@@ -10,9 +10,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "api"],
-  "references": [
-    { "path": "../../packages/shared" },
-    { "path": "../../packages/code-runner" }
-  ]
+  "include": ["src", "api"]
 }
