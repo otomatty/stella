@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Design tokens — warm neutral, deep indigo accent, dense & calm
+   Ported verbatim from the v1 prototype styles.css
+   ============================================================ */
+
+:root {
+  /* Surface */
+  --bg: oklch(98.5% 0.004 85);
+  --bg-raised: oklch(100% 0 0);
+  --bg-sunken: oklch(96% 0.005 85);
+  --bg-muted: oklch(94% 0.006 85);
+
+  /* Ink */
+  --ink: oklch(22% 0.01 260);
+  --ink-2: oklch(40% 0.01 260);
+  --ink-3: oklch(55% 0.01 260);
+  --ink-4: oklch(70% 0.008 260);
+
+  /* Line */
+  --line: oklch(90% 0.006 85);
+  --line-2: oklch(86% 0.008 85);
+  --line-strong: oklch(78% 0.008 85);
+
+  /* Brand — deep indigo */
+  --brand: oklch(46% 0.15 265);
+  --brand-hover: oklch(40% 0.15 265);
+  --brand-soft: oklch(94% 0.03 265);
+  --brand-ink: oklch(30% 0.12 265);
+
+  /* Status */
+  --success: oklch(52% 0.13 155);
+  --success-soft: oklch(94% 0.04 155);
+  --warning: oklch(62% 0.14 70);
+  --warning-soft: oklch(95% 0.05 75);
+  --danger: oklch(52% 0.18 25);
+  --danger-soft: oklch(95% 0.04 25);
+  --info: oklch(55% 0.12 230);
+  --info-soft: oklch(95% 0.03 230);
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow: 0 1px 3px oklch(0% 0 0 / 0.06), 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.08), 0 2px 6px oklch(0% 0 0 / 0.04);
+}
+
+/* Tailwind v4 theme — maps tokens to utility classes */
+@theme inline {
+  --font-sans: "Inter", "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Surface */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--bg-raised);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--bg-raised);
+  --color-popover-foreground: var(--ink);
+  --color-muted: var(--bg-muted);
+  --color-muted-foreground: var(--ink-3);
+  --color-sunken: var(--bg-sunken);
+
+  /* Ink levels */
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+
+  /* Lines / borders */
+  --color-border: var(--line);
+  --color-border-2: var(--line-2);
+  --color-border-strong: var(--line-strong);
+  --color-input: var(--line-2);
+  --color-ring: var(--brand);
+
+  /* Primary = near-black ink (shadcn-style mapping) */
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--bg-raised);
+
+  /* Secondary = soft sunken surface */
+  --color-secondary: var(--bg-sunken);
+  --color-secondary-foreground: var(--ink);
+
+  /* "accent" in shadcn = hover bg; we keep that convention */
+  --color-accent: var(--bg-sunken);
+  --color-accent-foreground: var(--ink);
+
+  /* Brand — the indigo accent */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-foreground: #fff;
+
+  /* Status */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #fff;
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow-md: 0 1px 3px oklch(0% 0 0 / 0.06), 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.08), 0 2px 6px oklch(0% 0 0 / 0.04);
+}
+
+/* ============================================================
+   Base layer — typography, scrollbar, defaults
+   ============================================================ */
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html, body {
+    height: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-foreground);
+    background: var(--color-background);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5 {
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 10px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--line-strong); }
+}
+
+/* ============================================================
+   Utilities that don't map cleanly to single Tailwind classes
+   ============================================================ */
+
+@layer utilities {
+  /* Sidebar avatar color palette (c1..c6) */
+  .avatar-c1 { background: oklch(92% 0.04 265); color: oklch(35% 0.13 265); }
+  .avatar-c2 { background: oklch(92% 0.05 155); color: oklch(32% 0.1 155); }
+  .avatar-c3 { background: oklch(93% 0.05 40);  color: oklch(35% 0.12 40); }
+  .avatar-c4 { background: oklch(93% 0.05 330); color: oklch(35% 0.13 330); }
+  .avatar-c5 { background: oklch(93% 0.04 200); color: oklch(32% 0.12 200); }
+  .avatar-c6 { background: oklch(93% 0.05 90);  color: oklch(35% 0.11 90); }
+
+  /* Course thumbnail placeholder stripes */
+  .thumb-stripes {
+    background-image: repeating-linear-gradient(45deg,
+      oklch(96% 0.005 85) 0, oklch(96% 0.005 85) 8px,
+      oklch(93% 0.01 85) 8px, oklch(93% 0.01 85) 16px);
+  }
+  .thumb-stripes-indigo {
+    background-image: repeating-linear-gradient(45deg,
+      oklch(94% 0.04 265) 0, oklch(94% 0.04 265) 8px,
+      oklch(90% 0.05 265) 8px, oklch(90% 0.05 265) 16px);
+  }
+  .thumb-stripes-green {
+    background-image: repeating-linear-gradient(45deg,
+      oklch(95% 0.04 155) 0, oklch(95% 0.04 155) 8px,
+      oklch(91% 0.05 155) 8px, oklch(91% 0.05 155) 16px);
+  }
+  .thumb-stripes-amber {
+    background-image: repeating-linear-gradient(45deg,
+      oklch(95% 0.05 70) 0, oklch(95% 0.05 70) 8px,
+      oklch(91% 0.06 70) 8px, oklch(91% 0.06 70) 16px);
+  }
+  .thumb-stripes-slate {
+    background-image: repeating-linear-gradient(45deg,
+      oklch(94% 0.01 240) 0, oklch(94% 0.01 240) 8px,
+      oklch(89% 0.02 240) 8px, oklch(89% 0.02 240) 16px);
+  }
+
+  /* Login art column grid background */
+  .login-art-grid {
+    background-image:
+      linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(30% 0.01 260) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.5;
+    mask-image: radial-gradient(ellipse at top right, black, transparent 70%);
+  }
+
+  /* Video player placeholder */
+  .video-placeholder-bg {
+    background-image:
+      radial-gradient(circle at 30% 40%, oklch(22% 0.02 260) 0, transparent 50%),
+      radial-gradient(circle at 70% 70%, oklch(18% 0.03 265) 0, transparent 50%),
+      #0a0a0b;
+  }
+
+  /* Prose (lesson body) — kept light so shadcn Card/Body spacing wins */
+  .prose-lms { font-size: 14.5px; line-height: 1.7; color: var(--ink); }
+  .prose-lms p { margin: 0 0 16px; }
+  .prose-lms h2 { font-size: 18px; margin: 28px 0 12px; letter-spacing: -0.01em; font-weight: 600; }
+  .prose-lms h3 { font-size: 15px; margin: 20px 0 8px; font-weight: 600; }
+  .prose-lms ul, .prose-lms ol { padding-left: 22px; margin: 0 0 16px; }
+  .prose-lms li { margin-bottom: 4px; }
+  .prose-lms code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-muted);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .prose-lms pre {
+    background: oklch(22% 0.01 260);
+    color: oklch(95% 0.005 85);
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 16px 0;
+  }
+  .prose-lms pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+
+  /* Code viewer (instructor review) */
+  .code-viewer-bg { background: oklch(22% 0.01 260); color: oklch(92% 0.005 85); }
+  .code-viewer-hover:hover { background: oklch(25% 0.01 260); }
+  .code-viewer-commented { background: oklch(28% 0.04 70); }
+  .code-viewer-ln { color: oklch(55% 0.01 260); }
+  .code-viewer-ln-commented { color: oklch(85% 0.1 70); }
+  .code-comment-indicator {
+    background: oklch(65% 0.14 70);
+    color: #000;
+  }
+
+  /* Syntax tokens */
+  .tok-kw  { color: oklch(75% 0.14 310); }
+  .tok-str { color: oklch(80% 0.13 145); }
+  .tok-com { color: oklch(55% 0.02 260); font-style: italic; }
+  .tok-num { color: oklch(80% 0.13 45); }
+  .tok-fn  { color: oklch(80% 0.13 240); }
+  .tok-type { color: oklch(80% 0.13 200); }
+
+  /* IDE */
+  .ide-bg     { background: oklch(22% 0.01 260); color: oklch(92% 0.005 85); }
+  .ide-tabs-bg { background: oklch(18% 0.01 260); }
+  .ide-output-bg { background: oklch(18% 0.01 260); color: oklch(85% 0.005 85); }
+  .ide-sep    { border-color: oklch(28% 0.01 260); }
+  .ide-muted  { color: oklch(55% 0.01 260); }
+  .ide-ok     { color: oklch(75% 0.13 145); }
+  .ide-fail   { color: oklch(70% 0.18 25); }
+  .ide-tab-inactive { color: oklch(65% 0.01 260); }
+  .ide-tab-active   { color: oklch(95% 0.005 85); }
+
+  /* Animations */
+  .animate-spin-slow { animation: lms-spin 0.8s linear infinite; }
+  @keyframes lms-spin { to { transform: rotate(360deg); } }
+
+  .animate-lms-pulse { animation: lms-pulse 2s ease-in-out infinite; }
+  @keyframes lms-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .animate-slide-up { animation: lms-slide 0.2s ease; }
+  @keyframes lms-slide {
+    from { transform: translate(-50%, 10px); opacity: 0; }
+  }
+
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+}

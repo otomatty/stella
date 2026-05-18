@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --track-changes=all \"C:/Users/saedg/Downloads/アーシャルデザイン_LMS仕様書_v1.0.docx\" -o /tmp/lms_spec.md)",
+      "Read(//tmp/**)",
+      "Bash(cp \"C:/Users/saedg/Downloads/アーシャルデザイン_LMS仕様書_v1.0.docx\" /tmp/spec.zip)",
+      "Read(//c/tmp/**)",
+      "Bash(unzip -o spec.zip -d spec_unpacked)",
+      "Bash(bun --version)",
+      "Bash(node tmp_extract.js)",
+      "Bash(bun run *)",
+      "Bash(bun add *)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}
