@@ -1,49 +1,14 @@
 {
   "name": "falcon-informal",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "description": "FALCON INFORMAL",
+  "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
-  },
-  "dependencies": {
-    "@radix-ui/react-avatar": "^1.1.10",
-    "@radix-ui/react-dialog": "^1.1.14",
-    "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-popover": "^1.1.14",
-    "@radix-ui/react-progress": "^1.1.7",
-    "@radix-ui/react-radio-group": "^1.3.7",
-    "@radix-ui/react-scroll-area": "^1.2.9",
-    "@radix-ui/react-separator": "^1.1.7",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-tabs": "^1.1.12",
-    "@radix-ui/react-tooltip": "^1.2.7",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.475.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "sonner": "^1.7.4",
-    "tailwind-merge": "^3.0.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.0.6",
-    "@types/node": "^25.6.0",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "tailwindcss": "^4.0.6",
-    "typescript": "^5.7.3",
-    "vite": "^5.4.14"
-  },
-  "packageManager": "bun@1.3.6",
-  "trustedDependencies": [
-    "@vitejs/plugin-react",
-    "esbuild",
-    "@tailwindcss/oxide"
-  ]
+    "dev": "bun --filter=@falcon/web dev",
+    "build": "bun --filter='*' build",
+    "preview": "bun --filter=@falcon/web preview",
+    "typecheck": "bun --filter='*' typecheck",
+    "vercel-dev": "bun --filter=@falcon/web vercel-dev"
+  }
 }

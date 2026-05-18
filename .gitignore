@@ -5,3 +5,10 @@ dist
 .vite
 .env
 .env.local
+*.tsbuildinfo
+
+# Generated at build time from sql.js
+apps/web/public/sqljs/
+
+# Vercel
+.vercel

@@ -1,76 +1,103 @@
-# FALCON INFORMAL (Vite + React + TypeScript + shadcn/ui)
+# FALCON INFORMAL
 
-FALCON INFORMAL のプロトタイプ。
-部活動指導者講習とSES未経験エンジニア育成の両事業を単一基盤で支える。
+部活動指導者講習とSES未経験エンジニア育成を **単一基盤で支えるLMS** のプロトタイプ。
+
+- 教材を見る (PDFスライド / 動画) — P1
+- 演習する (CodeMirror + Lint + AST + テスト実行) — P2
+- 採点される / AIに質問する — P2
+
+## モノレポ構成
+
+```text
+falcon-informal/
+├── apps/
+│   └── web/                  # @falcon/web — LMS本体 (Vite + React)
+│       ├── src/              # Learner / Instructor / Admin UI
+│       ├── api/              # Vercel Serverless Functions (chat, healthz)
+│       └── vite-plugins/     # copy-sqljs-wasm
+├── packages/
+│   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
+│   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
+├── tsconfig.base.json
+└── package.json              # Bun workspaces
+```
 
 ## スタック
 
-- Vite 5 + React 18 + TypeScript
-- Tailwind CSS v4 + shadcn/ui
-- Radix UI プリミティブ
-- lucide-react アイコン
-- sonner トースト
-- Bun (パッケージマネージャ)
+- **Vite 5 + React 18 + TypeScript (strict)**
+- **Tailwind CSS v4 + shadcn/ui** (`apps/web/src/components/ui/`)
+- **Radix UI** プリミティブ
+- **Bun** (パッケージマネージャ / Workspaces)
+- **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
+- **教材配信**: Supabase Storage (`materials-public` バケット)
+- **AI**: Anthropic Claude (`/api/chat` 経由)
+
+## セットアップ
+
+```bash
+bun install
+cp apps/web/.env.local.example apps/web/.env.local
+# .env.local を編集して Supabase / Anthropic の認証情報を埋める
+```
+
+### Supabase
+
+1. Supabase で新規プロジェクト作成 (リージョン: Tokyo 推奨)
+2. Storage で `materials-public` バケットを作成 (public read)
+3. CORS設定: `Access-Control-Allow-Origin: *`、`Methods: GET, HEAD`、`Headers: Range, Content-Type`
+4. プロジェクトURLとanon keyを `.env.local` の `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` に貼る
+
+### Anthropic (AIチャット用、 任意)
+
+`ANTHROPIC_API_KEY` を `.env.local` に設定。 既定モデルは `claude-sonnet-4-6`。
 
 ## 開発
 
 ```bash
-bun install
-bun run dev        # http://localhost:5173
-bun run build      # production build → dist/
-bun run preview
-bun run typecheck  # tsc -b --noEmit
+# ルートから
+bun run dev              # apps/web の vite dev (http://localhost:5173)
+bun run build            # 全 workspace の build
+bun run typecheck        # 全 workspace の tsc --noEmit
+bun run vercel-dev       # apps/web を Vercel CLI 経由で起動 (Edge Function 込み)
 ```
 
-## プロジェクト構成
+特定 workspace だけ動かす場合:
 
-```
-src/
-├── main.tsx                     React エントリ
-├── App.tsx                      ルーティング / テナント・ロール切替 / 永続化
-├── index.css                    Tailwind + 設計トークン (@theme inline)
-├── lib/
-│   ├── utils.ts                 cn() ヘルパー
-│   └── icons.tsx                lucide-react 再エクスポート + Google SVG
-├── data/
-│   ├── types.ts                 ドメイン型
-│   └── fixtures.ts              静的データ (テナント / コース / 添削キュー …)
-└── components/
-    ├── ui/                      shadcn/ui プリミティブ (Button, Card, Badge, …)
-    ├── shell/                   Sidebar, Topbar, LoginScreen, TenantSelect
-    ├── common/                  PageHeader, KpiCard, CourseThumb, Brand, AIChatBot, TweaksPanel
-    ├── learner/                 LearnerDashboard, CourseList, CourseDetail, LessonPlayer, Certificate, StandaloneQA
-    ├── instructor/              InstructorDashboard, ReviewQueue, ReviewEditor, InstructorGeneric
-    └── admin/                   AdminDashboard, UsersAdmin, AdminGeneric
+```bash
+bun run --filter=@falcon/web dev
+bun run --filter=@falcon/shared typecheck
 ```
 
 ## ロール切替
 
-バックティック (`` ` ``) キーで Tweaks パネルを開き、ロール・テナント・AI
-アシスタントの表示を切替。状態は `localStorage` に `lms_state` として永続化。
+バックティック (`` ` ``) キーで Tweaks パネルを開き、 ロール・テナント・AIアシスタント表示を切替。
+状態は `localStorage` に `lms_state` として永続化される。
 
-- **受講者 (Learner)** — ログイン、ダッシュボード、コース一覧、レッスン視聴 (動画/テキスト/小テスト/Web IDE/課題)、Q&A、修了証
-- **講師 (Instructor)** — ダッシュボード、添削キュー、AI下書き付き添削エディタ (インラインコメント・ルーブリック・総評)
-- **テナント管理者 (Admin)** — KPIダッシュボード、ユーザー管理、コース管理、監査ログ
+- **受講者 (Learner)** — ダッシュボード / コース一覧 / レッスン視聴 (動画・テキスト・小テスト・コード課題) / Q&A / 修了証
+- **講師 (Instructor)** — ダッシュボード / 添削キュー / AI下書き付き添削エディタ
+- **テナント管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / コース管理 / 監査ログ
 
 ## デザイントークン
 
-`src/index.css` の `:root` に生トークン、`@theme inline` で Tailwind
-ユーティリティに射影している。
+`apps/web/src/index.css` の `:root` に生トークン、 `@theme inline` で Tailwind ユーティリティに射影。
 
-- Surface: warm off-white `oklch(98.5% 0.004 85)` → `--bg`
-- Ink: near-black `oklch(22% 0.01 260)` → `--ink`
-- Brand: deep indigo `oklch(46% 0.15 265)` → `--brand`
+- Surface: warm off-white `oklch(98.5% 0.004 85)`
+- Ink: near-black `oklch(22% 0.01 260)`
+- Brand: deep indigo `oklch(46% 0.15 265)`
 - Typography: Inter + Noto Sans JP + JetBrains Mono
-- Radius: 4 / 8 / 12 / 16 px
-- Status: success (green), warning (amber), danger (red), info (blue)
 
-## v1 プロトタイプとの差分
+## ロードマップ
 
-- Pure CSS (1500行) → Tailwind CSS v4 + shadcn/ui
-- JSX → TypeScript (`strict: true`)
-- 自作 SVG アイコン → lucide-react
-- `window.XYZ` グローバル → `import`/`export`
-- `localStorage` の `lms_state` キー・形式は互換
+| Phase | 内容 | Issue |
+|---|---|---|
+| **P0** | monorepo化 + js-review-prototype取り込み + Supabase Storage | #2 |
+| **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
+| **P2** | コード演習統合 (PracticeWorkspace + AIChatBot リアル化) | #4 |
 
-旧実装は `src-legacy/` に保全している (参照専用 / 削除可)。
+## デプロイ (Vercel)
+
+- **Root Directory**: `apps/web` (`apps/web/vercel.json` あり)
+- **Framework**: Vite
+- **Install Command**: `cd ../.. && bun install`
+- **Build Command**: `bun run build`
+- **環境変数**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`
