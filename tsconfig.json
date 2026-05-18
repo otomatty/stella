@@ -1,8 +1,4 @@
 {
   "files": [],
-  "references": [
-    { "path": "./packages/shared" },
-    { "path": "./packages/code-runner" },
-    { "path": "./apps/web" }
-  ]
+  "include": []
 }
