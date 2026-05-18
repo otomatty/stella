@@ -270,15 +270,20 @@ export class QuickJsRunner {
         const exposeStmts = entryPoints
           .map((n) => `try { __jsreview_scope__.${n} = ${n}; } catch (_e) {}`)
           .join("\n");
+        // `with` は strict mode で SyntaxError。 学習者コードが "use strict" を含む
+        // (or class / module 構文を使う) と全体が strict 扱いになり採点不能になるため、
+        // 各エントリ識別子を明示的に const 束縛するスタイルに切り替える。
+        const bindingDecls = entryPoints
+          .map((n) => `const ${n} = __s.${n};`)
+          .join("\n");
 
         const source = `
         ${code}
         var __jsreview_scope__ = {};
         ${exposeStmts}
         (function (__s) {
-          with (__s) {
-            return (${test.code});
-          }
+          ${bindingDecls}
+          return (${test.code});
         })(__jsreview_scope__);
       `;
 

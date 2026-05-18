@@ -62,6 +62,21 @@ export function analyzeJsAst(code: string, requirement: ASTRequirement): ASTResu
       parseError: msg,
     };
   }
+  // `errorRecovery: true` は復旧可能な構文エラーを throw せず `File.errors` に蓄積する
+  // (例: 不要なセミコロン省略 など)。 そのまま AST 解析を続けると黙って通ってしまうため、
+  // 1 件でもあれば parseError として返してチェックを停止する。
+  const recovered = (ast as unknown as { errors?: Array<{ message?: string }> }).errors;
+  if (Array.isArray(recovered) && recovered.length > 0) {
+    return {
+      required: (requirement.required ?? []).map((p) => ({
+        pattern: p,
+        label: labelOf(p),
+        found: false,
+      })),
+      forbidden: [],
+      parseError: recovered[0]?.message ?? "Parse error",
+    };
+  }
 
   // 必須/禁止それぞれについて、コード全体をスキャンしてマッチ箇所を集める
   const requiredResults: ASTCheckResult[] = (requirement.required ?? []).map(
@@ -138,7 +153,10 @@ function matches(node: Node, pattern: ASTPattern): boolean {
   switch (pattern.kind) {
     case "method": {
       // `x.NAME(...)` または `x?.NAME(...)`
-      if (node.type !== "CallExpression") {return false;}
+      // OptionalCallExpression は `?.()` 形式のオプショナル呼び出し (例: `arr?.reduce(...)`)。
+      if (node.type !== "CallExpression" && node.type !== "OptionalCallExpression") {
+        return false;
+      }
       const callee = node.callee;
       if (
         (callee.type === "MemberExpression" ||

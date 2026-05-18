@@ -51,6 +51,14 @@ export async function* streamChat(
   );
 
   for await (const event of stream) {
+    // Anthropic Messages API は SSE で `error` イベントを送ることがある
+    // (overloaded_error 等)。 未処理だと最終 fallback の done で「成功」 と
+    // 誤判定されるため、 明示的に Error として throw して呼び出し側に伝える。
+    const maybeError = event as { type: string; error?: { message?: string } };
+    if (maybeError.type === "error") {
+      const msg = maybeError.error?.message ?? "Anthropic stream error";
+      throw new Error(msg);
+    }
     if (
       event.type === "content_block_delta" &&
       event.delta.type === "text_delta"

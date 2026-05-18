@@ -47,6 +47,12 @@ export function evaluate(
         // ランナー側が reference (Vitest なら全 pass / ESLint なら違反 0 件) と各 mutant
         // (Vitest なら kill / ESLint なら違反 ≥ 1 件) を 1 件ずつの TestResult に集約しており、
         // すべて成功で testsPassed=true。
+        //
+        // **意図的**: Lint/AST が「未適用 = pass」 を取るのに対し、 testResults は
+        // 「空 = fail」 で扱う。 これは「採点ランナーが何らかの理由で TestResult を
+        // 1 件も返さなかった = 課題定義不正 / ランナー側障害」 を学習者の cleared に
+        // つなげないための defensive choice。 課題は check-integrity スクリプトで
+        // tests.length > 0 が強制されている (mutation/eslint-config を除く)。
         return testResults.length > 0 && testResults.every((t) => t.passed);
       default: {
         const exhaustive: never = testKind;

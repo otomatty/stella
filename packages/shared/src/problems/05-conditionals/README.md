@@ -15,7 +15,7 @@
 
 ## ディレクトリ構成
 
-```
+```text
 05-conditionals/
 ├── README.md
 ├── _index.ts

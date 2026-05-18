@@ -14,7 +14,7 @@
 
 ## ディレクトリ構成
 
-```
+```text
 01-variables/
 ├── README.md
 ├── _index.ts

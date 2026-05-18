@@ -16,7 +16,7 @@
 
 ## ディレクトリ構成
 
-```
+```text
 03-strings/
 ├── README.md
 ├── _index.ts

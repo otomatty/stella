@@ -51,6 +51,29 @@ export const sqlRunner: CodeRunner = {
       // ここに到達した場合は呼び出し側の不整合なので明示的にエラー化する。
       throw new Error("SQL ランナは freerun モードに対応していません (採点モードでのみ利用可能)");
     }
+    // 設定ミスを「空コードで採点」として黙って通さないよう、 入力を明示的に検証して
+    // 不整合は構造化エラーとして返す (例外を投げると採点 UI が RUNNER_ERROR で全停止する)。
+    if (!Object.prototype.hasOwnProperty.call(input.files, input.entryFile)) {
+      const known = Object.keys(input.files).join(", ") || "(none)";
+      return {
+        durationMs: 0,
+        results: [
+          {
+            name: "runner-input",
+            passed: false,
+            error: `SQL_ERROR: entryFile "${input.entryFile}" not found in files (known: ${known})`,
+          },
+        ],
+      };
+    }
+    if (!Array.isArray(input.tests)) {
+      return {
+        durationMs: 0,
+        results: [
+          { name: "runner-input", passed: false, error: "SQL_ERROR: tests is not an array" },
+        ],
+      };
+    }
     const code = input.files[input.entryFile] ?? "";
     return runSqlTests(code, input.tests as SqlTestCase[], input.sqlSeed);
   },
@@ -124,8 +147,15 @@ function normalizeRow(row: unknown[]): SqlRow {
     if (typeof v === "number" || typeof v === "string" || typeof v === "boolean") {
       return v;
     }
-    // BLOB 等は学習教材では発生しない想定。 文字列化して返す。
-    if (typeof v === "bigint") {return v.toString();}
+    // SQLite の INT カラムは sql.js から bigint で返ることがある。 課題の
+    // `expectedRows` は number で書かれているため、 安全整数範囲なら number に変換
+    // して値ベースの比較を通す。 範囲外は精度を失わないよう string にフォールバック。
+    if (typeof v === "bigint") {
+      if (v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER)) {
+        return Number(v);
+      }
+      return v.toString();
+    }
     try {
       return JSON.stringify(v) ?? "";
     } catch {

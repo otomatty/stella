@@ -8,12 +8,12 @@
 
 ## モノレポ構成
 
-```
+```text
 falcon-informal/
 ├── apps/
 │   └── web/                  # @falcon/web — LMS本体 (Vite + React)
 │       ├── src/              # Learner / Instructor / Admin UI
-│       ├── api/              # Vercel Edge Functions (chat, healthz)
+│       ├── api/              # Vercel Serverless Functions (chat, healthz)
 │       └── vite-plugins/     # copy-sqljs-wasm
 ├── packages/
 │   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック

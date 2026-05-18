@@ -12,7 +12,7 @@
 
 ## ディレクトリ構成
 
-```
+```text
 00-setup/
 ├── README.md     # このファイル
 ├── _index.ts     # 章内 Assignment 配列の集約

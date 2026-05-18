@@ -16,7 +16,7 @@
 
 ## ディレクトリ構成
 
-```
+```text
 04-arrays/
 ├── README.md
 ├── _index.ts
@@ -39,7 +39,7 @@
 | 06 | `S1-Ch04-06-unshift` | unshift で先頭に追加 |
 | 07 | `S1-Ch04-07-shift` | shift で先頭を取り除く |
 | 08 | `S1-Ch04-08-print-array` | 配列をそのまま console.log で出す |
-| 09 | `S1-Ch04-09-nested-access` | matrix[i][j] でネスト配列にアクセス |
+| 09 | `S1-Ch04-09-nested-access` | `matrix[i][j]` でネスト配列にアクセス |
 | 10 | `S1-Ch04-10-update-element` | letters[i] = 値 で要素を上書き |
 | 11 | `S1-Ch04-11-array-of-strings` | 添字と length を組み合わせる |
 | 12 | `S1-Ch04-12-cart-total-capstone` ⭐ | **[チャレンジ]** 商品リストの合計額を出す |
