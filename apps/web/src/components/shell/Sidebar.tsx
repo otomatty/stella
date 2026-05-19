@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   ChevronsUpDown,
+  Code,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -35,6 +36,7 @@ type NavId =
   | 'orgs'
   | 'report'
   | 'audit'
+  | 'assignments'
   | 'settings'
   | '__logout'
   | '__switch_tenant';
@@ -64,6 +66,7 @@ const NAV: Record<Role, NavItem[]> = {
   admin: [
     { id: 'dash', label: 'KPIダッシュボード', icon: BarChart },
     { id: 'courses', label: 'コース管理', icon: Book },
+    { id: 'assignments', label: '課題管理', icon: Code },
     { id: 'users', label: 'ユーザー管理', icon: Users },
     { id: 'orgs', label: '組織マスタ', icon: Building },
     { id: 'report', label: 'レポート', icon: FileText },

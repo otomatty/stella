@@ -71,6 +71,10 @@ export {
   VolumeX,
   ChevronUp,
   Loader2,
+  Trash2 as Trash,
+  GripVertical,
+  Save,
+  PlayCircle,
 } from 'lucide-react';
 
 import type { SVGProps } from 'react';

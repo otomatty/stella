@@ -22,7 +22,6 @@ import type { Course, Section, Lesson, LessonType } from '@/data/types';
 import { SES_COURSES, QA_THREAD } from '@/data/fixtures';
 import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
 import type { Assignment } from '@falcon/shared/types';
-import { findAssignment } from '@falcon/shared/assignments';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -298,21 +297,16 @@ export const LessonPlayer = ({
 
       <main className="min-w-0 flex flex-col">
         {isCode && lessonObj.assignmentId ? (
-          findAssignment(lessonObj.assignmentId) ? (
-            <PracticeWorkspace
-              key={lessonObj.id}
-              assignmentId={lessonObj.assignmentId}
-              embedded
-              onCleared={handlePracticeCleared}
-              onAskAi={handlePracticeAskAi}
-              onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
-            />
-          ) : (
-            <div className="p-10 text-sm text-ink-3">
-              この演習レッスンに紐付く課題 (<code>{lessonObj.assignmentId}</code>) が
-              <code>@falcon/shared</code> に見つかりません。 fixtures を確認してください。
-            </div>
-          )
+          // PracticeWorkspace 側で shared / CMS DB の双方を解決するため、
+          // ここで findAssignment による事前フィルタは行わない (#10 — CMS で作られた課題対応)。
+          <PracticeWorkspace
+            key={lessonObj.id}
+            assignmentId={lessonObj.assignmentId}
+            embedded
+            onCleared={handlePracticeCleared}
+            onAskAi={handlePracticeAskAi}
+            onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
+          />
         ) : (
           <>
         {isVideo ? (

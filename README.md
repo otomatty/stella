@@ -47,6 +47,25 @@ cp apps/web/.env.local.example apps/web/.env.local
 3. CORS設定: `Access-Control-Allow-Origin: *`、`Methods: GET, HEAD`、`Headers: Range, Content-Type`
 4. プロジェクトURLとanon keyを `.env.local` の `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` に貼る
 
+### Supabase DB (教材 CMS 用) — Issue #10
+
+CMS 機能 (`/admin/courses` 等) を使う場合は DB スキーマと初期データの投入が必要。
+
+1. Supabase Studio の SQL Editor で `supabase/migrations/20260519000000_cms_foundation.sql` を貼って実行 (テーブル / RLS / Storage ポリシーが作成される)
+2. Authentication → Providers で **Email (Magic Link)** を有効化
+3. fixtures から既存コース・課題を取り込むには service_role キーを使った seed スクリプト:
+   ```bash
+   SUPABASE_URL=https://xxxxx.supabase.co \
+   SUPABASE_SERVICE_ROLE_KEY=... \
+     bun run seed:fixtures
+   ```
+   service_role キーは絶対にクライアントに公開しない (`apps/web/.env.local` の `SUPABASE_SERVICE_ROLE_KEY` はビルドに含まれないサーバ専用変数)。
+4. 初回サインイン後は `profiles` に `role='student'` で行が作られる。 管理者にしたい場合は SQL Editor で
+   ```sql
+   update public.profiles set role = 'admin' where email = 'you@example.com';
+   ```
+   を実行する (招待制フローは未実装)。
+
 ### Anthropic (AIチャット用、 任意)
 
 `ANTHROPIC_API_KEY` を `.env.local` に設定。 既定モデルは `claude-sonnet-4-6`。
@@ -93,6 +112,7 @@ bun run --filter=@falcon/shared typecheck
 | **P0** | monorepo化 + js-review-prototype取り込み + Supabase Storage | #2 |
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
 | **P2** | コード演習統合 (PracticeWorkspace + AIChatBot リアル化) | #4 |
+| **P5** | 教材 CMS — 講師が UI からコース・レッスン・課題を作成 / 編集 (DB スキーマ + RLS + 管理画面 骨組み) | #10 |
 
 ## デプロイ (Vercel)
 

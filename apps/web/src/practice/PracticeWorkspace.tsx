@@ -19,7 +19,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { findAssignment } from "@falcon/shared/assignments";
+import { useResolvedAssignment } from "@/hooks/useResolvedAssignment";
 import type { Assignment } from "@falcon/shared/types";
 import {
   getEntryFile,
@@ -80,15 +80,20 @@ export function PracticeWorkspace({
   onAskAi,
   onGoToNextLesson,
 }: PracticeWorkspaceProps) {
-  const assignment = useMemo(
-    () => findAssignment(assignmentId),
-    [assignmentId],
-  );
+  const { assignment, loading, error } = useResolvedAssignment(assignmentId);
 
+  if (loading) {
+    return (
+      <div className="p-10 text-sm text-ink-3">
+        課題を読み込み中: <code>{assignmentId}</code>
+      </div>
+    );
+  }
   if (!assignment) {
     return (
       <div className="p-10 text-sm text-ink-3">
         課題が見つかりません: <code>{assignmentId}</code>
+        {error ? <div className="mt-2 text-destructive text-[12px]">{error}</div> : null}
       </div>
     );
   }

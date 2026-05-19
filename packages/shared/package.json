@@ -10,6 +10,7 @@
     "./types": "./src/types.ts",
     "./assignments": "./src/assignments.ts",
     "./assignment-helpers": "./src/assignment-helpers.ts",
+    "./cms/types": "./src/cms/types.ts",
     "./curriculum/chapters": "./src/curriculum/chapters.ts",
     "./curriculum/stages": "./src/curriculum/stages.ts",
     "./grading": "./src/grading/index.ts",
