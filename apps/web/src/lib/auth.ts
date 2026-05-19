@@ -77,6 +77,9 @@ export interface EnsureProfileParams {
 export async function ensureProfile(
   params: EnsureProfileParams,
 ): Promise<Profile> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase が未設定のためプロフィールを作成できません");
+  }
   const supabase = getSupabase();
   const row = {
     id: params.userId,

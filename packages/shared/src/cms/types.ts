@@ -117,6 +117,7 @@ export interface AssignmentRow {
   lint_preset: LintPreset | null;
   static_analysis: { eslint?: { rules: Record<string, ESLintRuleConfig> }; ast?: ASTRequirement } | null;
   mutation: MutationConfig | null;
+  demo_call: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -244,6 +245,7 @@ export function mapAssignmentRowToAssignment(row: AssignmentRow): Assignment {
     ...(row.entry_file ? { entryFile: row.entry_file } : {}),
     ...(row.sql_seed ? { sqlSeed: row.sql_seed } : {}),
     ...(row.entry_points ? { entryPoints: row.entry_points } : {}),
+    ...(row.demo_call ? { demoCall: row.demo_call } : {}),
     tests: row.tests,
     ...(row.lint_preset ? { lintPreset: row.lint_preset } : {}),
     ...(row.static_analysis ? { staticAnalysis: row.static_analysis } : {}),

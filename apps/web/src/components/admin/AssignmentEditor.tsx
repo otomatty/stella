@@ -127,7 +127,7 @@ function fromRow(row: AssignmentRow): Draft {
     starterFiles: row.starter_files,
     entryFile: row.entry_file ?? row.starter_files[0]?.path ?? "main.js",
     entryPoints: (row.entry_points ?? []).join(", "),
-    demoCall: "",
+    demoCall: row.demo_call ?? "",
     sqlSeed: row.sql_seed ?? "",
     tests: row.tests,
     lintPreset: row.lint_preset ?? "",
@@ -228,11 +228,12 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
   };
 
   const buildAssignment = (): Assignment => {
-    const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required");
-    const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden");
+    const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required", []);
+    const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden", []);
     const eslintRules = parseJsonStrict<Record<string, ESLintRuleConfig>>(
       draft.eslintRulesJson,
       "ESLint rules 上書き",
+      {},
     );
     const ast = {
       required: astRequired as ASTRequirement["required"],
@@ -257,6 +258,7 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
       entryFile: draft.entryFile,
       ...(draft.sqlSeed ? { sqlSeed: draft.sqlSeed } : {}),
       ...(entryPoints.length ? { entryPoints } : {}),
+      ...(draft.demoCall ? { demoCall: draft.demoCall } : {}),
       tests: draft.tests,
       ...(draft.lintPreset ? { lintPreset: draft.lintPreset } : {}),
       staticAnalysis: {
@@ -313,11 +315,12 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
   const save = async () => {
     setSaving(true);
     try {
-      const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required");
-      const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden");
+      const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required", []);
+      const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden", []);
       const eslintRules = parseJsonStrict<Record<string, ESLintRuleConfig>>(
         draft.eslintRulesJson,
         "ESLint rules 上書き",
+        {},
       );
       const entryPoints = draft.entryPoints
         .split(",")
@@ -347,6 +350,7 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
           },
         },
         mutation: null,
+        demo_call: draft.demoCall || null,
       });
       toast.success("課題を保存しました");
       await onSaved();
@@ -865,7 +869,8 @@ function SqlTestEditor({ value, onChange }: SqlTestEditorProps) {
             const parsed = JSON.parse(rowsRaw) as unknown[][];
             onChange({ ...(value as object), expectedRows: parsed } as TestCase);
           } catch {
-            toast.error("expectedRows が不正な JSON");
+            toast.error("expectedRows が不正な JSON。 元の値に戻します");
+            setRowsRaw(JSON.stringify(rows, null, 2));
           }
         }}
         placeholder='例: [[1,"alice"],[2,"bob"]]'
@@ -1029,13 +1034,13 @@ function parseJsonOr<T>(raw: string, fallback: T): T {
   }
 }
 
-/** parseJsonOr の strict 版。 空欄は「未指定」とみなし、 不正な JSON は例外を投げる。 */
-function parseJsonStrict<T>(raw: string, label: string): T {
+/**
+ * parseJsonOr の strict 版。 空欄は呼び出し側が指定した `emptyDefault` を返し、
+ * 不正な JSON は例外を投げる (UI 側でユーザに見せる)。
+ */
+function parseJsonStrict<T>(raw: string, label: string, emptyDefault: T): T {
   const trimmed = raw.trim();
-  // 完全な空欄 / 空白のみは「未指定」扱い。 AST required = 空配列、 ESLint rules = 空オブジェクト相当。
-  if (!trimmed) {
-    return ((label.endsWith("rules 上書き") ? {} : []) as unknown) as T;
-  }
+  if (!trimmed) return emptyDefault;
   try {
     return JSON.parse(trimmed) as T;
   } catch (err) {

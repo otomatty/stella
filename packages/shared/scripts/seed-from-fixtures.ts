@@ -142,6 +142,7 @@ async function seedAssignment(tenantId: Tenant["id"], assignmentId: string) {
       ast: settings.ast,
     },
     mutation: a.mutation ?? null,
+    demo_call: a.demoCall ?? null,
   });
   if (error) throw new Error(`assignment ${a.id}: ${error.message}`);
 }

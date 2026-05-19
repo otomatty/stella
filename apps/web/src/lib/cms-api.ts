@@ -290,14 +290,15 @@ export async function uploadMaterial(
   return { path };
 }
 
-/** UI から呼ぶ前にパスをサニタイズする (邦字・空白を許容しつつ衝突を避ける)。 */
+/** UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。 */
 export function buildMaterialPath(args: {
   tenantId: string;
   courseId: string;
   fileName: string;
 }): string {
-  // Unicode 文字 (邦字含む) と空白 / `.` / `-` を残す。 その他は `_` に置換。
-  const safe = args.fileName.replace(/[^\p{L}\p{N}.\- ]+/gu, "_");
+  // Unicode 文字 (邦字含む) と `.` / `-` を残す。 空白を含むその他は `_` に置換。
+  // Storage URL では空白がエンコードで問題になるため明示的に潰す。
+  const safe = args.fileName.replace(/[^\p{L}\p{N}.\-]+/gu, "_");
   const uniq =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 8)

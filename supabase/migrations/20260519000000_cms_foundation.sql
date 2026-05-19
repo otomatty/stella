@@ -114,10 +114,13 @@ create table if not exists public.assignments (
   lint_preset text check (lint_preset in ('S1','S2','S3','S4','S5')),
   static_analysis jsonb,
   mutation jsonb,
+  demo_call text,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- 既存環境 (本マイグレーション以前を適用済み) でも欠落列を補えるよう defensive に追加。
+alter table public.assignments add column if not exists demo_call text;
 create index if not exists assignments_tenant_idx on public.assignments(tenant_id);
 create index if not exists assignments_chapter_idx on public.assignments(stage, chapter_id);
 
