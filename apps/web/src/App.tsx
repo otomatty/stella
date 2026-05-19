@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { Sparkles } from '@/lib/icons';
 import { TENANTS, CURRENT_USER, SES_COURSES, COACH_COURSES } from '@/data/fixtures';
 import type { Course, Role, Tenant } from '@/data/types';
+import type { ChatContext } from '@falcon/shared/ai/types';
+import { LessonAIProvider } from '@/components/common/LessonAIContext';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
@@ -92,9 +94,17 @@ export default function App() {
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiContext, setAiContext] = useState<ChatContext>({ kind: 'general' });
   const [showAIBot, setShowAIBot] = useState(() =>
     loadSaved()?.showAIBot ?? DEFAULTS.showAIBot,
   );
+
+  // ページがレッスン以外に戻ったら context を general にリセット
+  useEffect(() => {
+    if (page !== 'lesson') {
+      setAiContext({ kind: 'general' });
+    }
+  }, [page]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -194,14 +204,16 @@ export default function App() {
               courses,
               currentCourse,
               setCurrentCourse,
+              onOpenAIBot: () => setAiOpen(true),
+              setAIContext: setAiContext,
             })}
           </div>
         </div>
       </div>
 
-      {/* Floating AI chatbot (learner only, not inside lesson flush view) */}
-      {showAIBot && role === 'learner' && page !== 'lesson' ? (
-        <>
+      {/* Floating AI chatbot (learner only) — lesson 内でも開けるよう gate を撤廃 */}
+      {showAIBot && role === 'learner' ? (
+        <LessonAIProvider value={aiContext}>
           {!aiOpen ? (
             <Button
               variant="primary"
@@ -215,7 +227,7 @@ export default function App() {
           ) : (
             <AIChatBot onClose={() => setAiOpen(false)} />
           )}
-        </>
+        </LessonAIProvider>
       ) : null}
 
       {/* Tweaks panel — backtick toggle */}
@@ -245,6 +257,8 @@ interface RenderParams {
   courses: Course[];
   currentCourse: Course | null;
   setCurrentCourse: (c: Course) => void;
+  onOpenAIBot: () => void;
+  setAIContext: (ctx: ChatContext) => void;
 }
 
 function renderPage({
@@ -254,6 +268,8 @@ function renderPage({
   courses,
   currentCourse,
   setCurrentCourse,
+  onOpenAIBot,
+  setAIContext,
 }: RenderParams) {
   if (role === 'learner') {
     if (page === 'dash') return <LearnerDashboard setPage={setPage} courses={courses} />;
@@ -268,7 +284,14 @@ function renderPage({
     if (page === 'course-detail')
       return <CourseDetail course={currentCourse ?? courses[0]} setPage={setPage} />;
     if (page === 'lesson')
-      return <LessonPlayer course={currentCourse ?? courses[0]} setPage={setPage} />;
+      return (
+        <LessonPlayer
+          course={currentCourse ?? courses[0]}
+          setPage={setPage}
+          onOpenAIBot={onOpenAIBot}
+          setAIContext={setAIContext}
+        />
+      );
     if (page === 'cert') return <CertificatePage />;
     if (page === 'qa') return <StandaloneQA />;
   }

@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
   ChevronLeft,
   ChevronRight,
-  Play,
   FileText,
   Folder,
   MessageCircle,
@@ -13,16 +13,16 @@ import {
   X,
   Code,
   Download,
-  Cpu,
-  Upload,
   Send,
   HelpCircle,
   CheckCircle,
-  Terminal,
   Loader2,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
 import { SES_COURSES, QA_THREAD } from '@/data/fixtures';
+import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
+import type { Assignment } from '@falcon/shared/types';
+import { findAssignment } from '@falcon/shared/assignments';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -35,6 +35,7 @@ import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { cn } from '@/lib/utils';
+import { PracticeWorkspace } from '@/practice/PracticeWorkspace';
 
 const SlidesViewer = lazy(() =>
   import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
@@ -43,6 +44,10 @@ const SlidesViewer = lazy(() =>
 interface LessonPlayerProps {
   course: Course;
   setPage: (page: string) => void;
+  /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
+  onOpenAIBot?: () => void;
+  /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
+  setAIContext?: (ctx: ChatContext) => void;
 }
 
 const lessonTypeLabel: Record<LessonType, string> = {
@@ -54,7 +59,12 @@ const lessonTypeLabel: Record<LessonType, string> = {
   code: 'コーディング課題',
 };
 
-export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
+export const LessonPlayer = ({
+  course,
+  setPage,
+  onOpenAIBot,
+  setAIContext,
+}: LessonPlayerProps) => {
   const sections: Section[] = course.sections ?? SES_COURSES[0].sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
@@ -109,6 +119,59 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
     if (lessonObj) markComplete();
   };
 
+  // 次のレッスンへ遷移。 locked はスキップして次の解禁レッスンを探す。 末尾なら CourseDetail に戻る。
+  const goToNextLesson = useCallback(
+    (currentId: string) => {
+      const idx = allLessons.findIndex((l) => l.id === currentId);
+      if (idx === -1) return;
+      for (let i = idx + 1; i < allLessons.length; i++) {
+        if (resolveLessonStatus(allLessons[i], progressMap) !== 'locked') {
+          setActiveLesson(allLessons[i].id);
+          return;
+        }
+      }
+      setPage('course-detail');
+    },
+    [allLessons, progressMap, setPage],
+  );
+
+  // コード演習レッスン時にサイドバーを折りたたむ。 レッスン切替で同期。
+  const isCodeLesson = lessonObj?.type === 'code' && Boolean(lessonObj?.assignmentId);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  useEffect(() => {
+    setSidebarCollapsed(Boolean(isCodeLesson));
+  }, [isCodeLesson, lessonObj?.id]);
+
+  // レッスン切替で AI コンテキストを更新する (general/lesson/practice の遷移)。
+  // - code レッスン: 'lesson' を流す (採点失敗の practice context は PracticeWorkspace 経由で上書き)
+  // - その他: 'lesson'
+  useEffect(() => {
+    if (!setAIContext || !lessonObj) return;
+    setAIContext({
+      kind: 'lesson',
+      lessonTitle: lessonObj.title,
+      courseTitle: course.title,
+    });
+  }, [lessonObj?.id, lessonObj?.title, course.title, setAIContext]);
+
+  const handlePracticeAskAi = useCallback(
+    (ctx: { assignment: Assignment; userCode: string; summary: GradingSummary }) => {
+      setAIContext?.({
+        kind: 'practice',
+        assignmentId: ctx.assignment.id,
+        userCode: ctx.userCode,
+        summary: ctx.summary,
+      });
+      onOpenAIBot?.();
+    },
+    [setAIContext, onOpenAIBot],
+  );
+
+  const handlePracticeCleared = useCallback(() => {
+    markComplete();
+    toast.success('課題クリア! 次のレッスンへ進めます');
+  }, [markComplete]);
+
   if (!lessonObj) {
     return (
       <div className="p-10 text-sm text-ink-3">
@@ -124,17 +187,56 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
   const isSlides = lessonObj.type === 'slides';
 
   return (
-    <div className="grid" style={{ gridTemplateColumns: '280px 1fr', minHeight: 'calc(100vh - 57px)' }}>
-      <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
-        <div className="px-[18px] pb-3.5 border-b border-border mb-2">
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: sidebarCollapsed ? '40px 1fr' : '280px 1fr',
+        minHeight: 'calc(100vh - 57px)',
+      }}
+    >
+      {sidebarCollapsed ? (
+        <aside className="border-r border-border bg-card py-3 sticky top-[57px] max-h-[calc(100vh-57px)] flex flex-col items-center gap-2">
           <button
             type="button"
             onClick={() => setPage('course-detail')}
-            className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-foreground"
+            className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
+            title={course.title}
           >
-            <ChevronLeft size={12} />
-            {course.title}
+            <ChevronLeft size={14} />
           </button>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(false)}
+            className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
+            title="サイドバーを開く"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </aside>
+      ) : (
+      <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
+        <div className="px-[18px] pb-3.5 border-b border-border mb-2">
+          <div className="flex items-start gap-1">
+            <button
+              type="button"
+              onClick={() => setPage('course-detail')}
+              className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-foreground flex-1 min-w-0"
+            >
+              <ChevronLeft size={12} />
+              <span className="truncate">{course.title}</span>
+            </button>
+            {isCodeLesson ? (
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(true)}
+                className="text-ink-3 hover:text-foreground"
+                title="サイドバーをたたむ"
+                aria-label="サイドバーをたたむ"
+              >
+                <ChevronLeft size={14} />
+              </button>
+            ) : null}
+          </div>
           <div className="text-sm font-semibold leading-snug">進捗</div>
           <div className="text-[11.5px] text-ink-3 mt-1.5">
             <strong>{progressPercent}%</strong> · セクション {sections.length}
@@ -190,8 +292,27 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
           );
         })}
       </aside>
+      )}
 
       <main className="min-w-0 flex flex-col">
+        {isCode && lessonObj.assignmentId ? (
+          findAssignment(lessonObj.assignmentId) ? (
+            <PracticeWorkspace
+              key={lessonObj.id}
+              assignmentId={lessonObj.assignmentId}
+              embedded
+              onCleared={handlePracticeCleared}
+              onAskAi={handlePracticeAskAi}
+              onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
+            />
+          ) : (
+            <div className="p-10 text-sm text-ink-3">
+              この演習レッスンに紐付く課題 (<code>{lessonObj.assignmentId}</code>) が
+              <code>@falcon/shared</code> に見つかりません。 fixtures を確認してください。
+            </div>
+          )
+        ) : (
+          <>
         {isVideo ? (
           lessonObj.videoPath ? (
             <VideoViewer
@@ -276,8 +397,6 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
             <TabsContent value="content">
               {isQuiz ? (
                 <QuizView />
-              ) : isCode ? (
-                <WebIDE />
               ) : isText ? (
                 <LessonReadable onComplete={handleMarkComplete} />
               ) : isVideo || isSlides ? (
@@ -297,6 +416,8 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
             </TabsContent>
           </Tabs>
         </div>
+          </>
+        )}
       </main>
     </div>
   );
@@ -558,120 +679,6 @@ const QuizView = () => {
   );
 };
 
-const WebIDE = () => {
-  const [file, setFile] = useState('script.js');
-  const [running, setRunning] = useState(false);
-  const [output, setOutput] = useState<'ok' | null>(null);
-
-  const run = () => {
-    setRunning(true);
-    setOutput(null);
-    setTimeout(() => {
-      setRunning(false);
-      setOutput('ok');
-    }, 1200);
-  };
-
-  return (
-    <div>
-      <div className="prose-lms mb-4">
-        <h2>課題: シンプルな ToDo アプリ</h2>
-        <p>
-          HTML / CSS / JavaScript を使って、以下の要件を満たす ToDo アプリを実装してください。
-          テストケースが全て通るとパス判定になります。
-        </p>
-        <ul>
-          <li>入力欄から ToDo を追加できる</li>
-          <li>完了フラグを切り替えられる</li>
-          <li>削除できる</li>
-          <li>XSS を起こさない（textContent を使う）</li>
-        </ul>
-      </div>
-
-      <div className="grid grid-rows-[auto_1fr_auto] min-h-[520px] border border-border rounded-lg overflow-hidden ide-bg">
-        <div className="flex px-2.5 ide-tabs-bg border-b ide-sep">
-          {['index.html', 'style.css', 'script.js'].map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFile(f)}
-              className={cn(
-                'px-3.5 py-2.5 font-mono text-xs border-b-2 -mb-px',
-                file === f
-                  ? 'ide-tab-active border-brand ide-bg'
-                  : 'ide-tab-inactive border-transparent',
-              )}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 min-h-0">
-          <pre className="ide-bg py-3 px-0 text-[12.5px] leading-[1.65] font-mono overflow-auto whitespace-pre border-r ide-sep">
-            {`  1 │ `}<span className="tok-kw">const</span>{` `}<span className="tok-fn">todos</span>{` = [];
-
-  3 │ `}<span className="tok-kw">function</span>{` `}<span className="tok-fn">addTodo</span>{`(text) {
-  4 │   `}<span className="tok-kw">if</span>{` (text.trim() === `}<span className="tok-str">""</span>{`) `}<span className="tok-kw">return</span>{`;
-  5 │   todos.push({ text, done: `}<span className="tok-kw">false</span>{` });
-  6 │   render();
-  7 │ }
-
-  9 │ `}<span className="tok-kw">function</span>{` `}<span className="tok-fn">render</span>{`() {
- 10 │   `}<span className="tok-kw">const</span>{` list = document.getElementById(`}<span className="tok-str">"list"</span>{`);
- 11 │   list.innerHTML = `}<span className="tok-str">""</span>{`;
- 12 │   `}<span className="tok-kw">for</span>{` (`}<span className="tok-kw">const</span>{` [i, t] `}<span className="tok-kw">of</span>{` todos.entries()) {
- 13 │     `}<span className="tok-kw">const</span>{` li = document.createElement(`}<span className="tok-str">"li"</span>{`);
- 14 │     li.textContent = t.text;  `}<span className="tok-com">// XSS対策</span>{`
- 15 │     list.appendChild(li);
- 16 │   }
- 17 │ }`}
-          </pre>
-          <div className="ide-output-bg font-mono text-xs leading-relaxed p-3.5 overflow-auto">
-            <div className="mb-2.5 text-[oklch(80%_0.005_85)] font-medium">▾ 実行結果 / テスト</div>
-            {!output && !running && (
-              <div className="ide-muted">実行ボタンを押してテストを走らせてください</div>
-            )}
-            {running ? (
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full border-2 border-[oklch(30%_0.01_260)] border-t-brand animate-spin-slow" />
-                テスト実行中…
-              </div>
-            ) : null}
-            {output === 'ok' ? (
-              <>
-                <div className="ide-ok">✓ ToDo を追加できる ... pass (12ms)</div>
-                <div className="ide-ok">✓ 完了を切り替えられる ... pass (8ms)</div>
-                <div className="ide-ok">✓ 削除できる ... pass (10ms)</div>
-                <div className="ide-ok">✓ XSSを起こさない ... pass (15ms)</div>
-                <div className="mt-2.5 border-t ide-sep pt-2">
-                  <span className="ide-ok">4 passed</span>, 0 failed ・ 全テスト合格
-                </div>
-              </>
-            ) : null}
-          </div>
-        </div>
-        <div className="ide-tabs-bg px-3.5 py-2 flex items-center gap-2.5 text-[oklch(70%_0.01_260)] text-[11.5px] border-t ide-sep">
-          <Cpu size={12} />
-          sandbox: firecracker / 1core · 512MB · 30s
-          <span className="flex-1" />
-          <span>Node 20 · JavaScript</span>
-          <Button size="sm" variant="primary" onClick={run}>
-            {running ? '実行中…' : (
-              <>
-                <Play size={11} />
-                実行
-              </>
-            )}
-          </Button>
-          <Button size="sm" variant="accent">
-            <Upload size={11} />
-            提出
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const QAView = () => {
   const [msgs, setMsgs] = useState(QA_THREAD);
@@ -807,4 +814,4 @@ const NotesView = () => (
 );
 
 // re-export noisy imports so TS doesn't whine about unused
-export const __lesson_used = { Terminal, HelpCircle };
+export const __lesson_used = { HelpCircle };
