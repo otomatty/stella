@@ -58,6 +58,8 @@ export interface RunResultBodyProps {
   ast: ASTResult;
   /** クリア時に banner で出す「次は X」テキスト用の課題情報。 */
   nextAssignment?: Assignment | null;
+  /** 埋め込みモード (LessonPlayer) で次のレッスンが存在することを示すフラグ。 */
+  nextLessonAvailable?: boolean;
   /** banner / celebration をレンダリングするか (Dialog は表示、 panel は非表示で OK)。 */
   showBanner?: boolean;
 }
@@ -71,6 +73,7 @@ export function RunResultBody({
   lint,
   ast,
   nextAssignment = null,
+  nextLessonAvailable = false,
   showBanner = true,
 }: RunResultBodyProps) {
   const displayedLint = result?.lintAtRun ?? lint;
@@ -125,6 +128,7 @@ export function RunResultBody({
           phase={phase}
           result={result}
           nextAssignment={nextAssignment}
+          nextLessonAvailable={nextLessonAvailable}
         />
       ) : null}
       <div className="overflow-hidden rounded-lg border bg-card">
@@ -156,10 +160,12 @@ function ResultBanner({
   phase,
   result,
   nextAssignment,
+  nextLessonAvailable = false,
 }: {
   phase: RunResultPhase;
   result: ExecutionResult | null;
   nextAssignment: Assignment | null;
+  nextLessonAvailable?: boolean;
 }) {
   if (phase !== "done" || !result) {
     return (
@@ -200,7 +206,9 @@ function ResultBanner({
               <p className="mt-1 truncate text-xs text-muted-foreground">
                 {nextAssignment
                   ? `次は「${nextAssignment.title}」に進めます。`
-                  : "これが最後の問題です。お疲れさまでした！"}
+                  : nextLessonAvailable
+                    ? "次のレッスンに進めます。"
+                    : "お疲れさまでした！"}
               </p>
             </div>
           </div>

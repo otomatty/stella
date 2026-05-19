@@ -357,6 +357,7 @@ function PracticeWorkspaceInner({
             phase={phase}
             revealedTests={revealedTests}
             nextAssignment={null}
+            nextLessonAvailable={embedded && Boolean(onGoToNextLesson)}
             onGoToNext={handleGoToNext}
             onAskAi={handleAskAi}
             terminalEnabled={isSqlAssignment}
@@ -405,6 +406,7 @@ function PracticeWorkspaceInner({
             phase={phase}
             revealedTests={revealedTests}
             nextAssignment={null}
+            nextLessonAvailable={embedded && Boolean(onGoToNextLesson)}
             onGoToNext={handleGoToNext}
             onAskAi={handleAskAi}
           />

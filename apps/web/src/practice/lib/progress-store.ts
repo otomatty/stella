@@ -73,6 +73,13 @@ function entryKey(assignmentId: string): string {
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let cachedCleared: Set<string> | null = null;
+let storageListenerRegistered = false;
+
+function handleStorageEvent(e: StorageEvent): void {
+  if (e.key === null || e.key.startsWith(PREFIX)) {
+    emitChange();
+  }
+}
 
 function emitChange(): void {
   cachedCleared = null;
@@ -100,10 +107,10 @@ export function initProgressStore(): void {
   if (!ls) {return;}
 
   // 別タブでの編集にも追従する (key === null は localStorage.clear())。
-  if (typeof window !== "undefined") {
-    window.addEventListener("storage", (e) => {
-      if (e.key === null || e.key.startsWith(PREFIX)) {emitChange();}
-    });
+  // initProgressStore が複数回呼ばれてもリスナーが重複登録されないようガード。
+  if (typeof window !== "undefined" && !storageListenerRegistered) {
+    window.addEventListener("storage", handleStorageEvent);
+    storageListenerRegistered = true;
   }
 
   // Phase 1 以前の非プレフィックス旧キーが残っていれば掃除し、
@@ -172,7 +179,13 @@ function migrateV2ToV3(ls: Storage): void {
           lastSubmittedAt:
             typeof parsed.lastSubmittedAt === "number" ? parsed.lastSubmittedAt : undefined,
         };
-        ls.setItem(k, JSON.stringify(migrated));
+        // setItem 失敗 (Quota 等) と JSON.parse 失敗を区別する。
+        // 書き込みに失敗しただけなら元データは残しておき、 次回起動で再試行できるようにする。
+        try {
+          ls.setItem(k, JSON.stringify(migrated));
+        } catch {
+          // 書き込み失敗時は元の v2 データを保持 (削除しない)
+        }
       } else {
         // 想定形状ではない → 個別削除 + 通知
         ls.removeItem(k);

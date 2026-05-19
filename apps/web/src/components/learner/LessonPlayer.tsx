@@ -201,6 +201,7 @@ export const LessonPlayer = ({
             onClick={() => setPage('course-detail')}
             className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
             title={course.title}
+            aria-label={`コース詳細に戻る: ${course.title}`}
           >
             <ChevronLeft size={14} />
           </button>
@@ -209,6 +210,7 @@ export const LessonPlayer = ({
             onClick={() => setSidebarCollapsed(false)}
             className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
             title="サイドバーを開く"
+            aria-label="サイドバーを開く"
           >
             <ChevronRight size={14} />
           </button>

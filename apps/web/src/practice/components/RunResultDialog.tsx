@@ -42,6 +42,8 @@ interface RunResultDialogProps {
   phase: RunResultPhase;
   revealedTests: number;
   nextAssignment: Assignment | null;
+  /** 埋め込みモードで「次のレッスンへ」 CTA を出すフラグ。 */
+  nextLessonAvailable?: boolean;
   onGoToNext: () => void;
   /**
    * 不正解時に表示する「AI に質問する」ボタンのハンドラ。
@@ -63,9 +65,12 @@ export function RunResultDialog({
   phase,
   revealedTests,
   nextAssignment,
+  nextLessonAvailable = false,
   onGoToNext,
   onAskAi,
 }: RunResultDialogProps) {
+  const nextLabel = nextAssignment ? "次の問題へ" : "次のレッスンへ";
+  const nextTitle = nextAssignment ? `次の問題: ${nextAssignment.title}` : "次のレッスンへ進む";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby="run-result-dialog-description">
@@ -88,6 +93,7 @@ export function RunResultDialog({
             lint={lint}
             ast={ast}
             nextAssignment={nextAssignment}
+            nextLessonAvailable={nextLessonAvailable}
             showBanner
           />
         </div>
@@ -114,13 +120,15 @@ export function RunResultDialog({
               AI に質問する
             </Button>
           ) : null}
-          {phase === "done" && result?.evaluation.cleared && nextAssignment ? (
+          {phase === "done" &&
+          result?.evaluation.cleared &&
+          (nextAssignment || nextLessonAvailable) ? (
             <Button
               onClick={onGoToNext}
               className="gap-2"
-              title={`次の問題: ${nextAssignment.title}`}
+              title={nextTitle}
             >
-              次の問題へ
+              {nextLabel}
               <ArrowRight className="size-4 shrink-0" />
             </Button>
           ) : null}

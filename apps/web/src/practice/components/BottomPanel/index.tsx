@@ -42,6 +42,8 @@ interface Props {
   phase: RunResultPhase;
   revealedTests: number;
   nextAssignment: Assignment | null;
+  /** 埋め込みモードで「次のレッスンへ」 CTA を出すフラグ。 */
+  nextLessonAvailable?: boolean;
   onGoToNext: () => void;
   onAskAi?: () => void;
   /** ターミナル機能が有効な課題かどうか (SQL 等)。 false なら disabled 表示。 */
@@ -74,6 +76,7 @@ export function BottomPanel({
   phase,
   revealedTests,
   nextAssignment,
+  nextLessonAvailable = false,
   onGoToNext,
   onAskAi,
   terminalEnabled = false,
@@ -139,20 +142,22 @@ export function BottomPanel({
             lint={lint}
             ast={ast}
             nextAssignment={nextAssignment}
+            nextLessonAvailable={nextLessonAvailable}
             onGoToNext={onGoToNext}
             onAskAi={onAskAi}
           />
         </TabsPrimitive.Content>
-        <TabsPrimitive.Content
-          value="terminal"
-          forceMount
-          className="min-h-0 data-[state=inactive]:hidden"
-        >
-          <TerminalTab
-            enabled={terminalEnabled}
-            assignmentId={terminalAssignmentId}
-            seed={terminalSeed}
-          />
+        <TabsPrimitive.Content value="terminal" className="min-h-0">
+          {/* xterm (~200KB) + sql.js (wasm) は重いため、 ターミナルタブが
+              アクティブになった瞬間にだけマウントする (forceMount しない)。
+              非 SQL 課題でユーザがタブを開かない限り fetch されない。 */}
+          {activeTab === "terminal" ? (
+            <TerminalTab
+              enabled={terminalEnabled}
+              assignmentId={terminalAssignmentId}
+              seed={terminalSeed}
+            />
+          ) : null}
         </TabsPrimitive.Content>
       </TabsPrimitive.Root>
     </div>

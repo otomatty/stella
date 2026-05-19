@@ -94,6 +94,12 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
+      // ストリーム開始時の storageKey をスナップショット。 完了/中断後に
+      // activeKeyRef が別の context にすり替わっていれば旧 context の応答を
+      // 新しい履歴に書き込まない (Codex P2 指摘の stale stream commit ガード)。
+      const streamKey = storageKey;
+      const isStale = () =>
+        controller !== abortRef.current || activeKeyRef.current !== streamKey;
 
       setError(null);
       setDraftAssistant("");
@@ -115,6 +121,7 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
 
         for await (const event of iter) {
           if (controller.signal.aborted) {break;}
+          if (isStale()) {break;}
           if (event.type === "text") {
             accumulated += event.delta;
             setDraftAssistant(accumulated);
@@ -126,7 +133,7 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
         }
       } catch (e) {
         if (controller.signal.aborted) {
-          if (accumulated.length > 0) {
+          if (accumulated.length > 0 && !isStale()) {
             const finalMessages: ChatMessage[] = [
               ...initialMessages,
               { role: "assistant", content: accumulated, ts: Date.now() },
@@ -134,15 +141,24 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
             setMessages(finalMessages);
             scheduleSave(finalMessages);
           }
+          if (!isStale()) {
+            setDraftAssistant("");
+            setStreaming(false);
+            abortRef.current = null;
+          }
+          return;
+        }
+        if (!isStale()) {
+          setError(e instanceof Error ? e.message : String(e));
           setDraftAssistant("");
           setStreaming(false);
           abortRef.current = null;
-          return;
         }
-        setError(e instanceof Error ? e.message : String(e));
-        setDraftAssistant("");
-        setStreaming(false);
-        abortRef.current = null;
+        return;
+      }
+
+      if (isStale()) {
+        // context が切り替わっていたら、 新しい履歴を上書きしない。
         return;
       }
 
@@ -158,7 +174,7 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
       setStreaming(false);
       abortRef.current = null;
     },
-    [context, scheduleSave],
+    [context, scheduleSave, storageKey],
   );
 
   const send = useCallback(

@@ -76,15 +76,21 @@ export function buildContextUserMessage(
   summary: GradingSummary,
 ): string {
   const sections: string[] = [];
-  const fence = assignment.language === "sql" ? "sql" : "js";
+  const fenceLang = assignment.language === "sql" ? "sql" : "js";
 
   sections.push(`## 問題: ${assignment.title}`);
   sections.push(assignment.description.trim());
 
   sections.push("## 提出したコード");
-  sections.push("```" + fence);
+  // ユーザコード内の連続バッククォートでフェンスを破壊できないよう、
+  // 含まれる最長のバッククォート連長 + 1 (最低 3) でフェンスを構成する。
+  const longestBacktickRun = (userCode.match(/`+/g) ?? [])
+    .map((m) => m.length)
+    .reduce((a, b) => (a > b ? a : b), 0);
+  const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
+  sections.push(fenceTicks + fenceLang);
   sections.push(userCode.trimEnd());
-  sections.push("```");
+  sections.push(fenceTicks);
 
   sections.push("## 失敗しているチェック");
   const bullets = formatFailures(summary);

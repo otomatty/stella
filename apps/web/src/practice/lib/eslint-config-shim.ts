@@ -76,25 +76,32 @@ export function buildEslintConfigExtractionCode(userCode: string): {
     if (t === "symbol") throw new Error("Symbol 値はサポートしていません (" + path + ")");
     if (t === "undefined") throw new Error("undefined 値はサポートしていません (" + path + ")");
     if (t !== "object") throw new Error("サポート外の型: " + t + " (" + path + ")");
+    // 循環参照判定は「現在の再帰スタック上にいるか」 で行う。
+    // seen を永続的な visited にすると、 同一参照を別位置で再利用しただけの非巡回
+    // データも循環として弾いてしまう (CodeRabbit 指摘)。 push/pop で再帰スタック化。
     if (seen.indexOf(value) !== -1) throw new Error("循環参照を検出: " + path);
     seen.push(value);
-    if (Array.isArray(value)) {
-      for (var i = 0; i < value.length; i++) {
-        __assertJsonSafe(value[i], path + "[" + i + "]", seen);
+    try {
+      if (Array.isArray(value)) {
+        for (var i = 0; i < value.length; i++) {
+          __assertJsonSafe(value[i], path + "[" + i + "]", seen);
+        }
+        return;
       }
-      return;
-    }
-    var proto = Object.getPrototypeOf(value);
-    if (proto !== null && proto !== Object.prototype) {
-      throw new Error(
-        "plain object / array のみ受け付けます (RegExp / Date / Map / Set / クラスインスタンス は不可: " +
-          path + ")"
-      );
-    }
-    for (var k in value) {
-      if (Object.prototype.hasOwnProperty.call(value, k)) {
-        __assertJsonSafe(value[k], path ? path + "." + k : k, seen);
+      var proto = Object.getPrototypeOf(value);
+      if (proto !== null && proto !== Object.prototype) {
+        throw new Error(
+          "plain object / array のみ受け付けます (RegExp / Date / Map / Set / クラスインスタンス は不可: " +
+            path + ")"
+        );
       }
+      for (var k in value) {
+        if (Object.prototype.hasOwnProperty.call(value, k)) {
+          __assertJsonSafe(value[k], path ? path + "." + k : k, seen);
+        }
+      }
+    } finally {
+      seen.pop();
     }
   }
 

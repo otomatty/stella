@@ -28,6 +28,8 @@ interface Props {
   lint: LintViolation[];
   ast: ASTResult;
   nextAssignment: Assignment | null;
+  /** 埋め込みモード (LessonPlayer) で「次のレッスンへ」 CTA を出すフラグ。 */
+  nextLessonAvailable?: boolean;
   onGoToNext: () => void;
   onAskAi?: () => void;
 }
@@ -41,12 +43,16 @@ export function ResultsTab({
   lint,
   ast,
   nextAssignment,
+  nextLessonAvailable = false,
   onGoToNext,
   onAskAi,
 }: Props) {
   const showActions = phase === "done" && result !== null;
   const showAskAi = showActions && !result?.evaluation.cleared && onAskAi;
-  const showGoNext = showActions && result?.evaluation.cleared && nextAssignment;
+  const showGoNext =
+    showActions && result?.evaluation.cleared && (nextAssignment || nextLessonAvailable);
+  const nextLabel = nextAssignment ? "次の問題へ" : "次のレッスンへ";
+  const nextTitle = nextAssignment ? `次の問題: ${nextAssignment.title}` : "次のレッスンへ進む";
 
   return (
     <div className="flex max-h-[42vh] flex-col overflow-hidden">
@@ -73,9 +79,9 @@ export function ResultsTab({
               variant="default"
               onClick={onGoToNext}
               className="gap-2"
-              title={`次の問題: ${nextAssignment.title}`}
+              title={nextTitle}
             >
-              次の問題へ
+              {nextLabel}
               <ArrowRight className="size-3.5 shrink-0" />
             </Button>
           ) : null}
@@ -96,6 +102,7 @@ export function ResultsTab({
             lint={lint}
             ast={ast}
             nextAssignment={nextAssignment}
+            nextLessonAvailable={nextLessonAvailable}
             showBanner={false}
           />
         )}

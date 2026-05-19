@@ -36,9 +36,11 @@ function memoizePromiseFactory<T>(
 }
 
 // xterm + addon-fit + xterm.css を dynamic import で 1 度だけ読み込む。
+// 動的 import モジュールから直接型を引くことで、 type-only import の typeof 経由ではなく
+// 実際のランタイム値の型を反映する (CodeRabbit Critical 指摘)。
 type XtermBundle = {
-  Terminal: typeof XtermTerminal;
-  FitAddon: typeof XtermFitAddon;
+  Terminal: typeof import("@xterm/xterm").Terminal;
+  FitAddon: typeof import("@xterm/addon-fit").FitAddon;
 };
 const loadXterm = memoizePromiseFactory(async (): Promise<XtermBundle> => {
   const [xtermMod, fitMod] = await Promise.all([

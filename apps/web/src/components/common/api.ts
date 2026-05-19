@@ -66,11 +66,13 @@ export async function* streamChat(
       if (done) {break;}
       buffer += decoder.decode(value, { stream: true });
 
-      // SSE は `\n\n` でイベント区切り
-      let sepIdx: number;
-      while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
-        const chunk = buffer.slice(0, sepIdx);
-        buffer = buffer.slice(sepIdx + 2);
+      // SSE のイベント区切りは LF + LF (`\n\n`) または CR/LF + CR/LF (`\r\n\r\n`)。
+      // 両方の改行コードを受け付けるため、 正規表現で最初の境界を探す。
+      let match: RegExpExecArray | null;
+      const sepRegex = /\r?\n\r?\n/;
+      while ((match = sepRegex.exec(buffer)) !== null) {
+        const chunk = buffer.slice(0, match.index);
+        buffer = buffer.slice(match.index + match[0].length);
         const event = parseSseChunk(chunk);
         if (event) {yield event;}
       }
@@ -87,7 +89,8 @@ export async function* streamChat(
 
 function parseSseChunk(chunk: string): ChatStreamEvent | null {
   // `data:` 行のみを連結する (id/event/retry/comment は無視)。
-  const lines = chunk.split("\n");
+  // 行末の `\r` (CRLF サーバ) を許容するため、 split 後に line.replace(/\r$/, "") する。
+  const lines = chunk.split("\n").map((l) => l.replace(/\r$/, ""));
   const dataLines: string[] = [];
   for (const line of lines) {
     if (line.startsWith("data:")) {

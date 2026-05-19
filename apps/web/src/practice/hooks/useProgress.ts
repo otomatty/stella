@@ -175,27 +175,35 @@ export function useProgress({ assignmentId, starterFiles, entryFile }: Args): Pr
       const prev = existing?.cleared ?? false;
       const nextCleared = prev || passed;
       const isCurrentAssignment = lastAssignmentRef.current === assignmentId;
-      // 採点中に別課題へ切り替えていれば storage も state も触らない
-      // (古い課題の storage に新しい課題の files を書き込むのを防ぐ)。
-      if (!isCurrentAssignment) {
-        return;
-      }
       // ref で latest state を読む — closure 経由だと dep を増やすかスタイル違反になる。
       const latest = stateRef.current;
+      // 採点中に別課題へ切り替えていても、 採点開始時の assignmentId に対する結果は
+      // 必ず storage に書き込む (CodeRabbit 指摘: クリア瞬間を取りこぼさない)。
+      // ただし latest.files は新課題の内容なので、 別課題なら storage 側の既存ファイル
+      // を基底にして submittedCode だけを反映する。
+      const baseFiles = isCurrentAssignment
+        ? latest.files
+        : (existing?.lastFiles ?? { [entryFile]: submittedCode });
       const nextFiles: Record<string, string> = {
-        ...latest.files,
+        ...baseFiles,
         [entryFile]: submittedCode,
       };
       const entry: ProgressEntry = {
         cleared: nextCleared,
         lastFiles: nextFiles,
-        activeFile: latest.activeFile,
+        activeFile: isCurrentAssignment
+          ? latest.activeFile
+          : (existing?.activeFile ?? entryFile),
         lastSubmittedAt: Date.now(),
       };
       saveEntry(assignmentId, entry, {
         previousCleared: existing?.cleared ?? null,
       });
-      setState((s) => ({ ...s, cleared: nextCleared, files: nextFiles }));
+      // local state は現課題に一致するときのみ更新する (古い課題の cleared を
+      // 新課題のヘッダに反映してしまうのを防ぐ)。
+      if (isCurrentAssignment) {
+        setState((s) => ({ ...s, cleared: nextCleared, files: nextFiles }));
+      }
     },
     [assignmentId, entryFile],
   );
