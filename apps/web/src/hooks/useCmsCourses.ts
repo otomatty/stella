@@ -2,7 +2,7 @@
  * 管理 UI 向けに courses / sections / lessons をまとめて取得する Hook。
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   CourseRow,
   CourseWithChildren,
@@ -23,8 +23,10 @@ export function useCmsCourses(tenantId: string | null): UseCmsCoursesResult {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const refetch = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     if (!tenantId) {
       setCourses([]);
       return;
@@ -33,11 +35,13 @@ export function useCmsCourses(tenantId: string | null): UseCmsCoursesResult {
     setError(null);
     try {
       const rows = await listCourses(tenantId);
+      if (reqId !== requestIdRef.current) return;
       setCourses(rows);
     } catch (err) {
+      if (reqId !== requestIdRef.current) return;
       setError(err instanceof Error ? err.message : "fetch failed");
     } finally {
-      setLoading(false);
+      if (reqId === requestIdRef.current) setLoading(false);
     }
   }, [tenantId]);
 
@@ -59,8 +63,10 @@ export function useCmsCourse(courseId: string | null): UseCmsCourseResult {
   const [data, setData] = useState<CourseWithChildren | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const refetch = useCallback(async () => {
+    const reqId = ++requestIdRef.current;
     if (!courseId) {
       setData(null);
       return;
@@ -69,11 +75,13 @@ export function useCmsCourse(courseId: string | null): UseCmsCourseResult {
     setError(null);
     try {
       const result = await getCourseWithChildren(courseId);
+      if (reqId !== requestIdRef.current) return;
       setData(result);
     } catch (err) {
+      if (reqId !== requestIdRef.current) return;
       setError(err instanceof Error ? err.message : "fetch failed");
     } finally {
-      setLoading(false);
+      if (reqId === requestIdRef.current) setLoading(false);
     }
   }, [courseId]);
 

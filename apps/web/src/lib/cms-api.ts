@@ -43,40 +43,38 @@ export async function getCourseWithChildren(
   courseId: string,
 ): Promise<CourseWithChildren | null> {
   const supabase = getSupabase();
-  const { data: courseData, error: courseErr } = await supabase
+  // Supabase の embedded resource 機能で 1 クエリにまとめる。
+  const { data, error } = await supabase
     .from("courses")
-    .select("*")
+    .select("*, sections(*, lessons(*))")
     .eq("id", courseId)
+    .order("order", { foreignTable: "sections", ascending: true })
+    .order("order", { foreignTable: "sections.lessons", ascending: true })
     .maybeSingle();
-  if (courseErr) throw new Error(courseErr.message);
-  if (!courseData) return null;
+  if (error) throw new Error(error.message);
+  if (!data) return null;
 
-  const { data: sectionsData, error: sectionsErr } = await supabase
-    .from("sections")
-    .select("*")
-    .eq("course_id", courseId)
-    .order("order", { ascending: true });
-  if (sectionsErr) throw new Error(sectionsErr.message);
-
-  const sectionIds = (sectionsData ?? []).map((s) => s.id);
-  let lessonsData: LessonRow[] = [];
-  if (sectionIds.length > 0) {
-    const { data, error } = await supabase
-      .from("lessons")
-      .select("*")
-      .in("section_id", sectionIds)
-      .order("order", { ascending: true });
-    if (error) throw new Error(error.message);
-    lessonsData = (data as LessonRow[] | null) ?? [];
-  }
-
+  type Nested = CourseRow & { sections: Array<SectionRow & { lessons: LessonRow[] }> };
+  const nested = data as Nested;
   return {
-    course: courseData as CourseRow,
-    sections: (sectionsData as SectionRow[]).map((section) => ({
-      section,
-      lessons: lessonsData.filter((l) => l.section_id === section.id),
+    course: stripChildren(nested),
+    sections: (nested.sections ?? []).map((s) => ({
+      section: stripLessons(s),
+      lessons: s.lessons ?? [],
     })),
   };
+}
+
+function stripChildren(row: CourseRow & { sections?: unknown }): CourseRow {
+  const { sections: _sections, ...rest } = row as CourseRow & { sections?: unknown };
+  void _sections;
+  return rest as CourseRow;
+}
+
+function stripLessons(row: SectionRow & { lessons?: unknown }): SectionRow {
+  const { lessons: _lessons, ...rest } = row as SectionRow & { lessons?: unknown };
+  void _lessons;
+  return rest as SectionRow;
 }
 
 export interface UpsertCourseInput {
@@ -149,18 +147,21 @@ export async function deleteSection(id: string): Promise<void> {
 }
 
 export async function reorderSections(
-  _courseId: string,
+  courseId: string,
   orderedIds: string[],
 ): Promise<void> {
   const supabase = getSupabase();
-  // 個別 update を逐次実行。 行数が少ない (普通 < 20) ので問題なし。
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase
-      .from("sections")
-      .update({ order: i })
-      .eq("id", orderedIds[i]);
-    if (error) throw new Error(error.message);
-  }
+  // 親 course_id でもフィルタして、 他コースの section を巻き込まないようにする。
+  await Promise.all(
+    orderedIds.map(async (id, i) => {
+      const { error } = await supabase
+        .from("sections")
+        .update({ order: i })
+        .eq("id", id)
+        .eq("course_id", courseId);
+      if (error) throw new Error(error.message);
+    }),
+  );
 }
 
 // ---------------------------------------------------------------
@@ -201,17 +202,20 @@ export async function deleteLesson(id: string): Promise<void> {
 }
 
 export async function reorderLessons(
-  _sectionId: string,
+  sectionId: string,
   orderedIds: string[],
 ): Promise<void> {
   const supabase = getSupabase();
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase
-      .from("lessons")
-      .update({ order: i })
-      .eq("id", orderedIds[i]);
-    if (error) throw new Error(error.message);
-  }
+  await Promise.all(
+    orderedIds.map(async (id, i) => {
+      const { error } = await supabase
+        .from("lessons")
+        .update({ order: i })
+        .eq("id", id)
+        .eq("section_id", sectionId);
+      if (error) throw new Error(error.message);
+    }),
+  );
 }
 
 // ---------------------------------------------------------------
@@ -292,7 +296,8 @@ export function buildMaterialPath(args: {
   courseId: string;
   fileName: string;
 }): string {
-  const safe = args.fileName.replace(/[^\w.\-]+/g, "_");
+  // Unicode 文字 (邦字含む) と空白 / `.` / `-` を残す。 その他は `_` に置換。
+  const safe = args.fileName.replace(/[^\p{L}\p{N}.\- ]+/gu, "_");
   const uniq =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 8)

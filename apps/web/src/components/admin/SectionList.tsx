@@ -140,12 +140,15 @@ export function SectionList({ course, tenantId, onChange }: Props) {
 
   const renameSection = async (section: SectionRow, title: string) => {
     if (title === section.title) return;
+    // 並び替え直後など section.order は古い可能性があるので、 live state から最新の index を引く。
+    const liveIndex = sections.findIndex((s) => s.section.id === section.id);
+    const liveOrder = liveIndex === -1 ? section.order : liveIndex;
     try {
       await upsertSection({
         id: section.id,
         course_id: section.course_id,
         title,
-        order: section.order,
+        order: liveOrder,
       });
       await onChange();
     } catch (err) {
@@ -179,7 +182,12 @@ export function SectionList({ course, tenantId, onChange }: Props) {
 
   const onLessonSaved = async (sectionId: string, lessonId: string | null, partial: Omit<Parameters<typeof upsertLesson>[0], "id" | "section_id" | "order"> & { order?: number }) => {
     const currentSection = sections.find((s) => s.section.id === sectionId);
-    const nextOrder = partial.order ?? (currentSection?.lessons.length ?? 0);
+    // 既存レッスン編集時は現在の order を維持。 新規追加時のみ末尾に置く。
+    const existingOrder = lessonId
+      ? currentSection?.lessons.find((l) => l.id === lessonId)?.order
+      : undefined;
+    const nextOrder =
+      partial.order ?? existingOrder ?? currentSection?.lessons.length ?? 0;
     try {
       await upsertLesson({
         ...partial,

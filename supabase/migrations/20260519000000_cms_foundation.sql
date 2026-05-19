@@ -188,13 +188,22 @@ create policy profiles_select_self on public.profiles
 drop policy if exists profiles_insert_self on public.profiles;
 create policy profiles_insert_self on public.profiles
   for insert to authenticated
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    -- 自己昇格を防ぐ。 instructor / admin への変更は SQL Editor で運用者が行う。
+    and role = 'student'
+  );
 
 drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles
   for update to authenticated
   using (id = auth.uid())
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    -- 自分の role / tenant_id 変更は不可。 変更したい場合は管理者が SQL Editor で行う。
+    and role = (select role from public.profiles where id = auth.uid())
+    and tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+  );
 
 -- courses
 drop policy if exists courses_read on public.courses;

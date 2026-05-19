@@ -53,12 +53,13 @@ export function useCoursesForTenant(tenantId: Tenant["id"]): UseCoursesResult {
           setSource("fixtures");
           return;
         }
-        const withChildren: CourseWithChildren[] = [];
-        for (const row of courseRows) {
-          const detail = await getCourseWithChildren(row.id);
-          if (detail) withChildren.push(detail);
-        }
+        const details = await Promise.all(
+          courseRows.map((row) => getCourseWithChildren(row.id)),
+        );
         if (cancelled) return;
+        const withChildren: CourseWithChildren[] = details.filter(
+          (d): d is CourseWithChildren => d !== null,
+        );
         const ui: UiCourse[] = withChildren.map(mapCourseToUi);
         // UiCourse は Course と shape 互換 (cms/types.ts のコメント参照)。
         setCourses(ui as unknown as Course[]);

@@ -179,12 +179,20 @@ export default function App() {
   // Pseudo-routes
   useEffect(() => {
     if (page === '__logout') {
-      if (supabaseEnabled) {
-        void authSignOut();
-      }
-      setStage('login');
-      setPage('dash');
-      toast('ログアウトしました');
+      void (async () => {
+        try {
+          if (supabaseEnabled) {
+            await authSignOut();
+          }
+          setStage('login');
+          setPage('dash');
+          toast('ログアウトしました');
+        } catch (err) {
+          console.error('[logout]', err);
+          toast.error('ログアウトに失敗しました');
+          setPage('dash');
+        }
+      })();
     }
     if (page === '__switch_tenant') {
       setStage('tenant-select');

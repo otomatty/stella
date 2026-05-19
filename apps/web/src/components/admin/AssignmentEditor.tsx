@@ -228,11 +228,11 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
   };
 
   const buildAssignment = (): Assignment => {
-    const astRequired = parseJsonOr<unknown[]>(draft.astRequiredJson, []);
-    const astForbidden = parseJsonOr<unknown[]>(draft.astForbiddenJson, []);
-    const eslintRules = parseJsonOr<Record<string, ESLintRuleConfig>>(
+    const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required");
+    const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden");
+    const eslintRules = parseJsonStrict<Record<string, ESLintRuleConfig>>(
       draft.eslintRulesJson,
-      {},
+      "ESLint rules 上書き",
     );
     const ast = {
       required: astRequired as ASTRequirement["required"],
@@ -313,11 +313,11 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
   const save = async () => {
     setSaving(true);
     try {
-      const astRequired = parseJsonOr<unknown[]>(draft.astRequiredJson, []);
-      const astForbidden = parseJsonOr<unknown[]>(draft.astForbiddenJson, []);
-      const eslintRules = parseJsonOr<Record<string, ESLintRuleConfig>>(
+      const astRequired = parseJsonStrict<unknown[]>(draft.astRequiredJson, "AST required");
+      const astForbidden = parseJsonStrict<unknown[]>(draft.astForbiddenJson, "AST forbidden");
+      const eslintRules = parseJsonStrict<Record<string, ESLintRuleConfig>>(
         draft.eslintRulesJson,
-        {},
+        "ESLint rules 上書き",
       );
       const entryPoints = draft.entryPoints
         .split(",")
@@ -1026,5 +1026,21 @@ function parseJsonOr<T>(raw: string, fallback: T): T {
     return JSON.parse(raw) as T;
   } catch {
     return fallback;
+  }
+}
+
+/** parseJsonOr の strict 版。 空欄は「未指定」とみなし、 不正な JSON は例外を投げる。 */
+function parseJsonStrict<T>(raw: string, label: string): T {
+  const trimmed = raw.trim();
+  // 完全な空欄 / 空白のみは「未指定」扱い。 AST required = 空配列、 ESLint rules = 空オブジェクト相当。
+  if (!trimmed) {
+    return ((label.endsWith("rules 上書き") ? {} : []) as unknown) as T;
+  }
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch (err) {
+    throw new Error(
+      `${label} の JSON が不正です: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 }

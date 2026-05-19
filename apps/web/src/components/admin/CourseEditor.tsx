@@ -50,12 +50,17 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
 
   const onSaveMeta = async () => {
     if (!form || !data) return;
+    const cleanSlug = form.slug.trim();
+    if (!cleanSlug) {
+      toast.error("slug は必須です");
+      return;
+    }
     setSaving(true);
     try {
       await upsertCourse({
         id: data.course.id,
         tenant_id: tenantId,
-        slug: data.course.slug,
+        slug: cleanSlug,
         title: form.title,
         category: form.category || null,
         color: form.color,
@@ -133,6 +138,15 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
             />
           </div>
           <div>
+            <Label htmlFor="ce-slug">slug</Label>
+            <Input
+              id="ce-slug"
+              value={form.slug}
+              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              className="font-mono text-[12.5px]"
+            />
+          </div>
+          <div>
             <Label htmlFor="ce-cat">カテゴリ</Label>
             <Input
               id="ce-cat"
@@ -192,6 +206,7 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
 
 interface FormState {
   title: string;
+  slug: string;
   category: string;
   color: CourseColor;
   durationHours: string;
@@ -201,6 +216,7 @@ interface FormState {
 function fromCourse(data: CourseWithChildren): FormState {
   return {
     title: data.course.title,
+    slug: data.course.slug,
     category: data.course.category ?? "",
     color: data.course.color ?? "indigo",
     durationHours: data.course.duration_hours != null ? String(data.course.duration_hours) : "",

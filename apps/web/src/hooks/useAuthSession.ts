@@ -78,8 +78,12 @@ export function useAuthSession(): UseAuthSessionResult {
 
   const refreshProfile = async () => {
     if (!session) return;
-    const p = await fetchProfile(session.user.id);
-    setProfile(p);
+    try {
+      const p = await fetchProfile(session.user.id);
+      setProfile(p);
+    } catch (err) {
+      console.error("[useAuthSession] refreshProfile failed", err);
+    }
   };
 
   return { session, profile, loading, refreshProfile };

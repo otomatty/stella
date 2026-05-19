@@ -17,6 +17,9 @@ export type { Session };
 export type Profile = ProfileRow;
 
 export async function signInWithEmail(email: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase が未設定のため Magic Link を送信できません");
+  }
   const supabase = getSupabase();
   const redirect =
     typeof window !== "undefined" ? window.location.origin : undefined;
@@ -52,6 +55,7 @@ export function subscribeToAuth(
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
+  if (!isSupabaseConfigured()) return null;
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("profiles")
@@ -74,10 +78,7 @@ export async function ensureProfile(
   params: EnsureProfileParams,
 ): Promise<Profile> {
   const supabase = getSupabase();
-  const existing = await fetchProfile(params.userId);
-  if (existing) return existing;
-
-  const insertRow = {
+  const row = {
     id: params.userId,
     tenant_id: params.tenantId,
     role: "student" as const,
@@ -85,9 +86,12 @@ export async function ensureProfile(
     email: params.email ?? null,
     initials: params.initials ?? params.displayName.slice(0, 2).toUpperCase(),
   };
+  // 並列タブ等で重複作成された場合の TOCTOU を避けるため upsert する。
+  // RLS の profiles_update_self は role/tenant_id 変更を禁止するため、 既存行があれば
+  // role/tenant_id は据え置かれ display_name 等のみが更新される。
   const { data, error } = await supabase
     .from("profiles")
-    .insert(insertRow)
+    .upsert(row, { onConflict: "id" })
     .select("*")
     .single();
   if (error) throw error;

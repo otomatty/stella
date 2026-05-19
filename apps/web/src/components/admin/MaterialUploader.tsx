@@ -42,6 +42,10 @@ export function MaterialUploader({
   const label = kind === "video" ? "動画ファイル" : "PDF ファイル";
 
   const handleFile = async (file: File) => {
+    if (uploading) {
+      toast.message("アップロード中です。 完了までお待ちください");
+      return;
+    }
     if (kind === "video" && !file.type.startsWith("video/")) {
       toast.error("動画ファイルを選択してください");
       return;
