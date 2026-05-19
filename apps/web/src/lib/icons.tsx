@@ -60,6 +60,17 @@ export {
   SlidersHorizontal as Sliders,
   Star,
   Link as LinkIcon,
+  Presentation,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Minimize2,
+  RotateCcw,
+  RefreshCw,
+  Volume2,
+  VolumeX,
+  ChevronUp,
+  Loader2,
 } from 'lucide-react';
 
 import type { SVGProps } from 'react';

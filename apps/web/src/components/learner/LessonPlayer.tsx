@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Pause,
   FileText,
   Folder,
   MessageCircle,
@@ -20,6 +19,7 @@ import {
   HelpCircle,
   CheckCircle,
   Terminal,
+  Loader2,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
 import { SES_COURSES, QA_THREAD } from '@/data/fixtures';
@@ -31,7 +31,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
+import { VideoViewer } from './VideoViewer';
+import { resolveLessonStatus } from '@/lib/lesson-progress';
+import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { cn } from '@/lib/utils';
+
+const SlidesViewer = lazy(() =>
+  import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
+);
 
 interface LessonPlayerProps {
   course: Course;
@@ -40,6 +47,7 @@ interface LessonPlayerProps {
 
 const lessonTypeLabel: Record<LessonType, string> = {
   video: '動画',
+  slides: 'スライド',
   text: 'テキスト',
   quiz: '小テスト',
   assignment: '課題',
@@ -50,16 +58,32 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
   const sections: Section[] = course.sections ?? SES_COURSES[0].sections ?? [];
   const [activeLesson, setActiveLesson] = useState('l10');
   const [tab, setTab] = useState('content');
-  const [playing, setPlaying] = useState(false);
 
-  const lessonObj: Lesson =
-    sections.flatMap((s) => s.lessons).find((l) => l.id === activeLesson) ??
-    sections[2].lessons[2];
+  const progressMap = useLessonProgressMap();
+
+  const lessonObj: Lesson = useMemo(() => {
+    const all = sections.flatMap((s) => s.lessons);
+    return all.find((l) => l.id === activeLesson) ?? all[0];
+  }, [sections, activeLesson]);
+
+  const activeSectionIndex = useMemo(() => {
+    const idx = sections.findIndex((s) => s.lessons.some((l) => l.id === lessonObj.id));
+    return idx >= 0 ? idx : 0;
+  }, [sections, lessonObj]);
+
+  const activeSection = sections[activeSectionIndex] ?? sections[0];
+  const lessonIndexInSection = activeSection
+    ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id)
+    : 0;
+
+  const { markComplete } = useLessonProgress(lessonObj.id);
+  const handleMarkComplete = () => markComplete();
 
   const isQuiz = lessonObj.type === 'quiz';
   const isCode = lessonObj.type === 'code';
-  const isAssignment = lessonObj.type === 'assignment';
   const isText = lessonObj.type === 'text';
+  const isVideo = lessonObj.type === 'video';
+  const isSlides = lessonObj.type === 'slides';
 
   return (
     <div className="grid" style={{ gridTemplateColumns: '280px 1fr', minHeight: 'calc(100vh - 57px)' }}>
@@ -80,52 +104,76 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
           <Progress value={course.progress} tone="brand" className="mt-2" />
         </div>
 
-        {sections.map((s) => (
-          <div key={s.id} className="py-2.5">
-            <div className="px-[18px] py-2 text-[11px] font-semibold text-ink-3 uppercase tracking-wider flex items-center gap-1.5">
-              <span>{s.title}</span>
-              <span className="ml-auto text-[11px] font-normal text-ink-3">
-                {s.lessons.filter((l) => l.status === 'done').length}/{s.lessons.length}
-              </span>
-            </div>
-            {s.lessons.map((l) => {
-              const isActive = l.id === activeLesson;
-              return (
-                <button
-                  type="button"
-                  key={l.id}
-                  onClick={() => l.status !== 'locked' && setActiveLesson(l.id)}
-                  disabled={l.status === 'locked'}
-                  className={cn(
-                    'w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left',
-                    'transition-colors',
-                    isActive
-                      ? 'bg-sunken text-foreground font-medium border-brand'
-                      : l.status === 'locked'
-                        ? 'text-ink-4 cursor-not-allowed border-transparent'
-                        : 'text-ink-2 hover:bg-sunken hover:text-foreground border-transparent',
-                  )}
-                >
-                  <span className="shrink-0 mt-0.5 text-ink-3">
-                    <LessonStatusIcon status={l.status} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate">{l.title}</div>
-                    <div className="text-ink-3 text-[11px] mt-0.5 flex items-center gap-1">
-                      <LessonTypeIcon type={l.type} size={10} />
-                      <span>{l.duration}</span>
+        {sections.map((s) => {
+          const doneCount = s.lessons.filter(
+            (l) => resolveLessonStatus(l, progressMap) === 'done',
+          ).length;
+          return (
+            <div key={s.id} className="py-2.5">
+              <div className="px-[18px] py-2 text-[11px] font-semibold text-ink-3 uppercase tracking-wider flex items-center gap-1.5">
+                <span>{s.title}</span>
+                <span className="ml-auto text-[11px] font-normal text-ink-3">
+                  {doneCount}/{s.lessons.length}
+                </span>
+              </div>
+              {s.lessons.map((l) => {
+                const isActive = l.id === activeLesson;
+                const status = resolveLessonStatus(l, progressMap);
+                return (
+                  <button
+                    type="button"
+                    key={l.id}
+                    onClick={() => status !== 'locked' && setActiveLesson(l.id)}
+                    disabled={status === 'locked'}
+                    className={cn(
+                      'w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left',
+                      'transition-colors',
+                      isActive
+                        ? 'bg-sunken text-foreground font-medium border-brand'
+                        : status === 'locked'
+                          ? 'text-ink-4 cursor-not-allowed border-transparent'
+                          : 'text-ink-2 hover:bg-sunken hover:text-foreground border-transparent',
+                    )}
+                  >
+                    <span className="shrink-0 mt-0.5 text-ink-3">
+                      <LessonStatusIcon status={status} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{l.title}</div>
+                      <div className="text-ink-3 text-[11px] mt-0.5 flex items-center gap-1">
+                        <LessonTypeIcon type={l.type} size={10} />
+                        <span>{l.duration}</span>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </aside>
 
       <main className="min-w-0 flex flex-col">
-        {!isQuiz && !isCode && !isAssignment && !isText ? (
-          <VideoPlayer playing={playing} onTogglePlaying={() => setPlaying((p) => !p)} />
+        {isVideo && lessonObj.videoPath ? (
+          <VideoViewer
+            key={lessonObj.id}
+            lessonId={lessonObj.id}
+            videoPath={lessonObj.videoPath}
+            totalSec={lessonObj.totalSec}
+            onComplete={handleMarkComplete}
+          />
+        ) : null}
+
+        {isSlides && lessonObj.pdfPath ? (
+          <Suspense fallback={<ViewerLoading />}>
+            <SlidesViewer
+              key={lessonObj.id}
+              lessonId={lessonObj.id}
+              pdfPath={lessonObj.pdfPath}
+              totalPages={lessonObj.totalPages}
+              onComplete={handleMarkComplete}
+            />
+          </Suspense>
         ) : null}
 
         <div className="px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
@@ -137,8 +185,9 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
                   {lessonTypeLabel[lessonObj.type]}
                 </Badge>
                 <span className="text-[11.5px] text-ink-3">
-                  セクション 03 · {sections[2].lessons.indexOf(lessonObj) + 1} /{' '}
-                  {sections[2].lessons.length}
+                  {activeSection ? activeSection.title : ''} ·{' '}
+                  {lessonIndexInSection + 1} /{' '}
+                  {activeSection ? activeSection.lessons.length : 0}
                 </span>
               </div>
               <h1 className="text-[22px] tracking-tight font-semibold">{lessonObj.title}</h1>
@@ -183,8 +232,12 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
                 <QuizView />
               ) : isCode ? (
                 <WebIDE />
+              ) : isText ? (
+                <LessonReadable onComplete={handleMarkComplete} />
+              ) : isVideo || isSlides ? (
+                <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
               ) : (
-                <LessonReadable />
+                <LessonReadable onComplete={handleMarkComplete} />
               )}
             </TabsContent>
             <TabsContent value="qa">
@@ -203,51 +256,50 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
   );
 };
 
-const VideoPlayer = ({
-  playing,
-  onTogglePlaying,
-}: {
-  playing: boolean;
-  onTogglePlaying: () => void;
-}) => (
-  <div className="relative bg-black aspect-[16/9] max-h-[62vh]">
-    <div className="absolute inset-0 grid place-items-center video-placeholder-bg">
-      {!playing ? (
-        <button
-          type="button"
-          onClick={onTogglePlaying}
-          className="w-[72px] h-[72px] rounded-full bg-white/15 border border-white/30 backdrop-blur-md grid place-items-center text-white hover:bg-white/25"
-        >
-          <Play size={22} />
-        </button>
-      ) : (
-        <div className="text-[oklch(70%_0.01_260)] text-[11px] font-mono">
-          [ VIDEO PLAYER · HLS stream ]
-        </div>
-      )}
-    </div>
-    <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-3 text-white text-xs">
-      <button
-        type="button"
-        onClick={onTogglePlaying}
-        className="grid place-items-center cursor-pointer opacity-90 hover:opacity-100"
-      >
-        {playing ? <Pause size={18} /> : <Play size={18} />}
-      </button>
-      <div className="flex-1 h-[3px] bg-white/25 rounded-sm relative cursor-pointer">
-        <div className="h-full bg-white rounded-sm relative" style={{ width: '34%' }}>
-          <span className="absolute right-[-5px] top-[-4px] w-[11px] h-[11px] rounded-full bg-white" />
-        </div>
-      </div>
-      <div className="tabular-nums text-white/90">06:35 / 19:30</div>
-      <div className="text-[11px] font-mono grid place-items-center cursor-pointer opacity-90 hover:opacity-100">
-        1.0x
-      </div>
+const ViewerLoading = () => (
+  <div className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken text-ink-3 text-[12.5px]">
+    <div className="inline-flex items-center gap-2">
+      <Loader2 size={16} className="animate-spin" />
+      ビューアを読み込み中…
     </div>
   </div>
 );
 
-const LessonReadable = () => (
+const LessonOverview = ({
+  lesson,
+  onComplete,
+}: {
+  lesson: Lesson;
+  onComplete: () => void;
+}) => (
+  <div className="prose-lms">
+    <h2>このレッスンについて</h2>
+    <p>
+      上の{lesson.type === 'video' ? '動画' : 'スライド'}
+      で学習を進めてください。
+      {lesson.type === 'video'
+        ? ' 視聴秒数の90%に到達すると自動的に完了マークが付きます。'
+        : ' ページ全体の90%を閲覧すると自動的に完了マークが付きます。'}
+    </p>
+    <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+      <Button>
+        <ChevronLeft size={13} />
+        前のレッスン
+      </Button>
+      <div className="flex-1" />
+      <Button>
+        <Edit size={13} />
+        ノートに追加
+      </Button>
+      <Button variant="accent" onClick={onComplete}>
+        完了にする
+        <ChevronRight size={13} />
+      </Button>
+    </div>
+  </div>
+);
+
+const LessonReadable = ({ onComplete }: { onComplete: () => void }) => (
   <div className="prose-lms">
     <h2>レッスンの目的</h2>
     <p>
@@ -298,7 +350,7 @@ counter(); // 3`}</code>
         <Edit size={13} />
         ノートに追加
       </Button>
-      <Button variant="accent">
+      <Button variant="accent" onClick={onComplete}>
         完了にする
         <ChevronRight size={13} />
       </Button>
