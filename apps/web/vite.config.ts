@@ -5,11 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { copySqlJsWasm } from './vite-plugins/copy-sqljs-wasm.js';
+import { copyPdfjsAssets } from './vite-plugins/copy-pdfjs-assets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), copySqlJsWasm()],
+  plugins: [react(), tailwindcss(), copySqlJsWasm(), copyPdfjsAssets()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

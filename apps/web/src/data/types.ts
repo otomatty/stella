@@ -9,7 +9,7 @@ export type AvatarTone = 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6';
 
 export type CourseColor = 'indigo' | 'green' | 'amber' | 'slate';
 
-export type LessonType = 'video' | 'text' | 'quiz' | 'assignment' | 'code';
+export type LessonType = 'video' | 'slides' | 'text' | 'quiz' | 'assignment' | 'code';
 
 export type LessonStatus = 'done' | 'active' | 'todo' | 'locked';
 
@@ -34,6 +34,19 @@ export interface Lesson {
   duration: string;
   status: LessonStatus;
   progress?: number;
+
+  /** Supabase Storage `materials-public` バケット内のパス (video lesson 用) */
+  videoPath?: string;
+  /** Supabase Storage `materials-public` バケット内のパス (slides lesson 用) */
+  pdfPath?: string;
+  /** `text` レッスンの本文 (将来 CMS 化までは fixtures 直書き) */
+  markdown?: string;
+  /** `code` / `assignment` で参照する `@falcon/shared` の Assignment.id (P2 で使用) */
+  assignmentId?: string;
+  /** 想定総ページ数 (slides) — 進捗バー初期表示用、 実際の numPages は PDF 読み込み後に確定 */
+  totalPages?: number;
+  /** 想定総再生秒数 (video) — 進捗バー初期表示用、 実際の duration は loadedmetadata で確定 */
+  totalSec?: number;
 }
 
 export interface Section {

@@ -15,6 +15,7 @@ import {
   Upload,
   Terminal,
   Book,
+  Presentation,
 } from '@/lib/icons';
 import type { ComponentType } from 'react';
 import type { LucideProps } from 'lucide-react';
@@ -30,6 +31,7 @@ type LucideIcon = ComponentType<LucideProps>;
 
 const lessonTypeIcon: Record<LessonType, LucideIcon> = {
   video: Video,
+  slides: Presentation,
   text: FileText,
   quiz: HelpCircle,
   assignment: Upload,
