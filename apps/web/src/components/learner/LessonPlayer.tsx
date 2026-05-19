@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -56,28 +56,51 @@ const lessonTypeLabel: Record<LessonType, string> = {
 
 export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
   const sections: Section[] = course.sections ?? SES_COURSES[0].sections ?? [];
-  const [activeLesson, setActiveLesson] = useState('l10');
+  const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
+  const [activeLesson, setActiveLesson] = useState<string>(
+    () => allLessons.find((l) => l.id === 'l10')?.id ?? allLessons[0]?.id ?? '',
+  );
   const [tab, setTab] = useState('content');
 
   const progressMap = useLessonProgressMap();
 
-  const lessonObj: Lesson = useMemo(() => {
-    const all = sections.flatMap((s) => s.lessons);
-    return all.find((l) => l.id === activeLesson) ?? all[0];
-  }, [sections, activeLesson]);
+  const lessonObj: Lesson | undefined = useMemo(
+    () => allLessons.find((l) => l.id === activeLesson) ?? allLessons[0],
+    [allLessons, activeLesson],
+  );
+
+  // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
+  useEffect(() => {
+    if (lessonObj && lessonObj.id !== activeLesson) {
+      setActiveLesson(lessonObj.id);
+    }
+  }, [lessonObj, activeLesson]);
 
   const activeSectionIndex = useMemo(() => {
+    if (!lessonObj) return 0;
     const idx = sections.findIndex((s) => s.lessons.some((l) => l.id === lessonObj.id));
     return idx >= 0 ? idx : 0;
   }, [sections, lessonObj]);
 
   const activeSection = sections[activeSectionIndex] ?? sections[0];
-  const lessonIndexInSection = activeSection
-    ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id)
-    : 0;
+  const lessonIndexInSection =
+    activeSection && lessonObj
+      ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id)
+      : 0;
 
-  const { markComplete } = useLessonProgress(lessonObj.id);
-  const handleMarkComplete = () => markComplete();
+  // lessonObj が無いコースでも hook 順序を保つため空文字を渡す (内部で no-op)
+  const { markComplete } = useLessonProgress(lessonObj?.id ?? '');
+  const handleMarkComplete = () => {
+    if (lessonObj) markComplete();
+  };
+
+  if (!lessonObj) {
+    return (
+      <div className="p-10 text-sm text-ink-3">
+        このコースにはレッスンがありません。
+      </div>
+    );
+  }
 
   const isQuiz = lessonObj.type === 'quiz';
   const isCode = lessonObj.type === 'code';
@@ -326,10 +349,12 @@ const LessonOverview = ({
           <Edit size={13} />
           ノートに追加
         </Button>
-        <Button variant="accent" onClick={onComplete}>
-          完了にする
-          <ChevronRight size={13} />
-        </Button>
+        {hasMaterial ? (
+          <Button variant="accent" onClick={onComplete}>
+            完了にする
+            <ChevronRight size={13} />
+          </Button>
+        ) : null}
       </div>
     </div>
   );

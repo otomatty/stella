@@ -164,7 +164,11 @@ export function markComplete(lessonId: string): LessonProgressEntry {
 
 /**
  * fixture の初期 status と進捗マップから現在の表示 status を導出。
- * 優先度: locked 維持 → completed なら done → エントリ有なら active → fixture status。
+ *
+ * 優先度: locked 維持 → completed なら done → fixture が done なら done 維持
+ *      → エントリ有なら active → fixture status。
+ * fixture done の lesson を再訪して部分閲覧しただけで done から active に
+ * 落ちないように、 fixture done を partial entry より上に置く。
  */
 export function resolveLessonStatus(
   lesson: Lesson,
@@ -173,6 +177,7 @@ export function resolveLessonStatus(
   if (lesson.status === 'locked') return 'locked';
   const entry = map[lesson.id];
   if (entry?.completed) return 'done';
+  if (lesson.status === 'done') return 'done';
   if (entry) return 'active';
   return lesson.status;
 }
