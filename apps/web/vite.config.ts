@@ -20,4 +20,26 @@ export default defineConfig({
     port: 5173,
     open: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-sqljs': ['sql.js'],
+          'vendor-quickjs': [
+            'quickjs-emscripten-core',
+            '@jitl/quickjs-singlefile-browser-release-sync',
+          ],
+          'vendor-codemirror': [
+            '@uiw/react-codemirror',
+            '@codemirror/state',
+            '@codemirror/view',
+            '@codemirror/lang-javascript',
+            '@codemirror/lang-sql',
+            '@codemirror/lint',
+          ],
+          'vendor-markdown': ['react-markdown', 'remark-gfm', 'rehype-highlight', 'highlight.js'],
+        },
+      },
+    },
+  },
 });
