@@ -64,6 +64,16 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
 
   const progressMap = useLessonProgressMap();
 
+  const completedLessonCount = useMemo(
+    () =>
+      allLessons.filter((l) => resolveLessonStatus(l, progressMap) === 'done')
+        .length,
+    [allLessons, progressMap],
+  );
+  const progressPercent = allLessons.length
+    ? Math.round((completedLessonCount / allLessons.length) * 100)
+    : 0;
+
   const lessonObj: Lesson | undefined = useMemo(
     () => allLessons.find((l) => l.id === activeLesson) ?? allLessons[0],
     [allLessons, activeLesson],
@@ -122,9 +132,9 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
           </button>
           <div className="text-sm font-semibold leading-snug">進捗</div>
           <div className="text-[11.5px] text-ink-3 mt-1.5">
-            <strong>{course.progress}%</strong> · セクション {sections.length}
+            <strong>{progressPercent}%</strong> · セクション {sections.length}
           </div>
-          <Progress value={course.progress} tone="brand" className="mt-2" />
+          <Progress value={progressPercent} tone="brand" className="mt-2" />
         </div>
 
         {sections.map((s) => {

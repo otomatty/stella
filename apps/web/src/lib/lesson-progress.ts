@@ -56,11 +56,45 @@ function writeToStorage(map: LessonProgressMap): void {
   }
 }
 
+/**
+ * 2 つのエントリのうち updatedAt が新しい方を返す。
+ * updatedAt がない / パースできない場合は b (= 現タブの値) を優先。
+ */
+function pickNewer(
+  a: LessonProgressEntry | undefined,
+  b: LessonProgressEntry | undefined,
+): LessonProgressEntry | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  const ta = Date.parse(a.updatedAt);
+  const tb = Date.parse(b.updatedAt);
+  if (!Number.isFinite(ta) && !Number.isFinite(tb)) return b;
+  if (!Number.isFinite(ta)) return b;
+  if (!Number.isFinite(tb)) return a;
+  return tb >= ta ? b : a;
+}
+
+/**
+ * 別タブが先に書き込んだ進捗を踏み潰さないよう、 書き込み直前に
+ * localStorage の最新値を再読込し、 updatedAt が新しい方を採用してマージする。
+ */
+function mergeAndWrite(): void {
+  const fresh = readFromStorage();
+  const keys = new Set<string>([...Object.keys(fresh), ...Object.keys(cache)]);
+  const merged: LessonProgressMap = {};
+  for (const k of keys) {
+    const picked = pickNewer(fresh[k], cache[k]);
+    if (picked) merged[k] = picked;
+  }
+  cache = merged;
+  writeToStorage(cache);
+}
+
 function scheduleFlush(): void {
   if (pendingFlush) return;
   pendingFlush = setTimeout(() => {
     pendingFlush = null;
-    writeToStorage(cache);
+    mergeAndWrite();
   }, DEBOUNCE_MS);
 }
 
@@ -74,12 +108,25 @@ export function flushNow(): void {
     clearTimeout(pendingFlush);
     pendingFlush = null;
   }
-  writeToStorage(cache);
+  mergeAndWrite();
 }
 
 if (typeof window !== 'undefined') {
   // pagehide はモバイル含めて beforeunload より確実に発火する
   window.addEventListener('pagehide', flushNow);
+  // 別タブでの localStorage 更新を取り込み、 in-memory cache を同期
+  window.addEventListener('storage', (e) => {
+    if (e.key !== STORAGE_KEY) return;
+    const fresh = readFromStorage();
+    const keys = new Set<string>([...Object.keys(fresh), ...Object.keys(cache)]);
+    const merged: LessonProgressMap = {};
+    for (const k of keys) {
+      const picked = pickNewer(fresh[k], cache[k]);
+      if (picked) merged[k] = picked;
+    }
+    cache = merged;
+    notify();
+  });
 }
 
 export function loadMap(): LessonProgressMap {
@@ -113,7 +160,11 @@ export function recordPage(
 ): LessonProgressEntry {
   const prev = cache[lessonId];
   const validPage =
-    Number.isInteger(page) && page >= 1 ? page : undefined;
+    Number.isInteger(page) &&
+    page >= 1 &&
+    (totalPages <= 0 || page <= totalPages)
+      ? page
+      : undefined;
   const viewedSet = new Set(prev?.viewedPages ?? []);
   if (validPage !== undefined) viewedSet.add(validPage);
   const viewedPages = Array.from(viewedSet).sort((a, b) => a - b);
