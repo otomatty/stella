@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Mail, Google } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { signInWithEmail } from '@/lib/auth';
 
 interface LoginScreenProps {
   onLogin: (via: 'email' | 'google') => void;
@@ -12,11 +15,26 @@ interface LoginScreenProps {
 export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   const [email, setEmail] = useState('tanaka@example.com');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const sendMagic = (e?: React.FormEvent) => {
+  const sendMagic = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    setSent(true);
-    setTimeout(() => onLogin('email'), 1400);
+    // Supabase 未設定時は従来通り fixtures ベースの即時遷移。
+    if (!isSupabaseConfigured()) {
+      setSent(true);
+      setTimeout(() => onLogin('email'), 1400);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await signInWithEmail(email);
+      setSent(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '送信に失敗しました';
+      toast.error(`ログインリンクの送信に失敗: ${message}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -34,7 +52,7 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                 メールアドレスにログイン用リンクをお送りします。パスワードは不要です。
               </p>
 
-              <form onSubmit={sendMagic}>
+              <form onSubmit={(e) => void sendMagic(e)}>
                 <div className="mb-4">
                   <Label htmlFor="login-email">メールアドレス</Label>
                   <Input
@@ -45,9 +63,9 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                     autoFocus
                   />
                 </div>
-                <Button type="submit" variant="accent" size="full">
+                <Button type="submit" variant="accent" size="full" disabled={submitting}>
                   <Mail size={15} />
-                  ログインリンクを送信
+                  {submitting ? '送信中…' : 'ログインリンクを送信'}
                 </Button>
               </form>
 
@@ -78,10 +96,16 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                 <br />
                 リンクは15分間有効です。
               </p>
-              <div className="mt-6 flex items-center justify-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full border-2 border-border border-t-brand animate-spin-slow" />
-                <span className="text-ink-3 text-[11.5px]">自動でログインします…</span>
-              </div>
+              {isSupabaseConfigured() ? (
+                <div className="mt-6 text-[11.5px] text-ink-3">
+                  メール内のリンクをクリックするとブラウザに戻り、 ログインが完了します。
+                </div>
+              ) : (
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-border border-t-brand animate-spin-slow" />
+                  <span className="text-ink-3 text-[11.5px]">自動でログインします…</span>
+                </div>
+              )}
             </div>
           )}
 

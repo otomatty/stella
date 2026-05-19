@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Sparkles } from '@/lib/icons';
-import { TENANTS, CURRENT_USER, SES_COURSES, COACH_COURSES } from '@/data/fixtures';
-import type { Course, Role, Tenant } from '@/data/types';
+import { Loader2, Sparkles } from '@/lib/icons';
+import { TENANTS, CURRENT_USER } from '@/data/fixtures';
+import type { Course, Role, Tenant, User } from '@/data/types';
 import type { ChatContext } from '@falcon/shared/ai/types';
 import { LessonAIProvider } from '@/components/common/LessonAIContext';
+import { useCoursesForTenant } from '@/data/courses-source';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { signOut as authSignOut } from '@/lib/auth';
+import type { ProfileRole } from '@falcon/shared/cms/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { TenantSelect } from '@/components/shell/TenantSelect';
+import { OnboardingScreen } from '@/components/shell/OnboardingScreen';
 
 import { LearnerDashboard } from '@/components/learner/LearnerDashboard';
 import { CourseList } from '@/components/learner/CourseList';
@@ -26,6 +32,8 @@ import { InstructorGeneric } from '@/components/instructor/InstructorGeneric';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
 import { AdminGeneric, GenericEmpty } from '@/components/admin/AdminGeneric';
+import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
+import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
@@ -72,15 +80,26 @@ const PAGE_LABELS: Record<string, string> = {
   orgs: '組織マスタ',
   report: 'レポート',
   audit: '監査ログ',
+  assignments: '課題管理',
   settings: '設定',
 };
 
 const roleLabel = (role: Role) =>
   role === 'learner' ? 'マイラーニング' : role === 'instructor' ? '講師' : 'テナント管理';
 
+/** profiles.role を UI 用 Role にマップする。 student → learner。 */
+function mapProfileRole(role: ProfileRole): Role {
+  if (role === 'student') return 'learner';
+  if (role === 'instructor') return 'instructor';
+  return 'admin';
+}
+
 export default function App() {
   const defaultTenant =
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
+
+  const supabaseEnabled = isSupabaseConfigured();
+  const { session, profile, loading: authLoading, refreshProfile } = useAuthSession();
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
@@ -98,6 +117,31 @@ export default function App() {
   const [showAIBot, setShowAIBot] = useState(() =>
     loadSaved()?.showAIBot ?? DEFAULTS.showAIBot,
   );
+
+  // Supabase が設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
+  const effectiveRole: Role = supabaseEnabled && profile
+    ? mapProfileRole(profile.role)
+    : role;
+  const effectiveTenant: Tenant = useMemo(() => {
+    if (supabaseEnabled && profile) {
+      const t = TENANTS.find((t) => t.id === profile.tenant_id);
+      if (t) return t;
+    }
+    return tenant;
+  }, [supabaseEnabled, profile, tenant]);
+
+  const effectiveUser: User = useMemo(() => {
+    if (supabaseEnabled && profile) {
+      return {
+        name: profile.display_name,
+        email: profile.email ?? '',
+        initials: profile.initials ?? profile.display_name.slice(0, 2),
+      };
+    }
+    return CURRENT_USER;
+  }, [supabaseEnabled, profile]);
+
+  const { courses } = useCoursesForTenant(effectiveTenant.id);
 
   // ページがレッスン以外に戻ったら context を general にリセット
   useEffect(() => {
@@ -135,6 +179,9 @@ export default function App() {
   // Pseudo-routes
   useEffect(() => {
     if (page === '__logout') {
+      if (supabaseEnabled) {
+        void authSignOut();
+      }
       setStage('login');
       setPage('dash');
       toast('ログアウトしました');
@@ -147,36 +194,74 @@ export default function App() {
       setAiOpen(true);
       setPage('dash');
     }
-  }, [page]);
+  }, [page, supabaseEnabled]);
 
-  const courses = tenant.id === 'coach' ? COACH_COURSES : SES_COURSES;
+  // ----- 認証/オンボーディングの分岐 -----
 
-  if (stage === 'login') {
-    return (
-      <>
-        <LoginScreen onLogin={() => setStage('tenant-select')} />
-        <Toaster />
-      </>
-    );
-  }
-  if (stage === 'tenant-select') {
-    return (
-      <>
-        <TenantSelect
-          onPick={(t) => {
-            setTenant(t);
-            setStage('app');
-            setPage('dash');
-          }}
-        />
-        <Toaster />
-      </>
-    );
+  if (supabaseEnabled) {
+    if (authLoading) {
+      return (
+        <>
+          <div className="min-h-screen grid place-items-center bg-background text-ink-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Loader2 size={16} className="animate-spin" />
+              セッション復元中…
+            </div>
+          </div>
+          <Toaster />
+        </>
+      );
+    }
+    if (!session) {
+      return (
+        <>
+          <LoginScreen onLogin={() => undefined} />
+          <Toaster />
+        </>
+      );
+    }
+    if (!profile) {
+      return (
+        <>
+          <OnboardingScreen
+            userId={session.user.id}
+            email={session.user.email}
+            onCompleted={refreshProfile}
+          />
+          <Toaster />
+        </>
+      );
+    }
+    // supabaseEnabled + session + profile: アプリへ進む (stage 関係なし)
+  } else {
+    // 既存の fixtures フロー (Supabase 未設定時)
+    if (stage === 'login') {
+      return (
+        <>
+          <LoginScreen onLogin={() => setStage('tenant-select')} />
+          <Toaster />
+        </>
+      );
+    }
+    if (stage === 'tenant-select') {
+      return (
+        <>
+          <TenantSelect
+            onPick={(t) => {
+              setTenant(t);
+              setStage('app');
+              setPage('dash');
+            }}
+          />
+          <Toaster />
+        </>
+      );
+    }
   }
 
   const crumbs = [
-    tenant.name,
-    roleLabel(role),
+    effectiveTenant.name,
+    roleLabel(effectiveRole),
     page === 'course-detail' && currentCourse
       ? currentCourse.title
       : PAGE_LABELS[page] ?? page,
@@ -188,17 +273,17 @@ export default function App() {
     <>
       <div className="grid min-h-screen" style={{ gridTemplateColumns: '232px 1fr' }}>
         <Sidebar
-          role={role}
+          role={effectiveRole}
           page={page}
           setPage={setPage}
-          tenant={tenant}
-          user={CURRENT_USER}
+          tenant={effectiveTenant}
+          user={effectiveUser}
         />
         <div className="min-w-0 flex flex-col">
           <Topbar crumbs={crumbs} />
           <div className={isFlush ? 'flex-1 min-w-0' : 'p-7 flex-1 min-w-0 overflow-x-hidden'}>
             {renderPage({
-              role,
+              role: effectiveRole,
               page,
               setPage,
               courses,
@@ -206,13 +291,14 @@ export default function App() {
               setCurrentCourse,
               onOpenAIBot: () => setAiOpen(true),
               setAIContext: setAiContext,
+              tenantId: effectiveTenant.id,
             })}
           </div>
         </div>
       </div>
 
       {/* Floating AI chatbot (learner only) — lesson 内でも開けるよう gate を撤廃 */}
-      {showAIBot && role === 'learner' ? (
+      {showAIBot && effectiveRole === 'learner' ? (
         <LessonAIProvider value={aiContext}>
           {!aiOpen ? (
             <Button
@@ -230,8 +316,9 @@ export default function App() {
         </LessonAIProvider>
       ) : null}
 
-      {/* Tweaks panel — backtick toggle */}
-      {tweaksVisible ? (
+      {/* Tweaks panel — backtick toggle.
+          Supabase 設定時は profile が真実なので、 fixtures-flow tweaks は dev only として残す。 */}
+      {tweaksVisible && !supabaseEnabled ? (
         <TweaksPanel
           role={role}
           tenant={tenant}
@@ -259,6 +346,7 @@ interface RenderParams {
   setCurrentCourse: (c: Course) => void;
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
+  tenantId: Tenant['id'];
 }
 
 function renderPage({
@@ -270,6 +358,7 @@ function renderPage({
   setCurrentCourse,
   onOpenAIBot,
   setAIContext,
+  tenantId,
 }: RenderParams) {
   if (role === 'learner') {
     if (page === 'dash') return <LearnerDashboard setPage={setPage} courses={courses} />;
@@ -305,7 +394,9 @@ function renderPage({
   if (role === 'admin') {
     if (page === 'dash') return <AdminDashboard />;
     if (page === 'users') return <UsersAdmin />;
-    if (page === 'courses' || page === 'orgs' || page === 'report' || page === 'audit')
+    if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
+    if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
+    if (page === 'orgs' || page === 'report' || page === 'audit')
       return <AdminGeneric page={page} />;
   }
   return <GenericEmpty page={page} />;
