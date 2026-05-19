@@ -20,15 +20,16 @@ export default defineConfig({
     port: 5173,
     open: true,
   },
+  // Vite の worker.format は既定で "iife"。 メイン bundle 側の manualChunks が
+  // worker 側にも漏れて IIFE では使えないコード分割エラーになる (#code-splitting worker IIFE)。
+  // worker は ES モジュール (chunk 分割可) として出力する。
+  worker: {
+    format: 'es',
+  },
   build: {
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-sqljs': ['sql.js'],
-          'vendor-quickjs': [
-            'quickjs-emscripten-core',
-            '@jitl/quickjs-singlefile-browser-release-sync',
-          ],
           'vendor-codemirror': [
             '@uiw/react-codemirror',
             '@codemirror/state',
