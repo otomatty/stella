@@ -344,10 +344,26 @@ create policy lessons_write on public.lessons
   );
 
 -- assignments
+-- 受講者には、 published コース配下のレッスンに紐付く課題のみ見せる。
+-- 講師 / 管理者は同テナント全件 (draft / 未リンクの作成中課題を含む) を read 可能。
 drop policy if exists assignments_read on public.assignments;
 create policy assignments_read on public.assignments
   for select to authenticated
-  using (tenant_id = public.current_tenant_id());
+  using (
+    tenant_id = public.current_tenant_id()
+    and (
+      public.current_role() in ('instructor','admin')
+      or exists (
+        select 1
+          from public.lessons l
+          join public.sections s on s.id = l.section_id
+          join public.courses c on c.id = s.course_id
+         where l.assignment_id = assignments.id
+           and c.status = 'published'
+           and c.tenant_id = public.current_tenant_id()
+      )
+    )
+  );
 
 drop policy if exists assignments_write on public.assignments;
 create policy assignments_write on public.assignments
