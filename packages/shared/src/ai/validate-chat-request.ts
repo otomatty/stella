@@ -5,12 +5,13 @@
  * ランタイム依存を持たない純粋関数なので `@falcon/shared` に置く。
  *
  * 検証内容:
- * - assignmentId / content は空白のみを許容しない (trim 比較)。
+ * - context.kind が "practice" のとき assignmentId が必須。
+ * - context は kind ベースで構造検証 (lesson/practice/general)。
  * - 1 メッセージ最大文字数と、合計最大文字数の両方を制限する。
  * - 末尾は user メッセージである必要 (assistant 応答を期待するため)。
  */
 
-import type { ChatRequest } from "./types.js";
+import type { ChatContext, ChatRequest } from "./types.js";
 
 type ValidateResult =
   | { ok: true; body: ChatRequest }
@@ -27,11 +28,21 @@ export function validateChatRequest(raw: unknown): ValidateResult {
   }
   const body = raw as Partial<ChatRequest>;
 
-  if (
-    typeof body.assignmentId !== "string" ||
-    body.assignmentId.trim().length === 0
-  ) {
-    return { ok: false, status: 400, message: "assignmentId is required" };
+  const contextResult = validateContext(body.context);
+  if (!contextResult.ok) {
+    return contextResult;
+  }
+  const context = contextResult.value;
+
+  const assignmentIdValue =
+    typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
+  const needsAssignmentId = context?.kind === "practice";
+  if (needsAssignmentId && assignmentIdValue.length === 0) {
+    return {
+      ok: false,
+      status: 400,
+      message: "assignmentId is required for practice context",
+    };
   }
 
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
@@ -82,14 +93,125 @@ export function validateChatRequest(raw: unknown): ValidateResult {
     };
   }
 
-  return {
-    ok: true,
-    body: {
-      assignmentId: body.assignmentId.trim(),
-      messages: body.messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    },
+  const normalized: ChatRequest = {
+    messages: body.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   };
+  if (assignmentIdValue.length > 0) {
+    normalized.assignmentId = assignmentIdValue;
+  }
+  if (context !== undefined) {
+    normalized.context = context;
+  }
+
+  return { ok: true, body: normalized };
+}
+
+function validateContext(
+  raw: unknown,
+):
+  | { ok: true; value: ChatContext | undefined }
+  | { ok: false; status: 400; message: string } {
+  if (raw === undefined || raw === null) {
+    return { ok: true, value: undefined };
+  }
+  if (typeof raw !== "object") {
+    return { ok: false, status: 400, message: "Invalid context" };
+  }
+  const c = raw as { kind?: unknown };
+  switch (c.kind) {
+    case "general":
+      return { ok: true, value: { kind: "general" } };
+    case "lesson": {
+      const lessonTitle = (c as { lessonTitle?: unknown }).lessonTitle;
+      const courseTitle = (c as { courseTitle?: unknown }).courseTitle;
+      if (
+        typeof lessonTitle !== "string" ||
+        lessonTitle.trim().length === 0 ||
+        typeof courseTitle !== "string" ||
+        courseTitle.trim().length === 0
+      ) {
+        return {
+          ok: false,
+          status: 400,
+          message: "lesson context requires lessonTitle and courseTitle",
+        };
+      }
+      return {
+        ok: true,
+        value: {
+          kind: "lesson",
+          lessonTitle: lessonTitle.trim(),
+          courseTitle: courseTitle.trim(),
+        },
+      };
+    }
+    case "practice": {
+      const cp = c as {
+        assignmentId?: unknown;
+        summary?: unknown;
+        userCode?: unknown;
+      };
+      if (
+        typeof cp.assignmentId !== "string" ||
+        cp.assignmentId.trim().length === 0
+      ) {
+        return {
+          ok: false,
+          status: 400,
+          message: "practice context requires assignmentId",
+        };
+      }
+      if (typeof cp.userCode !== "string") {
+        return {
+          ok: false,
+          status: 400,
+          message: "practice context requires userCode",
+        };
+      }
+      if (!cp.summary || typeof cp.summary !== "object") {
+        return {
+          ok: false,
+          status: 400,
+          message: "practice context requires summary",
+        };
+      }
+      const s = cp.summary as {
+        cleared?: unknown;
+        lintFailures?: unknown;
+        astFailures?: unknown;
+        testFailures?: unknown;
+      };
+      if (
+        typeof s.cleared !== "boolean" ||
+        !Array.isArray(s.lintFailures) ||
+        !Array.isArray(s.astFailures) ||
+        !Array.isArray(s.testFailures)
+      ) {
+        return {
+          ok: false,
+          status: 400,
+          message: "practice context summary is malformed",
+        };
+      }
+      return {
+        ok: true,
+        value: {
+          kind: "practice",
+          assignmentId: cp.assignmentId.trim(),
+          userCode: cp.userCode,
+          summary: {
+            cleared: s.cleared,
+            lintFailures: s.lintFailures,
+            astFailures: s.astFailures,
+            testFailures: s.testFailures,
+          },
+        },
+      };
+    }
+    default:
+      return { ok: false, status: 400, message: "Invalid context kind" };
+  }
 }
