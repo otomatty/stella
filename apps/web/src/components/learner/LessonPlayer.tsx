@@ -154,26 +154,34 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
       </aside>
 
       <main className="min-w-0 flex flex-col">
-        {isVideo && lessonObj.videoPath ? (
-          <VideoViewer
-            key={lessonObj.id}
-            lessonId={lessonObj.id}
-            videoPath={lessonObj.videoPath}
-            totalSec={lessonObj.totalSec}
-            onComplete={handleMarkComplete}
-          />
-        ) : null}
-
-        {isSlides && lessonObj.pdfPath ? (
-          <Suspense fallback={<ViewerLoading />}>
-            <SlidesViewer
+        {isVideo ? (
+          lessonObj.videoPath ? (
+            <VideoViewer
               key={lessonObj.id}
               lessonId={lessonObj.id}
-              pdfPath={lessonObj.pdfPath}
-              totalPages={lessonObj.totalPages}
+              videoPath={lessonObj.videoPath}
+              totalSec={lessonObj.totalSec}
               onComplete={handleMarkComplete}
             />
-          </Suspense>
+          ) : (
+            <MissingMaterialFallback type="video" />
+          )
+        ) : null}
+
+        {isSlides ? (
+          lessonObj.pdfPath ? (
+            <Suspense fallback={<ViewerLoading />}>
+              <SlidesViewer
+                key={lessonObj.id}
+                lessonId={lessonObj.id}
+                pdfPath={lessonObj.pdfPath}
+                totalPages={lessonObj.totalPages}
+                onComplete={handleMarkComplete}
+              />
+            </Suspense>
+          ) : (
+            <MissingMaterialFallback type="slides" />
+          )
         ) : null}
 
         <div className="px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
@@ -269,39 +277,63 @@ const ViewerLoading = () => (
   </div>
 );
 
+const MissingMaterialFallback = ({ type }: { type: 'video' | 'slides' }) => (
+  <div className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken border-b border-border px-6 text-center">
+    <div className="max-w-md">
+      <div className="text-[13.5px] font-semibold text-ink-1">教材を準備中です</div>
+      <div className="text-[12px] text-ink-3 mt-1.5">
+        {type === 'video' ? '動画' : 'スライド'}
+        の素材がまだアップロードされていません。 講師がアップロード次第、 ここに表示されます。
+      </div>
+    </div>
+  </div>
+);
+
 const LessonOverview = ({
   lesson,
   onComplete,
 }: {
   lesson: Lesson;
   onComplete: () => void;
-}) => (
-  <div className="prose-lms">
-    <h2>このレッスンについて</h2>
-    <p>
-      上の{lesson.type === 'video' ? '動画' : 'スライド'}
-      で学習を進めてください。
-      {lesson.type === 'video'
-        ? ' 視聴秒数の90%に到達すると自動的に完了マークが付きます。'
-        : ' ページ全体の90%を閲覧すると自動的に完了マークが付きます。'}
-    </p>
-    <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-      <Button>
-        <ChevronLeft size={13} />
-        前のレッスン
-      </Button>
-      <div className="flex-1" />
-      <Button>
-        <Edit size={13} />
-        ノートに追加
-      </Button>
-      <Button variant="accent" onClick={onComplete}>
-        完了にする
-        <ChevronRight size={13} />
-      </Button>
+}) => {
+  const hasMaterial =
+    (lesson.type === 'video' && Boolean(lesson.videoPath)) ||
+    (lesson.type === 'slides' && Boolean(lesson.pdfPath));
+  const materialLabel = lesson.type === 'video' ? '動画' : 'スライド';
+  return (
+    <div className="prose-lms">
+      <h2>このレッスンについて</h2>
+      {hasMaterial ? (
+        <p>
+          上の{materialLabel}で学習を進めてください。
+          {lesson.type === 'video'
+            ? ' 視聴秒数の90%に到達すると自動的に完了マークが付きます。'
+            : ' ページ全体の90%を閲覧すると自動的に完了マークが付きます。'}
+        </p>
+      ) : (
+        <p>
+          {materialLabel}
+          素材はまだ準備中です。 アップロードされ次第、 ここから視聴できるようになります。
+        </p>
+      )}
+      <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+        <Button>
+          <ChevronLeft size={13} />
+          前のレッスン
+        </Button>
+        <div className="flex-1" />
+        <Button>
+          <Edit size={13} />
+          ノートに追加
+        </Button>
+        <Button variant="accent" onClick={onComplete}>
+          完了にする
+          <ChevronRight size={13} />
+        </Button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const LessonReadable = ({ onComplete }: { onComplete: () => void }) => (
   <div className="prose-lms">
