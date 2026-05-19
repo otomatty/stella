@@ -57,7 +57,7 @@ export default async function handler(request: Request): Promise<Response> {
 
       try {
         const iter = streamChat({
-          system: buildSystemPrompt(),
+          system: buildSystemPrompt(body.context),
           messages: body.messages,
           signal: upstreamAbort.signal,
         });

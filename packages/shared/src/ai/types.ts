@@ -14,8 +14,31 @@ export interface ChatMessage {
   ts?: number;
 }
 
+/**
+ * AIChatBot のコンテキスト種別。
+ *
+ * - `general`: ダッシュボード等のコンテキスト無し
+ * - `lesson`: ビデオ/スライド等のレッスン視聴中 (採点対象なし)
+ * - `practice`: コード演習中 (採点失敗サマリと提出コードを付帯)
+ */
+export type ChatContext =
+  | { kind: "general" }
+  | { kind: "lesson"; lessonTitle: string; courseTitle: string }
+  | {
+      kind: "practice";
+      assignmentId: string;
+      summary: GradingSummary;
+      userCode: string;
+    };
+
 export interface ChatRequest {
-  assignmentId: string;
+  /**
+   * practice context のときに必須。 backward-compat のため optional。
+   * 旧クライアント (context 未指定) は practice として扱う。
+   */
+  assignmentId?: string;
+  /** 省略時は general 扱い。 */
+  context?: ChatContext;
   messages: { role: ChatRole; content: string }[];
 }
 

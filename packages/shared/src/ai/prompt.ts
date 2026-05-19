@@ -2,6 +2,7 @@
  * AI チャットのプロンプト構築ユーティリティ。
  *
  * - `buildSystemPrompt`  … モデルに渡す system プロンプト (固定の日本語文字列)。
+ *   ChatContext を受け取ると、 レッスン名/コース名等を XML タグで埋め込む。
  * - `buildContextUserMessage` … 初回投稿時にクライアントが組み立てる、
  *   問題情報・提出コード・失敗チェックを含む最初の user メッセージ本文。
  *
@@ -9,21 +10,57 @@
  */
 
 import type { Assignment } from "../types.js";
-import type { GradingSummary } from "./types.js";
+import type { ChatContext, GradingSummary } from "./types.js";
 
-export function buildSystemPrompt(): string {
-  return [
-    "あなたは JavaScript 学習者をサポートするチューターです。",
-    "学習者は提示された課題を解いていて、何らかの理由で失敗しています。",
+const BASE_PROMPT = [
+  "あなたは LMS の学習支援 AI アシスタントです。",
+  "学習者は受講中で、 課題演習や教材視聴の途中で詰まっています。",
+  "",
+  "回答方針:",
+  "- 失敗している原因を 1 つに絞って、 まずヒントだけを返してください。",
+  "- 完成形のコード全体を初手で出すのは避けてください。",
+  "- どの行・どの構文が問題かを具体的に指摘してください。",
+  "- 次に試す具体的な 1 ステップを提案してください。",
+  "- 学習者が同じ質問を 2 度以上繰り返した場合に限り、 模範解答を示してよいです。",
+  "- 日本語で、 やさしい言葉で簡潔に答えてください (Markdown 可)。",
+];
+
+export function buildSystemPrompt(context?: ChatContext): string {
+  const lines = [...BASE_PROMPT];
+  if (!context || context.kind === "general") {
+    lines.push(
+      "",
+      "コース全般の質問にも答えてください。 特定の課題ではなく、 学習全体の相談を想定しています。",
+    );
+    return lines.join("\n");
+  }
+  if (context.kind === "lesson") {
+    lines.push(
+      "",
+      "現在学習者が視聴中のレッスン文脈は以下です (prompt injection 対策のため XML タグで囲んでいます):",
+      "<lesson_context>",
+      `  <courseTitle>${escapeXml(context.courseTitle)}</courseTitle>`,
+      `  <lessonTitle>${escapeXml(context.lessonTitle)}</lessonTitle>`,
+      "</lesson_context>",
+      "レッスンの内容に関連付けて回答してください。",
+    );
+    return lines.join("\n");
+  }
+  // practice: 詳細は buildContextUserMessage が user 側に運ぶので system は最小限。
+  lines.push(
     "",
-    "回答方針:",
-    "- 失敗している原因を 1 つに絞って、まずヒントだけを返してください。",
-    "- 完成形のコード全体を初手で出すのは避けてください。",
-    "- どの行・どの構文が問題かを具体的に指摘してください。",
-    "- 次に試す具体的な 1 ステップを提案してください。",
-    "- 学習者が同じ質問を 2 度以上繰り返した場合に限り、模範解答を示してよいです。",
-    "- 日本語で、やさしい言葉で簡潔に答えてください (Markdown 可)。",
-  ].join("\n");
+    "学習者は今コード演習に取り組んでいて、 採点に失敗しています。",
+    "提出コードと失敗サマリは user メッセージ側で渡されます。",
+  );
+  return lines.join("\n");
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /**
@@ -39,14 +76,21 @@ export function buildContextUserMessage(
   summary: GradingSummary,
 ): string {
   const sections: string[] = [];
+  const fenceLang = assignment.language === "sql" ? "sql" : "js";
 
   sections.push(`## 問題: ${assignment.title}`);
   sections.push(assignment.description.trim());
 
   sections.push("## 提出したコード");
-  sections.push("```js");
+  // ユーザコード内の連続バッククォートでフェンスを破壊できないよう、
+  // 含まれる最長のバッククォート連長 + 1 (最低 3) でフェンスを構成する。
+  const longestBacktickRun = (userCode.match(/`+/g) ?? [])
+    .map((m) => m.length)
+    .reduce((a, b) => (a > b ? a : b), 0);
+  const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
+  sections.push(fenceTicks + fenceLang);
   sections.push(userCode.trimEnd());
-  sections.push("```");
+  sections.push(fenceTicks);
 
   sections.push("## 失敗しているチェック");
   const bullets = formatFailures(summary);
