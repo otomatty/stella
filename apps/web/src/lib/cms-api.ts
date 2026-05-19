@@ -150,18 +150,13 @@ export async function reorderSections(
   courseId: string,
   orderedIds: string[],
 ): Promise<void> {
+  // 単一 UPDATE で原子的に書き換える RPC を呼ぶ (部分失敗を防ぐ)。
   const supabase = getSupabase();
-  // 親 course_id でもフィルタして、 他コースの section を巻き込まないようにする。
-  await Promise.all(
-    orderedIds.map(async (id, i) => {
-      const { error } = await supabase
-        .from("sections")
-        .update({ order: i })
-        .eq("id", id)
-        .eq("course_id", courseId);
-      if (error) throw new Error(error.message);
-    }),
-  );
+  const { error } = await supabase.rpc("reorder_sections", {
+    p_course_id: courseId,
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(error.message);
 }
 
 // ---------------------------------------------------------------
@@ -206,16 +201,11 @@ export async function reorderLessons(
   orderedIds: string[],
 ): Promise<void> {
   const supabase = getSupabase();
-  await Promise.all(
-    orderedIds.map(async (id, i) => {
-      const { error } = await supabase
-        .from("lessons")
-        .update({ order: i })
-        .eq("id", id)
-        .eq("section_id", sectionId);
-      if (error) throw new Error(error.message);
-    }),
-  );
+  const { error } = await supabase.rpc("reorder_lessons", {
+    p_section_id: sectionId,
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(error.message);
 }
 
 // ---------------------------------------------------------------

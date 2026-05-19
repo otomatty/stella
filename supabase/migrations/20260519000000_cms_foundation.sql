@@ -164,6 +164,42 @@ grant execute on function public.current_tenant_id() to authenticated, anon;
 grant execute on function public.current_role() to authenticated, anon;
 
 -- ---------------------------------------------------------------
+-- 5b. アトミックな並び替え RPC
+-- ---------------------------------------------------------------
+-- 個別 UPDATE を逐次 / 並列で打つと部分的失敗で不整合が残る。
+-- 単一 UPDATE + unnest with ordinality で原子的に全行を更新する。
+-- security invoker なので RLS (sections_write / lessons_write) が引き続き適用される。
+
+create or replace function public.reorder_sections(p_course_id uuid, p_ids uuid[])
+returns void
+language sql
+security invoker
+set search_path = public
+as $$
+  update public.sections
+     set "order" = (t.idx - 1)::int
+    from unnest(p_ids) with ordinality as t(id, idx)
+   where public.sections.id = t.id
+     and public.sections.course_id = p_course_id;
+$$;
+
+create or replace function public.reorder_lessons(p_section_id uuid, p_ids uuid[])
+returns void
+language sql
+security invoker
+set search_path = public
+as $$
+  update public.lessons
+     set "order" = (t.idx - 1)::int
+    from unnest(p_ids) with ordinality as t(id, idx)
+   where public.lessons.id = t.id
+     and public.lessons.section_id = p_section_id;
+$$;
+
+grant execute on function public.reorder_sections(uuid, uuid[]) to authenticated;
+grant execute on function public.reorder_lessons(uuid, uuid[]) to authenticated;
+
+-- ---------------------------------------------------------------
 -- 6. RLS 有効化 + ポリシー
 -- ---------------------------------------------------------------
 
@@ -195,6 +231,9 @@ create policy profiles_insert_self on public.profiles
     id = auth.uid()
     -- 自己昇格を防ぐ。 instructor / admin への変更は SQL Editor で運用者が行う。
     and role = 'student'
+    -- FK で既に存在チェックされるが、 明示的に policy にも記述し
+    -- ポリシー違反としてのエラーメッセージで失敗できるようにする (defense-in-depth)。
+    and exists (select 1 from public.tenants t where t.id = tenant_id)
   );
 
 drop policy if exists profiles_update_self on public.profiles;
