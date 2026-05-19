@@ -48,9 +48,11 @@ export function useCoursesForTenant(tenantId: Tenant["id"]): UseCoursesResult {
       try {
         const courseRows = await listCourses(tenantId);
         if (cancelled) return;
+        // クエリ成功 = DB を真実として採用する。 空 (= 未 seed / RLS で全部 draft 等) でも
+        // fixtures に fallback しない (#10 — Codex P2: RLS で隠した draft が漏れるのを防ぐ)。
         if (courseRows.length === 0) {
-          setCourses(fixturesFor(tenantId));
-          setSource("fixtures");
+          setCourses([]);
+          setSource("db");
           return;
         }
         const details = await Promise.all(

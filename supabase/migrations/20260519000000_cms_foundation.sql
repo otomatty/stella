@@ -410,6 +410,13 @@ create policy materials_public_update on storage.objects
     and (storage.foldername(name))[1] = 'tenant'
     and (storage.foldername(name))[2] = public.current_tenant_id()
     and public.current_role() in ('instructor','admin')
+  )
+  -- with check も指定して、 リネーム / 移動後のパスも tenant 境界に閉じる。
+  with check (
+    bucket_id = 'materials-public'
+    and (storage.foldername(name))[1] = 'tenant'
+    and (storage.foldername(name))[2] = public.current_tenant_id()
+    and public.current_role() in ('instructor','admin')
   );
 
 drop policy if exists materials_public_delete on storage.objects;
