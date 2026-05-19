@@ -42,9 +42,12 @@ export function useResolvedAssignment(id: string): Result {
     }
     let cancelled = false;
     setError(null);
+    // id が変わったら必ず fallback を即時セットする。 そうしないと前 lesson の課題が
+    // DB lookup 完了まで残り、 学習者が別の課題を解いてしまう恐れがある (#10 — Codex P2)。
+    setAssignment(fallback);
     // shared にあれば fast-path で表示しつつ DB も問い合わせて差分があれば反映 (SWR 風)。
     // shared に無い場合のみスピナー表示。
-    if (!fallback) setLoading(true);
+    setLoading(!fallback);
     (async () => {
       try {
         const row = await getAssignmentRow(id);

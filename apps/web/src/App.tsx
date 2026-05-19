@@ -378,17 +378,23 @@ function renderPage({
           setCurrentCourse={setCurrentCourse}
         />
       );
-    if (page === 'course-detail')
-      return <CourseDetail course={currentCourse ?? courses[0]} setPage={setPage} />;
-    if (page === 'lesson')
+    if (page === 'course-detail') {
+      const target = currentCourse ?? courses[0];
+      if (!target) return <EmptyCoursesNotice setPage={setPage} />;
+      return <CourseDetail course={target} setPage={setPage} />;
+    }
+    if (page === 'lesson') {
+      const target = currentCourse ?? courses[0];
+      if (!target) return <EmptyCoursesNotice setPage={setPage} />;
       return (
         <LessonPlayer
-          course={currentCourse ?? courses[0]}
+          course={target}
           setPage={setPage}
           onOpenAIBot={onOpenAIBot}
           setAIContext={setAIContext}
         />
       );
+    }
     if (page === 'cert') return <CertificatePage />;
     if (page === 'qa') return <StandaloneQA />;
   }
@@ -408,4 +414,22 @@ function renderPage({
       return <AdminGeneric page={page} />;
   }
   return <GenericEmpty page={page} />;
+}
+
+function EmptyCoursesNotice({ setPage }: { setPage: (p: string) => void }) {
+  return (
+    <div className="max-w-md mx-auto mt-16 text-center">
+      <div className="text-[15px] font-semibold mb-2">受講可能なコースがありません</div>
+      <div className="text-[12.5px] text-ink-3 mb-4">
+        現在このテナントに公開中のコースはありません。 管理者がコースを公開するまでお待ちください。
+      </div>
+      <button
+        type="button"
+        className="text-[12.5px] text-brand underline underline-offset-2"
+        onClick={() => setPage('dash')}
+      >
+        ダッシュボードに戻る
+      </button>
+    </div>
+  );
 }
