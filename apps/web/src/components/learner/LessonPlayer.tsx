@@ -80,11 +80,16 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
   );
 
   // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
+  // (lessonObj 経由ではなく allLessons から直接 foundId を計算する)
   useEffect(() => {
-    if (lessonObj && lessonObj.id !== activeLesson) {
-      setActiveLesson(lessonObj.id);
+    const foundId =
+      allLessons.find((l) => l.id === activeLesson)?.id ??
+      allLessons[0]?.id ??
+      '';
+    if (foundId !== activeLesson) {
+      setActiveLesson(foundId);
     }
-  }, [lessonObj, activeLesson]);
+  }, [allLessons, activeLesson]);
 
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;
