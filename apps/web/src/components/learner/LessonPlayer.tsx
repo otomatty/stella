@@ -257,9 +257,13 @@ export const LessonPlayer = ({ course, setPage }: LessonPlayerProps) => {
 };
 
 const ViewerLoading = () => (
-  <div className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken text-ink-3 text-[12.5px]">
+  <div
+    role="status"
+    aria-label="ビューアを読み込み中"
+    className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken text-ink-3 text-[12.5px]"
+  >
     <div className="inline-flex items-center gap-2">
-      <Loader2 size={16} className="animate-spin" />
+      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
       ビューアを読み込み中…
     </div>
   </div>

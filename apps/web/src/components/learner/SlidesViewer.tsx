@@ -42,14 +42,19 @@ interface Props {
   onComplete?: () => void;
 }
 
-const ZOOM_PRESETS = [0.5, 0.75, 1, 1.25, 1.5] as const;
+const ZOOM_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3] as const;
 const ZOOM_LABELS: Record<string, string> = {
   '0.5': '50%',
   '0.75': '75%',
   '1': '100%',
   '1.25': '125%',
   '1.5': '150%',
+  '2': '200%',
+  '2.5': '250%',
+  '3': '300%',
 };
+const ZOOM_MAX = ZOOM_PRESETS[ZOOM_PRESETS.length - 1];
+const ZOOM_MIN = ZOOM_PRESETS[0];
 
 const COMPLETION_THRESHOLD = 0.9;
 
@@ -113,16 +118,21 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
     recordPage(page, numPages);
   }, [page, numPages, recordPage]);
 
-  // 90% で onComplete を 1 回だけ呼ぶ
+  // 90% で markComplete を呼んでストアに反映し、 onComplete 通知 (どちらも 1 回だけ)
   useEffect(() => {
     if (!numPages || numPages <= 0) return;
     if (completedRef.current) return;
+    if (entry?.completed) {
+      completedRef.current = true;
+      return;
+    }
     const viewed = entry?.viewedPages?.length ?? 0;
     if (viewed / numPages >= COMPLETION_THRESHOLD) {
       completedRef.current = true;
+      markComplete();
       onComplete?.();
     }
-  }, [entry, numPages, onComplete]);
+  }, [entry, numPages, markComplete, onComplete]);
 
   // フルスクリーン状態の追従
   useEffect(() => {
@@ -137,13 +147,20 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
     setPage((p) => Math.max(1, p - 1));
   }, []);
   const goNext = useCallback(() => {
-    setPage((p) => (total > 0 ? Math.min(total, p + 1) : p + 1));
+    setPage((p) => (total > 0 ? Math.min(total, p + 1) : p));
   }, [total]);
   const goFirst = useCallback(() => setPage(1), []);
   const goLast = useCallback(() => total > 0 && setPage(total), [total]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest('input, textarea, select, button, a, [contenteditable="true"]')
+      ) {
+        return;
+      }
       switch (e.key) {
         case 'ArrowLeft':
         case 'PageUp':
@@ -207,7 +224,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
       tabIndex={0}
       onKeyDown={onKeyDown}
       className={cn(
-        'relative bg-sunken border border-border focus:outline-none',
+        'relative bg-sunken border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60',
         isFullscreen ? 'h-screen w-screen' : 'rounded-md',
       )}
       aria-label="PDF スライドビューア"
@@ -237,7 +254,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
           variant="ghost"
           onClick={goNext}
           aria-label="次のページ"
-          disabled={total > 0 && page >= total}
+          disabled={total === 0 || page >= total}
         >
           <ChevronRight size={14} />
         </Button>
@@ -245,7 +262,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => setScale((s) => Math.max(0.5, +(s - 0.25).toFixed(2)))}
+          onClick={() => setScale((s) => Math.max(ZOOM_MIN, +(s - 0.25).toFixed(2)))}
           aria-label="縮小"
         >
           <ZoomOut size={13} />
@@ -265,7 +282,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => setScale((s) => Math.min(3, +(s + 0.25).toFixed(2)))}
+          onClick={() => setScale((s) => Math.min(ZOOM_MAX, +(s + 0.25).toFixed(2)))}
           aria-label="拡大"
         >
           <ZoomIn size={13} />

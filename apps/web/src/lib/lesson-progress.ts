@@ -112,15 +112,17 @@ export function recordPage(
   totalPages: number,
 ): LessonProgressEntry {
   const prev = cache[lessonId];
+  const validPage =
+    Number.isInteger(page) && page >= 1 ? page : undefined;
   const viewedSet = new Set(prev?.viewedPages ?? []);
-  if (page >= 1 && Number.isFinite(page)) viewedSet.add(page);
+  if (validPage !== undefined) viewedSet.add(validPage);
   const viewedPages = Array.from(viewedSet).sort((a, b) => a - b);
   const completed =
     prev?.completed === true ||
     (totalPages > 0 && viewedPages.length / totalPages >= COMPLETION_THRESHOLD);
   return update(lessonId, {
     completed,
-    lastPage: page,
+    lastPage: validPage ?? prev?.lastPage,
     viewedPages,
     watchedSec: prev?.watchedSec,
     updatedAt: nowIso(),
@@ -133,7 +135,9 @@ export function recordWatchTime(
   totalSec: number,
 ): LessonProgressEntry {
   const prev = cache[lessonId];
-  const watched = Math.max(prev?.watchedSec ?? 0, Math.max(0, sec));
+  const prevWatched = prev?.watchedSec ?? 0;
+  const normalizedSec = Number.isFinite(sec) ? Math.max(0, sec) : prevWatched;
+  const watched = Math.max(prevWatched, normalizedSec);
   const completed =
     prev?.completed === true ||
     (totalSec > 0 && watched / totalSec >= COMPLETION_THRESHOLD);

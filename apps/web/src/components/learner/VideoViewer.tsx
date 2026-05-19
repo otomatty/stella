@@ -93,10 +93,11 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
       recordWatchTime(sec, dur);
       if (!completedRef.current && dur > 0 && sec / dur >= COMPLETION_THRESHOLD) {
         completedRef.current = true;
+        markComplete();
         onComplete?.();
       }
     },
-    [recordWatchTime, duration, totalSec, onComplete],
+    [recordWatchTime, duration, totalSec, markComplete, onComplete],
   );
 
   const onTimeUpdate = useCallback(() => {
@@ -169,8 +170,10 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
   const seek = useCallback((deltaSec: number) => {
     const v = videoRef.current;
     if (!v) return;
-    const next = Math.max(0, Math.min((v.duration || 0) || v.currentTime + deltaSec, v.currentTime + deltaSec));
-    v.currentTime = next;
+    v.currentTime = Math.max(
+      0,
+      Math.min(v.duration || Infinity, v.currentTime + deltaSec),
+    );
   }, []);
 
   const toggleFullscreen = useCallback(() => {
@@ -184,6 +187,13 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest('input, textarea, select, button, a, [contenteditable="true"]')
+      ) {
+        return;
+      }
       switch (e.key) {
         case ' ':
         case 'Spacebar':
@@ -261,7 +271,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
       ref={containerRef}
       tabIndex={0}
       onKeyDown={onKeyDown}
-      className="relative bg-black focus:outline-none"
+      className="relative bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
       aria-label="動画ビューア"
     >
       {hasError ? (
@@ -347,7 +357,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
 
       <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2 text-[11.5px] text-ink-3">
         <span className="inline-flex items-center gap-1">
-          {isPlaying ? <Play size={12} /> : <Pause size={12} />}
+          {isPlaying ? <Pause size={12} /> : <Play size={12} />}
           視聴 {Math.round(watched)} / {Math.round(dur) || '?'} 秒 ({pct}%)
         </span>
         <div className="flex-1 h-1 bg-muted rounded-sm overflow-hidden max-w-[260px]">
