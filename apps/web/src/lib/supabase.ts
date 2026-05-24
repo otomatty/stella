@@ -1,7 +1,7 @@
 /**
  * Supabase クライアントの遅延初期化と教材URL解決ヘルパ。
  *
- * 環境変数 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` が未設定でも、
+ * 環境変数 `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` が未設定でも、
  * アプリのビルド・既存ダミー画面の起動は壊れない (P0 受け入れ条件)。
  * 教材ファイルをfetchしようとした瞬間に明示的なエラーを出す。
  */
@@ -9,22 +9,24 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const publishableKey =
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
 
 let cached: SupabaseClient | null = null;
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(url && anonKey);
+  return Boolean(url && publishableKey);
 }
 
 export function getSupabase(): SupabaseClient {
-  if (!url || !anonKey) {
+  if (!url || !publishableKey) {
     throw new Error(
-      'Supabase env vars are missing. Copy apps/web/.env.local.example to .env.local and fill in VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.',
+      'Supabase env vars are missing. Copy apps/web/.env.local.example to .env.local and fill in VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY.',
     );
   }
   if (!cached) {
-    cached = createClient(url, anonKey, {
+    cached = createClient(url, publishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

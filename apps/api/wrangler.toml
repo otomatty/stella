@@ -1,0 +1,9 @@
+name = "falcon-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ANTHROPIC_MODEL = "claude-sonnet-4-6"
+# ローカル開発用。本番は README のデプロイ手順に従い Vercel ドメイン等を設定する。
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"

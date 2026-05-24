@@ -1,7 +1,7 @@
 /**
  * AI チャット機能の共有型定義。
  *
- * このモジュールはランタイム依存を持たず、Vercel Serverless API ハンドラと
+ * このモジュールはランタイム依存を持たず、Hono API (`apps/api`) と
  * クライアントの両方から import される。Anthropic SDK へは一切依存しない。
  */
 

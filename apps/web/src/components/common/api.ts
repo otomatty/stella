@@ -9,7 +9,7 @@ import type {
   ChatStreamEvent,
 } from "@falcon/shared/ai/types";
 
-/** 空なら同一オリジン (Vercel の `/api/chat`)。デプロイ済み URL を別ホストから叩きたい場合に指定する。 */
+/** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
 const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
 
 /**
