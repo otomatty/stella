@@ -13,7 +13,7 @@ healthzRoute.get("/api/healthz", (c) => {
   const memoryLimitMb = Number.isFinite(parsed) && parsed > 0 ? parsed : 32;
   return c.json({
     ok: true,
-    runner: "quickjs-emscripten",
+    runner: "anthropic-proxy",
     memoryLimitMb,
   });
 });
