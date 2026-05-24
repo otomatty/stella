@@ -1,51 +1,45 @@
 /**
- * Vercel Serverless Function: POST /api/chat
- *
- * Anthropic Claude にメッセージ列を投げ、SSE で逐次イベントを返す。
- * イベント形式は `ChatStreamEvent` (text / done / error) を JSON 直列化したもの。
+ * POST /api/chat — Anthropic Claude への SSE プロキシ。
  */
 
 import { buildSystemPrompt } from "@falcon/shared/ai/prompt";
 import type { ChatStreamEvent } from "@falcon/shared/ai/types";
 import { validateChatRequest } from "@falcon/shared/ai/validate-chat-request";
+import { Hono } from "hono";
 
-import { MissingApiKeyError, streamChat } from "./_lib/anthropic-client.js";
+import type { Env } from "../env.js";
+import { MissingApiKeyError, streamChat } from "../lib/anthropic.js";
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
-  }
+const SERVER_TIMEOUT_MS = 75_000;
 
+export const chatRoute = new Hono<{ Bindings: Env }>();
+
+chatRoute.post("/api/chat", async (c) => {
   let raw: unknown;
   try {
-    raw = await request.json();
+    raw = await c.req.json();
   } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+    return c.json({ error: "Invalid JSON body" }, 400);
   }
 
   const validated = validateChatRequest(raw);
   if (!validated.ok) {
-    return Response.json({ error: validated.message }, {
-      status: validated.status,
-    });
+    return c.json({ error: validated.message }, validated.status);
   }
   const body = validated.body;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json(
-      { error: new MissingApiKeyError().message },
-      { status: 500 },
-    );
+  if (!c.env.ANTHROPIC_API_KEY) {
+    return c.json({ error: new MissingApiKeyError().message }, 500);
   }
 
   const encoder = new TextEncoder();
-  const SERVER_TIMEOUT_MS = 75_000;
+  const requestSignal = c.req.raw.signal;
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const upstreamAbort = new AbortController();
       const onClientAbort = () => upstreamAbort.abort();
-      request.signal.addEventListener("abort", onClientAbort);
-      // 上流ハング時にレスポンスストリームを確実に閉じる保険
+      requestSignal.addEventListener("abort", onClientAbort);
       const timeoutId = setTimeout(
         () => upstreamAbort.abort(),
         SERVER_TIMEOUT_MS,
@@ -57,13 +51,16 @@ export default async function handler(request: Request): Promise<Response> {
 
       try {
         const iter = streamChat({
+          env: c.env,
           system: buildSystemPrompt(body.context),
           messages: body.messages,
           signal: upstreamAbort.signal,
         });
         for await (const event of iter) {
           send(event);
-          if (event.type === "done") {break;}
+          if (event.type === "done") {
+            break;
+          }
         }
       } catch (e) {
         const message = upstreamAbort.signal.aborted
@@ -74,7 +71,7 @@ export default async function handler(request: Request): Promise<Response> {
         send({ type: "error", message });
       } finally {
         clearTimeout(timeoutId);
-        request.signal.removeEventListener("abort", onClientAbort);
+        requestSignal.removeEventListener("abort", onClientAbort);
         controller.close();
       }
     },
@@ -88,4 +85,4 @@ export default async function handler(request: Request): Promise<Response> {
       Connection: "keep-alive",
     },
   });
-}
+});

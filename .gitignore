@@ -15,3 +15,7 @@ apps/web/public/pdfjs/
 
 # Vercel
 .vercel
+
+# Cloudflare Workers
+.wrangler
+apps/api/.dev.vars

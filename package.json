@@ -6,10 +6,10 @@
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "dev": "bun --filter=@falcon/web dev",
-    "build": "bun --filter='*' build",
+    "dev:api": "bun --filter=@falcon/api dev",
+    "build": "bun --filter '@falcon/*' build",
     "preview": "bun --filter=@falcon/web preview",
-    "typecheck": "bun --filter='*' typecheck",
-    "vercel-dev": "bun --filter=@falcon/web vercel-dev",
+    "typecheck": "bun --filter '@falcon/*' typecheck",
     "seed:fixtures": "bun run packages/shared/scripts/seed-from-fixtures.ts"
   }
 }

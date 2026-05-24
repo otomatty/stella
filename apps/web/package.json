@@ -8,11 +8,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "vercel-dev": "vercel dev"
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-sql": "^6.10.0",
     "@codemirror/lint": "^6.5.0",

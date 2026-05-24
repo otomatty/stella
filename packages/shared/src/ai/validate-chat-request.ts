@@ -1,7 +1,7 @@
 /**
  * `POST /api/chat` の入力バリデータ。
  *
- * Vercel Serverless ランタイムの API ハンドラから import される。
+ * Hono API ハンドラ (`apps/api`) から import される。
  * ランタイム依存を持たない純粋関数なので `@falcon/shared` に置く。
  *
  * 検証内容:
