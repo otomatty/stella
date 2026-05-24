@@ -1,6 +1,11 @@
 /**
  * CORS オリジン判定。 Vercel Preview (`*.vercel.app` / `https://*.vercel.app`) 等の
  * ワイルドカードに対応。
+ *
+ * パターン例:
+ * - 完全一致: `https://app.example.com`
+ * - サブドメインのみ: `*.example.com` / `https://*.example.com`（apex `example.com` は含まない）
+ * - スキームなし (`*.example.com`) は HTTP / HTTPS 両方にマッチ。HTTPS のみなら `https://*` を使う
  */
 
 interface OriginPattern {
@@ -28,7 +33,8 @@ function parseOriginPattern(pattern: string): OriginPattern {
 }
 
 function matchesHostSuffix(hostname: string, suffix: string): boolean {
-  return hostname === suffix.slice(1) || hostname.endsWith(suffix);
+  // `*.example.com` はサブドメインのみ。apex (`example.com`) は許可しない。
+  return hostname.endsWith(suffix) && hostname.length > suffix.length;
 }
 
 export function isAllowedOrigin(origin: string, allowedOrigins: string): boolean {
