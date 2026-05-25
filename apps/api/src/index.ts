@@ -9,6 +9,7 @@ import type { Env } from "./env.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthzRoute } from "./routes/healthz.js";
+import { reviewDraftRoute } from "./routes/review-draft.js";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -23,5 +24,6 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/", healthzRoute);
 app.route("/", chatRoute);
+app.route("/", reviewDraftRoute);
 
 export default app;

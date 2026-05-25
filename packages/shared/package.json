@@ -21,7 +21,12 @@
     "./util/validate-run-tests-request": "./src/util/validate-run-tests-request.ts",
     "./ai/types": "./src/ai/types.ts",
     "./ai/prompt": "./src/ai/prompt.ts",
-    "./ai/validate-chat-request": "./src/ai/validate-chat-request.ts"
+    "./ai/validate-chat-request": "./src/ai/validate-chat-request.ts",
+    "./review/types": "./src/review/types.ts",
+    "./review/prompt": "./src/review/prompt.ts",
+    "./review/heuristic-draft": "./src/review/heuristic-draft.ts",
+    "./review/validate-review-draft-request": "./src/review/validate-review-draft-request.ts",
+    "./review/parse-draft-json": "./src/review/parse-draft-json.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

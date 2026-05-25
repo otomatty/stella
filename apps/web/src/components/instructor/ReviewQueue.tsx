@@ -12,23 +12,37 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import { REVIEW_QUEUE } from '@/data/fixtures';
+import { useSubmissions } from '@/hooks/useSubmissions';
+import { formatSubmittedAt } from '@/lib/submissions-store';
+import type { Tenant } from '@/data/types';
+import type { AvatarTone } from '@/data/types';
 
-export const ReviewQueue = ({ setPage }: { setPage: (p: string) => void }) => {
-  const readyCount = REVIEW_QUEUE.filter((r) => r.aiReady).length;
+interface ReviewQueueProps {
+  tenantId: Tenant['id'];
+  setPage: (p: string) => void;
+  onOpenReview: (submissionId: string) => void;
+}
+
+export const ReviewQueue = ({
+  tenantId,
+  setPage,
+  onOpenReview,
+}: ReviewQueueProps) => {
+  const { submissions, pendingCount, aiReadyCount } = useSubmissions(tenantId);
+  const pending = submissions.filter((s) => s.status === 'pending');
 
   return (
     <>
       <PageHeader
         title="添削待ちキュー"
-        sub={`${REVIEW_QUEUE.length}件の提出物 · うちAI下書き準備済 ${readyCount}件`}
+        sub={`${pendingCount}件の提出物 · うちAI下書き準備済 ${aiReadyCount}件`}
         actions={
           <>
-            <Button>
+            <Button type="button" variant="ghost" disabled title="今後対応">
               <Filter size={14} />
               フィルター
             </Button>
-            <Button>
+            <Button type="button" variant="ghost" disabled title="今後対応">
               <Sliders size={14} />
               ソート
             </Button>
@@ -49,43 +63,62 @@ export const ReviewQueue = ({ setPage }: { setPage: (p: string) => void }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {REVIEW_QUEUE.map((r) => (
-              <TableRow key={r.id} interactive onClick={() => setPage('review')}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar size="sm">
-                      <AvatarFallback tone={r.c}>{r.initials}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{r.student}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{r.assignment}</TableCell>
-                <TableCell className="text-ink-3">{r.course}</TableCell>
-                <TableCell className="text-ink-3">{r.submittedAt}</TableCell>
-                <TableCell>
-                  {r.aiReady ? (
-                    <Badge variant="accent">
-                      <Sparkles size={10} />
-                      準備済
-                    </Badge>
-                  ) : (
-                    <span className="text-ink-3 text-[11.5px]">生成中</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {r.priority === 'high' ? (
-                    <Badge variant="warning">優先</Badge>
-                  ) : r.priority === 'low' ? (
-                    <Badge>低</Badge>
-                  ) : (
-                    <Badge variant="info">通常</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <ChevronRight size={14} className="text-ink-4" />
+            {pending.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-ink-3 py-10">
+                  添削待ちの提出物はありません
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              pending.map((r) => (
+                <TableRow
+                  key={r.id}
+                  interactive
+                  onClick={() => {
+                    onOpenReview(r.id);
+                    setPage('review');
+                  }}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar size="sm">
+                        <AvatarFallback tone={r.avatarTone as AvatarTone}>
+                          {r.studentInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{r.studentName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{r.assignmentTitle}</TableCell>
+                  <TableCell className="text-ink-3">{r.courseTitle}</TableCell>
+                  <TableCell className="text-ink-3">
+                    {formatSubmittedAt(r.submittedAt)}
+                  </TableCell>
+                  <TableCell>
+                    {r.aiReady ? (
+                      <Badge variant="accent">
+                        <Sparkles size={10} />
+                        準備済
+                      </Badge>
+                    ) : (
+                      <span className="text-ink-3 text-[11.5px]">生成中</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {r.priority === 'high' ? (
+                      <Badge variant="warning">優先</Badge>
+                    ) : r.priority === 'low' ? (
+                      <Badge>低</Badge>
+                    ) : (
+                      <Badge variant="info">通常</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <ChevronRight size={14} className="text-ink-4" />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Card>
