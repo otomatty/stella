@@ -5,6 +5,9 @@
 
 export type ReviewPriority = "high" | "normal" | "low";
 
+/** UI アバター色 (fixtures の AvatarTone と同値) */
+export type ReviewAvatarTone = "c1" | "c2" | "c3" | "c4" | "c5" | "c6";
+
 export type SubmissionStatus = "pending" | "passed" | "resubmit" | "failed";
 
 export type ReviewVerdict = "pass" | "resubmit" | "fail";
@@ -34,8 +37,7 @@ export interface Submission {
   tenantId: string;
   studentName: string;
   studentInitials: string;
-  /** UI アバター色 (c1–c6) */
-  avatarTone: string;
+  avatarTone: ReviewAvatarTone;
   courseTitle: string;
   sectionTitle?: string;
   assignmentTitle: string;

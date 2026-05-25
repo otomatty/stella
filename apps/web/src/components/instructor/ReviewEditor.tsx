@@ -57,14 +57,22 @@ export const ReviewEditor = ({
   const [notes, setNotes] = useState('');
   const [draftLoading, setDraftLoading] = useState(false);
   const draftRequestedRef = useRef<string | null>(null);
+  const loadedSubmissionIdRef = useRef<string | null>(null);
 
+  // 提出物の切替時のみローカル編集状態を初期化 (AI 下書き到着で上書きしない)
   useEffect(() => {
-    if (!submission) return;
+    if (!submission) {
+      loadedSubmissionIdRef.current = null;
+      return;
+    }
+    if (loadedSubmissionIdRef.current === submission.id) return;
+    loadedSubmissionIdRef.current = submission.id;
+    draftRequestedRef.current = null;
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
     setVerdict(submission.verdict);
-  }, [submission?.id, submission?.aiSuggestions, submission?.rubric, submission?.reviewNotes, submission?.verdict]);
+  }, [submission]);
 
   useEffect(() => {
     if (!submission || submission.aiReady) return;
@@ -81,18 +89,26 @@ export const ReviewEditor = ({
           language: 'js',
         });
         if (cancelled) return;
-        update(submission.id, {
+        const saved = update(submission.id, {
           aiReady: true,
           aiSuggestions: draft.suggestions,
           rubric: draft.rubric,
           reviewNotes: draft.notes || submission.reviewNotes,
         });
+        if (!saved) {
+          toast.error('AI 下書きの保存に失敗しました');
+          draftRequestedRef.current = null;
+          return;
+        }
         setSuggestions(draft.suggestions);
         setRubric(draft.rubric);
-        if (draft.notes) setNotes(draft.notes);
+        if (draft.notes) {
+          setNotes((prev) => (prev.trim() ? prev : draft.notes));
+        }
       } catch (err) {
         console.error('[ReviewEditor] draft failed', err);
         toast.error('AI 下書きの生成に失敗しました');
+        draftRequestedRef.current = null;
       } finally {
         if (!cancelled) setDraftLoading(false);
       }
@@ -129,11 +145,15 @@ export const ReviewEditor = ({
   );
 
   const handleFinalize = (v: ReviewVerdict) => {
-    finalize(submission.id, v, {
+    const saved = finalize(submission.id, v, {
       reviewNotes: notes,
       aiSuggestions: suggestions,
       rubric,
     });
+    if (!saved) {
+      toast.error('採点の保存に失敗しました');
+      return;
+    }
     setVerdict(v);
     toast.success(
       v === 'pass'

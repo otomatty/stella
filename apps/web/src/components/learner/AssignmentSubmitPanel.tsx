@@ -40,7 +40,7 @@ export function AssignmentSubmitPanel({
     }
     setSubmitting(true);
     try {
-      createSubmission(tenantId, {
+      const created = createSubmission(tenantId, {
         studentName,
         studentInitials,
         avatarTone: 'c1',
@@ -52,6 +52,10 @@ export function AssignmentSubmitPanel({
         codeLines: code.split('\n'),
         priority: 'normal',
       });
+      if (!created) {
+        toast.error('提出の保存に失敗しました。ストレージ容量を確認してください。');
+        return;
+      }
       toast.success('講師に提出しました。添削結果は Q&A または通知でお知らせします。');
       onSubmitted?.();
     } finally {

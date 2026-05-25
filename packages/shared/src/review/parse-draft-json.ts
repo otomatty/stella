@@ -53,13 +53,14 @@ function normalizeRubric(raw: unknown): RubricCriterion[] {
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
-    const name = typeof o.name === "string" ? o.name : `項目${++n}`;
+    const name = typeof o.name === "string" ? o.name : `項目${n + 1}`;
     const desc = typeof o.desc === "string" ? o.desc : "";
     const max = typeof o.max === "number" ? Math.min(10, Math.max(1, o.max)) : 4;
     const score =
       typeof o.score === "number"
         ? Math.min(max, Math.max(0, Math.floor(o.score)))
         : 0;
+    n += 1;
     out.push({
       id: typeof o.id === "string" ? o.id : `rb${n}`,
       name,

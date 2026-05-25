@@ -10,7 +10,8 @@ import { MissingApiKeyError } from "./anthropic.js";
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 2048;
-const REQUEST_TIMEOUT_MS = 60_000;
+/** Cloudflare Workers CPU 制限に合わせて chat ストリームより短めに設定 */
+const REQUEST_TIMEOUT_MS = 25_000;
 
 interface CompleteArgs {
   env: Pick<Env, "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL">;

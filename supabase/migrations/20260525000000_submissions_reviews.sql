@@ -45,7 +45,7 @@ create policy submissions_student_select on public.submissions
   for select to authenticated
   using (student_id = auth.uid());
 
--- 講師 / 管理者: テナント内の pending を閲覧・更新
+-- 講師 / 管理者: テナント内の提出物を閲覧・更新 (status はアプリ層で pending 等にマップ)
 create policy submissions_instructor_select on public.submissions
   for select to authenticated
   using (
@@ -56,6 +56,10 @@ create policy submissions_instructor_select on public.submissions
 create policy submissions_instructor_update on public.submissions
   for update to authenticated
   using (
+    tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+    and (select role from public.profiles where id = auth.uid()) in ('instructor','admin')
+  )
+  with check (
     tenant_id = (select tenant_id from public.profiles where id = auth.uid())
     and (select role from public.profiles where id = auth.uid()) in ('instructor','admin')
   );

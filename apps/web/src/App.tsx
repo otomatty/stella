@@ -156,6 +156,11 @@ export default function App() {
     }
   }, [page]);
 
+  // テナント / ロール切替時に添削対象の選択をクリア
+  useEffect(() => {
+    setReviewSubmissionId(null);
+  }, [tenant.id, role]);
+
   useEffect(() => {
     localStorage.setItem(
       'lms_state',
@@ -192,6 +197,7 @@ export default function App() {
   // Pseudo-routes
   useEffect(() => {
     if (page === '__logout') {
+      setReviewSubmissionId(null);
       void (async () => {
         try {
           if (supabaseEnabled) {
@@ -208,6 +214,7 @@ export default function App() {
       })();
     }
     if (page === '__switch_tenant') {
+      setReviewSubmissionId(null);
       setStage('tenant-select');
       setPage('dash');
     }

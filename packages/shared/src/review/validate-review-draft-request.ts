@@ -1,5 +1,8 @@
 import type { ReviewDraftRequest } from "./types.js";
 
+/** 推論コスト抑制のための提出コード上限 (文字数) */
+export const MAX_REVIEW_CODE_LENGTH = 80_000;
+
 type Result =
   | { ok: true; body: ReviewDraftRequest }
   | { ok: false; status: 400; message: string };
@@ -14,6 +17,13 @@ export function validateReviewDraftRequest(raw: unknown): Result {
   }
   if (typeof o.code !== "string") {
     return { ok: false, status: 400, message: "code is required" };
+  }
+  if (o.code.length > MAX_REVIEW_CODE_LENGTH) {
+    return {
+      ok: false,
+      status: 400,
+      message: `code exceeds maximum length (${MAX_REVIEW_CODE_LENGTH})`,
+    };
   }
   const language =
     o.language === "sql" || o.language === "js" ? o.language : undefined;

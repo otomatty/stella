@@ -26,7 +26,10 @@ export function buildReviewDraftSystemPrompt(): string {
 
 export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
   const fenceLang = req.language === "sql" ? "sql" : "javascript";
-  const fence = "```" + fenceLang;
+  const longestBacktickRun = (req.code.match(/`+/g) ?? [])
+    .map((m) => m.length)
+    .reduce((a, b) => (a > b ? a : b), 0);
+  const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
   return [
     `<review_context>`,
     `  <courseTitle>${escapeXml(req.courseTitle ?? "コース")}</courseTitle>`,
@@ -34,9 +37,9 @@ export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
     `</review_context>`,
     "",
     "提出コード:",
-    fence,
+    fenceTicks + fenceLang,
     req.code,
-    "```",
+    fenceTicks,
   ].join("\n");
 }
 

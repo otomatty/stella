@@ -56,7 +56,7 @@ reviewDraftRoute.post("/api/review-draft", async (c) => {
     if (e instanceof MissingApiKeyError) {
       return c.json(buildHeuristicReviewDraft(body.code));
     }
-    const message = e instanceof Error ? e.message : "Review draft failed";
-    return c.json({ error: message }, 500);
+    console.error("[review-draft]", e);
+    return c.json({ error: "AI 下書きの生成に失敗しました" }, 500);
   }
 });

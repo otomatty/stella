@@ -22,9 +22,17 @@ type StoreV1 = {
 };
 
 let cache: StoreV1 | null = null;
+let storeVersion = 0;
 const listeners = new Set<() => void>();
+/** useSyncExternalStore 用: 同一 storeVersion なら同じ配列参照を返す */
+const listSnapshotCache = new Map<
+  string,
+  { version: number; snapshot: Submission[] }
+>();
 
 function emit() {
+  storeVersion += 1;
+  listSnapshotCache.clear();
   listeners.forEach((fn) => fn());
 }
 
@@ -50,15 +58,29 @@ function loadStore(): StoreV1 {
   return cache;
 }
 
-function saveStore(store: StoreV1) {
-  cache = store;
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch (err) {
-    console.error("[submissions-store] save failed", err);
+function saveStore(store: StoreV1): boolean {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    } catch (err) {
+      console.error("[submissions-store] save failed", err);
+      return false;
+    }
   }
+  cache = store;
   emit();
+  return true;
+}
+
+function withTenantList(
+  store: StoreV1,
+  tenantId: string,
+  list: Submission[],
+): StoreV1 {
+  return {
+    ...store,
+    byTenant: { ...store.byTenant, [tenantId]: list },
+  };
 }
 
 function relativeSubmittedAt(ms: number): string {
@@ -85,13 +107,16 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
       avatarTone: r.c,
       courseTitle: r.course,
       assignmentTitle: r.assignment,
-      codeLines: isFirst ? [...SUBMITTED_CODE] : [`// ${r.assignment} — ${r.student}`, "// (デモ提出コード)", ""],
+      codeLines: isFirst
+        ? [...SUBMITTED_CODE]
+        : [`// ${r.assignment} — ${r.student}`, "// (デモ提出コード)", ""],
       submittedAt,
       status: "pending" as const,
       priority: r.priority,
       attempt: r.assignment.includes("再提出") ? 2 : 1,
       aiReady: r.aiReady,
-      aiSuggestions: isFirst && r.aiReady ? AI_SUGGESTIONS.map((s) => ({ ...s })) : [],
+      aiSuggestions:
+        isFirst && r.aiReady ? AI_SUGGESTIONS.map((s) => ({ ...s })) : [],
       rubric: isFirst && r.aiReady ? RUBRIC.map((x) => ({ ...x })) : [],
       reviewNotes: isFirst
         ? "コードは動作していますが、innerHTML による XSS リスクと等価演算子の使い方に改善の余地があります。"
@@ -101,24 +126,33 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
   });
 }
 
-function ensureTenant(tenantId: Tenant["id"]): Submission[] {
-  const store = loadStore();
-  if (!store.byTenant[tenantId]?.length) {
-    store.byTenant[tenantId] = seedForTenant(tenantId);
-    saveStore(store);
-  }
-  return store.byTenant[tenantId];
+function tenantList(store: StoreV1, tenantId: Tenant["id"]): Submission[] {
+  const list = store.byTenant[tenantId];
+  if (list?.length) return list;
+  const seeded = seedForTenant(tenantId);
+  const next = withTenantList(store, tenantId, seeded);
+  if (!saveStore(next)) return seeded;
+  return loadStore().byTenant[tenantId] ?? seeded;
 }
 
 export function listSubmissions(tenantId: Tenant["id"]): Submission[] {
-  return [...ensureTenant(tenantId)].sort((a, b) => b.submittedAt - a.submittedAt);
+  const cached = listSnapshotCache.get(tenantId);
+  if (cached && cached.version === storeVersion) {
+    return cached.snapshot;
+  }
+  const store = loadStore();
+  const list = tenantList(store, tenantId);
+  const snapshot = [...list].sort((a, b) => b.submittedAt - a.submittedAt);
+  listSnapshotCache.set(tenantId, { version: storeVersion, snapshot });
+  return snapshot;
 }
 
 export function getSubmission(
   tenantId: Tenant["id"],
   id: string,
 ): Submission | undefined {
-  return ensureTenant(tenantId).find((s) => s.id === id);
+  const store = loadStore();
+  return tenantList(store, tenantId).find((s) => s.id === id);
 }
 
 export function updateSubmission(
@@ -127,13 +161,13 @@ export function updateSubmission(
   patch: Partial<Submission>,
 ): Submission | undefined {
   const store = loadStore();
-  const list = ensureTenant(tenantId);
+  const list = tenantList(store, tenantId);
   const idx = list.findIndex((s) => s.id === id);
   if (idx < 0) return undefined;
-  list[idx] = { ...list[idx], ...patch };
-  store.byTenant[tenantId] = list;
-  saveStore(store);
-  return list[idx];
+  const updated = { ...list[idx], ...patch };
+  const newList = list.map((s, i) => (i === idx ? updated : s));
+  if (!saveStore(withTenantList(store, tenantId, newList))) return undefined;
+  return updated;
 }
 
 export function createSubmission(
@@ -152,10 +186,13 @@ export function createSubmission(
     | "attempt"
     | "priority"
   > & { priority?: Submission["priority"]; attempt?: number },
-): Submission {
+): Submission | null {
   const store = loadStore();
-  const list = ensureTenant(tenantId);
-  const id = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const list = tenantList(store, tenantId);
+  const id =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `sub-${Date.now()}`;
   const submission: Submission = {
     id,
     tenantId,
@@ -170,9 +207,8 @@ export function createSubmission(
     attempt: input.attempt ?? 1,
     ...input,
   };
-  list.unshift(submission);
-  store.byTenant[tenantId] = list;
-  saveStore(store);
+  const newList = [submission, ...list];
+  if (!saveStore(withTenantList(store, tenantId, newList))) return null;
   return submission;
 }
 
@@ -200,7 +236,9 @@ export function formatSubmittedAt(ms: number): string {
 }
 
 export function countPending(tenantId: Tenant["id"]): number {
-  return ensureTenant(tenantId).filter((s) => s.status === "pending").length;
+  const store = loadStore();
+  return tenantList(store, tenantId).filter((s) => s.status === "pending")
+    .length;
 }
 
 export function subscribeSubmissions(listener: () => void): () => void {
@@ -211,9 +249,13 @@ export function subscribeSubmissions(listener: () => void): () => void {
       emit();
     }
   };
-  window.addEventListener("storage", onStorage);
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", onStorage);
+  }
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("storage", onStorage);
+    }
   };
 }
