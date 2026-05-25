@@ -15,6 +15,7 @@ create table if not exists public.submissions (
   section_title text,
   assignment_title text not null,
   code text not null,
+  -- status: 提出ライフサイクル (passed/failed は verdict pass/fail の確定結果)
   status text not null check (status in ('pending','passed','resubmit','failed')) default 'pending',
   priority text not null check (priority in ('high','normal','low')) default 'normal',
   attempt int not null default 1,
@@ -62,4 +63,12 @@ create policy submissions_instructor_update on public.submissions
   with check (
     tenant_id = (select tenant_id from public.profiles where id = auth.uid())
     and (select role from public.profiles where id = auth.uid()) in ('instructor','admin')
+    and (
+      student_id is null
+      or exists (
+        select 1 from public.profiles p
+        where p.id = student_id
+          and p.tenant_id = (select tenant_id from public.profiles where id = auth.uid())
+      )
+    )
   );

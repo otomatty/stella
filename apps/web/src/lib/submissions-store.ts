@@ -128,7 +128,7 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
 
 function tenantList(store: StoreV1, tenantId: Tenant["id"]): Submission[] {
   const list = store.byTenant[tenantId];
-  if (list?.length) return list;
+  if (list !== undefined) return list;
   const seeded = seedForTenant(tenantId);
   const next = withTenantList(store, tenantId, seeded);
   if (!saveStore(next)) return seeded;

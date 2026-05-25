@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
 import { TENANTS, CURRENT_USER } from '@/data/fixtures';
@@ -122,6 +122,9 @@ export default function App() {
   const [reviewSubmissionId, setReviewSubmissionId] = useState<string | null>(
     () => loadSaved()?.reviewSubmissionId ?? null,
   );
+  const prevSessionRef = useRef<{ tenantId: Tenant['id']; role: Role } | null>(
+    null,
+  );
 
   // Supabase が設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
   const effectiveRole: Role = supabaseEnabled && profile
@@ -156,9 +159,13 @@ export default function App() {
     }
   }, [page]);
 
-  // テナント / ロール切替時に添削対象の選択をクリア
+  // テナント / ロール切替時のみ添削対象をクリア (初回マウントでは loadSaved を維持)
   useEffect(() => {
-    setReviewSubmissionId(null);
+    const prev = prevSessionRef.current;
+    if (prev && (prev.tenantId !== tenant.id || prev.role !== role)) {
+      setReviewSubmissionId(null);
+    }
+    prevSessionRef.current = { tenantId: tenant.id, role };
   }, [tenant.id, role]);
 
   useEffect(() => {

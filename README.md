@@ -59,16 +59,21 @@ CMS 機能 (`/admin/courses` 等) を使う場合は DB スキーマと初期デ
 1. Supabase Studio の SQL Editor で `supabase/migrations/20260519000000_cms_foundation.sql` を貼って実行 (テーブル / RLS / Storage ポリシーが作成される)
 2. Authentication → Providers で **Email (Magic Link)** を有効化
 3. fixtures から既存コース・課題を取り込むには service_role キーを使った seed スクリプト:
+
    ```bash
    SUPABASE_URL=https://xxxxx.supabase.co \
    SUPABASE_SERVICE_ROLE_KEY=... \
      bun run seed:fixtures
    ```
+
    service_role キーは絶対にクライアントに公開しない (`apps/web/.env.local` の `SUPABASE_SERVICE_ROLE_KEY` はビルドに含まれないサーバ専用変数)。
+
 4. 初回サインイン後は `profiles` に `role='student'` で行が作られる。 管理者にしたい場合は SQL Editor で
+
    ```sql
    update public.profiles set role = 'admin' where email = 'you@example.com';
    ```
+
    を実行する (招待制フローは未実装)。
 
 ### 講師添削 (Issue #8)

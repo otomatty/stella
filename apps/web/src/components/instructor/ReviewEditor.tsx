@@ -63,11 +63,13 @@ export const ReviewEditor = ({
   useEffect(() => {
     if (!submission) {
       loadedSubmissionIdRef.current = null;
+      setDraftLoading(false);
       return;
     }
     if (loadedSubmissionIdRef.current === submission.id) return;
     loadedSubmissionIdRef.current = submission.id;
     draftRequestedRef.current = null;
+    setDraftLoading(false);
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
