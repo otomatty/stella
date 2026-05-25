@@ -22,6 +22,8 @@ bun run dev:api    # Wrangler (Cloudflare Workers) on :8787
 
 The web app works **without Supabase or Anthropic credentials** using hardcoded fixture data and a mock login flow. All roles (Learner, Instructor, Admin) are testable with the Tweaks panel (press backtick `` ` `` key).
 
+**Instructor review (Issue #8 / P3):** Submissions persist in `localStorage` (`lms_submissions_v1`). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`).
+
 ### Key caveats
 
 - **Vite dev server + browser resource limits**: The app loads many ES modules in dev mode. If the browser shows `ERR_INSUFFICIENT_RESOURCES`, use `bun run build` then `bun run preview` as an alternative for manual testing.

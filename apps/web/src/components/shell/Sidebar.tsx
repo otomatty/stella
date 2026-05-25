@@ -80,9 +80,18 @@ interface SidebarProps {
   setPage: (page: string) => void;
   tenant: Tenant;
   user: User;
+  /** 講師ロール時の添削待ち件数 (未指定時は NAV の既定値) */
+  reviewQueueCount?: number;
 }
 
-export const Sidebar = ({ role, page, setPage, tenant, user }: SidebarProps) => (
+export const Sidebar = ({
+  role,
+  page,
+  setPage,
+  tenant,
+  user,
+  reviewQueueCount,
+}: SidebarProps) => (
   <aside className="bg-card border-r border-border p-3 pb-4 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto w-[232px]">
     <div className="pt-1 px-2.5 pb-4 border-b border-border mb-3">
       <Brand size="sm" />
@@ -91,16 +100,22 @@ export const Sidebar = ({ role, page, setPage, tenant, user }: SidebarProps) => 
     <div className="px-3 pt-3.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-ink-4">
       メニュー
     </div>
-    {NAV[role].map((link) => (
-      <SidebarLink
-        key={link.id}
-        icon={link.icon}
-        label={link.label}
-        count={link.count}
-        active={page === link.id}
-        onClick={() => setPage(link.id)}
-      />
-    ))}
+    {NAV[role].map((link) => {
+      const count =
+        link.id === 'review-queue' && typeof reviewQueueCount === 'number'
+          ? reviewQueueCount
+          : link.count;
+      return (
+        <SidebarLink
+          key={link.id}
+          icon={link.icon}
+          label={link.label}
+          count={count}
+          active={page === link.id}
+          onClick={() => setPage(link.id)}
+        />
+      );
+    })}
 
     <div className="px-3 pt-3.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-ink-4">
       一般

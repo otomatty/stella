@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
 import { TENANTS, CURRENT_USER } from '@/data/fixtures';
@@ -39,6 +39,7 @@ import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
+import { usePendingReviewCount } from '@/hooks/useSubmissions';
 
 type Stage = 'login' | 'tenant-select' | 'app';
 
@@ -48,6 +49,7 @@ interface PersistedState {
   tenantId?: Tenant['id'];
   page?: string;
   showAIBot?: boolean;
+  reviewSubmissionId?: string | null;
 }
 
 const DEFAULTS = {
@@ -117,6 +119,12 @@ export default function App() {
   const [showAIBot, setShowAIBot] = useState(() =>
     loadSaved()?.showAIBot ?? DEFAULTS.showAIBot,
   );
+  const [reviewSubmissionId, setReviewSubmissionId] = useState<string | null>(
+    () => loadSaved()?.reviewSubmissionId ?? null,
+  );
+  const prevSessionRef = useRef<{ tenantId: Tenant['id']; role: Role } | null>(
+    null,
+  );
 
   // Supabase が設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
   const effectiveRole: Role = supabaseEnabled && profile
@@ -142,6 +150,7 @@ export default function App() {
   }, [supabaseEnabled, profile]);
 
   const { courses } = useCoursesForTenant(effectiveTenant.id);
+  const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
 
   // ページがレッスン以外に戻ったら context を general にリセット
   useEffect(() => {
@@ -150,12 +159,28 @@ export default function App() {
     }
   }, [page]);
 
+  // テナント / ロール切替時のみ添削対象をクリア (初回マウントでは loadSaved を維持)
+  useEffect(() => {
+    const prev = prevSessionRef.current;
+    if (prev && (prev.tenantId !== tenant.id || prev.role !== role)) {
+      setReviewSubmissionId(null);
+    }
+    prevSessionRef.current = { tenantId: tenant.id, role };
+  }, [tenant.id, role]);
+
   useEffect(() => {
     localStorage.setItem(
       'lms_state',
-      JSON.stringify({ stage, role, tenantId: tenant.id, page, showAIBot }),
+      JSON.stringify({
+        stage,
+        role,
+        tenantId: tenant.id,
+        page,
+        showAIBot,
+        reviewSubmissionId,
+      }),
     );
-  }, [stage, role, tenant, page, showAIBot]);
+  }, [stage, role, tenant, page, showAIBot, reviewSubmissionId]);
 
   // Backtick toggle for tweaks panel
   useEffect(() => {
@@ -179,6 +204,7 @@ export default function App() {
   // Pseudo-routes
   useEffect(() => {
     if (page === '__logout') {
+      setReviewSubmissionId(null);
       void (async () => {
         try {
           if (supabaseEnabled) {
@@ -195,6 +221,7 @@ export default function App() {
       })();
     }
     if (page === '__switch_tenant') {
+      setReviewSubmissionId(null);
       setStage('tenant-select');
       setPage('dash');
     }
@@ -286,6 +313,9 @@ export default function App() {
           setPage={setPage}
           tenant={effectiveTenant}
           user={effectiveUser}
+          reviewQueueCount={
+            effectiveRole === 'instructor' ? pendingReviewCount : undefined
+          }
         />
         <div className="min-w-0 flex flex-col">
           <Topbar crumbs={crumbs} />
@@ -300,6 +330,10 @@ export default function App() {
               onOpenAIBot: () => setAiOpen(true),
               setAIContext: setAiContext,
               tenantId: effectiveTenant.id,
+              reviewSubmissionId,
+              onOpenReview: setReviewSubmissionId,
+              studentName: effectiveUser.name,
+              studentInitials: effectiveUser.initials,
             })}
           </div>
         </div>
@@ -355,6 +389,10 @@ interface RenderParams {
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
   tenantId: Tenant['id'];
+  reviewSubmissionId: string | null;
+  onOpenReview: (id: string) => void;
+  studentName: string;
+  studentInitials: string;
 }
 
 function renderPage({
@@ -367,6 +405,10 @@ function renderPage({
   onOpenAIBot,
   setAIContext,
   tenantId,
+  reviewSubmissionId,
+  onOpenReview,
+  studentName,
+  studentInitials,
 }: RenderParams) {
   if (role === 'learner') {
     if (page === 'dash') return <LearnerDashboard setPage={setPage} courses={courses} />;
@@ -392,6 +434,9 @@ function renderPage({
           setPage={setPage}
           onOpenAIBot={onOpenAIBot}
           setAIContext={setAIContext}
+          tenantId={tenantId}
+          studentName={studentName}
+          studentInitials={studentInitials}
         />
       );
     }
@@ -399,9 +444,30 @@ function renderPage({
     if (page === 'qa') return <StandaloneQA />;
   }
   if (role === 'instructor') {
-    if (page === 'dash') return <InstructorDashboard setPage={setPage} />;
-    if (page === 'review-queue') return <ReviewQueue setPage={setPage} />;
-    if (page === 'review') return <ReviewEditor setPage={setPage} />;
+    if (page === 'dash')
+      return (
+        <InstructorDashboard
+          tenantId={tenantId}
+          setPage={setPage}
+          onOpenReview={onOpenReview}
+        />
+      );
+    if (page === 'review-queue')
+      return (
+        <ReviewQueue
+          tenantId={tenantId}
+          setPage={setPage}
+          onOpenReview={onOpenReview}
+        />
+      );
+    if (page === 'review')
+      return (
+        <ReviewEditor
+          tenantId={tenantId}
+          submissionId={reviewSubmissionId}
+          setPage={setPage}
+        />
+      );
     if (page === 'students' || page === 'qa' || page === 'courses')
       return <InstructorGeneric page={page} />;
   }

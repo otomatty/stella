@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   ChevronLeft,
   Sparkles,
@@ -10,6 +11,7 @@ import {
   X,
   Edit,
   Info,
+  Loader2,
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,32 +19,117 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import {
-  SUBMITTED_CODE,
-  AI_SUGGESTIONS,
-  RUBRIC,
-} from '@/data/fixtures';
-import type { AISuggestion, RubricCriterion } from '@/data/types';
+import type {
+  ReviewSuggestion,
+  RubricCriterion,
+  ReviewVerdict,
+} from '@falcon/shared/review/types';
+import { useSubmission, useSubmissions } from '@/hooks/useSubmissions';
+import { fetchReviewDraft } from '@/lib/review-draft-api';
+import { formatSubmittedAt } from '@/lib/submissions-store';
+import type { Tenant } from '@/data/types';
 import { cn } from '@/lib/utils';
 
-const severityDot: Record<AISuggestion['severity'], string> = {
+const severityDot: Record<ReviewSuggestion['severity'], string> = {
   high: 'bg-danger',
   med: 'bg-warning',
   low: 'bg-info',
 };
 
 interface ReviewEditorProps {
+  tenantId: Tenant['id'];
+  submissionId: string | null;
   setPage: (page: string) => void;
 }
 
-export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
+export const ReviewEditor = ({
+  tenantId,
+  submissionId,
+  setPage,
+}: ReviewEditorProps) => {
+  const submission = useSubmission(tenantId, submissionId);
+  const { update, finalize } = useSubmissions(tenantId);
+
   const [tab, setTab] = useState('ai');
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>(AI_SUGGESTIONS);
-  const [rubric, setRubric] = useState<RubricCriterion[]>(RUBRIC);
-  const [verdict, setVerdict] = useState<'pass' | 'resubmit' | 'fail' | null>(null);
-  const [notes, setNotes] = useState(
-    'コードは動作していますが、innerHTML による XSS リスクと等価演算子の使い方に改善の余地があります。ES2015 以降の記法に統一すると、今後の可読性も上がります。',
-  );
+  const [suggestions, setSuggestions] = useState<ReviewSuggestion[]>([]);
+  const [rubric, setRubric] = useState<RubricCriterion[]>([]);
+  const [verdict, setVerdict] = useState<ReviewVerdict | null>(null);
+  const [notes, setNotes] = useState('');
+  const [draftLoading, setDraftLoading] = useState(false);
+  const draftRequestedRef = useRef<string | null>(null);
+  const loadedSubmissionIdRef = useRef<string | null>(null);
+
+  // 提出物の切替時のみローカル編集状態を初期化 (AI 下書き到着で上書きしない)
+  useEffect(() => {
+    if (!submission) {
+      loadedSubmissionIdRef.current = null;
+      setDraftLoading(false);
+      return;
+    }
+    if (loadedSubmissionIdRef.current === submission.id) return;
+    loadedSubmissionIdRef.current = submission.id;
+    draftRequestedRef.current = null;
+    setDraftLoading(false);
+    setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
+    setRubric(submission.rubric.map((r) => ({ ...r })));
+    setNotes(submission.reviewNotes);
+    setVerdict(submission.verdict);
+  }, [submission]);
+
+  useEffect(() => {
+    if (!submission || submission.aiReady) return;
+    if (draftRequestedRef.current === submission.id) return;
+    draftRequestedRef.current = submission.id;
+    let cancelled = false;
+    setDraftLoading(true);
+    (async () => {
+      try {
+        const draft = await fetchReviewDraft({
+          assignmentTitle: submission.assignmentTitle,
+          courseTitle: submission.courseTitle,
+          code: submission.codeLines.join('\n'),
+          language: 'js',
+        });
+        if (cancelled) return;
+        const saved = update(submission.id, {
+          aiReady: true,
+          aiSuggestions: draft.suggestions,
+          rubric: draft.rubric,
+          reviewNotes: draft.notes || submission.reviewNotes,
+        });
+        if (!saved) {
+          toast.error('AI 下書きの保存に失敗しました');
+          draftRequestedRef.current = null;
+          return;
+        }
+        setSuggestions(draft.suggestions);
+        setRubric(draft.rubric);
+        if (draft.notes) {
+          setNotes((prev) => (prev.trim() ? prev : draft.notes));
+        }
+      } catch (err) {
+        console.error('[ReviewEditor] draft failed', err);
+        toast.error('AI 下書きの生成に失敗しました');
+        draftRequestedRef.current = null;
+      } finally {
+        if (!cancelled) setDraftLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submission, update]);
+
+  if (!submissionId || !submission) {
+    return (
+      <div className="p-7 text-center text-ink-3">
+        <p className="mb-4">提出物が選択されていません。</p>
+        <Button type="button" onClick={() => setPage('review-queue')}>
+          キューに戻る
+        </Button>
+      </div>
+    );
+  }
 
   const adopt = (id: string) =>
     setSuggestions((s) => s.map((x) => (x.id === id ? { ...x, adopted: true } : x)));
@@ -53,11 +140,34 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
 
   const totalScore = rubric.reduce((a, r) => a + r.score, 0);
   const maxScore = rubric.reduce((a, r) => a + r.max, 0);
-  const pct = Math.round((totalScore / maxScore) * 100);
+  const pct = maxScore ? Math.round((totalScore / maxScore) * 100) : 0;
 
   const commentedLines = new Set(
     suggestions.filter((s) => s.adopted === true).map((s) => s.line),
   );
+
+  const handleFinalize = (v: ReviewVerdict) => {
+    const saved = finalize(submission.id, v, {
+      reviewNotes: notes,
+      aiSuggestions: suggestions,
+      rubric,
+    });
+    if (!saved) {
+      toast.error('採点の保存に失敗しました');
+      return;
+    }
+    setVerdict(v);
+    toast.success(
+      v === 'pass'
+        ? '合格として確定しました（デモ: 通知は未送信）'
+        : v === 'resubmit'
+          ? '再提出を依頼しました'
+          : '不合格として確定しました',
+    );
+    setPage('review-queue');
+  };
+
+  const codeLines = submission.codeLines;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-57px)]">
@@ -72,21 +182,32 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
         </button>
         <div className="w-px h-5 bg-border mx-1.5" />
         <div>
-          <div className="text-sm font-semibold">ランディングページ模写 · 田中 翔太</div>
+          <div className="text-sm font-semibold">
+            {submission.assignmentTitle} · {submission.studentName}
+          </div>
           <div className="text-[11.5px] text-ink-3">
-            Web開発基礎 / セクション 02 · 提出 2時間前 · 1回目
+            {submission.courseTitle}
+            {submission.sectionTitle ? ` / ${submission.sectionTitle}` : ''} · 提出{' '}
+            {formatSubmittedAt(submission.submittedAt)} · {submission.attempt}回目
           </div>
         </div>
         <div className="flex-1" />
-        <Badge variant="accent">
-          <Sparkles size={10} />
-          AI下書き準備済
-        </Badge>
-        <Button>
+        {draftLoading ? (
+          <Badge variant="info">
+            <Loader2 size={10} className="animate-spin" />
+            AI生成中
+          </Badge>
+        ) : submission.aiReady ? (
+          <Badge variant="accent">
+            <Sparkles size={10} />
+            AI下書き準備済
+          </Badge>
+        ) : null}
+        <Button type="button" onClick={() => handleFinalize('resubmit')}>
           <ThumbsDown size={13} />
           再提出
         </Button>
-        <Button variant="primary" onClick={() => setVerdict('pass')}>
+        <Button type="button" variant="primary" onClick={() => handleFinalize('pass')}>
           <ThumbsUp size={13} />
           合格として確定
         </Button>
@@ -95,14 +216,12 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
       <div className="grid" style={{ gridTemplateColumns: '1fr 380px', minHeight: 0, flex: 1 }}>
         <div className="min-w-0 overflow-hidden flex flex-col">
           <div className="px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
-            <Badge>script.js</Badge>
-            <Badge>index.html</Badge>
-            <Badge>style.css</Badge>
+            <Badge>提出コード</Badge>
             <div className="flex-1" />
-            <span className="text-[11.5px] text-ink-3">4ファイル · 412行</span>
+            <span className="text-[11.5px] text-ink-3">{codeLines.length}行</span>
           </div>
           <div className="flex-1 overflow-auto font-mono text-[12.5px] leading-[1.6] py-3.5 code-viewer-bg">
-            {SUBMITTED_CODE.map((line, i) => {
+            {codeLines.map((line, i) => {
               const lineNum = i + 1;
               const isCommented = commentedLines.has(lineNum);
               return (
@@ -163,6 +282,13 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                 </div>
               </div>
 
+              {draftLoading && suggestions.length === 0 ? (
+                <div className="text-ink-3 text-[12.5px] flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  AI 下書きを生成しています…
+                </div>
+              ) : null}
+
               {suggestions.map((s) => (
                 <div
                   key={s.id}
@@ -189,6 +315,7 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                   <div className="flex gap-1.5">
                     <Button
                       size="sm"
+                      type="button"
                       onClick={() => adopt(s.id)}
                       disabled={s.adopted === true}
                     >
@@ -197,13 +324,14 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                     </Button>
                     <Button
                       size="sm"
+                      type="button"
                       onClick={() => reject(s.id)}
                       disabled={s.adopted === false}
                     >
                       <X size={11} />
                       却下
                     </Button>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" type="button" variant="ghost" disabled title="今後対応">
                       <Edit size={11} />
                       編集
                     </Button>
@@ -237,7 +365,7 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                     <div className="text-[11.5px] text-ink-3 mt-0.5">{r.desc}</div>
                   </div>
                   <div className="flex gap-1">
-                    {[1, 2, 3, 4].map((n) => (
+                    {Array.from({ length: r.max }, (_, i) => i + 1).map((n) => (
                       <button
                         key={n}
                         type="button"
@@ -255,14 +383,6 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                   </div>
                 </div>
               ))}
-
-              <div className="flex gap-2.5 items-start bg-gradient-to-br from-[oklch(97%_0.02_265)] to-[oklch(94%_0.04_265)] border border-[oklch(85%_0.06_265)] rounded-md px-3.5 py-3 mt-4 text-[12.5px] text-brand-ink">
-                <Sparkles size={14} />
-                <div>
-                  <strong className="font-semibold">AIの採点下書き:</strong> 3 / 3 / 2 / 1 (計 9/16
-                  · 56%)。セキュリティと設計の観点で減点。
-                </div>
-              </div>
             </TabsContent>
 
             <TabsContent
@@ -279,6 +399,7 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
               <Label>判定</Label>
               <div className="flex gap-2 mb-4">
                 <Button
+                  type="button"
                   variant={verdict === 'pass' ? 'primary' : 'default'}
                   onClick={() => setVerdict('pass')}
                 >
@@ -286,12 +407,14 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                   合格
                 </Button>
                 <Button
+                  type="button"
                   variant={verdict === 'resubmit' ? 'primary' : 'default'}
                   onClick={() => setVerdict('resubmit')}
                 >
                   再提出
                 </Button>
                 <Button
+                  type="button"
                   variant={verdict === 'fail' ? 'primary' : 'default'}
                   onClick={() => setVerdict('fail')}
                 >
@@ -299,9 +422,19 @@ export const ReviewEditor = ({ setPage }: ReviewEditorProps) => {
                 </Button>
               </div>
 
+              <Button
+                type="button"
+                variant="accent"
+                className="w-full mb-3"
+                onClick={() => verdict && handleFinalize(verdict)}
+                disabled={!verdict}
+              >
+                採点を確定
+              </Button>
+
               <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 text-[12.5px] text-brand-ink">
                 <Info size={14} />
-                <div>採点を確定すると受講者にメール + LMS通知が送信されます。</div>
+                <div>採点を確定すると受講者にメール + LMS通知が送信されます（デモでは未送信）。</div>
               </div>
             </TabsContent>
           </Tabs>
@@ -329,7 +462,6 @@ const Count = ({ children }: { children: ReactNode }) => (
   </span>
 );
 
-/* lightweight JS syntax highlighter — returns an array of React children */
 function syntax(line: string): ReactNode {
   type Part = { t: string; cls: string | null };
   const patterns: Array<[RegExp, string]> = [

@@ -35,6 +35,8 @@ import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { cn } from '@/lib/utils';
 import { PracticeWorkspace } from '@/practice/PracticeWorkspace';
+import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
+import type { Tenant } from '@/data/types';
 
 const SlidesViewer = lazy(() =>
   import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
@@ -43,6 +45,9 @@ const SlidesViewer = lazy(() =>
 interface LessonPlayerProps {
   course: Course;
   setPage: (page: string) => void;
+  tenantId: Tenant['id'];
+  studentName: string;
+  studentInitials: string;
   /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
   onOpenAIBot?: () => void;
   /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
@@ -61,6 +66,9 @@ const lessonTypeLabel: Record<LessonType, string> = {
 export const LessonPlayer = ({
   course,
   setPage,
+  tenantId,
+  studentName,
+  studentInitials,
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
@@ -181,6 +189,7 @@ export const LessonPlayer = ({
 
   const isQuiz = lessonObj.type === 'quiz';
   const isCode = lessonObj.type === 'code';
+  const isAssignment = lessonObj.type === 'assignment';
   const isText = lessonObj.type === 'text';
   const isVideo = lessonObj.type === 'video';
   const isSlides = lessonObj.type === 'slides';
@@ -393,6 +402,16 @@ export const LessonPlayer = ({
             <TabsContent value="content">
               {isQuiz ? (
                 <QuizView />
+              ) : isAssignment ? (
+                <AssignmentSubmitPanel
+                  tenantId={tenantId}
+                  course={course}
+                  lesson={lessonObj}
+                  sectionTitle={activeSection?.title}
+                  studentName={studentName}
+                  studentInitials={studentInitials}
+                  onSubmitted={handleMarkComplete}
+                />
               ) : isText ? (
                 <LessonReadable onComplete={handleMarkComplete} />
               ) : isVideo || isSlides ? (

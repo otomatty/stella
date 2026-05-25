@@ -16,11 +16,26 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { REVIEW_QUEUE } from '@/data/fixtures';
-import type { AvatarTone } from '@/data/types';
+import type { AvatarTone, Tenant } from '@/data/types';
+import { useSubmissions } from '@/hooks/useSubmissions';
+import { formatSubmittedAt } from '@/lib/submissions-store';
 import { cn } from '@/lib/utils';
 
-export const InstructorDashboard = ({ setPage }: { setPage: (p: string) => void }) => (
+interface InstructorDashboardProps {
+  tenantId: Tenant['id'];
+  setPage: (p: string) => void;
+  onOpenReview: (submissionId: string) => void;
+}
+
+export const InstructorDashboard = ({
+  tenantId,
+  setPage,
+  onOpenReview,
+}: InstructorDashboardProps) => {
+  const { submissions, pendingCount, aiReadyCount } = useSubmissions(tenantId);
+  const pending = submissions.filter((s) => s.status === 'pending');
+
+  return (
   <>
     <PageHeader
       title="講師ダッシュボード"
@@ -46,12 +61,12 @@ export const InstructorDashboard = ({ setPage }: { setPage: (p: string) => void 
             <Edit size={12} /> 添削待ち
           </>
         }
-        value={6}
+        value={pendingCount}
         unit="件"
         trend={
           <>
             <TrendingUp size={12} />
-            AI下書き準備済 5件
+            AI下書き準備済 {aiReadyCount}件
           </>
         }
         trendDir="up"
@@ -99,30 +114,35 @@ export const InstructorDashboard = ({ setPage }: { setPage: (p: string) => void 
         <CardHeader>
           <CardTitle>添削待ちキュー</CardTitle>
           <CardActions>
-            <Button size="sm" onClick={() => setPage('review-queue')}>
-              すべて見る ({REVIEW_QUEUE.length})
+            <Button size="sm" type="button" onClick={() => setPage('review-queue')}>
+              すべて見る ({pendingCount})
             </Button>
           </CardActions>
         </CardHeader>
         <div>
-          {REVIEW_QUEUE.slice(0, 4).map((r) => (
+          {pending.slice(0, 4).map((r) => (
             <button
               type="button"
               key={r.id}
-              onClick={() => setPage('review')}
+              onClick={() => {
+                onOpenReview(r.id);
+                setPage('review');
+              }}
               className="w-full grid items-center gap-3.5 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken text-left"
               style={{ gridTemplateColumns: 'auto 1fr auto auto auto' }}
             >
               <Avatar size="sm">
-                <AvatarFallback tone={r.c}>{r.initials}</AvatarFallback>
+                <AvatarFallback tone={r.avatarTone as AvatarTone}>
+                  {r.studentInitials}
+                </AvatarFallback>
               </Avatar>
               <div>
                 <div className="text-[13.5px] font-medium">
-                  {r.student} ·{' '}
-                  <span className="text-ink-3 font-normal">{r.assignment}</span>
+                  {r.studentName} ·{' '}
+                  <span className="text-ink-3 font-normal">{r.assignmentTitle}</span>
                 </div>
                 <div className="text-xs text-ink-3 mt-0.5">
-                  {r.course} · 提出 {r.submittedAt}
+                  {r.courseTitle} · 提出 {formatSubmittedAt(r.submittedAt)}
                 </div>
               </div>
               {r.aiReady ? (
@@ -141,6 +161,11 @@ export const InstructorDashboard = ({ setPage }: { setPage: (p: string) => void 
               <ChevronRight size={14} className="text-ink-4" />
             </button>
           ))}
+          {pending.length === 0 ? (
+            <div className="px-4 py-8 text-center text-ink-3 text-[12.5px]">
+              添削待ちの提出物はありません
+            </div>
+          ) : null}
         </div>
       </Card>
 
@@ -207,7 +232,8 @@ export const InstructorDashboard = ({ setPage }: { setPage: (p: string) => void 
       </div>
     </div>
   </>
-);
+  );
+};
 
 const STUDENT_PROG: Array<{
   n: string;
