@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import type { Course, Lesson } from '@/data/types';
-import { createSubmission } from '@/lib/submissions-store';
+import {
+  createSubmission,
+  createSubmissionAsync,
+} from '@/lib/submissions-store';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import type { Tenant } from '@/data/types';
 
 interface AssignmentSubmitPanelProps {
@@ -32,7 +36,7 @@ export function AssignmentSubmitPanel({
   );
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = code.trim();
     if (trimmed.length < 10) {
       toast.error('提出コードを入力してください');
@@ -40,20 +44,27 @@ export function AssignmentSubmitPanel({
     }
     setSubmitting(true);
     try {
-      const created = createSubmission(tenantId, {
+      const payload = {
         studentName,
         studentInitials,
-        avatarTone: 'c1',
+        avatarTone: 'c1' as const,
         courseTitle: course.title,
         sectionTitle,
         assignmentTitle: lesson.title,
         lessonId: lesson.id,
         assignmentId: lesson.assignmentId,
         codeLines: code.split('\n'),
-        priority: 'normal',
-      });
+        priority: 'normal' as const,
+      };
+      const created = isSupabaseConfigured()
+        ? await createSubmissionAsync(tenantId, payload)
+        : createSubmission(tenantId, payload);
       if (!created) {
-        toast.error('提出の保存に失敗しました。ストレージ容量を確認してください。');
+        toast.error(
+          isSupabaseConfigured()
+            ? '提出の保存に失敗しました。ログイン状態とネットワークを確認してください。'
+            : '提出の保存に失敗しました。ストレージ容量を確認してください。',
+        );
         return;
       }
       toast.success('講師に提出しました。添削結果は Q&A または通知でお知らせします。');

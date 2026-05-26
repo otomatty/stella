@@ -82,8 +82,8 @@ CMS 機能 (`/admin/courses` 等) を使う場合は DB スキーマと初期デ
 Tweaks パネルで講師ロールに切り替え、 キューから添削エディタを開くと AI 下書き (`POST /api/review-draft`) が生成されます
 (API キー未設定時はルールベースのヒューリスティックにフォールバック)。
 
-- 提出物の永続化 (デモ): `localStorage` キー `lms_submissions_v1`
-- DB 永続化 (任意): `supabase/migrations/20260525000000_submissions_reviews.sql`
+- 提出物の永続化 (デモ / Supabase 未設定): `localStorage` キー `lms_submissions_v1`
+- DB 永続化 (Supabase 設定時): `submissions` テーブル (`20260525000000_submissions_reviews.sql` 適用後、 Magic Link ログインが必要)
 
 ### Anthropic (AIチャット用、 任意)
 

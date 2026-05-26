@@ -70,6 +70,14 @@ select count(*) as courses from public.courses;
 select count(*) as assignments from public.assignments;
 ```
 
+## セットアップ後の動作確認
+
+1. `bun run dev` でフロントを起動し、 Magic Link でサインイン
+2. 初回はオンボーディングでテナントを選択 → `profiles` 行が作成される
+3. 講師ロールにする場合は SQL Editor で `role` を更新 (上記「認証」参照)
+4. 受講者として assignment レッスンからコードを提出 → `submissions` テーブルに行が増える
+5. 講師ロールで「添削待ち」キューに提出が表示される
+
 ## トラブルシュート
 
 - **Magic Link が届かない** — Auth の SMTP / レート制限、Redirect URL を確認
