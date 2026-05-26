@@ -10,6 +10,9 @@
     "build": "bun --filter '@falcon/*' build",
     "preview": "bun --filter=@falcon/web preview",
     "typecheck": "bun --filter '@falcon/*' typecheck",
-    "seed:fixtures": "bun run packages/shared/scripts/seed-from-fixtures.ts"
+    "seed:fixtures": "bun --env-file=apps/web/.env.local run packages/shared/scripts/seed-from-fixtures.ts",
+    "seed:fixtures:sql": "bun run packages/shared/scripts/export-seed-sql.ts",
+    "setup:supabase": "bash scripts/setup-supabase-env.sh",
+    "supabase:push": "npx supabase@2.101.0 db push --linked"
   }
 }
