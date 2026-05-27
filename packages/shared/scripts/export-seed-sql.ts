@@ -55,7 +55,7 @@ function emitCourse(tenantId: Tenant["id"], course: Course) {
   const cid = `course_${tenantId}_${slug.replace(/-/g, "_")}`;
   courseIdMap.set(`${tenantId}:${course.id}`, cid);
   lines.push(
-    `insert into public.courses (id, tenant_id, slug, title, category, color, duration_hours, description, status) values (gen_random_uuid(), '${esc(tenantId)}', '${slug}', '${esc(course.title)}', ${course.category ? `'${esc(course.category)}'` : "null"}, ${course.color ? `'${course.color}'` : "null"}, ${course.duration ?? "null"}, ${course.description ? `'${esc(course.description)}'` : "null"}, 'published') on conflict (tenant_id, slug) do update set title = excluded.title, category = excluded.category, color = excluded.color, duration_hours = excluded.duration_hours, description = excluded.description, status = excluded.status, updated_at = now();`,
+    `insert into public.courses (id, tenant_id, slug, title, category, color, duration_hours, description, status) values (gen_random_uuid(), '${esc(tenantId)}', '${slug}', '${esc(course.title)}', ${course.category ? `'${esc(course.category)}'` : "null"}, ${course.color ? `'${esc(course.color)}'` : "null"}, ${course.duration ?? "null"}, ${course.description ? `'${esc(course.description)}'` : "null"}, 'published') on conflict (tenant_id, slug) do update set title = excluded.title, category = excluded.category, color = excluded.color, duration_hours = excluded.duration_hours, description = excluded.description, status = excluded.status, updated_at = now();`,
   );
   lines.push(
     `-- ${cid} course uuid variable via subselect`,
