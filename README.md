@@ -85,6 +85,15 @@ Tweaks パネルで講師ロールに切り替え、 キューから添削エデ
 - 提出物の永続化 (デモ / Supabase 未設定): `localStorage` キー `lms_submissions_v1`
 - DB 永続化 (Supabase 設定時): `submissions` テーブル (`20260525000000_submissions_reviews.sql` 適用後、 Magic Link ログインが必要)
 
+### レッスン進捗の永続化 (Issue #21)
+
+レッスン視聴進捗 (動画の視聴秒数 / スライドの閲覧ページ / 完了フラグ) を保存します。
+
+- ローカル (デモ / Supabase 未設定): `localStorage` キー `lms_lesson_progress`
+- DB 永続化 (Supabase 設定時): `lesson_progress` テーブル (`20260607000000_lesson_progress.sql` 適用後、 Magic Link ログインが必要)。
+  ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
+  講師 / 管理者は RLS により同テナントの進捗を read できます (可視化 UI は別 Issue)。
+
 ### Anthropic (AIチャット用、 任意)
 
 `apps/api/.dev.vars` に `ANTHROPIC_API_KEY` を設定。 既定モデルは `claude-sonnet-4-6`。

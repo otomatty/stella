@@ -13,6 +13,10 @@ import type { Lesson, LessonStatus } from '@/data/types';
 const STORAGE_KEY = 'lms_lesson_progress';
 const COMPLETION_THRESHOLD = 0.9;
 const DEBOUNCE_MS = 1000;
+/** リモート upsert はローカルより少し長めにまとめてバッチ送信する。 */
+const REMOTE_DEBOUNCE_MS = 2000;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface LessonProgressEntry {
   completed: boolean;
@@ -98,6 +102,161 @@ function scheduleFlush(): void {
   }, DEBOUNCE_MS);
 }
 
+// ---------------------------------------------------------------
+// リモート同期 (Supabase) — Issue #21
+//
+// Supabase 設定 + ログイン時のみ有効。 `configureRemoteSync` を App が呼ぶと
+// サーバから進捗を取り込み (LWW マージ)、 以降の更新を debounce で upsert する。
+// 未設定時 (identity === null) は従来通り localStorage のみで動作する。
+// ---------------------------------------------------------------
+
+interface SyncIdentity {
+  userId: string;
+  tenantId: string;
+}
+
+/** 直近に同期した user_id を記録し、 共有端末でのアカウント切替を検知する。 */
+const OWNER_KEY = 'lms_lesson_progress_owner';
+
+let identity: SyncIdentity | null = null;
+const remoteDirty = new Set<string>();
+let remoteFlush: ReturnType<typeof setTimeout> | null = null;
+
+function readOwner(): string | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    return window.localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeOwner(userId: string): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(OWNER_KEY, userId);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * 共有ブラウザで別アカウントにログインした場合、 localStorage に残った
+ * 前ユーザーの DB 連携進捗 (uuid キー) を新ユーザーへ漏らさない / 押し上げない
+ * よう、 uuid キーのエントリを破棄する。 fixture (非 uuid) エントリは保持する。
+ */
+function purgeRemoteEntries(): void {
+  const next: LessonProgressMap = {};
+  for (const [k, v] of Object.entries(cache)) {
+    if (!UUID_RE.test(k)) next[k] = v;
+  }
+  cache = next;
+  writeToStorage(cache);
+}
+
+function scheduleRemoteFlush(): void {
+  if (!identity || remoteFlush) return;
+  remoteFlush = setTimeout(() => {
+    remoteFlush = null;
+    void flushRemote();
+  }, REMOTE_DEBOUNCE_MS);
+}
+
+async function flushRemote(): Promise<void> {
+  if (!identity || remoteDirty.size === 0) return;
+  const current = identity;
+  const ids = Array.from(remoteDirty);
+  remoteDirty.clear();
+  const entries = ids
+    .map((lessonId) => ({ lessonId, entry: cache[lessonId] }))
+    .filter((e): e is { lessonId: string; entry: LessonProgressEntry } =>
+      Boolean(e.entry),
+    );
+  try {
+    const { upsertProgressBatch } = await import('@/lib/lesson-progress-api');
+    await upsertProgressBatch(current.userId, current.tenantId, entries);
+  } catch (err) {
+    console.error('[lesson-progress] remote upsert failed', err);
+    // 失敗分は remoteDirty に戻すだけに留める。 自動の即時再スケジュールは
+    // オフライン / RLS エラー時に 2 秒間隔の無限リトライを招くため行わない。
+    // 次の update() / flushNow() (pagehide) で自然に再試行される。
+    if (identity === current) {
+      for (const { lessonId } of entries) remoteDirty.add(lessonId);
+    }
+  }
+}
+
+async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
+  try {
+    const { fetchProgressForUser } = await import('@/lib/lesson-progress-api');
+    const remote = await fetchProgressForUser(target.userId);
+    // 取得中に identity が切り替わっていたら破棄
+    if (identity !== target) return;
+    const keys = new Set<string>([...Object.keys(remote), ...Object.keys(cache)]);
+    const merged: LessonProgressMap = {};
+    const toPush: string[] = [];
+    for (const k of keys) {
+      const picked = pickNewer(remote[k], cache[k]);
+      if (picked) merged[k] = picked;
+      // ローカルが採用された (= サーバに無い / ローカルが厳密に新しい) uuid 進捗のみ
+      // push 対象にする。 updatedAt を比較し、 同一タイムスタンプの再 upsert を避ける。
+      if (
+        UUID_RE.test(k) &&
+        picked &&
+        picked === cache[k] &&
+        picked.updatedAt !== remote[k]?.updatedAt
+      ) {
+        toPush.push(k);
+      }
+    }
+    cache = merged;
+    writeToStorage(cache);
+    notify();
+    if (toPush.length > 0) {
+      for (const k of toPush) remoteDirty.add(k);
+      scheduleRemoteFlush();
+    }
+  } catch (err) {
+    console.error('[lesson-progress] remote hydrate failed', err);
+  }
+}
+
+/**
+ * リモート同期の有効化 / 無効化。
+ * - identity を渡すと: サーバから進捗を hydrate し、 以降の更新を upsert する
+ * - null を渡すと (ログアウト等): 同期を停止する (ローカルキャッシュは保持)
+ */
+export function configureRemoteSync(next: SyncIdentity | null): void {
+  if (
+    identity?.userId === next?.userId &&
+    identity?.tenantId === next?.tenantId
+  ) {
+    return;
+  }
+  identity = next;
+  if (remoteFlush) {
+    clearTimeout(remoteFlush);
+    remoteFlush = null;
+  }
+  remoteDirty.clear();
+  if (next) {
+    // pagehide 時の即時 flush でチャンクフェッチ中断を避けるため、 同期有効化の
+    // タイミングで API モジュールを投機的にプリロードしておく。
+    void import('@/lib/lesson-progress-api');
+    // 別ユーザーに切り替わったら、 前ユーザーの DB 連携進捗をローカルから除去。
+    // ただし owner 未記録 (null) の初回同期では purge しない。 本機能導入前から
+    // localStorage に残る既存ユーザーの uuid 進捗を、 hydrate 前に消して失わない
+    // ようにするため (記録済み owner があり、 かつ別ユーザーの時のみ purge)。
+    const prevOwner = readOwner();
+    if (prevOwner !== null && prevOwner !== next.userId) {
+      purgeRemoteEntries();
+      notify();
+    }
+    writeOwner(next.userId);
+    void hydrateFromRemote(next);
+  }
+}
+
 function notify(): void {
   for (const l of listeners) l();
 }
@@ -109,6 +268,15 @@ export function flushNow(): void {
     pendingFlush = null;
   }
   mergeAndWrite();
+  // リモートも best-effort で即時送信 (pagehide では完了は保証されない。
+  // 通常のデバウンス送信で大半は既に同期済み)。
+  if (identity && remoteDirty.size > 0) {
+    if (remoteFlush) {
+      clearTimeout(remoteFlush);
+      remoteFlush = null;
+    }
+    void flushRemote();
+  }
 }
 
 if (typeof window !== 'undefined') {
@@ -149,6 +317,10 @@ function nowIso(): string {
 function update(lessonId: string, entry: LessonProgressEntry): LessonProgressEntry {
   cache = { ...cache, [lessonId]: entry };
   scheduleFlush();
+  if (identity && UUID_RE.test(lessonId)) {
+    remoteDirty.add(lessonId);
+    scheduleRemoteFlush();
+  }
   notify();
   return entry;
 }

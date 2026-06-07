@@ -9,6 +9,7 @@ import { useCoursesForTenant } from '@/data/courses-source';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { signOut as authSignOut } from '@/lib/auth';
+import { configureRemoteSync } from '@/lib/lesson-progress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
@@ -181,6 +182,19 @@ export default function App() {
       }),
     );
   }, [stage, role, tenant, page, showAIBot, reviewSubmissionId]);
+
+  // レッスン進捗のサーバ同期 (Issue #21): Supabase + profile が揃った時のみ有効化。
+  // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
+  useEffect(() => {
+    if (supabaseEnabled && session && profile) {
+      configureRemoteSync({
+        userId: session.user.id,
+        tenantId: profile.tenant_id,
+      });
+    } else {
+      configureRemoteSync(null);
+    }
+  }, [supabaseEnabled, session, profile]);
 
   // Backtick toggle for tweaks panel
   useEffect(() => {
