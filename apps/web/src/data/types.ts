@@ -109,16 +109,6 @@ export interface RubricCriterion {
   score: number;
 }
 
-export interface QAMessage {
-  id: number;
-  who: string;
-  me: boolean;
-  initials: string;
-  time: string;
-  body: string;
-  c?: AvatarTone;
-}
-
 export interface CompletionByCourse {
   name: string;
   n: number;

@@ -3,7 +3,6 @@ import type {
   Announcement,
   CompletionByCourse,
   Course,
-  QAMessage,
   ReviewItem,
   RubricCriterion,
   Stumble,
@@ -313,45 +312,6 @@ export const RUBRIC: RubricCriterion[] = [
   { id: 'rb4', name: 'セキュリティ配慮', desc: 'XSS・入力検証', max: 4, score: 1 },
 ];
 
-export const QA_THREAD: QAMessage[] = [
-  {
-    id: 1,
-    who: '田中 翔太',
-    me: true,
-    initials: 'TS',
-    time: '14:22',
-    body:
-      'l10 関数とスコープ のサンプルコードで、クロージャの例の変数 count が毎回独立している理由がよくわかりません。具体的にメモリ上で何が起きているのでしょうか？',
-  },
-  {
-    id: 2,
-    who: '堀江メンター',
-    me: false,
-    initials: 'HM',
-    c: 'c2',
-    time: '14:48',
-    body:
-      'いい質問です！makeCounter を呼ぶたびに「新しい実行コンテキスト」が作られ、その中の count 変数は独立した束縛を持ちます。返された関数はその束縛への参照を保持するので、呼び出しごとに別々の count が生きる、というイメージです。',
-  },
-  {
-    id: 3,
-    who: '堀江メンター',
-    me: false,
-    initials: 'HM',
-    c: 'c2',
-    time: '14:49',
-    body: '図解すると分かりやすいので、あとで補足資料をお知らせに上げておきます。',
-  },
-  {
-    id: 4,
-    who: '田中 翔太',
-    me: true,
-    initials: 'TS',
-    time: '14:51',
-    body:
-      'ありがとうございます！「新しい実行コンテキスト = 新しいレキシカル環境」という理解で合っていますか？',
-  },
-];
 
 export const ENROLLMENT_TREND: number[] = [
   32, 45, 51, 63, 78, 89, 102, 118, 132, 141, 156, 163,

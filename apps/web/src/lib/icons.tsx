@@ -78,6 +78,7 @@ export {
   GripVertical,
   Save,
   PlayCircle,
+  Inbox,
 } from 'lucide-react';
 
 import type { SVGProps } from 'react';

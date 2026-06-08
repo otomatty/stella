@@ -11,24 +11,29 @@ import {
   Info,
   Code,
   Download,
-  Send,
   Loader2,
+  HelpCircle,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
-import { SES_COURSES, QA_THREAD } from '@/data/fixtures';
+import { SES_COURSES } from '@/data/fixtures';
 import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
 import type { Assignment } from '@falcon/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
+import { useLessonQuestions } from '@/hooks/useQuestions';
+import { createQuestion, createReply } from '@/lib/qa-api';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { QAThread } from '@/components/common/QAThread';
+import { QuestionComposer } from '@/components/common/QuestionComposer';
+import type { QuestionWithReplies } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 import { PracticeWorkspace } from '@/practice/PracticeWorkspace';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
@@ -45,11 +50,16 @@ interface LessonPlayerProps {
   tenantId: Tenant['id'];
   studentName: string;
   studentInitials: string;
+  /** ログイン中ユーザの ID (Q&A の自己メッセージ判定に使う)。 未ログイン時は null。 */
+  currentUserId: string | null;
   /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
   onOpenAIBot?: () => void;
   /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
   setAIContext?: (ctx: ChatContext) => void;
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const lessonTypeLabel: Record<LessonType, string> = {
   video: '動画',
@@ -66,6 +76,7 @@ export const LessonPlayer = ({
   tenantId,
   studentName,
   studentInitials,
+  currentUserId,
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
@@ -92,6 +103,16 @@ export const LessonPlayer = ({
     () => allLessons.find((l) => l.id === activeLesson) ?? allLessons[0],
     [allLessons, activeLesson],
   );
+
+  // Q&A はレッスンが CMS の実体 (uuid) かつ Supabase 設定済みのときのみ永続化する。
+  // fixtures のレッスン (id='l10' 等) では空状態を表示し、 モックには戻さない。
+  const qaEnabled =
+    isSupabaseConfigured() && UUID_RE.test(lessonObj?.id ?? '');
+  const {
+    threads: qaThreads,
+    loading: qaLoading,
+    refetch: qaRefetch,
+  } = useLessonQuestions(lessonObj?.id ?? null, qaEnabled);
 
   // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
   // (lessonObj 経由ではなく allLessons から直接 foundId を計算する)
@@ -387,7 +408,7 @@ export const LessonPlayer = ({
                 <MessageCircle size={13} />
                 Q&A
                 <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">
-                  {QA_THREAD.length}
+                  {qaThreads.length}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="notes">
@@ -421,7 +442,16 @@ export const LessonPlayer = ({
               )}
             </TabsContent>
             <TabsContent value="qa">
-              <QAView />
+              <QAView
+                threads={qaThreads}
+                loading={qaLoading}
+                enabled={qaEnabled}
+                tenantId={tenantId}
+                courseId={course.id}
+                lessonId={lessonObj.id}
+                currentUserId={currentUserId}
+                onRefetch={qaRefetch}
+              />
             </TabsContent>
             <TabsContent value="resources">
               <ResourcesList />
@@ -570,77 +600,95 @@ counter(); // 3`}</code>
   </div>
 );
 
-const QAView = () => {
-  const [msgs, setMsgs] = useState(QA_THREAD);
-  const [draft, setDraft] = useState('');
+interface QAViewProps {
+  threads: QuestionWithReplies[];
+  loading: boolean;
+  enabled: boolean;
+  tenantId: string;
+  courseId: string;
+  lessonId: string;
+  currentUserId: string | null;
+  onRefetch: () => Promise<void>;
+}
 
-  const send = () => {
-    if (!draft.trim()) return;
-    setMsgs((m) => [
-      ...m,
-      {
-        id: Date.now(),
-        who: '田中 翔太',
-        me: true,
-        initials: 'TS',
-        time: 'たった今',
-        body: draft.trim(),
-      },
-    ]);
-    setDraft('');
+const QAView = ({
+  threads,
+  loading,
+  enabled,
+  tenantId,
+  courseId,
+  lessonId,
+  currentUserId,
+  onRefetch,
+}: QAViewProps) => {
+  if (!enabled) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+        <HelpCircle size={28} className="text-ink-4" />
+        <div className="font-medium text-ink-2">Q&amp;A はまだ利用できません</div>
+        <div className="text-[12.5px]">
+          このレッスンが公開・保存されると、 ここで質問を投稿できるようになります。
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreate = async ({
+    title,
+    body,
+  }: {
+    title: string;
+    body: string;
+  }) => {
+    try {
+      await createQuestion({ tenantId, courseId, lessonId, title, body });
+      await onRefetch();
+      toast.success('質問を投稿しました');
+    } catch (err) {
+      console.error('[QAView] createQuestion failed', err);
+      toast.error(err instanceof Error ? err.message : '質問の投稿に失敗しました');
+      // 失敗を QuestionComposer へ伝播し、 入力フォームのクリアを防ぐ。
+      throw err;
+    }
+  };
+
+  const handleReply = async (questionId: string, body: string) => {
+    try {
+      await createReply(questionId, body);
+      await onRefetch();
+    } catch (err) {
+      console.error('[QAView] createReply failed', err);
+      toast.error(err instanceof Error ? err.message : '返信の送信に失敗しました');
+      throw err;
+    }
   };
 
   return (
-    <Card className="h-[520px] flex flex-col overflow-hidden">
-      <CardHeader>
-        <CardTitle>レッスンQ&A</CardTitle>
-        <Badge>スレッド 1 · メッセージ {msgs.length}</Badge>
-      </CardHeader>
-      <div className="flex-1 overflow-y-auto p-[18px] flex flex-col gap-3.5">
-        {msgs.map((m) => (
-          <div
-            key={m.id}
-            className={cn('flex gap-2.5 max-w-[88%]', m.me && 'self-end flex-row-reverse')}
-          >
-            <Avatar size="sm">
-              <AvatarFallback tone={m.c ?? 'c2'}>{m.initials}</AvatarFallback>
-            </Avatar>
-            <div>
-              <div
-                className={cn(
-                  'rounded-xl px-3 py-2.5 text-[13px] leading-relaxed',
-                  m.me ? 'bg-brand text-white' : 'bg-sunken text-foreground',
-                )}
-              >
-                {m.body}
-              </div>
-              <div
-                className={cn('text-[11px] text-ink-3 mt-1', m.me ? 'text-right' : '')}
-              >
-                {m.who} · {m.time}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="px-3.5 py-3 border-t border-border flex gap-2 items-end bg-card">
-        <Textarea
-          placeholder="メッセージを入力…"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          className="min-h-[38px] max-h-[120px] text-[13px] py-2 px-2.5"
-        />
-        <Button variant="accent" size="icon" onClick={send}>
-          <Send size={13} />
-        </Button>
-      </div>
-    </Card>
+    <div className="flex flex-col gap-4">
+      <QuestionComposer
+        onSubmit={handleCreate}
+        bodyPlaceholder="このレッスンについて質問する…"
+      />
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
+          <Loader2 size={16} className="animate-spin" /> 読み込み中…
+        </div>
+      ) : threads.length === 0 ? (
+        <div className="py-10 text-center text-[12.5px] text-ink-3">
+          まだ質問はありません。 最初の質問を投稿してみましょう。
+        </div>
+      ) : (
+        threads.map((t) => (
+          <QAThread
+            key={t.id}
+            thread={t}
+            currentUserId={currentUserId}
+            canReply
+            onReply={(body) => handleReply(t.id, body)}
+          />
+        ))
+      )}
+    </div>
   );
 };
 

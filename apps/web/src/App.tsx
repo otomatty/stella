@@ -29,6 +29,7 @@ import { InstructorDashboard } from '@/components/instructor/InstructorDashboard
 import { ReviewQueue } from '@/components/instructor/ReviewQueue';
 import { ReviewEditor } from '@/components/instructor/ReviewEditor';
 import { InstructorGeneric } from '@/components/instructor/InstructorGeneric';
+import { InstructorQA } from '@/components/instructor/InstructorQA';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
@@ -474,11 +475,19 @@ function renderPage({
           tenantId={tenantId}
           studentName={studentName}
           studentInitials={studentInitials}
+          currentUserId={currentUserId}
         />
       );
     }
     if (page === 'cert') return <CertificatePage />;
-    if (page === 'qa') return <StandaloneQA />;
+    if (page === 'qa')
+      return (
+        <StandaloneQA
+          tenantId={tenantId}
+          currentUserId={currentUserId}
+          courses={courses}
+        />
+      );
   }
   if (role === 'instructor') {
     if (page === 'dash')
@@ -505,7 +514,9 @@ function renderPage({
           setPage={setPage}
         />
       );
-    if (page === 'students' || page === 'qa' || page === 'courses')
+    if (page === 'qa')
+      return <InstructorQA tenantId={tenantId} currentUserId={currentUserId} />;
+    if (page === 'students' || page === 'courses')
       return <InstructorGeneric page={page} />;
   }
   if (role === 'admin') {
