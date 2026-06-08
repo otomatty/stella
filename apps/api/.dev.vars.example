@@ -3,3 +3,11 @@ ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-sonnet-4-6
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ISOLATE_MEMORY_LIMIT=32
+
+# ユーザー管理 API (招待 / ロール変更 / 無効化) 用。
+# SUPABASE_SERVICE_ROLE_KEY は Dashboard → Settings → API Keys の Secret key (`sb_secret_...`)
+# または legacy service_role JWT。 本番は `wrangler secret put SUPABASE_SERVICE_ROLE_KEY` で設定する。
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+# 招待メールのリンク先 (未設定なら ALLOWED_ORIGINS の先頭を使用)
+INVITE_REDIRECT_URL=http://localhost:5173

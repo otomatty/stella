@@ -7,6 +7,7 @@ import { cors } from "hono/cors";
 
 import type { Env } from "./env.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
+import { adminUsersRoute } from "./routes/admin-users.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthzRoute } from "./routes/healthz.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
@@ -25,5 +26,6 @@ app.use("/api/*", async (c, next) => {
 app.route("/", healthzRoute);
 app.route("/", chatRoute);
 app.route("/", reviewDraftRoute);
+app.route("/", adminUsersRoute);
 
 export default app;

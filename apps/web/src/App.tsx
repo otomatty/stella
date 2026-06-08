@@ -344,6 +344,9 @@ export default function App() {
               onOpenAIBot: () => setAiOpen(true),
               setAIContext: setAiContext,
               tenantId: effectiveTenant.id,
+              tenantName: effectiveTenant.name,
+              currentUserId: session?.user.id ?? null,
+              supabaseEnabled,
               reviewSubmissionId,
               onOpenReview: setReviewSubmissionId,
               studentName: effectiveUser.name,
@@ -403,6 +406,9 @@ interface RenderParams {
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
   tenantId: Tenant['id'];
+  tenantName: string;
+  currentUserId: string | null;
+  supabaseEnabled: boolean;
   reviewSubmissionId: string | null;
   onOpenReview: (id: string) => void;
   studentName: string;
@@ -419,6 +425,9 @@ function renderPage({
   onOpenAIBot,
   setAIContext,
   tenantId,
+  tenantName,
+  currentUserId,
+  supabaseEnabled,
   reviewSubmissionId,
   onOpenReview,
   studentName,
@@ -487,7 +496,15 @@ function renderPage({
   }
   if (role === 'admin') {
     if (page === 'dash') return <AdminDashboard />;
-    if (page === 'users') return <UsersAdmin />;
+    if (page === 'users')
+      return (
+        <UsersAdmin
+          tenantId={tenantId}
+          tenantName={tenantName}
+          currentUserId={currentUserId}
+          supabaseEnabled={supabaseEnabled}
+        />
+      );
     if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
     if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
     if (page === 'orgs' || page === 'report' || page === 'audit')

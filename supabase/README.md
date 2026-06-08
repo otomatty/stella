@@ -45,6 +45,8 @@ bun run seed:fixtures
 |----------|------|
 | `20260519000000_cms_foundation.sql` | CMS テーブル、RLS、`materials-public` バケット |
 | `20260525000000_submissions_reviews.sql` | 講師添削用 `submissions` テーブル |
+| `20260607000000_lesson_progress.sql` | レッスン進捗 (Issue #21) |
+| `20260607010000_user_management.sql` | `profiles.disabled` 列 + ユーザー管理 RLS 再確認 (Issue #22) |
 
 ## Storage
 
@@ -57,11 +59,27 @@ bun run seed:fixtures
 1. Dashboard → **Authentication → Providers** で **Email**（Magic Link）を有効化
 2. **URL Configuration** の Site URL / Redirect URLs に `http://localhost:5173` を追加
 3. 初回サインイン後、`profiles` に `role='student'` で行が作成される
-4. 管理者にする例:
+4. **最初の管理者** だけは SQL Editor で昇格させる（以降は管理画面から操作可能）:
 
 ```sql
 update public.profiles set role = 'admin' where email = 'you@example.com';
 ```
+
+### ユーザー管理（Issue #22）
+
+最初の管理者を作った後は、SQL を書かずに **管理画面 → ユーザー管理** から
+ユーザーの一覧 / 招待（単体・CSV 一括）/ ロール変更 / 無効化ができます。
+
+招待・ロール変更・無効化は service-role 権限が必要なため、`apps/api`
+（Cloudflare Workers）の `/api/admin/users/*` エンドポイント経由で行います。
+API 側に以下を設定してください（`apps/api/.dev.vars` / 本番は `wrangler secret`）:
+
+- `SUPABASE_URL` — Project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — Secret key（**ブラウザに公開しない**）
+- `INVITE_REDIRECT_URL` — 招待受諾後に開くアプリ URL（任意。未設定なら `ALLOWED_ORIGINS` 先頭）
+
+招待時に指定した tenant / role は、招待と同時に `profiles` 行へ反映されるため、
+受諾後はそのロールでログインできます（自己昇格・他テナント干渉は API / RLS で遮断）。
 
 ## シード後の確認
 

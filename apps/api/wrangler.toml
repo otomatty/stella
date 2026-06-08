@@ -7,3 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 # ローカル開発用。本番は README のデプロイ手順に従い Vercel ドメイン等を設定する。
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
+# ユーザー管理 API (Issue #22) 用。 SUPABASE_URL は非機密なので vars でも可。
+# SUPABASE_SERVICE_ROLE_KEY は機密のため vars に書かず `wrangler secret put` で設定する。
+# SUPABASE_URL = "https://<project-ref>.supabase.co"
+# INVITE_REDIRECT_URL = "https://<your-app-domain>"

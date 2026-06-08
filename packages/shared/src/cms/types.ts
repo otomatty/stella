@@ -57,6 +57,11 @@ export interface ProfileRow {
   display_name: string;
   initials: string | null;
   email: string | null;
+  /**
+   * 無効化フラグ (Issue #22)。 列が未マイグレーションの環境では undefined になり得るため optional。
+   * service-role API 経由でのみ更新され、 同時に auth.users 側も ban される。
+   */
+  disabled?: boolean;
   created_at: string;
 }
 
