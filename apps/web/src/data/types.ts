@@ -65,6 +65,8 @@ export interface Course {
   progress: number;
   enrolledBy?: string;
   dueAt?: string | null;
+  /** 受講登録 (Issue #20) 由来。 必須 / 任意の区別。 */
+  required?: boolean;
   description?: string;
   completed?: boolean;
   sections?: Section[];

@@ -94,6 +94,11 @@ export const CourseList = ({ setPage, courses, setCurrentCourse }: CourseListPro
                 ) : (
                   <Badge>未着手</Badge>
                 )}
+                {c.required === true ? (
+                  <Badge variant="warning">必須</Badge>
+                ) : c.required === false ? (
+                  <Badge variant="info">任意</Badge>
+                ) : null}
                 <span className="text-[11.5px] text-ink-3">{c.category}</span>
               </div>
               <div className="text-[15px] font-semibold leading-snug tracking-tight">

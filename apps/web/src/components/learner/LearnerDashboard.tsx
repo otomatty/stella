@@ -30,6 +30,29 @@ export const LearnerDashboard = ({ setPage, courses }: LearnerDashboardProps) =>
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   const current = active[0];
 
+  // 期限が近い課題は enrollment の dueAt から実データで組み立てる。
+  // 該当が無ければサンプルではなく空状態を表示する (誤情報を出さない)。
+  const deadlines = courses
+    .filter((c) => c.dueAt && !c.completed)
+    .sort((a, b) => (a.dueAt! < b.dueAt! ? -1 : 1))
+    .slice(0, 5)
+    .map((c) => {
+      // due_at は UTC 午前0時で保存される。 new Date(...) で UTC インスタンスを
+      // ローカル日付に変換すると UTC より西の TZ で日付が 1 日ずれるため、
+      // 日付部分 (YYYY-MM-DD) を date-only として扱って差分を取る。
+      const [y, m, d] = c.dueAt!.slice(0, 10).split('-').map(Number);
+      const dueUTC = Date.UTC(y!, m! - 1, d!);
+      const now = new Date();
+      const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      const days = Math.round((dueUTC - todayUTC) / 86_400_000);
+      return {
+        t: c.title,
+        due: days < 0 ? '期限超過' : days === 0 ? '本日まで' : `${days}日後`,
+        c: c.required ? '必須' : c.category,
+        urgency: (days <= 3 ? 'warning' : 'info') as 'warning' | 'info',
+      };
+    });
+
   return (
     <>
       <PageHeader
@@ -230,12 +253,17 @@ export const LearnerDashboard = ({ setPage, courses }: LearnerDashboardProps) =>
               <CardTitle>期限が近い課題</CardTitle>
             </CardHeader>
             <div>
-              {DEADLINES.map((d, i) => (
+              {deadlines.length === 0 ? (
+                <div className="px-4 py-3 text-[12.5px] text-ink-3">
+                  期限が設定された課題はありません。
+                </div>
+              ) : null}
+              {deadlines.map((d, i) => (
                 <div
                   key={i}
                   className={cn(
                     'flex gap-3 px-4 py-3',
-                    i < DEADLINES.length - 1 ? 'border-b border-border' : '',
+                    i < deadlines.length - 1 ? 'border-b border-border' : '',
                   )}
                 >
                   <Badge variant={d.urgency} className="text-[10px]">
@@ -296,17 +324,6 @@ const FEEDBACKS: Array<{
   { course: 'Web開発基礎', a: 'ランディングページ模写', status: '合格', tone: 'success', by: '堀江メンター', date: '4月15日', n: 'スコア 82 / 100' },
   { course: 'Git/GitHub', a: '最終確認課題', status: '合格', tone: 'success', by: '堀江メンター', date: '4月10日', n: 'スコア 94 / 100' },
   { course: 'Web開発基礎', a: 'HTML構造演習', status: '再提出', tone: 'warning', by: 'AI + 堀江メンター', date: '4月8日', n: 'セマンティクスの修正が必要です' },
-];
-
-const DEADLINES: Array<{
-  t: string;
-  due: string;
-  c: string;
-  urgency: 'warning' | 'info';
-}> = [
-  { t: 'ToDoアプリ 実装', due: '5日後', c: 'Web開発基礎', urgency: 'warning' },
-  { t: '基本情報 第3回クイズ', due: '8日後', c: '基本情報対策', urgency: 'info' },
-  { t: 'React 最終課題', due: '14日後', c: 'React入門', urgency: 'info' },
 ];
 
 const WEEK = [32, 45, 0, 58, 72, 38, 48, 55, 62, 25, 88, 72, 40, 62];

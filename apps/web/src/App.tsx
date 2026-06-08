@@ -5,7 +5,7 @@ import { TENANTS, CURRENT_USER } from '@/data/fixtures';
 import type { Course, Role, Tenant, User } from '@/data/types';
 import type { ChatContext } from '@falcon/shared/ai/types';
 import { LessonAIProvider } from '@/components/common/LessonAIContext';
-import { useCoursesForTenant } from '@/data/courses-source';
+import { useCoursesForTenant, useEnrolledCoursesForTenant } from '@/data/courses-source';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { signOut as authSignOut } from '@/lib/auth';
@@ -35,6 +35,7 @@ import { UsersAdmin } from '@/components/admin/UsersAdmin';
 import { AdminGeneric, GenericEmpty } from '@/components/admin/AdminGeneric';
 import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
 import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
+import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
@@ -80,6 +81,7 @@ const PAGE_LABELS: Record<string, string> = {
   review: '添削エディタ',
   students: '担当受講者',
   users: 'ユーザー管理',
+  enrollments: '受講登録',
   orgs: '組織マスタ',
   report: 'レポート',
   audit: '監査ログ',
@@ -150,7 +152,19 @@ export default function App() {
     return CURRENT_USER;
   }, [supabaseEnabled, profile]);
 
-  const { courses } = useCoursesForTenant(effectiveTenant.id);
+  // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
+  // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
+  const browseCourses = useCoursesForTenant(
+    effectiveTenant.id,
+    effectiveRole !== 'learner',
+  );
+  const enrolledCourses = useEnrolledCoursesForTenant(
+    effectiveTenant.id,
+    session?.user.id ?? null,
+    effectiveRole === 'learner',
+  );
+  const courses =
+    effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
 
   // ページがレッスン以外に戻ったら context を general にリセット
@@ -507,6 +521,15 @@ function renderPage({
       );
     if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
     if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
+    if (page === 'enrollments')
+      return (
+        <AdminEnrollmentsPage
+          key={tenantId}
+          tenantId={tenantId}
+          currentUserId={currentUserId}
+          supabaseEnabled={supabaseEnabled}
+        />
+      );
     if (page === 'orgs' || page === 'report' || page === 'audit')
       return <AdminGeneric page={page} />;
   }

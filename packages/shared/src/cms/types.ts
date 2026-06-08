@@ -212,6 +212,25 @@ export interface QuizGradeResult {
   results: QuizQuestionResult[];
 }
 
+export type EnrollmentStatus = "active" | "completed" | "expired";
+
+/**
+ * 受講登録 (Issue #20)。 「誰がどのコースを、 いつまでに受講するか」 を表す。
+ * 割当は instructor/admin が RLS 配下で行い、 受講者は自分の行のみ read 可能。
+ */
+export interface EnrollmentRow {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  course_id: string;
+  assigned_by: string | null;
+  due_at: string | null;
+  required: boolean;
+  status: EnrollmentStatus;
+  enrolled_at: string;
+  completed_at: string | null;
+}
+
 export interface AssignmentRow {
   id: string;
   tenant_id: string;
@@ -273,6 +292,8 @@ export interface UiCourse {
   progress: number;
   enrolledBy?: string;
   dueAt?: string | null;
+  /** 受講登録 (Issue #20) 由来。 必須 / 任意の区別。 */
+  required?: boolean;
   description?: string;
   completed?: boolean;
   sections?: UiSection[];

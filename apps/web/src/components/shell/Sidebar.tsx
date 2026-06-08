@@ -10,6 +10,7 @@ import {
   Users,
   BarChart,
   Building,
+  ClipboardList,
   FileText,
   Shield,
   Settings,
@@ -33,6 +34,7 @@ type NavId =
   | 'review-queue'
   | 'students'
   | 'users'
+  | 'enrollments'
   | 'orgs'
   | 'report'
   | 'audit'
@@ -67,6 +69,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'dash', label: 'KPIダッシュボード', icon: BarChart },
     { id: 'courses', label: 'コース管理', icon: Book },
     { id: 'assignments', label: '課題管理', icon: Code },
+    { id: 'enrollments', label: '受講登録', icon: ClipboardList },
     { id: 'users', label: 'ユーザー管理', icon: Users },
     { id: 'orgs', label: '組織マスタ', icon: Building },
     { id: 'report', label: 'レポート', icon: FileText },
