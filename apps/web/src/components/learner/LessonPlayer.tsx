@@ -9,13 +9,9 @@ import {
   Edit,
   Clock,
   Info,
-  Check,
-  X,
   Code,
   Download,
   Send,
-  HelpCircle,
-  CheckCircle,
   Loader2,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
@@ -36,6 +32,7 @@ import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgre
 import { cn } from '@/lib/utils';
 import { PracticeWorkspace } from '@/practice/PracticeWorkspace';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
+import { QuizPlayer } from './QuizPlayer';
 import type { Tenant } from '@/data/types';
 
 const SlidesViewer = lazy(() =>
@@ -401,7 +398,10 @@ export const LessonPlayer = ({
 
             <TabsContent value="content">
               {isQuiz ? (
-                <QuizView />
+                <QuizPlayer
+                  lessonId={lessonObj.id}
+                  onComplete={handleMarkComplete}
+                />
               ) : isAssignment ? (
                 <AssignmentSubmitPanel
                   tenantId={tenantId}
@@ -570,131 +570,6 @@ counter(); // 3`}</code>
   </div>
 );
 
-interface QuizOption {
-  id: number;
-  text: string;
-  correct?: boolean;
-}
-
-const QUIZ_OPTIONS: QuizOption[] = [
-  { id: 0, text: '毎回同じ変数 count を参照しているから' },
-  {
-    id: 1,
-    text: '関数呼び出しごとに新しいレキシカル環境が作られ、独立した束縛を持つから',
-    correct: true,
-  },
-  { id: 2, text: 'JavaScriptエンジンが変数を複製して保持しているから' },
-  { id: 3, text: 'グローバル変数として保存されているから' },
-];
-
-const QuizView = () => {
-  const [selected, setSelected] = useState<number>(1);
-  const [submitted, setSubmitted] = useState(false);
-
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-5 text-xs text-ink-3">
-        <span>問題 3 / 10</span>
-        <div className="flex-1 h-1 bg-muted rounded-sm overflow-hidden">
-          <div className="h-full bg-brand" style={{ width: '30%' }} />
-        </div>
-        <span className="flex items-center gap-1">
-          <Clock size={12} /> 残り 12:40
-        </span>
-      </div>
-
-      <Card className="p-6">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Badge variant="accent">単一選択</Badge>
-          <span className="text-[11.5px] text-ink-3">配点 10点</span>
-        </div>
-        <div className="text-lg font-semibold tracking-tight leading-snug mb-1.5">
-          makeCounter() を複数回呼び出した時、なぜそれぞれの counter が独立した値を持つのでしょうか？
-        </div>
-        <div className="text-xs text-ink-3 mb-4">最も適切な説明を1つ選んでください。</div>
-
-        {QUIZ_OPTIONS.map((o) => {
-          const isCorrect = submitted && o.correct;
-          const isWrong = submitted && selected === o.id && !o.correct;
-          const isSelected = selected === o.id;
-          return (
-            <button
-              type="button"
-              key={o.id}
-              onClick={() => !submitted && setSelected(o.id)}
-              className={cn(
-                'w-full flex items-start gap-3 p-3.5 border rounded-md bg-card mb-2 transition-colors text-left',
-                submitted ? 'cursor-default' : 'cursor-pointer hover:border-ink-3',
-                isSelected && !submitted && 'border-brand bg-brand-soft',
-                isCorrect && 'border-success bg-success-soft',
-                isWrong && 'border-danger bg-danger-soft',
-                !isSelected && !isCorrect && !isWrong && 'border-border-2',
-              )}
-            >
-              <div
-                className={cn(
-                  'w-5 h-5 rounded-full border-[1.5px] grid place-items-center shrink-0 mt-0.5 text-[11px] font-semibold',
-                  isSelected && !submitted && 'border-brand bg-brand text-white',
-                  isCorrect && 'border-success bg-success text-white',
-                  isWrong && 'border-danger bg-danger text-white',
-                  !isSelected && !isCorrect && !isWrong && 'border-border-strong text-ink-3',
-                )}
-              >
-                {submitted && o.correct ? (
-                  <Check size={12} />
-                ) : submitted && isSelected ? (
-                  <X size={12} />
-                ) : (
-                  String.fromCharCode(65 + o.id)
-                )}
-              </div>
-              <div className="flex-1 text-sm leading-relaxed">
-                {o.text}
-                {submitted && o.correct ? (
-                  <div className="mt-2 text-xs text-ink-2 pt-2 border-t border-dashed border-border">
-                    <strong>解説:</strong>{' '}
-                    関数が呼び出されるたびに新しい実行コンテキストが生成され、その中の{' '}
-                    <code>let count</code>{' '}
-                    は毎回別々の束縛を持ちます。返された内側の関数はその束縛への参照（クロージャ）を保持するので、カウンターごとに独立した状態になります。
-                  </div>
-                ) : null}
-              </div>
-            </button>
-          );
-        })}
-
-        <div className="flex gap-2.5 mt-5 pt-4 border-t border-border">
-          <Button>前の問題</Button>
-          <div className="flex-1" />
-          {!submitted ? (
-            <Button variant="accent" onClick={() => setSubmitted(true)}>
-              回答する
-            </Button>
-          ) : (
-            <Button variant="accent">
-              次の問題
-              <ChevronRight size={13} />
-            </Button>
-          )}
-        </div>
-      </Card>
-
-      {submitted ? (
-        <Card className="mt-4 border-success bg-success-soft">
-          <CardContent className="flex items-center gap-3">
-            <CheckCircle size={20} className="text-success" />
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold text-success">正解です！</div>
-              <div className="text-[11.5px] text-ink-3">現在の獲得点数: 27 / 30 (90%)</div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-    </div>
-  );
-};
-
-
 const QAView = () => {
   const [msgs, setMsgs] = useState(QA_THREAD);
   const [draft, setDraft] = useState('');
@@ -827,6 +702,3 @@ const NotesView = () => (
     </CardContent>
   </Card>
 );
-
-// re-export noisy imports so TS doesn't whine about unused
-export const __lesson_used = { HelpCircle };

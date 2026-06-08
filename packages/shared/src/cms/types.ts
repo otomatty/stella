@@ -105,6 +105,113 @@ export interface LessonRow {
   updated_at: string;
 }
 
+export type QuestionKind = "single" | "multiple" | "boolean";
+
+export interface QuizRow {
+  id: string;
+  lesson_id: string;
+  pass_score: number;
+  time_limit_sec: number | null;
+  shuffle_questions: boolean;
+  shuffle_options: boolean;
+  max_attempts: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuizQuestionRow {
+  id: string;
+  quiz_id: string;
+  kind: QuestionKind;
+  prompt: string;
+  explanation: string | null;
+  points: number;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuizOptionRow {
+  id: string;
+  question_id: string;
+  label: string;
+  is_correct: boolean;
+  order: number;
+}
+
+export interface QuizAttemptRow {
+  id: string;
+  tenant_id: string;
+  quiz_id: string;
+  user_id: string;
+  score: number;
+  max_score: number;
+  passed: boolean;
+  answers: QuizAnswer[];
+  submitted_at: string;
+}
+
+/** CMS で読み込む quiz 全体 (設問 + 選択肢をネスト)。 */
+export interface QuizWithQuestions {
+  quiz: QuizRow;
+  questions: Array<QuizQuestionRow & { options: QuizOptionRow[] }>;
+}
+
+/** 受講者へ送る回答 payload。 */
+export interface QuizAnswer {
+  question_id: string;
+  selected_option_ids: string[];
+}
+
+/**
+ * 受講者向けにサニタイズされた設問 (is_correct / explanation を含めない)。
+ * get_quiz_for_lesson RPC の戻り値に対応する。
+ */
+export interface LearnerQuizOption {
+  id: string;
+  label: string;
+  order: number;
+}
+
+export interface LearnerQuizQuestion {
+  id: string;
+  kind: QuestionKind;
+  prompt: string;
+  points: number;
+  order: number;
+  options: LearnerQuizOption[];
+}
+
+export interface LearnerQuizConfig {
+  id: string;
+  lesson_id: string;
+  pass_score: number;
+  time_limit_sec: number | null;
+  shuffle_questions: boolean;
+  shuffle_options: boolean;
+  max_attempts: number | null;
+}
+
+export interface LearnerQuiz {
+  quiz: LearnerQuizConfig;
+  questions: LearnerQuizQuestion[];
+}
+
+/** submit_quiz_attempt RPC の採点結果。 */
+export interface QuizQuestionResult {
+  question_id: string;
+  correct: boolean;
+  correct_option_ids: string[];
+  explanation: string | null;
+}
+
+export interface QuizGradeResult {
+  score: number;
+  max_score: number;
+  passed: boolean;
+  results: QuizQuestionResult[];
+}
+
 export interface AssignmentRow {
   id: string;
   tenant_id: string;

@@ -13,6 +13,11 @@ import type {
   CourseWithChildren,
   LessonRow,
   LessonType,
+  QuestionKind,
+  QuizOptionRow,
+  QuizQuestionRow,
+  QuizRow,
+  QuizWithQuestions,
   SectionRow,
 } from "@falcon/shared/cms/types";
 import { getSupabase } from "./supabase";
@@ -205,6 +210,134 @@ export async function reorderLessons(
     p_section_id: sectionId,
     p_ids: orderedIds,
   });
+  if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------
+// Quiz (CMS 編集用 — staff のみ。 受講者の出題/採点は quiz-attempts-api.ts)
+// ---------------------------------------------------------------
+
+/** lesson に紐付く quiz を設問・選択肢ごと取得する。 未作成なら null。 */
+export async function getQuizByLesson(
+  lessonId: string,
+): Promise<QuizWithQuestions | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select("*, quiz_questions(*, quiz_options(*))")
+    .eq("lesson_id", lessonId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  type Nested = QuizRow & {
+    quiz_questions: Array<QuizQuestionRow & { quiz_options: QuizOptionRow[] }>;
+  };
+  const nested = data as Nested;
+  const { quiz_questions: _q, ...quiz } = nested;
+  void _q;
+  return {
+    quiz: quiz as QuizRow,
+    questions: (nested.quiz_questions ?? [])
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((q) => {
+        const { quiz_options, ...rest } = q;
+        return {
+          ...(rest as QuizQuestionRow),
+          options: (quiz_options ?? [])
+            .slice()
+            .sort((a, b) => a.order - b.order),
+        };
+      }),
+  };
+}
+
+/** lesson に quiz 行が無ければデフォルト設定で作成し、 既存ならそれを返す。 */
+export async function ensureQuiz(lessonId: string): Promise<QuizRow> {
+  const existing = await getQuizByLesson(lessonId);
+  if (existing) return existing.quiz;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quizzes")
+    .insert({ lesson_id: lessonId })
+    .select("*")
+    .single();
+  return unwrap(data as QuizRow | null, error);
+}
+
+export interface UpsertQuizInput {
+  id: string;
+  pass_score?: number;
+  time_limit_sec?: number | null;
+  shuffle_questions?: boolean;
+  shuffle_options?: boolean;
+  max_attempts?: number | null;
+}
+
+export async function updateQuiz(input: UpsertQuizInput): Promise<QuizRow> {
+  const { id, ...patch } = input;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quizzes")
+    .update(patch)
+    .eq("id", id)
+    .select("*")
+    .single();
+  return unwrap(data as QuizRow | null, error);
+}
+
+export interface UpsertQuizQuestionInput {
+  id?: string;
+  quiz_id: string;
+  kind: QuestionKind;
+  prompt: string;
+  explanation?: string | null;
+  points?: number;
+  order?: number;
+}
+
+export async function upsertQuizQuestion(
+  input: UpsertQuizQuestionInput,
+): Promise<QuizQuestionRow> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quiz_questions")
+    .upsert(input)
+    .select("*")
+    .single();
+  return unwrap(data as QuizQuestionRow | null, error);
+}
+
+export async function deleteQuizQuestion(id: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("quiz_questions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export interface UpsertQuizOptionInput {
+  id?: string;
+  question_id: string;
+  label: string;
+  is_correct?: boolean;
+  order?: number;
+}
+
+export async function upsertQuizOption(
+  input: UpsertQuizOptionInput,
+): Promise<QuizOptionRow> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quiz_options")
+    .upsert(input)
+    .select("*")
+    .single();
+  return unwrap(data as QuizOptionRow | null, error);
+}
+
+export async function deleteQuizOption(id: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("quiz_options").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 

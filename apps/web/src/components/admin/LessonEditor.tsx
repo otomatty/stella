@@ -26,6 +26,7 @@ import type {
 } from "@falcon/shared/cms/types";
 import { listAssignments, type UpsertLessonInput } from "@/lib/cms-api";
 import { MaterialUploader } from "./MaterialUploader";
+import { QuizEditor } from "./QuizEditor";
 
 interface Props {
   tenantId: string;
@@ -74,6 +75,7 @@ export function LessonEditor({
   );
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [quizEditorOpen, setQuizEditorOpen] = useState(false);
 
   useEffect(() => {
     if (type !== "assignment" && type !== "code") return;
@@ -110,6 +112,15 @@ export function LessonEditor({
       setSubmitting(false);
     }
   };
+
+  if (quizEditorOpen && lesson?.id) {
+    return (
+      <QuizEditor
+        lessonId={lesson.id}
+        onClose={() => setQuizEditorOpen(false)}
+      />
+    );
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -211,9 +222,24 @@ export function LessonEditor({
           ) : null}
 
           {type === "quiz" ? (
-            <div className="rounded-md border border-dashed border-border bg-sunken p-3 text-[12.5px] text-ink-3">
-              クイズ設問の編集 UI は将来対応です (Issue #10 P5.5)。 タイトルと種別のみ保存されます。
-            </div>
+            lesson?.id ? (
+              <div className="rounded-md border border-border-2 bg-sunken p-3 text-[12.5px] text-ink-3 flex items-center gap-3">
+                <span className="flex-1">
+                  設問・選択肢・配点はこのレッスンに紐付けて編集します。
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQuizEditorOpen(true)}
+                >
+                  設問を編集
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-border bg-sunken p-3 text-[12.5px] text-ink-3">
+                先にこのレッスンを保存すると、 設問・選択肢・配点を編集できます。
+              </div>
+            )
           ) : null}
 
           {type === "code" || type === "assignment" ? (
