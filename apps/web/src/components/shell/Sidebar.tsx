@@ -17,6 +17,7 @@ import {
   LogOut,
   ChevronsUpDown,
   Code,
+  GraduationCap,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -32,6 +33,7 @@ type NavId =
   | 'qa'
   | 'cert'
   | 'review-queue'
+  | 'gradebook'
   | 'students'
   | 'users'
   | 'enrollments'
@@ -61,6 +63,7 @@ const NAV: Record<Role, NavItem[]> = {
   instructor: [
     { id: 'dash', label: 'ダッシュボード', icon: Home },
     { id: 'review-queue', label: '添削待ち', icon: Edit, count: 6 },
+    { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'students', label: '担当受講者', icon: Users },
     { id: 'qa', label: 'Q&A 未返信', icon: MessageCircle, count: 3 },
     { id: 'courses', label: 'コース', icon: Book },
@@ -70,6 +73,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'courses', label: 'コース管理', icon: Book },
     { id: 'assignments', label: '課題管理', icon: Code },
     { id: 'enrollments', label: '受講登録', icon: ClipboardList },
+    { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'users', label: 'ユーザー管理', icon: Users },
     { id: 'orgs', label: '組織マスタ', icon: Building },
     { id: 'report', label: 'レポート', icon: FileText },

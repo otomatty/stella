@@ -67,6 +67,10 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
         duration_hours: form.durationHours ? Number(form.durationHours) : null,
         description: form.description || null,
         status: data.course.status,
+        require_all_lessons: form.requireAllLessons,
+        require_quiz_pass: form.requireQuizPass,
+        require_assignment_pass: form.requireAssignmentPass,
+        auto_issue_certificate: form.autoIssueCertificate,
       });
       toast.success("メタデータを保存しました");
       await refetch();
@@ -197,10 +201,67 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
       </section>
 
       <section className="bg-card border border-border rounded-md p-5">
+        <h3 className="text-sm font-semibold mb-1">修了基準</h3>
+        <p className="text-[12px] text-ink-3 mb-3">
+          有効にした条件をすべて満たすと修了と判定され、 修了証を発行できます。
+        </p>
+        <div className="flex flex-col gap-2.5">
+          <CriterionToggle
+            label="全レッスンの完了を必須にする"
+            checked={form.requireAllLessons}
+            onChange={(v) => setForm({ ...form, requireAllLessons: v })}
+          />
+          <CriterionToggle
+            label="全小テストの合格を必須にする"
+            checked={form.requireQuizPass}
+            onChange={(v) => setForm({ ...form, requireQuizPass: v })}
+          />
+          <CriterionToggle
+            label="全課題の pass を必須にする"
+            checked={form.requireAssignmentPass}
+            onChange={(v) => setForm({ ...form, requireAssignmentPass: v })}
+          />
+          <CriterionToggle
+            label="基準達成時の修了証の自動発行を許可する"
+            checked={form.autoIssueCertificate}
+            onChange={(v) => setForm({ ...form, autoIssueCertificate: v })}
+          />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button type="button" variant="primary" disabled={saving} onClick={() => void onSaveMeta()}>
+            <Save size={14} />
+            修了基準を保存
+          </Button>
+        </div>
+      </section>
+
+      <section className="bg-card border border-border rounded-md p-5">
         <h3 className="text-sm font-semibold mb-3">セクション / レッスン</h3>
         <SectionList course={data} tenantId={tenantId} onChange={refetch} />
       </section>
     </div>
+  );
+}
+
+function CriterionToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2.5 text-[13px] cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded-sm border-border accent-brand"
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 
@@ -211,6 +272,10 @@ interface FormState {
   color: CourseColor;
   durationHours: string;
   description: string;
+  requireAllLessons: boolean;
+  requireQuizPass: boolean;
+  requireAssignmentPass: boolean;
+  autoIssueCertificate: boolean;
 }
 
 function fromCourse(data: CourseWithChildren): FormState {
@@ -221,5 +286,10 @@ function fromCourse(data: CourseWithChildren): FormState {
     color: data.course.color ?? "indigo",
     durationHours: data.course.duration_hours != null ? String(data.course.duration_hours) : "",
     description: data.course.description ?? "",
+    // 列が未マイグレーションの環境では undefined → 既定 true に倒す。
+    requireAllLessons: data.course.require_all_lessons ?? true,
+    requireQuizPass: data.course.require_quiz_pass ?? true,
+    requireAssignmentPass: data.course.require_assignment_pass ?? true,
+    autoIssueCertificate: data.course.auto_issue_certificate ?? true,
   };
 }

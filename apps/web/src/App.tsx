@@ -30,6 +30,9 @@ import { ReviewQueue } from '@/components/instructor/ReviewQueue';
 import { ReviewEditor } from '@/components/instructor/ReviewEditor';
 import { InstructorGeneric } from '@/components/instructor/InstructorGeneric';
 import { InstructorQA } from '@/components/instructor/InstructorQA';
+import { Gradebook } from '@/components/instructor/Gradebook';
+
+import { PublicCertificateVerify } from '@/components/public/PublicCertificateVerify';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
@@ -81,6 +84,7 @@ const PAGE_LABELS: Record<string, string> = {
   qa: 'Q&A',
   'review-queue': '添削待ち',
   review: '添削エディタ',
+  gradebook: '成績台帳',
   students: '担当受講者',
   users: 'ユーザー管理',
   enrollments: '受講登録',
@@ -102,6 +106,25 @@ function mapProfileRole(role: ProfileRole): Role {
 }
 
 export default function App() {
+  // 公開検証ページ (Issue #26): `/?cert=<CODE>` はログイン不要で到達する。
+  // 認証系フックを持つ本体 (MainApp) とは別コンポーネントに分けることで、
+  // 早期 return が hooks 規則 (Rules of Hooks) に抵触しないようにする。
+  const certCode =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('cert')
+      : null;
+  if (certCode) {
+    return (
+      <>
+        <PublicCertificateVerify certCode={certCode} />
+        <Toaster />
+      </>
+    );
+  }
+  return <MainApp />;
+}
+
+function MainApp() {
   const defaultTenant =
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
 
@@ -501,7 +524,17 @@ function renderPage({
         />
       );
     }
-    if (page === 'cert') return <CertificatePage />;
+    if (page === 'cert')
+      return (
+        <CertificatePage
+          courses={courses}
+          currentUserId={currentUserId}
+          studentName={studentName}
+          studentInitials={studentInitials}
+          tenantName={tenantName}
+          supabaseEnabled={supabaseEnabled}
+        />
+      );
     if (page === 'qa')
       return (
         <StandaloneQA
@@ -538,6 +571,7 @@ function renderPage({
       );
     if (page === 'qa')
       return <InstructorQA tenantId={tenantId} currentUserId={currentUserId} />;
+    if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'students' || page === 'courses')
       return <InstructorGeneric page={page} />;
   }
@@ -553,6 +587,7 @@ function renderPage({
         />
       );
     if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
+    if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
     if (page === 'enrollments')
       return (

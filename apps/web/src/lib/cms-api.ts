@@ -92,6 +92,11 @@ export interface UpsertCourseInput {
   duration_hours?: number | null;
   description?: string | null;
   status?: CourseStatus;
+  // 修了基準 (Issue #26)。
+  require_all_lessons?: boolean;
+  require_quiz_pass?: boolean;
+  require_assignment_pass?: boolean;
+  auto_issue_certificate?: boolean;
 }
 
 export async function upsertCourse(input: UpsertCourseInput): Promise<CourseRow> {

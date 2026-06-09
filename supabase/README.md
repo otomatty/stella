@@ -47,6 +47,11 @@ bun run seed:fixtures
 | `20260525000000_submissions_reviews.sql` | 講師添削用 `submissions` テーブル |
 | `20260607000000_lesson_progress.sql` | レッスン進捗 (Issue #21) |
 | `20260607010000_user_management.sql` | `profiles.disabled` 列 + ユーザー管理 RLS 再確認 (Issue #22) |
+| `20260608000000_quiz.sql` | 小テスト (quizzes / questions / options / attempts) + 採点 RPC (Issue #23) |
+| `20260608010000_enrollments.sql` | 受講登録 (enrollments) + グループ枠 (Issue #20) |
+| `20260608020000_qa.sql` | Q&A スレッド / 返信 (Issue #24) |
+| `20260608030000_notifications.sql` | お知らせ / 通知 (Issue #25) |
+| `20260609000000_certificates.sql` | 修了基準 / 成績台帳 RPC / `certificates` + 発行・検証 RPC (Issue #26) |
 
 ## Storage
 

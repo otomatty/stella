@@ -81,6 +81,11 @@ export {
   Inbox,
   Megaphone,
   CheckCheck,
+  ShieldCheck,
+  XCircle,
+  Printer,
+  ExternalLink,
+  GraduationCap,
 } from 'lucide-react';
 
 import type { SVGProps } from 'react';

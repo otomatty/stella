@@ -78,6 +78,14 @@ export interface CourseRow {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * 修了基準 (Issue #26)。 列が未マイグレーションの環境では undefined になり得るため optional。
+   * いずれも既定 true (全レッスン完了 + 小テスト全合格 + 課題全 pass で達成、 達成で自動発行)。
+   */
+  require_all_lessons?: boolean;
+  require_quiz_pass?: boolean;
+  require_assignment_pass?: boolean;
+  auto_issue_certificate?: boolean;
 }
 
 export interface SectionRow {
@@ -229,6 +237,100 @@ export interface EnrollmentRow {
   status: EnrollmentStatus;
   enrolled_at: string;
   completed_at: string | null;
+}
+
+// ---------------------------------------------------------------
+// 修了判定 / 成績台帳 / 修了証 (Issue #26)
+// ---------------------------------------------------------------
+
+/** コースの修了基準トグル。 compute_course_completion / gradebook が返す。 */
+export interface CompletionCriteria {
+  require_all_lessons: boolean;
+  require_quiz_pass: boolean;
+  require_assignment_pass: boolean;
+  auto_issue_certificate: boolean;
+}
+
+/**
+ * (受講者, コース) の達成状況。 compute_course_completion / get_my_course_completion
+ * RPC の戻り値に対応する。 進捗 + 小テスト + 課題を統合した修了判定の中核。
+ */
+export interface CourseCompletion {
+  user_id: string;
+  course_id: string;
+  course_title: string;
+  total_lessons: number;
+  completed_lessons: number;
+  total_quizzes: number;
+  passed_quizzes: number;
+  total_assignments: number;
+  passed_assignments: number;
+  criteria: CompletionCriteria;
+  /** 全基準達成なら true。 修了証発行の前提。 */
+  met: boolean;
+  has_certificate: boolean;
+  cert_code: string | null;
+}
+
+/** 成績台帳の 1 行 (受講者 × 達成状況)。 */
+export interface GradebookEntry {
+  user_id: string;
+  display_name: string;
+  initials: string | null;
+  email: string | null;
+  enrollment_status: EnrollmentStatus;
+  due_at: string | null;
+  enrolled_at: string;
+  completion: CourseCompletion | null;
+}
+
+/** get_course_gradebook RPC の戻り値。 */
+export interface CourseGradebook {
+  course_id: string;
+  course_title: string;
+  criteria: CompletionCriteria;
+  rows: GradebookEntry[];
+}
+
+/** 修了証 DB 行。 */
+export interface CertificateRow {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  course_id: string;
+  cert_code: string;
+  issued_by: string | null;
+  issued_at: string;
+  criteria_snapshot: CourseCompletion | Record<string, unknown>;
+  recipient_name: string;
+  course_title: string;
+  tenant_name: string;
+  revoked: boolean;
+}
+
+/** issue_certificate RPC の戻り値 (サマリ)。 */
+export interface IssuedCertificate {
+  id: string;
+  cert_code: string;
+  course_id: string;
+  user_id: string;
+  issued_at: string;
+  recipient_name: string;
+  course_title: string;
+  tenant_name: string;
+  revoked: boolean;
+  already_existed: boolean;
+}
+
+/** verify_certificate RPC (匿名実行可) の戻り値。 */
+export interface CertificateVerification {
+  valid: boolean;
+  reason?: "not_found" | "revoked";
+  cert_code?: string;
+  recipient_name?: string;
+  course_title?: string;
+  tenant_name?: string;
+  issued_at?: string;
 }
 
 export type QuestionStatus = "open" | "answered" | "closed";
