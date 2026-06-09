@@ -38,6 +38,7 @@ export interface CallerProfile {
   id: string;
   tenantId: string;
   role: ProfileRole;
+  name: string;
 }
 
 /**
@@ -61,7 +62,7 @@ export async function authenticateAdmin(
 
   const { data: profile, error: pErr } = await supabase
     .from("profiles")
-    .select("id, tenant_id, role, disabled")
+    .select("id, tenant_id, role, disabled, display_name")
     .eq("id", userData.user.id)
     .maybeSingle();
   if (pErr) {
@@ -80,6 +81,7 @@ export async function authenticateAdmin(
     id: profile.id as string,
     tenantId: profile.tenant_id as string,
     role: profile.role as ProfileRole,
+    name: (profile.display_name as string | null) ?? "",
   };
 }
 
@@ -116,6 +118,57 @@ export async function requireSameTenantTarget(
 /** 表示名からイニシャル (先頭 2 文字、 大文字) を作る。 */
 export function initialsFrom(displayName: string): string {
   return displayName.slice(0, 2).toUpperCase();
+}
+
+/** リバースプロキシ / Cloudflare 越しの実クライアント IP を取り出す。 取れなければ null。 */
+export function clientIp(c: Context<{ Bindings: Env }>): string | null {
+  const cf = c.req.header("cf-connecting-ip");
+  if (cf) return cf;
+  const fwd = c.req.header("x-forwarded-for");
+  if (fwd) {
+    const first = fwd.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return null;
+}
+
+export interface AuditEntry {
+  tenantId: string;
+  actorId: string | null;
+  actorName?: string;
+  actorRole?: string | null;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  ip?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 監査ログを 1 件記録する (Issue #27)。 service-role クライアントで呼ぶ前提で、
+ * RLS を迂回して audit_logs に append する。
+ *
+ * 記録の失敗で主たる管理操作 (ロール変更等) を巻き戻すと運用上かえって危険なため、
+ * ここでは例外を投げず console.error に留める (best-effort)。
+ */
+export async function recordAuditLog(
+  supabase: SupabaseClient,
+  entry: AuditEntry,
+): Promise<void> {
+  const { error } = await supabase.from("audit_logs").insert({
+    tenant_id: entry.tenantId,
+    actor_id: entry.actorId,
+    actor_name: entry.actorName ?? "",
+    actor_role: entry.actorRole ?? null,
+    action: entry.action,
+    target_type: entry.targetType,
+    target_id: entry.targetId ?? null,
+    ip: entry.ip ?? null,
+    metadata: entry.metadata ?? {},
+  });
+  if (error) {
+    console.error("[audit] failed to record audit log", entry.action, error);
+  }
 }
 
 /** ALLOWED_ORIGINS の先頭、 または INVITE_REDIRECT_URL を招待リンク先に使う。 */

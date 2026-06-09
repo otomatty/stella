@@ -20,8 +20,10 @@ import type { Env } from "../env.js";
 import {
   AdminApiError,
   authenticateAdmin,
+  clientIp,
   getServiceClient,
   initialsFrom,
+  recordAuditLog,
   requireSameTenantTarget,
   resolveInviteRedirect,
 } from "../lib/supabase-admin.js";
@@ -56,6 +58,7 @@ adminUsersRoute.post("/api/admin/users/invite", async (c) => {
     }
 
     const redirectTo = resolveInviteRedirect(c.env);
+    const ip = clientIp(c);
     const results: InviteResult[] = [];
 
     for (const inv of validated.invites) {
@@ -131,6 +134,17 @@ adminUsersRoute.post("/api/admin/users/invite", async (c) => {
           results.push({ email: inv.email, ok: false, error: "プロフィール作成に失敗しました" });
         } else {
           results.push({ email: inv.email, ok: true, userId: data.user.id });
+          await recordAuditLog(supabase, {
+            tenantId: caller.tenantId,
+            actorId: caller.id,
+            actorName: caller.name,
+            actorRole: caller.role,
+            action: "user_invite",
+            targetType: "user",
+            targetId: data.user.id,
+            ip,
+            metadata: { email: inv.email, role: inv.role },
+          });
         }
       } catch (rowErr) {
         console.error("[admin-users] invite row failed", rowErr);
@@ -173,7 +187,7 @@ adminUsersRoute.post("/api/admin/users/role", async (c) => {
       return c.json({ error: "自分自身のロールは変更できません" }, 400);
     }
 
-    await requireSameTenantTarget(supabase, caller, userId);
+    const target = await requireSameTenantTarget(supabase, caller, userId);
 
     // tenant_id 条件も付け、 チェック後の TOCTOU で他テナント行を更新できないようにする。
     // .select() で更新行を返し、 0 件 (対象消失 / tenant 変化) を成功扱いしない。
@@ -190,6 +204,18 @@ adminUsersRoute.post("/api/admin/users/role", async (c) => {
     if (!updated || updated.length === 0) {
       throw new AdminApiError("対象ユーザーが見つかりません", 404);
     }
+
+    await recordAuditLog(supabase, {
+      tenantId: caller.tenantId,
+      actorId: caller.id,
+      actorName: caller.name,
+      actorRole: caller.role,
+      action: "role_change",
+      targetType: "user",
+      targetId: userId,
+      ip: clientIp(c),
+      metadata: { from: target.role, to: body.role },
+    });
 
     return c.json({ ok: true });
   } catch (e) {
@@ -261,6 +287,17 @@ adminUsersRoute.post("/api/admin/users/disable", async (c) => {
       await rollbackBan();
       throw new AdminApiError("対象ユーザーが見つかりません", 404);
     }
+
+    await recordAuditLog(supabase, {
+      tenantId: caller.tenantId,
+      actorId: caller.id,
+      actorName: caller.name,
+      actorRole: caller.role,
+      action: disabled ? "user_disable" : "user_enable",
+      targetType: "user",
+      targetId: userId,
+      ip: clientIp(c),
+    });
 
     return c.json({ ok: true });
   } catch (e) {

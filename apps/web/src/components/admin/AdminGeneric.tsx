@@ -1,7 +1,6 @@
 import {
   Upload,
   Plus,
-  Download,
   Folder,
   Edit,
   MoreHorizontal,
@@ -12,85 +11,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CourseThumb } from '@/components/common/CourseThumb';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from '@/components/ui/table';
 import { SES_COURSES } from '@/data/fixtures';
 
 const titles: Record<string, { t: string; s: string }> = {
   courses: { t: 'コース管理', s: '公開状態 / テンプレート化 / 複製' },
   orgs: { t: '組織マスタ', s: '顧客企業・学校の登録管理' },
   report: { t: 'レポート', s: 'CSV / Excel エクスポート対応' },
-  audit: { t: '監査ログ', s: '認証・権限変更・削除操作 — 1年以上保管' },
 };
-
-const AUDIT_ROWS = [
-  { t: '14:32:18', a: '堀江メンター', ac: 'add_review', tg: 'submission/r1', ip: '10.0.3.22' },
-  { t: '14:28:05', a: '中村 理恵', ac: 'role_change', tg: 'user/u_142', ip: '10.0.3.5' },
-  { t: '13:05:44', a: 'sys_admin', ac: 'tenant_update', tg: 'tenant/ses', ip: '10.0.0.1' },
-  { t: '12:18:30', a: '堀江メンター', ac: 'course_publish', tg: 'course/web-fundamentals', ip: '10.0.3.22' },
-  { t: '11:02:09', a: '中村 理恵', ac: 'user_invite', tg: 'email/sato.m', ip: '10.0.3.5' },
-  { t: '10:45:12', a: '田中 翔太', ac: 'login', tg: 'auth/magiclink', ip: '124.32.11.8' },
-];
 
 export const AdminGeneric = ({ page }: { page: string }) => {
   const info = titles[page];
   if (!info) {
     return <GenericEmpty page={page} />;
-  }
-
-  if (page === 'audit') {
-    return (
-      <>
-        <PageHeader
-          title={info.t}
-          sub={info.s}
-          actions={
-            <Button>
-              <Download size={14} />
-              CSV出力
-            </Button>
-          }
-        />
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>日時</TableHead>
-                <TableHead>実行者</TableHead>
-                <TableHead>操作</TableHead>
-                <TableHead>対象</TableHead>
-                <TableHead>IP</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {AUDIT_ROWS.map((l, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-mono text-[11.5px]">
-                    2026-04-18 {l.t}
-                  </TableCell>
-                  <TableCell>{l.a}</TableCell>
-                  <TableCell>
-                    <Badge>{l.ac}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-[11.5px] text-ink-3">
-                    {l.tg}
-                  </TableCell>
-                  <TableCell className="font-mono text-[11.5px] text-ink-3">
-                    {l.ip}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      </>
-    );
   }
 
   if (page === 'courses') {

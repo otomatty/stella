@@ -40,6 +40,7 @@ import { AdminGeneric, GenericEmpty } from '@/components/admin/AdminGeneric';
 import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
 import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
+import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
@@ -598,7 +599,9 @@ function renderPage({
           supabaseEnabled={supabaseEnabled}
         />
       );
-    if (page === 'orgs' || page === 'report' || page === 'audit')
+    if (page === 'audit')
+      return <AdminAuditPage tenantId={tenantId} supabaseEnabled={supabaseEnabled} />;
+    if (page === 'orgs' || page === 'report')
       return <AdminGeneric page={page} />;
   }
   return <GenericEmpty page={page} />;
