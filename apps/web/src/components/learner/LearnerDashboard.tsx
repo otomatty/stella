@@ -17,18 +17,36 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ANNOUNCEMENTS } from '@/data/fixtures';
-import type { Course } from '@/data/types';
+import type { Course, Tenant } from '@/data/types';
+import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { cn } from '@/lib/utils';
 
 interface LearnerDashboardProps {
   setPage: (page: string) => void;
   courses: Course[];
+  tenantId: Tenant['id'];
 }
 
-export const LearnerDashboard = ({ setPage, courses }: LearnerDashboardProps) => {
+/** ISO 文字列を「M月D日」表記にする。 不正値は空文字。 */
+function formatAnnouncementDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+const NEW_WINDOW_MS = 7 * 86_400_000;
+
+export const LearnerDashboard = ({ setPage, courses, tenantId }: LearnerDashboardProps) => {
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   const current = active[0];
+
+  // お知らせを実データ化 (Issue #25)。 Supabase 未設定時は fixtures へフォールバックする。
+  const { announcements } = useAnnouncements(tenantId);
+  const now = Date.now();
+  const newCount = announcements.reduce(
+    (n, a) => n + (now - new Date(a.published_at).getTime() < NEW_WINDOW_MS ? 1 : 0),
+    0,
+  );
 
   // 期限が近い課題は enrollment の dueAt から実データで組み立てる。
   // 該当が無ければサンプルではなく空状態を表示する (誤情報を出さない)。
@@ -218,33 +236,48 @@ export const LearnerDashboard = ({ setPage, courses }: LearnerDashboardProps) =>
             <CardHeader>
               <CardTitle>お知らせ</CardTitle>
               <CardActions>
-                <Badge variant="accent">2 新着</Badge>
+                {newCount > 0 ? (
+                  <Badge variant="accent">{newCount} 新着</Badge>
+                ) : null}
               </CardActions>
             </CardHeader>
             <div>
-              {ANNOUNCEMENTS.map((a, i) => (
-                <div
-                  key={a.id}
-                  className={cn(
-                    'flex gap-3 px-4 py-3',
-                    i < ANNOUNCEMENTS.length - 1 ? 'border-b border-border' : '',
-                  )}
-                >
+              {announcements.length === 0 ? (
+                <div className="px-4 py-3 text-[12.5px] text-ink-3">
+                  お知らせはありません。
+                </div>
+              ) : null}
+              {announcements.slice(0, 5).map((a, i, arr) => {
+                const isNew = now - new Date(a.published_at).getTime() < NEW_WINDOW_MS;
+                return (
                   <div
+                    key={a.id}
                     className={cn(
-                      'shrink-0 w-2 h-2 rounded-full mt-1.5',
-                      a.unread ? 'bg-brand' : 'bg-border-strong',
+                      'flex gap-3 px-4 py-3',
+                      i < arr.length - 1 ? 'border-b border-border' : '',
                     )}
-                  />
-                  <div>
-                    <div className="font-medium text-[13px] leading-snug">{a.title}</div>
-                    <div className="text-[11.5px] text-ink-3 mt-1 flex gap-2">
-                      <span>{a.by}</span>
-                      <span>{a.date}</span>
+                  >
+                    <div
+                      className={cn(
+                        'shrink-0 w-2 h-2 rounded-full mt-1.5',
+                        isNew ? 'bg-brand' : 'bg-border-strong',
+                      )}
+                    />
+                    <div className="min-w-0">
+                      <div className="font-medium text-[13px] leading-snug">{a.title}</div>
+                      {a.body ? (
+                        <div className="text-[11.5px] text-ink-2 mt-0.5 line-clamp-2">
+                          {a.body}
+                        </div>
+                      ) : null}
+                      <div className="text-[11.5px] text-ink-3 mt-1 flex gap-2">
+                        <span>{a.author_name || 'お知らせ'}</span>
+                        <span>{formatAnnouncementDate(a.published_at)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
 

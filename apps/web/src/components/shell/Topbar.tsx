@@ -1,13 +1,28 @@
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
-import { ChevronRight, Search, Bell, HelpCircle } from '@/lib/icons';
+import { ChevronRight, Search, HelpCircle } from '@/lib/icons';
+import { NotificationCenter } from '@/components/shell/NotificationCenter';
+import type { NotificationRow } from '@falcon/shared/cms/types';
+import type { Course, Role, Tenant } from '@/data/types';
 
 interface TopbarProps {
   crumbs: ReactNode[];
   actions?: ReactNode;
+  /** 通知センター用のコンテキスト / データ / ハンドラ。 */
+  notify: {
+    role: Role;
+    tenantId: Tenant['id'];
+    notifications: NotificationRow[];
+    unreadCount: number;
+    loading: boolean;
+    onMarkRead: (id: string) => void;
+    onMarkAllRead: () => void;
+    onAfterCreateAnnouncement: () => void;
+    courses: Course[];
+  };
 }
 
-export const Topbar = ({ crumbs, actions }: TopbarProps) => (
+export const Topbar = ({ crumbs, actions, notify }: TopbarProps) => (
   <div className="flex items-center gap-3.5 px-7 py-3 bg-card border-b border-border sticky top-0 z-10 h-[57px]">
     <div className="flex items-center gap-1.5 text-[13px] text-ink-3">
       {crumbs.map((c, i) => (
@@ -32,14 +47,17 @@ export const Topbar = ({ crumbs, actions }: TopbarProps) => (
         ⌘K
       </span>
     </div>
-    <button
-      className="w-8 h-8 rounded-sm grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border relative"
-      title="お知らせ"
-      type="button"
-    >
-      <Bell size={16} />
-      <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] rounded-full bg-brand border-[1.5px] border-card" />
-    </button>
+    <NotificationCenter
+      role={notify.role}
+      tenantId={notify.tenantId}
+      notifications={notify.notifications}
+      unreadCount={notify.unreadCount}
+      loading={notify.loading}
+      onMarkRead={notify.onMarkRead}
+      onMarkAllRead={notify.onMarkAllRead}
+      onAfterCreateAnnouncement={notify.onAfterCreateAnnouncement}
+      courses={notify.courses}
+    />
     <button
       className="w-8 h-8 rounded-sm grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
       title="ヘルプ"

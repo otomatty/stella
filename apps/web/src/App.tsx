@@ -43,6 +43,7 @@ import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
+import { useNotifications } from '@/hooks/useNotifications';
 
 type Stage = 'login' | 'tenant-select' | 'app';
 
@@ -167,6 +168,13 @@ export default function App() {
   const courses =
     effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
+  // 通知センター (Issue #25)。 Supabase 未設定 / 未ログイン時はフック内部で空になる。
+  // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
+  const notifications = useNotifications(
+    effectiveTenant.id,
+    session?.user.id ?? null,
+    true,
+  );
 
   // ページがレッスン以外に戻ったら context を general にリセット
   useEffect(() => {
@@ -347,7 +355,20 @@ export default function App() {
           }
         />
         <div className="min-w-0 flex flex-col">
-          <Topbar crumbs={crumbs} />
+          <Topbar
+            crumbs={crumbs}
+            notify={{
+              role: effectiveRole,
+              tenantId: effectiveTenant.id,
+              notifications: notifications.notifications,
+              unreadCount: notifications.unreadCount,
+              loading: notifications.loading,
+              onMarkRead: (id) => void notifications.markRead(id),
+              onMarkAllRead: () => void notifications.markAllRead(),
+              onAfterCreateAnnouncement: () => void notifications.refetch(),
+              courses: browseCourses.courses,
+            }}
+          />
           <div className={isFlush ? 'flex-1 min-w-0' : 'p-7 flex-1 min-w-0 overflow-x-hidden'}>
             {renderPage({
               role: effectiveRole,
@@ -449,7 +470,8 @@ function renderPage({
   studentInitials,
 }: RenderParams) {
   if (role === 'learner') {
-    if (page === 'dash') return <LearnerDashboard setPage={setPage} courses={courses} />;
+    if (page === 'dash')
+      return <LearnerDashboard setPage={setPage} courses={courses} tenantId={tenantId} />;
     if (page === 'courses')
       return (
         <CourseList

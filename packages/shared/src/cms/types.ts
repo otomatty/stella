@@ -269,6 +269,50 @@ export interface QuestionWithReplies extends QuestionRow {
   replies: QuestionReplyRow[];
 }
 
+// ---------------------------------------------------------------
+// 通知・お知らせ (Issue #25)
+// ---------------------------------------------------------------
+
+/**
+ * お知らせ (アナウンス)。 講師/管理者が発信し、 受講者ダッシュボードに表示される。
+ * course_id が null ならテナント全体、 set ならそのコース受講者向け。
+ * author_name は profiles の RLS を跨がず描画するための denormalize。
+ */
+export interface AnnouncementRow {
+  id: string;
+  tenant_id: string;
+  course_id: string | null;
+  author_id: string | null;
+  author_name: string;
+  title: string;
+  body: string;
+  published_at: string;
+  created_at: string;
+}
+
+export type NotificationType =
+  | "announcement"
+  | "review_completed"
+  | "qa_answered"
+  | "assignment_due";
+
+/**
+ * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。
+ * お知らせの fan-out + 添削完了 / Q&A 回答などのイベントを受け取る。
+ * payload は種別ごとの参照情報 (submission_id / question_id / announcement_id 等)。
+ */
+export interface NotificationRow {
+  id: string;
+  user_id: string;
+  tenant_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
+  read: boolean;
+  created_at: string;
+}
+
 export interface AssignmentRow {
   id: string;
   tenant_id: string;

@@ -79,6 +79,8 @@ export {
   Save,
   PlayCircle,
   Inbox,
+  Megaphone,
+  CheckCheck,
 } from 'lucide-react';
 
 import type { SVGProps } from 'react';
