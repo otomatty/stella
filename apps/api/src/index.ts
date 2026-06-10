@@ -17,7 +17,8 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("/api/*", async (c, next) => {
   const corsMiddleware = cors({
-    origin: (origin) => resolveCorsOrigin(origin, c.env.ALLOWED_ORIGINS) ?? "",
+    // null を返すと Access-Control-Allow-Origin ヘッダ自体が送られない (= 不許可)。
+    origin: (origin) => resolveCorsOrigin(origin, c.env.ALLOWED_ORIGINS),
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   });

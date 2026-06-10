@@ -60,20 +60,27 @@ adminUsersRoute.post("/api/admin/users/invite", async (c) => {
     const ip = clientIp(c);
     const results: InviteResult[] = [];
 
+    // 既存プロフィールを email で先に確認し、 他テナントのユーザーを upsert で
+    // 自テナントへ上書き (テナントハイジャック) するのを防ぐ。
+    // CSV 一括招待 (最大 200 件) でも 1 クエリで済むよう in() で一括取得する。
+    const { data: existingRows, error: findErr } = await supabase
+      .from("profiles")
+      .select("id, tenant_id, email")
+      .in(
+        "email",
+        validated.invites.map((inv) => inv.email),
+      );
+    if (findErr) {
+      console.error("[admin-users] lookup existing profiles failed", findErr);
+      return c.json({ error: "既存ユーザーの確認に失敗しました" }, 500);
+    }
+    const existingByEmail = new Map(
+      (existingRows ?? []).map((row) => [row.email, row]),
+    );
+
     for (const inv of validated.invites) {
       try {
-        // 既存プロフィールを email で先に確認し、 他テナントのユーザーを upsert で
-        // 自テナントへ上書き (テナントハイジャック) するのを防ぐ。
-        const { data: existing, error: findErr } = await supabase
-          .from("profiles")
-          .select("id, tenant_id")
-          .eq("email", inv.email)
-          .maybeSingle();
-        if (findErr) {
-          console.error("[admin-users] lookup existing profile failed", findErr);
-          results.push({ email: inv.email, ok: false, error: "既存ユーザーの確認に失敗しました" });
-          continue;
-        }
+        const existing = existingByEmail.get(inv.email);
         if (existing) {
           results.push({
             email: inv.email,

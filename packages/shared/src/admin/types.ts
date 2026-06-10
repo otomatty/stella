@@ -95,6 +95,11 @@ export interface UpsertOrganizationInput {
   contractStart?: string | null;
   contractEnd?: string | null;
   active?: boolean;
+  /**
+   * true のとき「新規作成」の意図を示す。 同じ id の組織が既に存在する場合、
+   * API は upsert で黙って上書きせず 409 を返す (ID 衝突による既存組織の改変防止)。
+   */
+  expectCreate?: boolean;
 }
 
 /** 組織 id (slug) の形式。 英小文字 / 数字 / ハイフン、 2〜32 文字。 */
@@ -165,6 +170,7 @@ export function validateUpsertOrganization(raw: unknown): ValidateOrgResult {
       ? body.contractEnd.trim()
       : null;
   const active = typeof body.active === "boolean" ? body.active : true;
+  const expectCreate = body.expectCreate === true;
 
   return {
     ok: true,
@@ -178,6 +184,7 @@ export function validateUpsertOrganization(raw: unknown): ValidateOrgResult {
       contractStart,
       contractEnd,
       active,
+      expectCreate,
     },
   };
 }

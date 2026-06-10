@@ -129,6 +129,7 @@ function OrgsLive() {
         contractStart: form.contractStart || null,
         contractEnd: form.contractEnd || null,
         active: form.active,
+        expectCreate: !editing,
       });
       toast.success(editing ? "組織を更新しました" : "組織を作成しました");
       setDialogOpen(false);

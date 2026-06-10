@@ -2,7 +2,7 @@
  * `/admin/assignments` — テナント所属の課題一覧 + 編集起動。
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Plus, Edit, Trash } from "@/lib/icons";
@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/table";
 import type { AssignmentRow } from "@falcon/shared/cms/types";
 import { deleteAssignment, listAssignments } from "@/lib/cms-api";
-import { AssignmentEditor } from "./AssignmentEditor";
+
+// CodeMirror + 採点ランナーを含む重いダイアログのため、 編集を開くまでロードしない。
+const AssignmentEditor = lazy(() =>
+  import("./AssignmentEditor").then((m) => ({ default: m.AssignmentEditor })),
+);
 
 interface Props {
   tenantId: string;
@@ -128,15 +132,27 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
       )}
 
       {editingId ? (
-        <AssignmentEditor
-          tenantId={tenantId}
-          assignmentId={editingId === "__new__" ? null : editingId}
-          onClose={() => setEditingId(null)}
-          onSaved={async () => {
-            await refetch();
-            setEditingId(null);
-          }}
-        />
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              aria-busy="true"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-background/80"
+            >
+              <div className="text-sm text-ink-3">読み込み中…</div>
+            </div>
+          }
+        >
+          <AssignmentEditor
+            tenantId={tenantId}
+            assignmentId={editingId === "__new__" ? null : editingId}
+            onClose={() => setEditingId(null)}
+            onSaved={async () => {
+              await refetch();
+              setEditingId(null);
+            }}
+          />
+        </Suspense>
       ) : null}
     </>
   );

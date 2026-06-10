@@ -108,6 +108,11 @@ organizationsRoute.post("/api/admin/orgs/upsert", async (c) => {
       console.error("[orgs] lookup tenant failed", findErr);
       throw new AdminApiError("組織の確認に失敗しました", 500);
     }
+    // 「新規作成」の意図で既存 id を指定した場合は upsert で黙って上書きせず弾く
+    // (ID 衝突による既存組織の改変防止)。
+    if (v.expectCreate && existing) {
+      throw new AdminApiError("この組織IDは既に使用されています", 409);
+    }
     const isCreate = !existing;
 
     const row = {

@@ -12,3 +12,12 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 # SUPABASE_SERVICE_ROLE_KEY は機密のため vars に書かず `wrangler secret put` で設定する。
 # SUPABASE_URL = "https://<project-ref>.supabase.co"
 # INVITE_REDIRECT_URL = "https://<your-app-domain>"
+
+# AI エンドポイント (chat / review-draft) のレート制限。
+# クライアント IP 単位で 60 秒あたり 20 リクエストまで。
+# https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+[[unsafe.bindings]]
+name = "AI_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }

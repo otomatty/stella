@@ -13,7 +13,7 @@ import type { ProfileRole } from "@falcon/shared/admin/types";
 import type { Env } from "../env.js";
 
 export class AdminApiError extends Error {
-  status: 400 | 401 | 403 | 404 | 500 | 503;
+  status: 400 | 401 | 403 | 404 | 409 | 429 | 500 | 503;
   constructor(message: string, status: AdminApiError["status"]) {
     super(message);
     this.name = "AdminApiError";

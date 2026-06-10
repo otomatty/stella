@@ -35,13 +35,19 @@ import { QAThread } from '@/components/common/QAThread';
 import { QuestionComposer } from '@/components/common/QuestionComposer';
 import type { QuestionWithReplies } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
-import { PracticeWorkspace } from '@/practice/PracticeWorkspace';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
 import { QuizPlayer } from './QuizPlayer';
 import type { Tenant } from '@/data/types';
 
 const SlidesViewer = lazy(() =>
   import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
+);
+
+// CodeMirror (vendor-codemirror chunk) を含むため、 code レッスンを開くまでロードしない。
+const PracticeWorkspace = lazy(() =>
+  import('@/practice/PracticeWorkspace').then((m) => ({
+    default: m.PracticeWorkspace,
+  })),
 );
 
 interface LessonPlayerProps {
@@ -326,14 +332,16 @@ export const LessonPlayer = ({
         {isCode && lessonObj.assignmentId ? (
           // PracticeWorkspace 側で shared / CMS DB の双方を解決するため、
           // ここで findAssignment による事前フィルタは行わない (#10 — CMS で作られた課題対応)。
-          <PracticeWorkspace
-            key={lessonObj.id}
-            assignmentId={lessonObj.assignmentId}
-            embedded
-            onCleared={handlePracticeCleared}
-            onAskAi={handlePracticeAskAi}
-            onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
-          />
+          <Suspense fallback={<ViewerLoading />}>
+            <PracticeWorkspace
+              key={lessonObj.id}
+              assignmentId={lessonObj.assignmentId}
+              embedded
+              onCleared={handlePracticeCleared}
+              onAskAi={handlePracticeAskAi}
+              onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
+            />
+          </Suspense>
         ) : (
           <>
         {isVideo ? (

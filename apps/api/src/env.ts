@@ -17,4 +17,9 @@ export interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
   /** 招待メールのリンク先 (受諾後に開くアプリ URL)。 未設定なら ALLOWED_ORIGINS の先頭。 */
   INVITE_REDIRECT_URL?: string;
+  /**
+   * AI エンドポイント (chat / review-draft) の Rate Limiting バインディング。
+   * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
+   */
+  AI_RATE_LIMITER?: RateLimit;
 }

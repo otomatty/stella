@@ -14,10 +14,14 @@ import { Hono } from "hono";
 import type { Env } from "../env.js";
 import { completeMessage } from "../lib/anthropic-complete.js";
 import { MissingApiKeyError } from "../lib/anthropic.js";
+import { enforceAiRateLimit } from "../lib/rate-limit.js";
 
 export const reviewDraftRoute = new Hono<{ Bindings: Env }>();
 
 reviewDraftRoute.post("/api/review-draft", async (c) => {
+  const limited = await enforceAiRateLimit(c);
+  if (limited) return limited;
+
   let raw: unknown;
   try {
     raw = await c.req.json();

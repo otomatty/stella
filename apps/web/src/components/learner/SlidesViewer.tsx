@@ -15,6 +15,11 @@ import {
   useState,
 } from 'react';
 import { Document, Page } from 'react-pdf';
+// pdfjs (約 1MB+) を main バンドルに含めないよう、 worker 設定と CSS は
+// lazy ロードされる本コンポーネント側で import する (main.tsx に置かない)。
+import '@/lib/pdfjs-worker';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import {
   ChevronLeft,
   ChevronRight,
