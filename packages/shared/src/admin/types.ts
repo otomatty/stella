@@ -54,6 +54,134 @@ export interface SetDisabledRequest {
 /** 1 度に招待できる最大件数 (CSV 一括のスパム / タイムアウト対策)。 */
 export const MAX_INVITES_PER_REQUEST = 200;
 
+// ---------------------------------------------------------------
+// 組織マスタ (Issue #29)
+// ---------------------------------------------------------------
+
+/** 組織 (tenant) 1 件。 契約情報 + 所属ユーザー数 (member_count) を含む。 */
+export interface OrganizationRow {
+  id: string;
+  name: string;
+  subtitle: string | null;
+  icon: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  plan_seats: number | null;
+  contract_start: string | null;
+  contract_end: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  /** 無効化されていない所属プロフィール数 (API が集計)。 */
+  member_count: number;
+}
+
+/** `GET /api/admin/orgs` のレスポンス。 */
+export interface ListOrganizationsResponse {
+  organizations: OrganizationRow[];
+}
+
+/**
+ * `POST /api/admin/orgs/upsert` のリクエスト body。
+ * `id` 新規時は slug を採番、 既存時は更新対象を指す (id 自体は不変)。
+ */
+export interface UpsertOrganizationInput {
+  id: string;
+  name: string;
+  subtitle?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  planSeats?: number | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  active?: boolean;
+}
+
+/** 組織 id (slug) の形式。 英小文字 / 数字 / ハイフン、 2〜32 文字。 */
+const ORG_ID_RE = /^[a-z0-9][a-z0-9-]{1,31}$/;
+
+export function isValidOrgId(value: string): boolean {
+  return ORG_ID_RE.test(value);
+}
+
+type ValidateOrgResult =
+  | { ok: true; value: Required<Pick<UpsertOrganizationInput, "id" | "name">> & UpsertOrganizationInput }
+  | { ok: false; status: 400; message: string };
+
+/**
+ * 組織 upsert リクエストを検証して正規化する。 API ハンドラと UI の双方で再利用する。
+ */
+export function validateUpsertOrganization(raw: unknown): ValidateOrgResult {
+  if (!raw || typeof raw !== "object") {
+    return { ok: false, status: 400, message: "リクエストボディが不正です" };
+  }
+  const body = raw as Record<string, unknown>;
+
+  const id = typeof body.id === "string" ? body.id.trim().toLowerCase() : "";
+  if (!isValidOrgId(id)) {
+    return {
+      ok: false,
+      status: 400,
+      message: "組織IDは英小文字・数字・ハイフン (2〜32文字) で指定してください",
+    };
+  }
+
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  if (!name) {
+    return { ok: false, status: 400, message: "組織名は必須です" };
+  }
+
+  const contactEmail =
+    typeof body.contactEmail === "string" && body.contactEmail.trim()
+      ? body.contactEmail.trim().toLowerCase()
+      : null;
+  if (contactEmail && !isValidEmail(contactEmail)) {
+    return { ok: false, status: 400, message: "担当者メールアドレスの形式が不正です" };
+  }
+
+  let planSeats: number | null = null;
+  if (body.planSeats !== undefined && body.planSeats !== null && body.planSeats !== "") {
+    const n = Number(body.planSeats);
+    if (!Number.isInteger(n) || n < 0) {
+      return { ok: false, status: 400, message: "席数は 0 以上の整数で指定してください" };
+    }
+    planSeats = n;
+  }
+
+  const subtitle =
+    typeof body.subtitle === "string" && body.subtitle.trim()
+      ? body.subtitle.trim()
+      : null;
+  const contactName =
+    typeof body.contactName === "string" && body.contactName.trim()
+      ? body.contactName.trim()
+      : null;
+  const contractStart =
+    typeof body.contractStart === "string" && body.contractStart.trim()
+      ? body.contractStart.trim()
+      : null;
+  const contractEnd =
+    typeof body.contractEnd === "string" && body.contractEnd.trim()
+      ? body.contractEnd.trim()
+      : null;
+  const active = typeof body.active === "boolean" ? body.active : true;
+
+  return {
+    ok: true,
+    value: {
+      id,
+      name,
+      subtitle,
+      contactName,
+      contactEmail,
+      planSeats,
+      contractStart,
+      contractEnd,
+      active,
+    },
+  };
+}
+
 /** ざっくりしたメール形式チェック。 厳密な RFC 準拠ではなく明らかな誤入力を弾く用途。 */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

@@ -148,8 +148,10 @@ export interface AuditEntry {
  * 監査ログを 1 件記録する (Issue #27)。 service-role クライアントで呼ぶ前提で、
  * RLS を迂回して audit_logs に append する。
  *
- * 記録の失敗で主たる管理操作 (ロール変更等) を巻き戻すと運用上かえって危険なため、
- * ここでは例外を投げず console.error に留める (best-effort)。
+ * ロール変更 / 招待 / 無効化など主操作との原子性が必要な記録は、 単一トランザクション
+ * の RPC (admin_change_role / admin_apply_disable / admin_apply_invite) に移行済み (#39)。
+ * 本関数は、 主操作との原子性まで要さない補助的な記録 (組織マスタの作成/更新など) のための
+ * best-effort 記録として残す (失敗は console.error に留め、 主操作は巻き戻さない)。
  */
 export async function recordAuditLog(
   supabase: SupabaseClient,

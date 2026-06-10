@@ -46,6 +46,8 @@ const ACTION_META: Record<
   course_unpublish: { label: "コース非公開", variant: "default" },
   course_status_change: { label: "コース状態変更", variant: "default" },
   course_delete: { label: "コース削除", variant: "danger" },
+  org_create: { label: "組織作成", variant: "info" },
+  org_update: { label: "組織更新", variant: "warning" },
   login: { label: "ログイン", variant: "default" },
 };
 

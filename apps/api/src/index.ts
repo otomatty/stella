@@ -10,6 +10,7 @@ import { resolveCorsOrigin } from "./lib/cors.js";
 import { adminUsersRoute } from "./routes/admin-users.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthzRoute } from "./routes/healthz.js";
+import { organizationsRoute } from "./routes/organizations.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -27,5 +28,6 @@ app.route("/", healthzRoute);
 app.route("/", chatRoute);
 app.route("/", reviewDraftRoute);
 app.route("/", adminUsersRoute);
+app.route("/", organizationsRoute);
 
 export default app;

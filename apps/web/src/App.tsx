@@ -41,6 +41,7 @@ import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
 import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
+import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
@@ -552,6 +553,7 @@ function renderPage({
           tenantId={tenantId}
           setPage={setPage}
           onOpenReview={onOpenReview}
+          supabaseEnabled={supabaseEnabled}
         />
       );
     if (page === 'review-queue')
@@ -577,7 +579,8 @@ function renderPage({
       return <InstructorGeneric page={page} />;
   }
   if (role === 'admin') {
-    if (page === 'dash') return <AdminDashboard />;
+    if (page === 'dash')
+      return <AdminDashboard tenantId={tenantId} supabaseEnabled={supabaseEnabled} />;
     if (page === 'users')
       return (
         <UsersAdmin
@@ -601,7 +604,9 @@ function renderPage({
       );
     if (page === 'audit')
       return <AdminAuditPage tenantId={tenantId} supabaseEnabled={supabaseEnabled} />;
-    if (page === 'orgs' || page === 'report')
+    if (page === 'orgs')
+      return <AdminOrganizationsPage supabaseEnabled={supabaseEnabled} />;
+    if (page === 'report')
       return <AdminGeneric page={page} />;
   }
   return <GenericEmpty page={page} />;

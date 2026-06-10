@@ -333,6 +333,68 @@ export interface CertificateVerification {
   issued_at?: string;
 }
 
+// ---------------------------------------------------------------
+// 分析ダッシュボード (Issue #28)
+// ---------------------------------------------------------------
+
+/** 受講推移チャートの 1 点 (月次新規登録数)。 */
+export interface AnalyticsTrendPoint {
+  month: string;
+  label: string;
+  count: number;
+}
+
+/** コース別の登録者数 n と完了率 pct。 */
+export interface AnalyticsCourseCompletion {
+  course_id: string;
+  name: string;
+  n: number;
+  pct: number;
+}
+
+/** 小テストのつまずき分析 (設問ごとの正答率)。 */
+export interface AnalyticsStumble {
+  question_id: string;
+  prompt: string;
+  n: number;
+  correct_pct: number;
+}
+
+/** get_tenant_analytics RPC の戻り値。 管理者ダッシュボードの KPI 一式。 */
+export interface TenantAnalytics {
+  active_learners: number;
+  total_learners: number;
+  completion_rate: number;
+  certs_this_month: number;
+  certs_total: number;
+  avg_study_hours: number;
+  new_enrollments_this_month: number;
+  new_enrollments_prev_month: number;
+  enrollment_trend: AnalyticsTrendPoint[];
+  completion_by_course: AnalyticsCourseCompletion[];
+  stumbles: AnalyticsStumble[];
+  status_breakdown: { active: number; completed: number; expired: number };
+  generated_at: string;
+}
+
+/** 講師ダッシュボードの受講者進捗サンプル 1 行。 */
+export interface InstructorStudentProgress {
+  user_id: string;
+  display_name: string;
+  initials: string | null;
+  course_title: string;
+  progress_pct: number;
+  overdue: boolean;
+}
+
+/** get_instructor_overview RPC の戻り値。 */
+export interface InstructorOverview {
+  open_questions: number;
+  overdue_learners: number;
+  total_learners: number;
+  students: InstructorStudentProgress[];
+}
+
 export type QuestionStatus = "open" | "answered" | "closed";
 
 /**

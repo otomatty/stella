@@ -23,7 +23,6 @@ import {
   clientIp,
   getServiceClient,
   initialsFrom,
-  recordAuditLog,
   requireSameTenantTarget,
   resolveInviteRedirect,
 } from "../lib/supabase-admin.js";
@@ -110,22 +109,23 @@ adminUsersRoute.post("/api/admin/users/invite", async (c) => {
 
         // 受諾前から正しい tenant/role でプロフィールを作っておく (RLS では student 固定の
         // ため、 非 student ロールはこの service-role 経由でのみ設定できる)。
-        const { error: pErr } = await supabase.from("profiles").upsert(
-          {
-            id: data.user.id,
-            tenant_id: caller.tenantId,
-            role: inv.role,
-            display_name: inv.displayName,
-            email: inv.email,
-            initials: initialsFrom(inv.displayName),
-            disabled: false,
-          },
-          { onConflict: "id" },
-        );
+        // profiles upsert と監査記録を 1 つの RPC (単一トランザクション) で原子的に行う (#39)。
+        const { error: pErr } = await supabase.rpc("admin_apply_invite", {
+          p_actor_id: caller.id,
+          p_actor_name: caller.name,
+          p_actor_role: caller.role,
+          p_tenant_id: caller.tenantId,
+          p_target_id: data.user.id,
+          p_email: inv.email,
+          p_display_name: inv.displayName,
+          p_role: inv.role,
+          p_initials: initialsFrom(inv.displayName),
+          p_ip: ip,
+        });
         if (pErr) {
-          // profiles 作成に失敗したら auth.users 側もロールバックする。
+          // profiles 作成 / 監査記録に失敗したら auth.users 側もロールバックする。
           // (放置すると orphan auth ユーザーが残り、 同 email の再招待が詰まる)
-          console.error("[admin-users] profile upsert failed; rolling back auth user", pErr);
+          console.error("[admin-users] invite apply failed; rolling back auth user", pErr);
           // admin API は reject せず { error } を返すため、 戻り値を検査する。
           const { error: delErr } = await supabase.auth.admin.deleteUser(data.user.id);
           if (delErr) {
@@ -134,17 +134,6 @@ adminUsersRoute.post("/api/admin/users/invite", async (c) => {
           results.push({ email: inv.email, ok: false, error: "プロフィール作成に失敗しました" });
         } else {
           results.push({ email: inv.email, ok: true, userId: data.user.id });
-          await recordAuditLog(supabase, {
-            tenantId: caller.tenantId,
-            actorId: caller.id,
-            actorName: caller.name,
-            actorRole: caller.role,
-            action: "user_invite",
-            targetType: "user",
-            targetId: data.user.id,
-            ip,
-            metadata: { email: inv.email, role: inv.role },
-          });
         }
       } catch (rowErr) {
         console.error("[admin-users] invite row failed", rowErr);
@@ -187,35 +176,26 @@ adminUsersRoute.post("/api/admin/users/role", async (c) => {
       return c.json({ error: "自分自身のロールは変更できません" }, 400);
     }
 
-    const target = await requireSameTenantTarget(supabase, caller, userId);
+    await requireSameTenantTarget(supabase, caller, userId);
 
-    // tenant_id 条件も付け、 チェック後の TOCTOU で他テナント行を更新できないようにする。
-    // .select() で更新行を返し、 0 件 (対象消失 / tenant 変化) を成功扱いしない。
-    const { data: updated, error } = await supabase
-      .from("profiles")
-      .update({ role: body.role })
-      .eq("id", userId)
-      .eq("tenant_id", caller.tenantId)
-      .select("id");
+    // ロール更新と監査記録を 1 つの RPC (単一トランザクション) で原子的に行う (#39)。
+    // RPC は target を tenant 限定で再取得し、 TOCTOU での越テナント更新を防ぐ。
+    const { error } = await supabase.rpc("admin_change_role", {
+      p_actor_id: caller.id,
+      p_actor_name: caller.name,
+      p_actor_role: caller.role,
+      p_tenant_id: caller.tenantId,
+      p_target_id: userId,
+      p_new_role: body.role,
+      p_ip: clientIp(c),
+    });
     if (error) {
-      console.error("[admin-users] role update failed", error);
+      if (String(error.message).includes("target_not_found")) {
+        throw new AdminApiError("対象ユーザーが見つかりません", 404);
+      }
+      console.error("[admin-users] role change failed", error);
       throw new AdminApiError("ロールの更新に失敗しました", 500);
     }
-    if (!updated || updated.length === 0) {
-      throw new AdminApiError("対象ユーザーが見つかりません", 404);
-    }
-
-    await recordAuditLog(supabase, {
-      tenantId: caller.tenantId,
-      actorId: caller.id,
-      actorName: caller.name,
-      actorRole: caller.role,
-      action: "role_change",
-      targetType: "user",
-      targetId: userId,
-      ip: clientIp(c),
-      metadata: { from: target.role, to: body.role },
-    });
 
     return c.json({ ok: true });
   } catch (e) {
@@ -269,35 +249,25 @@ adminUsersRoute.post("/api/admin/users/disable", async (c) => {
       throw new AdminApiError("無効化処理に失敗しました", 500);
     }
 
-    // 表示用ミラーを profiles に反映 (tenant_id 条件付きで越境更新を防ぐ)。
-    // .select() で更新行数を確認し、 0 件 (対象消失 / tenant 変化) は ban を戻して失敗扱い。
-    const { data: updated, error: pErr } = await supabase
-      .from("profiles")
-      .update({ disabled })
-      .eq("id", userId)
-      .eq("tenant_id", caller.tenantId)
-      .select("id");
+    // 表示用ミラー (profiles.disabled) と監査記録を 1 つの RPC (単一トランザクション) で
+    // 原子的に行う (#39)。 失敗時は ban を元に戻し、 auth と profiles の不整合を残さない。
+    const { error: pErr } = await supabase.rpc("admin_apply_disable", {
+      p_actor_id: caller.id,
+      p_actor_name: caller.name,
+      p_actor_role: caller.role,
+      p_tenant_id: caller.tenantId,
+      p_target_id: userId,
+      p_disabled: disabled,
+      p_ip: clientIp(c),
+    });
     if (pErr) {
-      // DB ミラー失敗時は ban を元に戻し、 auth と profiles の不整合を残さない。
-      console.error("[admin-users] profile disabled mirror failed; rolling back ban", pErr);
       await rollbackBan();
+      if (String(pErr.message).includes("target_not_found")) {
+        throw new AdminApiError("対象ユーザーが見つかりません", 404);
+      }
+      console.error("[admin-users] disable apply failed; rolled back ban", pErr);
       throw new AdminApiError("無効化処理に失敗しました", 500);
     }
-    if (!updated || updated.length === 0) {
-      await rollbackBan();
-      throw new AdminApiError("対象ユーザーが見つかりません", 404);
-    }
-
-    await recordAuditLog(supabase, {
-      tenantId: caller.tenantId,
-      actorId: caller.id,
-      actorName: caller.name,
-      actorRole: caller.role,
-      action: disabled ? "user_disable" : "user_enable",
-      targetType: "user",
-      targetId: userId,
-      ip: clientIp(c),
-    });
 
     return c.json({ ok: true });
   } catch (e) {

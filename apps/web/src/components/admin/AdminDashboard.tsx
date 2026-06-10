@@ -1,3 +1,15 @@
+/**
+ * `/admin/dash` — テナント KPI ダッシュボード (Issue #28)。
+ *
+ * KPI カード / 受講推移 / コース別完了率 / つまずき分析 / 受講状況サマリを、
+ * enrollment + lesson_progress + quiz_attempts + certificates から集計した実データで
+ * 表示する (get_tenant_analytics RPC)。 表示中の集計は CSV 出力できる。
+ *
+ * Supabase 未設定時 (dev fixtures フロー): DB が無いため、 従来の固定サンプルを表示する。
+ */
+
+import { toast } from 'sonner';
+
 import {
   Calendar,
   Download,
@@ -7,7 +19,7 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
-  ChevronRight,
+  RefreshCw,
 } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard } from '@/components/common/KpiCard';
@@ -22,122 +34,435 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import { ENROLLMENT_TREND, COMPLETION_BY_COURSE, STUMBLES } from '@/data/fixtures';
+import type {
+  AnalyticsStumble,
+  AnalyticsTrendPoint,
+  TenantAnalytics,
+} from '@falcon/shared/cms/types';
+import { useTenantAnalytics } from '@/hooks/useAnalytics';
+import { downloadCsv, toCsv } from '@/lib/csv';
+import {
+  ENROLLMENT_TREND,
+  COMPLETION_BY_COURSE,
+  STUMBLES,
+} from '@/data/fixtures';
 
-export const AdminDashboard = () => (
-  <>
-    <PageHeader
-      title="テナントKPIダッシュボード"
-      sub="SES未経験エンジニア育成 · 2026年4月"
-      actions={
-        <>
-          <Button>
-            <Calendar size={14} />
-            直近30日
-          </Button>
-          <Button>
-            <Download size={14} />
-            CSV/Excel 出力
-          </Button>
-        </>
-      }
-    />
+interface Props {
+  tenantId: string;
+  supabaseEnabled: boolean;
+}
 
-    <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-      <KpiCard
-        label={
-          <>
-            <Users size={12} /> アクティブ受講者
-          </>
-        }
-        value={163}
-        unit="名"
-        trend={
-          <>
-            <TrendingUp size={12} />
-            +7 先月比
-          </>
-        }
-        trendDir="up"
-      />
-      <KpiCard
-        label={
-          <>
-            <CheckCircle size={12} /> コース完了率
-          </>
-        }
-        value={58}
-        unit="%"
-        trend={
-          <>
-            <TrendingUp size={12} />
-            +3pt
-          </>
-        }
-        trendDir="up"
-      />
-      <KpiCard
-        label={
-          <>
-            <Award size={12} /> 修了証 発行数
-          </>
-        }
-        value={47}
-        unit="件 / 今月"
-        trend="累計 284件"
-      />
-      <KpiCard
-        label={
-          <>
-            <Clock size={12} /> 平均受講時間
-          </>
-        }
-        value="4.2"
-        unit="時間/週"
-        trend={
-          <>
-            <TrendingDown size={12} />
-            -0.3h
-          </>
-        }
-        trendDir="down"
-      />
-    </div>
+export const AdminDashboard = ({ tenantId, supabaseEnabled }: Props) => {
+  if (!supabaseEnabled) {
+    return <DashboardDemo />;
+  }
+  return <DashboardLive tenantId={tenantId} />;
+};
 
-    <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: '2fr 1fr' }}>
-      <Card>
-        <CardHeader>
-          <CardTitle>アクティブ受講者の推移</CardTitle>
-          <CardActions>
-            <span className="text-[11.5px] text-ink-3">過去12ヶ月</span>
-          </CardActions>
-        </CardHeader>
-        <div className="p-4 h-[260px]">
-          <EnrollmentChart />
+function DashboardLive({ tenantId }: { tenantId: string }) {
+  const { analytics, loading, error, refetch } = useTenantAnalytics(tenantId, true);
+
+  const onExport = () => {
+    if (!analytics) return;
+    const courseRows = analytics.completion_by_course.map((c) => [c.name, c.n, c.pct]);
+    // KPI サマリ + コース別完了率を 1 ファイルにまとめ、 概況を持ち出せるようにする。
+    const rows: (string | number)[][] = [
+      ['アクティブ受講者', analytics.active_learners],
+      ['受講者総数', analytics.total_learners],
+      ['コース完了率(%)', analytics.completion_rate],
+      ['修了証 今月発行', analytics.certs_this_month],
+      ['修了証 累計', analytics.certs_total],
+      ['平均学習時間(時間/人)', analytics.avg_study_hours],
+      [],
+      ['コース', '登録者数', '完了率(%)'],
+      ...courseRows,
+    ];
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`analytics-${stamp}.csv`, toCsv(['指標', '値'], rows));
+    toast.success('レポートを出力しました');
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="テナントKPIダッシュボード"
+        sub="受講状況 · 完了率 · つまずき分析"
+        actions={
+          <>
+            <Button onClick={() => void refetch()} disabled={loading}>
+              <RefreshCw size={14} />
+              更新
+            </Button>
+            <Button onClick={onExport} disabled={!analytics}>
+              <Download size={14} />
+              CSV出力
+            </Button>
+          </>
+        }
+      />
+
+      {error ? (
+        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
+          集計の取得に失敗しました: {error}
         </div>
-      </Card>
+      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>コース別 完了率</CardTitle>
-        </CardHeader>
-        <div className="px-4 py-3.5">
-          {COMPLETION_BY_COURSE.map((c, i) => (
-            <div key={i} className="mb-3.5 last:mb-0">
-              <div className="flex items-center gap-2 text-xs mb-1.5">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-[11.5px] text-ink-3">n={c.n}</span>
-                <div className="flex-1" />
-                <span className="font-mono font-semibold">{c.pct}%</span>
+      {!analytics && loading ? (
+        <div className="py-16 text-center text-sm text-ink-3">集計を読み込み中…</div>
+      ) : !analytics ? (
+        <Card className="text-center p-16 text-ink-3 text-sm">
+          集計データがありません。
+        </Card>
+      ) : (
+        <LiveContent analytics={analytics} />
+      )}
+    </>
+  );
+}
+
+function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
+  return (
+    <>
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <KpiCard
+          label={
+            <>
+              <Users size={12} /> アクティブ受講者
+            </>
+          }
+          value={analytics.active_learners}
+          unit={`名 / 全${analytics.total_learners}`}
+          trend={
+            <>
+              {analytics.new_enrollments_this_month >= analytics.new_enrollments_prev_month ? (
+                <TrendingUp size={12} />
+              ) : (
+                <TrendingDown size={12} />
+              )}
+              今月 +{analytics.new_enrollments_this_month} 登録
+            </>
+          }
+          trendDir={
+            analytics.new_enrollments_this_month >= analytics.new_enrollments_prev_month
+              ? 'up'
+              : 'down'
+          }
+        />
+        <KpiCard
+          label={
+            <>
+              <CheckCircle size={12} /> コース完了率
+            </>
+          }
+          value={analytics.completion_rate}
+          unit="%"
+          trend={`完了 ${analytics.status_breakdown.completed} / 受講中 ${analytics.status_breakdown.active}`}
+        />
+        <KpiCard
+          label={
+            <>
+              <Award size={12} /> 修了証 発行数
+            </>
+          }
+          value={analytics.certs_this_month}
+          unit="件 / 今月"
+          trend={`累計 ${analytics.certs_total}件`}
+        />
+        <KpiCard
+          label={
+            <>
+              <Clock size={12} /> 平均学習時間
+            </>
+          }
+          value={analytics.avg_study_hours}
+          unit="時間 / 人"
+          trend="累計 (動画視聴)"
+        />
+      </div>
+
+      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: '2fr 1fr' }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>新規受講登録の推移</CardTitle>
+            <CardActions>
+              <span className="text-[11.5px] text-ink-3">過去12ヶ月</span>
+            </CardActions>
+          </CardHeader>
+          <div className="p-4 h-[260px]">
+            <EnrollmentChart trend={analytics.enrollment_trend} />
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>コース別 完了率</CardTitle>
+          </CardHeader>
+          <div className="px-4 py-3.5">
+            {analytics.completion_by_course.length === 0 ? (
+              <div className="py-6 text-center text-[12.5px] text-ink-3">
+                受講登録がまだありません。
               </div>
-              <Progress value={c.pct} tone="brand" />
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
+            ) : (
+              analytics.completion_by_course.map((c) => (
+                <div key={c.course_id} className="mb-3.5 last:mb-0">
+                  <div className="flex items-center gap-2 text-xs mb-1.5">
+                    <span className="font-medium">{c.name}</span>
+                    <span className="text-[11.5px] text-ink-3">n={c.n}</span>
+                    <div className="flex-1" />
+                    <span className="font-mono font-semibold">{c.pct}%</span>
+                  </div>
+                  <Progress value={c.pct} tone="brand" />
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
 
-    <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>課題別つまずき分析</CardTitle>
+            <CardActions>
+              <span className="text-[11.5px] text-ink-3">正答率の低い順</span>
+            </CardActions>
+          </CardHeader>
+          {analytics.stumbles.length === 0 ? (
+            <div className="py-10 text-center text-[12.5px] text-ink-3">
+              小テストの受験データがまだありません。
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>設問</TableHead>
+                  <TableHead>正答率</TableHead>
+                  <TableHead>受験者</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {analytics.stumbles.map((s: AnalyticsStumble) => {
+                  const tone =
+                    s.correct_pct < 40 ? 'danger' : s.correct_pct < 60 ? 'warning' : 'success';
+                  return (
+                    <TableRow key={s.question_id}>
+                      <TableCell>{s.prompt}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20">
+                            <Progress value={s.correct_pct} tone={tone} />
+                          </div>
+                          <span className="font-mono text-[11.5px]">{s.correct_pct}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-ink-3 tabular-nums">{s.n}回</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>受講状況サマリ</CardTitle>
+          </CardHeader>
+          <div className="px-4 py-3.5 flex flex-col gap-3">
+            <StatusRow label="受講中" value={analytics.status_breakdown.active} tone="brand" total={statusTotal(analytics)} />
+            <StatusRow label="完了" value={analytics.status_breakdown.completed} tone="success" total={statusTotal(analytics)} />
+            <StatusRow label="期限切れ" value={analytics.status_breakdown.expired} tone="danger" total={statusTotal(analytics)} />
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function statusTotal(a: TenantAnalytics): number {
+  const { active, completed, expired } = a.status_breakdown;
+  return active + completed + expired;
+}
+
+function StatusRow({
+  label,
+  value,
+  tone,
+  total,
+}: {
+  label: string;
+  value: number;
+  tone: 'brand' | 'success' | 'danger';
+  total: number;
+}) {
+  const pct = total === 0 ? 0 : Math.round((value / total) * 100);
+  return (
+    <div>
+      <div className="flex items-center gap-2 text-xs mb-1.5">
+        <span className="font-medium">{label}</span>
+        <div className="flex-1" />
+        <span className="font-mono font-semibold">{value}</span>
+        <span className="text-[11.5px] text-ink-3">{pct}%</span>
+      </div>
+      <Progress value={pct} tone={tone} />
+    </div>
+  );
+}
+
+/** 月次推移を最大値でオートスケールして描く折れ線。 */
+function EnrollmentChart({ trend }: { trend: AnalyticsTrendPoint[] }) {
+  const counts = trend.map((t) => t.count);
+  const max = Math.max(10, ...counts);
+  const n = trend.length || 1;
+  const step = n > 1 ? 510 / (n - 1) : 0;
+  const x = (i: number) => 40 + i * step;
+  const y = (v: number) => 190 - (v / max) * 160;
+  const pts = trend.map((t, i) => [x(i), y(t.count)] as const);
+  const path = pts.length
+    ? 'M ' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L ')
+    : '';
+  const area = pts.length
+    ? `${path} L ${pts[pts.length - 1][0].toFixed(1)} 190 L ${pts[0][0].toFixed(1)} 190 Z`
+    : '';
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(max * (1 - f)));
+
+  return (
+    <svg viewBox="0 0 560 220" className="w-full h-full">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <line
+          key={i}
+          x1="40"
+          y1={30 + i * 40}
+          x2="550"
+          y2={30 + i * 40}
+          stroke="var(--line)"
+          strokeDasharray="2 4"
+        />
+      ))}
+      {ticks.map((t, i) => (
+        <text key={i} x="35" y={33 + i * 40} textAnchor="end" className="fill-ink-3 text-[10.5px]">
+          {t}
+        </text>
+      ))}
+      {area ? <path d={area} fill="var(--brand-soft)" /> : null}
+      {path ? (
+        <path d={path} stroke="var(--brand)" strokeWidth={2} fill="none" strokeLinecap="round" />
+      ) : null}
+      {pts.map(([px, py], i) => (
+        <circle key={i} cx={px} cy={py} r="3" fill="var(--brand)" />
+      ))}
+      {trend.map((t, i) => (
+        <text
+          key={i}
+          x={x(i)}
+          y="210"
+          textAnchor="middle"
+          className="fill-ink-3 text-[10.5px]"
+        >
+          {t.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------
+// dev fixtures フロー用のデモ表示 (Supabase 未設定時)。
+// ---------------------------------------------------------------
+
+function DashboardDemo() {
+  return (
+    <>
+      <PageHeader
+        title="テナントKPIダッシュボード"
+        sub="受講状況 · 完了率 · つまずき分析"
+        actions={
+          <>
+            <Button>
+              <Calendar size={14} />
+              直近30日
+            </Button>
+            <Button disabled>
+              <Download size={14} />
+              CSV出力
+            </Button>
+          </>
+        }
+      />
+      <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
+        Supabase 未設定のため、 以下はデモ表示です。 実データの集計・CSV出力には
+        <code className="mx-1">VITE_SUPABASE_*</code> を設定してください。
+      </div>
+
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <KpiCard
+          label={<><Users size={12} /> アクティブ受講者</>}
+          value={163}
+          unit="名"
+          trend={<><TrendingUp size={12} />+7 先月比</>}
+          trendDir="up"
+        />
+        <KpiCard
+          label={<><CheckCircle size={12} /> コース完了率</>}
+          value={58}
+          unit="%"
+          trend={<><TrendingUp size={12} />+3pt</>}
+          trendDir="up"
+        />
+        <KpiCard
+          label={<><Award size={12} /> 修了証 発行数</>}
+          value={47}
+          unit="件 / 今月"
+          trend="累計 284件"
+        />
+        <KpiCard
+          label={<><Clock size={12} /> 平均学習時間</>}
+          value="4.2"
+          unit="時間/週"
+          trend={<><TrendingDown size={12} />-0.3h</>}
+          trendDir="down"
+        />
+      </div>
+
+      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: '2fr 1fr' }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>新規受講登録の推移</CardTitle>
+            <CardActions>
+              <span className="text-[11.5px] text-ink-3">過去12ヶ月</span>
+            </CardActions>
+          </CardHeader>
+          <div className="p-4 h-[260px]">
+            <EnrollmentChart
+              trend={ENROLLMENT_TREND.map((count, i) => ({
+                month: `m${i}`,
+                label: DEMO_MONTHS[i] ?? '',
+                count,
+              }))}
+            />
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>コース別 完了率</CardTitle>
+          </CardHeader>
+          <div className="px-4 py-3.5">
+            {COMPLETION_BY_COURSE.map((c, i) => (
+              <div key={i} className="mb-3.5 last:mb-0">
+                <div className="flex items-center gap-2 text-xs mb-1.5">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-[11.5px] text-ink-3">n={c.n}</span>
+                  <div className="flex-1" />
+                  <span className="font-mono font-semibold">{c.pct}%</span>
+                </div>
+                <Progress value={c.pct} tone="brand" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>課題別つまずき分析</CardTitle>
@@ -151,7 +476,6 @@ export const AdminDashboard = () => (
               <TableHead>設問</TableHead>
               <TableHead>正答率</TableHead>
               <TableHead>受験者</TableHead>
-              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -171,128 +495,14 @@ export const AdminDashboard = () => (
                     </div>
                   </TableCell>
                   <TableCell className="text-ink-3 tabular-nums">{s.n}名</TableCell>
-                  <TableCell>
-                    <ChevronRight size={13} className="text-ink-4" />
-                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </Card>
-
-      <div className="flex flex-col gap-4">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>組織別受講状況</CardTitle>
-          </CardHeader>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>組織</TableHead>
-                <TableHead>受講者</TableHead>
-                <TableHead>完了率</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ORGS.map((o, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{o.n}</TableCell>
-                  <TableCell className="tabular-nums text-[11.5px]">{o.u}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-[60px]">
-                        <Progress value={o.p} tone="brand" />
-                      </div>
-                      <span className="font-mono text-[11.5px]">{o.p}%</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>AI利用・コスト</CardTitle>
-          </CardHeader>
-          <div className="px-4 py-3.5">
-            <div className="flex items-center mb-4">
-              <div className="flex-1">
-                <div className="text-[11.5px] text-ink-3">今月使用量</div>
-                <div className="text-xl font-semibold mt-0.5">
-                  2.4M <span className="text-[11px] text-ink-3">tokens</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="text-[11.5px] text-ink-3">月間上限</div>
-                <div className="text-xl font-semibold mt-0.5">
-                  5.0M <span className="text-[11px] text-ink-3">tokens</span>
-                </div>
-              </div>
-            </div>
-            <Progress value={48} tone="brand" />
-            <div className="flex items-center mt-4 text-[11.5px] text-ink-3">
-              <span>添削補助: 62% · Q&A: 28% · 採点: 10%</span>
-              <div className="flex-1" />
-              <span>Claude Haiku 4.5</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
-  </>
-);
-
-const ORGS = [
-  { n: 'FALCON INFORMAL 本社', u: 62, p: 64 },
-  { n: '株式会社テックソリューション', u: 28, p: 72 },
-  { n: '合同会社ブルーコード', u: 18, p: 48 },
-  { n: '株式会社システムズ', u: 14, p: 55 },
-  { n: 'その他（個人契約）', u: 41, p: 51 },
-];
-
-const EnrollmentChart = () => {
-  const pts = ENROLLMENT_TREND.map((v, i) => [50 + i * 42, 190 - (v / 200) * 160] as const);
-  const path = 'M ' + pts.map((p) => p.join(' ')).join(' L ');
-  const area = `${path} L ${pts[pts.length - 1][0]} 190 L ${pts[0][0]} 190 Z`;
-  const months = ['5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月'];
-
-  return (
-    <svg viewBox="0 0 560 220" className="w-full h-full">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <line
-          key={i}
-          x1="40"
-          y1={30 + i * 40}
-          x2="550"
-          y2={30 + i * 40}
-          stroke="var(--line)"
-          strokeDasharray="2 4"
-        />
-      ))}
-      {[30, 70, 110, 150, 190].map((y, i) => (
-        <text key={i} x="35" y={y + 3} textAnchor="end" className="fill-ink-3 text-[10.5px]">
-          {[200, 150, 100, 50, 0][i]}
-        </text>
-      ))}
-      <path d={area} fill="var(--brand-soft)" />
-      <path d={path} stroke="var(--brand)" strokeWidth={2} fill="none" strokeLinecap="round" />
-      {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="3" fill="var(--brand)" />
-      ))}
-      {months.map((m, i) => (
-        <text
-          key={i}
-          x={50 + i * 42}
-          y="210"
-          textAnchor="middle"
-          className="fill-ink-3 text-[10.5px]"
-        >
-          {m}
-        </text>
-      ))}
-    </svg>
+    </>
   );
-};
+}
+
+const DEMO_MONTHS = ['5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月'];
