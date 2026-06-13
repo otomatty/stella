@@ -1,12 +1,10 @@
 /**
- * 監査ログのデータアクセス層 (Issue #27)。
+ * 監査ログのデータアクセス層 (Issue #27 — Neon / Hono API)。
  *
- * 読み取り専用。 audit_logs は RLS で「同テナントの instructor/admin のみ SELECT 可」
- * かつ append-only (INSERT/UPDATE/DELETE ポリシー無し) のため、 ここでは select のみ提供する。
- * 記録は service-role 経由の管理 API / DB トリガーで行う (audit_logs migration 参照)。
+ * 読み取り専用。 認可はサーバ側で「同テナントの instructor/admin のみ」。 記録は管理 API 側。
  */
 
-import { getSupabase } from "./supabase";
+import { apiFetch } from "./api-client";
 
 export interface AuditLogRow {
   id: string;
@@ -36,59 +34,53 @@ export interface ListAuditLogsOpts {
   limit?: number;
 }
 
-const COLUMNS =
-  "id, tenant_id, actor_id, actor_name, actor_role, action, target_type, target_id, ip, metadata, created_at";
-
 /** 一覧 (テーブル表示) の既定取得上限。 これを超える場合は CSV 出力で全件取得する。 */
 export const DEFAULT_LIST_LIMIT = 500;
 
 /** CSV 全件取得時の 1 ページあたり件数。 */
 const EXPORT_PAGE_SIZE = 1000;
 
-/** tenant / 期間 / 実行者 / 操作種別の絞り込みを共通適用する。 */
-function buildFilteredQuery(opts: ListAuditLogsOpts) {
-  const supabase = getSupabase();
-  let query = supabase
-    .from("audit_logs")
-    .select(COLUMNS)
-    .eq("tenant_id", opts.tenantId)
-    .order("created_at", { ascending: false });
-
-  if (opts.from) query = query.gte("created_at", opts.from);
-  if (opts.to) query = query.lte("created_at", opts.to);
-  if (opts.actorId) query = query.eq("actor_id", opts.actorId);
-  if (opts.action) query = query.eq("action", opts.action);
-  return query;
+/** tenant / 期間 / 実行者 / 操作種別の絞り込みをクエリ文字列に組み立てる。 */
+function buildQuery(
+  opts: Omit<ListAuditLogsOpts, "tenantId">,
+  limit: number,
+  offset: number,
+): string {
+  const p = new URLSearchParams();
+  // tenant はサーバが caller から決めるため送らない。
+  if (opts.from) p.set("from", opts.from);
+  if (opts.to) p.set("to", opts.to);
+  if (opts.actorId) p.set("actorId", opts.actorId);
+  if (opts.action) p.set("action", opts.action);
+  p.set("limit", String(limit));
+  p.set("offset", String(offset));
+  return p.toString();
 }
 
 export async function listAuditLogs(
   opts: ListAuditLogsOpts,
 ): Promise<AuditLogRow[]> {
-  const { data, error } = await buildFilteredQuery(opts).limit(
-    opts.limit ?? DEFAULT_LIST_LIMIT,
-  );
-  if (error) throw new Error(error.message);
-  return (data as AuditLogRow[] | null) ?? [];
+  const qs = buildQuery(opts, opts.limit ?? DEFAULT_LIST_LIMIT, 0);
+  const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(`/api/audit-logs?${qs}`);
+  return rows ?? [];
 }
 
 /**
  * 絞り込み条件に一致する監査ログを全件取得する (CSV 出力用)。
- * 一覧の表示上限 (DEFAULT_LIST_LIMIT) では証跡が欠落し得るため、 監査・コンプライアンス
- * 用途のエクスポートはページングで全件を辿る。
+ * 表示上限では証跡が欠落し得るため、 ページングで全件を辿る。
  */
 export async function listAllAuditLogs(
   opts: Omit<ListAuditLogsOpts, "limit">,
 ): Promise<AuditLogRow[]> {
   const all: AuditLogRow[] = [];
   for (let offset = 0; ; offset += EXPORT_PAGE_SIZE) {
-    const { data, error } = await buildFilteredQuery(opts).range(
-      offset,
-      offset + EXPORT_PAGE_SIZE - 1,
+    const qs = buildQuery(opts, EXPORT_PAGE_SIZE, offset);
+    const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(
+      `/api/audit-logs?${qs}`,
     );
-    if (error) throw new Error(error.message);
-    const rows = (data as AuditLogRow[] | null) ?? [];
-    all.push(...rows);
-    if (rows.length < EXPORT_PAGE_SIZE) break;
+    const page = rows ?? [];
+    all.push(...page);
+    if (page.length < EXPORT_PAGE_SIZE) break;
   }
   return all;
 }

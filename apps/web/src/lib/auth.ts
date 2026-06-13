@@ -1,69 +1,53 @@
 /**
- * Supabase Auth (Magic Link) ラッパ。
+ * 認証ラッパ (Neon Auth Magic Link / 旧 Supabase Auth の置き換え)。
  *
- * - `signInWithEmail(email)` で OTP メールを送る
- * - `onAuthStateChange` のサブスクリプションを集約する
- * - `fetchProfile` / `ensureProfile` で `profiles` テーブルとの紐付けを管理する
+ * - `signInWithEmail(email)` で Magic Link を送る
+ * - `onAuthStateChange` 相当を `subscribeToAuth` で集約する
+ * - `fetchProfile` / `ensureProfile` は Hono API (`/api/me`) 経由で profiles を読み書きする
  *
- * 既存の fixtures ベースのフローは Supabase 未設定時の dev fallback として残す。
- * (`isSupabaseConfigured()` ゲートで利用側が分岐する)
+ * 公開インターフェースは旧実装と互換に保ち、 利用側 (useAuthSession 等) を変えずに
+ * バックエンドだけ差し替えられるようにしている。
  */
 
-import type { Session } from "@supabase/supabase-js";
 import type { ProfileRow } from "@falcon/shared/cms/types";
-import { getSupabase, isSupabaseConfigured } from "./supabase";
+
+import { apiFetch } from "./api-client";
+import {
+  getAccessToken,
+  getSession as getNeonSession,
+  isAuthConfigured,
+  signInWithEmail as neonSignIn,
+  signOut as neonSignOut,
+  subscribeToAuth as neonSubscribe,
+  type Session,
+} from "./neon-auth";
 
 export type { Session };
 export type Profile = ProfileRow;
 
 export async function signInWithEmail(email: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase が未設定のため Magic Link を送信できません");
-  }
-  const supabase = getSupabase();
-  const redirect =
-    typeof window !== "undefined" ? window.location.origin : undefined;
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: redirect ? { emailRedirectTo: redirect } : undefined,
-  });
-  if (error) throw error;
+  return neonSignIn(email);
 }
 
 export async function signOut(): Promise<void> {
-  if (!isSupabaseConfigured()) return;
-  const supabase = getSupabase();
-  await supabase.auth.signOut();
+  return neonSignOut();
 }
 
 export async function getSession(): Promise<Session | null> {
-  if (!isSupabaseConfigured()) return null;
-  const supabase = getSupabase();
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  return getNeonSession();
 }
 
 export function subscribeToAuth(
   callback: (session: Session | null) => void,
 ): () => void {
-  if (!isSupabaseConfigured()) return () => undefined;
-  const supabase = getSupabase();
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session);
-  });
-  return () => data.subscription.unsubscribe();
+  return neonSubscribe(callback);
 }
 
-export async function fetchProfile(userId: string): Promise<Profile | null> {
-  if (!isSupabaseConfigured()) return null;
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as Profile | null) ?? null;
+/** caller 自身のプロフィールを取得する (引数 userId は互換のため受けるが未使用)。 */
+export async function fetchProfile(_userId?: string): Promise<Profile | null> {
+  if (!isAuthConfigured() || !getAccessToken()) return null;
+  const { profile } = await apiFetch<{ profile: Profile | null }>("/api/me");
+  return profile;
 }
 
 export interface EnsureProfileParams {
@@ -77,26 +61,15 @@ export interface EnsureProfileParams {
 export async function ensureProfile(
   params: EnsureProfileParams,
 ): Promise<Profile> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase が未設定のためプロフィールを作成できません");
-  }
-  const supabase = getSupabase();
-  const row = {
-    id: params.userId,
-    tenant_id: params.tenantId,
-    role: "student" as const,
-    display_name: params.displayName,
-    email: params.email ?? null,
-    initials: params.initials ?? params.displayName.slice(0, 2).toUpperCase(),
-  };
-  // 並列タブ等で重複作成された場合の TOCTOU を避けるため upsert する。
-  // RLS の profiles_update_self は role/tenant_id 変更を禁止するため、 既存行があれば
-  // role/tenant_id は据え置かれ display_name 等のみが更新される。
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(row, { onConflict: "id" })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data as Profile;
+  const { profile } = await apiFetch<{ profile: Profile }>("/api/me", {
+    method: "POST",
+    body: {
+      tenant_id: params.tenantId,
+      display_name: params.displayName,
+      ...(params.email ? { email: params.email } : {}),
+      ...(params.initials ? { initials: params.initials } : {}),
+    },
+  });
+  if (!profile) throw new Error("プロフィールの作成に失敗しました");
+  return profile;
 }

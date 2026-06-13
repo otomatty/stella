@@ -1,14 +1,17 @@
 /**
- * レッスン進捗の Supabase 永続化 (Issue #21 — P0 DB 連携)。
+ * レッスン進捗の永続化 (Issue #21 — Neon / Hono API 連携)。
  *
- * RLS: 受講者は自分の進捗のみ read/write。 講師・管理者は同テナントを read。
+ * 旧 Supabase 直アクセス (lesson_progress テーブル + upsert_lesson_progress RPC) を
+ * Hono API (`/api/lesson-progress`) 経由に置き換えた。 認可はサーバ側 (アプリ層) で行う:
+ *   - 受講者は自分の進捗のみ read/write
+ *   - 講師 / 管理者は同テナントを read (`/api/lesson-progress/tenant`)
  *
- * `lesson-progress.ts` (フレームワーク非依存の localStorage ストア) から
- * 動的 import される。 Supabase 未設定時はそもそも呼ばれない。
+ * `lesson-progress.ts` (フレームワーク非依存の localStorage ストア) から動的 import される。
+ * バックエンド未設定時はそもそも呼ばれない。
  */
 
 import type { LessonProgressEntry } from "@/lib/lesson-progress";
-import { getSupabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-client";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -41,39 +44,15 @@ function rowToEntry(row: LessonProgressRow): LessonProgressEntry {
   };
 }
 
-function entryToRow(
-  userId: string,
-  tenantId: string,
-  lessonId: string,
-  entry: LessonProgressEntry,
-): LessonProgressRow & { tenant_id: string } {
-  return {
-    user_id: userId,
-    tenant_id: tenantId,
-    lesson_id: lessonId,
-    completed: entry.completed,
-    last_page: entry.lastPage ?? null,
-    viewed_pages: entry.viewedPages ?? [],
-    watched_sec: entry.watchedSec ?? null,
-    updated_at: entry.updatedAt,
-  };
-}
-
-const SELECT_COLS =
-  "user_id, lesson_id, completed, last_page, viewed_pages, watched_sec, updated_at";
-
 /** 受講者本人の全進捗を取得し lessonId → entry の map にして返す。 */
 export async function fetchProgressForUser(
-  userId: string,
+  _userId: string,
 ): Promise<Record<string, LessonProgressEntry>> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("lesson_progress")
-    .select(SELECT_COLS)
-    .eq("user_id", userId);
-  if (error) throw error;
+  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>(
+    "/api/lesson-progress",
+  );
   const map: Record<string, LessonProgressEntry> = {};
-  for (const row of (data ?? []) as LessonProgressRow[]) {
+  for (const row of rows ?? []) {
     map[row.lesson_id] = rowToEntry(row);
   }
   return map;
@@ -82,39 +61,40 @@ export async function fetchProgressForUser(
 /**
  * 複数エントリを 1 リクエストで upsert する (uuid 形式の lesson_id のみ)。
  *
- * 単純な `.upsert()` は別端末が後から書いた新しい行を古い payload で上書きし得る。
- * `upsert_lesson_progress` RPC は conflict 時に payload の updated_at が既存より
- * 新しい場合のみ更新するため、 書き込み側でも端末間 Last-Write-Wins を担保する。
+ * サーバ側 upsert が conflict 時に payload の updated_at が既存より新しい場合のみ
+ * 更新するため、 端末間 Last-Write-Wins を担保する。 tenant_id はサーバが caller の
+ * テナントを使うため送らない。
  */
 export async function upsertProgressBatch(
-  userId: string,
-  tenantId: string,
+  _userId: string,
+  _tenantId: string,
   entries: Array<{ lessonId: string; entry: LessonProgressEntry }>,
 ): Promise<void> {
   const rows = entries
     .filter(({ lessonId }) => isSyncableLessonId(lessonId))
-    .map(({ lessonId, entry }) => entryToRow(userId, tenantId, lessonId, entry));
+    .map(({ lessonId, entry }) => ({
+      lesson_id: lessonId,
+      completed: entry.completed,
+      last_page: entry.lastPage ?? null,
+      viewed_pages: entry.viewedPages ?? [],
+      watched_sec: entry.watchedSec ?? null,
+      updated_at: entry.updatedAt,
+    }));
   if (rows.length === 0) return;
-  const supabase = getSupabase();
-  const { error } = await supabase.rpc("upsert_lesson_progress", {
-    p_rows: rows,
-  });
-  if (error) throw error;
+  await apiFetch("/api/lesson-progress", { method: "POST", body: { rows } });
 }
 
 /**
  * 講師 / 管理者向け: 同テナントの進捗行を取得する (可視化のデータ経路)。
- * RLS により instructor/admin のみ tenant 全件を read 可能。
+ * 認可はサーバ側で instructor/admin に限定される。
  */
 export async function fetchProgressForTenant(): Promise<
   Array<{ userId: string; lessonId: string; entry: LessonProgressEntry }>
 > {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("lesson_progress")
-    .select(SELECT_COLS);
-  if (error) throw error;
-  return ((data ?? []) as LessonProgressRow[]).map((row) => ({
+  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>(
+    "/api/lesson-progress/tenant",
+  );
+  return (rows ?? []).map((row) => ({
     userId: row.user_id,
     lessonId: row.lesson_id,
     entry: rowToEntry(row),

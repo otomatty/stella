@@ -13,8 +13,7 @@ import type {
   ReviewPriority,
   ReviewAvatarTone,
 } from "@falcon/shared/review/types";
-import { getSupabase } from "./supabase";
-import { getSession } from "./auth";
+import { apiFetch } from "./api-client";
 
 const AVATAR_TONES: ReviewAvatarTone[] = [
   "c1",
@@ -116,105 +115,56 @@ function rowToSubmission(row: SubmissionRow): Submission {
   };
 }
 
-function submissionToInsert(
-  tenantId: string,
-  studentId: string,
-  input: InsertSubmissionInput,
-) {
-  return {
-    tenant_id: tenantId,
-    student_id: studentId,
-    lesson_id:
-      input.lessonId && UUID_RE.test(input.lessonId) ? input.lessonId : null,
-    assignment_id: input.assignmentId ?? null,
-    course_title: input.courseTitle,
-    section_title: input.sectionTitle ?? null,
-    assignment_title: input.assignmentTitle,
-    code: input.codeLines.join("\n"),
-    status: "pending" as const,
-    priority: input.priority,
-    attempt: input.attempt,
-    ai_ready: false,
-    ai_suggestions: [],
-    rubric: [],
-    review_notes: "",
-    verdict: null,
-  };
-}
-
-function patchToUpdate(patch: SubmissionPatch): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
-  if (patch.status !== undefined) row.status = patch.status;
-  if (patch.priority !== undefined) row.priority = patch.priority;
-  if (patch.attempt !== undefined) row.attempt = patch.attempt;
-  if (patch.aiReady !== undefined) row.ai_ready = patch.aiReady;
-  if (patch.aiSuggestions !== undefined) {
-    row.ai_suggestions = patch.aiSuggestions;
-  }
-  if (patch.rubric !== undefined) row.rubric = patch.rubric;
-  if (patch.reviewNotes !== undefined) row.review_notes = patch.reviewNotes;
-  if (patch.verdict !== undefined) row.verdict = patch.verdict;
-  if (patch.codeLines !== undefined) row.code = patch.codeLines.join("\n");
-  if (patch.status && patch.status !== "pending") {
-    row.reviewed_at = new Date().toISOString();
-  }
-  return row;
-}
-
-const SELECT = "*, profiles!student_id(display_name, initials)";
-
+/** staff: テナント内の提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
 export async function fetchSubmissionsForTenant(
-  tenantId: string,
+  _tenantId: string,
 ): Promise<Submission[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("submissions")
-    .select(SELECT)
-    .eq("tenant_id", tenantId)
-    .order("submitted_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return ((data as SubmissionRow[] | null) ?? []).map(rowToSubmission);
+  const { rows } = await apiFetch<{ rows: SubmissionRow[] }>("/api/submissions");
+  return (rows ?? []).map(rowToSubmission);
 }
 
+/** 受講者: 自分の提出を作成する。 student / tenant はサーバが caller から確定する。 */
 export async function insertSubmission(
-  tenantId: string,
+  _tenantId: string,
   input: InsertSubmissionInput,
 ): Promise<Submission> {
-  const session = await getSession();
-  if (!session) {
-    throw new Error("ログインが必要です");
-  }
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("submissions")
-    .insert(submissionToInsert(tenantId, session.user.id, input))
-    .select(SELECT)
-    .single();
-  if (error) throw new Error(error.message);
-  return rowToSubmission(data as SubmissionRow);
+  const { row } = await apiFetch<{ row: SubmissionRow }>("/api/submissions", {
+    method: "POST",
+    body: {
+      lessonId: input.lessonId && UUID_RE.test(input.lessonId) ? input.lessonId : null,
+      assignmentId: input.assignmentId ?? null,
+      courseTitle: input.courseTitle,
+      sectionTitle: input.sectionTitle ?? null,
+      assignmentTitle: input.assignmentTitle,
+      code: input.codeLines.join("\n"),
+      priority: input.priority,
+      attempt: input.attempt,
+    },
+  });
+  return rowToSubmission(row);
 }
 
+/** staff: 提出物を更新する (添削)。 reviewed_at の打刻と通知はサーバ側で行う。 */
 export async function patchSubmission(
   id: string,
   patch: SubmissionPatch,
 ): Promise<Submission> {
-  const supabase = getSupabase();
-  const row = patchToUpdate(patch);
-  if (Object.keys(row).length === 0) {
-    const { data, error } = await supabase
-      .from("submissions")
-      .select(SELECT)
-      .eq("id", id)
-      .single();
-    if (error) throw new Error(error.message);
-    return rowToSubmission(data as SubmissionRow);
-  }
-  const { data, error } = await supabase
-    .from("submissions")
-    .update(row)
-    .eq("id", id)
-    .select(SELECT)
-    .single();
-  if (error) throw new Error(error.message);
-  return rowToSubmission(data as SubmissionRow);
+  const { row } = await apiFetch<{ row: SubmissionRow }>(
+    `/api/submissions/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      body: {
+        ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+        ...(patch.attempt !== undefined ? { attempt: patch.attempt } : {}),
+        ...(patch.aiReady !== undefined ? { aiReady: patch.aiReady } : {}),
+        ...(patch.aiSuggestions !== undefined ? { aiSuggestions: patch.aiSuggestions } : {}),
+        ...(patch.rubric !== undefined ? { rubric: patch.rubric } : {}),
+        ...(patch.reviewNotes !== undefined ? { reviewNotes: patch.reviewNotes } : {}),
+        ...(patch.verdict !== undefined ? { verdict: patch.verdict } : {}),
+        ...(patch.codeLines !== undefined ? { code: patch.codeLines.join("\n") } : {}),
+      },
+    },
+  );
+  return rowToSubmission(row);
 }

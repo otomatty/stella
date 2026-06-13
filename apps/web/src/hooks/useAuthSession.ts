@@ -9,14 +9,14 @@
  */
 
 import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
 
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isAuthConfigured } from "@/lib/neon-auth";
 import {
   fetchProfile,
   getSession,
   subscribeToAuth,
   type Profile,
+  type Session,
 } from "@/lib/auth";
 
 interface UseAuthSessionResult {
@@ -29,10 +29,10 @@ interface UseAuthSessionResult {
 export function useAuthSession(): UseAuthSessionResult {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(isSupabaseConfigured());
+  const [loading, setLoading] = useState(isAuthConfigured());
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
+    if (!isAuthConfigured()) {
       setLoading(false);
       return;
     }

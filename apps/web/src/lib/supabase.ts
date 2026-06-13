@@ -1,51 +1,21 @@
 /**
- * Supabase クライアントの遅延初期化と教材URL解決ヘルパ。
+ * [互換シム] 旧 `@/lib/supabase` の公開 API を Neon 構成へ橋渡しする。
  *
- * 環境変数 `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` が未設定でも、
- * アプリのビルド・既存ダミー画面の起動は壊れない (P0 受け入れ条件)。
- * 教材ファイルをfetchしようとした瞬間に明示的なエラーを出す。
+ * Supabase クライアントは廃止済み。 旧コードが広く参照していた `isSupabaseConfigured` は
+ * 「バックエンド (Neon Auth + Hono API) が設定済みか」 の意味に再定義し、 DB 経路 / fixtures
+ * フォールバックの分岐ゲートとして引き続き機能させる。 教材 URL は Neon File Storage へ委譲する。
+ *
+ * 既存の呼び出し側を一括置換しないための薄いシム。 将来的に各所を `isBackendConfigured` /
+ * `./storage` へ直接張り替えてこのファイルを削除する。
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { isAuthConfigured } from "./neon-auth";
+import { isApiConfigured } from "./api-client";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const publishableKey =
-  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
-
-let cached: SupabaseClient | null = null;
-
+/** バックエンド (Neon Auth + Hono API) が設定済みか。 旧 isSupabaseConfigured の後継。 */
 export function isSupabaseConfigured(): boolean {
-  return Boolean(url && publishableKey);
+  return isAuthConfigured() && isApiConfigured();
 }
 
-export function getSupabase(): SupabaseClient {
-  if (!url || !publishableKey) {
-    throw new Error(
-      'Supabase env vars are missing. Copy apps/web/.env.local.example to .env.local and fill in VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY.',
-    );
-  }
-  if (!cached) {
-    cached = createClient(url, publishableKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    });
-  }
-  return cached;
-}
-
-const BUCKET = 'materials-public';
-
-/**
- * Supabase Storage の `materials-public` バケット上のオブジェクト public URL を返す。
- *
- * 例: `getMaterialUrl('web-fundamentals/01-http.pdf')`
- */
-export function getMaterialUrl(path: string): string {
-  const supabase = getSupabase();
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
-}
+// 教材 URL は Neon File Storage へ移行済み。 後方互換のため再エクスポートする。
+export { getMaterialUrl, isStorageConfigured } from "./storage";

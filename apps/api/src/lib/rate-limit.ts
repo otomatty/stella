@@ -11,7 +11,15 @@
 import type { Context } from "hono";
 
 import type { Env } from "../env.js";
-import { clientIp } from "./supabase-admin.js";
+
+/** リバースプロキシ / Cloudflare 越しの実クライアント IP を取り出す。 取れなければ null。 */
+function clientIp(c: Context<{ Bindings: Env }>): string | null {
+  return (
+    c.req.header("cf-connecting-ip") ??
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+    null
+  );
+}
 
 /**
  * レート制限を超過していれば 429 レスポンスを返し、 許容内なら null を返す。

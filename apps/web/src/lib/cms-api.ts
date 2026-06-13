@@ -1,9 +1,9 @@
 /**
- * CMS データアクセス層。 Supabase クライアントの薄いラッパ。
+ * CMS データアクセス層 (Neon / Hono API)。
  *
- * - 戻り値は DB 行 (snake_case) のままで、 マッパー (@falcon/shared/cms/types) は呼び出し側で適用する
- * - 例外は Supabase エラーを `Error` でラップして throw する。 UI 側で toast 表示する想定
- * - すべてのテーブルが RLS 配下のため、 認証されていない呼び出しは empty result または PostgrestError を返す
+ * 旧 Supabase 直アクセス (RLS + reorder RPC + Storage アップロード) を Hono API
+ * (`/api/cms/*`, `/api/materials/*`) 経由に置き換えた。 認可はサーバ側 (staff / 同テナント)。
+ * 戻り値は DB 行 (snake_case) のままで、 マッパー (@falcon/shared/cms/types) は呼び出し側で適用する。
  */
 
 import type {
@@ -20,66 +20,24 @@ import type {
   QuizWithQuestions,
   SectionRow,
 } from "@falcon/shared/cms/types";
-import { getSupabase } from "./supabase";
-
-const MATERIALS_BUCKET = "materials-public";
-
-function unwrap<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Empty result");
-  return data;
-}
+import { apiFetch } from "./api-client";
 
 // ---------------------------------------------------------------
 // Courses
 // ---------------------------------------------------------------
 
-export async function listCourses(tenantId: string): Promise<CourseRow[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .order("updated_at", { ascending: false });
-  return unwrap(data as CourseRow[] | null, error);
+export async function listCourses(_tenantId: string): Promise<CourseRow[]> {
+  const { rows } = await apiFetch<{ rows: CourseRow[] }>("/api/cms/courses");
+  return rows ?? [];
 }
 
 export async function getCourseWithChildren(
   courseId: string,
 ): Promise<CourseWithChildren | null> {
-  const supabase = getSupabase();
-  // Supabase の embedded resource 機能で 1 クエリにまとめる。
-  const { data, error } = await supabase
-    .from("courses")
-    .select("*, sections(*, lessons(*))")
-    .eq("id", courseId)
-    .order("order", { foreignTable: "sections", ascending: true })
-    .order("order", { foreignTable: "sections.lessons", ascending: true })
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-
-  type Nested = CourseRow & { sections: Array<SectionRow & { lessons: LessonRow[] }> };
-  const nested = data as Nested;
-  return {
-    course: stripChildren(nested),
-    sections: (nested.sections ?? []).map((s) => ({
-      section: stripLessons(s),
-      lessons: s.lessons ?? [],
-    })),
-  };
-}
-
-function stripChildren(row: CourseRow & { sections?: unknown }): CourseRow {
-  const { sections: _sections, ...rest } = row as CourseRow & { sections?: unknown };
-  void _sections;
-  return rest as CourseRow;
-}
-
-function stripLessons(row: SectionRow & { lessons?: unknown }): SectionRow {
-  const { lessons: _lessons, ...rest } = row as SectionRow & { lessons?: unknown };
-  void _lessons;
-  return rest as SectionRow;
+  const { course } = await apiFetch<{ course: CourseWithChildren | null }>(
+    `/api/cms/courses/${encodeURIComponent(courseId)}`,
+  );
+  return course ?? null;
 }
 
 export interface UpsertCourseInput {
@@ -92,7 +50,6 @@ export interface UpsertCourseInput {
   duration_hours?: number | null;
   description?: string | null;
   status?: CourseStatus;
-  // 修了基準 (Issue #26)。
   require_all_lessons?: boolean;
   require_quiz_pass?: boolean;
   require_assignment_pass?: boolean;
@@ -100,31 +57,25 @@ export interface UpsertCourseInput {
 }
 
 export async function upsertCourse(input: UpsertCourseInput): Promise<CourseRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("courses")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as CourseRow | null, error);
+  const { row } = await apiFetch<{ row: CourseRow }>("/api/cms/courses", {
+    method: "POST",
+    body: input,
+  });
+  return row;
 }
 
 export async function setCourseStatus(
   id: string,
   status: CourseStatus,
 ): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("courses")
-    .update({ status })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/courses/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    body: { status },
+  });
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("courses").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/courses/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 // ---------------------------------------------------------------
@@ -141,32 +92,25 @@ export interface UpsertSectionInput {
 export async function upsertSection(
   input: UpsertSectionInput,
 ): Promise<SectionRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("sections")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as SectionRow | null, error);
+  const { row } = await apiFetch<{ row: SectionRow }>("/api/cms/sections", {
+    method: "POST",
+    body: input,
+  });
+  return row;
 }
 
 export async function deleteSection(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("sections").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/sections/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export async function reorderSections(
   courseId: string,
   orderedIds: string[],
 ): Promise<void> {
-  // 単一 UPDATE で原子的に書き換える RPC を呼ぶ (部分失敗を防ぐ)。
-  const supabase = getSupabase();
-  const { error } = await supabase.rpc("reorder_sections", {
-    p_course_id: courseId,
-    p_ids: orderedIds,
+  await apiFetch("/api/cms/sections/reorder", {
+    method: "POST",
+    body: { courseId, orderedIds },
   });
-  if (error) throw new Error(error.message);
 }
 
 // ---------------------------------------------------------------
@@ -191,84 +135,46 @@ export interface UpsertLessonInput {
 export async function upsertLesson(
   input: UpsertLessonInput,
 ): Promise<LessonRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("lessons")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as LessonRow | null, error);
+  const { row } = await apiFetch<{ row: LessonRow }>("/api/cms/lessons", {
+    method: "POST",
+    body: input,
+  });
+  return row;
 }
 
 export async function deleteLesson(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("lessons").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/lessons/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export async function reorderLessons(
   sectionId: string,
   orderedIds: string[],
 ): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.rpc("reorder_lessons", {
-    p_section_id: sectionId,
-    p_ids: orderedIds,
+  await apiFetch("/api/cms/lessons/reorder", {
+    method: "POST",
+    body: { sectionId, orderedIds },
   });
-  if (error) throw new Error(error.message);
 }
 
 // ---------------------------------------------------------------
-// Quiz (CMS 編集用 — staff のみ。 受講者の出題/採点は quiz-attempts-api.ts)
+// Quiz (CMS 編集用 — staff のみ)
 // ---------------------------------------------------------------
 
-/** lesson に紐付く quiz を設問・選択肢ごと取得する。 未作成なら null。 */
 export async function getQuizByLesson(
   lessonId: string,
 ): Promise<QuizWithQuestions | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("quizzes")
-    .select("*, quiz_questions(*, quiz_options(*))")
-    .eq("lesson_id", lessonId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-
-  type Nested = QuizRow & {
-    quiz_questions: Array<QuizQuestionRow & { quiz_options: QuizOptionRow[] }>;
-  };
-  const nested = data as Nested;
-  const { quiz_questions: _q, ...quiz } = nested;
-  void _q;
-  return {
-    quiz: quiz as QuizRow,
-    questions: (nested.quiz_questions ?? [])
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((q) => {
-        const { quiz_options, ...rest } = q;
-        return {
-          ...(rest as QuizQuestionRow),
-          options: (quiz_options ?? [])
-            .slice()
-            .sort((a, b) => a.order - b.order),
-        };
-      }),
-  };
+  const { quiz } = await apiFetch<{ quiz: QuizWithQuestions | null }>(
+    `/api/cms/quiz/by-lesson/${encodeURIComponent(lessonId)}`,
+  );
+  return quiz ?? null;
 }
 
-/** lesson に quiz 行が無ければデフォルト設定で作成し、 既存ならそれを返す。 */
 export async function ensureQuiz(lessonId: string): Promise<QuizRow> {
-  const existing = await getQuizByLesson(lessonId);
-  if (existing) return existing.quiz;
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("quizzes")
-    .insert({ lesson_id: lessonId })
-    .select("*")
-    .single();
-  return unwrap(data as QuizRow | null, error);
+  const { row } = await apiFetch<{ row: QuizRow }>("/api/cms/quiz/ensure", {
+    method: "POST",
+    body: { lessonId },
+  });
+  return row;
 }
 
 export interface UpsertQuizInput {
@@ -282,14 +188,11 @@ export interface UpsertQuizInput {
 
 export async function updateQuiz(input: UpsertQuizInput): Promise<QuizRow> {
   const { id, ...patch } = input;
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("quizzes")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
-  return unwrap(data as QuizRow | null, error);
+  const { row } = await apiFetch<{ row: QuizRow }>(
+    `/api/cms/quiz/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: patch },
+  );
+  return row;
 }
 
 export interface UpsertQuizQuestionInput {
@@ -305,19 +208,17 @@ export interface UpsertQuizQuestionInput {
 export async function upsertQuizQuestion(
   input: UpsertQuizQuestionInput,
 ): Promise<QuizQuestionRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("quiz_questions")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as QuizQuestionRow | null, error);
+  const { row } = await apiFetch<{ row: QuizQuestionRow }>(
+    "/api/cms/quiz-questions",
+    { method: "POST", body: input },
+  );
+  return row;
 }
 
 export async function deleteQuizQuestion(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("quiz_questions").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/quiz-questions/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export interface UpsertQuizOptionInput {
@@ -331,19 +232,17 @@ export interface UpsertQuizOptionInput {
 export async function upsertQuizOption(
   input: UpsertQuizOptionInput,
 ): Promise<QuizOptionRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("quiz_options")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as QuizOptionRow | null, error);
+  const { row } = await apiFetch<{ row: QuizOptionRow }>("/api/cms/quiz-options", {
+    method: "POST",
+    body: input,
+  });
+  return row;
 }
 
 export async function deleteQuizOption(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("quiz_options").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/quiz-options/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 // ---------------------------------------------------------------
@@ -351,28 +250,19 @@ export async function deleteQuizOption(id: string): Promise<void> {
 // ---------------------------------------------------------------
 
 export async function listAssignments(
-  tenantId: string,
+  _tenantId: string,
 ): Promise<AssignmentRow[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .order("updated_at", { ascending: false });
-  return unwrap(data as AssignmentRow[] | null, error);
+  const { rows } = await apiFetch<{ rows: AssignmentRow[] }>("/api/cms/assignments");
+  return rows ?? [];
 }
 
 export async function getAssignmentRow(
   id: string,
 ): Promise<AssignmentRow | null> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("assignments")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as AssignmentRow | null) ?? null;
+  const { row } = await apiFetch<{ row: AssignmentRow | null }>(
+    `/api/cms/assignments/${encodeURIComponent(id)}`,
+  );
+  return row ?? null;
 }
 
 export type UpsertAssignmentInput = Omit<
@@ -383,23 +273,21 @@ export type UpsertAssignmentInput = Omit<
 export async function upsertAssignment(
   input: UpsertAssignmentInput,
 ): Promise<AssignmentRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("assignments")
-    .upsert(input)
-    .select("*")
-    .single();
-  return unwrap(data as AssignmentRow | null, error);
+  const { row } = await apiFetch<{ row: AssignmentRow }>("/api/cms/assignments", {
+    method: "POST",
+    body: input,
+  });
+  return row;
 }
 
 export async function deleteAssignment(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("assignments").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/cms/assignments/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 // ---------------------------------------------------------------
-// Storage upload
+// Storage upload (Neon File Storage 経由)
 // ---------------------------------------------------------------
 
 export interface UploadMaterialResult {
@@ -410,12 +298,29 @@ export async function uploadMaterial(
   file: File,
   path: string,
 ): Promise<UploadMaterialResult> {
-  const supabase = getSupabase();
-  const { error } = await supabase.storage
-    .from(MATERIALS_BUCKET)
-    .upload(path, file, { upsert: true });
-  if (error) throw new Error(error.message);
-  return { path };
+  const { getAccessToken } = await import("./neon-auth");
+  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
+  const token = getAccessToken();
+  const form = new FormData();
+  form.append("path", path);
+  form.append("file", file);
+  const res = await fetch(`${serverUrl}/api/materials/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let message = `アップロードに失敗しました (${res.status})`;
+    try {
+      const data = JSON.parse(text) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      /* noop */
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as UploadMaterialResult;
 }
 
 /** UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。 */
@@ -424,8 +329,6 @@ export function buildMaterialPath(args: {
   courseId: string;
   fileName: string;
 }): string {
-  // Unicode 文字 (邦字含む) と `.` / `-` を残す。 空白を含むその他は `_` に置換。
-  // Storage URL では空白がエンコードで問題になるため明示的に潰す。
   const safe = args.fileName.replace(/[^\p{L}\p{N}.\-]+/gu, "_");
   const uniq =
     typeof crypto !== "undefined" && "randomUUID" in crypto

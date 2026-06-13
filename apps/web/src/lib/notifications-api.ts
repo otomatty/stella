@@ -1,25 +1,15 @@
 /**
- * 通知・お知らせのデータアクセス層 (Issue #25)。
+ * 通知・お知らせのデータアクセス層 (Issue #25 — Neon / Hono API)。
  *
- * RLS:
- *   - announcements は同テナントの認証済みユーザが read、 講師/管理者が write。
- *     author_id / author_name は DB トリガーが auth.uid() の profile から確定する。
- *   - notifications は本人のみ read/既読化/削除。 生成 (insert) は DB トリガー経由のみで、
- *     クライアントからは直接作れない (他人宛の捏造を防ぐ)。
- *
- * いずれも RLS 配下の Supabase クライアントから直接 read/write する。
+ * 旧 Supabase 直アクセス (RLS + fan-out トリガー) を Hono API 経由に置き換えた。
+ * author の確定・受講者への fan-out・本人限定の既読化はすべてサーバ側で行う。
  */
 
 import type {
   AnnouncementRow,
   NotificationRow,
 } from "@falcon/shared/cms/types";
-import { getSupabase } from "./supabase";
-
-const ANNOUNCEMENT_COLS =
-  "id, tenant_id, course_id, author_id, author_name, title, body, published_at, created_at";
-const NOTIFICATION_COLS =
-  "id, user_id, tenant_id, type, title, body, payload, read, created_at";
+import { apiFetch } from "./api-client";
 
 export interface ListAnnouncementsOpts {
   tenantId: string;
@@ -33,19 +23,14 @@ export interface ListAnnouncementsOpts {
 export async function listAnnouncements(
   opts: ListAnnouncementsOpts,
 ): Promise<AnnouncementRow[]> {
-  const supabase = getSupabase();
-  let query = supabase
-    .from("announcements")
-    .select(ANNOUNCEMENT_COLS)
-    .eq("tenant_id", opts.tenantId)
-    .order("published_at", { ascending: false })
-    .limit(opts.limit ?? 20);
-
-  if (opts.courseId) query = query.eq("course_id", opts.courseId);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data as AnnouncementRow[] | null) ?? [];
+  const p = new URLSearchParams();
+  if (opts.courseId) p.set("courseId", opts.courseId);
+  if (opts.limit) p.set("limit", String(opts.limit));
+  const qs = p.toString();
+  const { rows } = await apiFetch<{ rows: AnnouncementRow[] }>(
+    `/api/announcements${qs ? `?${qs}` : ""}`,
+  );
+  return rows ?? [];
 }
 
 export interface CreateAnnouncementInput {
@@ -57,30 +42,25 @@ export interface CreateAnnouncementInput {
 }
 
 /**
- * お知らせを作成する。 author_id / author_name は DB トリガーが確定するため
- * クライアントからは渡さない。 作成後、 DB トリガーが対象受講者へ通知を fan-out する。
+ * お知らせを作成する。 author はサーバが caller から確定し、 対象受講者へ fan-out する。
  */
 export async function createAnnouncement(
   input: CreateAnnouncementInput,
 ): Promise<AnnouncementRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("announcements")
-    .insert({
-      tenant_id: input.tenantId,
-      course_id: input.courseId ?? null,
+  const { row } = await apiFetch<{ row: AnnouncementRow }>("/api/announcements", {
+    method: "POST",
+    body: {
+      courseId: input.courseId ?? null,
       title: input.title,
       body: input.body,
-    })
-    .select(ANNOUNCEMENT_COLS)
-    .single();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("お知らせの作成結果が空でした");
-  return data as AnnouncementRow;
+    },
+  });
+  if (!row) throw new Error("お知らせの作成結果が空でした");
+  return row;
 }
 
 export interface ListNotificationsOpts {
-  /** 対象テナント。 RLS は本人の行に絞るが、 多テナント混入を防ぐため明示的に絞り込む。 */
+  /** 対象テナント (サーバは caller のテナントに固定するため送信のみ互換)。 */
   tenantId: string;
   /** 未読のみに絞る。 */
   unreadOnly?: boolean;
@@ -88,52 +68,28 @@ export interface ListNotificationsOpts {
   limit?: number;
 }
 
-/** 自分宛の通知を新着順で取得する (RLS により本人の行のみ)。 */
+/** 自分宛の通知を新着順で取得する。 */
 export async function listNotifications(
   opts: ListNotificationsOpts,
 ): Promise<NotificationRow[]> {
-  const supabase = getSupabase();
-  let query = supabase
-    .from("notifications")
-    .select(NOTIFICATION_COLS)
-    .eq("tenant_id", opts.tenantId)
-    .order("created_at", { ascending: false })
-    .limit(opts.limit ?? 30);
-
-  if (opts.unreadOnly) query = query.eq("read", false);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data as NotificationRow[] | null) ?? [];
+  const p = new URLSearchParams();
+  if (opts.unreadOnly) p.set("unreadOnly", "true");
+  if (opts.limit) p.set("limit", String(opts.limit));
+  const qs = p.toString();
+  const { rows } = await apiFetch<{ rows: NotificationRow[] }>(
+    `/api/notifications${qs ? `?${qs}` : ""}`,
+  );
+  return rows ?? [];
 }
 
-/**
- * 通知を既読にする。
- *
- * Postgres は対象行が無い / RLS で除外された更新を 0 件成功として返すため、
- * `.select().maybeSingle()` で実更新行を確認し、 0 件なら明示的に失敗させる。
- */
+/** 通知を既読にする。 */
 export async function markNotificationRead(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("id", id)
-    .select("id")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) {
-    throw new Error("対象の通知が見つからないか、 更新権限がありません");
-  }
+  await apiFetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+    method: "PATCH",
+  });
 }
 
 /** 自分宛の未読通知をすべて既読にする (当該テナント内)。 */
-export async function markAllNotificationsRead(tenantId: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("tenant_id", tenantId)
-    .eq("read", false);
-  if (error) throw new Error(error.message);
+export async function markAllNotificationsRead(_tenantId: string): Promise<void> {
+  await apiFetch("/api/notifications/read-all", { method: "POST" });
 }

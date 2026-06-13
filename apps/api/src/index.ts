@@ -7,11 +7,22 @@ import { cors } from "hono/cors";
 
 import type { Env } from "./env.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
-import { adminUsersRoute } from "./routes/admin-users.js";
+import { adminRoute } from "./routes/admin.js";
+import { analyticsRoute } from "./routes/analytics.js";
+import { auditLogsRoute } from "./routes/audit-logs.js";
+import { certificatesRoute } from "./routes/certificates.js";
 import { chatRoute } from "./routes/chat.js";
+import { cmsRoute } from "./routes/cms.js";
+import { enrollmentsRoute } from "./routes/enrollments.js";
 import { healthzRoute } from "./routes/healthz.js";
-import { organizationsRoute } from "./routes/organizations.js";
+import { lessonProgressRoute } from "./routes/lesson-progress.js";
+import { materialsRoute } from "./routes/materials.js";
+import { meRoute } from "./routes/me.js";
+import { notificationsRoute } from "./routes/notifications.js";
+import { qaRoute } from "./routes/qa.js";
+import { quizRoute } from "./routes/quiz.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
+import { submissionsRoute } from "./routes/submissions.js";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -19,7 +30,7 @@ app.use("/api/*", async (c, next) => {
   const corsMiddleware = cors({
     // null を返すと Access-Control-Allow-Origin ヘッダ自体が送られない (= 不許可)。
     origin: (origin) => resolveCorsOrigin(origin, c.env.ALLOWED_ORIGINS),
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   });
   return corsMiddleware(c, next);
@@ -28,7 +39,18 @@ app.use("/api/*", async (c, next) => {
 app.route("/", healthzRoute);
 app.route("/", chatRoute);
 app.route("/", reviewDraftRoute);
-app.route("/", adminUsersRoute);
-app.route("/", organizationsRoute);
+app.route("/", adminRoute);
+app.route("/", lessonProgressRoute);
+app.route("/", meRoute);
+app.route("/", enrollmentsRoute);
+app.route("/", qaRoute);
+app.route("/", auditLogsRoute);
+app.route("/", notificationsRoute);
+app.route("/", quizRoute);
+app.route("/", certificatesRoute);
+app.route("/", analyticsRoute);
+app.route("/", submissionsRoute);
+app.route("/", cmsRoute);
+app.route("/", materialsRoute);
 
 export default app;

@@ -1,46 +1,32 @@
 /**
- * 受講登録 (Enrollment) のデータアクセス層 (Issue #20)。
+ * 受講登録 (Enrollment) のデータアクセス層 (Issue #20 — Neon / Hono API)。
  *
- * RLS:
- *   - 受講者は自分の enrollment のみ read。
- *   - instructor/admin は同テナントを read/write (割当・解除・期限/必須の変更)。
- *
- * 割当は auth.users を触らないため、 user-management のような service-role API は不要で、
- * RLS 配下の Supabase クライアントから直接 write する。
+ * 旧 Supabase 直アクセス (RLS 配下) を Hono API 経由に置き換えた。 認可はサーバ側:
+ *   - 受講者は自分の enrollment のみ read (`/api/enrollments/mine`)
+ *   - instructor/admin は同テナントを read/write
  */
 
 import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
-import { getSupabase } from "./supabase";
+import { apiFetch } from "./api-client";
 
-const SELECT_COLS =
-  "id, tenant_id, user_id, course_id, assigned_by, due_at, required, status, enrolled_at, completed_at";
-
-/** 受講者本人の enrollment 一覧 (登録日昇順)。 */
+/** 受講者本人の enrollment 一覧 (登録日昇順)。 userId はサーバが caller から解決する。 */
 export async function listEnrollmentsForUser(
-  userId: string,
+  _userId: string,
 ): Promise<EnrollmentRow[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("enrollments")
-    .select(SELECT_COLS)
-    .eq("user_id", userId)
-    .order("enrolled_at", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data as EnrollmentRow[] | null) ?? [];
+  const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>(
+    "/api/enrollments/mine",
+  );
+  return rows ?? [];
 }
 
 /** staff 向け: あるコースに割り当てられている受講者の enrollment 一覧。 */
 export async function listEnrollmentsForCourse(
   courseId: string,
 ): Promise<EnrollmentRow[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("enrollments")
-    .select(SELECT_COLS)
-    .eq("course_id", courseId)
-    .order("enrolled_at", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data as EnrollmentRow[] | null) ?? [];
+  const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>(
+    `/api/enrollments?courseId=${encodeURIComponent(courseId)}`,
+  );
+  return rows ?? [];
 }
 
 export interface AssignEnrollmentInput {
@@ -54,30 +40,22 @@ export interface AssignEnrollmentInput {
 
 /**
  * 受講者にコースを割り当てる (既存があれば期限/必須/割当者を更新)。
- * unique(user_id, course_id) 制約に対し upsert することで二重登録を防ぐ。
+ * tenant_id / assigned_by はサーバが caller から決めるため送らない。
  */
 export async function assignEnrollment(
   input: AssignEnrollmentInput,
 ): Promise<EnrollmentRow> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("enrollments")
-    .upsert(
-      {
-        tenant_id: input.tenantId,
-        user_id: input.userId,
-        course_id: input.courseId,
-        assigned_by: input.assignedBy ?? null,
-        due_at: input.dueAt ?? null,
-        required: input.required ?? true,
-      },
-      { onConflict: "user_id,course_id" },
-    )
-    .select(SELECT_COLS)
-    .single();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Empty result");
-  return data as EnrollmentRow;
+  const { row } = await apiFetch<{ row: EnrollmentRow }>("/api/enrollments", {
+    method: "POST",
+    body: {
+      userId: input.userId,
+      courseId: input.courseId,
+      ...(input.dueAt !== undefined ? { dueAt: input.dueAt } : {}),
+      ...(input.required !== undefined ? { required: input.required } : {}),
+    },
+  });
+  if (!row) throw new Error("Empty result");
+  return row;
 }
 
 export interface UpdateEnrollmentPatch {
@@ -92,17 +70,15 @@ export async function updateEnrollment(
   id: string,
   patch: UpdateEnrollmentPatch,
 ): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("enrollments")
-    .update(patch)
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/enrollments/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: patch,
+  });
 }
 
 /** 割当を解除する。 */
 export async function removeEnrollment(id: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("enrollments").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await apiFetch(`/api/enrollments/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
