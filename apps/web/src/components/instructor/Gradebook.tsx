@@ -10,14 +10,26 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Award, CheckCircle, Loader2 } from '@/lib/icons';
+import { Award, CheckCircle, Download, Loader2 } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/data/types';
-import type { CourseGradebook, GradebookEntry } from '@falcon/shared/cms/types';
+import type {
+  CourseGradebook,
+  EnrollmentStatus,
+  GradebookEntry,
+} from '@falcon/shared/cms/types';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { fetchCourseGradebook, issueCertificate } from '@/lib/certificates-api';
+import { downloadCsv, toCsv } from '@/lib/csv';
+
+/** enrollment ステータスを日本語の表示語にする。 */
+const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
+  active: '受講中',
+  completed: '完了',
+  expired: '期限切れ',
+};
 
 interface GradebookProps {
   courses: Course[];
@@ -63,6 +75,49 @@ export const Gradebook = ({ courses }: GradebookProps) => {
     }
   }, [courses, courseId]);
 
+  const onExport = () => {
+    if (!data || data.rows.length === 0) return;
+    const headers = [
+      '受講者',
+      'メール',
+      '受講状態',
+      '期限',
+      '登録日',
+      'レッスン完了',
+      'レッスン総数',
+      '小テスト合格',
+      '小テスト総数',
+      '課題合格',
+      '課題総数',
+      '達成',
+      '修了証',
+      '認定番号',
+    ];
+    const rows = data.rows.map((r) => {
+      const c = r.completion;
+      return [
+        r.display_name,
+        r.email ?? '',
+        ENROLLMENT_STATUS_LABEL[r.enrollment_status] ?? r.enrollment_status,
+        r.due_at ? r.due_at.slice(0, 10) : '',
+        r.enrolled_at ? r.enrolled_at.slice(0, 10) : '',
+        c?.completed_lessons ?? '',
+        c?.total_lessons ?? '',
+        c?.passed_quizzes ?? '',
+        c?.total_quizzes ?? '',
+        c?.passed_assignments ?? '',
+        c?.total_assignments ?? '',
+        c?.met ? '達成' : '未達成',
+        c?.has_certificate ? '発行済み' : '',
+        c?.cert_code ?? '',
+      ];
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    const safeTitle = data.course_title.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40);
+    downloadCsv(`gradebook-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
+    toast.success('成績台帳を出力しました');
+  };
+
   const onIssue = async (userId: string) => {
     if (!courseId) return;
     setIssuingUser(userId);
@@ -85,24 +140,30 @@ export const Gradebook = ({ courses }: GradebookProps) => {
         title="成績台帳"
         sub="受講者ごとの達成状況を確認し、 修了証を発行できます"
         actions={
-          <select
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-            className="h-8 rounded-sm border border-border-2 bg-card px-3 text-[13px]"
-          >
-            {courses.length === 0 ? <option value="">コースなし</option> : null}
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className="h-8 rounded-sm border border-border-2 bg-card px-3 text-[13px]"
+            >
+              {courses.length === 0 ? <option value="">コースなし</option> : null}
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+            <Button onClick={onExport} disabled={!data || data.rows.length === 0}>
+              <Download size={14} />
+              CSV出力
+            </Button>
+          </>
         }
       />
 
       {!supabaseEnabled ? (
         <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
-          成績台帳は Supabase 接続時に実データで動作します (現在はデモ表示のため利用できません)。
+          成績台帳はバックエンド (Neon) 接続時に実データで動作します (現在はデモ表示のため利用できません)。
         </div>
       ) : loading ? (
         <div className="flex items-center justify-center gap-2 text-sm text-ink-3 py-16">

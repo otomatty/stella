@@ -212,7 +212,12 @@ async function computeStumbles(
     .slice(0, 8);
 }
 
-/** 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗。 */
+/**
+ * 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗。
+ *
+ * 注: 講師 ↔ 受講者 / コースの担当割当モデルは存在しないため、 母集合はテナント全体の
+ * enrollment (= テナント概況) とする。 越テナント参照は caller.tenantId で構造的に遮断する。
+ */
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -246,44 +251,86 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
       .sort((a, b) => (a.dueAt?.getTime() ?? Infinity) - (b.dueAt?.getTime() ?? Infinity))
       .slice(0, 6);
 
-    const students = [];
-    for (const e of active) {
-      const courseRows = await db
-        .select({ title: courses.title })
-        .from(courses)
-        .where(eq(courses.id, e.courseId))
-        .limit(1);
-      const lessonRows = await db
-        .select({ id: lessons.id })
-        .from(lessons)
-        .innerJoin(sections, eq(sections.id, lessons.sectionId))
-        .where(eq(sections.courseId, e.courseId));
-      const total = lessonRows.length;
-      let done = 0;
-      if (total > 0) {
-        const lessonIds = lessonRows.map((l) => l.id);
-        const completed = await db
-          .select({ lessonId: lessonProgress.lessonId })
-          .from(lessonProgress)
-          .where(and(eq(lessonProgress.userId, e.userId), eq(lessonProgress.completed, true)));
-        done = new Set(
-          completed.filter((cmp) => lessonIds.includes(cmp.lessonId)).map((cmp) => cmp.lessonId),
-        ).size;
-      }
-      const prof = await db
-        .select({ displayName: profiles.displayName, initials: profiles.initials })
-        .from(profiles)
-        .where(eq(profiles.id, e.userId))
-        .limit(1);
-      students.push({
+    // Neon HTTP は 1 クエリ = 1 ラウンドトリップのため、 受講者ごとのループ内クエリ (N+1)
+    // を避け、 course / lesson / progress / profile をまとめて取得してから JS で突合する。
+    const sampleCourseIds = [...new Set(active.map((e) => e.courseId))];
+    const sampleUserIds = [...new Set(active.map((e) => e.userId))];
+
+    const sampleCourses =
+      sampleCourseIds.length > 0
+        ? await db
+            .select({ id: courses.id, title: courses.title })
+            .from(courses)
+            .where(and(eq(courses.tenantId, tenantId), inArray(courses.id, sampleCourseIds)))
+        : [];
+    const courseTitleById = new Map(sampleCourses.map((co) => [co.id, co.title]));
+
+    // 対象コース配下の全レッスンを courseId ごとにグルーピング。
+    const sampleLessons =
+      sampleCourseIds.length > 0
+        ? await db
+            .select({ lessonId: lessons.id, courseId: sections.courseId })
+            .from(lessons)
+            .innerJoin(sections, eq(sections.id, lessons.sectionId))
+            .where(inArray(sections.courseId, sampleCourseIds))
+        : [];
+    const lessonIdsByCourse = new Map<string, string[]>();
+    for (const r of sampleLessons) {
+      const arr = lessonIdsByCourse.get(r.courseId) ?? [];
+      arr.push(r.lessonId);
+      lessonIdsByCourse.set(r.courseId, arr);
+    }
+
+    // 対象受講者の完了レッスンを userId ごとの集合に。
+    const sampleCompleted =
+      sampleUserIds.length > 0
+        ? await db
+            .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
+            .from(lessonProgress)
+            .where(
+              and(
+                eq(lessonProgress.tenantId, tenantId),
+                inArray(lessonProgress.userId, sampleUserIds),
+                eq(lessonProgress.completed, true),
+              ),
+            )
+        : [];
+    const completedByUser = new Map<string, Set<string>>();
+    for (const r of sampleCompleted) {
+      const set = completedByUser.get(r.userId) ?? new Set<string>();
+      set.add(r.lessonId);
+      completedByUser.set(r.userId, set);
+    }
+
+    // 対象受講者の表示名 / イニシャル。
+    const sampleProfiles =
+      sampleUserIds.length > 0
+        ? await db
+            .select({
+              id: profiles.id,
+              displayName: profiles.displayName,
+              initials: profiles.initials,
+            })
+            .from(profiles)
+            .where(and(eq(profiles.tenantId, tenantId), inArray(profiles.id, sampleUserIds)))
+        : [];
+    const profileById = new Map(sampleProfiles.map((p) => [p.id, p]));
+
+    const students = active.map((e) => {
+      const lessonIds = lessonIdsByCourse.get(e.courseId) ?? [];
+      const total = lessonIds.length;
+      const completed = completedByUser.get(e.userId) ?? new Set<string>();
+      const done = total === 0 ? 0 : lessonIds.filter((id) => completed.has(id)).length;
+      const prof = profileById.get(e.userId);
+      return {
         user_id: e.userId,
-        display_name: prof[0]?.displayName ?? "",
-        initials: prof[0]?.initials ?? null,
-        course_title: courseRows[0]?.title ?? "",
+        display_name: prof?.displayName ?? "",
+        initials: prof?.initials ?? null,
+        course_title: courseTitleById.get(e.courseId) ?? "",
         progress_pct: total === 0 ? 0 : round((done * 100) / total),
         overdue: e.dueAt != null && e.dueAt < now,
-      });
-    }
+      };
+    });
 
     return c.json({
       overview: {

@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CalendarClock, UserPlus, X } from "@/lib/icons";
+import { CalendarClock, Download, UserPlus, X } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import type { AvatarTone } from "@/data/types";
-import type { EnrollmentRow } from "@falcon/shared/cms/types";
+import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useCourseEnrollments } from "@/hooks/useEnrollments";
@@ -34,8 +34,16 @@ import {
   removeEnrollment,
   updateEnrollment,
 } from "@/lib/enrollments-api";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
+
+/** enrollment ステータスを日本語の表示語にする。 */
+const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
+  active: "受講中",
+  completed: "完了",
+  expired: "期限切れ",
+};
 
 function toneFromId(id: string): AvatarTone {
   let h = 0;
@@ -163,20 +171,51 @@ function EnrollmentsLive({
 
   const assignedCount = enrollmentByUser.size;
 
+  const onExport = () => {
+    if (learners.length === 0) return;
+    const headers = ["受講者", "割当", "受講状態", "期限", "必須", "登録日"];
+    const rows = learners.map((p) => {
+      const e = enrollmentByUser.get(p.id);
+      return [
+        p.display_name,
+        e ? "割当済み" : "未割当",
+        e ? (ENROLLMENT_STATUS_LABEL[e.status] ?? e.status) : "—",
+        e?.due_at ? e.due_at.slice(0, 10) : "",
+        e ? (e.required ? "必須" : "任意") : "",
+        e?.enrolled_at ? e.enrolled_at.slice(0, 10) : "",
+      ];
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    const safeTitle = (selectedCourse?.title ?? "course")
+      .replace(/[^\p{L}\p{N}_-]+/gu, "_")
+      .slice(0, 40);
+    downloadCsv(`enrollments-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
+    toast.success("受講状況を出力しました");
+  };
+
   return (
     <>
       <PageHeader
         title="受講登録"
         sub="受講者へのコース割当 · 期限 / 必須の設定"
         actions={
-          <Button
-            variant="accent"
-            disabled={!courseId || learners.length === 0 || busyId !== null}
-            onClick={onAssignAll}
-          >
-            <UserPlus size={14} />
-            全受講者に割当
-          </Button>
+          <>
+            <Button
+              disabled={!courseId || learners.length === 0}
+              onClick={onExport}
+            >
+              <Download size={14} />
+              CSV出力
+            </Button>
+            <Button
+              variant="accent"
+              disabled={!courseId || learners.length === 0 || busyId !== null}
+              onClick={onAssignAll}
+            >
+              <UserPlus size={14} />
+              全受講者に割当
+            </Button>
+          </>
         }
       />
 
@@ -331,8 +370,9 @@ function EnrollmentsDemoNotice() {
     <>
       <PageHeader title="受講登録" sub="受講者へのコース割当 · 期限 / 必須の設定" />
       <div className="rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
-        Supabase 未設定のため受講登録は利用できません。 受講者へのコース割当を行うには
-        <code className="mx-1">VITE_SUPABASE_*</code> を設定してください。
+        バックエンド (Neon) 未接続のため受講登録は利用できません。 受講者へのコース割当を行うには
+        <code className="mx-1">VITE_NEON_AUTH_URL</code> / <code className="mx-1">VITE_SERVER_URL</code>
+        を設定してください。
       </div>
     </>
   );

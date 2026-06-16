@@ -169,9 +169,9 @@ export const InstructorDashboard = ({
             <Star size={12} /> AI採用率
           </>
         }
-        value={74}
+        value="—"
         unit="%"
-        trend="直近30日間"
+        trend="計測準備中 (採用ログ未収集)"
       />
     </div>
 

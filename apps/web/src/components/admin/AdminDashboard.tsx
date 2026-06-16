@@ -3,9 +3,9 @@
  *
  * KPI カード / 受講推移 / コース別完了率 / つまずき分析 / 受講状況サマリを、
  * enrollment + lesson_progress + quiz_attempts + certificates から集計した実データで
- * 表示する (get_tenant_analytics RPC)。 表示中の集計は CSV 出力できる。
+ * 表示する (GET /api/analytics/tenant)。 表示中の集計は CSV 出力できる。
  *
- * Supabase 未設定時 (dev fixtures フロー): DB が無いため、 従来の固定サンプルを表示する。
+ * バックエンド (Neon) 未接続時 (dev fixtures フロー): DB が無いため、 従来の固定サンプルを表示する。
  */
 
 import { toast } from 'sonner';
@@ -390,8 +390,9 @@ function DashboardDemo() {
         }
       />
       <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
-        Supabase 未設定のため、 以下はデモ表示です。 実データの集計・CSV出力には
-        <code className="mx-1">VITE_SUPABASE_*</code> を設定してください。
+        バックエンド (Neon) 未接続のため、 以下はデモ表示です。 実データの集計・CSV出力には
+        <code className="mx-1">VITE_NEON_AUTH_URL</code> / <code className="mx-1">VITE_SERVER_URL</code>
+        を設定してください。
       </div>
 
       <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
