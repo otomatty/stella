@@ -15,7 +15,7 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
    ▼
 [Neon Postgres]   ← Drizzle スキーマ (apps/api/src/db/schema.ts)
 [Neon Auth]       ← JWT を JWKS で検証 (apps/api/src/lib/authz.ts)
-[Neon File Storage] ← 教材配信 (VITE_MATERIALS_BASE_URL)
+[Cloudflare R2]   ← 教材配信 (VITE_MATERIALS_BASE_URL) / アップロード (Workers R2 バインディング)
 ```
 
 ## 決定事項
@@ -53,14 +53,14 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
 - ドメイン: **analytics** (`/api/analytics/*`, テナント KPI / 講師概況)
 - ドメイン: **submissions** (`/api/submissions`, staff キュー / 提出 / 添削 + review_completed 通知)
 - ドメイン: **cms** (`/api/cms/*`, course/section/lesson/quiz/assignment + reorder)
-- 教材アップロード: **materials** (`/api/materials/upload`, Neon File Storage S3 互換 / aws4fetch)
+- 教材アップロード: **materials** (`/api/materials/upload`, Cloudflare R2 Workers バインディング)
 - ドメイン: **admin-users / organizations** (`/api/admin/*`, ロール変更 / 無効化 / 組織 CRUD)
 
 ### ✅ Supabase 依存の完全撤去
 - `@supabase/supabase-js` を apps/web / apps/api の依存から削除。
 - `apps/api/src/lib/supabase-admin.ts` / `routes/admin-users.ts` / `routes/organizations.ts` を削除。
 - `apps/web/src/lib/supabase.ts` は互換シム化 (`isSupabaseConfigured` = Neon Auth + API 設定済み、
-  `getMaterialUrl` は Neon File Storage へ委譲)。 ソース内に `@supabase` の import は無し。
+  `getMaterialUrl` は Cloudflare R2 公開 URL へ委譲)。 ソース内に `@supabase` の import は無し。
 
 ### ⚠️ 1 点だけ外部 API 依存が残る: ユーザー招待
 - **ロール変更 / 無効化 / 一覧 / 組織 CRUD は Neon で完全動作**する。
@@ -81,5 +81,5 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
    - `NEON_AUTH_JWKS_URL` (API) / `VITE_NEON_AUTH_URL` (web) を設定。
    - `web/src/lib/neon-auth.ts` の Magic Link 送信 / トークン取り込みエンドポイントを
      実際の Neon Auth (Better Auth) のパスに合わせる (または公式 React SDK に置換)。
-4. **Neon File Storage** バケットを作成 → 公開ベース URL を `VITE_MATERIALS_BASE_URL` に。
-   既存の `materials-public` バケットの中身を移送する。
+4. **Cloudflare R2** バケット (`falcon-materials-public`) を Workers にバインド → 公開ベース URL を
+   `VITE_MATERIALS_BASE_URL` に。 旧 `materials-public` バケットの中身を移送する。

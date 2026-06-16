@@ -68,28 +68,34 @@ export const profiles = pgTable("profiles", {
 // コース / セクション / レッスン / 課題
 // ---------------------------------------------------------------
 
-export const courses = pgTable("courses", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  slug: text("slug").notNull(),
-  title: text("title").notNull(),
-  category: text("category"),
-  color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
-  durationHours: integer("duration_hours"),
-  description: text("description"),
-  status: text("status", { enum: ["draft", "published", "archived"] })
-    .notNull()
-    .default("draft"),
-  requireAllLessons: boolean("require_all_lessons").notNull().default(true),
-  requireQuizPass: boolean("require_quiz_pass").notNull().default(true),
-  requireAssignmentPass: boolean("require_assignment_pass").notNull().default(true),
-  autoIssueCertificate: boolean("auto_issue_certificate").notNull().default(true),
-  createdBy: text("created_by"),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const courses = pgTable(
+  "courses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    category: text("category"),
+    color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
+    durationHours: integer("duration_hours"),
+    description: text("description"),
+    status: text("status", { enum: ["draft", "published", "archived"] })
+      .notNull()
+      .default("draft"),
+    requireAllLessons: boolean("require_all_lessons").notNull().default(true),
+    requireQuizPass: boolean("require_quiz_pass").notNull().default(true),
+    requireAssignmentPass: boolean("require_assignment_pass").notNull().default(true),
+    autoIssueCertificate: boolean("auto_issue_certificate").notNull().default(true),
+    createdBy: text("created_by"),
+    createdAt: now(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tenantSlugUnique: uniqueIndex("courses_tenant_slug_uq").on(t.tenantId, t.slug),
+  }),
+);
 
 export const sections = pgTable("sections", {
   id: uuid("id").primaryKey().defaultRandom(),

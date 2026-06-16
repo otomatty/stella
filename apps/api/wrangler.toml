@@ -21,3 +21,9 @@ name = "AI_RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 20, period = 60 }
+
+# 教材アップロード (Cloudflare R2)。 公開読み取りは Dashboard で r2.dev またはカスタムドメインを有効化し、
+# フロントの VITE_MATERIALS_BASE_URL に公開 URL を設定する。
+[[r2_buckets]]
+binding = "MATERIALS_BUCKET"
+bucket_name = "falcon-materials-public"

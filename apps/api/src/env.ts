@@ -36,15 +36,11 @@ export interface Env {
   /** Neon Auth admin API のサーバ秘密鍵 (Authorization に付与)。 機密。 */
   NEON_AUTH_ADMIN_SECRET?: string;
 
-  // --- Neon File Storage (S3 互換) — 教材アップロード ---
-  /** S3 互換エンドポイント (例: https://<bucket>.<region>.neon.storage)。 */
-  MATERIALS_S3_ENDPOINT?: string;
-  /** バケット名。 */
-  MATERIALS_S3_BUCKET?: string;
-  MATERIALS_S3_ACCESS_KEY_ID?: string;
-  MATERIALS_S3_SECRET_ACCESS_KEY?: string;
-  /** リージョン (S3 署名用、 既定 auto)。 */
-  MATERIALS_S3_REGION?: string;
+  /**
+   * Cloudflare R2 — 教材アップロード用バケット。
+   * `wrangler.toml` の `[[r2_buckets]]` で `MATERIALS_BUCKET` としてバインドする。
+   */
+  MATERIALS_BUCKET?: R2Bucket;
 
   /** 招待メールのリンク先 (受諾後に開くアプリ URL)。 未設定なら ALLOWED_ORIGINS の先頭。 */
   INVITE_REDIRECT_URL?: string;

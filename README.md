@@ -19,21 +19,28 @@ falcon-informal/
 ├── packages/
 │   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
-├── supabase/                 # DB マイグレーション
+├── apps/api/drizzle/         # Drizzle マイグレーション (Neon Postgres)
+├── supabase/                 # 旧 Supabase マイグレーション (移行元の参考・履歴用)
 ├── tsconfig.base.json
 └── package.json              # Bun workspaces
 ```
 
+> **アーキテクチャ移行 (#neon)**: Supabase (PostgREST 直叩き + RLS + RPC + Auth + Storage) から
+> **Neon Postgres + Neon Auth + Cloudflare R2** へ移行済み。 フロントは DB を直接叩かず、
+> 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
+> 詳細は [`docs/neon-migration.md`](docs/neon-migration.md) を参照。
+
 ## スタック
 
 - **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`)
-- **Hono + Cloudflare Workers** — API (`apps/api`)
-- **Supabase** — Auth / PostgreSQL / Storage (Tokyo 推奨)
+- **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約 (旧 RLS の代替)
+- **Neon Postgres** — DB (Drizzle ORM / `drizzle-orm/neon-http`)
+- **Neon Auth** — 認証 (Magic Link / Email OTP)。 JWT を JWKS で検証
+- **Cloudflare R2** — 教材配信・アップロード (Workers R2 バインディング + 公開 URL)
 - **Tailwind CSS v4 + shadcn/ui** (`apps/web/src/components/ui/`)
 - **Radix UI** プリミティブ
 - **Bun** (パッケージマネージャ / Workspaces)
 - **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
-- **教材配信**: Supabase Storage (`materials-public` バケット)
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
 ## セットアップ
@@ -42,39 +49,61 @@ falcon-informal/
 bun install
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/api/.dev.vars.example apps/api/.dev.vars
-# 各ファイルを編集して Supabase / Anthropic の認証情報を埋める
+# 各ファイルを編集して Neon / Anthropic の認証情報を埋める
 ```
 
-### Supabase
+> フィクスチャのフォールバックにより、 Neon / Anthropic 未設定でもモックログインで全ロール
+> (Learner / Instructor / Admin) を Tweaks パネル (バックティック `` ` `` キー) から試せる。
 
-1. Supabase で新規プロジェクト作成 (リージョン: Tokyo 推奨)
-2. Storage で `materials-public` バケットを作成 (public read)
-3. CORS設定: `Access-Control-Allow-Origin: *`、`Methods: GET, HEAD`、`Headers: Range, Content-Type`
-4. プロジェクト URL と [Publishable key](https://supabase.com/docs/guides/getting-started/api-keys) (`sb_publishable_...`) を `.env.local` の `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` に貼る
+### Neon Postgres (DB / マイグレーション)
 
-### Supabase DB (教材 CMS 用) — Issue #10
+CMS / 進捗 / 提出 / 小テスト / 修了証 など DB 連携機能を使う場合は、 Neon プロジェクトを作成し
+スキーマを適用する。
 
-CMS 機能 (`/admin/courses` 等) を使う場合は DB スキーマと初期データの投入が必要。
-
-1. Supabase Studio の SQL Editor で `supabase/migrations/20260519000000_cms_foundation.sql` を貼って実行 (テーブル / RLS / Storage ポリシーが作成される)
-2. Authentication → Providers で **Email (Magic Link)** を有効化
-3. fixtures から既存コース・課題を取り込むには service_role キーを使った seed スクリプト:
+1. [Neon Console](https://console.neon.tech) で新規プロジェクトを作成し、 **pooled connection** の
+   接続文字列を取得する (例: `postgres://user:pass@ep-xxxx-pooler.<region>.aws.neon.tech/dbname?sslmode=require`)。
+   staging / production は別プロジェクト (または別 branch) に分ける。
+2. `apps/api/.dev.vars` の `DATABASE_URL` に貼る (本番は `wrangler secret put DATABASE_URL`)。
+3. 疎通確認 → マイグレーション適用 → 再確認:
 
    ```bash
-   SUPABASE_URL=https://xxxxx.supabase.co \
-   SUPABASE_SERVICE_ROLE_KEY=... \
-     bun run seed:fixtures
+   DATABASE_URL=postgres://... bun run smoke:neon   # 接続 OK・テーブル未適用を確認
+   DATABASE_URL=postgres://... bun run db:migrate    # 全 19 テーブルを適用
+   DATABASE_URL=postgres://... bun run smoke:neon    # 19/19 存在 を確認
    ```
 
-   service_role キーは絶対にクライアントに公開しない (`apps/web/.env.local` の `SUPABASE_SERVICE_ROLE_KEY` はビルドに含まれないサーバ専用変数)。
+4. 初期データ (テナント `coach` / `ses` + fixtures のコース・課題) を投入:
 
-4. 初回サインイン後は `profiles` に `role='student'` で行が作られる。 管理者にしたい場合は SQL Editor で
+   ```bash
+   bun run seed:fixtures:sql > apps/api/drizzle/seed.sql      # fixtures → INSERT SQL を生成
+   psql "$DATABASE_URL" -f apps/api/drizzle/seed.sql          # Neon に適用 (SQL Editor 貼付でも可)
+   ```
+
+5. 初回 Magic Link ログイン後は `profiles` に `role='student'` で行が作られる。 管理者にするには:
 
    ```sql
    update public.profiles set role = 'admin' where email = 'you@example.com';
    ```
 
-   を実行する (招待制フローは未実装)。
+### Neon Auth (Magic Link / Email OTP)
+
+1. Neon Console → Auth を有効化し、 Magic Link / Email OTP を設定する。
+2. `NEON_AUTH_JWKS_URL` (API / `apps/api/.dev.vars`) と `VITE_NEON_AUTH_URL` (web / `apps/web/.env.local`)
+   を設定する。 必要に応じて `NEON_AUTH_ISSUER` / `NEON_AUTH_AUDIENCE` で iss / aud も検証する。
+3. **ユーザー招待** (identity 作成 + 招待メール) を使う場合のみ、 `NEON_AUTH_ADMIN_URL` /
+   `NEON_AUTH_ADMIN_SECRET` を設定する (未設定時は招待エンドポイントが 503。 ロール変更 / 無効化 /
+   一覧 / 組織 CRUD は DB のみで動作する)。
+
+### Cloudflare R2 (教材配信・アップロード)
+
+1. R2 バケット `falcon-materials-public` は `apps/api/wrangler.toml` の `[[r2_buckets]]` で Workers にバインド済み。
+   未作成の場合は Dashboard または `wrangler r2 bucket create falcon-materials-public` で作成する。
+2. Dashboard → R2 → バケット → **Settings** で **Public Development URL** (`r2.dev`) または
+   **Custom Domain** を有効化し、 公開ベース URL を `VITE_MATERIALS_BASE_URL` に設定する
+   (例: `https://pub-xxxx.r2.dev`)。
+3. アップロードは `/api/materials/upload` 経由 (講師/管理者)。 Workers の R2 バインディングを使うため
+   S3 API トークンは不要。
+4. 旧 Supabase Storage `materials-public` バケットの既存オブジェクトを R2 へ移送する。
 
 ### 講師添削 (Issue #8)
 
@@ -82,17 +111,17 @@ CMS 機能 (`/admin/courses` 等) を使う場合は DB スキーマと初期デ
 Tweaks パネルで講師ロールに切り替え、 キューから添削エディタを開くと AI 下書き (`POST /api/review-draft`) が生成されます
 (API キー未設定時はルールベースのヒューリスティックにフォールバック)。
 
-- 提出物の永続化 (デモ / Supabase 未設定): `localStorage` キー `lms_submissions_v1`
-- DB 永続化 (Supabase 設定時): `submissions` テーブル (`20260525000000_submissions_reviews.sql` 適用後、 Magic Link ログインが必要)
+- 提出物の永続化 (デモ / Neon 未設定): `localStorage` キー `lms_submissions_v1`
+- DB 永続化 (Neon 設定時): `submissions` テーブル (`/api/submissions` 経由、 Magic Link ログインが必要)
 
 ### レッスン進捗の永続化 (Issue #21)
 
 レッスン視聴進捗 (動画の視聴秒数 / スライドの閲覧ページ / 完了フラグ) を保存します。
 
-- ローカル (デモ / Supabase 未設定): `localStorage` キー `lms_lesson_progress`
-- DB 永続化 (Supabase 設定時): `lesson_progress` テーブル (`20260607000000_lesson_progress.sql` 適用後、 Magic Link ログインが必要)。
+- ローカル (デモ / Neon 未設定): `localStorage` キー `lms_lesson_progress`
+- DB 永続化 (Neon 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 Magic Link ログインが必要)。
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
-  講師 / 管理者は RLS により同テナントの進捗を read できます (可視化 UI は別 Issue)。
+  講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
 
 ### 成績台帳と修了証 (Issue #26)
 
@@ -105,10 +134,9 @@ Tweaks パネルで講師ロールに切り替え、 キューから添削エデ
 - 受講者は **修了証** ページで、 達成済みコースの修了証を発行 (自動発行が許可されたコース) /
   確認でき、 認定番号 (`cert_code`) と公開検証ページへのリンクを得られます。
 - 公開検証ページは **ログイン不要**で `/?cert=<CODE>` から到達し、 真正性を確認できます。
-  検証は `verify_certificate` RPC (anon 実行可 / security definer) 経由で、 公開して良い情報のみ返します。
-- DB 永続化 (Supabase 設定時): `certificates` テーブル + 判定/発行/検証 RPC
-  (`20260609000000_certificates.sql` 適用後)。 Supabase 未設定時は修了証ページが静的デモ表示に
-  フォールバックします。
+  検証は匿名エンドポイント `GET /api/certificates/verify/:code` 経由で、 公開して良い情報のみ返します。
+- DB 永続化 (Neon 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
+  Neon 未設定時は修了証ページが静的デモ表示にフォールバックします。
 
 ### Anthropic (AIチャット用、 任意)
 
@@ -162,7 +190,7 @@ bun run --filter=@falcon/shared typecheck
 
 | Phase | 内容 | Issue |
 |---|---|---|
-| **P0** | monorepo化 + js-review-prototype取り込み + Supabase Storage | #2 |
+| **P0** | monorepo化 + js-review-prototype取り込み + 教材ストレージ | #2 |
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
 | **P2** | コード演習統合 (PracticeWorkspace + AIChatBot リアル化) | #4 |
 | **P3** | 講師添削ワークフロー (提出 → AI下書き → ルーブリック採点 → 確定) | #8 |
@@ -177,15 +205,17 @@ bun run --filter=@falcon/shared typecheck
 - **Install Command**: `cd ../.. && bun install`
 - **Build Command**: `bun run build`
 - **環境変数**:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_PUBLISHABLE_KEY`
   - `VITE_SERVER_URL` — Cloudflare Workers API の URL (例: `https://falcon-api.example.workers.dev`)
+  - `VITE_NEON_AUTH_URL` — Neon Auth のベース URL
+  - `VITE_MATERIALS_BASE_URL` — Cloudflare R2 バケットの公開ベース URL
 
 ### API — Cloudflare Workers (`apps/api`)
 
 ```bash
 cd apps/api
 wrangler secret put ANTHROPIC_API_KEY
+wrangler secret put DATABASE_URL              # Neon pooled connection
+wrangler secret put NEON_AUTH_ADMIN_SECRET    # ユーザー招待を使う場合のみ
 bun run deploy
 ```
 
@@ -194,6 +224,11 @@ bun run deploy
 | 名前 | 種別 | 用途 |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Secret | Anthropic API |
+| `DATABASE_URL` | Secret | Neon Postgres 接続文字列 (pooled) |
+| `NEON_AUTH_JWKS_URL` | var/Secret | Neon Auth JWT 検証用 JWKS エンドポイント |
+| `NEON_AUTH_ISSUER` / `NEON_AUTH_AUDIENCE` | var | 任意: JWT の iss / aud 検証 |
+| `NEON_AUTH_ADMIN_URL` / `NEON_AUTH_ADMIN_SECRET` | var/Secret | ユーザー招待 (任意) |
+| `MATERIALS_BUCKET` | R2 binding | 教材アップロード (`wrangler.toml` `[[r2_buckets]]`) |
 | `ANTHROPIC_MODEL` | var | 既定: `claude-sonnet-4-6` |
 | `ALLOWED_ORIGINS` | var | CORS 許可オリジン (カンマ区切り、`*.vercel.app` 可) |
 
@@ -204,7 +239,9 @@ bun run deploy
 ALLOWED_ORIGINS = "https://your-app.vercel.app,https://*.vercel.app"
 ```
 
-### バックエンド — Supabase
+### バックエンド — Neon + Cloudflare R2
 
-- リージョン: Tokyo 推奨
-- Staging / Production でプロジェクトを分ける
+- Neon Postgres / Neon Auth
+- 教材ファイル: Cloudflare R2 (`falcon-materials-public`)
+- staging / production は Neon を別プロジェクト (または別 branch) に分ける
+- マイグレーション適用は `DATABASE_URL=... bun run db:migrate` (詳細は上記「Neon Postgres」)

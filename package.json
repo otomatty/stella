@@ -14,6 +14,7 @@
     "seed:fixtures:sql": "bun run packages/shared/scripts/export-seed-sql.ts",
     "smoke:neon": "bun run --filter=@falcon/api smoke",
     "db:generate": "bun run --filter=@falcon/api db:generate",
-    "db:migrate": "bun run --filter=@falcon/api db:migrate"
+    "db:migrate": "bun run --filter=@falcon/api db:migrate",
+    "db:seed": "bun run seed:fixtures:sql > apps/api/drizzle/seed.sql && bun run --filter=@falcon/api db:apply-sql drizzle/seed.sql"
   }
 }

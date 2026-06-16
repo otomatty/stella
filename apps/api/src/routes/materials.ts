@@ -1,14 +1,13 @@
 /**
  * 教材アップロード API (旧 Supabase Storage 直アップロード + storage policy の置き換え)。
  *
- * Neon File Storage は S3 互換のため aws4fetch で SigV4 PUT する。
+ * Cloudflare R2 バインディング (`MATERIALS_BUCKET`) 経由で PUT する。
  * 旧 storage policy (tenant/{tenant_id}/... プレフィクス + staff のみ) をアプリ層で再現する。
  *
- * S3 認証情報 (MATERIALS_S3_*) 未設定時は 503 を返す (設定すれば動作する)。
+ * R2 バインディング未設定時は 503 を返す (wrangler.toml の `[[r2_buckets]]` を参照)。
  */
 
 import { Hono } from "hono";
-import { AwsClient } from "aws4fetch";
 
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
 import type { Env } from "../env.js";
@@ -20,14 +19,9 @@ materialsRoute.post("/api/materials/upload", async (c) => {
     const { caller } = await getCaller(c);
     requireRole(caller, "instructor", "admin");
 
-    const env = c.env;
-    if (
-      !env.MATERIALS_S3_ENDPOINT ||
-      !env.MATERIALS_S3_BUCKET ||
-      !env.MATERIALS_S3_ACCESS_KEY_ID ||
-      !env.MATERIALS_S3_SECRET_ACCESS_KEY
-    ) {
-      throw new ApiError("教材ストレージ (MATERIALS_S3_*) が未設定です", 503);
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) {
+      throw new ApiError("教材ストレージ (R2 バインディング MATERIALS_BUCKET) が未設定です", 503);
     }
 
     const form = await c.req.formData();
@@ -55,27 +49,11 @@ materialsRoute.post("/api/materials/upload", async (c) => {
       throw new ApiError("不正な保存先パスです", 403);
     }
 
-    const aws = new AwsClient({
-      accessKeyId: env.MATERIALS_S3_ACCESS_KEY_ID,
-      secretAccessKey: env.MATERIALS_S3_SECRET_ACCESS_KEY,
-      region: env.MATERIALS_S3_REGION ?? "auto",
-      service: "s3",
-    });
-
-    const base = env.MATERIALS_S3_ENDPOINT.replace(/\/+$/, "");
-    const url = `${base}/${env.MATERIALS_S3_BUCKET}/${path}`;
-    const body = await file.arrayBuffer();
-    const res = await aws.fetch(url, {
-      method: "PUT",
-      body,
-      headers: {
-        "Content-Type": file.type || "application/octet-stream",
+    await bucket.put(path, await file.arrayBuffer(), {
+      httpMetadata: {
+        contentType: file.type || "application/octet-stream",
       },
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new ApiError(`アップロードに失敗しました (${res.status}) ${text}`, 502);
-    }
 
     return c.json({ path });
   } catch (err) {

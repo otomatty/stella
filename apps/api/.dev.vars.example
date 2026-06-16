@@ -18,12 +18,9 @@ NEON_AUTH_AUDIENCE=
 NEON_AUTH_ADMIN_URL=
 NEON_AUTH_ADMIN_SECRET=
 
-# 教材アップロード (Neon File Storage / S3 互換)。
-MATERIALS_S3_ENDPOINT=
-MATERIALS_S3_BUCKET=
-MATERIALS_S3_ACCESS_KEY_ID=
-MATERIALS_S3_SECRET_ACCESS_KEY=
-MATERIALS_S3_REGION=auto
+# 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインドする。
+# 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、
+# apps/web/.env.local の VITE_MATERIALS_BASE_URL に設定する。
 
 # 招待メールのリンク先 (未設定なら ALLOWED_ORIGINS の先頭を使用)
 INVITE_REDIRECT_URL=http://localhost:5173
