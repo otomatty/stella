@@ -5,7 +5,7 @@
  * Drizzle に置き換えた。 呼び出し元は admin であることを必須とし、 操作対象を同テナントに限定する。
  *
  *   GET  /api/admin/users          一覧 (同テナント)
- *   POST /api/admin/users/invite   招待 (要 Neon Auth admin API)
+ *   POST /api/admin/users/invite   招待 (要 Neon Auth admin API / 組織の席数上限を強制)
  *   POST /api/admin/users/role     ロール変更
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
  *   GET  /api/admin/orgs           組織一覧 + 所属ユーザー数
@@ -24,7 +24,7 @@ import {
   type OrganizationRow,
 } from "@falcon/shared/admin/types";
 import { Hono, type Context } from "hono";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 
 import { auditLogs, profiles, tenants } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
@@ -80,6 +80,33 @@ async function requireAdmin(c: Context<{ Bindings: Env }>): Promise<{ caller: Ca
   const { caller, db } = await getCaller(c);
   requireRole(caller, "admin");
   return { caller, db };
+}
+
+/**
+ * 組織 (テナント) の席数上限と現在の使用席数を返す (Issue #29 — 席数上限管理)。
+ *
+ * 使用席数は無効化されていない所属プロフィール数で数える (組織一覧の member_count と同義)。
+ * 集計は DB 側の COUNT(*) で行う。 planSeats が null のテナントは無制限。
+ */
+async function getSeatUsage(
+  db: Db,
+  tenantId: string,
+): Promise<{ planSeats: number | null; seatsUsed: number }> {
+  const tenantRow = (
+    await db
+      .select({ planSeats: tenants.planSeats })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1)
+  )[0];
+  const planSeats = tenantRow?.planSeats ?? null;
+  const countRow = (
+    await db
+      .select({ value: count() })
+      .from(profiles)
+      .where(and(eq(profiles.tenantId, tenantId), eq(profiles.disabled, false)))
+  )[0];
+  return { planSeats, seatsUsed: Number(countRow?.value ?? 0) };
 }
 
 /** 操作対象が同テナントであることを保証する (自己昇格 / 越テナントを防ぐ)。 */
@@ -183,6 +210,10 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
       .where(inArray(profiles.email, emails));
     const existingByEmail = new Map(existingRows.map((r) => [r.email, r]));
 
+    // 席数上限 (Issue #29): 新規招待が plan_seats を超える分はブロックする。
+    const { planSeats, seatsUsed } = await getSeatUsage(db, caller.tenantId);
+    let seatsConsumed = seatsUsed;
+
     const results: InviteResult[] = [];
     for (const inv of validated.invites) {
       try {
@@ -195,6 +226,14 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
               existing.tenantId === caller.tenantId
                 ? "このユーザーは既にこのテナントに登録 / 招待されています"
                 : "このメールアドレスは既に別のテナントで登録されています",
+          });
+          continue;
+        }
+        if (planSeats != null && seatsConsumed >= planSeats) {
+          results.push({
+            email: inv.email,
+            ok: false,
+            error: `席数の上限 (${planSeats}) に達しているため招待できません。 組織マスタで席数を見直してください`,
           });
           continue;
         }
@@ -212,6 +251,7 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           initials: initialsFrom(inv.displayName),
           email: inv.email,
         });
+        seatsConsumed += 1;
         await recordAudit(db, caller, {
           action: "user_invite",
           targetType: "user",
