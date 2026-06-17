@@ -2,9 +2,9 @@
  * `/admin/orgs` — 組織マスタ (Issue #29)。
  *
  * B2B 顧客企業・学校 (= tenant) を一覧・作成・編集する。 所属ユーザー数は実データ。
- * 作成 / 編集はテナント横断の特権操作のため service-role 経由の管理 API で行う。
+ * 作成 / 編集はテナント横断の特権操作のため、 admin 認可を課す管理 API (Neon / Hono) で行う。
  *
- * Supabase 未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
+ * バックエンド (Neon Auth + API) 未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
  */
 
 import { useState } from "react";
@@ -367,8 +367,8 @@ function OrgsDemoNotice() {
     <>
       <PageHeader title="組織マスタ" sub="顧客企業・学校の登録管理" />
       <div className="rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
-        Supabase 未設定のため組織マスタは利用できません。 組織の登録・編集を行うには
-        <code className="mx-1">VITE_SUPABASE_*</code> と API サーバ
+        バックエンド未設定のため組織マスタは利用できません。 組織の登録・編集を行うには
+        <code className="mx-1">VITE_NEON_AUTH_URL</code> と API サーバ
         <code className="mx-1">VITE_SERVER_URL</code> を設定してください。
       </div>
     </>
