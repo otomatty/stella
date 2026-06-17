@@ -123,11 +123,7 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
         </div>
         <div className="relative z-10">
           <div className="text-[26px] leading-snug tracking-tight max-w-[480px] font-medium">
-            「非専門家を <span className="text-[oklch(75%_0.13_85)]">一定水準の専門性</span>{' '}
-            を持つ人材へ育てる」
-            <div className="text-sm font-normal text-[oklch(80%_0.01_260)] mt-5 max-w-[440px] leading-relaxed">
-              部活動指導者講習とSES未経験エンジニア育成。異なる領域を、同じ学習設計で支える汎用プラットフォーム。
-            </div>
+            「学ぶ人の、<span className="text-[oklch(75%_0.13_85)]">はじめの一歩</span> に。」
           </div>
         </div>
         <div className="text-[12.5px] text-[oklch(75%_0.01_260)] relative z-10">
