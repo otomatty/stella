@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import type { Env } from "./env.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { adminRoute } from "./routes/admin.js";
+import { authRoute } from "./routes/auth.js";
 import { analyticsRoute } from "./routes/analytics.js";
 import { auditLogsRoute } from "./routes/audit-logs.js";
 import { certificatesRoute } from "./routes/certificates.js";
@@ -37,6 +38,7 @@ app.use("/api/*", async (c, next) => {
 });
 
 app.route("/", healthzRoute);
+app.route("/", authRoute);
 app.route("/", chatRoute);
 app.route("/", reviewDraftRoute);
 app.route("/", adminRoute);

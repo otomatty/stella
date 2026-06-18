@@ -391,7 +391,7 @@ function DashboardDemo() {
       />
       <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
         バックエンド (Neon) 未接続のため、 以下はデモ表示です。 実データの集計・CSV出力には
-        <code className="mx-1">VITE_NEON_AUTH_URL</code> / <code className="mx-1">VITE_SERVER_URL</code>
+        <code className="mx-1">VITE_SERVER_URL</code>
         を設定してください。
       </div>
 

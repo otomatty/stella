@@ -1,25 +1,20 @@
 /**
- * 認証 (Neon Auth JWT 検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
+ * 認証 (Workers JWT 検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
  *
- * 旧 Supabase は PostgREST + RLS でブラウザから直接 DB を叩いていたが、
- * Neon 移行後は全アクセスが Hono を経由するため、 認可をここに集約する。
- *
- *   - `verifyToken` … Authorization: Bearer の Neon Auth JWT を JWKS で検証
+ *   - `verifyToken` … Authorization: Bearer の JWT を HS256 で検証
  *   - `getCaller`   … JWT 検証 + profiles から caller の tenant / role を解決
  *   - `requireRole` … caller が指定ロールのいずれかであることを保証
- *
- * 旧 RLS の述語 (`user_id = auth.uid() and tenant_id = current_tenant_id()`) は、
- * 各ルートが caller.id / caller.tenantId と突き合わせることで再現する。
  */
 
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import type { JWTPayload } from "jose";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
 import { profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
+import { verifyAccessToken } from "./auth-jwt.js";
 
 export class ApiError extends Error {
   status: 400 | 401 | 403 | 404 | 409 | 429 | 500 | 502 | 503;
@@ -40,37 +35,20 @@ export interface Caller {
   email: string | null;
 }
 
-/** JWKS は env (URL) ごとにキャッシュする。 リクエスト間で再利用できる。 */
-const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
-
-function getJwks(url: string): ReturnType<typeof createRemoteJWKSet> {
-  let jwks = jwksCache.get(url);
-  if (!jwks) {
-    jwks = createRemoteJWKSet(new URL(url));
-    jwksCache.set(url, jwks);
-  }
-  return jwks;
-}
-
 /**
- * Authorization: Bearer の Neon Auth JWT を検証し、 ペイロードを返す。
+ * Authorization: Bearer の JWT を検証し、 ペイロードを返す。
  * `sub` がユーザー ID (= profiles.id)。
  */
 export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<JWTPayload> {
-  if (!c.env.NEON_AUTH_JWKS_URL) {
-    throw new ApiError("認証が未設定です (NEON_AUTH_JWKS_URL)", 503);
+  if (!c.env.AUTH_JWT_SECRET) {
+    throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
   }
   const header = c.req.header("Authorization") ?? "";
   const token = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) throw new ApiError("Authorization ヘッダが必要です", 401);
 
   try {
-    const { payload } = await jwtVerify(token, getJwks(c.env.NEON_AUTH_JWKS_URL), {
-      ...(c.env.NEON_AUTH_ISSUER ? { issuer: c.env.NEON_AUTH_ISSUER } : {}),
-      ...(c.env.NEON_AUTH_AUDIENCE ? { audience: c.env.NEON_AUTH_AUDIENCE } : {}),
-    });
-    if (!payload.sub) throw new ApiError("トークンに sub がありません", 401);
-    return payload;
+    return await verifyAccessToken(c.env.AUTH_JWT_SECRET, token);
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError("トークンが無効です", 401);

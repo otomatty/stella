@@ -10,11 +10,13 @@
     "build": "bun --filter '@falcon/*' build",
     "preview": "bun --filter=@falcon/web preview",
     "typecheck": "bun --filter '@falcon/*' typecheck",
-    "seed:fixtures": "bun --env-file=apps/web/.env.local run packages/shared/scripts/seed-from-fixtures.ts",
-    "seed:fixtures:sql": "bun run packages/shared/scripts/export-seed-sql.ts",
-    "smoke:neon": "bun run --filter=@falcon/api smoke",
+    "deploy:api": "bun run --filter=@falcon/api deploy",
+    "deploy:web": "bun run build && bun run --filter=@falcon/web deploy",
+    "smoke:d1": "bun run --filter=@falcon/api smoke",
     "db:generate": "bun run --filter=@falcon/api db:generate",
     "db:migrate": "bun run --filter=@falcon/api db:migrate",
-    "db:seed": "bun run seed:fixtures:sql > apps/api/drizzle/seed.sql && bun run --filter=@falcon/api db:apply-sql drizzle/seed.sql"
+    "db:migrate:remote": "bun run --filter=@falcon/api db:migrate:remote",
+    "db:seed": "bun run --filter=@falcon/api db:seed",
+    "db:seed:remote": "bun run --filter=@falcon/api db:seed:remote"
   }
 }

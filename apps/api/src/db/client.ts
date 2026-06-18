@@ -1,26 +1,23 @@
 /**
- * Neon Postgres への Drizzle クライアント生成 (Cloudflare Workers / HTTP ドライバ)。
+ * Cloudflare D1 への Drizzle クライアント生成。
  *
- * `@neondatabase/serverless` の HTTP ドライバは Workers のリクエストごとに
- * ステートレスに動くため、 リクエストスコープで `getDb(env)` を呼ぶ。
+ * Workers では `env.DB` バインディング経由でアクセスする (接続文字列不要)。
  */
 
-import { neon } from "@neondatabase/serverless";
-import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
+import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 
 import type { Env } from "../env.js";
 import * as schema from "./schema.js";
 
-export type Db = NeonHttpDatabase<typeof schema>;
+export type Db = DrizzleD1Database<typeof schema>;
 
 export function getDb(env: Env): Db {
-  if (!env.DATABASE_URL) {
+  if (!env.DB) {
     throw new Error(
-      "DATABASE_URL が未設定です。 Neon の接続文字列を wrangler secret put DATABASE_URL で設定してください。",
+      "D1 バインディング DB が未設定です。 wrangler.toml の [[d1_databases]] を確認してください。",
     );
   }
-  const sql = neon(env.DATABASE_URL);
-  return drizzle(sql, { schema });
+  return drizzle(env.DB, { schema });
 }
 
 export { schema };

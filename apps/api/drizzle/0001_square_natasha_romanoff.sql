@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "courses_tenant_slug_uq" ON "courses" USING btree ("tenant_id","slug");

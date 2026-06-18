@@ -1,55 +1,62 @@
 /**
- * Drizzle スキーマ — Neon Postgres (Supabase からの移行 / #neon)。
+ * Drizzle スキーマ — Cloudflare D1 (SQLite)。
  *
- * 旧 `supabase/migrations/*.sql` の DDL を Drizzle 定義へ移植したもの。
- * 主な差分:
- *   - `auth.users` への参照を廃止。 ユーザー ID は Neon Auth が発行する文字列 (text)。
- *     `profiles.id` が Neon Auth ユーザー ID を保持する正準テーブルになる。
- *   - RLS / SECURITY DEFINER 関数は廃止し、 認可は Hono アプリ層 (`lib/authz.ts`) で行う。
- *   - `current_tenant_id()` / `current_role()` 相当はリクエストごとの caller profile で代替。
+ * 旧 Neon Postgres スキーマを SQLite 向けに移植。 snake_case 列名は
+ * `@falcon/shared/cms/types` の行型と一致させ、 フロントのマッパーは無変更。
  *
- * snake_case 列名は既存の DB 行型 (`@falcon/shared/cms/types`) と一致させ、
- * フロント側のマッパーを変更せずに済むようにしている。
+ * 認可は Hono アプリ層 (`lib/authz.ts`) で行う。
  */
 
-import {
-  boolean,
-  date,
-  doublePrecision,
-  integer,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-const now = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+const uuid = () => text("id").primaryKey().$defaultFn(() => crypto.randomUUID());
+const ts = (name: string) => integer(name, { mode: "timestamp_ms" });
+const tsNow = (name: string) => ts(name).notNull().$defaultFn(() => new Date());
+const tsNowUpd = (name: string) =>
+  ts(name)
+    .notNull()
+    .$defaultFn(() => new Date())
+    .$onUpdateFn(() => new Date());
+const json = <T>(name: string, fallback: T) =>
+  text(name, { mode: "json" }).$type<T>().notNull().default(fallback);
 
 // ---------------------------------------------------------------
-// テナント / プロフィール (旧 cms_foundation)
+// 認証 (Workers 自前 Google OAuth / JWT)
 // ---------------------------------------------------------------
 
-export const tenants = pgTable("tenants", {
+export const authUsers = sqliteTable("auth_users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text("email").notNull().unique(),
+  createdAt: tsNow("created_at"),
+});
+
+export const authOtpCodes = sqliteTable("auth_otp_codes", {
+  email: text("email").primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: ts("expires_at").notNull(),
+});
+
+// ---------------------------------------------------------------
+// テナント / プロフィール
+// ---------------------------------------------------------------
+
+export const tenants = sqliteTable("tenants", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   subtitle: text("subtitle"),
   icon: text("icon"),
   activeCount: integer("active_count").notNull().default(0),
-  // 組織マスタ (Issue #29) 拡張列。
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   planSeats: integer("plan_seats"),
-  contractStart: date("contract_start"),
-  contractEnd: date("contract_end"),
-  active: boolean("active").notNull().default(true),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  contractStart: text("contract_start"),
+  contractEnd: text("contract_end"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
-export const profiles = pgTable("profiles", {
-  // Neon Auth が発行するユーザー ID (text)。 旧 auth.users(id) の置き換え。
+export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   tenantId: text("tenant_id")
     .notNull()
@@ -60,18 +67,18 @@ export const profiles = pgTable("profiles", {
   displayName: text("display_name").notNull(),
   initials: text("initials"),
   email: text("email"),
-  disabled: boolean("disabled").notNull().default(false),
-  createdAt: now(),
+  disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+  createdAt: tsNow("created_at"),
 });
 
 // ---------------------------------------------------------------
 // コース / セクション / レッスン / 課題
 // ---------------------------------------------------------------
 
-export const courses = pgTable(
+export const courses = sqliteTable(
   "courses",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
@@ -84,31 +91,36 @@ export const courses = pgTable(
     status: text("status", { enum: ["draft", "published", "archived"] })
       .notNull()
       .default("draft"),
-    requireAllLessons: boolean("require_all_lessons").notNull().default(true),
-    requireQuizPass: boolean("require_quiz_pass").notNull().default(true),
-    requireAssignmentPass: boolean("require_assignment_pass").notNull().default(true),
-    autoIssueCertificate: boolean("auto_issue_certificate").notNull().default(true),
+    requireAllLessons: integer("require_all_lessons", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    requireQuizPass: integer("require_quiz_pass", { mode: "boolean" }).notNull().default(true),
+    requireAssignmentPass: integer("require_assignment_pass", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    autoIssueCertificate: integer("auto_issue_certificate", { mode: "boolean" })
+      .notNull()
+      .default(true),
     createdBy: text("created_by"),
-    createdAt: now(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
   },
   (t) => ({
     tenantSlugUnique: uniqueIndex("courses_tenant_slug_uq").on(t.tenantId, t.slug),
   }),
 );
 
-export const sections = pgTable("sections", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  courseId: uuid("course_id")
+export const sections = sqliteTable("sections", {
+  id: uuid(),
+  courseId: text("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   order: integer("order").notNull().default(0),
-  createdAt: now(),
+  createdAt: tsNow("created_at"),
 });
 
-export const assignments = pgTable("assignments", {
-  // id は @falcon/shared 由来の text id (uuid ではない)。
+export const assignments = sqliteTable("assignments", {
   id: text("id").primaryKey(),
   tenantId: text("tenant_id")
     .notNull()
@@ -119,23 +131,23 @@ export const assignments = pgTable("assignments", {
   description: text("description").notNull(),
   language: text("language").notNull(),
   testKind: text("test_kind").notNull(),
-  starterFiles: jsonb("starter_files").notNull().default([]),
+  starterFiles: json<unknown[]>("starter_files", []),
   entryFile: text("entry_file"),
-  entryPoints: jsonb("entry_points"),
-  tests: jsonb("tests").notNull().default([]),
+  entryPoints: text("entry_points", { mode: "json" }).$type<unknown | null>(),
+  tests: json<unknown[]>("tests", []),
   sqlSeed: text("sql_seed"),
-  lintPreset: jsonb("lint_preset"),
-  staticAnalysis: jsonb("static_analysis"),
-  mutation: jsonb("mutation"),
+  lintPreset: text("lint_preset", { mode: "json" }).$type<unknown | null>(),
+  staticAnalysis: text("static_analysis", { mode: "json" }).$type<unknown | null>(),
+  mutation: text("mutation", { mode: "json" }).$type<unknown | null>(),
   demoCall: text("demo_call"),
   createdBy: text("created_by"),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
-export const lessons = pgTable("lessons", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  sectionId: uuid("section_id")
+export const lessons = sqliteTable("lessons", {
+  id: uuid(),
+  sectionId: text("section_id")
     .notNull()
     .references(() => sections.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
@@ -147,22 +159,21 @@ export const lessons = pgTable("lessons", {
   videoPath: text("video_path"),
   pdfPath: text("pdf_path"),
   markdown: text("markdown"),
-  // assignment_id は text (assignments.id と同じく @falcon/shared 由来)。 FK にはしない。
   assignmentId: text("assignment_id"),
   totalPages: integer("total_pages"),
   totalSec: integer("total_sec"),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
 // ---------------------------------------------------------------
-// レッスン進捗 (旧 lesson_progress)
+// レッスン進捗
 // ---------------------------------------------------------------
 
-export const lessonProgress = pgTable(
+export const lessonProgress = sqliteTable(
   "lesson_progress",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
@@ -170,42 +181,38 @@ export const lessonProgress = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     lessonId: text("lesson_id").notNull(),
-    completed: boolean("completed").notNull().default(false),
+    completed: integer("completed", { mode: "boolean" }).notNull().default(false),
     lastPage: integer("last_page"),
-    viewedPages: jsonb("viewed_pages").notNull().default([]),
-    watchedSec: doublePrecision("watched_sec"),
-    // クライアント付与の更新時刻 (端末間 Last-Write-Wins に使う)。
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    viewedPages: json<number[]>("viewed_pages", []),
+    watchedSec: real("watched_sec"),
+    updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
   },
   (t) => ({
-    userLessonUnique: uniqueIndex("lesson_progress_user_lesson_uq").on(
-      t.userId,
-      t.lessonId,
-    ),
+    userLessonUnique: uniqueIndex("lesson_progress_user_lesson_uq").on(t.userId, t.lessonId),
   }),
 );
 
 // ---------------------------------------------------------------
-// 小テスト (旧 quizzes / quiz_questions / quiz_options / quiz_attempts)
+// 小テスト
 // ---------------------------------------------------------------
 
-export const quizzes = pgTable("quizzes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  lessonId: uuid("lesson_id")
+export const quizzes = sqliteTable("quizzes", {
+  id: uuid(),
+  lessonId: text("lesson_id")
     .notNull()
     .references(() => lessons.id, { onDelete: "cascade" }),
   passScore: integer("pass_score").notNull().default(70),
   timeLimitSec: integer("time_limit_sec"),
-  shuffleQuestions: boolean("shuffle_questions").notNull().default(false),
-  shuffleOptions: boolean("shuffle_options").notNull().default(false),
+  shuffleQuestions: integer("shuffle_questions", { mode: "boolean" }).notNull().default(false),
+  shuffleOptions: integer("shuffle_options", { mode: "boolean" }).notNull().default(false),
   maxAttempts: integer("max_attempts"),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
-export const quizQuestions = pgTable("quiz_questions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  quizId: uuid("quiz_id")
+export const quizQuestions = sqliteTable("quiz_questions", {
+  id: uuid(),
+  quizId: text("quiz_id")
     .notNull()
     .references(() => quizzes.id, { onDelete: "cascade" }),
   kind: text("kind", { enum: ["single", "multiple", "boolean"] }).notNull(),
@@ -213,26 +220,26 @@ export const quizQuestions = pgTable("quiz_questions", {
   explanation: text("explanation"),
   points: integer("points").notNull().default(1),
   order: integer("order").notNull().default(0),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
-export const quizOptions = pgTable("quiz_options", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  questionId: uuid("question_id")
+export const quizOptions = sqliteTable("quiz_options", {
+  id: uuid(),
+  questionId: text("question_id")
     .notNull()
     .references(() => quizQuestions.id, { onDelete: "cascade" }),
   label: text("label").notNull().default(""),
-  isCorrect: boolean("is_correct").notNull().default(false),
+  isCorrect: integer("is_correct", { mode: "boolean" }).notNull().default(false),
   order: integer("order").notNull().default(0),
 });
 
-export const quizAttempts = pgTable("quiz_attempts", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const quizAttempts = sqliteTable("quiz_attempts", {
+  id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
-  quizId: uuid("quiz_id")
+  quizId: text("quiz_id")
     .notNull()
     .references(() => quizzes.id, { onDelete: "cascade" }),
   userId: text("user_id")
@@ -240,56 +247,53 @@ export const quizAttempts = pgTable("quiz_attempts", {
     .references(() => profiles.id, { onDelete: "cascade" }),
   score: integer("score").notNull(),
   maxScore: integer("max_score").notNull(),
-  passed: boolean("passed").notNull(),
-  answers: jsonb("answers").notNull().default([]),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  passed: integer("passed", { mode: "boolean" }).notNull(),
+  answers: json<unknown[]>("answers", []),
+  submittedAt: tsNow("submitted_at"),
 });
 
 // ---------------------------------------------------------------
-// 受講登録 (旧 enrollments)
+// 受講登録
 // ---------------------------------------------------------------
 
-export const enrollments = pgTable(
+export const enrollments = sqliteTable(
   "enrollments",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: uuid(),
     tenantId: text("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    courseId: uuid("course_id")
+    courseId: text("course_id")
       .notNull()
       .references(() => courses.id, { onDelete: "cascade" }),
     assignedBy: text("assigned_by"),
-    dueAt: timestamp("due_at", { withTimezone: true }),
-    required: boolean("required").notNull().default(false),
+    dueAt: ts("due_at"),
+    required: integer("required", { mode: "boolean" }).notNull().default(false),
     status: text("status", { enum: ["active", "completed", "expired"] })
       .notNull()
       .default("active"),
-    enrolledAt: timestamp("enrolled_at", { withTimezone: true }).notNull().defaultNow(),
-    completedAt: timestamp("completed_at", { withTimezone: true }),
+    enrolledAt: tsNow("enrolled_at"),
+    completedAt: ts("completed_at"),
   },
   (t) => ({
-    userCourseUnique: uniqueIndex("enrollments_user_course_uq").on(
-      t.userId,
-      t.courseId,
-    ),
+    userCourseUnique: uniqueIndex("enrollments_user_course_uq").on(t.userId, t.courseId),
   }),
 );
 
 // ---------------------------------------------------------------
-// Q&A (旧 questions / question_replies)
+// Q&A
 // ---------------------------------------------------------------
 
-export const questions = pgTable("questions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const questions = sqliteTable("questions", {
+  id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
-  courseId: uuid("course_id").notNull(),
-  lessonId: uuid("lesson_id"),
+  courseId: text("course_id").notNull(),
+  lessonId: text("lesson_id"),
   authorId: text("author_id").notNull(),
   authorName: text("author_name").notNull(),
   authorInitials: text("author_initials"),
@@ -298,43 +302,43 @@ export const questions = pgTable("questions", {
   status: text("status", { enum: ["open", "answered", "closed"] })
     .notNull()
     .default("open"),
-  createdAt: now(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
 
-export const questionReplies = pgTable("question_replies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  questionId: uuid("question_id")
+export const questionReplies = sqliteTable("question_replies", {
+  id: uuid(),
+  questionId: text("question_id")
     .notNull()
     .references(() => questions.id, { onDelete: "cascade" }),
   authorId: text("author_id").notNull(),
   authorName: text("author_name").notNull(),
   authorInitials: text("author_initials"),
   body: text("body").notNull(),
-  isInstructor: boolean("is_instructor").notNull().default(false),
-  createdAt: now(),
+  isInstructor: integer("is_instructor", { mode: "boolean" }).notNull().default(false),
+  createdAt: tsNow("created_at"),
 });
 
 // ---------------------------------------------------------------
-// 通知 / お知らせ (旧 announcements / notifications)
+// 通知 / お知らせ
 // ---------------------------------------------------------------
 
-export const announcements = pgTable("announcements", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const announcements = sqliteTable("announcements", {
+  id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
-  courseId: uuid("course_id"),
+  courseId: text("course_id"),
   authorId: text("author_id"),
   authorName: text("author_name").notNull().default(""),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
-  publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
-  createdAt: now(),
+  publishedAt: tsNow("published_at"),
+  createdAt: tsNow("created_at"),
 });
 
-export const notifications = pgTable("notifications", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const notifications = sqliteTable("notifications", {
+  id: uuid(),
   userId: text("user_id")
     .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
@@ -346,22 +350,22 @@ export const notifications = pgTable("notifications", {
   }).notNull(),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
-  payload: jsonb("payload").notNull().default({}),
-  read: boolean("read").notNull().default(false),
-  createdAt: now(),
+  payload: json<Record<string, unknown>>("payload", {}),
+  read: integer("read", { mode: "boolean" }).notNull().default(false),
+  createdAt: tsNow("created_at"),
 });
 
 // ---------------------------------------------------------------
-// 課題提出 / 添削 (旧 submissions)
+// 課題提出 / 添削
 // ---------------------------------------------------------------
 
-export const submissions = pgTable("submissions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const submissions = sqliteTable("submissions", {
+  id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
   studentId: text("student_id"),
-  lessonId: uuid("lesson_id"),
+  lessonId: text("lesson_id"),
   assignmentId: text("assignment_id"),
   courseTitle: text("course_title").notNull(),
   sectionTitle: text("section_title"),
@@ -376,47 +380,47 @@ export const submissions = pgTable("submissions", {
     .notNull()
     .default("normal"),
   attempt: integer("attempt").notNull().default(1),
-  aiReady: boolean("ai_ready").notNull().default(false),
-  aiSuggestions: jsonb("ai_suggestions").notNull().default([]),
-  rubric: jsonb("rubric").notNull().default([]),
+  aiReady: integer("ai_ready", { mode: "boolean" }).notNull().default(false),
+  aiSuggestions: json<unknown[]>("ai_suggestions", []),
+  rubric: json<unknown[]>("rubric", []),
   reviewNotes: text("review_notes").notNull().default(""),
   verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
-  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  submittedAt: tsNow("submitted_at"),
+  reviewedAt: ts("reviewed_at"),
   reviewerId: text("reviewer_id"),
 });
 
 // ---------------------------------------------------------------
-// 修了証 (旧 certificates)
+// 修了証
 // ---------------------------------------------------------------
 
-export const certificates = pgTable("certificates", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const certificates = sqliteTable("certificates", {
+  id: uuid(),
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
   userId: text("user_id")
     .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
-  courseId: uuid("course_id")
+  courseId: text("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
   certCode: text("cert_code").notNull().unique(),
   issuedBy: text("issued_by"),
-  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
-  criteriaSnapshot: jsonb("criteria_snapshot").notNull().default({}),
+  issuedAt: tsNow("issued_at"),
+  criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
   recipientName: text("recipient_name").notNull(),
   courseTitle: text("course_title").notNull(),
   tenantName: text("tenant_name").notNull(),
-  revoked: boolean("revoked").notNull().default(false),
+  revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
 });
 
 // ---------------------------------------------------------------
-// 監査ログ (旧 audit_logs)
+// 監査ログ
 // ---------------------------------------------------------------
 
-export const auditLogs = pgTable("audit_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const auditLogs = sqliteTable("audit_logs", {
+  id: uuid(),
   tenantId: text("tenant_id").notNull(),
   actorId: text("actor_id"),
   actorName: text("actor_name").notNull().default(""),
@@ -425,6 +429,33 @@ export const auditLogs = pgTable("audit_logs", {
   targetType: text("target_type").notNull(),
   targetId: text("target_id"),
   ip: text("ip"),
-  metadata: jsonb("metadata").notNull().default({}),
-  createdAt: now(),
+  metadata: json<Record<string, unknown>>("metadata", {}),
+  createdAt: tsNow("created_at"),
 });
+
+/** D1 smoke 用テーブル名一覧 (auth 含む 21)。 */
+export const APP_TABLES = [
+  "auth_users",
+  "auth_otp_codes",
+  "tenants",
+  "profiles",
+  "courses",
+  "sections",
+  "lessons",
+  "assignments",
+  "lesson_progress",
+  "quizzes",
+  "quiz_questions",
+  "quiz_options",
+  "quiz_attempts",
+  "enrollments",
+  "questions",
+  "question_replies",
+  "announcements",
+  "notifications",
+  "submissions",
+  "certificates",
+  "audit_logs",
+] as const;
+
+export const TABLE_COUNT = APP_TABLES.length;

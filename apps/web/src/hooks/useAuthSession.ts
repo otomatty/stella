@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 
-import { isAuthConfigured } from "@/lib/neon-auth";
+import { isAuthConfigured } from "@/lib/auth-client";
 import {
   fetchProfile,
   getSession,

@@ -15,6 +15,7 @@ import type { ProfileRole } from '@falcon/shared/cms/types';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
 import { LoginScreen } from '@/components/shell/LoginScreen';
+import { AuthCallback } from '@/components/shell/AuthCallback';
 import { TenantSelect } from '@/components/shell/TenantSelect';
 import { OnboardingScreen } from '@/components/shell/OnboardingScreen';
 
@@ -119,6 +120,14 @@ export default function App() {
     return (
       <>
         <PublicCertificateVerify certCode={certCode} />
+        <Toaster />
+      </>
+    );
+  }
+  if (typeof window !== 'undefined' && window.location.pathname === '/auth/callback') {
+    return (
+      <>
+        <AuthCallback />
         <Toaster />
       </>
     );
@@ -312,7 +321,7 @@ function MainApp() {
     if (!session) {
       return (
         <>
-          <LoginScreen onLogin={() => undefined} />
+          <LoginScreen />
           <Toaster />
         </>
       );
@@ -335,7 +344,7 @@ function MainApp() {
     if (stage === 'login') {
       return (
         <>
-          <LoginScreen onLogin={() => setStage('tenant-select')} />
+          <LoginScreen onMockLogin={() => setStage('tenant-select')} />
           <Toaster />
         </>
       );

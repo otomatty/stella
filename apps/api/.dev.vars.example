@@ -1,26 +1,20 @@
-# wrangler dev 用。 `.dev.vars` にコピーして値を埋める (gitignore 対象)。
-ANTHROPIC_API_KEY=
-ANTHROPIC_MODEL=claude-sonnet-4-6
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-ISOLATE_MEMORY_LIMIT=32
-
-# --- Neon (DB / Auth) — Supabase からの移行 (#neon) ---
-# Neon Postgres 接続文字列 (pooled connection 推奨)。 本番は `wrangler secret put DATABASE_URL`。
-DATABASE_URL=postgres://user:pass@ep-xxxx-pooler.region.aws.neon.tech/dbname?sslmode=require
-# Neon Auth が発行する JWT を検証する JWKS エンドポイント (Neon Console → Auth)。
-NEON_AUTH_JWKS_URL=
-# 任意: JWT の iss / aud 検証値 (設定時のみ検証)。
-NEON_AUTH_ISSUER=
-NEON_AUTH_AUDIENCE=
-
-# ユーザー招待 (admin) 用の Neon Auth admin API。 未設定なら招待エンドポイントが 503。
-# (ロール変更 / 無効化は DB のみで動作するため未設定でも可)
-NEON_AUTH_ADMIN_URL=
-NEON_AUTH_ADMIN_SECRET=
-
-# 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインドする。
-# 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、
-# apps/web/.env.local の VITE_MATERIALS_BASE_URL に設定する。
-
-# 招待メールのリンク先 (未設定なら ALLOWED_ORIGINS の先頭を使用)
-INVITE_REDIRECT_URL=http://localhost:5173
+# wrangler dev 用。 `.dev.vars` にコピーして値を埋める (gitignore 対象)。
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ISOLATE_MEMORY_LIMIT=32
+
+# --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
+# JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
+AUTH_JWT_SECRET=dev-only-change-me-in-production
+
+# Google OAuth (Cloud Console → 認可済みリダイレクト URI に
+#   http://127.0.0.1:8787/api/auth/google/callback を追加)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインド。
+# 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、
+# apps/web/.env.local の VITE_MATERIALS_BASE_URL に設定する。
+
+INVITE_REDIRECT_URL=http://localhost:5173

@@ -7,7 +7,7 @@
  * 旧 Supabase クライアントの `.from().select()` / `.rpc()` を置き換える基盤。
  */
 
-import { getAccessToken } from "./neon-auth";
+import { getAccessToken } from "./auth-client";
 
 /** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
 const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");

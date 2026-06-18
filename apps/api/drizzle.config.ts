@@ -1,10 +1,8 @@
 /**
- * Drizzle Kit 設定 — Neon Postgres のマイグレーション生成 / 適用。
+ * Drizzle Kit 設定 — Cloudflare D1 (SQLite)。
  *
- *   bun run --filter=@falcon/api db:generate   # schema.ts から SQL を生成
- *   bun run --filter=@falcon/api db:migrate     # Neon に適用 (DATABASE_URL が必要)
- *
- * DATABASE_URL はローカルでは apps/api/.dev.vars / 環境変数から読む。
+ *   bun run db:generate   # schema.ts から SQL を生成 → drizzle/
+ *   bun run db:migrate    # wrangler d1 migrations apply (local / remote)
  */
 
 import { defineConfig } from "drizzle-kit";
@@ -12,8 +10,5 @@ import { defineConfig } from "drizzle-kit";
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
-  dialect: "postgresql",
-  dbCredentials: {
-    url: process.env.DATABASE_URL ?? "",
-  },
+  dialect: "sqlite",
 });

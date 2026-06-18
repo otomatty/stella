@@ -371,7 +371,7 @@ function EnrollmentsDemoNotice() {
       <PageHeader title="受講登録" sub="受講者へのコース割当 · 期限 / 必須の設定" />
       <div className="rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
         バックエンド (Neon) 未接続のため受講登録は利用できません。 受講者へのコース割当を行うには
-        <code className="mx-1">VITE_NEON_AUTH_URL</code> / <code className="mx-1">VITE_SERVER_URL</code>
+        <code className="mx-1">VITE_SERVER_URL</code>
         を設定してください。
       </div>
     </>

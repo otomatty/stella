@@ -11,7 +11,6 @@
       "dependencies": {
         "@anthropic-ai/sdk": "^0.30.0",
         "@falcon/shared": "workspace:*",
-        "@neondatabase/serverless": "^0.10.4",
         "drizzle-orm": "^0.38.3",
         "hono": "^4.7.11",
         "jose": "^5.9.6",

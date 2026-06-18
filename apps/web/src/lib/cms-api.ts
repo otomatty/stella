@@ -298,7 +298,7 @@ export async function uploadMaterial(
   file: File,
   path: string,
 ): Promise<UploadMaterialResult> {
-  const { getAccessToken } = await import("./neon-auth");
+  const { getAccessToken } = await import("./auth-client");
   const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
   const token = getAccessToken();
   const form = new FormData();

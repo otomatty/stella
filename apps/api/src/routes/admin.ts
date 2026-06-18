@@ -1,19 +1,17 @@
 /**
- * 管理 API (ユーザー管理 #22 + 組織マスタ #29) — Neon / Drizzle 版。
+ * 管理 API (ユーザー管理 #22 + 組織マスタ #29) — Cloudflare D1 版。
  *
- * 旧 Supabase service-role + RLS + 3 RPC を、 Neon Auth JWT 検証 + アプリ層認可 +
- * Drizzle に置き換えた。 呼び出し元は admin であることを必須とし、 操作対象を同テナントに限定する。
+ * 呼び出し元は admin であることを必須とし、 操作対象を同テナントに限定する。
  *
  *   GET  /api/admin/users          一覧 (同テナント)
- *   POST /api/admin/users/invite   招待 (要 Neon Auth admin API / 組織の席数上限を強制)
+ *   POST /api/admin/users/invite   招待 (Google ログイン / 組織の席数上限を強制)
  *   POST /api/admin/users/role     ロール変更
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
  *   GET  /api/admin/orgs           組織一覧 + 所属ユーザー数
  *   POST /api/admin/orgs/upsert    組織の作成 / 編集
  *
  * 無効化は profiles.disabled を立てるだけで、 API 経由の全アクセスが getCaller の
- * disabled チェックで遮断される。 アイデンティティ側のセッション失効を即時化したい場合は
- * Neon Auth admin API (NEON_AUTH_ADMIN_URL) を併用する。
+ * disabled チェックで遮断される。
  */
 
 import {
@@ -30,6 +28,7 @@ import { auditLogs, profiles, tenants } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
+import { registerInvitedUser } from "../lib/auth-users.js";
 import type { Env } from "../env.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
@@ -156,40 +155,8 @@ adminRoute.get("/api/admin/users", async (c) => {
 });
 
 // ---------------------------------------------------------------
-// 招待 (要 Neon Auth admin API)
+// 招待 (Google ログイン)
 // ---------------------------------------------------------------
-
-/** Neon Auth admin API でユーザーを作成 / 招待し、 ユーザー ID を返す。 */
-async function inviteNeonAuthUser(
-  env: Env,
-  email: string,
-  metadata: { tenant_id: string; role: string; display_name: string },
-  redirectTo?: string,
-): Promise<string> {
-  if (!env.NEON_AUTH_ADMIN_URL || !env.NEON_AUTH_ADMIN_SECRET) {
-    throw new ApiError("招待には Neon Auth admin API (NEON_AUTH_ADMIN_URL) の設定が必要です", 503);
-  }
-  const res = await fetch(`${env.NEON_AUTH_ADMIN_URL.replace(/\/$/, "")}/users/invite`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.NEON_AUTH_ADMIN_SECRET}`,
-    },
-    body: JSON.stringify({ email, metadata, ...(redirectTo ? { callbackUrl: redirectTo } : {}) }),
-  });
-  if (!res.ok) throw new ApiError("招待の発行に失敗しました", 502);
-  const data = (await res.json()) as { id?: string; userId?: string };
-  const id = data.id ?? data.userId;
-  if (!id) throw new ApiError("Neon Auth が user id を返しませんでした", 502);
-  return id;
-}
-
-function resolveInviteRedirect(env: Env): string | undefined {
-  if (env.INVITE_REDIRECT_URL) return env.INVITE_REDIRECT_URL;
-  return env.ALLOWED_ORIGINS?.split(",")
-    .map((s) => s.trim())
-    .filter((s) => s && !s.includes("*"))[0];
-}
 
 adminRoute.post("/api/admin/users/invite", async (c) => {
   try {
@@ -198,7 +165,6 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
     const validated = validateInviteUsersRequest(raw);
     if (!validated.ok) return c.json({ error: validated.message }, validated.status);
 
-    const redirectTo = resolveInviteRedirect(c.env);
     const ip = clientIp(c);
 
     // 既存プロフィールを email で一括確認 (テナントハイジャック防止)。
@@ -237,12 +203,7 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           });
           continue;
         }
-        const userId = await inviteNeonAuthUser(
-          c.env,
-          inv.email,
-          { tenant_id: caller.tenantId, role: inv.role, display_name: inv.displayName },
-          redirectTo,
-        );
+        const userId = crypto.randomUUID();
         await db.insert(profiles).values({
           id: userId,
           tenantId: caller.tenantId,
@@ -251,6 +212,7 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           initials: initialsFrom(inv.displayName),
           email: inv.email,
         });
+        await registerInvitedUser(db, userId, inv.email);
         seatsConsumed += 1;
         await recordAudit(db, caller, {
           action: "user_invite",

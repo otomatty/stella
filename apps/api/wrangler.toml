@@ -3,27 +3,30 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
+# A.sugai@a-cial.com's Account
+account_id = "0a0dd103e779842ba2c67cbde20574a0"
+
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
-# ローカル開発用。本番は README のデプロイ手順に従い Vercel ドメイン等を設定する。
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
-
-# ユーザー管理 API (Issue #22) 用。 SUPABASE_URL は非機密なので vars でも可。
-# SUPABASE_SERVICE_ROLE_KEY は機密のため vars に書かず `wrangler secret put` で設定する。
-# SUPABASE_URL = "https://<project-ref>.supabase.co"
-# INVITE_REDIRECT_URL = "https://<your-app-domain>"
+GOOGLE_CLIENT_ID = "774089873889-iq12o3cq3ded2iu7aa15lru5753bo5a1.apps.googleusercontent.com"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
+INVITE_REDIRECT_URL = "https://falcon-web.pages.dev"
 
 # AI エンドポイント (chat / review-draft) のレート制限。
-# クライアント IP 単位で 60 秒あたり 20 リクエストまで。
-# https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
 [[unsafe.bindings]]
 name = "AI_RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 20, period = 60 }
 
-# 教材アップロード (Cloudflare R2)。 公開読み取りは Dashboard で r2.dev またはカスタムドメインを有効化し、
-# フロントの VITE_MATERIALS_BASE_URL に公開 URL を設定する。
+# Cloudflare D1 — LMS データ (旧 Neon Postgres)。
+[[d1_databases]]
+binding = "DB"
+database_name = "falcon-db"
+database_id = "5c22102a-6c90-4433-b744-4f51f0f608f9"
+migrations_dir = "drizzle"
+
+# 教材アップロード (Cloudflare R2)。
 [[r2_buckets]]
 binding = "MATERIALS_BUCKET"
 bucket_name = "falcon-materials-public"

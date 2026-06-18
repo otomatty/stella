@@ -11,7 +11,7 @@
 ```text
 falcon-informal/
 ├── apps/
-│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Vercel
+│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Cloudflare Pages
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
 │   └── api/                  # @falcon/api — Hono API → Cloudflare Workers
@@ -19,23 +19,22 @@ falcon-informal/
 ├── packages/
 │   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
-├── apps/api/drizzle/         # Drizzle マイグレーション (Neon Postgres)
+├── apps/api/drizzle/         # Drizzle マイグレーション (Cloudflare D1)
 ├── supabase/                 # 旧 Supabase マイグレーション (移行元の参考・履歴用)
 ├── tsconfig.base.json
 └── package.json              # Bun workspaces
 ```
 
-> **アーキテクチャ移行 (#neon)**: Supabase (PostgREST 直叩き + RLS + RPC + Auth + Storage) から
-> **Neon Postgres + Neon Auth + Cloudflare R2** へ移行済み。 フロントは DB を直接叩かず、
-> 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
-> 詳細は [`docs/neon-migration.md`](docs/neon-migration.md) を参照。
+> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Google OAuth + R2 + Pages**。
+> フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
+> 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
 
 ## スタック
 
-- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`)
-- **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約 (旧 RLS の代替)
-- **Neon Postgres** — DB (Drizzle ORM / `drizzle-orm/neon-http`)
-- **Neon Auth** — 認証 (Magic Link / Email OTP)。 JWT を JWKS で検証
+- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Cloudflare Pages
+- **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約
+- **Cloudflare D1** — DB (Drizzle ORM / `drizzle-orm/d1`)
+- **Google OAuth + JWT** — `/api/auth/google`, `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_*`
 - **Cloudflare R2** — 教材配信・アップロード (Workers R2 バインディング + 公開 URL)
 - **Tailwind CSS v4 + shadcn/ui** (`apps/web/src/components/ui/`)
 - **Radix UI** プリミティブ
@@ -49,50 +48,38 @@ falcon-informal/
 bun install
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/api/.dev.vars.example apps/api/.dev.vars
-# 各ファイルを編集して Neon / Anthropic の認証情報を埋める
+# 各ファイルを編集 (AUTH_JWT_SECRET / Anthropic 等)
 ```
 
-> フィクスチャのフォールバックにより、 Neon / Anthropic 未設定でもモックログインで全ロール
+> フィクスチャのフォールバックにより、 API / Auth 未設定でもモックログインで全ロール
 > (Learner / Instructor / Admin) を Tweaks パネル (バックティック `` ` `` キー) から試せる。
 
-### Neon Postgres (DB / マイグレーション)
+### Cloudflare D1 (DB / マイグレーション)
 
-CMS / 進捗 / 提出 / 小テスト / 修了証 など DB 連携機能を使う場合は、 Neon プロジェクトを作成し
-スキーマを適用する。
-
-1. [Neon Console](https://console.neon.tech) で新規プロジェクトを作成し、 **pooled connection** の
-   接続文字列を取得する (例: `postgres://user:pass@ep-xxxx-pooler.<region>.aws.neon.tech/dbname?sslmode=require`)。
-   staging / production は別プロジェクト (または別 branch) に分ける。
-2. `apps/api/.dev.vars` の `DATABASE_URL` に貼る (本番は `wrangler secret put DATABASE_URL`)。
-3. 疎通確認 → マイグレーション適用 → 再確認:
+1. 初回: `cd apps/api && wrangler d1 create falcon-db` → `wrangler.toml` の `database_id` を更新。
+2. ローカル D1 にマイグレーション適用:
 
    ```bash
-   DATABASE_URL=postgres://... bun run smoke:neon   # 接続 OK・テーブル未適用を確認
-   DATABASE_URL=postgres://... bun run db:migrate    # 全 19 テーブルを適用
-   DATABASE_URL=postgres://... bun run smoke:neon    # 19/19 存在 を確認
+   bun run db:migrate      # wrangler d1 migrations apply --local
+   bun run db:seed         # fixtures → D1
+   bun run smoke:d1        # 21/21 テーブル確認
    ```
 
-4. 初期データ (テナント `coach` / `ses` + fixtures のコース・課題) を投入:
+3. 初回 Google ログイン後は `profiles` に `role='student'` で行が作られる。 管理者:
 
    ```bash
-   bun run seed:fixtures:sql > apps/api/drizzle/seed.sql      # fixtures → INSERT SQL を生成
-   psql "$DATABASE_URL" -f apps/api/drizzle/seed.sql          # Neon に適用 (SQL Editor 貼付でも可)
+   wrangler d1 execute falcon-db --local --command "update profiles set role='admin' where email='you@example.com'"
    ```
 
-5. 初回 Magic Link ログイン後は `profiles` に `role='student'` で行が作られる。 管理者にするには:
+### 認証 (Google OAuth)
 
-   ```sql
-   update public.profiles set role = 'admin' where email = 'you@example.com';
-   ```
-
-### Neon Auth (Magic Link / Email OTP)
-
-1. Neon Console → Auth を有効化し、 Magic Link / Email OTP を設定する。
-2. `NEON_AUTH_JWKS_URL` (API / `apps/api/.dev.vars`) と `VITE_NEON_AUTH_URL` (web / `apps/web/.env.local`)
-   を設定する。 必要に応じて `NEON_AUTH_ISSUER` / `NEON_AUTH_AUDIENCE` で iss / aud も検証する。
-3. **ユーザー招待** (identity 作成 + 招待メール) を使う場合のみ、 `NEON_AUTH_ADMIN_URL` /
-   `NEON_AUTH_ADMIN_SECRET` を設定する (未設定時は招待エンドポイントが 503。 ロール変更 / 無効化 /
-   一覧 / 組織 CRUD は DB のみで動作する)。
+1. [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0 クライアント ID を作成。
+2. **認可済みリダイレクト URI** に以下を追加:
+   - `http://127.0.0.1:8787/api/auth/google/callback` (ローカル)
+   - `https://falcon-api.a-sugai.workers.dev/api/auth/google/callback` (本番)
+3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
+   本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
+4. Web は `https://falcon-web.pages.dev/auth/callback` で JWT を受け取る (Pages SPA 用に `public/_redirects` あり)。
 
 ### Cloudflare R2 (教材配信・アップロード)
 
@@ -111,15 +98,14 @@ CMS / 進捗 / 提出 / 小テスト / 修了証 など DB 連携機能を使う
 Tweaks パネルで講師ロールに切り替え、 キューから添削エディタを開くと AI 下書き (`POST /api/review-draft`) が生成されます
 (API キー未設定時はルールベースのヒューリスティックにフォールバック)。
 
-- 提出物の永続化 (デモ / Neon 未設定): `localStorage` キー `lms_submissions_v1`
-- DB 永続化 (Neon 設定時): `submissions` テーブル (`/api/submissions` 経由、 Magic Link ログインが必要)
+- DB 永続化 (D1 設定時): `submissions` テーブル (`/api/submissions` 経由、 ログインが必要)
 
 ### レッスン進捗の永続化 (Issue #21)
 
 レッスン視聴進捗 (動画の視聴秒数 / スライドの閲覧ページ / 完了フラグ) を保存します。
 
-- ローカル (デモ / Neon 未設定): `localStorage` キー `lms_lesson_progress`
-- DB 永続化 (Neon 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 Magic Link ログインが必要)。
+- ローカル (デモ / API 未設定): `localStorage` キー `lms_lesson_progress`
+- DB 永続化 (D1 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 ログインが必要)。
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
   講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
 
@@ -135,8 +121,8 @@ Tweaks パネルで講師ロールに切り替え、 キューから添削エデ
   確認でき、 認定番号 (`cert_code`) と公開検証ページへのリンクを得られます。
 - 公開検証ページは **ログイン不要**で `/?cert=<CODE>` から到達し、 真正性を確認できます。
   検証は匿名エンドポイント `GET /api/certificates/verify/:code` 経由で、 公開して良い情報のみ返します。
-- DB 永続化 (Neon 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
-  Neon 未設定時は修了証ページが静的デモ表示にフォールバックします。
+- DB 永続化 (D1 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
+  API 未設定時は修了証ページが静的デモ表示にフォールバックします。
 
 ### Anthropic (AIチャット用、 任意)
 
@@ -198,24 +184,25 @@ bun run --filter=@falcon/shared typecheck
 
 ## デプロイ
 
-### フロント — Vercel (`apps/web`)
+### フロント — Cloudflare Pages (`apps/web`)
 
-- **Root Directory**: `apps/web` (`apps/web/vercel.json` あり)
-- **Framework**: Vite
-- **Install Command**: `cd ../.. && bun install`
-- **Build Command**: `bun run build`
-- **環境変数**:
-  - `VITE_SERVER_URL` — Cloudflare Workers API の URL (例: `https://falcon-api.example.workers.dev`)
-  - `VITE_NEON_AUTH_URL` — Neon Auth のベース URL
-  - `VITE_MATERIALS_BASE_URL` — Cloudflare R2 バケットの公開ベース URL
+```bash
+bun run deploy:web   # build + wrangler pages deploy
+```
+
+- **環境変数** (Pages ダッシュボード):
+  - `VITE_SERVER_URL` — Workers API URL
+  - `VITE_MATERIALS_BASE_URL` — R2 公開 URL
 
 ### API — Cloudflare Workers (`apps/api`)
 
 ```bash
 cd apps/api
-wrangler secret put ANTHROPIC_API_KEY
-wrangler secret put DATABASE_URL              # Neon pooled connection
-wrangler secret put NEON_AUTH_ADMIN_SECRET    # ユーザー招待を使う場合のみ
+wrangler d1 create falcon-db          # 初回: database_id を wrangler.toml に反映
+bun run db:migrate:remote
+wrangler secret put AUTH_JWT_SECRET
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put ANTHROPIC_API_KEY   # 任意
 bun run deploy
 ```
 
@@ -223,25 +210,19 @@ bun run deploy
 
 | 名前 | 種別 | 用途 |
 |---|---|---|
+| `AUTH_JWT_SECRET` | Secret | JWT 署名 (必須) |
+| `GOOGLE_CLIENT_ID` | var / Secret | Google OAuth クライアント ID |
+| `GOOGLE_CLIENT_SECRET` | Secret | Google OAuth シークレット |
 | `ANTHROPIC_API_KEY` | Secret | Anthropic API |
-| `DATABASE_URL` | Secret | Neon Postgres 接続文字列 (pooled) |
-| `NEON_AUTH_JWKS_URL` | var/Secret | Neon Auth JWT 検証用 JWKS エンドポイント |
-| `NEON_AUTH_ISSUER` / `NEON_AUTH_AUDIENCE` | var | 任意: JWT の iss / aud 検証 |
-| `NEON_AUTH_ADMIN_URL` / `NEON_AUTH_ADMIN_SECRET` | var/Secret | ユーザー招待 (任意) |
-| `MATERIALS_BUCKET` | R2 binding | 教材アップロード (`wrangler.toml` `[[r2_buckets]]`) |
-| `ANTHROPIC_MODEL` | var | 既定: `claude-sonnet-4-6` |
-| `ALLOWED_ORIGINS` | var | CORS 許可オリジン (カンマ区切り、`*.vercel.app` 可) |
+| `DB` | D1 binding | データベース (`wrangler.toml`) |
+| `MATERIALS_BUCKET` | R2 binding | 教材アップロード |
+| `ALLOWED_ORIGINS` | var | CORS 許可オリジン |
 
-本番例:
+### バックエンド — 完全 Cloudflare
 
-```toml
-# wrangler.toml [vars]
-ALLOWED_ORIGINS = "https://your-app.vercel.app,https://*.vercel.app"
-```
+- **D1** — LMS データ
+- **Workers** — API + Google OAuth 認証
+- **R2** — 教材ファイル
+- **Pages** — フロント
 
-### バックエンド — Neon + Cloudflare R2
-
-- Neon Postgres / Neon Auth
-- 教材ファイル: Cloudflare R2 (`falcon-materials-public`)
-- staging / production は Neon を別プロジェクト (または別 branch) に分ける
-- マイグレーション適用は `DATABASE_URL=... bun run db:migrate` (詳細は上記「Neon Postgres」)
+詳細: [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md)

@@ -1,39 +1,26 @@
-import { useState } from 'react';
 import { toast } from 'sonner';
-import { Mail, Google } from '@/lib/icons';
+import { Google } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { signInWithEmail } from '@/lib/auth';
+import { signInWithGoogle } from '@/lib/auth';
 
 interface LoginScreenProps {
-  onLogin: (via: 'email' | 'google') => void;
+  /** Supabase/API 未設定時の fixtures 用モックログイン。 */
+  onMockLogin?: () => void;
 }
 
-export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
-  const [email, setEmail] = useState('tanaka@example.com');
-  const [sent, setSent] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const sendMagic = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    // Supabase 未設定時は従来通り fixtures ベースの即時遷移。
+export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
+  const handleGoogleLogin = () => {
     if (!isSupabaseConfigured()) {
-      setSent(true);
-      setTimeout(() => onLogin('email'), 1400);
+      onMockLogin?.();
       return;
     }
-    setSubmitting(true);
     try {
-      await signInWithEmail(email);
-      setSent(true);
+      signInWithGoogle();
     } catch (err) {
-      const message = err instanceof Error ? err.message : '送信に失敗しました';
-      toast.error(`ログインリンクの送信に失敗: ${message}`);
-    } finally {
-      setSubmitting(false);
+      const message = err instanceof Error ? err.message : 'ログインに失敗しました';
+      toast.error(message);
     }
   };
 
@@ -45,69 +32,15 @@ export const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             <Brand size="md" />
           </div>
 
-          {!sent ? (
-            <>
-              <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
-              <p className="text-ink-3 text-[13.5px] mb-7">
-                メールアドレスにログイン用リンクをお送りします。パスワードは不要です。
-              </p>
+          <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
+          <p className="text-ink-3 text-[13.5px] mb-7">
+            Google アカウントでログインしてください。
+          </p>
 
-              <form onSubmit={(e) => void sendMagic(e)}>
-                <div className="mb-4">
-                  <Label htmlFor="login-email">メールアドレス</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <Button type="submit" variant="accent" size="full" disabled={submitting}>
-                  <Mail size={15} />
-                  {submitting ? '送信中…' : 'ログインリンクを送信'}
-                </Button>
-              </form>
-
-              <div className="flex items-center gap-3 my-5 text-ink-4 text-[11px] uppercase tracking-widest">
-                <div className="flex-1 h-px bg-border" />
-                または
-                <div className="flex-1 h-px bg-border" />
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="full"
-                onClick={() => onLogin('google')}
-              >
-                <Google width={16} height={16} />
-                Googleでログイン
-              </Button>
-            </>
-          ) : (
-            <div className="text-center py-10">
-              <div className="grid place-items-center w-14 h-14 rounded-full bg-brand-soft text-brand mx-auto mb-4">
-                <Mail size={24} />
-              </div>
-              <h2 className="text-[18px] mb-1.5 font-semibold">メールを確認してください</h2>
-              <p className="text-ink-3 text-[13px]">
-                {email} 宛にリンクを送信しました。
-                <br />
-                リンクは15分間有効です。
-              </p>
-              {isSupabaseConfigured() ? (
-                <div className="mt-6 text-[11.5px] text-ink-3">
-                  メール内のリンクをクリックするとブラウザに戻り、 ログインが完了します。
-                </div>
-              ) : (
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  <span className="w-3.5 h-3.5 rounded-full border-2 border-border border-t-brand animate-spin-slow" />
-                  <span className="text-ink-3 text-[11.5px]">自動でログインします…</span>
-                </div>
-              )}
-            </div>
-          )}
+          <Button type="button" variant="accent" size="full" onClick={handleGoogleLogin}>
+            <Google width={16} height={16} />
+            Googleでログイン
+          </Button>
 
           <div className="mt-8 text-[11.5px] text-ink-3 text-center">
             ログインできない場合は{' '}

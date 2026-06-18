@@ -10,14 +10,15 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:apply-sql": "bun run scripts/apply-sql.ts",
-    "smoke": "bun run scripts/neon-smoke.ts"
+    "db:migrate": "wrangler d1 migrations apply falcon-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply falcon-db --remote",
+    "db:seed": "bun run scripts/seed-d1.ts",
+    "db:seed:remote": "bun run scripts/seed-d1.ts --remote",
+    "smoke": "bun run scripts/d1-smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
     "@falcon/shared": "workspace:*",
-    "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.7.11",
     "jose": "^5.9.6"

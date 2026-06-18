@@ -479,7 +479,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
         courseId,
         certCode: genCertCode(),
         issuedBy: isStaff ? caller.id : null,
-        criteriaSnapshot: completion,
+        criteriaSnapshot: completion as unknown as Record<string, unknown>,
         recipientName: recipientRows[0].name,
         courseTitle: course.title,
         tenantName: tenantRows[0]?.name ?? course.tenantId,

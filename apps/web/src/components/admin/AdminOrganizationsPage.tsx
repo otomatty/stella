@@ -368,7 +368,7 @@ function OrgsDemoNotice() {
       <PageHeader title="組織マスタ" sub="顧客企業・学校の登録管理" />
       <div className="rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
         バックエンド未設定のため組織マスタは利用できません。 組織の登録・編集を行うには
-        <code className="mx-1">VITE_NEON_AUTH_URL</code> と API サーバ
+        <code className="mx-1">VITE_SERVER_URL</code> と API サーバ
         <code className="mx-1">VITE_SERVER_URL</code> を設定してください。
       </div>
     </>
