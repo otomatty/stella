@@ -22,13 +22,13 @@ function clientIp(c: Context<{ Bindings: Env }>): string | null {
 }
 
 /**
- * レート制限を超過していれば 429 レスポンスを返し、 許容内なら null を返す。
- * 判定自体が失敗した場合はリクエストを通す (fail-open: 可用性優先)。
+ * 指定リミッタで IP 単位のレート制限を行う。 超過なら 429、 許容内なら null。
+ * リミッタ未設定 (ローカル / テスト) や判定失敗時はリクエストを通す (fail-open: 可用性優先)。
  */
-export async function enforceAiRateLimit(
+async function enforce(
   c: Context<{ Bindings: Env }>,
+  limiter: RateLimit | undefined,
 ): Promise<Response | null> {
-  const limiter = c.env.AI_RATE_LIMITER;
   if (!limiter) return null;
 
   // IP が取れない場合は共有キーに落とす (制限なしにはしない)。
@@ -45,4 +45,18 @@ export async function enforceAiRateLimit(
     console.error("[rate-limit] limiter check failed; allowing request", e);
   }
   return null;
+}
+
+/** AI エンドポイント (chat / review-draft) 用のレート制限。 */
+export function enforceAiRateLimit(
+  c: Context<{ Bindings: Env }>,
+): Promise<Response | null> {
+  return enforce(c, c.env.AI_RATE_LIMITER);
+}
+
+/** サポート問い合わせ (公開・認証前) フォーム用のレート制限。 */
+export function enforceSupportRateLimit(
+  c: Context<{ Bindings: Env }>,
+): Promise<Response | null> {
+  return enforce(c, c.env.SUPPORT_RATE_LIMITER);
 }

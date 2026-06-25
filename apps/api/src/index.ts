@@ -24,6 +24,7 @@ import { qaRoute } from "./routes/qa.js";
 import { quizRoute } from "./routes/quiz.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
 import { submissionsRoute } from "./routes/submissions.js";
+import { supportRoute } from "./routes/support.js";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -52,6 +53,7 @@ app.route("/", quizRoute);
 app.route("/", certificatesRoute);
 app.route("/", analyticsRoute);
 app.route("/", submissionsRoute);
+app.route("/", supportRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
 

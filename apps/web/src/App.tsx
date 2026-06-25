@@ -34,6 +34,7 @@ import { InstructorQA } from '@/components/instructor/InstructorQA';
 import { Gradebook } from '@/components/instructor/Gradebook';
 
 import { PublicCertificateVerify } from '@/components/public/PublicCertificateVerify';
+import { SupportPage } from '@/components/public/SupportPage';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
@@ -128,6 +129,15 @@ export default function App() {
     return (
       <>
         <AuthCallback />
+        <Toaster />
+      </>
+    );
+  }
+  // サポートページ: ログイン不要で `/support` から到達する (ログインできない受け皿)。
+  if (typeof window !== 'undefined' && window.location.pathname === '/support') {
+    return (
+      <>
+        <SupportPage />
         <Toaster />
       </>
     );

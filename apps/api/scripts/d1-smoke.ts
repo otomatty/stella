@@ -16,7 +16,11 @@ function d1Json<T>(command: string): T {
     `bunx wrangler d1 execute falcon-db --local --json --command ${JSON.stringify(command)}`,
     { cwd: apiDir, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
   );
-  const parsed = JSON.parse(out) as Array<{ results: T[] }>;
+  // wrangler が JSON の前にバナー (skills 案内等) を出力することがあるため、
+  // 最初の `[` 以降を JSON とみなして取り出す。
+  const start = out.indexOf("[");
+  const json = start >= 0 ? out.slice(start) : out;
+  const parsed = JSON.parse(json) as Array<{ results: T[] }>;
   return parsed[0]?.results ?? ([] as T);
 }
 

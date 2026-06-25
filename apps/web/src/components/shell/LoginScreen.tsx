@@ -13,7 +13,15 @@ interface LoginScreenProps {
 export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
   const handleGoogleLogin = () => {
     if (!isSupabaseConfigured()) {
-      onMockLogin?.();
+      // fixtures デモ (バックエンド未設定) はモックログインへ。
+      if (onMockLogin) {
+        onMockLogin();
+        return;
+      }
+      // 本番想定でバックエンド未設定の場合は無反応にせず、 原因とサポート導線を示す。
+      toast.error(
+        'ログインを開始できませんでした。 サーバ設定が未完了の可能性があります。 問題が続く場合はサポートへお問い合わせください。',
+      );
       return;
     }
     try {
@@ -44,7 +52,10 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
 
           <div className="mt-8 text-[11.5px] text-ink-3 text-center">
             ログインできない場合は{' '}
-            <a className="text-brand underline underline-offset-2">サポート</a> までお問い合わせください。
+            <a href="/support" className="text-brand underline underline-offset-2">
+              サポート
+            </a>{' '}
+            までお問い合わせください。
           </div>
         </div>
       </div>

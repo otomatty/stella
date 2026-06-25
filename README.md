@@ -81,6 +81,11 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
 4. Web は `https://falcon-web.pages.dev/auth/callback` で JWT を受け取る (Pages SPA 用に `public/_redirects` あり)。
 
+> **ログインできない場合**: 切り分け手順は
+> [`docs/google-login-troubleshooting.md`](docs/google-login-troubleshooting.md) を参照
+> (`/api/healthz` の `googleOAuthConfigured` / `jwtConfigured` で設定状況を確認できる)。
+> ユーザー向けにはサポートページ `/support` (FAQ + 問い合わせフォーム) を案内する。
+
 ### Cloudflare R2 (教材配信・アップロード)
 
 1. R2 バケット `falcon-materials-public` は `apps/api/wrangler.toml` の `[[r2_buckets]]` で Workers にバインド済み。

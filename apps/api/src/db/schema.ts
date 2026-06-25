@@ -433,7 +433,32 @@ export const auditLogs = sqliteTable("audit_logs", {
   createdAt: tsNow("created_at"),
 });
 
-/** D1 smoke 用テーブル名一覧 (auth 含む 21)。 */
+// ---------------------------------------------------------------
+// サポート問い合わせ (ログイン不要フォーム)
+// ---------------------------------------------------------------
+
+/**
+ * サポート問い合わせ。 ログイン画面「サポート」リンク先の公開フォームから投稿される。
+ * 未ログインでも投稿できるため tenant / user は任意 (ログイン中のみ user_id を記録)。
+ */
+export const supportInquiries = sqliteTable("support_inquiries", {
+  id: uuid(),
+  name: text("name").notNull().default(""),
+  email: text("email").notNull(),
+  category: text("category", {
+    enum: ["login", "account", "billing", "bug", "other"],
+  })
+    .notNull()
+    .default("other"),
+  message: text("message").notNull(),
+  status: text("status", { enum: ["open", "closed"] })
+    .notNull()
+    .default("open"),
+  userId: text("user_id"),
+  createdAt: tsNow("created_at"),
+});
+
+/** D1 smoke 用テーブル名一覧 (auth 含む)。 */
 export const APP_TABLES = [
   "auth_users",
   "auth_otp_codes",
@@ -456,6 +481,7 @@ export const APP_TABLES = [
   "submissions",
   "certificates",
   "audit_logs",
+  "support_inquiries",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;

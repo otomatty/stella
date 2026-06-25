@@ -41,4 +41,10 @@ export interface Env {
    * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
    */
   AI_RATE_LIMITER?: RateLimit;
+
+  /**
+   * サポート問い合わせ (公開フォーム) の Rate Limiting バインディング。
+   * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
+   */
+  SUPPORT_RATE_LIMITER?: RateLimit;
 }
