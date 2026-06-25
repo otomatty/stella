@@ -13,9 +13,6 @@ apps/web/public/sqljs/
 # Generated at build time from pdfjs-dist (cmaps + standard_fonts)
 apps/web/public/pdfjs/
 
-# Vercel
-.vercel
-
-# Cloudflare Workers
+# Cloudflare Workers / Pages
 .wrangler
 apps/api/.dev.vars

@@ -1,6 +1,6 @@
 /**
- * CORS オリジン判定。 Vercel Preview (`*.vercel.app` / `https://*.vercel.app`) 等の
- * ワイルドカードに対応。
+ * CORS オリジン判定。 Cloudflare Pages Preview (`*.falcon-web.pages.dev` /
+ * `https://*.falcon-web.pages.dev`) 等のワイルドカードに対応。
  *
  * パターン例:
  * - 完全一致: `https://app.example.com`
