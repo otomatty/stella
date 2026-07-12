@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: verify → migrate → api → web
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+      VITE_MATERIALS_BASE_URL: ${{ vars.VITE_MATERIALS_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # --- 検証ゲート（ci.yml と同内容） ---
+      - name: Lint
+        run: bun run lint
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Test
+        run: bun run test
+      - name: Build
+        run: bun run build
+
+      # --- デプロイ（直列。前段失敗で後段は動かない） ---
+      - name: Apply D1 migrations (remote)
+        run: bun run db:migrate:remote
+
+      - name: Deploy API
+        run: bun run deploy:api
+
+      - name: Deploy Web (build with VITE_* then deploy)
+        run: bun run deploy:web

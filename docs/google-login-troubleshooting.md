@@ -28,13 +28,16 @@ curl -s https://<api-host>/api/healthz | jq
 
 `googleOAuthConfigured` / `jwtConfigured` が `false` の場合は **手順 3 / 4** の Secrets が未設定。
 
-## 1. フロントの `VITE_SERVER_URL` (ビルド時)
+## 1. フロントの `VITE_SERVER_URL` (Workers Static Assets)
 
-- デプロイ時の `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
+- ビルド時に焼き込まれる `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
   - 例: `https://falcon-api.a-sugai.workers.dev`
+  - 本番ビルドは GitHub Actions（`deploy.yml`）が実行し、値は Actions の Repository Variables
+    `VITE_SERVER_URL` から供給される（詳細は [`docs/ci-cd.md`](ci-cd.md)）。
 - 未設定だとログインボタンを押しても遷移先が無く **無反応** になる
   (本アプリは原因を示すトーストを出すよう改善済み)。
 - 変更後は **再ビルド / 再デプロイ** が必要 (`VITE_*` はビルド時に埋め込まれる)。
+  GitHub Actions Variables を更新しただけでは反映されず、`main` への push（再デプロイ）が必要。
 
 ## 2. Google Console の認可済みリダイレクト URI (完全一致)
 
@@ -62,18 +65,22 @@ wrangler secret put GOOGLE_CLIENT_SECRET   # Google OAuth シークレット (�
 
 ## 4. `ALLOWED_ORIGINS` に Web オリジンが含まれているか
 
-`apps/api/wrangler.toml` の `[vars].ALLOWED_ORIGINS` に、 本番 Web Worker のオリジンが含まれていること。
-含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後のリダイレクト先がフォールバックになる
-(`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
+`apps/api/wrangler.toml` の `[vars].ALLOWED_ORIGINS` に、 本番の Workers Static Assets オリジンが
+含まれていること。 含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後の
+リダイレクト先がフォールバックになる (`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
 
 ```dotenv
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
 ```
 
-## 5. SPA ルーティング (`/auth/callback`)
+旧 `https://falcon-web.pages.dev` / `https://*.falcon-web.pages.dev` は移行期間の暫定維持
+（切替確認後に削除予定）。
 
-`apps/web/wrangler.toml` で `assets.not_found_handling = "single-page-application"` が設定され、
-`/auth/callback` や `/support` の直アクセスが `index.html` に解決されること。
+## 5. SPA リダイレクト (`/auth/callback`)
+
+`apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"` により、
+`/auth/callback` や `/support` の直アクセスが `index.html` に解決されること。 これが無いと
+Workers が 404 を返す。
 
 ## それでも解決しない場合
 

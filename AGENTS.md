@@ -8,7 +8,7 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@falcon/web` | `apps/web` | Vite + React frontend → Workers Static Assets (port 5173 dev) |
+| `@falcon/web` | `apps/web` | Vite + React frontend → Cloudflare Workers (Static Assets, `falcon-web`; port 5173 dev) |
 | `@falcon/api` | `apps/api` | Hono API on Cloudflare Workers (port 8787) |
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |
@@ -22,7 +22,9 @@ bun run dev:api    # Wrangler (Cloudflare Workers) on :8787
 
 The web app works **without D1/Auth or Anthropic credentials** using hardcoded fixture data and a mock login flow. All roles (Learner, Instructor, Admin) are testable with the Tweaks panel (press backtick `` ` `` key).
 
-**Stack:** Cloudflare D1 (DB) + Google OAuth + R2 (materials). See `docs/cloudflare-stack.md`.
+**Stack:** Cloudflare D1 (DB) + Google OAuth + R2 (materials) + Workers Static Assets (frontend, migrated from Pages). See `docs/cloudflare-stack.md`.
+
+**Deploy:** GitHub Actions only — no manual `wrangler` deploys for the normal flow. `.github/workflows/ci.yml` gates PRs (lint/typecheck/test/build); `.github/workflows/deploy.yml` runs on push to `main` (gate → D1 migrate remote → deploy:api → deploy:web). Requires repo Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` and Variables `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`. See `docs/ci-cd.md`.
 
 **DB setup (local):** `bun run db:migrate && bun run db:seed && bun run smoke:d1`
 

@@ -11,7 +11,7 @@
 ```text
 falcon-informal/
 ├── apps/
-│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Workers Static Assets
+│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
 │   └── api/                  # @falcon/api — Hono API → Cloudflare Workers
@@ -24,13 +24,17 @@ falcon-informal/
 └── package.json              # Bun workspaces
 ```
 
-> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Google OAuth + R2 + Workers (API + フロント Static Assets)**。
+> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Google OAuth + R2 + Workers (Static Assets)**。
 > フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
 > 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
+>
+> **デプロイ**: 旧 Cloudflare Pages から Workers Static Assets (`falcon-web`) へ移行済み。
+> デプロイは GitHub Actions（PR は `ci.yml` で検証ゲート、`main` は `deploy.yml` が自動デプロイ）。
+> 詳細は [`docs/ci-cd.md`](docs/ci-cd.md) を参照。
 
 ## スタック
 
-- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Workers Static Assets
+- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Cloudflare Workers (Static Assets)
 - **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約
 - **Cloudflare D1** — DB (Drizzle ORM / `drizzle-orm/d1`)
 - **Google OAuth + JWT** — `/api/auth/google`, `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_*`
@@ -79,7 +83,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
 4. Web は `https://falcon-web.a-sugai.workers.dev/auth/callback` で JWT を受け取る
-   (SPA ルーティングは Workers `assets.not_found_handling = "single-page-application"`)。
+   (SPA fallback は `apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
 > [`docs/google-login-troubleshooting.md`](docs/google-login-troubleshooting.md) を参照
@@ -189,14 +193,24 @@ bun run --filter=@falcon/shared typecheck
 
 ## デプロイ
 
-### フロント — Workers Static Assets (`apps/web`)
+**通常のデプロイは GitHub Actions が自動実行する**（手動 `wrangler` ではない）。
+`pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
+`main` への push は `deploy.yml` が同じ検証 → D1 migrate(remote) → API デプロイ → Web デプロイを直列実行する。
+GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
+Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要。
+詳細（ワークフロー一覧・必須チェック設定・OAuth Console 手順・失敗時の再デプロイ）は
+[`docs/ci-cd.md`](docs/ci-cd.md) を参照。
+
+以下はローカルからの手動デプロイ手順（初回セットアップ / 障害時の代替手段）。
+
+### フロント — Cloudflare Workers Static Assets (`apps/web`)
 
 ```bash
 bun run deploy:web   # build + wrangler deploy
 ```
 
-- **ビルド時環境変数**:
-  - `VITE_SERVER_URL` — API Worker URL
+- **環境変数** (ビルド時に焼き込み。通常は GitHub Actions Variables から供給):
+  - `VITE_SERVER_URL` — Workers API URL
   - `VITE_MATERIALS_BASE_URL` — R2 公開 URL
 - 本番 URL 例: `https://falcon-web.a-sugai.workers.dev`
 
@@ -229,6 +243,6 @@ bun run deploy
 - **D1** — LMS データ
 - **Workers** — API + Google OAuth 認証
 - **R2** — 教材ファイル
-- **Workers Static Assets** — フロント
+- **Workers (Static Assets)** — フロント
 
 詳細: [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md)

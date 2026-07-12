@@ -5,8 +5,8 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 
 ## 目標アーキテクチャ
 
-```text
-[ブラウザ apps/web]  → Cloudflare Workers (Static Assets / SPA)
+```
+[ブラウザ apps/web]  → Cloudflare Workers (Static Assets)
    │  fetch (Authorization: Bearer = Workers JWT)
    ▼
 [Hono API apps/api]  → Cloudflare Workers
@@ -22,7 +22,8 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 - **DB 層**: Drizzle ORM + D1 バインディング (`drizzle-orm/d1`)
 - **認証**: Google OAuth (`/api/auth/google`) + JWT (`AUTH_JWT_SECRET`)
 - **認可**: Hono アプリ層 (旧 RLS 相当)
-- **フロント**: Workers Static Assets (`apps/web/wrangler.toml` の `[assets]`)
+- **フロント**: Cloudflare Workers Static Assets (`falcon-web`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
+- **デプロイ運用**: 手動 `wrangler` ではなく GitHub Actions（`.github/workflows/deploy.yml`）。`main` マージで D1 migrate（remote）→ api → web を自動実行。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
 ## ローカル開発
 
@@ -49,9 +50,12 @@ bun run dev       # :5173
 |---------|------|----------|
 | D1 `falcon-db` | ✅ マイグレーション + seed 済 | `5c22102a-6c90-4433-b744-4f51f0f608f9` |
 | Worker `falcon-api` | ✅ デプロイ済 | https://falcon-api.a-sugai.workers.dev |
-| Worker `falcon-web` (Static Assets) | ✅ Pages から移行 | https://falcon-web.a-sugai.workers.dev |
+| Worker `falcon-web` (Static Assets) | ✅ デプロイ済 | https://falcon-web.a-sugai.workers.dev（旧 Pages URL `https://falcon-web.pages.dev` は移行期間の CORS 許可のため暫定的に維持） |
 | Secret `AUTH_JWT_SECRET` | ✅ 設定済 | (wrangler secret) |
 | R2 `falcon-materials-public` | ✅ 作成 + 公開 URL 有効 | https://pub-bd7872ac470e4c649d6bc3cc86ac9ca7.r2.dev |
+
+以下は初回セットアップ / ローカルからの手動再デプロイ手順。`main` への通常のデプロイは
+GitHub Actions（`deploy.yml`）が自動実行する。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
 ```bash
 # 1. D1 作成 (初回のみ)
@@ -96,8 +100,8 @@ CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
 | Workers Secret | `AUTH_JWT_SECRET` | JWT 署名 |
 | Workers Secret / var | `GOOGLE_CLIENT_SECRET` / `GOOGLE_CLIENT_ID` | Google OAuth |
 | Workers var | `ALLOWED_ORIGINS` | CORS |
-| Web (build-time) | `VITE_SERVER_URL` | API URL |
-| Web (build-time) | `VITE_MATERIALS_BASE_URL` | R2 公開 URL |
+| Web (GitHub Actions Variable、ビルド時に焼き込み) | `VITE_SERVER_URL` | API URL |
+| Web (GitHub Actions Variable、ビルド時に焼き込み) | `VITE_MATERIALS_BASE_URL` | R2 公開 URL |
 
 ## 移行元 (Neon) からの差分
 

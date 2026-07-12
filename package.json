@@ -6,10 +6,13 @@
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "dev": "bun --filter=@falcon/web dev",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
     "dev:api": "bun --filter=@falcon/api dev",
     "build": "bun --filter '@falcon/*' build",
     "preview": "bun --filter=@falcon/web preview",
     "typecheck": "bun --filter '@falcon/*' typecheck",
+    "test": "vitest run",
     "deploy:api": "bun run --filter=@falcon/api deploy",
     "deploy:web": "bun run build && bun run --filter=@falcon/web deploy",
     "smoke:d1": "bun run --filter=@falcon/api smoke",
@@ -18,5 +21,9 @@
     "db:migrate:remote": "bun run --filter=@falcon/api db:migrate:remote",
     "db:seed": "bun run --filter=@falcon/api db:seed",
     "db:seed:remote": "bun run --filter=@falcon/api db:seed:remote"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "vitest": "2.1.9"
   }
 }
