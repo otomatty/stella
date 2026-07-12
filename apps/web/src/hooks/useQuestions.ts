@@ -5,14 +5,14 @@
  * - `useMyQuestions`: 投稿者本人のスレッド (受講者の「あなたのスレッド」)。
  * - `useOpenQuestions`: 未返信キュー (status='open') — 講師の未返信一覧。
  *
- * いずれも Supabase 未設定時は no-op (空配列) で、 fixtures に依存しない。
+ * いずれも バックエンド未設定時は no-op (空配列) で、 fixtures に依存しない。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { QuestionWithReplies } from "@falcon/shared/cms/types";
 import { listQuestions, type ListQuestionsOpts } from "@/lib/qa-api";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 
 export interface UseQuestionsResult {
   threads: QuestionWithReplies[];
@@ -39,7 +39,7 @@ function useQuestionList(
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!enabled || !isSupabaseConfigured()) {
+    if (!enabled || !isBackendConfigured()) {
       setThreads([]);
       setError(null);
       setLoading(false);

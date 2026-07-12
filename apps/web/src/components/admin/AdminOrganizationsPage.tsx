@@ -38,7 +38,7 @@ import { useOrganizations } from "@/hooks/useOrganizations";
 import { upsertOrganization } from "@/lib/organizations-api";
 
 interface Props {
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
 interface FormState {
@@ -79,8 +79,8 @@ function formFromOrg(o: OrganizationRow): FormState {
   };
 }
 
-export function AdminOrganizationsPage({ supabaseEnabled }: Props) {
-  if (!supabaseEnabled) {
+export function AdminOrganizationsPage({ backendEnabled }: Props) {
+  if (!backendEnabled) {
     return <OrgsDemoNotice />;
   }
   return <OrgsLive />;

@@ -1,7 +1,7 @@
 /**
  * 自分宛の通知を取得・既読化する Hook (Issue #25)。
  *
- * Supabase 未設定時は no-op (空配列) で fixtures に依存しない (Q&A と同方針)。
+ * バックエンド未設定時は no-op (空配列) で fixtures に依存しない (Q&A と同方針)。
  * 既読化は楽観更新で即座に UI へ反映し、 失敗時はサーバ状態へ refetch で巻き戻す。
  */
 
@@ -13,7 +13,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/notifications-api";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 
 export interface UseNotificationsResult {
   notifications: NotificationRow[];
@@ -37,7 +37,7 @@ export function useNotifications(
 
   // userId を鍵に含め、 ログアウト→別ユーザーのログイン (同テナント) でも
   // 前ユーザーの通知が残らないよう refetch / クリアされるようにする。
-  const active = enabled && isSupabaseConfigured() && Boolean(userId);
+  const active = enabled && isBackendConfigured() && Boolean(userId);
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;

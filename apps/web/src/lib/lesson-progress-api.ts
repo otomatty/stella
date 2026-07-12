@@ -1,7 +1,7 @@
 /**
  * レッスン進捗の永続化 (Issue #21 — Neon / Hono API 連携)。
  *
- * 旧 Supabase 直アクセス (lesson_progress テーブル + upsert_lesson_progress RPC) を
+ * 旧 BaaS 直アクセス (lesson_progress テーブル + upsert_lesson_progress RPC) を
  * Hono API (`/api/lesson-progress`) 経由に置き換えた。 認可はサーバ側 (アプリ層) で行う:
  *   - 受講者は自分の進捗のみ read/write
  *   - 講師 / 管理者は同テナントを read (`/api/lesson-progress/tenant`)

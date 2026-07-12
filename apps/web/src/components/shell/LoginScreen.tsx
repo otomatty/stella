@@ -2,17 +2,17 @@ import { toast } from 'sonner';
 import { Google } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Button } from '@/components/ui/button';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { signInWithGoogle } from '@/lib/auth';
 
 interface LoginScreenProps {
-  /** Supabase/API 未設定時の fixtures 用モックログイン。 */
+  /** バックエンド未設定時の fixtures 用モックログイン。 */
   onMockLogin?: () => void;
 }
 
 export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
   const handleGoogleLogin = () => {
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       // fixtures デモ (バックエンド未設定) はモックログインへ。
       if (onMockLogin) {
         onMockLogin();

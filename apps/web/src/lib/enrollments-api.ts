@@ -1,7 +1,7 @@
 /**
  * 受講登録 (Enrollment) のデータアクセス層 (Issue #20 — Neon / Hono API)。
  *
- * 旧 Supabase 直アクセス (RLS 配下) を Hono API 経由に置き換えた。 認可はサーバ側:
+ * 旧 BaaS 直アクセス (RLS 配下) を Hono API 経由に置き換えた。 認可はサーバ側:
  *   - 受講者は自分の enrollment のみ read (`/api/enrollments/mine`)
  *   - instructor/admin は同テナントを read/write
  */

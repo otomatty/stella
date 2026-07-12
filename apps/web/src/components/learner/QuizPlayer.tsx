@@ -6,7 +6,7 @@
  * - 「採点する」 で `submit_quiz_attempt` RPC を呼び、 サーバ採点 + quiz_attempts 保存。
  * - 合格 (passed) で onComplete を呼び、 既存の進捗フローでレッスンを完了化する。
  *
- * Supabase 未設定 / quiz 未作成 / 非 uuid lessonId のときは空状態を表示する。
+ * バックエンド未設定 / quiz 未作成 / 非 uuid lessonId のときは空状態を表示する。
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 import {
   fetchQuizForLearner,
   submitQuizAttempt,
@@ -71,7 +71,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<QuizGradeResult | null>(null);
 
-  const canLoad = isSupabaseConfigured() && UUID_RE.test(lessonId);
+  const canLoad = isBackendConfigured() && UUID_RE.test(lessonId);
 
   useEffect(() => {
     if (!canLoad) {

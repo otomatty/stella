@@ -35,9 +35,9 @@ export interface Lesson {
   status: LessonStatus;
   progress?: number;
 
-  /** Supabase Storage `materials-public` バケット内のパス (video lesson 用) */
+  /** R2 バケット内のパス (video lesson 用) */
   videoPath?: string;
-  /** Supabase Storage `materials-public` バケット内のパス (slides lesson 用) */
+  /** R2 バケット内のパス (slides lesson 用) */
   pdfPath?: string;
   /** `text` レッスンの本文 (将来 CMS 化までは fixtures 直書き) */
   markdown?: string;

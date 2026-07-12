@@ -1,9 +1,9 @@
 /**
- * Supabase Storage 上の `materials-public` バケットへ単一ファイルをアップロードする UI。
+ * R2 へ単一ファイルをアップロードする UI。
  *
  * - 動画 (mp4) / PDF を受け付ける (`kind` で切り替え)
  * - アップロード後のパスを親に通知して、 LessonEditor の `video_path` / `pdf_path` にセットする
- * - 進捗は Supabase JS が公開しないため、 不確定スピナーで表現
+ * - 進捗バーは未対応のため、 不確定スピナーで表現
  */
 
 import { useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Upload, FileText, Video, Loader2, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { buildMaterialPath, uploadMaterial } from "@/lib/cms-api";
-import { getMaterialUrl } from "@/lib/supabase";
+import { getMaterialUrl } from "@/lib/storage";
 
 type Kind = "video" | "pdf";
 

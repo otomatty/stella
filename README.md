@@ -11,7 +11,7 @@
 ```text
 falcon-informal/
 ├── apps/
-│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Cloudflare Pages
+│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Workers Static Assets
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
 │   └── api/                  # @falcon/api — Hono API → Cloudflare Workers
@@ -20,18 +20,17 @@ falcon-informal/
 │   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
 ├── apps/api/drizzle/         # Drizzle マイグレーション (Cloudflare D1)
-├── supabase/                 # 旧 Supabase マイグレーション (移行元の参考・履歴用)
 ├── tsconfig.base.json
 └── package.json              # Bun workspaces
 ```
 
-> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Google OAuth + R2 + Pages**。
+> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Google OAuth + R2 + Workers (API + フロント Static Assets)**。
 > フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
 > 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
 
 ## スタック
 
-- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Cloudflare Pages
+- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Workers Static Assets
 - **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約
 - **Cloudflare D1** — DB (Drizzle ORM / `drizzle-orm/d1`)
 - **Google OAuth + JWT** — `/api/auth/google`, `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_*`
@@ -79,7 +78,8 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    - `https://falcon-api.a-sugai.workers.dev/api/auth/google/callback` (本番)
 3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
-4. Web は `https://falcon-web.pages.dev/auth/callback` で JWT を受け取る (Pages SPA 用に `public/_redirects` あり)。
+4. Web は `https://falcon-web.a-sugai.workers.dev/auth/callback` で JWT を受け取る
+   (SPA ルーティングは Workers `assets.not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
 > [`docs/google-login-troubleshooting.md`](docs/google-login-troubleshooting.md) を参照
@@ -95,7 +95,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    (例: `https://pub-xxxx.r2.dev`)。
 3. アップロードは `/api/materials/upload` 経由 (講師/管理者)。 Workers の R2 バインディングを使うため
    S3 API トークンは不要。
-4. 旧 Supabase Storage `materials-public` バケットの既存オブジェクトを R2 へ移送する。
+4. 既存オブジェクトを R2 へ移送する（必要なら）。
 
 ### 講師添削 (Issue #8)
 
@@ -189,15 +189,16 @@ bun run --filter=@falcon/shared typecheck
 
 ## デプロイ
 
-### フロント — Cloudflare Pages (`apps/web`)
+### フロント — Workers Static Assets (`apps/web`)
 
 ```bash
-bun run deploy:web   # build + wrangler pages deploy
+bun run deploy:web   # build + wrangler deploy
 ```
 
-- **環境変数** (Pages ダッシュボード):
-  - `VITE_SERVER_URL` — Workers API URL
+- **ビルド時環境変数**:
+  - `VITE_SERVER_URL` — API Worker URL
   - `VITE_MATERIALS_BASE_URL` — R2 公開 URL
+- 本番 URL 例: `https://falcon-web.a-sugai.workers.dev`
 
 ### API — Cloudflare Workers (`apps/api`)
 
@@ -228,6 +229,6 @@ bun run deploy
 - **D1** — LMS データ
 - **Workers** — API + Google OAuth 認証
 - **R2** — 教材ファイル
-- **Pages** — フロント
+- **Workers Static Assets** — フロント
 
 詳細: [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md)

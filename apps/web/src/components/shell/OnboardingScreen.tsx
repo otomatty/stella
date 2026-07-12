@@ -2,7 +2,7 @@
  * Magic Link 初回サインイン直後、 `profiles` 行が無い状態で開かれるオンボーディング画面。
  *
  * テナント選択 + 表示名入力で `profiles` 行を作成する (デフォルト role='student')。
- * 管理者 / 講師ロールへの昇格は Supabase SQL Editor から手動で行う前提 (README 参照)。
+ * 管理者 / 講師ロールへの昇格は管理画面または DB から行う。
  */
 
 import { useState } from "react";

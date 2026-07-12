@@ -1,5 +1,5 @@
 /**
- * UsersAdmin のデモ版 (Supabase 未設定時)。 デモデータを read-only で表示する。
+ * UsersAdmin のデモ版 (バックエンド未設定時)。 デモデータを read-only で表示する。
  */
 
 import { Upload, Plus, MoreHorizontal } from '@/lib/icons';
@@ -53,8 +53,8 @@ export function UsersAdminDemo() {
         }
       />
       <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
-        Supabase 未設定のためデモデータを表示しています。 招待 / ロール変更を行うには
-        <code className="mx-1">VITE_SUPABASE_*</code> と API の service-role を設定してください。
+        バックエンド未設定のためデモデータを表示しています。 招待 / ロール変更を行うには
+        <code className="mx-1">VITE_SERVER_URL</code> を設定してください。
       </div>
       <Card className="overflow-hidden">
         <Table>

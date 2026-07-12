@@ -1,8 +1,8 @@
 /**
  * 提出物ストア (Issue #8 — 講師添削ワークフロー)。
  *
- * - Supabase 未設定: localStorage + fixtures シード (デモ / Tweaks)
- * - Supabase 設定済み: `submissions` テーブル (RLS)。 楽観的更新 + 非同期永続化
+ * - バックエンド未設定: localStorage + fixtures シード (デモ / Tweaks)
+ * - バックエンド設定済み: `submissions` テーブル (RLS)。 楽観的更新 + 非同期永続化
  */
 
 import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
@@ -13,7 +13,7 @@ import {
   RUBRIC,
 } from "@/data/fixtures";
 import type { Tenant } from "@/data/types";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 import {
   fetchSubmissionsForTenant,
   insertSubmission,
@@ -37,14 +37,14 @@ const listSnapshotCache = new Map<
   { version: number; snapshot: Submission[] }
 >();
 
-/** Supabase モード: テナント別インメモリキャッシュ */
+/** バックエンドモード: テナント別インメモリキャッシュ */
 const remoteByTenant = new Map<string, Submission[]>();
 type RemoteFetchStatus = "idle" | "loading" | "success" | "error";
 const remoteFetchStatus = new Map<string, RemoteFetchStatus>();
 const remotePatchGen = new Map<string, number>();
 
 function useRemotePersistence(): boolean {
-  return isSupabaseConfigured();
+  return isBackendConfigured();
 }
 
 function emit() {
@@ -329,10 +329,10 @@ export function createSubmission(
     attempt: input.attempt ?? 1,
   };
 
-  // Supabase モードは createSubmissionAsync を使う (同期 API は local のみ)
+  // バックエンドモードは createSubmissionAsync を使う (同期 API は local のみ)
   if (useRemotePersistence()) {
     console.warn(
-      "[submissions-store] createSubmission called in Supabase mode; use createSubmissionAsync",
+      "[submissions-store] createSubmission called in backend mode; use createSubmissionAsync",
     );
     return null;
   }

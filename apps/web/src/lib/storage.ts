@@ -1,11 +1,11 @@
 /**
- * 教材ファイル (PDF / 動画) の URL 解決 (旧 Supabase Storage の置き換え)。
+ * 教材ファイル (PDF / 動画) の URL 解決 (R2 への置き換え)。
  *
  * Cloudflare R2 の公開バケット URL を `VITE_MATERIALS_BASE_URL` に設定する。
  * 例 (r2.dev): https://pub-xxxx.r2.dev
  * 例 (カスタムドメイン): https://materials.example.com
  *
- * 旧実装 (Supabase Storage `materials-public` バケット) と同じく、
+ * パス形式は従来どおり 
  * `getMaterialUrl('web-fundamentals/01-http.pdf')` 形式で参照する。
  */
 

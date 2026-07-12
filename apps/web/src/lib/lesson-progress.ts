@@ -103,9 +103,9 @@ function scheduleFlush(): void {
 }
 
 // ---------------------------------------------------------------
-// リモート同期 (Supabase) — Issue #21
+// リモート同期 (API) — Issue #21
 //
-// Supabase 設定 + ログイン時のみ有効。 `configureRemoteSync` を App が呼ぶと
+// バックエンド設定 + ログイン時のみ有効。 `configureRemoteSync` を App が呼ぶと
 // サーバから進捗を取り込み (LWW マージ)、 以降の更新を debounce で upsert する。
 // 未設定時 (identity === null) は従来通り localStorage のみで動作する。
 // ---------------------------------------------------------------

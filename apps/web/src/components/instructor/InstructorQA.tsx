@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { QAThread } from '@/components/common/QAThread';
 import { useOpenQuestions } from '@/hooks/useQuestions';
 import { createReply, updateQuestionStatus } from '@/lib/qa-api';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { toast } from 'sonner';
 import type { QuestionStatus } from '@falcon/shared/cms/types';
 import type { Tenant } from '@/data/types';
@@ -25,7 +25,7 @@ interface InstructorQAProps {
 
 /** 講師の未返信キュー: open スレッドを一覧し、 その場で回答 / クローズする。 */
 export const InstructorQA = ({ currentUserId }: InstructorQAProps) => {
-  const enabled = isSupabaseConfigured() && Boolean(currentUserId);
+  const enabled = isBackendConfigured() && Boolean(currentUserId);
   const { threads, loading, refetch } = useOpenQuestions(enabled);
 
   const handleReply = async (questionId: string, body: string) => {

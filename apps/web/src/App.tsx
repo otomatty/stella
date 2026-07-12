@@ -7,7 +7,7 @@ import type { ChatContext } from '@falcon/shared/ai/types';
 import { LessonAIProvider } from '@/components/common/LessonAIContext';
 import { useCoursesForTenant, useEnrolledCoursesForTenant } from '@/data/courses-source';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync } from '@/lib/lesson-progress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
@@ -149,7 +149,7 @@ function MainApp() {
   const defaultTenant =
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
 
-  const supabaseEnabled = isSupabaseConfigured();
+  const backendEnabled = isBackendConfigured();
   const { session, profile, loading: authLoading, refreshProfile } = useAuthSession();
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
@@ -175,20 +175,20 @@ function MainApp() {
     null,
   );
 
-  // Supabase が設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
-  const effectiveRole: Role = supabaseEnabled && profile
+  // バックエンドが設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
+  const effectiveRole: Role = backendEnabled && profile
     ? mapProfileRole(profile.role)
     : role;
   const effectiveTenant: Tenant = useMemo(() => {
-    if (supabaseEnabled && profile) {
+    if (backendEnabled && profile) {
       const t = TENANTS.find((t) => t.id === profile.tenant_id);
       if (t) return t;
     }
     return tenant;
-  }, [supabaseEnabled, profile, tenant]);
+  }, [backendEnabled, profile, tenant]);
 
   const effectiveUser: User = useMemo(() => {
-    if (supabaseEnabled && profile) {
+    if (backendEnabled && profile) {
       return {
         name: profile.display_name,
         email: profile.email ?? '',
@@ -196,7 +196,7 @@ function MainApp() {
       };
     }
     return CURRENT_USER;
-  }, [supabaseEnabled, profile]);
+  }, [backendEnabled, profile]);
 
   // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
@@ -212,7 +212,7 @@ function MainApp() {
   const courses =
     effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
-  // 通知センター (Issue #25)。 Supabase 未設定 / 未ログイン時はフック内部で空になる。
+  // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
   const notifications = useNotifications(
     effectiveTenant.id,
@@ -250,10 +250,10 @@ function MainApp() {
     );
   }, [stage, role, tenant, page, showAIBot, reviewSubmissionId]);
 
-  // レッスン進捗のサーバ同期 (Issue #21): Supabase + profile が揃った時のみ有効化。
+  // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
   useEffect(() => {
-    if (supabaseEnabled && session && profile) {
+    if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
@@ -261,7 +261,7 @@ function MainApp() {
     } else {
       configureRemoteSync(null);
     }
-  }, [supabaseEnabled, session, profile]);
+  }, [backendEnabled, session, profile]);
 
   // Backtick toggle for tweaks panel
   useEffect(() => {
@@ -288,7 +288,7 @@ function MainApp() {
       setReviewSubmissionId(null);
       void (async () => {
         try {
-          if (supabaseEnabled) {
+          if (backendEnabled) {
             await authSignOut();
           }
           setStage('login');
@@ -310,11 +310,11 @@ function MainApp() {
       setAiOpen(true);
       setPage('dash');
     }
-  }, [page, supabaseEnabled]);
+  }, [page, backendEnabled]);
 
   // ----- 認証/オンボーディングの分岐 -----
 
-  if (supabaseEnabled) {
+  if (backendEnabled) {
     if (authLoading) {
       return (
         <>
@@ -348,9 +348,9 @@ function MainApp() {
         </>
       );
     }
-    // supabaseEnabled + session + profile: アプリへ進む (stage 関係なし)
+    // backendEnabled + session + profile: アプリへ進む (stage 関係なし)
   } else {
-    // 既存の fixtures フロー (Supabase 未設定時)
+    // 既存の fixtures フロー (バックエンド未設定時)
     if (stage === 'login') {
       return (
         <>
@@ -426,7 +426,7 @@ function MainApp() {
               tenantId: effectiveTenant.id,
               tenantName: effectiveTenant.name,
               currentUserId: session?.user.id ?? null,
-              supabaseEnabled,
+              backendEnabled,
               reviewSubmissionId,
               onOpenReview: setReviewSubmissionId,
               studentName: effectiveUser.name,
@@ -456,8 +456,8 @@ function MainApp() {
       ) : null}
 
       {/* Tweaks panel — backtick toggle.
-          Supabase 設定時は profile が真実なので、 fixtures-flow tweaks は dev only として残す。 */}
-      {tweaksVisible && !supabaseEnabled ? (
+          バックエンド設定時は profile が真実なので、 fixtures-flow tweaks は dev only として残す。 */}
+      {tweaksVisible && !backendEnabled ? (
         <TweaksPanel
           role={role}
           tenant={tenant}
@@ -488,7 +488,7 @@ interface RenderParams {
   tenantId: Tenant['id'];
   tenantName: string;
   currentUserId: string | null;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
   reviewSubmissionId: string | null;
   onOpenReview: (id: string) => void;
   studentName: string;
@@ -507,7 +507,7 @@ function renderPage({
   tenantId,
   tenantName,
   currentUserId,
-  supabaseEnabled,
+  backendEnabled,
   reviewSubmissionId,
   onOpenReview,
   studentName,
@@ -553,7 +553,7 @@ function renderPage({
           studentName={studentName}
           studentInitials={studentInitials}
           tenantName={tenantName}
-          supabaseEnabled={supabaseEnabled}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'qa')
@@ -572,7 +572,7 @@ function renderPage({
           tenantId={tenantId}
           setPage={setPage}
           onOpenReview={onOpenReview}
-          supabaseEnabled={supabaseEnabled}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'review-queue')
@@ -599,14 +599,14 @@ function renderPage({
   }
   if (role === 'admin') {
     if (page === 'dash')
-      return <AdminDashboard tenantId={tenantId} supabaseEnabled={supabaseEnabled} />;
+      return <AdminDashboard tenantId={tenantId} backendEnabled={backendEnabled} />;
     if (page === 'users')
       return (
         <UsersAdmin
           tenantId={tenantId}
           tenantName={tenantName}
           currentUserId={currentUserId}
-          supabaseEnabled={supabaseEnabled}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
@@ -618,13 +618,13 @@ function renderPage({
           key={tenantId}
           tenantId={tenantId}
           currentUserId={currentUserId}
-          supabaseEnabled={supabaseEnabled}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'audit')
-      return <AdminAuditPage tenantId={tenantId} supabaseEnabled={supabaseEnabled} />;
+      return <AdminAuditPage tenantId={tenantId} backendEnabled={backendEnabled} />;
     if (page === 'orgs')
-      return <AdminOrganizationsPage supabaseEnabled={supabaseEnabled} />;
+      return <AdminOrganizationsPage backendEnabled={backendEnabled} />;
     if (page === 'report')
       return <AdminGeneric page={page} />;
   }

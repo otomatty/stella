@@ -1,7 +1,7 @@
 /**
  * 通知・お知らせのデータアクセス層 (Issue #25 — Neon / Hono API)。
  *
- * 旧 Supabase 直アクセス (RLS + fan-out トリガー) を Hono API 経由に置き換えた。
+ * 旧 BaaS 直アクセス (RLS + fan-out トリガー) を Hono API 経由に置き換えた。
  * author の確定・受講者への fan-out・本人限定の既読化はすべてサーバ側で行う。
  */
 

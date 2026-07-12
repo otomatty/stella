@@ -28,7 +28,7 @@ interface InstructorDashboardProps {
   tenantId: Tenant['id'];
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
 const AVATAR_TONES: AvatarTone[] = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
@@ -65,15 +65,15 @@ export const InstructorDashboard = ({
   tenantId,
   setPage,
   onOpenReview,
-  supabaseEnabled,
+  backendEnabled,
 }: InstructorDashboardProps) => {
   const { submissions, pendingCount, aiReadyCount } = useSubmissions(tenantId);
   const pending = submissions.filter((s) => s.status === 'pending');
 
-  const { overview } = useInstructorOverview(tenantId, supabaseEnabled);
-  const { threads: openThreads } = useOpenQuestions(supabaseEnabled);
+  const { overview } = useInstructorOverview(tenantId, backendEnabled);
+  const { threads: openThreads } = useOpenQuestions(backendEnabled);
 
-  // 実データ (Supabase 設定時) と fixtures フォールバックを切り替える。
+  // 実データ (バックエンド設定時) と fixtures フォールバックを切り替える。
   const openQuestions = overview ? overview.open_questions : 3;
   const overdueLearners = overview ? overview.overdue_learners : 4;
   const totalLearners = overview ? overview.total_learners : 42;
@@ -333,7 +333,7 @@ interface UnansweredRow {
   t: string;
 }
 
-// Supabase 未設定 (dev fixtures フロー) のフォールバック表示。
+// バックエンド未設定 (dev fixtures フロー) のフォールバック表示。
 const STUDENT_PROG_DEMO: StudentRow[] = [
   { n: '田中 翔太', c: 'c1', p: 62, course: 'Web開発基礎', s: '順調', sev: 'success' },
   { n: '佐藤 美咲', c: 'c2', p: 38, course: 'Web開発基礎', s: 'やや遅延', sev: 'warning' },

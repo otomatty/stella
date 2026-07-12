@@ -1,11 +1,12 @@
 # Cloudflare スタック (#cloudflare)
 
 Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行した。
+フロントは Cloudflare Pages から **Workers Static Assets** へ移行済み。
 
 ## 目標アーキテクチャ
 
-```
-[ブラウザ apps/web]  → Cloudflare Pages
+```text
+[ブラウザ apps/web]  → Cloudflare Workers (Static Assets / SPA)
    │  fetch (Authorization: Bearer = Workers JWT)
    ▼
 [Hono API apps/api]  → Cloudflare Workers
@@ -21,7 +22,7 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 - **DB 層**: Drizzle ORM + D1 バインディング (`drizzle-orm/d1`)
 - **認証**: Google OAuth (`/api/auth/google`) + JWT (`AUTH_JWT_SECRET`)
 - **認可**: Hono アプリ層 (旧 RLS 相当)
-- **フロント**: Cloudflare Pages (`apps/web/wrangler.toml`)
+- **フロント**: Workers Static Assets (`apps/web/wrangler.toml` の `[assets]`)
 
 ## ローカル開発
 
@@ -48,7 +49,7 @@ bun run dev       # :5173
 |---------|------|----------|
 | D1 `falcon-db` | ✅ マイグレーション + seed 済 | `5c22102a-6c90-4433-b744-4f51f0f608f9` |
 | Worker `falcon-api` | ✅ デプロイ済 | https://falcon-api.a-sugai.workers.dev |
-| Pages `falcon-web` | ✅ デプロイ済 | https://falcon-web.pages.dev |
+| Worker `falcon-web` (Static Assets) | ✅ Pages から移行 | https://falcon-web.a-sugai.workers.dev |
 | Secret `AUTH_JWT_SECRET` | ✅ 設定済 | (wrangler secret) |
 | R2 `falcon-materials-public` | ✅ 作成 + 公開 URL 有効 | https://pub-bd7872ac470e4c649d6bc3cc86ac9ca7.r2.dev |
 
@@ -79,15 +80,13 @@ wrangler r2 bucket dev-url get falcon-materials-public  # → VITE_MATERIALS_BAS
 # 5. API デプロイ
 bun run deploy:api
 
-# 6. Web (Pages) — 初回は project 作成
+# 6. Web (Workers Static Assets)
 cd apps/web
-CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
-  bunx wrangler pages project create falcon-web --production-branch main  # 初回のみ
-
 VITE_SERVER_URL=https://falcon-api.a-sugai.workers.dev \
 VITE_MATERIALS_BASE_URL=https://pub-bd7872ac470e4c649d6bc3cc86ac9ca7.r2.dev \
 CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
-  bun run deploy:web
+  bun run deploy
+# → https://falcon-web.a-sugai.workers.dev
 ```
 
 ### 環境変数
@@ -97,8 +96,8 @@ CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
 | Workers Secret | `AUTH_JWT_SECRET` | JWT 署名 |
 | Workers Secret / var | `GOOGLE_CLIENT_SECRET` / `GOOGLE_CLIENT_ID` | Google OAuth |
 | Workers var | `ALLOWED_ORIGINS` | CORS |
-| Web (Pages) | `VITE_SERVER_URL` | API URL |
-| Web (Pages) | `VITE_MATERIALS_BASE_URL` | R2 公開 URL |
+| Web (build-time) | `VITE_SERVER_URL` | API URL |
+| Web (build-time) | `VITE_MATERIALS_BASE_URL` | R2 公開 URL |
 
 ## 移行元 (Neon) からの差分
 
@@ -108,5 +107,6 @@ CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
 | Auth | Neon Auth JWKS | Google OAuth + HS256 JWT |
 | Storage | R2 (既に移行済) | R2 |
 | 招待 | Neon admin API | profiles + auth_users (Google ログイン待ち) |
+| フロント配信 | Cloudflare Pages | Workers Static Assets |
 
 旧 `docs/neon-migration.md` は履歴参考。

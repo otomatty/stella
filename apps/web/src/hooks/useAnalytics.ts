@@ -1,7 +1,7 @@
 /**
  * 分析ダッシュボード用 Hook (Issue #28)。
  *
- * Supabase 未設定時は集計を行わず enabled=false で空を返す (呼び出し側が
+ * バックエンド未設定時は集計を行わず enabled=false で空を返す (呼び出し側が
  * fixtures デモ表示にフォールバックする)。
  */
 

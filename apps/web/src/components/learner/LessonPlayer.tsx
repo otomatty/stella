@@ -30,7 +30,7 @@ import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useLessonQuestions } from '@/hooks/useQuestions';
 import { createQuestion, createReply } from '@/lib/qa-api';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { QAThread } from '@/components/common/QAThread';
 import { QuestionComposer } from '@/components/common/QuestionComposer';
 import type { QuestionWithReplies } from '@falcon/shared/cms/types';
@@ -110,10 +110,10 @@ export const LessonPlayer = ({
     [allLessons, activeLesson],
   );
 
-  // Q&A はレッスンが CMS の実体 (uuid) かつ Supabase 設定済みのときのみ永続化する。
+  // Q&A はレッスンが CMS の実体 (uuid) かつ バックエンド設定済みのときのみ永続化する。
   // fixtures のレッスン (id='l10' 等) では空状態を表示し、 モックには戻さない。
   const qaEnabled =
-    isSupabaseConfigured() && UUID_RE.test(lessonObj?.id ?? '');
+    isBackendConfigured() && UUID_RE.test(lessonObj?.id ?? '');
   const {
     threads: qaThreads,
     loading: qaLoading,

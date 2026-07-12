@@ -1,5 +1,5 @@
 /**
- * 教材アップロード API (旧 Supabase Storage 直アップロード + storage policy の置き換え)。
+ * 教材アップロード API (旧 Storage 直アップロード + storage policy の置き換え)。
  *
  * Cloudflare R2 バインディング (`MATERIALS_BUCKET`) 経由で PUT する。
  * 旧 storage policy (tenant/{tenant_id}/... プレフィクス + staff のみ) をアプリ層で再現する。

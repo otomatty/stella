@@ -9,8 +9,8 @@ account_id = "0a0dd103e779842ba2c67cbde20574a0"
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 GOOGLE_CLIENT_ID = "774089873889-iq12o3cq3ded2iu7aa15lru5753bo5a1.apps.googleusercontent.com"
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
-INVITE_REDIRECT_URL = "https://falcon-web.pages.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
+INVITE_REDIRECT_URL = "https://falcon-web.a-sugai.workers.dev"
 
 # AI エンドポイント (chat / review-draft) のレート制限。
 [[unsafe.bindings]]

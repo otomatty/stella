@@ -8,7 +8,7 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@falcon/web` | `apps/web` | Vite + React frontend → Cloudflare Pages (port 5173 dev) |
+| `@falcon/web` | `apps/web` | Vite + React frontend → Workers Static Assets (port 5173 dev) |
 | `@falcon/api` | `apps/api` | Hono API on Cloudflare Workers (port 8787) |
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |

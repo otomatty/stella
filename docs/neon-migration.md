@@ -1,4 +1,8 @@
-# Supabase → Neon 移行 (#neon)
+# Supabase → Neon 移行 (#neon) — 履歴
+
+> **注**: その後 Neon から Cloudflare D1 へ再移行済み (`docs/cloudflare-stack.md`)。
+> 旧 `supabase/` ディレクトリと互換シム (`isSupabaseConfigured`) は削除済み。
+> 現行のフロント判定は `isBackendConfigured()` (`apps/web/src/lib/backend.ts`)。
 
 Supabase の BaaS 的な使い方 (PostgREST 直叩き + RLS + RPC + Auth + Storage) をやめ、
 **Neon Postgres + Neon Auth + Neon File Storage + Hono API** へ移行する。
@@ -56,11 +60,13 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
 - 教材アップロード: **materials** (`/api/materials/upload`, Cloudflare R2 Workers バインディング)
 - ドメイン: **admin-users / organizations** (`/api/admin/*`, ロール変更 / 無効化 / 組織 CRUD)
 
-### ✅ Supabase 依存の完全撤去
+### ✅ Supabase 依存の完全撤去（当時の Neon 移行時点）
 - `@supabase/supabase-js` を apps/web / apps/api の依存から削除。
-- `apps/api/src/lib/supabase-admin.ts` / `routes/admin-users.ts` / `routes/organizations.ts` を削除。
-- `apps/web/src/lib/supabase.ts` は互換シム化 (`isSupabaseConfigured` = Neon Auth + API 設定済み、
-  `getMaterialUrl` は Cloudflare R2 公開 URL へ委譲)。 ソース内に `@supabase` の import は無し。
+- `apps/api/src/lib/supabase-admin.ts` 等を削除。
+- 当時は `apps/web/src/lib/supabase.ts` を互換シム化していた
+  (`isSupabaseConfigured` = Neon Auth + API 設定済み、 `getMaterialUrl` は R2 へ委譲)。
+- **その後の Cloudflare 移行でシム自体も削除**し、 現行は `isBackendConfigured()`
+  (`apps/web/src/lib/backend.ts`) を使う。 詳細は冒頭の注を参照。
 
 ### ⚠️ 1 点だけ外部 API 依存が残る: ユーザー招待
 - **ロール変更 / 無効化 / 一覧 / 組織 CRUD は Neon で完全動作**する。

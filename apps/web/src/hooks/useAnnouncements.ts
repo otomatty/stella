@@ -1,7 +1,7 @@
 /**
  * お知らせ一覧を取得する Hook (Issue #25)。
  *
- * - Supabase 設定時: `announcements` テーブルから同テナントのお知らせを公開順で取得。
+ * - バックエンド設定時: `announcements` テーブルから同テナントのお知らせを公開順で取得。
  * - 未設定時 (dev fallback): fixtures の ANNOUNCEMENTS を AnnouncementRow 形へ写像して返す
  *   (ダッシュボードのダミー表示を壊さないため)。 DB 取得に失敗した場合も fixtures へ退避する。
  */
@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AnnouncementRow } from "@falcon/shared/cms/types";
 import { listAnnouncements } from "@/lib/notifications-api";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 import { ANNOUNCEMENTS } from "@/data/fixtures";
 
 export interface UseAnnouncementsResult {
@@ -52,7 +52,7 @@ export function useAnnouncements(
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!enabled || !isSupabaseConfigured()) {
+    if (!enabled || !isBackendConfigured()) {
       setAnnouncements(fixtureAnnouncements(tenantId));
       setSource("fixtures");
       setError(null);

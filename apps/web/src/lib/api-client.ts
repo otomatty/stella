@@ -4,7 +4,7 @@
  * Neon 移行後、 フロントは DB を直接叩かず全てこのクライアント経由で API を呼ぶ。
  * Neon Auth のアクセストークンを Authorization: Bearer に自動で載せる。
  *
- * 旧 Supabase クライアントの `.from().select()` / `.rpc()` を置き換える基盤。
+ * 旧 BaaS クライアントの `.from().select()` / `.rpc()` を置き換える基盤。
  */
 
 import { getAccessToken } from "./auth-client";

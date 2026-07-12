@@ -9,7 +9,7 @@ import {
   createSubmission,
   createSubmissionAsync,
 } from '@/lib/submissions-store';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import type { Tenant } from '@/data/types';
 
 interface AssignmentSubmitPanelProps {
@@ -56,12 +56,12 @@ export function AssignmentSubmitPanel({
         codeLines: code.split('\n'),
         priority: 'normal' as const,
       };
-      const created = isSupabaseConfigured()
+      const created = isBackendConfigured()
         ? await createSubmissionAsync(tenantId, payload)
         : createSubmission(tenantId, payload);
       if (!created) {
         toast.error(
-          isSupabaseConfigured()
+          isBackendConfigured()
             ? '提出の保存に失敗しました。ログイン状態とネットワークを確認してください。'
             : '提出の保存に失敗しました。ストレージ容量を確認してください。',
         );

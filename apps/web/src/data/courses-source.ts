@@ -1,7 +1,7 @@
 /**
  * 受講者 UI 用のコース一覧ソース。
  *
- * - Supabase が設定されていて DB に行があれば DB から読む
+ * - バックエンドが設定されていて DB に行があれば DB から読む
  * - それ以外 (未設定 / クエリ失敗 / 空) は既存 fixtures にフォールバックする
  *
  * 受講者 UI (`CourseList` / `CourseDetail` / `LessonPlayer`) は `Course[]` 型を
@@ -16,7 +16,7 @@ import {
 } from "@falcon/shared/cms/types";
 import type { Course, Tenant } from "@/data/types";
 import { COACH_COURSES, SES_COURSES } from "@/data/fixtures";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";
 
@@ -35,7 +35,7 @@ export function useCoursesForTenant(
   enabled = true,
 ): UseCoursesResult {
   const [courses, setCourses] = useState<Course[]>(() => fixturesFor(tenantId));
-  const [loading, setLoading] = useState(isSupabaseConfigured());
+  const [loading, setLoading] = useState(isBackendConfigured());
   const [source, setSource] = useState<"db" | "fixtures">("fixtures");
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function useCoursesForTenant(
       setLoading(false);
       return;
     }
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       setCourses(fixturesFor(tenantId));
       setSource("fixtures");
       setLoading(false);
@@ -101,8 +101,8 @@ export function useCoursesForTenant(
  * enrollment ベースで自分が受講登録されたコースのみを返す。 各コースには enrollment 由来の
  * 期限 (`dueAt`) / 必須 (`required`) / 完了 (`completed`) を実データで載せる。
  *
- * - Supabase 未設定: 従来どおり fixtures をそのまま返す (デモ用)。
- * - Supabase 設定済み: enrollment → コース詳細を引いてマージする。 enrollment が無ければ空。
+ * - バックエンド未設定: 従来どおり fixtures をそのまま返す (デモ用)。
+ * - バックエンド設定済み: enrollment → コース詳細を引いてマージする。 enrollment が無ければ空。
  *   draft コースの enrollment は courses RLS で詳細取得が null になり、 受講者には現れない。
  */
 export function useEnrolledCoursesForTenant(
@@ -111,7 +111,7 @@ export function useEnrolledCoursesForTenant(
   enabled = true,
 ): UseCoursesResult {
   const [courses, setCourses] = useState<Course[]>(() => fixturesFor(tenantId));
-  const [loading, setLoading] = useState(isSupabaseConfigured());
+  const [loading, setLoading] = useState(isBackendConfigured());
   const [source, setSource] = useState<"db" | "fixtures">("fixtures");
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export function useEnrolledCoursesForTenant(
       setLoading(false);
       return;
     }
-    if (!isSupabaseConfigured()) {
+    if (!isBackendConfigured()) {
       setCourses(fixturesFor(tenantId));
       setSource("fixtures");
       setLoading(false);

@@ -1,7 +1,7 @@
 /**
  * PDF スライドビューア (react-pdf ベース)。
  *
- * - Supabase Storage の `materials-public` バケットから PDF を取得
+ * - R2 公開バケットから PDF を取得
  * - ページ送り (ボタン / キーボード)、 ズーム、 フルスクリーン、 サムネペイン
  * - 閲覧ページを `useLessonProgress` に記録、 90% で auto complete
  * - 環境未設定 / 取得失敗時は fallback UI を表示
@@ -36,7 +36,8 @@ import {
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { getMaterialUrl, isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
+import { getMaterialUrl } from "@/lib/storage";
 import { useLessonProgress } from '@/hooks/useLessonProgress';
 import { cn } from '@/lib/utils';
 
@@ -85,7 +86,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   const completedRef = useRef<boolean>(entry?.completed === true);
 
   const url = useMemo<string | null>(() => {
-    if (!isSupabaseConfigured()) return null;
+    if (!isBackendConfigured()) return null;
     try {
       return getMaterialUrl(pdfPath);
     } catch {
@@ -218,7 +219,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
     return (
       <FallbackCard
         title="教材が設定されていません"
-        body="Supabase の環境変数が未設定です。 apps/web/.env.local を確認してください。"
+        body="VITE_SERVER_URL / VITE_MATERIALS_BASE_URL を apps/web/.env.local に設定してください。"
       />
     );
   }

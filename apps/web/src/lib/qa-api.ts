@@ -1,7 +1,7 @@
 /**
  * Q&A・ディスカッションのデータアクセス層 (Issue #24 — Neon / Hono API)。
  *
- * 旧 Supabase 直アクセス (RLS + DB トリガー) を Hono API 経由に置き換えた。
+ * 旧 BaaS 直アクセス (RLS + DB トリガー) を Hono API 経由に置き換えた。
  * author_id / 表示名 / is_instructor の確定と、 講師返信時の 'answered' 自動更新は
  * サーバ側 (アプリ層) で行う。
  */

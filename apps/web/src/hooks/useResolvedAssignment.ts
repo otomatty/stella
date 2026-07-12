@@ -1,20 +1,20 @@
 /**
  * Assignment を id から解決する Hook。
  *
- * 解決順 (Supabase が設定されている場合):
+ * 解決順 (バックエンド設定時):
  *  1. 初期表示用に `@falcon/shared` のバンドル版を fast-path として返す (あれば)
- *  2. その後 async で Supabase の `assignments` を問い合わせ、 ヒットしたら上書き
+ *  2. その後 async で API の assignments を問い合わせ、 ヒットしたら上書き
  *     — CMS で編集 / 新規作成されたバージョンを優先する (#10 — Codex P2)
  *  3. DB に無ければ shared の値を保持。 shared にも無ければ null
  *
- * Supabase 未設定時は 1 だけで完了 (従来通り fixtures 動作)。
+ * バックエンド未設定時は 1 だけで完了 (従来通り fixtures 動作)。
  */
 
 import { useEffect, useState } from "react";
 import type { Assignment } from "@falcon/shared/types";
 import { findAssignment } from "@falcon/shared/assignments";
 import { mapAssignmentRowToAssignment } from "@falcon/shared/cms/types";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isBackendConfigured } from "@/lib/backend";
 import { getAssignmentRow } from "@/lib/cms-api";
 
 interface Result {
@@ -24,17 +24,17 @@ interface Result {
 }
 
 export function useResolvedAssignment(id: string): Result {
-  const supabaseEnabled = isSupabaseConfigured();
+  const backendEnabled = isBackendConfigured();
   const sharedFallback = findAssignment(id) ?? null;
 
   const [assignment, setAssignment] = useState<Assignment | null>(sharedFallback);
-  // shared にも DB にも無い可能性があるので、 supabase が有効で shared に無い時のみ「読込中」を出す。
-  const [loading, setLoading] = useState(supabaseEnabled && !sharedFallback);
+  // shared にも DB にも無い可能性があるので、 バックエンドが有効で shared に無い時のみ「読込中」を出す。
+  const [loading, setLoading] = useState(backendEnabled && !sharedFallback);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fallback = findAssignment(id) ?? null;
-    if (!supabaseEnabled) {
+    if (!backendEnabled) {
       setAssignment(fallback);
       setLoading(false);
       setError(null);
@@ -71,7 +71,7 @@ export function useResolvedAssignment(id: string): Result {
     return () => {
       cancelled = true;
     };
-  }, [id, supabaseEnabled]);
+  }, [id, backendEnabled]);
 
   return { assignment, loading, error };
 }

@@ -5,7 +5,7 @@
  * 一覧表示する。 基準達成かつ未発行の受講者は、 この画面から修了証を承認発行できる。
  *
  * データは get_course_gradebook RPC (staff のみ / security definer) から取得する。
- * Supabase 未設定時は実データが無いため、 その旨を案内する。
+ * バックエンド未設定時は実データが無いため、 その旨を案内する。
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ import type {
   EnrollmentStatus,
   GradebookEntry,
 } from '@falcon/shared/cms/types';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { fetchCourseGradebook, issueCertificate } from '@/lib/certificates-api';
 import { downloadCsv, toCsv } from '@/lib/csv';
 
@@ -41,10 +41,10 @@ export const Gradebook = ({ courses }: GradebookProps) => {
   const [loading, setLoading] = useState(false);
   const [issuingUser, setIssuingUser] = useState<string | null>(null);
 
-  const supabaseEnabled = isSupabaseConfigured();
+  const backendEnabled = isBackendConfigured();
 
   const load = useCallback(async () => {
-    if (!supabaseEnabled || !courseId) {
+    if (!backendEnabled || !courseId) {
       setData(null);
       return;
     }
@@ -58,13 +58,13 @@ export const Gradebook = ({ courses }: GradebookProps) => {
     } finally {
       setLoading(false);
     }
-  }, [supabaseEnabled, courseId]);
+  }, [backendEnabled, courseId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // courses は Supabase 設定時に非同期で到着する (初期は fixtures / 空)。
+  // courses は バックエンド設定時に非同期で到着する (初期は fixtures / 空)。
   // 選択中の courseId が未設定 / 現在の一覧に無い場合は先頭コースへ補正し、
   // ロード前の fixture id のまま台帳取得が空振りし続けるのを防ぐ。
   useEffect(() => {
@@ -161,7 +161,7 @@ export const Gradebook = ({ courses }: GradebookProps) => {
         }
       />
 
-      {!supabaseEnabled ? (
+      {!backendEnabled ? (
         <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
           成績台帳はバックエンド (Neon) 接続時に実データで動作します (現在はデモ表示のため利用できません)。
         </div>

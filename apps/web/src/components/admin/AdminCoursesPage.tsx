@@ -1,7 +1,7 @@
 /**
  * `/admin/courses` — コース一覧 + 編集画面 (内部 state でルーティング)。
  *
- * AdminGeneric の courses 分岐の置き換え。 fixtures ではなく Supabase の courses テーブルを読む。
+ * AdminGeneric の courses 分岐の置き換え。 fixtures ではなく DB の courses テーブルを読む。
  */
 
 import { useState } from "react";

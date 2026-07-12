@@ -1,9 +1,9 @@
 /**
  * `/admin/users` — ユーザー管理 (Issue #22)。
  *
- * Supabase 設定時: 同テナントの `profiles` を実データで一覧し、 招待 (単体 / CSV 一括) /
+ * バックエンド設定時: 同テナントの `profiles` を実データで一覧し、 招待 (単体 / CSV 一括) /
  * ロール変更 / 無効化を service-role API 経由で行う。
- * Supabase 未設定時 (dev fixtures フロー): デモデータを read-only で表示する。
+ * バックエンド未設定時 (dev fixtures フロー): デモデータを read-only で表示する。
  *
  * 招待ダイアログ / デモ版 / 共有小物は users-admin/ 配下に分割。
  */
@@ -49,16 +49,16 @@ interface Props {
   tenantId: string;
   tenantName: string;
   currentUserId: string | null;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
 export function UsersAdmin({
   tenantId,
   tenantName,
   currentUserId,
-  supabaseEnabled,
+  backendEnabled,
 }: Props) {
-  if (!supabaseEnabled) {
+  if (!backendEnabled) {
     return <UsersAdminDemo />;
   }
   return (

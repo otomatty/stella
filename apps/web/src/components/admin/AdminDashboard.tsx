@@ -49,11 +49,11 @@ import {
 
 interface Props {
   tenantId: string;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
-export const AdminDashboard = ({ tenantId, supabaseEnabled }: Props) => {
-  if (!supabaseEnabled) {
+export const AdminDashboard = ({ tenantId, backendEnabled }: Props) => {
+  if (!backendEnabled) {
     return <DashboardDemo />;
   }
   return <DashboardLive tenantId={tenantId} />;
@@ -367,7 +367,7 @@ function EnrollmentChart({ trend }: { trend: AnalyticsTrendPoint[] }) {
 }
 
 // ---------------------------------------------------------------
-// dev fixtures フロー用のデモ表示 (Supabase 未設定時)。
+// dev fixtures フロー用のデモ表示 (バックエンド未設定時)。
 // ---------------------------------------------------------------
 
 function DashboardDemo() {

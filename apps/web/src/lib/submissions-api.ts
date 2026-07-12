@@ -1,5 +1,5 @@
 /**
- * 提出物の Supabase 永続化 (Issue #8 — P3 DB 連携)。
+ * 提出物の API 永続化 (Issue #8 — P3 DB 連携)。
  *
  * RLS: 受講者は自分の提出のみ insert/select。 講師・管理者はテナント内を select/update。
  */

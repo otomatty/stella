@@ -4,7 +4,7 @@
  * 管理者がコースを選び、 同テナントの受講者に対し割当 / 解除 / 期限・必須の設定を行う。
  * 割当は RLS 配下で enrollments テーブルへ直接 write する (service-role API は不要)。
  *
- * Supabase 未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
+ * バックエンド未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
  */
 
 import { useMemo, useState } from "react";
@@ -66,15 +66,15 @@ function fromDateInput(value: string): string | null {
 interface Props {
   tenantId: string;
   currentUserId: string | null;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
 export function AdminEnrollmentsPage({
   tenantId,
   currentUserId,
-  supabaseEnabled,
+  backendEnabled,
 }: Props) {
-  if (!supabaseEnabled) {
+  if (!backendEnabled) {
     return <EnrollmentsDemoNotice />;
   }
   return <EnrollmentsLive tenantId={tenantId} currentUserId={currentUserId} />;

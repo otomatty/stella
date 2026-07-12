@@ -40,7 +40,7 @@ export const LearnerDashboard = ({ setPage, courses, tenantId }: LearnerDashboar
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   const current = active[0];
 
-  // お知らせを実データ化 (Issue #25)。 Supabase 未設定時は fixtures へフォールバックする。
+  // お知らせを実データ化 (Issue #25)。 バックエンド未設定時は fixtures へフォールバックする。
   const { announcements } = useAnnouncements(tenantId);
   const now = Date.now();
   const newCount = announcements.reduce(

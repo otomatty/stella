@@ -1,7 +1,7 @@
 /**
  * CMS データアクセス層 (Neon / Hono API)。
  *
- * 旧 Supabase 直アクセス (RLS + reorder RPC + Storage アップロード) を Hono API
+ * 旧 BaaS 直アクセス (RLS + reorder RPC + Storage アップロード) を Hono API
  * (`/api/cms/*`, `/api/materials/*`) 経由に置き換えた。 認可はサーバ側 (staff / 同テナント)。
  * 戻り値は DB 行 (snake_case) のままで、 マッパー (@falcon/shared/cms/types) は呼び出し側で適用する。
  */

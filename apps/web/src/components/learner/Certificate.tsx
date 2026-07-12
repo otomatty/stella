@@ -1,12 +1,12 @@
 /**
  * 受講者の修了証ページ (Issue #26)。
  *
- * - Supabase 設定 + ログイン時: 実データで動作する。
+ * - バックエンド設定 + ログイン時: 実データで動作する。
  *   - 発行済みの修了証を一覧表示 (印刷 / 公開検証ページへのリンク付き)。
  *   - 受講中コースの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示し、
  *     基準達成かつ未発行のコースは受講者自身が「発行する」ボタンで発行できる
  *     (コースが auto_issue_certificate のときも、 ここでの発行が実体化トリガになる)。
- * - Supabase 未設定 (fixtures デモ) 時: 従来どおり静的テンプレートを表示する。
+ * - バックエンド未設定 (fixtures デモ) 時: 従来どおり静的テンプレートを表示する。
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -36,7 +36,7 @@ interface CertificatePageProps {
   studentName: string;
   studentInitials: string;
   tenantName: string;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
 export const CertificatePage = ({
@@ -45,9 +45,9 @@ export const CertificatePage = ({
   studentName,
   studentInitials,
   tenantName,
-  supabaseEnabled,
+  backendEnabled,
 }: CertificatePageProps) => {
-  if (!supabaseEnabled || !currentUserId) {
+  if (!backendEnabled || !currentUserId) {
     return <DemoCertificate name={studentName} initials={studentInitials} />;
   }
   return (
@@ -327,7 +327,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 // ---------------------------------------------------------------
-// fixtures デモ版 (Supabase 未設定時)
+// fixtures デモ版 (バックエンド未設定時)
 // ---------------------------------------------------------------
 
 function DemoCertificate({ name, initials }: { name: string; initials: string }) {

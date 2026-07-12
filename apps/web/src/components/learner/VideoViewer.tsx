@@ -1,7 +1,7 @@
 /**
  * HTML5 動画プレイヤーラッパ。
  *
- * - Supabase Storage の mp4 を直接 src に渡し、 ネイティブ controls を活用
+ * - R2 上の mp4 を直接 src に渡し、 ネイティブ controls を活用
  * - 再生速度プリセット (0.75〜2.0x) を独自 UI で
  * - キーボードショートカット (Space / ←→ / J L / M / F)
  * - 前回視聴位置からの自動再開 (`watchedSec`)
@@ -23,7 +23,8 @@ import {
   Check,
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
-import { getMaterialUrl, isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
+import { getMaterialUrl } from "@/lib/storage";
 import { useLessonProgress } from '@/hooks/useLessonProgress';
 import { flushNow } from '@/lib/lesson-progress';
 import { cn } from '@/lib/utils';
@@ -57,7 +58,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
   const resumedRef = useRef(false);
 
   const url = useMemo<string | null>(() => {
-    if (!isSupabaseConfigured()) return null;
+    if (!isBackendConfigured()) return null;
     try {
       return getMaterialUrl(videoPath);
     } catch {
@@ -258,7 +259,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
           <div>
             <div className="text-[13.5px] font-semibold">教材が設定されていません</div>
             <div className="text-[12.5px] text-ink-3 mt-1">
-              Supabase の環境変数が未設定です。 apps/web/.env.local を確認してください。
+              VITE_SERVER_URL / VITE_MATERIALS_BASE_URL を apps/web/.env.local に設定してください。
             </div>
           </div>
         </div>

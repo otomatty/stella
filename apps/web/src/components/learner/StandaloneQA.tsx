@@ -14,7 +14,7 @@ import { QAThread } from '@/components/common/QAThread';
 import { QuestionComposer } from '@/components/common/QuestionComposer';
 import { useMyQuestions } from '@/hooks/useQuestions';
 import { createQuestion, createReply } from '@/lib/qa-api';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isBackendConfigured } from "@/lib/backend";
 import { toast } from 'sonner';
 import type { Course, Tenant } from '@/data/types';
 
@@ -30,7 +30,7 @@ export const StandaloneQA = ({
   currentUserId,
   courses,
 }: StandaloneQAProps) => {
-  const enabled = isSupabaseConfigured() && Boolean(currentUserId);
+  const enabled = isBackendConfigured() && Boolean(currentUserId);
   const { threads, loading, refetch } = useMyQuestions(currentUserId, enabled);
 
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');

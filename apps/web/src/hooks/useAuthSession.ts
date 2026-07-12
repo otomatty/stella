@@ -1,10 +1,10 @@
 /**
- * Supabase Auth セッションと profiles 行を一括で扱う React Hook。
+ * 認証セッションと profiles 行を一括で扱う React Hook。
  *
  * - 初回: `getSession()` でセッション復元 → profile を取得
  * - 変化: `subscribeToAuth` のイベントで session を更新し、 関連する profile を再取得
  *
- * Supabase 未設定時は `loading: false, session: null, profile: null` を返し、
+ * バックエンド未設定時は `loading: false, session: null, profile: null` を返し、
  * 上位コンポーネントが fixtures フローへフォールバックできるようにする。
  */
 

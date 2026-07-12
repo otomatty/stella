@@ -5,7 +5,7 @@
  * 絞り込み、 表示中の内容を CSV 出力できる。 audit_logs は append-only (read 専用) のため
  * このページは閲覧とエクスポートのみを行う。
  *
- * Supabase 未設定時 (dev fixtures フロー): DB が無いため、 デモ用の固定サンプルを表示する。
+ * バックエンド未設定時 (dev fixtures フロー): DB が無いため、 デモ用の固定サンプルを表示する。
  */
 
 import { useMemo, useState } from "react";
@@ -80,11 +80,11 @@ function dateInputToIso(value: string, endOfDay: boolean): string | null {
 
 interface Props {
   tenantId: string;
-  supabaseEnabled: boolean;
+  backendEnabled: boolean;
 }
 
-export function AdminAuditPage({ tenantId, supabaseEnabled }: Props) {
-  if (!supabaseEnabled) {
+export function AdminAuditPage({ tenantId, backendEnabled }: Props) {
+  if (!backendEnabled) {
     return <AuditDemo />;
   }
   return <AuditLive tenantId={tenantId} />;
@@ -356,8 +356,8 @@ function AuditDemo() {
     <>
       <PageHeader title="監査ログ" sub="認証・権限変更・削除操作 — 1年以上保管" />
       <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
-        Supabase 未設定のため、 以下はデモ表示です。 実データの記録・閲覧・CSV出力には
-        <code className="mx-1">VITE_SUPABASE_*</code> を設定してください。
+        バックエンド未設定のため、 以下はデモ表示です。 実データの記録・閲覧・CSV出力には
+        <code className="mx-1">VITE_SERVER_URL</code> を設定してください。
       </div>
       <Card className="overflow-hidden">
         <Table>

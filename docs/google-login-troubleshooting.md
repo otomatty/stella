@@ -5,7 +5,7 @@
 ([`docs/cloudflare-stack.md`](cloudflare-stack.md) 参照)。
 
 ```text
-[Web (Pages)] --VITE_SERVER_URL--> [API (Workers) /api/auth/google]
+[Web (Workers Static Assets)] --VITE_SERVER_URL--> [API (Workers) /api/auth/google]
    --> Google 同意画面 --> /api/auth/google/callback
    --> JWT 発行 --> Web /auth/callback#access_token=... --> ログイン完了
 ```
@@ -28,9 +28,9 @@ curl -s https://<api-host>/api/healthz | jq
 
 `googleOAuthConfigured` / `jwtConfigured` が `false` の場合は **手順 3 / 4** の Secrets が未設定。
 
-## 1. フロントの `VITE_SERVER_URL` (Pages)
+## 1. フロントの `VITE_SERVER_URL` (ビルド時)
 
-- Cloudflare Pages の環境変数 `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
+- デプロイ時の `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
   - 例: `https://falcon-api.a-sugai.workers.dev`
 - 未設定だとログインボタンを押しても遷移先が無く **無反応** になる
   (本アプリは原因を示すトーストを出すよう改善済み)。
@@ -60,20 +60,20 @@ wrangler secret put GOOGLE_CLIENT_SECRET   # Google OAuth シークレット (�
 未設定だと API が 503 を返し、 コールバックが `#error=...` を付けてフロントへ戻る
 (改善済みの `/auth/callback` がエラー内容を表示する)。
 
-## 4. `ALLOWED_ORIGINS` に Pages オリジンが含まれているか
+## 4. `ALLOWED_ORIGINS` に Web オリジンが含まれているか
 
-`apps/api/wrangler.toml` の `[vars].ALLOWED_ORIGINS` に、 本番・プレビューの Pages オリジンが
-含まれていること。 含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後の
-リダイレクト先がフォールバックになる (`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
+`apps/api/wrangler.toml` の `[vars].ALLOWED_ORIGINS` に、 本番 Web Worker のオリジンが含まれていること。
+含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後のリダイレクト先がフォールバックになる
+(`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
 
 ```dotenv
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev"
 ```
 
-## 5. SPA リダイレクト (`/auth/callback`)
+## 5. SPA ルーティング (`/auth/callback`)
 
-`apps/web/public/_redirects` に `/*  /index.html  200` があり、 `/auth/callback` や `/support` の
-直アクセスが `index.html` に解決されること。 これが無いと Pages が 404 を返す。
+`apps/web/wrangler.toml` で `assets.not_found_handling = "single-page-application"` が設定され、
+`/auth/callback` や `/support` の直アクセスが `index.html` に解決されること。
 
 ## それでも解決しない場合
 

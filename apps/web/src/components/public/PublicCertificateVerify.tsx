@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, XCircle } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { CertificateView, formatIssuedAt } from '@/components/common/CertificateView';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isApiConfigured } from '@/lib/api-client';
 import { verifyCertificate } from '@/lib/certificates-api';
 import type { CertificateVerification } from '@falcon/shared/cms/types';
 
@@ -20,8 +20,8 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setError('検証サービスが構成されていません (Supabase 未設定)。');
+    if (!isApiConfigured()) {
+      setError('検証サービスが構成されていません (API 未設定)。');
       setState('done');
       return;
     }

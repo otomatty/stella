@@ -1,5 +1,5 @@
 /**
- * CMS API (旧 cms-api.ts の Supabase 直アクセス + RLS + reorder RPC の置き換え / Issue #10)。
+ * CMS API (旧 cms-api.ts の BaaS 直アクセス + RLS + reorder RPC の置き換え / Issue #10)。
  *
  * 認可 (旧 RLS):
  *   - courses/sections/lessons/assignments の read は同テナント、 published か staff。
