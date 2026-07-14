@@ -34,7 +34,7 @@ falcon-informal/
 
 ## スタック
 
-- **Vite 5 + React 18 + TypeScript (strict)** — フロント (`apps/web`) → Cloudflare Workers (Static Assets)
+- **Vite 5 + React 19 + TypeScript 7 (strict)** — フロント (`apps/web`) → Cloudflare Workers (Static Assets)
 - **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約
 - **Cloudflare D1** — DB (Drizzle ORM / `drizzle-orm/d1`)
 - **Google OAuth + JWT** — `/api/auth/google`, `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_*`
