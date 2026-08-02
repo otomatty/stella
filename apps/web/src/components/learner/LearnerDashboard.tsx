@@ -17,14 +17,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { Course, Tenant } from '@/data/types';
-import { useAnnouncements } from '@/hooks/useAnnouncements';
+import type { Course } from '@/data/types';
+import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
 import { cn } from '@/lib/utils';
 
 interface LearnerDashboardProps {
   setPage: (page: string) => void;
   courses: Course[];
-  tenantId: Tenant['id'];
+  announcementsHook: UseAnnouncementsResult;
+  coursesError: string | null;
 }
 
 /** ISO 文字列を「M月D日」表記にする。 不正値は空文字。 */
@@ -36,12 +37,16 @@ function formatAnnouncementDate(iso: string): string {
 
 const NEW_WINDOW_MS = 7 * 86_400_000;
 
-export const LearnerDashboard = ({ setPage, courses, tenantId }: LearnerDashboardProps) => {
+export const LearnerDashboard = ({
+  setPage,
+  courses,
+  announcementsHook,
+  coursesError,
+}: LearnerDashboardProps) => {
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   const current = active[0];
 
-  // お知らせを実データ化 (Issue #25)。 バックエンド未設定時は fixtures へフォールバックする。
-  const { announcements } = useAnnouncements(tenantId);
+  const { announcements, error: announcementsError, refetch } = announcementsHook;
   const now = Date.now();
   const newCount = announcements.reduce(
     (n, a) => n + (now - new Date(a.published_at).getTime() < NEW_WINDOW_MS ? 1 : 0),
@@ -93,6 +98,22 @@ export const LearnerDashboard = ({ setPage, courses, tenantId }: LearnerDashboar
           </>
         }
       />
+
+      {coursesError ? (
+        <p className="text-sm text-destructive mb-3">
+          コースの取得に失敗しました: {coursesError}
+        </p>
+      ) : null}
+      {announcementsError ? (
+        <div className="flex items-center gap-3 mb-3">
+          <p className="text-sm text-destructive">
+            お知らせの取得に失敗しました: {announcementsError}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            再試行
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <KpiCard

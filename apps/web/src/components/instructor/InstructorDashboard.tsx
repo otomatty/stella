@@ -73,10 +73,23 @@ export const InstructorDashboard = ({
   const { overview } = useInstructorOverview(tenantId, backendEnabled);
   const { threads: openThreads } = useOpenQuestions(backendEnabled);
 
-  // 実データ (バックエンド設定時) と fixtures フォールバックを切り替える。
-  const openQuestions = overview ? overview.open_questions : 3;
-  const overdueLearners = overview ? overview.overdue_learners : 4;
-  const totalLearners = overview ? overview.total_learners : 42;
+  // デモ専用のみデモ定数。backendEnabled 時は overview null → KPI 0 / 空リスト。
+  const openQuestions = overview
+    ? overview.open_questions
+    : backendEnabled
+      ? 0
+      : 3;
+  const overdueLearners = overview
+    ? overview.overdue_learners
+    : backendEnabled
+      ? 0
+      : 4;
+  const totalLearners = overview
+    ? overview.total_learners
+    : backendEnabled
+      ? 0
+      : 42;
+
   const students: StudentRow[] = overview
     ? overview.students.map((s) => {
         const sv = severityOf(s);
@@ -90,7 +103,10 @@ export const InstructorDashboard = ({
           sev: sv.sev,
         };
       })
-    : STUDENT_PROG_DEMO;
+    : backendEnabled
+      ? []
+      : STUDENT_PROG_DEMO;
+
   const unanswered: UnansweredRow[] = overview
     ? openThreads.slice(0, 3).map((q) => ({
         id: q.id,
@@ -99,7 +115,9 @@ export const InstructorDashboard = ({
         c: toneFromId(q.author_id),
         t: relativeTime(q.created_at),
       }))
-    : UNANSWERED_DEMO;
+    : backendEnabled
+      ? []
+      : UNANSWERED_DEMO;
 
   return (
   <>
@@ -333,7 +351,7 @@ interface UnansweredRow {
   t: string;
 }
 
-// バックエンド未設定 (dev fixtures フロー) のフォールバック表示。
+// デモ専用のみデモ定数。
 const STUDENT_PROG_DEMO: StudentRow[] = [
   { n: '田中 翔太', c: 'c1', p: 62, course: 'Web開発基礎', s: '順調', sev: 'success' },
   { n: '佐藤 美咲', c: 'c2', p: 38, course: 'Web開発基礎', s: 'やや遅延', sev: 'warning' },

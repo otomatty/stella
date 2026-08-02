@@ -77,6 +77,10 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    bun run smoke:d1        # テーブル確認
    ```
 
+   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントのロール昇格は下記「初回ログインとロール昇格」を参照してください。
+
+   コース ID が安定 UUID に変わったあと、古いローカル D1 で seed が失敗する場合は `apps/api/.wrangler/state`（または同等のローカル D1 状態）を削除してから `bun run db:migrate && bun run db:seed` をやり直してください。リモート D1（`db:seed:remote`）も既存のランダム course ID は書き換えられないため、安定 UUID 導入前に seed 済みなら wipe/再作成するか、衝突する course 行を消してから再 seed してください。
+
 ### 起動（既定）
 
 ```bash

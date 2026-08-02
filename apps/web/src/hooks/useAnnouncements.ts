@@ -2,8 +2,7 @@
  * お知らせ一覧を取得する Hook (Issue #25)。
  *
  * - バックエンド設定時: `announcements` テーブルから同テナントのお知らせを公開順で取得。
- * - 未設定時 (dev fallback): fixtures の ANNOUNCEMENTS を AnnouncementRow 形へ写像して返す
- *   (ダッシュボードのダミー表示を壊さないため)。 DB 取得に失敗した場合も fixtures へ退避する。
+ * - 未設定時 (demo-only): fixtures の ANNOUNCEMENTS を AnnouncementRow 形へ写像して返す。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,11 +16,11 @@ export interface UseAnnouncementsResult {
   announcements: AnnouncementRow[];
   loading: boolean;
   error: string | null;
-  source: "db" | "fixtures";
+  source: "db" | "fixtures" | "error";
   refetch: () => Promise<void>;
 }
 
-/** fixtures の Announcement を AnnouncementRow 形へ写像する (dev fallback 用)。 */
+/** fixtures の Announcement を AnnouncementRow 形へ写像する (demo-only 用)。 */
 function fixtureAnnouncements(tenantId: string): AnnouncementRow[] {
   const now = Date.now();
   return ANNOUNCEMENTS.map((a, i) => ({
@@ -42,19 +41,23 @@ export function useAnnouncements(
   tenantId: string,
   enabled = true,
 ): UseAnnouncementsResult {
+  const backend = isBackendConfigured();
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>(() =>
-    fixtureAnnouncements(tenantId),
+    backend ? [] : fixtureAnnouncements(tenantId),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<"db" | "fixtures">("fixtures");
+  const [source, setSource] = useState<"db" | "fixtures" | "error">(
+    backend ? "db" : "fixtures",
+  );
   const requestIdRef = useRef(0);
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
     if (!enabled || !isBackendConfigured()) {
-      setAnnouncements(fixtureAnnouncements(tenantId));
-      setSource("fixtures");
+      const backend = isBackendConfigured();
+      setAnnouncements(backend ? [] : fixtureAnnouncements(tenantId));
+      setSource(backend ? "db" : "fixtures");
       setError(null);
       setLoading(false);
       return;
@@ -66,12 +69,12 @@ export function useAnnouncements(
       if (reqId !== requestIdRef.current) return;
       setAnnouncements(rows);
       setSource("db");
+      setError(null);
     } catch (err) {
       if (reqId !== requestIdRef.current) return;
-      // DB 取得失敗時は fixtures へ退避し、 ダッシュボードを空白にしない。
-      console.error("[useAnnouncements] fetch failed, fallback to fixtures", err);
-      setAnnouncements(fixtureAnnouncements(tenantId));
-      setSource("fixtures");
+      console.error("[useAnnouncements] fetch failed", err);
+      setAnnouncements([]);
+      setSource("error");
       setError(err instanceof Error ? err.message : "fetch failed");
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);

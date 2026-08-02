@@ -14,6 +14,8 @@ import type { ProfileRole } from '@falcon/shared/cms/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
+import { DataSourceBanner } from '@/components/shell/DataSourceBanner';
+import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { AuthCallback } from '@/components/shell/AuthCallback';
 import { TenantSelect } from '@/components/shell/TenantSelect';
@@ -51,6 +53,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
 import { useNotifications } from '@/hooks/useNotifications';
+import {
+  useAnnouncements,
+  type UseAnnouncementsResult,
+} from '@/hooks/useAnnouncements';
 
 type Stage = 'login' | 'tenant-select' | 'app';
 
@@ -211,6 +217,16 @@ function MainApp() {
   );
   const courses =
     effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
+  const courseSource =
+    effectiveRole === 'learner' ? enrolledCourses.source : browseCourses.source;
+  const courseError =
+    effectiveRole === 'learner' ? enrolledCourses.error : browseCourses.error;
+  // バナー集約 + LearnerDashboard への props 渡し用（二重 fetch 回避）。
+  const announcements = useAnnouncements(
+    effectiveTenant.id,
+    effectiveRole === 'learner',
+  );
+  const dataSource = pickSource(courseSource, announcements.source);
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
@@ -399,6 +415,7 @@ function MainApp() {
           }
         />
         <div className="min-w-0 flex flex-col">
+          {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
           <Topbar
             crumbs={crumbs}
             notify={{
@@ -431,6 +448,8 @@ function MainApp() {
               onOpenReview: setReviewSubmissionId,
               studentName: effectiveUser.name,
               studentInitials: effectiveUser.initials,
+              announcementsHook: announcements,
+              coursesError: courseError,
             })}
           </div>
         </div>
@@ -476,6 +495,12 @@ function MainApp() {
   );
 }
 
+function pickSource(...sources: DataSourceKind[]): DataSourceKind {
+  if (sources.includes('error')) return 'error';
+  if (sources.includes('fixtures')) return 'fixtures';
+  return 'db';
+}
+
 interface RenderParams {
   role: Role;
   page: string;
@@ -493,6 +518,8 @@ interface RenderParams {
   onOpenReview: (id: string) => void;
   studentName: string;
   studentInitials: string;
+  announcementsHook: UseAnnouncementsResult;
+  coursesError: string | null;
 }
 
 function renderPage({
@@ -512,10 +539,19 @@ function renderPage({
   onOpenReview,
   studentName,
   studentInitials,
+  announcementsHook,
+  coursesError,
 }: RenderParams) {
   if (role === 'learner') {
     if (page === 'dash')
-      return <LearnerDashboard setPage={setPage} courses={courses} tenantId={tenantId} />;
+      return (
+        <LearnerDashboard
+          setPage={setPage}
+          courses={courses}
+          announcementsHook={announcementsHook}
+          coursesError={coursesError}
+        />
+      );
     if (page === 'courses')
       return (
         <CourseList

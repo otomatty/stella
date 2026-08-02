@@ -1,8 +1,8 @@
 /**
  * 受講者 UI 用のコース一覧ソース。
  *
- * - バックエンドが設定されていて DB に行があれば DB から読む
- * - それ以外 (未設定 / クエリ失敗 / 空) は既存 fixtures にフォールバックする
+ * - バックエンド設定済み: DB から読む。失敗時は空配列 + error（fixtures に戻さない）。
+ * - バックエンド未設定: 既存 fixtures（デモ専用）。
  *
  * 受講者 UI (`CourseList` / `CourseDetail` / `LessonPlayer`) は `Course[]` 型を
  * そのまま受け取り続けるため、 マッパー (`mapCourseToUi`) で正規化する。
@@ -24,19 +24,26 @@ function fixturesFor(tenantId: Tenant["id"]): Course[] {
   return tenantId === "coach" ? COACH_COURSES : SES_COURSES;
 }
 
+type DataSource = "db" | "fixtures" | "error";
+
 interface UseCoursesResult {
   courses: Course[];
   loading: boolean;
-  source: "db" | "fixtures";
+  error: string | null;
+  source: DataSource;
 }
 
 export function useCoursesForTenant(
   tenantId: Tenant["id"],
   enabled = true,
 ): UseCoursesResult {
-  const [courses, setCourses] = useState<Course[]>(() => fixturesFor(tenantId));
-  const [loading, setLoading] = useState(isBackendConfigured());
-  const [source, setSource] = useState<"db" | "fixtures">("fixtures");
+  const backend = isBackendConfigured();
+  const [courses, setCourses] = useState<Course[]>(() =>
+    backend ? [] : fixturesFor(tenantId),
+  );
+  const [loading, setLoading] = useState(backend && enabled);
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
 
   useEffect(() => {
     // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
@@ -47,6 +54,7 @@ export function useCoursesForTenant(
     if (!isBackendConfigured()) {
       setCourses(fixturesFor(tenantId));
       setSource("fixtures");
+      setError(null);
       setLoading(false);
       return;
     }
@@ -62,6 +70,7 @@ export function useCoursesForTenant(
         if (courseRows.length === 0) {
           setCourses([]);
           setSource("db");
+          setError(null);
           return;
         }
         const details = await Promise.all(
@@ -75,11 +84,13 @@ export function useCoursesForTenant(
         // UiCourse は Course と shape 互換 (cms/types.ts のコメント参照)。
         setCourses(ui as unknown as Course[]);
         setSource("db");
+        setError(null);
       } catch (err) {
-        console.error("[useCoursesForTenant] DB fetch failed, fallback to fixtures", err);
+        console.error("[useCoursesForTenant] DB fetch failed", err);
         if (!cancelled) {
-          setCourses(fixturesFor(tenantId));
-          setSource("fixtures");
+          setCourses([]);
+          setSource("error");
+          setError(err instanceof Error ? err.message : "fetch failed");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -91,7 +102,7 @@ export function useCoursesForTenant(
     };
   }, [tenantId, enabled]);
 
-  return { courses, loading, source };
+  return { courses, loading, error, source };
 }
 
 /**
@@ -103,6 +114,7 @@ export function useCoursesForTenant(
  *
  * - バックエンド未設定: 従来どおり fixtures をそのまま返す (デモ用)。
  * - バックエンド設定済み: enrollment → コース詳細を引いてマージする。 enrollment が無ければ空。
+ *   失敗時は空配列 + error（fixtures に戻さない）。
  *   draft コースの enrollment は courses RLS で詳細取得が null になり、 受講者には現れない。
  */
 export function useEnrolledCoursesForTenant(
@@ -110,9 +122,13 @@ export function useEnrolledCoursesForTenant(
   userId: string | null,
   enabled = true,
 ): UseCoursesResult {
-  const [courses, setCourses] = useState<Course[]>(() => fixturesFor(tenantId));
-  const [loading, setLoading] = useState(isBackendConfigured());
-  const [source, setSource] = useState<"db" | "fixtures">("fixtures");
+  const backend = isBackendConfigured();
+  const [courses, setCourses] = useState<Course[]>(() =>
+    backend ? [] : fixturesFor(tenantId),
+  );
+  const [loading, setLoading] = useState(backend && enabled);
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
 
   useEffect(() => {
     // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
@@ -123,12 +139,14 @@ export function useEnrolledCoursesForTenant(
     if (!isBackendConfigured()) {
       setCourses(fixturesFor(tenantId));
       setSource("fixtures");
+      setError(null);
       setLoading(false);
       return;
     }
     if (!userId) {
       setCourses([]);
       setSource("db");
+      setError(null);
       setLoading(false);
       return;
     }
@@ -142,10 +160,11 @@ export function useEnrolledCoursesForTenant(
         if (enrollments.length === 0) {
           setCourses([]);
           setSource("db");
+          setError(null);
           return;
         }
-        // 1 コースの取得失敗 (削除済み / 一時的なエラー等) で全体を fixtures に
-        // フォールバックさせないよう、 個別に catch して null に倒す。
+        // 1 コースの取得失敗 (削除済み / 一時的なエラー等) で全体を error に
+        // しないよう、 個別に catch して null に倒す。
         const details = await Promise.all(
           enrollments.map((e) =>
             getCourseWithChildren(e.course_id).catch((err) => {
@@ -181,14 +200,13 @@ export function useEnrolledCoursesForTenant(
         }
         setCourses(merged);
         setSource("db");
+        setError(null);
       } catch (err) {
-        console.error(
-          "[useEnrolledCoursesForTenant] DB fetch failed, fallback to fixtures",
-          err,
-        );
+        console.error("[useEnrolledCoursesForTenant] DB fetch failed", err);
         if (!cancelled) {
-          setCourses(fixturesFor(tenantId));
-          setSource("fixtures");
+          setCourses([]);
+          setSource("error");
+          setError(err instanceof Error ? err.message : "fetch failed");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -200,5 +218,5 @@ export function useEnrolledCoursesForTenant(
     };
   }, [tenantId, userId, enabled]);
 
-  return { courses, loading, source };
+  return { courses, loading, error, source };
 }
