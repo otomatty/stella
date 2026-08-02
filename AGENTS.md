@@ -13,14 +13,16 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |
 
-### Running services
+### Running services (default: real data)
 
 ```bash
-bun run dev        # Vite dev server on :5173
-bun run dev:api    # Wrangler (Cloudflare Workers) on :8787
+bun run dev:api    # Wrangler (Cloudflare Workers) on :8787 — start this first
+bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SERVER_URL
 ```
 
-The web app works **without D1/Auth or Anthropic credentials** using hardcoded fixture data and a mock login flow. All roles (Learner, Instructor, Admin) are testable with the Tweaks panel (press backtick `` ` `` key).
+**Default local loop:** copy env from examples → `bun run db:migrate && bun run db:seed && bun run smoke:d1` → `dev:api` + `dev` → Google login → D1-backed UI. See `README.md` setup section for role promotion (`admin` / `instructor`) and the manual verification checklist.
+
+**Demo-only (not for day-to-day work):** If `VITE_SERVER_URL` is unset, the web app uses fixture data and a mock login flow. Tweaks panel (backtick `` ` ``) can switch Learner / Instructor / Admin without D1. Treat this as a prototype demo path only.
 
 **Stack:** Cloudflare D1 (DB) + Google OAuth + R2 (materials) + Workers Static Assets (frontend, migrated from Pages). See `docs/cloudflare-stack.md`.
 
@@ -28,12 +30,12 @@ The web app works **without D1/Auth or Anthropic credentials** using hardcoded f
 
 **DB setup (local):** `bun run db:migrate && bun run db:seed && bun run smoke:d1`
 
-**Instructor review (Issue #8 / P3):** Submissions persist in `localStorage` (`lms_submissions_v1`). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`).
+**Instructor review (Issue #8 / P3):** With the API running, submissions go through `/api/submissions` (D1). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`). localStorage `lms_submissions_v1` remains a demo/offline remnant — not the default path.
 
 ### Key caveats
 
 - **Vite dev server + browser resource limits**: The app loads many ES modules in dev mode. If the browser shows `ERR_INSUFFICIENT_RESOURCES`, use `bun run build` then `bun run preview` as an alternative for manual testing.
-- **Env files**: `apps/web/.env.local` and `apps/api/.dev.vars` are gitignored. Copy from `.example`. Set `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in `.dev.vars` for Google login.
+- **Env files**: `apps/web/.env.local` and `apps/api/.dev.vars` are gitignored. Copy from `.example`. For the default real-data path set `VITE_SERVER_URL=http://127.0.0.1:8787` in `.env.local`, and `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in `.dev.vars`.
 - **Wrangler**: The API dev server uses `wrangler dev`. On first run it may print a telemetry notice; this is not an error.
 
 ### Lint / Typecheck / Build

@@ -45,34 +45,62 @@ falcon-informal/
 - **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
-## セットアップ
+## セットアップ（実データ開発・既定）
+
+日常の開発は **API + ローカル D1 + Google ログイン** を既定とする。
+`VITE_SERVER_URL` 未設定のモック単体起動は [デモ専用](#デモ専用モック単体) を参照。
 
 ```bash
 bun install
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/api/.dev.vars.example apps/api/.dev.vars
-# 各ファイルを編集 (AUTH_JWT_SECRET / Anthropic 等)
 ```
 
-> フィクスチャのフォールバックにより、 API / Auth 未設定でもモックログインで全ロール
-> (Learner / Instructor / Admin) を Tweaks パネル (バックティック `` ` `` キー) から試せる。
+必須（ローカル）:
 
-### Cloudflare D1 (DB / マイグレーション)
+| ファイル | 変数 | 値の目安 |
+|---------|------|---------|
+| `apps/web/.env.local` | `VITE_SERVER_URL` | `http://127.0.0.1:8787`（example のまま） |
+| `apps/api/.dev.vars` | `AUTH_JWT_SECRET` | 任意の長いランダム文字列（example のままでも可） |
+| `apps/api/.dev.vars` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Console の OAuth クライアント |
 
-1. 初回: `cd apps/api && wrangler d1 create falcon-db` → `wrangler.toml` の `database_id` を更新。
-2. ローカル D1 にマイグレーション適用:
+任意: `ANTHROPIC_API_KEY`（AI チャット）、`VITE_MATERIALS_BASE_URL`（R2 教材）。
+
+### DB 初期化
+
+1. 初回のみ（リモート D1 を新規作成する場合）: `cd apps/api && wrangler d1 create falcon-db` → `wrangler.toml` の `database_id` を更新。
+2. ローカル D1:
 
    ```bash
    bun run db:migrate      # wrangler d1 migrations apply --local
    bun run db:seed         # fixtures → D1
-   bun run smoke:d1        # 21/21 テーブル確認
+   bun run smoke:d1        # テーブル確認
    ```
 
-3. 初回 Google ログイン後は `profiles` に `role='student'` で行が作られる。 管理者:
+### 起動（既定）
 
-   ```bash
-   wrangler d1 execute falcon-db --local --command "update profiles set role='admin' where email='you@example.com'"
-   ```
+```bash
+# ターミナル 1: API (http://127.0.0.1:8787)
+bun run dev:api
+
+# ターミナル 2: フロント (http://localhost:5173)
+bun run dev
+```
+
+`apps/web/.env.local` の `VITE_SERVER_URL` が API オリジンと一致していること。
+
+```bash
+bun run build            # 全 workspace の build
+bun run typecheck        # 全 workspace の tsc --noEmit
+```
+
+特定 workspace だけ動かす場合:
+
+```bash
+bun run --filter=@falcon/web dev
+bun run --filter=@falcon/api dev
+bun run --filter=@falcon/shared typecheck
+```
 
 ### 認証 (Google OAuth)
 
@@ -90,6 +118,50 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 > (`/api/healthz` の `googleOAuthConfigured` / `jwtConfigured` で設定状況を確認できる)。
 > ユーザー向けにはサポートページ `/support` (FAQ + 問い合わせフォーム) を案内する。
 
+### 初回ログインとロール昇格
+
+初回 Google ログイン後にオンボーディング（テナント選択・表示名）を完了すると、
+`profiles` に `role='student'` で行が作られる。ログイン直後（オンボーディング前）に
+下記 SQL を実行しても更新件数 0 になる点に注意。
+Admin / Instructor 画面を検証するときは、オンボーディング完了後にログインに使ったメールで
+ロールを上げる（`apps/api` で実行。メールは自分のものに置換）:
+
+```bash
+cd apps/api
+
+# 管理者
+wrangler d1 execute falcon-db --local --command "update profiles set role='admin' where email='you@example.com'"
+
+# 講師
+wrangler d1 execute falcon-db --local --command "update profiles set role='instructor' where email='you@example.com'"
+```
+
+昇格後はブラウザをリロード（または再ログイン）してロールを反映させる。
+認可は `/api/me` の `profiles.role` を参照するため、JWT の再発行は不要。
+
+### 手動検証チェックリスト
+
+実データ経路が通っていることの確認（Tweaks パネルは使わない）:
+
+- [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`（できれば `jwtConfigured` / `googleOAuthConfigured` も true）
+- [ ] `http://localhost:5173` で Google ログインできる
+- [ ] Learner（UI 名; DB は `profiles.role='student'`）としてコース一覧など D1（seed）由来のデータが見える
+- [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
+- [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / コース等）が D1 データを表示する
+
+### デモ専用（モック単体）
+
+`VITE_SERVER_URL` を空のまま `bun run dev` だけ起動すると、fixtures とモックログインで UI を試せる。
+バックティック (`` ` ``) の Tweaks パネルでロール切替可能。状態は `localStorage` の `lms_state`。
+
+**日常開発・ #58 以降の作業には使わない。** 障害調査や API なしの画面確認用のデモ経路である。
+
+ロール別の画面一覧（参考）:
+
+- **受講者 (Learner)** — ダッシュボード / コース一覧 / レッスン視聴 / Q&A / 修了証
+- **講師 (Instructor)** — ダッシュボード / 添削キュー / AI下書き付き添削エディタ
+- **テナント管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / コース管理 / 監査ログ
+
 ### Cloudflare R2 (教材配信・アップロード)
 
 1. R2 バケット `falcon-materials-public` は `apps/api/wrangler.toml` の `[[r2_buckets]]` で Workers にバインド済み。
@@ -104,8 +176,8 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 ### 講師添削 (Issue #8)
 
 受講者が `assignment` 型レッスンからコードを提出すると、 講師ロールの「添削待ち」キューに表示されます。
-Tweaks パネルで講師ロールに切り替え、 キューから添削エディタを開くと AI 下書き (`POST /api/review-draft`) が生成されます
-(API キー未設定時はルールベースのヒューリスティックにフォールバック)。
+実データ経路では Google ログイン後に `instructor`（または `admin`）へロール昇格したアカウントでキューを開く。
+AI 下書き (`POST /api/review-draft`) は API キー未設定時はルールベースのヒューリスティックにフォールバックする。
 
 - DB 永続化 (D1 設定時): `submissions` テーブル (`/api/submissions` 経由、 ログインが必要)
 
@@ -113,7 +185,7 @@ Tweaks パネルで講師ロールに切り替え、 キューから添削エデ
 
 レッスン視聴進捗 (動画の視聴秒数 / スライドの閲覧ページ / 完了フラグ) を保存します。
 
-- ローカル (デモ / API 未設定): `localStorage` キー `lms_lesson_progress`
+- デモ専用 (`VITE_SERVER_URL` 未設定): `localStorage` キー `lms_lesson_progress`
 - DB 永続化 (D1 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 ログインが必要)。
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
   講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
@@ -131,46 +203,12 @@ Tweaks パネルで講師ロールに切り替え、 キューから添削エデ
 - 公開検証ページは **ログイン不要**で `/?cert=<CODE>` から到達し、 真正性を確認できます。
   検証は匿名エンドポイント `GET /api/certificates/verify/:code` 経由で、 公開して良い情報のみ返します。
 - DB 永続化 (D1 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
-  API 未設定時は修了証ページが静的デモ表示にフォールバックします。
+  デモ専用 (`VITE_SERVER_URL` 未設定) では修了証ページが静的デモ表示にフォールバックします。
 
 ### Anthropic (AIチャット用、 任意)
 
 `apps/api/.dev.vars` に `ANTHROPIC_API_KEY` を設定。 既定モデルは `claude-sonnet-4-6`。
 本番は Cloudflare Workers の Secret (`wrangler secret put ANTHROPIC_API_KEY`) で管理する。
-
-## 開発
-
-```bash
-# ターミナル 1: API (http://127.0.0.1:8787)
-bun run dev:api
-
-# ターミナル 2: フロント (http://localhost:5173)
-bun run dev
-```
-
-`apps/web/.env.local` の `VITE_SERVER_URL` を API のオリジンに合わせる (ローカル既定: `http://127.0.0.1:8787`)。
-
-```bash
-bun run build            # 全 workspace の build
-bun run typecheck        # 全 workspace の tsc --noEmit
-```
-
-特定 workspace だけ動かす場合:
-
-```bash
-bun run --filter=@falcon/web dev
-bun run --filter=@falcon/api dev
-bun run --filter=@falcon/shared typecheck
-```
-
-## ロール切替
-
-バックティック (`` ` ``) キーで Tweaks パネルを開き、 ロール・テナント・AIアシスタント表示を切替。
-状態は `localStorage` に `lms_state` として永続化される。
-
-- **受講者 (Learner)** — ダッシュボード / コース一覧 / レッスン視聴 (動画・テキスト・小テスト・コード課題) / Q&A / 修了証
-- **講師 (Instructor)** — ダッシュボード / 添削キュー / AI下書き付き添削エディタ
-- **テナント管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / コース管理 / 監査ログ
 
 ## デザイントークン
 
