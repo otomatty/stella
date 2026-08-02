@@ -27,6 +27,7 @@ import { CourseDetail } from '@/components/learner/CourseDetail';
 import { LessonPlayer } from '@/components/learner/LessonPlayer';
 import { CertificatePage } from '@/components/learner/Certificate';
 import { StandaloneQA } from '@/components/learner/StandaloneQA';
+import { ReviewResultView } from '@/components/learner/ReviewResultView';
 
 import { InstructorDashboard } from '@/components/instructor/InstructorDashboard';
 import { ReviewQueue } from '@/components/instructor/ReviewQueue';
@@ -67,6 +68,7 @@ interface PersistedState {
   page?: string;
   showAIBot?: boolean;
   reviewSubmissionId?: string | null;
+  resultSubmissionId?: string | null;
 }
 
 const DEFAULTS = {
@@ -90,6 +92,7 @@ const PAGE_LABELS: Record<string, string> = {
   courses: 'コース一覧',
   'course-detail': 'コース詳細',
   lesson: 'レッスン',
+  'submission-result': '添削結果',
   cert: '修了証',
   qa: 'Q&A',
   'review-queue': '添削待ち',
@@ -177,6 +180,9 @@ function MainApp() {
   const [reviewSubmissionId, setReviewSubmissionId] = useState<string | null>(
     () => loadSaved()?.reviewSubmissionId ?? null,
   );
+  const [resultSubmissionId, setResultSubmissionId] = useState<string | null>(
+    () => loadSaved()?.resultSubmissionId ?? null,
+  );
   const prevSessionRef = useRef<{ tenantId: Tenant['id']; role: Role } | null>(
     null,
   );
@@ -235,6 +241,10 @@ function MainApp() {
     session?.user.id ?? null,
     true,
   );
+  const openSubmissionResult = (id: string) => {
+    setResultSubmissionId(id);
+    setPage('submission-result');
+  };
 
   // ページがレッスン以外に戻ったら context を general にリセット
   useEffect(() => {
@@ -262,9 +272,10 @@ function MainApp() {
         page,
         showAIBot,
         reviewSubmissionId,
+        resultSubmissionId,
       }),
     );
-  }, [stage, role, tenant, page, showAIBot, reviewSubmissionId]);
+  }, [stage, role, tenant, page, showAIBot, reviewSubmissionId, resultSubmissionId]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
@@ -428,6 +439,7 @@ function MainApp() {
               onMarkAllRead: () => void notifications.markAllRead(),
               onAfterCreateAnnouncement: () => void notifications.refetch(),
               courses: browseCourses.courses,
+              onOpenSubmission: openSubmissionResult,
             }}
           />
           <div className={isFlush ? 'flex-1 min-w-0' : 'p-7 flex-1 min-w-0 overflow-x-hidden'}>
@@ -450,6 +462,8 @@ function MainApp() {
               studentInitials: effectiveUser.initials,
               announcementsHook: announcements,
               coursesError: courseError,
+              resultSubmissionId,
+              onOpenSubmission: openSubmissionResult,
             })}
           </div>
         </div>
@@ -520,6 +534,8 @@ interface RenderParams {
   studentInitials: string;
   announcementsHook: UseAnnouncementsResult;
   coursesError: string | null;
+  resultSubmissionId: string | null;
+  onOpenSubmission: (submissionId: string) => void;
 }
 
 function renderPage({
@@ -541,7 +557,17 @@ function renderPage({
   studentInitials,
   announcementsHook,
   coursesError,
+  resultSubmissionId,
+  onOpenSubmission,
 }: RenderParams) {
+  if (page === 'submission-result' && resultSubmissionId) {
+    return (
+      <ReviewResultView
+        submissionId={resultSubmissionId}
+        setPage={setPage}
+      />
+    );
+  }
   if (role === 'learner') {
     if (page === 'dash')
       return (
@@ -550,6 +576,7 @@ function renderPage({
           courses={courses}
           announcementsHook={announcementsHook}
           coursesError={coursesError}
+          onOpenSubmission={onOpenSubmission}
         />
       );
     if (page === 'courses')
@@ -563,7 +590,13 @@ function renderPage({
     if (page === 'course-detail') {
       const target = currentCourse ?? courses[0];
       if (!target) return <EmptyCoursesNotice setPage={setPage} />;
-      return <CourseDetail course={target} setPage={setPage} />;
+      return (
+        <CourseDetail
+          course={target}
+          setPage={setPage}
+          onOpenSubmission={onOpenSubmission}
+        />
+      );
     }
     if (page === 'lesson') {
       const target = currentCourse ?? courses[0];

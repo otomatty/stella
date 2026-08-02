@@ -19,6 +19,8 @@ import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/compone
 import { Progress } from '@/components/ui/progress';
 import type { Course } from '@/data/types';
 import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
+import { useMySubmissions } from '@/hooks/useMySubmissions';
+import { formatSubmittedAt } from '@/lib/submissions-store';
 import { cn } from '@/lib/utils';
 
 interface LearnerDashboardProps {
@@ -26,6 +28,7 @@ interface LearnerDashboardProps {
   courses: Course[];
   announcementsHook: UseAnnouncementsResult;
   coursesError: string | null;
+  onOpenSubmission: (submissionId: string) => void;
 }
 
 /** ISO 文字列を「M月D日」表記にする。 不正値は空文字。 */
@@ -42,9 +45,15 @@ export const LearnerDashboard = ({
   courses,
   announcementsHook,
   coursesError,
+  onOpenSubmission,
 }: LearnerDashboardProps) => {
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   const current = active[0];
+  const {
+    submissions,
+    loading: submissionsLoading,
+    error: submissionsError,
+  } = useMySubmissions(true);
 
   const { announcements, error: announcementsError, refetch } = announcementsHook;
   const now = Date.now();
@@ -211,31 +220,47 @@ export const LearnerDashboard = ({
 
           <Card>
             <CardHeader>
-              <CardTitle>直近のフィードバック</CardTitle>
-              <CardActions>
-                <Button size="sm">すべて見る</Button>
-              </CardActions>
+              <CardTitle>提出・添削履歴</CardTitle>
             </CardHeader>
             <div>
-              {FEEDBACKS.map((f, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3',
-                    i < FEEDBACKS.length - 1 ? 'border-b border-border' : '',
-                  )}
-                >
-                  <Badge variant={f.tone}>{f.status}</Badge>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium">{f.a}</div>
-                    <div className="text-[11.5px] text-ink-3">
-                      {f.course} · {f.by} · {f.date}
-                    </div>
-                  </div>
-                  <div className="text-[11.5px] text-ink-3">{f.n}</div>
-                  <ChevronRight size={14} className="text-ink-4" />
+              {submissionsLoading ? (
+                <div className="px-4 py-4 text-[12.5px] text-ink-3">読み込み中…</div>
+              ) : null}
+              {submissionsError ? (
+                <div className="px-4 py-3 text-[12.5px] text-destructive">
+                  提出履歴の取得に失敗しました: {submissionsError}
                 </div>
-              ))}
+              ) : null}
+              {!submissionsLoading && !submissionsError && submissions.length === 0 ? (
+                <div className="px-4 py-4 text-[12.5px] text-ink-3">
+                  提出はまだありません。
+                </div>
+              ) : null}
+              {submissions.map((submission, i) => {
+                const meta = submission.verdict
+                  ? SUBMISSION_META[submission.verdict]
+                  : SUBMISSION_META.pending;
+                return (
+                  <button
+                    type="button"
+                    key={submission.id}
+                    onClick={() => onOpenSubmission(submission.id)}
+                    className={cn(
+                      'w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-sunken',
+                      i < submissions.length - 1 ? 'border-b border-border' : '',
+                    )}
+                  >
+                    <Badge variant={meta.variant}>{meta.label}</Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium">{submission.assignmentTitle}</div>
+                      <div className="text-[11.5px] text-ink-3">
+                        {submission.courseTitle} · {formatSubmittedAt(submission.submittedAt)}
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-ink-4" />
+                  </button>
+                );
+              })}
             </div>
           </Card>
 
@@ -366,19 +391,12 @@ export const LearnerDashboard = ({
   );
 };
 
-const FEEDBACKS: Array<{
-  course: string;
-  a: string;
-  status: string;
-  tone: 'success' | 'warning';
-  by: string;
-  date: string;
-  n: string;
-}> = [
-  { course: 'Web開発基礎', a: 'ランディングページ模写', status: '合格', tone: 'success', by: '堀江メンター', date: '4月15日', n: 'スコア 82 / 100' },
-  { course: 'Git/GitHub', a: '最終確認課題', status: '合格', tone: 'success', by: '堀江メンター', date: '4月10日', n: 'スコア 94 / 100' },
-  { course: 'Web開発基礎', a: 'HTML構造演習', status: '再提出', tone: 'warning', by: 'AI + 堀江メンター', date: '4月8日', n: 'セマンティクスの修正が必要です' },
-];
+const SUBMISSION_META = {
+  pending: { label: '添削待ち', variant: 'info' },
+  pass: { label: '合格', variant: 'success' },
+  resubmit: { label: '再提出', variant: 'warning' },
+  fail: { label: '不合格', variant: 'danger' },
+} as const;
 
 const WEEK = [32, 45, 0, 58, 72, 38, 48, 55, 62, 25, 88, 72, 40, 62];
 const DAY = ['月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日'];

@@ -3,6 +3,7 @@
  *
  * 認可 (旧 RLS):
  *   - 受講者は自分の提出のみ insert (student_id = caller)。
+ *   - 受講者は mine / 本人の :id を select 可。
  *   - 講師 / 管理者は同テナントの提出を一覧 / 更新。
  * 添削確定 (reviewed_at が初めて設定) で受講者へ review_completed 通知を生成する。
  *
@@ -11,7 +12,7 @@
  */
 
 import { Hono } from "hono";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { notifications, profiles, submissions } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
@@ -125,6 +126,52 @@ submissionsRoute.post("/api/submissions", async (c) => {
       .returning();
     const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
     return c.json({ row: toRow(inserted[0]!, profile) });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 受講者: 自分の提出一覧 (新着順)。 */
+submissionsRoute.get("/api/submissions/mine", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const rows = await db
+      .select()
+      .from(submissions)
+      .where(
+        and(
+          eq(submissions.tenantId, caller.tenantId),
+          eq(submissions.studentId, caller.id),
+        ),
+      )
+      .orderBy(desc(submissions.submittedAt));
+
+    const profile = await profileFor(db, caller.id);
+    return c.json({
+      rows: rows.map((r) => toRow(r, profile)),
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 本人または staff: 提出物の詳細を取得。 */
+submissionsRoute.get("/api/submissions/:id", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const id = c.req.param("id");
+    const rows = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+    const row = rows[0];
+    if (!row) throw new ApiError("対象の提出が見つかりません", 404);
+    if (row.tenantId !== caller.tenantId) {
+      throw new ApiError("他テナントの提出は操作できません", 403);
+    }
+    const isStaff = caller.role === "instructor" || caller.role === "admin";
+    const isOwner = row.studentId === caller.id;
+    if (!isStaff && !isOwner) {
+      throw new ApiError("この提出を閲覧する権限がありません", 403);
+    }
+    return c.json({ row: toRow(row, await profileFor(db, row.studentId)) });
   } catch (err) {
     return errorResponse(c, err);
   }

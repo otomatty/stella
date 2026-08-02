@@ -2,7 +2,7 @@
  * 提出物ストア (Issue #8 — 講師添削ワークフロー)。
  *
  * - バックエンド未設定: localStorage + fixtures シード (デモ / Tweaks)
- * - バックエンド設定済み: `submissions` テーブル (RLS)。 楽観的更新 + 非同期永続化
+ * - バックエンド設定済み: `submissions` テーブル (RLS)。実データは PATCH await
  */
 
 import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
@@ -248,52 +248,55 @@ export function getSubmission(
   return localTenantList(store, tenantId).find((s) => s.id === id);
 }
 
-function persistRemotePatch(
+async function persistRemotePatch(
   tenantId: Tenant["id"],
   id: string,
   patch: Partial<Submission>,
   rollback: Submission,
-): void {
+): Promise<Submission | undefined> {
   const nextGen = (remotePatchGen.get(id) ?? 0) + 1;
   remotePatchGen.set(id, nextGen);
   const apiPatch = toSubmissionPatch(patch);
-  void patchSubmission(id, apiPatch)
-    .then((saved) => {
-      if (remotePatchGen.get(id) !== nextGen) return;
-      const list = remoteList(tenantId);
-      const idx = list.findIndex((s) => s.id === id);
-      if (idx < 0) return;
+  try {
+    const saved = await patchSubmission(id, apiPatch);
+    if (remotePatchGen.get(id) !== nextGen) return saved;
+    const list = remoteList(tenantId);
+    const idx = list.findIndex((s) => s.id === id);
+    if (idx >= 0) {
       const next = [...list];
       next[idx] = saved;
       setRemoteList(tenantId, next);
-    })
-    .catch((err) => {
-      if (remotePatchGen.get(id) !== nextGen) return;
+    }
+    return saved;
+  } catch (err) {
+    if (remotePatchGen.get(id) === nextGen) {
       console.error("[submissions-store] remote patch failed", err);
       const list = remoteList(tenantId);
       const idx = list.findIndex((s) => s.id === id);
-      if (idx < 0) return;
-      const next = [...list];
-      next[idx] = rollback;
-      setRemoteList(tenantId, next);
-    });
+      if (idx >= 0) {
+        const next = [...list];
+        next[idx] = rollback;
+        setRemoteList(tenantId, next);
+      }
+    }
+    return undefined;
+  }
 }
 
-export function updateSubmission(
+export async function updateSubmission(
   tenantId: Tenant["id"],
   id: string,
   patch: Partial<Submission>,
-): Submission | undefined {
+): Promise<Submission | undefined> {
   if (useRemotePersistence()) {
     const list = remoteList(tenantId);
     const idx = list.findIndex((s) => s.id === id);
     if (idx < 0) return undefined;
-    const before = list[idx];
+    const before = list[idx]!;
     const updated = { ...before, ...patch };
     const next = list.map((s, i) => (i === idx ? updated : s));
     setRemoteList(tenantId, next);
-    persistRemotePatch(tenantId, id, patch, before);
-    return updated;
+    return persistRemotePatch(tenantId, id, patch, before);
   }
 
   const store = loadLocalStore();
@@ -400,7 +403,7 @@ export async function createSubmissionAsync(
   }
 }
 
-export function finalizeReview(
+export async function finalizeReview(
   tenantId: Tenant["id"],
   id: string,
   verdict: ReviewVerdict,
@@ -409,7 +412,7 @@ export function finalizeReview(
     aiSuggestions: Submission["aiSuggestions"];
     rubric: Submission["rubric"];
   },
-): Submission | undefined {
+): Promise<Submission | undefined> {
   const status =
     verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
   return updateSubmission(tenantId, id, {

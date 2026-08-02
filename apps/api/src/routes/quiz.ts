@@ -4,7 +4,7 @@
  * セキュリティ要件 (旧 security definer RPC と同じ):
  *   - 出題は is_correct / explanation を含めずサニタイズして返す (カンニング不可)。
  *   - 採点はサーバ側で行い、 受講者は score を改竄できない。
- *   - アクセス可否: staff は同テナント、 受講者は published コース配下のみ。
+ *   - アクセス可否: staff は同テナント、 受講者は published + active enrollment。
  */
 
 import { Hono } from "hono";
@@ -12,6 +12,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import {
   courses,
+  enrollments,
   lessons,
   quizAttempts,
   quizOptions,
@@ -28,8 +29,9 @@ import type { QuizAnswer } from "@falcon/shared/cms/types";
 export const quizRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * lesson が caller の同テナントで、 かつ (published コース or caller が staff) かを判定する。
- * 旧 RPC の v_authorized 相当。
+ * lesson が caller の同テナントで、かつアクセス可かを判定する。
+ * - staff: 同テナントなら可
+ * - student: published かつ当該コースに active enrollment
  */
 async function isAuthorizedForLesson(
   db: Db,
@@ -38,7 +40,11 @@ async function isAuthorizedForLesson(
 ): Promise<boolean> {
   const isStaff = caller.role === "instructor" || caller.role === "admin";
   const rows = await db
-    .select({ status: courses.status, tenantId: courses.tenantId })
+    .select({
+      status: courses.status,
+      tenantId: courses.tenantId,
+      courseId: courses.id,
+    })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .innerJoin(courses, eq(courses.id, sections.courseId))
@@ -47,7 +53,21 @@ async function isAuthorizedForLesson(
   const row = rows[0];
   if (!row) return false;
   if (row.tenantId !== caller.tenantId) return false;
-  return row.status === "published" || isStaff;
+  if (isStaff) return true;
+  if (row.status !== "published") return false;
+
+  const enrolled = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.userId, caller.id),
+        eq(enrollments.courseId, row.courseId),
+        eq(enrollments.status, "active"),
+      ),
+    )
+    .limit(1);
+  return enrolled.length > 0;
 }
 
 /** 受講者向けの設問を取得する (サニタイズ済み)。 quiz 未作成 / 権限外なら null。 */

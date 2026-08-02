@@ -19,6 +19,7 @@ interface TopbarProps {
     onMarkAllRead: () => void;
     onAfterCreateAnnouncement: () => void;
     courses: Course[];
+    onOpenSubmission?: (submissionId: string) => void;
   };
 }
 
@@ -57,6 +58,7 @@ export const Topbar = ({ crumbs, actions, notify }: TopbarProps) => (
       onMarkAllRead={notify.onMarkAllRead}
       onAfterCreateAnnouncement={notify.onAfterCreateAnnouncement}
       courses={notify.courses}
+      onOpenSubmission={notify.onOpenSubmission}
     />
     <button
       className="w-8 h-8 rounded-sm grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"

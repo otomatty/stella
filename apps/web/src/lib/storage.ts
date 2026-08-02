@@ -5,8 +5,8 @@
  * 例 (r2.dev): https://pub-xxxx.r2.dev
  * 例 (カスタムドメイン): https://materials.example.com
  *
- * パス形式は従来どおり 
- * `getMaterialUrl('web-fundamentals/01-http.pdf')` 形式で参照する。
+ * パス形式は `tenant/{tenantId}/courses/{courseId}/{fileName}`。
+ * 例: `getMaterialUrl('tenant/ses/courses/6b200629-c6af-5746-bf86-69718cfacf2f/01-http.pdf')`
  */
 
 const baseUrl = (import.meta.env.VITE_MATERIALS_BASE_URL as string | undefined)?.replace(

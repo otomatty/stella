@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { Course, Lesson, LessonStatus, LessonType } from '@/data/types';
+import { useMySubmissions } from '@/hooks/useMySubmissions';
 import { cn } from '@/lib/utils';
 
 type LucideIcon = ComponentType<LucideProps>;
@@ -56,16 +57,30 @@ export const LessonStatusIcon = ({ status }: { status: LessonStatus }) => {
 interface CourseDetailProps {
   course: Course;
   setPage: (page: string) => void;
+  onOpenSubmission?: (submissionId: string) => void;
 }
 
-export const CourseDetail = ({ course, setPage }: CourseDetailProps) => {
+export const CourseDetail = ({
+  course,
+  setPage,
+  onOpenSubmission,
+}: CourseDetailProps) => {
   const sections = course.sections ?? [];
+  const { submissions } = useMySubmissions(true);
   const totalLessons =
     sections.reduce((a, s) => a + s.lessons.length, 0) || course.lessonsCount;
   const doneLessons = sections.reduce(
     (a, s) => a + s.lessons.filter((l) => l.status === 'done').length,
     0,
   );
+  const reviewedForLesson = (lesson: Lesson) =>
+    submissions.find((submission) => {
+      if (submission.status === 'pending' || submission.courseTitle !== course.title) return false;
+      if (submission.assignmentId) {
+        return Boolean(lesson.assignmentId && submission.assignmentId === lesson.assignmentId);
+      }
+      return submission.assignmentTitle === lesson.title;
+    });
 
   return (
     <>
@@ -126,13 +141,18 @@ export const CourseDetail = ({ course, setPage }: CourseDetailProps) => {
                       完了
                     </span>
                   </div>
-                  {s.lessons.map((l) => (
-                    <LessonRow
-                      key={l.id}
-                      lesson={l}
-                      onClick={() => l.status !== 'locked' && setPage('lesson')}
-                    />
-                  ))}
+                  {s.lessons.map((l) => {
+                    const reviewedSubmission = reviewedForLesson(l);
+                    return (
+                      <LessonRow
+                        key={l.id}
+                        lesson={l}
+                        onClick={() => l.status !== 'locked' && setPage('lesson')}
+                        reviewedSubmissionId={reviewedSubmission?.id}
+                        onOpenSubmission={onOpenSubmission}
+                      />
+                    );
+                  })}
                 </div>
               ))}
               {sections.length === 0 ? (
@@ -195,7 +215,17 @@ export const CourseDetail = ({ course, setPage }: CourseDetailProps) => {
   );
 };
 
-const LessonRow = ({ lesson, onClick }: { lesson: Lesson; onClick: () => void }) => {
+const LessonRow = ({
+  lesson,
+  onClick,
+  reviewedSubmissionId,
+  onOpenSubmission,
+}: {
+  lesson: Lesson;
+  onClick: () => void;
+  reviewedSubmissionId?: string;
+  onOpenSubmission?: (submissionId: string) => void;
+}) => {
   const locked = lesson.status === 'locked';
   return (
     <div
@@ -228,6 +258,17 @@ const LessonRow = ({ lesson, onClick }: { lesson: Lesson; onClick: () => void })
           ) : null}
         </div>
       </div>
+      {reviewedSubmissionId && onOpenSubmission ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenSubmission(reviewedSubmissionId);
+          }}
+        >
+          <Badge variant="success">添削済み</Badge>
+        </button>
+      ) : null}
       {!locked ? <ChevronRight size={13} className="text-ink-4 mt-1" /> : null}
     </div>
   );

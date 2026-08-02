@@ -153,6 +153,19 @@ wrangler d1 execute falcon-db --local --command "update profiles set role='instr
 - [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
 - [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / コース等）が D1 データを表示する
 
+### コア学習ループ（#61）手動 E2E
+
+前提: `dev:api` + `dev`、Google ログイン、必要なら admin/instructor 昇格、受講登録済み。
+
+- [ ] Admin がコースを公開し、教材を R2 にアップロードできる
+- [ ] 学習者を受講登録できる（Admin 受講登録画面）
+- [ ] 学習者がレッスン進捗・クイズ・課題提出を実行し、D1 に残る（再ログイン後も見える）
+- [ ] 講師が ReviewQueue から添削確定でき、失敗時はエラートースト（成功時のみ「LMS通知」文言）
+- [ ] 学習者 Dashboard / 通知から ReviewResultView で verdict・rubric・行コメント・要約が見える
+- [ ] 未受講コースのクイズは受験できない
+- [ ] API 停止時に courses / announcements が fixtures に化けない（#60）
+- [ ] 別ブラウザ（またはシークレット）で再ログイン後も進捗・提出履歴が見える
+
 ### デモ専用（モック単体）
 
 `VITE_SERVER_URL` を空のまま `bun run dev` だけ起動すると、fixtures とモックログインで UI を試せる。
@@ -176,6 +189,8 @@ wrangler d1 execute falcon-db --local --command "update profiles set role='instr
 3. アップロードは `/api/materials/upload` 経由 (講師/管理者)。 Workers の R2 バインディングを使うため
    S3 API トークンは不要。
 4. 既存オブジェクトを R2 へ移送する（必要なら）。
+
+seed 教材パスは `tenant/ses/courses/{courseUuid}/...` 形式。オブジェクトが R2 に無いと再生は失敗する。Admin の教材アップロード、または同キーでの配置で確認する。
 
 ### 講師添削 (Issue #8)
 

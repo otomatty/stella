@@ -25,6 +25,7 @@ import type {
   ReviewVerdict,
 } from '@falcon/shared/review/types';
 import { useSubmission, useSubmissions } from '@/hooks/useSubmissions';
+import { isBackendConfigured } from '@/lib/backend';
 import { fetchReviewDraft } from '@/lib/review-draft-api';
 import { formatSubmittedAt } from '@/lib/submissions-store';
 import type { Tenant } from '@/data/types';
@@ -56,6 +57,7 @@ export const ReviewEditor = ({
   const [verdict, setVerdict] = useState<ReviewVerdict | null>(null);
   const [notes, setNotes] = useState('');
   const [draftLoading, setDraftLoading] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const draftRequestedRef = useRef<string | null>(null);
   const loadedSubmissionIdRef = useRef<string | null>(null);
 
@@ -80,7 +82,7 @@ export const ReviewEditor = ({
     if (!submission || submission.aiReady) return;
     if (draftRequestedRef.current === submission.id) return;
     draftRequestedRef.current = submission.id;
-    let cancelled = false;
+    const requestId = submission.id;
     setDraftLoading(true);
     (async () => {
       try {
@@ -90,18 +92,21 @@ export const ReviewEditor = ({
           code: submission.codeLines.join('\n'),
           language: 'js',
         });
-        if (cancelled) return;
-        const saved = update(submission.id, {
+        // 楽観更新の emit で effect が再実行されても、保存と同一提出の UI 反映は続行する。
+        const saved = await update(requestId, {
           aiReady: true,
           aiSuggestions: draft.suggestions,
           rubric: draft.rubric,
           reviewNotes: draft.notes || submission.reviewNotes,
         });
         if (!saved) {
-          toast.error('AI 下書きの保存に失敗しました');
+          if (loadedSubmissionIdRef.current === requestId) {
+            toast.error('AI 下書きの保存に失敗しました');
+          }
           draftRequestedRef.current = null;
           return;
         }
+        if (loadedSubmissionIdRef.current !== requestId) return;
         setSuggestions(draft.suggestions);
         setRubric(draft.rubric);
         if (draft.notes) {
@@ -109,15 +114,16 @@ export const ReviewEditor = ({
         }
       } catch (err) {
         console.error('[ReviewEditor] draft failed', err);
-        toast.error('AI 下書きの生成に失敗しました');
+        if (loadedSubmissionIdRef.current === requestId) {
+          toast.error('AI 下書きの生成に失敗しました');
+        }
         draftRequestedRef.current = null;
       } finally {
-        if (!cancelled) setDraftLoading(false);
+        if (loadedSubmissionIdRef.current === requestId) {
+          setDraftLoading(false);
+        }
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [submission, update]);
 
   if (!submissionId || !submission) {
@@ -146,25 +152,38 @@ export const ReviewEditor = ({
     suggestions.filter((s) => s.adopted === true).map((s) => s.line),
   );
 
-  const handleFinalize = (v: ReviewVerdict) => {
-    const saved = finalize(submission.id, v, {
-      reviewNotes: notes,
-      aiSuggestions: suggestions,
-      rubric,
-    });
-    if (!saved) {
-      toast.error('採点の保存に失敗しました');
-      return;
+  const handleFinalize = async (v: ReviewVerdict) => {
+    if (finalizing) return;
+    setFinalizing(true);
+    try {
+      const saved = await finalize(submission.id, v, {
+        reviewNotes: notes,
+        aiSuggestions: suggestions,
+        rubric,
+      });
+      if (!saved) {
+        toast.error('採点の保存に失敗しました');
+        return;
+      }
+      setVerdict(v);
+      const backend = isBackendConfigured();
+      toast.success(
+        v === 'pass'
+          ? backend
+            ? '合格として確定しました（LMS通知を送信しました）'
+            : '合格として確定しました（デモ: 通知はローカルのみ）'
+          : v === 'resubmit'
+            ? backend
+              ? '再提出を依頼しました（LMS通知を送信しました）'
+              : '再提出を依頼しました'
+            : backend
+              ? '不合格として確定しました（LMS通知を送信しました）'
+              : '不合格として確定しました',
+      );
+      setPage('review-queue');
+    } finally {
+      setFinalizing(false);
     }
-    setVerdict(v);
-    toast.success(
-      v === 'pass'
-        ? '合格として確定しました（デモ: 通知は未送信）'
-        : v === 'resubmit'
-          ? '再提出を依頼しました'
-          : '不合格として確定しました',
-    );
-    setPage('review-queue');
   };
 
   const codeLines = submission.codeLines;
@@ -203,11 +222,20 @@ export const ReviewEditor = ({
             AI下書き準備済
           </Badge>
         ) : null}
-        <Button type="button" onClick={() => handleFinalize('resubmit')}>
+        <Button
+          type="button"
+          onClick={() => handleFinalize('resubmit')}
+          disabled={finalizing}
+        >
           <ThumbsDown size={13} />
           再提出
         </Button>
-        <Button type="button" variant="primary" onClick={() => handleFinalize('pass')}>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => handleFinalize('pass')}
+          disabled={finalizing}
+        >
           <ThumbsUp size={13} />
           合格として確定
         </Button>
@@ -427,14 +455,18 @@ export const ReviewEditor = ({
                 variant="accent"
                 className="w-full mb-3"
                 onClick={() => verdict && handleFinalize(verdict)}
-                disabled={!verdict}
+                disabled={!verdict || finalizing}
               >
                 採点を確定
               </Button>
 
               <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 text-[12.5px] text-brand-ink">
                 <Info size={14} />
-                <div>採点を確定すると受講者にメール + LMS通知が送信されます（デモでは未送信）。</div>
+                <div>
+                  {isBackendConfigured()
+                    ? '採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。'
+                    : '採点を確定するとローカルに保存されます（デモ）。'}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

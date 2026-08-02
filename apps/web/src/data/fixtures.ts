@@ -21,6 +21,10 @@ export const CURRENT_USER: User = {
   initials: 'TS',
 };
 
+const SES_WEB_FUNDAMENTALS_COURSE_UUID =
+  '6b200629-c6af-5746-bf86-69718cfacf2f';
+const SES_WEB_MATERIALS_PREFIX = `tenant/ses/courses/${SES_WEB_FUNDAMENTALS_COURSE_UUID}`;
+
 export const SES_COURSES: Course[] = [
   {
     id: 'web-fundamentals',
@@ -45,7 +49,7 @@ export const SES_COURSES: Course[] = [
             type: 'slides',
             duration: '12分',
             status: 'done',
-            pdfPath: 'web-fundamentals/01-http.pdf',
+            pdfPath: `${SES_WEB_MATERIALS_PREFIX}/01-http.pdf`,
             totalPages: 18,
           },
           {
@@ -54,7 +58,7 @@ export const SES_COURSES: Course[] = [
             type: 'video',
             duration: '09:20',
             status: 'done',
-            videoPath: 'web-fundamentals/02-dns.mp4',
+            videoPath: `${SES_WEB_MATERIALS_PREFIX}/02-dns.mp4`,
             totalSec: 560,
           },
           { id: 'l3', title: '確認テスト（全10問）', type: 'quiz', duration: '10分', status: 'done' },
@@ -83,7 +87,7 @@ export const SES_COURSES: Course[] = [
             duration: '19:30',
             status: 'active',
             progress: 42,
-            videoPath: 'web-fundamentals/10-functions.mp4',
+            videoPath: `${SES_WEB_MATERIALS_PREFIX}/10-functions.mp4`,
             totalSec: 1170,
           },
           {

@@ -38,6 +38,7 @@ interface NotificationCenterProps {
   onAfterCreateAnnouncement: () => void;
   /** お知らせのコース指定に使う (任意。 空ならテナント全体)。 */
   courses: Course[];
+  onOpenSubmission?: (submissionId: string) => void;
 }
 
 const TYPE_META: Record<
@@ -76,6 +77,7 @@ export const NotificationCenter = ({
   onMarkAllRead,
   onAfterCreateAnnouncement,
   courses,
+  onOpenSubmission,
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -173,6 +175,13 @@ export const NotificationCenter = ({
                     key={n.id}
                     onClick={() => {
                       if (!n.read) onMarkRead(n.id);
+                      if (n.type === 'review_completed' && onOpenSubmission) {
+                        const submissionId = n.payload?.submission_id;
+                        if (typeof submissionId === 'string' && submissionId.length > 0) {
+                          onOpenSubmission(submissionId);
+                          setOpen(false);
+                        }
+                      }
                     }}
                     className={cn(
                       'w-full text-left flex gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken transition-colors',

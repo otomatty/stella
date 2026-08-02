@@ -1,7 +1,7 @@
 /**
  * 提出物の API 永続化 (Issue #8 — P3 DB 連携)。
  *
- * RLS: 受講者は自分の提出のみ insert/select。 講師・管理者はテナント内を select/update。
+ * RLS: 受講者: insert + mine/本人 select。staff: テナント一覧/更新。
  */
 
 import type {
@@ -113,6 +113,20 @@ function rowToSubmission(row: SubmissionRow): Submission {
     reviewNotes: row.review_notes ?? "",
     verdict: row.verdict,
   };
+}
+
+/** 受講者: 自分の提出一覧。 */
+export async function fetchMySubmissions(): Promise<Submission[]> {
+  const { rows } = await apiFetch<{ rows: SubmissionRow[] }>("/api/submissions/mine");
+  return (rows ?? []).map(rowToSubmission);
+}
+
+/** 本人または staff: 提出 1 件。 */
+export async function fetchSubmissionById(id: string): Promise<Submission> {
+  const { row } = await apiFetch<{ row: SubmissionRow }>(
+    `/api/submissions/${encodeURIComponent(id)}`,
+  );
+  return rowToSubmission(row);
 }
 
 /** staff: テナント内の提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
