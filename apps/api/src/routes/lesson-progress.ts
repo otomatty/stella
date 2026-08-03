@@ -55,7 +55,7 @@ lessonProgressRoute.get("/api/lesson-progress", async (c) => {
 lessonProgressRoute.get("/api/lesson-progress/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
       .select(SELECT)
       .from(lessonProgress)

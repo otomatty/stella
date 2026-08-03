@@ -22,6 +22,7 @@ import {
 import { Brand } from '@/components/common/Brand';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { Role, Tenant, User } from '@/data/types';
+import type { ProfileRole } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 
 type LucideIcon = ComponentType<LucideProps>;
@@ -75,11 +76,20 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'enrollments', label: '受講登録', icon: ClipboardList },
     { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'users', label: 'ユーザー管理', icon: Users },
-    { id: 'orgs', label: '組織マスタ', icon: Building },
     { id: 'report', label: 'レポート', icon: FileText },
     { id: 'audit', label: '監査ログ', icon: Shield },
   ],
 };
+
+const ORGS_NAV: NavItem = { id: 'orgs', label: '組織マスタ', icon: Building };
+
+function navForRole(role: Role, profileRole?: ProfileRole): NavItem[] {
+  const items = NAV[role];
+  if (role !== 'admin' || profileRole !== 'platform_admin') return items;
+  const usersIdx = items.findIndex((item) => item.id === 'users');
+  const insertAt = usersIdx >= 0 ? usersIdx + 1 : items.length;
+  return [...items.slice(0, insertAt), ORGS_NAV, ...items.slice(insertAt)];
+}
 
 interface SidebarProps {
   role: Role;
@@ -89,6 +99,8 @@ interface SidebarProps {
   user: User;
   /** 講師ロール時の添削待ち件数 (未指定時は NAV の既定値) */
   reviewQueueCount?: number;
+  /** profiles.role — 組織マスタは platform_admin のみ表示 */
+  profileRole?: ProfileRole;
 }
 
 export const Sidebar = ({
@@ -98,6 +110,7 @@ export const Sidebar = ({
   tenant,
   user,
   reviewQueueCount,
+  profileRole,
 }: SidebarProps) => (
   <aside className="bg-card border-r border-border p-3 pb-4 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto w-[232px]">
     <div className="pt-1 px-2.5 pb-4 border-b border-border mb-3">
@@ -107,7 +120,7 @@ export const Sidebar = ({
     <div className="px-3 pt-3.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-ink-4">
       メニュー
     </div>
-    {NAV[role].map((link) => {
+    {navForRole(role, profileRole).map((link) => {
       const count =
         link.id === 'review-queue' && typeof reviewQueueCount === 'number'
           ? reviewQueueCount

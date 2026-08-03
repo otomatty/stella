@@ -56,20 +56,28 @@ export const tenants = sqliteTable("tenants", {
   updatedAt: tsNowUpd("updated_at"),
 });
 
-export const profiles = sqliteTable("profiles", {
-  id: text("id").primaryKey(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  role: text("role", { enum: ["student", "instructor", "admin"] })
-    .notNull()
-    .default("student"),
-  displayName: text("display_name").notNull(),
-  initials: text("initials"),
-  email: text("email"),
-  disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
-  createdAt: tsNow("created_at"),
-});
+export const profiles = sqliteTable(
+  "profiles",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    role: text("role", {
+      enum: ["student", "instructor", "admin", "platform_admin"],
+    })
+      .notNull()
+      .default("student"),
+    displayName: text("display_name").notNull(),
+    initials: text("initials"),
+    email: text("email"),
+    disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
+  }),
+);
 
 // ---------------------------------------------------------------
 // コース / セクション / レッスン / 課題

@@ -13,13 +13,17 @@ export const PROFILE_ROLES: readonly ProfileRole[] = [
   "student",
   "instructor",
   "admin",
+  "platform_admin",
 ];
+
+export const ASSIGNABLE_PROFILE_ROLES = ["student", "instructor", "admin"] as const;
+export type AssignableProfileRole = (typeof ASSIGNABLE_PROFILE_ROLES)[number];
 
 /** 招待 1 件分の入力。 tenant は呼び出し元 (admin) の所属から server 側で決まる。 */
 export interface InviteUserInput {
   email: string;
   displayName: string;
-  role: ProfileRole;
+  role: AssignableProfileRole;
 }
 
 /** `POST /api/admin/users/invite` のリクエスト body。 */
@@ -42,7 +46,7 @@ export interface InviteUsersResponse {
 /** `POST /api/admin/users/role` のリクエスト body。 */
 export interface SetRoleRequest {
   userId: string;
-  role: ProfileRole;
+  role: AssignableProfileRole;
 }
 
 /** `POST /api/admin/users/disable` のリクエスト body。 */
@@ -197,6 +201,15 @@ export function isValidEmail(value: string): boolean {
 }
 
 export function isProfileRole(value: unknown): value is ProfileRole {
+  return (
+    value === "student" ||
+    value === "instructor" ||
+    value === "admin" ||
+    value === "platform_admin"
+  );
+}
+
+export function isAssignableProfileRole(value: unknown): value is AssignableProfileRole {
   return value === "student" || value === "instructor" || value === "admin";
 }
 
@@ -232,7 +245,7 @@ export function validateInviteUsersRequest(raw: unknown): ValidateResult {
     if (!isValidEmail(email)) {
       return { ok: false, status: 400, message: `invites[${i}].email is invalid` };
     }
-    if (!isProfileRole(item.role)) {
+    if (!isAssignableProfileRole(item.role)) {
       return { ok: false, status: 400, message: `invites[${i}].role is invalid` };
     }
     const displayNameRaw =

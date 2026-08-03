@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
 const ISSUER = "falcon-api";
 const AUDIENCE = "falcon-web";
-const TTL_SEC = 60 * 60 * 24 * 7; // 7 日
+const TTL_SEC = 60 * 60 * 24; // 24 時間
 
 function secretKey(secret: string): Uint8Array {
   return new TextEncoder().encode(secret);

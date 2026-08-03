@@ -29,3 +29,21 @@ export async function registerInvitedUser(db: Db, userId: string, email: string)
   const normalized = email.trim().toLowerCase();
   await db.insert(authUsers).values({ id: userId, email: normalized });
 }
+
+/**
+ * 招待で使う auth_users.id を解決する。
+ * login-before-invite の場合は既存 id を再利用し、なければ新規 UUID を返す。
+ */
+export async function resolveInviteAuthUserId(
+  db: Db,
+  email: string,
+): Promise<{ userId: string; authExists: boolean }> {
+  const normalized = email.trim().toLowerCase();
+  const existing = (
+    await db.select().from(authUsers).where(eq(authUsers.email, normalized)).limit(1)
+  )[0];
+  if (existing) {
+    return { userId: existing.id, authExists: true };
+  }
+  return { userId: crypto.randomUUID(), authExists: false };
+}

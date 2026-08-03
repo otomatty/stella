@@ -47,7 +47,7 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
 enrollmentsRoute.get("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const courseId = c.req.query("courseId");
     if (!courseId) throw new ApiError("courseId が必要です", 400);
     const rows = await db
@@ -70,7 +70,7 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
 enrollmentsRoute.post("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const body = (await c.req.json()) as {
       userId: string;
       courseId: string;
@@ -126,7 +126,7 @@ async function assertSameTenant(
 enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     await assertSameTenant(db, id, caller.tenantId);
     const patch = (await c.req.json()) as {
@@ -158,7 +158,7 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
 enrollmentsRoute.delete("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     await assertSameTenant(db, id, caller.tenantId);
     await db.delete(enrollments).where(eq(enrollments.id, id));

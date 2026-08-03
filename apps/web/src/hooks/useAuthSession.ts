@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 
 import { isAuthConfigured } from "@/lib/auth-client";
+import { ApiClientError } from "@/lib/api-client";
 import {
   fetchProfile,
   getSession,
@@ -23,13 +24,23 @@ interface UseAuthSessionResult {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  inviteRequired: boolean;
   refreshProfile: () => Promise<void>;
+}
+
+function isInviteRequiredError(err: unknown): boolean {
+  return (
+    err instanceof ApiClientError &&
+    err.status === 403 &&
+    err.message === "invite_required"
+  );
 }
 
 export function useAuthSession(): UseAuthSessionResult {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(isAuthConfigured());
+  const [inviteRequired, setInviteRequired] = useState(false);
 
   useEffect(() => {
     if (!isAuthConfigured()) {
@@ -43,6 +54,7 @@ export function useAuthSession(): UseAuthSessionResult {
       setSession(next);
       if (!next) {
         setProfile(null);
+        setInviteRequired(false);
         setLoading(false);
         return;
       }
@@ -50,12 +62,22 @@ export function useAuthSession(): UseAuthSessionResult {
         const p = await fetchProfile(next.user.id);
         if (!cancelled) {
           setProfile(p);
+          setInviteRequired(false);
           setLoading(false);
         }
       } catch (err) {
+        if (isInviteRequiredError(err)) {
+          if (!cancelled) {
+            setProfile(null);
+            setInviteRequired(true);
+            setLoading(false);
+          }
+          return;
+        }
         console.error("[useAuthSession] fetchProfile failed", err);
         if (!cancelled) {
           setProfile(null);
+          setInviteRequired(false);
           setLoading(false);
         }
       }
@@ -81,10 +103,16 @@ export function useAuthSession(): UseAuthSessionResult {
     try {
       const p = await fetchProfile(session.user.id);
       setProfile(p);
+      setInviteRequired(false);
     } catch (err) {
+      if (isInviteRequiredError(err)) {
+        setProfile(null);
+        setInviteRequired(true);
+        return;
+      }
       console.error("[useAuthSession] refreshProfile failed", err);
     }
   };
 
-  return { session, profile, loading, refreshProfile };
+  return { session, profile, loading, inviteRequired, refreshProfile };
 }

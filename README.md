@@ -77,7 +77,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    bun run smoke:d1        # テーブル確認
    ```
 
-   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントのロール昇格は下記「初回ログインとロール昇格」を参照してください。
+   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
 
    コース ID が安定 UUID に変わったあと、古いローカル D1 で seed が失敗する場合は `apps/api/.wrangler/state`（または同等のローカル D1 状態）を削除してから `bun run db:migrate && bun run db:seed` をやり直してください。リモート D1（`db:seed:remote`）も既存のランダム course ID は書き換えられないため、安定 UUID 導入前に seed 済みなら wipe/再作成するか、衝突する course 行を消してから再 seed してください。
 
@@ -124,34 +124,72 @@ bun run --filter=@falcon/shared typecheck
 
 ### 初回ログインとロール昇格
 
-初回 Google ログイン後にオンボーディング（テナント選択・表示名）を完了すると、
-`profiles` に `role='student'` で行が作られる。ログイン直後（オンボーディング前）に
-下記 SQL を実行しても更新件数 0 になる点に注意。
-Admin / Instructor 画面を検証するときは、オンボーディング完了後にログインに使ったメールで
-ロールを上げる（`apps/api` で実行。メールは自分のものに置換）:
+所属は**招待制のみ**。自由オンボーディング（任意テナント選択）は廃止済み。
+未招待のまま Google ログインすると招待必要画面になり、テナントには入れない。
+
+先に tenant `admin`（管理画面のユーザー招待）か、下記の開発用 SQL で
+自分の Google メールを `profiles` + `auth_users`（同一 UUID）に登録してからログインする。
+招待メール送信はない。先に未招待ログインしたあとで招待しても、再ログインで紐付く（救済）。
+
+#### 開発ブートストラップ（ローカル D1）
+
+seed の `seed-admin` 等は Google ログイン用ではない。自分の email を seed テナント `ses` へ直接入れる例
+（`<uuid>` は同じ値を両方に使う。メールは自分のものに置換）:
 
 ```bash
 cd apps/api
 
-# 管理者
-wrangler d1 execute falcon-db --local --command "update profiles set role='admin' where email='you@example.com'"
+wrangler d1 execute falcon-db --local --command \
+  "insert into auth_users (id, email, created_at) values ('<uuid>', 'you@example.com', unixepoch() * 1000)"
 
-# 講師
-wrangler d1 execute falcon-db --local --command "update profiles set role='instructor' where email='you@example.com'"
+wrangler d1 execute falcon-db --local --command \
+  "insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('<uuid>', 'ses', 'admin', 'You', 'Y', 'you@example.com', 0, unixepoch() * 1000)"
 ```
 
-昇格後はブラウザをリロード（または再ログイン）してロールを反映させる。
-認可は `/api/me` の `profiles.role` を参照するため、JWT の再発行は不要。
+既に tenant `admin` で入れている場合は、管理画面の招待（単発 / CSV）で同じ email を追加してもよい。
+
+#### ロール昇格（SQL）
+
+Admin / Instructor / プラットフォーム管理を検証するとき（`apps/api` で実行）:
+
+```bash
+cd apps/api
+
+# テナント管理者
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='admin' where email='you@example.com'"
+
+# 講師
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='instructor' where email='you@example.com'"
+
+# プラットフォーム管理者（組織マスタなどテナント横断。招待 UI からは付与不可）
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='platform_admin' where email='you@example.com'"
+```
+
+昇格後はブラウザをリロードしてロールを反映させる。
+認可は `/api/me` の `profiles.role` を参照するため、ロール変更だけの再ログインは不要。
+
+JWT の有効期限は **24 時間**。失効後は再ログインが必要（サーバー側 denylist / refresh は無い）。
 
 ### 手動検証チェックリスト
 
 実データ経路が通っていることの確認（Tweaks パネルは使わない）:
 
 - [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`（できれば `jwtConfigured` / `googleOAuthConfigured` も true）
-- [ ] `http://localhost:5173` で Google ログインできる
+- [ ] 招待済み email で `http://localhost:5173` から Google ログインできる
 - [ ] Learner（UI 名; DB は `profiles.role='student'`）としてコース一覧など D1（seed）由来のデータが見える
 - [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
 - [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / コース等）が D1 データを表示する
+
+### 認可・所属（#62）手動確認
+
+- [ ] 未招待 Google ログイン → 招待必要画面（任意テナントに入れない）
+- [ ] 招待後ログイン → 正しい tenant/role
+- [ ] tenant admin は組織マスタ不可 / platform_admin は可
+- [ ] 未認証で /api/chat・/api/review-draft が 401
+- [ ] student で review-draft が 403
 
 ### コア学習ループ（#61）手動 E2E
 

@@ -15,7 +15,7 @@
  */
 
 import {
-  isProfileRole,
+  isAssignableProfileRole,
   validateInviteUsersRequest,
   validateUpsertOrganization,
   type InviteResult,
@@ -24,11 +24,17 @@ import {
 import { Hono, type Context } from "hono";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 
-import { auditLogs, profiles, tenants } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { auditLogs, authUsers, profiles, tenants } from "../db/schema.js";
+import {
+  errorResponse,
+  getCaller,
+  requirePlatformAdmin,
+  requireTenantAdmin,
+  ApiError,
+} from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
-import { registerInvitedUser } from "../lib/auth-users.js";
+import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import type { Env } from "../env.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
@@ -74,10 +80,21 @@ async function recordAudit(
   }
 }
 
-/** admin 認証 + caller 解決。 */
-async function requireAdmin(c: Context<{ Bindings: Env }>): Promise<{ caller: Caller; db: Db }> {
+/** ユーザー管理用: tenant admin (admin | platform_admin) + caller 解決。 */
+async function requireTenantAdminCtx(
+  c: Context<{ Bindings: Env }>,
+): Promise<{ caller: Caller; db: Db }> {
   const { caller, db } = await getCaller(c);
-  requireRole(caller, "admin");
+  requireTenantAdmin(caller);
+  return { caller, db };
+}
+
+/** org ルート用: platform_admin のみ。 */
+async function requirePlatformAdminCtx(
+  c: Context<{ Bindings: Env }>,
+): Promise<{ caller: Caller; db: Db }> {
+  const { caller, db } = await getCaller(c);
+  requirePlatformAdmin(caller);
   return { caller, db };
 }
 
@@ -126,12 +143,22 @@ async function requireSameTenantTarget(
   return rows[0];
 }
 
+/** platform_admin は SQL/seed 専用。非 platform_admin からの role/disable を拒否。 */
+function rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(
+  caller: Caller,
+  targetRole: string,
+): void {
+  if (targetRole === "platform_admin" && caller.role !== "platform_admin") {
+    throw new ApiError("platform_admin は操作できません", 403);
+  }
+}
+
 // ---------------------------------------------------------------
 // ユーザー一覧
 // ---------------------------------------------------------------
 adminRoute.get("/api/admin/users", async (c) => {
   try {
-    const { caller, db } = await requireAdmin(c);
+    const { caller, db } = await requireTenantAdminCtx(c);
     const rows = await db
       .select()
       .from(profiles)
@@ -160,7 +187,7 @@ adminRoute.get("/api/admin/users", async (c) => {
 
 adminRoute.post("/api/admin/users/invite", async (c) => {
   try {
-    const { caller, db } = await requireAdmin(c);
+    const { caller, db } = await requireTenantAdminCtx(c);
     const raw = await c.req.json().catch(() => null);
     const validated = validateInviteUsersRequest(raw);
     if (!validated.ok) return c.json({ error: validated.message }, validated.status);
@@ -203,8 +230,8 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           });
           continue;
         }
-        const userId = crypto.randomUUID();
-        await db.insert(profiles).values({
+        const { userId, authExists } = await resolveInviteAuthUserId(db, inv.email);
+        const profileInsert = db.insert(profiles).values({
           id: userId,
           tenantId: caller.tenantId,
           role: inv.role,
@@ -212,7 +239,16 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           initials: initialsFrom(inv.displayName),
           email: inv.email,
         });
-        await registerInvitedUser(db, userId, inv.email);
+        if (authExists) {
+          // login-before-invite: 既存 auth_users.id に profile のみ紐付け
+          await profileInsert;
+        } else {
+          // 新規: profile + auth_users を D1 batch で原子作成
+          await db.batch([
+            profileInsert,
+            db.insert(authUsers).values({ id: userId, email: inv.email }),
+          ]);
+        }
         seatsConsumed += 1;
         await recordAudit(db, caller, {
           action: "user_invite",
@@ -238,15 +274,16 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
 // ---------------------------------------------------------------
 adminRoute.post("/api/admin/users/role", async (c) => {
   try {
-    const { caller, db } = await requireAdmin(c);
+    const { caller, db } = await requireTenantAdminCtx(c);
     const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
     const userId = typeof body.userId === "string" ? body.userId : "";
     if (!userId) return c.json({ error: "userId は必須です" }, 400);
-    if (!isProfileRole(body.role)) return c.json({ error: "role が不正です" }, 400);
+    if (!isAssignableProfileRole(body.role)) return c.json({ error: "role が不正です" }, 400);
     if (userId === caller.id) {
       return c.json({ error: "自分自身のロールは変更できません" }, 400);
     }
-    await requireSameTenantTarget(db, caller, userId);
+    const target = await requireSameTenantTarget(db, caller, userId);
+    rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
     await db.update(profiles).set({ role: body.role }).where(eq(profiles.id, userId));
     await recordAudit(db, caller, {
       action: "user_role_change",
@@ -266,7 +303,7 @@ adminRoute.post("/api/admin/users/role", async (c) => {
 // ---------------------------------------------------------------
 adminRoute.post("/api/admin/users/disable", async (c) => {
   try {
-    const { caller, db } = await requireAdmin(c);
+    const { caller, db } = await requireTenantAdminCtx(c);
     const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
     const userId = typeof body.userId === "string" ? body.userId : "";
     if (!userId) return c.json({ error: "userId は必須です" }, 400);
@@ -274,7 +311,8 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
       return c.json({ error: "disabled は真偽値である必要があります" }, 400);
     }
     if (userId === caller.id) return c.json({ error: "自分自身は無効化できません" }, 400);
-    await requireSameTenantTarget(db, caller, userId);
+    const target = await requireSameTenantTarget(db, caller, userId);
+    rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
     await recordAudit(db, caller, {
@@ -295,7 +333,7 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
 // ---------------------------------------------------------------
 adminRoute.get("/api/admin/orgs", async (c) => {
   try {
-    const { db } = await requireAdmin(c);
+    const { db } = await requirePlatformAdminCtx(c);
     const tenantRows = await db.select().from(tenants).orderBy(asc(tenants.createdAt));
     const memberRows = await db
       .select({ tenantId: profiles.tenantId })
@@ -330,7 +368,7 @@ adminRoute.get("/api/admin/orgs", async (c) => {
 // ---------------------------------------------------------------
 adminRoute.post("/api/admin/orgs/upsert", async (c) => {
   try {
-    const { caller, db } = await requireAdmin(c);
+    const { caller, db } = await requirePlatformAdminCtx(c);
     const raw = await c.req.json().catch(() => null);
     const validated = validateUpsertOrganization(raw);
     if (!validated.ok) return c.json({ error: validated.message }, validated.status);

@@ -34,7 +34,7 @@ const MAX_LIMIT = 1000;
 auditLogsRoute.get("/api/audit-logs", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
 
     const q = c.req.query();
     // tenant は常に caller のテナントに固定する (クエリの tenantId は無視)。

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `profiles_email_uq` ON `profiles` (`email`);

@@ -17,8 +17,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import type { ProfileRole } from '@falcon/shared/cms/types';
-import { isValidEmail, type InviteUserInput } from '@falcon/shared/admin/types';
+import {
+  ASSIGNABLE_PROFILE_ROLES,
+  isValidEmail,
+  type AssignableProfileRole,
+  type InviteUserInput,
+} from '@falcon/shared/admin/types';
 import { inviteUsers } from '@/lib/admin-users-api';
 
 import { ROLE_LABEL } from './shared';
@@ -38,7 +42,7 @@ export function InviteDialog({
 }: InviteDialogProps) {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<ProfileRole>('student');
+  const [role, setRole] = useState<AssignableProfileRole>('student');
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
@@ -118,12 +122,14 @@ export function InviteDialog({
             <select
               id="inv-role"
               value={role}
-              onChange={(e) => setRole(e.target.value as ProfileRole)}
+              onChange={(e) => setRole(e.target.value as AssignableProfileRole)}
               className="h-10 w-full rounded-sm border border-input bg-card px-3 text-sm"
             >
-              <option value="student">{ROLE_LABEL.student}</option>
-              <option value="instructor">{ROLE_LABEL.instructor}</option>
-              <option value="admin">{ROLE_LABEL.admin}</option>
+              {ASSIGNABLE_PROFILE_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </option>
+              ))}
             </select>
           </div>
           <DialogFooter className="px-0 pb-2 border-t-0">

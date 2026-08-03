@@ -17,7 +17,7 @@ export const materialsRoute = new Hono<{ Bindings: Env }>();
 materialsRoute.post("/api/materials/upload", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
 
     const bucket = c.env.MATERIALS_BUCKET;
     if (!bucket) {

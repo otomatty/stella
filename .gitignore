@@ -16,3 +16,6 @@ apps/web/public/pdfjs/
 # Cloudflare Workers / Pages
 .wrangler
 apps/api/.dev.vars
+
+# Git worktrees (local)
+.worktrees

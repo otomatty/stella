@@ -19,7 +19,7 @@ import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { AuthCallback } from '@/components/shell/AuthCallback';
 import { TenantSelect } from '@/components/shell/TenantSelect';
-import { OnboardingScreen } from '@/components/shell/OnboardingScreen';
+import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
 
 import { LearnerDashboard } from '@/components/learner/LearnerDashboard';
 import { CourseList } from '@/components/learner/CourseList';
@@ -108,14 +108,28 @@ const PAGE_LABELS: Record<string, string> = {
   settings: '設定',
 };
 
-const roleLabel = (role: Role) =>
-  role === 'learner' ? 'マイラーニング' : role === 'instructor' ? '講師' : 'テナント管理';
+function roleLabel(role: Role, profileRole?: ProfileRole): string {
+  if (profileRole === 'platform_admin') return 'プラットフォーム管理';
+  if (role === 'learner') return 'マイラーニング';
+  if (role === 'instructor') return '講師';
+  return 'テナント管理';
+}
 
-/** profiles.role を UI 用 Role にマップする。 student → learner。 */
+/** profiles.role を UI 用 Role にマップする。 student → learner。 platform_admin → admin シェル。 */
 function mapProfileRole(role: ProfileRole): Role {
-  if (role === 'student') return 'learner';
-  if (role === 'instructor') return 'instructor';
-  return 'admin';
+  switch (role) {
+    case 'student':
+      return 'learner';
+    case 'instructor':
+      return 'instructor';
+    case 'admin':
+    case 'platform_admin':
+      return 'admin';
+    default: {
+      const _exhaustive: never = role;
+      return _exhaustive;
+    }
+  }
 }
 
 export default function App() {
@@ -159,7 +173,7 @@ function MainApp() {
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
 
   const backendEnabled = isBackendConfigured();
-  const { session, profile, loading: authLoading, refreshProfile } = useAuthSession();
+  const { session, profile, loading: authLoading, inviteRequired } = useAuthSession();
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
@@ -252,6 +266,13 @@ function MainApp() {
       setAiContext({ kind: 'general' });
     }
   }, [page]);
+
+  // 組織マスタは platform_admin のみ。 tenant admin 等が残留 page を持っていても戻す。
+  useEffect(() => {
+    if (page === 'orgs' && profile?.role !== 'platform_admin') {
+      setPage('dash');
+    }
+  }, [page, profile?.role]);
 
   // テナント / ロール切替時のみ添削対象をクリア (初回マウントでは loadSaved を維持)
   useEffect(() => {
@@ -363,19 +384,18 @@ function MainApp() {
         </>
       );
     }
-    if (!profile) {
+    if (inviteRequired) {
       return (
         <>
-          <OnboardingScreen
-            userId={session.user.id}
-            email={session.user.email}
-            onCompleted={refreshProfile}
+          <InviteRequiredScreen
+            email={session.user.email ?? ""}
+            onSignOut={() => void authSignOut()}
           />
           <Toaster />
         </>
       );
     }
-    // backendEnabled + session + profile: アプリへ進む (stage 関係なし)
+    // backendEnabled + session (+ profile or transient null): アプリへ進む (stage 関係なし)
   } else {
     // 既存の fixtures フロー (バックエンド未設定時)
     if (stage === 'login') {
@@ -404,7 +424,7 @@ function MainApp() {
 
   const crumbs = [
     effectiveTenant.name,
-    roleLabel(effectiveRole),
+    roleLabel(effectiveRole, profile?.role),
     page === 'course-detail' && currentCourse
       ? currentCourse.title
       : PAGE_LABELS[page] ?? page,
@@ -424,6 +444,7 @@ function MainApp() {
           reviewQueueCount={
             effectiveRole === 'instructor' ? pendingReviewCount : undefined
           }
+          profileRole={profile?.role}
         />
         <div className="min-w-0 flex flex-col">
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
@@ -464,6 +485,7 @@ function MainApp() {
               coursesError: courseError,
               resultSubmissionId,
               onOpenSubmission: openSubmissionResult,
+              profileRole: profile?.role,
             })}
           </div>
         </div>
@@ -536,6 +558,7 @@ interface RenderParams {
   coursesError: string | null;
   resultSubmissionId: string | null;
   onOpenSubmission: (submissionId: string) => void;
+  profileRole?: ProfileRole;
 }
 
 function renderPage({
@@ -559,6 +582,7 @@ function renderPage({
   coursesError,
   resultSubmissionId,
   onOpenSubmission,
+  profileRole,
 }: RenderParams) {
   if (page === 'submission-result' && resultSubmissionId) {
     return (
@@ -675,6 +699,7 @@ function renderPage({
           tenantId={tenantId}
           tenantName={tenantName}
           currentUserId={currentUserId}
+          currentUserRole={profileRole ?? null}
           backendEnabled={backendEnabled}
         />
       );
@@ -692,8 +717,26 @@ function renderPage({
       );
     if (page === 'audit')
       return <AdminAuditPage tenantId={tenantId} backendEnabled={backendEnabled} />;
-    if (page === 'orgs')
+    if (page === 'orgs') {
+      if (profileRole !== 'platform_admin') {
+        return (
+          <div className="max-w-md mx-auto mt-16 text-center">
+            <div className="text-[15px] font-semibold mb-2">権限がありません</div>
+            <div className="text-[12.5px] text-ink-3 mb-4">
+              組織マスタはプラットフォーム管理のみ利用できます。
+            </div>
+            <button
+              type="button"
+              className="text-[12.5px] text-brand underline underline-offset-2"
+              onClick={() => setPage('dash')}
+            >
+              ダッシュボードに戻る
+            </button>
+          </div>
+        );
+      }
       return <AdminOrganizationsPage backendEnabled={backendEnabled} />;
+    }
     if (page === 'report')
       return <AdminGeneric page={page} />;
   }
