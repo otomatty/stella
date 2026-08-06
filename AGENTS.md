@@ -34,19 +34,25 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 ### Key caveats
 
+- **Bun toolchain**: Bun is the package manager/runtime but is NOT preinstalled on a bare VM. The startup update script installs it to `~/.bun/bin` (and appends it to `~/.bashrc`). If `bun` is not found in a shell, run `export PATH="$HOME/.bun/bin:$PATH"`.
 - **Vite dev server + browser resource limits**: The app loads many ES modules in dev mode. If the browser shows `ERR_INSUFFICIENT_RESOURCES`, use `bun run build` then `bun run preview` as an alternative for manual testing.
+- **Dev mode crashes on code-runner / PracticeWorkspace routes**: The in-browser ESLint linter pulls in `@babel/traverse`, which references `process` and throws `Uncaught ReferenceError: process is not defined` in `vite dev` (5173) — it blanks the whole app, but ONLY on routes that load that chunk (assignment/practice lessons). The dashboard/course list render fine in dev. To manually test the practice workspace / code exercises / grading, use the production build instead: `bun run build` then `bun run preview` (served on :4173).
+- **Preview build CORS**: When testing via `bun run preview` (:4173), the API rejects it unless the preview origin is allowed. Add `http://localhost:4173,http://127.0.0.1:4173` to `ALLOWED_ORIGINS` in `apps/api/.dev.vars` and restart `dev:api`. (`.dev.vars` is gitignored/local.)
+- **Google OAuth (real login)**: The example `.dev.vars` ships empty `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (so `/api/healthz` reports `googleOAuthConfigured:false`). Cloud agents have `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` available as environment secrets — copy those env values into `apps/api/.dev.vars` and restart `dev:api` to get `googleOAuthConfigured:true`. The registered callback is `http://127.0.0.1:8787/api/auth/google/callback`, so use the API on `127.0.0.1:8787` (not `localhost`) for the OAuth redirect to match. Real login still needs interactive Google credentials.
+- **Local login without Google OAuth**: To test authenticated flows without doing interactive Google sign-in, mint a JWT yourself (HS256, `iss=falcon-api`, `aud=falcon-web`, `sub=<profile id>`, signed with `AUTH_JWT_SECRET` from `.dev.vars`) and set it in the browser `localStorage` key `falcon_auth_token_v1` (this is exactly what the OAuth callback stores). Seeded profile ids: `seed-learner` (student), `seed-instructor`, `seed-admin` — all tenant `ses`; `seed-learner` is enrolled in the `web-fundamentals` course.
 - **Env files**: `apps/web/.env.local` and `apps/api/.dev.vars` are gitignored. Copy from `.example`. For the default real-data path set `VITE_SERVER_URL=http://127.0.0.1:8787` in `.env.local`, and `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in `.dev.vars`.
 - **Wrangler**: The API dev server uses `wrangler dev`. On first run it may print a telemetry notice; this is not an error.
 
 ### Lint / Typecheck / Build
 
 ```bash
+bun run lint       # biome lint . (the CI lint gate)
 bun run typecheck  # tsc --noEmit across all workspaces
 bun run build      # Full production build (web uses Vite)
 ```
 
-There is no separate ESLint config at the repo level. TypeScript strict mode (`tsc --noEmit`) serves as the primary static analysis.
+Linting is **Biome** (`biome.json`), not ESLint. `biome.json` enables the formatter but disables recommended lint rules (`linter.rules.recommended: false`), so `bun run lint` is intentionally permissive; TypeScript strict mode (`tsc --noEmit`) is the primary static analysis.
 
 ### Testing
 
-No automated test framework (Jest/Vitest) is configured in this repo. Validation is done via typecheck + manual testing of the running app.
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`). CI (`.github/workflows/ci.yml`) runs lint → typecheck → test → build. Test coverage is currently minimal (a few unit tests in `@falcon/shared`), so also validate via manual testing of the running app.
