@@ -1,5 +1,5 @@
 import { ChevronRight, School, Cpu } from '@/lib/icons';
-import { TENANTS } from '@/data/fixtures';
+import { TENANTS } from '@/demo/fixtures';
 import type { Tenant } from '@/data/types';
 import { Brand } from '@/components/common/Brand';
 

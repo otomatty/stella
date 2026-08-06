@@ -15,7 +15,6 @@ import {
   HelpCircle,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
-import { SES_COURSES } from '@/data/fixtures';
 import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
 import type { Assignment } from '@falcon/shared/types';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +85,7 @@ export const LessonPlayer = ({
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
-  const sections: Section[] = course.sections ?? SES_COURSES[0].sections ?? [];
+  const sections: Section[] = course.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
     () => allLessons.find((l) => l.id === 'l10')?.id ?? allLessons[0]?.id ?? '',

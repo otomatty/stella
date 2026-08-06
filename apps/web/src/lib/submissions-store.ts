@@ -11,7 +11,7 @@ import {
   SUBMITTED_CODE,
   AI_SUGGESTIONS,
   RUBRIC,
-} from "@/data/fixtures";
+} from "@/demo/fixtures";
 import type { Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import {

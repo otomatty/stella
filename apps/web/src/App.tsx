@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
-import { TENANTS, CURRENT_USER } from '@/data/fixtures';
+import { TENANTS } from '@/data/seed-catalog';
+import { CURRENT_USER } from '@/demo/fixtures';
 import type { Course, Role, Tenant, User } from '@/data/types';
 import type { ChatContext } from '@falcon/shared/ai/types';
 import { LessonAIProvider } from '@/components/common/LessonAIContext';
@@ -688,7 +689,13 @@ function renderPage({
       return <InstructorQA tenantId={tenantId} currentUserId={currentUserId} />;
     if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'students' || page === 'courses')
-      return <InstructorGeneric page={page} />;
+      return (
+        <InstructorGeneric
+          page={page}
+          tenantId={tenantId}
+          backendEnabled={backendEnabled}
+        />
+      );
   }
   if (role === 'admin') {
     if (page === 'dash')

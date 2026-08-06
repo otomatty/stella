@@ -15,7 +15,7 @@ import {
   type UiCourse,
 } from "@falcon/shared/cms/types";
 import type { Course, Tenant } from "@/data/types";
-import { COACH_COURSES, SES_COURSES } from "@/data/fixtures";
+import { COACH_COURSES, SES_COURSES } from "@/data/seed-catalog";
 import { isBackendConfigured } from "@/lib/backend";
 import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";

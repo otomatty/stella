@@ -1,6 +1,6 @@
 import { Sliders } from '@/lib/icons';
 import type { Role, Tenant } from '@/data/types';
-import { TENANTS } from '@/data/fixtures';
+import { TENANTS } from '@/demo/fixtures';
 import { cn } from '@/lib/utils';
 
 interface TweaksPanelProps {

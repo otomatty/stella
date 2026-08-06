@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnnouncementRow } from "@falcon/shared/cms/types";
 import { listAnnouncements } from "@/lib/notifications-api";
 import { isBackendConfigured } from "@/lib/backend";
-import { ANNOUNCEMENTS } from "@/data/fixtures";
+import { ANNOUNCEMENTS } from "@/demo/fixtures";
 
 export interface UseAnnouncementsResult {
   announcements: AnnouncementRow[];

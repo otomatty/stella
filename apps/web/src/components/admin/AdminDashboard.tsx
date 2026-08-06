@@ -45,7 +45,7 @@ import {
   ENROLLMENT_TREND,
   COMPLETION_BY_COURSE,
   STUMBLES,
-} from '@/data/fixtures';
+} from '@/demo/fixtures';
 
 interface Props {
   tenantId: string;

@@ -11,7 +11,7 @@ import {
   COACH_COURSES,
   SES_COURSES,
   TENANTS,
-} from "../../../apps/web/src/data/fixtures.js";
+} from "../../../apps/web/src/data/seed-catalog.js";
 import type { Course, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
 import { findAssignment } from "../src/problems/index.js";
