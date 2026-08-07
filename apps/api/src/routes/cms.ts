@@ -16,6 +16,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import {
   assignments,
   courses,
+  lessonMaterials,
   lessons,
   quizOptions,
   quizQuestions,
@@ -183,6 +184,29 @@ function assertTenant(t: string | null, caller: Caller): void {
   if (t !== caller.tenantId) throw new ApiError("他テナントのリソースは操作できません", 403);
 }
 
+/**
+ * レッスン削除 (直接 / section・course からの cascade) 前に、 紐づく配布資料の
+ * R2 オブジェクトをベストエフォートで削除する (Issue #72)。
+ * DB 行は FK cascade で消えるため、 ここでは R2 実体のみ扱う。
+ * R2 未設定・削除失敗でもコンテンツ削除は妨げない (孤児はログに残す)。
+ */
+async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Promise<void> {
+  if (lessonIds.length === 0) return;
+  const bucket = env.MATERIALS_BUCKET;
+  if (!bucket) return;
+  try {
+    const rows = await db
+      .select({ path: lessonMaterials.path })
+      .from(lessonMaterials)
+      .where(inArray(lessonMaterials.lessonId, lessonIds));
+    if (rows.length > 0) {
+      await bucket.delete(rows.map((r) => r.path));
+    }
+  } catch (e) {
+    console.error("[cms] 配布資料の R2 削除に失敗 (孤児オブジェクト)", lessonIds, e);
+  }
+}
+
 // =================================================================
 // Courses
 // =================================================================
@@ -293,6 +317,13 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     assertTenant(await courseTenant(db, id), caller);
+    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
+    const lessonRows = await db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .where(eq(sections.courseId, id));
+    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
     await db.delete(courses).where(eq(courses.id, id));
     return c.json({ ok: true });
   } catch (err) {
@@ -329,6 +360,12 @@ cmsRoute.delete("/api/cms/sections/:id", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const sc = await sectionCourse(db, c.req.param("id"));
     assertTenant(sc?.tenant ?? null, caller);
+    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
+    const lessonRows = await db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .where(eq(lessons.sectionId, c.req.param("id")));
+    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
     await db.delete(sections).where(eq(sections.id, c.req.param("id")));
     return c.json({ ok: true });
   } catch (err) {
@@ -398,6 +435,8 @@ cmsRoute.delete("/api/cms/lessons/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     assertTenant(await lessonTenant(db, c.req.param("id")), caller);
+    // cascade で消える配布資料の R2 実体を先に掃除する。
+    await deleteMaterialObjects(db, c.env, [c.req.param("id")]);
     await db.delete(lessons).where(eq(lessons.id, c.req.param("id")));
     return c.json({ ok: true });
   } catch (err) {

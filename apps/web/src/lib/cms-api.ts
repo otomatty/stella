@@ -11,6 +11,7 @@ import type {
   CourseRow,
   CourseStatus,
   CourseWithChildren,
+  LessonMaterialRow,
   LessonRow,
   LessonType,
   QuestionKind,
@@ -321,6 +322,98 @@ export async function uploadMaterial(
     throw new Error(message);
   }
   return (await res.json()) as UploadMaterialResult;
+}
+
+// ---------------------------------------------------------------
+// レッスン配布資料 (Issue #72)
+// ---------------------------------------------------------------
+
+/** レッスンに紐づく配布資料一覧。 受講者は同テナントの published コースのみ返る。 */
+export async function listLessonMaterials(
+  lessonId: string,
+): Promise<LessonMaterialRow[]> {
+  const { rows } = await apiFetch<{ rows: LessonMaterialRow[] }>(
+    `/api/materials?lessonId=${encodeURIComponent(lessonId)}`,
+  );
+  return rows ?? [];
+}
+
+/**
+ * 配布資料をアップロードしてレッスンに紐付ける (staff のみ)。
+ * 保存先パスはサーバ側で組み立てられる。
+ */
+export async function uploadLessonMaterial(
+  file: File,
+  lessonId: string,
+): Promise<LessonMaterialRow> {
+  const { getAccessToken } = await import("./auth-client");
+  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
+  const token = getAccessToken();
+  const form = new FormData();
+  form.append("lessonId", lessonId);
+  form.append("file", file);
+  const res = await fetch(`${serverUrl}/api/materials/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let message = `アップロードに失敗しました (${res.status})`;
+    try {
+      const data = JSON.parse(text) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      /* noop */
+    }
+    throw new Error(message);
+  }
+  const { row } = (await res.json()) as { row: LessonMaterialRow };
+  return row;
+}
+
+/** 配布資料を削除する (staff のみ)。 R2 オブジェクトも削除される。 */
+export async function deleteLessonMaterial(id: string): Promise<void> {
+  await apiFetch(`/api/materials/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/**
+ * 配布資料をダウンロードする。 API 経由のプロキシ (要 Authorization) のため、
+ * fetch → Blob → a[download] で保存させる。
+ */
+export async function downloadLessonMaterial(
+  material: Pick<LessonMaterialRow, "id" | "file_name">,
+): Promise<void> {
+  const { getAccessToken } = await import("./auth-client");
+  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
+  const token = getAccessToken();
+  const res = await fetch(
+    `${serverUrl}/api/materials/${encodeURIComponent(material.id)}/download`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let message = `ダウンロードに失敗しました (${res.status})`;
+    try {
+      const data = JSON.parse(text) as { error?: string };
+      if (data.error) message = data.error;
+    } catch {
+      /* noop */
+    }
+    throw new Error(message);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = material.file_name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /** UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。 */

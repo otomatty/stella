@@ -121,6 +121,21 @@ export interface LessonRow {
   updated_at: string;
 }
 
+/**
+ * レッスン配布資料 (lesson_materials 行 / Issue #72)。 実体は R2 上のオブジェクト。
+ * R2 の `path` はサーバ内部でのみ扱い、 クライアントへは返さない
+ * (ダウンロードは id ベースの `/api/materials/:id/download` プロキシ経由)。
+ */
+export interface LessonMaterialRow {
+  id: string;
+  lesson_id: string;
+  file_name: string;
+  size_bytes: number;
+  mime_type: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export type QuestionKind = "single" | "multiple" | "boolean";
 
 export interface QuizRow {

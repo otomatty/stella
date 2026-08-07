@@ -177,6 +177,28 @@ export const lessons = sqliteTable("lessons", {
 });
 
 // ---------------------------------------------------------------
+// レッスン配布資料 (Issue #72)
+// ---------------------------------------------------------------
+
+/**
+ * レッスンに紐づく配布資料。 実体は R2 (`MATERIALS_BUCKET`) 上のオブジェクトで、
+ * `path` は `tenant/{tenantId}/lessons/{lessonId}/...` 形式。
+ * テナントはレッスン → セクション → コースの join で解決する (authz はアプリ層)。
+ */
+export const lessonMaterials = sqliteTable("lesson_materials", {
+  id: uuid(),
+  lessonId: text("lesson_id")
+    .notNull()
+    .references(() => lessons.id, { onDelete: "cascade" }),
+  path: text("path").notNull(),
+  fileName: text("file_name").notNull(),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  mimeType: text("mime_type").notNull().default("application/octet-stream"),
+  createdBy: text("created_by"),
+  createdAt: tsNow("created_at"),
+});
+
+// ---------------------------------------------------------------
 // レッスン進捗
 // ---------------------------------------------------------------
 
@@ -477,6 +499,7 @@ export const APP_TABLES = [
   "courses",
   "sections",
   "lessons",
+  "lesson_materials",
   "assignments",
   "lesson_progress",
   "quizzes",

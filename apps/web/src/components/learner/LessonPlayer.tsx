@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   FileText,
   Folder,
   MessageCircle,
@@ -27,7 +28,10 @@ import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useLessonQuestions } from '@/hooks/useQuestions';
+import { useLessonMaterials } from '@/hooks/useLessonMaterials';
 import { createQuestion, createReply } from '@/lib/qa-api';
+import { downloadLessonMaterial } from '@/lib/cms-api';
+import type { LessonMaterialRow } from '@falcon/shared/cms/types';
 import { isBackendConfigured } from "@/lib/backend";
 import { QAThread } from '@/components/common/QAThread';
 import { QuestionComposer } from '@/components/common/QuestionComposer';
@@ -117,6 +121,13 @@ export const LessonPlayer = ({
     loading: qaLoading,
     refetch: qaRefetch,
   } = useLessonQuestions(lessonObj?.id ?? null, qaEnabled);
+
+  // 配布資料も CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
+  const {
+    materials,
+    loading: materialsLoading,
+    error: materialsError,
+  } = useLessonMaterials(lessonObj?.id ?? null, qaEnabled);
 
   // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
   // (lessonObj 経由ではなく allLessons から直接 foundId を計算する)
@@ -406,6 +417,12 @@ export const LessonPlayer = ({
               <TabsTrigger value="resources">
                 <Folder size={13} />
                 資料
+                {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
+                {materialsLoading ? null : (
+                  <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">
+                    {materials.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="qa">
                 <MessageCircle size={13} />
@@ -457,7 +474,11 @@ export const LessonPlayer = ({
               />
             </TabsContent>
             <TabsContent value="resources">
-              <ResourcesList />
+              <ResourcesList
+                materials={materials}
+                loading={materialsLoading}
+                error={materialsError}
+              />
             </TabsContent>
             <TabsContent value="notes">
               <NotesView lessonId={lessonObj.id} />
@@ -669,18 +690,107 @@ const QAView = ({
   );
 };
 
+/** ファイルサイズ表記 (1024 基数)。 */
+const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
 /**
- * 資料タブ。 配布資料の一覧 API は未提供のため、 サンプルではなく空状態を表示する。
+ * 資料タブ。 配布資料 (lesson_materials) の実データを一覧し、 API 経由でダウンロードする。
+ * 資料が無いレッスンでは空状態を表示する。
  */
-const ResourcesList = () => (
-  <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
-    <Folder size={28} className="text-ink-4" />
-    <div className="font-medium text-ink-2">配布資料はありません</div>
-    <div className="text-[12.5px]">
-      このレッスンに配布資料が追加されると、 ここからダウンロードできます。
+const ResourcesList = ({
+  materials,
+  loading,
+  error,
+}: {
+  materials: LessonMaterialRow[];
+  loading: boolean;
+  error: string | null;
+}) => {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (material: LessonMaterialRow) => {
+    setDownloadingId(material.id);
+    try {
+      await downloadLessonMaterial(material);
+    } catch (err) {
+      console.error('[ResourcesList] download failed', err);
+      toast.error(
+        err instanceof Error ? err.message : 'ダウンロードに失敗しました',
+      );
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
+        <Loader2 size={16} className="animate-spin" /> 読み込み中…
+      </div>
+    );
+  }
+
+  // 取得失敗は「資料なし」と区別して表示する。
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+        <Folder size={28} className="text-ink-4" />
+        <div className="font-medium text-danger">配布資料の取得に失敗しました</div>
+        <div className="text-[12.5px]">{error}</div>
+      </div>
+    );
+  }
+
+  if (materials.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+        <Folder size={28} className="text-ink-4" />
+        <div className="font-medium text-ink-2">配布資料はありません</div>
+        <div className="text-[12.5px]">
+          このレッスンに配布資料が追加されると、 ここからダウンロードできます。
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {materials.map((m) => (
+        <div
+          key={m.id}
+          className="flex items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5"
+        >
+          <div className="grid place-items-center w-9 h-9 rounded-md bg-sunken text-ink-3 shrink-0">
+            <FileText size={16} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium truncate">{m.file_name}</div>
+            <div className="text-[11.5px] text-ink-3">{formatBytes(m.size_bytes)}</div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={downloadingId === m.id}
+            onClick={() => void handleDownload(m)}
+          >
+            {downloadingId === m.id ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Download size={13} />
+            )}
+            ダウンロード
+          </Button>
+        </div>
+      ))}
     </div>
-  </div>
-);
+  );
+};
 
 const NOTES_STORAGE_PREFIX = 'lms_lesson_notes_v1:';
 
