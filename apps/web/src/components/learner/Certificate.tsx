@@ -47,8 +47,14 @@ export const CertificatePage = ({
   tenantName,
   backendEnabled,
 }: CertificatePageProps) => {
-  if (!backendEnabled || !currentUserId) {
+  if (!backendEnabled) {
     return <DemoCertificate name={studentName} initials={studentInitials} />;
+  }
+  // バックエンド設定済みでセッション復元中 (userId 未取得) はデモ証書ではなく読み込み表示。
+  if (!currentUserId) {
+    return (
+      <div className="py-16 text-center text-sm text-ink-3">読み込み中…</div>
+    );
   }
   return (
     <LiveCertificates

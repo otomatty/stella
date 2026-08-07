@@ -1,11 +1,11 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
   Calendar,
   Play,
   Book,
-  Flame,
+  CheckCircle,
   Clock,
   Award,
-  TrendingUp,
   ChevronRight,
   MessageCircle,
   Sparkles,
@@ -17,9 +17,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { Course } from '@/data/types';
+import type { Course, Lesson } from '@/data/types';
 import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
+import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useMySubmissions } from '@/hooks/useMySubmissions';
+import { listCertificatesForUser } from '@/lib/certificates-api';
+import {
+  resolveLessonStatus,
+  type LessonProgressMap,
+} from '@/lib/lesson-progress';
 import { formatSubmittedAt } from '@/lib/submissions-store';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +35,9 @@ interface LearnerDashboardProps {
   announcementsHook: UseAnnouncementsResult;
   coursesError: string | null;
   onOpenSubmission: (submissionId: string) => void;
+  studentName: string;
+  currentUserId: string | null;
+  backendEnabled: boolean;
 }
 
 /** ISO 文字列を「M月D日」表記にする。 不正値は空文字。 */
@@ -36,6 +45,41 @@ function formatAnnouncementDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+/** 秒数を「H:MM」表記にする。 */
+function formatHoursMinutes(totalSec: number): string {
+  const minutes = Math.floor(totalSec / 60);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
+interface NextLessonInfo {
+  lesson: Lesson;
+  /** 1-indexed セクション番号 */
+  sectionNumber: number;
+  /** コース内の通し番号 (1-indexed) */
+  lessonNumber: number;
+}
+
+/** コース内で最初の未完了レッスンを探す (進捗マップで実ステータスに解決してから)。 */
+function findNextLesson(
+  course: Course | undefined,
+  map: LessonProgressMap,
+): NextLessonInfo | null {
+  if (!course?.sections) return null;
+  let flat = 0;
+  for (let si = 0; si < course.sections.length; si++) {
+    for (const lesson of course.sections[si]!.lessons) {
+      flat += 1;
+      const status = resolveLessonStatus(lesson, map);
+      if (status !== 'done' && status !== 'locked') {
+        return { lesson, sectionNumber: si + 1, lessonNumber: flat };
+      }
+    }
+  }
+  return null;
 }
 
 const NEW_WINDOW_MS = 7 * 86_400_000;
@@ -46,14 +90,61 @@ export const LearnerDashboard = ({
   announcementsHook,
   coursesError,
   onOpenSubmission,
+  studentName,
+  currentUserId,
+  backendEnabled,
 }: LearnerDashboardProps) => {
+  const progressMap = useLessonProgressMap();
   const active = courses.filter((c) => !c.completed && c.progress > 0);
-  const current = active[0];
+  // 「次に取り組む」対象: 受講中の先頭 → なければ未着手の先頭。
+  const current =
+    active[0] ?? courses.find((c) => !c.completed && (c.sections?.length ?? 0) > 0);
+  const nextLesson = useMemo(
+    () => findNextLesson(current, progressMap),
+    [current, progressMap],
+  );
   const {
     submissions,
     loading: submissionsLoading,
     error: submissionsError,
   } = useMySubmissions(true);
+
+  // 進捗 KPI はレッスン進捗ストア (バックエンド設定時はサーバ同期済み) から集計する。
+  const allLessons = useMemo(
+    () => courses.flatMap((c) => c.sections?.flatMap((s) => s.lessons) ?? []),
+    [courses],
+  );
+  const totalLessons = allLessons.length;
+  const completedLessons = allLessons.filter(
+    (l) => resolveLessonStatus(l, progressMap) === 'done',
+  ).length;
+  const totalWatchedSec = allLessons.reduce(
+    (sum, l) => sum + (progressMap[l.id]?.watchedSec ?? 0),
+    0,
+  );
+
+  // 修了証: バックエンド設定時は API の実発行数、 未設定 (デモ) 時は完了コース数。
+  const completedCourses = courses.filter((c) => c.completed).length;
+  const [certCount, setCertCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!backendEnabled || !currentUserId) {
+      setCertCount(null);
+      return;
+    }
+    let cancelled = false;
+    void listCertificatesForUser(currentUserId)
+      .then((rows) => {
+        if (!cancelled) setCertCount(rows.filter((r) => !r.revoked).length);
+      })
+      .catch((err) => {
+        console.error('[LearnerDashboard] certificates fetch failed', err);
+        if (!cancelled) setCertCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backendEnabled, currentUserId]);
+  const displayCertCount = backendEnabled ? certCount ?? 0 : completedCourses;
 
   const { announcements, error: announcementsError, refetch } = announcementsHook;
   const now = Date.now();
@@ -88,10 +179,12 @@ export const LearnerDashboard = ({
   return (
     <>
       <PageHeader
-        title="おかえりなさい、翔太さん"
+        title={`おかえりなさい、${studentName}さん`}
         sub={
           <>
-            今日も学習を続けましょう。連続学習 <strong className="text-foreground">12日</strong> · 今週 3時間20分
+            今日も学習を続けましょう。受講中{' '}
+            <strong className="text-foreground">{active.length}コース</strong> · 完了レッスン{' '}
+            {completedLessons}/{totalLessons}
           </>
         }
         actions={
@@ -138,39 +231,36 @@ export const LearnerDashboard = ({
         <KpiCard
           label={
             <>
-              <Flame size={12} /> 連続学習
+              <CheckCircle size={12} /> 完了レッスン
             </>
           }
-          value={12}
-          unit="日"
-          trend={
-            <>
-              <TrendingUp size={12} />
-              自己ベスト更新中
-            </>
-          }
-          trendDir="up"
-        />
+          value={completedLessons}
+          unit={`/ ${totalLessons}`}
+        >
+          <Progress
+            value={totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0}
+            className="mt-2"
+            tone="brand"
+          />
+        </KpiCard>
         <KpiCard
           label={
             <>
-              <Clock size={12} /> 今週の学習時間
+              <Clock size={12} /> 学習時間
             </>
           }
-          value="3:20"
-          unit="/ 目標 5:00"
-        >
-          <Progress value={66} className="mt-2" tone="brand" />
-        </KpiCard>
+          value={formatHoursMinutes(totalWatchedSec)}
+          unit="累計"
+          trend="動画視聴の合計"
+        />
         <KpiCard
           label={
             <>
               <Award size={12} /> 修了証
             </>
           }
-          value={1}
-          unit="/ 2 見込み"
-          trend={<>次の修了まで 38%</>}
+          value={displayCertCount}
+          unit={`/ 全${courses.length}コース`}
         />
       </div>
 
@@ -192,26 +282,36 @@ export const LearnerDashboard = ({
                 </div>
                 <div className="p-4 pl-5">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <Badge variant="accent">受講中</Badge>
-                    <span className="text-[11.5px] text-ink-3">
-                      セクション 03 · レッスン 10/24
-                    </span>
+                    <Badge variant="accent">
+                      {current.progress > 0 ? '受講中' : '未着手'}
+                    </Badge>
+                    {nextLesson ? (
+                      <span className="text-[11.5px] text-ink-3">
+                        セクション {String(nextLesson.sectionNumber).padStart(2, '0')} · レッスン{' '}
+                        {nextLesson.lessonNumber}/{current.lessonsCount}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="text-[15px] font-semibold leading-snug mb-1">関数とスコープ</div>
+                  <div className="text-[15px] font-semibold leading-snug mb-1">
+                    {nextLesson?.lesson.title ?? current.title}
+                  </div>
                   <div className="text-[11.5px] text-ink-3 mb-3">{current.title}</div>
                   <div className="flex items-center gap-3 mb-3.5">
                     <div className="flex-1">
                       <div className="text-[11.5px] text-ink-3 mb-2">進捗 {current.progress}%</div>
                       <Progress value={current.progress} tone="brand" />
                     </div>
-                    <div className="text-[11.5px] text-ink-3 flex items-center gap-1">
-                      <Clock size={12} />
-                      残り 約11時間
-                    </div>
+                    {nextLesson ? (
+                      <div className="text-[11.5px] text-ink-3 flex items-center gap-1">
+                        <Clock size={12} />
+                        残り {Math.max(current.lessonsCount - nextLesson.lessonNumber + 1, 0)}
+                        レッスン
+                      </div>
+                    ) : null}
                   </div>
                   <Button variant="primary" onClick={() => setPage('lesson')}>
                     <Play size={13} />
-                    再生を続ける (14:20 から)
+                    続きから学習
                   </Button>
                 </div>
               </div>
@@ -266,13 +366,34 @@ export const LearnerDashboard = ({
 
           <Card>
             <CardHeader>
-              <CardTitle>週間学習時間</CardTitle>
+              <CardTitle>コース進捗</CardTitle>
               <CardActions>
-                <span className="text-[11.5px] text-ink-3">直近14日</span>
+                <Button variant="default" size="sm" onClick={() => setPage('courses')}>
+                  コース一覧へ
+                </Button>
               </CardActions>
             </CardHeader>
-            <div className="p-4 h-60 relative">
-              <WeeklyChart />
+            <div className="px-4 py-3.5">
+              {courses.length === 0 ? (
+                <div className="py-4 text-center text-[12.5px] text-ink-3">
+                  受講中のコースはありません。
+                </div>
+              ) : (
+                courses.slice(0, 5).map((c) => (
+                  <div key={c.id} className="mb-3.5 last:mb-0">
+                    <div className="flex items-center gap-2 text-xs mb-1.5">
+                      <span className="font-medium">{c.title}</span>
+                      {c.completed ? <Badge variant="success">完了</Badge> : null}
+                      <div className="flex-1" />
+                      <span className="font-mono font-semibold">{c.progress}%</span>
+                    </div>
+                    <Progress
+                      value={c.progress}
+                      tone={c.completed ? 'success' : 'brand'}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>
@@ -397,54 +518,3 @@ const SUBMISSION_META = {
   resubmit: { label: '再提出', variant: 'warning' },
   fail: { label: '不合格', variant: 'danger' },
 } as const;
-
-const WEEK = [32, 45, 0, 58, 72, 38, 48, 55, 62, 25, 88, 72, 40, 62];
-const DAY = ['月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日'];
-
-const WeeklyChart = () => (
-  <svg viewBox="0 0 560 200" className="w-full h-full">
-    {[0, 1, 2, 3].map((i) => (
-      <line
-        key={i}
-        x1="40"
-        y1={40 + i * 40}
-        x2="550"
-        y2={40 + i * 40}
-        stroke="var(--line)"
-        strokeDasharray="2 4"
-      />
-    ))}
-    {[40, 80, 120, 160].map((y, i) => (
-      <text key={i} x="35" y={y + 3} textAnchor="end" className="fill-ink-3 text-[10.5px]">
-        {[3, 2, 1, 0][i]}h
-      </text>
-    ))}
-    {WEEK.map((v, i) => {
-      const x = 55 + i * 34;
-      const h = v * 1.6;
-      return (
-        <rect
-          key={i}
-          x={x}
-          y={160 - h}
-          width="18"
-          height={h}
-          rx="2"
-          fill="var(--ink)"
-          opacity={i > 6 ? 1 : 0.55}
-        />
-      );
-    })}
-    {DAY.map((d, i) => (
-      <text
-        key={i}
-        x={55 + i * 34 + 9}
-        y="178"
-        textAnchor="middle"
-        className="fill-ink-3 text-[10.5px]"
-      >
-        {d}
-      </text>
-    ))}
-  </svg>
-);

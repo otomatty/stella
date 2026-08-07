@@ -50,23 +50,23 @@ interface NavItem {
   id: NavId;
   label: string;
   icon: LucideIcon;
-  count?: number;
 }
 
+// バッジ件数はモック値を持たず、 App から実データ (counts prop) で渡す。
 const NAV: Record<Role, NavItem[]> = {
   learner: [
     { id: 'dash', label: 'ダッシュボード', icon: Home },
     { id: 'courses', label: 'コース一覧', icon: Book },
     { id: 'lesson', label: '現在のレッスン', icon: Play },
-    { id: 'qa', label: 'Q&A', icon: MessageCircle, count: 2 },
-    { id: 'cert', label: '修了証', icon: Award, count: 1 },
+    { id: 'qa', label: 'Q&A', icon: MessageCircle },
+    { id: 'cert', label: '修了証', icon: Award },
   ],
   instructor: [
     { id: 'dash', label: 'ダッシュボード', icon: Home },
-    { id: 'review-queue', label: '添削待ち', icon: Edit, count: 6 },
+    { id: 'review-queue', label: '添削待ち', icon: Edit },
     { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'students', label: '担当受講者', icon: Users },
-    { id: 'qa', label: 'Q&A 未返信', icon: MessageCircle, count: 3 },
+    { id: 'qa', label: 'Q&A 未返信', icon: MessageCircle },
     { id: 'courses', label: 'コース', icon: Book },
   ],
   admin: [
@@ -97,8 +97,8 @@ interface SidebarProps {
   setPage: (page: string) => void;
   tenant: Tenant;
   user: User;
-  /** 講師ロール時の添削待ち件数 (未指定時は NAV の既定値) */
-  reviewQueueCount?: number;
+  /** ナビ ID ごとの実件数バッジ (添削待ち / Q&A 未返信 / 修了証 等)。 0 は非表示。 */
+  counts?: Partial<Record<NavId, number>>;
   /** profiles.role — 組織マスタは platform_admin のみ表示 */
   profileRole?: ProfileRole;
 }
@@ -109,7 +109,7 @@ export const Sidebar = ({
   setPage,
   tenant,
   user,
-  reviewQueueCount,
+  counts,
   profileRole,
 }: SidebarProps) => (
   <aside className="bg-card border-r border-border p-3 pb-4 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto w-[232px]">
@@ -121,16 +121,13 @@ export const Sidebar = ({
       メニュー
     </div>
     {navForRole(role, profileRole).map((link) => {
-      const count =
-        link.id === 'review-queue' && typeof reviewQueueCount === 'number'
-          ? reviewQueueCount
-          : link.count;
+      const count = counts?.[link.id];
       return (
         <SidebarLink
           key={link.id}
           icon={link.icon}
           label={link.label}
-          count={count}
+          count={typeof count === 'number' && count > 0 ? count : undefined}
           active={page === link.id}
           onClick={() => setPage(link.id)}
         />

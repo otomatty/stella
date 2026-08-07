@@ -8,7 +8,7 @@
  * - 一度 `completed: true` になったレッスンは自動では取り消されない
  */
 
-import type { Lesson, LessonStatus } from '@/data/types';
+import type { Course, Lesson, LessonStatus } from '@/data/types';
 
 const STORAGE_KEY = 'lms_lesson_progress';
 const COMPLETION_THRESHOLD = 0.9;
@@ -403,4 +403,24 @@ export function resolveLessonStatus(
   if (lesson.status === 'done') return 'done';
   if (entry) return 'active';
   return lesson.status;
+}
+
+/**
+ * 進捗マップからコースの進捗率 (%) を導出して返す。
+ * DB 由来コースは `mapCourseToUi` が progress=0 で返すため、 レッスン完了数から計算する。
+ * レッスンを持たないコースはそのまま返す。
+ */
+export function deriveCourseProgress(
+  course: Course,
+  map: LessonProgressMap,
+): Course {
+  const lessons = course.sections?.flatMap((s) => s.lessons) ?? [];
+  if (lessons.length === 0) return course;
+  const done = lessons.filter(
+    (l) => resolveLessonStatus(l, map) === 'done',
+  ).length;
+  const pct = course.completed
+    ? 100
+    : Math.round((done / lessons.length) * 100);
+  return { ...course, progress: pct };
 }

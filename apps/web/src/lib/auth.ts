@@ -2,7 +2,7 @@
  * 認証ラッパ (Cloudflare Workers Google OAuth / JWT)。
  */
 
-import type { ProfileRow } from "@falcon/shared/cms/types";
+import type { ProfileRow, ProfileTenantInfo } from "@falcon/shared/cms/types";
 
 import { apiFetch, ApiClientError } from "./api-client";
 import {
@@ -17,7 +17,8 @@ import {
 } from "./auth-client";
 
 export type { Session };
-export type Profile = ProfileRow;
+/** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
+export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
 
 export { signInWithGoogle, completeAuthFromCallbackHash };
 
@@ -38,8 +39,11 @@ export function subscribeToAuth(
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
   if (!isAuthConfigured() || !getAccessToken()) return null;
   try {
-    const { profile } = await apiFetch<{ profile: Profile }>("/api/me");
-    return profile;
+    const { profile, tenant } = await apiFetch<{
+      profile: ProfileRow;
+      tenant?: ProfileTenantInfo | null;
+    }>("/api/me");
+    return profile ? { ...profile, tenant: tenant ?? null } : profile;
   } catch (err) {
     if (
       err instanceof ApiClientError &&

@@ -1,4 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import {
   ChevronLeft,
@@ -8,9 +10,6 @@ import {
   MessageCircle,
   Edit,
   Clock,
-  Info,
-  Code,
-  Download,
   Loader2,
   HelpCircle,
 } from '@/lib/icons';
@@ -389,13 +388,11 @@ export const LessonPlayer = ({
               </div>
               <h1 className="text-[22px] tracking-tight font-semibold">{lessonObj.title}</h1>
               <div className="flex flex-wrap gap-3.5 text-ink-3 text-[12.5px] mb-5 mt-1">
-                <span className="flex items-center gap-1">
-                  <Clock size={12} /> {lessonObj.duration}
-                </span>
-                <span className="text-ink-4">·</span>
-                <span>講師: 堀江メンター</span>
-                <span className="text-ink-4">·</span>
-                <span>最終更新 4月14日</span>
+                {lessonObj.duration ? (
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} /> {lessonObj.duration}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -409,7 +406,6 @@ export const LessonPlayer = ({
               <TabsTrigger value="resources">
                 <Folder size={13} />
                 資料
-                <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">3</span>
               </TabsTrigger>
               <TabsTrigger value="qa">
                 <MessageCircle size={13} />
@@ -441,11 +437,11 @@ export const LessonPlayer = ({
                   onSubmitted={handleMarkComplete}
                 />
               ) : isText ? (
-                <LessonReadable onComplete={handleMarkComplete} />
+                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               ) : isVideo || isSlides ? (
                 <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
               ) : (
-                <LessonReadable onComplete={handleMarkComplete} />
+                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               )}
             </TabsContent>
             <TabsContent value="qa">
@@ -464,7 +460,7 @@ export const LessonPlayer = ({
               <ResourcesList />
             </TabsContent>
             <TabsContent value="notes">
-              <NotesView />
+              <NotesView lessonId={lessonObj.id} />
             </TabsContent>
           </Tabs>
         </div>
@@ -548,57 +544,31 @@ const LessonOverview = ({
   );
 };
 
-const LessonReadable = ({ onComplete }: { onComplete: () => void }) => (
+/**
+ * text レッスンの本文。 CMS (lessons.markdown) の実データを描画する。
+ * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
+ */
+const LessonReadable = ({
+  lesson,
+  onComplete,
+}: {
+  lesson: Lesson;
+  onComplete: () => void;
+}) => (
   <div className="prose-lms">
-    <h2>レッスンの目的</h2>
-    <p>
-      関数が呼び出された時に生成される「実行コンテキスト」と、そこに束縛される変数のスコープについて理解します。
-      クロージャという仕組みが、関数外部から隠蔽された状態を保持するためにどう使われるかを、具体例を通して学びます。
-    </p>
-
-    <h2>サンプルコード</h2>
-    <pre>
-      <code>{`function makeCounter() {
-  let count = 0;
-  return function() {
-    count += 1;
-    return count;
-  };
-}
-
-const counter = makeCounter();
-counter(); // 1
-counter(); // 2
-counter(); // 3`}</code>
-    </pre>
-
-    <div className="border border-border border-l-[3px] border-l-brand bg-card rounded-sm px-4 py-3 my-4 flex gap-2.5 items-start text-[13.5px]">
-      <Info size={15} className="text-brand shrink-0 mt-0.5" />
-      <div>
-        <strong>チェックポイント</strong> — <code>makeCounter</code> を2回呼ぶと、それぞれが独立した{' '}
-        <code>count</code> を持ちます。 変数の共有ではなく「関数呼び出しごとに新しい環境」が作られる点がポイントです。
+    {lesson.markdown ? (
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.markdown}</ReactMarkdown>
+    ) : (
+      <div className="py-10 text-center text-[12.5px] text-ink-3">
+        <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">
+          本文を準備中です
+        </div>
+        このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
       </div>
-    </div>
-
-    <h2>理解度チェック</h2>
-    <ul>
-      <li>クロージャの主な用途3つを挙げられますか？</li>
-      <li>
-        <code>var</code> と <code>let</code> をループ内で使った時のスコープの違いは？
-      </li>
-      <li>IIFE（即時実行関数）はなぜ古くからクロージャと組み合わせて使われてきたのか？</li>
-    </ul>
+    )}
 
     <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-      <Button>
-        <ChevronLeft size={13} />
-        前のレッスン
-      </Button>
       <div className="flex-1" />
-      <Button>
-        <Edit size={13} />
-        ノートに追加
-      </Button>
       <Button variant="accent" onClick={onComplete}>
         完了にする
         <ChevronRight size={13} />
@@ -699,61 +669,60 @@ const QAView = ({
   );
 };
 
-const RESOURCES: Array<{
-  icon: typeof FileText;
-  t: string;
-  s: string;
-}> = [
-  { icon: FileText, t: '関数とスコープ — 補足スライド.pdf', s: '2.4 MB · PDF' },
-  { icon: Code, t: 'クロージャのサンプルコード集.zip', s: '18 KB · ZIP' },
-  { icon: FileText, t: '参考リンク集（外部リソース）', s: '4件のリンク' },
-];
-
+/**
+ * 資料タブ。 配布資料の一覧 API は未提供のため、 サンプルではなく空状態を表示する。
+ */
 const ResourcesList = () => (
-  <Card>
-    {RESOURCES.map((r, i) => {
-      const Icon = r.icon;
-      return (
-        <div
-          key={i}
-          className={cn(
-            'flex items-center gap-3 px-4 py-3.5 cursor-pointer',
-            i < RESOURCES.length - 1 ? 'border-b border-border' : '',
-          )}
-        >
-          <div className="w-9 h-9 rounded-md bg-sunken grid place-items-center text-ink-2">
-            <Icon size={16} />
-          </div>
-          <div className="flex-1">
-            <div className="text-[13px] font-medium">{r.t}</div>
-            <div className="text-[11.5px] text-ink-3 mt-0.5">{r.s}</div>
-          </div>
-          <Button size="sm">
-            <Download size={12} />
-            ダウンロード
+  <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+    <Folder size={28} className="text-ink-4" />
+    <div className="font-medium text-ink-2">配布資料はありません</div>
+    <div className="text-[12.5px]">
+      このレッスンに配布資料が追加されると、 ここからダウンロードできます。
+    </div>
+  </div>
+);
+
+const NOTES_STORAGE_PREFIX = 'lms_lesson_notes_v1:';
+
+/** レッスンごとの個人メモ。 localStorage に保存する (本人の端末のみ)。 */
+const NotesView = ({ lessonId }: { lessonId: string }) => {
+  const storageKey = `${NOTES_STORAGE_PREFIX}${lessonId}`;
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    try {
+      setNote(window.localStorage.getItem(storageKey) ?? '');
+    } catch {
+      setNote('');
+    }
+  }, [storageKey]);
+
+  const handleSave = () => {
+    try {
+      window.localStorage.setItem(storageKey, note);
+      toast.success('ノートを保存しました');
+    } catch {
+      toast.error('ノートの保存に失敗しました');
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <Textarea
+          className="min-h-[260px]"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="このレッスンのメモを書き残せます…"
+        />
+        <div className="flex items-center mt-2">
+          <span className="text-[11.5px] text-ink-3">このノートはあなただけに見えます</span>
+          <div className="flex-1" />
+          <Button size="sm" onClick={handleSave}>
+            保存
           </Button>
         </div>
-      );
-    })}
-  </Card>
-);
-
-const NotesView = () => (
-  <Card>
-    <CardContent>
-      <Textarea
-        className="min-h-[260px]"
-        defaultValue={`# 関数とスコープ メモ
-
-- クロージャ = 関数 + それが生成された環境
-- makeCounter を呼ぶたびに新しい count が生まれる
-- var → let で書き直すとループのスコープ問題が解消`}
-      />
-      <div className="flex items-center mt-2">
-        <span className="text-[11.5px] text-ink-3">このノートはあなただけに見えます</span>
-        <div className="flex-1" />
-        <Button size="sm">保存</Button>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};

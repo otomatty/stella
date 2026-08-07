@@ -12,7 +12,7 @@ import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
-import { profiles } from "../db/schema.js";
+import { profiles, tenants } from "../db/schema.js";
 import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
 import type { Env } from "../env.js";
 
@@ -33,15 +33,35 @@ meRoute.get("/api/me", async (c) => {
   try {
     const payload = await verifyToken(c);
     const db = getDb(c.env);
+    // テナント表示名は seed カタログではなく DB を真実とするため、 profile と一緒に返す。
     const rows = await db
-      .select(PROFILE_COLS)
+      .select({
+        ...PROFILE_COLS,
+        tenant_name: tenants.name,
+        tenant_subtitle: tenants.subtitle,
+        tenant_icon: tenants.icon,
+      })
       .from(profiles)
+      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, payload.sub as string))
       .limit(1);
-    if (!rows[0]) {
+    const row = rows[0];
+    if (!row) {
       throw new ApiError("invite_required", 403);
     }
-    return c.json({ profile: rows[0] });
+    const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
+    return c.json({
+      profile,
+      tenant:
+        tenant_name != null
+          ? {
+              id: profile.tenant_id,
+              name: tenant_name,
+              subtitle: tenant_subtitle,
+              icon: tenant_icon,
+            }
+          : null,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

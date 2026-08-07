@@ -25,7 +25,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { Course, Lesson, LessonStatus, LessonType } from '@/data/types';
+import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useMySubmissions } from '@/hooks/useMySubmissions';
+import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { cn } from '@/lib/utils';
 
 type LucideIcon = ComponentType<LucideProps>;
@@ -67,10 +69,13 @@ export const CourseDetail = ({
 }: CourseDetailProps) => {
   const sections = course.sections ?? [];
   const { submissions } = useMySubmissions(true);
+  // 完了数は fixture の初期 status ではなく進捗ストア (サーバ同期済み) で解決する。
+  const progressMap = useLessonProgressMap();
+  const statusOf = (l: Lesson) => resolveLessonStatus(l, progressMap);
   const totalLessons =
     sections.reduce((a, s) => a + s.lessons.length, 0) || course.lessonsCount;
   const doneLessons = sections.reduce(
-    (a, s) => a + s.lessons.filter((l) => l.status === 'done').length,
+    (a, s) => a + s.lessons.filter((l) => statusOf(l) === 'done').length,
     0,
   );
   const reviewedForLesson = (lesson: Lesson) =>
@@ -101,15 +106,19 @@ export const CourseDetail = ({
           </div>
           <h1 className="text-[26px] tracking-tight font-semibold mb-2.5">{course.title}</h1>
           <div className="flex flex-wrap items-center gap-4 text-ink-3 text-[13px] mb-6">
-            <span className="flex items-center gap-1">
-              <User size={13} /> {course.enrolledBy ?? '堀江メンター'}
-            </span>
+            {course.enrolledBy ? (
+              <span className="flex items-center gap-1">
+                <User size={13} /> {course.enrolledBy}
+              </span>
+            ) : null}
             <span className="flex items-center gap-1">
               <Video size={13} /> {totalLessons}レッスン
             </span>
-            <span className="flex items-center gap-1">
-              <Clock size={13} /> 約{course.duration}時間
-            </span>
+            {course.duration != null ? (
+              <span className="flex items-center gap-1">
+                <Clock size={13} /> 約{course.duration}時間
+              </span>
+            ) : null}
             {course.dueAt ? (
               <span className="flex items-center gap-1">
                 <Calendar size={13} /> 提出期限 {course.dueAt}
@@ -117,10 +126,11 @@ export const CourseDetail = ({
             ) : null}
           </div>
 
-          <p className="text-sm leading-relaxed text-ink-2 mb-7 max-w-[720px]">
-            {course.description ??
-              '本コースはカリキュラム v1.2 に準拠しています。順序に沿って各レッスンを完了すると、次のレッスンが解放されます。動画は視聴完了率80%以上、小テストは70%以上の得点で完了となります。'}
-          </p>
+          {course.description ? (
+            <p className="text-sm leading-relaxed text-ink-2 mb-7 max-w-[720px]">
+              {course.description}
+            </p>
+          ) : null}
 
           <Card className="mb-6">
             <CardHeader>
@@ -137,17 +147,19 @@ export const CourseDetail = ({
                   <div className="px-4 py-3 border-b border-border bg-sunken text-[12.5px] font-semibold flex items-center gap-2.5">
                     <span>{s.title}</span>
                     <span className="text-[11.5px] text-ink-3 font-normal ml-auto">
-                      {s.lessons.filter((l) => l.status === 'done').length} / {s.lessons.length}{' '}
-                      完了
+                      {s.lessons.filter((l) => statusOf(l) === 'done').length} /{' '}
+                      {s.lessons.length} 完了
                     </span>
                   </div>
                   {s.lessons.map((l) => {
                     const reviewedSubmission = reviewedForLesson(l);
+                    const status = statusOf(l);
                     return (
                       <LessonRow
                         key={l.id}
                         lesson={l}
-                        onClick={() => l.status !== 'locked' && setPage('lesson')}
+                        status={status}
+                        onClick={() => status !== 'locked' && setPage('lesson')}
                         reviewedSubmissionId={reviewedSubmission?.id}
                         onOpenSubmission={onOpenSubmission}
                       />
@@ -190,25 +202,33 @@ export const CourseDetail = ({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>修了条件</CardTitle>
-            </CardHeader>
-            <CardContent className="text-[12.5px]">
-              <div className="flex items-center gap-2 mb-2.5">
-                <CheckCircle size={14} className="text-success" />
-                <span>動画視聴完了率 80% 以上</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2.5">
-                <CheckCircle size={14} className="text-success" />
-                <span>小テスト平均 70点以上</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle size={14} className="text-success" />
-                <span>全課題「合格」判定</span>
-              </div>
-            </CardContent>
-          </Card>
+          {course.criteria ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>修了条件</CardTitle>
+              </CardHeader>
+              <CardContent className="text-[12.5px]">
+                {course.criteria.requireAllLessons ? (
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>全レッスンの完了</span>
+                  </div>
+                ) : null}
+                {course.criteria.requireQuizPass ? (
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>全小テストの合格</span>
+                  </div>
+                ) : null}
+                {course.criteria.requireAssignmentPass ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle size={14} className="text-success" />
+                    <span>全課題「合格」判定</span>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
     </>
@@ -217,16 +237,19 @@ export const CourseDetail = ({
 
 const LessonRow = ({
   lesson,
+  status,
   onClick,
   reviewedSubmissionId,
   onOpenSubmission,
 }: {
   lesson: Lesson;
+  /** 進捗ストアで解決済みの表示ステータス。 */
+  status: LessonStatus;
   onClick: () => void;
   reviewedSubmissionId?: string;
   onOpenSubmission?: (submissionId: string) => void;
 }) => {
-  const locked = lesson.status === 'locked';
+  const locked = status === 'locked';
   return (
     <div
       onClick={locked ? undefined : onClick}
@@ -240,17 +263,17 @@ const LessonRow = ({
       <span
         className={cn(
           'shrink-0 mt-0.5',
-          lesson.status === 'done' ? 'text-success' : 'text-ink-3',
+          status === 'done' ? 'text-success' : 'text-ink-3',
         )}
       >
-        <LessonStatusIcon status={lesson.status} />
+        <LessonStatusIcon status={status} />
       </span>
       <div className="flex-1 min-w-0">
         <div className="truncate">{lesson.title}</div>
         <div className="flex items-center gap-1 text-ink-3 text-[11px] mt-0.5">
           <LessonTypeIcon type={lesson.type} size={10} />
           <span>{lesson.duration}</span>
-          {lesson.status === 'active' && lesson.progress !== undefined ? (
+          {status === 'active' && lesson.progress !== undefined ? (
             <>
               <span>·</span>
               <span>進捗 {lesson.progress}%</span>

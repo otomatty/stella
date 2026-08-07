@@ -1,0 +1,1 @@
+ALTER TABLE `tenants` ADD `test_mode` integer DEFAULT false NOT NULL;

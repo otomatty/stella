@@ -52,6 +52,8 @@ export const tenants = sqliteTable("tenants", {
   contractStart: text("contract_start"),
   contractEnd: text("contract_end"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  // テストモード (管理画面から切替)。 ON のとき招待 (ユーザー登録) 時にテストデータを投入する。
+  testMode: integer("test_mode", { mode: "boolean" }).notNull().default(false),
   createdAt: tsNow("created_at"),
   updatedAt: tsNowUpd("updated_at"),
 });

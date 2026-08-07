@@ -10,7 +10,8 @@ import { useCoursesForTenant, useEnrolledCoursesForTenant } from '@/data/courses
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from '@/lib/auth';
-import { configureRemoteSync } from '@/lib/lesson-progress';
+import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
+import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
@@ -48,12 +49,15 @@ import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
 import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
+import { AdminSettingsPage } from '@/components/admin/AdminSettingsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
+import { useMyQuestions, useOpenQuestions } from '@/hooks/useQuestions';
+import { useMyCertificates } from '@/hooks/useMyCertificates';
 import { useNotifications } from '@/hooks/useNotifications';
 import {
   useAnnouncements,
@@ -208,22 +212,44 @@ function MainApp() {
     : role;
   const effectiveTenant: Tenant = useMemo(() => {
     if (backendEnabled && profile) {
-      const t = TENANTS.find((t) => t.id === profile.tenant_id);
-      if (t) return t;
+      // DB (GET /api/me の tenant) を真実とする。 seed カタログに無いテナントでも
+      // fixtures の 'ses' 等へフォールバックせず、 実テナントとして扱う。
+      const info = profile.tenant;
+      const seedIcon = TENANTS.find((t) => t.id === profile.tenant_id)?.icon;
+      const icon: Tenant['icon'] =
+        info?.icon === 'cpu' || info?.icon === 'school'
+          ? info.icon
+          : seedIcon ?? 'school';
+      return {
+        id: profile.tenant_id,
+        name: info?.name ?? profile.tenant_id,
+        subtitle: info?.subtitle ?? '',
+        icon,
+        active: 0,
+      };
     }
     return tenant;
   }, [backendEnabled, profile, tenant]);
 
   const effectiveUser: User = useMemo(() => {
-    if (backendEnabled && profile) {
+    if (backendEnabled) {
+      if (profile) {
+        return {
+          name: profile.display_name,
+          email: profile.email ?? '',
+          initials: profile.initials ?? profile.display_name.slice(0, 2),
+        };
+      }
+      // profile 取得前の過渡状態でも fixtures のデモユーザーは出さない。
+      const email = session?.user.email ?? '';
       return {
-        name: profile.display_name,
-        email: profile.email ?? '',
-        initials: profile.initials ?? profile.display_name.slice(0, 2),
+        name: email || 'ユーザー',
+        email,
+        initials: (email || 'U').slice(0, 2).toUpperCase(),
       };
     }
     return CURRENT_USER;
-  }, [backendEnabled, profile]);
+  }, [backendEnabled, profile, session]);
 
   // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
@@ -236,8 +262,14 @@ function MainApp() {
     session?.user.id ?? null,
     effectiveRole === 'learner',
   );
-  const courses =
+  // DB 由来コースは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
+  const progressMap = useLessonProgressMap();
+  const rawCourses =
     effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
+  const courses = useMemo(
+    () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
+    [rawCourses, progressMap],
+  );
   const courseSource =
     effectiveRole === 'learner' ? enrolledCourses.source : browseCourses.source;
   const courseError =
@@ -249,6 +281,30 @@ function MainApp() {
   );
   const dataSource = pickSource(courseSource, announcements.source);
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
+  // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
+  const myQuestions = useMyQuestions(
+    session?.user.id ?? null,
+    effectiveRole === 'learner',
+  );
+  const openQuestions = useOpenQuestions(effectiveRole === 'instructor');
+  const myCertificates = useMyCertificates(
+    session?.user.id ?? null,
+    effectiveRole === 'learner',
+  );
+  const sidebarCounts =
+    effectiveRole === 'learner'
+      ? {
+          qa: myQuestions.threads.filter((t) => t.status === 'open').length,
+          cert: backendEnabled
+            ? myCertificates.certificates.length
+            : courses.filter((c) => c.completed).length,
+        }
+      : effectiveRole === 'instructor'
+        ? {
+            'review-queue': pendingReviewCount,
+            qa: openQuestions.threads.length,
+          }
+        : undefined;
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
   const notifications = useNotifications(
@@ -442,9 +498,7 @@ function MainApp() {
           setPage={setPage}
           tenant={effectiveTenant}
           user={effectiveUser}
-          reviewQueueCount={
-            effectiveRole === 'instructor' ? pendingReviewCount : undefined
-          }
+          counts={sidebarCounts}
           profileRole={profile?.role}
         />
         <div className="min-w-0 flex flex-col">
@@ -602,6 +656,9 @@ function renderPage({
           announcementsHook={announcementsHook}
           coursesError={coursesError}
           onOpenSubmission={onOpenSubmission}
+          studentName={studentName}
+          currentUserId={currentUserId}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'courses')
@@ -746,6 +803,13 @@ function renderPage({
     }
     if (page === 'report')
       return <AdminGeneric page={page} />;
+    if (page === 'settings')
+      return (
+        <AdminSettingsPage
+          tenantName={tenantName}
+          backendEnabled={backendEnabled}
+        />
+      );
   }
   return <GenericEmpty page={page} />;
 }

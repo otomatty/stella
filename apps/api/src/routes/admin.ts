@@ -9,6 +9,11 @@
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
  *   GET  /api/admin/orgs           組織一覧 + 所属ユーザー数
  *   POST /api/admin/orgs/upsert    組織の作成 / 編集
+ *   GET  /api/admin/settings       テナント設定 (テストモード) の取得
+ *   POST /api/admin/settings       テナント設定 (テストモード) の更新
+ *
+ * テストモード ON のテナントでは、 招待 (ユーザー登録) 時にテストデータ
+ * (受講登録・進捗・通知) を投入する (`lib/test-data.ts`)。
  *
  * 無効化は profiles.disabled を立てるだけで、 API 経由の全アクセスが getCaller の
  * disabled チェックで遮断される。
@@ -35,6 +40,7 @@ import {
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
+import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
@@ -107,10 +113,10 @@ async function requirePlatformAdminCtx(
 async function getSeatUsage(
   db: Db,
   tenantId: string,
-): Promise<{ planSeats: number | null; seatsUsed: number }> {
+): Promise<{ planSeats: number | null; seatsUsed: number; testMode: boolean }> {
   const tenantRow = (
     await db
-      .select({ planSeats: tenants.planSeats })
+      .select({ planSeats: tenants.planSeats, testMode: tenants.testMode })
       .from(tenants)
       .where(eq(tenants.id, tenantId))
       .limit(1)
@@ -122,7 +128,11 @@ async function getSeatUsage(
       .from(profiles)
       .where(and(eq(profiles.tenantId, tenantId), eq(profiles.disabled, false)))
   )[0];
-  return { planSeats, seatsUsed: Number(countRow?.value ?? 0) };
+  return {
+    planSeats,
+    seatsUsed: Number(countRow?.value ?? 0),
+    testMode: tenantRow?.testMode ?? false,
+  };
 }
 
 /** 操作対象が同テナントであることを保証する (自己昇格 / 越テナントを防ぐ)。 */
@@ -204,7 +214,7 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
     const existingByEmail = new Map(existingRows.map((r) => [r.email, r]));
 
     // 席数上限 (Issue #29): 新規招待が plan_seats を超える分はブロックする。
-    const { planSeats, seatsUsed } = await getSeatUsage(db, caller.tenantId);
+    const { planSeats, seatsUsed, testMode } = await getSeatUsage(db, caller.tenantId);
     let seatsConsumed = seatsUsed;
 
     const results: InviteResult[] = [];
@@ -250,12 +260,34 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
           ]);
         }
         seatsConsumed += 1;
+
+        // テストモード: 登録直後にテストデータを投入する (失敗しても招待は成功扱い)。
+        let testDataInserted = false;
+        if (testMode) {
+          try {
+            await insertTestDataForNewUser(db, {
+              tenantId: caller.tenantId,
+              userId,
+              role: inv.role,
+              displayName: inv.displayName,
+              invitedBy: caller.id,
+            });
+            testDataInserted = true;
+          } catch (e) {
+            console.error("[admin] test data insert failed", inv.email, e);
+          }
+        }
+
         await recordAudit(db, caller, {
           action: "user_invite",
           targetType: "user",
           targetId: userId,
           ip,
-          metadata: { email: inv.email, role: inv.role },
+          metadata: {
+            email: inv.email,
+            role: inv.role,
+            ...(testDataInserted ? { test_data: true } : {}),
+          },
         });
         results.push({ email: inv.email, ok: true, userId });
       } catch (rowErr) {
@@ -426,6 +458,51 @@ adminRoute.post("/api/admin/orgs/upsert", async (c) => {
         updated_at: saved.updatedAt.toISOString(),
       },
     });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+// ---------------------------------------------------------------
+// テナント設定 (テストモード)
+// ---------------------------------------------------------------
+
+adminRoute.get("/api/admin/settings", async (c) => {
+  try {
+    const { caller, db } = await requireTenantAdminCtx(c);
+    const row = (
+      await db
+        .select({ testMode: tenants.testMode })
+        .from(tenants)
+        .where(eq(tenants.id, caller.tenantId))
+        .limit(1)
+    )[0];
+    if (!row) throw new ApiError("テナントが見つかりません", 404);
+    return c.json({ settings: { test_mode: row.testMode } });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+adminRoute.post("/api/admin/settings", async (c) => {
+  try {
+    const { caller, db } = await requireTenantAdminCtx(c);
+    const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+    if (typeof body.testMode !== "boolean") {
+      return c.json({ error: "testMode は真偽値である必要があります" }, 400);
+    }
+    await db
+      .update(tenants)
+      .set({ testMode: body.testMode, updatedAt: new Date() })
+      .where(eq(tenants.id, caller.tenantId));
+    await recordAudit(db, caller, {
+      action: body.testMode ? "test_mode_enable" : "test_mode_disable",
+      targetType: "tenant",
+      targetId: caller.tenantId,
+      ip: clientIp(c),
+      metadata: { test_mode: body.testMode },
+    });
+    return c.json({ settings: { test_mode: body.testMode } });
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -50,6 +50,14 @@ export interface TenantRow {
   created_at: string;
 }
 
+/** GET /api/me が profile と一緒に返す所属テナントの表示情報。 */
+export interface ProfileTenantInfo {
+  id: string;
+  name: string;
+  subtitle: string | null;
+  icon: string | null;
+}
+
 export interface ProfileRow {
   id: string;
   tenant_id: string;
@@ -543,6 +551,12 @@ export interface UiCourse {
   description?: string;
   completed?: boolean;
   sections?: UiSection[];
+  /** 修了基準 (CourseRow の require_* フラグ由来)。 受講者 UI の「修了条件」表示に使う。 */
+  criteria?: {
+    requireAllLessons: boolean;
+    requireQuizPass: boolean;
+    requireAssignmentPass: boolean;
+  };
 }
 
 // ---------------------------------------------------------------
@@ -605,6 +619,11 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
       ? { description: input.course.description }
       : {}),
     sections,
+    criteria: {
+      requireAllLessons: input.course.require_all_lessons ?? true,
+      requireQuizPass: input.course.require_quiz_pass ?? true,
+      requireAssignmentPass: input.course.require_assignment_pass ?? true,
+    },
   };
 }
 

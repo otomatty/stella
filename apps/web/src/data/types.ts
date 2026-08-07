@@ -14,7 +14,8 @@ export type LessonType = 'video' | 'slides' | 'text' | 'quiz' | 'assignment' | '
 export type LessonStatus = 'done' | 'active' | 'todo' | 'locked';
 
 export interface Tenant {
-  id: 'coach' | 'ses';
+  /** seed テナント ('coach' | 'ses') に限らず、 DB 上の任意のテナント ID を取り得る。 */
+  id: string;
   name: string;
   subtitle: string;
   icon: 'school' | 'cpu';
@@ -70,6 +71,12 @@ export interface Course {
   description?: string;
   completed?: boolean;
   sections?: Section[];
+  /** 修了基準 (DB 由来コースのみ)。 未定義なら表示しない。 */
+  criteria?: {
+    requireAllLessons: boolean;
+    requireQuizPass: boolean;
+    requireAssignmentPass: boolean;
+  };
 }
 
 export interface Announcement {
