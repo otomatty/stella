@@ -98,6 +98,8 @@ export const courses = sqliteTable(
     color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
     durationHours: integer("duration_hours"),
     description: text("description"),
+    /** 講師表示名 (Issue #74)。 未設定 (null / 空) のコースは受講者 UI で講師を表示しない。 */
+    instructorName: text("instructor_name"),
     status: text("status", { enum: ["draft", "published", "archived"] })
       .notNull()
       .default("draft"),

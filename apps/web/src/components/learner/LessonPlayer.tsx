@@ -13,6 +13,7 @@ import {
   Clock,
   Loader2,
   HelpCircle,
+  User,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
 import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
@@ -402,6 +403,12 @@ export const LessonPlayer = ({
                 {lessonObj.duration ? (
                   <span className="flex items-center gap-1">
                     <Clock size={12} /> {lessonObj.duration}
+                  </span>
+                ) : null}
+                {/* 講師名 (courses.instructor_name)。 未設定のコースでは何も出さない。 */}
+                {course.enrolledBy ? (
+                  <span className="flex items-center gap-1">
+                    <User size={12} /> {course.enrolledBy}
                   </span>
                 ) : null}
               </div>

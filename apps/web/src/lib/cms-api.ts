@@ -50,6 +50,7 @@ export interface UpsertCourseInput {
   color?: "indigo" | "green" | "amber" | "slate" | null;
   duration_hours?: number | null;
   description?: string | null;
+  instructor_name?: string | null;
   status?: CourseStatus;
   require_all_lessons?: boolean;
   require_quiz_pass?: boolean;

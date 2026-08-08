@@ -48,6 +48,7 @@ const courseToRow = (c: CourseSel) => ({
   color: c.color,
   duration_hours: c.durationHours,
   description: c.description,
+  instructor_name: c.instructorName,
   status: c.status,
   created_by: c.createdBy,
   created_at: c.createdAt,
@@ -211,6 +212,13 @@ async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Pro
 // Courses
 // =================================================================
 
+/** 講師表示名 (Issue #74) を正規化する。 未入力 / 空白のみは null (= 未設定) に倒す。 */
+function normalizeInstructorName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 cmsRoute.get("/api/cms/courses", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -278,6 +286,8 @@ cmsRoute.post("/api/cms/courses", async (c) => {
       color: (input.color as CourseSel["color"]) ?? null,
       durationHours: (input.duration_hours as number | null) ?? null,
       description: (input.description as string | null) ?? null,
+      // 空文字は「未設定」 に正規化する (受講者 UI で講師欄を出さないため)。
+      instructorName: normalizeInstructorName(input.instructor_name),
       status: (input.status as CourseSel["status"]) ?? "draft",
       requireAllLessons: (input.require_all_lessons as boolean) ?? true,
       requireQuizPass: (input.require_quiz_pass as boolean) ?? true,

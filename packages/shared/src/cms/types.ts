@@ -82,6 +82,11 @@ export interface CourseRow {
   color: CourseColor | null;
   duration_hours: number | null;
   description: string | null;
+  /**
+   * 講師表示名 (Issue #74)。 列が未マイグレーションの環境では undefined になり得るため optional。
+   * null / 空文字は「未設定」 として扱い、 受講者 UI では講師を表示しない。
+   */
+  instructor_name?: string | null;
   status: CourseStatus;
   created_by: string | null;
   created_at: string;
@@ -559,6 +564,7 @@ export interface UiCourse {
   duration?: number;
   lessonsCount: number;
   progress: number;
+  /** 講師表示名 (`courses.instructor_name` 由来)。 未設定なら省略される。 */
   enrolledBy?: string;
   dueAt?: string | null;
   /** 受講登録 (Issue #20) 由来。 必須 / 任意の区別。 */
@@ -620,6 +626,8 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
     .map(({ section, lessons }) => mapSectionRowToUi(section, lessons));
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
+  // 空文字も「未設定」 とみなし、 キーごと落として UI 側の分岐を単純にする。
+  const instructorName = input.course.instructor_name?.trim();
   return {
     id: input.course.id,
     title: input.course.title,
@@ -630,6 +638,7 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
       : {}),
     lessonsCount,
     progress: 0,
+    ...(instructorName ? { enrolledBy: instructorName } : {}),
     ...(input.course.description != null
       ? { description: input.course.description }
       : {}),
