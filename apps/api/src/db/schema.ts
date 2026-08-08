@@ -225,6 +225,38 @@ export const lessonProgress = sqliteTable(
 );
 
 // ---------------------------------------------------------------
+// 学習アクティビティ (日別ログ / Issue #73)
+// ---------------------------------------------------------------
+
+/**
+ * 受講者の日別学習ログ。 `lesson_progress` はレッスンごとの最終状態しか持たないため、
+ * 週間チャート / 連続学習ストリークを実データで出すためのログをここに積む。
+ *
+ * `date` はアプリ基準 TZ (Asia/Tokyo) の `YYYY-MM-DD`。 進捗 upsert のたびに
+ * サーバ側で当日分を加算 upsert する (差分のみ加算 — `lib/study-activity.ts`)。
+ */
+export const studyActivity = sqliteTable(
+  "study_activity",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    watchedSec: real("watched_sec").notNull().default(0),
+    completedLessons: integer("completed_lessons").notNull().default(0),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    userDateUnique: uniqueIndex("study_activity_user_date_uq").on(t.userId, t.date),
+  }),
+);
+
+// ---------------------------------------------------------------
 // 小テスト
 // ---------------------------------------------------------------
 
@@ -502,6 +534,7 @@ export const APP_TABLES = [
   "lesson_materials",
   "assignments",
   "lesson_progress",
+  "study_activity",
   "quizzes",
   "quiz_questions",
   "quiz_options",

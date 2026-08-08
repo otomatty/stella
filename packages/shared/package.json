@@ -28,7 +28,9 @@
     "./review/prompt": "./src/review/prompt.ts",
     "./review/heuristic-draft": "./src/review/heuristic-draft.ts",
     "./review/validate-review-draft-request": "./src/review/validate-review-draft-request.ts",
-    "./review/parse-draft-json": "./src/review/parse-draft-json.ts"
+    "./review/parse-draft-json": "./src/review/parse-draft-json.ts",
+    "./study/activity": "./src/study/activity.ts",
+    "./study/progress-sync": "./src/study/progress-sync.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

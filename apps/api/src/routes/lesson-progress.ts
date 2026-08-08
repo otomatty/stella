@@ -7,23 +7,21 @@
  *
  * 端末間 Last-Write-Wins は upsert の setWhere (excluded.updated_at > 既存) で担保する
  * (旧 upsert_lesson_progress RPC と同じ意味論)。
+ *
+ * upsert 時は日別学習ログ (`study_activity`) の当日分もサーバ側で加算する (Issue #73)。
  */
 
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
+import {
+  normalizeProgressRows,
+  type ProgressSyncInput,
+} from "@falcon/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
 import { lessonProgress } from "../db/schema.js";
+import { buildStudyActivityIncrement } from "../lib/study-activity.js";
 import type { Env } from "../env.js";
-
-interface ProgressRowInput {
-  lesson_id: string;
-  completed: boolean;
-  last_page: number | null;
-  viewed_pages: number[];
-  watched_sec: number | null;
-  updated_at: string;
-}
 
 export const lessonProgressRoute = new Hono<{ Bindings: Env }>();
 
@@ -70,22 +68,33 @@ lessonProgressRoute.get("/api/lesson-progress/tenant", async (c) => {
 lessonProgressRoute.post("/api/lesson-progress", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const body = (await c.req.json()) as { rows?: ProgressRowInput[] };
+    const body = (await c.req.json()) as { rows?: ProgressSyncInput[] };
     const inputs = Array.isArray(body.rows) ? body.rows : [];
     if (inputs.length === 0) return c.json({ ok: true, written: 0 });
 
-    const values = inputs.map((r) => ({
+    // 不正行の除去と同一 lesson_id の集約 (SQLite の upsert は 1 文で同じ行を 2 度
+    // 更新できないため、 重複を残すとリクエストごと失敗する)。
+    const rows = normalizeProgressRows(inputs);
+    if (rows.length === 0) return c.json({ ok: true, written: 0 });
+
+    const values = rows.map((r) => ({
       tenantId: caller.tenantId,
       userId: caller.id,
-      lessonId: r.lesson_id,
-      completed: Boolean(r.completed),
-      lastPage: r.last_page ?? null,
-      viewedPages: Array.isArray(r.viewed_pages) ? r.viewed_pages : [],
-      watchedSec: r.watched_sec ?? null,
-      updatedAt: new Date(r.updated_at),
+      lessonId: r.lessonId,
+      completed: r.completed,
+      lastPage: r.lastPage,
+      viewedPages: r.viewedPages,
+      watchedSec: r.watchedSec,
+      updatedAt: new Date(r.updatedAtMs),
     }));
 
-    await db
+    // 日別ログの加算量と LWW 判定は DB 側の 1 文に閉じ込める (アプリ側で先に SELECT して
+    // 差分を計算すると、 割り込みリクエストがあったとき進捗とログがズレる)。
+    const activityIncrements = rows
+      .filter((r) => r.countsTowardActivity)
+      .map((r) => buildStudyActivityIncrement(db, caller.tenantId, caller.id, r));
+
+    const progressUpsert = db
       .insert(lessonProgress)
       .values(values)
       .onConflictDoUpdate({
@@ -100,6 +109,15 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
         // conflict 時、 payload の updated_at が既存より新しい場合のみ更新 (LWW)。
         setWhere: sql`excluded.updated_at > ${lessonProgress.updatedAt}`,
       });
+
+    const [firstIncrement, ...restIncrements] = activityIncrements;
+    if (firstIncrement === undefined) {
+      await progressUpsert;
+    } else {
+      // 1 トランザクション (D1 batch) で書く。 日別ログの文は更新前の lesson_progress を
+      // 読んで増分を出すため、 必ず進捗 upsert より先に置くこと。
+      await db.batch([firstIncrement, ...restIncrements, progressUpsert]);
+    }
 
     return c.json({ ok: true, written: values.length });
   } catch (err) {

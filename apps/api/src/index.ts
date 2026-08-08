@@ -23,6 +23,7 @@ import { notificationsRoute } from "./routes/notifications.js";
 import { qaRoute } from "./routes/qa.js";
 import { quizRoute } from "./routes/quiz.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
+import { studyActivityRoute } from "./routes/study-activity.js";
 import { submissionsRoute } from "./routes/submissions.js";
 import { supportRoute } from "./routes/support.js";
 
@@ -44,6 +45,7 @@ app.route("/", chatRoute);
 app.route("/", reviewDraftRoute);
 app.route("/", adminRoute);
 app.route("/", lessonProgressRoute);
+app.route("/", studyActivityRoute);
 app.route("/", meRoute);
 app.route("/", enrollmentsRoute);
 app.route("/", qaRoute);

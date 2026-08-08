@@ -7,8 +7,10 @@ import {
   Clock,
   Award,
   ChevronRight,
+  Flame,
   MessageCircle,
   Sparkles,
+  TrendingUp,
 } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard } from '@/components/common/KpiCard';
@@ -21,6 +23,8 @@ import type { Course, Lesson } from '@/data/types';
 import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useMySubmissions } from '@/hooks/useMySubmissions';
+import { useStudyActivity } from '@/hooks/useStudyActivity';
+import { StudyChart } from '@/components/learner/StudyChart';
 import { listCertificatesForUser } from '@/lib/certificates-api';
 import {
   resolveLessonStatus,
@@ -84,6 +88,9 @@ function findNextLesson(
 
 const NEW_WINDOW_MS = 7 * 86_400_000;
 
+/** 週間学習チャートの表示日数 (受け入れ基準の「直近14日」)。 */
+const STUDY_ACTIVITY_DAYS = 14;
+
 export const LearnerDashboard = ({
   setPage,
   courses,
@@ -108,6 +115,30 @@ export const LearnerDashboard = ({
     loading: submissionsLoading,
     error: submissionsError,
   } = useMySubmissions(true);
+  // 週間チャート / ストリークは日別学習ログ (study_activity) の実データから出す。
+  const {
+    activity,
+    loading: activityLoading,
+    error: activityError,
+  } = useStudyActivity(currentUserId, STUDY_ACTIVITY_DAYS, backendEnabled);
+  // ストリークが自己ベストに並んだら「更新中」として強調する。
+  const isBestStreak =
+    activity != null && activity.current_streak > 0 &&
+    activity.current_streak >= activity.longest_streak;
+  const streakTrend = !activity ? (
+    activityLoading ? (
+      '読み込み中…'
+    ) : (
+      '学習ログがありません'
+    )
+  ) : isBestStreak ? (
+    <>
+      <TrendingUp size={12} />
+      自己ベスト更新中
+    </>
+  ) : (
+    <>自己ベスト {activity.longest_streak}日</>
+  );
 
   // 進捗 KPI はレッスン進捗ストア (バックエンド設定時はサーバ同期済み) から集計する。
   const allLessons = useMemo(
@@ -217,7 +248,7 @@ export const LearnerDashboard = ({
         </div>
       ) : null}
 
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
         <KpiCard
           label={
             <>
@@ -227,6 +258,17 @@ export const LearnerDashboard = ({
           value={active.length}
           unit="コース"
           trend={<>全{courses.length}コース中</>}
+        />
+        <KpiCard
+          label={
+            <>
+              <Flame size={12} /> 連続学習
+            </>
+          }
+          value={activity ? activity.current_streak : '—'}
+          unit={activity ? '日' : undefined}
+          trend={streakTrend}
+          {...(isBestStreak ? { trendDir: 'up' as const } : {})}
         />
         <KpiCard
           label={
@@ -362,6 +404,37 @@ export const LearnerDashboard = ({
                 );
               })}
             </div>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>週間学習時間</CardTitle>
+              <CardActions>
+                <span className="text-[11.5px] text-ink-3">
+                  直近{STUDY_ACTIVITY_DAYS}日
+                  {activity ? ` · 合計 ${formatHoursMinutes(activity.total_sec)}` : ''}
+                </span>
+              </CardActions>
+            </CardHeader>
+            {activityError ? (
+              <div className="px-4 py-4 text-[12.5px] text-destructive">
+                学習ログの取得に失敗しました: {activityError}
+              </div>
+            ) : activityLoading && !activity ? (
+              <div className="px-4 py-4 text-[12.5px] text-ink-3">読み込み中…</div>
+            ) : !activity ? (
+              <div className="px-4 py-4 text-[12.5px] text-ink-3">
+                学習ログはまだありません。レッスンを視聴すると日別の学習時間が記録されます。
+              </div>
+            ) : activity.total_sec === 0 ? (
+              <div className="px-4 py-4 text-[12.5px] text-ink-3">
+                直近{STUDY_ACTIVITY_DAYS}日の学習記録はありません。
+              </div>
+            ) : (
+              <div className="p-4 h-60 relative">
+                <StudyChart days={activity.days} />
+              </div>
+            )}
           </Card>
 
           <Card>

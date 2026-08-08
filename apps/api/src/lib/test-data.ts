@@ -6,12 +6,14 @@
  *
  *   - student: テナントの published コースへの受講登録 (期限 30 日後 / 必須)
  *              + 最初のレッスンを完了済みにする進捗
+ *              + 直近数日の日別学習ログ (週間チャート / ストリークの確認用)
  *   - 全ロール: ウェルカム通知 1 件
  *
  * 招待自体を失敗させないため、 呼び出し側で best-effort (try/catch) にすること。
  */
 
 import { and, asc, eq } from "drizzle-orm";
+import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
 
 import type { Db } from "../db/client.js";
 import {
@@ -21,9 +23,26 @@ import {
   lessons,
   notifications,
   sections,
+  studyActivity,
 } from "../db/schema.js";
 
 const TEST_ENROLLMENT_DUE_DAYS = 30;
+
+/**
+ * 日別学習ログのテストデータ (今日を 0 とした「N 日前 → 学習秒数」)。
+ * 意図的に 3 日前を空けて、 ストリークが途切れる挙動も確認できるようにしている
+ * (この並びだと連続学習は「今日から 3 日」になる)。
+ */
+const TEST_STUDY_ACTIVITY: ReadonlyArray<{ daysAgo: number; watchedSec: number }> = [
+  { daysAgo: 8, watchedSec: 1_800 },
+  { daysAgo: 7, watchedSec: 2_700 },
+  { daysAgo: 6, watchedSec: 1_200 },
+  { daysAgo: 5, watchedSec: 3_600 },
+  { daysAgo: 4, watchedSec: 900 },
+  { daysAgo: 2, watchedSec: 2_400 },
+  { daysAgo: 1, watchedSec: 1_500 },
+  { daysAgo: 0, watchedSec: 600 },
+];
 
 export interface TestDataTarget {
   tenantId: string;
@@ -92,6 +111,24 @@ export async function insertTestDataForNewUser(
           });
       }
     }
+
+    // 週間学習チャート / 連続学習ストリークをすぐ確認できるよう、 日別ログも入れる。
+    // 完了レッスン 1 件は「今日」に計上して lesson_progress と辻褄を合わせる。
+    const today = toStudyDate(new Date());
+    await db
+      .insert(studyActivity)
+      .values(
+        TEST_STUDY_ACTIVITY.map((row) => ({
+          tenantId: target.tenantId,
+          userId: target.userId,
+          date: addStudyDays(today, -row.daysAgo),
+          watchedSec: row.watchedSec,
+          completedLessons: row.daysAgo === 0 ? 1 : 0,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [studyActivity.userId, studyActivity.date],
+      });
   }
 
   await db.insert(notifications).values({

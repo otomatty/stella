@@ -247,6 +247,20 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
   講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
 
+### 学習アクティビティ (Issue #73)
+
+`lesson_progress` はレッスンごとの最終状態しか持たないため、日別の学習履歴は
+`study_activity` テーブル (`user_id` / `date` / `watched_sec` / `completed_lessons`) に別途積みます。
+
+- `POST /api/lesson-progress` の upsert 時に、サーバが「反映前後の差分」
+  (視聴秒数の増分 / 未完了 → 完了に変わったレッスン数) を当日分へ加算します。
+  進捗と日別ログは D1 の batch で 1 トランザクションにまとめて書きます。
+- 日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります (`@falcon/shared/study/activity`)。
+- `GET /api/study-activity/mine?days=14` が欠損日を 0 埋めした系列と連続学習日数を返し、
+  受講者ダッシュボードの「週間学習時間」チャートと「連続学習」KPI がこれを描画します。
+  受講者は自分のログのみ参照できます。
+- テナントのテストモード中に招待された受講者には、動作確認用の日別ログも投入されます。
+
 ### 成績台帳と修了証 (Issue #26)
 
 コースの **修了基準** (全レッスン完了 / 小テスト合格 / 課題 pass) を満たすと修了と判定し、
