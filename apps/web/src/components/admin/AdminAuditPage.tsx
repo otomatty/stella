@@ -31,31 +31,36 @@ import {
   listAllAuditLogs,
   type AuditLogRow,
 } from "@/lib/audit-logs-api";
+import {
+  AUDIT_ACTION_LABELS,
+  auditActionLabel,
+} from "@falcon/shared/admin/audit-actions";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
-// 操作種別の表示ラベルと配色。 未知の action は素のまま表示する。
-const ACTION_META: Record<
+// 操作種別の配色。 表示ラベルはレポート (#75) と共通の
+// `@falcon/shared/admin/audit-actions` を使う。 未知の action は素のまま表示する。
+const ACTION_VARIANT: Record<
   string,
-  { label: string; variant: "default" | "success" | "warning" | "danger" | "info" | "accent" }
+  "default" | "success" | "warning" | "danger" | "info" | "accent"
 > = {
-  role_change: { label: "ロール変更", variant: "warning" },
-  user_invite: { label: "ユーザー招待", variant: "info" },
-  user_disable: { label: "ユーザー無効化", variant: "danger" },
-  user_enable: { label: "ユーザー復帰", variant: "success" },
-  course_publish: { label: "コース公開", variant: "success" },
-  course_unpublish: { label: "コース非公開", variant: "default" },
-  course_status_change: { label: "コース状態変更", variant: "default" },
-  course_delete: { label: "コース削除", variant: "danger" },
-  org_create: { label: "組織作成", variant: "info" },
-  org_update: { label: "組織更新", variant: "warning" },
-  login: { label: "ログイン", variant: "default" },
+  role_change: "warning",
+  user_invite: "info",
+  user_disable: "danger",
+  user_enable: "success",
+  course_publish: "success",
+  course_unpublish: "default",
+  course_status_change: "default",
+  course_delete: "danger",
+  org_create: "info",
+  org_update: "warning",
+  login: "default",
 };
 
-// 操作種別フィルタの選択肢。 ACTION_META のキー順を踏襲する。
-const ACTION_OPTIONS = Object.keys(ACTION_META);
+// 操作種別フィルタの選択肢。 ラベル定義のキー順を踏襲する。
+const ACTION_OPTIONS = Object.keys(AUDIT_ACTION_LABELS);
 
 function actionLabel(action: string): string {
-  return ACTION_META[action]?.label ?? action;
+  return auditActionLabel(action);
 }
 
 function formatDateTime(iso: string): string {
@@ -299,7 +304,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
             </TableHeader>
             <TableBody>
               {logs.map((l) => {
-                const meta = ACTION_META[l.action];
+                const variant = ACTION_VARIANT[l.action] ?? "default";
                 return (
                   <TableRow key={l.id}>
                     <TableCell className="font-mono text-[11.5px] whitespace-nowrap">
@@ -307,7 +312,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
                     </TableCell>
                     <TableCell>{displayActor(l)}</TableCell>
                     <TableCell>
-                      <Badge variant={meta?.variant ?? "default"}>
+                      <Badge variant={variant}>
                         {actionLabel(l.action)}
                       </Badge>
                     </TableCell>
@@ -376,7 +381,7 @@ function AuditDemo() {
                 <TableCell className="font-mono text-[11.5px]">{l.t}</TableCell>
                 <TableCell>{l.a}</TableCell>
                 <TableCell>
-                  <Badge variant={ACTION_META[l.ac]?.variant ?? "default"}>
+                  <Badge variant={ACTION_VARIANT[l.ac] ?? "default"}>
                     {actionLabel(l.ac)}
                   </Badge>
                 </TableCell>

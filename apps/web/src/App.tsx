@@ -43,11 +43,12 @@ import { SupportPage } from '@/components/public/SupportPage';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
-import { AdminGeneric, GenericEmpty } from '@/components/admin/AdminGeneric';
+import { GenericEmpty } from '@/components/admin/AdminGeneric';
 import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
 import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
+import { AdminReportPage } from '@/components/admin/AdminReportPage';
 import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
 import { AdminSettingsPage } from '@/components/admin/AdminSettingsPage';
 
@@ -802,7 +803,7 @@ function renderPage({
       return <AdminOrganizationsPage backendEnabled={backendEnabled} />;
     }
     if (page === 'report')
-      return <AdminGeneric page={page} />;
+      return <AdminReportPage tenantId={tenantId} backendEnabled={backendEnabled} />;
     if (page === 'settings')
       return (
         <AdminSettingsPage
