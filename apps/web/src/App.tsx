@@ -13,6 +13,7 @@ import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
+import type { SearchResult } from '@falcon/shared/search/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
@@ -191,6 +192,17 @@ function MainApp() {
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
   const [page, setPage] = useState(() => loadSaved()?.page ?? 'dash');
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  // 検索パレット (Issue #77) からのディープリンク。 通常のページ遷移では毎回クリアする。
+  // `seq` は「同じコースを続けて選び直した」ことを子に伝えるための版番号。 これが無いと
+  // CourseEditor を閉じた後に同じコースを再選択しても key が変わらず開き直せない。
+  const [deepLinkLesson, setDeepLinkLesson] = useState<{
+    id: string;
+    seq: number;
+  } | null>(null);
+  const [deepLinkCourse, setDeepLinkCourse] = useState<{
+    id: string;
+    seq: number;
+  } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: 'general' });
@@ -316,6 +328,49 @@ function MainApp() {
   const openSubmissionResult = (id: string) => {
     setResultSubmissionId(id);
     setPage('submission-result');
+  };
+
+  /**
+   * 通常のページ遷移。 サイドバー / 各画面からの遷移では検索のディープリンクを捨てる
+   * (「コース一覧」を押したのに検索で開いた編集画面へ戻る、 といった挙動を防ぐ)。
+   */
+  const navigate = (nextPage: string) => {
+    setDeepLinkLesson(null);
+    setDeepLinkCourse(null);
+    setPage(nextPage);
+  };
+
+  /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はコース管理画面へ。 */
+  const handleSearchSelect = (result: SearchResult) => {
+    if (effectiveRole === 'learner') {
+      const target = courses.find((c) => c.id === result.course_id);
+      if (!target) {
+        toast.error('このコースは現在受講対象に含まれていません');
+        return;
+      }
+      setCurrentCourse(target);
+      if (result.kind === 'lesson') {
+        // 同じレッスンを選び直しても反映されるよう、 選択のたびに seq を進める。
+        setDeepLinkLesson((prev) => ({
+          id: result.id,
+          seq: (prev?.seq ?? 0) + 1,
+        }));
+        setPage('lesson');
+      } else {
+        setDeepLinkLesson(null);
+        setPage('course-detail');
+      }
+      setDeepLinkCourse(null);
+      return;
+    }
+    // instructor / admin: コース管理画面へ。 admin は該当コースの編集画面を直接開き、
+    // instructor は一覧内で該当コースをハイライトする。
+    setDeepLinkLesson(null);
+    setDeepLinkCourse((prev) => ({
+      id: result.course_id,
+      seq: (prev?.seq ?? 0) + 1,
+    }));
+    setPage('courses');
   };
 
   // ページがレッスン以外に戻ったら context を general にリセット
@@ -496,7 +551,7 @@ function MainApp() {
         <Sidebar
           role={effectiveRole}
           page={page}
-          setPage={setPage}
+          setPage={navigate}
           tenant={effectiveTenant}
           user={effectiveUser}
           counts={sidebarCounts}
@@ -506,6 +561,7 @@ function MainApp() {
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
           <Topbar
             crumbs={crumbs}
+            onSearchSelect={handleSearchSelect}
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,
@@ -523,8 +579,10 @@ function MainApp() {
             {renderPage({
               role: effectiveRole,
               page,
-              setPage,
+              setPage: navigate,
               courses,
+              deepLinkLesson,
+              deepLinkCourse,
               currentCourse,
               setCurrentCourse,
               onOpenAIBot: () => setAiOpen(true),
@@ -615,6 +673,16 @@ interface RenderParams {
   resultSubmissionId: string | null;
   onOpenSubmission: (submissionId: string) => void;
   profileRole?: ProfileRole;
+  /**
+   * 検索から指定されたレッスン (受講者のレッスン画面を開く位置)。
+   * `seq` は同じレッスンを選び直したときにも再適用させるための版番号。
+   */
+  deepLinkLesson: { id: string; seq: number } | null;
+  /**
+   * 検索から指定されたコース (staff のコース管理で開く / ハイライトする対象)。
+   * `seq` は同じコースを選び直したときに子を再マウントさせるための版番号。
+   */
+  deepLinkCourse: { id: string; seq: number } | null;
 }
 
 function renderPage({
@@ -622,6 +690,8 @@ function renderPage({
   page,
   setPage,
   courses,
+  deepLinkLesson,
+  deepLinkCourse,
   currentCourse,
   setCurrentCourse,
   onOpenAIBot,
@@ -694,6 +764,7 @@ function renderPage({
           studentName={studentName}
           studentInitials={studentInitials}
           currentUserId={currentUserId}
+          initialLesson={deepLinkLesson}
         />
       );
     }
@@ -752,6 +823,8 @@ function renderPage({
           page={page}
           tenantId={tenantId}
           backendEnabled={backendEnabled}
+          highlightCourseId={deepLinkCourse?.id ?? null}
+          highlightSeq={deepLinkCourse?.seq ?? 0}
         />
       );
   }
@@ -768,7 +841,16 @@ function renderPage({
           backendEnabled={backendEnabled}
         />
       );
-    if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
+    if (page === 'courses')
+      return (
+        <AdminCoursesPage
+          // seq を含めることで、 同じコースを選び直したときも再マウントされ
+          // CourseEditor を閉じた後に開き直せる。
+          key={deepLinkCourse ? `${deepLinkCourse.id}:${deepLinkCourse.seq}` : 'list'}
+          tenantId={tenantId}
+          initialCourseId={deepLinkCourse?.id ?? null}
+        />
+      );
     if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
     if (page === 'enrollments')

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Calendar,
   Play,
   Book,
   CheckCircle,
@@ -219,16 +218,12 @@ export const LearnerDashboard = ({
           </>
         }
         actions={
-          <>
-            <Button variant="default">
-              <Calendar size={14} />
-              学習スケジュール
-            </Button>
-            <Button variant="accent" onClick={() => setPage('lesson')}>
-              <Play size={14} />
-              続きから学習
-            </Button>
-          </>
+          // 「学習スケジュール」は撤去した (Issue #77)。 スケジュール機能自体が存在せず、
+          // 期限は右カラムの「期限が近い課題」で実データを出しているため。
+          <Button variant="accent" onClick={() => setPage('lesson')}>
+            <Play size={14} />
+            続きから学習
+          </Button>
         }
       />
 

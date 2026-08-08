@@ -23,11 +23,16 @@ import { CourseEditor } from "./CourseEditor";
 
 interface Props {
   tenantId: string;
+  /**
+   * 開いた直後に編集画面を出すコース ID (Issue #77 — Topbar の検索からの遷移)。
+   * 呼び出し側は値を変えるときに `key` も変えてマウントし直す。
+   */
+  initialCourseId?: string | null;
 }
 
-export function AdminCoursesPage({ tenantId }: Props) {
+export function AdminCoursesPage({ tenantId, initialCourseId = null }: Props) {
   const { courses, loading, error, refetch } = useCmsCourses(tenantId);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(initialCourseId);
 
   if (editingId) {
     return (

@@ -8,6 +8,7 @@
 
 import type {
   AssignmentRow,
+  CourseMaterialRow,
   CourseRow,
   CourseStatus,
   CourseWithChildren,
@@ -335,6 +336,19 @@ export async function listLessonMaterials(
 ): Promise<LessonMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: LessonMaterialRow[] }>(
     `/api/materials?lessonId=${encodeURIComponent(lessonId)}`,
+  );
+  return rows ?? [];
+}
+
+/**
+ * コース全体の配布資料一覧 (Issue #77 — コース詳細「教材をダウンロード」)。
+ * セクション → レッスン → 登録順に並んだ状態で返る。
+ */
+export async function listCourseMaterials(
+  courseId: string,
+): Promise<CourseMaterialRow[]> {
+  const { rows } = await apiFetch<{ rows: CourseMaterialRow[] }>(
+    `/api/materials?courseId=${encodeURIComponent(courseId)}`,
   );
   return rows ?? [];
 }

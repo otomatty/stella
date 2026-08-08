@@ -8,6 +8,8 @@
  *                                         lesson_materials 行も登録する (Issue #72)。
  * - GET    /api/materials?lessonId=...  … レッスンの配布資料一覧。
  *                                         受講者は published + active enrollment (quiz と同基準)。
+ * - GET    /api/materials?courseId=...  … コース全体の配布資料一覧 (Issue #77 —
+ *                                         コース詳細「教材をダウンロード」)。 認可は同上。
  * - GET    /api/materials/:id/download  … R2 からのプロキシダウンロード (認可は一覧と同じ)。
  * - DELETE /api/materials/:id           … staff のみ。 DB 行を先に消し、 R2 はベストエフォート。
  *
@@ -18,7 +20,9 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
+
+import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
 
 import { courses, enrollments, lessonMaterials, lessons, sections } from "../db/schema.js";
 import {
@@ -70,9 +74,11 @@ async function lessonCourseInfo(
 }
 
 /**
- * 配布資料の閲覧認可 (quiz.ts の isAuthorizedForLesson と同基準)。
+ * 配布資料の閲覧認可。
  * - staff: 同テナントなら可
- * - student: published かつ当該コースに active enrollment
+ * - student: published かつ当該コースに閲覧可能な enrollment
+ *   (`active` に加えて `completed`。 修了済みコースも受講者のコース一覧に並ぶため、
+ *    `active` だけにすると一覧に出ているコースの資料が 404 になる)
  */
 async function assertMaterialReadable(
   db: Db,
@@ -94,7 +100,7 @@ async function assertMaterialReadable(
       and(
         eq(enrollments.userId, caller.id),
         eq(enrollments.courseId, info.courseId),
-        eq(enrollments.status, "active"),
+        inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
     )
     .limit(1);
@@ -198,11 +204,76 @@ materialsRoute.post("/api/materials/upload", async (c) => {
   }
 });
 
+/**
+ * コース全体の配布資料の閲覧認可。 レッスン単位 (`assertMaterialReadable`) と同基準を
+ * コース行に対して直接適用する。
+ */
+async function assertCourseMaterialsReadable(
+  db: Db,
+  caller: Caller,
+  courseId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ tenantId: courses.tenantId, status: courses.status })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+  const course = rows[0];
+  if (!course || course.tenantId !== caller.tenantId) {
+    throw new ApiError("コースが見つかりません", 404);
+  }
+  if (isStaffRole(caller.role)) return;
+  if (course.status !== "published") {
+    throw new ApiError("コースが見つかりません", 404);
+  }
+  const enrolled = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.userId, caller.id),
+        eq(enrollments.courseId, courseId),
+        inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+      ),
+    )
+    .limit(1);
+  if (!enrolled[0]) throw new ApiError("コースが見つかりません", 404);
+}
+
 materialsRoute.get("/api/materials", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const lessonId = c.req.query("lessonId");
-    if (!lessonId) throw new ApiError("lessonId が必要です", 400);
+    const courseId = c.req.query("courseId");
+
+    // コース単位: レッスン → セクション → コースの join で束ねて返す (Issue #77)。
+    if (courseId) {
+      await assertCourseMaterialsReadable(db, caller, courseId);
+      const rows = await db
+        .select({
+          material: lessonMaterials,
+          lessonTitle: lessons.title,
+          sectionTitle: sections.title,
+        })
+        .from(lessonMaterials)
+        .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
+        .innerJoin(sections, eq(sections.id, lessons.sectionId))
+        .where(eq(sections.courseId, courseId))
+        .orderBy(
+          asc(sections.order),
+          asc(lessons.order),
+          asc(lessonMaterials.createdAt),
+        );
+      return c.json({
+        rows: rows.map((r) => ({
+          ...materialToRow(r.material),
+          lesson_title: r.lessonTitle,
+          section_title: r.sectionTitle,
+        })),
+      });
+    }
+
+    if (!lessonId) throw new ApiError("lessonId または courseId が必要です", 400);
 
     await assertMaterialReadable(db, caller, lessonId);
 

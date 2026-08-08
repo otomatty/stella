@@ -141,6 +141,15 @@ export interface LessonMaterialRow {
   created_at: string;
 }
 
+/**
+ * コース単位で引いた配布資料 (`GET /api/materials?courseId=...` / Issue #77)。
+ * 一覧をレッスン・セクションでグルーピングできるよう表示名を同梱する。
+ */
+export interface CourseMaterialRow extends LessonMaterialRow {
+  lesson_title: string;
+  section_title: string;
+}
+
 export type QuestionKind = "single" | "multiple" | "boolean";
 
 export interface QuizRow {

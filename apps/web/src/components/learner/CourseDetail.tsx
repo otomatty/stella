@@ -17,9 +17,11 @@ import {
   Book,
   Presentation,
 } from '@/lib/icons';
+import { useState } from 'react';
 import type { ComponentType } from 'react';
 import type { LucideProps } from 'lucide-react';
 import { CourseThumb } from '@/components/common/CourseThumb';
+import { CourseMaterialsDialog } from '@/components/learner/CourseMaterialsDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
@@ -68,6 +70,7 @@ export const CourseDetail = ({
   onOpenSubmission,
 }: CourseDetailProps) => {
   const sections = course.sections ?? [];
+  const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
   // 完了数は fixture の初期 status ではなく進捗ストア (サーバ同期済み) で解決する。
   const progressMap = useLessonProgressMap();
@@ -195,7 +198,12 @@ export const CourseDetail = ({
                 <Play size={14} />
                 {course.progress === 0 ? '受講を開始' : '続きから'}
               </Button>
-              <Button size="full" className="mt-2">
+              {/* 旧スタブを実装 (Issue #77): コース内の配布資料をまとめて一覧・DL する。 */}
+              <Button
+                size="full"
+                className="mt-2"
+                onClick={() => setMaterialsOpen(true)}
+              >
                 <Download size={13} />
                 教材をダウンロード
               </Button>
@@ -231,6 +239,13 @@ export const CourseDetail = ({
           ) : null}
         </div>
       </div>
+
+      <CourseMaterialsDialog
+        open={materialsOpen}
+        onOpenChange={setMaterialsOpen}
+        courseId={course.id}
+        courseTitle={course.title}
+      />
     </>
   );
 };

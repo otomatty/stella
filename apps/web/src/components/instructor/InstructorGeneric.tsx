@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Loader2, ChevronRight } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import type { AvatarTone, Tenant } from '@/data/types';
 import type { InstructorStudentProgress } from '@falcon/shared/cms/types';
 import { useCoursesForTenant } from '@/data/courses-source';
 import { useInstructorOverview } from '@/hooks/useAnalytics';
+import { cn } from '@/lib/utils';
 
 const titles: Record<string, string> = {
   students: '担当受講者',
@@ -48,12 +50,27 @@ interface Props {
   page: string;
   tenantId: Tenant['id'];
   backendEnabled: boolean;
+  /** 検索から指定されたコース。 一覧内で強調表示してスクロールする (Issue #77)。 */
+  highlightCourseId?: string | null;
+  /** 同じコースを選び直したときにも再度スクロールさせるための版番号。 */
+  highlightSeq?: number;
 }
 
-export const InstructorGeneric = ({ page, tenantId, backendEnabled }: Props) => {
+export const InstructorGeneric = ({
+  page,
+  tenantId,
+  backendEnabled,
+  highlightCourseId = null,
+  highlightSeq = 0,
+}: Props) => {
   if (page === 'courses') {
     return (
-      <InstructorCoursesPage tenantId={tenantId} backendEnabled={backendEnabled} />
+      <InstructorCoursesPage
+        tenantId={tenantId}
+        backendEnabled={backendEnabled}
+        highlightCourseId={highlightCourseId}
+        highlightSeq={highlightSeq}
+      />
     );
   }
   if (page === 'students') {
@@ -120,11 +137,23 @@ function InstructorStudentsPage({
 function InstructorCoursesPage({
   tenantId,
   backendEnabled,
+  highlightCourseId,
+  highlightSeq,
 }: {
   tenantId: Tenant['id'];
   backendEnabled: boolean;
+  highlightCourseId: string | null;
+  highlightSeq: number;
 }) {
   const { courses, loading, error } = useCoursesForTenant(tenantId, true);
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  // 検索から来たコースを可視領域に入れる。 同じコースを選び直した場合も
+  // highlightSeq が変わるので再度スクロールする。
+  useEffect(() => {
+    if (!highlightCourseId) return;
+    highlightRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [highlightCourseId, highlightSeq, courses]);
 
   const rows = courses.map((c) => ({
     key: c.id,
@@ -156,10 +185,18 @@ function InstructorCoursesPage({
           className="grid gap-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
         >
-          {rows.map((c) => (
+          {rows.map((c) => {
+            const highlighted = c.key === highlightCourseId;
+            return (
             <div
               key={c.key}
-              className="bg-card border border-border rounded-lg overflow-hidden flex flex-col"
+              ref={highlighted ? highlightRef : undefined}
+              className={cn(
+                'bg-card border rounded-lg overflow-hidden flex flex-col',
+                highlighted
+                  ? 'border-brand ring-[3px] ring-brand-soft'
+                  : 'border-border',
+              )}
             >
               <div className="relative">
                 <CourseThumb color={c.color} />
@@ -174,7 +211,8 @@ function InstructorCoursesPage({
                 <div className="text-[11.5px] text-ink-3">{c.lessonsCount}レッスン</div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
@@ -61,6 +61,15 @@ interface LessonPlayerProps {
   studentInitials: string;
   /** ログイン中ユーザの ID (Q&A の自己メッセージ判定に使う)。 未ログイン時は null。 */
   currentUserId: string | null;
+  /**
+   * 検索パレットから指定されたレッスン (Issue #77)。 指定が無ければ従来どおり
+   * コース先頭のレッスンを開く。
+   *
+   * `seq` は選択のたびに増える版番号。 「検索で A → サイドバーで B → 再び検索で A」
+   * のように同じレッスンを選び直したときも、 id だけでは変化を検出できず反映
+   * されないため、 版番号で「明示的に選ばれた」ことを伝える。
+   */
+  initialLesson?: { id: string; seq: number } | null;
   /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
   onOpenAIBot?: () => void;
   /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
@@ -86,15 +95,27 @@ export const LessonPlayer = ({
   studentName,
   studentInitials,
   currentUserId,
+  initialLesson = null,
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
   const sections: Section[] = course.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
-    () => allLessons.find((l) => l.id === 'l10')?.id ?? allLessons[0]?.id ?? '',
+    () =>
+      allLessons.find((l) => l.id === initialLesson?.id)?.id ??
+      allLessons.find((l) => l.id === 'l10')?.id ??
+      allLessons[0]?.id ??
+      '',
   );
   const [tab, setTab] = useState('content');
+
+  // 適用済みの「検索での選択」を id:seq で覚えておく。 これによりサイドバー操作は
+  // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
+  const selectionKey = initialLesson
+    ? `${initialLesson.id}:${initialLesson.seq}`
+    : null;
+  const appliedSelectionRef = useRef<string | null>(selectionKey);
 
   const progressMap = useLessonProgressMap();
 
@@ -130,17 +151,30 @@ export const LessonPlayer = ({
     error: materialsError,
   } = useLessonMaterials(lessonObj?.id ?? null, qaEnabled);
 
-  // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
-  // (lessonObj 経由ではなく allLessons から直接 foundId を計算する)
+  // 表示レッスンの解決。 「検索での選択の適用」と「コース切替時の先頭寄せ」を
+  // 1 つの効果にまとめている。 別々の効果にすると、 別コースのレッスンを検索から
+  // 選んだとき (course と initialLesson が同時に変わる) に同一コミット内で
+  // 後者が古い activeLesson を見て先頭レッスンに上書きしてしまうため。
   useEffect(() => {
-    const foundId =
-      allLessons.find((l) => l.id === activeLesson)?.id ??
-      allLessons[0]?.id ??
-      '';
-    if (foundId !== activeLesson) {
-      setActiveLesson(foundId);
+    if (allLessons.length === 0) {
+      if (activeLesson !== '') setActiveLesson('');
+      return;
     }
-  }, [allLessons, activeLesson]);
+    // 1. 未適用の検索選択を最優先で反映する。 現在のコースにまだ含まれていない
+    //    (コース prop の反映待ち) 場合は適用済みにせず次のレンダーへ持ち越す。
+    if (selectionKey && appliedSelectionRef.current !== selectionKey) {
+      const selected = allLessons.find((l) => l.id === initialLesson?.id);
+      if (selected) {
+        appliedSelectionRef.current = selectionKey;
+        if (selected.id !== activeLesson) setActiveLesson(selected.id);
+        return;
+      }
+    }
+    // 2. コース切替等で activeLesson が現コースに無ければ先頭に揃える。
+    if (!allLessons.some((l) => l.id === activeLesson)) {
+      setActiveLesson(allLessons[0]!.id);
+    }
+  }, [allLessons, activeLesson, initialLesson, selectionKey]);
 
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;
@@ -159,6 +193,20 @@ export const LessonPlayer = ({
   const handleMarkComplete = () => {
     if (lessonObj) markComplete();
   };
+
+  // 前のレッスンへ遷移 (Issue #77)。 locked はスキップして手前の解禁レッスンを探す。
+  // 手前に解禁レッスンが無ければ null を返し、 呼び出し側でボタンを無効化する。
+  const prevLessonId = useMemo(() => {
+    const idx = allLessons.findIndex((l) => l.id === activeLesson);
+    if (idx <= 0) return null;
+    for (let i = idx - 1; i >= 0; i--) {
+      const candidate = allLessons[i];
+      if (candidate && resolveLessonStatus(candidate, progressMap) !== 'locked') {
+        return candidate.id;
+      }
+    }
+    return null;
+  }, [allLessons, activeLesson, progressMap]);
 
   // 次のレッスンへ遷移。 locked はスキップして次の解禁レッスンを探す。 末尾なら CourseDetail に戻る。
   const goToNextLesson = useCallback(
@@ -463,7 +511,14 @@ export const LessonPlayer = ({
               ) : isText ? (
                 <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               ) : isVideo || isSlides ? (
-                <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
+                <LessonOverview
+                  lesson={lessonObj}
+                  onComplete={handleMarkComplete}
+                  onPrevLesson={
+                    prevLessonId ? () => setActiveLesson(prevLessonId) : null
+                  }
+                  onOpenNotes={() => setTab('notes')}
+                />
               ) : (
                 <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               )}
@@ -527,9 +582,14 @@ const MissingMaterialFallback = ({ type }: { type: 'video' | 'slides' }) => (
 const LessonOverview = ({
   lesson,
   onComplete,
+  onPrevLesson,
+  onOpenNotes,
 }: {
   lesson: Lesson;
   onComplete: () => void;
+  /** 手前に解禁済みレッスンが無いときは null (ボタンを無効化する)。 */
+  onPrevLesson: (() => void) | null;
+  onOpenNotes: () => void;
 }) => {
   const hasMaterial =
     (lesson.type === 'video' && Boolean(lesson.videoPath)) ||
@@ -552,12 +612,16 @@ const LessonOverview = ({
         </p>
       )}
       <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-        <Button>
+        <Button
+          onClick={() => onPrevLesson?.()}
+          disabled={!onPrevLesson}
+          title={onPrevLesson ? undefined : '最初のレッスンです'}
+        >
           <ChevronLeft size={13} />
           前のレッスン
         </Button>
         <div className="flex-1" />
-        <Button>
+        <Button onClick={onOpenNotes}>
           <Edit size={13} />
           ノートに追加
         </Button>

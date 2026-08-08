@@ -24,6 +24,7 @@ import { qaRoute } from "./routes/qa.js";
 import { quizRoute } from "./routes/quiz.js";
 import { reportsRoute } from "./routes/reports.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
+import { searchRoute } from "./routes/search.js";
 import { studyActivityRoute } from "./routes/study-activity.js";
 import { submissionsRoute } from "./routes/submissions.js";
 import { supportRoute } from "./routes/support.js";
@@ -60,5 +61,6 @@ app.route("/", submissionsRoute);
 app.route("/", supportRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
+app.route("/", searchRoute);
 
 export default app;
