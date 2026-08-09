@@ -28,6 +28,8 @@ import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
+import { useLessonNote } from '@/hooks/useLessonNote';
+import { MAX_NOTE_LENGTH } from '@falcon/shared/study/notes-sync';
 import { useLessonQuestions } from '@/hooks/useQuestions';
 import { useLessonMaterials } from '@/hooks/useLessonMaterials';
 import { createQuestion, createReply } from '@/lib/qa-api';
@@ -543,7 +545,7 @@ export const LessonPlayer = ({
               />
             </TabsContent>
             <TabsContent value="notes">
-              <NotesView lessonId={lessonObj.id} />
+              <NotesView lessonId={lessonObj.id} userId={currentUserId} />
             </TabsContent>
           </Tabs>
         </div>
@@ -863,28 +865,46 @@ const ResourcesList = ({
   );
 };
 
-const NOTES_STORAGE_PREFIX = 'lms_lesson_notes_v1:';
+/**
+ * レッスンごとの個人メモ (Issue #78)。
+ *
+ * バックエンド設定時はサーバ (`/api/lesson-notes`) に保存し、 端末をまたいで同じノートを
+ * 参照・編集できる。 未設定時は従来どおり localStorage のみ (`useLessonNote` が吸収)。
+ */
+const NotesView = ({
+  lessonId,
+  userId,
+}: {
+  lessonId: string;
+  /** ログイン中ユーザの ID。 切り替わったら前ユーザーのノートを持ち越さない。 */
+  userId: string | null;
+}) => {
+  const {
+    body,
+    setBody,
+    save,
+    loading,
+    saving,
+    error,
+    localError,
+    remote,
+    conflict,
+    overLimit,
+  } = useLessonNote(lessonId, userId);
 
-/** レッスンごとの個人メモ。 localStorage に保存する (本人の端末のみ)。 */
-const NotesView = ({ lessonId }: { lessonId: string }) => {
-  const storageKey = `${NOTES_STORAGE_PREFIX}${lessonId}`;
-  const [note, setNote] = useState('');
-
-  useEffect(() => {
-    try {
-      setNote(window.localStorage.getItem(storageKey) ?? '');
-    } catch {
-      setNote('');
-    }
-  }, [storageKey]);
-
-  const handleSave = () => {
-    try {
-      window.localStorage.setItem(storageKey, note);
-      toast.success('ノートを保存しました');
-    } catch {
+  const handleSave = async () => {
+    const result = await save();
+    if (!result.ok) {
       toast.error('ノートの保存に失敗しました');
+      return;
     }
+    if (result.conflict) {
+      toast.warning(
+        '他の端末で更新されたノートがあるため保存されませんでした。 再読み込みしてください',
+      );
+      return;
+    }
+    toast.success('ノートを保存しました');
   };
 
   return (
@@ -892,14 +912,42 @@ const NotesView = ({ lessonId }: { lessonId: string }) => {
       <CardContent>
         <Textarea
           className="min-h-[260px]"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          maxLength={MAX_NOTE_LENGTH}
           placeholder="このレッスンのメモを書き残せます…"
         />
-        <div className="flex items-center mt-2">
-          <span className="text-[11.5px] text-ink-3">このノートはあなただけに見えます</span>
+        {overLimit ? (
+          <p className="text-[11.5px] text-warning mt-2">
+            ノートが {MAX_NOTE_LENGTH.toLocaleString()} 文字を超えています。
+            超過分はこの端末にのみ残り、 他の端末には同期されません
+          </p>
+        ) : null}
+        {conflict ? (
+          <p className="text-[11.5px] text-warning mt-2">
+            他の端末で更新されたノートがあります。 再読み込みすると最新の内容を取り込めます
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-[11.5px] text-destructive mt-2">
+            サーバとの同期に失敗しました ({error})
+            {localError ? null : '。 この端末には保存されています'}
+          </p>
+        ) : null}
+        {localError ? (
+          <p className="text-[11.5px] text-destructive mt-2">{localError}</p>
+        ) : null}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-[11.5px] text-ink-3">
+            {remote
+              ? 'このノートはあなただけに見えます (端末をまたいで同期されます)'
+              : 'このノートはあなただけに見えます (この端末のみ)'}
+          </span>
+          {loading || saving ? (
+            <Loader2 size={12} className="animate-spin text-ink-3" />
+          ) : null}
           <div className="flex-1" />
-          <Button size="sm" onClick={handleSave}>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
             保存
           </Button>
         </div>

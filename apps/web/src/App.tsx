@@ -11,6 +11,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
+import { configureNotesSync } from '@/lib/lesson-notes';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import type { SearchResult } from '@falcon/shared/search/types';
@@ -413,14 +414,18 @@ function MainApp() {
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
+  // ノート (Issue #78) は取得・保存自体がレッスン単位なので、 ここでは共有端末での
+  // アカウント切替検知 (前ユーザーのローカルノートの破棄) だけを行う。
   useEffect(() => {
     if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
       });
+      configureNotesSync(session.user.id);
     } else {
       configureRemoteSync(null);
+      configureNotesSync(null);
     }
   }, [backendEnabled, session, profile]);
 

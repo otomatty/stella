@@ -33,6 +33,7 @@
     "./review/parse-draft-json": "./src/review/parse-draft-json.ts",
     "./study/activity": "./src/study/activity.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
+    "./study/notes-sync": "./src/study/notes-sync.ts",
     "./search/types": "./src/search/types.ts",
     "./enrollment/access": "./src/enrollment/access.ts"
   },

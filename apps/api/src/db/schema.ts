@@ -227,6 +227,36 @@ export const lessonProgress = sqliteTable(
 );
 
 // ---------------------------------------------------------------
+// レッスンノート (Issue #78)
+// ---------------------------------------------------------------
+
+/**
+ * 受講者がレッスンごとに書く個人メモ。 本人のみ read/write (`routes/lesson-notes.ts`)。
+ *
+ * 端末間 Last-Write-Wins のため、 `updated_at` はクライアントが編集時刻を送り、
+ * upsert 側で「送られた値の方が新しいときだけ更新」する (lesson_progress と同方針)。
+ */
+export const lessonNotes = sqliteTable(
+  "lesson_notes",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    lessonId: text("lesson_id").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: tsNow("created_at"),
+    updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    userLessonUnique: uniqueIndex("lesson_notes_user_lesson_uq").on(t.userId, t.lessonId),
+  }),
+);
+
+// ---------------------------------------------------------------
 // 学習アクティビティ (日別ログ / Issue #73)
 // ---------------------------------------------------------------
 
