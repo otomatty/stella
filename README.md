@@ -192,7 +192,28 @@ JWT の有効期限は **24 時間**。失効後は再ログインが必要（�
 - [ ] 未認証で /api/chat・/api/review-draft が 401
 - [ ] student で review-draft が 403
 
+### コア学習ループの自動スモーク（#64）
+
+ブラウザを使わず、起動中の API に HTTP だけでコア学習ループを 1 本流す E2E スモーク。
+CI（`.github/workflows/ci.yml` の `core-loop` ジョブ）でも同じものが回る。
+
+```bash
+bun run dev:api      # ターミナル 1（migrate / seed 済みであること）
+bun run smoke:core   # ターミナル 2
+```
+
+検証内容（19 ステップ）: コース作成 → 公開（draft は受講者に見えないことも確認）→ 受講登録 →
+レッスン進捗 → 課題提出 → 添削キュー表示 → 受講者による添削の 403 → 添削確定 → 通知生成 →
+修了条件の充足 → 修了証発行（べき等性・未認証での検証）→ 監査ログ記録の確認 → 後片付け。
+
+認証は OAuth を通さず、`apps/api/.dev.vars` の `AUTH_JWT_SECRET` で seed ユーザーの JWT を
+直接発行する（`SMOKE_BASE_URL` / `SMOKE_LEARNER_ID` などで上書き可）。
+作成したコースと受講登録は最後に削除するが、提出物に削除 API がないため
+`[smoke]` 付きの提出が 1 件残る（添削確定済みなのでキューには出ない）。
+
 ### コア学習ループ（#61）手動 E2E
+
+UI を含めた確認。API レベルの検証は上記のスモークで代替できる。
 
 前提: `dev:api` + `dev`、Google ログイン、必要なら admin/instructor 昇格、受講登録済み。
 
@@ -230,6 +251,27 @@ JWT の有効期限は **24 時間**。失効後は再ログインが必要（�
 4. 既存オブジェクトを R2 へ移送する（必要なら）。
 
 seed 教材パスは `tenant/ses/courses/{courseUuid}/...` 形式。オブジェクトが R2 に無いと再生は失敗する。Admin の教材アップロード、または同キーでの配置で確認する。
+
+#### 孤児オブジェクトの棚卸し・掃除（#64）
+
+教材の差し替えや削除時の R2 削除失敗（best-effort）で、DB から参照されない実体が残ることがある。
+
+```bash
+bun run r2:orphans              # 棚卸しのみ（既定・削除しない）
+bun run r2:orphans -- --delete  # 一覧に出た孤児を削除
+```
+
+API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/admin/r2/orphans/cleanup`、
+tenant admin 以上）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
+`next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
+「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
+走査・削除とも呼び出し元テナントの `tenant/<tenantId>/` 配下に限定し、
+参照判定には配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
+（`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
+削除は監査ログ（`r2_orphan_cleanup`）に残る。
+
+本番に対して実行する場合は `API_BASE_URL` と、admin の JWT を `ADMIN_TOKEN` に渡す
+（未指定ならローカルの `.dev.vars` から `seed-admin` の JWT を発行する）。
 
 ### 講師添削 (Issue #8)
 

@@ -55,4 +55,8 @@ Linting is **Biome** (`biome.json`), not ESLint. `biome.json` enables the format
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`). CI (`.github/workflows/ci.yml`) runs lint → typecheck → test → build. Test coverage is currently minimal (a few unit tests in `@falcon/shared`), so also validate via manual testing of the running app.
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`). Unit coverage is minimal (a few tests in `@falcon/shared`).
+
+End-to-end coverage is a **core-loop HTTP smoke** (`bun run smoke:core`, `apps/api/scripts/core-loop-smoke.ts`): with the API running it walks course create → publish → enroll → progress → submit → review → notification → certificate → audit-log assertions → cleanup. No browser; auth is a self-minted JWT from `AUTH_JWT_SECRET`, so it needs `db:migrate` + `db:seed` and `dev:api` first. See README「コア学習ループの自動スモーク」.
+
+CI (`.github/workflows/ci.yml`) has two jobs: `verify` (lint → typecheck → test → build) and `core-loop` (migrate + seed local D1 → `wrangler dev` → `smoke:core`). Beyond these, still validate UI-level changes by hand in the running app.

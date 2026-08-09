@@ -34,27 +34,39 @@ import {
 import {
   AUDIT_ACTION_LABELS,
   auditActionLabel,
+  type AuditAction,
 } from "@falcon/shared/admin/audit-actions";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
+type ActionVariant = "default" | "success" | "warning" | "danger" | "info" | "accent";
+
 // 操作種別の配色。 表示ラベルはレポート (#75) と共通の
 // `@falcon/shared/admin/audit-actions` を使う。 未知の action は素のまま表示する。
-const ACTION_VARIANT: Record<
-  string,
-  "default" | "success" | "warning" | "danger" | "info" | "accent"
-> = {
-  role_change: "warning",
+// キーは `AuditAction` に縛り、 記録側に無い action へ色だけ付ける事故を防ぐ。
+const ACTION_VARIANT: Partial<Record<AuditAction, ActionVariant>> = {
+  login: "default",
   user_invite: "info",
+  user_role_change: "warning",
   user_disable: "danger",
   user_enable: "success",
   course_publish: "success",
   course_unpublish: "default",
   course_status_change: "default",
   course_delete: "danger",
+  enrollment_create: "info",
+  enrollment_update: "default",
+  enrollment_delete: "danger",
+  certificate_issue: "accent",
   org_create: "info",
   org_update: "warning",
-  login: "default",
+  test_mode_enable: "warning",
+  test_mode_disable: "default",
+  r2_orphan_cleanup: "danger",
 };
+
+function actionVariant(action: string): ActionVariant {
+  return ACTION_VARIANT[action as AuditAction] ?? "default";
+}
 
 // 操作種別フィルタの選択肢。 ラベル定義のキー順を踏襲する。
 const ACTION_OPTIONS = Object.keys(AUDIT_ACTION_LABELS);
@@ -304,7 +316,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
             </TableHeader>
             <TableBody>
               {logs.map((l) => {
-                const variant = ACTION_VARIANT[l.action] ?? "default";
+                const variant = actionVariant(l.action);
                 return (
                   <TableRow key={l.id}>
                     <TableCell className="font-mono text-[11.5px] whitespace-nowrap">
@@ -350,7 +362,7 @@ function FilterField({
 
 // dev fixtures フロー用のデモ表示。 DB が無いため固定サンプルを出す。
 const DEMO_ROWS = [
-  { t: "2026-04-18 14:28:05", a: "中村 理恵", ac: "role_change", tg: "user/u_142", ip: "10.0.3.5" },
+  { t: "2026-04-18 14:28:05", a: "中村 理恵", ac: "user_role_change", tg: "user/u_142", ip: "10.0.3.5" },
   { t: "2026-04-18 13:05:44", a: "sys_admin", ac: "course_publish", tg: "course/web-fundamentals", ip: "10.0.0.1" },
   { t: "2026-04-18 12:18:30", a: "堀江メンター", ac: "course_delete", tg: "course/legacy-sql", ip: "10.0.3.22" },
   { t: "2026-04-18 11:02:09", a: "中村 理恵", ac: "user_invite", tg: "user/u_310", ip: "10.0.3.5" },
@@ -381,7 +393,7 @@ function AuditDemo() {
                 <TableCell className="font-mono text-[11.5px]">{l.t}</TableCell>
                 <TableCell>{l.a}</TableCell>
                 <TableCell>
-                  <Badge variant={ACTION_VARIANT[l.ac] ?? "default"}>
+                  <Badge variant={actionVariant(l.ac)}>
                     {actionLabel(l.ac)}
                   </Badge>
                 </TableCell>

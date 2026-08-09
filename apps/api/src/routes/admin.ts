@@ -29,7 +29,7 @@ import {
 import { Hono, type Context } from "hono";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 
-import { auditLogs, authUsers, profiles, tenants } from "../db/schema.js";
+import { authUsers, profiles, tenants } from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
@@ -39,51 +39,15 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
 
-function clientIp(c: Context<{ Bindings: Env }>): string | null {
-  return (
-    c.req.header("cf-connecting-ip") ??
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    null
-  );
-}
-
 function initialsFrom(name: string): string {
   return name.slice(0, 2).toUpperCase();
-}
-
-/** 監査ログを 1 件記録する (best-effort)。 */
-async function recordAudit(
-  db: Db,
-  caller: Caller,
-  entry: {
-    action: string;
-    targetType: string;
-    targetId?: string | null;
-    ip?: string | null;
-    metadata?: Record<string, unknown>;
-  },
-): Promise<void> {
-  try {
-    await db.insert(auditLogs).values({
-      tenantId: caller.tenantId,
-      actorId: caller.id,
-      actorName: caller.name,
-      actorRole: caller.role,
-      action: entry.action,
-      targetType: entry.targetType,
-      targetId: entry.targetId ?? null,
-      ip: entry.ip ?? null,
-      metadata: entry.metadata ?? {},
-    });
-  } catch (e) {
-    console.error("[admin] audit log failed", entry.action, e);
-  }
 }
 
 /** ユーザー管理用: tenant admin (admin | platform_admin) + caller 解決。 */

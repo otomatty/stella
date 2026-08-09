@@ -25,6 +25,7 @@ import {
 } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -137,6 +138,23 @@ const optionToRow = (o: OptionSel) => ({
 async function courseTenant(db: Db, courseId: string): Promise<string | null> {
   const rows = await db.select({ t: courses.tenantId }).from(courses).where(eq(courses.id, courseId)).limit(1);
   return rows[0]?.t ?? null;
+}
+/** 監査ログ用に、 テナント検証と同時にコースの現在値も取る (公開/削除の記録に使う)。 */
+async function courseAuditInfo(
+  db: Db,
+  courseId: string,
+): Promise<{ tenant: string; status: CourseSel["status"]; title: string; slug: string } | null> {
+  const rows = await db
+    .select({
+      tenant: courses.tenantId,
+      status: courses.status,
+      title: courses.title,
+      slug: courses.slug,
+    })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+  return rows[0] ?? null;
 }
 async function sectionCourse(db: Db, sectionId: string): Promise<{ courseId: string; tenant: string } | null> {
   const rows = await db
@@ -312,9 +330,24 @@ cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    assertTenant(await courseTenant(db, id), caller);
+    const info = await courseAuditInfo(db, id);
+    assertTenant(info?.tenant ?? null, caller);
     const { status } = (await c.req.json()) as { status: CourseSel["status"] };
     await db.update(courses).set({ status, updatedAt: new Date() }).where(eq(courses.id, id));
+    // 公開 / 非公開は監査上の意味が違うため action を分ける (Issue #64)。
+    const wasPublished = info!.status === "published";
+    await recordAudit(db, caller, {
+      action:
+        status === "published"
+          ? "course_publish"
+          : wasPublished
+            ? "course_unpublish"
+            : "course_status_change",
+      targetType: "course",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: { title: info!.title, slug: info!.slug, from: info!.status, to: status },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
@@ -326,7 +359,8 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    assertTenant(await courseTenant(db, id), caller);
+    const info = await courseAuditInfo(db, id);
+    assertTenant(info?.tenant ?? null, caller);
     // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
     const lessonRows = await db
       .select({ id: lessons.id })
@@ -335,6 +369,19 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
       .where(eq(sections.courseId, id));
     await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
     await db.delete(courses).where(eq(courses.id, id));
+    // 削除後は行が消えるため、 タイトル等は削除前に取った値を残す。
+    await recordAudit(db, caller, {
+      action: "course_delete",
+      targetType: "course",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: {
+        title: info!.title,
+        slug: info!.slug,
+        status: info!.status,
+        lesson_count: lessonRows.length,
+      },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);

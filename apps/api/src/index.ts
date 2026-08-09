@@ -23,6 +23,7 @@ import { meRoute } from "./routes/me.js";
 import { notificationsRoute } from "./routes/notifications.js";
 import { qaRoute } from "./routes/qa.js";
 import { quizRoute } from "./routes/quiz.js";
+import { r2MaintenanceRoute } from "./routes/r2-maintenance.js";
 import { reportsRoute } from "./routes/reports.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
 import { searchRoute } from "./routes/search.js";
@@ -63,6 +64,7 @@ app.route("/", submissionsRoute);
 app.route("/", supportRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
+app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
 
 export default app;

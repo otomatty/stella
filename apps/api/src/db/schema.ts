@@ -490,26 +490,36 @@ export const submissions = sqliteTable("submissions", {
 // 修了証
 // ---------------------------------------------------------------
 
-export const certificates = sqliteTable("certificates", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  courseId: text("course_id")
-    .notNull()
-    .references(() => courses.id, { onDelete: "cascade" }),
-  certCode: text("cert_code").notNull().unique(),
-  issuedBy: text("issued_by"),
-  issuedAt: tsNow("issued_at"),
-  criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
-  recipientName: text("recipient_name").notNull(),
-  courseTitle: text("course_title").notNull(),
-  tenantName: text("tenant_name").notNull(),
-  revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
-});
+export const certificates = sqliteTable(
+  "certificates",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    certCode: text("cert_code").notNull().unique(),
+    issuedBy: text("issued_by"),
+    issuedAt: tsNow("issued_at"),
+    criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
+    recipientName: text("recipient_name").notNull(),
+    courseTitle: text("course_title").notNull(),
+    tenantName: text("tenant_name").notNull(),
+    revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => ({
+    // 1 ユーザー 1 コースにつき 1 通。 発行 API はこの制約を前提に
+    // `onConflictDoNothing` で競合時のべき等性を担保する (制約が無いと D1 が
+    // "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint" で
+    // 落ち、 修了証発行が常に 500 になる)。
+    userCourseUnique: uniqueIndex("certificates_user_course_uq").on(t.userId, t.courseId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // 監査ログ

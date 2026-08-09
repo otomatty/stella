@@ -26,6 +26,7 @@ import {
 } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type {
@@ -502,6 +503,21 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
       .update(enrollments)
       .set({ status: "completed", completedAt: new Date() })
       .where(and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)));
+
+    // 新規発行時のみ記録する (べき等な再取得は操作ではない)。
+    // 自己発行 (受講者本人 + auto_issue_certificate) もあるため actor は caller のまま。
+    await recordAudit(db, caller, {
+      action: "certificate_issue",
+      targetType: "certificate",
+      targetId: inserted[0].id,
+      ip: clientIp(c),
+      metadata: {
+        cert_code: inserted[0].cert_code,
+        course_id: courseId,
+        user_id: userId,
+        self_issued: !isStaff,
+      },
+    });
 
     return c.json({ certificate: { ...toIssued(inserted[0]), already_existed: false } });
   } catch (err) {

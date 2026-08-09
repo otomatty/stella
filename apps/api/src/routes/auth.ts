@@ -6,8 +6,12 @@
  */
 
 import { Hono } from "hono";
+import { eq } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
+import type { Db } from "../db/client.js";
+import { profiles } from "../db/schema.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { errorResponse, ApiError } from "../lib/authz.js";
@@ -24,6 +28,48 @@ import {
 import type { Env } from "../env.js";
 
 export const authRoute = new Hono<{ Bindings: Env }>();
+
+/**
+ * ログイン成功を監査ログに記録する (Issue #64)。
+ *
+ * プロフィール未作成 (招待前のログイン) は記録しない — 所属テナントが未確定で
+ * `audit_logs.tenant_id` を決められず、 そもそもアプリへは入れないため。
+ */
+async function recordLogin(
+  c: Parameters<typeof clientIp>[0],
+  db: Db,
+  userId: string,
+): Promise<void> {
+  const profile = (
+    await db
+      .select({
+        id: profiles.id,
+        tenantId: profiles.tenantId,
+        role: profiles.role,
+        displayName: profiles.displayName,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1)
+  )[0];
+  if (!profile) return;
+  await recordAudit(
+    db,
+    {
+      id: profile.id,
+      tenantId: profile.tenantId,
+      role: profile.role,
+      name: profile.displayName,
+    },
+    {
+      action: "login",
+      targetType: "user",
+      targetId: profile.id,
+      ip: clientIp(c),
+      metadata: { provider: "google" },
+    },
+  );
+}
 
 function assertGoogleOAuthConfigured(env: Env): void {
   if (!env.AUTH_JWT_SECRET) {
@@ -90,6 +136,7 @@ authRoute.get("/api/auth/google/callback", async (c) => {
     const db = getDb(c.env);
     const user = await findOrCreateUserByEmail(db, claims.email);
     const accessToken = await signAccessToken(c.env.AUTH_JWT_SECRET!, user.id, user.email);
+    await recordLogin(c, db, user.id);
 
     return redirectWithAuthResult(parsedState.returnTo, { access_token: accessToken });
   } catch (err) {

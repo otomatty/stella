@@ -16,6 +16,8 @@
     "deploy:api": "bun run --filter=@falcon/api deploy",
     "deploy:web": "bun run build && bun run --filter=@falcon/web deploy",
     "smoke:d1": "bun run --filter=@falcon/api smoke",
+    "smoke:core": "bun run --filter=@falcon/api smoke:core",
+    "r2:orphans": "bun run --filter=@falcon/api r2:orphans",
     "db:generate": "bun run --filter=@falcon/api db:generate",
     "db:migrate": "bun run --filter=@falcon/api db:migrate",
     "db:migrate:remote": "bun run --filter=@falcon/api db:migrate:remote",

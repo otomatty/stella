@@ -218,7 +218,7 @@ describe("reportRowToCells", () => {
       actor_id: "admin1",
       actor_name: "",
       actor_role: "admin",
-      action: "role_change",
+      action: "user_role_change",
       target_type: "user",
       target_id: "u1",
       ip: null,
@@ -232,7 +232,7 @@ describe("reportRowToCells", () => {
     expect(auditCells[1]).toBe("admin1");
     // 操作は日本語ラベル + 生の操作コードの両方を出す (監査ログ画面の CSV と同じ)。
     expect(auditCells[4]).toBe("ロール変更");
-    expect(auditCells[5]).toBe("role_change");
+    expect(auditCells[5]).toBe("user_role_change");
   });
 
   it("未知のステータスはそのまま出す", () => {
