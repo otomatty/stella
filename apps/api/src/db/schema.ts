@@ -71,7 +71,17 @@ export const profiles = sqliteTable(
       .notNull()
       .default("student"),
     displayName: text("display_name").notNull(),
+    /**
+     * display_name の出所。 招待時は "invite" (メールのローカル部) で作られ、 Google ログイン時に
+     * ID トークンの name で "google" へ上書きされる。 本人が設定画面で変更すると "user" になり、
+     * 以後 Google 名では上書きしない。
+     */
+    nameSource: text("name_source", { enum: ["invite", "google", "user"] })
+      .notNull()
+      .default("invite"),
     initials: text("initials"),
+    /** Google アカウントのプロフィール画像 URL。 ログインのたびに最新化する。 */
+    avatarUrl: text("avatar_url"),
     email: text("email"),
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     createdAt: tsNow("created_at"),

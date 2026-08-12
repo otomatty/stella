@@ -56,28 +56,16 @@ export async function fetchProfile(_userId?: string): Promise<Profile | null> {
   }
 }
 
-export interface EnsureProfileParams {
-  userId: string;
-  tenantId: string;
-  displayName: string;
-  email?: string;
-  initials?: string;
-}
-
-/** 自己更新のみ。招待制のため自由作成オンボーディングからは呼ばない。 */
-export async function ensureProfile(
-  params: EnsureProfileParams,
-): Promise<Profile> {
+/**
+ * 設定画面からのユーザー名変更。 更新できるのは表示名のみ (ロール / テナント / メールは
+ * 招待とログインが真実)。 保存すると以後 Google の登録名では上書きされなくなる。
+ */
+export async function updateMyDisplayName(displayName: string): Promise<Profile> {
   const { profile } = await apiFetch<{ profile: Profile }>("/api/me", {
     method: "POST",
-    body: {
-      tenant_id: params.tenantId,
-      display_name: params.displayName,
-      ...(params.email ? { email: params.email } : {}),
-      ...(params.initials ? { initials: params.initials } : {}),
-    },
+    body: { display_name: displayName },
   });
-  if (!profile) throw new Error("プロフィールの作成に失敗しました");
+  if (!profile) throw new Error("ユーザー名の保存に失敗しました");
   return profile;
 }
 

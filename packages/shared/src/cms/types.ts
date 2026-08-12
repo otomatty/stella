@@ -64,6 +64,8 @@ export interface ProfileRow {
   role: ProfileRole;
   display_name: string;
   initials: string | null;
+  /** Google アカウントのプロフィール画像 URL (ログインのたびに更新される)。 */
+  avatar_url?: string | null;
   email: string | null;
   /**
    * 無効化フラグ (Issue #22)。 列が未マイグレーションの環境では undefined になり得るため optional。

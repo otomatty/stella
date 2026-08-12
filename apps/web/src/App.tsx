@@ -9,7 +9,7 @@ import { LessonAIProvider } from '@/components/common/LessonAIContext';
 import { useCoursesForTenant, useEnrolledCoursesForTenant } from '@/data/courses-source';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { isBackendConfigured } from "@/lib/backend";
-import { signOut as authSignOut } from '@/lib/auth';
+import { signOut as authSignOut, type Profile } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
@@ -23,6 +23,7 @@ import { LoginScreen } from '@/components/shell/LoginScreen';
 import { AuthCallback } from '@/components/shell/AuthCallback';
 import { TenantSelect } from '@/components/shell/TenantSelect';
 import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
+import { SettingsPage } from '@/components/shell/SettingsPage';
 
 import { LearnerDashboard } from '@/components/learner/LearnerDashboard';
 import { CourseList } from '@/components/learner/CourseList';
@@ -49,7 +50,6 @@ import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
 import { AdminReportPage } from '@/components/admin/AdminReportPage';
 import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
-import { AdminSettingsPage } from '@/components/admin/AdminSettingsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
@@ -186,7 +186,13 @@ function MainApp() {
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
 
   const backendEnabled = isBackendConfigured();
-  const { session, profile, loading: authLoading, inviteRequired } = useAuthSession();
+  const {
+    session,
+    profile,
+    loading: authLoading,
+    inviteRequired,
+    refreshProfile,
+  } = useAuthSession();
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
@@ -271,6 +277,7 @@ function MainApp() {
           name: profile.display_name,
           email: profile.email ?? '',
           initials: profile.initials ?? profile.display_name.slice(0, 2),
+          avatarUrl: profile.avatar_url ?? null,
         };
       }
       // profile 取得前の過渡状態でも fixtures のデモユーザーは出さない。
@@ -659,6 +666,8 @@ function MainApp() {
               resultSubmissionId,
               onOpenSubmission: openSubmissionResult,
               profileRole: profile?.role,
+              profile,
+              onProfileUpdated: refreshProfile,
             })}
           </div>
         </div>
@@ -736,6 +745,10 @@ interface RenderParams {
   resultSubmissionId: string | null;
   onOpenSubmission: (submissionId: string) => void;
   profileRole?: ProfileRole;
+  /** 設定画面 (ユーザー名の変更) 用。 バックエンド未設定 / 取得前は null。 */
+  profile: Profile | null;
+  /** ユーザー名の保存後に /api/me を取り直す。 */
+  onProfileUpdated: () => Promise<void>;
   /**
    * 検索から指定されたレッスン (受講者のレッスン画面を開く位置)。
    * `seq` は同じレッスンを選び直したときにも再適用させるための版番号。
@@ -774,7 +787,21 @@ function renderPage({
   resultSubmissionId,
   onOpenSubmission,
   profileRole,
+  profile,
+  onProfileUpdated,
 }: RenderParams) {
+  // 設定 (ユーザー名) は全ロール共通。 テナント管理者にはテナント設定も同じ画面に出す。
+  if (page === 'settings') {
+    return (
+      <SettingsPage
+        role={role}
+        profile={profile}
+        tenantName={tenantName}
+        backendEnabled={backendEnabled}
+        onProfileUpdated={onProfileUpdated}
+      />
+    );
+  }
   if (page === 'submission-result' && resultSubmissionId) {
     return (
       <ReviewResultView
@@ -943,13 +970,6 @@ function renderPage({
     }
     if (page === 'report')
       return <AdminReportPage tenantId={tenantId} backendEnabled={backendEnabled} />;
-    if (page === 'settings')
-      return (
-        <AdminSettingsPage
-          tenantName={tenantName}
-          backendEnabled={backendEnabled}
-        />
-      );
   }
   return <GenericEmpty page={page} />;
 }

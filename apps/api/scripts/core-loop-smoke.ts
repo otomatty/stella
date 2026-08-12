@@ -169,6 +169,38 @@ async function main(): Promise<void> {
     assert(r.status === 401, `401 を期待したが ${r.status}`);
   });
 
+  await step("受講者が設定画面からユーザー名を変更できる", async () => {
+    const before = await ok("GET", "/api/me", { token: learner });
+    const original = before.profile.display_name as string;
+    // Google ログインで同期されるアバターはフロントが /api/me から読む。
+    assert("avatar_url" in before.profile, "/api/me が avatar_url を返さない");
+    const next = `[smoke] ユーザー名 ${stamp}`;
+
+    const saved = await ok("POST", "/api/me", {
+      token: learner,
+      body: { display_name: ` ${next} ` },
+    });
+    assert(
+      saved.profile.display_name === next,
+      `display_name が trim して保存されない: ${saved.profile.display_name}`,
+    );
+
+    const empty = await call("POST", "/api/me", {
+      token: learner,
+      body: { display_name: "   " },
+    });
+    assert(empty.status === 400, `空のユーザー名は 400 を期待したが ${empty.status}`);
+
+    const tooLong = await call("POST", "/api/me", {
+      token: learner,
+      body: { display_name: "あ".repeat(51) },
+    });
+    assert(tooLong.status === 400, `51文字は 400 を期待したが ${tooLong.status}`);
+
+    // 以降のステップ (提出者名の表示など) に影響させないよう元の名前へ戻す。
+    await ok("POST", "/api/me", { token: learner, body: { display_name: original } });
+  });
+
   await step("Admin がコースを作成する (draft)", async () => {
     const res = await ok("POST", "/api/cms/courses", {
       token: admin,

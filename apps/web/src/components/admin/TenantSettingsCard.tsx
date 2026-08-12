@@ -1,5 +1,5 @@
 /**
- * `/admin/settings` — テナント設定。
+ * テナント設定カード — 設定画面 (SettingsPage) にテナント管理者だけ表示される。
  *
  * テストモードの切り替えを行う。 テストモード ON のあいだは、 ユーザー登録 (招待) 時に
  * 動作確認用のテストデータ (受講登録・進捗・ウェルカム通知) が自動投入される。
@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { FlaskConical, Loader2 } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,11 +20,10 @@ import {
 } from '@/lib/admin-settings-api';
 
 interface Props {
-  tenantName: string;
   backendEnabled: boolean;
 }
 
-export const AdminSettingsPage = ({ tenantName, backendEnabled }: Props) => {
+export const TenantSettingsCard = ({ backendEnabled }: Props) => {
   const [testMode, setTestMode] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
   const [saving, setSaving] = useState(false);
@@ -42,7 +40,7 @@ export const AdminSettingsPage = ({ tenantName, backendEnabled }: Props) => {
         }
       })
       .catch((err) => {
-        console.error('[AdminSettingsPage] fetch failed', err);
+        console.error('[TenantSettingsCard] fetch failed', err);
         if (!cancelled) {
           setError(err instanceof Error ? err.message : '設定の取得に失敗しました');
         }
@@ -66,7 +64,7 @@ export const AdminSettingsPage = ({ tenantName, backendEnabled }: Props) => {
         saved.test_mode ? 'テストモードを有効にしました' : 'テストモードを無効にしました',
       );
     } catch (err) {
-      console.error('[AdminSettingsPage] update failed', err);
+      console.error('[TenantSettingsCard] update failed', err);
       toast.error(err instanceof Error ? err.message : '設定の更新に失敗しました');
     } finally {
       setSaving(false);
@@ -75,14 +73,12 @@ export const AdminSettingsPage = ({ tenantName, backendEnabled }: Props) => {
 
   return (
     <>
-      <PageHeader title="設定" sub={`${tenantName} のテナント設定`} />
-
       {!backendEnabled ? (
         <Card className="text-center p-12 text-ink-3 text-sm">
           テナント設定はバックエンド接続時に利用できます (現在はデモ表示です)。
         </Card>
       ) : (
-        <Card className="max-w-[720px]">
+        <Card>
           <CardHeader>
             <CardTitle>テストモード</CardTitle>
           </CardHeader>

@@ -71,6 +71,13 @@
       "when": 1786522249516,
       "tag": "0009_aromatic_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1786523622307,
+      "tag": "0010_cynical_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

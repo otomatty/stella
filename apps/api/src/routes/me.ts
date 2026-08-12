@@ -2,7 +2,10 @@
  * 認証済みユーザー自身のプロフィール API (旧 auth.ts の profiles 直アクセスの置き換え)。
  *
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
- *   POST /api/me  … 自己更新のみ / 未招待は invite_required
+ *   POST /api/me  … 表示名の自己更新のみ / 未招待は invite_required
+ *
+ * 更新できるのは display_name だけ。 role / tenant / email は招待とログイン (JWT) が真実なので、
+ * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
  *
  * getCaller は「プロフィール必須」だが、 ここは JWT 検証のみで profile 有無を判定するため
  * verifyToken (JWT 検証のみ) を直接使う。
@@ -18,12 +21,16 @@ import type { Env } from "../env.js";
 
 export const meRoute = new Hono<{ Bindings: Env }>();
 
+/** ユーザー名の上限。 一覧・修了証・アバターの表示が破綻しない範囲。 */
+const MAX_DISPLAY_NAME_LENGTH = 50;
+
 const PROFILE_COLS = {
   id: profiles.id,
   tenant_id: profiles.tenantId,
   role: profiles.role,
   display_name: profiles.displayName,
   initials: profiles.initials,
+  avatar_url: profiles.avatarUrl,
   email: profiles.email,
   disabled: profiles.disabled,
   created_at: profiles.createdAt,
@@ -71,13 +78,18 @@ meRoute.post("/api/me", async (c) => {
   try {
     const payload = await verifyToken(c);
     const userId = payload.sub as string;
-    const email = typeof payload.email === "string" ? payload.email : undefined;
     const db = getDb(c.env);
-    const body = (await c.req.json()) as {
-      display_name?: string;
-      email?: string;
-      initials?: string;
-    };
+    const body = (await c.req.json().catch(() => null)) as {
+      display_name?: unknown;
+    } | null;
+
+    const displayName = typeof body?.display_name === "string" ? body.display_name.trim() : "";
+    if (!displayName) {
+      throw new ApiError("ユーザー名を入力してください", 400);
+    }
+    if (displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+      throw new ApiError(`ユーザー名は${MAX_DISPLAY_NAME_LENGTH}文字以内で入力してください`, 400);
+    }
 
     const existing = await db
       .select({ id: profiles.id })
@@ -88,18 +100,13 @@ meRoute.post("/api/me", async (c) => {
       throw new ApiError("invite_required", 403);
     }
 
-    const displayName = body.display_name?.trim() || email || "User";
-    const initials = body.initials ?? displayName.slice(0, 2).toUpperCase();
-    const rawEmail = body.email ?? email ?? null;
-    const normalizedEmail =
-      typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() || null : null;
-
+    // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
     await db
       .update(profiles)
       .set({
         displayName,
-        initials,
-        email: normalizedEmail,
+        initials: displayName.slice(0, 2).toUpperCase(),
+        nameSource: "user",
       })
       .where(eq(profiles.id, userId));
 

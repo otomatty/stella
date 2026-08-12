@@ -18,7 +18,7 @@ import {
   GraduationCap,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Role, User } from '@/data/types';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
@@ -144,6 +144,10 @@ export const Sidebar = ({
 
     <div className="mt-auto flex items-center gap-2.5 px-1.5 pt-2.5 pb-0.5 border-t border-border">
       <Avatar>
+        {user.avatarUrl ? (
+          // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
+          <AvatarImage src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+        ) : null}
         <AvatarFallback>{user.initials}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 text-xs">

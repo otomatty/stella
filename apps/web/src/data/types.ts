@@ -26,6 +26,8 @@ export interface User {
   name: string;
   email: string;
   initials: string;
+  /** Google アカウントのプロフィール画像。 未取得 / 読み込み失敗時はイニシャル表示。 */
+  avatarUrl?: string | null;
 }
 
 export interface Lesson {
