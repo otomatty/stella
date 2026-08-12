@@ -438,48 +438,9 @@ export interface InstructorStudentProgress {
 
 /** get_instructor_overview RPC の戻り値。 */
 export interface InstructorOverview {
-  open_questions: number;
   overdue_learners: number;
   total_learners: number;
   students: InstructorStudentProgress[];
-}
-
-export type QuestionStatus = "open" | "answered" | "closed";
-
-/**
- * Q&A スレッドのルート (Issue #24)。 course / lesson に紐付く受講者の質問。
- * author_name / author_initials は profiles の RLS を跨がず描画するための denormalize。
- */
-export interface QuestionRow {
-  id: string;
-  tenant_id: string;
-  course_id: string;
-  lesson_id: string | null;
-  author_id: string;
-  author_name: string;
-  author_initials: string | null;
-  title: string;
-  body: string;
-  status: QuestionStatus;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Q&A スレッドへの返信 (受講者の追記 / 講師の回答)。 */
-export interface QuestionReplyRow {
-  id: string;
-  question_id: string;
-  author_id: string;
-  author_name: string;
-  author_initials: string | null;
-  body: string;
-  is_instructor: boolean;
-  created_at: string;
-}
-
-/** スレッド + 返信をネストした読み出し形 (created_at 昇順)。 */
-export interface QuestionWithReplies extends QuestionRow {
-  replies: QuestionReplyRow[];
 }
 
 // ---------------------------------------------------------------
@@ -506,13 +467,12 @@ export interface AnnouncementRow {
 export type NotificationType =
   | "announcement"
   | "review_completed"
-  | "qa_answered"
   | "assignment_due";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。
- * お知らせの fan-out + 添削完了 / Q&A 回答などのイベントを受け取る。
- * payload は種別ごとの参照情報 (submission_id / question_id / announcement_id 等)。
+ * お知らせの fan-out + 添削完了などのイベントを受け取る。
+ * payload は種別ごとの参照情報 (submission_id / announcement_id 等)。
  */
 export interface NotificationRow {
   id: string;

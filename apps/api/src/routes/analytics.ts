@@ -16,7 +16,6 @@ import {
   lessonProgress,
   lessons,
   profiles,
-  questions,
   quizAttempts,
   quizOptions,
   quizQuestions,
@@ -213,7 +212,7 @@ async function computeStumbles(
 }
 
 /**
- * 講師ダッシュボード用の未返信 / 遅延 / 受講者進捗。
+ * 講師ダッシュボード用の遅延 / 受講者進捗。
  *
  * 注: 講師 ↔ 受講者 / コースの担当割当モデルは存在しないため、 母集合はテナント全体の
  * enrollment (= テナント概況) とする。 越テナント参照は caller.tenantId で構造的に遮断する。
@@ -224,11 +223,6 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const tenantId = caller.tenantId;
     const now = new Date();
-
-    const openQ = await db
-      .select({ id: questions.id })
-      .from(questions)
-      .where(and(eq(questions.tenantId, tenantId), eq(questions.status, "open")));
 
     const allEnr = await db
       .select({
@@ -334,7 +328,6 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
 
     return c.json({
       overview: {
-        open_questions: openQ.length,
         overdue_learners: overdue,
         total_learners: totalLearners,
         students,

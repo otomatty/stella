@@ -8,8 +8,7 @@
  *              + 最初のレッスンを完了済みにする進捗
  *              + 直近数日の日別学習ログ (週間チャート / ストリークの確認用)
  *              + サンプル提出 (添削待ち 2 件 + 添削済み 1 件)
- *              + サンプル Q&A (未返信 1 件 + 回答済み 1 件)
- *   - instructor / admin: テナントに受講者が居れば、 添削待ち / 未返信 Q&A が
+ *   - instructor / admin: テナントに受講者が居れば、 添削待ちが
  *              1 件も無いときだけ既存受講者名義でサンプルを補充する
  *              (受講者を先に招待していれば何もしない)
  *   - 全ロール: ウェルカム通知 1 件
@@ -17,7 +16,7 @@
  * 招待自体を失敗させないため、 呼び出し側で best-effort (try/catch) にすること。
  */
 
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
 import type {
   ReviewPriority,
@@ -26,7 +25,6 @@ import type {
   RubricCriterion,
   SubmissionStatus,
 } from "@falcon/shared/review/types";
-import type { QuestionStatus } from "@falcon/shared/cms/types";
 
 import type { Db } from "../db/client.js";
 import {
@@ -36,8 +34,6 @@ import {
   lessons,
   notifications,
   profiles,
-  questionReplies,
-  questions,
   sections,
   studyActivity,
   submissions,
@@ -63,7 +59,7 @@ const TEST_STUDY_ACTIVITY: ReadonlyArray<{ daysAgo: number; watchedSec: number }
   { daysAgo: 0, watchedSec: 600 },
 ];
 
-/** 提出物 / Q&A を紐付けられるレッスンの種別。 */
+/** 提出物を紐付けられるレッスンの種別。 */
 const ASSIGNMENT_LESSON_TYPES = ["assignment", "code"] as const;
 
 const STAFF_ROLES = ["instructor", "admin", "platform_admin"] as const;
@@ -223,57 +219,6 @@ const SUBMISSION_TEMPLATES: readonly SubmissionTemplate[] = [
 ];
 
 // ---------------------------------------------------------------
-// サンプル Q&A の雛形
-// ---------------------------------------------------------------
-
-interface QaThreadTemplate {
-  hoursAgo: number;
-  /** 課題レッスンに紐付けるか (false なら最初のレッスン)。 */
-  onAssignmentLesson: boolean;
-  status: QuestionStatus;
-  title: string;
-  body: string;
-  replies: ReadonlyArray<{ hoursAgo: number; fromInstructor: boolean; body: string }>;
-}
-
-/** 未返信 1 件 (講師の未返信キュー用) + 回答済み 1 件 (受講者のスレッド表示用)。 */
-const QA_TEMPLATES: readonly QaThreadTemplate[] = [
-  {
-    hoursAgo: 5,
-    onAssignmentLesson: true,
-    status: "open",
-    title: "課題のテストが 1 件だけ失敗します",
-    body:
-      "課題を提出する前にテストを実行したところ、 空文字を渡すケースだけ失敗してしまいます。" +
-      " 入力チェックはどこで行うのが定石でしょうか。 (テストデータ)",
-    replies: [],
-  },
-  {
-    hoursAgo: 50,
-    onAssignmentLesson: false,
-    status: "answered",
-    title: "動画の再生位置が引き継がれません",
-    body:
-      "レッスン動画を途中で閉じて開き直すと、 最初から再生されることがあります。" +
-      " 再開位置はどの操作で保存されますか。 (テストデータ)",
-    replies: [
-      {
-        hoursAgo: 48,
-        fromInstructor: true,
-        body:
-          "再開位置は再生を止めたタイミングで保存されます。 タブを閉じる直前に一時停止すると確実です。" +
-          " それでも戻る場合は、 ブラウザのプライベートウィンドウを使っていないかご確認ください。",
-      },
-      {
-        hoursAgo: 47,
-        fromInstructor: false,
-        body: "ありがとうございます。 一時停止してから閉じたら再開できました。",
-      },
-    ],
-  },
-];
-
-// ---------------------------------------------------------------
 
 export interface TestDataTarget {
   tenantId: string;
@@ -379,18 +324,8 @@ async function insertStudentTestData(
       name: target.displayName,
       initials: initialsOf(target.displayName),
     };
-    const responder = await pickResponder(db, target.tenantId, target.userId);
 
     await insertSampleSubmissions(db, target.tenantId, author, course.title, courseLessons, now);
-    await insertSampleQaThreads(
-      db,
-      target.tenantId,
-      author,
-      responder,
-      course.id,
-      courseLessons,
-      now,
-    );
   }
 
   // 週間学習チャート / 連続学習ストリークをすぐ確認できるよう、 日別ログも入れる。
@@ -420,7 +355,7 @@ async function insertStudentTestData(
  * 講師 / 管理者を先に招待したときのための補充。
  *
  * 講師 ↔ 受講者の担当割当モデルは無く、 講師画面の母集合はテナント全体なので、
- * 「テナントに添削待ち / 未返信 Q&A があるか」だけを見て、 足りない分を既存受講者
+ * 「テナントに添削待ちがあるか」だけを見て、 足りない分を既存受講者
  * 名義で補う。 受講者が 1 人も居なければ何もしない (その後の受講者招待で埋まる)。
  */
 async function insertStaffTestData(
@@ -428,23 +363,14 @@ async function insertStaffTestData(
   target: TestDataTarget,
   now: Date,
 ): Promise<void> {
-  const [pending, openQuestions] = await Promise.all([
-    db
-      .select({ id: submissions.id })
-      .from(submissions)
-      .where(
-        and(eq(submissions.tenantId, target.tenantId), eq(submissions.status, "pending")),
-      )
-      .limit(1),
-    db
-      .select({ id: questions.id })
-      .from(questions)
-      .where(and(eq(questions.tenantId, target.tenantId), eq(questions.status, "open")))
-      .limit(1),
-  ]);
-  const needSubmissions = pending.length === 0;
-  const needQuestions = openQuestions.length === 0;
-  if (!needSubmissions && !needQuestions) return;
+  const pending = await db
+    .select({ id: submissions.id })
+    .from(submissions)
+    .where(
+      and(eq(submissions.tenantId, target.tenantId), eq(submissions.status, "pending")),
+    )
+    .limit(1);
+  if (pending.length > 0) return;
 
   const student = (
     await db
@@ -467,28 +393,14 @@ async function insertStaffTestData(
     initials: student.initials ?? initialsOf(student.displayName),
   };
 
-  if (needSubmissions) {
-    await insertSampleSubmissions(
-      db,
-      target.tenantId,
-      author,
-      course.title,
-      courseLessons,
-      now,
-    );
-  }
-  if (needQuestions) {
-    const responder = await pickResponder(db, target.tenantId, target.userId);
-    await insertSampleQaThreads(
-      db,
-      target.tenantId,
-      author,
-      responder,
-      course.id,
-      courseLessons,
-      now,
-    );
-  }
+  await insertSampleSubmissions(
+    db,
+    target.tenantId,
+    author,
+    course.title,
+    courseLessons,
+    now,
+  );
 }
 
 // ---------------------------------------------------------------
@@ -520,38 +432,6 @@ async function listCourseLessons(db: Db, courseId: string): Promise<CourseLesson
     .innerJoin(sections, eq(lessons.sectionId, sections.id))
     .where(eq(sections.courseId, courseId))
     .orderBy(asc(sections.order), asc(lessons.order));
-}
-
-/**
- * サンプル Q&A の講師返信に使うプロフィールを選ぶ。
- * 講師 > その他スタッフ の順で、 可能なら本人以外を選ぶ (招待した管理者が残る)。
- */
-async function pickResponder(
-  db: Db,
-  tenantId: string,
-  excludeUserId: string,
-): Promise<SampleAuthor | null> {
-  const staff = await db
-    .select({
-      id: profiles.id,
-      displayName: profiles.displayName,
-      initials: profiles.initials,
-      role: profiles.role,
-    })
-    .from(profiles)
-    .where(and(eq(profiles.tenantId, tenantId), inArray(profiles.role, [...STAFF_ROLES])))
-    .orderBy(asc(profiles.createdAt));
-
-  const picked =
-    staff.find((p) => p.role === "instructor" && p.id !== excludeUserId) ??
-    staff.find((p) => p.id !== excludeUserId) ??
-    staff[0];
-  if (!picked) return null;
-  return {
-    id: picked.id,
-    name: picked.displayName,
-    initials: picked.initials ?? initialsOf(picked.displayName),
-  };
 }
 
 /**
@@ -619,107 +499,6 @@ async function insertSampleSubmissions(
         verdict: row.verdict,
         status: row.status,
         course_title: row.courseTitle,
-        test_data: true,
-      },
-    })),
-  );
-}
-
-/**
- * 講師の未返信キュー / 受講者のレッスン内 Q&A を埋めるサンプルスレッド。
- * 返信者 (講師 / 管理者) が居ないテナントでは、 返信付きスレッドを飛ばす。
- */
-async function insertSampleQaThreads(
-  db: Db,
-  tenantId: string,
-  author: SampleAuthor,
-  responder: SampleAuthor | null,
-  courseId: string,
-  courseLessons: readonly CourseLesson[],
-  now: Date,
-): Promise<void> {
-  const firstLessonId = courseLessons[0]?.id ?? null;
-  const assignmentLessonId =
-    courseLessons.find((l) => (ASSIGNMENT_LESSON_TYPES as readonly string[]).includes(l.type))
-      ?.id ?? firstLessonId;
-
-  const base = now.getTime();
-  const threads = QA_TEMPLATES.filter(
-    (t) => responder != null || t.replies.every((r) => !r.fromInstructor),
-  ).map((t) => {
-    const replies = t.replies.map((r) => ({
-      fromInstructor: r.fromInstructor,
-      body: r.body,
-      createdAt: new Date(base - r.hoursAgo * HOUR_MS),
-    }));
-    const createdAt = new Date(base - t.hoursAgo * HOUR_MS);
-    return {
-      lessonId: t.onAssignmentLesson ? assignmentLessonId : firstLessonId,
-      status: t.status,
-      title: t.title,
-      body: t.body,
-      createdAt,
-      // 一覧は updated_at 降順のため、 最後の返信時刻を反映させる。
-      updatedAt: replies[replies.length - 1]?.createdAt ?? createdAt,
-      replies,
-    };
-  });
-  if (threads.length === 0) return;
-
-  const inserted = await db
-    .insert(questions)
-    .values(
-      threads.map((t) => ({
-        tenantId,
-        courseId,
-        lessonId: t.lessonId,
-        authorId: author.id,
-        authorName: author.name,
-        authorInitials: author.initials,
-        title: t.title,
-        body: t.body,
-        status: t.status,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-      })),
-    )
-    .returning({ id: questions.id });
-
-  const replyRows = threads.flatMap((t, i) => {
-    const questionId = inserted[i]?.id;
-    if (!questionId) return [];
-    return t.replies.map((r) => {
-      const by = r.fromInstructor ? responder! : author;
-      return {
-        questionId,
-        authorId: by.id,
-        authorName: by.name,
-        authorInitials: by.initials,
-        body: r.body,
-        isInstructor: r.fromInstructor,
-        createdAt: r.createdAt,
-      };
-    });
-  });
-  if (replyRows.length === 0) return;
-  await db.insert(questionReplies).values(replyRows);
-
-  // 講師返信のあるスレッドには、 通常フローと同じく質問者宛の通知も入れておく。
-  const answered = threads
-    .map((thread, i) => ({ thread, id: inserted[i]?.id }))
-    .filter((x) => x.id != null && x.thread.replies.some((r) => r.fromInstructor));
-  if (answered.length === 0) return;
-  await db.insert(notifications).values(
-    answered.map(({ thread, id }) => ({
-      userId: author.id,
-      tenantId,
-      type: "qa_answered" as const,
-      title: "質問に回答がつきました",
-      body: (thread.replies.find((r) => r.fromInstructor)?.body ?? "").slice(0, 140),
-      payload: {
-        question_id: id,
-        course_id: courseId,
-        lesson_id: thread.lessonId,
         test_data: true,
       },
     })),

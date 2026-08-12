@@ -1,7 +1,6 @@
 import {
   Calendar,
   Edit,
-  MessageCircle,
   AlertTriangle,
   Star,
   TrendingUp,
@@ -20,7 +19,6 @@ import type { AvatarTone, Tenant } from '@/data/types';
 import type { InstructorStudentProgress } from '@falcon/shared/cms/types';
 import { useSubmissions } from '@/hooks/useSubmissions';
 import { useInstructorOverview } from '@/hooks/useAnalytics';
-import { useOpenQuestions } from '@/hooks/useQuestions';
 import { formatSubmittedAt } from '@/lib/submissions-store';
 import { cn } from '@/lib/utils';
 
@@ -49,18 +47,6 @@ function severityOf(s: InstructorStudentProgress): {
   return { label: '順調', sev: 'success' };
 }
 
-/** <input type="date"> ではなく相対表現にする簡易フォーマッタ。 */
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const diff = Date.now() - then;
-  const hours = Math.floor(diff / 3_600_000);
-  if (hours < 1) return 'たった今';
-  if (hours < 24) return `${hours}時間前`;
-  const days = Math.floor(hours / 24);
-  return `${days}日前`;
-}
-
 export const InstructorDashboard = ({
   tenantId,
   setPage,
@@ -71,14 +57,8 @@ export const InstructorDashboard = ({
   const pending = submissions.filter((s) => s.status === 'pending');
 
   const { overview } = useInstructorOverview(tenantId, backendEnabled);
-  const { threads: openThreads } = useOpenQuestions(backendEnabled);
 
   // デモ専用のみデモ定数。backendEnabled 時は overview null → KPI 0 / 空リスト。
-  const openQuestions = overview
-    ? overview.open_questions
-    : backendEnabled
-      ? 0
-      : 3;
   const overdueLearners = overview
     ? overview.overdue_learners
     : backendEnabled
@@ -107,23 +87,11 @@ export const InstructorDashboard = ({
       ? []
       : STUDENT_PROG_DEMO;
 
-  const unanswered: UnansweredRow[] = overview
-    ? openThreads.slice(0, 3).map((q) => ({
-        id: q.id,
-        q: q.title,
-        who: q.author_name,
-        c: toneFromId(q.author_id),
-        t: relativeTime(q.created_at),
-      }))
-    : backendEnabled
-      ? []
-      : UNANSWERED_DEMO;
-
   return (
   <>
     <PageHeader
       title="講師ダッシュボード"
-      sub="担当受講者の進捗 · 添削 · Q&A"
+      sub="担当受講者の進捗 · 添削"
       actions={
         <>
           <Button>
@@ -138,7 +106,7 @@ export const InstructorDashboard = ({
       }
     />
 
-    <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+    <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
       <KpiCard
         label={
           <>
@@ -154,16 +122,6 @@ export const InstructorDashboard = ({
           </>
         }
         trendDir="up"
-      />
-      <KpiCard
-        label={
-          <>
-            <MessageCircle size={12} /> Q&A 未返信
-          </>
-        }
-        value={openQuestions}
-        unit="件"
-        trend={unanswered[0] ? `最古 ${unanswered[unanswered.length - 1]?.t ?? ''}` : '未返信なし'}
       />
       <KpiCard
         label={
@@ -253,81 +211,43 @@ export const InstructorDashboard = ({
         </div>
       </Card>
 
-      <div className="flex flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>担当受講者の進捗</CardTitle>
-          </CardHeader>
-          <div>
-            {students.length === 0 ? (
-              <div className="px-4 py-8 text-center text-ink-3 text-[12.5px]">
-                受講登録された受講者がいません
-              </div>
-            ) : (
-              students.map((s, i) => (
-                <div
-                  key={s.id ?? i}
-                  className={cn(
-                    'flex items-center gap-2.5 px-4 py-2.5',
-                    i < students.length - 1 ? 'border-b border-border' : '',
-                  )}
-                >
-                  <Avatar size="sm">
-                    <AvatarFallback tone={s.c}>{s.n.slice(0, 1)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium">{s.n}</div>
-                    <div className="text-[11.5px] text-ink-3">{s.course}</div>
-                  </div>
-                  <div className="w-20">
-                    <Progress value={s.p} tone="ink" />
-                    <div className="text-[11.5px] text-ink-3 font-mono text-right mt-0.5">
-                      {s.p}%
-                    </div>
-                  </div>
-                  <Badge variant={s.sev}>{s.s}</Badge>
+      <Card>
+        <CardHeader>
+          <CardTitle>担当受講者の進捗</CardTitle>
+        </CardHeader>
+        <div>
+          {students.length === 0 ? (
+            <div className="px-4 py-8 text-center text-ink-3 text-[12.5px]">
+              受講登録された受講者がいません
+            </div>
+          ) : (
+            students.map((s, i) => (
+              <div
+                key={s.id ?? i}
+                className={cn(
+                  'flex items-center gap-2.5 px-4 py-2.5',
+                  i < students.length - 1 ? 'border-b border-border' : '',
+                )}
+              >
+                <Avatar size="sm">
+                  <AvatarFallback tone={s.c}>{s.n.slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium">{s.n}</div>
+                  <div className="text-[11.5px] text-ink-3">{s.course}</div>
                 </div>
-              ))
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Q&A 未返信</CardTitle>
-          </CardHeader>
-          <div>
-            {unanswered.length === 0 ? (
-              <div className="px-4 py-8 text-center text-ink-3 text-[12.5px]">
-                未返信の質問はありません
-              </div>
-            ) : (
-              unanswered.map((q, i) => (
-                <div
-                  key={q.id ?? i}
-                  className={cn(
-                    'flex items-center gap-2.5 px-4 py-3',
-                    i < unanswered.length - 1 ? 'border-b border-border' : '',
-                  )}
-                >
-                  <Avatar size="sm">
-                    <AvatarFallback tone={q.c}>{q.who.slice(0, 1)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium truncate">{q.q}</div>
-                    <div className="text-[11.5px] text-ink-3">
-                      {q.who} · {q.t}
-                    </div>
+                <div className="w-20">
+                  <Progress value={s.p} tone="ink" />
+                  <div className="text-[11.5px] text-ink-3 font-mono text-right mt-0.5">
+                    {s.p}%
                   </div>
-                  <Button size="sm" onClick={() => setPage('qa')}>
-                    返信
-                  </Button>
                 </div>
-              ))
-            )}
-          </div>
-        </Card>
-      </div>
+                <Badge variant={s.sev}>{s.s}</Badge>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   </>
   );
@@ -343,24 +263,10 @@ interface StudentRow {
   sev: 'success' | 'warning' | 'danger';
 }
 
-interface UnansweredRow {
-  id?: string;
-  q: string;
-  who: string;
-  c: AvatarTone;
-  t: string;
-}
-
 // デモ専用のみデモ定数。
 const STUDENT_PROG_DEMO: StudentRow[] = [
   { n: '田中 翔太', c: 'c1', p: 62, course: 'Web開発基礎', s: '順調', sev: 'success' },
   { n: '佐藤 美咲', c: 'c2', p: 38, course: 'Web開発基礎', s: 'やや遅延', sev: 'warning' },
   { n: '鈴木 健一', c: 'c3', p: 18, course: 'React入門', s: '遅延', sev: 'danger' },
   { n: '山田 優花', c: 'c4', p: 85, course: '基本情報対策', s: '順調', sev: 'success' },
-];
-
-const UNANSWERED_DEMO: UnansweredRow[] = [
-  { q: 'thisの束縛についての質問', who: '佐藤 美咲', c: 'c2', t: '6時間前' },
-  { q: 'CSS Grid の minmax() について', who: '鈴木 健一', c: 'c3', t: '昨日' },
-  { q: 'Node.js のバージョン指定方法', who: '中村 理恵', c: 'c6', t: '昨日' },
 ];

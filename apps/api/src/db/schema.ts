@@ -227,36 +227,6 @@ export const lessonProgress = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// レッスンノート (Issue #78)
-// ---------------------------------------------------------------
-
-/**
- * 受講者がレッスンごとに書く個人メモ。 本人のみ read/write (`routes/lesson-notes.ts`)。
- *
- * 端末間 Last-Write-Wins のため、 `updated_at` はクライアントが編集時刻を送り、
- * upsert 側で「送られた値の方が新しいときだけ更新」する (lesson_progress と同方針)。
- */
-export const lessonNotes = sqliteTable(
-  "lesson_notes",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    lessonId: text("lesson_id").notNull(),
-    body: text("body").notNull().default(""),
-    createdAt: tsNow("created_at"),
-    updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
-  },
-  (t) => ({
-    userLessonUnique: uniqueIndex("lesson_notes_user_lesson_uq").on(t.userId, t.lessonId),
-  }),
-);
-
-// ---------------------------------------------------------------
 // 学習アクティビティ (日別ログ / Issue #73)
 // ---------------------------------------------------------------
 
@@ -380,42 +350,6 @@ export const enrollments = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// Q&A
-// ---------------------------------------------------------------
-
-export const questions = sqliteTable("questions", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  courseId: text("course_id").notNull(),
-  lessonId: text("lesson_id"),
-  authorId: text("author_id").notNull(),
-  authorName: text("author_name").notNull(),
-  authorInitials: text("author_initials"),
-  title: text("title").notNull().default(""),
-  body: text("body").notNull(),
-  status: text("status", { enum: ["open", "answered", "closed"] })
-    .notNull()
-    .default("open"),
-  createdAt: tsNow("created_at"),
-  updatedAt: tsNowUpd("updated_at"),
-});
-
-export const questionReplies = sqliteTable("question_replies", {
-  id: uuid(),
-  questionId: text("question_id")
-    .notNull()
-    .references(() => questions.id, { onDelete: "cascade" }),
-  authorId: text("author_id").notNull(),
-  authorName: text("author_name").notNull(),
-  authorInitials: text("author_initials"),
-  body: text("body").notNull(),
-  isInstructor: integer("is_instructor", { mode: "boolean" }).notNull().default(false),
-  createdAt: tsNow("created_at"),
-});
-
-// ---------------------------------------------------------------
 // 通知 / お知らせ
 // ---------------------------------------------------------------
 
@@ -442,7 +376,7 @@ export const notifications = sqliteTable("notifications", {
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
   type: text("type", {
-    enum: ["announcement", "review_completed", "qa_answered", "assignment_due"],
+    enum: ["announcement", "review_completed", "assignment_due"],
   }).notNull(),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
@@ -582,8 +516,6 @@ export const APP_TABLES = [
   "quiz_options",
   "quiz_attempts",
   "enrollments",
-  "questions",
-  "question_replies",
   "announcements",
   "notifications",
   "submissions",

@@ -2,7 +2,7 @@
  * レッスン配布資料の一覧を取得する Hook (Issue #72)。
  *
  * バックエンド未設定時や fixtures レッスン (非 uuid) では no-op (空配列) で、
- * モックには依存しない。 連続フェッチの取り違えは requestId で防ぐ (useQuestions と同方針)。
+ * モックには依存しない。 連続フェッチの取り違えは requestId で防ぐ。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";

@@ -7,11 +7,8 @@ import {
   Download,
   FileText,
   Folder,
-  MessageCircle,
-  Edit,
   Clock,
   Loader2,
-  HelpCircle,
   User,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
@@ -19,10 +16,8 @@ import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
 import type { Assignment } from '@falcon/shared/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
@@ -31,17 +26,10 @@ import {
   useLessonProgressMap,
   useStudyTime,
 } from '@/hooks/useLessonProgress';
-import { useLessonNote } from '@/hooks/useLessonNote';
-import { MAX_NOTE_LENGTH } from '@falcon/shared/study/notes-sync';
-import { useLessonQuestions } from '@/hooks/useQuestions';
 import { useLessonMaterials } from '@/hooks/useLessonMaterials';
-import { createQuestion, createReply } from '@/lib/qa-api';
 import { downloadLessonMaterial } from '@/lib/cms-api';
 import type { LessonMaterialRow } from '@falcon/shared/cms/types';
 import { isBackendConfigured } from "@/lib/backend";
-import { QAThread } from '@/components/common/QAThread';
-import { QuestionComposer } from '@/components/common/QuestionComposer';
-import type { QuestionWithReplies } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
 import { LessonMarkdown, MarkdownSlides } from './MarkdownSlides';
@@ -65,8 +53,6 @@ interface LessonPlayerProps {
   tenantId: Tenant['id'];
   studentName: string;
   studentInitials: string;
-  /** ログイン中ユーザの ID (Q&A の自己メッセージ判定に使う)。 未ログイン時は null。 */
-  currentUserId: string | null;
   /**
    * 外から指定された開始レッスン (「続きから」・ シラバスの行クリック・ 検索パレット・
    * リロード復帰)。 指定が無ければ従来どおりコース先頭のレッスンを開く。
@@ -105,7 +91,6 @@ export const LessonPlayer = ({
   tenantId,
   studentName,
   studentInitials,
-  currentUserId,
   initialLesson = null,
   onActiveLessonChange,
   onOpenAIBot,
@@ -149,22 +134,14 @@ export const LessonPlayer = ({
     [allLessons, activeLesson],
   );
 
-  // Q&A はレッスンが CMS の実体 (uuid) かつ バックエンド設定済みのときのみ永続化する。
-  // fixtures のレッスン (id='l10' 等) では空状態を表示し、 モックには戻さない。
-  const qaEnabled =
+  // 配布資料は CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
+  const materialsEnabled =
     isBackendConfigured() && UUID_RE.test(lessonObj?.id ?? '');
-  const {
-    threads: qaThreads,
-    loading: qaLoading,
-    refetch: qaRefetch,
-  } = useLessonQuestions(lessonObj?.id ?? null, qaEnabled);
-
-  // 配布資料も CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
   const {
     materials,
     loading: materialsLoading,
     error: materialsError,
-  } = useLessonMaterials(lessonObj?.id ?? null, qaEnabled);
+  } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled);
 
   // 表示レッスンの解決。 「検索での選択の適用」と「コース切替時の先頭寄せ」を
   // 1 つの効果にまとめている。 別々の効果にすると、 別コースのレッスンを検索から
@@ -501,12 +478,6 @@ export const LessonPlayer = ({
               >
                 資料
               </TabsTrigger>
-              <TabsTrigger value="qa" icon={<MessageCircle />} count={qaThreads.length}>
-                Q&A
-              </TabsTrigger>
-              <TabsTrigger value="notes" icon={<Edit />}>
-                ノート
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="content">
@@ -542,23 +513,10 @@ export const LessonPlayer = ({
                   onPrevLesson={
                     prevLessonId ? () => setActiveLesson(prevLessonId) : null
                   }
-                  onOpenNotes={() => setTab('notes')}
                 />
               ) : (
                 <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               )}
-            </TabsContent>
-            <TabsContent value="qa">
-              <QAView
-                threads={qaThreads}
-                loading={qaLoading}
-                enabled={qaEnabled}
-                tenantId={tenantId}
-                courseId={course.id}
-                lessonId={lessonObj.id}
-                currentUserId={currentUserId}
-                onRefetch={qaRefetch}
-              />
             </TabsContent>
             <TabsContent value="resources">
               <ResourcesList
@@ -566,9 +524,6 @@ export const LessonPlayer = ({
                 loading={materialsLoading}
                 error={materialsError}
               />
-            </TabsContent>
-            <TabsContent value="notes">
-              <NotesView lessonId={lessonObj.id} userId={currentUserId} />
             </TabsContent>
           </Tabs>
         </div>
@@ -608,13 +563,11 @@ const LessonOverview = ({
   lesson,
   onComplete,
   onPrevLesson,
-  onOpenNotes,
 }: {
   lesson: Lesson;
   onComplete: () => void;
   /** 手前に解禁済みレッスンが無いときは null (ボタンを無効化する)。 */
   onPrevLesson: (() => void) | null;
-  onOpenNotes: () => void;
 }) => {
   const hasMaterial =
     (lesson.type === 'video' && Boolean(lesson.videoPath)) ||
@@ -646,10 +599,6 @@ const LessonOverview = ({
           前のレッスン
         </Button>
         <div className="flex-1" />
-        <Button onClick={onOpenNotes}>
-          <Edit size={13} />
-          ノートに追加
-        </Button>
         {hasMaterial ? (
           <Button variant="accent" onClick={onComplete}>
             完了にする
@@ -724,98 +673,6 @@ const LessonReadable = ({
           </Button>
         )}
       </div>
-    </div>
-  );
-};
-
-interface QAViewProps {
-  threads: QuestionWithReplies[];
-  loading: boolean;
-  enabled: boolean;
-  tenantId: string;
-  courseId: string;
-  lessonId: string;
-  currentUserId: string | null;
-  onRefetch: () => Promise<void>;
-}
-
-const QAView = ({
-  threads,
-  loading,
-  enabled,
-  tenantId,
-  courseId,
-  lessonId,
-  currentUserId,
-  onRefetch,
-}: QAViewProps) => {
-  if (!enabled) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
-        <HelpCircle size={28} className="text-ink-4" />
-        <div className="font-medium text-ink-2">Q&amp;A はまだ利用できません</div>
-        <div className="text-[12.5px]">
-          このレッスンが公開・保存されると、 ここで質問を投稿できるようになります。
-        </div>
-      </div>
-    );
-  }
-
-  const handleCreate = async ({
-    title,
-    body,
-  }: {
-    title: string;
-    body: string;
-  }) => {
-    try {
-      await createQuestion({ tenantId, courseId, lessonId, title, body });
-      await onRefetch();
-      toast.success('質問を投稿しました');
-    } catch (err) {
-      console.error('[QAView] createQuestion failed', err);
-      toast.error(err instanceof Error ? err.message : '質問の投稿に失敗しました');
-      // 失敗を QuestionComposer へ伝播し、 入力フォームのクリアを防ぐ。
-      throw err;
-    }
-  };
-
-  const handleReply = async (questionId: string, body: string) => {
-    try {
-      await createReply(questionId, body);
-      await onRefetch();
-    } catch (err) {
-      console.error('[QAView] createReply failed', err);
-      toast.error(err instanceof Error ? err.message : '返信の送信に失敗しました');
-      throw err;
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <QuestionComposer
-        onSubmit={handleCreate}
-        bodyPlaceholder="このレッスンについて質問する…"
-      />
-      {loading ? (
-        <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
-          <Loader2 size={16} className="animate-spin" /> 読み込み中…
-        </div>
-      ) : threads.length === 0 ? (
-        <div className="py-10 text-center text-[12.5px] text-ink-3">
-          まだ質問はありません。 最初の質問を投稿してみましょう。
-        </div>
-      ) : (
-        threads.map((t) => (
-          <QAThread
-            key={t.id}
-            thread={t}
-            currentUserId={currentUserId}
-            canReply
-            onReply={(body) => handleReply(t.id, body)}
-          />
-        ))
-      )}
     </div>
   );
 };
@@ -919,96 +776,5 @@ const ResourcesList = ({
         </div>
       ))}
     </div>
-  );
-};
-
-/**
- * レッスンごとの個人メモ (Issue #78)。
- *
- * バックエンド設定時はサーバ (`/api/lesson-notes`) に保存し、 端末をまたいで同じノートを
- * 参照・編集できる。 未設定時は従来どおり localStorage のみ (`useLessonNote` が吸収)。
- */
-const NotesView = ({
-  lessonId,
-  userId,
-}: {
-  lessonId: string;
-  /** ログイン中ユーザの ID。 切り替わったら前ユーザーのノートを持ち越さない。 */
-  userId: string | null;
-}) => {
-  const {
-    body,
-    setBody,
-    save,
-    loading,
-    saving,
-    error,
-    localError,
-    remote,
-    conflict,
-    overLimit,
-  } = useLessonNote(lessonId, userId);
-
-  const handleSave = async () => {
-    const result = await save();
-    if (!result.ok) {
-      toast.error('ノートの保存に失敗しました');
-      return;
-    }
-    if (result.conflict) {
-      toast.warning(
-        '他の端末で更新されたノートがあるため保存されませんでした。 再読み込みしてください',
-      );
-      return;
-    }
-    toast.success('ノートを保存しました');
-  };
-
-  return (
-    <Card>
-      <CardContent>
-        <Textarea
-          className="min-h-[260px]"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          maxLength={MAX_NOTE_LENGTH}
-          placeholder="このレッスンのメモを書き残せます…"
-        />
-        {overLimit ? (
-          <p className="text-[11.5px] text-warning mt-2">
-            ノートが {MAX_NOTE_LENGTH.toLocaleString()} 文字を超えています。
-            超過分はこの端末にのみ残り、 他の端末には同期されません
-          </p>
-        ) : null}
-        {conflict ? (
-          <p className="text-[11.5px] text-warning mt-2">
-            他の端末で更新されたノートがあります。 再読み込みすると最新の内容を取り込めます
-          </p>
-        ) : null}
-        {error ? (
-          <p className="text-[11.5px] text-destructive mt-2">
-            サーバとの同期に失敗しました ({error})
-            {localError ? null : '。 この端末には保存されています'}
-          </p>
-        ) : null}
-        {localError ? (
-          <p className="text-[11.5px] text-destructive mt-2">{localError}</p>
-        ) : null}
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-[11.5px] text-ink-3">
-            {remote
-              ? 'このノートはあなただけに見えます (端末をまたいで同期されます)'
-              : 'このノートはあなただけに見えます (この端末のみ)'}
-          </span>
-          {loading || saving ? (
-            <Loader2 size={12} className="animate-spin text-ink-3" />
-          ) : null}
-          <div className="flex-1" />
-          <Button size="sm" onClick={handleSave} disabled={saving}>
-            保存
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 };

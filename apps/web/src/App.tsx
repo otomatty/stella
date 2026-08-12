@@ -11,7 +11,6 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
-import { configureNotesSync } from '@/lib/lesson-notes';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import type { SearchResult } from '@falcon/shared/search/types';
@@ -30,14 +29,12 @@ import { CourseList } from '@/components/learner/CourseList';
 import { CourseDetail } from '@/components/learner/CourseDetail';
 import { LessonPlayer } from '@/components/learner/LessonPlayer';
 import { CertificatePage } from '@/components/learner/Certificate';
-import { StandaloneQA } from '@/components/learner/StandaloneQA';
 import { ReviewResultView } from '@/components/learner/ReviewResultView';
 
 import { InstructorDashboard } from '@/components/instructor/InstructorDashboard';
 import { ReviewQueue } from '@/components/instructor/ReviewQueue';
 import { ReviewEditor } from '@/components/instructor/ReviewEditor';
 import { InstructorGeneric } from '@/components/instructor/InstructorGeneric';
-import { InstructorQA } from '@/components/instructor/InstructorQA';
 import { Gradebook } from '@/components/instructor/Gradebook';
 
 import { PublicCertificateVerify } from '@/components/public/PublicCertificateVerify';
@@ -59,7 +56,6 @@ import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
-import { useMyQuestions, useOpenQuestions } from '@/hooks/useQuestions';
 import { useMyCertificates } from '@/hooks/useMyCertificates';
 import { useNotifications } from '@/hooks/useNotifications';
 import {
@@ -112,7 +108,6 @@ const PAGE_LABELS: Record<string, string> = {
   lesson: 'レッスン',
   'submission-result': '添削結果',
   cert: '修了証',
-  qa: 'Q&A',
   'review-queue': '添削待ち',
   review: '添削エディタ',
   gradebook: '成績台帳',
@@ -201,7 +196,11 @@ function MainApp() {
     return (saved?.tenantId && TENANTS.find((t) => t.id === saved.tenantId)) || defaultTenant;
   });
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
-  const [page, setPage] = useState(() => loadSaved()?.page ?? 'dash');
+  // 削除済み画面 (ノート / Q&A) を開いていた端末はダッシュボードへ戻す。
+  const [page, setPage] = useState(() => {
+    const savedPage = loadSaved()?.page ?? 'dash';
+    return savedPage === 'qa' ? 'dash' : savedPage;
+  });
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [lastLocation, setLastLocation] = useState<LastLocation | null>(
     () => loadSaved()?.lastLocation ?? null,
@@ -335,11 +334,6 @@ function MainApp() {
   const dataSource = pickSource(courseSource, announcements.source);
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
-  const myQuestions = useMyQuestions(
-    session?.user.id ?? null,
-    effectiveRole === 'learner',
-  );
-  const openQuestions = useOpenQuestions(effectiveRole === 'instructor');
   const myCertificates = useMyCertificates(
     session?.user.id ?? null,
     effectiveRole === 'learner',
@@ -347,7 +341,6 @@ function MainApp() {
   const sidebarCounts =
     effectiveRole === 'learner'
       ? {
-          qa: myQuestions.threads.filter((t) => t.status === 'open').length,
           cert: backendEnabled
             ? myCertificates.certificates.length
             : courses.filter((c) => c.completed).length,
@@ -355,7 +348,6 @@ function MainApp() {
       : effectiveRole === 'instructor'
         ? {
             'review-queue': pendingReviewCount,
-            qa: openQuestions.threads.length,
           }
         : undefined;
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
@@ -484,18 +476,14 @@ function MainApp() {
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
-  // ノート (Issue #78) は取得・保存自体がレッスン単位なので、 ここでは共有端末での
-  // アカウント切替検知 (前ユーザーのローカルノートの破棄) だけを行う。
   useEffect(() => {
     if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
       });
-      configureNotesSync(session.user.id);
     } else {
       configureRemoteSync(null);
-      configureNotesSync(null);
     }
   }, [backendEnabled, session, profile]);
 
@@ -842,7 +830,6 @@ function renderPage({
           tenantId={tenantId}
           studentName={studentName}
           studentInitials={studentInitials}
-          currentUserId={currentUserId}
           initialLesson={deepLinkLesson}
           onActiveLessonChange={onActiveLessonChange}
         />
@@ -857,14 +844,6 @@ function renderPage({
           studentInitials={studentInitials}
           tenantName={tenantName}
           backendEnabled={backendEnabled}
-        />
-      );
-    if (page === 'qa')
-      return (
-        <StandaloneQA
-          tenantId={tenantId}
-          currentUserId={currentUserId}
-          courses={courses}
         />
       );
   }
@@ -894,8 +873,6 @@ function renderPage({
           setPage={setPage}
         />
       );
-    if (page === 'qa')
-      return <InstructorQA tenantId={tenantId} currentUserId={currentUserId} />;
     if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'students' || page === 'courses')
       return (

@@ -4,7 +4,6 @@ import {
   Home,
   Book,
   Play,
-  MessageCircle,
   Award,
   Edit,
   Users,
@@ -30,7 +29,6 @@ type NavId =
   | 'dash'
   | 'courses'
   | 'lesson'
-  | 'qa'
   | 'cert'
   | 'review-queue'
   | 'gradebook'
@@ -56,7 +54,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'dash', label: 'ダッシュボード', icon: Home },
     { id: 'courses', label: 'コース一覧', icon: Book },
     { id: 'lesson', label: '現在のレッスン', icon: Play },
-    { id: 'qa', label: 'Q&A', icon: MessageCircle },
     { id: 'cert', label: '修了証', icon: Award },
   ],
   instructor: [
@@ -64,7 +61,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'review-queue', label: '添削待ち', icon: Edit },
     { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'students', label: '担当受講者', icon: Users },
-    { id: 'qa', label: 'Q&A 未返信', icon: MessageCircle },
     { id: 'courses', label: 'コース', icon: Book },
   ],
   admin: [
@@ -94,7 +90,7 @@ interface SidebarProps {
   page: string;
   setPage: (page: string) => void;
   user: User;
-  /** ナビ ID ごとの実件数バッジ (添削待ち / Q&A 未返信 / 修了証 等)。 0 は非表示。 */
+  /** ナビ ID ごとの実件数バッジ (添削待ち / 修了証 等)。 0 は非表示。 */
   counts?: Partial<Record<NavId, number>>;
   /** profiles.role — 組織マスタは platform_admin のみ表示 */
   profileRole?: ProfileRole;

@@ -14,7 +14,6 @@ import {
   CheckCheck,
   Megaphone,
   Check,
-  MessageCircle,
   Loader2,
   X,
   Send,
@@ -47,7 +46,6 @@ const TYPE_META: Record<
 > = {
   announcement: { icon: Megaphone, tone: 'text-brand', label: 'お知らせ' },
   review_completed: { icon: Check, tone: 'text-success', label: '添削完了' },
-  qa_answered: { icon: MessageCircle, tone: 'text-info', label: 'Q&A 回答' },
   assignment_due: { icon: Bell, tone: 'text-warning', label: '課題期限' },
 };
 
