@@ -49,7 +49,7 @@ npx prettier --check src
 npx eslint src
 ```
 
-<!-- ノート: 9-1-2で入れたVS Codeの設定で、整形を意識しなくてよくなる。--noEmitはファイルを出力せず型チェックだけ行う指定。この3つをpackage.jsonのscriptsにまとめ、手元とCIで同じコマンドが動くようにするのが理想。 -->
+<!-- ノート: 9-1-3で入れたVS Codeの設定で、整形を意識しなくてよくなる。--noEmitはファイルを出力せず型チェックだけ行う指定。この3つをpackage.jsonのscriptsにまとめ、手元とCIで同じコマンドが動くようにするのが理想。 -->
 
 ---
 

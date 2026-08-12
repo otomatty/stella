@@ -4,7 +4,7 @@
   <!-- Level 1: プリミティブ型 全体 -->
   <rect x="80" y="168" width="1040" height="280" rx="12"
         fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
-  <rect x="104" y="156" width="112" height="24" fill="#FFFFFF"/>
+  <rect x="104" y="156" width="140" height="24" fill="#FFFFFF"/>
   <text x="112" y="172" font-size="16" font-weight="500" letter-spacing="0.18em"
         font-family="Figtree, sans-serif" fill="#8A8A93">PRIMITIVE</text>
 

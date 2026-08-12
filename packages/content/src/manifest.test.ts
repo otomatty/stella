@@ -80,9 +80,9 @@ describe("buildContentManifest", () => {
     expect(quizzes.map((q) => q.lessonId).sort()).toEqual(quizLessonIds?.sort());
   });
 
-  it("全 160 トピックが載る", () => {
+  it("全 162 トピックが載る", () => {
     const slides = courses[0].sections?.flatMap((s) => s.lessons).filter((l) => l.type === "slides");
-    expect(slides).toHaveLength(160);
+    expect(slides).toHaveLength(162);
   });
 
   // parseQuiz は「## 確認クイズ」節が無いと黙って [] を返す。見出しの改名で

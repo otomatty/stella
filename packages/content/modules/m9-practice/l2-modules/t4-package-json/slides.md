@@ -55,7 +55,7 @@ TypeScript入門研修 — Module 9 / レッスン9-2
 }
 ```
 
-<!-- ノート: dependenciesは本番でも必要なもの、devDependenciesは開発中だけ必要なもの。9-1-3でtypescriptを --save-dev で入れたのは、変換が終われば本番では不要だから。scriptsに書いた名前は npm run build で実行できる。 -->
+<!-- ノート: dependenciesは本番でも必要なもの、devDependenciesは開発中だけ必要なもの。9-1-4でtypescriptを --save-dev で入れたのは、変換が終われば本番では不要だから。scriptsに書いた名前は npm run build で実行できる。 -->
 
 ---
 

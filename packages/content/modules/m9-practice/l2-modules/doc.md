@@ -113,7 +113,7 @@ console.log(format(new Date(), "yyyy/MM/dd"));
 - **`dependencies`** — 本番でも必要なもの
 - **`devDependencies`** — 開発中だけ必要なもの
 
-9-1-3で`typescript`を`--save-dev`で入れたのは、変換が終われば本番では不要だからです。
+9-1-4で`typescript`を`--save-dev`で入れたのは、変換が終われば本番では不要だからです。
 
 `scripts`に書いた名前は`npm run build`で実行できます。
 

@@ -1,15 +1,15 @@
 ---
-id: 9-1-3
+id: 9-1-5
 title: tscでコンパイルする
 takeaway: "tscはTypeScriptをJavaScriptに変換するコマンド"
 introduces: [tsc]
-requires: [コンパイル, Node.js, ターミナル, JavaScript, TypeScript, npm]
+requires: [コンパイル, Node.js, ターミナル, JavaScript, TypeScript, npm, npx]
 header: "TypeScript入門研修"
 ---
 
 <!-- _class: lead -->
 
-# 9-1-3
+# 9-1-5
 # tscでコンパイルする
 
 TypeScript入門研修 — Module 9 / レッスン9-1
@@ -33,33 +33,31 @@ TypeScript入門研修 — Module 9 / レッスン9-1
 
 - tsc = TypeScript Compiler の略
 
-<!-- ノート: 結論を先に言い切る。0-1-2で「コンパイラー」という言葉を定義したが、その実体がこのコマンド。npmで導入する(npmは次のレッスンで扱うので、いまは手順として実行してもらう)。 -->
+<!-- ノート: 結論を先に言い切る。0-1-2で「コンパイラー」という言葉を定義したが、その実体がこのコマンド。 -->
 
 ---
 
-## 実行してみる
+## 変換する
 
 ```bash
-npm install --save-dev typescript
 npx tsc index.ts
 ```
 
 - `index.ts` から `index.js` が作られる
 - 中身を開くと、型注釈が消えている
 
-<!-- ノート: 出力されたjsファイルを実際に開いてもらう。0-1-3の図で見たことが、目の前で起きている。npxはインストールしたコマンドを実行する命令、とだけ説明する。 -->
-
+<!-- ノート: 先に index.ts を作ってから tsc する。中身の例はdoc/演習に書く。出力されたjsを実際に開いてもらう。0-1-3の図で見たことが、目の前で起きている。npxは前のトピックで導入済み。 -->
 ---
 
-## 実行する
+## 動かす
 
 ```bash
 node index.js
 ```
 
-- 変換後のJavaScriptを、Node.jsで動かす
+- 書く(`.ts`) → 変換する(`tsc`) → 動かす(`node`)
 
-<!-- ノート: 対比枠。書く(.ts) → 変換する(tsc) → 動かす(node)という3ステップ。Playgroundでは1つのボタンに隠れていた流れが、手元では明示的になる。毎回2つのコマンドを打つのは面倒なので、実務では設定ファイルで簡略化する。それが次のレッスン以降の話。 -->
+<!-- ノート: 対比枠。Playgroundでは1つのボタンに隠れていた流れが、手元では明示的になる。毎回手打ちは面倒なので、実務では設定ファイルで簡略化する。それが次のレッスン以降の話。 -->
 
 ---
 

@@ -118,9 +118,9 @@ python packages/content/scripts/diagram_export.py packages/content/modules/<path
 
 ## 現在の状態
 
-**全モジュールがトピック形式です。** 全10モジュール(M0〜M9)/ 42レッスン / 160トピックで完成しています。旧形式の教材は残っていません。
+**全モジュールがトピック形式です。** 全10モジュール(M0〜M9)/ 42レッスン / 162トピックで完成しています。旧形式の教材は残っていません。
 
-**教材本体(`modules/`)とビルドスクリプト(`scripts/`)は移設済みです。** `bun run --filter=@falcon/content materials` で160トピック分の pptx が生成できることを確認しています(図解SVG 68件・図解HTML 68件を含む)。
+**教材本体(`modules/`)とビルドスクリプト(`scripts/`)は移設済みです。** `bun run --filter=@falcon/content materials` で162トピック分の pptx が生成できることを確認しています(図解SVG 68件・図解HTML 68件を含む)。
 
 全体構成・全トピックの一覧・順序の根拠は **[CURRICULUM.md](CURRICULUM.md)** にあります。作業前に必ず参照してください。
 
@@ -128,7 +128,7 @@ python packages/content/scripts/diagram_export.py packages/content/modules/<path
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
 - **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入
-- **収録** — 160本の動画収録は未着手
+- **収録** — 162本の動画収録は未着手
 - **LMS への seed 投入** — 教材を LMS のコース/レッスンとして登録する seed は未整備
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 
