@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 120 1200 440" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <!-- baseline -->
+  <line x1="120" y1="320" x2="1080" y2="320" stroke="#B7B7BE" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- event1: 開始 -->
+  <circle cx="240" cy="320" r="8" fill="#8A8A93"/>
+  <text x="240" y="280" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">newで開始</text>
+
+  <!-- event2: コンストラクタ内(OK) -->
+  <circle cx="480" cy="320" r="8" fill="#16A34A"/>
+  <text x="480" y="364" text-anchor="middle" font-size="20" font-family="'Geist Mono', monospace" fill="#0E0E10">this.id = id;</text>
+  <text x="480" y="392" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#16A34A">OK(コンストラクタの中)</text>
+
+  <!-- milestone: 生成完了(中立) -->
+  <line x1="720" y1="176" x2="720" y2="440" stroke="#8A8A93" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <rect x="616" y="152" width="208" height="40" fill="#FFFFFF"/>
+  <text x="720" y="180" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">生成完了</text>
+  <circle cx="720" cy="320" r="12" fill="#0E0E10"/>
+
+  <!-- event3: 生成後(NG) -->
+  <circle cx="960" cy="320" r="8" fill="#E5342B"/>
+  <text x="960" y="364" text-anchor="middle" font-size="20" font-family="'Geist Mono', monospace" fill="#0E0E10">this.id = "X-999";</text>
+  <text x="960" y="392" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E5342B">NG(エラーになる)</text>
+
+  <text x="600" y="500" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">生成が終わったら、二度と代入できない</text>
+</svg>

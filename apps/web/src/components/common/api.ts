@@ -8,6 +8,7 @@ import type {
   ChatRequest,
   ChatStreamEvent,
 } from "@falcon/shared/ai/types";
+import { getAccessToken } from "@/lib/auth-client";
 
 /** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
 const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
@@ -24,9 +25,15 @@ export async function* streamChat(
   body: ChatRequest,
   options: { signal?: AbortSignal } = {},
 ): AsyncGenerator<ChatStreamEvent, void, unknown> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${SERVER_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
     signal: options.signal,
   });

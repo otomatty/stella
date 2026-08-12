@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Brand — SectionHeading & Stat" subtitle="Signature eyebrow/underline header + gradient metrics" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-jp); background: #fff; padding: 26px 22px; }
+  .stats { display: flex; gap: 40px; justify-content: center; margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--border-subtle); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel">
+    const { SectionHeading, Stat } = window.SportsForceTechBoostDesignSystem_381be8;
+    function Demo() {
+      return (
+        <div>
+          <SectionHeading eyebrow="Results & Case Studies" title="実績・事例" />
+          <div className="stats">
+            <Stat value="300+" label="導入企業数" />
+            <Stat value="94" unit="点" label="顧客満足度" />
+            <Stat value="2.5" unit="倍" label="開発速度" />
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+</body>
+</html>

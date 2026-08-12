@@ -58,6 +58,8 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
 - ドメイン: **submissions** (`/api/submissions`, staff キュー / 提出 / 添削 + review_completed 通知)
 - ドメイン: **cms** (`/api/cms/*`, course/section/lesson/quiz/assignment + reorder)
 - 教材アップロード: **materials** (`/api/materials/upload`, Cloudflare R2 Workers バインディング)
+- 配布資料一覧: **materials** (`/api/materials?lessonId=` / `?courseId=`, 受講者は published + active enrollment)
+- ドメイン: **search** (`/api/search`, コース / レッスン横断検索 — staff は同テナント全件、 受講者は受講中コースのみ)
 - ドメイン: **admin-users / organizations** (`/api/admin/*`, ロール変更 / 無効化 / 組織 CRUD)
 
 ### ✅ Supabase 依存の完全撤去（当時の Neon 移行時点）

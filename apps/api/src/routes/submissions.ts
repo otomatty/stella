@@ -15,7 +15,7 @@ import { Hono } from "hono";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { notifications, profiles, submissions } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -68,7 +68,7 @@ async function profileFor(
 submissionsRoute.get("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
       .select()
       .from(submissions)
@@ -166,7 +166,7 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (row.tenantId !== caller.tenantId) {
       throw new ApiError("他テナントの提出は操作できません", 403);
     }
-    const isStaff = caller.role === "instructor" || caller.role === "admin";
+    const isStaff = isStaffRole(caller.role);
     const isOwner = row.studentId === caller.id;
     if (!isStaff && !isOwner) {
       throw new ApiError("この提出を閲覧する権限がありません", 403);
@@ -181,7 +181,7 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
 submissionsRoute.patch("/api/submissions/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
 
     const current = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);

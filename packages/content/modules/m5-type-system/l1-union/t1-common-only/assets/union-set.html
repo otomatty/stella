@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>使えるのは重なった部分だけ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 112 1200 528" width="1200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- string でできること -->
+  <circle cx="460" cy="340" r="160" fill="#F7F7F9" stroke="#0E0E10" stroke-width="2"/>
+  <text x="340" y="168" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">string でできること</text>
+  <text x="356" y="292" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">length</text>
+
+  <!-- number でできること -->
+  <circle cx="620" cy="340" r="160" fill="#F7F7F9" stroke="#5C5C66" stroke-width="2"/>
+  <text x="676" y="168" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">number でできること</text>
+  <text x="720" y="292" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">toFixed</text>
+
+  <!-- 共通部分(焦点) -->
+  <text x="540" y="332" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E62F9A">共通の操作</text>
+  <text x="540" y="360" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#E62F9A">ここだけ使える</text>
+
+  <text x="600" y="560" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">値の集合ではなく、アクセスできる操作の集合を表す</text>
+</svg>
+</body>
+</html>

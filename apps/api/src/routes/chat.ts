@@ -9,6 +9,7 @@ import { Hono } from "hono";
 
 import type { Env } from "../env.js";
 import { MissingApiKeyError, streamChat } from "../lib/anthropic.js";
+import { errorResponse, getCaller } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 
 const SERVER_TIMEOUT_MS = 75_000;
@@ -18,6 +19,12 @@ export const chatRoute = new Hono<{ Bindings: Env }>();
 chatRoute.post("/api/chat", async (c) => {
   const limited = await enforceAiRateLimit(c);
   if (limited) return limited;
+
+  try {
+    await getCaller(c);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
 
   let raw: unknown;
   try {

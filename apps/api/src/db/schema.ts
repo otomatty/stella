@@ -52,24 +52,34 @@ export const tenants = sqliteTable("tenants", {
   contractStart: text("contract_start"),
   contractEnd: text("contract_end"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  // テストモード (管理画面から切替)。 ON のとき招待 (ユーザー登録) 時にテストデータを投入する。
+  testMode: integer("test_mode", { mode: "boolean" }).notNull().default(false),
   createdAt: tsNow("created_at"),
   updatedAt: tsNowUpd("updated_at"),
 });
 
-export const profiles = sqliteTable("profiles", {
-  id: text("id").primaryKey(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  role: text("role", { enum: ["student", "instructor", "admin"] })
-    .notNull()
-    .default("student"),
-  displayName: text("display_name").notNull(),
-  initials: text("initials"),
-  email: text("email"),
-  disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
-  createdAt: tsNow("created_at"),
-});
+export const profiles = sqliteTable(
+  "profiles",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    role: text("role", {
+      enum: ["student", "instructor", "admin", "platform_admin"],
+    })
+      .notNull()
+      .default("student"),
+    displayName: text("display_name").notNull(),
+    initials: text("initials"),
+    email: text("email"),
+    disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
+  }),
+);
 
 // ---------------------------------------------------------------
 // コース / セクション / レッスン / 課題
@@ -88,6 +98,8 @@ export const courses = sqliteTable(
     color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
     durationHours: integer("duration_hours"),
     description: text("description"),
+    /** 講師表示名 (Issue #74)。 未設定 (null / 空) のコースは受講者 UI で講師を表示しない。 */
+    instructorName: text("instructor_name"),
     status: text("status", { enum: ["draft", "published", "archived"] })
       .notNull()
       .default("draft"),
@@ -167,6 +179,28 @@ export const lessons = sqliteTable("lessons", {
 });
 
 // ---------------------------------------------------------------
+// レッスン配布資料 (Issue #72)
+// ---------------------------------------------------------------
+
+/**
+ * レッスンに紐づく配布資料。 実体は R2 (`MATERIALS_BUCKET`) 上のオブジェクトで、
+ * `path` は `tenant/{tenantId}/lessons/{lessonId}/...` 形式。
+ * テナントはレッスン → セクション → コースの join で解決する (authz はアプリ層)。
+ */
+export const lessonMaterials = sqliteTable("lesson_materials", {
+  id: uuid(),
+  lessonId: text("lesson_id")
+    .notNull()
+    .references(() => lessons.id, { onDelete: "cascade" }),
+  path: text("path").notNull(),
+  fileName: text("file_name").notNull(),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  mimeType: text("mime_type").notNull().default("application/octet-stream"),
+  createdBy: text("created_by"),
+  createdAt: tsNow("created_at"),
+});
+
+// ---------------------------------------------------------------
 // レッスン進捗
 // ---------------------------------------------------------------
 
@@ -189,6 +223,68 @@ export const lessonProgress = sqliteTable(
   },
   (t) => ({
     userLessonUnique: uniqueIndex("lesson_progress_user_lesson_uq").on(t.userId, t.lessonId),
+  }),
+);
+
+// ---------------------------------------------------------------
+// レッスンノート (Issue #78)
+// ---------------------------------------------------------------
+
+/**
+ * 受講者がレッスンごとに書く個人メモ。 本人のみ read/write (`routes/lesson-notes.ts`)。
+ *
+ * 端末間 Last-Write-Wins のため、 `updated_at` はクライアントが編集時刻を送り、
+ * upsert 側で「送られた値の方が新しいときだけ更新」する (lesson_progress と同方針)。
+ */
+export const lessonNotes = sqliteTable(
+  "lesson_notes",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    lessonId: text("lesson_id").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: tsNow("created_at"),
+    updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    userLessonUnique: uniqueIndex("lesson_notes_user_lesson_uq").on(t.userId, t.lessonId),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 学習アクティビティ (日別ログ / Issue #73)
+// ---------------------------------------------------------------
+
+/**
+ * 受講者の日別学習ログ。 `lesson_progress` はレッスンごとの最終状態しか持たないため、
+ * 週間チャート / 連続学習ストリークを実データで出すためのログをここに積む。
+ *
+ * `date` はアプリ基準 TZ (Asia/Tokyo) の `YYYY-MM-DD`。 進捗 upsert のたびに
+ * サーバ側で当日分を加算 upsert する (差分のみ加算 — `lib/study-activity.ts`)。
+ */
+export const studyActivity = sqliteTable(
+  "study_activity",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    watchedSec: real("watched_sec").notNull().default(0),
+    completedLessons: integer("completed_lessons").notNull().default(0),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    userDateUnique: uniqueIndex("study_activity_user_date_uq").on(t.userId, t.date),
   }),
 );
 
@@ -394,26 +490,36 @@ export const submissions = sqliteTable("submissions", {
 // 修了証
 // ---------------------------------------------------------------
 
-export const certificates = sqliteTable("certificates", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  courseId: text("course_id")
-    .notNull()
-    .references(() => courses.id, { onDelete: "cascade" }),
-  certCode: text("cert_code").notNull().unique(),
-  issuedBy: text("issued_by"),
-  issuedAt: tsNow("issued_at"),
-  criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
-  recipientName: text("recipient_name").notNull(),
-  courseTitle: text("course_title").notNull(),
-  tenantName: text("tenant_name").notNull(),
-  revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
-});
+export const certificates = sqliteTable(
+  "certificates",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    certCode: text("cert_code").notNull().unique(),
+    issuedBy: text("issued_by"),
+    issuedAt: tsNow("issued_at"),
+    criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
+    recipientName: text("recipient_name").notNull(),
+    courseTitle: text("course_title").notNull(),
+    tenantName: text("tenant_name").notNull(),
+    revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => ({
+    // 1 ユーザー 1 コースにつき 1 通。 発行 API はこの制約を前提に
+    // `onConflictDoNothing` で競合時のべき等性を担保する (制約が無いと D1 が
+    // "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint" で
+    // 落ち、 修了証発行が常に 500 になる)。
+    userCourseUnique: uniqueIndex("certificates_user_course_uq").on(t.userId, t.courseId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // 監査ログ
@@ -467,8 +573,10 @@ export const APP_TABLES = [
   "courses",
   "sections",
   "lessons",
+  "lesson_materials",
   "assignments",
   "lesson_progress",
+  "study_activity",
   "quizzes",
   "quiz_questions",
   "quiz_options",

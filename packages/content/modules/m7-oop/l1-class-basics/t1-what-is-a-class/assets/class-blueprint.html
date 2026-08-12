@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>1つの設計図から実物ができる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 124 1200 356" width="1200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- root: class Product(設計図) -->
+  <rect x="480" y="156" width="240" height="80" rx="12" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="600" y="196" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">class Product</text>
+  <text x="600" y="224" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">name / price</text>
+
+  <!-- connectors: root -> bus -> 2 children (orthogonal) -->
+  <line x1="600" y1="236" x2="600" y2="264" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="340" y1="264" x2="860" y2="264" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="340" y1="264" x2="340" y2="292" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="860" y1="264" x2="860" y2="292" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="612" y="256" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">new</text>
+
+  <!-- child 1: item1 -->
+  <rect x="180" y="292" width="320" height="116" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="340" y="324" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">item1</text>
+  <text x="340" y="356" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">name: "コーヒー"</text>
+  <text x="340" y="384" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">price: 480</text>
+
+  <!-- child 2: item2 -->
+  <rect x="700" y="292" width="320" height="116" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="860" y="324" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">item2</text>
+  <text x="860" y="356" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">name: "紅茶"</text>
+  <text x="860" y="384" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">price: 320</text>
+</svg>
+</body>
+</html>

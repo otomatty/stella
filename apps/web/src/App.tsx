@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
-import { TENANTS, CURRENT_USER } from '@/data/fixtures';
+import { TENANTS } from '@/data/seed-catalog';
+import { CURRENT_USER } from '@/demo/fixtures';
 import type { Course, Role, Tenant, User } from '@/data/types';
 import type { ChatContext } from '@falcon/shared/ai/types';
 import { LessonAIProvider } from '@/components/common/LessonAIContext';
@@ -9,8 +10,11 @@ import { useCoursesForTenant, useEnrolledCoursesForTenant } from '@/data/courses
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from '@/lib/auth';
-import { configureRemoteSync } from '@/lib/lesson-progress';
+import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
+import { configureNotesSync } from '@/lib/lesson-notes';
+import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import type { ProfileRole } from '@falcon/shared/cms/types';
+import type { SearchResult } from '@falcon/shared/search/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
@@ -19,7 +23,7 @@ import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { AuthCallback } from '@/components/shell/AuthCallback';
 import { TenantSelect } from '@/components/shell/TenantSelect';
-import { OnboardingScreen } from '@/components/shell/OnboardingScreen';
+import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
 
 import { LearnerDashboard } from '@/components/learner/LearnerDashboard';
 import { CourseList } from '@/components/learner/CourseList';
@@ -41,18 +45,22 @@ import { SupportPage } from '@/components/public/SupportPage';
 
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { UsersAdmin } from '@/components/admin/UsersAdmin';
-import { AdminGeneric, GenericEmpty } from '@/components/admin/AdminGeneric';
+import { GenericEmpty } from '@/components/admin/AdminGeneric';
 import { AdminCoursesPage } from '@/components/admin/AdminCoursesPage';
 import { AdminAssignmentsPage } from '@/components/admin/AdminAssignmentsPage';
 import { AdminEnrollmentsPage } from '@/components/admin/AdminEnrollmentsPage';
 import { AdminAuditPage } from '@/components/admin/AdminAuditPage';
+import { AdminReportPage } from '@/components/admin/AdminReportPage';
 import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
+import { AdminSettingsPage } from '@/components/admin/AdminSettingsPage';
 
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
+import { useMyQuestions, useOpenQuestions } from '@/hooks/useQuestions';
+import { useMyCertificates } from '@/hooks/useMyCertificates';
 import { useNotifications } from '@/hooks/useNotifications';
 import {
   useAnnouncements,
@@ -108,14 +116,28 @@ const PAGE_LABELS: Record<string, string> = {
   settings: '設定',
 };
 
-const roleLabel = (role: Role) =>
-  role === 'learner' ? 'マイラーニング' : role === 'instructor' ? '講師' : 'テナント管理';
+function roleLabel(role: Role, profileRole?: ProfileRole): string {
+  if (profileRole === 'platform_admin') return 'プラットフォーム管理';
+  if (role === 'learner') return 'マイラーニング';
+  if (role === 'instructor') return '講師';
+  return 'テナント管理';
+}
 
-/** profiles.role を UI 用 Role にマップする。 student → learner。 */
+/** profiles.role を UI 用 Role にマップする。 student → learner。 platform_admin → admin シェル。 */
 function mapProfileRole(role: ProfileRole): Role {
-  if (role === 'student') return 'learner';
-  if (role === 'instructor') return 'instructor';
-  return 'admin';
+  switch (role) {
+    case 'student':
+      return 'learner';
+    case 'instructor':
+      return 'instructor';
+    case 'admin':
+    case 'platform_admin':
+      return 'admin';
+    default: {
+      const _exhaustive: never = role;
+      return _exhaustive;
+    }
+  }
 }
 
 export default function App() {
@@ -159,7 +181,7 @@ function MainApp() {
     TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
 
   const backendEnabled = isBackendConfigured();
-  const { session, profile, loading: authLoading, refreshProfile } = useAuthSession();
+  const { session, profile, loading: authLoading, inviteRequired } = useAuthSession();
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
@@ -171,6 +193,17 @@ function MainApp() {
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
   const [page, setPage] = useState(() => loadSaved()?.page ?? 'dash');
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  // 検索パレット (Issue #77) からのディープリンク。 通常のページ遷移では毎回クリアする。
+  // `seq` は「同じコースを続けて選び直した」ことを子に伝えるための版番号。 これが無いと
+  // CourseEditor を閉じた後に同じコースを再選択しても key が変わらず開き直せない。
+  const [deepLinkLesson, setDeepLinkLesson] = useState<{
+    id: string;
+    seq: number;
+  } | null>(null);
+  const [deepLinkCourse, setDeepLinkCourse] = useState<{
+    id: string;
+    seq: number;
+  } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: 'general' });
@@ -193,22 +226,44 @@ function MainApp() {
     : role;
   const effectiveTenant: Tenant = useMemo(() => {
     if (backendEnabled && profile) {
-      const t = TENANTS.find((t) => t.id === profile.tenant_id);
-      if (t) return t;
+      // DB (GET /api/me の tenant) を真実とする。 seed カタログに無いテナントでも
+      // fixtures の 'ses' 等へフォールバックせず、 実テナントとして扱う。
+      const info = profile.tenant;
+      const seedIcon = TENANTS.find((t) => t.id === profile.tenant_id)?.icon;
+      const icon: Tenant['icon'] =
+        info?.icon === 'cpu' || info?.icon === 'school'
+          ? info.icon
+          : seedIcon ?? 'school';
+      return {
+        id: profile.tenant_id,
+        name: info?.name ?? profile.tenant_id,
+        subtitle: info?.subtitle ?? '',
+        icon,
+        active: 0,
+      };
     }
     return tenant;
   }, [backendEnabled, profile, tenant]);
 
   const effectiveUser: User = useMemo(() => {
-    if (backendEnabled && profile) {
+    if (backendEnabled) {
+      if (profile) {
+        return {
+          name: profile.display_name,
+          email: profile.email ?? '',
+          initials: profile.initials ?? profile.display_name.slice(0, 2),
+        };
+      }
+      // profile 取得前の過渡状態でも fixtures のデモユーザーは出さない。
+      const email = session?.user.email ?? '';
       return {
-        name: profile.display_name,
-        email: profile.email ?? '',
-        initials: profile.initials ?? profile.display_name.slice(0, 2),
+        name: email || 'ユーザー',
+        email,
+        initials: (email || 'U').slice(0, 2).toUpperCase(),
       };
     }
     return CURRENT_USER;
-  }, [backendEnabled, profile]);
+  }, [backendEnabled, profile, session]);
 
   // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
@@ -221,8 +276,14 @@ function MainApp() {
     session?.user.id ?? null,
     effectiveRole === 'learner',
   );
-  const courses =
+  // DB 由来コースは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
+  const progressMap = useLessonProgressMap();
+  const rawCourses =
     effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
+  const courses = useMemo(
+    () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
+    [rawCourses, progressMap],
+  );
   const courseSource =
     effectiveRole === 'learner' ? enrolledCourses.source : browseCourses.source;
   const courseError =
@@ -234,6 +295,30 @@ function MainApp() {
   );
   const dataSource = pickSource(courseSource, announcements.source);
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
+  // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
+  const myQuestions = useMyQuestions(
+    session?.user.id ?? null,
+    effectiveRole === 'learner',
+  );
+  const openQuestions = useOpenQuestions(effectiveRole === 'instructor');
+  const myCertificates = useMyCertificates(
+    session?.user.id ?? null,
+    effectiveRole === 'learner',
+  );
+  const sidebarCounts =
+    effectiveRole === 'learner'
+      ? {
+          qa: myQuestions.threads.filter((t) => t.status === 'open').length,
+          cert: backendEnabled
+            ? myCertificates.certificates.length
+            : courses.filter((c) => c.completed).length,
+        }
+      : effectiveRole === 'instructor'
+        ? {
+            'review-queue': pendingReviewCount,
+            qa: openQuestions.threads.length,
+          }
+        : undefined;
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
   const notifications = useNotifications(
@@ -246,12 +331,62 @@ function MainApp() {
     setPage('submission-result');
   };
 
+  /**
+   * 通常のページ遷移。 サイドバー / 各画面からの遷移では検索のディープリンクを捨てる
+   * (「コース一覧」を押したのに検索で開いた編集画面へ戻る、 といった挙動を防ぐ)。
+   */
+  const navigate = (nextPage: string) => {
+    setDeepLinkLesson(null);
+    setDeepLinkCourse(null);
+    setPage(nextPage);
+  };
+
+  /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はコース管理画面へ。 */
+  const handleSearchSelect = (result: SearchResult) => {
+    if (effectiveRole === 'learner') {
+      const target = courses.find((c) => c.id === result.course_id);
+      if (!target) {
+        toast.error('このコースは現在受講対象に含まれていません');
+        return;
+      }
+      setCurrentCourse(target);
+      if (result.kind === 'lesson') {
+        // 同じレッスンを選び直しても反映されるよう、 選択のたびに seq を進める。
+        setDeepLinkLesson((prev) => ({
+          id: result.id,
+          seq: (prev?.seq ?? 0) + 1,
+        }));
+        setPage('lesson');
+      } else {
+        setDeepLinkLesson(null);
+        setPage('course-detail');
+      }
+      setDeepLinkCourse(null);
+      return;
+    }
+    // instructor / admin: コース管理画面へ。 admin は該当コースの編集画面を直接開き、
+    // instructor は一覧内で該当コースをハイライトする。
+    setDeepLinkLesson(null);
+    setDeepLinkCourse((prev) => ({
+      id: result.course_id,
+      seq: (prev?.seq ?? 0) + 1,
+    }));
+    setPage('courses');
+  };
+
   // ページがレッスン以外に戻ったら context を general にリセット
   useEffect(() => {
     if (page !== 'lesson') {
       setAiContext({ kind: 'general' });
     }
   }, [page]);
+
+  // 組織マスタは platform_admin のみ。 tenant admin 等が残留 page を持っていても戻す。
+  useEffect(() => {
+    if (page === 'orgs' && profile?.role !== 'platform_admin') {
+      setPage('dash');
+    }
+  }, [page, profile?.role]);
 
   // テナント / ロール切替時のみ添削対象をクリア (初回マウントでは loadSaved を維持)
   useEffect(() => {
@@ -279,14 +414,18 @@ function MainApp() {
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
+  // ノート (Issue #78) は取得・保存自体がレッスン単位なので、 ここでは共有端末での
+  // アカウント切替検知 (前ユーザーのローカルノートの破棄) だけを行う。
   useEffect(() => {
     if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
       });
+      configureNotesSync(session.user.id);
     } else {
       configureRemoteSync(null);
+      configureNotesSync(null);
     }
   }, [backendEnabled, session, profile]);
 
@@ -363,19 +502,18 @@ function MainApp() {
         </>
       );
     }
-    if (!profile) {
+    if (inviteRequired) {
       return (
         <>
-          <OnboardingScreen
-            userId={session.user.id}
-            email={session.user.email}
-            onCompleted={refreshProfile}
+          <InviteRequiredScreen
+            email={session.user.email ?? ""}
+            onSignOut={() => void authSignOut()}
           />
           <Toaster />
         </>
       );
     }
-    // backendEnabled + session + profile: アプリへ進む (stage 関係なし)
+    // backendEnabled + session (+ profile or transient null): アプリへ進む (stage 関係なし)
   } else {
     // 既存の fixtures フロー (バックエンド未設定時)
     if (stage === 'login') {
@@ -404,7 +542,7 @@ function MainApp() {
 
   const crumbs = [
     effectiveTenant.name,
-    roleLabel(effectiveRole),
+    roleLabel(effectiveRole, profile?.role),
     page === 'course-detail' && currentCourse
       ? currentCourse.title
       : PAGE_LABELS[page] ?? page,
@@ -418,17 +556,17 @@ function MainApp() {
         <Sidebar
           role={effectiveRole}
           page={page}
-          setPage={setPage}
+          setPage={navigate}
           tenant={effectiveTenant}
           user={effectiveUser}
-          reviewQueueCount={
-            effectiveRole === 'instructor' ? pendingReviewCount : undefined
-          }
+          counts={sidebarCounts}
+          profileRole={profile?.role}
         />
         <div className="min-w-0 flex flex-col">
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
           <Topbar
             crumbs={crumbs}
+            onSearchSelect={handleSearchSelect}
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,
@@ -446,8 +584,10 @@ function MainApp() {
             {renderPage({
               role: effectiveRole,
               page,
-              setPage,
+              setPage: navigate,
               courses,
+              deepLinkLesson,
+              deepLinkCourse,
               currentCourse,
               setCurrentCourse,
               onOpenAIBot: () => setAiOpen(true),
@@ -464,6 +604,7 @@ function MainApp() {
               coursesError: courseError,
               resultSubmissionId,
               onOpenSubmission: openSubmissionResult,
+              profileRole: profile?.role,
             })}
           </div>
         </div>
@@ -536,6 +677,17 @@ interface RenderParams {
   coursesError: string | null;
   resultSubmissionId: string | null;
   onOpenSubmission: (submissionId: string) => void;
+  profileRole?: ProfileRole;
+  /**
+   * 検索から指定されたレッスン (受講者のレッスン画面を開く位置)。
+   * `seq` は同じレッスンを選び直したときにも再適用させるための版番号。
+   */
+  deepLinkLesson: { id: string; seq: number } | null;
+  /**
+   * 検索から指定されたコース (staff のコース管理で開く / ハイライトする対象)。
+   * `seq` は同じコースを選び直したときに子を再マウントさせるための版番号。
+   */
+  deepLinkCourse: { id: string; seq: number } | null;
 }
 
 function renderPage({
@@ -543,6 +695,8 @@ function renderPage({
   page,
   setPage,
   courses,
+  deepLinkLesson,
+  deepLinkCourse,
   currentCourse,
   setCurrentCourse,
   onOpenAIBot,
@@ -559,6 +713,7 @@ function renderPage({
   coursesError,
   resultSubmissionId,
   onOpenSubmission,
+  profileRole,
 }: RenderParams) {
   if (page === 'submission-result' && resultSubmissionId) {
     return (
@@ -577,6 +732,9 @@ function renderPage({
           announcementsHook={announcementsHook}
           coursesError={coursesError}
           onOpenSubmission={onOpenSubmission}
+          studentName={studentName}
+          currentUserId={currentUserId}
+          backendEnabled={backendEnabled}
         />
       );
     if (page === 'courses')
@@ -611,6 +769,7 @@ function renderPage({
           studentName={studentName}
           studentInitials={studentInitials}
           currentUserId={currentUserId}
+          initialLesson={deepLinkLesson}
         />
       );
     }
@@ -664,7 +823,15 @@ function renderPage({
       return <InstructorQA tenantId={tenantId} currentUserId={currentUserId} />;
     if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'students' || page === 'courses')
-      return <InstructorGeneric page={page} />;
+      return (
+        <InstructorGeneric
+          page={page}
+          tenantId={tenantId}
+          backendEnabled={backendEnabled}
+          highlightCourseId={deepLinkCourse?.id ?? null}
+          highlightSeq={deepLinkCourse?.seq ?? 0}
+        />
+      );
   }
   if (role === 'admin') {
     if (page === 'dash')
@@ -675,10 +842,20 @@ function renderPage({
           tenantId={tenantId}
           tenantName={tenantName}
           currentUserId={currentUserId}
+          currentUserRole={profileRole ?? null}
           backendEnabled={backendEnabled}
         />
       );
-    if (page === 'courses') return <AdminCoursesPage tenantId={tenantId} />;
+    if (page === 'courses')
+      return (
+        <AdminCoursesPage
+          // seq を含めることで、 同じコースを選び直したときも再マウントされ
+          // CourseEditor を閉じた後に開き直せる。
+          key={deepLinkCourse ? `${deepLinkCourse.id}:${deepLinkCourse.seq}` : 'list'}
+          tenantId={tenantId}
+          initialCourseId={deepLinkCourse?.id ?? null}
+        />
+      );
     if (page === 'gradebook') return <Gradebook courses={courses} />;
     if (page === 'assignments') return <AdminAssignmentsPage tenantId={tenantId} />;
     if (page === 'enrollments')
@@ -692,10 +869,35 @@ function renderPage({
       );
     if (page === 'audit')
       return <AdminAuditPage tenantId={tenantId} backendEnabled={backendEnabled} />;
-    if (page === 'orgs')
+    if (page === 'orgs') {
+      if (profileRole !== 'platform_admin') {
+        return (
+          <div className="max-w-md mx-auto mt-16 text-center">
+            <div className="text-[15px] font-semibold mb-2">権限がありません</div>
+            <div className="text-[12.5px] text-ink-3 mb-4">
+              組織マスタはプラットフォーム管理のみ利用できます。
+            </div>
+            <button
+              type="button"
+              className="text-[12.5px] text-brand underline underline-offset-2"
+              onClick={() => setPage('dash')}
+            >
+              ダッシュボードに戻る
+            </button>
+          </div>
+        );
+      }
       return <AdminOrganizationsPage backendEnabled={backendEnabled} />;
+    }
     if (page === 'report')
-      return <AdminGeneric page={page} />;
+      return <AdminReportPage tenantId={tenantId} backendEnabled={backendEnabled} />;
+    if (page === 'settings')
+      return (
+        <AdminSettingsPage
+          tenantName={tenantName}
+          backendEnabled={backendEnabled}
+        />
+      );
   }
   return <GenericEmpty page={page} />;
 }

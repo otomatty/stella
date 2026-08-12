@@ -15,10 +15,11 @@ import {
   type UiCourse,
 } from "@falcon/shared/cms/types";
 import type { Course, Tenant } from "@/data/types";
-import { COACH_COURSES, SES_COURSES } from "@/data/fixtures";
+import { COACH_COURSES, SES_COURSES } from "@/data/seed-catalog";
 import { isBackendConfigured } from "@/lib/backend";
 import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";
+import { isReadableEnrollmentStatus } from "@falcon/shared/enrollment/access";
 
 function fixturesFor(tenantId: Tenant["id"]): Course[] {
   return tenantId === "coach" ? COACH_COURSES : SES_COURSES;
@@ -155,8 +156,13 @@ export function useEnrolledCoursesForTenant(
     setLoading(true);
     (async () => {
       try {
-        const enrollments = await listEnrollmentsForUser(userId);
+        const allEnrollments = await listEnrollmentsForUser(userId);
         if (cancelled) return;
+        // 期限切れ (expired) の登録は一覧に出さない。 API 側は教材・資料・検索を
+        // 一律で拒否するため、 ここに残すと「一覧には出るが開くと 404」になる。
+        const enrollments = allEnrollments.filter((e) =>
+          isReadableEnrollmentStatus(e.status),
+        );
         if (enrollments.length === 0) {
           setCourses([]);
           setSource("db");

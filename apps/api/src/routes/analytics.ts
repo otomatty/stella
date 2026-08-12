@@ -36,7 +36,7 @@ function round(n: number): number {
 analyticsRoute.get("/api/analytics/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const tenantId = caller.tenantId;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -221,7 +221,7 @@ async function computeStumbles(
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const tenantId = caller.tenantId;
     const now = new Date();
 

@@ -1,0 +1,67 @@
+/* ============================================================
+   COLORS — Sports Force / Tech&Boost
+   The brand is built on a single signature: a vivid horizontal
+   gradient running BLUE -> MAGENTA -> RED. Everything else is a
+   near-monochrome white/ink base so the gradient stays the hero.
+   ============================================================ */
+
+:root {
+  /* --- Gradient anchor hues (sampled from the live site) --- */
+  --sf-blue:    #0A33FF;  /* gradient start  */
+  --sf-violet:  #8330C7;  /* gradient quarter */
+  --sf-magenta: #E62F9A;  /* gradient mid / solo accent */
+  --sf-rose:    #FF2C61;  /* gradient three-quarter */
+  --sf-red:     #FF2E0D;  /* gradient end */
+
+  /* --- The signature gradient, in usable forms --- */
+  --sf-gradient:        linear-gradient(90deg, #0A33FF 0%, #8330C7 34%, #E62F9A 58%, #FF2C61 78%, #FF2E0D 100%); /* @kind color */
+  --sf-gradient-135:    linear-gradient(135deg, #0A33FF 0%, #E62F9A 55%, #FF2E0D 100%); /* @kind color */
+  --sf-gradient-soft:   linear-gradient(90deg, #1131F9 0%, #E62F9A 60%, #FF3A1A 100%); /* @kind color */
+
+  /* --- Ink (text + near-black UI) --- */
+  --ink-900: #0E0E10;  /* primary headings, near-black */
+  --ink-800: #1C1C20;  /* dark surfaces / nav pill */
+  --ink-700: #33333A;  /* strong body */
+  --ink-500: #5C5C66;  /* secondary text */
+  --ink-400: #8A8A93;  /* tertiary / captions */
+  --ink-300: #B7B7BE;  /* disabled text, faint eyebrows */
+  --ink-200: #DDDDE2;  /* hairline borders */
+  --ink-100: #ECECEF;  /* subtle fills */
+  --ink-50:  #F5F5F7;  /* app background tint */
+
+  /* --- Surfaces --- */
+  --white:      #FFFFFF;
+  --surface-1:  #FFFFFF;  /* cards on white */
+  --surface-2:  #F7F7F9;  /* page tint */
+  --surface-3:  #EFEFF2;  /* nested fills */
+  --surface-ink:#141418;  /* dark hero / footer */
+
+  /* --- Semantic status --- */
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger:  #E5342B;
+  --info:    #2563EB;
+
+  /* ====== SEMANTIC ALIASES (use these in components) ====== */
+  --color-accent:        var(--sf-magenta);
+  --color-accent-strong: var(--sf-red);
+  --gradient-brand:      var(--sf-gradient);
+  --gradient-brand-diag: var(--sf-gradient-135);
+
+  --text-strong:   var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --text-on-dark:  rgba(255,255,255,0.92);
+  --text-on-accent:#FFFFFF;
+
+  --surface-page:  var(--white);
+  --surface-card:  var(--surface-1);
+  --surface-sunk:  var(--surface-2);
+  --surface-dark:  var(--surface-ink);
+
+  --border-subtle: var(--ink-200);
+  --border-strong: var(--ink-300);
+
+  --focus-ring:    rgba(230,47,154,0.40);
+}

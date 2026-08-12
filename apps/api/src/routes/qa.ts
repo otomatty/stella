@@ -13,7 +13,7 @@ import { Hono } from "hono";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { notifications, questions, questionReplies } from "../db/schema.js";
-import { errorResponse, getCaller, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Env } from "../env.js";
 
 export const qaRoute = new Hono<{ Bindings: Env }>();
@@ -144,7 +144,7 @@ qaRoute.post("/api/questions/:id/replies", async (c) => {
       throw new ApiError("他テナントのスレッドには返信できません", 403);
     }
 
-    const isInstructor = caller.role === "instructor" || caller.role === "admin";
+    const isInstructor = isStaffRole(caller.role);
     const initials = caller.name.slice(0, 2).toUpperCase();
     const rows = await db
       .insert(questionReplies)
@@ -205,7 +205,7 @@ qaRoute.patch("/api/questions/:id/status", async (c) => {
     if (!parent[0] || parent[0].tenant_id !== caller.tenantId) {
       throw new ApiError("対象スレッドが見つからないか、 更新権限がありません", 404);
     }
-    const isStaff = caller.role === "instructor" || caller.role === "admin";
+    const isStaff = isStaffRole(caller.role);
     if (!isStaff && parent[0].author_id !== caller.id) {
       throw new ApiError("更新権限がありません", 403);
     }

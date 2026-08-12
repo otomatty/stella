@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Filter, Plus, Video, Clock } from '@/lib/icons';
+import { Video, Clock } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { CourseThumb } from '@/components/common/CourseThumb';
 import { Button } from '@/components/ui/button';
@@ -36,21 +36,14 @@ export const CourseList = ({ setPage, courses, setCurrentCourse }: CourseListPro
 
   return (
     <>
+      {/*
+        ヘッダにあった「フィルター」「コースを探す」は撤去した (Issue #77)。
+        前者は直下の絞り込みタブと重複、 後者は受講登録が管理者割当のみで
+        自分でコースを追加する導線が存在しないため。
+      */}
       <PageHeader
         title="コース一覧"
         sub="受講中・完了・未着手のコースを確認できます"
-        actions={
-          <>
-            <Button>
-              <Filter size={14} />
-              フィルター
-            </Button>
-            <Button>
-              <Plus size={14} />
-              コースを探す
-            </Button>
-          </>
-        }
       />
 
       <div className="flex gap-1 items-center mb-6 pb-3 border-b border-border">

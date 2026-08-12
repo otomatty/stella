@@ -13,6 +13,8 @@
     "./cms/types": "./src/cms/types.ts",
     "./admin/types": "./src/admin/types.ts",
     "./admin/parse-invite-csv": "./src/admin/parse-invite-csv.ts",
+    "./admin/reports": "./src/admin/reports.ts",
+    "./admin/audit-actions": "./src/admin/audit-actions.ts",
     "./curriculum/chapters": "./src/curriculum/chapters.ts",
     "./curriculum/stages": "./src/curriculum/stages.ts",
     "./grading": "./src/grading/index.ts",
@@ -28,7 +30,12 @@
     "./review/prompt": "./src/review/prompt.ts",
     "./review/heuristic-draft": "./src/review/heuristic-draft.ts",
     "./review/validate-review-draft-request": "./src/review/validate-review-draft-request.ts",
-    "./review/parse-draft-json": "./src/review/parse-draft-json.ts"
+    "./review/parse-draft-json": "./src/review/parse-draft-json.ts",
+    "./study/activity": "./src/study/activity.ts",
+    "./study/progress-sync": "./src/study/progress-sync.ts",
+    "./study/notes-sync": "./src/study/notes-sync.ts",
+    "./search/types": "./src/search/types.ts",
+    "./enrollment/access": "./src/enrollment/access.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -37,7 +44,8 @@
   "dependencies": {
     "@babel/parser": "^7.24.0",
     "@babel/traverse": "^7.24.0",
-    "@babel/types": "^7.24.0"
+    "@babel/types": "^7.24.0",
+    "@falcon/content": "workspace:*"
   },
   "devDependencies": {
     "@types/babel__traverse": "^7.20.5",

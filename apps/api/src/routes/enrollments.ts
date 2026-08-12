@@ -11,6 +11,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { enrollments } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Env } from "../env.js";
 
 export const enrollmentsRoute = new Hono<{ Bindings: Env }>();
@@ -47,7 +48,7 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
 enrollmentsRoute.get("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const courseId = c.req.query("courseId");
     if (!courseId) throw new ApiError("courseId が必要です", 400);
     const rows = await db
@@ -70,7 +71,7 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
 enrollmentsRoute.post("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const body = (await c.req.json()) as {
       userId: string;
       courseId: string;
@@ -99,20 +100,39 @@ enrollmentsRoute.post("/api/enrollments", async (c) => {
         },
       })
       .returning(SELECT);
+    await recordAudit(db, caller, {
+      action: "enrollment_create",
+      targetType: "enrollment",
+      targetId: rows[0]?.id ?? null,
+      ip: clientIp(c),
+      metadata: {
+        user_id: body.userId,
+        course_id: body.courseId,
+        required: body.required ?? true,
+        due_at: body.dueAt ?? null,
+      },
+    });
     return c.json({ row: rows[0] });
   } catch (err) {
     return errorResponse(c, err);
   }
 });
 
-/** 対象 enrollment が caller と同テナントであることを保証する。 */
+/**
+ * 対象 enrollment が caller と同テナントであることを保証し、 監査ログ用に
+ * 対象の受講者 / コースを返す。
+ */
 async function assertSameTenant(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
   id: string,
   tenantId: string,
-): Promise<void> {
+): Promise<{ userId: string; courseId: string }> {
   const rows = await db
-    .select({ tenant_id: enrollments.tenantId })
+    .select({
+      tenant_id: enrollments.tenantId,
+      user_id: enrollments.userId,
+      course_id: enrollments.courseId,
+    })
     .from(enrollments)
     .where(eq(enrollments.id, id))
     .limit(1);
@@ -120,15 +140,16 @@ async function assertSameTenant(
   if (rows[0].tenant_id !== tenantId) {
     throw new ApiError("他テナントの登録は操作できません", 403);
   }
+  return { userId: rows[0].user_id, courseId: rows[0].course_id };
 }
 
 /** staff: 期限 / 必須 / ステータスを更新する。 */
 enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    await assertSameTenant(db, id, caller.tenantId);
+    const target = await assertSameTenant(db, id, caller.tenantId);
     const patch = (await c.req.json()) as {
       due_at?: string | null;
       required?: boolean;
@@ -148,6 +169,13 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
           : {}),
       })
       .where(eq(enrollments.id, id));
+    await recordAudit(db, caller, {
+      action: "enrollment_update",
+      targetType: "enrollment",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: { user_id: target.userId, course_id: target.courseId, patch },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
@@ -158,10 +186,17 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
 enrollmentsRoute.delete("/api/enrollments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    await assertSameTenant(db, id, caller.tenantId);
+    const target = await assertSameTenant(db, id, caller.tenantId);
     await db.delete(enrollments).where(eq(enrollments.id, id));
+    await recordAudit(db, caller, {
+      action: "enrollment_delete",
+      targetType: "enrollment",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: { user_id: target.userId, course_id: target.courseId },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);

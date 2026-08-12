@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Accent & Status" subtitle="Magenta accent + semantic status hues" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-latin); background: var(--white); }
+  .wrap { padding: 20px; display: flex; gap: 14px; }
+  .chip { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .sw { height: 56px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); }
+  .lbl { font-size: 11px; font-weight: 700; color: var(--ink-700); }
+  .hex { font-size: 10px; color: var(--ink-400); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="chip"><div class="sw" style="background:#E62F9A"></div><span class="lbl">Accent</span><span class="hex">#E62F9A</span></div>
+    <div class="chip"><div class="sw" style="background:#16A34A"></div><span class="lbl">Success</span><span class="hex">#16A34A</span></div>
+    <div class="chip"><div class="sw" style="background:#F59E0B"></div><span class="lbl">Warning</span><span class="hex">#F59E0B</span></div>
+    <div class="chip"><div class="sw" style="background:#E5342B"></div><span class="lbl">Danger</span><span class="hex">#E5342B</span></div>
+    <div class="chip"><div class="sw" style="background:#2563EB"></div><span class="lbl">Info</span><span class="hex">#2563EB</span></div>
+  </div>
+</body>
+</html>

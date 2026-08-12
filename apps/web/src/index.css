@@ -218,6 +218,13 @@
   /* Prose (lesson body) — kept light so shadcn Card/Body spacing wins */
   .prose-lms { font-size: 14.5px; line-height: 1.7; color: var(--ink); }
   .prose-lms p { margin: 0 0 16px; }
+  .prose-lms h1 {
+    font-size: 21px;
+    line-height: 1.35;
+    margin: 0 0 16px;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
   .prose-lms h2 { font-size: 18px; margin: 28px 0 12px; letter-spacing: -0.01em; font-weight: 600; }
   .prose-lms h3 { font-size: 15px; margin: 20px 0 8px; font-weight: 600; }
   .prose-lms ul, .prose-lms ol { padding-left: 22px; margin: 0 0 16px; }
@@ -241,6 +248,29 @@
     margin: 16px 0;
   }
   .prose-lms pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+  /* グローバルの a は色も下線も持たないので、 教材本文のリンクだけリンクらしく見せる */
+  .prose-lms a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+  .prose-lms a:hover { color: var(--brand-hover); }
+  .prose-lms blockquote {
+    margin: 16px 0;
+    padding: 2px 0 2px 14px;
+    border-left: 3px solid var(--brand);
+    color: var(--ink-2);
+  }
+  .prose-lms blockquote > :last-child { margin-bottom: 0; }
+  .prose-lms table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13.5px;
+  }
+  .prose-lms th, .prose-lms td {
+    border: 1px solid var(--line-2);
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose-lms th { background: var(--bg-sunken); font-weight: 600; }
 
   /* Code viewer (instructor review) */
   .code-viewer-bg { background: oklch(22% 0.01 260); color: oklch(92% 0.005 85); }

@@ -45,6 +45,7 @@ export {
   AlertTriangle,
   Info,
   Flame,
+  FlaskConical,
   TrendingUp,
   TrendingDown,
   Dot,

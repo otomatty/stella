@@ -14,11 +14,12 @@ export type Stage = "S0" | "S1" | "S2" | "S3" | "S4" | "S5";
 /**
  * 課題の対象言語。
  *
- * falcon-informal P0 では JavaScript / SQL のみ。
+ * falcon-informal では JavaScript / TypeScript / SQL に対応する。
+ * TypeScript は実行前に JS へトランスパイルして QuickJS で動かす (型検査はしない)。
  * Python / PHP / Vitest mutation / ESLint config は本プロジェクトのスコープ外 (将来枠)。
  * `getRunner(language)` で言語別ランナー実装を取得する。
  */
-export type Language = "javascript" | "sql";
+export type Language = "javascript" | "typescript" | "sql";
 
 /**
  * 多ファイル教材で 1 ファイルを表す。
@@ -53,7 +54,9 @@ export type ChapterId =
   | "Ch13"
   | "Ch14"
   | "Ch15"
-  | "Ch16";
+  | "Ch16"
+  | "Ch17"
+  | "Ch18";
 
 export interface StageInfo {
   id: Stage;

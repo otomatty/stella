@@ -2,7 +2,7 @@
  * 言語別ランナーのディスパッチャ (falcon-informal P0)。
  *
  * `getRunner(language)` は `CodeRunner` インタフェースを満たす言語別実装を返す。
- * 本プロジェクトでは JavaScript / SQL の 2 言語のみ対応。
+ * 本プロジェクトでは JavaScript / TypeScript / SQL の 3 言語に対応。
  *
  * `runGrading` は採点呼び出し側 (`useGradeRunner`) 向けの薄いラッパで、
  * ランナーで実行した結果と手元の Lint / AST を合算して `evaluate()` を返す。
@@ -25,11 +25,14 @@ import { evaluate } from "@falcon/shared/grading/evaluate";
 
 import { jsRunner } from "./js-runner.js";
 import { sqlRunner } from "./sql-runner.js";
+import { tsRunner } from "./ts-runner.js";
 
 export function getRunner(language: Language): CodeRunner {
   switch (language) {
     case "javascript":
       return jsRunner;
+    case "typescript":
+      return tsRunner;
     case "sql":
       return sqlRunner;
     default: {

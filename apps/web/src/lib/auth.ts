@@ -2,9 +2,9 @@
  * 認証ラッパ (Cloudflare Workers Google OAuth / JWT)。
  */
 
-import type { ProfileRow } from "@falcon/shared/cms/types";
+import type { ProfileRow, ProfileTenantInfo } from "@falcon/shared/cms/types";
 
-import { apiFetch } from "./api-client";
+import { apiFetch, ApiClientError } from "./api-client";
 import {
   completeAuthFromCallbackHash,
   getAccessToken,
@@ -17,7 +17,8 @@ import {
 } from "./auth-client";
 
 export type { Session };
-export type Profile = ProfileRow;
+/** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
+export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
 
 export { signInWithGoogle, completeAuthFromCallbackHash };
 
@@ -37,8 +38,22 @@ export function subscribeToAuth(
 
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
   if (!isAuthConfigured() || !getAccessToken()) return null;
-  const { profile } = await apiFetch<{ profile: Profile | null }>("/api/me");
-  return profile;
+  try {
+    const { profile, tenant } = await apiFetch<{
+      profile: ProfileRow;
+      tenant?: ProfileTenantInfo | null;
+    }>("/api/me");
+    return profile ? { ...profile, tenant: tenant ?? null } : profile;
+  } catch (err) {
+    if (
+      err instanceof ApiClientError &&
+      err.status === 403 &&
+      err.message === "invite_required"
+    ) {
+      throw err; // 上位で inviteRequired に
+    }
+    throw err;
+  }
 }
 
 export interface EnsureProfileParams {
@@ -49,6 +64,7 @@ export interface EnsureProfileParams {
   initials?: string;
 }
 
+/** 自己更新のみ。招待制のため自由作成オンボーディングからは呼ばない。 */
 export async function ensureProfile(
   params: EnsureProfileParams,
 ): Promise<Profile> {

@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Radii" subtitle="6 → full pill; actions are pills" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-latin); background: var(--white); }
+  .wrap { padding: 22px; display: flex; gap: 18px; align-items: center; }
+  .box { width: 64px; height: 64px; background: var(--surface-sunk); box-shadow: inset 0 0 0 1.5px var(--border-strong); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box; }
+  .n { font-size: 10px; color: var(--ink-500); font-weight: 600; }
+  .pill { width: 96px; border-radius: 999px; background: var(--sf-gradient-135); box-shadow: none; }
+  .pill .n { color: #fff; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="box" style="border-radius:6px"><span class="n">6 xs</span></div>
+    <div class="box" style="border-radius:12px"><span class="n">12 md</span></div>
+    <div class="box" style="border-radius:16px"><span class="n">16 lg</span></div>
+    <div class="box" style="border-radius:24px"><span class="n">24 xl</span></div>
+    <div class="box pill"><span class="n">999 pill</span></div>
+  </div>
+</body>
+</html>

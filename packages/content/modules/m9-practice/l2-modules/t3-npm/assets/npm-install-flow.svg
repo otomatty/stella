@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 148 1200 252" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <line x1="320" y1="250" x2="352" y2="250" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="600" y1="250" x2="632" y2="250" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="880" y1="250" x2="912" y2="250" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- command (focus): the single cause -->
+  <rect x="80" y="180" width="232" height="140" rx="12"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="196" y="236" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">npm install</text>
+  <text x="196" y="272" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">date-fns</text>
+
+  <rect x="360" y="180" width="232" height="140" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="476" y="236" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">ダウンロード</text>
+  <text x="476" y="272" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">レジストリから</text>
+
+  <rect x="640" y="180" width="232" height="140" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="756" y="236" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">保存</text>
+  <text x="756" y="272" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">node_modules</text>
+
+  <rect x="920" y="180" width="232" height="140" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="1036" y="236" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">利用</text>
+  <text x="1036" y="272" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">importで使える</text>
+</svg>

@@ -17,7 +17,7 @@ import {
   notifications,
   profiles,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -63,7 +63,7 @@ notificationsRoute.get("/api/announcements", async (c) => {
     const { caller, db } = await getCaller(c);
     const courseId = c.req.query("courseId");
     const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
-    const isStaff = caller.role === "instructor" || caller.role === "admin";
+    const isStaff = isStaffRole(caller.role);
 
     const conds = [eq(announcements.tenantId, caller.tenantId)];
     if (courseId) conds.push(eq(announcements.courseId, courseId));
@@ -93,7 +93,7 @@ notificationsRoute.get("/api/announcements", async (c) => {
 notificationsRoute.post("/api/announcements", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const body = (await c.req.json()) as {
       courseId?: string | null;
       title: string;

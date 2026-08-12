@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 140 1200 500" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+
+  <!-- 開始 -->
+  <rect x="500" y="172" width="200" height="56" rx="20" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="208" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">開始</text>
+  <line x1="600" y1="228" x2="600" y2="264" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 判定 -->
+  <polygon points="600,268 772,356 600,444 428,356" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="600" y="348" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">要素は</text>
+  <text x="600" y="376" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">残っている?</text>
+
+  <!-- yes: 取り出して実行 -->
+  <line x1="772" y1="356" x2="808" y2="356" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="792" y="340" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">あり</text>
+
+  <rect x="812" y="316" width="280" height="80" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="952" y="360" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">取り出してitemに代入</text>
+
+  <line x1="952" y1="396" x2="952" y2="428" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="812" y="432" width="280" height="80" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="952" y="476" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">ブロックを実行</text>
+
+  <!-- ループの本線(次の要素へ)。判定図形にも「なし」の矢印にも重ならないよう
+       ブロックの下を大きく回り込む -->
+  <path d="M952,512 L952,596 L300,596 L300,356 L424,356" fill="none" stroke="#E62F9A" stroke-width="2.5" marker-end="url(#arrowAccent)"/>
+  <text x="364" y="340" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">次の要素へ</text>
+
+  <!-- no: 終了 -->
+  <line x1="600" y1="444" x2="600" y2="516" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="624" y="484" text-anchor="start" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">なし</text>
+
+  <rect x="500" y="520" width="200" height="56" rx="20" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="552" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">ループ終了</text>
+</svg>

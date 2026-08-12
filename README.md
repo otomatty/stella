@@ -77,7 +77,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    bun run smoke:d1        # テーブル確認
    ```
 
-   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントのロール昇格は下記「初回ログインとロール昇格」を参照してください。
+   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` はキューや一覧確認用の固定ユーザーです。Google ログインした本人とは別です。自分のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
 
    コース ID が安定 UUID に変わったあと、古いローカル D1 で seed が失敗する場合は `apps/api/.wrangler/state`（または同等のローカル D1 状態）を削除してから `bun run db:migrate && bun run db:seed` をやり直してください。リモート D1（`db:seed:remote`）も既存のランダム course ID は書き換えられないため、安定 UUID 導入前に seed 済みなら wipe/再作成するか、衝突する course 行を消してから再 seed してください。
 
@@ -124,36 +124,96 @@ bun run --filter=@falcon/shared typecheck
 
 ### 初回ログインとロール昇格
 
-初回 Google ログイン後にオンボーディング（テナント選択・表示名）を完了すると、
-`profiles` に `role='student'` で行が作られる。ログイン直後（オンボーディング前）に
-下記 SQL を実行しても更新件数 0 になる点に注意。
-Admin / Instructor 画面を検証するときは、オンボーディング完了後にログインに使ったメールで
-ロールを上げる（`apps/api` で実行。メールは自分のものに置換）:
+所属は**招待制のみ**。自由オンボーディング（任意テナント選択）は廃止済み。
+未招待のまま Google ログインすると招待必要画面になり、テナントには入れない。
+
+先に tenant `admin`（管理画面のユーザー招待）か、下記の開発用 SQL で
+自分の Google メールを `profiles` + `auth_users`（同一 UUID）に登録してからログインする。
+招待メール送信はない。先に未招待ログインしたあとで招待しても、再ログインで紐付く（救済）。
+
+#### 開発ブートストラップ（ローカル D1）
+
+seed の `seed-admin` 等は Google ログイン用ではない。自分の email を seed テナント `ses` へ直接入れる例
+（`<uuid>` は同じ値を両方に使う。メールは自分のものに置換）:
 
 ```bash
 cd apps/api
 
-# 管理者
-wrangler d1 execute falcon-db --local --command "update profiles set role='admin' where email='you@example.com'"
+wrangler d1 execute falcon-db --local --command \
+  "insert into auth_users (id, email, created_at) values ('<uuid>', 'you@example.com', unixepoch() * 1000)"
 
-# 講師
-wrangler d1 execute falcon-db --local --command "update profiles set role='instructor' where email='you@example.com'"
+wrangler d1 execute falcon-db --local --command \
+  "insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('<uuid>', 'ses', 'admin', 'You', 'Y', 'you@example.com', 0, unixepoch() * 1000)"
 ```
 
-昇格後はブラウザをリロード（または再ログイン）してロールを反映させる。
-認可は `/api/me` の `profiles.role` を参照するため、JWT の再発行は不要。
+既に tenant `admin` で入れている場合は、管理画面の招待（単発 / CSV）で同じ email を追加してもよい。
+
+#### ロール昇格（SQL）
+
+Admin / Instructor / プラットフォーム管理を検証するとき（`apps/api` で実行）:
+
+```bash
+cd apps/api
+
+# テナント管理者
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='admin' where email='you@example.com'"
+
+# 講師
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='instructor' where email='you@example.com'"
+
+# プラットフォーム管理者（組織マスタなどテナント横断。招待 UI からは付与不可）
+wrangler d1 execute falcon-db --local --command \
+  "update profiles set role='platform_admin' where email='you@example.com'"
+```
+
+昇格後はブラウザをリロードしてロールを反映させる。
+認可は `/api/me` の `profiles.role` を参照するため、ロール変更だけの再ログインは不要。
+
+JWT の有効期限は **24 時間**。失効後は再ログインが必要（サーバー側 denylist / refresh は無い）。
 
 ### 手動検証チェックリスト
 
 実データ経路が通っていることの確認（Tweaks パネルは使わない）:
 
 - [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`（できれば `jwtConfigured` / `googleOAuthConfigured` も true）
-- [ ] `http://localhost:5173` で Google ログインできる
+- [ ] 招待済み email で `http://localhost:5173` から Google ログインできる
 - [ ] Learner（UI 名; DB は `profiles.role='student'`）としてコース一覧など D1（seed）由来のデータが見える
 - [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
 - [ ] `admin` に上げたあと、Tweaks なしで管理画面（ユーザー / コース等）が D1 データを表示する
+- [ ] 管理画面「レポート」で種別・期間を切り替えると D1 由来の明細が出て、CSV をダウンロードできる
+
+### 認可・所属（#62）手動確認
+
+- [ ] 未招待 Google ログイン → 招待必要画面（任意テナントに入れない）
+- [ ] 招待後ログイン → 正しい tenant/role
+- [ ] tenant admin は組織マスタ不可 / platform_admin は可
+- [ ] 未認証で /api/chat・/api/review-draft が 401
+- [ ] student で review-draft が 403
+
+### コア学習ループの自動スモーク（#64）
+
+ブラウザを使わず、起動中の API に HTTP だけでコア学習ループを 1 本流す E2E スモーク。
+CI（`.github/workflows/ci.yml` の `core-loop` ジョブ）でも同じものが回る。
+
+```bash
+bun run dev:api      # ターミナル 1（migrate / seed 済みであること）
+bun run smoke:core   # ターミナル 2
+```
+
+検証内容（19 ステップ）: コース作成 → 公開（draft は受講者に見えないことも確認）→ 受講登録 →
+レッスン進捗 → 課題提出 → 添削キュー表示 → 受講者による添削の 403 → 添削確定 → 通知生成 →
+修了条件の充足 → 修了証発行（べき等性・未認証での検証）→ 監査ログ記録の確認 → 後片付け。
+
+認証は OAuth を通さず、`apps/api/.dev.vars` の `AUTH_JWT_SECRET` で seed ユーザーの JWT を
+直接発行する（`SMOKE_BASE_URL` / `SMOKE_LEARNER_ID` などで上書き可）。
+作成したコースと受講登録は最後に削除するが、提出物に削除 API がないため
+`[smoke]` 付きの提出が 1 件残る（添削確定済みなのでキューには出ない）。
 
 ### コア学習ループ（#61）手動 E2E
+
+UI を含めた確認。API レベルの検証は上記のスモークで代替できる。
 
 前提: `dev:api` + `dev`、Google ログイン、必要なら admin/instructor 昇格、受講登録済み。
 
@@ -192,6 +252,27 @@ wrangler d1 execute falcon-db --local --command "update profiles set role='instr
 
 seed 教材パスは `tenant/ses/courses/{courseUuid}/...` 形式。オブジェクトが R2 に無いと再生は失敗する。Admin の教材アップロード、または同キーでの配置で確認する。
 
+#### 孤児オブジェクトの棚卸し・掃除（#64）
+
+教材の差し替えや削除時の R2 削除失敗（best-effort）で、DB から参照されない実体が残ることがある。
+
+```bash
+bun run r2:orphans              # 棚卸しのみ（既定・削除しない）
+bun run r2:orphans -- --delete  # 一覧に出た孤児を削除
+```
+
+API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/admin/r2/orphans/cleanup`、
+tenant admin 以上）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
+`next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
+「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
+走査・削除とも呼び出し元テナントの `tenant/<tenantId>/` 配下に限定し、
+参照判定には配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
+（`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
+削除は監査ログ（`r2_orphan_cleanup`）に残る。
+
+本番に対して実行する場合は `API_BASE_URL` と、admin の JWT を `ADMIN_TOKEN` に渡す
+（未指定ならローカルの `.dev.vars` から `seed-admin` の JWT を発行する）。
+
 ### 講師添削 (Issue #8)
 
 受講者が `assignment` 型レッスンからコードを提出すると、 講師ロールの「添削待ち」キューに表示されます。
@@ -209,6 +290,21 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
   講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
 
+### 学習アクティビティ (Issue #73)
+
+`lesson_progress` はレッスンごとの最終状態しか持たないため、日別の学習履歴は
+`study_activity` テーブル (`user_id` / `date` / `watched_sec` / `completed_lessons`) に別途積みます。
+
+- `POST /api/lesson-progress` の upsert 時に、サーバが「反映前後の差分」
+  (視聴秒数の増分 / 未完了 → 完了に変わったレッスン数) を当日分へ加算します。
+  進捗と日別ログは D1 の batch で 1 トランザクションにまとめて書きます。
+- 日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります (`@falcon/shared/study/activity`)。
+- `GET /api/study-activity/mine?days=14` が欠損日を 0 埋めした系列と連続学習日数を返し、
+  受講者ダッシュボードの「週間学習時間」チャートと「連続学習」KPI がこれを描画します。
+  受講者は自分のログのみ参照できます。
+- テナントのテストモード中に招待された受講者には、動作確認用の日別ログも投入されます
+  (→ [テストモード](#テストモード-issue-58--76))。
+
 ### 成績台帳と修了証 (Issue #26)
 
 コースの **修了基準** (全レッスン完了 / 小テスト合格 / 課題 pass) を満たすと修了と判定し、
@@ -223,6 +319,48 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   検証は匿名エンドポイント `GET /api/certificates/verify/:code` 経由で、 公開して良い情報のみ返します。
 - DB 永続化 (D1 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
   デモ専用 (`VITE_SERVER_URL` 未設定) では修了証ページが静的デモ表示にフォールバックします。
+
+### レポート (Issue #75)
+
+管理画面サイドバーの **レポート** は、 期間を指定して明細を CSV に書き出す横断エクスポートです
+(KPI ダッシュボード #28 の「今の状態」、 成績台帳 #26 の「コース単位の一覧」とは別の用途)。
+
+- 種別: **受講状況** (受講登録ごとの進捗 / 期限 / 完了) · **成績** (小テスト受験 + 課題提出) ·
+  **修了証** (発行済み一覧) · **監査** (操作証跡)。
+- 期間: 今月 / 先月 / 直近30日 / 直近90日 / 年初来 / 全期間 / 日付指定。
+  日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります。
+- 画面はプレビュー (先頭 200 件) を表示し、「CSV出力」は条件に一致する全件をページングで取得します。
+  列定義は `@falcon/shared/admin/reports` に集約しており、 プレビュー表と CSV は同じ変換を通ります。
+- API: `GET /api/reports/:type?from=&to=&limit=&offset=` (from/to は ISO 日時 または `YYYY-MM-DD` · inclusive。
+  日付だけを渡した場合はアプリ基準 TZ の日境界として解釈します)。
+  同テナントの `admin` / `platform_admin` のみ。 母集合は caller のテナントに固定されます。
+- 件数 (`total`) は各テーブルの `COUNT` で数えるため、 取得上限で明細が欠けることはありません
+  (成績は小テストと課題を提出日時で併合するため、 ページ確定に必要な分だけ各表から読みます)。
+- 出力は **CSV のみ** です (Issue #75 の受け入れ基準に合わせたスコープ。 Excel 形式は未対応)。
+- デモ専用 (`VITE_SERVER_URL` 未設定) では実データが無いため、 デモ行は出さず案内のみ表示します。
+
+### テストモード (Issue #58 / #76)
+
+管理画面サイドバーの **設定** で、 テナントごとに **テストモード** を切り替えられます。
+ON の間に招待 (ユーザー登録) されたユーザーには、 直後に動作確認用のテストデータが入り、
+受講者 / 講師 / 管理者の主要画面を空のまま眺めることなく確認できます。
+
+- **受講者を招待したとき**: 公開コースへの受講登録 (期限 30 日後 / 必須) · 最初のレッスンの完了進捗 ·
+  直近 8 日の日別学習ログ · サンプル提出 3 件 (添削待ち 2 件 + 添削済み 1 件) ·
+  サンプル Q&A 2 スレッド (未返信 1 件 + 講師返信済み 1 件) · 通知 3 件
+  (ようこそ / 添削完了 / Q&A 回答)。
+  提出は課題・演習レッスンに紐付き、 添削待ちの 1 件はあえて AI 下書き未生成にしてあるため、
+  ReviewEditor を開くと `/api/review-draft` の生成経路まで確認できます。
+- **講師 / 管理者を招待したとき**: テナントに添削待ちの提出も未返信 Q&A も無い場合に限り、
+  既存の受講者名義でサンプルを補充します (受講者を先に招待していれば何もしません)。
+  講師 ↔ 受講者の担当割当モデルは無く、 講師画面の母集合はテナント全体です。
+- したがって **受講者と講師を 1 人ずつ招待すれば、 どちらの順でも** 三者の主要画面が埋まります。
+- 投入したデータは通常のレコードなので、 テストモードを OFF にしても消えません。
+  本文には「(テストデータ)」を含め、 通知 / 監査ログの payload には `test_data: true` が入ります。
+- 雛形と投入処理はどちらも `apps/api/src/lib/test-data.ts` にあります。
+  現在の投入経路は招待 (`POST /api/admin/users/invite`) のみです。 セルフサインアップ
+  (Google ログインだけで profile を作る経路) はまだ無いため、 その経路が入る際に
+  `insertTestDataForNewUser()` のフックを足します (Issue #76 の残タスク)。
 
 ### Anthropic (AIチャット用、 任意)
 

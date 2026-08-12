@@ -20,7 +20,7 @@ import {
   quizzes,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -38,7 +38,7 @@ async function isAuthorizedForLesson(
   caller: Caller,
   lessonId: string,
 ): Promise<boolean> {
-  const isStaff = caller.role === "instructor" || caller.role === "admin";
+  const isStaff = isStaffRole(caller.role);
   const rows = await db
     .select({
       status: courses.status,

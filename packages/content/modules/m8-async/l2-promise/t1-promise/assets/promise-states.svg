@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 144 1200 496" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <!-- 開始 -->
+  <circle cx="100" cy="372" r="8" fill="#0E0E10"/>
+  <line x1="108" y1="372" x2="140" y2="372" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- pending -->
+  <rect x="140" y="316" width="280" height="112" rx="12" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="280" y="368" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">pending</text>
+  <text x="280" y="404" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">待機中</text>
+
+  <!-- fulfilled -->
+  <rect x="700" y="176" width="320" height="112" rx="12" fill="#F7F7F9" stroke="#16A34A" stroke-width="2"/>
+  <text x="860" y="228" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#16A34A">fulfilled</text>
+  <text x="860" y="264" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">成功して値を持つ</text>
+
+  <!-- rejected -->
+  <rect x="700" y="456" width="320" height="112" rx="12" fill="#F7F7F9" stroke="#E5342B" stroke-width="2"/>
+  <text x="860" y="508" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#E5342B">rejected</text>
+  <text x="860" y="544" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">失敗してエラーを持つ</text>
+
+  <!-- 遷移(片方向のみ) -->
+  <line x1="420" y1="356" x2="696" y2="256" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="500" y="284" width="120" height="28" fill="#FFFFFF"/>
+  <text x="560" y="304" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">resolve</text>
+
+  <line x1="420" y1="388" x2="696" y2="488" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="500" y="428" width="112" height="28" fill="#FFFFFF"/>
+  <text x="556" y="448" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">reject</text>
+
+  <text x="600" y="596" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">一度 fulfilled か rejected になったら、二度と変わらない</text>
+</svg>

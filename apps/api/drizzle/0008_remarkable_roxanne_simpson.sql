@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `certificates_user_course_uq` ON `certificates` (`user_id`,`course_id`);

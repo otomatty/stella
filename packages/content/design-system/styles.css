@@ -1,0 +1,8 @@
+/* Sports Force / Tech&Boost — Design System global entry.
+   Consumers link THIS file. It is @imports only. */
+
+@import "tokens/fonts.css";
+@import "tokens/colors.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/effects.css";

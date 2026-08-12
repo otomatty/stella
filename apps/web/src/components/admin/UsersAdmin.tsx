@@ -33,6 +33,10 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import type { ProfileRole } from '@falcon/shared/cms/types';
+import {
+  ASSIGNABLE_PROFILE_ROLES,
+  type AssignableProfileRole,
+} from '@falcon/shared/admin/types';
 import { useProfiles } from '@/hooks/useProfiles';
 import {
   setUserRole,
@@ -49,6 +53,7 @@ interface Props {
   tenantId: string;
   tenantName: string;
   currentUserId: string | null;
+  currentUserRole: ProfileRole | null;
   backendEnabled: boolean;
 }
 
@@ -56,6 +61,7 @@ export function UsersAdmin({
   tenantId,
   tenantName,
   currentUserId,
+  currentUserRole,
   backendEnabled,
 }: Props) {
   if (!backendEnabled) {
@@ -66,6 +72,7 @@ export function UsersAdmin({
       tenantId={tenantId}
       tenantName={tenantName}
       currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
     />
   );
 }
@@ -78,10 +85,12 @@ function UsersAdminLive({
   tenantId,
   tenantName,
   currentUserId,
+  currentUserRole,
 }: {
   tenantId: string;
   tenantName: string;
   currentUserId: string | null;
+  currentUserRole: ProfileRole | null;
 }) {
   const { profiles, loading, error, refetch } = useProfiles(tenantId);
   const [query, setQuery] = useState('');
@@ -92,7 +101,12 @@ function UsersAdminLive({
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const counts = useMemo(() => {
-    const c = { student: 0, instructor: 0, admin: 0 };
+    const c: Record<ProfileRole, number> = {
+      student: 0,
+      instructor: 0,
+      admin: 0,
+      platform_admin: 0,
+    };
     for (const p of profiles) c[p.role]++;
     return c;
   }, [profiles]);
@@ -109,7 +123,7 @@ function UsersAdminLive({
     });
   }, [profiles, query, roleFilter]);
 
-  const onChangeRole = async (p: AdminProfileRow, role: ProfileRole) => {
+  const onChangeRole = async (p: AdminProfileRow, role: AssignableProfileRole) => {
     setMenuId(null);
     if (role === p.role) return;
     setBusyId(p.id);
@@ -219,62 +233,73 @@ function UsersAdminLive({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((p) => (
-                <TableRow key={p.id} className={p.disabled ? 'opacity-60' : undefined}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar size="sm">
-                        <AvatarFallback tone={toneFromId(p.id)}>
-                          {(p.initials ?? p.display_name.slice(0, 1)).slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{p.display_name}</span>
-                      {p.id === currentUserId ? (
-                        <span className="text-[10.5px] text-ink-3">(あなた)</span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-ink-3">{p.email ?? '—'}</TableCell>
-                  <TableCell>
-                    <RoleBadge role={p.role} />
-                  </TableCell>
-                  <TableCell>
-                    {p.disabled ? (
-                      <Badge variant="danger">無効</Badge>
-                    ) : (
-                      <Badge variant="success">有効</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-ink-3 text-[11.5px]">
-                    {new Date(p.created_at).toLocaleDateString('ja-JP')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="relative flex justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={p.id === currentUserId || busyId === p.id}
-                        onClick={() => setMenuId((id) => (id === p.id ? null : p.id))}
-                        title={
-                          p.id === currentUserId
-                            ? '自分自身は変更できません'
-                            : '操作'
-                        }
-                      >
-                        <MoreHorizontal size={13} />
-                      </Button>
-                      {menuId === p.id ? (
-                        <RowMenu
-                          profile={p}
-                          onChangeRole={(role) => void onChangeRole(p, role)}
-                          onToggleDisabled={() => void onToggleDisabled(p)}
-                          onClose={() => setMenuId(null)}
-                        />
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((p) => {
+                const manageable = canManageUserRow(
+                  p,
+                  currentUserId,
+                  currentUserRole,
+                );
+                return (
+                  <TableRow key={p.id} className={p.disabled ? 'opacity-60' : undefined}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar size="sm">
+                          <AvatarFallback tone={toneFromId(p.id)}>
+                            {(p.initials ?? p.display_name.slice(0, 1)).slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{p.display_name}</span>
+                        {p.id === currentUserId ? (
+                          <span className="text-[10.5px] text-ink-3">(あなた)</span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-ink-3">{p.email ?? '—'}</TableCell>
+                    <TableCell>
+                      <RoleBadge role={p.role} />
+                    </TableCell>
+                    <TableCell>
+                      {p.disabled ? (
+                        <Badge variant="danger">無効</Badge>
+                      ) : (
+                        <Badge variant="success">有効</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-ink-3 text-[11.5px]">
+                      {new Date(p.created_at).toLocaleDateString('ja-JP')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="relative flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled={!manageable || busyId === p.id}
+                          onClick={() =>
+                            setMenuId((id) => (id === p.id ? null : p.id))
+                          }
+                          title={
+                            manageable
+                              ? '操作'
+                              : p.id === currentUserId
+                                ? '自分自身は変更できません'
+                                : 'platform_admin は変更できません'
+                          }
+                        >
+                          <MoreHorizontal size={13} />
+                        </Button>
+                        {menuId === p.id && manageable ? (
+                          <RowMenu
+                            profile={p}
+                            onChangeRole={(role) => void onChangeRole(p, role)}
+                            onToggleDisabled={() => void onToggleDisabled(p)}
+                            onClose={() => setMenuId(null)}
+                          />
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -294,6 +319,19 @@ function UsersAdminLive({
       />
     </>
   );
+}
+
+/** 非 platform_admin は platform_admin 行の role/disable を触れない (SQL/seed 専用ロール)。 */
+function canManageUserRow(
+  profile: AdminProfileRow,
+  currentUserId: string | null,
+  currentUserRole: ProfileRole | null,
+): boolean {
+  if (profile.id === currentUserId) return false;
+  if (profile.role === 'platform_admin' && currentUserRole !== 'platform_admin') {
+    return false;
+  }
+  return true;
 }
 
 function FilterChip({
@@ -325,7 +363,7 @@ function RowMenu({
   onClose,
 }: {
   profile: AdminProfileRow;
-  onChangeRole: (role: ProfileRole) => void;
+  onChangeRole: (role: AssignableProfileRole) => void;
   onToggleDisabled: () => void;
   onClose: () => void;
 }) {
@@ -338,7 +376,7 @@ function RowMenu({
           <Shield size={12} />
           ロール変更
         </div>
-        {(['student', 'instructor', 'admin'] as ProfileRole[]).map((role) => (
+        {ASSIGNABLE_PROFILE_ROLES.map((role) => (
           <button
             key={role}
             type="button"

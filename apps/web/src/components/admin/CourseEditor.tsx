@@ -66,6 +66,7 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
         color: form.color,
         duration_hours: form.durationHours ? Number(form.durationHours) : null,
         description: form.description || null,
+        instructor_name: form.instructorName.trim() || null,
         status: data.course.status,
         require_all_lessons: form.requireAllLessons,
         require_quiz_pass: form.requireQuizPass,
@@ -183,6 +184,18 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
             />
           </div>
           <div className="col-span-3">
+            <Label htmlFor="ce-instructor">講師名</Label>
+            <Input
+              id="ce-instructor"
+              value={form.instructorName}
+              onChange={(e) => setForm({ ...form, instructorName: e.target.value })}
+              placeholder="例: 堀江 太郎"
+            />
+            <p className="mt-1 text-[12px] text-ink-3">
+              受講者のコース詳細 / レッスン画面に表示されます。 未入力の場合は表示されません。
+            </p>
+          </div>
+          <div className="col-span-3">
             <Label htmlFor="ce-desc">説明</Label>
             <Textarea
               id="ce-desc"
@@ -271,6 +284,7 @@ interface FormState {
   category: string;
   color: CourseColor;
   durationHours: string;
+  instructorName: string;
   description: string;
   requireAllLessons: boolean;
   requireQuizPass: boolean;
@@ -285,6 +299,8 @@ function fromCourse(data: CourseWithChildren): FormState {
     category: data.course.category ?? "",
     color: data.course.color ?? "indigo",
     durationHours: data.course.duration_hours != null ? String(data.course.duration_hours) : "",
+    // 列が未マイグレーションの環境では undefined → 空 (未設定) に倒す。
+    instructorName: data.course.instructor_name ?? "",
     description: data.course.description ?? "",
     // 列が未マイグレーションの環境では undefined → 既定 true に倒す。
     requireAllLessons: data.course.require_all_lessons ?? true,

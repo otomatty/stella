@@ -1,0 +1,1 @@
+ALTER TABLE `courses` ADD `instructor_name` text;

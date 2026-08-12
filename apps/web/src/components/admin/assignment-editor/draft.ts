@@ -54,7 +54,7 @@ export interface PreviewResult {
 }
 
 export const STAGES: Stage[] = ["S0", "S1", "S2", "S3", "S4", "S5"];
-export const LANGUAGES: Language[] = ["javascript", "sql"];
+export const LANGUAGES: Language[] = ["javascript", "typescript", "sql"];
 export const TEST_KINDS: TestKind[] = ["stdout", "function", "sql"];
 export const LINT_PRESETS: LintPreset[] = ["S1", "S2", "S3", "S4", "S5"];
 

@@ -2,7 +2,7 @@
  * CodeMirror 6 + ESLint プラグイン。
  * 編集中、ESLint の違反箇所が赤線/黄線でリアルタイム表示される。
  *
- * P2 (falcon-informal) では JavaScript と SQL のみサポート。
+ * falcon-informal では JavaScript / TypeScript / SQL をサポート。
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -22,8 +22,9 @@ interface Props {
   entryPoints: string[];
   /**
    * 現在表示中のファイルの言語。 省略時は "javascript" 扱い。
-   * 非 JS (sql) のときは ESLint linter を無効化し、
-   * `@codemirror/lang-sql` を動的 import で取得して切り替える。
+   * 非 JS (typescript / sql) のときは ESLint linter を無効化する。
+   * typescript は `@codemirror/lang-javascript` の TS モードで、
+   * sql は `@codemirror/lang-sql` を動的 import で取得して切り替える。
    */
   language?: Language;
   /** 編集を禁止する (readonly ファイル表示用)。 */
@@ -91,8 +92,8 @@ export function Editor({
 
   const extensions = useMemo<Extension[]>(() => {
     const exts: Extension[] = [];
-    if (language === "javascript") {
-      exts.push(javascript());
+    if (language === "javascript" || language === "typescript") {
+      exts.push(javascript({ typescript: language === "typescript" }));
     } else if (language === "sql" && sqlExtension) {
       exts.push(sqlExtension);
     }

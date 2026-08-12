@@ -25,6 +25,9 @@ export function analyzeAst(
   switch (language) {
     case "javascript":
       return analyzeJsAst(code, requirement);
+    // TypeScript は Babel パーサに TS プラグインを付けていないため型注釈でパースできない。
+    // SQL と同じく空結果 = 未適用 = 通過扱いにして、 採点はテスト結果のみで判定する。
+    case "typescript":
     case "sql":
       return emptyAst();
     default: {

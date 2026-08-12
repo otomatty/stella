@@ -24,8 +24,9 @@ import {
   submissions,
   tenants,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type {
@@ -64,7 +65,7 @@ async function computeCourseCompletion(
   const course = courseRows[0];
   if (!course || course.tenantId !== caller.tenantId) return null;
 
-  const isStaff = caller.role === "instructor" || caller.role === "admin";
+  const isStaff = isStaffRole(caller.role);
   if (!(userId === caller.id || isStaff)) return null;
 
   // 対象ユーザーが同テナントであることを必須化する。
@@ -339,7 +340,7 @@ certificatesRoute.get("/api/certificates/completion/:courseId", async (c) => {
 certificatesRoute.get("/api/certificates/gradebook/:courseId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const courseId = c.req.param("courseId");
 
     const courseRows = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
@@ -423,7 +424,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
     if (!course || course.tenantId !== caller.tenantId) {
       throw new ApiError("course not found", 404);
     }
-    const isStaff = caller.role === "instructor" || caller.role === "admin";
+    const isStaff = isStaffRole(caller.role);
     if (!(userId === caller.id || isStaff)) {
       throw new ApiError("not authorized to issue this certificate", 403);
     }
@@ -502,6 +503,21 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
       .update(enrollments)
       .set({ status: "completed", completedAt: new Date() })
       .where(and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)));
+
+    // 新規発行時のみ記録する (べき等な再取得は操作ではない)。
+    // 自己発行 (受講者本人 + auto_issue_certificate) もあるため actor は caller のまま。
+    await recordAudit(db, caller, {
+      action: "certificate_issue",
+      targetType: "certificate",
+      targetId: inserted[0].id,
+      ip: clientIp(c),
+      metadata: {
+        cert_code: inserted[0].cert_code,
+        course_id: courseId,
+        user_id: userId,
+        self_issued: !isStaff,
+      },
+    });
 
     return c.json({ certificate: { ...toIssued(inserted[0]), already_existed: false } });
   } catch (err) {

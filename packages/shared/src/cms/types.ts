@@ -25,7 +25,7 @@ import type {
 // ---------------------------------------------------------------
 
 export type CourseStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "instructor" | "admin";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export type CourseColor = "indigo" | "green" | "amber" | "slate";
 
@@ -48,6 +48,14 @@ export interface TenantRow {
   icon: string | null;
   active_count: number;
   created_at: string;
+}
+
+/** GET /api/me が profile と一緒に返す所属テナントの表示情報。 */
+export interface ProfileTenantInfo {
+  id: string;
+  name: string;
+  subtitle: string | null;
+  icon: string | null;
 }
 
 export interface ProfileRow {
@@ -74,6 +82,11 @@ export interface CourseRow {
   color: CourseColor | null;
   duration_hours: number | null;
   description: string | null;
+  /**
+   * 講師表示名 (Issue #74)。 列が未マイグレーションの環境では undefined になり得るため optional。
+   * null / 空文字は「未設定」 として扱い、 受講者 UI では講師を表示しない。
+   */
+  instructor_name?: string | null;
   status: CourseStatus;
   created_by: string | null;
   created_at: string;
@@ -111,6 +124,30 @@ export interface LessonRow {
   total_sec: number | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * レッスン配布資料 (lesson_materials 行 / Issue #72)。 実体は R2 上のオブジェクト。
+ * R2 の `path` はサーバ内部でのみ扱い、 クライアントへは返さない
+ * (ダウンロードは id ベースの `/api/materials/:id/download` プロキシ経由)。
+ */
+export interface LessonMaterialRow {
+  id: string;
+  lesson_id: string;
+  file_name: string;
+  size_bytes: number;
+  mime_type: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * コース単位で引いた配布資料 (`GET /api/materials?courseId=...` / Issue #77)。
+ * 一覧をレッスン・セクションでグルーピングできるよう表示名を同梱する。
+ */
+export interface CourseMaterialRow extends LessonMaterialRow {
+  lesson_title: string;
+  section_title: string;
 }
 
 export type QuestionKind = "single" | "multiple" | "boolean";
@@ -536,6 +573,7 @@ export interface UiCourse {
   duration?: number;
   lessonsCount: number;
   progress: number;
+  /** 講師表示名 (`courses.instructor_name` 由来)。 未設定なら省略される。 */
   enrolledBy?: string;
   dueAt?: string | null;
   /** 受講登録 (Issue #20) 由来。 必須 / 任意の区別。 */
@@ -543,6 +581,12 @@ export interface UiCourse {
   description?: string;
   completed?: boolean;
   sections?: UiSection[];
+  /** 修了基準 (CourseRow の require_* フラグ由来)。 受講者 UI の「修了条件」表示に使う。 */
+  criteria?: {
+    requireAllLessons: boolean;
+    requireQuizPass: boolean;
+    requireAssignmentPass: boolean;
+  };
 }
 
 // ---------------------------------------------------------------
@@ -591,6 +635,8 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
     .map(({ section, lessons }) => mapSectionRowToUi(section, lessons));
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
+  // 空文字も「未設定」 とみなし、 キーごと落として UI 側の分岐を単純にする。
+  const instructorName = input.course.instructor_name?.trim();
   return {
     id: input.course.id,
     title: input.course.title,
@@ -601,10 +647,16 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
       : {}),
     lessonsCount,
     progress: 0,
+    ...(instructorName ? { enrolledBy: instructorName } : {}),
     ...(input.course.description != null
       ? { description: input.course.description }
       : {}),
     sections,
+    criteria: {
+      requireAllLessons: input.course.require_all_lessons ?? true,
+      requireQuizPass: input.course.require_quiz_pass ?? true,
+      requireAssignmentPass: input.course.require_assignment_pass ?? true,
+    },
   };
 }
 

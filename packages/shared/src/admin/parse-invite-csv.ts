@@ -9,10 +9,9 @@
  * クォート付き CSV (`"田中, 翔太"`) にも最低限対応する簡易実装。
  */
 
-import type { ProfileRole } from "../cms/types.js";
-import { isValidEmail, type InviteUserInput } from "./types.js";
+import { isAssignableProfileRole, isValidEmail, type AssignableProfileRole, type InviteUserInput } from "./types.js";
 
-const ROLE_ALIASES: Record<string, ProfileRole> = {
+const ROLE_ALIASES: Record<string, AssignableProfileRole> = {
   student: "student",
   受講者: "student",
   学習者: "student",
@@ -95,10 +94,10 @@ export function parseInviteCsv(text: string): ParsedInviteCsv {
     const displayName = (cells[1] ?? "").trim() || email.split("@")[0] || email;
 
     const roleRaw = (cells[2] ?? "").trim();
-    let role: ProfileRole = "student";
+    let role: AssignableProfileRole = "student";
     if (roleRaw) {
       const mapped = ROLE_ALIASES[roleRaw] ?? ROLE_ALIASES[roleRaw.toLowerCase()];
-      if (!mapped) {
+      if (!mapped || !isAssignableProfileRole(mapped)) {
         errors.push(`${i + 1} 行目: ロールが不正です (${roleRaw})`);
         continue;
       }

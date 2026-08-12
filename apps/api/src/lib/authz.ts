@@ -25,7 +25,7 @@ export class ApiError extends Error {
   }
 }
 
-export type ProfileRole = "student" | "instructor" | "admin";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export interface Caller {
   id: string;
@@ -101,6 +101,18 @@ export function requireRole(caller: Caller, ...roles: ProfileRole[]): void {
   if (!roles.includes(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }
+}
+
+export function isStaffRole(role: ProfileRole): boolean {
+  return role === "instructor" || role === "admin" || role === "platform_admin";
+}
+
+export function requireTenantAdmin(caller: Caller): void {
+  requireRole(caller, "admin", "platform_admin");
+}
+
+export function requirePlatformAdmin(caller: Caller): void {
+  requireRole(caller, "platform_admin");
 }
 
 /** ApiError を Hono レスポンスへ。 想定外エラーは 500 に丸める。 */

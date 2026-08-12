@@ -13,6 +13,8 @@ import { s1Ch02MathAbs } from "./s1/10-math-abs.js";
 import { s1Ch02MathMax } from "./s1/11-math-max.js";
 import { s1Ch02CompoundAssign } from "./s1/12-compound-assign.js";
 import { s1Ch02BmiCapstone } from "./s1/13-bmi-capstone.js";
+import { s1Ch02CoffeeTotal } from "./s1/14-coffee-total.js";
+import { s1Ch02BooleanFlags } from "./s1/15-boolean-flags.js";
 import { s2Ch02NumberFromString } from "./s2/01-number-from-string.js";
 import { s2Ch02ParseIntBasic } from "./s2/02-parseInt-basic.js";
 import { s2Ch02ParseIntRadix } from "./s2/03-parseInt-radix.js";
@@ -25,6 +27,7 @@ import { s2Ch02NumberIsNaN } from "./s2/09-number-isnan.js";
 import { s2Ch02ToFixed } from "./s2/10-tofixed.js";
 import { s2Ch02NumberIsInteger } from "./s2/11-number-isinteger.js";
 import { s2Ch02PercentOnesPlace } from "./s2/12-percent-ones-place.js";
+import { s2Ch02FloatCompare } from "./s2/13-float-compare.js";
 import { s3Ch02IsEven } from "./s3/01-is-even.js";
 import { s3Ch02Abs } from "./s3/02-abs.js";
 import { s3Ch02Factorial } from "./s3/03-factorial.js";
@@ -52,6 +55,8 @@ export const ch02Numbers: Assignment[] = [
   s1Ch02MathMax,
   s1Ch02CompoundAssign,
   s1Ch02BmiCapstone,
+  s1Ch02CoffeeTotal,
+  s1Ch02BooleanFlags,
   s2Ch02NumberFromString,
   s2Ch02ParseIntBasic,
   s2Ch02ParseIntRadix,
@@ -64,6 +69,7 @@ export const ch02Numbers: Assignment[] = [
   s2Ch02ToFixed,
   s2Ch02NumberIsInteger,
   s2Ch02PercentOnesPlace,
+  s2Ch02FloatCompare,
   s3Ch02IsEven,
   s3Ch02Abs,
   s3Ch02Factorial,

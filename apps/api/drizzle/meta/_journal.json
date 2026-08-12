@@ -15,6 +15,55 @@
       "when": 1782388708746,
       "tag": "0001_empty_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785745819241,
+      "tag": "0002_loud_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786101781545,
+      "tag": "0003_nostalgic_oracle",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786103866594,
+      "tag": "0004_complete_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786120736351,
+      "tag": "0005_clever_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786188553804,
+      "tag": "0006_loving_kulan_gath",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1786228497629,
+      "tag": "0007_thankful_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1786250714712,
+      "tag": "0008_remarkable_roxanne_simpson",
+      "breakpoints": true
     }
   ]
 }

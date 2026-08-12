@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 144 1200 496" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+
+  <!-- 連結線(ノードより先に描く) -->
+  <path d="M400,336 L520,336" fill="none" stroke="#DDDDE2" stroke-width="1.5"/>
+  <path d="M520,208 L520,464" fill="none" stroke="#DDDDE2" stroke-width="1.5"/>
+  <path d="M520,208 L720,208" fill="none" stroke="#DDDDE2" stroke-width="1.5"/>
+  <path d="M520,336 L720,336" fill="none" stroke="#DDDDE2" stroke-width="1.5"/>
+  <path d="M520,464 L720,464" fill="none" stroke="#DDDDE2" stroke-width="1.5"/>
+
+  <!-- 定義(root) -->
+  <rect x="80" y="176" width="320" height="320" rx="16"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2.5"/>
+  <text x="240" y="228" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">type User</text>
+  <line x1="140" y1="252" x2="340" y2="252" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="240" y="300" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">name: string</text>
+  <text x="240" y="340" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">age: number</text>
+  <rect x="140" y="384" width="200" height="48" rx="24" fill="#E62F9A"/>
+  <text x="240" y="416" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#FFFFFF">定義はここだけ</text>
+
+  <!-- 使う場所(leaves) -->
+  <rect x="720" y="176" width="400" height="64" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="920" y="216" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">const user: User</text>
+
+  <rect x="720" y="304" width="400" height="64" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="920" y="344" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">const member: User</text>
+
+  <rect x="720" y="432" width="400" height="64" rx="8" fill="#FFFFFF" stroke="#8A8A93" stroke-width="1.5" stroke-dasharray="8 8"/>
+  <text x="920" y="472" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#8A8A93">他の変数でも使える</text>
+
+  <text x="600" y="560" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">型は1か所で定義、使う場所はいくつでも</text>
+</svg>

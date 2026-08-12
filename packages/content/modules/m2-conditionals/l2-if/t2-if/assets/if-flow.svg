@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 136 1200 344" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <!-- 開始 -->
+  <rect x="504" y="168" width="192" height="48" rx="20"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="200" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">開始</text>
+
+  <line x1="600" y1="216" x2="600" y2="240" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 判定 -->
+  <polygon points="600,240 760,304 600,368 440,304"
+           fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="312" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">stock === 0</text>
+
+  <!-- Yes: ブロックの中を通る(焦点) -->
+  <line x1="760" y1="304" x2="840" y2="304" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="800" y="288" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">Yes</text>
+
+  <rect x="840" y="272" width="240" height="64" rx="12"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="960" y="312" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">"在庫切れです"</text>
+
+  <!-- No: ブロックを迂回する -->
+  <line x1="600" y1="368" x2="600" y2="400" stroke="#5C5C66" stroke-width="2"/>
+  <text x="560" y="388" text-anchor="end" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">No</text>
+
+  <!-- 合流 -->
+  <line x1="960" y1="336" x2="960" y2="400" stroke="#5C5C66" stroke-width="2"/>
+  <line x1="960" y1="400" x2="600" y2="400" stroke="#5C5C66" stroke-width="2"/>
+  <circle cx="600" cy="400" r="4" fill="#0E0E10"/>
+</svg>

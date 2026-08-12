@@ -1,0 +1,3 @@
+# diagram_export.py --self-test が生成する出力(入力は *.html のみ)
+*.svg
+*.diagram.png

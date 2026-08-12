@@ -25,6 +25,7 @@ import type {
   LessonType,
 } from "@falcon/shared/cms/types";
 import { listAssignments, type UpsertLessonInput } from "@/lib/cms-api";
+import { LessonMaterialsPanel } from "./LessonMaterialsPanel";
 import { MaterialUploader } from "./MaterialUploader";
 import { QuizEditor } from "./QuizEditor";
 
@@ -263,6 +264,8 @@ export function LessonEditor({
               </div>
             </div>
           ) : null}
+
+          <LessonMaterialsPanel lessonId={lesson?.id ?? null} />
         </div>
 
         <DialogFooter>

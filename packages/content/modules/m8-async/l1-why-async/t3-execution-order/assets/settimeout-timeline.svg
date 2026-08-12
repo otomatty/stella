@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 144 1200 336" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <text x="80" y="196" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#8A8A93">時間</text>
+  <line x1="80" y1="280" x2="1120" y2="280" stroke="#B7B7BE" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 同期処理: 上から順にすぐ実行される -->
+  <circle cx="180" cy="280" r="8" fill="#8A8A93"/>
+  <text x="180" y="232" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">console.log("1")</text>
+
+  <circle cx="460" cy="280" r="8" fill="#8A8A93"/>
+  <text x="460" y="232" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">setTimeout(cb, 0)</text>
+
+  <circle cx="740" cy="280" r="8" fill="#8A8A93"/>
+  <text x="740" y="232" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">console.log("3")</text>
+
+  <!-- 非同期のコールバック: 同期処理がすべて終わってから実行される(焦点) -->
+  <circle cx="1040" cy="280" r="8" fill="#E62F9A"/>
+  <text x="1040" y="232" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">console.log("2")</text>
+  <text x="1040" y="320" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E62F9A">最後に実行される</text>
+
+  <text x="600" y="412" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">非同期処理は、同期処理がすべて終わってから実行される</text>
+</svg>

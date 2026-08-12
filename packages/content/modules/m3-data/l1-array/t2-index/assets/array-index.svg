@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 132 1200 348" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+
+  <!-- 配列(外側)。中に要素(内側)が並ぶ入れ子構造。 -->
+  <rect x="160" y="176" width="880" height="176" rx="16"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="184" y="164" width="88" height="24" fill="#FFFFFF"/>
+  <text x="192" y="180" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="Figtree, sans-serif" fill="#8A8A93">ITEMS</text>
+
+  <!-- 要素0(焦点) -->
+  <rect x="200" y="212" width="224" height="104" rx="12"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2.5"/>
+  <text x="216" y="240" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#E62F9A">0</text>
+  <text x="312" y="284" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">"コーヒー"</text>
+
+  <!-- 要素1 -->
+  <rect x="488" y="212" width="224" height="104" rx="12"
+        fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="504" y="240" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#8A8A93">1</text>
+  <text x="600" y="284" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">"紅茶"</text>
+
+  <!-- 要素2 -->
+  <rect x="776" y="212" width="224" height="104" rx="12"
+        fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="792" y="240" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#8A8A93">2</text>
+  <text x="888" y="284" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">"緑茶"</text>
+
+  <text x="600" y="408" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">1番目の要素はインデックス0</text>
+</svg>

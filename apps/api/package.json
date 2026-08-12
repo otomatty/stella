@@ -14,7 +14,9 @@
     "db:migrate:remote": "wrangler d1 migrations apply falcon-db --remote",
     "db:seed": "bun run scripts/seed-d1.ts",
     "db:seed:remote": "bun run scripts/seed-d1.ts --remote",
-    "smoke": "bun run scripts/d1-smoke.ts"
+    "smoke": "bun run scripts/d1-smoke.ts",
+    "smoke:core": "bun run scripts/core-loop-smoke.ts",
+    "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",

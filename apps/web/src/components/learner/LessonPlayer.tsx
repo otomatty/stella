@@ -1,21 +1,19 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   FileText,
   Folder,
   MessageCircle,
   Edit,
   Clock,
-  Info,
-  Code,
-  Download,
   Loader2,
   HelpCircle,
+  User,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
-import { SES_COURSES } from '@/data/fixtures';
 import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
 import type { Assignment } from '@falcon/shared/types';
 import { Badge } from '@/components/ui/badge';
@@ -28,14 +26,20 @@ import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
 import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
+import { useLessonNote } from '@/hooks/useLessonNote';
+import { MAX_NOTE_LENGTH } from '@falcon/shared/study/notes-sync';
 import { useLessonQuestions } from '@/hooks/useQuestions';
+import { useLessonMaterials } from '@/hooks/useLessonMaterials';
 import { createQuestion, createReply } from '@/lib/qa-api';
+import { downloadLessonMaterial } from '@/lib/cms-api';
+import type { LessonMaterialRow } from '@falcon/shared/cms/types';
 import { isBackendConfigured } from "@/lib/backend";
 import { QAThread } from '@/components/common/QAThread';
 import { QuestionComposer } from '@/components/common/QuestionComposer';
 import type { QuestionWithReplies } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
+import { LessonMarkdown, MarkdownSlides } from './MarkdownSlides';
 import { QuizPlayer } from './QuizPlayer';
 import type { Tenant } from '@/data/types';
 
@@ -58,6 +62,15 @@ interface LessonPlayerProps {
   studentInitials: string;
   /** ログイン中ユーザの ID (Q&A の自己メッセージ判定に使う)。 未ログイン時は null。 */
   currentUserId: string | null;
+  /**
+   * 検索パレットから指定されたレッスン (Issue #77)。 指定が無ければ従来どおり
+   * コース先頭のレッスンを開く。
+   *
+   * `seq` は選択のたびに増える版番号。 「検索で A → サイドバーで B → 再び検索で A」
+   * のように同じレッスンを選び直したときも、 id だけでは変化を検出できず反映
+   * されないため、 版番号で「明示的に選ばれた」ことを伝える。
+   */
+  initialLesson?: { id: string; seq: number } | null;
   /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
   onOpenAIBot?: () => void;
   /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
@@ -83,15 +96,27 @@ export const LessonPlayer = ({
   studentName,
   studentInitials,
   currentUserId,
+  initialLesson = null,
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
-  const sections: Section[] = course.sections ?? SES_COURSES[0].sections ?? [];
+  const sections: Section[] = course.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
-    () => allLessons.find((l) => l.id === 'l10')?.id ?? allLessons[0]?.id ?? '',
+    () =>
+      allLessons.find((l) => l.id === initialLesson?.id)?.id ??
+      allLessons.find((l) => l.id === 'l10')?.id ??
+      allLessons[0]?.id ??
+      '',
   );
   const [tab, setTab] = useState('content');
+
+  // 適用済みの「検索での選択」を id:seq で覚えておく。 これによりサイドバー操作は
+  // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
+  const selectionKey = initialLesson
+    ? `${initialLesson.id}:${initialLesson.seq}`
+    : null;
+  const appliedSelectionRef = useRef<string | null>(selectionKey);
 
   const progressMap = useLessonProgressMap();
 
@@ -120,17 +145,37 @@ export const LessonPlayer = ({
     refetch: qaRefetch,
   } = useLessonQuestions(lessonObj?.id ?? null, qaEnabled);
 
-  // course 切り替え時に activeLesson が新コースに含まれていなければ先頭に揃える
-  // (lessonObj 経由ではなく allLessons から直接 foundId を計算する)
+  // 配布資料も CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
+  const {
+    materials,
+    loading: materialsLoading,
+    error: materialsError,
+  } = useLessonMaterials(lessonObj?.id ?? null, qaEnabled);
+
+  // 表示レッスンの解決。 「検索での選択の適用」と「コース切替時の先頭寄せ」を
+  // 1 つの効果にまとめている。 別々の効果にすると、 別コースのレッスンを検索から
+  // 選んだとき (course と initialLesson が同時に変わる) に同一コミット内で
+  // 後者が古い activeLesson を見て先頭レッスンに上書きしてしまうため。
   useEffect(() => {
-    const foundId =
-      allLessons.find((l) => l.id === activeLesson)?.id ??
-      allLessons[0]?.id ??
-      '';
-    if (foundId !== activeLesson) {
-      setActiveLesson(foundId);
+    if (allLessons.length === 0) {
+      if (activeLesson !== '') setActiveLesson('');
+      return;
     }
-  }, [allLessons, activeLesson]);
+    // 1. 未適用の検索選択を最優先で反映する。 現在のコースにまだ含まれていない
+    //    (コース prop の反映待ち) 場合は適用済みにせず次のレンダーへ持ち越す。
+    if (selectionKey && appliedSelectionRef.current !== selectionKey) {
+      const selected = allLessons.find((l) => l.id === initialLesson?.id);
+      if (selected) {
+        appliedSelectionRef.current = selectionKey;
+        if (selected.id !== activeLesson) setActiveLesson(selected.id);
+        return;
+      }
+    }
+    // 2. コース切替等で activeLesson が現コースに無ければ先頭に揃える。
+    if (!allLessons.some((l) => l.id === activeLesson)) {
+      setActiveLesson(allLessons[0]!.id);
+    }
+  }, [allLessons, activeLesson, initialLesson, selectionKey]);
 
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;
@@ -149,6 +194,20 @@ export const LessonPlayer = ({
   const handleMarkComplete = () => {
     if (lessonObj) markComplete();
   };
+
+  // 前のレッスンへ遷移 (Issue #77)。 locked はスキップして手前の解禁レッスンを探す。
+  // 手前に解禁レッスンが無ければ null を返し、 呼び出し側でボタンを無効化する。
+  const prevLessonId = useMemo(() => {
+    const idx = allLessons.findIndex((l) => l.id === activeLesson);
+    if (idx <= 0) return null;
+    for (let i = idx - 1; i >= 0; i--) {
+      const candidate = allLessons[i];
+      if (candidate && resolveLessonStatus(candidate, progressMap) !== 'locked') {
+        return candidate.id;
+      }
+    }
+    return null;
+  }, [allLessons, activeLesson, progressMap]);
 
   // 次のレッスンへ遷移。 locked はスキップして次の解禁レッスンを探す。 末尾なら CourseDetail に戻る。
   const goToNextLesson = useCallback(
@@ -358,7 +417,8 @@ export const LessonPlayer = ({
           )
         ) : null}
 
-        {isSlides ? (
+        {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
+        {isSlides && !lessonObj.markdown ? (
           lessonObj.pdfPath ? (
             <Suspense fallback={<ViewerLoading />}>
               <SlidesViewer
@@ -390,13 +450,17 @@ export const LessonPlayer = ({
               </div>
               <h1 className="text-[22px] tracking-tight font-semibold">{lessonObj.title}</h1>
               <div className="flex flex-wrap gap-3.5 text-ink-3 text-[12.5px] mb-5 mt-1">
-                <span className="flex items-center gap-1">
-                  <Clock size={12} /> {lessonObj.duration}
-                </span>
-                <span className="text-ink-4">·</span>
-                <span>講師: 堀江メンター</span>
-                <span className="text-ink-4">·</span>
-                <span>最終更新 4月14日</span>
+                {lessonObj.duration ? (
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} /> {lessonObj.duration}
+                  </span>
+                ) : null}
+                {/* 講師名 (courses.instructor_name)。 未設定のコースでは何も出さない。 */}
+                {course.enrolledBy ? (
+                  <span className="flex items-center gap-1">
+                    <User size={12} /> {course.enrolledBy}
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -410,7 +474,12 @@ export const LessonPlayer = ({
               <TabsTrigger value="resources">
                 <Folder size={13} />
                 資料
-                <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">3</span>
+                {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
+                {materialsLoading ? null : (
+                  <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">
+                    {materials.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="qa">
                 <MessageCircle size={13} />
@@ -442,11 +511,25 @@ export const LessonPlayer = ({
                   onSubmitted={handleMarkComplete}
                 />
               ) : isText ? (
-                <LessonReadable onComplete={handleMarkComplete} />
+                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+              ) : isSlides && lessonObj.markdown ? (
+                <MarkdownSlides
+                  key={lessonObj.id}
+                  lessonId={lessonObj.id}
+                  markdown={lessonObj.markdown}
+                  onComplete={handleMarkComplete}
+                />
               ) : isVideo || isSlides ? (
-                <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
+                <LessonOverview
+                  lesson={lessonObj}
+                  onComplete={handleMarkComplete}
+                  onPrevLesson={
+                    prevLessonId ? () => setActiveLesson(prevLessonId) : null
+                  }
+                  onOpenNotes={() => setTab('notes')}
+                />
               ) : (
-                <LessonReadable onComplete={handleMarkComplete} />
+                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
               )}
             </TabsContent>
             <TabsContent value="qa">
@@ -462,10 +545,14 @@ export const LessonPlayer = ({
               />
             </TabsContent>
             <TabsContent value="resources">
-              <ResourcesList />
+              <ResourcesList
+                materials={materials}
+                loading={materialsLoading}
+                error={materialsError}
+              />
             </TabsContent>
             <TabsContent value="notes">
-              <NotesView />
+              <NotesView lessonId={lessonObj.id} userId={currentUserId} />
             </TabsContent>
           </Tabs>
         </div>
@@ -504,9 +591,14 @@ const MissingMaterialFallback = ({ type }: { type: 'video' | 'slides' }) => (
 const LessonOverview = ({
   lesson,
   onComplete,
+  onPrevLesson,
+  onOpenNotes,
 }: {
   lesson: Lesson;
   onComplete: () => void;
+  /** 手前に解禁済みレッスンが無いときは null (ボタンを無効化する)。 */
+  onPrevLesson: (() => void) | null;
+  onOpenNotes: () => void;
 }) => {
   const hasMaterial =
     (lesson.type === 'video' && Boolean(lesson.videoPath)) ||
@@ -529,12 +621,16 @@ const LessonOverview = ({
         </p>
       )}
       <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-        <Button>
+        <Button
+          onClick={() => onPrevLesson?.()}
+          disabled={!onPrevLesson}
+          title={onPrevLesson ? undefined : '最初のレッスンです'}
+        >
           <ChevronLeft size={13} />
           前のレッスン
         </Button>
         <div className="flex-1" />
-        <Button>
+        <Button onClick={onOpenNotes}>
           <Edit size={13} />
           ノートに追加
         </Button>
@@ -549,57 +645,33 @@ const LessonOverview = ({
   );
 };
 
-const LessonReadable = ({ onComplete }: { onComplete: () => void }) => (
+/**
+ * text レッスンの本文。 CMS (lessons.markdown) の実データを描画する。
+ * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
+ *
+ * 画像パスは R2 のオブジェクトキーで入っているので、 `LessonMarkdown` が公開 URL へ解決する。
+ */
+const LessonReadable = ({
+  lesson,
+  onComplete,
+}: {
+  lesson: Lesson;
+  onComplete: () => void;
+}) => (
   <div className="prose-lms">
-    <h2>レッスンの目的</h2>
-    <p>
-      関数が呼び出された時に生成される「実行コンテキスト」と、そこに束縛される変数のスコープについて理解します。
-      クロージャという仕組みが、関数外部から隠蔽された状態を保持するためにどう使われるかを、具体例を通して学びます。
-    </p>
-
-    <h2>サンプルコード</h2>
-    <pre>
-      <code>{`function makeCounter() {
-  let count = 0;
-  return function() {
-    count += 1;
-    return count;
-  };
-}
-
-const counter = makeCounter();
-counter(); // 1
-counter(); // 2
-counter(); // 3`}</code>
-    </pre>
-
-    <div className="border border-border border-l-[3px] border-l-brand bg-card rounded-sm px-4 py-3 my-4 flex gap-2.5 items-start text-[13.5px]">
-      <Info size={15} className="text-brand shrink-0 mt-0.5" />
-      <div>
-        <strong>チェックポイント</strong> — <code>makeCounter</code> を2回呼ぶと、それぞれが独立した{' '}
-        <code>count</code> を持ちます。 変数の共有ではなく「関数呼び出しごとに新しい環境」が作られる点がポイントです。
+    {lesson.markdown ? (
+      <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
+    ) : (
+      <div className="py-10 text-center text-[12.5px] text-ink-3">
+        <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">
+          本文を準備中です
+        </div>
+        このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
       </div>
-    </div>
-
-    <h2>理解度チェック</h2>
-    <ul>
-      <li>クロージャの主な用途3つを挙げられますか？</li>
-      <li>
-        <code>var</code> と <code>let</code> をループ内で使った時のスコープの違いは？
-      </li>
-      <li>IIFE（即時実行関数）はなぜ古くからクロージャと組み合わせて使われてきたのか？</li>
-    </ul>
+    )}
 
     <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-      <Button>
-        <ChevronLeft size={13} />
-        前のレッスン
-      </Button>
       <div className="flex-1" />
-      <Button>
-        <Edit size={13} />
-        ノートに追加
-      </Button>
       <Button variant="accent" onClick={onComplete}>
         完了にする
         <ChevronRight size={13} />
@@ -700,61 +772,195 @@ const QAView = ({
   );
 };
 
-const RESOURCES: Array<{
-  icon: typeof FileText;
-  t: string;
-  s: string;
-}> = [
-  { icon: FileText, t: '関数とスコープ — 補足スライド.pdf', s: '2.4 MB · PDF' },
-  { icon: Code, t: 'クロージャのサンプルコード集.zip', s: '18 KB · ZIP' },
-  { icon: FileText, t: '参考リンク集（外部リソース）', s: '4件のリンク' },
-];
+/** ファイルサイズ表記 (1024 基数)。 */
+const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
 
-const ResourcesList = () => (
-  <Card>
-    {RESOURCES.map((r, i) => {
-      const Icon = r.icon;
-      return (
+/**
+ * 資料タブ。 配布資料 (lesson_materials) の実データを一覧し、 API 経由でダウンロードする。
+ * 資料が無いレッスンでは空状態を表示する。
+ */
+const ResourcesList = ({
+  materials,
+  loading,
+  error,
+}: {
+  materials: LessonMaterialRow[];
+  loading: boolean;
+  error: string | null;
+}) => {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (material: LessonMaterialRow) => {
+    setDownloadingId(material.id);
+    try {
+      await downloadLessonMaterial(material);
+    } catch (err) {
+      console.error('[ResourcesList] download failed', err);
+      toast.error(
+        err instanceof Error ? err.message : 'ダウンロードに失敗しました',
+      );
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
+        <Loader2 size={16} className="animate-spin" /> 読み込み中…
+      </div>
+    );
+  }
+
+  // 取得失敗は「資料なし」と区別して表示する。
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+        <Folder size={28} className="text-ink-4" />
+        <div className="font-medium text-danger">配布資料の取得に失敗しました</div>
+        <div className="text-[12.5px]">{error}</div>
+      </div>
+    );
+  }
+
+  if (materials.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
+        <Folder size={28} className="text-ink-4" />
+        <div className="font-medium text-ink-2">配布資料はありません</div>
+        <div className="text-[12.5px]">
+          このレッスンに配布資料が追加されると、 ここからダウンロードできます。
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {materials.map((m) => (
         <div
-          key={i}
-          className={cn(
-            'flex items-center gap-3 px-4 py-3.5 cursor-pointer',
-            i < RESOURCES.length - 1 ? 'border-b border-border' : '',
-          )}
+          key={m.id}
+          className="flex items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5"
         >
-          <div className="w-9 h-9 rounded-md bg-sunken grid place-items-center text-ink-2">
-            <Icon size={16} />
+          <div className="grid place-items-center w-9 h-9 rounded-md bg-sunken text-ink-3 shrink-0">
+            <FileText size={16} />
           </div>
-          <div className="flex-1">
-            <div className="text-[13px] font-medium">{r.t}</div>
-            <div className="text-[11.5px] text-ink-3 mt-0.5">{r.s}</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-medium truncate">{m.file_name}</div>
+            <div className="text-[11.5px] text-ink-3">{formatBytes(m.size_bytes)}</div>
           </div>
-          <Button size="sm">
-            <Download size={12} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={downloadingId === m.id}
+            onClick={() => void handleDownload(m)}
+          >
+            {downloadingId === m.id ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Download size={13} />
+            )}
             ダウンロード
           </Button>
         </div>
+      ))}
+    </div>
+  );
+};
+
+/**
+ * レッスンごとの個人メモ (Issue #78)。
+ *
+ * バックエンド設定時はサーバ (`/api/lesson-notes`) に保存し、 端末をまたいで同じノートを
+ * 参照・編集できる。 未設定時は従来どおり localStorage のみ (`useLessonNote` が吸収)。
+ */
+const NotesView = ({
+  lessonId,
+  userId,
+}: {
+  lessonId: string;
+  /** ログイン中ユーザの ID。 切り替わったら前ユーザーのノートを持ち越さない。 */
+  userId: string | null;
+}) => {
+  const {
+    body,
+    setBody,
+    save,
+    loading,
+    saving,
+    error,
+    localError,
+    remote,
+    conflict,
+    overLimit,
+  } = useLessonNote(lessonId, userId);
+
+  const handleSave = async () => {
+    const result = await save();
+    if (!result.ok) {
+      toast.error('ノートの保存に失敗しました');
+      return;
+    }
+    if (result.conflict) {
+      toast.warning(
+        '他の端末で更新されたノートがあるため保存されませんでした。 再読み込みしてください',
       );
-    })}
-  </Card>
-);
+      return;
+    }
+    toast.success('ノートを保存しました');
+  };
 
-const NotesView = () => (
-  <Card>
-    <CardContent>
-      <Textarea
-        className="min-h-[260px]"
-        defaultValue={`# 関数とスコープ メモ
-
-- クロージャ = 関数 + それが生成された環境
-- makeCounter を呼ぶたびに新しい count が生まれる
-- var → let で書き直すとループのスコープ問題が解消`}
-      />
-      <div className="flex items-center mt-2">
-        <span className="text-[11.5px] text-ink-3">このノートはあなただけに見えます</span>
-        <div className="flex-1" />
-        <Button size="sm">保存</Button>
-      </div>
-    </CardContent>
-  </Card>
-);
+  return (
+    <Card>
+      <CardContent>
+        <Textarea
+          className="min-h-[260px]"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          maxLength={MAX_NOTE_LENGTH}
+          placeholder="このレッスンのメモを書き残せます…"
+        />
+        {overLimit ? (
+          <p className="text-[11.5px] text-warning mt-2">
+            ノートが {MAX_NOTE_LENGTH.toLocaleString()} 文字を超えています。
+            超過分はこの端末にのみ残り、 他の端末には同期されません
+          </p>
+        ) : null}
+        {conflict ? (
+          <p className="text-[11.5px] text-warning mt-2">
+            他の端末で更新されたノートがあります。 再読み込みすると最新の内容を取り込めます
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-[11.5px] text-destructive mt-2">
+            サーバとの同期に失敗しました ({error})
+            {localError ? null : '。 この端末には保存されています'}
+          </p>
+        ) : null}
+        {localError ? (
+          <p className="text-[11.5px] text-destructive mt-2">{localError}</p>
+        ) : null}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-[11.5px] text-ink-3">
+            {remote
+              ? 'このノートはあなただけに見えます (端末をまたいで同期されます)'
+              : 'このノートはあなただけに見えます (この端末のみ)'}
+          </span>
+          {loading || saving ? (
+            <Loader2 size={12} className="animate-spin text-ink-3" />
+          ) : null}
+          <div className="flex-1" />
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            保存
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

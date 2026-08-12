@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>3つのブロックでできている</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 148 1200 332" width="1200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- connectors (drawn before nodes) -->
+  <line x1="600" y1="236" x2="600" y2="264" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="320" y1="264" x2="880" y2="264" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="320" y1="264" x2="320" y2="308" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="600" y1="264" x2="600" y2="308" stroke="#B7B7BE" stroke-width="1.5"/>
+  <line x1="880" y1="264" x2="880" y2="308" stroke="#B7B7BE" stroke-width="1.5"/>
+
+  <!-- root -->
+  <rect x="500" y="180" width="200" height="56" rx="8"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="216" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">tsconfig.json</text>
+
+  <!-- child 1: compilerOptions (focus, the largest block) -->
+  <rect x="200" y="308" width="240" height="64" rx="8"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="320" y="348" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">compilerOptions</text>
+  <text x="320" y="400" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">コンパイラーの設定</text>
+
+  <!-- child 2: include -->
+  <rect x="480" y="308" width="240" height="64" rx="8"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="600" y="348" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">include</text>
+  <text x="600" y="400" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">対象に含める</text>
+
+  <!-- child 3: exclude -->
+  <rect x="760" y="308" width="240" height="64" rx="8"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="880" y="348" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">exclude</text>
+  <text x="880" y="400" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">対象から外す</text>
+</svg>
+</body>
+</html>

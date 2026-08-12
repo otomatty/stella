@@ -16,22 +16,20 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import {
   assignments,
   courses,
+  lessonMaterials,
   lessons,
   quizOptions,
   quizQuestions,
   quizzes,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
+import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
+import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
 export const cmsRoute = new Hono<{ Bindings: Env }>();
-
-function isStaff(caller: Caller): boolean {
-  return caller.role === "instructor" || caller.role === "admin";
-}
 
 // --- mappers (Drizzle camelCase → 旧 DB 行 snake_case) ---
 type CourseSel = typeof courses.$inferSelect;
@@ -51,6 +49,7 @@ const courseToRow = (c: CourseSel) => ({
   color: c.color,
   duration_hours: c.durationHours,
   description: c.description,
+  instructor_name: c.instructorName,
   status: c.status,
   created_by: c.createdBy,
   created_at: c.createdAt,
@@ -140,6 +139,23 @@ async function courseTenant(db: Db, courseId: string): Promise<string | null> {
   const rows = await db.select({ t: courses.tenantId }).from(courses).where(eq(courses.id, courseId)).limit(1);
   return rows[0]?.t ?? null;
 }
+/** 監査ログ用に、 テナント検証と同時にコースの現在値も取る (公開/削除の記録に使う)。 */
+async function courseAuditInfo(
+  db: Db,
+  courseId: string,
+): Promise<{ tenant: string; status: CourseSel["status"]; title: string; slug: string } | null> {
+  const rows = await db
+    .select({
+      tenant: courses.tenantId,
+      status: courses.status,
+      title: courses.title,
+      slug: courses.slug,
+    })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+  return rows[0] ?? null;
+}
 async function sectionCourse(db: Db, sectionId: string): Promise<{ courseId: string; tenant: string } | null> {
   const rows = await db
     .select({ courseId: sections.courseId, tenant: courses.tenantId })
@@ -187,15 +203,45 @@ function assertTenant(t: string | null, caller: Caller): void {
   if (t !== caller.tenantId) throw new ApiError("他テナントのリソースは操作できません", 403);
 }
 
+/**
+ * レッスン削除 (直接 / section・course からの cascade) 前に、 紐づく配布資料の
+ * R2 オブジェクトをベストエフォートで削除する (Issue #72)。
+ * DB 行は FK cascade で消えるため、 ここでは R2 実体のみ扱う。
+ * R2 未設定・削除失敗でもコンテンツ削除は妨げない (孤児はログに残す)。
+ */
+async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Promise<void> {
+  if (lessonIds.length === 0) return;
+  const bucket = env.MATERIALS_BUCKET;
+  if (!bucket) return;
+  try {
+    const rows = await db
+      .select({ path: lessonMaterials.path })
+      .from(lessonMaterials)
+      .where(inArray(lessonMaterials.lessonId, lessonIds));
+    if (rows.length > 0) {
+      await bucket.delete(rows.map((r) => r.path));
+    }
+  } catch (e) {
+    console.error("[cms] 配布資料の R2 削除に失敗 (孤児オブジェクト)", lessonIds, e);
+  }
+}
+
 // =================================================================
 // Courses
 // =================================================================
+
+/** 講師表示名 (Issue #74) を正規化する。 未入力 / 空白のみは null (= 未設定) に倒す。 */
+function normalizeInstructorName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
 
 cmsRoute.get("/api/cms/courses", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const conds = [eq(courses.tenantId, caller.tenantId)];
-    if (!isStaff(caller)) conds.push(eq(courses.status, "published"));
+    if (!isStaffRole(caller.role)) conds.push(eq(courses.status, "published"));
     const rows = await db
       .select()
       .from(courses)
@@ -214,7 +260,7 @@ cmsRoute.get("/api/cms/courses/:id", async (c) => {
     const courseRows = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
     const course = courseRows[0];
     if (!course || course.tenantId !== caller.tenantId) return c.json({ course: null });
-    if (course.status !== "published" && !isStaff(caller)) return c.json({ course: null });
+    if (course.status !== "published" && !isStaffRole(caller.role)) return c.json({ course: null });
 
     const sectionRows = await db
       .select()
@@ -248,7 +294,7 @@ cmsRoute.get("/api/cms/courses/:id", async (c) => {
 cmsRoute.post("/api/cms/courses", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as Record<string, unknown> & { id?: string };
     const values = {
       tenantId: caller.tenantId,
@@ -258,6 +304,8 @@ cmsRoute.post("/api/cms/courses", async (c) => {
       color: (input.color as CourseSel["color"]) ?? null,
       durationHours: (input.duration_hours as number | null) ?? null,
       description: (input.description as string | null) ?? null,
+      // 空文字は「未設定」 に正規化する (受講者 UI で講師欄を出さないため)。
+      instructorName: normalizeInstructorName(input.instructor_name),
       status: (input.status as CourseSel["status"]) ?? "draft",
       requireAllLessons: (input.require_all_lessons as boolean) ?? true,
       requireQuizPass: (input.require_quiz_pass as boolean) ?? true,
@@ -280,11 +328,26 @@ cmsRoute.post("/api/cms/courses", async (c) => {
 cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    assertTenant(await courseTenant(db, id), caller);
+    const info = await courseAuditInfo(db, id);
+    assertTenant(info?.tenant ?? null, caller);
     const { status } = (await c.req.json()) as { status: CourseSel["status"] };
     await db.update(courses).set({ status, updatedAt: new Date() }).where(eq(courses.id, id));
+    // 公開 / 非公開は監査上の意味が違うため action を分ける (Issue #64)。
+    const wasPublished = info!.status === "published";
+    await recordAudit(db, caller, {
+      action:
+        status === "published"
+          ? "course_publish"
+          : wasPublished
+            ? "course_unpublish"
+            : "course_status_change",
+      targetType: "course",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: { title: info!.title, slug: info!.slug, from: info!.status, to: status },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
@@ -294,10 +357,31 @@ cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
 cmsRoute.delete("/api/cms/courses/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    assertTenant(await courseTenant(db, id), caller);
+    const info = await courseAuditInfo(db, id);
+    assertTenant(info?.tenant ?? null, caller);
+    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
+    const lessonRows = await db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .where(eq(sections.courseId, id));
+    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
     await db.delete(courses).where(eq(courses.id, id));
+    // 削除後は行が消えるため、 タイトル等は削除前に取った値を残す。
+    await recordAudit(db, caller, {
+      action: "course_delete",
+      targetType: "course",
+      targetId: id,
+      ip: clientIp(c),
+      metadata: {
+        title: info!.title,
+        slug: info!.slug,
+        status: info!.status,
+        lesson_count: lessonRows.length,
+      },
+    });
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
@@ -311,7 +395,7 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
 cmsRoute.post("/api/cms/sections", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as { id?: string; course_id: string; title: string; order?: number };
     assertTenant(await courseTenant(db, input.course_id), caller);
     const values = { courseId: input.course_id, title: input.title, order: input.order ?? 0 };
@@ -330,9 +414,15 @@ cmsRoute.post("/api/cms/sections", async (c) => {
 cmsRoute.delete("/api/cms/sections/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const sc = await sectionCourse(db, c.req.param("id"));
     assertTenant(sc?.tenant ?? null, caller);
+    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
+    const lessonRows = await db
+      .select({ id: lessons.id })
+      .from(lessons)
+      .where(eq(lessons.sectionId, c.req.param("id")));
+    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
     await db.delete(sections).where(eq(sections.id, c.req.param("id")));
     return c.json({ ok: true });
   } catch (err) {
@@ -343,7 +433,7 @@ cmsRoute.delete("/api/cms/sections/:id", async (c) => {
 cmsRoute.post("/api/cms/sections/reorder", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const { courseId, orderedIds } = (await c.req.json()) as { courseId: string; orderedIds: string[] };
     assertTenant(await courseTenant(db, courseId), caller);
     // 順序付きで各行の order を更新する (course 内に限定)。 並列実行でレイテンシを抑える。
@@ -368,7 +458,7 @@ cmsRoute.post("/api/cms/sections/reorder", async (c) => {
 cmsRoute.post("/api/cms/lessons", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as Record<string, unknown> & { id?: string; section_id: string };
     const sc = await sectionCourse(db, input.section_id);
     assertTenant(sc?.tenant ?? null, caller);
@@ -400,8 +490,10 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
 cmsRoute.delete("/api/cms/lessons/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     assertTenant(await lessonTenant(db, c.req.param("id")), caller);
+    // cascade で消える配布資料の R2 実体を先に掃除する。
+    await deleteMaterialObjects(db, c.env, [c.req.param("id")]);
     await db.delete(lessons).where(eq(lessons.id, c.req.param("id")));
     return c.json({ ok: true });
   } catch (err) {
@@ -412,7 +504,7 @@ cmsRoute.delete("/api/cms/lessons/:id", async (c) => {
 cmsRoute.post("/api/cms/lessons/reorder", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const { sectionId, orderedIds } = (await c.req.json()) as { sectionId: string; orderedIds: string[] };
     const sc = await sectionCourse(db, sectionId);
     assertTenant(sc?.tenant ?? null, caller);
@@ -437,7 +529,7 @@ cmsRoute.post("/api/cms/lessons/reorder", async (c) => {
 cmsRoute.get("/api/cms/quiz/by-lesson/:lessonId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const lessonId = c.req.param("lessonId");
     assertTenant(await lessonTenant(db, lessonId), caller);
     const quizRows = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
@@ -474,7 +566,7 @@ cmsRoute.get("/api/cms/quiz/by-lesson/:lessonId", async (c) => {
 cmsRoute.post("/api/cms/quiz/ensure", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const { lessonId } = (await c.req.json()) as { lessonId: string };
     assertTenant(await lessonTenant(db, lessonId), caller);
     const existing = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
@@ -489,7 +581,7 @@ cmsRoute.post("/api/cms/quiz/ensure", async (c) => {
 cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     assertTenant(await quizTenant(db, id), caller);
     const p = (await c.req.json()) as Record<string, unknown>;
@@ -516,7 +608,7 @@ cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
 cmsRoute.post("/api/cms/quiz-questions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as Record<string, unknown> & { id?: string; quiz_id: string };
     assertTenant(await quizTenant(db, input.quiz_id), caller);
     const values = {
@@ -542,7 +634,7 @@ cmsRoute.post("/api/cms/quiz-questions", async (c) => {
 cmsRoute.delete("/api/cms/quiz-questions/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     assertTenant(await questionTenant(db, c.req.param("id")), caller);
     await db.delete(quizQuestions).where(eq(quizQuestions.id, c.req.param("id")));
     return c.json({ ok: true });
@@ -554,7 +646,7 @@ cmsRoute.delete("/api/cms/quiz-questions/:id", async (c) => {
 cmsRoute.post("/api/cms/quiz-options", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as { id?: string; question_id: string; label: string; is_correct?: boolean; order?: number };
     assertTenant(await questionTenant(db, input.question_id), caller);
     const values = {
@@ -578,7 +670,7 @@ cmsRoute.post("/api/cms/quiz-options", async (c) => {
 cmsRoute.delete("/api/cms/quiz-options/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     // option → question → ... のテナント検証。
     const rows = await db
       .select({ questionId: quizOptions.questionId })
@@ -601,7 +693,7 @@ cmsRoute.delete("/api/cms/quiz-options/:id", async (c) => {
 cmsRoute.get("/api/cms/assignments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
       .select()
       .from(assignments)
@@ -620,7 +712,7 @@ cmsRoute.get("/api/cms/assignments/:id", async (c) => {
     const rows = await db.select().from(assignments).where(eq(assignments.id, id)).limit(1);
     const a = rows[0];
     if (!a || a.tenantId !== caller.tenantId) return c.json({ row: null });
-    if (!isStaff(caller)) {
+    if (!isStaffRole(caller.role)) {
       // 受講者は published コース配下のレッスンに紐付く課題のみ。
       const linked = await db
         .select({ id: lessons.id })
@@ -640,7 +732,7 @@ cmsRoute.get("/api/cms/assignments/:id", async (c) => {
 cmsRoute.post("/api/cms/assignments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as Record<string, unknown> & { id: string };
     // tenant は caller に固定する。
     const values = {
@@ -680,7 +772,7 @@ cmsRoute.post("/api/cms/assignments", async (c) => {
 cmsRoute.delete("/api/cms/assignments/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin");
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     const rows = await db.select({ t: assignments.tenantId }).from(assignments).where(eq(assignments.id, id)).limit(1);
     assertTenant(rows[0]?.t ?? null, caller);
