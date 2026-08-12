@@ -8,7 +8,7 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import {
   courses,
@@ -24,7 +24,7 @@ import { errorResponse, getCaller, ApiError, isStaffRole } from "../lib/authz.js
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
-import type { QuizAnswer } from "@falcon/shared/cms/types";
+import type { LearnerQuizHistory, QuizAnswer } from "@falcon/shared/cms/types";
 
 export const quizRoute = new Hono<{ Bindings: Env }>();
 
@@ -68,6 +68,38 @@ async function isAuthorizedForLesson(
     )
     .limit(1);
   return enrolled.length > 0;
+}
+
+/**
+ * 受講者自身の受験履歴を要約する。
+ *
+ * 出題と一緒に返して、 再訪時に「合格済み」を復元し、 受験回数の上限も判定できるようにする。
+ * 正解は含めない (出題のサニタイズと同じ理由)。
+ */
+async function loadHistory(
+  db: Db,
+  quizId: string,
+  userId: string,
+): Promise<LearnerQuizHistory> {
+  const rows = await db
+    .select({
+      score: quizAttempts.score,
+      maxScore: quizAttempts.maxScore,
+      passed: quizAttempts.passed,
+      submittedAt: quizAttempts.submittedAt,
+    })
+    .from(quizAttempts)
+    .where(and(eq(quizAttempts.quizId, quizId), eq(quizAttempts.userId, userId)))
+    .orderBy(desc(quizAttempts.submittedAt));
+
+  const last = rows[0];
+  return {
+    attempt_count: rows.length,
+    passed: rows.some((r) => r.passed),
+    last_score: last?.score ?? null,
+    last_max_score: last?.maxScore ?? null,
+    last_attempt_at: last ? new Date(last.submittedAt).toISOString() : null,
+  };
 }
 
 /** 受講者向けの設問を取得する (サニタイズ済み)。 quiz 未作成 / 権限外なら null。 */
@@ -135,6 +167,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
           max_attempts: quiz.maxAttempts,
         },
         questions,
+        history: await loadHistory(db, quiz.id, caller.id),
       },
     });
   } catch (err) {
@@ -206,15 +239,22 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
 
     const passed = max === 0 ? true : (score * 100) / max >= quiz.passScore;
 
-    await db.insert(quizAttempts).values({
-      tenantId: caller.tenantId,
-      quizId,
-      userId: caller.id,
-      score,
-      maxScore: max,
-      passed,
-      answers,
-    });
+    // 受験回数の上限 (null は無制限)。 UI 側の制御だけでは直接 POST を防げない。
+    //
+    // 「件数を数えてから INSERT」 に分けると、 同時に投げられた複数のリクエストが
+    // どれも INSERT 前の件数を読んで全部通ってしまう。 1 文の INSERT ... SELECT に
+    // 条件を畳み込み、 実際に挿入されたか (changes) で判定する。
+    // 合格済みの再受験は上限に関係なく許す (成績は下がらない)。
+    const inserted = await db.run(
+      sql`insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, answers, submitted_at)
+          select ${crypto.randomUUID()}, ${caller.tenantId}, ${quizId}, ${caller.id}, ${score}, ${max}, ${passed ? 1 : 0}, ${JSON.stringify(answers)}, ${Date.now()}
+          where ${quiz.maxAttempts} is null
+             or (select count(*) from quiz_attempts where quiz_id = ${quizId} and user_id = ${caller.id}) < ${quiz.maxAttempts}
+             or exists (select 1 from quiz_attempts where quiz_id = ${quizId} and user_id = ${caller.id} and passed = 1)`,
+    );
+    if (inserted.meta.changes === 0) {
+      throw new ApiError("attempt limit reached", 429);
+    }
 
     return c.json({ result: { score, max_score: max, passed, results } });
   } catch (err) {

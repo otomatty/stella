@@ -35,7 +35,7 @@ import { Check, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { getMaterialUrl } from '@/lib/storage';
-import { useLessonProgress } from '@/hooks/useLessonProgress';
+import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
 
 /**
  * 教材 markdown の画像 src は R2 のオブジェクトキー (URL ではない) なので公開 URL へ解決する。
@@ -238,16 +238,26 @@ export function MarkdownSlides({ lessonId, markdown, header = '', onComplete }: 
   const total = slides.length;
 
   const { entry, recordPage, markComplete } = useLessonProgress(lessonId);
-  const [page, setPage] = useState(() =>
-    Math.min(Math.max(entry?.lastPage ?? 1, 1), Math.max(total, 1)),
-  );
+  const ready = useProgressReady();
+  const [page, setPage] = useState(1);
+  // 復元が済むまでは記録しない。 ref ではなく state なのは、 復元したページで
+  // 記録の効果を走らせたいから (ref だと同じコミットで古い page を記録してしまう)。
+  const [restored, setRestored] = useState(false);
   const notifiedRef = useRef(entry?.completed === true);
+
+  // サーバ進捗が決着してから「続き」のページへ飛ぶ。 決着前に飛ぶと、 ローカルにしか
+  // 進捗が無い状態の 1 ページ目を「続き」と誤認し、 それをサーバへ push してしまう。
+  useEffect(() => {
+    if (!ready || restored || total === 0) return;
+    setPage(Math.min(Math.max(entry?.lastPage ?? 1, 1), total));
+    setRestored(true);
+  }, [ready, restored, total, entry?.lastPage]);
 
   // 閲覧ページを記録する。 90% での auto complete は `recordPage` (ストア側) が判定するので、
   // SlidesViewer と同じ挙動になるようここでしきい値を二重に持たない。
   useEffect(() => {
-    if (total > 0) recordPage(page, total);
-  }, [page, total, recordPage]);
+    if (restored && total > 0) recordPage(page, total);
+  }, [restored, page, total, recordPage]);
 
   // 完了になったら 1 回だけ親へ通知する。
   useEffect(() => {

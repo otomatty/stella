@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -25,7 +26,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
-import { useLessonProgress, useLessonProgressMap } from '@/hooks/useLessonProgress';
+import {
+  useLessonProgress,
+  useLessonProgressMap,
+  useStudyTime,
+} from '@/hooks/useLessonProgress';
 import { useLessonNote } from '@/hooks/useLessonNote';
 import { MAX_NOTE_LENGTH } from '@falcon/shared/study/notes-sync';
 import { useLessonQuestions } from '@/hooks/useQuestions';
@@ -111,7 +116,6 @@ export const LessonPlayer = ({
   const [activeLesson, setActiveLesson] = useState<string>(
     () =>
       allLessons.find((l) => l.id === initialLesson?.id)?.id ??
-      allLessons.find((l) => l.id === 'l10')?.id ??
       allLessons[0]?.id ??
       '',
   );
@@ -209,6 +213,10 @@ export const LessonPlayer = ({
   const handleMarkComplete = () => {
     if (lessonObj) markComplete();
   };
+
+  // 滞在時間を学習時間として積む。 動画は VideoViewer が実再生秒数を記録するので除外
+  // (両方が同じ watched_sec を書くと二重計上になる)。
+  useStudyTime(lessonObj?.id ?? '', Boolean(lessonObj) && lessonObj?.type !== 'video');
 
   // 前のレッスンへ遷移 (Issue #77)。 locked はスキップして手前の解禁レッスンを探す。
   // 手前に解禁レッスンが無ければ null を返し、 呼び出し側でボタンを無効化する。
@@ -666,6 +674,10 @@ const LessonOverview = ({
  * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
  *
  * 画像パスは R2 のオブジェクトキーで入っているので、 `LessonMarkdown` が公開 URL へ解決する。
+ *
+ * 完了判定はスライドの「90% 閲覧」に対応させて、 **本文の末尾まで到達したら自動完了**
+ * とする。 開いた時点で進捗行も作る (作らないと、 完了ボタンを押すまでサイドバーで
+ * 「読みかけ」に見えず、 「続きから」の遷移先もこのレッスンを飛ばしてしまう)。
  */
 const LessonReadable = ({
   lesson,
@@ -673,28 +685,56 @@ const LessonReadable = ({
 }: {
   lesson: Lesson;
   onComplete: () => void;
-}) => (
-  <div className="prose-lms">
-    {lesson.markdown ? (
-      <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
-    ) : (
-      <div className="py-10 text-center text-[12.5px] text-ink-3">
-        <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">
-          本文を準備中です
-        </div>
-        このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
-      </div>
-    )}
+}) => {
+  const { entry, markVisited } = useLessonProgress(lesson.id);
+  const endRef = useRef<HTMLDivElement>(null);
+  const isCompleted = entry?.completed === true;
 
-    <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-      <div className="flex-1" />
-      <Button variant="accent" onClick={onComplete}>
-        完了にする
-        <ChevronRight size={13} />
-      </Button>
+  useEffect(() => {
+    markVisited();
+  }, [markVisited]);
+
+  useEffect(() => {
+    const el = endRef.current;
+    if (!el || isCompleted || !lesson.markdown) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) onComplete();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isCompleted, lesson.markdown, onComplete]);
+
+  return (
+    <div className="prose-lms">
+      {lesson.markdown ? (
+        <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
+      ) : (
+        <div className="py-10 text-center text-[12.5px] text-ink-3">
+          <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">
+            本文を準備中です
+          </div>
+          このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
+        </div>
+      )}
+
+      <div ref={endRef} aria-hidden="true" />
+      <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+        <div className="flex-1" />
+        {isCompleted ? (
+          <span className="inline-flex items-center gap-1 text-success text-[12px]">
+            <Check size={13} aria-hidden="true" />
+            完了済み
+          </span>
+        ) : (
+          <Button variant="accent" onClick={onComplete}>
+            完了にする
+            <ChevronRight size={13} />
+          </Button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 interface QAViewProps {
   threads: QuestionWithReplies[];

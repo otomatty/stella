@@ -1,13 +1,19 @@
 /**
- * 「続きから」 の再開位置の判定。 ここが壊れると受講者は毎回コース先頭に戻される
- * (TypeScript 入門研修は 246 レッスンあるので、 実質やり直しになる)。
+ * 「続きから」 の再開位置の判定と、 進捗マージの単調性。
+ *
+ * 前者が壊れると受講者は毎回コース先頭に戻され (TypeScript 入門研修は 246 レッスン
+ * あるので実質やり直し)、 後者が壊れると完了済みの進捗が黙って消える。
  */
 
 import { describe, expect, it } from "vitest";
 import type { Course, Lesson, LessonStatus } from "@/data/types";
 import {
+  deriveCourseProgress,
   findNextLesson,
+  mergeEntries,
+  resolveLessonStatus,
   resumeLessonId,
+  type LessonProgressEntry,
   type LessonProgressMap,
 } from "@/lib/lesson-progress";
 
@@ -115,5 +121,55 @@ describe("resumeLessonId", () => {
 
   it("レッスンが無ければ null", () => {
     expect(resumeLessonId({ ...course, sections: [] }, {})).toBeNull();
+  });
+});
+
+describe("mergeEntries", () => {
+  it("完了は取り消されない (新しい未完了で古い完了を潰さない)", () => {
+    // ログイン直後、 サーバ進捗の取り込み前にレッスンを開いた瞬間の記録は
+    // サーバより新しい updatedAt を持つ。 丸ごと置き換えると完了が消える。
+    const server = { completed: true, lastPage: 5, updatedAt: "2026-08-01T00:00:00.000Z" };
+    const local = { completed: false, lastPage: 1, updatedAt: "2026-08-02T00:00:00.000Z" };
+    expect(mergeEntries(server, local)?.completed).toBe(true);
+  });
+
+  it("閲覧ページは和集合になる", () => {
+    const a = { completed: false, viewedPages: [1, 2], updatedAt: "2026-08-01T00:00:00.000Z" };
+    const b = { completed: false, viewedPages: [3, 1], updatedAt: "2026-08-02T00:00:00.000Z" };
+    expect(mergeEntries(a, b)?.viewedPages).toEqual([1, 2, 3]);
+  });
+
+  it("視聴秒数は最大値を採る (古い側が大きくても縮まない)", () => {
+    const a = { completed: false, watchedSec: 120, updatedAt: "2026-08-02T00:00:00.000Z" };
+    const b = { completed: false, watchedSec: 30, updatedAt: "2026-08-03T00:00:00.000Z" };
+    expect(mergeEntries(a, b)?.watchedSec).toBe(120);
+  });
+
+  it("最終ページは updatedAt が新しい側を採る (単調ではないため)", () => {
+    const older = { completed: false, lastPage: 2, updatedAt: "2026-08-01T00:00:00.000Z" };
+    const newer = { completed: false, lastPage: 7, updatedAt: "2026-08-05T00:00:00.000Z" };
+    expect(mergeEntries(older, newer)?.lastPage).toBe(7);
+    expect(mergeEntries(newer, older)?.lastPage).toBe(7);
+  });
+
+  it("片側だけならそのまま返す", () => {
+    const only: LessonProgressEntry = done();
+    expect(mergeEntries(undefined, only)).toBe(only);
+    expect(mergeEntries(only, undefined)).toBe(only);
+    expect(mergeEntries(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe("resolveLessonStatus / deriveCourseProgress", () => {
+  it("エントリだけあるレッスンは active (読みかけが残る)", () => {
+    const entry: LessonProgressEntry = {
+      completed: false,
+      updatedAt: "2026-08-01T00:00:00.000Z",
+    };
+    expect(resolveLessonStatus(lesson("a"), { a: entry })).toBe("active");
+  });
+
+  it("完了数から進捗率を出す", () => {
+    expect(deriveCourseProgress(course, { a: done() }).progress).toBe(25);
   });
 });

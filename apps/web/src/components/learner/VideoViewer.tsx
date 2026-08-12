@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
-import { useLessonProgress } from '@/hooks/useLessonProgress';
+import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
 import { flushNow } from '@/lib/lesson-progress';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +42,8 @@ const COMPLETION_THRESHOLD = 0.9;
 
 export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props) {
   const { entry, recordWatchTime, markComplete } = useLessonProgress(lessonId);
+  // サーバ進捗の取り込みが決着するまで再開位置は確定しない。
+  const ready = useProgressReady();
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -66,27 +68,38 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
     }
   }, [videoPath]);
 
+  // 前回視聴位置から再開する。 メタデータ読み込みとサーバ進捗の取り込みは
+  // どちらが先に終わるか決まっていないので、 両方揃った時点で 1 度だけ実行する。
+  const resumePlayback = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || resumedRef.current || !ready) return;
+    if (!Number.isFinite(v.duration) || v.duration <= 0) return;
+    resumedRef.current = true;
+    const dur = v.duration;
+    const resumeFrom = entry?.watchedSec ?? 0;
+    const tooNearEnd = resumeFrom >= dur - 5;
+    if (entry?.completed) {
+      v.currentTime = 0;
+    } else if (resumeFrom > 0 && !tooNearEnd) {
+      try {
+        v.currentTime = resumeFrom;
+      } catch {
+        // ignore (range request 失敗など)
+      }
+    }
+  }, [entry, ready]);
+
   const onLoadedMetadata = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
     if (Number.isFinite(v.duration) && v.duration > 0) setDuration(v.duration);
-    // 前回視聴位置から再開
-    if (!resumedRef.current) {
-      resumedRef.current = true;
-      const dur = v.duration;
-      const resumeFrom = entry?.watchedSec ?? 0;
-      const tooNearEnd = Number.isFinite(dur) && resumeFrom >= dur - 5;
-      if (entry?.completed) {
-        v.currentTime = 0;
-      } else if (resumeFrom > 0 && !tooNearEnd) {
-        try {
-          v.currentTime = resumeFrom;
-        } catch {
-          // ignore (range request 失敗など)
-        }
-      }
-    }
-  }, [entry]);
+    resumePlayback();
+  }, [resumePlayback]);
+
+  // メタデータが先に読み終わっていた場合は、 進捗が決着した時点で再開位置を当てる。
+  useEffect(() => {
+    resumePlayback();
+  }, [resumePlayback]);
 
   const flushSave = useCallback(
     (sec: number) => {

@@ -204,9 +204,19 @@ for (const p of [
   );
 }
 
-lines.push(
-  `insert into ${tbl("enrollments")} (id, tenant_id, user_id, course_id, assigned_by, due_at, required, status, enrolled_at, completed_at) values ('${SEED_ENROLLMENT}', 'ses', '${SEED_LEARNER}', '${webFundCourseId}', '${SEED_INSTRUCTOR}', null, 1, 'active', ${nowExpr()}, null) on conflict (user_id, course_id) do update set status = excluded.status, required = excluded.required;`,
-);
+// 教材コース (TypeScript 入門研修) にも登録しておく。 登録が無いと出題 API
+// (`/api/quiz/for-lesson`) も資料もアクセス不可になり、 seed だけでは検証できない。
+for (const [id, courseUuid] of [
+  [SEED_ENROLLMENT, webFundCourseId],
+  ...content.courses.map(
+    (c) =>
+      [`seed-enrollment-learner-${c.id}`, stableUuid(`course:ses:${c.id}`)] as const,
+  ),
+] as const) {
+  lines.push(
+    `insert into ${tbl("enrollments")} (id, tenant_id, user_id, course_id, assigned_by, due_at, required, status, enrolled_at, completed_at) values ('${id}', 'ses', '${SEED_LEARNER}', '${courseUuid}', '${SEED_INSTRUCTOR}', null, 1, 'active', ${nowExpr()}, null) on conflict (user_id, course_id) do update set status = excluded.status, required = excluded.required;`,
+  );
+}
 
 lines.push(
   `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, course_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${webFundLessonId}', 'S0-Ch00-01-print-hello', 'Web開発基礎 — HTML / CSS / JavaScript', '03. JavaScript 基礎', ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,

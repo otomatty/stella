@@ -6,8 +6,12 @@
  * - `pagehide` 時に未フラッシュ分を即時保存 (タブクローズで失われないように)
  * - 完了判定: slides は閲覧ページ集合 / 動画は視聴秒数 が 90% 以上で auto complete
  * - 一度 `completed: true` になったレッスンは自動では取り消されない
+ * - マージは単調 (完了は OR / 閲覧ページは和集合 / 視聴秒数は max)。 `updatedAt` の
+ *   新旧だけで丸ごと入れ替えると、 サーバ取り込み前のローカル更新が既存の進捗を
+ *   巻き戻して push してしまうため (`mergeEntries` のコメント参照)。
  */
 
+import { isBackendConfigured } from '@/lib/backend';
 import type { Course, Lesson, LessonStatus } from '@/data/types';
 
 const STORAGE_KEY = 'lms_lesson_progress';
@@ -61,10 +65,19 @@ function writeToStorage(map: LessonProgressMap): void {
 }
 
 /**
- * 2 つのエントリのうち updatedAt が新しい方を返す。
- * updatedAt がない / パースできない場合は b (= 現タブの値) を優先。
+ * 2 つのエントリを 1 つにまとめる。
+ *
+ * 進捗の各項目は本質的に単調 (閲覧ページは増えるだけ / 視聴秒数は最大値 / 完了は
+ * 取り消されない) なので、 `updatedAt` が新しい方でレコードごと置き換えるのではなく
+ * **項目ごとに単調な側を採る**。 置き換えにすると、 サーバ取り込み (hydrate) が
+ * 終わる前に走ったローカル更新 (レッスンを開いた瞬間の 1 ページ目記録など) が
+ * より新しい `updatedAt` を持ってしまい、 サーバ側の完了フラグや閲覧ページを
+ * 巻き戻したうえに、 その巻き戻しを push してしまう。
+ *
+ * `lastPage` だけは「最後に見た位置」で単調ではないので `updatedAt` が新しい方を採る。
+ * updatedAt がない / パースできない場合は b (= 現タブの値) を新しい側とみなす。
  */
-function pickNewer(
+export function mergeEntries(
   a: LessonProgressEntry | undefined,
   b: LessonProgressEntry | undefined,
 ): LessonProgressEntry | undefined {
@@ -72,25 +85,41 @@ function pickNewer(
   if (!b) return a;
   const ta = Date.parse(a.updatedAt);
   const tb = Date.parse(b.updatedAt);
-  if (!Number.isFinite(ta) && !Number.isFinite(tb)) return b;
-  if (!Number.isFinite(ta)) return b;
-  if (!Number.isFinite(tb)) return a;
-  return tb >= ta ? b : a;
+  const newer = !Number.isFinite(tb) || !Number.isFinite(ta)
+    ? Number.isFinite(ta) ? a : b
+    : tb >= ta
+      ? b
+      : a;
+  const viewed = new Set<number>([...(a.viewedPages ?? []), ...(b.viewedPages ?? [])]);
+  const watched = Math.max(a.watchedSec ?? 0, b.watchedSec ?? 0);
+  return {
+    completed: a.completed || b.completed,
+    lastPage: newer.lastPage ?? a.lastPage ?? b.lastPage,
+    viewedPages: viewed.size > 0 ? Array.from(viewed).sort((x, y) => x - y) : undefined,
+    watchedSec: watched > 0 ? watched : undefined,
+    updatedAt: newer.updatedAt,
+  };
+}
+
+/** 2 つの進捗マップを `mergeEntries` で束ねる。 */
+function mergeMaps(
+  a: LessonProgressMap,
+  b: LessonProgressMap,
+): LessonProgressMap {
+  const merged: LessonProgressMap = {};
+  for (const k of new Set<string>([...Object.keys(a), ...Object.keys(b)])) {
+    const picked = mergeEntries(a[k], b[k]);
+    if (picked) merged[k] = picked;
+  }
+  return merged;
 }
 
 /**
  * 別タブが先に書き込んだ進捗を踏み潰さないよう、 書き込み直前に
- * localStorage の最新値を再読込し、 updatedAt が新しい方を採用してマージする。
+ * localStorage の最新値を再読込してマージする。
  */
 function mergeAndWrite(): void {
-  const fresh = readFromStorage();
-  const keys = new Set<string>([...Object.keys(fresh), ...Object.keys(cache)]);
-  const merged: LessonProgressMap = {};
-  for (const k of keys) {
-    const picked = pickNewer(fresh[k], cache[k]);
-    if (picked) merged[k] = picked;
-  }
-  cache = merged;
+  cache = mergeMaps(readFromStorage(), cache);
   writeToStorage(cache);
 }
 
@@ -121,6 +150,39 @@ const OWNER_KEY = 'lms_lesson_progress_owner';
 let identity: SyncIdentity | null = null;
 const remoteDirty = new Set<string>();
 let remoteFlush: ReturnType<typeof setTimeout> | null = null;
+/**
+ * サーバ進捗の取り込みが決着したか (成功・失敗どちらでも true)。
+ *
+ * 「続きから」の復元位置 (`lastPage` / `watchedSec`) は、 これが true になるまで
+ * 確定できない。 バックエンド未設定ならサーバ進捗自体が無いので常に確定済み。
+ * 設定済みでログイン前は `configureRemoteSync(null)` が呼ばれた時点で確定する。
+ */
+let hydrated = !isBackendConfigured();
+
+/** サーバ進捗の取り込みが決着したか。 ビューアの復元位置の確定に使う。 */
+export function isProgressReady(): boolean {
+  return hydrated;
+}
+
+function setHydrated(next: boolean): void {
+  if (hydrated === next) return;
+  hydrated = next;
+  notify();
+}
+
+/** 進捗の中身 (updatedAt を除く) が同じか。 hydrate 後の push 要否判定に使う。 */
+function sameEntry(
+  a: LessonProgressEntry | undefined,
+  b: LessonProgressEntry | undefined,
+): boolean {
+  if (!a || !b) return false;
+  return (
+    a.completed === b.completed &&
+    a.lastPage === b.lastPage &&
+    (a.watchedSec ?? 0) === (b.watchedSec ?? 0) &&
+    (a.viewedPages ?? []).join(',') === (b.viewedPages ?? []).join(',')
+  );
+}
 
 function readOwner(): string | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
@@ -192,22 +254,15 @@ async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
     const remote = await fetchProgressForUser(target.userId);
     // 取得中に identity が切り替わっていたら破棄
     if (identity !== target) return;
-    const keys = new Set<string>([...Object.keys(remote), ...Object.keys(cache)]);
-    const merged: LessonProgressMap = {};
+    const merged = mergeMaps(remote, cache);
+    // マージ結果がサーバの行と食い違う uuid 進捗 (= ローカルにしか無い分がある) を
+    // push する。 マージは updatedAt を進めないことがあるので、 サーバ側 LWW
+    // (excluded.updated_at > 既存) に弾かれないよう push 分だけ今の時刻を打ち直す。
     const toPush: string[] = [];
-    for (const k of keys) {
-      const picked = pickNewer(remote[k], cache[k]);
-      if (picked) merged[k] = picked;
-      // ローカルが採用された (= サーバに無い / ローカルが厳密に新しい) uuid 進捗のみ
-      // push 対象にする。 updatedAt を比較し、 同一タイムスタンプの再 upsert を避ける。
-      if (
-        UUID_RE.test(k) &&
-        picked &&
-        picked === cache[k] &&
-        picked.updatedAt !== remote[k]?.updatedAt
-      ) {
-        toPush.push(k);
-      }
+    for (const [k, entry] of Object.entries(merged)) {
+      if (!UUID_RE.test(k) || sameEntry(entry, remote[k])) continue;
+      merged[k] = { ...entry, updatedAt: nowIso() };
+      toPush.push(k);
     }
     cache = merged;
     writeToStorage(cache);
@@ -218,6 +273,9 @@ async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
     }
   } catch (err) {
     console.error('[lesson-progress] remote hydrate failed', err);
+  } finally {
+    // 失敗しても「決着」とする。 待ち続けるとビューアが復元位置を出せない。
+    if (identity === target) setHydrated(true);
   }
 }
 
@@ -239,6 +297,8 @@ export function configureRemoteSync(next: SyncIdentity | null): void {
     remoteFlush = null;
   }
   remoteDirty.clear();
+  // 同期しないなら復元位置はローカルで確定済み。 同期するなら hydrate 待ち。
+  setHydrated(next === null);
   if (next) {
     // pagehide 時の即時 flush でチャンクフェッチ中断を避けるため、 同期有効化の
     // タイミングで API モジュールを投機的にプリロードしておく。
@@ -285,14 +345,7 @@ if (typeof window !== 'undefined') {
   // 別タブでの localStorage 更新を取り込み、 in-memory cache を同期
   window.addEventListener('storage', (e) => {
     if (e.key !== STORAGE_KEY) return;
-    const fresh = readFromStorage();
-    const keys = new Set<string>([...Object.keys(fresh), ...Object.keys(cache)]);
-    const merged: LessonProgressMap = {};
-    for (const k of keys) {
-      const picked = pickNewer(fresh[k], cache[k]);
-      if (picked) merged[k] = picked;
-    }
-    cache = merged;
+    cache = mergeMaps(readFromStorage(), cache);
     notify();
   });
 }
@@ -371,6 +424,19 @@ export function recordWatchTime(
     watchedSec: watched,
     updatedAt: nowIso(),
   });
+}
+
+/**
+ * 「開いた」ことだけを記録する (完了にはしない)。
+ *
+ * text / quiz レッスンは閲覧ページも視聴秒数も持たないため、 これが無いと完了ボタンを
+ * 押すまで進捗行が 1 行も作られず、 サイドバーでも「読みかけ」に見えない。
+ * 既にエントリがあれば何もしない (updatedAt を無駄に進めて LWW を乱さない)。
+ */
+export function markVisited(lessonId: string): LessonProgressEntry {
+  const prev = cache[lessonId];
+  if (prev) return prev;
+  return update(lessonId, { completed: false, updatedAt: nowIso() });
 }
 
 export function markComplete(lessonId: string): LessonProgressEntry {

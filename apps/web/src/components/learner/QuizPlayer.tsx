@@ -70,6 +70,8 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   const [answers, setAnswers] = useState<Record<string, Set<string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<QuizGradeResult | null>(null);
+  // 「もう一度挑戦する」を押したか。 押すまでは過去の受験結果を表示する。
+  const [retaking, setRetaking] = useState(false);
 
   const canLoad = isBackendConfigured() && UUID_RE.test(lessonId);
 
@@ -83,6 +85,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
     setQuiz(null);
     setResult(null);
     setAnswers({});
+    setRetaking(false);
     (async () => {
       try {
         const data = await fetchQuizForLearner(lessonId);
@@ -101,6 +104,12 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       cancelled = true;
     };
   }, [lessonId, canLoad]);
+
+  // 別端末で合格していた等でレッスン進捗が完了になっていない場合の取りこぼしを拾う。
+  // `markComplete` は冪等なので、 既に完了ならストアは動かない。
+  useEffect(() => {
+    if (quiz?.history.passed) onComplete?.();
+  }, [quiz?.history.passed, onComplete]);
 
   const toggleOption = useCallback(
     (question: LearnerQuizQuestion, optionId: string) => {
@@ -142,6 +151,21 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       }));
       const graded = await submitQuizAttempt(quiz.quiz.id, payload);
       setResult(graded);
+      // 残り受験回数の判定に使うので、 再取得せずローカルの履歴も進めておく。
+      setQuiz((prev) =>
+        prev
+          ? {
+              ...prev,
+              history: {
+                attempt_count: prev.history.attempt_count + 1,
+                passed: prev.history.passed || graded.passed,
+                last_score: graded.score,
+                last_max_score: graded.max_score,
+                last_attempt_at: new Date().toISOString(),
+              },
+            }
+          : prev,
+      );
       if (graded.passed) {
         toast.success(
           `合格しました！ ${graded.score} / ${graded.max_score} 点`,
@@ -165,9 +189,22 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   const handleRetry = () => {
     setResult(null);
     setAnswers({});
+    setRetaking(true);
     // 再挑戦時にも順序を入れ替え、 解答位置の暗記による不正を防ぐ。
     setQuiz((prev) => (prev ? applyShuffle(prev) : prev));
   };
+
+  // 受験済みで、 まだこの表示で解き直していないなら、 白紙の設問ではなく前回の結果を出す。
+  // (設問だけ出すと「合格済みなのにまた解かされる」ように見え、 進捗とも食い違う)
+  const history = quiz?.history;
+  const showPastAttempt =
+    !result && !retaking && history != null && history.attempt_count > 0;
+  const attemptsLeft =
+    quiz?.quiz.max_attempts != null && history != null
+      ? Math.max(quiz.quiz.max_attempts - history.attempt_count, 0)
+      : null;
+  const outOfAttempts =
+    attemptsLeft === 0 && history != null && !history.passed;
 
   if (loading) {
     return (
@@ -194,6 +231,56 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
     result && result.max_score > 0
       ? Math.round((result.score * 100) / result.max_score)
       : 0;
+
+  // 前回までの受験結果。 設問は伏せたまま、 結果と再挑戦の導線だけ出す。
+  if (showPastAttempt && history) {
+    const pastPercent =
+      history.last_max_score && history.last_max_score > 0
+        ? Math.round(((history.last_score ?? 0) * 100) / history.last_max_score)
+        : 0;
+    return (
+      <Card
+        className={cn(
+          history.passed
+            ? "border-success bg-success-soft"
+            : "border-danger bg-danger-soft",
+        )}
+      >
+        <CardContent className="flex items-center gap-3">
+          {history.passed ? (
+            <CheckCircle size={20} className="text-success" />
+          ) : (
+            <X size={20} className="text-danger" />
+          )}
+          <div className="flex-1">
+            <div
+              className={cn(
+                "text-[13px] font-semibold",
+                history.passed ? "text-success" : "text-danger",
+              )}
+            >
+              {history.passed ? "合格済みです" : "まだ合格していません"}
+            </div>
+            <div className="text-[11.5px] text-ink-3">
+              直近の結果: {history.last_score} / {history.last_max_score} (
+              {pastPercent}%) · 合格ライン {quiz.quiz.pass_score}% · 受験{" "}
+              {history.attempt_count} 回
+              {attemptsLeft !== null ? ` (残り ${attemptsLeft} 回)` : ""}
+            </div>
+          </div>
+          {outOfAttempts ? (
+            <span className="text-[11.5px] text-ink-3">
+              受験回数の上限に達しました
+            </span>
+          ) : (
+            <Button variant="accent" onClick={handleRetry}>
+              もう一度挑戦する
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div>
@@ -224,13 +311,20 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
               <div className="text-[11.5px] text-ink-3">
                 獲得点数: {result.score} / {result.max_score} ({scorePercent}%) ·
                 合格ライン {quiz.quiz.pass_score}%
+                {attemptsLeft !== null ? ` · 残り ${attemptsLeft} 回` : ''}
               </div>
             </div>
-            {!result.passed ? (
+            {/* 上限に達したあとも再挑戦ボタンを出すと、 押した先の解答フォームで
+                採点できず行き止まりになる。 上限時は理由を出してボタンを出さない。 */}
+            {result.passed ? null : outOfAttempts ? (
+              <span className="text-[11.5px] text-ink-3">
+                受験回数の上限に達しました
+              </span>
+            ) : (
               <Button variant="accent" onClick={handleRetry}>
                 もう一度挑戦する
               </Button>
-            ) : null}
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -343,14 +437,16 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       {!result ? (
         <div className="flex gap-2.5 mt-5 pt-4 border-t border-border items-center">
           <span className="text-[11.5px] text-ink-3">
-            {allAnswered
-              ? "すべて回答済みです"
-              : "すべての設問に回答してください"}
+            {outOfAttempts
+              ? "受験回数の上限に達しました"
+              : allAnswered
+                ? "すべて回答済みです"
+                : "すべての設問に回答してください"}
           </span>
           <div className="flex-1" />
           <Button
             variant="accent"
-            disabled={!allAnswered || submitting}
+            disabled={!allAnswered || submitting || outOfAttempts}
             onClick={handleSubmit}
           >
             {submitting ? (

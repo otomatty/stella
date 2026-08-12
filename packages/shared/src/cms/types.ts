@@ -237,9 +237,21 @@ export interface LearnerQuizConfig {
   max_attempts: number | null;
 }
 
+/** 受講者自身の受験履歴の要約。 再訪時に「合格済み」を復元するために返す。 */
+export interface LearnerQuizHistory {
+  attempt_count: number;
+  /** 一度でも合格していれば true。 */
+  passed: boolean;
+  /** 直近の受験結果 (未受験なら null)。 */
+  last_score: number | null;
+  last_max_score: number | null;
+  last_attempt_at: string | null;
+}
+
 export interface LearnerQuiz {
   quiz: LearnerQuizConfig;
   questions: LearnerQuizQuestion[];
+  history: LearnerQuizHistory;
 }
 
 /** submit_quiz_attempt RPC の採点結果。 */

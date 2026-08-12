@@ -38,7 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
-import { useLessonProgress } from '@/hooks/useLessonProgress';
+import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -72,9 +72,12 @@ const PDFJS_OPTIONS = {
 
 export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Props) {
   const { entry, recordPage, markComplete } = useLessonProgress(lessonId);
+  // サーバ進捗が決着するまで復元位置は確定しない (未決着なら 1 ページ目のまま待つ)。
+  const ready = useProgressReady();
 
-  const initialPage = entry?.lastPage ?? 1;
-  const [page, setPage] = useState<number>(initialPage);
+  const [page, setPage] = useState<number>(1);
+  // 復元が済むまでは記録しない (未決着のローカル進捗でサーバの last_page を潰さない)。
+  const [restored, setRestored] = useState(false);
   const [numPages, setNumPages] = useState<number | undefined>(totalPages);
   const [scale, setScale] = useState<number>(1);
   const [showThumbs, setShowThumbs] = useState(false);
@@ -108,21 +111,26 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
       setLoadError(null);
       // 初期ページが既に numPages を超えていれば最後のページに丸める
       setPage((p) => Math.min(Math.max(1, p), n));
-      // 初期ページを記録 (自動で viewedPages に加算される)
-      recordPage(Math.min(Math.max(1, initialPage), n), n);
     },
-    [recordPage, initialPage],
+    [],
   );
 
   const handleLoadError = useCallback((err: Error) => {
     setLoadError(err);
   }, []);
 
-  // ページが変わったら記録
+  // サーバ進捗が決着してから「続き」のページへ飛ぶ (MarkdownSlides と同じ理由)。
   useEffect(() => {
-    if (!numPages) return;
+    if (!ready || restored || !numPages) return;
+    setPage(Math.min(Math.max(entry?.lastPage ?? 1, 1), numPages));
+    setRestored(true);
+  }, [ready, restored, numPages, entry?.lastPage]);
+
+  // ページが変わったら記録 (復元が済むまでは書かない)
+  useEffect(() => {
+    if (!restored || !numPages) return;
     recordPage(page, numPages);
-  }, [page, numPages, recordPage]);
+  }, [restored, page, numPages, recordPage]);
 
   // 90% で markComplete を呼んでストアに反映し、 onComplete 通知 (どちらも 1 回だけ)
   useEffect(() => {
