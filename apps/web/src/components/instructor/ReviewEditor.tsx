@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import { toast } from 'sonner';
 import {
   ChevronLeft,
@@ -283,17 +289,13 @@ export const ReviewEditor = ({
         <aside className="border-l border-border bg-card flex flex-col max-h-[calc(100vh-57px-64px)] overflow-hidden">
           <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0 flex-1">
             <TabsList className="border-b border-border flex px-0 gap-0 m-0">
-              <TabTrigger value="ai">
-                <Sparkles size={13} />
+              <TabTrigger value="ai" icon={<Sparkles />} count={suggestions.length}>
                 AI 下書き
-                <Count>{suggestions.length}</Count>
               </TabTrigger>
-              <TabTrigger value="rubric">
-                <Star size={13} />
+              <TabTrigger value="rubric" icon={<Star />}>
                 ルーブリック
               </TabTrigger>
-              <TabTrigger value="comment">
-                <MessageCircle size={13} />
+              <TabTrigger value="comment" icon={<MessageCircle />}>
                 総評
               </TabTrigger>
             </TabsList>
@@ -476,22 +478,9 @@ export const ReviewEditor = ({
   );
 };
 
-const TabTrigger = ({ value, children }: { value: string; children: ReactNode }) => (
-  <TabsTrigger
-    value={value}
-    className={cn(
-      'flex-1 justify-center px-3.5 py-2.5 text-xs font-medium',
-      'data-[state=active]:border-brand',
-    )}
-  >
-    {children}
-  </TabsTrigger>
-);
-
-const Count = ({ children }: { children: ReactNode }) => (
-  <span className="text-[11px] px-1.5 rounded-lg bg-muted text-ink-2 group-data-[state=active]:bg-brand-soft group-data-[state=active]:text-brand-ink">
-    {children}
-  </span>
+/** 狭いサイドパネル用に等幅・小さめにするだけのレイアウトラッパー。配色は共通側。 */
+const TabTrigger = (props: ComponentProps<typeof TabsTrigger>) => (
+  <TabsTrigger {...props} className="flex-1 justify-center py-2.5 text-xs" />
 );
 
 function syntax(line: string): ReactNode {

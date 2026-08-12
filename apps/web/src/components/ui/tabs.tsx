@@ -19,23 +19,51 @@ export const TabsList = React.forwardRef<
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
+type TabsTriggerProps = React.ComponentPropsWithoutRef<
+  typeof TabsPrimitive.Trigger
+> & {
+  /** 先頭に置くアイコン。サイズ指定は不要（14px に揃う）。 */
+  icon?: React.ReactNode;
+  /** 末尾の件数バッジ。undefined ならバッジごと出さない（ロード中に使う）。 */
+  count?: number;
+};
+
 export const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
+  TabsTriggerProps
+>(({ className, icon, count, children, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-ink-3',
-      'border-b-2 border-transparent -mb-px',
-      'hover:text-foreground',
-      'data-[state=active]:text-foreground data-[state=active]:border-ink',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm',
+      'group relative inline-flex items-center gap-1.5 px-3.5 py-2',
+      'text-[13px] font-medium text-ink-3 rounded-t-sm transition-colors',
+      '[&_svg]:size-3.5 [&_svg]:shrink-0',
+      'hover:bg-sunken hover:text-ink',
+      'data-[state=active]:text-brand',
+      // アクティブ下線。list の border-b に重ねるので -bottom-px。
+      'after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full',
+      'after:bg-brand after:origin-left after:scale-x-0',
+      'after:transition-transform after:duration-200 data-[state=active]:after:scale-x-100',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       'disabled:pointer-events-none disabled:opacity-50',
       className,
     )}
     {...props}
-  />
+  >
+    {icon}
+    {children}
+    {count === undefined ? null : (
+      <span
+        className={cn(
+          'ml-0.5 rounded-full bg-muted px-1.5 text-[11px] font-medium text-ink-2',
+          'transition-colors',
+          'group-data-[state=active]:bg-brand-soft group-data-[state=active]:text-brand-ink',
+        )}
+      >
+        {count}
+      </span>
+    )}
+  </TabsPrimitive.Trigger>
 ));
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 

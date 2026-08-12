@@ -490,29 +490,21 @@ export const LessonPlayer = ({
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
-              <TabsTrigger value="content">
-                <FileText size={13} />
+              <TabsTrigger value="content" icon={<FileText />}>
                 教材
               </TabsTrigger>
-              <TabsTrigger value="resources">
-                <Folder size={13} />
+              {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
+              <TabsTrigger
+                value="resources"
+                icon={<Folder />}
+                count={materialsLoading ? undefined : materials.length}
+              >
                 資料
-                {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
-                {materialsLoading ? null : (
-                  <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">
-                    {materials.length}
-                  </span>
-                )}
               </TabsTrigger>
-              <TabsTrigger value="qa">
-                <MessageCircle size={13} />
+              <TabsTrigger value="qa" icon={<MessageCircle />} count={qaThreads.length}>
                 Q&A
-                <span className="text-[11px] bg-muted px-1.5 rounded-full ml-1">
-                  {qaThreads.length}
-                </span>
               </TabsTrigger>
-              <TabsTrigger value="notes">
-                <Edit size={13} />
+              <TabsTrigger value="notes" icon={<Edit />}>
                 ノート
               </TabsTrigger>
             </TabsList>
