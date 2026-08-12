@@ -67,6 +67,12 @@ describe("splitSlides", () => {
     expect(splitSlides(SAMPLE)[0].body).not.toContain("_class");
   });
 
+  it("_class は cls に取り出す (LMS の見た目の型に使う)", () => {
+    const slides = splitSlides(SAMPLE);
+    expect(slides[0].cls).toBe("lead");
+    expect(slides[1].cls).toBeNull();
+  });
+
   it("本文は前後の空白を落として返す", () => {
     const slides = splitSlides(SAMPLE);
     expect(slides[0].body.startsWith("# 1-1-2")).toBe(true);

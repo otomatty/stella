@@ -11,12 +11,16 @@ export interface Slide {
   body: string;
   /** 講師ノートの中身。無ければ null */
   note: string | null;
+  /** `<!-- _class: lead -->` の値。無ければ null（= 通常スライド） */
+  cls: string | null;
 }
 
 const FRONT_MATTER = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const NOTE = /<!--\s*ノート:\s*([\s\S]*?)\s*-->/;
 /** Marp 時代の名残のディレクティブコメント（`<!-- _class: lead -->` など） */
 const DIRECTIVE = /<!--\s*_[\s\S]*?-->/g;
+/** ディレクティブのうち、見た目の型を決める `_class`。build_pptx.py と同じ書式。 */
+const CLASS_DIRECTIVE = /<!--\s*_class:\s*(\w+)\s*-->/;
 
 /** front-matter を落として本文だけを返す。 */
 export function stripFrontMatter(source: string): string {
@@ -30,7 +34,12 @@ export function splitSlides(source: string): Slide[] {
     .split(/\n---\n/)
     .map((chunk) => {
       const noteMatch = NOTE.exec(chunk);
+      const classMatch = CLASS_DIRECTIVE.exec(chunk);
       const body = chunk.replace(NOTE, "").replace(DIRECTIVE, "").trim();
-      return { body, note: noteMatch ? noteMatch[1].trim() : null };
+      return {
+        body,
+        note: noteMatch ? noteMatch[1].trim() : null,
+        cls: classMatch ? classMatch[1] : null,
+      };
     });
 }

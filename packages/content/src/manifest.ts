@@ -114,8 +114,16 @@ export function buildContentManifest(root: string = defaultRoot()): {
         topicIds.push(fm.id);
         // 受講者に渡すのは講師ノートを外した本文だけ。区切りは `---` のまま残し、
         // 何枚に分けるかは描画側 (Task 10) が splitSlides で決める。
+        // `_class` は build_pptx.py と同じくスライドの見た目の型 (lead / summary) を
+        // 決めるので、コメントのまま本文に戻す。描画側 (MarkdownSlides) が型を読んだ
+        // あと本文から外す。react-markdown は生 HTML をエスケープして表示してしまうので、
+        // 外さずに渡すと受講者にこのコメントが見えてしまう点に注意。
         const body = splitSlides(source)
-          .map((s) => rewriteImagePaths(s.body, topicDir))
+          .map(
+            (s) =>
+              (s.cls ? `<!-- _class: ${s.cls} -->\n\n` : "") +
+              rewriteImagePaths(s.body, topicDir),
+          )
           .join("\n\n---\n\n");
         lessons.push({
           id: fm.id,

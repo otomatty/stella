@@ -10,10 +10,27 @@
  * manifest 側で講師ノート除去済み・ `\n\n---\n\n` 連結済みなので、 ここは割るだけで足りる。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import type { Options as RehypeHighlightOptions } from 'rehype-highlight';
+import bash from 'highlight.js/lib/languages/bash';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
+import typescript from 'highlight.js/lib/languages/typescript';
+// build_pptx.py の CODE_COLORS は GitHub Light をそのまま使っているので、
+// 同じテーマを当てれば pptx とコードの配色が一致する。
+import 'highlight.js/styles/github.css';
+import './slides-skin.css';
 import { Check, ChevronLeft, ChevronRight } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -41,6 +58,12 @@ function resolveImageSrc(src: string): string {
  */
 const MARP_SIZE_ALT = /^(?:[wh]:\d+%?\s*)+$/;
 
+/** alt の `w:950` を px 幅として読む。 無ければ build_pptx.py と同じ既定値 950。 */
+function altWidth(alt: string | undefined): number {
+  const m = alt ? /w:(\d+)/.exec(alt) : null;
+  return m ? Number(m[1]) : 950;
+}
+
 const markdownComponents: Components = {
   img: ({ src, alt, title }) => (
     <img
@@ -53,6 +76,12 @@ const markdownComponents: Components = {
   ),
 };
 
+/** slides.md で実際に使われている言語だけ登録する (common バンドル全部は要らない)。 */
+const highlightOptions = {
+  aliases: { typescript: ['ts'], javascript: ['js'], bash: ['sh'] },
+  languages: { typescript, javascript, bash, json },
+} satisfies RehypeHighlightOptions;
+
 /** レッスン本文 markdown の共通描画。 text レッスンとスライド 1 枚の両方で使う。 */
 export function LessonMarkdown({ children }: { children: string }) {
   return (
@@ -62,13 +91,142 @@ export function LessonMarkdown({ children }: { children: string }) {
   );
 }
 
+// --- ここから下は build_pptx.py と対になる寸法。 変える前に向こうを確認すること。
+const CANVAS_W = 1280; // SLIDE_W
+const BODY_AVAIL_H = 615; // SLIDE_H - 60 - 45 (build_content の avail)
+const SCALE_MAX = 1.45;
+const SCALE_MIN = 0.8;
+
+/**
+ * manifest が本文に残した `<!-- _class: lead -->`。 見た目の型を読んだら本文から外す。
+ *
+ * react-markdown は rehype-raw なしだと生 HTML を「無視」ではなく「エスケープ」する
+ * (`&lt;!-- _class: lead --&gt;` というテキストノードになる) ので、 渡す前に必ず落とす。
+ */
+const CLASS_DIRECTIVE = /<!--\s*_class:\s*(\w+)\s*-->/;
+
+/**
+ * スライド 1 枚。 pptx と同じ 1280x720 のキャンバスに描き、 親幅に合わせて縮小する。
+ *
+ * 本文の拡大率 (`--s`) は build_content() と同じく 1.45 から 0.05 刻みで下げて
+ * 収まる値を探す。 あちらは文字数からの推定だが、 ここは実測なのでより正確。
+ */
+function SlideCanvas({
+  source,
+  header,
+  pageNo,
+}: {
+  source: string;
+  header: string;
+  pageNo: number;
+}) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // 画像と Web フォントは後から載るので、 その都度倍率を測り直す。
+  const [reflowTick, setReflowTick] = useState(0);
+
+  const cls = CLASS_DIRECTIVE.exec(source)?.[1] ?? null;
+  const isLead = cls === 'lead';
+  const body = useMemo(() => source.replace(CLASS_DIRECTIVE, '').trimStart(), [source]);
+
+  const components = useMemo<Components>(
+    () => ({
+      ...markdownComponents,
+      img: ({ src, alt, title }) => (
+        <img
+          src={typeof src === 'string' ? resolveImageSrc(src) : undefined}
+          alt={alt && !MARP_SIZE_ALT.test(alt.trim()) ? alt : ''}
+          title={title}
+          // pptx と同じく alt の `w:` を px 幅として使い、 本文倍率に連動させる。
+          style={{ width: `calc(${altWidth(alt)}px * var(--s))` }}
+          onLoad={() => setReflowTick((t) => t + 1)}
+        />
+      ),
+    }),
+    [],
+  );
+
+  // キャンバス全体を親幅に合わせる。
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const slide = slideRef.current;
+    if (!stage || !slide) return;
+    const apply = () =>
+      slide.style.setProperty('--fit', String(stage.clientWidth / CANVAS_W));
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, []);
+
+  // Web フォントは index.html で `display=swap` 指定なので、 初回描画時は
+  // フォールバック字形で測ってしまうことがある。 差し替わると幅も行数も変わり、
+  // .sf-slide は overflow:hidden なので黙って切れる。 読み込み完了後に測り直す。
+  // (既に読み込み済みなら ready は即座に解決するので、 測り直しが 1 回増えるだけ)
+  useEffect(() => {
+    let alive = true;
+    void document.fonts?.ready.then(() => {
+      if (alive) setReflowTick((t) => t + 1);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 本文の拡大率。 lead は固定サイズなので測らない。
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el || isLead) return;
+    // コードは折り返さないので、 高さだけでなく横のはみ出しも見る。
+    // `pre code` も見るのは、 ハイライトのテーマが code 側をスクロール枠にすると
+    // はみ出しが pre に伝わらなくなるため (slides-skin.css で戻してはいる)。
+    const overflows = () =>
+      el.scrollHeight > BODY_AVAIL_H ||
+      Array.from(el.querySelectorAll('pre, pre code')).some(
+        (node) => node.scrollWidth > node.clientWidth,
+      );
+    let scale = SCALE_MAX;
+    el.style.setProperty('--s', String(scale));
+    while (scale > SCALE_MIN && overflows()) {
+      scale = Math.round((scale - 0.05) * 100) / 100;
+      el.style.setProperty('--s', String(scale));
+    }
+  }, [body, isLead, reflowTick]);
+
+  return (
+    <div ref={stageRef} className="sf-stage">
+      <div
+        ref={slideRef}
+        className={
+          'sf-slide' + (isLead ? ' is-lead' : cls === 'summary' ? ' is-summary' : '')
+        }
+      >
+        {header ? <div className="sf-header">{header}</div> : null}
+        <div ref={bodyRef} className="sf-body">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[[rehypeHighlight, highlightOptions]]}
+            components={components}
+          >
+            {body}
+          </ReactMarkdown>
+        </div>
+        <div className="sf-pageno">{pageNo}</div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   lessonId: string;
   markdown: string;
+  /** スライド左上に出す見出し (pptx の front-matter `header` に相当)。 */
+  header?: string;
   onComplete?: () => void;
 }
 
-export function MarkdownSlides({ lessonId, markdown, onComplete }: Props) {
+export function MarkdownSlides({ lessonId, markdown, header = '', onComplete }: Props) {
   const slides = useMemo(
     () =>
       markdown
@@ -151,13 +309,15 @@ export function MarkdownSlides({ lessonId, markdown, onComplete }: Props) {
       <div
         tabIndex={0}
         aria-label={`スライド ${page} / ${total}`}
-        className={
-          'prose-lms bg-card border border-border rounded-md px-6 py-5 min-h-[52vh] overflow-x-auto ' +
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60'
-        }
+        className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
         onKeyDown={onKeyDown}
       >
-        <LessonMarkdown>{slides[page - 1] ?? ''}</LessonMarkdown>
+        <SlideCanvas
+          key={page}
+          source={slides[page - 1] ?? ''}
+          header={header}
+          pageNo={page}
+        />
       </div>
 
       <div className="flex items-center gap-3 mt-4 flex-wrap">

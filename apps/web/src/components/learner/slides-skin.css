@@ -1,0 +1,273 @@
+/**
+ * スライドの見た目 (Sports Force スキン)。
+ *
+ * 正本は `packages/content/scripts/build_pptx.py` — pptx と同じ 1280x720px の
+ * キャンバス・同じ配色・同じ寸法を CSS に写している。px 値を変える前に必ず
+ * build_pptx.py の該当箇所を確認すること (数値の出どころをコメントで示している)。
+ *
+ * `--s` は本文の拡大率。build_content() の倍率 (0.8〜1.45) に対応し、
+ * MarkdownSlides が実測してセットする。`--fit` はキャンバス全体を親幅に
+ * 合わせる倍率。
+ */
+
+.sf-stage {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #dddde2);
+  background: #fff;
+}
+
+.sf-slide {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+  transform: scale(var(--fit, 1));
+  background: #fff;
+  color: #33333a; /* TEXT */
+  font-family: "Noto Sans JP", sans-serif; /* JP_FONT */
+  overflow: hidden;
+}
+
+/* set_background(BG_SOFT) */
+.sf-slide.is-summary {
+  background: #f7f7f9;
+}
+
+/* build_lead: 全面 INK + 上端 10px のブランドグラデーション帯 */
+.sf-slide.is-lead {
+  background: #141418; /* LEAD_BG */
+}
+
+.sf-slide.is-lead::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(
+    90deg,
+    #0a33ff 0%,
+    #8330c7 34%,
+    #e62f9a 58%,
+    #ff2c61 78%,
+    #ff2e0d 100%
+  );
+}
+
+/* ---------------------------------------------------------- chrome */
+/* add_chrome(): ヘッダー x=PAD_X y=20 / ページ番号は右下 */
+
+.sf-header {
+  position: absolute;
+  left: 76px;
+  top: 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3.33px; /* spacing_pt=2.5 → 2.5pt */
+  color: #b7b7be; /* FAINT */
+}
+
+.sf-slide.is-lead .sf-header {
+  color: #73737b;
+}
+
+.sf-pageno {
+  position: absolute;
+  right: 40px;
+  top: 674px;
+  width: 100px;
+  text-align: right;
+  font-size: 18px;
+  font-weight: 700;
+  color: #8a8a93; /* MUTED */
+}
+
+/* ---------------------------------------------------------- content */
+/* build_content(): 左右 PAD_X=76, 上 y=60, 幅 CONTENT_W=1128 */
+
+.sf-body {
+  --s: 1; /* MarkdownSlides が実測して上書きする */
+  position: absolute;
+  left: 76px;
+  top: 60px;
+  width: 1128px;
+}
+
+.sf-body > :first-child {
+  margin-top: 0;
+}
+
+/* h1/h2 は同じ扱い。見出しの下に 72x4 のグラデーションバー */
+.sf-body h1,
+.sf-body h2 {
+  margin: 0 0 calc(28px * var(--s));
+  font-size: calc(32.5px * var(--s));
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0e0e10; /* INK */
+}
+
+.sf-body h1::after,
+.sf-body h2::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 4px;
+  border-radius: 2px;
+  margin-top: calc(10px * var(--s));
+  background: linear-gradient(
+    90deg,
+    #0a33ff 0%,
+    #8330c7 34%,
+    #e62f9a 58%,
+    #ff2c61 78%,
+    #ff2e0d 100%
+  );
+}
+
+.sf-body p,
+.sf-body ul,
+.sf-body ol {
+  margin: calc(6px * var(--s)) 0 calc(12px * var(--s));
+  font-size: calc(26px * var(--s));
+  line-height: 1.6;
+}
+
+.sf-body ul,
+.sf-body ol {
+  padding-left: calc(40px * var(--s));
+}
+
+.sf-body ul {
+  list-style: disc;
+}
+
+.sf-body ol {
+  list-style: decimal;
+}
+
+.sf-body li {
+  margin-bottom: calc(4px * var(--s));
+}
+
+/* set_bullet(color=PINK) */
+.sf-body li::marker {
+  color: #e62f9a;
+}
+
+/* fill_runs(): 本文中の ** は太字ではなくアクセント色で区別する */
+.sf-body strong {
+  font-weight: 700;
+  color: #e62f9a; /* PINK */
+}
+
+.sf-body h1 strong,
+.sf-body h2 strong,
+.sf-body th strong {
+  color: inherit;
+}
+
+/* fill_runs(): インラインコードは 0.85倍の等幅 + CODE_PINK */
+.sf-body :not(pre) > code {
+  font-family: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  font-size: 0.85em;
+  color: #b81e72; /* CODE_PINK */
+}
+
+/* render_block("code"): BG_SOFT の角丸カード。折り返さない (pptx と同じ) */
+.sf-body pre {
+  margin: calc(6px * var(--s)) 0 calc(12px * var(--s));
+  padding: calc(20px * var(--s)) calc(29px * var(--s));
+  background: #f7f7f9; /* BG_SOFT */
+  border: 1px solid #dddde2; /* BORDER */
+  border-radius: 16px;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.sf-body pre code {
+  font-family: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  font-size: calc(22px * var(--s));
+  line-height: 1.5;
+  color: #33333a;
+}
+
+/**
+ * highlight.js のテーマは `pre code.hljs { overflow-x: auto }` を当ててくるが、
+ * スライドは固定サイズのキャンバスなので中にスクロールバーを出したくない
+ * (pptx にはそんなものは無い)。 code 側をスクロール枠にしてしまうと
+ * `pre.scrollWidth` がはみ出しを報告しなくなり、 MarkdownSlides の倍率調整も
+ * 効かなくなるので、 はみ出しは pre に伝えて縮小で吸収する。
+ */
+.sf-body pre code.hljs {
+  overflow-x: visible;
+  padding: 0;
+  background: none;
+}
+
+/* render_block("img"): 中央寄せ。幅は alt の `w:` 指定 (既定 950px) */
+.sf-body img {
+  display: block;
+  margin: calc(6px * var(--s)) auto calc(16px * var(--s));
+  max-width: 100%;
+  height: auto;
+}
+
+/* render_block("table"): 見出し行は INK 地に白抜き中央寄せ */
+.sf-body table {
+  margin: calc(6px * var(--s)) auto calc(12px * var(--s));
+  border-collapse: collapse;
+  font-size: calc(24px * var(--s));
+  line-height: 1.4;
+}
+
+.sf-body th,
+.sf-body td {
+  border: 1px solid #dddde2; /* BORDER */
+  padding: calc(10px * var(--s)) calc(20px * var(--s));
+  vertical-align: middle;
+}
+
+.sf-body th {
+  background: #0e0e10; /* INK */
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------- lead */
+/* build_lead(): x=90 で縦センタリング。h1 は 44px 白、段落は大文字トラッキング */
+
+.sf-slide.is-lead .sf-body {
+  top: 0;
+  left: 90px;
+  width: 1100px;
+  height: 720px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sf-slide.is-lead .sf-body h1,
+.sf-slide.is-lead .sf-body h2 {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.sf-slide.is-lead .sf-body h1::after,
+.sf-slide.is-lead .sf-body h2::after {
+  content: none;
+}
+
+.sf-slide.is-lead .sf-body p {
+  margin: 36px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px; /* spacing_pt=3.0 */
+  text-transform: uppercase;
+  color: #9b9ba4; /* LEAD_SUB */
+}

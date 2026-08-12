@@ -517,6 +517,7 @@ export const LessonPlayer = ({
                   key={lessonObj.id}
                   lessonId={lessonObj.id}
                   markdown={lessonObj.markdown}
+                  header={course.title}
                   onComplete={handleMarkComplete}
                 />
               ) : isVideo || isSlides ? (
