@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
 import { TENANTS } from '@/data/seed-catalog';
@@ -69,6 +69,15 @@ import {
 
 type Stage = 'login' | 'tenant-select' | 'app';
 
+/**
+ * 直近に開いていた受講位置。 コース本体は肥大 / 陳腐化するので ID だけを保存し、
+ * コース一覧が届いた時点で currentCourse に解決し直す。
+ */
+interface LastLocation {
+  courseId: string;
+  lessonId: string | null;
+}
+
 interface PersistedState {
   stage?: Stage;
   role?: Role;
@@ -77,6 +86,7 @@ interface PersistedState {
   showAIBot?: boolean;
   reviewSubmissionId?: string | null;
   resultSubmissionId?: string | null;
+  lastLocation?: LastLocation | null;
 }
 
 const DEFAULTS = {
@@ -193,13 +203,23 @@ function MainApp() {
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
   const [page, setPage] = useState(() => loadSaved()?.page ?? 'dash');
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  const [lastLocation, setLastLocation] = useState<LastLocation | null>(
+    () => loadSaved()?.lastLocation ?? null,
+  );
   // 検索パレット (Issue #77) からのディープリンク。 通常のページ遷移では毎回クリアする。
   // `seq` は「同じコースを続けて選び直した」ことを子に伝えるための版番号。 これが無いと
   // CourseEditor を閉じた後に同じコースを再選択しても key が変わらず開き直せない。
+  // リロードでレッスン画面に戻る場合は、 保存しておいた受講位置を初期値にする
+  // (これが無いとコース先頭のレッスンが開いてしまう)。
   const [deepLinkLesson, setDeepLinkLesson] = useState<{
     id: string;
     seq: number;
-  } | null>(null);
+  } | null>(() => {
+    const saved = loadSaved();
+    return saved?.page === 'lesson' && saved.lastLocation?.lessonId
+      ? { id: saved.lastLocation.lessonId, seq: 0 }
+      : null;
+  });
   const [deepLinkCourse, setDeepLinkCourse] = useState<{
     id: string;
     seq: number;
@@ -284,6 +304,25 @@ function MainApp() {
     () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
     [rawCourses, progressMap],
   );
+  // リロード復帰: レッスン画面のときだけ保存 courseId を解決する。
+  // course-detail などでは走らせない (別コース詳細を開いたあとのリロードで
+  // lastLocation のコースに上書きされるのを防ぐ)。
+  useEffect(() => {
+    if (page !== 'lesson' || currentCourse || !lastLocation) return;
+    const found = courses.find((c) => c.id === lastLocation.courseId);
+    if (found) setCurrentCourse(found);
+  }, [courses, currentCourse, lastLocation, page]);
+
+  // currentCourse は選択時点のスナップショットなので、 進捗が更新された最新の同一コースへ
+  // 解決し直す (再開直後に進捗リングが 0% のまま固まらないように)。
+  const activeCourse = useMemo(
+    () =>
+      currentCourse
+        ? courses.find((c) => c.id === currentCourse.id) ?? currentCourse
+        : null,
+    [courses, currentCourse],
+  );
+
   const courseSource =
     effectiveRole === 'learner' ? enrolledCourses.source : browseCourses.source;
   const courseError =
@@ -341,6 +380,32 @@ function MainApp() {
     setPage(nextPage);
   };
 
+  /**
+   * レッスン画面を「指定のレッスンで」開く。 ダッシュボードの「続きから学習」・ シラバスの
+   * 行クリック・ 検索パレットの共通導線。 開いた位置は `lastLocation` に控え、 リロード後も
+   * ここへ戻れるようにする。
+   */
+  const openLesson = useCallback((course: Course, lessonId: string) => {
+    setCurrentCourse(course);
+    // 同じレッスンを選び直しても反映されるよう、 選択のたびに seq を進める。
+    setDeepLinkLesson((prev) => ({ id: lessonId, seq: (prev?.seq ?? 0) + 1 }));
+    setDeepLinkCourse(null);
+    setLastLocation({ courseId: course.id, lessonId });
+    setPage('lesson');
+  }, []);
+
+  /** レッスン画面内での切替 (サイドバー / 次のレッスン) を受講位置へ反映する。 */
+  const handleActiveLessonChange = useCallback(
+    (courseId: string, lessonId: string) => {
+      setLastLocation((prev) =>
+        prev?.courseId === courseId && prev.lessonId === lessonId
+          ? prev
+          : { courseId, lessonId },
+      );
+    },
+    [],
+  );
+
   /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はコース管理画面へ。 */
   const handleSearchSelect = (result: SearchResult) => {
     if (effectiveRole === 'learner') {
@@ -349,19 +414,14 @@ function MainApp() {
         toast.error('このコースは現在受講対象に含まれていません');
         return;
       }
-      setCurrentCourse(target);
       if (result.kind === 'lesson') {
-        // 同じレッスンを選び直しても反映されるよう、 選択のたびに seq を進める。
-        setDeepLinkLesson((prev) => ({
-          id: result.id,
-          seq: (prev?.seq ?? 0) + 1,
-        }));
-        setPage('lesson');
-      } else {
-        setDeepLinkLesson(null);
-        setPage('course-detail');
+        openLesson(target, result.id);
+        return;
       }
+      setCurrentCourse(target);
+      setDeepLinkLesson(null);
       setDeepLinkCourse(null);
+      setPage('course-detail');
       return;
     }
     // instructor / admin: コース管理画面へ。 admin は該当コースの編集画面を直接開き、
@@ -408,9 +468,19 @@ function MainApp() {
         showAIBot,
         reviewSubmissionId,
         resultSubmissionId,
+        lastLocation,
       }),
     );
-  }, [stage, role, tenant, page, showAIBot, reviewSubmissionId, resultSubmissionId]);
+  }, [
+    stage,
+    role,
+    tenant,
+    page,
+    showAIBot,
+    reviewSubmissionId,
+    resultSubmissionId,
+    lastLocation,
+  ]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
@@ -538,8 +608,8 @@ function MainApp() {
   const crumbs = [
     effectiveTenant.name,
     roleLabel(effectiveRole, profile?.role),
-    page === 'course-detail' && currentCourse
-      ? currentCourse.title
+    page === 'course-detail' && activeCourse
+      ? activeCourse.title
       : PAGE_LABELS[page] ?? page,
   ];
 
@@ -582,8 +652,10 @@ function MainApp() {
               courses,
               deepLinkLesson,
               deepLinkCourse,
-              currentCourse,
+              currentCourse: activeCourse,
               setCurrentCourse,
+              onOpenLesson: openLesson,
+              onActiveLessonChange: handleActiveLessonChange,
               onOpenAIBot: () => setAiOpen(true),
               setAIContext: setAiContext,
               tenantId: effectiveTenant.id,
@@ -657,6 +729,10 @@ interface RenderParams {
   courses: Course[];
   currentCourse: Course | null;
   setCurrentCourse: (c: Course) => void;
+  /** 指定のレッスンでレッスン画面を開く (「続きから」 / シラバスの行クリック)。 */
+  onOpenLesson: (course: Course, lessonId: string) => void;
+  /** レッスン画面内でのレッスン切替の通知 (リロード後の復帰位置に使う)。 */
+  onActiveLessonChange: (courseId: string, lessonId: string) => void;
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
   tenantId: Tenant['id'];
@@ -693,6 +769,8 @@ function renderPage({
   deepLinkCourse,
   currentCourse,
   setCurrentCourse,
+  onOpenLesson,
+  onActiveLessonChange,
   onOpenAIBot,
   setAIContext,
   tenantId,
@@ -722,6 +800,7 @@ function renderPage({
       return (
         <LearnerDashboard
           setPage={setPage}
+          onOpenLesson={onOpenLesson}
           courses={courses}
           announcementsHook={announcementsHook}
           coursesError={coursesError}
@@ -746,6 +825,7 @@ function renderPage({
         <CourseDetail
           course={target}
           setPage={setPage}
+          onOpenLesson={(lessonId) => onOpenLesson(target, lessonId)}
           onOpenSubmission={onOpenSubmission}
         />
       );
@@ -764,6 +844,7 @@ function renderPage({
           studentInitials={studentInitials}
           currentUserId={currentUserId}
           initialLesson={deepLinkLesson}
+          onActiveLessonChange={onActiveLessonChange}
         />
       );
     }

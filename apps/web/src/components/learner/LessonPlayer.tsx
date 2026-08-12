@@ -63,14 +63,19 @@ interface LessonPlayerProps {
   /** ログイン中ユーザの ID (Q&A の自己メッセージ判定に使う)。 未ログイン時は null。 */
   currentUserId: string | null;
   /**
-   * 検索パレットから指定されたレッスン (Issue #77)。 指定が無ければ従来どおり
-   * コース先頭のレッスンを開く。
+   * 外から指定された開始レッスン (「続きから」・ シラバスの行クリック・ 検索パレット・
+   * リロード復帰)。 指定が無ければ従来どおりコース先頭のレッスンを開く。
    *
    * `seq` は選択のたびに増える版番号。 「検索で A → サイドバーで B → 再び検索で A」
    * のように同じレッスンを選び直したときも、 id だけでは変化を検出できず反映
    * されないため、 版番号で「明示的に選ばれた」ことを伝える。
    */
   initialLesson?: { id: string; seq: number } | null;
+  /**
+   * 表示中のレッスンが変わったときの通知。 親はこれを受講位置として控え、
+   * リロード後に同じレッスンへ戻す。
+   */
+  onActiveLessonChange?: (courseId: string, lessonId: string) => void;
   /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
   onOpenAIBot?: () => void;
   /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
@@ -97,6 +102,7 @@ export const LessonPlayer = ({
   studentInitials,
   currentUserId,
   initialLesson = null,
+  onActiveLessonChange,
   onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
@@ -111,12 +117,16 @@ export const LessonPlayer = ({
   );
   const [tab, setTab] = useState('content');
 
-  // 適用済みの「検索での選択」を id:seq で覚えておく。 これによりサイドバー操作は
+  // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
+  //
+  // 初期値は null。 マウント時点の選択を「適用済み」にすると、 コース取得が終わる前に
+  // マウントしたとき (リロード復帰) に上の useState が対象を見つけられず、 その後
+  // コースが届いても再適用されずコース先頭に落ちてしまう。
   const selectionKey = initialLesson
     ? `${initialLesson.id}:${initialLesson.seq}`
     : null;
-  const appliedSelectionRef = useRef<string | null>(selectionKey);
+  const appliedSelectionRef = useRef<string | null>(null);
 
   const progressMap = useLessonProgressMap();
 
@@ -176,6 +186,11 @@ export const LessonPlayer = ({
       setActiveLesson(allLessons[0]!.id);
     }
   }, [allLessons, activeLesson, initialLesson, selectionKey]);
+
+  // 表示中のレッスンを親へ伝える (リロード後の復帰位置になる)。
+  useEffect(() => {
+    if (lessonObj) onActiveLessonChange?.(course.id, lessonObj.id);
+  }, [course.id, lessonObj, onActiveLessonChange]);
 
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;

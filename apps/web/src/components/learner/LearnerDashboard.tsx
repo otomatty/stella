@@ -18,22 +18,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { Course, Lesson } from '@/data/types';
+import type { Course } from '@/data/types';
 import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useMySubmissions } from '@/hooks/useMySubmissions';
 import { useStudyActivity } from '@/hooks/useStudyActivity';
 import { StudyChart } from '@/components/learner/StudyChart';
 import { listCertificatesForUser } from '@/lib/certificates-api';
-import {
-  resolveLessonStatus,
-  type LessonProgressMap,
-} from '@/lib/lesson-progress';
+import { findNextLesson, resolveLessonStatus } from '@/lib/lesson-progress';
 import { formatSubmittedAt } from '@/lib/submissions-store';
 import { cn } from '@/lib/utils';
 
 interface LearnerDashboardProps {
   setPage: (page: string) => void;
+  /** 指定のレッスンでレッスン画面を開く (「続きから学習」)。 */
+  onOpenLesson: (course: Course, lessonId: string) => void;
   courses: Course[];
   announcementsHook: UseAnnouncementsResult;
   coursesError: string | null;
@@ -58,33 +57,6 @@ function formatHoursMinutes(totalSec: number): string {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-interface NextLessonInfo {
-  lesson: Lesson;
-  /** 1-indexed セクション番号 */
-  sectionNumber: number;
-  /** コース内の通し番号 (1-indexed) */
-  lessonNumber: number;
-}
-
-/** コース内で最初の未完了レッスンを探す (進捗マップで実ステータスに解決してから)。 */
-function findNextLesson(
-  course: Course | undefined,
-  map: LessonProgressMap,
-): NextLessonInfo | null {
-  if (!course?.sections) return null;
-  let flat = 0;
-  for (let si = 0; si < course.sections.length; si++) {
-    for (const lesson of course.sections[si]!.lessons) {
-      flat += 1;
-      const status = resolveLessonStatus(lesson, map);
-      if (status !== 'done' && status !== 'locked') {
-        return { lesson, sectionNumber: si + 1, lessonNumber: flat };
-      }
-    }
-  }
-  return null;
-}
-
 const NEW_WINDOW_MS = 7 * 86_400_000;
 
 /** 週間学習チャートの表示日数 (受け入れ基準の「直近14日」)。 */
@@ -92,6 +64,7 @@ const STUDY_ACTIVITY_DAYS = 14;
 
 export const LearnerDashboard = ({
   setPage,
+  onOpenLesson,
   courses,
   announcementsHook,
   coursesError,
@@ -109,6 +82,11 @@ export const LearnerDashboard = ({
     () => findNextLesson(current, progressMap),
     [current, progressMap],
   );
+  /** 再開先が決まらない (受講コース無し / 全完了) ときはコース一覧へ逃がす。 */
+  const resume = () => {
+    if (current && nextLesson) onOpenLesson(current, nextLesson.lesson.id);
+    else setPage('courses');
+  };
   const {
     submissions,
     loading: submissionsLoading,
@@ -220,7 +198,7 @@ export const LearnerDashboard = ({
         actions={
           // 「学習スケジュール」は撤去した (Issue #77)。 スケジュール機能自体が存在せず、
           // 期限は右カラムの「期限が近い課題」で実データを出しているため。
-          <Button variant="accent" onClick={() => setPage('lesson')}>
+          <Button variant="accent" onClick={resume}>
             <Play size={14} />
             続きから学習
           </Button>
@@ -346,7 +324,7 @@ export const LearnerDashboard = ({
                       </div>
                     ) : null}
                   </div>
-                  <Button variant="primary" onClick={() => setPage('lesson')}>
+                  <Button variant="primary" onClick={resume}>
                     <Play size={13} />
                     続きから学習
                   </Button>

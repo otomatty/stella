@@ -405,6 +405,53 @@ export function resolveLessonStatus(
   return lesson.status;
 }
 
+export interface NextLessonInfo {
+  lesson: Lesson;
+  /** 1-indexed セクション番号 */
+  sectionNumber: number;
+  /** コース内の通し番号 (1-indexed) */
+  lessonNumber: number;
+}
+
+/**
+ * コース内で最初の未完了レッスンを探す (進捗マップで実ステータスに解決してから)。
+ * 「続きから」 の再開位置はここが唯一の判定元。 全完了 / レッスン無しなら null。
+ */
+export function findNextLesson(
+  course: Course | undefined,
+  map: LessonProgressMap,
+): NextLessonInfo | null {
+  if (!course?.sections) return null;
+  let flat = 0;
+  for (let si = 0; si < course.sections.length; si++) {
+    for (const lesson of course.sections[si]!.lessons) {
+      flat += 1;
+      const status = resolveLessonStatus(lesson, map);
+      if (status !== 'done' && status !== 'locked') {
+        return { lesson, sectionNumber: si + 1, lessonNumber: flat };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * 「続きから」 で開くレッスン ID。 未完了があればそこ、 残りが完了済みなら
+ * 最初の非 locked レッスンへ戻す (読み返しでボタンを死なせない / ロック行ガードを迂回しない)。
+ * すべて locked / レッスン無しなら null。
+ */
+export function resumeLessonId(
+  course: Course | undefined,
+  map: LessonProgressMap,
+): string | null {
+  const next = findNextLesson(course, map);
+  if (next) return next.lesson.id;
+  const lessons = course?.sections?.flatMap((s) => s.lessons) ?? [];
+  return (
+    lessons.find((l) => resolveLessonStatus(l, map) !== 'locked')?.id ?? null
+  );
+}
+
 /**
  * 進捗マップからコースの進捗率 (%) を導出して返す。
  * DB 由来コースは `mapCourseToUi` が progress=0 で返すため、 レッスン完了数から計算する。

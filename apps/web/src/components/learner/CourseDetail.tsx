@@ -29,7 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import type { Course, Lesson, LessonStatus, LessonType } from '@/data/types';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useMySubmissions } from '@/hooks/useMySubmissions';
-import { resolveLessonStatus } from '@/lib/lesson-progress';
+import { resolveLessonStatus, resumeLessonId } from '@/lib/lesson-progress';
 import { cn } from '@/lib/utils';
 
 type LucideIcon = ComponentType<LucideProps>;
@@ -61,12 +61,15 @@ export const LessonStatusIcon = ({ status }: { status: LessonStatus }) => {
 interface CourseDetailProps {
   course: Course;
   setPage: (page: string) => void;
+  /** 指定のレッスンでレッスン画面を開く。 */
+  onOpenLesson: (lessonId: string) => void;
   onOpenSubmission?: (submissionId: string) => void;
 }
 
 export const CourseDetail = ({
   course,
   setPage,
+  onOpenLesson,
   onOpenSubmission,
 }: CourseDetailProps) => {
   const sections = course.sections ?? [];
@@ -81,6 +84,8 @@ export const CourseDetail = ({
     (a, s) => a + s.lessons.filter((l) => statusOf(l) === 'done').length,
     0,
   );
+  // 「続きから」 の再開位置 (最初の未完了レッスン)。 レッスンが無いコースでは null。
+  const resumeId = resumeLessonId(course, progressMap);
   const reviewedForLesson = (lesson: Lesson) =>
     submissions.find((submission) => {
       if (submission.status === 'pending' || submission.courseTitle !== course.title) return false;
@@ -162,7 +167,7 @@ export const CourseDetail = ({
                         key={l.id}
                         lesson={l}
                         status={status}
-                        onClick={() => status !== 'locked' && setPage('lesson')}
+                        onClick={() => status !== 'locked' && onOpenLesson(l.id)}
                         reviewedSubmissionId={reviewedSubmission?.id}
                         onOpenSubmission={onOpenSubmission}
                       />
@@ -194,7 +199,12 @@ export const CourseDetail = ({
                 <span className="text-sm text-ink-3 font-normal">%</span>
               </div>
               <Progress value={course.progress} tone="brand" className="mt-2 mb-4" />
-              <Button variant="accent" size="full" onClick={() => setPage('lesson')}>
+              <Button
+                variant="accent"
+                size="full"
+                disabled={!resumeId}
+                onClick={() => resumeId && onOpenLesson(resumeId)}
+              >
                 <Play size={14} />
                 {course.progress === 0 ? '受講を開始' : '続きから'}
               </Button>
