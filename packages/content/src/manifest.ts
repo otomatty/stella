@@ -141,7 +141,7 @@ export function buildContentManifest(root: string = defaultRoot()): {
       const docFile = join(lessonPath, "doc.md");
       lessons.push({
         id: `doc-${key}`,
-        title: `${key} ドキュメント`,
+        title: `${key} まとめ`,
         type: "text",
         duration: "10分",
         status: "todo",

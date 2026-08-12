@@ -236,9 +236,11 @@
     padding: 1px 5px;
     border-radius: 3px;
   }
+  /* スライド (slides-skin.css) と同じ「淡いカード + github light」に揃える。 */
   .prose-lms pre {
-    background: oklch(22% 0.01 260);
-    color: oklch(95% 0.005 85);
+    background: var(--bg-sunken);
+    color: var(--ink);
+    border: 1px solid var(--line-2);
     padding: 14px 16px;
     border-radius: var(--radius);
     overflow-x: auto;
@@ -319,3 +321,10 @@
 
   .tabular-nums { font-variant-numeric: tabular-nums; }
 }
+
+/**
+ * 教材本文のコードブロックのシンタックスハイライト (highlight.js / github light)。
+ * テーマは `.hljs` に自前の白地を敷いてくるので、 pre のカードに合わせて剥がす。
+ * `@layer` の外に置くのは、 レイヤー付きの規則は素の CSS (github.css) に必ず負けるため。
+ */
+.prose-lms pre code.hljs { background: none; padding: 0; }

@@ -85,7 +85,11 @@ const highlightOptions = {
 /** レッスン本文 markdown の共通描画。 text レッスンとスライド 1 枚の両方で使う。 */
 export function LessonMarkdown({ children }: { children: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[[rehypeHighlight, highlightOptions]]}
+      components={markdownComponents}
+    >
       {children}
     </ReactMarkdown>
   );
