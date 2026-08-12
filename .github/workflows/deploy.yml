@@ -33,6 +33,8 @@ jobs:
         run: bun run lint
       - name: Typecheck
         run: bun run typecheck
+      - name: Content vocabulary check
+        run: bun run content:check
       - name: Test
         run: bun run test
       - name: Build

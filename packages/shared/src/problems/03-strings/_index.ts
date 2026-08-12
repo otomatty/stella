@@ -13,6 +13,8 @@ import { s1Ch03ReplaceSimple } from "./s1/10-replace-simple.js";
 import { s1Ch03MultilineTemplate } from "./s1/11-multiline-template.js";
 import { s1Ch03NumberInTemplate } from "./s1/12-number-in-template.js";
 import { s1Ch03SelfIntroCapstone } from "./s1/13-self-intro-capstone.js";
+import { s1Ch03OrderMessage } from "./s1/14-order-message.js";
+import { s1Ch03FixTemplateLiteral } from "./s1/15-fix-template-literal.js";
 import { s2Ch03SplitComma } from "./s2/01-split-comma.js";
 import { s2Ch03SplitJoin } from "./s2/02-split-join.js";
 import { s2Ch03ReplaceBasic } from "./s2/03-replace-basic.js";
@@ -25,6 +27,7 @@ import { s2Ch03IndexOfString } from "./s2/09-indexOf-string.js";
 import { s2Ch03PadStart } from "./s2/10-padStart.js";
 import { s2Ch03Repeat } from "./s2/11-repeat.js";
 import { s2Ch03CharAt } from "./s2/12-charAt.js";
+import { s2Ch03StringPlusNumber } from "./s2/13-string-plus-number.js";
 import { s3Ch03ReverseString } from "./s3/01-reverse-string.js";
 import { s3Ch03IsPalindrome } from "./s3/02-is-palindrome.js";
 import { s3Ch03CountChar } from "./s3/03-count-char.js";
@@ -56,6 +59,8 @@ export const ch03Strings: Assignment[] = [
   s1Ch03MultilineTemplate,
   s1Ch03NumberInTemplate,
   s1Ch03SelfIntroCapstone,
+  s1Ch03OrderMessage,
+  s1Ch03FixTemplateLiteral,
   s2Ch03SplitComma,
   s2Ch03SplitJoin,
   s2Ch03ReplaceBasic,
@@ -68,6 +73,7 @@ export const ch03Strings: Assignment[] = [
   s2Ch03PadStart,
   s2Ch03Repeat,
   s2Ch03CharAt,
+  s2Ch03StringPlusNumber,
   s3Ch03ReverseString,
   s3Ch03IsPalindrome,
   s3Ch03CountChar,

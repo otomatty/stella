@@ -1,5 +1,11 @@
 import type { Assignment } from "../../types.js";
 
+import { s1Ch05MemberRank } from "./s1/01-member-rank.js";
+import { s1Ch05PaymentLabel } from "./s1/02-payment-label.js";
+import { s1Ch05TruthyFalsySix } from "./s1/03-truthy-falsy-six.js";
+import { s1Ch05NoteDefaultValue } from "./s1/04-note-default-value.js";
+import { s1Ch05PaymentMethodSwitch } from "./s1/05-payment-method-switch.js";
+import { s1Ch05FixMissingBreak } from "./s1/06-fix-missing-break.js";
 import { s2Ch05IfPositive } from "./s2/01-if-positive.js";
 import { s2Ch05IfElseEvenOdd } from "./s2/02-if-else-even-odd.js";
 import { s2Ch05ElseIfGrade } from "./s2/03-else-if-grade.js";
@@ -15,6 +21,9 @@ import { s2Ch05TernaryChain } from "./s2/12-ternary-chain.js";
 import { s2Ch05RangeCheck } from "./s2/13-range-check.js";
 import { s2Ch05DefaultFallback } from "./s2/14-default-fallback.js";
 import { s2Ch05SwitchDefault } from "./s2/15-switch-default.js";
+import { s2Ch05FixElseIfOrder } from "./s2/16-fix-else-if-order.js";
+import { s2Ch05NarrowCouponCode } from "./s2/17-narrow-coupon-code.js";
+import { s2Ch05RangeNeedsIf } from "./s2/18-range-needs-if.js";
 import { s3Ch05ClassifyNumber } from "./s3/01-classify-number.js";
 import { s3Ch05DayKind } from "./s3/02-day-kind.js";
 import { s3Ch05CategorizeAge } from "./s3/03-categorize-age.js";
@@ -30,6 +39,12 @@ import { s5Ch05ShippingFeePriority } from "./s5/02-shipping-fee-priority.js";
 import { s5Ch05PermissionMatrixCapstone } from "./s5/03-permission-matrix-capstone.js";
 
 export const ch05Conditionals: Assignment[] = [
+  s1Ch05MemberRank,
+  s1Ch05PaymentLabel,
+  s1Ch05TruthyFalsySix,
+  s1Ch05NoteDefaultValue,
+  s1Ch05PaymentMethodSwitch,
+  s1Ch05FixMissingBreak,
   s2Ch05IfPositive,
   s2Ch05IfElseEvenOdd,
   s2Ch05ElseIfGrade,
@@ -45,6 +60,9 @@ export const ch05Conditionals: Assignment[] = [
   s2Ch05RangeCheck,
   s2Ch05DefaultFallback,
   s2Ch05SwitchDefault,
+  s2Ch05FixElseIfOrder,
+  s2Ch05NarrowCouponCode,
+  s2Ch05RangeNeedsIf,
   s3Ch05ClassifyNumber,
   s3Ch05DayKind,
   s3Ch05CategorizeAge,

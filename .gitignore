@@ -13,6 +13,12 @@ apps/web/public/sqljs/
 # Generated at build time from pdfjs-dist (cmaps + standard_fonts)
 apps/web/public/pdfjs/
 
+# 教材ビルド生成物（.svg は正本なのでコミットする）
+packages/content/modules/**/slides.pptx
+packages/content/modules/**/*.diagram.png
+packages/content/dist/
+packages/content/**/__pycache__/
+
 # Cloudflare Workers / Pages
 .wrangler
 apps/api/.dev.vars

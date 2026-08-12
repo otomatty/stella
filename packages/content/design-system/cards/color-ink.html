@@ -1,0 +1,29 @@
+<!-- @dsCard group="Colors" viewport="700x140" name="Ink Scale" subtitle="Near-black to hairline — the monochrome base" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-latin); background: var(--white); }
+  .row { display: flex; gap: 0; padding: 20px; }
+  .cell { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .sw { height: 52px; }
+  .cell:first-child .sw { border-radius: 8px 0 0 8px; }
+  .cell:last-child .sw { border-radius: 0 8px 8px 0; }
+  .name { font-size: 10px; font-weight: 600; color: var(--ink-500); padding-left: 2px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="cell"><div class="sw" style="background:#0E0E10"></div><span class="name">900</span></div>
+    <div class="cell"><div class="sw" style="background:#33333A"></div><span class="name">700</span></div>
+    <div class="cell"><div class="sw" style="background:#5C5C66"></div><span class="name">500</span></div>
+    <div class="cell"><div class="sw" style="background:#8A8A93"></div><span class="name">400</span></div>
+    <div class="cell"><div class="sw" style="background:#B7B7BE"></div><span class="name">300</span></div>
+    <div class="cell"><div class="sw" style="background:#DDDDE2"></div><span class="name">200</span></div>
+    <div class="cell"><div class="sw" style="background:#ECECEF"></div><span class="name">100</span></div>
+    <div class="cell"><div class="sw" style="background:#F5F5F7;box-shadow:inset 0 0 0 1px #ECECEF"></div><span class="name">50</span></div>
+  </div>
+</body>
+</html>

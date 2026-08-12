@@ -7,6 +7,9 @@
 
 import { createHash } from "node:crypto";
 
+import { buildContentManifest } from "@falcon/content";
+import type { QuizQuestionSeed } from "@falcon/content";
+
 import {
   COACH_COURSES,
   SES_COURSES,
@@ -50,6 +53,8 @@ function nowExpr(): string {
   return isSqlite ? "cast(unixepoch('subsec') * 1000 as integer)" : "now()";
 }
 
+const tbl = (name: string) => (isSqlite ? name : `public.${name}`);
+
 /** 名前空間キーから安定した UUID 文字列を作る（再 seed で ID がずれないようにする）。 */
 function stableUuid(key: string): string {
   const h = createHash("sha1").update(key).digest();
@@ -63,6 +68,9 @@ function stableUuid(key: string): string {
 const courseIdMap = new Map<string, string>();
 const sectionIdMap = new Map<string, string>();
 const emittedAssignments = new Set<string>();
+
+/** 教材ファイル（packages/content/modules）から組み立てたコースと確認クイズ。 */
+const content = buildContentManifest();
 
 const lines: string[] = ["-- seed from fixtures (generated)"];
 if (!isSqlite) lines.push("begin;");
@@ -95,6 +103,13 @@ function emitCourse(tenantId: Tenant["id"], course: Course) {
     for (let j = 0; j < section.lessons.length; j++) {
       const lesson = section.lessons[j];
       emitLesson(tenantId, course.id, section.id, sectionUuid, j, lesson);
+      // 確認クイズは教材コースのレッスンにだけ紐づく。fixtures 側に同じ lesson.id が
+      // 現れても quiz を生やさないよう、教材コースかどうかで絞る（quizUuid は
+      // course / section を含まないため、絞らないと行が衝突する）。
+      const quizSeed = content.courses.includes(course)
+        ? content.quizzes.find((q) => q.lessonId === lesson.id)
+        : undefined;
+      if (quizSeed) emitQuiz(tenantId, course.id, section.id, quizSeed);
       if (lesson.assignmentId && !emittedAssignments.has(lesson.assignmentId)) {
         emittedAssignments.add(lesson.assignmentId);
         emitAssignment(tenantId, lesson.assignmentId);
@@ -130,7 +145,42 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
   );
 }
 
-for (const c of SES_COURSES) emitCourse("ses", c);
+/**
+ * quiz / quiz_questions / quiz_options を emit する。
+ * lesson と同じく stableUuid で ID を決めるので、seed を何度流しても同じ行になる。
+ * 設問・選択肢は差分マージせず delete → insert（教材ファイルが唯一の正本）。
+ */
+function emitQuiz(
+  tenantId: Tenant["id"],
+  courseId: string,
+  sectionId: string,
+  quiz: { lessonId: string; passScore: number; questions: QuizQuestionSeed[] },
+) {
+  const lessonUuid = stableUuid(`lesson:${tenantId}:${courseId}:${sectionId}:${quiz.lessonId}`);
+  const quizUuid = stableUuid(`quiz:${tenantId}:${quiz.lessonId}`);
+
+  lines.push(
+    `insert into ${tbl("quizzes")} (id, lesson_id, pass_score, time_limit_sec, shuffle_questions, shuffle_options, max_attempts${isSqlite ? ", created_at, updated_at" : ""}) values ('${quizUuid}', '${lessonUuid}', ${quiz.passScore}, null, ${isSqlite ? "0" : "false"}, ${isSqlite ? "0" : "false"}, null${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set pass_score = excluded.pass_score, updated_at = ${nowExpr()};`,
+    `delete from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}';`,
+  );
+
+  for (let i = 0; i < quiz.questions.length; i++) {
+    const q = quiz.questions[i];
+    const qUuid = stableUuid(`quiz-q:${tenantId}:${quiz.lessonId}:${i}`);
+    lines.push(
+      `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order"${isSqlite ? ", created_at, updated_at" : ""}) values ('${qUuid}', '${quizUuid}', 'single', ${strLit(q.prompt)}, ${strLit(q.explanation)}, 1, ${i}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""});`,
+    );
+    for (let j = 0; j < q.options.length; j++) {
+      const o = q.options[j];
+      const oUuid = stableUuid(`quiz-o:${tenantId}:${quiz.lessonId}:${i}:${j}`);
+      lines.push(
+        `insert into ${tbl("quiz_options")} (id, question_id, label, is_correct, "order") values ('${oUuid}', '${qUuid}', ${strLit(o.label)}, ${o.isCorrect ? (isSqlite ? "1" : "true") : isSqlite ? "0" : "false"}, ${j});`,
+      );
+    }
+  }
+}
+
+for (const c of [...SES_COURSES, ...content.courses]) emitCourse("ses", c);
 for (const c of COACH_COURSES) emitCourse("coach", c);
 
 // Minimal verification scenario (stable IDs for queue / list smoke checks)
@@ -141,7 +191,6 @@ const SEED_ENROLLMENT = "seed-enrollment-learner-web-fundamentals";
 const SEED_SUBMISSION = "seed-submission-pending-1";
 const webFundCourseId = stableUuid("course:ses:web-fundamentals");
 const webFundLessonId = stableUuid("lesson:ses:web-fundamentals:s3:l11a");
-const tbl = (name: string) => (isSqlite ? name : `public.${name}`);
 
 for (const p of [
   { id: SEED_ADMIN, role: "admin", name: "Seed Admin", initials: "SA", email: "seed-admin@example.local" },

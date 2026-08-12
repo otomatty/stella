@@ -25,6 +25,12 @@ import { s2Ch04Flat } from "./s2/10-flat.js";
 import { s2Ch04Fill } from "./s2/11-fill.js";
 import { s2Ch04AtNegative } from "./s2/12-at-negative.js";
 import { s2Ch04SumCapstone } from "./s2/13-sum-capstone.js";
+import { s2Ch04DeclareTypedArrays } from "./s2/14-declare-typed-arrays.js";
+import { s2Ch04FixMixedNumberArray } from "./s2/15-fix-mixed-number-array.js";
+import { s2Ch04SecondAndLast } from "./s2/16-second-and-last.js";
+import { s2Ch04UpdateAndPush } from "./s2/17-update-and-push.js";
+import { s2Ch04ForOfTotal } from "./s2/18-for-of-total.js";
+import { s2Ch04SumOverThreshold } from "./s2/19-sum-over-threshold.js";
 import { s3Ch04SumArray } from "./s3/01-sum-array.js";
 import { s3Ch04MaxValue } from "./s3/02-max-value.js";
 import { s3Ch04CountPositive } from "./s3/03-count-positive.js";
@@ -69,6 +75,12 @@ export const ch04Arrays: Assignment[] = [
   s2Ch04Fill,
   s2Ch04AtNegative,
   s2Ch04SumCapstone,
+  s2Ch04DeclareTypedArrays,
+  s2Ch04FixMixedNumberArray,
+  s2Ch04SecondAndLast,
+  s2Ch04UpdateAndPush,
+  s2Ch04ForOfTotal,
+  s2Ch04SumOverThreshold,
   s3Ch04SumArray,
   s3Ch04MaxValue,
   s3Ch04CountPositive,

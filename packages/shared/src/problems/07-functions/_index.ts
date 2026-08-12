@@ -16,6 +16,16 @@ import { s2Ch07HelperFunction } from "./s2/13-helper-function.js";
 import { s2Ch07ArrowBlock } from "./s2/14-arrow-block.js";
 import { s2Ch07FunctionLoopSum } from "./s2/15-function-loop-sum.js";
 import { s2Ch07GradingCapstone } from "./s2/16-grading-capstone.js";
+import { s2Ch07DescribeProduct } from "./s2/17-describe-product.js";
+import { s2Ch07StockLabel } from "./s2/18-stock-label.js";
+import { s2Ch07ArrowUpperLabel } from "./s2/19-arrow-upper-label.js";
+import { s2Ch07ConciseArrowPair } from "./s2/20-concise-arrow-pair.js";
+import { s2Ch07PriceLabelDefault } from "./s2/21-price-label-default.js";
+import { s2Ch07JoinNamesRest } from "./s2/22-join-names-rest.js";
+import { s2Ch07ShowProductVoid } from "./s2/23-show-product-void.js";
+import { s2Ch07FormatterType } from "./s2/24-formatter-type.js";
+import { s2Ch07DestructureProduct } from "./s2/25-destructure-product.js";
+import { s2Ch07LabelDestructuredParam } from "./s2/26-label-destructured-param.js";
 import { s3Ch07DefaultGreet } from "./s3/01-default-greet.js";
 import { s3Ch07MakeMultiplier } from "./s3/02-make-multiplier.js";
 import { s3Ch07ApplyTwice } from "./s3/03-apply-twice.js";
@@ -24,6 +34,11 @@ import { s3Ch07Clamp } from "./s3/05-clamp.js";
 import { s3Ch07CallNTimes } from "./s3/06-call-n-times.js";
 import { s3Ch07NegatePredicate } from "./s3/07-negate-predicate.js";
 import { s3Ch07Compose } from "./s3/08-compose.js";
+import { s3Ch07FixCalcDiscount } from "./s3/09-fix-calc-discount.js";
+import { s3Ch07FixUseBeforeDeclaration } from "./s3/10-fix-use-before-declaration.js";
+import { s3Ch07SpreadCallFix } from "./s3/11-spread-call-fix.js";
+import { s3Ch07ReturnTypeAnnotation } from "./s3/12-return-type-annotation.js";
+import { s3Ch07OptionsObjectSearch } from "./s3/13-options-object-search.js";
 import { s4Ch07Once } from "./s4/01-once.js";
 import { s4Ch07Memoize } from "./s4/02-memoize.js";
 import { s4Ch07Pipe } from "./s4/03-pipe.js";
@@ -50,6 +65,16 @@ export const ch07Functions: Assignment[] = [
   s2Ch07ArrowBlock,
   s2Ch07FunctionLoopSum,
   s2Ch07GradingCapstone,
+  s2Ch07DescribeProduct,
+  s2Ch07StockLabel,
+  s2Ch07ArrowUpperLabel,
+  s2Ch07ConciseArrowPair,
+  s2Ch07PriceLabelDefault,
+  s2Ch07JoinNamesRest,
+  s2Ch07ShowProductVoid,
+  s2Ch07FormatterType,
+  s2Ch07DestructureProduct,
+  s2Ch07LabelDestructuredParam,
   s3Ch07DefaultGreet,
   s3Ch07MakeMultiplier,
   s3Ch07ApplyTwice,
@@ -58,6 +83,11 @@ export const ch07Functions: Assignment[] = [
   s3Ch07CallNTimes,
   s3Ch07NegatePredicate,
   s3Ch07Compose,
+  s3Ch07FixCalcDiscount,
+  s3Ch07FixUseBeforeDeclaration,
+  s3Ch07SpreadCallFix,
+  s3Ch07ReturnTypeAnnotation,
+  s3Ch07OptionsObjectSearch,
   s4Ch07Once,
   s4Ch07Memoize,
   s4Ch07Pipe,

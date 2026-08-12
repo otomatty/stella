@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>配列とタプルの違い</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 144 1200 496" width="1200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- 見出し -->
+  <rect x="384" y="176" width="352" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="560" y="220" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">配列</text>
+  <text x="560" y="248" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#8A8A93">number[]</text>
+
+  <rect x="768" y="176" width="352" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="944" y="220" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">タプル</text>
+  <text x="944" y="248" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#8A8A93">[number, number]</text>
+
+  <!-- 行1: 要素数の決まり方(差なし) -->
+  <text x="352" y="344" text-anchor="end" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">要素の個数</text>
+  <rect x="384" y="296" width="352" height="88" rx="12"
+        fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="560" y="352" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">自由(同じ型なら何個でも)</text>
+  <rect x="768" y="296" width="352" height="88" rx="12"
+        fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="944" y="352" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">固定(位置ごとに型)</text>
+
+  <!-- 行2: [1, 2, 3] を代入する(差が出る行) -->
+  <text x="352" y="472" text-anchor="end" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">[1, 2, 3] を代入</text>
+  <rect x="384" y="416" width="352" height="104" rx="12"
+        fill="rgba(22,163,74,0.08)" stroke="#16A34A" stroke-width="2"/>
+  <text x="560" y="460" text-anchor="middle" font-size="24"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">[1, 2, 3]</text>
+  <text x="560" y="496" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#16A34A">できる</text>
+
+  <rect x="768" y="416" width="352" height="104" rx="12"
+        fill="rgba(229,52,43,0.08)" stroke="#E5342B" stroke-width="2"/>
+  <text x="944" y="460" text-anchor="middle" font-size="24"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">[1, 2, 3]</text>
+  <text x="944" y="496" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E5342B">2個までのはず → エラー</text>
+</svg>
+</body>
+</html>

@@ -1,6 +1,4 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import {
   ChevronLeft,
@@ -41,6 +39,7 @@ import { QuestionComposer } from '@/components/common/QuestionComposer';
 import type { QuestionWithReplies } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
+import { LessonMarkdown, MarkdownSlides } from './MarkdownSlides';
 import { QuizPlayer } from './QuizPlayer';
 import type { Tenant } from '@/data/types';
 
@@ -418,7 +417,8 @@ export const LessonPlayer = ({
           )
         ) : null}
 
-        {isSlides ? (
+        {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
+        {isSlides && !lessonObj.markdown ? (
           lessonObj.pdfPath ? (
             <Suspense fallback={<ViewerLoading />}>
               <SlidesViewer
@@ -512,6 +512,13 @@ export const LessonPlayer = ({
                 />
               ) : isText ? (
                 <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+              ) : isSlides && lessonObj.markdown ? (
+                <MarkdownSlides
+                  key={lessonObj.id}
+                  lessonId={lessonObj.id}
+                  markdown={lessonObj.markdown}
+                  onComplete={handleMarkComplete}
+                />
               ) : isVideo || isSlides ? (
                 <LessonOverview
                   lesson={lessonObj}
@@ -641,6 +648,8 @@ const LessonOverview = ({
 /**
  * text レッスンの本文。 CMS (lessons.markdown) の実データを描画する。
  * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
+ *
+ * 画像パスは R2 のオブジェクトキーで入っているので、 `LessonMarkdown` が公開 URL へ解決する。
  */
 const LessonReadable = ({
   lesson,
@@ -651,7 +660,7 @@ const LessonReadable = ({
 }) => (
   <div className="prose-lms">
     {lesson.markdown ? (
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.markdown}</ReactMarkdown>
+      <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
     ) : (
       <div className="py-10 text-center text-[12.5px] text-ink-3">
         <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">

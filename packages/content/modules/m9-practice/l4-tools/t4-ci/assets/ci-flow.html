@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>pushしたら自動でチェックが走る</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 136 1200 344" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <!-- push -> CI -->
+  <line x1="80" y1="288" x2="196" y2="288" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="140" y="272" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">push</text>
+
+  <!-- CI container: order matters, numbered 1-3 (本文のコード例と同じ順: tsc -> prettier -> eslint) -->
+  <rect x="200" y="168" width="500" height="240" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="232" y="216" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">CI(自動チェック)</text>
+
+  <text x="232" y="264" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">1  tsc</text>
+  <text x="232" y="304" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">2  prettier</text>
+  <text x="232" y="344" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">3  eslint</text>
+
+  <!-- CI -> outcomes (orthogonal routing) -->
+  <polyline points="700,264 748,264 748,232 780,232" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <polyline points="700,344 748,344 748,352 780,352" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- pass -->
+  <rect x="780" y="180" width="336" height="104" rx="12"
+        fill="rgba(22,163,74,0.08)" stroke="#16A34A" stroke-width="2"/>
+  <text x="948" y="228" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">すべて成功</text>
+  <text x="948" y="260" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#16A34A">マージできる</text>
+
+  <!-- fail -->
+  <rect x="780" y="304" width="336" height="104" rx="12"
+        fill="rgba(229,52,43,0.08)" stroke="#E5342B" stroke-width="2"/>
+  <text x="948" y="352" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">1つでも失敗</text>
+  <text x="948" y="384" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#E5342B">マージ不可</text>
+</svg>
+</body>
+</html>

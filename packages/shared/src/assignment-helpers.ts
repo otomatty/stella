@@ -40,6 +40,8 @@ function defaultEntryPathFor(lang: Language): string {
   switch (lang) {
     case "sql":
       return "query.sql";
+    case "typescript":
+      return "main.ts";
     case "javascript":
       return "main.js";
     default: {

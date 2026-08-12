@@ -1,0 +1,66 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Buttons, Badges & Cards" subtitle="Gradient pill actions, chips, surfaces" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-jp); background: var(--surface-sunk); padding: 22px; }
+  #root { display: flex; flex-direction: column; gap: 18px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .panel { background: #fff; border-radius: 14px; padding: 18px; box-shadow: var(--shadow-sm); }
+  .cap { font-family: var(--font-latin); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-400); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel">
+    const { Button, Badge, Card } = window.SportsForceTechBoostDesignSystem_381be8;
+    function Demo() {
+      return (
+        <>
+          <div className="panel">
+            <div className="cap">Button</div>
+            <div className="row">
+              <Button variant="primary" size="lg">お問い合わせはこちら</Button>
+              <Button variant="secondary">資料請求</Button>
+              <Button variant="outline">詳しく見る</Button>
+              <Button variant="ghost">キャンセル</Button>
+              <Button variant="primary" disabled>送信</Button>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="cap">Badge</div>
+            <div className="row">
+              <Badge variant="gradient">NEW</Badge>
+              <Badge tone="accent">DX支援</Badge>
+              <Badge variant="solid" tone="ink">PM型エンジニア</Badge>
+              <Badge variant="solid" tone="success">導入済み</Badge>
+              <Badge tone="warning">準備中</Badge>
+              <Badge variant="outline" tone="ink">競技人材</Badge>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="cap">Card</div>
+            <div className="row" style={{ alignItems: 'stretch' }}>
+              <Card accentBar interactive style={{ width: 220 }}>
+                <h3 style={{ margin: '4px 0 8px', fontSize: 17, fontWeight: 900 }}>遂行力の育成</h3>
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-muted)' }}>競技経験をIT/DXの現場で活かす。</p>
+              </Card>
+              <Card style={{ width: 220 }}>
+                <h3 style={{ margin: '4px 0 8px', fontSize: 17, fontWeight: 900 }}>伴走型サポート</h3>
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-muted)' }}>導入から定着まで一貫支援。</p>
+              </Card>
+            </div>
+          </div>
+        </>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+  </script>
+</body>
+</html>

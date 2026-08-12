@@ -1,0 +1,16 @@
+/* ============================================================
+   FONTS — Sports Force / Tech&Boost
+   SUBSTITUTION FLAG: the real site uses a heavy Japanese gothic
+   for headings and an italic Latin display for the "Sports Force"
+   wordmark. The exact licensed faces were not provided, so we use
+   the closest free matches from Google Fonts:
+     - JP gothic  -> Noto Sans JP (400/500/700/900)
+     - Latin UI   -> Inter is intentionally AVOIDED; we use
+                     "Figtree" for a friendlier geometric sans
+     - Wordmark   -> the live logo is an italic bold Helvetica-ish
+                     face; we ship the cropped logo PNG instead and
+                     do NOT recreate it in webfont form.
+   Replace these with the licensed fonts when available.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap');

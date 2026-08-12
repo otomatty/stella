@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 116 1200 524" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+
+  <!-- Level 1: ブラウザ全体 -->
+  <rect x="40" y="160" width="1120" height="440" rx="12"
+        fill="#FFFFFF" stroke="#DDDDE2" stroke-width="2"/>
+  <rect x="64" y="148" width="136" height="24" fill="#FFFFFF"/>
+  <text x="72" y="164" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="Figtree, sans-serif" fill="#8A8A93">BROWSER</text>
+
+  <!-- Level 2: 左 = コードを書くエリア -->
+  <rect x="80" y="240" width="496" height="320" rx="12"
+        fill="#F7F7F9" stroke="#5C5C66" stroke-width="2"/>
+  <rect x="104" y="228" width="100" height="24" fill="#F7F7F9"/>
+  <text x="112" y="244" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="Figtree, sans-serif" fill="#8A8A93">CODE</text>
+  <text x="328" y="400" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">コードを書く</text>
+  <text x="328" y="436" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">ここに入力する</text>
+
+  <!-- Level 2: 右 = 結果が出るエリア -->
+  <rect x="624" y="240" width="496" height="320" rx="12"
+        fill="#F7F7F9" stroke="#5C5C66" stroke-width="2"/>
+  <rect x="648" y="228" width="120" height="24" fill="#F7F7F9"/>
+  <text x="656" y="244" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="Figtree, sans-serif" fill="#8A8A93">RESULT</text>
+  <text x="872" y="400" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">結果が出る</text>
+  <text x="872" y="436" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">ここに表示される</text>
+</svg>

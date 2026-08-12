@@ -1,5 +1,7 @@
 import type { Assignment } from "../../types.js";
 
+import { s2Ch09BracketAllMap } from "./s2/01-bracket-all-map.js";
+import { s2Ch09FilterHighPrices } from "./s2/02-filter-high-prices.js";
 import { s3Ch09DoubleAll } from "./s3/01-double-all.js";
 import { s3Ch09OnlyPositive } from "./s3/02-only-positive.js";
 import { s3Ch09SumWithReduce } from "./s3/03-sum-with-reduce.js";
@@ -8,6 +10,7 @@ import { s3Ch09Adults } from "./s3/05-adults.js";
 import { s3Ch09CountTrue } from "./s3/06-count-true.js";
 import { s3Ch09FindByName } from "./s3/07-find-by-name.js";
 import { s3Ch09PipelineCapstone } from "./s3/08-pipeline-capstone.js";
+import { s3Ch09InStockLabels } from "./s3/09-in-stock-labels.js";
 import { s4Ch09MyMap } from "./s4/01-my-map.js";
 import { s4Ch09Partition } from "./s4/02-partition.js";
 import { s4Ch09GroupBy } from "./s4/03-group-by.js";
@@ -18,6 +21,8 @@ import { s5Ch09PipeReports } from "./s5/02-pipe-reports.js";
 import { s5Ch09MonthlySalesReportCapstone } from "./s5/03-monthly-sales-report-capstone.js";
 
 export const ch09HigherOrder: Assignment[] = [
+  s2Ch09BracketAllMap,
+  s2Ch09FilterHighPrices,
   s3Ch09DoubleAll,
   s3Ch09OnlyPositive,
   s3Ch09SumWithReduce,
@@ -26,6 +31,7 @@ export const ch09HigherOrder: Assignment[] = [
   s3Ch09CountTrue,
   s3Ch09FindByName,
   s3Ch09PipelineCapstone,
+  s3Ch09InStockLabels,
   s4Ch09MyMap,
   s4Ch09Partition,
   s4Ch09GroupBy,

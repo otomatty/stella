@@ -2,7 +2,7 @@
  * Lint の言語別ディスパッチャ。
  *
  * `getLinter(language)` は `Linter` 関数を返すファクトリ。 JS なら
- * `eslint-linter-browserify` ベースの実装、 SQL は空配列を返す no-op を返す。
+ * `eslint-linter-browserify` ベースの実装、 TypeScript / SQL は空配列を返す no-op を返す。
  * 空配列は `evaluate()` で「未適用 = 通過扱い」 になるため、 cleared 判定を阻害しない。
  */
 
@@ -26,6 +26,9 @@ export function getLinter(language: Language): Linter {
   switch (language) {
     case "javascript":
       return lintCode;
+    // TypeScript は JS 用 ESLint パーサが型注釈を読めず、 無意味な構文エラーだらけになるので
+    // SQL と同じく no-op。 空配列は `evaluate()` で「未適用 = 通過扱い」 になる。
+    case "typescript":
     case "sql":
       return NOOP_LINTER;
     default: {

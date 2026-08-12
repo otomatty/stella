@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 144 1200 336" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+
+  <!-- アクター -->
+  <rect x="80" y="176" width="280" height="56" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="220" y="212" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">呼び出し元</text>
+
+  <rect x="800" y="176" width="280" height="56" rx="8" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="940" y="212" text-anchor="middle" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">Product</text>
+
+  <!-- ライフライン -->
+  <line x1="220" y1="232" x2="220" y2="376" stroke="#B7B7BE" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <line x1="940" y1="232" x2="940" y2="376" stroke="#B7B7BE" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- アクティベーションバー -->
+  <rect x="936" y="256" width="8" height="96" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="1.5"/>
+
+  <!-- 1: 呼び出し元 -> Product(コンストラクタ呼び出し、accent) -->
+  <line x1="220" y1="256" x2="932" y2="256" stroke="#E62F9A" stroke-width="2" marker-end="url(#arrow-accent)"/>
+  <rect x="440" y="236" width="272" height="24" fill="#FFFFFF"/>
+  <text x="576" y="252" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">new Product("コーヒー", 480)</text>
+
+  <!-- 2: コンストラクタ本体(自己メッセージ) -->
+  <path d="M944 272 H992 V296 H944" fill="none" stroke="#5C5C66" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1032" y="316" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">プロパティに書き込む</text>
+
+  <!-- 3: Product -> 呼び出し元(戻り、破線) -->
+  <line x1="940" y1="340" x2="224" y2="340" stroke="#5C5C66" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+  <rect x="548" y="312" width="64" height="24" fill="#FFFFFF"/>
+  <text x="580" y="328" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">item</text>
+
+  <text x="600" y="416" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">コンストラクタはnewの瞬間に1回だけ実行される</text>
+</svg>

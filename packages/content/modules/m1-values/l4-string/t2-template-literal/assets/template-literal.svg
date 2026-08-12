@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 144 1200 416" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+
+  <line x1="360" y1="248" x2="360" y2="276" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="840" y1="248" x2="840" y2="276" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="600" y1="376" x2="600" y2="404" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="220" y="176" width="280" height="72" rx="12" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="360" y="220" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">userName = "田中"</text>
+
+  <rect x="700" y="176" width="280" height="72" rx="12" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="840" y="220" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">price = 300</text>
+
+  <rect x="140" y="280" width="920" height="96" rx="12" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="336" text-anchor="middle" font-size="24"
+        font-family="'Geist Mono', monospace" fill="#0E0E10"><tspan fill="#E62F9A">${userName}</tspan>さんの注文金額は<tspan fill="#E62F9A">${price}</tspan>円です</text>
+
+  <rect x="200" y="408" width="800" height="64" rx="12" fill="#F7F7F9" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="600" y="448" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">"田中さんの注文金額は300円です"</text>
+
+  <text x="600" y="516" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66"><tspan font-family="'Geist Mono', monospace" font-weight="400">${ }</tspan> が値の差し込み口です</text>
+</svg>

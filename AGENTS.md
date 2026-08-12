@@ -12,6 +12,7 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 | `@falcon/api` | `apps/api` | Hono API on Cloudflare Workers (port 8787) |
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |
+| `@falcon/content` | `packages/content` | 研修教材の正本（スライド / ドキュメント / 演習）。執筆ルールは `packages/content/CLAUDE.md` |
 
 ### Running services (default: real data)
 

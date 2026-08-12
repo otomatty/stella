@@ -141,4 +141,20 @@ export const chapters: Chapter[] = [
     defaultMdnPage: `${MDN_JS_BASE}/Guide/Using_promises`,
     mdnPageTitle: "プロミスの使用",
   },
+  {
+    id: "Ch17",
+    order: 17,
+    label: "Ch17. 型システム",
+    description: "型注釈、ユニオン型、型ガード、any / unknown / never。",
+    defaultMdnPage: "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+    mdnPageTitle: "Everyday Types (TypeScript Handbook)",
+  },
+  {
+    id: "Ch18",
+    order: 18,
+    label: "Ch18. ジェネリクス",
+    description: "型引数、keyof / typeof、ユーティリティ型。",
+    defaultMdnPage: "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+    mdnPageTitle: "Generics (TypeScript Handbook)",
+  },
 ];

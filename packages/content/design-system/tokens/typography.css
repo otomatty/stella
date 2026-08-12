@@ -1,0 +1,54 @@
+/* ============================================================
+   TYPOGRAPHY — Sports Force / Tech&Boost
+   Headings are HEAVY (700–900) Japanese gothic, tight leading.
+   Latin "eyebrow" labels are uppercase, wide-tracked, faint.
+   Body is comfortable Noto Sans JP at regular/medium.
+   ============================================================ */
+
+:root {
+  /* --- Families --- */
+  --font-jp:      'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  --font-latin:   'Figtree', 'Noto Sans JP', system-ui, sans-serif;
+  --font-display: 'Figtree', 'Noto Sans JP', sans-serif;  /* big English numerals / eyebrows */
+  --font-sans:    var(--font-jp);  /* default app font */
+
+  /* --- Weights --- */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium:  500; /* @kind font */
+  --fw-bold:    700; /* @kind font */
+  --fw-black:   900; /* @kind font */
+
+  /* --- Type scale (px) --- */
+  --fs-eyebrow: 13px;   /* uppercase Latin label */
+  --fs-caption: 12px;
+  --fs-sm:      14px;
+  --fs-body:    16px;
+  --fs-lead:    18px;
+  --fs-h6:      18px;
+  --fs-h5:      22px;
+  --fs-h4:      28px;
+  --fs-h3:      36px;
+  --fs-h2:      48px;
+  --fs-h1:      64px;
+  --fs-display: 88px;   /* hero JP headline */
+  --fs-stat:    72px;   /* big gradient numerals */
+
+  /* --- Line heights --- */
+  --lh-tight:   1.12; /* @kind font */
+  --lh-snug:    1.3;  /* @kind font */
+  --lh-normal:  1.6;  /* @kind font */
+  --lh-relaxed: 1.8;  /* @kind font */
+
+  /* --- Letter spacing --- */
+  --ls-eyebrow: 0.22em;  /* @kind font */ /* very wide for Latin eyebrows */
+  --ls-heading: 0.01em;  /* @kind font */
+  --ls-body:    0.02em;  /* @kind font */ /* JP reads better slightly open */
+
+  /* ====== SEMANTIC ALIASES ====== */
+  --text-display-font:   var(--font-jp);
+  --text-display-weight: var(--fw-black);
+  --text-heading-font:   var(--font-jp);
+  --text-heading-weight: var(--fw-bold);
+  --text-eyebrow-font:   var(--font-display);
+  --text-body-font:      var(--font-jp);
+}

@@ -1,5 +1,11 @@
 import type { Assignment } from "../../types.js";
 
+import { s2Ch08TaskObject } from "./s2/01-task-object.js";
+import { s2Ch08FixMissingProperty } from "./s2/02-fix-missing-property.js";
+import { s2Ch08FixTwoMistakes } from "./s2/03-fix-two-mistakes.js";
+import { s2Ch08EmployeeType } from "./s2/04-employee-type.js";
+import { s2Ch08EmployeeList } from "./s2/05-employee-list.js";
+import { s2Ch08OptionalDepartment } from "./s2/06-optional-department.js";
 import { s3Ch08GetName } from "./s3/01-get-name.js";
 import { s3Ch08WithProperty } from "./s3/02-with-property.js";
 import { s3Ch08CountProperties } from "./s3/03-count-properties.js";
@@ -18,6 +24,12 @@ import { s5Ch08UpdateCartItem } from "./s5/02-update-cart-item.js";
 import { s5Ch08TagContactsCapstone } from "./s5/03-tag-contacts-capstone.js";
 
 export const ch08Objects: Assignment[] = [
+  s2Ch08TaskObject,
+  s2Ch08FixMissingProperty,
+  s2Ch08FixTwoMistakes,
+  s2Ch08EmployeeType,
+  s2Ch08EmployeeList,
+  s2Ch08OptionalDepartment,
   s3Ch08GetName,
   s3Ch08WithProperty,
   s3Ch08CountProperties,
