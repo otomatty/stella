@@ -11,6 +11,7 @@
     "dev:api": "bun --filter=@falcon/api dev",
     "build": "bun --filter '@falcon/*' build",
     "preview": "bun --filter=@falcon/web preview",
+    "preview:build": "bun run --filter=@falcon/web build && bun run --filter=@falcon/web preview",
     "typecheck": "bun --filter '@falcon/*' typecheck",
     "test": "vitest run",
     "content:check": "bun run --filter=@falcon/content check:ci",

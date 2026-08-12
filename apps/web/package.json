@@ -34,6 +34,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@tanstack/react-router": "^1.170.26",
     "@uiw/react-codemirror": "^4.22.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
@@ -55,6 +56,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.6",
+    "@tanstack/router-plugin": "^1.168.30",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

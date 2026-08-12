@@ -25,3 +25,6 @@ apps/api/.dev.vars
 
 # Git worktrees (local)
 .worktrees
+
+# Vite ‚ª vite.config.ts “Ç‚İ‚İ‚Éì‚éˆêƒtƒ@ƒCƒ‹
+vite.config.ts.timestamp-*.mjs

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Loader2, XCircle } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { completeAuthFromCallbackHash } from '@/lib/auth';
+import { POST_LOGIN_REDIRECT_KEY } from '@/components/shell/AppShell';
 
 export function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -10,7 +11,13 @@ export function AuthCallback() {
   useEffect(() => {
     const result = completeAuthFromCallbackHash(window.location.hash);
     if (result.ok) {
-      window.location.replace('/');
+      // ログイン前に開いていた保護 URL (共有リンク等) へ復元する。
+      // 相対パスのみ許可 ('//' はプロトコル相対 URL になるため除外)。
+      const saved = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+      const dest =
+        saved && saved.startsWith('/') && !saved.startsWith('//') ? saved : '/';
+      window.location.replace(dest);
       return;
     }
     // 失敗時は即バウンスせず、 原因を提示して再ログイン / サポート導線を出す。
