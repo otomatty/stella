@@ -467,11 +467,6 @@ function MainApp() {
         }
       })();
     }
-    if (page === '__switch_tenant') {
-      setReviewSubmissionId(null);
-      setStage('tenant-select');
-      setPage('dash');
-    }
     if (page === '__ai') {
       setAiOpen(true);
       setPage('dash');
@@ -557,7 +552,6 @@ function MainApp() {
           role={effectiveRole}
           page={page}
           setPage={navigate}
-          tenant={effectiveTenant}
           user={effectiveUser}
           counts={sidebarCounts}
           profileRole={profile?.role}

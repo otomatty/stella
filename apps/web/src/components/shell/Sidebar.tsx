@@ -15,13 +15,12 @@ import {
   Shield,
   Settings,
   LogOut,
-  ChevronsUpDown,
   Code,
   GraduationCap,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import type { Role, Tenant, User } from '@/data/types';
+import type { Role, User } from '@/data/types';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
 
@@ -43,8 +42,7 @@ type NavId =
   | 'audit'
   | 'assignments'
   | 'settings'
-  | '__logout'
-  | '__switch_tenant';
+  | '__logout';
 
 interface NavItem {
   id: NavId;
@@ -95,7 +93,6 @@ interface SidebarProps {
   role: Role;
   page: string;
   setPage: (page: string) => void;
-  tenant: Tenant;
   user: User;
   /** ナビ ID ごとの実件数バッジ (添削待ち / Q&A 未返信 / 修了証 等)。 0 は非表示。 */
   counts?: Partial<Record<NavId, number>>;
@@ -107,7 +104,6 @@ export const Sidebar = ({
   role,
   page,
   setPage,
-  tenant,
   user,
   counts,
   profileRole,
@@ -150,21 +146,7 @@ export const Sidebar = ({
       onClick={() => setPage('__logout')}
     />
 
-    <button
-      type="button"
-      className="mt-auto p-2.5 border border-border rounded-md bg-background hover:border-border-strong transition-colors text-left"
-      onClick={() => setPage('__switch_tenant')}
-    >
-      <div className="text-[10.5px] text-ink-3 uppercase tracking-wider font-semibold">
-        現在のテナント
-      </div>
-      <div className="font-semibold text-[13px] mt-0.5 flex items-center gap-1.5">
-        <span>{tenant.name}</span>
-        <ChevronsUpDown size={13} className="ml-auto text-ink-4" />
-      </div>
-    </button>
-
-    <div className="flex items-center gap-2.5 px-1.5 pt-2.5 pb-0.5 mt-2">
+    <div className="mt-auto flex items-center gap-2.5 px-1.5 pt-2.5 pb-0.5 border-t border-border">
       <Avatar>
         <AvatarFallback>{user.initials}</AvatarFallback>
       </Avatar>
