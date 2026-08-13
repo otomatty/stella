@@ -1,0 +1,57 @@
+version: 2
+updates:
+  # Bun ワークスペース（ルートの bun.lock が正本）
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      radix:
+        patterns: ["@radix-ui/*"]
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - "@uiw/react-codemirror"
+      dnd-kit:
+        patterns: ["@dnd-kit/*"]
+      tanstack:
+        patterns: ["@tanstack/*"]
+      cloudflare:
+        patterns:
+          - "wrangler"
+          - "@cloudflare/*"
+      babel:
+        patterns: ["@babel/*", "@types/babel__*"]
+      typescript-eslint-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      # bun は groups.dependency-type 非対応。先にマッチしたグループ以外をまとめる。
+      other:
+        patterns: ["*"]
+
+  # GitHub Actions（actions/checkout, oven-sh/setup-bun など）
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns: ["*"]
