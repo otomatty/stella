@@ -7,9 +7,11 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） | lint → typecheck → test → build |
-| `.github/workflows/deploy.yml` | `main` への push | 検証ゲート → D1 migrate(remote) → deploy:api → deploy:web |
+| `.github/workflows/deploy.yml` | `main` への push | 検証ゲート → D1 migrate(remote) → D1 seed(remote) → deploy:api → deploy:web |
 
 `main` push の検証は `deploy.yml` 側で再実行するため、`ci.yml` は `main` push を起動しない。
+
+seed は `packages/content` を正本として D1 の教材コースを upsert し、GitHub から消えたトピック / セクションは prune する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS 由来でコース ID が安定 UUID と一致しないコース（例: `web-fundamentals`）のレッスンツリーは触らない。
 
 ## 必須ステータスチェック設定
 
@@ -48,12 +50,14 @@ Web が `*.pages.dev` から `*.workers.dev` に変わるため、Google Cloud C
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列（migrate → api → web）で、api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列（migrate → seed → api → web）で、api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
+- **seed 失敗**: 教材 seed SQL を修正して再 push（migrate は済んでいる。api/web は動かない）。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`
   - Web: `bun run deploy:web`
   - migrate: `bun run db:migrate:remote`
+  - seed: `bun run db:seed:remote:content`
   （ローカル実行時も `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` が必要）

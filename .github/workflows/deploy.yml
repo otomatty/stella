@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: verify → migrate → api → web
+    name: verify → migrate → seed → api → web
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -43,6 +43,9 @@ jobs:
       # --- デプロイ（直列。前段失敗で後段は動かない） ---
       - name: Apply D1 migrations (remote)
         run: bun run db:migrate:remote
+
+      - name: Seed D1 content (remote)
+        run: bun run db:seed:remote:content
 
       - name: Deploy API
         run: bun run deploy:api

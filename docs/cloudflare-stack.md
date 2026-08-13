@@ -23,7 +23,7 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 - **認証**: Google OAuth (`/api/auth/google`) + JWT (`AUTH_JWT_SECRET`)
 - **認可**: Hono アプリ層 (旧 RLS 相当)
 - **フロント**: Cloudflare Workers Static Assets (`falcon-web`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
-- **デプロイ運用**: 手動 `wrangler` ではなく GitHub Actions（`.github/workflows/deploy.yml`）。`main` マージで D1 migrate（remote）→ api → web を自動実行。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
+- **デプロイ運用**: 手動 `wrangler` ではなく GitHub Actions（`.github/workflows/deploy.yml`）。`main` マージで D1 migrate（remote）→ D1 seed（remote）→ api → web を自動実行。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
 ## ローカル開発
 

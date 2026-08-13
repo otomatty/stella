@@ -390,7 +390,7 @@ ON の間に招待 (ユーザー登録) されたユーザーには、 直後に
 
 **通常のデプロイは GitHub Actions が自動実行する**（手動 `wrangler` ではない）。
 `pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
-`main` への push は `deploy.yml` が同じ検証 → D1 migrate(remote) → API デプロイ → Web デプロイを直列実行する。
+`main` への push は `deploy.yml` が同じ検証 → D1 migrate(remote) → D1 seed(remote) → API デプロイ → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。
 GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
 Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要。
 詳細（ワークフロー一覧・必須チェック設定・OAuth Console 手順・失敗時の再デプロイ）は

@@ -24,7 +24,8 @@
     "db:migrate": "bun run --filter=@falcon/api db:migrate",
     "db:migrate:remote": "bun run --filter=@falcon/api db:migrate:remote",
     "db:seed": "bun run --filter=@falcon/api db:seed",
-    "db:seed:remote": "bun run --filter=@falcon/api db:seed:remote"
+    "db:seed:remote": "bun run --filter=@falcon/api db:seed:remote",
+    "db:seed:remote:content": "bun run --filter=@falcon/api db:seed:remote:content"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
