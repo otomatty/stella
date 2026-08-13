@@ -74,26 +74,6 @@ function loadSaved(): PersistedState | null {
   }
 }
 
-const PAGE_LABELS: Record<string, string> = {
-  dash: 'ダッシュボード',
-  courses: 'コース一覧',
-  'course-detail': 'コース詳細',
-  lesson: 'レッスン',
-  'submission-result': '添削結果',
-  cert: '修了証',
-  'review-queue': '添削待ち',
-  review: '添削エディタ',
-  gradebook: '成績台帳',
-  students: '担当受講者',
-  users: 'ユーザー管理',
-  enrollments: '受講登録',
-  orgs: '組織マスタ',
-  report: 'レポート',
-  audit: '監査ログ',
-  assignments: '課題管理',
-  settings: '設定',
-};
-
 /** 旧ページキー → URL。 パラメータ付きページ (lesson / review 等) はアダプタ内で解決する。 */
 const PATH_BY_PAGE: Record<string, string> = {
   dash: '/',
@@ -111,7 +91,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   settings: '/settings',
 };
 
-/** URL → 旧ページキー (Sidebar のアクティブ表示と crumbs 用)。 */
+/** URL → 旧ページキー (Sidebar のアクティブ表示用)。 */
 function pageKeyFromPath(path: string): string {
   if (path.startsWith('/courses/')) {
     return path.includes('/lessons/') ? 'lesson' : 'course-detail';
@@ -133,13 +113,6 @@ function firstLessonId(course: Course): string | null {
   return (
     course.sections?.flatMap((sec) => sec.lessons).find(Boolean)?.id ?? null
   );
-}
-
-function roleLabel(role: Role, profileRole?: ProfileRole): string {
-  if (profileRole === 'platform_admin') return 'プラットフォーム管理';
-  if (role === 'learner') return 'マイラーニング';
-  if (role === 'instructor') return '講師';
-  return 'テナント管理';
 }
 
 /** profiles.role を UI 用 Role にマップする。 student → learner。 platform_admin → admin シェル。 */
@@ -588,18 +561,6 @@ export function AppShell() {
     }
   }
 
-  const pathCourseId = courseIdFromPath(pathname);
-  const pathCourse = pathCourseId
-    ? courses.find((c) => c.id === pathCourseId) ?? null
-    : null;
-  const crumbs = [
-    effectiveTenant.name,
-    roleLabel(effectiveRole, profile?.role),
-    page === 'course-detail' && pathCourse
-      ? pathCourse.title
-      : PAGE_LABELS[page] ?? page,
-  ];
-
   const isFlush = page === 'lesson' || page === 'review';
 
   const shellValue: AppShellValue = {
@@ -641,7 +602,6 @@ export function AppShell() {
         <div className="min-w-0 flex flex-col">
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
           <Topbar
-            crumbs={crumbs}
             onSearchSelect={handleSearchSelect}
             notify={{
               role: effectiveRole,

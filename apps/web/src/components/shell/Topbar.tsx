@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Fragment, useEffect, useState } from 'react';
-import { ChevronRight, HelpCircle, Search } from '@/lib/icons';
+import { useEffect, useState } from 'react';
+import { HelpCircle, Search } from '@/lib/icons';
 import { NotificationCenter } from '@/components/shell/NotificationCenter';
 import { SearchPalette } from '@/components/shell/SearchPalette';
 import type { NotificationRow } from '@falcon/shared/cms/types';
@@ -8,7 +8,6 @@ import type { SearchResult } from '@falcon/shared/search/types';
 import type { Course, Role, Tenant } from '@/data/types';
 
 interface TopbarProps {
-  crumbs: ReactNode[];
   actions?: ReactNode;
   /** 検索パレットで選ばれたコース / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
@@ -35,7 +34,7 @@ function shortcutLabel(): string {
     : 'Ctrl K';
 }
 
-export const Topbar = ({ crumbs, actions, notify, onSearchSelect }: TopbarProps) => {
+export const Topbar = ({ actions, notify, onSearchSelect }: TopbarProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // ⌘K / Ctrl+K で検索パレットを開く。 入力欄にフォーカスがあっても効かせる
@@ -53,20 +52,6 @@ export const Topbar = ({ crumbs, actions, notify, onSearchSelect }: TopbarProps)
 
   return (
     <div className="flex items-center gap-3.5 px-7 py-3 bg-card border-b border-border sticky top-0 z-10 h-[57px]">
-      <div className="flex items-center gap-1.5 text-[13px] text-ink-3">
-        {crumbs.map((c, i) => (
-          <Fragment key={i}>
-            {i > 0 ? (
-              <span className="text-ink-4">
-                <ChevronRight size={12} />
-              </span>
-            ) : null}
-            <span className={i === crumbs.length - 1 ? 'text-foreground font-medium' : ''}>
-              {c}
-            </span>
-          </Fragment>
-        ))}
-      </div>
       <div className="flex-1" />
       <button
         type="button"
