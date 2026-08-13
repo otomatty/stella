@@ -359,21 +359,38 @@ def set_background(slide, color):
     slide.background.fill.fore_color.rgb = color
 
 
+def lead_h1_height(lines):
+    """leadのh1ブロックの高さ(px)。高さ見積もりと描画で共用する。
+
+    2行以上あるとき、1行目はトピック番号(小さいラベル)なので44px行より低い。
+    20px * line_spacing 1.3 + space_after 8pt = 26 + 10.67 ≒ 37px。
+    """
+    return (len(lines) - 1) * 62 + 37 if len(lines) > 1 else 62
+
+
 def build_lead(slide, blocks):
     strip = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, px(SLIDE_W), px(10))
     set_gradient(strip)
     # コンテンツ量からおおまかに垂直センタリングする
-    est = sum(len(b[1]) * 62 + 36 if b[0] == "h1" else 60 for b in blocks)
+    est = sum(lead_h1_height(b[1]) + 36 if b[0] == "h1" else 60 for b in blocks)
     y = max(120, (SLIDE_H - est) / 2 - 30)
     for block in blocks:
         if block[0] == "h1":
             lines = block[1]
-            tf = add_textbox(slide, 90, y, SLIDE_W - 180, len(lines) * 62)
+            tf = add_textbox(slide, 90, y, SLIDE_W - 180, lead_h1_height(lines))
             for j, line in enumerate(lines):
                 p = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
                 p.line_spacing = 1.3
-                fill_runs(p, [(plain_text(line), True, False)], 44, WHITE)
-            y += len(lines) * 62 + 36
+                # 1行目はトピック番号。タイトルと同じ44px白では見分けがつかないので、
+                # 小さいラベル(kicker)として扱う
+                if j == 0 and len(lines) > 1:
+                    p.space_after = Pt(8)
+                    run = p.add_run()
+                    run.text = plain_text(line)
+                    set_run(run, 20, LEAD_SUB, spacing_pt=3.0)
+                else:
+                    fill_runs(p, [(plain_text(line), True, False)], 44, WHITE)
+            y += lead_h1_height(lines) + 36
         elif block[0] == "p":
             tf = add_textbox(slide, 90, y, SLIDE_W - 180, 40)
             run = tf.paragraphs[0].add_run()

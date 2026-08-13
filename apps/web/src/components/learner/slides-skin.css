@@ -263,6 +263,18 @@
   content: none;
 }
 
+/**
+ * build_lead(): lead の 1 つ目の h1 はトピック番号 (`# 0-1-1`)。 タイトルと同じ
+ * 44px 白では見分けがつかないので、 小さいラベル (kicker) として扱う。
+ * 全 162 トピックが「番号 → タイトル」の 2 本の h1 で始まる前提。
+ */
+.sf-slide.is-lead .sf-body h1:first-child {
+  margin-bottom: 12px;
+  font-size: 20px;
+  letter-spacing: 4px; /* spacing_pt=3.0 */
+  color: #9b9ba4; /* LEAD_SUB */
+}
+
 .sf-slide.is-lead .sf-body p {
   margin: 36px 0 0;
   font-size: 22px;
