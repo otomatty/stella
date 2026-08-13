@@ -12,13 +12,11 @@ import {
   ClipboardList,
   FileText,
   Shield,
-  Settings,
-  LogOut,
   Code,
   GraduationCap,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserMenu } from '@/components/shell/UserMenu';
 import type { Role, User } from '@/data/types';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import { cn } from '@/lib/utils';
@@ -126,34 +124,13 @@ export const Sidebar = ({
       );
     })}
 
-    <div className="px-3 pt-3.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-ink-4">
-      一般
-    </div>
-    <SidebarLink
-      icon={Settings}
-      label="設定"
-      active={page === 'settings'}
-      onClick={() => setPage('settings')}
-    />
-    <SidebarLink
-      icon={LogOut}
-      label="ログアウト"
-      active={false}
-      onClick={() => setPage('__logout')}
-    />
-
-    <div className="mt-auto flex items-center gap-2.5 px-1.5 pt-2.5 pb-0.5 border-t border-border">
-      <Avatar>
-        {user.avatarUrl ? (
-          // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
-          <AvatarImage src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-        ) : null}
-        <AvatarFallback>{user.initials}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 text-xs">
-        <div className="font-medium text-foreground truncate">{user.name}</div>
-        <div className="text-[11px] text-ink-3 truncate">{user.email}</div>
-      </div>
+    {/* 「設定」「ログアウト」はユーザーメニュー (アバター) 側に集約している。 */}
+    <div className="mt-auto pt-2.5 border-t border-border">
+      <UserMenu
+        user={user}
+        onOpenSettings={() => setPage('settings')}
+        onLogout={() => setPage('__logout')}
+      />
     </div>
   </aside>
 );
