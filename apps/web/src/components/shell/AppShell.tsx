@@ -79,6 +79,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   dash: '/',
   courses: '/courses',
   cert: '/certificates',
+  'interview-prep': '/interview-prep',
   'review-queue': '/review-queue',
   gradebook: '/gradebook',
   students: '/students',

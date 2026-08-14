@@ -34,7 +34,10 @@
     "./study/activity": "./src/study/activity.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
     "./search/types": "./src/search/types.ts",
-    "./enrollment/access": "./src/enrollment/access.ts"
+    "./enrollment/access": "./src/enrollment/access.ts",
+    "./interview/types": "./src/interview/types.ts",
+    "./interview/questions": "./src/interview/questions.ts",
+    "./interview/filter": "./src/interview/filter.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

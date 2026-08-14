@@ -14,6 +14,7 @@ import {
   Shield,
   Code,
   GraduationCap,
+  MessageCircle,
 } from '@/lib/icons';
 import { Brand } from '@/components/common/Brand';
 import { UserMenu } from '@/components/shell/UserMenu';
@@ -28,6 +29,7 @@ type NavId =
   | 'courses'
   | 'lesson'
   | 'cert'
+  | 'interview-prep'
   | 'review-queue'
   | 'gradebook'
   | 'students'
@@ -52,6 +54,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'dash', label: 'ダッシュボード', icon: Home },
     { id: 'courses', label: 'コース一覧', icon: Book },
     { id: 'lesson', label: '現在のレッスン', icon: Play },
+    { id: 'interview-prep', label: '面談対策', icon: MessageCircle },
     { id: 'cert', label: '修了証', icon: Award },
   ],
   instructor: [
@@ -59,6 +62,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: 'review-queue', label: '添削待ち', icon: Edit },
     { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
     { id: 'students', label: '担当受講者', icon: Users },
+    { id: 'interview-prep', label: '面談対策', icon: MessageCircle },
     { id: 'courses', label: 'コース', icon: Book },
   ],
   admin: [

@@ -466,6 +466,68 @@ export const certificates = sqliteTable(
 );
 
 // ---------------------------------------------------------------
+// 面談対策 (Interview Prep)
+// ---------------------------------------------------------------
+
+/**
+ * 面談対策の想定質問バンク。 正本はリポジトリの
+ * `packages/shared/src/interview/questions.json` で、 seed が upsert/prune する
+ * (教材コースと同じ運用 — CMS 編集 UI は無い)。
+ */
+export const interviewQuestions = sqliteTable(
+  "interview_questions",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    no: integer("no").notNull(),
+    category: text("category").notNull(),
+    subcategory: text("subcategory").notNull(),
+    freq: text("freq", { enum: ["A", "B", "C"] }).notNull(),
+    question: text("question").notNull(),
+    time: text("time"),
+    keywords: text("keywords"),
+    intent: text("intent"),
+    answerTemplate: text("answer_template"),
+    deep1: text("deep1"),
+    deep2: text("deep2"),
+    deep3: text("deep3"),
+    ng: text("ng"),
+    criteria: text("criteria"),
+    isReverse: integer("is_reverse", { mode: "boolean" }).notNull().default(false),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantNoUnique: uniqueIndex("interview_questions_tenant_no_uq").on(t.tenantId, t.no),
+  }),
+);
+
+/** 受講者ごとの面談対策カテゴリ割当。 共通カテゴリは割当に含めず常時表示。 */
+export const interviewPrepAssignments = sqliteTable(
+  "interview_prep_assignments",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    categories: json<string[]>("categories", []),
+    assignedBy: text("assigned_by"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantProfileUnique: uniqueIndex("interview_prep_assignments_tenant_profile_uq").on(
+      t.tenantId,
+      t.profileId,
+    ),
+  }),
+);
+
+// ---------------------------------------------------------------
 // 監査ログ
 // ---------------------------------------------------------------
 
@@ -532,6 +594,8 @@ export const APP_TABLES = [
   "certificates",
   "audit_logs",
   "support_inquiries",
+  "interview_questions",
+  "interview_prep_assignments",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;

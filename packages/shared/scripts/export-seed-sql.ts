@@ -26,6 +26,7 @@ import {
   getLanguage,
   getStaticAnalysisSettings,
 } from "../src/assignment-helpers.js";
+import { INTERVIEW_QUESTIONS } from "../src/interview/questions.js";
 
 const dialect = process.env.DIALECT === "sqlite" ? "sqlite" : "postgres";
 const isSqlite = dialect === "sqlite";
@@ -275,8 +276,27 @@ function emitQuiz(
   }
 }
 
+/** 面談対策の想定質問バンク (upsert + prune)。 questions.json が正本。 */
+function emitInterviewQuestions(tenantId: string) {
+  const ids: string[] = [];
+  const bool = (v: boolean) => (isSqlite ? (v ? "1" : "0") : v ? "true" : "false");
+  const opt = (v: string | null) => (v ? strLit(v) : "null");
+  for (const q of INTERVIEW_QUESTIONS) {
+    const id = stableUuid(`interview-q:${tenantId}:${q.no}`);
+    ids.push(id);
+    lines.push(
+      `insert into ${tbl("interview_questions")} (id, tenant_id, no, category, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${strLit(q.category)}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, ${opt(q.deep1)}, ${opt(q.deep2)}, ${opt(q.deep3)}, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set category = excluded.category, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = excluded.deep1, deep2 = excluded.deep2, deep3 = excluded.deep3, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()};`,
+    );
+  }
+  lines.push(
+    `delete from ${tbl("interview_questions")} where tenant_id = '${esc(tenantId)}' and id not in (${sqlIn(ids)});`,
+  );
+}
+
 for (const c of [...SES_COURSES, ...content.courses]) emitCourse("ses", c);
 for (const c of COACH_COURSES) emitCourse("coach", c);
+
+emitInterviewQuestions("ses");
 
 lines.push(
   `delete from ${tbl("lesson_progress")} where lesson_id not in (select id from ${tbl("lessons")});`,
