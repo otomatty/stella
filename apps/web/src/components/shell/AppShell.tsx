@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { toast } from 'sonner';
 import { Loader2, Sparkles } from '@/lib/icons';
 import { TENANTS } from '@/data/seed-catalog';
@@ -13,6 +14,7 @@ import { isBackendConfigured } from '@/lib/backend';
 import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
+import { useIsNarrowViewport } from '@/hooks/useIsNarrowViewport';
 import type { ProfileRole } from '@falcon/shared/cms/types';
 import type { SearchResult } from '@falcon/shared/search/types';
 
@@ -170,6 +172,9 @@ export function AppShell() {
     seq: number;
   } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
+  // lg 未満でのみ使うナビゲーションドロワーの開閉。
+  const [navOpen, setNavOpen] = useState(false);
+  const isNarrow = useIsNarrowViewport();
   const [aiOpen, setAiOpen] = useState(false);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: 'general' });
   const [showAIBot, setShowAIBot] = useState(() =>
@@ -458,6 +463,12 @@ export function AppShell() {
     }
   }, [backendEnabled, authLoading, session, pathname]);
 
+  // lg に広がったらドロワーを閉じる。 CSS で隠すだけでは Radix のモーダルロック
+  // (body の pointer-events / フォーカストラップ) が残り、 デスクトップ UI が操作不能になる。
+  useEffect(() => {
+    if (!isNarrow) setNavOpen(false);
+  }, [isNarrow]);
+
   // レッスン以外に移動したら AI の文脈を general にリセット
   useEffect(() => {
     if (!pathname.includes('/lessons/')) {
@@ -591,18 +602,47 @@ export function AppShell() {
 
   return (
     <>
-      <div className="grid min-h-screen" style={{ gridTemplateColumns: '232px 1fr' }}>
-        <Sidebar
-          role={effectiveRole}
-          page={page}
-          setPage={setPage}
-          user={effectiveUser}
-          counts={sidebarCounts}
-          profileRole={profile?.role}
-        />
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[232px_1fr]">
+        {/* lg 未満ではサイドバーを畳み、 Topbar のハンバーガーからドロワーで開く。
+            `lg:contents` で通常時は aside 自体がグリッド列になる。 */}
+        <div className="hidden lg:contents">
+          <Sidebar
+            role={effectiveRole}
+            page={page}
+            setPage={setPage}
+            user={effectiveUser}
+            counts={sidebarCounts}
+            profileRole={profile?.role}
+          />
+        </div>
+        <DialogPrimitive.Root open={navOpen} onOpenChange={setNavOpen}>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 lg:hidden" />
+            <DialogPrimitive.Content
+              aria-describedby={undefined}
+              className="fixed inset-y-0 left-0 z-50 outline-hidden lg:hidden"
+            >
+              <DialogPrimitive.Title className="sr-only">
+                メインナビゲーション
+              </DialogPrimitive.Title>
+              <Sidebar
+                role={effectiveRole}
+                page={page}
+                setPage={(key) => {
+                  setNavOpen(false);
+                  setPage(key);
+                }}
+                user={effectiveUser}
+                counts={sidebarCounts}
+                profileRole={profile?.role}
+              />
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
         <div className="min-w-0 flex flex-col">
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
           <Topbar
+            onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
             notify={{
               role: effectiveRole,
@@ -617,7 +657,7 @@ export function AppShell() {
               onOpenSubmission: openSubmissionResult,
             }}
           />
-          <div className={isFlush ? 'flex-1 min-w-0' : 'p-7 flex-1 min-w-0 overflow-x-hidden'}>
+          <div className={isFlush ? 'flex-1 min-w-0' : 'p-4 sm:p-7 flex-1 min-w-0 overflow-x-hidden'}>
             <AppShellContext.Provider value={shellValue}>
               <Outlet />
             </AppShellContext.Provider>

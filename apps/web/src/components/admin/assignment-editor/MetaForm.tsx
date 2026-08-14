@@ -14,7 +14,7 @@ import { LANGUAGES, STAGES, TEST_KINDS, type FormProps } from "./draft";
 
 export function MetaForm({ draft, update, disableId }: FormProps & { disableId: boolean }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div>
         <Label htmlFor="ae-id">ID</Label>
         <Input
@@ -28,7 +28,7 @@ export function MetaForm({ draft, update, disableId }: FormProps & { disableId: 
           保存後は変更不可。 一意な文字列を指定 (例: <code>S1-Ch01-print-hello</code>)
         </div>
       </div>
-      <div className="col-span-2">
+      <div className="col-span-1 sm:col-span-2">
         <Label htmlFor="ae-title">タイトル</Label>
         <Input
           id="ae-title"
@@ -120,7 +120,7 @@ export function MetaForm({ draft, update, disableId }: FormProps & { disableId: 
           placeholder="console.log(sum([1, 2, 3]))"
         />
       </div>
-      <div className="col-span-3">
+      <div className="col-span-1 sm:col-span-3">
         <Label htmlFor="ae-desc">課題説明 (Markdown)</Label>
         <Textarea
           id="ae-desc"

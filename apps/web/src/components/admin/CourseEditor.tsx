@@ -133,8 +133,8 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
 
       <section className="bg-card border border-border rounded-md p-5">
         <h3 className="text-sm font-semibold mb-3">メタデータ</h3>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="col-span-1 sm:col-span-2">
             <Label htmlFor="ce-title">タイトル</Label>
             <Input
               id="ce-title"
@@ -183,7 +183,7 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
               onChange={(e) => setForm({ ...form, durationHours: e.target.value })}
             />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-3">
             <Label htmlFor="ce-instructor">講師名</Label>
             <Input
               id="ce-instructor"
@@ -195,7 +195,7 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
               受講者のコース詳細 / レッスン画面に表示されます。 未入力の場合は表示されません。
             </p>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-3">
             <Label htmlFor="ce-desc">説明</Label>
             <Textarea
               id="ce-desc"

@@ -27,6 +27,7 @@ import {
   useStudyTime,
 } from '@/hooks/useLessonProgress';
 import { useLessonMaterials } from '@/hooks/useLessonMaterials';
+import { useIsNarrowViewport } from '@/hooks/useIsNarrowViewport';
 import { downloadLessonMaterial } from '@/lib/cms-api';
 import type { LessonMaterialRow } from '@falcon/shared/cms/types';
 import { isBackendConfigured } from "@/lib/backend";
@@ -75,6 +76,7 @@ interface LessonPlayerProps {
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 
 const lessonTypeLabel: Record<LessonType, string> = {
   video: '動画',
@@ -227,10 +229,13 @@ export const LessonPlayer = ({
 
   // コード演習レッスン時にサイドバーを折りたたむ。 レッスン切替で同期。
   const isCodeLesson = lessonObj?.type === 'code' && Boolean(lessonObj?.assignmentId);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // 狭いビューポート (VSCode 拡張のパネル等) では目次を畳んでおく。 レッスン切替だけでなく
+  // パネル幅の変更で lg 境界を跨いだときも追従させる。
+  const isNarrow = useIsNarrowViewport();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(isNarrow);
   useEffect(() => {
-    setSidebarCollapsed(Boolean(isCodeLesson));
-  }, [isCodeLesson, lessonObj?.id]);
+    setSidebarCollapsed(Boolean(isCodeLesson) || isNarrow);
+  }, [isCodeLesson, lessonObj?.id, isNarrow]);
 
   // レッスン切替で AI コンテキストを更新する (general/lesson/practice の遷移)。
   // - code レッスン: 'lesson' を流す (採点失敗の practice context は PracticeWorkspace 経由で上書き)
@@ -279,11 +284,12 @@ export const LessonPlayer = ({
 
   return (
     <div
-      className="grid"
-      style={{
-        gridTemplateColumns: sidebarCollapsed ? '40px 1fr' : '280px 1fr',
-        minHeight: 'calc(100vh - 57px)',
-      }}
+      className={cn(
+        'grid',
+        // lg 未満では展開時もレール幅のまま。 目次はコンテンツの上にオーバーレイさせる。
+        sidebarCollapsed ? 'grid-cols-[40px_1fr]' : 'grid-cols-[40px_1fr] lg:grid-cols-[280px_1fr]',
+      )}
+      style={{ minHeight: 'calc(100vh - 57px)' }}
     >
       {sidebarCollapsed ? (
         <aside className="border-r border-border bg-card py-3 sticky top-[57px] max-h-[calc(100vh-57px)] flex flex-col items-center gap-2">
@@ -307,7 +313,15 @@ export const LessonPlayer = ({
           </button>
         </aside>
       ) : (
-      <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
+      <>
+      {/* lg 未満では目次を fixed オーバーレイにして本文を潰さない。 */}
+      <button
+        type="button"
+        aria-label="目次を閉じる"
+        onClick={() => setSidebarCollapsed(true)}
+        className="lg:hidden fixed inset-0 top-[57px] z-20 bg-black/40"
+      />
+      <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)] max-lg:fixed max-lg:left-0 max-lg:top-[57px] max-lg:bottom-0 max-lg:z-30 max-lg:w-[280px] max-lg:max-h-none max-lg:shadow-lg">
         <div className="px-[18px] pb-3.5 border-b border-border mb-2">
           <div className="flex items-start gap-1">
             <button
@@ -318,17 +332,19 @@ export const LessonPlayer = ({
               <ChevronLeft size={12} />
               <span className="truncate">{course.title}</span>
             </button>
-            {isCodeLesson ? (
-              <button
-                type="button"
-                onClick={() => setSidebarCollapsed(true)}
-                className="text-ink-3 hover:text-foreground"
-                title="サイドバーをたたむ"
-                aria-label="サイドバーをたたむ"
-              >
-                <ChevronLeft size={14} />
-              </button>
-            ) : null}
+            {/* 演習レッスンは幅が要るので常に、 それ以外も狭幅では畳めるようにする。 */}
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(true)}
+              className={cn(
+                'text-ink-3 hover:text-foreground',
+                isCodeLesson ? '' : 'lg:hidden',
+              )}
+              title="サイドバーをたたむ"
+              aria-label="サイドバーをたたむ"
+            >
+              <ChevronLeft size={14} />
+            </button>
           </div>
           <div className="text-sm font-semibold leading-snug">進捗</div>
           <div className="text-[11.5px] text-ink-3 mt-1.5">
@@ -359,7 +375,12 @@ export const LessonPlayer = ({
                   <button
                     type="button"
                     key={l.id}
-                    onClick={() => status !== 'locked' && setActiveLesson(l.id)}
+                    onClick={() => {
+                      if (status === 'locked') return;
+                      setActiveLesson(l.id);
+                      // 狭幅ではオーバーレイ表示なので、 選んだら閉じる。
+                      if (isNarrow) setSidebarCollapsed(true);
+                    }}
                     disabled={status === 'locked'}
                     className={cn(
                       'w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left',
@@ -398,9 +419,11 @@ export const LessonPlayer = ({
           );
         })}
       </aside>
+      </>
       )}
 
-      <main className="min-w-0 flex flex-col">
+      {/* 目次を fixed オーバーレイにするとグリッド外に出るので、 列を明示して 1 列目に落ちないようにする。 */}
+      <main className="col-start-2 min-w-0 flex flex-col">
         {isCode && lessonObj.assignmentId ? (
           // PracticeWorkspace 側で shared / CMS DB の双方を解決するため、
           // ここで findAssignment による事前フィルタは行わない (#10 — CMS で作られた課題対応)。
@@ -447,7 +470,7 @@ export const LessonPlayer = ({
           )
         ) : null}
 
-        <div className="px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
+        <div className="px-4 sm:px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
           <div className="flex items-start gap-3 mb-2">
             <div className="flex-1">
               <div className="flex items-center gap-1.5 mb-2">

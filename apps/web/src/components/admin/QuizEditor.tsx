@@ -335,7 +335,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
         ) : (
           <div className="flex flex-col gap-4">
             {/* 設定 */}
-            <div className="grid grid-cols-3 gap-3 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <div>
                 <Label htmlFor="quiz-pass">合格点 (%)</Label>
                 <Input

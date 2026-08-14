@@ -278,7 +278,7 @@ function OrgsLive() {
                 onChange={(e) => set("subtitle", e.target.value)}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <Field label="担当者名 (任意)">
                 <Input
                   value={form.contactName}
@@ -293,7 +293,7 @@ function OrgsLive() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <Field label="席数 (任意)">
                 <Input
                   type="number"

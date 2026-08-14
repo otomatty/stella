@@ -221,7 +221,7 @@ export const LearnerDashboard = ({
         </div>
       ) : null}
 
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div className="grid gap-3 mb-6 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           label={
             <>
@@ -279,7 +279,7 @@ export const LearnerDashboard = ({
         />
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="grid gap-4 grid-cols-1 xl:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-4">
           {current ? (
             <Card>
@@ -291,7 +291,7 @@ export const LearnerDashboard = ({
                   </Button>
                 </CardActions>
               </CardHeader>
-              <div className="grid" style={{ gridTemplateColumns: '220px 1fr', gap: 0 }}>
+              <div className="grid gap-0 grid-cols-1 sm:grid-cols-[220px_1fr]">
                 <div className="relative border-r border-border">
                   <CourseThumb color={current.color} label={current.category} />
                 </div>

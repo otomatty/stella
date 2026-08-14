@@ -106,7 +106,7 @@ export const CourseDetail = ({
         <span>コース一覧に戻る</span>
       </button>
 
-      <div className="grid gap-6 items-start" style={{ gridTemplateColumns: '1fr 320px' }}>
+      <div className="grid gap-6 items-start grid-cols-1 lg:grid-cols-[1fr_320px]">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="accent">{course.category}</Badge>

@@ -42,7 +42,7 @@ export function StaticAnalysisForm({ draft, update }: FormProps) {
           placeholder='例: {"no-var": "error"}'
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label htmlFor="ae-astreq">AST required (JSON 配列)</Label>
           <Textarea

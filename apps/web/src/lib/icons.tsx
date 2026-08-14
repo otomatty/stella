@@ -40,6 +40,7 @@ export {
   Zap,
   Video,
   HelpCircle,
+  Menu,
   Send,
   AlertCircle,
   AlertTriangle,

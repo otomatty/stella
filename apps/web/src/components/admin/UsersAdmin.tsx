@@ -181,7 +181,7 @@ function UsersAdminLive({
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 flex items-center gap-2 border-b border-border flex-wrap">
-          <div className="flex items-center gap-2 bg-sunken border border-border rounded-md px-2.5 py-1.5 w-[280px] text-ink-3 text-[12.5px]">
+          <div className="flex items-center gap-2 bg-sunken border border-border rounded-md px-2.5 py-1.5 w-full sm:w-[280px] text-ink-3 text-[12.5px]">
             <Search size={13} />
             <input
               placeholder="名前・メールで検索…"

@@ -131,8 +131,8 @@ export function LessonEditor({
         </DialogHeader>
 
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="col-span-1 sm:col-span-2">
               <Label htmlFor="lesson-title">タイトル</Label>
               <Input
                 id="lesson-title"

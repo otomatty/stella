@@ -229,7 +229,7 @@ function EnrollmentsLive({
             value={courseId ?? ""}
             onChange={(e) => setSelectedCourseId(e.target.value)}
             disabled={coursesLoading || courses.length === 0}
-            className="h-9 min-w-[260px] rounded-sm border border-input bg-card px-3 text-sm"
+            className="h-9 w-full sm:w-auto sm:min-w-[260px] rounded-sm border border-input bg-card px-3 text-sm"
           >
             {courses.length === 0 ? (
               <option value="">コースがありません</option>
