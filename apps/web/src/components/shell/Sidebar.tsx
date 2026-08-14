@@ -106,13 +106,13 @@ export const Sidebar = ({
   counts,
   profileRole,
 }: SidebarProps) => (
-  <aside className="bg-card border-r border-border p-3 pb-4 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto w-[232px]">
+  <aside className="bg-card border-r border-border px-3 pt-3.5 pb-4 flex flex-col gap-0.5 sticky top-0 h-screen overflow-y-auto w-[236px]">
     <div className="pt-1 px-2.5 pb-4 border-b border-border mb-3">
       <Brand size="sm" />
     </div>
 
-    <div className="px-3 pt-3.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-widest text-ink-4">
-      メニュー
+    <div className="px-3.5 pt-2.5 pb-2 font-display text-[10.5px] font-bold uppercase tracking-[0.22em] text-ink-4">
+      Menu
     </div>
     {navForRole(role, profileRole).map((link) => {
       const count = counts?.[link.id];
@@ -152,11 +152,11 @@ const SidebarLink = ({ icon: Icon, label, count, active, onClick }: SidebarLinkP
     type="button"
     onClick={onClick}
     className={cn(
-      'flex items-center gap-2.5 px-2.5 py-[7px] rounded-sm text-[13px] border cursor-pointer select-none text-left',
+      'flex items-center gap-2.5 px-3.5 py-2 rounded-full text-[13px] cursor-pointer select-none text-left',
       'transition-colors',
       active
-        ? 'bg-sunken text-foreground font-medium border-border'
-        : 'text-ink-2 hover:bg-sunken hover:text-foreground border-transparent',
+        ? 'bg-ink text-white font-bold'
+        : 'text-ink-2 font-medium hover:bg-sunken hover:text-foreground',
     )}
   >
     <Icon size={15} className="shrink-0" />
@@ -164,8 +164,8 @@ const SidebarLink = ({ icon: Icon, label, count, active, onClick }: SidebarLinkP
     {typeof count === 'number' ? (
       <span
         className={cn(
-          'ml-auto text-[11px] px-1.5 py-[1px] rounded-full font-medium',
-          active ? 'bg-brand text-white' : 'bg-muted text-ink-2',
+          'ml-auto text-[11px] px-[7px] py-[1px] rounded-full font-bold',
+          active ? 'bg-white/20 text-white' : 'bg-muted text-ink-2',
         )}
       >
         {count}

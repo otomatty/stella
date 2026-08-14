@@ -101,7 +101,7 @@ export const NotificationCenter = ({
   return (
     <div ref={rootRef} className="relative">
       <button
-        className="w-8 h-8 rounded-sm grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border relative"
+        className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border relative"
         title="通知"
         type="button"
         aria-label={`通知${unreadCount > 0 ? ` (未読 ${unreadCount} 件)` : ''}`}

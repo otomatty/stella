@@ -56,13 +56,13 @@ export const Topbar = ({ actions, notify, onSearchSelect }: TopbarProps) => {
       <button
         type="button"
         onClick={() => setSearchOpen(true)}
-        className="flex items-center gap-2 bg-background border border-border rounded-md px-2.5 py-1.5 w-[280px] text-ink-3 text-[12.5px] hover:border-border-strong hover:text-foreground"
+        className="flex items-center gap-2 bg-sunken border border-border-2 rounded-full py-[7px] pl-3.5 pr-2 w-[280px] text-ink-3 text-[12.5px] hover:border-border-strong hover:text-ink-2"
       >
-        <Search size={14} />
+        <Search size={14} className="shrink-0" />
         <span className="flex-1 min-w-0 text-left truncate">
           コース・レッスンを検索…
         </span>
-        <span className="font-mono text-[10px] text-ink-3 border border-border rounded-[3px] px-1.5 py-[1px] bg-card">
+        <span className="font-display text-[10px] font-bold text-ink-3 border border-border-2 rounded-full px-2 py-[2px] bg-card">
           {shortcutLabel()}
         </span>
       </button>
@@ -89,7 +89,7 @@ export const Topbar = ({ actions, notify, onSearchSelect }: TopbarProps) => {
         href="/support"
         target="_blank"
         rel="noreferrer"
-        className="w-8 h-8 rounded-sm grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
+        className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
         title="ヘルプ・サポート"
         aria-label="ヘルプ・サポート"
       >

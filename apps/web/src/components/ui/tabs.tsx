@@ -39,10 +39,10 @@ export const TabsTrigger = React.forwardRef<
       'text-[13px] font-medium text-ink-3 rounded-t-sm transition-colors',
       '[&_svg]:size-3.5 [&_svg]:shrink-0',
       'hover:bg-sunken hover:text-ink',
-      'data-[state=active]:text-brand',
-      // アクティブ下線。list の border-b に重ねるので -bottom-px。
-      'after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full',
-      'after:bg-brand after:origin-left after:scale-x-0',
+      'data-[state=active]:text-sf-magenta data-[state=active]:font-bold',
+      // アクティブ下線 (Sports Force グラデーション)。list の border-b に重ねるので -bottom-px。
+      'after:absolute after:inset-x-0 after:-bottom-px after:h-[2.5px] after:rounded-full',
+      'after:[background:var(--sf-gradient)] after:origin-left after:scale-x-0',
       'after:transition-transform after:duration-200 data-[state=active]:after:scale-x-100',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       'disabled:pointer-events-none disabled:opacity-50',
@@ -57,7 +57,7 @@ export const TabsTrigger = React.forwardRef<
         className={cn(
           'ml-0.5 rounded-full bg-muted px-1.5 text-[11px] font-medium text-ink-2',
           'transition-colors',
-          'group-data-[state=active]:bg-brand-soft group-data-[state=active]:text-brand-ink',
+          'group-data-[state=active]:bg-sf-magenta-soft group-data-[state=active]:text-sf-magenta-ink',
         )}
       >
         {count}

@@ -333,7 +333,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
       )}
 
       <div className="absolute top-2 right-2 flex items-center gap-1.5 text-[11.5px]">
-        <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded px-2 py-1 text-white">
+        <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full px-2.5 py-1 text-white font-display font-bold">
           <label htmlFor={`speed-${lessonId}`} className="sr-only">
             再生速度
           </label>
@@ -355,7 +355,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
           type="button"
           aria-label={isMuted ? 'ミュート解除' : 'ミュート'}
           onClick={toggleMute}
-          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded p-1.5 text-white"
+          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white"
         >
           {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
         </button>
@@ -363,20 +363,21 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
           type="button"
           aria-label="フルスクリーン"
           onClick={toggleFullscreen}
-          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded p-1.5 text-white"
+          className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white"
         >
           <Maximize2 size={13} />
         </button>
       </div>
 
-      <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2 text-[11.5px] text-ink-3">
-        <span className="inline-flex items-center gap-1">
+      <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
+        <span className="inline-flex items-center gap-1.5">
           {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-          視聴 {Math.round(watched)} / {Math.round(dur) || '?'} 秒 ({pct}%)
+          視聴 {Math.round(watched)} / {Math.round(dur) || '?'} 秒{' '}
+          <span className="font-display font-bold text-ink-2">({pct}%)</span>
         </span>
-        <div className="flex-1 h-1 bg-muted rounded-sm overflow-hidden max-w-[260px]">
+        <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
           <div
-            className={cn('h-full', isCompleted ? 'bg-success' : 'bg-brand')}
+            className={cn('h-full', isCompleted ? 'bg-success' : 'sf-gradient-bg')}
             style={{ width: `${pct}%` }}
           />
         </div>

@@ -4,7 +4,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background [&_svg]:shrink-0',
+  // DS (Sports Force) のボタンは全 variant がピル形。
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-bold transition-[color,background-color,border-color,filter] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -12,8 +13,9 @@ const buttonVariants = cva(
           'bg-card border border-border-2 text-foreground hover:bg-sunken hover:border-border-strong',
         primary:
           'bg-primary text-primary-foreground border border-primary hover:bg-[oklch(30%_0.01_260)]',
+        // シグネチャ CTA。 DS の primary = ブランドグラデーションのピル。
         accent:
-          'bg-brand text-brand-foreground border border-brand hover:bg-brand-hover hover:border-brand-hover',
+          'sf-gradient-bg text-brand-foreground border border-transparent hover:brightness-105',
         ghost:
           'bg-transparent border border-transparent text-foreground hover:bg-sunken hover:border-border',
         outline:

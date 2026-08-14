@@ -313,7 +313,7 @@ export const LessonPlayer = ({
             <button
               type="button"
               onClick={() => setPage('course-detail')}
-              className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-foreground flex-1 min-w-0"
+              className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta flex-1 min-w-0"
             >
               <ChevronLeft size={12} />
               <span className="truncate">{course.title}</span>
@@ -332,9 +332,12 @@ export const LessonPlayer = ({
           </div>
           <div className="text-sm font-semibold leading-snug">進捗</div>
           <div className="text-[11.5px] text-ink-3 mt-1.5">
-            <strong>{progressPercent}%</strong> · セクション {sections.length}
+            <strong className="sf-gradient-text font-display text-[13px] font-bold">
+              {progressPercent}%
+            </strong>{' '}
+            · セクション {sections.length}
           </div>
-          <Progress value={progressPercent} tone="brand" className="mt-2" />
+          <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
         </div>
 
         {sections.map((s) => {
@@ -343,7 +346,7 @@ export const LessonPlayer = ({
           ).length;
           return (
             <div key={s.id} className="py-2.5">
-              <div className="px-[18px] py-2 text-[11px] font-semibold text-ink-3 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
                 <span>{s.title}</span>
                 <span className="ml-auto text-[11px] font-normal text-ink-3">
                   {doneCount}/{s.lessons.length}
@@ -362,20 +365,30 @@ export const LessonPlayer = ({
                       'w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left',
                       'transition-colors',
                       isActive
-                        ? 'bg-sunken text-foreground font-medium border-brand'
+                        ? 'bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta'
                         : status === 'locked'
                           ? 'text-ink-4 cursor-not-allowed border-transparent'
                           : 'text-ink-2 hover:bg-sunken hover:text-foreground border-transparent',
                     )}
                   >
                     <span className="shrink-0 mt-0.5 text-ink-3">
-                      <LessonStatusIcon status={status} />
+                      {isActive ? (
+                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
+                      ) : (
+                        <LessonStatusIcon status={status} />
+                      )}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="truncate">{l.title}</div>
-                      <div className="text-ink-3 text-[11px] mt-0.5 flex items-center gap-1">
+                      <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
                         <LessonTypeIcon type={l.type} size={10} />
                         <span>{l.duration}</span>
+                        {isActive && l.progress !== undefined ? (
+                          <>
+                            <span>·</span>
+                            <span>進捗 {l.progress}%</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -438,7 +451,10 @@ export const LessonPlayer = ({
           <div className="flex items-start gap-3 mb-2">
             <div className="flex-1">
               <div className="flex items-center gap-1.5 mb-2">
-                <Badge variant="accent">
+                <Badge
+                  variant="accent"
+                  className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
+                >
                   <LessonTypeIcon type={lessonObj.type} size={10} />
                   {lessonTypeLabel[lessonObj.type]}
                 </Badge>
@@ -448,7 +464,9 @@ export const LessonPlayer = ({
                   {activeSection ? activeSection.lessons.length : 0}
                 </span>
               </div>
-              <h1 className="text-[22px] tracking-tight font-semibold">{lessonObj.title}</h1>
+              <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
+                {lessonObj.title}
+              </h1>
               <div className="flex flex-wrap gap-3.5 text-ink-3 text-[12.5px] mb-5 mt-1">
                 {lessonObj.duration ? (
                   <span className="flex items-center gap-1">
@@ -591,6 +609,7 @@ const LessonOverview = ({
       )}
       <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
         <Button
+          variant="outline"
           onClick={() => onPrevLesson?.()}
           disabled={!onPrevLesson}
           title={onPrevLesson ? undefined : '最初のレッスンです'}

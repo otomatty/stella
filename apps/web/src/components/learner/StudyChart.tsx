@@ -60,6 +60,17 @@ export const StudyChart = ({ days }: StudyChartProps) => {
 
   return (
     <svg viewBox="0 0 560 200" className="w-full h-full" role="img" aria-label="日別の学習時間">
+      {/* プロット幅いっぱいに引いたブランドグラデーション。 各バーはその x 位置の
+          色を切り取るので、 直近 1 週間のバー全体で 1 本のグラデーションになる。 */}
+      <defs>
+        <linearGradient id="sf-bar" gradientUnits="userSpaceOnUse" x1={left} y1="0" x2={right} y2="0">
+          <stop offset="0" stopColor="#0A33FF" />
+          <stop offset="0.34" stopColor="#8330C7" />
+          <stop offset="0.58" stopColor="#E62F9A" />
+          <stop offset="0.78" stopColor="#FF2C61" />
+          <stop offset="1" stopColor="#FF2E0D" />
+        </linearGradient>
+      </defs>
       {[0, 1, 2, 3].map((i) => (
         <line
           key={i}
@@ -93,8 +104,7 @@ export const StudyChart = ({ days }: StudyChartProps) => {
             width={barW}
             height={h}
             rx="2"
-            fill="var(--ink)"
-            opacity={recent ? 1 : 0.55}
+            fill={recent ? 'url(#sf-bar)' : 'var(--line-2)'}
           >
             <title>{`${d.date} · ${formatDuration(d.watched_sec)}`}</title>
           </rect>

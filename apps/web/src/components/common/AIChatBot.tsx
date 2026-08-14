@@ -159,12 +159,12 @@ const Message = ({ role, body, streaming = false }: MessageProps) => {
   if (role === 'user') {
     return (
       <div className="flex gap-2.5 max-w-[88%] self-end flex-row-reverse">
-        <Avatar size="sm" className="bg-brand text-white">
-          <AvatarFallback className="bg-brand text-white">
+        <Avatar size="sm" className="sf-gradient-135-bg text-white">
+          <AvatarFallback className="sf-gradient-135-bg text-white">
             <User size={12} />
           </AvatarFallback>
         </Avatar>
-        <div className="bg-brand text-white rounded-xl px-3 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap">
+        <div className="sf-gradient-bg text-white rounded-xl px-3 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap">
           {body}
         </div>
       </div>

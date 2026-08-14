@@ -24,7 +24,7 @@ interface UserMenuProps {
 export const UserMenu = ({ user, onOpenSettings, onLogout }: UserMenuProps) => (
   <DropdownMenu>
     <DropdownMenuTrigger
-      className="flex w-full items-center gap-2.5 rounded-sm border border-transparent px-1.5 py-1.5 text-left transition-colors hover:bg-sunken hover:border-border data-[state=open]:bg-sunken data-[state=open]:border-border"
+      className="flex w-full items-center gap-2.5 rounded-xl border border-transparent px-1.5 py-1.5 text-left transition-colors hover:bg-sunken hover:border-border data-[state=open]:bg-sunken data-[state=open]:border-border"
       aria-label="ユーザーメニュー"
     >
       <Avatar>
@@ -32,10 +32,12 @@ export const UserMenu = ({ user, onOpenSettings, onLogout }: UserMenuProps) => (
           // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
           <AvatarImage src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
         ) : null}
-        <AvatarFallback>{user.initials}</AvatarFallback>
+        <AvatarFallback className="bg-ink text-white font-display text-[11px] font-bold">
+          {user.initials}
+        </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 text-xs">
-        <div className="truncate font-medium text-foreground">{user.name}</div>
+        <div className="truncate font-bold text-foreground">{user.name}</div>
         <div className="truncate text-[11px] text-ink-3">{user.email}</div>
       </div>
       <ChevronsUpDown size={13} className="shrink-0 text-ink-3" />

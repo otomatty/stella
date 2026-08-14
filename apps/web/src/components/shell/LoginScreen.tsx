@@ -45,7 +45,7 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
             Google アカウントでログインしてください。
           </p>
 
-          <Button type="button" variant="accent" size="full" onClick={handleGoogleLogin}>
+          <Button type="button" variant="primary" size="full" onClick={handleGoogleLogin}>
             <Google width={16} height={16} />
             Googleでログイン
           </Button>

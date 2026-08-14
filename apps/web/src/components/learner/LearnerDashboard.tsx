@@ -324,7 +324,7 @@ export const LearnerDashboard = ({
                       </div>
                     ) : null}
                   </div>
-                  <Button variant="primary" onClick={resume}>
+                  <Button variant="accent" onClick={resume}>
                     <Play size={13} />
                     続きから学習
                   </Button>

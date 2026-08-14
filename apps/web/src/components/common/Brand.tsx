@@ -16,13 +16,13 @@ export const Brand = ({
   inverted = false,
   className,
 }: BrandProps) => {
-  const markSize = size === 'md' ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-[13px]';
-  const markBg = inverted ? 'bg-card text-ink' : 'bg-ink text-card';
+  const markSize = size === 'md' ? 'w-8 h-8 text-sm' : 'w-[30px] h-[30px] text-sm';
+  const markBg = inverted ? 'bg-card text-ink' : 'sf-gradient-135-bg text-white';
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
       <div
         className={cn(
-          'grid place-items-center rounded-md font-bold tracking-tight',
+          'grid place-items-center rounded-[9px] font-display font-extrabold shrink-0',
           markSize,
           markBg,
         )}
@@ -30,7 +30,9 @@ export const Brand = ({
         F
       </div>
       <div className="leading-tight">
-        <div className="font-semibold text-[13px]">{title}</div>
+        <div className="font-display font-bold text-[13px] tracking-[0.04em]">
+          {title}
+        </div>
         {subtitle && <div className="text-[11px] text-ink-3">{subtitle}</div>}
       </div>
     </div>

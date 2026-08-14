@@ -11,7 +11,8 @@ interface ProgressProps
 
 const toneClass: Record<NonNullable<ProgressProps['tone']>, string> = {
   ink: 'bg-ink',
-  brand: 'bg-brand',
+  // ブランド進捗は DS のシグネチャグラデーション (単色マゼンタは使わない)
+  brand: 'sf-gradient-bg',
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',

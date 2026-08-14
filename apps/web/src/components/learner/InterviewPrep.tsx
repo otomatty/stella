@@ -64,7 +64,7 @@ function Chip({ active, children, onClick }: {
       className={cn(
         'px-2.5 py-1 rounded-full text-[12px] border cursor-pointer transition-colors',
         active
-          ? 'bg-brand text-white border-brand'
+          ? 'sf-gradient-bg text-white border-transparent font-bold'
           : 'bg-card text-ink-2 border-border hover:bg-sunken',
       )}
     >
@@ -426,7 +426,7 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
         </button>
         <button
           type="button"
-          className="px-3 py-1.5 rounded-sm bg-brand text-white text-[12.5px] cursor-pointer hover:opacity-90"
+          className="px-3 py-1.5 rounded-full sf-gradient-bg text-white text-[12.5px] font-bold cursor-pointer hover:brightness-105"
           onClick={() => move(1)}
         >
           次の問題

@@ -327,7 +327,8 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
 
       <div className="px-3 py-2 border-b border-border bg-card flex items-center gap-2 text-[11.5px] text-ink-3">
         <span>
-          閲覧 {viewedCount} / {total || '?'} ページ ({progressPct}%)
+          閲覧 {viewedCount} / {total || '?'} ページ{' '}
+          <span className="font-display font-bold text-ink-2">({progressPct}%)</span>
         </span>
         <div className="flex-1 max-w-[280px]">
           <Progress value={progressPct} tone="brand" />
