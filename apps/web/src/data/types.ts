@@ -14,7 +14,7 @@ export type LessonType = 'video' | 'slides' | 'text' | 'quiz' | 'assignment' | '
 export type LessonStatus = 'done' | 'active' | 'todo' | 'locked';
 
 export interface Tenant {
-  /** seed テナント ('coach' | 'ses') に限らず、 DB 上の任意のテナント ID を取り得る。 */
+  /** seed テナント ('ses') に限らず、 DB 上の任意のテナント ID を取り得る。 */
   id: string;
   name: string;
   subtitle: string;

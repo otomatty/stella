@@ -1,9 +1,11 @@
 /**
- * packages/content/modules/** を走査して、LMS の Course / Section / Lesson と
- * quiz seed を組み立てる。ファイルが正本で、D1 はここから毎回作り直される。
+ * packages/content/courses/<slug>/modules/** を走査して、LMS の Course /
+ * Section / Lesson と quiz seed を組み立てる。ファイルが正本で、D1 はここから
+ * 毎回作り直される。講座を足すときは courses/<slug>/ を増やす。
  *
  * 対応:
- *   モジュール (m0..m9)          → Section
+ *   courses/<slug>/course.json   → Course
+ *   モジュール (m0..)            → Section
  *   トピック   (t1..)            → Lesson (type: "slides")
  *   レッスンの doc.md            → Lesson (type: "text")
  *   レッスンの practice.md 確認クイズ → Lesson (type: "quiz") + QuizSeed
@@ -17,29 +19,18 @@ import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.j
 import { parseQuiz } from "./parse-quiz.js";
 import { parseSlides } from "./parse-slides.js";
 import { splitSlides } from "./split-slides.js";
-import type { QuizSeed } from "./types.js";
+import type { CourseColor, CourseConfig, QuizSeed } from "./types.js";
 
+/** 既存コード互換。新講座のテナントは course.json の tenantId。 */
 export const TENANT_ID = "ses";
+/** 既存コード互換。いま入っている講座の slug。 */
 export const COURSE_SLUG = "typescript-basics";
 
-const MATERIAL_PREFIX = `tenant/${TENANT_ID}/courses/${COURSE_SLUG}`;
+const COURSE_COLORS = new Set<CourseColor>(["indigo", "green", "amber", "slate"]);
 
-export function assetPath(topicDir: string, fileName: string): string {
-  return `${MATERIAL_PREFIX}/assets/${topicDir}/${fileName}`;
+export function assetPath(courseSlug: string, topicDir: string, fileName: string): string {
+  return `tenant/${TENANT_ID}/courses/${courseSlug}/assets/${topicDir}/${fileName}`;
 }
-
-const MODULE_TITLES: Record<string, string> = {
-  "m0-orientation": "M0. オリエンテーション",
-  "m1-values": "M1. 値と変数",
-  "m2-conditionals": "M2. 条件分岐とスコープ",
-  "m3-data": "M3. 配列とオブジェクト",
-  "m4-functions": "M4. 関数",
-  "m5-type-system": "M5. 型システム",
-  "m6-generics": "M6. ジェネリクス",
-  "m7-oop": "M7. クラスとインターフェース",
-  "m8-async": "M8. 非同期処理",
-  "m9-practice": "M9. 実務への接続",
-};
 
 function dirsIn(path: string): string[] {
   return readdirSync(path)
@@ -47,8 +38,23 @@ function dirsIn(path: string): string[] {
     .sort();
 }
 
-function defaultRoot(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), "..", "modules");
+function defaultCoursesRoot(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "courses");
+}
+
+function readCourseConfig(courseDir: string, slug: string): CourseConfig & { tenantId: string } {
+  const file = join(courseDir, "course.json");
+  if (!existsSync(file)) {
+    throw new Error(`courses/${slug}/course.json がありません。templates/course.json をコピーしてください。`);
+  }
+  const raw = JSON.parse(readFileSync(file, "utf8")) as CourseConfig;
+  if (typeof raw.title !== "string" || raw.title.trim() === "") {
+    throw new Error(`courses/${slug}/course.json の title が空です。`);
+  }
+  if (raw.color != null && !COURSE_COLORS.has(raw.color)) {
+    throw new Error(`courses/${slug}/course.json の color が不正です: ${raw.color}`);
+  }
+  return { ...raw, tenantId: raw.tenantId?.trim() || TENANT_ID };
 }
 
 /**
@@ -58,13 +64,17 @@ function defaultRoot(): string {
  * slides.md はトピックディレクトリから見た `assets/x.svg` 形式で書かれている。
  * 前者は自分でトピックを名乗るので `topicDir` を渡さず、後者は呼び出し側が渡す。
  */
-function rewriteImagePaths(markdown: string, topicDir?: string): string {
+function rewriteImagePaths(
+  courseSlug: string,
+  markdown: string,
+  topicDir?: string,
+): string {
   return markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (whole, alt: string, src: string) => {
     if (/^https?:/.test(src)) return whole;
     const withTopic = /^(t[^/]+)\/assets\/(.+)$/.exec(src);
-    if (withTopic) return `![${alt}](${assetPath(withTopic[1], withTopic[2])})`;
+    if (withTopic) return `![${alt}](${assetPath(courseSlug, withTopic[1], withTopic[2])})`;
     const bare = /^(?:\.\/)?assets\/(.+)$/.exec(src);
-    if (bare && topicDir) return `![${alt}](${assetPath(topicDir, bare[1])})`;
+    if (bare && topicDir) return `![${alt}](${assetPath(courseSlug, topicDir, bare[1])})`;
     return whole;
   });
 }
@@ -90,15 +100,17 @@ function lessonKey(topicIds: string[]): string {
   return first.split("-").slice(0, 2).join("-");
 }
 
-export function buildContentManifest(root: string = defaultRoot()): {
-  courses: Course[];
-  quizzes: QuizSeed[];
-} {
+function buildOneCourse(
+  slug: string,
+  modulesRoot: string,
+  config: CourseConfig & { tenantId: string },
+): { course: Course; quizzes: QuizSeed[] } {
   const sections: Section[] = [];
   const quizzes: QuizSeed[] = [];
+  const moduleTitles = config.modules ?? {};
 
-  for (const moduleDir of dirsIn(root)) {
-    const modulePath = join(root, moduleDir);
+  for (const moduleDir of dirsIn(modulesRoot)) {
+    const modulePath = join(modulesRoot, moduleDir);
     const lessons: Lesson[] = [];
 
     for (const lessonDir of dirsIn(modulePath)) {
@@ -108,12 +120,12 @@ export function buildContentManifest(root: string = defaultRoot()): {
 
       for (const topicDir of topicDirs) {
         const slidesFile = join(lessonPath, topicDir, "slides.md");
-        if (!existsSync(slidesFile)) continue; // slides.md を持たないディレクトリ
+        if (!existsSync(slidesFile)) continue;
         const source = readFileSync(slidesFile, "utf8");
         const fm = parseSlides(source);
         topicIds.push(fm.id);
         // 受講者に渡すのは講師ノートを外した本文だけ。区切りは `---` のまま残し、
-        // 何枚に分けるかは描画側 (Task 10) が splitSlides で決める。
+        // 何枚に分けるかは描画側が splitSlides で決める。
         // `_class` は build_pptx.py と同じくスライドの見た目の型 (lead / summary) を
         // 決めるので、コメントのまま本文に戻す。描画側 (MarkdownSlides) が型を読んだ
         // あと本文から外す。react-markdown は生 HTML をエスケープして表示してしまうので、
@@ -122,7 +134,7 @@ export function buildContentManifest(root: string = defaultRoot()): {
           .map(
             (s) =>
               (s.cls ? `<!-- _class: ${s.cls} -->\n\n` : "") +
-              rewriteImagePaths(s.body, topicDir),
+              rewriteImagePaths(slug, s.body, topicDir),
           )
           .join("\n\n---\n\n");
         lessons.push({
@@ -146,7 +158,7 @@ export function buildContentManifest(root: string = defaultRoot()): {
         duration: "10分",
         status: "todo",
         markdown: dropPracticeLink(
-          rewriteImagePaths(readFileSync(docFile, "utf8").replace(/\r\n/g, "\n")),
+          rewriteImagePaths(slug, readFileSync(docFile, "utf8").replace(/\r\n/g, "\n")),
         ),
       });
 
@@ -161,13 +173,13 @@ export function buildContentManifest(root: string = defaultRoot()): {
           duration: "5分",
           status: "todo",
         });
-        quizzes.push({ lessonId: quizLessonId, passScore: 80, questions });
+        quizzes.push({ courseId: slug, lessonId: quizLessonId, passScore: 80, questions });
       }
     }
 
     sections.push({
       id: moduleDir,
-      title: MODULE_TITLES[moduleDir] ?? moduleDir,
+      title: moduleTitles[moduleDir] ?? moduleDir,
       lessons,
     });
   }
@@ -175,19 +187,35 @@ export function buildContentManifest(root: string = defaultRoot()): {
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
 
   return {
-    courses: [
-      {
-        id: COURSE_SLUG,
-        title: "TypeScript 入門研修",
-        category: "プログラミング",
-        color: "indigo",
-        lessonsCount,
-        progress: 0,
-        description:
-          "未経験からの TypeScript 研修。ショート動画 1 本で 1 つだけ覚える粒度で、値・型・関数・非同期まで通す。",
-        sections,
-      },
-    ],
+    course: {
+      id: slug,
+      title: config.title,
+      category: config.category ?? "",
+      color: config.color ?? "indigo",
+      lessonsCount,
+      progress: 0,
+      description: config.description,
+      sections,
+    },
     quizzes,
   };
+}
+
+export function buildContentManifest(coursesRoot: string = defaultCoursesRoot()): {
+  courses: Course[];
+  quizzes: QuizSeed[];
+} {
+  const courses: Course[] = [];
+  const quizzes: QuizSeed[] = [];
+
+  for (const slug of dirsIn(coursesRoot)) {
+    const courseDir = join(coursesRoot, slug);
+    const modulesRoot = join(courseDir, "modules");
+    if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
+    const built = buildOneCourse(slug, modulesRoot, readCourseConfig(courseDir, slug));
+    courses.push(built.course);
+    quizzes.push(...built.quizzes);
+  }
+
+  return { courses, quizzes };
 }

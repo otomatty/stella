@@ -17,7 +17,22 @@ export interface QuizQuestionSeed {
   options: QuizOptionSeed[];
 }
 
+export type CourseColor = "indigo" | "green" | "amber" | "slate";
+
+/** courses/<slug>/course.json。slug はディレクトリ名。 */
+export interface CourseConfig {
+  title: string;
+  category?: string;
+  color?: CourseColor;
+  description?: string;
+  header?: string;
+  tenantId?: string;
+  modules?: Record<string, string>;
+}
+
 export interface QuizSeed {
+  /** 所属講座。lessonId は講座内でのみ一意なので、seed 照合に両方使う。 */
+  courseId: string;
   /** 紐づく lesson の安定キー（manifest が振る Lesson.id と一致させる） */
   lessonId: string;
   passScore: number;

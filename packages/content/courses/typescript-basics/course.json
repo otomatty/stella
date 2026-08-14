@@ -1,0 +1,20 @@
+{
+  "title": "TypeScript 入門研修",
+  "category": "プログラミング",
+  "color": "indigo",
+  "description": "未経験からの TypeScript 研修。ショート動画 1 本で 1 つだけ覚える粒度で、値・型・関数・非同期まで通す。",
+  "header": "TypeScript入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-values": "M1. 値と変数",
+    "m2-conditionals": "M2. 条件分岐とスコープ",
+    "m3-data": "M3. 配列とオブジェクト",
+    "m4-functions": "M4. 関数",
+    "m5-type-system": "M5. 型システム",
+    "m6-generics": "M6. ジェネリクス",
+    "m7-oop": "M7. クラスとインターフェース",
+    "m8-async": "M8. 非同期処理",
+    "m9-practice": "M9. 実務への接続"
+  }
+}

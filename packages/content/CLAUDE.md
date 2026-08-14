@@ -6,7 +6,7 @@
 
 社内の**未経験エンジニア向けTypeScript研修教材**です。動画講義(ショート動画)とLMS掲載用のドキュメントの2本立てです。
 
-この教材は `falcon-informal` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。
+この教材は `falcon-informal` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `courses/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_COURSE.md](ADDING_COURSE.md)）。
 
 原典は [サバイバルTypeScript](https://typescriptbook.jp/)(CC BY-SA 4.0)ですが、**未経験者向けに順序・粒度を再設計した独自教材**であり、原典の翻訳や写しではありません。
 
@@ -24,18 +24,22 @@
 
 ## ディレクトリ構成
 
+講座は `courses/<slug>/` が単位。新しい講座を足すのが既定の手順で、詳細は [ADDING_COURSE.md](ADDING_COURSE.md)。
+
 ```
-packages/content/modules/<モジュールID>/<レッスンID>/
-├── <トピックID>/
-│   ├── slides.md   # 動画1本ぶんのスライド(必須)
-│   └── assets/     # そのトピック専用の図解(正本は.html、.svgはビルドで生成)
-├── doc.md          # LMSドキュメント(トピックと1:1の見出しを持つ)
-└── practice.md     # ハンズオン・演習・クイズ
+packages/content/courses/<slug>/
+├── course.json     # タイトル・説明・セクション名
+└── modules/<モジュールID>/<レッスンID>/
+    ├── <トピックID>/
+    │   ├── slides.md   # 動画1本ぶんのスライド(必須)
+    │   └── assets/     # そのトピック専用の図解(正本は.html、.svgはビルドで生成)
+    ├── doc.md          # LMSドキュメント(トピックと1:1の見出しを持つ)
+    └── practice.md     # ハンズオン・演習・クイズ
 packages/content/templates/     # 新規作成用の雛形
 packages/content/STYLE_GUIDE.md # 執筆ルール(文体・コード例・図解・構成)
 ```
 
-例: `packages/content/modules/m1-values/l1-variables/t2-const-and-let/slides.md`
+例: `packages/content/courses/typescript-basics/modules/m1-values/l1-variables/t2-const-and-let/slides.md`
 
 ## 語彙台帳 — 前後関係は検査で守る
 
@@ -61,7 +65,7 @@ header: "TypeScript入門研修"
 
 ```bash
 bun run --filter=@falcon/content materials        # 全トピックを pptx 化
-bun run --filter=@falcon/content materials -- modules/m1-values/l1-variables   # 一部だけ
+bun run --filter=@falcon/content materials -- courses/typescript-basics/modules/m1-values/l1-variables   # 一部だけ
 bun run --filter=@falcon/content check:ci         # 語彙台帳・画像リンク・スライド枚数の検査（CI と同じ）
 ```
 
@@ -112,26 +116,29 @@ bun run --filter=@falcon/content materials
 図解を追加・修正した場合は、そのトピックだけを検査できます。`<rect>` / `<circle>` / `<ellipse>` で描いた枠からのはみ出しはビルドが自動で検出しますが、`<path>` で描いた枠(外接矩形が意味を持たない任意形状)は対象外です。`<path>` を使う複雑な図は、生成された `.diagram.png` を目視で確認してください。
 
 ```bash
-python .claude/skills/diagram-design/lint-skin.py packages/content/modules/<path>
-python packages/content/scripts/diagram_export.py packages/content/modules/<path>
+python .claude/skills/diagram-design/lint-skin.py packages/content/courses/<slug>/modules/<path>
+python packages/content/scripts/diagram_export.py packages/content/courses/<slug>/modules/<path>
 ```
 
 ## 現在の状態
 
 **全モジュールがトピック形式です。** 全10モジュール(M0〜M9)/ 42レッスン / 162トピックで完成しています。旧形式の教材は残っていません。
 
-**教材本体(`modules/`)とビルドスクリプト(`scripts/`)は移設済みです。** `bun run --filter=@falcon/content materials` で162トピック分の pptx が生成できることを確認しています(図解SVG 68件・図解HTML 68件を含む)。
+**教材本体は `courses/<slug>/modules/` です。** TypeScript 入門は `courses/typescript-basics/`。`bun run --filter=@falcon/content materials` で162トピック分の pptx が生成できます。
 
-全体構成・全トピックの一覧・順序の根拠は **[CURRICULUM.md](CURRICULUM.md)** にあります。作業前に必ず参照してください。
+TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
+
+**LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 なので、`bun run --filter=@falcon/content upload:remote` を別途実行してください（デプロイワークフローには含まれません）。
 
 未着手の課題:
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
 - **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入
 - **収録** — 162本の動画収録は未着手
-- **LMS への seed 投入** — 教材を LMS のコース/レッスンとして登録する seed は未整備
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 
 ## 作業の進め方
 
 レッスン単位で作業し、モジュールごとにコミットしてください。全体に一括で及ぶ変更は、スクリプトで処理してから全ビルド検証を行ってください。
+
+トピック / レッスン / 新しい講座の足し方は **[ADDING_COURSE.md](ADDING_COURSE.md)** を先に読む。

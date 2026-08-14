@@ -24,6 +24,19 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("'typescript-basics'");
   });
 
+  it("デモ講座は seed せず、安定 UUID だけ削除する", () => {
+    const webFundamentals = stableUuid("course:ses:web-fundamentals");
+    const reactIntro = stableUuid("course:ses:react-intro");
+    expect(sql).not.toContain("Web開発基礎");
+    expect(sql).not.toContain("Git / GitHub");
+    expect(sql).not.toContain("React入門");
+    expect(sql).toContain(`delete from courses where id = '${webFundamentals}'`);
+    expect(sql).toContain(`delete from courses where id = '${reactIntro}'`);
+    expect(sql).not.toMatch(/or \(tenant_id = '[^']+' and slug = '/);
+    expect(sql).toContain(`delete from sections where course_id = '${webFundamentals}';`);
+    expect(sql).not.toContain(`delete from sections where course_id = '${webFundamentals}');`);
+  });
+
   it("スライドレッスンに本文 markdown が入る", () => {
     expect(sql).toMatch(/insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?constは再代入できない/);
   });
@@ -38,8 +51,12 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(/insert into quiz_options /);
   });
 
-  it("sections を course_id だけで丸ごと wipe しない", () => {
-    expect(sql).not.toMatch(/delete from\s+(public\.)?sections where course_id = '[^']+';/i);
+  it("教材コースの sections を course_id だけで丸ごと wipe しない", () => {
+    const tsCourse = stableUuid("course:ses:typescript-basics");
+    expect(sql).not.toContain(`delete from sections where course_id = '${tsCourse}';`);
+    expect(sql).toContain(
+      `delete from sections where course_id = '${tsCourse}' and id not in (`,
+    );
   });
 
   it("教材から消えた lesson / section を prune する", () => {
@@ -82,6 +99,17 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(/update quizzes set lesson_id = case lesson_id/i);
     expect(sql).toMatch(
       /on conflict \(id\) do update set lesson_id = excluded\.lesson_id, pass_score = excluded\.pass_score/i,
+    );
+  });
+
+  it("旧 quiz UUID の受験履歴を新 UUID へ付け替えてから消す", () => {
+    const newQuiz = stableUuid("quiz:ses:typescript-basics:quiz-1-1");
+    const legacyQuiz = stableUuid("quiz:ses:quiz-1-1");
+    expect(sql).toContain(
+      `update quiz_attempts set quiz_id = '${newQuiz}' where quiz_id = '${legacyQuiz}'`,
+    );
+    expect(sql).toContain(
+      `delete from quizzes where lesson_id = '${stableUuid("lesson:ses:typescript-basics:quiz-1-1")}' and id != '${newQuiz}'`,
     );
   });
 
@@ -131,15 +159,17 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).toContain("'typescript-basics'");
     expect(sql).toMatch(/insert into lessons /);
   });
+
+  it("デモ講座の削除は本番 seed でも出す", () => {
+    expect(sql).toContain(`delete from courses where id = '${stableUuid("course:ses:web-fundamentals")}'`);
+    expect(sql).not.toContain("Web開発基礎");
+  });
 });
 
-// quizUuid は course / section を含まないため、fixtures 側に教材の quiz と同じ lesson.id が
-// 現れると同じ quiz 行が二度 emit され、後勝ちで fixtures のレッスンを指してしまう。
-// 教材コースにスコープするガードが消えたら落ちるよう、@falcon/content を差し替えて
-// 「fixtures の実在レッスンと同じ lesson.id を持つ教材コース」という衝突を作って検証する。
+// quiz は教材コースにだけ紐づける。fixtures 側に同じ lesson.id が現れても
+// quiz を生やさないガードが消えたら落ちるよう、@falcon/content を差し替えて検証する。
 vi.mock("@falcon/content", async () => {
-  const { SES_COURSES } = await import("../../../apps/web/src/data/fixtures.js");
-  const collidingLessonId = SES_COURSES[0].sections[0].lessons[0].id;
+  const collidingLessonId = "l1";
 
   return {
     buildContentManifest: () => ({
@@ -158,6 +188,7 @@ vi.mock("@falcon/content", async () => {
       ],
       quizzes: [
         {
+          courseId: "typescript-basics",
           lessonId: collidingLessonId,
           passScore: 80,
           questions: [

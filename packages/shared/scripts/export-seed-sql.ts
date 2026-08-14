@@ -4,8 +4,9 @@
  *   DIALECT=sqlite bun run packages/shared/scripts/export-seed-sql.ts   # D1
  *   bun run packages/shared/scripts/export-seed-sql.ts                  # Postgres (legacy)
  *
- * 教材コースは upsert + prune（GitHub が正本）。コース id が安定 UUID と
- * 一致しない CMS コースのレッスンツリーは触らない。
+ * 教材コースは upsert + prune（GitHub が正本）。旧デモ講座
+ * (web-fundamentals 等) は安定 UUID で削除する。CMS で作った別 ID の
+ * コースのレッスンツリーは触らない。
  */
 
 import { createHash } from "node:crypto";
@@ -13,11 +14,7 @@ import { createHash } from "node:crypto";
 import { buildContentManifest } from "@falcon/content";
 import type { QuizQuestionSeed } from "@falcon/content";
 
-import {
-  COACH_COURSES,
-  SES_COURSES,
-  TENANTS,
-} from "../../../apps/web/src/data/seed-catalog.js";
+import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Course, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
 import { findAssignment } from "../src/problems/index.js";
@@ -90,7 +87,7 @@ const courseIdMap = new Map<string, string>();
 const sectionIdMap = new Map<string, string>();
 const emittedAssignments = new Set<string>();
 
-/** 教材ファイル（packages/content/modules）から組み立てたコースと確認クイズ。 */
+/** 教材ファイル（packages/content/courses/<slug>/modules）から組み立てたコースと確認クイズ。 */
 const content = buildContentManifest();
 
 const lines: string[] = ["-- seed from fixtures (generated)"];
@@ -150,7 +147,7 @@ function emitCourse(tenantId: Tenant["id"], course: Course) {
       // 現れても quiz を生やさないよう、教材コースかどうかで絞る（quizUuid は
       // course / section を含まないため、絞らないと行が衝突する）。
       const quizSeed = content.courses.includes(course)
-        ? content.quizzes.find((q) => q.lessonId === lesson.id)
+        ? content.quizzes.find((q) => q.courseId === course.id && q.lessonId === lesson.id)
         : undefined;
       if (quizSeed) emitQuiz(tenantId, course.id, quizSeed);
       if (lesson.assignmentId && !emittedAssignments.has(lesson.assignmentId)) {
@@ -168,9 +165,47 @@ function sqlIn(ids: string[]): string {
   return ids.map((id) => `'${id}'`).join(", ");
 }
 
+/** かつて seed していたデモ講座。再 seed で本番カタログから落とす。 */
+const RETIRED_DEMO_COURSES: ReadonlyArray<{ tenantId: string; slug: string }> = [
+  { tenantId: "ses", slug: "web-fundamentals" },
+  { tenantId: "ses", slug: "git-basics" },
+  { tenantId: "ses", slug: "ciso-basic" },
+  { tenantId: "ses", slug: "react-intro" },
+  { tenantId: "coach", slug: "safety-1" },
+  { tenantId: "coach", slug: "comm-1" },
+  { tenantId: "coach", slug: "first-aid" },
+];
+
+function emitRetiredDemoCourses() {
+  for (const { tenantId, slug } of RETIRED_DEMO_COURSES) {
+    const courseUuid = stableUuid(`course:${tenantId}:${slug}`);
+    const lessonsInCourse =
+      `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.course_id = '${courseUuid}'`;
+    const quizzesInCourse =
+      `select z.id from ${tbl("quizzes")} z where z.lesson_id in (${lessonsInCourse})`;
+    const questionsInCourse =
+      `select qq.id from ${tbl("quiz_questions")} qq where qq.quiz_id in (${quizzesInCourse})`;
+    lines.push(
+      `delete from ${tbl("quiz_options")} where question_id in (${questionsInCourse});`,
+      `delete from ${tbl("quiz_attempts")} where quiz_id in (${quizzesInCourse});`,
+      `delete from ${tbl("quiz_questions")} where quiz_id in (${quizzesInCourse});`,
+      `delete from ${tbl("quizzes")} where lesson_id in (${lessonsInCourse});`,
+      `delete from ${tbl("lesson_materials")} where lesson_id in (${lessonsInCourse});`,
+      `delete from ${tbl("lesson_progress")} where lesson_id in (${lessonsInCourse});`,
+      `delete from ${tbl("submissions")} where lesson_id in (${lessonsInCourse});`,
+      `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where course_id = '${courseUuid}');`,
+      `delete from ${tbl("sections")} where course_id = '${courseUuid}';`,
+      `delete from ${tbl("enrollments")} where course_id = '${courseUuid}';`,
+      `delete from ${tbl("certificates")} where course_id = '${courseUuid}';`,
+      `update ${tbl("announcements")} set course_id = null where course_id = '${courseUuid}';`,
+      // slug 一致だけでは消さない。CMS が同じ slug で別 ID を持つコースを残す。
+      `delete from ${tbl("courses")} where id = '${courseUuid}';`,
+    );
+  }
+}
+
 /** 安定 UUID コースから、GitHub に無い section / lesson を落とす。
- *  seed にセクションが無いカタログ stub と、course_id が安定 UUID と一致しない
- *  CMS コースは触らない。 */
+ *  course_id が安定 UUID と一致しない CMS コースは触らない。 */
 function emitPrune(courseUuid: string, sectionUuids: string[], lessonUuids: string[]) {
   if (sectionUuids.length === 0) return;
   lines.push(
@@ -230,8 +265,9 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
 
 /**
  * quiz / quiz_questions / quiz_options を emit する。
- * quiz UUID は lesson.id のみ（section 非依存）。seed を何度流しても同じ行になる。
+ * quiz UUID は course + lesson.id（section 非依存）。講座を増やしても衝突しない。
  * 設問・選択肢は差分マージせず delete → insert（教材ファイルが唯一の正本）。
+ * 旧 UUID (`quiz:${tenant}:${lessonId}`) の受験履歴は新 UUID へ付け替えてから消す。
  */
 function emitQuiz(
   tenantId: Tenant["id"],
@@ -239,7 +275,8 @@ function emitQuiz(
   quiz: { lessonId: string; passScore: number; questions: QuizQuestionSeed[] },
 ) {
   const id = lessonUuid(tenantId, courseId, quiz.lessonId);
-  const quizUuid = stableUuid(`quiz:${tenantId}:${quiz.lessonId}`);
+  const quizUuid = stableUuid(`quiz:${tenantId}:${courseId}:${quiz.lessonId}`);
+  const legacyQuizUuid = stableUuid(`quiz:${tenantId}:${quiz.lessonId}`);
 
   lines.push(
     [
@@ -249,12 +286,21 @@ function emitQuiz(
       `where l.id = '${id}'`,
       `on conflict (id) do update set lesson_id = excluded.lesson_id, pass_score = excluded.pass_score, updated_at = ${nowExpr()};`,
     ].join(" "),
+  );
+  if (legacyQuizUuid !== quizUuid) {
+    lines.push(
+      `update ${tbl("quiz_attempts")} set quiz_id = '${quizUuid}' where quiz_id = '${legacyQuizUuid}';`,
+    );
+  }
+  lines.push(
+    `delete from ${tbl("quiz_questions")} where quiz_id in (select id from ${tbl("quizzes")} where lesson_id = '${id}' and id != '${quizUuid}');`,
+    `delete from ${tbl("quizzes")} where lesson_id = '${id}' and id != '${quizUuid}';`,
     `delete from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}';`,
   );
 
   for (let i = 0; i < quiz.questions.length; i++) {
     const q = quiz.questions[i];
-    const qUuid = stableUuid(`quiz-q:${tenantId}:${quiz.lessonId}:${i}`);
+    const qUuid = stableUuid(`quiz-q:${tenantId}:${courseId}:${quiz.lessonId}:${i}`);
     lines.push(
       [
         `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order"${isSqlite ? ", created_at, updated_at" : ""})`,
@@ -264,7 +310,7 @@ function emitQuiz(
     );
     for (let j = 0; j < q.options.length; j++) {
       const o = q.options[j];
-      const oUuid = stableUuid(`quiz-o:${tenantId}:${quiz.lessonId}:${i}:${j}`);
+      const oUuid = stableUuid(`quiz-o:${tenantId}:${courseId}:${quiz.lessonId}:${i}:${j}`);
       lines.push(
         [
           `insert into ${tbl("quiz_options")} (id, question_id, label, is_correct, "order")`,
@@ -293,8 +339,8 @@ function emitInterviewQuestions(tenantId: string) {
   );
 }
 
-for (const c of [...SES_COURSES, ...content.courses]) emitCourse("ses", c);
-for (const c of COACH_COURSES) emitCourse("coach", c);
+for (const c of content.courses) emitCourse("ses", c);
+emitRetiredDemoCourses();
 
 emitInterviewQuestions("ses");
 
@@ -307,9 +353,15 @@ if (!contentOnly) {
   const SEED_ADMIN = "seed-admin";
   const SEED_INSTRUCTOR = "seed-instructor";
   const SEED_LEARNER = "seed-learner";
-  const SEED_ENROLLMENT = "seed-enrollment-learner-web-fundamentals";
+  const SEED_ENROLLMENT = "seed-enrollment-learner-typescript-basics";
   const SEED_SUBMISSION = "seed-submission-pending-1";
-  const webFundLessonId = lessonUuid("ses", "web-fundamentals", "l11a");
+  const tsCourse = content.courses.find((c) => c.id === "typescript-basics");
+  const firstLesson = tsCourse?.sections?.[0]?.lessons?.[0];
+  const tsLessonId =
+    tsCourse && firstLesson
+      ? lessonUuid("ses", tsCourse.id, firstLesson.id)
+      : lessonUuid("ses", "typescript-basics", "0-1-1");
+  emitAssignment("ses", "S0-Ch00-01-print-hello");
 
   for (const p of [
     { id: SEED_ADMIN, role: "admin", name: "Seed Admin", initials: "SA", email: "seed-admin@example.local" },
@@ -323,11 +375,14 @@ if (!contentOnly) {
     );
   }
 
-  // 教材コース (TypeScript 入門研修) にも登録しておく。 登録が無いと出題 API
+  // 教材コース (TypeScript 入門研修) に登録しておく。 登録が無いと出題 API
   // (`/api/quiz/for-lesson`) も資料もアクセス不可になり、 seed だけでは検証できない。
   for (const [id, slug] of [
-    [SEED_ENROLLMENT, "web-fundamentals"],
-    ...content.courses.map((c) => [`seed-enrollment-learner-${c.id}`, c.id] as const),
+    ...content.courses.map((c) =>
+      c.id === "typescript-basics"
+        ? ([SEED_ENROLLMENT, c.id] as const)
+        : ([`seed-enrollment-learner-${c.id}`, c.id] as const),
+    ),
   ] as const) {
     lines.push(
       [
@@ -341,7 +396,7 @@ if (!contentOnly) {
   }
 
   lines.push(
-    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, course_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${webFundLessonId}', 'S0-Ch00-01-print-hello', 'Web開発基礎 — HTML / CSS / JavaScript', '03. JavaScript 基礎', ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
+    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, course_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${tsLessonId}', 'S0-Ch00-01-print-hello', 'TypeScript 入門研修', ${strLit(tsCourse?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
   );
 }
 

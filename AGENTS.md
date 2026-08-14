@@ -13,7 +13,7 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 | `informal` (`falcon.informal`) | `apps/vscode` | VS Code extension for learner code exercises. F5 Extension Development Host; settings `falcon.serverUrl` / `falcon.webUrl` |
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView + admin AssignmentEditor) |
-| `@falcon/content` | `packages/content` | 研修教材の正本（スライド / ドキュメント / 演習）。執筆ルールは `packages/content/CLAUDE.md` |
+| `@falcon/content` | `packages/content` | 教材の正本。講座は `courses/<slug>/`。執筆ルールは `packages/content/CLAUDE.md`。導入手順（新講座が既定）は `packages/content/ADDING_COURSE.md` |
 
 ### Running services (default: real data)
 
@@ -26,7 +26,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **Default local loop:** copy env from examples → `bun run db:migrate && bun run db:seed && bun run smoke:d1` → `dev:api` + `dev` → Google login → D1-backed UI. See `README.md` setup section for role promotion (`admin` / `instructor`) and the manual verification checklist.
 
-**Demo-only (not for day-to-day work):** If `VITE_SERVER_URL` is unset, the web app uses fixture data and a mock login flow. Tweaks panel (backtick `` ` ``) can switch Learner / Instructor / Admin without D1. Treat this as a prototype demo path only.
+**Demo-only (not for day-to-day work):** If `VITE_SERVER_URL` is unset, the web app uses fixture data and a mock login flow (no course catalog — materials live in D1 via seed). Tweaks panel (backtick `` ` ``) can switch Learner / Instructor / Admin without D1. Treat this as a prototype demo path only.
 
 **Stack:** Cloudflare D1 (DB) + Google OAuth + R2 (materials) + Workers Static Assets (frontend, migrated from Pages). See `docs/cloudflare-stack.md`.
 
@@ -43,7 +43,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 - **Dev mode crashes on AssignmentEditor / admin preview**: Learner code exercises run in the VS Code extension (`falcon.informal`), not in the web PracticeWorkspace. Admin `AssignmentEditor` (CMS preview / in-browser editor + linter) still loads that chunk. The in-browser ESLint linter pulls in `@babel/traverse`, which references `process` and throws `Uncaught ReferenceError: process is not defined` in `vite dev` (5173) — it blanks the whole app, but ONLY on routes that load that chunk (admin assignment editor / preview). The dashboard/course list and learner lesson pages render fine in dev. To manually test AssignmentEditor preview grading, use the production build instead: `bun run build` then `bun run preview` (served on :4173). Learner exercise grading is tested in the Extension Development Host, not in the web preview.
 - **Preview build CORS**: When testing via `bun run preview` (:4173), the API rejects it unless the preview origin is allowed. Add `http://localhost:4173,http://127.0.0.1:4173` to `ALLOWED_ORIGINS` in `apps/api/.dev.vars` and restart `dev:api`. (`.dev.vars` is gitignored/local.)
 - **Google OAuth (real login)**: The example `.dev.vars` ships empty `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (so `/api/healthz` reports `googleOAuthConfigured:false`). Cloud agents have `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` available as environment secrets — copy those env values into `apps/api/.dev.vars` and restart `dev:api` to get `googleOAuthConfigured:true`. The registered callback is `http://127.0.0.1:8787/api/auth/google/callback`, so use the API on `127.0.0.1:8787` (not `localhost`) for the OAuth redirect to match. Real login still needs interactive Google credentials.
-- **Local login without Google OAuth**: To test authenticated flows without doing interactive Google sign-in, mint a JWT yourself (HS256, `iss=falcon-api`, `aud=falcon-web`, `sub=<profile id>`, signed with `AUTH_JWT_SECRET` from `.dev.vars`) and set it in the browser `localStorage` key `falcon_auth_token_v1` (this is exactly what the OAuth callback stores). Seeded profile ids: `seed-learner` (student), `seed-instructor`, `seed-admin` — all tenant `ses`; `seed-learner` is enrolled in the `web-fundamentals` course.
+- **Local login without Google OAuth**: To test authenticated flows without doing interactive Google sign-in, mint a JWT yourself (HS256, `iss=falcon-api`, `aud=falcon-web`, `sub=<profile id>`, signed with `AUTH_JWT_SECRET` from `.dev.vars`) and set it in the browser `localStorage` key `falcon_auth_token_v1` (this is exactly what the OAuth callback stores). Seeded profile ids: `seed-learner` (student), `seed-instructor`, `seed-admin` — all tenant `ses`; `seed-learner` is enrolled in the `typescript-basics` course (TypeScript 入門研修).
 - **Env files**: `apps/web/.env.local` and `apps/api/.dev.vars` are gitignored. Copy from `.example`. For the default real-data path set `VITE_SERVER_URL=http://127.0.0.1:8787` in `.env.local`, and `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in `.dev.vars`.
 - **Wrangler**: The API dev server uses `wrangler dev`. On first run it may print a telemetry notice; this is not an error.
 

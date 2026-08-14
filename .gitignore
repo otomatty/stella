@@ -13,9 +13,11 @@ apps/web/public/sqljs/
 # Generated at build time from pdfjs-dist (cmaps + standard_fonts)
 apps/web/public/pdfjs/
 
-# 教材ビルド生成物（.svg は正本なのでコミットする）
+# ææãã«ãçæç©ï¼.svg ã¯æ­£æ¬ãªã®ã§ã³ãããããï¼
 packages/content/modules/**/slides.pptx
 packages/content/modules/**/*.diagram.png
+packages/content/courses/**/slides.pptx
+packages/content/courses/**/*.diagram.png
 packages/content/dist/
 packages/content/**/__pycache__/
 
@@ -26,5 +28,5 @@ apps/api/.dev.vars
 # Git worktrees (local)
 .worktrees
 
-# Vite �� vite.config.ts �ǂݍ��ݎ��ɍ��ꎞ�t�@�C��
+# Vite ª vite.config.ts ÇÝÝÉìéêt@C
 vite.config.ts.timestamp-*.mjs

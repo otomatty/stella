@@ -22,7 +22,7 @@ import { assetPath } from "../src/manifest.js";
 const BUCKET = "falcon-materials-public";
 const remote = process.argv.includes("--remote");
 const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, "..", "modules");
+const coursesRoot = join(here, "..", "courses");
 const apiDir = join(here, "..", "..", "..", "apps", "api");
 
 function put(key: string, file: string, contentType: string) {
@@ -53,30 +53,32 @@ function dirsIn(path: string): string[] {
 /**
  * アップロード対象を先に全部数え上げる。
  *
- * assetPath() のキーは「トピックディレクトリ名 + ファイル名」の平坦キーだが、
- * トピックディレクトリ名は一意ではない (例: t3-readonly が m3-data/l4-type-alias と
- * m7-oop/l2-encapsulation の両方にある)。同名ファイルが置かれた瞬間に片方が黙って
- * 上書きされ、受講者は別トピックの図を見ることになるので、put の前に検出して止める。
+ * assetPath() のキーは「講座 slug + トピックディレクトリ名 + ファイル名」。
+ * 同一講座内でトピック DIR 名が被ると上書きされるので、put の前に検出して止める。
  */
 const targets = new Map<string, string>();
 const collisions: string[] = [];
 
-for (const moduleDir of dirsIn(root)) {
-  for (const lessonDir of dirsIn(join(root, moduleDir))) {
-    const lessonPath = join(root, moduleDir, lessonDir);
-    for (const topicDir of dirsIn(lessonPath)) {
-      const assetsDir = join(lessonPath, topicDir, "assets");
-      if (!existsSync(assetsDir)) continue;
-      for (const file of readdirSync(assetsDir).sort()) {
-        if (!file.endsWith(".svg")) continue;
-        const key = assetPath(topicDir, file);
-        const source = join(assetsDir, file);
-        const seen = targets.get(key);
-        if (seen) {
-          collisions.push(`  ${key}\n    ${seen}\n    ${source}`);
-          continue;
+for (const slug of dirsIn(coursesRoot)) {
+  const root = join(coursesRoot, slug, "modules");
+  if (!existsSync(root)) continue;
+  for (const moduleDir of dirsIn(root)) {
+    for (const lessonDir of dirsIn(join(root, moduleDir))) {
+      const lessonPath = join(root, moduleDir, lessonDir);
+      for (const topicDir of dirsIn(lessonPath)) {
+        const assetsDir = join(lessonPath, topicDir, "assets");
+        if (!existsSync(assetsDir)) continue;
+        for (const file of readdirSync(assetsDir).sort()) {
+          if (!file.endsWith(".svg")) continue;
+          const key = assetPath(slug, topicDir, file);
+          const source = join(assetsDir, file);
+          const seen = targets.get(key);
+          if (seen) {
+            collisions.push(`  ${key}\n    ${seen}\n    ${source}`);
+            continue;
+          }
+          targets.set(key, source);
         }
-        targets.set(key, source);
       }
     }
   }
@@ -85,8 +87,7 @@ for (const moduleDir of dirsIn(root)) {
 if (collisions.length > 0) {
   console.error(
     `R2 のオブジェクトキーが ${collisions.length} 件衝突しています。` +
-      "assetPath() はトピックディレクトリ名とファイル名だけでキーを作るため、\n" +
-      "別レッスンでも同名トピック + 同名ファイルなら同じキーになります。" +
+      "同一講座内でトピックディレクトリ名とファイル名が同じだと同じキーになります。\n" +
       "どちらかのファイル名を変えてください。\n" +
       collisions.join("\n"),
   );
@@ -94,7 +95,7 @@ if (collisions.length > 0) {
 }
 
 if (targets.size === 0) {
-  console.error("SVG が 1 件も見つかりませんでした。modules の配置を確認してください。");
+  console.error("SVG が 1 件も見つかりませんでした。courses/<slug>/modules の配置を確認してください。");
   process.exit(1);
 }
 

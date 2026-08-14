@@ -7,7 +7,7 @@
 ## 運用フロー
 
 1. 下記のプロンプトでChatGPTに画像を生成させる
-2. 指定のファイル名で保存する(形式はPNG。`.gitignore` が無視するのはビルド生成物の `packages/content/modules/**/*.diagram.png` だけなので、ここで置くPNGはそのまま追跡対象になる)
+2. 指定のファイル名で保存する(形式はPNG。`.gitignore` が無視するのはビルド生成物の `packages/content/courses/**/*.diagram.png` だけなので、ここで置くPNGはそのまま追跡対象になる)
 3. Claudeに「画像を置いたので配置して」と依頼 → スクリプトで挿入 + 全ビルド検証
 
 ## 配置スロット(2種類)

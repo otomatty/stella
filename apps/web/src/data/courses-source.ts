@@ -15,14 +15,14 @@ import {
   type UiCourse,
 } from "@falcon/shared/cms/types";
 import type { Course, Tenant } from "@/data/types";
-import { COACH_COURSES, SES_COURSES } from "@/data/seed-catalog";
 import { isBackendConfigured } from "@/lib/backend";
 import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";
 import { isReadableEnrollmentStatus } from "@falcon/shared/enrollment/access";
 
-function fixturesFor(tenantId: Tenant["id"]): Course[] {
-  return tenantId === "coach" ? COACH_COURSES : SES_COURSES;
+/** デモ経路にカタログ stub は置かない。教材は D1 seed（packages/content）だけ。 */
+function fixturesFor(_tenantId: Tenant["id"]): Course[] {
+  return [];
 }
 
 type DataSource = "db" | "fixtures" | "error";

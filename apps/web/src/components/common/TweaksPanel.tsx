@@ -64,16 +64,18 @@ export const TweaksPanel = ({
         ))}
       </div>
     </div>
-    <div className="flex items-center gap-2 mb-2.5 text-xs">
-      <label className="flex-1 text-ink-2">テナント</label>
-      <div className="flex gap-1">
-        {TENANTS.map((t) => (
-          <Pill key={t.id} active={tenant.id === t.id} onClick={() => onTenant(t)}>
-            {t.id === 'coach' ? '指導者' : 'SES'}
-          </Pill>
-        ))}
+    {TENANTS.length > 1 ? (
+      <div className="flex items-center gap-2 mb-2.5 text-xs">
+        <label className="flex-1 text-ink-2">テナント</label>
+        <div className="flex gap-1">
+          {TENANTS.map((t) => (
+            <Pill key={t.id} active={tenant.id === t.id} onClick={() => onTenant(t)}>
+              {t.name}
+            </Pill>
+          ))}
+        </div>
       </div>
-    </div>
+    ) : null}
     <div className="flex items-center gap-2 mb-2.5 text-xs">
       <label className="flex-1 text-ink-2">AI アシスタント</label>
       <div className="flex gap-1">

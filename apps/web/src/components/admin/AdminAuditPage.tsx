@@ -363,7 +363,7 @@ function FilterField({
 // dev fixtures フロー用のデモ表示。 DB が無いため固定サンプルを出す。
 const DEMO_ROWS = [
   { t: "2026-04-18 14:28:05", a: "中村 理恵", ac: "user_role_change", tg: "user/u_142", ip: "10.0.3.5" },
-  { t: "2026-04-18 13:05:44", a: "sys_admin", ac: "course_publish", tg: "course/web-fundamentals", ip: "10.0.0.1" },
+  { t: "2026-04-18 13:05:44", a: "sys_admin", ac: "course_publish", tg: "course/typescript-basics", ip: "10.0.0.1" },
   { t: "2026-04-18 12:18:30", a: "堀江メンター", ac: "course_delete", tg: "course/legacy-sql", ip: "10.0.3.22" },
   { t: "2026-04-18 11:02:09", a: "中村 理恵", ac: "user_invite", tg: "user/u_310", ip: "10.0.3.5" },
 ];

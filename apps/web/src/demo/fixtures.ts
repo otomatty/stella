@@ -13,7 +13,7 @@ import type {
   User,
 } from "@/data/types";
 
-export { COACH_COURSES, SES_COURSES, TENANTS } from "@/data/seed-catalog";
+export { TENANTS } from "@/data/seed-catalog";
 
 export const CURRENT_USER: User = {
   name: "田中 翔太",
@@ -24,16 +24,16 @@ export const CURRENT_USER: User = {
 export const ANNOUNCEMENTS: Announcement[] = [
   { id: 1, title: "第3期 課題提出期限を5/31まで延長します", date: "4月17日", by: "事務局", unread: true },
   { id: 2, title: "堀江メンターによるライブQ&A (4/22 19:00) 開催予定", date: "4月15日", by: "運営", unread: true },
-  { id: 3, title: "【重要】JavaScriptセクション 教材 v1.2 への更新", date: "4月12日", by: "コース作成", unread: false },
+  { id: 3, title: "【重要】TypeScript 入門研修 教材の更新", date: "4月12日", by: "コース作成", unread: false },
 ];
 
 export const REVIEW_QUEUE: ReviewItem[] = [
-  { id: "r1", student: "田中 翔太", initials: "TS", c: "c1", course: "Web開発基礎", assignment: "ランディングページ模写", submittedAt: "2時間前", aiReady: true, priority: "high" },
-  { id: "r2", student: "佐藤 美咲", initials: "SM", c: "c2", course: "Web開発基礎", assignment: "JS基礎 確認課題", submittedAt: "4時間前", aiReady: true, priority: "normal" },
-  { id: "r3", student: "鈴木 健一", initials: "SK", c: "c3", course: "React入門", assignment: "カウンターアプリ実装", submittedAt: "昨日", aiReady: true, priority: "normal" },
-  { id: "r4", student: "山田 優花", initials: "YY", c: "c4", course: "基本情報対策", assignment: "アルゴリズム記述問題", submittedAt: "昨日", aiReady: false, priority: "normal" },
-  { id: "r5", student: "渡辺 拓海", initials: "WT", c: "c5", course: "Web開発基礎", assignment: "ToDoアプリ（再提出）", submittedAt: "2日前", aiReady: true, priority: "high" },
-  { id: "r6", student: "中村 理恵", initials: "NR", c: "c6", course: "Git/GitHub", assignment: "最終確認課題", submittedAt: "3日前", aiReady: true, priority: "low" },
+  { id: "r1", student: "田中 翔太", initials: "TS", c: "c1", course: "TypeScript 入門研修", assignment: "変数と型の確認課題", submittedAt: "2時間前", aiReady: true, priority: "high" },
+  { id: "r2", student: "佐藤 美咲", initials: "SM", c: "c2", course: "TypeScript 入門研修", assignment: "関数の確認課題", submittedAt: "4時間前", aiReady: true, priority: "normal" },
+  { id: "r3", student: "鈴木 健一", initials: "SK", c: "c3", course: "TypeScript 入門研修", assignment: "配列とオブジェクト", submittedAt: "昨日", aiReady: true, priority: "normal" },
+  { id: "r4", student: "山田 優花", initials: "YY", c: "c4", course: "TypeScript 入門研修", assignment: "型システムの確認", submittedAt: "昨日", aiReady: false, priority: "normal" },
+  { id: "r5", student: "渡辺 拓海", initials: "WT", c: "c5", course: "TypeScript 入門研修", assignment: "非同期処理（再提出）", submittedAt: "2日前", aiReady: true, priority: "high" },
+  { id: "r6", student: "中村 理恵", initials: "NR", c: "c6", course: "TypeScript 入門研修", assignment: "実務への接続", submittedAt: "3日前", aiReady: true, priority: "low" },
 ];
 
 export const SUBMITTED_CODE: string[] = [
@@ -120,17 +120,13 @@ export const ENROLLMENT_TREND: number[] = [
 ];
 
 export const COMPLETION_BY_COURSE: CompletionByCourse[] = [
-  { name: "Web開発基礎", n: 48, pct: 72 },
-  { name: "Git / GitHub", n: 52, pct: 94 },
-  { name: "React入門", n: 28, pct: 41 },
-  { name: "基本情報 対策", n: 35, pct: 18 },
-  { name: "Python基礎", n: 22, pct: 63 },
+  { name: "TypeScript 入門研修", n: 48, pct: 72 },
 ];
 
 export const STUMBLES: Stumble[] = [
-  { q: "DOM操作 — イベント伝播とバブリング", wrong: 68, n: 142 },
-  { q: "JavaScript — thisの束縛", wrong: 61, n: 142 },
-  { q: "CSS — z-index / stacking context", wrong: 54, n: 138 },
-  { q: "HTTP — CORSとプリフライト", wrong: 47, n: 105 },
-  { q: "Git — rebase vs merge", wrong: 38, n: 167 },
+  { q: "型注釈と型推論", wrong: 68, n: 142 },
+  { q: "ユニオン型と narrowing", wrong: 61, n: 142 },
+  { q: "ジェネリクスの制約", wrong: 54, n: 138 },
+  { q: "Promise と async/await", wrong: 47, n: 105 },
+  { q: "unknown と例外処理", wrong: 38, n: 167 },
 ];

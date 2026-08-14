@@ -1,6 +1,6 @@
 # FALCON INFORMAL
 
-部活動指導者講習とSES未経験エンジニア育成を **単一基盤で支えるLMS** のプロトタイプ。
+SES未経験エンジニア向け **TypeScript 入門研修** を配信する LMS。教材の正本は `packages/content`。
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
 - コード演習する (VS Code 拡張 `falcon.informal`) — P2
@@ -75,7 +75,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 
    ```bash
    bun run db:migrate      # wrangler d1 migrations apply --local
-   bun run db:seed         # fixtures → D1
+   bun run db:seed         # packages/content の TypeScript 研修 → D1
    bun run smoke:d1        # テーブル確認
    ```
 

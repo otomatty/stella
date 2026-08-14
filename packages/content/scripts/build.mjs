@@ -6,7 +6,7 @@
  *
  * --check-only を渡すと Python を起動せず、Node だけで走る検査で打ち切る(CI 用)。
  *
- * 対象パスを省略すると modules 配下の全レッスンをビルドする。
+ * 対象パスを省略すると courses/<slug>/modules 配下の全レッスンをビルドする。
  * 4段構成: check_vocab.mjs(語彙台帳の検査)→ lint-skin.py(図解トークンの検査)→
  *           diagram_export.py(図解のSVG/PNG生成とはみ出し検査)→ build_pptx.py(python-pptxで再構築)
  */
@@ -14,6 +14,7 @@ import { readdirSync, statSync, existsSync, mkdirSync, copyFileSync, rmSync, rea
 import { join, resolve, dirname, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { listCourseModuleRoots } from "./course-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -60,7 +61,7 @@ function checkDocImages(roots) {
 
 const searchRoots = targets.length > 0
   ? targets.map((t) => resolve(ROOT, t))
-  : [join(ROOT, "modules")];
+  : listCourseModuleRoots();
 
 for (const root of searchRoots) {
   if (!existsSync(root)) {
@@ -101,8 +102,15 @@ if (slides.length === 0) {
   process.exit(1);
 }
 
-const vocab = spawnSync("node", [join(ROOT, "scripts", "check_vocab.mjs"), ...searchRoots],
-  { encoding: "utf8", stdio: "inherit" });
+const vocab = spawnSync(
+  "node",
+  [
+    join(ROOT, "scripts", "check_vocab.mjs"),
+    // 対象未指定なら check_vocab 側で講座ごとに検査する（混ぜると語彙が干渉する）。
+    ...(targets.length > 0 ? searchRoots : []),
+  ],
+  { encoding: "utf8", stdio: "inherit" },
+);
 if (vocab.status !== 0) process.exit(vocab.status ?? 1);
 
 // ここまでが Node だけで走る検査(画像リンク・スライド枚数・語彙台帳)。CI はここで打ち切る。
@@ -157,13 +165,23 @@ if (skipped > 0) console.log(`pptx: ${skipped} 件スキップ(最新)`);
  * 収録・アップロード用のファイル名を決める。
  * トピック形式は front-matter の id を先頭に付ける(例: 1-1-2-const-and-let.pptx)。
  * ファイル名順に並べると収録順になり、スライド・doc.md の見出しとIDが一致する。
- * id を持たない旧形式は、衝突しないよう modules 配下の相対パスを連結する。
+ * id を持たない旧形式は、衝突しないよう courses 配下の相対パスを連結する。
  */
+function courseSlugFromSlide(slidePath) {
+  const rel = relative(join(ROOT, "courses"), slidePath);
+  if (!rel || rel.startsWith("..")) return null;
+  return rel.split(/[\\/]/)[0];
+}
+
 function distName(slidePath) {
   const dir = dirname(slidePath);
   const id = /^id:\s*(\S+)\s*$/m.exec(readFileSync(slidePath, "utf8").split("\n---")[0])?.[1];
-  if (id) return `${id}-${basename(dir).replace(/^t\d+-/, "")}`;
-  return relative(join(ROOT, "modules"), dir).split(/[\\/]/).join("_");
+  const slug = courseSlugFromSlide(slidePath);
+  if (id) {
+    const topic = `${id}-${basename(dir).replace(/^t\d+-/, "")}`;
+    return slug ? `${slug}-${topic}` : topic;
+  }
+  return relative(join(ROOT, "courses"), dir).split(/[\\/]/).join("_");
 }
 
 // Google Slides等へ一括アップロードしやすいよう、名前を付けて1フォルダに集める

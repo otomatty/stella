@@ -23,7 +23,6 @@ import { Topbar } from '@/components/shell/Topbar';
 import { DataSourceBanner } from '@/components/shell/DataSourceBanner';
 import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
-import { TenantSelect } from '@/components/shell/TenantSelect';
 import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
 import {
   AppShellContext,
@@ -144,7 +143,7 @@ export function AppShell() {
   const page = pageKeyFromPath(pathname);
 
   const defaultTenant =
-    TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[1];
+    TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[0];
 
   const backendEnabled = isBackendConfigured();
   const {
@@ -157,7 +156,13 @@ export function AppShell() {
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
-  const [stage, setStage] = useState<Stage>(() => loadSaved()?.stage ?? 'login');
+  const [stage, setStage] = useState<Stage>(() => {
+    const saved = loadSaved()?.stage;
+    if (saved === 'app' || saved === 'login') return saved;
+    // 旧デモの tenant-select は廃止。保存されていてもアプリへ進む。
+    if (saved === 'tenant-select') return 'app';
+    return 'login';
+  });
   const [tenant, setTenant] = useState<Tenant>(() => {
     const saved = loadSaved();
     return (saved?.tenantId && TENANTS.find((t) => t.id === saved.tenantId)) || defaultTenant;
@@ -559,13 +564,10 @@ export function AppShell() {
   } else {
     // 既存の fixtures フロー (バックエンド未設定時)
     if (stage === 'login') {
-      return <LoginScreen onMockLogin={() => setStage('tenant-select')} />;
-    }
-    if (stage === 'tenant-select') {
       return (
-        <TenantSelect
-          onPick={(t) => {
-            setTenant(t);
+        <LoginScreen
+          onMockLogin={() => {
+            setTenant(TENANTS[0] ?? tenant);
             setStage('app');
             void navigate({ to: '/' });
           }}

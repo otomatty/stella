@@ -229,4 +229,15 @@ if __name__ == "__main__":
         self_test()
     else:
         paths = [Path(a).resolve() for a in args if not a.startswith("--")]
-        run(paths or [ROOT / "modules"])
+        if paths:
+            run(paths)
+        else:
+            courses = ROOT / "courses"
+            defaults = sorted(
+                p / "modules"
+                for p in courses.iterdir()
+                if p.is_dir() and (p / "modules").is_dir()
+            ) if courses.is_dir() else []
+            if not defaults:
+                raise SystemExit("courses/<slug>/modules が見つかりません。")
+            run(defaults)

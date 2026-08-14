@@ -351,7 +351,7 @@ function DemoCertificate({ name, initials }: { name: string; initials: string })
       />
       <CertificateView
         recipientName={name}
-        courseTitle="Git / GitHub 実務ワークフロー"
+        courseTitle="TypeScript 入門研修"
         issuer="FALCON INFORMAL"
         issuedAt="2026-04-10"
         certCode="FLC-2026-4A9F-2E11"

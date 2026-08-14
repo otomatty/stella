@@ -12,7 +12,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 `main` push の検証は `deploy.yml` 側で再実行するため、`ci.yml` は `main` push を起動しない。
 
-seed は `packages/content` を正本として D1 の教材コースを upsert し、GitHub から消えたトピック / セクションは prune する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS 由来でコース ID が安定 UUID と一致しないコース（例: `web-fundamentals`）のレッスンツリーは触らない。
+seed は `packages/content/courses/<slug>/` を正本として各講座を D1 に upsert し、GitHub から消えたトピック / セクションは prune する。旧デモ講座 (`web-fundamentals` 等) は安定 UUID で削除する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS で作った別 ID のコースのレッスンツリーは触らない。
 
 ## VS Code 拡張のリリース
 

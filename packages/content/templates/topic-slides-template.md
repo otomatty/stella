@@ -4,7 +4,7 @@ title: 【トピックタイトル】
 takeaway: "【覚えることを1文で。これが書けなければ2トピックに割る】"
 introduces: [新しく導入する語1, 新しく導入する語2]
 requires: [前提として必要な語1]
-header: "TypeScript入門研修"
+header: "【講座名】"
 ---
 
 <!-- _class: lead -->

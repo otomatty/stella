@@ -13,6 +13,7 @@
 import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { listCourseModuleRoots } from "./course-roots.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -45,53 +46,67 @@ function parseLedger(path) {
   return { id, path, introduces: list("introduces"), requires: list("requires") };
 }
 
-const targets = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const searchRoots = targets.length > 0
-  ? targets.map((t) => resolve(ROOT, t))
-  : [join(ROOT, "modules")];
+function checkRoots(searchRoots) {
+  for (const root of searchRoots) {
+    if (!existsSync(root)) {
+      console.error(`対象が見つかりません: ${root}`);
+      return false;
+    }
+  }
 
-for (const root of searchRoots) {
-  if (!existsSync(root)) {
-    console.error(`対象が見つかりません: ${root}`);
+  const topics = searchRoots
+    .flatMap((root) => (statSync(root).isDirectory() ? collect(root) : [root]))
+    .sort()
+    .map(parseLedger)
+    .filter(Boolean);
+
+  if (topics.length === 0) {
+    console.log("語彙台帳を持つトピックがありません。チェックをスキップします。");
+    return true;
+  }
+
+  const known = new Map(SEED.map((w) => [w, "(Module 0)"]));
+  const problems = [];
+
+  for (const t of topics) {
+    const where = relative(ROOT, t.path);
+    for (const word of t.requires) {
+      if (!known.has(word)) {
+        problems.push(`順序違反: ${where}\n    requires「${word}」がこれより前のトピックで導入されていません`);
+      }
+    }
+    for (const word of t.introduces) {
+      if (known.has(word)) {
+        problems.push(`重複導入: ${where}\n    「${word}」は ${known.get(word)} で既に導入されています`);
+      } else {
+        known.set(word, t.id);
+      }
+    }
+  }
+
+  if (problems.length > 0) {
+    console.error(`\n語彙台帳チェックで ${problems.length} 件の問題が見つかりました:\n`);
+    for (const p of problems) console.error(`  - ${p}`);
+    console.error("");
+    return false;
+  }
+
+  console.log(`語彙台帳チェック OK (${topics.length} トピック / 登録語 ${known.size - SEED.length} 語)`);
+  return true;
+}
+
+const targets = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+if (targets.length > 0) {
+  if (!checkRoots(targets.map((t) => resolve(ROOT, t)))) process.exit(1);
+} else {
+  const roots = listCourseModuleRoots();
+  if (roots.length === 0) {
+    console.error("courses/<slug>/modules が見つかりません。");
     process.exit(1);
   }
-}
-
-const topics = searchRoots
-  .flatMap((root) => (statSync(root).isDirectory() ? collect(root) : [root]))
-  .sort()
-  .map(parseLedger)
-  .filter(Boolean);
-
-if (topics.length === 0) {
-  console.log("語彙台帳を持つトピックがありません。チェックをスキップします。");
-  process.exit(0);
-}
-
-const known = new Map(SEED.map((w) => [w, "(Module 0)"]));
-const problems = [];
-
-for (const t of topics) {
-  const where = relative(ROOT, t.path);
-  for (const word of t.requires) {
-    if (!known.has(word)) {
-      problems.push(`順序違反: ${where}\n    requires「${word}」がこれより前のトピックで導入されていません`);
-    }
+  let ok = true;
+  for (const root of roots) {
+    if (!checkRoots([root])) ok = false;
   }
-  for (const word of t.introduces) {
-    if (known.has(word)) {
-      problems.push(`重複導入: ${where}\n    「${word}」は ${known.get(word)} で既に導入されています`);
-    } else {
-      known.set(word, t.id);
-    }
-  }
+  if (!ok) process.exit(1);
 }
-
-if (problems.length > 0) {
-  console.error(`\n語彙台帳チェックで ${problems.length} 件の問題が見つかりました:\n`);
-  for (const p of problems) console.error(`  - ${p}`);
-  console.error("");
-  process.exit(1);
-}
-
-console.log(`語彙台帳チェック OK (${topics.length} トピック / 登録語 ${known.size - SEED.length} 語)`);

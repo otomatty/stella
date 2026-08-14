@@ -6,8 +6,8 @@ function courseRow(overrides: Partial<CourseRow> = {}): CourseRow {
   return {
     id: "course-1",
     tenant_id: "ses",
-    slug: "web-fundamentals",
-    title: "Web開発基礎",
+    slug: "typescript-basics",
+    title: "TypeScript 入門研修",
     category: "フロントエンド",
     color: "indigo",
     duration_hours: 28,

@@ -1,0 +1,11 @@
+{
+  "title": "【講座名】",
+  "category": "プログラミング",
+  "color": "indigo",
+  "description": "【受講者が一覧で見る説明。1〜2文】",
+  "header": "【講座名】",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション"
+  }
+}
