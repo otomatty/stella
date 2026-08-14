@@ -299,7 +299,7 @@ export const LessonPlayer = ({
           </div>
           <div className="text-sm font-semibold leading-snug">進捗</div>
           <div className="text-[11.5px] text-ink-3 mt-1.5">
-            <strong className="sf-gradient-text font-display text-[13px] font-bold">
+            <strong className="text-ink font-display text-[13px] font-bold">
               {progressPercent}%
             </strong>{' '}
             · セクション {sections.length}
