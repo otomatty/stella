@@ -1,0 +1,37 @@
+{
+  "title": "SQL 入門研修",
+  "category": "プログラミング",
+  "color": "green",
+  "description": "未経験からの SQL 研修。テーブルからデータを取り出す SELECT を軸に、絞り込み・並べ替え・結合・集計まで通す。",
+  "header": "SQL入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-select": "M1. SELECT",
+    "m2-where": "M2. WHERE",
+    "m3-order-limit": "M3. 並べ替えと制限",
+    "m4-join": "M4. JOIN",
+    "m5-aggregate": "M5. 集計"
+  },
+  "exercises": {
+    "1-1": [
+      { "id": "S0-Sql-Ch00-04-select-columns", "title": "演習: 列を選んで取り出す" }
+    ],
+    "2-1": [
+      { "id": "S0-Sql-Ch00-05-where-only", "title": "演習: WHERE で行を絞り込む" }
+    ],
+    "3-1": [
+      { "id": "S0-Sql-Ch00-01-select-hello", "title": "演習: 昇順で取り出す" },
+      { "id": "S0-Sql-Ch00-02-where-filter", "title": "演習: 絞り込んで並べ替える" },
+      { "id": "S0-Sql-Ch00-06-order-limit", "title": "演習: 上位だけ取り出す" }
+    ],
+    "4-1": [
+      { "id": "S0-Sql-Ch00-07-inner-join", "title": "演習: INNER JOIN で結合する" },
+      { "id": "S0-Sql-Ch00-08-left-join", "title": "演習: LEFT JOIN で全員を残す" }
+    ],
+    "5-1": [
+      { "id": "S0-Sql-Ch00-03-group-by", "title": "演習: GROUP BY で集計する" },
+      { "id": "S0-Sql-Ch00-09-group-having", "title": "演習: HAVING で集計結果を絞る" }
+    ]
+  }
+}

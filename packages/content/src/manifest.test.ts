@@ -162,6 +162,53 @@ describe("buildContentManifest — 複数講座", () => {
   });
 });
 
+describe("buildContentManifest — コード演習の配線", () => {
+  function writeCourse(root: string, exercises: unknown) {
+    const topic = join(root, "demo-course", "modules", "m0-x", "l1-y", "t1-z");
+    mkdirSync(topic, { recursive: true });
+    writeFileSync(
+      join(root, "demo-course", "course.json"),
+      JSON.stringify({ title: "デモ講座", exercises }),
+    );
+    writeFileSync(
+      join(topic, "slides.md"),
+      '---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n',
+    );
+    writeFileSync(join(root, "demo-course", "modules", "m0-x", "l1-y", "doc.md"), "# ドキュメント\n");
+    writeFileSync(join(root, "demo-course", "modules", "m0-x", "l1-y", "practice.md"), "# 演習\n");
+  }
+
+  it("exercises のレッスンキーから type:code のレッスンが生える", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-code-"));
+    try {
+      writeCourse(root, {
+        "0-1": [{ id: "S0-Sql-Ch00-01-select-hello", title: "SQL: 数値を SELECT する" }],
+      });
+      const { courses } = buildContentManifest(root);
+      const lessons = courses[0].sections?.[0].lessons ?? [];
+      const code = lessons.find((l) => l.type === "code");
+      // 並び位置ではなく assignment id 由来。演習の挿入・入れ替えで進捗がずれない。
+      expect(code?.id).toBe("code-S0-Sql-Ch00-01-select-hello");
+      expect(code?.title).toBe("SQL: 数値を SELECT する");
+      expect(code?.assignmentId).toBe("S0-Sql-Ch00-01-select-hello");
+      // 並びは スライド → まとめ → (クイズ) → コード演習
+      expect(lessons[lessons.length - 1]).toBe(code);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("対応するレッスンが無いキーはビルドで落ちる", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-code-bad-"));
+    try {
+      writeCourse(root, { "9-9": [{ id: "X", title: "宙に浮いた演習" }] });
+      expect(() => buildContentManifest(root)).toThrow(/9-9/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 // CRLF でチェックアウトされたツリー（core.autocrlf=true・.gitattributes 無し）でも
 // 同じ manifest になること。doc.md だけは他のパーサを通らないので、ここが唯一の番人。
 describe("buildContentManifest — CRLF チェックアウト", () => {

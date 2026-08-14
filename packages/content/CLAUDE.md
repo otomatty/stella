@@ -126,6 +126,8 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **教材本体は `courses/<slug>/modules/` です。** TypeScript 入門は `courses/typescript-basics/`。`bun run --filter=@falcon/content materials` で162トピック分の pptx が生成できます。
 
+**SQL 入門（`courses/sql-basics/`）があります。** 6 モジュール / 6 レッスン / 24 トピックで、構成は [courses/sql-basics/CURRICULUM.md](courses/sql-basics/CURRICULUM.md)。コード演習は `course.json` の `exercises` で `@falcon/shared` の SQL 課題（`_lang/sql/`）に配線され、VS Code 拡張で採点されます。原典クレジットは CURRICULUM.md に集約しています。
+
 TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 なので、`bun run --filter=@falcon/content upload:remote` を別途実行してください（デプロイワークフローには含まれません）。

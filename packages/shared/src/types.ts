@@ -326,6 +326,8 @@ export interface SqlTestCase {
   /** 期待される行 (列順は `expectedColumns` または SELECT 順)。 */
   expectedRows: SqlRow[];
   expectedColumns?: string[];
+  /** true なら行の並び順を無視して比較する (ORDER BY を課さない問題用)。 */
+  orderInsensitive?: boolean;
   code?: never;
   expectedStdout?: never;
 }

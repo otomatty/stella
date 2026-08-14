@@ -108,6 +108,7 @@ function buildOneCourse(
   const sections: Section[] = [];
   const quizzes: QuizSeed[] = [];
   const moduleTitles = config.modules ?? {};
+  const usedExerciseKeys = new Set<string>();
 
   for (const moduleDir of dirsIn(modulesRoot)) {
     const modulePath = join(modulesRoot, moduleDir);
@@ -175,6 +176,22 @@ function buildOneCourse(
         });
         quizzes.push({ courseId: slug, lessonId: quizLessonId, passScore: 80, questions });
       }
+
+      // コード演習は VS Code 拡張で解く。course.json の exercises が正本で、
+      // assignment 本体は seed が @falcon/shared から引く。
+      // レッスン id は assignment id から作る。配列の並び位置を使うと、演習の
+      // 挿入・入れ替えで既存 id が別課題を指し、lesson_progress が付け替わる。
+      for (const ex of config.exercises?.[key] ?? []) {
+        usedExerciseKeys.add(key);
+        lessons.push({
+          id: `code-${ex.id}`,
+          title: ex.title,
+          type: "code",
+          duration: "10分",
+          status: "todo",
+          assignmentId: ex.id,
+        });
+      }
     }
 
     sections.push({
@@ -182,6 +199,16 @@ function buildOneCourse(
       title: moduleTitles[moduleDir] ?? moduleDir,
       lessons,
     });
+  }
+
+  // タイポしたキーの演習が黙って消えないように、未使用キーはビルドで落とす。
+  const unusedExerciseKeys = Object.keys(config.exercises ?? {}).filter(
+    (k) => !usedExerciseKeys.has(k),
+  );
+  if (unusedExerciseKeys.length > 0) {
+    throw new Error(
+      `courses/${slug}/course.json の exercises に、対応するレッスンが無いキーがあります: ${unusedExerciseKeys.join(", ")}`,
+    );
   }
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);

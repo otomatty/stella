@@ -118,6 +118,20 @@ header: "【講座名】"
 
 図解は `.claude/skills/diagram-design/` に従い、正本は `assets/<名前>.html`、コミットするのは `.svg`。
 
+### 3.5 コード演習を配線する（任意）
+
+VS Code 拡張で解くコード演習は、`course.json` の `exercises` にレッスンキー（トピック id の先頭 2 節。`1-1-1` → `1-1`）で書く。id は `@falcon/shared` の `Assignment.id`。
+
+```json
+{
+  "exercises": {
+    "1-1": [{ "id": "S0-Sql-Ch00-04-select-columns", "title": "演習: 列を選んで取り出す" }]
+  }
+}
+```
+
+manifest がクイズの後ろに `type: "code"` のレッスン（`code-<AssignmentId>` 形式の安定 id）を生やし、seed が assignment 本体を D1 へ upsert する。対応するレッスンが無いキーはビルドで落ちる。SQL 入門（`courses/sql-basics/`）が実例。
+
 ### 4. 検査する
 
 ```bash

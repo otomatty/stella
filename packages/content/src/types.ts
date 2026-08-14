@@ -19,6 +19,12 @@ export interface QuizQuestionSeed {
 
 export type CourseColor = "indigo" | "green" | "amber" | "slate";
 
+/** レッスンに紐づくコード演習。id は `@falcon/shared` の Assignment.id。 */
+export interface ExerciseRef {
+  id: string;
+  title: string;
+}
+
 /** courses/<slug>/course.json。slug はディレクトリ名。 */
 export interface CourseConfig {
   title: string;
@@ -28,6 +34,8 @@ export interface CourseConfig {
   header?: string;
   tenantId?: string;
   modules?: Record<string, string>;
+  /** レッスンキー ("1-1" 形式) → VS Code 拡張で解くコード演習 */
+  exercises?: Record<string, ExerciseRef[]>;
 }
 
 export interface QuizSeed {

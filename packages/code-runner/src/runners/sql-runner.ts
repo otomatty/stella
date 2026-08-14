@@ -131,8 +131,12 @@ function runOneSqlTest(
     const last = target[target.length - 1];
     const rows = last?.values ?? [];
     const columns = last?.columns ?? [];
-    const actualRows = rows.map(normalizeRow);
-    const expectedRows = test.expectedRows.map(normalizeRow);
+    let actualRows = rows.map(normalizeRow);
+    let expectedRows = test.expectedRows.map(normalizeRow);
+    if (test.orderInsensitive) {
+      actualRows = sortRows(actualRows);
+      expectedRows = sortRows(expectedRows);
+    }
     const columnsOk = checkColumns(columns, test.expectedColumns);
     const rowsOk = deepEqualRows(actualRows, expectedRows);
     return {
@@ -173,6 +177,14 @@ function normalizeRow(row: unknown[]): SqlRow {
       return "";
     }
   });
+}
+
+/** orderInsensitive 用。 JSON 表現の辞書順で並べ、 両辺を同じ順序に正規化する。 */
+function sortRows(rows: SqlRow[]): SqlRow[] {
+  return rows
+    .map((r) => ({ r, key: JSON.stringify(r) }))
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+    .map(({ r }) => r);
 }
 
 function checkColumns(actual: string[], expected?: string[]): boolean {
