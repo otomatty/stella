@@ -14,7 +14,7 @@
  */
 
 import { parse } from "@babel/parser";
-import _traverse from "@babel/traverse";
+import _traverse, { type NodePath } from "@babel/traverse";
 import type { Node } from "@babel/types";
 
 import type {
@@ -134,8 +134,8 @@ function labelOf(p: ASTPattern): string {
 function findFirst(ast: Node, pattern: ASTPattern): Found | null {
   let result: Found | null = null;
 
-  traverse(ast as never, {
-    enter(path) {
+  traverse(ast, {
+    enter(path: NodePath) {
       if (result) {return;}
 
       const node = path.node;
