@@ -1,9 +1,10 @@
 /**
  * ユーザーメニュー。 アバターとユーザー名のボタンを押すと
  * 「設定」「ログアウト」がドロップダウンで開く。
+ * staff はここから受講者画面へ切り替えられる。
  */
 
-import { ChevronsUpDown, LogOut, Settings } from '@/lib/icons';
+import { ChevronsUpDown, Eye, GraduationCap, LogOut, Settings } from '@/lib/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -13,15 +14,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { staffHomeLabel } from '@/lib/ui-role';
 import type { User } from '@/data/types';
+import type { ProfileRole } from '@falcon/shared/cms/types';
 
 interface UserMenuProps {
   user: User;
   onOpenSettings: () => void;
   onLogout: () => void;
+  canSwitchToLearner?: boolean;
+  previewingLearner?: boolean;
+  profileRole?: ProfileRole;
+  onSwitchToLearner?: () => void;
+  onReturnToStaff?: () => void;
 }
 
-export const UserMenu = ({ user, onOpenSettings, onLogout }: UserMenuProps) => (
+export const UserMenu = ({
+  user,
+  onOpenSettings,
+  onLogout,
+  canSwitchToLearner = false,
+  previewingLearner = false,
+  profileRole,
+  onSwitchToLearner,
+  onReturnToStaff,
+}: UserMenuProps) => (
   <DropdownMenu>
     <DropdownMenuTrigger
       className="flex w-full items-center gap-2.5 rounded-xl border border-transparent px-1.5 py-1.5 text-left transition-colors hover:bg-sunken hover:border-border data-[state=open]:bg-sunken data-[state=open]:border-border"
@@ -51,6 +68,17 @@ export const UserMenu = ({ user, onOpenSettings, onLogout }: UserMenuProps) => (
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
+      {canSwitchToLearner ? (
+        previewingLearner ? (
+          <DropdownMenuItem icon={GraduationCap} onClick={onReturnToStaff}>
+            {staffHomeLabel(profileRole)}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem icon={Eye} onClick={onSwitchToLearner}>
+            受講者画面を表示
+          </DropdownMenuItem>
+        )
+      ) : null}
       <DropdownMenuItem icon={Settings} onClick={onOpenSettings}>
         設定
       </DropdownMenuItem>

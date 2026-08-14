@@ -15,15 +15,16 @@ import { signOut as authSignOut } from '@/lib/auth';
 import { configureRemoteSync, deriveCourseProgress } from '@/lib/lesson-progress';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
 import { useIsNarrowViewport } from '@/hooks/useIsNarrowViewport';
-import type { ProfileRole } from '@falcon/shared/cms/types';
 import type { SearchResult } from '@falcon/shared/search/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
 import { DataSourceBanner } from '@/components/shell/DataSourceBanner';
 import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
+import { LearnerPreviewBanner } from '@/components/shell/LearnerPreviewBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
+import { resolveUiRole } from '@/lib/ui-role';
 import {
   AppShellContext,
   type AppShellValue,
@@ -57,6 +58,8 @@ interface PersistedState {
   tenantId?: Tenant['id'];
   showAIBot?: boolean;
   lastLocation?: LastLocation | null;
+  /** staff が受講者シェルを開いているときだけ 'learner'。 API の role は変えない。 */
+  uiRoleOverride?: Role | null;
 }
 
 const DEFAULTS = {
@@ -118,23 +121,6 @@ function firstLessonId(course: Course): string | null {
   );
 }
 
-/** profiles.role を UI 用 Role にマップする。 student → learner。 platform_admin → admin シェル。 */
-function mapProfileRole(role: ProfileRole): Role {
-  switch (role) {
-    case 'student':
-      return 'learner';
-    case 'instructor':
-      return 'instructor';
-    case 'admin':
-    case 'platform_admin':
-      return 'admin';
-    default: {
-      const _exhaustive: never = role;
-      return _exhaustive;
-    }
-  }
-}
-
 export function AppShell() {
   const navigate = useNavigate();
   const pathname = useRouterState({
@@ -168,6 +154,9 @@ export function AppShell() {
     return (saved?.tenantId && TENANTS.find((t) => t.id === saved.tenantId)) || defaultTenant;
   });
   const [role, setRole] = useState<Role>(() => loadSaved()?.role ?? DEFAULTS.role);
+  const [uiRoleOverride, setUiRoleOverride] = useState<Role | null>(
+    () => loadSaved()?.uiRoleOverride ?? null,
+  );
   const [lastLocation, setLastLocation] = useState<LastLocation | null>(
     () => loadSaved()?.lastLocation ?? null,
   );
@@ -195,9 +184,13 @@ export function AppShell() {
   );
 
   // バックエンドが設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
-  const effectiveRole: Role = backendEnabled && profile
-    ? mapProfileRole(profile.role)
-    : role;
+  // staff は UI だけ受講者シェルへ切り替えられる（認可は profiles.role のまま）。
+  const { role: effectiveRole, previewingLearner, canSwitchToLearner } = resolveUiRole({
+    backendEnabled,
+    profileRole: profile?.role,
+    uiRoleOverride,
+    demoRole: role,
+  });
   const effectiveTenant: Tenant = useMemo(() => {
     if (backendEnabled && profile) {
       // DB (GET /api/me の tenant) を真実とする。 seed カタログに無いテナントでも
@@ -242,28 +235,36 @@ export function AppShell() {
 
   // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
+  // staff が受講者画面を開いているときは公開講座を出す（自分への割当が無くても確認できる）。
   const browseCourses = useCoursesForTenant(
     effectiveTenant.id,
-    effectiveRole !== 'learner',
+    effectiveRole !== 'learner' || previewingLearner,
+    { publishedOnly: previewingLearner },
   );
   const enrolledCourses = useEnrolledCoursesForTenant(
     effectiveTenant.id,
     session?.user.id ?? null,
-    effectiveRole === 'learner',
+    effectiveRole === 'learner' && !previewingLearner,
   );
   // DB 由来コースは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
   const progressMap = useLessonProgressMap();
   const rawCourses =
-    effectiveRole === 'learner' ? enrolledCourses.courses : browseCourses.courses;
+    effectiveRole === 'learner' && !previewingLearner
+      ? enrolledCourses.courses
+      : browseCourses.courses;
   const courses = useMemo(
     () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
     [rawCourses, progressMap],
   );
 
   const courseSource =
-    effectiveRole === 'learner' ? enrolledCourses.source : browseCourses.source;
+    effectiveRole === 'learner' && !previewingLearner
+      ? enrolledCourses.source
+      : browseCourses.source;
   const courseError =
-    effectiveRole === 'learner' ? enrolledCourses.error : browseCourses.error;
+    effectiveRole === 'learner' && !previewingLearner
+      ? enrolledCourses.error
+      : browseCourses.error;
   // バナー集約 + LearnerDashboard への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(
     effectiveTenant.id,
@@ -315,6 +316,7 @@ export function AppShell() {
 
   const doLogout = useCallback(async () => {
     reviewIdRef.current = null;
+    setUiRoleOverride(null);
     try {
       if (backendEnabled) {
         await authSignOut();
@@ -327,6 +329,18 @@ export function AppShell() {
       toast.error('ログアウトに失敗しました');
     }
   }, [backendEnabled, navigate]);
+
+  const switchToLearnerView = useCallback(() => {
+    setNavOpen(false);
+    setUiRoleOverride('learner');
+    void navigate({ to: '/' });
+  }, [navigate]);
+
+  const returnToStaffView = useCallback(() => {
+    setNavOpen(false);
+    setUiRoleOverride(null);
+    void navigate({ to: '/' });
+  }, [navigate]);
 
   /**
    * 旧ページキー互換の遷移アダプタ。 既存画面コンポーネントの `setPage(key)` を
@@ -500,14 +514,15 @@ export function AppShell() {
         tenantId: tenant.id,
         showAIBot,
         lastLocation,
+        uiRoleOverride,
       }),
     );
-  }, [stage, role, tenant, showAIBot, lastLocation]);
+  }, [stage, role, tenant, showAIBot, lastLocation, uiRoleOverride]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
   useEffect(() => {
-    if (backendEnabled && session && profile) {
+    if (backendEnabled && session && profile && !previewingLearner) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
@@ -515,7 +530,7 @@ export function AppShell() {
     } else {
       configureRemoteSync(null);
     }
-  }, [backendEnabled, session, profile]);
+  }, [backendEnabled, session, profile, previewingLearner]);
 
   // Backtick toggle for tweaks panel
   useEffect(() => {
@@ -601,6 +616,7 @@ export function AppShell() {
     profile,
     onProfileUpdated: refreshProfile,
     highlightCourse,
+    previewingLearner,
   };
 
   return (
@@ -616,6 +632,10 @@ export function AppShell() {
             user={effectiveUser}
             counts={sidebarCounts}
             profileRole={profile?.role}
+            canSwitchToLearner={canSwitchToLearner}
+            previewingLearner={previewingLearner}
+            onSwitchToLearner={switchToLearnerView}
+            onReturnToStaff={returnToStaffView}
           />
         </div>
         <DialogPrimitive.Root open={navOpen} onOpenChange={setNavOpen}>
@@ -638,15 +658,28 @@ export function AppShell() {
                 user={effectiveUser}
                 counts={sidebarCounts}
                 profileRole={profile?.role}
+                canSwitchToLearner={canSwitchToLearner}
+                previewingLearner={previewingLearner}
+                onSwitchToLearner={switchToLearnerView}
+                onReturnToStaff={returnToStaffView}
               />
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
         <div className="min-w-0 flex flex-col">
           {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
+          {previewingLearner ? (
+            <LearnerPreviewBanner
+              profileRole={profile?.role}
+              onReturn={returnToStaffView}
+            />
+          ) : null}
           <Topbar
             onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
+            searchCourseIds={
+              previewingLearner ? new Set(courses.map((c) => c.id)) : null
+            }
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,

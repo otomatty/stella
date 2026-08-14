@@ -1,3 +1,4 @@
+import { useLearnerPreviewReadOnly } from '@/components/shell/app-shell-context';
 import { OpenInVscodeButton } from './OpenInVscodeButton';
 
 export function CodeLessonHandoff({
@@ -9,6 +10,7 @@ export function CodeLessonHandoff({
   lessonId: string;
   assignmentTitle?: string;
 }) {
+  const previewReadOnly = useLearnerPreviewReadOnly();
   return (
     <div className="px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
       <p className="hidden max-md:block text-[13.5px] text-ink-2">
@@ -26,11 +28,17 @@ export function CodeLessonHandoff({
       </div>
 
       <p className="max-md:hidden text-[13px] text-ink-3 mt-4">
-        拡張 FALCON INFORMAL を入れた VS Code で演習を進めます。まだ入れていない場合は、サイドバーの「VS Code」から{' '}
-        <a href="/connect-vscode" className="text-brand underline underline-offset-2">
-          接続ページ
-        </a>
-        を開いて拡張を接続してください。
+        {previewReadOnly
+          ? 'プレビュー中のため VS Code への接続はできません。管理画面に戻ってから接続してください。'
+          : (
+            <>
+              拡張 FALCON INFORMAL を入れた VS Code で演習を進めます。まだ入れていない場合は、サイドバーの「VS Code」から{' '}
+              <a href="/connect-vscode" className="text-brand underline underline-offset-2">
+                接続ページ
+              </a>
+              を開いて拡張を接続してください。
+            </>
+          )}
       </p>
     </div>
   );

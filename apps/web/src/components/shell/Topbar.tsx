@@ -13,6 +13,8 @@ interface TopbarProps {
   onOpenNav?: () => void;
   /** 検索パレットで選ばれたコース / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
+  /** 受講者プレビュー時は公開講座に検索を限定する。 */
+  searchCourseIds?: ReadonlySet<string> | null;
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {
     role: Role;
@@ -36,7 +38,13 @@ function shortcutLabel(): string {
     : 'Ctrl K';
 }
 
-export const Topbar = ({ actions, notify, onOpenNav, onSearchSelect }: TopbarProps) => {
+export const Topbar = ({
+  actions,
+  notify,
+  onOpenNav,
+  onSearchSelect,
+  searchCourseIds = null,
+}: TopbarProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // ⌘K / Ctrl+K で検索パレットを開く。 入力欄にフォーカスがあっても効かせる
@@ -85,6 +93,7 @@ export const Topbar = ({ actions, notify, onOpenNav, onSearchSelect }: TopbarPro
         open={searchOpen}
         onOpenChange={setSearchOpen}
         onSelect={onSearchSelect}
+        allowedCourseIds={searchCourseIds}
       />
       <NotificationCenter
         role={notify.role}

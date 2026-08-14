@@ -81,8 +81,14 @@ const NAV: Record<Role, NavItem[]> = {
 
 const ORGS_NAV: NavItem = { id: 'orgs', label: '組織マスタ', icon: Building };
 
-function navForRole(role: Role, profileRole?: ProfileRole): NavItem[] {
-  const items = NAV[role];
+function navForRole(
+  role: Role,
+  profileRole?: ProfileRole,
+  previewingLearner?: boolean,
+): NavItem[] {
+  const items = previewingLearner
+    ? NAV[role].filter((item) => item.id !== 'connect-vscode')
+    : NAV[role];
   if (role !== 'admin' || profileRole !== 'platform_admin') return items;
   const usersIdx = items.findIndex((item) => item.id === 'users');
   const insertAt = usersIdx >= 0 ? usersIdx + 1 : items.length;
@@ -98,6 +104,10 @@ interface SidebarProps {
   counts?: Partial<Record<NavId, number>>;
   /** profiles.role — 組織マスタは platform_admin のみ表示 */
   profileRole?: ProfileRole;
+  canSwitchToLearner?: boolean;
+  previewingLearner?: boolean;
+  onSwitchToLearner?: () => void;
+  onReturnToStaff?: () => void;
 }
 
 export const Sidebar = ({
@@ -107,6 +117,10 @@ export const Sidebar = ({
   user,
   counts,
   profileRole,
+  canSwitchToLearner,
+  previewingLearner,
+  onSwitchToLearner,
+  onReturnToStaff,
 }: SidebarProps) => (
   <aside className="bg-card border-r border-border px-3 pt-3.5 pb-4 flex flex-col gap-0.5 sticky top-0 h-screen overflow-y-auto w-[236px]">
     <div className="pt-1 px-2.5 pb-4 border-b border-border mb-3">
@@ -116,7 +130,7 @@ export const Sidebar = ({
     <div className="px-3.5 pt-2.5 pb-2 font-display text-[10.5px] font-bold uppercase tracking-[0.22em] text-ink-4">
       Menu
     </div>
-    {navForRole(role, profileRole).map((link) => {
+    {navForRole(role, profileRole, previewingLearner).map((link) => {
       const count = counts?.[link.id];
       return (
         <SidebarLink
@@ -136,6 +150,11 @@ export const Sidebar = ({
         user={user}
         onOpenSettings={() => setPage('settings')}
         onLogout={() => setPage('__logout')}
+        canSwitchToLearner={canSwitchToLearner}
+        previewingLearner={previewingLearner}
+        profileRole={profileRole}
+        onSwitchToLearner={onSwitchToLearner}
+        onReturnToStaff={onReturnToStaff}
       />
     </div>
   </aside>

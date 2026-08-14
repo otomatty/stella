@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useLearnerPreviewReadOnly } from '@/components/shell/app-shell-context';
 import {
   loadMap,
   subscribe,
@@ -47,25 +48,30 @@ export interface UseLessonProgressResult {
 export function useLessonProgress(lessonId: string): UseLessonProgressResult {
   const map = useLessonProgressMap();
   const entry = map[lessonId];
+  const readOnly = useLearnerPreviewReadOnly();
 
   const recordPage = useCallback(
     (page: number, totalPages: number) => {
+      if (readOnly) return;
       storeRecordPage(lessonId, page, totalPages);
     },
-    [lessonId],
+    [lessonId, readOnly],
   );
   const recordWatchTime = useCallback(
     (sec: number, totalSec: number) => {
+      if (readOnly) return;
       storeRecordWatchTime(lessonId, sec, totalSec);
     },
-    [lessonId],
+    [lessonId, readOnly],
   );
   const markComplete = useCallback(() => {
+    if (readOnly) return;
     storeMarkComplete(lessonId);
-  }, [lessonId]);
+  }, [lessonId, readOnly]);
   const markVisited = useCallback(() => {
+    if (readOnly) return;
     storeMarkVisited(lessonId);
-  }, [lessonId]);
+  }, [lessonId, readOnly]);
 
   return { entry, recordPage, recordWatchTime, markComplete, markVisited };
 }
@@ -86,8 +92,10 @@ const STUDY_TICK_MS = 60_000;
 export function useStudyTime(lessonId: string, enabled: boolean): void {
   const ready = useProgressReady();
 
+  const readOnly = useLearnerPreviewReadOnly();
+
   useEffect(() => {
-    if (!enabled || !ready || !lessonId) return;
+    if (!enabled || !ready || !lessonId || readOnly) return;
     let accumulated = getEntry(lessonId)?.watchedSec ?? 0;
     let visibleSince =
       document.visibilityState === 'visible' ? Date.now() : null;
@@ -116,5 +124,5 @@ export function useStudyTime(lessonId: string, enabled: boolean): void {
       document.removeEventListener('visibilitychange', onVisibility);
       flush();
     };
-  }, [lessonId, enabled, ready]);
+  }, [lessonId, enabled, ready, readOnly]);
 }

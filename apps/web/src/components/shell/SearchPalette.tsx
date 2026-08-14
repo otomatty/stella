@@ -13,19 +13,31 @@ import { Book, Loader2, Search } from '@/lib/icons';
 import { LessonTypeIcon } from '@/components/learner/CourseDetail';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useSearch } from '@/hooks/useSearch';
+import { filterSearchResultsForPreview } from '@/lib/ui-role';
 import { cn } from '@/lib/utils';
 
 interface SearchPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (result: SearchResult) => void;
+  /** 受講者プレビュー時は公開講座の ID。 null なら API 結果をそのまま出す。 */
+  allowedCourseIds?: ReadonlySet<string> | null;
 }
 
-export const SearchPalette = ({ open, onOpenChange, onSelect }: SearchPaletteProps) => {
+export const SearchPalette = ({
+  open,
+  onOpenChange,
+  onSelect,
+  allowedCourseIds = null,
+}: SearchPaletteProps) => {
   const [input, setInput] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
-  const { results, loading, error, tooShort, unavailable } = useSearch(input, open);
+  const { results: rawResults, loading, error, tooShort, unavailable } = useSearch(input, open);
+  const results = useMemo(
+    () => filterSearchResultsForPreview(rawResults, allowedCourseIds),
+    [rawResults, allowedCourseIds],
+  );
 
   // 開くたびに入力をリセットする (前回の検索語が残らないように)。
   useEffect(() => {

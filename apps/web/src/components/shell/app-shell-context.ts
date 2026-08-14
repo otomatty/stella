@@ -37,6 +37,8 @@ export interface AppShellValue {
   onProfileUpdated: () => Promise<void>;
   /** 検索パレット→コース管理のハイライト対象。 seq は選び直し検出用の版番号。 */
   highlightCourse: { id: string; seq: number } | null;
+  /** staff が受講者シェルを開いている。 進捗・提出は書かない。 */
+  previewingLearner: boolean;
 }
 
 export const AppShellContext = createContext<AppShellValue | null>(null);
@@ -45,4 +47,9 @@ export function useAppShell(): AppShellValue {
   const v = useContext(AppShellContext);
   if (!v) throw new Error('useAppShell must be used under the _app route');
   return v;
+}
+
+/** AppShell 配下以外では false。 進捗フックから provider 必須にしない。 */
+export function useLearnerPreviewReadOnly(): boolean {
+  return Boolean(useContext(AppShellContext)?.previewingLearner);
 }

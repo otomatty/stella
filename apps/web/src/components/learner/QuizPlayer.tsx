@@ -21,6 +21,7 @@ import {
   fetchQuizForLearner,
   submitQuizAttempt,
 } from "@/lib/quiz-attempts-api";
+import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 import type {
   LearnerQuiz,
   LearnerQuizQuestion,
@@ -64,6 +65,7 @@ function applyShuffle(quiz: LearnerQuiz): LearnerQuiz {
 }
 
 export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
+  const previewReadOnly = useLearnerPreviewReadOnly();
   const [quiz, setQuiz] = useState<LearnerQuiz | null>(null);
   const [loading, setLoading] = useState(true);
   // questionId -> 選択した optionId 集合
@@ -142,6 +144,10 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   }, [quiz, answers]);
 
   const handleSubmit = async () => {
+    if (previewReadOnly) {
+      toast.message("受講者画面のプレビューでは採点結果は保存されません");
+      return;
+    }
     if (!quiz) return;
     setSubmitting(true);
     try {
@@ -437,16 +443,18 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       {!result ? (
         <div className="flex gap-2.5 mt-5 pt-4 border-t border-border items-center">
           <span className="text-[11.5px] text-ink-3">
-            {outOfAttempts
-              ? "受験回数の上限に達しました"
-              : allAnswered
-                ? "すべて回答済みです"
-                : "すべての設問に回答してください"}
+            {previewReadOnly
+              ? "プレビュー中のため採点は保存されません"
+              : outOfAttempts
+                ? "受験回数の上限に達しました"
+                : allAnswered
+                  ? "すべて回答済みです"
+                  : "すべての設問に回答してください"}
           </span>
           <div className="flex-1" />
           <Button
             variant="accent"
-            disabled={!allAnswered || submitting || outOfAttempts}
+            disabled={previewReadOnly || !allAnswered || submitting || outOfAttempts}
             onClick={handleSubmit}
           >
             {submitting ? (
