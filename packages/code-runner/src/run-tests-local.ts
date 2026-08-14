@@ -15,7 +15,17 @@ import type {
 } from "./quickjs-worker.js";
 
 let workerInstance: Worker | null = null;
+let workerUrlOverride: URL | string | undefined;
 let nextRequestId = 1;
+
+/** Grader WebView など、バンドル後の worker ファイル URL を差し替える。 */
+export function setQuickJsWorkerUrl(url: URL | string): void {
+  workerUrlOverride = url;
+  if (workerInstance !== null) {
+    workerInstance.terminate();
+    workerInstance = null;
+  }
+}
 
 /**
  * 全テスト合計の安全網タイムアウト。
@@ -27,7 +37,7 @@ const WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 function getWorker(): Worker {
   if (workerInstance === null) {
     workerInstance = new Worker(
-      new URL("./quickjs-worker.ts", import.meta.url),
+      workerUrlOverride ?? new URL("./quickjs-worker.ts", import.meta.url),
       { type: "module" },
     );
   }

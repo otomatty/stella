@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Check,
@@ -12,8 +12,7 @@ import {
   User,
 } from '@/lib/icons';
 import type { Course, Section, Lesson, LessonType } from '@/data/types';
-import type { ChatContext, GradingSummary } from '@falcon/shared/ai/types';
-import type { Assignment } from '@falcon/shared/types';
+import type { ChatContext } from '@falcon/shared/ai/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -33,19 +32,13 @@ import type { LessonMaterialRow } from '@falcon/shared/cms/types';
 import { isBackendConfigured } from "@/lib/backend";
 import { cn } from '@/lib/utils';
 import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
+import { CodeLessonHandoff } from './CodeLessonHandoff';
 import { LessonMarkdown, MarkdownSlides } from './MarkdownSlides';
 import { QuizPlayer } from './QuizPlayer';
 import type { Tenant } from '@/data/types';
 
 const SlidesViewer = lazy(() =>
   import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
-);
-
-// CodeMirror (vendor-codemirror chunk) を含むため、 code レッスンを開くまでロードしない。
-const PracticeWorkspace = lazy(() =>
-  import('@/practice/PracticeWorkspace').then((m) => ({
-    default: m.PracticeWorkspace,
-  })),
 );
 
 interface LessonPlayerProps {
@@ -68,9 +61,9 @@ interface LessonPlayerProps {
    * リロード後に同じレッスンへ戻す。
    */
   onActiveLessonChange?: (courseId: string, lessonId: string) => void;
-  /** AIChatBot を開くトリガ。 PracticeWorkspace の「AI に質問する」 から呼ぶ。 */
+  /** AIChatBot を開くトリガ。 親が渡す。 */
   onOpenAIBot?: () => void;
-  /** レッスン (またはコード演習) の文脈を AIChatBot に伝えるための setter。 */
+  /** レッスンの文脈を AIChatBot に伝えるための setter。 */
   setAIContext?: (ctx: ChatContext) => void;
 }
 
@@ -95,7 +88,6 @@ export const LessonPlayer = ({
   studentInitials,
   initialLesson = null,
   onActiveLessonChange,
-  onOpenAIBot,
   setAIContext,
 }: LessonPlayerProps) => {
   const sections: Section[] = course.sections ?? [];
@@ -211,35 +203,15 @@ export const LessonPlayer = ({
     return null;
   }, [allLessons, activeLesson, progressMap]);
 
-  // 次のレッスンへ遷移。 locked はスキップして次の解禁レッスンを探す。 末尾なら CourseDetail に戻る。
-  const goToNextLesson = useCallback(
-    (currentId: string) => {
-      const idx = allLessons.findIndex((l) => l.id === currentId);
-      if (idx === -1) return;
-      for (let i = idx + 1; i < allLessons.length; i++) {
-        if (resolveLessonStatus(allLessons[i], progressMap) !== 'locked') {
-          setActiveLesson(allLessons[i].id);
-          return;
-        }
-      }
-      setPage('course-detail');
-    },
-    [allLessons, progressMap, setPage],
-  );
-
-  // コード演習レッスン時にサイドバーを折りたたむ。 レッスン切替で同期。
-  const isCodeLesson = lessonObj?.type === 'code' && Boolean(lessonObj?.assignmentId);
   // 狭いビューポート (VSCode 拡張のパネル等) では目次を畳んでおく。 レッスン切替だけでなく
   // パネル幅の変更で lg 境界を跨いだときも追従させる。
   const isNarrow = useIsNarrowViewport();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(isNarrow);
   useEffect(() => {
-    setSidebarCollapsed(Boolean(isCodeLesson) || isNarrow);
-  }, [isCodeLesson, lessonObj?.id, isNarrow]);
+    setSidebarCollapsed(isNarrow);
+  }, [isNarrow]);
 
-  // レッスン切替で AI コンテキストを更新する (general/lesson/practice の遷移)。
-  // - code レッスン: 'lesson' を流す (採点失敗の practice context は PracticeWorkspace 経由で上書き)
-  // - その他: 'lesson'
+  // レッスン切替で AI コンテキストを更新する。code レッスンも含め kind: 'lesson'。
   useEffect(() => {
     if (!setAIContext || !lessonObj) return;
     setAIContext({
@@ -248,24 +220,6 @@ export const LessonPlayer = ({
       courseTitle: course.title,
     });
   }, [lessonObj?.id, lessonObj?.title, course.title, setAIContext]);
-
-  const handlePracticeAskAi = useCallback(
-    (ctx: { assignment: Assignment; userCode: string; summary: GradingSummary }) => {
-      setAIContext?.({
-        kind: 'practice',
-        assignmentId: ctx.assignment.id,
-        userCode: ctx.userCode,
-        summary: ctx.summary,
-      });
-      onOpenAIBot?.();
-    },
-    [setAIContext, onOpenAIBot],
-  );
-
-  const handlePracticeCleared = useCallback(() => {
-    markComplete();
-    toast.success('課題クリア! 次のレッスンへ進めます');
-  }, [markComplete]);
 
   if (!lessonObj) {
     return (
@@ -332,14 +286,11 @@ export const LessonPlayer = ({
               <ChevronLeft size={12} />
               <span className="truncate">{course.title}</span>
             </button>
-            {/* 演習レッスンは幅が要るので常に、 それ以外も狭幅では畳めるようにする。 */}
+            {/* 狭幅では目次を畳めるようにする。 コード演習は VS Code へ渡すので幅確保は不要。 */}
             <button
               type="button"
               onClick={() => setSidebarCollapsed(true)}
-              className={cn(
-                'text-ink-3 hover:text-foreground',
-                isCodeLesson ? '' : 'lg:hidden',
-              )}
+              className="text-ink-3 hover:text-foreground lg:hidden"
               title="サイドバーをたたむ"
               aria-label="サイドバーをたたむ"
             >
@@ -425,18 +376,11 @@ export const LessonPlayer = ({
       {/* 目次を fixed オーバーレイにするとグリッド外に出るので、 列を明示して 1 列目に落ちないようにする。 */}
       <main className="col-start-2 min-w-0 flex flex-col">
         {isCode && lessonObj.assignmentId ? (
-          // PracticeWorkspace 側で shared / CMS DB の双方を解決するため、
-          // ここで findAssignment による事前フィルタは行わない (#10 — CMS で作られた課題対応)。
-          <Suspense fallback={<ViewerLoading />}>
-            <PracticeWorkspace
-              key={lessonObj.id}
-              assignmentId={lessonObj.assignmentId}
-              embedded
-              onCleared={handlePracticeCleared}
-              onAskAi={handlePracticeAskAi}
-              onGoToNextLesson={() => goToNextLesson(lessonObj.id)}
-            />
-          </Suspense>
+          <CodeLessonHandoff
+            courseId={course.id}
+            lessonId={lessonObj.id}
+            assignmentTitle={lessonObj.title}
+          />
         ) : (
           <>
         {isVideo ? (

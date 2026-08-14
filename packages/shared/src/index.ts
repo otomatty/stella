@@ -14,3 +14,6 @@ export {
 } from "./problems/index.js";
 export { stages } from "./curriculum/stages.js";
 export { analyzeAst, analyzeJsAst, evaluate } from "./grading/index.js";
+export * from "./vscode/uris.js";
+export * from "./vscode/auth-exchange.js";
+export * from "./vscode/exercise-paths.js";

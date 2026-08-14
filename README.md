@@ -2,8 +2,8 @@
 
 部活動指導者講習とSES未経験エンジニア育成を **単一基盤で支えるLMS** のプロトタイプ。
 
-- 教材を見る (PDFスライド / 動画) — P1
-- 演習する (CodeMirror + Lint + AST + テスト実行) — P2
+- 教材を見る (PDFスライド / 動画) / クイズ — Web
+- コード演習する (VS Code 拡張 `falcon.informal`) — P2
 - 採点される / AIに質問する — P2
 
 ## モノレポ構成
@@ -14,8 +14,9 @@ falcon-informal/
 │   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
-│   └── api/                  # @falcon/api — Hono API → Cloudflare Workers
-│       └── src/              # /api/chat, /api/healthz
+│   ├── api/                  # @falcon/api — Hono API → Cloudflare Workers
+│   │   └── src/              # /api/chat, /api/healthz
+│   └── vscode/               # informal (`falcon.informal`) — 学習者のコード演習用 VS Code 拡張
 ├── packages/
 │   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
@@ -43,6 +44,7 @@ falcon-informal/
 - **Radix UI** プリミティブ
 - **Bun** (パッケージマネージャ / Workspaces)
 - **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
+- **VS Code 拡張** (`falcon.informal` / `apps/vscode`) — 学習者のコード演習
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
 ## セットアップ（実データ開発・既定）
@@ -105,6 +107,29 @@ bun run --filter=@falcon/web dev
 bun run --filter=@falcon/api dev
 bun run --filter=@falcon/shared typecheck
 ```
+
+### コード演習（VS Code 拡張）
+
+学習者のコード演習はブラウザではなく VS Code 拡張 `falcon.informal`（`apps/vscode`）で行う。
+Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師の課題プレビュー（`AssignmentEditor`）だけ Web に残る。
+
+**学習者**
+
+1. Web にログインする
+2. 拡張を入れる（ローカルは `apps/vscode` で `bun run package` した VSIX。Marketplace は下記の手順のみ。このリポジトリからは公開しない）
+3. サイドバー「VS Code」の `/connect-vscode` で接続する。またはコードレッスンの「VS Code で開く」
+
+JWT は拡張の SecretStorage（`falcon.accessToken`）に入る。設定にトークンを貼らない。
+
+**開発者**
+
+`bun run dev:api` と `bun run dev` のあと、`apps/vscode` を VS Code で開いて F5 する（`.vscode/launch.json` の `extensionHost`。`--extensionDevelopmentPath` は `apps/vscode`）。モノレポルートを開いている場合は、同じ構成を `--extensionDevelopmentPath` が `apps/vscode` を指すようにしてから F5 する。
+設定の既定は `falcon.serverUrl` = `http://127.0.0.1:8787`、`falcon.webUrl` = `http://127.0.0.1:5173`。
+詳細は [`apps/vscode/README.md`](apps/vscode/README.md)。
+
+**Marketplace（手順のみ・公開しない）**
+
+CI では出さない。publisher は `falcon`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login falcon` または `VSCE_PAT`）。
 
 ### 認証 (Google OAuth)
 

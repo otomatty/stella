@@ -34,12 +34,23 @@ interface SqlJsDatabase {
   close(): void;
 }
 
+let locateSqlJsFile = (file: string) => `/sqljs/${file}`;
+
+/** Grader WebView など、バンドル後の wasm URL を差し替える。 */
+export function setSqlJsLocateFile(locateFile: (file: string) => string): void {
+  locateSqlJsFile = locateFile;
+}
+
+export function sqlJsFileUrl(file: string): string {
+  return locateSqlJsFile(file);
+}
+
 const getSqlJs = memoizePromiseFactory(async () => {
   const mod = (await import("sql.js")) as unknown as { default: InitSqlJs };
   const init = mod.default;
   return init({
-    // Vite の publicDir に配置した wasm を参照する。
-    locateFile: (file: string) => `/sqljs/${file}`,
+    // 既定は Vite publicDir (`/sqljs/sql-wasm.wasm`)。拡張は setSqlJsLocateFile で上書きする。
+    locateFile: (file: string) => sqlJsFileUrl(file),
   });
 });
 

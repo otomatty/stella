@@ -40,8 +40,8 @@ export default defineConfig({
         // 明示的な vendor チャンクは定義しない。 vendor チャンクを定義すると Vite の
         // preload ヘルパ等の共有モジュールがそこへ吸い込まれ、 entry が
         // そのチャンクを静的 import してしまう (lazy 化が無効になる) ため。
-        // codemirror / pdf / xterm は lazy コンポーネント (PracticeWorkspace /
-        // AssignmentEditor / SlidesViewer / TerminalTab) からのみ参照されるので、
+        // codemirror / pdf は lazy コンポーネント (AssignmentEditor /
+        // SlidesViewer) からのみ参照されるので、
         // Rollup の自動分割でオンデマンドな共有チャンクになる。
         manualChunks(id: string) {
           // Vite の preload ヘルパが vendor チャンクへ混入して eager 化するのを防ぐ。

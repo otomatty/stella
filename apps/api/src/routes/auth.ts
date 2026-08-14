@@ -1,20 +1,28 @@
 /**
  * 認証 API — Google OAuth + JWT (Cloudflare Workers 自前)。
  *
- *   GET /api/auth/google           … Google 認可画面へリダイレクト
- *   GET /api/auth/google/callback  … コールバック → JWT をフロントへ返す
+ *   GET  /api/auth/google                 … Google 認可画面へリダイレクト
+ *   GET  /api/auth/google/callback        … コールバック → JWT をフロントへ返す
+ *   POST /api/auth/vscode-link            … ログイン済みユーザー向けワンタイム接続コード
+ *   POST /api/auth/vscode-link/exchange   … 接続コードを JWT に交換 (Authorization 不要)
  */
 
 import { Hono } from "hono";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
-import { profiles } from "../db/schema.js";
+import { authUsers, authVscodeLinks, profiles } from "../db/schema.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { errorResponse, ApiError } from "../lib/authz.js";
+import { errorResponse, ApiError, getCaller } from "../lib/authz.js";
+import {
+  createVscodeLinkCode,
+  hashVscodeLinkCode,
+  redeemVscodeLink,
+  VSCODE_LINK_TTL_MS,
+} from "../lib/vscode-link.js";
 import {
   buildGoogleAuthUrl,
   createOAuthState,
@@ -106,6 +114,25 @@ async function syncGoogleProfile(
   }
 }
 
+async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | null> {
+  const profile = (
+    await db
+      .select({ email: profiles.email })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1)
+  )[0];
+  if (profile?.email) return profile.email;
+  const user = (
+    await db
+      .select({ email: authUsers.email })
+      .from(authUsers)
+      .where(eq(authUsers.id, userId))
+      .limit(1)
+  )[0];
+  return user?.email ?? null;
+}
+
 function assertGoogleOAuthConfigured(env: Env): void {
   if (!env.AUTH_JWT_SECRET) {
     throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
@@ -184,4 +211,61 @@ authRoute.get("/api/auth/google/callback", async (c) => {
     });
   }
 });
-
+
+authRoute.post("/api/auth/vscode-link", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const code = createVscodeLinkCode();
+    const expiresAt = new Date(Date.now() + VSCODE_LINK_TTL_MS);
+    await db.insert(authVscodeLinks).values({
+      userId: caller.id,
+      codeHash: await hashVscodeLinkCode(code),
+      expiresAt,
+    });
+    return c.json({ code, expires_at: expiresAt.toISOString() });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
+  try {
+    if (!c.env.AUTH_JWT_SECRET) {
+      throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
+    }
+
+    const body = (await c.req.json().catch(() => null)) as { code?: unknown } | null;
+    const code = typeof body?.code === "string" ? body.code : "";
+    const db = getDb(c.env);
+    const now = new Date();
+    const row = (
+      await db
+        .select()
+        .from(authVscodeLinks)
+        .where(eq(authVscodeLinks.codeHash, await hashVscodeLinkCode(code)))
+        .limit(1)
+    )[0];
+
+    const exchanged = await redeemVscodeLink({
+      row,
+      now,
+      resolveEmail: (userId) => resolveVscodeLinkEmail(db, userId),
+      consume: async (id) => {
+        const consumed = (
+          await db
+            .update(authVscodeLinks)
+            .set({ usedAt: now })
+            .where(and(eq(authVscodeLinks.id, id), isNull(authVscodeLinks.usedAt)))
+            .returning({ id: authVscodeLinks.id })
+        )[0];
+        return Boolean(consumed);
+      },
+      signToken: (userId, email) => signAccessToken(c.env.AUTH_JWT_SECRET!, userId, email),
+    });
+    await recordLogin(c, db, exchanged.userId);
+    return c.json({ access_token: exchanged.access_token });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+

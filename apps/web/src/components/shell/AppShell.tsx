@@ -80,6 +80,7 @@ function loadSaved(): PersistedState | null {
 const PATH_BY_PAGE: Record<string, string> = {
   dash: '/',
   courses: '/courses',
+  'connect-vscode': '/connect-vscode',
   cert: '/certificates',
   'interview-prep': '/interview-prep',
   'review-queue': '/review-queue',

@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./runners": "./src/runners/index.ts",
+    "./lint": "./src/lint.ts",
     "./quickjs-worker": "./src/quickjs-worker.ts",
     "./run-tests-local": "./src/run-tests-local.ts"
   },
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "@falcon/shared": "workspace:*",
+    "eslint-linter-browserify": "^9.1.0",
     "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "quickjs-emscripten-core": "^0.32.0",
     "sql.js": "^1.14.1",

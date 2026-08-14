@@ -8,9 +8,7 @@
  * - WAI-ARIA tablist パターン: ArrowLeft/Right で循環移動、 Home/End で先頭/末尾、
  *   roving tabindex (`tabIndex={isActive ? 0 : -1}`) で支援技術ユーザを考慮 (coderabbit 対応)。
  *
- * `[` / `]` キーで前後の課題に飛ぶ既存ナビと衝突しないよう、 ルート要素には
- * `data-bottom-panel` … ではなく VSCode 風のタブを示す `data-file-tabs` を付与。
- * `PracticePage` の除外セレクタで参照する。
+ * ルート要素には VSCode 風のタブを示す `data-file-tabs` を付与する。
  */
 
 import { useRef, type KeyboardEvent } from "react";

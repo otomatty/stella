@@ -36,6 +36,15 @@ export const authOtpCodes = sqliteTable("auth_otp_codes", {
   expiresAt: ts("expires_at").notNull(),
 });
 
+export const authVscodeLinks = sqliteTable("auth_vscode_links", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull(),
+  codeHash: text("code_hash").notNull().unique(),
+  expiresAt: ts("expires_at").notNull(),
+  usedAt: ts("used_at"),
+  createdAt: tsNow("created_at"),
+});
+
 // ---------------------------------------------------------------
 // テナント / プロフィール
 // ---------------------------------------------------------------
@@ -574,6 +583,7 @@ export const supportInquiries = sqliteTable("support_inquiries", {
 export const APP_TABLES = [
   "auth_users",
   "auth_otp_codes",
+  "auth_vscode_links",
   "tenants",
   "profiles",
   "courses",

@@ -13,7 +13,7 @@ import type { Extension } from "@codemirror/state";
 
 import type { ESLintRuleConfig, Language } from "@falcon/shared/types";
 import { useTheme } from "../hooks/useTheme.js";
-import { getLinter } from "../lib/linters/index.js";
+import { getLinter } from "@falcon/code-runner/lint";
 
 interface Props {
   code: string;

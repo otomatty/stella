@@ -1,0 +1,67 @@
+{
+  "name": "informal",
+  "displayName": "FALCON INFORMAL",
+  "publisher": "falcon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FALCON INFORMAL — VS Code extension for course lessons and exercises",
+  "engines": { "vscode": "^1.96.0" },
+  "main": "./dist/extension.js",
+  "activationEvents": ["onUri", "onView:falcon.lessons"],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "falcon",
+          "title": "FALCON",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "falcon": [
+        {
+          "id": "falcon.lessons",
+          "name": "カリキュラム"
+        }
+      ]
+    },
+    "commands": [
+      { "command": "falcon.connect", "title": "FALCON: Web で接続" },
+      { "command": "falcon.disconnect", "title": "FALCON: 切断" },
+      { "command": "falcon.refresh", "title": "FALCON: 再読み込み" },
+      { "command": "falcon.grade", "title": "FALCON: 採点を実行" },
+      { "command": "falcon.resetExercise", "title": "FALCON: 課題をリセット" },
+      { "command": "falcon.openInWeb", "title": "FALCON: Web で開く" },
+      { "command": "falcon.openLessonDoc", "title": "FALCON: ドキュメントを開く" },
+      { "command": "falcon.openLessonCode", "title": "FALCON: 演習を開く" },
+      { "command": "falcon.openNextLesson", "title": "FALCON: 次のレッスンへ" }
+    ],
+    "configuration": {
+      "properties": {
+        "falcon.serverUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8787"
+        },
+        "falcon.webUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:5173"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "typecheck": "tsc --noEmit",
+    "package": "bun run build && bunx @vscode/vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@falcon/code-runner": "workspace:*",
+    "@falcon/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.96.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^7.0.2"
+  }
+}

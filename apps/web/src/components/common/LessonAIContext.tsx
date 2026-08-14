@@ -2,11 +2,7 @@
  * LessonPlayer から AIChatBot へ「いま学習中の文脈」 を渡すための React Context。
  *
  * - dashboard / コース一覧では Provider なし → AIChatBot は general モードで動く
- * - video/text/slides/quiz レッスン中は `kind: 'lesson'` を流す
- * - code レッスン中は `kind: 'practice'` を流す (PracticeWorkspace から userCode/summary 込みで設定)
- *
- * 採点失敗時に PracticeWorkspace が `onAskAi` で context を渡し、 親 (LessonPlayer)
- * が `setLessonAIContext` で更新するフロー。
+ * - レッスン中は `kind: 'lesson'` を流す (code レッスン含む)
  */
 
 import { createContext, useContext, type ReactNode } from 'react';

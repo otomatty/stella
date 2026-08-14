@@ -37,7 +37,7 @@ interface UseAiChatApi {
   error: string | null;
   /** user の質問を 1 件送る。空文字列やストリーミング中は無視。 */
   send: (text: string) => void;
-  /** 履歴が空の場合に最初の user メッセージを投げる (PracticeWorkspace の context bootstrap 用)。 */
+  /** 履歴が空の場合に最初の user メッセージを投げる (context bootstrap 用)。 */
   bootstrapIfEmpty: (initialUserMessage: string) => void;
 }
 

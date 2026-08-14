@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAssignmentsRouteImport } from './routes/_app/assignments'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
+import { Route as AppConnectVscodeRouteImport } from './routes/_app/connect-vscode'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
 import { Route as AppInterviewPrepRouteImport } from './routes/_app/interview-prep'
@@ -59,6 +60,11 @@ const AppAuditRoute = AppAuditRouteImport.update({
 const AppCertificatesRoute = AppCertificatesRouteImport.update({
   id: '/certificates',
   path: '/certificates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConnectVscodeRoute = AppConnectVscodeRouteImport.update({
+  id: '/connect-vscode',
+  path: '/connect-vscode',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEnrollmentsRoute = AppEnrollmentsRouteImport.update({
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
+  '/connect-vscode': typeof AppConnectVscodeRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
+  '/connect-vscode': typeof AppConnectVscodeRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/_app/assignments': typeof AppAssignmentsRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/certificates': typeof AppCertificatesRoute
+  '/_app/connect-vscode': typeof AppConnectVscodeRoute
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
   '/_app/interview-prep': typeof AppInterviewPrepRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/audit'
     | '/certificates'
+    | '/connect-vscode'
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/audit'
     | '/certificates'
+    | '/connect-vscode'
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/_app/assignments'
     | '/_app/audit'
     | '/_app/certificates'
+    | '/_app/connect-vscode'
     | '/_app/enrollments'
     | '/_app/gradebook'
     | '/_app/interview-prep'
@@ -337,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/certificates'
       fullPath: '/certificates'
       preLoaderRoute: typeof AppCertificatesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/connect-vscode': {
+      id: '/_app/connect-vscode'
+      path: '/connect-vscode'
+      fullPath: '/connect-vscode'
+      preLoaderRoute: typeof AppConnectVscodeRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/enrollments': {
@@ -458,6 +477,7 @@ interface AppRouteChildren {
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditRoute: typeof AppAuditRoute
   AppCertificatesRoute: typeof AppCertificatesRoute
+  AppConnectVscodeRoute: typeof AppConnectVscodeRoute
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
   AppInterviewPrepRoute: typeof AppInterviewPrepRoute
@@ -479,6 +499,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditRoute: AppAuditRoute,
   AppCertificatesRoute: AppCertificatesRoute,
+  AppConnectVscodeRoute: AppConnectVscodeRoute,
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
   AppInterviewPrepRoute: AppInterviewPrepRoute,

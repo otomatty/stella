@@ -6,8 +6,6 @@
  * - スキーマ変更に備えてバージョンキーを別途保持し、不一致なら全削除
  * - QuotaExceeded 時は他課題のチャットを古い順に削除して再試行
  * - 課題ごとに最新 `MAX_MESSAGES_PER_ASSIGNMENT` 件にキャップ
- *
- * 設計は `progress-store.ts` に揃えている。
  */
 
 import type { ChatMessage } from "@falcon/shared/ai/types";

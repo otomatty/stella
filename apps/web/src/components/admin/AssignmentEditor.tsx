@@ -30,14 +30,12 @@ import type {
   ESLintRuleConfig,
   LintPreset,
 } from "@falcon/shared/types";
-import { getStaticAnalysisSettings } from "@falcon/shared/assignment-helpers";
-import { analyzeAst } from "@falcon/shared/grading";
+import { lintAssignment } from "@falcon/code-runner/lint";
 import { runGrading } from "@falcon/code-runner/runners";
 import {
   getAssignmentRow,
   upsertAssignment,
 } from "@/lib/cms-api";
-import { getLinter } from "@/practice/lib/linters";
 
 import {
   fromRow,
@@ -196,16 +194,8 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
       const files: Record<string, string> = {};
       for (const f of assignment.starterFiles) files[f.path] = f.content;
 
-      const settings = getStaticAnalysisSettings(assignment);
-      let lint: ReturnType<ReturnType<typeof getLinter>> = [];
-      let ast = { required: [], forbidden: [] } as Awaited<ReturnType<typeof analyzeAst>>;
-      if (assignment.language === "javascript") {
-        const linter = getLinter("javascript");
-        lint = linter(files[assignment.entryFile ?? assignment.starterFiles[0].path] ?? "", settings.eslintRules, {
-          ignoredUnusedNames: settings.ignoredUnusedNames,
-        });
-        ast = analyzeAst("javascript", files[assignment.entryFile ?? assignment.starterFiles[0].path] ?? "", settings.ast);
-      }
+      const entry = assignment.entryFile ?? assignment.starterFiles[0].path;
+      const { lint, ast } = lintAssignment(files[entry] ?? "", assignment);
 
       const { response, evaluation } = await runGrading({
         files,
