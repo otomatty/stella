@@ -1,0 +1,78 @@
+name: Release VS Code Extension
+
+# apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付する。
+# 検証（lint/typecheck/test/build）は deploy.yml 側で走るのでここではやらない。
+on:
+  push:
+    branches: [main]
+    paths: ["apps/vscode/**"]
+# workflow_dispatch は置かない。任意の ref から実行できてしまい、未マージのコードで
+# vscode-v<version> の Release を作成/上書きできるため。再実行は Actions の Re-run で。
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-vscode
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: package .vsix → GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # deploy.yml の検証ゲートは同じ push で並走するだけで、この job を止められない。
+      # 壊れた main から .vsix が出ないよう、ここでも通す（build は Package で走る）。
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun run test
+
+      # apps/vscode/package.json の package スクリプトは対話プロンプト
+      # （repository フィールド欠落の確認）で CI が止まるため、
+      # build + vsce を --allow-missing-repository 付きで直接呼ぶ。
+      - name: Package
+        working-directory: apps/vscode
+        run: |
+          bun run build
+          bunx @vscode/vsce package --no-dependencies --allow-missing-repository
+
+      - name: Read version
+        id: meta
+        run: echo "version=$(node -p "require('./apps/vscode/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # 同一バージョンで再度 main に push された場合は既存 Release に上書き添付する
+      # （バージョン採番は apps/vscode/package.json の手動更新。自動 bump はしない）。
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: vscode-v${{ steps.meta.outputs.version }}
+          NOTES: |
+            commit ${{ github.sha }} からビルド。
+            .vsix をダウンロードし、VS Code の「Extensions: Install from VSIX...」でインストールする。
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            # .vsix と本文をセットで差し替える（本文の commit がビルド元）。
+            # タグ自体は初回リリース時のコミットを指したままなので、
+            # コミットとタグを一致させたい場合はバージョンを上げること。
+            gh release upload "$TAG" apps/vscode/*.vsix --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            # タグ未作成時の gh release create はデフォルトブランチの最新から
+            # タグを切るため、ビルドした commit を --target で明示する。
+            gh release create "$TAG" apps/vscode/*.vsix \
+              --target "$GITHUB_SHA" \
+              --title "VS Code 拡張 $TAG" \
+              --notes "$NOTES"
+          fi

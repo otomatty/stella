@@ -8,10 +8,20 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） | lint → typecheck → test → build |
 | `.github/workflows/deploy.yml` | `main` への push | 検証ゲート → D1 migrate(remote) → D1 seed(remote) → deploy:api → deploy:web |
+| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 |
 
 `main` push の検証は `deploy.yml` 側で再実行するため、`ci.yml` は `main` push を起動しない。
 
 seed は `packages/content` を正本として D1 の教材コースを upsert し、GitHub から消えたトピック / セクションは prune する。デプロイ時は `db:seed:remote:content`（検証用 `seed-*` ユーザー / 提出は含めない）。CMS 由来でコース ID が安定 UUID と一致しないコース（例: `web-fundamentals`）のレッスンツリーは触らない。
+
+## VS Code 拡張のリリース
+
+`apps/vscode/**` を含む PR が `main` にマージされると `release-vscode.yml` が `.vsix` をパッケージし、
+`apps/vscode/package.json` の `version` から作ったタグ `vscode-v<version>` の Release に添付する。
+バージョンは手動採番（自動 bump はしない）。同じバージョンのまま再度マージした場合は既存 Release の `.vsix` と本文を上書きする（本文の commit がビルド元。タグは初回リリース時のコミットを指したままなので、タグと実体を一致させたいならバージョンを上げる）。
+トリガは `main` への push のみ（`workflow_dispatch` は付けない。任意の ref から未マージのコードでリリースを作れてしまうため）。やり直しは Actions の Re-run で行う。
+`.vsix` を出す前に `typecheck` / `test` をこのワークフロー内でも実行する（`deploy.yml` の検証ゲートは同じ push で並走するだけで、このジョブを止められないため）。
+Marketplace への publish はしない（`.vsix` を落として「Extensions: Install from VSIX...」でインストールする配布形態）。
 
 ## 必須ステータスチェック設定
 
