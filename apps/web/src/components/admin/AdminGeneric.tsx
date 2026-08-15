@@ -5,9 +5,9 @@
  * 実装済みで、 ここには未知の page キーが来たときの空表示だけが残っている。
  */
 
-import { FileText } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Card } from '@/components/ui/card';
+import { FileText } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Card } from "@/components/ui/card";
 
 export const GenericEmpty = ({ page }: { page: string }) => (
   <>

@@ -16,11 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import type {
-  CourseColor,
-  CourseStatus,
-  CourseWithChildren,
-} from "@falcon/shared/cms/types";
+import type { CourseColor, CourseStatus, CourseWithChildren } from "@falcon/shared/cms/types";
 import { setCourseStatus, upsertCourse } from "@/lib/cms-api";
 import { useCmsCourse } from "@/hooks/useCmsCourses";
 import { SectionList } from "./SectionList";
@@ -119,7 +115,11 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
               一覧に戻る
             </Button>
             <Badge variant={data.course.status === "published" ? "success" : "default"}>
-              {data.course.status === "published" ? "公開中" : data.course.status === "draft" ? "下書き" : "アーカイブ"}
+              {data.course.status === "published"
+                ? "公開中"
+                : data.course.status === "draft"
+                  ? "下書き"
+                  : "アーカイブ"}
             </Badge>
             <Button
               type="button"
@@ -207,7 +207,12 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
           </div>
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="button" variant="primary" disabled={saving} onClick={() => void onSaveMeta()}>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={saving}
+            onClick={() => void onSaveMeta()}
+          >
             <Save size={14} />
             メタデータを保存
           </Button>
@@ -242,7 +247,12 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button type="button" variant="primary" disabled={saving} onClick={() => void onSaveMeta()}>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={saving}
+            onClick={() => void onSaveMeta()}
+          >
             <Save size={14} />
             修了基準を保存
           </Button>

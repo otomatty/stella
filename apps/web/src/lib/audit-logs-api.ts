@@ -57,9 +57,7 @@ function buildQuery(
   return p.toString();
 }
 
-export async function listAuditLogs(
-  opts: ListAuditLogsOpts,
-): Promise<AuditLogRow[]> {
+export async function listAuditLogs(opts: ListAuditLogsOpts): Promise<AuditLogRow[]> {
   const qs = buildQuery(opts, opts.limit ?? DEFAULT_LIST_LIMIT, 0);
   const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(`/api/audit-logs?${qs}`);
   return rows ?? [];
@@ -75,9 +73,7 @@ export async function listAllAuditLogs(
   const all: AuditLogRow[] = [];
   for (let offset = 0; ; offset += EXPORT_PAGE_SIZE) {
     const qs = buildQuery(opts, EXPORT_PAGE_SIZE, offset);
-    const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(
-      `/api/audit-logs?${qs}`,
-    );
+    const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(`/api/audit-logs?${qs}`);
     const page = rows ?? [];
     all.push(...page);
     if (page.length < EXPORT_PAGE_SIZE) break;

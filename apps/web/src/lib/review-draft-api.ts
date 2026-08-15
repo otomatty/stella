@@ -1,7 +1,4 @@
-import type {
-  ReviewDraftRequest,
-  ReviewDraftResponse,
-} from "@falcon/shared/review/types";
+import type { ReviewDraftRequest, ReviewDraftResponse } from "@falcon/shared/review/types";
 import { buildHeuristicReviewDraft } from "@falcon/shared/review/heuristic-draft";
 import { getAccessToken } from "./auth-client";
 
@@ -11,9 +8,7 @@ function serverUrl(): string {
   return url.replace(/\/$/, "");
 }
 
-export async function fetchReviewDraft(
-  req: ReviewDraftRequest,
-): Promise<ReviewDraftResponse> {
+export async function fetchReviewDraft(req: ReviewDraftRequest): Promise<ReviewDraftResponse> {
   const base = serverUrl();
   if (!base) {
     return buildHeuristicReviewDraft(req.code);
@@ -31,9 +26,8 @@ export async function fetchReviewDraft(
       body: JSON.stringify(req),
     });
     if (!res.ok) {
-      const errBody = await res.json().catch(() => ({} as { error?: string }));
-      const message =
-        typeof errBody.error === "string" ? errBody.error : `HTTP ${res.status}`;
+      const errBody = await res.json().catch(() => ({}) as { error?: string });
+      const message = typeof errBody.error === "string" ? errBody.error : `HTTP ${res.status}`;
       const error = new Error(message) as Error & { status?: number };
       error.status = res.status;
       throw error;

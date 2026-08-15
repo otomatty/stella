@@ -10,32 +10,25 @@
  * manifest 側で講師ノート除去済み・ `\n\n---\n\n` 連結済みなので、 ここは割るだけで足りる。
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import ReactMarkdown from 'react-markdown';
-import type { Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import type { Options as RehypeHighlightOptions } from 'rehype-highlight';
-import bash from 'highlight.js/lib/languages/bash';
-import javascript from 'highlight.js/lib/languages/javascript';
-import json from 'highlight.js/lib/languages/json';
-import typescript from 'highlight.js/lib/languages/typescript';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import type { Options as RehypeHighlightOptions } from "rehype-highlight";
+import bash from "highlight.js/lib/languages/bash";
+import javascript from "highlight.js/lib/languages/javascript";
+import json from "highlight.js/lib/languages/json";
+import typescript from "highlight.js/lib/languages/typescript";
 // build_pptx.py の CODE_COLORS は GitHub Light をそのまま使っているので、
 // 同じテーマを当てれば pptx とコードの配色が一致する。
-import 'highlight.js/styles/github.css';
-import './slides-skin.css';
-import { Check, ChevronLeft, ChevronRight } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { getMaterialUrl } from '@/lib/storage';
-import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
+import "highlight.js/styles/github.css";
+import "./slides-skin.css";
+import { Check, ChevronLeft, ChevronRight } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { getMaterialUrl } from "@/lib/storage";
+import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
 
 /**
  * 教材 markdown の画像 src は R2 のオブジェクトキー (URL ではない) なので公開 URL へ解決する。
@@ -67,8 +60,8 @@ function altWidth(alt: string | undefined): number {
 const markdownComponents: Components = {
   img: ({ src, alt, title }) => (
     <img
-      src={typeof src === 'string' ? resolveImageSrc(src) : undefined}
-      alt={alt && !MARP_SIZE_ALT.test(alt.trim()) ? alt : ''}
+      src={typeof src === "string" ? resolveImageSrc(src) : undefined}
+      alt={alt && !MARP_SIZE_ALT.test(alt.trim()) ? alt : ""}
       title={title}
       loading="lazy"
       className="max-w-full h-auto"
@@ -78,7 +71,7 @@ const markdownComponents: Components = {
 
 /** slides.md で実際に使われている言語だけ登録する (common バンドル全部は要らない)。 */
 const highlightOptions = {
-  aliases: { typescript: ['ts'], javascript: ['js'], bash: ['sh'] },
+  aliases: { typescript: ["ts"], javascript: ["js"], bash: ["sh"] },
   languages: { typescript, javascript, bash, json },
 } satisfies RehypeHighlightOptions;
 
@@ -131,16 +124,16 @@ function SlideCanvas({
   const [reflowTick, setReflowTick] = useState(0);
 
   const cls = CLASS_DIRECTIVE.exec(source)?.[1] ?? null;
-  const isLead = cls === 'lead';
-  const body = useMemo(() => source.replace(CLASS_DIRECTIVE, '').trimStart(), [source]);
+  const isLead = cls === "lead";
+  const body = useMemo(() => source.replace(CLASS_DIRECTIVE, "").trimStart(), [source]);
 
   const components = useMemo<Components>(
     () => ({
       ...markdownComponents,
       img: ({ src, alt, title }) => (
         <img
-          src={typeof src === 'string' ? resolveImageSrc(src) : undefined}
-          alt={alt && !MARP_SIZE_ALT.test(alt.trim()) ? alt : ''}
+          src={typeof src === "string" ? resolveImageSrc(src) : undefined}
+          alt={alt && !MARP_SIZE_ALT.test(alt.trim()) ? alt : ""}
           title={title}
           // pptx と同じく alt の `w:` を px 幅として使い、 本文倍率に連動させる。
           style={{ width: `calc(${altWidth(alt)}px * var(--s))` }}
@@ -156,8 +149,7 @@ function SlideCanvas({
     const stage = stageRef.current;
     const slide = slideRef.current;
     if (!stage || !slide) return;
-    const apply = () =>
-      slide.style.setProperty('--fit', String(stage.clientWidth / CANVAS_W));
+    const apply = () => slide.style.setProperty("--fit", String(stage.clientWidth / CANVAS_W));
     apply();
     const observer = new ResizeObserver(apply);
     observer.observe(stage);
@@ -179,6 +171,7 @@ function SlideCanvas({
   }, []);
 
   // 本文の拡大率。 lead は固定サイズなので測らない。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: body / reflowTick 変更で再計測する
   useLayoutEffect(() => {
     const el = bodyRef.current;
     if (!el || isLead) return;
@@ -187,14 +180,14 @@ function SlideCanvas({
     // はみ出しが pre に伝わらなくなるため (slides-skin.css で戻してはいる)。
     const overflows = () =>
       el.scrollHeight > BODY_AVAIL_H ||
-      Array.from(el.querySelectorAll('pre, pre code')).some(
+      Array.from(el.querySelectorAll("pre, pre code")).some(
         (node) => node.scrollWidth > node.clientWidth,
       );
     let scale = SCALE_MAX;
-    el.style.setProperty('--s', String(scale));
+    el.style.setProperty("--s", String(scale));
     while (scale > SCALE_MIN && overflows()) {
       scale = Math.round((scale - 0.05) * 100) / 100;
-      el.style.setProperty('--s', String(scale));
+      el.style.setProperty("--s", String(scale));
     }
   }, [body, isLead, reflowTick]);
 
@@ -202,9 +195,7 @@ function SlideCanvas({
     <div ref={stageRef} className="sf-stage">
       <div
         ref={slideRef}
-        className={
-          'sf-slide' + (isLead ? ' is-lead' : cls === 'summary' ? ' is-summary' : '')
-        }
+        className={"sf-slide" + (isLead ? " is-lead" : cls === "summary" ? " is-summary" : "")}
       >
         {header ? <div className="sf-header">{header}</div> : null}
         <div ref={bodyRef} className="sf-body">
@@ -230,7 +221,7 @@ interface Props {
   onComplete?: () => void;
 }
 
-export function MarkdownSlides({ lessonId, markdown, header = '', onComplete }: Props) {
+export function MarkdownSlides({ lessonId, markdown, header = "", onComplete }: Props) {
   const slides = useMemo(
     () =>
       markdown
@@ -283,21 +274,21 @@ export function MarkdownSlides({ lessonId, markdown, header = '', onComplete }: 
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
       switch (e.key) {
-        case 'ArrowLeft':
-        case 'PageUp':
+        case "ArrowLeft":
+        case "PageUp":
           e.preventDefault();
           setPage((p) => Math.max(1, p - 1));
           break;
-        case 'ArrowRight':
-        case 'PageDown':
+        case "ArrowRight":
+        case "PageDown":
           e.preventDefault();
           setPage((p) => Math.min(total, p + 1));
           break;
-        case 'Home':
+        case "Home":
           e.preventDefault();
           setPage(1);
           break;
-        case 'End':
+        case "End":
           e.preventDefault();
           setPage(total);
           break;
@@ -321,17 +312,14 @@ export function MarkdownSlides({ lessonId, markdown, header = '', onComplete }: 
   return (
     <div>
       <div
+        role="application"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: 矢印キー操作のためコンテナがフォーカスを持つ
         tabIndex={0}
         aria-label={`スライド ${page} / ${total}`}
         className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
         onKeyDown={onKeyDown}
       >
-        <SlideCanvas
-          key={page}
-          source={slides[page - 1] ?? ''}
-          header={header}
-          pageNo={page}
-        />
+        <SlideCanvas key={page} source={slides[page - 1] ?? ""} header={header} pageNo={page} />
       </div>
 
       <div className="flex items-center gap-3 mt-4 flex-wrap">

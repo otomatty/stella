@@ -114,7 +114,10 @@ export function isValidOrgId(value: string): boolean {
 }
 
 type ValidateOrgResult =
-  | { ok: true; value: Required<Pick<UpsertOrganizationInput, "id" | "name">> & UpsertOrganizationInput }
+  | {
+      ok: true;
+      value: Required<Pick<UpsertOrganizationInput, "id" | "name">> & UpsertOrganizationInput;
+    }
   | { ok: false; status: 400; message: string };
 
 /**
@@ -158,9 +161,7 @@ export function validateUpsertOrganization(raw: unknown): ValidateOrgResult {
   }
 
   const subtitle =
-    typeof body.subtitle === "string" && body.subtitle.trim()
-      ? body.subtitle.trim()
-      : null;
+    typeof body.subtitle === "string" && body.subtitle.trim() ? body.subtitle.trim() : null;
   const contactName =
     typeof body.contactName === "string" && body.contactName.trim()
       ? body.contactName.trim()
@@ -202,10 +203,7 @@ export function isValidEmail(value: string): boolean {
 
 export function isProfileRole(value: unknown): value is ProfileRole {
   return (
-    value === "student" ||
-    value === "instructor" ||
-    value === "admin" ||
-    value === "platform_admin"
+    value === "student" || value === "instructor" || value === "admin" || value === "platform_admin"
   );
 }
 
@@ -248,8 +246,7 @@ export function validateInviteUsersRequest(raw: unknown): ValidateResult {
     if (!isAssignableProfileRole(item.role)) {
       return { ok: false, status: 400, message: `invites[${i}].role is invalid` };
     }
-    const displayNameRaw =
-      typeof item.displayName === "string" ? item.displayName.trim() : "";
+    const displayNameRaw = typeof item.displayName === "string" ? item.displayName.trim() : "";
     const displayName = displayNameRaw || email.split("@")[0] || email;
     normalized.push({ email, displayName, role: item.role });
   }

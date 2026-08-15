@@ -3,16 +3,10 @@
  * メインスレッドをブロックしないために実体はワーカ側 (`quickjs-worker.ts`) で動かす。
  */
 
-import type {
-  RunTestsRequest,
-  RunTestsResponse,
-} from "@falcon/shared/types";
+import type { RunTestsRequest, RunTestsResponse } from "@falcon/shared/types";
 import { validateRunTestsBody } from "@falcon/shared/util/validate-run-tests-request";
 
-import type {
-  WorkerRequest,
-  WorkerResponse,
-} from "./quickjs-worker.js";
+import type { WorkerRequest, WorkerResponse } from "./quickjs-worker.js";
 
 let workerInstance: Worker | null = null;
 let workerUrlOverride: URL | string | undefined;
@@ -44,9 +38,7 @@ function getWorker(): Worker {
   return workerInstance;
 }
 
-export async function runTestsLocally(
-  body: RunTestsRequest,
-): Promise<RunTestsResponse> {
+export async function runTestsLocally(body: RunTestsRequest): Promise<RunTestsResponse> {
   const validated = validateRunTestsBody(body);
   if (!validated.ok) {
     throw new Error(validated.message);
@@ -104,11 +96,7 @@ export async function runTestsLocally(
       cleanup();
       worker.terminate();
       workerInstance = null;
-      reject(
-        e instanceof Error
-          ? e
-          : new Error("Failed to post message to QuickJS worker"),
-      );
+      reject(e instanceof Error ? e : new Error("Failed to post message to QuickJS worker"));
     }
   });
 }

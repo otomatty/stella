@@ -9,10 +9,10 @@
  * 既存の `copy-sqljs-wasm.ts` と同パターン。
  */
 
-import { createRequire } from 'node:module';
-import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'node:fs';
-import path from 'node:path';
-import type { Plugin } from 'vite';
+import { createRequire } from "node:module";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import type { Plugin } from "vite";
 
 const require = createRequire(import.meta.url);
 
@@ -39,18 +39,18 @@ function copyDir(src: string, dst: string): number {
 
 export function copyPdfjsAssets(): Plugin {
   return {
-    name: 'copy-pdfjs-assets',
+    name: "copy-pdfjs-assets",
     configResolved(config) {
-      const isBuild = config.command === 'build';
+      const isBuild = config.command === "build";
       try {
         // pdfjs-dist の package.json から install dir を解決
-        const pkgJson = require.resolve('pdfjs-dist/package.json');
+        const pkgJson = require.resolve("pdfjs-dist/package.json");
         const pdfjsRoot = path.dirname(pkgJson);
         const targets = [
-          { src: path.join(pdfjsRoot, 'cmaps'), name: 'cmaps' },
-          { src: path.join(pdfjsRoot, 'standard_fonts'), name: 'standard_fonts' },
+          { src: path.join(pdfjsRoot, "cmaps"), name: "cmaps" },
+          { src: path.join(pdfjsRoot, "standard_fonts"), name: "standard_fonts" },
         ];
-        const baseTarget = path.join(config.publicDir, 'pdfjs');
+        const baseTarget = path.join(config.publicDir, "pdfjs");
         for (const t of targets) {
           if (!existsSync(t.src)) {
             const msg = `[copy-pdfjs-assets] ${t.src} not found; Japanese PDFs may fail to render`;

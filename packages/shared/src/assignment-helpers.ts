@@ -5,10 +5,7 @@ import type {
   ESLintRuleConfig,
   Language,
 } from "./types.js";
-import {
-  getDefaultLintPreset,
-  LINT_PRESET_RULES,
-} from "./lint-presets.js";
+import { getDefaultLintPreset, LINT_PRESET_RULES } from "./lint-presets.js";
 
 export interface StaticAnalysisSettings {
   eslintRules: Record<string, ESLintRuleConfig>;
@@ -16,9 +13,7 @@ export interface StaticAnalysisSettings {
   ignoredUnusedNames: string[];
 }
 
-export function getStaticAnalysisSettings(
-  assignment: Assignment,
-): StaticAnalysisSettings {
+export function getStaticAnalysisSettings(assignment: Assignment): StaticAnalysisSettings {
   const lintPreset = assignment.lintPreset ?? getDefaultLintPreset(assignment.stage);
 
   return {

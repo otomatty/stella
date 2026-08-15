@@ -33,10 +33,7 @@ import type {
 } from "@falcon/shared/types";
 import { lintAssignment } from "@falcon/code-runner/lint";
 import { runGrading } from "@falcon/code-runner/runners";
-import {
-  getAssignmentRow,
-  upsertAssignment,
-} from "@/lib/cms-api";
+import { getAssignmentRow, upsertAssignment } from "@/lib/cms-api";
 
 import {
   fromRow,
@@ -312,7 +309,9 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
                   onAdd={addFile}
                   onRemove={removeFile}
                   onRename={renameFile}
-                  onToggleReadonly={() => updateFile(activeFile.path, { readonly: !activeFile.readonly })}
+                  onToggleReadonly={() =>
+                    updateFile(activeFile.path, { readonly: !activeFile.readonly })
+                  }
                   onSetEntry={(path) => update({ entryFile: path })}
                 />
                 {draft.language === "sql" ? (

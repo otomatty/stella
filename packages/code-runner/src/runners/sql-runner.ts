@@ -11,16 +11,8 @@
  * `RunInput.sqlSeed` が DDL + seed SQL に対応する。
  */
 
-import type {
-  CodeRunner,
-  RunInput,
-  RunOutput,
-} from "@falcon/shared/runner/types";
-import type {
-  SqlRow,
-  SqlTestCase,
-  TestResult,
-} from "@falcon/shared/types";
+import type { CodeRunner, RunInput, RunOutput } from "@falcon/shared/runner/types";
+import type { SqlRow, SqlTestCase, TestResult } from "@falcon/shared/types";
 
 import { memoizePromiseFactory } from "quickjs-emscripten-core";
 
@@ -97,9 +89,7 @@ async function runSqlTests(
 ): Promise<RunOutput> {
   const SQL = await getSqlJs();
   const startedAt = performance.now();
-  const results: TestResult[] = tests.map((t) =>
-    runOneSqlTest(SQL, code, t, seed ?? ""),
-  );
+  const results: TestResult[] = tests.map((t) => runOneSqlTest(SQL, code, t, seed ?? ""));
   return {
     durationMs: Math.round(performance.now() - startedAt),
     results,
@@ -158,7 +148,9 @@ function runOneSqlTest(
 
 function normalizeRow(row: unknown[]): SqlRow {
   return row.map((v): SqlRow[number] => {
-    if (v === null || v === undefined) {return null;}
+    if (v === null || v === undefined) {
+      return null;
+    }
     if (typeof v === "number" || typeof v === "string" || typeof v === "boolean") {
       return v;
     }
@@ -188,37 +180,57 @@ function sortRows(rows: SqlRow[]): SqlRow[] {
 }
 
 function checkColumns(actual: string[], expected?: string[]): boolean {
-  if (!expected) {return true;}
-  if (actual.length !== expected.length) {return false;}
+  if (!expected) {
+    return true;
+  }
+  if (actual.length !== expected.length) {
+    return false;
+  }
   for (let i = 0; i < actual.length; i++) {
-    if (actual[i] !== expected[i]) {return false;}
+    if (actual[i] !== expected[i]) {
+      return false;
+    }
   }
   return true;
 }
 
 function deepEqualRows(a: SqlRow[], b: SqlRow[]): boolean {
-  if (a.length !== b.length) {return false;}
+  if (a.length !== b.length) {
+    return false;
+  }
   for (let i = 0; i < a.length; i++) {
-    if (a[i].length !== b[i].length) {return false;}
+    if (a[i].length !== b[i].length) {
+      return false;
+    }
     for (let j = 0; j < a[i].length; j++) {
-      if (a[i][j] !== b[i][j]) {return false;}
+      if (a[i][j] !== b[i][j]) {
+        return false;
+      }
     }
   }
   return true;
 }
 
 function formatRows(rows: SqlRow[]): string {
-  if (rows.length === 0) {return "(no rows)";}
+  if (rows.length === 0) {
+    return "(no rows)";
+  }
   return rows.map((r) => r.map(formatCell).join(" | ")).join("\n");
 }
 
 function formatCell(v: SqlRow[number]): string {
-  if (v === null) {return "NULL";}
-  if (typeof v === "boolean") {return v ? "true" : "false";}
+  if (v === null) {
+    return "NULL";
+  }
+  if (typeof v === "boolean") {
+    return v ? "true" : "false";
+  }
   return String(v);
 }
 
 function formatErr(e: unknown): string {
-  if (e instanceof Error) {return e.message;}
+  if (e instanceof Error) {
+    return e.message;
+  }
   return String(e);
 }

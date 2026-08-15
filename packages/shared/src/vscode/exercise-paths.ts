@@ -13,10 +13,7 @@ export function isPathInsideDir(fsPath: string, dirPath: string): boolean {
   return file === dir || file.startsWith(`${dir}/`);
 }
 
-export function assignmentIdFromExercisePath(
-  fsPath: string,
-  homeDir: string,
-): string | undefined {
+export function assignmentIdFromExercisePath(fsPath: string, homeDir: string): string | undefined {
   const file = fsPath.replace(/\\/g, "/");
   const prefix = `${homeDir.replace(/[/\\]+$/, "").replace(/\\/g, "/")}/.falcon-informal/exercises/`;
   if (!file.toLowerCase().startsWith(prefix.toLowerCase())) {

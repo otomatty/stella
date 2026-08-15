@@ -17,10 +17,7 @@ import type {
   RunTestsResponse,
 } from "@falcon/shared/types";
 import type { CodeRunner } from "@falcon/shared/runner/types";
-import {
-  getEntryFile,
-  getLanguage,
-} from "@falcon/shared/assignment-helpers";
+import { getEntryFile, getLanguage } from "@falcon/shared/assignment-helpers";
 import { evaluate } from "@falcon/shared/grading/evaluate";
 
 import { jsRunner } from "./js-runner.js";

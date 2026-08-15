@@ -24,15 +24,19 @@ import {
   submissions,
   tenants,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
+import {
+  errorResponse,
+  getCaller,
+  requireRole,
+  ApiError,
+  isStaffRole,
+  requireReturning,
+} from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
-import type {
-  CourseCompletion,
-  GradebookEntry,
-} from "@falcon/shared/cms/types";
+import type { CourseCompletion, GradebookEntry } from "@falcon/shared/cms/types";
 
 export const certificatesRoute = new Hono<{ Bindings: Env }>();
 
@@ -265,9 +269,21 @@ async function batchComputeCompletions(
     }
     return m;
   };
-  const doneByUser = setBy(progressRows, (r) => r.userId, (r) => r.lessonId);
-  const quizByUser = setBy(quizPassRows, (r) => r.userId, (r) => r.quizId);
-  const assignByUser = setBy(assignPassRows, (r) => r.userId, (r) => r.lessonId);
+  const doneByUser = setBy(
+    progressRows,
+    (r) => r.userId,
+    (r) => r.lessonId,
+  );
+  const quizByUser = setBy(
+    quizPassRows,
+    (r) => r.userId,
+    (r) => r.quizId,
+  );
+  const assignByUser = setBy(
+    assignPassRows,
+    (r) => r.userId,
+    (r) => r.lessonId,
+  );
   const certByUser = new Map<string, string>();
   for (const r of certRows) certByUser.set(r.userId, r.certCode);
 
@@ -495,7 +511,12 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
         .from(certificates)
         .where(and(eq(certificates.userId, userId), eq(certificates.courseId, courseId)))
         .limit(1);
-      return c.json({ certificate: { ...toIssued(again[0]!), already_existed: true } });
+      return c.json({
+        certificate: {
+          ...toIssued(requireReturning(again, "certificate lookup")),
+          already_existed: true,
+        },
+      });
     }
 
     // enrollment を completed にする。

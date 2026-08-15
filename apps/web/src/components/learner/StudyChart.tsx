@@ -6,20 +6,18 @@
  * 実際の最大値から動的に決める。
  */
 
-import { studyDateWeekday, type StudyActivityDay } from '@falcon/shared/study/activity';
+import { studyDateWeekday, type StudyActivityDay } from "@falcon/shared/study/activity";
 
 /** チャート右端側を強調する日数 (直近 1 週間)。 */
 const HIGHLIGHT_DAYS = 7;
-const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'] as const;
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
 /** Y 軸の目盛り 1 段ぶんの候補 (秒)。 最大値が 3 段に収まる最小の刻みを選ぶ。 */
-const AXIS_STEPS_SEC = [
-  300, 600, 900, 1800, 3600, 5400, 7200, 10_800, 14_400, 21_600, 28_800,
-];
+const AXIS_STEPS_SEC = [300, 600, 900, 1800, 3600, 5400, 7200, 10_800, 14_400, 21_600, 28_800];
 
 /** 目盛りラベル (刻みが 1 時間以上なら時間、 未満なら分)。 */
 function formatAxisTick(sec: number): string {
-  if (sec === 0) return '0';
+  if (sec === 0) return "0";
   if (sec % 3600 === 0) return `${sec / 3600}h`;
   if (sec >= 3600) return `${(sec / 3600).toFixed(1)}h`;
   return `${Math.round(sec / 60)}分`;
@@ -30,12 +28,12 @@ function pickAxisStep(maxSec: number): number {
   const step = AXIS_STEPS_SEC.find((s) => s * 3 >= maxSec);
   if (step !== undefined) return step;
   // 候補の上限 (8h/段) を超える極端な値でも軸が破綻しないようにする。
-  return Math.max(Math.ceil(maxSec / 3), AXIS_STEPS_SEC[0]!);
+  return Math.max(Math.ceil(maxSec / 3), AXIS_STEPS_SEC[0] ?? 300);
 }
 
 /** ツールチップ用に秒数を「1時間20分」/「20分」/「40秒」表記にする。 */
 function formatDuration(totalSec: number): string {
-  if (totalSec <= 0) return '記録なし';
+  if (totalSec <= 0) return "記録なし";
   if (totalSec < 60) return `${Math.round(totalSec)}秒`;
   const minutes = Math.round(totalSec / 60);
   const h = Math.floor(minutes / 60);
@@ -63,7 +61,14 @@ export const StudyChart = ({ days }: StudyChartProps) => {
       {/* プロット幅いっぱいに引いたブランドグラデーション。 各バーはその x 位置の
           色を切り取るので、 直近 1 週間のバー全体で 1 本のグラデーションになる。 */}
       <defs>
-        <linearGradient id="sf-bar" gradientUnits="userSpaceOnUse" x1={left} y1="0" x2={right} y2="0">
+        <linearGradient
+          id="sf-bar"
+          gradientUnits="userSpaceOnUse"
+          x1={left}
+          y1="0"
+          x2={right}
+          y2="0"
+        >
           <stop offset="0" stopColor="#0A33FF" />
           <stop offset="0.34" stopColor="#8330C7" />
           <stop offset="0.58" stopColor="#E62F9A" />
@@ -104,7 +109,7 @@ export const StudyChart = ({ days }: StudyChartProps) => {
             width={barW}
             height={h}
             rx="2"
-            fill={recent ? 'url(#sf-bar)' : 'var(--line-2)'}
+            fill={recent ? "url(#sf-bar)" : "var(--line-2)"}
           >
             <title>{`${d.date} · ${formatDuration(d.watched_sec)}`}</title>
           </rect>

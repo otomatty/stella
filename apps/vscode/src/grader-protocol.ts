@@ -47,11 +47,7 @@ export function isGradeRequest(value: unknown): value is GradeRequest {
   if (!isRecord(value) || value.type !== "grade") {
     return false;
   }
-  return (
-    typeof value.requestId === "string" &&
-    isRecord(value.assignment) &&
-    isRecord(value.files)
-  );
+  return typeof value.requestId === "string" && isRecord(value.assignment) && isRecord(value.files);
 }
 
 export function isGradeResultMessage(value: unknown): value is GradeResultMessage {

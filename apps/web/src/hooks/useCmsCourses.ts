@@ -3,14 +3,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  CourseRow,
-  CourseWithChildren,
-} from "@falcon/shared/cms/types";
-import {
-  getCourseWithChildren,
-  listCourses,
-} from "@/lib/cms-api";
+import type { CourseRow, CourseWithChildren } from "@falcon/shared/cms/types";
+import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
 
 interface UseCmsCoursesResult {
   courses: CourseRow[];

@@ -28,7 +28,8 @@ export function StaticAnalysisForm({ draft, update }: FormProps) {
           ))}
         </select>
         <div className="text-[11.5px] text-ink-3 mt-1">
-          stage に対応するプリセット ($S1$ ⇒ S1 preset) が暗黙で使われる。 個別ルールは下の JSON で上書き可能。
+          stage に対応するプリセット ($S1$ ⇒ S1 preset) が暗黙で使われる。 個別ルールは下の JSON
+          で上書き可能。
         </div>
       </div>
       <div>
@@ -69,8 +70,8 @@ export function StaticAnalysisForm({ draft, update }: FormProps) {
       <div className="text-[11.5px] text-ink-3">
         AST パターンの kind: <code>method</code> / <code>node</code> / <code>console-log</code> /{" "}
         <code>const-declaration</code> / <code>var</code> / <code>loose-eq</code> /{" "}
-        <code>async-fn</code> — 詳細は packages/shared/src/types.ts の{" "}
-        <code>ASTPattern</code> を参照。
+        <code>async-fn</code> — 詳細は packages/shared/src/types.ts の <code>ASTPattern</code>{" "}
+        を参照。
       </div>
     </div>
   );

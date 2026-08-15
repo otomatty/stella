@@ -6,17 +6,11 @@
  *   正解・解説は提出後にのみ戻り値で受け取る (カンニング不可)。
  */
 
-import type {
-  LearnerQuiz,
-  QuizAnswer,
-  QuizGradeResult,
-} from "@falcon/shared/cms/types";
+import type { LearnerQuiz, QuizAnswer, QuizGradeResult } from "@falcon/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
 
 /** 受講者向けの設問を取得する。 quiz 未作成 / 権限外なら null。 */
-export async function fetchQuizForLearner(
-  lessonId: string,
-): Promise<LearnerQuiz | null> {
+export async function fetchQuizForLearner(lessonId: string): Promise<LearnerQuiz | null> {
   const { quiz } = await apiFetch<{ quiz: LearnerQuiz | null }>(
     `/api/quiz/for-lesson/${encodeURIComponent(lessonId)}`,
   );

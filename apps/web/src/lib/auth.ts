@@ -30,9 +30,7 @@ export async function getSession(): Promise<Session | null> {
   return readSession();
 }
 
-export function subscribeToAuth(
-  callback: (session: Session | null) => void,
-): () => void {
+export function subscribeToAuth(callback: (session: Session | null) => void): () => void {
   return onAuthChange(callback);
 }
 
@@ -45,11 +43,7 @@ export async function fetchProfile(_userId?: string): Promise<Profile | null> {
     }>("/api/me");
     return profile ? { ...profile, tenant: tenant ?? null } : profile;
   } catch (err) {
-    if (
-      err instanceof ApiClientError &&
-      err.status === 403 &&
-      err.message === "invite_required"
-    ) {
+    if (err instanceof ApiClientError && err.status === 403 && err.message === "invite_required") {
       throw err; // 上位で inviteRequired に
     }
     throw err;

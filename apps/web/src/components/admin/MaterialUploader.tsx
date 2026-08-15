@@ -26,13 +26,7 @@ interface Props {
 
 const MAX_BYTES = 200 * 1024 * 1024; // 200MB
 
-export function MaterialUploader({
-  kind,
-  tenantId,
-  courseId,
-  currentPath,
-  onChange,
-}: Props) {
+export function MaterialUploader({ kind, tenantId, courseId, currentPath, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -55,7 +49,9 @@ export function MaterialUploader({
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast.error(`ファイルサイズが大きすぎます (${Math.round(file.size / 1024 / 1024)}MB > 200MB)`);
+      toast.error(
+        `ファイルサイズが大きすぎます (${Math.round(file.size / 1024 / 1024)}MB > 200MB)`,
+      );
       return;
     }
     setUploading(true);

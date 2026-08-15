@@ -83,7 +83,9 @@ export function signInWithGoogle(): void {
 }
 
 /** OAuth コールバック URL の hash から JWT を取り出して保存する。 */
-export function completeAuthFromCallbackHash(hash: string): { ok: true } | { ok: false; error: string } {
+export function completeAuthFromCallbackHash(
+  hash: string,
+): { ok: true } | { ok: false; error: string } {
   const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const error = params.get("error_description") ?? params.get("error");
   if (error) return { ok: false, error };

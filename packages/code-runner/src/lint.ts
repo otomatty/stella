@@ -9,10 +9,7 @@
  */
 
 import { analyzeAst } from "@falcon/shared/grading";
-import {
-  getLanguage,
-  getStaticAnalysisSettings,
-} from "@falcon/shared/assignment-helpers";
+import { getLanguage, getStaticAnalysisSettings } from "@falcon/shared/assignment-helpers";
 import type {
   Assignment,
   ASTResult,

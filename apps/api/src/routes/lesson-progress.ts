@@ -13,10 +13,7 @@
 
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
-import {
-  normalizeProgressRows,
-  type ProgressSyncInput,
-} from "@falcon/shared/study/progress-sync";
+import { normalizeProgressRows, type ProgressSyncInput } from "@falcon/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
 import { lessonProgress } from "../db/schema.js";

@@ -59,7 +59,7 @@ export function useNotifications(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [active, tenantId, userId]);
+  }, [active, tenantId]);
 
   useEffect(() => {
     void refetch();
@@ -69,9 +69,7 @@ export function useNotifications(
     async (id: string) => {
       if (!active) return;
       // 楽観更新: 先に既読へ。 失敗したら refetch でサーバ状態へ戻す。
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
       try {
         await markNotificationRead(id);
       } catch (err) {

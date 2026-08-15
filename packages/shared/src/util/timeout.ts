@@ -11,16 +11,11 @@
 
 export function isThenable(v: unknown): v is PromiseLike<unknown> {
   return (
-    typeof v === "object" &&
-    v !== null &&
-    typeof (v as { then?: unknown }).then === "function"
+    typeof v === "object" && v !== null && typeof (v as { then?: unknown }).then === "function"
   );
 }
 
-export function withWallTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-): Promise<T> {
+export function withWallTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("TIMEOUT")), ms);
     promise.then(

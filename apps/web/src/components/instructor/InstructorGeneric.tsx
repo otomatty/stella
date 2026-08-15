@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { ChevronRight } from '@/lib/icons';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useEffect, useRef } from "react";
+import { ChevronRight } from "@/lib/icons";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
@@ -12,44 +12,44 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import { CourseThumb } from '@/components/common/CourseThumb';
-import type { AvatarTone, Tenant } from '@/data/types';
-import type { InstructorStudentProgress } from '@falcon/shared/cms/types';
-import { useCoursesForTenant } from '@/data/courses-source';
-import { useInstructorOverview } from '@/hooks/useAnalytics';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table";
+import { CourseThumb } from "@/components/common/CourseThumb";
+import type { AvatarTone, Tenant } from "@/data/types";
+import type { InstructorStudentProgress } from "@falcon/shared/cms/types";
+import { useCoursesForTenant } from "@/data/courses-source";
+import { useInstructorOverview } from "@/hooks/useAnalytics";
+import { cn } from "@/lib/utils";
 
 const titles: Record<string, string> = {
-  students: '担当受講者',
-  qa: 'Q&A 未返信',
-  courses: '担当コース',
+  students: "担当受講者",
+  qa: "Q&A 未返信",
+  courses: "担当コース",
 };
 
-const AVATAR_TONES: AvatarTone[] = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
 
 function toneForIndex(i: number): AvatarTone {
-  return AVATAR_TONES[i % AVATAR_TONES.length] ?? 'c1';
+  return AVATAR_TONES[i % AVATAR_TONES.length] ?? "c1";
 }
 
 function toneFromId(id: string): AvatarTone {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h + id.charCodeAt(i)) % AVATAR_TONES.length;
-  return AVATAR_TONES[h] ?? 'c1';
+  return AVATAR_TONES[h] ?? "c1";
 }
 
 function severityOf(s: InstructorStudentProgress): {
   label: string;
-  variant: 'success' | 'warning' | 'danger';
+  variant: "success" | "warning" | "danger";
 } {
-  if (s.overdue || s.progress_pct < 25) return { label: '遅延', variant: 'danger' };
-  if (s.progress_pct < 60) return { label: 'やや遅延', variant: 'warning' };
-  return { label: '順調', variant: 'success' };
+  if (s.overdue || s.progress_pct < 25) return { label: "遅延", variant: "danger" };
+  if (s.progress_pct < 60) return { label: "やや遅延", variant: "warning" };
+  return { label: "順調", variant: "success" };
 }
 
 interface Props {
   page: string;
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   backendEnabled: boolean;
   /** 検索から指定されたコース。 一覧内で強調表示してスクロールする (Issue #77)。 */
   highlightCourseId?: string | null;
@@ -64,7 +64,7 @@ export const InstructorGeneric = ({
   highlightCourseId = null,
   highlightSeq = 0,
 }: Props) => {
-  if (page === 'courses') {
+  if (page === "courses") {
     return (
       <InstructorCoursesPage
         tenantId={tenantId}
@@ -74,18 +74,14 @@ export const InstructorGeneric = ({
       />
     );
   }
-  if (page === 'students') {
-    return (
-      <InstructorStudentsPage tenantId={tenantId} backendEnabled={backendEnabled} />
-    );
+  if (page === "students") {
+    return <InstructorStudentsPage tenantId={tenantId} backendEnabled={backendEnabled} />;
   }
 
   return (
     <>
       <PageHeader title={titles[page] ?? page} sub="フィルターして一覧表示" />
-      <Card className="text-center p-16 text-ink-3 text-sm">
-        このページは準備中です。
-      </Card>
+      <Card className="text-center p-16 text-ink-3 text-sm">このページは準備中です。</Card>
     </>
   );
 };
@@ -94,7 +90,7 @@ function InstructorStudentsPage({
   tenantId,
   backendEnabled,
 }: {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   backendEnabled: boolean;
 }) {
   const { overview, loading, error } = useInstructorOverview(tenantId, backendEnabled);
@@ -120,7 +116,7 @@ function InstructorStudentsPage({
                     key: `${s.user_id}:${s.course_title}`,
                     name: s.display_name || `受講者 ${i + 1}`,
                     tone: toneFromId(s.user_id),
-                    course: s.course_title || '—',
+                    course: s.course_title || "—",
                     statusLabel: sv.label,
                     statusVariant: sv.variant,
                     updated: `${s.progress_pct}%`,
@@ -140,7 +136,7 @@ function InstructorCoursesPage({
   highlightCourseId,
   highlightSeq,
 }: {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   backendEnabled: boolean;
   highlightCourseId: string | null;
   highlightSeq: number;
@@ -150,9 +146,10 @@ function InstructorCoursesPage({
 
   // 検索から来たコースを可視領域に入れる。 同じコースを選び直した場合も
   // highlightSeq が変わるので再度スクロールする。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: highlightSeq / courses は再スクロールのトリガー
   useEffect(() => {
     if (!highlightCourseId) return;
-    highlightRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    highlightRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [highlightCourseId, highlightSeq, courses]);
 
   const rows = courses.map((c) => ({
@@ -160,8 +157,8 @@ function InstructorCoursesPage({
     title: c.title,
     color: c.color,
     lessonsCount: c.lessonsCount,
-    statusLabel: c.completed ? '完了' : '公開中',
-    statusVariant: (c.completed ? 'success' : 'accent') as 'success' | 'accent',
+    statusLabel: c.completed ? "完了" : "公開中",
+    statusVariant: (c.completed ? "success" : "accent") as "success" | "accent",
   }));
 
   return (
@@ -176,40 +173,36 @@ function InstructorCoursesPage({
           コース一覧の取得に失敗しました: {error}
         </Card>
       ) : rows.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-ink-3">
-          担当コースがありません。
-        </Card>
+        <Card className="p-12 text-center text-sm text-ink-3">担当コースがありません。</Card>
       ) : (
         <div
           className="grid gap-4"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
         >
           {rows.map((c) => {
             const highlighted = c.key === highlightCourseId;
             return (
-            <div
-              key={c.key}
-              ref={highlighted ? highlightRef : undefined}
-              className={cn(
-                'bg-card border rounded-lg overflow-hidden flex flex-col',
-                highlighted
-                  ? 'border-brand ring-[3px] ring-brand-soft'
-                  : 'border-border',
-              )}
-            >
-              <div className="relative">
-                <CourseThumb color={c.color} />
-                <div className="absolute top-2.5 left-2.5">
-                  <Badge variant={c.statusVariant}>{c.statusLabel}</Badge>
+              <div
+                key={c.key}
+                ref={highlighted ? highlightRef : undefined}
+                className={cn(
+                  "bg-card border rounded-lg overflow-hidden flex flex-col",
+                  highlighted ? "border-brand ring-[3px] ring-brand-soft" : "border-border",
+                )}
+              >
+                <div className="relative">
+                  <CourseThumb color={c.color} />
+                  <div className="absolute top-2.5 left-2.5">
+                    <Badge variant={c.statusVariant}>{c.statusLabel}</Badge>
+                  </div>
+                </div>
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                  <div className="text-[15px] font-semibold leading-snug tracking-tight">
+                    {c.title}
+                  </div>
+                  <div className="text-[11.5px] text-ink-3">{c.lessonsCount}レッスン</div>
                 </div>
               </div>
-              <div className="p-4 flex flex-col gap-2 flex-1">
-                <div className="text-[15px] font-semibold leading-snug tracking-tight">
-                  {c.title}
-                </div>
-                <div className="text-[11.5px] text-ink-3">{c.lessonsCount}レッスン</div>
-              </div>
-            </div>
             );
           })}
         </div>
@@ -227,16 +220,12 @@ function StudentsTable({
     tone: AvatarTone;
     course: string;
     statusLabel: string;
-    statusVariant: 'success' | 'warning' | 'danger';
+    statusVariant: "success" | "warning" | "danger";
     updated: string;
   }>;
 }) {
   if (rows.length === 0) {
-    return (
-      <Card className="p-12 text-center text-sm text-ink-3">
-        担当受講者がいません。
-      </Card>
-    );
+    return <Card className="p-12 text-center text-sm text-ink-3">担当受講者がいません。</Card>;
   }
 
   return (
@@ -282,8 +271,8 @@ const DEMO_STUDENT_ROWS = [1, 2, 3, 4, 5, 6].map((i) => ({
   key: `demo-${i}`,
   name: `受講者 ${i}`,
   tone: toneForIndex(i - 1),
-  course: 'TypeScript 入門研修',
-  statusLabel: i % 2 ? '順調' : '要フォロー',
-  statusVariant: (i % 2 ? 'success' : 'warning') as 'success' | 'warning',
+  course: "TypeScript 入門研修",
+  statusLabel: i % 2 ? "順調" : "要フォロー",
+  statusVariant: (i % 2 ? "success" : "warning") as "success" | "warning",
   updated: `${i}時間前`,
 }));

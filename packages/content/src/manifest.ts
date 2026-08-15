@@ -45,7 +45,9 @@ function defaultCoursesRoot(): string {
 function readCourseConfig(courseDir: string, slug: string): CourseConfig & { tenantId: string } {
   const file = join(courseDir, "course.json");
   if (!existsSync(file)) {
-    throw new Error(`courses/${slug}/course.json がありません。templates/course.json をコピーしてください。`);
+    throw new Error(
+      `courses/${slug}/course.json がありません。templates/course.json をコピーしてください。`,
+    );
   }
   const raw = JSON.parse(readFileSync(file, "utf8")) as CourseConfig;
   if (typeof raw.title !== "string" || raw.title.trim() === "") {
@@ -64,11 +66,7 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
  * slides.md はトピックディレクトリから見た `assets/x.svg` 形式で書かれている。
  * 前者は自分でトピックを名乗るので `topicDir` を渡さず、後者は呼び出し側が渡す。
  */
-function rewriteImagePaths(
-  courseSlug: string,
-  markdown: string,
-  topicDir?: string,
-): string {
+function rewriteImagePaths(courseSlug: string, markdown: string, topicDir?: string): string {
   return markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (whole, alt: string, src: string) => {
     if (/^https?:/.test(src)) return whole;
     const withTopic = /^(t[^/]+)\/assets\/(.+)$/.exec(src);

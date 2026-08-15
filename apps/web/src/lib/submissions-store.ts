@@ -6,12 +6,7 @@
  */
 
 import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
-import {
-  REVIEW_QUEUE,
-  SUBMITTED_CODE,
-  AI_SUGGESTIONS,
-  RUBRIC,
-} from "@/demo/fixtures";
+import { REVIEW_QUEUE, SUBMITTED_CODE, AI_SUGGESTIONS, RUBRIC } from "@/demo/fixtures";
 import type { Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import {
@@ -32,10 +27,7 @@ type StoreV1 = {
 let localCache: StoreV1 | null = null;
 let storeVersion = 0;
 const listeners = new Set<() => void>();
-const listSnapshotCache = new Map<
-  string,
-  { version: number; snapshot: Submission[] }
->();
+const listSnapshotCache = new Map<string, { version: number; snapshot: Submission[] }>();
 
 /** バックエンドモード: テナント別インメモリキャッシュ */
 const remoteByTenant = new Map<string, Submission[]>();
@@ -43,7 +35,7 @@ type RemoteFetchStatus = "idle" | "loading" | "success" | "error";
 const remoteFetchStatus = new Map<string, RemoteFetchStatus>();
 const remotePatchGen = new Map<string, number>();
 
-function useRemotePersistence(): boolean {
+function isRemotePersistence(): boolean {
   return isBackendConfigured();
 }
 
@@ -66,7 +58,7 @@ function setRemoteList(tenantId: Tenant["id"], list: Submission[]): void {
 }
 
 function ensureRemoteFetch(tenantId: Tenant["id"]): void {
-  if (!useRemotePersistence()) return;
+  if (!isRemotePersistence()) return;
   const status = remoteFetchStatus.get(tenantId) ?? "idle";
   if (status === "loading" || status === "success") return;
 
@@ -151,11 +143,7 @@ function saveLocalStore(store: StoreV1): boolean {
   return true;
 }
 
-function withTenantList(
-  store: StoreV1,
-  tenantId: string,
-  list: Submission[],
-): StoreV1 {
+function withTenantList(store: StoreV1, tenantId: string, list: Submission[]): StoreV1 {
   return {
     ...store,
     byTenant: { ...store.byTenant, [tenantId]: list },
@@ -194,8 +182,7 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
       priority: r.priority,
       attempt: r.assignment.includes("再提出") ? 2 : 1,
       aiReady: r.aiReady,
-      aiSuggestions:
-        isFirst && r.aiReady ? AI_SUGGESTIONS.map((s) => ({ ...s })) : [],
+      aiSuggestions: isFirst && r.aiReady ? AI_SUGGESTIONS.map((s) => ({ ...s })) : [],
       rubric: isFirst && r.aiReady ? RUBRIC.map((x) => ({ ...x })) : [],
       reviewNotes: isFirst
         ? "コードは動作していますが、innerHTML による XSS リスクと等価演算子の使い方に改善の余地があります。"
@@ -214,10 +201,7 @@ function localTenantList(store: StoreV1, tenantId: Tenant["id"]): Submission[] {
   return loadLocalStore().byTenant[tenantId] ?? seeded;
 }
 
-function snapshotList(
-  tenantId: Tenant["id"],
-  list: Submission[],
-): Submission[] {
+function snapshotList(tenantId: Tenant["id"], list: Submission[]): Submission[] {
   const cached = listSnapshotCache.get(tenantId);
   if (cached && cached.version === storeVersion) {
     return cached.snapshot;
@@ -228,7 +212,7 @@ function snapshotList(
 }
 
 export function listSubmissions(tenantId: Tenant["id"]): Submission[] {
-  if (useRemotePersistence()) {
+  if (isRemotePersistence()) {
     ensureRemoteFetch(tenantId);
     return snapshotList(tenantId, remoteList(tenantId));
   }
@@ -236,11 +220,8 @@ export function listSubmissions(tenantId: Tenant["id"]): Submission[] {
   return snapshotList(tenantId, localTenantList(store, tenantId));
 }
 
-export function getSubmission(
-  tenantId: Tenant["id"],
-  id: string,
-): Submission | undefined {
-  if (useRemotePersistence()) {
+export function getSubmission(tenantId: Tenant["id"], id: string): Submission | undefined {
+  if (isRemotePersistence()) {
     ensureRemoteFetch(tenantId);
     return remoteList(tenantId).find((s) => s.id === id);
   }
@@ -288,11 +269,12 @@ export async function updateSubmission(
   id: string,
   patch: Partial<Submission>,
 ): Promise<Submission | undefined> {
-  if (useRemotePersistence()) {
+  if (isRemotePersistence()) {
     const list = remoteList(tenantId);
     const idx = list.findIndex((s) => s.id === id);
     if (idx < 0) return undefined;
-    const before = list[idx]!;
+    const before = list[idx];
+    if (!before) return undefined;
     const updated = { ...before, ...patch };
     const next = list.map((s, i) => (i === idx ? updated : s));
     setRemoteList(tenantId, next);
@@ -333,7 +315,7 @@ export function createSubmission(
   };
 
   // バックエンドモードは createSubmissionAsync を使う (同期 API は local のみ)
-  if (useRemotePersistence()) {
+  if (isRemotePersistence()) {
     console.warn(
       "[submissions-store] createSubmission called in backend mode; use createSubmissionAsync",
     );
@@ -343,9 +325,7 @@ export function createSubmission(
   const store = loadLocalStore();
   const list = localTenantList(store, tenantId);
   const id =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `sub-${Date.now()}`;
+    typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `sub-${Date.now()}`;
   const submission: Submission = {
     id,
     tenantId,
@@ -386,15 +366,12 @@ export async function createSubmissionAsync(
     attempt: input.attempt ?? 1,
   };
 
-  if (!useRemotePersistence()) {
+  if (!isRemotePersistence()) {
     return createSubmission(tenantId, input);
   }
 
   try {
-    const created = await insertSubmission(
-      tenantId,
-      toInsertPayload(base),
-    );
+    const created = await insertSubmission(tenantId, toInsertPayload(base));
     setRemoteList(tenantId, [created, ...remoteList(tenantId)]);
     return created;
   } catch (err) {
@@ -413,8 +390,7 @@ export async function finalizeReview(
     rubric: Submission["rubric"];
   },
 ): Promise<Submission | undefined> {
-  const status =
-    verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
+  const status = verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
   return updateSubmission(tenantId, id, {
     ...patch,
     verdict,
@@ -427,13 +403,12 @@ export function formatSubmittedAt(ms: number): string {
 }
 
 export function countPending(tenantId: Tenant["id"]): number {
-  if (useRemotePersistence()) {
+  if (isRemotePersistence()) {
     ensureRemoteFetch(tenantId);
     return remoteList(tenantId).filter((s) => s.status === "pending").length;
   }
   const store = loadLocalStore();
-  return localTenantList(store, tenantId).filter((s) => s.status === "pending")
-    .length;
+  return localTenantList(store, tenantId).filter((s) => s.status === "pending").length;
 }
 
 export function subscribeSubmissions(listener: () => void): () => void {

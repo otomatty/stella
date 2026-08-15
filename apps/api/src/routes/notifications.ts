@@ -11,13 +11,15 @@
 import { Hono } from "hono";
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
+import { announcements, enrollments, notifications, profiles } from "../db/schema.js";
 import {
-  announcements,
-  enrollments,
-  notifications,
-  profiles,
-} from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
+  errorResponse,
+  getCaller,
+  requireRole,
+  ApiError,
+  isStaffRole,
+  requireReturning,
+} from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -112,7 +114,7 @@ notificationsRoute.post("/api/announcements", async (c) => {
         body: body.body,
       })
       .returning(A_COLS);
-    const row = inserted[0]!;
+    const row = requireReturning(inserted, "announcement insert");
 
     await fanoutAnnouncement(db, caller, row.id, row.course_id, row.title, row.body);
     return c.json({ row });
@@ -131,10 +133,7 @@ async function fanoutAnnouncement(
   body: string,
 ): Promise<void> {
   // 対象 student を解決する。
-  const baseConds = [
-    eq(profiles.tenantId, caller.tenantId),
-    eq(profiles.role, "student"),
-  ];
+  const baseConds = [eq(profiles.tenantId, caller.tenantId), eq(profiles.role, "student")];
   let targetIds: string[];
   if (courseId) {
     const rows = await db
@@ -144,7 +143,10 @@ async function fanoutAnnouncement(
       .where(and(...baseConds, eq(enrollments.courseId, courseId)));
     targetIds = rows.map((r) => r.id);
   } else {
-    const rows = await db.select({ id: profiles.id }).from(profiles).where(and(...baseConds));
+    const rows = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(and(...baseConds));
     targetIds = rows.map((r) => r.id);
   }
   const recipients = targetIds.filter((id) => id !== caller.id);

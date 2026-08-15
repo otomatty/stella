@@ -38,10 +38,7 @@ export function copySqlJsWasm(): Plugin {
         if (existsSync(target)) {
           const srcStat = statSync(source);
           const dstStat = statSync(target);
-          if (
-            dstStat.size === srcStat.size &&
-            dstStat.mtimeMs >= srcStat.mtimeMs
-          ) {
+          if (dstStat.size === srcStat.size && dstStat.mtimeMs >= srcStat.mtimeMs) {
             return; // already in place (size + mtime match)
           }
         }

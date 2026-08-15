@@ -3,9 +3,7 @@ import type { ReviewDraftRequest } from "./types.js";
 /** 推論コスト抑制のための提出コード上限 (文字数) */
 export const MAX_REVIEW_CODE_LENGTH = 80_000;
 
-type Result =
-  | { ok: true; body: ReviewDraftRequest }
-  | { ok: false; status: 400; message: string };
+type Result = { ok: true; body: ReviewDraftRequest } | { ok: false; status: 400; message: string };
 
 export function validateReviewDraftRequest(raw: unknown): Result {
   if (!raw || typeof raw !== "object") {
@@ -25,10 +23,8 @@ export function validateReviewDraftRequest(raw: unknown): Result {
       message: `code exceeds maximum length (${MAX_REVIEW_CODE_LENGTH})`,
     };
   }
-  const language =
-    o.language === "sql" || o.language === "js" ? o.language : undefined;
-  const courseTitle =
-    typeof o.courseTitle === "string" ? o.courseTitle : undefined;
+  const language = o.language === "sql" || o.language === "js" ? o.language : undefined;
+  const courseTitle = typeof o.courseTitle === "string" ? o.courseTitle : undefined;
   return {
     ok: true,
     body: {

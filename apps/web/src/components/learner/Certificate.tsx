@@ -9,28 +9,22 @@
  * - バックエンド未設定 (fixtures デモ) 時: 従来どおり静的テンプレートを表示する。
  */
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { toast } from 'sonner';
-import {
-  Download,
-  ExternalLink,
-  Loader2,
-  Award,
-  CheckCircle,
-} from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { CertificateView, formatIssuedAt } from '@/components/common/CertificateView';
-import { Button } from '@/components/ui/button';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import type { Course } from '@/data/types';
-import type { CertificateRow, CourseCompletion } from '@falcon/shared/cms/types';
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { Download, ExternalLink, Loader2, Award, CheckCircle } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
+import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import type { Course } from "@/data/types";
+import type { CertificateRow, CourseCompletion } from "@falcon/shared/cms/types";
 import {
   buildVerificationUrl,
   fetchMyCourseCompletion,
   issueCertificate,
   listCertificatesForUser,
-} from '@/lib/certificates-api';
-import { useLearnerPreviewReadOnly } from '@/components/shell/app-shell-context';
+} from "@/lib/certificates-api";
+import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 
 interface CertificatePageProps {
   courses: Course[];
@@ -102,8 +96,8 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
       setCerts(certRows);
       setCompletions(Object.fromEntries(completionPairs));
     } catch (err) {
-      console.error('[CertificatePage] load failed', err);
-      toast.error('修了証の読み込みに失敗しました');
+      console.error("[CertificatePage] load failed", err);
+      toast.error("修了証の読み込みに失敗しました");
     } finally {
       setLoading(false);
     }
@@ -115,18 +109,16 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
 
   const onIssue = async (courseId: string) => {
     if (previewReadOnly) {
-      toast.message('受講者画面のプレビューでは修了証は発行されません');
+      toast.message("受講者画面のプレビューでは修了証は発行されません");
       return;
     }
     setIssuingId(courseId);
     try {
       const result = await issueCertificate(courseId, userId);
-      toast.success(
-        result.already_existed ? '修了証は既に発行済みです' : '修了証を発行しました',
-      );
+      toast.success(result.already_existed ? "修了証は既に発行済みです" : "修了証を発行しました");
       await load();
     } catch (err) {
-      toast.error(`発行に失敗しました: ${err instanceof Error ? err.message : 'unknown'}`);
+      toast.error(`発行に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setIssuingId(null);
     }
@@ -134,9 +126,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
 
   const certByCourse = new Map(certs.map((c) => [c.course_id, c]));
   // 未発行で基準達成のコース (自動発行可なら本人発行、 不可なら講師承認待ち)。
-  const issuable = courses.filter(
-    (c) => !certByCourse.has(c.id) && completions[c.id]?.met,
-  );
+  const issuable = courses.filter((c) => !certByCourse.has(c.id) && completions[c.id]?.met);
   // 受講中 (未達成 / 集計あり) のコース。
   const inProgress = courses.filter(
     (c) => !certByCourse.has(c.id) && completions[c.id] && !completions[c.id]?.met,
@@ -156,8 +146,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
               <SectionTitle>発行可能な修了証</SectionTitle>
               <div className="flex flex-col gap-2">
                 {issuable.map((c) => {
-                  const autoIssue =
-                    completions[c.id]?.criteria.auto_issue_certificate ?? true;
+                  const autoIssue = completions[c.id]?.criteria.auto_issue_certificate ?? true;
                   return (
                     <div
                       key={c.id}
@@ -169,7 +158,9 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
                         <div className="text-[12px] text-ink-3">修了基準を達成しました</div>
                       </div>
                       {previewReadOnly ? (
-                        <span className="text-[12px] text-ink-4 shrink-0">プレビュー中は発行できません</span>
+                        <span className="text-[12px] text-ink-4 shrink-0">
+                          プレビュー中は発行できません
+                        </span>
                       ) : autoIssue ? (
                         <Button
                           variant="accent"
@@ -203,11 +194,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
             ) : (
               <div className="flex flex-col gap-8">
                 {certs.map((cert) => (
-                  <IssuedCertificate
-                    key={cert.id}
-                    cert={cert}
-                    fallbackInitials={studentInitials}
-                  />
+                  <IssuedCertificate key={cert.id} cert={cert} fallbackInitials={studentInitials} />
                 ))}
               </div>
             )}
@@ -230,9 +217,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
           ) : null}
 
           {courses.length === 0 ? (
-            <div className="text-[13px] text-ink-3">
-              受講登録されたコースがありません。
-            </div>
+            <div className="text-[13px] text-ink-3">受講登録されたコースがありません。</div>
           ) : null}
 
           <p className="text-[11.5px] text-ink-4">発行者: {tenantName}</p>
@@ -321,9 +306,9 @@ function Metric({
   required: boolean;
 }) {
   return (
-    <span className={required ? '' : 'opacity-50'}>
+    <span className={required ? "" : "opacity-50"}>
       {label}: <span className="font-mono text-ink-2">{value}</span>
-      {required ? '' : ' (任意)'}
+      {required ? "" : " (任意)"}
     </span>
   );
 }

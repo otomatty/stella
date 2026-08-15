@@ -60,9 +60,8 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
       .from(enrollments)
       .where(eq(enrollments.tenantId, tenantId));
 
-    const activeLearners = new Set(
-      enr.filter((e) => e.status === "active").map((e) => e.userId),
-    ).size;
+    const activeLearners = new Set(enr.filter((e) => e.status === "active").map((e) => e.userId))
+      .size;
     const totalEnroll = enr.length;
     const completedEnroll = enr.filter((e) => e.status === "completed").length;
     const expiredEnroll = enr.filter((e) => e.status === "expired").length;
@@ -190,7 +189,8 @@ async function computeStumbles(
     for (const a of answers) selByQ.set(a.question_id, new Set(a.selected_option_ids ?? []));
     for (const q of questionsForQuizzes) {
       if (q.quizId !== att.quizId) continue;
-      const st = stats.get(q.id)!;
+      const st = stats.get(q.id);
+      if (!st) continue;
       st.n += 1;
       const correct = correctByQuestion.get(q.id) ?? new Set<string>();
       const selected = selByQ.get(q.id) ?? new Set<string>();
@@ -242,7 +242,11 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
     // 期限が近い順に active enrollment 上位 6 件の進捗サンプル。
     const active = allEnr
       .filter((e) => e.status === "active")
-      .sort((a, b) => (a.dueAt?.getTime() ?? Infinity) - (b.dueAt?.getTime() ?? Infinity))
+      .sort(
+        (a, b) =>
+          (a.dueAt?.getTime() ?? Number.POSITIVE_INFINITY) -
+          (b.dueAt?.getTime() ?? Number.POSITIVE_INFINITY),
+      )
       .slice(0, 6);
 
     // Neon HTTP は 1 クエリ = 1 ラウンドトリップのため、 受講者ごとのループ内クエリ (N+1)

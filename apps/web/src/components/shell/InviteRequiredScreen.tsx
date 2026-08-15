@@ -21,13 +21,7 @@ export function InviteRequiredScreen({ email, onSignOut }: Props) {
           招待が必要です。管理者に連絡してください。
         </p>
         <p className="mt-3 text-[12.5px] text-ink-2">{email}</p>
-        <Button
-          type="button"
-          variant="accent"
-          size="full"
-          className="mt-5"
-          onClick={onSignOut}
-        >
+        <Button type="button" variant="accent" size="full" className="mt-5" onClick={onSignOut}>
           ログアウト
         </Button>
       </div>

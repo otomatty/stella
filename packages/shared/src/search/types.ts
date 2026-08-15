@@ -85,14 +85,10 @@ export function buildPrefixLikePattern(query: string): string {
  * D1 (SQLite) 側で ORDER BY を組み立てると種別ごとのクエリを跨げないため、
  * マージ後にこの純粋関数で整える。
  */
-export function rankSearchResults(
-  results: readonly SearchResult[],
-  query: string,
-): SearchResult[] {
+export function rankSearchResults(results: readonly SearchResult[], query: string): SearchResult[] {
   const needle = query.toLowerCase();
   const kindRank: Record<SearchResultKind, number> = { course: 0, lesson: 1 };
-  const score = (r: SearchResult): number =>
-    r.title.toLowerCase().startsWith(needle) ? 0 : 1;
+  const score = (r: SearchResult): number => (r.title.toLowerCase().startsWith(needle) ? 0 : 1);
 
   return [...results].sort((a, b) => {
     const byScore = score(a) - score(b);

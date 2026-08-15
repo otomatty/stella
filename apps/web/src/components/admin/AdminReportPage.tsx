@@ -107,15 +107,10 @@ function ReportLive({ tenantId }: { tenantId: string }) {
     try {
       // プレビュー上限に縛られず、 期間に一致する全件を書き出す。
       const all = await fetchAllReportRows(type, period);
-      downloadCsv(
-        reportFileName(type, period),
-        toCsv(meta.headers, reportRowsToCells(type, all)),
-      );
+      downloadCsv(reportFileName(type, period), toCsv(meta.headers, reportRowsToCells(type, all)));
       toast.success(`${all.length} 件をエクスポートしました`);
     } catch (err) {
-      toast.error(
-        `CSV出力に失敗しました: ${err instanceof Error ? err.message : "unknown"}`,
-      );
+      toast.error(`CSV出力に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setExporting(false);
     }
@@ -214,7 +209,8 @@ function ReportLive({ tenantId }: { tenantId: string }) {
 
       {truncated ? (
         <div className="mb-4 rounded-md border border-border bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
-          全 {total} 件のうち先頭 {REPORT_PREVIEW_LIMIT} 件を表示しています。 全件は「CSV出力」で取得してください。
+          全 {total} 件のうち先頭 {REPORT_PREVIEW_LIMIT} 件を表示しています。
+          全件は「CSV出力」で取得してください。
         </div>
       ) : null}
 
@@ -242,8 +238,10 @@ function ReportLive({ tenantId }: { tenantId: string }) {
               <TableBody>
                 {rows.map((row, i) => (
                   // 行に安定した一意キーが無い種別 (成績は複数テーブルの混成) があるため index を使う。
+                  // biome-ignore lint/suspicious/noArrayIndexKey: 混成行に安定キーが無い
                   <TableRow key={i}>
                     {reportRowToCells(type, row).map((cell, j) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: セルは列位置が同一性
                       <TableCell key={j} className="whitespace-nowrap">
                         {cell || "—"}
                       </TableCell>
@@ -267,10 +265,10 @@ function FilterField({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
       <span className="text-[11px] text-ink-3">{label}</span>
       {children}
-    </label>
+    </div>
   );
 }
 

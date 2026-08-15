@@ -121,7 +121,9 @@ function toCatalogCourse(
   const sections = detail.sections
     .slice()
     .sort((a, b) => a.section.order - b.section.order)
-    .map(({ section, lessons }) => toCatalogSection(detail.course.id, section, lessons, completedIds));
+    .map(({ section, lessons }) =>
+      toCatalogSection(detail.course.id, section, lessons, completedIds),
+    );
   return {
     id: detail.course.id,
     title: detail.course.title,
@@ -188,9 +190,7 @@ export async function loadCatalog(): Promise<CatalogCourse[]> {
   ]);
 
   const completedIds = new Set(
-    (progress.rows ?? [])
-      .filter((row) => isCompleted(row.completed))
-      .map((row) => row.lesson_id),
+    (progress.rows ?? []).filter((row) => isCompleted(row.completed)).map((row) => row.lesson_id),
   );
   const courseIds = courseIdsForRole(me.profile.role, enrollments.rows ?? [], courses.rows ?? []);
   const details = await Promise.all(courseIds.map(fetchCourseDetail));

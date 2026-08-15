@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import type { Role } from '@/data/types';
-import { useAppShell } from '@/components/shell/app-shell-context';
-import { GenericEmpty } from '@/components/admin/AdminGeneric';
+import type { ReactNode } from "react";
+import type { Role } from "@/data/types";
+import { useAppShell } from "@/components/shell/app-shell-context";
+import { GenericEmpty } from "@/components/admin/AdminGeneric";
 
 /**
  * ロール外のアクセスをブロックする。 旧 renderPage はロール別分岐の外に落ちると

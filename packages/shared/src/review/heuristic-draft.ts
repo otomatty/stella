@@ -51,12 +51,7 @@ export function buildHeuristicReviewDraft(code: string): ReviewDraftResponse {
       );
     }
     if (/\bvar\b/.test(line)) {
-      push(
-        n,
-        "low",
-        "ES2015+",
-        "`let` / `const` の使用を推奨します。",
-      );
+      push(n, "low", "ES2015+", "`let` / `const` の使用を推奨します。");
     }
   });
 

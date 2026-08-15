@@ -23,7 +23,14 @@ import {
   quizzes,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
+import {
+  errorResponse,
+  getCaller,
+  requireRole,
+  ApiError,
+  isStaffRole,
+  requireReturning,
+} from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
@@ -136,7 +143,11 @@ const optionToRow = (o: OptionSel) => ({
 
 // --- tenant 検証ヘルパ (子要素の書き込み時に親のテナント所属を確認) ---
 async function courseTenant(db: Db, courseId: string): Promise<string | null> {
-  const rows = await db.select({ t: courses.tenantId }).from(courses).where(eq(courses.id, courseId)).limit(1);
+  const rows = await db
+    .select({ t: courses.tenantId })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
   return rows[0]?.t ?? null;
 }
 /** 監査ログ用に、 テナント検証と同時にコースの現在値も取る (公開/削除の記録に使う)。 */
@@ -156,7 +167,10 @@ async function courseAuditInfo(
     .limit(1);
   return rows[0] ?? null;
 }
-async function sectionCourse(db: Db, sectionId: string): Promise<{ courseId: string; tenant: string } | null> {
+async function sectionCourse(
+  db: Db,
+  sectionId: string,
+): Promise<{ courseId: string; tenant: string } | null> {
   const rows = await db
     .select({ courseId: sections.courseId, tenant: courses.tenantId })
     .from(sections)
@@ -315,9 +329,16 @@ cmsRoute.post("/api/cms/courses", async (c) => {
     let row: CourseSel;
     if (input.id) {
       assertTenant(await courseTenant(db, input.id), caller);
-      row = (await db.update(courses).set({ ...values, updatedAt: new Date() }).where(eq(courses.id, input.id)).returning())[0]!;
+      row = requireReturning(
+        await db
+          .update(courses)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(courses.id, input.id))
+          .returning(),
+        "course update",
+      );
     } else {
-      row = (await db.insert(courses).values(values).returning())[0]!;
+      row = requireReturning(await db.insert(courses).values(values).returning(), "course insert");
     }
     return c.json({ row: courseToRow(row) });
   } catch (err) {
@@ -331,11 +352,12 @@ cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     const info = await courseAuditInfo(db, id);
-    assertTenant(info?.tenant ?? null, caller);
+    if (!info) throw new ApiError("対象が見つかりません", 404);
+    assertTenant(info.tenant, caller);
     const { status } = (await c.req.json()) as { status: CourseSel["status"] };
     await db.update(courses).set({ status, updatedAt: new Date() }).where(eq(courses.id, id));
     // 公開 / 非公開は監査上の意味が違うため action を分ける (Issue #64)。
-    const wasPublished = info!.status === "published";
+    const wasPublished = info.status === "published";
     await recordAudit(db, caller, {
       action:
         status === "published"
@@ -346,7 +368,7 @@ cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
       targetType: "course",
       targetId: id,
       ip: clientIp(c),
-      metadata: { title: info!.title, slug: info!.slug, from: info!.status, to: status },
+      metadata: { title: info.title, slug: info.slug, from: info.status, to: status },
     });
     return c.json({ ok: true });
   } catch (err) {
@@ -360,14 +382,19 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
     const info = await courseAuditInfo(db, id);
-    assertTenant(info?.tenant ?? null, caller);
+    if (!info) throw new ApiError("対象が見つかりません", 404);
+    assertTenant(info.tenant, caller);
     // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
     const lessonRows = await db
       .select({ id: lessons.id })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .where(eq(sections.courseId, id));
-    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
+    await deleteMaterialObjects(
+      db,
+      c.env,
+      lessonRows.map((l) => l.id),
+    );
     await db.delete(courses).where(eq(courses.id, id));
     // 削除後は行が消えるため、 タイトル等は削除前に取った値を残す。
     await recordAudit(db, caller, {
@@ -376,9 +403,9 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
       targetId: id,
       ip: clientIp(c),
       metadata: {
-        title: info!.title,
-        slug: info!.slug,
-        status: info!.status,
+        title: info.title,
+        slug: info.slug,
+        status: info.status,
         lesson_count: lessonRows.length,
       },
     });
@@ -396,14 +423,25 @@ cmsRoute.post("/api/cms/sections", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const input = (await c.req.json()) as { id?: string; course_id: string; title: string; order?: number };
+    const input = (await c.req.json()) as {
+      id?: string;
+      course_id: string;
+      title: string;
+      order?: number;
+    };
     assertTenant(await courseTenant(db, input.course_id), caller);
     const values = { courseId: input.course_id, title: input.title, order: input.order ?? 0 };
     let row: SectionSel;
     if (input.id) {
-      row = (await db.update(sections).set(values).where(eq(sections.id, input.id)).returning())[0]!;
+      row = requireReturning(
+        await db.update(sections).set(values).where(eq(sections.id, input.id)).returning(),
+        "section update",
+      );
     } else {
-      row = (await db.insert(sections).values(values).returning())[0]!;
+      row = requireReturning(
+        await db.insert(sections).values(values).returning(),
+        "section insert",
+      );
     }
     return c.json({ row: sectionToRow(row) });
   } catch (err) {
@@ -422,7 +460,11 @@ cmsRoute.delete("/api/cms/sections/:id", async (c) => {
       .select({ id: lessons.id })
       .from(lessons)
       .where(eq(lessons.sectionId, c.req.param("id")));
-    await deleteMaterialObjects(db, c.env, lessonRows.map((l) => l.id));
+    await deleteMaterialObjects(
+      db,
+      c.env,
+      lessonRows.map((l) => l.id),
+    );
     await db.delete(sections).where(eq(sections.id, c.req.param("id")));
     return c.json({ ok: true });
   } catch (err) {
@@ -434,7 +476,10 @@ cmsRoute.post("/api/cms/sections/reorder", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const { courseId, orderedIds } = (await c.req.json()) as { courseId: string; orderedIds: string[] };
+    const { courseId, orderedIds } = (await c.req.json()) as {
+      courseId: string;
+      orderedIds: string[];
+    };
     assertTenant(await courseTenant(db, courseId), caller);
     // 順序付きで各行の order を更新する (course 内に限定)。 並列実行でレイテンシを抑える。
     await Promise.all(
@@ -459,7 +504,10 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const input = (await c.req.json()) as Record<string, unknown> & { id?: string; section_id: string };
+    const input = (await c.req.json()) as Record<string, unknown> & {
+      id?: string;
+      section_id: string;
+    };
     const sc = await sectionCourse(db, input.section_id);
     assertTenant(sc?.tenant ?? null, caller);
     const values = {
@@ -477,9 +525,16 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
     };
     let row: LessonSel;
     if (input.id) {
-      row = (await db.update(lessons).set({ ...values, updatedAt: new Date() }).where(eq(lessons.id, input.id)).returning())[0]!;
+      row = requireReturning(
+        await db
+          .update(lessons)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(lessons.id, input.id))
+          .returning(),
+        "lesson update",
+      );
     } else {
-      row = (await db.insert(lessons).values(values).returning())[0]!;
+      row = requireReturning(await db.insert(lessons).values(values).returning(), "lesson insert");
     }
     return c.json({ row: lessonToRow(row) });
   } catch (err) {
@@ -505,7 +560,10 @@ cmsRoute.post("/api/cms/lessons/reorder", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const { sectionId, orderedIds } = (await c.req.json()) as { sectionId: string; orderedIds: string[] };
+    const { sectionId, orderedIds } = (await c.req.json()) as {
+      sectionId: string;
+      orderedIds: string[];
+    };
     const sc = await sectionCourse(db, sectionId);
     assertTenant(sc?.tenant ?? null, caller);
     await Promise.all(
@@ -546,7 +604,12 @@ cmsRoute.get("/api/cms/quiz/by-lesson/:lessonId", async (c) => {
         ? await db
             .select()
             .from(quizOptions)
-            .where(inArray(quizOptions.questionId, qRows.map((q) => q.id)))
+            .where(
+              inArray(
+                quizOptions.questionId,
+                qRows.map((q) => q.id),
+              ),
+            )
             .orderBy(asc(quizOptions.order))
         : [];
     return c.json({
@@ -571,7 +634,10 @@ cmsRoute.post("/api/cms/quiz/ensure", async (c) => {
     assertTenant(await lessonTenant(db, lessonId), caller);
     const existing = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
     if (existing[0]) return c.json({ row: quizToRow(existing[0]) });
-    const row = (await db.insert(quizzes).values({ lessonId }).returning())[0]!;
+    const row = requireReturning(
+      await db.insert(quizzes).values({ lessonId }).returning(),
+      "quiz insert",
+    );
     return c.json({ row: quizToRow(row) });
   } catch (err) {
     return errorResponse(c, err);
@@ -585,20 +651,27 @@ cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
     const id = c.req.param("id");
     assertTenant(await quizTenant(db, id), caller);
     const p = (await c.req.json()) as Record<string, unknown>;
-    const row = (
+    const row = requireReturning(
       await db
         .update(quizzes)
         .set({
           ...(p.pass_score !== undefined ? { passScore: p.pass_score as number } : {}),
-          ...(p.time_limit_sec !== undefined ? { timeLimitSec: p.time_limit_sec as number | null } : {}),
-          ...(p.shuffle_questions !== undefined ? { shuffleQuestions: p.shuffle_questions as boolean } : {}),
-          ...(p.shuffle_options !== undefined ? { shuffleOptions: p.shuffle_options as boolean } : {}),
+          ...(p.time_limit_sec !== undefined
+            ? { timeLimitSec: p.time_limit_sec as number | null }
+            : {}),
+          ...(p.shuffle_questions !== undefined
+            ? { shuffleQuestions: p.shuffle_questions as boolean }
+            : {}),
+          ...(p.shuffle_options !== undefined
+            ? { shuffleOptions: p.shuffle_options as boolean }
+            : {}),
           ...(p.max_attempts !== undefined ? { maxAttempts: p.max_attempts as number | null } : {}),
           updatedAt: new Date(),
         })
         .where(eq(quizzes.id, id))
-        .returning()
-    )[0]!;
+        .returning(),
+      "quiz update",
+    );
     return c.json({ row: quizToRow(row) });
   } catch (err) {
     return errorResponse(c, err);
@@ -609,7 +682,10 @@ cmsRoute.post("/api/cms/quiz-questions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const input = (await c.req.json()) as Record<string, unknown> & { id?: string; quiz_id: string };
+    const input = (await c.req.json()) as Record<string, unknown> & {
+      id?: string;
+      quiz_id: string;
+    };
     assertTenant(await quizTenant(db, input.quiz_id), caller);
     const values = {
       quizId: input.quiz_id,
@@ -621,9 +697,19 @@ cmsRoute.post("/api/cms/quiz-questions", async (c) => {
     };
     let row: QuestionSel;
     if (input.id) {
-      row = (await db.update(quizQuestions).set({ ...values, updatedAt: new Date() }).where(eq(quizQuestions.id, input.id)).returning())[0]!;
+      row = requireReturning(
+        await db
+          .update(quizQuestions)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(quizQuestions.id, input.id))
+          .returning(),
+        "quiz question update",
+      );
     } else {
-      row = (await db.insert(quizQuestions).values(values).returning())[0]!;
+      row = requireReturning(
+        await db.insert(quizQuestions).values(values).returning(),
+        "quiz question insert",
+      );
     }
     return c.json({ row: questionToRow(row) });
   } catch (err) {
@@ -647,7 +733,13 @@ cmsRoute.post("/api/cms/quiz-options", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const input = (await c.req.json()) as { id?: string; question_id: string; label: string; is_correct?: boolean; order?: number };
+    const input = (await c.req.json()) as {
+      id?: string;
+      question_id: string;
+      label: string;
+      is_correct?: boolean;
+      order?: number;
+    };
     assertTenant(await questionTenant(db, input.question_id), caller);
     const values = {
       questionId: input.question_id,
@@ -657,9 +749,15 @@ cmsRoute.post("/api/cms/quiz-options", async (c) => {
     };
     let row: OptionSel;
     if (input.id) {
-      row = (await db.update(quizOptions).set(values).where(eq(quizOptions.id, input.id)).returning())[0]!;
+      row = requireReturning(
+        await db.update(quizOptions).set(values).where(eq(quizOptions.id, input.id)).returning(),
+        "quiz option update",
+      );
     } else {
-      row = (await db.insert(quizOptions).values(values).returning())[0]!;
+      row = requireReturning(
+        await db.insert(quizOptions).values(values).returning(),
+        "quiz option insert",
+      );
     }
     return c.json({ row: optionToRow(row) });
   } catch (err) {
@@ -719,7 +817,13 @@ cmsRoute.get("/api/cms/assignments/:id", async (c) => {
         .from(lessons)
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
         .innerJoin(courses, eq(courses.id, sections.courseId))
-        .where(and(eq(lessons.assignmentId, id), eq(courses.status, "published"), eq(courses.tenantId, caller.tenantId)))
+        .where(
+          and(
+            eq(lessons.assignmentId, id),
+            eq(courses.status, "published"),
+            eq(courses.tenantId, caller.tenantId),
+          ),
+        )
         .limit(1);
       if (!linked[0]) return c.json({ row: null });
     }
@@ -754,15 +858,17 @@ cmsRoute.post("/api/cms/assignments", async (c) => {
       mutation: input.mutation ?? null,
       demoCall: (input.demo_call as string | null) ?? null,
     };
-    const row = (
+    const row = requireReturning(
       await db
         .insert(assignments)
         .values(values)
         .onConflictDoUpdate({ target: assignments.id, set: { ...values, updatedAt: new Date() } })
-        .returning()
-    )[0]!;
+        .returning(),
+      "assignment upsert",
+    );
     // 越テナント上書き防止: 既存が別テナントなら弾く。
-    if (row.tenantId !== caller.tenantId) throw new ApiError("他テナントの課題は操作できません", 403);
+    if (row.tenantId !== caller.tenantId)
+      throw new ApiError("他テナントの課題は操作できません", 403);
     return c.json({ row: assignmentToRow(row) });
   } catch (err) {
     return errorResponse(c, err);
@@ -774,7 +880,11 @@ cmsRoute.delete("/api/cms/assignments/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    const rows = await db.select({ t: assignments.tenantId }).from(assignments).where(eq(assignments.id, id)).limit(1);
+    const rows = await db
+      .select({ t: assignments.tenantId })
+      .from(assignments)
+      .where(eq(assignments.id, id))
+      .limit(1);
     assertTenant(rows[0]?.t ?? null, caller);
     await db.delete(assignments).where(eq(assignments.id, id));
     return c.json({ ok: true });

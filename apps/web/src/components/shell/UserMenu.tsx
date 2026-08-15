@@ -4,8 +4,8 @@
  * staff はここから受講者画面へ切り替えられる。
  */
 
-import { ChevronsUpDown, Eye, GraduationCap, LogOut, Settings } from '@/lib/icons';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ChevronsUpDown, Eye, GraduationCap, LogOut, Settings } from "@/lib/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +13,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { staffHomeLabel } from '@/lib/ui-role';
-import type { User } from '@/data/types';
-import type { ProfileRole } from '@falcon/shared/cms/types';
+} from "@/components/ui/dropdown-menu";
+import { staffHomeLabel } from "@/lib/ui-role";
+import type { User } from "@/data/types";
+import type { ProfileRole } from "@falcon/shared/cms/types";
 
 interface UserMenuProps {
   user: User;
@@ -63,9 +63,7 @@ export const UserMenu = ({
     <DropdownMenuContent side="top" align="start">
       <DropdownMenuLabel>
         <div className="truncate font-medium text-foreground">{user.name}</div>
-        <div className="truncate text-[11px] font-normal text-ink-3">
-          {user.email}
-        </div>
+        <div className="truncate text-[11px] font-normal text-ink-3">{user.email}</div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       {canSwitchToLearner ? (

@@ -17,17 +17,26 @@ describe("exerciseRoot", () => {
 
 describe("isPathInsideDir", () => {
   it("accepts the directory and files under it", () => {
-    expect(isPathInsideDir("/home/u/.falcon-informal/exercises/asg-1", "/home/u/.falcon-informal/exercises/asg-1")).toBe(
-      true,
-    );
     expect(
-      isPathInsideDir("/home/u/.falcon-informal/exercises/asg-1/main.js", "/home/u/.falcon-informal/exercises/asg-1"),
+      isPathInsideDir(
+        "/home/u/.falcon-informal/exercises/asg-1",
+        "/home/u/.falcon-informal/exercises/asg-1",
+      ),
+    ).toBe(true);
+    expect(
+      isPathInsideDir(
+        "/home/u/.falcon-informal/exercises/asg-1/main.js",
+        "/home/u/.falcon-informal/exercises/asg-1",
+      ),
     ).toBe(true);
   });
 
   it("rejects a prefix-sibling exercise folder", () => {
     expect(
-      isPathInsideDir("/home/u/.falcon-informal/exercises/asg-10/main.js", "/home/u/.falcon-informal/exercises/asg-1"),
+      isPathInsideDir(
+        "/home/u/.falcon-informal/exercises/asg-10/main.js",
+        "/home/u/.falcon-informal/exercises/asg-1",
+      ),
     ).toBe(false);
   });
 

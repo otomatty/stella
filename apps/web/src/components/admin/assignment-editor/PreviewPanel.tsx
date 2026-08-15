@@ -20,7 +20,8 @@ export function PreviewPanel({ previewing, preview, onRun }: PreviewPanelProps) 
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="text-[12.5px] text-ink-3">
-          現在のドラフトを採点ランナーで実行し、 starterFiles の中身でテストが pass するか確認します。
+          現在のドラフトを採点ランナーで実行し、 starterFiles の中身でテストが pass
+          するか確認します。
         </div>
         <Button type="button" variant="accent" disabled={previewing} onClick={onRun}>
           {previewing ? <Loader2 size={14} className="animate-spin" /> : <PlayCircle size={14} />}
@@ -60,8 +61,8 @@ export function PreviewPanel({ previewing, preview, onRun }: PreviewPanelProps) 
                 </tr>
               </thead>
               <tbody>
-                {preview.results.map((r, i) => (
-                  <tr key={i} className="border-t border-border">
+                {preview.results.map((r) => (
+                  <tr key={r.name} className="border-t border-border">
                     <td className="px-2 py-1 font-medium">{r.name}</td>
                     <td className="px-2 py-1">
                       <Badge variant={r.passed ? "success" : "danger"}>
@@ -69,7 +70,9 @@ export function PreviewPanel({ previewing, preview, onRun }: PreviewPanelProps) 
                       </Badge>
                     </td>
                     <td className="px-2 py-1 font-mono">
-                      <pre className="whitespace-pre-wrap text-[11px]">{r.expectedStdout ?? ""}</pre>
+                      <pre className="whitespace-pre-wrap text-[11px]">
+                        {r.expectedStdout ?? ""}
+                      </pre>
                     </td>
                     <td className="px-2 py-1 font-mono">
                       <pre className="whitespace-pre-wrap text-[11px]">{r.stdout ?? ""}</pre>

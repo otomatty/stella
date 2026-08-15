@@ -24,9 +24,7 @@ export interface InterviewPrepAssignmentRow {
   categories: string[];
 }
 
-export async function listInterviewPrepAssignments(): Promise<
-  InterviewPrepAssignmentRow[]
-> {
+export async function listInterviewPrepAssignments(): Promise<InterviewPrepAssignmentRow[]> {
   const { rows } = await apiFetch<{ rows: InterviewPrepAssignmentRow[] }>(
     "/api/interview-prep/assignments",
   );
@@ -37,8 +35,8 @@ export async function saveInterviewPrepAssignment(
   profileId: string,
   categories: string[],
 ): Promise<void> {
-  await apiFetch(
-    `/api/interview-prep/assignments/${encodeURIComponent(profileId)}`,
-    { method: "PUT", body: { categories } },
-  );
+  await apiFetch(`/api/interview-prep/assignments/${encodeURIComponent(profileId)}`, {
+    method: "PUT",
+    body: { categories },
+  });
 }

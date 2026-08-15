@@ -8,23 +8,16 @@
  * 招待ダイアログ / デモ版 / 共有小物は users-admin/ 配下に分割。
  */
 
-import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import {
-  Upload,
-  Plus,
-  Search,
-  MoreHorizontal,
-  Shield,
-  Lock,
-} from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Upload, Plus, Search, MoreHorizontal, Shield, Lock } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
@@ -32,23 +25,16 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import type { ProfileRole } from '@falcon/shared/cms/types';
-import {
-  ASSIGNABLE_PROFILE_ROLES,
-  type AssignableProfileRole,
-} from '@falcon/shared/admin/types';
-import { useProfiles } from '@/hooks/useProfiles';
-import {
-  setUserRole,
-  setUserDisabled,
-  type AdminProfileRow,
-} from '@/lib/admin-users-api';
+} from "@/components/ui/table";
+import type { ProfileRole } from "@falcon/shared/cms/types";
+import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@falcon/shared/admin/types";
+import { useProfiles } from "@/hooks/useProfiles";
+import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
 
-import { ROLE_LABEL, RoleBadge, toneFromId } from './users-admin/shared';
-import { InviteDialog } from './users-admin/InviteDialog';
-import { CsvInviteDialog } from './users-admin/CsvInviteDialog';
-import { UsersAdminDemo } from './users-admin/UsersAdminDemo';
+import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
+import { InviteDialog } from "./users-admin/InviteDialog";
+import { CsvInviteDialog } from "./users-admin/CsvInviteDialog";
+import { UsersAdminDemo } from "./users-admin/UsersAdminDemo";
 
 interface Props {
   tenantId: string;
@@ -94,8 +80,8 @@ function UsersAdminLive({
   currentUserRole: ProfileRole | null;
 }) {
   const { profiles, loading, error, refetch } = useProfiles(tenantId);
-  const [query, setQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<ProfileRole | 'all'>('all');
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<ProfileRole | "all">("all");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -115,12 +101,9 @@ function UsersAdminLive({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return profiles.filter((p) => {
-      if (roleFilter !== 'all' && p.role !== roleFilter) return false;
+      if (roleFilter !== "all" && p.role !== roleFilter) return false;
       if (!q) return true;
-      return (
-        p.display_name.toLowerCase().includes(q) ||
-        (p.email ?? '').toLowerCase().includes(q)
-      );
+      return p.display_name.toLowerCase().includes(q) || (p.email ?? "").toLowerCase().includes(q);
     });
   }, [profiles, query, roleFilter]);
 
@@ -133,7 +116,7 @@ function UsersAdminLive({
       toast.success(`${p.display_name} を「${ROLE_LABEL[role]}」に変更しました`);
       await refetch();
     } catch (err) {
-      toast.error(`ロール変更失敗: ${err instanceof Error ? err.message : 'unknown'}`);
+      toast.error(`ロール変更失敗: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setBusyId(null);
     }
@@ -144,12 +127,10 @@ function UsersAdminLive({
     setBusyId(p.id);
     try {
       await setUserDisabled(p.id, !p.disabled);
-      toast.success(
-        `${p.display_name} を${!p.disabled ? '無効化' : '有効化'}しました`,
-      );
+      toast.success(`${p.display_name} を${!p.disabled ? "無効化" : "有効化"}しました`);
       await refetch();
     } catch (err) {
-      toast.error(`状態変更失敗: ${err instanceof Error ? err.message : 'unknown'}`);
+      toast.error(`状態変更失敗: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setBusyId(null);
     }
@@ -192,25 +173,25 @@ function UsersAdminLive({
             />
           </div>
           <FilterChip
-            active={roleFilter === 'all'}
-            onClick={() => setRoleFilter('all')}
+            active={roleFilter === "all"}
+            onClick={() => setRoleFilter("all")}
             label={`全 ${profiles.length}名`}
           />
           <FilterChip
-            active={roleFilter === 'student'}
-            onClick={() => setRoleFilter('student')}
+            active={roleFilter === "student"}
+            onClick={() => setRoleFilter("student")}
             label={`受講者 ${counts.student}`}
             variant="info"
           />
           <FilterChip
-            active={roleFilter === 'instructor'}
-            onClick={() => setRoleFilter('instructor')}
+            active={roleFilter === "instructor"}
+            onClick={() => setRoleFilter("instructor")}
             label={`講師 ${counts.instructor}`}
             variant="accent"
           />
           <FilterChip
-            active={roleFilter === 'admin'}
-            onClick={() => setRoleFilter('admin')}
+            active={roleFilter === "admin"}
+            onClick={() => setRoleFilter("admin")}
             label={`管理者 ${counts.admin}`}
           />
         </div>
@@ -235,13 +216,9 @@ function UsersAdminLive({
             </TableHeader>
             <TableBody>
               {filtered.map((p) => {
-                const manageable = canManageUserRow(
-                  p,
-                  currentUserId,
-                  currentUserRole,
-                );
+                const manageable = canManageUserRow(p, currentUserId, currentUserRole);
                 return (
-                  <TableRow key={p.id} className={p.disabled ? 'opacity-60' : undefined}>
+                  <TableRow key={p.id} className={p.disabled ? "opacity-60" : undefined}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar size="sm">
@@ -255,7 +232,7 @@ function UsersAdminLive({
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="text-ink-3">{p.email ?? '—'}</TableCell>
+                    <TableCell className="text-ink-3">{p.email ?? "—"}</TableCell>
                     <TableCell>
                       <RoleBadge role={p.role} />
                     </TableCell>
@@ -267,7 +244,7 @@ function UsersAdminLive({
                       )}
                     </TableCell>
                     <TableCell className="text-ink-3 text-[11.5px]">
-                      {new Date(p.created_at).toLocaleDateString('ja-JP')}
+                      {new Date(p.created_at).toLocaleDateString("ja-JP")}
                     </TableCell>
                     <TableCell>
                       <div className="relative flex justify-end">
@@ -275,15 +252,13 @@ function UsersAdminLive({
                           variant="ghost"
                           size="icon-sm"
                           disabled={!manageable || busyId === p.id}
-                          onClick={() =>
-                            setMenuId((id) => (id === p.id ? null : p.id))
-                          }
+                          onClick={() => setMenuId((id) => (id === p.id ? null : p.id))}
                           title={
                             manageable
-                              ? '操作'
+                              ? "操作"
                               : p.id === currentUserId
-                                ? '自分自身は変更できません'
-                                : 'platform_admin は変更できません'
+                                ? "自分自身は変更できません"
+                                : "platform_admin は変更できません"
                           }
                         >
                           <MoreHorizontal size={13} />
@@ -329,7 +304,7 @@ function canManageUserRow(
   currentUserRole: ProfileRole | null,
 ): boolean {
   if (profile.id === currentUserId) return false;
-  if (profile.role === 'platform_admin' && currentUserRole !== 'platform_admin') {
+  if (profile.role === "platform_admin" && currentUserRole !== "platform_admin") {
     return false;
   }
   return true;
@@ -344,13 +319,13 @@ function FilterChip({
   active: boolean;
   onClick: () => void;
   label: string;
-  variant?: 'info' | 'accent';
+  variant?: "info" | "accent";
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={active ? 'ring-2 ring-brand rounded-full' : ''}
+      className={active ? "ring-2 ring-brand rounded-full" : ""}
     >
       <Badge variant={variant}>{label}</Badge>
     </button>
@@ -371,7 +346,12 @@ function RowMenu({
   return (
     <>
       {/* クリックアウトで閉じる透明レイヤ */}
-      <div className="fixed inset-0 z-10" onClick={onClose} />
+      <button
+        type="button"
+        className="fixed inset-0 z-10 cursor-default"
+        aria-label="メニューを閉じる"
+        onClick={onClose}
+      />
       <div className="absolute right-0 top-7 z-20 w-48 bg-card border border-border rounded-md shadow-lg text-[12.5px] py-1">
         <div className="px-3 py-1.5 text-[11px] text-ink-3 flex items-center gap-1.5">
           <Shield size={12} />
@@ -395,7 +375,7 @@ function RowMenu({
           onClick={onToggleDisabled}
         >
           <Lock size={12} />
-          {profile.disabled ? '有効化する' : '無効化する'}
+          {profile.disabled ? "有効化する" : "無効化する"}
         </button>
       </div>
     </>

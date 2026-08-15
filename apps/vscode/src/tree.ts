@@ -3,7 +3,13 @@ import * as vscode from "vscode";
 import { AuthExpiredError } from "./api.js";
 import type { AuthStore } from "./auth.js";
 import { onDidChangeAuth } from "./auth.js";
-import { clearCatalog, loadCatalog, type CatalogCourse, type CatalogLesson, type CatalogSection } from "./catalog.js";
+import {
+  clearCatalog,
+  loadCatalog,
+  type CatalogCourse,
+  type CatalogLesson,
+  type CatalogSection,
+} from "./catalog.js";
 
 export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web";
 

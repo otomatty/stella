@@ -33,9 +33,7 @@ export async function listCourses(_tenantId: string): Promise<CourseRow[]> {
   return rows ?? [];
 }
 
-export async function getCourseWithChildren(
-  courseId: string,
-): Promise<CourseWithChildren | null> {
+export async function getCourseWithChildren(courseId: string): Promise<CourseWithChildren | null> {
   const { course } = await apiFetch<{ course: CourseWithChildren | null }>(
     `/api/cms/courses/${encodeURIComponent(courseId)}`,
   );
@@ -67,10 +65,7 @@ export async function upsertCourse(input: UpsertCourseInput): Promise<CourseRow>
   return row;
 }
 
-export async function setCourseStatus(
-  id: string,
-  status: CourseStatus,
-): Promise<void> {
+export async function setCourseStatus(id: string, status: CourseStatus): Promise<void> {
   await apiFetch(`/api/cms/courses/${encodeURIComponent(id)}/status`, {
     method: "PATCH",
     body: { status },
@@ -92,9 +87,7 @@ export interface UpsertSectionInput {
   order?: number;
 }
 
-export async function upsertSection(
-  input: UpsertSectionInput,
-): Promise<SectionRow> {
+export async function upsertSection(input: UpsertSectionInput): Promise<SectionRow> {
   const { row } = await apiFetch<{ row: SectionRow }>("/api/cms/sections", {
     method: "POST",
     body: input,
@@ -106,10 +99,7 @@ export async function deleteSection(id: string): Promise<void> {
   await apiFetch(`/api/cms/sections/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export async function reorderSections(
-  courseId: string,
-  orderedIds: string[],
-): Promise<void> {
+export async function reorderSections(courseId: string, orderedIds: string[]): Promise<void> {
   await apiFetch("/api/cms/sections/reorder", {
     method: "POST",
     body: { courseId, orderedIds },
@@ -135,9 +125,7 @@ export interface UpsertLessonInput {
   total_sec?: number | null;
 }
 
-export async function upsertLesson(
-  input: UpsertLessonInput,
-): Promise<LessonRow> {
+export async function upsertLesson(input: UpsertLessonInput): Promise<LessonRow> {
   const { row } = await apiFetch<{ row: LessonRow }>("/api/cms/lessons", {
     method: "POST",
     body: input,
@@ -149,10 +137,7 @@ export async function deleteLesson(id: string): Promise<void> {
   await apiFetch(`/api/cms/lessons/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export async function reorderLessons(
-  sectionId: string,
-  orderedIds: string[],
-): Promise<void> {
+export async function reorderLessons(sectionId: string, orderedIds: string[]): Promise<void> {
   await apiFetch("/api/cms/lessons/reorder", {
     method: "POST",
     body: { sectionId, orderedIds },
@@ -163,9 +148,7 @@ export async function reorderLessons(
 // Quiz (CMS 編集用 — staff のみ)
 // ---------------------------------------------------------------
 
-export async function getQuizByLesson(
-  lessonId: string,
-): Promise<QuizWithQuestions | null> {
+export async function getQuizByLesson(lessonId: string): Promise<QuizWithQuestions | null> {
   const { quiz } = await apiFetch<{ quiz: QuizWithQuestions | null }>(
     `/api/cms/quiz/by-lesson/${encodeURIComponent(lessonId)}`,
   );
@@ -191,10 +174,10 @@ export interface UpsertQuizInput {
 
 export async function updateQuiz(input: UpsertQuizInput): Promise<QuizRow> {
   const { id, ...patch } = input;
-  const { row } = await apiFetch<{ row: QuizRow }>(
-    `/api/cms/quiz/${encodeURIComponent(id)}`,
-    { method: "PATCH", body: patch },
-  );
+  const { row } = await apiFetch<{ row: QuizRow }>(`/api/cms/quiz/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: patch,
+  });
   return row;
 }
 
@@ -208,13 +191,11 @@ export interface UpsertQuizQuestionInput {
   order?: number;
 }
 
-export async function upsertQuizQuestion(
-  input: UpsertQuizQuestionInput,
-): Promise<QuizQuestionRow> {
-  const { row } = await apiFetch<{ row: QuizQuestionRow }>(
-    "/api/cms/quiz-questions",
-    { method: "POST", body: input },
-  );
+export async function upsertQuizQuestion(input: UpsertQuizQuestionInput): Promise<QuizQuestionRow> {
+  const { row } = await apiFetch<{ row: QuizQuestionRow }>("/api/cms/quiz-questions", {
+    method: "POST",
+    body: input,
+  });
   return row;
 }
 
@@ -232,9 +213,7 @@ export interface UpsertQuizOptionInput {
   order?: number;
 }
 
-export async function upsertQuizOption(
-  input: UpsertQuizOptionInput,
-): Promise<QuizOptionRow> {
+export async function upsertQuizOption(input: UpsertQuizOptionInput): Promise<QuizOptionRow> {
   const { row } = await apiFetch<{ row: QuizOptionRow }>("/api/cms/quiz-options", {
     method: "POST",
     body: input,
@@ -252,16 +231,12 @@ export async function deleteQuizOption(id: string): Promise<void> {
 // Assignments
 // ---------------------------------------------------------------
 
-export async function listAssignments(
-  _tenantId: string,
-): Promise<AssignmentRow[]> {
+export async function listAssignments(_tenantId: string): Promise<AssignmentRow[]> {
   const { rows } = await apiFetch<{ rows: AssignmentRow[] }>("/api/cms/assignments");
   return rows ?? [];
 }
 
-export async function getAssignmentRow(
-  id: string,
-): Promise<AssignmentRow | null> {
+export async function getAssignmentRow(id: string): Promise<AssignmentRow | null> {
   const { row } = await apiFetch<{ row: AssignmentRow | null }>(
     `/api/cms/assignments/${encodeURIComponent(id)}`,
   );
@@ -273,9 +248,7 @@ export type UpsertAssignmentInput = Omit<
   "created_at" | "updated_at" | "created_by"
 > & { created_by?: string | null };
 
-export async function upsertAssignment(
-  input: UpsertAssignmentInput,
-): Promise<AssignmentRow> {
+export async function upsertAssignment(input: UpsertAssignmentInput): Promise<AssignmentRow> {
   const { row } = await apiFetch<{ row: AssignmentRow }>("/api/cms/assignments", {
     method: "POST",
     body: input,
@@ -297,10 +270,7 @@ export interface UploadMaterialResult {
   path: string;
 }
 
-export async function uploadMaterial(
-  file: File,
-  path: string,
-): Promise<UploadMaterialResult> {
+export async function uploadMaterial(file: File, path: string): Promise<UploadMaterialResult> {
   const { getAccessToken } = await import("./auth-client");
   const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
   const token = getAccessToken();
@@ -331,9 +301,7 @@ export async function uploadMaterial(
 // ---------------------------------------------------------------
 
 /** レッスンに紐づく配布資料一覧。 受講者は同テナントの published コースのみ返る。 */
-export async function listLessonMaterials(
-  lessonId: string,
-): Promise<LessonMaterialRow[]> {
+export async function listLessonMaterials(lessonId: string): Promise<LessonMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: LessonMaterialRow[] }>(
     `/api/materials?lessonId=${encodeURIComponent(lessonId)}`,
   );
@@ -344,9 +312,7 @@ export async function listLessonMaterials(
  * コース全体の配布資料一覧 (Issue #77 — コース詳細「教材をダウンロード」)。
  * セクション → レッスン → 登録順に並んだ状態で返る。
  */
-export async function listCourseMaterials(
-  courseId: string,
-): Promise<CourseMaterialRow[]> {
+export async function listCourseMaterials(courseId: string): Promise<CourseMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: CourseMaterialRow[] }>(
     `/api/materials?courseId=${encodeURIComponent(courseId)}`,
   );

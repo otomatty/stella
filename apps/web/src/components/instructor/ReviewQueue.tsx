@@ -1,9 +1,9 @@
-import { Filter, Sliders, ChevronRight, Sparkles } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Filter, Sliders, ChevronRight, Sparkles } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
@@ -11,25 +11,21 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import { useSubmissions } from '@/hooks/useSubmissions';
-import { formatSubmittedAt } from '@/lib/submissions-store';
-import type { Tenant } from '@/data/types';
-import type { AvatarTone } from '@/data/types';
+} from "@/components/ui/table";
+import { useSubmissions } from "@/hooks/useSubmissions";
+import { formatSubmittedAt } from "@/lib/submissions-store";
+import type { Tenant } from "@/data/types";
+import type { AvatarTone } from "@/data/types";
 
 interface ReviewQueueProps {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
 }
 
-export const ReviewQueue = ({
-  tenantId,
-  setPage,
-  onOpenReview,
-}: ReviewQueueProps) => {
+export const ReviewQueue = ({ tenantId, setPage, onOpenReview }: ReviewQueueProps) => {
   const { submissions, pendingCount, aiReadyCount } = useSubmissions(tenantId);
-  const pending = submissions.filter((s) => s.status === 'pending');
+  const pending = submissions.filter((s) => s.status === "pending");
 
   return (
     <>
@@ -76,7 +72,7 @@ export const ReviewQueue = ({
                   interactive
                   onClick={() => {
                     onOpenReview(r.id);
-                    setPage('review');
+                    setPage("review");
                   }}
                 >
                   <TableCell>
@@ -91,9 +87,7 @@ export const ReviewQueue = ({
                   </TableCell>
                   <TableCell>{r.assignmentTitle}</TableCell>
                   <TableCell className="text-ink-3">{r.courseTitle}</TableCell>
-                  <TableCell className="text-ink-3">
-                    {formatSubmittedAt(r.submittedAt)}
-                  </TableCell>
+                  <TableCell className="text-ink-3">{formatSubmittedAt(r.submittedAt)}</TableCell>
                   <TableCell>
                     {r.aiReady ? (
                       <Badge variant="accent">
@@ -105,9 +99,9 @@ export const ReviewQueue = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    {r.priority === 'high' ? (
+                    {r.priority === "high" ? (
                       <Badge variant="warning">優先</Badge>
-                    ) : r.priority === 'low' ? (
+                    ) : r.priority === "low" ? (
                       <Badge>低</Badge>
                     ) : (
                       <Badge variant="info">通常</Badge>

@@ -11,16 +11,14 @@ export interface TenantSettings {
 }
 
 export async function fetchTenantSettings(): Promise<TenantSettings> {
-  const { settings } = await apiFetch<{ settings: TenantSettings }>(
-    "/api/admin/settings",
-  );
+  const { settings } = await apiFetch<{ settings: TenantSettings }>("/api/admin/settings");
   return settings;
 }
 
 export async function updateTestMode(testMode: boolean): Promise<TenantSettings> {
-  const { settings } = await apiFetch<{ settings: TenantSettings }>(
-    "/api/admin/settings",
-    { method: "POST", body: { testMode } },
-  );
+  const { settings } = await apiFetch<{ settings: TenantSettings }>("/api/admin/settings", {
+    method: "POST",
+    body: { testMode },
+  });
   return settings;
 }

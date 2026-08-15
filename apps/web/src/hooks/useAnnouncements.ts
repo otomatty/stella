@@ -37,19 +37,14 @@ function fixtureAnnouncements(tenantId: string): AnnouncementRow[] {
   }));
 }
 
-export function useAnnouncements(
-  tenantId: string,
-  enabled = true,
-): UseAnnouncementsResult {
+export function useAnnouncements(tenantId: string, enabled = true): UseAnnouncementsResult {
   const backend = isBackendConfigured();
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>(() =>
     backend ? [] : fixtureAnnouncements(tenantId),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<"db" | "fixtures" | "error">(
-    backend ? "db" : "fixtures",
-  );
+  const [source, setSource] = useState<"db" | "fixtures" | "error">(backend ? "db" : "fixtures");
   const requestIdRef = useRef(0);
 
   const refetch = useCallback(async () => {

@@ -95,7 +95,10 @@ function formatBytes(n: number): string {
 }
 
 /** 削除は 1 リクエスト 1000 件までなので分割して投げる。 */
-async function deleteOrphans(token: string, paths: string[]): Promise<{ deleted: number; skipped: number }> {
+async function deleteOrphans(
+  token: string,
+  paths: string[],
+): Promise<{ deleted: number; skipped: number }> {
   let deleted = 0;
   let skipped = 0;
   for (let i = 0; i < paths.length; i += DELETE_BATCH) {
@@ -162,7 +165,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const result = await deleteOrphans(token, orphans.map((o) => o.key));
+  const result = await deleteOrphans(
+    token,
+    orphans.map((o) => o.key),
+  );
   console.log(`\n✓ ${result.deleted} 件を削除しました`);
   if (result.skipped > 0) {
     console.log(`  (棚卸し後に参照が復活した ${result.skipped} 件はスキップ)`);

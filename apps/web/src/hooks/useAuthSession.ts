@@ -12,13 +12,7 @@ import { useEffect, useState } from "react";
 
 import { isAuthConfigured } from "@/lib/auth-client";
 import { ApiClientError } from "@/lib/api-client";
-import {
-  fetchProfile,
-  getSession,
-  subscribeToAuth,
-  type Profile,
-  type Session,
-} from "@/lib/auth";
+import { fetchProfile, getSession, subscribeToAuth, type Profile, type Session } from "@/lib/auth";
 
 interface UseAuthSessionResult {
   session: Session | null;
@@ -29,11 +23,7 @@ interface UseAuthSessionResult {
 }
 
 function isInviteRequiredError(err: unknown): boolean {
-  return (
-    err instanceof ApiClientError &&
-    err.status === 403 &&
-    err.message === "invite_required"
-  );
+  return err instanceof ApiClientError && err.status === 403 && err.message === "invite_required";
 }
 
 export function useAuthSession(): UseAuthSessionResult {

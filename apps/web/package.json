@@ -67,9 +67,5 @@
     "vite": "^5.4.14",
     "wrangler": "^4.120.1"
   },
-  "trustedDependencies": [
-    "@vitejs/plugin-react",
-    "esbuild",
-    "@tailwindcss/oxide"
-  ]
+  "trustedDependencies": ["@vitejs/plugin-react", "esbuild", "@tailwindcss/oxide"]
 }

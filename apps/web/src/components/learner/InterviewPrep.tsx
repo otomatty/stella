@@ -1,22 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Play, Pause, X } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Card } from '@/components/ui/card';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import type { InterviewQuestion } from '@falcon/shared/interview/types';
-import {
-  ASSIGNABLE_CATEGORIES,
-  COMMON_CATEGORY,
-} from '@falcon/shared/interview/types';
-import { fetchInterviewQuestions } from '@/lib/interview-prep-api';
-import { cn } from '@/lib/utils';
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Play, Pause, X } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Card } from "@/components/ui/card";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import type { InterviewQuestion } from "@falcon/shared/interview/types";
+import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
+import { fetchInterviewQuestions } from "@/lib/interview-prep-api";
+import { cn } from "@/lib/utils";
 
-type Freq = 'ALL' | 'A' | 'B' | 'C';
-const FREQ_LABELS: Record<Exclude<Freq, 'ALL'>, string> = {
-  A: 'A 必修',
-  B: 'B 推奨',
-  C: 'C 参考',
+type Freq = "ALL" | "A" | "B" | "C";
+const FREQ_LABELS: Record<Exclude<Freq, "ALL">, string> = {
+  A: "A 必修",
+  B: "B 推奨",
+  C: "C 参考",
 };
 
 /**
@@ -31,6 +28,7 @@ function AnswerTemplate({ template }: { template: string }) {
       {parts.map((part, i) =>
         i % 2 === 1 ? (
           <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: split 結果は位置が同一性
             key={i}
             className="px-1.5 py-px rounded-sm bg-brand/10 text-brand font-bold"
           >
@@ -48,12 +46,20 @@ function shuffle(nos: number[]): number[] {
   const a = [...nos];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
+    const left = a[i];
+    const right = a[j];
+    if (left === undefined || right === undefined) continue;
+    a[i] = right;
+    a[j] = left;
   }
   return a;
 }
 
-function Chip({ active, children, onClick }: {
+function Chip({
+  active,
+  children,
+  onClick,
+}: {
   active: boolean;
   children: React.ReactNode;
   onClick: () => void;
@@ -63,10 +69,10 @@ function Chip({ active, children, onClick }: {
       type="button"
       onClick={onClick}
       className={cn(
-        'px-2.5 py-1 rounded-full text-[12px] border cursor-pointer transition-colors',
+        "px-2.5 py-1 rounded-full text-[12px] border cursor-pointer transition-colors",
         active
-          ? 'sf-gradient-bg text-white border-transparent font-bold'
-          : 'bg-card text-ink-2 border-border hover:bg-sunken',
+          ? "sf-gradient-bg text-white border-transparent font-bold"
+          : "bg-card text-ink-2 border-border hover:bg-sunken",
       )}
     >
       {children}
@@ -84,7 +90,7 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
     let cancelled = false;
     if (!backendEnabled) {
       // デモ (fixtures) モード: 全件表示。質問データ(200KB超)はメインチャンクに含めない。
-      import('@falcon/shared/interview/questions').then(({ INTERVIEW_QUESTIONS }) => {
+      import("@falcon/shared/interview/questions").then(({ INTERVIEW_QUESTIONS }) => {
         if (cancelled) return;
         setRows(INTERVIEW_QUESTIONS);
         setAssigned([...ASSIGNABLE_CATEGORIES]);
@@ -110,27 +116,25 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
     };
   }, [backendEnabled]);
 
-  const [mode, setMode] = useState<'list' | 'quiz'>('list');
-  const [cat, setCat] = useState<string>('ALL');
-  const [freq, setFreq] = useState<Freq>('A');
-  const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<"list" | "quiz">("list");
+  const [cat, setCat] = useState<string>("ALL");
+  const [freq, setFreq] = useState<Freq>("A");
+  const [query, setQuery] = useState("");
 
   // 表示対象カテゴリのチップ: 割当カテゴリが 1 つ以上あるときだけ出す
   const catChips = useMemo(() => {
-    const cats = [...assigned, COMMON_CATEGORY].filter((c) =>
-      rows.some((r) => r.category === c),
-    );
+    const cats = [...assigned, COMMON_CATEGORY].filter((c) => rows.some((r) => r.category === c));
     return cats.length > 1 ? cats : [];
   }, [assigned, rows]);
 
   const pool = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((d) => {
-      if (cat !== 'ALL' && d.category !== cat) return false;
-      if (freq !== 'ALL' && d.freq !== freq) return false;
+      if (cat !== "ALL" && d.category !== cat) return false;
+      if (freq !== "ALL" && d.freq !== freq) return false;
       if (!q) return true;
-      return [d.question, d.keywords, d.subcategory, d.intent].some(
-        (v) => v && v.toLowerCase().includes(q),
+      return [d.question, d.keywords, d.subcategory, d.intent].some((v) =>
+        v?.toLowerCase().includes(q),
       );
     });
   }, [rows, cat, freq, query]);
@@ -161,8 +165,8 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
       <div className="flex items-center gap-1.5 mb-3">
         {(
           [
-            ['list', '一覧'],
-            ['quiz', 'ランダム出題'],
+            ["list", "一覧"],
+            ["quiz", "ランダム出題"],
           ] as const
         ).map(([key, label]) => (
           <Chip key={key} active={mode === key} onClick={() => setMode(key)}>
@@ -176,7 +180,7 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
         {catChips.length > 0 ? (
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] text-ink-4 w-14">案件種別</span>
-            <Chip active={cat === 'ALL'} onClick={() => setCat('ALL')}>
+            <Chip active={cat === "ALL"} onClick={() => setCat("ALL")}>
               すべて
             </Chip>
             {catChips.map((c) => (
@@ -188,17 +192,17 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
         ) : null}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] text-ink-4 w-14">優先度</span>
-          <Chip active={freq === 'ALL'} onClick={() => setFreq('ALL')}>
+          <Chip active={freq === "ALL"} onClick={() => setFreq("ALL")}>
             すべて
           </Chip>
-          {(Object.keys(FREQ_LABELS) as Array<Exclude<Freq, 'ALL'>>).map((f) => (
+          {(Object.keys(FREQ_LABELS) as Array<Exclude<Freq, "ALL">>).map((f) => (
             <Chip key={f} active={freq === f} onClick={() => setFreq(f)}>
               {FREQ_LABELS[f]}
             </Chip>
           ))}
           <span className="ml-auto text-[12px] text-ink-3">該当 {pool.length} 問</span>
         </div>
-        {mode === 'list' ? (
+        {mode === "list" ? (
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -212,7 +216,7 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
         <Card className="p-12 text-center text-sm text-ink-3">
           条件に合う質問がありません。フィルターを緩めてください。
         </Card>
-      ) : mode === 'list' ? (
+      ) : mode === "list" ? (
         <QuestionList pool={pool} />
       ) : (
         <QuizMode pool={pool} />
@@ -221,16 +225,16 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
   );
 }
 
-function FreqBadge({ freq }: { freq: 'A' | 'B' | 'C' }) {
+function FreqBadge({ freq }: { freq: "A" | "B" | "C" }) {
   return (
     <span
       className={cn(
-        'text-[10.5px] px-1.5 py-[1px] rounded font-semibold shrink-0',
-        freq === 'A'
-          ? 'bg-destructive/10 text-destructive'
-          : freq === 'B'
-            ? 'border border-border text-ink-2'
-            : 'bg-muted text-ink-3',
+        "text-[10.5px] px-1.5 py-[1px] rounded font-semibold shrink-0",
+        freq === "A"
+          ? "bg-destructive/10 text-destructive"
+          : freq === "B"
+            ? "border border-border text-ink-2"
+            : "bg-muted text-ink-3",
       )}
     >
       {FREQ_LABELS[freq]}
@@ -260,7 +264,7 @@ function QuestionList({ pool }: { pool: InterviewQuestion[] }) {
               <span className="block text-[13.5px] font-medium">{d.question}</span>
               <span className="block text-[11.5px] text-ink-4 mt-0.5">
                 {d.category} ・ {d.subcategory}
-                {d.time ? ` ・ 目安 ${d.time}` : ''}
+                {d.time ? ` ・ 目安 ${d.time}` : ""}
               </span>
             </span>
             {open[d.no] ? (
@@ -299,7 +303,7 @@ function QuestionDetail({ d }: { d: InterviewQuestion }) {
         </p>
       ) : null}
       {d.answer_template ? (
-        <DetailBlock label={d.is_reverse ? 'Prep ・ 準備のポイント' : 'Answer ・ 回答の型'}>
+        <DetailBlock label={d.is_reverse ? "Prep ・ 準備のポイント" : "Answer ・ 回答の型"}>
           <AnswerTemplate template={d.answer_template} />
         </DetailBlock>
       ) : null}
@@ -313,7 +317,7 @@ function QuestionDetail({ d }: { d: InterviewQuestion }) {
                   className="text-[12px] text-brand underline underline-offset-2 cursor-pointer"
                   onClick={() => setShownDeeps((s) => ({ ...s, [i]: !s[i] }))}
                 >
-                  深掘り{'①②③'[i]} {shownDeeps[i] ? 'を閉じる' : 'を見る'}
+                  深掘り{"①②③"[i]} {shownDeeps[i] ? "を閉じる" : "を見る"}
                 </button>
                 {shownDeeps[i] ? <p className="mt-1">{t}</p> : null}
               </div>
@@ -353,7 +357,7 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
   const cur = pool.find((d) => d.no === order[qi % Math.max(order.length, 1)]);
   if (!cur) return null;
 
-  const fmt = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+  const fmt = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
   const move = (delta: number) => {
     setQi((i) => (i + delta + order.length) % order.length);
     setRevealed(false);
@@ -369,7 +373,7 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
         </span>
         <span>
           {cur.category} ・ {cur.subcategory}
-          {cur.time ? ` ・ 目安 ${cur.time}` : ''}
+          {cur.time ? ` ・ 目安 ${cur.time}` : ""}
         </span>
       </div>
 
@@ -386,7 +390,7 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
           onClick={() => setRunning((v) => !v)}
         >
           {running ? <Pause size={12} /> : <Play size={12} />}
-          {running ? '一時停止' : sec > 0 ? '再開' : 'スタート'}
+          {running ? "一時停止" : sec > 0 ? "再開" : "スタート"}
         </button>
         <button
           type="button"

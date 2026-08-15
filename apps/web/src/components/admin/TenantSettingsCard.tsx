@@ -7,18 +7,15 @@
  * バックエンド未設定時 (fixtures デモ) は設定を保存する先が無いため、 その旨を案内する。
  */
 
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { FlaskConical, Loader2 } from '@/lib/icons';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  fetchTenantSettings,
-  updateTestMode,
-} from '@/lib/admin-settings-api';
+import { FlaskConical, Loader2 } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchTenantSettings, updateTestMode } from "@/lib/admin-settings-api";
 
 interface Props {
   backendEnabled: boolean;
@@ -41,9 +38,9 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
         }
       })
       .catch((err) => {
-        console.error('[TenantSettingsCard] fetch failed', err);
+        console.error("[TenantSettingsCard] fetch failed", err);
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : '設定の取得に失敗しました');
+          setError(err instanceof Error ? err.message : "設定の取得に失敗しました");
         }
       })
       .finally(() => {
@@ -62,11 +59,11 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
       const saved = await updateTestMode(next);
       setTestMode(saved.test_mode);
       toast.success(
-        saved.test_mode ? 'テストモードを有効にしました' : 'テストモードを無効にしました',
+        saved.test_mode ? "テストモードを有効にしました" : "テストモードを無効にしました",
       );
     } catch (err) {
-      console.error('[TenantSettingsCard] update failed', err);
-      toast.error(err instanceof Error ? err.message : '設定の更新に失敗しました');
+      console.error("[TenantSettingsCard] update failed", err);
+      toast.error(err instanceof Error ? err.message : "設定の更新に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -97,30 +94,23 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[13.5px] font-semibold">
-                      テストモード
-                    </span>
-                    {testMode ? (
-                      <Badge variant="warning">有効</Badge>
-                    ) : (
-                      <Badge>無効</Badge>
-                    )}
+                    <span className="text-[13.5px] font-semibold">テストモード</span>
+                    {testMode ? <Badge variant="warning">有効</Badge> : <Badge>無効</Badge>}
                   </div>
                   <p className="text-[12.5px] text-ink-3 leading-relaxed">
-                    有効にすると、 ユーザー登録 (招待) 時に動作確認用のテストデータを自動投入します。
-                    受講者には公開中コースの受講登録 (期限30日・必須) と最初のレッスンの完了進捗、
+                    有効にすると、 ユーザー登録 (招待)
+                    時に動作確認用のテストデータを自動投入します。 受講者には公開中コースの受講登録
+                    (期限30日・必須) と最初のレッスンの完了進捗、
                     全ロールにウェルカム通知が作成されます。 本番運用時は無効にしてください。
                   </p>
                 </div>
                 <Button
-                  variant={testMode ? 'accent' : 'default'}
+                  variant={testMode ? "accent" : "default"}
                   disabled={saving}
                   onClick={() => void onToggle()}
                 >
-                  {saving ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : null}
-                  {testMode ? '無効にする' : '有効にする'}
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : null}
+                  {testMode ? "無効にする" : "有効にする"}
                 </Button>
               </div>
             )}

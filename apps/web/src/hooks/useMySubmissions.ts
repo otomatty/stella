@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Submission } from '@falcon/shared/review/types';
-import { isBackendConfigured } from '@/lib/backend';
-import { fetchMySubmissions } from '@/lib/submissions-api';
+import { useCallback, useEffect, useState } from "react";
+import type { Submission } from "@falcon/shared/review/types";
+import { isBackendConfigured } from "@/lib/backend";
+import { fetchMySubmissions } from "@/lib/submissions-api";
 
 export function useMySubmissions(enabled: boolean): {
   submissions: Submission[];
@@ -17,6 +17,7 @@ export function useMySubmissions(enabled: boolean): {
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tick は reload() の再取得トリガー
   useEffect(() => {
     if (!enabled || !backend) {
       setSubmissions([]);
@@ -35,9 +36,9 @@ export function useMySubmissions(enabled: boolean): {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('[useMySubmissions] failed', err);
+        console.error("[useMySubmissions] failed", err);
         setSubmissions([]);
-        setError(err instanceof Error ? err.message : '提出履歴の取得に失敗しました');
+        setError(err instanceof Error ? err.message : "提出履歴の取得に失敗しました");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

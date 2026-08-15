@@ -16,10 +16,7 @@ export interface UseMyCertificatesResult {
   refetch: () => Promise<void>;
 }
 
-export function useMyCertificates(
-  userId: string | null,
-  enabled = true,
-): UseMyCertificatesResult {
+export function useMyCertificates(userId: string | null, enabled = true): UseMyCertificatesResult {
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -13,10 +13,7 @@ import { Upload, FileText, Loader2, Trash } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
-import {
-  deleteLessonMaterial,
-  uploadLessonMaterial,
-} from "@/lib/cms-api";
+import { deleteLessonMaterial, uploadLessonMaterial } from "@/lib/cms-api";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 
 const MAX_BYTES = 200 * 1024 * 1024; // 200MB (MaterialUploader と同じ上限)
@@ -99,11 +96,7 @@ export function LessonMaterialsPanel({ lessonId }: { lessonId: string | null }) 
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
         >
-          {uploading ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Upload size={13} />
-          )}
+          {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
           ファイルを追加
         </Button>
       </div>
@@ -154,12 +147,8 @@ export function LessonMaterialsPanel({ lessonId }: { lessonId: string | null }) 
               >
                 <FileText size={14} className="text-ink-3 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[12.5px] font-medium truncate">
-                    {m.file_name}
-                  </div>
-                  <div className="text-[11px] text-ink-3">
-                    {formatBytes(m.size_bytes)}
-                  </div>
+                  <div className="text-[12.5px] font-medium truncate">{m.file_name}</div>
+                  <div className="text-[11px] text-ink-3">{formatBytes(m.size_bytes)}</div>
                 </div>
                 <Button
                   type="button"

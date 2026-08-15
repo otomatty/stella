@@ -39,8 +39,7 @@ function safeHref(escapedHref: string): string | undefined {
 }
 
 function renderInline(text: string): string {
-  const token =
-    /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
+  const token = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
   const parts: string[] = [];
   let last = 0;
   for (const match of text.matchAll(token)) {
@@ -242,10 +241,7 @@ function viewBody(view: LessonDocView): string {
       ].join("\n");
     }
     case "empty":
-      return [
-        `<h1>${escapeHtml(view.title)}</h1>`,
-        "<p>本文を準備中です</p>",
-      ].join("\n");
+      return [`<h1>${escapeHtml(view.title)}</h1>`, "<p>本文を準備中です</p>"].join("\n");
     default: {
       const _exhaustive: never = view;
       return _exhaustive;

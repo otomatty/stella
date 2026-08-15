@@ -95,7 +95,9 @@ if (collisions.length > 0) {
 }
 
 if (targets.size === 0) {
-  console.error("SVG が 1 件も見つかりませんでした。courses/<slug>/modules の配置を確認してください。");
+  console.error(
+    "SVG が 1 件も見つかりませんでした。courses/<slug>/modules の配置を確認してください。",
+  );
   process.exit(1);
 }
 

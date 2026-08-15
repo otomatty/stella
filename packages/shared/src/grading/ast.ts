@@ -79,16 +79,14 @@ export function analyzeJsAst(code: string, requirement: ASTRequirement): ASTResu
   }
 
   // 必須/禁止それぞれについて、コード全体をスキャンしてマッチ箇所を集める
-  const requiredResults: ASTCheckResult[] = (requirement.required ?? []).map(
-    (pattern) => {
-      const found = findFirst(ast, pattern);
-      return {
-        pattern,
-        label: labelOf(pattern),
-        found: found !== null,
-      };
-    },
-  );
+  const requiredResults: ASTCheckResult[] = (requirement.required ?? []).map((pattern) => {
+    const found = findFirst(ast, pattern);
+    return {
+      pattern,
+      label: labelOf(pattern),
+      found: found !== null,
+    };
+  });
 
   const forbiddenViolations: ASTViolation[] = [];
   for (const pattern of requirement.forbidden ?? []) {
@@ -109,7 +107,9 @@ export function analyzeJsAst(code: string, requirement: ASTRequirement): ASTResu
 }
 
 function labelOf(p: ASTPattern): string {
-  if (p.label) {return p.label;}
+  if (p.label) {
+    return p.label;
+  }
   switch (p.kind) {
     case "method":
       return `${p.name} を使う`;
@@ -136,7 +136,9 @@ function findFirst(ast: Node, pattern: ASTPattern): Found | null {
 
   traverse(ast, {
     enter(path: NodePath) {
-      if (result) {return;}
+      if (result) {
+        return;
+      }
 
       const node = path.node;
       if (matches(node, pattern)) {
@@ -159,8 +161,7 @@ function matches(node: Node, pattern: ASTPattern): boolean {
       }
       const callee = node.callee;
       if (
-        (callee.type === "MemberExpression" ||
-          callee.type === "OptionalMemberExpression") &&
+        (callee.type === "MemberExpression" || callee.type === "OptionalMemberExpression") &&
         callee.property.type === "Identifier" &&
         callee.property.name === pattern.name
       ) {
@@ -186,10 +187,7 @@ function matches(node: Node, pattern: ASTPattern): boolean {
       return node.type === "VariableDeclaration" && node.kind === "var";
 
     case "loose-eq":
-      return (
-        node.type === "BinaryExpression" &&
-        (node.operator === "==" || node.operator === "!=")
-      );
+      return node.type === "BinaryExpression" && (node.operator === "==" || node.operator === "!=");
 
     case "async-fn":
       return (
@@ -201,16 +199,12 @@ function matches(node: Node, pattern: ASTPattern): boolean {
   }
 }
 
-function matchesConsoleLog(
-  node: Node,
-  expectedArgument?: ASTConsoleLogArgument,
-): boolean {
-  if (node.type !== "CallExpression") {return false;}
+function matchesConsoleLog(node: Node, expectedArgument?: ASTConsoleLogArgument): boolean {
+  if (node.type !== "CallExpression") {
+    return false;
+  }
   const callee = node.callee;
-  if (
-    callee.type !== "MemberExpression" &&
-    callee.type !== "OptionalMemberExpression"
-  ) {
+  if (callee.type !== "MemberExpression" && callee.type !== "OptionalMemberExpression") {
     return false;
   }
   if (callee.object.type !== "Identifier" || callee.object.name !== "console") {
@@ -219,7 +213,9 @@ function matchesConsoleLog(
   if (callee.property.type !== "Identifier" || callee.property.name !== "log") {
     return false;
   }
-  if (!expectedArgument) {return true;}
+  if (!expectedArgument) {
+    return true;
+  }
   return matchesConsoleLogArgument(node.arguments[0], expectedArgument);
 }
 
@@ -227,7 +223,9 @@ function matchesConsoleLogArgument(
   argument: Node | undefined,
   expected: ASTConsoleLogArgument,
 ): boolean {
-  if (!argument) {return false;}
+  if (!argument) {
+    return false;
+  }
   switch (expected.kind) {
     case "number":
       return argument.type === "NumericLiteral" && argument.value === expected.value;
@@ -251,9 +249,10 @@ function matchesConstDeclaration(node: Node, name?: string): boolean {
   if (node.type !== "VariableDeclaration" || node.kind !== "const") {
     return false;
   }
-  if (!name) {return true;}
+  if (!name) {
+    return true;
+  }
   return node.declarations.some(
-    (declaration) =>
-      declaration.id.type === "Identifier" && declaration.id.name === name,
+    (declaration) => declaration.id.type === "Identifier" && declaration.id.name === name,
   );
 }

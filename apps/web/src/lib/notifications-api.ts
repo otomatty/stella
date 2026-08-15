@@ -5,10 +5,7 @@
  * author の確定・受講者への fan-out・本人限定の既読化はすべてサーバ側で行う。
  */
 
-import type {
-  AnnouncementRow,
-  NotificationRow,
-} from "@falcon/shared/cms/types";
+import type { AnnouncementRow, NotificationRow } from "@falcon/shared/cms/types";
 import { apiFetch } from "./api-client";
 
 export interface ListAnnouncementsOpts {
@@ -20,9 +17,7 @@ export interface ListAnnouncementsOpts {
 }
 
 /** 公開順 (published_at 降順) でお知らせを取得する。 */
-export async function listAnnouncements(
-  opts: ListAnnouncementsOpts,
-): Promise<AnnouncementRow[]> {
+export async function listAnnouncements(opts: ListAnnouncementsOpts): Promise<AnnouncementRow[]> {
   const p = new URLSearchParams();
   if (opts.courseId) p.set("courseId", opts.courseId);
   if (opts.limit) p.set("limit", String(opts.limit));
@@ -44,9 +39,7 @@ export interface CreateAnnouncementInput {
 /**
  * お知らせを作成する。 author はサーバが caller から確定し、 対象受講者へ fan-out する。
  */
-export async function createAnnouncement(
-  input: CreateAnnouncementInput,
-): Promise<AnnouncementRow> {
+export async function createAnnouncement(input: CreateAnnouncementInput): Promise<AnnouncementRow> {
   const { row } = await apiFetch<{ row: AnnouncementRow }>("/api/announcements", {
     method: "POST",
     body: {
@@ -69,9 +62,7 @@ export interface ListNotificationsOpts {
 }
 
 /** 自分宛の通知を新着順で取得する。 */
-export async function listNotifications(
-  opts: ListNotificationsOpts,
-): Promise<NotificationRow[]> {
+export async function listNotifications(opts: ListNotificationsOpts): Promise<NotificationRow[]> {
   const p = new URLSearchParams();
   if (opts.unreadOnly) p.set("unreadOnly", "true");
   if (opts.limit) p.set("limit", String(opts.limit));

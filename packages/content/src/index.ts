@@ -4,4 +4,10 @@ export { parseSlides } from "./parse-slides.js";
 export type { SlidesFrontMatter } from "./parse-slides.js";
 export { splitSlides, stripFrontMatter } from "./split-slides.js";
 export type { Slide } from "./split-slides.js";
-export type { CourseColor, CourseConfig, QuizOptionSeed, QuizQuestionSeed, QuizSeed } from "./types.js";
+export type {
+  CourseColor,
+  CourseConfig,
+  QuizOptionSeed,
+  QuizQuestionSeed,
+  QuizSeed,
+} from "./types.js";

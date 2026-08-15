@@ -19,11 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  AssignmentRow,
-  LessonRow,
-  LessonType,
-} from "@falcon/shared/cms/types";
+import type { AssignmentRow, LessonRow, LessonType } from "@falcon/shared/cms/types";
 import { listAssignments, type UpsertLessonInput } from "@/lib/cms-api";
 import { LessonMaterialsPanel } from "./LessonMaterialsPanel";
 import { MaterialUploader } from "./MaterialUploader";
@@ -65,9 +61,7 @@ export function LessonEditor({
   const [videoPath, setVideoPath] = useState<string | null>(lesson?.video_path ?? null);
   const [pdfPath, setPdfPath] = useState<string | null>(lesson?.pdf_path ?? null);
   const [markdown, setMarkdown] = useState(lesson?.markdown ?? "");
-  const [assignmentId, setAssignmentId] = useState<string | null>(
-    lesson?.assignment_id ?? null,
-  );
+  const [assignmentId, setAssignmentId] = useState<string | null>(lesson?.assignment_id ?? null);
   const [totalPages, setTotalPages] = useState<string>(
     lesson?.total_pages != null ? String(lesson.total_pages) : "",
   );
@@ -104,8 +98,7 @@ export function LessonEditor({
         video_path: type === "video" ? videoPath : null,
         pdf_path: type === "slides" ? pdfPath : null,
         markdown: type === "text" ? markdown : null,
-        assignment_id:
-          type === "assignment" || type === "code" ? assignmentId : null,
+        assignment_id: type === "assignment" || type === "code" ? assignmentId : null,
         total_pages: type === "slides" && totalPages ? Number(totalPages) : null,
         total_sec: type === "video" && totalSec ? Number(totalSec) : null,
       });
@@ -115,12 +108,7 @@ export function LessonEditor({
   };
 
   if (quizEditorOpen && lesson?.id) {
-    return (
-      <QuizEditor
-        lessonId={lesson.id}
-        onClose={() => setQuizEditorOpen(false)}
-      />
-    );
+    return <QuizEditor lessonId={lesson.id} onClose={() => setQuizEditorOpen(false)} />;
   }
 
   return (
@@ -134,11 +122,7 @@ export function LessonEditor({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="col-span-1 sm:col-span-2">
               <Label htmlFor="lesson-title">タイトル</Label>
-              <Input
-                id="lesson-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+              <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="lesson-duration">表示用 duration</Label>
@@ -228,11 +212,7 @@ export function LessonEditor({
                 <span className="flex-1">
                   設問・選択肢・配点はこのレッスンに紐付けて編集します。
                 </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setQuizEditorOpen(true)}
-                >
+                <Button type="button" variant="outline" onClick={() => setQuizEditorOpen(true)}>
                   設問を編集
                 </Button>
               </div>

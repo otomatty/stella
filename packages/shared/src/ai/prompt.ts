@@ -129,10 +129,7 @@ function formatFailures(summary: GradingSummary): string[] {
   for (const t of summary.testFailures) {
     if (t.error) {
       out.push(`テスト失敗 "${t.name}": ${t.error}`);
-    } else if (
-      t.expectedStdout !== undefined &&
-      t.actualStdout !== undefined
-    ) {
+    } else if (t.expectedStdout !== undefined && t.actualStdout !== undefined) {
       out.push(
         `テスト失敗 "${t.name}": 期待 \`${oneLine(t.expectedStdout)}\` / 実際 \`${oneLine(t.actualStdout)}\``,
       );

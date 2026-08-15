@@ -1,20 +1,17 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { Send, CheckCircle, Loader2 } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import type { Course, Lesson } from '@/data/types';
-import {
-  createSubmission,
-  createSubmissionAsync,
-} from '@/lib/submissions-store';
+import { useState } from "react";
+import { toast } from "sonner";
+import { Send, CheckCircle, Loader2 } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import type { Course, Lesson } from "@/data/types";
+import { createSubmission, createSubmissionAsync } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
 import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
-import type { Tenant } from '@/data/types';
+import type { Tenant } from "@/data/types";
 
 interface AssignmentSubmitPanelProps {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   course: Course;
   lesson: Lesson;
   sectionTitle?: string;
@@ -45,7 +42,7 @@ export function AssignmentSubmitPanel({
     }
     const trimmed = code.trim();
     if (trimmed.length < 10) {
-      toast.error('提出コードを入力してください');
+      toast.error("提出コードを入力してください");
       return;
     }
     setSubmitting(true);
@@ -53,14 +50,14 @@ export function AssignmentSubmitPanel({
       const payload = {
         studentName,
         studentInitials,
-        avatarTone: 'c1' as const,
+        avatarTone: "c1" as const,
         courseTitle: course.title,
         sectionTitle,
         assignmentTitle: lesson.title,
         lessonId: lesson.id,
         assignmentId: lesson.assignmentId,
-        codeLines: code.split('\n'),
-        priority: 'normal' as const,
+        codeLines: code.split("\n"),
+        priority: "normal" as const,
       };
       const created = isBackendConfigured()
         ? await createSubmissionAsync(tenantId, payload)
@@ -68,12 +65,12 @@ export function AssignmentSubmitPanel({
       if (!created) {
         toast.error(
           isBackendConfigured()
-            ? '提出の保存に失敗しました。ログイン状態とネットワークを確認してください。'
-            : '提出の保存に失敗しました。ストレージ容量を確認してください。',
+            ? "提出の保存に失敗しました。ログイン状態とネットワークを確認してください。"
+            : "提出の保存に失敗しました。ストレージ容量を確認してください。",
         );
         return;
       }
-      toast.success('講師に提出しました。添削結果は Q&A または通知でお知らせします。');
+      toast.success("講師に提出しました。添削結果は Q&A または通知でお知らせします。");
       onSubmitted?.();
     } finally {
       setSubmitting(false);
@@ -84,8 +81,8 @@ export function AssignmentSubmitPanel({
     <div className="prose-lms">
       <h2>課題提出</h2>
       <p>
-        完成したコード（またはレポート）を提出してください。 講師が AI 下書きを参考に添削し、
-        合格 / 再提出 / 不合格のいずれかで返却します。
+        完成したコード（またはレポート）を提出してください。 講師が AI 下書きを参考に添削し、 合格 /
+        再提出 / 不合格のいずれかで返却します。
       </p>
       <Label className="mt-4 block">提出コード</Label>
       <Textarea
@@ -95,16 +92,8 @@ export function AssignmentSubmitPanel({
         spellCheck={false}
       />
       <div className="flex gap-2.5 items-center pt-4 border-t border-border">
-        <Button
-          variant="accent"
-          onClick={handleSubmit}
-          disabled={previewReadOnly || submitting}
-        >
-          {submitting ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Send size={14} />
-          )}
+        <Button variant="accent" onClick={handleSubmit} disabled={previewReadOnly || submitting}>
+          {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           講師に提出
         </Button>
         <span className="text-[11.5px] text-ink-3 flex items-center gap-1">

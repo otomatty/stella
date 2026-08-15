@@ -38,8 +38,5 @@ export type AssignableCategory = (typeof ASSIGNABLE_CATEGORIES)[number];
 export const COMMON_CATEGORY = "全案件共通";
 
 export function isAssignableCategory(v: unknown): v is AssignableCategory {
-  return (
-    typeof v === "string" &&
-    (ASSIGNABLE_CATEGORIES as readonly string[]).includes(v)
-  );
+  return typeof v === "string" && (ASSIGNABLE_CATEGORIES as readonly string[]).includes(v);
 }

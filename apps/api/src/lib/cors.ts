@@ -67,7 +67,7 @@ export function isAllowedOrigin(origin: string, allowedOrigins: string): boolean
         return true;
       }
     } catch {
-      continue;
+      // 不正な ALLOWED_ORIGINS エントリは無視する
     }
   }
 

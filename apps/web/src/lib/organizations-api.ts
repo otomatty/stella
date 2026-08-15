@@ -19,12 +19,10 @@ export async function listOrganizations(): Promise<OrganizationRow[]> {
 }
 
 /** 組織を作成 / 編集する。 */
-export async function upsertOrganization(
-  input: UpsertOrganizationInput,
-): Promise<OrganizationRow> {
-  const res = await apiFetch<{ organization: OrganizationRow }>(
-    "/api/admin/orgs/upsert",
-    { method: "POST", body: input },
-  );
+export async function upsertOrganization(input: UpsertOrganizationInput): Promise<OrganizationRow> {
+  const res = await apiFetch<{ organization: OrganizationRow }>("/api/admin/orgs/upsert", {
+    method: "POST",
+    body: input,
+  });
   return res.organization;
 }

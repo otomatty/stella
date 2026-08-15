@@ -13,14 +13,11 @@ export type EnrollmentStatus = "active" | "completed" | "expired";
 /** コースの教材・資料を閲覧してよい enrollment ステータス。 */
 export const READABLE_ENROLLMENT_STATUSES = ["active", "completed"] as const;
 
-export type ReadableEnrollmentStatus =
-  (typeof READABLE_ENROLLMENT_STATUSES)[number];
+export type ReadableEnrollmentStatus = (typeof READABLE_ENROLLMENT_STATUSES)[number];
 
 /** そのステータスでコースの中身を読んでよいか。 */
 export function isReadableEnrollmentStatus(
   status: string | null | undefined,
 ): status is ReadableEnrollmentStatus {
-  return (READABLE_ENROLLMENT_STATUSES as readonly string[]).includes(
-    status ?? "",
-  );
+  return (READABLE_ENROLLMENT_STATUSES as readonly string[]).includes(status ?? "");
 }

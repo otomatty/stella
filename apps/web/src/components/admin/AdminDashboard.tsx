@@ -17,13 +17,13 @@ import {
   TrendingUp,
   TrendingDown,
   RefreshCw,
-} from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { KpiCard } from '@/components/common/KpiCard';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+} from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { KpiCard } from "@/components/common/KpiCard";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableHeader,
@@ -31,18 +31,14 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import type {
   AnalyticsStumble,
   AnalyticsTrendPoint,
   TenantAnalytics,
-} from '@falcon/shared/cms/types';
-import { useTenantAnalytics } from '@/hooks/useAnalytics';
-import {
-  ENROLLMENT_TREND,
-  COMPLETION_BY_COURSE,
-  STUMBLES,
-} from '@/demo/fixtures';
+} from "@falcon/shared/cms/types";
+import { useTenantAnalytics } from "@/hooks/useAnalytics";
+import { ENROLLMENT_TREND, COMPLETION_BY_COURSE, STUMBLES } from "@/demo/fixtures";
 
 interface Props {
   tenantId: string;
@@ -79,8 +75,8 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
       ) : null}
 
       {!analytics && loading ? (
-        <div role="status" aria-label="集計を読み込み中">
-          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div aria-busy="true" aria-live="polite" aria-label="集計を読み込み中">
+          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
@@ -89,9 +85,7 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : !analytics ? (
-        <Card className="text-center p-16 text-ink-3 text-sm">
-          集計データがありません。
-        </Card>
+        <Card className="text-center p-16 text-ink-3 text-sm">集計データがありません。</Card>
       ) : (
         <LiveContent analytics={analytics} />
       )}
@@ -102,7 +96,7 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
 function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
   return (
     <>
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <KpiCard
           label={
             <>
@@ -123,8 +117,8 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
           }
           trendDir={
             analytics.new_enrollments_this_month >= analytics.new_enrollments_prev_month
-              ? 'up'
-              : 'down'
+              ? "up"
+              : "down"
           }
         />
         <KpiCard
@@ -159,7 +153,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
         />
       </div>
 
-      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "2fr 1fr" }}>
         <Card>
           <CardHeader>
             <CardTitle>新規受講登録の推移</CardTitle>
@@ -198,7 +192,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 1fr" }}>
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>課題別つまずき分析</CardTitle>
@@ -222,7 +216,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
               <TableBody>
                 {analytics.stumbles.map((s: AnalyticsStumble) => {
                   const tone =
-                    s.correct_pct < 40 ? 'danger' : s.correct_pct < 60 ? 'warning' : 'success';
+                    s.correct_pct < 40 ? "danger" : s.correct_pct < 60 ? "warning" : "success";
                   return (
                     <TableRow key={s.question_id}>
                       <TableCell>{s.prompt}</TableCell>
@@ -248,9 +242,24 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
             <CardTitle>受講状況サマリ</CardTitle>
           </CardHeader>
           <div className="px-4 py-3.5 flex flex-col gap-3">
-            <StatusRow label="受講中" value={analytics.status_breakdown.active} tone="brand" total={statusTotal(analytics)} />
-            <StatusRow label="完了" value={analytics.status_breakdown.completed} tone="success" total={statusTotal(analytics)} />
-            <StatusRow label="期限切れ" value={analytics.status_breakdown.expired} tone="danger" total={statusTotal(analytics)} />
+            <StatusRow
+              label="受講中"
+              value={analytics.status_breakdown.active}
+              tone="brand"
+              total={statusTotal(analytics)}
+            />
+            <StatusRow
+              label="完了"
+              value={analytics.status_breakdown.completed}
+              tone="success"
+              total={statusTotal(analytics)}
+            />
+            <StatusRow
+              label="期限切れ"
+              value={analytics.status_breakdown.expired}
+              tone="danger"
+              total={statusTotal(analytics)}
+            />
           </div>
         </Card>
       </div>
@@ -271,7 +280,7 @@ function StatusRow({
 }: {
   label: string;
   value: number;
-  tone: 'brand' | 'success' | 'danger';
+  tone: "brand" | "success" | "danger";
   total: number;
 }) {
   const pct = total === 0 ? 0 : Math.round((value / total) * 100);
@@ -298,15 +307,19 @@ function EnrollmentChart({ trend }: { trend: AnalyticsTrendPoint[] }) {
   const y = (v: number) => 190 - (v / max) * 160;
   const pts = trend.map((t, i) => [x(i), y(t.count)] as const);
   const path = pts.length
-    ? 'M ' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L ')
-    : '';
+    ? "M " + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" L ")
+    : "";
   const area = pts.length
     ? `${path} L ${pts[pts.length - 1][0].toFixed(1)} 190 L ${pts[0][0].toFixed(1)} 190 Z`
-    : '';
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(max * (1 - f)));
+    : "";
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+    f,
+    label: Math.round(max * (1 - f)),
+  }));
 
   return (
-    <svg viewBox="0 0 560 220" className="w-full h-full">
+    <svg viewBox="0 0 560 220" className="w-full h-full" role="img" aria-label="新規受講登録の推移">
+      <title>新規受講登録の推移</title>
       {[0, 1, 2, 3, 4].map((i) => (
         <line
           key={i}
@@ -319,20 +332,30 @@ function EnrollmentChart({ trend }: { trend: AnalyticsTrendPoint[] }) {
         />
       ))}
       {ticks.map((t, i) => (
-        <text key={i} x="35" y={33 + i * 40} textAnchor="end" className="fill-ink-3 text-[10.5px]">
-          {t}
+        <text
+          key={t.f}
+          x="35"
+          y={33 + i * 40}
+          textAnchor="end"
+          className="fill-ink-3 text-[10.5px]"
+        >
+          {t.label}
         </text>
       ))}
       {area ? <path d={area} fill="var(--brand-soft)" /> : null}
       {path ? (
         <path d={path} stroke="var(--brand)" strokeWidth={2} fill="none" strokeLinecap="round" />
       ) : null}
-      {pts.map(([px, py], i) => (
-        <circle key={i} cx={px} cy={py} r="3" fill="var(--brand)" />
-      ))}
+      {trend.map((t, i) => {
+        const point = pts[i];
+        if (!point) return null;
+        return (
+          <circle key={`${t.month}-dot`} cx={point[0]} cy={point[1]} r="3" fill="var(--brand)" />
+        );
+      })}
       {trend.map((t, i) => (
         <text
-          key={i}
+          key={`${t.month}-label`}
           x={x(i)}
           y="210"
           textAnchor="middle"
@@ -355,14 +378,10 @@ function DashboardDemo() {
       <PageHeader
         title="テナントKPIダッシュボード"
         sub="受講状況 · 完了率 · つまずき分析"
-        actions={
-          <>
-            <Button>
-              <Calendar size={14} />
-              直近30日
-            </Button>
-          </>
-        }
+        actions=<Button>
+          <Calendar size={14} />
+          直近30日
+        </Button>
       />
       <div className="mb-4 rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
         バックエンド (Neon) 未接続のため、 以下はデモ表示です。 実データの集計には
@@ -370,37 +389,68 @@ function DashboardDemo() {
         を設定してください。
       </div>
 
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <KpiCard
-          label={<><Users size={12} /> アクティブ受講者</>}
+          label={
+            <>
+              <Users size={12} /> アクティブ受講者
+            </>
+          }
           value={163}
           unit="名"
-          trend={<><TrendingUp size={12} />+7 先月比</>}
+          trend={
+            <>
+              <TrendingUp size={12} />
+              +7 先月比
+            </>
+          }
           trendDir="up"
         />
         <KpiCard
-          label={<><CheckCircle size={12} /> コース完了率</>}
+          label={
+            <>
+              <CheckCircle size={12} /> コース完了率
+            </>
+          }
           value={58}
           unit="%"
-          trend={<><TrendingUp size={12} />+3pt</>}
+          trend={
+            <>
+              <TrendingUp size={12} />
+              +3pt
+            </>
+          }
           trendDir="up"
         />
         <KpiCard
-          label={<><Award size={12} /> 修了証 発行数</>}
+          label={
+            <>
+              <Award size={12} /> 修了証 発行数
+            </>
+          }
           value={47}
           unit="件 / 今月"
           trend="累計 284件"
         />
         <KpiCard
-          label={<><Clock size={12} /> 平均学習時間</>}
+          label={
+            <>
+              <Clock size={12} /> 平均学習時間
+            </>
+          }
           value="4.2"
           unit="時間/週"
-          trend={<><TrendingDown size={12} />-0.3h</>}
+          trend={
+            <>
+              <TrendingDown size={12} />
+              -0.3h
+            </>
+          }
           trendDir="down"
         />
       </div>
 
-      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "2fr 1fr" }}>
         <Card>
           <CardHeader>
             <CardTitle>新規受講登録の推移</CardTitle>
@@ -412,7 +462,7 @@ function DashboardDemo() {
             <EnrollmentChart
               trend={ENROLLMENT_TREND.map((count, i) => ({
                 month: `m${i}`,
-                label: DEMO_MONTHS[i] ?? '',
+                label: DEMO_MONTHS[i] ?? "",
                 count,
               }))}
             />
@@ -424,8 +474,8 @@ function DashboardDemo() {
             <CardTitle>コース別 完了率</CardTitle>
           </CardHeader>
           <div className="px-4 py-3.5">
-            {COMPLETION_BY_COURSE.map((c, i) => (
-              <div key={i} className="mb-3.5 last:mb-0">
+            {COMPLETION_BY_COURSE.map((c) => (
+              <div key={c.name} className="mb-3.5 last:mb-0">
                 <div className="flex items-center gap-2 text-xs mb-1.5">
                   <span className="font-medium">{c.name}</span>
                   <span className="text-[11.5px] text-ink-3">n={c.n}</span>
@@ -455,12 +505,11 @@ function DashboardDemo() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {STUMBLES.map((s, i) => {
+            {STUMBLES.map((s) => {
               const correct = 100 - Math.round((s.wrong / s.n) * 100);
-              const tone =
-                correct < 40 ? 'danger' : correct < 60 ? 'warning' : 'success';
+              const tone = correct < 40 ? "danger" : correct < 60 ? "warning" : "success";
               return (
-                <TableRow key={i}>
+                <TableRow key={s.q}>
                   <TableCell>{s.q}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -481,4 +530,17 @@ function DashboardDemo() {
   );
 }
 
-const DEMO_MONTHS = ['5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月'];
+const DEMO_MONTHS = [
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+];

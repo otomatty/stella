@@ -24,7 +24,9 @@ interface StoredChat {
 
 function safeStorage(): Storage | null {
   try {
-    if (typeof window === "undefined") {return null;}
+    if (typeof window === "undefined") {
+      return null;
+    }
     return window.localStorage;
   } catch {
     return null;
@@ -38,18 +40,26 @@ function entryKey(assignmentId: string): string {
 /** 起動時に呼ぶ。バージョン不一致なら旧データを破棄する。 */
 export function initChatStore(): void {
   const ls = safeStorage();
-  if (!ls) {return;}
+  if (!ls) {
+    return;
+  }
 
   const stored = ls.getItem(VERSION_KEY);
-  if (stored === String(VERSION)) {return;}
+  if (stored === String(VERSION)) {
+    return;
+  }
 
   // バージョン不一致 (または未設定) → 旧データを掃除
   const obsolete: string[] = [];
   for (let i = 0; i < ls.length; i++) {
     const k = ls.key(i);
-    if (k && k.startsWith(PREFIX) && k !== VERSION_KEY) {obsolete.push(k);}
+    if (k?.startsWith(PREFIX) && k !== VERSION_KEY) {
+      obsolete.push(k);
+    }
   }
-  for (const k of obsolete) {ls.removeItem(k);}
+  for (const k of obsolete) {
+    ls.removeItem(k);
+  }
 
   try {
     ls.setItem(VERSION_KEY, String(VERSION));
@@ -60,13 +70,21 @@ export function initChatStore(): void {
 
 export function loadHistory(assignmentId: string): ChatMessage[] {
   const ls = safeStorage();
-  if (!ls) {return [];}
+  if (!ls) {
+    return [];
+  }
   const raw = ls.getItem(entryKey(assignmentId));
-  if (!raw) {return [];}
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed = JSON.parse(raw) as Partial<StoredChat>;
-    if (parsed.v !== VERSION) {return [];}
-    if (!Array.isArray(parsed.messages)) {return [];}
+    if (parsed.v !== VERSION) {
+      return [];
+    }
+    if (!Array.isArray(parsed.messages)) {
+      return [];
+    }
     // 軽い形チェック
     return parsed.messages.filter(
       (m): m is ChatMessage =>
@@ -81,12 +99,11 @@ export function loadHistory(assignmentId: string): ChatMessage[] {
   }
 }
 
-export function saveHistory(
-  assignmentId: string,
-  messages: ChatMessage[],
-): void {
+export function saveHistory(assignmentId: string, messages: ChatMessage[]): void {
   const ls = safeStorage();
-  if (!ls) {return;}
+  if (!ls) {
+    return;
+  }
 
   // 上限を超えていたら古い順に間引く
   const trimmed =
@@ -117,12 +134,16 @@ export function saveHistory(
 
 export function clearHistory(assignmentId: string): void {
   const ls = safeStorage();
-  if (!ls) {return;}
+  if (!ls) {
+    return;
+  }
   ls.removeItem(entryKey(assignmentId));
 }
 
 function isQuotaError(e: unknown): boolean {
-  if (!(e instanceof Error)) {return false;}
+  if (!(e instanceof Error)) {
+    return false;
+  }
   return (
     e.name === "QuotaExceededError" ||
     e.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
@@ -135,8 +156,12 @@ function pruneOldest(ls: Storage, currentAssignmentId: string): void {
   const items: Item[] = [];
   for (let i = 0; i < ls.length; i++) {
     const k = ls.key(i);
-    if (!k || !k.startsWith(PREFIX) || k === VERSION_KEY) {continue;}
-    if (k === entryKey(currentAssignmentId)) {continue;}
+    if (!k || !k.startsWith(PREFIX) || k === VERSION_KEY) {
+      continue;
+    }
+    if (k === entryKey(currentAssignmentId)) {
+      continue;
+    }
     const raw = ls.getItem(k);
     let ts = 0;
     if (raw) {

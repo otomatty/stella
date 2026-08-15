@@ -6,7 +6,7 @@
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
     "dev": "bun --filter=@falcon/web dev",
-    "lint": "biome lint .",
+    "lint": "biome ci .",
     "format": "biome format --write .",
     "dev:api": "bun --filter=@falcon/api dev",
     "build": "bun --filter '@falcon/*' build && bun --filter informal build",

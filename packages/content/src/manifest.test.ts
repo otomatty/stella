@@ -174,7 +174,10 @@ describe("buildContentManifest — コード演習の配線", () => {
       join(topic, "slides.md"),
       '---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n',
     );
-    writeFileSync(join(root, "demo-course", "modules", "m0-x", "l1-y", "doc.md"), "# ドキュメント\n");
+    writeFileSync(
+      join(root, "demo-course", "modules", "m0-x", "l1-y", "doc.md"),
+      "# ドキュメント\n",
+    );
     writeFileSync(join(root, "demo-course", "modules", "m0-x", "l1-y", "practice.md"), "# 演習\n");
   }
 
@@ -227,7 +230,10 @@ describe("buildContentManifest — CRLF チェックアウト", () => {
         join(topic, "slides.md"),
         crlf('---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n'),
       );
-      writeFileSync(join(courseDir, "modules", "m0-x", "l1-y", "doc.md"), crlf("# ドキュメント\n\n本文\n"));
+      writeFileSync(
+        join(courseDir, "modules", "m0-x", "l1-y", "doc.md"),
+        crlf("# ドキュメント\n\n本文\n"),
+      );
       writeFileSync(join(courseDir, "modules", "m0-x", "l1-y", "practice.md"), crlf("# 演習\n"));
 
       const { courses } = buildContentManifest(root);

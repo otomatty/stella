@@ -29,13 +29,7 @@ export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export type CourseColor = "indigo" | "green" | "amber" | "slate";
 
-export type LessonType =
-  | "video"
-  | "slides"
-  | "text"
-  | "quiz"
-  | "assignment"
-  | "code";
+export type LessonType = "video" | "slides" | "text" | "quiz" | "assignment" | "code";
 
 // ---------------------------------------------------------------
 // DB 行型
@@ -466,10 +460,7 @@ export interface AnnouncementRow {
   created_at: string;
 }
 
-export type NotificationType =
-  | "announcement"
-  | "review_completed"
-  | "assignment_due";
+export type NotificationType = "announcement" | "review_completed" | "assignment_due";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。
@@ -503,7 +494,10 @@ export interface AssignmentRow {
   tests: TestCase[];
   sql_seed: string | null;
   lint_preset: LintPreset | null;
-  static_analysis: { eslint?: { rules: Record<string, ESLintRuleConfig> }; ast?: ASTRequirement } | null;
+  static_analysis: {
+    eslint?: { rules: Record<string, ESLintRuleConfig> };
+    ast?: ASTRequirement;
+  } | null;
   mutation: MutationConfig | null;
   demo_call: string | null;
   created_by: string | null;
@@ -583,10 +577,7 @@ export function mapLessonRowToUi(row: LessonRow): UiLesson {
   };
 }
 
-export function mapSectionRowToUi(
-  row: SectionRow,
-  lessons: LessonRow[],
-): UiSection {
+export function mapSectionRowToUi(row: SectionRow, lessons: LessonRow[]): UiSection {
   return {
     id: row.id,
     title: row.title,
@@ -616,15 +607,11 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
     title: input.course.title,
     category: input.course.category ?? "",
     color: input.course.color ?? "indigo",
-    ...(input.course.duration_hours != null
-      ? { duration: input.course.duration_hours }
-      : {}),
+    ...(input.course.duration_hours != null ? { duration: input.course.duration_hours } : {}),
     lessonsCount,
     progress: 0,
     ...(instructorName ? { enrolledBy: instructorName } : {}),
-    ...(input.course.description != null
-      ? { description: input.course.description }
-      : {}),
+    ...(input.course.description != null ? { description: input.course.description } : {}),
     sections,
     criteria: {
       requireAllLessons: input.course.require_all_lessons ?? true,
@@ -658,9 +645,7 @@ export function mapAssignmentRowToAssignment(row: AssignmentRow): Assignment {
 
   if (row.test_kind === "mutation" || row.test_kind === "eslint-config") {
     if (!row.mutation) {
-      throw new Error(
-        `Assignment ${row.id} has test_kind=${row.test_kind} but no mutation config`,
-      );
+      throw new Error(`Assignment ${row.id} has test_kind=${row.test_kind} but no mutation config`);
     }
     return { ...base, testKind: row.test_kind, mutation: row.mutation };
   }

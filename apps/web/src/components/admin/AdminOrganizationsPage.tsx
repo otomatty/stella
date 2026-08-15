@@ -136,9 +136,7 @@ function OrgsLive() {
       setDialogOpen(false);
       await refetch();
     } catch (err) {
-      toast.error(
-        `保存に失敗しました: ${err instanceof Error ? err.message : "unknown"}`,
-      );
+      toast.error(`保存に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setSaving(false);
     }
@@ -184,8 +182,7 @@ function OrgsLive() {
             </TableHeader>
             <TableBody>
               {organizations.map((o) => {
-                const overSeats =
-                  o.plan_seats != null && o.member_count > o.plan_seats;
+                const overSeats = o.plan_seats != null && o.member_count > o.plan_seats;
                 return (
                   <TableRow key={o.id}>
                     <TableCell>
@@ -195,9 +192,7 @@ function OrgsLive() {
                         </div>
                         <div>
                           <div className="font-medium">{o.name}</div>
-                          <div className="text-[11.5px] text-ink-3 font-mono">
-                            {o.id}
-                          </div>
+                          <div className="text-[11.5px] text-ink-3 font-mono">{o.id}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -228,11 +223,7 @@ function OrgsLive() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      {o.active ? (
-                        <Badge variant="success">契約中</Badge>
-                      ) : (
-                        <Badge>停止</Badge>
-                      )}
+                      {o.active ? <Badge variant="success">契約中</Badge> : <Badge>停止</Badge>}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end">
@@ -257,7 +248,10 @@ function OrgsLive() {
           </DialogHeader>
 
           <div className="px-6 py-2 grid gap-3.5">
-            <Field label="組織ID" hint={editing ? "作成後は変更できません" : "英小文字・数字・ハイフン"}>
+            <Field
+              label="組織ID"
+              hint={editing ? "作成後は変更できません" : "英小文字・数字・ハイフン"}
+            >
               <Input
                 value={form.id}
                 disabled={Boolean(editing)}

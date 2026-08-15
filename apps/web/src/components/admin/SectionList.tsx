@@ -180,14 +180,19 @@ export function SectionList({ course, tenantId, onChange }: Props) {
     }
   };
 
-  const onLessonSaved = async (sectionId: string, lessonId: string | null, partial: Omit<Parameters<typeof upsertLesson>[0], "id" | "section_id" | "order"> & { order?: number }) => {
+  const onLessonSaved = async (
+    sectionId: string,
+    lessonId: string | null,
+    partial: Omit<Parameters<typeof upsertLesson>[0], "id" | "section_id" | "order"> & {
+      order?: number;
+    },
+  ) => {
     const currentSection = sections.find((s) => s.section.id === sectionId);
     // 既存レッスン編集時は現在の order を維持。 新規追加時のみ末尾に置く。
     const existingOrder = lessonId
       ? currentSection?.lessons.find((l) => l.id === lessonId)?.order
       : undefined;
-    const nextOrder =
-      partial.order ?? existingOrder ?? currentSection?.lessons.length ?? 0;
+    const nextOrder = partial.order ?? existingOrder ?? currentSection?.lessons.length ?? 0;
     try {
       await upsertLesson({
         ...partial,
@@ -205,7 +210,10 @@ export function SectionList({ course, tenantId, onChange }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onSectionDragEnd}>
-        <SortableContext items={sections.map((s) => s.section.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={sections.map((s) => s.section.id)}
+          strategy={verticalListSortingStrategy}
+        >
           {sections.map((s) => (
             <SortableSection
               key={s.section.id}
@@ -215,9 +223,7 @@ export function SectionList({ course, tenantId, onChange }: Props) {
               onRemove={removeSection}
               onLessonDragEnd={onLessonDragEnd}
               onAddLesson={addLesson}
-              onEditLesson={(lesson) =>
-                setEditingLesson({ sectionId: s.section.id, lesson })
-              }
+              onEditLesson={(lesson) => setEditingLesson({ sectionId: s.section.id, lesson })}
               onRemoveLesson={removeLesson}
             />
           ))}
@@ -298,7 +304,12 @@ function SortableSection({
           onBlur={(e) => void onRename(section, e.target.value.trim() || section.title)}
           className="flex-1 bg-transparent text-[14px] font-semibold focus:outline-none focus:bg-sunken rounded-sm px-1.5 py-0.5"
         />
-        <Button type="button" size="icon-sm" variant="ghost" onClick={() => void onRemove(section.id)}>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => void onRemove(section.id)}
+        >
           <Trash size={13} />
         </Button>
       </div>

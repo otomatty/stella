@@ -12,16 +12,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, X, CheckCircle, Loader2, HelpCircle } from "@/lib/icons";
-import { SkeletonRows } from '@/components/ui/skeleton';
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { isBackendConfigured } from "@/lib/backend";
-import {
-  fetchQuizForLearner,
-  submitQuizAttempt,
-} from "@/lib/quiz-attempts-api";
+import { fetchQuizForLearner, submitQuizAttempt } from "@/lib/quiz-attempts-api";
 import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 import type {
   LearnerQuiz,
@@ -35,8 +32,7 @@ interface QuizPlayerProps {
   onComplete?: () => void;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const KIND_LABEL: Record<LearnerQuizQuestion["kind"], string> = {
   single: "単一選択",
@@ -56,9 +52,7 @@ function shuffled<T>(arr: T[]): T[] {
 
 /** quiz 設定に応じて設問・選択肢の表示順を (必要なら) シャッフルした新オブジェクトを返す。 */
 function applyShuffle(quiz: LearnerQuiz): LearnerQuiz {
-  let questions = quiz.quiz.shuffle_questions
-    ? shuffled(quiz.questions)
-    : quiz.questions;
+  let questions = quiz.quiz.shuffle_questions ? shuffled(quiz.questions) : quiz.questions;
   if (quiz.quiz.shuffle_options) {
     questions = questions.map((q) => ({ ...q, options: shuffled(q.options) }));
   }
@@ -174,9 +168,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
           : prev,
       );
       if (graded.passed) {
-        toast.success(
-          `合格しました！ ${graded.score} / ${graded.max_score} 点`,
-        );
+        toast.success(`合格しました！ ${graded.score} / ${graded.max_score} 点`);
         onComplete?.();
       } else {
         toast.message(
@@ -185,9 +177,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       }
     } catch (err) {
       console.error("[QuizPlayer] submit failed", err);
-      toast.error(
-        err instanceof Error ? err.message : "採点に失敗しました",
-      );
+      toast.error(err instanceof Error ? err.message : "採点に失敗しました");
     } finally {
       setSubmitting(false);
     }
@@ -204,14 +194,12 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   // 受験済みで、 まだこの表示で解き直していないなら、 白紙の設問ではなく前回の結果を出す。
   // (設問だけ出すと「合格済みなのにまた解かされる」ように見え、 進捗とも食い違う)
   const history = quiz?.history;
-  const showPastAttempt =
-    !result && !retaking && history != null && history.attempt_count > 0;
+  const showPastAttempt = !result && !retaking && history != null && history.attempt_count > 0;
   const attemptsLeft =
     quiz?.quiz.max_attempts != null && history != null
       ? Math.max(quiz.quiz.max_attempts - history.attempt_count, 0)
       : null;
-  const outOfAttempts =
-    attemptsLeft === 0 && history != null && !history.passed;
+  const outOfAttempts = attemptsLeft === 0 && history != null && !history.passed;
 
   if (loading) {
     return <SkeletonRows rows={4} className="py-6" />;
@@ -222,18 +210,14 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
         <HelpCircle size={28} className="text-ink-4" />
         <div className="font-medium text-ink-2">クイズはまだ準備中です</div>
-        <div className="text-[12.5px]">
-          このレッスンの設問はまだ公開されていません。
-        </div>
+        <div className="text-[12.5px]">このレッスンの設問はまだ公開されていません。</div>
       </div>
     );
   }
 
   const totalPoints = quiz.questions.reduce((n, q) => n + q.points, 0);
   const scorePercent =
-    result && result.max_score > 0
-      ? Math.round((result.score * 100) / result.max_score)
-      : 0;
+    result && result.max_score > 0 ? Math.round((result.score * 100) / result.max_score) : 0;
 
   // 前回までの受験結果。 設問は伏せたまま、 結果と再挑戦の導線だけ出す。
   if (showPastAttempt && history) {
@@ -244,9 +228,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
     return (
       <Card
         className={cn(
-          history.passed
-            ? "border-success bg-success-soft"
-            : "border-danger bg-danger-soft",
+          history.passed ? "border-success bg-success-soft" : "border-danger bg-danger-soft",
         )}
       >
         <CardContent className="flex items-center gap-3">
@@ -265,16 +247,13 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
               {history.passed ? "合格済みです" : "まだ合格していません"}
             </div>
             <div className="text-[11.5px] text-ink-3">
-              直近の結果: {history.last_score} / {history.last_max_score} (
-              {pastPercent}%) · 合格ライン {quiz.quiz.pass_score}% · 受験{" "}
-              {history.attempt_count} 回
+              直近の結果: {history.last_score} / {history.last_max_score} ({pastPercent}%) ·
+              合格ライン {quiz.quiz.pass_score}% · 受験 {history.attempt_count} 回
               {attemptsLeft !== null ? ` (残り ${attemptsLeft} 回)` : ""}
             </div>
           </div>
           {outOfAttempts ? (
-            <span className="text-[11.5px] text-ink-3">
-              受験回数の上限に達しました
-            </span>
+            <span className="text-[11.5px] text-ink-3">受験回数の上限に達しました</span>
           ) : (
             <Button variant="accent" onClick={handleRetry}>
               もう一度挑戦する
@@ -291,9 +270,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
         <Card
           className={cn(
             "mb-5",
-            result.passed
-              ? "border-success bg-success-soft"
-              : "border-danger bg-danger-soft",
+            result.passed ? "border-success bg-success-soft" : "border-danger bg-danger-soft",
           )}
         >
           <CardContent className="flex items-center gap-3">
@@ -312,17 +289,14 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                 {result.passed ? "合格です！" : "不合格です"}
               </div>
               <div className="text-[11.5px] text-ink-3">
-                獲得点数: {result.score} / {result.max_score} ({scorePercent}%) ·
-                合格ライン {quiz.quiz.pass_score}%
-                {attemptsLeft !== null ? ` · 残り ${attemptsLeft} 回` : ''}
+                獲得点数: {result.score} / {result.max_score} ({scorePercent}%) · 合格ライン{" "}
+                {quiz.quiz.pass_score}%{attemptsLeft !== null ? ` · 残り ${attemptsLeft} 回` : ""}
               </div>
             </div>
             {/* 上限に達したあとも再挑戦ボタンを出すと、 押した先の解答フォームで
                 採点できず行き止まりになる。 上限時は理由を出してボタンを出さない。 */}
             {result.passed ? null : outOfAttempts ? (
-              <span className="text-[11.5px] text-ink-3">
-                受験回数の上限に達しました
-              </span>
+              <span className="text-[11.5px] text-ink-3">受験回数の上限に達しました</span>
             ) : (
               <Button variant="accent" onClick={handleRetry}>
                 もう一度挑戦する
@@ -348,13 +322,9 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
           return (
             <Card key={q.id} className="p-6">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-[11.5px] text-ink-3 font-semibold">
-                  問題 {idx + 1}
-                </span>
+                <span className="text-[11.5px] text-ink-3 font-semibold">問題 {idx + 1}</span>
                 <Badge variant="accent">{KIND_LABEL[q.kind]}</Badge>
-                <span className="text-[11.5px] text-ink-3">
-                  配点 {q.points}点
-                </span>
+                <span className="text-[11.5px] text-ink-3">配点 {q.points}点</span>
                 {qResult ? (
                   qResult.correct ? (
                     <Badge variant="success" className="ml-auto">
@@ -379,8 +349,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
               {q.options.map((o, oi) => {
                 const isSelected = selected.has(o.id);
                 const showCorrect = Boolean(qResult) && correctIds.has(o.id);
-                const showWrong =
-                  Boolean(qResult) && isSelected && !correctIds.has(o.id);
+                const showWrong = Boolean(qResult) && isSelected && !correctIds.has(o.id);
                 return (
                   <button
                     type="button"
@@ -389,16 +358,11 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                     disabled={Boolean(result)}
                     className={cn(
                       "w-full flex items-start gap-3 p-3.5 border rounded-md bg-card mb-2 transition-colors text-left",
-                      result
-                        ? "cursor-default"
-                        : "cursor-pointer hover:border-ink-3",
+                      result ? "cursor-default" : "cursor-pointer hover:border-ink-3",
                       isSelected && !result && "border-brand bg-brand-soft",
                       showCorrect && "border-success bg-success-soft",
                       showWrong && "border-danger bg-danger-soft",
-                      !isSelected &&
-                        !showCorrect &&
-                        !showWrong &&
-                        "border-border-2",
+                      !isSelected && !showCorrect && !showWrong && "border-border-2",
                     )}
                   >
                     <div
@@ -454,9 +418,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
             disabled={previewReadOnly || !allAnswered || submitting || outOfAttempts}
             onClick={handleSubmit}
           >
-            {submitting ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : null}
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
             採点する
           </Button>
         </div>

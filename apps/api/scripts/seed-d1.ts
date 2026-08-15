@@ -24,7 +24,8 @@ function splitSqlStatements(sql: string): string[] {
   let current = "";
   let inString = false;
   for (let i = 0; i < sql.length; i++) {
-    const ch = sql[i]!;
+    const ch = sql[i];
+    if (ch === undefined) break;
     current += ch;
     if (inString) {
       if (ch === "'" && sql[i + 1] === "'") {
@@ -95,10 +96,12 @@ const target = remote ? "remote" : "local";
 console.log(`→ D1 (${target}) に seed を適用 (${chunks.length} chunk, ${file})`);
 for (let i = 0; i < chunks.length; i++) {
   const chunkFile = join(dir, `seed-${i}.sql`);
-  writeFileSync(chunkFile, chunks[i]!, "utf8");
-  execSync(
-    `bunx wrangler d1 execute falcon-db --${target} --file=${JSON.stringify(chunkFile)}`,
-    { cwd: apiDir, stdio: "inherit" },
-  );
+  const chunk = chunks[i];
+  if (chunk === undefined) continue;
+  writeFileSync(chunkFile, chunk, "utf8");
+  execSync(`bunx wrangler d1 execute falcon-db --${target} --file=${JSON.stringify(chunkFile)}`, {
+    cwd: apiDir,
+    stdio: "inherit",
+  });
 }
 console.log("✓ seed 完了");

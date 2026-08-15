@@ -17,14 +17,19 @@ export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "theme";
 
 function readInitialTheme(): Theme {
-  if (typeof document === "undefined") {return "light";}
+  if (typeof document === "undefined") {
+    return "light";
+  }
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 function applyTheme(theme: Theme): void {
   const root = document.documentElement;
-  if (theme === "dark") {root.classList.add("dark");}
-  else {root.classList.remove("dark");}
+  if (theme === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
 }
 
 interface ThemeApi {
@@ -70,7 +75,9 @@ export function useTheme(): ThemeApi {
 
   // ユーザーが明示選択していない (= localStorage 未設定) 間は OS 設定に追従
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) {return;}
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (event: MediaQueryListEvent) => {
       let stored: string | null = null;
@@ -79,7 +86,9 @@ export function useTheme(): ThemeApi {
       } catch (_) {
         // localStorage が読めない環境では OS 設定に追従する
       }
-      if (stored === "light" || stored === "dark") {return;}
+      if (stored === "light" || stored === "dark") {
+        return;
+      }
       setTheme(event.matches ? "dark" : "light");
     };
     // Safari 13 / iOS 13 では addEventListener が無く addListener しか持たない。

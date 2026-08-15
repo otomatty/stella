@@ -56,7 +56,12 @@ describe("findNextLesson", () => {
   it("途中まで閲覧しただけ (未完了) のレッスンはそこを再開位置にする", () => {
     const map: LessonProgressMap = {
       a: done(),
-      b: { completed: false, lastPage: 3, viewedPages: [1, 2, 3], updatedAt: "2026-08-12T00:00:00.000Z" },
+      b: {
+        completed: false,
+        lastPage: 3,
+        viewedPages: [1, 2, 3],
+        updatedAt: "2026-08-12T00:00:00.000Z",
+      },
     };
     expect(findNextLesson(course, map)?.lesson.id).toBe("b");
   });

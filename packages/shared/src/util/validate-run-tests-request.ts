@@ -11,9 +11,7 @@ export type ValidateRunTestsErr = {
   message: string;
 };
 
-export function validateRunTestsBody(
-  raw: unknown,
-): ValidateRunTestsOk | ValidateRunTestsErr {
+export function validateRunTestsBody(raw: unknown): ValidateRunTestsOk | ValidateRunTestsErr {
   if (typeof raw !== "object" || raw === null) {
     return { ok: false, status: 400, message: "Invalid JSON body" };
   }
@@ -24,11 +22,7 @@ export function validateRunTestsBody(
     return { ok: false, status: 400, message: "Missing 'code' (string)" };
   }
 
-  if (
-    body.mode !== undefined &&
-    body.mode !== "test" &&
-    body.mode !== "freerun"
-  ) {
+  if (body.mode !== undefined && body.mode !== "test" && body.mode !== "freerun") {
     return {
       ok: false,
       status: 400,

@@ -48,15 +48,11 @@ async function enforce(
 }
 
 /** AI エンドポイント (chat / review-draft) 用のレート制限。 */
-export function enforceAiRateLimit(
-  c: Context<{ Bindings: Env }>,
-): Promise<Response | null> {
+export function enforceAiRateLimit(c: Context<{ Bindings: Env }>): Promise<Response | null> {
   return enforce(c, c.env.AI_RATE_LIMITER);
 }
 
 /** サポート問い合わせ (公開・認証前) フォーム用のレート制限。 */
-export function enforceSupportRateLimit(
-  c: Context<{ Bindings: Env }>,
-): Promise<Response | null> {
+export function enforceSupportRateLimit(c: Context<{ Bindings: Env }>): Promise<Response | null> {
   return enforce(c, c.env.SUPPORT_RATE_LIMITER);
 }

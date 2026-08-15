@@ -20,10 +20,7 @@ interface UseAuditLogsResult {
   refetch: () => Promise<void>;
 }
 
-export function useAuditLogs(
-  tenantId: string | null,
-  filters: AuditFilters,
-): UseAuditLogsResult {
+export function useAuditLogs(tenantId: string | null, filters: AuditFilters): UseAuditLogsResult {
   const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

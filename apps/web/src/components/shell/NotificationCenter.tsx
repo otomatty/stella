@@ -8,27 +8,19 @@
  * バックエンド未設定時は通知が空のため、 ベルはバッジ無しで描画される。
  */
 
-import { useEffect, useRef, useState } from 'react';
-import {
-  Bell,
-  CheckCheck,
-  Megaphone,
-  Check,
-  Loader2,
-  X,
-  Send,
-} from '@/lib/icons';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { createAnnouncement } from '@/lib/notifications-api';
-import { cn } from '@/lib/utils';
-import type { NotificationRow, NotificationType } from '@falcon/shared/cms/types';
-import type { Course, Role, Tenant } from '@/data/types';
+import { useEffect, useRef, useState } from "react";
+import { Bell, CheckCheck, Megaphone, Check, Loader2, X, Send } from "@/lib/icons";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { createAnnouncement } from "@/lib/notifications-api";
+import { cn } from "@/lib/utils";
+import type { NotificationRow, NotificationType } from "@falcon/shared/cms/types";
+import type { Course, Role, Tenant } from "@/data/types";
 
 interface NotificationCenterProps {
   role: Role;
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   notifications: NotificationRow[];
   unreadCount: number;
   loading: boolean;
@@ -41,22 +33,19 @@ interface NotificationCenterProps {
   onOpenSubmission?: (submissionId: string) => void;
 }
 
-const TYPE_META: Record<
-  NotificationType,
-  { icon: typeof Bell; tone: string; label: string }
-> = {
-  announcement: { icon: Megaphone, tone: 'text-brand', label: 'お知らせ' },
-  review_completed: { icon: Check, tone: 'text-success', label: '添削完了' },
-  assignment_due: { icon: Bell, tone: 'text-warning', label: '課題期限' },
+const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; label: string }> = {
+  announcement: { icon: Megaphone, tone: "text-brand", label: "お知らせ" },
+  review_completed: { icon: Check, tone: "text-success", label: "添削完了" },
+  assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
 };
 
 /** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
+  if (Number.isNaN(then)) return "";
   const diff = Date.now() - then;
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return 'たった今';
+  if (min < 1) return "たった今";
   if (min < 60) return `${min}分前`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr}時間前`;
@@ -80,7 +69,7 @@ export const NotificationCenter = ({
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const isStaff = role === 'instructor' || role === 'admin';
+  const isStaff = role === "instructor" || role === "admin";
 
   // 外側クリック / Escape で閉じる。
   useEffect(() => {
@@ -89,13 +78,13 @@ export const NotificationCenter = ({
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === "Escape") setOpen(false);
     };
-    window.addEventListener('mousedown', onPointer);
-    window.addEventListener('keydown', onKey);
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener('mousedown', onPointer);
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -105,13 +94,13 @@ export const NotificationCenter = ({
         className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border relative"
         title="通知"
         type="button"
-        aria-label={`通知${unreadCount > 0 ? ` (未読 ${unreadCount} 件)` : ''}`}
+        aria-label={`通知${unreadCount > 0 ? ` (未読 ${unreadCount} 件)` : ""}`}
         onClick={() => setOpen((v) => !v)}
       >
         <Bell size={16} />
         {unreadCount > 0 ? (
           <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 grid place-items-center rounded-full bg-brand text-white text-[9px] font-semibold leading-none border-[1.5px] border-card">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
       </button>
@@ -121,9 +110,7 @@ export const NotificationCenter = ({
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
             <div className="text-[13px] font-semibold">通知</div>
             {unreadCount > 0 ? (
-              <span className="text-[11px] text-brand font-medium">
-                未読 {unreadCount}
-              </span>
+              <span className="text-[11px] text-brand font-medium">未読 {unreadCount}</span>
             ) : null}
             <div className="flex-1" />
             {unreadCount > 0 ? (
@@ -172,20 +159,20 @@ export const NotificationCenter = ({
                     key={n.id}
                     onClick={() => {
                       if (!n.read) onMarkRead(n.id);
-                      if (n.type === 'review_completed' && onOpenSubmission) {
+                      if (n.type === "review_completed" && onOpenSubmission) {
                         const submissionId = n.payload?.submission_id;
-                        if (typeof submissionId === 'string' && submissionId.length > 0) {
+                        if (typeof submissionId === "string" && submissionId.length > 0) {
                           onOpenSubmission(submissionId);
                           setOpen(false);
                         }
                       }
                     }}
                     className={cn(
-                      'w-full text-left flex gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken transition-colors',
-                      !n.read && 'bg-brand-soft/40',
+                      "w-full text-left flex gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken transition-colors",
+                      !n.read && "bg-brand-soft/40",
                     )}
                   >
-                    <div className={cn('shrink-0 mt-0.5', meta.tone)}>
+                    <div className={cn("shrink-0 mt-0.5", meta.tone)}>
                       <Icon size={16} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -198,9 +185,7 @@ export const NotificationCenter = ({
                         ) : null}
                       </div>
                       {n.body ? (
-                        <div className="text-[11.5px] text-ink-3 mt-0.5 line-clamp-2">
-                          {n.body}
-                        </div>
+                        <div className="text-[11.5px] text-ink-3 mt-0.5 line-clamp-2">{n.body}</div>
                       ) : null}
                       <div className="text-[10.5px] text-ink-4 mt-1 flex items-center gap-1.5">
                         <span>{meta.label}</span>
@@ -220,34 +205,30 @@ export const NotificationCenter = ({
 };
 
 interface AnnouncementComposerProps {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   courses: Course[];
   onCreated: () => void;
 }
 
 /** 講師/管理者向けのお知らせ作成フォーム (通知センター内蔵)。 */
-const AnnouncementComposer = ({
-  tenantId,
-  courses,
-  onCreated,
-}: AnnouncementComposerProps) => {
+const AnnouncementComposer = ({ tenantId, courses, onCreated }: AnnouncementComposerProps) => {
   const [expanded, setExpanded] = useState(false);
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [courseId, setCourseId] = useState<string>('');
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [courseId, setCourseId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
-    setTitle('');
-    setBody('');
-    setCourseId('');
+    setTitle("");
+    setBody("");
+    setCourseId("");
   };
 
   const handleSubmit = async () => {
     const t = title.trim();
     const b = body.trim();
     if (!t) {
-      toast.error('タイトルを入力してください');
+      toast.error("タイトルを入力してください");
       return;
     }
     setSubmitting(true);
@@ -260,11 +241,11 @@ const AnnouncementComposer = ({
       });
       reset();
       setExpanded(false);
-      toast.success('お知らせを公開しました');
+      toast.success("お知らせを公開しました");
       onCreated();
     } catch (err) {
-      console.error('[AnnouncementComposer] createAnnouncement failed', err);
-      toast.error(err instanceof Error ? err.message : 'お知らせの公開に失敗しました');
+      console.error("[AnnouncementComposer] createAnnouncement failed", err);
+      toast.error(err instanceof Error ? err.message : "お知らせの公開に失敗しました");
     } finally {
       setSubmitting(false);
     }
@@ -338,11 +319,7 @@ const AnnouncementComposer = ({
           onClick={() => void handleSubmit()}
           disabled={submitting || !title.trim()}
         >
-          {submitting ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Send size={13} />
-          )}
+          {submitting ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
           公開する
         </Button>
       </div>

@@ -18,11 +18,7 @@ import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Course, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
 import { findAssignment } from "../src/problems/index.js";
-import {
-  getEntryFile,
-  getLanguage,
-  getStaticAnalysisSettings,
-} from "../src/assignment-helpers.js";
+import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { INTERVIEW_QUESTIONS } from "../src/interview/questions.js";
 
 const dialect = process.env.DIALECT === "sqlite" ? "sqlite" : "postgres";
@@ -62,8 +58,13 @@ const tbl = (name: string) => (isSqlite ? name : `public.${name}`);
 function stableUuid(key: string): string {
   const h = createHash("sha1").update(key).digest();
   const bytes = Uint8Array.from(h.subarray(0, 16));
-  bytes[6] = (bytes[6]! & 0x0f) | 0x50; // version 5-ish
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80; // RFC 4122 variant
+  const ver = bytes[6];
+  const variant = bytes[8];
+  if (ver === undefined || variant === undefined) {
+    throw new Error("sha1 digest too short");
+  }
+  bytes[6] = (ver & 0x0f) | 0x50; // version 5-ish
+  bytes[8] = (variant & 0x3f) | 0x80; // RFC 4122 variant
   const hex = Buffer.from(bytes).toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
@@ -179,12 +180,9 @@ const RETIRED_DEMO_COURSES: ReadonlyArray<{ tenantId: string; slug: string }> = 
 function emitRetiredDemoCourses() {
   for (const { tenantId, slug } of RETIRED_DEMO_COURSES) {
     const courseUuid = stableUuid(`course:${tenantId}:${slug}`);
-    const lessonsInCourse =
-      `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.course_id = '${courseUuid}'`;
-    const quizzesInCourse =
-      `select z.id from ${tbl("quizzes")} z where z.lesson_id in (${lessonsInCourse})`;
-    const questionsInCourse =
-      `select qq.id from ${tbl("quiz_questions")} qq where qq.quiz_id in (${quizzesInCourse})`;
+    const lessonsInCourse = `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.course_id = '${courseUuid}'`;
+    const quizzesInCourse = `select z.id from ${tbl("quizzes")} z where z.lesson_id in (${lessonsInCourse})`;
+    const questionsInCourse = `select qq.id from ${tbl("quiz_questions")} qq where qq.quiz_id in (${quizzesInCourse})`;
     lines.push(
       `delete from ${tbl("quiz_options")} where question_id in (${questionsInCourse});`,
       `delete from ${tbl("quiz_attempts")} where quiz_id in (${quizzesInCourse});`,
@@ -364,9 +362,27 @@ if (!contentOnly) {
   emitAssignment("ses", "S0-Ch00-01-print-hello");
 
   for (const p of [
-    { id: SEED_ADMIN, role: "admin", name: "Seed Admin", initials: "SA", email: "seed-admin@example.local" },
-    { id: SEED_INSTRUCTOR, role: "instructor", name: "Seed Instructor", initials: "SI", email: "seed-instructor@example.local" },
-    { id: SEED_LEARNER, role: "student", name: "Seed Learner", initials: "SL", email: "seed-learner@example.local" },
+    {
+      id: SEED_ADMIN,
+      role: "admin",
+      name: "Seed Admin",
+      initials: "SA",
+      email: "seed-admin@example.local",
+    },
+    {
+      id: SEED_INSTRUCTOR,
+      role: "instructor",
+      name: "Seed Instructor",
+      initials: "SI",
+      email: "seed-instructor@example.local",
+    },
+    {
+      id: SEED_LEARNER,
+      role: "student",
+      name: "Seed Learner",
+      initials: "SL",
+      email: "seed-learner@example.local",
+    },
   ]) {
     lines.push(
       isSqlite

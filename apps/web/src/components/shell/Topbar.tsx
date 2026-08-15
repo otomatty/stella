@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
-import { HelpCircle, Menu, Search } from '@/lib/icons';
-import { NotificationCenter } from '@/components/shell/NotificationCenter';
-import { SearchPalette } from '@/components/shell/SearchPalette';
-import type { NotificationRow } from '@falcon/shared/cms/types';
-import type { SearchResult } from '@falcon/shared/search/types';
-import type { Course, Role, Tenant } from '@/data/types';
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { HelpCircle, Menu, Search } from "@/lib/icons";
+import { NotificationCenter } from "@/components/shell/NotificationCenter";
+import { SearchPalette } from "@/components/shell/SearchPalette";
+import type { NotificationRow } from "@falcon/shared/cms/types";
+import type { SearchResult } from "@falcon/shared/search/types";
+import type { Course, Role, Tenant } from "@/data/types";
 
 interface TopbarProps {
   actions?: ReactNode;
@@ -18,7 +18,7 @@ interface TopbarProps {
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {
     role: Role;
-    tenantId: Tenant['id'];
+    tenantId: Tenant["id"];
     notifications: NotificationRow[];
     unreadCount: number;
     loading: boolean;
@@ -32,10 +32,8 @@ interface TopbarProps {
 
 /** macOS 系なら ⌘、 それ以外は Ctrl 表記にする。 */
 function shortcutLabel(): string {
-  if (typeof navigator === 'undefined') return '⌘K';
-  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
-    ? '⌘K'
-    : 'Ctrl K';
+  if (typeof navigator === "undefined") return "⌘K";
+  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘K" : "Ctrl K";
 }
 
 export const Topbar = ({
@@ -51,13 +49,13 @@ export const Topbar = ({
   // (修飾キー付きなので通常の入力を妨げない)。
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setSearchOpen((v) => !v);
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   return (

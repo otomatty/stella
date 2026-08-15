@@ -6,8 +6,13 @@ import { describe, expect, it, vi } from "vitest";
 function stableUuid(key: string): string {
   const h = createHash("sha1").update(key).digest();
   const bytes = Uint8Array.from(h.subarray(0, 16));
-  bytes[6] = (bytes[6]! & 0x0f) | 0x50;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const ver = bytes[6];
+  const variant = bytes[8];
+  if (ver === undefined || variant === undefined) {
+    throw new Error("sha1 digest too short");
+  }
+  bytes[6] = (ver & 0x0f) | 0x50;
+  bytes[8] = (variant & 0x3f) | 0x80;
   const hex = Buffer.from(bytes).toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
@@ -38,7 +43,9 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("スライドレッスンに本文 markdown が入る", () => {
-    expect(sql).toMatch(/insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?constは再代入できない/);
+    expect(sql).toMatch(
+      /insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?constは再代入できない/,
+    );
   });
 
   it("図解画像は R2 の絶対パスで入る", () => {
@@ -54,9 +61,7 @@ describe("export-seed-sql (sqlite)", () => {
   it("教材コースの sections を course_id だけで丸ごと wipe しない", () => {
     const tsCourse = stableUuid("course:ses:typescript-basics");
     expect(sql).not.toContain(`delete from sections where course_id = '${tsCourse}';`);
-    expect(sql).toContain(
-      `delete from sections where course_id = '${tsCourse}' and id not in (`,
-    );
+    expect(sql).toContain(`delete from sections where course_id = '${tsCourse}' and id not in (`);
   });
 
   it("教材から消えた lesson / section を prune する", () => {
@@ -64,7 +69,9 @@ describe("export-seed-sql (sqlite)", () => {
       /delete from lessons where section_id in \(select id from sections where course_id = '[^']+'\) and id not in \(/i,
     );
     expect(sql).toMatch(/delete from sections where course_id = '[^']+' and id not in \(/i);
-    expect(sql).toMatch(/delete from lesson_progress where lesson_id not in \(select id from lessons\)/i);
+    expect(sql).toMatch(
+      /delete from lesson_progress where lesson_id not in \(select id from lessons\)/i,
+    );
   });
 
   it("sections は slug で既存コースに紐づけて upsert する", () => {
@@ -87,15 +94,11 @@ describe("export-seed-sql (sqlite)", () => {
     const withSection = stableUuid("lesson:ses:typescript-basics:m1-values:1-1-2");
     expect(sql).toContain(`'${withoutSection}'`);
     expect(sql).not.toMatch(new RegExp(`select '${withSection}'`));
-    expect(sql).toMatch(
-      /on conflict \(id\) do update set section_id = excluded\.section_id/i,
-    );
+    expect(sql).toMatch(/on conflict \(id\) do update set section_id = excluded\.section_id/i);
   });
 
   it("旧レッスン UUID からの進捗付け替えと quiz.lesson_id 更新を出す", () => {
-    expect(sql).toMatch(
-      /update lesson_progress set lesson_id = case lesson_id/i,
-    );
+    expect(sql).toMatch(/update lesson_progress set lesson_id = case lesson_id/i);
     expect(sql).toMatch(/update quizzes set lesson_id = case lesson_id/i);
     expect(sql).toMatch(
       /on conflict \(id\) do update set lesson_id = excluded\.lesson_id, pass_score = excluded\.pass_score/i,
@@ -161,7 +164,9 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
   });
 
   it("デモ講座の削除は本番 seed でも出す", () => {
-    expect(sql).toContain(`delete from courses where id = '${stableUuid("course:ses:web-fundamentals")}'`);
+    expect(sql).toContain(
+      `delete from courses where id = '${stableUuid("course:ses:web-fundamentals")}'`,
+    );
     expect(sql).not.toContain("Web開発基礎");
   });
 });

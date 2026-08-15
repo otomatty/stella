@@ -9,21 +9,12 @@
 import { Hono } from "hono";
 import { and, asc, eq } from "drizzle-orm";
 
-import {
-  ASSIGNABLE_CATEGORIES,
-  isAssignableCategory,
-} from "@falcon/shared/interview/types";
+import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { visibleQuestions } from "@falcon/shared/interview/filter";
 
 import { interviewPrepAssignments, interviewQuestions, profiles } from "../db/schema.js";
-import {
-  ApiError,
-  errorResponse,
-  getCaller,
-  isStaffRole,
-  requireRole,
-} from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, isStaffRole, requireRole } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Env } from "../env.js";
 
@@ -125,10 +116,7 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     requireRole(caller, "instructor", "admin", "platform_admin");
     const profileId = c.req.param("profileId");
     const body = (await c.req.json()) as { categories?: unknown };
-    if (
-      !Array.isArray(body.categories) ||
-      !body.categories.every(isAssignableCategory)
-    ) {
+    if (!Array.isArray(body.categories) || !body.categories.every(isAssignableCategory)) {
       throw new ApiError(
         `categories は ${ASSIGNABLE_CATEGORIES.join(" / ")} の配列で指定してください`,
         400,

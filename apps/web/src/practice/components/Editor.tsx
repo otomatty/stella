@@ -40,40 +40,34 @@ export function Editor({
   readOnly = false,
 }: Props) {
   const { theme } = useTheme();
-  const eslintExtension = useMemo<Extension | null>(
-    () => {
-      if (language !== "javascript") {return null;}
-      const runLint = getLinter(language);
-      return linter((view) => {
-        const text = view.state.doc.toString();
-        const violations = runLint(text, eslintRules, {
-          ignoredUnusedNames: entryPoints,
-        });
-
-        return violations
-          .map((v): Diagnostic | null => {
-            const line = view.state.doc.line(
-              Math.min(Math.max(v.line, 1), view.state.doc.lines),
-            );
-            const from = Math.min(
-              line.from + Math.max(0, v.column - 1),
-              line.to,
-            );
-            const to = Math.min(from + 1, line.to);
-
-            return {
-              from,
-              to,
-              severity: v.severity === 2 ? "error" : "warning",
-              message: v.message,
-              source: v.ruleId ?? undefined,
-            };
-          })
-          .filter((d): d is Diagnostic => d !== null);
+  const eslintExtension = useMemo<Extension | null>(() => {
+    if (language !== "javascript") {
+      return null;
+    }
+    const runLint = getLinter(language);
+    return linter((view) => {
+      const text = view.state.doc.toString();
+      const violations = runLint(text, eslintRules, {
+        ignoredUnusedNames: entryPoints,
       });
-    },
-    [entryPoints, eslintRules, language],
-  );
+
+      return violations
+        .map((v): Diagnostic | null => {
+          const line = view.state.doc.line(Math.min(Math.max(v.line, 1), view.state.doc.lines));
+          const from = Math.min(line.from + Math.max(0, v.column - 1), line.to);
+          const to = Math.min(from + 1, line.to);
+
+          return {
+            from,
+            to,
+            severity: v.severity === 2 ? "error" : "warning",
+            message: v.message,
+            source: v.ruleId ?? undefined,
+          };
+        })
+        .filter((d): d is Diagnostic => d !== null);
+    });
+  }, [entryPoints, eslintRules, language]);
 
   const [sqlExtension, setSqlExtension] = useState<Extension | null>(null);
   useEffect(() => {
@@ -83,7 +77,9 @@ export function Editor({
     }
     let cancelled = false;
     void import("@codemirror/lang-sql").then((mod) => {
-      if (!cancelled) {setSqlExtension(mod.sql());}
+      if (!cancelled) {
+        setSqlExtension(mod.sql());
+      }
     });
     return () => {
       cancelled = true;

@@ -50,7 +50,11 @@ export function FilesForm({
     [eslintRulesJson],
   );
   const epList = useMemo(
-    () => entryPoints.split(",").map((s) => s.trim()).filter(Boolean),
+    () =>
+      entryPoints
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
     [entryPoints],
   );
   return (
@@ -60,10 +64,15 @@ export function FilesForm({
           <Plus size={13} />
           ファイル追加
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => {
-          const next = prompt("新しいファイル名", current.path);
-          if (next) onRename(current.path, next);
-        }}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            const next = prompt("新しいファイル名", current.path);
+            if (next) onRename(current.path, next);
+          }}
+        >
           リネーム
         </Button>
         <Button

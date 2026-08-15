@@ -15,20 +15,14 @@ import {
   type QuickJSWASMModule,
 } from "quickjs-emscripten-core";
 
-import type {
-  TestCase,
-  TestKind,
-  TestResult,
-} from "@falcon/shared/types";
+import type { TestCase, TestKind, TestResult } from "@falcon/shared/types";
 
 export const MEMORY_LIMIT_MB = 32;
 export const PER_TEST_WALL_TIMEOUT_MS = 3000;
 
 /** WASM モジュールはタブのライフタイムで初回だけロードする (動的 import で code-split) */
 export const getQuickJSModule = memoizePromiseFactory(() =>
-  newQuickJSWASMModuleFromVariant(
-    import("@jitl/quickjs-singlefile-browser-release-sync"),
-  ),
+  newQuickJSWASMModuleFromVariant(import("@jitl/quickjs-singlefile-browser-release-sync")),
 );
 
 export class QuickJsRunner {
@@ -58,10 +52,7 @@ export class QuickJsRunner {
     };
   }
 
-  private runStdoutTestBatch(
-    code: string,
-    tests: TestCase[],
-  ): TestResult[] {
+  private runStdoutTestBatch(code: string, tests: TestCase[]): TestResult[] {
     let captured: { stdout: string; error?: string } | null = null;
     const results: TestResult[] = [];
     for (const test of tests) {
@@ -135,8 +126,7 @@ export class QuickJsRunner {
         return {
           name: test.name,
           passed: false,
-          error:
-            "INVALID_TEST_KIND: mutation tests must be routed to vitest-runner",
+          error: "INVALID_TEST_KIND: mutation tests must be routed to vitest-runner",
         };
       case "eslint-config":
         // eslint-config testKind は eslint-config-runner が browser ESLint Linter で
@@ -144,8 +134,7 @@ export class QuickJsRunner {
         return {
           name: test.name,
           passed: false,
-          error:
-            "INVALID_TEST_KIND: eslint-config tests must be routed to eslint-config-runner",
+          error: "INVALID_TEST_KIND: eslint-config tests must be routed to eslint-config-runner",
         };
       default: {
         const exhaustive: never = options.testKind;
@@ -154,10 +143,7 @@ export class QuickJsRunner {
     }
   }
 
-  private runStdoutTest(
-    code: string,
-    test: TestCase,
-  ): TestResult {
+  private runStdoutTest(code: string, test: TestCase): TestResult {
     if (test.expectedStdout === undefined) {
       return {
         name: test.name,
@@ -169,9 +155,7 @@ export class QuickJsRunner {
     return this.buildStdoutTestResult(test, captured);
   }
 
-  private executeAndCaptureStdout(
-    code: string,
-  ): { stdout: string; error?: string } {
+  private executeAndCaptureStdout(code: string): { stdout: string; error?: string } {
     const stdout: string[] = [];
     const wallDeadline = Date.now() + PER_TEST_WALL_TIMEOUT_MS;
 
@@ -190,7 +174,7 @@ export class QuickJsRunner {
         try {
           const wrapped = `${consoleHookSource()}\n;(async () => {\n${code}\n})();\n`;
 
-          let evalResult;
+          let evalResult: ReturnType<QuickJSContext["evalCode"]>;
           try {
             evalResult = context.evalCode(wrapped, "user.js");
           } catch (e) {
@@ -211,12 +195,7 @@ export class QuickJsRunner {
           }
 
           try {
-            const drained = drainToFulfillment(
-              context,
-              runtime,
-              handle,
-              wallDeadline,
-            );
+            const drained = drainToFulfillment(context, runtime, handle, wallDeadline);
             if (!drained.ok) {
               return {
                 stdout: normalizeStdout(stdout.join("\n")),
@@ -244,11 +223,7 @@ export class QuickJsRunner {
     }
   }
 
-  private runFunctionTest(
-    code: string,
-    test: TestCase,
-    entryPoints: string[],
-  ): TestResult {
+  private runFunctionTest(code: string, test: TestCase, entryPoints: string[]): TestResult {
     if (!("code" in test)) {
       return {
         name: test.name,
@@ -273,9 +248,7 @@ export class QuickJsRunner {
         // `with` は strict mode で SyntaxError。 学習者コードが "use strict" を含む
         // (or class / module 構文を使う) と全体が strict 扱いになり採点不能になるため、
         // 各エントリ識別子を明示的に const 束縛するスタイルに切り替える。
-        const bindingDecls = entryPoints
-          .map((n) => `const ${n} = __s.${n};`)
-          .join("\n");
+        const bindingDecls = entryPoints.map((n) => `const ${n} = __s.${n};`).join("\n");
 
         const source = `
         ${code}
@@ -287,7 +260,7 @@ export class QuickJsRunner {
         })(__jsreview_scope__);
       `;
 
-        let evalResult;
+        let evalResult: ReturnType<QuickJSContext["evalCode"]>;
         try {
           evalResult = context.evalCode(source, "fn-test.js");
         } catch (e) {
@@ -310,12 +283,7 @@ export class QuickJsRunner {
         }
 
         try {
-          const drained = drainToFulfillment(
-            context,
-            runtime,
-            handle,
-            wallDeadline,
-          );
+          const drained = drainToFulfillment(context, runtime, handle, wallDeadline);
           if (!drained.ok) {
             return {
               name: test.name,
@@ -349,9 +317,7 @@ function drainToFulfillment(
   runtime: QuickJSRuntime,
   handle: QuickJSHandle,
   wallDeadline: number,
-):
-  | { ok: true; value: QuickJSHandle }
-  | { ok: false; error: string } {
+): { ok: true; value: QuickJSHandle } | { ok: false; error: string } {
   for (;;) {
     if (Date.now() >= wallDeadline) {
       return { ok: false, error: "TIMEOUT" };
@@ -394,10 +360,7 @@ function drainToFulfillment(
   }
 }
 
-function errorHandleToMessage(
-  context: QuickJSContext,
-  errHandle: QuickJSHandle,
-): string {
+function errorHandleToMessage(context: QuickJSContext, errHandle: QuickJSHandle): string {
   try {
     const dumped: unknown = context.dump(errHandle);
     if (typeof dumped === "object" && dumped !== null && "message" in dumped) {

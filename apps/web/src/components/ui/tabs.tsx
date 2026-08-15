@@ -1,6 +1,6 @@
-import * as React from 'react';
-import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { cn } from "@/lib/utils";
 
 export const Tabs = TabsPrimitive.Root;
 
@@ -10,18 +10,13 @@ export const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn(
-      'inline-flex items-center gap-1 border-b border-border -mb-px',
-      className,
-    )}
+    className={cn("inline-flex items-center gap-1 border-b border-border -mb-px", className)}
     {...props}
   />
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
-type TabsTriggerProps = React.ComponentPropsWithoutRef<
-  typeof TabsPrimitive.Trigger
-> & {
+type TabsTriggerProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
   /** 先頭に置くアイコン。サイズ指定は不要（14px に揃う）。 */
   icon?: React.ReactNode;
   /** 末尾の件数バッジ。undefined ならバッジごと出さない（ロード中に使う）。 */
@@ -35,17 +30,17 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'group relative inline-flex items-center gap-1.5 px-3.5 py-2',
-      'text-[13px] font-medium text-ink-3 rounded-t-sm transition-colors',
-      '[&_svg]:size-3.5 [&_svg]:shrink-0',
-      'hover:bg-sunken hover:text-ink',
-      'data-[state=active]:text-sf-magenta data-[state=active]:font-bold',
+      "group relative inline-flex items-center gap-1.5 px-3.5 py-2",
+      "text-[13px] font-medium text-ink-3 rounded-t-sm transition-colors",
+      "[&_svg]:size-3.5 [&_svg]:shrink-0",
+      "hover:bg-sunken hover:text-ink",
+      "data-[state=active]:text-sf-magenta data-[state=active]:font-bold",
       // アクティブ下線 (Sports Force グラデーション)。list の border-b に重ねるので -bottom-px。
-      'after:absolute after:inset-x-0 after:-bottom-px after:h-[2.5px] after:rounded-full',
-      'after:[background:var(--sf-gradient)] after:origin-left after:scale-x-0',
-      'after:transition-transform after:duration-200 data-[state=active]:after:scale-x-100',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-      'disabled:pointer-events-none disabled:opacity-50',
+      "after:absolute after:inset-x-0 after:-bottom-px after:h-[2.5px] after:rounded-full",
+      "after:[background:var(--sf-gradient)] after:origin-left after:scale-x-0",
+      "after:transition-transform after:duration-200 data-[state=active]:after:scale-x-100",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      "disabled:pointer-events-none disabled:opacity-50",
       className,
     )}
     {...props}
@@ -55,9 +50,9 @@ export const TabsTrigger = React.forwardRef<
     {count === undefined ? null : (
       <span
         className={cn(
-          'ml-0.5 rounded-full bg-muted px-1.5 text-[11px] font-medium text-ink-2',
-          'transition-colors',
-          'group-data-[state=active]:bg-sf-magenta-soft group-data-[state=active]:text-sf-magenta-ink',
+          "ml-0.5 rounded-full bg-muted px-1.5 text-[11px] font-medium text-ink-2",
+          "transition-colors",
+          "group-data-[state=active]:bg-sf-magenta-soft group-data-[state=active]:text-sf-magenta-ink",
         )}
       >
         {count}
@@ -74,7 +69,7 @@ export const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      'mt-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm',
+      "mt-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
       className,
     )}
     {...props}

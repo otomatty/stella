@@ -14,12 +14,8 @@
     "m5-aggregate": "M5. 集計"
   },
   "exercises": {
-    "1-1": [
-      { "id": "S0-Sql-Ch00-04-select-columns", "title": "演習: 列を選んで取り出す" }
-    ],
-    "2-1": [
-      { "id": "S0-Sql-Ch00-05-where-only", "title": "演習: WHERE で行を絞り込む" }
-    ],
+    "1-1": [{ "id": "S0-Sql-Ch00-04-select-columns", "title": "演習: 列を選んで取り出す" }],
+    "2-1": [{ "id": "S0-Sql-Ch00-05-where-only", "title": "演習: WHERE で行を絞り込む" }],
     "3-1": [
       { "id": "S0-Sql-Ch00-01-select-hello", "title": "演習: 昇順で取り出す" },
       { "id": "S0-Sql-Ch00-02-where-filter", "title": "演習: 絞り込んで並べ替える" },

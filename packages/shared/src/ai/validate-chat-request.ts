@@ -34,8 +34,7 @@ export function validateChatRequest(raw: unknown): ValidateResult {
   }
   const context = contextResult.value;
 
-  const assignmentIdValue =
-    typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
+  const assignmentIdValue = typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
   const needsAssignmentId = context?.kind === "practice";
   if (needsAssignmentId && assignmentIdValue.length === 0) {
     return {
@@ -111,9 +110,7 @@ export function validateChatRequest(raw: unknown): ValidateResult {
 
 function validateContext(
   raw: unknown,
-):
-  | { ok: true; value: ChatContext | undefined }
-  | { ok: false; status: 400; message: string } {
+): { ok: true; value: ChatContext | undefined } | { ok: false; status: 400; message: string } {
   if (raw === undefined || raw === null) {
     return { ok: true, value: undefined };
   }
@@ -154,10 +151,7 @@ function validateContext(
         summary?: unknown;
         userCode?: unknown;
       };
-      if (
-        typeof cp.assignmentId !== "string" ||
-        cp.assignmentId.trim().length === 0
-      ) {
+      if (typeof cp.assignmentId !== "string" || cp.assignmentId.trim().length === 0) {
         return {
           ok: false,
           status: 400,

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { XCircle } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { PageSkeleton } from '@/components/ui/skeleton';
-import { completeAuthFromCallbackHash } from '@/lib/auth';
-import { POST_LOGIN_REDIRECT_KEY } from '@/components/shell/AppShell';
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { XCircle } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/ui/skeleton";
+import { completeAuthFromCallbackHash } from "@/lib/auth";
+import { POST_LOGIN_REDIRECT_KEY } from "@/components/shell/AppShell";
 
 export function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
@@ -16,8 +16,7 @@ export function AuthCallback() {
       // 相対パスのみ許可 ('//' はプロトコル相対 URL になるため除外)。
       const saved = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
       sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-      const dest =
-        saved && saved.startsWith('/') && !saved.startsWith('//') ? saved : '/';
+      const dest = saved?.startsWith("/") && !saved.startsWith("//") ? saved : "/";
       window.location.replace(dest);
       return;
     }
@@ -38,14 +37,11 @@ export function AuthCallback() {
               type="button"
               variant="accent"
               size="full"
-              onClick={() => window.location.replace('/')}
+              onClick={() => window.location.replace("/")}
             >
               もう一度ログイン
             </Button>
-            <a
-              href="/support"
-              className="text-[12px] text-brand underline underline-offset-2"
-            >
+            <a href="/support" className="text-[12px] text-brand underline underline-offset-2">
               解決しない場合はサポートへ
             </a>
           </div>

@@ -36,9 +36,7 @@ function renderGradeResults(result: ExecutionResult): string {
       return `<li>${mark} ${escapeHtml(test.name)}${err}</li>`;
     })
     .join("");
-  const extra = result.errorMessage
-    ? `<p>${escapeHtml(result.errorMessage)}</p>`
-    : "";
+  const extra = result.errorMessage ? `<p>${escapeHtml(result.errorMessage)}</p>` : "";
   return [
     `<h2>採点結果</h2>`,
     `<p><strong>${status}</strong></p>`,
@@ -125,4 +123,3 @@ export function openExercisePanel(input: ExercisePanelInput): void {
 
   currentPanel.webview.html = html;
 }
-

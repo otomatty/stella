@@ -10,19 +10,13 @@ import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
 import { apiFetch } from "./api-client";
 
 /** 受講者本人の enrollment 一覧 (登録日昇順)。 userId はサーバが caller から解決する。 */
-export async function listEnrollmentsForUser(
-  _userId: string,
-): Promise<EnrollmentRow[]> {
-  const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>(
-    "/api/enrollments/mine",
-  );
+export async function listEnrollmentsForUser(_userId: string): Promise<EnrollmentRow[]> {
+  const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>("/api/enrollments/mine");
   return rows ?? [];
 }
 
 /** staff 向け: あるコースに割り当てられている受講者の enrollment 一覧。 */
-export async function listEnrollmentsForCourse(
-  courseId: string,
-): Promise<EnrollmentRow[]> {
+export async function listEnrollmentsForCourse(courseId: string): Promise<EnrollmentRow[]> {
   const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>(
     `/api/enrollments?courseId=${encodeURIComponent(courseId)}`,
   );
@@ -42,9 +36,7 @@ export interface AssignEnrollmentInput {
  * 受講者にコースを割り当てる (既存があれば期限/必須/割当者を更新)。
  * tenant_id / assigned_by はサーバが caller から決めるため送らない。
  */
-export async function assignEnrollment(
-  input: AssignEnrollmentInput,
-): Promise<EnrollmentRow> {
+export async function assignEnrollment(input: AssignEnrollmentInput): Promise<EnrollmentRow> {
   const { row } = await apiFetch<{ row: EnrollmentRow }>("/api/enrollments", {
     method: "POST",
     body: {
@@ -66,10 +58,7 @@ export interface UpdateEnrollmentPatch {
 }
 
 /** 既存 enrollment の期限 / 必須 / ステータスを更新する。 */
-export async function updateEnrollment(
-  id: string,
-  patch: UpdateEnrollmentPatch,
-): Promise<void> {
+export async function updateEnrollment(id: string, patch: UpdateEnrollmentPatch): Promise<void> {
   await apiFetch(`/api/enrollments/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: patch,

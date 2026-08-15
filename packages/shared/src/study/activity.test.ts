@@ -9,11 +9,7 @@ import {
   type StudyActivityDay,
 } from "./activity.js";
 
-function day(
-  date: string,
-  watched_sec = 60,
-  completed_lessons = 0,
-): StudyActivityDay {
+function day(date: string, watched_sec = 60, completed_lessons = 0): StudyActivityDay {
   return { date, watched_sec, completed_lessons };
 }
 
@@ -61,11 +57,7 @@ describe("studyDateWeekday", () => {
 describe("buildStudySeries", () => {
   it("末尾が endDate の昇順・指定日数の系列になる", () => {
     const series = buildStudySeries([], "2026-08-07", 3);
-    expect(series.map((d) => d.date)).toEqual([
-      "2026-08-05",
-      "2026-08-06",
-      "2026-08-07",
-    ]);
+    expect(series.map((d) => d.date)).toEqual(["2026-08-05", "2026-08-06", "2026-08-07"]);
   });
 
   it("欠損日を 0 で埋める", () => {
@@ -111,11 +103,7 @@ describe("computeStreaks", () => {
   });
 
   it("学習量 0 の日は連続を切る", () => {
-    const rows = [
-      day("2026-08-05"),
-      day("2026-08-06", 0, 0),
-      day("2026-08-07"),
-    ];
+    const rows = [day("2026-08-05"), day("2026-08-06", 0, 0), day("2026-08-07")];
     expect(computeStreaks(rows, "2026-08-07")).toEqual({ current: 1, longest: 1 });
   });
 

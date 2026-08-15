@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useAppShell } from '@/components/shell/app-shell-context';
-import { SettingsPage } from '@/components/shell/SettingsPage';
+import { createFileRoute } from "@tanstack/react-router";
+import { useAppShell } from "@/components/shell/app-shell-context";
+import { SettingsPage } from "@/components/shell/SettingsPage";
 
-export const Route = createFileRoute('/_app/settings')({
+export const Route = createFileRoute("/_app/settings")({
   component: Settings,
 });
 

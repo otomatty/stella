@@ -10,7 +10,10 @@ const sqlJsEntry = require.resolve("sql.js", {
   paths: [path.resolve(here, "../../packages/code-runner")],
 });
 mkdirSync("dist", { recursive: true });
-copyFileSync(path.join(path.dirname(sqlJsEntry), "sql-wasm.wasm"), path.join("dist", "sql-wasm.wasm"));
+copyFileSync(
+  path.join(path.dirname(sqlJsEntry), "sql-wasm.wasm"),
+  path.join("dist", "sql-wasm.wasm"),
+);
 
 const processShim = "var process = globalThis.process || { env: { NODE_ENV: 'production' } };";
 

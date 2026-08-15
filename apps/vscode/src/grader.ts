@@ -76,4 +76,3 @@ export async function gradeActiveExercise(): Promise<ExecutionResult> {
   const files = await readExerciseFiles(rootUri);
   return gradeFiles({ assignment, files });
 }
-

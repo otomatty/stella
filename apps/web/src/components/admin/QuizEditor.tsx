@@ -128,9 +128,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
           })),
         );
         setLoadedQuestionIds(data.questions.map((q) => q.id));
-        setLoadedOptionIds(
-          data.questions.flatMap((q) => q.options.map((o) => o.id)),
-        );
+        setLoadedOptionIds(data.questions.flatMap((q) => q.options.map((o) => o.id)));
       } catch (err) {
         if (!cancelled) {
           console.error("[QuizEditor] load failed", err);
@@ -146,9 +144,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
   }, [lessonId]);
 
   const updateQuestion = (key: string, patch: Partial<DraftQuestion>) => {
-    setQuestions((qs) =>
-      qs.map((q) => (q.key === key ? { ...q, ...patch } : q)),
-    );
+    setQuestions((qs) => qs.map((q) => (q.key === key ? { ...q, ...patch } : q)));
   };
 
   const changeKind = (key: string, kind: QuestionKind) => {
@@ -198,9 +194,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
         q.key === qKey
           ? {
               ...q,
-              options: q.options.map((o) =>
-                o.key === oKey ? { ...o, label } : o,
-              ),
+              options: q.options.map((o) => (o.key === oKey ? { ...o, label } : o)),
             }
           : q,
       ),
@@ -209,25 +203,20 @@ export function QuizEditor({ lessonId, onClose }: Props) {
 
   const addOption = (qKey: string) => {
     setQuestions((qs) =>
-      qs.map((q) =>
-        q.key === qKey ? { ...q, options: [...q.options, newOption()] } : q,
-      ),
+      qs.map((q) => (q.key === qKey ? { ...q, options: [...q.options, newOption()] } : q)),
     );
   };
 
   const removeOption = (qKey: string, oKey: string) => {
     setQuestions((qs) =>
       qs.map((q) =>
-        q.key === qKey
-          ? { ...q, options: q.options.filter((o) => o.key !== oKey) }
-          : q,
+        q.key === qKey ? { ...q, options: q.options.filter((o) => o.key !== oKey) } : q,
       ),
     );
   };
 
   const addQuestion = () => setQuestions((qs) => [...qs, newQuestion()]);
-  const removeQuestion = (key: string) =>
-    setQuestions((qs) => qs.filter((q) => q.key !== key));
+  const removeQuestion = (key: string) => setQuestions((qs) => qs.filter((q) => q.key !== key));
 
   const validate = (): string | null => {
     if (Number.isNaN(passScore) || passScore < 0 || passScore > 100)
@@ -238,13 +227,10 @@ export function QuizEditor({ lessonId, onClose }: Props) {
       if (Number.isNaN(q.points) || q.points < 0)
         return `問題 ${i + 1}: 配点は 0 以上の数値を入力してください`;
       if (!q.prompt.trim()) return `問題 ${i + 1}: 設問文を入力してください`;
-      if (q.options.length < 2)
-        return `問題 ${i + 1}: 選択肢を 2 つ以上にしてください`;
-      if (q.options.some((o) => !o.label.trim()))
-        return `問題 ${i + 1}: 空の選択肢があります`;
+      if (q.options.length < 2) return `問題 ${i + 1}: 選択肢を 2 つ以上にしてください`;
+      if (q.options.some((o) => !o.label.trim())) return `問題 ${i + 1}: 空の選択肢があります`;
       const correctCount = q.options.filter((o) => o.is_correct).length;
-      if (correctCount === 0)
-        return `問題 ${i + 1}: 正解を 1 つ以上指定してください`;
+      if (correctCount === 0) return `問題 ${i + 1}: 正解を 1 つ以上指定してください`;
       if (q.kind !== "multiple" && correctCount > 1)
         return `問題 ${i + 1}: この種別では正解は 1 つだけです`;
     }
@@ -281,9 +267,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
         ...loadedQuestionIds
           .filter((id) => !keptQuestionIds.has(id))
           .map((id) => deleteQuizQuestion(id)),
-        ...loadedOptionIds
-          .filter((id) => !keptOptionIds.has(id))
-          .map((id) => deleteQuizOption(id)),
+        ...loadedOptionIds.filter((id) => !keptOptionIds.has(id)).map((id) => deleteQuizOption(id)),
       ]);
 
       // 設問 → 選択肢を順次 upsert (新規設問の id を得てから選択肢を作る)
@@ -314,9 +298,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
       onClose();
     } catch (e) {
       console.error("[QuizEditor] save failed", e);
-      toast.error(
-        e instanceof Error ? `保存に失敗: ${e.message}` : "保存に失敗しました",
-      );
+      toast.error(e instanceof Error ? `保存に失敗: ${e.message}` : "保存に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -371,14 +353,10 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                 className="rounded-md border border-border-2 bg-card p-4 flex flex-col gap-3"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold text-ink-3">
-                    問題 {i + 1}
-                  </span>
+                  <span className="text-[12px] font-semibold text-ink-3">問題 {i + 1}</span>
                   <select
                     value={q.kind}
-                    onChange={(e) =>
-                      changeKind(q.key, e.target.value as QuestionKind)
-                    }
+                    onChange={(e) => changeKind(q.key, e.target.value as QuestionKind)}
                     className="h-8 rounded-sm border border-border-2 bg-card px-2 text-[13px]"
                   >
                     {KIND_OPTIONS.map((k) => (
@@ -388,10 +366,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                     ))}
                   </select>
                   <div className="flex items-center gap-1">
-                    <Label
-                      htmlFor={`q-points-${q.key}`}
-                      className="text-[11.5px] text-ink-3"
-                    >
+                    <Label htmlFor={`q-points-${q.key}`} className="text-[11.5px] text-ink-3">
                       配点
                     </Label>
                     <Input
@@ -399,9 +374,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                       type="number"
                       min={0}
                       value={q.points}
-                      onChange={(e) =>
-                        updateQuestion(q.key, { points: Number(e.target.value) })
-                      }
+                      onChange={(e) => updateQuestion(q.key, { points: Number(e.target.value) })}
                       className="w-16"
                     />
                   </div>
@@ -422,9 +395,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                     id={`q-prompt-${q.key}`}
                     rows={2}
                     value={q.prompt}
-                    onChange={(e) =>
-                      updateQuestion(q.key, { prompt: e.target.value })
-                    }
+                    onChange={(e) => updateQuestion(q.key, { prompt: e.target.value })}
                   />
                 </div>
 
@@ -446,9 +417,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                       />
                       <Input
                         value={o.label}
-                        onChange={(e) =>
-                          updateOption(q.key, o.key, e.target.value)
-                        }
+                        onChange={(e) => updateOption(q.key, o.key, e.target.value)}
                         placeholder="選択肢のテキスト"
                         className="flex-1"
                         disabled={q.kind === "boolean"}
@@ -478,27 +447,18 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                 </div>
 
                 <div>
-                  <Label htmlFor={`q-exp-${q.key}`}>
-                    解説 (任意・提出後に表示)
-                  </Label>
+                  <Label htmlFor={`q-exp-${q.key}`}>解説 (任意・提出後に表示)</Label>
                   <Textarea
                     id={`q-exp-${q.key}`}
                     rows={2}
                     value={q.explanation}
-                    onChange={(e) =>
-                      updateQuestion(q.key, { explanation: e.target.value })
-                    }
+                    onChange={(e) => updateQuestion(q.key, { explanation: e.target.value })}
                   />
                 </div>
               </div>
             ))}
 
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={addQuestion}
-              className="self-start"
-            >
+            <Button type="button" variant="ghost" onClick={addQuestion} className="self-start">
               <Plus size={14} /> 設問を追加
             </Button>
           </div>

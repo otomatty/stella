@@ -7,14 +7,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type {
-  InstructorOverview,
-  TenantAnalytics,
-} from "@falcon/shared/cms/types";
-import {
-  getInstructorOverview,
-  getTenantAnalytics,
-} from "@/lib/analytics-api";
+import type { InstructorOverview, TenantAnalytics } from "@falcon/shared/cms/types";
+import { getInstructorOverview, getTenantAnalytics } from "@/lib/analytics-api";
 
 interface UseTenantAnalyticsResult {
   analytics: TenantAnalytics | null;

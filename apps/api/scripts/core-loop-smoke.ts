@@ -161,7 +161,10 @@ async function main(): Promise<void> {
   await step("API が応答し JWT が設定済み", async () => {
     const health = await ok("GET", "/api/healthz");
     assert(health.ok === true, `healthz が ok:true でない: ${JSON.stringify(health)}`);
-    assert(health.jwtConfigured === true, "AUTH_JWT_SECRET が API 側で未設定 (jwtConfigured:false)");
+    assert(
+      health.jwtConfigured === true,
+      "AUTH_JWT_SECRET が API 側で未設定 (jwtConfigured:false)",
+    );
   });
 
   await step("未認証リクエストは 401", async () => {
@@ -383,7 +386,10 @@ async function main(): Promise<void> {
     assert(again.certificate.already_existed === true, "2 回目の発行が新規扱いになっている");
     assert(again.certificate.cert_code === certCode, "cert_code が発行ごとに変わっている");
     const verified = await ok("GET", `/api/certificates/verify/${certCode}`);
-    assert(verified.verification?.valid === true, `検証が valid でない: ${JSON.stringify(verified)}`);
+    assert(
+      verified.verification?.valid === true,
+      `検証が valid でない: ${JSON.stringify(verified)}`,
+    );
     assert(verified.verification.cert_code === certCode, "検証結果の cert_code が一致しない");
   });
 
@@ -422,6 +428,6 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
   console.error("\n✗ スモーク実行中に想定外のエラー:");
-  console.error(err instanceof Error ? err.stack ?? err.message : err);
+  console.error(err instanceof Error ? (err.stack ?? err.message) : err);
   process.exit(1);
 });

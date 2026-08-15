@@ -1,5 +1,5 @@
-import type { ComponentType } from 'react';
-import type { LucideProps } from 'lucide-react';
+import type { ComponentType } from "react";
+import type { LucideProps } from "lucide-react";
 import {
   Home,
   Book,
@@ -15,33 +15,33 @@ import {
   Code,
   GraduationCap,
   MessageCircle,
-} from '@/lib/icons';
-import { Brand } from '@/components/common/Brand';
-import { UserMenu } from '@/components/shell/UserMenu';
-import type { Role, User } from '@/data/types';
-import type { ProfileRole } from '@falcon/shared/cms/types';
-import { cn } from '@/lib/utils';
+} from "@/lib/icons";
+import { Brand } from "@/components/common/Brand";
+import { UserMenu } from "@/components/shell/UserMenu";
+import type { Role, User } from "@/data/types";
+import type { ProfileRole } from "@falcon/shared/cms/types";
+import { cn } from "@/lib/utils";
 
 type LucideIcon = ComponentType<LucideProps>;
 
 type NavId =
-  | 'dash'
-  | 'courses'
-  | 'connect-vscode'
-  | 'lesson'
-  | 'cert'
-  | 'interview-prep'
-  | 'review-queue'
-  | 'gradebook'
-  | 'students'
-  | 'users'
-  | 'enrollments'
-  | 'orgs'
-  | 'report'
-  | 'audit'
-  | 'assignments'
-  | 'settings'
-  | '__logout';
+  | "dash"
+  | "courses"
+  | "connect-vscode"
+  | "lesson"
+  | "cert"
+  | "interview-prep"
+  | "review-queue"
+  | "gradebook"
+  | "students"
+  | "users"
+  | "enrollments"
+  | "orgs"
+  | "report"
+  | "audit"
+  | "assignments"
+  | "settings"
+  | "__logout";
 
 interface NavItem {
   id: NavId;
@@ -52,45 +52,41 @@ interface NavItem {
 // バッジ件数はモック値を持たず、 App から実データ (counts prop) で渡す。
 const NAV: Record<Role, NavItem[]> = {
   learner: [
-    { id: 'dash', label: 'ダッシュボード', icon: Home },
-    { id: 'courses', label: 'コース一覧', icon: Book },
-    { id: 'connect-vscode', label: 'VS Code', icon: Code },
-    { id: 'lesson', label: '現在のレッスン', icon: Play },
-    { id: 'interview-prep', label: '面談対策', icon: MessageCircle },
-    { id: 'cert', label: '修了証', icon: Award },
+    { id: "dash", label: "ダッシュボード", icon: Home },
+    { id: "courses", label: "コース一覧", icon: Book },
+    { id: "connect-vscode", label: "VS Code", icon: Code },
+    { id: "lesson", label: "現在のレッスン", icon: Play },
+    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
+    { id: "cert", label: "修了証", icon: Award },
   ],
   instructor: [
-    { id: 'dash', label: 'ダッシュボード', icon: Home },
-    { id: 'review-queue', label: '添削待ち', icon: Edit },
-    { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
-    { id: 'students', label: '担当受講者', icon: Users },
-    { id: 'interview-prep', label: '面談対策', icon: MessageCircle },
-    { id: 'courses', label: 'コース', icon: Book },
+    { id: "dash", label: "ダッシュボード", icon: Home },
+    { id: "review-queue", label: "添削待ち", icon: Edit },
+    { id: "gradebook", label: "成績台帳", icon: GraduationCap },
+    { id: "students", label: "担当受講者", icon: Users },
+    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
+    { id: "courses", label: "コース", icon: Book },
   ],
   admin: [
-    { id: 'dash', label: 'KPIダッシュボード', icon: BarChart },
-    { id: 'courses', label: 'コース管理', icon: Book },
-    { id: 'assignments', label: '課題管理', icon: Code },
-    { id: 'enrollments', label: '受講登録', icon: ClipboardList },
-    { id: 'gradebook', label: '成績台帳', icon: GraduationCap },
-    { id: 'users', label: 'ユーザー管理', icon: Users },
-    { id: 'report', label: 'レポート', icon: FileText },
-    { id: 'audit', label: '監査ログ', icon: Shield },
+    { id: "dash", label: "KPIダッシュボード", icon: BarChart },
+    { id: "courses", label: "コース管理", icon: Book },
+    { id: "assignments", label: "課題管理", icon: Code },
+    { id: "enrollments", label: "受講登録", icon: ClipboardList },
+    { id: "gradebook", label: "成績台帳", icon: GraduationCap },
+    { id: "users", label: "ユーザー管理", icon: Users },
+    { id: "report", label: "レポート", icon: FileText },
+    { id: "audit", label: "監査ログ", icon: Shield },
   ],
 };
 
-const ORGS_NAV: NavItem = { id: 'orgs', label: '組織マスタ', icon: Building };
+const ORGS_NAV: NavItem = { id: "orgs", label: "組織マスタ", icon: Building };
 
-function navForRole(
-  role: Role,
-  profileRole?: ProfileRole,
-  previewingLearner?: boolean,
-): NavItem[] {
+function navForRole(role: Role, profileRole?: ProfileRole, previewingLearner?: boolean): NavItem[] {
   const items = previewingLearner
-    ? NAV[role].filter((item) => item.id !== 'connect-vscode')
+    ? NAV[role].filter((item) => item.id !== "connect-vscode")
     : NAV[role];
-  if (role !== 'admin' || profileRole !== 'platform_admin') return items;
-  const usersIdx = items.findIndex((item) => item.id === 'users');
+  if (role !== "admin" || profileRole !== "platform_admin") return items;
+  const usersIdx = items.findIndex((item) => item.id === "users");
   const insertAt = usersIdx >= 0 ? usersIdx + 1 : items.length;
   return [...items.slice(0, insertAt), ORGS_NAV, ...items.slice(insertAt)];
 }
@@ -137,7 +133,7 @@ export const Sidebar = ({
           key={link.id}
           icon={link.icon}
           label={link.label}
-          count={typeof count === 'number' && count > 0 ? count : undefined}
+          count={typeof count === "number" && count > 0 ? count : undefined}
           active={page === link.id}
           onClick={() => setPage(link.id)}
         />
@@ -148,8 +144,8 @@ export const Sidebar = ({
     <div className="mt-auto pt-2.5 border-t border-border">
       <UserMenu
         user={user}
-        onOpenSettings={() => setPage('settings')}
-        onLogout={() => setPage('__logout')}
+        onOpenSettings={() => setPage("settings")}
+        onLogout={() => setPage("__logout")}
         canSwitchToLearner={canSwitchToLearner}
         previewingLearner={previewingLearner}
         profileRole={profileRole}
@@ -173,20 +169,20 @@ const SidebarLink = ({ icon: Icon, label, count, active, onClick }: SidebarLinkP
     type="button"
     onClick={onClick}
     className={cn(
-      'flex items-center gap-2.5 px-3.5 py-2 rounded-full text-[13px] cursor-pointer select-none text-left',
-      'transition-colors',
+      "flex items-center gap-2.5 px-3.5 py-2 rounded-full text-[13px] cursor-pointer select-none text-left",
+      "transition-colors",
       active
-        ? 'bg-ink text-white font-bold'
-        : 'text-ink-2 font-medium hover:bg-sunken hover:text-foreground',
+        ? "bg-ink text-white font-bold"
+        : "text-ink-2 font-medium hover:bg-sunken hover:text-foreground",
     )}
   >
     <Icon size={15} className="shrink-0" />
     <span className="flex-1 truncate">{label}</span>
-    {typeof count === 'number' ? (
+    {typeof count === "number" ? (
       <span
         className={cn(
-          'ml-auto text-[11px] px-[7px] py-[1px] rounded-full font-bold',
-          active ? 'bg-white/20 text-white' : 'bg-muted text-ink-2',
+          "ml-auto text-[11px] px-[7px] py-[1px] rounded-full font-bold",
+          active ? "bg-white/20 text-white" : "bg-muted text-ink-2",
         )}
       >
         {count}

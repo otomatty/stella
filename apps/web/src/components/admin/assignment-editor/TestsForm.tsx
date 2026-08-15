@@ -85,7 +85,7 @@ export function TestsForm({ draft, update }: FormProps) {
       </div>
       {draft.tests.map((t, idx) => (
         <TestRow
-          key={idx}
+          key={t.name}
           index={idx}
           testKind={draft.testKind}
           value={t}
@@ -154,9 +154,7 @@ function TestRow({ index, testKind, value, onChange, onRemove }: TestRowProps) {
           className="font-mono text-[12.5px]"
         />
       ) : null}
-      {testKind === "sql" ? (
-        <SqlTestEditor value={value} onChange={onChange} />
-      ) : null}
+      {testKind === "sql" ? <SqlTestEditor value={value} onChange={onChange} /> : null}
     </div>
   );
 }
@@ -200,7 +198,10 @@ function SqlTestEditor({ value, onChange }: SqlTestEditorProps) {
       <Input
         value={(cols ?? []).join(", ")}
         onChange={(e) => {
-          const list = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+          const list = e.target.value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
           emit({ expectedColumns: list.length ? list : undefined });
         }}
         placeholder="期待する列名 (カンマ区切り、 任意)"

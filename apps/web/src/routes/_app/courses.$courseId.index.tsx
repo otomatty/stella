@@ -1,10 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useAppShell } from '@/components/shell/app-shell-context';
-import { CourseNotFoundNotice, EmptyCoursesNotice } from '@/components/shell/AppShell';
-import { RoleGuard } from '@/components/shell/RoleGuard';
-import { CourseDetail } from '@/components/learner/CourseDetail';
+import { createFileRoute } from "@tanstack/react-router";
+import { useAppShell } from "@/components/shell/app-shell-context";
+import { CourseNotFoundNotice, EmptyCoursesNotice } from "@/components/shell/AppShell";
+import { RoleGuard } from "@/components/shell/RoleGuard";
+import { CourseDetail } from "@/components/learner/CourseDetail";
 
-export const Route = createFileRoute('/_app/courses/$courseId/')({
+export const Route = createFileRoute("/_app/courses/$courseId/")({
   component: CourseDetailPage,
 });
 
@@ -13,7 +13,7 @@ function CourseDetailPage() {
   const { courseId } = Route.useParams();
   const target = s.courses.find((c) => c.id === courseId);
   return (
-    <RoleGuard allow={['learner']} page="course-detail">
+    <RoleGuard allow={["learner"]} page="course-detail">
       {target ? (
         <CourseDetail
           course={target}

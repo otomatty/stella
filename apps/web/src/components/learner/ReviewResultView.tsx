@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
-import type { Submission } from '@falcon/shared/review/types';
-import { ChevronLeft } from '@/lib/icons';
-import { Badge } from '@/components/ui/badge';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchSubmissionById } from '@/lib/submissions-api';
-import { formatSubmittedAt } from '@/lib/submissions-store';
-import { isBackendConfigured } from '@/lib/backend';
+import { useEffect, useState } from "react";
+import type { Submission } from "@falcon/shared/review/types";
+import { ChevronLeft } from "@/lib/icons";
+import { Badge } from "@/components/ui/badge";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchSubmissionById } from "@/lib/submissions-api";
+import { formatSubmittedAt } from "@/lib/submissions-store";
+import { isBackendConfigured } from "@/lib/backend";
 
 interface ReviewResultViewProps {
   submissionId: string;
@@ -16,23 +16,19 @@ interface ReviewResultViewProps {
 }
 
 const verdictMeta = {
-  pass: { label: '合格', variant: 'success' },
-  resubmit: { label: '再提出', variant: 'warning' },
-  fail: { label: '不合格', variant: 'danger' },
+  pass: { label: "合格", variant: "success" },
+  resubmit: { label: "再提出", variant: "warning" },
+  fail: { label: "不合格", variant: "danger" },
 } as const;
 
-export function ReviewResultView({
-  submissionId,
-  setPage,
-  initial = null,
-}: ReviewResultViewProps) {
+export function ReviewResultView({ submissionId, setPage, initial = null }: ReviewResultViewProps) {
   const [submission, setSubmission] = useState<Submission | null>(initial);
   const [loading, setLoading] = useState(!initial && isBackendConfigured());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isBackendConfigured()) {
-      setError('バックエンド未設定のため提出詳細を表示できません');
+      setError("バックエンド未設定のため提出詳細を表示できません");
       setLoading(false);
       return;
     }
@@ -48,7 +44,7 @@ export function ReviewResultView({
       .catch((err) => {
         if (cancelled) return;
         setSubmission(null);
-        setError(err instanceof Error ? err.message : '提出の取得に失敗しました');
+        setError(err instanceof Error ? err.message : "提出の取得に失敗しました");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -66,11 +62,11 @@ export function ReviewResultView({
   if (error || !submission) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center">
-        <p className="text-sm text-destructive mb-4">{error ?? '提出が見つかりません'}</p>
+        <p className="text-sm text-destructive mb-4">{error ?? "提出が見つかりません"}</p>
         <button
           type="button"
           className="text-[12.5px] text-brand underline underline-offset-2"
-          onClick={() => setPage('dash')}
+          onClick={() => setPage("dash")}
         >
           ダッシュボードに戻る
         </button>
@@ -85,7 +81,7 @@ export function ReviewResultView({
     <div className="max-w-5xl mx-auto">
       <button
         type="button"
-        onClick={() => setPage('dash')}
+        onClick={() => setPage("dash")}
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
@@ -96,7 +92,7 @@ export function ReviewResultView({
         <div>
           <h1 className="text-[24px] tracking-tight font-semibold">{submission.assignmentTitle}</h1>
           <p className="text-[12.5px] text-ink-3 mt-1">
-            {submission.courseTitle} · 提出 {formatSubmittedAt(submission.submittedAt)} ·{' '}
+            {submission.courseTitle} · 提出 {formatSubmittedAt(submission.submittedAt)} ·{" "}
             {submission.attempt}回目
           </p>
         </div>
@@ -108,7 +104,7 @@ export function ReviewResultView({
         )}
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
@@ -116,7 +112,7 @@ export function ReviewResultView({
             </CardHeader>
             <CardContent>
               <p className="text-[13px] leading-relaxed text-ink-2 whitespace-pre-wrap">
-                {submission.reviewNotes || '総評はまだありません。'}
+                {submission.reviewNotes || "総評はまだありません。"}
               </p>
             </CardContent>
           </Card>
@@ -181,11 +177,12 @@ export function ReviewResultView({
           </CardHeader>
           <pre className="overflow-auto p-4 bg-sunken text-[12px] leading-relaxed font-mono">
             {submission.codeLines.map((line, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
               <span key={index} className="block">
                 <span className="inline-block w-8 mr-3 text-right text-ink-4 select-none">
                   {index + 1}
                 </span>
-                {line || ' '}
+                {line || " "}
               </span>
             ))}
           </pre>

@@ -1,14 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useAppShell } from '@/components/shell/app-shell-context';
+import { createFileRoute } from "@tanstack/react-router";
+import { useAppShell } from "@/components/shell/app-shell-context";
 import {
   CourseNotFoundNotice,
   EmptyCoursesNotice,
   LessonNotFoundNotice,
-} from '@/components/shell/AppShell';
-import { RoleGuard } from '@/components/shell/RoleGuard';
-import { LessonPlayer } from '@/components/learner/LessonPlayer';
+} from "@/components/shell/AppShell";
+import { RoleGuard } from "@/components/shell/RoleGuard";
+import { LessonPlayer } from "@/components/learner/LessonPlayer";
 
-export const Route = createFileRoute('/_app/courses/$courseId/lessons/$lessonId')({
+export const Route = createFileRoute("/_app/courses/$courseId/lessons/$lessonId")({
   component: LessonPage,
 });
 
@@ -19,10 +19,9 @@ function LessonPage() {
   // lessonId がコースに無いまま LessonPlayer へ渡すと先頭レッスンへ差し替えられて
   // URL まで書き換わるため、 ここで解決して不在なら明示的に表示する。
   const lessonExists =
-    target?.sections?.some((sec) => sec.lessons.some((l) => l.id === lessonId)) ??
-    false;
+    target?.sections?.some((sec) => sec.lessons.some((l) => l.id === lessonId)) ?? false;
   return (
-    <RoleGuard allow={['learner']} page="lesson">
+    <RoleGuard allow={["learner"]} page="lesson">
       {target && !lessonExists ? (
         <LessonNotFoundNotice setPage={s.setPage} />
       ) : target ? (

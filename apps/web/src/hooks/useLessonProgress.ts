@@ -7,8 +7,8 @@
  * 両方とも内部で `useSyncExternalStore` を使い、 ストア更新時に自動再レンダする。
  */
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
-import { useLearnerPreviewReadOnly } from '@/components/shell/app-shell-context';
+import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 import {
   loadMap,
   subscribe,
@@ -20,7 +20,7 @@ import {
   markVisited as storeMarkVisited,
   type LessonProgressEntry,
   type LessonProgressMap,
-} from '@/lib/lesson-progress';
+} from "@/lib/lesson-progress";
 
 export function useLessonProgressMap(): LessonProgressMap {
   return useSyncExternalStore(subscribe, loadMap, loadMap);
@@ -97,8 +97,7 @@ export function useStudyTime(lessonId: string, enabled: boolean): void {
   useEffect(() => {
     if (!enabled || !ready || !lessonId || readOnly) return;
     let accumulated = getEntry(lessonId)?.watchedSec ?? 0;
-    let visibleSince =
-      document.visibilityState === 'visible' ? Date.now() : null;
+    let visibleSince = document.visibilityState === "visible" ? Date.now() : null;
 
     const flush = () => {
       if (visibleSince === null) return;
@@ -109,7 +108,7 @@ export function useStudyTime(lessonId: string, enabled: boolean): void {
       storeRecordWatchTime(lessonId, accumulated, 0);
     };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         visibleSince = Date.now();
       } else {
         flush();
@@ -118,10 +117,10 @@ export function useStudyTime(lessonId: string, enabled: boolean): void {
     };
 
     const timer = setInterval(flush, STUDY_TICK_MS);
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
       flush();
     };
   }, [lessonId, enabled, ready, readOnly]);

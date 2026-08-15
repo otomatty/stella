@@ -45,7 +45,11 @@ async function signState(secret: string, payloadB64: string): Promise<string> {
   return toBase64Url(new Uint8Array(sig));
 }
 
-async function verifyStateSignature(secret: string, payloadB64: string, sigB64: string): Promise<boolean> {
+async function verifyStateSignature(
+  secret: string,
+  payloadB64: string,
+  sigB64: string,
+): Promise<boolean> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -87,10 +91,7 @@ export function googleRedirectUri(requestUrl: string): string {
   return url.toString();
 }
 
-export async function createOAuthState(
-  secret: string,
-  returnTo: string,
-): Promise<string> {
+export async function createOAuthState(secret: string, returnTo: string): Promise<string> {
   const payload: OAuthStatePayload = {
     returnTo,
     nonce: crypto.randomUUID(),
@@ -122,11 +123,7 @@ export async function parseOAuthState(
   }
 }
 
-export function buildGoogleAuthUrl(
-  clientId: string,
-  redirectUri: string,
-  state: string,
-): string {
+export function buildGoogleAuthUrl(clientId: string, redirectUri: string, state: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,

@@ -8,37 +8,37 @@
 
 :root {
   /* Surface (surface-1 / surface-2 / surface-3) */
-  --bg: #F7F7F9;
-  --bg-raised: #FFFFFF;
-  --bg-sunken: #F7F7F9;
-  --bg-muted: #EFEFF2;
+  --bg: #f7f7f9;
+  --bg-raised: #ffffff;
+  --bg-sunken: #f7f7f9;
+  --bg-muted: #efeff2;
 
   /* Ink (ink-900 / ink-700 / ink-400 / ink-300 に対応) */
-  --ink: #0E0E10;
-  --ink-2: #33333A;
-  --ink-3: #8A8A93;
-  --ink-4: #B7B7BE;
+  --ink: #0e0e10;
+  --ink-2: #33333a;
+  --ink-3: #8a8a93;
+  --ink-4: #b7b7be;
 
   /* Line (ink-100 / ink-200 / ink-300) */
-  --line: #ECECEF;
-  --line-2: #DDDDE2;
-  --line-strong: #B7B7BE;
+  --line: #ececef;
+  --line-2: #dddde2;
+  --line-strong: #b7b7be;
 
   /* Brand — Sports Force magenta (ソロアクセント) */
-  --brand: #E62F9A;
-  --brand-hover: #B81E72;
+  --brand: #e62f9a;
+  --brand-hover: #b81e72;
   --brand-soft: rgba(230, 47, 154, 0.12);
-  --brand-ink: #B81E72;
+  --brand-ink: #b81e72;
 
   /* Status */
-  --success: #16A34A;
+  --success: #16a34a;
   --success-soft: rgba(22, 163, 74, 0.12);
-  --warning: #F59E0B;
+  --warning: #f59e0b;
   --warning-soft: rgba(245, 158, 11, 0.16);
-  --danger: #E5342B;
+  --danger: #e5342b;
   --danger-soft: rgba(229, 52, 43, 0.12);
-  --info: #2563EB;
-  --info-soft: rgba(37, 99, 235, 0.10);
+  --info: #2563eb;
+  --info-soft: rgba(37, 99, 235, 0.1);
 
   --radius-sm: 6px;
   --radius: 12px;
@@ -46,19 +46,26 @@
 
   --shadow-sm: 0 2px 8px rgba(14, 14, 16, 0.06);
   --shadow: 0 8px 24px rgba(14, 14, 16, 0.08);
-  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.10);
+  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.1);
 
   /* Sports Force / Tech&Boost ブランドトークン (デザインシステム tokens/colors.css より)。
      受講者画面のリブランド (レッスン視聴から順次適用) で使う。 */
-  --sf-blue:    #0A33FF;
-  --sf-violet:  #8330C7;
-  --sf-magenta: #E62F9A;
-  --sf-rose:    #FF2C61;
-  --sf-red:     #FF2E0D;
-  --sf-gradient: linear-gradient(90deg, #0A33FF 0%, #8330C7 34%, #E62F9A 58%, #FF2C61 78%, #FF2E0D 100%);
-  --sf-gradient-135: linear-gradient(135deg, #0A33FF 0%, #E62F9A 55%, #FF2E0D 100%);
+  --sf-blue: #0a33ff;
+  --sf-violet: #8330c7;
+  --sf-magenta: #e62f9a;
+  --sf-rose: #ff2c61;
+  --sf-red: #ff2e0d;
+  --sf-gradient: linear-gradient(
+    90deg,
+    #0a33ff 0%,
+    #8330c7 34%,
+    #e62f9a 58%,
+    #ff2c61 78%,
+    #ff2e0d 100%
+  );
+  --sf-gradient-135: linear-gradient(135deg, #0a33ff 0%, #e62f9a 55%, #ff2e0d 100%);
   --sf-magenta-soft: rgba(230, 47, 154, 0.12);
-  --sf-magenta-ink: #B81E72;
+  --sf-magenta-ink: #b81e72;
 
   /* トップバーとサイドバーのロゴ行を同じ高さにする */
   --shell-header-height: 57px;
@@ -141,7 +148,7 @@
   /* Shadows (DS effects.css — 柔らかい低コントラスト) */
   --shadow-sm: 0 2px 8px rgba(14, 14, 16, 0.06);
   --shadow-md: 0 8px 24px rgba(14, 14, 16, 0.08);
-  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.10);
+  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.1);
 }
 
 /* ============================================================
@@ -152,7 +159,8 @@
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html,
+  body {
     height: 100%;
   }
   body {
@@ -164,22 +172,38 @@
     letter-spacing: 0.02em; /* DS: JP は少し開けた方が読みやすい */
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4, h5 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
     margin: 0;
     font-weight: 700;
     letter-spacing: 0.01em;
   }
-  a { color: inherit; text-decoration: none; }
-  ::selection { background: rgba(230, 47, 154, 0.16); }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  ::selection {
+    background: rgba(230, 47, 154, 0.16);
+  }
 
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
   ::-webkit-scrollbar-thumb {
     background: var(--line-2);
     border-radius: 10px;
     border: 2px solid var(--bg);
   }
-  ::-webkit-scrollbar-thumb:hover { background: var(--line-strong); }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--line-strong);
+  }
 }
 
 /* ============================================================
@@ -203,44 +227,81 @@
   }
 
   /* Sidebar avatar color palette (c1..c6) */
-  .avatar-c1 { background: oklch(92% 0.04 265); color: oklch(35% 0.13 265); }
-  .avatar-c2 { background: oklch(92% 0.05 155); color: oklch(32% 0.1 155); }
-  .avatar-c3 { background: oklch(93% 0.05 40);  color: oklch(35% 0.12 40); }
-  .avatar-c4 { background: oklch(93% 0.05 330); color: oklch(35% 0.13 330); }
-  .avatar-c5 { background: oklch(93% 0.04 200); color: oklch(32% 0.12 200); }
-  .avatar-c6 { background: oklch(93% 0.05 90);  color: oklch(35% 0.11 90); }
+  .avatar-c1 {
+    background: oklch(92% 0.04 265);
+    color: oklch(35% 0.13 265);
+  }
+  .avatar-c2 {
+    background: oklch(92% 0.05 155);
+    color: oklch(32% 0.1 155);
+  }
+  .avatar-c3 {
+    background: oklch(93% 0.05 40);
+    color: oklch(35% 0.12 40);
+  }
+  .avatar-c4 {
+    background: oklch(93% 0.05 330);
+    color: oklch(35% 0.13 330);
+  }
+  .avatar-c5 {
+    background: oklch(93% 0.04 200);
+    color: oklch(32% 0.12 200);
+  }
+  .avatar-c6 {
+    background: oklch(93% 0.05 90);
+    color: oklch(35% 0.11 90);
+  }
 
   /* Course thumbnail placeholder stripes */
   .thumb-stripes {
-    background-image: repeating-linear-gradient(45deg,
-      oklch(96% 0.005 85) 0, oklch(96% 0.005 85) 8px,
-      oklch(93% 0.01 85) 8px, oklch(93% 0.01 85) 16px);
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(96% 0.005 85) 0,
+      oklch(96% 0.005 85) 8px,
+      oklch(93% 0.01 85) 8px,
+      oklch(93% 0.01 85) 16px
+    );
   }
   .thumb-stripes-indigo {
-    background-image: repeating-linear-gradient(45deg,
-      oklch(94% 0.04 265) 0, oklch(94% 0.04 265) 8px,
-      oklch(90% 0.05 265) 8px, oklch(90% 0.05 265) 16px);
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(94% 0.04 265) 0,
+      oklch(94% 0.04 265) 8px,
+      oklch(90% 0.05 265) 8px,
+      oklch(90% 0.05 265) 16px
+    );
   }
   .thumb-stripes-green {
-    background-image: repeating-linear-gradient(45deg,
-      oklch(95% 0.04 155) 0, oklch(95% 0.04 155) 8px,
-      oklch(91% 0.05 155) 8px, oklch(91% 0.05 155) 16px);
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(95% 0.04 155) 0,
+      oklch(95% 0.04 155) 8px,
+      oklch(91% 0.05 155) 8px,
+      oklch(91% 0.05 155) 16px
+    );
   }
   .thumb-stripes-amber {
-    background-image: repeating-linear-gradient(45deg,
-      oklch(95% 0.05 70) 0, oklch(95% 0.05 70) 8px,
-      oklch(91% 0.06 70) 8px, oklch(91% 0.06 70) 16px);
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(95% 0.05 70) 0,
+      oklch(95% 0.05 70) 8px,
+      oklch(91% 0.06 70) 8px,
+      oklch(91% 0.06 70) 16px
+    );
   }
   .thumb-stripes-slate {
-    background-image: repeating-linear-gradient(45deg,
-      oklch(94% 0.01 240) 0, oklch(94% 0.01 240) 8px,
-      oklch(89% 0.02 240) 8px, oklch(89% 0.02 240) 16px);
+    background-image: repeating-linear-gradient(
+      45deg,
+      oklch(94% 0.01 240) 0,
+      oklch(94% 0.01 240) 8px,
+      oklch(89% 0.02 240) 8px,
+      oklch(89% 0.02 240) 16px
+    );
   }
 
   /* Login art column grid background */
   .login-art-grid {
-    background-image:
-      linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
+    background-image: linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
       linear-gradient(to bottom, oklch(30% 0.01 260) 1px, transparent 1px);
     background-size: 48px 48px;
     opacity: 0.5;
@@ -249,15 +310,19 @@
 
   /* Video player placeholder */
   .video-placeholder-bg {
-    background-image:
-      radial-gradient(circle at 30% 40%, oklch(22% 0.02 260) 0, transparent 50%),
-      radial-gradient(circle at 70% 70%, oklch(18% 0.03 265) 0, transparent 50%),
-      #0a0a0b;
+    background-image: radial-gradient(circle at 30% 40%, oklch(22% 0.02 260) 0, transparent 50%),
+      radial-gradient(circle at 70% 70%, oklch(18% 0.03 265) 0, transparent 50%), #0a0a0b;
   }
 
   /* Prose (lesson body) — kept light so shadcn Card/Body spacing wins */
-  .prose-lms { font-size: 14.5px; line-height: 1.7; color: var(--ink); }
-  .prose-lms p { margin: 0 0 16px; }
+  .prose-lms {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .prose-lms p {
+    margin: 0 0 16px;
+  }
   .prose-lms h1 {
     font-size: 21px;
     line-height: 1.35;
@@ -265,10 +330,25 @@
     letter-spacing: -0.015em;
     font-weight: 600;
   }
-  .prose-lms h2 { font-size: 18px; margin: 28px 0 12px; letter-spacing: -0.01em; font-weight: 600; }
-  .prose-lms h3 { font-size: 15px; margin: 20px 0 8px; font-weight: 600; }
-  .prose-lms ul, .prose-lms ol { padding-left: 22px; margin: 0 0 16px; }
-  .prose-lms li { margin-bottom: 4px; }
+  .prose-lms h2 {
+    font-size: 18px;
+    margin: 28px 0 12px;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  .prose-lms h3 {
+    font-size: 15px;
+    margin: 20px 0 8px;
+    font-weight: 600;
+  }
+  .prose-lms ul,
+  .prose-lms ol {
+    padding-left: 22px;
+    margin: 0 0 16px;
+  }
+  .prose-lms li {
+    margin-bottom: 4px;
+  }
   .prose-lms code {
     font-family: var(--font-mono);
     font-size: 13px;
@@ -289,77 +369,158 @@
     line-height: 1.55;
     margin: 16px 0;
   }
-  .prose-lms pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+  .prose-lms pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
   /* グローバルの a は色も下線も持たないので、 教材本文のリンクだけリンクらしく見せる */
-  .prose-lms a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
-  .prose-lms a:hover { color: var(--brand-hover); }
+  .prose-lms a {
+    color: var(--brand);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-lms a:hover {
+    color: var(--brand-hover);
+  }
   .prose-lms blockquote {
     margin: 16px 0;
     padding: 2px 0 2px 14px;
     border-left: 3px solid var(--brand);
     color: var(--ink-2);
   }
-  .prose-lms blockquote > :last-child { margin-bottom: 0; }
+  .prose-lms blockquote > :last-child {
+    margin-bottom: 0;
+  }
   .prose-lms table {
     width: 100%;
     border-collapse: collapse;
     margin: 16px 0;
     font-size: 13.5px;
   }
-  .prose-lms th, .prose-lms td {
+  .prose-lms th,
+  .prose-lms td {
     border: 1px solid var(--line-2);
     padding: 6px 10px;
     text-align: left;
     vertical-align: top;
   }
-  .prose-lms th { background: var(--bg-sunken); font-weight: 600; }
+  .prose-lms th {
+    background: var(--bg-sunken);
+    font-weight: 600;
+  }
 
   /* Code viewer (instructor review) */
-  .code-viewer-bg { background: oklch(22% 0.01 260); color: oklch(92% 0.005 85); }
-  .code-viewer-hover:hover { background: oklch(25% 0.01 260); }
-  .code-viewer-commented { background: oklch(28% 0.04 70); }
-  .code-viewer-ln { color: oklch(55% 0.01 260); }
-  .code-viewer-ln-commented { color: oklch(85% 0.1 70); }
+  .code-viewer-bg {
+    background: oklch(22% 0.01 260);
+    color: oklch(92% 0.005 85);
+  }
+  .code-viewer-hover:hover {
+    background: oklch(25% 0.01 260);
+  }
+  .code-viewer-commented {
+    background: oklch(28% 0.04 70);
+  }
+  .code-viewer-ln {
+    color: oklch(55% 0.01 260);
+  }
+  .code-viewer-ln-commented {
+    color: oklch(85% 0.1 70);
+  }
   .code-comment-indicator {
     background: oklch(65% 0.14 70);
     color: #000;
   }
 
   /* Syntax tokens */
-  .tok-kw  { color: oklch(75% 0.14 310); }
-  .tok-str { color: oklch(80% 0.13 145); }
-  .tok-com { color: oklch(55% 0.02 260); font-style: italic; }
-  .tok-num { color: oklch(80% 0.13 45); }
-  .tok-fn  { color: oklch(80% 0.13 240); }
-  .tok-type { color: oklch(80% 0.13 200); }
+  .tok-kw {
+    color: oklch(75% 0.14 310);
+  }
+  .tok-str {
+    color: oklch(80% 0.13 145);
+  }
+  .tok-com {
+    color: oklch(55% 0.02 260);
+    font-style: italic;
+  }
+  .tok-num {
+    color: oklch(80% 0.13 45);
+  }
+  .tok-fn {
+    color: oklch(80% 0.13 240);
+  }
+  .tok-type {
+    color: oklch(80% 0.13 200);
+  }
 
   /* IDE */
-  .ide-bg     { background: oklch(22% 0.01 260); color: oklch(92% 0.005 85); }
-  .ide-tabs-bg { background: oklch(18% 0.01 260); }
-  .ide-output-bg { background: oklch(18% 0.01 260); color: oklch(85% 0.005 85); }
-  .ide-sep    { border-color: oklch(28% 0.01 260); }
-  .ide-muted  { color: oklch(55% 0.01 260); }
-  .ide-ok     { color: oklch(75% 0.13 145); }
-  .ide-fail   { color: oklch(70% 0.18 25); }
-  .ide-tab-inactive { color: oklch(65% 0.01 260); }
-  .ide-tab-active   { color: oklch(95% 0.005 85); }
+  .ide-bg {
+    background: oklch(22% 0.01 260);
+    color: oklch(92% 0.005 85);
+  }
+  .ide-tabs-bg {
+    background: oklch(18% 0.01 260);
+  }
+  .ide-output-bg {
+    background: oklch(18% 0.01 260);
+    color: oklch(85% 0.005 85);
+  }
+  .ide-sep {
+    border-color: oklch(28% 0.01 260);
+  }
+  .ide-muted {
+    color: oklch(55% 0.01 260);
+  }
+  .ide-ok {
+    color: oklch(75% 0.13 145);
+  }
+  .ide-fail {
+    color: oklch(70% 0.18 25);
+  }
+  .ide-tab-inactive {
+    color: oklch(65% 0.01 260);
+  }
+  .ide-tab-active {
+    color: oklch(95% 0.005 85);
+  }
 
   /* Animations */
-  .animate-spin-slow { animation: lms-spin 0.8s linear infinite; }
-  @keyframes lms-spin { to { transform: rotate(360deg); } }
+  .animate-spin-slow {
+    animation: lms-spin 0.8s linear infinite;
+  }
+  @keyframes lms-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
-  .animate-lms-pulse { animation: lms-pulse 2s ease-in-out infinite; }
+  .animate-lms-pulse {
+    animation: lms-pulse 2s ease-in-out infinite;
+  }
   @keyframes lms-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
-  .animate-slide-up { animation: lms-slide 0.2s ease; }
+  .animate-slide-up {
+    animation: lms-slide 0.2s ease;
+  }
   @keyframes lms-slide {
-    from { transform: translate(-50%, 10px); opacity: 0; }
+    from {
+      transform: translate(-50%, 10px);
+      opacity: 0;
+    }
   }
 
-  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /**
@@ -367,4 +528,7 @@
  * テーマは `.hljs` に自前の白地を敷いてくるので、 pre のカードに合わせて剥がす。
  * `@layer` の外に置くのは、 レイヤー付きの規則は素の CSS (github.css) に必ず負けるため。
  */
-.prose-lms pre code.hljs { background: none; padding: 0; }
+.prose-lms pre code.hljs {
+  background: none;
+  padding: 0;
+}

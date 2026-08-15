@@ -38,9 +38,7 @@ export async function* streamChat(
   const model = args.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
 
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  const signal = args.signal
-    ? AbortSignal.any([args.signal, timeoutSignal])
-    : timeoutSignal;
+  const signal = args.signal ? AbortSignal.any([args.signal, timeoutSignal]) : timeoutSignal;
 
   const stream = await client.messages.create(
     {
@@ -59,10 +57,7 @@ export async function* streamChat(
       const msg = maybeError.error?.message ?? "Anthropic stream error";
       throw new Error(msg);
     }
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       yield { type: "text", delta: event.delta.text };
     } else if (event.type === "message_stop") {
       yield { type: "done" };

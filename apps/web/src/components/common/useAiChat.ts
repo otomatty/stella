@@ -12,11 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type {
-  ChatContext,
-  ChatMessage,
-  ChatRequest,
-} from "@falcon/shared/ai/types";
+import type { ChatContext, ChatMessage, ChatRequest } from "@falcon/shared/ai/types";
 
 import { streamChat } from "./api";
 import { loadHistory, saveHistory } from "./chat-store";
@@ -42,9 +38,7 @@ interface UseAiChatApi {
 }
 
 export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi {
-  const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    loadHistory(storageKey),
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadHistory(storageKey));
   const [draftAssistant, setDraftAssistant] = useState<string>("");
   const [streaming, setStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +50,9 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
 
   // storageKey が変わったら状態を入れ替える。
   useEffect(() => {
-    if (activeKeyRef.current === storageKey) {return;}
+    if (activeKeyRef.current === storageKey) {
+      return;
+    }
     abortRef.current?.abort();
     abortRef.current = null;
     bootstrappedRef.current = false;
@@ -98,8 +94,7 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
       // activeKeyRef が別の context にすり替わっていれば旧 context の応答を
       // 新しい履歴に書き込まない (Codex P2 指摘の stale stream commit ガード)。
       const streamKey = storageKey;
-      const isStale = () =>
-        controller !== abortRef.current || activeKeyRef.current !== streamKey;
+      const isStale = () => controller !== abortRef.current || activeKeyRef.current !== streamKey;
 
       setError(null);
       setDraftAssistant("");
@@ -120,8 +115,12 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
         const iter = streamChat(body, { signal: controller.signal });
 
         for await (const event of iter) {
-          if (controller.signal.aborted) {break;}
-          if (isStale()) {break;}
+          if (controller.signal.aborted) {
+            break;
+          }
+          if (isStale()) {
+            break;
+          }
           if (event.type === "text") {
             accumulated += event.delta;
             setDraftAssistant(accumulated);
@@ -180,7 +179,9 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
   const send = useCallback(
     (text: string) => {
       const trimmed = text.trim();
-      if (trimmed.length === 0 || streaming) {return;}
+      if (trimmed.length === 0 || streaming) {
+        return;
+      }
       const nextMessages: ChatMessage[] = [
         ...messages,
         { role: "user", content: trimmed, ts: Date.now() },
@@ -194,14 +195,18 @@ export function useAiChat({ storageKey, context }: UseAiChatArgs): UseAiChatApi 
 
   const bootstrapIfEmpty = useCallback(
     (initialUserMessage: string) => {
-      if (bootstrappedRef.current) {return;}
-      if (messages.length > 0) {return;}
+      if (bootstrappedRef.current) {
+        return;
+      }
+      if (messages.length > 0) {
+        return;
+      }
       const trimmed = initialUserMessage.trim();
-      if (trimmed.length === 0) {return;}
+      if (trimmed.length === 0) {
+        return;
+      }
       bootstrappedRef.current = true;
-      const firstMessages: ChatMessage[] = [
-        { role: "user", content: trimmed, ts: Date.now() },
-      ];
+      const firstMessages: ChatMessage[] = [{ role: "user", content: trimmed, ts: Date.now() }];
       setMessages(firstMessages);
       scheduleSave(firstMessages);
       void startStream(firstMessages);

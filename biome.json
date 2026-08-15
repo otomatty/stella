@@ -8,20 +8,75 @@
       "**/drizzle/**",
       "**/*.wasm",
       "**/.wrangler/**",
+      ".claude/**",
+      "packages/shared/src/problems/**",
+      "packages/content/design-system/**",
+      "apps/web/src/routeTree.gen.ts",
       "apps/web/public/pdf.worker.min.mjs"
     ]
   },
+  "organizeImports": { "enabled": false },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 100
+    "lineWidth": 100,
+    "lineEnding": "lf"
   },
   "javascript": {
     "formatter": { "quoteStyle": "double", "semicolons": "always" }
   },
   "linter": {
     "enabled": true,
-    "rules": { "recommended": false }
-  }
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "recommended": true
+      },
+      "complexity": {
+        "noForEach": "off",
+        "useLiteralKeys": "off"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "error"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "error",
+        "noDangerouslySetInnerHtmlWithChildren": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "noUnusedTemplateLiteral": "off",
+        "useTemplate": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "error",
+        "noConsoleLog": "error",
+        "noDebugger": "error",
+        "noEmptyBlockStatements": "warn",
+        "noExplicitAny": "error",
+        "noFocusedTests": "error",
+        "noImplicitAnyLet": "error",
+        "noSkippedTests": "warn",
+        "useAwait": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": [
+        "apps/api/scripts/**",
+        "packages/content/scripts/**",
+        "packages/shared/scripts/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsoleLog": "off",
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
 }

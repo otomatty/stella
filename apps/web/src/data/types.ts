@@ -3,22 +3,22 @@
  * Intentionally kept narrow — reflects only what the UI renders today.
  */
 
-export type Role = 'learner' | 'instructor' | 'admin';
+export type Role = "learner" | "instructor" | "admin";
 
-export type AvatarTone = 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6';
+export type AvatarTone = "c1" | "c2" | "c3" | "c4" | "c5" | "c6";
 
-export type CourseColor = 'indigo' | 'green' | 'amber' | 'slate';
+export type CourseColor = "indigo" | "green" | "amber" | "slate";
 
-export type LessonType = 'video' | 'slides' | 'text' | 'quiz' | 'assignment' | 'code';
+export type LessonType = "video" | "slides" | "text" | "quiz" | "assignment" | "code";
 
-export type LessonStatus = 'done' | 'active' | 'todo' | 'locked';
+export type LessonStatus = "done" | "active" | "todo" | "locked";
 
 export interface Tenant {
   /** seed テナント ('ses') に限らず、 DB 上の任意のテナント ID を取り得る。 */
   id: string;
   name: string;
   subtitle: string;
-  icon: 'school' | 'cpu';
+  icon: "school" | "cpu";
   active: number;
 }
 
@@ -98,13 +98,13 @@ export interface ReviewItem {
   assignment: string;
   submittedAt: string;
   aiReady: boolean;
-  priority: 'high' | 'normal' | 'low';
+  priority: "high" | "normal" | "low";
 }
 
 export interface AISuggestion {
   id: string;
   line: number;
-  severity: 'high' | 'med' | 'low';
+  severity: "high" | "med" | "low";
   category: string;
   body: string;
   adopted: boolean | null;

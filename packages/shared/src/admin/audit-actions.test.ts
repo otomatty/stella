@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  AUDIT_ACTION_LABELS,
-  auditActionLabel,
-  type AuditAction,
-} from "./audit-actions.js";
+import { AUDIT_ACTION_LABELS, auditActionLabel, type AuditAction } from "./audit-actions.js";
 
 describe("audit-actions", () => {
   it("既知の action は日本語ラベルを返す", () => {

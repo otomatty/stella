@@ -15,13 +15,7 @@
  * `lintPassed` / `astPassed` は通過扱いとなる (#104)。
  */
 
-import type {
-  ASTResult,
-  EvaluationResult,
-  LintViolation,
-  TestResult,
-  TestKind,
-} from "../types.js";
+import type { ASTResult, EvaluationResult, LintViolation, TestResult, TestKind } from "../types.js";
 
 export function evaluate(
   testKind: TestKind,

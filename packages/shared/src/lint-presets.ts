@@ -1,8 +1,4 @@
-import type {
-  ESLintRuleConfig,
-  LintPreset,
-  Stage,
-} from "./types.js";
+import type { ESLintRuleConfig, LintPreset, Stage } from "./types.js";
 
 const BUG_PREVENTION_RULES: Record<string, ESLintRuleConfig> = {
   eqeqeq: "error",
@@ -43,10 +39,7 @@ const MAINTAINABILITY_RULES: Record<string, ESLintRuleConfig> = {
   "max-params": ["warn", 4],
 };
 
-export const LINT_PRESET_RULES: Record<
-  LintPreset,
-  Record<string, ESLintRuleConfig>
-> = {
+export const LINT_PRESET_RULES: Record<LintPreset, Record<string, ESLintRuleConfig>> = {
   S1: BUG_PREVENTION_RULES,
   S2: {
     ...BUG_PREVENTION_RULES,

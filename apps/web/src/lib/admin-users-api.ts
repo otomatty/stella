@@ -5,10 +5,7 @@
  */
 
 import type { ProfileRole, ProfileRow } from "@falcon/shared/cms/types";
-import type {
-  InviteUserInput,
-  InviteUsersResponse,
-} from "@falcon/shared/admin/types";
+import type { InviteUserInput, InviteUsersResponse } from "@falcon/shared/admin/types";
 
 import { apiFetch } from "./api-client";
 
@@ -22,29 +19,21 @@ export async function listProfiles(_tenantId: string): Promise<AdminProfileRow[]
   }));
 }
 
-export async function inviteUsers(
-  invites: InviteUserInput[],
-): Promise<InviteUsersResponse> {
+export async function inviteUsers(invites: InviteUserInput[]): Promise<InviteUsersResponse> {
   return apiFetch<InviteUsersResponse>("/api/admin/users/invite", {
     method: "POST",
     body: { invites },
   });
 }
 
-export async function setUserRole(
-  userId: string,
-  role: ProfileRole,
-): Promise<void> {
+export async function setUserRole(userId: string, role: ProfileRole): Promise<void> {
   await apiFetch("/api/admin/users/role", {
     method: "POST",
     body: { userId, role },
   });
 }
 
-export async function setUserDisabled(
-  userId: string,
-  disabled: boolean,
-): Promise<void> {
+export async function setUserDisabled(userId: string, disabled: boolean): Promise<void> {
   await apiFetch("/api/admin/users/disable", {
     method: "POST",
     body: { userId, disabled },

@@ -51,10 +51,7 @@ chatRoute.post("/api/chat", async (c) => {
       const upstreamAbort = new AbortController();
       const onClientAbort = () => upstreamAbort.abort();
       requestSignal.addEventListener("abort", onClientAbort);
-      const timeoutId = setTimeout(
-        () => upstreamAbort.abort(),
-        SERVER_TIMEOUT_MS,
-      );
+      const timeoutId = setTimeout(() => upstreamAbort.abort(), SERVER_TIMEOUT_MS);
 
       const send = (event: ChatStreamEvent) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));

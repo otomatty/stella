@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Play,
   Book,
@@ -10,25 +10,25 @@ import {
   MessageCircle,
   Sparkles,
   TrendingUp,
-} from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { KpiCard } from '@/components/common/KpiCard';
-import { CourseThumb } from '@/components/common/CourseThumb';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
-import type { Course } from '@/data/types';
-import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
-import { useLessonProgressMap } from '@/hooks/useLessonProgress';
-import { useMySubmissions } from '@/hooks/useMySubmissions';
-import { useStudyActivity } from '@/hooks/useStudyActivity';
-import { StudyChart } from '@/components/learner/StudyChart';
-import { listCertificatesForUser } from '@/lib/certificates-api';
-import { findNextLesson, resolveLessonStatus } from '@/lib/lesson-progress';
-import { formatSubmittedAt } from '@/lib/submissions-store';
-import { cn } from '@/lib/utils';
+} from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { KpiCard } from "@/components/common/KpiCard";
+import { CourseThumb } from "@/components/common/CourseThumb";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardActions, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import type { Course } from "@/data/types";
+import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
+import { useLessonProgressMap } from "@/hooks/useLessonProgress";
+import { useMySubmissions } from "@/hooks/useMySubmissions";
+import { useStudyActivity } from "@/hooks/useStudyActivity";
+import { StudyChart } from "@/components/learner/StudyChart";
+import { listCertificatesForUser } from "@/lib/certificates-api";
+import { findNextLesson, resolveLessonStatus } from "@/lib/lesson-progress";
+import { formatSubmittedAt } from "@/lib/submissions-store";
+import { cn } from "@/lib/utils";
 
 interface LearnerDashboardProps {
   setPage: (page: string) => void;
@@ -46,7 +46,7 @@ interface LearnerDashboardProps {
 /** ISO 文字列を「M月D日」表記にする。 不正値は空文字。 */
 function formatAnnouncementDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
+  if (Number.isNaN(d.getTime())) return "";
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
@@ -55,7 +55,7 @@ function formatHoursMinutes(totalSec: number): string {
   const minutes = Math.floor(totalSec / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return `${h}:${String(m).padStart(2, '0')}`;
+  return `${h}:${String(m).padStart(2, "0")}`;
 }
 
 const NEW_WINDOW_MS = 7 * 86_400_000;
@@ -77,16 +77,12 @@ export const LearnerDashboard = ({
   const progressMap = useLessonProgressMap();
   const active = courses.filter((c) => !c.completed && c.progress > 0);
   // 「次に取り組む」対象: 受講中の先頭 → なければ未着手の先頭。
-  const current =
-    active[0] ?? courses.find((c) => !c.completed && (c.sections?.length ?? 0) > 0);
-  const nextLesson = useMemo(
-    () => findNextLesson(current, progressMap),
-    [current, progressMap],
-  );
+  const current = active[0] ?? courses.find((c) => !c.completed && (c.sections?.length ?? 0) > 0);
+  const nextLesson = useMemo(() => findNextLesson(current, progressMap), [current, progressMap]);
   /** 再開先が決まらない (受講コース無し / 全完了) ときはコース一覧へ逃がす。 */
   const resume = () => {
     if (current && nextLesson) onOpenLesson(current, nextLesson.lesson.id);
-    else setPage('courses');
+    else setPage("courses");
   };
   const {
     submissions,
@@ -101,13 +97,14 @@ export const LearnerDashboard = ({
   } = useStudyActivity(currentUserId, STUDY_ACTIVITY_DAYS, backendEnabled);
   // ストリークが自己ベストに並んだら「更新中」として強調する。
   const isBestStreak =
-    activity != null && activity.current_streak > 0 &&
+    activity != null &&
+    activity.current_streak > 0 &&
     activity.current_streak >= activity.longest_streak;
   const streakTrend = !activity ? (
     activityLoading ? (
       <Skeleton className="h-3 w-20" />
     ) : (
-      '学習ログがありません'
+      "学習ログがありません"
     )
   ) : isBestStreak ? (
     <>
@@ -125,7 +122,7 @@ export const LearnerDashboard = ({
   );
   const totalLessons = allLessons.length;
   const completedLessons = allLessons.filter(
-    (l) => resolveLessonStatus(l, progressMap) === 'done',
+    (l) => resolveLessonStatus(l, progressMap) === "done",
   ).length;
   const totalWatchedSec = allLessons.reduce(
     (sum, l) => sum + (progressMap[l.id]?.watchedSec ?? 0),
@@ -146,14 +143,14 @@ export const LearnerDashboard = ({
         if (!cancelled) setCertCount(rows.filter((r) => !r.revoked).length);
       })
       .catch((err) => {
-        console.error('[LearnerDashboard] certificates fetch failed', err);
+        console.error("[LearnerDashboard] certificates fetch failed", err);
         if (!cancelled) setCertCount(null);
       });
     return () => {
       cancelled = true;
     };
   }, [backendEnabled, currentUserId]);
-  const displayCertCount = backendEnabled ? certCount ?? 0 : completedCourses;
+  const displayCertCount = backendEnabled ? (certCount ?? 0) : completedCourses;
 
   const { announcements, error: announcementsError, refetch } = announcementsHook;
   const now = Date.now();
@@ -165,24 +162,28 @@ export const LearnerDashboard = ({
   // 期限が近い課題は enrollment の dueAt から実データで組み立てる。
   // 該当が無ければサンプルではなく空状態を表示する (誤情報を出さない)。
   const deadlines = courses
-    .filter((c) => c.dueAt && !c.completed)
-    .sort((a, b) => (a.dueAt! < b.dueAt! ? -1 : 1))
+    .filter((c): c is Course & { dueAt: string } => Boolean(c.dueAt) && !c.completed)
+    .sort((a, b) => (a.dueAt < b.dueAt ? -1 : 1))
     .slice(0, 5)
-    .map((c) => {
+    .flatMap((c) => {
       // due_at は UTC 午前0時で保存される。 new Date(...) で UTC インスタンスを
       // ローカル日付に変換すると UTC より西の TZ で日付が 1 日ずれるため、
       // 日付部分 (YYYY-MM-DD) を date-only として扱って差分を取る。
-      const [y, m, d] = c.dueAt!.slice(0, 10).split('-').map(Number);
-      const dueUTC = Date.UTC(y!, m! - 1, d!);
+      const [y, m, d] = c.dueAt.slice(0, 10).split("-").map(Number);
+      if (y === undefined || m === undefined || d === undefined) return [];
+      const dueUTC = Date.UTC(y, m - 1, d);
       const now = new Date();
       const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
       const days = Math.round((dueUTC - todayUTC) / 86_400_000);
-      return {
-        t: c.title,
-        due: days < 0 ? '期限超過' : days === 0 ? '本日まで' : `${days}日後`,
-        c: c.required ? '必須' : c.category,
-        urgency: (days <= 3 ? 'warning' : 'info') as 'warning' | 'info',
-      };
+      return [
+        {
+          id: c.id,
+          t: c.title,
+          due: days < 0 ? "期限超過" : days === 0 ? "本日まで" : `${days}日後`,
+          c: c.required ? "必須" : c.category,
+          urgency: (days <= 3 ? "warning" : "info") as "warning" | "info",
+        },
+      ];
     });
 
   return (
@@ -191,8 +192,8 @@ export const LearnerDashboard = ({
         title={`おかえりなさい、${studentName}さん`}
         sub={
           <>
-            今日も学習を続けましょう。受講中{' '}
-            <strong className="text-foreground">{active.length}コース</strong> · 完了レッスン{' '}
+            今日も学習を続けましょう。受講中{" "}
+            <strong className="text-foreground">{active.length}コース</strong> · 完了レッスン{" "}
             {completedLessons}/{totalLessons}
           </>
         }
@@ -207,9 +208,7 @@ export const LearnerDashboard = ({
       />
 
       {coursesError ? (
-        <p className="text-sm text-destructive mb-3">
-          コースの取得に失敗しました: {coursesError}
-        </p>
+        <p className="text-sm text-destructive mb-3">コースの取得に失敗しました: {coursesError}</p>
       ) : null}
       {announcementsError ? (
         <div className="flex items-center gap-3 mb-3">
@@ -239,10 +238,10 @@ export const LearnerDashboard = ({
               <Flame size={12} /> 連続学習
             </>
           }
-          value={activity ? activity.current_streak : '—'}
-          unit={activity ? '日' : undefined}
+          value={activity ? activity.current_streak : "—"}
+          unit={activity ? "日" : undefined}
           trend={streakTrend}
-          {...(isBestStreak ? { trendDir: 'up' as const } : {})}
+          {...(isBestStreak ? { trendDir: "up" as const } : {})}
         />
         <KpiCard
           label={
@@ -287,7 +286,7 @@ export const LearnerDashboard = ({
               <CardHeader>
                 <CardTitle>次に取り組むレッスン</CardTitle>
                 <CardActions>
-                  <Button variant="default" size="sm" onClick={() => setPage('courses')}>
+                  <Button variant="default" size="sm" onClick={() => setPage("courses")}>
                     すべて見る
                   </Button>
                 </CardActions>
@@ -298,12 +297,10 @@ export const LearnerDashboard = ({
                 </div>
                 <div className="p-4 pl-5">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <Badge variant="accent">
-                      {current.progress > 0 ? '受講中' : '未着手'}
-                    </Badge>
+                    <Badge variant="accent">{current.progress > 0 ? "受講中" : "未着手"}</Badge>
                     {nextLesson ? (
                       <span className="text-[11.5px] text-ink-3">
-                        セクション {String(nextLesson.sectionNumber).padStart(2, '0')} · レッスン{' '}
+                        セクション {String(nextLesson.sectionNumber).padStart(2, "0")} · レッスン{" "}
                         {nextLesson.lessonNumber}/{current.lessonsCount}
                       </span>
                     ) : null}
@@ -339,18 +336,14 @@ export const LearnerDashboard = ({
               <CardTitle>提出・添削履歴</CardTitle>
             </CardHeader>
             <div>
-              {submissionsLoading ? (
-                <SkeletonRows rows={3} className="px-4 py-4" />
-              ) : null}
+              {submissionsLoading ? <SkeletonRows rows={3} className="px-4 py-4" /> : null}
               {submissionsError ? (
                 <div className="px-4 py-3 text-[12.5px] text-destructive">
                   提出履歴の取得に失敗しました: {submissionsError}
                 </div>
               ) : null}
               {!submissionsLoading && !submissionsError && submissions.length === 0 ? (
-                <div className="px-4 py-4 text-[12.5px] text-ink-3">
-                  提出はまだありません。
-                </div>
+                <div className="px-4 py-4 text-[12.5px] text-ink-3">提出はまだありません。</div>
               ) : null}
               {submissions.map((submission, i) => {
                 const meta = submission.verdict
@@ -362,8 +355,8 @@ export const LearnerDashboard = ({
                     key={submission.id}
                     onClick={() => onOpenSubmission(submission.id)}
                     className={cn(
-                      'w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-sunken',
-                      i < submissions.length - 1 ? 'border-b border-border' : '',
+                      "w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-sunken",
+                      i < submissions.length - 1 ? "border-b border-border" : "",
                     )}
                   >
                     <Badge variant={meta.variant}>{meta.label}</Badge>
@@ -386,7 +379,7 @@ export const LearnerDashboard = ({
               <CardActions>
                 <span className="text-[11.5px] text-ink-3">
                   直近{STUDY_ACTIVITY_DAYS}日
-                  {activity ? ` · 合計 ${formatHoursMinutes(activity.total_sec)}` : ''}
+                  {activity ? ` · 合計 ${formatHoursMinutes(activity.total_sec)}` : ""}
                 </span>
               </CardActions>
             </CardHeader>
@@ -417,7 +410,7 @@ export const LearnerDashboard = ({
             <CardHeader>
               <CardTitle>コース進捗</CardTitle>
               <CardActions>
-                <Button variant="default" size="sm" onClick={() => setPage('courses')}>
+                <Button variant="default" size="sm" onClick={() => setPage("courses")}>
                   コース一覧へ
                 </Button>
               </CardActions>
@@ -436,10 +429,7 @@ export const LearnerDashboard = ({
                       <div className="flex-1" />
                       <span className="font-mono font-semibold">{c.progress}%</span>
                     </div>
-                    <Progress
-                      value={c.progress}
-                      tone={c.completed ? 'success' : 'brand'}
-                    />
+                    <Progress value={c.progress} tone={c.completed ? "success" : "brand"} />
                   </div>
                 ))
               )}
@@ -452,16 +442,12 @@ export const LearnerDashboard = ({
             <CardHeader>
               <CardTitle>お知らせ</CardTitle>
               <CardActions>
-                {newCount > 0 ? (
-                  <Badge variant="accent">{newCount} 新着</Badge>
-                ) : null}
+                {newCount > 0 ? <Badge variant="accent">{newCount} 新着</Badge> : null}
               </CardActions>
             </CardHeader>
             <div>
               {announcements.length === 0 ? (
-                <div className="px-4 py-3 text-[12.5px] text-ink-3">
-                  お知らせはありません。
-                </div>
+                <div className="px-4 py-3 text-[12.5px] text-ink-3">お知らせはありません。</div>
               ) : null}
               {announcements.slice(0, 5).map((a, i, arr) => {
                 const isNew = now - new Date(a.published_at).getTime() < NEW_WINDOW_MS;
@@ -469,25 +455,23 @@ export const LearnerDashboard = ({
                   <div
                     key={a.id}
                     className={cn(
-                      'flex gap-3 px-4 py-3',
-                      i < arr.length - 1 ? 'border-b border-border' : '',
+                      "flex gap-3 px-4 py-3",
+                      i < arr.length - 1 ? "border-b border-border" : "",
                     )}
                   >
                     <div
                       className={cn(
-                        'shrink-0 w-2 h-2 rounded-full mt-1.5',
-                        isNew ? 'bg-brand' : 'bg-border-strong',
+                        "shrink-0 w-2 h-2 rounded-full mt-1.5",
+                        isNew ? "bg-brand" : "bg-border-strong",
                       )}
                     />
                     <div className="min-w-0">
                       <div className="font-medium text-[13px] leading-snug">{a.title}</div>
                       {a.body ? (
-                        <div className="text-[11.5px] text-ink-2 mt-0.5 line-clamp-2">
-                          {a.body}
-                        </div>
+                        <div className="text-[11.5px] text-ink-2 mt-0.5 line-clamp-2">{a.body}</div>
                       ) : null}
                       <div className="text-[11.5px] text-ink-3 mt-1 flex gap-2">
-                        <span>{a.author_name || 'お知らせ'}</span>
+                        <span>{a.author_name || "お知らせ"}</span>
                         <span>{formatAnnouncementDate(a.published_at)}</span>
                       </div>
                     </div>
@@ -509,10 +493,10 @@ export const LearnerDashboard = ({
               ) : null}
               {deadlines.map((d, i) => (
                 <div
-                  key={i}
+                  key={d.id}
                   className={cn(
-                    'flex gap-3 px-4 py-3',
-                    i < deadlines.length - 1 ? 'border-b border-border' : '',
+                    "flex gap-3 px-4 py-3",
+                    i < deadlines.length - 1 ? "border-b border-border" : "",
                   )}
                 >
                   <Badge variant={d.urgency} className="text-[10px]">
@@ -530,8 +514,7 @@ export const LearnerDashboard = ({
           <Card
             className="bg-gradient-to-br"
             style={{
-              background:
-                'linear-gradient(to bottom right, var(--bg-raised), var(--brand-soft))',
+              background: "linear-gradient(to bottom right, var(--bg-raised), var(--brand-soft))",
             }}
           >
             <CardContent>
@@ -548,7 +531,7 @@ export const LearnerDashboard = ({
                 variant="default"
                 size="full"
                 className="mt-4"
-                onClick={() => setPage('__ai')}
+                onClick={() => setPage("__ai")}
               >
                 <MessageCircle size={13} />
                 質問する
@@ -562,8 +545,8 @@ export const LearnerDashboard = ({
 };
 
 const SUBMISSION_META = {
-  pending: { label: '添削待ち', variant: 'info' },
-  pass: { label: '合格', variant: 'success' },
-  resubmit: { label: '再提出', variant: 'warning' },
-  fail: { label: '不合格', variant: 'danger' },
+  pending: { label: "添削待ち", variant: "info" },
+  pass: { label: "合格", variant: "success" },
+  resubmit: { label: "再提出", variant: "warning" },
+  fail: { label: "不合格", variant: "danger" },
 } as const;

@@ -59,9 +59,7 @@ export function useCoursesForTenant(
   options?: { publishedOnly?: boolean },
 ): UseCoursesResult {
   const backend = isBackendConfigured();
-  const [courses, setCourses] = useState<Course[]>(() =>
-    backend ? [] : fixturesFor(tenantId),
-  );
+  const [courses, setCourses] = useState<Course[]>(() => (backend ? [] : fixturesFor(tenantId)));
   const [loading, setLoading] = useState(backend && enabled);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
@@ -97,9 +95,7 @@ export function useCoursesForTenant(
           setError(null);
           return;
         }
-        const details = await Promise.all(
-          courseRows.map((row) => getCourseWithChildren(row.id)),
-        );
+        const details = await Promise.all(courseRows.map((row) => getCourseWithChildren(row.id)));
         if (cancelled) return;
         const withChildren: CourseWithChildren[] = details.filter(
           (d): d is CourseWithChildren => d !== null,
@@ -128,11 +124,7 @@ export function useCoursesForTenant(
     };
   }, [tenantId, enabled, publishedOnly]);
 
-  const visibleCourses = coursesReadyForPublishedOnly(
-    courses,
-    publishedOnly,
-    fetchedPublishedOnly,
-  );
+  const visibleCourses = coursesReadyForPublishedOnly(courses, publishedOnly, fetchedPublishedOnly);
   return {
     courses: visibleCourses,
     loading: loading || (publishedOnly && fetchedPublishedOnly !== true),
@@ -159,9 +151,7 @@ export function useEnrolledCoursesForTenant(
   enabled = true,
 ): UseCoursesResult {
   const backend = isBackendConfigured();
-  const [courses, setCourses] = useState<Course[]>(() =>
-    backend ? [] : fixturesFor(tenantId),
-  );
+  const [courses, setCourses] = useState<Course[]>(() => (backend ? [] : fixturesFor(tenantId)));
   const [loading, setLoading] = useState(backend && enabled);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
@@ -195,9 +185,7 @@ export function useEnrolledCoursesForTenant(
         if (cancelled) return;
         // 期限切れ (expired) の登録は一覧に出さない。 API 側は教材・資料・検索を
         // 一律で拒否するため、 ここに残すと「一覧には出るが開くと 404」になる。
-        const enrollments = allEnrollments.filter((e) =>
-          isReadableEnrollmentStatus(e.status),
-        );
+        const enrollments = allEnrollments.filter((e) => isReadableEnrollmentStatus(e.status));
         if (enrollments.length === 0) {
           setCourses([]);
           setSource("db");
@@ -219,9 +207,7 @@ export function useEnrolledCoursesForTenant(
         );
         if (cancelled) return;
         const detailById = new Map(
-          details
-            .filter((d): d is CourseWithChildren => d !== null)
-            .map((d) => [d.course.id, d]),
+          details.filter((d): d is CourseWithChildren => d !== null).map((d) => [d.course.id, d]),
         );
 
         const merged: Course[] = [];

@@ -4,10 +4,7 @@
  * テスト実行系は #105 で `CodeRunner` 抽象 (`lib/runners/*`) に集約された。
  * このファイルは AI チャットの SSE クライアントだけを担当する。
  */
-import type {
-  ChatRequest,
-  ChatStreamEvent,
-} from "@falcon/shared/ai/types";
+import type { ChatRequest, ChatStreamEvent } from "@falcon/shared/ai/types";
 import { getAccessToken } from "@/lib/auth-client";
 
 /** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
@@ -70,24 +67,31 @@ export async function* streamChat(
   try {
     while (true) {
       const { value, done } = await reader.read();
-      if (done) {break;}
+      if (done) {
+        break;
+      }
       buffer += decoder.decode(value, { stream: true });
 
       // SSE のイベント区切りは LF + LF (`\n\n`) または CR/LF + CR/LF (`\r\n\r\n`)。
       // 両方の改行コードを受け付けるため、 正規表現で最初の境界を探す。
-      let match: RegExpExecArray | null;
       const sepRegex = /\r?\n\r?\n/;
-      while ((match = sepRegex.exec(buffer)) !== null) {
+      let match = sepRegex.exec(buffer);
+      while (match !== null) {
         const chunk = buffer.slice(0, match.index);
         buffer = buffer.slice(match.index + match[0].length);
         const event = parseSseChunk(chunk);
-        if (event) {yield event;}
+        if (event) {
+          yield event;
+        }
+        match = sepRegex.exec(buffer);
       }
     }
     // ストリーム終端に残った最後のイベント
     if (buffer.trim().length > 0) {
       const event = parseSseChunk(buffer);
-      if (event) {yield event;}
+      if (event) {
+        yield event;
+      }
     }
   } finally {
     reader.releaseLock();
@@ -104,7 +108,9 @@ function parseSseChunk(chunk: string): ChatStreamEvent | null {
       dataLines.push(line.slice(5).replace(/^ /, ""));
     }
   }
-  if (dataLines.length === 0) {return null;}
+  if (dataLines.length === 0) {
+    return null;
+  }
   const payload = dataLines.join("\n");
   try {
     const parsed = JSON.parse(payload) as ChatStreamEvent;

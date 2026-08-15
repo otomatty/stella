@@ -10,7 +10,15 @@
  * 4段構成: check_vocab.mjs(語彙台帳の検査)→ lint-skin.py(図解トークンの検査)→
  *           diagram_export.py(図解のSVG/PNG生成とはみ出し検査)→ build_pptx.py(python-pptxで再構築)
  */
-import { readdirSync, statSync, existsSync, mkdirSync, copyFileSync, rmSync, readFileSync } from "node:fs";
+import {
+  readdirSync,
+  statSync,
+  existsSync,
+  mkdirSync,
+  copyFileSync,
+  rmSync,
+  readFileSync,
+} from "node:fs";
 import { join, resolve, dirname, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -59,9 +67,8 @@ function checkDocImages(roots) {
   return problems;
 }
 
-const searchRoots = targets.length > 0
-  ? targets.map((t) => resolve(ROOT, t))
-  : listCourseModuleRoots();
+const searchRoots =
+  targets.length > 0 ? targets.map((t) => resolve(ROOT, t)) : listCourseModuleRoots();
 
 for (const root of searchRoots) {
   if (!existsSync(root)) {
@@ -70,13 +77,15 @@ for (const root of searchRoots) {
   }
 }
 
-const slides = searchRoots.flatMap((root) =>
-  statSync(root).isDirectory() ? collect(root, "slides.md") : [root]
-).sort();
+const slides = searchRoots
+  .flatMap((root) => (statSync(root).isDirectory() ? collect(root, "slides.md") : [root]))
+  .sort();
 
 const brokenImages = checkDocImages(searchRoots);
 if (brokenImages.length > 0) {
-  console.error(`\ndoc.md / practice.md に存在しない画像への参照が ${brokenImages.length} 件あります:\n`);
+  console.error(
+    `\ndoc.md / practice.md に存在しない画像への参照が ${brokenImages.length} 件あります:\n`,
+  );
   for (const p of brokenImages) console.error(`  - ${p}`);
   console.error("");
   process.exit(1);
@@ -91,7 +100,9 @@ const slideCountViolations = slides.flatMap((path) => {
   return n < 4 || n > 6 ? [`${relative(ROOT, path)} — ${n}枚`] : [];
 });
 if (slideCountViolations.length > 0) {
-  console.error(`\nスライド枚数が規定(4〜6枚)から外れたトピックが ${slideCountViolations.length} 件あります:\n`);
+  console.error(
+    `\nスライド枚数が規定(4〜6枚)から外れたトピックが ${slideCountViolations.length} 件あります:\n`,
+  );
   for (const p of slideCountViolations) console.error(`  - ${p}`);
   console.error("");
   process.exit(1);
@@ -122,13 +133,18 @@ console.log(`${slides.length} 件のスライドを pptx でビルドします\n
 // PYTHONUTF8: Windows既定のANSIコードページでは日本語メッセージが文字化けするため、
 // Python側の標準入出力・ファイルI/OをUTF-8に固定する。
 const SKILL_DIR = join(ROOT, "..", "..", ".claude", "skills", "diagram-design");
-const lint = spawnSync("python",
-  [join(SKILL_DIR, "lint-skin.py"), ...searchRoots],
-  { encoding: "utf8", stdio: "inherit", env: { ...process.env, PYTHONUTF8: "1" } });
+const lint = spawnSync("python", [join(SKILL_DIR, "lint-skin.py"), ...searchRoots], {
+  encoding: "utf8",
+  stdio: "inherit",
+  env: { ...process.env, PYTHONUTF8: "1" },
+});
 if (lint.status !== 0) process.exit(lint.status ?? 1);
 
-const raster = spawnSync("python", [join(ROOT, "scripts", "diagram_export.py"), ...searchRoots],
-  { encoding: "utf8", stdio: "inherit", env: { ...process.env, PYTHONUTF8: "1" } });
+const raster = spawnSync("python", [join(ROOT, "scripts", "diagram_export.py"), ...searchRoots], {
+  encoding: "utf8",
+  stdio: "inherit",
+  env: { ...process.env, PYTHONUTF8: "1" },
+});
 if (raster.status !== 0) process.exit(raster.status ?? 1);
 
 const mtime = (p) => (existsSync(p) ? statSync(p).mtimeMs : 0);
@@ -155,8 +171,10 @@ const stale = force ? slides : slides.filter(isStale);
 const skipped = slides.length - stale.length;
 
 if (stale.length > 0) {
-  const gen = spawnSync("python", [join(ROOT, "scripts", "build_pptx.py"), ...stale],
-    { encoding: "utf8", stdio: "inherit" });
+  const gen = spawnSync("python", [join(ROOT, "scripts", "build_pptx.py"), ...stale], {
+    encoding: "utf8",
+    stdio: "inherit",
+  });
   if ((gen.status ?? 1) !== 0) process.exit(gen.status ?? 1);
 }
 if (skipped > 0) console.log(`pptx: ${skipped} 件スキップ(最新)`);

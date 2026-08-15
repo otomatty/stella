@@ -27,10 +27,7 @@ export async function signAccessToken(
     .sign(secretKey(secret));
 }
 
-export async function verifyAccessToken(
-  secret: string,
-  token: string,
-): Promise<JWTPayload> {
+export async function verifyAccessToken(secret: string, token: string): Promise<JWTPayload> {
   const { payload } = await jwtVerify(token, secretKey(secret), {
     issuer: ISSUER,
     audience: AUDIENCE,

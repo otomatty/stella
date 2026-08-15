@@ -10,7 +10,7 @@
  * - 読み込み失敗時のリトライ + ダウンロード fallback
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Play,
   Pause,
@@ -21,13 +21,13 @@ import {
   RefreshCw,
   AlertCircle,
   Check,
-} from '@/lib/icons';
-import { Button } from '@/components/ui/button';
+} from "@/lib/icons";
+import { Button } from "@/components/ui/button";
 import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
-import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
-import { flushNow } from '@/lib/lesson-progress';
-import { cn } from '@/lib/utils';
+import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
+import { flushNow } from "@/lib/lesson-progress";
+import { cn } from "@/lib/utils";
 
 interface Props {
   lessonId: string;
@@ -139,7 +139,8 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
 
   const onPlay = useCallback(() => setIsPlaying(true), []);
 
-  // unmount でフラッシュ
+  // unmount でフラッシュ。 flushSave の identity 変化で unmount 相当の保存を走らせない
+  // biome-ignore lint/correctness/useExhaustiveDependencies: unmount 時だけフラッシュする
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
@@ -158,7 +159,6 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
       flushNow();
     };
     // 1 回登録すれば良い
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // speed 反映
@@ -170,8 +170,11 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play().catch(() => {});
-    else v.pause();
+    if (v.paused) {
+      v.play().catch(() => {
+        // autoplay 拒否は無視する
+      });
+    } else v.pause();
   }, []);
 
   const toggleMute = useCallback(() => {
@@ -186,59 +189,60 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
     if (!v) return;
     v.currentTime = Math.max(
       0,
-      Math.min(v.duration || Infinity, v.currentTime + deltaSec),
+      Math.min(v.duration || Number.POSITIVE_INFINITY, v.currentTime + deltaSec),
     );
   }, []);
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
     if (document.fullscreenElement === containerRef.current) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => {
+        // フルスクリーン解除が拒否されても操作は続行する
+      });
     } else {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().catch(() => {
+        // フルスクリーン要求が拒否されても操作は続行する
+      });
     }
   }, []);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        target.closest('input, textarea, select, button, a, [contenteditable="true"]')
-      ) {
+      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) {
         return;
       }
       switch (e.key) {
-        case ' ':
-        case 'Spacebar':
+        case " ":
+        case "Spacebar":
           e.preventDefault();
           togglePlay();
           break;
-        case 'ArrowLeft':
+        case "ArrowLeft":
           e.preventDefault();
           seek(-5);
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
           seek(5);
           break;
-        case 'j':
-        case 'J':
+        case "j":
+        case "J":
           e.preventDefault();
           seek(-10);
           break;
-        case 'l':
-        case 'L':
+        case "l":
+        case "L":
           e.preventDefault();
           seek(10);
           break;
-        case 'm':
-        case 'M':
+        case "m":
+        case "M":
           e.preventDefault();
           toggleMute();
           break;
-        case 'f':
-        case 'F':
+        case "f":
+        case "F":
           e.preventDefault();
           toggleFullscreen();
           break;
@@ -283,6 +287,8 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
   return (
     <div
       ref={containerRef}
+      role="application"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: キーボード操作のためコンテナがフォーカスを持つ
       tabIndex={0}
       onKeyDown={onKeyDown}
       className="relative bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
@@ -353,7 +359,7 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
         </div>
         <button
           type="button"
-          aria-label={isMuted ? 'ミュート解除' : 'ミュート'}
+          aria-label={isMuted ? "ミュート解除" : "ミュート"}
           onClick={toggleMute}
           className="bg-black/55 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white"
         >
@@ -372,12 +378,12 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
       <div className="px-3 py-2 bg-card border-t border-border flex items-center gap-2.5 text-[11.5px] text-ink-3">
         <span className="inline-flex items-center gap-1.5">
           {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-          視聴 {Math.round(watched)} / {Math.round(dur) || '?'} 秒{' '}
+          視聴 {Math.round(watched)} / {Math.round(dur) || "?"} 秒{" "}
           <span className="font-display font-bold text-ink-2">({pct}%)</span>
         </span>
         <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden max-w-[260px]">
           <div
-            className={cn('h-full', isCompleted ? 'bg-success' : 'sf-gradient-bg')}
+            className={cn("h-full", isCompleted ? "bg-success" : "sf-gradient-bg")}
             style={{ width: `${pct}%` }}
           />
         </div>

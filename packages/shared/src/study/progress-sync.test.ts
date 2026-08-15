@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  normalizeProgressRows,
-  type ProgressSyncInput,
-} from "./progress-sync.js";
+import { normalizeProgressRows, type ProgressSyncInput } from "./progress-sync.js";
+
+function at<T>(rows: T[], i: number): T {
+  const row = rows[i];
+  expect(row).toBeDefined();
+  if (row === undefined) throw new Error(`expected row ${i}`);
+  return row;
+}
 
 function input(over: Partial<ProgressSyncInput> = {}): ProgressSyncInput {
   return {
@@ -46,8 +50,8 @@ describe("normalizeProgressRows", () => {
       input({ watched_sec: 200, updated_at: "2026-08-07T02:00:00.000Z" }),
     ]);
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.watchedSec).toBe(300);
-    expect(rows[0]!.updatedAtMs).toBe(Date.parse("2026-08-07T03:00:00.000Z"));
+    expect(at(rows, 0).watchedSec).toBe(300);
+    expect(at(rows, 0).updatedAtMs).toBe(Date.parse("2026-08-07T03:00:00.000Z"));
   });
 
   it("集約しても入力順 (初出位置) は保たれる", () => {
@@ -61,22 +65,22 @@ describe("normalizeProgressRows", () => {
 
   it("視聴秒数も完了フラグも無い行は学習ログの対象外", () => {
     const rows = normalizeProgressRows([input({ watched_sec: null, completed: false })]);
-    expect(rows[0]!.countsTowardActivity).toBe(false);
+    expect(at(rows, 0).countsTowardActivity).toBe(false);
   });
 
   it("視聴秒数 0 だけの行も対象外 (増分が必ず 0 のため)", () => {
     const rows = normalizeProgressRows([input({ watched_sec: 0, completed: false })]);
-    expect(rows[0]!.countsTowardActivity).toBe(false);
+    expect(at(rows, 0).countsTowardActivity).toBe(false);
   });
 
   it("視聴秒数が正なら対象", () => {
     const rows = normalizeProgressRows([input({ watched_sec: 30 })]);
-    expect(rows[0]!.countsTowardActivity).toBe(true);
+    expect(at(rows, 0).countsTowardActivity).toBe(true);
   });
 
   it("完了フラグが立っていれば視聴秒数が無くても対象 (スライド等)", () => {
     const rows = normalizeProgressRows([input({ completed: true, watched_sec: null })]);
-    expect(rows[0]!.countsTowardActivity).toBe(true);
+    expect(at(rows, 0).countsTowardActivity).toBe(true);
   });
 
   it("数値でない watched_sec は null に落とす", () => {
@@ -84,15 +88,13 @@ describe("normalizeProgressRows", () => {
       input({ watched_sec: Number.NaN }),
       input({ lesson_id: "b", watched_sec: "60" as unknown as number }),
     ]);
-    expect(rows[0]!.watchedSec).toBeNull();
-    expect(rows[1]!.watchedSec).toBeNull();
+    expect(at(rows, 0).watchedSec).toBeNull();
+    expect(at(rows, 1).watchedSec).toBeNull();
   });
 
   it("viewed_pages が配列でなければ空配列にする", () => {
-    const rows = normalizeProgressRows([
-      input({ viewed_pages: null as unknown as number[] }),
-    ]);
-    expect(rows[0]!.viewedPages).toEqual([]);
+    const rows = normalizeProgressRows([input({ viewed_pages: null as unknown as number[] })]);
+    expect(at(rows, 0).viewedPages).toEqual([]);
   });
 
   it("加算先の日付を JST で決める", () => {
@@ -110,10 +112,6 @@ describe("normalizeProgressRows", () => {
       input({ lesson_id: "b", watched_sec: 60, updated_at: "2026-08-06T02:00:00.000Z" }),
       input({ lesson_id: "c", watched_sec: 60, updated_at: "2026-08-07T02:00:00.000Z" }),
     ]);
-    expect(rows.map((r) => r.activityDate)).toEqual([
-      "2026-08-05",
-      "2026-08-06",
-      "2026-08-07",
-    ]);
+    expect(rows.map((r) => r.activityDate)).toEqual(["2026-08-05", "2026-08-06", "2026-08-07"]);
   });
 });

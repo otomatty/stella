@@ -25,7 +25,13 @@ import { formatGradeMessage, gradeActiveExercise, resolveActiveAssignmentId } fr
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
-import { openLessonNode, refreshLessonTree, registerLessonTree, toLessonNode, type LessonNode } from "./tree.js";
+import {
+  openLessonNode,
+  refreshLessonTree,
+  registerLessonTree,
+  toLessonNode,
+  type LessonNode,
+} from "./tree.js";
 import {
   getActiveExercise,
   getAssignmentForGrading,
@@ -51,7 +57,10 @@ async function resolveLessonForActiveExercise(): Promise<CatalogLesson | undefin
   return resolveLessonForExercise(assignmentId, active, catalog);
 }
 
-async function showExerciseForLesson(lesson: CatalogLesson, result?: ExecutionResult): Promise<void> {
+async function showExerciseForLesson(
+  lesson: CatalogLesson,
+  result?: ExecutionResult,
+): Promise<void> {
   const assignmentId = lesson.assignmentId;
   if (!assignmentId) {
     return;
@@ -136,7 +145,11 @@ async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean>
   }
 
   try {
-    const token = await exchangeVscodeLink(falconConfig("serverUrl", "http://127.0.0.1:8787"), code, fetch);
+    const token = await exchangeVscodeLink(
+      falconConfig("serverUrl", "http://127.0.0.1:8787"),
+      code,
+      fetch,
+    );
     await auth.setToken(token);
     void vscode.window.showInformationMessage("FALCON に接続しました");
     return true;
@@ -192,14 +205,17 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("falcon.refresh", () => {
       refreshLessonTree();
     }),
-    vscode.commands.registerCommand("falcon.openInWeb", async (courseId?: string, lessonId?: string) => {
-      const web = falconConfig("webUrl", "http://127.0.0.1:5173");
-      const path =
-        typeof courseId === "string" && typeof lessonId === "string"
-          ? `/courses/${courseId}/lessons/${lessonId}`
-          : "";
-      await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
-    }),
+    vscode.commands.registerCommand(
+      "falcon.openInWeb",
+      async (courseId?: string, lessonId?: string) => {
+        const web = falconConfig("webUrl", "http://127.0.0.1:5173");
+        const path =
+          typeof courseId === "string" && typeof lessonId === "string"
+            ? `/courses/${courseId}/lessons/${lessonId}`
+            : "";
+        await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
+      },
+    ),
     vscode.commands.registerCommand("falcon.openLessonDoc", (node?: LessonNode) => {
       if (!node?.id || !node.courseId) {
         void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
@@ -247,17 +263,20 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showErrorMessage(message);
       }
     }),
-    vscode.commands.registerCommand("falcon.openNextLesson", (courseId?: string, lessonId?: string) => {
-      if (typeof courseId !== "string" || typeof lessonId !== "string") {
-        return;
-      }
-      const next = findNextLesson(getCachedCatalog(), courseId, lessonId);
-      if (!next) {
-        void vscode.window.showInformationMessage("次のレッスンはありません");
-        return;
-      }
-      openLessonNode(toLessonNode(next));
-    }),
+    vscode.commands.registerCommand(
+      "falcon.openNextLesson",
+      (courseId?: string, lessonId?: string) => {
+        if (typeof courseId !== "string" || typeof lessonId !== "string") {
+          return;
+        }
+        const next = findNextLesson(getCachedCatalog(), courseId, lessonId);
+        if (!next) {
+          void vscode.window.showInformationMessage("次のレッスンはありません");
+          return;
+        }
+        openLessonNode(toLessonNode(next));
+      },
+    ),
     vscode.commands.registerCommand("falcon.openLessonCode", async (node?: LessonNode) => {
       if (!node?.id) {
         void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
@@ -282,4 +301,6 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  return;
+}

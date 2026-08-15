@@ -7,22 +7,22 @@
  * (実体は R2 上の別ファイルで、 一括 zip 化の仕組みが無いため 1 件ずつ落とす。)
  */
 
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-import type { CourseMaterialRow } from '@falcon/shared/cms/types';
-import { Download, FileText, Folder, Loader2 } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { SkeletonRows } from '@/components/ui/skeleton';
+import type { CourseMaterialRow } from "@falcon/shared/cms/types";
+import { Download, FileText, Folder, Loader2 } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { downloadLessonMaterial, listCourseMaterials } from '@/lib/cms-api';
-import { isBackendConfigured } from '@/lib/backend';
+} from "@/components/ui/dialog";
+import { downloadLessonMaterial, listCourseMaterials } from "@/lib/cms-api";
+import { isBackendConfigured } from "@/lib/backend";
 
 interface CourseMaterialsDialogProps {
   open: boolean;
@@ -33,7 +33,7 @@ interface CourseMaterialsDialogProps {
 
 /** ファイルサイズ表記 (1024 基数)。 */
 function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -92,9 +92,9 @@ export const CourseMaterialsDialog = ({
       })
       .catch((err: unknown) => {
         if (reqId !== requestIdRef.current) return;
-        console.error('[CourseMaterialsDialog] fetch failed', err);
+        console.error("[CourseMaterialsDialog] fetch failed", err);
         setMaterials([]);
-        setError(err instanceof Error ? err.message : '教材の取得に失敗しました');
+        setError(err instanceof Error ? err.message : "教材の取得に失敗しました");
       })
       .finally(() => {
         if (reqId === requestIdRef.current) setLoading(false);
@@ -106,8 +106,8 @@ export const CourseMaterialsDialog = ({
     try {
       await downloadLessonMaterial(material);
     } catch (err) {
-      console.error('[CourseMaterialsDialog] download failed', err);
-      toast.error(err instanceof Error ? err.message : 'ダウンロードに失敗しました');
+      console.error("[CourseMaterialsDialog] download failed", err);
+      toast.error(err instanceof Error ? err.message : "ダウンロードに失敗しました");
     } finally {
       setDownloadingId(null);
     }
@@ -148,9 +148,7 @@ export const CourseMaterialsDialog = ({
             <div className="flex flex-col gap-4 pt-4">
               {groups.map((group) => (
                 <div key={group.lessonId}>
-                  <div className="text-[11.5px] text-ink-3 mb-1.5">
-                    {group.sectionTitle}
-                  </div>
+                  <div className="text-[11.5px] text-ink-3 mb-1.5">{group.sectionTitle}</div>
                   <div className="text-[13px] font-medium mb-2">{group.lessonTitle}</div>
                   <div className="flex flex-col gap-2">
                     {group.materials.map((m) => (
@@ -162,9 +160,7 @@ export const CourseMaterialsDialog = ({
                           <FileText size={16} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-[13px] font-medium truncate">
-                            {m.file_name}
-                          </div>
+                          <div className="text-[13px] font-medium truncate">{m.file_name}</div>
                           <div className="text-[11.5px] text-ink-3">
                             {formatBytes(m.size_bytes)}
                           </div>

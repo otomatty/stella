@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Card } from '@/components/ui/card';
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -10,13 +10,13 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import { ASSIGNABLE_CATEGORIES } from '@falcon/shared/interview/types';
+} from "@/components/ui/table";
+import { ASSIGNABLE_CATEGORIES } from "@falcon/shared/interview/types";
 import {
   listInterviewPrepAssignments,
   saveInterviewPrepAssignment,
   type InterviewPrepAssignmentRow,
-} from '@/lib/interview-prep-api';
+} from "@/lib/interview-prep-api";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
@@ -52,9 +52,7 @@ export function InterviewPrepAssignmentsPage({
       : [...row.categories, category];
     // 楽観更新 → 失敗時はこの行だけロールバック（他行の並行編集を巻き込まない）
     setRows((rs) =>
-      rs.map((r) =>
-        r.profile_id === row.profile_id ? { ...r, categories: next } : r,
-      ),
+      rs.map((r) => (r.profile_id === row.profile_id ? { ...r, categories: next } : r)),
     );
     setSavingId(row.profile_id);
     try {
@@ -62,11 +60,9 @@ export function InterviewPrepAssignmentsPage({
       toast(`${row.display_name} の面談対策を更新しました`);
     } catch (e) {
       setRows((rs) =>
-        rs.map((r) =>
-          r.profile_id === row.profile_id ? { ...r, categories: row.categories } : r,
-        ),
+        rs.map((r) => (r.profile_id === row.profile_id ? { ...r, categories: row.categories } : r)),
       );
-      toast.error(e instanceof Error ? e.message : '保存に失敗しました');
+      toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
       setSavingId(null);
     }
@@ -108,7 +104,7 @@ export function InterviewPrepAssignmentsPage({
                 <TableRow key={row.profile_id}>
                   <TableCell>
                     <div className="text-[13px] font-medium">{row.display_name}</div>
-                    <div className="text-[11.5px] text-ink-4">{row.email ?? ''}</div>
+                    <div className="text-[11.5px] text-ink-4">{row.email ?? ""}</div>
                   </TableCell>
                   {ASSIGNABLE_CATEGORIES.map((c) => (
                     <TableCell key={c} className="text-center">

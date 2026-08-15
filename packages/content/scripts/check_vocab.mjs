@@ -41,7 +41,10 @@ function parseLedger(path) {
   if (!id) return null;
   const list = (key) => {
     const raw = new RegExp(`^${key}:\\s*\\[(.*)\\]\\s*$`, "m").exec(fm)?.[1] ?? "";
-    return raw.split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    return raw
+      .split(",")
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
   };
   return { id, path, introduces: list("introduces"), requires: list("requires") };
 }
@@ -72,12 +75,16 @@ function checkRoots(searchRoots) {
     const where = relative(ROOT, t.path);
     for (const word of t.requires) {
       if (!known.has(word)) {
-        problems.push(`順序違反: ${where}\n    requires「${word}」がこれより前のトピックで導入されていません`);
+        problems.push(
+          `順序違反: ${where}\n    requires「${word}」がこれより前のトピックで導入されていません`,
+        );
       }
     }
     for (const word of t.introduces) {
       if (known.has(word)) {
-        problems.push(`重複導入: ${where}\n    「${word}」は ${known.get(word)} で既に導入されています`);
+        problems.push(
+          `重複導入: ${where}\n    「${word}」は ${known.get(word)} で既に導入されています`,
+        );
       } else {
         known.set(word, t.id);
       }
@@ -91,7 +98,9 @@ function checkRoots(searchRoots) {
     return false;
   }
 
-  console.log(`語彙台帳チェック OK (${topics.length} トピック / 登録語 ${known.size - SEED.length} 語)`);
+  console.log(
+    `語彙台帳チェック OK (${topics.length} トピック / 登録語 ${known.size - SEED.length} 語)`,
+  );
   return true;
 }
 

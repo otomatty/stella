@@ -54,12 +54,7 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
     const rows = await db
       .select(SELECT)
       .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.courseId, courseId),
-          eq(enrollments.tenantId, caller.tenantId),
-        ),
-      )
+      .where(and(eq(enrollments.courseId, courseId), eq(enrollments.tenantId, caller.tenantId)))
       .orderBy(asc(enrollments.enrolledAt));
     return c.json({ rows });
   } catch (err) {

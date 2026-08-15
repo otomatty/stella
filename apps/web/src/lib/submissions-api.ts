@@ -15,27 +15,14 @@ import type {
 } from "@falcon/shared/review/types";
 import { apiFetch } from "./api-client";
 
-const AVATAR_TONES: ReviewAvatarTone[] = [
-  "c1",
-  "c2",
-  "c3",
-  "c4",
-  "c5",
-  "c6",
-];
+const AVATAR_TONES: ReviewAvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** DB に永続化する insert フィールドのみ */
 export type InsertSubmissionInput = Pick<
   Submission,
-  | "courseTitle"
-  | "sectionTitle"
-  | "assignmentTitle"
-  | "lessonId"
-  | "assignmentId"
-  | "codeLines"
+  "courseTitle" | "sectionTitle" | "assignmentTitle" | "lessonId" | "assignmentId" | "codeLines"
 > & {
   priority: ReviewPriority;
   attempt: number;
@@ -83,14 +70,13 @@ function toneFromStudentId(studentId: string | null): ReviewAvatarTone {
   for (let i = 0; i < studentId.length; i++) {
     h = (h + studentId.charCodeAt(i)) % AVATAR_TONES.length;
   }
-  return AVATAR_TONES[h]!;
+  return AVATAR_TONES[h] ?? "c1";
 }
 
 function rowToSubmission(row: SubmissionRow): Submission {
   const profile = row.profiles;
   const name = profile?.display_name ?? "受講者";
-  const initials =
-    profile?.initials ?? (name.slice(0, 2).toUpperCase() || "??");
+  const initials = profile?.initials ?? (name.slice(0, 2).toUpperCase() || "??");
   return {
     id: row.id,
     tenantId: row.tenant_id,
@@ -130,9 +116,7 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
 }
 
 /** staff: テナント内の提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
-export async function fetchSubmissionsForTenant(
-  _tenantId: string,
-): Promise<Submission[]> {
+export async function fetchSubmissionsForTenant(_tenantId: string): Promise<Submission[]> {
   const { rows } = await apiFetch<{ rows: SubmissionRow[] }>("/api/submissions");
   return (rows ?? []).map(rowToSubmission);
 }
@@ -159,10 +143,7 @@ export async function insertSubmission(
 }
 
 /** staff: 提出物を更新する (添削)。 reviewed_at の打刻と通知はサーバ側で行う。 */
-export async function patchSubmission(
-  id: string,
-  patch: SubmissionPatch,
-): Promise<Submission> {
+export async function patchSubmission(id: string, patch: SubmissionPatch): Promise<Submission> {
   const { row } = await apiFetch<{ row: SubmissionRow }>(
     `/api/submissions/${encodeURIComponent(id)}`,
     {

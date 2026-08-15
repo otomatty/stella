@@ -9,7 +9,12 @@
  * クォート付き CSV (`"田中, 翔太"`) にも最低限対応する簡易実装。
  */
 
-import { isAssignableProfileRole, isValidEmail, type AssignableProfileRole, type InviteUserInput } from "./types.js";
+import {
+  isAssignableProfileRole,
+  isValidEmail,
+  type AssignableProfileRole,
+  type InviteUserInput,
+} from "./types.js";
 
 const ROLE_ALIASES: Record<string, AssignableProfileRole> = {
   student: "student",

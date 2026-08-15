@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({
   EventEmitter: class {
     event = () => undefined;
-    fire() {}
+    fire(): void {
+      return;
+    }
   },
   TreeItem: class {
     constructor(public readonly label: string) {}
@@ -12,7 +14,13 @@ vi.mock("vscode", () => ({
   ThemeIcon: class {
     constructor(public readonly id: string) {}
   },
-  window: { registerTreeDataProvider: () => ({ dispose() {} }) },
+  window: {
+    registerTreeDataProvider: () => ({
+      dispose(): void {
+        return;
+      },
+    }),
+  },
   commands: { executeCommand: () => undefined },
 }));
 

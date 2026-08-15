@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  isAssignableProfileRole,
-  isProfileRole,
-  validateInviteUsersRequest,
-} from "./types.js";
+import { isAssignableProfileRole, isProfileRole, validateInviteUsersRequest } from "./types.js";
 
 describe("profile roles", () => {
   it("recognizes platform_admin as a profile role but not assignable", () => {

@@ -9,28 +9,28 @@
  * テナント管理者にはテナント設定 (テストモード) も同じ画面に並べる。
  */
 
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { Loader2, Save } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { TenantSettingsCard } from '@/components/admin/TenantSettingsCard';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { updateMyDisplayName, type Profile } from '@/lib/auth';
-import type { Role } from '@/data/types';
+import { Loader2, Save } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { TenantSettingsCard } from "@/components/admin/TenantSettingsCard";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { updateMyDisplayName, type Profile } from "@/lib/auth";
+import type { Role } from "@/data/types";
 
 /** サーバ側 (POST /api/me) と揃える。 */
 const MAX_NAME_LENGTH = 50;
 
 const ROLE_LABELS: Record<string, string> = {
-  student: '受講者',
-  instructor: '講師',
-  admin: 'テナント管理者',
-  platform_admin: 'プラットフォーム管理者',
+  student: "受講者",
+  instructor: "講師",
+  admin: "テナント管理者",
+  platform_admin: "プラットフォーム管理者",
 };
 
 interface SettingsPageProps {
@@ -52,7 +52,7 @@ export const SettingsPage = ({
   <>
     <PageHeader
       title="設定"
-      sub={role === 'admin' ? `アカウント / ${tenantName} のテナント設定` : 'アカウント設定'}
+      sub={role === "admin" ? `アカウント / ${tenantName} のテナント設定` : "アカウント設定"}
     />
     <div className="max-w-[720px] flex flex-col gap-5">
       <AccountCard
@@ -61,9 +61,7 @@ export const SettingsPage = ({
         backendEnabled={backendEnabled}
         onProfileUpdated={onProfileUpdated}
       />
-      {role === 'admin' ? (
-        <TenantSettingsCard backendEnabled={backendEnabled} />
-      ) : null}
+      {role === "admin" ? <TenantSettingsCard backendEnabled={backendEnabled} /> : null}
     </div>
   </>
 );
@@ -81,7 +79,7 @@ const AccountCard = ({
   backendEnabled,
   onProfileUpdated,
 }: AccountCardProps) => {
-  const savedName = profile?.display_name ?? '';
+  const savedName = profile?.display_name ?? "";
   const [name, setName] = useState(savedName);
   const [saving, setSaving] = useState(false);
 
@@ -101,16 +99,16 @@ const AccountCard = ({
     try {
       await updateMyDisplayName(trimmed);
       await onProfileUpdated();
-      toast.success('ユーザー名を保存しました');
+      toast.success("ユーザー名を保存しました");
     } catch (err) {
-      console.error('[SettingsPage] save failed', err);
-      toast.error(err instanceof Error ? err.message : 'ユーザー名の保存に失敗しました');
+      console.error("[SettingsPage] save failed", err);
+      toast.error(err instanceof Error ? err.message : "ユーザー名の保存に失敗しました");
     } finally {
       setSaving(false);
     }
   };
 
-  const initials = profile?.initials ?? (trimmed || 'U').slice(0, 2).toUpperCase();
+  const initials = profile?.initials ?? (trimmed || "U").slice(0, 2).toUpperCase();
 
   return (
     <Card>
@@ -133,10 +131,10 @@ const AccountCard = ({
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 text-[12.5px] text-ink-3">
-            <div>{profile?.email ?? '—'}</div>
+            <div>{profile?.email ?? "—"}</div>
             <div>
               {tenantName}
-              {profile ? ` ・ ${ROLE_LABELS[profile.role] ?? profile.role}` : ''}
+              {profile ? ` ・ ${ROLE_LABELS[profile.role] ?? profile.role}` : ""}
             </div>
             <div className="text-[11.5px] text-ink-4">
               プロフィール画像は Google アカウントのものを使用します。
@@ -154,12 +152,12 @@ const AccountCard = ({
             placeholder="山田 太郎"
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void onSave();
+              if (e.key === "Enter") void onSave();
             }}
           />
           <p className="mt-1.5 text-[11.5px] text-ink-3 leading-relaxed">
-            登録時に Google アカウントの名前が自動で設定されます。 ここで変更すると、
-            以降の Google ログインでは上書きされません。 コース内の投稿者名や修了証にも使われます。
+            登録時に Google アカウントの名前が自動で設定されます。 ここで変更すると、 以降の Google
+            ログインでは上書きされません。 コース内の投稿者名や修了証にも使われます。
           </p>
         </div>
 
@@ -174,7 +172,8 @@ const AccountCard = ({
         </div>
 
         <div className="mt-4 pt-4 border-t border-border text-[11.5px] text-ink-4">
-          メールアドレス・ロール・所属は管理者が管理します。 変更が必要な場合は管理者へ依頼してください。
+          メールアドレス・ロール・所属は管理者が管理します。
+          変更が必要な場合は管理者へ依頼してください。
         </div>
       </CardContent>
     </Card>

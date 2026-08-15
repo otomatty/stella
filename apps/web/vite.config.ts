@@ -1,19 +1,19 @@
-import { defineConfig } from 'vite';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { defineConfig } from "vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { copySqlJsWasm } from './vite-plugins/copy-sqljs-wasm.js';
-import { copyPdfjsAssets } from './vite-plugins/copy-pdfjs-assets.js';
+import { copySqlJsWasm } from "./vite-plugins/copy-sqljs-wasm.js";
+import { copyPdfjsAssets } from "./vite-plugins/copy-pdfjs-assets.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
     // autoCodeSplitting は無効: 下記 manualChunks / lazy 設計に干渉させない。
-    tanstackRouter({ target: 'react', autoCodeSplitting: false }),
+    tanstackRouter({ target: "react", autoCodeSplitting: false }),
     react(),
     tailwindcss(),
     copySqlJsWasm(),
@@ -21,7 +21,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
@@ -32,7 +32,7 @@ export default defineConfig({
   // worker 側にも漏れて IIFE では使えないコード分割エラーになる (#code-splitting worker IIFE)。
   // worker は ES モジュール (chunk 分割可) として出力する。
   worker: {
-    format: 'es',
+    format: "es",
   },
   build: {
     rollupOptions: {
@@ -45,7 +45,7 @@ export default defineConfig({
         // Rollup の自動分割でオンデマンドな共有チャンクになる。
         manualChunks(id: string) {
           // Vite の preload ヘルパが vendor チャンクへ混入して eager 化するのを防ぐ。
-          if (id.includes('vite/preload-helper')) return 'preload-helper';
+          if (id.includes("vite/preload-helper")) return "preload-helper";
           return undefined;
         },
       },

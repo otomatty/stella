@@ -47,11 +47,7 @@ export function clientIp(c: Context<{ Bindings: Env }>): string | null {
 }
 
 /** 監査ログを 1 件記録する (best-effort)。 */
-export async function recordAudit(
-  db: Db,
-  actor: AuditActor,
-  entry: AuditEntry,
-): Promise<void> {
+export async function recordAudit(db: Db, actor: AuditActor, entry: AuditEntry): Promise<void> {
   try {
     await db.insert(auditLogs).values({
       tenantId: actor.tenantId,

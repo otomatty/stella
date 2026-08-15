@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Check,
   ChevronLeft,
@@ -10,42 +10,38 @@ import {
   Clock,
   Loader2,
   User,
-} from '@/lib/icons';
-import type { Course, Section, Lesson, LessonType } from '@/data/types';
-import type { ChatContext } from '@falcon/shared/ai/types';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
-import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
-import { VideoViewer } from './VideoViewer';
-import { resolveLessonStatus } from '@/lib/lesson-progress';
-import {
-  useLessonProgress,
-  useLessonProgressMap,
-  useStudyTime,
-} from '@/hooks/useLessonProgress';
-import { useLessonMaterials } from '@/hooks/useLessonMaterials';
-import { useIsNarrowViewport } from '@/hooks/useIsNarrowViewport';
-import { downloadLessonMaterial } from '@/lib/cms-api';
-import type { LessonMaterialRow } from '@falcon/shared/cms/types';
+} from "@/lib/icons";
+import type { Course, Section, Lesson, LessonType } from "@/data/types";
+import type { ChatContext } from "@falcon/shared/ai/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { LessonTypeIcon, LessonStatusIcon } from "./CourseDetail";
+import { VideoViewer } from "./VideoViewer";
+import { resolveLessonStatus } from "@/lib/lesson-progress";
+import { useLessonProgress, useLessonProgressMap, useStudyTime } from "@/hooks/useLessonProgress";
+import { useLessonMaterials } from "@/hooks/useLessonMaterials";
+import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
+import { downloadLessonMaterial } from "@/lib/cms-api";
+import type { LessonMaterialRow } from "@falcon/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
-import { cn } from '@/lib/utils';
-import { AssignmentSubmitPanel } from './AssignmentSubmitPanel';
-import { CodeLessonHandoff } from './CodeLessonHandoff';
-import { LessonMarkdown, MarkdownSlides } from './MarkdownSlides';
-import { QuizPlayer } from './QuizPlayer';
-import type { Tenant } from '@/data/types';
+import { cn } from "@/lib/utils";
+import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
+import { CodeLessonHandoff } from "./CodeLessonHandoff";
+import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
+import { QuizPlayer } from "./QuizPlayer";
+import type { Tenant } from "@/data/types";
 
 const SlidesViewer = lazy(() =>
-  import('./SlidesViewer').then((m) => ({ default: m.SlidesViewer })),
+  import("./SlidesViewer").then((m) => ({ default: m.SlidesViewer })),
 );
 
 interface LessonPlayerProps {
   course: Course;
   setPage: (page: string) => void;
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   studentName: string;
   studentInitials: string;
   /**
@@ -68,17 +64,15 @@ interface LessonPlayerProps {
   setAIContext?: (ctx: ChatContext) => void;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const lessonTypeLabel: Record<LessonType, string> = {
-  video: '動画',
-  slides: 'スライド',
-  text: 'テキスト',
-  quiz: '小テスト',
-  assignment: '課題',
-  code: 'コーディング課題',
+  video: "動画",
+  slides: "スライド",
+  text: "テキスト",
+  quiz: "小テスト",
+  assignment: "課題",
+  code: "コーディング課題",
 };
 
 export const LessonPlayer = ({
@@ -94,12 +88,9 @@ export const LessonPlayer = ({
   const sections: Section[] = course.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
-    () =>
-      allLessons.find((l) => l.id === initialLesson?.id)?.id ??
-      allLessons[0]?.id ??
-      '',
+    () => allLessons.find((l) => l.id === initialLesson?.id)?.id ?? allLessons[0]?.id ?? "",
   );
-  const [tab, setTab] = useState('content');
+  const [tab, setTab] = useState("content");
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -107,17 +98,13 @@ export const LessonPlayer = ({
   // 初期値は null。 マウント時点の選択を「適用済み」にすると、 コース取得が終わる前に
   // マウントしたとき (リロード復帰) に上の useState が対象を見つけられず、 その後
   // コースが届いても再適用されずコース先頭に落ちてしまう。
-  const selectionKey = initialLesson
-    ? `${initialLesson.id}:${initialLesson.seq}`
-    : null;
+  const selectionKey = initialLesson ? `${initialLesson.id}:${initialLesson.seq}` : null;
   const appliedSelectionRef = useRef<string | null>(null);
 
   const progressMap = useLessonProgressMap();
 
   const completedLessonCount = useMemo(
-    () =>
-      allLessons.filter((l) => resolveLessonStatus(l, progressMap) === 'done')
-        .length,
+    () => allLessons.filter((l) => resolveLessonStatus(l, progressMap) === "done").length,
     [allLessons, progressMap],
   );
   const progressPercent = allLessons.length
@@ -130,8 +117,7 @@ export const LessonPlayer = ({
   );
 
   // 配布資料は CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
-  const materialsEnabled =
-    isBackendConfigured() && UUID_RE.test(lessonObj?.id ?? '');
+  const materialsEnabled = isBackendConfigured() && UUID_RE.test(lessonObj?.id ?? "");
   const {
     materials,
     loading: materialsLoading,
@@ -144,7 +130,7 @@ export const LessonPlayer = ({
   // 後者が古い activeLesson を見て先頭レッスンに上書きしてしまうため。
   useEffect(() => {
     if (allLessons.length === 0) {
-      if (activeLesson !== '') setActiveLesson('');
+      if (activeLesson !== "") setActiveLesson("");
       return;
     }
     // 1. 未適用の検索選択を最優先で反映する。 現在のコースにまだ含まれていない
@@ -159,7 +145,8 @@ export const LessonPlayer = ({
     }
     // 2. コース切替等で activeLesson が現コースに無ければ先頭に揃える。
     if (!allLessons.some((l) => l.id === activeLesson)) {
-      setActiveLesson(allLessons[0]!.id);
+      const first = allLessons[0];
+      if (first) setActiveLesson(first.id);
     }
   }, [allLessons, activeLesson, initialLesson, selectionKey]);
 
@@ -176,19 +163,17 @@ export const LessonPlayer = ({
 
   const activeSection = sections[activeSectionIndex] ?? sections[0];
   const lessonIndexInSection =
-    activeSection && lessonObj
-      ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id)
-      : 0;
+    activeSection && lessonObj ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id) : 0;
 
   // lessonObj が無いコースでも hook 順序を保つため空文字を渡す (内部で no-op)
-  const { markComplete } = useLessonProgress(lessonObj?.id ?? '');
+  const { markComplete } = useLessonProgress(lessonObj?.id ?? "");
   const handleMarkComplete = () => {
     if (lessonObj) markComplete();
   };
 
   // 滞在時間を学習時間として積む。 動画は VideoViewer が実再生秒数を記録するので除外
   // (両方が同じ watched_sec を書くと二重計上になる)。
-  useStudyTime(lessonObj?.id ?? '', Boolean(lessonObj) && lessonObj?.type !== 'video');
+  useStudyTime(lessonObj?.id ?? "", Boolean(lessonObj) && lessonObj?.type !== "video");
 
   // 前のレッスンへ遷移 (Issue #77)。 locked はスキップして手前の解禁レッスンを探す。
   // 手前に解禁レッスンが無ければ null を返し、 呼び出し側でボタンを無効化する。
@@ -197,7 +182,7 @@ export const LessonPlayer = ({
     if (idx <= 0) return null;
     for (let i = idx - 1; i >= 0; i--) {
       const candidate = allLessons[i];
-      if (candidate && resolveLessonStatus(candidate, progressMap) !== 'locked') {
+      if (candidate && resolveLessonStatus(candidate, progressMap) !== "locked") {
         return candidate.id;
       }
     }
@@ -213,44 +198,42 @@ export const LessonPlayer = ({
   }, [isNarrow]);
 
   // レッスン切替で AI コンテキストを更新する。code レッスンも含め kind: 'lesson'。
+  const lessonId = lessonObj?.id;
+  const lessonTitle = lessonObj?.title;
   useEffect(() => {
-    if (!setAIContext || !lessonObj) return;
+    if (!setAIContext || lessonId === undefined || lessonTitle === undefined) return;
     setAIContext({
-      kind: 'lesson',
-      lessonTitle: lessonObj.title,
+      kind: "lesson",
+      lessonTitle,
       courseTitle: course.title,
     });
-  }, [lessonObj?.id, lessonObj?.title, course.title, setAIContext]);
+  }, [lessonId, lessonTitle, course.title, setAIContext]);
 
   if (!lessonObj) {
-    return (
-      <div className="p-10 text-sm text-ink-3">
-        このコースにはレッスンがありません。
-      </div>
-    );
+    return <div className="p-10 text-sm text-ink-3">このコースにはレッスンがありません。</div>;
   }
 
-  const isQuiz = lessonObj.type === 'quiz';
-  const isCode = lessonObj.type === 'code';
-  const isAssignment = lessonObj.type === 'assignment';
-  const isText = lessonObj.type === 'text';
-  const isVideo = lessonObj.type === 'video';
-  const isSlides = lessonObj.type === 'slides';
+  const isQuiz = lessonObj.type === "quiz";
+  const isCode = lessonObj.type === "code";
+  const isAssignment = lessonObj.type === "assignment";
+  const isText = lessonObj.type === "text";
+  const isVideo = lessonObj.type === "video";
+  const isSlides = lessonObj.type === "slides";
 
   return (
     <div
       className={cn(
-        'grid',
+        "grid",
         // lg 未満では展開時もレール幅のまま。 目次はコンテンツの上にオーバーレイさせる。
-        sidebarCollapsed ? 'grid-cols-[40px_1fr]' : 'grid-cols-[40px_1fr] lg:grid-cols-[280px_1fr]',
+        sidebarCollapsed ? "grid-cols-[40px_1fr]" : "grid-cols-[40px_1fr] lg:grid-cols-[280px_1fr]",
       )}
-      style={{ minHeight: 'calc(100vh - 57px)' }}
+      style={{ minHeight: "calc(100vh - 57px)" }}
     >
       {sidebarCollapsed ? (
         <aside className="border-r border-border bg-card py-3 sticky top-[57px] max-h-[calc(100vh-57px)] flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={() => setPage('course-detail')}
+            onClick={() => setPage("course-detail")}
             className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
             title={course.title}
             aria-label={`コース詳細に戻る: ${course.title}`}
@@ -268,110 +251,110 @@ export const LessonPlayer = ({
           </button>
         </aside>
       ) : (
-      <>
-      {/* lg 未満では目次を fixed オーバーレイにして本文を潰さない。 */}
-      <button
-        type="button"
-        aria-label="目次を閉じる"
-        onClick={() => setSidebarCollapsed(true)}
-        className="lg:hidden fixed inset-0 top-[57px] z-20 bg-black/40"
-      />
-      <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)] max-lg:fixed max-lg:left-0 max-lg:top-[57px] max-lg:bottom-0 max-lg:z-30 max-lg:w-[280px] max-lg:max-h-none max-lg:shadow-lg">
-        <div className="px-[18px] pb-3.5 border-b border-border mb-2">
-          <div className="flex items-start gap-1">
-            <button
-              type="button"
-              onClick={() => setPage('course-detail')}
-              className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta flex-1 min-w-0"
-            >
-              <ChevronLeft size={12} />
-              <span className="truncate">{course.title}</span>
-            </button>
-            {/* 狭幅では目次を畳めるようにする。 コード演習は VS Code へ渡すので幅確保は不要。 */}
-            <button
-              type="button"
-              onClick={() => setSidebarCollapsed(true)}
-              className="text-ink-3 hover:text-foreground lg:hidden"
-              title="サイドバーをたたむ"
-              aria-label="サイドバーをたたむ"
-            >
-              <ChevronLeft size={14} />
-            </button>
-          </div>
-          <div className="text-sm font-semibold leading-snug">進捗</div>
-          <div className="text-[11.5px] text-ink-3 mt-1.5">
-            <strong className="text-ink font-display text-[13px] font-bold">
-              {progressPercent}%
-            </strong>{' '}
-            · セクション {sections.length}
-          </div>
-          <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
-        </div>
-
-        {sections.map((s) => {
-          const doneCount = s.lessons.filter(
-            (l) => resolveLessonStatus(l, progressMap) === 'done',
-          ).length;
-          return (
-            <div key={s.id} className="py-2.5">
-              <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
-                <span>{s.title}</span>
-                <span className="ml-auto text-[11px] font-normal text-ink-3">
-                  {doneCount}/{s.lessons.length}
-                </span>
+        <>
+          {/* lg 未満では目次を fixed オーバーレイにして本文を潰さない。 */}
+          <button
+            type="button"
+            aria-label="目次を閉じる"
+            onClick={() => setSidebarCollapsed(true)}
+            className="lg:hidden fixed inset-0 top-[57px] z-20 bg-black/40"
+          />
+          <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)] max-lg:fixed max-lg:left-0 max-lg:top-[57px] max-lg:bottom-0 max-lg:z-30 max-lg:w-[280px] max-lg:max-h-none max-lg:shadow-lg">
+            <div className="px-[18px] pb-3.5 border-b border-border mb-2">
+              <div className="flex items-start gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage("course-detail")}
+                  className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta flex-1 min-w-0"
+                >
+                  <ChevronLeft size={12} />
+                  <span className="truncate">{course.title}</span>
+                </button>
+                {/* 狭幅では目次を畳めるようにする。 コード演習は VS Code へ渡すので幅確保は不要。 */}
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="text-ink-3 hover:text-foreground lg:hidden"
+                  title="サイドバーをたたむ"
+                  aria-label="サイドバーをたたむ"
+                >
+                  <ChevronLeft size={14} />
+                </button>
               </div>
-              {s.lessons.map((l) => {
-                const isActive = l.id === activeLesson;
-                const status = resolveLessonStatus(l, progressMap);
-                return (
-                  <button
-                    type="button"
-                    key={l.id}
-                    onClick={() => {
-                      if (status === 'locked') return;
-                      setActiveLesson(l.id);
-                      // 狭幅ではオーバーレイ表示なので、 選んだら閉じる。
-                      if (isNarrow) setSidebarCollapsed(true);
-                    }}
-                    disabled={status === 'locked'}
-                    className={cn(
-                      'w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left',
-                      'transition-colors',
-                      isActive
-                        ? 'bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta'
-                        : status === 'locked'
-                          ? 'text-ink-4 cursor-not-allowed border-transparent'
-                          : 'text-ink-2 hover:bg-sunken hover:text-foreground border-transparent',
-                    )}
-                  >
-                    <span className="shrink-0 mt-0.5 text-ink-3">
-                      {isActive ? (
-                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
-                      ) : (
-                        <LessonStatusIcon status={status} />
-                      )}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate">{l.title}</div>
-                      <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
-                        <LessonTypeIcon type={l.type} size={10} />
-                        <span>{l.duration}</span>
-                        {isActive && l.progress !== undefined ? (
-                          <>
-                            <span>·</span>
-                            <span>進捗 {l.progress}%</span>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+              <div className="text-sm font-semibold leading-snug">進捗</div>
+              <div className="text-[11.5px] text-ink-3 mt-1.5">
+                <strong className="text-ink font-display text-[13px] font-bold">
+                  {progressPercent}%
+                </strong>{" "}
+                · セクション {sections.length}
+              </div>
+              <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
             </div>
-          );
-        })}
-      </aside>
-      </>
+
+            {sections.map((s) => {
+              const doneCount = s.lessons.filter(
+                (l) => resolveLessonStatus(l, progressMap) === "done",
+              ).length;
+              return (
+                <div key={s.id} className="py-2.5">
+                  <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
+                    <span>{s.title}</span>
+                    <span className="ml-auto text-[11px] font-normal text-ink-3">
+                      {doneCount}/{s.lessons.length}
+                    </span>
+                  </div>
+                  {s.lessons.map((l) => {
+                    const isActive = l.id === activeLesson;
+                    const status = resolveLessonStatus(l, progressMap);
+                    return (
+                      <button
+                        type="button"
+                        key={l.id}
+                        onClick={() => {
+                          if (status === "locked") return;
+                          setActiveLesson(l.id);
+                          // 狭幅ではオーバーレイ表示なので、 選んだら閉じる。
+                          if (isNarrow) setSidebarCollapsed(true);
+                        }}
+                        disabled={status === "locked"}
+                        className={cn(
+                          "w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left",
+                          "transition-colors",
+                          isActive
+                            ? "bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta"
+                            : status === "locked"
+                              ? "text-ink-4 cursor-not-allowed border-transparent"
+                              : "text-ink-2 hover:bg-sunken hover:text-foreground border-transparent",
+                        )}
+                      >
+                        <span className="shrink-0 mt-0.5 text-ink-3">
+                          {isActive ? (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
+                          ) : (
+                            <LessonStatusIcon status={status} />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate">{l.title}</div>
+                          <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
+                            <LessonTypeIcon type={l.type} size={10} />
+                            <span>{l.duration}</span>
+                            {isActive && l.progress !== undefined ? (
+                              <>
+                                <span>·</span>
+                                <span>進捗 {l.progress}%</span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </aside>
+        </>
       )}
 
       {/* 目次を fixed オーバーレイにするとグリッド外に出るので、 列を明示して 1 列目に落ちないようにする。 */}
@@ -384,135 +367,129 @@ export const LessonPlayer = ({
           />
         ) : (
           <>
-        {isVideo ? (
-          lessonObj.videoPath ? (
-            <VideoViewer
-              key={lessonObj.id}
-              lessonId={lessonObj.id}
-              videoPath={lessonObj.videoPath}
-              totalSec={lessonObj.totalSec}
-              onComplete={handleMarkComplete}
-            />
-          ) : (
-            <MissingMaterialFallback type="video" />
-          )
-        ) : null}
-
-        {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
-        {isSlides && !lessonObj.markdown ? (
-          lessonObj.pdfPath ? (
-            <Suspense fallback={<ViewerLoading />}>
-              <SlidesViewer
-                key={lessonObj.id}
-                lessonId={lessonObj.id}
-                pdfPath={lessonObj.pdfPath}
-                totalPages={lessonObj.totalPages}
-                onComplete={handleMarkComplete}
-              />
-            </Suspense>
-          ) : (
-            <MissingMaterialFallback type="slides" />
-          )
-        ) : null}
-
-        <div className="px-4 sm:px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
-          <div className="flex items-start gap-3 mb-2">
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Badge
-                  variant="accent"
-                  className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
-                >
-                  <LessonTypeIcon type={lessonObj.type} size={10} />
-                  {lessonTypeLabel[lessonObj.type]}
-                </Badge>
-                <span className="text-[11.5px] text-ink-3">
-                  {activeSection ? activeSection.title : ''} ·{' '}
-                  {lessonIndexInSection + 1} /{' '}
-                  {activeSection ? activeSection.lessons.length : 0}
-                </span>
-              </div>
-              <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
-                {lessonObj.title}
-              </h1>
-              <div className="flex flex-wrap gap-3.5 text-ink-3 text-[12.5px] mb-5 mt-1">
-                {lessonObj.duration ? (
-                  <span className="flex items-center gap-1">
-                    <Clock size={12} /> {lessonObj.duration}
-                  </span>
-                ) : null}
-                {/* 講師名 (courses.instructor_name)。 未設定のコースでは何も出さない。 */}
-                {course.enrolledBy ? (
-                  <span className="flex items-center gap-1">
-                    <User size={12} /> {course.enrolledBy}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList>
-              <TabsTrigger value="content" icon={<FileText />}>
-                教材
-              </TabsTrigger>
-              {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
-              <TabsTrigger
-                value="resources"
-                icon={<Folder />}
-                count={materialsLoading ? undefined : materials.length}
-              >
-                資料
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="content">
-              {isQuiz ? (
-                <QuizPlayer
-                  lessonId={lessonObj.id}
-                  onComplete={handleMarkComplete}
-                />
-              ) : isAssignment ? (
-                <AssignmentSubmitPanel
-                  tenantId={tenantId}
-                  course={course}
-                  lesson={lessonObj}
-                  sectionTitle={activeSection?.title}
-                  studentName={studentName}
-                  studentInitials={studentInitials}
-                  onSubmitted={handleMarkComplete}
-                />
-              ) : isText ? (
-                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-              ) : isSlides && lessonObj.markdown ? (
-                <MarkdownSlides
+            {isVideo ? (
+              lessonObj.videoPath ? (
+                <VideoViewer
                   key={lessonObj.id}
                   lessonId={lessonObj.id}
-                  markdown={lessonObj.markdown}
-                  header={course.title}
+                  videoPath={lessonObj.videoPath}
+                  totalSec={lessonObj.totalSec}
                   onComplete={handleMarkComplete}
-                />
-              ) : isVideo || isSlides ? (
-                <LessonOverview
-                  lesson={lessonObj}
-                  onComplete={handleMarkComplete}
-                  onPrevLesson={
-                    prevLessonId ? () => setActiveLesson(prevLessonId) : null
-                  }
                 />
               ) : (
-                <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
-              )}
-            </TabsContent>
-            <TabsContent value="resources">
-              <ResourcesList
-                materials={materials}
-                loading={materialsLoading}
-                error={materialsError}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
+                <MissingMaterialFallback type="video" />
+              )
+            ) : null}
+
+            {/* markdown を持つスライドは教材タブの MarkdownSlides で描画するので、 上の PDF 枠は出さない。 */}
+            {isSlides && !lessonObj.markdown ? (
+              lessonObj.pdfPath ? (
+                <Suspense fallback={<ViewerLoading />}>
+                  <SlidesViewer
+                    key={lessonObj.id}
+                    lessonId={lessonObj.id}
+                    pdfPath={lessonObj.pdfPath}
+                    totalPages={lessonObj.totalPages}
+                    onComplete={handleMarkComplete}
+                  />
+                </Suspense>
+              ) : (
+                <MissingMaterialFallback type="slides" />
+              )
+            ) : null}
+
+            <div className="px-4 sm:px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
+              <div className="flex items-start gap-3 mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Badge
+                      variant="accent"
+                      className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
+                    >
+                      <LessonTypeIcon type={lessonObj.type} size={10} />
+                      {lessonTypeLabel[lessonObj.type]}
+                    </Badge>
+                    <span className="text-[11.5px] text-ink-3">
+                      {activeSection ? activeSection.title : ""} · {lessonIndexInSection + 1} /{" "}
+                      {activeSection ? activeSection.lessons.length : 0}
+                    </span>
+                  </div>
+                  <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
+                    {lessonObj.title}
+                  </h1>
+                  <div className="flex flex-wrap gap-3.5 text-ink-3 text-[12.5px] mb-5 mt-1">
+                    {lessonObj.duration ? (
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> {lessonObj.duration}
+                      </span>
+                    ) : null}
+                    {/* 講師名 (courses.instructor_name)。 未設定のコースでは何も出さない。 */}
+                    {course.enrolledBy ? (
+                      <span className="flex items-center gap-1">
+                        <User size={12} /> {course.enrolledBy}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <Tabs value={tab} onValueChange={setTab}>
+                <TabsList>
+                  <TabsTrigger value="content" icon={<FileText />}>
+                    教材
+                  </TabsTrigger>
+                  {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
+                  <TabsTrigger
+                    value="resources"
+                    icon={<Folder />}
+                    count={materialsLoading ? undefined : materials.length}
+                  >
+                    資料
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="content">
+                  {isQuiz ? (
+                    <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
+                  ) : isAssignment ? (
+                    <AssignmentSubmitPanel
+                      tenantId={tenantId}
+                      course={course}
+                      lesson={lessonObj}
+                      sectionTitle={activeSection?.title}
+                      studentName={studentName}
+                      studentInitials={studentInitials}
+                      onSubmitted={handleMarkComplete}
+                    />
+                  ) : isText ? (
+                    <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                  ) : isSlides && lessonObj.markdown ? (
+                    <MarkdownSlides
+                      key={lessonObj.id}
+                      lessonId={lessonObj.id}
+                      markdown={lessonObj.markdown}
+                      header={course.title}
+                      onComplete={handleMarkComplete}
+                    />
+                  ) : isVideo || isSlides ? (
+                    <LessonOverview
+                      lesson={lessonObj}
+                      onComplete={handleMarkComplete}
+                      onPrevLesson={prevLessonId ? () => setActiveLesson(prevLessonId) : null}
+                    />
+                  ) : (
+                    <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                  )}
+                </TabsContent>
+                <TabsContent value="resources">
+                  <ResourcesList
+                    materials={materials}
+                    loading={materialsLoading}
+                    error={materialsError}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           </>
         )}
       </main>
@@ -522,7 +499,8 @@ export const LessonPlayer = ({
 
 const ViewerLoading = () => (
   <div
-    role="status"
+    aria-busy="true"
+    aria-live="polite"
     aria-label="ビューアを読み込み中"
     className="aspect-[16/9] max-h-[62vh]"
   >
@@ -530,12 +508,12 @@ const ViewerLoading = () => (
   </div>
 );
 
-const MissingMaterialFallback = ({ type }: { type: 'video' | 'slides' }) => (
+const MissingMaterialFallback = ({ type }: { type: "video" | "slides" }) => (
   <div className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken border-b border-border px-6 text-center">
     <div className="max-w-md">
       <div className="text-[13.5px] font-semibold text-ink-1">教材を準備中です</div>
       <div className="text-[12px] text-ink-3 mt-1.5">
-        {type === 'video' ? '動画' : 'スライド'}
+        {type === "video" ? "動画" : "スライド"}
         の素材がまだアップロードされていません。 講師がアップロード次第、 ここに表示されます。
       </div>
     </div>
@@ -553,18 +531,18 @@ const LessonOverview = ({
   onPrevLesson: (() => void) | null;
 }) => {
   const hasMaterial =
-    (lesson.type === 'video' && Boolean(lesson.videoPath)) ||
-    (lesson.type === 'slides' && Boolean(lesson.pdfPath));
-  const materialLabel = lesson.type === 'video' ? '動画' : 'スライド';
+    (lesson.type === "video" && Boolean(lesson.videoPath)) ||
+    (lesson.type === "slides" && Boolean(lesson.pdfPath));
+  const materialLabel = lesson.type === "video" ? "動画" : "スライド";
   return (
     <div className="prose-lms">
       <h2>このレッスンについて</h2>
       {hasMaterial ? (
         <p>
           上の{materialLabel}で学習を進めてください。
-          {lesson.type === 'video'
-            ? ' 視聴秒数の90%に到達すると自動的に完了マークが付きます。'
-            : ' ページ全体の90%を閲覧すると自動的に完了マークが付きます。'}
+          {lesson.type === "video"
+            ? " 視聴秒数の90%に到達すると自動的に完了マークが付きます。"
+            : " ページ全体の90%を閲覧すると自動的に完了マークが付きます。"}
         </p>
       ) : (
         <p>
@@ -577,7 +555,7 @@ const LessonOverview = ({
           variant="outline"
           onClick={() => onPrevLesson?.()}
           disabled={!onPrevLesson}
-          title={onPrevLesson ? undefined : '最初のレッスンです'}
+          title={onPrevLesson ? undefined : "最初のレッスンです"}
         >
           <ChevronLeft size={13} />
           前のレッスン
@@ -635,9 +613,7 @@ const LessonReadable = ({
         <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
       ) : (
         <div className="py-10 text-center text-[12.5px] text-ink-3">
-          <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">
-            本文を準備中です
-          </div>
+          <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">本文を準備中です</div>
           このレッスンの本文はまだ登録されていません。 講師が登録次第、 ここに表示されます。
         </div>
       )}
@@ -663,7 +639,7 @@ const LessonReadable = ({
 
 /** ファイルサイズ表記 (1024 基数)。 */
 const formatBytes = (bytes: number): string => {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -689,10 +665,8 @@ const ResourcesList = ({
     try {
       await downloadLessonMaterial(material);
     } catch (err) {
-      console.error('[ResourcesList] download failed', err);
-      toast.error(
-        err instanceof Error ? err.message : 'ダウンロードに失敗しました',
-      );
+      console.error("[ResourcesList] download failed", err);
+      toast.error(err instanceof Error ? err.message : "ダウンロードに失敗しました");
     } finally {
       setDownloadingId(null);
     }

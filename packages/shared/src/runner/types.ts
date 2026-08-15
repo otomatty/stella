@@ -9,13 +9,7 @@
  * 純粋な実行責務に限定する。
  */
 
-import type {
-  Language,
-  MutationConfig,
-  RunTestsResponse,
-  TestCase,
-  TestKind,
-} from "../types.js";
+import type { Language, MutationConfig, RunTestsResponse, TestCase, TestKind } from "../types.js";
 
 export interface RunInput {
   /**

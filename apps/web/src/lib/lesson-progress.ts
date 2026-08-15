@@ -11,16 +11,15 @@
  *   巻き戻して push してしまうため (`mergeEntries` のコメント参照)。
  */
 
-import { isBackendConfigured } from '@/lib/backend';
-import type { Course, Lesson, LessonStatus } from '@/data/types';
+import { isBackendConfigured } from "@/lib/backend";
+import type { Course, Lesson, LessonStatus } from "@/data/types";
 
-const STORAGE_KEY = 'lms_lesson_progress';
+const STORAGE_KEY = "lms_lesson_progress";
 const COMPLETION_THRESHOLD = 0.9;
 const DEBOUNCE_MS = 1000;
 /** リモート upsert はローカルより少し長めにまとめてバッチ送信する。 */
 const REMOTE_DEBOUNCE_MS = 2000;
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface LessonProgressEntry {
   completed: boolean;
@@ -43,12 +42,12 @@ let cache: LessonProgressMap = readFromStorage();
 let pendingFlush: ReturnType<typeof setTimeout> | null = null;
 
 function readFromStorage(): LessonProgressMap {
-  if (typeof window === 'undefined' || !window.localStorage) return {};
+  if (typeof window === "undefined" || !window.localStorage) return {};
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') return parsed as LessonProgressMap;
+    if (parsed && typeof parsed === "object") return parsed as LessonProgressMap;
     return {};
   } catch {
     return {};
@@ -56,7 +55,7 @@ function readFromStorage(): LessonProgressMap {
 }
 
 function writeToStorage(map: LessonProgressMap): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
@@ -85,11 +84,8 @@ export function mergeEntries(
   if (!b) return a;
   const ta = Date.parse(a.updatedAt);
   const tb = Date.parse(b.updatedAt);
-  const newer = !Number.isFinite(tb) || !Number.isFinite(ta)
-    ? Number.isFinite(ta) ? a : b
-    : tb >= ta
-      ? b
-      : a;
+  const newer =
+    !Number.isFinite(tb) || !Number.isFinite(ta) ? (Number.isFinite(ta) ? a : b) : tb >= ta ? b : a;
   const viewed = new Set<number>([...(a.viewedPages ?? []), ...(b.viewedPages ?? [])]);
   const watched = Math.max(a.watchedSec ?? 0, b.watchedSec ?? 0);
   return {
@@ -102,10 +98,7 @@ export function mergeEntries(
 }
 
 /** 2 つの進捗マップを `mergeEntries` で束ねる。 */
-function mergeMaps(
-  a: LessonProgressMap,
-  b: LessonProgressMap,
-): LessonProgressMap {
+function mergeMaps(a: LessonProgressMap, b: LessonProgressMap): LessonProgressMap {
   const merged: LessonProgressMap = {};
   for (const k of new Set<string>([...Object.keys(a), ...Object.keys(b)])) {
     const picked = mergeEntries(a[k], b[k]);
@@ -145,7 +138,7 @@ interface SyncIdentity {
 }
 
 /** 直近に同期した user_id を記録し、 共有端末でのアカウント切替を検知する。 */
-const OWNER_KEY = 'lms_lesson_progress_owner';
+const OWNER_KEY = "lms_lesson_progress_owner";
 
 let identity: SyncIdentity | null = null;
 const remoteDirty = new Set<string>();
@@ -180,12 +173,12 @@ function sameEntry(
     a.completed === b.completed &&
     a.lastPage === b.lastPage &&
     (a.watchedSec ?? 0) === (b.watchedSec ?? 0) &&
-    (a.viewedPages ?? []).join(',') === (b.viewedPages ?? []).join(',')
+    (a.viewedPages ?? []).join(",") === (b.viewedPages ?? []).join(",")
   );
 }
 
 function readOwner(): string | null {
-  if (typeof window === 'undefined' || !window.localStorage) return null;
+  if (typeof window === "undefined" || !window.localStorage) return null;
   try {
     return window.localStorage.getItem(OWNER_KEY);
   } catch {
@@ -194,7 +187,7 @@ function readOwner(): string | null {
 }
 
 function writeOwner(userId: string): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
+  if (typeof window === "undefined" || !window.localStorage) return;
   try {
     window.localStorage.setItem(OWNER_KEY, userId);
   } catch {
@@ -231,14 +224,12 @@ async function flushRemote(): Promise<void> {
   remoteDirty.clear();
   const entries = ids
     .map((lessonId) => ({ lessonId, entry: cache[lessonId] }))
-    .filter((e): e is { lessonId: string; entry: LessonProgressEntry } =>
-      Boolean(e.entry),
-    );
+    .filter((e): e is { lessonId: string; entry: LessonProgressEntry } => Boolean(e.entry));
   try {
-    const { upsertProgressBatch } = await import('@/lib/lesson-progress-api');
+    const { upsertProgressBatch } = await import("@/lib/lesson-progress-api");
     await upsertProgressBatch(current.userId, current.tenantId, entries);
   } catch (err) {
-    console.error('[lesson-progress] remote upsert failed', err);
+    console.error("[lesson-progress] remote upsert failed", err);
     // 失敗分は remoteDirty に戻すだけに留める。 自動の即時再スケジュールは
     // オフライン / RLS エラー時に 2 秒間隔の無限リトライを招くため行わない。
     // 次の update() / flushNow() (pagehide) で自然に再試行される。
@@ -250,7 +241,7 @@ async function flushRemote(): Promise<void> {
 
 async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
   try {
-    const { fetchProgressForUser } = await import('@/lib/lesson-progress-api');
+    const { fetchProgressForUser } = await import("@/lib/lesson-progress-api");
     const remote = await fetchProgressForUser(target.userId);
     // 取得中に identity が切り替わっていたら破棄
     if (identity !== target) return;
@@ -272,7 +263,7 @@ async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
       scheduleRemoteFlush();
     }
   } catch (err) {
-    console.error('[lesson-progress] remote hydrate failed', err);
+    console.error("[lesson-progress] remote hydrate failed", err);
   } finally {
     // 失敗しても「決着」とする。 待ち続けるとビューアが復元位置を出せない。
     if (identity === target) setHydrated(true);
@@ -285,10 +276,7 @@ async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
  * - null を渡すと (ログアウト等): 同期を停止する (ローカルキャッシュは保持)
  */
 export function configureRemoteSync(next: SyncIdentity | null): void {
-  if (
-    identity?.userId === next?.userId &&
-    identity?.tenantId === next?.tenantId
-  ) {
+  if (identity?.userId === next?.userId && identity?.tenantId === next?.tenantId) {
     return;
   }
   identity = next;
@@ -302,7 +290,7 @@ export function configureRemoteSync(next: SyncIdentity | null): void {
   if (next) {
     // pagehide 時の即時 flush でチャンクフェッチ中断を避けるため、 同期有効化の
     // タイミングで API モジュールを投機的にプリロードしておく。
-    void import('@/lib/lesson-progress-api');
+    void import("@/lib/lesson-progress-api");
     // 別ユーザーに切り替わったら、 前ユーザーの DB 連携進捗をローカルから除去。
     // ただし owner 未記録 (null) の初回同期では purge しない。 本機能導入前から
     // localStorage に残る既存ユーザーの uuid 進捗を、 hydrate 前に消して失わない
@@ -339,11 +327,11 @@ export function flushNow(): void {
   }
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   // pagehide はモバイル含めて beforeunload より確実に発火する
-  window.addEventListener('pagehide', flushNow);
+  window.addEventListener("pagehide", flushNow);
   // 別タブでの localStorage 更新を取り込み、 in-memory cache を同期
-  window.addEventListener('storage', (e) => {
+  window.addEventListener("storage", (e) => {
     if (e.key !== STORAGE_KEY) return;
     cache = mergeMaps(readFromStorage(), cache);
     notify();
@@ -385,9 +373,7 @@ export function recordPage(
 ): LessonProgressEntry {
   const prev = cache[lessonId];
   const validPage =
-    Number.isInteger(page) &&
-    page >= 1 &&
-    (totalPages <= 0 || page <= totalPages)
+    Number.isInteger(page) && page >= 1 && (totalPages <= 0 || page <= totalPages)
       ? page
       : undefined;
   const viewedSet = new Set(prev?.viewedPages ?? []);
@@ -415,8 +401,7 @@ export function recordWatchTime(
   const normalizedSec = Number.isFinite(sec) ? Math.max(0, sec) : prevWatched;
   const watched = Math.max(prevWatched, normalizedSec);
   const completed =
-    prev?.completed === true ||
-    (totalSec > 0 && watched / totalSec >= COMPLETION_THRESHOLD);
+    prev?.completed === true || (totalSec > 0 && watched / totalSec >= COMPLETION_THRESHOLD);
   return update(lessonId, {
     completed,
     lastPage: prev?.lastPage,
@@ -459,15 +444,12 @@ export function markComplete(lessonId: string): LessonProgressEntry {
  * fixture done の lesson を再訪して部分閲覧しただけで done から active に
  * 落ちないように、 fixture done を partial entry より上に置く。
  */
-export function resolveLessonStatus(
-  lesson: Lesson,
-  map: LessonProgressMap,
-): LessonStatus {
-  if (lesson.status === 'locked') return 'locked';
+export function resolveLessonStatus(lesson: Lesson, map: LessonProgressMap): LessonStatus {
+  if (lesson.status === "locked") return "locked";
   const entry = map[lesson.id];
-  if (entry?.completed) return 'done';
-  if (lesson.status === 'done') return 'done';
-  if (entry) return 'active';
+  if (entry?.completed) return "done";
+  if (lesson.status === "done") return "done";
+  if (entry) return "active";
   return lesson.status;
 }
 
@@ -490,10 +472,12 @@ export function findNextLesson(
   if (!course?.sections) return null;
   let flat = 0;
   for (let si = 0; si < course.sections.length; si++) {
-    for (const lesson of course.sections[si]!.lessons) {
+    const section = course.sections[si];
+    if (!section) continue;
+    for (const lesson of section.lessons) {
       flat += 1;
       const status = resolveLessonStatus(lesson, map);
-      if (status !== 'done' && status !== 'locked') {
+      if (status !== "done" && status !== "locked") {
         return { lesson, sectionNumber: si + 1, lessonNumber: flat };
       }
     }
@@ -506,16 +490,11 @@ export function findNextLesson(
  * 最初の非 locked レッスンへ戻す (読み返しでボタンを死なせない / ロック行ガードを迂回しない)。
  * すべて locked / レッスン無しなら null。
  */
-export function resumeLessonId(
-  course: Course | undefined,
-  map: LessonProgressMap,
-): string | null {
+export function resumeLessonId(course: Course | undefined, map: LessonProgressMap): string | null {
   const next = findNextLesson(course, map);
   if (next) return next.lesson.id;
   const lessons = course?.sections?.flatMap((s) => s.lessons) ?? [];
-  return (
-    lessons.find((l) => resolveLessonStatus(l, map) !== 'locked')?.id ?? null
-  );
+  return lessons.find((l) => resolveLessonStatus(l, map) !== "locked")?.id ?? null;
 }
 
 /**
@@ -523,17 +502,10 @@ export function resumeLessonId(
  * DB 由来コースは `mapCourseToUi` が progress=0 で返すため、 レッスン完了数から計算する。
  * レッスンを持たないコースはそのまま返す。
  */
-export function deriveCourseProgress(
-  course: Course,
-  map: LessonProgressMap,
-): Course {
+export function deriveCourseProgress(course: Course, map: LessonProgressMap): Course {
   const lessons = course.sections?.flatMap((s) => s.lessons) ?? [];
   if (lessons.length === 0) return course;
-  const done = lessons.filter(
-    (l) => resolveLessonStatus(l, map) === 'done',
-  ).length;
-  const pct = course.completed
-    ? 100
-    : Math.round((done / lessons.length) * 100);
+  const done = lessons.filter((l) => resolveLessonStatus(l, map) === "done").length;
+  const pct = course.completed ? 100 : Math.round((done / lessons.length) * 100);
   return { ...course, progress: pct };
 }

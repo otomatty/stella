@@ -7,19 +7,13 @@
  * - 環境未設定 / 取得失敗時は fallback UI を表示
  */
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Document, Page } from 'react-pdf';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Document, Page } from "react-pdf";
 // pdfjs (約 1MB+) を main バンドルに含めないよう、 worker 設定と CSS は
 // lazy ロードされる本コンポーネント側で import する (main.tsx に置かない)。
-import '@/lib/pdfjs-worker';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+import "@/lib/pdfjs-worker";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import {
   ChevronLeft,
   ChevronRight,
@@ -32,14 +26,14 @@ import {
   AlertCircle,
   Check,
   FileText,
-} from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
-import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
-import { cn } from '@/lib/utils';
+import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
+import { cn } from "@/lib/utils";
 
 interface Props {
   lessonId: string;
@@ -50,14 +44,14 @@ interface Props {
 
 const ZOOM_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3] as const;
 const ZOOM_LABELS: Record<string, string> = {
-  '0.5': '50%',
-  '0.75': '75%',
-  '1': '100%',
-  '1.25': '125%',
-  '1.5': '150%',
-  '2': '200%',
-  '2.5': '250%',
-  '3': '300%',
+  "0.5": "50%",
+  "0.75": "75%",
+  "1": "100%",
+  "1.25": "125%",
+  "1.5": "150%",
+  "2": "200%",
+  "2.5": "250%",
+  "3": "300%",
 };
 const ZOOM_MAX = ZOOM_PRESETS[ZOOM_PRESETS.length - 1];
 const ZOOM_MIN = ZOOM_PRESETS[0];
@@ -65,9 +59,9 @@ const ZOOM_MIN = ZOOM_PRESETS[0];
 const COMPLETION_THRESHOLD = 0.9;
 
 const PDFJS_OPTIONS = {
-  cMapUrl: '/pdfjs/cmaps/',
+  cMapUrl: "/pdfjs/cmaps/",
   cMapPacked: true,
-  standardFontDataUrl: '/pdfjs/standard_fonts/',
+  standardFontDataUrl: "/pdfjs/standard_fonts/",
 };
 
 export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Props) {
@@ -98,22 +92,16 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   }, [pdfPath]);
 
   // file プロップが毎レンダ新オブジェクトになると無限ループになるため memoize
-  const documentFile = useMemo(
-    () => (url ? { url } : null),
-    // reloadKey を依存に含めることでリトライ時に新しいオブジェクトを作る
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [url, reloadKey],
-  );
+  // reloadKey を依存に含めることでリトライ時に新しいオブジェクトを作る
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reloadKey は再生成トリガー
+  const documentFile = useMemo(() => (url ? { url } : null), [url, reloadKey]);
 
-  const handleLoadSuccess = useCallback(
-    ({ numPages: n }: { numPages: number }) => {
-      setNumPages(n);
-      setLoadError(null);
-      // 初期ページが既に numPages を超えていれば最後のページに丸める
-      setPage((p) => Math.min(Math.max(1, p), n));
-    },
-    [],
-  );
+  const handleLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
+    setNumPages(n);
+    setLoadError(null);
+    // 初期ページが既に numPages を超えていれば最後のページに丸める
+    setPage((p) => Math.min(Math.max(1, p), n));
+  }, []);
 
   const handleLoadError = useCallback((err: Error) => {
     setLoadError(err);
@@ -151,8 +139,8 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   // フルスクリーン状態の追従
   useEffect(() => {
     const onChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
   const total = numPages ?? totalPages ?? 0;
@@ -169,28 +157,25 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        target.closest('input, textarea, select, button, a, [contenteditable="true"]')
-      ) {
+      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) {
         return;
       }
       switch (e.key) {
-        case 'ArrowLeft':
-        case 'PageUp':
+        case "ArrowLeft":
+        case "PageUp":
           e.preventDefault();
           goPrev();
           break;
-        case 'ArrowRight':
-        case 'PageDown':
+        case "ArrowRight":
+        case "PageDown":
           e.preventDefault();
           goNext();
           break;
-        case 'Home':
+        case "Home":
           e.preventDefault();
           goFirst();
           break;
-        case 'End':
+        case "End":
           e.preventDefault();
           goLast();
           break;
@@ -202,9 +187,13 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
     if (document.fullscreenElement === containerRef.current) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => {
+        // フルスクリーン解除が拒否されても操作は続行する
+      });
     } else {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().catch(() => {
+        // フルスクリーン要求が拒否されても操作は続行する
+      });
     }
   }, []);
 
@@ -235,11 +224,13 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
   return (
     <div
       ref={containerRef}
+      role="application"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: 矢印キー操作のためコンテナがフォーカスを持つ
       tabIndex={0}
       onKeyDown={onKeyDown}
       className={cn(
-        'relative bg-sunken border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60',
-        isFullscreen ? 'h-screen w-screen' : 'rounded-md',
+        "relative bg-sunken border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60",
+        isFullscreen ? "h-screen w-screen" : "rounded-md",
       )}
       aria-label="PDF スライドビューア"
     >
@@ -251,17 +242,20 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
           aria-label="サムネペインを開閉"
         >
           <FileText size={13} />
-          {showThumbs ? '一覧を閉じる' : '一覧'}
+          {showThumbs ? "一覧を閉じる" : "一覧"}
         </Button>
         <span className="text-ink-3">|</span>
-        <Button size="sm" variant="ghost" onClick={goPrev} aria-label="前のページ" disabled={page <= 1}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={goPrev}
+          aria-label="前のページ"
+          disabled={page <= 1}
+        >
           <ChevronLeft size={14} />
         </Button>
-        <div
-          className="text-ink-2 tabular-nums px-1.5 min-w-[64px] text-center"
-          aria-live="polite"
-        >
-          {page} / {total || '?'}
+        <div className="text-ink-2 tabular-nums px-1.5 min-w-[64px] text-center" aria-live="polite">
+          {page} / {total || "?"}
         </div>
         <Button
           size="sm"
@@ -327,7 +321,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
 
       <div className="px-3 py-2 border-b border-border bg-card flex items-center gap-2 text-[11.5px] text-ink-3">
         <span>
-          閲覧 {viewedCount} / {total || '?'} ページ{' '}
+          閲覧 {viewedCount} / {total || "?"} ページ{" "}
           <span className="font-display font-bold text-ink-2">({progressPct}%)</span>
         </span>
         <div className="flex-1 max-w-[280px]">
@@ -335,26 +329,32 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
         </div>
       </div>
 
-      <div className="flex" style={{ height: isFullscreen ? 'calc(100vh - 92px)' : 'min(70vh, 720px)' }}>
+      <div
+        className="flex"
+        style={{ height: isFullscreen ? "calc(100vh - 92px)" : "min(70vh, 720px)" }}
+      >
         {showThumbs ? (
           <div className="w-[160px] shrink-0 border-r border-border bg-card overflow-y-auto py-2">
             {loadError || !documentFile ? null : (
-              <Document
-                file={documentFile}
-                options={PDFJS_OPTIONS}
-                loading={<ThumbLoading />}
-              >
+              <Document file={documentFile} options={PDFJS_OPTIONS} loading={<ThumbLoading />}>
                 {Array.from({ length: total }, (_, i) => i + 1).map((p) => (
                   <button
                     type="button"
                     key={p}
                     onClick={() => setPage(p)}
                     className={cn(
-                      'block w-full mb-2 px-2 py-1 rounded border text-left',
-                      p === page ? 'border-brand bg-brand-soft' : 'border-transparent hover:border-border',
+                      "block w-full mb-2 px-2 py-1 rounded border text-left",
+                      p === page
+                        ? "border-brand bg-brand-soft"
+                        : "border-transparent hover:border-border",
                     )}
                   >
-                    <Page pageNumber={p} width={130} renderAnnotationLayer={false} renderTextLayer={false} />
+                    <Page
+                      pageNumber={p}
+                      width={130}
+                      renderAnnotationLayer={false}
+                      renderTextLayer={false}
+                    />
                     <div className="text-[11px] text-ink-3 text-center mt-0.5">{p}</div>
                   </button>
                 ))}
@@ -368,7 +368,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
             <div className="w-full max-w-md mx-auto mt-8">
               <FallbackCard
                 title="PDF を読み込めませんでした"
-                body={loadError.message || '通信状況を確認して再読み込みしてください。'}
+                body={loadError.message || "通信状況を確認して再読み込みしてください。"}
                 action={
                   <div className="flex gap-2">
                     <Button size="sm" variant="primary" onClick={retry}>
@@ -407,7 +407,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
 
 function PageLoading() {
   return (
-    <div role="status" aria-label="読み込み中" className="p-4">
+    <div aria-busy="true" aria-live="polite" aria-label="読み込み中" className="p-4">
       <Skeleton className="aspect-[16/9] w-[min(60vw,880px)]" />
     </div>
   );
@@ -415,7 +415,12 @@ function PageLoading() {
 
 function ThumbLoading() {
   return (
-    <div role="status" aria-label="サムネイルを生成中" className="px-2 py-1 space-y-2">
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="サムネイルを生成中"
+      className="px-2 py-1 space-y-2"
+    >
       <Skeleton className="aspect-[16/9] w-full" />
       <Skeleton className="aspect-[16/9] w-full" />
     </div>

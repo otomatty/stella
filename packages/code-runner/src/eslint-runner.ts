@@ -7,10 +7,7 @@
 
 import { Linter } from "eslint-linter-browserify";
 
-import type {
-  ESLintRuleConfig,
-  LintViolation,
-} from "@falcon/shared/types";
+import type { ESLintRuleConfig, LintViolation } from "@falcon/shared/types";
 
 interface RawMessage {
   ruleId: string | null;
@@ -72,10 +69,8 @@ const JA_MESSAGES: Record<string, (msg: string) => string> = {
   eqeqeq: () => "== ではなく === を使いましょう",
   "no-var": () => "var ではなく let / const を使いましょう",
   "prefer-const": () => "再代入されない変数は let ではなく const にできます",
-  "no-unused-vars": (msg) =>
-    `未使用の変数があります: ${msg.match(/'([^']+)'/)?.[1] ?? ""}`,
-  "no-undef": (msg) =>
-    `未定義の識別子です: ${msg.match(/'([^']+)'/)?.[1] ?? ""}`,
+  "no-unused-vars": (msg) => `未使用の変数があります: ${msg.match(/'([^']+)'/)?.[1] ?? ""}`,
+  "no-undef": (msg) => `未定義の識別子です: ${msg.match(/'([^']+)'/)?.[1] ?? ""}`,
 };
 
 export function lintCode(
@@ -102,16 +97,16 @@ export function lintCode(
 
   return messages
     .filter((m) => {
-      if (m.ruleId !== "no-unused-vars") {return true;}
+      if (m.ruleId !== "no-unused-vars") {
+        return true;
+      }
       const unusedName = m.message.match(/'([^']+)'/)?.[1];
       return !unusedName || !ignoredUnusedNames.has(unusedName);
     })
     .map((m) => ({
       ruleId: m.ruleId,
       severity: m.severity,
-      message: m.ruleId
-        ? (JA_MESSAGES[m.ruleId]?.(m.message) ?? m.message)
-        : m.message,
+      message: m.ruleId ? (JA_MESSAGES[m.ruleId]?.(m.message) ?? m.message) : m.message,
       rawMessage: m.message,
       line: m.line,
       column: m.column,
@@ -124,23 +119,15 @@ function withUnusedVarsOptions(
 ): Record<string, unknown> {
   const configuredRules: Record<string, unknown> = { ...rules };
   const noUnusedVars = rules["no-unused-vars"];
-  if (
-    noUnusedVars === undefined ||
-    noUnusedVars === "off" ||
-    noUnusedVars === 0
-  ) {
+  if (noUnusedVars === undefined || noUnusedVars === "off" || noUnusedVars === 0) {
     return configuredRules;
   }
 
   const severity = Array.isArray(noUnusedVars) ? noUnusedVars[0] : noUnusedVars;
   const existingOptions =
-    Array.isArray(noUnusedVars) && isRecord(noUnusedVars[1])
-      ? noUnusedVars[1]
-      : {};
+    Array.isArray(noUnusedVars) && isRecord(noUnusedVars[1]) ? noUnusedVars[1] : {};
   const rest =
-    Array.isArray(noUnusedVars) && isRecord(noUnusedVars[1])
-      ? noUnusedVars.slice(2)
-      : [];
+    Array.isArray(noUnusedVars) && isRecord(noUnusedVars[1]) ? noUnusedVars.slice(2) : [];
   const ignoredNamePattern =
     ignoredUnusedNames.size > 0
       ? `^(?:${[...ignoredUnusedNames].map(escapeRegExp).join("|")})$`

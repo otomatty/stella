@@ -5,10 +5,10 @@
  * - レッスン中は `kind: 'lesson'` を流す (code レッスン含む)
  */
 
-import { createContext, useContext, type ReactNode } from 'react';
-import type { ChatContext } from '@falcon/shared/ai/types';
+import { createContext, useContext, type ReactNode } from "react";
+import type { ChatContext } from "@falcon/shared/ai/types";
 
-const LessonAIContextValue = createContext<ChatContext>({ kind: 'general' });
+const LessonAIContextValue = createContext<ChatContext>({ kind: "general" });
 
 export interface LessonAIProviderProps {
   value: ChatContext;
@@ -16,9 +16,7 @@ export interface LessonAIProviderProps {
 }
 
 export function LessonAIProvider({ value, children }: LessonAIProviderProps) {
-  return (
-    <LessonAIContextValue.Provider value={value}>{children}</LessonAIContextValue.Provider>
-  );
+  return <LessonAIContextValue.Provider value={value}>{children}</LessonAIContextValue.Provider>;
 }
 
 export function useLessonAI(): ChatContext {

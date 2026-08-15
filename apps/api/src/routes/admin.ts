@@ -36,6 +36,7 @@ import {
   requirePlatformAdmin,
   requireTenantAdmin,
   ApiError,
+  requireReturning,
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
@@ -370,7 +371,11 @@ adminRoute.post("/api/admin/orgs/upsert", async (c) => {
     if (!validated.ok) return c.json({ error: validated.message }, validated.status);
     const v = validated.value;
 
-    const existing = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, v.id)).limit(1);
+    const existing = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, v.id))
+      .limit(1);
     if (v.expectCreate && existing[0]) {
       throw new ApiError("この組織IDは既に使用されています", 409);
     }
@@ -387,7 +392,7 @@ adminRoute.post("/api/admin/orgs/upsert", async (c) => {
       contractEnd: v.contractEnd ?? null,
       active: v.active ?? true,
     };
-    const saved = (
+    const saved = requireReturning(
       await db
         .insert(tenants)
         .values(values)
@@ -395,8 +400,9 @@ adminRoute.post("/api/admin/orgs/upsert", async (c) => {
           target: tenants.id,
           set: { ...values, updatedAt: new Date() },
         })
-        .returning()
-    )[0]!;
+        .returning(),
+      "tenant upsert",
+    );
 
     await recordAudit(db, caller, {
       action: isCreate ? "org_create" : "org_update",

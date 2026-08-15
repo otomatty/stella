@@ -14,11 +14,7 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CourseThumb } from "@/components/common/CourseThumb";
 import type { CourseColor, CourseRow } from "@falcon/shared/cms/types";
-import {
-  deleteCourse,
-  setCourseStatus,
-  upsertCourse,
-} from "@/lib/cms-api";
+import { deleteCourse, setCourseStatus, upsertCourse } from "@/lib/cms-api";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { CourseEditor } from "./CourseEditor";
 
@@ -65,10 +61,7 @@ export function AdminCoursesPage({ tenantId, initialCourseId = null }: Props) {
 
   const onTogglePublish = async (course: CourseRow) => {
     try {
-      await setCourseStatus(
-        course.id,
-        course.status === "published" ? "draft" : "published",
-      );
+      await setCourseStatus(course.id, course.status === "published" ? "draft" : "published");
       await refetch();
     } catch (err) {
       toast.error(`状態切替失敗: ${err instanceof Error ? err.message : "unknown"}`);
@@ -76,7 +69,8 @@ export function AdminCoursesPage({ tenantId, initialCourseId = null }: Props) {
   };
 
   const onDelete = async (course: CourseRow) => {
-    if (!confirm(`コース "${course.title}" を削除します。 セクション / レッスンも一緒に消えます。`)) return;
+    if (!confirm(`コース "${course.title}" を削除します。 セクション / レッスンも一緒に消えます。`))
+      return;
     try {
       await deleteCourse(course.id);
       await refetch();
@@ -190,9 +184,7 @@ function CourseCard({ course, onEdit, onTogglePublish, onDelete }: CourseCardPro
         </div>
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <div className="text-[15px] font-semibold leading-snug tracking-tight">
-          {course.title}
-        </div>
+        <div className="text-[15px] font-semibold leading-snug tracking-tight">{course.title}</div>
         <div className="text-[11.5px] text-ink-3 flex gap-3 items-center">
           {course.category ? <span>{course.category}</span> : null}
           {course.duration_hours ? <span>{course.duration_hours}h</span> : null}

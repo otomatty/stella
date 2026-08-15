@@ -1,9 +1,9 @@
-import { toast } from 'sonner';
-import { Google } from '@/lib/icons';
-import { Brand } from '@/components/common/Brand';
-import { Button } from '@/components/ui/button';
+import { toast } from "sonner";
+import { Google } from "@/lib/icons";
+import { Brand } from "@/components/common/Brand";
+import { Button } from "@/components/ui/button";
 import { isBackendConfigured } from "@/lib/backend";
-import { signInWithGoogle } from '@/lib/auth';
+import { signInWithGoogle } from "@/lib/auth";
 
 interface LoginScreenProps {
   /** バックエンド未設定時の fixtures 用モックログイン。 */
@@ -20,14 +20,14 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
       }
       // 本番想定でバックエンド未設定の場合は無反応にせず、 原因とサポート導線を示す。
       toast.error(
-        'ログインを開始できませんでした。 サーバ設定が未完了の可能性があります。 問題が続く場合はサポートへお問い合わせください。',
+        "ログインを開始できませんでした。 サーバ設定が未完了の可能性があります。 問題が続く場合はサポートへお問い合わせください。",
       );
       return;
     }
     try {
       signInWithGoogle();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'ログインに失敗しました';
+      const message = err instanceof Error ? err.message : "ログインに失敗しました";
       toast.error(message);
     }
   };
@@ -41,9 +41,7 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
           </div>
 
           <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
-          <p className="text-ink-3 text-[13.5px] mb-7">
-            Google アカウントでログインしてください。
-          </p>
+          <p className="text-ink-3 text-[13.5px] mb-7">Google アカウントでログインしてください。</p>
 
           <Button type="button" variant="primary" size="full" onClick={handleGoogleLogin}>
             <Google width={16} height={16} />
@@ -51,10 +49,10 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
           </Button>
 
           <div className="mt-8 text-[11.5px] text-ink-3 text-center">
-            ログインできない場合は{' '}
+            ログインできない場合は{" "}
             <a href="/support" className="text-brand underline underline-offset-2">
               サポート
-            </a>{' '}
+            </a>{" "}
             までお問い合わせください。
           </div>
         </div>

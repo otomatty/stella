@@ -2,13 +2,13 @@
  * 招待ダイアログ (単体)。 email / 表示名 / ロールを指定して 1 名を招待する。
  */
 
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { toast } from "sonner";
 
-import { Mail } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Mail } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,16 +16,16 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   ASSIGNABLE_PROFILE_ROLES,
   isValidEmail,
   type AssignableProfileRole,
   type InviteUserInput,
-} from '@falcon/shared/admin/types';
-import { inviteUsers } from '@/lib/admin-users-api';
+} from "@falcon/shared/admin/types";
+import { inviteUsers } from "@/lib/admin-users-api";
 
-import { ROLE_LABEL } from './shared';
+import { ROLE_LABEL } from "./shared";
 
 interface InviteDialogProps {
   open: boolean;
@@ -34,51 +34,50 @@ interface InviteDialogProps {
   onInvited: () => Promise<void> | void;
 }
 
-export function InviteDialog({
-  open,
-  onOpenChange,
-  tenantName,
-  onInvited,
-}: InviteDialogProps) {
-  const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<AssignableProfileRole>('student');
+export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: InviteDialogProps) {
+  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<AssignableProfileRole>("student");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
-    setEmail('');
-    setDisplayName('');
-    setRole('student');
+    setEmail("");
+    setDisplayName("");
+    setRole("student");
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) {
-      toast.error('メールアドレスを入力してください');
+      toast.error("メールアドレスを入力してください");
       return;
     }
     if (!isValidEmail(trimmed)) {
-      toast.error('有効なメールアドレスを入力してください');
+      toast.error("有効なメールアドレスを入力してください");
       return;
     }
     setSubmitting(true);
     try {
       const invites: InviteUserInput[] = [
-        { email: trimmed, displayName: displayName.trim() || trimmed.split('@')[0] || trimmed, role },
+        {
+          email: trimmed,
+          displayName: displayName.trim() || trimmed.split("@")[0] || trimmed,
+          role,
+        },
       ];
       const res = await inviteUsers(invites);
       const first = res.results[0];
-      if (first && first.ok) {
+      if (first?.ok) {
         toast.success(`${trimmed} を招待しました`);
         reset();
         onOpenChange(false);
         await onInvited();
       } else {
-        toast.error(`招待失敗: ${first?.error ?? 'unknown'}`);
+        toast.error(`招待失敗: ${first?.error ?? "unknown"}`);
       }
     } catch (err) {
-      toast.error(`招待失敗: ${err instanceof Error ? err.message : 'unknown'}`);
+      toast.error(`招待失敗: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +136,7 @@ export function InviteDialog({
               キャンセル
             </Button>
             <Button type="submit" variant="accent" disabled={submitting}>
-              {submitting ? '送信中…' : '招待を送る'}
+              {submitting ? "送信中…" : "招待を送る"}
             </Button>
           </DialogFooter>
         </form>

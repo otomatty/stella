@@ -1,11 +1,5 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ReactNode,
-} from 'react';
-import { toast } from 'sonner';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { toast } from "sonner";
 import {
   ChevronLeft,
   Sparkles,
@@ -18,50 +12,42 @@ import {
   Edit,
   Info,
   Loader2,
-} from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import type {
-  ReviewSuggestion,
-  RubricCriterion,
-  ReviewVerdict,
-} from '@falcon/shared/review/types';
-import { useSubmission, useSubmissions } from '@/hooks/useSubmissions';
-import { isBackendConfigured } from '@/lib/backend';
-import { fetchReviewDraft } from '@/lib/review-draft-api';
-import { formatSubmittedAt } from '@/lib/submissions-store';
-import type { Tenant } from '@/data/types';
-import { cn } from '@/lib/utils';
+} from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import type { ReviewSuggestion, RubricCriterion, ReviewVerdict } from "@falcon/shared/review/types";
+import { useSubmission, useSubmissions } from "@/hooks/useSubmissions";
+import { isBackendConfigured } from "@/lib/backend";
+import { fetchReviewDraft } from "@/lib/review-draft-api";
+import { formatSubmittedAt } from "@/lib/submissions-store";
+import type { Tenant } from "@/data/types";
+import { cn } from "@/lib/utils";
 
-const severityDot: Record<ReviewSuggestion['severity'], string> = {
-  high: 'bg-danger',
-  med: 'bg-warning',
-  low: 'bg-info',
+const severityDot: Record<ReviewSuggestion["severity"], string> = {
+  high: "bg-danger",
+  med: "bg-warning",
+  low: "bg-info",
 };
 
 interface ReviewEditorProps {
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   submissionId: string | null;
   setPage: (page: string) => void;
 }
 
-export const ReviewEditor = ({
-  tenantId,
-  submissionId,
-  setPage,
-}: ReviewEditorProps) => {
+export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorProps) => {
   const submission = useSubmission(tenantId, submissionId);
   const { update, finalize } = useSubmissions(tenantId);
 
-  const [tab, setTab] = useState('ai');
+  const [tab, setTab] = useState("ai");
   const [suggestions, setSuggestions] = useState<ReviewSuggestion[]>([]);
   const [rubric, setRubric] = useState<RubricCriterion[]>([]);
   const [verdict, setVerdict] = useState<ReviewVerdict | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
   const [draftLoading, setDraftLoading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const draftRequestedRef = useRef<string | null>(null);
@@ -95,8 +81,8 @@ export const ReviewEditor = ({
         const draft = await fetchReviewDraft({
           assignmentTitle: submission.assignmentTitle,
           courseTitle: submission.courseTitle,
-          code: submission.codeLines.join('\n'),
-          language: 'js',
+          code: submission.codeLines.join("\n"),
+          language: "js",
         });
         // 楽観更新の emit で effect が再実行されても、保存と同一提出の UI 反映は続行する。
         const saved = await update(requestId, {
@@ -107,7 +93,7 @@ export const ReviewEditor = ({
         });
         if (!saved) {
           if (loadedSubmissionIdRef.current === requestId) {
-            toast.error('AI 下書きの保存に失敗しました');
+            toast.error("AI 下書きの保存に失敗しました");
           }
           draftRequestedRef.current = null;
           return;
@@ -119,9 +105,9 @@ export const ReviewEditor = ({
           setNotes((prev) => (prev.trim() ? prev : draft.notes));
         }
       } catch (err) {
-        console.error('[ReviewEditor] draft failed', err);
+        console.error("[ReviewEditor] draft failed", err);
         if (loadedSubmissionIdRef.current === requestId) {
-          toast.error('AI 下書きの生成に失敗しました');
+          toast.error("AI 下書きの生成に失敗しました");
         }
         draftRequestedRef.current = null;
       } finally {
@@ -136,7 +122,7 @@ export const ReviewEditor = ({
     return (
       <div className="p-7 text-center text-ink-3">
         <p className="mb-4">提出物が選択されていません。</p>
-        <Button type="button" onClick={() => setPage('review-queue')}>
+        <Button type="button" onClick={() => setPage("review-queue")}>
           キューに戻る
         </Button>
       </div>
@@ -154,9 +140,7 @@ export const ReviewEditor = ({
   const maxScore = rubric.reduce((a, r) => a + r.max, 0);
   const pct = maxScore ? Math.round((totalScore / maxScore) * 100) : 0;
 
-  const commentedLines = new Set(
-    suggestions.filter((s) => s.adopted === true).map((s) => s.line),
-  );
+  const commentedLines = new Set(suggestions.filter((s) => s.adopted === true).map((s) => s.line));
 
   const handleFinalize = async (v: ReviewVerdict) => {
     if (finalizing) return;
@@ -168,25 +152,25 @@ export const ReviewEditor = ({
         rubric,
       });
       if (!saved) {
-        toast.error('採点の保存に失敗しました');
+        toast.error("採点の保存に失敗しました");
         return;
       }
       setVerdict(v);
       const backend = isBackendConfigured();
       toast.success(
-        v === 'pass'
+        v === "pass"
           ? backend
-            ? '合格として確定しました（LMS通知を送信しました）'
-            : '合格として確定しました（デモ: 通知はローカルのみ）'
-          : v === 'resubmit'
+            ? "合格として確定しました（LMS通知を送信しました）"
+            : "合格として確定しました（デモ: 通知はローカルのみ）"
+          : v === "resubmit"
             ? backend
-              ? '再提出を依頼しました（LMS通知を送信しました）'
-              : '再提出を依頼しました'
+              ? "再提出を依頼しました（LMS通知を送信しました）"
+              : "再提出を依頼しました"
             : backend
-              ? '不合格として確定しました（LMS通知を送信しました）'
-              : '不合格として確定しました',
+              ? "不合格として確定しました（LMS通知を送信しました）"
+              : "不合格として確定しました",
       );
-      setPage('review-queue');
+      setPage("review-queue");
     } finally {
       setFinalizing(false);
     }
@@ -199,7 +183,7 @@ export const ReviewEditor = ({
       <div className="px-5 py-3.5 border-b border-border bg-card flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setPage('review-queue')}
+          onClick={() => setPage("review-queue")}
           className="flex items-center gap-2 cursor-pointer text-ink-3 hover:text-foreground"
         >
           <ChevronLeft size={14} />
@@ -212,7 +196,7 @@ export const ReviewEditor = ({
           </div>
           <div className="text-[11.5px] text-ink-3">
             {submission.courseTitle}
-            {submission.sectionTitle ? ` / ${submission.sectionTitle}` : ''} · 提出{' '}
+            {submission.sectionTitle ? ` / ${submission.sectionTitle}` : ""} · 提出{" "}
             {formatSubmittedAt(submission.submittedAt)} · {submission.attempt}回目
           </div>
         </div>
@@ -228,18 +212,14 @@ export const ReviewEditor = ({
             AI下書き準備済
           </Badge>
         ) : null}
-        <Button
-          type="button"
-          onClick={() => handleFinalize('resubmit')}
-          disabled={finalizing}
-        >
+        <Button type="button" onClick={() => handleFinalize("resubmit")} disabled={finalizing}>
           <ThumbsDown size={13} />
           再提出
         </Button>
         <Button
           type="button"
           variant="primary"
-          onClick={() => handleFinalize('pass')}
+          onClick={() => handleFinalize("pass")}
           disabled={finalizing}
         >
           <ThumbsUp size={13} />
@@ -247,7 +227,7 @@ export const ReviewEditor = ({
         </Button>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 380px', minHeight: 0, flex: 1 }}>
+      <div className="grid" style={{ gridTemplateColumns: "1fr 380px", minHeight: 0, flex: 1 }}>
         <div className="min-w-0 overflow-hidden flex flex-col">
           <div className="px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
             <Badge>提出コード</Badge>
@@ -260,16 +240,17 @@ export const ReviewEditor = ({
               const isCommented = commentedLines.has(lineNum);
               return (
                 <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
                   key={i}
                   className={cn(
-                    'flex gap-4 px-5 relative',
-                    isCommented ? 'code-viewer-commented' : 'code-viewer-hover',
+                    "flex gap-4 px-5 relative",
+                    isCommented ? "code-viewer-commented" : "code-viewer-hover",
                   )}
                 >
                   <div
                     className={cn(
-                      'w-[30px] text-right shrink-0 select-none',
-                      isCommented ? 'code-viewer-ln-commented' : 'code-viewer-ln',
+                      "w-[30px] text-right shrink-0 select-none",
+                      isCommented ? "code-viewer-ln-commented" : "code-viewer-ln",
                     )}
                   >
                     {lineNum}
@@ -323,15 +304,15 @@ export const ReviewEditor = ({
                 <div
                   key={s.id}
                   className={cn(
-                    'border rounded-md p-3.5 mb-2.5 bg-card',
-                    s.adopted === true && 'border-success bg-success-soft',
-                    s.adopted === false && 'opacity-55',
-                    s.adopted === null && 'border-border',
+                    "border rounded-md p-3.5 mb-2.5 bg-card",
+                    s.adopted === true && "border-success bg-success-soft",
+                    s.adopted === false && "opacity-55",
+                    s.adopted === null && "border-border",
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1.5 text-[11.5px] font-semibold uppercase tracking-wider">
                     <span
-                      className={cn('w-2 h-2 rounded-full inline-block', severityDot[s.severity])}
+                      className={cn("w-2 h-2 rounded-full inline-block", severityDot[s.severity])}
                     />
                     <span>{s.category}</span>
                     <span className="font-mono bg-muted text-ink-2 px-1.5 py-px rounded-[3px] text-[11px] font-medium normal-case tracking-normal">
@@ -388,7 +369,7 @@ export const ReviewEditor = ({
                 <div
                   key={r.id}
                   className="grid items-center gap-3 py-2.5 border-b border-border last:border-b-0"
-                  style={{ gridTemplateColumns: '1fr auto' }}
+                  style={{ gridTemplateColumns: "1fr auto" }}
                 >
                   <div>
                     <div className="text-[13px] font-medium">{r.name}</div>
@@ -401,10 +382,10 @@ export const ReviewEditor = ({
                         type="button"
                         onClick={() => setRubricScore(r.id, n)}
                         className={cn(
-                          'w-[26px] h-[26px] rounded-[4px] grid place-items-center text-[11px] font-semibold',
+                          "w-[26px] h-[26px] rounded-[4px] grid place-items-center text-[11px] font-semibold",
                           r.score === n
-                            ? 'bg-brand text-white border border-brand'
-                            : 'border border-border-2 text-ink-3 bg-card hover:border-brand hover:text-brand',
+                            ? "bg-brand text-white border border-brand"
+                            : "border border-border-2 text-ink-3 bg-card hover:border-brand hover:text-brand",
                         )}
                       >
                         {n}
@@ -430,23 +411,23 @@ export const ReviewEditor = ({
               <div className="flex gap-2 mb-4">
                 <Button
                   type="button"
-                  variant={verdict === 'pass' ? 'primary' : 'default'}
-                  onClick={() => setVerdict('pass')}
+                  variant={verdict === "pass" ? "primary" : "default"}
+                  onClick={() => setVerdict("pass")}
                 >
                   <Check size={13} />
                   合格
                 </Button>
                 <Button
                   type="button"
-                  variant={verdict === 'resubmit' ? 'primary' : 'default'}
-                  onClick={() => setVerdict('resubmit')}
+                  variant={verdict === "resubmit" ? "primary" : "default"}
+                  onClick={() => setVerdict("resubmit")}
                 >
                   再提出
                 </Button>
                 <Button
                   type="button"
-                  variant={verdict === 'fail' ? 'primary' : 'default'}
-                  onClick={() => setVerdict('fail')}
+                  variant={verdict === "fail" ? "primary" : "default"}
+                  onClick={() => setVerdict("fail")}
                 >
                   不合格
                 </Button>
@@ -466,8 +447,8 @@ export const ReviewEditor = ({
                 <Info size={14} />
                 <div>
                   {isBackendConfigured()
-                    ? '採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。'
-                    : '採点を確定するとローカルに保存されます（デモ）。'}
+                    ? "採点を確定すると受講者に LMS 通知が送られます（メールは送信しません）。"
+                    : "採点を確定するとローカルに保存されます（デモ）。"}
                 </div>
               </div>
             </TabsContent>
@@ -486,11 +467,11 @@ const TabTrigger = (props: ComponentProps<typeof TabsTrigger>) => (
 function syntax(line: string): ReactNode {
   type Part = { t: string; cls: string | null };
   const patterns: Array<[RegExp, string]> = [
-    [/\/\/[^\n]*/g, 'tok-com'],
-    [/"[^"]*"/g, 'tok-str'],
-    [/\b(const|let|var|function|if|else|for|return|new|class|this|of)\b/g, 'tok-kw'],
-    [/\b(true|false|null|undefined)\b/g, 'tok-num'],
-    [/\b\d+\b/g, 'tok-num'],
+    [/\/\/[^\n]*/g, "tok-com"],
+    [/"[^"]*"/g, "tok-str"],
+    [/\b(const|let|var|function|if|else|for|return|new|class|this|of)\b/g, "tok-kw"],
+    [/\b(true|false|null|undefined)\b/g, "tok-num"],
+    [/\b\d+\b/g, "tok-num"],
   ];
   let parts: Part[] = [{ t: line, cls: null }];
   for (const [re, cls] of patterns) {
@@ -510,6 +491,7 @@ function syntax(line: string): ReactNode {
   }
   return parts.map((p, i) =>
     p.cls ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: ハイライト分割は位置が同一性
       <span key={i} className={p.cls}>
         {p.t}
       </span>

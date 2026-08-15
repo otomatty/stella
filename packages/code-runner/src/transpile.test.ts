@@ -9,7 +9,9 @@ describe("transpileTypeScript", () => {
   });
 
   it("interface と type は消える", () => {
-    const out = transpileTypeScript("type A = { a: string };\ninterface B { b: number }\nconsole.log(1);");
+    const out = transpileTypeScript(
+      "type A = { a: string };\ninterface B { b: number }\nconsole.log(1);",
+    );
     expect(out).not.toContain("interface");
     expect(out).not.toContain("type A");
   });

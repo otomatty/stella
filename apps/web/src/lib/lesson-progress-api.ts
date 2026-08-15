@@ -13,8 +13,7 @@
 import type { LessonProgressEntry } from "@/lib/lesson-progress";
 import { apiFetch } from "@/lib/api-client";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * DB の lesson_id は CMS の uuid を指す。 fixtures フォールバック時の
@@ -48,9 +47,7 @@ function rowToEntry(row: LessonProgressRow): LessonProgressEntry {
 export async function fetchProgressForUser(
   _userId: string,
 ): Promise<Record<string, LessonProgressEntry>> {
-  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>(
-    "/api/lesson-progress",
-  );
+  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>("/api/lesson-progress");
   const map: Record<string, LessonProgressEntry> = {};
   for (const row of rows ?? []) {
     map[row.lesson_id] = rowToEntry(row);
@@ -91,9 +88,7 @@ export async function upsertProgressBatch(
 export async function fetchProgressForTenant(): Promise<
   Array<{ userId: string; lessonId: string; entry: LessonProgressEntry }>
 > {
-  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>(
-    "/api/lesson-progress/tenant",
-  );
+  const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>("/api/lesson-progress/tenant");
   return (rows ?? []).map((row) => ({
     userId: row.user_id,
     lessonId: row.lesson_id,

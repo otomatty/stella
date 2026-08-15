@@ -88,11 +88,7 @@ async function recordLogin(
  * 上書きしない。 アバターは編集手段が無いので毎回最新化する (URL は失効し得るため)。
  * 同期に失敗してもログイン自体は成立させる。
  */
-async function syncGoogleProfile(
-  db: Db,
-  userId: string,
-  claims: GoogleUserClaims,
-): Promise<void> {
+async function syncGoogleProfile(db: Db, userId: string, claims: GoogleUserClaims): Promise<void> {
   const displayName = claims.name?.trim();
   const avatarUrl = claims.picture?.trim();
   try {
@@ -133,22 +129,30 @@ async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | 
   return user?.email ?? null;
 }
 
-function assertGoogleOAuthConfigured(env: Env): void {
-  if (!env.AUTH_JWT_SECRET) {
+function requireGoogleOAuth(env: Env): {
+  jwtSecret: string;
+  googleClientId: string;
+  googleClientSecret: string;
+} {
+  const jwtSecret = env.AUTH_JWT_SECRET;
+  const googleClientId = env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
+  if (!jwtSecret) {
     throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
   }
-  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+  if (!googleClientId || !googleClientSecret) {
     throw new ApiError("Google OAuth が未設定です (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)", 503);
   }
+  return { jwtSecret, googleClientId, googleClientSecret };
 }
 
 authRoute.get("/api/auth/google", async (c) => {
   try {
-    assertGoogleOAuthConfigured(c.env);
+    const { jwtSecret, googleClientId } = requireGoogleOAuth(c.env);
     const returnTo = resolveOAuthReturnTo(c.env, c.req.query("return_to"));
-    const state = await createOAuthState(c.env.AUTH_JWT_SECRET!, returnTo);
+    const state = await createOAuthState(jwtSecret, returnTo);
     const redirectUri = googleRedirectUri(c.req.url);
-    const url = buildGoogleAuthUrl(c.env.GOOGLE_CLIENT_ID!, redirectUri, state);
+    const url = buildGoogleAuthUrl(googleClientId, redirectUri, state);
     return c.redirect(url, 302);
   } catch (err) {
     return errorResponse(c, err);
@@ -159,13 +163,14 @@ authRoute.get("/api/auth/google/callback", async (c) => {
   const returnToFallback = resolveOAuthReturnTo(c.env, undefined);
 
   try {
-    assertGoogleOAuthConfigured(c.env);
+    const { jwtSecret, googleClientId, googleClientSecret } = requireGoogleOAuth(c.env);
 
     const oauthError = c.req.query("error");
     if (oauthError) {
       return redirectWithAuthResult(returnToFallback, {
         error: oauthError,
-        error_description: c.req.query("error_description") ?? "Google ログインがキャンセルされました",
+        error_description:
+          c.req.query("error_description") ?? "Google ログインがキャンセルされました",
       });
     }
 
@@ -178,7 +183,7 @@ authRoute.get("/api/auth/google/callback", async (c) => {
       });
     }
 
-    const parsedState = await parseOAuthState(c.env.AUTH_JWT_SECRET!, state);
+    const parsedState = await parseOAuthState(jwtSecret, state);
     if (!parsedState) {
       return redirectWithAuthResult(returnToFallback, {
         error: "invalid_state",
@@ -187,17 +192,12 @@ authRoute.get("/api/auth/google/callback", async (c) => {
     }
 
     const redirectUri = googleRedirectUri(c.req.url);
-    const idToken = await exchangeGoogleCode(
-      c.env.GOOGLE_CLIENT_ID!,
-      c.env.GOOGLE_CLIENT_SECRET!,
-      code,
-      redirectUri,
-    );
-    const claims = await verifyGoogleIdToken(idToken, c.env.GOOGLE_CLIENT_ID!);
+    const idToken = await exchangeGoogleCode(googleClientId, googleClientSecret, code, redirectUri);
+    const claims = await verifyGoogleIdToken(idToken, googleClientId);
 
     const db = getDb(c.env);
     const user = await findOrCreateUserByEmail(db, claims.email);
-    const accessToken = await signAccessToken(c.env.AUTH_JWT_SECRET!, user.id, user.email);
+    const accessToken = await signAccessToken(jwtSecret, user.id, user.email);
     await syncGoogleProfile(db, user.id, claims);
     await recordLogin(c, db, user.id);
 
@@ -230,7 +230,8 @@ authRoute.post("/api/auth/vscode-link", async (c) => {
 
 authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
   try {
-    if (!c.env.AUTH_JWT_SECRET) {
+    const jwtSecret = c.env.AUTH_JWT_SECRET;
+    if (!jwtSecret) {
       throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
     }
 
@@ -260,7 +261,7 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
         )[0];
         return Boolean(consumed);
       },
-      signToken: (userId, email) => signAccessToken(c.env.AUTH_JWT_SECRET!, userId, email),
+      signToken: (userId, email) => signAccessToken(jwtSecret, userId, email),
     });
     await recordLogin(c, db, exchanged.userId);
     return c.json({ access_token: exchanged.access_token });
@@ -268,4 +269,3 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
     return errorResponse(c, err);
   }
 });
-

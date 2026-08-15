@@ -31,6 +31,7 @@ import {
   isStaffRole,
   requireRole,
   ApiError,
+  requireReturning,
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
@@ -80,11 +81,7 @@ async function lessonCourseInfo(
  *   (`active` に加えて `completed`。 修了済みコースも受講者のコース一覧に並ぶため、
  *    `active` だけにすると一覧に出ているコースの資料が 404 になる)
  */
-async function assertMaterialReadable(
-  db: Db,
-  caller: Caller,
-  lessonId: string,
-): Promise<void> {
+async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string): Promise<void> {
   const info = await lessonCourseInfo(db, lessonId);
   if (!info || info.tenantId !== caller.tenantId) {
     throw new ApiError("レッスンが見つかりません", 404);
@@ -176,7 +173,7 @@ materialsRoute.post("/api/materials/upload", async (c) => {
       // insert 失敗時は R2 オブジェクトを削除して補償する (孤児オブジェクト防止)。
       let row: MaterialSel;
       try {
-        row = (
+        row = requireReturning(
           await db
             .insert(lessonMaterials)
             .values({
@@ -187,8 +184,9 @@ materialsRoute.post("/api/materials/upload", async (c) => {
               mimeType: file.type || "application/octet-stream",
               createdBy: caller.id,
             })
-            .returning()
-        )[0]!;
+            .returning(),
+          "material insert",
+        );
       } catch (insertErr) {
         await bucket.delete(path).catch((e) => {
           console.error("[materials] R2 補償削除に失敗 (要手動クリーンアップ)", path, e);
@@ -259,11 +257,7 @@ materialsRoute.get("/api/materials", async (c) => {
         .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
         .where(eq(sections.courseId, courseId))
-        .orderBy(
-          asc(sections.order),
-          asc(lessons.order),
-          asc(lessonMaterials.createdAt),
-        );
+        .orderBy(asc(sections.order), asc(lessons.order), asc(lessonMaterials.createdAt));
       return c.json({
         rows: rows.map((r) => ({
           ...materialToRow(r.material),

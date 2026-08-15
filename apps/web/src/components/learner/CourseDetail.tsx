@@ -16,21 +16,21 @@ import {
   Terminal,
   Book,
   Presentation,
-} from '@/lib/icons';
-import { useState } from 'react';
-import type { ComponentType } from 'react';
-import type { LucideProps } from 'lucide-react';
-import { CourseThumb } from '@/components/common/CourseThumb';
-import { CourseMaterialsDialog } from '@/components/learner/CourseMaterialsDialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import type { Course, Lesson, LessonStatus, LessonType } from '@/data/types';
-import { useLessonProgressMap } from '@/hooks/useLessonProgress';
-import { useMySubmissions } from '@/hooks/useMySubmissions';
-import { resolveLessonStatus, resumeLessonId } from '@/lib/lesson-progress';
-import { cn } from '@/lib/utils';
+} from "@/lib/icons";
+import { useState } from "react";
+import type { ComponentType } from "react";
+import type { LucideProps } from "lucide-react";
+import { CourseThumb } from "@/components/common/CourseThumb";
+import { CourseMaterialsDialog } from "@/components/learner/CourseMaterialsDialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import type { Course, Lesson, LessonStatus, LessonType } from "@/data/types";
+import { useLessonProgressMap } from "@/hooks/useLessonProgress";
+import { useMySubmissions } from "@/hooks/useMySubmissions";
+import { resolveLessonStatus, resumeLessonId } from "@/lib/lesson-progress";
+import { cn } from "@/lib/utils";
 
 type LucideIcon = ComponentType<LucideProps>;
 
@@ -49,9 +49,9 @@ export const LessonTypeIcon = ({ type, size = 14 }: { type: LessonType; size?: n
 };
 
 export const LessonStatusIcon = ({ status }: { status: LessonStatus }) => {
-  if (status === 'done') return <CheckCircle size={15} className="text-success" />;
-  if (status === 'locked') return <Lock size={13} className="text-ink-4" />;
-  if (status === 'active')
+  if (status === "done") return <CheckCircle size={15} className="text-success" />;
+  if (status === "locked") return <Lock size={13} className="text-ink-4" />;
+  if (status === "active")
     return (
       <span className="inline-block w-2.5 h-2.5 rounded-full bg-brand mt-1 ml-[3px] animate-lms-pulse" />
     );
@@ -78,17 +78,16 @@ export const CourseDetail = ({
   // 完了数は fixture の初期 status ではなく進捗ストア (サーバ同期済み) で解決する。
   const progressMap = useLessonProgressMap();
   const statusOf = (l: Lesson) => resolveLessonStatus(l, progressMap);
-  const totalLessons =
-    sections.reduce((a, s) => a + s.lessons.length, 0) || course.lessonsCount;
+  const totalLessons = sections.reduce((a, s) => a + s.lessons.length, 0) || course.lessonsCount;
   const doneLessons = sections.reduce(
-    (a, s) => a + s.lessons.filter((l) => statusOf(l) === 'done').length,
+    (a, s) => a + s.lessons.filter((l) => statusOf(l) === "done").length,
     0,
   );
   // 「続きから」 の再開位置 (最初の未完了レッスン)。 レッスンが無いコースでは null。
   const resumeId = resumeLessonId(course, progressMap);
   const reviewedForLesson = (lesson: Lesson) =>
     submissions.find((submission) => {
-      if (submission.status === 'pending' || submission.courseTitle !== course.title) return false;
+      if (submission.status === "pending" || submission.courseTitle !== course.title) return false;
       if (submission.assignmentId) {
         return Boolean(lesson.assignmentId && submission.assignmentId === lesson.assignmentId);
       }
@@ -99,7 +98,7 @@ export const CourseDetail = ({
     <>
       <button
         type="button"
-        onClick={() => setPage('courses')}
+        onClick={() => setPage("courses")}
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
@@ -155,8 +154,8 @@ export const CourseDetail = ({
                   <div className="px-4 py-3 border-b border-border bg-sunken text-[12.5px] font-semibold flex items-center gap-2.5">
                     <span>{s.title}</span>
                     <span className="text-[11.5px] text-ink-3 font-normal ml-auto">
-                      {s.lessons.filter((l) => statusOf(l) === 'done').length} /{' '}
-                      {s.lessons.length} 完了
+                      {s.lessons.filter((l) => statusOf(l) === "done").length} / {s.lessons.length}{" "}
+                      完了
                     </span>
                   </div>
                   {s.lessons.map((l) => {
@@ -167,7 +166,7 @@ export const CourseDetail = ({
                         key={l.id}
                         lesson={l}
                         status={status}
-                        onClick={() => status !== 'locked' && onOpenLesson(l.id)}
+                        onClick={() => status !== "locked" && onOpenLesson(l.id)}
                         reviewedSubmissionId={reviewedSubmission?.id}
                         onOpenSubmission={onOpenSubmission}
                       />
@@ -189,7 +188,7 @@ export const CourseDetail = ({
 
         <div className="sticky top-[88px]">
           <Card className="mb-4">
-            <div className="relative border-b border-border" style={{ aspectRatio: '16 / 10' }}>
+            <div className="relative border-b border-border" style={{ aspectRatio: "16 / 10" }}>
               <CourseThumb color={course.color} label={course.category} />
             </div>
             <CardContent>
@@ -206,14 +205,10 @@ export const CourseDetail = ({
                 onClick={() => resumeId && onOpenLesson(resumeId)}
               >
                 <Play size={14} />
-                {course.progress === 0 ? '受講を開始' : '続きから'}
+                {course.progress === 0 ? "受講を開始" : "続きから"}
               </Button>
               {/* 旧スタブを実装 (Issue #77): コース内の配布資料をまとめて一覧・DL する。 */}
-              <Button
-                size="full"
-                className="mt-2"
-                onClick={() => setMaterialsOpen(true)}
-              >
+              <Button size="full" className="mt-2" onClick={() => setMaterialsOpen(true)}>
                 <Download size={13} />
                 教材をダウンロード
               </Button>
@@ -274,23 +269,20 @@ const LessonRow = ({
   reviewedSubmissionId?: string;
   onOpenSubmission?: (submissionId: string) => void;
 }) => {
-  const locked = status === 'locked';
+  const locked = status === "locked";
   return (
-    <div
+    <button
+      type="button"
+      disabled={locked}
       onClick={locked ? undefined : onClick}
       className={cn(
-        'flex items-start gap-2.5 px-4 py-2.5 text-[12.5px] border-l-2 border-transparent',
+        "flex w-full items-start gap-2.5 px-4 py-2.5 text-left text-[12.5px] border-l-2 border-transparent bg-transparent",
         locked
-          ? 'text-ink-4 cursor-not-allowed'
-          : 'text-ink-2 cursor-pointer hover:bg-sunken hover:text-foreground',
+          ? "text-ink-4 cursor-not-allowed"
+          : "text-ink-2 cursor-pointer hover:bg-sunken hover:text-foreground",
       )}
     >
-      <span
-        className={cn(
-          'shrink-0 mt-0.5',
-          status === 'done' ? 'text-success' : 'text-ink-3',
-        )}
-      >
+      <span className={cn("shrink-0 mt-0.5", status === "done" ? "text-success" : "text-ink-3")}>
         <LessonStatusIcon status={status} />
       </span>
       <div className="flex-1 min-w-0">
@@ -298,7 +290,7 @@ const LessonRow = ({
         <div className="flex items-center gap-1 text-ink-3 text-[11px] mt-0.5">
           <LessonTypeIcon type={lesson.type} size={10} />
           <span>{lesson.duration}</span>
-          {status === 'active' && lesson.progress !== undefined ? (
+          {status === "active" && lesson.progress !== undefined ? (
             <>
               <span>·</span>
               <span>進捗 {lesson.progress}%</span>
@@ -318,6 +310,6 @@ const LessonRow = ({
         </button>
       ) : null}
       {!locked ? <ChevronRight size={13} className="text-ink-4 mt-1" /> : null}
-    </div>
+    </button>
   );
 };

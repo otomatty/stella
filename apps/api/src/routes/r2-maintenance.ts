@@ -166,7 +166,9 @@ r2MaintenanceRoute.post("/api/admin/r2/orphans/cleanup", async (c) => {
     const bucket = requireBucket(c.env);
 
     const body = (await c.req.json().catch(() => null)) as { paths?: unknown } | null;
-    const paths = Array.isArray(body?.paths) ? body.paths.filter((p): p is string => typeof p === "string") : [];
+    const paths = Array.isArray(body?.paths)
+      ? body.paths.filter((p): p is string => typeof p === "string")
+      : [];
     if (paths.length === 0) throw new ApiError("削除するパス (paths) が必要です", 400);
     if (paths.length > MAX_DELETE) {
       throw new ApiError(`一度に削除できるのは ${MAX_DELETE} 件までです`, 400);

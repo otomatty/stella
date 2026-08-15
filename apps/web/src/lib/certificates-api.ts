@@ -15,19 +15,13 @@ import type {
 import { apiFetch } from "@/lib/api-client";
 
 /** 受講者本人の修了証一覧 (発行日降順)。 */
-export async function listCertificatesForUser(
-  _userId: string,
-): Promise<CertificateRow[]> {
-  const { rows } = await apiFetch<{ rows: CertificateRow[] }>(
-    "/api/certificates/mine",
-  );
+export async function listCertificatesForUser(_userId: string): Promise<CertificateRow[]> {
+  const { rows } = await apiFetch<{ rows: CertificateRow[] }>("/api/certificates/mine");
   return rows ?? [];
 }
 
 /** 受講者本人の、 あるコースの達成状況を取得する。 */
-export async function fetchMyCourseCompletion(
-  courseId: string,
-): Promise<CourseCompletion | null> {
+export async function fetchMyCourseCompletion(courseId: string): Promise<CourseCompletion | null> {
   const { completion } = await apiFetch<{ completion: CourseCompletion | null }>(
     `/api/certificates/completion/${encodeURIComponent(courseId)}`,
   );
@@ -35,9 +29,7 @@ export async function fetchMyCourseCompletion(
 }
 
 /** staff 向け: コースの成績台帳 (受講者 × 達成状況) を取得する。 */
-export async function fetchCourseGradebook(
-  courseId: string,
-): Promise<CourseGradebook | null> {
+export async function fetchCourseGradebook(courseId: string): Promise<CourseGradebook | null> {
   const { gradebook } = await apiFetch<{ gradebook: CourseGradebook | null }>(
     `/api/certificates/gradebook/${encodeURIComponent(courseId)}`,
   );
@@ -62,9 +54,7 @@ export async function issueCertificate(
 }
 
 /** cert_code から真正性を検証する (匿名実行可能)。 */
-export async function verifyCertificate(
-  certCode: string,
-): Promise<CertificateVerification | null> {
+export async function verifyCertificate(certCode: string): Promise<CertificateVerification | null> {
   const { verification } = await apiFetch<{
     verification: CertificateVerification | null;
   }>(`/api/certificates/verify/${encodeURIComponent(certCode)}`, {

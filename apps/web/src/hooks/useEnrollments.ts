@@ -14,9 +14,7 @@ interface UseCourseEnrollmentsResult {
   refetch: () => Promise<void>;
 }
 
-export function useCourseEnrollments(
-  courseId: string | null,
-): UseCourseEnrollmentsResult {
+export function useCourseEnrollments(courseId: string | null): UseCourseEnrollmentsResult {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +46,7 @@ export function useCourseEnrollments(
   // 残すと、 切替直後のクリックで別コースの enrollment を削除/更新し得る。
   // courseId にのみ依存させ、 操作後の手動 refetch (同一 courseId) ではクリアせず
   // テーブルのちらつきを防ぐ。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: courseId 切替時だけ一覧を空にする
   useEffect(() => {
     setEnrollments([]);
   }, [courseId]);

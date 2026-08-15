@@ -1,15 +1,15 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useAppShell } from '@/components/shell/app-shell-context';
-import { AdminOrganizationsPage } from '@/components/admin/AdminOrganizationsPage';
+import { createFileRoute } from "@tanstack/react-router";
+import { useAppShell } from "@/components/shell/app-shell-context";
+import { AdminOrganizationsPage } from "@/components/admin/AdminOrganizationsPage";
 
-export const Route = createFileRoute('/_app/orgs')({
+export const Route = createFileRoute("/_app/orgs")({
   component: OrgsPage,
 });
 
 function OrgsPage() {
   const s = useAppShell();
   // 組織マスタは platform_admin のみ。 tenant admin 等が URL 直叩きしても表示しない。
-  if (s.profileRole !== 'platform_admin') {
+  if (s.profileRole !== "platform_admin") {
     return (
       <div className="max-w-md mx-auto mt-16 text-center">
         <div className="text-[15px] font-semibold mb-2">権限がありません</div>
@@ -19,7 +19,7 @@ function OrgsPage() {
         <button
           type="button"
           className="text-[12.5px] text-brand underline underline-offset-2"
-          onClick={() => s.setPage('dash')}
+          onClick={() => s.setPage("dash")}
         >
           ダッシュボードに戻る
         </button>

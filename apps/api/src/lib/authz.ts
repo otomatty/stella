@@ -25,6 +25,15 @@ export class ApiError extends Error {
   }
 }
 
+/** `.returning()` が空だったときに 500 にする。呼び出し側の `rows[0]!` を避ける。 */
+export function requireReturning<T>(rows: readonly T[], what: string): T {
+  const row = rows[0];
+  if (row === undefined) {
+    throw new ApiError(`${what} が行を返しませんでした`, 500);
+  }
+  return row;
+}
+
 export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export interface Caller {

@@ -8,28 +8,24 @@
  * バックエンド未設定時は実データが無いため、 その旨を案内する。
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { Award, CheckCircle, Download, Loader2 } from '@/lib/icons';
-import { SkeletonRows } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { Course } from '@/data/types';
-import type {
-  CourseGradebook,
-  EnrollmentStatus,
-  GradebookEntry,
-} from '@falcon/shared/cms/types';
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Award, CheckCircle, Download, Loader2 } from "@/lib/icons";
+import { SkeletonRows } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Course } from "@/data/types";
+import type { CourseGradebook, EnrollmentStatus, GradebookEntry } from "@falcon/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
-import { fetchCourseGradebook, issueCertificate } from '@/lib/certificates-api';
-import { downloadCsv, toCsv } from '@/lib/csv';
+import { fetchCourseGradebook, issueCertificate } from "@/lib/certificates-api";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 /** enrollment ステータスを日本語の表示語にする。 */
 const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
-  active: '受講中',
-  completed: '完了',
-  expired: '期限切れ',
+  active: "受講中",
+  completed: "完了",
+  expired: "期限切れ",
 };
 
 interface GradebookProps {
@@ -37,7 +33,7 @@ interface GradebookProps {
 }
 
 export const Gradebook = ({ courses }: GradebookProps) => {
-  const [courseId, setCourseId] = useState<string>(() => courses[0]?.id ?? '');
+  const [courseId, setCourseId] = useState<string>(() => courses[0]?.id ?? "");
   const [data, setData] = useState<CourseGradebook | null>(null);
   const [loading, setLoading] = useState(false);
   const [issuingUser, setIssuingUser] = useState<string | null>(null);
@@ -53,8 +49,8 @@ export const Gradebook = ({ courses }: GradebookProps) => {
     try {
       setData(await fetchCourseGradebook(courseId));
     } catch (err) {
-      console.error('[Gradebook] load failed', err);
-      toast.error('成績台帳の取得に失敗しました');
+      console.error("[Gradebook] load failed", err);
+      toast.error("成績台帳の取得に失敗しました");
       setData(null);
     } finally {
       setLoading(false);
@@ -69,7 +65,7 @@ export const Gradebook = ({ courses }: GradebookProps) => {
   // 選択中の courseId が未設定 / 現在の一覧に無い場合は先頭コースへ補正し、
   // ロード前の fixture id のまま台帳取得が空振りし続けるのを防ぐ。
   useEffect(() => {
-    const firstId = courses[0]?.id ?? '';
+    const firstId = courses[0]?.id ?? "";
     if (!firstId) return;
     if (!courseId || !courses.some((c) => c.id === courseId)) {
       setCourseId(firstId);
@@ -79,44 +75,44 @@ export const Gradebook = ({ courses }: GradebookProps) => {
   const onExport = () => {
     if (!data || data.rows.length === 0) return;
     const headers = [
-      '受講者',
-      'メール',
-      '受講状態',
-      '期限',
-      '登録日',
-      'レッスン完了',
-      'レッスン総数',
-      '小テスト合格',
-      '小テスト総数',
-      '課題合格',
-      '課題総数',
-      '達成',
-      '修了証',
-      '認定番号',
+      "受講者",
+      "メール",
+      "受講状態",
+      "期限",
+      "登録日",
+      "レッスン完了",
+      "レッスン総数",
+      "小テスト合格",
+      "小テスト総数",
+      "課題合格",
+      "課題総数",
+      "達成",
+      "修了証",
+      "認定番号",
     ];
     const rows = data.rows.map((r) => {
       const c = r.completion;
       return [
         r.display_name,
-        r.email ?? '',
+        r.email ?? "",
         ENROLLMENT_STATUS_LABEL[r.enrollment_status] ?? r.enrollment_status,
-        r.due_at ? r.due_at.slice(0, 10) : '',
-        r.enrolled_at ? r.enrolled_at.slice(0, 10) : '',
-        c?.completed_lessons ?? '',
-        c?.total_lessons ?? '',
-        c?.passed_quizzes ?? '',
-        c?.total_quizzes ?? '',
-        c?.passed_assignments ?? '',
-        c?.total_assignments ?? '',
-        c?.met ? '達成' : '未達成',
-        c?.has_certificate ? '発行済み' : '',
-        c?.cert_code ?? '',
+        r.due_at ? r.due_at.slice(0, 10) : "",
+        r.enrolled_at ? r.enrolled_at.slice(0, 10) : "",
+        c?.completed_lessons ?? "",
+        c?.total_lessons ?? "",
+        c?.passed_quizzes ?? "",
+        c?.total_quizzes ?? "",
+        c?.passed_assignments ?? "",
+        c?.total_assignments ?? "",
+        c?.met ? "達成" : "未達成",
+        c?.has_certificate ? "発行済み" : "",
+        c?.cert_code ?? "",
       ];
     });
     const stamp = new Date().toISOString().slice(0, 10);
-    const safeTitle = data.course_title.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40);
+    const safeTitle = data.course_title.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40);
     downloadCsv(`gradebook-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
-    toast.success('成績台帳を出力しました');
+    toast.success("成績台帳を出力しました");
   };
 
   const onIssue = async (userId: string) => {
@@ -124,12 +120,10 @@ export const Gradebook = ({ courses }: GradebookProps) => {
     setIssuingUser(userId);
     try {
       const result = await issueCertificate(courseId, userId);
-      toast.success(
-        result.already_existed ? '既に発行済みです' : '修了証を発行しました',
-      );
+      toast.success(result.already_existed ? "既に発行済みです" : "修了証を発行しました");
       await load();
     } catch (err) {
-      toast.error(`発行に失敗しました: ${err instanceof Error ? err.message : 'unknown'}`);
+      toast.error(`発行に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setIssuingUser(null);
     }
@@ -164,7 +158,8 @@ export const Gradebook = ({ courses }: GradebookProps) => {
 
       {!backendEnabled ? (
         <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
-          成績台帳はバックエンド (Neon) 接続時に実データで動作します (現在はデモ表示のため利用できません)。
+          成績台帳はバックエンド (Neon) 接続時に実データで動作します
+          (現在はデモ表示のため利用できません)。
         </div>
       ) : loading ? (
         <SkeletonRows rows={5} className="py-6" />
@@ -216,18 +211,16 @@ function GradebookTable({
               <tr key={row.user_id} className="border-b border-border last:border-0">
                 <td className="px-4 py-2.5">
                   <div className="font-medium text-foreground">{row.display_name}</div>
-                  {row.email ? (
-                    <div className="text-[11px] text-ink-4">{row.email}</div>
-                  ) : null}
+                  {row.email ? <div className="text-[11px] text-ink-4">{row.email}</div> : null}
                 </td>
                 <td className="px-3 py-2.5 font-mono text-ink-2">
-                  {c ? `${c.completed_lessons}/${c.total_lessons}` : '—'}
+                  {c ? `${c.completed_lessons}/${c.total_lessons}` : "—"}
                 </td>
                 <td className="px-3 py-2.5 font-mono text-ink-2">
-                  {c ? `${c.passed_quizzes}/${c.total_quizzes}` : '—'}
+                  {c ? `${c.passed_quizzes}/${c.total_quizzes}` : "—"}
                 </td>
                 <td className="px-3 py-2.5 font-mono text-ink-2">
-                  {c ? `${c.passed_assignments}/${c.total_assignments}` : '—'}
+                  {c ? `${c.passed_assignments}/${c.total_assignments}` : "—"}
                 </td>
                 <td className="px-3 py-2.5">
                   {hasCert ? (

@@ -15,7 +15,14 @@ import { Hono } from "hono";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { notifications, profiles, submissions } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole, ApiError, isStaffRole } from "../lib/authz.js";
+import {
+  errorResponse,
+  getCaller,
+  requireRole,
+  ApiError,
+  isStaffRole,
+  requireReturning,
+} from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -87,7 +94,9 @@ submissionsRoute.get("/api/submissions", async (c) => {
         profMap.set(p.id, { display_name: p.displayName, initials: p.initials });
       }
     }
-    return c.json({ rows: rows.map((r) => toRow(r, r.studentId ? profMap.get(r.studentId) ?? null : null)) });
+    return c.json({
+      rows: rows.map((r) => toRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null)),
+    });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -125,7 +134,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       })
       .returning();
     const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
-    return c.json({ row: toRow(inserted[0]!, profile) });
+    return c.json({ row: toRow(requireReturning(inserted, "submission insert"), profile) });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -138,12 +147,7 @@ submissionsRoute.get("/api/submissions/mine", async (c) => {
     const rows = await db
       .select()
       .from(submissions)
-      .where(
-        and(
-          eq(submissions.tenantId, caller.tenantId),
-          eq(submissions.studentId, caller.id),
-        ),
-      )
+      .where(and(eq(submissions.tenantId, caller.tenantId), eq(submissions.studentId, caller.id)))
       .orderBy(desc(submissions.submittedAt));
 
     const profile = await profileFor(db, caller.id);
@@ -225,7 +229,10 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       await db.update(submissions).set(set).where(eq(submissions.id, id));
     }
 
-    const after = (await db.select().from(submissions).where(eq(submissions.id, id)).limit(1))[0]!;
+    const after = requireReturning(
+      await db.select().from(submissions).where(eq(submissions.id, id)).limit(1),
+      "submission reload",
+    );
 
     // 添削確定の初回のみ通知 (旧 notify_review_completed: old.reviewed_at is null)。
     if (before.reviewedAt == null && after.reviewedAt != null && after.studentId) {

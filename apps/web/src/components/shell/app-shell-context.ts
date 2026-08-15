@@ -1,9 +1,9 @@
-import { createContext, useContext } from 'react';
-import type { Course, Role, Tenant } from '@/data/types';
-import type { ChatContext } from '@falcon/shared/ai/types';
-import type { ProfileRole } from '@falcon/shared/cms/types';
-import type { Profile } from '@/lib/auth';
-import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
+import { createContext, useContext } from "react";
+import type { Course, Role, Tenant } from "@/data/types";
+import type { ChatContext } from "@falcon/shared/ai/types";
+import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { Profile } from "@/lib/auth";
+import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
 
 /**
  * AppShell (認証済みレイアウト) が配下ルートへ渡す値。
@@ -20,7 +20,7 @@ export interface AppShellValue {
   onActiveLessonChange: (courseId: string, lessonId: string) => void;
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
-  tenantId: Tenant['id'];
+  tenantId: Tenant["id"];
   tenantName: string;
   currentUserId: string | null;
   backendEnabled: boolean;
@@ -45,7 +45,7 @@ export const AppShellContext = createContext<AppShellValue | null>(null);
 
 export function useAppShell(): AppShellValue {
   const v = useContext(AppShellContext);
-  if (!v) throw new Error('useAppShell must be used under the _app route');
+  if (!v) throw new Error("useAppShell must be used under the _app route");
   return v;
 }
 

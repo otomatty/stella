@@ -9,9 +9,15 @@
 
 import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-const uuid = () => text("id").primaryKey().$defaultFn(() => crypto.randomUUID());
+const uuid = () =>
+  text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
 const ts = (name: string) => integer(name, { mode: "timestamp_ms" });
-const tsNow = (name: string) => ts(name).notNull().$defaultFn(() => new Date());
+const tsNow = (name: string) =>
+  ts(name)
+    .notNull()
+    .$defaultFn(() => new Date());
 const tsNowUpd = (name: string) =>
   ts(name)
     .notNull()
@@ -25,7 +31,9 @@ const json = <T>(name: string, fallback: T) =>
 // ---------------------------------------------------------------
 
 export const authUsers = sqliteTable("auth_users", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
   createdAt: tsNow("created_at"),
 });
@@ -37,7 +45,9 @@ export const authOtpCodes = sqliteTable("auth_otp_codes", {
 });
 
 export const authVscodeLinks = sqliteTable("auth_vscode_links", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull(),
   codeHash: text("code_hash").notNull().unique(),
   expiresAt: ts("expires_at").notNull(),
@@ -122,9 +132,7 @@ export const courses = sqliteTable(
     status: text("status", { enum: ["draft", "published", "archived"] })
       .notNull()
       .default("draft"),
-    requireAllLessons: integer("require_all_lessons", { mode: "boolean" })
-      .notNull()
-      .default(true),
+    requireAllLessons: integer("require_all_lessons", { mode: "boolean" }).notNull().default(true),
     requireQuizPass: integer("require_quiz_pass", { mode: "boolean" }).notNull().default(true),
     requireAssignmentPass: integer("require_assignment_pass", { mode: "boolean" })
       .notNull()
@@ -238,7 +246,9 @@ export const lessonProgress = sqliteTable(
     lastPage: integer("last_page"),
     viewedPages: json<number[]>("viewed_pages", []),
     watchedSec: real("watched_sec"),
-    updatedAt: ts("updated_at").notNull().$defaultFn(() => new Date()),
+    updatedAt: ts("updated_at")
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (t) => ({
     userLessonUnique: uniqueIndex("lesson_progress_user_lesson_uq").on(t.userId, t.lessonId),

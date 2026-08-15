@@ -98,8 +98,6 @@ describe("filterSearchResultsForPreview", () => {
   });
 
   it("drops hits whose course is outside the published catalog", () => {
-    expect(filterSearchResultsForPreview(results, new Set(["pub"]))).toEqual([
-      results[0],
-    ]);
+    expect(filterSearchResultsForPreview(results, new Set(["pub"]))).toEqual([results[0]]);
   });
 });

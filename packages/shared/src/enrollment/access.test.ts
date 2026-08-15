@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  isReadableEnrollmentStatus,
-  READABLE_ENROLLMENT_STATUSES,
-} from "./access.js";
+import { isReadableEnrollmentStatus, READABLE_ENROLLMENT_STATUSES } from "./access.js";
 
 describe("isReadableEnrollmentStatus", () => {
   it("受講中 / 修了済みは閲覧できる", () => {

@@ -33,11 +33,7 @@ export const quizRoute = new Hono<{ Bindings: Env }>();
  * - staff: 同テナントなら可
  * - student: published かつ当該コースに active enrollment
  */
-async function isAuthorizedForLesson(
-  db: Db,
-  caller: Caller,
-  lessonId: string,
-): Promise<boolean> {
+async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): Promise<boolean> {
   const isStaff = isStaffRole(caller.role);
   const rows = await db
     .select({
@@ -76,11 +72,7 @@ async function isAuthorizedForLesson(
  * 出題と一緒に返して、 再訪時に「合格済み」を復元し、 受験回数の上限も判定できるようにする。
  * 正解は含めない (出題のサニタイズと同じ理由)。
  */
-async function loadHistory(
-  db: Db,
-  quizId: string,
-  userId: string,
-): Promise<LearnerQuizHistory> {
+async function loadHistory(db: Db, quizId: string, userId: string): Promise<LearnerQuizHistory> {
   const rows = await db
     .select({
       score: quizAttempts.score,
@@ -108,11 +100,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
     const { caller, db } = await getCaller(c);
     const lessonId = c.req.param("lessonId");
 
-    const quizRows = await db
-      .select()
-      .from(quizzes)
-      .where(eq(quizzes.lessonId, lessonId))
-      .limit(1);
+    const quizRows = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId)).limit(1);
     const quiz = quizRows[0];
     if (!quiz) return c.json({ quiz: null });
 
@@ -226,8 +214,7 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
       const selected = selectedByQuestion.get(q.id) ?? new Set<string>();
       // 集合の完全一致 (順不同・重複無視)。
       const isCorrect =
-        correct.size === selected.size &&
-        [...correct].every((id) => selected.has(id));
+        correct.size === selected.size && [...correct].every((id) => selected.has(id));
       if (isCorrect) score += q.points;
       return {
         question_id: q.id,

@@ -28,9 +28,7 @@ function normalizeSuggestions(raw: unknown): ReviewSuggestion[] {
     const o = item as Record<string, unknown>;
     const line = typeof o.line === "number" ? Math.max(1, Math.floor(o.line)) : 1;
     const severity =
-      o.severity === "high" || o.severity === "med" || o.severity === "low"
-        ? o.severity
-        : "med";
+      o.severity === "high" || o.severity === "med" || o.severity === "low" ? o.severity : "med";
     const category = typeof o.category === "string" ? o.category : "指摘";
     const body = typeof o.body === "string" ? o.body : "";
     if (!body) continue;
@@ -56,10 +54,7 @@ function normalizeRubric(raw: unknown): RubricCriterion[] {
     const name = typeof o.name === "string" ? o.name : `項目${n + 1}`;
     const desc = typeof o.desc === "string" ? o.desc : "";
     const max = typeof o.max === "number" ? Math.min(10, Math.max(1, o.max)) : 4;
-    const score =
-      typeof o.score === "number"
-        ? Math.min(max, Math.max(0, Math.floor(o.score)))
-        : 0;
+    const score = typeof o.score === "number" ? Math.min(max, Math.max(0, Math.floor(o.score))) : 0;
     n += 1;
     out.push({
       id: typeof o.id === "string" ? o.id : `rb${n}`,

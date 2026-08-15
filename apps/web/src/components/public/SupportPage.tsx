@@ -7,61 +7,56 @@
  * 構成: ログイン関連 FAQ + 問い合わせフォーム (`POST /api/support`) + メール直送フォールバック。
  */
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { ChevronLeft, HelpCircle, Mail, Send, Loader2, CheckCircle } from '@/lib/icons';
-import { Brand } from '@/components/common/Brand';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { isApiConfigured } from '@/lib/api-client';
-import {
-  SUPPORT_CATEGORIES,
-  submitSupportInquiry,
-  type SupportCategory,
-} from '@/lib/support-api';
+import { useState } from "react";
+import { toast } from "sonner";
+import { ChevronLeft, HelpCircle, Mail, Send, Loader2, CheckCircle } from "@/lib/icons";
+import { Brand } from "@/components/common/Brand";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { isApiConfigured } from "@/lib/api-client";
+import { SUPPORT_CATEGORIES, submitSupportInquiry, type SupportCategory } from "@/lib/support-api";
 
 const SUPPORT_EMAIL =
-  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined)?.trim() ||
-  'saedgewell@gmail.com';
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined)?.trim() || "saedgewell@gmail.com";
 
 const LOGIN_FAQ: { q: string; a: string }[] = [
   {
-    q: 'Google でログインできません。',
-    a: 'ポップアップやリダイレクトがブロックされていないか、 ブラウザの設定をご確認ください。 別の Google アカウントでログインしている場合は、 一度サインアウトしてから再度お試しください。',
+    q: "Google でログインできません。",
+    a: "ポップアップやリダイレクトがブロックされていないか、 ブラウザの設定をご確認ください。 別の Google アカウントでログインしている場合は、 一度サインアウトしてから再度お試しください。",
   },
   {
-    q: 'ボタンを押しても何も起こりません。',
-    a: 'ブラウザの拡張機能 (広告ブロッカー等) やプライベートモードが影響することがあります。 通常モードの別ブラウザでお試しいただくか、 Cookie を許可してから再読み込みしてください。',
+    q: "ボタンを押しても何も起こりません。",
+    a: "ブラウザの拡張機能 (広告ブロッカー等) やプライベートモードが影響することがあります。 通常モードの別ブラウザでお試しいただくか、 Cookie を許可してから再読み込みしてください。",
   },
   {
-    q: 'ログイン後にエラー画面が表示されます。',
-    a: '端末の時刻が大きくずれているとログインに失敗することがあります。 自動時刻設定を有効にしてから再度お試しください。 改善しない場合は、 下記フォームより表示されたエラー内容をお知らせください。',
+    q: "ログイン後にエラー画面が表示されます。",
+    a: "端末の時刻が大きくずれているとログインに失敗することがあります。 自動時刻設定を有効にしてから再度お試しください。 改善しない場合は、 下記フォームより表示されたエラー内容をお知らせください。",
   },
 ];
 
 export const SupportPage = () => {
   const apiReady = isApiConfigured();
   const mailtoHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-    '【FALCON INFORMAL】サポートのお問い合わせ',
+    "【FALCON INFORMAL】サポートのお問い合わせ",
   )}`;
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [category, setCategory] = useState<SupportCategory>('login');
-  const [message, setMessage] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [category, setCategory] = useState<SupportCategory>("login");
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !message.trim()) {
-      toast.error('メールアドレスとお問い合わせ内容を入力してください');
+      toast.error("メールアドレスとお問い合わせ内容を入力してください");
       return;
     }
     if (!apiReady) {
-      toast.error('問い合わせフォームが利用できません。 メールでお問い合わせください。');
+      toast.error("問い合わせフォームが利用できません。 メールでお問い合わせください。");
       return;
     }
     setSubmitting(true);
@@ -74,7 +69,7 @@ export const SupportPage = () => {
       });
       setDone(true);
     } catch (err) {
-      const m = err instanceof Error ? err.message : '送信に失敗しました';
+      const m = err instanceof Error ? err.message : "送信に失敗しました";
       toast.error(m);
     } finally {
       setSubmitting(false);
@@ -108,10 +103,7 @@ export const SupportPage = () => {
           <h2 className="mb-3 text-[15px] font-semibold">よくある質問</h2>
           <div className="space-y-3">
             {LOGIN_FAQ.map((item) => (
-              <div
-                key={item.q}
-                className="rounded-md border border-border-2 bg-card p-4"
-              >
+              <div key={item.q} className="rounded-md border border-border-2 bg-card p-4">
                 <div className="mb-1 text-[13.5px] font-medium">{item.q}</div>
                 <div className="text-[12.5px] leading-relaxed text-ink-3">{item.a}</div>
               </div>
@@ -128,7 +120,8 @@ export const SupportPage = () => {
               <CheckCircle size={28} className="mx-auto mb-2 text-brand" />
               <div className="mb-1 text-[14px] font-medium">送信しました</div>
               <p className="text-[12.5px] text-ink-3">
-                お問い合わせを受け付けました。 入力いただいたメールアドレス宛に折り返しご連絡します。
+                お問い合わせを受け付けました。
+                入力いただいたメールアドレス宛に折り返しご連絡します。
               </p>
               <Button
                 type="button"
@@ -136,7 +129,7 @@ export const SupportPage = () => {
                 className="mt-4"
                 onClick={() => {
                   setDone(false);
-                  setMessage('');
+                  setMessage("");
                 }}
               >
                 続けて問い合わせる
@@ -197,17 +190,14 @@ export const SupportPage = () => {
               </div>
 
               <Button type="submit" variant="accent" size="full" disabled={submitting}>
-                {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} />
-                )}
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 送信する
               </Button>
 
               {!apiReady && (
                 <p className="text-[11.5px] text-ink-3">
-                  ※ フォーム送信は現在ご利用いただけません。 下記より直接メールでお問い合わせください。
+                  ※ フォーム送信は現在ご利用いただけません。
+                  下記より直接メールでお問い合わせください。
                 </p>
               )}
             </form>

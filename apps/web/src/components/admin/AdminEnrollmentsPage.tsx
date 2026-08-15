@@ -29,11 +29,7 @@ import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useCourseEnrollments } from "@/hooks/useEnrollments";
-import {
-  assignEnrollment,
-  removeEnrollment,
-  updateEnrollment,
-} from "@/lib/enrollments-api";
+import { assignEnrollment, removeEnrollment, updateEnrollment } from "@/lib/enrollments-api";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
@@ -69,11 +65,7 @@ interface Props {
   backendEnabled: boolean;
 }
 
-export function AdminEnrollmentsPage({
-  tenantId,
-  currentUserId,
-  backendEnabled,
-}: Props) {
+export function AdminEnrollmentsPage({ tenantId, currentUserId, backendEnabled }: Props) {
   if (!backendEnabled) {
     return <EnrollmentsDemoNotice />;
   }
@@ -200,10 +192,7 @@ function EnrollmentsLive({
         sub="受講者へのコース割当 · 期限 / 必須の設定"
         actions={
           <>
-            <Button
-              disabled={!courseId || learners.length === 0}
-              onClick={onExport}
-            >
+            <Button disabled={!courseId || learners.length === 0} onClick={onExport}>
               <Download size={14} />
               CSV出力
             </Button>
@@ -248,17 +237,15 @@ function EnrollmentsLive({
             </span>
           ) : null}
           <span className="ml-auto text-[12.5px] text-ink-3">
-            割当済み <strong className="text-foreground">{assignedCount}</strong> /
-            受講者 {learners.length} 名
+            割当済み <strong className="text-foreground">{assignedCount}</strong> / 受講者{" "}
+            {learners.length} 名
           </span>
         </div>
       </Card>
 
       <Card className="overflow-hidden">
         {courses.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">
-            まずコースを作成してください。
-          </div>
+          <div className="py-10 text-center text-sm text-ink-3">まずコースを作成してください。</div>
         ) : learners.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             割当可能な受講者がいません。 「ユーザー管理」 から招待してください。

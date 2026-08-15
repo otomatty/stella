@@ -2,11 +2,11 @@
  * UsersAdmin のデモ版 (バックエンド未設定時)。 デモデータを read-only で表示する。
  */
 
-import { Upload, Plus, MoreHorizontal } from '@/lib/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Upload, Plus, MoreHorizontal } from "@/lib/icons";
+import { PageHeader } from "@/components/common/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
@@ -14,11 +14,11 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import type { AvatarTone } from '@/data/types';
-import type { ProfileRole } from '@falcon/shared/cms/types';
+} from "@/components/ui/table";
+import type { AvatarTone } from "@/data/types";
+import type { ProfileRole } from "@falcon/shared/cms/types";
 
-import { RoleBadge } from './shared';
+import { RoleBadge } from "./shared";
 
 const DEMO_USERS: Array<{
   n: string;
@@ -26,11 +26,11 @@ const DEMO_USERS: Array<{
   e: string;
   r: ProfileRole;
 }> = [
-  { n: '田中 翔太', c: 'c1', e: 'tanaka@example.com', r: 'student' },
-  { n: '佐藤 美咲', c: 'c2', e: 'sato.m@example.com', r: 'student' },
-  { n: '堀江メンター', c: 'c3', e: 'horie@ursal.co.jp', r: 'instructor' },
-  { n: '鈴木 健一', c: 'c4', e: 'suzuki@example.com', r: 'student' },
-  { n: '中村 理恵', c: 'c6', e: 'nakamura@ursal.co.jp', r: 'admin' },
+  { n: "田中 翔太", c: "c1", e: "tanaka@example.com", r: "student" },
+  { n: "佐藤 美咲", c: "c2", e: "sato.m@example.com", r: "student" },
+  { n: "堀江メンター", c: "c3", e: "horie@ursal.co.jp", r: "instructor" },
+  { n: "鈴木 健一", c: "c4", e: "suzuki@example.com", r: "student" },
+  { n: "中村 理恵", c: "c6", e: "nakamura@ursal.co.jp", r: "admin" },
 ];
 
 export function UsersAdminDemo() {
@@ -67,8 +67,8 @@ export function UsersAdminDemo() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {DEMO_USERS.map((u, i) => (
-              <TableRow key={i}>
+            {DEMO_USERS.map((u) => (
+              <TableRow key={u.e}>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar size="sm">

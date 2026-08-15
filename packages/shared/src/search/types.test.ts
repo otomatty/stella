@@ -109,10 +109,7 @@ describe("rankSearchResults", () => {
 
   it("同スコア・同種別ならタイトル昇順", () => {
     const ranked = rankSearchResults(
-      [
-        result({ id: "b", title: "React B" }),
-        result({ id: "a", title: "React A" }),
-      ],
+      [result({ id: "b", title: "React B" }), result({ id: "a", title: "React A" })],
       "react",
     );
     expect(ranked.map((r) => r.id)).toEqual(["a", "b"]);

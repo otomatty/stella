@@ -123,9 +123,7 @@ searchRoute.get("/api/search", async (c) => {
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .innerJoin(courses, eq(courses.id, sections.courseId))
-      .where(
-        and(courseScope, sql`${lessons.title} LIKE ${pattern} ESCAPE '\\'`),
-      )
+      .where(and(courseScope, sql`${lessons.title} LIKE ${pattern} ESCAPE '\\'`))
       .orderBy(
         sql`(CASE WHEN ${lessons.title} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END)`,
         asc(lessons.title),
@@ -147,7 +145,10 @@ searchRoute.get("/api/search", async (c) => {
         id: row.id,
         title: row.title,
         subtitle: blankToNull(
-          [row.courseTitle, row.sectionTitle].map((s) => s?.trim()).filter(Boolean).join(" · "),
+          [row.courseTitle, row.sectionTitle]
+            .map((s) => s?.trim())
+            .filter(Boolean)
+            .join(" · "),
         ),
         course_id: row.courseId,
         course_title: row.courseTitle,

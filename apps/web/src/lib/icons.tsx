@@ -88,9 +88,9 @@ export {
   Printer,
   ExternalLink,
   GraduationCap,
-} from 'lucide-react';
+} from "lucide-react";
 
-import type { SVGProps } from 'react';
+import type { SVGProps } from "react";
 
 export const Google = (props: SVGProps<SVGSVGElement>) => (
   <svg
@@ -98,6 +98,7 @@ export const Google = (props: SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     width={16}
     height={16}
+    aria-hidden="true"
     {...props}
   >
     <path

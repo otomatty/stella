@@ -30,7 +30,9 @@ export function FileTabs({ files, activeFile, onSelect }: Props) {
   const hasActiveFile = files.some((f) => f.path === activeFile);
 
   const moveFocus = (nextIndex: number) => {
-    if (files.length === 0) {return;}
+    if (files.length === 0) {
+      return;
+    }
     const wrapped = ((nextIndex % files.length) + files.length) % files.length;
     onSelect(files[wrapped].path);
     // 次フォーカスは render 反映後に行う (現タブ要素から自然遷移)。
@@ -39,10 +41,7 @@ export function FileTabs({ files, activeFile, onSelect }: Props) {
     });
   };
 
-  const handleKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     switch (event.key) {
       case "ArrowRight":
         event.preventDefault();

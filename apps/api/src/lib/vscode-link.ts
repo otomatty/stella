@@ -12,9 +12,7 @@ export async function hashVscodeLinkCode(code: string): Promise<string> {
     "SHA-256",
     new TextEncoder().encode(code.trim().toUpperCase()),
   );
-  return [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export const VSCODE_LINK_TTL_MS = 5 * 60 * 1000;

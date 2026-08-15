@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { PublicCertificateVerify } from '@/components/public/PublicCertificateVerify';
+import { createFileRoute } from "@tanstack/react-router";
+import { PublicCertificateVerify } from "@/components/public/PublicCertificateVerify";
 
-export const Route = createFileRoute('/verify/$certCode')({
+export const Route = createFileRoute("/verify/$certCode")({
   component: VerifyPage,
 });
 

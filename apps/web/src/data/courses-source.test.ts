@@ -21,18 +21,10 @@ function row(id: string, status: CourseRow["status"]): CourseRow {
 }
 
 describe("publishedCatalogRows", () => {
-  const rows = [
-    row("pub", "published"),
-    row("draft", "draft"),
-    row("arch", "archived"),
-  ];
+  const rows = [row("pub", "published"), row("draft", "draft"), row("arch", "archived")];
 
   it("keeps every row when publishedOnly is false", () => {
-    expect(publishedCatalogRows(rows, false).map((r) => r.id)).toEqual([
-      "pub",
-      "draft",
-      "arch",
-    ]);
+    expect(publishedCatalogRows(rows, false).map((r) => r.id)).toEqual(["pub", "draft", "arch"]);
   });
 
   it("drops draft and archived rows for learner preview", () => {

@@ -289,15 +289,7 @@ export const REPORT_META: Record<ReportType, ReportMeta> = {
     label: "修了証",
     description: "発行された修了証の一覧",
     fileBase: "report-certificates",
-    headers: [
-      "認定番号",
-      "受講者",
-      "メール",
-      "コース",
-      "発行日時",
-      "発行者ID",
-      "状態",
-    ],
+    headers: ["認定番号", "受講者", "メール", "コース", "発行日時", "発行者ID", "状態"],
   },
   audit: {
     label: "監査",
@@ -430,7 +422,6 @@ export function reportRowsToCells(type: ReportType, rows: ReportRow[]): string[]
 
 /** `report-enrollments-2026-01-01_2026-01-31.csv` のようなファイル名を組み立てる。 */
 export function reportFileName(type: ReportType, period: ReportPeriod): string {
-  const range =
-    period.from || period.to ? `${period.from ?? "all"}_${period.to ?? "all"}` : "all";
+  const range = period.from || period.to ? `${period.from ?? "all"}_${period.to ?? "all"}` : "all";
   return `${REPORT_META[type].fileBase}-${range}.csv`;
 }

@@ -6,24 +6,24 @@
  * certificates テーブルそのものは匿名公開しない (公開して良い情報だけ返る)。
  */
 
-import { useEffect, useState } from 'react';
-import { ShieldCheck, XCircle } from '@/lib/icons';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Brand } from '@/components/common/Brand';
-import { CertificateView, formatIssuedAt } from '@/components/common/CertificateView';
-import { isApiConfigured } from '@/lib/api-client';
-import { verifyCertificate } from '@/lib/certificates-api';
-import type { CertificateVerification } from '@falcon/shared/cms/types';
+import { useEffect, useState } from "react";
+import { ShieldCheck, XCircle } from "@/lib/icons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Brand } from "@/components/common/Brand";
+import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
+import { isApiConfigured } from "@/lib/api-client";
+import { verifyCertificate } from "@/lib/certificates-api";
+import type { CertificateVerification } from "@falcon/shared/cms/types";
 
 export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
-  const [state, setState] = useState<'loading' | 'done'>('loading');
+  const [state, setState] = useState<"loading" | "done">("loading");
   const [result, setResult] = useState<CertificateVerification | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isApiConfigured()) {
-      setError('検証サービスが構成されていません (API 未設定)。');
-      setState('done');
+      setError("検証サービスが構成されていません (API 未設定)。");
+      setState("done");
       return;
     }
     let cancelled = false;
@@ -33,10 +33,10 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
         if (!cancelled) setResult(r);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : '検証に失敗しました');
+          setError(err instanceof Error ? err.message : "検証に失敗しました");
         }
       } finally {
-        if (!cancelled) setState('done');
+        if (!cancelled) setState("done");
       }
     })();
     return () => {
@@ -58,8 +58,8 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
           <div className="text-[12.5px] text-ink-3 mt-1 font-mono">{certCode}</div>
         </div>
 
-        {state === 'loading' ? (
-          <div role="status" aria-label="検証中" className="space-y-3 py-6">
+        {state === "loading" ? (
+          <div aria-busy="true" aria-live="polite" aria-label="検証中" className="space-y-3 py-6">
             <Skeleton className="mx-auto h-5 w-48" />
             <Skeleton className="h-40 w-full" />
           </div>
@@ -70,10 +70,10 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
               この修了証は有効です
             </div>
             <CertificateView
-              recipientName={result.recipient_name ?? ''}
-              courseTitle={result.course_title ?? ''}
-              issuer={result.tenant_name ?? ''}
-              issuedAt={result.issued_at ? formatIssuedAt(result.issued_at) : ''}
+              recipientName={result.recipient_name ?? ""}
+              courseTitle={result.course_title ?? ""}
+              issuer={result.tenant_name ?? ""}
+              issuedAt={result.issued_at ? formatIssuedAt(result.issued_at) : ""}
               certCode={result.cert_code ?? certCode}
             />
           </div>
@@ -81,13 +81,13 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
           <div className="bg-card border border-border rounded-lg px-6 py-12 text-center">
             <div className="flex items-center justify-center gap-2 text-sm font-medium text-destructive mb-2">
               <XCircle size={18} />
-              {result?.reason === 'revoked'
-                ? 'この修了証は失効しています'
-                : '有効な修了証が見つかりません'}
+              {result?.reason === "revoked"
+                ? "この修了証は失効しています"
+                : "有効な修了証が見つかりません"}
             </div>
             <p className="text-[12.5px] text-ink-3">
               {error ??
-                '認定番号をご確認のうえ、 再度お試しください。 不明な点は発行元にお問い合わせください。'}
+                "認定番号をご確認のうえ、 再度お試しください。 不明な点は発行元にお問い合わせください。"}
             </p>
           </div>
         )}

@@ -27,11 +27,7 @@ import {
 } from "@/components/ui/table";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAuditLogs, type AuditFilters } from "@/hooks/useAuditLogs";
-import {
-  DEFAULT_LIST_LIMIT,
-  listAllAuditLogs,
-  type AuditLogRow,
-} from "@/lib/audit-logs-api";
+import { DEFAULT_LIST_LIMIT, listAllAuditLogs, type AuditLogRow } from "@/lib/audit-logs-api";
 import {
   AUDIT_ACTION_LABELS,
   auditActionLabel,
@@ -140,10 +136,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
   }, [profiles]);
 
   const displayActor = (log: AuditLogRow): string =>
-    log.actor_name ||
-    (log.actor_id ? profileName.get(log.actor_id) : "") ||
-    log.actor_id ||
-    "—";
+    log.actor_name || (log.actor_id ? profileName.get(log.actor_id) : "") || log.actor_id || "—";
 
   const displayTarget = (log: AuditLogRow): string =>
     log.target_id ? `${log.target_type}/${log.target_id}` : log.target_type || "—";
@@ -181,9 +174,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
       downloadCsv(`audit-logs-${stamp}.csv`, toCsv(headers, rows));
       toast.success(`${all.length} 件をエクスポートしました`);
     } catch (err) {
-      toast.error(
-        `CSV出力に失敗しました: ${err instanceof Error ? err.message : "unknown"}`,
-      );
+      toast.error(`CSV出力に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
       setExporting(false);
     }
@@ -203,10 +194,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
         title="監査ログ"
         sub="認証・権限変更・削除操作 — 1年以上保管"
         actions={
-          <Button
-            onClick={() => void onExport()}
-            disabled={exporting || logs.length === 0}
-          >
+          <Button onClick={() => void onExport()} disabled={exporting || logs.length === 0}>
             <Download size={14} />
             {exporting ? "出力中…" : "CSV出力"}
           </Button>
@@ -291,7 +279,8 @@ function AuditLive({ tenantId }: { tenantId: string }) {
 
       {truncated ? (
         <div className="mb-4 rounded-md border border-border bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
-          最新 {DEFAULT_LIST_LIMIT} 件のみ表示しています。 条件を絞り込むか、 全件は「CSV出力」で取得してください。
+          最新 {DEFAULT_LIST_LIMIT} 件のみ表示しています。 条件を絞り込むか、
+          全件は「CSV出力」で取得してください。
         </div>
       ) : null}
 
@@ -325,9 +314,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
                     </TableCell>
                     <TableCell>{displayActor(l)}</TableCell>
                     <TableCell>
-                      <Badge variant={variant}>
-                        {actionLabel(l.action)}
-                      </Badge>
+                      <Badge variant={variant}>{actionLabel(l.action)}</Badge>
                     </TableCell>
                     <TableCell className="font-mono text-[11.5px] text-ink-3">
                       {displayTarget(l)}
@@ -354,18 +341,36 @@ function FilterField({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
       <span className="text-[11px] text-ink-3">{label}</span>
       {children}
-    </label>
+    </div>
   );
 }
 
 // dev fixtures フロー用のデモ表示。 DB が無いため固定サンプルを出す。
 const DEMO_ROWS = [
-  { t: "2026-04-18 14:28:05", a: "中村 理恵", ac: "user_role_change", tg: "user/u_142", ip: "10.0.3.5" },
-  { t: "2026-04-18 13:05:44", a: "sys_admin", ac: "course_publish", tg: "course/typescript-basics", ip: "10.0.0.1" },
-  { t: "2026-04-18 12:18:30", a: "堀江メンター", ac: "course_delete", tg: "course/legacy-sql", ip: "10.0.3.22" },
+  {
+    t: "2026-04-18 14:28:05",
+    a: "中村 理恵",
+    ac: "user_role_change",
+    tg: "user/u_142",
+    ip: "10.0.3.5",
+  },
+  {
+    t: "2026-04-18 13:05:44",
+    a: "sys_admin",
+    ac: "course_publish",
+    tg: "course/typescript-basics",
+    ip: "10.0.0.1",
+  },
+  {
+    t: "2026-04-18 12:18:30",
+    a: "堀江メンター",
+    ac: "course_delete",
+    tg: "course/legacy-sql",
+    ip: "10.0.3.22",
+  },
   { t: "2026-04-18 11:02:09", a: "中村 理恵", ac: "user_invite", tg: "user/u_310", ip: "10.0.3.5" },
 ];
 
@@ -389,14 +394,12 @@ function AuditDemo() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {DEMO_ROWS.map((l, i) => (
-              <TableRow key={i}>
+            {DEMO_ROWS.map((l) => (
+              <TableRow key={`${l.t}-${l.tg}`}>
                 <TableCell className="font-mono text-[11.5px]">{l.t}</TableCell>
                 <TableCell>{l.a}</TableCell>
                 <TableCell>
-                  <Badge variant={actionVariant(l.ac)}>
-                    {actionLabel(l.ac)}
-                  </Badge>
+                  <Badge variant={actionVariant(l.ac)}>{actionLabel(l.ac)}</Badge>
                 </TableCell>
                 <TableCell className="font-mono text-[11.5px] text-ink-3">{l.tg}</TableCell>
                 <TableCell className="font-mono text-[11.5px] text-ink-3">{l.ip}</TableCell>

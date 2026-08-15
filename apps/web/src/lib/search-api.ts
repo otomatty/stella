@@ -8,10 +8,7 @@
 import type { SearchResponse } from "@falcon/shared/search/types";
 import { apiFetch } from "./api-client";
 
-export async function searchAll(
-  query: string,
-  signal?: AbortSignal,
-): Promise<SearchResponse> {
+export async function searchAll(query: string, signal?: AbortSignal): Promise<SearchResponse> {
   return apiFetch<SearchResponse>(
     `/api/search?q=${encodeURIComponent(query)}`,
     signal ? { signal } : {},

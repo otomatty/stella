@@ -1,7 +1,7 @@
-import { Sliders } from '@/lib/icons';
-import type { Role, Tenant } from '@/data/types';
-import { TENANTS } from '@/demo/fixtures';
-import { cn } from '@/lib/utils';
+import { Sliders } from "@/lib/icons";
+import type { Role, Tenant } from "@/data/types";
+import { TENANTS } from "@/demo/fixtures";
+import { cn } from "@/lib/utils";
 
 interface TweaksPanelProps {
   role: Role;
@@ -13,9 +13,9 @@ interface TweaksPanelProps {
 }
 
 const ROLE_OPTIONS: Array<{ id: Role; label: string }> = [
-  { id: 'learner', label: '受講者' },
-  { id: 'instructor', label: '講師' },
-  { id: 'admin', label: '管理者' },
+  { id: "learner", label: "受講者" },
+  { id: "instructor", label: "講師" },
+  { id: "admin", label: "管理者" },
 ];
 
 const Pill = ({
@@ -31,10 +31,10 @@ const Pill = ({
     type="button"
     onClick={onClick}
     className={cn(
-      'px-2 py-[3px] rounded-[4px] border text-[11px] transition-colors',
+      "px-2 py-[3px] rounded-[4px] border text-[11px] transition-colors",
       active
-        ? 'bg-ink text-card border-ink'
-        : 'bg-card text-ink-2 border-border-2 hover:border-ink-3',
+        ? "bg-ink text-card border-ink"
+        : "bg-card text-ink-2 border-border-2 hover:border-ink-3",
     )}
   >
     {children}
@@ -55,7 +55,7 @@ export const TweaksPanel = ({
       TWEAKS
     </h4>
     <div className="flex items-center gap-2 mb-2.5 text-xs">
-      <label className="flex-1 text-ink-2">ロール</label>
+      <span className="flex-1 text-ink-2">ロール</span>
       <div className="flex gap-1">
         {ROLE_OPTIONS.map((r) => (
           <Pill key={r.id} active={role === r.id} onClick={() => onRole(r.id)}>
@@ -66,7 +66,7 @@ export const TweaksPanel = ({
     </div>
     {TENANTS.length > 1 ? (
       <div className="flex items-center gap-2 mb-2.5 text-xs">
-        <label className="flex-1 text-ink-2">テナント</label>
+        <span className="flex-1 text-ink-2">テナント</span>
         <div className="flex gap-1">
           {TENANTS.map((t) => (
             <Pill key={t.id} active={tenant.id === t.id} onClick={() => onTenant(t)}>
@@ -77,7 +77,7 @@ export const TweaksPanel = ({
       </div>
     ) : null}
     <div className="flex items-center gap-2 mb-2.5 text-xs">
-      <label className="flex-1 text-ink-2">AI アシスタント</label>
+      <span className="flex-1 text-ink-2">AI アシスタント</span>
       <div className="flex gap-1">
         <Pill active={showAIBot} onClick={onToggleAIBot}>
           表示
@@ -85,9 +85,10 @@ export const TweaksPanel = ({
       </div>
     </div>
     <div className="text-[10.5px] text-ink-3 mt-2.5 border-t border-border pt-2.5 leading-relaxed">
-      ロール切替 → ダッシュボードへリセット。<br />
-      変更は保持されます。<br />
-      ` (バッククォート) キーで表示/非表示。
+      ロール切替 → ダッシュボードへリセット。
+      <br />
+      変更は保持されます。
+      <br />` (バッククォート) キーで表示/非表示。
     </div>
   </div>
 );

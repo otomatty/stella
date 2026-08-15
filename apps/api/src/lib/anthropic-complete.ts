@@ -29,9 +29,7 @@ export async function completeMessage(args: CompleteArgs): Promise<string> {
   const client = new Anthropic({ apiKey });
   const model = args.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  const signal = args.signal
-    ? AbortSignal.any([args.signal, timeoutSignal])
-    : timeoutSignal;
+  const signal = args.signal ? AbortSignal.any([args.signal, timeoutSignal]) : timeoutSignal;
 
   const response = await client.messages.create(
     {

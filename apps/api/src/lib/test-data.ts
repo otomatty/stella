@@ -248,10 +248,7 @@ function initialsOf(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export async function insertTestDataForNewUser(
-  db: Db,
-  target: TestDataTarget,
-): Promise<void> {
+export async function insertTestDataForNewUser(db: Db, target: TestDataTarget): Promise<void> {
   const now = new Date();
 
   if (target.role === "student") {
@@ -274,11 +271,7 @@ export async function insertTestDataForNewUser(
 // 受講者
 // ---------------------------------------------------------------
 
-async function insertStudentTestData(
-  db: Db,
-  target: TestDataTarget,
-  now: Date,
-): Promise<void> {
+async function insertStudentTestData(db: Db, target: TestDataTarget, now: Date): Promise<void> {
   const published = await listPublishedCourses(db, target.tenantId);
 
   if (published.length > 0) {
@@ -299,7 +292,8 @@ async function insertStudentTestData(
         target: [enrollments.userId, enrollments.courseId],
       });
 
-    const course = published[0]!;
+    const course = published[0];
+    if (!course) return;
     const courseLessons = await listCourseLessons(db, course.id);
 
     // 最初のコースの最初のレッスンを完了済みにして、 進捗表示を確認できるようにする。
@@ -358,17 +352,11 @@ async function insertStudentTestData(
  * 「テナントに添削待ちがあるか」だけを見て、 足りない分を既存受講者
  * 名義で補う。 受講者が 1 人も居なければ何もしない (その後の受講者招待で埋まる)。
  */
-async function insertStaffTestData(
-  db: Db,
-  target: TestDataTarget,
-  now: Date,
-): Promise<void> {
+async function insertStaffTestData(db: Db, target: TestDataTarget, now: Date): Promise<void> {
   const pending = await db
     .select({ id: submissions.id })
     .from(submissions)
-    .where(
-      and(eq(submissions.tenantId, target.tenantId), eq(submissions.status, "pending")),
-    )
+    .where(and(eq(submissions.tenantId, target.tenantId), eq(submissions.status, "pending")))
     .limit(1);
   if (pending.length > 0) return;
 
@@ -393,14 +381,7 @@ async function insertStaffTestData(
     initials: student.initials ?? initialsOf(student.displayName),
   };
 
-  await insertSampleSubmissions(
-    db,
-    target.tenantId,
-    author,
-    course.title,
-    courseLessons,
-    now,
-  );
+  await insertSampleSubmissions(db, target.tenantId, author, course.title, courseLessons, now);
 }
 
 // ---------------------------------------------------------------
@@ -452,29 +433,32 @@ async function insertSampleSubmissions(
   if (targets.length === 0) return;
 
   const base = now.getTime();
-  const rows = targets.map((lesson, i) => {
-    const t = SUBMISSION_TEMPLATES[i]!;
-    return {
-      tenantId,
-      studentId: author.id,
-      lessonId: lesson.id,
-      assignmentId: lesson.assignmentId,
-      courseTitle,
-      sectionTitle: lesson.sectionTitle,
-      assignmentTitle: lesson.title,
-      code: t.code,
-      status: t.status,
-      priority: t.priority,
-      attempt: t.attempt,
-      aiReady: t.aiReady,
-      aiSuggestions: t.aiSuggestions,
-      rubric: t.rubric,
-      reviewNotes: t.reviewNotes,
-      verdict: t.verdict,
-      submittedAt: new Date(base - t.submittedHoursAgo * HOUR_MS),
-      reviewedAt:
-        t.reviewedHoursAgo == null ? null : new Date(base - t.reviewedHoursAgo * HOUR_MS),
-    };
+  const rows = targets.flatMap((lesson, i) => {
+    const t = SUBMISSION_TEMPLATES[i];
+    if (!t) return [];
+    return [
+      {
+        tenantId,
+        studentId: author.id,
+        lessonId: lesson.id,
+        assignmentId: lesson.assignmentId,
+        courseTitle,
+        sectionTitle: lesson.sectionTitle,
+        assignmentTitle: lesson.title,
+        code: t.code,
+        status: t.status,
+        priority: t.priority,
+        attempt: t.attempt,
+        aiReady: t.aiReady,
+        aiSuggestions: t.aiSuggestions,
+        rubric: t.rubric,
+        reviewNotes: t.reviewNotes,
+        verdict: t.verdict,
+        submittedAt: new Date(base - t.submittedHoursAgo * HOUR_MS),
+        reviewedAt:
+          t.reviewedHoursAgo == null ? null : new Date(base - t.reviewedHoursAgo * HOUR_MS),
+      },
+    ];
   });
   const inserted = await db.insert(submissions).values(rows).returning({ id: submissions.id });
 

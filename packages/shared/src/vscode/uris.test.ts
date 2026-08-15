@@ -3,9 +3,7 @@ import { buildVscodeLessonUri, buildVscodeLinkUri } from "./uris.js";
 
 describe("vscode uris", () => {
   it("builds a link uri", () => {
-    expect(buildVscodeLinkUri("ABCD2345")).toBe(
-      "vscode://falcon.informal/link?code=ABCD2345",
-    );
+    expect(buildVscodeLinkUri("ABCD2345")).toBe("vscode://falcon.informal/link?code=ABCD2345");
   });
 
   it("builds a lesson uri", () => {

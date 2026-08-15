@@ -50,12 +50,12 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 ### Lint / Typecheck / Build
 
 ```bash
-bun run lint       # biome lint . (the CI lint gate)
+bun run lint       # biome ci . (lint + format の CI ゲート)
 bun run typecheck  # tsc --noEmit across all workspaces
 bun run build      # Full production build (web uses Vite)
 ```
 
-Linting is **Biome** (`biome.json`), not ESLint. `biome.json` enables the formatter but disables recommended lint rules (`linter.rules.recommended: false`), so `bun run lint` is intentionally permissive; TypeScript strict mode (`tsc --noEmit`) is the primary static analysis.
+Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`（lint + format）。`recommended` に加え `noNonNullAssertion` / a11y / `noDangerouslySetInnerHtml` / `noArrayIndexKey` / `noExplicitAny` / `noConsoleLog` などを error にしている。教材 `packages/shared/src/problems/**`・生成物・CLI scripts は ignore / override。TypeScript strict (`tsc --noEmit`) も併用する。
 
 ### Testing
 
