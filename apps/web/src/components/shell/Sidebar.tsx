@@ -122,8 +122,8 @@ export const Sidebar = ({
   onSwitchToLearner,
   onReturnToStaff,
 }: SidebarProps) => (
-  <aside className="bg-card border-r border-border px-3 pt-3.5 pb-4 flex flex-col gap-0.5 sticky top-0 h-screen overflow-y-auto w-[236px]">
-    <div className="pt-1 px-2.5 pb-4 border-b border-border mb-3">
+  <aside className="bg-card border-r border-border px-3 pb-4 flex flex-col gap-0.5 sticky top-0 h-screen overflow-y-auto w-[236px]">
+    <div className="-mx-3 mb-3 flex h-[var(--shell-header-height)] items-center border-b border-border px-5">
       <Brand size="sm" />
     </div>
 

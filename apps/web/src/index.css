@@ -59,6 +59,9 @@
   --sf-gradient-135: linear-gradient(135deg, #0A33FF 0%, #E62F9A 55%, #FF2E0D 100%);
   --sf-magenta-soft: rgba(230, 47, 154, 0.12);
   --sf-magenta-ink: #B81E72;
+
+  /* トップバーとサイドバーのロゴ行を同じ高さにする */
+  --shell-header-height: 57px;
 }
 
 /* Tailwind v4 theme — maps tokens to utility classes */

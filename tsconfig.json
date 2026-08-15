@@ -1,4 +1,11 @@
 {
   "files": [],
-  "include": []
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/code-runner" },
+    { "path": "./packages/content" },
+    { "path": "./apps/web" },
+    { "path": "./apps/api" },
+    { "path": "./apps/vscode" }
+  ]
 }

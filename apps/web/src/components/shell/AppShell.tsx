@@ -19,9 +19,6 @@ import type { SearchResult } from '@falcon/shared/search/types';
 
 import { Sidebar } from '@/components/shell/Sidebar';
 import { Topbar } from '@/components/shell/Topbar';
-import { DataSourceBanner } from '@/components/shell/DataSourceBanner';
-import type { DataSourceKind } from '@/components/shell/DataSourceBanner';
-import { LearnerPreviewBanner } from '@/components/shell/LearnerPreviewBanner';
 import { LoginScreen } from '@/components/shell/LoginScreen';
 import { InviteRequiredScreen } from '@/components/shell/InviteRequiredScreen';
 import { resolveUiRole } from '@/lib/ui-role';
@@ -258,20 +255,15 @@ export function AppShell() {
     [rawCourses, progressMap],
   );
 
-  const courseSource =
-    effectiveRole === 'learner' && !previewingLearner
-      ? enrolledCourses.source
-      : browseCourses.source;
   const courseError =
     effectiveRole === 'learner' && !previewingLearner
       ? enrolledCourses.error
       : browseCourses.error;
-  // バナー集約 + LearnerDashboard への props 渡し用（二重 fetch 回避）。
+  // LearnerDashboard への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(
     effectiveTenant.id,
     effectiveRole === 'learner',
   );
-  const dataSource = pickSource(courseSource, announcements.source);
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
   const myCertificates = useMyCertificates(
@@ -661,13 +653,6 @@ export function AppShell() {
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
         <div className="min-w-0 flex flex-col">
-          {import.meta.env.DEV ? <DataSourceBanner source={dataSource} /> : null}
-          {previewingLearner ? (
-            <LearnerPreviewBanner
-              profileRole={profile?.role}
-              onReturn={returnToStaffView}
-            />
-          ) : null}
           <Topbar
             onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
@@ -731,12 +716,6 @@ export function AppShell() {
       ) : null}
     </>
   );
-}
-
-function pickSource(...sources: DataSourceKind[]): DataSourceKind {
-  if (sources.includes('error')) return 'error';
-  if (sources.includes('fixtures')) return 'fixtures';
-  return 'db';
 }
 
 function NotFoundNotice({

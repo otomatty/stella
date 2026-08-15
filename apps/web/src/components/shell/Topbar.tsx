@@ -61,7 +61,7 @@ export const Topbar = ({
   }, []);
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3.5 px-4 sm:px-7 py-3 bg-card border-b border-border sticky top-0 z-10 h-[57px]">
+    <div className="flex items-center gap-2 sm:gap-3.5 px-4 sm:px-7 py-3 bg-card border-b border-border sticky top-0 z-10 h-[var(--shell-header-height)]">
       {onOpenNav ? (
         <button
           type="button"
