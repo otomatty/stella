@@ -11,6 +11,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Upload, FileText, Loader2, Trash } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import {
   deleteLessonMaterial,
@@ -134,9 +135,7 @@ export function LessonMaterialsPanel({ lessonId }: { lessonId: string | null }) 
         }}
       >
         {loading ? (
-          <div className="flex items-center gap-2 py-3 text-[12.5px] text-ink-3">
-            <Loader2 size={14} className="animate-spin" /> 読み込み中…
-          </div>
+          <SkeletonRows rows={2} className="py-3" />
         ) : error ? (
           <div className="rounded-md border border-danger/40 bg-sunken p-3 text-[12.5px] text-danger">
             配布資料の取得に失敗しました: {error}

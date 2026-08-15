@@ -7,7 +7,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Loader2, ShieldCheck, XCircle } from '@/lib/icons';
+import { ShieldCheck, XCircle } from '@/lib/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Brand } from '@/components/common/Brand';
 import { CertificateView, formatIssuedAt } from '@/components/common/CertificateView';
 import { isApiConfigured } from '@/lib/api-client';
@@ -58,9 +59,9 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
         </div>
 
         {state === 'loading' ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-ink-3 py-16">
-            <Loader2 size={16} className="animate-spin" />
-            検証中…
+          <div role="status" aria-label="検証中" className="space-y-3 py-6">
+            <Skeleton className="mx-auto h-5 w-48" />
+            <Skeleton className="h-40 w-full" />
           </div>
         ) : valid && result ? (
           <div className="flex flex-col gap-4">

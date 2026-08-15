@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { FlaskConical, Loader2 } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   fetchTenantSettings,
@@ -84,10 +85,7 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex items-center gap-2 py-4 text-sm text-ink-3">
-                <Loader2 size={15} className="animate-spin" />
-                読み込み中…
-              </div>
+              <SkeletonRows rows={2} className="py-4" />
             ) : error ? (
               <div className="py-2 text-[12.5px] text-destructive">
                 設定の取得に失敗しました: {error}

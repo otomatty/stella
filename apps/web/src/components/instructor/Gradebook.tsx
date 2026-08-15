@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Award, CheckCircle, Download, Loader2 } from '@/lib/icons';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -166,10 +167,7 @@ export const Gradebook = ({ courses }: GradebookProps) => {
           成績台帳はバックエンド (Neon) 接続時に実データで動作します (現在はデモ表示のため利用できません)。
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center gap-2 text-sm text-ink-3 py-16">
-          <Loader2 size={16} className="animate-spin" />
-          読み込み中…
-        </div>
+        <SkeletonRows rows={5} className="py-6" />
       ) : !data ? (
         <div className="text-[13px] text-ink-3">コースを選択してください。</div>
       ) : data.rows.length === 0 ? (

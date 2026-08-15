@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { CertificateView, formatIssuedAt } from '@/components/common/CertificateView';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import type { Course } from '@/data/types';
 import type { CertificateRow, CourseCompletion } from '@falcon/shared/cms/types';
 import {
@@ -53,9 +54,7 @@ export const CertificatePage = ({
   }
   // バックエンド設定済みでセッション復元中 (userId 未取得) はデモ証書ではなく読み込み表示。
   if (!currentUserId) {
-    return (
-      <div className="py-16 text-center text-sm text-ink-3">読み込み中…</div>
-    );
+    return <SkeletonRows rows={3} className="py-6" />;
   }
   return (
     <LiveCertificates
@@ -148,10 +147,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
       <PageHeader title="修了証" sub="修了したコースの修了証を確認・発行できます" />
 
       {loading ? (
-        <div className="flex items-center justify-center gap-2 text-sm text-ink-3 py-16">
-          <Loader2 size={16} className="animate-spin" />
-          読み込み中…
-        </div>
+        <SkeletonRows rows={3} className="py-6" />
       ) : (
         <div className="flex flex-col gap-10">
           {/* 発行可能 (基準達成・未発行) */}

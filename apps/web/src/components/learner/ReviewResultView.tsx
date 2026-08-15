@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Submission } from '@falcon/shared/review/types';
-import { ChevronLeft, Loader2 } from '@/lib/icons';
+import { ChevronLeft } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchSubmissionById } from '@/lib/submissions-api';
 import { formatSubmittedAt } from '@/lib/submissions-store';
@@ -59,12 +60,7 @@ export function ReviewResultView({
   }, [submissionId]);
 
   if (loading && !submission) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-ink-3">
-        <Loader2 size={16} className="animate-spin" />
-        提出結果を読み込み中…
-      </div>
-    );
+    return <SkeletonRows rows={4} className="py-6" />;
   }
 
   if (error || !submission) {

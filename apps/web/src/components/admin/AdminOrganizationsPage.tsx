@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Building, Edit, Plus, Users } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -164,7 +165,7 @@ function OrgsLive() {
 
       <Card className="overflow-hidden">
         {loading && organizations.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">読み込み中…</div>
+          <SkeletonRows rows={4} className="p-4" />
         ) : organizations.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             組織がまだありません。 「新規組織」 から登録してください。

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Loader2, ChevronRight } from '@/lib/icons';
+import { ChevronRight } from '@/lib/icons';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -102,9 +103,8 @@ function InstructorStudentsPage({
     <>
       <PageHeader title={titles.students} sub="フィルターして一覧表示" />
       {backendEnabled && loading ? (
-        <Card className="p-12 flex items-center justify-center gap-2 text-sm text-ink-3">
-          <Loader2 size={16} className="animate-spin" />
-          読み込み中…
+        <Card className="p-6">
+          <SkeletonRows rows={5} />
         </Card>
       ) : backendEnabled && error ? (
         <Card className="p-12 text-center text-sm text-destructive">
@@ -168,9 +168,8 @@ function InstructorCoursesPage({
     <>
       <PageHeader title={titles.courses} sub="担当コース一覧" />
       {backendEnabled && loading ? (
-        <Card className="p-12 flex items-center justify-center gap-2 text-sm text-ink-3">
-          <Loader2 size={16} className="animate-spin" />
-          読み込み中…
+        <Card className="p-6">
+          <SkeletonRows rows={4} />
         </Card>
       ) : backendEnabled && error ? (
         <Card className="p-12 text-center text-sm text-destructive">

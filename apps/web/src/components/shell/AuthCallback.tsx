@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, XCircle } from '@/lib/icons';
+import { XCircle } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { completeAuthFromCallbackHash } from '@/lib/auth';
 import { POST_LOGIN_REDIRECT_KEY } from '@/components/shell/AppShell';
 
@@ -53,12 +54,5 @@ export function AuthCallback() {
     );
   }
 
-  return (
-    <div className="min-h-screen grid place-items-center bg-background text-ink-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Loader2 size={16} className="animate-spin" />
-        ログイン処理中…
-      </div>
-    </div>
-  );
+  return <PageSkeleton label="ログイン処理中" />;
 }

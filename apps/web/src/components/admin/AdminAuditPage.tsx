@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Download, RefreshCw } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -296,7 +297,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
 
       <Card className="overflow-hidden">
         {loading && logs.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">読み込み中…</div>
+          <SkeletonRows rows={6} className="p-4" />
         ) : logs.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             {hasFilters

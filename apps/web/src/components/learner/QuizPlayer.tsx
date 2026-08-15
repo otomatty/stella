@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, X, CheckCircle, Loader2, HelpCircle } from "@/lib/icons";
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -213,11 +214,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
     attemptsLeft === 0 && history != null && !history.passed;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-ink-3">
-        <Loader2 size={16} className="animate-spin" /> クイズを読み込み中…
-      </div>
-    );
+    return <SkeletonRows rows={4} className="py-6" />;
   }
 
   if (!quiz || quiz.questions.length === 0) {

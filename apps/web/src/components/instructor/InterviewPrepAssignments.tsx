@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2 } from '@/lib/icons';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
 import {
@@ -83,9 +83,8 @@ export function InterviewPrepAssignmentsPage({
           デモモードでは割当を編集できません。
         </Card>
       ) : loading ? (
-        <Card className="p-12 flex items-center justify-center gap-2 text-sm text-ink-3">
-          <Loader2 size={16} className="animate-spin" />
-          読み込み中…
+        <Card className="p-6">
+          <SkeletonRows rows={5} />
         </Card>
       ) : error ? (
         <Card className="p-12 text-center text-sm text-destructive">

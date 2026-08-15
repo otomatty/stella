@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, ChevronDown, ChevronRight, Play, Pause, X } from '@/lib/icons';
+import { ChevronDown, ChevronRight, Play, Pause, X } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import type { InterviewQuestion } from '@falcon/shared/interview/types';
 import {
@@ -136,9 +137,8 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
 
   if (loading) {
     return (
-      <Card className="p-12 flex items-center justify-center gap-2 text-sm text-ink-3">
-        <Loader2 size={16} className="animate-spin" />
-        読み込み中…
+      <Card className="p-6">
+        <SkeletonRows rows={4} />
       </Card>
     );
   }

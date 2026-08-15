@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Plus, Edit, Trash } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -82,7 +83,7 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
       ) : null}
 
       {loading && rows.length === 0 ? (
-        <div className="text-sm text-ink-3 py-10 text-center">読み込み中…</div>
+        <SkeletonRows rows={4} className="py-4" />
       ) : rows.length === 0 ? (
         <div className="text-sm text-ink-3 py-10 text-center border border-dashed border-border rounded-md">
           まだ課題がありません。 「新規課題」 ボタンから作成してください。
@@ -137,9 +138,12 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
             <div
               role="status"
               aria-busy="true"
+              aria-label="読み込み中"
               className="fixed inset-0 z-50 flex items-center justify-center bg-background/80"
             >
-              <div className="text-sm text-ink-3">読み込み中…</div>
+              <div className="w-[95vw] max-w-[1100px] rounded-lg border border-border bg-card p-6">
+                <SkeletonRows rows={4} />
+              </div>
             </div>
           }
         >

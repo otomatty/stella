@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import type { CourseMaterialRow } from '@falcon/shared/cms/types';
 import { Download, FileText, Folder, Loader2 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -128,9 +129,7 @@ export const CourseMaterialsDialog = ({
               教材のダウンロードはバックエンド接続時のみ利用できます。
             </div>
           ) : loading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
-              <Loader2 size={16} className="animate-spin" /> 読み込み中…
-            </div>
+            <SkeletonRows rows={3} className="py-4" />
           ) : error ? (
             <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-ink-3">
               <Folder size={28} className="text-ink-4" />

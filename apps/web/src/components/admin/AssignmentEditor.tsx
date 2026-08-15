@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Loader2 } from "@/lib/icons";
@@ -280,7 +281,7 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
         </DialogHeader>
 
         {loading ? (
-          <div className="py-10 text-center text-ink-3 text-sm">読み込み中…</div>
+          <SkeletonRows rows={4} className="py-4" />
         ) : (
           <Tabs defaultValue="meta" className="flex-1 flex flex-col overflow-hidden">
             <TabsList>

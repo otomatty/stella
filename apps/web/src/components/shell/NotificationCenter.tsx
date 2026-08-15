@@ -18,6 +18,7 @@ import {
   X,
   Send,
 } from '@/lib/icons';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { createAnnouncement } from '@/lib/notifications-api';
@@ -155,9 +156,7 @@ export const NotificationCenter = ({
 
           <div className="overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-[12.5px] text-ink-3">
-                <Loader2 size={15} className="animate-spin" /> 読み込み中…
-              </div>
+              <SkeletonRows rows={3} className="px-4 py-4" />
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
                 <Bell size={22} className="text-ink-4" />

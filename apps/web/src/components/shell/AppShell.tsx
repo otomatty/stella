@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { toast } from 'sonner';
-import { Loader2, Sparkles } from '@/lib/icons';
+import { Sparkles } from '@/lib/icons';
 import { TENANTS } from '@/data/seed-catalog';
 import { CURRENT_USER } from '@/demo/fixtures';
 import type { Course, Role, Tenant, User } from '@/data/types';
@@ -33,6 +33,7 @@ import {
 import { AIChatBot } from '@/components/common/AIChatBot';
 import { TweaksPanel } from '@/components/common/TweaksPanel';
 import { Button } from '@/components/ui/button';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { usePendingReviewCount } from '@/hooks/useSubmissions';
 import { useMyCertificates } from '@/hooks/useMyCertificates';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -555,14 +556,7 @@ export function AppShell() {
 
   if (backendEnabled) {
     if (authLoading) {
-      return (
-        <div className="min-h-screen grid place-items-center bg-background text-ink-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Loader2 size={16} className="animate-spin" />
-            セッション復元中…
-          </div>
-        </div>
-      );
+      return <PageSkeleton label="セッション復元中" />;
     }
     if (!session) {
       return <LoginScreen />;

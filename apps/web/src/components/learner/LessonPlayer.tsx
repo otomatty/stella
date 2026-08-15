@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
 import { LessonTypeIcon, LessonStatusIcon } from './CourseDetail';
 import { VideoViewer } from './VideoViewer';
 import { resolveLessonStatus } from '@/lib/lesson-progress';
@@ -523,12 +524,9 @@ const ViewerLoading = () => (
   <div
     role="status"
     aria-label="ビューアを読み込み中"
-    className="aspect-[16/9] max-h-[62vh] grid place-items-center bg-sunken text-ink-3 text-[12.5px]"
+    className="aspect-[16/9] max-h-[62vh]"
   >
-    <div className="inline-flex items-center gap-2">
-      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-      ビューアを読み込み中…
-    </div>
+    <Skeleton className="h-full w-full rounded-none" />
   </div>
 );
 
@@ -701,11 +699,7 @@ const ResourcesList = ({
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
-        <Loader2 size={16} className="animate-spin" /> 読み込み中…
-      </div>
-    );
+    return <SkeletonRows rows={3} className="py-4" />;
   }
 
   // 取得失敗は「資料なし」と区別して表示する。

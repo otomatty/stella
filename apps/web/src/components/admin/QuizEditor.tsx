@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -329,9 +330,7 @@ export function QuizEditor({ lessonId, onClose }: Props) {
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-ink-3">
-            <Loader2 size={16} className="animate-spin" /> 読み込み中…
-          </div>
+          <SkeletonRows rows={4} className="py-4" />
         ) : (
           <div className="flex flex-col gap-4">
             {/* 設定 */}

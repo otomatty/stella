@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ChevronLeft, Save } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,7 +98,7 @@ export function CourseEditor({ courseId, tenantId, onBack, onMetadataChanged }: 
   };
 
   if (loading && !data) {
-    return <div className="p-6 text-sm text-ink-3">読み込み中…</div>;
+    return <SkeletonRows rows={5} className="p-6" />;
   }
   if (error) {
     return <div className="p-6 text-sm text-destructive">エラー: {error}</div>;

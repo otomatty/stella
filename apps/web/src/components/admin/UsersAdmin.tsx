@@ -21,6 +21,7 @@ import {
 } from '@/lib/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -215,7 +216,7 @@ function UsersAdminLive({
         </div>
 
         {loading && profiles.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">読み込み中…</div>
+          <SkeletonRows rows={5} className="p-4" />
         ) : profiles.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             まだユーザーがいません。 「ユーザーを招待」 から追加してください。

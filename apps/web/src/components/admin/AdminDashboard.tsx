@@ -24,6 +24,7 @@ import {
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard } from '@/components/common/KpiCard';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardActions } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -108,7 +109,15 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
       ) : null}
 
       {!analytics && loading ? (
-        <div className="py-16 text-center text-sm text-ink-3">集計を読み込み中…</div>
+        <div role="status" aria-label="集計を読み込み中">
+          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
       ) : !analytics ? (
         <Card className="text-center p-16 text-ink-3 text-sm">
           集計データがありません。

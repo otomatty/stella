@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardActions, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
 import type { Course } from '@/data/types';
 import type { UseAnnouncementsResult } from '@/hooks/useAnnouncements';
 import { useLessonProgressMap } from '@/hooks/useLessonProgress';
@@ -104,7 +105,7 @@ export const LearnerDashboard = ({
     activity.current_streak >= activity.longest_streak;
   const streakTrend = !activity ? (
     activityLoading ? (
-      '読み込み中…'
+      <Skeleton className="h-3 w-20" />
     ) : (
       '学習ログがありません'
     )
@@ -339,7 +340,7 @@ export const LearnerDashboard = ({
             </CardHeader>
             <div>
               {submissionsLoading ? (
-                <div className="px-4 py-4 text-[12.5px] text-ink-3">読み込み中…</div>
+                <SkeletonRows rows={3} className="px-4 py-4" />
               ) : null}
               {submissionsError ? (
                 <div className="px-4 py-3 text-[12.5px] text-destructive">
@@ -394,7 +395,9 @@ export const LearnerDashboard = ({
                 学習ログの取得に失敗しました: {activityError}
               </div>
             ) : activityLoading && !activity ? (
-              <div className="px-4 py-4 text-[12.5px] text-ink-3">読み込み中…</div>
+              <div className="p-4 h-60">
+                <Skeleton className="h-full w-full" />
+              </div>
             ) : !activity ? (
               <div className="px-4 py-4 text-[12.5px] text-ink-3">
                 学習ログはまだありません。レッスンを視聴すると日別の学習時間が記録されます。

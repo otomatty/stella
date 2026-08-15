@@ -30,12 +30,12 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
-  Loader2,
   Check,
   FileText,
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
 import { useLessonProgress, useProgressReady } from '@/hooks/useLessonProgress';
@@ -407,18 +407,17 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
 
 function PageLoading() {
   return (
-    <div className="grid place-items-center p-10 text-ink-3">
-      <Loader2 size={24} className="animate-spin" />
-      <div className="text-[12px] mt-2">読み込み中…</div>
+    <div role="status" aria-label="読み込み中" className="p-4">
+      <Skeleton className="aspect-[16/9] w-[min(60vw,880px)]" />
     </div>
   );
 }
 
 function ThumbLoading() {
   return (
-    <div className="px-3 py-4 text-[11px] text-ink-3 inline-flex items-center gap-1">
-      <Loader2 size={12} className="animate-spin" />
-      生成中…
+    <div role="status" aria-label="サムネイルを生成中" className="px-2 py-1 space-y-2">
+      <Skeleton className="aspect-[16/9] w-full" />
+      <Skeleton className="aspect-[16/9] w-full" />
     </div>
   );
 }

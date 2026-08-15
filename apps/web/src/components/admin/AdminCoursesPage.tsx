@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Plus, MoreHorizontal, Edit } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { CourseThumb } from "@/components/common/CourseThumb";
 import type { CourseColor, CourseRow } from "@falcon/shared/cms/types";
@@ -104,7 +105,7 @@ export function AdminCoursesPage({ tenantId, initialCourseId = null }: Props) {
       ) : null}
 
       {loading && courses.length === 0 ? (
-        <div className="text-sm text-ink-3 py-10 text-center">読み込み中…</div>
+        <SkeletonRows rows={4} className="py-4" />
       ) : courses.length === 0 ? (
         <div className="text-sm text-ink-3 py-10 text-center border border-dashed border-border rounded-md">
           まだコースがありません。 「新規コース」 ボタンから作成してください。

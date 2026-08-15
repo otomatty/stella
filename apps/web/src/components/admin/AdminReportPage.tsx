@@ -32,6 +32,7 @@ import {
 import { Download, RefreshCw } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -219,7 +220,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
 
       <Card className="overflow-hidden">
         {loading && rows.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">読み込み中…</div>
+          <SkeletonRows rows={6} className="p-4" />
         ) : rows.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             {invalidPeriod
