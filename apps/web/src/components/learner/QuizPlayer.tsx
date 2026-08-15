@@ -370,8 +370,10 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                         "w-5 h-5 border-[1.5px] grid place-items-center shrink-0 mt-0.5 text-[11px] font-semibold",
                         q.kind === "multiple" ? "rounded-sm" : "rounded-full",
                         isSelected && !result && "border-brand bg-brand text-white",
-                        showCorrect && "border-success bg-success text-white",
-                        showWrong && "border-danger bg-danger text-white",
+                        // ダークの success / danger は明るい方に寄せてあるので、
+                        // 白抜きだとコントラストが 3:1 を切る。 面と反対の色を敷く。
+                        showCorrect && "border-success bg-success text-card",
+                        showWrong && "border-danger bg-danger text-card",
                         !isSelected &&
                           !showCorrect &&
                           !showWrong &&

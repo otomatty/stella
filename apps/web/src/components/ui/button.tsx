@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default:
           "bg-card border border-border-2 text-foreground hover:bg-sunken hover:border-border-strong",
         primary:
-          "bg-primary text-primary-foreground border border-primary hover:bg-[oklch(30%_0.01_260)]",
+          "bg-primary text-primary-foreground border border-primary hover:bg-primary-hover hover:border-primary-hover",
         // シグネチャ CTA。 DS の primary = ブランドグラデーションのピル。
         accent:
           "sf-gradient-bg text-brand-foreground border border-transparent hover:brightness-105",

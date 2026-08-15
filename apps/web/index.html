@@ -4,7 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FALCON INFORMAL</title>
+<!-- content は useTheme の applyTheme が実テーマに合わせて書き換える (media 版だと
+     OS 設定と違うテーマを明示選択した時にモバイルのブラウザ chrome だけ食い違う)。 -->
 <meta name="theme-color" content="#FFFFFF">
+<script>
+// ダークモードの初期適用。 描画前に <html class="dark"> を確定させてチラつきを防ぐ。
+// 保存キー / theme-color の値は src/hooks/useTheme.ts と揃えること。
+(function () {
+  var dark = false;
+  try {
+    var stored = localStorage.getItem("theme");
+    dark = stored === "dark" || (stored !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  } catch (e) {
+    // private モード等で localStorage が読めない場合はライトのまま
+  }
+  if (dark) {
+    document.documentElement.classList.add("dark");
+    document.querySelector('meta[name="theme-color"]').content = "#0D0D10";
+  }
+})();
+</script>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">

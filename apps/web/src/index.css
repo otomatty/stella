@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Tailwind 既定の `dark:` は OS 設定 (prefers-color-scheme) を見るが、 この app の
+   真の値は `<html class="dark">` なので `dark:` もそちらに合わせる。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    Design tokens — Sports Force / Tech&Boost
    claude.ai/design のデザインシステム (tokens/colors.css ほか) 準拠。
@@ -7,6 +11,8 @@
    ============================================================ */
 
 :root {
+  color-scheme: light;
+
   /* Surface (surface-1 / surface-2 / surface-3) */
   --bg: #f7f7f9;
   --bg-raised: #ffffff;
@@ -30,6 +36,9 @@
   --brand-soft: rgba(230, 47, 154, 0.12);
   --brand-ink: #b81e72;
 
+  /* primary (= ink) ボタンの hover 面 */
+  --primary-hover: #33333a;
+
   /* Status */
   --success: #16a34a;
   --success-soft: rgba(22, 163, 74, 0.12);
@@ -44,9 +53,21 @@
   --radius: 12px;
   --radius-lg: 16px;
 
-  --shadow-sm: 0 2px 8px rgba(14, 14, 16, 0.06);
-  --shadow: 0 8px 24px rgba(14, 14, 16, 0.08);
-  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.1);
+  /* 影の色。 ダークでは面が暗いので不透明度を上げないと浮き上がって見えない。
+     @theme inline 側から var() のまま参照させて、 .dark で差し替えられるようにする。 */
+  --shadow-tint-1: rgba(14, 14, 16, 0.06);
+  --shadow-tint-2: rgba(14, 14, 16, 0.08);
+  --shadow-tint-3: rgba(14, 14, 16, 0.1);
+
+  --shadow-sm: 0 2px 8px var(--shadow-tint-1);
+  --shadow: 0 8px 24px var(--shadow-tint-2);
+  --shadow-lg: 0 16px 48px var(--shadow-tint-3);
+
+  /* oklch パレット (avatar / サムネのストライプ) の明度。 色相と彩度は各クラスが持つ。 */
+  --palette-bg-l: 92%;
+  --palette-fg-l: 34%;
+  --stripe-l1: 96%;
+  --stripe-l2: 92%;
 
   /* Sports Force / Tech&Boost ブランドトークン (デザインシステム tokens/colors.css より)。
      受講者画面のリブランド (レッスン視聴から順次適用) で使う。 */
@@ -69,6 +90,59 @@
 
   /* トップバーとサイドバーのロゴ行を同じ高さにする */
   --shell-header-height: 57px;
+}
+
+/* ============================================================
+   Dark theme — 差し替えるのは :root のトークンだけ。
+   `<html class="dark">` が真の値 (付与は index.html のインラインスクリプトと
+   useTheme フック)。 utility 側 (@theme inline) は var() 参照なので追従する。
+   ============================================================ */
+
+.dark {
+  color-scheme: dark;
+
+  --bg: #0d0d10;
+  --bg-raised: #17171b;
+  --bg-sunken: #121216;
+  --bg-muted: #23232b;
+
+  --ink: #f4f4f7;
+  --ink-2: #c6c6cf;
+  --ink-3: #8e8e99;
+  --ink-4: #6a6a75;
+
+  --line: #26262d;
+  --line-2: #34343d;
+  --line-strong: #4d4d58;
+
+  /* マゼンタは暗い面だと沈むので少し明るい方に寄せる。 */
+  --brand: #f04fae;
+  --brand-hover: #ff7ac4;
+  --brand-soft: rgba(240, 79, 174, 0.18);
+  --brand-ink: #ff8fcb;
+
+  --primary-hover: #d8d8df;
+
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.16);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.18);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.16);
+  --info: #60a5fa;
+  --info-soft: rgba(96, 165, 250, 0.16);
+
+  --shadow-tint-1: rgba(0, 0, 0, 0.4);
+  --shadow-tint-2: rgba(0, 0, 0, 0.5);
+  --shadow-tint-3: rgba(0, 0, 0, 0.6);
+
+  --palette-bg-l: 30%;
+  --palette-fg-l: 86%;
+  --stripe-l1: 26%;
+  --stripe-l2: 21%;
+
+  --sf-magenta-soft: rgba(240, 79, 174, 0.18);
+  --sf-magenta-ink: #ff8fcb;
 }
 
 /* Tailwind v4 theme — maps tokens to utility classes */
@@ -111,6 +185,7 @@
   /* Primary = near-black ink (shadcn-style mapping) */
   --color-primary: var(--ink);
   --color-primary-foreground: var(--bg-raised);
+  --color-primary-hover: var(--primary-hover);
 
   /* Secondary = soft sunken surface */
   --color-secondary: var(--bg-sunken);
@@ -145,10 +220,10 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
 
-  /* Shadows (DS effects.css — 柔らかい低コントラスト) */
-  --shadow-sm: 0 2px 8px rgba(14, 14, 16, 0.06);
-  --shadow-md: 0 8px 24px rgba(14, 14, 16, 0.08);
-  --shadow-lg: 0 16px 48px rgba(14, 14, 16, 0.1);
+  /* Shadows (DS effects.css — 柔らかい低コントラスト)。 色は var のまま残して .dark で差し替える。 */
+  --shadow-sm: 0 2px 8px var(--shadow-tint-1);
+  --shadow-md: 0 8px 24px var(--shadow-tint-2);
+  --shadow-lg: 0 16px 48px var(--shadow-tint-3);
 }
 
 /* ============================================================
@@ -226,76 +301,77 @@
     background: var(--sf-gradient-135);
   }
 
-  /* Sidebar avatar color palette (c1..c6) */
+  /* Sidebar avatar color palette (c1..c6)。
+     明度は --palette-*-l (ライト/ダークで反転)、 色相と彩度だけここで持つ。 */
   .avatar-c1 {
-    background: oklch(92% 0.04 265);
-    color: oklch(35% 0.13 265);
+    background: oklch(var(--palette-bg-l) 0.04 265);
+    color: oklch(var(--palette-fg-l) 0.13 265);
   }
   .avatar-c2 {
-    background: oklch(92% 0.05 155);
-    color: oklch(32% 0.1 155);
+    background: oklch(var(--palette-bg-l) 0.05 155);
+    color: oklch(var(--palette-fg-l) 0.1 155);
   }
   .avatar-c3 {
-    background: oklch(93% 0.05 40);
-    color: oklch(35% 0.12 40);
+    background: oklch(var(--palette-bg-l) 0.05 40);
+    color: oklch(var(--palette-fg-l) 0.12 40);
   }
   .avatar-c4 {
-    background: oklch(93% 0.05 330);
-    color: oklch(35% 0.13 330);
+    background: oklch(var(--palette-bg-l) 0.05 330);
+    color: oklch(var(--palette-fg-l) 0.13 330);
   }
   .avatar-c5 {
-    background: oklch(93% 0.04 200);
-    color: oklch(32% 0.12 200);
+    background: oklch(var(--palette-bg-l) 0.04 200);
+    color: oklch(var(--palette-fg-l) 0.12 200);
   }
   .avatar-c6 {
-    background: oklch(93% 0.05 90);
-    color: oklch(35% 0.11 90);
+    background: oklch(var(--palette-bg-l) 0.05 90);
+    color: oklch(var(--palette-fg-l) 0.11 90);
   }
 
-  /* Course thumbnail placeholder stripes */
+  /* Course thumbnail placeholder stripes (明度は --stripe-l1 / --stripe-l2) */
   .thumb-stripes {
     background-image: repeating-linear-gradient(
       45deg,
-      oklch(96% 0.005 85) 0,
-      oklch(96% 0.005 85) 8px,
-      oklch(93% 0.01 85) 8px,
-      oklch(93% 0.01 85) 16px
+      oklch(var(--stripe-l1) 0.005 85) 0,
+      oklch(var(--stripe-l1) 0.005 85) 8px,
+      oklch(var(--stripe-l2) 0.01 85) 8px,
+      oklch(var(--stripe-l2) 0.01 85) 16px
     );
   }
   .thumb-stripes-indigo {
     background-image: repeating-linear-gradient(
       45deg,
-      oklch(94% 0.04 265) 0,
-      oklch(94% 0.04 265) 8px,
-      oklch(90% 0.05 265) 8px,
-      oklch(90% 0.05 265) 16px
+      oklch(var(--stripe-l1) 0.04 265) 0,
+      oklch(var(--stripe-l1) 0.04 265) 8px,
+      oklch(var(--stripe-l2) 0.05 265) 8px,
+      oklch(var(--stripe-l2) 0.05 265) 16px
     );
   }
   .thumb-stripes-green {
     background-image: repeating-linear-gradient(
       45deg,
-      oklch(95% 0.04 155) 0,
-      oklch(95% 0.04 155) 8px,
-      oklch(91% 0.05 155) 8px,
-      oklch(91% 0.05 155) 16px
+      oklch(var(--stripe-l1) 0.04 155) 0,
+      oklch(var(--stripe-l1) 0.04 155) 8px,
+      oklch(var(--stripe-l2) 0.05 155) 8px,
+      oklch(var(--stripe-l2) 0.05 155) 16px
     );
   }
   .thumb-stripes-amber {
     background-image: repeating-linear-gradient(
       45deg,
-      oklch(95% 0.05 70) 0,
-      oklch(95% 0.05 70) 8px,
-      oklch(91% 0.06 70) 8px,
-      oklch(91% 0.06 70) 16px
+      oklch(var(--stripe-l1) 0.05 70) 0,
+      oklch(var(--stripe-l1) 0.05 70) 8px,
+      oklch(var(--stripe-l2) 0.06 70) 8px,
+      oklch(var(--stripe-l2) 0.06 70) 16px
     );
   }
   .thumb-stripes-slate {
     background-image: repeating-linear-gradient(
       45deg,
-      oklch(94% 0.01 240) 0,
-      oklch(94% 0.01 240) 8px,
-      oklch(89% 0.02 240) 8px,
-      oklch(89% 0.02 240) 16px
+      oklch(var(--stripe-l1) 0.01 240) 0,
+      oklch(var(--stripe-l1) 0.01 240) 8px,
+      oklch(var(--stripe-l2) 0.02 240) 8px,
+      oklch(var(--stripe-l2) 0.02 240) 16px
     );
   }
 
@@ -531,4 +607,81 @@
 .prose-lms pre code.hljs {
   background: none;
   padding: 0;
+}
+
+/**
+ * ダーク時の配色 (highlight.js の github-dark テーマ相当)。 github.css と同じく
+ * `@layer` の外に置いて素の CSS 同士で勝負させる。
+ * スライド (.sf-slide) は pptx と同じ白キャンバスのままなので対象にしない。
+ */
+.dark :is(.prose-lms, .prose) {
+  & .hljs {
+    color: #c9d1d9;
+    background: none;
+  }
+  & .hljs-doctag,
+  & .hljs-keyword,
+  & .hljs-meta .hljs-keyword,
+  & .hljs-template-tag,
+  & .hljs-template-variable,
+  & .hljs-type,
+  & .hljs-variable.language_ {
+    color: #ff7b72;
+  }
+  & .hljs-title,
+  & .hljs-title.class_,
+  & .hljs-title.function_ {
+    color: #d2a8ff;
+  }
+  & .hljs-attr,
+  & .hljs-attribute,
+  & .hljs-literal,
+  & .hljs-meta,
+  & .hljs-number,
+  & .hljs-operator,
+  & .hljs-variable,
+  & .hljs-selector-attr,
+  & .hljs-selector-class,
+  & .hljs-selector-id {
+    color: #79c0ff;
+  }
+  & .hljs-regexp,
+  & .hljs-string,
+  & .hljs-meta .hljs-string {
+    color: #a5d6ff;
+  }
+  & .hljs-built_in,
+  & .hljs-symbol {
+    color: #ffa657;
+  }
+  & .hljs-comment,
+  & .hljs-code,
+  & .hljs-formula {
+    color: #8b949e;
+  }
+  & .hljs-name,
+  & .hljs-quote,
+  & .hljs-selector-tag,
+  & .hljs-selector-pseudo {
+    color: #7ee787;
+  }
+  & .hljs-subst,
+  & .hljs-emphasis,
+  & .hljs-strong {
+    color: #c9d1d9;
+  }
+  & .hljs-section {
+    color: #1f6feb;
+  }
+  & .hljs-bullet {
+    color: #f2cc60;
+  }
+  & .hljs-addition {
+    color: #aff5b4;
+    background-color: #033a16;
+  }
+  & .hljs-deletion {
+    color: #ffdcd7;
+    background-color: #67060c;
+  }
 }

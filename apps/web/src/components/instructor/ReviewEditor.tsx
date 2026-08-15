@@ -285,7 +285,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
               value="ai"
               className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
             >
-              <div className="flex gap-2.5 items-start bg-gradient-to-br from-[oklch(97%_0.02_265)] to-[oklch(94%_0.04_265)] border border-[oklch(85%_0.06_265)] rounded-md px-3.5 py-3 mb-3.5 text-[12.5px] text-brand-ink">
+              <div className="flex gap-2.5 items-start bg-brand-soft border border-brand/30 rounded-md px-3.5 py-3 mb-3.5 text-[12.5px] text-brand-ink">
                 <Sparkles size={15} className="shrink-0 mt-0.5" />
                 <div>
                   <strong className="font-semibold">AIは下書きです。</strong>

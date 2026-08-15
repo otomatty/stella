@@ -23,6 +23,9 @@ function readInitialTheme(): Theme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
+/** `index.html` のインラインスクリプトと同じ値。 モバイルのブラウザ chrome の色。 */
+const THEME_COLORS: Record<Theme, string> = { light: "#FFFFFF", dark: "#0D0D10" };
+
 function applyTheme(theme: Theme): void {
   const root = document.documentElement;
   if (theme === "dark") {
@@ -30,6 +33,8 @@ function applyTheme(theme: Theme): void {
   } else {
     root.classList.remove("dark");
   }
+  // OS 設定と違うテーマを明示選択した時もブラウザ chrome を合わせる。
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[theme]);
 }
 
 interface ThemeApi {

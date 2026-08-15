@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { HelpCircle, Menu, Search } from "@/lib/icons";
+import { HelpCircle, Menu, Moon, Search, Sun } from "@/lib/icons";
+import { useTheme } from "@/hooks/useTheme";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
 import type { NotificationRow } from "@falcon/shared/cms/types";
@@ -44,6 +45,7 @@ export const Topbar = ({
   searchCourseIds = null,
 }: TopbarProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   // ⌘K / Ctrl+K で検索パレットを開く。 入力欄にフォーカスがあっても効かせる
   // (修飾キー付きなので通常の入力を妨げない)。
@@ -105,6 +107,16 @@ export const Topbar = ({
         courses={notify.courses}
         onOpenSubmission={notify.onOpenSubmission}
       />
+      {/* ライト / ダークの切り替え。 未選択のうちは OS 設定に追従し、 押した時点で固定される。 */}
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
+        title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+        aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+      >
+        {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
       {/* ハンドラの無いスタブだったヘルプボタンを、 既存の公開サポートページに繋いだ。
           学習中の状態を失わないよう別タブで開く。 */}
       <a

@@ -49,7 +49,7 @@ export const UserMenu = ({
           // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
           <AvatarImage src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
         ) : null}
-        <AvatarFallback className="bg-ink text-white font-display text-[11px] font-bold">
+        <AvatarFallback className="bg-ink text-card font-display text-[11px] font-bold">
           {user.initials}
         </AvatarFallback>
       </Avatar>

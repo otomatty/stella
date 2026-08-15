@@ -12,7 +12,7 @@ import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Extension } from "@codemirror/state";
 
 import type { ESLintRuleConfig, Language } from "@falcon/shared/types";
-import { useTheme } from "../hooks/useTheme.js";
+import { useTheme } from "@/hooks/useTheme";
 import { getLinter } from "@falcon/code-runner/lint";
 
 interface Props {

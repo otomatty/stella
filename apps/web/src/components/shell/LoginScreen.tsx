@@ -58,7 +58,9 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
         </div>
       </div>
 
-      <div className="hidden md:flex bg-ink text-card relative overflow-hidden p-12 flex-col justify-between">
+      {/* アートの罫線・文字色が暗い地に載る前提で作られているので、 ここだけは
+          テーマに関係なく暗いまま固定する (スライドの lead 面と同じ #141418)。 */}
+      <div className="hidden md:flex bg-[#141418] text-white relative overflow-hidden p-12 flex-col justify-between">
         <div className="absolute inset-0 login-art-grid" />
         <div className="relative z-10">
           <Brand size="md" inverted subtitle="" title="" />

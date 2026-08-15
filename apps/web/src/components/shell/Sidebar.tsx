@@ -172,7 +172,7 @@ const SidebarLink = ({ icon: Icon, label, count, active, onClick }: SidebarLinkP
       "flex items-center gap-2.5 px-3.5 py-2 rounded-full text-[13px] cursor-pointer select-none text-left",
       "transition-colors",
       active
-        ? "bg-ink text-white font-bold"
+        ? "bg-ink text-card font-bold"
         : "text-ink-2 font-medium hover:bg-sunken hover:text-foreground",
     )}
   >
@@ -182,7 +182,7 @@ const SidebarLink = ({ icon: Icon, label, count, active, onClick }: SidebarLinkP
       <span
         className={cn(
           "ml-auto text-[11px] px-[7px] py-[1px] rounded-full font-bold",
-          active ? "bg-white/20 text-white" : "bg-muted text-ink-2",
+          active ? "bg-card/20 text-card" : "bg-muted text-ink-2",
         )}
       >
         {count}

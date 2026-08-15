@@ -17,7 +17,8 @@ export const Brand = ({
   className,
 }: BrandProps) => {
   const markSize = size === "md" ? "w-8 h-8 text-sm" : "w-[30px] h-[30px] text-sm";
-  const markBg = inverted ? "bg-card text-ink" : "sf-gradient-135-bg text-white";
+  // inverted は暗い面に載せる用途 (ログイン画面のアート面) なので、 テーマに追従させず白で固定する。
+  const markBg = inverted ? "bg-white text-[#141418]" : "sf-gradient-135-bg text-white";
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <div

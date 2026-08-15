@@ -41,6 +41,8 @@ export {
   Video,
   HelpCircle,
   Menu,
+  Sun,
+  Moon,
   Send,
   AlertCircle,
   AlertTriangle,

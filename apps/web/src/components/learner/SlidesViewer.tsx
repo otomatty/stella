@@ -363,7 +363,8 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
           </div>
         ) : null}
 
-        <div className="flex-1 min-w-0 overflow-auto grid place-items-start justify-center p-4 bg-[oklch(96%_0.005_260)]">
+        {/* スライド / PDF は白い紙のままなので、 台紙側だけテーマに追従させる。 */}
+        <div className="flex-1 min-w-0 overflow-auto grid place-items-start justify-center p-4 bg-sunken">
           {loadError ? (
             <div className="w-full max-w-md mx-auto mt-8">
               <FallbackCard
