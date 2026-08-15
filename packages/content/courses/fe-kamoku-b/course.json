@@ -1,0 +1,15 @@
+{
+  "title": "基本情報技術者 科目B対策",
+  "category": "資格対策",
+  "color": "slate",
+  "description": "基本情報技術者試験 科目Bの対策講座。擬似言語の読み方から始めて、トレース・探索・整列と、出題の8割を占めるアルゴリズム問題を解ける力を作る。",
+  "header": "基本情報 科目B対策",
+  "tenantId": "ses",
+  "modules": {
+    "m1-pseudo": "M1. 擬似言語の読み方",
+    "m2-algo-basics": "M2. アルゴリズム基礎",
+    "m3-algo-advanced": "M3. アルゴリズム応用",
+    "m4-security": "M4. 情報セキュリティ",
+    "m5-mock": "M5. 総合演習"
+  }
+}

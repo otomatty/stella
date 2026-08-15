@@ -1,0 +1,19 @@
+{
+  "title": "基本情報技術者 科目A対策",
+  "category": "資格対策",
+  "color": "amber",
+  "description": "基本情報技術者試験 科目Aの対策講座。シラバスの体系に沿って、頻出分野から知識を1トピックずつ固める。まずは技術要素(データベース・ネットワーク・セキュリティ)から。",
+  "header": "基本情報 科目A対策",
+  "tenantId": "ses",
+  "modules": {
+    "m1-foundations": "M1. 基礎理論",
+    "m2-computer-systems": "M2. コンピュータシステム",
+    "m3-tech-elements": "M3. 技術要素",
+    "m4-development": "M4. 開発技術",
+    "m5-project-management": "M5. プロジェクトマネジメント",
+    "m6-service-management": "M6. サービスマネジメント",
+    "m7-system-strategy": "M7. システム戦略",
+    "m8-business-strategy": "M8. 経営戦略",
+    "m9-corporate-legal": "M9. 企業と法務"
+  }
+}

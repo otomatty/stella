@@ -128,6 +128,8 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **SQL 入門（`courses/sql-basics/`）があります。** 6 モジュール / 6 レッスン / 24 トピックで、構成は [courses/sql-basics/CURRICULUM.md](courses/sql-basics/CURRICULUM.md)。コード演習は `course.json` の `exercises` で `@falcon/shared` の SQL 課題（`_lang/sql/`）に配線され、VS Code 拡張で採点されます。原典クレジットは CURRICULUM.md に集約しています。
 
+**基本情報技術者試験の対策講座があります。** 科目A対策（`courses/fe-kamoku-a/`）と科目B対策（`courses/fe-kamoku-b/`）の2講座で、IPA シラバスの「大分類 → 中分類」を「モジュール → レッスン」に写像しています。科目Aは M1 基礎理論〜M9 企業と法務（17 レッスン / 72 トピック）、科目Bは M1 擬似言語〜M5 総合演習（9 レッスン / 27 トピック）が実装済み。問題はすべて自作で、IPA 過去問・サンプル問題の転載はしません（参照元クレジットは各講座の CURRICULUM.md に集約）。科目Aの模擬試験モジュールは未着手（モジュール並びが辞書順のため `m10` は使えない点に注意）。残りは各 CURRICULUM.md の全体計画を参照。
+
 TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 なので、`bun run --filter=@falcon/content upload:remote` を別途実行してください（デプロイワークフローには含まれません）。
