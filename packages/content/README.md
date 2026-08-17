@@ -8,6 +8,7 @@
 
 | 読むもの | 内容 |
 | --- | --- |
+| [THEME_TO_COURSE.md](THEME_TO_COURSE.md) | 外部で見つけたテーマを教材にするかの判定と、教材要件(目標・範囲・規模・評価)の決め方 |
 | [ADDING_COURSE.md](ADDING_COURSE.md) | 教材の導入手順。既存講座への追加と、新しい講座の足し方 |
 | [CLAUDE.md](CLAUDE.md) | 作業指針。粒度の定義、語彙台帳、コマンド、絶対に守るルール |
 | [STYLE_GUIDE.md](STYLE_GUIDE.md) | 執筆ルール。文体・コード例・図解・構成 |

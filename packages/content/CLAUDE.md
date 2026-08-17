@@ -92,7 +92,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 1. **1トピック = 1 Takeaway を崩さない** — スライドを足したくなったら、まずトピックを割れないか考えてください。「関連情報」は Takeaway を強化する枠(図解 or 失敗例)1つだけに収めます。詰め込みは粒度の設計を壊します。
 2. **語彙台帳を必ず更新する** — トピックを追加・移動・改稿したら `introduces` / `requires` を更新し、`bun run --filter=@falcon/content materials` で検査を通してください。
-3. **クレジット表記を教材本体に入れない** — 原典への言及は `README.md` に集約する方針です。スライド・ドキュメント本文・講師ノートに「サバイバルTypeScript」等の原典名を書かないでください(LMSドキュメント末尾の「もっと知りたい人へ」の参考リンクは例外として可)。
+3. **クレジット表記を教材本体に入れない** — スライド・ドキュメント本文・講師ノートに「サバイバルTypeScript」等の原典名を書かないでください(LMSドキュメント末尾の「もっと知りたい人へ」の参考リンクは例外として可)。集約先は**講座ごとの `CURRICULUM.md`** です(SQL 入門・HTML/CSS 入門・基本情報の各講座)。TypeScript 入門だけは歴史的経緯で `README.md` に置いています。
 4. **`STYLE_GUIDE.md` に従う** — 文体、コード例の書き方、構成のルールがすべて定義されています。新規作成・修正の前に読んでください。
 5. **図解は `.claude/skills/diagram-design/` の規約に従う** — 型を選び、テンプレートから作り、出力前チェックリストを通してください。配色・寸法の正本は `references/style-guide.md` です。
 
@@ -148,3 +148,5 @@ TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](
 レッスン単位で作業し、モジュールごとにコミットしてください。全体に一括で及ぶ変更は、スクリプトで処理してから全ビルド検証を行ってください。
 
 トピック / レッスン / 新しい講座の足し方は **[ADDING_COURSE.md](ADDING_COURSE.md)** を先に読む。
+
+外部で見つけたテーマを教材にするか迷うとき、および講座の要件（到達目標・スコープ・規模・評価方法）を決めるときは **[THEME_TO_COURSE.md](THEME_TO_COURSE.md)** を使う。カリキュラム（takeaway 一覧）が固まる前に本文を書き始めない。
