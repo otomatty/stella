@@ -1,0 +1,16 @@
+{
+  "title": "HTML/CSS 入門研修",
+  "category": "プログラミング",
+  "color": "amber",
+  "description": "未経験からの HTML/CSS 研修。ページの中身を作る HTML と、見た目を決める CSS を、文書の骨格から余白・配置・読みやすさまで通す。",
+  "header": "HTML/CSS入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-document": "M1. 文書の骨格",
+    "m2-media-forms": "M2. メディアとフォーム",
+    "m3-css": "M3. CSS の当て方",
+    "m4-box": "M4. 箱と配置",
+    "m5-readability": "M5. 読みやすさ"
+  }
+}
