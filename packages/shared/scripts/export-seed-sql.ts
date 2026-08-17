@@ -320,16 +320,41 @@ function emitQuiz(
   }
 }
 
+/**
+ * 移行期間のみ: 新しい階層タグ → 分割前の旧カテゴリ。 旧 Worker は
+ * `interview_questions.category` を完全一致で照合し、 旧割当は `["PHP/JS"]` のまま
+ * 残っているため、 この対応表どおりに書かないと移行中に問題が見えなくなる。
+ * 旧 category 列を落とす contract リリースで、 この定数ごと削除する。
+ */
+const COMMON = "全案件共通";
+const LEGACY_CATEGORY_BY_TOP_TAG: Record<string, string> = {
+  PHP: "PHP/JS",
+  JS: "PHP/JS",
+  SQL: "SQL",
+  テスト: "テスト",
+  [COMMON]: COMMON,
+};
+
+/** 先頭タグのトップレベル部分 ("PHP/Laravel" → "PHP")。 */
+function topTag(categories: string[]): string {
+  return (categories[0] ?? COMMON).split("/")[0] ?? COMMON;
+}
+
 /** 面談対策の想定質問バンク (upsert + prune)。 questions.json が正本。 */
 function emitInterviewQuestions(tenantId: string) {
   const ids: string[] = [];
   const bool = (v: boolean) => (isSqlite ? (v ? "1" : "0") : v ? "true" : "false");
   const opt = (v: string | null) => (v ? strLit(v) : "null");
   for (const q of INTERVIEW_QUESTIONS) {
+    const cats = strLit(JSON.stringify(q.categories));
+    // 移行期間の dual-write。 旧 category 列には「分割前の旧カテゴリ」をそのまま書く。
+    // 旧 Worker は category を完全一致で照合し、 旧割当は ["PHP/JS"] のまま残っているため、
+    // 新しい階層タグを書くと deploy:api までその問題が見えなくなる。 category 列削除と同時に消す。
+    const legacyCategory = strLit(LEGACY_CATEGORY_BY_TOP_TAG[topTag(q.categories)] ?? COMMON);
     const id = stableUuid(`interview-q:${tenantId}:${q.no}`);
     ids.push(id);
     lines.push(
-      `insert into ${tbl("interview_questions")} (id, tenant_id, no, category, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${strLit(q.category)}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, ${opt(q.deep1)}, ${opt(q.deep2)}, ${opt(q.deep3)}, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set category = excluded.category, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = excluded.deep1, deep2 = excluded.deep2, deep3 = excluded.deep3, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()};`,
+      `insert into ${tbl("interview_questions")} (id, tenant_id, no, category, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${legacyCategory}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, ${opt(q.deep1)}, ${opt(q.deep2)}, ${opt(q.deep3)}, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set category = excluded.category, categories = excluded.categories, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = excluded.deep1, deep2 = excluded.deep2, deep3 = excluded.deep3, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()};`,
     );
   }
   lines.push(

@@ -501,7 +501,13 @@ export const interviewQuestions = sqliteTable(
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
     no: integer("no").notNull(),
+    /**
+     * 旧・単一カテゴリ。 本番のデプロイ順が migrate → seed → deploy:api → deploy:web で、
+     * 移行中は旧 Worker / 旧バンドルがまだこの列を読む。 全環境が categories へ移った
+     * 次のリリースで削除する (drop 用のマイグレーションを別 PR で追加すること)。
+     */
     category: text("category").notNull(),
+    categories: json<string[]>("categories", []),
     subcategory: text("subcategory").notNull(),
     freq: text("freq", { enum: ["A", "B", "C"] }).notNull(),
     question: text("question").notNull(),

@@ -141,6 +141,29 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("seed-admin");
     expect(sql).toContain("seed-submission-pending-1");
   });
+
+  it("面談対策の insert が category と categories を dual-write する", () => {
+    expect(sql).toContain(
+      "insert into interview_questions (id, tenant_id, no, category, categories,",
+    );
+    expect(sql).toContain("set category = excluded.category, categories = excluded.categories");
+  });
+
+  /**
+   * 移行期間中の旧 Worker は category を完全一致で照合し、 旧割当は ["PHP/JS"] のまま
+   * 残っている。 新しい階層タグを書くと deploy:api までその問題が見えなくなるため、
+   * dual-write では分割前の旧カテゴリをそのまま書く。
+   */
+  it("dual-write する旧 category は分割前の旧カテゴリ", () => {
+    expect(sql).toContain(`'PHP/JS', '["PHP/Laravel"]'`);
+    expect(sql).toContain(`'PHP/JS', '["PHP","JS"]'`);
+    expect(sql).toContain(`'PHP/JS', '["JS"]'`);
+    expect(sql).toContain(`'SQL', '["SQL"]'`);
+    expect(sql).toContain(`'全案件共通', '["全案件共通"]'`);
+    // 新タグをそのまま書いていないこと
+    expect(sql).not.toContain(`'PHP/Laravel', '["PHP/Laravel"]'`);
+    expect(sql).not.toContain(`'PHP', '["PHP"]'`);
+  });
 });
 
 describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {

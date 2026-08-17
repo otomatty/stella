@@ -17,6 +17,7 @@ import {
   saveInterviewPrepAssignment,
   type InterviewPrepAssignmentRow,
 } from "@/lib/interview-prep-api";
+import { Chip } from "@/components/ui/chip";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
@@ -72,7 +73,7 @@ export function InterviewPrepAssignmentsPage({
     <>
       <PageHeader
         title="面談対策の割当"
-        sub="受講者ごとに対策する案件種別を設定します。全案件共通の質問は常に全員へ表示されます"
+        sub="受講者ごとに対策する案件種別を設定します。フレームワークまで指定すると、その言語の共通問題も併せて表示されます"
       />
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
@@ -88,15 +89,11 @@ export function InterviewPrepAssignmentsPage({
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
-          <Table>
+          <Table className="max-lg:min-w-0">
             <TableHeader>
               <TableRow>
-                <TableHead>受講者</TableHead>
-                {ASSIGNABLE_CATEGORIES.map((c) => (
-                  <TableHead key={c} className="text-center w-28">
-                    {c}
-                  </TableHead>
-                ))}
+                <TableHead className="w-40 sm:w-56">受講者</TableHead>
+                <TableHead>割当</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,26 +103,26 @@ export function InterviewPrepAssignmentsPage({
                     <div className="text-[13px] font-medium">{row.display_name}</div>
                     <div className="text-[11.5px] text-ink-4">{row.email ?? ""}</div>
                   </TableCell>
-                  {ASSIGNABLE_CATEGORIES.map((c) => (
-                    <TableCell key={c} className="text-center">
-                      <input
-                        type="checkbox"
-                        className="size-4 accent-[var(--brand)] cursor-pointer"
-                        checked={row.categories.includes(c)}
-                        disabled={savingId === row.profile_id}
-                        onChange={() => void toggle(row, c)}
-                        aria-label={`${row.display_name} に ${c} を割当`}
-                      />
-                    </TableCell>
-                  ))}
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ASSIGNABLE_CATEGORIES.map((c) => (
+                        <Chip
+                          key={c}
+                          active={row.categories.includes(c)}
+                          disabled={savingId === row.profile_id}
+                          onClick={() => void toggle(row, c)}
+                          ariaLabel={`${row.display_name} に ${c} を割当`}
+                        >
+                          {c}
+                        </Chip>
+                      ))}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={1 + ASSIGNABLE_CATEGORIES.length}
-                    className="text-center text-sm text-ink-3 p-8"
-                  >
+                  <TableCell colSpan={2} className="text-center text-sm text-ink-3 p-8">
                     受講者がいません。
                   </TableCell>
                 </TableRow>

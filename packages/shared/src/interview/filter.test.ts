@@ -1,39 +1,134 @@
 import { describe, expect, it } from "vitest";
 
-import { visibleQuestions } from "./filter.js";
+import { expandLegacyCategories, tagMatches, visibleQuestions } from "./filter.js";
 import { INTERVIEW_QUESTIONS } from "./questions.js";
+import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "./types.js";
 
-const q = (no: number, category: string) => ({ no, category });
+const q = (no: number, categories: string[]) => ({ no, categories });
+
+describe("tagMatches", () => {
+  it("完全一致", () => {
+    expect(tagMatches("PHP", "PHP")).toBe(true);
+  });
+
+  it("下位タグの問題は上位の割当にマッチする", () => {
+    expect(tagMatches("PHP/Laravel", "PHP")).toBe(true);
+  });
+
+  it("上位タグの問題は下位の割当にマッチする", () => {
+    expect(tagMatches("PHP", "PHP/Laravel")).toBe(true);
+  });
+
+  it("別系統にはマッチしない", () => {
+    expect(tagMatches("PHP", "JS")).toBe(false);
+    expect(tagMatches("PHP/Laravel", "JS/React")).toBe(false);
+  });
+
+  it("前方一致だけの別タグにはマッチしない (区切りを跨がない)", () => {
+    expect(tagMatches("PHPUnit", "PHP")).toBe(false);
+  });
+});
+
+describe("expandLegacyCategories", () => {
+  it("旧 PHP/JS を PHP と JS へ展開する", () => {
+    expect(expandLegacyCategories(["PHP/JS"])).toEqual(["PHP", "JS"]);
+    expect(expandLegacyCategories(["PHP/JS", "SQL"])).toEqual(["PHP", "JS", "SQL"]);
+  });
+
+  it("既に展開済みの値と混在しても重複しない", () => {
+    expect(expandLegacyCategories(["PHP", "PHP/JS"])).toEqual(["PHP", "JS"]);
+  });
+
+  it("新しいタグはそのまま通す", () => {
+    expect(expandLegacyCategories(["PHP/Laravel", "JS/React"])).toEqual([
+      "PHP/Laravel",
+      "JS/React",
+    ]);
+    expect(expandLegacyCategories([])).toEqual([]);
+  });
+});
 
 describe("visibleQuestions", () => {
-  const all = [q(1, "PHP/JS"), q(2, "SQL"), q(3, "テスト"), q(4, "全案件共通")];
+  const all = [
+    q(1, ["PHP"]),
+    q(2, ["PHP/Laravel"]),
+    q(3, ["JS"]),
+    q(4, ["PHP", "JS"]),
+    q(5, ["SQL"]),
+    q(6, ["テスト"]),
+    q(7, [COMMON_CATEGORY]),
+  ];
 
-  it("割当なしなら共通カテゴリのみ", () => {
-    expect(visibleQuestions(all, []).map((x) => x.no)).toEqual([4]);
+  it("割当なしなら共通タグのみ", () => {
+    expect(visibleQuestions(all, []).map((x) => x.no)).toEqual([7]);
   });
 
-  it("割当カテゴリ + 共通を返す", () => {
-    expect(visibleQuestions(all, ["PHP/JS"]).map((x) => x.no)).toEqual([1, 4]);
-    expect(visibleQuestions(all, ["SQL", "テスト"]).map((x) => x.no)).toEqual([2, 3, 4]);
+  it("言語タグの割当は同言語の下位タグの問題も拾う", () => {
+    expect(visibleQuestions(all, ["PHP"]).map((x) => x.no)).toEqual([1, 2, 4, 7]);
   });
 
-  it("未知の割当カテゴリは無視される (該当行が無いだけ)", () => {
-    expect(visibleQuestions(all, ["Java"]).map((x) => x.no)).toEqual([4]);
+  it("FW タグの割当は上位の言語タグの問題も拾う", () => {
+    expect(visibleQuestions(all, ["PHP/Laravel"]).map((x) => x.no)).toEqual([1, 2, 4, 7]);
+  });
+
+  it("複数タグの問題はいずれかの割当にマッチすれば出る", () => {
+    expect(visibleQuestions(all, ["JS"]).map((x) => x.no)).toEqual([3, 4, 7]);
+  });
+
+  it("テスト案件の受講者に PHP/JS 向けの問題は出ない (課題①の回帰防止)", () => {
+    expect(visibleQuestions(all, ["テスト"]).map((x) => x.no)).toEqual([6, 7]);
+  });
+
+  it("未知の割当タグは無視される", () => {
+    expect(visibleQuestions(all, ["Java"]).map((x) => x.no)).toEqual([7]);
   });
 });
 
 describe("INTERVIEW_QUESTIONS", () => {
-  it("188 問で no が一意", () => {
-    expect(INTERVIEW_QUESTIONS).toHaveLength(188);
-    expect(new Set(INTERVIEW_QUESTIONS.map((d) => d.no)).size).toBe(188);
+  it("175 問で no が一意", () => {
+    expect(INTERVIEW_QUESTIONS).toHaveLength(175);
+    expect(new Set(INTERVIEW_QUESTIONS.map((d) => d.no)).size).toBe(175);
   });
 
-  it("カテゴリと優先度が既知の値のみ", () => {
-    const cats = new Set(INTERVIEW_QUESTIONS.map((d) => d.category));
-    expect([...cats].sort()).toEqual(["PHP/JS", "SQL", "テスト", "全案件共通"].sort());
+  it("タグと優先度が既知の値のみ", () => {
+    const known = new Set<string>([...ASSIGNABLE_CATEGORIES, COMMON_CATEGORY]);
     for (const d of INTERVIEW_QUESTIONS) {
+      expect(d.categories.length, `no=${d.no} の categories が空`).toBeGreaterThan(0);
+      for (const tag of d.categories) {
+        expect(known, `no=${d.no} の ${tag}`).toContain(tag);
+      }
       expect(["A", "B", "C"]).toContain(d.freq);
     }
+  });
+
+  it("旧 PHP/JS カテゴリが残っていない", () => {
+    const tags = new Set(INTERVIEW_QUESTIONS.flatMap((d) => d.categories));
+    expect(tags.has("PHP/JS")).toBe(false);
+    expect(tags.has("PHP")).toBe(true);
+    expect(tags.has("JS")).toBe(true);
+    expect(tags.has("PHP/Laravel")).toBe(true);
+  });
+
+  /**
+   * 件数チェックだけだと、 問題を別タグへ付け替える取り違えが素通りしてしまう。
+   * この講座はデータ移行そのものが成果物なので、 タグの組み合わせ単位で固定する。
+   * FW別問題を書き足すときはここの期待値も更新すること。
+   */
+  it("タグの組み合わせごとの問題数", () => {
+    const byTags: Record<string, number> = {};
+    for (const d of INTERVIEW_QUESTIONS) {
+      const key = d.categories.join(",");
+      byTags[key] = (byTags[key] ?? 0) + 1;
+    }
+    expect(byTags).toEqual({
+      SQL: 50,
+      テスト: 47,
+      全案件共通: 43,
+      JS: 12,
+      PHP: 11,
+      "PHP,JS": 7,
+      "PHP/Laravel": 5,
+    });
   });
 
   /**

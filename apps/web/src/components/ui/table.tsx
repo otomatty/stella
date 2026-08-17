@@ -36,8 +36,10 @@ export const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
+  // scope="col" は読み上げが列見出しとセルを対応付けるために必要。 呼び出し側で上書きできる。
   <th
     ref={ref}
+    scope="col"
     className={cn(
       "text-left font-medium text-[11px] uppercase tracking-wider text-muted-foreground",
       "px-4 py-2.5 border-b border-border bg-sunken whitespace-nowrap",

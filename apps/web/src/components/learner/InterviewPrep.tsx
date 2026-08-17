@@ -6,8 +6,10 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
+import { tagMatches } from "@falcon/shared/interview/filter";
 import { fetchInterviewQuestions } from "@/lib/interview-prep-api";
 import { cn } from "@/lib/utils";
+import { Chip } from "@/components/ui/chip";
 
 type Freq = "ALL" | "A" | "B" | "C";
 const FREQ_LABELS: Record<Exclude<Freq, "ALL">, string> = {
@@ -55,31 +57,6 @@ function shuffle(nos: number[]): number[] {
   return a;
 }
 
-function Chip({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "px-2.5 py-1 rounded-full text-[12px] border cursor-pointer transition-colors",
-        active
-          ? "sf-gradient-bg text-white border-transparent font-bold"
-          : "bg-card text-ink-2 border-border hover:bg-sunken",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean }) {
   const [rows, setRows] = useState<InterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
@@ -121,16 +98,18 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
   const [freq, setFreq] = useState<Freq>("A");
   const [query, setQuery] = useState("");
 
-  // 表示対象カテゴリのチップ: 割当カテゴリが 1 つ以上あるときだけ出す
+  // 表示対象タグのチップ: 割当タグが 1 つ以上あるときだけ出す
   const catChips = useMemo(() => {
-    const cats = [...assigned, COMMON_CATEGORY].filter((c) => rows.some((r) => r.category === c));
+    const cats = [...assigned, COMMON_CATEGORY].filter((c) =>
+      rows.some((r) => r.categories.some((t) => tagMatches(t, c))),
+    );
     return cats.length > 1 ? cats : [];
   }, [assigned, rows]);
 
   const pool = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((d) => {
-      if (cat !== "ALL" && d.category !== cat) return false;
+      if (cat !== "ALL" && !d.categories.some((t) => tagMatches(t, cat))) return false;
       if (freq !== "ALL" && d.freq !== freq) return false;
       if (!q) return true;
       return [d.question, d.keywords, d.subcategory, d.intent].some((v) =>
@@ -263,7 +242,8 @@ function QuestionList({ pool }: { pool: InterviewQuestion[] }) {
             <span className="flex-1 min-w-0">
               <span className="block text-[13.5px] font-medium">{d.question}</span>
               <span className="block text-[11.5px] text-ink-4 mt-0.5">
-                {d.category} ・ {d.subcategory}
+                {/* 区切りは「、」。 " / " だと階層タグ (PHP/Laravel) と紛らわしい */}
+                {d.categories.join("、")} ・ {d.subcategory}
                 {d.time ? ` ・ 目安 ${d.time}` : ""}
               </span>
             </span>
@@ -372,7 +352,7 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
           {(qi % order.length) + 1} / {order.length}
         </span>
         <span>
-          {cur.category} ・ {cur.subcategory}
+          {cur.categories.join("、")} ・ {cur.subcategory}
           {cur.time ? ` ・ 目安 ${cur.time}` : ""}
         </span>
       </div>

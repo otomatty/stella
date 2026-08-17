@@ -1,7 +1,7 @@
 [
   {
     "no": 2,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "PHPとJavaScriptの経験年数と業務内での使用割合を教えてください。",
@@ -18,7 +18,7 @@
   },
   {
     "no": 3,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "直近のチーム体制（人数や役割）はどのようなものでしたか？",
@@ -35,7 +35,7 @@
   },
   {
     "no": 4,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "これまでで最も手応えを感じた実装や機能開発は何ですか？",
@@ -52,7 +52,7 @@
   },
   {
     "no": 5,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "A",
     "question": "PHPのバージョン経験と使用したことのあるFWを教えてください。",
@@ -69,7 +69,7 @@
   },
   {
     "no": 6,
-    "category": "PHP/JS",
+    "categories": ["PHP/Laravel"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "Laravel等のFWにおけるMVCの役割分担を理解して実装できますか？",
@@ -86,7 +86,7 @@
   },
   {
     "no": 7,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "PHPでのオブジェクト指向（クラス、継承、インターフェース）の活用経験はありますか？",
@@ -103,7 +103,7 @@
   },
   {
     "no": 8,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "バリデーション処理はどこでどのように実装していますか？",
@@ -120,7 +120,7 @@
   },
   {
     "no": 9,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "PHPでの例外処理（try-catch）やエラーハンドリングの基本方針を教えてください。",
@@ -137,7 +137,7 @@
   },
   {
     "no": 10,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "セッション管理や認証処理（Auth機能等）の実装経験はありますか？",
@@ -154,7 +154,7 @@
   },
   {
     "no": 11,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "C",
     "question": "外部APIとの連携処理（CURLやGuzzleを用いた通信）を実装したことはありますか？",
@@ -171,7 +171,7 @@
   },
   {
     "no": 12,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "C",
     "question": "PHPのパフォーマンスチューニング（メモリ上限やループの最適化）で意識することは？",
@@ -188,7 +188,7 @@
   },
   {
     "no": 13,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "C",
     "question": "依存関係管理ツール（Composer）の使用経験やパッケージ追加の手順は理解していますか？",
@@ -205,7 +205,7 @@
   },
   {
     "no": 14,
-    "category": "PHP/JS",
+    "categories": ["PHP"],
     "subcategory": "PHP・バックエンド",
     "freq": "B",
     "question": "コーディング規約（PSR-12など）を意識した実装を行っていますか？",
@@ -222,7 +222,7 @@
   },
   {
     "no": 15,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "B",
     "question": "JavaScript（ES6以降）の記述（アロー関数、Promise、async/await等）は問題ありませんか？",
@@ -239,7 +239,7 @@
   },
   {
     "no": 16,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "B",
     "question": "JavaScriptのフロントフレームワーク（Vue.jsやReact）またはjQueryの使用経験はありますか？",
@@ -256,7 +256,7 @@
   },
   {
     "no": 17,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "非同期通信（Ajax / Fetch API / Axios）を用いた画面更新の実装経験はありますか？",
@@ -273,7 +273,7 @@
   },
   {
     "no": 18,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "DOM操作を行う際のパフォーマンス面（リフロー・リペイントの削減）で気をつけていることは？",
@@ -290,7 +290,7 @@
   },
   {
     "no": 19,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "B",
     "question": "フォームのフロントエンドバリデーションの実装経験はありますか？",
@@ -307,7 +307,7 @@
   },
   {
     "no": 20,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "HTML5 / CSS3 でのレスポンス対応（メディアクエリやFlexbox/Grid）は一人称で対応できますか？",
@@ -324,7 +324,7 @@
   },
   {
     "no": 21,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "CSSプリプロセッサ（Sass/SCSS）やCSSフレームワーク（Bootstrap, Tailwind等）の使用経験は？",
@@ -341,7 +341,7 @@
   },
   {
     "no": 22,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "クロスブラウザ対応（Chrome, Safari, Edge等での表示ズレ・挙動確認）で意識していることは？",
@@ -358,7 +358,7 @@
   },
   {
     "no": 23,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "JavaScriptでのイベントハンドリングやイベントバブリングの理解はありますか？",
@@ -375,7 +375,7 @@
   },
   {
     "no": 24,
-    "category": "PHP/JS",
+    "categories": ["JS"],
     "subcategory": "JavaScript・フロント",
     "freq": "C",
     "question": "フロントエンドのビルドツール（Webpack, Vite, npm/yarn）の使用経験はありますか？",
@@ -392,7 +392,7 @@
   },
   {
     "no": 25,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "DB・API連携",
     "freq": "B",
     "question": "RESTful APIのエンドポイント設計やレスポンス設計に関わったことはありますか？",
@@ -409,7 +409,7 @@
   },
   {
     "no": 26,
-    "category": "PHP/JS",
+    "categories": ["PHP/Laravel"],
     "subcategory": "DB・API連携",
     "freq": "B",
     "question": "ORM（EloquentやDoctrine等）を使ったDB操作とRaw SQLの使い分けはどうしていますか？",
@@ -426,7 +426,7 @@
   },
   {
     "no": 27,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "DB・API連携",
     "freq": "C",
     "question": "N+1問題とは何か、またそれを回避するためにどのように実装しますか？",
@@ -443,7 +443,7 @@
   },
   {
     "no": 28,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "DB・API連携",
     "freq": "C",
     "question": "トランザクション処理（Commit/Rollback）はどのような場面で実装しますか？",
@@ -460,7 +460,7 @@
   },
   {
     "no": 29,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "DB・API連携",
     "freq": "B",
     "question": "SQLインジェクションやXSSなどのWeb脆弱性対策で意識している実装は？",
@@ -476,25 +476,8 @@
     "is_reverse": false
   },
   {
-    "no": 30,
-    "category": "PHP/JS",
-    "subcategory": "設計・テスト",
-    "freq": "C",
-    "question": "詳細設計書（処理定義、API仕様、画面遷移図等）の作成経験について詳しく教えてください。",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "設計書作成の経験レベルと、読み手を意識した書き方ができるかを見ている。",
-    "answer_template": "基本設計書をインプットに、処理フローやバリデーション仕様を記載した詳細設計書の作成経験があります。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "「作成経験があります」の後に、どのレベルの粒度で書いたか（画面単位・API単位等）を添える。経験が浅い場合は「先輩のレビューを受けながら作成した」と正直に伝えて問題ない。",
-    "criteria": "設計書作成の経験レベルを正確に説明できるか",
-    "is_reverse": false
-  },
-  {
     "no": 31,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "設計・テスト",
     "freq": "B",
     "question": "詳細設計を行う際、例外系やイレギュラーなパターンをどう整理していますか？",
@@ -511,7 +494,7 @@
   },
   {
     "no": 32,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "設計・テスト",
     "freq": "B",
     "question": "単体テストコード（PHPUnitやJest）の作成経験はありますか？",
@@ -527,42 +510,8 @@
     "is_reverse": false
   },
   {
-    "no": 33,
-    "category": "PHP/JS",
-    "subcategory": "設計・テスト",
-    "freq": "C",
-    "question": "単体テスト仕様書の作成とテスト実施・エビデンス取得の手順を教えてください。",
-    "time": "30秒",
-    "keywords": "―",
-    "intent": "テスト設計の基本手法（同値分割・境界値分析）の理解と、実務での適用経験を見ている。",
-    "answer_template": "同値分割や境界値分析を活用してテストケースを設計し、画面操作やDB確認結果をエビデンスとして保存していました。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "境界値テストの具体例（例：文字数制限のテストで最小値・最大値・その前後を検証する等）を1つ用意しておくと深掘りに対応しやすい。",
-    "criteria": "テスト設計の基本手法を理解し実務で適用できるか",
-    "is_reverse": false
-  },
-  {
-    "no": 34,
-    "category": "PHP/JS",
-    "subcategory": "設計・テスト",
-    "freq": "B",
-    "question": "コードレビューを受ける際、または行う際に気をつけているポイントは何ですか？",
-    "time": "30秒",
-    "keywords": "―",
-    "intent": "レビューへの姿勢（素直さ・柔軟性）を見ている。",
-    "answer_template": "レビューを受ける際は指摘に感謝しつつ、意図を汲み取って迅速に修正するよう心がけています。",
-    "deep1": "レビューで強く否定された場合、どう対応しますか？",
-    "deep2": null,
-    "deep3": null,
-    "ng": "「指摘を素直に受け止める」という姿勢を強調する。技術的な正しさより、コミュニケーションの柔軟性が評価される設問。",
-    "criteria": "レビューへの向き合い方（柔軟性・素直さ）を示せるか",
-    "is_reverse": false
-  },
-  {
     "no": 35,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "ツール・環境",
     "freq": "B",
     "question": "Gitでのブランチ戦略（Git Flow等）やPRの作成ルールについて教えてください。",
@@ -579,7 +528,7 @@
   },
   {
     "no": 36,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "ツール・環境",
     "freq": "B",
     "question": "Docker環境での開発（docker-compose up等）はスムーズに行えますか？",
@@ -596,7 +545,7 @@
   },
   {
     "no": 37,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "ツール・環境",
     "freq": "C",
     "question": "Linux基本コマンドでのログ確認やパーミッション変更などは行えますか？",
@@ -613,7 +562,7 @@
   },
   {
     "no": 38,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "コミュニケーション",
     "freq": "A",
     "question": "設計書や仕様に不備・曖昧な点があった場合、どう対応しますか？",
@@ -630,7 +579,7 @@
   },
   {
     "no": 39,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "コミュニケーション",
     "freq": "A",
     "question": "実装中にハマった（スタックした）場合、どのタイミングで相談しますか？",
@@ -647,7 +596,7 @@
   },
   {
     "no": 40,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "コミュニケーション",
     "freq": "A",
     "question": "エンジニア以外の職種（デザイナーやディレクター）とのコミュニケーションで意識することは？",
@@ -664,7 +613,7 @@
   },
   {
     "no": 41,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "トラブル・解決力",
     "freq": "A",
     "question": "開発中に発生した予期せぬバグやエラーに対し、どのようにデバッグ・解決しましたか？",
@@ -681,7 +630,7 @@
   },
   {
     "no": 42,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "トラブル・解決力",
     "freq": "A",
     "question": "納期が逼迫した際、どのようにタスクの優先順位をつけて調整しましたか？",
@@ -698,7 +647,7 @@
   },
   {
     "no": 43,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "マインドセット",
     "freq": "A",
     "question": "これまで扱ったことがないライブラリや技術を導入する際、どうキャッチアップしますか？",
@@ -715,7 +664,7 @@
   },
   {
     "no": 44,
-    "category": "PHP/JS",
+    "categories": ["PHP", "JS"],
     "subcategory": "マインドセット",
     "freq": "A",
     "question": "今後バックエンドとフロントエンドどちらのスキルをより強めていきたいですか？",
@@ -732,7 +681,7 @@
   },
   {
     "no": 45,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "今回参画した場合、最初に担当する機能や開発フェーズはどのようになりますか？",
@@ -749,7 +698,7 @@
   },
   {
     "no": 46,
-    "category": "PHP/JS",
+    "categories": ["全案件共通"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "チーム内で使われているコミュニケーションツールやレビュー体制について教えてください。",
@@ -766,7 +715,7 @@
   },
   {
     "no": 47,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "自己紹介とこれまでのSQL活用・保守運用の経験を教えてください。",
@@ -783,7 +732,7 @@
   },
   {
     "no": 48,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "保守案件において最も重要だと考えている姿勢は何ですか？",
@@ -800,7 +749,7 @@
   },
   {
     "no": 49,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "これまで扱ってきたデータベースの種類（MySQL, PostgreSQL等）とバージョンを教えてください。",
@@ -817,7 +766,7 @@
   },
   {
     "no": 50,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "これまでに携わった保守案件の規模感や問い合わせ対応の頻度はどのくらいでしたか？",
@@ -834,7 +783,7 @@
   },
   {
     "no": 51,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "自己紹介・実績",
     "freq": "B",
     "question": "ソースコード調査（PHP等）とSQL調査の比率はどのくらい経験がありますか？",
@@ -851,7 +800,7 @@
   },
   {
     "no": 52,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "B",
     "question": "SELECT文での複数テーブル結合（INNER JOIN, LEFT OUTER JOIN）は自在に書けますか？",
@@ -868,7 +817,7 @@
   },
   {
     "no": 53,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "B",
     "question": "GROUP BY や HAVING句を用いた集計クエリの作成経験はありますか？",
@@ -885,7 +834,7 @@
   },
   {
     "no": 54,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "サブクエリ（副問い合わせ）や相関サブクエリを使ったクエリ構築は行えますか？",
@@ -902,7 +851,7 @@
   },
   {
     "no": 55,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "B",
     "question": "ウインドウ関数（ROW_NUMBER, RANK, OVER句等）の使用経験はありますか？",
@@ -919,7 +868,7 @@
   },
   {
     "no": 56,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "B",
     "question": "CASE式を用いた条件分岐を含むデータ抽出クエリは書けますか？",
@@ -936,7 +885,7 @@
   },
   {
     "no": 57,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "大量データを扱う際、実行計画（EXPLAIN）を確認してチューニングを行ったことはありますか？",
@@ -953,7 +902,7 @@
   },
   {
     "no": 58,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "インデックス（Index）の仕組みと、適切なインデックス作成の基準について教えてください。",
@@ -970,7 +919,7 @@
   },
   {
     "no": 59,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "複合インデックス（マルチコラムインデックス）の列順序で意識するポイントは？",
@@ -987,7 +936,7 @@
   },
   {
     "no": 60,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "デッドロックやロック待ちが発生する原因と、それを防ぐSQL記述の注意点は？",
@@ -1004,7 +953,7 @@
   },
   {
     "no": 61,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "ビュー（VIEW）やストアドプロシージャ/関数の作成・修正経験はありますか？",
@@ -1021,7 +970,7 @@
   },
   {
     "no": 62,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "B",
     "question": "文字列操作関数（CONCAT, SUBSTRING等）や日付操作関数（DATE_ADD等）を活用できますか？",
@@ -1038,7 +987,7 @@
   },
   {
     "no": 63,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "NULL値の扱い（IS NULL, COALESCE等）で注意していることは何ですか？",
@@ -1055,7 +1004,7 @@
   },
   {
     "no": 64,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "UNION と UNION ALL の違いと使い分けについて説明できますか？",
@@ -1072,7 +1021,7 @@
   },
   {
     "no": 65,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "C",
     "question": "トランザクションの分離レベル（Read Committed等）に関する理解はありますか？",
@@ -1089,7 +1038,7 @@
   },
   {
     "no": 66,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "SQLスキル",
     "freq": "A",
     "question": "大規模テーブルに対するDELETEやUPDATEを行う際、パフォーマンスや負荷を考慮した工夫は？",
@@ -1106,7 +1055,7 @@
   },
   {
     "no": 67,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ調査・障害解析",
     "freq": "A",
     "question": "「画面にデータが表示されない」という問い合わせが届いた場合、どう調査を進めますか？",
@@ -1123,7 +1072,7 @@
   },
   {
     "no": 68,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ調査・障害解析",
     "freq": "B",
     "question": "本番環境のDBに対してデータ調査を行う際、安全面で気をつけていることは？",
@@ -1140,7 +1089,7 @@
   },
   {
     "no": 69,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ調査・障害解析",
     "freq": "B",
     "question": "アプリケーションログからエラーの該当SQLやパラメータを特定する流れを教えてください。",
@@ -1157,7 +1106,7 @@
   },
   {
     "no": 70,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ調査・障害解析",
     "freq": "B",
     "question": "不整合データ（本来ありえないステータス等）が見つかった際、どのように原因を追求しますか？",
@@ -1174,7 +1123,7 @@
   },
   {
     "no": 71,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ調査・障害解析",
     "freq": "B",
     "question": "スロークエリ（処理速度の遅いSQL）の特定と改善アプローチを教えてください。",
@@ -1191,7 +1140,7 @@
   },
   {
     "no": 72,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ修正・手順作成",
     "freq": "B",
     "question": "本番DBのデータ修正（UPDATE/DELETE）を依頼された際、実施するまでの手順は？",
@@ -1208,7 +1157,7 @@
   },
   {
     "no": 73,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ修正・手順作成",
     "freq": "B",
     "question": "データ修正作業時の「手順書」にはどのような項目を記載しますか？",
@@ -1225,7 +1174,7 @@
   },
   {
     "no": 74,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ修正・手順作成",
     "freq": "B",
     "question": "万が一、誤ったデータをUPDATEしてしまった場合のリカバリー手順はどう想定しますか？",
@@ -1242,7 +1191,7 @@
   },
   {
     "no": 75,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ修正・手順作成",
     "freq": "C",
     "question": "データパッチ（一括補正スクリプト）を作成する際、検証環境で確認するポイントは？",
@@ -1259,7 +1208,7 @@
   },
   {
     "no": 76,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "データ修正・手順作成",
     "freq": "B",
     "question": "ダブルチェック体制でデータ修正を行う際、作業者・確認者として意識することは？",
@@ -1276,7 +1225,7 @@
   },
   {
     "no": 77,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "運用保守・改善",
     "freq": "B",
     "question": "既存のコードやSQLが可読性の低い「秘伝のタレ」状態だった場合、どう対応しますか？",
@@ -1293,7 +1242,7 @@
   },
   {
     "no": 78,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "運用保守・改善",
     "freq": "B",
     "question": "定期的なデータ抽出作業（月次レポート等）を効率化・自動化した経験はありますか？",
@@ -1310,7 +1259,7 @@
   },
   {
     "no": 79,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "運用保守・改善",
     "freq": "B",
     "question": "DBマイグレーション（テーブル構造変更）の際の注意点は何ですか？",
@@ -1327,7 +1276,7 @@
   },
   {
     "no": 80,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "運用保守・改善",
     "freq": "B",
     "question": "保守運用でナレッジが属人化しないために行っている工夫はありますか？",
@@ -1344,7 +1293,7 @@
   },
   {
     "no": 81,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "運用保守・改善",
     "freq": "A",
     "question": "仕様書が存在しないシステムで、既存SQLから仕様を読み解いた経験はありますか？",
@@ -1361,7 +1310,7 @@
   },
   {
     "no": 82,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "コミュ・チーム",
     "freq": "A",
     "question": "障害一次調査の結果を顧客やCS（非エンジニア）へ報告する際、意識することは？",
@@ -1378,7 +1327,7 @@
   },
   {
     "no": 83,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "コミュ・チーム",
     "freq": "A",
     "question": "調査に想定以上の時間がかかりそうな場合、どのように報告しますか？",
@@ -1395,7 +1344,7 @@
   },
   {
     "no": 84,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "コミュ・チーム",
     "freq": "A",
     "question": "開発チームやインフラチームへ調査結果を引き継ぐ際、意識することは？",
@@ -1412,7 +1361,7 @@
   },
   {
     "no": 85,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "コミュ・チーム",
     "freq": "A",
     "question": "複数の問い合わせや不具合対応が重なった際、優先順位をどう判断しますか？",
@@ -1429,7 +1378,7 @@
   },
   {
     "no": 86,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "コミュ・チーム",
     "freq": "A",
     "question": "これまでの保守業務で、ミスを未然に防いだエピソードがあれば教えてください。",
@@ -1446,7 +1395,7 @@
   },
   {
     "no": 87,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "マインドセット",
     "freq": "B",
     "question": "単純作業に見えるデータ保守において、モチベーションをどう維持していますか？",
@@ -1463,7 +1412,7 @@
   },
   {
     "no": 88,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "マインドセット",
     "freq": "B",
     "question": "SQLスキルを維持・向上させるために普段行っている学習はありますか？",
@@ -1480,7 +1429,7 @@
   },
   {
     "no": 89,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "マインドセット",
     "freq": "A",
     "question": "保守業務の中で、開発側の改善提案（リファクタリング提案等）を行った経験は？",
@@ -1497,7 +1446,7 @@
   },
   {
     "no": 90,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "現在のDB保守運用における一番の課題（ナレッジ不足、ログ解析等）は何ですか？",
@@ -1514,7 +1463,7 @@
   },
   {
     "no": 91,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "データ修正や本番アクセスの承認フローはどのような手順になっていますか？",
@@ -1531,7 +1480,7 @@
   },
   {
     "no": 92,
-    "category": "SQL",
+    "categories": ["SQL"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "参画までに把握しておくべきドキュメントやER図などはありますか？",
@@ -1548,7 +1497,7 @@
   },
   {
     "no": 93,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "自己紹介と、設計〜テスト工程に関するこれまでの実績を教えてください。",
@@ -1565,7 +1514,7 @@
   },
   {
     "no": 94,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "基本設計（要件定義）のインプットから詳細設計を起こす際、得意とするアプローチは？",
@@ -1582,7 +1531,7 @@
   },
   {
     "no": 95,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "これまでに作成したことのある設計書・ドキュメントの種類を教えてください。",
@@ -1599,7 +1548,7 @@
   },
   {
     "no": 96,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "テスト工程において、どのような種類のテスト（単体、結合、総合等）を担当してきましたか？",
@@ -1616,7 +1565,7 @@
   },
   {
     "no": 97,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "自己紹介・実績",
     "freq": "A",
     "question": "「品質担保」のために、設計・テスト段階で最も意識していることは？",
@@ -1633,7 +1582,7 @@
   },
   {
     "no": 98,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "詳細設計書を作成する際、第三者（実装者）が迷わないためにどんな工夫をしていますか？",
@@ -1650,7 +1599,7 @@
   },
   {
     "no": 99,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "基本設計書や要件定義書に矛盾や記載漏れがあった場合、どう対処しますか？",
@@ -1667,7 +1616,7 @@
   },
   {
     "no": 100,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "データベースの詳細設計（テーブル定義、カラム型、制約、インデックス）の作成経験は？",
@@ -1684,7 +1633,7 @@
   },
   {
     "no": 101,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "画面詳細設計書における「入力チェック仕様」や「エラーメッセージ定義」はどう記述しますか？",
@@ -1701,7 +1650,7 @@
   },
   {
     "no": 102,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "API詳細設計書（リクエストパラメータ、レスポンスJSON、ステータスコード）の作成経験は？",
@@ -1718,7 +1667,7 @@
   },
   {
     "no": 103,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "C",
     "question": "CRUD図（機能とテーブルの参照・更新マトリクス）を作成・更新した経験はありますか？",
@@ -1735,7 +1684,7 @@
   },
   {
     "no": 104,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "C",
     "question": "シーケンス図やフローチャートを描く際、どのようなツール（PlantUML, Enterprise Architect, Excel等）を使用しましたか？",
@@ -1752,7 +1701,7 @@
   },
   {
     "no": 105,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "既存システムの改修設計時、既存仕様のキャッチアップと影響調査はどのように行いますか？",
@@ -1769,7 +1718,7 @@
   },
   {
     "no": 106,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "設計書に対するレビュー（ピアレビューやPLレビュー）で指摘を受けないために意識していることは？",
@@ -1786,7 +1735,7 @@
   },
   {
     "no": 107,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "C",
     "question": "アジャイル/スクラム開発における「ストーリー」や「仕様メモ」から詳細を詰める経験はありますか？",
@@ -1803,7 +1752,7 @@
   },
   {
     "no": 108,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "仕様書・設計力",
     "freq": "B",
     "question": "非機能要件（レスポンス速度、セキュリティ、排他制御等）を詳細設計に反映したことは？",
@@ -1820,7 +1769,7 @@
   },
   {
     "no": 109,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "結合テスト仕様書を作成する際、観点（テストマトリクス）はどのように抽出しますか？",
@@ -1837,7 +1786,7 @@
   },
   {
     "no": 110,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "テストケースの抽出技法（同値分割、境界値分析、状態遷移テスト等）をどう活用していますか？",
@@ -1854,7 +1803,7 @@
   },
   {
     "no": 111,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "総合テスト（シナリオテスト）の仕様書作成で、ユーザーの業務フローをどう反映しますか？",
@@ -1871,7 +1820,7 @@
   },
   {
     "no": 112,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "テストデータの作成（SQLでのデータ投入やCSV作成など）は効率的に行えますか？",
@@ -1888,7 +1837,7 @@
   },
   {
     "no": 113,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "外部システム連携（APIやファイル連携）を含むテストはどのように実施・検証しますか？",
@@ -1905,7 +1854,7 @@
   },
   {
     "no": 114,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "テストエビデンス（画面キャプチャ、ログ、DB実行結果等）の収集・管理基準について教えてください。",
@@ -1922,7 +1871,7 @@
   },
   {
     "no": 115,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "テスト自動化ツール（Selenium, Cypress, Playwright等）の経験や興味はありますか？",
@@ -1939,7 +1888,7 @@
   },
   {
     "no": 116,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "回帰テスト（リグレッションテスト）の範囲選定はどのように行っていますか？",
@@ -1956,7 +1905,7 @@
   },
   {
     "no": 117,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "異常系（ネットワーク切断、タイムアウト、不正データ入力等）のテストケースはどのように設計しますか？",
@@ -1973,7 +1922,7 @@
   },
   {
     "no": 118,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "B",
     "question": "複数人でテストを実施する際、進捗管理やケースの分担をどのように行いましたか？",
@@ -1990,7 +1939,7 @@
   },
   {
     "no": 119,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "仕様変更がテスト工程終盤で発生した場合、テスト仕様書の修正と再テストをどう進めますか？",
@@ -2007,7 +1956,7 @@
   },
   {
     "no": 120,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "C",
     "question": "ブラウザ互換性テストや端末別（iOS/Android等）テストの実行・管理経験は？",
@@ -2024,7 +1973,7 @@
   },
   {
     "no": 121,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "テスト設計・実施",
     "freq": "A",
     "question": "性能テスト（負荷テスト）やセキュリティテストの補助・実行に関わったことはありますか？",
@@ -2041,7 +1990,7 @@
   },
   {
     "no": 122,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "A",
     "question": "不具合（バグ）を発見した際、不具合起票（バグチケット作成）で記載する必須項目は何ですか？",
@@ -2058,7 +2007,7 @@
   },
   {
     "no": 123,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "A",
     "question": "上がってきた不具合が「仕様」なのか「バグ」なのか判断がつかない場合どうしますか？",
@@ -2075,7 +2024,7 @@
   },
   {
     "no": 124,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "B",
     "question": "不具合の優先度（Blocker, Major, Minor等）の判断基準を教えてください。",
@@ -2092,7 +2041,7 @@
   },
   {
     "no": 125,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "C",
     "question": "修正されたバグの「再テスト（呼び戻しテスト）」を行う際、気をつけていることは？",
@@ -2109,7 +2058,7 @@
   },
   {
     "no": 126,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "B",
     "question": "テスト工程での「不具合密度の偏り」が見つかった場合、どう分析・対処しますか？",
@@ -2126,7 +2075,7 @@
   },
   {
     "no": 127,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "B",
     "question": "品質管理（QMS）や標準化された開発プロセス（Vモデル等）に従った業務経験はありますか？",
@@ -2143,7 +2092,7 @@
   },
   {
     "no": 128,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "B",
     "question": "開発チームへ不具合をフィードバックする際、摩擦を起こさないための配慮は？",
@@ -2160,7 +2109,7 @@
   },
   {
     "no": 129,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "B",
     "question": "テストサマリー報告書（テスト完了報告書）の作成に関わったことはありますか？",
@@ -2177,7 +2126,7 @@
   },
   {
     "no": 130,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "不具合・品質管理",
     "freq": "A",
     "question": "仕様書と実装の乖離を見つけた場合、どちらを正として修正を進めますか？",
@@ -2194,7 +2143,7 @@
   },
   {
     "no": 131,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "コミュ・調整",
     "freq": "A",
     "question": "上流工程の担当者（要件定義者・PM）と仕様詰めの打ち合わせを行う際の工夫は？",
@@ -2211,7 +2160,7 @@
   },
   {
     "no": 132,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "コミュ・調整",
     "freq": "A",
     "question": "テスト遅延が発生しそうな時、PLやPMにどのように早期アラートをあげますか？",
@@ -2228,7 +2177,7 @@
   },
   {
     "no": 133,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "コミュ・調整",
     "freq": "A",
     "question": "オフショアチームや外部ベンダーが作成した設計書・テスト結果のレビュー経験はありますか？",
@@ -2245,7 +2194,7 @@
   },
   {
     "no": 134,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "マインドセット",
     "freq": "A",
     "question": "設計やテストといったドキュメント中心の業務に対する意欲ややりがいは何ですか？",
@@ -2262,7 +2211,7 @@
   },
   {
     "no": 135,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "マインドセット",
     "freq": "B",
     "question": "将来的に基本設計や要件定義などの上流工程へステップアップしていきたいですか？",
@@ -2279,7 +2228,7 @@
   },
   {
     "no": 136,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "マインドセット",
     "freq": "A",
     "question": "仕様変更が多くドキュメント更新が追いつかないような現場での経験や対応策は？",
@@ -2296,7 +2245,7 @@
   },
   {
     "no": 137,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "今回作成する設計書やテスト仕様書のフォーマットや標準ルールは定められていますか？",
@@ -2313,7 +2262,7 @@
   },
   {
     "no": 138,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "現在プロジェクトで使われている不具合管理ツールや課題管理ツールは何ですか？",
@@ -2330,7 +2279,7 @@
   },
   {
     "no": 139,
-    "category": "テスト",
+    "categories": ["テスト"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "設計〜テスト工程において、現在チームが感じている課題（ドキュメント不足等）はありますか？",
@@ -2347,7 +2296,7 @@
   },
   {
     "no": 140,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "規模感・体制",
     "freq": "A",
     "question": "直近のプロジェクトにおいて、システム全体の規模感（画面数、テーブル数、月間アクティブユーザー数等）と担当範囲を教えてください。",
@@ -2364,7 +2313,7 @@
   },
   {
     "no": 141,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "規模感・体制",
     "freq": "A",
     "question": "プロジェクトのチーム体制（全体人数、サーバーサイド/フロントエンドの比率）と開発手法（アジャイル/ウォーターフォール）について教えてください。",
@@ -2381,7 +2330,7 @@
   },
   {
     "no": 142,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "開発環境",
     "freq": "A",
     "question": "ローカルでの開発環境構築（Windows/Mac、Docker等の利用）はご自身で完結できますか？",
@@ -2398,7 +2347,7 @@
   },
   {
     "no": 143,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "タスク・工程",
     "freq": "A",
     "question": "タスクの割り振りはどのように行われ、進捗管理やスケジュール調整はどのようにしていましたか？",
@@ -2415,7 +2364,7 @@
   },
   {
     "no": 144,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "品質管理・バグ対策",
     "freq": "B",
     "question": "実装時やセルフチェックにおいて、バグ（不具合・デグレ）を未然に防ぐために日常的に取り組んでいる工夫は何ですか？",
@@ -2432,7 +2381,7 @@
   },
   {
     "no": 145,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "品質管理・バグ対策",
     "freq": "B",
     "question": "コーディングをする上で、可読性や保守性を高めるために意識しているルールや工夫はありますか？",
@@ -2448,25 +2397,8 @@
     "is_reverse": false
   },
   {
-    "no": 146,
-    "category": "全案件共通",
-    "subcategory": "ツール活用",
-    "freq": "B",
-    "question": "ソース管理ツール（Git）のコマンド操作や、GitHub/GitLab等でのブランチ運用・PR対応は問題ありませんか？",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "ツールが使えるという事実だけでなく、運用ルールに従って作業できるかを見ている。",
-    "answer_template": "はい、問題ありません。Gitコマンド（clone, checkout, branch, pull, push, rebase等）での操作に慣れており、featureブランチからのPR作成、コンフリクト解消、コードレビュー指摘への修正対応まで一通り実務で経験しています。",
-    "deep1": "「Gitで複雑なコンフリクトが発生した場合、安全に解消するための手順を教えてください。」",
-    "deep2": null,
-    "deep3": null,
-    "ng": "コマンドが使える事実とともに、「Git Flowなどのブランチ運用ルールに従って作業できる」ことを伝えます。",
-    "criteria": "ブランチ運用ルールに従って作業できるか",
-    "is_reverse": false
-  },
-  {
     "no": 147,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "ツール活用",
     "freq": "B",
     "question": "BacklogやJiraなどのタスク管理ツール、およびSlack等のコミュニケーションツールの実務経験はありますか？",
@@ -2482,25 +2414,8 @@
     "is_reverse": false
   },
   {
-    "no": 148,
-    "category": "全案件共通",
-    "subcategory": "バックエンド（PHP）",
-    "freq": "B",
-    "question": "PHPのバージョン経験と、実務で使用したことのあるフレームワーク（Laravel等）のバージョン・実績を教えてください。",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "スキルシート記載のバージョン・フレームワークと発言の整合性を確認している。",
-    "answer_template": "PHPは7.4および8.1の実務経験があり、フレームワークはLaravel（v8/v9）を中心に2年間使用してきました。標準機能を活かしたCRUD処理の実装やルーティング、ミドルウェアの設定など一通りの製造を担当しています。",
-    "deep1": "「PHP7からPHP8へのバージョン変更で、新しく使ってみた機能や型定義の意識などはありますか？」",
-    "deep2": null,
-    "deep3": null,
-    "ng": "使用したフレームワークのバージョンまで正確に答えることで、スキルシートの記載内容への信頼性が高まります。",
-    "criteria": "スキルシート記載内容と発言の整合性があるか",
-    "is_reverse": false
-  },
-  {
     "no": 149,
-    "category": "全案件共通",
+    "categories": ["PHP"],
     "subcategory": "バックエンド（PHP）",
     "freq": "B",
     "question": "PHPで開発を進める中で、どのような処理や機能を主に担当されていましたか？",
@@ -2517,7 +2432,7 @@
   },
   {
     "no": 150,
-    "category": "全案件共通",
+    "categories": ["PHP/Laravel"],
     "subcategory": "バックエンド（PHP）",
     "freq": "C",
     "question": "PHPやWebシステム開発において、フレームワーク（Laravel等）を利用するメリットは何だと考えますか？",
@@ -2534,7 +2449,7 @@
   },
   {
     "no": 151,
-    "category": "全案件共通",
+    "categories": ["PHP/Laravel"],
     "subcategory": "バックエンド（PHP）",
     "freq": "C",
     "question": "Laravelの「リポジトリパターン」の概念や導入するメリットについてご存知ですか？",
@@ -2551,7 +2466,7 @@
   },
   {
     "no": 152,
-    "category": "全案件共通",
+    "categories": ["PHP/Laravel"],
     "subcategory": "バックエンド（PHP）",
     "freq": "C",
     "question": "Laravelに対するご自身の理解度・習熟度を仮にパーセンテージ（または5段階評価）で表すとどれくらいですか？",
@@ -2568,7 +2483,7 @@
   },
   {
     "no": 153,
-    "category": "全案件共通",
+    "categories": ["PHP"],
     "subcategory": "バックエンド（PHP）",
     "freq": "C",
     "question": "PHP以外の言語（例：JavaやPython等）での開発経験や学習経験はありますか？",
@@ -2585,7 +2500,7 @@
   },
   {
     "no": 154,
-    "category": "全案件共通",
+    "categories": ["JS"],
     "subcategory": "フロントエンド（JS）",
     "freq": "C",
     "question": "JavaScript（ES6以降）を外部ライブラリなし（バニラJSスクラッチ）で記述するスキル感はいかがですか？",
@@ -2602,7 +2517,7 @@
   },
   {
     "no": 155,
-    "category": "全案件共通",
+    "categories": ["JS"],
     "subcategory": "フロントエンド（JS）",
     "freq": "C",
     "question": "jQueryおよびJavaScript（またはVue.js等）を採用するメリット・デメリットをどう捉えていますか？",
@@ -2618,59 +2533,8 @@
     "is_reverse": false
   },
   {
-    "no": 156,
-    "category": "全案件共通",
-    "subcategory": "フロントエンド（JS）",
-    "freq": "C",
-    "question": "Ajax（非同期通信）を活用した機能開発の実装経験について、具体的な利用シーンを教えてください。",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "通信処理だけでなく、UI/UX面（ローディング表示等）への配慮ができているかを見ている。",
-    "answer_template": "フォーム入力時のリアルタイム住所自動入力機能や、ページ遷移を伴わない「お気に入り登録/解除」ボタン、および動的グラフデータの取得処理などでAjax（Axios/Fetch API）を活用しました。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "単にデータ通信をするだけでなく、「ローディング表示」や「送信ボタンの非活性化（disabled）」などUI/UX配慮まで答えます。",
-    "criteria": "UI/UX面の配慮まで語れるか",
-    "is_reverse": false
-  },
-  {
-    "no": 157,
-    "category": "全案件共通",
-    "subcategory": "フロントエンド（CSS）",
-    "freq": "C",
-    "question": "HTML5/CSS3によるレスポンシブWebデザイン対応や、SCSS（Sass）の記述経験はありますか？",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "デザイン通りに組めるだけでなく、表示崩れを防ぐ意識があるかを見ている。",
-    "answer_template": "はい、メディアクエリやFlexbox/Gridを用いたレスポンシブレイアウトの作成、およびSCSSでの変数（Variables）やネスト構造を活用したスタイル管理の経験があります。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "デザイン通りに組めるだけでなく、表示崩れを防ぐ意識やクラスの共通化（SCSS活用）ができることを伝えます。",
-    "criteria": "表示崩れ防止の意識を語れるか",
-    "is_reverse": false
-  },
-  {
-    "no": 158,
-    "category": "全案件共通",
-    "subcategory": "フロントエンド（CSS）",
-    "freq": "C",
-    "question": "ブラウザチェック（クロスブラウザ検証）はどのように実施していましたか？",
-    "time": "30秒",
-    "keywords": "―",
-    "intent": "Chromeだけでなく複数ブラウザでの検証習慣があるかを見ている。",
-    "answer_template": "開発・テスト段階でChrome、Safari、Edgeの各最新版を用い、ディベロッパーツールでレスポンシブ表示やコンソールエラーの有無を確認しました。必要に応じて実機端末での挙動確認も行いました。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "「Chromeだけでしか確認していない」とならないよう、複数ブラウザや検証ツールの使用経験を提示します。",
-    "criteria": "複数ブラウザでの検証習慣を語れるか",
-    "is_reverse": false
-  },
-  {
     "no": 159,
-    "category": "全案件共通",
+    "categories": ["SQL"],
     "subcategory": "データベース（SQL）",
     "freq": "B",
     "question": "SQLを素（RAW SQL）で書くスキルや、複数テーブルのJOIN・サブクエリ・集計処理は問題ありませんか？",
@@ -2687,7 +2551,7 @@
   },
   {
     "no": 160,
-    "category": "全案件共通",
+    "categories": ["SQL"],
     "subcategory": "データベース（SQL）",
     "freq": "B",
     "question": "SQLチューニング（クエリ改善）やパフォーマンス最適化の経験はありますか？",
@@ -2704,7 +2568,7 @@
   },
   {
     "no": 161,
-    "category": "全案件共通",
+    "categories": ["SQL"],
     "subcategory": "データベース（SQL）",
     "freq": "C",
     "question": "ER図の読解・作成や、新規テーブル設計（正規化）の経験はどの程度ありますか？",
@@ -2721,7 +2585,7 @@
   },
   {
     "no": 162,
-    "category": "全案件共通",
+    "categories": ["SQL"],
     "subcategory": "データベース（SQL）",
     "freq": "C",
     "question": "データベース移行（DBマイグレーション）や、本番環境データの一括補正に関わったことはありますか？",
@@ -2737,42 +2601,8 @@
     "is_reverse": false
   },
   {
-    "no": 163,
-    "category": "全案件共通",
-    "subcategory": "API・インフラ",
-    "freq": "B",
-    "question": "RESTful APIのエンドポイント設計や仕様書の読解・作成についてイメージできますか？",
-    "time": "30〜45秒",
-    "keywords": "―",
-    "intent": "フロントとバックエンドを繋ぐインターフェースとしてのAPI概念を正確に理解しているかを見ている。",
-    "answer_template": "はい、イメージ可能です。HTTPメソッド（GET/POST/PUT/DELETE）の役割分担や、リクエスト/レスポンスのJSONフォーマット定義、HTTPステータスコード（200, 400, 401, 500等）の設計ルールを理解して実装に落とし込めます。",
-    "deep1": "「APIでエラーが発生した際、レスポンスボディにはどのような情報を返すべきだと考えて設計しますか？」",
-    "deep2": null,
-    "deep3": null,
-    "ng": "フロントとバックエンドを繋ぐインターフェースとしてのAPI概念を正確に捉えているかが見られます。",
-    "criteria": "API設計の基本概念を正確に理解しているか",
-    "is_reverse": false
-  },
-  {
-    "no": 164,
-    "category": "全案件共通",
-    "subcategory": "API・インフラ",
-    "freq": "C",
-    "question": "Linux基本コマンドの操作や、サーバーでのログ確認・調査は行えますか？",
-    "time": "30秒",
-    "keywords": "―",
-    "intent": "障害調査でよく使うコマンドを具体的に語れるかを見ている。",
-    "answer_template": "はい、可能です。`cd`, `ls`, `cp`, `chmod` などの基本操作に加え、障害調査時に `tail -f` や `grep` を用いてログファイルをリアルタイム検索・抽出する作業は日常的に行っています。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": "ログ調査でよく使うコマンド（`tail -n`, `grep`, `find`等）を具現化して答えると説得力が増します。",
-    "criteria": "障害調査で使うコマンドを具体的に語れるか",
-    "is_reverse": false
-  },
-  {
     "no": 165,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "API・インフラ",
     "freq": "B",
     "question": "AWSやGCPなどのクラウドインフラサービスの使用経験や関わり方はありますか？",
@@ -2789,7 +2619,7 @@
   },
   {
     "no": 166,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "設計・ドキュメント",
     "freq": "B",
     "question": "詳細設計書や各種仕様書（画面仕様書、API仕様書）の作成・修正経験について教えてください。",
@@ -2806,7 +2636,7 @@
   },
   {
     "no": 167,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "テスト・品質",
     "freq": "B",
     "question": "単体テストおよび結合テスト仕様書の作成や、テスト実施・エビデンス取得の経験はありますか？",
@@ -2823,7 +2653,7 @@
   },
   {
     "no": 168,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "テスト・品質",
     "freq": "C",
     "question": "テストカバレッジ（網羅率）を意識したテスト実施や、PHPUnit等の自動テストの経験はありますか？",
@@ -2840,7 +2670,7 @@
   },
   {
     "no": 169,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "テスト・品質",
     "freq": "A",
     "question": "E2Eテストやブラウザ自動テストツール（Selenium, Cypress, Playwright等）の経験はありますか？",
@@ -2856,25 +2686,8 @@
     "is_reverse": false
   },
   {
-    "no": 170,
-    "category": "全案件共通",
-    "subcategory": "チーム・コミュニケーション",
-    "freq": "A",
-    "question": "業務上でわからないことや技術的なハマり（スタック）が発生した際、どのように対応していますか？",
-    "time": "30秒",
-    "keywords": "相談タイミング",
-    "intent": "「すぐ人に聞く」でも「抱え込む」でもない、適切なタイミングでの相談ができるかを見ている。",
-    "answer_template": "まずは自分でエラーログや公式ドキュメントを<span class=\"blank\">[相談タイミング]</span>分程度調べ、解決策の仮説を立てます。それでも解決しない場合は、①試したこと②現在の仮説③聞きたいことを整理した上で相談しています。",
-    "deep1": "相談した相手も回答を持ち合わせておらず、解決しなかった場合は次にどう行動しますか？→「一定時間自分で調べて整理してから相談する」姿勢を示す。",
-    "deep2": "相談する相手はどう選びますか？→「担当領域が近い先輩に、まずは聞きます」等。",
-    "deep3": null,
-    "ng": "相談までの時間の目安が曖昧",
-    "criteria": "適切なタイミングでの相談ができているか",
-    "is_reverse": false
-  },
-  {
     "no": 171,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "チーム・コミュニケーション",
     "freq": "A",
     "question": "チーム開発を進める中で、これまでに苦労したことやトラブルと、それをどう乗り越えたか教えてください。",
@@ -2891,7 +2704,7 @@
   },
   {
     "no": 172,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "チーム・コミュニケーション",
     "freq": "A",
     "question": "コードレビュー（レビュアーとして他人のコードを見る、またはレビュイーとして受ける）の経験と意識は？",
@@ -2908,7 +2721,7 @@
   },
   {
     "no": 173,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "チーム・コミュニケーション",
     "freq": "A",
     "question": "リモートワーク環境下で業務を行う際、報連相や意思疎通で気をつけていることは何ですか？",
@@ -2925,7 +2738,7 @@
   },
   {
     "no": 174,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "トラブル対応",
     "freq": "A",
     "question": "今まで参画した案件の中で「一番きつかった・大変だった案件」と、その対応策を教えてください。",
@@ -2942,7 +2755,7 @@
   },
   {
     "no": 175,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "キャリア・学習",
     "freq": "A",
     "question": "普段どのような方法で技術の勉強や情報のキャッチアップを行っていますか？",
@@ -2959,7 +2772,7 @@
   },
   {
     "no": 176,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "キャリア・学習",
     "freq": "A",
     "question": "今後エンジニアとしてどのようなスキルを身につけ、どんなキャリアを目指していきたいですか？",
@@ -2976,7 +2789,7 @@
   },
   {
     "no": 177,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "キャリア・学習",
     "freq": "A",
     "question": "最近気になったIT系のニュースや、技術トピックがあれば教えてください。",
@@ -2993,7 +2806,7 @@
   },
   {
     "no": 178,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "パーソナリティ",
     "freq": "A",
     "question": "周囲（同僚や上司）から、ご自身は「どのような人柄（キャラクター）」と言われることが多いですか？",
@@ -3010,7 +2823,7 @@
   },
   {
     "no": 179,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "パーソナリティ",
     "freq": "A",
     "question": "エンジニアとして仕事をする上で、ご自身が最も大切にしている価値観（ポリシー）は何ですか？",
@@ -3027,7 +2840,7 @@
   },
   {
     "no": 180,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "自作アプリ",
     "freq": "B",
     "question": "ご自身で作成されたポートフォリオ・アプリケーションについて、自己採点するなら何点ですか？",
@@ -3044,7 +2857,7 @@
   },
   {
     "no": 181,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "稼働条件",
     "freq": "A",
     "question": "出社とリモートワークのハイブリッド環境や、フル出社での業務対応は問題ありませんか？",
@@ -3061,7 +2874,7 @@
   },
   {
     "no": 182,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "稼働条件",
     "freq": "A",
     "question": "繁忙期等で残業が発生する場合（月15〜20時間程度）、対応は可能ですか？",
@@ -3078,7 +2891,7 @@
   },
   {
     "no": 183,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "稼働条件",
     "freq": "A",
     "question": "いつから本案件に参画可能ですか？（稼働開始日の確認）",
@@ -3095,7 +2908,7 @@
   },
   {
     "no": 184,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "客先折衝",
     "freq": "B",
     "question": "顧客や非エンジニア（営業・CS等）との打ち合わせや仕様調整（客先折衝）の経験はありますか？",
@@ -3112,7 +2925,7 @@
   },
   {
     "no": 185,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "インフラ設計",
     "freq": "C",
     "question": "インフラの要件定義やアーキテクチャ設計の経験はありますか？",
@@ -3129,7 +2942,7 @@
   },
   {
     "no": 186,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "コミュニティ",
     "freq": "B",
     "question": "IT系の勉強会や交流会、コミュニティ等に参加された経験はありますか？",
@@ -3145,42 +2958,8 @@
     "is_reverse": false
   },
   {
-    "no": 187,
-    "category": "全案件共通",
-    "subcategory": "逆質問",
-    "freq": "A",
-    "question": "今回募集されているプロジェクトにおいて、参画初期に担当する主な機能やフェーズについて教えていただけますか？",
-    "time": "（逆質問）",
-    "keywords": "―",
-    "intent": "「特にありません」を避け、案件への意欲を示す質問ができるかを見ている。",
-    "answer_template": "前向きな姿勢と、参画後のキャッチアップ意欲をアピールするための重要質問。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": null,
-    "criteria": "案件への意欲を示す逆質問ができるか",
-    "is_reverse": true
-  },
-  {
-    "no": 188,
-    "category": "全案件共通",
-    "subcategory": "逆質問",
-    "freq": "A",
-    "question": "開発チーム内で使われているコミュニケーションツールや、コードレビューの運用ルールについて教えていただけますか？",
-    "time": "（逆質問）",
-    "keywords": "―",
-    "intent": "参画後すぐにチームカルチャーに馴染みたいという意識を見ている。",
-    "answer_template": "現場のツールや開発プロセスに興味を持っていることを示す質問。",
-    "deep1": null,
-    "deep2": null,
-    "deep3": null,
-    "ng": null,
-    "criteria": "チームカルチャーへの適応意欲を示す逆質問ができるか",
-    "is_reverse": true
-  },
-  {
     "no": 189,
-    "category": "全案件共通",
+    "categories": ["全案件共通"],
     "subcategory": "逆質問",
     "freq": "A",
     "question": "参画開始日までに、あらかじめキャッチアップしておくと望ましい技術スタックや業務知識はありますか？",
