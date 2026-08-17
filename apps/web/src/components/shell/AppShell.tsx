@@ -174,11 +174,7 @@ export function AppShell() {
 
   // バックエンドが設定済みかつ profile を取得済みなら、 そこから role / tenant を上書きする。
   // staff は UI だけ受講者シェルへ切り替えられる（認可は profiles.role のまま）。
-  const {
-    role: effectiveRole,
-    previewingLearner,
-    canSwitchToLearner,
-  } = resolveUiRole({
+  const { role: effectiveRole, canSwitchToLearner } = resolveUiRole({
     backendEnabled,
     profileRole: profile?.role,
     uiRoleOverride,
@@ -226,30 +222,27 @@ export function AppShell() {
 
   // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
-  // staff が受講者画面を開いているときは公開講座を出す（自分への割当が無くても確認できる）。
-  const browseCourses = useCoursesForTenant(
-    effectiveTenant.id,
-    effectiveRole !== "learner" || previewingLearner,
-    { publishedOnly: previewingLearner },
-  );
+  // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
+  // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
+  const browseCourses = useCoursesForTenant(effectiveTenant.id, effectiveRole !== "learner");
   const enrolledCourses = useEnrolledCoursesForTenant(
     effectiveTenant.id,
     session?.user.id ?? null,
-    effectiveRole === "learner" && !previewingLearner,
+    effectiveRole === "learner",
   );
   // DB 由来コースは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
   const progressMap = useLessonProgressMap();
-  const rawCourses =
-    effectiveRole === "learner" && !previewingLearner
-      ? enrolledCourses.courses
-      : browseCourses.courses;
+  const rawCourses = effectiveRole === "learner" ? enrolledCourses.courses : browseCourses.courses;
   const courses = useMemo(
     () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
     [rawCourses, progressMap],
   );
 
-  const courseError =
-    effectiveRole === "learner" && !previewingLearner ? enrolledCourses.error : browseCourses.error;
+  const courseError = effectiveRole === "learner" ? enrolledCourses.error : browseCourses.error;
+  // 検索 API は staff に同テナントの全講座 (draft 含む) を返すため、 staff が受講者シェルを
+  // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
+  // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
+  const scopeSearchToOwnCourses = effectiveRole === "learner" && canSwitchToLearner;
   // LearnerDashboard への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(effectiveTenant.id, effectiveRole === "learner");
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
@@ -487,7 +480,7 @@ export function AppShell() {
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
   useEffect(() => {
-    if (backendEnabled && session && profile && !previewingLearner) {
+    if (backendEnabled && session && profile) {
       configureRemoteSync({
         userId: session.user.id,
         tenantId: profile.tenant_id,
@@ -495,7 +488,7 @@ export function AppShell() {
     } else {
       configureRemoteSync(null);
     }
-  }, [backendEnabled, session, profile, previewingLearner]);
+  }, [backendEnabled, session, profile]);
 
   // Backtick toggle for tweaks panel
   useEffect(() => {
@@ -571,7 +564,6 @@ export function AppShell() {
     profile,
     onProfileUpdated: refreshProfile,
     highlightCourse,
-    previewingLearner,
   };
 
   return (
@@ -588,7 +580,6 @@ export function AppShell() {
             counts={sidebarCounts}
             profileRole={profile?.role}
             canSwitchToLearner={canSwitchToLearner}
-            previewingLearner={previewingLearner}
             onSwitchToLearner={switchToLearnerView}
             onReturnToStaff={returnToStaffView}
           />
@@ -614,7 +605,6 @@ export function AppShell() {
                 counts={sidebarCounts}
                 profileRole={profile?.role}
                 canSwitchToLearner={canSwitchToLearner}
-                previewingLearner={previewingLearner}
                 onSwitchToLearner={switchToLearnerView}
                 onReturnToStaff={returnToStaffView}
               />
@@ -625,7 +615,7 @@ export function AppShell() {
           <Topbar
             onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
-            searchCourseIds={previewingLearner ? new Set(courses.map((c) => c.id)) : null}
+            searchCourseIds={scopeSearchToOwnCourses ? new Set(courses.map((c) => c.id)) : null}
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,

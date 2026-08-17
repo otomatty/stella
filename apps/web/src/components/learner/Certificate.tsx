@@ -24,7 +24,6 @@ import {
   issueCertificate,
   listCertificatesForUser,
 } from "@/lib/certificates-api";
-import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 
 interface CertificatePageProps {
   courses: Course[];
@@ -72,7 +71,6 @@ interface LiveProps {
 }
 
 function LiveCertificates({ courses, userId, studentInitials, tenantName }: LiveProps) {
-  const previewReadOnly = useLearnerPreviewReadOnly();
   const [certs, setCerts] = useState<CertificateRow[]>([]);
   const [completions, setCompletions] = useState<Record<string, CourseCompletion | null>>({});
   const [loading, setLoading] = useState(true);
@@ -108,10 +106,6 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
   }, [load]);
 
   const onIssue = async (courseId: string) => {
-    if (previewReadOnly) {
-      toast.message("受講者画面のプレビューでは修了証は発行されません");
-      return;
-    }
     setIssuingId(courseId);
     try {
       const result = await issueCertificate(courseId, userId);
@@ -157,11 +151,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
                         <div className="text-[13.5px] font-medium truncate">{c.title}</div>
                         <div className="text-[12px] text-ink-3">修了基準を達成しました</div>
                       </div>
-                      {previewReadOnly ? (
-                        <span className="text-[12px] text-ink-4 shrink-0">
-                          プレビュー中は発行できません
-                        </span>
-                      ) : autoIssue ? (
+                      {autoIssue ? (
                         <Button
                           variant="accent"
                           disabled={issuingId === c.id}

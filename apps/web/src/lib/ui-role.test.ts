@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterSearchResultsForPreview, resolveUiRole, staffHomeLabel } from "./ui-role.js";
+import { filterSearchResultsForLearner, resolveUiRole, staffHomeLabel } from "./ui-role.js";
 
 describe("resolveUiRole", () => {
   it("uses the profile role when backend is on and there is no override", () => {
@@ -11,14 +11,10 @@ describe("resolveUiRole", () => {
         uiRoleOverride: null,
         demoRole: "learner",
       }),
-    ).toEqual({
-      role: "admin",
-      previewingLearner: false,
-      canSwitchToLearner: true,
-    });
+    ).toEqual({ role: "admin", canSwitchToLearner: true });
   });
 
-  it("lets staff preview the learner shell", () => {
+  it("lets staff open the learner shell", () => {
     expect(
       resolveUiRole({
         backendEnabled: true,
@@ -26,11 +22,7 @@ describe("resolveUiRole", () => {
         uiRoleOverride: "learner",
         demoRole: "admin",
       }),
-    ).toEqual({
-      role: "learner",
-      previewingLearner: true,
-      canSwitchToLearner: true,
-    });
+    ).toEqual({ role: "learner", canSwitchToLearner: true });
   });
 
   it("ignores a leftover override for students", () => {
@@ -41,11 +33,7 @@ describe("resolveUiRole", () => {
         uiRoleOverride: "learner",
         demoRole: "admin",
       }),
-    ).toEqual({
-      role: "learner",
-      previewingLearner: false,
-      canSwitchToLearner: false,
-    });
+    ).toEqual({ role: "learner", canSwitchToLearner: false });
   });
 
   it("keeps the demo Tweaks role when the backend is off", () => {
@@ -56,11 +44,7 @@ describe("resolveUiRole", () => {
         uiRoleOverride: "learner",
         demoRole: "instructor",
       }),
-    ).toEqual({
-      role: "instructor",
-      previewingLearner: false,
-      canSwitchToLearner: false,
-    });
+    ).toEqual({ role: "instructor", canSwitchToLearner: false });
   });
 });
 
@@ -71,7 +55,7 @@ describe("staffHomeLabel", () => {
   });
 });
 
-describe("filterSearchResultsForPreview", () => {
+describe("filterSearchResultsForLearner", () => {
   const results = [
     {
       kind: "course" as const,
@@ -93,11 +77,11 @@ describe("filterSearchResultsForPreview", () => {
     },
   ];
 
-  it("keeps every hit when there is no preview scope", () => {
-    expect(filterSearchResultsForPreview(results, null)).toEqual(results);
+  it("keeps every hit when there is no course scope", () => {
+    expect(filterSearchResultsForLearner(results, null)).toEqual(results);
   });
 
-  it("drops hits whose course is outside the published catalog", () => {
-    expect(filterSearchResultsForPreview(results, new Set(["pub"]))).toEqual([results[0]]);
+  it("drops hits whose course is outside the learner's own courses", () => {
+    expect(filterSearchResultsForLearner(results, new Set(["pub"]))).toEqual([results[0]]);
   });
 });

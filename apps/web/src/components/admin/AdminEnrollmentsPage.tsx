@@ -29,6 +29,7 @@ import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useCourseEnrollments } from "@/hooks/useEnrollments";
+import { RoleBadge } from "./users-admin/shared";
 import { assignEnrollment, removeEnrollment, updateEnrollment } from "@/lib/enrollments-api";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
@@ -88,11 +89,18 @@ function EnrollmentsLive({
   const selectedCourse = courses.find((c) => c.id === courseId) ?? null;
   const { enrollments, refetch } = useCourseEnrollments(courseId);
 
-  // 受講者 (student) のみ割当対象。 無効化ユーザーは除外する。
+  // 受講者 (student) は一括割当 / CSV の対象。 無効化ユーザーは除外する。
   const learners = useMemo(
     () => profiles.filter((p) => p.role === "student" && !p.disabled),
     [profiles],
   );
+  // staff も個別割当だけは許す。 受講者シェルは enrollment ベースなので、 講師 / 管理者が
+  // 受講者画面を自分で確認するには受講登録が要る。 一括割当 / CSV には含めない。
+  const staffMembers = useMemo(
+    () => profiles.filter((p) => p.role !== "student" && !p.disabled),
+    [profiles],
+  );
+  const assignable = useMemo(() => [...learners, ...staffMembers], [learners, staffMembers]);
 
   const enrollmentByUser = useMemo(() => {
     const map = new Map<string, EnrollmentRow>();
@@ -246,7 +254,7 @@ function EnrollmentsLive({
       <Card className="overflow-hidden">
         {courses.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">まずコースを作成してください。</div>
-        ) : learners.length === 0 ? (
+        ) : assignable.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             割当可能な受講者がいません。 「ユーザー管理」 から招待してください。
           </div>
@@ -262,7 +270,7 @@ function EnrollmentsLive({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {learners.map((p) => {
+              {assignable.map((p) => {
                 const enrollment = enrollmentByUser.get(p.id);
                 const busy = busyId === p.id || busyId === "__all__";
                 return (
@@ -275,6 +283,7 @@ function EnrollmentsLive({
                           </AvatarFallback>
                         </Avatar>
                         <span className="font-medium">{p.display_name}</span>
+                        {p.role !== "student" ? <RoleBadge role={p.role} /> : null}
                       </div>
                     </TableCell>
                     <TableCell>

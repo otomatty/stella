@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import type { Course, Lesson } from "@/data/types";
 import { createSubmission, createSubmissionAsync } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
-import { useLearnerPreviewReadOnly } from "@/components/shell/app-shell-context";
 import type { Tenant } from "@/data/types";
 
 interface AssignmentSubmitPanelProps {
@@ -29,17 +28,12 @@ export function AssignmentSubmitPanel({
   studentInitials,
   onSubmitted,
 }: AssignmentSubmitPanelProps) {
-  const previewReadOnly = useLearnerPreviewReadOnly();
   const [code, setCode] = useState(
     `// ${lesson.title}\n// 提出用コードをここに貼り付けてください\n\n`,
   );
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (previewReadOnly) {
-      toast.message("受講者画面のプレビューでは提出は保存されません");
-      return;
-    }
     const trimmed = code.trim();
     if (trimmed.length < 10) {
       toast.error("提出コードを入力してください");
@@ -92,15 +86,13 @@ export function AssignmentSubmitPanel({
         spellCheck={false}
       />
       <div className="flex gap-2.5 items-center pt-4 border-t border-border">
-        <Button variant="accent" onClick={handleSubmit} disabled={previewReadOnly || submitting}>
+        <Button variant="accent" onClick={handleSubmit} disabled={submitting}>
           {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           講師に提出
         </Button>
         <span className="text-[11.5px] text-ink-3 flex items-center gap-1">
           <CheckCircle size={12} />
-          {previewReadOnly
-            ? "プレビュー中のため提出は保存されません"
-            : "提出後は「添削待ち」キューに表示されます"}
+          提出後は「添削待ち」キューに表示されます
         </span>
       </div>
     </div>

@@ -81,10 +81,8 @@ const NAV: Record<Role, NavItem[]> = {
 
 const ORGS_NAV: NavItem = { id: "orgs", label: "組織マスタ", icon: Building };
 
-function navForRole(role: Role, profileRole?: ProfileRole, previewingLearner?: boolean): NavItem[] {
-  const items = previewingLearner
-    ? NAV[role].filter((item) => item.id !== "connect-vscode")
-    : NAV[role];
+function navForRole(role: Role, profileRole?: ProfileRole): NavItem[] {
+  const items = NAV[role];
   if (role !== "admin" || profileRole !== "platform_admin") return items;
   const usersIdx = items.findIndex((item) => item.id === "users");
   const insertAt = usersIdx >= 0 ? usersIdx + 1 : items.length;
@@ -101,7 +99,6 @@ interface SidebarProps {
   /** profiles.role — 組織マスタは platform_admin のみ表示 */
   profileRole?: ProfileRole;
   canSwitchToLearner?: boolean;
-  previewingLearner?: boolean;
   onSwitchToLearner?: () => void;
   onReturnToStaff?: () => void;
 }
@@ -114,7 +111,6 @@ export const Sidebar = ({
   counts,
   profileRole,
   canSwitchToLearner,
-  previewingLearner,
   onSwitchToLearner,
   onReturnToStaff,
 }: SidebarProps) => (
@@ -126,7 +122,7 @@ export const Sidebar = ({
     <div className="px-3.5 pt-2.5 pb-2 font-display text-[10.5px] font-bold uppercase tracking-[0.22em] text-ink-4">
       Menu
     </div>
-    {navForRole(role, profileRole, previewingLearner).map((link) => {
+    {navForRole(role, profileRole).map((link) => {
       const count = counts?.[link.id];
       return (
         <SidebarLink
@@ -147,7 +143,7 @@ export const Sidebar = ({
         onOpenSettings={() => setPage("settings")}
         onLogout={() => setPage("__logout")}
         canSwitchToLearner={canSwitchToLearner}
-        previewingLearner={previewingLearner}
+        viewingAsLearner={role === "learner"}
         profileRole={profileRole}
         onSwitchToLearner={onSwitchToLearner}
         onReturnToStaff={onReturnToStaff}

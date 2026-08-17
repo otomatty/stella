@@ -9,12 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import {
-  mapCourseToUi,
-  type CourseRow,
-  type CourseWithChildren,
-  type UiCourse,
-} from "@falcon/shared/cms/types";
+import { mapCourseToUi, type CourseWithChildren, type UiCourse } from "@falcon/shared/cms/types";
 import type { Course, Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getCourseWithChildren, listCourses } from "@/lib/cms-api";
@@ -35,36 +30,12 @@ interface UseCoursesResult {
   source: DataSource;
 }
 
-/** staff 向け CMS 一覧から、受講者プレビュー用に公開中だけ残す。 */
-export function publishedCatalogRows(rows: CourseRow[], publishedOnly: boolean): CourseRow[] {
-  return publishedOnly ? rows.filter((row) => row.status === "published") : rows;
-}
-
-/**
- * publishedOnly に切り替えた直後、未フィルタのキャッシュを出さない。
- * 取得済みフラグが published になるまで空配列を返す。
- */
-export function coursesReadyForPublishedOnly<T>(
-  courses: T[],
-  publishedOnly: boolean,
-  fetchedPublishedOnly: boolean | null,
-): T[] {
-  if (publishedOnly && fetchedPublishedOnly !== true) return [];
-  return courses;
-}
-
-export function useCoursesForTenant(
-  tenantId: Tenant["id"],
-  enabled = true,
-  options?: { publishedOnly?: boolean },
-): UseCoursesResult {
+export function useCoursesForTenant(tenantId: Tenant["id"], enabled = true): UseCoursesResult {
   const backend = isBackendConfigured();
   const [courses, setCourses] = useState<Course[]>(() => (backend ? [] : fixturesFor(tenantId)));
   const [loading, setLoading] = useState(backend && enabled);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
-  const publishedOnly = options?.publishedOnly === true;
-  const [fetchedPublishedOnly, setFetchedPublishedOnly] = useState<boolean | null>(null);
 
   useEffect(() => {
     // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
@@ -84,13 +55,12 @@ export function useCoursesForTenant(
     setLoading(true);
     (async () => {
       try {
-        const courseRows = publishedCatalogRows(await listCourses(tenantId), publishedOnly);
+        const courseRows = await listCourses(tenantId);
         if (cancelled) return;
         // クエリ成功 = DB を真実として採用する。 空 (= 未 seed / RLS で全部 draft 等) でも
         // fixtures に fallback しない (#10 — Codex P2: RLS で隠した draft が漏れるのを防ぐ)。
         if (courseRows.length === 0) {
           setCourses([]);
-          setFetchedPublishedOnly(publishedOnly);
           setSource("db");
           setError(null);
           return;
@@ -103,14 +73,12 @@ export function useCoursesForTenant(
         const ui: UiCourse[] = withChildren.map(mapCourseToUi);
         // UiCourse は Course と shape 互換 (cms/types.ts のコメント参照)。
         setCourses(ui as unknown as Course[]);
-        setFetchedPublishedOnly(publishedOnly);
         setSource("db");
         setError(null);
       } catch (err) {
         console.error("[useCoursesForTenant] DB fetch failed", err);
         if (!cancelled) {
           setCourses([]);
-          setFetchedPublishedOnly(publishedOnly);
           setSource("error");
           setError(err instanceof Error ? err.message : "fetch failed");
         }
@@ -122,15 +90,9 @@ export function useCoursesForTenant(
     return () => {
       cancelled = true;
     };
-  }, [tenantId, enabled, publishedOnly]);
+  }, [tenantId, enabled]);
 
-  const visibleCourses = coursesReadyForPublishedOnly(courses, publishedOnly, fetchedPublishedOnly);
-  return {
-    courses: visibleCourses,
-    loading: loading || (publishedOnly && fetchedPublishedOnly !== true),
-    error,
-    source,
-  };
+  return { courses, loading, error, source };
 }
 
 /**
@@ -215,6 +177,9 @@ export function useEnrolledCoursesForTenant(
           const detail = detailById.get(e.course_id);
           // 詳細が引けない (= draft / RLS で不可視) コースは受講者一覧に出さない。
           if (!detail) continue;
+          // staff は CMS API から draft / archived の詳細も引けてしまうため、 ここでも弾く。
+          // 受講者は API 側で既に null になるので、 この判定は staff にだけ効く。
+          if (detail.course.status !== "published") continue;
           const ui: UiCourse = mapCourseToUi(detail);
           const completed = e.status === "completed";
           // UiCourse は Course と shape 互換 (cms/types.ts のコメント参照)。

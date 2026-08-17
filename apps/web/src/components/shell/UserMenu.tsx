@@ -23,7 +23,8 @@ interface UserMenuProps {
   onOpenSettings: () => void;
   onLogout: () => void;
   canSwitchToLearner?: boolean;
-  previewingLearner?: boolean;
+  /** 受講者シェルを表示中 (staff のみ true になりうる)。 */
+  viewingAsLearner?: boolean;
   profileRole?: ProfileRole;
   onSwitchToLearner?: () => void;
   onReturnToStaff?: () => void;
@@ -34,7 +35,7 @@ export const UserMenu = ({
   onOpenSettings,
   onLogout,
   canSwitchToLearner = false,
-  previewingLearner = false,
+  viewingAsLearner = false,
   profileRole,
   onSwitchToLearner,
   onReturnToStaff,
@@ -67,7 +68,7 @@ export const UserMenu = ({
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       {canSwitchToLearner ? (
-        previewingLearner ? (
+        viewingAsLearner ? (
           <DropdownMenuItem icon={GraduationCap} onClick={onReturnToStaff}>
             {staffHomeLabel(profileRole)}
           </DropdownMenuItem>

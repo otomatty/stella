@@ -4,7 +4,11 @@
  * セキュリティ要件 (旧 security definer RPC と同じ):
  *   - 出題は is_correct / explanation を含めずサニタイズして返す (カンニング不可)。
  *   - 採点はサーバ側で行い、 受講者は score を改竄できない。
- *   - アクセス可否: staff は同テナント、 受講者は published + active enrollment。
+ *   - アクセス可否: ロールによらず published + active enrollment。
+ *
+ * この 2 本は受講者シェル (`QuizPlayer`) だけが叩く。 staff が編集で使うのは
+ * `/api/cms/quiz/by-lesson/:lessonId` (staff 限定) なので、 ここに staff の
+ * 抜け道は要らない。 staff が受講者として小テストを解くなら受講登録しておく。
  */
 
 import { Hono } from "hono";
@@ -20,7 +24,7 @@ import {
   quizzes,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, ApiError, isStaffRole } from "../lib/authz.js";
+import { errorResponse, getCaller, ApiError } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -30,11 +34,9 @@ export const quizRoute = new Hono<{ Bindings: Env }>();
 
 /**
  * lesson が caller の同テナントで、かつアクセス可かを判定する。
- * - staff: 同テナントなら可
- * - student: published かつ当該コースに active enrollment
+ * ロールによらず published かつ当該コースに active enrollment があること。
  */
 async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): Promise<boolean> {
-  const isStaff = isStaffRole(caller.role);
   const rows = await db
     .select({
       status: courses.status,
@@ -49,7 +51,6 @@ async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): 
   const row = rows[0];
   if (!row) return false;
   if (row.tenantId !== caller.tenantId) return false;
-  if (isStaff) return true;
   if (row.status !== "published") return false;
 
   const enrolled = await db

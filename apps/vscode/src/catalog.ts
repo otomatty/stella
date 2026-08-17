@@ -1,12 +1,9 @@
 import { isReadableEnrollmentStatus } from "@falcon/shared/enrollment/access";
 import type {
-  CourseRow,
   CourseWithChildren,
   EnrollmentRow,
   LessonRow,
   LessonType,
-  ProfileRole,
-  ProfileRow,
   SectionRow,
 } from "@falcon/shared/cms/types";
 import { AuthExpiredError, apiRequest } from "./api.js";
@@ -38,10 +35,6 @@ export interface CatalogCourse {
   id: string;
   title: string;
   sections: CatalogSection[];
-}
-
-interface MeResponse {
-  profile: ProfileRow;
 }
 
 interface RowsResponse<T> {
@@ -79,33 +72,18 @@ export function findCachedLesson(courseId: string, lessonId: string): CatalogLes
   return undefined;
 }
 
-function isStaffRole(role: ProfileRole): boolean {
-  switch (role) {
-    case "instructor":
-    case "admin":
-    case "platform_admin":
-      return true;
-    case "student":
-      return false;
-    default: {
-      const _exhaustive: never = role;
-      return _exhaustive;
-    }
-  }
-}
-
 function isCompleted(value: boolean | number): boolean {
   return value === true || value === 1;
 }
 
-function courseIdsForRole(
-  role: ProfileRole,
-  enrollments: EnrollmentRow[],
-  courses: CourseRow[],
-): string[] {
-  if (isStaffRole(role)) {
-    return courses.filter((course) => course.status === "published").map((course) => course.id);
-  }
+/**
+ * 演習に出すコースは受講登録ベース (ロールによらず同じ)。
+ *
+ * 以前は staff だけ「同テナントの公開講座すべて」を出していたが、 Web の受講者シェルが
+ * enrollment ベースに一本化されたため、 拡張側も同じにする。 staff が受講者として演習を
+ * 確認したい場合は、 受講者と同様に対象講座へ受講登録しておく。
+ */
+function enrolledCourseIds(enrollments: EnrollmentRow[]): string[] {
   return enrollments
     .filter((enrollment) => isReadableEnrollmentStatus(enrollment.status))
     .map((enrollment) => enrollment.course_id);
@@ -180,19 +158,17 @@ async function fetchCourseDetail(courseId: string): Promise<CourseWithChildren |
   }
 }
 
-/** Fetch me / enrollments / courses / progress in parallel, then each course detail. */
+/** Fetch enrollments / progress in parallel, then each course detail. */
 export async function loadCatalog(): Promise<CatalogCourse[]> {
-  const [me, enrollments, courses, progress] = await Promise.all([
-    apiRequest<MeResponse>("/api/me"),
+  const [enrollments, progress] = await Promise.all([
     apiRequest<RowsResponse<EnrollmentRow>>("/api/enrollments/mine"),
-    apiRequest<RowsResponse<CourseRow>>("/api/cms/courses"),
     apiRequest<RowsResponse<LessonProgressRow>>("/api/lesson-progress"),
   ]);
 
   const completedIds = new Set(
     (progress.rows ?? []).filter((row) => isCompleted(row.completed)).map((row) => row.lesson_id),
   );
-  const courseIds = courseIdsForRole(me.profile.role, enrollments.rows ?? [], courses.rows ?? []);
+  const courseIds = enrolledCourseIds(enrollments.rows ?? []);
   const details = await Promise.all(courseIds.map(fetchCourseDetail));
   requireLoadedCourseDetails(courseIds, details);
 

@@ -13,7 +13,7 @@ import { Book, Loader2, Search } from "@/lib/icons";
 import { LessonTypeIcon } from "@/components/learner/CourseDetail";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useSearch } from "@/hooks/useSearch";
-import { filterSearchResultsForPreview } from "@/lib/ui-role";
+import { filterSearchResultsForLearner } from "@/lib/ui-role";
 import { cn } from "@/lib/utils";
 
 interface SearchPaletteProps {
@@ -35,7 +35,7 @@ export const SearchPalette = ({
   const listRef = useRef<HTMLDivElement>(null);
   const { results: rawResults, loading, error, tooShort, unavailable } = useSearch(input, open);
   const results = useMemo(
-    () => filterSearchResultsForPreview(rawResults, allowedCourseIds),
+    () => filterSearchResultsForLearner(rawResults, allowedCourseIds),
     [rawResults, allowedCourseIds],
   );
 
