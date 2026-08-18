@@ -20,7 +20,7 @@
         "jose": "^6.2.8",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^5.20260813.1",
+        "@cloudflare/workers-types": "^5.20260815.1",
         "drizzle-kit": "^0.31.10",
         "typescript": "^7.0.2",
         "wrangler": "^4.123.0",
@@ -219,7 +219,7 @@
 
     "@cloudflare/workerd-windows-64": ["@cloudflare/workerd-windows-64@1.20260811.1", "", { "os": "win32", "cpu": "x64" }, "sha512-g6VquwjASlYAibcNW/0E6Zszht4qLkmnXOGwIjjRHl2A0Qz48kVeMcGvyH6eA0G9U3OzZojjYFpP+YeyQmmdjw=="],
 
-    "@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260813.1", "", {}, "sha512-RQNfm7xD10hNHEQZFxQPmyGMJ9+aDGPcdFZ0x1LtmjRoLFcgZkGvfaqJAbOMQBAUFSESO3bYJS4p9mOLv28Ihg=="],
+    "@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260815.1", "", {}, "sha512-btpW8rEgeJKcxDlBWKxzjLLUHxzUWqXZY8O+DmM6NcSHadUQN5I71z6Q/yAKCTJyGS7adBpXzlsZSFbosLnECQ=="],
 
     "@codemirror/autocomplete": ["@codemirror/autocomplete@6.20.2", "", { "dependencies": { "@codemirror/language": "^6.0.0", "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.17.0", "@lezer/common": "^1.0.0" } }, "sha512-G5FPkgIiLjOgZMjqVjvuKQ1rGPtHogLldJr33eFJdVLtmwY+giGrlv/ewljLz6b9BSQLkjxuwBc6g6omDM+YxQ=="],
 
