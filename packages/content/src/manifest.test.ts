@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildContentManifest } from "./manifest.js";
+import { buildContentManifest, collectCourseThumbnails } from "./manifest.js";
 
 describe("buildContentManifest", () => {
   const { courses, quizzes } = buildContentManifest();
@@ -240,6 +240,137 @@ describe("buildContentManifest — CRLF チェックアウト", () => {
       for (const l of courses[0].sections?.[0].lessons ?? []) {
         expect(l.markdown ?? "").not.toContain("\r");
       }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("buildContentManifest — 講座サムネイル", () => {
+  /** 講座 1 つぶんの最小構成。thumbnail を置くかは呼び出し側が決める。 */
+  function writeCourse(root: string, slug: string, config: Record<string, unknown> = {}) {
+    const courseDir = join(root, slug);
+    const topic = join(courseDir, "modules", "m0-x", "l1-y", "t1-z");
+    mkdirSync(topic, { recursive: true });
+    writeFileSync(join(courseDir, "course.json"), JSON.stringify({ title: "デモ講座", ...config }));
+    writeFileSync(
+      join(topic, "slides.md"),
+      '---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n',
+    );
+    writeFileSync(join(courseDir, "modules", "m0-x", "l1-y", "doc.md"), "# ドキュメント\n");
+    writeFileSync(join(courseDir, "modules", "m0-x", "l1-y", "practice.md"), "# 演習\n");
+    return courseDir;
+  }
+
+  it("thumbnail.png があれば内容ハッシュ入りの R2 キーが付く", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-"));
+    try {
+      const courseDir = writeCourse(root, "demo-course", { tenantId: "ses" });
+      writeFileSync(join(courseDir, "thumbnail.png"), "fake-png-bytes");
+
+      const { courses } = buildContentManifest(root);
+      expect(courses[0].thumbnailPath).toMatch(
+        /^tenant\/ses\/courses\/demo-course\/thumbnail-[0-9a-f]{8}\.png$/,
+      );
+      // アップロード側と seed 側でキーがずれると 404 を配ることになる。
+      const [thumb] = collectCourseThumbnails(root);
+      expect(thumb.key).toBe(courses[0].thumbnailPath);
+      expect(thumb.contentType).toBe("image/png");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // 検査 (scripts/check_thumbnails.mjs) が受け入れる拡張子を manifest が拾わないと、
+  // CI は通るのに R2 にも D1 にも載らない画像ができる。両者の候補リストを縛る。
+  it("検査スクリプトと同じ拡張子をすべて拾う", () => {
+    const candidates = readFileSync(
+      join(import.meta.dirname, "..", "scripts", "check_thumbnails.mjs"),
+      "utf8",
+    ).match(/const CANDIDATES = \[([^\]]+)\]/)?.[1];
+    const names = [...(candidates ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(names.length).toBeGreaterThan(0);
+
+    for (const name of names) {
+      const root = mkdtempSync(join(tmpdir(), "manifest-thumb-ext-"));
+      try {
+        const courseDir = writeCourse(root, "demo-course");
+        writeFileSync(join(courseDir, name), "fake");
+        const [thumb] = collectCourseThumbnails(root);
+        expect(buildContentManifest(root).courses[0].thumbnailPath, name).toBe(thumb?.key);
+        const ext = name.slice(name.lastIndexOf("."));
+        expect(thumb?.key, name).toMatch(new RegExp(`/thumbnail-[0-9a-f]{8}\\${ext}$`));
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("キーは中身が変わると変わる (差し替えがキャッシュを跨がない)", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-hash-"));
+    try {
+      const courseDir = writeCourse(root, "demo-course");
+      writeFileSync(join(courseDir, "thumbnail.png"), "before");
+      const before = buildContentManifest(root).courses[0].thumbnailPath;
+      writeFileSync(join(courseDir, "thumbnail.png"), "after");
+      const after = buildContentManifest(root).courses[0].thumbnailPath;
+      expect(before).not.toBe(after);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // seed (export-seed-sql.ts) は教材コースを emitCourse("ses", ...) 固定で入れる。
+  // キーだけ別テナントを名乗ると、ses のコース行が他テナントのプレフィクスを指し、
+  // そのテナントの r2:orphans が配信中のサムネイルを孤児として消せてしまう。
+  it("R2 キーのテナントは seed と同じ ses に固定される", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-tenant-"));
+    try {
+      const courseDir = writeCourse(root, "demo-course", { tenantId: "ses" });
+      writeFileSync(join(courseDir, "thumbnail.webp"), "fake");
+      expect(buildContentManifest(root).courses[0].thumbnailPath).toContain("tenant/ses/");
+      expect(collectCourseThumbnails(root)[0].tenantId).toBe("ses");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("seed が扱えないテナントを course.json に書いたらビルドで落とす", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-tenant-ng-"));
+    try {
+      writeCourse(root, "demo-course", { tenantId: "coach" });
+      expect(() => buildContentManifest(root)).toThrow(/tenantId は "ses" のみ対応/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("画像が無ければ thumbnailPath は付かない (色のストライプ表示にフォールバック)", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-none-"));
+    try {
+      writeCourse(root, "demo-course");
+      expect(buildContentManifest(root).courses[0].thumbnailPath).toBeUndefined();
+      expect(collectCourseThumbnails(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("course.json の thumbnail が指すファイルが無ければビルドを落とす", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-missing-"));
+    try {
+      writeCourse(root, "demo-course", { thumbnail: "cover.png" });
+      expect(() => buildContentManifest(root)).toThrow(/thumbnail が指すファイルがありません/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("講座ディレクトリの外を指す thumbnail は拒否する", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-thumb-escape-"));
+    try {
+      writeCourse(root, "demo-course", { thumbnail: "../secret.png" });
+      expect(() => buildContentManifest(root)).toThrow(/相対パスにしてください/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

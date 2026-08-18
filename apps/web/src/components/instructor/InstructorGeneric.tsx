@@ -156,6 +156,7 @@ function InstructorCoursesPage({
     key: c.id,
     title: c.title,
     color: c.color,
+    thumbnailPath: c.thumbnailPath,
     lessonsCount: c.lessonsCount,
     statusLabel: c.completed ? "完了" : "公開中",
     statusVariant: (c.completed ? "success" : "accent") as "success" | "accent",
@@ -191,7 +192,7 @@ function InstructorCoursesPage({
                 )}
               >
                 <div className="relative">
-                  <CourseThumb color={c.color} />
+                  <CourseThumb color={c.color} thumbnailPath={c.thumbnailPath} />
                   <div className="absolute top-2.5 left-2.5">
                     <Badge variant={c.statusVariant}>{c.statusLabel}</Badge>
                   </div>

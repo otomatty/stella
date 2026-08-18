@@ -1,4 +1,11 @@
-export { assetPath, buildContentManifest, COURSE_SLUG, TENANT_ID } from "./manifest.js";
+export {
+  assetPath,
+  buildContentManifest,
+  collectCourseThumbnails,
+  COURSE_SLUG,
+  TENANT_ID,
+} from "./manifest.js";
+export type { CourseThumbnail } from "./manifest.js";
 export { parseQuiz } from "./parse-quiz.js";
 export { parseSlides } from "./parse-slides.js";
 export type { SlidesFrontMatter } from "./parse-slides.js";

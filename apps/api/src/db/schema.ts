@@ -125,6 +125,11 @@ export const courses = sqliteTable(
     title: text("title").notNull(),
     category: text("category"),
     color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
+    /**
+     * 一覧カードのサムネイル画像の R2 キー。教材リポジトリ (`packages/content`) の
+     * `courses/<slug>/thumbnail.*` を seed が書き込む。null ならストライプ表示。
+     */
+    thumbnailPath: text("thumbnail_path"),
     durationHours: integer("duration_hours"),
     description: text("description"),
     /** 講師表示名 (Issue #74)。 未設定 (null / 空) のコースは受講者 UI で講師を表示しない。 */

@@ -226,12 +226,13 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 # templates/topic-slides-template.md / doc-template.md / practice-template.md を配置してから本文を書く
 bun run --filter=@falcon/content check:ci
 bun run db:seed
-bun run --filter=@falcon/content upload     # 図解を足したとき
+bun run --filter=@falcon/content upload     # 図解・サムネイルをローカル R2 に入れる
 ```
 
 - 1 レッスンにつき `doc.md` と `practice.md` は**必須**（無いと manifest が落ちます）
 - 図解の正本は `assets/<名前>.html`、コミットするのは生成された `.svg`
-- 図解 SVG は seed ではなく R2。本番は `upload:remote` を別途実行
+- 図解 SVG と講座サムネイル (`courses/<slug>/thumbnail.webp`) は seed ではなく R2。どちらもデプロイに含まれるので `main` への push だけで反映される
+- 手元のコマンドはローカル R2 用（本番へ直接出すときだけ `upload:remote`）
 
 ---
 
@@ -328,5 +329,5 @@ bun run --filter=@falcon/content upload     # 図解を足したとき
 | クイズが「用語を覚えたか」だけになる | 到達目標が「理解する」で書かれている | 観測可能な動詞に書き換え、目標ごとに測る問題を作る |
 | コード演習を作れないと後で気づく | 言語が js / ts / sql 以外 | 要件段階で評価方法を確定する（STEP 2） |
 | 講座が完成しない | 初回から大型（100+ トピック）を狙った | 標準規模に切り、続編を別講座に分ける |
-| seed 後に図解が表示されない | R2 へのアップロードはデプロイに含まれない | `upload` / `upload:remote` を実行する |
+| seed 後に図解が表示されない | ローカル R2 に画像が入っていない (本番はデプロイが流す) | `bun run --filter=@falcon/content upload` を実行する |
 | 進捗が消えた | slug を変更した | slug は変えない。変えるなら移行を別途設計する |

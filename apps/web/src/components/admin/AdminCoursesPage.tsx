@@ -137,7 +137,7 @@ function CourseCard({ course, onEdit, onTogglePublish, onDelete }: CourseCardPro
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col">
       <div className="relative">
-        <CourseThumb color={color} />
+        <CourseThumb color={color} thumbnailPath={course.thumbnail_path} />
         <div className="absolute top-2.5 left-2.5">
           {course.status === "published" ? (
             <Badge variant="success">公開中</Badge>

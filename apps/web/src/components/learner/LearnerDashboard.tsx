@@ -293,7 +293,11 @@ export const LearnerDashboard = ({
               </CardHeader>
               <div className="grid gap-0 grid-cols-1 sm:grid-cols-[220px_1fr]">
                 <div className="relative border-r border-border">
-                  <CourseThumb color={current.color} label={current.category} />
+                  <CourseThumb
+                    color={current.color}
+                    label={current.category}
+                    thumbnailPath={current.thumbnailPath}
+                  />
                 </div>
                 <div className="p-4 pl-5">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">

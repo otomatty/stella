@@ -7,6 +7,8 @@
  * --check-only を渡すと Python を起動せず、Node だけで走る検査で打ち切る(CI 用)。
  *
  * 対象パスを省略すると courses/<slug>/modules 配下の全レッスンをビルドする。
+ * 全体ビルド時は check_thumbnails.mjs(講座サムネイルの寸法・容量の検査)も走る。
+ *
  * 4段構成: check_vocab.mjs(語彙台帳の検査)→ lint-skin.py(図解トークンの検査)→
  *           diagram_export.py(図解のSVG/PNG生成とはみ出し検査)→ build_pptx.py(python-pptxで再構築)
  */
@@ -124,7 +126,16 @@ const vocab = spawnSync(
 );
 if (vocab.status !== 0) process.exit(vocab.status ?? 1);
 
-// ここまでが Node だけで走る検査(画像リンク・スライド枚数・語彙台帳)。CI はここで打ち切る。
+// 講座サムネイルは講座単位 (modules の外) なので、対象を絞らない全体ビルドでだけ検査する。
+if (targets.length === 0) {
+  const thumbs = spawnSync("node", [join(ROOT, "scripts", "check_thumbnails.mjs")], {
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+  if (thumbs.status !== 0) process.exit(thumbs.status ?? 1);
+}
+
+// ここまでが Node だけで走る検査(画像リンク・スライド枚数・語彙台帳・サムネイル)。CI はここで打ち切る。
 if (process.argv.includes("--check-only")) process.exit(0);
 
 console.log(`${slides.length} 件のスライドを pptx でビルドします\n`);

@@ -99,6 +99,13 @@
       "when": 1786763929000,
       "tag": "0013_easy_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1787020788350,
+      "tag": "0014_lucky_shiver_man",
+      "breakpoints": true
     }
   ]
 }

@@ -30,7 +30,9 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **Stack:** Cloudflare D1 (DB) + Google OAuth + R2 (materials) + Workers Static Assets (frontend, migrated from Pages). See `docs/cloudflare-stack.md`.
 
-**Deploy:** GitHub Actions only — no manual `wrangler` deploys for the normal flow. `.github/workflows/ci.yml` gates PRs (lint/typecheck/test/build); `.github/workflows/deploy.yml` runs on push to `main` (gate → D1 migrate remote → D1 seed remote → deploy:api → deploy:web). Requires repo Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` and Variables `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`. See `docs/ci-cd.md`.
+**教材の画像:** 講座一覧カードのサムネイルは `packages/content/courses/<slug>/thumbnail.webp`（無ければ `course.json` の `color` のストライプ表示）、レッスンの図解は各トピックの `assets/*.svg`。どちらも `main` への push で R2 アップロード → seed まで自動で通る（手動 `upload:remote` は不要）。規格 (16:9 / 1600×900 推奨 / 400KB 以内) は `bun run content:check` が検査する。詳細は `packages/content/ADDING_COURSE.md`。
+
+**Deploy:** GitHub Actions only — no manual `wrangler` deploys for the normal flow. `.github/workflows/ci.yml` gates PRs (lint/typecheck/test/build); `.github/workflows/deploy.yml` runs on push to `main` (gate → D1 migrate remote → R2 教材画像アップロード(図解 SVG + サムネイル) → D1 seed remote → deploy:api → deploy:web). Requires repo Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` and Variables `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`. See `docs/ci-cd.md`.
 
 **DB setup (local):** `bun run db:migrate && bun run db:seed && bun run smoke:d1`
 

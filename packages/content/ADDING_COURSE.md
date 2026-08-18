@@ -15,18 +15,23 @@ packages/content/courses/<slug>/
         ├─ modules/**/slides.md / doc.md / practice.md
         │         └── seed (export-seed-sql) ──► D1: courses / sections / lessons / quizzes
         │
+        ├─ thumbnail.webp                （任意。一覧カードのサムネイル）
+        │         └── upload-materials ──► R2 ＋ seed ──► D1: courses.thumbnail_path
+        │
         └─ modules/**/assets/*.svg
                   └── upload-materials ──► R2
 ```
 
 - 本文は `bun run db:seed`（本番は `db:seed:remote:content`）で D1 に入る
-- 図解 SVG は `bun run --filter=@falcon/content upload`（本番は `upload:remote`）。デプロイには含まれない
+- 図解 SVG とサムネイルは `main` への push で自動反映（デプロイが seed の前に R2 へ流す）
+- ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を手で叩く
 - 受講者が見るには講師 / 管理者が enrollment する。本番 seed は Google ログインした本人を自動登録しない
 - `practice.md` の確認クイズだけが LMS の quiz になる。ハンズオン本文は Assignment 化されていない
 
 | ファイル | LMS |
 | --- | --- |
 | `course.json` | コース（タイトル・説明） |
+| `thumbnail.webp` / `.png` / `.jpg` | 一覧カードのサムネイル（任意） |
 | モジュールディレクトリ | セクション |
 | トピックの `slides.md` | レッスン（slides） |
 | `doc.md` | レッスン（text、まとめ） |
@@ -145,14 +150,36 @@ bun run --filter=@falcon/content materials -- courses/<slug>/modules
 
 ```bash
 bun run db:seed
-bun run --filter=@falcon/content upload    # 図解を足したとき
+bun run --filter=@falcon/content upload    # 図解・サムネイルをローカル R2 に入れる
 ```
 
 manifest が `courses/` を全部読むので、`course.json` を置いた講座は seed に載る。コードの COURSE_SLUG 固定は不要。ローカル seed は各講座に `seed-learner` を登録する。本番では受講者を LMS 上で割り当てる。
 
-図解を本番 R2 に出すときは `upload:remote` を別途実行する。
+本番 R2 への反映は `main` への push だけでよい（`.github/workflows/deploy.yml` の「Upload course materials」が図解・サムネイルの両方を seed の前に流す）。手元から本番へ直接出したいときだけ `upload:remote`。
 
-### 6. ドキュメント
+### 6. サムネイル（任意）
+
+講座ディレクトリ直下に `thumbnail.webp`（または `.png` / `.jpg`）を置くと、受講者・講師・管理の一覧カードがその画像になる。置かなければ `course.json` の `color` のストライプ表示のまま。
+
+```text
+packages/content/courses/<slug>/thumbnail.webp
+```
+
+| 項目 | 規格 |
+| --- | --- |
+| 縦横比 | 16:9（±2% まで許容） |
+| 推奨サイズ | 1600×900 |
+| 最低幅 | 800px |
+| 上限容量 | 400KB |
+| 形式 | `.webp`（推奨） / `.png` / `.jpg` |
+
+- 規格外は `bun run content:check` が落とす（`scripts/check_thumbnails.mjs`）
+- 別名にしたいときは `course.json` の `thumbnail` に講座ディレクトリからの相対パスを書く
+- R2 のキーは内容ハッシュ入り（`tenant/<tenantId>/courses/<slug>/thumbnail-<hash>.webp`）。差し替えれば URL ごと変わるので、CDN / ブラウザのキャッシュに阻まれない
+- 古い世代のオブジェクトは `bun run r2:orphans` の棚卸しに出る（参照されるのは最新の 1 件だけ）
+- 反映は `main` への push だけでよい。デプロイが R2 へ流してから seed が D1 を更新する
+
+### 7. ドキュメント
 
 - このファイルと [CLAUDE.md](CLAUDE.md) の「現在の状態」
 - リポジトリの `AGENTS.md`（seed されるコースの説明）

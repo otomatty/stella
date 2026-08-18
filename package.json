@@ -15,6 +15,8 @@
     "typecheck": "bun --filter '@falcon/*' typecheck && bun --filter informal typecheck",
     "test": "vitest run",
     "content:check": "bun run --filter=@falcon/content check:ci",
+    "content:upload:remote": "bun run --filter=@falcon/content upload:remote",
+    "content:upload:thumbnails:remote": "bun run --filter=@falcon/content upload:thumbnails:remote",
     "deploy:api": "bun run --filter=@falcon/api deploy",
     "deploy:web": "bun run build && bun run --filter=@falcon/web deploy",
     "smoke:d1": "bun run --filter=@falcon/api smoke",

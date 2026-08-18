@@ -47,6 +47,8 @@ export interface UpsertCourseInput {
   title: string;
   category?: string | null;
   color?: "indigo" | "green" | "amber" | "slate" | null;
+  /** サムネイル画像の R2 パス。 正本は教材リポジトリの seed。 */
+  thumbnail_path?: string | null;
   duration_hours?: number | null;
   description?: string | null;
   instructor_name?: string | null;

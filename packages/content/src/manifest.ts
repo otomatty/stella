@@ -11,8 +11,9 @@
  *   レッスンの practice.md 確認クイズ → Lesson (type: "quiz") + QuizSeed
  */
 
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.js";
@@ -30,6 +31,88 @@ const COURSE_COLORS = new Set<CourseColor>(["indigo", "green", "amber", "slate"]
 
 export function assetPath(courseSlug: string, topicDir: string, fileName: string): string {
   return `tenant/${TENANT_ID}/courses/${courseSlug}/assets/${topicDir}/${fileName}`;
+}
+
+/**
+ * course.json の thumbnail 省略時に探すファイル名（この順に採用する）。
+ *
+ * scripts/check_thumbnails.mjs の CANDIDATES と同じ並びに保つこと。検査だけが知っている
+ * 拡張子があると、CI は通るのに manifest が拾わず、無言でストライプ表示のままになる。
+ */
+const THUMBNAIL_CANDIDATES = [
+  "thumbnail.webp",
+  "thumbnail.png",
+  "thumbnail.jpg",
+  "thumbnail.jpeg",
+] as const;
+
+const THUMBNAIL_CONTENT_TYPES: Record<string, string> = {
+  ".webp": "image/webp",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+};
+
+/** 講座サムネイル 1 件。R2 のキーが D1 `courses.thumbnail_path` にそのまま入る。 */
+export interface CourseThumbnail {
+  slug: string;
+  tenantId: string;
+  /** リポジトリ内の実ファイル（絶対パス） */
+  sourceFile: string;
+  /** R2 キー。内容ハッシュ入りなので、差し替えると URL ごと変わりキャッシュを跨がない。 */
+  key: string;
+  contentType: string;
+}
+
+/**
+ * 講座ディレクトリ直下のサムネイルを解決する。
+ *
+ * キーに内容ハッシュを混ぜるのは、公開 R2 の URL が固定だと差し替えが CDN /
+ * ブラウザキャッシュに阻まれて反映されないため。古いキーのオブジェクトは
+ * `bun run r2:orphans` の棚卸しに出る（参照は最新の 1 件だけ）。
+ *
+ * テナントは assetPath() と同じ TENANT_ID を使う。seed (export-seed-sql.ts) が
+ * 教材コースを `emitCourse("ses", ...)` で固定して入れるので、キーだけ course.json の
+ * tenantId に従うと「ses のコース行が別テナントのプレフィクスを指す」状態になり、
+ * その別テナントの r2:orphans が配信中のサムネイルを孤児として消せてしまう。
+ */
+function resolveThumbnail(
+  courseDir: string,
+  slug: string,
+  config: CourseConfig & { tenantId: string },
+): CourseThumbnail | undefined {
+  const explicit = config.thumbnail?.trim();
+  if (explicit && (explicit.includes("..") || explicit.startsWith("/"))) {
+    throw new Error(
+      `courses/${slug}/course.json の thumbnail は講座ディレクトリ内の相対パスにしてください: ${explicit}`,
+    );
+  }
+  const candidates = explicit ? [explicit] : [...THUMBNAIL_CANDIDATES];
+  for (const rel of candidates) {
+    const file = join(courseDir, rel);
+    if (!existsSync(file)) continue;
+    const ext = extname(file).toLowerCase();
+    const contentType = THUMBNAIL_CONTENT_TYPES[ext];
+    if (!contentType) {
+      throw new Error(
+        `courses/${slug} のサムネイルは ${Object.keys(THUMBNAIL_CONTENT_TYPES).join(" / ")} のみ対応しています: ${rel}`,
+      );
+    }
+    const hash = createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 8);
+    return {
+      slug,
+      tenantId: TENANT_ID,
+      sourceFile: file,
+      key: `tenant/${TENANT_ID}/courses/${slug}/thumbnail-${hash}${ext}`,
+      contentType,
+    };
+  }
+  if (explicit) {
+    throw new Error(
+      `courses/${slug}/course.json の thumbnail が指すファイルがありません: ${explicit}`,
+    );
+  }
+  return undefined;
 }
 
 function dirsIn(path: string): string[] {
@@ -56,7 +139,15 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
   if (raw.color != null && !COURSE_COLORS.has(raw.color)) {
     throw new Error(`courses/${slug}/course.json の color が不正です: ${raw.color}`);
   }
-  return { ...raw, tenantId: raw.tenantId?.trim() || TENANT_ID };
+  const tenantId = raw.tenantId?.trim() || TENANT_ID;
+  // seed は教材コースを TENANT_ID 固定で入れる。ここだけ別テナントを名乗れると、
+  // コース行と R2 キーのテナントがずれる (どちらも黙って壊れる) ので先に落とす。
+  if (tenantId !== TENANT_ID) {
+    throw new Error(
+      `courses/${slug}/course.json の tenantId は "${TENANT_ID}" のみ対応しています: ${tenantId}`,
+    );
+  }
+  return { ...raw, tenantId };
 }
 
 /**
@@ -100,6 +191,7 @@ function lessonKey(topicIds: string[]): string {
 
 function buildOneCourse(
   slug: string,
+  courseDir: string,
   modulesRoot: string,
   config: CourseConfig & { tenantId: string },
 ): { course: Course; quizzes: QuizSeed[] } {
@@ -210,6 +302,7 @@ function buildOneCourse(
   }
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
+  const thumbnail = resolveThumbnail(courseDir, slug, config);
 
   return {
     course: {
@@ -220,6 +313,7 @@ function buildOneCourse(
       lessonsCount,
       progress: 0,
       description: config.description,
+      ...(thumbnail ? { thumbnailPath: thumbnail.key } : {}),
       sections,
     },
     quizzes,
@@ -237,10 +331,29 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
     const courseDir = join(coursesRoot, slug);
     const modulesRoot = join(courseDir, "modules");
     if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
-    const built = buildOneCourse(slug, modulesRoot, readCourseConfig(courseDir, slug));
+    const built = buildOneCourse(slug, courseDir, modulesRoot, readCourseConfig(courseDir, slug));
     courses.push(built.course);
     quizzes.push(...built.quizzes);
   }
 
   return { courses, quizzes };
+}
+
+/**
+ * 全講座のサムネイルを列挙する。R2 へ流す `upload-materials.ts` が使う。
+ *
+ * キーは buildContentManifest() が D1 に入れる `courses.thumbnail_path` と同じ
+ * 計算なので、seed とアップロードが同じコミットから走る限り必ず一致する。
+ */
+export function collectCourseThumbnails(
+  coursesRoot: string = defaultCoursesRoot(),
+): CourseThumbnail[] {
+  const thumbnails: CourseThumbnail[] = [];
+  for (const slug of dirsIn(coursesRoot)) {
+    const courseDir = join(coursesRoot, slug);
+    if (!existsSync(join(courseDir, "modules"))) continue;
+    const thumbnail = resolveThumbnail(courseDir, slug, readCourseConfig(courseDir, slug));
+    if (thumbnail) thumbnails.push(thumbnail);
+  }
+  return thumbnails;
 }

@@ -63,6 +63,11 @@ export interface Course {
   title: string;
   category: string;
   color: CourseColor;
+  /**
+   * 一覧カードのサムネイル画像の R2 パス (`courses.thumbnail_path` 由来)。
+   * 未設定なら color のストライプ表示にフォールバックする。
+   */
+  thumbnailPath?: string;
   duration?: number;
   lessonsCount: number;
   progress: number;

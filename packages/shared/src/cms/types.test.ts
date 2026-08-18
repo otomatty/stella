@@ -43,3 +43,23 @@ describe("mapCourseToUi — 講師名 (Issue #74)", () => {
     }
   });
 });
+
+describe("mapCourseToUi — サムネイル", () => {
+  it("thumbnail_path を thumbnailPath に載せる", () => {
+    const ui = mapCourseToUi(
+      withChildren(
+        courseRow({
+          thumbnail_path: "tenant/ses/courses/typescript-basics/thumbnail-abcd1234.webp",
+        }),
+      ),
+    );
+    expect(ui.thumbnailPath).toBe("tenant/ses/courses/typescript-basics/thumbnail-abcd1234.webp");
+  });
+
+  it("null / 空文字 / 未マイグレーション (undefined) では付けない (ストライプ表示のまま)", () => {
+    for (const value of [null, "", undefined]) {
+      const ui = mapCourseToUi(withChildren(courseRow({ thumbnail_path: value })));
+      expect("thumbnailPath" in ui).toBe(false);
+    }
+  });
+});

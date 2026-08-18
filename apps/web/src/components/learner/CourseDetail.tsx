@@ -189,7 +189,11 @@ export const CourseDetail = ({
         <div className="sticky top-[88px]">
           <Card className="mb-4">
             <div className="relative border-b border-border" style={{ aspectRatio: "16 / 10" }}>
-              <CourseThumb color={course.color} label={course.category} />
+              <CourseThumb
+                color={course.color}
+                label={course.category}
+                thumbnailPath={course.thumbnailPath}
+              />
             </div>
             <CardContent>
               <div className="text-[11.5px] text-ink-3 mb-2">あなたの進捗</div>

@@ -15,7 +15,9 @@
     "check": "node scripts/check_vocab.mjs",
     "check:ci": "node scripts/build.mjs --check-only",
     "upload": "bun run scripts/upload-materials.ts",
-    "upload:remote": "bun run scripts/upload-materials.ts --remote"
+    "upload:remote": "bun run scripts/upload-materials.ts --remote",
+    "upload:thumbnails": "bun run scripts/upload-materials.ts --thumbnails",
+    "upload:thumbnails:remote": "bun run scripts/upload-materials.ts --remote --thumbnails"
   },
   "devDependencies": {
     "typescript": "^7.0.2"

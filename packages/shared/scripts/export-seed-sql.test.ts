@@ -52,6 +52,13 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("tenant/ses/courses/typescript-basics/assets/");
   });
 
+  // サムネイルは courses.thumbnail_path が正本。列が upsert から落ちると、
+  // 画像を差し替えても D1 が古いキーを指したままになる。
+  it("courses の upsert は thumbnail_path を含む", () => {
+    expect(sql).toMatch(/insert into courses \([^)]*\bthumbnail_path\b[^)]*\)/);
+    expect(sql).toContain("thumbnail_path = excluded.thumbnail_path");
+  });
+
   it("quiz / quiz_questions / quiz_options を emit する", () => {
     expect(sql).toMatch(/insert into quizzes /);
     expect(sql).toMatch(/insert into quiz_questions /);

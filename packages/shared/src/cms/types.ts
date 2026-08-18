@@ -76,6 +76,11 @@ export interface CourseRow {
   title: string;
   category: string | null;
   color: CourseColor | null;
+  /**
+   * サムネイル画像の R2 パス。 列が未マイグレーションの環境では undefined になり得るため optional。
+   * 教材リポジトリの `courses/<slug>/thumbnail.*` を seed が書き込む。
+   */
+  thumbnail_path?: string | null;
   duration_hours: number | null;
   description: string | null;
   /**
@@ -552,6 +557,8 @@ export interface UiCourse {
   title: string;
   category: string;
   color: CourseColor;
+  /** サムネイル画像の R2 パス (`courses.thumbnail_path` 由来)。 未設定なら色のストライプ表示。 */
+  thumbnailPath?: string;
   duration?: number;
   lessonsCount: number;
   progress: number;
@@ -621,6 +628,7 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
     title: input.course.title,
     category: input.course.category ?? "",
     color: input.course.color ?? "indigo",
+    ...(input.course.thumbnail_path ? { thumbnailPath: input.course.thumbnail_path } : {}),
     ...(input.course.duration_hours != null ? { duration: input.course.duration_hours } : {}),
     lessonsCount,
     progress: 0,

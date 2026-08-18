@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 import { cn } from "@/lib/utils";
+import { getMaterialUrl, isStorageConfigured } from "@/lib/storage";
 import type { CourseColor } from "@/data/types";
 
 const colorClass: Record<CourseColor, string> = {
@@ -11,21 +14,54 @@ const colorClass: Record<CourseColor, string> = {
 interface CourseThumbProps {
   color?: CourseColor;
   label?: string;
+  /**
+   * サムネイル画像の R2 パス (`courses.thumbnail_path`)。 正本は教材リポジトリの
+   * `packages/content/courses/<slug>/thumbnail.*`。 未設定・ストレージ未設定・
+   * 読み込み失敗のいずれでも color のストライプ表示にフォールバックする。
+   */
+  thumbnailPath?: string | null;
   className?: string;
 }
 
-export const CourseThumb = ({ color = "indigo", label, className }: CourseThumbProps) => (
-  <div
-    className={cn(
-      "relative w-full aspect-[16/9] border-b border-border overflow-hidden",
-      className,
-    )}
-  >
-    <div className={cn("absolute inset-0", colorClass[color])} />
-    {label ? (
-      <div className="absolute inset-0 grid place-items-center text-ink-2 text-[11px] font-mono tracking-wider uppercase opacity-75">
-        {label}
-      </div>
-    ) : null}
-  </div>
-);
+export const CourseThumb = ({
+  color = "indigo",
+  label,
+  thumbnailPath,
+  className,
+}: CourseThumbProps) => {
+  // 失敗を boolean で持つと、同じインスタンスが別コースのパスを受け取ったとき
+  // (ダッシュボードの「受講中の講座」切り替えなど) に新しい画像を二度と試さなくなる。
+  // 落ちたパス自体を覚えて、そのパスのときだけフォールバックする。
+  const [failedPath, setFailedPath] = useState<string | null>(null);
+  // パスは内容ハッシュ入りなので、差し替えれば URL ごと変わる (キャッシュを跨がない)。
+  const src =
+    thumbnailPath && thumbnailPath !== failedPath && isStorageConfigured()
+      ? getMaterialUrl(thumbnailPath)
+      : null;
+
+  return (
+    <div
+      className={cn(
+        "relative w-full aspect-[16/9] border-b border-border overflow-hidden",
+        className,
+      )}
+    >
+      {/* 画像の読み込み前・失敗時の下地。 */}
+      <div className={cn("absolute inset-0", colorClass[color])} />
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailedPath(thumbnailPath ?? null)}
+        />
+      ) : label ? (
+        <div className="absolute inset-0 grid place-items-center text-ink-2 text-[11px] font-mono tracking-wider uppercase opacity-75">
+          {label}
+        </div>
+      ) : null}
+    </div>
+  );
+};

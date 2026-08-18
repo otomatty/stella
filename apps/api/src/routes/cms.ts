@@ -54,6 +54,7 @@ const courseToRow = (c: CourseSel) => ({
   title: c.title,
   category: c.category,
   color: c.color,
+  thumbnail_path: c.thumbnailPath,
   duration_hours: c.durationHours,
   description: c.description,
   instructor_name: c.instructorName,
@@ -316,6 +317,11 @@ cmsRoute.post("/api/cms/courses", async (c) => {
       title: String(input.title),
       category: (input.category as string | null) ?? null,
       color: (input.color as CourseSel["color"]) ?? null,
+      // サムネイルは教材リポジトリの seed が正本。 キーを送ってこないクライアント
+      // (旧 CMS 画面) の保存で消えないよう、 明示的に来たときだけ更新する。
+      ...("thumbnail_path" in input
+        ? { thumbnailPath: (input.thumbnail_path as string | null) ?? null }
+        : {}),
       durationHours: (input.duration_hours as number | null) ?? null,
       description: (input.description as string | null) ?? null,
       // 空文字は「未設定」 に正規化する (受講者 UI で講師欄を出さないため)。

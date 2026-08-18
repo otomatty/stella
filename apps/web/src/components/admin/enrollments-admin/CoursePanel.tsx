@@ -360,7 +360,7 @@ function CourseAssignRow({
       }
     >
       <div className="w-14 shrink-0 overflow-hidden rounded-sm border border-border">
-        <CourseThumb color={color} className="border-b-0" />
+        <CourseThumb color={color} thumbnailPath={course.thumbnail_path} className="border-b-0" />
       </div>
 
       <div className="min-w-0 flex-1">

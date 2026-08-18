@@ -78,7 +78,7 @@ export const CourseList = ({ setPage, courses, setCurrentCourse }: CourseListPro
               "flex flex-col cursor-pointer transition-colors hover:border-border-strong",
             )}
           >
-            <CourseThumb color={c.color} label={c.category} />
+            <CourseThumb color={c.color} label={c.category} thumbnailPath={c.thumbnailPath} />
             <div className="p-4 flex flex-col gap-2 flex-1">
               <div className="flex flex-wrap gap-1.5 items-center">
                 {c.completed ? (

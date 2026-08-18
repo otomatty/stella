@@ -44,6 +44,13 @@ jobs:
       - name: Apply D1 migrations (remote)
         run: bun run db:migrate:remote
 
+      # 教材画像 (図解 SVG + 講座サムネイル) を seed より先に R2 へ置く。
+      # 順序が逆だと、D1 がまだ存在しないオブジェクトを指す時間ができる。
+      # put は冪等なので毎回全件流す。並列 + リトライで 70 件程度なら 1 分前後。
+      # CLOUDFLARE_API_TOKEN には「Workers R2 Storage: Edit」権限が要る。
+      - name: Upload course materials (figures + thumbnails) to R2 (remote)
+        run: bun run content:upload:remote
+
       - name: Seed D1 content (remote)
         run: bun run db:seed:remote:content
 

@@ -12,14 +12,15 @@
  * 安全側の設計:
  *   - テナント管理者以上のみ。 走査も削除も `tenant/<callerTenant>/` 配下に限定する。
  *   - 参照は「配布資料 (lesson_materials.path)」だけでなく
- *     「レッスンの動画 / スライド (lessons.video_path / pdf_path)」も数える。
- *     ここを漏らすと配信中の教材を消してしまう。
+ *     「レッスンの動画 / スライド (lessons.video_path / pdf_path)」「レッスン本文
+ *     (lessons.markdown) が埋め込む画像」「講座サムネイル (courses.thumbnail_path)」も数える。
+ *     ここを漏らすと配信中の教材を消してしまう (教材の図解 SVG は本文からしか参照されない)。
  *   - 削除は棚卸しで返ったパスを呼び出し側が明示的に渡した場合のみ。 削除直前に
  *     参照有無を取り直し、 その間に参照が復活したパスはスキップする。
  */
 
 import { Hono } from "hono";
-import { and, eq, isNotNull, or } from "drizzle-orm";
+import { and, eq, gt, isNotNull, like, or } from "drizzle-orm";
 
 import { courses, lessonMaterials, lessons, sections } from "../db/schema.js";
 import { errorResponse, getCaller, requireTenantAdmin, ApiError } from "../lib/authz.js";
@@ -44,9 +45,56 @@ function requireBucket(env: Env): NonNullable<Env["MATERIALS_BUCKET"]> {
   return bucket;
 }
 
+/** 本文 1 回のスキャンで読むレッスン数。 markdown は 1 行が大きいので小分けにする。 */
+const MARKDOWN_PAGE = 100;
+
+/** 正規表現に埋める前にメタ文字を殺す (tenantId は DB 由来の任意文字列)。 */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * レッスン本文 (`lessons.markdown`) から R2 パスを拾う。
+ *
+ * 教材の図解 SVG は lesson_materials でも video_path / pdf_path でもなく、
+ * 本文の `![alt](tenant/<tenantId>/courses/...)` としてだけ参照される。 ここを見ないと
+ * 配信中の図解が丸ごと孤児判定になり、 掃除で消えてしまう。
+ */
+async function markdownReferencedPaths(db: Db, tenantId: string, into: Set<string>): Promise<void> {
+  const pattern = new RegExp(`tenant/${escapeRegExp(tenantId)}/[^\\s)"'<>\\]]+`, "g");
+  // ページングは主キーの keyset で行う。 LIMIT/OFFSET は ORDER BY が無いと
+  // ページ間の順序が保証されず、 取りこぼした 1 行が唯一の参照元だった画像は
+  // 孤児として消せてしまう (削除直前の取り直しも同じ穴を通る)。
+  let lastId = "";
+  for (;;) {
+    const rows = await db
+      .select({ id: lessons.id, markdown: lessons.markdown })
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .innerJoin(courses, eq(courses.id, sections.courseId))
+      .where(
+        and(
+          eq(courses.tenantId, tenantId),
+          isNotNull(lessons.markdown),
+          like(lessons.markdown, `%tenant/${tenantId}/%`),
+          gt(lessons.id, lastId),
+        ),
+      )
+      .orderBy(lessons.id)
+      .limit(MARKDOWN_PAGE);
+
+    if (rows.length === 0) return;
+    for (const row of rows) {
+      for (const match of (row.markdown ?? "").matchAll(pattern)) into.add(match[0]);
+    }
+    lastId = rows[rows.length - 1]?.id ?? lastId;
+    if (rows.length < MARKDOWN_PAGE) return;
+  }
+}
+
 /**
  * テナント配下で「参照されている」R2 パスを集める。
- * 配布資料 + レッスンの動画 / スライドの両方を対象にする。
+ * 配布資料 + レッスンの動画 / スライド + 本文中の画像 + コースのサムネイルを対象にする。
  */
 async function referencedPaths(db: Db, tenantId: string): Promise<Set<string>> {
   const materialRows = await db
@@ -69,12 +117,23 @@ async function referencedPaths(db: Db, tenantId: string): Promise<Set<string>> {
       ),
     );
 
+  // 講座サムネイル (courses.thumbnail_path)。 キーが内容ハッシュ入りなので、
+  // 差し替え前の世代は参照から外れ、 棚卸しに孤児として出る (掃除して良い)。
+  const thumbnailRows = await db
+    .select({ path: courses.thumbnailPath })
+    .from(courses)
+    .where(and(eq(courses.tenantId, tenantId), isNotNull(courses.thumbnailPath)));
+
   const set = new Set<string>();
   for (const r of materialRows) set.add(r.path);
+  for (const r of thumbnailRows) {
+    if (r.path) set.add(r.path);
+  }
   for (const r of lessonRows) {
     if (r.videoPath) set.add(r.videoPath);
     if (r.pdfPath) set.add(r.pdfPath);
   }
+  await markdownReferencedPaths(db, tenantId, set);
   return set;
 }
 
