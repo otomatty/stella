@@ -14,7 +14,6 @@ function EnrollmentsPage() {
       <AdminEnrollmentsPage
         key={s.tenantId}
         tenantId={s.tenantId}
-        currentUserId={s.currentUserId}
         backendEnabled={s.backendEnabled}
       />
     </RoleGuard>

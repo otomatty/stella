@@ -26,6 +26,8 @@ const LABELS = {
   enrollment_create: "受講登録",
   enrollment_update: "受講登録の更新",
   enrollment_delete: "受講登録の解除",
+  enrollment_bulk_create: "受講登録の一括割当",
+  enrollment_bulk_delete: "受講登録の一括解除",
   // 修了証 (#26)
   certificate_issue: "修了証発行",
   // 組織マスタ (#29)

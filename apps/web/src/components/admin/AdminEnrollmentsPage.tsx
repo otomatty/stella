@@ -1,8 +1,14 @@
 /**
- * `/admin/enrollments` — 受講登録 (Issue #20)。
+ * `/enrollments` — 受講登録 (Issue #20)。
  *
- * 管理者がコースを選び、 同テナントの受講者に対し割当 / 解除 / 期限・必須の設定を行う。
- * 割当は RLS 配下で enrollments テーブルへ直接 write する (service-role API は不要)。
+ * 操作の順序は「① 受講生を選ぶ → ② 割り当てる教材を選ぶ」。 左ペインで受講生を 1 名 (行クリック)
+ * または複数名 (チェックボックス) 選び、 右ペインでその受講生に教材を割り当て / 解除する。
+ * 1 名選択時は期限 / 必須をその場で編集でき、 複数名選択時は「何名に割当済みか」を見ながら
+ * まとめて操作する。
+ *
+ * データ取得は 2 本に分ける。 受講者一覧のバッジは件数サマリ (`/api/enrollments/summary`)、
+ * 右ペインの割当状況は選択中の受講者ぶんの enrollment だけを取る。 テナント全件を取ると
+ * 受講者数 × コース数に比例して応答が膨らむため。
  *
  * バックエンド未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
  */
@@ -10,361 +16,386 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CalendarClock, Download, UserPlus, X } from "@/lib/icons";
+import { Download } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import type { AvatarTone } from "@/data/types";
-import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
+import type { CourseRow, EnrollmentRow } from "@falcon/shared/cms/types";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { useProfiles } from "@/hooks/useProfiles";
-import { useCourseEnrollments } from "@/hooks/useEnrollments";
-import { RoleBadge } from "./users-admin/shared";
-import { assignEnrollment, removeEnrollment, updateEnrollment } from "@/lib/enrollments-api";
+import { useEnrollmentSummaries, useUsersEnrollments } from "@/hooks/useEnrollments";
+import type { AdminProfileRow } from "@/lib/admin-users-api";
+import {
+  type BulkEnrollmentResult,
+  bulkAssignEnrollments,
+  bulkRemoveEnrollments,
+  listEnrollmentsForUsers,
+  mapWithConcurrency,
+  updateEnrollment,
+} from "@/lib/enrollments-api";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { ROLE_LABEL } from "./users-admin/shared";
+import { LearnerPanel } from "./enrollments-admin/LearnerPanel";
+import { BULK_BUSY_KEY, CoursePanel } from "./enrollments-admin/CoursePanel";
+import {
+  ENROLLMENT_STATUS_LABEL,
+  type CourseFilter,
+  type LearnerFilter,
+  fromDateInput,
+  indexEnrollments,
+} from "./enrollments-admin/shared";
 
-const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
-
-/** enrollment ステータスを日本語の表示語にする。 */
-const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
-  active: "受講中",
-  completed: "完了",
-  expired: "期限切れ",
-};
-
-function toneFromId(id: string): AvatarTone {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h + id.charCodeAt(i)) % AVATAR_TONES.length;
-  return AVATAR_TONES[h] ?? "c1";
-}
-
-/** timestamptz → <input type="date"> 用 (YYYY-MM-DD)。 */
-function toDateInput(iso: string | null): string {
-  return iso ? iso.slice(0, 10) : "";
-}
-
-/** <input type="date"> の値 → timestamptz (UTC 0 時)。 空なら null。 */
-function fromDateInput(value: string): string | null {
-  if (!value) return null;
-  const d = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
+/**
+ * CSV に出せる行数の上限 (受講者 × 教材)。
+ *
+ * 全受講者を対象にすると行数がテナント規模 × 教材数で増える。 ブラウザ側で行配列と
+ * CSV 文字列を二重に持つため、 上限を超える指定は出力せず対象を絞ってもらう。
+ */
+const MAX_CSV_ROWS = 20_000;
 
 interface Props {
   tenantId: string;
-  currentUserId: string | null;
   backendEnabled: boolean;
 }
 
-export function AdminEnrollmentsPage({ tenantId, currentUserId, backendEnabled }: Props) {
+export function AdminEnrollmentsPage({ tenantId, backendEnabled }: Props) {
   if (!backendEnabled) {
     return <EnrollmentsDemoNotice />;
   }
-  return <EnrollmentsLive tenantId={tenantId} currentUserId={currentUserId} />;
+  return <EnrollmentsLive tenantId={tenantId} />;
 }
 
-function EnrollmentsLive({
-  tenantId,
-  currentUserId,
-}: {
-  tenantId: string;
-  currentUserId: string | null;
-}) {
+function EnrollmentsLive({ tenantId }: { tenantId: string }) {
   const { courses, loading: coursesLoading } = useCmsCourses(tenantId);
-  const { profiles } = useProfiles(tenantId);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const { profiles, loading: profilesLoading, error: profilesError } = useProfiles(tenantId);
+  const {
+    summaries,
+    error: summariesError,
+    refetch: refetchSummaries,
+  } = useEnrollmentSummaries(tenantId);
 
-  const courseId = selectedCourseId ?? courses[0]?.id ?? null;
-  const selectedCourse = courses.find((c) => c.id === courseId) ?? null;
-  const { enrollments, refetch } = useCourseEnrollments(courseId);
+  const [learnerFilter, setLearnerFilter] = useState<LearnerFilter>("student");
+  const [learnerQuery, setLearnerQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [courseQuery, setCourseQuery] = useState("");
+  const [courseFilter, setCourseFilter] = useState<CourseFilter>("all");
+  const [defaultDue, setDefaultDue] = useState("");
+  const [defaultRequired, setDefaultRequired] = useState(true);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  // 受講者 (student) は一括割当 / CSV の対象。 無効化ユーザーは除外する。
-  const learners = useMemo(
+  const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
+  const {
+    enrollments,
+    loading: enrollmentsLoading,
+    error: enrollmentsError,
+    refetch: refetchEnrollments,
+  } = useUsersEnrollments(selectedIdList);
+
+  // 受講者 (student) が割当の主対象。 無効化ユーザーは除外する。
+  const students = useMemo(
     () => profiles.filter((p) => p.role === "student" && !p.disabled),
     [profiles],
   );
-  // staff も個別割当だけは許す。 受講者シェルは enrollment ベースなので、 講師 / 管理者が
-  // 受講者画面を自分で確認するには受講登録が要る。 一括割当 / CSV には含めない。
-  const staffMembers = useMemo(
+  // スタッフ (講師 / 管理者) も割当対象に残す。 受講者シェルは enrollment ベースなので、
+  // 講師 / 管理者が受講者画面を自分で確認するには受講登録が要る。
+  const staff = useMemo(
     () => profiles.filter((p) => p.role !== "student" && !p.disabled),
     [profiles],
   );
-  const assignable = useMemo(() => [...learners, ...staffMembers], [learners, staffMembers]);
 
-  const enrollmentByUser = useMemo(() => {
-    const map = new Map<string, EnrollmentRow>();
-    for (const e of enrollments) map.set(e.user_id, e);
+  const profileById = useMemo(() => {
+    const map = new Map<string, AdminProfileRow>();
+    for (const p of [...students, ...staff]) map.set(p.id, p);
     return map;
-  }, [enrollments]);
+  }, [students, staff]);
 
-  const withBusy = async (id: string, fn: () => Promise<void>) => {
-    setBusyId(id);
+  const enrollmentIndex = useMemo(() => indexEnrollments(enrollments), [enrollments]);
+
+  // 割当状況が確定していない間 (取得中 / 取得失敗) は、 未割当と区別が付かない。
+  // この状態で割当を通すと既存の登録まで upsert され、 期限 / 必須が既定値に戻る。
+  const enrollmentsReady = !enrollmentsLoading && enrollmentsError === null;
+
+  // 選択解除済み / 無効化されたユーザーが残らないよう profile 側と突き合わせる。
+  const selectedProfiles = useMemo(
+    () =>
+      [...selectedIds]
+        .map((id) => profileById.get(id))
+        .filter((p): p is AdminProfileRow => p !== undefined),
+    [selectedIds, profileById],
+  );
+
+  const withBusy = async (key: string, fn: () => Promise<void>) => {
+    setBusyKey(key);
     try {
       await fn();
-      await refetch();
+      // 右ペインの割当状況と、 左ペインの件数バッジの両方を取り直す。
+      await Promise.all([refetchEnrollments(), refetchSummaries()]);
     } catch (err) {
       toast.error(`処理に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
     } finally {
-      setBusyId(null);
+      setBusyKey(null);
     }
   };
 
-  const onAssign = (userId: string) =>
-    withBusy(userId, async () => {
-      if (!courseId) return;
-      await assignEnrollment({
-        tenantId,
-        userId,
-        courseId,
-        assignedBy: currentUserId,
-        required: true,
-      });
+  const selectOnly = (userId: string) => setSelectedIds(new Set([userId]));
+
+  const toggleSelected = (userId: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
     });
 
-  const onRemove = (enrollment: EnrollmentRow) =>
-    withBusy(enrollment.user_id, () => removeEnrollment(enrollment.id));
+  const setVisibleSelected = (userIds: string[], selected: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of userIds) {
+        if (selected) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
 
-  const onChangeDue = (enrollment: EnrollmentRow, value: string) =>
-    withBusy(enrollment.user_id, () =>
+  /** 一括 API の結果を 1 本のトーストにする (部分失敗も落とさず伝える)。 */
+  const reportBulk = (result: BulkEnrollmentResult, done: string) => {
+    if (result.errors.length > 0) {
+      const failed = `${result.errors.length} 件のリクエストが失敗しました: ${result.errors[0]}`;
+      toast.error(`${done.replace("{n}", String(result.applied))} — ${failed}`);
+      return;
+    }
+    toast.success(done.replace("{n}", String(result.applied)));
+  };
+
+  /** 選択中の受講生のうち、 そのコースが未割当の人へまとめて割り当てる。 */
+  const assignCourse = (courseId: string) => {
+    if (!enrollmentsReady) return;
+    const targets = selectedProfiles.filter((p) => !enrollmentIndex.get(p.id)?.has(courseId));
+    if (targets.length === 0) return;
+    void withBusy(courseId, async () => {
+      const result = await bulkAssignEnrollments({
+        userIds: targets.map((p) => p.id),
+        courseIds: [courseId],
+        dueAt: fromDateInput(defaultDue),
+        required: defaultRequired,
+      });
+      reportBulk(result, `${courseTitle(courses, courseId)} を {n} 名に割り当てました`);
+    });
+  };
+
+  /** 選択中の受講生からそのコースの割当を外す。 */
+  const unassignCourse = (courseId: string) => {
+    const targets = selectedProfiles.filter((p) => enrollmentIndex.get(p.id)?.has(courseId));
+    if (targets.length === 0) return;
+    void withBusy(courseId, async () => {
+      const result = await bulkRemoveEnrollments({
+        userIds: targets.map((p) => p.id),
+        courseIds: [courseId],
+      });
+      reportBulk(result, `${courseTitle(courses, courseId)} の割当を {n} 件解除しました`);
+    });
+  };
+
+  /** 表示中の教材を、 選択中の受講生の未割当ぶんだけまとめて割り当てる。 */
+  const assignVisibleCourses = (courseIds: string[]) => {
+    if (!enrollmentsReady) return;
+    // 既に割当済みの組は upsert で期限 / 必須が既定値に戻ってしまうため送らない。
+    // 受講者ごとに未割当のコースが違うので、 同じ未割当集合の受講者をまとめて 1 リクエストにする。
+    const byMissing = new Map<string, { courseIds: string[]; userIds: string[] }>();
+    let pairs = 0;
+    for (const p of selectedProfiles) {
+      const missing = courseIds.filter((id) => !enrollmentIndex.get(p.id)?.has(id));
+      if (missing.length === 0) continue;
+      pairs += missing.length;
+      const key = missing.join(",");
+      const group = byMissing.get(key) ?? { courseIds: missing, userIds: [] };
+      group.userIds.push(p.id);
+      byMissing.set(key, group);
+    }
+    if (pairs === 0) {
+      toast("未割当の組み合わせはありません");
+      return;
+    }
+    void withBusy(BULK_BUSY_KEY, async () => {
+      // 未割当集合が受講生ごとに違うとグループ数が受講生数まで増えるため、
+      // 同時に走るリクエストを絞る (各グループ内のチャンクは元から直列)。
+      const results = await mapWithConcurrency([...byMissing.values()], (group) =>
+        bulkAssignEnrollments({
+          userIds: group.userIds,
+          courseIds: group.courseIds,
+          dueAt: fromDateInput(defaultDue),
+          required: defaultRequired,
+        }),
+      );
+      reportBulk(
+        {
+          applied: results.reduce((n, r) => n + r.applied, 0),
+          errors: results.flatMap((r) => r.errors),
+        },
+        "{n} 件の割当を追加しました",
+      );
+    });
+  };
+
+  const changeDue = (enrollment: EnrollmentRow, value: string) =>
+    void withBusy(enrollment.course_id, () =>
       updateEnrollment(enrollment.id, { due_at: fromDateInput(value) }),
     );
 
-  const onToggleRequired = (enrollment: EnrollmentRow) =>
-    withBusy(enrollment.user_id, () =>
+  const toggleRequired = (enrollment: EnrollmentRow) =>
+    void withBusy(enrollment.course_id, () =>
       updateEnrollment(enrollment.id, { required: !enrollment.required }),
     );
 
-  const onAssignAll = () => {
-    if (!courseId) return;
-    const targets = learners.filter((l) => !enrollmentByUser.has(l.id));
-    if (targets.length === 0) {
-      toast("未割当の受講者はいません");
+  /**
+   * 受講者 × 教材の割当マトリクスを CSV にする (選択中がいればその受講生ぶんだけ)。
+   *
+   * 画面が持っているのは選択中の受講者ぶんだけなので、 出力対象の enrollment はここで
+   * 取り直す (サーバ側の上限に合わせて分割リクエストになる)。
+   */
+  const onExport = async () => {
+    const targets = exportTargets;
+    if (targets.length === 0 || courses.length === 0) return;
+    // 受講者 × 教材の全組を 1 度にメモリへ載せるので、 行数に上限を設ける。
+    // 超える場合は黙って切り詰めず、 対象を絞ってもらう。
+    const rowCount = targets.length * courses.length;
+    if (rowCount > MAX_CSV_ROWS) {
+      toast.error(
+        `出力対象が多すぎます (${rowCount.toLocaleString()} 行)。` +
+          ` 受講生を選ぶか教材を整理して、 ${MAX_CSV_ROWS.toLocaleString()} 行以内にしてください`,
+      );
       return;
     }
-    void withBusy("__all__", async () => {
-      // 受講者数に比例して直列リクエストにならないよう並列で投げる。
-      await Promise.all(
-        targets.map((l) =>
-          assignEnrollment({
-            tenantId,
-            userId: l.id,
-            courseId,
-            assignedBy: currentUserId,
-            required: true,
-          }),
-        ),
-      );
-      toast.success(`${targets.length} 名に割り当てました`);
-    });
-  };
-
-  const assignedCount = enrollmentByUser.size;
-
-  const onExport = () => {
-    if (learners.length === 0) return;
-    const headers = ["受講者", "割当", "受講状態", "期限", "必須", "登録日"];
-    const rows = learners.map((p) => {
-      const e = enrollmentByUser.get(p.id);
-      return [
-        p.display_name,
-        e ? "割当済み" : "未割当",
-        e ? (ENROLLMENT_STATUS_LABEL[e.status] ?? e.status) : "—",
-        e?.due_at ? e.due_at.slice(0, 10) : "",
-        e ? (e.required ? "必須" : "任意") : "",
-        e?.enrolled_at ? e.enrolled_at.slice(0, 10) : "",
-      ];
-    });
+    setExporting(true);
+    let index: typeof enrollmentIndex;
+    try {
+      index = indexEnrollments(await listEnrollmentsForUsers(targets.map((p) => p.id)));
+    } catch (err) {
+      toast.error(`出力に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
+      return;
+    } finally {
+      setExporting(false);
+    }
+    const headers = [
+      "受講者",
+      "メール",
+      "ロール",
+      "教材",
+      "割当",
+      "受講状態",
+      "期限",
+      "必須",
+      "登録日",
+    ];
+    const rows = targets.flatMap((p) =>
+      courses.map((course) => {
+        const e = index.get(p.id)?.get(course.id);
+        return [
+          p.display_name,
+          p.email ?? "",
+          ROLE_LABEL[p.role],
+          course.title,
+          e ? "割当済み" : "未割当",
+          e ? (ENROLLMENT_STATUS_LABEL[e.status] ?? e.status) : "—",
+          e?.due_at ? e.due_at.slice(0, 10) : "",
+          e ? (e.required ? "必須" : "任意") : "",
+          e?.enrolled_at ? e.enrolled_at.slice(0, 10) : "",
+        ];
+      }),
+    );
     const stamp = new Date().toISOString().slice(0, 10);
-    const safeTitle = (selectedCourse?.title ?? "course")
-      .replace(/[^\p{L}\p{N}_-]+/gu, "_")
-      .slice(0, 40);
-    downloadCsv(`enrollments-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
+    downloadCsv(`enrollments-${stamp}.csv`, toCsv(headers, rows));
     toast.success("受講状況を出力しました");
   };
+
+  const error = profilesError ?? summariesError;
+
+  // スタッフ (講師 / 管理者) は自己確認用の割当。 まとめて選んだときに気付けるよう数える。
+  const staffSelectedCount = selectedProfiles.filter((p) => p.role !== "student").length;
+
+  // CSV の出力対象。 選択があればその受講生、 なければ受講者全員。
+  // ボタンの活性条件と出力処理で同じ判断を使う (スタッフだけ選んだ場合も出力できる)。
+  const exportTargets = selectedProfiles.length > 0 ? selectedProfiles : students;
 
   return (
     <>
       <PageHeader
         title="受講登録"
-        sub="受講者へのコース割当 · 期限 / 必須の設定"
+        sub="受講生を選んでから、 割り当てる教材を決めます"
         actions={
-          <>
-            <Button disabled={!courseId || learners.length === 0} onClick={onExport}>
-              <Download size={14} />
-              CSV出力
-            </Button>
-            <Button
-              variant="accent"
-              disabled={!courseId || learners.length === 0 || busyId !== null}
-              onClick={onAssignAll}
-            >
-              <UserPlus size={14} />
-              全受講者に割当
-            </Button>
-          </>
+          <Button
+            disabled={courses.length === 0 || exportTargets.length === 0 || exporting}
+            onClick={() => void onExport()}
+          >
+            <Download size={14} />
+            CSV出力
+          </Button>
         }
       />
 
-      <Card className="mb-4">
-        <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
-          <label htmlFor="enr-course" className="text-[12.5px] text-ink-3">
-            コース
-          </label>
-          <select
-            id="enr-course"
-            value={courseId ?? ""}
-            onChange={(e) => setSelectedCourseId(e.target.value)}
-            disabled={coursesLoading || courses.length === 0}
-            className="h-9 w-full sm:w-auto sm:min-w-[260px] rounded-sm border border-input bg-card px-3 text-sm"
-          >
-            {courses.length === 0 ? (
-              <option value="">コースがありません</option>
-            ) : (
-              courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                  {c.status !== "published" ? "（非公開）" : ""}
-                </option>
-              ))
-            )}
-          </select>
-          {selectedCourse && selectedCourse.status !== "published" ? (
-            <span className="text-[11.5px] text-warning">
-              ※ 非公開コースのため、 割り当てても受講者には表示されません
-            </span>
-          ) : null}
-          <span className="ml-auto text-[12.5px] text-ink-3">
-            割当済み <strong className="text-foreground">{assignedCount}</strong> / 受講者{" "}
-            {learners.length} 名
-          </span>
+      {error ? (
+        <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
+          {error}
         </div>
-      </Card>
+      ) : null}
 
-      <Card className="overflow-hidden">
-        {courses.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">まずコースを作成してください。</div>
-        ) : assignable.length === 0 ? (
-          <div className="py-10 text-center text-sm text-ink-3">
-            割当可能な受講者がいません。 「ユーザー管理」 から招待してください。
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>受講者</TableHead>
-                <TableHead>状態</TableHead>
-                <TableHead>期限</TableHead>
-                <TableHead>必須</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assignable.map((p) => {
-                const enrollment = enrollmentByUser.get(p.id);
-                const busy = busyId === p.id || busyId === "__all__";
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar size="sm">
-                          <AvatarFallback tone={toneFromId(p.id)}>
-                            {(p.initials ?? p.display_name.slice(0, 1)).slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{p.display_name}</span>
-                        {p.role !== "student" ? <RoleBadge role={p.role} /> : null}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {enrollment ? (
-                        <Badge variant="success">割当済み</Badge>
-                      ) : (
-                        <Badge>未割当</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enrollment ? (
-                        <div className="flex items-center gap-1.5 text-ink-3">
-                          <CalendarClock size={13} />
-                          <input
-                            type="date"
-                            value={toDateInput(enrollment.due_at)}
-                            disabled={busy}
-                            onChange={(e) => void onChangeDue(enrollment, e.target.value)}
-                            className="h-8 rounded-sm border border-input bg-card px-2 text-[12.5px]"
-                          />
-                        </div>
-                      ) : (
-                        <span className="text-ink-4 text-[12.5px]">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enrollment ? (
-                        <label className="flex items-center gap-1.5 text-[12.5px] cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={enrollment.required}
-                            disabled={busy}
-                            onChange={() => void onToggleRequired(enrollment)}
-                          />
-                          {enrollment.required ? "必須" : "任意"}
-                        </label>
-                      ) : (
-                        <span className="text-ink-4 text-[12.5px]">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        {enrollment ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => void onRemove(enrollment)}
-                            className="text-destructive"
-                          >
-                            <X size={13} />
-                            解除
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="accent"
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => void onAssign(p.id)}
-                          >
-                            <UserPlus size={13} />
-                            割当
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <LearnerPanel
+          students={students}
+          staff={staff}
+          filter={learnerFilter}
+          onChangeFilter={setLearnerFilter}
+          query={learnerQuery}
+          onChangeQuery={setLearnerQuery}
+          selectedIds={selectedIds}
+          onSelectOnly={selectOnly}
+          onToggle={toggleSelected}
+          onSetVisibleSelected={setVisibleSelected}
+          summaries={summaries}
+          courseCount={courses.length}
+          loading={profilesLoading}
+        />
+
+        <CoursePanel
+          courses={courses}
+          coursesLoading={coursesLoading}
+          selectedProfiles={selectedProfiles}
+          staffSelectedCount={staffSelectedCount}
+          enrollmentIndex={enrollmentIndex}
+          enrollmentsLoading={enrollmentsLoading}
+          enrollmentsError={enrollmentsError}
+          onRetryEnrollments={() => void refetchEnrollments()}
+          query={courseQuery}
+          onChangeQuery={setCourseQuery}
+          filter={courseFilter}
+          onChangeFilter={setCourseFilter}
+          defaultDue={defaultDue}
+          onChangeDefaultDue={setDefaultDue}
+          defaultRequired={defaultRequired}
+          onChangeDefaultRequired={setDefaultRequired}
+          busyKey={busyKey}
+          onAssign={assignCourse}
+          onUnassign={unassignCourse}
+          onAssignVisible={assignVisibleCourses}
+          onChangeDue={changeDue}
+          onToggleRequired={toggleRequired}
+          onClearSelection={() => setSelectedIds(new Set())}
+          onDeselect={toggleSelected}
+        />
+      </div>
     </>
   );
+}
+
+/** トーストに出す教材名 (見つからなければ既定文言)。 */
+function courseTitle(courses: CourseRow[], courseId: string): string {
+  return courses.find((c) => c.id === courseId)?.title ?? "教材";
 }
 
 function EnrollmentsDemoNotice() {
   return (
     <>
-      <PageHeader title="受講登録" sub="受講者へのコース割当 · 期限 / 必須の設定" />
+      <PageHeader title="受講登録" sub="受講生を選んでから、 割り当てる教材を決めます" />
       <div className="rounded-md border border-border bg-sunken px-3 py-2 text-[12.5px] text-ink-3">
         バックエンド (Neon) 未接続のため受講登録は利用できません。 受講者へのコース割当を行うには
         <code className="mx-1">VITE_SERVER_URL</code>
