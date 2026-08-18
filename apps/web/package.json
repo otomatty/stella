@@ -50,7 +50,7 @@
     "react-pdf": "^9",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
-    "sonner": "^1.7.4",
+    "sonner": "^2.0.8",
     "sql.js": "^1.14.2",
     "tailwind-merge": "^3.0.1"
   },
