@@ -28,6 +28,11 @@ const LABELS = {
   enrollment_delete: "受講登録の解除",
   enrollment_bulk_create: "受講登録の一括割当",
   enrollment_bulk_delete: "受講登録の一括解除",
+  // 割当プリセット
+  enrollment_preset_create: "割当プリセットの作成",
+  enrollment_preset_update: "割当プリセットの更新",
+  enrollment_preset_delete: "割当プリセットの削除",
+  enrollment_preset_apply: "割当プリセットの適用",
   // 修了証 (#26)
   certificate_issue: "修了証発行",
   // 組織マスタ (#29)

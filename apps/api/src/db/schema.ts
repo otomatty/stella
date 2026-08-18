@@ -7,6 +7,7 @@
  * 認可は Hono アプリ層 (`lib/authz.ts`) で行う。
  */
 
+import { sql } from "drizzle-orm";
 import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const uuid = () =>
@@ -375,11 +376,102 @@ export const enrollments = sqliteTable(
     status: text("status", { enum: ["active", "completed", "expired"] })
       .notNull()
       .default("active"),
+    /**
+     * この登録を **作った** 割当プリセット (`enrollment_presets.id`)。 手動割当なら null。
+     *
+     * 記録するのは出自であって 「今の期限 / 必須がプリセット由来か」 ではない。 あとから期限を
+     * 手で直しても消さない。 消してしまうと 「このプリセットで登録した受講生」 の集合が
+     * 個別調整のたびに欠け、 差分適用 (プリセットに後から足した教材を適用済みの受講生へ配る)
+     * の足場が崩れるため。 画面のバッジもこの意味で表示する。
+     *
+     * FK は張らない: プリセット側は物理削除せず `archived` で退役させる運用なので参照は切れず、
+     * 実データの入った `enrollments` を FK 追加のためにテーブル再作成したくないため。
+     */
+    presetId: text("preset_id"),
+    /**
+     * `preset_id` のプリセットでこの登録が作られた時刻。
+     *
+     * あとから別のプリセットを被せても、 手で期限を直しても更新しない。 「今の値の出どころ」
+     * ではなく出自を表す列なので、 上書きすると `preset_id` と意味がずれる。
+     */
+    presetAppliedAt: ts("preset_applied_at"),
     enrolledAt: tsNow("enrolled_at"),
     completedAt: ts("completed_at"),
   },
   (t) => ({
     userCourseUnique: uniqueIndex("enrollments_user_course_uq").on(t.userId, t.courseId),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 割当プリセット (受講登録のテンプレート)
+// ---------------------------------------------------------------
+
+/**
+ * 「新入社員パック」 のように、 受講登録の組み合わせに名前を付けて保存したもの。
+ *
+ * 適用は 「その場で enrollments へ展開して終わり」 のスナップショット方式。 プリセットを
+ * あとから編集しても、 適用済みの受講登録は追随しない (差分適用は `enrollments.preset_id`
+ * を手掛かりに後から足せる)。 動的グループにすると、 教材を外したときの伝播や個別に
+ * 伸ばした期限の扱いが一気に増えるため、 まずは展開して切り離す。
+ */
+export const enrollmentPresets = sqliteTable(
+  "enrollment_presets",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    /**
+     * 退役フラグ。 使用中のプリセットを物理削除すると監査ログの `preset_id` が
+     * 参照先を失うため、 削除 API はこの列を立てるだけにする。
+     */
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    createdBy: text("created_by"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    // 同じ名前が並ぶと適用時に選び間違えるため、 テナント内で一意にする。
+    //
+    // ただし **退役していないものに限る** 部分インデックスにする。 削除は `archived` を立てる
+    // 論理削除なので、 無条件の一意制約だと消した名前が永久に予約され、 同じ名前で作り直せない
+    // (画面上は削除したのに 409 になる)。
+    tenantNameUnique: uniqueIndex("enrollment_presets_tenant_name_uq")
+      .on(t.tenantId, t.name)
+      .where(sql`${t.archived} = 0`),
+  }),
+);
+
+/**
+ * プリセットに含まれる教材 1 件。
+ *
+ * 期限は絶対日付ではなく `due_offset_days` (基準日からの日数) で持つ。 絶対日付を焼き込むと
+ * 4 月に作ったプリセットが 7 月には腐り、 適用のたびに手で直すことになる。
+ */
+export const enrollmentPresetItems = sqliteTable(
+  "enrollment_preset_items",
+  {
+    id: uuid(),
+    presetId: text("preset_id")
+      .notNull()
+      .references(() => enrollmentPresets.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    required: integer("required", { mode: "boolean" }).notNull().default(true),
+    /** 基準日からの日数。 null なら期限なし。 */
+    dueOffsetDays: integer("due_offset_days"),
+    /** 表示順 (学習してほしい順序の意図を残す)。 */
+    order: integer("order").notNull().default(0),
+  },
+  (t) => ({
+    presetCourseUnique: uniqueIndex("enrollment_preset_items_preset_course_uq").on(
+      t.presetId,
+      t.courseId,
+    ),
   }),
 );
 
@@ -619,6 +711,8 @@ export const APP_TABLES = [
   "quiz_options",
   "quiz_attempts",
   "enrollments",
+  "enrollment_presets",
+  "enrollment_preset_items",
   "announcements",
   "notifications",
   "submissions",

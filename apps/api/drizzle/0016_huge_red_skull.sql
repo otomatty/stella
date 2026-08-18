@@ -1,0 +1,2 @@
+DROP INDEX `enrollment_presets_tenant_name_uq`;--> statement-breakpoint
+CREATE UNIQUE INDEX `enrollment_presets_tenant_name_uq` ON `enrollment_presets` (`tenant_id`,`name`) WHERE "enrollment_presets"."archived" = 0;

@@ -33,6 +33,11 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import {
+  MAX_ARCHIVED_PRESETS_IN_AUDIT,
+  archiveEmptiedPresetsStatement,
+  touchPresetsContainingCourseStatement,
+} from "../lib/enrollment-presets.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -401,7 +406,18 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
       c.env,
       lessonRows.map((l) => l.id),
     );
-    await db.delete(courses).where(eq(courses.id, id));
+    // 教材が消えると割当プリセットの項目も cascade で消える。 最後の 1 件だった場合は
+    // 「適用すれば必ず失敗する空のプリセット」 が残るため、 同じトランザクションで退役させる。
+    // 別々に流すと、 教材の削除だけ確定して退役が失敗したとき、 再実行しても教材はもう無い
+    // (404) ので直せず、 空のプリセットが恒久的に残る。
+    const [, , archivedPresets] = await db.batch([
+      // 版を進めるのは削除より前。 削除後は cascade で項目が消え、 影響を受けたプリセットを
+      // 引けなくなる。 項目が減っただけのプリセットも 「内容が変わった」 ので版を進める
+      // (適用中の分割送信が、 約束どおり 409 で止まるようにする)。
+      touchPresetsContainingCourseStatement(db, caller.tenantId, id),
+      db.delete(courses).where(eq(courses.id, id)),
+      archiveEmptiedPresetsStatement(db, caller.tenantId),
+    ]);
     // 削除後は行が消えるため、 タイトル等は削除前に取った値を残す。
     await recordAudit(db, caller, {
       action: "course_delete",
@@ -413,6 +429,16 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
         slug: info.slug,
         status: info.status,
         lesson_count: lessonRows.length,
+        // 巻き添えで畳んだプリセットは黙って消さず、 監査から辿れるようにする。
+        // 1 行が膨らみすぎないよう件数は丸める (全件は退役状態そのものが記録になる)。
+        ...(archivedPresets.length > 0
+          ? {
+              archived_presets: archivedPresets
+                .slice(0, MAX_ARCHIVED_PRESETS_IN_AUDIT)
+                .map((p) => ({ id: p.id, name: p.name })),
+              archived_preset_count: archivedPresets.length,
+            }
+          : {}),
       },
     });
     return c.json({ ok: true });

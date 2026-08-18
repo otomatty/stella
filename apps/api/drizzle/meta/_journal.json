@@ -106,6 +106,20 @@
       "when": 1787020788350,
       "tag": "0014_lucky_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1787026472572,
+      "tag": "0015_sturdy_gravity",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1787031137747,
+      "tag": "0016_huge_red_skull",
+      "breakpoints": true
     }
   ]
 }

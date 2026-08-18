@@ -10,19 +10,25 @@
  * 右ペインの割当状況は選択中の受講者ぶんの enrollment だけを取る。 テナント全件を取ると
  * 受講者数 × コース数に比例して応答が膨らむため。
  *
+ * 「割当プリセット」 タブでは、 よく使う教材の組み合わせに名前を付けて保存できる。 プリセットの
+ * 期限は絶対日付ではなく基準日からの日数で持ち、 適用時に基準日 (入社日 / 研修開始日) を
+ * 選んで実際の日付に展開する。 詳しくは `@falcon/shared/enrollment/preset`。
+ *
  * バックエンド未設定時 (dev fixtures フロー): 操作不可の案内のみ表示する。
  */
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Download } from "@/lib/icons";
+import { ClipboardList, Download, Users } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import type { CourseRow, EnrollmentRow } from "@falcon/shared/cms/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { CourseRow, EnrollmentRow, ProfileRole } from "@falcon/shared/cms/types";
 import { useCmsCourses } from "@/hooks/useCmsCourses";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useEnrollmentSummaries, useUsersEnrollments } from "@/hooks/useEnrollments";
+import { useEnrollmentPresets } from "@/hooks/useEnrollmentPresets";
 import type { AdminProfileRow } from "@/lib/admin-users-api";
 import {
   type BulkEnrollmentResult,
@@ -36,6 +42,8 @@ import { downloadCsv, toCsv } from "@/lib/csv";
 import { ROLE_LABEL } from "./users-admin/shared";
 import { LearnerPanel } from "./enrollments-admin/LearnerPanel";
 import { BULK_BUSY_KEY, CoursePanel } from "./enrollments-admin/CoursePanel";
+import { PresetApplyDialog } from "./enrollments-admin/PresetApplyDialog";
+import { PresetPanel } from "./enrollments-admin/PresetPanel";
 import {
   ENROLLMENT_STATUS_LABEL,
   type CourseFilter,
@@ -55,16 +63,24 @@ const MAX_CSV_ROWS = 20_000;
 interface Props {
   tenantId: string;
   backendEnabled: boolean;
+  /** プリセットの定義を編集できるのは admin 以上 (サーバ側の認可と揃える)。 */
+  profileRole?: ProfileRole;
 }
 
-export function AdminEnrollmentsPage({ tenantId, backendEnabled }: Props) {
+export function AdminEnrollmentsPage({ tenantId, backendEnabled, profileRole }: Props) {
   if (!backendEnabled) {
     return <EnrollmentsDemoNotice />;
   }
-  return <EnrollmentsLive tenantId={tenantId} />;
+  return <EnrollmentsLive tenantId={tenantId} profileRole={profileRole} />;
 }
 
-function EnrollmentsLive({ tenantId }: { tenantId: string }) {
+function EnrollmentsLive({
+  tenantId,
+  profileRole,
+}: {
+  tenantId: string;
+  profileRole?: ProfileRole;
+}) {
   const { courses, loading: coursesLoading } = useCmsCourses(tenantId);
   const { profiles, loading: profilesLoading, error: profilesError } = useProfiles(tenantId);
   const {
@@ -82,6 +98,20 @@ function EnrollmentsLive({ tenantId }: { tenantId: string }) {
   const [defaultRequired, setDefaultRequired] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false);
+  const [tab, setTab] = useState("assign");
+
+  const {
+    presets,
+    loading: presetsLoading,
+    error: presetsError,
+    refetch: refetchPresets,
+  } = useEnrollmentPresets(tenantId);
+  // プリセットの定義はサーバ側でも admin 以上に限っている。 UI もそれに合わせ、
+  // 講師には一覧と適用だけ見せる。
+  const canEditPresets = profileRole === "admin" || profileRole === "platform_admin";
+  // 退役したプリセット由来の登録は名前を引けないので、 行側で既定文言に落とす。
+  const presetNameById = useMemo(() => new Map(presets.map((p) => [p.id, p.name])), [presets]);
 
   const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
   const {
@@ -194,6 +224,11 @@ function EnrollmentsLive({ tenantId }: { tenantId: string }) {
       });
       reportBulk(result, `${courseTitle(courses, courseId)} の割当を {n} 件解除しました`);
     });
+  };
+
+  /** プリセット適用後に、 右ペインの割当状況と左ペインの件数バッジを取り直す。 */
+  const onPresetApplied = async () => {
+    await Promise.all([refetchEnrollments(), refetchSummaries()]);
   };
 
   /** 表示中の教材を、 選択中の受講生の未割当ぶんだけまとめて割り当てる。 */
@@ -339,50 +374,87 @@ function EnrollmentsLive({ tenantId }: { tenantId: string }) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <LearnerPanel
-          students={students}
-          staff={staff}
-          filter={learnerFilter}
-          onChangeFilter={setLearnerFilter}
-          query={learnerQuery}
-          onChangeQuery={setLearnerQuery}
-          selectedIds={selectedIds}
-          onSelectOnly={selectOnly}
-          onToggle={toggleSelected}
-          onSetVisibleSelected={setVisibleSelected}
-          summaries={summaries}
-          courseCount={courses.length}
-          loading={profilesLoading}
-        />
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="assign" icon={<Users />}>
+            受講生に割り当てる
+          </TabsTrigger>
+          <TabsTrigger value="presets" icon={<ClipboardList />} count={presets.length}>
+            割当プリセット
+          </TabsTrigger>
+        </TabsList>
 
-        <CoursePanel
-          courses={courses}
-          coursesLoading={coursesLoading}
-          selectedProfiles={selectedProfiles}
-          staffSelectedCount={staffSelectedCount}
-          enrollmentIndex={enrollmentIndex}
-          enrollmentsLoading={enrollmentsLoading}
-          enrollmentsError={enrollmentsError}
-          onRetryEnrollments={() => void refetchEnrollments()}
-          query={courseQuery}
-          onChangeQuery={setCourseQuery}
-          filter={courseFilter}
-          onChangeFilter={setCourseFilter}
-          defaultDue={defaultDue}
-          onChangeDefaultDue={setDefaultDue}
-          defaultRequired={defaultRequired}
-          onChangeDefaultRequired={setDefaultRequired}
-          busyKey={busyKey}
-          onAssign={assignCourse}
-          onUnassign={unassignCourse}
-          onAssignVisible={assignVisibleCourses}
-          onChangeDue={changeDue}
-          onToggleRequired={toggleRequired}
-          onClearSelection={() => setSelectedIds(new Set())}
-          onDeselect={toggleSelected}
-        />
-      </div>
+        <TabsContent value="presets">
+          <PresetPanel
+            presets={presets}
+            loading={presetsLoading}
+            error={presetsError}
+            courses={courses}
+            canEdit={canEditPresets}
+            onChanged={refetchPresets}
+          />
+        </TabsContent>
+
+        <TabsContent value="assign">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <LearnerPanel
+              students={students}
+              staff={staff}
+              filter={learnerFilter}
+              onChangeFilter={setLearnerFilter}
+              query={learnerQuery}
+              onChangeQuery={setLearnerQuery}
+              selectedIds={selectedIds}
+              onSelectOnly={selectOnly}
+              onToggle={toggleSelected}
+              onSetVisibleSelected={setVisibleSelected}
+              summaries={summaries}
+              courseCount={courses.length}
+              loading={profilesLoading}
+            />
+
+            <CoursePanel
+              courses={courses}
+              coursesLoading={coursesLoading}
+              selectedProfiles={selectedProfiles}
+              staffSelectedCount={staffSelectedCount}
+              enrollmentIndex={enrollmentIndex}
+              enrollmentsLoading={enrollmentsLoading}
+              enrollmentsError={enrollmentsError}
+              onRetryEnrollments={() => void refetchEnrollments()}
+              query={courseQuery}
+              onChangeQuery={setCourseQuery}
+              filter={courseFilter}
+              onChangeFilter={setCourseFilter}
+              defaultDue={defaultDue}
+              onChangeDefaultDue={setDefaultDue}
+              defaultRequired={defaultRequired}
+              onChangeDefaultRequired={setDefaultRequired}
+              busyKey={busyKey}
+              onAssign={assignCourse}
+              onUnassign={unassignCourse}
+              onAssignVisible={assignVisibleCourses}
+              onChangeDue={changeDue}
+              onToggleRequired={toggleRequired}
+              onClearSelection={() => setSelectedIds(new Set())}
+              onDeselect={toggleSelected}
+              presetNameById={presetNameById}
+              presetCount={presets.length}
+              onOpenPresets={() => setPresetDialogOpen(true)}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <PresetApplyDialog
+        open={presetDialogOpen}
+        onOpenChange={setPresetDialogOpen}
+        presets={presets}
+        presetsLoading={presetsLoading}
+        courses={courses}
+        selectedProfiles={selectedProfiles}
+        onApplied={onPresetApplied}
+      />
     </>
   );
 }

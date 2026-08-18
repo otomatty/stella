@@ -37,6 +37,7 @@
     "./vscode/exercise-paths": "./src/vscode/exercise-paths.ts",
     "./search/types": "./src/search/types.ts",
     "./enrollment/access": "./src/enrollment/access.ts",
+    "./enrollment/preset": "./src/enrollment/preset.ts",
     "./interview/types": "./src/interview/types.ts",
     "./interview/questions": "./src/interview/questions.ts",
     "./interview/filter": "./src/interview/filter.ts"

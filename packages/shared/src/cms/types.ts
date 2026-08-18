@@ -285,6 +285,9 @@ export interface EnrollmentRow {
   due_at: string | null;
   required: boolean;
   status: EnrollmentStatus;
+  /** この登録を作った割当プリセット (`enrollment_presets.id`)。 手動割当なら null。 */
+  preset_id: string | null;
+  preset_applied_at: string | null;
   enrolled_at: string;
   completed_at: string | null;
 }

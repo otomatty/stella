@@ -7,7 +7,7 @@
 
 import { useMemo } from "react";
 
-import { Book, CalendarClock, Check, UserPlus, Users, X } from "@/lib/icons";
+import { Book, CalendarClock, Check, ClipboardList, UserPlus, Users, X } from "@/lib/icons";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,12 @@ interface Props {
   onToggleRequired: (enrollment: EnrollmentRow) => void;
   onClearSelection: () => void;
   onDeselect: (userId: string) => void;
+  /** プリセット id → 名前。 プリセット由来の登録にバッジを出すために使う。 */
+  presetNameById: Map<string, string>;
+  /** 定義済みの割当プリセット数。 0 件ならボタンを出さない。 */
+  presetCount: number;
+  /** プリセット適用ダイアログを開く。 */
+  onOpenPresets: () => void;
 }
 
 export function CoursePanel(props: Props) {
@@ -95,6 +101,9 @@ export function CoursePanel(props: Props) {
     onToggleRequired,
     onClearSelection,
     onDeselect,
+    presetNameById,
+    presetCount,
+    onOpenPresets,
   } = props;
 
   const single = selectedProfiles.length === 1 ? selectedProfiles[0] : null;
@@ -257,6 +266,12 @@ export function CoursePanel(props: Props) {
             />
             必須にする
           </label>
+          {presetCount > 0 ? (
+            <Button variant="outline" size="sm" disabled={bulkBusy} onClick={onOpenPresets}>
+              <ClipboardList size={13} />
+              プリセットを適用
+            </Button>
+          ) : null}
           <Button
             variant="accent"
             size="sm"
@@ -304,6 +319,7 @@ export function CoursePanel(props: Props) {
               busy={busyKey === course.id || busyKey === BULK_BUSY_KEY}
               disabled={busyKey !== null}
               today={today}
+              presetNameById={presetNameById}
               onAssign={() => onAssign(course.id)}
               onUnassign={() => onUnassign(course.id)}
               onChangeDue={onChangeDue}
@@ -327,6 +343,8 @@ interface RowProps {
   disabled: boolean;
   /** 期限超過の判定に使う今日の日付 (YYYY-MM-DD)。 */
   today: string;
+  /** プリセット id → 名前 (退役済み / 削除済みは引けないので既定文言にする)。 */
+  presetNameById: Map<string, string>;
   onAssign: () => void;
   onUnassign: () => void;
   onChangeDue: (enrollment: EnrollmentRow, value: string) => void;
@@ -342,6 +360,7 @@ function CourseAssignRow({
   busy,
   disabled,
   today,
+  presetNameById,
   onAssign,
   onUnassign,
   onChangeDue,
@@ -385,6 +404,19 @@ function CourseAssignRow({
                 <Check size={11} />
                 {ENROLLMENT_STATUS_LABEL[enrollment.status] ?? enrollment.status}
               </Badge>
+              {enrollment.preset_id ? (
+                // バッジは 「どのプリセットで登録されたか」 (出自) を表す。 その後に期限や必須を
+                // 手で直しても残るので、 現在の値の出どころと取り違えないよう補足を出す。
+                <Badge
+                  variant="accent"
+                  title={`この受講登録は割当プリセット「${
+                    presetNameById.get(enrollment.preset_id) ?? "(削除済み)"
+                  }」から作成されました。 その後の期限 / 必須の手動変更は反映されません。`}
+                >
+                  <ClipboardList size={11} />
+                  {presetNameById.get(enrollment.preset_id) ?? "プリセット"}
+                </Badge>
+              ) : null}
               <div className="flex items-center gap-1.5 text-ink-3">
                 <CalendarClock size={13} />
                 <input

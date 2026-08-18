@@ -29,6 +29,7 @@ import {
 import type { ProfileRole } from "@falcon/shared/cms/types";
 import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@falcon/shared/admin/types";
 import { useProfiles } from "@/hooks/useProfiles";
+import { useEnrollmentPresets } from "@/hooks/useEnrollmentPresets";
 import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
 
 import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
@@ -80,6 +81,9 @@ function UsersAdminLive({
   currentUserRole: ProfileRole | null;
 }) {
   const { profiles, loading, error, refetch } = useProfiles(tenantId);
+  // 招待と同時に教材を割り当てられるよう、 プリセットを読んでダイアログへ渡す。
+  // 取得に失敗した場合は空配列 = 割当欄を出さないだけで、 招待自体は使える。
+  const { presets } = useEnrollmentPresets(tenantId);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<ProfileRole | "all">("all");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -282,12 +286,14 @@ function UsersAdminLive({
       </Card>
 
       <InviteDialog
+        presets={presets}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         tenantName={tenantName}
         onInvited={refetch}
       />
       <CsvInviteDialog
+        presets={presets}
         open={csvOpen}
         onOpenChange={setCsvOpen}
         tenantName={tenantName}

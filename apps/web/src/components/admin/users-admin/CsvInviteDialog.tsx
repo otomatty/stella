@@ -1,6 +1,9 @@
 /**
  * CSV 一括招待ダイアログ。 `email, 表示名, ロール` 形式 (1 行 1 名) を
  * ファイル選択または貼り付けで受け取り、 一括招待する。
+ *
+ * 割当プリセットを選ぶと、 招待が通った人へまとめて教材を割り当てる。 招待は行ごとに
+ * 部分成功しうるので、 割当対象は成功した userId だけに絞る。
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -18,11 +21,21 @@ import {
 } from "@/components/ui/dialog";
 import { parseInviteCsv } from "@falcon/shared/admin/parse-invite-csv";
 import { inviteUsers } from "@/lib/admin-users-api";
+import { todayDateKey } from "@/lib/date-keys";
+import type { EnrollmentPresetWithItems } from "@falcon/shared/enrollment/preset";
+
+import {
+  InvitePresetFields,
+  type InvitePresetState,
+  applyPresetToInvited,
+} from "./InvitePresetFields";
 
 interface CsvInviteDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   tenantName: string;
+  /** 招待と同時に割り当てられるプリセット。 空配列なら選択欄自体を出さない。 */
+  presets: EnrollmentPresetWithItems[];
   onInvited: () => Promise<void> | void;
 }
 
@@ -30,9 +43,14 @@ export function CsvInviteDialog({
   open,
   onOpenChange,
   tenantName,
+  presets,
   onInvited,
 }: CsvInviteDialogProps) {
   const [text, setText] = useState("");
+  const [preset, setPreset] = useState<InvitePresetState>({
+    presetId: "",
+    baseDate: todayDateKey(),
+  });
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -52,10 +70,28 @@ export function CsvInviteDialog({
     setSubmitting(true);
     try {
       const res = await inviteUsers(parsed.rows);
-      const ok = res.results.filter((r) => r.ok).length;
+      const succeeded = res.results.filter((r) => r.ok);
+      const ok = succeeded.length;
       const failed = res.results.filter((r) => !r.ok);
       if (ok > 0) {
         toast.success(`${ok} 件を招待しました`);
+      }
+
+      // 招待に成功した人だけへ割り当てる。 割当が失敗しても招待は巻き戻さない。
+      const selected = presets.find((p) => p.id === preset.presetId);
+      const invitedIds = succeeded
+        .map((r) => r.userId)
+        .filter((id): id is string => typeof id === "string");
+      if (selected && invitedIds.length > 0) {
+        try {
+          const applied = await applyPresetToInvited(selected, preset.baseDate, invitedIds);
+          if (applied.ok) toast.success(applied.message);
+          else toast.error(applied.message);
+        } catch (err) {
+          toast.error(
+            `招待は成功しましたが教材の割当に失敗しました: ${err instanceof Error ? err.message : "unknown"}`,
+          );
+        }
       }
       if (failed.length > 0) {
         toast.error(
@@ -68,6 +104,7 @@ export function CsvInviteDialog({
       await onInvited();
       if (failed.length === 0) {
         setText("");
+        setPreset({ presetId: "", baseDate: todayDateKey() });
         onOpenChange(false);
       }
     } catch (err) {
@@ -126,6 +163,13 @@ export function CsvInviteDialog({
               ))}
             </div>
           ) : null}
+          <InvitePresetFields
+            presets={presets}
+            value={preset}
+            onChange={setPreset}
+            disabled={submitting}
+            idPrefix="csv-inv"
+          />
         </div>
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

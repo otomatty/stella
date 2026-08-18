@@ -9,9 +9,19 @@
 import { Hono } from "hono";
 import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
-import { courses, enrollments, profiles } from "../db/schema.js";
+import { enrollments } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import {
+  D1_MAX_BOUND_PARAMS,
+  MAX_COURSE_IDS,
+  MAX_PAIRS,
+  MAX_USER_IDS,
+  assertTenantTargets,
+  chunk,
+  rowsPerInsert,
+  uniqueIds,
+} from "../lib/enrollment-bulk.js";
 import type { Env } from "../env.js";
 
 export const enrollmentsRoute = new Hono<{ Bindings: Env }>();
@@ -25,6 +35,10 @@ const SELECT = {
   due_at: enrollments.dueAt,
   required: enrollments.required,
   status: enrollments.status,
+  // 割当プリセット由来の登録は出所を持つ (手動割当は null)。 画面が 「どのプリセットで
+  // 入った登録か」 を出せるよう一覧にも含める。
+  preset_id: enrollments.presetId,
+  preset_applied_at: enrollments.presetAppliedAt,
   enrolled_at: enrollments.enrolledAt,
   completed_at: enrollments.completedAt,
 } as const;
@@ -40,43 +54,6 @@ function parseTimestamp(value: string | null | undefined, field: string): Date |
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) throw new ApiError(`${field} の日時が不正です`, 400);
   return date;
-}
-
-/**
- * 割当対象の受講者 / コースが caller と同テナントに実在することを確かめる。
- *
- * enrollments の外部キーは 「存在するか」 しか見ず、 テナントは見ない。 検証せずに insert すると、
- * 他テナントの受講者 / コースを指す行を自テナントの tenant_id で作れてしまい、
- * 受講者本人の一覧 (`/api/enrollments/mine` は user_id だけで引く) に他テナントのコースが出る。
- * また (user_id, course_id) はグローバルに一意なので、 他テナントの既存登録の期限 / 必須を
- * upsert で書き換えられてしまう。
- */
-async function assertTenantTargets(
-  db: Awaited<ReturnType<typeof getCaller>>["db"],
-  tenantId: string,
-  userIds: string[],
-  courseIds: string[],
-): Promise<void> {
-  if (userIds.length > 0) {
-    const rows = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(and(eq(profiles.tenantId, tenantId), inArray(profiles.id, userIds)));
-    const found = new Set(rows.map((row) => row.id));
-    if (userIds.some((id) => !found.has(id))) {
-      throw new ApiError("同じテナントに存在しない受講者が含まれています", 403);
-    }
-  }
-  if (courseIds.length > 0) {
-    const rows = await db
-      .select({ id: courses.id })
-      .from(courses)
-      .where(and(eq(courses.tenantId, tenantId), inArray(courses.id, courseIds)));
-    const found = new Set(rows.map((row) => row.id));
-    if (courseIds.some((id) => !found.has(id))) {
-      throw new ApiError("同じテナントに存在しないコースが含まれています", 403);
-    }
-  }
 }
 
 /** 受講者本人の enrollment 一覧 (登録日昇順)。 */
@@ -137,9 +114,6 @@ enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
     return errorResponse(c, err);
   }
 });
-
-/** `userIds` に渡せる受講者 id の上限。 1 リクエストの応答量を抑えるためのガード。 */
-const MAX_USER_IDS = 50;
 
 /**
  * staff: enrollment 一覧 (常に同テナントに限定)。
@@ -229,43 +203,6 @@ enrollmentsRoute.post("/api/enrollments", async (c) => {
     return errorResponse(c, err);
   }
 });
-
-/** 1 リクエストで扱える コース id の上限。 */
-const MAX_COURSE_IDS = 50;
-/** 1 リクエストで扱える 受講者 × コース の組み合わせ上限。 */
-const MAX_PAIRS = 500;
-/**
- * D1 の 1 クエリあたりのバインド変数上限。 これを超えると
- * `D1_ERROR: too many SQL variables` で失敗するため、 SQL 文をこの範囲に分けて batch で流す。
- */
-const D1_MAX_BOUND_PARAMS = 100;
-/**
- * 1 文に載せられる upsert 行数を、 実際に組み立てた SQL のバインド数から求める。
- *
- * 列を数え上げるとズレる (`id` / `enrolled_at` は `$defaultFn` のため、 スキーマ上は既定値でも
- * 値がバインドされる)。 1 行版と 2 行版のバインド数の差を 1 行あたりのコストとして測り、
- * 残りを固定オーバーヘッド (SET 句) とみなす。 スキーマに列が増えても自動で追随する。
- */
-function rowsPerInsert(build: (rows: number) => { toSQL: () => { params: unknown[] } }): number {
-  const one = build(1).toSQL().params.length;
-  const two = build(2).toSQL().params.length;
-  const perRow = Math.max(1, two - one);
-  const overhead = Math.max(0, one - perRow);
-  return Math.max(1, Math.floor((D1_MAX_BOUND_PARAMS - overhead) / perRow));
-}
-
-/** 配列を `size` 件ずつに分ける。 */
-function chunk<T>(items: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += Math.max(1, size)) out.push(items.slice(i, i + size));
-  return out;
-}
-
-/** カンマ区切り / 配列いずれでも受け取り、 空要素を落として重複を除く。 */
-function uniqueIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((v): v is string => typeof v === "string" && v.trim() !== ""))];
-}
 
 /**
  * staff: 受講者 × コースをまとめて割当 / 解除する (Issue #20 / 受講登録画面の一括操作)。

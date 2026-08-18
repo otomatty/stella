@@ -1,5 +1,8 @@
 /**
  * 招待ダイアログ (単体)。 email / 表示名 / ロールを指定して 1 名を招待する。
+ *
+ * 割当プリセットを選ぶと、 招待が通った直後にその教材をまとめて割り当てる
+ * (「入社 → 招待 → 受講登録」 を 1 回の操作にまとめる)。
  */
 
 import { useState } from "react";
@@ -24,26 +27,46 @@ import {
   type InviteUserInput,
 } from "@falcon/shared/admin/types";
 import { inviteUsers } from "@/lib/admin-users-api";
+import { todayDateKey } from "@/lib/date-keys";
+import type { EnrollmentPresetWithItems } from "@falcon/shared/enrollment/preset";
 
 import { ROLE_LABEL } from "./shared";
+import {
+  InvitePresetFields,
+  type InvitePresetState,
+  applyPresetToInvited,
+} from "./InvitePresetFields";
 
 interface InviteDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   tenantName: string;
+  /** 招待と同時に割り当てられるプリセット。 空配列なら選択欄自体を出さない。 */
+  presets: EnrollmentPresetWithItems[];
   onInvited: () => Promise<void> | void;
 }
 
-export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: InviteDialogProps) {
+export function InviteDialog({
+  open,
+  onOpenChange,
+  tenantName,
+  presets,
+  onInvited,
+}: InviteDialogProps) {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<AssignableProfileRole>("student");
+  const [preset, setPreset] = useState<InvitePresetState>({
+    presetId: "",
+    baseDate: todayDateKey(),
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setEmail("");
     setDisplayName("");
     setRole("student");
+    setPreset({ presetId: "", baseDate: todayDateKey() });
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -70,6 +93,19 @@ export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: Invi
       const first = res.results[0];
       if (first?.ok) {
         toast.success(`${trimmed} を招待しました`);
+        // 招待は成功しているので、 割当が失敗しても招待自体は巻き戻さない (警告に留める)。
+        const selected = presets.find((p) => p.id === preset.presetId);
+        if (selected && first.userId) {
+          try {
+            const applied = await applyPresetToInvited(selected, preset.baseDate, [first.userId]);
+            if (applied.ok) toast.success(applied.message);
+            else toast.error(applied.message);
+          } catch (err) {
+            toast.error(
+              `招待は成功しましたが教材の割当に失敗しました: ${err instanceof Error ? err.message : "unknown"}`,
+            );
+          }
+        }
         reset();
         onOpenChange(false);
         await onInvited();
@@ -131,6 +167,13 @@ export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: Invi
               ))}
             </select>
           </div>
+          <InvitePresetFields
+            presets={presets}
+            value={preset}
+            onChange={setPreset}
+            disabled={submitting}
+            idPrefix="inv"
+          />
           <DialogFooter className="px-0 pb-2 border-t-0">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               キャンセル
