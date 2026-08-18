@@ -35,9 +35,17 @@ updates:
         patterns:
           - "typescript"
           - "@types/*"
-      # bun は groups.dependency-type 非対応。先にマッチしたグループ以外をまとめる。
+      drizzle:
+        patterns:
+          - "drizzle-orm"
+          - "drizzle-kit"
+      # bun は groups.dependency-type 非対応。先にマッチしたグループ以外の
+      # patch/minor をまとめる。major は個別 PR にする（#140 / #150 対策）。
       other:
         patterns: ["*"]
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions（actions/checkout, oven-sh/setup-bun など）
   - package-ecosystem: "github-actions"
