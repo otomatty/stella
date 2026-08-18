@@ -15,10 +15,12 @@ import {
   consumePendingOnSuccess,
   isExtensionUriPath,
   loadLessonForUri,
+  parseLinkCode,
   parsePendingLesson,
   readPendingLesson,
   requireDeepLinkedLesson,
   shouldResumeAfterLink,
+  type PendingLesson,
 } from "./deep-link.js";
 import { openExercisePanel } from "./exercise-panel.js";
 import { formatGradeMessage, gradeActiveExercise, resolveActiveAssignmentId } from "./grader.js";
@@ -84,9 +86,18 @@ function falconConfig(key: "serverUrl" | "webUrl", fallback: string): string {
   return vscode.workspace.getConfiguration("falcon").get<string>(key, fallback).replace(/\/+$/, "");
 }
 
-async function openConnectPage(): Promise<void> {
+/**
+ * 接続専用ページは持たない。 接続は Web のコードレッスンの「VS Code で開く」から始まり、
+ * そのボタンが接続コードを載せた lesson URI を開く。 未接続で来た時は開きたいレッスン
+ * (分かる場合) の Web ページへ送り返して、 同じボタンを押してもらう。
+ */
+async function openWebForConnect(target?: PendingLesson): Promise<void> {
   const web = falconConfig("webUrl", "http://127.0.0.1:5173");
-  await vscode.env.openExternal(vscode.Uri.parse(`${web}/connect-vscode`));
+  const path = target ? `/courses/${target.courseId}/lessons/${target.lessonId}` : "/courses";
+  void vscode.window.showInformationMessage(
+    "FALCON に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください",
+  );
+  await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
 }
 
 async function openDeepLinkedLesson(courseId: string, lessonId: string): Promise<void> {
@@ -117,19 +128,27 @@ async function handleLessonUri(
     return;
   }
 
+  // lesson URI が接続コードを連れてきたら、 先に JWT 交換まで済ませる。 これで Web の
+  // 「VS Code で開く」1 クリックが 接続 → レッスン表示 まで通る。
+  const code = parseLinkCode(uri.query);
+  if (code) {
+    await linkFromLessonUri(code, auth);
+  }
+
   const token = await auth.getToken();
   if (!token) {
     await context.globalState.update(PENDING_LESSON_KEY, pending);
-    await openConnectPage();
+    await openWebForConnect(pending);
     return;
   }
 
   try {
     await openDeepLinkedLesson(pending.courseId, pending.lessonId);
+    await context.globalState.update(PENDING_LESSON_KEY, undefined);
   } catch (err) {
     if (err instanceof AuthExpiredError) {
       await context.globalState.update(PENDING_LESSON_KEY, pending);
-      await openConnectPage();
+      await openWebForConnect(pending);
       return;
     }
     const message = err instanceof Error ? err.message : String(err);
@@ -137,13 +156,8 @@ async function handleLessonUri(
   }
 }
 
-async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean> {
-  const code = new URLSearchParams(uri.query).get("code");
-  if (!code) {
-    void vscode.window.showInformationMessage("接続コードがありません");
-    return false;
-  }
-
+/** 成功したら undefined。 失敗の見せ方は呼び出し側の状況で変わるので、 ここでは通知しない。 */
+async function exchangeLinkCode(code: string, auth: AuthStore): Promise<Error | undefined> {
   try {
     const token = await exchangeVscodeLink(
       falconConfig("serverUrl", "http://127.0.0.1:8787"),
@@ -151,13 +165,43 @@ async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean>
       fetch,
     );
     await auth.setToken(token);
-    void vscode.window.showInformationMessage("FALCON に接続しました");
-    return true;
+    return undefined;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    void vscode.window.showErrorMessage(message);
+    return err instanceof Error ? err : new Error(String(err));
+  }
+}
+
+/**
+ * lesson URI に載ってきた接続コードを使う。 接続済みの利用者には毎回の再交換を見せない
+ * ため、 未接続だった時だけ結果を通知する (使用済みコードでの失敗も同様に黙って捨てる)。
+ */
+async function linkFromLessonUri(code: string, auth: AuthStore): Promise<void> {
+  const wasConnected = (await auth.getToken()) !== null;
+  const failure = await exchangeLinkCode(code, auth);
+  if (wasConnected) {
+    return;
+  }
+  if (failure) {
+    void vscode.window.showErrorMessage(failure.message);
+    return;
+  }
+  void vscode.window.showInformationMessage("FALCON に接続しました");
+}
+
+/** 旧クライアント (接続専用ページ) からの `/link` URI 用。 */
+async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean> {
+  const code = parseLinkCode(uri.query);
+  if (!code) {
+    void vscode.window.showInformationMessage("接続コードがありません");
     return false;
   }
+  const failure = await exchangeLinkCode(code, auth);
+  if (failure) {
+    void vscode.window.showErrorMessage(failure.message);
+    return false;
+  }
+  void vscode.window.showInformationMessage("FALCON に接続しました");
+  return true;
 }
 
 async function handleExtensionUri(
@@ -197,7 +241,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     }),
     vscode.commands.registerCommand("falcon.connect", async () => {
-      await openConnectPage();
+      await openWebForConnect();
     }),
     vscode.commands.registerCommand("falcon.disconnect", async () => {
       await auth.clear();

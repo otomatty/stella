@@ -8,9 +8,11 @@
 
 1. Web にログインする
 2. この拡張を入れる（下記「ローカル VSIX」）
-3. Web の `/connect-vscode`（サイドバー「VS Code」）で「VS Code に接続」する。またはコードレッスンの「VS Code で開く」
+3. Web のコードレッスンで「VS Code で開く」を押す
 
-未接続のままレッスンを開くと、拡張は `falcon.webUrl` の `/connect-vscode` を開く。
+「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://falcon.informal/lesson?courseId=...&lessonId=...&code=...` を開く。拡張はその URI で JWT 交換（未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
+
+未接続・期限切れのまま lesson URI が来た（コードが無い / 使用済み）場合、拡張は `falcon.webUrl` のそのレッスンのページ（レッスン不明なら `/courses`）を開いて、同じボタンを押し直してもらう。`FALCON: Web で接続` コマンドも同じ動きをする。
 
 接続後、JWT は VS Code の SecretStorage（キー `falcon.accessToken`）に保存される。設定やファイルにトークンを貼らない。
 
@@ -19,7 +21,7 @@
 | 設定 | 既定 | 用途 |
 |------|------|------|
 | `falcon.serverUrl` | `http://127.0.0.1:8787` | API オリジン |
-| `falcon.webUrl` | `http://127.0.0.1:5173` | Web オリジン（接続ページなど） |
+| `falcon.webUrl` | `http://127.0.0.1:5173` | Web オリジン（未接続時に開き直すレッスンページなど） |
 
 ## 開発（Extension Development Host）
 

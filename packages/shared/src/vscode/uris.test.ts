@@ -11,4 +11,10 @@ describe("vscode uris", () => {
       "vscode://falcon.informal/lesson?courseId=course-1&lessonId=lesson-1",
     );
   });
+
+  it("carries a link code so the extension can connect from the lesson uri", () => {
+    expect(buildVscodeLessonUri("course-1", "lesson-1", "ABCD2345")).toBe(
+      "vscode://falcon.informal/lesson?courseId=course-1&lessonId=lesson-1&code=ABCD2345",
+    );
+  });
 });

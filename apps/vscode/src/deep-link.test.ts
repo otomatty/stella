@@ -4,6 +4,7 @@ import {
   consumePendingOnSuccess,
   isExtensionUriPath,
   loadLessonForUri,
+  parseLinkCode,
   parsePendingLesson,
   readPendingLesson,
   requireDeepLinkedLesson,
@@ -20,6 +21,12 @@ describe("deep-link", () => {
     expect(isExtensionUriPath("/lesson", "lesson")).toBe(true);
     expect(isExtensionUriPath("lesson", "lesson")).toBe(true);
     expect(isExtensionUriPath("/link", "lesson")).toBe(false);
+  });
+
+  it("reads the connect code off a lesson uri", () => {
+    expect(parseLinkCode("courseId=c1&lessonId=l1&code=ABCD2345")).toBe("ABCD2345");
+    expect(parseLinkCode("courseId=c1&lessonId=l1")).toBeUndefined();
+    expect(parseLinkCode("code=")).toBeUndefined();
   });
 
   it("accepts /link and link paths", () => {

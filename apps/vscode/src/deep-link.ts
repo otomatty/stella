@@ -9,6 +9,11 @@ export function isExtensionUriPath(path: string, name: "link" | "lesson"): boole
   return path === `/${name}` || path === name;
 }
 
+/** `/link` と `/lesson` の両方が `code` を運ぶ。 lesson 側は接続とレッスン表示を 1 URI で兼ねる。 */
+export function parseLinkCode(query: string): string | undefined {
+  return new URLSearchParams(query).get("code") || undefined;
+}
+
 export function parsePendingLesson(query: string): PendingLesson | undefined {
   const params = new URLSearchParams(query);
   const courseId = params.get("courseId");

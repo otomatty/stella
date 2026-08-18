@@ -26,12 +26,8 @@ export function CodeLessonHandoff({
       </div>
 
       <p className="max-md:hidden text-[13px] text-ink-3 mt-4">
-        拡張 FALCON INFORMAL を入れた VS Code
-        で演習を進めます。まだ入れていない場合は、サイドバーの「VS Code」から{" "}
-        <a href="/connect-vscode" className="text-brand underline underline-offset-2">
-          接続ページ
-        </a>
-        を開いて拡張を接続してください。
+        拡張 FALCON INFORMAL を入れた VS Code で演習を進めます。ボタンを押すと VS Code
+        が起動し、未接続なら接続も同時に済ませてこのレッスンを開きます。拡張をまだ入れていない場合は先にインストールしてください。
       </p>
     </div>
   );

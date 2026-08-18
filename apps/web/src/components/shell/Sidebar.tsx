@@ -27,7 +27,6 @@ type LucideIcon = ComponentType<LucideProps>;
 type NavId =
   | "dash"
   | "courses"
-  | "connect-vscode"
   | "lesson"
   | "cert"
   | "interview-prep"
@@ -54,7 +53,6 @@ const NAV: Record<Role, NavItem[]> = {
   learner: [
     { id: "dash", label: "ダッシュボード", icon: Home },
     { id: "courses", label: "コース一覧", icon: Book },
-    { id: "connect-vscode", label: "VS Code", icon: Code },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "cert", label: "修了証", icon: Award },

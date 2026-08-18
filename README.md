@@ -117,7 +117,7 @@ Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師
 
 1. Web にログインする
 2. 拡張を入れる（ローカルは `apps/vscode` で `bun run package` した VSIX。Marketplace は下記の手順のみ。このリポジトリからは公開しない）
-3. サイドバー「VS Code」の `/connect-vscode` で接続する。またはコードレッスンの「VS Code で開く」
+3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://falcon.informal/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
 
 JWT は拡張の SecretStorage（`falcon.accessToken`）に入る。設定にトークンを貼らない。
 
