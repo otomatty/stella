@@ -165,6 +165,19 @@ manifest が `courses/` を全部読むので、`course.json` を置いた講座
 packages/content/courses/<slug>/thumbnail.webp
 ```
 
+既存 6 講座のサムネイルは `scripts/build_thumbnails.py` が生成している。**新しい講座もここに 1 件足して生成する**（画像を手で描かない）。6 枚が 1 つのシリーズに見えることが一覧カードの前提で、レイアウト・書体・トークンはスクリプトが共有している。
+
+```bash
+pip install pillow playwright && playwright install chromium   # 初回だけ
+python packages/content/scripts/build_thumbnails.py <slug>     # 引数なしで全講座
+```
+
+- 講座ごとに書くのは `SPECS` の 4 つ（`title` / `title_size` / `subtitle` / `motif`）だけ。eyebrow は `course.json` の `category`、配色は `color` から引く
+- モチーフは講座の中身を 1 つだけ図にする（SQL なら「表から行を取り出す」、科目Aなら「9 分野を 1 つずつ」）。色・線幅・角丸は図解 skin（`.claude/skills/diagram-design/references/style-guide.md`）のトークンに合わせる
+- **外部ロゴは使わない。** 技術名は普通名称としての文字表記だけにして、公式ロゴ・ロゴフォント・シンボルマークは持ち込まない。TypeScript（Microsoft）・Python（PSF）・情報処理技術者試験（IPA）などのロゴは、加工や商用利用に許諾が要るうえ、公認教材だという誤認を生む
+- 左カラムの文字がモチーフに重なるとスクリプトが落ちる。長いタイトルは `title_size` を下げる
+- 書体は Google Fonts から**使う文字だけ**を切り出して埋め込むので、生成時だけ通信する（描画はオフライン）
+
 | 項目 | 規格 |
 | --- | --- |
 | 縦横比 | 16:9（±2% まで許容） |

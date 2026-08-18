@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "materials": "node scripts/build.mjs",
+    "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
     "check:ci": "node scripts/build.mjs --check-only",
     "upload": "bun run scripts/upload-materials.ts",

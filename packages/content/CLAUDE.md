@@ -138,12 +138,12 @@ TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 ですが、こちらもデプロイに含まれる（seed の前に全件アップロードする）ので、手動実行は不要です。ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を叩いてください。
 
-**講座サムネイルは `courses/<slug>/thumbnail.webp`（`.png` / `.jpg` も可）です。** 置けば一覧カードがその画像になり、置かなければ `course.json` の `color` のストライプ表示のままです。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
+**講座サムネイルは全 6 講座に入っています（`courses/<slug>/thumbnail.webp`）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@falcon/content thumbnails`）が生成します。6 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
 
 未着手の課題:
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
-- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入、および講座サムネイル(`courses/<slug>/thumbnail.webp`)。仕組みは通っているが画像そのものは未作成
+- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 6 講座に設置済み
 - **収録** — 162本の動画収録は未着手
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 
