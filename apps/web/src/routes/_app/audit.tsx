@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/audit")({
 function AuditPage() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["admin"]} page="audit">
+    <RoleGuard allow={["admin"]}>
       <AdminAuditPage tenantId={s.tenantId} backendEnabled={s.backendEnabled} />
     </RoleGuard>
   );

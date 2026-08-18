@@ -21,7 +21,7 @@ function LessonPage() {
   const lessonExists =
     target?.sections?.some((sec) => sec.lessons.some((l) => l.id === lessonId)) ?? false;
   return (
-    <RoleGuard allow={["learner"]} page="lesson">
+    <RoleGuard allow={["learner"]}>
       {target && !lessonExists ? (
         <LessonNotFoundNotice setPage={s.setPage} />
       ) : target ? (

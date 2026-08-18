@@ -13,7 +13,7 @@ function CourseDetailPage() {
   const { courseId } = Route.useParams();
   const target = s.courses.find((c) => c.id === courseId);
   return (
-    <RoleGuard allow={["learner"]} page="course-detail">
+    <RoleGuard allow={["learner"]}>
       {target ? (
         <CourseDetail
           course={target}

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppSplatRouteImport } from './routes/_app/$'
 import { Route as AppAssignmentsRouteImport } from './routes/_app/assignments'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
@@ -44,6 +45,11 @@ const SupportRoute = SupportRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSplatRoute = AppSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
@@ -147,6 +153,7 @@ const AppCoursesCourseIdLessonsLessonIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/support': typeof SupportRoute
+  '/$': typeof AppSplatRoute
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/support': typeof SupportRoute
+  '/$': typeof AppSplatRoute
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/support': typeof SupportRoute
+  '/_app/$': typeof AppSplatRoute
   '/_app/assignments': typeof AppAssignmentsRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/certificates': typeof AppCertificatesRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/support'
+    | '/$'
     | '/assignments'
     | '/audit'
     | '/certificates'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/support'
+    | '/$'
     | '/assignments'
     | '/audit'
     | '/certificates'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/support'
+    | '/_app/$'
     | '/_app/assignments'
     | '/_app/audit'
     | '/_app/certificates'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/$': {
+      id: '/_app/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof AppSplatRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/assignments': {
@@ -455,6 +474,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppSplatRoute: typeof AppSplatRoute
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditRoute: typeof AppAuditRoute
   AppCertificatesRoute: typeof AppCertificatesRoute
@@ -476,6 +496,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSplatRoute: AppSplatRoute,
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditRoute: AppAuditRoute,
   AppCertificatesRoute: AppCertificatesRoute,

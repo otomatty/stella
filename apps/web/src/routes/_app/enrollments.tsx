@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/enrollments")({
 function EnrollmentsPage() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["admin"]} page="enrollments">
+    <RoleGuard allow={["admin"]}>
       <AdminEnrollmentsPage
         key={s.tenantId}
         tenantId={s.tenantId}

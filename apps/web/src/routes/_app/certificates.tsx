@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/certificates")({
 function Certificates() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["learner"]} page="cert">
+    <RoleGuard allow={["learner"]}>
       <CertificatePage
         courses={s.courses}
         currentUserId={s.currentUserId}

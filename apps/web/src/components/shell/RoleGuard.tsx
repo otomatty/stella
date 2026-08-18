@@ -1,23 +1,14 @@
 import type { ReactNode } from "react";
 import type { Role } from "@/data/types";
 import { useAppShell } from "@/components/shell/app-shell-context";
-import { GenericEmpty } from "@/components/admin/AdminGeneric";
+import { AccessDeniedScreen } from "@/components/common/AccessDeniedScreen";
 
 /**
- * ロール外のアクセスをブロックする。 旧 renderPage はロール別分岐の外に落ちると
- * GenericEmpty を返していたため、 URL 直叩きでも同じ表示に揃える。
+ * ロール外のアクセスをブロックする。 URL 直叩きでも 403 画面 (権限が無い旨と復帰導線)
+ * に揃える。 「存在しない」 URL は `_app/$` の 404 が担当する。
  */
-export function RoleGuard({
-  allow,
-  page,
-  children,
-}: {
-  allow: Role[];
-  /** GenericEmpty に表示する旧ページキー。 */
-  page: string;
-  children: ReactNode;
-}) {
+export function RoleGuard({ allow, children }: { allow: Role[]; children: ReactNode }) {
   const s = useAppShell();
-  if (!allow.includes(s.role)) return <GenericEmpty page={page} />;
+  if (!allow.includes(s.role)) return <AccessDeniedScreen allow={allow} />;
   return <>{children}</>;
 }

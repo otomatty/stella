@@ -11,6 +11,7 @@ export {
   Check,
   CheckCircle2 as CheckCircle,
   Circle,
+  Compass,
   Lock,
   Users,
   User,

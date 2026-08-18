@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/review-queue")({
 function ReviewQueuePage() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["instructor"]} page="review-queue">
+    <RoleGuard allow={["instructor"]}>
       <ReviewQueue tenantId={s.tenantId} setPage={s.setPage} onOpenReview={s.onOpenReview} />
     </RoleGuard>
   );

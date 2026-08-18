@@ -119,6 +119,10 @@ export function AppShell() {
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
+  // どのルートにも一致しなかった URL (`_app/$` の 404)。
+  const isUnknownRoute = useRouterState({
+    select: (s) => s.matches.some((m) => m.routeId === "/_app/$"),
+  });
   const page = pageKeyFromPath(pathname);
 
   const defaultTenant = TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[0];
@@ -435,10 +439,11 @@ export function AppShell() {
   // 未ログインで開いた保護 URL (共有リンク等) を控える。 Google OAuth は固定で
   // /auth/callback に戻るため、 AuthCallback がこれを読んで元の URL へ復元する。
   useEffect(() => {
-    if (backendEnabled && !authLoading && !session && pathname !== "/") {
+    // 404 の URL を復帰先に残すとログイン直後にまた 404 を踏むので除外する。
+    if (backendEnabled && !authLoading && !session && pathname !== "/" && !isUnknownRoute) {
       sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, pathname + window.location.search);
     }
-  }, [backendEnabled, authLoading, session, pathname]);
+  }, [backendEnabled, authLoading, session, pathname, isUnknownRoute]);
 
   // lg に広がったらドロワーを閉じる。 CSS で隠すだけでは Radix のモーダルロック
   // (body の pointer-events / フォーカストラップ) が残り、 デスクトップ UI が操作不能になる。

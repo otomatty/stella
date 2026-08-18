@@ -11,7 +11,7 @@ function ReviewEditorPage() {
   const s = useAppShell();
   const { submissionId } = Route.useParams();
   return (
-    <RoleGuard allow={["instructor"]} page="review">
+    <RoleGuard allow={["instructor"]}>
       <ReviewEditor tenantId={s.tenantId} submissionId={submissionId} setPage={s.setPage} />
     </RoleGuard>
   );

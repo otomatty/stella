@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/students")({
 function StudentsPage() {
   const s = useAppShell();
   return (
-    <RoleGuard allow={["instructor"]} page="students">
+    <RoleGuard allow={["instructor"]}>
       <InstructorGeneric
         page="students"
         tenantId={s.tenantId}
