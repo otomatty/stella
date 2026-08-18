@@ -1,0 +1,17 @@
+{
+  "title": "Python テスト自動化と CI 入門",
+  "category": "プログラミング",
+  "color": "green",
+  "description": "Python の関数に pytest で単体テストを書き、失敗の出力を読んで直せるようになる研修。CI が落ちた理由を説明でき、テストしやすいコードへ書き換えるところまで通す。",
+  "header": "Pythonテスト自動化とCI入門",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. なぜテストを書くのか",
+    "m1-pytest": "M1. pytest でテストを書く",
+    "m2-failures": "M2. 失敗を読んで直す",
+    "m3-ci": "M3. CI で品質を守る",
+    "m4-integration": "M4. つなぎ目を守る",
+    "m5-testable": "M5. テストしやすいコード",
+    "m6-static-checks": "M6. テスト以外の自動チェック"
+  }
+}
