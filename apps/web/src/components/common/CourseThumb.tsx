@@ -20,6 +20,12 @@ interface CourseThumbProps {
    * 読み込み失敗のいずれでも color のストライプ表示にフォールバックする。
    */
   thumbnailPath?: string | null;
+  /**
+   * 16:9 の固有比を持たず、`relative` な親要素を絶対配置で埋める。 高さを親
+   * (グリッドのセルなど) が決める横並びレイアウトで、画像と表示領域がずれない
+   * ようにするためのモード。
+   */
+  fill?: boolean;
   className?: string;
 }
 
@@ -27,6 +33,7 @@ export const CourseThumb = ({
   color = "indigo",
   label,
   thumbnailPath,
+  fill = false,
   className,
 }: CourseThumbProps) => {
   // 失敗を boolean で持つと、同じインスタンスが別コースのパスを受け取ったとき
@@ -42,7 +49,8 @@ export const CourseThumb = ({
   return (
     <div
       className={cn(
-        "relative w-full aspect-[16/9] border-b border-border overflow-hidden",
+        "overflow-hidden",
+        fill ? "absolute inset-0" : "relative w-full aspect-[16/9] border-b border-border",
         className,
       )}
     >

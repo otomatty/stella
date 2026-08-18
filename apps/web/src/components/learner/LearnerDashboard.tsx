@@ -291,9 +291,15 @@ export const LearnerDashboard = ({
                   </Button>
                 </CardActions>
               </CardHeader>
-              <div className="grid gap-0 grid-cols-1 sm:grid-cols-[220px_1fr]">
-                <div className="relative border-r border-border">
+              <div className="grid gap-0 grid-cols-1 sm:grid-cols-[minmax(0,340px)_1fr]">
+                {/* サムネイルの枠。 縦積み時は自前の 16:9、横並び時は行の高さ
+                    (右カラムの内容が決める / 約 190px) に従う。 サムネイルは
+                    absolute でこの枠を埋めるので画像と表示領域がずれない。
+                    列幅 340px は 190px × 16/9 ≒ 338px から。 ほぼ 16:9 になり
+                    object-cover でも教材サムネイルの中身が切れない。 */}
+                <div className="relative aspect-[16/9] sm:aspect-auto border-b sm:border-b-0 sm:border-r border-border">
                   <CourseThumb
+                    fill
                     color={current.color}
                     label={current.category}
                     thumbnailPath={current.thumbnailPath}

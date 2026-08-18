@@ -189,7 +189,9 @@ export const CourseDetail = ({
         <div className="sticky top-[88px]">
           <Card className="mb-4">
             <div className="relative border-b border-border" style={{ aspectRatio: "16 / 10" }}>
+              {/* 枠は 16:10、サムネイル自体は 16:9 なので fill で枠に合わせる。 */}
               <CourseThumb
+                fill
                 color={course.color}
                 label={course.category}
                 thumbnailPath={course.thumbnailPath}
