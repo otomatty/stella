@@ -21,7 +21,7 @@
     "eslint-linter-browserify": "^9.1.0",
     "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "quickjs-emscripten-core": "^0.32.0",
-    "sql.js": "^1.14.1",
+    "sql.js": "^1.14.2",
     "typescript-transpiler": "npm:typescript@^5.9.3"
   },
   "devDependencies": {
