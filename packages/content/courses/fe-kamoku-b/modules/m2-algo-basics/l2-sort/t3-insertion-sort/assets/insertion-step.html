@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>挿入ソートの1回目の差し込み</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 36 1200 448" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+  <!-- 焦点: 取り出した 3 を正しい位置に差し込む矢印1本(accent) -->
+  <path d="M432 156 C432 100 288 100 288 148" fill="none" stroke="#E62F9A" stroke-width="2.5"
+        marker-end="url(#arrow-accent)"/>
+  <text x="360" y="84" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">5 の前に差し込む</text>
+
+  <rect x="288" y="160" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="384" y="160" width="96" height="72" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2.5"/>
+  <rect x="480" y="160" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="576" y="160" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="336" y="204" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">5</text>
+  <text x="432" y="204" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">3</text>
+  <text x="528" y="204" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="624" y="204" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">1</text>
+  <text x="720" y="204" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">3 を取り出す</text>
+  <line x1="292" y1="248" x2="380" y2="248" stroke="#B7B7BE" stroke-width="2.5"/>
+  <text x="336" y="276" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">整列済み</text>
+
+  <line x1="480" y1="264" x2="480" y2="304" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="288" y="312" width="96" height="72" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2.5"/>
+  <rect x="384" y="312" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="480" y="312" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="576" y="312" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="336" y="356" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">3</text>
+  <text x="432" y="356" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">5</text>
+  <text x="528" y="356" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="624" y="356" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">1</text>
+  <text x="720" y="356" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">5 は右へ1つずれる</text>
+  <line x1="292" y1="400" x2="476" y2="400" stroke="#B7B7BE" stroke-width="2.5"/>
+  <text x="384" y="428" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">整列済みが1つ育つ</text>
+</svg>
+</body>
+</html>

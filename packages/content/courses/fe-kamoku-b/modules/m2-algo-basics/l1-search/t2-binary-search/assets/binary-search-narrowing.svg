@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 92 1200 440" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <text x="208" y="144" font-size="20" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">探す値は 11</text>
+
+  <!-- 1回目: mid の 6 と比較する -->
+  <rect x="208" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="304" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="400" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="496" y="176" width="96" height="72" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2.5"/>
+  <rect x="592" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="688" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="784" y="176" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="256" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">1</text>
+  <text x="352" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">3</text>
+  <text x="448" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">4</text>
+  <text x="544" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">6</text>
+  <text x="640" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="736" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">11</text>
+  <text x="832" y="220" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">15</text>
+  <text x="256" y="288" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">low</text>
+  <text x="544" y="288" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">mid</text>
+  <text x="832" y="288" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">high</text>
+  <text x="904" y="216" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">6 &lt; 11 なので</text>
+  <text x="904" y="240" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">前半と mid を捨てる</text>
+
+  <line x1="544" y1="304" x2="544" y2="356" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 2回目: 残り半分だけを探す(accentの枠が今の範囲) -->
+  <rect x="208" y="368" width="96" height="72" fill="#F7F7F9" stroke="#DDDDE2" stroke-width="1.5"/>
+  <rect x="304" y="368" width="96" height="72" fill="#F7F7F9" stroke="#DDDDE2" stroke-width="1.5"/>
+  <rect x="400" y="368" width="96" height="72" fill="#F7F7F9" stroke="#DDDDE2" stroke-width="1.5"/>
+  <rect x="496" y="368" width="96" height="72" fill="#F7F7F9" stroke="#DDDDE2" stroke-width="1.5"/>
+  <rect x="592" y="368" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="688" y="368" width="96" height="72" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2.5"/>
+  <rect x="784" y="368" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="256" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#8A8A93">1</text>
+  <text x="352" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#8A8A93">3</text>
+  <text x="448" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#8A8A93">4</text>
+  <text x="544" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#8A8A93">6</text>
+  <text x="640" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="736" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">11</text>
+  <text x="832" y="412" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">15</text>
+  <rect x="588" y="364" width="296" height="80" rx="8" fill="none" stroke="#E62F9A" stroke-width="2.5"/>
+  <text x="640" y="480" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">low</text>
+  <text x="736" y="480" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">mid</text>
+  <text x="832" y="480" text-anchor="middle" font-size="16" font-family="'Geist Mono', monospace" fill="#5C5C66">high</text>
+  <text x="904" y="408" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">mid の 11 と一致 →</text>
+  <text x="904" y="432" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">見つかった</text>
+</svg>

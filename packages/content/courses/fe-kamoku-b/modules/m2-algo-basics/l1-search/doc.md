@@ -48,6 +48,8 @@
 
 真ん中の要素 `data[mid]` と目的の値を比較し、結果に応じて範囲の半分を捨てます。
 
+![7要素の配列から11を探す。1回目の比較で前半を捨て、2回目のmidで見つかる](t2-binary-search/assets/binary-search-narrowing.svg)
+
 ```text
 ○二分探索(整数型の配列: data, 整数型: target)
   整数型: low ← 1

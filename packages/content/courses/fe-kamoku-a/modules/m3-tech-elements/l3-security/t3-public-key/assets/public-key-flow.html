@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>公開鍵で暗号化し、秘密鍵で復号する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 36 1200 364" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <!-- 鍵ペア。焦点は「秘密鍵は受け取る側だけが持つ」の1点(accent) -->
+  <text x="400" y="80" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">誰でも持ってよい</text>
+  <rect x="328" y="96" width="144" height="56" rx="8" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="400" y="132" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">公開鍵</text>
+  <line x1="400" y1="152" x2="400" y2="244" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <text x="800" y="80" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">受け取る側だけが持つ</text>
+  <rect x="728" y="96" width="144" height="56" rx="8" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="800" y="132" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">秘密鍵</text>
+  <line x1="800" y1="152" x2="800" y2="244" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 平文 → 暗号文 → 平文 の流れ -->
+  <line x1="288" y1="264" x2="508" y2="264" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="688" y1="264" x2="908" y2="264" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="112" y="224" width="176" height="80" rx="12" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="200" y="272" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">平文</text>
+
+  <rect x="512" y="224" width="176" height="80" rx="12" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="264" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">暗号文</text>
+  <text x="600" y="292" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#8A8A93">盗まれても読めない</text>
+
+  <rect x="912" y="224" width="176" height="80" rx="12" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="1000" y="272" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">平文</text>
+
+  <text x="400" y="296" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">公開鍵で暗号化</text>
+  <text x="800" y="296" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">秘密鍵で復号</text>
+
+  <text x="200" y="352" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#8A8A93">送る側</text>
+  <text x="1000" y="352" text-anchor="middle" font-size="16" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#8A8A93">受け取る側</text>
+</svg>
+</body>
+</html>

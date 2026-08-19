@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>暗号化とデジタル署名の鍵の使い方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 144 1200 456" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 比較(2列)。焦点はデジタル署名の列1つ(accent) -->
+  <rect x="384" y="176" width="352" height="88" rx="12" fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="560" y="232" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">暗号化</text>
+
+  <rect x="768" y="176" width="352" height="88" rx="12" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="944" y="232" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">デジタル署名</text>
+
+  <text x="352" y="344" text-anchor="end" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">送る側</text>
+  <rect x="384" y="296" width="352" height="88" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="560" y="352" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">相手の公開鍵</text>
+  <rect x="768" y="296" width="352" height="88" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="944" y="352" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">自分の秘密鍵</text>
+
+  <text x="352" y="464" text-anchor="end" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">受け取る側</text>
+  <rect x="384" y="416" width="352" height="88" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="560" y="472" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">自分の秘密鍵</text>
+  <rect x="768" y="416" width="352" height="88" rx="12" fill="#FFFFFF" stroke="#DDDDE2" stroke-width="1.5"/>
+  <text x="944" y="472" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">相手の公開鍵</text>
+
+  <text x="560" y="552" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">守れるのは 機密性</text>
+  <text x="944" y="552" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">確かめられるのは 完全性と本人性</text>
+</svg>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 44 1200 512" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <!-- 集合A(ink)と集合B(muted)。焦点は重なり=積集合の1つだけ(accent)。 -->
+  <circle cx="480" cy="320" r="180" fill="rgba(14,14,16,0.04)" stroke="#0E0E10" stroke-width="2"/>
+  <circle cx="720" cy="320" r="180" fill="rgba(92,92,102,0.05)" stroke="#5C5C66" stroke-width="2"/>
+
+  <!-- 重なり(レンズ形)。2円の交点(600,186)-(600,454)を結ぶ2本の弧 -->
+  <path d="M 600 186 A 180 180 0 0 1 600 454 A 180 180 0 0 1 600 186 Z"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+
+  <text x="356" y="96" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">集合A</text>
+  <text x="356" y="128" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">営業部の社員</text>
+
+  <text x="844" y="96" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">集合B</text>
+  <text x="844" y="128" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">東京在住の社員</text>
+
+  <text x="600" y="312" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#E62F9A">積集合</text>
+  <text x="600" y="348" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">AかつB</text>
+</svg>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 48 1200 488" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <!-- 段階1: 走査して最小値を探す(配列は動かさない) -->
+  <line x1="300" y1="120" x2="656" y2="120" stroke="#5C5C66" stroke-width="1.5"
+        stroke-dasharray="4,4" marker-end="url(#arrow)"/>
+  <text x="480" y="96" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">走査して最小値を探す</text>
+
+  <rect x="288" y="152" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="384" y="152" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="480" y="152" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="576" y="152" width="96" height="72" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2.5"/>
+  <text x="336" y="196" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">5</text>
+  <text x="432" y="196" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">3</text>
+  <text x="528" y="196" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="624" y="196" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">1</text>
+  <text x="720" y="196" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">探している間は動かさない</text>
+  <text x="624" y="144" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">最小値</text>
+
+  <!-- 段階2: 先頭と1回だけ交換する -->
+  <path d="M336 232 C336 296 624 296 624 232" fill="none" stroke="#5C5C66" stroke-width="2"
+        marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="416" y="320" text-anchor="middle" font-size="16"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">先頭と交換(1回だけ)</text>
+
+  <line x1="480" y1="340" x2="480" y2="376" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="288" y="384" width="96" height="72" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2.5"/>
+  <rect x="384" y="384" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="480" y="384" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <rect x="576" y="384" width="96" height="72" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="1.5"/>
+  <text x="336" y="428" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">1</text>
+  <text x="432" y="428" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">3</text>
+  <text x="528" y="428" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">8</text>
+  <text x="624" y="428" text-anchor="middle" font-size="24" font-family="'Geist Mono', monospace" fill="#0E0E10">5</text>
+  <text x="720" y="428" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">最小値 1 が先頭で確定</text>
+</svg>
