@@ -167,6 +167,7 @@ export function AppShell() {
   const [navOpen, setNavOpen] = useState(false);
   const isNarrow = useIsNarrowViewport();
   const [aiOpen, setAiOpen] = useState(false);
+  const aiFabRef = useRef<HTMLButtonElement | null>(null);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: "general" });
   const [showAIBot, setShowAIBot] = useState(() => loadSaved()?.showAIBot ?? DEFAULTS.showAIBot);
   // 「選択してから遷移する」旧 API (setCurrentCourse → setPage('course-detail') 等) の
@@ -590,10 +591,11 @@ export function AppShell() {
         </div>
         <DialogPrimitive.Root open={navOpen} onOpenChange={setNavOpen}>
           <DialogPrimitive.Portal>
-            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 lg:hidden" />
+            {/* FAB (z-90) より上。 ナビを開いている間に AI ボタンが浮いて見えないようにする。 */}
+            <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/50 lg:hidden" />
             <DialogPrimitive.Content
               aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-50 outline-hidden lg:hidden"
+              className="fixed inset-y-0 left-0 z-[95] outline-hidden lg:hidden"
             >
               <DialogPrimitive.Title className="sr-only">
                 メインナビゲーション
@@ -651,19 +653,21 @@ export function AppShell() {
       {/* Floating AI chatbot (learner only) — lesson 内でも開けるよう gate を撤廃 */}
       {showAIBot && effectiveRole === "learner" ? (
         <LessonAIProvider value={aiContext}>
-          {!aiOpen ? (
-            <Button
-              variant="primary"
-              size="icon"
-              onClick={() => setAiOpen(true)}
-              title="学習アシスタントAI"
-              className="fixed bottom-6 right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
-            >
-              <Sparkles size={18} />
-            </Button>
-          ) : (
-            <AIChatBot onClose={() => setAiOpen(false)} />
-          )}
+          {/* 開いている間も unmount しない。 モバイルは Drawer (modal Dialog) なので、
+              閉じたときのフォーカス復帰先がこのボタンとして DOM に残っている必要がある。 */}
+          <Button
+            ref={aiFabRef}
+            variant="primary"
+            size="icon"
+            onClick={() => setAiOpen((v) => !v)}
+            title={aiOpen ? "学習アシスタントAIを閉じる" : "学習アシスタントAI"}
+            aria-expanded={aiOpen}
+            className="fixed bottom-6 right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
+          >
+            <Sparkles size={18} />
+          </Button>
+          {/* 閉じている間も mount したまま。 モバイルの Drawer が閉じアニメーションを出せるようにする。 */}
+          <AIChatBot open={aiOpen} onClose={() => setAiOpen(false)} returnFocusRef={aiFabRef} />
         </LessonAIProvider>
       ) : null}
 
