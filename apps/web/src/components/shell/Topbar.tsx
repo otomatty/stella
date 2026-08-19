@@ -4,6 +4,7 @@ import { HelpCircle, Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
+import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { NotificationRow } from "@falcon/shared/cms/types";
 import type { SearchResult } from "@falcon/shared/search/types";
@@ -63,6 +64,9 @@ export const Topbar = ({
       {/* サイドバーの開閉。 モバイルはドロワー、 デスクトップは常設カラムのトグル
           (どちらを切るかは SidebarProvider が現在の画面幅から判断する)。 */}
       <SidebarTrigger />
+      {/* 画面固有のナビゲーションの差し込み口 (TopbarSlot が portal する)。
+          レッスンの目次など、 本文の表示領域を削らずに常に開けるようにしたいものを置く。 */}
+      <div id={TOPBAR_SLOT_ID} className="flex items-center gap-2" />
       <div className="flex-1" />
       {/* 狭幅では検索ラベル / ショートカット表記を落としてアイコンボタンに縮退する。 */}
       <button

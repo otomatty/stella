@@ -8,8 +8,10 @@ import {
   FileText,
   Folder,
   Clock,
+  ListTree,
   Loader2,
   User,
+  X,
 } from "@/lib/icons";
 import type { Course, Section, Lesson, LessonType } from "@/data/types";
 import type { ChatContext } from "@falcon/shared/ai/types";
@@ -17,10 +19,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { LessonTypeIcon, LessonStatusIcon } from "./CourseDetail";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
+import type { LessonProgressMap } from "@/lib/lesson-progress";
 import { useLessonProgress, useLessonProgressMap, useStudyTime } from "@/hooks/useLessonProgress";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
@@ -189,12 +200,14 @@ export const LessonPlayer = ({
     return null;
   }, [allLessons, activeLesson, progressMap]);
 
-  // 狭いビューポート (VSCode 拡張のパネル等) では目次を畳んでおく。 レッスン切替だけでなく
-  // パネル幅の変更で lg 境界を跨いだときも追従させる。
+  // lg 未満 (VSCode 拡張のパネル等も含む) では目次をドロワーで開く。 パネル幅の変更で
+  // lg 境界を跨いだら常設パネル側に切り替わるので、 ドロワーは閉じておく。
   const isNarrow = useIsNarrowViewport();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(isNarrow);
+  const [tocOpen, setTocOpen] = useState(false);
+  // ドロワーを閉じたときのフォーカス復帰先。
+  const tocButtonRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    setSidebarCollapsed(isNarrow);
+    if (!isNarrow) setTocOpen(false);
   }, [isNarrow]);
 
   // レッスン切替で AI コンテキストを更新する。code レッスンも含め kind: 'lesson'。
@@ -222,143 +235,94 @@ export const LessonPlayer = ({
 
   return (
     <div
-      className={cn(
-        "grid",
-        // lg 未満では展開時もレール幅のまま。 目次はコンテンツの上にオーバーレイさせる。
-        sidebarCollapsed ? "grid-cols-[40px_1fr]" : "grid-cols-[40px_1fr] lg:grid-cols-[280px_1fr]",
-      )}
-      style={{ minHeight: "calc(100vh - 57px)" }}
+      className="grid grid-cols-1 lg:grid-cols-[280px_1fr]"
+      style={{ minHeight: "calc(100vh - var(--shell-header-height))" }}
     >
-      {sidebarCollapsed ? (
-        <aside className="border-r border-border bg-card py-3 sticky top-[57px] max-h-[calc(100vh-57px)] flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPage("course-detail")}
-            className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
-            title={course.title}
-            aria-label={`コース詳細に戻る: ${course.title}`}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed(false)}
-            className="w-7 h-7 grid place-items-center text-ink-3 hover:bg-sunken rounded"
-            title="サイドバーを開く"
-            aria-label="サイドバーを開く"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </aside>
-      ) : (
-        <>
-          {/* lg 未満では目次を fixed オーバーレイにして本文を潰さない。 */}
-          <button
-            type="button"
-            aria-label="目次を閉じる"
-            onClick={() => setSidebarCollapsed(true)}
-            className="lg:hidden fixed inset-0 top-[57px] z-20 bg-black/40"
+      {/* このグリッドの直下に置けるのは目次の常設パネルと本文だけ。 TopbarSlot は Topbar へ、
+          Drawer は portal 先へ抜けるのでここには DOM を残さない。 列を増やす要素を足すと
+          lg:grid-cols-[280px_1fr] の 2 列目に乗って本文が崩れる。 */}
+      {/* lg 以上は目次を常設する。 lg 未満は列ごと落として本文を全幅で使い、 目次は
+          Topbar から開くドロワーへ寄せる (常設のレールは表示領域を削るので廃止した)。
+          CSS で隠すのではなく描画ごと落として、 ドロワーと同時に目次を 2 本持たない。 */}
+      {isNarrow ? null : (
+        <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[var(--shell-header-height)] max-h-[calc(100vh-var(--shell-header-height))]">
+          <LessonToc
+            course={course}
+            sections={sections}
+            progressPercent={progressPercent}
+            progressMap={progressMap}
+            activeLesson={activeLesson}
+            onSelectLesson={setActiveLesson}
+            onBackToCourse={() => setPage("course-detail")}
           />
-          <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)] max-lg:fixed max-lg:left-0 max-lg:top-[57px] max-lg:bottom-0 max-lg:z-30 max-lg:w-[280px] max-lg:max-h-none max-lg:shadow-lg">
-            <div className="px-[18px] pb-3.5 border-b border-border mb-2">
-              <div className="flex items-start gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPage("course-detail")}
-                  className="flex items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta flex-1 min-w-0"
-                >
-                  <ChevronLeft size={12} />
-                  <span className="truncate">{course.title}</span>
-                </button>
-                {/* 狭幅では目次を畳めるようにする。 コード演習は VS Code へ渡すので幅確保は不要。 */}
-                <button
-                  type="button"
-                  onClick={() => setSidebarCollapsed(true)}
-                  className="text-ink-3 hover:text-foreground lg:hidden"
-                  title="サイドバーをたたむ"
-                  aria-label="サイドバーをたたむ"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-              </div>
-              <div className="text-sm font-semibold leading-snug">進捗</div>
-              <div className="text-[11.5px] text-ink-3 mt-1.5">
-                <strong className="text-ink font-display text-[13px] font-bold">
-                  {progressPercent}%
-                </strong>{" "}
-                · セクション {sections.length}
-              </div>
-              <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
-            </div>
-
-            {sections.map((s) => {
-              const doneCount = s.lessons.filter(
-                (l) => resolveLessonStatus(l, progressMap) === "done",
-              ).length;
-              return (
-                <div key={s.id} className="py-2.5">
-                  <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
-                    <span>{s.title}</span>
-                    <span className="ml-auto text-[11px] font-normal text-ink-3">
-                      {doneCount}/{s.lessons.length}
-                    </span>
-                  </div>
-                  {s.lessons.map((l) => {
-                    const isActive = l.id === activeLesson;
-                    const status = resolveLessonStatus(l, progressMap);
-                    return (
-                      <button
-                        type="button"
-                        key={l.id}
-                        onClick={() => {
-                          if (status === "locked") return;
-                          setActiveLesson(l.id);
-                          // 狭幅ではオーバーレイ表示なので、 選んだら閉じる。
-                          if (isNarrow) setSidebarCollapsed(true);
-                        }}
-                        disabled={status === "locked"}
-                        className={cn(
-                          "w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left",
-                          "transition-colors",
-                          isActive
-                            ? "bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta"
-                            : status === "locked"
-                              ? "text-ink-4 cursor-not-allowed border-transparent"
-                              : "text-ink-2 hover:bg-sunken hover:text-foreground border-transparent",
-                        )}
-                      >
-                        <span className="shrink-0 mt-0.5 text-ink-3">
-                          {isActive ? (
-                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
-                          ) : (
-                            <LessonStatusIcon status={status} />
-                          )}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate">{l.title}</div>
-                          <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
-                            <LessonTypeIcon type={l.type} size={10} />
-                            <span>{l.duration}</span>
-                            {isActive && l.progress !== undefined ? (
-                              <>
-                                <span>·</span>
-                                <span>進捗 {l.progress}%</span>
-                              </>
-                            ) : null}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </aside>
-        </>
+        </aside>
       )}
 
-      {/* 目次を fixed オーバーレイにするとグリッド外に出るので、 列を明示して 1 列目に落ちないようにする。 */}
-      <main className="col-start-2 min-w-0 flex flex-col">
+      {/* 目次を開くボタンは Topbar へ差し込む。 本文の上に何も重ねず、 スクロール位置に
+          関係なく開ける。 */}
+      <TopbarSlot>
+        <button
+          ref={tocButtonRef}
+          type="button"
+          onClick={() => setTocOpen(true)}
+          className="lg:hidden w-[34px] h-[34px] shrink-0 rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
+          title="レッスンの目次"
+          aria-label="レッスンの目次を開く"
+          aria-haspopup="dialog"
+          aria-expanded={tocOpen}
+        >
+          {/* 隣のハンバーガー (Menu) と紛れないよう、 横線だけのアイコンは避ける。 */}
+          <ListTree size={18} />
+        </button>
+      </TopbarSlot>
+
+      <Drawer open={tocOpen} onOpenChange={setTocOpen}>
+        {/* 中身は常設パネルと同じ LessonToc。 コース名はその先頭に出るので、
+            ヘッダは見出しと閉じるボタンだけに絞る。 */}
+        <DrawerContent
+          direction="left"
+          aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            // 開くボタンは DrawerTrigger ではなく portal 先の button なので、 Radix の
+            // 既定復帰に任せず自分で戻す (AIChatBot の FAB と同じ扱い)。
+            const target = tocButtonRef.current;
+            if (target) {
+              event.preventDefault();
+              target.focus();
+            }
+          }}
+        >
+          <DrawerHeader className="flex-row items-center gap-2.5 py-2.5">
+            <div className="min-w-0 flex-1">
+              <DrawerTitle className="text-[13px]">目次</DrawerTitle>
+            </div>
+            <DrawerClose asChild>
+              <Button variant="ghost" size="icon-sm" aria-label="閉じる">
+                <X size={14} />
+              </Button>
+            </DrawerClose>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto py-3">
+            <LessonToc
+              course={course}
+              sections={sections}
+              progressPercent={progressPercent}
+              progressMap={progressMap}
+              activeLesson={activeLesson}
+              onSelectLesson={(lessonId) => {
+                setActiveLesson(lessonId);
+                setTocOpen(false);
+              }}
+              onBackToCourse={() => {
+                setTocOpen(false);
+                setPage("course-detail");
+              }}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <main className="min-w-0 flex flex-col">
         {isCode && lessonObj.assignmentId ? (
           <CodeLessonHandoff
             courseId={course.id}
@@ -496,6 +460,108 @@ export const LessonPlayer = ({
     </div>
   );
 };
+
+/**
+ * レッスン一覧 (目次)。 lg 以上では左の常設パネル、 lg 未満では Topbar から開く
+ * ドロワーの中身として、 同じものを 2 か所で描く。
+ */
+const LessonToc = ({
+  course,
+  sections,
+  progressPercent,
+  progressMap,
+  activeLesson,
+  onSelectLesson,
+  onBackToCourse,
+}: {
+  course: Course;
+  sections: Section[];
+  progressPercent: number;
+  progressMap: LessonProgressMap;
+  activeLesson: string;
+  onSelectLesson: (lessonId: string) => void;
+  onBackToCourse: () => void;
+}) => (
+  <>
+    <div className="px-[18px] pb-3.5 border-b border-border mb-2">
+      <button
+        type="button"
+        onClick={onBackToCourse}
+        className="flex w-full items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta min-w-0"
+      >
+        <ChevronLeft size={12} className="shrink-0" />
+        <span className="truncate">{course.title}</span>
+      </button>
+      <div className="text-sm font-semibold leading-snug">進捗</div>
+      <div className="text-[11.5px] text-ink-3 mt-1.5">
+        <strong className="text-ink font-display text-[13px] font-bold">{progressPercent}%</strong>{" "}
+        · セクション {sections.length}
+      </div>
+      <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
+    </div>
+
+    {sections.map((s) => {
+      const doneCount = s.lessons.filter(
+        (l) => resolveLessonStatus(l, progressMap) === "done",
+      ).length;
+      return (
+        <div key={s.id} className="py-2.5">
+          <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
+            <span>{s.title}</span>
+            <span className="ml-auto text-[11px] font-normal text-ink-3">
+              {doneCount}/{s.lessons.length}
+            </span>
+          </div>
+          {s.lessons.map((l) => {
+            const isActive = l.id === activeLesson;
+            const status = resolveLessonStatus(l, progressMap);
+            return (
+              <button
+                type="button"
+                key={l.id}
+                onClick={() => {
+                  if (status === "locked") return;
+                  onSelectLesson(l.id);
+                }}
+                disabled={status === "locked"}
+                className={cn(
+                  "w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left",
+                  "transition-colors",
+                  isActive
+                    ? "bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta"
+                    : status === "locked"
+                      ? "text-ink-4 cursor-not-allowed border-transparent"
+                      : "text-ink-2 hover:bg-sunken hover:text-foreground border-transparent",
+                )}
+              >
+                <span className="shrink-0 mt-0.5 text-ink-3">
+                  {isActive ? (
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
+                  ) : (
+                    <LessonStatusIcon status={status} />
+                  )}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="truncate">{l.title}</div>
+                  <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
+                    <LessonTypeIcon type={l.type} size={10} />
+                    <span>{l.duration}</span>
+                    {isActive && l.progress !== undefined ? (
+                      <>
+                        <span>·</span>
+                        <span>進捗 {l.progress}%</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      );
+    })}
+  </>
+);
 
 const ViewerLoading = () => (
   <div

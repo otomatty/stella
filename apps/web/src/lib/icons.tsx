@@ -85,6 +85,7 @@ export {
   Save,
   PlayCircle,
   Inbox,
+  ListTree,
   Megaphone,
   CheckCheck,
   ShieldCheck,
