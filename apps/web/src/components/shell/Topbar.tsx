@@ -1,17 +1,16 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { HelpCircle, Menu, Moon, Search, Sun } from "@/lib/icons";
+import { HelpCircle, Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { NotificationRow } from "@falcon/shared/cms/types";
 import type { SearchResult } from "@falcon/shared/search/types";
 import type { Course, Role, Tenant } from "@/data/types";
 
 interface TopbarProps {
   actions?: ReactNode;
-  /** ナビゲーションドロワーを開く (サイドバーはドロワーとしてのみ表示する)。 */
-  onOpenNav?: () => void;
   /** 検索パレットで選ばれたコース / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
   /** 受講者プレビュー時は公開講座に検索を限定する。 */
@@ -40,7 +39,6 @@ function shortcutLabel(): string {
 export const Topbar = ({
   actions,
   notify,
-  onOpenNav,
   onSearchSelect,
   searchCourseIds = null,
 }: TopbarProps) => {
@@ -62,17 +60,9 @@ export const Topbar = ({
 
   return (
     <div className="flex items-center gap-2 sm:gap-3.5 px-4 sm:px-7 py-3 bg-card border-b border-border sticky top-0 z-10 h-[var(--shell-header-height)]">
-      {onOpenNav ? (
-        <button
-          type="button"
-          onClick={onOpenNav}
-          className="w-[34px] h-[34px] shrink-0 rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
-          title="メニュー"
-          aria-label="メニューを開く"
-        >
-          <Menu size={18} />
-        </button>
-      ) : null}
+      {/* サイドバーの開閉。 モバイルはドロワー、 デスクトップは常設カラムのトグル
+          (どちらを切るかは SidebarProvider が現在の画面幅から判断する)。 */}
+      <SidebarTrigger />
       <div className="flex-1" />
       {/* 狭幅では検索ラベル / ショートカット表記を落としてアイコンボタンに縮退する。 */}
       <button

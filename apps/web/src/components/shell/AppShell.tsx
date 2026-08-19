@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import { Sparkles } from "@/lib/icons";
 import { TENANTS } from "@/data/seed-catalog";
@@ -16,8 +15,9 @@ import { configureRemoteSync, deriveCourseProgress } from "@/lib/lesson-progress
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import type { SearchResult } from "@falcon/shared/search/types";
 
-import { Sidebar } from "@/components/shell/Sidebar";
+import { AppSidebar } from "@/components/shell/AppSidebar";
 import { Topbar } from "@/components/shell/Topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { LoginScreen } from "@/components/shell/LoginScreen";
 import { InviteRequiredScreen } from "@/components/shell/InviteRequiredScreen";
 import { resolveUiRole } from "@/lib/ui-role";
@@ -163,8 +163,6 @@ export function AppShell() {
     seq: number;
   } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
-  // ナビゲーションドロワーの開閉 (サイドバーは常設せずドロワーでのみ表示する)。
-  const [navOpen, setNavOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const aiFabRef = useRef<HTMLButtonElement | null>(null);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: "general" });
@@ -301,13 +299,11 @@ export function AppShell() {
   }, [backendEnabled, navigate]);
 
   const switchToLearnerView = useCallback(() => {
-    setNavOpen(false);
     setUiRoleOverride("learner");
     void navigate({ to: "/" });
   }, [navigate]);
 
   const returnToStaffView = useCallback(() => {
-    setNavOpen(false);
     setUiRoleOverride(null);
     void navigate({ to: "/" });
   }, [navigate]);
@@ -566,39 +562,22 @@ export function AppShell() {
 
   return (
     <>
-      <div className="grid min-h-screen grid-cols-1">
-        {/* サイドバーは常設せず、 Topbar のハンバーガーから開くドロワーとしてのみ出す。 */}
-        <DialogPrimitive.Root open={navOpen} onOpenChange={setNavOpen}>
-          <DialogPrimitive.Portal>
-            {/* FAB (z-90) より上。 ナビを開いている間に AI ボタンが浮いて見えないようにする。 */}
-            <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/50" />
-            <DialogPrimitive.Content
-              aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-[95] outline-hidden"
-            >
-              <DialogPrimitive.Title className="sr-only">
-                メインナビゲーション
-              </DialogPrimitive.Title>
-              <Sidebar
-                role={effectiveRole}
-                page={page}
-                setPage={(key) => {
-                  setNavOpen(false);
-                  setPage(key);
-                }}
-                user={effectiveUser}
-                counts={sidebarCounts}
-                profileRole={profile?.role}
-                canSwitchToLearner={canSwitchToLearner}
-                onSwitchToLearner={switchToLearnerView}
-                onReturnToStaff={returnToStaffView}
-              />
-            </DialogPrimitive.Content>
-          </DialogPrimitive.Portal>
-        </DialogPrimitive.Root>
-        <div className="min-w-0 flex flex-col">
+      {/* サイドバーは lg 未満ではドロワー、 lg 以上では常設カラムとして出る。
+          既定は畳んだ状態 (本文を全幅で使う) で、 開閉はブラウザに記憶される。 */}
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar
+          role={effectiveRole}
+          page={page}
+          setPage={setPage}
+          user={effectiveUser}
+          counts={sidebarCounts}
+          profileRole={profile?.role}
+          canSwitchToLearner={canSwitchToLearner}
+          onSwitchToLearner={switchToLearnerView}
+          onReturnToStaff={returnToStaffView}
+        />
+        <SidebarInset>
           <Topbar
-            onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
             searchCourseIds={scopeSearchToOwnCourses ? new Set(courses.map((c) => c.id)) : null}
             notify={{
@@ -621,8 +600,8 @@ export function AppShell() {
               <Outlet />
             </AppShellContext.Provider>
           </div>
-        </div>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
 
       {/* Floating AI chatbot (learner only) — lesson 内でも開けるよう gate を撤廃 */}
       {showAIBot && effectiveRole === "learner" ? (

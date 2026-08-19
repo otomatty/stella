@@ -42,6 +42,7 @@ export {
   Video,
   HelpCircle,
   Menu,
+  PanelLeft,
   Sun,
   Moon,
   Send,
