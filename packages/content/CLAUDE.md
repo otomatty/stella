@@ -58,6 +58,8 @@ header: "TypeScript入門研修"
 
 `packages/content/scripts/check_vocab.mjs` が、トピックをパス順(= 学習順)に並べ、**`requires` に「それより前で `introduces` されていない語」があればビルドを落とします**。前後関係は人力レビューではなくこの検査で守ってください。
 
+このパス順は**自然順**です(`src/natural-order.mjs`)。名前の中の数字を数値として比べるので、`m9-...` の次は `m10-...` になります。manifest(LMS のセクション順)・pptx の収録順もこの並びを使います。
+
 - 未導入の語を使いたくなったら、それは**構成の問題**です。語を足すのではなく、トピックの順序を見直してください
 - **台帳が見るのは宣言した依存だけ**です。`requires` に書かずにコード例へ未導入の語を混ぜても検出できません。コード例は目視で確認してください
 
@@ -83,7 +85,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 ビルド時、pptxを `packages/content/dist/slides/` にも複製します。出力はすべて `slides.pptx` という同名のため、収録やGoogle Slides等への一括アップロードにはこのフォルダを使ってください。
 
 - ファイル名は **トピックIDを先頭に付けた `1-1-2-const-and-let.pptx` 形式**。`id` は front-matter の値なので、スライド・`doc.md` の見出し・`practice.md` の対象範囲とIDが一致します
-- **ファイル名順 = 収録順**です。IDが衝突するとビルドが落ちます
+- **ファイル名の自然順 = 収録順**です(`10-1-1-...` は `9-...` の後ろ。数字を数値で見ないツールで並べると `1-...` と `2-...` の間に見えます)。IDが衝突するとビルドが落ちます
 - 全体ビルド時は `dist/slides/` を作り直します(構成変更で名前が変わった古い出力が残らないように)。対象を指定したプレビュー時は残します
 
 ビルド生成物(`slides.pptx` / `assets/*.diagram.png` / `dist/`)は `.gitignore` 済みです。コミットしないでください。**`assets/*.svg` も生成物ですが、こちらはコミットします**(`slides.md` / `doc.md` が参照する正本のため)。
@@ -132,7 +134,7 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **Python テスト自動化と CI 入門（`courses/python-testing-ci-basics/`）があります。** 7 モジュール / 8 レッスン / 28 トピックで、構成は [courses/python-testing-ci-basics/CURRICULUM.md](courses/python-testing-ci-basics/CURRICULUM.md)。採点基盤（`@falcon/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
 
-**基本情報技術者試験の対策講座があります。** 科目A対策（`courses/fe-kamoku-a/`）と科目B対策（`courses/fe-kamoku-b/`）の2講座で、IPA シラバスの「大分類 → 中分類」を「モジュール → レッスン」に写像しています。科目Aは M1 基礎理論〜M9 企業と法務（17 レッスン / 72 トピック）、科目Bは M1 擬似言語〜M5 総合演習（9 レッスン / 27 トピック）が実装済み。問題はすべて自作で、IPA 過去問・サンプル問題の転載はしません（参照元クレジットは各講座の CURRICULUM.md に集約）。科目Aの模擬試験モジュールは未着手（モジュール並びが辞書順のため `m10` は使えない点に注意）。残りは各 CURRICULUM.md の全体計画を参照。
+**基本情報技術者試験の対策講座があります。** 科目A対策（`courses/fe-kamoku-a/`）と科目B対策（`courses/fe-kamoku-b/`）の2講座で、IPA シラバスの「大分類 → 中分類」を「モジュール → レッスン」に写像しています。科目Aは M1 基礎理論〜M10 模擬試験（18 レッスン / 73 トピック）、科目Bは M1 擬似言語〜M5 総合演習（9 レッスン / 27 トピック）が実装済み。問題はすべて自作で、IPA 過去問・サンプル問題の転載はしません（参照元クレジットは各講座の CURRICULUM.md に集約）。模擬試験モジュール（科目A の M10 / 科目B の M5）の確認クイズだけは、出題範囲がそのレッスンに閉じない意図的な例外です。残りは各 CURRICULUM.md の全体計画を参照。
 
 TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
 

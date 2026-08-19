@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { assetPath, collectCourseThumbnails } from "../src/manifest.js";
+import { sortNatural } from "../src/natural-order.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -115,9 +116,9 @@ async function putAll(entries: Array<[string, Target]>, concurrency: number): Pr
 }
 
 function dirsIn(path: string): string[] {
-  return readdirSync(path)
-    .filter((e) => statSync(join(path, e)).isDirectory())
-    .sort();
+  // 並びは manifest.ts と揃える (自然順)。ここは R2 キーの列挙なので順序に意味は
+  // 無いが、走査の対象が同じである以上、片方だけ辞書順にしておく理由も無い。
+  return sortNatural(readdirSync(path).filter((e) => statSync(join(path, e)).isDirectory()));
 }
 
 /**

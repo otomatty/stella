@@ -25,6 +25,7 @@ import { join, resolve, dirname, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { listCourseModuleRoots } from "./course-roots.mjs";
+import { compareNatural } from "../src/natural-order.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -81,7 +82,8 @@ for (const root of searchRoots) {
 
 const slides = searchRoots
   .flatMap((root) => (statSync(root).isDirectory() ? collect(root, "slides.md") : [root]))
-  .sort();
+  // 収録順 = パスの自然順。辞書順だと m10 が m1 と m2 の間に入る。
+  .sort(compareNatural);
 
 const brokenImages = checkDocImages(searchRoots);
 if (brokenImages.length > 0) {
@@ -193,7 +195,7 @@ if (skipped > 0) console.log(`pptx: ${skipped} 件スキップ(最新)`);
 /**
  * 収録・アップロード用のファイル名を決める。
  * トピック形式は front-matter の id を先頭に付ける(例: 1-1-2-const-and-let.pptx)。
- * ファイル名順に並べると収録順になり、スライド・doc.md の見出しとIDが一致する。
+ * ファイル名を自然順に並べると収録順になり、スライド・doc.md の見出しとIDが一致する。
  * id を持たない旧形式は、衝突しないよう courses 配下の相対パスを連結する。
  */
 function courseSlugFromSlide(slidePath) {
@@ -233,4 +235,4 @@ for (const slidePath of slides) {
 
 console.log(`\n完了: ${stale.length} 件を再生成、${skipped} 件は最新(計 ${slides.length} 件)。`);
 console.log("出力先: 各トピックフォルダ内の slides.pptx");
-console.log(`一括アップロード用: dist/slides/ (${slides.length} 本。ファイル名順 = 収録順)`);
+console.log(`一括アップロード用: dist/slides/ (${slides.length} 本。ファイル名の自然順 = 収録順)`);

@@ -17,6 +17,7 @@ import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.js";
+import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
 import { parseSlides } from "./parse-slides.js";
 import { splitSlides } from "./split-slides.js";
@@ -115,10 +116,12 @@ function resolveThumbnail(
   return undefined;
 }
 
+/**
+ * 直下のディレクトリを自然順で返す。並び = セクション / レッスン / トピックの順序なので、
+ * 辞書順にすると `m10-mock-exam` が `m1` と `m2` の間に割り込む。
+ */
 function dirsIn(path: string): string[] {
-  return readdirSync(path)
-    .filter((e) => statSync(join(path, e)).isDirectory())
-    .sort();
+  return sortNatural(readdirSync(path).filter((e) => statSync(join(path, e)).isDirectory()));
 }
 
 function defaultCoursesRoot(): string {

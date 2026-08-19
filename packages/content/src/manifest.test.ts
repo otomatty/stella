@@ -162,6 +162,44 @@ describe("buildContentManifest — 複数講座", () => {
   });
 });
 
+// モジュール / レッスン / トピックの並び = ディレクトリ名の並び。辞書順だと
+// `m10-mock-exam` が `m1` と `m2` の間に割り込み、模擬試験を最後に置けない。
+describe("buildContentManifest — セクションの並び", () => {
+  it("2 桁のモジュールが 1 桁の後ろに並ぶ", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-order-"));
+    const courseDir = join(root, "demo-course");
+    try {
+      const modules = ["m1-a", "m2-b", "m9-c", "m10-mock"];
+      for (const moduleDir of modules) {
+        const lessonDir = join(courseDir, "modules", moduleDir, "l1-x");
+        mkdirSync(join(lessonDir, "t1-y"), { recursive: true });
+        const id = `${moduleDir.slice(1).split("-")[0]}-1-1`;
+        writeFileSync(
+          join(lessonDir, "t1-y", "slides.md"),
+          `---\nid: ${id}\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n`,
+        );
+        writeFileSync(join(lessonDir, "doc.md"), "# ドキュメント\n");
+        writeFileSync(join(lessonDir, "practice.md"), "# 演習\n");
+      }
+      writeFileSync(join(courseDir, "course.json"), JSON.stringify({ title: "デモ講座" }));
+
+      const sections = buildContentManifest(root).courses[0].sections;
+      expect(sections?.map((s) => s.id)).toEqual(modules);
+      expect(sections?.at(-1)?.lessons[0].id).toBe("10-1-1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // 実講座でも見ておく。course.json への登録漏れや配線ミスは一時ディレクトリでは出ない。
+  it("fe-kamoku-a の模擬試験 (M10) が最後のセクションに来る", () => {
+    const fe = buildContentManifest().courses.find((c) => c.id === "fe-kamoku-a");
+    expect(fe?.sections?.[0].id).toBe("m1-foundations");
+    expect(fe?.sections?.at(-1)?.id).toBe("m10-mock-exam");
+    expect(fe?.sections?.at(-1)?.title).toBe("M10. 模擬試験");
+  });
+});
+
 describe("buildContentManifest — コード演習の配線", () => {
   function writeCourse(root: string, exercises: unknown) {
     const topic = join(root, "demo-course", "modules", "m0-x", "l1-y", "t1-z");

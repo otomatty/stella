@@ -14,6 +14,7 @@ import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { listCourseModuleRoots } from "./course-roots.mjs";
+import { compareNatural } from "../src/natural-order.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -59,7 +60,8 @@ function checkRoots(searchRoots) {
 
   const topics = searchRoots
     .flatMap((root) => (statSync(root).isDirectory() ? collect(root) : [root]))
-    .sort()
+    // 学習順はパスの自然順。辞書順だと m10 が m1 と m2 の間に入り、前提語の判定がずれる。
+    .sort(compareNatural)
     .map(parseLedger)
     .filter(Boolean);
 
