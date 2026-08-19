@@ -1,20 +1,5 @@
 import { COMMON_CATEGORY } from "./types.js";
 
-/** 分割前の旧カテゴリ。 移行期間のみ受け付ける。 */
-const LEGACY_PHP_JS = "PHP/JS";
-
-/**
- * 割当カテゴリの正規化。 移行期間中の旧 web バンドル (デプロイ順で deploy:api が
- * deploy:web に先行するため、 開いたままのタブを含めて必ず存在する) は
- * "PHP/JS" のチェックボックスを送ってくるので、 400 で弾かず ["PHP","JS"] へ展開する。
- * マイグレーション後に旧 API 経由で書き戻された行を読むときにも効く。
- *
- * 旧 category 列を落とす contract リリースで、 この関数ごと削除する。
- */
-export function expandLegacyCategories(categories: string[]): string[] {
-  return [...new Set(categories.flatMap((c) => (c === LEGACY_PHP_JS ? ["PHP", "JS"] : [c])))];
-}
-
 /**
  * 案件種別タグ同士の階層照合。 タグは "/" 区切り (例: "PHP/Laravel")。
  * 上位・下位のどちらからでもマッチさせる —

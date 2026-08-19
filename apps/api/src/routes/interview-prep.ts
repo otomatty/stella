@@ -11,7 +11,7 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
-import { expandLegacyCategories, visibleQuestions } from "@falcon/shared/interview/filter";
+import { visibleQuestions } from "@falcon/shared/interview/filter";
 
 import { interviewPrepAssignments, interviewQuestions, profiles } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller, isStaffRole, requireRole } from "../lib/authz.js";
@@ -22,8 +22,6 @@ export const interviewPrepRoute = new Hono<{ Bindings: Env }>();
 
 const Q_SELECT = {
   no: interviewQuestions.no,
-  // 移行期間のみ: 旧 web バンドル (開いたままのタブを含む) がこの項目を読む
-  category: interviewQuestions.category,
   categories: interviewQuestions.categories,
   subcategory: interviewQuestions.subcategory,
   freq: interviewQuestions.freq,
@@ -62,7 +60,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
         ),
       )
       .limit(1);
-    const categories = expandLegacyCategories(assigned[0]?.categories ?? []);
+    const categories = assigned[0]?.categories ?? [];
     return c.json({
       rows: visibleQuestions(rows, categories),
       assignedCategories: categories,
@@ -99,9 +97,7 @@ interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
       })
       .from(interviewPrepAssignments)
       .where(eq(interviewPrepAssignments.tenantId, caller.tenantId));
-    const byProfile = new Map(
-      assignments.map((a) => [a.profile_id, expandLegacyCategories(a.categories)]),
-    );
+    const byProfile = new Map(assignments.map((a) => [a.profile_id, a.categories]));
     return c.json({
       rows: students.map((s) => ({
         ...s,
@@ -120,20 +116,13 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     requireRole(caller, "instructor", "admin", "platform_admin");
     const profileId = c.req.param("profileId");
     const body = (await c.req.json()) as { categories?: unknown };
-    if (!Array.isArray(body.categories) || !body.categories.every((v) => typeof v === "string")) {
+    if (!Array.isArray(body.categories) || !body.categories.every(isAssignableCategory)) {
       throw new ApiError(
         `categories は ${ASSIGNABLE_CATEGORIES.join(" / ")} の配列で指定してください`,
         400,
       );
     }
-    // 旧 web バンドルは "PHP/JS" を送ってくる。 展開してから検証する (移行期間のみ)
-    const requested = expandLegacyCategories(body.categories);
-    if (!requested.every(isAssignableCategory)) {
-      throw new ApiError(
-        `categories は ${ASSIGNABLE_CATEGORIES.join(" / ")} の配列で指定してください`,
-        400,
-      );
-    }
+    const categories: string[] = body.categories;
     const target = await db
       .select({ id: profiles.id, tenantId: profiles.tenantId })
       .from(profiles)
@@ -142,7 +131,6 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     if (!target[0] || target[0].tenantId !== caller.tenantId) {
       throw new ApiError("対象の受講者が見つかりません", 404);
     }
-    const categories = requested;
     await db
       .insert(interviewPrepAssignments)
       .values({

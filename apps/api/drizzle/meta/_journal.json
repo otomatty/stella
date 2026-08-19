@@ -120,6 +120,20 @@
       "when": 1787031137747,
       "tag": "0016_huge_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1787106787872,
+      "tag": "0017_rewrite_legacy_php_js_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1787106836116,
+      "tag": "0018_demonic_king_bedlam",
+      "breakpoints": true
     }
   ]
 }

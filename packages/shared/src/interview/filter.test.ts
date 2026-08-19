@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { expandLegacyCategories, tagMatches, visibleQuestions } from "./filter.js";
+import { tagMatches, visibleQuestions } from "./filter.js";
 import { INTERVIEW_QUESTIONS } from "./questions.js";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "./types.js";
 
@@ -26,25 +26,6 @@ describe("tagMatches", () => {
 
   it("前方一致だけの別タグにはマッチしない (区切りを跨がない)", () => {
     expect(tagMatches("PHPUnit", "PHP")).toBe(false);
-  });
-});
-
-describe("expandLegacyCategories", () => {
-  it("旧 PHP/JS を PHP と JS へ展開する", () => {
-    expect(expandLegacyCategories(["PHP/JS"])).toEqual(["PHP", "JS"]);
-    expect(expandLegacyCategories(["PHP/JS", "SQL"])).toEqual(["PHP", "JS", "SQL"]);
-  });
-
-  it("既に展開済みの値と混在しても重複しない", () => {
-    expect(expandLegacyCategories(["PHP", "PHP/JS"])).toEqual(["PHP", "JS"]);
-  });
-
-  it("新しいタグはそのまま通す", () => {
-    expect(expandLegacyCategories(["PHP/Laravel", "JS/React"])).toEqual([
-      "PHP/Laravel",
-      "JS/React",
-    ]);
-    expect(expandLegacyCategories([])).toEqual([]);
   });
 });
 

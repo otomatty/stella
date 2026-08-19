@@ -266,6 +266,8 @@ FW別問題の執筆。現状 `PHP/Laravel` 以外は0問。
 
 ### 移行期間に旧 category を生かし続ける仕組み
 
+> **履歴**: この節が説明する互換レイヤ (旧 category 列の dual-write / `expandLegacyCategories()` / `Q_SELECT` の category) は、移行完了後の contract リリース (issue #141) で削除済み。旧割当 `["PHP/JS"]` もマイグレーション 0017 で `["PHP","JS"]` へ書き換えた。以下は expand リリース当時、どの窓を塞ぐために何を残したかの記録として残す。
+
 本 PR は `interview_questions.category` を残したまま `categories` を追加する expand リリース。デプロイ順 `migrate → seed → deploy:api → deploy:web` の各段でどうなるかを整理すると:
 
 **原則: マイグレーションは既存データに一切触らない (純粋に追加のみ)。** 旧コードが読む値をマイグレーションで書き換えると、新 API が立つまでの間どこかが必ず壊れる。旧表現の解釈は新 API 側の `expandLegacyCategories()` が引き受ける。
@@ -284,6 +286,8 @@ FW別問題の執筆。現状 `PHP/Laravel` 以外は0問。
 移行中に旧クライアントで唯一変わるのは、`全案件共通` から言語タグへ移した11問 (#148–158 系) が旧カテゴリ上は `PHP/JS` になるため、SQL / テストのみ割当の受講者には表示されなくなる点。これは移行後の正しい挙動が先に現れるだけで、deploy:web で解消する。
 
 ### 旧 category 列の削除 (contract リリース)
+
+> **履歴**: issue #141 で実施済み (マイグレーション 0017 = 割当書き換え、0018 = category 列 drop)。
 
 全環境が `categories` ベースのコードへ移行した後、別 PR で以下を行う contract リリースが必要:
 

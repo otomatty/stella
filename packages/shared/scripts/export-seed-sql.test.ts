@@ -149,27 +149,17 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("seed-submission-pending-1");
   });
 
-  it("面談対策の insert が category と categories を dual-write する", () => {
-    expect(sql).toContain(
-      "insert into interview_questions (id, tenant_id, no, category, categories,",
-    );
-    expect(sql).toContain("set category = excluded.category, categories = excluded.categories");
-  });
-
-  /**
-   * 移行期間中の旧 Worker は category を完全一致で照合し、 旧割当は ["PHP/JS"] のまま
-   * 残っている。 新しい階層タグを書くと deploy:api までその問題が見えなくなるため、
-   * dual-write では分割前の旧カテゴリをそのまま書く。
-   */
-  it("dual-write する旧 category は分割前の旧カテゴリ", () => {
-    expect(sql).toContain(`'PHP/JS', '["PHP/Laravel"]'`);
-    expect(sql).toContain(`'PHP/JS', '["PHP","JS"]'`);
-    expect(sql).toContain(`'PHP/JS', '["JS"]'`);
-    expect(sql).toContain(`'SQL', '["SQL"]'`);
-    expect(sql).toContain(`'全案件共通', '["全案件共通"]'`);
-    // 新タグをそのまま書いていないこと
-    expect(sql).not.toContain(`'PHP/Laravel', '["PHP/Laravel"]'`);
-    expect(sql).not.toContain(`'PHP', '["PHP"]'`);
+  // 旧 category 列は contract リリース (#141) で drop 済み。 seed が書き戻すと
+  // マイグレーション適用後の D1 で INSERT が落ちるため、 復活していないことを縛る。
+  // (courses.category は別物なので interview_questions の文だけを見る。 1 文 = 1 行)
+  it("面談対策の insert は categories のみで旧 category 列を書かない", () => {
+    const inserts = sql.match(/^insert into interview_questions .*$/gm) ?? [];
+    expect(inserts.length).toBeGreaterThan(0);
+    for (const line of inserts) {
+      expect(line).toContain("insert into interview_questions (id, tenant_id, no, categories,");
+      expect(line).toContain("set categories = excluded.categories");
+      expect(line).not.toMatch(/\bcategory\b/);
+    }
   });
 });
 

@@ -1,12 +1,5 @@
--- 純粋に追加のみのマイグレーション。 デプロイ順が migrate → seed → deploy:api → deploy:web で、
--- migrate が終わってから新 API が立つまでは旧 Worker / 旧 web バンドルが動き続けるため、
--- 既存データ (interview_questions.category / interview_prep_assignments.categories) には一切触らない。
---
---   * category 列を drop すると旧 Worker の Q_SELECT が 500 になる
---   * category を書き換えると旧 Worker の完全一致が空振りする
---   * 割当を ["PHP","JS"] へ書き換えると旧 API の isAssignableCategory が 400 を返し、
---     旧割当画面からの編集が一切できなくなる
---
--- 旧割当 ["PHP/JS"] は新 API 側の expandLegacyCategories() が ["PHP","JS"] として解釈する。
--- 割当行の書き換えと category 列の drop は、 全環境が移行し切ってからの contract リリースで行う。
+-- 面談対策カテゴリ分割 (#137) の expand リリース。 移行期間中に旧 Worker / 旧 web
+-- バンドルが動き続けられるよう、 純粋に追加のみとし既存データには一切触らなかった。
+-- 移行完了後の contract リリース (#141) で、 旧割当 ["PHP/JS"] の書き換えは 0017、
+-- 旧 category 列の drop は 0018 が行っている。
 ALTER TABLE `interview_questions` ADD `categories` text DEFAULT '[]' NOT NULL;
