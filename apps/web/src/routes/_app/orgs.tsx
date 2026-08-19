@@ -1,30 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAppShell } from "@/components/shell/app-shell-context";
-import { AdminOrganizationsPage } from "@/components/admin/AdminOrganizationsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/**
+ * 旧 URL 互換。 管理画面は `/admin/*` 配下へ移した (ブックマーク / 共有リンク救済)。
+ * 移行期間を過ぎたら削除してよい (削除後は `_app/$` の 404 が受ける)。
+ */
 export const Route = createFileRoute("/_app/orgs")({
-  component: OrgsPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/orgs", replace: true });
+  },
 });
-
-function OrgsPage() {
-  const s = useAppShell();
-  // 組織マスタは platform_admin のみ。 tenant admin 等が URL 直叩きしても表示しない。
-  if (s.profileRole !== "platform_admin") {
-    return (
-      <div className="max-w-md mx-auto mt-16 text-center">
-        <div className="text-[15px] font-semibold mb-2">権限がありません</div>
-        <div className="text-[12.5px] text-ink-3 mb-4">
-          組織マスタはプラットフォーム管理のみ利用できます。
-        </div>
-        <button
-          type="button"
-          className="text-[12.5px] text-brand underline underline-offset-2"
-          onClick={() => s.setPage("dash")}
-        >
-          ダッシュボードに戻る
-        </button>
-      </div>
-    );
-  }
-  return <AdminOrganizationsPage backendEnabled={s.backendEnabled} />;
-}

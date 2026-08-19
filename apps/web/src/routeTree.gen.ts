@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSplatRouteImport } from './routes/_app/$'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAssignmentsRouteImport } from './routes/_app/assignments'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
@@ -27,6 +28,13 @@ import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as VerifyCertCodeRouteImport } from './routes/verify.$certCode'
+import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
+import { Route as AppAdminAssignmentsRouteImport } from './routes/_app/admin/assignments'
+import { Route as AppAdminAuditRouteImport } from './routes/_app/admin/audit'
+import { Route as AppAdminEnrollmentsRouteImport } from './routes/_app/admin/enrollments'
+import { Route as AppAdminOrgsRouteImport } from './routes/_app/admin/orgs'
+import { Route as AppAdminReportRouteImport } from './routes/_app/admin/report'
+import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
 import { Route as AppReviewsSubmissionIdRouteImport } from './routes/_app/reviews.$submissionId'
 import { Route as AppSubmissionsSubmissionIdRouteImport } from './routes/_app/submissions.$submissionId'
@@ -50,6 +58,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppSplatRoute = AppSplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
@@ -122,6 +135,41 @@ const VerifyCertCodeRoute = VerifyCertCodeRouteImport.update({
   path: '/verify/$certCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminAssignmentsRoute = AppAdminAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminAuditRoute = AppAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminEnrollmentsRoute = AppAdminEnrollmentsRouteImport.update({
+  id: '/enrollments',
+  path: '/enrollments',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminOrgsRoute = AppAdminOrgsRouteImport.update({
+  id: '/orgs',
+  path: '/orgs',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminReportRoute = AppAdminReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
   id: '/courses/',
   path: '/courses/',
@@ -154,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/support': typeof SupportRoute
   '/$': typeof AppSplatRoute
+  '/admin': typeof AppAdminRouteWithChildren
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
@@ -168,8 +217,15 @@ export interface FileRoutesByFullPath {
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
+  '/admin/assignments': typeof AppAdminAssignmentsRoute
+  '/admin/audit': typeof AppAdminAuditRoute
+  '/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/admin/orgs': typeof AppAdminOrgsRoute
+  '/admin/report': typeof AppAdminReportRoute
+  '/admin/users': typeof AppAdminUsersRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
+  '/admin/': typeof AppAdminIndexRoute
   '/courses/': typeof AppCoursesIndexRoute
   '/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -192,8 +248,15 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
   '/': typeof AppIndexRoute
+  '/admin/assignments': typeof AppAdminAssignmentsRoute
+  '/admin/audit': typeof AppAdminAuditRoute
+  '/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/admin/orgs': typeof AppAdminOrgsRoute
+  '/admin/report': typeof AppAdminReportRoute
+  '/admin/users': typeof AppAdminUsersRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
+  '/admin': typeof AppAdminIndexRoute
   '/courses': typeof AppCoursesIndexRoute
   '/courses/$courseId': typeof AppCoursesCourseIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -203,6 +266,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/support': typeof SupportRoute
   '/_app/$': typeof AppSplatRoute
+  '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/assignments': typeof AppAssignmentsRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/certificates': typeof AppCertificatesRoute
@@ -218,8 +282,15 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/admin/assignments': typeof AppAdminAssignmentsRoute
+  '/_app/admin/audit': typeof AppAdminAuditRoute
+  '/_app/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/_app/admin/orgs': typeof AppAdminOrgsRoute
+  '/_app/admin/report': typeof AppAdminReportRoute
+  '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/_app/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
+  '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
   '/_app/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/_app/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -230,6 +301,7 @@ export interface FileRouteTypes {
     | '/'
     | '/support'
     | '/$'
+    | '/admin'
     | '/assignments'
     | '/audit'
     | '/certificates'
@@ -244,8 +316,15 @@ export interface FileRouteTypes {
     | '/users'
     | '/auth/callback'
     | '/verify/$certCode'
+    | '/admin/assignments'
+    | '/admin/audit'
+    | '/admin/enrollments'
+    | '/admin/orgs'
+    | '/admin/report'
+    | '/admin/users'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
+    | '/admin/'
     | '/courses/'
     | '/courses/$courseId/'
     | '/courses/$courseId/lessons/$lessonId'
@@ -268,8 +347,15 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/verify/$certCode'
     | '/'
+    | '/admin/assignments'
+    | '/admin/audit'
+    | '/admin/enrollments'
+    | '/admin/orgs'
+    | '/admin/report'
+    | '/admin/users'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
+    | '/admin'
     | '/courses'
     | '/courses/$courseId'
     | '/courses/$courseId/lessons/$lessonId'
@@ -278,6 +364,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/support'
     | '/_app/$'
+    | '/_app/admin'
     | '/_app/assignments'
     | '/_app/audit'
     | '/_app/certificates'
@@ -293,8 +380,15 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/verify/$certCode'
     | '/_app/'
+    | '/_app/admin/assignments'
+    | '/_app/admin/audit'
+    | '/_app/admin/enrollments'
+    | '/_app/admin/orgs'
+    | '/_app/admin/report'
+    | '/_app/admin/users'
     | '/_app/reviews/$submissionId'
     | '/_app/submissions/$submissionId'
+    | '/_app/admin/'
     | '/_app/courses/'
     | '/_app/courses/$courseId/'
     | '/_app/courses/$courseId/lessons/$lessonId'
@@ -335,6 +429,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof AppSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/assignments': {
@@ -435,6 +536,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyCertCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/admin/': {
+      id: '/_app/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AppAdminIndexRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/assignments': {
+      id: '/_app/admin/assignments'
+      path: '/assignments'
+      fullPath: '/admin/assignments'
+      preLoaderRoute: typeof AppAdminAssignmentsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/audit': {
+      id: '/_app/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AppAdminAuditRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/enrollments': {
+      id: '/_app/admin/enrollments'
+      path: '/enrollments'
+      fullPath: '/admin/enrollments'
+      preLoaderRoute: typeof AppAdminEnrollmentsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/orgs': {
+      id: '/_app/admin/orgs'
+      path: '/orgs'
+      fullPath: '/admin/orgs'
+      preLoaderRoute: typeof AppAdminOrgsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/report': {
+      id: '/_app/admin/report'
+      path: '/report'
+      fullPath: '/admin/report'
+      preLoaderRoute: typeof AppAdminReportRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/users': {
+      id: '/_app/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AppAdminUsersRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/courses/': {
       id: '/_app/courses/'
       path: '/courses'
@@ -473,8 +623,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppAdminRouteChildren {
+  AppAdminAssignmentsRoute: typeof AppAdminAssignmentsRoute
+  AppAdminAuditRoute: typeof AppAdminAuditRoute
+  AppAdminEnrollmentsRoute: typeof AppAdminEnrollmentsRoute
+  AppAdminOrgsRoute: typeof AppAdminOrgsRoute
+  AppAdminReportRoute: typeof AppAdminReportRoute
+  AppAdminUsersRoute: typeof AppAdminUsersRoute
+  AppAdminIndexRoute: typeof AppAdminIndexRoute
+}
+
+const AppAdminRouteChildren: AppAdminRouteChildren = {
+  AppAdminAssignmentsRoute: AppAdminAssignmentsRoute,
+  AppAdminAuditRoute: AppAdminAuditRoute,
+  AppAdminEnrollmentsRoute: AppAdminEnrollmentsRoute,
+  AppAdminOrgsRoute: AppAdminOrgsRoute,
+  AppAdminReportRoute: AppAdminReportRoute,
+  AppAdminUsersRoute: AppAdminUsersRoute,
+  AppAdminIndexRoute: AppAdminIndexRoute,
+}
+
+const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
+  AppAdminRouteChildren,
+)
+
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute
+  AppAdminRoute: typeof AppAdminRouteWithChildren
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditRoute: typeof AppAuditRoute
   AppCertificatesRoute: typeof AppCertificatesRoute
@@ -497,6 +672,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
+  AppAdminRoute: AppAdminRouteWithChildren,
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditRoute: AppAuditRoute,
   AppCertificatesRoute: AppCertificatesRoute,

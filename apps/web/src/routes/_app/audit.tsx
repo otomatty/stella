@@ -1,17 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAppShell } from "@/components/shell/app-shell-context";
-import { RoleGuard } from "@/components/shell/RoleGuard";
-import { AdminAuditPage } from "@/components/admin/AdminAuditPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/**
+ * 旧 URL 互換。 管理画面は `/admin/*` 配下へ移した (ブックマーク / 共有リンク救済)。
+ * 移行期間を過ぎたら削除してよい (削除後は `_app/$` の 404 が受ける)。
+ */
 export const Route = createFileRoute("/_app/audit")({
-  component: AuditPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/audit", replace: true });
+  },
 });
-
-function AuditPage() {
-  const s = useAppShell();
-  return (
-    <RoleGuard allow={["admin"]}>
-      <AdminAuditPage tenantId={s.tenantId} backendEnabled={s.backendEnabled} />
-    </RoleGuard>
-  );
-}

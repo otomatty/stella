@@ -81,12 +81,13 @@ const PATH_BY_PAGE: Record<string, string> = {
   "review-queue": "/review-queue",
   gradebook: "/gradebook",
   students: "/students",
-  users: "/users",
-  enrollments: "/enrollments",
-  assignments: "/assignments",
-  audit: "/audit",
-  orgs: "/orgs",
-  report: "/report",
+  // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
+  users: "/admin/users",
+  enrollments: "/admin/enrollments",
+  assignments: "/admin/assignments",
+  audit: "/admin/audit",
+  orgs: "/admin/orgs",
+  report: "/admin/report",
   settings: "/settings",
 };
 
