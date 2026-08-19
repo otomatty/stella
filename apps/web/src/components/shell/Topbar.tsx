@@ -1,27 +1,21 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { Eye, HelpCircle, Menu, Moon, Search, Sun } from "@/lib/icons";
+import { HelpCircle, Menu, Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
-import type { NotificationRow, ProfileRole } from "@falcon/shared/cms/types";
+import type { NotificationRow } from "@falcon/shared/cms/types";
 import type { SearchResult } from "@falcon/shared/search/types";
-import { staffHomeLabel } from "@/lib/ui-role";
 import type { Course, Role, Tenant } from "@/data/types";
 
 interface TopbarProps {
   actions?: ReactNode;
-  /** lg 未満で表示するナビゲーションドロワーを開く。 */
+  /** ナビゲーションドロワーを開く (サイドバーはドロワーとしてのみ表示する)。 */
   onOpenNav?: () => void;
   /** 検索パレットで選ばれたコース / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
   /** 受講者プレビュー時は公開講座に検索を限定する。 */
   searchCourseIds?: ReadonlySet<string> | null;
-  /** staff が受講者画面を表示中のバッジ。 押すとスタッフ画面へ戻る。 */
-  learnerPreview?: {
-    profileRole?: ProfileRole;
-    onReturnToStaff: () => void;
-  } | null;
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {
     role: Role;
@@ -49,7 +43,6 @@ export const Topbar = ({
   onOpenNav,
   onSearchSelect,
   searchCourseIds = null,
-  learnerPreview = null,
 }: TopbarProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -73,27 +66,11 @@ export const Topbar = ({
         <button
           type="button"
           onClick={onOpenNav}
-          className="lg:hidden w-[34px] h-[34px] shrink-0 rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
+          className="w-[34px] h-[34px] shrink-0 rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
           title="メニュー"
           aria-label="メニューを開く"
         >
           <Menu size={18} />
-        </button>
-      ) : null}
-      {/* 受講者画面を表示中はどの画面でも分かるようにし、 1 タップで戻れるようにする。 */}
-      {learnerPreview ? (
-        <button
-          type="button"
-          onClick={learnerPreview.onReturnToStaff}
-          className="flex min-w-0 items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft px-2.5 py-[5px] text-[11.5px] font-bold text-brand hover:brightness-105"
-          title={staffHomeLabel(learnerPreview.profileRole)}
-          aria-label={`受講者画面を表示中 — ${staffHomeLabel(learnerPreview.profileRole)}`}
-        >
-          <Eye size={13} className="shrink-0" />
-          <span className="truncate">受講者画面</span>
-          <span className="hidden truncate font-medium text-brand/80 sm:inline">
-            · {staffHomeLabel(learnerPreview.profileRole)}
-          </span>
         </button>
       ) : null}
       <div className="flex-1" />

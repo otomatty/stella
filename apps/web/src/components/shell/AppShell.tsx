@@ -14,7 +14,6 @@ import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
 import { configureRemoteSync, deriveCourseProgress } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
-import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
 import type { SearchResult } from "@falcon/shared/search/types";
 
 import { Sidebar } from "@/components/shell/Sidebar";
@@ -163,9 +162,8 @@ export function AppShell() {
     seq: number;
   } | null>(null);
   const [tweaksVisible, setTweaksVisible] = useState(false);
-  // lg 未満でのみ使うナビゲーションドロワーの開閉。
+  // ナビゲーションドロワーの開閉 (サイドバーは常設せずドロワーでのみ表示する)。
   const [navOpen, setNavOpen] = useState(false);
-  const isNarrow = useIsNarrowViewport();
   const [aiOpen, setAiOpen] = useState(false);
   const aiFabRef = useRef<HTMLButtonElement | null>(null);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: "general" });
@@ -446,12 +444,6 @@ export function AppShell() {
     }
   }, [backendEnabled, authLoading, session, pathname, isUnknownRoute]);
 
-  // lg に広がったらドロワーを閉じる。 CSS で隠すだけでは Radix のモーダルロック
-  // (body の pointer-events / フォーカストラップ) が残り、 デスクトップ UI が操作不能になる。
-  useEffect(() => {
-    if (!isNarrow) setNavOpen(false);
-  }, [isNarrow]);
-
   // レッスン以外に移動したら AI の文脈を general にリセット
   useEffect(() => {
     if (!pathname.includes("/lessons/")) {
@@ -573,29 +565,15 @@ export function AppShell() {
 
   return (
     <>
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[232px_1fr]">
-        {/* lg 未満ではサイドバーを畳み、 Topbar のハンバーガーからドロワーで開く。
-            `lg:contents` で通常時は aside 自体がグリッド列になる。 */}
-        <div className="hidden lg:contents">
-          <Sidebar
-            role={effectiveRole}
-            page={page}
-            setPage={setPage}
-            user={effectiveUser}
-            counts={sidebarCounts}
-            profileRole={profile?.role}
-            canSwitchToLearner={canSwitchToLearner}
-            onSwitchToLearner={switchToLearnerView}
-            onReturnToStaff={returnToStaffView}
-          />
-        </div>
+      <div className="grid min-h-screen grid-cols-1">
+        {/* サイドバーは常設せず、 Topbar のハンバーガーから開くドロワーとしてのみ出す。 */}
         <DialogPrimitive.Root open={navOpen} onOpenChange={setNavOpen}>
           <DialogPrimitive.Portal>
             {/* FAB (z-90) より上。 ナビを開いている間に AI ボタンが浮いて見えないようにする。 */}
-            <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/50 lg:hidden" />
+            <DialogPrimitive.Overlay className="fixed inset-0 z-[95] bg-black/50" />
             <DialogPrimitive.Content
               aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-[95] outline-hidden lg:hidden"
+              className="fixed inset-y-0 left-0 z-[95] outline-hidden"
             >
               <DialogPrimitive.Title className="sr-only">
                 メインナビゲーション
@@ -622,11 +600,6 @@ export function AppShell() {
             onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
             searchCourseIds={scopeSearchToOwnCourses ? new Set(courses.map((c) => c.id)) : null}
-            learnerPreview={
-              canSwitchToLearner && effectiveRole === "learner"
-                ? { profileRole: profile?.role, onReturnToStaff: returnToStaffView }
-                : null
-            }
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,
