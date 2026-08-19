@@ -42,6 +42,13 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).not.toContain(`delete from sections where course_id = '${webFundamentals}');`);
   });
 
+  it("slug を再利用した git-basics(Git 入門研修)は upsert し、旧デモ削除の対象にしない", () => {
+    const gitBasics = stableUuid("course:ses:git-basics");
+    expect(sql).toContain("'git-basics'");
+    expect(sql).toContain("Git 入門研修");
+    expect(sql).not.toContain(`delete from courses where id = '${gitBasics}'`);
+  });
+
   it("スライドレッスンに本文 markdown が入る", () => {
     expect(sql).toMatch(
       /insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?constは再代入できない/,

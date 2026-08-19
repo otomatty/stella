@@ -166,10 +166,11 @@ function sqlIn(ids: string[]): string {
   return ids.map((id) => `'${id}'`).join(", ");
 }
 
-/** かつて seed していたデモ講座。再 seed で本番カタログから落とす。 */
+/** かつて seed していたデモ講座。再 seed で本番カタログから落とす。
+ *  git-basics は同じ slug を教材講座(Git 入門研修)が再利用したため、ここには載せない。
+ *  安定 UUID が同一なので、載せると upsert 直後に新講座ごと消えてしまう。 */
 const RETIRED_DEMO_COURSES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   { tenantId: "ses", slug: "web-fundamentals" },
-  { tenantId: "ses", slug: "git-basics" },
   { tenantId: "ses", slug: "ciso-basic" },
   { tenantId: "ses", slug: "react-intro" },
   { tenantId: "coach", slug: "safety-1" },

@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは 6 講座で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは 7 講座で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -188,6 +188,28 @@ def motif_fe_kamoku_b(c: str) -> str:
     <path d="M 410 82 L 396 92 L 410 102 Z" fill="{c}"/>"""
 
 
+def motif_git(c: str) -> str:
+    """枝分かれして合流するコミットグラフ。 main の列から枝が出て、コミットを積んで戻る。"""
+    main_y = 372
+    branch_y = 204
+    commits = "".join(
+        f'<circle cx="{x}" cy="{main_y}" r="22" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>'
+        for x in (96, 200, 452)
+    )
+    branch_commits = "".join(
+        f'<circle cx="{x}" cy="{branch_y}" r="22" fill="{c}" stroke="{c}" stroke-width="4"/>'
+        for x in (272, 344)
+    )
+    return f"""
+    <path d="M 48 {main_y} L 500 {main_y}" stroke="{INK}" stroke-width="4" fill="none"/>
+    <path d="M 200 {main_y} C 200 260 224 {branch_y} 272 {branch_y}" stroke="{c}" stroke-width="4" fill="none"/>
+    <path d="M 272 {branch_y} L 344 {branch_y}" stroke="{c}" stroke-width="4" fill="none"/>
+    <path d="M 344 {branch_y} C 408 {branch_y} 452 260 452 {main_y}" stroke="{c}" stroke-width="4" fill="none"/>
+    {commits}
+    {branch_commits}
+    <circle cx="452" cy="{main_y}" r="34" fill="none" stroke="{c}" stroke-width="4"/>"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -213,6 +235,12 @@ SPECS = {
         "title_size": 152,
         "subtitle": "テスト自動化と CI 入門",
         "motif": motif_python_testing,
+    },
+    "git-basics": {
+        "title": "Git",
+        "title_size": 168,
+        "subtitle": "入門研修",
+        "motif": motif_git,
     },
     "fe-kamoku-a": {
         "title": "科目A",

@@ -1,0 +1,21 @@
+{
+  "title": "Git 入門研修",
+  "category": "プログラミング",
+  "color": "slate",
+  "description": "未経験からの Git 研修。変更の記録(commit)から履歴の読み方・やり直し・ブランチ・共有(push/pull)・プルリクエストまで、現場の基本操作を通す。",
+  "header": "Git入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-first-commit": "M1. はじめてのコミット",
+    "m2-record-cycle": "M2. 変更を積み重ねる",
+    "m3-ignore": "M3. 記録しないものを決める",
+    "m4-history": "M4. 履歴を読む",
+    "m5-undo": "M5. やり直す",
+    "m6-branch": "M6. 枝を分ける",
+    "m7-merge": "M7. 合流する",
+    "m8-remote": "M8. 共有する",
+    "m9-pull-request": "M9. プルリクエスト",
+    "m10-team": "M10. 現場の型"
+  }
+}
