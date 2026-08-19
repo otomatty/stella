@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
 import {
+  Eye,
   Home,
   Book,
   Play,
@@ -20,6 +21,7 @@ import { Brand } from "@/components/common/Brand";
 import { UserMenu } from "@/components/shell/UserMenu";
 import type { Role, User } from "@/data/types";
 import type { ProfileRole } from "@falcon/shared/cms/types";
+import { staffHomeLabel } from "@/lib/ui-role";
 import { cn } from "@/lib/utils";
 
 type LucideIcon = ComponentType<LucideProps>;
@@ -112,7 +114,9 @@ export const Sidebar = ({
   onSwitchToLearner,
   onReturnToStaff,
 }: SidebarProps) => (
-  <aside className="bg-card border-r border-border px-3 pb-4 flex flex-col gap-0.5 sticky top-0 h-screen overflow-y-auto w-[236px]">
+  // h-dvh: モバイルブラウザでは 100vh がアドレスバー分だけ実表示領域より大きく、
+  // h-screen だと下端のビュー切替 / ユーザーメニューが画面外に隠れてしまう。
+  <aside className="bg-card border-r border-border px-3 pb-4 flex flex-col gap-0.5 sticky top-0 h-dvh overflow-y-auto w-[min(84vw,236px)] lg:w-[236px]">
     <div className="-mx-3 mb-3 flex h-[var(--shell-header-height)] items-center border-b border-border px-5">
       <Brand size="sm" />
     </div>
@@ -134,8 +138,21 @@ export const Sidebar = ({
       );
     })}
 
+    {/* 受講者画面との切り替えはユーザーメニューの中だけだと気付けないため、
+        ナビ直下にも常時見える導線として出す (ドロワーでも同じ位置に出る)。 */}
+    {canSwitchToLearner ? (
+      <div className="mt-auto pt-2.5">
+        <ViewSwitch
+          viewingAsLearner={role === "learner"}
+          profileRole={profileRole}
+          onSwitchToLearner={onSwitchToLearner}
+          onReturnToStaff={onReturnToStaff}
+        />
+      </div>
+    ) : null}
+
     {/* 「設定」「ログアウト」はユーザーメニュー (アバター) 側に集約している。 */}
-    <div className="mt-auto pt-2.5 border-t border-border">
+    <div className={cn("pt-2.5 border-t border-border", canSwitchToLearner ? "mt-2.5" : "mt-auto")}>
       <UserMenu
         user={user}
         onOpenSettings={() => setPage("settings")}
@@ -149,6 +166,47 @@ export const Sidebar = ({
     </div>
   </aside>
 );
+
+/**
+ * 受講者画面 ⇄ スタッフ画面の切替。 staff (instructor / admin / platform_admin) だけに出る。
+ * 受講者画面を表示中は「今どちらを見ているか」が分かるよう強調して戻り導線を出す。
+ */
+const ViewSwitch = ({
+  viewingAsLearner,
+  profileRole,
+  onSwitchToLearner,
+  onReturnToStaff,
+}: {
+  viewingAsLearner: boolean;
+  profileRole?: ProfileRole;
+  onSwitchToLearner?: () => void;
+  onReturnToStaff?: () => void;
+}) =>
+  viewingAsLearner ? (
+    <div className="rounded-xl border border-brand/40 bg-brand-soft px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-brand">
+        <Eye size={13} className="shrink-0" />
+        受講者画面を表示中
+      </div>
+      <button
+        type="button"
+        onClick={onReturnToStaff}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-[12px] font-bold text-card transition-colors hover:opacity-90"
+      >
+        <GraduationCap size={13} className="shrink-0" />
+        {staffHomeLabel(profileRole)}
+      </button>
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={onSwitchToLearner}
+      className="flex w-full items-center gap-2.5 rounded-full border border-border-2 px-3.5 py-2 text-[13px] font-medium text-ink-2 transition-colors hover:border-border-strong hover:bg-sunken hover:text-foreground"
+    >
+      <Eye size={15} className="shrink-0" />
+      <span className="flex-1 truncate text-left">受講者画面を表示</span>
+    </button>
+  );
 
 interface SidebarLinkProps {
   icon: LucideIcon;

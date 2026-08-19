@@ -142,7 +142,7 @@ export function CoursePanel(props: Props) {
             まず受講生を選んでください
           </h2>
           <p className="mx-auto mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-3">
-            左の一覧から受講生を選ぶと、 その受講生に割り当てる教材をここで決められます。
+            「① 受講生を選ぶ」で受講生を選ぶと、 その受講生に割り当てる教材をここで決められます。
             チェックボックスで複数名を選べば、 まとめて同じ教材を割り当てられます。
           </p>
         </div>

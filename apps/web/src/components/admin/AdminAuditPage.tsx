@@ -209,7 +209,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
               value={fromDate}
               max={toDate || undefined}
               onChange={(e) => setFromDate(e.target.value)}
-              className="h-9 rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             />
           </FilterField>
           <FilterField label="終了日">
@@ -218,14 +218,14 @@ function AuditLive({ tenantId }: { tenantId: string }) {
               value={toDate}
               min={fromDate || undefined}
               onChange={(e) => setToDate(e.target.value)}
-              className="h-9 rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             />
           </FilterField>
           <FilterField label="実行者">
             <select
               value={actorId}
               onChange={(e) => setActorId(e.target.value)}
-              className="h-9 min-w-[180px] rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full min-w-[180px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             >
               <option value="">すべて</option>
               {profiles.map((p) => (
@@ -239,7 +239,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
             <select
               value={action}
               onChange={(e) => setAction(e.target.value)}
-              className="h-9 min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             >
               <option value="">すべて</option>
               {ACTION_OPTIONS.map((a) => (
@@ -341,7 +341,8 @@ function FilterField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    // 狭幅では 2 列に収まるよう最小幅つきで伸縮させる (input の既定幅で溢れさせない)。
+    <div className="flex min-w-[140px] flex-1 flex-col gap-1 sm:flex-none">
       <span className="text-[11px] text-ink-3">{label}</span>
       {children}
     </div>

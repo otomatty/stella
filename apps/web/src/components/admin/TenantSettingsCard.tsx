@@ -88,7 +88,8 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
                 設定の取得に失敗しました: {error}
               </div>
             ) : (
-              <div className="flex items-start gap-4">
+              // 狭幅では説明文が 1 行数文字まで潰れるため縦積みにする。
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-4">
                 <div className="w-9 h-9 rounded-md bg-sunken grid place-items-center text-ink-2 shrink-0">
                   <FlaskConical size={17} />
                 </div>
@@ -105,6 +106,7 @@ export const TenantSettingsCard = ({ backendEnabled }: Props) => {
                   </p>
                 </div>
                 <Button
+                  className="shrink-0 max-sm:ml-12"
                   variant={testMode ? "accent" : "default"}
                   disabled={saving}
                   onClick={() => void onToggle()}

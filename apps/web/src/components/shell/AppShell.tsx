@@ -620,6 +620,11 @@ export function AppShell() {
             onOpenNav={() => setNavOpen(true)}
             onSearchSelect={handleSearchSelect}
             searchCourseIds={scopeSearchToOwnCourses ? new Set(courses.map((c) => c.id)) : null}
+            learnerPreview={
+              canSwitchToLearner && effectiveRole === "learner"
+                ? { profileRole: profile?.role, onReturnToStaff: returnToStaffView }
+                : null
+            }
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,

@@ -138,7 +138,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
             <select
               value={type}
               onChange={(e) => setType(e.target.value as ReportType)}
-              className="h-9 min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full min-w-[160px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             >
               {REPORT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -151,7 +151,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
             <select
               value={preset}
               onChange={(e) => setPreset(e.target.value as ReportPeriodPreset)}
-              className="h-9 min-w-[140px] rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full min-w-[140px] rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             >
               {PRESET_OPTIONS.map((p) => (
                 <option key={p} value={p}>
@@ -166,7 +166,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
               value={period.from ?? ""}
               max={period.to || undefined}
               onChange={(e) => onDateChange("from", e.target.value)}
-              className="h-9 rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             />
           </FilterField>
           <FilterField label="終了日">
@@ -175,7 +175,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
               value={period.to ?? ""}
               min={period.from || undefined}
               onChange={(e) => onDateChange("to", e.target.value)}
-              className="h-9 rounded-sm border border-input bg-card px-2 text-[12.5px]"
+              className="h-9 w-full rounded-sm border border-input bg-card px-2 text-[12.5px] sm:w-auto"
             />
           </FilterField>
 
@@ -265,7 +265,8 @@ function FilterField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    // 狭幅では 2 列に収まるよう最小幅つきで伸縮させる (input の既定幅で溢れさせない)。
+    <div className="flex min-w-[140px] flex-1 flex-col gap-1 sm:flex-none">
       <span className="text-[11px] text-ink-3">{label}</span>
       {children}
     </div>

@@ -76,7 +76,7 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
 
       {!analytics && loading ? (
         <div aria-busy="true" aria-live="polite" aria-label="集計を読み込み中">
-          <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
@@ -96,7 +96,7 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
 function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
   return (
     <>
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label={
             <>
@@ -153,7 +153,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
         />
       </div>
 
-      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "2fr 1fr" }}>
+      <div className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-[2fr_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <CardTitle>新規受講登録の推移</CardTitle>
@@ -161,8 +161,11 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
               <span className="text-[11.5px] text-ink-3">過去12ヶ月</span>
             </CardActions>
           </CardHeader>
-          <div className="p-4 h-[260px]">
-            <EnrollmentChart trend={analytics.enrollment_trend} />
+          <div className="overflow-x-auto p-4">
+            {/* 狭幅で軸ラベルが読めなくなるため、 縮小せず最小幅で横スクロールさせる。 */}
+            <div className="h-[220px] min-w-[460px] sm:h-[260px]">
+              <EnrollmentChart trend={analytics.enrollment_trend} />
+            </div>
           </div>
         </Card>
 
@@ -178,11 +181,11 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
             ) : (
               analytics.completion_by_course.map((c) => (
                 <div key={c.course_id} className="mb-3.5 last:mb-0">
-                  <div className="flex items-center gap-2 text-xs mb-1.5">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-[11.5px] text-ink-3">n={c.n}</span>
-                    <div className="flex-1" />
-                    <span className="font-mono font-semibold">{c.pct}%</span>
+                  <div className="flex items-baseline gap-2 text-xs mb-1.5">
+                    {/* 名前を伸縮列にする。 spacer で押し出すと狭幅で 1 文字ずつに潰れる。 */}
+                    <span className="min-w-0 flex-1 font-medium">{c.name}</span>
+                    <span className="shrink-0 text-[11.5px] text-ink-3">n={c.n}</span>
+                    <span className="shrink-0 font-mono font-semibold tabular-nums">{c.pct}%</span>
                   </div>
                   <Progress value={c.pct} tone="brand" />
                 </div>
@@ -192,7 +195,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 1fr" }}>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[2fr_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>課題別つまずき分析</CardTitle>
@@ -286,11 +289,10 @@ function StatusRow({
   const pct = total === 0 ? 0 : Math.round((value / total) * 100);
   return (
     <div>
-      <div className="flex items-center gap-2 text-xs mb-1.5">
-        <span className="font-medium">{label}</span>
-        <div className="flex-1" />
-        <span className="font-mono font-semibold">{value}</span>
-        <span className="text-[11.5px] text-ink-3">{pct}%</span>
+      <div className="flex items-baseline gap-2 text-xs mb-1.5">
+        <span className="min-w-0 flex-1 font-medium">{label}</span>
+        <span className="shrink-0 font-mono font-semibold tabular-nums">{value}</span>
+        <span className="shrink-0 text-[11.5px] text-ink-3 tabular-nums">{pct}%</span>
       </div>
       <Progress value={pct} tone={tone} />
     </div>
@@ -389,7 +391,7 @@ function DashboardDemo() {
         を設定してください。
       </div>
 
-      <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label={
             <>
@@ -450,7 +452,7 @@ function DashboardDemo() {
         />
       </div>
 
-      <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "2fr 1fr" }}>
+      <div className="grid gap-4 mb-6 grid-cols-1 lg:grid-cols-[2fr_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <CardTitle>新規受講登録の推移</CardTitle>
@@ -458,14 +460,16 @@ function DashboardDemo() {
               <span className="text-[11.5px] text-ink-3">過去12ヶ月</span>
             </CardActions>
           </CardHeader>
-          <div className="p-4 h-[260px]">
-            <EnrollmentChart
-              trend={ENROLLMENT_TREND.map((count, i) => ({
-                month: `m${i}`,
-                label: DEMO_MONTHS[i] ?? "",
-                count,
-              }))}
-            />
+          <div className="overflow-x-auto p-4">
+            <div className="h-[220px] min-w-[460px] sm:h-[260px]">
+              <EnrollmentChart
+                trend={ENROLLMENT_TREND.map((count, i) => ({
+                  month: `m${i}`,
+                  label: DEMO_MONTHS[i] ?? "",
+                  count,
+                }))}
+              />
+            </div>
           </div>
         </Card>
 
@@ -476,11 +480,10 @@ function DashboardDemo() {
           <div className="px-4 py-3.5">
             {COMPLETION_BY_COURSE.map((c) => (
               <div key={c.name} className="mb-3.5 last:mb-0">
-                <div className="flex items-center gap-2 text-xs mb-1.5">
-                  <span className="font-medium">{c.name}</span>
-                  <span className="text-[11.5px] text-ink-3">n={c.n}</span>
-                  <div className="flex-1" />
-                  <span className="font-mono font-semibold">{c.pct}%</span>
+                <div className="flex items-baseline gap-2 text-xs mb-1.5">
+                  <span className="min-w-0 flex-1 font-medium">{c.name}</span>
+                  <span className="shrink-0 text-[11.5px] text-ink-3">n={c.n}</span>
+                  <span className="shrink-0 font-mono font-semibold tabular-nums">{c.pct}%</span>
                 </div>
                 <Progress value={c.pct} tone="brand" />
               </div>

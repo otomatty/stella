@@ -375,11 +375,17 @@ function SortableLesson({ lesson, onEdit, onRemove }: SortableLessonProps) {
       >
         <GripVertical size={14} />
       </button>
-      <span className="text-[11px] uppercase tracking-wider text-ink-3 w-16 shrink-0">
+      {/* 狭幅では種別ラベルを畳んでタイトルに幅を譲る (title 属性で内容は保つ)。 */}
+      <span
+        className="hidden w-16 shrink-0 text-[11px] uppercase tracking-wider text-ink-3 sm:inline"
+        title={LESSON_TYPE_LABELS[lesson.type]}
+      >
         {LESSON_TYPE_LABELS[lesson.type]}
       </span>
-      <span className="flex-1 text-[13px] truncate">{lesson.title}</span>
-      <span className="text-[11.5px] text-ink-3">{lesson.duration_label ?? ""}</span>
+      <span className="min-w-0 flex-1 truncate text-[13px]" title={lesson.title}>
+        {lesson.title}
+      </span>
+      <span className="shrink-0 text-[11.5px] text-ink-3">{lesson.duration_label ?? ""}</span>
       <Button type="button" size="icon-sm" variant="ghost" onClick={onEdit}>
         <Edit size={13} />
       </Button>

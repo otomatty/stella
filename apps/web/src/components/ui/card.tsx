@@ -16,7 +16,11 @@ export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-center gap-2.5 px-4 py-3.5 border-b border-border", className)}
+      // 狭幅では CardActions を見出しの下へ折り返す (見出しが 1 文字ずつ潰れるのを防ぐ)。
+      className={cn(
+        "flex flex-wrap items-center gap-2.5 px-4 py-3.5 border-b border-border",
+        className,
+      )}
       {...props}
     />
   ),

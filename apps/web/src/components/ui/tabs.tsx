@@ -10,7 +10,13 @@ export const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex items-center gap-1 border-b border-border -mb-px", className)}
+    // 狭幅ではタブ名が 1 文字ずつに折り返されるため、 縮めずに横スクロールさせる。
+    // スクロールバーは邪魔になるので隠す (スワイプ / トラックパッドで送れる)。
+    className={cn(
+      "inline-flex max-w-full items-center gap-1 overflow-x-auto border-b border-border -mb-px",
+      "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      className,
+    )}
     {...props}
   />
 ));
@@ -30,7 +36,7 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "group relative inline-flex items-center gap-1.5 px-3.5 py-2",
+      "group relative inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3.5 py-2",
       "text-[13px] font-medium text-ink-3 rounded-t-sm transition-colors",
       "[&_svg]:size-3.5 [&_svg]:shrink-0",
       "hover:bg-sunken hover:text-ink",
