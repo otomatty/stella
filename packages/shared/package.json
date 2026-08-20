@@ -33,6 +33,8 @@
     "./review/parse-draft-json": "./src/review/parse-draft-json.ts",
     "./study/activity": "./src/study/activity.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
+    "./srs/sm2": "./src/srs/sm2.ts",
+    "./srs/types": "./src/srs/types.ts",
     "./vscode/auth-exchange": "./src/vscode/auth-exchange.ts",
     "./vscode/exercise-paths": "./src/vscode/exercise-paths.ts",
     "./search/types": "./src/search/types.ts",

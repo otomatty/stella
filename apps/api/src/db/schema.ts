@@ -8,7 +8,7 @@
  */
 
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const uuid = () =>
   text("id")
@@ -352,6 +352,68 @@ export const quizAttempts = sqliteTable("quiz_attempts", {
   answers: json<unknown[]>("answers", []),
   submittedAt: tsNow("submitted_at"),
 });
+
+// ---------------------------------------------------------------
+// デイリー復習 (SRS — docs/superpowers/specs/2026-08-20-daily-srs-review-design.md)
+// ---------------------------------------------------------------
+
+/**
+ * SM-2 のカード状態。 クイズで解答した設問ごとに 1 枚 (user_id × question_id)。
+ * `due_date` はアプリ基準 TZ (Asia/Tokyo) の `YYYY-MM-DD` (study_activity.date と同じ規約)。
+ * クイズ本編の受験と復習解答の両方が SM-2 の入力としてここを更新する。
+ */
+export const reviewCards = sqliteTable(
+  "review_cards",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => quizQuestions.id, { onDelete: "cascade" }),
+    ease: real("ease").notNull().default(2.5),
+    intervalDays: integer("interval_days").notNull().default(1),
+    reps: integer("reps").notNull().default(0),
+    dueDate: text("due_date").notNull(),
+    lastReviewedAt: ts("last_reviewed_at").notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    userQuestionUnique: uniqueIndex("review_cards_user_question_uq").on(t.userId, t.questionId),
+    userDueIdx: index("review_cards_user_due_idx").on(t.userId, t.dueDate),
+  }),
+);
+
+/**
+ * 復習の解答ログ (1 解答 = 1 行の追記)。 「今日の解答数」の算出と、 将来の
+ * アルゴリズム移行 (FSRS 等) のための学習データを兼ねる。 クイズ本編の受験は
+ * quiz_attempts に残るためここには書かない。
+ */
+export const reviewLogs = sqliteTable(
+  "review_logs",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    cardId: text("card_id")
+      .notNull()
+      .references(() => reviewCards.id, { onDelete: "cascade" }),
+    questionId: text("question_id").notNull(),
+    correct: integer("correct", { mode: "boolean" }).notNull(),
+    answeredAt: tsNow("answered_at"),
+  },
+  (t) => ({
+    userAnsweredIdx: index("review_logs_user_answered_idx").on(t.userId, t.answeredAt),
+  }),
+);
 
 // ---------------------------------------------------------------
 // 受講登録
@@ -704,6 +766,8 @@ export const APP_TABLES = [
   "quiz_questions",
   "quiz_options",
   "quiz_attempts",
+  "review_cards",
+  "review_logs",
   "enrollments",
   "enrollment_presets",
   "enrollment_preset_items",

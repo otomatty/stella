@@ -29,6 +29,8 @@ import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type { LearnerQuizHistory, QuizAnswer } from "@falcon/shared/cms/types";
+import { isExactSelection } from "../lib/quiz-grading.js";
+import { applyOutcomesToCards } from "../lib/srs-cards.js";
 
 export const quizRoute = new Hono<{ Bindings: Env }>();
 
@@ -213,9 +215,7 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
       max += q.points;
       const correct = correctByQuestion.get(q.id) ?? new Set<string>();
       const selected = selectedByQuestion.get(q.id) ?? new Set<string>();
-      // 集合の完全一致 (順不同・重複無視)。
-      const isCorrect =
-        correct.size === selected.size && [...correct].every((id) => selected.has(id));
+      const isCorrect = isExactSelection(correct, selected);
       if (isCorrect) score += q.points;
       return {
         question_id: q.id,
@@ -242,6 +242,24 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
     );
     if (inserted.meta.changes === 0) {
       throw new ApiError("attempt limit reached", 429);
+    }
+
+    // 解答済みの設問を SRS カード (デイリー復習) に反映する。 受験そのものは
+    // quiz_attempts に残るため review_logs には書かない。 上限 429 で弾かれた
+    // 受験は上の throw で到達しない (カウントしない)。
+    // 復習カードは副次データであり、本編の受験結果応答を壊さない。
+    try {
+      await applyOutcomesToCards(
+        db,
+        caller.tenantId,
+        caller.id,
+        results.map((r) => ({ questionId: r.question_id, correct: r.correct })),
+        new Date(),
+      );
+    } catch (e) {
+      // 上のコメントの通り応答は壊さないが、 無言だと D1 障害等に気づけないので記録は残す。
+      // 欠けたカードは backfillCards (routes/srs.ts) が次回 /api/srs/today で埋め直す。
+      console.error("[quiz] SRS カード反映に失敗", e);
     }
 
     return c.json({ result: { score, max_score: max, passed, results } });

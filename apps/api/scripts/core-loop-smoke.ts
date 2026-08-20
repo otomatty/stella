@@ -151,6 +151,10 @@ async function main(): Promise<void> {
 
   let courseId = "";
   let lessonId = "";
+  let quizId = "";
+  let questionId = "";
+  let correctOptionId = "";
+  let wrongOptionId = "";
   let enrollmentId = "";
   let presetId = "";
   let soloPresetId = "";
@@ -488,6 +492,74 @@ async function main(): Promise<void> {
   await step("課題未合格の時点では修了条件を満たさない", async () => {
     const res = await ok("GET", `/api/certificates/completion/${courseId}`, { token: learner });
     assert(res.completion.met === false, "課題未合格なのに修了条件を満たしている");
+  });
+
+  await step("Admin が確認クイズを作成する", async () => {
+    const quiz = await ok("POST", "/api/cms/quiz/ensure", {
+      token: admin,
+      body: { lessonId },
+    });
+    quizId = quiz.row.id;
+    assert(quizId, "quiz.id が返らない");
+    const q = await ok("POST", "/api/cms/quiz-questions", {
+      token: admin,
+      body: {
+        quiz_id: quizId,
+        kind: "single",
+        prompt: "[smoke] 1 + 1 = ?",
+        explanation: "2 です。",
+        points: 1,
+        order: 0,
+      },
+    });
+    questionId = q.row.id;
+    const o1 = await ok("POST", "/api/cms/quiz-options", {
+      token: admin,
+      body: { question_id: questionId, label: "2", is_correct: true, order: 0 },
+    });
+    correctOptionId = o1.row.id;
+    const o2 = await ok("POST", "/api/cms/quiz-options", {
+      token: admin,
+      body: { question_id: questionId, label: "3", is_correct: false, order: 1 },
+    });
+    wrongOptionId = o2.row.id;
+  });
+
+  await step("受講者がクイズに誤答してもカードは同日再出題されない", async () => {
+    await ok("POST", `/api/quiz/${quizId}/attempt`, {
+      token: learner,
+      body: { answers: [{ question_id: questionId, selected_option_ids: [wrongOptionId] }] },
+    });
+    // 誤答カードは翌日 due (同日再出題なし)。 今日のリストには出ないことを検証する。
+    const today = await ok("GET", "/api/srs/today", { token: learner });
+    const listed = today.review.questions.some((q: { id: string }) => q.id === questionId);
+    assert(!listed, "誤答した設問が同日の復習リストに出ている");
+  });
+
+  await step("復習の連続正解で SM-2 の間隔が 1 日 → 6 日と伸びる", async () => {
+    const first = await ok("POST", "/api/srs/answer", {
+      token: learner,
+      body: { question_id: questionId, selected_option_ids: [correctOptionId] },
+    });
+    assert(first.result.correct === true, "正解のはずが誤答判定");
+    assert(
+      first.result.interval_days === 1,
+      `1 回目の正解は 1 日のはずが ${first.result.interval_days}`,
+    );
+    const second = await ok("POST", "/api/srs/answer", {
+      token: learner,
+      body: { question_id: questionId, selected_option_ids: [correctOptionId] },
+    });
+    assert(
+      second.result.interval_days === 6,
+      `2 回目の連続正解は 6 日のはずが ${second.result.interval_days}`,
+    );
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(second.result.due_date), "due_date が YYYY-MM-DD でない");
+    const today = await ok("GET", "/api/srs/today", { token: learner });
+    assert(
+      today.review.answered_today >= 2,
+      `answered_today が増えていない (${today.review.answered_today})`,
+    );
   });
 
   await step("受講者が課題を提出する", async () => {

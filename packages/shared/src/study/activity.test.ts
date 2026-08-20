@@ -4,6 +4,7 @@ import {
   addStudyDays,
   buildStudySeries,
   computeStreaks,
+  studyDateStartMs,
   studyDateWeekday,
   toStudyDate,
   type StudyActivityDay,
@@ -127,5 +128,12 @@ describe("computeStreaks", () => {
   it("同日が複数行に分かれていても 1 日として数える", () => {
     const rows = [day("2026-08-07", 10), day("2026-08-07", 20), day("2026-08-06")];
     expect(computeStreaks(rows, "2026-08-07")).toEqual({ current: 2, longest: 2 });
+  });
+});
+
+describe("studyDateStartMs", () => {
+  it("studyDateStartMs は JST 0 時の UTC ミリ秒を返す", () => {
+    // 2026-08-20 00:00 JST = 2026-08-19 15:00 UTC
+    expect(studyDateStartMs("2026-08-20")).toBe(Date.UTC(2026, 7, 19, 15));
   });
 });

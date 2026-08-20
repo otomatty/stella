@@ -61,6 +61,11 @@ function studyDateToMs(date: string): number {
   return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
+/** `YYYY-MM-DD` (アプリ基準 TZ) の一日の開始を UTC ミリ秒で返す。 不正値は NaN。 */
+export function studyDateStartMs(date: string, offsetMin = STUDY_TZ_OFFSET_MIN): number {
+  return studyDateToMs(date) - offsetMin * 60_000;
+}
+
 /** `YYYY-MM-DD` に日数を加減した日付を返す。 */
 export function addStudyDays(date: string, delta: number): string {
   const ms = studyDateToMs(date);

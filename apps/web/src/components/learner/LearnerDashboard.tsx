@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Play,
   CheckCircle,
@@ -22,6 +23,7 @@ import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { useStudyActivity } from "@/hooks/useStudyActivity";
+import { useSrsToday } from "@/hooks/useSrsToday";
 import { StudyChart } from "@/components/learner/StudyChart";
 import { findNextLesson, resolveLessonStatus } from "@/lib/lesson-progress";
 import { formatSubmittedAt } from "@/lib/submissions-store";
@@ -92,6 +94,8 @@ export const LearnerDashboard = ({
     loading: activityLoading,
     error: activityError,
   } = useStudyActivity(currentUserId, STUDY_ACTIVITY_DAYS, backendEnabled);
+  // 「今日の復習」(SRS) の残り問題数。 カードが無い/今日ぶんゼロなら出さない。
+  const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
   // ストリークが自己ベストに並んだら「更新中」として強調する。
   const isBestStreak =
     activity != null &&
@@ -282,6 +286,43 @@ export const LearnerDashboard = ({
           {...(todaySec != null && todaySec > 0 ? { trendDir: "up" as const } : {})}
         />
       </div>
+
+      {/* 取得失敗を握り潰すと「復習機能が無い」ように見えるため、 他のエラーと同じトーンで出す。 */}
+      {reviewError ? (
+        <p className="text-sm text-destructive mb-3">
+          今日の復習の取得に失敗しました: {reviewError}
+        </p>
+      ) : null}
+      {review && (review.questions.length > 0 || review.answered_today > 0) ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles size={14} /> 今日の復習
+              </span>
+            </CardTitle>
+            <CardActions>
+              {review.questions.length > 0 ? (
+                <Button asChild variant="accent" size="sm">
+                  <Link to="/review">復習を始める</Link>
+                </Button>
+              ) : null}
+            </CardActions>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {review.questions.length > 0 ? (
+                <>
+                  残り <strong className="text-foreground">{review.questions.length} 問</strong>。
+                  忘れる前の数分が いちばん効きます。
+                </>
+              ) : (
+                <>今日の復習は完了! {review.answered_today} 問解答しました。 また明日。</>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-4">

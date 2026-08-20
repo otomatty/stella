@@ -22,6 +22,7 @@ import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
 import { Route as AppInterviewPrepRouteImport } from './routes/_app/interview-prep'
 import { Route as AppOrgsRouteImport } from './routes/_app/orgs'
 import { Route as AppReportRouteImport } from './routes/_app/report'
+import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppReviewQueueRouteImport } from './routes/_app/review-queue'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppStudentsRouteImport } from './routes/_app/students'
@@ -103,6 +104,11 @@ const AppOrgsRoute = AppOrgsRouteImport.update({
 const AppReportRoute = AppReportRouteImport.update({
   id: '/report',
   path: '/report',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReviewRoute = AppReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReviewQueueRoute = AppReviewQueueRouteImport.update({
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/interview-prep': typeof AppInterviewPrepRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
+  '/review': typeof AppReviewRoute
   '/review-queue': typeof AppReviewQueueRoute
   '/settings': typeof AppSettingsRoute
   '/students': typeof AppStudentsRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/interview-prep': typeof AppInterviewPrepRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
+  '/review': typeof AppReviewRoute
   '/review-queue': typeof AppReviewQueueRoute
   '/settings': typeof AppSettingsRoute
   '/students': typeof AppStudentsRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/_app/interview-prep': typeof AppInterviewPrepRoute
   '/_app/orgs': typeof AppOrgsRoute
   '/_app/report': typeof AppReportRoute
+  '/_app/review': typeof AppReviewRoute
   '/_app/review-queue': typeof AppReviewQueueRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/students': typeof AppStudentsRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/interview-prep'
     | '/orgs'
     | '/report'
+    | '/review'
     | '/review-queue'
     | '/settings'
     | '/students'
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/interview-prep'
     | '/orgs'
     | '/report'
+    | '/review'
     | '/review-queue'
     | '/settings'
     | '/students'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/_app/interview-prep'
     | '/_app/orgs'
     | '/_app/report'
+    | '/_app/review'
     | '/_app/review-queue'
     | '/_app/settings'
     | '/_app/students'
@@ -492,6 +504,13 @@ declare module '@tanstack/react-router' {
       path: '/report'
       fullPath: '/report'
       preLoaderRoute: typeof AppReportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/review': {
+      id: '/_app/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof AppReviewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/review-queue': {
@@ -658,6 +677,7 @@ interface AppRouteChildren {
   AppInterviewPrepRoute: typeof AppInterviewPrepRoute
   AppOrgsRoute: typeof AppOrgsRoute
   AppReportRoute: typeof AppReportRoute
+  AppReviewRoute: typeof AppReviewRoute
   AppReviewQueueRoute: typeof AppReviewQueueRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStudentsRoute: typeof AppStudentsRoute
@@ -681,6 +701,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInterviewPrepRoute: AppInterviewPrepRoute,
   AppOrgsRoute: AppOrgsRoute,
   AppReportRoute: AppReportRoute,
+  AppReviewRoute: AppReviewRoute,
   AppReviewQueueRoute: AppReviewQueueRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStudentsRoute: AppStudentsRoute,
