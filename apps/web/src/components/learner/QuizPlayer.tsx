@@ -264,11 +264,10 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   }
 
   return (
-    // 解答中の sm 未満は下部固定バー (約 100px + safe-area) がコンテンツに被さるので、
-    // 最終問題の解説まで読めるようバーの高さぶんの下余白を確保する。 親 (LessonPlayer) が
-    // FAB クリアランスとして常に pb-24 (96px) を持つため、 ここは合算でバー高を満たす
-    // 差分だけ足す (96 + 48 = 144px ≥ バー約 100px + safe-area)。
-    <div className={cn(!result && "pb-12 sm:pb-0")}>
+    // 解答中の sm 未満は下部固定バーがコンテンツに被さるが、 その下余白は
+    // ページ末尾のブロック (LessonPlayer の前後ナビ) がまとめて持つ。 ここで足すと
+    // 本文と前後ナビの間だけが空いて、 バーに隠れるのは変わらない。
+    <div>
       {result ? (
         <Card
           className={cn(

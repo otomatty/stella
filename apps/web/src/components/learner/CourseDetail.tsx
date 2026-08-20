@@ -43,6 +43,16 @@ const lessonTypeIcon: Record<LessonType, LucideIcon> = {
   code: Terminal,
 };
 
+/** レッスン種別の表示名。 バッジ・前後ナビなど受講者向けの表示で共有する。 */
+export const lessonTypeLabel: Record<LessonType, string> = {
+  video: "動画",
+  slides: "スライド",
+  text: "テキスト",
+  quiz: "小テスト",
+  assignment: "課題",
+  code: "コーディング課題",
+};
+
 export const LessonTypeIcon = ({ type, size = 14 }: { type: LessonType; size?: number }) => {
   const Icon = lessonTypeIcon[type];
   return <Icon size={size} />;

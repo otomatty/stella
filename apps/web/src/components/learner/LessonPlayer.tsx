@@ -1,9 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
   ChevronLeft,
-  ChevronRight,
   Download,
   FileText,
   Folder,
@@ -13,7 +12,7 @@ import {
   User,
   X,
 } from "@/lib/icons";
-import type { Course, Section, Lesson, LessonType } from "@/data/types";
+import type { Course, Section, Lesson } from "@/data/types";
 import type { ChatContext } from "@falcon/shared/ai/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,11 +27,18 @@ import {
 } from "@/components/ui/drawer";
 import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
-import { LessonTypeIcon, LessonStatusIcon } from "./CourseDetail";
+import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./CourseDetail";
+import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
-import { useLessonProgress, useLessonProgressMap, useStudyTime } from "@/hooks/useLessonProgress";
+import { resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import {
+  useLessonProgress,
+  useLessonProgressMap,
+  useProgressReady,
+  useStudyTime,
+} from "@/hooks/useLessonProgress";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
 import { downloadLessonMaterial } from "@/lib/cms-api";
@@ -76,15 +82,6 @@ interface LessonPlayerProps {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const lessonTypeLabel: Record<LessonType, string> = {
-  video: "動画",
-  slides: "スライド",
-  text: "テキスト",
-  quiz: "小テスト",
-  assignment: "課題",
-  code: "コーディング課題",
-};
 
 export const LessonPlayer = ({
   course,
@@ -186,19 +183,66 @@ export const LessonPlayer = ({
   // (両方が同じ watched_sec を書くと二重計上になる)。
   useStudyTime(lessonObj?.id ?? "", Boolean(lessonObj) && lessonObj?.type !== "video");
 
-  // 前のレッスンへ遷移 (Issue #77)。 locked はスキップして手前の解禁レッスンを探す。
-  // 手前に解禁レッスンが無ければ null を返し、 呼び出し側でボタンを無効化する。
-  const prevLessonId = useMemo(() => {
-    const idx = allLessons.findIndex((l) => l.id === activeLesson);
-    if (idx <= 0) return null;
-    for (let i = idx - 1; i >= 0; i--) {
-      const candidate = allLessons[i];
-      if (candidate && resolveLessonStatus(candidate, progressMap) !== "locked") {
-        return candidate.id;
-      }
+  // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 locked はスキップして
+  // 手前 / 先の解禁レッスンを探す。 無ければ null で、 ナビは端の表示になる。
+  const neighbors = useMemo(
+    () => resolveLessonNeighbors(course, activeLesson, progressMap),
+    [course, activeLesson, progressMap],
+  );
+
+  /**
+   * ナビ / CTA からのレッスン移動。 切替時に先頭へ戻さないと、 長いレッスンの
+   * 末尾で「次へ」を押したとき次のレッスンの途中にスクロールしたまま始まる。
+   */
+  const goToLesson = useCallback((lessonId: string) => {
+    setActiveLesson(lessonId);
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const handleBackToCourse = useCallback(() => setPage("course-detail"), [setPage]);
+
+  const nextLessonId = neighbors.next?.lesson.id ?? null;
+  const handleAdvanceNext = useCallback(() => {
+    if (nextLessonId) goToLesson(nextLessonId);
+  }, [nextLessonId, goToLesson]);
+
+  /**
+   * 「このレッスンを見ている間に完了した」 ことの検知。
+   *
+   * 開いた時点で既に完了しているレッスン (読み返し) では CTA を出さない。
+   * 完了の起点は種類ごとに違う (動画の 90% 視聴 / スライドの 90% 閲覧 / テキストの
+   * 末尾到達 / 小テストの合格 / 課題の提出 / 拡張からのクリア同期) が、 どれも
+   * 最終的に進捗ストアの `completed` を立てるので、 その遷移だけを見れば足りる。
+   *
+   * ただし基準にできるのはサーバ進捗の取り込みが決着してから (`useProgressReady`)。
+   * `hydrateFromRemote` はキャッシュ更新の notify を先に流して最後に ready を立てる
+   * ので、 決着前に基準を取ると 「ローカルは空 → サーバの completed が届く」 を
+   * 「いま完了した」 と読んでしまう (ログイン直後 / 別端末で完了済み /
+   * localStorage を消したあとの読み返しで祝ってしまう)。 ビューア側の復元位置と
+   * 同じ扱いに揃える。
+   */
+  const progressReady = useProgressReady();
+  const activeCompleted = activeLesson ? progressMap[activeLesson]?.completed === true : false;
+  const completionWatchRef = useRef<{ lessonId: string; wasCompleted: boolean } | null>(null);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const [calloutDismissed, setCalloutDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!activeLesson || !progressReady) {
+      // 基準を取れないうちは監視しない。 決着後に取り直せるよう捨てておく。
+      completionWatchRef.current = null;
+      return;
     }
-    return null;
-  }, [allLessons, activeLesson, progressMap]);
+    if (completionWatchRef.current?.lessonId !== activeLesson) {
+      completionWatchRef.current = { lessonId: activeLesson, wasCompleted: activeCompleted };
+      setJustCompleted(false);
+      setCalloutDismissed(false);
+      return;
+    }
+    if (activeCompleted && !completionWatchRef.current.wasCompleted) setJustCompleted(true);
+  }, [activeLesson, activeCompleted, progressReady]);
+
+  const showCompleteCallout = justCompleted && !calloutDismissed;
 
   // lg 未満 (VSCode 拡張のパネル等も含む) では目次をドロワーで開く。 パネル幅の変更で
   // lg 境界を跨いだら常設パネル側に切り替わるので、 ドロワーは閉じておく。
@@ -252,8 +296,8 @@ export const LessonPlayer = ({
             progressPercent={progressPercent}
             progressMap={progressMap}
             activeLesson={activeLesson}
-            onSelectLesson={setActiveLesson}
-            onBackToCourse={() => setPage("course-detail")}
+            onSelectLesson={goToLesson}
+            onBackToCourse={handleBackToCourse}
           />
         </aside>
       )}
@@ -310,12 +354,12 @@ export const LessonPlayer = ({
               progressMap={progressMap}
               activeLesson={activeLesson}
               onSelectLesson={(lessonId) => {
-                setActiveLesson(lessonId);
+                goToLesson(lessonId);
                 setTocOpen(false);
               }}
               onBackToCourse={() => {
                 setTocOpen(false);
-                setPage("course-detail");
+                handleBackToCourse();
               }}
             />
           </div>
@@ -339,6 +383,10 @@ export const LessonPlayer = ({
                   videoPath={lessonObj.videoPath}
                   totalSec={lessonObj.totalSec}
                   onComplete={handleMarkComplete}
+                  nextLessonTitle={neighbors.next?.lesson.title ?? null}
+                  // 次が無いコース末尾では渡さない。 渡すと VideoViewer 側の
+                  // canAdvance が true になり、 何もしないオーバーレイが出る。
+                  onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
                 />
               ) : (
                 <MissingMaterialFallback type="video" />
@@ -362,9 +410,7 @@ export const LessonPlayer = ({
               )
             ) : null}
 
-            {/* pb-24 は右下固定の AI FAB (bottom-6 + h-12 = 下端から 72px) のクリアランス。
-                末尾に右寄せアクション (採点 / 提出) が来ても FAB と重ならない。 */}
-            <div className="px-4 sm:px-10 py-6 pb-24 max-w-[880px] mx-auto w-full">
+            <div className="px-4 sm:px-10 py-6 max-w-[880px] mx-auto w-full">
               <div className="flex items-start gap-3 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5 mb-2">
@@ -438,11 +484,7 @@ export const LessonPlayer = ({
                       onComplete={handleMarkComplete}
                     />
                   ) : isVideo || isSlides ? (
-                    <LessonOverview
-                      lesson={lessonObj}
-                      onComplete={handleMarkComplete}
-                      onPrevLesson={prevLessonId ? () => setActiveLesson(prevLessonId) : null}
-                    />
+                    <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
                   ) : (
                     <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
                   )}
@@ -458,6 +500,34 @@ export const LessonPlayer = ({
             </div>
           </>
         )}
+
+        {/* 完了の CTA と前後ナビはレッスンの種類を問わず本文の最後に出す。 コーディング
+            課題 (VS Code へ渡すだけの画面) にも同じ導線が要るので、 上の分岐の外に置く。
+
+            ページ末尾はこのブロックなので、 下端に重なる固定要素のクリアランスもここが持つ。
+            pb-24 (96px) は右下の AI FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
+            解答中の sm 未満に下部固定バー (約 100px + safe-area) が出るので、 その間だけ
+            pb-36 (144px) へ広げる (採点後は余白が 48px 余るが、 末尾の余白なので害はない)。 */}
+        <div
+          className={cn(
+            "px-4 sm:px-10 max-w-[880px] mx-auto w-full",
+            isQuiz ? "pb-36 sm:pb-24" : "pb-24",
+          )}
+        >
+          {showCompleteCallout ? (
+            <LessonCompleteCallout
+              neighbors={neighbors}
+              onSelectLesson={goToLesson}
+              onBackToCourse={handleBackToCourse}
+              onDismiss={() => setCalloutDismissed(true)}
+            />
+          ) : null}
+          <LessonNavFooter
+            neighbors={neighbors}
+            onSelectLesson={goToLesson}
+            onBackToCourse={handleBackToCourse}
+          />
+        </div>
       </main>
     </div>
   );
@@ -591,13 +661,12 @@ const MissingMaterialFallback = ({ type }: { type: "video" | "slides" }) => (
 const LessonOverview = ({
   lesson,
   onComplete,
-  onPrevLesson,
 }: {
   lesson: Lesson;
   onComplete: () => void;
-  /** 手前に解禁済みレッスンが無いときは null (ボタンを無効化する)。 */
-  onPrevLesson: (() => void) | null;
 }) => {
+  const { entry } = useLessonProgress(lesson.id);
+  const isCompleted = entry?.completed === true;
   const hasMaterial =
     (lesson.type === "video" && Boolean(lesson.videoPath)) ||
     (lesson.type === "slides" && Boolean(lesson.pdfPath));
@@ -618,24 +687,22 @@ const LessonOverview = ({
           素材はまだ準備中です。 アップロードされ次第、 ここから視聴できるようになります。
         </p>
       )}
-      <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-        <Button
-          variant="outline"
-          onClick={() => onPrevLesson?.()}
-          disabled={!onPrevLesson}
-          title={onPrevLesson ? undefined : "最初のレッスンです"}
-        >
-          <ChevronLeft size={13} />
-          前のレッスン
-        </Button>
-        <div className="flex-1" />
-        {hasMaterial ? (
-          <Button variant="accent" onClick={onComplete}>
-            完了にする
-            <ChevronRight size={13} />
-          </Button>
-        ) : null}
-      </div>
+      {hasMaterial ? (
+        <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+          <div className="flex-1" />
+          {isCompleted ? (
+            <span className="inline-flex items-center gap-1 text-success text-[12px]">
+              <Check size={13} aria-hidden="true" />
+              完了済み
+            </span>
+          ) : (
+            <Button variant="accent" onClick={onComplete}>
+              <Check size={13} aria-hidden="true" />
+              完了にする
+            </Button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -696,8 +763,8 @@ const LessonReadable = ({
           </span>
         ) : (
           <Button variant="accent" onClick={onComplete}>
+            <Check size={13} aria-hidden="true" />
             完了にする
-            <ChevronRight size={13} />
           </Button>
         )}
       </div>

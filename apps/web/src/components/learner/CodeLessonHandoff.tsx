@@ -10,7 +10,7 @@ export function CodeLessonHandoff({
   assignmentTitle?: string;
 }) {
   return (
-    <div className="px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
+    <div className="px-4 sm:px-10 py-6 max-w-[880px] mx-auto w-full">
       <p className="hidden max-md:block text-[13.5px] text-ink-2">
         この演習はパソコンの VS Code で進めてください
       </p>

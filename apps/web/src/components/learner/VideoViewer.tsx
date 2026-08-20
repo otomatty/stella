@@ -7,6 +7,7 @@
  * - 前回視聴位置からの自動再開 (`watchedSec`)
  * - `timeupdate` を 250ms デバウンスして localStorage に保存
  * - 90% 視聴で `onComplete()`
+ * - 再生終了で「次のレッスンへ」オーバーレイ (既定は 5 秒で自動遷移 / 取り消し可)
  * - 読み込み失敗時のリトライ + ダウンロード fallback
  */
 
@@ -27,6 +28,7 @@ import { isBackendConfigured } from "@/lib/backend";
 import { getMaterialUrl } from "@/lib/storage";
 import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
 import { flushNow } from "@/lib/lesson-progress";
+import { useAutoplayNext } from "@/lib/autoplay-pref";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -34,13 +36,26 @@ interface Props {
   videoPath: string;
   totalSec?: number;
   onComplete?: () => void;
+  /** 再生終了後に案内する次のレッスン名。 次が無いコース末尾では null。 */
+  nextLessonTitle?: string | null;
+  /** 次のレッスンへ進む。 未指定 (次が無い) ならオーバーレイを出さない。 */
+  onAdvanceNext?: (() => void) | undefined;
 }
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2] as const;
 const SAVE_DEBOUNCE_MS = 250;
 const COMPLETION_THRESHOLD = 0.9;
+/** 再生終了から自動で次へ進むまでの秒数。 */
+const AUTO_ADVANCE_SEC = 5;
 
-export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props) {
+export function VideoViewer({
+  lessonId,
+  videoPath,
+  totalSec,
+  onComplete,
+  nextLessonTitle = null,
+  onAdvanceNext,
+}: Props) {
   const { entry, recordWatchTime, markComplete } = useLessonProgress(lessonId);
   // サーバ進捗の取り込みが決着するまで再開位置は確定しない。
   const ready = useProgressReady();
@@ -51,6 +66,11 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
   const [duration, setDuration] = useState<number>(totalSec ?? 0);
   const [hasError, setHasError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [autoAdvance, setAutoAdvance] = useAutoplayNext();
+  const [showNextOverlay, setShowNextOverlay] = useState(false);
+  /** 自動遷移までの残り秒。 null なら自動遷移しない (ボタンのみ)。 */
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const canAdvance = Boolean(onAdvanceNext);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -137,7 +157,21 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
     flushNow();
   }, [flushSave]);
 
-  const onPlay = useCallback(() => setIsPlaying(true), []);
+  // 最後まで見終わったら次のレッスンへの導線を出す。 自動遷移が有効なら
+  // カウントダウンも始める (見直しのために再生を再開したら取り消す)。
+  const handleEnded = useCallback(() => {
+    onPauseOrEnded();
+    if (!canAdvance) return;
+    setShowNextOverlay(true);
+    setCountdown(autoAdvance ? AUTO_ADVANCE_SEC : null);
+  }, [onPauseOrEnded, canAdvance, autoAdvance]);
+
+  const onPlay = useCallback(() => {
+    setIsPlaying(true);
+    // 見直しを始めたら勝手に次へ飛ばさない。
+    setShowNextOverlay(false);
+    setCountdown(null);
+  }, []);
 
   // unmount でフラッシュ。 flushSave の identity 変化で unmount 相当の保存を走らせない
   // biome-ignore lint/correctness/useExhaustiveDependencies: unmount 時だけフラッシュする
@@ -166,6 +200,27 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
     const v = videoRef.current;
     if (v) v.playbackRate = speed;
   }, [speed]);
+
+  // 自動遷移のカウントダウン。 コールバックは ref 経由で読み、 親の再レンダで
+  // identity が変わっても 1 秒の刻みをやり直さない。
+  const advanceRef = useRef(onAdvanceNext);
+  useEffect(() => {
+    advanceRef.current = onAdvanceNext;
+  }, [onAdvanceNext]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setCountdown(null);
+      setShowNextOverlay(false);
+      advanceRef.current?.();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdown((sec) => (sec === null ? null : sec - 1));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
@@ -331,12 +386,64 @@ export function VideoViewer({ lessonId, videoPath, totalSec, onComplete }: Props
           onTimeUpdate={onTimeUpdate}
           onPlay={onPlay}
           onPause={onPauseOrEnded}
-          onEnded={onPauseOrEnded}
+          onEnded={handleEnded}
           onError={() => setHasError(true)}
         >
           <track kind="captions" />
         </video>
       )}
+
+      {showNextOverlay && canAdvance ? (
+        // ブラウザ既定のコントロールバーはこの上に描かれるので、 下に余白を空けて
+        // ボタンが操作バーと重ならないようにする。
+        <div className="absolute inset-0 grid place-items-center bg-black/70 px-4 pb-14 text-center">
+          <div className="max-w-sm">
+            <div className="text-[11.5px] uppercase tracking-[0.14em] text-white/70">
+              次のレッスン
+            </div>
+            <div className="mt-1.5 text-[15px] font-bold text-white">
+              {nextLessonTitle ?? "次のレッスン"}
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Button
+                variant="accent"
+                onClick={() => {
+                  setCountdown(null);
+                  setShowNextOverlay(false);
+                  onAdvanceNext?.();
+                }}
+              >
+                <Play size={13} />
+                {countdown === null ? "次のレッスンへ" : `次のレッスンへ (${countdown})`}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-white/40 bg-transparent text-white hover:bg-white/10"
+                onClick={() => {
+                  setCountdown(null);
+                  setShowNextOverlay(false);
+                }}
+              >
+                {countdown === null ? "閉じる" : "キャンセル"}
+              </Button>
+            </div>
+            <label className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] text-white/80">
+              <input
+                type="checkbox"
+                checked={autoAdvance}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setAutoAdvance(next);
+                  // その場で挙動を合わせる (オフにしたらカウントダウンを止める)。
+                  setCountdown(next ? AUTO_ADVANCE_SEC : null);
+                }}
+                className="accent-brand"
+              />
+              再生終了後に自動で次へ進む
+            </label>
+          </div>
+        </div>
+      ) : null}
 
       <div className="absolute top-2 right-2 flex items-center gap-1.5 text-[11.5px]">
         <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full px-2.5 py-1 text-white font-display font-bold">
