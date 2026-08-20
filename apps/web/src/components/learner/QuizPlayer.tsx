@@ -212,6 +212,11 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   const totalPoints = quiz.questions.reduce((n, q) => n + q.points, 0);
   const scorePercent =
     result && result.max_score > 0 ? Math.round((result.score * 100) / result.max_score) : 0;
+  const submitHint = outOfAttempts
+    ? "受験回数の上限に達しました"
+    : allAnswered
+      ? "すべて回答済みです"
+      : "すべての設問に回答してください";
 
   // 前回までの受験結果。 設問は伏せたまま、 結果と再挑戦の導線だけ出す。
   if (showPastAttempt && history) {
@@ -259,7 +264,11 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
   }
 
   return (
-    <div>
+    // 解答中の sm 未満は下部固定バー (約 100px + safe-area) がコンテンツに被さるので、
+    // 最終問題の解説まで読めるようバーの高さぶんの下余白を確保する。 親 (LessonPlayer) が
+    // FAB クリアランスとして常に pb-24 (96px) を持つため、 ここは合算でバー高を満たす
+    // 差分だけ足す (96 + 48 = 144px ≥ バー約 100px + safe-area)。
+    <div className={cn(!result && "pb-12 sm:pb-0")}>
       {result ? (
         <Card
           className={cn(
@@ -398,24 +407,43 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       </div>
 
       {!result ? (
-        <div className="flex gap-2.5 mt-5 pt-4 border-t border-border items-center">
-          <span className="text-[11.5px] text-ink-3">
-            {outOfAttempts
-              ? "受験回数の上限に達しました"
-              : allAnswered
-                ? "すべて回答済みです"
-                : "すべての設問に回答してください"}
-          </span>
-          <div className="flex-1" />
-          <Button
-            variant="accent"
-            disabled={!allAnswered || submitting || outOfAttempts}
-            onClick={handleSubmit}
-          >
-            {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-            採点する
-          </Button>
-        </div>
+        <>
+          {/* sm 以上: コンテンツ末尾のインライン行。 右下 FAB とはコンテンツ側の
+              下余白 (LessonPlayer の pb) で離してある。 */}
+          <div className="hidden sm:flex gap-2.5 mt-5 pt-4 border-t border-border items-center">
+            <span className="text-[11.5px] text-ink-3">{submitHint}</span>
+            <div className="flex-1" />
+            <Button
+              variant="accent"
+              disabled={!allAnswered || submitting || outOfAttempts}
+              onClick={handleSubmit}
+            >
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
+              採点する
+            </Button>
+          </div>
+          {/* sm 未満: 画面下部固定のアクションバー。 右端は AI FAB (right-6 + w-12 = 72px)
+              の指定席なので、 誤タップ防止の間隔 16px を足した 88px を空けて左側いっぱいを使う。
+              FAB は動かさず、 バーが FAB の台座に見えるよう背景は全幅に敷く。 */}
+          <div className="fixed inset-x-0 bottom-0 z-[80] border-t border-border bg-card sm:hidden">
+            <div className="pl-4 pr-[88px] pt-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+              <div className="mb-1.5 text-[11px] text-ink-3">{submitHint}</div>
+              {/* 高さ 48px + 下 24px は FAB (h-12 / bottom-6) と同じ。 ボタン中心を
+                  FAB 中心と揃えて 1 本の帯に見せる。 */}
+              <div className="flex h-12 items-center">
+                <Button
+                  variant="accent"
+                  className="w-full"
+                  disabled={!allAnswered || submitting || outOfAttempts}
+                  onClick={handleSubmit}
+                >
+                  {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
+                  採点する
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

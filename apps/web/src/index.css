@@ -294,11 +294,16 @@
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
+  /* background-origin を border-box にしないと、 透明ボーダー付きの要素 (Button accent 等) で
+     既定 (origin: padding-box + clip: border-box + repeat) によりボーダー帯へ隣のタイルが
+     繰り返され、 左端に終端色 / 右端に始端色の 1px フリンジが出る。 */
   .sf-gradient-bg {
     background: var(--sf-gradient);
+    background-origin: border-box;
   }
   .sf-gradient-135-bg {
     background: var(--sf-gradient-135);
+    background-origin: border-box;
   }
 
   /* Sidebar avatar color palette (c1..c6)。

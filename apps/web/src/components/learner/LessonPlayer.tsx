@@ -362,7 +362,9 @@ export const LessonPlayer = ({
               )
             ) : null}
 
-            <div className="px-4 sm:px-10 py-6 pb-12 max-w-[880px] mx-auto w-full">
+            {/* pb-24 は右下固定の AI FAB (bottom-6 + h-12 = 下端から 72px) のクリアランス。
+                末尾に右寄せアクション (採点 / 提出) が来ても FAB と重ならない。 */}
+            <div className="px-4 sm:px-10 py-6 pb-24 max-w-[880px] mx-auto w-full">
               <div className="flex items-start gap-3 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5 mb-2">

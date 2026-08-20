@@ -615,7 +615,9 @@ export function AppShell() {
             onClick={() => setAiOpen((v) => !v)}
             title={aiOpen ? "学習アシスタントAIを閉じる" : "学習アシスタントAI"}
             aria-expanded={aiOpen}
-            className="fixed bottom-6 right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
+            // bottom は 24px + safe-area。 クイズ解答中の下部固定バー (QuizPlayer) が
+            // 同じ式でボタン中心を揃えているので、 ここを変えるときは両方揃えること。
+            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 w-12 h-12 rounded-full shadow-lg z-[90]"
           >
             <Sparkles size={18} />
           </Button>
