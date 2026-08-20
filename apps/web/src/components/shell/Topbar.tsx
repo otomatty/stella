@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { HelpCircle, Moon, Search, Sun } from "@/lib/icons";
+import { Moon, Search, Sun } from "@/lib/icons";
 import { useTheme } from "@/hooks/useTheme";
+import { HelpDrawer } from "@/components/shell/HelpDrawer";
 import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
 import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
@@ -111,18 +112,8 @@ export const Topbar = ({
       >
         {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
       </button>
-      {/* ハンドラの無いスタブだったヘルプボタンを、 既存の公開サポートページに繋いだ。
-          学習中の状態を失わないよう別タブで開く。 */}
-      <a
-        href="/support"
-        target="_blank"
-        rel="noreferrer"
-        className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
-        title="ヘルプ・サポート"
-        aria-label="ヘルプ・サポート"
-      >
-        <HelpCircle size={16} />
-      </a>
+      {/* 現在の画面に応じた使い方ヘルプ。 サポートページへの導線はドロワー内に残す。 */}
+      <HelpDrawer role={notify.role} />
       {actions}
     </div>
   );

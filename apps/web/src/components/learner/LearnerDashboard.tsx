@@ -431,8 +431,10 @@ export const LearnerDashboard = ({
             </CardHeader>
             <div className="px-4 py-3.5">
               {courses.length === 0 ? (
+                /* 受講登録は管理者割当のみ (CourseList 参照) なので、 自分で追加する
+                   導線は出せない。 割当待ちであることを伝えるに留める。 */
                 <div className="py-4 text-center text-[12.5px] text-ink-3">
-                  受講中のコースはありません。
+                  受講中のコースはまだありません。管理者がコースを割り当てると、ここに表示されます。
                 </div>
               ) : (
                 courses.slice(0, 5).map((c) => (
