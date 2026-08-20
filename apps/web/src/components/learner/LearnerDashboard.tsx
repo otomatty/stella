@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Play,
-  Book,
   CheckCircle,
   Clock,
-  Award,
   ChevronRight,
   Flame,
   MessageCircle,
@@ -25,7 +23,6 @@ import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { useStudyActivity } from "@/hooks/useStudyActivity";
 import { StudyChart } from "@/components/learner/StudyChart";
-import { listCertificatesForUser } from "@/lib/certificates-api";
 import { findNextLesson, resolveLessonStatus } from "@/lib/lesson-progress";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 import { cn } from "@/lib/utils";
@@ -129,28 +126,43 @@ export const LearnerDashboard = ({
     0,
   );
 
-  // 修了証: バックエンド設定時は API の実発行数、 未設定 (デモ) 時は完了コース数。
-  const completedCourses = courses.filter((c) => c.completed).length;
-  const [certCount, setCertCount] = useState<number | null>(null);
-  useEffect(() => {
-    if (!backendEnabled || !currentUserId) {
-      setCertCount(null);
-      return;
-    }
-    let cancelled = false;
-    void listCertificatesForUser(currentUserId)
-      .then((rows) => {
-        if (!cancelled) setCertCount(rows.filter((r) => !r.revoked).length);
-      })
-      .catch((err) => {
-        console.error("[LearnerDashboard] certificates fetch failed", err);
-        if (!cancelled) setCertCount(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [backendEnabled, currentUserId]);
-  const displayCertCount = backendEnabled ? (certCount ?? 0) : completedCourses;
+  // 前日比: 累計の完了レッスン数は「今日完了した数」だけ前日から増えるので、
+  // 日別学習ログ (study_activity) の今日の completed_lessons を昨日からの増分として出す。
+  // (昨日の日次件数との差ではない。 表記も「昨日から +N」でその読みに寄せる。)
+  // 系列は欠損日 0 埋め済みだが、 末尾=今日という並びには依存せず日付で引く。
+  // 進捗 KPI (進捗ストア集計) と原資が違うため理論上ずれ得るが、 サーバ記録の実データを優先する。
+  const todayCompletedLessons = activity
+    ? (activity.days.find((d) => d.date === activity.today)?.completed_lessons ?? 0)
+    : null;
+  // 今日の学習時間 (秒)。 「今日どれだけ進んだか」を見せてモチベーションにつなげる。
+  const todaySec = activity?.today_sec ?? null;
+  // 新設トレンドもストリークと同じくロード中は Skeleton (着弾時のチラつきを抑える)。
+  const completedTrend = !activity ? (
+    activityLoading ? (
+      <Skeleton className="h-3 w-24" />
+    ) : undefined
+  ) : todayCompletedLessons != null && todayCompletedLessons > 0 ? (
+    <>
+      <TrendingUp size={12} />
+      昨日から +{todayCompletedLessons} レッスン
+    </>
+  ) : (
+    <>昨日から ±0 · 今日の1本目を始めよう</>
+  );
+  const studyTimeTrend = !activity ? (
+    activityLoading ? (
+      <Skeleton className="h-3 w-24" />
+    ) : (
+      "動画視聴の合計"
+    )
+  ) : todaySec != null && todaySec > 0 ? (
+    <>
+      <TrendingUp size={12} />
+      今日 {formatHoursMinutes(todaySec)}
+    </>
+  ) : (
+    <>今日はまだ 0:00</>
+  );
 
   const { announcements, error: announcementsError, refetch } = announcementsHook;
   const now = Date.now();
@@ -192,9 +204,13 @@ export const LearnerDashboard = ({
         title={`おかえりなさい、${studentName}さん`}
         sub={
           <>
-            今日も学習を続けましょう。受講中{" "}
-            <strong className="text-foreground">{active.length}コース</strong> · 完了レッスン{" "}
-            {completedLessons}/{totalLessons}
+            今日も学習を続けましょう。完了レッスン{" "}
+            <strong className="text-foreground">
+              {completedLessons}/{totalLessons}
+            </strong>
+            {todayCompletedLessons != null && todayCompletedLessons > 0 ? (
+              <span className="text-success"> · 今日 +{todayCompletedLessons}</span>
+            ) : null}
           </>
         }
         actions={
@@ -221,17 +237,9 @@ export const LearnerDashboard = ({
         </div>
       ) : null}
 
-      <div className="grid gap-3 mb-6 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
-        <KpiCard
-          label={
-            <>
-              <Book size={12} /> 受講中
-            </>
-          }
-          value={active.length}
-          unit="コース"
-          trend={<>全{courses.length}コース中</>}
-        />
+      {/* KPI は「昨日の自分と比べて今日どれだけ進んだか」に絞る。
+          受講中コース数・修了証数は行動につながらないストック値なので出さない。 */}
+      <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-3">
         <KpiCard
           label={
             <>
@@ -251,6 +259,10 @@ export const LearnerDashboard = ({
           }
           value={completedLessons}
           unit={`/ ${totalLessons}`}
+          trend={completedTrend}
+          {...(todayCompletedLessons != null && todayCompletedLessons > 0
+            ? { trendDir: "up" as const }
+            : {})}
         >
           <Progress
             value={totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0}
@@ -266,16 +278,8 @@ export const LearnerDashboard = ({
           }
           value={formatHoursMinutes(totalWatchedSec)}
           unit="累計"
-          trend="動画視聴の合計"
-        />
-        <KpiCard
-          label={
-            <>
-              <Award size={12} /> 修了証
-            </>
-          }
-          value={displayCertCount}
-          unit={`/ 全${courses.length}コース`}
+          trend={studyTimeTrend}
+          {...(todaySec != null && todaySec > 0 ? { trendDir: "up" as const } : {})}
         />
       </div>
 
