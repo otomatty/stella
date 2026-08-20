@@ -79,6 +79,9 @@ const PATH_BY_PAGE: Record<string, string> = {
   cert: "/certificates",
   "interview-prep": "/interview-prep",
   "review-queue": "/review-queue",
+  // デイリー復習 (SRS)。 未登録だと fallback でキーが "review" (添削詳細 = flush) に
+  // 衝突し、 共通パディングが外れてしまう。
+  "daily-review": "/review",
   gradebook: "/gradebook",
   students: "/students",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
