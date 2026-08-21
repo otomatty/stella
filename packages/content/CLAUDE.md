@@ -138,16 +138,18 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **基本情報技術者試験の対策講座があります。** 科目A対策（`courses/fe-kamoku-a/`）と科目B対策（`courses/fe-kamoku-b/`）の2講座で、IPA シラバスの「大分類 → 中分類」を「モジュール → レッスン」に写像しています。科目Aは M1 基礎理論〜M10 模擬試験（18 レッスン / 73 トピック）、科目Bは M1 擬似言語〜M5 総合演習（9 レッスン / 27 トピック）が実装済み。問題はすべて自作で、IPA 過去問・サンプル問題の転載はしません（参照元クレジットは各講座の CURRICULUM.md に集約）。模擬試験モジュール（科目A の M10 / 科目B の M5）の確認クイズだけは、出題範囲がそのレッスンに閉じない意図的な例外です。残りは各 CURRICULUM.md の全体計画を参照。
 
+**テスト設計と品質保証 入門研修（`courses/test-design-basics/`）があります。** 6 モジュール / 21 レッスン / 82 トピックで、構成は [courses/test-design-basics/CURRICULUM.md](courses/test-design-basics/CURRICULUM.md)。採点基盤（`@falcon/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成(`assets/` を持つトピックが無い)。原典クレジットは CURRICULUM.md に集約しています。
+
 TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 ですが、こちらもデプロイに含まれる（seed の前に全件アップロードする）ので、手動実行は不要です。ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を叩いてください。
 
-**講座サムネイルは全 7 講座に入っています（`courses/<slug>/thumbnail.webp`）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@falcon/content thumbnails`）が生成します。7 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
+**講座サムネイルは全 8 講座に入っています（`courses/<slug>/thumbnail.webp`）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@falcon/content thumbnails`）が生成します。8 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
 
 未着手の課題:
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
-- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 7 講座に設置済み
+- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 8 講座に設置済み
 - **収録** — 162本の動画収録は未着手
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 

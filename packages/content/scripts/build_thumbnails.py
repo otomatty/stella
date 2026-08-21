@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは 7 講座で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 8 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -210,6 +210,29 @@ def motif_git(c: str) -> str:
     <circle cx="452" cy="{main_y}" r="34" fill="none" stroke="{c}" stroke-width="4"/>"""
 
 
+def motif_test_design(c: str) -> str:
+    """仕様の範囲と境界値。 帯が仕様の範囲、その端をまたぐ 2 点だけを試す。"""
+    line_y = 252
+    boundary = 272
+    points = ((200, "3,000"), (344, "3,001"))
+    ticks = "".join(
+        f'<line x1="{x}" y1="{line_y - 16}" x2="{x}" y2="{line_y + 16}" stroke="{RULE_SOLID}" stroke-width="3"/>'
+        for x in (56, 128, 416, 488)
+    )
+    marks = "".join(
+        f'<circle cx="{x}" cy="{line_y}" r="28" fill="{c}" stroke="{PAPER}" stroke-width="5"/>'
+        f'<text x="{x}" y="412" text-anchor="middle" font-family="\'Geist Mono\', monospace"'
+        f' font-size="40" font-weight="500" fill="{INK}">{label}</text>'
+        for x, label in points
+    )
+    return f"""
+    <rect x="56" y="{line_y - 44}" width="{boundary - 56}" height="88" fill="{c}" opacity="0.12"/>
+    <line x1="56" y1="{line_y}" x2="492" y2="{line_y}" stroke="{INK}" stroke-width="4"/>
+    {ticks}
+    <line x1="{boundary}" y1="124" x2="{boundary}" y2="348" stroke="{INK}" stroke-width="3" stroke-dasharray="12 10"/>
+    {marks}"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -235,6 +258,12 @@ SPECS = {
         "title_size": 152,
         "subtitle": "テスト自動化と CI 入門",
         "motif": motif_python_testing,
+    },
+    "test-design-basics": {
+        "title": "テスト設計",
+        "title_size": 132,
+        "subtitle": "品質保証 入門研修",
+        "motif": motif_test_design,
     },
     "git-basics": {
         "title": "Git",

@@ -1,0 +1,16 @@
+{
+  "title": "テスト設計と品質保証 入門研修",
+  "category": "プログラミング",
+  "color": "green",
+  "description": "仕様からテストケースを設計し、pytest のテストコードに落とし、何を自動化するかを根拠つきで提案できるようになる研修。",
+  "header": "テスト設計入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m1-foundations": "M1. テストの基礎",
+    "m2-levels-types": "M2. 何をどこでテストするか",
+    "m3-blackbox": "M3. テスト設計技法 I: ブラックボックス",
+    "m4-whitebox-experience": "M4. テスト設計技法 II: コードと経験から",
+    "m5-strategy-reporting": "M5. 自動テスト戦略と品質の報告",
+    "m6-capstone": "M6. 総合演習"
+  }
+}
