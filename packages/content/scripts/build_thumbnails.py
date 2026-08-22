@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 8 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 9 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -233,6 +233,36 @@ def motif_test_design(c: str) -> str:
     {marks}"""
 
 
+def motif_ai_fluency(c: str) -> str:
+    """4つの局面を回す。 任せる→伝える→見極める→責任を持つ、の循環。今いる 1 マスだけ塗る。"""
+    boxes = [
+        # x, y, 塗るか
+        (60, 76, True),
+        (312, 76, False),
+        (312, 336, False),
+        (60, 336, False),
+    ]
+    out = []
+    for x, y, filled in boxes:
+        fill = c if filled else PAPER
+        stroke = c if filled else RULE_SOLID
+        bar = PAPER if filled else RULE
+        out.append(f"""
+    <rect x="{x}" y="{y}" width="176" height="136" rx="16" fill="{fill}" stroke="{stroke}" stroke-width="2.5"/>
+    <rect x="{x + 36}" y="{y + 56}" width="104" height="12" rx="6" fill="{bar}" opacity="{0.9 if filled else 1}"/>
+    <rect x="{x + 36}" y="{y + 80}" width="68" height="12" rx="6" fill="{bar}" opacity="{0.9 if filled else 1}"/>""")
+    arrows = f"""
+    <path d="M 248 144 L 300 144" stroke="{INK}" stroke-width="4" fill="none"/>
+    <path d="M 292 134 L 306 144 L 292 154 Z" fill="{INK}"/>
+    <path d="M 400 224 L 400 324" stroke="{INK}" stroke-width="4" fill="none"/>
+    <path d="M 390 316 L 400 330 L 410 316 Z" fill="{INK}"/>
+    <path d="M 300 404 L 248 404" stroke="{INK}" stroke-width="4" fill="none"/>
+    <path d="M 256 394 L 242 404 L 256 414 Z" fill="{INK}"/>
+    <path d="M 148 324 L 148 224" stroke="{c}" stroke-width="4" fill="none"/>
+    <path d="M 138 232 L 148 218 L 158 232 Z" fill="{c}"/>"""
+    return "".join(out) + arrows
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -282,6 +312,12 @@ SPECS = {
         "title_size": 148,
         "subtitle": "基本情報技術者試験",
         "motif": motif_fe_kamoku_b,
+    },
+    "ai-fluency-basics": {
+        "title": "AI駆動開発",
+        "title_size": 116,
+        "subtitle": "の考え方",
+        "motif": motif_ai_fluency,
     },
 }
 

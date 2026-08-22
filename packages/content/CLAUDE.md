@@ -140,6 +140,8 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **テスト設計と品質保証 入門研修（`courses/test-design-basics/`）があります。** 6 モジュール / 21 レッスン / 82 トピックで、構成は [courses/test-design-basics/CURRICULUM.md](courses/test-design-basics/CURRICULUM.md)。採点基盤（`@falcon/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成(`assets/` を持つトピックが無い)。原典クレジットは CURRICULUM.md に集約しています。
 
+**AI駆動開発の考え方（`courses/ai-fluency-basics/`）があります。** 5 モジュール / 7 レッスン / 28 トピックで、構成は [courses/ai-fluency-basics/CURRICULUM.md](courses/ai-fluency-basics/CURRICULUM.md)。Claude 研修シリーズの 1 本目で、製品操作を出さずに AI 駆動開発の考え方（4D と LLM の限界）だけを扱います。学習対象が判断であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（チャット画面や紙の上の判断演習）に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
+
 TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 ですが、こちらもデプロイに含まれる（seed の前に全件アップロードする）ので、手動実行は不要です。ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を叩いてください。
@@ -149,7 +151,7 @@ TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](
 未着手の課題:
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
-- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 8 講座に設置済み
+- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 9 講座に設置済み
 - **収録** — 162本の動画収録は未着手
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 
