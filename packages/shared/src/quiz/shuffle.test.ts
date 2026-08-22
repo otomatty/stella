@@ -53,17 +53,23 @@ describe("shuffleLearnerQuizQuestions", () => {
     }
   });
 
-  it("Math.random を固定すると決定的な順序になる", () => {
-    const random = [0.9, 0.1, 0.8, 0.2, 0.7, 0.3];
+  it("Math.random を固定すると既知の順序にシャッフルされる", () => {
+    const random = [0.1, 0.2, 0.1, 0.1];
     let i = 0;
-    const spy = vi.spyOn(Math, "random").mockImplementation(() => random[i++ % random.length] ?? 0);
+    const spy = vi.spyOn(Math, "random").mockImplementation(() => random[i++] ?? 0);
 
     const first = shuffleLearnerQuizQuestions(sampleQuestions);
     i = 0;
     const second = shuffleLearnerQuizQuestions(sampleQuestions);
 
+    expect(first.map((q) => q.id)).toEqual(["q2", "q1"]);
+    expect(first[0]?.options.map((o) => o.id)).toEqual(["q2-b", "q2-c", "q2-a"]);
+    expect(first[1]?.options.map((o) => o.id)).toEqual(["q1-b", "q1-a"]);
+
     expect(first.map((q) => q.id)).toEqual(second.map((q) => q.id));
-    expect(first[0]?.options.map((o) => o.id)).toEqual(second[0]?.options.map((o) => o.id));
+    expect(first.map((q) => q.options.map((o) => o.id))).toEqual(
+      second.map((q) => q.options.map((o) => o.id)),
+    );
 
     spy.mockRestore();
   });
