@@ -3,7 +3,7 @@
  *
  * LessonEditor の「設問を編集」から開くフルスクリーン Dialog。
  * - マウント時に ensureQuiz → getQuizByLesson で設定・設問・選択肢を読み込む。
- * - 設定 (合格点 / シャッフル)、 設問の追加/削除、 種別 (単一/複数/真偽)、 配点、
+ * - 設定 (合格点)、 設問の追加/削除、 種別 (単一/複数/真偽)、 配点、
  *   解説、 選択肢の追加/削除/正誤を編集する。
  * - 保存は cms-api 経由 (staff のみ RLS 許可)。 読み込み済みスナップショットと
  *   差分を取り、 削除された設問・選択肢を delete、 残りを upsert する。
@@ -93,8 +93,6 @@ export function QuizEditor({ lessonId, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [passScore, setPassScore] = useState(70);
-  const [shuffleQuestions, setShuffleQuestions] = useState(false);
-  const [shuffleOptions, setShuffleOptions] = useState(false);
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   // 読み込み時の id スナップショット (削除検出用)
   const [loadedQuestionIds, setLoadedQuestionIds] = useState<string[]>([]);
@@ -109,8 +107,6 @@ export function QuizEditor({ lessonId, onClose }: Props) {
         if (cancelled || !data) return;
         setQuizId(data.quiz.id);
         setPassScore(data.quiz.pass_score);
-        setShuffleQuestions(data.quiz.shuffle_questions);
-        setShuffleOptions(data.quiz.shuffle_options);
         setQuestions(
           data.questions.map((q) => ({
             key: nextKey(),
@@ -249,8 +245,6 @@ export function QuizEditor({ lessonId, onClose }: Props) {
       await updateQuiz({
         id: quizId,
         pass_score: passScore,
-        shuffle_questions: shuffleQuestions,
-        shuffle_options: shuffleOptions,
       });
 
       // 削除検出: スナップショットにあって draft に無い id を delete
@@ -328,22 +322,6 @@ export function QuizEditor({ lessonId, onClose }: Props) {
                   onChange={(e) => setPassScore(Number(e.target.value))}
                 />
               </div>
-              <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
-                <input
-                  type="checkbox"
-                  checked={shuffleQuestions}
-                  onChange={(e) => setShuffleQuestions(e.target.checked)}
-                />
-                設問をシャッフル
-              </label>
-              <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
-                <input
-                  type="checkbox"
-                  checked={shuffleOptions}
-                  onChange={(e) => setShuffleOptions(e.target.checked)}
-                />
-                選択肢をシャッフル
-              </label>
             </div>
 
             {/* 設問リスト */}

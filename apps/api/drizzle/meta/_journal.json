@@ -141,6 +141,13 @@
       "when": 1787210541994,
       "tag": "0019_amused_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1787369363034,
+      "tag": "0020_drop_quiz_shuffle_columns",
+      "breakpoints": true
     }
   ]
 }

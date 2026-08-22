@@ -169,8 +169,6 @@ export interface UpsertQuizInput {
   id: string;
   pass_score?: number;
   time_limit_sec?: number | null;
-  shuffle_questions?: boolean;
-  shuffle_options?: boolean;
   max_attempts?: number | null;
 }
 

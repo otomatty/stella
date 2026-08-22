@@ -3,7 +3,8 @@
  * (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §5)。
  *
  * QuizPlayer (一括提出 → 合否) と違い、 1 問ごとに採点 API を叩いて正誤と解説を
- * 即時表示する。 出題は GET /api/srs/today の due 順で、 セッション中は固定。
+ * 即時表示する。 出題は GET /api/srs/today の due 順をベースに、 読み込み時に
+ * 設問・選択肢をシャッフルする (セッション中は固定)。
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 
 import type { LearnerQuizQuestion } from "@falcon/shared/cms/types";
 import type { SrsAnswerResult, SrsTodaySummary } from "@falcon/shared/srs/types";
+import { shuffleLearnerQuizQuestions } from "@falcon/shared/quiz/shuffle";
 import { getSrsToday, submitSrsAnswer } from "@/lib/srs-api";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -45,7 +47,12 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
     }
     void getSrsToday()
       .then((review) => {
-        if (!cancelled) setSession(review);
+        if (!cancelled && review) {
+          setSession({
+            ...review,
+            questions: shuffleLearnerQuizQuestions(review.questions),
+          });
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : "fetch failed");

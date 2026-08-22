@@ -25,6 +25,7 @@ import type {
   QuizGradeResult,
   QuizQuestionResult,
 } from "@falcon/shared/cms/types";
+import { shuffleLearnerQuizQuestions } from "@falcon/shared/quiz/shuffle";
 
 interface QuizPlayerProps {
   lessonId: string;
@@ -39,23 +40,9 @@ const KIND_LABEL: Record<LearnerQuizQuestion["kind"], string> = {
   boolean: "真偽",
 };
 
-/** Fisher-Yates シャッフル (元配列は破壊しない)。 */
-function shuffled<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/** quiz 設定に応じて設問・選択肢の表示順を (必要なら) シャッフルした新オブジェクトを返す。 */
+/** 設問・選択肢の表示順をシャッフルした新オブジェクトを返す。 */
 function applyShuffle(quiz: LearnerQuiz): LearnerQuiz {
-  let questions = quiz.quiz.shuffle_questions ? shuffled(quiz.questions) : quiz.questions;
-  if (quiz.quiz.shuffle_options) {
-    questions = questions.map((q) => ({ ...q, options: shuffled(q.options) }));
-  }
-  return { ...quiz, questions };
+  return { ...quiz, questions: shuffleLearnerQuizQuestions(quiz.questions) };
 }
 
 export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {

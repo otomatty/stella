@@ -11,6 +11,7 @@
     "./assignments": "./src/assignments.ts",
     "./assignment-helpers": "./src/assignment-helpers.ts",
     "./cms/types": "./src/cms/types.ts",
+    "./quiz/shuffle": "./src/quiz/shuffle.ts",
     "./admin/types": "./src/admin/types.ts",
     "./admin/parse-invite-csv": "./src/admin/parse-invite-csv.ts",
     "./admin/reports": "./src/admin/reports.ts",

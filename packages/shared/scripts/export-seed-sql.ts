@@ -279,8 +279,8 @@ function emitQuiz(
 
   lines.push(
     [
-      `insert into ${tbl("quizzes")} (id, lesson_id, pass_score, time_limit_sec, shuffle_questions, shuffle_options, max_attempts${isSqlite ? ", created_at, updated_at" : ""})`,
-      `select '${quizUuid}', l.id, ${quiz.passScore}, null, ${isSqlite ? "0" : "false"}, ${isSqlite ? "0" : "false"}, null${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `insert into ${tbl("quizzes")} (id, lesson_id, pass_score, time_limit_sec, max_attempts${isSqlite ? ", created_at, updated_at" : ""})`,
+      `select '${quizUuid}', l.id, ${quiz.passScore}, null, null${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("lessons")} l`,
       `where l.id = '${id}'`,
       `on conflict (id) do update set lesson_id = excluded.lesson_id, pass_score = excluded.pass_score, updated_at = ${nowExpr()};`,

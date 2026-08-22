@@ -304,8 +304,6 @@ export const quizzes = sqliteTable("quizzes", {
     .references(() => lessons.id, { onDelete: "cascade" }),
   passScore: integer("pass_score").notNull().default(70),
   timeLimitSec: integer("time_limit_sec"),
-  shuffleQuestions: integer("shuffle_questions", { mode: "boolean" }).notNull().default(false),
-  shuffleOptions: integer("shuffle_options", { mode: "boolean" }).notNull().default(false),
   maxAttempts: integer("max_attempts"),
   createdAt: tsNow("created_at"),
   updatedAt: tsNowUpd("updated_at"),
