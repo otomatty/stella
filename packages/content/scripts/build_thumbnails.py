@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 10 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 11 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -280,6 +280,31 @@ def motif_claude_chat(c: str) -> str:
     <rect x="272" y="472" width="120" height="12" rx="6" fill="{c}" opacity="0.55"/>"""
 
 
+def motif_claude_cowork(c: str) -> str:
+    """任せて途中を見る。 ワークスペースのフォルダから、タスクの手順が進んでいく。"""
+    folder = f"""
+    <path d="M 44 84 L 156 84 L 184 116 L 304 116 L 304 236 L 44 236 Z" fill="{PAPER}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="76" y="148" width="164" height="12" rx="6" fill="{RULE}"/>
+    <rect x="76" y="176" width="112" height="12" rx="6" fill="{RULE}"/>
+    <path d="M 174 236 L 174 272" stroke="{c}" stroke-width="4" fill="none"/>
+    <path d="M 158 264 L 174 284 L 190 264 Z" fill="{c}"/>"""
+    rows = []
+    for i, y in enumerate((292, 372, 452)):
+        running = i == 2
+        rows.append(f'<rect x="120" y="{y}" width="384" height="64" rx="12" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
+        if running:
+            rows.append(f'<circle cx="156" cy="{y + 32}" r="20" fill="{PAPER}" stroke="{c}" stroke-width="4"/>')
+            rows.append(f'<circle cx="156" cy="{y + 32}" r="7" fill="{c}"/>')
+        else:
+            rows.append(f'<circle cx="156" cy="{y + 32}" r="20" fill="{c}"/>')
+            rows.append(
+                f'<path d="M 146 {y + 32} l 8 10 l 16 -20" stroke="{PAPER}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+            )
+        rows.append(f'<rect x="196" y="{y + 20}" width="{204 if i == 0 else 156}" height="12" rx="6" fill="{RULE}"/>')
+        rows.append(f'<rect x="196" y="{y + 44}" width="{120 if i == 0 else 96}" height="10" rx="5" fill="{RULE}"/>')
+    return folder + "".join(rows)
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -341,6 +366,12 @@ SPECS = {
         "title_size": 152,
         "subtitle": "チャット入門",
         "motif": motif_claude_chat,
+    },
+    "claude-cowork-basics": {
+        "title": "Cowork",
+        "title_size": 152,
+        "subtitle": "入門",
+        "motif": motif_claude_cowork,
     },
 }
 

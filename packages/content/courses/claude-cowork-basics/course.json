@@ -1,0 +1,16 @@
+{
+  "title": "Cowork 入門",
+  "category": "AI駆動開発",
+  "color": "amber",
+  "description": "Claude Cowork でまとまった作業を任せるための研修。チャットとの違いから、ワークスペースの決め方、文脈の渡し方、タスクを任せて途中を見る進め方、プラグインの使いどころまでを扱う。最後に向き不向きと、ファイル・機密情報の安全な扱いを判断できるようになる。",
+  "header": "Cowork入門",
+  "tenantId": "ses",
+  "modules": {
+    "m0-difference": "M0. チャットとの違い",
+    "m1-workspace": "M1. ワークスペース",
+    "m2-context": "M2. 文脈の渡し方",
+    "m3-task-loop": "M3. タスクループ",
+    "m4-plugins": "M4. プラグイン",
+    "m5-fit-and-safety": "M5. 向き不向きと安全"
+  }
+}
