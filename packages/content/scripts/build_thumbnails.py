@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 9 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 10 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -263,6 +263,23 @@ def motif_ai_fluency(c: str) -> str:
     return "".join(out) + arrows
 
 
+def motif_claude_chat(c: str) -> str:
+    """チャットの往復。 依頼の吹き出しと返答の吹き出しが交互に並ぶ。"""
+    return f"""
+    <rect x="200" y="72" width="320" height="112" rx="20" fill="{c}"/>
+    <path d="M 500 184 L 516 208 L 468 184 Z" fill="{c}"/>
+    <rect x="232" y="104" width="200" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+    <rect x="232" y="132" width="144" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+    <rect x="28" y="232" width="356" height="136" rx="20" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
+    <path d="M 48 366 L 32 392 L 80 366 Z" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
+    <rect x="60" y="264" width="248" height="12" rx="6" fill="{RULE}"/>
+    <rect x="60" y="292" width="292" height="12" rx="6" fill="{RULE}"/>
+    <rect x="60" y="320" width="180" height="12" rx="6" fill="{RULE}"/>
+    <rect x="240" y="416" width="280" height="96" rx="20" fill="{PAPER}" stroke="{c}" stroke-width="2.5"/>
+    <rect x="272" y="444" width="168" height="12" rx="6" fill="{c}" opacity="0.55"/>
+    <rect x="272" y="472" width="120" height="12" rx="6" fill="{c}" opacity="0.55"/>"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -318,6 +335,12 @@ SPECS = {
         "title_size": 116,
         "subtitle": "の考え方",
         "motif": motif_ai_fluency,
+    },
+    "claude-chat-basics": {
+        "title": "Claude",
+        "title_size": 152,
+        "subtitle": "チャット入門",
+        "motif": motif_claude_chat,
     },
 }
 

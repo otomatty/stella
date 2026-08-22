@@ -1,0 +1,14 @@
+{
+  "title": "Claude チャット入門",
+  "category": "AI駆動開発",
+  "color": "green",
+  "description": "claude.ai のチャットで仕事を進めるための研修。目的を伝える会話の始め方から、成果物とできの基準を書いた依頼、Project への文脈の置き方、Artifact に残すものの見分け方までを扱う。最後にチャット・Cowork・Claude Code のどれに進むかを選べるようになる。",
+  "header": "Claudeチャット入門",
+  "tenantId": "ses",
+  "modules": {
+    "m0-conversation": "M0. 対話の場",
+    "m1-requests": "M1. 依頼の書き方",
+    "m2-projects-artifacts": "M2. ProjectsとArtifacts",
+    "m3-next-steps": "M3. 次の製品への橋"
+  }
+}
