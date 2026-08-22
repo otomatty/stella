@@ -158,8 +158,6 @@ export interface QuizRow {
   lesson_id: string;
   pass_score: number;
   time_limit_sec: number | null;
-  shuffle_questions: boolean;
-  shuffle_options: boolean;
   max_attempts: number | null;
   created_at: string;
   updated_at: string;
@@ -233,8 +231,6 @@ export interface LearnerQuizConfig {
   lesson_id: string;
   pass_score: number;
   time_limit_sec: number | null;
-  shuffle_questions: boolean;
-  shuffle_options: boolean;
   max_attempts: number | null;
 }
 

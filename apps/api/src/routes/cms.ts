@@ -122,8 +122,6 @@ const quizToRow = (q: QuizSel) => ({
   lesson_id: q.lessonId,
   pass_score: q.passScore,
   time_limit_sec: q.timeLimitSec,
-  shuffle_questions: q.shuffleQuestions,
-  shuffle_options: q.shuffleOptions,
   max_attempts: q.maxAttempts,
   created_at: q.createdAt,
   updated_at: q.updatedAt,
@@ -690,12 +688,6 @@ cmsRoute.patch("/api/cms/quiz/:id", async (c) => {
           ...(p.pass_score !== undefined ? { passScore: p.pass_score as number } : {}),
           ...(p.time_limit_sec !== undefined
             ? { timeLimitSec: p.time_limit_sec as number | null }
-            : {}),
-          ...(p.shuffle_questions !== undefined
-            ? { shuffleQuestions: p.shuffle_questions as boolean }
-            : {}),
-          ...(p.shuffle_options !== undefined
-            ? { shuffleOptions: p.shuffle_options as boolean }
             : {}),
           ...(p.max_attempts !== undefined ? { maxAttempts: p.max_attempts as number | null } : {}),
           updatedAt: new Date(),

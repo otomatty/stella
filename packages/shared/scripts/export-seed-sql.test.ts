@@ -72,6 +72,15 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(/insert into quiz_options /);
   });
 
+  it("quizzes の insert は shuffle 列を書かない", () => {
+    const inserts = sql.match(/^insert into quizzes .*$/gm) ?? [];
+    expect(inserts.length).toBeGreaterThan(0);
+    for (const line of inserts) {
+      expect(line).not.toMatch(/\bshuffle_questions\b/);
+      expect(line).not.toMatch(/\bshuffle_options\b/);
+    }
+  });
+
   it("教材コースの sections を course_id だけで丸ごと wipe しない", () => {
     const tsCourse = stableUuid("course:ses:typescript-basics");
     expect(sql).not.toContain(`delete from sections where course_id = '${tsCourse}';`);

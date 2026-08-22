@@ -153,8 +153,6 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
           lesson_id: quiz.lessonId,
           pass_score: quiz.passScore,
           time_limit_sec: quiz.timeLimitSec,
-          shuffle_questions: quiz.shuffleQuestions,
-          shuffle_options: quiz.shuffleOptions,
           max_attempts: quiz.maxAttempts,
         },
         questions,
