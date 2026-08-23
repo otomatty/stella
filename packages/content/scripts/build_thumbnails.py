@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 11 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 12 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -305,6 +305,43 @@ def motif_claude_cowork(c: str) -> str:
     return folder + "".join(rows)
 
 
+def motif_claude_code(c: str) -> str:
+    """4つの段を順に通す。 Explore → Plan → Code → Commit の階段で、いまの段だけ塗る。"""
+    boxes = [
+        # x, y, 状態 (done / current / todo)
+        (36, 44, "done"),
+        (148, 164, "done"),
+        (260, 284, "current"),
+        (372, 404, "todo"),
+    ]
+    out = []
+    for i, (x, y, state) in enumerate(boxes):
+        if state == "current":
+            out.append(f'<rect x="{x}" y="{y}" width="168" height="100" rx="16" fill="{c}" stroke="{c}" stroke-width="2.5"/>')
+            out.append(f'<rect x="{x + 32}" y="{y + 36}" width="104" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
+            out.append(f'<rect x="{x + 32}" y="{y + 60}" width="68" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
+        else:
+            out.append(f'<rect x="{x}" y="{y}" width="168" height="100" rx="16" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
+            if state == "done":
+                out.append(f'<circle cx="{x + 40}" cy="{y + 50}" r="18" fill="{c}"/>')
+                out.append(
+                    f'<path d="M {x + 31} {y + 50} l 7 9 l 14 -18" stroke="{PAPER}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+                )
+                out.append(f'<rect x="{x + 72}" y="{y + 36}" width="76" height="12" rx="6" fill="{RULE}"/>')
+                out.append(f'<rect x="{x + 72}" y="{y + 60}" width="52" height="12" rx="6" fill="{RULE}"/>')
+            else:
+                out.append(f'<rect x="{x + 32}" y="{y + 36}" width="104" height="12" rx="6" fill="{RULE}"/>')
+                out.append(f'<rect x="{x + 32}" y="{y + 60}" width="68" height="12" rx="6" fill="{RULE}"/>')
+        if i < len(boxes) - 1:
+            # 次の箱へ落ちる L 字の矢印。 いまの段へ入る矢印だけ講座色にする。
+            color = c if boxes[i + 1][2] == "current" else INK
+            sx, sy = x + 84, y + 100
+            cy = y + 170
+            out.append(f'<path d="M {sx} {sy} L {sx} {cy} L {x + 96} {cy}" stroke="{color}" stroke-width="4" fill="none"/>')
+            out.append(f'<path d="M {x + 96} {cy - 10} L {x + 112} {cy} L {x + 96} {cy + 10} Z" fill="{color}"/>')
+    return "".join(out)
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -372,6 +409,12 @@ SPECS = {
         "title_size": 152,
         "subtitle": "入門",
         "motif": motif_claude_cowork,
+    },
+    "claude-code-basics": {
+        "title": "Claude Code",
+        "title_size": 108,
+        "subtitle": "入門",
+        "motif": motif_claude_code,
     },
 }
 
