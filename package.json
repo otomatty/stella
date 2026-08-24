@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
-    "vitest": "3.2.6"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "vite": "8.2.2",
