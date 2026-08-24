@@ -3,7 +3,7 @@
  *
  * アプリ層認可:
  *   - 受講者: 割当カテゴリ + 全案件共通の質問のみ read
- *   - staff (instructor/admin/platform_admin): 質問全件 read、 割当の read/write
+ *   - canManageInterviewPrep (instructor/admin/platform_admin/sales): 質問全件 read、 割当の read/write
  */
 
 import { Hono } from "hono";
@@ -14,7 +14,13 @@ import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { visibleQuestions } from "@falcon/shared/interview/filter";
 
 import { interviewPrepAssignments, interviewQuestions, profiles } from "../db/schema.js";
-import { ApiError, errorResponse, getCaller, isStaffRole, requireRole } from "../lib/authz.js";
+import {
+  ApiError,
+  errorResponse,
+  getCaller,
+  canManageInterviewPrep,
+  requireCanManageInterviewPrep,
+} from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Env } from "../env.js";
 
@@ -47,7 +53,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       .from(interviewQuestions)
       .where(eq(interviewQuestions.tenantId, caller.tenantId))
       .orderBy(asc(interviewQuestions.no));
-    if (isStaffRole(caller.role)) {
+    if (canManageInterviewPrep(caller.role)) {
       return c.json({ rows, assignedCategories: [...ASSIGNABLE_CATEGORIES] });
     }
     const assigned = await db
@@ -74,7 +80,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
 interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireCanManageInterviewPrep(caller);
     const students = await db
       .select({
         profile_id: profiles.id,
@@ -109,11 +115,11 @@ interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
   }
 });
 
-/** staff: 受講者の割当カテゴリを upsert する。 */
+/** staff: 受講者の割当カテゴリを upsert する。 Issue #205: interviewDate / note の write は sales/admin/platform_admin のみ。 */
 interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
+    requireCanManageInterviewPrep(caller);
     const profileId = c.req.param("profileId");
     const body = (await c.req.json()) as { categories?: unknown };
     if (!Array.isArray(body.categories) || !body.categories.every(isAssignableCategory)) {
@@ -124,12 +130,15 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     }
     const categories: string[] = body.categories;
     const target = await db
-      .select({ id: profiles.id, tenantId: profiles.tenantId })
+      .select({ id: profiles.id, tenantId: profiles.tenantId, role: profiles.role })
       .from(profiles)
       .where(eq(profiles.id, profileId))
       .limit(1);
     if (!target[0] || target[0].tenantId !== caller.tenantId) {
       throw new ApiError("対象の受講者が見つかりません", 404);
+    }
+    if (target[0].role !== "student") {
+      throw new ApiError("面談対策の割当は受講者のみ対象です", 400);
     }
     await db
       .insert(interviewPrepAssignments)

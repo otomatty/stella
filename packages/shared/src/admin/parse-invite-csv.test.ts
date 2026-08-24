@@ -18,6 +18,22 @@ describe("parseInviteCsv", () => {
     ]);
   });
 
+  it("営業ロール (sales / 営業) を解決する", () => {
+    const csv = [
+      "email,display_name,role",
+      "sales-en@example.com,Seed Sales EN,sales",
+      "sales-ja@example.com,Seed Sales JA,営業",
+    ].join("\n");
+
+    const { rows, errors } = parseInviteCsv(csv);
+
+    expect(errors).toEqual([]);
+    expect(rows).toEqual([
+      { email: "sales-en@example.com", displayName: "Seed Sales EN", role: "sales" },
+      { email: "sales-ja@example.com", displayName: "Seed Sales JA", role: "sales" },
+    ]);
+  });
+
   it("不正メールと重複を errors に集約する", () => {
     const csv = ["not-an-email", "dup@example.com", "dup@example.com"].join("\n");
 

@@ -16,6 +16,7 @@ const ROLE_LABELS: Record<Role, string> = {
   learner: "受講者",
   instructor: "講師",
   admin: "管理者",
+  sales: "営業",
 };
 
 const formatRoles = (roles: Role[]) => roles.map((r) => ROLE_LABELS[r]).join(" / ");

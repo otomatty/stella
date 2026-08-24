@@ -29,6 +29,7 @@ const BASE = (process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:8787").replace(/\/
 const LEARNER_ID = process.env.SMOKE_LEARNER_ID ?? "seed-learner";
 const INSTRUCTOR_ID = process.env.SMOKE_INSTRUCTOR_ID ?? "seed-instructor";
 const ADMIN_ID = process.env.SMOKE_ADMIN_ID ?? "seed-admin";
+const SALES_ID = process.env.SMOKE_SALES_ID ?? "seed-sales";
 
 /**
  * `.dev.vars` (KEY=VALUE 形式) から 1 つ読む。 env が優先。
@@ -143,6 +144,7 @@ async function main(): Promise<void> {
   const admin = await mintToken(secret, ADMIN_ID);
   const instructor = await mintToken(secret, INSTRUCTOR_ID);
   const learner = await mintToken(secret, LEARNER_ID);
+  const sales = await mintToken(secret, SALES_ID);
 
   // 再実行しても衝突しないよう slug に実行時刻を混ぜる。
   const stamp = Date.now().toString(36);
@@ -178,6 +180,63 @@ async function main(): Promise<void> {
   await step("未認証リクエストは 401", async () => {
     const r = await call("GET", "/api/me");
     assert(r.status === 401, `401 を期待したが ${r.status}`);
+  });
+
+  await step("営業は CMS API にアクセスできない (403)", async () => {
+    const r = await call("POST", "/api/cms/courses", {
+      token: sales,
+      body: { slug: `smoke-sales-deny-${stamp}`, title: "[smoke] sales deny", status: "draft" },
+    });
+    assert(r.status === 403, `403 を期待したが ${r.status}`);
+  });
+
+  await step("営業は監査ログを閲覧できない (403)", async () => {
+    const r = await call("GET", "/api/audit-logs?limit=10", { token: sales });
+    assert(r.status === 403, `403 を期待したが ${r.status}`);
+  });
+
+  await step("営業は受講登録 API を使えない (403)", async () => {
+    const r = await call("GET", "/api/enrollments", { token: sales });
+    assert(r.status === 403, `403 を期待したが ${r.status}`);
+  });
+
+  await step("営業は面談対策の割当一覧を取得できる", async () => {
+    const res = await ok("GET", "/api/interview-prep/assignments", { token: sales });
+    assert(Array.isArray(res.rows), "rows が配列でない");
+  });
+
+  await step("営業は面談対策の割当を更新できる", async () => {
+    await ok("PUT", `/api/interview-prep/assignments/${LEARNER_ID}`, {
+      token: sales,
+      body: { categories: ["JS/React"] },
+    });
+    const listed = await ok("GET", "/api/interview-prep/assignments", { token: sales });
+    const row = listed.rows.find((r: { profile_id: string }) => r.profile_id === LEARNER_ID);
+    assert(row?.categories?.includes("JS/React"), "割当が保存されていない");
+  });
+
+  await step("営業は面談対策の質問を全件閲覧できる", async () => {
+    const res = await ok("GET", "/api/interview-prep/questions", { token: sales });
+    assert(res.rows.length > 0, "質問が 0 件");
+    assert(res.assignedCategories?.length > 0, "assignedCategories が空");
+  });
+
+  await step("面談対策の割当は受講者以外 (営業/講師/管理者) を拒否する", async () => {
+    for (const [label, profileId] of [
+      ["営業", SALES_ID],
+      ["講師", INSTRUCTOR_ID],
+      ["管理者", ADMIN_ID],
+    ] as const) {
+      const r = await call("PUT", `/api/interview-prep/assignments/${profileId}`, {
+        token: admin,
+        body: { categories: ["SQL"] },
+      });
+      assert(r.status === 400, `${label} への割当は 400 を期待したが ${r.status}`);
+      assert(
+        r.body?.error === "面談対策の割当は受講者のみ対象です",
+        `${label}: エラーメッセージが想定と異なる: ${JSON.stringify(r.body)}`,
+      );
+    }
   });
 
   await step("受講者が設定画面からユーザー名を変更できる", async () => {

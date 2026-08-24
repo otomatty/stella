@@ -11,7 +11,8 @@
  *   - instructor / admin: テナントに受講者が居れば、 添削待ちが
  *              1 件も無いときだけ既存受講者名義でサンプルを補充する
  *              (受講者を先に招待していれば何もしない)
- *   - 全ロール: ウェルカム通知 1 件
+ *   - sales: 受講登録・進捗は投入しない (面談対策のみのロールのため)
+ *   - 全ロール: ウェルカム通知 1 件 (sales は投入内容に合わせた文言)
  *
  * 招待自体を失敗させないため、 呼び出し側で best-effort (try/catch) にすること。
  */
@@ -248,7 +249,26 @@ function initialsOf(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export async function insertTestDataForNewUser(db: Db, target: TestDataTarget): Promise<void> {
+/** テストモード招待のウェルカム通知本文。 sales は受講データを投入しないので文言を分ける。 */
+export function testDataWelcomeBody(role: string, displayName: string): string {
+  if (role === "sales") {
+    return (
+      `${displayName} さんのアカウントはテストモード中に登録されました。` +
+      " 営業ロールのため受講登録・進捗は投入していません。面談対策の割当画面をご確認ください。"
+    );
+  }
+  return (
+    `${displayName} さんのアカウントはテストモード中に登録されたため、` +
+    " 動作確認用のテストデータ (受講登録・進捗) を投入しました。"
+  );
+}
+
+/** 監査 metadata.test_data を付けるか。 sales は運用データを投入しないので付けない。 */
+export function recordsTestDataAudit(role: string): boolean {
+  return role !== "sales";
+}
+
+export async function insertTestDataForNewUser(db: Db, target: TestDataTarget): Promise<boolean> {
   const now = new Date();
 
   if (target.role === "student") {
@@ -262,9 +282,11 @@ export async function insertTestDataForNewUser(db: Db, target: TestDataTarget): 
     tenantId: target.tenantId,
     type: "announcement",
     title: "ようこそ (テストデータ)",
-    body: `${target.displayName} さんのアカウントはテストモード中に登録されたため、 動作確認用のテストデータ (受講登録・進捗) を投入しました。`,
+    body: testDataWelcomeBody(target.role, target.displayName),
     payload: { test_data: true },
   });
+
+  return recordsTestDataAudit(target.role);
 }
 
 // ---------------------------------------------------------------

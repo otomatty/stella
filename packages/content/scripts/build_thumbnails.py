@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 12 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 13 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -342,6 +342,40 @@ def motif_claude_code(c: str) -> str:
     return "".join(out)
 
 
+def motif_claude_code_skills(c: str) -> str:
+    """使い分けの判断。 1枚の指示の紙を、4つの入れ物のどれに置くかを選ぶ。"""
+    out = []
+    # 上: 指示の紙 (小さなノート)。
+    nx, ny = 190, 36
+    out.append(f'<rect x="{nx}" y="{ny}" width="168" height="104" rx="14" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 28}" width="112" height="12" rx="6" fill="{RULE}"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 52}" width="80" height="12" rx="6" fill="{RULE}"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 76}" width="96" height="12" rx="6" fill="{RULE}"/>')
+    # 下: 2×2 の入れ物。 右上 (選ばれた 1 つ) だけ講座色で塗る。
+    boxes = [
+        (44, 252, False),
+        (304, 252, True),
+        (44, 408, False),
+        (304, 408, False),
+    ]
+    for x, y, chosen in boxes:
+        if chosen:
+            out.append(f'<rect x="{x}" y="{y}" width="200" height="120" rx="16" fill="{c}" stroke="{c}" stroke-width="2.5"/>')
+            out.append(f'<rect x="{x + 36}" y="{y + 44}" width="128" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
+            out.append(f'<rect x="{x + 36}" y="{y + 68}" width="88" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
+        else:
+            out.append(f'<rect x="{x}" y="{y}" width="200" height="120" rx="16" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
+            out.append(f'<rect x="{x + 36}" y="{y + 44}" width="128" height="12" rx="6" fill="{RULE}"/>')
+            out.append(f'<rect x="{x + 36}" y="{y + 68}" width="88" height="12" rx="6" fill="{RULE}"/>')
+    # 紙から選ばれた入れ物への L 字矢印。 選ばれた 1 本だけ講座色、他は薄く。
+    sx, sy = nx + 84, ny + 104
+    out.append(f'<path d="M {sx} {sy} L {sx} 200 L 144 200 L 144 236" stroke="{RULE_SOLID}" stroke-width="4" fill="none"/>')
+    out.append(f'<path d="M 134 236 L 144 252 L 154 236 Z" fill="{RULE_SOLID}"/>')
+    out.append(f'<path d="M {sx} {sy} L {sx} 200 L 404 200 L 404 236" stroke="{c}" stroke-width="4" fill="none"/>')
+    out.append(f'<path d="M 394 236 L 404 252 L 414 236 Z" fill="{c}"/>')
+    return "".join(out)
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -415,6 +449,12 @@ SPECS = {
         "title_size": 108,
         "subtitle": "入門",
         "motif": motif_claude_code,
+    },
+    "claude-code-skills": {
+        "title": "Skills",
+        "title_size": 152,
+        "subtitle": "とサブエージェント",
+        "motif": motif_claude_code_skills,
     },
 }
 

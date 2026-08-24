@@ -1,0 +1,16 @@
+{
+  "title": "Skills とサブエージェント",
+  "category": "AI駆動開発",
+  "color": "indigo",
+  "description": "Claude Code をプロジェクトに合わせて仕組み化するための研修。毎回効く約束を CLAUDE.md に短く書き、繰り返す手順を Skill として置き、調査や検証をサブエージェントに渡すまでを扱う。最後に、同じ指示をどの入れ物に置くかを判断できるようになる。",
+  "header": "Skillsとサブエージェント",
+  "tenantId": "ses",
+  "modules": {
+    "m0-map": "M0. カスタマイズの地図",
+    "m1-claude-md": "M1. CLAUDE.md",
+    "m2-what-is-a-skill": "M2. Skillとは",
+    "m3-first-skill": "M3. 最初のSkillを書く",
+    "m4-subagents": "M4. サブエージェント",
+    "m5-choosing": "M5. 使い分け"
+  }
+}

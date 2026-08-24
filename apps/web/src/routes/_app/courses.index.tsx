@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAppShell } from "@/components/shell/app-shell-context";
+import { RoleGuard } from "@/components/shell/RoleGuard";
 import { CourseList } from "@/components/learner/CourseList";
 import { InstructorGeneric } from "@/components/instructor/InstructorGeneric";
 import { AdminCoursesPage } from "@/components/admin/AdminCoursesPage";
@@ -9,6 +10,14 @@ export const Route = createFileRoute("/_app/courses/")({
 });
 
 function CoursesPage() {
+  return (
+    <RoleGuard allow={["learner", "instructor", "admin"]}>
+      <CoursesPageBody />
+    </RoleGuard>
+  );
+}
+
+function CoursesPageBody() {
   const s = useAppShell();
   if (s.role === "admin") {
     return (

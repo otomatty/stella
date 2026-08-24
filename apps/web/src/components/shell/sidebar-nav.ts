@@ -79,6 +79,10 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
   ],
+  sales: [
+    { id: "dash", label: "ダッシュボード", icon: Home },
+    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
+  ],
 };
 
 const ORGS_NAV: NavItem = { id: "orgs", label: "組織マスタ", icon: Building };

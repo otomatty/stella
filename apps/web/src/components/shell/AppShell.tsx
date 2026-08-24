@@ -228,7 +228,10 @@ export function AppShell() {
   // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
   // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
-  const browseCourses = useCoursesForTenant(effectiveTenant.id, effectiveRole !== "learner");
+  const browseCourses = useCoursesForTenant(
+    effectiveTenant.id,
+    effectiveRole !== "learner" && effectiveRole !== "sales",
+  );
   const enrolledCourses = useEnrolledCoursesForTenant(
     effectiveTenant.id,
     session?.user.id ?? null,
