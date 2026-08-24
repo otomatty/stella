@@ -78,6 +78,8 @@ export {
   RefreshCw,
   Volume2,
   VolumeX,
+  Mic,
+  Square,
   ChevronUp,
   Loader2,
   Trash2 as Trash,

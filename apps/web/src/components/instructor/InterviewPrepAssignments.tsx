@@ -21,18 +21,24 @@ import {
   type InterviewPrepAssignmentRow,
 } from "@/lib/interview-prep-api";
 import { Chip } from "@/components/ui/chip";
+import { InterviewAudioAdmin } from "@/components/admin/InterviewAudioAdmin";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
   canEditSchedule,
+  canManageAudio = false,
 }: {
   backendEnabled: boolean;
+  /** sales/admin のみ true — 面談予定日・メモの編集可否 (Issue #205)。 */
   canEditSchedule: boolean;
+  /** admin のみ true — 質問読み上げ音声の生成・再生成タブを出す。 */
+  canManageAudio?: boolean;
 }) {
   const [rows, setRows] = useState<InterviewPrepAssignmentRow[]>([]);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"assign" | "audio">("assign");
   const [draftDates, setDraftDates] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
@@ -105,12 +111,48 @@ export function InterviewPrepAssignmentsPage({
     }
   };
 
+  if (canManageAudio && tab === "audio") {
+    return (
+      <>
+        <PageHeader
+          title="面談対策"
+          sub="質問の読み上げ音声を生成・再生成します。生成した音声は受講者の練習画面で再生されます"
+        />
+        <div className="flex items-center gap-1.5 mb-3">
+          <Chip active={false} onClick={() => setTab("assign")}>
+            割当
+          </Chip>
+          <Chip active onClick={() => setTab("audio")}>
+            質問音声
+          </Chip>
+        </div>
+        {backendEnabled ? (
+          <InterviewAudioAdmin />
+        ) : (
+          <Card className="p-12 text-center text-sm text-ink-3">
+            デモモードでは音声を生成できません。
+          </Card>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
         title="面談対策の割当"
         sub="受講者ごとに対策する案件種別を設定します。フレームワークまで指定すると、その言語の共通問題も併せて表示されます"
       />
+      {canManageAudio ? (
+        <div className="flex items-center gap-1.5 mb-3">
+          <Chip active onClick={() => setTab("assign")}>
+            割当
+          </Chip>
+          <Chip active={false} onClick={() => setTab("audio")}>
+            質問音声
+          </Chip>
+        </div>
+      ) : null}
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
           デモモードでは割当を編集できません。

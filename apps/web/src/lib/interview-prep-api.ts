@@ -5,19 +5,35 @@
  */
 
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
-import { apiFetch } from "./api-client";
+import { apiFetch, apiFetchRaw } from "./api-client";
 
-/** 受講者向け GET /questions の行 (個別回答の型フィールド付き)。 */
+/** 受講者向け GET /questions の行 (個別回答の型 + 学習ステータス付き)。 */
 export type LearnerInterviewQuestion = InterviewQuestion & {
   personal_answer_template?: string | null;
   draft_answer_template?: string | null;
   has_pending_draft?: boolean;
+  /** interview_progress の保存値。 行なし (未着手) は null。 */
+  progress_status?: "read" | "confident" | null;
+  practiced_count?: number;
 };
+
+/** 学習ステータスの更新イベント (PUT /progress/:no の body.event)。 */
+export type ProgressEvent = "read" | "practiced" | "confident";
+
+/** 受講者本人のみ。 read=型を読んだ / practiced=もう一度 / confident=できた。 */
+export async function reportInterviewProgress(no: number, event: ProgressEvent): Promise<void> {
+  await apiFetch(`/api/interview-prep/progress/${no}`, {
+    method: "PUT",
+    body: { event },
+  });
+}
 
 export interface InterviewQuestionsResult {
   rows: LearnerInterviewQuestion[];
   /** 受講者: 自分の割当。 staff: 全カテゴリ。 */
   assignedCategories: string[];
+  /** 読み上げ音声が登録済みの質問番号 (admin が事前生成)。 */
+  audioNos: number[];
   /** 面談予定日 (参考情報)。未設定なら null。 */
   interviewDate?: string | null;
   note?: string | null;
@@ -27,7 +43,41 @@ export async function fetchInterviewQuestions(
   profileId?: string | null,
 ): Promise<InterviewQuestionsResult> {
   const query = profileId ? `?profileId=${encodeURIComponent(profileId)}` : "";
-  return apiFetch<InterviewQuestionsResult>(`/api/interview-prep/questions${query}`);
+  const r = await apiFetch<InterviewQuestionsResult>(`/api/interview-prep/questions${query}`);
+  return { ...r, audioNos: r.audioNos ?? [] };
+}
+
+/** 質問の読み上げ音声 (MP3)。 未登録は 404 → ApiClientError。 */
+export async function fetchQuestionAudio(no: number): Promise<Blob> {
+  const res = await apiFetchRaw(`/api/interview-prep/questions/${no}/audio`);
+  return res.blob();
+}
+
+export interface TranscribeResult {
+  transcript: string;
+  durationSec: number | null;
+}
+
+/** 練習録音を Whisper で文字起こしする。 質問番号を渡すと認識精度が上がる。 */
+export async function transcribeRecording(no: number, audio: Blob): Promise<TranscribeResult> {
+  const res = await apiFetchRaw(`/api/interview-prep/transcribe?no=${no}`, {
+    method: "POST",
+    body: audio,
+    contentType: audio.type || "application/octet-stream",
+  });
+  return (await res.json()) as TranscribeResult;
+}
+
+export interface GenerateAudioResult {
+  results: Array<{ no: number; ok: boolean; error?: string }>;
+}
+
+/** admin: 指定質問の読み上げ音声を生成 (再生成は上書き)。 1 回最大 10 問。 */
+export async function generateQuestionAudio(nos: number[]): Promise<GenerateAudioResult> {
+  return apiFetch<GenerateAudioResult>("/api/interview-prep/audio/generate", {
+    method: "POST",
+    body: { nos },
+  });
 }
 
 export interface InterviewPrepAssignmentRow {

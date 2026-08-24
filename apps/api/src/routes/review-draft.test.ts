@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../env.js";
 import { reviewDraftRoute } from "./review-draft.js";
 import {
-  CHAT_TEST_PROFILES,
+  type CHAT_TEST_PROFILES,
   GATEWAY_ENV_VARS,
   createChatTestEnv,
   mintChatTestToken,

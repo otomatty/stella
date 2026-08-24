@@ -14,7 +14,7 @@ import { enforceAiRateLimit } from "../lib/rate-limit.js";
 import { skillSheetRoute } from "./skill-sheet.js";
 import {
   FORBIDDEN_PARSED_CONTACT_FIELDS,
-  SEED_PROFILES,
+  type SEED_PROFILES,
   SKILL_SHEET_PARSE_PATH,
   SKILL_SHEET_SAVE_PATH,
   createDocxFile,

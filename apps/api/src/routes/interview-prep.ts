@@ -8,7 +8,7 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
@@ -16,6 +16,7 @@ import { visibleQuestions } from "@falcon/shared/interview/filter";
 
 import {
   interviewPrepAssignments,
+  interviewProgress,
   interviewQuestions,
   notifications,
   profiles,
@@ -27,7 +28,10 @@ import {
   canManageInterviewPrep,
   canWriteInterviewSchedule,
   requireCanManageInterviewPrep,
+  requireRole,
 } from "../lib/authz.js";
+import { enforceAiRateLimit } from "../lib/rate-limit.js";
+import { synthesizeSpeech, transcribeAudio, workersAiConfigured } from "../lib/workers-ai.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import {
   adoptPersonalTemplateDraft,
@@ -57,6 +61,48 @@ const Q_SELECT = {
   criteria: interviewQuestions.criteria,
   is_reverse: interviewQuestions.isReverse,
 } as const;
+
+/**
+ * 質問音声の R2 プレフィックス。 質問データは全テナント共通の正本 (questions.json seed)
+ * のためキーは質問番号のみで、 テナントをまたいで共有する。 教材の `tenant/<id>/` 配下
+ * ではないため孤児掃除 (`/api/admin/r2/orphans`) の走査対象にならない。
+ */
+const TTS_PREFIX = "interview-tts";
+
+/** 1 リクエストで生成できる質問数の上限 (TTS 呼び出しの直列実行時間を抑える)。 */
+const TTS_BATCH_LIMIT = 10;
+
+/** 練習録音の受け付け上限。 webm/opus なら 10 分超に相当し、 base64 化しても Workers の制限内。 */
+const MAX_RECORDING_BYTES = 8 * 1024 * 1024;
+
+function ttsKey(no: number): string {
+  return `${TTS_PREFIX}/${no}.mp3`;
+}
+
+/**
+ * R2 上に音声が登録済みの質問番号を列挙する (質問一覧・管理画面の表示用)。
+ * 音声は任意の付加機能なので、 R2 の一時障害で質問一覧そのものを落とさない
+ * (失敗時は空配列 = 再生ボタンを出さないだけ)。
+ */
+async function listAudioNos(bucket: R2Bucket | undefined): Promise<number[]> {
+  if (!bucket) return [];
+  try {
+    const nos: number[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await bucket.list({ prefix: `${TTS_PREFIX}/`, cursor });
+      for (const obj of page.objects) {
+        const no = Number.parseInt(obj.key.slice(TTS_PREFIX.length + 1), 10);
+        if (Number.isInteger(no) && no > 0) nos.push(no);
+      }
+      cursor = page.truncated ? page.cursor : undefined;
+    } while (cursor);
+    return nos.sort((a, b) => a - b);
+  } catch (e) {
+    console.error("[interview-prep] failed to list question audio; serving without it", e);
+    return [];
+  }
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -135,6 +181,34 @@ function mapStaffQuestionRows(rows: InterviewQuestion[]) {
   }));
 }
 
+/** 質問ごとの学習ステータス (interview_progress) を行に同梱する。 行なし = 未着手。 */
+async function attachProgress<T extends { no: number }>(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+  rows: T[],
+): Promise<Array<T & { progress_status: "read" | "confident" | null; practiced_count: number }>> {
+  const progressRows = await db
+    .select({
+      questionNo: interviewProgress.questionNo,
+      status: interviewProgress.status,
+      practicedCount: interviewProgress.practicedCount,
+    })
+    .from(interviewProgress)
+    .where(
+      and(eq(interviewProgress.tenantId, tenantId), eq(interviewProgress.profileId, profileId)),
+    );
+  const byNo = new Map(progressRows.map((p) => [p.questionNo, p]));
+  return rows.map((row) => {
+    const p = byNo.get(row.no);
+    return {
+      ...row,
+      progress_status: p?.status ?? null,
+      practiced_count: p?.practicedCount ?? 0,
+    };
+  });
+}
+
 /** 質問一覧。 受講者は割当カテゴリ + 共通のみ、 staff は全件。 staff は ?profileId= で受講者の個別回答の型も取得可。 */
 interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
   try {
@@ -146,6 +220,8 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       .orderBy(asc(interviewQuestions.no));
 
     const profileIdParam = c.req.query("profileId")?.trim() || null;
+    // 読み上げ音声が登録済みの質問番号。 UI はこれに含まれる質問だけ再生ボタンを出す。
+    const audioNos = await listAudioNos(c.env.MATERIALS_BUCKET);
 
     if (canManageInterviewPrep(caller.role)) {
       if (profileIdParam) {
@@ -172,16 +248,23 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           profileIdParam,
         );
         return c.json({
-          rows: enrichQuestionRows(visible, personalByQuestion),
+          rows: await attachProgress(
+            db,
+            caller.tenantId,
+            profileIdParam,
+            enrichQuestionRows(visible, personalByQuestion),
+          ),
           assignedCategories: categories,
           interviewDate: assigned[0]?.interviewDate ?? null,
           note: assigned[0]?.note ?? null,
           profileId: profileIdParam,
+          audioNos,
         });
       }
       return c.json({
         rows: mapStaffQuestionRows(rows),
         assignedCategories: [...ASSIGNABLE_CATEGORIES],
+        audioNos,
       });
     }
 
@@ -210,10 +293,16 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       caller.id,
     );
     return c.json({
-      rows: enrichQuestionRows(visible, personalByQuestion),
+      rows: await attachProgress(
+        db,
+        caller.tenantId,
+        caller.id,
+        enrichQuestionRows(visible, personalByQuestion),
+      ),
       assignedCategories: categories,
       interviewDate: assigned[0]?.interviewDate ?? null,
       note: assigned[0]?.note ?? null,
+      audioNos,
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -474,3 +563,251 @@ interviewPrepRoute.post(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// 音声 (Workers AI): 質問読み上げは admin が事前生成して R2 登録、 受講者向け GET は
+// 配信のみで AI を呼ばない。 回答の文字起こしは Whisper large-v3-turbo。
+// ---------------------------------------------------------------------------
+
+/**
+ * 質問 1 件を取り出しつつ read 権限を検査する。
+ * 受講者は割当カテゴリ + 共通の範囲外なら 403 (一覧 API と同じ可視性)。
+ */
+async function loadVisibleQuestion(
+  c: Parameters<typeof getCaller>[0],
+  no: number,
+): Promise<InterviewQuestion> {
+  const { caller, db } = await getCaller(c);
+  const rows: InterviewQuestion[] = await db
+    .select(Q_SELECT)
+    .from(interviewQuestions)
+    .where(and(eq(interviewQuestions.tenantId, caller.tenantId), eq(interviewQuestions.no, no)))
+    .limit(1);
+  const question = rows[0];
+  if (!question) throw new ApiError("質問が見つかりません", 404);
+  if (!canManageInterviewPrep(caller.role)) {
+    const assigned = await db
+      .select({ categories: interviewPrepAssignments.categories })
+      .from(interviewPrepAssignments)
+      .where(
+        and(
+          eq(interviewPrepAssignments.tenantId, caller.tenantId),
+          eq(interviewPrepAssignments.profileId, caller.id),
+        ),
+      )
+      .limit(1);
+    if (visibleQuestions([question], assigned[0]?.categories ?? []).length === 0) {
+      throw new ApiError("この質問は割当範囲外です", 403);
+    }
+  }
+  return question;
+}
+
+/**
+ * 質問文の読み上げ音声 (MP3) の配信。 admin が事前生成して R2 に登録した音声を
+ * 返すだけで、 ここでは AI を呼ばない。 未登録は 404 (UI は再生ボタンを出さない)。
+ */
+interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
+  try {
+    const no = Number.parseInt(c.req.param("no"), 10);
+    if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
+    await loadVisibleQuestion(c, no);
+
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) throw new ApiError("音声機能は未設定です (R2 バインディングなし)", 503);
+    const object = await bucket.get(ttsKey(no));
+    if (!object) throw new ApiError("この質問の音声は未登録です", 404);
+
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Content-Length": String(object.size),
+        ETag: object.httpEtag,
+        // 再生成で同じキーの内容が変わるため、 ブラウザには都度再検証させる。
+        "Cache-Control": "private, no-cache",
+      },
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * admin: 指定した質問の読み上げ音声を TTS モデル (既定 Grok TTS) で生成し R2 へ登録する。
+ * 既存キーは上書き (= 再生成)。 コスト管理のため生成はこのエンドポイントに閉じ、
+ * 1 回の呼び出しで最大 TTS_BATCH_LIMIT 問まで直列に処理する。
+ */
+interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "admin", "platform_admin");
+
+    const body = (await c.req.json()) as { nos?: unknown };
+    if (
+      !Array.isArray(body.nos) ||
+      body.nos.length === 0 ||
+      !body.nos.every((n): n is number => Number.isInteger(n) && (n as number) > 0)
+    ) {
+      throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
+    }
+    if (body.nos.length > TTS_BATCH_LIMIT) {
+      throw new ApiError(`一度に生成できるのは ${TTS_BATCH_LIMIT} 問までです`, 400);
+    }
+
+    if (!workersAiConfigured(c.env)) {
+      throw new ApiError("音声機能は未設定です (WORKERS_AI_API_TOKEN を設定してください)", 503);
+    }
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) throw new ApiError("音声機能は未設定です (R2 バインディングなし)", 503);
+
+    const limited = await enforceAiRateLimit(c);
+    if (limited) return limited;
+
+    const questions = await db
+      .select({ no: interviewQuestions.no, question: interviewQuestions.question })
+      .from(interviewQuestions)
+      .where(eq(interviewQuestions.tenantId, caller.tenantId));
+    const byNo = new Map(questions.map((q) => [q.no, q.question]));
+
+    const lang = c.env.INTERVIEW_TTS_LANG ?? "ja";
+    const results: Array<{ no: number; ok: boolean; error?: string }> = [];
+    for (const no of body.nos) {
+      const text = byNo.get(no);
+      if (!text) {
+        results.push({ no, ok: false, error: "質問が見つかりません" });
+        continue;
+      }
+      try {
+        const bytes = await synthesizeSpeech(c.env, text, lang);
+        await bucket.put(ttsKey(no), bytes, { httpMetadata: { contentType: "audio/mpeg" } });
+        results.push({ no, ok: true });
+      } catch (e) {
+        results.push({ no, ok: false, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
+    await recordAudit(db, caller, {
+      action: "interview_tts_generate",
+      targetType: "interview_question_audio",
+      targetId: body.nos.join(","),
+      ip: clientIp(c),
+      metadata: { requested: body.nos.length, succeeded: results.filter((r) => r.ok).length },
+    });
+    return c.json({ results });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 練習録音の文字起こし。 body は録音バイナリそのまま (webm/opus など)。
+ * `?no=` を付けると該当質問の文脈を Whisper の initial_prompt に渡し、
+ * 専門用語の認識精度を上げる (可視性検査も兼ねる)。
+ */
+interviewPrepRoute.post("/api/interview-prep/transcribe", async (c) => {
+  try {
+    const noParam = c.req.query("no");
+    let question: InterviewQuestion | null = null;
+    if (noParam !== undefined) {
+      const no = Number.parseInt(noParam, 10);
+      if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
+      question = await loadVisibleQuestion(c, no);
+    } else {
+      await getCaller(c); // 認証だけ通す
+    }
+
+    if (!workersAiConfigured(c.env)) {
+      throw new ApiError("音声機能は未設定です (WORKERS_AI_API_TOKEN を設定してください)", 503);
+    }
+
+    const body = new Uint8Array(await c.req.arrayBuffer());
+    if (body.length === 0) throw new ApiError("録音データが空です", 400);
+    if (body.length > MAX_RECORDING_BYTES) {
+      throw new ApiError("録音が長すぎます。 数分以内に区切って録音してください", 400);
+    }
+
+    const limited = await enforceAiRateLimit(c);
+    if (limited) return limited;
+
+    const result = await transcribeAudio(c.env, body, {
+      initialPrompt: question ? `面談の想定質問「${question.question}」への回答。` : undefined,
+    });
+
+    return c.json({
+      transcript: result.text,
+      durationSec: result.durationSec,
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 受講者: 質問ごとの学習ステータスを更新する (準備ホーム / 練習の自己評価)。
+ * body.event:
+ *   - "read"      … 型を読んだ (行がなければ作る。 confident は下げない)
+ *   - "practiced" … 「もう一度」— 練習回数だけ加算 (ステータス維持)
+ *   - "confident" … 「できた」— 練習OK
+ */
+interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "student");
+    const no = Number.parseInt(c.req.param("no"), 10);
+    if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
+
+    const body = (await c.req.json()) as { event?: unknown };
+    const event = body.event;
+    if (event !== "read" && event !== "practiced" && event !== "confident") {
+      throw new ApiError("event は read / practiced / confident のいずれかで指定してください", 400);
+    }
+
+    await loadVisibleQuestion(c, no);
+
+    const practiced = event !== "read";
+    const now = new Date();
+
+    /**
+     * SELECT → INSERT/UPDATE に分けると、 同じ質問への更新が重なったとき
+     * (「型を読んだ」の直後に「できた」を押すなど) に
+     *   - 双方が行なしと判断して INSERT が衝突し 500 になる
+     *   - practiced_count を古い値から計算して加算が失われる
+     *   - 後着の practiced が先着の confident を read へ引き下げる
+     * が起こりうる。 単一の upsert にして、 更新値は現在行を参照する SQL 式で決める。
+     */
+    await db
+      .insert(interviewProgress)
+      .values({
+        tenantId: caller.tenantId,
+        profileId: caller.id,
+        questionNo: no,
+        status: event === "confident" ? "confident" : "read",
+        practicedCount: practiced ? 1 : 0,
+        lastPracticedAt: practiced ? now : null,
+      })
+      .onConflictDoUpdate({
+        target: [
+          interviewProgress.tenantId,
+          interviewProgress.profileId,
+          interviewProgress.questionNo,
+        ],
+        set: {
+          // confident は一度立ったら下がらない。 read / practiced は現状維持。
+          status:
+            event === "confident"
+              ? sql`'confident'`
+              : sql`CASE WHEN ${interviewProgress.status} = 'confident' THEN 'confident' ELSE 'read' END`,
+          // 加算は現在値を参照する式で行う (読み取り値からの計算にしない)。
+          practicedCount: practiced
+            ? sql`${interviewProgress.practicedCount} + 1`
+            : sql`${interviewProgress.practicedCount}`,
+          ...(practiced ? { lastPracticedAt: now } : {}),
+          updatedAt: now,
+        },
+      });
+
+    return c.json({ ok: true });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});

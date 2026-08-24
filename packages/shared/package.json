@@ -45,6 +45,7 @@
     "./interview/questions": "./src/interview/questions.ts",
     "./interview/filter": "./src/interview/filter.ts",
     "./interview/answer-template": "./src/interview/answer-template.ts",
+    "./interview/progress": "./src/interview/progress.ts",
     "./skill-sheet/types": "./src/skill-sheet/types.ts"
   },
   "scripts": {

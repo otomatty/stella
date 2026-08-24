@@ -790,7 +790,9 @@ describe("my-answer-memo retirement (#206)", () => {
       token,
     });
 
-    expect([404, 410]).toContain(res.status);
+    // 準備ホーム導入で PUT /progress/:no は学習ステータス (event enum) 専用として
+    // 存在するようになった。 myAnswer を含む body は 400 で拒否され、 保存もされない。
+    expect([400, 404, 410]).toContain(res.status);
   });
 
   it("does not include my_answer in learner questions payload", async () => {

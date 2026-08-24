@@ -9,7 +9,7 @@ import type { Env } from "../env.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 import { chatRoute } from "./chat.js";
 import {
-  CHAT_TEST_PROFILES,
+  type CHAT_TEST_PROFILES,
   GATEWAY_ENV_VARS,
   createChatTestEnv,
   mintChatTestToken,

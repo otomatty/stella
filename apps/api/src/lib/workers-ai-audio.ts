@@ -1,7 +1,9 @@
 /**
- * Workers AI audio transcription routed through AI Gateway (Issue #204).
+ * 音声モデル呼び出しを AI Gateway 経由にする共通トランスポート (Issue #204)。
  *
- * Uses the REST `cf-aig-gateway-id` header path — not the legacy `/ai/run/@cf/` URL.
+ * REST の `cf-aig-gateway-id` ヘッダ経路を使う (レガシーな `/ai/run/@cf/` URL は使わない)。
+ * `runModelViaGateway` は `workers-ai.ts` (面談対策の TTS / 文字起こし) からも使い、
+ * 音声トラフィックを Gateway のログ・使用量に載せる。
  */
 
 import { assertGatewayRequestUrlNotWorkersAiPath } from "./ai-gateway.js";
@@ -26,13 +28,24 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export async function transcribeAudioViaGateway(
-  args: TranscribeAudioArgs,
-): Promise<{ text: string }> {
+/**
+ * AI Gateway の `/ai/run` を叩く共通トランスポート。
+ *
+ * `/ai/run` は**全モデル・全モダリティ共通の universal endpoint** で、 Workers AI 自前の
+ * `@cf/author/model` と Unified Billing の第三者モデル `author/model` (例 `xai/grok-tts`)
+ * のどちらも同じ `{ model, input }` 契約で受け付ける。 モデルごとの入力スキーマは
+ * `input` の中身で表現する。 モデル名は URL ではなく body に載せる
+ * (`/ai/run/@cf/...` は Gateway を素通りするため禁止)。
+ */
+export async function runModelViaGateway(args: {
+  env: TranscribeEnv;
+  model: string;
+  input: Record<string, unknown>;
+}): Promise<Response> {
   const url = `https://api.cloudflare.com/client/v4/accounts/${args.env.CLOUDFLARE_ACCOUNT_ID}/ai/run`;
   assertGatewayRequestUrlNotWorkersAiPath(url);
 
-  const response = await fetch(url, {
+  return fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${args.env.AI_GATEWAY_CF_API_TOKEN}`,
@@ -41,10 +54,18 @@ export async function transcribeAudioViaGateway(
     },
     body: JSON.stringify({
       model: args.model,
-      input: {
-        audio: bytesToBase64(args.audioBytes),
-      },
+      input: args.input,
     }),
+  });
+}
+
+export async function transcribeAudioViaGateway(
+  args: TranscribeAudioArgs,
+): Promise<{ text: string }> {
+  const response = await runModelViaGateway({
+    env: args.env,
+    model: args.model,
+    input: { audio: bytesToBase64(args.audioBytes) },
   });
 
   if (!response.ok) {

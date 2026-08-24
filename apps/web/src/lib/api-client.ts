@@ -70,3 +70,45 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/**
+ * バイナリ送受信用の低レベル版。 body を JSON 化せずそのまま送り、 Response を返す。
+ * 音声 (面談対策の読み上げ取得・録音アップロード) など JSON 以外のやり取りに使う。
+ */
+export async function apiFetchRaw(
+  path: string,
+  options: {
+    method?: "GET" | "POST";
+    body?: BodyInit;
+    contentType?: string;
+    signal?: AbortSignal;
+  } = {},
+): Promise<Response> {
+  const { method = "GET", body, contentType, signal } = options;
+  const headers: Record<string, string> = {};
+  if (contentType) headers["Content-Type"] = contentType;
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${SERVER_URL}${path}`, {
+    method,
+    headers,
+    ...(body !== undefined ? { body } : {}),
+    ...(signal ? { signal } : {}),
+  });
+
+  if (!res.ok) {
+    let message = `サーバエラー (${res.status})`;
+    const text = await res.text().catch(() => "");
+    if (text) {
+      try {
+        const data = JSON.parse(text) as { error?: string };
+        message = data.error ?? `${message}: ${text}`;
+      } catch {
+        message = `${message}: ${text}`;
+      }
+    }
+    throw new ApiClientError(message, res.status);
+  }
+  return res;
+}

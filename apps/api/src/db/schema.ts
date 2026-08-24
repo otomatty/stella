@@ -745,6 +745,39 @@ export const interviewPersonalTemplates = sqliteTable(
   }),
 );
 
+/**
+ * 面談対策 — 質問ごとの学習ステータス (準備ホームの準備率の元データ)。
+ * 表示ステータスは 4 段階 (未着手/型を読んだ/回答作成済み/練習OK) だが、 行が持つのは
+ * read / confident のみ: 「回答作成済み」は個別回答の型の有無から導出し、 未着手は行なし。
+ */
+export const interviewProgress = sqliteTable(
+  "interview_progress",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    questionNo: integer("question_no").notNull(),
+    status: text("status", { enum: ["read", "confident"] })
+      .notNull()
+      .default("read"),
+    practicedCount: integer("practiced_count").notNull().default(0),
+    lastPracticedAt: ts("last_practiced_at"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantProfileQuestionUnique: uniqueIndex("interview_progress_tenant_profile_q_uq").on(
+      t.tenantId,
+      t.profileId,
+      t.questionNo,
+    ),
+  }),
+);
+
 /** Anthropic Message Batch による個別回答の型生成ジョブ (Issue #206)。 */
 export const generationJobs = sqliteTable("generation_jobs", {
   id: uuid(),

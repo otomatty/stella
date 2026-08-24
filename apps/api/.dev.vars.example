@@ -19,6 +19,20 @@ GOOGLE_CLIENT_SECRET=
 
 INVITE_REDIRECT_URL=http://localhost:5173
 
+# Workers AI (面談対策の質問読み上げ生成 / 回答文字起こし)。
+# Cloudflare Dashboard で「Workers AI (読み取り+実行)」権限の API トークンを作成して設定。
+# 未設定でも API は起動し、 音声エンドポイントだけ 503 になる。
+# AI_GATEWAY_ID + AI_GATEWAY_CF_API_TOKEN があればそちらを優先し Gateway 経由になる。
+WORKERS_AI_API_TOKEN=
+
+# 質問読み上げ (未設定なら Grok TTS / 声 eve / 言語 ja)。
+# Grok TTS は AI Gateway の Unified Billing で呼ぶため、 AI_GATEWAY_ID と
+# AI_GATEWAY_CF_API_TOKEN が必要 (xAI 側の API キーは不要)。
+# Workers AI の TTS は日本語非対応なので既定にはしない。
+# INTERVIEW_TTS_MODEL=grok-tts        # 他: @cf/myshell-ai/melotts, openai/tts-1
+# INTERVIEW_TTS_VOICE=eve             # Grok: eve / ara / rex / sal / leo
+# INTERVIEW_TTS_LANG=ja               # BCP-47。 "auto" で自動判定
+
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml [vars] CLOUDFLARE_ACCOUNT_ID と同値。 account_id だけでは Workers ランタイムに渡らない。
 CLOUDFLARE_ACCOUNT_ID=
