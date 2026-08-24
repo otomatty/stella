@@ -1,0 +1,16 @@
+{
+  "title": "検証・hooks・MCP",
+  "category": "AI駆動開発",
+  "color": "green",
+  "description": "Claude Code をチームで仕組み化するための研修。生成した変更をテスト・lint・自分の目で検証する構えから、検証手順の Skill 化、必ず実行される hook、既存 MCP サーバーの接続までを扱う。最後に、リポジトリに載せる仕組みと個人用を分けて、チームに配れるようになる。",
+  "header": "検証・hooks・MCP",
+  "tenantId": "ses",
+  "modules": {
+    "m0-verify-first": "M0. 検証が先",
+    "m1-verify-skill": "M1. 検証 Skill",
+    "m2-hooks": "M2. hooks",
+    "m3-mcp": "M3. MCP を使う",
+    "m4-team": "M4. チームへの展開",
+    "m5-wrap-up": "M5. 仕組み化の総仕上げ"
+  }
+}
