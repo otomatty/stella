@@ -60,7 +60,7 @@ export interface DispatchResult {
 export async function runGrading(args: RunArgs): Promise<DispatchResult> {
   const language = getLanguage(args.assignment);
   const entry = getEntryFile(args.assignment);
-  if (!Object.prototype.hasOwnProperty.call(args.files, entry)) {
+  if (!Object.hasOwn(args.files, entry)) {
     const known = Object.keys(args.files).join(", ");
     throw new Error(
       `entryFile "${entry}" not found in submitted files (known: ${known || "(none)"})`,

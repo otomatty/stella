@@ -10,12 +10,13 @@
 <script>
 // ダークモードの初期適用。 描画前に <html class="dark"> を確定させてチラつきを防ぐ。
 // 保存キー / theme-color の値は src/hooks/useTheme.ts と揃えること。
-(function () {
-  var dark = false;
+(() => {
+  let dark = false;
+  let stored;
   try {
-    var stored = localStorage.getItem("theme");
+    stored = localStorage.getItem("theme");
     dark = stored === "dark" || (stored !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-  } catch (e) {
+  } catch {
     // private モード等で localStorage が読めない場合はライトのまま
   }
   if (dark) {

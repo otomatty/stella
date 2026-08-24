@@ -637,6 +637,7 @@ const LessonToc = ({
 
 const ViewerLoading = () => (
   <div
+    role="status"
     aria-busy="true"
     aria-live="polite"
     aria-label="ビューアを読み込み中"
@@ -658,13 +659,7 @@ const MissingMaterialFallback = ({ type }: { type: "video" | "slides" }) => (
   </div>
 );
 
-const LessonOverview = ({
-  lesson,
-  onComplete,
-}: {
-  lesson: Lesson;
-  onComplete: () => void;
-}) => {
+const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) => {
   const { entry } = useLessonProgress(lesson.id);
   const isCompleted = entry?.completed === true;
   const hasMaterial =
@@ -717,13 +712,7 @@ const LessonOverview = ({
  * とする。 開いた時点で進捗行も作る (作らないと、 完了ボタンを押すまでサイドバーで
  * 「読みかけ」に見えず、 「続きから」の遷移先もこのレッスンを飛ばしてしまう)。
  */
-const LessonReadable = ({
-  lesson,
-  onComplete,
-}: {
-  lesson: Lesson;
-  onComplete: () => void;
-}) => {
+const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) => {
   const { entry, markVisited } = useLessonProgress(lesson.id);
   const endRef = useRef<HTMLDivElement>(null);
   const isCompleted = entry?.completed === true;

@@ -382,7 +382,8 @@
 
   /* Login art column grid background */
   .login-art-grid {
-    background-image: linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
+    background-image:
+      linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
       linear-gradient(to bottom, oklch(30% 0.01 260) 1px, transparent 1px);
     background-size: 48px 48px;
     opacity: 0.5;
@@ -391,7 +392,8 @@
 
   /* Video player placeholder */
   .video-placeholder-bg {
-    background-image: radial-gradient(circle at 30% 40%, oklch(22% 0.02 260) 0, transparent 50%),
+    background-image:
+      radial-gradient(circle at 30% 40%, oklch(22% 0.02 260) 0, transparent 50%),
       radial-gradient(circle at 70% 70%, oklch(18% 0.03 265) 0, transparent 50%), #0a0a0b;
   }
 

@@ -56,7 +56,7 @@ export const sqlRunner: CodeRunner = {
     }
     // 設定ミスを「空コードで採点」として黙って通さないよう、 入力を明示的に検証して
     // 不整合は構造化エラーとして返す (例外を投げると採点 UI が RUNNER_ERROR で全停止する)。
-    if (!Object.prototype.hasOwnProperty.call(input.files, input.entryFile)) {
+    if (!Object.hasOwn(input.files, input.entryFile)) {
       const known = Object.keys(input.files).join(", ") || "(none)";
       return {
         durationMs: 0,
