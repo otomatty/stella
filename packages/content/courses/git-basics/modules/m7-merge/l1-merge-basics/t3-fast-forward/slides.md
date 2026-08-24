@@ -58,7 +58,7 @@ Git入門研修 — Module 7 / レッスン7-1
 
 ![w:950](assets/fast-forward-before-after.svg)
 
-<!-- ノート: 破線がマージ前のmainの位置です。動くのはmainの付箋だけで、fix-typoはDを指したまま。コミットの並びも変わりません。これが早送り=fast-forwardの正体です。 -->
+<!-- ノート: 破線がマージ前のmainの位置です。動くのはmainの付箋だけで、fix-typoはDを指したまま動きません。コミットの並びも変わりません。これが早送り=fast-forwardの正体です。 -->
 
 ---
 

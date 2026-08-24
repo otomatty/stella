@@ -45,7 +45,7 @@ git merge fix-typo    # 2. fix-typo の変更を main へ取り込む
 
 枝を出してから main 側では何もコミットしていない、という場面は多くあります。このときのマージはとても簡単に済みます。
 
-![一直線の履歴B・C・Dで、mainの付箋がBからDへ滑る。fix-typoはDを指したままで、コミットの並びは変わらない](t3-fast-forward/assets/fast-forward-before-after.svg)
+![一直線の履歴B…Dで、mainの付箋だけがBからDへ滑る。fix-typoはDを指したまま動かず、コミットの並びも変わらない](t3-fast-forward/assets/fast-forward-before-after.svg)
 
 B から D までは一直線です。ブランチは「動く付箋」でしたから、main の付箋を先端 D まで滑らせれば合流は完了します。これが **fast-forward**(早送り)です。
 
