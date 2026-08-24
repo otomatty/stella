@@ -37,3 +37,8 @@ migrations_dir = "drizzle"
 [[r2_buckets]]
 binding = "MATERIALS_BUCKET"
 bucket_name = "falcon-materials-public"
+
+# スキルシート原本 (Issue #203)。
+[[r2_buckets]]
+binding = "SKILL_SHEETS_BUCKET"
+bucket_name = "falcon-skill-sheets"

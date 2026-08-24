@@ -43,7 +43,8 @@
     "./enrollment/preset": "./src/enrollment/preset.ts",
     "./interview/types": "./src/interview/types.ts",
     "./interview/questions": "./src/interview/questions.ts",
-    "./interview/filter": "./src/interview/filter.ts"
+    "./interview/filter": "./src/interview/filter.ts",
+    "./skill-sheet/types": "./src/skill-sheet/types.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

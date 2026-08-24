@@ -33,6 +33,12 @@ export interface Env {
    */
   MATERIALS_BUCKET?: R2Bucket;
 
+  /**
+   * Cloudflare R2 — スキルシート原本 (PDF/xlsx) アップロード用。
+   * `wrangler.toml` の `[[r2_buckets]]` で `SKILL_SHEETS_BUCKET` としてバインドする。
+   */
+  SKILL_SHEETS_BUCKET?: R2Bucket;
+
   /** 招待メールのリンク先 (受諾後に開くアプリ URL)。 未設定なら ALLOWED_ORIGINS の先頭。 */
   INVITE_REDIRECT_URL?: string;
 

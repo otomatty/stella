@@ -9,6 +9,7 @@
 
 import { sql } from "drizzle-orm";
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import type { SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
 
 const uuid = () =>
   text("id")
@@ -703,6 +704,30 @@ export const interviewPrepAssignments = sqliteTable(
   }),
 );
 
+/** 受講者ごとのスキルシート (Issue #203)。 1 人 1 行。 */
+export const skillSheets = sqliteTable(
+  "skill_sheets",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    r2Key: text("r2_key"),
+    sheet: json<SkillSheetV1>("sheet", {
+      sections: { basic: {}, skills: [], projects: [], certifications: [], self_pr: "" },
+    }),
+    updatedBy: text("updated_by"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantProfileUnique: uniqueIndex("skill_sheets_tenant_profile_uq").on(t.tenantId, t.profileId),
+  }),
+);
+
 // ---------------------------------------------------------------
 // 監査ログ
 // ---------------------------------------------------------------
@@ -777,6 +802,7 @@ export const APP_TABLES = [
   "support_inquiries",
   "interview_questions",
   "interview_prep_assignments",
+  "skill_sheets",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;

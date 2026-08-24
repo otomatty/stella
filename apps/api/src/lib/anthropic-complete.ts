@@ -3,6 +3,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/messages/messages.js";
 import type { ChatRole } from "@falcon/shared/ai/types";
 
 import type { Env } from "../env.js";
@@ -20,7 +21,14 @@ interface CompleteArgs {
   signal?: AbortSignal;
 }
 
-export async function completeMessage(args: CompleteArgs): Promise<string> {
+export interface StructuredCompleteArgs {
+  env: Pick<Env, "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL">;
+  system: string;
+  messages: { role: ChatRole; content: string | ContentBlockParam[] }[];
+  signal?: AbortSignal;
+}
+
+async function createCompletion(args: StructuredCompleteArgs): Promise<string> {
   const apiKey = args.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new MissingApiKeyError();
@@ -43,4 +51,13 @@ export async function completeMessage(args: CompleteArgs): Promise<string> {
 
   const block = response.content.find((b) => b.type === "text");
   return block && block.type === "text" ? block.text : "";
+}
+
+export async function completeMessage(args: CompleteArgs): Promise<string> {
+  return createCompletion(args);
+}
+
+/** PDF / 画像など ContentBlockParam を含むメッセージ向けの非ストリーミング完了。 */
+export async function completeStructuredMessage(args: StructuredCompleteArgs): Promise<string> {
+  return createCompletion(args);
 }

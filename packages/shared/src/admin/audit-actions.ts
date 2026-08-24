@@ -45,6 +45,9 @@ const LABELS = {
   r2_orphan_cleanup: "教材ストレージの孤児削除",
   // 面談対策
   interview_prep_assign: "面談対策の割当",
+  // スキルシート (#203)
+  skill_sheet_upload: "スキルシートのアップロード",
+  skill_sheet_update: "スキルシートの更新",
 } as const;
 
 /** 記録しうる監査アクション。 記録側・表示側の双方がこの型を共有する。 */
