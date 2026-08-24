@@ -563,7 +563,7 @@ export const notifications = sqliteTable("notifications", {
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
   type: text("type", {
-    enum: ["announcement", "review_completed", "assignment_due"],
+    enum: ["announcement", "review_completed", "assignment_due", "interview_date_set"],
   }).notNull(),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
@@ -693,6 +693,9 @@ export const interviewPrepAssignments = sqliteTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     categories: json<string[]>("categories", []),
+    /** 面談予定日 (参考情報。 LMS の正本ではない) — YYYY-MM-DD */
+    interviewDate: text("interview_date"),
+    interviewNote: text("interview_note"),
     assignedBy: text("assigned_by"),
     updatedAt: tsNowUpd("updated_at"),
   },

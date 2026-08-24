@@ -11,6 +11,9 @@ export interface InterviewQuestionsResult {
   rows: InterviewQuestion[];
   /** 受講者: 自分の割当。 staff: 全カテゴリ。 */
   assignedCategories: string[];
+  /** 面談予定日 (参考情報)。未設定なら null。 */
+  interviewDate?: string | null;
+  note?: string | null;
 }
 
 export async function fetchInterviewQuestions(): Promise<InterviewQuestionsResult> {
@@ -22,6 +25,8 @@ export interface InterviewPrepAssignmentRow {
   display_name: string;
   email: string | null;
   categories: string[];
+  interviewDate?: string | null;
+  note?: string | null;
 }
 
 export async function listInterviewPrepAssignments(): Promise<InterviewPrepAssignmentRow[]> {
@@ -33,10 +38,14 @@ export async function listInterviewPrepAssignments(): Promise<InterviewPrepAssig
 
 export async function saveInterviewPrepAssignment(
   profileId: string,
-  categories: string[],
+  payload: {
+    categories: string[];
+    interviewDate?: string | null;
+    note?: string | null;
+  },
 ): Promise<void> {
   await apiFetch(`/api/interview-prep/assignments/${encodeURIComponent(profileId)}`, {
     method: "PUT",
-    body: { categories },
+    body: payload,
   });
 }

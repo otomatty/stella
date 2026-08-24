@@ -148,6 +148,13 @@
       "when": 1787369363034,
       "tag": "0020_drop_quiz_shuffle_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1787500000000,
+      "tag": "0022_interview_prep_assignment_date",
+      "breakpoints": true
     }
   ]
 }

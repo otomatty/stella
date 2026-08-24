@@ -19,6 +19,7 @@ export const SEED_PROFILES = {
   learner: { id: "seed-learner", tenantId: "ses", role: "student" as ProfileRole },
   learnerB: { id: "seed-learner-b", tenantId: "ses", role: "student" as ProfileRole },
   learnerC: { id: "seed-learner-c", tenantId: "ses", role: "student" as ProfileRole },
+  learnerD: { id: "seed-learner-d", tenantId: "ses", role: "student" as ProfileRole },
   instructor: { id: "seed-instructor", tenantId: "ses", role: "instructor" as ProfileRole },
   admin: { id: "seed-admin", tenantId: "ses", role: "admin" as ProfileRole },
   sales: { id: "seed-sales", tenantId: "ses", role: "sales" as ProfileRole },
@@ -72,6 +73,13 @@ export const TEST_STUDENTS: StudentProfile[] = [
     role: "student",
     displayName: "Learner C",
     email: "learner-c@example.local",
+  },
+  {
+    id: SEED_PROFILES.learnerD.id,
+    tenantId: "ses",
+    role: "student",
+    displayName: "Learner D",
+    email: "learner-d@example.local",
   },
 ];
 
@@ -167,7 +175,25 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_questions") {
-      return [{ no: 1, categories: ["PHP"], question: "test?", freq: "A", subcategory: "", time: 30, keywords: "", intent: "", answer_template: "", deep1: "", deep2: "", deep3: "", ng: "", criteria: "", is_reverse: 0 }];
+      return [
+        {
+          no: 1,
+          categories: ["PHP"],
+          question: "test?",
+          freq: "A",
+          subcategory: "",
+          time: 30,
+          keywords: "",
+          intent: "",
+          answer_template: "",
+          deep1: "",
+          deep2: "",
+          deep3: "",
+          ng: "",
+          criteria: "",
+          is_reverse: 0,
+        },
+      ];
     }
 
     return [];
@@ -184,6 +210,7 @@ export function createInterviewPrepTestDb(
     chain.where = () => chain;
     chain.orderBy = () => Promise.resolve(executeSelect(fromTable, shape));
     chain.limit = (n: number) => Promise.resolve(executeSelect(fromTable, shape, n));
+    // biome-ignore lint/suspicious/noThenProperty: drizzle query chain is intentionally thenable in tests
     chain.then = (
       onFulfilled: (value: unknown[]) => unknown,
       onRejected?: (reason: unknown) => unknown,
@@ -205,11 +232,7 @@ export function createInterviewPrepTestDb(
           }
           if (name === "interview_prep_assignments") {
             return {
-              onConflictDoUpdate: ({
-                set,
-              }: {
-                set: Record<string, unknown>;
-              }) => {
+              onConflictDoUpdate: ({ set }: { set: Record<string, unknown> }) => {
                 for (const row of rows) {
                   const tenantId = row.tenantId as string;
                   const profileId = row.profileId as string;
@@ -218,7 +241,10 @@ export function createInterviewPrepTestDb(
                   const merged: InterviewPrepAssignmentRow = {
                     tenantId,
                     profileId,
-                    categories: (set.categories ?? row.categories ?? existing?.categories ?? []) as string[],
+                    categories: (set.categories ??
+                      row.categories ??
+                      existing?.categories ??
+                      []) as string[],
                     interviewDate: (set.interviewDate ??
                       row.interviewDate ??
                       existing?.interviewDate ??
@@ -227,9 +253,10 @@ export function createInterviewPrepTestDb(
                       row.interviewNote ??
                       existing?.interviewNote ??
                       null) as string | null,
-                    assignedBy: (set.assignedBy ?? row.assignedBy ?? existing?.assignedBy ?? null) as
-                      | string
-                      | null,
+                    assignedBy: (set.assignedBy ??
+                      row.assignedBy ??
+                      existing?.assignedBy ??
+                      null) as string | null,
                   };
                   state.assignments.set(key, merged);
                 }
@@ -269,11 +296,7 @@ export function createInterviewPrepTestEnv(overrides: Partial<Env> = {}): Env {
 export const DEFAULT_CATEGORIES = ["PHP"] as const;
 
 export function putAssignmentBody(
-  overrides: {
-    categories?: string[];
-    interviewDate?: string | null;
-    note?: string | null;
-  } = {},
+  overrides: { categories?: string[]; interviewDate?: string | null; note?: string | null } = {},
 ): Record<string, unknown> {
   return {
     categories: overrides.categories ?? [...DEFAULT_CATEGORIES],

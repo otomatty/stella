@@ -15,8 +15,6 @@ import {
   INTERVIEW_PREP_ASSIGNMENTS_PATH,
   INTERVIEW_PREP_QUESTIONS_PATH,
   SEED_PROFILES,
-  TEST_JWT_SECRET,
-  createInterviewPrepTestDb,
   createInterviewPrepTestEnv,
   createInterviewPrepTestState,
   interviewPrepAssignmentPath,
@@ -134,29 +132,26 @@ describe("PUT /api/interview-prep/assignments/:profileId interview date (#205)",
     ["platform_admin", "seed-platform-admin"],
   ] as const;
 
-  it.each(dateWriteRoles)(
-    "allows %s to save interviewDate and note",
-    async (_role, userId) => {
-      const { app } = createTestApp(env);
-      const token = await mintInterviewPrepTestToken(userId);
+  it.each(dateWriteRoles)("allows %s to save interviewDate and note", async (_role, userId) => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken(userId);
 
-      const res = await putAssignment(
-        app,
-        env,
-        token,
-        SEED_PROFILES.learner.id,
-        putAssignmentBody({
-          interviewDate: "2026-09-10",
-          note: "ECサイト保守開発",
-        }),
-      );
+    const res = await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({
+        interviewDate: "2026-09-10",
+        note: "ECサイト保守開発",
+      }),
+    );
 
-      expect(res.status).toBe(200);
-      const stored = state.assignments.get(`ses:${SEED_PROFILES.learner.id}`);
-      expect(stored?.interviewDate).toBe("2026-09-10");
-      expect(stored?.interviewNote).toBe("ECサイト保守開発");
-    },
-  );
+    expect(res.status).toBe(200);
+    const stored = state.assignments.get(`ses:${SEED_PROFILES.learner.id}`);
+    expect(stored?.interviewDate).toBe("2026-09-10");
+    expect(stored?.interviewNote).toBe("ECサイト保守開発");
+  });
 
   it("returns 403 when instructor sends interviewDate", async () => {
     const { app } = createTestApp(env);
@@ -362,12 +357,8 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
       .map((r: { interviewDate: string }) => r.interviewDate);
     expect(dated).toEqual(["2026-09-05", "2026-09-10", "2026-09-20"]);
 
-    const unsetRows = body.rows.filter(
-      (r: { interviewDate?: string | null }) => !r.interviewDate,
-    );
-    const datedRows = body.rows.filter(
-      (r: { interviewDate?: string | null }) => r.interviewDate,
-    );
+    const unsetRows = body.rows.filter((r: { interviewDate?: string | null }) => !r.interviewDate);
+    const datedRows = body.rows.filter((r: { interviewDate?: string | null }) => r.interviewDate);
     expect(body.rows.indexOf(unsetRows[0])).toBeGreaterThan(
       body.rows.indexOf(datedRows[datedRows.length - 1]),
     );
