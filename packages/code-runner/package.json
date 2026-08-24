@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@falcon/shared": "workspace:*",
-    "eslint-linter-browserify": "^9.1.0",
+    "eslint-linter-browserify": "^10.8.1",
     "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "quickjs-emscripten-core": "^0.32.0",
     "sql.js": "^1.14.2",
