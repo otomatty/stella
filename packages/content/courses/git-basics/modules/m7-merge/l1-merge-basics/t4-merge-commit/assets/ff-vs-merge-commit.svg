@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 64 1200 416" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <!-- 左列: fast-forward -->
+  <text x="300" y="112" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">fast-forward</text>
+  <text x="300" y="144" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">枝が一直線のとき</text>
+
+  <line x1="216" y1="256" x2="356" y2="256" stroke="#B7B7BE" stroke-width="2"/>
+  <line x1="412" y1="256" x2="528" y2="256" stroke="#5C5C66" stroke-width="2" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+
+  <circle cx="188" cy="256" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="188" y="264" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">A</text>
+  <circle cx="384" cy="256" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="384" y="264" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">B</text>
+
+  <text x="300" y="392" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">付箋が先へ進むだけ</text>
+  <text x="300" y="424" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">新しいコミットは増えない</text>
+
+  <!-- 右列: マージコミット -->
+  <text x="900" y="112" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">マージコミット</text>
+  <text x="900" y="144" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">枝が二股に育ったとき</text>
+
+  <line x1="724" y1="192" x2="836" y2="192" stroke="#B7B7BE" stroke-width="2"/>
+  <line x1="868" y1="192" x2="1000" y2="192" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M696 220 L696 320 L804 320" fill="none" stroke="#B7B7BE" stroke-width="2"/>
+  <path d="M868 320 L1032 320 L1032 224" fill="none" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <circle cx="696" cy="192" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="696" y="200" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">B</text>
+  <circle cx="840" cy="192" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="840" y="200" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">C</text>
+  <circle cx="840" cy="320" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <text x="840" y="328" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">E</text>
+  <circle cx="1032" cy="192" r="28" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="1032" y="200" text-anchor="middle" font-size="24" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">M</text>
+
+  <text x="900" y="392" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">CとEの両方を親に持つMを作る</text>
+  <text x="900" y="424" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">二股の先端を1点に束ねる</text>
+</svg>

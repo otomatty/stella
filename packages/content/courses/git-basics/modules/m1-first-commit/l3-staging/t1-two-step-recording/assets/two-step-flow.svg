@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 64 1200 576" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <line x1="600" y1="192" x2="600" y2="256" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="600" y1="360" x2="600" y2="424" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="96" width="480" height="96" rx="12" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="136" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">変更したファイルたち</text>
+  <text x="600" y="172" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">作業中のフォルダの変更</text>
+
+  <text x="632" y="232" text-anchor="start" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">git add</text>
+  <text x="744" y="232" text-anchor="start" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">次の記録に入れる分を選ぶ</text>
+
+  <rect x="360" y="264" width="480" height="96" rx="12" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="600" y="304" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">選ばれた変更</text>
+  <text x="600" y="340" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">次の記録に入る分だけ</text>
+
+  <text x="632" y="400" text-anchor="start" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">git commit</text>
+  <text x="784" y="400" text-anchor="start" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">選んだ分を記録として確定</text>
+
+  <rect x="360" y="432" width="480" height="96" rx="12" fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="472" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">コミットが1つ増える</text>
+  <text x="600" y="508" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">履歴に積まれる</text>
+</svg>
