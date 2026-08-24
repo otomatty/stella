@@ -1,7 +1,7 @@
 ---
 id: 4-1-5
 title: 役割はファイルで定義できる
-takeaway: "よく任せる役割は、名前と指示とdescriptionを書いたファイルとして定義しておけます"
+takeaway: "よく任せる役割は、frontmatterにnameとdescriptionを書き、本文に指示を置いたファイルとして定義できます"
 introduces: [役割]
 requires: [サブエージェント, ファイル, リポジトリ, description, frontmatter, 本文]
 header: "Skillsとサブエージェント"
@@ -29,28 +29,30 @@ Skillsとサブエージェント — Module 4 / レッスン4-1
 
 ## 結論
 
-**よく任せる役割は、名前と指示とdescriptionを書いたファイルとして定義しておけます**
+**よく任せる役割は、frontmatterにnameとdescriptionを書き、本文に指示を置いたファイルとして定義できます**
 
 - **役割** — 決まった観点で働く係。「検証役」「調査役」のような肩書き
 - 定義しておけば、毎回説明しなくても同じ係を呼び出せます
 
-<!-- ノート: Skillと同じ発想です。書くのは、係の名前・いつ呼ぶかのdescription・係への指示の3つです。 -->
+<!-- ノート: Skillと同じ発想です。frontmatterにnameとdescription、本文に係への指示を書きます。指示: キーは使いません。 -->
 
 ---
 
 ## 最小の例
 
 ```text
- .claude/agents/naming-checker.md(執筆時点の置き場所)
+ .claude/agents/naming-checker.md
+ (個人用は ~/.claude/agents/ 配下)
 
  ---
  name: naming-checker
  description: 差分の命名を規約と照らして確かめたいときに使う
  ---
+
  規約の一覧と照らし、違反と直し方だけを短く報告する。
 ```
 
-<!-- ノート: SKILL.mdと同じ形です。frontmatterに名前とdescription、本文に係への指示を書きます。一度書けば「検証役に見てもらって」で通じるようになり、説明のぶれも消えます。 -->
+<!-- ノート: この形をそのままコピーして保存すれば動きます。frontmatterにname/description、指示は本文に書きます。指示: キーは使いません。 -->
 
 ---
 
@@ -70,6 +72,6 @@ Skillsとサブエージェント — Module 4 / レッスン4-1
 
 ## まとめ
 
-**よく任せる役割は、名前と指示とdescriptionを書いたファイルとして定義しておけます**
+**よく任せる役割は、frontmatterにnameとdescriptionを書き、本文に指示を置いたファイルとして定義できます**
 
 <!-- ノート: 結論の再掲だけです。最後のモジュールで、4つの入れ物の使い分けを仕上げます、と口頭で締めます。 -->
