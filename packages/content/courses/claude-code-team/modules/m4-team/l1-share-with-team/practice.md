@@ -100,6 +100,19 @@ hookの設定は、チーム全員とエージェントの動きを変えるフ�
 
 </details>
 
+### Q5. チーム全員に使わせたいMCPサーバー設定の置き場所として適切なのはどれですか。
+
+- A. `claude mcp add` の既定(local)のまま、各自の手元だけに置く
+- B. project スコープの `.mcp.json` に書いてリポジトリにコミットする
+- C. APIキーをそのまま `.mcp.json` に書いてコミットする
+
+<details>
+<summary>答え</summary>
+
+**B** — チーム共有は project スコープの `.mcp.json` です。`claude mcp add` の既定は local で、コミットしても届きません。APIキーは `${VAR}` で環境変数参照にし、値は各自の手元に置きます。
+
+</details>
+
 ### Q4. GitHubの@claudeの説明として適切なのはどれですか。
 
 - A. Issueやプルリクエストから作業を頼むと、結果がGitHub上に返ってくる仕組み
