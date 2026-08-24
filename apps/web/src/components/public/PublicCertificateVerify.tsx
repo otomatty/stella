@@ -59,7 +59,13 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
         </div>
 
         {state === "loading" ? (
-          <div aria-busy="true" aria-live="polite" aria-label="検証中" className="space-y-3 py-6">
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            aria-label="検証中"
+            className="space-y-3 py-6"
+          >
             <Skeleton className="mx-auto h-5 w-48" />
             <Skeleton className="h-40 w-full" />
           </div>

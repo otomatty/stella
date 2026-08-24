@@ -80,7 +80,7 @@ export function parseInviteCsv(text: string): ParsedInviteCsv {
   let started = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!line || !line.trim()) continue;
+    if (!line?.trim()) continue;
     const cells = splitCsvLine(line);
     if (!started && looksLikeHeader(cells)) {
       started = true;

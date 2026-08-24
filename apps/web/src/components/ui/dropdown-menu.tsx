@@ -108,8 +108,6 @@ export const DropdownMenuLabel = ({
   <div className={cn("px-2.5 py-1.5 text-xs", className)} {...props} />
 );
 
-export const DropdownMenuSeparator = ({
-  className,
-}: {
-  className?: string;
-}) => <hr className={cn("-mx-1 my-1 h-px border-0 bg-border", className)} />;
+export const DropdownMenuSeparator = ({ className }: { className?: string }) => (
+  <hr className={cn("-mx-1 my-1 h-px border-0 bg-border", className)} />
+);

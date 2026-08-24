@@ -403,7 +403,7 @@ export function buildMaterialPath(args: {
   courseId: string;
   fileName: string;
 }): string {
-  const safe = args.fileName.replace(/[^\p{L}\p{N}.\-]+/gu, "_");
+  const safe = args.fileName.replace(/[^\p{L}\p{N}.-]+/gu, "_");
   const uniq =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 8)

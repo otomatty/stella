@@ -75,7 +75,7 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
       ) : null}
 
       {!analytics && loading ? (
-        <div aria-busy="true" aria-live="polite" aria-label="集計を読み込み中">
+        <div role="status" aria-busy="true" aria-live="polite" aria-label="集計を読み込み中">
           <div className="grid gap-3 mb-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />

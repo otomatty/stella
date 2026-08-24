@@ -21,13 +21,7 @@ async function issueLinkCode(): Promise<string | undefined> {
   }
 }
 
-export function OpenInVscodeButton({
-  courseId,
-  lessonId,
-}: {
-  courseId: string;
-  lessonId: string;
-}) {
+export function OpenInVscodeButton({ courseId, lessonId }: { courseId: string; lessonId: string }) {
   const [opening, setOpening] = useState(false);
 
   const handleOpen = async () => {

@@ -19,11 +19,7 @@ import {
 } from "@/lib/interview-prep-api";
 import { Chip } from "@/components/ui/chip";
 
-export function InterviewPrepAssignmentsPage({
-  backendEnabled,
-}: {
-  backendEnabled: boolean;
-}) {
+export function InterviewPrepAssignmentsPage({ backendEnabled }: { backendEnabled: boolean }) {
   const [rows, setRows] = useState<InterviewPrepAssignmentRow[]>([]);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);

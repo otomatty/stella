@@ -99,7 +99,6 @@ export const SearchPalette = ({
           <Search size={15} className="text-ink-3 shrink-0" />
           {/* コマンドパレットは開いた直後にそのまま打てることが前提のため autoFocus。 */}
           <input
-            // biome-ignore lint/a11y/noAutofocus: 検索パレットは開いた瞬間に入力できる必要がある
             autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}

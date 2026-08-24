@@ -145,7 +145,7 @@ materialsRoute.post("/api/materials/upload", async (c) => {
       if (!info || info.tenantId !== caller.tenantId) {
         throw new ApiError("レッスンが見つかりません", 404);
       }
-      const safeName = file.name.replace(/[^\p{L}\p{N}.\-]+/gu, "_");
+      const safeName = file.name.replace(/[^\p{L}\p{N}.-]+/gu, "_");
       const uniq = crypto.randomUUID().slice(0, 8);
       path = `tenant/${caller.tenantId}/lessons/${lessonId}/${uniq}-${safeName}`;
     } else {
