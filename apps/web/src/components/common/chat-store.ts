@@ -156,7 +156,7 @@ function pruneOldest(ls: Storage, currentAssignmentId: string): void {
   const items: Item[] = [];
   for (let i = 0; i < ls.length; i++) {
     const k = ls.key(i);
-    if (!k || !k.startsWith(PREFIX) || k === VERSION_KEY) {
+    if (!k?.startsWith(PREFIX) || k === VERSION_KEY) {
       continue;
     }
     if (k === entryKey(currentAssignmentId)) {

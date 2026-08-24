@@ -286,15 +286,7 @@ function CompletionRow({
   );
 }
 
-function Metric({
-  label,
-  value,
-  required,
-}: {
-  label: string;
-  value: string;
-  required: boolean;
-}) {
+function Metric({ label, value, required }: { label: string; value: string; required: boolean }) {
   return (
     <span className={required ? "" : "opacity-50"}>
       {label}: <span className="font-mono text-ink-2">{value}</span>

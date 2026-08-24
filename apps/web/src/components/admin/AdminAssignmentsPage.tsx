@@ -136,6 +136,7 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
         <Suspense
           fallback={
             <div
+              role="status"
               aria-busy="true"
               aria-live="polite"
               aria-label="読み込み中"

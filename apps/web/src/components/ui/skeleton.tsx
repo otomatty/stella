@@ -9,6 +9,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 export function PageSkeleton({ label = "読み込み中" }: { label?: string }) {
   return (
     <div
+      role="status"
       aria-busy="true"
       aria-live="polite"
       aria-label={label}
@@ -28,15 +29,10 @@ export function PageSkeleton({ label = "読み込み中" }: { label?: string }) 
 }
 
 /** リスト・テーブル・フォーム向けの汎用スケルトン行。 */
-export function SkeletonRows({
-  rows = 4,
-  className,
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function SkeletonRows({ rows = 4, className }: { rows?: number; className?: string }) {
   return (
     <div
+      role="status"
       aria-busy="true"
       aria-live="polite"
       aria-label="読み込み中"

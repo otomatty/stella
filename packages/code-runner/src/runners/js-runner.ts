@@ -19,7 +19,7 @@ export const jsRunner: CodeRunner = {
   async run(input: RunInput): Promise<RunOutput> {
     // entryFile が files に無い場合に空文字フォールバックすると、 設定ミスを
     // 「空コードで採点」として黙って通してしまう。 構造化エラーで明示的に伝える。
-    if (!Object.prototype.hasOwnProperty.call(input.files, input.entryFile)) {
+    if (!Object.hasOwn(input.files, input.entryFile)) {
       const known = Object.keys(input.files).join(", ") || "(none)";
       return {
         durationMs: 0,

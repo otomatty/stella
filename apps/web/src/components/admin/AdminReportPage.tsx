@@ -257,13 +257,7 @@ function ReportLive({ tenantId }: { tenantId: string }) {
   );
 }
 
-function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     // 狭幅では 2 列に収まるよう最小幅つきで伸縮させる (input の既定幅で溢れさせない)。
     <div className="flex min-w-[140px] flex-1 flex-col gap-1 sm:flex-none">

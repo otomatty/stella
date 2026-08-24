@@ -1,21 +1,32 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "ignore": [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/drizzle/**",
-      "**/*.wasm",
-      "**/.wrangler/**",
-      ".claude/**",
-      "packages/shared/src/problems/**",
-      "packages/content/design-system/**",
-      "apps/web/src/routeTree.gen.ts",
-      "apps/web/public/pdf.worker.min.mjs"
+    "includes": [
+      "**",
+      "!dist",
+      "!**/dist",
+      "!node_modules",
+      "!**/node_modules",
+      "!drizzle",
+      "!**/drizzle",
+      "!**/*.wasm",
+      "!.wrangler",
+      "!**/.wrangler",
+      "!packages/shared/src/problems",
+      "!**/packages/shared/src/problems",
+      "!packages/content/design-system",
+      "!**/packages/content/design-system",
+      "!**/apps/web/src/routeTree.gen.ts",
+      "!**/apps/web/public/pdf.worker.min.mjs"
     ]
   },
-  "organizeImports": { "enabled": false },
+  "assist": { "actions": { "source": { "organizeImports": "off" } } },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -29,9 +40,11 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
-        "recommended": true
+        "preset": "recommended",
+        "noSvgWithoutTitle": "off",
+        "noStaticElementInteractions": "off"
       },
       "complexity": {
         "noForEach": "off",
@@ -51,29 +64,50 @@
       },
       "suspicious": {
         "noArrayIndexKey": "error",
-        "noConsoleLog": "error",
         "noDebugger": "error",
         "noEmptyBlockStatements": "warn",
         "noExplicitAny": "error",
         "noFocusedTests": "error",
         "noImplicitAnyLet": "error",
         "noSkippedTests": "warn",
-        "useAwait": "off"
+        "useAwait": "off",
+        "noConsole": {
+          "level": "error",
+          "options": { "allow": ["assert", "error", "info", "warn"] }
+        }
       }
     }
   },
   "overrides": [
     {
-      "include": [
-        "apps/api/scripts/**",
-        "packages/content/scripts/**",
-        "packages/shared/scripts/**"
+      "includes": ["**/package.json"],
+      "json": {
+        "formatter": {
+          "expand": "auto"
+        }
+      }
+    },
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "**/apps/api/scripts/**",
+        "**/packages/content/scripts/**",
+        "**/packages/shared/scripts/**"
       ],
       "linter": {
         "rules": {
           "suspicious": {
-            "noConsoleLog": "off",
-            "noExplicitAny": "off"
+            "noExplicitAny": "off",
+            "noConsole": "off"
           }
         }
       }
