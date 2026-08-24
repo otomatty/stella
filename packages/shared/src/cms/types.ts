@@ -478,7 +478,11 @@ export interface AnnouncementRow {
   created_at: string;
 }
 
-export type NotificationType = "announcement" | "review_completed" | "assignment_due";
+export type NotificationType =
+  | "announcement"
+  | "review_completed"
+  | "assignment_due"
+  | "interview_date_set";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

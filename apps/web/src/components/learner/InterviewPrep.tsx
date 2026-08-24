@@ -57,9 +57,25 @@ function shuffle(nos: number[]): number[] {
   return a;
 }
 
+function daysUntilInterview(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(`${dateStr}T00:00:00`);
+  return Math.ceil((target.getTime() - today.getTime()) / 86_400_000);
+}
+
+function formatInterviewCountdown(dateStr: string): string {
+  const days = daysUntilInterview(dateStr);
+  if (days === 0) return "本日";
+  if (days > 0) return `あと ${days} 日`;
+  return `${Math.abs(days)} 日前`;
+}
+
 export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean }) {
   const [rows, setRows] = useState<InterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
+  const [interviewDate, setInterviewDate] = useState<string | null>(null);
+  const [interviewNote, setInterviewNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +97,8 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
         if (cancelled) return;
         setRows(r.rows);
         setAssigned(r.assignedCategories);
+        setInterviewDate(r.interviewDate ?? null);
+        setInterviewNote(r.note ?? null);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -139,6 +157,18 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
         title="面談対策"
         sub={`クライアント面談の想定質問 ${rows.length} 問 — 回答の型に自分の経験を当てはめて、声に出して練習しましょう`}
       />
+
+      {interviewDate ? (
+        <Card className="p-3 mb-4 border-brand/20 bg-brand/5">
+          <div className="text-[13px] font-semibold text-ink-1">
+            面談予定: {interviewDate}
+            <span className="ml-2 text-brand">{formatInterviewCountdown(interviewDate)}</span>
+          </div>
+          {interviewNote ? (
+            <p className="mt-1 text-[12px] text-ink-3 leading-relaxed">{interviewNote}</p>
+          ) : null}
+        </Card>
+      ) : null}
 
       {/* モード切替 */}
       <div className="flex items-center gap-1.5 mb-3">

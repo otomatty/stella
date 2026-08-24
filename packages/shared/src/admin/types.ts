@@ -221,6 +221,11 @@ export function canManageInterviewPrep(role: ProfileRole): boolean {
   return role === "instructor" || role === "admin" || role === "platform_admin" || role === "sales";
 }
 
+/** 面談予定日・メモの write (sales / admin / platform_admin)。 instructor は categories のみ。 */
+export function canWriteInterviewSchedule(role: ProfileRole): boolean {
+  return role === "sales" || role === "admin" || role === "platform_admin";
+}
+
 type ValidateResult =
   | { ok: true; invites: InviteUserInput[] }
   | { ok: false; status: 400; message: string };

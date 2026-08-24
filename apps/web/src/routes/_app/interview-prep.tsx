@@ -18,7 +18,12 @@ function InterviewPrep() {
     case "instructor":
     case "admin":
     case "sales":
-      return <InterviewPrepAssignmentsPage backendEnabled={s.backendEnabled} />;
+      return (
+        <InterviewPrepAssignmentsPage
+          backendEnabled={s.backendEnabled}
+          canEditSchedule={s.role === "admin" || s.role === "sales"}
+        />
+      );
     case "learner":
       return <InterviewPrepPage backendEnabled={s.backendEnabled} />;
     default: {

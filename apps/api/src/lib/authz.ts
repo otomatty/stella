@@ -127,6 +127,11 @@ export function requireCanManageInterviewPrep(caller: Caller): void {
   }
 }
 
+/** 面談予定日・メモの write。 instructor は categories のみ。 */
+export function canWriteInterviewSchedule(role: ProfileRole): boolean {
+  return role === "sales" || role === "admin" || role === "platform_admin";
+}
+
 export function requireTenantAdmin(caller: Caller): void {
   requireRole(caller, "admin", "platform_admin");
 }
