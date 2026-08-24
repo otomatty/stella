@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 13 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 14 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -376,6 +376,39 @@ def motif_claude_code_skills(c: str) -> str:
     return "".join(out)
 
 
+def motif_claude_code_team(c: str) -> str:
+    """検証のふるい。 生成した変更が 3 つの検査 (テスト・lint・自分の目) を通ってチームに届く。"""
+    out = []
+    # 上: 生成した変更 (差分の紙)。
+    nx, ny = 190, 28
+    out.append(f'<rect x="{nx}" y="{ny}" width="168" height="104" rx="14" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 28}" width="112" height="12" rx="6" fill="{RULE}"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 52}" width="80" height="12" rx="6" fill="{RULE}"/>')
+    out.append(f'<rect x="{nx + 28}" y="{ny + 76}" width="96" height="12" rx="6" fill="{RULE}"/>')
+    # 紙から検査の段へ落ちる矢印。
+    out.append(f'<path d="M 274 {ny + 104} L 274 200" stroke="{INK}" stroke-width="4" fill="none"/>')
+    out.append(f'<path d="M 264 200 L 274 216 L 284 200 Z" fill="{INK}"/>')
+    # 中: 3 つの検査のふるい。 どれも通ってはじめて受け取る。
+    for x in (28, 200, 372):
+        y = 232
+        out.append(f'<rect x="{x}" y="{y}" width="148" height="96" rx="16" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
+        out.append(f'<circle cx="{x + 40}" cy="{y + 48}" r="18" fill="{c}"/>')
+        out.append(
+            f'<path d="M {x + 31} {y + 48} l 7 9 l 14 -18" stroke="{PAPER}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+        )
+        out.append(f'<rect x="{x + 72}" y="{y + 42}" width="52" height="12" rx="6" fill="{RULE}"/>')
+    # 検査を通った変更がチームへ届く矢印。 ここだけ講座色。
+    out.append(f'<path d="M 274 328 L 274 396" stroke="{c}" stroke-width="4" fill="none"/>')
+    out.append(f'<path d="M 264 396 L 274 412 L 284 396 Z" fill="{c}"/>')
+    # 下: チームのリポジトリ。 配られた仕組みが全員に効く。
+    tx, ty = 110, 412
+    out.append(f'<rect x="{tx}" y="{ty}" width="328" height="116" rx="16" fill="{c}" stroke="{c}" stroke-width="2.5"/>')
+    for i in range(3):
+        out.append(f'<circle cx="{tx + 56 + i * 44}" cy="{ty + 44}" r="16" fill="{PAPER}" opacity="0.9"/>')
+    out.append(f'<rect x="{tx + 40}" y="{ty + 76}" width="192" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
+    return "".join(out)
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -455,6 +488,12 @@ SPECS = {
         "title_size": 152,
         "subtitle": "とサブエージェント",
         "motif": motif_claude_code_skills,
+    },
+    "claude-code-team": {
+        "title": "検証・hooks・MCP",
+        "title_size": 84,
+        "subtitle": "チームでの仕組み化",
+        "motif": motif_claude_code_team,
     },
 }
 
