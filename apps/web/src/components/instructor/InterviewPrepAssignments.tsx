@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAppShell } from "@/components/shell/app-shell-context";
+import { SkillSheetRegistrationPanel } from "@/components/skill-sheet/SkillSheetRegistrationPanel";
+import { monitoringSkillSheetEntryVisible } from "@/lib/skill-sheet-ui";
 import {
   Table,
   TableHeader,
@@ -41,6 +44,13 @@ export function InterviewPrepAssignmentsPage({
   const [tab, setTab] = useState<"assign" | "audio">("assign");
   const [draftDates, setDraftDates] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
+  const [skillSheetLearnerId, setSkillSheetLearnerId] = useState<string | null>(null);
+
+  const shell = useAppShell();
+  const showSkillSheetEntry = monitoringSkillSheetEntryVisible({
+    profileRole: shell.profileRole,
+    shellRole: shell.role,
+  });
 
   useEffect(() => {
     if (!backendEnabled) return;
@@ -174,6 +184,7 @@ export function InterviewPrepAssignmentsPage({
                 <TableHead className="w-36">面談予定</TableHead>
                 <TableHead className="w-48">メモ</TableHead>
                 <TableHead>割当</TableHead>
+                {showSkillSheetEntry ? <TableHead className="w-28">スキルシート</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -238,11 +249,29 @@ export function InterviewPrepAssignmentsPage({
                       ))}
                     </div>
                   </TableCell>
+                  {showSkillSheetEntry ? (
+                    <TableCell>
+                      <Button
+                        variant={skillSheetLearnerId === row.profile_id ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() =>
+                          setSkillSheetLearnerId((current) =>
+                            current === row.profile_id ? null : row.profile_id,
+                          )
+                        }
+                      >
+                        {skillSheetLearnerId === row.profile_id ? "閉じる" : "開く"}
+                      </Button>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-ink-3 p-8">
+                  <TableCell
+                    colSpan={showSkillSheetEntry ? 5 : 4}
+                    className="text-center text-sm text-ink-3 p-8"
+                  >
                     受講者がいません。
                   </TableCell>
                 </TableRow>
@@ -251,6 +280,21 @@ export function InterviewPrepAssignmentsPage({
           </Table>
         </Card>
       )}
+      {showSkillSheetEntry && skillSheetLearnerId && shell.currentUserId ? (
+        <div className="mt-4">
+          <SkillSheetRegistrationPanel
+            key={skillSheetLearnerId}
+            backendEnabled={backendEnabled}
+            profileRole={shell.profileRole}
+            shellRole={shell.role}
+            currentUserId={shell.currentUserId}
+            targetProfileId={skillSheetLearnerId}
+            learnerDisplayName={
+              rows.find((row) => row.profile_id === skillSheetLearnerId)?.display_name
+            }
+          />
+        </div>
+      ) : null}
     </>
   );
 }

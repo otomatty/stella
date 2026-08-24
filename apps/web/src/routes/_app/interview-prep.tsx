@@ -33,6 +33,7 @@ function InterviewPrep() {
           backendEnabled={s.backendEnabled}
           profileId={s.currentUserId}
           profileRole={s.profileRole}
+          shellRole={s.role}
         />
       );
     default: {

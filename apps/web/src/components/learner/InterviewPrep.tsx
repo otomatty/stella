@@ -34,6 +34,9 @@ import {
 } from "@/lib/interview-prep-api";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/components/ui/chip";
+import type { Role } from "@/data/types";
+import { interviewPrepTabIdsForRole } from "@/lib/skill-sheet-ui";
+import { SkillSheetRegistrationPanel } from "@/components/skill-sheet/SkillSheetRegistrationPanel";
 
 type Freq = "ALL" | "A" | "B" | "C";
 const FREQ_LABELS: Record<Exclude<Freq, "ALL">, string> = {
@@ -156,16 +159,25 @@ function PrepRateRing({ percent }: { percent: number }) {
   );
 }
 
+const INTERVIEW_PREP_TAB_LABELS: Record<string, string> = {
+  questions: "想定質問",
+  "skill-sheet": "スキルシート",
+};
+
 export function InterviewPrepPage({
   backendEnabled,
   profileId,
   profileRole,
+  shellRole = "learner",
 }: {
   backendEnabled: boolean;
   profileId?: string | null;
   /** 認証済みの実ロール。 staff が受講者シェルへ切り替えていても student にはならない。 */
   profileRole?: ProfileRole;
+  shellRole?: Role;
 }) {
+  const prepTabs = interviewPrepTabIdsForRole(shellRole);
+  const [prepTab, setPrepTab] = useState<string>(prepTabs[0] ?? "questions");
   const [rows, setRows] = useState<LearnerInterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
   const [audioNos, setAudioNos] = useState<number[]>([]);
@@ -342,6 +354,28 @@ export function InterviewPrepPage({
     });
   }, [rows, cat, freq, query, mode]);
 
+  if (prepTab === "skill-sheet" && profileId) {
+    return (
+      <>
+        <InterviewPrepHeader
+          prepTabs={prepTabs}
+          prepTab={prepTab}
+          onPrepTabChange={setPrepTab}
+          mode={mode}
+          onModeChange={setMode}
+          showQuestionModes={false}
+        />
+        <SkillSheetRegistrationPanel
+          backendEnabled={backendEnabled}
+          profileRole={profileRole}
+          shellRole={shellRole}
+          currentUserId={profileId}
+          targetProfileId={profileId}
+        />
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <Card className="p-6">
@@ -368,21 +402,14 @@ export function InterviewPrepPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 mb-5 pb-4 border-b border-border">
-        <h1 className="text-[19px] sm:text-[22px] tracking-tight font-semibold">面談対策</h1>
-        <div className="flex items-center gap-1.5 sm:ml-auto">
-          {(
-            [
-              ["home", "準備"],
-              ["quiz", "練習"],
-            ] as const
-          ).map(([key, label]) => (
-            <Chip key={key} active={mode === key} onClick={() => setMode(key)}>
-              {label}
-            </Chip>
-          ))}
-        </div>
-      </div>
+      <InterviewPrepHeader
+        prepTabs={prepTabs}
+        prepTab={prepTab}
+        onPrepTabChange={setPrepTab}
+        mode={mode}
+        onModeChange={setMode}
+        showQuestionModes
+      />
 
       {mode === "home" ? (
         <>
@@ -514,6 +541,47 @@ export function InterviewPrepPage({
         />
       )}
     </>
+  );
+}
+
+function InterviewPrepHeader({
+  prepTabs,
+  prepTab,
+  onPrepTabChange,
+  mode,
+  onModeChange,
+  showQuestionModes,
+}: {
+  prepTabs: string[];
+  prepTab: string;
+  onPrepTabChange: (tab: string) => void;
+  mode: "home" | "quiz";
+  onModeChange: (mode: "home" | "quiz") => void;
+  showQuestionModes: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mb-5 pb-4 border-b border-border">
+      <h1 className="text-[19px] sm:text-[22px] tracking-tight font-semibold">面談対策</h1>
+      <div className="flex items-center gap-1.5 flex-wrap sm:ml-auto">
+        {prepTabs.map((tabId) => (
+          <Chip key={tabId} active={prepTab === tabId} onClick={() => onPrepTabChange(tabId)}>
+            {INTERVIEW_PREP_TAB_LABELS[tabId] ?? tabId}
+          </Chip>
+        ))}
+        {showQuestionModes
+          ? (
+              [
+                ["home", "準備"],
+                ["quiz", "練習"],
+              ] as const
+            ).map(([key, label]) => (
+              <Chip key={key} active={mode === key} onClick={() => onModeChange(key)}>
+                {label}
+              </Chip>
+            ))
+          : null}
+      </div>
+    </div>
   );
 }
 
