@@ -1,0 +1,99 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FE Pseudo",
+  "scopeName": "source.fe-pseudo",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#function-definition" },
+    { "include": "#strings" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#numbers" },
+    { "include": "#operators" },
+    { "include": "#builtins" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.fe-pseudo",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.fe-pseudo",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "function-definition": {
+      "comment": "○ で始まる関数定義。 戻り値の型は省略できる (手続き)。",
+      "match": "(○|〇|●)\\s*(?:([^\\s:()]*型(?:の配列)*)\\s*(:))?\\s*([^\\s(]+)",
+      "captures": {
+        "1": { "name": "keyword.other.function-marker.fe-pseudo" },
+        "2": { "name": "storage.type.fe-pseudo" },
+        "3": { "name": "punctuation.separator.fe-pseudo" },
+        "4": { "name": "entity.name.function.fe-pseudo" }
+      }
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.fe-pseudo",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [{ "name": "constant.character.escape.fe-pseudo", "match": "\\\\." }]
+        },
+        {
+          "name": "string.quoted.single.fe-pseudo",
+          "begin": "'",
+          "end": "'",
+          "patterns": [{ "name": "constant.character.escape.fe-pseudo", "match": "\\\\." }]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.fe-pseudo",
+          "match": "\\b(if|elseif|else|endif|while|endwhile|do|for|endfor|return)\\b"
+        },
+        {
+          "name": "keyword.operator.word.fe-pseudo",
+          "match": "\\b(and|or|not|mod)\\b"
+        },
+        {
+          "comment": "for 文の見出しに現れる助詞。",
+          "name": "keyword.control.loop-particle.fe-pseudo",
+          "match": "(を|から|まで|ずつ増やす|ずつ減らす|ずつ\\s*増やす|ずつ\\s*減らす)"
+        }
+      ]
+    },
+    "types": {
+      "name": "storage.type.fe-pseudo",
+      "match": "(整数型|実数型|文字列型|文字型|論理型)(の配列)*"
+    },
+    "constants": {
+      "name": "constant.language.fe-pseudo",
+      "match": "\\b(true|false)\\b"
+    },
+    "numbers": {
+      "name": "constant.numeric.fe-pseudo",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "operators": {
+      "patterns": [
+        { "name": "keyword.operator.assignment.fe-pseudo", "match": "←|<-" },
+        { "name": "keyword.operator.comparison.fe-pseudo", "match": "≠|≦|≧|<=|>=|!=|<>|==|=|<|>" },
+        { "name": "keyword.operator.arithmetic.fe-pseudo", "match": "×|÷|\\+|-|\\*|/|%" }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        { "name": "support.function.fe-pseudo", "match": "の要素数" },
+        { "name": "support.function.fe-pseudo", "match": "\\b出力(?=\\s*\\()" }
+      ]
+    }
+  }
+}

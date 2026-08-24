@@ -4,6 +4,7 @@
 export { runGrading, getRunner, type DispatchResult } from "./runners/index.js";
 export { runTestsLocally, setQuickJsWorkerUrl } from "./run-tests-local.js";
 export { setSqlJsLocateFile, sqlJsFileUrl } from "./runners/sql-runner.js";
+export { FePseudoError, transpileFePseudo } from "./fe-pseudo/index.js";
 export {
   GLOBALS,
   getLinter,

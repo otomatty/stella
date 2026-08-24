@@ -37,6 +37,8 @@ function defaultEntryPathFor(lang: Language): string {
       return "query.sql";
     case "typescript":
       return "main.ts";
+    case "fe-pseudo":
+      return "main.fe";
     case "javascript":
       return "main.js";
     default: {

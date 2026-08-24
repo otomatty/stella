@@ -1,7 +1,8 @@
 /**
  * 全章の Assignment を集約するルートエントリ。
  *
- * falcon-informal P0 では JavaScript の Ch00–Ch09 と SQL の `_lang/sql/` のみを取り込む。
+ * falcon-informal P0 では JavaScript の Ch00–Ch09 と、 言語別ディレクトリ
+ * (`_lang/sql/` / `_lang/fe-pseudo/`) を取り込む。
  * Python / PHP / Vitest mutation / ESLint config 課題は本プロジェクトのスコープ外 (将来枠)。
  *
  * `assignmentsByStage` / `assignmentsByChapter` の helper は UI 側の章×ステージ matrix で利用される。
@@ -20,6 +21,7 @@ import { ch06Loops } from "./06-loops/_index.js";
 import { ch07Functions } from "./07-functions/_index.js";
 import { ch08Objects } from "./08-objects/_index.js";
 import { ch09HigherOrder } from "./09-higher-order/_index.js";
+import { langFePseudoAssignments } from "./_lang/fe-pseudo/_index.js";
 import { langSqlAssignments } from "./_lang/sql/_index.js";
 
 export { chapters };
@@ -36,6 +38,7 @@ export const assignments: Assignment[] = [
   ...ch08Objects,
   ...ch09HigherOrder,
   ...langSqlAssignments,
+  ...langFePseudoAssignments,
 ];
 
 export function findAssignment(id: string): Assignment | undefined {

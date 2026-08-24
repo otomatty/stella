@@ -29,6 +29,7 @@ import type {
   Assignment,
   ASTRequirement,
   ESLintRuleConfig,
+  Language,
   LintPreset,
 } from "@falcon/shared/types";
 import { lintAssignment } from "@falcon/code-runner/lint";
@@ -55,6 +56,13 @@ interface Props {
   onClose: () => void;
   onSaved: () => Promise<void> | void;
 }
+
+/** 「ファイルを追加」で作る既定のファイル名 (言語ごとの拡張子)。 */
+const EXTRA_FILE_NAME: Partial<Record<Language, string>> = {
+  sql: "extra.sql",
+  typescript: "extra.ts",
+  "fe-pseudo": "extra.fe",
+};
 
 export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: Props) {
   const [draft, setDraft] = useState<Draft>(newDraft);
@@ -109,7 +117,7 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
   };
 
   const addFile = () => {
-    const base = draft.language === "sql" ? "extra.sql" : "extra.js";
+    const base = EXTRA_FILE_NAME[draft.language] ?? "extra.js";
     let name = base;
     let i = 1;
     while (draft.starterFiles.some((f) => f.path === name)) {

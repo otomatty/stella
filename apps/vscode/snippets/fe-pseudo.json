@@ -1,0 +1,77 @@
+{
+  "関数定義": {
+    "prefix": "fn",
+    "body": ["○${1:整数型}: ${2:関数名}(${3:整数型: n})", "\t$0"],
+    "description": "○ で始まる関数を定義する"
+  },
+  "手続き定義 (戻り値なし)": {
+    "prefix": "proc",
+    "body": ["○${1:手続き名}(${2:整数型の配列: data})", "\t$0"],
+    "description": "戻り値のない手続きを定義する"
+  },
+  "if 文": {
+    "prefix": "if",
+    "body": ["if (${1:条件})", "\t$0", "endif"],
+    "description": "if 〜 endif"
+  },
+  "if / else 文": {
+    "prefix": "ifelse",
+    "body": ["if (${1:条件})", "\t$2", "else", "\t$0", "endif"],
+    "description": "if 〜 else 〜 endif"
+  },
+  "while 文": {
+    "prefix": "while",
+    "body": ["while (${1:条件})", "\t$0", "endwhile"],
+    "description": "while 〜 endwhile"
+  },
+  "do 〜 while 文": {
+    "prefix": "do",
+    "body": ["do", "\t$0", "while (${1:条件})"],
+    "description": "do 〜 while (後判定)"
+  },
+  "for 文 (増やす)": {
+    "prefix": "for",
+    "body": ["for (${1:i} を ${2:1} から ${3:n} まで ${4:1} ずつ増やす)", "\t$0", "endfor"],
+    "description": "for 〜 endfor (増やす)"
+  },
+  "for 文 (配列を走査)": {
+    "prefix": "forarray",
+    "body": ["for (${1:i} を 1 から ${2:data}の要素数 まで 1 ずつ増やす)", "\t$0", "endfor"],
+    "description": "配列を先頭から末尾まで走査する (添字は 1 起点)"
+  },
+  "for 文 (減らす)": {
+    "prefix": "fordown",
+    "body": ["for (${1:i} を ${2:n} から ${3:1} まで ${4:1} ずつ減らす)", "\t$0", "endfor"],
+    "description": "for 〜 endfor (減らす)"
+  },
+  "代入記号 ←": {
+    "prefix": "arw",
+    "body": ["← "],
+    "description": "代入記号 ← (`<-` と書いても同じ)"
+  },
+  "以下 ≦": {
+    "prefix": "le",
+    "body": ["≦ "],
+    "description": "≦ (`<=` と書いても同じ)"
+  },
+  "以上 ≧": {
+    "prefix": "ge",
+    "body": ["≧ "],
+    "description": "≧ (`>=` と書いても同じ)"
+  },
+  "等しくない ≠": {
+    "prefix": "ne",
+    "body": ["≠ "],
+    "description": "≠ (`!=` と書いても同じ)"
+  },
+  "乗算 ×": {
+    "prefix": "mul",
+    "body": ["× "],
+    "description": "× (`*` と書いても同じ)"
+  },
+  "除算 ÷": {
+    "prefix": "div",
+    "body": ["÷ "],
+    "description": "÷ (`/` と書いても同じ。整数どうしなら商)"
+  }
+}

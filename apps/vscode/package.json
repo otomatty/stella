@@ -37,6 +37,22 @@
       { "command": "falcon.openLessonCode", "title": "FALCON: 演習を開く" },
       { "command": "falcon.openNextLesson", "title": "FALCON: 次のレッスンへ" }
     ],
+    "languages": [
+      {
+        "id": "fe-pseudo",
+        "aliases": ["擬似言語 (基本情報 科目B)", "FE Pseudo", "fe-pseudo"],
+        "extensions": [".fe"],
+        "configuration": "./language-configuration/fe-pseudo.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fe-pseudo",
+        "scopeName": "source.fe-pseudo",
+        "path": "./syntaxes/fe-pseudo.tmLanguage.json"
+      }
+    ],
+    "snippets": [{ "language": "fe-pseudo", "path": "./snippets/fe-pseudo.json" }],
     "configuration": {
       "properties": {
         "falcon.serverUrl": {

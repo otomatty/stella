@@ -298,7 +298,13 @@ export class QuickJsRunner {
               passed,
             };
           } finally {
-            drained.value.dispose();
+            // 評価結果が Promise でないとき、 `getPromiseState` は渡した handle を
+            // dup せずそのまま返す。 その場合ここで dispose すると外側の
+            // `handle.dispose()` と二重解放になり、 QuickJSUseAfterFree が飛んで
+            // 採点全体が RUNNER_ERROR になる。 別ハンドルのときだけ捨てる。
+            if (drained.value !== handle) {
+              drained.value.dispose();
+            }
           }
         } finally {
           handle.dispose();

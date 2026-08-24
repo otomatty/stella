@@ -12,7 +12,7 @@ FALCON INFORMAL is a Learning Management System (LMS) monorepo using **Bun works
 | `@falcon/api` | `apps/api` | Hono API on Cloudflare Workers (port 8787) |
 | `informal` (`falcon.informal`) | `apps/vscode` | VS Code extension for learner code exercises. F5 Extension Development Host; settings `falcon.serverUrl` / `falcon.webUrl` |
 | `@falcon/shared` | `packages/shared` | Types, curriculum, grading logic |
-| `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView + admin AssignmentEditor) |
+| `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView + admin AssignmentEditor)。擬似言語 (`fe-pseudo`) は `src/fe-pseudo/` で JS に落として QuickJS に相乗り。対応構文は `src/fe-pseudo/SYNTAX.md` |
 | `@falcon/content` | `packages/content` | 教材の正本。講座は `courses/<slug>/`。執筆ルールは `packages/content/CLAUDE.md`。導入手順（新講座が既定）は `packages/content/ADDING_COURSE.md` |
 
 ### Running services (default: real data)

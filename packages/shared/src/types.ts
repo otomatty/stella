@@ -14,12 +14,14 @@ export type Stage = "S0" | "S1" | "S2" | "S3" | "S4" | "S5";
 /**
  * 課題の対象言語。
  *
- * falcon-informal では JavaScript / TypeScript / SQL に対応する。
+ * falcon-informal では JavaScript / TypeScript / SQL / 擬似言語に対応する。
  * TypeScript は実行前に JS へトランスパイルして QuickJS で動かす (型検査はしない)。
+ * `fe-pseudo` は基本情報技術者試験 科目B の擬似言語で、 こちらも JS に落として
+ * QuickJS で動かす (#133)。 新しい実行基盤は増やさない。
  * Python / PHP / Vitest mutation / ESLint config は本プロジェクトのスコープ外 (将来枠)。
  * `getRunner(language)` で言語別ランナー実装を取得する。
  */
-export type Language = "javascript" | "typescript" | "sql";
+export type Language = "javascript" | "typescript" | "sql" | "fe-pseudo";
 
 /**
  * 多ファイル教材で 1 ファイルを表す。

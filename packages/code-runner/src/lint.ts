@@ -33,9 +33,11 @@ export function getLinter(language: Language): Linter {
     case "javascript":
       return lintCode;
     // TypeScript は JS 用 ESLint パーサが型注釈を読めず、 無意味な構文エラーだらけになるので
-    // SQL と同じく no-op。 空配列は `evaluate()` で「未適用 = 通過扱い」 になる。
+    // SQL と同じく no-op。 擬似言語も JS ではないので同様。
+    // 空配列は `evaluate()` で「未適用 = 通過扱い」 になる。
     case "typescript":
     case "sql":
+    case "fe-pseudo":
       return NOOP_LINTER;
     default: {
       const _exhaustive: never = language;

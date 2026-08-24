@@ -11,5 +11,55 @@
     "m3-algo-advanced": "M3. アルゴリズム応用",
     "m4-security": "M4. 情報セキュリティ",
     "m5-mock": "M5. 総合演習"
+  },
+  "exercises": {
+    "1-1": [
+      {
+        "id": "S0-FePseudo-Ch00-01-max-of-two",
+        "title": "演習: 大きい方を返す"
+      },
+      {
+        "id": "S0-FePseudo-Ch00-02-sum-to-n",
+        "title": "演習: 1 から n までの合計"
+      }
+    ],
+    "1-2": [
+      {
+        "id": "S0-FePseudo-Ch00-03-array-sum",
+        "title": "演習: 配列の合計"
+      },
+      {
+        "id": "S0-FePseudo-Ch00-04-max-index",
+        "title": "演習: 最大値の位置"
+      }
+    ],
+    "2-1": [
+      {
+        "id": "S0-FePseudo-Ch00-05-linear-search",
+        "title": "演習: 線形探索"
+      },
+      {
+        "id": "S0-FePseudo-Ch00-06-binary-search",
+        "title": "演習: 二分探索"
+      }
+    ],
+    "2-2": [
+      {
+        "id": "S0-FePseudo-Ch00-07-bubble-sort",
+        "title": "演習: バブルソート"
+      }
+    ],
+    "3-1": [
+      {
+        "id": "S0-FePseudo-Ch00-08-stack-brackets",
+        "title": "演習: スタックで括弧の対応を調べる"
+      }
+    ],
+    "3-2": [
+      {
+        "id": "S0-FePseudo-Ch00-09-factorial",
+        "title": "演習: 階乗を再帰で求める"
+      }
+    ]
   }
 }
