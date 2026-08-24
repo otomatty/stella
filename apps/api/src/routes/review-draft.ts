@@ -14,6 +14,8 @@ import { Hono } from "hono";
 import type { Env } from "../env.js";
 import { completeMessage } from "../lib/anthropic-complete.js";
 import { MissingApiKeyError } from "../lib/anthropic.js";
+import { assertGrokGatewayConfigured, resolveChatProvider } from "../lib/chat-provider.js";
+import { completeGrokMessage } from "../lib/grok-complete.js";
 import { ApiError, errorResponse, getCaller, isStaffRole } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 
@@ -45,22 +47,41 @@ reviewDraftRoute.post("/api/review-draft", async (c) => {
   }
   const body = validated.body;
 
-  if (!c.env.ANTHROPIC_API_KEY) {
+  try {
+    assertGrokGatewayConfigured(c.env);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+
+  const provider = resolveChatProvider(c.env);
+  if (provider === "anthropic" && !c.env.ANTHROPIC_API_KEY) {
     return c.json(buildHeuristicReviewDraft(body.code));
   }
 
+  const system = buildReviewDraftSystemPrompt();
+  const messages = [
+    {
+      role: "user" as const,
+      content: buildReviewDraftUserMessage(body),
+    },
+  ];
+
   try {
-    const text = await completeMessage({
-      env: c.env,
-      system: buildReviewDraftSystemPrompt(),
-      messages: [
-        {
-          role: "user",
-          content: buildReviewDraftUserMessage(body),
-        },
-      ],
-      signal: c.req.raw.signal,
-    });
+    const text =
+      provider === "grok"
+        ? await completeGrokMessage({
+            env: c.env,
+            system,
+            messages,
+            model: c.env.CHAT_MODEL,
+            signal: c.req.raw.signal,
+          })
+        : await completeMessage({
+            env: c.env,
+            system,
+            messages,
+            signal: c.req.raw.signal,
+          });
     const parsed = parseReviewDraftJson(text);
     if (parsed) {
       return c.json(parsed);

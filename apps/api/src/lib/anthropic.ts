@@ -6,6 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ChatRole, ChatStreamEvent } from "@falcon/shared/ai/types";
 
 import type { Env } from "../env.js";
+import { resolveAnthropicClientConfig } from "./ai-gateway.js";
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
@@ -20,7 +21,10 @@ export class MissingApiKeyError extends Error {
 }
 
 interface StreamChatArgs {
-  env: Pick<Env, "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL">;
+  env: Pick<
+    Env,
+    "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL" | "CLOUDFLARE_ACCOUNT_ID" | "AI_GATEWAY_ID"
+  >;
   system: string;
   messages: { role: ChatRole; content: string }[];
   signal?: AbortSignal;
@@ -34,7 +38,13 @@ export async function* streamChat(
     throw new MissingApiKeyError();
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic(
+    resolveAnthropicClientConfig({
+      ANTHROPIC_API_KEY: apiKey,
+      CLOUDFLARE_ACCOUNT_ID: args.env.CLOUDFLARE_ACCOUNT_ID,
+      AI_GATEWAY_ID: args.env.AI_GATEWAY_ID,
+    }),
+  );
   const model = args.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
 
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);

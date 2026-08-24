@@ -7,6 +7,7 @@ import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/messages/mes
 import type { ChatRole } from "@falcon/shared/ai/types";
 
 import type { Env } from "../env.js";
+import { resolveAnthropicClientConfig } from "./ai-gateway.js";
 import { MissingApiKeyError } from "./anthropic.js";
 
 const DEFAULT_MODEL = "claude-sonnet-4-6";
@@ -14,15 +15,20 @@ const MAX_TOKENS = 2048;
 /** Cloudflare Workers CPU 制限に合わせて chat ストリームより短めに設定 */
 const REQUEST_TIMEOUT_MS = 25_000;
 
+type AnthropicEnv = Pick<
+  Env,
+  "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL" | "CLOUDFLARE_ACCOUNT_ID" | "AI_GATEWAY_ID"
+>;
+
 interface CompleteArgs {
-  env: Pick<Env, "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL">;
+  env: AnthropicEnv;
   system: string;
   messages: { role: ChatRole; content: string }[];
   signal?: AbortSignal;
 }
 
 export interface StructuredCompleteArgs {
-  env: Pick<Env, "ANTHROPIC_API_KEY" | "ANTHROPIC_MODEL">;
+  env: AnthropicEnv;
   system: string;
   messages: { role: ChatRole; content: string | ContentBlockParam[] }[];
   signal?: AbortSignal;
@@ -34,7 +40,13 @@ async function createCompletion(args: StructuredCompleteArgs): Promise<string> {
     throw new MissingApiKeyError();
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic(
+    resolveAnthropicClientConfig({
+      ANTHROPIC_API_KEY: apiKey,
+      CLOUDFLARE_ACCOUNT_ID: args.env.CLOUDFLARE_ACCOUNT_ID,
+      AI_GATEWAY_ID: args.env.AI_GATEWAY_ID,
+    }),
+  );
   const model = args.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const signal = args.signal ? AbortSignal.any([args.signal, timeoutSignal]) : timeoutSignal;

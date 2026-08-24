@@ -1,5 +1,5 @@
 /**
- * POST /api/chat — Anthropic Claude への SSE プロキシ。
+ * POST /api/chat — Anthropic Claude または Grok への SSE プロキシ。
  */
 
 import { buildSystemPrompt } from "@falcon/shared/ai/prompt";
@@ -9,6 +9,8 @@ import { Hono } from "hono";
 
 import type { Env } from "../env.js";
 import { MissingApiKeyError, streamChat } from "../lib/anthropic.js";
+import { assertGrokGatewayConfigured, resolveChatProvider } from "../lib/chat-provider.js";
+import { streamGrokChat } from "../lib/grok-chat.js";
 import { errorResponse, getCaller } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 
@@ -39,12 +41,20 @@ chatRoute.post("/api/chat", async (c) => {
   }
   const body = validated.body;
 
-  if (!c.env.ANTHROPIC_API_KEY) {
+  try {
+    assertGrokGatewayConfigured(c.env);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+
+  const provider = resolveChatProvider(c.env);
+  if (provider === "anthropic" && !c.env.ANTHROPIC_API_KEY) {
     return c.json({ error: new MissingApiKeyError().message }, 500);
   }
 
   const encoder = new TextEncoder();
   const requestSignal = c.req.raw.signal;
+  const system = buildSystemPrompt(body.context);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -58,12 +68,21 @@ chatRoute.post("/api/chat", async (c) => {
       };
 
       try {
-        const iter = streamChat({
-          env: c.env,
-          system: buildSystemPrompt(body.context),
-          messages: body.messages,
-          signal: upstreamAbort.signal,
-        });
+        const iter =
+          provider === "grok"
+            ? streamGrokChat({
+                env: c.env,
+                system,
+                messages: body.messages,
+                model: c.env.CHAT_MODEL,
+                signal: upstreamAbort.signal,
+              })
+            : streamChat({
+                env: c.env,
+                system,
+                messages: body.messages,
+                signal: upstreamAbort.signal,
+              });
         for await (const event of iter) {
           send(event);
           if (event.type === "done") {

@@ -1,20 +1,32 @@
-# wrangler dev 用。 `.dev.vars` にコピーして値を埋める (gitignore 対象)。
-ANTHROPIC_API_KEY=
-ANTHROPIC_MODEL=claude-sonnet-4-6
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-ISOLATE_MEMORY_LIMIT=32
-
-# --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
-# JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
-AUTH_JWT_SECRET=dev-only-change-me-in-production
-
-# Google OAuth (Cloud Console → 認可済みリダイレクト URI に
-#   http://127.0.0.1:8787/api/auth/google/callback を追加)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
-# 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインド。
-# 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、
-# apps/web/.env.local の VITE_MATERIALS_BASE_URL に設定する。
-
-INVITE_REDIRECT_URL=http://localhost:5173
+# wrangler dev 用。 `.dev.vars` にコピーして値を埋める (gitignore 対象)。
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ISOLATE_MEMORY_LIMIT=32
+
+# --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
+# JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
+AUTH_JWT_SECRET=dev-only-change-me-in-production
+
+# Google OAuth (Cloud Console → 認可済みリダイレクト URI に
+#   http://127.0.0.1:8787/api/auth/google/callback を追加)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインド。
+# 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、
+# apps/web/.env.local の VITE_MATERIALS_BASE_URL に設定する。
+
+INVITE_REDIRECT_URL=http://localhost:5173
+
+# --- AI Gateway (Issue #204) ---
+# wrangler.toml [vars] CLOUDFLARE_ACCOUNT_ID と同値。 account_id だけでは Workers ランタイムに渡らない。
+CLOUDFLARE_ACCOUNT_ID=
+# 例: falcon-ai。未設定 = Anthropic 直叩き。
+AI_GATEWAY_ID=
+# chat / review-draft プロバイダ (既定 anthropic)。Grok 利用時は gateway 必須。
+# CHAT_PROVIDER=grok
+# CHAT_MODEL=grok-4.6
+# Workers AI / AI Gateway REST 専用トークン (Account > Workers AI Read 等。deploy 用 CLOUDFLARE_API_TOKEN とは別)。
+# wrangler secret put AI_GATEWAY_CF_API_TOKEN
+AI_GATEWAY_CF_API_TOKEN=

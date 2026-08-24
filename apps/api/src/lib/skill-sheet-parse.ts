@@ -33,6 +33,10 @@ type CompleteStructuredFn = typeof defaultCompleteStructuredMessage;
 interface ParseEnv {
   ANTHROPIC_API_KEY?: string;
   ANTHROPIC_MODEL?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  AI_GATEWAY_ID?: string;
+  CHAT_PROVIDER?: string;
+  CHAT_MODEL?: string;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -51,6 +55,8 @@ function parseEnvWithModel(env: ParseEnv): StructuredCompleteArgs["env"] {
   return {
     ANTHROPIC_API_KEY: apiKey,
     ANTHROPIC_MODEL: env.ANTHROPIC_MODEL ?? SKILL_SHEET_PARSE_MODEL,
+    CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID,
+    AI_GATEWAY_ID: env.AI_GATEWAY_ID,
   };
 }
 
