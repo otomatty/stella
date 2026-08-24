@@ -14,7 +14,7 @@
 
 じつは、この研修で学んできた1周の流れそのものに名前が付いています。それが **GitHub Flow** です。
 
-![枝を出す、コミットを積む、pushしてPRを開く、mainへマージの4ステップを回り、またmainから繰り返す一周の輪](t1-github-flow/assets/github-flow-loop.svg)
+![枝を出す、コミットを積む、pushする、PRを開く、mainへマージの5ステップを回り、またmainから繰り返す一周の輪](t1-github-flow/assets/github-flow-loop.svg)
 
 - 出発点はいつも main。最新の main からブランチを出す
 - 作業してコミットを積み、push して PR を開く

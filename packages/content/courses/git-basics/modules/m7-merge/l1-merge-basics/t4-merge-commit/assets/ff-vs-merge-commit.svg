@@ -45,12 +45,14 @@
   <circle cx="840" cy="192" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
   <text x="840" y="200" text-anchor="middle" font-size="24" font-weight="500"
         font-family="'Geist Mono', monospace" fill="#0E0E10">C</text>
-  <circle cx="840" cy="320" r="28" fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
-  <text x="840" y="328" text-anchor="middle" font-size="24" font-weight="500"
-        font-family="'Geist Mono', monospace" fill="#0E0E10">E</text>
   <circle cx="1032" cy="192" r="28" fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
   <text x="1032" y="200" text-anchor="middle" font-size="24" font-weight="500"
         font-family="'Geist Mono', monospace" fill="#0E0E10">M</text>
+
+  <text x="840" y="328" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">E</text>
+  <text x="840" y="352" text-anchor="middle" font-size="16"
+        font-family="'Geist Mono', monospace" fill="#8A8A93">add-price</text>
 
   <text x="900" y="392" text-anchor="middle" font-size="20"
         font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">CとEの両方を親に持つMを作る</text>
