@@ -9,6 +9,10 @@ updates:
       time: "09:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
+    # vsce は @types/vscode が engines.vscode より新しいと package に失敗する。
+    # 型はサポート下限 (apps/vscode の engines.vscode) に揃える。上げるときは両方を同時に。
+    ignore:
+      - dependency-name: "@types/vscode"
     labels:
       - "dependencies"
     commit-message:
