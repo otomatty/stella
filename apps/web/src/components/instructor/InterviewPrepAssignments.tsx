@@ -17,6 +17,7 @@ import { ASSIGNABLE_CATEGORIES } from "@falcon/shared/interview/types";
 import {
   listInterviewPrepAssignments,
   saveInterviewPrepAssignment,
+  sortInterviewPrepAssignmentRows,
   type InterviewPrepAssignmentRow,
 } from "@/lib/interview-prep-api";
 import { Chip } from "@/components/ui/chip";
@@ -92,7 +93,9 @@ export function InterviewPrepAssignmentsPage({
         note,
       });
       setRows((rs) =>
-        rs.map((r) => (r.profile_id === row.profile_id ? { ...r, interviewDate, note } : r)),
+        sortInterviewPrepAssignmentRows(
+          rs.map((r) => (r.profile_id === row.profile_id ? { ...r, interviewDate, note } : r)),
+        ),
       );
       toast(`${row.display_name} の面談予定を更新しました`);
     } catch (e) {

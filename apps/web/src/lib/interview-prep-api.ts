@@ -29,11 +29,24 @@ export interface InterviewPrepAssignmentRow {
   note?: string | null;
 }
 
+/** 面談予定日昇順 → 未設定は display_name 順で末尾 (GET /assignments と同じ)。 */
+export function sortInterviewPrepAssignmentRows(
+  rows: InterviewPrepAssignmentRow[],
+): InterviewPrepAssignmentRow[] {
+  const dated = rows
+    .filter((r) => r.interviewDate)
+    .sort((a, b) => String(a.interviewDate).localeCompare(String(b.interviewDate)));
+  const undated = rows
+    .filter((r) => !r.interviewDate)
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  return [...dated, ...undated];
+}
+
 export async function listInterviewPrepAssignments(): Promise<InterviewPrepAssignmentRow[]> {
   const { rows } = await apiFetch<{ rows: InterviewPrepAssignmentRow[] }>(
     "/api/interview-prep/assignments",
   );
-  return rows ?? [];
+  return sortInterviewPrepAssignmentRows(rows ?? []);
 }
 
 export async function saveInterviewPrepAssignment(

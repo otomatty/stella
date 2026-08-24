@@ -242,6 +242,68 @@ describe("PUT /api/interview-prep/assignments/:profileId interview date (#205)",
     expect(state.notifications[0]?.title ?? state.notifications[0]?.body).toBeTruthy();
   });
 
+  it("does not notify again when saving the same interviewDate", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-sales");
+
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ interviewDate: "2026-09-15" }),
+    );
+    expect(state.notifications).toHaveLength(1);
+
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ interviewDate: "2026-09-15", note: "更新メモ" }),
+    );
+    expect(state.notifications).toHaveLength(1);
+  });
+
+  it("does not notify when only note is updated", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-sales");
+
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ interviewDate: "2026-09-15" }),
+    );
+    expect(state.notifications).toHaveLength(1);
+
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ note: "メモだけ更新" }),
+    );
+    expect(state.notifications).toHaveLength(1);
+  });
+
+  it("returns 400 for calendar-invalid interviewDate", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-sales");
+
+    const res = await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ interviewDate: "2026-02-31" }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(state.notifications).toHaveLength(0);
+  });
+
   it("records interviewDate in interview_prep_assign audit metadata", async () => {
     const { app } = createTestApp(env);
     const token = await mintInterviewPrepTestToken("seed-admin");

@@ -58,6 +58,15 @@ function parseInterviewDate(value: unknown): string | null {
   if (typeof value !== "string" || !DATE_RE.test(value)) {
     throw new ApiError("interviewDate は YYYY-MM-DD 形式で指定してください", 400);
   }
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    throw new ApiError("interviewDate は有効な日付で指定してください", 400);
+  }
   return value;
 }
 
@@ -230,8 +239,8 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
       )
       .limit(1);
 
-    const nextInterviewDate =
-      interviewDate !== undefined ? interviewDate : (existing[0]?.interviewDate ?? null);
+    const previousInterviewDate = existing[0]?.interviewDate ?? null;
+    const nextInterviewDate = interviewDate !== undefined ? interviewDate : previousInterviewDate;
     const nextInterviewNote =
       interviewNote !== undefined ? interviewNote : (existing[0]?.interviewNote ?? null);
 
@@ -256,15 +265,19 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
         },
       });
 
-    if (typeof body.interviewDate === "string" && body.interviewDate) {
+    const interviewDateNewlySet =
+      interviewDate !== undefined &&
+      interviewDate !== null &&
+      interviewDate !== previousInterviewDate;
+    if (interviewDateNewlySet) {
       await db.insert(notifications).values({
         userId: profileId,
         tenantId: caller.tenantId,
         type: "interview_date_set",
         title: "面談予定日が登録されました",
-        body: `面談予定日: ${body.interviewDate}${nextInterviewNote ? ` — ${nextInterviewNote}` : ""}`,
+        body: `面談予定日: ${interviewDate}${nextInterviewNote ? ` — ${nextInterviewNote}` : ""}`,
         payload: {
-          interview_date: body.interviewDate,
+          interview_date: interviewDate,
           note: nextInterviewNote,
         },
       });
