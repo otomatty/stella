@@ -18,7 +18,7 @@ export interface InterviewQuestion {
   keywords: string | null;
   /** 面談官の質問意図 */
   intent: string | null;
-  /** 穴埋め式「回答の型」。 HTML 文字列 (class="blank" の span が穴) */
+  /** 共通「回答の型」(プレーンテキスト。 Issue #206 で blank span を廃止) */
   answer_template: string | null;
   deep1: string | null;
   deep2: string | null;

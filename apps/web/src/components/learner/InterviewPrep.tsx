@@ -4,10 +4,14 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import type { InterviewQuestion } from "@falcon/shared/interview/types";
+import type { LearnerInterviewQuestion } from "@/lib/interview-prep-api";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
 import { tagMatches } from "@falcon/shared/interview/filter";
-import { fetchInterviewQuestions } from "@/lib/interview-prep-api";
+import {
+  adoptPersonalAnswerTemplateDraft,
+  fetchInterviewQuestions,
+  savePersonalAnswerTemplate,
+} from "@/lib/interview-prep-api";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/components/ui/chip";
 
@@ -19,29 +23,10 @@ const FREQ_LABELS: Record<Exclude<Freq, "ALL">, string> = {
 };
 
 /**
- * 回答の型を描画する。 `<span class="blank">…</span>` が「自分の経験で埋める穴」で、
- * データ中の HTML タグはこれのみ (packages/shared のテストで担保)。 split の
- * 奇数インデックスがキャプチャ = 穴の中身。
+ * Issue #206 — 共通・個別ともプレーンテキストで表示 (blank span 廃止)。
  */
-function AnswerTemplate({ template }: { template: string }) {
-  const parts = template.split(/<span class="blank">(.*?)<\/span>/g);
-  return (
-    <>
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <span
-            // biome-ignore lint/suspicious/noArrayIndexKey: split 結果は位置が同一性
-            key={i}
-            className="px-1.5 py-px rounded-sm bg-brand/10 text-brand font-bold"
-          >
-            {part}
-          </span>
-        ) : (
-          part
-        ),
-      )}
-    </>
-  );
+function AnswerTemplateText({ template }: { template: string }) {
+  return <span className="whitespace-pre-wrap">{template}</span>;
 }
 
 function shuffle(nos: number[]): number[] {
@@ -71,8 +56,14 @@ function formatInterviewCountdown(dateStr: string): string {
   return `${Math.abs(days)} 日前`;
 }
 
-export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean }) {
-  const [rows, setRows] = useState<InterviewQuestion[]>([]);
+export function InterviewPrepPage({
+  backendEnabled,
+  profileId,
+}: {
+  backendEnabled: boolean;
+  profileId?: string | null;
+}) {
+  const [rows, setRows] = useState<LearnerInterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
   const [interviewNote, setInterviewNote] = useState<string | null>(null);
@@ -110,6 +101,18 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
       cancelled = true;
     };
   }, [backendEnabled]);
+
+  const reloadRows = () => {
+    if (!backendEnabled) return;
+    fetchInterviewQuestions()
+      .then((r) => {
+        setRows(r.rows);
+        setAssigned(r.assignedCategories);
+        setInterviewDate(r.interviewDate ?? null);
+        setInterviewNote(r.note ?? null);
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  };
 
   const [mode, setMode] = useState<"list" | "quiz">("list");
   const [cat, setCat] = useState<string>("ALL");
@@ -155,7 +158,7 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
     <>
       <PageHeader
         title="面談対策"
-        sub={`クライアント面談の想定質問 ${rows.length} 問 — 回答の型に自分の経験を当てはめて、声に出して練習しましょう`}
+        sub={`クライアント面談の想定質問 ${rows.length} 問 — 回答の型を確認し、声に出して練習しましょう`}
       />
 
       {interviewDate ? (
@@ -226,9 +229,19 @@ export function InterviewPrepPage({ backendEnabled }: { backendEnabled: boolean 
           条件に合う質問がありません。フィルターを緩めてください。
         </Card>
       ) : mode === "list" ? (
-        <QuestionList pool={pool} />
+        <QuestionList
+          pool={pool}
+          backendEnabled={backendEnabled}
+          profileId={profileId}
+          onRefresh={reloadRows}
+        />
       ) : (
-        <QuizMode pool={pool} />
+        <QuizMode
+          pool={pool}
+          backendEnabled={backendEnabled}
+          profileId={profileId}
+          onRefresh={reloadRows}
+        />
       )}
     </>
   );
@@ -252,7 +265,17 @@ function FreqBadge({ freq }: { freq: "A" | "B" | "C" }) {
 }
 
 /** 一覧モード: アコーディオンで 意図 → 回答の型 → 深掘り → NG → 評価軸。 */
-function QuestionList({ pool }: { pool: InterviewQuestion[] }) {
+function QuestionList({
+  pool,
+  backendEnabled,
+  profileId,
+  onRefresh,
+}: {
+  pool: LearnerInterviewQuestion[];
+  backendEnabled: boolean;
+  profileId?: string | null;
+  onRefresh: () => void;
+}) {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   return (
     <div className="flex flex-col gap-2">
@@ -269,10 +292,14 @@ function QuestionList({ pool }: { pool: InterviewQuestion[] }) {
                 聞く質問
               </span>
             ) : null}
+            {d.has_pending_draft ? (
+              <span className="text-[10.5px] px-1.5 py-[1px] rounded bg-warning/15 text-warning font-semibold shrink-0">
+                新案あり
+              </span>
+            ) : null}
             <span className="flex-1 min-w-0">
               <span className="block text-[13.5px] font-medium">{d.question}</span>
               <span className="block text-[11.5px] text-ink-4 mt-0.5">
-                {/* 区切りは「、」。 " / " だと階層タグ (PHP/Laravel) と紛らわしい */}
                 {d.categories.join("、")} ・ {d.subcategory}
                 {d.time ? ` ・ 目安 ${d.time}` : ""}
               </span>
@@ -283,7 +310,14 @@ function QuestionList({ pool }: { pool: InterviewQuestion[] }) {
               <ChevronRight size={15} className="shrink-0 mt-1 text-ink-4" />
             )}
           </button>
-          {open[d.no] ? <QuestionDetail d={d} /> : null}
+          {open[d.no] ? (
+            <QuestionDetail
+              d={d}
+              backendEnabled={backendEnabled}
+              profileId={profileId}
+              onRefresh={onRefresh}
+            />
+          ) : null}
         </Card>
       ))}
     </div>
@@ -301,9 +335,48 @@ function DetailBlock({ label, children }: { label: string; children: React.React
   );
 }
 
-function QuestionDetail({ d }: { d: InterviewQuestion }) {
+function QuestionDetail({
+  d,
+  backendEnabled,
+  profileId,
+  onRefresh,
+}: {
+  d: LearnerInterviewQuestion;
+  backendEnabled: boolean;
+  profileId?: string | null;
+  onRefresh: () => void;
+}) {
   const deeps = [d.deep1, d.deep2, d.deep3].filter((v): v is string => Boolean(v));
   const [shownDeeps, setShownDeeps] = useState<Record<number, boolean>>({});
+  const displayTemplate = d.personal_answer_template ?? d.answer_template ?? null;
+  const canEditPersonal = backendEnabled && profileId && d.freq === "A" && !d.is_reverse;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(displayTemplate ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const saveTemplate = async () => {
+    if (!profileId || !draft.trim()) return;
+    setSaving(true);
+    try {
+      await savePersonalAnswerTemplate(profileId, d.no, draft.trim());
+      setEditing(false);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const adoptDraft = async () => {
+    if (!profileId) return;
+    setSaving(true);
+    try {
+      await adoptPersonalAnswerTemplateDraft(profileId, d.no);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="border-t border-border p-3.5 flex flex-col gap-3 bg-sunken/40">
       {d.intent ? <DetailBlock label="Intent ・ 質問の意図">{d.intent}</DetailBlock> : null}
@@ -312,9 +385,77 @@ function QuestionDetail({ d }: { d: InterviewQuestion }) {
           これはあなたが面談官に「聞く」質問です。回答準備ではなく、質問文自体を覚えておきましょう。
         </p>
       ) : null}
-      {d.answer_template ? (
+      {displayTemplate || canEditPersonal ? (
         <DetailBlock label={d.is_reverse ? "Prep ・ 準備のポイント" : "Answer ・ 回答の型"}>
-          <AnswerTemplate template={d.answer_template} />
+          {editing ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                className="w-full min-h-24 rounded-sm border border-border bg-surface p-2 text-[13px]"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={saving}
+                  className="px-3 py-1 rounded-sm sf-gradient-bg text-white text-[12px] font-semibold"
+                  onClick={() => void saveTemplate()}
+                >
+                  保存
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1 rounded-sm border border-border text-[12px]"
+                  onClick={() => {
+                    setEditing(false);
+                    setDraft(displayTemplate ?? "");
+                  }}
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {displayTemplate ? (
+                <AnswerTemplateText template={displayTemplate} />
+              ) : (
+                <p className="text-[12px] text-ink-3">
+                  スキルシート登録後、A
+                  必修の個別の型が生成されます。共通の型を参考に編集もできます。
+                </p>
+              )}
+              {canEditPersonal ? (
+                <button
+                  type="button"
+                  className="self-start text-[12px] text-brand underline underline-offset-2"
+                  onClick={() => {
+                    setDraft(displayTemplate ?? d.answer_template ?? "");
+                    setEditing(true);
+                  }}
+                >
+                  回答の型を編集
+                </button>
+              ) : null}
+            </div>
+          )}
+        </DetailBlock>
+      ) : null}
+      {d.has_pending_draft && d.draft_answer_template ? (
+        <DetailBlock label="Draft ・ 新しい生成案">
+          <div className="flex flex-col gap-2 rounded-sm border border-warning/30 bg-warning/5 p-2.5">
+            <AnswerTemplateText template={d.draft_answer_template} />
+            {canEditPersonal ? (
+              <button
+                type="button"
+                disabled={saving}
+                className="self-start px-3 py-1 rounded-sm border border-warning text-[12px] text-warning"
+                onClick={() => void adoptDraft()}
+              >
+                この案を採用する
+              </button>
+            ) : null}
+          </div>
         </DetailBlock>
       ) : null}
       {!d.is_reverse && deeps.length > 0 ? (
@@ -342,7 +483,17 @@ function QuestionDetail({ d }: { d: InterviewQuestion }) {
 }
 
 /** ランダム出題モード: タイマー付きフラッシュカード。 */
-function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
+function QuizMode({
+  pool,
+  backendEnabled,
+  profileId,
+  onRefresh,
+}: {
+  pool: LearnerInterviewQuestion[];
+  backendEnabled: boolean;
+  profileId?: string | null;
+  onRefresh: () => void;
+}) {
   const [order, setOrder] = useState<number[]>(() => shuffle(pool.map((d) => d.no)));
   const [qi, setQi] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -427,7 +578,12 @@ function QuizMode({ pool }: { pool: InterviewQuestion[] }) {
           まず声に出して答える → 回答例を表示
         </button>
       ) : (
-        <QuestionDetail d={cur} />
+        <QuestionDetail
+          d={cur}
+          backendEnabled={backendEnabled}
+          profileId={profileId}
+          onRefresh={onRefresh}
+        />
       )}
 
       <div className="flex items-center gap-2">

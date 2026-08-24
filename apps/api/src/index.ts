@@ -6,6 +6,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import type { Env } from "./env.js";
+import { getDb } from "./db/client.js";
+import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { adminRoute } from "./routes/admin.js";
 import { authRoute } from "./routes/auth.js";
@@ -71,4 +73,18 @@ app.route("/", materialsRoute);
 app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const db = getDb(env);
+          await runPersonalTemplateGenerationCron(env, db);
+        } catch (e) {
+          console.error("[cron] answer template generation poll failed", e);
+        }
+      })(),
+    );
+  },
+};

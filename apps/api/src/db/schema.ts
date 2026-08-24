@@ -563,7 +563,14 @@ export const notifications = sqliteTable("notifications", {
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
   type: text("type", {
-    enum: ["announcement", "review_completed", "assignment_due", "interview_date_set"],
+    enum: [
+      "announcement",
+      "review_completed",
+      "assignment_due",
+      "interview_date_set",
+      "interview_answer_template_generated",
+      "interview_answer_template_failed",
+    ],
   }).notNull(),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
@@ -707,6 +714,56 @@ export const interviewPrepAssignments = sqliteTable(
   }),
 );
 
+/** 受講者×質問ごとの個別「回答の型」(Issue #206)。 */
+export const interviewPersonalTemplates = sqliteTable(
+  "interview_personal_templates",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    questionNo: integer("question_no").notNull(),
+    content: text("content"),
+    draftContent: text("draft_content"),
+    generatedFrom: text("generated_from"),
+    source: text("source", { enum: ["ai", "manual"] })
+      .notNull()
+      .default("ai"),
+    updatedBy: text("updated_by"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantProfileQuestionUnique: uniqueIndex("interview_personal_templates_tenant_profile_q_uq").on(
+      t.tenantId,
+      t.profileId,
+      t.questionNo,
+    ),
+  }),
+);
+
+/** Anthropic Message Batch による個別回答の型生成ジョブ (Issue #206)。 */
+export const generationJobs = sqliteTable("generation_jobs", {
+  id: uuid(),
+  tenantId: text("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  profileId: text("profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  batchId: text("batch_id").notNull(),
+  status: text("status", { enum: ["pending", "done", "failed"] })
+    .notNull()
+    .default("pending"),
+  requested: integer("requested").notNull().default(0),
+  succeeded: integer("succeeded").notNull().default(0),
+  createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
+});
+
 /** 受講者ごとのスキルシート (Issue #203)。 1 人 1 行。 */
 export const skillSheets = sqliteTable(
   "skill_sheets",
@@ -805,6 +862,8 @@ export const APP_TABLES = [
   "support_inquiries",
   "interview_questions",
   "interview_prep_assignments",
+  "interview_personal_templates",
+  "generation_jobs",
   "skill_sheets",
 ] as const;
 

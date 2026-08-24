@@ -25,7 +25,7 @@ function InterviewPrep() {
         />
       );
     case "learner":
-      return <InterviewPrepPage backendEnabled={s.backendEnabled} />;
+      return <InterviewPrepPage backendEnabled={s.backendEnabled} profileId={s.currentUserId} />;
     default: {
       const _exhaustive: never = s.role;
       return _exhaustive;

@@ -29,6 +29,13 @@ import {
   requireCanManageInterviewPrep,
 } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import {
+  adoptPersonalTemplateDraft,
+  enrichQuestionRows,
+  loadPersonalTemplatesByQuestion,
+  upsertPersonalAnswerTemplate,
+} from "../lib/interview-answer-template-db.js";
+import { plainCommonAnswerTemplate } from "../lib/interview-answer-template.js";
 import type { Env } from "../env.js";
 
 export const interviewPrepRoute = new Hono<{ Bindings: Env }>();
@@ -90,7 +97,45 @@ function sortAssignmentRows<T extends { interviewDate?: string | null; display_n
   return [...dated, ...undated];
 }
 
-/** 質問一覧。 受講者は割当カテゴリ + 共通のみ、 staff は全件。 */
+function requireCanEditAnswerTemplate(
+  caller: Awaited<ReturnType<typeof getCaller>>["caller"],
+  profileId: string,
+): void {
+  if (caller.role === "student" && caller.id !== profileId) {
+    throw new ApiError("権限がありません", 403);
+  }
+  if (caller.role !== "student" && !canManageInterviewPrep(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
+async function assertLearnerInTenant(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+): Promise<void> {
+  const target = await db
+    .select({ id: profiles.id, tenantId: profiles.tenantId, role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+  if (!target[0] || target[0].tenantId !== tenantId) {
+    throw new ApiError("対象の受講者が見つかりません", 404);
+  }
+  if (target[0].role !== "student") {
+    throw new ApiError("面談対策の回答の型は受講者のみ対象です", 400);
+  }
+}
+
+function mapStaffQuestionRows(rows: InterviewQuestion[]) {
+  return rows.map((row) => ({
+    ...row,
+    answer_template:
+      row.answer_template != null ? plainCommonAnswerTemplate(row.answer_template) : null,
+  }));
+}
+
+/** 質問一覧。 受講者は割当カテゴリ + 共通のみ、 staff は全件。 staff は ?profileId= で受講者の個別回答の型も取得可。 */
 interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -99,8 +144,49 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       .from(interviewQuestions)
       .where(eq(interviewQuestions.tenantId, caller.tenantId))
       .orderBy(asc(interviewQuestions.no));
+
+    const profileIdParam = c.req.query("profileId")?.trim() || null;
+
     if (canManageInterviewPrep(caller.role)) {
-      return c.json({ rows, assignedCategories: [...ASSIGNABLE_CATEGORIES] });
+      if (profileIdParam) {
+        await assertLearnerInTenant(db, caller.tenantId, profileIdParam);
+        const assigned = await db
+          .select({
+            categories: interviewPrepAssignments.categories,
+            interviewDate: interviewPrepAssignments.interviewDate,
+            note: interviewPrepAssignments.interviewNote,
+          })
+          .from(interviewPrepAssignments)
+          .where(
+            and(
+              eq(interviewPrepAssignments.tenantId, caller.tenantId),
+              eq(interviewPrepAssignments.profileId, profileIdParam),
+            ),
+          )
+          .limit(1);
+        const categories = assigned[0]?.categories ?? [];
+        const visible = visibleQuestions(rows, categories);
+        const personalByQuestion = await loadPersonalTemplatesByQuestion(
+          db,
+          caller.tenantId,
+          profileIdParam,
+        );
+        return c.json({
+          rows: enrichQuestionRows(visible, personalByQuestion),
+          assignedCategories: categories,
+          interviewDate: assigned[0]?.interviewDate ?? null,
+          note: assigned[0]?.note ?? null,
+          profileId: profileIdParam,
+        });
+      }
+      return c.json({
+        rows: mapStaffQuestionRows(rows),
+        assignedCategories: [...ASSIGNABLE_CATEGORIES],
+      });
+    }
+
+    if (profileIdParam && profileIdParam !== caller.id) {
+      throw new ApiError("権限がありません", 403);
     }
     const assigned = await db
       .select({
@@ -117,8 +203,14 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       )
       .limit(1);
     const categories = assigned[0]?.categories ?? [];
+    const visible = visibleQuestions(rows, categories);
+    const personalByQuestion = await loadPersonalTemplatesByQuestion(
+      db,
+      caller.tenantId,
+      caller.id,
+    );
     return c.json({
-      rows: visibleQuestions(rows, categories),
+      rows: enrichQuestionRows(visible, personalByQuestion),
       assignedCategories: categories,
       interviewDate: assigned[0]?.interviewDate ?? null,
       note: assigned[0]?.note ?? null,
@@ -298,3 +390,87 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     return errorResponse(c, err);
   }
 });
+
+/** 個別「回答の型」を編集 (Issue #206)。 全ロール可 — updated_by を記録。 */
+interviewPrepRoute.put("/api/interview-prep/answer-templates/:profileId/:no", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const profileId = c.req.param("profileId");
+    const questionNo = Number.parseInt(c.req.param("no"), 10);
+    if (!Number.isFinite(questionNo)) {
+      throw new ApiError("質問番号が不正です", 400);
+    }
+
+    requireCanEditAnswerTemplate(caller, profileId);
+
+    const body = (await c.req.json()) as { content?: unknown };
+    if (typeof body.content !== "string" || body.content.trim() === "") {
+      throw new ApiError("content が必要です", 400);
+    }
+
+    await assertLearnerInTenant(db, caller.tenantId, profileId);
+
+    await upsertPersonalAnswerTemplate({
+      db,
+      tenantId: caller.tenantId,
+      profileId,
+      questionNo,
+      content: body.content,
+      updatedBy: caller.id,
+    });
+
+    await recordAudit(db, caller, {
+      action: "answer_template_edited",
+      targetType: "interview_personal_template",
+      targetId: `${profileId}:${questionNo}`,
+      ip: clientIp(c),
+      metadata: { questionNo },
+    });
+
+    return c.json({ ok: true });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 生成ドラフトを採用 (Issue #206)。 */
+interviewPrepRoute.post(
+  "/api/interview-prep/answer-templates/:profileId/:no/adopt-draft",
+  async (c) => {
+    try {
+      const { caller, db } = await getCaller(c);
+      const profileId = c.req.param("profileId");
+      const questionNo = Number.parseInt(c.req.param("no"), 10);
+      if (!Number.isFinite(questionNo)) {
+        throw new ApiError("質問番号が不正です", 400);
+      }
+
+      requireCanEditAnswerTemplate(caller, profileId);
+
+      try {
+        await assertLearnerInTenant(db, caller.tenantId, profileId);
+        await adoptPersonalTemplateDraft({
+          db,
+          tenantId: caller.tenantId,
+          profileId,
+          questionNo,
+          updatedBy: caller.id,
+        });
+      } catch {
+        throw new ApiError("採用可能なドラフトがありません", 404);
+      }
+
+      await recordAudit(db, caller, {
+        action: "answer_template_edited",
+        targetType: "interview_personal_template",
+        targetId: `${profileId}:${questionNo}`,
+        ip: clientIp(c),
+        metadata: { questionNo, adoptedDraft: true },
+      });
+
+      return c.json({ ok: true });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  },
+);

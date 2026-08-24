@@ -7,8 +7,15 @@
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { apiFetch } from "./api-client";
 
+/** 受講者向け GET /questions の行 (個別回答の型フィールド付き)。 */
+export type LearnerInterviewQuestion = InterviewQuestion & {
+  personal_answer_template?: string | null;
+  draft_answer_template?: string | null;
+  has_pending_draft?: boolean;
+};
+
 export interface InterviewQuestionsResult {
-  rows: InterviewQuestion[];
+  rows: LearnerInterviewQuestion[];
   /** 受講者: 自分の割当。 staff: 全カテゴリ。 */
   assignedCategories: string[];
   /** 面談予定日 (参考情報)。未設定なら null。 */
@@ -16,8 +23,11 @@ export interface InterviewQuestionsResult {
   note?: string | null;
 }
 
-export async function fetchInterviewQuestions(): Promise<InterviewQuestionsResult> {
-  return apiFetch<InterviewQuestionsResult>("/api/interview-prep/questions");
+export async function fetchInterviewQuestions(
+  profileId?: string | null,
+): Promise<InterviewQuestionsResult> {
+  const query = profileId ? `?profileId=${encodeURIComponent(profileId)}` : "";
+  return apiFetch<InterviewQuestionsResult>(`/api/interview-prep/questions${query}`);
 }
 
 export interface InterviewPrepAssignmentRow {
@@ -61,4 +71,28 @@ export async function saveInterviewPrepAssignment(
     method: "PUT",
     body: payload,
   });
+}
+
+export async function savePersonalAnswerTemplate(
+  profileId: string,
+  questionNo: number,
+  content: string,
+): Promise<void> {
+  await apiFetch(
+    `/api/interview-prep/answer-templates/${encodeURIComponent(profileId)}/${questionNo}`,
+    {
+      method: "PUT",
+      body: { content },
+    },
+  );
+}
+
+export async function adoptPersonalAnswerTemplateDraft(
+  profileId: string,
+  questionNo: number,
+): Promise<void> {
+  await apiFetch(
+    `/api/interview-prep/answer-templates/${encodeURIComponent(profileId)}/${questionNo}/adopt-draft`,
+    { method: "POST" },
+  );
 }

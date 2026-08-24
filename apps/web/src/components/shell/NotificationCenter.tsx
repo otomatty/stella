@@ -9,7 +9,17 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCheck, Megaphone, Check, Loader2, X, Send, CalendarClock } from "@/lib/icons";
+import {
+  Bell,
+  CheckCheck,
+  Megaphone,
+  Check,
+  Loader2,
+  X,
+  Send,
+  CalendarClock,
+  Sparkles,
+} from "@/lib/icons";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,6 +48,16 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   review_completed: { icon: Check, tone: "text-success", label: "添削完了" },
   assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
   interview_date_set: { icon: CalendarClock, tone: "text-brand", label: "面談予定" },
+  interview_answer_template_generated: {
+    icon: Sparkles,
+    tone: "text-brand",
+    label: "回答の型",
+  },
+  interview_answer_template_failed: {
+    icon: Sparkles,
+    tone: "text-destructive",
+    label: "回答の型",
+  },
 };
 
 /** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */

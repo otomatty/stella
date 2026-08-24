@@ -1,6 +1,7 @@
 /**
- * Issue #205 — interview scheduled date test contracts and in-memory DB mock.
- * Expected production module: routes/interview-prep.ts
+ * Issue #205 / #206 — interview prep test contracts and in-memory DB mock.
+ * Expected production modules: routes/interview-prep.ts, routes/skill-sheet.ts,
+ * lib/interview-answer-template.ts, lib/interview-answer-template-cron.ts
  */
 
 import { SignJWT } from "jose";
@@ -10,8 +11,21 @@ import type { Env } from "../env.js";
 
 export const INTERVIEW_PREP_ASSIGNMENTS_PATH = "/api/interview-prep/assignments";
 export const INTERVIEW_PREP_QUESTIONS_PATH = "/api/interview-prep/questions";
+export const INTERVIEW_PREP_PROGRESS_PATH = "/api/interview-prep/progress";
+export const INTERVIEW_PREP_MY_ANSWERS_PATH = "/api/interview-prep/my-answers";
+export const SKILL_SHEET_SAVE_PATH = "/api/skill-sheets";
+
 export const interviewPrepAssignmentPath = (profileId: string) =>
   `${INTERVIEW_PREP_ASSIGNMENTS_PATH}/${encodeURIComponent(profileId)}`;
+
+export const interviewPrepAnswerTemplatePath = (profileId: string, questionNo: number) =>
+  `/api/interview-prep/answer-templates/${encodeURIComponent(profileId)}/${questionNo}`;
+
+export const interviewPrepAdoptDraftPath = (profileId: string, questionNo: number) =>
+  `${interviewPrepAnswerTemplatePath(profileId, questionNo)}/adopt-draft`;
+
+export const interviewPrepProgressPath = (questionNo: number) =>
+  `${INTERVIEW_PREP_PROGRESS_PATH}/${questionNo}`;
 
 export const TEST_JWT_SECRET = "interview-prep-test-secret";
 
@@ -47,10 +61,116 @@ export interface InterviewPrepAssignmentRow {
   assignedBy: string | null;
 }
 
+export interface SkillSheetRow {
+  id: string;
+  tenantId: string;
+  profileId: string;
+  sheet: Record<string, unknown>;
+  updatedBy: string;
+}
+
+export interface PersonalAnswerTemplateRow {
+  id: string;
+  tenantId: string;
+  profileId: string;
+  questionNo: number;
+  content: string | null;
+  draftContent: string | null;
+  generatedFrom: string | null;
+  source: "ai" | "manual";
+  updatedBy: string | null;
+}
+
+export interface GenerationJobRow {
+  id: string;
+  tenantId: string;
+  profileId: string;
+  batchId: string;
+  status: "pending" | "done" | "failed";
+  requested: number;
+  succeeded: number;
+  createdAt: Date;
+}
+
 export interface InterviewPrepTestState {
   assignments: Map<string, InterviewPrepAssignmentRow>;
   notifications: Array<Record<string, unknown>>;
+  skillSheets: Map<string, SkillSheetRow>;
+  personalTemplates: Map<string, PersonalAnswerTemplateRow>;
+  generationJobs: GenerationJobRow[];
 }
+
+/** Fixture bank for #206 — assigned PHP A/B, JS A, and common A. */
+export const TEST_INTERVIEW_QUESTIONS = [
+  {
+    no: 101,
+    categories: ["PHP"],
+    subcategory: "",
+    freq: "A" as const,
+    question: "PHP A 必修?",
+    time: "30秒",
+    keywords: "",
+    intent: "基礎",
+    answer_template: '共通A: <span class="blank">経験年数</span>年です',
+    deep1: "",
+    deep2: "",
+    deep3: "",
+    ng: "",
+    criteria: "",
+    is_reverse: 0,
+  },
+  {
+    no: 102,
+    categories: ["PHP"],
+    subcategory: "",
+    freq: "B" as const,
+    question: "PHP B 推奨?",
+    time: "30秒",
+    keywords: "",
+    intent: "応用",
+    answer_template: '共通B: <span class="blank">具体例</span>があります',
+    deep1: "",
+    deep2: "",
+    deep3: "",
+    ng: "",
+    criteria: "",
+    is_reverse: 0,
+  },
+  {
+    no: 103,
+    categories: ["JS"],
+    subcategory: "",
+    freq: "A" as const,
+    question: "JS A 必修?",
+    time: "30秒",
+    keywords: "",
+    intent: "基礎",
+    answer_template: "共通JS A テンプレ",
+    deep1: "",
+    deep2: "",
+    deep3: "",
+    ng: "",
+    criteria: "",
+    is_reverse: 0,
+  },
+  {
+    no: 104,
+    categories: ["全案件共通"],
+    subcategory: "",
+    freq: "A" as const,
+    question: "共通 A?",
+    time: "30秒",
+    keywords: "",
+    intent: "共通",
+    answer_template: '共通: <span class="blank">自己紹介</span>です',
+    deep1: "",
+    deep2: "",
+    deep3: "",
+    ng: "",
+    criteria: "",
+    is_reverse: 0,
+  },
+];
 
 export const TEST_STUDENTS: StudentProfile[] = [
   {
@@ -97,10 +217,53 @@ function selectShapeKeys(shape: Record<string, unknown>): string[] {
   return Object.keys(shape);
 }
 
+function mergeNullableField<T>(
+  set: Record<string, unknown>,
+  row: Record<string, unknown>,
+  existing: T | undefined,
+  key: string,
+): T | null | undefined {
+  if (key in set) return set[key] as T | null;
+  if (key in row) return row[key] as T | null;
+  return existing;
+}
+
+function personalTemplateKey(tenantId: string, profileId: string, questionNo: number): string {
+  return `${tenantId}:${profileId}:${questionNo}`;
+}
+
+function skillSheetKey(tenantId: string, profileId: string): string {
+  return `${tenantId}:${profileId}`;
+}
+
 export function createInterviewPrepTestState(): InterviewPrepTestState {
   return {
     assignments: new Map(),
     notifications: [],
+    skillSheets: new Map(),
+    personalTemplates: new Map(),
+    generationJobs: [],
+  };
+}
+
+export function minimalSkillSheetPayload(): Record<string, unknown> {
+  return {
+    sections: {
+      basic: { years_total: 5, current_role: "バックエンド" },
+      skills: [{ name: "PHP", category: "lang", years: 3, level: "中", note: "" }],
+      projects: [
+        {
+          period: "2024-2026",
+          role: "メンバー",
+          team_size: 4,
+          phases: ["実装"],
+          technologies: ["PHP", "Laravel"],
+          summary: "EC 保守",
+        },
+      ],
+      certifications: [],
+      self_pr: "実務経験 5 年",
+    },
   };
 }
 
@@ -162,8 +325,15 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_prep_assignments") {
+      const subjectProfileId = ctx.targetProfileId ?? ctx.callerId;
+      if (keys.includes("categories") && limit === 1) {
+        const row = resolveAssignment(state, ctx.callerTenantId, subjectProfileId);
+        if (!row) return [];
+        const includeDate = keys.includes("interviewDate") || keys.includes("interview_date");
+        return [assignmentPayload(row, includeDate || keys.includes("note"))];
+      }
       if (keys.length === 1 && keys[0] === "categories") {
-        const row = resolveAssignment(state, ctx.callerTenantId, ctx.callerId);
+        const row = resolveAssignment(state, ctx.callerTenantId, subjectProfileId);
         if (!row) return [];
         return [{ categories: row.categories }];
       }
@@ -175,25 +345,60 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_questions") {
-      return [
-        {
-          no: 1,
-          categories: ["PHP"],
-          question: "test?",
-          freq: "A",
-          subcategory: "",
-          time: 30,
-          keywords: "",
-          intent: "",
-          answer_template: "",
-          deep1: "",
-          deep2: "",
-          deep3: "",
-          ng: "",
-          criteria: "",
-          is_reverse: 0,
-        },
-      ];
+      return TEST_INTERVIEW_QUESTIONS;
+    }
+
+    if (fromTable === "skill_sheets") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      const row = state.skillSheets.get(skillSheetKey(ctx.callerTenantId, profileId));
+      if (!row) return [];
+      return [{ id: row.id, sheet: row.sheet, profileId: row.profileId }];
+    }
+
+    if (fromTable === "interview_personal_templates") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      const rows = [...state.personalTemplates.values()].filter(
+        (t) => t.tenantId === ctx.callerTenantId && t.profileId === profileId,
+      );
+      return rows.map((t) => ({
+        id: t.id,
+        questionNo: t.questionNo,
+        content: t.content,
+        draftContent: t.draftContent,
+        generatedFrom: t.generatedFrom,
+        source: t.source,
+        updatedBy: t.updatedBy,
+      }));
+    }
+
+    if (fromTable === "generation_jobs") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      if (keys.includes("createdAt") && keys.length <= 4) {
+        return state.generationJobs
+          .filter((j) => j.tenantId === ctx.callerTenantId)
+          .map((j) => ({
+            id: j.id,
+            tenantId: j.tenantId,
+            profileId: j.profileId,
+            createdAt: j.createdAt,
+          }));
+      }
+      return state.generationJobs
+        .filter(
+          (j) =>
+            j.tenantId === ctx.callerTenantId &&
+            (keys.includes("batchId") ? j.status === "pending" : j.profileId === profileId),
+        )
+        .map((j) => ({
+          id: j.id,
+          tenantId: j.tenantId,
+          profileId: j.profileId,
+          batchId: j.batchId,
+          status: j.status,
+          requested: j.requested,
+          succeeded: j.succeeded,
+          createdAt: j.createdAt,
+        }));
     }
 
     return [];
@@ -264,10 +469,164 @@ export function createInterviewPrepTestDb(
               },
             };
           }
+          if (name === "skill_sheets") {
+            for (const row of rows) {
+              const tenantId = row.tenantId as string;
+              const profileId = row.profileId as string;
+              const key = skillSheetKey(tenantId, profileId);
+              state.skillSheets.set(key, {
+                id: (row.id as string) ?? `sheet-${profileId}`,
+                tenantId,
+                profileId,
+                sheet: row.sheet as Record<string, unknown>,
+                updatedBy: row.updatedBy as string,
+              });
+            }
+            return {
+              onConflictDoUpdate: () => Promise.resolve(undefined),
+              returning: async () => [{ id: rows[0]?.id ?? "sheet-1" }],
+            };
+          }
+          if (name === "generation_jobs") {
+            for (const row of rows) {
+              state.generationJobs.push({
+                id: row.id as string,
+                tenantId: row.tenantId as string,
+                profileId: row.profileId as string,
+                batchId: row.batchId as string,
+                status: row.status as GenerationJobRow["status"],
+                requested: row.requested as number,
+                succeeded: row.succeeded as number,
+                createdAt: (row.createdAt as Date | undefined) ?? new Date(),
+              });
+            }
+            return Promise.resolve(undefined);
+          }
+          if (name === "interview_personal_templates") {
+            for (const row of rows) {
+              const tenantId = row.tenantId as string;
+              const profileId = row.profileId as string;
+              const questionNo = row.questionNo as number;
+              state.personalTemplates.set(personalTemplateKey(tenantId, profileId, questionNo), {
+                id: row.id as string,
+                tenantId,
+                profileId,
+                questionNo,
+                content: (row.content as string | null) ?? null,
+                draftContent: (row.draftContent as string | null) ?? null,
+                generatedFrom: (row.generatedFrom as string | null) ?? null,
+                source: row.source as PersonalAnswerTemplateRow["source"],
+                updatedBy: (row.updatedBy as string | null) ?? null,
+              });
+            }
+            return {
+              onConflictDoUpdate: ({ set }: { set: Record<string, unknown> }) => {
+                for (const row of rows) {
+                  const tenantId = row.tenantId as string;
+                  const profileId = row.profileId as string;
+                  const questionNo = row.questionNo as number;
+                  const key = personalTemplateKey(tenantId, profileId, questionNo);
+                  const existing = state.personalTemplates.get(key);
+                  state.personalTemplates.set(key, {
+                    id: (row.id as string) ?? existing?.id ?? crypto.randomUUID(),
+                    tenantId,
+                    profileId,
+                    questionNo,
+                    content: mergeNullableField(set, row, existing?.content, "content") as
+                      | string
+                      | null,
+                    draftContent: mergeNullableField(
+                      set,
+                      row,
+                      existing?.draftContent,
+                      "draftContent",
+                    ) as string | null,
+                    generatedFrom: mergeNullableField(
+                      set,
+                      row,
+                      existing?.generatedFrom,
+                      "generatedFrom",
+                    ) as string | null,
+                    source: (set.source ?? row.source ?? existing?.source ?? "ai") as
+                      | "ai"
+                      | "manual",
+                    updatedBy: mergeNullableField(set, row, existing?.updatedBy, "updatedBy") as
+                      | string
+                      | null,
+                  });
+                }
+                return Promise.resolve(undefined);
+              },
+            };
+          }
           return {
             onConflictDoUpdate: () => Promise.resolve(undefined),
           };
         },
+      };
+    },
+    update: (table: object) => {
+      const name = tableName(table);
+      return {
+        set: (set: Record<string, unknown>) => ({
+          where: () => ({
+            returning: async () => {
+              if (name === "skill_sheets") {
+                const profileId = ctx.targetProfileId ?? ctx.callerId;
+                const key = skillSheetKey(ctx.callerTenantId, profileId);
+                const existing = state.skillSheets.get(key);
+                if (!existing) return [];
+                const updated: SkillSheetRow = {
+                  ...existing,
+                  sheet: (set.sheet as Record<string, unknown>) ?? existing.sheet,
+                  updatedBy: (set.updatedBy as string) ?? existing.updatedBy,
+                };
+                state.skillSheets.set(key, updated);
+                return [{ id: updated.id }];
+              }
+              if (name === "interview_personal_templates") {
+                const profileId = ctx.targetProfileId ?? ctx.callerId;
+                for (const [key, existing] of state.personalTemplates.entries()) {
+                  if (
+                    existing.profileId !== profileId ||
+                    existing.tenantId !== ctx.callerTenantId
+                  ) {
+                    continue;
+                  }
+                  state.personalTemplates.set(key, {
+                    ...existing,
+                    content: mergeNullableField(set, {}, existing.content, "content") as
+                      | string
+                      | null,
+                    draftContent: mergeNullableField(
+                      set,
+                      {},
+                      existing.draftContent,
+                      "draftContent",
+                    ) as string | null,
+                    source: (set.source as PersonalAnswerTemplateRow["source"]) ?? existing.source,
+                    updatedBy: mergeNullableField(set, {}, existing.updatedBy, "updatedBy") as
+                      | string
+                      | null,
+                  });
+                }
+                return [...state.personalTemplates.values()].filter(
+                  (t) => t.profileId === profileId,
+                );
+              }
+              if (name === "generation_jobs") {
+                for (const job of state.generationJobs) {
+                  if (job.tenantId !== ctx.callerTenantId) continue;
+                  if (set.status !== undefined)
+                    job.status = set.status as GenerationJobRow["status"];
+                  if (set.succeeded !== undefined) job.succeeded = set.succeeded as number;
+                }
+                return state.generationJobs;
+              }
+              return [];
+            },
+          }),
+        }),
       };
     },
   };

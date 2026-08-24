@@ -113,20 +113,13 @@ describe("INTERVIEW_QUESTIONS", () => {
   });
 
   /**
-   * web は answer_template を `<span class="blank">` で split して React 要素に
-   * 変換する (dangerouslySetInnerHTML を使わない)。 他のタグが混ざると素の
-   * テキストとして表示されてしまうため、 データ側で不変条件として縛る。
+   * answer_template はプレーンテキスト (Issue #206 で blank span を廃止)。
+   * 他フィールドに HTML タグが混ざらないこと。
    */
-  it("HTML タグは answer_template の blank span のみ", () => {
+  it("answer_template に HTML タグが含まれない", () => {
     for (const d of INTERVIEW_QUESTIONS) {
-      for (const [field, value] of Object.entries(d)) {
-        if (typeof value !== "string") continue;
-        const tags = value.match(/<[^>]+>/g) ?? [];
-        const allowed = field === "answer_template" ? ['<span class="blank">', "</span>"] : [];
-        for (const tag of tags) {
-          expect(allowed, `${field} (no=${d.no}) の ${tag}`).toContain(tag);
-        }
-      }
+      if (!d.answer_template) continue;
+      expect(d.answer_template, `no=${d.no}`).not.toMatch(/<[^>]+>/);
     }
   });
 });

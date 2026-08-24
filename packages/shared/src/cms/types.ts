@@ -482,7 +482,9 @@ export type NotificationType =
   | "announcement"
   | "review_completed"
   | "assignment_due"
-  | "interview_date_set";
+  | "interview_date_set"
+  | "interview_answer_template_generated"
+  | "interview_answer_template_failed";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

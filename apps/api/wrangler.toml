@@ -43,6 +43,9 @@ database_name = "falcon-db"
 database_id = "5c22102a-6c90-4433-b744-4f51f0f608f9"
 migrations_dir = "drizzle"
 
+[triggers]
+crons = ["*/15 * * * *"]
+
 # 教材アップロード (Cloudflare R2)。
 [[r2_buckets]]
 binding = "MATERIALS_BUCKET"

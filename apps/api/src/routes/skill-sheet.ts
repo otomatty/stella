@@ -32,6 +32,7 @@ import {
   assertSkillSheetUploadFormat,
   buildSkillSheetR2Key,
 } from "../lib/skill-sheet-storage.js";
+import { enqueuePersonalAnswerTemplateGeneration } from "../lib/interview-answer-template-db.js";
 
 export const skillSheetRoute = new Hono<{ Bindings: Env }>();
 
@@ -216,6 +217,19 @@ async function saveSkillSheet(c: Context<{ Bindings: Env }>): Promise<Response> 
       targetId: body.profileId,
       ip: clientIp(c),
     });
+
+    try {
+      await enqueuePersonalAnswerTemplateGeneration({
+        db,
+        env: c.env,
+        tenantId: caller.tenantId,
+        profileId: body.profileId,
+        skillSheetId: row.id,
+        sheet: validated.value as unknown as Record<string, unknown>,
+      });
+    } catch (genErr) {
+      console.error("[skill-sheet] answer template generation enqueue failed", genErr);
+    }
 
     return c.json({ id: row.id, rowCount: 1 });
   } catch (err) {
