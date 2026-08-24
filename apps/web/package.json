@@ -43,7 +43,7 @@
     "eslint-linter-browserify": "^10.8.1",
     "highlight.js": "^11.12.0",
     "lucide-react": "^0.475.0",
-    "pdfjs-dist": "4.8.69",
+    "pdfjs-dist": "6.2.108",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
