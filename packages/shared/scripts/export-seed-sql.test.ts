@@ -162,6 +162,7 @@ describe("export-seed-sql (sqlite)", () => {
 
   it("既定では検証用 seed ユーザーを含む", () => {
     expect(sql).toContain("seed-admin");
+    expect(sql).toContain("seed-sales");
     expect(sql).toContain("seed-submission-pending-1");
   });
 

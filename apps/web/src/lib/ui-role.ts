@@ -1,9 +1,14 @@
 import type { ProfileRole } from "@falcon/shared/cms/types";
 import type { SearchResult } from "@falcon/shared/search/types";
+import { canManageInterviewPrep } from "@falcon/shared/admin/types";
 import type { Role } from "@/data/types";
 
 export function isStaffProfileRole(role: ProfileRole | undefined): boolean {
   return role === "instructor" || role === "admin" || role === "platform_admin";
+}
+
+export function canManageInterviewPrepUi(role: ProfileRole | undefined): boolean {
+  return role !== undefined && canManageInterviewPrep(role);
 }
 
 export function mapProfileRole(role: ProfileRole): Role {
@@ -15,6 +20,8 @@ export function mapProfileRole(role: ProfileRole): Role {
     case "admin":
     case "platform_admin":
       return "admin";
+    case "sales":
+      return "sales";
     default: {
       const _exhaustive: never = role;
       return _exhaustive;
@@ -29,6 +36,8 @@ export function staffHomeLabel(role: ProfileRole | undefined): string {
     case "admin":
     case "platform_admin":
       return "管理画面に戻る";
+    case "sales":
+      return "営業画面に戻る";
     default:
       return "元の画面に戻る";
   }

@@ -3,7 +3,7 @@
  * Intentionally kept narrow — reflects only what the UI renders today.
  */
 
-export type Role = "learner" | "instructor" | "admin";
+export type Role = "learner" | "instructor" | "admin" | "sales";
 
 export type AvatarTone = "c1" | "c2" | "c3" | "c4" | "c5" | "c6";
 

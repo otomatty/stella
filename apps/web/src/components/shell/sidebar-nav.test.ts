@@ -26,4 +26,8 @@ describe("navForRole", () => {
       expect(items).not.toContain("audit");
     }
   });
+
+  it("営業はダッシュボードと面談対策だけを出す", () => {
+    expect(ids("sales", "sales")).toEqual(["dash", "interview-prep"]);
+  });
 });

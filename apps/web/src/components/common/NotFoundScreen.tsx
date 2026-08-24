@@ -8,43 +8,58 @@
 
 import { useContext } from "react";
 import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { Award, Book, Compass, Edit, HelpCircle, Home, Users } from "@/lib/icons";
+import { Award, Book, Compass, Edit, HelpCircle, Home, MessageCircle, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusScreen, type StatusScreenLink } from "@/components/common/StatusScreen";
 import { AppShellContext } from "@/components/shell/app-shell-context";
 import type { Role } from "@/data/types";
 
 /** ロール別の「ここから探せます」導線。 サイドバーの主要項目と揃える。 */
-function linksForRole(role: Role, setPage: (page: string) => void): StatusScreenLink[] {
-  if (role === "instructor") {
-    return [
-      { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-      {
-        label: "添削待ち",
-        description: "提出物のレビュー",
-        icon: Edit,
-        onSelect: () => setPage("review-queue"),
-      },
-      { label: "担当受講者", icon: Users, onSelect: () => setPage("students") },
-    ];
+export function linksForRole(role: Role, setPage: (page: string) => void): StatusScreenLink[] {
+  switch (role) {
+    case "instructor":
+      return [
+        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
+        {
+          label: "添削待ち",
+          description: "提出物のレビュー",
+          icon: Edit,
+          onSelect: () => setPage("review-queue"),
+        },
+        { label: "担当受講者", icon: Users, onSelect: () => setPage("students") },
+      ];
+    case "admin":
+      return [
+        { label: "KPIダッシュボード", icon: Home, onSelect: () => setPage("dash") },
+        { label: "コース管理", icon: Book, onSelect: () => setPage("courses") },
+        { label: "ユーザー管理", icon: Users, onSelect: () => setPage("users") },
+      ];
+    case "sales":
+      return [
+        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
+        {
+          label: "面談対策",
+          description: "案件種別の割当と準備状況",
+          icon: MessageCircle,
+          onSelect: () => setPage("interview-prep"),
+        },
+      ];
+    case "learner":
+      return [
+        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
+        {
+          label: "コース一覧",
+          description: "受講中のコースを開く",
+          icon: Book,
+          onSelect: () => setPage("courses"),
+        },
+        { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
+      ];
+    default: {
+      const _exhaustive: never = role;
+      return _exhaustive;
+    }
   }
-  if (role === "admin") {
-    return [
-      { label: "KPIダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-      { label: "コース管理", icon: Book, onSelect: () => setPage("courses") },
-      { label: "ユーザー管理", icon: Users, onSelect: () => setPage("users") },
-    ];
-  }
-  return [
-    { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-    {
-      label: "コース一覧",
-      description: "受講中のコースを開く",
-      icon: Book,
-      onSelect: () => setPage("courses"),
-    },
-    { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
-  ];
 }
 
 export const NotFoundScreen = () => {

@@ -230,14 +230,13 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
         let testDataInserted = false;
         if (testMode) {
           try {
-            await insertTestDataForNewUser(db, {
+            testDataInserted = await insertTestDataForNewUser(db, {
               tenantId: caller.tenantId,
               userId,
               role: inv.role,
               displayName: inv.displayName,
               invitedBy: caller.id,
             });
-            testDataInserted = true;
           } catch (e) {
             console.error("[admin] test data insert failed", inv.email, e);
           }

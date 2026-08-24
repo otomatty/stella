@@ -3,7 +3,7 @@
  *
  * 受け付ける列: `email, display_name, role` (この順)。
  * - ヘッダ行 (1 列目が email/メール 等) は自動でスキップする。
- * - role は英語キー (student/instructor/admin) と日本語ラベル (受講者/講師/管理者) を許容。
+ * - role は英語キー (student/instructor/admin/sales) と日本語ラベル (受講者/講師/管理者/営業) を許容。
  * - display_name 省略時はメールのローカル部を表示名にする。
  *
  * クォート付き CSV (`"田中, 翔太"`) にも最低限対応する簡易実装。
@@ -26,6 +26,8 @@ const ROLE_ALIASES: Record<string, AssignableProfileRole> = {
   admin: "admin",
   管理者: "admin",
   テナント管理者: "admin",
+  sales: "sales",
+  営業: "sales",
 };
 
 export interface ParsedInviteCsv {

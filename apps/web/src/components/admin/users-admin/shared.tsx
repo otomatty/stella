@@ -11,6 +11,7 @@ export const ROLE_LABEL: Record<ProfileRole, string> = {
   instructor: "講師",
   admin: "管理者",
   platform_admin: "プラットフォーム管理",
+  sales: "営業",
 };
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
@@ -27,6 +28,8 @@ export function RoleBadge({ role }: { role: ProfileRole }) {
       ? "accent"
       : role === "admin" || role === "platform_admin"
         ? "solid"
-        : undefined;
+        : role === "sales"
+          ? "info"
+          : undefined;
   return <Badge variant={variant}>{ROLE_LABEL[role]}</Badge>;
 }

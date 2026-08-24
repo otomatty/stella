@@ -34,7 +34,7 @@ export function requireReturning<T>(rows: readonly T[], what: string): T {
   return row;
 }
 
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin" | "sales";
 
 export interface Caller {
   id: string;
@@ -114,6 +114,17 @@ export function requireRole(caller: Caller, ...roles: ProfileRole[]): void {
 
 export function isStaffRole(role: ProfileRole): boolean {
   return role === "instructor" || role === "admin" || role === "platform_admin";
+}
+
+/** 面談対策の割当・準備状況の閲覧。 staff 機能 (CMS 等) とは別枠 — sales を含む。 */
+export function canManageInterviewPrep(role: ProfileRole): boolean {
+  return isStaffRole(role) || role === "sales";
+}
+
+export function requireCanManageInterviewPrep(caller: Caller): void {
+  if (!canManageInterviewPrep(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
 }
 
 export function requireTenantAdmin(caller: Caller): void {

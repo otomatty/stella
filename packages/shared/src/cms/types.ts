@@ -25,7 +25,7 @@ import type {
 // ---------------------------------------------------------------
 
 export type CourseStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin" | "sales";
 
 export type CourseColor = "indigo" | "green" | "amber" | "slate";
 

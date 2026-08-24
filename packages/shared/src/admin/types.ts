@@ -14,9 +14,10 @@ export const PROFILE_ROLES: readonly ProfileRole[] = [
   "instructor",
   "admin",
   "platform_admin",
+  "sales",
 ];
 
-export const ASSIGNABLE_PROFILE_ROLES = ["student", "instructor", "admin"] as const;
+export const ASSIGNABLE_PROFILE_ROLES = ["student", "instructor", "admin", "sales"] as const;
 export type AssignableProfileRole = (typeof ASSIGNABLE_PROFILE_ROLES)[number];
 
 /** 招待 1 件分の入力。 tenant は呼び出し元 (admin) の所属から server 側で決まる。 */
@@ -203,12 +204,21 @@ export function isValidEmail(value: string): boolean {
 
 export function isProfileRole(value: unknown): value is ProfileRole {
   return (
-    value === "student" || value === "instructor" || value === "admin" || value === "platform_admin"
+    value === "student" ||
+    value === "instructor" ||
+    value === "admin" ||
+    value === "platform_admin" ||
+    value === "sales"
   );
 }
 
 export function isAssignableProfileRole(value: unknown): value is AssignableProfileRole {
-  return value === "student" || value === "instructor" || value === "admin";
+  return value === "student" || value === "instructor" || value === "admin" || value === "sales";
+}
+
+/** 面談対策の割当・準備状況の閲覧 (instructor / admin / platform_admin / sales)。 */
+export function canManageInterviewPrep(role: ProfileRole): boolean {
+  return role === "instructor" || role === "admin" || role === "platform_admin" || role === "sales";
 }
 
 type ValidateResult =

@@ -353,6 +353,7 @@ if (!contentOnly) {
   const SEED_ADMIN = "seed-admin";
   const SEED_INSTRUCTOR = "seed-instructor";
   const SEED_LEARNER = "seed-learner";
+  const SEED_SALES = "seed-sales";
   const SEED_ENROLLMENT = "seed-enrollment-learner-typescript-basics";
   const SEED_SUBMISSION = "seed-submission-pending-1";
   const tsCourse = content.courses.find((c) => c.id === "typescript-basics");
@@ -384,6 +385,13 @@ if (!contentOnly) {
       name: "Seed Learner",
       initials: "SL",
       email: "seed-learner@example.local",
+    },
+    {
+      id: SEED_SALES,
+      role: "sales",
+      name: "Seed Sales",
+      initials: "SS",
+      email: "seed-sales@example.local",
     },
   ]) {
     lines.push(

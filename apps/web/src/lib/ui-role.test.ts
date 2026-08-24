@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { filterSearchResultsForLearner, resolveUiRole, staffHomeLabel } from "./ui-role.js";
+import {
+  canManageInterviewPrepUi,
+  filterSearchResultsForLearner,
+  resolveUiRole,
+  staffHomeLabel,
+} from "./ui-role.js";
 
 describe("resolveUiRole", () => {
   it("uses the profile role when backend is on and there is no override", () => {
@@ -46,12 +51,46 @@ describe("resolveUiRole", () => {
       }),
     ).toEqual({ role: "instructor", canSwitchToLearner: false });
   });
+
+  it("maps sales to the sales shell and does not offer the learner switch", () => {
+    expect(
+      resolveUiRole({
+        backendEnabled: true,
+        profileRole: "sales",
+        uiRoleOverride: null,
+        demoRole: "learner",
+      }),
+    ).toEqual({ role: "sales", canSwitchToLearner: false });
+  });
+
+  it("ignores a leftover learner override for sales", () => {
+    expect(
+      resolveUiRole({
+        backendEnabled: true,
+        profileRole: "sales",
+        uiRoleOverride: "learner",
+        demoRole: "admin",
+      }),
+    ).toEqual({ role: "sales", canSwitchToLearner: false });
+  });
 });
 
 describe("staffHomeLabel", () => {
   it("names the screen the staff member returns to", () => {
     expect(staffHomeLabel("admin")).toBe("管理画面に戻る");
     expect(staffHomeLabel("instructor")).toBe("講師画面に戻る");
+    expect(staffHomeLabel("sales")).toBe("営業画面に戻る");
+  });
+});
+
+describe("canManageInterviewPrepUi", () => {
+  it("is true for staff and sales, false for students and missing role", () => {
+    expect(canManageInterviewPrepUi("instructor")).toBe(true);
+    expect(canManageInterviewPrepUi("admin")).toBe(true);
+    expect(canManageInterviewPrepUi("platform_admin")).toBe(true);
+    expect(canManageInterviewPrepUi("sales")).toBe(true);
+    expect(canManageInterviewPrepUi("student")).toBe(false);
+    expect(canManageInterviewPrepUi(undefined)).toBe(false);
   });
 });
 

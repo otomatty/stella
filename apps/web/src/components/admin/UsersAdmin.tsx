@@ -97,6 +97,7 @@ function UsersAdminLive({
       instructor: 0,
       admin: 0,
       platform_admin: 0,
+      sales: 0,
     };
     for (const p of profiles) c[p.role]++;
     return c;
@@ -197,6 +198,12 @@ function UsersAdminLive({
             active={roleFilter === "admin"}
             onClick={() => setRoleFilter("admin")}
             label={`管理者 ${counts.admin}`}
+          />
+          <FilterChip
+            active={roleFilter === "sales"}
+            onClick={() => setRoleFilter("sales")}
+            label={`営業 ${counts.sales}`}
+            variant="info"
           />
         </div>
 

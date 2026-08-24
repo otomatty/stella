@@ -124,7 +124,7 @@ export function CsvInviteDialog({
           </DialogTitle>
           <DialogDescription>
             {tenantName} へ一括招待します。 形式: <code>email, 表示名, ロール</code> (1 行 1 名 /
-            ヘッダ行は自動スキップ)。 ロールは 受講者 / 講師 / 管理者。
+            ヘッダ行は自動スキップ)。 ロールは 受講者 / 講師 / 管理者 / 営業。
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-6 py-2">

@@ -86,7 +86,7 @@ export const profiles = sqliteTable(
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
     role: text("role", {
-      enum: ["student", "instructor", "admin", "platform_admin"],
+      enum: ["student", "instructor", "admin", "platform_admin", "sales"],
     })
       .notNull()
       .default("student"),
