@@ -9,6 +9,8 @@ describe("chapters", () => {
   });
 
   it("order は 0 から連番", () => {
-    chapters.forEach((c, i) => expect(c.order).toBe(i));
+    chapters.forEach((c, i) => {
+      expect(c.order).toBe(i);
+    });
   });
 });

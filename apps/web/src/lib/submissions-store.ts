@@ -42,7 +42,9 @@ function isRemotePersistence(): boolean {
 function emit() {
   storeVersion += 1;
   listSnapshotCache.clear();
-  listeners.forEach((fn) => fn());
+  listeners.forEach((fn) => {
+    fn();
+  });
 }
 
 function remoteList(tenantId: Tenant["id"]): Submission[] {

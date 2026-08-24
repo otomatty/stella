@@ -408,7 +408,7 @@ export function SlidesViewer({ lessonId, pdfPath, totalPages, onComplete }: Prop
 
 function PageLoading() {
   return (
-    <div aria-busy="true" aria-live="polite" aria-label="読み込み中" className="p-4">
+    <div role="status" aria-busy="true" aria-live="polite" aria-label="読み込み中" className="p-4">
       <Skeleton className="aspect-[16/9] w-[min(60vw,880px)]" />
     </div>
   );
@@ -417,6 +417,7 @@ function PageLoading() {
 function ThumbLoading() {
   return (
     <div
+      role="status"
       aria-busy="true"
       aria-live="polite"
       aria-label="サムネイルを生成中"
