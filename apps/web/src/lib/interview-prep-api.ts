@@ -5,6 +5,8 @@
  */
 
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
+import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
+import type { FixNote } from "@falcon/shared/interview/fix-notes";
 import { apiFetch, apiFetchRaw } from "./api-client";
 
 /** 受講者向け GET /questions の行 (個別回答の型 + 学習ステータス付き)。 */
@@ -15,6 +17,8 @@ export type LearnerInterviewQuestion = InterviewQuestion & {
   /** interview_progress の保存値。 行なし (未着手) は null。 */
   progress_status?: "read" | "confident" | null;
   practiced_count?: number;
+  /** 改善点メモ (未解決・解決済みの両方。 Issue #234)。 */
+  fix_notes?: FixNote[];
 };
 
 /** 学習ステータスの更新イベント (PUT /progress/:no の body.event)。 */
@@ -34,6 +38,8 @@ export interface InterviewQuestionsResult {
   assignedCategories: string[];
   /** 読み上げ音声が登録済みの質問番号 (admin が事前生成)。 */
   audioNos: number[];
+  /** 音声が登録済みのセグメント (`12:question` / `12:deep1`)。 深掘りを含む。 */
+  audioSegments: string[];
   /** 面談予定日 (参考情報)。未設定なら null。 */
   interviewDate?: string | null;
   note?: string | null;
@@ -44,13 +50,35 @@ export async function fetchInterviewQuestions(
 ): Promise<InterviewQuestionsResult> {
   const query = profileId ? `?profileId=${encodeURIComponent(profileId)}` : "";
   const r = await apiFetch<InterviewQuestionsResult>(`/api/interview-prep/questions${query}`);
-  return { ...r, audioNos: r.audioNos ?? [] };
+  return { ...r, audioNos: r.audioNos ?? [], audioSegments: r.audioSegments ?? [] };
 }
 
-/** 質問の読み上げ音声 (MP3)。 未登録は 404 → ApiClientError。 */
-export async function fetchQuestionAudio(no: number): Promise<Blob> {
-  const res = await apiFetchRaw(`/api/interview-prep/questions/${no}/audio`);
+/** 読み上げ音声 (MP3)。 深掘りは part で指定する。 未登録は 404 → ApiClientError。 */
+export async function fetchQuestionAudio(
+  no: number,
+  part: InterviewAudioPart = "question",
+): Promise<Blob> {
+  const query = part === "question" ? "" : `?part=${part}`;
+  const res = await apiFetchRaw(`/api/interview-prep/questions/${no}/audio${query}`);
   return res.blob();
+}
+
+/** 改善点メモを 1 行追加する (受講者本人のみ)。 */
+export async function addFixNote(questionNo: number, text: string): Promise<FixNote> {
+  const { note } = await apiFetch<{ note: FixNote }>(
+    `/api/interview-prep/fix-notes/${questionNo}`,
+    { method: "POST", body: { text } },
+  );
+  return note;
+}
+
+/** 改善点メモの消し込み / 取り消し。 */
+export async function setFixNoteResolved(id: string, resolved: boolean): Promise<FixNote> {
+  const { note } = await apiFetch<{ note: FixNote }>(
+    `/api/interview-prep/fix-notes/${encodeURIComponent(id)}`,
+    { method: "PUT", body: { resolved } },
+  );
+  return note;
 }
 
 export interface TranscribeResult {
@@ -68,15 +96,25 @@ export async function transcribeRecording(no: number, audio: Blob): Promise<Tran
   return (await res.json()) as TranscribeResult;
 }
 
-export interface GenerateAudioResult {
-  results: Array<{ no: number; ok: boolean; error?: string }>;
+export interface AudioSegmentRef {
+  no: number;
+  part: InterviewAudioPart;
 }
 
-/** admin: 指定質問の読み上げ音声を生成 (再生成は上書き)。 1 回最大 10 問。 */
-export async function generateQuestionAudio(nos: number[]): Promise<GenerateAudioResult> {
+export interface GenerateAudioResult {
+  results: Array<{ no: number; part: InterviewAudioPart; ok: boolean; error?: string }>;
+}
+
+/**
+ * admin: 指定セグメント (質問文 + 深掘り①〜③) の読み上げ音声を生成 (再生成は上書き)。
+ * 1 回最大 10 セグメント。
+ */
+export async function generateQuestionAudio(
+  segments: AudioSegmentRef[],
+): Promise<GenerateAudioResult> {
   return apiFetch<GenerateAudioResult>("/api/interview-prep/audio/generate", {
     method: "POST",
-    body: { nos },
+    body: { segments },
   });
 }
 

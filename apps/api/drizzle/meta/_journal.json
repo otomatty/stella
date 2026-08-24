@@ -169,6 +169,13 @@
       "when": 1787700000000,
       "tag": "0024_interview_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1787800000000,
+      "tag": "0025_interview_fix_notes",
+      "breakpoints": true
     }
   ]
 }

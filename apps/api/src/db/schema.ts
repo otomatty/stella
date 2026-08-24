@@ -778,6 +778,35 @@ export const interviewProgress = sqliteTable(
   }),
 );
 
+/**
+ * 面談対策 — 改善点メモ (Issue #234)。 振り返りで受講者が書き、 質問に紐付いて溜まる。
+ * 未解決分は次回その質問に答える直前に再表示され、 克服したら resolved_at で消し込む。
+ * 定型チップも自由入力も同じ 1 行として保存する。
+ */
+export const interviewFixNotes = sqliteTable(
+  "interview_fix_notes",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    questionNo: integer("question_no").notNull(),
+    text: text("text").notNull(),
+    createdAt: tsNow("created_at"),
+    resolvedAt: ts("resolved_at"),
+  },
+  (t) => ({
+    tenantProfileQuestionIdx: index("interview_fix_notes_tenant_profile_q_idx").on(
+      t.tenantId,
+      t.profileId,
+      t.questionNo,
+    ),
+  }),
+);
+
 /** Anthropic Message Batch による個別回答の型生成ジョブ (Issue #206)。 */
 export const generationJobs = sqliteTable("generation_jobs", {
   id: uuid(),

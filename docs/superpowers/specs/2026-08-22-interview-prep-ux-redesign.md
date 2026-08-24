@@ -66,7 +66,7 @@
 3. **振り返る(改善点メモ)** — 質問のやり取りを終えるごとに振り返り画面: 自分の回答(録音 + 文字起こし)と回答の型・NG・評価軸を並べ、**気づいた改善点をメモ**する(「結論から先に」などの定型チップ + 自由入力)。メモは質問に紐付いて溜まり、次回この質問に答える直前に再表示される(= 改善ループ)。
 4. **自己評価** — 「できた / もう一度」の 2 ボタン → 次の質問へ。録音と文字起こしは質問に紐付く練習ログとして残る(最新 n 件)。
 
-マイクを使えない環境(電車内など)向けに、録音をスキップして回答例を読むだけの**サイレントモード**を残す。「全問からランダム」も現行どおりサブ導線として残す。音声部品(読み上げ再生・録音 → 文字起こし)は現行のランダム出題モードに**実装済み**。対話ログ UI・改善点メモ・自己評価・練習ログの永続化はステータス基盤(Phase 1〜2)と合わせて導入する。深掘り①〜③の音声は質問文と同じ事前生成の仕組みに載せる(TTS 対象テキストが増えるだけ)。
+マイクを使えない環境(電車内など)向けに、録音をスキップして回答例を読むだけの**サイレントモード**を残す。「全問からランダム」も現行どおりサブ導線として残す。音声部品(読み上げ再生・録音 → 文字起こし)・**対話ログ UI・改善点メモ・自己評価**は**実装済み**(Issue #234)。練習ログ(録音そのもの)の永続化は Phase 2。深掘り①〜③の音声も質問文と同じ事前生成の仕組みに載せた(R2 キーは `interview-tts/<no>-deep1.mp3`)。
 
 **Flow 3 — 添削を受ける(Phase 2)**
 個別「回答の型」(+ 必要なら練習の文字起こし)を「添削依頼」で提出 → 講師キューへ → AI 下書き(`/api/review-draft`) → 講師が編集して返却 → 受講者に通知 → 修正して再保存。既存の課題添削と同じ心的モデル。文字起こしが付くことで「書けるのに話すと崩れる」箇所も添削対象になる。
@@ -94,7 +94,8 @@
 ## 画面構成の変更
 
 - 受講者 `/interview-prep`: タブを「一覧 / ランダム出題」→「**準備**(チェックリスト + 個別回答の型 + 改善点メモ履歴) / **練習**(音声セッション = 対話ログ UI。サイレント切替あり) / **模擬面談**(Phase 3)」へ。ヘッダーに面談カウントダウンと準備率リングを常設し、CTA は「音声セッションを始める」の 1 つ。検索・フィルタは「準備」タブ内に残す。
-  - **実装済み (2026-08-22)**: 「準備 / 練習」タブ、面談ヒーローカード(面談日 + カウントダウン + 準備率リング + 集計)、CTA「今日の練習を始める」、サブカテゴリ別チェックリスト(4 状態ステータスピル + グループ進捗バー + 音声ありアイコン)、練習の自己評価「できた / もう一度」。基盤は `interview_progress` テーブル(read/confident。「回答作成済み」は個別の型の有無から導出)+ `PUT /api/interview-prep/progress/:no` + `@falcon/shared/interview/progress` の導出ヘルパ。対話ログ UI・改善点メモ・SM-2 セット出題は未実装(次スプリント)。
+  - **実装済み (2026-08-22)**: 「準備 / 練習」タブ、面談ヒーローカード(面談日 + カウントダウン + 準備率リング + 集計)、CTA「今日の練習を始める」、サブカテゴリ別チェックリスト(4 状態ステータスピル + グループ進捗バー + 音声ありアイコン)、練習の自己評価「できた / もう一度」。基盤は `interview_progress` テーブル(read/confident。「回答作成済み」は個別の型の有無から導出)+ `PUT /api/interview-prep/progress/:no` + `@falcon/shared/interview/progress` の導出ヘルパ。
+  - **実装済み (2026-08-24 / Issue #234)**: 練習タブを対話ログ UI 化(面接官バブル + 自分のバブル、質問文は既定で非表示の耳だけモード、大きな録音ボタン + 目安時間で色が変わる経過タイマー、深掘り①〜③が音声で続く、ターン単位のパス、サイレントモード)、1 問ごとの振り返り(自分の回答と 型 / NG / 評価軸 を並べる + 改善点メモの定型チップ・自由入力 + 自己評価の移設)、改善点メモ(`interview_fix_notes`。答える直前に未解決分を再表示、チェックで消し込み、準備タブの質問ドロワーに履歴と一覧行に件数バッジ)。SM-2 セット出題は未実装(次スプリント)。
 - 受講者ダッシュボード: 面談カードを追加(面談日・準備率・「今日の練習へ」)。
 - 講師割当画面: 割当列の隣に準備状況列。行クリックで詳細ドロワー。admin には「質問音声」タブ(生成 / 再生成 / 試聴。実装済み)。
 
@@ -117,7 +118,7 @@ interview_progress           -- 新規
   srs_* (SM-2 系列)            -- デイリー復習の列構成に合わせる
   UNIQUE(tenant_id, profile_id, question_no)
 
-interview_fix_notes          -- 新規(Phase 1〜2)。改善点メモ (振り返りで受講者が書く)
+interview_fix_notes          -- 実装済み (Issue #234)。改善点メモ (振り返りで受講者が書く)
   id TEXT PK
   tenant_id TEXT
   profile_id TEXT
@@ -139,23 +140,22 @@ interview_recordings         -- 新規(Phase 2)。練習の録音 + 文字起こ
   -- 質問ごとに最新 n 件だけ保持(古いものは R2 ごと削除)
 ```
 
-添削(Phase 2)は既存 submissions パターン、模擬面談ログ(Phase 3)は既存チャット履歴の方式に合わせる。質問読み上げ音声は D1 ではなく R2 (`interview-tts/<no>.mp3`) が正本で、質問一覧 API が登録済み番号 (`audioNos`) を同梱する(実装済み)。
+添削(Phase 2)は既存 submissions パターン、模擬面談ログ(Phase 3)は既存チャット履歴の方式に合わせる。質問読み上げ音声は D1 ではなく R2 (`interview-tts/<no>.mp3`、深掘りは `interview-tts/<no>-deep1.mp3`) が正本で、質問一覧 API が登録済み番号 (`audioNos`) とセグメント (`audioSegments` = `<no>:question` / `<no>:deep1`) を同梱する(実装済み)。
 
 ## API(スケッチ)
 
 実装済み(2026-08-22):
 
-- `GET /api/interview-prep/questions` — レスポンスに `audioNos`(音声登録済み質問番号)を同梱。
-- `GET /api/interview-prep/questions/:no/audio` — 登録済み読み上げ音声(MP3)の配信。AI は呼ばない。未登録 404 / 割当範囲外 403。
-- `POST /api/interview-prep/audio/generate` — admin 専用。`{ nos: number[] }`(最大 10)を TTS モデル(既定 Grok TTS)で生成し R2 へ登録(再生成は上書き)。監査ログあり。
+- `GET /api/interview-prep/questions` — レスポンスに `audioNos`(音声登録済み質問番号)/ `audioSegments`(深掘りを含むセグメント)/ progress / 改善点メモ (`fix_notes`) を同梱。
+- `GET /api/interview-prep/questions/:no/audio?part=` — 登録済み読み上げ音声(MP3)の配信。`part` は `question`(既定)/ `deep1`〜`deep3`。AI は呼ばない。未登録 404 / 割当範囲外 403。
+- `POST /api/interview-prep/audio/generate` — admin 専用。`{ nos: number[] }`(質問文のみ)/ `{ segments: [{ no, part }] }`(深掘り込み)を合計 10 件まで TTS モデル(既定 Grok TTS)で生成し R2 へ登録(再生成は上書き)。監査ログあり。
+- `PUT /api/interview-prep/progress/:no` — `{ event: "read" | "practiced" | "confident" }`。自己評価と「型を読んだ」の記録。
+- `POST /api/interview-prep/fix-notes/:no` ・ `PUT /api/interview-prep/fix-notes/:id` — 改善点メモの追加・消し込み(受講者本人のみ)。
 - `POST /api/interview-prep/transcribe?no=` — 録音バイナリを Whisper で文字起こし。`no` があれば質問文を `initial_prompt` に渡す(可視性検査を兼ねる)。上限 8MB。
 
 今後(Phase 1〜):
 
-- `GET /api/interview-prep/questions` — progress を同梱(status / practiced_count)。
-- `PUT /api/interview-prep/progress/:no` — `{ status?, myAnswer? }`。自己評価とマイ回答メモ保存の両方が使う。
-- `GET /api/interview-prep/practice-set` — 今日のセット 10 問(SM-2 選定)。未解決の改善点メモを同梱。
-- `POST /api/interview-prep/fix-notes/:no` ・ `PUT /api/interview-prep/fix-notes/:id` — 改善点メモの追加・消し込み。
+- `GET /api/interview-prep/practice-set` — 今日のセット 10 問(SM-2 選定)。
 - `POST /api/interview-prep/recordings/:no` — 録音を R2 に永続化して練習ログにする(現状の transcribe は保存しない)。
 - `GET /api/interview-prep/recordings/:no` — その質問の練習ログ(録音 URL + 文字起こし)。講師詳細も同じ形を使う。
 - `PUT /api/interview-prep/assignments/:profileId` — body に `interviewDate` / `note` を追加。

@@ -8,6 +8,8 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION } from "@falcon/shared/interview/fix-notes";
+
 import type { Env } from "../env.js";
 import { recordAudit } from "../lib/audit.js";
 import { interviewPrepRoute } from "./interview-prep.js";
@@ -24,6 +26,7 @@ import {
   interviewPrepAdoptDraftPath,
   interviewPrepAnswerTemplatePath,
   interviewPrepAssignmentPath,
+  interviewPrepFixNotePath,
   interviewPrepProgressPath,
   minimalSkillSheetPayload,
   mintInterviewPrepTestToken,
@@ -70,6 +73,9 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
       if (!state) throw new actual.ApiError("テスト state が未設定です", 500);
 
       const targetProfileId = c.req.param("profileId") || c.req.query("profileId") || undefined;
+      // where 句を解釈しないモック DB のため、 質問単位 / 行単位のクエリは
+      // ルートパラメータを条件として渡す (改善点メモの追加・消し込み)。
+      const noParam = Number.parseInt(c.req.param("no") ?? "", 10);
       return {
         caller: {
           id: profile.id,
@@ -82,6 +88,8 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
           callerId: profile.id,
           callerTenantId: profile.tenantId,
           targetProfileId,
+          questionNo: Number.isInteger(noParam) ? noParam : undefined,
+          rowId: c.req.param("id") || undefined,
         }),
       };
     }),
@@ -809,5 +817,254 @@ describe("my-answer-memo retirement (#206)", () => {
     for (const row of body.rows) {
       expect(row).not.toHaveProperty("my_answer");
     }
+  });
+});
+
+describe("改善点メモ (#234)", () => {
+  let env: Env;
+  let state: InterviewPrepTestState;
+
+  beforeEach(async () => {
+    env = createInterviewPrepTestEnv();
+    state = createInterviewPrepTestState();
+    (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =
+      state;
+
+    // 学習者に PHP を割り当てる (No.101 が可視、 No.103 は割当範囲外)。
+    const { app } = createTestApp(env);
+    const salesToken = await mintInterviewPrepTestToken("seed-sales");
+    await putAssignment(
+      app,
+      env,
+      salesToken,
+      SEED_PROFILES.learner.id,
+      putAssignmentBody({ categories: ["PHP"] }),
+    );
+  });
+
+  const addNote = async (token: string, questionNo: number, text: unknown) => {
+    const { app } = createTestApp(env);
+    return request(app, env, interviewPrepFixNotePath(questionNo), {
+      method: "POST",
+      body: JSON.stringify({ text }),
+      token,
+    });
+  };
+
+  it("受講者はメモを追加でき、 質問一覧に未解決として同梱される", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+
+    const created = await addNote(token, 101, "  結論から  先に ");
+    expect(created.status).toBe(201);
+    const createdBody = await created.json();
+    expect(createdBody.note).toMatchObject({
+      question_no: 101,
+      text: "結論から 先に",
+      resolved_at: null,
+    });
+    expect(typeof createdBody.note.id).toBe("string");
+
+    const { app } = createTestApp(env);
+    const res = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { method: "GET", token });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const row = body.rows.find((r: { no: number }) => r.no === 101);
+    expect(row.fix_notes).toHaveLength(1);
+    expect(row.fix_notes[0]).toMatchObject({ text: "結論から 先に", resolved_at: null });
+    const other = body.rows.find((r: { no: number }) => r.no === 104);
+    expect(other.fix_notes).toEqual([]);
+  });
+
+  it("メモを消し込むと resolved_at が入り、 取り消しで戻せる", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+    const created = await addNote(token, 101, "数字を即答できるように");
+    const { note } = await created.json();
+
+    const { app } = createTestApp(env);
+    const resolved = await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: true }),
+      token,
+    });
+    expect(resolved.status).toBe(200);
+    expect((await resolved.json()).note.resolved_at).not.toBeNull();
+
+    const reopened = await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: false }),
+      token,
+    });
+    expect(reopened.status).toBe(200);
+    expect((await reopened.json()).note.resolved_at).toBeNull();
+  });
+
+  it("空文字のメモは 400 で保存しない", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+
+    const res = await addNote(token, 101, "   ");
+
+    expect(res.status).toBe(400);
+    expect(state.fixNotes).toHaveLength(0);
+  });
+
+  it("割当範囲外の質問には付けられない", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+
+    const res = await addNote(token, 103, "JS の質問へのメモ");
+
+    expect(res.status).toBe(403);
+    expect(state.fixNotes).toHaveLength(0);
+  });
+
+  it("受講者以外は追加できない", async () => {
+    const token = await mintInterviewPrepTestToken("seed-instructor");
+
+    const res = await addNote(token, 101, "講師のメモ");
+
+    expect(res.status).toBe(403);
+    expect(state.fixNotes).toHaveLength(0);
+  });
+
+  it("他人のメモは消し込めない", async () => {
+    const ownerToken = await mintInterviewPrepTestToken("seed-learner");
+    const created = await addNote(ownerToken, 101, "本人のメモ");
+    const { note } = await created.json();
+
+    const { app } = createTestApp(env);
+    const otherToken = await mintInterviewPrepTestToken("seed-learner-b");
+    const res = await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: true }),
+      token: otherToken,
+    });
+
+    expect(res.status).toBe(404);
+    expect(state.fixNotes[0]?.resolvedAt).toBeNull();
+  });
+
+  it("消し込みの取り消しも未解決の上限を超えない", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+    const { app } = createTestApp(env);
+
+    // 上限ちょうどまで溜める → 1 件消し込む → 空いた枠を新しいメモで埋める。
+    const created: string[] = [];
+    for (let i = 0; i < FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION; i++) {
+      const res = await addNote(token, 101, `メモ ${i}`);
+      expect(res.status).toBe(201);
+      created.push((await res.json()).note.id);
+    }
+    const first = created[0] as string;
+    const resolved = await request(app, env, interviewPrepFixNotePath(first), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: true }),
+      token,
+    });
+    expect(resolved.status).toBe(200);
+    expect((await addNote(token, 101, "入れ替えのメモ")).status).toBe(201);
+
+    // ここで消し込みを取り消すと未解決が上限を 1 件超えるので拒否される。
+    const reopened = await request(app, env, interviewPrepFixNotePath(first), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: false }),
+      token,
+    });
+
+    expect(reopened.status).toBe(400);
+    expect(state.fixNotes.find((n) => n.id === first)?.resolvedAt).not.toBeNull();
+  });
+
+  it("上限に余裕があれば消し込みを取り消せる", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+    const { app } = createTestApp(env);
+    const created = await addNote(token, 101, "戻せるメモ");
+    const { note } = await created.json();
+
+    await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: true }),
+      token,
+    });
+    const reopened = await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: false }),
+      token,
+    });
+
+    expect(reopened.status).toBe(200);
+    expect((await reopened.json()).note.resolved_at).toBeNull();
+  });
+
+  it("resolved が真偽値でなければ 400", async () => {
+    const token = await mintInterviewPrepTestToken("seed-learner");
+    const created = await addNote(token, 101, "メモ");
+    const { note } = await created.json();
+
+    const { app } = createTestApp(env);
+    const res = await request(app, env, interviewPrepFixNotePath(note.id), {
+      method: "PUT",
+      body: JSON.stringify({ resolved: "yes" }),
+      token,
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("深掘り音声 (#234)", () => {
+  let env: Env;
+  let state: InterviewPrepTestState;
+
+  beforeEach(() => {
+    env = createInterviewPrepTestEnv();
+    state = createInterviewPrepTestState();
+    (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =
+      state;
+  });
+
+  it("audio の part が不正なら 400", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-learner");
+
+    const res = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/104/audio?part=deep9`, {
+      method: "GET",
+      token,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("生成は質問文と深掘りを合わせて 10 件までに制限する", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        nos: [101, 102, 103, 104, 105, 106],
+        segments: [
+          { no: 101, part: "deep1" },
+          { no: 101, part: "deep2" },
+          { no: 102, part: "deep1" },
+          { no: 102, part: "deep2" },
+          { no: 103, part: "deep1" },
+        ],
+      }),
+      token,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("segments の指定が不正なら 400", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ segments: [{ no: 101, part: "answer" }] }),
+      token,
+    });
+
+    expect(res.status).toBe(400);
   });
 });

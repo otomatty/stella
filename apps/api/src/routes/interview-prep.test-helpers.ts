@@ -27,6 +27,11 @@ export const interviewPrepAdoptDraftPath = (profileId: string, questionNo: numbe
 export const interviewPrepProgressPath = (questionNo: number) =>
   `${INTERVIEW_PREP_PROGRESS_PATH}/${questionNo}`;
 
+export const INTERVIEW_PREP_FIX_NOTES_PATH = "/api/interview-prep/fix-notes";
+
+export const interviewPrepFixNotePath = (questionNoOrId: number | string) =>
+  `${INTERVIEW_PREP_FIX_NOTES_PATH}/${questionNoOrId}`;
+
 export const TEST_JWT_SECRET = "interview-prep-test-secret";
 
 export const SEED_PROFILES = {
@@ -92,12 +97,24 @@ export interface GenerationJobRow {
   createdAt: Date;
 }
 
+/** Issue #234 — 改善点メモ (interview_fix_notes)。 */
+export interface FixNoteRow {
+  id: string;
+  tenantId: string;
+  profileId: string;
+  questionNo: number;
+  text: string;
+  createdAt: Date;
+  resolvedAt: Date | null;
+}
+
 export interface InterviewPrepTestState {
   assignments: Map<string, InterviewPrepAssignmentRow>;
   notifications: Array<Record<string, unknown>>;
   skillSheets: Map<string, SkillSheetRow>;
   personalTemplates: Map<string, PersonalAnswerTemplateRow>;
   generationJobs: GenerationJobRow[];
+  fixNotes: FixNoteRow[];
 }
 
 /** Fixture bank for #206 — assigned PHP A/B, JS A, and common A. */
@@ -243,6 +260,7 @@ export function createInterviewPrepTestState(): InterviewPrepTestState {
     skillSheets: new Map(),
     personalTemplates: new Map(),
     generationJobs: [],
+    fixNotes: [],
   };
 }
 
@@ -271,6 +289,10 @@ interface DbContext {
   callerId: string;
   callerTenantId: string;
   targetProfileId?: string;
+  /** ルートの :no (改善点メモの追加など質問単位のクエリで where の代わりに使う)。 */
+  questionNo?: number;
+  /** ルートの :id (改善点メモの消し込み)。 */
+  rowId?: string;
 }
 
 function resolveAssignment(
@@ -345,6 +367,10 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_questions") {
+      // 1 件取得 (loadVisibleQuestion) はルートの :no を条件にする。 where 句は解釈しない。
+      if (limit === 1 && ctx.questionNo !== undefined) {
+        return TEST_INTERVIEW_QUESTIONS.filter((q) => q.no === ctx.questionNo);
+      }
       return TEST_INTERVIEW_QUESTIONS;
     }
 
@@ -368,6 +394,31 @@ export function createInterviewPrepTestDb(
         generatedFrom: t.generatedFrom,
         source: t.source,
         updatedBy: t.updatedBy,
+      }));
+    }
+
+    if (fromTable === "interview_fix_notes") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      const mine = state.fixNotes.filter(
+        (n) => n.tenantId === ctx.callerTenantId && n.profileId === profileId,
+      );
+      // where 句は解釈しないので、 ルートパラメータで絞る:
+      //   :no があればその質問、 :id の 1 件取得はその行、 :id の一覧はその行と同じ質問。
+      const targetOfRowId = ctx.rowId ? mine.find((n) => n.id === ctx.rowId) : undefined;
+      const scoped =
+        ctx.questionNo !== undefined
+          ? mine.filter((n) => n.questionNo === ctx.questionNo)
+          : ctx.rowId
+            ? limit === 1
+              ? mine.filter((n) => n.id === ctx.rowId)
+              : mine.filter((n) => n.questionNo === targetOfRowId?.questionNo)
+            : mine;
+      return scoped.map((n) => ({
+        id: n.id,
+        questionNo: n.questionNo,
+        text: n.text,
+        createdAt: n.createdAt,
+        resolvedAt: n.resolvedAt,
       }));
     }
 
@@ -485,6 +536,28 @@ export function createInterviewPrepTestDb(
             return {
               onConflictDoUpdate: () => Promise.resolve(undefined),
               returning: async () => [{ id: rows[0]?.id ?? "sheet-1" }],
+            };
+          }
+          if (name === "interview_fix_notes") {
+            const created: FixNoteRow[] = rows.map((row, i) => ({
+              id: (row.id as string) ?? `fix-note-${state.fixNotes.length + i + 1}`,
+              tenantId: row.tenantId as string,
+              profileId: row.profileId as string,
+              questionNo: row.questionNo as number,
+              text: row.text as string,
+              createdAt: (row.createdAt as Date | undefined) ?? new Date(),
+              resolvedAt: (row.resolvedAt as Date | null | undefined) ?? null,
+            }));
+            state.fixNotes.push(...created);
+            return {
+              returning: async () =>
+                created.map((n) => ({
+                  id: n.id,
+                  questionNo: n.questionNo,
+                  text: n.text,
+                  createdAt: n.createdAt,
+                  resolvedAt: n.resolvedAt,
+                })),
             };
           }
           if (name === "generation_jobs") {
@@ -613,6 +686,25 @@ export function createInterviewPrepTestDb(
                 return [...state.personalTemplates.values()].filter(
                   (t) => t.profileId === profileId,
                 );
+              }
+              if (name === "interview_fix_notes") {
+                const target = state.fixNotes.find(
+                  (n) =>
+                    n.id === ctx.rowId &&
+                    n.tenantId === ctx.callerTenantId &&
+                    n.profileId === ctx.callerId,
+                );
+                if (!target) return [];
+                target.resolvedAt = (set.resolvedAt as Date | null) ?? null;
+                return [
+                  {
+                    id: target.id,
+                    questionNo: target.questionNo,
+                    text: target.text,
+                    createdAt: target.createdAt,
+                    resolvedAt: target.resolvedAt,
+                  },
+                ];
               }
               if (name === "generation_jobs") {
                 for (const job of state.generationJobs) {

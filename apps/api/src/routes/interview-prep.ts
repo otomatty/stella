@@ -13,8 +13,22 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { visibleQuestions } from "@falcon/shared/interview/filter";
+import {
+  type InterviewAudioPart,
+  type InterviewAudioSegment,
+  interviewAudioObjectName,
+  interviewAudioSegmentId,
+  interviewAudioSegments,
+  isInterviewAudioPart,
+  parseInterviewAudioObjectName,
+} from "@falcon/shared/interview/audio";
+import {
+  FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION,
+  normalizeFixNoteText,
+} from "@falcon/shared/interview/fix-notes";
 
 import {
+  interviewFixNotes,
   interviewPrepAssignments,
   interviewProgress,
   interviewQuestions,
@@ -75,32 +89,40 @@ const TTS_BATCH_LIMIT = 10;
 /** 練習録音の受け付け上限。 webm/opus なら 10 分超に相当し、 base64 化しても Workers の制限内。 */
 const MAX_RECORDING_BYTES = 8 * 1024 * 1024;
 
-function ttsKey(no: number): string {
-  return `${TTS_PREFIX}/${no}.mp3`;
+function ttsKey(no: number, part: InterviewAudioPart = "question"): string {
+  return `${TTS_PREFIX}/${interviewAudioObjectName(no, part)}`;
 }
 
 /**
- * R2 上に音声が登録済みの質問番号を列挙する (質問一覧・管理画面の表示用)。
+ * R2 上に音声が登録済みのセグメントを列挙する (質問一覧・管理画面の表示用)。
  * 音声は任意の付加機能なので、 R2 の一時障害で質問一覧そのものを落とさない
- * (失敗時は空配列 = 再生ボタンを出さないだけ)。
+ * (失敗時は空 = 再生ボタンを出さないだけ)。
+ *
+ * `audioNos` は質問文の音声だけ (既存クライアント互換)、 `audioSegments` は
+ * 深掘りを含む全セグメント (`12:deep1` 形式) を返す。
  */
-async function listAudioNos(bucket: R2Bucket | undefined): Promise<number[]> {
-  if (!bucket) return [];
+async function listAudioSegments(
+  bucket: R2Bucket | undefined,
+): Promise<{ audioNos: number[]; audioSegments: string[] }> {
+  if (!bucket) return { audioNos: [], audioSegments: [] };
   try {
     const nos: number[] = [];
+    const segments: string[] = [];
     let cursor: string | undefined;
     do {
       const page = await bucket.list({ prefix: `${TTS_PREFIX}/`, cursor });
       for (const obj of page.objects) {
-        const no = Number.parseInt(obj.key.slice(TTS_PREFIX.length + 1), 10);
-        if (Number.isInteger(no) && no > 0) nos.push(no);
+        const parsed = parseInterviewAudioObjectName(obj.key.slice(TTS_PREFIX.length + 1));
+        if (!parsed) continue;
+        if (parsed.part === "question") nos.push(parsed.no);
+        segments.push(interviewAudioSegmentId(parsed.no, parsed.part));
       }
       cursor = page.truncated ? page.cursor : undefined;
     } while (cursor);
-    return nos.sort((a, b) => a - b);
+    return { audioNos: nos.sort((a, b) => a - b), audioSegments: segments.sort() };
   } catch (e) {
     console.error("[interview-prep] failed to list question audio; serving without it", e);
-    return [];
+    return { audioNos: [], audioSegments: [] };
   }
 }
 
@@ -181,6 +203,33 @@ function mapStaffQuestionRows(rows: InterviewQuestion[]) {
   }));
 }
 
+/** API が返す改善点メモ 1 行 (日時は ISO 文字列)。 */
+interface SerializedFixNote {
+  id: string;
+  question_no: number;
+  text: string;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+function serializeFixNote(row: {
+  id: string;
+  questionNo: number;
+  text: string;
+  createdAt: Date | string;
+  resolvedAt: Date | string | null;
+}): SerializedFixNote {
+  const iso = (v: Date | string | null): string | null =>
+    v == null ? null : v instanceof Date ? v.toISOString() : new Date(v).toISOString();
+  return {
+    id: row.id,
+    question_no: row.questionNo,
+    text: row.text,
+    created_at: iso(row.createdAt) ?? new Date(0).toISOString(),
+    resolved_at: iso(row.resolvedAt),
+  };
+}
+
 /** 質問ごとの学習ステータス (interview_progress) を行に同梱する。 行なし = 未着手。 */
 async function attachProgress<T extends { no: number }>(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
@@ -209,6 +258,38 @@ async function attachProgress<T extends { no: number }>(
   });
 }
 
+/**
+ * 改善点メモ (Issue #234) を質問行に同梱する。 未解決分は音声セッションで答える直前に、
+ * 全件は準備タブの質問ドロワーの履歴に使う。
+ */
+async function attachFixNotes<T extends { no: number }>(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+  rows: T[],
+): Promise<Array<T & { fix_notes: SerializedFixNote[] }>> {
+  const noteRows = await db
+    .select({
+      id: interviewFixNotes.id,
+      questionNo: interviewFixNotes.questionNo,
+      text: interviewFixNotes.text,
+      createdAt: interviewFixNotes.createdAt,
+      resolvedAt: interviewFixNotes.resolvedAt,
+    })
+    .from(interviewFixNotes)
+    .where(
+      and(eq(interviewFixNotes.tenantId, tenantId), eq(interviewFixNotes.profileId, profileId)),
+    );
+  const byNo = new Map<number, SerializedFixNote[]>();
+  for (const row of noteRows) {
+    const list = byNo.get(row.questionNo);
+    const note = serializeFixNote(row);
+    if (list) list.push(note);
+    else byNo.set(row.questionNo, [note]);
+  }
+  return rows.map((row) => ({ ...row, fix_notes: byNo.get(row.no) ?? [] }));
+}
+
 /** 質問一覧。 受講者は割当カテゴリ + 共通のみ、 staff は全件。 staff は ?profileId= で受講者の個別回答の型も取得可。 */
 interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
   try {
@@ -220,8 +301,8 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       .orderBy(asc(interviewQuestions.no));
 
     const profileIdParam = c.req.query("profileId")?.trim() || null;
-    // 読み上げ音声が登録済みの質問番号。 UI はこれに含まれる質問だけ再生ボタンを出す。
-    const audioNos = await listAudioNos(c.env.MATERIALS_BUCKET);
+    // 読み上げ音声が登録済みのセグメント。 UI はこれに含まれるものだけ再生する。
+    const { audioNos, audioSegments } = await listAudioSegments(c.env.MATERIALS_BUCKET);
 
     if (canManageInterviewPrep(caller.role)) {
       if (profileIdParam) {
@@ -248,23 +329,30 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           profileIdParam,
         );
         return c.json({
-          rows: await attachProgress(
+          rows: await attachFixNotes(
             db,
             caller.tenantId,
             profileIdParam,
-            enrichQuestionRows(visible, personalByQuestion),
+            await attachProgress(
+              db,
+              caller.tenantId,
+              profileIdParam,
+              enrichQuestionRows(visible, personalByQuestion),
+            ),
           ),
           assignedCategories: categories,
           interviewDate: assigned[0]?.interviewDate ?? null,
           note: assigned[0]?.note ?? null,
           profileId: profileIdParam,
           audioNos,
+          audioSegments,
         });
       }
       return c.json({
         rows: mapStaffQuestionRows(rows),
         assignedCategories: [...ASSIGNABLE_CATEGORIES],
         audioNos,
+        audioSegments,
       });
     }
 
@@ -293,16 +381,22 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       caller.id,
     );
     return c.json({
-      rows: await attachProgress(
+      rows: await attachFixNotes(
         db,
         caller.tenantId,
         caller.id,
-        enrichQuestionRows(visible, personalByQuestion),
+        await attachProgress(
+          db,
+          caller.tenantId,
+          caller.id,
+          enrichQuestionRows(visible, personalByQuestion),
+        ),
       ),
       assignedCategories: categories,
       interviewDate: assigned[0]?.interviewDate ?? null,
       note: assigned[0]?.note ?? null,
       audioNos,
+      audioSegments,
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -564,6 +658,54 @@ interviewPrepRoute.post(
   },
 );
 
+/**
+ * 生成対象セグメントの解釈。 `nos` は質問文のみ、 `segments` は深掘りを含む指定。
+ * 重複は畳んで、 合計が TTS_BATCH_LIMIT を超えたら 400 (直列生成の実行時間を抑える)。
+ */
+function parseAudioGenerateTargets(body: {
+  nos?: unknown;
+  segments?: unknown;
+}): Array<{ no: number; part: InterviewAudioPart }> {
+  const targets: Array<{ no: number; part: InterviewAudioPart }> = [];
+  const seen = new Set<string>();
+  const push = (no: number, part: InterviewAudioPart) => {
+    const id = interviewAudioSegmentId(no, part);
+    if (seen.has(id)) return;
+    seen.add(id);
+    targets.push({ no, part });
+  };
+
+  if (body.nos !== undefined) {
+    if (
+      !Array.isArray(body.nos) ||
+      !body.nos.every((n): n is number => Number.isInteger(n) && (n as number) > 0)
+    ) {
+      throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
+    }
+    for (const no of body.nos) push(no, "question");
+  }
+  if (body.segments !== undefined) {
+    if (!Array.isArray(body.segments)) {
+      throw new ApiError("segments は { no, part } の配列で指定してください", 400);
+    }
+    for (const raw of body.segments) {
+      const seg = raw as { no?: unknown; part?: unknown };
+      if (!Number.isInteger(seg.no) || (seg.no as number) <= 0 || !isInterviewAudioPart(seg.part)) {
+        throw new ApiError("segments は { no, part } の配列で指定してください", 400);
+      }
+      push(seg.no as number, seg.part);
+    }
+  }
+
+  if (targets.length === 0) {
+    throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
+  }
+  if (targets.length > TTS_BATCH_LIMIT) {
+    throw new ApiError(`一度に生成できるのは ${TTS_BATCH_LIMIT} 件までです`, 400);
+  }
+  return targets;
+}
+
 // ---------------------------------------------------------------------------
 // 音声 (Workers AI): 質問読み上げは admin が事前生成して R2 登録、 受講者向け GET は
 // 配信のみで AI を呼ばない。 回答の文字起こしは Whisper large-v3-turbo。
@@ -604,18 +746,23 @@ async function loadVisibleQuestion(
 }
 
 /**
- * 質問文の読み上げ音声 (MP3) の配信。 admin が事前生成して R2 に登録した音声を
- * 返すだけで、 ここでは AI を呼ばない。 未登録は 404 (UI は再生ボタンを出さない)。
+ * 読み上げ音声 (MP3) の配信。 admin が事前生成して R2 に登録した音声を返すだけで、
+ * ここでは AI を呼ばない。 未登録は 404 (UI は再生ボタンを出さない)。
+ * `?part=deep1` で深掘り①〜③の音声も同じ経路で配信する (Issue #234)。
  */
 interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
   try {
     const no = Number.parseInt(c.req.param("no"), 10);
     if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
+    const partParam = c.req.query("part") ?? "question";
+    if (!isInterviewAudioPart(partParam)) {
+      throw new ApiError("part は question / deep1 / deep2 / deep3 で指定してください", 400);
+    }
     await loadVisibleQuestion(c, no);
 
     const bucket = c.env.MATERIALS_BUCKET;
     if (!bucket) throw new ApiError("音声機能は未設定です (R2 バインディングなし)", 503);
-    const object = await bucket.get(ttsKey(no));
+    const object = await bucket.get(ttsKey(no, partParam));
     if (!object) throw new ApiError("この質問の音声は未登録です", 404);
 
     return new Response(object.body, {
@@ -633,26 +780,21 @@ interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
 });
 
 /**
- * admin: 指定した質問の読み上げ音声を TTS モデル (既定 Grok TTS) で生成し R2 へ登録する。
- * 既存キーは上書き (= 再生成)。 コスト管理のため生成はこのエンドポイントに閉じ、
- * 1 回の呼び出しで最大 TTS_BATCH_LIMIT 問まで直列に処理する。
+ * admin: 指定したセグメント (質問文 / 深掘り①〜③) の読み上げ音声を TTS モデル
+ * (既定 Grok TTS) で生成し R2 へ登録する。 既存キーは上書き (= 再生成)。
+ * コスト管理のため生成はこのエンドポイントに閉じ、 1 回の呼び出しで最大
+ * TTS_BATCH_LIMIT セグメントまで直列に処理する。
+ *
+ * body は `{ nos: number[] }` (質問文のみ — 従来の形) と
+ * `{ segments: [{ no, part }] }` (深掘りを含む) の両方を受ける。
  */
 interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "admin", "platform_admin");
 
-    const body = (await c.req.json()) as { nos?: unknown };
-    if (
-      !Array.isArray(body.nos) ||
-      body.nos.length === 0 ||
-      !body.nos.every((n): n is number => Number.isInteger(n) && (n as number) > 0)
-    ) {
-      throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
-    }
-    if (body.nos.length > TTS_BATCH_LIMIT) {
-      throw new ApiError(`一度に生成できるのは ${TTS_BATCH_LIMIT} 問までです`, 400);
-    }
+    const body = (await c.req.json()) as { nos?: unknown; segments?: unknown };
+    const requested = parseAudioGenerateTargets(body);
 
     if (!workersAiConfigured(c.env)) {
       throw new ApiError("音声機能は未設定です (WORKERS_AI_API_TOKEN を設定してください)", 503);
@@ -664,34 +806,56 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
     if (limited) return limited;
 
     const questions = await db
-      .select({ no: interviewQuestions.no, question: interviewQuestions.question })
+      .select({
+        no: interviewQuestions.no,
+        question: interviewQuestions.question,
+        deep1: interviewQuestions.deep1,
+        deep2: interviewQuestions.deep2,
+        deep3: interviewQuestions.deep3,
+      })
       .from(interviewQuestions)
       .where(eq(interviewQuestions.tenantId, caller.tenantId));
-    const byNo = new Map(questions.map((q) => [q.no, q.question]));
+    /** 質問番号 → セグメント (質問文 + 本文のある深掘り) の読み上げテキスト。 */
+    const textByNo = new Map<number, Map<InterviewAudioPart, string>>();
+    for (const q of questions) {
+      const segments: InterviewAudioSegment[] = interviewAudioSegments(q);
+      textByNo.set(q.no, new Map(segments.map((seg) => [seg.part, seg.text])));
+    }
 
     const lang = c.env.INTERVIEW_TTS_LANG ?? "ja";
-    const results: Array<{ no: number; ok: boolean; error?: string }> = [];
-    for (const no of body.nos) {
-      const text = byNo.get(no);
+    const results: Array<{ no: number; part: InterviewAudioPart; ok: boolean; error?: string }> =
+      [];
+    for (const target of requested) {
+      const text = textByNo.get(target.no)?.get(target.part);
       if (!text) {
-        results.push({ no, ok: false, error: "質問が見つかりません" });
+        results.push({
+          ...target,
+          ok: false,
+          error: target.part === "question" ? "質問が見つかりません" : "この深掘りは空です",
+        });
         continue;
       }
       try {
         const bytes = await synthesizeSpeech(c.env, text, lang);
-        await bucket.put(ttsKey(no), bytes, { httpMetadata: { contentType: "audio/mpeg" } });
-        results.push({ no, ok: true });
+        await bucket.put(ttsKey(target.no, target.part), bytes, {
+          httpMetadata: { contentType: "audio/mpeg" },
+        });
+        results.push({ ...target, ok: true });
       } catch (e) {
-        results.push({ no, ok: false, error: e instanceof Error ? e.message : String(e) });
+        results.push({
+          ...target,
+          ok: false,
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
     await recordAudit(db, caller, {
       action: "interview_tts_generate",
       targetType: "interview_question_audio",
-      targetId: body.nos.join(","),
+      targetId: requested.map((t) => interviewAudioSegmentId(t.no, t.part)).join(","),
       ip: clientIp(c),
-      metadata: { requested: body.nos.length, succeeded: results.filter((r) => r.ok).length },
+      metadata: { requested: requested.length, succeeded: results.filter((r) => r.ok).length },
     });
     return c.json({ results });
   } catch (err) {
@@ -807,6 +971,155 @@ interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
       });
 
     return c.json({ ok: true });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 改善点メモ (Issue #234): 振り返りで受講者が書き、 次回その質問に答える直前に再表示する。
+// ---------------------------------------------------------------------------
+
+/**
+ * 受講者: 質問に改善点メモを 1 行足す。 定型チップも自由入力も同じ扱い。
+ * 溜まりすぎると練習直前の再表示が読めなくなるため、 未解決の上限を超えたら 400。
+ */
+/** 未解決メモの上限に達したときのエラー文 (追加・消し込みの取り消しで共用)。 */
+function unresolvedLimitMessage(): string {
+  return `未解決の改善点メモは 1 問あたり ${FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION} 件までです。 克服したものを消し込んでください`;
+}
+
+/** その質問に付いている自分のメモ (未解決の件数を数えるのに使う)。 */
+async function loadFixNotesForQuestion(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+  questionNo: number,
+): Promise<Array<{ resolvedAt: Date | string | null }>> {
+  return db
+    .select({ resolvedAt: interviewFixNotes.resolvedAt })
+    .from(interviewFixNotes)
+    .where(
+      and(
+        eq(interviewFixNotes.tenantId, tenantId),
+        eq(interviewFixNotes.profileId, profileId),
+        eq(interviewFixNotes.questionNo, questionNo),
+      ),
+    );
+}
+
+interviewPrepRoute.post("/api/interview-prep/fix-notes/:no", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "student");
+    const no = Number.parseInt(c.req.param("no"), 10);
+    if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
+
+    const body = (await c.req.json()) as { text?: unknown };
+    const text = normalizeFixNoteText(body.text);
+    if (text === "") throw new ApiError("text が必要です", 400);
+
+    await loadVisibleQuestion(c, no);
+
+    const existing = await loadFixNotesForQuestion(db, caller.tenantId, caller.id, no);
+    if (
+      existing.filter((n) => n.resolvedAt == null).length >= FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION
+    ) {
+      throw new ApiError(unresolvedLimitMessage(), 400);
+    }
+
+    const inserted = await db
+      .insert(interviewFixNotes)
+      .values({
+        tenantId: caller.tenantId,
+        profileId: caller.id,
+        questionNo: no,
+        text,
+      })
+      .returning({
+        id: interviewFixNotes.id,
+        questionNo: interviewFixNotes.questionNo,
+        text: interviewFixNotes.text,
+        createdAt: interviewFixNotes.createdAt,
+        resolvedAt: interviewFixNotes.resolvedAt,
+      });
+    const row = inserted[0];
+    if (!row) throw new ApiError("改善点メモを保存できませんでした", 500);
+
+    return c.json({ note: serializeFixNote(row) }, 201);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 受講者: 改善点メモの消し込み (`{ resolved: true }`) と取り消し (`false`)。 */
+interviewPrepRoute.put("/api/interview-prep/fix-notes/:id", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "student");
+    const id = c.req.param("id");
+
+    const body = (await c.req.json()) as { resolved?: unknown };
+    if (typeof body.resolved !== "boolean") {
+      throw new ApiError("resolved は真偽値で指定してください", 400);
+    }
+
+    if (!body.resolved) {
+      // 消し込みの取り消しも上限の対象。 消し込んで足して戻す、 を繰り返せば
+      // 未解決が上限を超え、 練習直前の再表示が読めない量になってしまう。
+      const target = await db
+        .select({
+          questionNo: interviewFixNotes.questionNo,
+          resolvedAt: interviewFixNotes.resolvedAt,
+        })
+        .from(interviewFixNotes)
+        .where(
+          and(
+            eq(interviewFixNotes.id, id),
+            eq(interviewFixNotes.tenantId, caller.tenantId),
+            eq(interviewFixNotes.profileId, caller.id),
+          ),
+        )
+        .limit(1);
+      if (!target[0]) throw new ApiError("改善点メモが見つかりません", 404);
+      if (target[0].resolvedAt != null) {
+        const siblings = await loadFixNotesForQuestion(
+          db,
+          caller.tenantId,
+          caller.id,
+          target[0].questionNo,
+        );
+        if (
+          siblings.filter((n) => n.resolvedAt == null).length >=
+          FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION
+        ) {
+          throw new ApiError(unresolvedLimitMessage(), 400);
+        }
+      }
+    }
+
+    // 他人のメモを触れないよう、 更新条件にテナントと本人を含める (無ければ 404)。
+    const updated = await db
+      .update(interviewFixNotes)
+      .set({ resolvedAt: body.resolved ? new Date() : null })
+      .where(
+        and(
+          eq(interviewFixNotes.id, id),
+          eq(interviewFixNotes.tenantId, caller.tenantId),
+          eq(interviewFixNotes.profileId, caller.id),
+        ),
+      )
+      .returning({
+        id: interviewFixNotes.id,
+        questionNo: interviewFixNotes.questionNo,
+        text: interviewFixNotes.text,
+        createdAt: interviewFixNotes.createdAt,
+        resolvedAt: interviewFixNotes.resolvedAt,
+      });
+    const row = updated[0];
+    if (!row) throw new ApiError("改善点メモが見つかりません", 404);
+
+    return c.json({ note: serializeFixNote(row) });
   } catch (err) {
     return errorResponse(c, err);
   }

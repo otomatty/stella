@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Mic,
-  Pause,
-  Play,
-  Square,
-  Volume2,
-  X,
-} from "@/lib/icons";
+import { ChevronDown, ChevronRight, Play, Volume2 } from "@/lib/icons";
 import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import type { LearnerInterviewQuestion, ProgressEvent } from "@/lib/interview-prep-api";
+import type { FixNote } from "@falcon/shared/interview/fix-notes";
+import { summarizeFixNotes } from "@falcon/shared/interview/fix-notes";
 import type { ProfileRole } from "@falcon/shared/cms/types";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
 import { tagMatches } from "@falcon/shared/interview/filter";
@@ -27,11 +19,10 @@ import {
 import {
   adoptPersonalAnswerTemplateDraft,
   fetchInterviewQuestions,
-  fetchQuestionAudio,
   reportInterviewProgress,
   savePersonalAnswerTemplate,
-  transcribeRecording,
 } from "@/lib/interview-prep-api";
+import { FixNoteEditor, InterviewVoiceSession } from "@/components/learner/InterviewVoiceSession";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/components/ui/chip";
 import type { Role } from "@/data/types";
@@ -50,19 +41,6 @@ const FREQ_LABELS: Record<Exclude<Freq, "ALL">, string> = {
  */
 function AnswerTemplateText({ template }: { template: string }) {
   return <span className="whitespace-pre-wrap">{template}</span>;
-}
-
-function shuffle(nos: number[]): number[] {
-  const a = [...nos];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const left = a[i];
-    const right = a[j];
-    if (left === undefined || right === undefined) continue;
-    a[i] = right;
-    a[j] = left;
-  }
-  return a;
 }
 
 function daysUntilInterview(dateStr: string): number {
@@ -181,6 +159,7 @@ export function InterviewPrepPage({
   const [rows, setRows] = useState<LearnerInterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
   const [audioNos, setAudioNos] = useState<number[]>([]);
+  const [audioSegments, setAudioSegments] = useState<string[]>([]);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
   const [interviewNote, setInterviewNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
@@ -230,6 +209,7 @@ export function InterviewPrepPage({
         seedConfirmed(r.rows);
         setAssigned(r.assignedCategories);
         setAudioNos(r.audioNos);
+        setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
       })
@@ -252,6 +232,7 @@ export function InterviewPrepPage({
         seedConfirmed(r.rows);
         setAssigned(r.assignedCategories);
         setAudioNos(r.audioNos);
+        setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
       })
@@ -321,6 +302,23 @@ export function InterviewPrepPage({
             : "進捗を保存できませんでした",
         );
       });
+  };
+
+  /**
+   * 改善点メモの追加・消し込みを行に反映する。 追加も消し込みも更新後の 1 行が返るので、
+   * 同じ id を差し替えるだけで済む (全件読み直すと練習中の出題順が作り直される)。
+   */
+  const applyFixNote = (note: FixNote) => {
+    setRows((rs) =>
+      rs.map((r) => {
+        if (r.no !== note.question_no) return r;
+        const notes = r.fix_notes ?? [];
+        const next = notes.some((n) => n.id === note.id)
+          ? notes.map((n) => (n.id === note.id ? note : n))
+          : [...notes, note];
+        return { ...r, fix_notes: next };
+      }),
+    );
   };
 
   // 準備率 (割当範囲全体の A 必修が対象。 画面のフィルタには影響されない)
@@ -524,20 +522,21 @@ export function InterviewPrepPage({
         <PrepChecklist
           pool={pool}
           backendEnabled={backendEnabled}
-          profileId={profileId}
-          audioNos={audioNos}
-          onRefresh={reloadRows}
-          onProgress={reportProgress}
-        />
-      ) : (
-        <QuizMode
-          pool={pool}
-          backendEnabled={backendEnabled}
           canRecordProgress={canRecordProgress}
           profileId={profileId}
           audioNos={audioNos}
           onRefresh={reloadRows}
           onProgress={reportProgress}
+          onFixNoteChange={applyFixNote}
+        />
+      ) : (
+        <InterviewVoiceSession
+          pool={pool}
+          audioSegments={audioSegments}
+          backendEnabled={backendEnabled}
+          canRecordProgress={canRecordProgress}
+          onProgress={reportProgress}
+          onFixNoteChange={applyFixNote}
         />
       )}
     </>
@@ -610,17 +609,22 @@ function FreqBadge({ freq }: { freq: "A" | "B" | "C" }) {
 function PrepChecklist({
   pool,
   backendEnabled,
+  canRecordProgress,
   profileId,
   audioNos,
   onRefresh,
   onProgress,
+  onFixNoteChange,
 }: {
   pool: LearnerInterviewQuestion[];
   backendEnabled: boolean;
+  /** 改善点メモを編集できるか (staff の受講者プレビューでは false)。 */
+  canRecordProgress: boolean;
   profileId?: string | null;
   audioNos: number[];
   onRefresh: () => void;
   onProgress: (no: number, event: ProgressEvent) => void;
+  onFixNoteChange: (note: FixNote) => void;
 }) {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const audioSet = useMemo(() => new Set(audioNos), [audioNos]);
@@ -694,6 +698,11 @@ function PrepChecklist({
                       {d.time ? ` ・ 目安 ${d.time}` : ""}
                     </span>
                   </span>
+                  {summarizeFixNotes(d.fix_notes ?? []).unresolved > 0 ? (
+                    <span className="text-[10.5px] px-1.5 py-[1px] rounded-full bg-warning/15 text-warning font-semibold shrink-0 tabular-nums">
+                      改善点 {summarizeFixNotes(d.fix_notes ?? []).unresolved}
+                    </span>
+                  ) : null}
                   {audioSet.has(d.no) ? (
                     <Volume2 size={14} className="shrink-0 text-ink-4" aria-label="音声あり" />
                   ) : null}
@@ -707,8 +716,10 @@ function PrepChecklist({
                   <QuestionDetail
                     d={d}
                     backendEnabled={backendEnabled}
+                    canRecordProgress={canRecordProgress}
                     profileId={profileId}
                     onRefresh={onRefresh}
+                    onFixNoteChange={onFixNoteChange}
                   />
                 ) : null}
               </Card>
@@ -734,13 +745,17 @@ function DetailBlock({ label, children }: { label: string; children: React.React
 function QuestionDetail({
   d,
   backendEnabled,
+  canRecordProgress,
   profileId,
   onRefresh,
+  onFixNoteChange,
 }: {
   d: LearnerInterviewQuestion;
   backendEnabled: boolean;
+  canRecordProgress: boolean;
   profileId?: string | null;
   onRefresh: () => void;
+  onFixNoteChange: (note: FixNote) => void;
 }) {
   const deeps = [d.deep1, d.deep2, d.deep3].filter((v): v is string => Boolean(v));
   const [shownDeeps, setShownDeeps] = useState<Record<number, boolean>>({});
@@ -874,448 +889,16 @@ function QuestionDetail({
       ) : null}
       {d.ng ? <DetailBlock label="Avoid ・ 避けたい回答">{d.ng}</DetailBlock> : null}
       {d.criteria ? <DetailBlock label="Criteria ・ 評価軸">{d.criteria}</DetailBlock> : null}
-    </div>
-  );
-}
-
-/**
- * 音声練習: 質問を聞く (admin が事前生成した読み上げ音声) → 録音しながら声に出して
- * 答える → Whisper の文字起こしで振り返る。 `key={question.no}` で質問ごとに状態を捨てる。
- */
-const ttsUrlCache = new Map<number, string>();
-
-function VoicePractice({
-  q,
-  hasAudio,
-  onRecordStart,
-  onRecordStop,
-}: {
-  q: LearnerInterviewQuestion;
-  hasAudio: boolean;
-  onRecordStart: () => void;
-  onRecordStop: () => void;
-}) {
-  const [ttsState, setTtsState] = useState<"idle" | "loading" | "playing">("idle");
-  const [recState, setRecState] = useState<"idle" | "recording" | "transcribing" | "done">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<string | null>(null);
-  const [recUrl, setRecUrl] = useState<string | null>(null);
-  /** マイク取得中 (許可ダイアログ表示中を含む)。 ボタンを塞いで二重取得を防ぐ。 */
-  const [acquiring, setAcquiring] = useState(false);
-  const acquiringRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  /**
-   * 音声取得は非同期なので、 fetch 中に質問が変わる (= このインスタンスが unmount される)
-   * ことがある。 その場合 audioRef はまだ空でクリーンアップが効かず、 後から解決した
-   * 前の質問の音声が新しい質問に重なって鳴ってしまうため、 再生前にこのフラグで弾く。
-   */
-  const aliveRef = useRef(true);
-  // クリーンアップから親のタイマー停止を呼ぶための最新参照 (依存配列で再登録しない)。
-  const onRecordStopRef = useRef(onRecordStop);
-  onRecordStopRef.current = onRecordStop;
-
-  // アンマウント時: 再生・録音を止めてマイクを解放する。
-  useEffect(() => {
-    aliveRef.current = true;
-    return () => {
-      aliveRef.current = false;
-      audioRef.current?.pause();
-      const rec = recorderRef.current;
-      if (rec && rec.state !== "inactive") {
-        // 録音中に「次の問題」へ移った場合:
-        //   1. onstop を外してから止める — 旧質問の文字起こし API を裏で叩かせない
-        //   2. 親のタイマーを止める — 次の問題でカウントが走り続けるのを防ぐ
-        rec.onstop = null;
-        rec.stop();
-        onRecordStopRef.current();
-      }
-      for (const track of rec?.stream.getTracks() ?? []) track.stop();
-    };
-  }, []);
-
-  // 録音の objectURL は差し替え時・アンマウント時に解放する。
-  useEffect(() => {
-    return () => {
-      if (recUrl) URL.revokeObjectURL(recUrl);
-    };
-  }, [recUrl]);
-
-  const playTts = async () => {
-    if (ttsState === "playing") {
-      audioRef.current?.pause();
-      setTtsState("idle");
-      return;
-    }
-    // 取得中の再クリックは無視する。 2 本の Audio が同時に鳴り、 audioRef に残る
-    // 最後の 1 本しか停止できなくなるため (ボタン側も loading 中は disabled)。
-    if (ttsState === "loading") return;
-    setError(null);
-    try {
-      let url = ttsUrlCache.get(q.no);
-      if (!url) {
-        setTtsState("loading");
-        const blob = await fetchQuestionAudio(q.no);
-        url = URL.createObjectURL(blob);
-        ttsUrlCache.set(q.no, url);
-      }
-      // fetch 中に質問が切り替わっていたら再生しない (前の質問が重なって鳴るのを防ぐ)。
-      if (!aliveRef.current) return;
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => setTtsState("idle");
-      await audio.play();
-      if (!aliveRef.current) {
-        audio.pause();
-        return;
-      }
-      setTtsState("playing");
-    } catch (e) {
-      if (!aliveRef.current) return;
-      setTtsState("idle");
-      setError(e instanceof Error ? e.message : "音声の再生に失敗しました");
-    }
-  };
-
-  const finishRecording = async (rec: MediaRecorder) => {
-    for (const track of rec.stream.getTracks()) track.stop();
-    // 質問が切り替わった後に発火した場合は、 アップロードも状態更新もしない。
-    if (!aliveRef.current) return;
-    const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
-    if (blob.size === 0) {
-      setRecState("idle");
-      return;
-    }
-    setRecUrl(URL.createObjectURL(blob));
-    setRecState("transcribing");
-    try {
-      const r = await transcribeRecording(q.no, blob);
-      setTranscript(r.transcript || "（無音、または聞き取れませんでした）");
-    } catch (e) {
-      // 文字起こしに失敗しても録音自体は聞き直せる。
-      setError(e instanceof Error ? e.message : "文字起こしに失敗しました");
-    } finally {
-      setRecState("done");
-    }
-  };
-
-  const startRecording = async () => {
-    // マイク許可のダイアログ中は recState が idle のままなので、 連打すると
-    // getUserMedia が複数走って recorderRef が上書きされ、 先に立ち上がった
-    // レコーダーを止める手段が無くなる。 取得中はここで弾く (ボタンも disabled)。
-    if (acquiringRef.current) return;
-    acquiringRef.current = true;
-    setAcquiring(true);
-    setError(null);
-    setTranscript(null);
-    /** 録音開始まで漕ぎ着けなかった場合に解放するストリーム (成功したら undefined にする)。 */
-    let pending: MediaStream | undefined;
-    try {
-      pending = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // 許可のダイアログ中に「次の問題」へ移ると、 クリーンアップは recorderRef が
-      // 空のまま走り終えている。 ここで弾かないとマイクを掴んだまま録音が始まり、
-      // 停止する手段も画面に無くなる (マイクが開きっぱなしになる)。
-      if (!aliveRef.current) return;
-      // Chromium/Firefox は webm/opus、 Safari は mp4 (m4a)。 Whisper はどちらも受け付ける。
-      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((t) =>
-        MediaRecorder.isTypeSupported(t),
-      );
-      const rec = new MediaRecorder(pending, mimeType ? { mimeType } : undefined);
-      recorderRef.current = rec;
-      chunksRef.current = [];
-      rec.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      rec.onstop = () => {
-        void finishRecording(rec);
-      };
-      rec.start();
-      // ここから先はレコーダー側 (停止・アンマウント) がストリームを解放する。
-      pending = undefined;
-      setRecState("recording");
-      onRecordStart();
-    } catch {
-      if (aliveRef.current) {
-        setError("マイクを利用できません。ブラウザのマイク許可を確認してください");
-      }
-    } finally {
-      // 中断・MediaRecorder の生成失敗・start() の失敗のいずれでもマイクを解放する。
-      for (const track of pending?.getTracks() ?? []) track.stop();
-      acquiringRef.current = false;
-      if (aliveRef.current) setAcquiring(false);
-    }
-  };
-
-  const stopRecording = () => {
-    onRecordStop();
-    const rec = recorderRef.current;
-    if (rec && rec.state !== "inactive") rec.stop();
-  };
-
-  const voiceBtn =
-    "px-2.5 py-1 rounded-sm border border-border text-[12px] cursor-pointer hover:bg-sunken inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-default";
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        {hasAudio ? (
-          <button
-            type="button"
-            className={voiceBtn}
-            disabled={ttsState === "loading"}
-            onClick={() => void playTts()}
-          >
-            {ttsState === "loading" ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <Volume2 size={12} />
-            )}
-            {ttsState === "playing" ? "停止" : "質問を聞く"}
-          </button>
-        ) : null}
-        {recState === "recording" ? (
-          <button type="button" className={voiceBtn} onClick={stopRecording}>
-            <Square size={12} />
-            停止して文字起こし
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={voiceBtn}
-            disabled={recState === "transcribing" || acquiring}
-            onClick={() => void startRecording()}
-          >
-            {acquiring ? <Loader2 size={12} className="animate-spin" /> : <Mic size={12} />}
-            {acquiring
-              ? "マイクを準備中…"
-              : recState === "done"
-                ? "もう一度録音"
-                : "録音して答える"}
-          </button>
-        )}
-        {recState === "recording" ? (
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-destructive">
-            <span className="size-2 rounded-full bg-destructive animate-pulse" />
-            録音中 — 声に出して答えましょう
-          </span>
-        ) : null}
-        {recState === "transcribing" ? (
-          <span className="inline-flex items-center gap-1 text-[12px] text-ink-3">
-            <Loader2 size={12} className="animate-spin" />
-            文字起こし中…
-          </span>
-        ) : null}
-      </div>
-      {error ? <p className="text-[12px] text-destructive">{error}</p> : null}
-      {recUrl && recState === "done" ? (
-        <div className="flex flex-col gap-1.5 p-3 rounded-sm border border-border bg-sunken/40">
-          <div className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-4">
-            Your Answer ・ あなたの回答（文字起こし）
-          </div>
-          {/* biome-ignore lint/a11y/useMediaCaption: 受講者自身の練習録音で、 内容は直下に文字起こしとして表示している */}
-          <audio src={recUrl} controls className="h-8 w-full max-w-md" />
-          {transcript ? (
-            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{transcript}</p>
-          ) : null}
-          <p className="text-[11.5px] text-ink-4">
-            回答例と見比べて、抜けた要素や言い淀みがないか確認しましょう。
-          </p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-/** 練習モード: タイマー付きフラッシュカード + 音声練習 + 自己評価。 */
-function QuizMode({
-  pool,
-  backendEnabled,
-  canRecordProgress,
-  profileId,
-  audioNos,
-  onRefresh,
-  onProgress,
-}: {
-  pool: LearnerInterviewQuestion[];
-  backendEnabled: boolean;
-  /** 自己評価を保存できるか (staff の受講者プレビューでは false)。 */
-  canRecordProgress: boolean;
-  profileId?: string | null;
-  audioNos: number[];
-  onRefresh: () => void;
-  onProgress: (no: number, event: ProgressEvent) => void;
-}) {
-  const [order, setOrder] = useState<number[]>(() => shuffle(pool.map((d) => d.no)));
-  const [qi, setQi] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const [sec, setSec] = useState(0);
-  const [running, setRunning] = useState(false);
-
-  // フィルタが変わったら出題順を作り直す。 進捗の楽観更新で pool の参照だけが変わる
-  // ケースでは作り直さない (自己評価のたびにシャッフルされるのを防ぐ)。
-  const poolKey = pool.map((d) => d.no).join(",");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: poolKey が pool の同一性を代表する
-  useEffect(() => {
-    setOrder(shuffle(poolKey === "" ? [] : poolKey.split(",").map(Number)));
-    setQi(0);
-    setRevealed(false);
-    setSec(0);
-    setRunning(false);
-  }, [poolKey]);
-
-  useEffect(() => {
-    if (!running) return;
-    const t = setInterval(() => setSec((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [running]);
-
-  const audioSet = useMemo(() => new Set(audioNos), [audioNos]);
-  const cur = pool.find((d) => d.no === order[qi % Math.max(order.length, 1)]);
-  if (!cur) return null;
-
-  const fmt = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
-  const move = (delta: number) => {
-    setQi((i) => (i + delta + order.length) % order.length);
-    setRevealed(false);
-    setSec(0);
-    setRunning(false);
-  };
-
-  return (
-    <Card className="p-5 flex flex-col gap-4">
-      <div className="flex items-center justify-between text-[12px] text-ink-3">
-        <span>
-          {(qi % order.length) + 1} / {order.length}
-        </span>
-        <span>
-          {cur.categories.join("、")} ・ {cur.subcategory}
-          {cur.time ? ` ・ 目安 ${cur.time}` : ""}
-        </span>
-      </div>
-
-      <div className="flex items-start gap-2.5">
-        <FreqBadge freq={cur.freq} />
-        <p className="text-[15px] font-medium leading-relaxed flex-1">{cur.question}</p>
-      </div>
-
-      {backendEnabled ? (
-        <VoicePractice
-          key={cur.no}
-          q={cur}
-          hasAudio={audioSet.has(cur.no)}
-          onRecordStart={() => {
-            // 録音開始と同時にタイマーも回す (面談本番の時間感覚をつける)。
-            setSec(0);
-            setRunning(true);
-          }}
-          onRecordStop={() => setRunning(false)}
+      {/* 改善点メモの履歴 (音声セッションの振り返りで書いたもの。 ここでも消し込める) */}
+      {backendEnabled && !d.is_reverse ? (
+        <FixNoteEditor
+          questionNo={d.no}
+          notes={d.fix_notes ?? []}
+          canEdit={canRecordProgress}
+          onFixNoteChange={onFixNoteChange}
+          compact
         />
       ) : null}
-
-      <div className="flex items-center gap-2">
-        <span className="text-[20px] font-semibold tabular-nums">{fmt(sec)}</span>
-        <button
-          type="button"
-          className="px-2.5 py-1 rounded-sm border border-border text-[12px] cursor-pointer hover:bg-sunken inline-flex items-center gap-1"
-          onClick={() => setRunning((v) => !v)}
-        >
-          {running ? <Pause size={12} /> : <Play size={12} />}
-          {running ? "一時停止" : sec > 0 ? "再開" : "スタート"}
-        </button>
-        <button
-          type="button"
-          className="px-2.5 py-1 rounded-sm border border-border text-[12px] cursor-pointer hover:bg-sunken inline-flex items-center gap-1"
-          onClick={() => {
-            setSec(0);
-            setRunning(false);
-          }}
-        >
-          <X size={12} />
-          リセット
-        </button>
-      </div>
-
-      {!revealed ? (
-        <button
-          type="button"
-          className="p-4 rounded-sm border border-dashed border-border text-[13px] text-ink-3 cursor-pointer hover:bg-sunken"
-          onClick={() => {
-            setRevealed(true);
-            setRunning(false);
-            // 回答例を開いた = 型を読んだ (confident は下がらない)
-            if (!cur.is_reverse && statusOf(cur) === "none") onProgress(cur.no, "read");
-          }}
-        >
-          まず声に出して答える → 回答例を表示
-        </button>
-      ) : (
-        <>
-          <QuestionDetail
-            d={cur}
-            backendEnabled={backendEnabled}
-            profileId={profileId}
-            onRefresh={onRefresh}
-          />
-          {canRecordProgress && !cur.is_reverse ? (
-            <div className="flex items-center gap-2.5 border-t border-border pt-4">
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-1.5 h-11 px-6 rounded-full border border-border-2 text-[13.5px] cursor-pointer hover:bg-sunken"
-                onClick={() => {
-                  onProgress(cur.no, "practiced");
-                  move(1);
-                }}
-              >
-                もう一度
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-1.5 h-11 px-7 rounded-full sf-gradient-bg text-white text-[13.5px] font-bold cursor-pointer hover:brightness-105"
-                onClick={() => {
-                  onProgress(cur.no, "confident");
-                  move(1);
-                }}
-              >
-                できた — 次へ
-              </button>
-              <span className="ml-auto text-[11.5px] text-ink-4">
-                「できた」で練習OKになり準備率に反映されます
-              </span>
-            </div>
-          ) : null}
-        </>
-      )}
-
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-sm border border-border text-[12.5px] cursor-pointer hover:bg-sunken"
-          onClick={() => move(-1)}
-        >
-          前の問題
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 rounded-full sf-gradient-bg text-white text-[12.5px] font-bold cursor-pointer hover:brightness-105"
-          onClick={() => move(1)}
-        >
-          次の問題
-        </button>
-        <button
-          type="button"
-          className="ml-auto text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
-          onClick={() => {
-            setOrder(shuffle(pool.map((d) => d.no)));
-            setQi(0);
-            setRevealed(false);
-            setSec(0);
-            setRunning(false);
-          }}
-        >
-          出題順をシャッフルし直す
-        </button>
-      </div>
-    </Card>
+    </div>
   );
 }
