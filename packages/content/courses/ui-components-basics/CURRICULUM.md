@@ -4,7 +4,7 @@
 代表的な UI 部品を **HTML と CSS だけで、部品ごとに段階的に** 作ります。
 構成は [MDN Web ドキュメント](https://developer.mozilla.org/) の CSS レイアウトクックブックと Learn web development に合わせています。
 
-想定する受講順は `html-css-basics` → `modern-css-basics` → **本講座** → `page-composition-basics`(予定) です。
+想定する受講順は `html-css-basics` → `modern-css-basics` → **本講座** → `page-composition-basics` です。
 
 ## 終了時の目標
 

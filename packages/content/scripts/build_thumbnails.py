@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 16 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 17 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -467,6 +467,36 @@ def motif_ui_components(c: str) -> str:
     return "".join(out)
 
 
+def motif_page_composition(c: str) -> str:
+    """部品が 1 枚のページに収まる。 ヘッダの帯・カードの集合・一覧・下端のフッタ。"""
+    cards = []
+    for x in (98, 282):
+        cards.append(
+            f'<rect x="{x}" y="168" width="168" height="124" rx="12" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>'
+        )
+        cards.append(f'<rect x="{x + 24}" y="192" width="96" height="14" rx="7" fill="{c}"/>')
+        cards.append(f'<rect x="{x + 24}" y="222" width="120" height="10" rx="5" fill="{RULE}"/>')
+        cards.append(f'<rect x="{x + 24}" y="244" width="88" height="10" rx="5" fill="{RULE}"/>')
+    return f"""
+    <clipPath id="page-frame"><rect x="74" y="40" width="400" height="468" rx="16"/></clipPath>
+    <g clip-path="url(#page-frame)">
+      <rect x="74" y="40" width="400" height="468" fill="{PAPER}"/>
+      <rect x="74" y="40" width="400" height="76" fill="{c}"/>
+      <rect x="98" y="72" width="64" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+      <rect x="178" y="72" width="64" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+      <rect x="386" y="72" width="64" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+      <rect x="98" y="138" width="140" height="10" rx="5" fill="{RULE}"/>
+      {"".join(cards)}
+      <rect x="98" y="316" width="352" height="72" rx="12" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
+      <circle cx="134" cy="352" r="18" fill="{RULE}"/>
+      <rect x="170" y="336" width="192" height="12" rx="6" fill="{RULE}"/>
+      <rect x="170" y="360" width="136" height="10" rx="5" fill="{RULE}"/>
+      <rect x="74" y="432" width="400" height="76" fill="{INK}"/>
+      <rect x="98" y="464" width="140" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
+    </g>
+    <rect x="74" y="40" width="400" height="468" rx="16" fill="none" stroke="{RULE_SOLID}" stroke-width="2.5"/>"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -498,6 +528,12 @@ SPECS = {
         "title_size": 148,
         "subtitle": "入門研修",
         "motif": motif_ui_components,
+    },
+    "page-composition-basics": {
+        "title": "ページ構成",
+        "title_size": 116,
+        "subtitle": "入門研修",
+        "motif": motif_page_composition,
     },
     "python-testing-ci-basics": {
         "title": "Python",

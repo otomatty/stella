@@ -136,6 +136,8 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **UI部品 入門研修（`courses/ui-components-basics/`）があります。** 4 モジュール / 11 レッスン / 44 トピックで、構成は [courses/ui-components-basics/CURRICULUM.md](courses/ui-components-basics/CURRICULUM.md)。モダンCSS 入門の次に受ける講座で、代表的な UI 部品（カード・メディアオブジェクト・スプリットナビ・パンくずリスト・ページネーション・フォーム部品・`details`・ポップオーバー・宣言的な `dialog`）を **HTML 骨格 → レイアウト → トークン → 状態** の 4 段階で 1 つずつ作ります。JavaScript / DOM・WAI-ARIA APG の対話ウィジェット・カードの集合グリッド（後続の `page-composition-basics` の範囲）は対象外。Popover API と Invoker Commands API は MDN Baseline が Newly available なので、動かない環境ではフォールバックの JavaScript を書かない方針を CURRICULUM.md と本文に明記しています。HTML/CSS 入門・モダンCSS 入門と同じく見た目の自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
 
+**ページ構成 入門研修（`courses/page-composition-basics/`）があります。** 3 モジュール / 6 レッスン / 23 トピックで、構成は [courses/page-composition-basics/CURRICULUM.md](courses/page-composition-basics/CURRICULUM.md)。UI部品 入門の次に受ける講座（Web 系列の到達点）で、既習の部品と `:root` のトークンだけを使って `header` / `nav` / `main` / `footer` のある 1 枚の静的ページに組み立てます（landmark の原則・帯 + wrapper・`repeat(auto-fill, minmax())` のカード集合・任意の `subgrid`・sticky footer・popover / dialog を 1 つずつ・skip link・幅 1 本の `@media` recap）。部品の HTML/CSS の初出とトークン定義の初出は置きません（再導入のみ）。HTML/CSS 入門と同じく見た目の自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
+
 **Python テスト自動化と CI 入門（`courses/python-testing-ci-basics/`）があります。** 7 モジュール / 8 レッスン / 28 トピックで、構成は [courses/python-testing-ci-basics/CURRICULUM.md](courses/python-testing-ci-basics/CURRICULUM.md)。採点基盤（`@falcon/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
 
 **Git 入門研修（`courses/git-basics/`）があります。** 11 モジュール / 37 レッスン / 141 トピックで、構成は [courses/git-basics/CURRICULUM.md](courses/git-basics/CURRICULUM.md)。Git サンドボックス・コマンド自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元の VS Code のターミナルで試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。旧デモ講座と同じ slug を再利用しており、seed の旧デモ削除リスト（`export-seed-sql.ts` の `RETIRED_DEMO_COURSES`）からは外してあります。図解 SVG は優先 8 トピック(9 枚。Issue #177)に導入済みで、残りのトピックには追加余地があります。原典クレジットは CURRICULUM.md に集約しています。
@@ -160,12 +162,12 @@ TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](
 
 **LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 ですが、こちらもデプロイに含まれる（seed の前に全件アップロードする）ので、手動実行は不要です。ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を叩いてください。
 
-**講座サムネイルは全 16 講座に入っています（`courses/<slug>/thumbnail.webp`）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@falcon/content thumbnails`）が生成します。16 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
+**講座サムネイルは全 17 講座に入っています（`courses/<slug>/thumbnail.webp`）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@falcon/content thumbnails`）が生成します。17 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
 
 未着手の課題:
 
 - **図解SVGの不足** — 旧形式から流用したため、図解を持たないトピックがある。`assets/` がないトピックには追加余地がある
-- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 16 講座に設置済み
+- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは全 17 講座に設置済み
 - **収録** — 162本の動画収録は未着手
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 

@@ -4,7 +4,7 @@ HTML/CSS 入門研修(`html-css-basics`)の次に受ける中間講座です。1
 入門で作った 1 枚のページを、**新しい部品を足さずに**、現代の CSS の書き方で見た目だけやり直します。
 構成は [MDN Web ドキュメント](https://developer.mozilla.org/) の各リファレンスと Learn web development に合わせています。
 
-想定する受講順は `html-css-basics` → **本講座** → `ui-components-basics`(予定) → `page-composition-basics`(予定) です。
+想定する受講順は `html-css-basics` → **本講座** → `ui-components-basics` → `page-composition-basics` です。
 
 ## 終了時の目標
 
