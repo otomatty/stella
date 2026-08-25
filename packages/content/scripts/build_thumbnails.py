@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 15 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 16 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -428,6 +428,45 @@ def motif_claude_code_team(c: str) -> str:
     return "".join(out)
 
 
+def motif_ui_components(c: str) -> str:
+    """1 つの部品が 4 段階で仕上がる。 骨格 → レイアウト → トークン → 状態。"""
+    out = []
+    cells = [(28, 28), (288, 28), (28, 288), (288, 288)]
+    for step, (x, y) in enumerate(cells):
+        colored = step >= 2
+        out.append(
+            f'<rect x="{x}" y="{y}" width="232" height="232" rx="16" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>'
+        )
+        # 1 段階目だけ左端をそろえない (骨格を置いただけで、まだ並べていない)。
+        offsets = (28, 52, 40) if step == 0 else (28, 28, 28)
+        head_fill = c if colored else RULE
+        out.append(
+            f'<rect x="{x + offsets[0]}" y="{y + 48}" width="132" height="16" rx="8" fill="{head_fill}"/>'
+        )
+        out.append(
+            f'<rect x="{x + offsets[1]}" y="{y + 88}" width="168" height="12" rx="6" fill="{RULE}"/>'
+        )
+        out.append(
+            f'<rect x="{x + offsets[2]}" y="{y + 116}" width="112" height="12" rx="6" fill="{RULE}"/>'
+        )
+        # 部品の中のボタン。 トークンを当てた段階から塗りつぶしになる。
+        pill_x = x + (28 if step != 0 else 36)
+        if colored:
+            out.append(
+                f'<rect x="{pill_x}" y="{y + 152}" width="96" height="40" rx="20" fill="{c}"/>'
+            )
+        else:
+            out.append(
+                f'<rect x="{pill_x}" y="{y + 152}" width="96" height="40" rx="20" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>'
+            )
+        # 4 段階目だけ、ボタンにフォーカスの枠が出ている。
+        if step == 3:
+            out.append(
+                f'<rect x="{pill_x - 8}" y="{y + 144}" width="112" height="56" rx="28" fill="none" stroke="{c}" stroke-width="3"/>'
+            )
+    return "".join(out)
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -453,6 +492,12 @@ SPECS = {
         "title_size": 116,
         "subtitle": "入門研修",
         "motif": motif_modern_css,
+    },
+    "ui-components-basics": {
+        "title": "UI部品",
+        "title_size": 148,
+        "subtitle": "入門研修",
+        "motif": motif_ui_components,
     },
     "python-testing-ci-basics": {
         "title": "Python",

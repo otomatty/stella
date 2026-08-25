@@ -165,7 +165,7 @@ manifest が `courses/` を全部読むので、`course.json` を置いた講座
 packages/content/courses/<slug>/thumbnail.webp
 ```
 
-既存 14 講座のサムネイルは `scripts/build_thumbnails.py` が生成している。**新しい講座もここに 1 件足して生成する**（画像を手で描かない）。14 枚が 1 つのシリーズに見えることが一覧カードの前提で、レイアウト・書体・トークンはスクリプトが共有している。
+既存 16 講座のサムネイルは `scripts/build_thumbnails.py` が生成している。**新しい講座もここに 1 件足して生成する**（画像を手で描かない）。16 枚が 1 つのシリーズに見えることが一覧カードの前提で、レイアウト・書体・トークンはスクリプトが共有している。
 
 ```bash
 pip install pillow playwright && playwright install chromium   # 初回だけ
