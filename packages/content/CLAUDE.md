@@ -130,7 +130,7 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 **SQL 入門（`courses/sql-basics/`）があります。** 6 モジュール / 6 レッスン / 24 トピックで、構成は [courses/sql-basics/CURRICULUM.md](courses/sql-basics/CURRICULUM.md)。コード演習は `course.json` の `exercises` で `@falcon/shared` の SQL 課題（`_lang/sql/`）に配線され、VS Code 拡張で採点されます。原典クレジットは CURRICULUM.md に集約しています。
 
-**HTML/CSS 入門（`courses/html-css-basics/`）があります。** 6 モジュール / 10 レッスン / 35 トピックで、構成は [courses/html-css-basics/CURRICULUM.md](courses/html-css-basics/CURRICULUM.md)。見た目の自動採点は現時点の採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に留め、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。原典クレジットは CURRICULUM.md に集約しています。
+**HTML/CSS 入門（`courses/html-css-basics/`）があります。** 6 モジュール / 22 レッスン / 83 トピックで、構成は [courses/html-css-basics/CURRICULUM.md](courses/html-css-basics/CURRICULUM.md)。MDN Learn web development の Core 本経路に合わせており、Flex に加えて Grid・位置指定・最小限のレスポンシブ（`viewport` と幅 1 本の `@media`）まで扱います。見た目の自動採点は現時点の採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に留め、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。原典クレジットは CURRICULUM.md に集約しています。
 
 **Python テスト自動化と CI 入門（`courses/python-testing-ci-basics/`）があります。** 7 モジュール / 8 レッスン / 28 トピックで、構成は [courses/python-testing-ci-basics/CURRICULUM.md](courses/python-testing-ci-basics/CURRICULUM.md)。採点基盤（`@falcon/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
 
