@@ -680,6 +680,19 @@ export const interviewQuestions = sqliteTable(
     ng: text("ng"),
     criteria: text("criteria"),
     isReverse: integer("is_reverse", { mode: "boolean" }).notNull().default(false),
+    /**
+     * 人が編集した時刻 (Issue #237)。 null なら questions.json のまま。
+     * seed の upsert はこの列が入っている行を上書きしない — 入れておかないと
+     * main への push ごとに走る seed で現場の修正が消える。
+     */
+    editedAt: ts("edited_at"),
+    editedBy: text("edited_by"),
+    /**
+     * 「正本の管理に戻す」の予約 (Issue #237)。 押した時点では本文はまだ編集後のまま
+     * なので `edited_at` は落とさない (落とすと音声側が「編集前の読み上げを使ってよい」
+     * と誤解する)。 次の seed が本文を正本へ書き戻すときに、 両方まとめて落ちる。
+     */
+    releaseRequestedAt: ts("release_requested_at"),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
@@ -687,6 +700,22 @@ export const interviewQuestions = sqliteTable(
     tenantNoUnique: uniqueIndex("interview_questions_tenant_no_uq").on(t.tenantId, t.no),
   }),
 );
+
+/**
+ * 汎用の排他ロック (Issue #237)。
+ *
+ * D1 の `insert ... on conflict do nothing` が「無ければ入れる」を不可分に行えることを
+ * 使った素朴なミューテックス。 面談対策では「質問の本文更新 + 読み上げ音声の更新」を
+ * 1 つのロックの中で行い、 同じ質問への同時操作で音声と本文が食い違わないようにする。
+ * `expires_at` を過ぎたロックは取り直せる (保持中に Worker が落ちても詰まらない)。
+ */
+export const resourceLocks = sqliteTable("resource_locks", {
+  /** ロック対象の識別子 (例: `interview-audio:<tenant>:<no>`)。 */
+  id: text("id").primaryKey(),
+  /** 取得者を表す使い捨てトークン。 自分が取ったロックだけを解放するために持つ。 */
+  holder: text("holder").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+});
 
 /** 受講者ごとの面談対策カテゴリ割当。 共通カテゴリは割当に含めず常時表示。 */
 export const interviewPrepAssignments = sqliteTable(

@@ -6,6 +6,7 @@
 
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
+import type { InterviewQuestionPatch } from "@falcon/shared/interview/edit";
 import type { FixNote } from "@falcon/shared/interview/fix-notes";
 import { type MonitoringSummary, sortByInterviewDate } from "@falcon/shared/interview/monitoring";
 import { toStudyDate } from "@falcon/shared/study/activity";
@@ -131,6 +132,11 @@ export interface InterviewQuestionsResult {
   audioNos: number[];
   /** 音声が登録済みのセグメント (`12:question` / `12:deep1`)。 深掘りを含む。 */
   audioSegments: string[];
+  /**
+   * 登録済みだが本文と食い違うセグメント (Issue #237)。 質問文を直したあと
+   * 読み上げの作り直しに失敗した場合などに入る。 audioSegments の部分集合。
+   */
+  audioStaleSegments: string[];
   /** 面談予定日 (参考情報)。未設定なら null。 */
   interviewDate?: string | null;
   note?: string | null;
@@ -143,7 +149,68 @@ export async function fetchInterviewQuestions(
 ): Promise<InterviewQuestionsResult> {
   const query = profileId ? `?profileId=${encodeURIComponent(profileId)}` : "";
   const r = await apiFetch<InterviewQuestionsResult>(`/api/interview-prep/questions${query}`);
-  return { ...r, audioNos: r.audioNos ?? [], audioSegments: r.audioSegments ?? [] };
+  return {
+    ...r,
+    audioNos: r.audioNos ?? [],
+    audioSegments: r.audioSegments ?? [],
+    audioStaleSegments: r.audioStaleSegments ?? [],
+  };
+}
+
+/** staff 一覧の行 (`attachEditMarks`)。 誰がいつ直したかが付く。 */
+export type StaffInterviewQuestion = InterviewQuestion & {
+  edited_at?: string | null;
+  edited_by?: string | null;
+  /**
+   * 「正本の管理に戻す」の予約 (Issue #237)。 入っていても本文はまだ編集後のままで、
+   * 次の配信 (seed) で正本へ戻る。 それまでは編集済みとして扱う。
+   */
+  release_requested_at?: string | null;
+};
+
+/** 質問編集で音声に何が起きたか (`syncQuestionAudio` の戻り)。 */
+export interface QuestionAudioSync {
+  regenerated: string[];
+  removed: string[];
+  /** 本文は変わったが作り直せなかったセグメント。 管理画面から手で生成できる。 */
+  stale: string[];
+  reason: string | null;
+}
+
+export interface UpdateQuestionResult {
+  row: StaffInterviewQuestion;
+  edited_at: string | null;
+  edited_by: string | null;
+  audio: QuestionAudioSync;
+}
+
+/**
+ * admin / sales: 想定質問 1 件を編集する。 読み上げテキストが変わったセグメントは
+ * サーバ側で作り直され、 結果が `audio` に入る (呼び出し側で生成し直す必要はない)。
+ */
+export async function updateInterviewQuestion(
+  no: number,
+  patch: InterviewQuestionPatch,
+): Promise<UpdateQuestionResult> {
+  return apiFetch<UpdateQuestionResult>(`/api/interview-prep/questions/${no}`, {
+    method: "PATCH",
+    body: patch,
+  });
+}
+
+/**
+ * 質問を正本 (questions.json) の管理下へ戻すよう予約する。
+ *
+ * その場で本文は戻らない (API は questions.json を持たない) ので、 編集済みの印も
+ * 残したままにする — 印を先に外すと、 編集後の本文に編集前の読み上げ音声が
+ * 付いてしまう。 次の配信 (seed) が本文を書き戻すときに印ごと落ちる。
+ */
+export async function releaseInterviewQuestionEdit(no: number): Promise<string | null> {
+  const r = await apiFetch<{ release_requested_at?: string | null }>(
+    `/api/interview-prep/questions/${no}/edit-mark`,
+    { method: "DELETE" },
+  );
+  return r.release_requested_at ?? null;
 }
 
 /** 読み上げ音声 (MP3)。 深掘りは part で指定する。 未登録は 404 → ApiClientError。 */

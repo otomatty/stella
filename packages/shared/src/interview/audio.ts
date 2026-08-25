@@ -89,3 +89,38 @@ export function interviewAudioSegments(q: {
   }
   return segments;
 }
+
+/**
+ * 読み上げテキストの指紋。 生成した音声の R2 customMetadata に載せておき、
+ * 質問文が変わったかどうか (= 音声が古いか) を本文の保持なしで判定する。
+ *
+ * FNV-1a の 32bit。 暗号用途ではなく「変わったか」を見るだけなので衝突耐性より
+ * 依存なしで Workers / ブラウザ / Node のどこでも同じ値になることを優先する。
+ */
+export function interviewAudioTextHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    // 32bit の FNV prime 乗算 (オーバーフローを避けてシフトで組む)。
+    hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+/** 生成済み音声の R2 customMetadata に載せるキー。 */
+export const INTERVIEW_AUDIO_TEXT_HASH_KEY = "textHash";
+
+/**
+ * 登録済み音声が現在の本文より古いか。
+ *
+ * 指紋を持たない音声 (この仕組みより前に生成されたもの) は **古いと見なさない**。
+ * 実際に古いかは分からないので、 全件を「要更新」で塗って再生成を促すより、
+ * 変わったと分かっているものだけを挙げるほうが運用の判断を誤らせない。
+ */
+export function isInterviewAudioStale(
+  storedHash: string | null | undefined,
+  currentText: string,
+): boolean {
+  if (!storedHash) return false;
+  return storedHash !== interviewAudioTextHash(currentText);
+}

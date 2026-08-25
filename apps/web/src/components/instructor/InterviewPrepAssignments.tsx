@@ -26,25 +26,29 @@ import {
 } from "@/lib/interview-prep-api";
 import { Chip } from "@/components/ui/chip";
 import { InterviewAudioAdmin } from "@/components/admin/InterviewAudioAdmin";
+import { InterviewQuestionEditor } from "@/components/admin/InterviewQuestionEditor";
 import { InterviewPrepMonitoring } from "@/components/instructor/InterviewPrepMonitoring";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
   canEditSchedule,
   canManageAudio = false,
+  canEditQuestions = false,
 }: {
   backendEnabled: boolean;
   /** sales/admin のみ true — 面談予定日・メモの編集可否 (Issue #205)。 */
   canEditSchedule: boolean;
   /** admin のみ true — 質問読み上げ音声の生成・再生成タブを出す。 */
   canManageAudio?: boolean;
+  /** sales/admin のみ true — 想定質問そのものの編集タブを出す (Issue #237)。 */
+  canEditQuestions?: boolean;
 }) {
   const [rows, setRows] = useState<InterviewPrepAssignmentRow[]>([]);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   // モニタリングを既定タブにする (Issue #236) — 講師・営業の起点は「準備できているか」。
-  const [tab, setTab] = useState<"monitoring" | "assign" | "audio">("monitoring");
+  const [tab, setTab] = useState<"monitoring" | "assign" | "questions" | "audio">("monitoring");
   const [draftDates, setDraftDates] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
@@ -159,6 +163,11 @@ export function InterviewPrepAssignmentsPage({
       <Chip active={tab === "assign"} onClick={() => setTab("assign")}>
         割当
       </Chip>
+      {canEditQuestions ? (
+        <Chip active={tab === "questions"} onClick={() => setTab("questions")}>
+          質問編集
+        </Chip>
+      ) : null}
       {canManageAudio ? (
         <Chip active={tab === "audio"} onClick={() => setTab("audio")}>
           質問音声
@@ -166,6 +175,25 @@ export function InterviewPrepAssignmentsPage({
       ) : null}
     </div>
   );
+
+  if (canEditQuestions && tab === "questions") {
+    return (
+      <>
+        <PageHeader
+          title="面談対策の質問編集"
+          sub="想定質問の文面を直します。質問文と深掘りを直すと読み上げ音声もその場で作り直されます"
+        />
+        {tabs}
+        {backendEnabled ? (
+          <InterviewQuestionEditor canManageAudio={canManageAudio} />
+        ) : (
+          <Card className="p-12 text-center text-sm text-ink-3">
+            デモモードでは質問を編集できません。
+          </Card>
+        )}
+      </>
+    );
+  }
 
   if (canManageAudio && tab === "audio") {
     return (

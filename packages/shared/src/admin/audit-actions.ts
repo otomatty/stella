@@ -46,6 +46,7 @@ const LABELS = {
   // 面談対策
   interview_prep_assign: "面談対策の割当",
   interview_tts_generate: "面談対策 質問音声の生成",
+  interview_question_edit: "面談対策 想定質問の編集",
   answer_template_generated: "回答の型の AI 生成",
   answer_template_edited: "回答の型の編集",
   // スキルシート (#203)

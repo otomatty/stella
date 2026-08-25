@@ -41,6 +41,8 @@ export async function runModelViaGateway(args: {
   env: TranscribeEnv;
   model: string;
   input: Record<string, unknown>;
+  /** 応答を待つ上限。 呼び出し側が所要時間を見積もれるようにする。 */
+  signal?: AbortSignal;
 }): Promise<Response> {
   const url = `https://api.cloudflare.com/client/v4/accounts/${args.env.CLOUDFLARE_ACCOUNT_ID}/ai/run`;
   assertGatewayRequestUrlNotWorkersAiPath(url);
@@ -56,6 +58,7 @@ export async function runModelViaGateway(args: {
       model: args.model,
       input: args.input,
     }),
+    ...(args.signal ? { signal: args.signal } : {}),
   });
 }
 

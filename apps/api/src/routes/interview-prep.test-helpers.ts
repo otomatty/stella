@@ -155,8 +155,28 @@ export interface InterviewPrepTestState {
   practiceSets: PracticeSetRow[];
   /** 質問バンクの差し替え (セット選定のテストで 10 問以上を用意する)。 */
   questions?: typeof TEST_INTERVIEW_QUESTIONS;
+  /**
+   * Issue #237 — 手動編集の印 (質問番号 → 誰がいつ)。 質問バンク本体とは別に
+   * 持つことで、 バンクを差し替えるテストでも編集の有無だけを組み立てられる。
+   */
+  questionEdits: Map<
+    number,
+    { editedAt: Date; editedBy: string; releaseRequestedAt?: Date | null }
+  >;
   /** テーブルごとの SELECT 回数。 モニタリング集計の N+1 検出に使う (Issue #236)。 */
   selectCounts: Record<string, number>;
+  /**
+   * 質問を更新した直後に呼ばれるテスト用フック (Issue #237)。 「保存の途中で別の
+   * staff が同じ質問を書き換えた」状況を作るために使う。
+   */
+  afterQuestionUpdate?: () => void;
+  /** 排他ロック (resource_locks)。 id → holder。 */
+  locks: Map<string, string>;
+  /**
+   * ロックを「他が保持中」にし続けるテスト用フック (Issue #237)。
+   * 取得を諦めたときの振る舞いを試す。
+   */
+  lockBusy?: boolean;
 }
 
 /** Fixture bank for #206 — assigned PHP A/B, JS A, and common A. */
@@ -305,6 +325,8 @@ export function createInterviewPrepTestState(): InterviewPrepTestState {
     fixNotes: [],
     progress: [],
     practiceSets: [],
+    questionEdits: new Map(),
+    locks: new Map(),
     selectCounts: {},
   };
 }
@@ -454,9 +476,21 @@ export function createInterviewPrepTestDb(
 
     if (fromTable === "interview_questions") {
       const bank = state.questions ?? TEST_INTERVIEW_QUESTIONS;
+      // 編集の印「だけ」を引く問い合わせ (attachEditMarks / loadEditedQuestionNos)。
+      // 本文も一緒に引く loadVisibleQuestion は下の 1 件取得へ落とす。
+      if (keys.includes("editedAt") && !keys.includes("question")) {
+        return bank.map((q) => ({
+          no: q.no,
+          editedAt: state.questionEdits.get(q.no)?.editedAt ?? null,
+          editedBy: state.questionEdits.get(q.no)?.editedBy ?? null,
+          releaseRequestedAt: state.questionEdits.get(q.no)?.releaseRequestedAt ?? null,
+        }));
+      }
       // 1 件取得 (loadVisibleQuestion) はルートの :no を条件にする。 where 句は解釈しない。
       if (limit === 1 && ctx.questionNo !== undefined) {
-        return bank.filter((q) => q.no === ctx.questionNo);
+        return bank
+          .filter((q) => q.no === ctx.questionNo)
+          .map((q) => ({ ...q, editedAt: state.questionEdits.get(q.no)?.editedAt ?? null }));
       }
       return bank;
     }
@@ -608,11 +642,40 @@ export function createInterviewPrepTestDb(
 
   return {
     select: (shape: Record<string, unknown>) => buildSelectChain(shape),
+    /**
+     * 排他ロック (resource_locks) の解放と期限切れ掃除だけを解釈する。 where 句は
+     * 読まないので、 ロック以外のテーブルへの delete は何もしない。
+     */
+    delete: (table: object) => {
+      const name = tableName(table);
+      return {
+        where: async () => {
+          if (name !== "resource_locks") return [];
+          // 本番は id + holder (解放) / id + 期限切れ (取り直し) を条件にするが、
+          // モックは 1 度に 1 つのロックしか使わないので全消しで足りる。
+          state.locks.clear();
+          return [];
+        },
+      };
+    },
     insert: (table: object) => {
       const name = tableName(table);
       return {
         values: (data: Record<string, unknown> | Record<string, unknown>[]) => {
           const rows = Array.isArray(data) ? data : [data];
+          if (name === "resource_locks") {
+            return {
+              onConflictDoNothing: () => ({
+                returning: async () => {
+                  const row = rows[0] as { id: string; holder: string };
+                  if (state.lockBusy) return [];
+                  if (state.locks.has(row.id)) return [];
+                  state.locks.set(row.id, row.holder);
+                  return [{ id: row.id }];
+                },
+              }),
+            };
+          }
           if (name === "notifications") {
             for (const row of rows) state.notifications.push(row);
             return Promise.resolve(undefined);
@@ -865,6 +928,46 @@ export function createInterviewPrepTestDb(
                 };
                 state.skillSheets.set(key, updated);
                 return [{ id: updated.id }];
+              }
+              if (name === "interview_questions") {
+                // 質問バンクは本番同様その場で書き換え、 編集の印は別に持つ。
+                const bank = state.questions ?? [...TEST_INTERVIEW_QUESTIONS];
+                state.questions = bank;
+                const target = bank.find((q) => q.no === ctx.questionNo);
+                if (!target) return [];
+                for (const [key, value] of Object.entries(set)) {
+                  if (key === "editedAt" || key === "editedBy") continue;
+                  // 列名 (camelCase) を fixture のキー (snake_case) に戻す。
+                  const field =
+                    key === "answerTemplate"
+                      ? "answer_template"
+                      : key === "isReverse"
+                        ? "is_reverse"
+                        : key;
+                  (target as Record<string, unknown>)[field] = value;
+                }
+                if ("editedAt" in set) {
+                  const at = set.editedAt as Date | null;
+                  if (at === null) state.questionEdits.delete(target.no);
+                  else {
+                    state.questionEdits.set(target.no, {
+                      editedAt: at,
+                      editedBy: (set.editedBy as string) ?? ctx.callerId,
+                      releaseRequestedAt: (set.releaseRequestedAt as Date | null) ?? null,
+                    });
+                  }
+                } else if ("releaseRequestedAt" in set) {
+                  // 解除の予約。 編集済みの印 (editedAt) はそのまま残す。
+                  const existing = state.questionEdits.get(target.no);
+                  if (existing) {
+                    state.questionEdits.set(target.no, {
+                      ...existing,
+                      releaseRequestedAt: set.releaseRequestedAt as Date | null,
+                    });
+                  }
+                }
+                state.afterQuestionUpdate?.();
+                return [{ no: target.no }];
               }
               if (name === "interview_personal_templates") {
                 const profileId = ctx.targetProfileId ?? ctx.callerId;

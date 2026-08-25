@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Volume2 } from "@/lib/icons";
+import { AlertTriangle, Loader2, Sparkles, Volume2 } from "@/lib/icons";
 import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Chip } from "@/components/ui/chip";
@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 /** API 側の 1 リクエスト上限 (TTS_BATCH_LIMIT) に合わせる (セグメント数)。 */
 const BATCH = 10;
 
-type StatusFilter = "all" | "missing" | "registered";
+type StatusFilter = "all" | "missing" | "stale" | "registered";
 
 /** 試聴ボタンの表示名 (質問文 + 深掘り①〜③)。 */
 const SEGMENT_LABELS: Record<InterviewAudioPart, string> = {
@@ -48,6 +48,11 @@ export function InterviewAudioAdmin() {
   const [rows, setRows] = useState<InterviewQuestion[]>([]);
   /** 登録済みセグメント (`12:question` / `12:deep1`)。 */
   const [audioSet, setAudioSet] = useState<Set<string>>(new Set());
+  /**
+   * 登録済みだが本文と食い違うセグメント (Issue #237)。 質問を編集すると
+   * サーバが音声を作り直すが、 読み上げが未設定・失敗したときはここに残る。
+   */
+  const [staleSet, setStaleSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -71,6 +76,7 @@ export function InterviewAudioAdmin() {
         if (cancelled) return;
         setRows(r.rows);
         setAudioSet(new Set(r.audioSegments));
+        setStaleSet(new Set(r.audioStaleSegments));
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -102,6 +108,18 @@ export function InterviewAudioAdmin() {
     [allSegments, audioSet],
   );
 
+  /** 登録済みだが本文と食い違うセグメント。 未登録とは別に数え、 別ボタンで作り直す。 */
+  const stale = useMemo(
+    () => allSegments.filter((seg) => staleSet.has(interviewAudioSegmentId(seg.no, seg.part))),
+    [allSegments, staleSet],
+  );
+
+  /** その質問に古い音声が残っているか (行のバッジと絞り込みで使う)。 */
+  const hasStale = (no: number): boolean =>
+    (segmentsByNo.get(no) ?? []).some((seg) =>
+      staleSet.has(interviewAudioSegmentId(seg.no, seg.part)),
+    );
+
   /** その質問のセグメントが何件登録済みか。 */
   const registeredCount = (no: number): number =>
     (segmentsByNo.get(no) ?? []).filter((seg) =>
@@ -116,12 +134,16 @@ export function InterviewAudioAdmin() {
         audioSet.has(interviewAudioSegmentId(seg.no, seg.part)),
       ).length;
       const complete = segments.length > 0 && done === segments.length;
+      const outdated = segments.some((seg) =>
+        staleSet.has(interviewAudioSegmentId(seg.no, seg.part)),
+      );
       if (filter === "missing" && complete) return false;
+      if (filter === "stale" && !outdated) return false;
       if (filter === "registered" && !complete) return false;
       if (!q) return true;
       return r.question.toLowerCase().includes(q) || String(r.no) === q;
     });
-  }, [rows, audioSet, filter, query, segmentsByNo]);
+  }, [rows, audioSet, staleSet, filter, query, segmentsByNo]);
 
   /** 指定セグメントを生成し、 成功分を登録済みへ反映する。 失敗件数を返す。 */
   const generate = async (targets: AudioSegmentRef[]): Promise<number> => {
@@ -130,7 +152,15 @@ export function InterviewAudioAdmin() {
     try {
       const { results } = await generateQuestionAudio(targets);
       const ok = results.filter((r) => r.ok).map((r) => interviewAudioSegmentId(r.no, r.part));
-      if (ok.length > 0) setAudioSet((s) => new Set([...s, ...ok]));
+      if (ok.length > 0) {
+        setAudioSet((s) => new Set([...s, ...ok]));
+        // 作り直せたぶんは今の本文で録り直したので、 古い印を落とす。
+        setStaleSet((s) => {
+          const next = new Set(s);
+          for (const id of ok) next.delete(id);
+          return next;
+        });
+      }
       return results.length - ok.length;
     } finally {
       setBusyNos((s) => {
@@ -155,9 +185,9 @@ export function InterviewAudioAdmin() {
     }
   };
 
-  /** 未登録をまとめて生成。 API 上限に合わせて 10 セグメントずつ直列で送る。 */
-  const generateMissing = async () => {
-    const targets: AudioSegmentRef[] = missing.map(({ no, part }) => ({ no, part }));
+  /** まとめて生成。 API 上限に合わせて 10 セグメントずつ直列で送る。 */
+  const generateBulk = async (segments: InterviewAudioSegment[], verb: string) => {
+    const targets: AudioSegmentRef[] = segments.map(({ no, part }) => ({ no, part }));
     if (targets.length === 0) return;
     setBulk({ done: 0, total: targets.length });
     let failed = 0;
@@ -167,8 +197,8 @@ export function InterviewAudioAdmin() {
         failed += await generate(chunk);
         setBulk({ done: Math.min(i + chunk.length, targets.length), total: targets.length });
       }
-      if (failed > 0) toast.error(`${failed} 件の生成に失敗しました (再実行で埋められます)`);
-      else toast(`${targets.length} 件の音声を生成しました`);
+      if (failed > 0) toast.error(`${failed} 件の${verb}に失敗しました (再実行で埋められます)`);
+      else toast(`${targets.length} 件の音声を${verb}しました`);
     } catch (e) {
       // レート制限 (429) などで中断しても、 成功済みは登録に反映されている。
       toast.error(e instanceof Error ? e.message : "一括生成が中断しました");
@@ -248,12 +278,28 @@ export function InterviewAudioAdmin() {
           <span className="text-[12.5px] text-ink-2">
             登録済み <b>{allSegments.length - missing.length}</b> / 全 {allSegments.length}{" "}
             セグメント (質問文 + 深掘り、 全 {rows.length} 問)
+            {stale.length > 0 ? (
+              <>
+                {" "}
+                — うち <b className="text-warning-foreground">{stale.length}</b> 件は本文が更新済み
+              </>
+            ) : null}
           </span>
+          {/* 質問編集からの作り直しが落ちたぶんの復旧口。 未登録の生成とは分けて数える。 */}
           <button
             type="button"
             className={cn(btn, "ml-auto")}
+            disabled={bulk !== null || stale.length === 0}
+            onClick={() => void generateBulk(stale, "再生成")}
+          >
+            {bulk ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />}
+            {stale.length === 0 ? "古い音声なし" : `古い音声を再生成 (${stale.length} 件)`}
+          </button>
+          <button
+            type="button"
+            className={btn}
             disabled={bulk !== null || missing.length === 0}
-            onClick={() => void generateMissing()}
+            onClick={() => void generateBulk(missing, "生成")}
           >
             {bulk ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {bulk
@@ -268,6 +314,7 @@ export function InterviewAudioAdmin() {
             [
               ["all", "すべて"],
               ["missing", "未登録"],
+              ["stale", "音声が古い"],
               ["registered", "登録済み"],
             ] as const
           ).map(([key, label]) => (
@@ -307,6 +354,15 @@ export function InterviewAudioAdmin() {
                 >
                   {registered ? "登録済み" : `${done}/${segments.length}`}
                 </span>
+                {hasStale(r.no) ? (
+                  <span
+                    className="text-[10.5px] px-1.5 py-[1px] rounded font-semibold shrink-0 bg-warning/20 text-warning-foreground inline-flex items-center gap-1"
+                    title="質問文が更新されており、 音声が追いついていません"
+                  >
+                    <AlertTriangle size={11} />
+                    音声が古い
+                  </span>
+                ) : null}
                 <span className="flex-1 min-w-0 text-[13px] truncate" title={r.question}>
                   {r.question}
                 </span>

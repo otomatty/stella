@@ -187,3 +187,38 @@ describe("buildTtsInput", () => {
     });
   });
 });
+
+describe("モデル呼び出しの上限 (#237)", () => {
+  const directEnv = {
+    CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID,
+    WORKERS_AI_API_TOKEN: "token",
+    INTERVIEW_TTS_MODEL: "@cf/myshell-ai/melotts",
+  } as unknown as Env;
+
+  const jsonOnce = (body: unknown) =>
+    vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
+      );
+
+  it("読み上げには上限を掛ける (ロックの保持時間を見積もれるようにする)", async () => {
+    const fetchMock = jsonOnce({ result: { audio: btoa("mp3") } });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await synthesizeSpeech(directEnv, "読み上げる本文", "ja");
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("文字起こしには上限を掛けない (10 分超の録音を途中で切らない)", async () => {
+    const fetchMock = jsonOnce({ result: { text: "こんにちは" } });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await transcribeAudio(directEnv, new Uint8Array([1, 2, 3]));
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.signal).toBeUndefined();
+  });
+});

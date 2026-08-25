@@ -48,6 +48,7 @@
     "./interview/progress": "./src/interview/progress.ts",
     "./interview/monitoring": "./src/interview/monitoring.ts",
     "./interview/audio": "./src/interview/audio.ts",
+    "./interview/edit": "./src/interview/edit.ts",
     "./interview/fix-notes": "./src/interview/fix-notes.ts",
     "./interview/session": "./src/interview/session.ts",
     "./interview/practice-set": "./src/interview/practice-set.ts",

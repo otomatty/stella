@@ -10,7 +10,9 @@ export const Route = createFileRoute("/_app/interview-prep")({
 /**
  * 表示ロール (`s.role`) で画面を分ける。 staff が受講者シェルへ切り替えたときは
  * 練習画面を見せる (profileRole のまま割当画面に固定しない)。
- * 質問音声タブは admin のみ。 面談日編集は sales/admin のみ (Issue #205)。
+ * 質問音声タブは admin のみ (生成コストが乗るため)。 面談日編集 (Issue #205) と
+ * 質問文の編集 (Issue #237) は sales/admin — 面談で実際に聞かれた言い回しを
+ * 知っているのは営業なので、 質問バンクの文面は営業も直せる。
  */
 function InterviewPrep() {
   const s = useAppShell();
@@ -23,6 +25,7 @@ function InterviewPrep() {
           backendEnabled={s.backendEnabled}
           canEditSchedule={s.role === "admin" || s.role === "sales"}
           canManageAudio={s.role === "admin"}
+          canEditQuestions={s.role === "admin" || s.role === "sales"}
         />
       );
     case "learner":

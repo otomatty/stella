@@ -132,6 +132,21 @@ export function canWriteInterviewSchedule(role: ProfileRole): boolean {
   return role === "sales" || role === "admin" || role === "platform_admin";
 }
 
+/**
+ * 想定質問そのものの編集 (Issue #237)。 面談に同席して質問の実際の言い回しを
+ * 知っているのは営業なので、 admin と同じく編集できる。 instructor は割当と
+ * モニタリングのみで、 全受講者に効く質問バンクは触らせない。
+ */
+export function canEditInterviewQuestions(role: ProfileRole): boolean {
+  return role === "sales" || role === "admin" || role === "platform_admin";
+}
+
+export function requireCanEditInterviewQuestions(caller: Caller): void {
+  if (!canEditInterviewQuestions(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
 export function requireTenantAdmin(caller: Caller): void {
   requireRole(caller, "admin", "platform_admin");
 }

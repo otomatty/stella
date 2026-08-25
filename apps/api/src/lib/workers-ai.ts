@@ -38,6 +38,20 @@ const DEFAULT_TTS_MODEL = "grok-tts";
 const DEFAULT_TTS_VOICE = "eve";
 const STT_MODEL = "@cf/openai/whisper-large-v3-turbo";
 
+/**
+ * **読み上げ (TTS)** 1 回の呼び出しを待つ上限。
+ *
+ * 読み上げは質問ごとの排他ロック (`lib/resource-lock.ts`) の中で走るので、 ここが
+ * 青天井だと「ロックの保持時間が work の所要時間を上回る」という前提が崩れ、
+ * 期限切れで別のリクエストが同じロックを取れてしまう。 上限を決めて、 ロックの
+ * TTL をそれより長く取れるようにする。
+ *
+ * **文字起こしには掛けない**。 こちらはロックの外で走るうえ、 受け付ける録音は
+ * 10 分超になりうる (`MAX_RECORDING_BYTES`) ので、 同じ上限だと正当な録音を
+ * 途中で切ってしまう。
+ */
+export const AI_REQUEST_TIMEOUT_MS = 25_000;
+
 function ttsModel(env: Env): string {
   const configured = env.INTERVIEW_TTS_MODEL?.trim() || DEFAULT_TTS_MODEL;
   // grok-tts → xai/grok-tts (Unified Billing のプロバイダ ID。 チャットと同じ規則)
@@ -127,6 +141,8 @@ async function runModel(
   env: Env,
   model: string,
   input: Record<string, unknown>,
+  /** 応答を待つ上限 (ms)。 未指定なら待ち続ける (長い録音の文字起こし用)。 */
+  timeoutMs?: number,
 ): Promise<Response> {
   if (!gatewayConfigured(env) && isUnifiedBillingModel(model)) {
     // 直叩きへ落とすと `/ai/run/xai%2Fgrok-tts` で 404 になり原因が分かりにくいので、
@@ -136,6 +152,7 @@ async function runModel(
       503,
     );
   }
+  const signal = timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs);
   const res = gatewayConfigured(env)
     ? await runModelViaGateway({
         env: {
@@ -146,6 +163,7 @@ async function runModel(
         },
         model,
         input,
+        ...(signal ? { signal } : {}),
       })
     : await (async () => {
         const { token, accountId } = requireConfig(env);
@@ -153,6 +171,7 @@ async function runModel(
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(input),
+          ...(signal ? { signal } : {}),
         });
       })();
 
@@ -171,6 +190,7 @@ export async function synthesizeSpeech(env: Env, text: string, lang: string): Pr
     env,
     model,
     buildTtsInput(model, text, lang, env.INTERVIEW_TTS_VOICE?.trim()),
+    AI_REQUEST_TIMEOUT_MS,
   );
   const contentType = res.headers.get("content-type") ?? "";
   // REST は通常 { result: { audio: "<base64 mp3>" } } を返すが、
