@@ -66,9 +66,9 @@ describe("visibleQuestions", () => {
 });
 
 describe("INTERVIEW_QUESTIONS", () => {
-  it("175 問で no が一意", () => {
-    expect(INTERVIEW_QUESTIONS).toHaveLength(175);
-    expect(new Set(INTERVIEW_QUESTIONS.map((d) => d.no)).size).toBe(175);
+  it("197 問で no が一意", () => {
+    expect(INTERVIEW_QUESTIONS).toHaveLength(197);
+    expect(new Set(INTERVIEW_QUESTIONS.map((d) => d.no)).size).toBe(197);
   });
 
   it("タグと優先度が既知の値のみ", () => {
@@ -109,6 +109,11 @@ describe("INTERVIEW_QUESTIONS", () => {
       PHP: 11,
       "PHP,JS": 7,
       "PHP/Laravel": 5,
+      "PHP/CakePHP": 5,
+      "PHP/スクラッチ": 3,
+      "JS/React": 6,
+      "JS/Vue": 5,
+      "JS/jQuery": 3,
     });
   });
 
