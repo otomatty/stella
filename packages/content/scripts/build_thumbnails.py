@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 14 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 15 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -130,6 +130,25 @@ def motif_html_css(c: str) -> str:
     <rect x="104" y="152" width="340" height="220" rx="12" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>
     <rect x="156" y="204" width="236" height="116" rx="8" fill="{c}"/>
     <text x="274" y="482" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="36" font-weight="500" fill="{MUTED}">&lt;div&gt;</text>"""
+
+
+def motif_modern_css(c: str) -> str:
+    """:root のトークン 1 つが、3 つの部品へ配られる。"""
+    boxes = "".join(
+        f'<rect x="{x}" y="248" width="144" height="200" rx="12" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>'
+        for x in (40, 202, 364)
+    )
+    return f"""
+    <rect x="134" y="64" width="280" height="76" rx="38" fill="{INK}"/>
+    <text x="274" y="113" text-anchor="middle" font-family="'Geist Mono', monospace" font-size="32" font-weight="500" fill="{PAPER}">--color</text>
+    <path d="M 274 140 L 274 248 M 274 194 L 112 194 L 112 248 M 274 194 L 436 194 L 436 248" stroke="{RULE_SOLID}" stroke-width="3" fill="none"/>
+    {boxes}
+    <rect x="64" y="280" width="96" height="16" rx="8" fill="{c}"/>
+    <rect x="64" y="316" width="96" height="10" rx="5" fill="{RULE}"/>
+    <rect x="64" y="340" width="72" height="10" rx="5" fill="{RULE}"/>
+    <rect x="226" y="322" width="96" height="44" rx="22" fill="{c}"/>
+    <rect x="388" y="280" width="96" height="64" rx="8" fill="none" stroke="{c}" stroke-width="4"/>
+    <rect x="388" y="368" width="96" height="10" rx="5" fill="{RULE}"/>"""
 
 
 def motif_python_testing(c: str) -> str:
@@ -428,6 +447,12 @@ SPECS = {
         "title_size": 116,
         "subtitle": "入門研修",
         "motif": motif_html_css,
+    },
+    "modern-css-basics": {
+        "title": "モダンCSS",
+        "title_size": 116,
+        "subtitle": "入門研修",
+        "motif": motif_modern_css,
     },
     "python-testing-ci-basics": {
         "title": "Python",
