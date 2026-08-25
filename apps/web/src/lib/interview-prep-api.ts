@@ -7,6 +7,8 @@
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
 import type { FixNote } from "@falcon/shared/interview/fix-notes";
+import { type MonitoringSummary, sortByInterviewDate } from "@falcon/shared/interview/monitoring";
+import { toStudyDate } from "@falcon/shared/study/activity";
 import { apiFetch, apiFetchRaw } from "./api-client";
 
 /** 受講者向け GET /questions の行 (個別回答の型 + 学習ステータス付き)。 */
@@ -216,19 +218,124 @@ export interface InterviewPrepAssignmentRow {
   categories: string[];
   interviewDate?: string | null;
   note?: string | null;
+  /** 準備率 (%) — 割当範囲の A 必修のうち「練習OK」の割合 (Issue #236)。 */
+  prepRate?: number;
+  /** 準備率の分母 (A 必修の問題数)。 割当前は 0。 */
+  prepTotal?: number;
+  /** 4 状態の内訳 (合計は prepTotal に一致する)。 */
+  breakdown?: { confident: number; drafted: number; read: number; none: number };
+  /** 最終練習日時 (ISO)。 一度も練習していなければ null。 */
+  lastPracticedAt?: string | null;
 }
 
-/** 面談予定日昇順 → 未設定は display_name 順で末尾 (GET /assignments と同じ)。 */
+/**
+ * モニタリング一覧の集計 (`monitoringRisk` などに渡す形)。
+ * 集計が無い行 (再集計待ち / 未同梱の旧レスポンス) は 0% ではなく「未算出」として渡す。
+ */
+export function monitoringSummaryOf(row: InterviewPrepAssignmentRow): MonitoringSummary {
+  return {
+    interviewDate: row.interviewDate ?? null,
+    prepPercent: row.prepRate ?? null,
+    lastPracticedAt: row.lastPracticedAt ?? null,
+  };
+}
+
+/**
+ * 割当保存の楽観更新 (一覧の即時反映)。
+ *
+ * **カテゴリを変えたら集計値を落とす**のが要点: 準備率の分母は「割当範囲の A 必修」
+ * なので、 PHP → Java のように割当を変えると準備率・内訳はサーバで計算し直すまで
+ * 分からない。 古い値を残すと案件・割当だけ新しく、 準備率は旧割当のまま —— という
+ * 食い違いが (再読込するまで) 居座る。 落としたぶんは保存成功後の再取得で埋める。
+ * 最終練習日は割当に依存しないのでそのまま残す。
+ */
+export function applyAssignmentSave(
+  rows: InterviewPrepAssignmentRow[],
+  profileId: string,
+  patch: { categories?: string[]; interviewDate?: string | null; note?: string | null },
+  today: string = toStudyDate(Date.now()),
+): InterviewPrepAssignmentRow[] {
+  return sortInterviewPrepAssignmentRows(
+    rows.map((row) => {
+      if (row.profile_id !== profileId) return row;
+      const next: InterviewPrepAssignmentRow = { ...row };
+      if (patch.categories !== undefined) {
+        const changed = !sameCategories(row.categories, patch.categories);
+        next.categories = patch.categories;
+        if (changed) {
+          next.prepRate = undefined;
+          next.prepTotal = undefined;
+          next.breakdown = undefined;
+        }
+      }
+      if (patch.interviewDate !== undefined) next.interviewDate = patch.interviewDate;
+      if (patch.note !== undefined) next.note = patch.note;
+      return next;
+    }),
+    today,
+  );
+}
+
+/**
+ * 楽観更新の取り消し。 保存が失敗したら、 その行を保存前の姿へそのまま戻す。
+ *
+ * `applyAssignmentSave` で戻そうとすると「割当がまた変わった」と見なされて集計値が
+ * 落ちたままになる (この経路には再取得が続かないので「集計中…」で固まる)。 サーバは
+ * 何も変えていないのだから、 集計値も含めて元の行をそのまま復元するのが正しい。
+ */
+export function restoreAssignmentRow(
+  rows: InterviewPrepAssignmentRow[],
+  original: InterviewPrepAssignmentRow,
+  today: string = toStudyDate(Date.now()),
+): InterviewPrepAssignmentRow[] {
+  return sortInterviewPrepAssignmentRows(
+    rows.map((row) => (row.profile_id === original.profile_id ? original : row)),
+    today,
+  );
+}
+
+/**
+ * 再取得した一覧から **集計値だけ** を取り込む。
+ *
+ * 一覧をまるごと差し替えると、 再取得が飛んでいる最中に別の行で保存した面談日・メモ・
+ * 割当が、 その保存より前に読まれたスナップショットで巻き戻る (画面だけサーバと食い違う)。
+ * この再取得の目的はサーバでしか出せない集計を貰うことなので、 利用者が編集する値
+ * (categories / interviewDate / note) には触らない。
+ *
+ * サーバの割当がこちらと食い違う行は、 もっと新しい保存が進行中ということ。 その集計は
+ * 別の割当に対する値なので取り込まず、 未算出のままにする (その保存の再取得が正しい値を運ぶ)。
+ */
+export function mergeAssignmentAggregates(
+  current: InterviewPrepAssignmentRow[],
+  fetched: InterviewPrepAssignmentRow[],
+): InterviewPrepAssignmentRow[] {
+  const byProfile = new Map(fetched.map((r) => [r.profile_id, r]));
+  return current.map((row) => {
+    const server = byProfile.get(row.profile_id);
+    if (!server || !sameCategories(row.categories, server.categories)) return row;
+    return {
+      ...row,
+      prepRate: server.prepRate,
+      prepTotal: server.prepTotal,
+      breakdown: server.breakdown,
+      lastPracticedAt: server.lastPracticedAt,
+    };
+  });
+}
+
+/** 割当カテゴリの同値判定 (順序は問わない)。 */
+function sameCategories(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedB = [...b].sort();
+  return [...a].sort().every((v, i) => v === sortedB[i]);
+}
+
+/** 「面談が近い順」: これから → 済んだ面談 → 未設定 (GET /assignments と同じ)。 */
 export function sortInterviewPrepAssignmentRows(
   rows: InterviewPrepAssignmentRow[],
+  today: string = toStudyDate(Date.now()),
 ): InterviewPrepAssignmentRow[] {
-  const dated = rows
-    .filter((r) => r.interviewDate)
-    .sort((a, b) => String(a.interviewDate).localeCompare(String(b.interviewDate)));
-  const undated = rows
-    .filter((r) => !r.interviewDate)
-    .sort((a, b) => a.display_name.localeCompare(b.display_name));
-  return [...dated, ...undated];
+  return sortByInterviewDate(rows, today);
 }
 
 export async function listInterviewPrepAssignments(): Promise<InterviewPrepAssignmentRow[]> {

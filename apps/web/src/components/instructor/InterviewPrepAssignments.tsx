@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -6,7 +6,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAppShell } from "@/components/shell/app-shell-context";
-import { SkillSheetRegistrationPanel } from "@/components/skill-sheet/SkillSheetRegistrationPanel";
 import { monitoringSkillSheetEntryVisible } from "@/lib/skill-sheet-ui";
 import {
   Table,
@@ -18,13 +17,16 @@ import {
 } from "@/components/ui/table";
 import { ASSIGNABLE_CATEGORIES } from "@falcon/shared/interview/types";
 import {
+  applyAssignmentSave,
   listInterviewPrepAssignments,
+  mergeAssignmentAggregates,
+  restoreAssignmentRow,
   saveInterviewPrepAssignment,
-  sortInterviewPrepAssignmentRows,
   type InterviewPrepAssignmentRow,
 } from "@/lib/interview-prep-api";
 import { Chip } from "@/components/ui/chip";
 import { InterviewAudioAdmin } from "@/components/admin/InterviewAudioAdmin";
+import { InterviewPrepMonitoring } from "@/components/instructor/InterviewPrepMonitoring";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
@@ -41,29 +43,49 @@ export function InterviewPrepAssignmentsPage({
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"assign" | "audio">("assign");
+  // モニタリングを既定タブにする (Issue #236) — 講師・営業の起点は「準備できているか」。
+  const [tab, setTab] = useState<"monitoring" | "assign" | "audio">("monitoring");
   const [draftDates, setDraftDates] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
-  const [skillSheetLearnerId, setSkillSheetLearnerId] = useState<string | null>(null);
 
   const shell = useAppShell();
+  // スキルシートの入口はモニタリングの詳細ドロワーに 1 つだけ置く (Issue #236)。
   const showSkillSheetEntry = monitoringSkillSheetEntryVisible({
     profileRole: shell.profileRole,
     shellRole: shell.role,
   });
 
+  /**
+   * 再取得の世代番号。 チップを続けて押すと保存も再取得も並ぶので、 遅れて届いた
+   * 古い応答で新しい集計を上書きしないよう、 最後に投げたものだけを採用する。
+   */
+  const reloadSeq = useRef(0);
+
+  /**
+   * 一覧を引き直して集計 (準備率・内訳・最終練習日) を更新する。 割当を変えると
+   * 準備率の分母が変わるため、 保存のたびにサーバの再集計を取り込む必要がある。
+   *
+   * 取り込むのは集計値だけ。 まるごと差し替えると、 この再取得が飛んでいる最中に
+   * 別の行で保存した面談日・メモ・割当が、 保存前のスナップショットで巻き戻る。
+   */
+  const refreshRows = useCallback(async () => {
+    const seq = ++reloadSeq.current;
+    const r = await listInterviewPrepAssignments();
+    if (seq === reloadSeq.current) setRows((rs) => mergeAssignmentAggregates(rs, r));
+  }, []);
+
   useEffect(() => {
     if (!backendEnabled) return;
+    const seq = ++reloadSeq.current;
     let cancelled = false;
     listInterviewPrepAssignments()
       .then((r) => {
-        if (!cancelled) {
-          setRows(r);
-          setDraftDates(
-            Object.fromEntries(r.map((row) => [row.profile_id, row.interviewDate ?? ""])),
-          );
-          setDraftNotes(Object.fromEntries(r.map((row) => [row.profile_id, row.note ?? ""])));
-        }
+        if (cancelled || seq !== reloadSeq.current) return;
+        setRows(r);
+        setDraftDates(
+          Object.fromEntries(r.map((row) => [row.profile_id, row.interviewDate ?? ""])),
+        );
+        setDraftNotes(Object.fromEntries(r.map((row) => [row.profile_id, row.note ?? ""])));
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -80,19 +102,30 @@ export function InterviewPrepAssignmentsPage({
     const next = row.categories.includes(category)
       ? row.categories.filter((c) => c !== category)
       : [...row.categories, category];
-    // 楽観更新 → 失敗時はこの行だけロールバック（他行の並行編集を巻き込まない）
-    setRows((rs) =>
-      rs.map((r) => (r.profile_id === row.profile_id ? { ...r, categories: next } : r)),
-    );
+    // 楽観更新 → 失敗時はこの行だけロールバック（他行の並行編集を巻き込まない）。
+    // 集計値は割当が変わると当てにならないので、 保存成功後に引き直す。
+    setRows((rs) => applyAssignmentSave(rs, row.profile_id, { categories: next }));
     setSavingId(row.profile_id);
     try {
       await saveInterviewPrepAssignment(row.profile_id, { categories: next });
-      toast(`${row.display_name} の面談対策を更新しました`);
     } catch (e) {
-      setRows((rs) =>
-        rs.map((r) => (r.profile_id === row.profile_id ? { ...r, categories: row.categories } : r)),
-      );
+      // サーバは何も変えていないので、 集計値も含めて保存前の行をそのまま戻す
+      // (集計値を落としたままだとこの経路には再取得が続かず「集計中…」で固まる)。
+      setRows((rs) => restoreAssignmentRow(rs, row));
       toast.error(e instanceof Error ? e.message : "保存に失敗しました");
+      setSavingId(null);
+      return;
+    }
+    toast(`${row.display_name} の面談対策を更新しました`);
+    // ここから先の失敗は「保存できなかった」ではない。 サーバは新しい割当を持っているので、
+    // 再取得がこけてもロールバックしてはいけない (画面だけ旧割当に戻ると実態とずれる)。
+    // 集計値は落としたままにして、 分からないことを分からないまま示す。
+    try {
+      await refreshRows();
+    } catch {
+      toast.error(
+        "割当は保存しました。準備率の再集計を取得できませんでした（再読み込みしてください）",
+      );
     } finally {
       setSavingId(null);
     }
@@ -108,11 +141,8 @@ export function InterviewPrepAssignmentsPage({
         interviewDate,
         note,
       });
-      setRows((rs) =>
-        sortInterviewPrepAssignmentRows(
-          rs.map((r) => (r.profile_id === row.profile_id ? { ...r, interviewDate, note } : r)),
-        ),
-      );
+      // 面談日・メモは準備率の分母に効かないので、 集計値はそのまま残せる。
+      setRows((rs) => applyAssignmentSave(rs, row.profile_id, { interviewDate, note }));
       toast(`${row.display_name} の面談予定を更新しました`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "保存に失敗しました");
@@ -121,6 +151,22 @@ export function InterviewPrepAssignmentsPage({
     }
   };
 
+  const tabs = (
+    <div className="flex items-center gap-1.5 mb-3">
+      <Chip active={tab === "monitoring"} onClick={() => setTab("monitoring")}>
+        モニタリング
+      </Chip>
+      <Chip active={tab === "assign"} onClick={() => setTab("assign")}>
+        割当
+      </Chip>
+      {canManageAudio ? (
+        <Chip active={tab === "audio"} onClick={() => setTab("audio")}>
+          質問音声
+        </Chip>
+      ) : null}
+    </div>
+  );
+
   if (canManageAudio && tab === "audio") {
     return (
       <>
@@ -128,14 +174,7 @@ export function InterviewPrepAssignmentsPage({
           title="面談対策"
           sub="質問の読み上げ音声を生成・再生成します。生成した音声は受講者の練習画面で再生されます"
         />
-        <div className="flex items-center gap-1.5 mb-3">
-          <Chip active={false} onClick={() => setTab("assign")}>
-            割当
-          </Chip>
-          <Chip active onClick={() => setTab("audio")}>
-            質問音声
-          </Chip>
-        </div>
+        {tabs}
         {backendEnabled ? (
           <InterviewAudioAdmin />
         ) : (
@@ -147,22 +186,35 @@ export function InterviewPrepAssignmentsPage({
     );
   }
 
+  if (tab === "monitoring") {
+    return (
+      <>
+        <PageHeader
+          title="面談対策のモニタリング"
+          sub="面談日が近い順に受講者の準備状況を並べます。行を開くと質問ごとのステータスと個別回答の型を確認できます"
+        />
+        {tabs}
+        <InterviewPrepMonitoring
+          rows={rows}
+          loading={loading}
+          error={error}
+          backendEnabled={backendEnabled}
+          showSkillSheet={showSkillSheetEntry}
+          profileRole={shell.profileRole}
+          shellRole={shell.role}
+          currentUserId={shell.currentUserId}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
         title="面談対策の割当"
         sub="受講者ごとに対策する案件種別を設定します。フレームワークまで指定すると、その言語の共通問題も併せて表示されます"
       />
-      {canManageAudio ? (
-        <div className="flex items-center gap-1.5 mb-3">
-          <Chip active onClick={() => setTab("assign")}>
-            割当
-          </Chip>
-          <Chip active={false} onClick={() => setTab("audio")}>
-            質問音声
-          </Chip>
-        </div>
-      ) : null}
+      {tabs}
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
           デモモードでは割当を編集できません。
@@ -184,7 +236,6 @@ export function InterviewPrepAssignmentsPage({
                 <TableHead className="w-36">面談予定</TableHead>
                 <TableHead className="w-48">メモ</TableHead>
                 <TableHead>割当</TableHead>
-                {showSkillSheetEntry ? <TableHead className="w-28">スキルシート</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -249,29 +300,11 @@ export function InterviewPrepAssignmentsPage({
                       ))}
                     </div>
                   </TableCell>
-                  {showSkillSheetEntry ? (
-                    <TableCell>
-                      <Button
-                        variant={skillSheetLearnerId === row.profile_id ? "primary" : "outline"}
-                        size="sm"
-                        onClick={() =>
-                          setSkillSheetLearnerId((current) =>
-                            current === row.profile_id ? null : row.profile_id,
-                          )
-                        }
-                      >
-                        {skillSheetLearnerId === row.profile_id ? "閉じる" : "開く"}
-                      </Button>
-                    </TableCell>
-                  ) : null}
                 </TableRow>
               ))}
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={showSkillSheetEntry ? 5 : 4}
-                    className="text-center text-sm text-ink-3 p-8"
-                  >
+                  <TableCell colSpan={4} className="text-center text-sm text-ink-3 p-8">
                     受講者がいません。
                   </TableCell>
                 </TableRow>
@@ -280,21 +313,6 @@ export function InterviewPrepAssignmentsPage({
           </Table>
         </Card>
       )}
-      {showSkillSheetEntry && skillSheetLearnerId && shell.currentUserId ? (
-        <div className="mt-4">
-          <SkillSheetRegistrationPanel
-            key={skillSheetLearnerId}
-            backendEnabled={backendEnabled}
-            profileRole={shell.profileRole}
-            shellRole={shell.role}
-            currentUserId={shell.currentUserId}
-            targetProfileId={skillSheetLearnerId}
-            learnerDisplayName={
-              rows.find((row) => row.profile_id === skillSheetLearnerId)?.display_name
-            }
-          />
-        </div>
-      ) : null}
     </>
   );
 }

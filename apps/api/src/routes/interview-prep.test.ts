@@ -30,8 +30,10 @@ import {
   interviewPrepProgressPath,
   minimalSkillSheetPayload,
   mintInterviewPrepTestToken,
+  progressRow,
   putAssignmentBody,
   type InterviewPrepTestState,
+  type ProgressRow,
 } from "./interview-prep.test-helpers.js";
 
 vi.mock("../lib/audit.js", () => ({
@@ -1066,5 +1068,162 @@ describe("深掘り音声 (#234)", () => {
     });
 
     expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/interview-prep/assignments monitoring aggregates (#236)", () => {
+  let env: Env;
+  let state: InterviewPrepTestState;
+
+  /** 受講者ごとに割当 + 進捗 + 個別の型を用意する (割当は sales で保存する)。 */
+  async function seedLearner(
+    profileId: string,
+    opts: {
+      categories?: string[];
+      interviewDate?: string | null;
+      progress?: Array<Partial<ProgressRow> & { questionNo: number }>;
+      drafted?: number[];
+    },
+  ) {
+    const { app } = createTestApp(env);
+    const salesToken = await mintInterviewPrepTestToken("seed-sales");
+    await putAssignment(
+      app,
+      env,
+      salesToken,
+      profileId,
+      putAssignmentBody({
+        categories: opts.categories ?? ["PHP"],
+        interviewDate: opts.interviewDate ?? null,
+      }),
+    );
+    for (const p of opts.progress ?? []) {
+      state.progress.push(progressRow({ ...p, profileId }));
+    }
+    for (const no of opts.drafted ?? []) {
+      state.personalTemplates.set(`ses:${profileId}:${no}`, {
+        id: `tpl-${profileId}-${no}`,
+        tenantId: "ses",
+        profileId,
+        questionNo: no,
+        content: "個別の型",
+        draftContent: null,
+        generatedFrom: null,
+        source: "ai",
+        updatedBy: null,
+      });
+    }
+  }
+
+  async function fetchRows(tokenUser: string) {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken(tokenUser);
+    const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      rows: Array<Record<string, unknown> & { profile_id: string }>;
+    };
+    return body.rows;
+  }
+
+  beforeEach(() => {
+    env = createInterviewPrepTestEnv();
+    state = createInterviewPrepTestState();
+    (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =
+      state;
+  });
+
+  it("割当範囲の A 必修だけを分母に準備率と内訳を返す", async () => {
+    // PHP 割当の可視質問は 101(A) / 102(B) / 104(共通 A) → A 必修は 101 と 104 の 2 問。
+    await seedLearner(SEED_PROFILES.learner.id, {
+      categories: ["PHP"],
+      progress: [{ questionNo: 101, status: "confident" }],
+      drafted: [104],
+    });
+
+    const rows = await fetchRows("seed-instructor");
+    const row = rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
+
+    expect(row).toMatchObject({
+      prepRate: 50,
+      prepTotal: 2,
+      breakdown: { confident: 1, drafted: 1, read: 0, none: 0 },
+    });
+  });
+
+  it("最終練習日は interview_progress の最大値", async () => {
+    await seedLearner(SEED_PROFILES.learner.id, {
+      progress: [
+        { questionNo: 101, status: "confident", lastPracticedAt: new Date("2026-09-03T04:00:00Z") },
+        { questionNo: 102, status: "read", lastPracticedAt: new Date("2026-09-07T04:00:00Z") },
+        { questionNo: 104, status: "read", lastPracticedAt: null },
+      ],
+    });
+
+    const rows = await fetchRows("seed-sales");
+    const row = rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
+
+    expect(row?.lastPracticedAt).toBe("2026-09-07T04:00:00.000Z");
+  });
+
+  it("進捗も個別の型も無い受講者は準備率 0 / 最終練習日 null", async () => {
+    await seedLearner(SEED_PROFILES.learner.id, { categories: ["PHP"] });
+
+    const rows = await fetchRows("seed-admin");
+    const row = rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
+
+    expect(row).toMatchObject({ prepRate: 0, prepTotal: 2, lastPracticedAt: null });
+    expect(row?.breakdown).toEqual({ confident: 0, drafted: 0, read: 0, none: 2 });
+  });
+
+  it("割当が無い受講者は分母 0 でも 0% (ゼロ除算しない)", async () => {
+    // 割当を保存していない受講者も一覧には並ぶ。 可視は共通 A の 104 のみ。
+    const rows = await fetchRows("seed-instructor");
+    const row = rows.find((r) => r.profile_id === SEED_PROFILES.learnerD.id);
+
+    expect(row).toMatchObject({ prepRate: 0, prepTotal: 1, lastPracticedAt: null });
+  });
+
+  it("受講者ごとの進捗が混ざらない", async () => {
+    await seedLearner(SEED_PROFILES.learner.id, {
+      progress: [
+        { questionNo: 101, status: "confident" },
+        { questionNo: 104, status: "confident" },
+      ],
+    });
+    await seedLearner(SEED_PROFILES.learnerB.id, {
+      progress: [{ questionNo: 101, status: "confident" }],
+    });
+
+    const rows = await fetchRows("seed-instructor");
+
+    expect(rows.find((r) => r.profile_id === SEED_PROFILES.learner.id)?.prepRate).toBe(100);
+    expect(rows.find((r) => r.profile_id === SEED_PROFILES.learnerB.id)?.prepRate).toBe(50);
+    expect(rows.find((r) => r.profile_id === SEED_PROFILES.learnerC.id)?.prepRate).toBe(0);
+  });
+
+  it("受講者数によらず集計クエリは 1 テーブル 1 回 (N+1 を作らない)", async () => {
+    await seedLearner(SEED_PROFILES.learner.id, {
+      progress: [{ questionNo: 101, status: "confident" }],
+    });
+    await seedLearner(SEED_PROFILES.learnerB.id, { drafted: [104] });
+    await seedLearner(SEED_PROFILES.learnerC.id, {});
+    state.selectCounts = {};
+
+    const rows = await fetchRows("seed-instructor");
+
+    expect(rows.length).toBe(4);
+    expect(state.selectCounts.interview_progress).toBe(1);
+    expect(state.selectCounts.interview_personal_templates).toBe(1);
+    expect(state.selectCounts.interview_questions).toBe(1);
+  });
+
+  it("受講者は一覧を取得できない (#202 の権限境界)", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-learner");
+
+    const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
+
+    expect(res.status).toBe(403);
   });
 });

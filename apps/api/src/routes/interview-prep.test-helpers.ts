@@ -155,6 +155,8 @@ export interface InterviewPrepTestState {
   practiceSets: PracticeSetRow[];
   /** 質問バンクの差し替え (セット選定のテストで 10 問以上を用意する)。 */
   questions?: typeof TEST_INTERVIEW_QUESTIONS;
+  /** テーブルごとの SELECT 回数。 モニタリング集計の N+1 検出に使う (Issue #236)。 */
+  selectCounts: Record<string, number>;
 }
 
 /** Fixture bank for #206 — assigned PHP A/B, JS A, and common A. */
@@ -303,6 +305,7 @@ export function createInterviewPrepTestState(): InterviewPrepTestState {
     fixNotes: [],
     progress: [],
     practiceSets: [],
+    selectCounts: {},
   };
 }
 
@@ -410,6 +413,7 @@ export function createInterviewPrepTestDb(
     limit?: number,
   ): Promise<unknown[]> => {
     const keys = selectShapeKeys(shape);
+    state.selectCounts[fromTable] = (state.selectCounts[fromTable] ?? 0) + 1;
 
     if (fromTable === "profiles") {
       if (keys.includes("id") && keys.includes("tenantId") && keys.includes("role")) {
@@ -458,10 +462,12 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_progress") {
+      const mine = state.progress.filter((r) => r.tenantId === ctx.callerTenantId);
+      // モニタリングの集計 (Issue #236) はテナント全員ぶんを 1 回で読む。 その形は
+      // select に profileId が入っていることで見分ける (where 句は解釈しない)。
+      if (keys.includes("profileId")) return mine.map((r) => ({ ...r }));
       const profileId = ctx.targetProfileId ?? ctx.callerId;
-      return state.progress
-        .filter((r) => r.tenantId === ctx.callerTenantId && r.profileId === profileId)
-        .map((r) => ({ ...r }));
+      return mine.filter((r) => r.profileId === profileId).map((r) => ({ ...r }));
     }
 
     if (fromTable === "interview_practice_sets") {
@@ -496,10 +502,19 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_personal_templates") {
-      const profileId = ctx.targetProfileId ?? ctx.callerId;
-      const rows = [...state.personalTemplates.values()].filter(
-        (t) => t.tenantId === ctx.callerTenantId && t.profileId === profileId,
+      const inTenant = [...state.personalTemplates.values()].filter(
+        (t) => t.tenantId === ctx.callerTenantId,
       );
+      // 進捗と同じく、 profileId 付きの select はテナント全員ぶんの集計用。
+      if (keys.includes("profileId")) {
+        return inTenant.map((t) => ({
+          profileId: t.profileId,
+          questionNo: t.questionNo,
+          content: t.content,
+        }));
+      }
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      const rows = inTenant.filter((t) => t.profileId === profileId);
       return rows.map((t) => ({
         id: t.id,
         questionNo: t.questionNo,

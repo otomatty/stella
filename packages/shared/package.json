@@ -46,6 +46,7 @@
     "./interview/filter": "./src/interview/filter.ts",
     "./interview/answer-template": "./src/interview/answer-template.ts",
     "./interview/progress": "./src/interview/progress.ts",
+    "./interview/monitoring": "./src/interview/monitoring.ts",
     "./interview/audio": "./src/interview/audio.ts",
     "./interview/fix-notes": "./src/interview/fix-notes.ts",
     "./interview/session": "./src/interview/session.ts",

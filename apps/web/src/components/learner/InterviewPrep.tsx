@@ -11,11 +11,11 @@ import type { ProfileRole } from "@falcon/shared/cms/types";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
 import { tagMatches } from "@falcon/shared/interview/filter";
 import {
-  PREP_STATUS_LABELS,
   deriveQuestionPrepStatus,
   prepRate,
   type QuestionPrepStatus,
 } from "@falcon/shared/interview/progress";
+import { PrepStatusPill } from "@/components/interview/PrepStatusPill";
 import {
   type ActiveSetSummary,
   adoptPersonalAnswerTemplateDraft,
@@ -78,26 +78,6 @@ interface ConfirmedProgress {
   seq: number;
   status: LearnerInterviewQuestion["progress_status"];
   count: number;
-}
-
-const STATUS_PILL_CLASSES: Record<QuestionPrepStatus, string> = {
-  none: "bg-muted text-ink-3",
-  read: "bg-info/10 text-info",
-  drafted: "bg-warning/15 text-warning",
-  confident: "bg-success/10 text-success",
-};
-
-function PrepStatusPill({ status }: { status: QuestionPrepStatus }) {
-  return (
-    <span
-      className={cn(
-        "text-[10.5px] px-2 py-[2px] rounded-full font-semibold shrink-0",
-        STATUS_PILL_CLASSES[status],
-      )}
-    >
-      {PREP_STATUS_LABELS[status]}
-    </span>
-  );
 }
 
 /** 準備率リング。 sf グラデーションのストロークで A 必修の練習OK率を示す。 */

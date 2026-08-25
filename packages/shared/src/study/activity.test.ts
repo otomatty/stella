@@ -4,6 +4,7 @@ import {
   addStudyDays,
   buildStudySeries,
   computeStreaks,
+  msUntilNextStudyDay,
   studyDateStartMs,
   studyDateWeekday,
   toStudyDate,
@@ -135,5 +136,25 @@ describe("studyDateStartMs", () => {
   it("studyDateStartMs は JST 0 時の UTC ミリ秒を返す", () => {
     // 2026-08-20 00:00 JST = 2026-08-19 15:00 UTC
     expect(studyDateStartMs("2026-08-20")).toBe(Date.UTC(2026, 7, 19, 15));
+  });
+});
+
+describe("msUntilNextStudyDay", () => {
+  it("日本時間の 00:00 までの残りを返す", () => {
+    // 2026-09-10T03:00Z = JST 12:00 → 境界まで 12 時間
+    expect(msUntilNextStudyDay(Date.parse("2026-09-10T03:00:00.000Z"))).toBe(12 * 3_600_000);
+    // 2026-09-10T14:00Z = JST 23:00 → 境界まで 1 時間
+    expect(msUntilNextStudyDay(Date.parse("2026-09-10T14:00:00.000Z"))).toBe(3_600_000);
+  });
+
+  it("境界ちょうどなら次の境界まで丸一日", () => {
+    // 2026-09-09T15:00Z = JST 2026-09-10 00:00
+    expect(msUntilNextStudyDay(Date.parse("2026-09-09T15:00:00.000Z"))).toBe(86_400_000);
+  });
+
+  it("待った先では日付が変わっている", () => {
+    const at = Date.parse("2026-09-10T14:30:00.000Z");
+    expect(toStudyDate(at)).toBe("2026-09-10");
+    expect(toStudyDate(at + msUntilNextStudyDay(at))).toBe("2026-09-11");
   });
 });

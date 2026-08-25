@@ -33,6 +33,8 @@ import {
   summarizePracticeSet,
 } from "@falcon/shared/interview/practice-set";
 import { deriveQuestionPrepStatus, prepRate } from "@falcon/shared/interview/progress";
+import { sortByInterviewDate } from "@falcon/shared/interview/monitoring";
+import { toStudyDate } from "@falcon/shared/study/activity";
 
 import {
   interviewFixNotes,
@@ -71,6 +73,10 @@ import {
   upsertPersonalAnswerTemplate,
 } from "../lib/interview-answer-template-db.js";
 import { plainCommonAnswerTemplate } from "../lib/interview-answer-template.js";
+import {
+  EMPTY_INTERVIEW_PREP_SUMMARY,
+  loadInterviewPrepSummaries,
+} from "../lib/interview-monitoring.js";
 import type { Env } from "../env.js";
 
 export const interviewPrepRoute = new Hono<{ Bindings: Env }>();
@@ -168,18 +174,6 @@ function parseInterviewNote(value: unknown): string | null {
     throw new ApiError("note は文字列で指定してください", 400);
   }
   return value;
-}
-
-function sortAssignmentRows<T extends { interviewDate?: string | null; display_name?: string }>(
-  rows: T[],
-): T[] {
-  const dated = rows
-    .filter((r) => r.interviewDate)
-    .sort((a, b) => String(a.interviewDate).localeCompare(String(b.interviewDate)));
-  const undated = rows
-    .filter((r) => !r.interviewDate)
-    .sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
-  return [...dated, ...undated];
 }
 
 function requireCanEditAnswerTemplate(
@@ -533,7 +527,15 @@ interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
         },
       ]),
     );
-    const rows = sortAssignmentRows(
+    // モニタリング一覧 (Issue #236) の集計。 受講者ごとに引くと N+1 になるので、
+    // 進捗・個別の型・質問をテナント単位でまとめて読んでから JS 側で割り当てる。
+    const summaries = await loadInterviewPrepSummaries(
+      db,
+      caller.tenantId,
+      new Map(students.map((s) => [s.profile_id, byProfile.get(s.profile_id)?.categories ?? []])),
+    );
+    // 「面談が近い順」: これから → 済んだ面談 → 未設定 (並び順の正本は shared)。
+    const rows = sortByInterviewDate(
       students.map((s) => {
         const assignment = byProfile.get(s.profile_id);
         return {
@@ -541,8 +543,10 @@ interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
           categories: assignment?.categories ?? [],
           interviewDate: assignment?.interviewDate ?? null,
           note: assignment?.note ?? null,
+          ...(summaries.get(s.profile_id) ?? EMPTY_INTERVIEW_PREP_SUMMARY),
         };
       }),
+      toStudyDate(Date.now()),
     );
     return c.json({ rows });
   } catch (err) {

@@ -54,6 +54,18 @@ export function toStudyDate(at: Date | number, offsetMin = STUDY_TZ_OFFSET_MIN):
   return formatUtcDate(ms + offsetMin * 60_000);
 }
 
+/**
+ * 次の学習日の境界までのミリ秒。 開きっぱなしの画面が前日の「今日」を持ち続けないよう、
+ * ここまでタイマーを張って日付を採り直す (講師のモニタリング画面など)。
+ * 境界ちょうどのときは次の境界までの丸一日を返す。
+ */
+export function msUntilNextStudyDay(at: Date | number, offsetMin = STUDY_TZ_OFFSET_MIN): number {
+  const ms = typeof at === "number" ? at : at.getTime();
+  const shifted = ms + offsetMin * 60_000;
+  const intoDay = ((shifted % 86_400_000) + 86_400_000) % 86_400_000;
+  return 86_400_000 - intoDay;
+}
+
 /** `YYYY-MM-DD` を UTC ミリ秒 (その日の 00:00) に。 不正値は NaN。 */
 function studyDateToMs(date: string): number {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
