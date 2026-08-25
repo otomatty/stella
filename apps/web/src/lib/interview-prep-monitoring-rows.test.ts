@@ -12,6 +12,7 @@ import { monitoringRisk } from "@falcon/shared/interview/monitoring";
 import {
   applyAssignmentSave,
   mergeAssignmentAggregates,
+  monitoringRowsOf,
   monitoringSummaryOf,
   restoreAssignmentRow,
   type InterviewPrepAssignmentRow,
@@ -215,5 +216,39 @@ describe("restoreAssignmentRow — 保存失敗のロールバック", () => {
     const restored = restoreAssignmentRow(optimistic, original);
 
     expect(restored.find((r) => r.profile_id === "b")?.categories).toEqual(["SQL"]);
+  });
+});
+
+describe("monitoringRowsOf — モニタリングに並べる行", () => {
+  it("受講者は割当前でも並べる (未割当であること自体が合図)", () => {
+    const rows = [row({ role: "student", categories: [], interviewDate: null })];
+
+    expect(monitoringRowsOf(rows)).toHaveLength(1);
+  });
+
+  it("割当も面談予定も無い管理者は並べない (「練習なし」で埋まらせない)", () => {
+    const rows = [
+      row({ profile_id: "seed-admin", role: "admin", categories: [], interviewDate: null }),
+    ];
+
+    expect(monitoringRowsOf(rows)).toHaveLength(0);
+  });
+
+  it("割当か面談予定が入った管理者は受講者と同じように並べる", () => {
+    const assigned = row({ profile_id: "seed-admin", role: "admin", interviewDate: null });
+    const scheduled = row({
+      profile_id: "seed-admin-b",
+      role: "admin",
+      categories: [],
+      interviewDate: "2026-09-14",
+    });
+
+    expect(monitoringRowsOf([assigned, scheduled])).toHaveLength(2);
+  });
+
+  it("role が無い応答 (旧レスポンス) は落とさない", () => {
+    const rows = [row({ role: undefined, categories: [], interviewDate: null })];
+
+    expect(monitoringRowsOf(rows)).toHaveLength(1);
   });
 });

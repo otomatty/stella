@@ -282,6 +282,39 @@ export const TEST_STUDENTS: StudentProfile[] = [
   },
 ];
 
+/**
+ * 受講者以外のプロフィール。 面談対策は管理者も受講者と同じ内容を練習するので、
+ * 対象者一覧 (`GET /assignments`) に載る管理者と、 載らない講師・営業の両方を置く。
+ */
+export const TEST_STAFF: StudentProfile[] = [
+  {
+    id: SEED_PROFILES.admin.id,
+    tenantId: "ses",
+    role: "admin",
+    displayName: "Admin A",
+    email: "admin-a@example.local",
+  },
+  {
+    id: SEED_PROFILES.instructor.id,
+    tenantId: "ses",
+    role: "instructor",
+    displayName: "Instructor A",
+    email: "instructor-a@example.local",
+  },
+  {
+    id: SEED_PROFILES.sales.id,
+    tenantId: "ses",
+    role: "sales",
+    displayName: "Sales A",
+    email: "sales-a@example.local",
+  },
+];
+
+export const TEST_PROFILES: StudentProfile[] = [...TEST_STUDENTS, ...TEST_STAFF];
+
+/** 面談対策の対象になれるロール (本番の `INTERVIEW_PREP_PRACTICE_ROLES` と揃える)。 */
+const PREP_TARGET_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
+
 const DRIZZLE_NAME = Symbol.for("drizzle:Name");
 
 function tableName(table: object): string {
@@ -440,15 +473,19 @@ export function createInterviewPrepTestDb(
     if (fromTable === "profiles") {
       if (keys.includes("id") && keys.includes("tenantId") && keys.includes("role")) {
         const profileId = ctx.targetProfileId ?? ctx.callerId;
-        const found = TEST_STUDENTS.find((s) => s.id === profileId);
+        const found = TEST_PROFILES.find((s) => s.id === profileId);
         if (!found) return [];
         return [{ id: found.id, tenantId: found.tenantId, role: found.role }];
       }
       if (keys.includes("profile_id") && keys.includes("display_name")) {
-        const rows = TEST_STUDENTS.filter((s) => s.tenantId === ctx.callerTenantId).map((s) => ({
+        // 対象者一覧。 where 句は解釈しないので、 ロールの絞り込みはここで再現する。
+        const rows = TEST_PROFILES.filter(
+          (s) => s.tenantId === ctx.callerTenantId && PREP_TARGET_ROLES.includes(s.role),
+        ).map((s) => ({
           profile_id: s.id,
           display_name: s.displayName,
           email: s.email,
+          role: s.role,
         }));
         return limit ? rows.slice(0, limit) : rows;
       }

@@ -234,11 +234,10 @@ async function main(): Promise<void> {
     assert(res.assignedCategories?.length > 0, "assignedCategories が空");
   });
 
-  await step("面談対策の割当は受講者以外 (営業/講師/管理者) を拒否する", async () => {
+  await step("面談対策の割当は営業・講師を拒否する", async () => {
     for (const [label, profileId] of [
       ["営業", SALES_ID],
       ["講師", INSTRUCTOR_ID],
-      ["管理者", ADMIN_ID],
     ] as const) {
       const r = await call("PUT", `/api/interview-prep/assignments/${profileId}`, {
         token: admin,
@@ -246,10 +245,39 @@ async function main(): Promise<void> {
       });
       assert(r.status === 400, `${label} への割当は 400 を期待したが ${r.status}`);
       assert(
-        r.body?.error === "面談対策の割当は受講者のみ対象です",
+        r.body?.error === "面談対策の割当は受講者と管理者のみ対象です",
         `${label}: エラーメッセージが想定と異なる: ${JSON.stringify(r.body)}`,
       );
     }
+  });
+
+  await step("管理者は受講者と同じく面談対策の対象にできる", async () => {
+    await ok("PUT", `/api/interview-prep/assignments/${ADMIN_ID}`, {
+      token: admin,
+      body: { categories: ["SQL"] },
+    });
+
+    const listed = await ok("GET", "/api/interview-prep/assignments", { token: admin });
+    const row = listed.rows.find((r: { profile_id: string }) => r.profile_id === ADMIN_ID);
+    assert(row?.categories?.includes("SQL"), "管理者の割当が保存されていない");
+    assert(row?.role === "admin", `対象者の行に role が付かない: ${JSON.stringify(row)}`);
+
+    // 管理者も自分の練習を記録できる (受講者と同じ経路)。
+    const questions = await ok("GET", `/api/interview-prep/questions?profileId=${ADMIN_ID}`, {
+      token: admin,
+    });
+    const first = questions.rows?.[0]?.no as number | undefined;
+    assert(typeof first === "number", "割当ぶんの質問が返らない");
+    await ok("PUT", `/api/interview-prep/progress/${first}`, {
+      token: admin,
+      body: { event: "read" },
+    });
+
+    // 後片付け: 割当を空へ戻す (モニタリング一覧に常時並ばせない)。
+    await ok("PUT", `/api/interview-prep/assignments/${ADMIN_ID}`, {
+      token: admin,
+      body: { categories: [] },
+    });
   });
 
   await step("受講者が設定画面からユーザー名を変更できる", async () => {

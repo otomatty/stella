@@ -8,6 +8,7 @@ import type { LearnerInterviewQuestion, ProgressEvent } from "@/lib/interview-pr
 import type { FixNote } from "@falcon/shared/interview/fix-notes";
 import { summarizeFixNotes } from "@falcon/shared/interview/fix-notes";
 import type { ProfileRole } from "@falcon/shared/cms/types";
+import { canPracticeInterviewPrep } from "@falcon/shared/admin/types";
 import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
 import { tagMatches } from "@falcon/shared/interview/filter";
 import {
@@ -256,6 +257,17 @@ export function InterviewPrepPage({
   profileRole?: ProfileRole;
   shellRole?: Role;
 }) {
+  /**
+   * 自分の練習ぶんを取りに行くときに渡す profileId。
+   *
+   * 受講者は付けても付けなくても同じ (サーバは caller 自身を見る) が、 管理者は
+   * staff 判定のまま質問全件を返されてしまう — 自分の進捗・個別の型が付いた
+   * 「受講者と同じ」ペイロードを受け取るために明示する。 講師 / 営業は面談対策の
+   * 対象者ではないので付けず、 従来どおり staff の全件表示にする。
+   */
+  const practiceProfileId =
+    profileRole !== undefined && canPracticeInterviewPrep(profileRole) ? (profileId ?? null) : null;
+
   const prepTabs = interviewPrepTabIdsForRole(shellRole);
   const [prepTab, setPrepTab] = useState<string>(prepTabs[0] ?? "questions");
   const [rows, setRows] = useState<LearnerInterviewQuestion[]>([]);
@@ -341,7 +353,7 @@ export function InterviewPrepPage({
         cancelled = true;
       };
     }
-    fetchInterviewQuestions()
+    fetchInterviewQuestions(practiceProfileId)
       .then((r) => {
         if (cancelled) return;
         setRows(r.rows);
@@ -362,7 +374,7 @@ export function InterviewPrepPage({
     return () => {
       cancelled = true;
     };
-  }, [backendEnabled, seedConfirmed]);
+  }, [backendEnabled, practiceProfileId, seedConfirmed]);
 
   /**
    * 質問を読み直す。 送信中の自己評価が終わってから投げる — 先に読み直すと、 まだ届いて
@@ -372,7 +384,7 @@ export function InterviewPrepPage({
   const reloadRows = () => {
     if (!backendEnabled) return;
     pendingProgressRef.current
-      .then(() => fetchInterviewQuestions())
+      .then(() => fetchInterviewQuestions(practiceProfileId))
       .then((r) => {
         setRows(r.rows);
         seedConfirmed(r.rows);
@@ -394,11 +406,12 @@ export function InterviewPrepPage({
   const [query, setQuery] = useState("");
 
   /**
-   * 進捗を記録できるのは認証済みの受講者本人だけ。 staff が受講者シェルへ切り替えて
-   * 覗いているときは `s.role` が learner でも API 側は 403 を返すので、 送信も
-   * 自己評価ボタンの表示も止める (毎回失敗してロールバックするのを防ぐ)。
+   * 進捗を記録できるのは面談対策の対象者本人 (受講者・管理者) だけ。 講師 / 営業が
+   * 受講者シェルへ切り替えて覗いているときは `s.role` が learner でも API 側は 403 を
+   * 返すので、 送信も自己評価ボタンの表示も止める (毎回失敗してロールバックするのを防ぐ)。
    */
-  const canRecordProgress = backendEnabled && profileRole === "student";
+  const canRecordProgress =
+    backendEnabled && profileRole !== undefined && canPracticeInterviewPrep(profileRole);
 
   /**
    * 学習ステータスの更新。 楽観更新してからサーバへ送り、 保存に失敗したら

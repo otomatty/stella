@@ -47,10 +47,12 @@ import {
   fetchInterviewQuestions,
   type InterviewPrepAssignmentRow,
   type LearnerInterviewQuestion,
+  monitoringRowsOf,
   monitoringSummaryOf,
 } from "@/lib/interview-prep-api";
 import { useStudyToday } from "@/hooks/useStudyToday";
 import { PrepStatusPill } from "@/components/interview/PrepStatusPill";
+import { PrepTargetRoleBadge } from "@/components/interview/PrepTargetRoleBadge";
 import { SkillSheetRegistrationPanel } from "@/components/skill-sheet/SkillSheetRegistrationPanel";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +103,10 @@ export function InterviewPrepMonitoring({
   // 並び順も「今日」に追随させる。 API / 保存時のソートだけに任せると、 開いたまま
   // 日付をまたいだときに、 済んだばかりの面談がこれからの面談より前に居座る
   // (カウントダウンと注意喚起だけが更新されて順序が取り残される)。
-  const orderedRows = useMemo(() => sortByInterviewDate(rows, today), [rows, today]);
+  const orderedRows = useMemo(
+    () => sortByInterviewDate(monitoringRowsOf(rows), today),
+    [rows, today],
+  );
   const totals = useMemo(
     () => summarizeMonitoring(orderedRows.map(monitoringSummaryOf), today),
     [orderedRows, today],
@@ -125,7 +130,7 @@ export function InterviewPrepMonitoring({
   if (error) {
     return (
       <Card className="p-12 text-center text-sm text-destructive">
-        受講者一覧の取得に失敗しました: {error}
+        対象者一覧の取得に失敗しました: {error}
       </Card>
     );
   }
@@ -141,7 +146,7 @@ export function InterviewPrepMonitoring({
         <Table className="max-lg:min-w-0">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-40 sm:w-52">受講者</TableHead>
+              <TableHead className="w-40 sm:w-52">対象者</TableHead>
               <TableHead className="w-32">面談日</TableHead>
               <TableHead className="w-44">案件・割当</TableHead>
               <TableHead className="w-40">準備率</TableHead>
@@ -173,6 +178,7 @@ export function InterviewPrepMonitoring({
                   <TableCell>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[13px] font-medium">{row.display_name}</span>
+                      <PrepTargetRoleBadge role={row.role} />
                       {risk !== "none" ? (
                         <span
                           className={cn(

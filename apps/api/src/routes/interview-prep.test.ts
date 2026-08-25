@@ -989,7 +989,7 @@ describe("改善点メモ (#234)", () => {
     expect(state.fixNotes).toHaveLength(0);
   });
 
-  it("受講者以外は追加できない", async () => {
+  it("面談対策の対象でないロール (講師) は追加できない", async () => {
     const token = await mintInterviewPrepTestToken("seed-instructor");
 
     const res = await addNote(token, 101, "講師のメモ");
@@ -1283,7 +1283,8 @@ describe("GET /api/interview-prep/assignments monitoring aggregates (#236)", () 
 
     const rows = await fetchRows("seed-instructor");
 
-    expect(rows.length).toBe(4);
+    // 受講者 4 名 + 面談対策の対象になる管理者 1 名 (講師・営業は対象外)。
+    expect(rows.length).toBe(5);
     expect(state.selectCounts.interview_progress).toBe(1);
     expect(state.selectCounts.interview_personal_templates).toBe(1);
     expect(state.selectCounts.interview_questions).toBe(1);
@@ -1296,6 +1297,184 @@ describe("GET /api/interview-prep/assignments monitoring aggregates (#236)", () 
     const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
 
     expect(res.status).toBe(403);
+  });
+});
+
+describe("面談対策の対象者 (受講者 + 管理者)", () => {
+  let env: Env;
+  let state: InterviewPrepTestState;
+
+  beforeEach(() => {
+    env = createInterviewPrepTestEnv();
+    state = createInterviewPrepTestState();
+    (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =
+      state;
+  });
+
+  it("管理者を割当対象にできる (受講者と同じ面談対策を受ける)", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.admin.id,
+      putAssignmentBody({ categories: ["PHP"], interviewDate: "2026-09-10" }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(state.assignments.get(`ses:${SEED_PROFILES.admin.id}`)).toMatchObject({
+      categories: ["PHP"],
+      interviewDate: "2026-09-10",
+    });
+  });
+
+  it("対象者一覧に管理者が並び、 行のロールが分かる", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+    await putAssignment(app, env, token, SEED_PROFILES.admin.id, putAssignmentBody());
+
+    const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const row = body.rows.find(
+      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.admin.id,
+    );
+    expect(row).toMatchObject({ role: "admin", categories: ["PHP"] });
+    const learner = body.rows.find(
+      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.learner.id,
+    );
+    expect(learner?.role).toBe("student");
+  });
+
+  it("講師・営業は対象にならない (一覧にも載らず、 割当も 400)", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.instructor.id,
+      putAssignmentBody(),
+    );
+    expect(res.status).toBe(400);
+    expect(state.assignments.size).toBe(0);
+
+    const list = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
+    const body = await list.json();
+    const ids = body.rows.map((r: { profile_id: string }) => r.profile_id);
+    expect(ids).not.toContain(SEED_PROFILES.instructor.id);
+    expect(ids).not.toContain(SEED_PROFILES.sales.id);
+  });
+
+  it("管理者は自分の学習ステータスを記録できる", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+    await putAssignment(app, env, token, SEED_PROFILES.admin.id, putAssignmentBody());
+
+    const res = await request(app, env, interviewPrepProgressPath(101), {
+      method: "PUT",
+      body: JSON.stringify({ event: "confident" }),
+      token,
+    });
+
+    expect(res.status).toBe(200);
+    expect(
+      state.progress.find((r) => r.profileId === SEED_PROFILES.admin.id && r.questionNo === 101),
+    ).toMatchObject({ status: "confident" });
+  });
+
+  it("講師・営業は学習ステータスを記録できない (面談対策の対象ではない)", async () => {
+    const { app } = createTestApp(env);
+    for (const who of ["seed-instructor", "seed-sales"]) {
+      const token = await mintInterviewPrepTestToken(who);
+      const res = await request(app, env, interviewPrepProgressPath(101), {
+        method: "PUT",
+        body: JSON.stringify({ event: "confident" }),
+        token,
+      });
+      expect(res.status).toBe(403);
+    }
+    expect(state.progress).toHaveLength(0);
+  });
+
+  it("管理者も割当範囲外の質問には練習を記録できない (受講者と同じ可視性)", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.admin.id,
+      putAssignmentBody({ categories: ["PHP"] }),
+    );
+
+    // 103 は JS。 質問全件を読める管理者でも、 練習の記録は自分の割当で閉じる。
+    const progress = await request(app, env, interviewPrepProgressPath(103), {
+      method: "PUT",
+      body: JSON.stringify({ event: "confident" }),
+      token,
+    });
+    expect(progress.status).toBe(403);
+
+    const note = await request(app, env, interviewPrepFixNotePath(103), {
+      method: "POST",
+      body: JSON.stringify({ text: "割当範囲外へのメモ" }),
+      token,
+    });
+    expect(note.status).toBe(403);
+
+    expect(state.progress).toHaveLength(0);
+    expect(state.fixNotes).toHaveLength(0);
+  });
+
+  it("割当範囲内なら管理者も記録できる (共通カテゴリを含む)", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.admin.id,
+      putAssignmentBody({ categories: ["PHP"] }),
+    );
+
+    for (const no of [101, 104]) {
+      const res = await request(app, env, interviewPrepProgressPath(no), {
+        method: "PUT",
+        body: JSON.stringify({ event: "read" }),
+        token,
+      });
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it("管理者が自分の profileId を指定すると、 受講者と同じ (割当ぶんの) 質問が返る", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+    await putAssignment(
+      app,
+      env,
+      token,
+      SEED_PROFILES.admin.id,
+      putAssignmentBody({ categories: ["PHP"] }),
+    );
+
+    const res = await request(
+      app,
+      env,
+      `${INTERVIEW_PREP_QUESTIONS_PATH}?profileId=${SEED_PROFILES.admin.id}`,
+      { method: "GET", token },
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.assignedCategories).toEqual(["PHP"]);
+    // PHP (101/102) + 全案件共通 (104)。 割当外の JS (103) は含めない。
+    expect(body.rows.map((r: { no: number }) => r.no).sort()).toEqual([101, 102, 104]);
   });
 });
 
@@ -1613,6 +1792,43 @@ describe("古い音声を受講者に届けない (#237)", () => {
     const body = (await res.json()) as { audioNos: number[]; audioSegments: string[] };
     expect(body.audioSegments).not.toContain("101:question");
     expect(body.audioNos).not.toContain(101);
+  });
+
+  it("管理者が自分の練習ぶんを引くときは古いセグメントを載せない", async () => {
+    await makeStaleAudio();
+    state.assignments.set("ses:seed-admin", {
+      tenantId: "ses",
+      profileId: "seed-admin",
+      categories: ["PHP"],
+      interviewDate: null,
+      interviewNote: null,
+      assignedBy: "seed-admin",
+    });
+    const { app } = createTestApp(env);
+    const admin = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}?profileId=seed-admin`, {
+      method: "GET",
+      token: admin,
+    });
+
+    const body = (await res.json()) as { audioNos: number[]; audioSegments: string[] };
+    expect(body.audioSegments).not.toContain("101:question");
+    expect(body.audioNos).not.toContain(101);
+  });
+
+  it("他人の行を覗くときは古いセグメントも残す (staff の試聴用)", async () => {
+    await makeStaleAudio();
+    const { app } = createTestApp(env);
+    const admin = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}?profileId=seed-learner`, {
+      method: "GET",
+      token: admin,
+    });
+
+    const body = (await res.json()) as { audioSegments: string[] };
+    expect(body.audioSegments).toContain("101:question");
   });
 
   it("staff の一覧には残す (試聴してから再生成する導線のため)", async () => {

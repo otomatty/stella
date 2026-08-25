@@ -127,6 +127,24 @@ export function requireCanManageInterviewPrep(caller: Caller): void {
   }
 }
 
+/**
+ * 面談対策を「受ける」側になれるロール (受講者 / 管理者)。 管理者は受講者と同じ
+ * 練習 (割当・今日の練習セット・進捗・改善点メモ) ができる。 講師・営業は対象外。
+ * UI 側の双子は `@falcon/shared/admin/types` の同名関数。
+ */
+export const INTERVIEW_PREP_PRACTICE_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
+
+export function canPracticeInterviewPrep(role: ProfileRole): boolean {
+  return INTERVIEW_PREP_PRACTICE_ROLES.includes(role);
+}
+
+/** 面談対策の練習系 API (自分の進捗を書く操作) の入口ガード。 */
+export function requireCanPracticeInterviewPrep(caller: Caller): void {
+  if (!canPracticeInterviewPrep(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
 /** 面談予定日・メモの write。 instructor は categories のみ。 */
 export function canWriteInterviewSchedule(role: ProfileRole): boolean {
   return role === "sales" || role === "admin" || role === "platform_admin";

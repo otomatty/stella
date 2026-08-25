@@ -28,6 +28,7 @@ import { Chip } from "@/components/ui/chip";
 import { InterviewAudioAdmin } from "@/components/admin/InterviewAudioAdmin";
 import { InterviewQuestionEditor } from "@/components/admin/InterviewQuestionEditor";
 import { InterviewPrepMonitoring } from "@/components/instructor/InterviewPrepMonitoring";
+import { PrepTargetRoleBadge } from "@/components/interview/PrepTargetRoleBadge";
 
 export function InterviewPrepAssignmentsPage({
   backendEnabled,
@@ -240,9 +241,14 @@ export function InterviewPrepAssignmentsPage({
     <>
       <PageHeader
         title="面談対策の割当"
-        sub="受講者ごとに対策する案件種別を設定します。フレームワークまで指定すると、その言語の共通問題も併せて表示されます"
+        sub="対象者ごとに対策する案件種別を設定します。フレームワークまで指定すると、その言語の共通問題も併せて表示されます"
       />
       {tabs}
+      {/* 管理者は一覧に自分の行を持つ。 割り当てたあと受講者画面へ切り替えれば練習できる。 */}
+      <p className="mb-3 text-[12px] text-ink-3">
+        受講者に加えて管理者も対象にできます。 自分で練習するときは、
+        割り当てたあと左下のメニューから「受講者画面を表示」に切り替えてください。
+      </p>
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
           デモモードでは割当を編集できません。
@@ -253,14 +259,14 @@ export function InterviewPrepAssignmentsPage({
         </Card>
       ) : error ? (
         <Card className="p-12 text-center text-sm text-destructive">
-          受講者一覧の取得に失敗しました: {error}
+          対象者一覧の取得に失敗しました: {error}
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <Table className="max-lg:min-w-0">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-40 sm:w-56">受講者</TableHead>
+                <TableHead className="w-40 sm:w-56">対象者</TableHead>
                 <TableHead className="w-36">面談予定</TableHead>
                 <TableHead className="w-48">メモ</TableHead>
                 <TableHead>割当</TableHead>
@@ -270,7 +276,10 @@ export function InterviewPrepAssignmentsPage({
               {rows.map((row) => (
                 <TableRow key={row.profile_id}>
                   <TableCell>
-                    <div className="text-[13px] font-medium">{row.display_name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-medium">{row.display_name}</span>
+                      <PrepTargetRoleBadge role={row.role} />
+                    </div>
                     <div className="text-[11.5px] text-ink-4">{row.email ?? ""}</div>
                   </TableCell>
                   <TableCell>

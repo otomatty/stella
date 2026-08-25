@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canManageInterviewPrep,
+  canPracticeInterviewPrep,
   isAssignableProfileRole,
   isProfileRole,
   validateInviteUsersRequest,
@@ -27,5 +28,13 @@ describe("profile roles", () => {
     expect(canManageInterviewPrep("platform_admin")).toBe(true);
     expect(canManageInterviewPrep("sales")).toBe(true);
     expect(canManageInterviewPrep("student")).toBe(false);
+  });
+
+  it("面談対策を受けられるのは受講者と管理者 (講師・営業は対象外)", () => {
+    expect(canPracticeInterviewPrep("student")).toBe(true);
+    expect(canPracticeInterviewPrep("admin")).toBe(true);
+    expect(canPracticeInterviewPrep("platform_admin")).toBe(true);
+    expect(canPracticeInterviewPrep("instructor")).toBe(false);
+    expect(canPracticeInterviewPrep("sales")).toBe(false);
   });
 });

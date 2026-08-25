@@ -3,12 +3,13 @@
  *
  * アプリ層認可:
  *   - 受講者: 割当カテゴリ + 全案件共通の質問のみ read
+ *   - canPracticeInterviewPrep (受講者/admin/platform_admin): 自分の練習 (割当・進捗・メモ) の対象
  *   - canManageInterviewPrep (instructor/admin/platform_admin/sales): 質問全件 read、 割当の read/write
  *   - interviewDate / note の write: sales/admin/platform_admin のみ (Issue #205)
  */
 
 import { Hono } from "hono";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
@@ -68,10 +69,13 @@ import {
   ApiError,
   errorResponse,
   getCaller,
+  INTERVIEW_PREP_PRACTICE_ROLES,
   canManageInterviewPrep,
+  canPracticeInterviewPrep,
   canWriteInterviewSchedule,
   requireCanEditInterviewQuestions,
   requireCanManageInterviewPrep,
+  requireCanPracticeInterviewPrep,
   requireRole,
 } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
@@ -399,7 +403,11 @@ function requireCanEditAnswerTemplate(
   }
 }
 
-async function assertLearnerInTenant(
+/**
+ * 面談対策の対象者 (受講者 / 管理者) が同じテナントに居ることを保証する。
+ * 管理者も受講者と同じ練習をするので、 回答の型・割当の対象に含める。
+ */
+async function assertPrepTargetInTenant(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
   tenantId: string,
   profileId: string,
@@ -412,8 +420,8 @@ async function assertLearnerInTenant(
   if (!target[0] || target[0].tenantId !== tenantId) {
     throw new ApiError("対象の受講者が見つかりません", 404);
   }
-  if (target[0].role !== "student") {
-    throw new ApiError("面談対策の回答の型は受講者のみ対象です", 400);
+  if (!canPracticeInterviewPrep(target[0].role)) {
+    throw new ApiError("面談対策の回答の型は受講者と管理者のみ対象です", 400);
   }
 }
 
@@ -657,7 +665,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
 
     if (canManageInterviewPrep(caller.role)) {
       if (profileIdParam) {
-        await assertLearnerInTenant(db, caller.tenantId, profileIdParam);
+        await assertPrepTargetInTenant(db, caller.tenantId, profileIdParam);
         const assigned = await db
           .select({
             categories: interviewPrepAssignments.categories,
@@ -679,6 +687,16 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           caller.tenantId,
           profileIdParam,
         );
+        /**
+         * 自分の練習ぶんを取りに来た staff (= 面談対策の対象になる管理者) には、
+         * 受講者と同じく本文と食い違う音声を渡さない — 練習で古い読み上げを
+         * 聞かせないため。 他人の行を覗くとき (モニタリングの詳細) は staff の
+         * 試聴用にそのまま残す (聞いてから作り直せるように)。
+         */
+        const inventory =
+          profileIdParam === caller.id && canPracticeInterviewPrep(caller.role)
+            ? learnerAudioInventory({ audioNos, audioSegments, audioStaleSegments })
+            : { audioNos, audioSegments, audioStaleSegments };
         return c.json({
           rows: await attachFixNotes(
             db,
@@ -695,9 +713,9 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           interviewDate: assigned[0]?.interviewDate ?? null,
           note: assigned[0]?.note ?? null,
           profileId: profileIdParam,
-          audioNos,
-          audioSegments,
-          audioStaleSegments,
+          audioNos: inventory.audioNos,
+          audioSegments: inventory.audioSegments,
+          audioStaleSegments: inventory.audioStaleSegments,
           activeSet: summarizeActiveSet(
             await loadActivePracticeSet(db, caller.tenantId, profileIdParam),
           ),
@@ -764,22 +782,28 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
   }
 });
 
-/** staff: テナント内の受講者一覧 + 割当カテゴリ (割当管理画面用)。 */
+/**
+ * staff: テナント内の面談対策の対象者一覧 + 割当カテゴリ (割当管理画面用)。
+ *
+ * 対象は受講者と管理者 (`INTERVIEW_PREP_PRACTICE_ROLES`)。 管理者も受講者と同じ
+ * 練習をするため、 割当・モニタリングの行として並ぶ。 行がどちらかは `role` で分かる。
+ */
 interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireCanManageInterviewPrep(caller);
-    const students = await db
+    const targets = await db
       .select({
         profile_id: profiles.id,
         display_name: profiles.displayName,
         email: profiles.email,
+        role: profiles.role,
       })
       .from(profiles)
       .where(
         and(
           eq(profiles.tenantId, caller.tenantId),
-          eq(profiles.role, "student"),
+          inArray(profiles.role, INTERVIEW_PREP_PRACTICE_ROLES),
           eq(profiles.disabled, false),
         ),
       )
@@ -808,11 +832,11 @@ interviewPrepRoute.get("/api/interview-prep/assignments", async (c) => {
     const summaries = await loadInterviewPrepSummaries(
       db,
       caller.tenantId,
-      new Map(students.map((s) => [s.profile_id, byProfile.get(s.profile_id)?.categories ?? []])),
+      new Map(targets.map((s) => [s.profile_id, byProfile.get(s.profile_id)?.categories ?? []])),
     );
     // 「面談が近い順」: これから → 済んだ面談 → 未設定 (並び順の正本は shared)。
     const rows = sortByInterviewDate(
-      students.map((s) => {
+      targets.map((s) => {
         const assignment = byProfile.get(s.profile_id);
         return {
           ...s,
@@ -867,8 +891,8 @@ interviewPrepRoute.put("/api/interview-prep/assignments/:profileId", async (c) =
     if (!target[0] || target[0].tenantId !== caller.tenantId) {
       throw new ApiError("対象の受講者が見つかりません", 404);
     }
-    if (target[0].role !== "student") {
-      throw new ApiError("面談対策の割当は受講者のみ対象です", 400);
+    if (!canPracticeInterviewPrep(target[0].role)) {
+      throw new ApiError("面談対策の割当は受講者と管理者のみ対象です", 400);
     }
 
     const existing = await db
@@ -962,7 +986,7 @@ interviewPrepRoute.put("/api/interview-prep/answer-templates/:profileId/:no", as
       throw new ApiError("content が必要です", 400);
     }
 
-    await assertLearnerInTenant(db, caller.tenantId, profileId);
+    await assertPrepTargetInTenant(db, caller.tenantId, profileId);
 
     await upsertPersonalAnswerTemplate({
       db,
@@ -1002,7 +1026,7 @@ interviewPrepRoute.post(
       requireCanEditAnswerTemplate(caller, profileId);
 
       try {
-        await assertLearnerInTenant(db, caller.tenantId, profileId);
+        await assertPrepTargetInTenant(db, caller.tenantId, profileId);
         await adoptPersonalTemplateDraft({
           db,
           tenantId: caller.tenantId,
@@ -1085,10 +1109,15 @@ function parseAudioGenerateTargets(body: {
 /**
  * 質問 1 件を取り出しつつ read 権限を検査する。
  * 受講者は割当カテゴリ + 共通の範囲外なら 403 (一覧 API と同じ可視性)。
+ *
+ * `scope: "self-practice"` を渡すと、 質問全件を読める staff であっても本人の割当で
+ * 判定する。 練習の記録 (学習ステータス・改善点メモ) は「自分に割り当てられた質問を
+ * 練習する」ものなので、 管理者が対象に加わっても受講者と同じ範囲に閉じる。
  */
 async function loadVisibleQuestion(
   c: Parameters<typeof getCaller>[0],
   no: number,
+  opts: { scope?: "read" | "self-practice" } = {},
 ): Promise<{
   caller: Awaited<ReturnType<typeof getCaller>>["caller"];
   question: InterviewQuestion;
@@ -1104,7 +1133,7 @@ async function loadVisibleQuestion(
   const row = rows[0];
   if (!row) throw new ApiError("質問が見つかりません", 404);
   const { editedAt, ...question } = row as InterviewQuestion & { editedAt: Date | null };
-  if (!canManageInterviewPrep(caller.role)) {
+  if (opts.scope === "self-practice" || !canManageInterviewPrep(caller.role)) {
     const assigned = await db
       .select({ categories: interviewPrepAssignments.categories })
       .from(interviewPrepAssignments)
@@ -1847,7 +1876,7 @@ function serializePracticeSet(set: PracticeSetRow) {
 }
 
 /**
- * 受講者: 「今日の練習セット」を取得する。 進行中のセットがあればそれをそのまま返し
+ * 受講者・管理者: 「今日の練習セット」を取得する。 進行中のセットがあればそれをそのまま返し
  * (= 中断からの再開)、 無ければ SM-2 で 10 問を選んで作る。
  *
  * 優先度は `selectPracticeSet` に閉じている: 「もう一度」→ 未着手・未練習 →
@@ -1857,7 +1886,7 @@ function serializePracticeSet(set: PracticeSetRow) {
 interviewPrepRoute.get("/api/interview-prep/practice-set", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "student");
+    requireCanPracticeInterviewPrep(caller);
 
     const { visible, personalByQuestion, progressByNo } = await loadLearnerPrepContext(
       db,
@@ -1917,13 +1946,13 @@ interviewPrepRoute.get("/api/interview-prep/practice-set", async (c) => {
 });
 
 /**
- * 受講者: セットを終了する (`{ status: "done" }`)。 全問終えた場合も途中で切り上げた
+ * 受講者・管理者: セットを終了する (`{ status: "done" }`)。 全問終えた場合も途中で切り上げた
  * 場合も同じで、 レスポンスに終了サマリ (できた n/10 と準備率の伸び) を返す。
  */
 interviewPrepRoute.put("/api/interview-prep/practice-set/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "student");
+    requireCanPracticeInterviewPrep(caller);
     const id = c.req.param("id");
 
     const body = (await c.req.json()) as { status?: unknown };
@@ -1962,7 +1991,7 @@ interviewPrepRoute.put("/api/interview-prep/practice-set/:id", async (c) => {
 });
 
 /**
- * 受講者: 質問ごとの学習ステータスを更新する (準備ホーム / 練習の自己評価)。
+ * 受講者・管理者: 質問ごとの学習ステータスを更新する (準備ホーム / 練習の自己評価)。
  * body.event:
  *   - "read"      … 型を読んだ (行がなければ作る。 confident は下げない)
  *   - "practiced" … 「もう一度」— 練習回数を加算し、 SM-2 は誤答として進める
@@ -1973,7 +2002,7 @@ interviewPrepRoute.put("/api/interview-prep/practice-set/:id", async (c) => {
 interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "student");
+    requireCanPracticeInterviewPrep(caller);
     const no = parseQuestionNoParam(c.req.param("no"));
 
     const body = (await c.req.json()) as { event?: unknown; setId?: unknown };
@@ -1985,7 +2014,8 @@ interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
       throw new ApiError("setId は文字列で指定してください", 400);
     }
 
-    await loadVisibleQuestion(c, no);
+    // 記録できるのは自分の割当範囲の質問だけ (staff の全件 read 権限では通さない)。
+    await loadVisibleQuestion(c, no, { scope: "self-practice" });
 
     const practiced = event !== "read";
     const now = new Date();
@@ -2127,14 +2157,15 @@ async function loadFixNotesForQuestion(
 interviewPrepRoute.post("/api/interview-prep/fix-notes/:no", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "student");
+    requireCanPracticeInterviewPrep(caller);
     const no = parseQuestionNoParam(c.req.param("no"));
 
     const body = (await c.req.json()) as { text?: unknown };
     const text = normalizeFixNoteText(body.text);
     if (text === "") throw new ApiError("text が必要です", 400);
 
-    await loadVisibleQuestion(c, no);
+    // メモも自分の割当範囲の質問にだけ付けられる (進捗と同じ可視性)。
+    await loadVisibleQuestion(c, no, { scope: "self-practice" });
 
     const existing = await loadFixNotesForQuestion(db, caller.tenantId, caller.id, no);
     if (
@@ -2167,11 +2198,11 @@ interviewPrepRoute.post("/api/interview-prep/fix-notes/:no", async (c) => {
   }
 });
 
-/** 受講者: 改善点メモの消し込み (`{ resolved: true }`) と取り消し (`false`)。 */
+/** 受講者・管理者: 改善点メモの消し込み (`{ resolved: true }`) と取り消し (`false`)。 */
 interviewPrepRoute.put("/api/interview-prep/fix-notes/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    requireRole(caller, "student");
+    requireCanPracticeInterviewPrep(caller);
     const id = c.req.param("id");
 
     const body = (await c.req.json()) as { resolved?: unknown };

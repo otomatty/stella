@@ -4,6 +4,7 @@
  *   - staff: 全件 + 割当の read/write
  */
 
+import type { ProfileRole } from "@falcon/shared/cms/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
 import type { InterviewQuestionPatch } from "@falcon/shared/interview/edit";
@@ -282,6 +283,11 @@ export interface InterviewPrepAssignmentRow {
   profile_id: string;
   display_name: string;
   email: string | null;
+  /**
+   * 対象者のロール。 面談対策は受講者のほか管理者も同じ内容を練習するので、
+   * 一覧に受講者以外が並ぶ (行の見分けが付くよう UI でバッジにする)。
+   */
+  role?: ProfileRole;
   categories: string[];
   interviewDate?: string | null;
   note?: string | null;
@@ -305,6 +311,25 @@ export function monitoringSummaryOf(row: InterviewPrepAssignmentRow): Monitoring
     prepPercent: row.prepRate ?? null,
     lastPracticedAt: row.lastPracticedAt ?? null,
   };
+}
+
+/**
+ * モニタリング一覧に並べる行を選ぶ。
+ *
+ * 受講者は割当前でも並べる — 「まだ割り当てていない」こと自体が講師・営業への合図
+ * なので、 一覧から消してはいけない。 一方、 面談対策の対象に加わった管理者は
+ * 割当も面談予定も無いあいだは外す: 全管理者が「練習なし」として常時並ぶと、
+ * 受講者の準備状況を追うというこの一覧の役目が薄まるため。 割り当てた時点で
+ * (あるいは面談予定が入った時点で) 受講者と同じように並ぶ。
+ */
+export function monitoringRowsOf(rows: InterviewPrepAssignmentRow[]): InterviewPrepAssignmentRow[] {
+  return rows.filter(
+    (row) =>
+      row.role === undefined ||
+      row.role === "student" ||
+      row.categories.length > 0 ||
+      (row.interviewDate ?? null) !== null,
+  );
 }
 
 /**
