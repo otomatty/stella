@@ -27,6 +27,17 @@ describe("navForRole", () => {
     }
   });
 
+  // 組織マスタの挿入位置 (ユーザー管理の直後 = 面談対策より後ろ) がずれても
+  // 面談対策が成績台帳の隣に残ることを、 admin の両 profileRole で見る。
+  it.each(["admin", "platform_admin"] as const)(
+    "面談対策は admin (%s) にも出す (質問音声タブは admin 専用のため導線が必要)",
+    (profileRole) => {
+      const items = ids("admin", profileRole);
+      expect(items).toContain("interview-prep");
+      expect(items.indexOf("interview-prep")).toBe(items.indexOf("gradebook") + 1);
+    },
+  );
+
   it("営業はダッシュボードと面談対策だけを出す", () => {
     expect(ids("sales", "sales")).toEqual(["dash", "interview-prep"]);
   });

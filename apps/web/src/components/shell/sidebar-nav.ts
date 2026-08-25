@@ -75,6 +75,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "assignments", label: "課題管理", icon: Code },
     { id: "enrollments", label: "受講登録", icon: ClipboardList },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
+    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
