@@ -17,10 +17,15 @@ import {
   type QuestionPrepStatus,
 } from "@falcon/shared/interview/progress";
 import {
+  type ActiveSetSummary,
   adoptPersonalAnswerTemplateDraft,
   fetchInterviewQuestions,
+  finishPracticeSet,
+  type PracticeSet,
+  type PracticeSetSummary,
   reportInterviewProgress,
   savePersonalAnswerTemplate,
+  startPracticeSet,
 } from "@/lib/interview-prep-api";
 import { FixNoteEditor, InterviewVoiceSession } from "@/components/learner/InterviewVoiceSession";
 import { cn } from "@/lib/utils";
@@ -137,6 +142,123 @@ function PrepRateRing({ percent }: { percent: number }) {
   );
 }
 
+/** 消化状況から派生フィールド (残り・次の質問・完了判定) を組み直す。 */
+function withSetCounts(
+  set: PracticeSet,
+  completedNos: number[],
+  confidentNos: number[],
+): PracticeSet {
+  const remaining = set.question_nos.filter((v) => !completedNos.includes(v));
+  return {
+    ...set,
+    completed_nos: completedNos,
+    confident_nos: confidentNos,
+    completed: completedNos.length,
+    remaining: remaining.length,
+    next_no: remaining[0] ?? null,
+    finished: remaining.length === 0,
+  };
+}
+
+/** 自己評価 1 件をセットに反映する (楽観更新。 サーバ側も同じ形で記録する)。 */
+function applyAnswerToSet(set: PracticeSet, no: number, confident: boolean): PracticeSet {
+  if (!set.question_nos.includes(no)) return set;
+  const completed = set.completed_nos.includes(no) ? set.completed_nos : [...set.completed_nos, no];
+  const confidentNos = confident
+    ? set.confident_nos.includes(no)
+      ? set.confident_nos
+      : [...set.confident_nos, no]
+    : set.confident_nos.filter((v) => v !== no);
+  return withSetCounts(set, completed, confidentNos);
+}
+
+/**
+ * 保存に失敗した自己評価をセットから取り消す。 楽観更新のまま残すと、 その質問は
+ * 消化済みとして出題から外れ、 セット終了時にサーバ側では「未回答」で確定してしまう
+ * (その場でやり直すこともできない)。 取り消せば未評価に戻り、 出題に戻ってくる。
+ */
+function revertAnswerInSet(
+  set: PracticeSet,
+  no: number,
+  wasCompleted: boolean,
+  wasConfident: boolean,
+): PracticeSet {
+  if (!set.question_nos.includes(no)) return set;
+  const completed = wasCompleted ? set.completed_nos : set.completed_nos.filter((v) => v !== no);
+  const confidentNos = wasConfident
+    ? set.confident_nos.includes(no)
+      ? set.confident_nos
+      : [...set.confident_nos, no]
+    : set.confident_nos.filter((v) => v !== no);
+  return withSetCounts(set, completed, confidentNos);
+}
+
+/** セット終了サマリ: できた n/10 と準備率の伸び、 続けるか終了するか。 */
+function PracticeSetSummaryCard({
+  summary,
+  starting,
+  onContinue,
+  onExit,
+}: {
+  summary: PracticeSetSummary;
+  starting: boolean;
+  onContinue: () => void;
+  onExit: () => void;
+}) {
+  return (
+    <Card className="p-6 flex flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <div className="text-[11px] font-bold tracking-[0.14em] text-brand-ink font-display">
+          SET COMPLETE
+        </div>
+        <div className="text-[24px] font-bold tracking-tight font-display tabular-nums">
+          できた {summary.confident} / {summary.total} 問
+        </div>
+        <p className="text-[12.5px] text-ink-2">
+          もう一度 {summary.again} 問{summary.skipped > 0 ? ` ・ 未回答 ${summary.skipped} 問` : ""}
+        </p>
+      </div>
+      <div className="flex items-center gap-4 flex-wrap">
+        <PrepRateRing percent={summary.currentPercent} />
+        <div className="flex flex-col gap-0.5 text-[12.5px] text-ink-2">
+          <span className="tabular-nums">
+            準備率 {summary.startedPercent}% →{" "}
+            <b className="text-[15px]">{summary.currentPercent}%</b>
+          </span>
+          <span
+            className={cn(
+              "tabular-nums font-semibold",
+              summary.gainedPercent > 0 ? "text-success" : "text-ink-4",
+            )}
+          >
+            {summary.gainedPercent > 0
+              ? `このセットで +${summary.gainedPercent} ポイント`
+              : "今回は準備率の変化なし — 「できた」を付けると上がります"}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5 flex-wrap border-t border-border pt-4">
+        <button
+          type="button"
+          disabled={starting}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full sf-gradient-bg text-white text-[13.5px] font-bold cursor-pointer hover:brightness-105 disabled:opacity-50 disabled:cursor-default"
+          onClick={onContinue}
+        >
+          <Play size={14} />
+          {starting ? "次のセットを準備中…" : "もう 1 セット続ける"}
+        </button>
+        <button
+          type="button"
+          className="px-4 py-2.5 rounded-full border border-border text-[13px] cursor-pointer hover:bg-sunken"
+          onClick={onExit}
+        >
+          今日はここまでにする
+        </button>
+      </div>
+    </Card>
+  );
+}
+
 const INTERVIEW_PREP_TAB_LABELS: Record<string, string> = {
   questions: "想定質問",
   "skill-sheet": "スキルシート",
@@ -164,6 +286,25 @@ export function InterviewPrepPage({
   const [interviewNote, setInterviewNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
+  /** 中断中のセット (準備ホームの「途中のセットを再開」)。 */
+  const [activeSet, setActiveSet] = useState<ActiveSetSummary | null>(null);
+  /** 実行中のセット (Issue #235)。 サブ導線の「全問からランダム」では null。 */
+  const [practiceSet, setPracticeSet] = useState<PracticeSet | null>(null);
+  const [setSummary, setSetSummary] = useState<PracticeSetSummary | null>(null);
+  /**
+   * セット取得時にサーバが返した質問番号 (= いま出題してよいもの)。 セット作成後に
+   * 割当から外された質問はここに入らないので、 出題対象の判定はこちらを正とする。
+   */
+  const [setVisibleNos, setSetVisibleNos] = useState<number[]>([]);
+  /**
+   * 最新のセット。 終了処理は待ち合わせのあとに走るので、 その時点の状態
+   * (巻き戻しで未評価に戻った質問があるか) を state のスナップショットではなく
+   * これで見る。
+   */
+  const practiceSetRef = useRef<PracticeSet | null>(null);
+  const [startingSet, setStartingSet] = useState(false);
+  /** セット終了の確定待ち。 その間は次のセットを始めさせない。 */
+  const [finishingSet, setFinishingSet] = useState(false);
 
   /**
    * 質問ごとの「サーバに保存されたと確認できた最後の状態」。 楽観更新の巻き戻し先は
@@ -173,21 +314,39 @@ export function InterviewPrepPage({
    */
   const confirmedRef = useRef<Map<number, ConfirmedProgress>>(new Map());
   const seqRef = useRef<Map<number, number>>(new Map());
+  /**
+   * 送信中の進捗更新。 セット終了サマリはサーバが保存済みの回答から作るので、
+   * 最後の 1 問の自己評価が届く前に終了すると「できた n/10」が 1 問ぶん少なくなる。
+   * 終了はこの Promise の解決を待ってから投げる。
+   */
+  const pendingProgressRef = useRef<Promise<unknown>>(Promise.resolve());
+  practiceSetRef.current = practiceSet;
 
   /** サーバから読み直した行を確定値として覚え直す (参照しか触らないので依存は空)。 */
-  const seedConfirmed = useCallback((rs: LearnerInterviewQuestion[]) => {
-    const next = new Map<number, ConfirmedProgress>();
+  /**
+   * サーバから受け取った行だけを確定値として覚え直す (全体は作り直さない)。 セット取得で
+   * 増えた行をここに入れておかないと、 その質問の保存に失敗したときに巻き戻し先が無く、
+   * 保存されていない進捗が準備率に残り続ける。
+   */
+  const confirmRows = useCallback((rs: LearnerInterviewQuestion[]) => {
     for (const r of rs) {
       // 送信中のリクエストが後から解決してもこの読み直しを上書きしないよう、
       // 現在の世代番号を確定値の世代にする (seqRef 自体はリセットしない)。
-      next.set(r.no, {
+      confirmedRef.current.set(r.no, {
         seq: seqRef.current.get(r.no) ?? 0,
         status: r.progress_status ?? null,
         count: r.practiced_count ?? 0,
       });
     }
-    confirmedRef.current = next;
   }, []);
+
+  const seedConfirmed = useCallback(
+    (rs: LearnerInterviewQuestion[]) => {
+      confirmedRef.current = new Map<number, ConfirmedProgress>();
+      confirmRows(rs);
+    },
+    [confirmRows],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -212,6 +371,7 @@ export function InterviewPrepPage({
         setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
+        setActiveSet(r.activeSet ?? null);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -224,9 +384,15 @@ export function InterviewPrepPage({
     };
   }, [backendEnabled, seedConfirmed]);
 
+  /**
+   * 質問を読み直す。 送信中の自己評価が終わってから投げる — 先に読み直すと、 まだ届いて
+   * いない評価を含まない状態で行と `activeSet` を差し替えてしまい、 後から成功した評価は
+   * 確定値 (ref) を更新するだけなので、 準備率と残り問数が古いまま残る。
+   */
   const reloadRows = () => {
     if (!backendEnabled) return;
-    fetchInterviewQuestions()
+    pendingProgressRef.current
+      .then(() => fetchInterviewQuestions())
       .then((r) => {
         setRows(r.rows);
         seedConfirmed(r.rows);
@@ -235,11 +401,13 @@ export function InterviewPrepPage({
         setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
+        setActiveSet(r.activeSet ?? null);
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   };
 
-  const [mode, setMode] = useState<"home" | "quiz">("home");
+  /** home=準備 / set=今日の練習セット / quiz=全問からランダム (サブ導線)。 */
+  const [mode, setMode] = useState<"home" | "quiz" | "set">("home");
   const [showFilters, setShowFilters] = useState(false);
   const [cat, setCat] = useState<string>("ALL");
   const [freq, setFreq] = useState<Freq>("A");
@@ -259,6 +427,16 @@ export function InterviewPrepPage({
    */
   const reportProgress = (no: number, event: ProgressEvent) => {
     if (!canRecordProgress) return;
+    // セット実行中の自己評価はセットの消化としても記録する (中断・再開と終了サマリ)。
+    const setId = mode === "set" && event !== "read" ? (practiceSet?.id ?? null) : null;
+    // 保存に失敗したときに楽観更新を戻せるよう、 反映前の消化状況を控える。
+    const wasCompleted = practiceSet?.completed_nos.includes(no) ?? false;
+    const wasConfident = practiceSet?.confident_nos.includes(no) ?? false;
+    if (setId && practiceSet) {
+      setPracticeSet((prev) =>
+        prev && prev.id === setId ? applyAnswerToSet(prev, no, event === "confident") : prev,
+      );
+    }
     const seq = (seqRef.current.get(no) ?? 0) + 1;
     seqRef.current.set(no, seq);
     let applied: Omit<ConfirmedProgress, "seq"> | undefined;
@@ -274,12 +452,31 @@ export function InterviewPrepPage({
         return next;
       }),
     );
-    reportInterviewProgress(no, event)
-      .then(() => {
+    /** セットへの記録が失敗したときに、 その 1 問だけ楽観更新を戻す。 */
+    const revertSetAnswer = () => {
+      if (!setId) return;
+      setPracticeSet((prev) =>
+        prev && prev.id === setId ? revertAnswerInSet(prev, no, wasCompleted, wasConfident) : prev,
+      );
+    };
+
+    const request = reportInterviewProgress(no, event, setId)
+      .then((result) => {
         // 保存できた状態を確定値にする。 応答が前後しても古い世代では上書きしない。
         const current = confirmedRef.current.get(no);
         if (applied && (!current || current.seq < seq)) {
           confirmedRef.current.set(no, { seq, ...applied });
+        }
+        /**
+         * 進捗自体は保存できたが、 セットへの記録だけ落ちた場合 (競合・別タブでの終了)。
+         * ここで再評価を促してはいけない — もう一度評価すると SM-2 と練習回数が二重に
+         * 進み、 1 回の「できた」が rep 2 (6 日後) まで飛んでしまう。 練習の記録は
+         * 残っているので、 セットの集計にだけ入らなかったことを伝えるに留める。
+         */
+        if (setId && !result.set_recorded) {
+          toast.warning(
+            "この回答はセットの集計に反映されませんでした（練習の記録は保存されています）",
+          );
         }
       })
       .catch((e: unknown) => {
@@ -295,6 +492,8 @@ export function InterviewPrepPage({
               ),
             );
           }
+          // セットの消化も戻す。 残したままだとこの質問が飛ばされ、 終了時に「未回答」で確定する。
+          revertSetAnswer();
         }
         toast.error(
           e instanceof Error
@@ -302,6 +501,7 @@ export function InterviewPrepPage({
             : "進捗を保存できませんでした",
         );
       });
+    pendingProgressRef.current = Promise.allSettled([pendingProgressRef.current, request]);
   };
 
   /**
@@ -352,6 +552,24 @@ export function InterviewPrepPage({
     });
   }, [rows, cat, freq, query, mode]);
 
+  /**
+   * セットの出題 (サーバが決めた順番のまま。 改善点メモの更新は rows 側に入る)。
+   *
+   * 出題してよい質問は「セット取得時にサーバが返した行」が正。 手元の rows には一覧を
+   * 取得した時点の質問が残っており、 その後に割当から外された質問も含まれる。 rows だけで
+   * 引くと、 外された質問を出題してしまい、 自己評価が API の可視性検査で 403 になる。
+   */
+  const setPool = useMemo(() => {
+    if (!practiceSet) return [];
+    const allowed = new Set(setVisibleNos);
+    const byNo = new Map(rows.map((r) => [r.no, r]));
+    return practiceSet.question_nos.flatMap((no) => {
+      if (!allowed.has(no)) return [];
+      const row = byNo.get(no);
+      return row ? [row] : [];
+    });
+  }, [practiceSet, rows, setVisibleNos]);
+
   if (prepTab === "skill-sheet" && profileId) {
     return (
       <>
@@ -389,11 +607,132 @@ export function InterviewPrepPage({
     );
   }
 
-  const startPractice = () => {
+  /** サブ導線: 割当範囲の A 必修を全問シャッフルで回す (従来の練習)。 */
+  const startRandomPractice = () => {
     setFreq("A");
     setCat("ALL");
     setQuery("");
     setMode("quiz");
+  };
+
+  /** セットを終了してサマリを出す (全問終えた場合も途中で切り上げた場合も同じ)。 */
+  /**
+   * セットを終了してサマリを出す。 `requireComplete` は「全問答え終えたので自動で
+   * 終了する」経路で立てる — 直前の自己評価が保存できず巻き戻された場合は、 終了せずに
+   * セッションへ戻す (終了してしまうとその質問は「未回答」で確定し、 やり直せない)。
+   * 受講者が明示的に切り上げる経路では立てない。
+   *
+   * 画面の状態は終了が確定してから片付ける。 先に片付けると、 終了リクエスト (と
+   * 待ち合わせている自己評価) が飛んでいる間に新しいセットを始められてしまい、 サーバは
+   * まだ進行中の同じセットを返して再開扱いになる。 その後に届いた終了が裏から done に
+   * するため、 以後の自己評価は進捗には入るのにセットには記録されない。
+   */
+  const finishSetById = (id: string, opts: { requireComplete?: boolean } = {}) => {
+    if (finishingSet) return;
+    setFinishingSet(true);
+    // 直前の自己評価が保存されてから終了する (サマリの「できた n/10」がずれないように)。
+    pendingProgressRef.current
+      .then(() => {
+        const current = practiceSetRef.current;
+        if (opts.requireComplete && current?.id === id && !current.finished) {
+          toast.error("保存できなかった回答があります。もう一度評価してください");
+          return null;
+        }
+        return finishPracticeSet(id);
+      })
+      .then((r) => {
+        if (!r) return; // 中止 (セッションを続ける)
+        setPracticeSet(null);
+        setActiveSet(null);
+        setMode("home");
+        setSetSummary(r.summary);
+      })
+      .catch((e: unknown) =>
+        toast.error(
+          e instanceof Error
+            ? `セットを終了できませんでした: ${e.message}`
+            : "セットを終了できませんでした",
+        ),
+      )
+      .finally(() => {
+        setFinishingSet(false);
+        reloadRows();
+      });
+  };
+
+  /** 受講者が明示的に切り上げる (未回答が残っていてもそのまま終了する)。 */
+  const closePracticeSet = () => {
+    if (practiceSet) finishSetById(practiceSet.id);
+  };
+
+  /** 全問答え終えたので自動で終了する。 巻き戻された回答があれば終了しない。 */
+  const completePracticeSet = () => {
+    if (practiceSet) finishSetById(practiceSet.id, { requireComplete: true });
+  };
+
+  /**
+   * 今日の練習セット (Issue #235)。 中断していたセットがあればサーバがそれを返すので、
+   * 「始める」と「再開する」は同じ呼び出しで済む。
+   */
+  const beginPracticeSet = () => {
+    if (!canRecordProgress || startingSet || finishingSet) return;
+    setStartingSet(true);
+    setSetSummary(null);
+    startPracticeSet()
+      .then((r) => {
+        if (!r.set) {
+          toast.error("出題できる A 必修がありません。担当者に案件種別の割当を依頼してください");
+          // 割当が外れて 0 問になった可能性がある。 手元の質問を読み直して、
+          // サブ導線 (全問からランダム) に無効な質問が残らないようにする。
+          reloadRows();
+          return;
+        }
+        if (r.set.finished) {
+          // 全問答えたまま終了していなかったセット。 出題するものが無いのでサマリへ送る。
+          finishSetById(r.set.id);
+          return;
+        }
+        /**
+         * セットの行はサーバで作り直した最新版なので、 手元の行も差し替える。
+         * 差し替えだけでは足りない — 一覧を取得した後に割当が変わっていると、 セットには
+         * 手元に無い質問が入る。 取りこぼすと出題を引けず、 有効なセットなのに
+         * 「出題できる質問が残っていません」になってしまうので、 新しい行は足す。
+         */
+        setRows((rs) => {
+          const byNo = new Map(r.rows.map((row) => [row.no, row]));
+          const known = new Set(rs.map((row) => row.no));
+          const merged = rs.map((row) => byNo.get(row.no) ?? row);
+          const added = r.rows.filter((row) => !known.has(row.no));
+          return added.length === 0 ? merged : [...merged, ...added].sort((a, b) => a.no - b.no);
+        });
+        // セットの行はサーバの確定値。 巻き戻し先として覚えておく (増えた行を含む)。
+        confirmRows(r.rows);
+        setPracticeSet(r.set);
+        setSetVisibleNos(r.rows.map((row) => row.no));
+        setActiveSet({
+          id: r.set.id,
+          date: r.set.date,
+          total: r.set.total,
+          completed: r.set.completed,
+          remaining: r.set.remaining,
+        });
+        setMode("set");
+      })
+      .catch((e: unknown) =>
+        toast.error(
+          e instanceof Error
+            ? `練習セットを開始できませんでした: ${e.message}`
+            : "練習セットを開始できませんでした",
+        ),
+      )
+      .finally(() => setStartingSet(false));
+  };
+
+  /** 中断: セットはサーバに残したまま準備ホームへ戻る。 */
+  const suspendPracticeSet = () => {
+    setPracticeSet(null);
+    setMode("home");
+    reloadRows();
   };
 
   const filtersVisible = mode === "quiz" || showFilters;
@@ -405,7 +744,15 @@ export function InterviewPrepPage({
         prepTab={prepTab}
         onPrepTabChange={setPrepTab}
         mode={mode}
-        onModeChange={setMode}
+        onModeChange={(next) => {
+          // セット実行中に「準備」へ戻るのは中断 (セットはサーバに残す)。
+          if (next === "home") {
+            if (mode === "set") suspendPracticeSet();
+            else setMode("home");
+            return;
+          }
+          if (mode !== "set") startRandomPractice();
+        }}
         showQuestionModes
       />
 
@@ -454,15 +801,34 @@ export function InterviewPrepPage({
             </div>
           </Card>
 
-          {/* 次にやること: CTA は 1 つ */}
+          {/* 次にやること: CTA は「今日の練習セット」1 つ。 全問からランダムはサブ導線 */}
           <div className="flex items-center gap-2.5 mb-5 flex-wrap">
+            {canRecordProgress ? (
+              <button
+                type="button"
+                disabled={startingSet || finishingSet}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full sf-gradient-bg text-white text-[13.5px] font-bold cursor-pointer hover:brightness-105 disabled:opacity-50 disabled:cursor-default"
+                onClick={beginPracticeSet}
+              >
+                <Play size={14} />
+                {finishingSet
+                  ? "セットを終了しています…"
+                  : startingSet
+                    ? "セットを準備中…"
+                    : activeSet
+                      ? `途中のセットを再開 — 残り ${activeSet.remaining} 問`
+                      : "今日の練習セットを始める — 10 問"}
+              </button>
+            ) : null}
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full sf-gradient-bg text-white text-[13.5px] font-bold cursor-pointer hover:brightness-105"
-              onClick={startPractice}
+              className={cn(
+                "text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer",
+                canRecordProgress ? "" : "font-semibold",
+              )}
+              onClick={startRandomPractice}
             >
-              <Play size={14} />
-              今日の練習を始める — A 必修 {stats.total} 問
+              全問からランダム（A 必修 {stats.total} 問）
             </button>
             <button
               type="button"
@@ -472,11 +838,27 @@ export function InterviewPrepPage({
               {showFilters ? "絞り込みを閉じる" : "絞り込み・検索"}
             </button>
           </div>
+          {activeSet ? (
+            <p className="text-[12px] text-ink-3 -mt-3 mb-5">
+              {activeSet.date} のセットが {activeSet.completed}/{activeSet.total}{" "}
+              問まで進んでいます。 再開すると続きから出題されます。
+            </p>
+          ) : null}
+          {setSummary ? (
+            <div className="mb-5">
+              <PracticeSetSummaryCard
+                summary={setSummary}
+                starting={startingSet || finishingSet}
+                onContinue={beginPracticeSet}
+                onExit={() => setSetSummary(null)}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
 
-      {/* フィルタ (準備ホームでは折りたたみ、 練習では常時表示) */}
-      {filtersVisible ? (
+      {/* フィルタ (準備ホームでは折りたたみ、 全問からランダムでは常時表示。 セットでは出さない) */}
+      {mode !== "set" && filtersVisible ? (
         <Card className="p-3 mb-4 flex flex-col gap-2">
           {catChips.length > 0 ? (
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -514,7 +896,42 @@ export function InterviewPrepPage({
         </Card>
       ) : null}
 
-      {pool.length === 0 ? (
+      {mode === "set" ? (
+        practiceSet && setPool.length > 0 ? (
+          <InterviewVoiceSession
+            pool={setPool}
+            audioSegments={audioSegments}
+            backendEnabled={backendEnabled}
+            canRecordProgress={canRecordProgress}
+            practiceSet={{
+              id: practiceSet.id,
+              questionNos: practiceSet.question_nos,
+              completedNos: practiceSet.completed_nos,
+              onAllDone: completePracticeSet,
+              onFinish: closePracticeSet,
+              onSuspend: suspendPracticeSet,
+            }}
+            onProgress={reportProgress}
+            onFixNoteChange={applyFixNote}
+          />
+        ) : practiceSet ? (
+          /* 出題できる質問が残っていないセット (割当変更など)。 行き止まりにしない。 */
+          <Card className="p-8 text-center flex flex-col items-center gap-3">
+            <p className="text-[13px] text-ink-3">
+              このセットに出題できる質問が残っていません。割当が変わった可能性があります。
+            </p>
+            <button
+              type="button"
+              className="px-4 py-2 rounded-full sf-gradient-bg text-white text-[13px] font-bold cursor-pointer hover:brightness-105"
+              onClick={closePracticeSet}
+            >
+              セットを終了して準備に戻る
+            </button>
+          </Card>
+        ) : (
+          <Card className="p-12 text-center text-sm text-ink-3">セットを読み込んでいます…</Card>
+        )
+      ) : pool.length === 0 ? (
         <Card className="p-12 text-center text-sm text-ink-3">
           条件に合う質問がありません。フィルターを緩めてください。
         </Card>
@@ -554,7 +971,8 @@ function InterviewPrepHeader({
   prepTabs: string[];
   prepTab: string;
   onPrepTabChange: (tab: string) => void;
-  mode: "home" | "quiz";
+  /** set は「今日の練習セット」実行中 (チップ上は「練習」と同じ扱い)。 */
+  mode: "home" | "quiz" | "set";
   onModeChange: (mode: "home" | "quiz") => void;
   showQuestionModes: boolean;
 }) {
@@ -574,7 +992,11 @@ function InterviewPrepHeader({
                 ["quiz", "練習"],
               ] as const
             ).map(([key, label]) => (
-              <Chip key={key} active={mode === key} onClick={() => onModeChange(key)}>
+              <Chip
+                key={key}
+                active={key === "quiz" ? mode !== "home" : mode === "home"}
+                onClick={() => onModeChange(key)}
+              >
                 {label}
               </Chip>
             ))

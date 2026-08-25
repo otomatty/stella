@@ -26,6 +26,11 @@ import {
   unresolvedFixNotes,
 } from "@falcon/shared/interview/fix-notes";
 import {
+  nextUnratedIndex,
+  practiceSetProgress,
+  remainingPracticeQuestions,
+} from "@falcon/shared/interview/practice-set";
+import {
   type SessionTurn,
   buildSessionTurns,
   formatElapsed,
@@ -74,11 +79,30 @@ const DEEP_LABELS: Record<InterviewAudioPart, string> = {
   deep3: "深掘り③",
 };
 
+/**
+ * 「今日の練習セット」(Issue #235) の実行コンテキスト。 渡されると出題は
+ * シャッフルではなくセットの順番になり、 最後まで答えたら `onAllDone` で終わる。
+ */
+export interface VoiceSessionSet {
+  id: string;
+  /** セットの出題順 (サーバが SM-2 で選定した 10 問)。 */
+  questionNos: number[];
+  /** すでに自己評価を付けた質問 (再開時はその次から始める)。 */
+  completedNos: number[];
+  /** 全問終えた (= サマリへ)。 */
+  onAllDone: () => void;
+  /** セットを切り上げてサマリへ。 */
+  onFinish: () => void;
+  /** 中断して準備ホームへ戻る (セットは残る)。 */
+  onSuspend: () => void;
+}
+
 export function InterviewVoiceSession({
   pool,
   audioSegments,
   backendEnabled,
   canRecordProgress,
+  practiceSet,
   onProgress,
   onFixNoteChange,
 }: {
@@ -88,11 +112,30 @@ export function InterviewVoiceSession({
   backendEnabled: boolean;
   /** 自己評価・改善点メモを保存できるか (staff の受講者プレビューでは false)。 */
   canRecordProgress: boolean;
+  /** セット出題のとき。 サブ導線の「全問からランダム」では null。 */
+  practiceSet?: VoiceSessionSet | null;
   onProgress: (no: number, event: ProgressEvent) => void;
   onFixNoteChange: (note: FixNote) => void;
 }) {
-  const [order, setOrder] = useState<number[]>(() => shuffle(pool.map((d) => d.no)));
+  const [order, setOrder] = useState<number[]>(() =>
+    practiceSet
+      ? remainingPracticeQuestions(
+          practiceSet.questionNos,
+          practiceSet.completedNos,
+          pool.map((d) => d.no),
+        )
+      : shuffle(pool.map((d) => d.no)),
+  );
   const [qi, setQi] = useState(0);
+  /**
+   * 再開時にすでに終えていた問題数。 出題順からは外すが、 見出しは
+   * 「4 / 10 問目」とセット全体で数えたいので位置の下駄として持つ。
+   */
+  const [doneOffset, setDoneOffset] = useState(() =>
+    practiceSet
+      ? practiceSetProgress(practiceSet.questionNos, practiceSet.completedNos).completed
+      : 0,
+  );
   /**
    * 出題の回数。 質問の状態は `key` の付け替えで捨てるが、 出題が 1 問だけのときは
    * 次へ進んでも `cur.no` が変わらず、 振り返り画面のまま固まってしまう。 移動のたびに
@@ -103,21 +146,74 @@ export function InterviewVoiceSession({
   const [showText, setShowText] = useState(false);
   /** マイクを使えない環境向け: 録音を省いて回答例を読むだけにする。 */
   const [silent, setSilent] = useState(false);
+  /** パスした質問へ一周して戻ったか (セットが終わらない理由を画面に出す)。 */
+  const [revisiting, setRevisiting] = useState(false);
 
-  // フィルタが変わったら出題順を作り直す。 進捗の楽観更新で pool の参照だけが
-  // 変わるケースでは作り直さない (自己評価のたびにシャッフルされるのを防ぐ)。
+  // フィルタ (またはセット) が変わったら出題順を作り直す。 進捗の楽観更新で pool の
+  // 参照だけが変わるケースでは作り直さない (自己評価のたびにシャッフルされるのを防ぐ)。
+  // セットの completedNos は答えるたびに増えるが、 ここでは再開時の残りを決めるのに
+  // しか使わないので依存に入れない (答えるたびに出題順が組み直されてしまう)。
   const poolKey = pool.map((d) => d.no).join(",");
+  const setId = practiceSet?.id ?? "";
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 出題順はプール / セットが変わったときだけ作り直す
   useEffect(() => {
-    setOrder(shuffle(poolKey === "" ? [] : poolKey.split(",").map(Number)));
+    const poolNos = poolKey === "" ? [] : poolKey.split(",").map(Number);
+    if (practiceSet) {
+      setOrder(
+        remainingPracticeQuestions(practiceSet.questionNos, practiceSet.completedNos, poolNos),
+      );
+      setDoneOffset(
+        practiceSetProgress(practiceSet.questionNos, practiceSet.completedNos).completed,
+      );
+    } else {
+      setOrder(shuffle(poolNos));
+      setDoneOffset(0);
+    }
+    setRevisiting(false);
     setQi(0);
     setRound((r) => r + 1);
-  }, [poolKey]);
+  }, [poolKey, setId]);
 
   const audioSet = useMemo(() => new Set(audioSegments), [audioSegments]);
   const cur = pool.find((d) => d.no === order[qi % Math.max(order.length, 1)]);
   if (!cur) return null;
 
+  /**
+   * 「この質問をパス」でセットが閉じてしまう状況か (未評価が今の 1 問だけ)。 パスは
+   * 「後でやる」操作なので、 それでセットが終わって未回答が確定するのは意図とずれる。
+   * ボタンを塞いで、 明示的な「ここで終了してサマリを見る」へ誘導する。
+   */
+  const passWouldEndSet =
+    practiceSet !== null &&
+    practiceSet !== undefined &&
+    nextUnratedIndex(order, qi, practiceSet.completedNos) === null;
+
+  /**
+   * セットの移動。 前へ進むときは「まだ自己評価していない質問」を順に辿り、 末尾まで来たら
+   * パスした質問へ戻る — 単に次の番号へ進めると、 パスした質問が末尾到達でセットごと
+   * 閉じられて置き去りになる。 残りが無くなってはじめて終了サマリへ渡す。
+   * 「前の問題」は 1 つ前に戻るだけで巡回しない (先頭では無効)。
+   * 「全問からランダム」(サブ導線) は従来どおり巡回する。
+   */
   const move = (delta: number) => {
+    if (practiceSet) {
+      if (delta < 0) {
+        if (qi === 0) return;
+        setQi(qi - 1);
+        setRound((r) => r + 1);
+        return;
+      }
+      const target = nextUnratedIndex(order, qi, practiceSet.completedNos);
+      if (target === null) {
+        practiceSet.onAllDone();
+        return;
+      }
+      // 一周して戻った = パスした質問の再挑戦。 画面にもそう出す。
+      if (target <= qi) setRevisiting(true);
+      setQi(target);
+      setRound((r) => r + 1);
+      return;
+    }
     setQi((i) => (i + delta + order.length) % order.length);
     setRound((r) => r + 1);
   };
@@ -125,9 +221,21 @@ export function InterviewVoiceSession({
   return (
     <Card className="p-0 overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-border bg-sunken/40">
+        {practiceSet ? (
+          <span className="text-[11px] px-2 py-[2px] rounded-full font-bold sf-gradient-bg text-white">
+            今日の練習セット
+          </span>
+        ) : null}
         <span className="text-[12px] text-ink-3 tabular-nums">
-          {(qi % Math.max(order.length, 1)) + 1} / {order.length} 問目
+          {/* セットは残りだけを出題するので、 見出しはセット全体での位置に直して出す */}
+          {doneOffset + (qi % Math.max(order.length, 1)) + 1} /{" "}
+          {practiceSet ? practiceSet.questionNos.length : order.length} 問目
         </span>
+        {revisiting ? (
+          <span className="text-[11.5px] text-warning">
+            パスした質問に戻っています — 終えるには「ここで終了してサマリを見る」
+          </span>
+        ) : null}
         <span className="text-[11.5px] text-ink-4 hidden sm:inline">
           {cur.subcategory}
           {cur.time ? ` ・ 目安 ${cur.time}` : ""}
@@ -158,32 +266,58 @@ export function InterviewVoiceSession({
         }}
       />
 
-      <div className="flex items-center gap-2 px-4 py-3 border-t border-border">
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-border flex-wrap">
         <button
           type="button"
-          className="px-3 py-1.5 rounded-sm border border-border text-[12.5px] cursor-pointer hover:bg-sunken"
+          disabled={Boolean(practiceSet) && qi === 0}
+          className="px-3 py-1.5 rounded-sm border border-border text-[12.5px] cursor-pointer hover:bg-sunken disabled:opacity-50 disabled:cursor-default"
           onClick={() => move(-1)}
         >
           前の問題
         </button>
         <button
           type="button"
-          className="px-3 py-1.5 rounded-sm border border-border text-[12.5px] cursor-pointer hover:bg-sunken"
+          disabled={passWouldEndSet}
+          title={
+            passWouldEndSet
+              ? "残りはこの質問だけです。終えるには「ここで終了してサマリを見る」を使ってください"
+              : undefined
+          }
+          className="px-3 py-1.5 rounded-sm border border-border text-[12.5px] cursor-pointer hover:bg-sunken disabled:opacity-50 disabled:cursor-default"
           onClick={() => move(1)}
         >
           この質問をパス
         </button>
-        <button
-          type="button"
-          className="ml-auto text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
-          onClick={() => {
-            setOrder(shuffle(pool.map((d) => d.no)));
-            setQi(0);
-            setRound((r) => r + 1);
-          }}
-        >
-          出題順をシャッフルし直す
-        </button>
+        {practiceSet ? (
+          <>
+            <button
+              type="button"
+              className="ml-auto text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
+              onClick={practiceSet.onSuspend}
+            >
+              中断する（あとで再開）
+            </button>
+            <button
+              type="button"
+              className="text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
+              onClick={practiceSet.onFinish}
+            >
+              ここで終了してサマリを見る
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="ml-auto text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
+            onClick={() => {
+              setOrder(shuffle(pool.map((d) => d.no)));
+              setQi(0);
+              setRound((r) => r + 1);
+            }}
+          >
+            出題順をシャッフルし直す
+          </button>
+        )}
       </div>
     </Card>
   );

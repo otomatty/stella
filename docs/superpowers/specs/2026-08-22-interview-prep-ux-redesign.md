@@ -95,7 +95,8 @@
 
 - 受講者 `/interview-prep`: タブを「一覧 / ランダム出題」→「**準備**(チェックリスト + 個別回答の型 + 改善点メモ履歴) / **練習**(音声セッション = 対話ログ UI。サイレント切替あり) / **模擬面談**(Phase 3)」へ。ヘッダーに面談カウントダウンと準備率リングを常設し、CTA は「音声セッションを始める」の 1 つ。検索・フィルタは「準備」タブ内に残す。
   - **実装済み (2026-08-22)**: 「準備 / 練習」タブ、面談ヒーローカード(面談日 + カウントダウン + 準備率リング + 集計)、CTA「今日の練習を始める」、サブカテゴリ別チェックリスト(4 状態ステータスピル + グループ進捗バー + 音声ありアイコン)、練習の自己評価「できた / もう一度」。基盤は `interview_progress` テーブル(read/confident。「回答作成済み」は個別の型の有無から導出)+ `PUT /api/interview-prep/progress/:no` + `@falcon/shared/interview/progress` の導出ヘルパ。
-  - **実装済み (2026-08-24 / Issue #234)**: 練習タブを対話ログ UI 化(面接官バブル + 自分のバブル、質問文は既定で非表示の耳だけモード、大きな録音ボタン + 目安時間で色が変わる経過タイマー、深掘り①〜③が音声で続く、ターン単位のパス、サイレントモード)、1 問ごとの振り返り(自分の回答と 型 / NG / 評価軸 を並べる + 改善点メモの定型チップ・自由入力 + 自己評価の移設)、改善点メモ(`interview_fix_notes`。答える直前に未解決分を再表示、チェックで消し込み、準備タブの質問ドロワーに履歴と一覧行に件数バッジ)。SM-2 セット出題は未実装(次スプリント)。
+  - **実装済み (2026-08-24 / Issue #234)**: 練習タブを対話ログ UI 化(面接官バブル + 自分のバブル、質問文は既定で非表示の耳だけモード、大きな録音ボタン + 目安時間で色が変わる経過タイマー、深掘り①〜③が音声で続く、ターン単位のパス、サイレントモード)、1 問ごとの振り返り(自分の回答と 型 / NG / 評価軸 を並べる + 改善点メモの定型チップ・自由入力 + 自己評価の移設)、改善点メモ(`interview_fix_notes`。答える直前に未解決分を再表示、チェックで消し込み、準備タブの質問ドロワーに履歴と一覧行に件数バッジ)。
+  - **実装済み (2026-08-24 / Issue #235)**: 「今日の練習セット」— `interview_progress` に SM-2 列 (`srs_ease` / `srs_interval_days` / `srs_reps` / `srs_due_date` / `last_result`) を足し、 自己評価をデイリー復習と同じ `sm2Next` に通す。 出題は `GET /api/interview-prep/practice-set` が 10 問を選定 (優先度: 「もう一度」→ 未着手・未練習 → 期日を過ぎた `練習OK`、 埋まらないときだけ期日前を前倒しで補充。 対象は割当カテゴリの A 必修で逆質問は除く)。 セットは `interview_practice_sets` に確定させ、 中断・再開 (準備ホームの「途中のセットを再開」) と終了サマリ (できた n/10・準備率の伸び・続けるか終了するか) を持つ。 準備ホームの CTA は「今日の練習セット」に接続し、 `全問からランダム` はサブ導線として残した。
 - 受講者ダッシュボード: 面談カードを追加(面談日・準備率・「今日の練習へ」)。
 - 講師割当画面: 割当列の隣に準備状況列。行クリックで詳細ドロワー。admin には「質問音声」タブ(生成 / 再生成 / 試聴。実装済み)。
 
@@ -115,8 +116,21 @@ interview_progress           -- 新規
   -- (改訂) my_answer は廃止。個別の型は interview_personal_templates (issue ドラフト参照) に持つ
   practiced_count INTEGER
   last_practiced_at TEXT
-  srs_* (SM-2 系列)            -- デイリー復習の列構成に合わせる
+  srs_ease REAL / srs_interval_days INTEGER / srs_reps INTEGER / srs_due_date TEXT
+  last_result TEXT             -- 'again' | 'good'。 「もう一度」を翌日以降のセットで最優先にする
   UNIQUE(tenant_id, profile_id, question_no)
+
+interview_practice_sets      -- 実装済み (Issue #235)。「今日の練習セット」
+  id TEXT PK
+  tenant_id TEXT
+  profile_id TEXT
+  date TEXT                    -- 作成した学習日 (YYYY-MM-DD)
+  question_nos JSON            -- 出題する質問番号 (作成時に確定させる)
+  completed_nos JSON           -- 自己評価を付けた質問 (中断・再開の差分)
+  confident_nos JSON           -- 「できた」を付けた質問 (終了サマリの n/10)
+  started_percent INTEGER      -- 作成時点の準備率 (終了サマリの「伸び」の基準)
+  status TEXT                  -- 'active' | 'done'
+  -- 進行中は受講者ごとに 1 つだけ (status='active' の部分ユニーク索引)
 
 interview_fix_notes          -- 実装済み (Issue #234)。改善点メモ (振り返りで受講者が書く)
   id TEXT PK
@@ -146,16 +160,18 @@ interview_recordings         -- 新規(Phase 2)。練習の録音 + 文字起こ
 
 実装済み(2026-08-22):
 
-- `GET /api/interview-prep/questions` — レスポンスに `audioNos`(音声登録済み質問番号)/ `audioSegments`(深掘りを含むセグメント)/ progress / 改善点メモ (`fix_notes`) を同梱。
+- `GET /api/interview-prep/questions` — レスポンスに `audioNos`(音声登録済み質問番号)/ `audioSegments`(深掘りを含むセグメント)/ progress (SM-2 の `srs_due_date` / `last_result` を含む)/ 改善点メモ (`fix_notes`)/ 中断中のセット (`activeSet`) を同梱。
 - `GET /api/interview-prep/questions/:no/audio?part=` — 登録済み読み上げ音声(MP3)の配信。`part` は `question`(既定)/ `deep1`〜`deep3`。AI は呼ばない。未登録 404 / 割当範囲外 403。
 - `POST /api/interview-prep/audio/generate` — admin 専用。`{ nos: number[] }`(質問文のみ)/ `{ segments: [{ no, part }] }`(深掘り込み)を合計 10 件まで TTS モデル(既定 Grok TTS)で生成し R2 へ登録(再生成は上書き)。監査ログあり。
-- `PUT /api/interview-prep/progress/:no` — `{ event: "read" | "practiced" | "confident" }`。自己評価と「型を読んだ」の記録。
+- `PUT /api/interview-prep/progress/:no` — `{ event: "read" | "practiced" | "confident", setId? }`。自己評価と「型を読んだ」の記録。 `practiced` / `confident` は SM-2 を進め(誤答 / 正解)、 `setId` があればセットの消化としても記録する (Issue #235)。
 - `POST /api/interview-prep/fix-notes/:no` ・ `PUT /api/interview-prep/fix-notes/:id` — 改善点メモの追加・消し込み(受講者本人のみ)。
 - `POST /api/interview-prep/transcribe?no=` — 録音バイナリを Whisper で文字起こし。`no` があれば質問文を `initial_prompt` に渡す(可視性検査を兼ねる)。上限 8MB。
 
+- `GET /api/interview-prep/practice-set` — 今日のセット 10 問(SM-2 選定)。 進行中のセットがあればそれを返す(= 中断からの再開)。 レスポンスは `{ set, resumed, rows, prepPercent }` で、 `rows` は出題順の質問(個別の型・進捗・改善点メモ込み)。 実装済み (Issue #235)。
+- `PUT /api/interview-prep/practice-set/:id` — `{ status: "done" }` でセットを終了し、 終了サマリ(できた n/10・準備率の伸び)を返す。 実装済み (Issue #235)。
+
 今後(Phase 1〜):
 
-- `GET /api/interview-prep/practice-set` — 今日のセット 10 問(SM-2 選定)。
 - `POST /api/interview-prep/recordings/:no` — 録音を R2 に永続化して練習ログにする(現状の transcribe は保存しない)。
 - `GET /api/interview-prep/recordings/:no` — その質問の練習ログ(録音 URL + 文字起こし)。講師詳細も同じ形を使う。
 - `PUT /api/interview-prep/assignments/:profileId` — body に `interviewDate` / `note` を追加。

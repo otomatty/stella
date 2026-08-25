@@ -766,6 +766,18 @@ export const interviewProgress = sqliteTable(
       .default("read"),
     practicedCount: integer("practiced_count").notNull().default(0),
     lastPracticedAt: ts("last_practiced_at"),
+    /**
+     * SM-2 系列 (Issue #235)。 デイリー復習の review_cards と同じ列構成で、
+     * 更新も同じ `sm2Next` を通す。 未練習は due が null (= 「今日の練習セット」の
+     * fresh バケット) で、 自己評価のたびに ease / interval / due が進む。
+     */
+    srsEase: real("srs_ease").notNull().default(2.5),
+    srsIntervalDays: integer("srs_interval_days").notNull().default(0),
+    srsReps: integer("srs_reps").notNull().default(0),
+    /** 次回出題日 (`YYYY-MM-DD`)。 未練習は null。 */
+    srsDueDate: text("srs_due_date"),
+    /** 最後の自己評価。 「もう一度」= again を次のセットで最優先に再登場させる。 */
+    lastResult: text("last_result", { enum: ["again", "good"] }),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
@@ -804,6 +816,62 @@ export const interviewFixNotes = sqliteTable(
       t.profileId,
       t.questionNo,
     ),
+  }),
+);
+
+/**
+ * 面談対策 — 「今日の練習セット」(Issue #235)。
+ *
+ * 出題は作成時に確定させて行に残す。 毎回 SM-2 で引き直すと、 1 問答えるたびに
+ * 残りの並びが変わって「今日はここまでやった」が残らないため。 中断・再開は
+ * completed_nos の差分で表現し、 終了サマリ (準備率の伸び) のために作成時点の
+ * 準備率を started_percent に控える。
+ */
+export const interviewPracticeSets = sqliteTable(
+  "interview_practice_sets",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    /** 作成した学習日 (アプリ基準 TZ の `YYYY-MM-DD`)。 */
+    date: text("date").notNull(),
+    /** 出題する質問番号 (優先度順)。 */
+    questionNos: json<number[]>("question_nos", []),
+    /** 自己評価を付けた質問番号。 */
+    completedNos: json<number[]>("completed_nos", []),
+    /** 「できた」を付けた質問番号 (終了サマリの n/10)。 */
+    confidentNos: json<number[]>("confident_nos", []),
+    /** 作成時点の準備率 (%)。 終了サマリの「伸び」の基準。 */
+    startedPercent: integer("started_percent").notNull().default(0),
+    status: text("status", { enum: ["active", "done"] })
+      .notNull()
+      .default("active"),
+    /**
+     * 楽観ロックの版数。 消化記録は JSON 配列の読み → 追記 → 書き戻しなので、
+     * 自己評価が同時に 2 件走ると後着が先着の 1 問を消してしまう。 更新は
+     * 「読んだときの版数と一致する行だけ」に限定して、 外れたら読み直す。
+     */
+    version: integer("version").notNull().default(0),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    tenantProfileStatusIdx: index("interview_practice_sets_tenant_profile_status_idx").on(
+      t.tenantId,
+      t.profileId,
+      t.status,
+    ),
+    /**
+     * 進行中のセットは受講者ごとに 1 つだけ (部分ユニーク)。 「途中のセットを再開」の
+     * 取得が 1 行に定まり、 二重タップや StrictMode の二重取得でセットが増えない。
+     */
+    activeUnique: uniqueIndex("interview_practice_sets_active_uq")
+      .on(t.tenantId, t.profileId)
+      .where(sql`status = 'active'`),
   }),
 );
 

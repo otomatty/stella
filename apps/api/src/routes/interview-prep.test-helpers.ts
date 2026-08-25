@@ -29,6 +29,11 @@ export const interviewPrepProgressPath = (questionNo: number) =>
 
 export const INTERVIEW_PREP_FIX_NOTES_PATH = "/api/interview-prep/fix-notes";
 
+export const INTERVIEW_PREP_PRACTICE_SET_PATH = "/api/interview-prep/practice-set";
+
+export const interviewPrepPracticeSetPath = (id: string) =>
+  `${INTERVIEW_PREP_PRACTICE_SET_PATH}/${encodeURIComponent(id)}`;
+
 export const interviewPrepFixNotePath = (questionNoOrId: number | string) =>
   `${INTERVIEW_PREP_FIX_NOTES_PATH}/${questionNoOrId}`;
 
@@ -108,6 +113,37 @@ export interface FixNoteRow {
   resolvedAt: Date | null;
 }
 
+/** Issue #235 — 質問ごとの学習ステータス (interview_progress。 SM-2 列を含む)。 */
+export interface ProgressRow {
+  tenantId: string;
+  profileId: string;
+  questionNo: number;
+  status: "read" | "confident";
+  practicedCount: number;
+  lastPracticedAt: Date | null;
+  srsEase: number;
+  srsIntervalDays: number;
+  srsReps: number;
+  srsDueDate: string | null;
+  lastResult: "again" | "good" | null;
+}
+
+/** Issue #235 — 今日の練習セット (interview_practice_sets)。 */
+export interface PracticeSetRow {
+  id: string;
+  tenantId: string;
+  profileId: string;
+  date: string;
+  questionNos: number[];
+  completedNos: number[];
+  confidentNos: number[];
+  startedPercent: number;
+  status: "active" | "done";
+  /** 楽観ロックの版数 (消化記録の競合検出)。 */
+  version: number;
+  createdAt: Date;
+}
+
 export interface InterviewPrepTestState {
   assignments: Map<string, InterviewPrepAssignmentRow>;
   notifications: Array<Record<string, unknown>>;
@@ -115,6 +151,10 @@ export interface InterviewPrepTestState {
   personalTemplates: Map<string, PersonalAnswerTemplateRow>;
   generationJobs: GenerationJobRow[];
   fixNotes: FixNoteRow[];
+  progress: ProgressRow[];
+  practiceSets: PracticeSetRow[];
+  /** 質問バンクの差し替え (セット選定のテストで 10 問以上を用意する)。 */
+  questions?: typeof TEST_INTERVIEW_QUESTIONS;
 }
 
 /** Fixture bank for #206 — assigned PHP A/B, JS A, and common A. */
@@ -261,6 +301,48 @@ export function createInterviewPrepTestState(): InterviewPrepTestState {
     personalTemplates: new Map(),
     generationJobs: [],
     fixNotes: [],
+    progress: [],
+    practiceSets: [],
+  };
+}
+
+/** セット選定のテスト用に A 必修を任意の数だけ生やす (割当は PHP)。 */
+export function practiceQuestionBank(
+  count: number,
+  startNo = 201,
+): typeof TEST_INTERVIEW_QUESTIONS {
+  return Array.from({ length: count }, (_, i) => ({
+    no: startNo + i,
+    categories: ["PHP"],
+    subcategory: "",
+    freq: "A" as const,
+    question: `PHP A 必修 ${startNo + i}?`,
+    time: "30秒",
+    keywords: "",
+    intent: "基礎",
+    answer_template: "共通テンプレ",
+    deep1: "",
+    deep2: "",
+    deep3: "",
+    ng: "",
+    criteria: "",
+    is_reverse: 0,
+  }));
+}
+
+export function progressRow(over: Partial<ProgressRow> & { questionNo: number }): ProgressRow {
+  return {
+    tenantId: "ses",
+    profileId: SEED_PROFILES.learner.id,
+    status: "read",
+    practicedCount: 0,
+    lastPracticedAt: null,
+    srsEase: 2.5,
+    srsIntervalDays: 0,
+    srsReps: 0,
+    srsDueDate: null,
+    lastResult: null,
+    ...over,
   };
 }
 
@@ -367,11 +449,43 @@ export function createInterviewPrepTestDb(
     }
 
     if (fromTable === "interview_questions") {
+      const bank = state.questions ?? TEST_INTERVIEW_QUESTIONS;
       // 1 件取得 (loadVisibleQuestion) はルートの :no を条件にする。 where 句は解釈しない。
       if (limit === 1 && ctx.questionNo !== undefined) {
-        return TEST_INTERVIEW_QUESTIONS.filter((q) => q.no === ctx.questionNo);
+        return bank.filter((q) => q.no === ctx.questionNo);
       }
-      return TEST_INTERVIEW_QUESTIONS;
+      return bank;
+    }
+
+    if (fromTable === "interview_progress") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      return state.progress
+        .filter((r) => r.tenantId === ctx.callerTenantId && r.profileId === profileId)
+        .map((r) => ({ ...r }));
+    }
+
+    if (fromTable === "interview_practice_sets") {
+      const profileId = ctx.targetProfileId ?? ctx.callerId;
+      const mine = state.practiceSets.filter(
+        (r) => r.tenantId === ctx.callerTenantId && r.profileId === profileId,
+      );
+      // where 句は解釈しないので、 :id があればその行、 無ければ進行中のセットを新しい順に。
+      const scoped = ctx.rowId
+        ? mine.filter((r) => r.id === ctx.rowId)
+        : mine
+            .filter((r) => r.status === "active")
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const rows = scoped.map((r) => ({
+        id: r.id,
+        date: r.date,
+        questionNos: r.questionNos,
+        completedNos: r.completedNos,
+        confidentNos: r.confidentNos,
+        startedPercent: r.startedPercent,
+        status: r.status,
+        version: r.version,
+      }));
+      return limit ? rows.slice(0, limit) : rows;
     }
 
     if (fromTable === "skill_sheets") {
@@ -464,7 +578,9 @@ export function createInterviewPrepTestDb(
       return chain;
     };
     chain.where = () => chain;
-    chain.orderBy = () => Promise.resolve(executeSelect(fromTable, shape));
+    // orderBy の後に limit を繋ぐクエリ (進行中セットの取得) があるので、 ここでは
+    // まだ実行しない。 chain 自体が thenable なので await だけでも解決する。
+    chain.orderBy = () => chain;
     chain.limit = (n: number) => Promise.resolve(executeSelect(fromTable, shape, n));
     // biome-ignore lint/suspicious/noThenProperty: drizzle query chain is intentionally thenable in tests
     chain.then = (
@@ -560,6 +676,79 @@ export function createInterviewPrepTestDb(
                 })),
             };
           }
+          if (name === "interview_practice_sets") {
+            for (const row of rows) {
+              state.practiceSets.push({
+                id: row.id as string,
+                tenantId: row.tenantId as string,
+                profileId: row.profileId as string,
+                date: row.date as string,
+                questionNos: (row.questionNos as number[] | undefined) ?? [],
+                completedNos: (row.completedNos as number[] | undefined) ?? [],
+                confidentNos: (row.confidentNos as number[] | undefined) ?? [],
+                startedPercent: (row.startedPercent as number | undefined) ?? 0,
+                status: (row.status as PracticeSetRow["status"] | undefined) ?? "active",
+                version: (row.version as number | undefined) ?? 0,
+                createdAt: new Date(Date.now() + state.practiceSets.length),
+              });
+            }
+            return Promise.resolve(undefined);
+          }
+          if (name === "interview_progress") {
+            return {
+              /**
+               * 本番の upsert は status / practiced_count を SQL 式で更新する。
+               * モックは SQL を解釈しないので、 同じ意味を JS で再現する:
+               *   - confident は一度立ったら下がらない
+               *   - practiced_count は現在値 + 挿入値
+               * SM-2 列はルート側が値を計算して渡すのでそのまま入る。
+               */
+              onConflictDoUpdate: ({ set }: { set: Record<string, unknown> }) => {
+                for (const row of rows) {
+                  const tenantId = row.tenantId as string;
+                  const profileId = row.profileId as string;
+                  const questionNo = row.questionNo as number;
+                  const existing = state.progress.find(
+                    (r) =>
+                      r.tenantId === tenantId &&
+                      r.profileId === profileId &&
+                      r.questionNo === questionNo,
+                  );
+                  const incomingStatus = row.status as ProgressRow["status"];
+                  const merged: ProgressRow = {
+                    tenantId,
+                    profileId,
+                    questionNo,
+                    status:
+                      incomingStatus === "confident" || existing?.status === "confident"
+                        ? "confident"
+                        : "read",
+                    practicedCount:
+                      (existing?.practicedCount ?? 0) + ((row.practicedCount as number) ?? 0),
+                    lastPracticedAt:
+                      (row.lastPracticedAt as Date | null) ?? existing?.lastPracticedAt ?? null,
+                    srsEase: (set.srsEase ?? row.srsEase ?? existing?.srsEase ?? 2.5) as number,
+                    srsIntervalDays: (set.srsIntervalDays ??
+                      row.srsIntervalDays ??
+                      existing?.srsIntervalDays ??
+                      0) as number,
+                    srsReps: (set.srsReps ?? row.srsReps ?? existing?.srsReps ?? 0) as number,
+                    srsDueDate: (set.srsDueDate ??
+                      row.srsDueDate ??
+                      existing?.srsDueDate ??
+                      null) as string | null,
+                    lastResult: (set.lastResult ??
+                      row.lastResult ??
+                      existing?.lastResult ??
+                      null) as ProgressRow["lastResult"],
+                  };
+                  if (existing) Object.assign(existing, merged);
+                  else state.progress.push(merged);
+                }
+                return Promise.resolve(undefined);
+              },
+            };
+          }
           if (name === "generation_jobs") {
             for (const row of rows) {
               state.generationJobs.push({
@@ -642,8 +831,13 @@ export function createInterviewPrepTestDb(
       const name = tableName(table);
       return {
         set: (set: Record<string, unknown>) => ({
-          where: () => ({
-            returning: async () => {
+          /**
+           * 本番には `.returning()` を呼ばずに await するだけの更新 (練習セットの
+           * 消化記録・終了) があるため、 更新自体は where の時点で確定させ、
+           * 戻り値を thenable かつ `.returning()` 可能な形にする。
+           */
+          where: () => {
+            const apply = (): unknown[] => {
               if (name === "skill_sheets") {
                 const profileId = ctx.targetProfileId ?? ctx.callerId;
                 const key = skillSheetKey(ctx.callerTenantId, profileId);
@@ -715,9 +909,40 @@ export function createInterviewPrepTestDb(
                 }
                 return state.generationJobs;
               }
+              if (name === "interview_practice_sets") {
+                // where 句は解釈しないので、 更新対象は :id か進行中のセット。
+                const profileId = ctx.targetProfileId ?? ctx.callerId;
+                const mine = state.practiceSets.filter(
+                  (r) => r.tenantId === ctx.callerTenantId && r.profileId === profileId,
+                );
+                const target = ctx.rowId
+                  ? mine.find((r) => r.id === ctx.rowId)
+                  : mine.find((r) => r.status === "active");
+                if (!target) return [];
+                if (set.questionNos !== undefined) target.questionNos = set.questionNos as number[];
+                if (set.completedNos !== undefined)
+                  target.completedNos = set.completedNos as number[];
+                if (set.confidentNos !== undefined)
+                  target.confidentNos = set.confidentNos as number[];
+                if (set.status !== undefined)
+                  target.status = set.status as PracticeSetRow["status"];
+                // 楽観ロック: 本番は version 一致を where で見る。 モックは where 句を
+                // 解釈しないので、 版数の進み方だけ再現する (テストは直列なので競合しない)。
+                if (set.version !== undefined) target.version = set.version as number;
+                return [target];
+              }
               return [];
-            },
-          }),
+            };
+            const result = apply();
+            return {
+              returning: async () => result,
+              // biome-ignore lint/suspicious/noThenProperty: drizzle query chain is intentionally thenable in tests
+              then: (
+                onFulfilled: (value: unknown[]) => unknown,
+                onRejected?: (reason: unknown) => unknown,
+              ) => Promise.resolve(result).then(onFulfilled, onRejected),
+            };
+          },
         }),
       };
     },

@@ -26,6 +26,13 @@ import {
   FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION,
   normalizeFixNoteText,
 } from "@falcon/shared/interview/fix-notes";
+import {
+  PRACTICE_SET_SIZE,
+  type PracticeCandidate,
+  practiceSetProgress,
+  summarizePracticeSet,
+} from "@falcon/shared/interview/practice-set";
+import { deriveQuestionPrepStatus, prepRate } from "@falcon/shared/interview/progress";
 
 import {
   interviewFixNotes,
@@ -35,6 +42,16 @@ import {
   notifications,
   profiles,
 } from "../db/schema.js";
+import {
+  type InterviewProgressState,
+  finishPracticeSet,
+  loadActivePracticeSet,
+  loadInterviewProgress,
+  nextInterviewSrs,
+  type PracticeSetRow,
+  recordPracticeSetAnswer,
+  startOrResumePracticeSet,
+} from "../lib/interview-practice-set.js";
 import {
   ApiError,
   errorResponse,
@@ -231,31 +248,100 @@ function serializeFixNote(row: {
 }
 
 /** 質問ごとの学習ステータス (interview_progress) を行に同梱する。 行なし = 未着手。 */
-async function attachProgress<T extends { no: number }>(
-  db: Awaited<ReturnType<typeof getCaller>>["db"],
-  tenantId: string,
-  profileId: string,
+function attachProgressRows<T extends { no: number }>(
   rows: T[],
-): Promise<Array<T & { progress_status: "read" | "confident" | null; practiced_count: number }>> {
-  const progressRows = await db
-    .select({
-      questionNo: interviewProgress.questionNo,
-      status: interviewProgress.status,
-      practicedCount: interviewProgress.practicedCount,
-    })
-    .from(interviewProgress)
-    .where(
-      and(eq(interviewProgress.tenantId, tenantId), eq(interviewProgress.profileId, profileId)),
-    );
-  const byNo = new Map(progressRows.map((p) => [p.questionNo, p]));
+  byNo: Map<number, InterviewProgressState>,
+): Array<
+  T & {
+    progress_status: "read" | "confident" | null;
+    practiced_count: number;
+    /** SM-2 の次回出題日 (`YYYY-MM-DD`)。 未練習は null (Issue #235)。 */
+    srs_due_date: string | null;
+    /** 最後の自己評価 (`again` は次のセットで最優先に再登場する)。 */
+    last_result: "again" | "good" | null;
+  }
+> {
   return rows.map((row) => {
     const p = byNo.get(row.no);
     return {
       ...row,
       progress_status: p?.status ?? null,
       practiced_count: p?.practicedCount ?? 0,
+      srs_due_date: p?.srsDueDate ?? null,
+      last_result: p?.lastResult ?? null,
     };
   });
+}
+
+async function attachProgress<T extends { no: number }>(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+  rows: T[],
+) {
+  return attachProgressRows(rows, await loadInterviewProgress(db, tenantId, profileId));
+}
+
+/** 進行中セットの要約 (準備ホームの「途中のセットを再開」)。 */
+function summarizeActiveSet(set: PracticeSetRow | null) {
+  if (!set) return null;
+  const progress = practiceSetProgress(set.questionNos, set.completedNos);
+  return {
+    id: set.id,
+    date: set.date,
+    total: progress.total,
+    completed: progress.completed,
+    remaining: progress.remaining,
+  };
+}
+
+/**
+ * 準備率 (%) — 割当範囲の A 必修のうち `練習OK` の割合。 表示側 (`prepRate`) と
+ * 同じ導出をサーバでも行い、 セット終了サマリの「伸び」に使う。
+ */
+function prepPercentOf(
+  visible: InterviewQuestion[],
+  personalByQuestion: Map<number, { content: string | null }>,
+  progressByNo: Map<number, InterviewProgressState>,
+): number {
+  return prepRate(
+    visible.map((q) => ({
+      freq: q.freq,
+      is_reverse: q.is_reverse,
+      status: deriveQuestionPrepStatus({
+        // 個別の型は A 必修にしか生成しない (enrichQuestionRows と揃える)。
+        hasPersonalTemplate: q.freq === "A" && Boolean(personalByQuestion.get(q.no)?.content),
+        progressStatus: progressByNo.get(q.no)?.status ?? null,
+      }),
+    })),
+  ).percent;
+}
+
+/** 受講者本人の可視質問 + 個別の型 + 進捗。 準備率とセット選定で共用する。 */
+async function loadLearnerPrepContext(
+  db: Awaited<ReturnType<typeof getCaller>>["db"],
+  tenantId: string,
+  profileId: string,
+) {
+  const rows: InterviewQuestion[] = await db
+    .select(Q_SELECT)
+    .from(interviewQuestions)
+    .where(eq(interviewQuestions.tenantId, tenantId))
+    .orderBy(asc(interviewQuestions.no));
+  const assigned = await db
+    .select({ categories: interviewPrepAssignments.categories })
+    .from(interviewPrepAssignments)
+    .where(
+      and(
+        eq(interviewPrepAssignments.tenantId, tenantId),
+        eq(interviewPrepAssignments.profileId, profileId),
+      ),
+    )
+    .limit(1);
+  const visible = visibleQuestions(rows, assigned[0]?.categories ?? []);
+  const personalByQuestion = await loadPersonalTemplatesByQuestion(db, tenantId, profileId);
+  const progressByNo = await loadInterviewProgress(db, tenantId, profileId);
+  return { visible, personalByQuestion, progressByNo };
 }
 
 /**
@@ -346,6 +432,9 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           profileId: profileIdParam,
           audioNos,
           audioSegments,
+          activeSet: summarizeActiveSet(
+            await loadActivePracticeSet(db, caller.tenantId, profileIdParam),
+          ),
         });
       }
       return c.json({
@@ -397,6 +486,8 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       note: assigned[0]?.note ?? null,
       audioNos,
       audioSegments,
+      // 中断したセットがあれば準備ホームに「途中のセットを再開」を出す (Issue #235)。
+      activeSet: summarizeActiveSet(await loadActivePracticeSet(db, caller.tenantId, caller.id)),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -906,12 +997,152 @@ interviewPrepRoute.post("/api/interview-prep/transcribe", async (c) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// 今日の練習セット (Issue #235): SM-2 で 10 問を選び、 中断・再開とセット終了サマリを持つ。
+// ---------------------------------------------------------------------------
+
+/** セット行を API の形 (snake_case) に落とす。 */
+function serializePracticeSet(set: PracticeSetRow) {
+  const progress = practiceSetProgress(set.questionNos, set.completedNos);
+  return {
+    id: set.id,
+    date: set.date,
+    question_nos: set.questionNos,
+    completed_nos: set.completedNos,
+    confident_nos: set.confidentNos,
+    started_percent: set.startedPercent,
+    status: set.status,
+    total: progress.total,
+    completed: progress.completed,
+    remaining: progress.remaining,
+    next_no: progress.nextNo,
+    finished: progress.finished,
+  };
+}
+
+/**
+ * 受講者: 「今日の練習セット」を取得する。 進行中のセットがあればそれをそのまま返し
+ * (= 中断からの再開)、 無ければ SM-2 で 10 問を選んで作る。
+ *
+ * 優先度は `selectPracticeSet` に閉じている: 「もう一度」→ 未着手・未練習 →
+ * 期日を過ぎた `練習OK`、 それでも埋まらないときだけ期日前を前倒しで補充する。
+ * 対象は割当カテゴリの A 必修のみ (逆質問は「聞く質問」なので出さない)。
+ */
+interviewPrepRoute.get("/api/interview-prep/practice-set", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "student");
+
+    const { visible, personalByQuestion, progressByNo } = await loadLearnerPrepContext(
+      db,
+      caller.tenantId,
+      caller.id,
+    );
+    const candidates: PracticeCandidate[] = visible.map((q) => {
+      const p = progressByNo.get(q.no);
+      return {
+        no: q.no,
+        freq: q.freq,
+        is_reverse: q.is_reverse,
+        status: p?.status ?? null,
+        practicedCount: p?.practicedCount ?? 0,
+        srsDueDate: p?.srsDueDate ?? null,
+        lastResult: p?.lastResult ?? null,
+      };
+    });
+
+    const startedPercent = prepPercentOf(visible, personalByQuestion, progressByNo);
+    const started = await startOrResumePracticeSet({
+      db,
+      tenantId: caller.tenantId,
+      profileId: caller.id,
+      candidates,
+      startedPercent,
+      at: new Date(),
+      size: PRACTICE_SET_SIZE,
+    });
+    if (!started) {
+      // 割当前・A 必修が 0 問。 UI は「全問からランダム」へ誘導する。
+      return c.json({ set: null, resumed: false, rows: [], prepPercent: startedPercent });
+    }
+
+    // 出題順を保ったまま質問本体を返す (改善点メモも同梱 — 答える直前に再表示する)。
+    const byNo = new Map(visible.map((q) => [q.no, q]));
+    const ordered = started.set.questionNos.flatMap((no) => {
+      const q = byNo.get(no);
+      return q ? [q] : [];
+    });
+    const rows = await attachFixNotes(
+      db,
+      caller.tenantId,
+      caller.id,
+      attachProgressRows(enrichQuestionRows(ordered, personalByQuestion), progressByNo),
+    );
+
+    return c.json({
+      set: serializePracticeSet(started.set),
+      resumed: started.resumed,
+      rows,
+      prepPercent: startedPercent,
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 受講者: セットを終了する (`{ status: "done" }`)。 全問終えた場合も途中で切り上げた
+ * 場合も同じで、 レスポンスに終了サマリ (できた n/10 と準備率の伸び) を返す。
+ */
+interviewPrepRoute.put("/api/interview-prep/practice-set/:id", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "student");
+    const id = c.req.param("id");
+
+    const body = (await c.req.json()) as { status?: unknown };
+    if (body.status !== "done") {
+      throw new ApiError('status は "done" で指定してください', 400);
+    }
+
+    const finished = await finishPracticeSet({
+      db,
+      tenantId: caller.tenantId,
+      profileId: caller.id,
+      setId: id,
+    });
+    if (!finished) throw new ApiError("練習セットが見つかりません", 404);
+
+    const { visible, personalByQuestion, progressByNo } = await loadLearnerPrepContext(
+      db,
+      caller.tenantId,
+      caller.id,
+    );
+    const currentPercent = prepPercentOf(visible, personalByQuestion, progressByNo);
+
+    return c.json({
+      set: serializePracticeSet(finished),
+      summary: summarizePracticeSet({
+        questionNos: finished.questionNos,
+        completedNos: finished.completedNos,
+        confidentNos: finished.confidentNos,
+        startedPercent: finished.startedPercent,
+        currentPercent,
+      }),
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 /**
  * 受講者: 質問ごとの学習ステータスを更新する (準備ホーム / 練習の自己評価)。
  * body.event:
  *   - "read"      … 型を読んだ (行がなければ作る。 confident は下げない)
- *   - "practiced" … 「もう一度」— 練習回数だけ加算 (ステータス維持)
- *   - "confident" … 「できた」— 練習OK
+ *   - "practiced" … 「もう一度」— 練習回数を加算し、 SM-2 は誤答として進める
+ *   - "confident" … 「できた」— 練習OK。 SM-2 は正解として進める
+ *
+ * body.setId があれば「今日の練習セット」(Issue #235) の消化としても記録する。
  */
 interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
   try {
@@ -920,16 +1151,31 @@ interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
     const no = Number.parseInt(c.req.param("no"), 10);
     if (!Number.isInteger(no) || no <= 0) throw new ApiError("質問番号が不正です", 400);
 
-    const body = (await c.req.json()) as { event?: unknown };
+    const body = (await c.req.json()) as { event?: unknown; setId?: unknown };
     const event = body.event;
     if (event !== "read" && event !== "practiced" && event !== "confident") {
       throw new ApiError("event は read / practiced / confident のいずれかで指定してください", 400);
+    }
+    if (body.setId !== undefined && typeof body.setId !== "string") {
+      throw new ApiError("setId は文字列で指定してください", 400);
     }
 
     await loadVisibleQuestion(c, no);
 
     const practiced = event !== "read";
     const now = new Date();
+
+    /**
+     * SM-2 は現在のカード状態から次を計算するため、 ここだけは読んでから書く
+     * (デイリー復習の `applyOutcomesToCards` と同じ形)。 自己評価の二重送信が
+     * 重なると ease が 1 回ぶん古い値から計算されうるが、 次の評価で追いつく。
+     */
+    const existing = practiced
+      ? (await loadInterviewProgress(db, caller.tenantId, caller.id)).get(no)
+      : undefined;
+    const srs = practiced
+      ? nextInterviewSrs(existing, event === "confident" ? "good" : "again", now)
+      : null;
 
     /**
      * SELECT → INSERT/UPDATE に分けると、 同じ質問への更新が重なったとき
@@ -948,6 +1194,15 @@ interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
         status: event === "confident" ? "confident" : "read",
         practicedCount: practiced ? 1 : 0,
         lastPracticedAt: practiced ? now : null,
+        ...(srs
+          ? {
+              srsEase: srs.ease,
+              srsIntervalDays: srs.intervalDays,
+              srsReps: srs.reps,
+              srsDueDate: srs.dueDate,
+              lastResult: srs.lastResult,
+            }
+          : {}),
       })
       .onConflictDoUpdate({
         target: [
@@ -966,11 +1221,47 @@ interviewPrepRoute.put("/api/interview-prep/progress/:no", async (c) => {
             ? sql`${interviewProgress.practicedCount} + 1`
             : sql`${interviewProgress.practicedCount}`,
           ...(practiced ? { lastPracticedAt: now } : {}),
+          ...(srs
+            ? {
+                srsEase: srs.ease,
+                srsIntervalDays: srs.intervalDays,
+                srsReps: srs.reps,
+                srsDueDate: srs.dueDate,
+                lastResult: srs.lastResult,
+              }
+            : {}),
           updatedAt: now,
         },
       });
 
-    return c.json({ ok: true });
+    // セット内の自己評価なら消化済みとして記録する (中断・再開と終了サマリの元データ)。
+    let set: PracticeSetRow | null = null;
+    /**
+     * セットへ記録できたか。 `setId` を渡していない (セット外の練習) ときは true。
+     * 競合が続いた場合や、 別タブが先にセットを終了していた場合は false になり、
+     * クライアントはその 1 問の楽観更新を戻してやり直せる — 200 のまま黙って
+     * 返すと、 記録されていない回答を「できた」として数えたサマリになる。
+     */
+    let setRecorded = true;
+    if (practiced && typeof body.setId === "string" && body.setId !== "") {
+      set = await recordPracticeSetAnswer({
+        db,
+        tenantId: caller.tenantId,
+        profileId: caller.id,
+        setId: body.setId,
+        questionNo: no,
+        confident: event === "confident",
+      });
+      setRecorded = set !== null;
+    }
+
+    return c.json({
+      ok: true,
+      due_date: srs?.dueDate ?? null,
+      interval_days: srs?.intervalDays ?? null,
+      set: set ? serializePracticeSet(set) : null,
+      set_recorded: setRecorded,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

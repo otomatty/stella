@@ -49,6 +49,7 @@
     "./interview/audio": "./src/interview/audio.ts",
     "./interview/fix-notes": "./src/interview/fix-notes.ts",
     "./interview/session": "./src/interview/session.ts",
+    "./interview/practice-set": "./src/interview/practice-set.ts",
     "./skill-sheet/types": "./src/skill-sheet/types.ts"
   },
   "scripts": {
