@@ -607,6 +607,8 @@ export const submissions = sqliteTable("submissions", {
   aiReady: integer("ai_ready", { mode: "boolean" }).notNull().default(false),
   aiSuggestions: json<unknown[]>("ai_suggestions", []),
   rubric: json<unknown[]>("rubric", []),
+  /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ (Issue #9)。 Web 提出は null。 */
+  gradingSummary: text("grading_summary", { mode: "json" }).$type<unknown>(),
   reviewNotes: text("review_notes").notNull().default(""),
   verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
   submittedAt: tsNow("submitted_at"),

@@ -63,6 +63,58 @@ describe("buildExercisePanelHtml", () => {
     expect(html).not.toMatch(/<script/i);
   });
 
+  it("offers 講師に引き継ぐ via command URI when a failed grade is on hand", () => {
+    const html = buildExercisePanelHtml({
+      assignmentTitle: "Demo",
+      description: "do it",
+      courseId: "c1",
+      lessonId: "l1",
+      assignmentId: "a1",
+      canEscalate: true,
+      result: failResult,
+    });
+    expect(html).toContain("講師に引き継ぐ");
+    expect(html).toContain("command:falcon.escalateToInstructor");
+    expect(html).toContain(encodeURIComponent(JSON.stringify(["a1"])));
+    expect(html).not.toMatch(/<script/i);
+  });
+
+  it("hides 講師に引き継ぐ when the grade cleared or nothing was graded", () => {
+    const cleared = buildExercisePanelHtml({
+      assignmentTitle: "Demo",
+      description: "do it",
+      courseId: "c1",
+      lessonId: "l1",
+      assignmentId: "a1",
+      canEscalate: true,
+      result: clearResult,
+    });
+    expect(cleared).not.toContain("講師に引き継ぐ");
+
+    const notGraded = buildExercisePanelHtml({
+      assignmentTitle: "Demo",
+      description: "do it",
+      courseId: "c1",
+      lessonId: "l1",
+      assignmentId: "a1",
+      canEscalate: true,
+    });
+    expect(notGraded).not.toContain("講師に引き継ぐ");
+  });
+
+  it("hides 講師に引き継ぐ when no grade run is remembered", () => {
+    const html = buildExercisePanelHtml({
+      assignmentTitle: "Demo",
+      description: "do it",
+      courseId: "c1",
+      lessonId: "l1",
+      assignmentId: "a1",
+      canEscalate: false,
+      result: failResult,
+    });
+    expect(html).not.toContain("講師に引き継ぐ");
+  });
+
   it("offers 次のレッスンへ via command URI when cleared", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo",

@@ -38,6 +38,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **Instructor review (Issue #8 / P3):** With the API running, submissions go through `/api/submissions` (D1). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`). localStorage `lms_submissions_v1` remains a demo/offline remnant — not the default path.
 
+**講師への引き継ぎ (Issue #9):** VS Code 拡張で採点が未クリアだったとき、演習パネルの「講師に引き継ぐ」が採点コードと採点失敗サマリ (`submissions.grading_summary`) を `POST /api/submissions` で送る。同一課題の未添削提出は upsert (`attempt++`) されキューに増殖しない。引き継いでもレッスン完了にはならない (完了は自動採点クリアのまま)。講師側は `ReviewEditor` の「自動採点」タブで詰まりを読み、AI 下書きは Editor を開いた時に遅延生成する。詳細は `docs/superpowers/specs/2026-08-25-vscode-instructor-escalate-design.md` と `apps/vscode/README.md`。
+
 ### Key caveats
 
 - **Bun toolchain**: Bun is the package manager/runtime but is NOT preinstalled on a bare VM. The startup update script installs it to `~/.bun/bin` (and appends it to `~/.bashrc`). If `bun` is not found in a shell, run `export PATH="$HOME/.bun/bin:$PATH"`.

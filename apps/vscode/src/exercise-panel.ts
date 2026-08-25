@@ -18,6 +18,9 @@ export interface ExercisePanelInput {
   result?: ExecutionResult;
   nextLesson?: ExerciseNextLesson;
   alreadyCleared?: boolean;
+  /** 未クリア時に「講師に引き継ぐ」 を出せるか (直近の採点が控えてある時だけ)。 */
+  assignmentId?: string;
+  canEscalate?: boolean;
 }
 
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -47,6 +50,24 @@ function renderGradeResults(result: ExecutionResult): string {
     `</ul>`,
     tests ? `<ol>${tests}</ol>` : "",
     extra,
+  ].join("\n");
+}
+
+/**
+ * 未クリアの採点直後にだけ出す「講師に引き継ぐ」。
+ * クリア済み / 採点前は出さない (自動採点で通る課題を講師キューに流さない)。
+ */
+function escalateLink(input: ExercisePanelInput): string {
+  const failed = input.result !== undefined && !input.result.evaluation.cleared;
+  if (!failed || !input.canEscalate || !input.assignmentId) {
+    return "";
+  }
+  const args = encodeURIComponent(JSON.stringify([input.assignmentId]));
+  return [
+    `<div class="escalate">`,
+    `<p><a href="command:falcon.escalateToInstructor?${args}">講師に引き継ぐ</a></p>`,
+    `<p class="hint">いま採点したコードと失敗した項目を講師の添削キューに送ります。 レッスンの完了にはなりません。</p>`,
+    `</div>`,
   ].join("\n");
 }
 
@@ -88,12 +109,21 @@ export function buildExercisePanelHtml(input: ExercisePanelInput): string {
     code { font-family: var(--vscode-editor-font-family); font-size: 0.9em; }
     a { color: var(--vscode-textLink-foreground); }
     ul, ol { padding-left: 1.4rem; }
+    .escalate {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+    }
+    .escalate p { margin: 0.25rem 0; }
+    .hint { color: var(--vscode-descriptionForeground); font-size: 0.9em; }
   </style>
 </head>
 <body>
 <h1>${escapeHtml(input.assignmentTitle)}</h1>
 ${body}
 ${results}
+${escalateLink(input)}
 ${nextLessonLink(input)}
 </body>
 </html>`;
@@ -110,7 +140,7 @@ export function openExercisePanel(input: ExercisePanelInput): void {
       {
         enableScripts: false,
         localResourceRoots: [],
-        enableCommandUris: ["falcon.openNextLesson"],
+        enableCommandUris: ["falcon.openNextLesson", "falcon.escalateToInstructor"],
       },
     );
     currentPanel.onDidDispose(() => {

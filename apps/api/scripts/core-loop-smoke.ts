@@ -31,6 +31,18 @@ const INSTRUCTOR_ID = process.env.SMOKE_INSTRUCTOR_ID ?? "seed-instructor";
 const ADMIN_ID = process.env.SMOKE_ADMIN_ID ?? "seed-admin";
 const SALES_ID = process.env.SMOKE_SALES_ID ?? "seed-sales";
 
+/** VS Code の「講師に引き継ぐ」 が添える採点失敗サマリの最小形 (Issue #9)。 */
+const SMOKE_GRADING_SUMMARY = {
+  cleared: false,
+  checks: { lint: true, ast: true, tests: false },
+  language: "js",
+  lint: [],
+  ast: [],
+  failedTests: [{ name: "[smoke] 失敗テスト", error: "expected 1, got 0" }],
+  passedTestCount: 0,
+  totalTestCount: 1,
+};
+
 /**
  * `.dev.vars` (KEY=VALUE 形式) から 1 つ読む。 env が優先。
  * 行末の CR を落としてから解釈する (`.dev.vars.example` は CRLF 保存のため)。
@@ -163,6 +175,7 @@ async function main(): Promise<void> {
   let sharedPresetId = "";
   let sharedPresetUpdatedAt = "";
   let submissionId = "";
+  const smokeAssignmentId = `smoke-assignment-${stamp}`;
   let certificateId = "";
   let certCode = "";
 
@@ -626,6 +639,7 @@ async function main(): Promise<void> {
       token: learner,
       body: {
         lessonId,
+        assignmentId: smokeAssignmentId,
         courseTitle,
         sectionTitle: "[smoke] セクション",
         assignmentTitle: "[smoke] 課題レッスン",
@@ -639,11 +653,43 @@ async function main(): Promise<void> {
     assert(res.row.status === "pending", `status が pending でない: ${res.row.status}`);
   });
 
+  // Issue #9: VS Code の「講師に引き継ぐ」。 採点失敗サマリを添えて再提出しても
+  // 未添削の行を上書きする (キューを増殖させない)。
+  await step("VS Code から詰まりを引き継ぐと未添削の提出を上書きする", async () => {
+    const res = await ok("POST", "/api/submissions", {
+      token: learner,
+      body: {
+        lessonId,
+        assignmentId: smokeAssignmentId,
+        courseTitle,
+        sectionTitle: "[smoke] セクション",
+        assignmentTitle: "[smoke] 課題レッスン",
+        code: "console.log('escalated');",
+        priority: "high",
+        attempt: 1,
+        gradingSummary: SMOKE_GRADING_SUMMARY,
+      },
+    });
+    assert(res.row.id === submissionId, "同一課題の未添削提出が上書きされず新規作成された");
+    assert(res.row.attempt === 2, `attempt が 2 でない: ${res.row.attempt}`);
+    assert(res.row.priority === "high", `priority が high でない: ${res.row.priority}`);
+    assert(res.row.code.includes("escalated"), "提出コードが上書きされていない");
+    assert(
+      res.row.grading_summary?.failedTests?.[0]?.name === "[smoke] 失敗テスト",
+      "採点失敗サマリが保存されていない",
+    );
+  });
+
   await step("講師の添削キューに提出が現れる", async () => {
     const res = await ok("GET", "/api/submissions", { token: instructor });
-    const row = res.rows.find((r: { id: string }) => r.id === submissionId);
-    assert(row, "添削キューに提出が出ない");
+    const mine = res.rows.filter(
+      (r: { assignment_id: string | null }) => r.assignment_id === smokeAssignmentId,
+    );
+    assert(mine.length === 1, `同一課題の提出が ${mine.length} 件ある (1 件のはず)`);
+    const row = mine[0];
+    assert(row.id === submissionId, "添削キューに提出が出ない");
     assert(row.student_id === LEARNER_ID, "提出者が一致しない");
+    assert(row.grading_summary?.cleared === false, "採点失敗サマリが講師側に届いていない");
   });
 
   await step("受講者は他人の提出を添削できない (403)", async () => {
@@ -652,6 +698,44 @@ async function main(): Promise<void> {
       body: { status: "passed", verdict: "pass" },
     });
     assert(r.status === 403, `403 を期待したが ${r.status}`);
+  });
+
+  // Issue #9: 講師が開いている間に学習者が引き継ぎ直したら、 その添削は確定させない。
+  await step("開いていた版が古くなった添削は 409", async () => {
+    const opened = await ok("GET", `/api/submissions/${submissionId}`, { token: instructor });
+    const staleVersion = opened.row.submitted_at;
+
+    // 学習者が同じ課題を引き継ぎ直す (= submitted_at が進む)。
+    await ok("POST", "/api/submissions", {
+      token: learner,
+      body: {
+        lessonId,
+        assignmentId: smokeAssignmentId,
+        courseTitle,
+        assignmentTitle: "[smoke] 課題レッスン",
+        code: "console.log('re-escalated');",
+        priority: "high",
+        attempt: 1,
+        gradingSummary: SMOKE_GRADING_SUMMARY,
+      },
+    });
+
+    const stale = await call("PATCH", `/api/submissions/${submissionId}`, {
+      token: instructor,
+      body: { expectedSubmittedAt: staleVersion, status: "passed", verdict: "pass" },
+    });
+    assert(stale.status === 409, `409 を期待したが ${stale.status}`);
+
+    // 壊れた版指定が 409 に化けないこと (原因が分からなくなる)。
+    const malformed = await call("PATCH", `/api/submissions/${submissionId}`, {
+      token: instructor,
+      body: { expectedSubmittedAt: "not-a-date", status: "passed", verdict: "pass" },
+    });
+    assert(malformed.status === 400, `400 を期待したが ${malformed.status}`);
+
+    const current = await ok("GET", `/api/submissions/${submissionId}`, { token: instructor });
+    assert(current.row.status === "pending", "409 のはずが添削が確定してしまった");
+    assert(current.row.code.includes("re-escalated"), "引き継ぎ直したコードが載っていない");
   });
 
   await step("講師が添削を確定する (合格)", async () => {
@@ -683,6 +767,54 @@ async function main(): Promise<void> {
     const row = res.rows.find((r: { id: string }) => r.id === submissionId);
     assert(row, "自分の提出一覧に出ない");
     assert(row.verdict === "pass", "verdict が受講者側に反映されていない");
+  });
+
+  // Issue #9: 添削が確定した後の引き継ぎは、 確定済みの添削を pending へ巻き戻さない。
+  await step("添削確定後の引き継ぎは確定済みの提出を上書きしない", async () => {
+    const res = await ok("POST", "/api/submissions", {
+      token: learner,
+      body: {
+        lessonId,
+        assignmentId: smokeAssignmentId,
+        courseTitle,
+        sectionTitle: "[smoke] セクション",
+        assignmentTitle: "[smoke] 課題レッスン",
+        code: "console.log('after review');",
+        priority: "high",
+        attempt: 1,
+        gradingSummary: SMOKE_GRADING_SUMMARY,
+      },
+    });
+    assert(res.row.id !== submissionId, "確定済みの提出が上書きされた");
+    assert(res.row.attempt === 4, `attempt が 4 でない: ${res.row.attempt}`);
+
+    const before = await ok("GET", `/api/submissions/${submissionId}`, { token: learner });
+    assert(before.row.verdict === "pass", "確定済みの添削が巻き戻された");
+    assert(before.row.status === "passed", "確定済みの提出が pending に戻った");
+
+    // 後片付け: 新しい提出も確定して、 添削待ちキューに残さない。
+    await ok("PATCH", `/api/submissions/${res.row.id}`, {
+      token: instructor,
+      body: { status: "passed", verdict: "pass", reviewNotes: "[smoke] 再引き継ぎも合格" },
+    });
+  });
+
+  // Issue #9: 壊れた採点サマリは黙って捨てず 400。 講師画面が落ちる payload を弾く。
+  await step("壊れた採点サマリ付きの提出は 400", async () => {
+    const r = await call("POST", "/api/submissions", {
+      token: learner,
+      body: {
+        lessonId,
+        assignmentId: `${smokeAssignmentId}-invalid`,
+        courseTitle,
+        assignmentTitle: "[smoke] 不正サマリ",
+        code: "console.log('bad');",
+        priority: "normal",
+        attempt: 1,
+        gradingSummary: { ...SMOKE_GRADING_SUMMARY, lint: [null] },
+      },
+    });
+    assert(r.status === 400, `400 を期待したが ${r.status}`);
   });
 
   await step("修了条件を満たし、 修了証を発行できる", async () => {

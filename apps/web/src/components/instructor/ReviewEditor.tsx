@@ -12,6 +12,7 @@ import {
   Edit,
   Info,
   Loader2,
+  AlertTriangle,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +20,27 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import type { ReviewSuggestion, RubricCriterion, ReviewVerdict } from "@falcon/shared/review/types";
+import { formatGradingSummaryText } from "@falcon/shared/review/grading-summary";
+import type {
+  GradingSummary,
+  ReviewSuggestion,
+  RubricCriterion,
+  ReviewVerdict,
+} from "@falcon/shared/review/types";
 import { useSubmission, useSubmissions } from "@/hooks/useSubmissions";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchReviewDraft } from "@/lib/review-draft-api";
-import { formatSubmittedAt } from "@/lib/submissions-store";
+import { SubmissionConflictError, formatSubmittedAt } from "@/lib/submissions-store";
 import type { Tenant } from "@/data/types";
 import { cn } from "@/lib/utils";
+
+/**
+ * 提出の「版」。 学習者が同じ提出を引き継ぎ直すと id は据え置きでコードが変わるため、
+ * id だけでは古い状態を握り続けてしまう。 `submittedAt` は引き継ぎ直しでのみ動く。
+ */
+function submissionVersion(submission: { id: string; submittedAt: number }): string {
+  return `${submission.id}:${submission.submittedAt}`;
+}
 
 const severityDot: Record<ReviewSuggestion["severity"], string> = {
   high: "bg-danger",
@@ -51,19 +66,27 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
   const [draftLoading, setDraftLoading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const draftRequestedRef = useRef<string | null>(null);
-  const loadedSubmissionIdRef = useRef<string | null>(null);
+  const loadedVersionRef = useRef<string | null>(null);
 
-  // 提出物の切替時のみローカル編集状態を初期化 (AI 下書き到着で上書きしない)
+  // 提出物の切替時のみローカル編集状態を初期化 (AI 下書き到着で上書きしない)。
+  //
+  // id ではなく id + submittedAt で見る。 学習者が同じ提出を引き継ぎ直すと id は
+  // そのままでコードだけ変わるので、 id で見ていると古い下書きを表示し続け、
+  // 下書きの再生成も走らない。 `submittedAt` が動くのは引き継ぎ直しのときだけ
+  // (講師側の PATCH は触らない) なので、 自分の楽観更新では初期化されない。
   useEffect(() => {
     if (!submission) {
-      loadedSubmissionIdRef.current = null;
+      loadedVersionRef.current = null;
       setDraftLoading(false);
       return;
     }
-    if (loadedSubmissionIdRef.current === submission.id) return;
-    loadedSubmissionIdRef.current = submission.id;
+    const version = submissionVersion(submission);
+    if (loadedVersionRef.current === version) return;
+    loadedVersionRef.current = version;
     draftRequestedRef.current = null;
     setDraftLoading(false);
+    // 詰まって引き継がれた提出は、 まず「どこで落ちたか」から読ませる。
+    setTab(submission.gradingSummary ? "grade" : "ai");
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
@@ -72,17 +95,20 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
 
   useEffect(() => {
     if (!submission || submission.aiReady) return;
-    if (draftRequestedRef.current === submission.id) return;
-    draftRequestedRef.current = submission.id;
+    const version = submissionVersion(submission);
+    if (draftRequestedRef.current === version) return;
+    draftRequestedRef.current = version;
     const requestId = submission.id;
     setDraftLoading(true);
     (async () => {
       try {
+        const summary = submission.gradingSummary;
         const draft = await fetchReviewDraft({
           assignmentTitle: submission.assignmentTitle,
           courseTitle: submission.courseTitle,
           code: submission.codeLines.join("\n"),
-          language: "js",
+          language: summary?.language ?? "js",
+          ...(summary ? { gradingSummary: formatGradingSummaryText(summary) } : {}),
         });
         // 楽観更新の emit で effect が再実行されても、保存と同一提出の UI 反映は続行する。
         const saved = await update(requestId, {
@@ -92,26 +118,33 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
           reviewNotes: draft.notes || submission.reviewNotes,
         });
         if (!saved) {
-          if (loadedSubmissionIdRef.current === requestId) {
+          if (loadedVersionRef.current === version) {
             toast.error("AI 下書きの保存に失敗しました");
           }
           draftRequestedRef.current = null;
           return;
         }
-        if (loadedSubmissionIdRef.current !== requestId) return;
+        if (loadedVersionRef.current !== version) return;
         setSuggestions(draft.suggestions);
         setRubric(draft.rubric);
         if (draft.notes) {
           setNotes((prev) => (prev.trim() ? prev : draft.notes));
         }
       } catch (err) {
+        // 学習者が引き継ぎ直した (409)。 エラーにはせず、 最新化された提出の
+        // 新しい version でこの effect が再実行されるのに任せる。 ここで ref を
+        // 空に戻すと、 最新化に失敗して version が変わらなかったときに同じ
+        // リクエストを撃ち続けてしまう。
+        if (err instanceof SubmissionConflictError) {
+          return;
+        }
         console.error("[ReviewEditor] draft failed", err);
-        if (loadedSubmissionIdRef.current === requestId) {
+        if (loadedVersionRef.current === version) {
           toast.error("AI 下書きの生成に失敗しました");
         }
         draftRequestedRef.current = null;
       } finally {
-        if (loadedSubmissionIdRef.current === requestId) {
+        if (loadedVersionRef.current === version) {
           setDraftLoading(false);
         }
       }
@@ -146,11 +179,22 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     if (finalizing) return;
     setFinalizing(true);
     try {
-      const saved = await finalize(submission.id, v, {
-        reviewNotes: notes,
-        aiSuggestions: suggestions,
-        rubric,
-      });
+      let saved: Awaited<ReturnType<typeof finalize>>;
+      try {
+        saved = await finalize(submission.id, v, {
+          reviewNotes: notes,
+          aiSuggestions: suggestions,
+          rubric,
+        });
+      } catch (err) {
+        // 開いている間に学習者が引き継ぎ直した。 見えていないコードに確定させない。
+        if (err instanceof SubmissionConflictError) {
+          toast.error(err.message);
+          setPage("review-queue");
+          return;
+        }
+        throw err;
+      }
       if (!saved) {
         toast.error("採点の保存に失敗しました");
         return;
@@ -201,6 +245,12 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
           </div>
         </div>
         <div className="flex-1" />
+        {submission.gradingSummary && !submission.gradingSummary.cleared ? (
+          <Badge variant="warning">
+            <AlertTriangle size={10} />
+            自動採点で未クリア
+          </Badge>
+        ) : null}
         {draftLoading ? (
           <Badge variant="info">
             <Loader2 size={10} className="animate-spin" />
@@ -270,6 +320,11 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
         <aside className="border-l border-border bg-card flex flex-col max-h-[calc(100vh-57px-64px)] overflow-hidden">
           <Tabs value={tab} onValueChange={setTab} className="flex flex-col min-h-0 flex-1">
             <TabsList className="border-b border-border flex px-0 gap-0 m-0">
+              {submission.gradingSummary ? (
+                <TabTrigger value="grade" icon={<AlertTriangle />}>
+                  自動採点
+                </TabTrigger>
+              ) : null}
               <TabTrigger value="ai" icon={<Sparkles />} count={suggestions.length}>
                 AI 下書き
               </TabTrigger>
@@ -280,6 +335,15 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 総評
               </TabTrigger>
             </TabsList>
+
+            {submission.gradingSummary ? (
+              <TabsContent
+                value="grade"
+                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+              >
+                <GradeSummaryPanel summary={submission.gradingSummary} />
+              </TabsContent>
+            ) : null}
 
             <TabsContent
               value="ai"
@@ -458,6 +522,92 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     </div>
   );
 };
+
+/**
+ * VS Code から引き継がれた提出に付く自動採点の記録 (Issue #9)。
+ * 講師が「どこで詰まったか」を最初に読めるように、 チェック → 失敗の詳細の順で出す。
+ */
+const GradeSummaryPanel = ({ summary }: { summary: GradingSummary }) => (
+  <div className="text-[12.5px] leading-relaxed">
+    <div className="flex gap-2.5 items-start bg-warning-soft border border-border rounded-md px-3.5 py-3 mb-3.5 text-warning">
+      <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+      <div>
+        <strong className="font-semibold">学習者はここで詰まっています。</strong>
+        VS Code の自動採点が
+        {summary.cleared ? "通った状態で引き継がれました。" : "通らなかった提出です。"}
+      </div>
+    </div>
+
+    <div className="flex gap-1.5 mb-4">
+      <CheckBadge label="Lint" passed={summary.checks.lint} />
+      <CheckBadge label="AST" passed={summary.checks.ast} />
+      <CheckBadge label="テスト" passed={summary.checks.tests} />
+    </div>
+
+    <SummarySection title={`テスト (${summary.passedTestCount}/${summary.totalTestCount} 通過)`}>
+      {summary.failedTests.length === 0 ? (
+        <p className="text-ink-3">失敗したテストはありません。</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {summary.failedTests.map((test) => (
+            <li key={test.name}>
+              <span className="font-medium">{test.name}</span>
+              {test.error ? <span className="text-ink-3"> — {test.error}</span> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </SummarySection>
+
+    {summary.lint.length > 0 ? (
+      <SummarySection title="Lint エラー">
+        <ul className="space-y-1.5">
+          {summary.lint.map((violation) => (
+            <li key={`${violation.line}:${violation.ruleId ?? ""}:${violation.message}`}>
+              <span className="font-mono bg-muted text-ink-2 px-1.5 py-px rounded-[3px] text-[11px]">
+                Line {violation.line}
+              </span>{" "}
+              {violation.message}
+              {violation.ruleId ? <span className="text-ink-3"> ({violation.ruleId})</span> : null}
+            </li>
+          ))}
+        </ul>
+      </SummarySection>
+    ) : null}
+
+    {summary.ast.length > 0 ? (
+      <SummarySection title="AST チェック">
+        <ul className="space-y-1.5">
+          {summary.ast.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      </SummarySection>
+    ) : null}
+
+    {summary.errorMessage ? (
+      <SummarySection title="実行エラー">
+        <p className="whitespace-pre-wrap">{summary.errorMessage}</p>
+      </SummarySection>
+    ) : null}
+  </div>
+);
+
+const CheckBadge = ({ label, passed }: { label: string; passed: boolean }) => (
+  <Badge variant={passed ? "success" : "danger"}>
+    {passed ? <Check size={10} /> : <X size={10} />}
+    {label}
+  </Badge>
+);
+
+const SummarySection = ({ title, children }: { title: string; children: ReactNode }) => (
+  <section className="mb-4 last:mb-0">
+    <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-ink-3 mb-1.5">
+      {title}
+    </h3>
+    {children}
+  </section>
+);
 
 /** 狭いサイドパネル用に等幅・小さめにするだけのレイアウトラッパー。配色は共通側。 */
 const TabTrigger = (props: ComponentProps<typeof TabsTrigger>) => (

@@ -62,11 +62,27 @@ export function clearCatalog(): void {
 
 /** Lesson already loaded with the course tree — do not refetch. */
 export function findCachedLesson(courseId: string, lessonId: string): CatalogLesson | undefined {
+  return findCachedLessonContext(courseId, lessonId)?.lesson;
+}
+
+export interface CatalogLessonContext {
+  lesson: CatalogLesson;
+  courseTitle: string;
+  sectionTitle: string;
+}
+
+/** 提出に載せる講座名 / セクション名は木構造の親からしか取れないので、 まとめて返す。 */
+export function findCachedLessonContext(
+  courseId: string,
+  lessonId: string,
+): CatalogLessonContext | undefined {
   for (const course of cachedCatalog) {
     if (course.id !== courseId) continue;
     for (const section of course.sections) {
       const lesson = section.lessons.find((item) => item.id === lessonId);
-      if (lesson) return lesson;
+      if (lesson) {
+        return { lesson, courseTitle: course.title, sectionTitle: section.title };
+      }
     }
   }
   return undefined;

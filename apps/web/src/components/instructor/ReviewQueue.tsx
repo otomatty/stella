@@ -95,7 +95,8 @@ export const ReviewQueue = ({ tenantId, setPage, onOpenReview }: ReviewQueueProp
                         準備済
                       </Badge>
                     ) : (
-                      <span className="text-ink-3 text-[11.5px]">生成中</span>
+                      // 下書きは講師が Editor を開いた時に生成する。 提出直後は「未生成」。
+                      <span className="text-ink-3 text-[11.5px]">未生成</span>
                     )}
                   </TableCell>
                   <TableCell>

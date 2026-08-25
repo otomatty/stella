@@ -13,6 +13,7 @@ const SYSTEM = [
   "- 行番号は 1 始まり。存在しない行は指定しない。",
   "- severity は high / med / low のいずれか。",
   "- ルーブリックは 4 項目、各 max=4、score は 0–4 の整数。",
+  "- 自動採点の結果が添えられている場合は、その失敗の原因を最優先で説明する。",
   "- 必ず次の JSON 形式のみを返す (Markdown や説明文は不要):",
   '{"suggestions":[...],"rubric":[...],"notes":"総評の下書き"}',
   "",
@@ -24,8 +25,22 @@ export function buildReviewDraftSystemPrompt(): string {
   return SYSTEM;
 }
 
+/** Markdown コードフェンスの言語識別子。 擬似言語はハイライトが無いので素の text にする。 */
+function fenceLanguage(language: ReviewDraftRequest["language"]): string {
+  switch (language) {
+    case "sql":
+      return "sql";
+    case "ts":
+      return "typescript";
+    case "fe-pseudo":
+      return "text";
+    default:
+      return "javascript";
+  }
+}
+
 export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
-  const fenceLang = req.language === "sql" ? "sql" : "javascript";
+  const fenceLang = fenceLanguage(req.language);
   const longestBacktickRun = (req.code.match(/`+/g) ?? [])
     .map((m) => m.length)
     .reduce((a, b) => (a > b ? a : b), 0);
@@ -35,6 +50,9 @@ export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
     `  <courseTitle>${escapeXml(req.courseTitle ?? "コース")}</courseTitle>`,
     `  <assignmentTitle>${escapeXml(req.assignmentTitle)}</assignmentTitle>`,
     `</review_context>`,
+    ...(req.gradingSummary
+      ? ["", "自動採点の結果 (学習者はここで詰まっています):", req.gradingSummary]
+      : []),
     "",
     "提出コード:",
     fenceTicks + fenceLang,

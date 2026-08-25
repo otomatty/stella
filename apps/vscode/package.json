@@ -35,7 +35,8 @@
       { "command": "falcon.openInWeb", "title": "FALCON: Web で開く" },
       { "command": "falcon.openLessonDoc", "title": "FALCON: ドキュメントを開く" },
       { "command": "falcon.openLessonCode", "title": "FALCON: 演習を開く" },
-      { "command": "falcon.openNextLesson", "title": "FALCON: 次のレッスンへ" }
+      { "command": "falcon.openNextLesson", "title": "FALCON: 次のレッスンへ" },
+      { "command": "falcon.escalateToInstructor", "title": "FALCON: 講師に引き継ぐ" }
     ],
     "languages": [
       {

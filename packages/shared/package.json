@@ -32,6 +32,8 @@
     "./review/heuristic-draft": "./src/review/heuristic-draft.ts",
     "./review/validate-review-draft-request": "./src/review/validate-review-draft-request.ts",
     "./review/parse-draft-json": "./src/review/parse-draft-json.ts",
+    "./review/grading-summary": "./src/review/grading-summary.ts",
+    "./review/escalation": "./src/review/escalation.ts",
     "./study/activity": "./src/study/activity.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
     "./srs/sm2": "./src/srs/sm2.ts",

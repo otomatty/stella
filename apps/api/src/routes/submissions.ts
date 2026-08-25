@@ -11,8 +11,11 @@
  * `profiles: { display_name, initials }` をネストしてフロントのマッパーを無変更に保つ。
  */
 
+import { nextSubmissionAttempt } from "@falcon/shared/review/escalation";
+import { isGradingSummary, parseGradingSummary } from "@falcon/shared/review/grading-summary";
+import type { GradingSummary } from "@falcon/shared/review/types";
 import { Hono } from "hono";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { notifications, profiles, submissions } from "../db/schema.js";
 import {
@@ -51,6 +54,7 @@ function toRow(
     ai_ready: s.aiReady,
     ai_suggestions: s.aiSuggestions,
     rubric: s.rubric,
+    grading_summary: parseGradingSummary(s.gradingSummary),
     review_notes: s.reviewNotes,
     verdict: s.verdict,
     submitted_at: s.submittedAt.toISOString(),
@@ -102,7 +106,156 @@ submissionsRoute.get("/api/submissions", async (c) => {
   }
 });
 
-/** 受講者: 自分の提出を作成する。 */
+/** 同一課題の直近提出を 1 件引く (新しい行の attempt を決めるため)。 */
+async function latestForAssignment(
+  db: Db,
+  tenantId: string,
+  studentId: string,
+  assignmentId: string,
+): Promise<{ attempt: number } | null> {
+  const rows = await db
+    .select({ attempt: submissions.attempt })
+    .from(submissions)
+    .where(
+      and(
+        eq(submissions.tenantId, tenantId),
+        eq(submissions.studentId, studentId),
+        eq(submissions.assignmentId, assignmentId),
+      ),
+    )
+    .orderBy(desc(submissions.submittedAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+interface SubmissionInput {
+  lessonId: string | null;
+  assignmentId: string | null;
+  courseTitle: string;
+  sectionTitle: string | null;
+  assignmentTitle: string;
+  code: string;
+  priority: "high" | "normal" | "low";
+  gradingSummary: GradingSummary | null;
+}
+
+/** 同一課題の未添削提出のうち最新の 1 件の id。 */
+async function pendingIdForAssignment(
+  db: Db,
+  tenantId: string,
+  studentId: string,
+  assignmentId: string,
+): Promise<string | undefined> {
+  const rows = await db
+    .select({ id: submissions.id })
+    .from(submissions)
+    .where(
+      and(
+        eq(submissions.tenantId, tenantId),
+        eq(submissions.studentId, studentId),
+        eq(submissions.assignmentId, assignmentId),
+        eq(submissions.status, "pending"),
+      ),
+    )
+    .orderBy(desc(submissions.submittedAt))
+    .limit(1);
+  return rows[0]?.id;
+}
+
+/**
+ * 同一課題の未添削提出を上書きする (Issue #9)。
+ *
+ * 対象は **最新の 1 件だけ**。 本 PR 以前の API は同一課題の pending を複数作れたので、
+ * 条件一致した行をまとめて更新すると、 既存 DB では同じ内容の行がキューに並んでしまう。
+ * WHERE に `status = 'pending'` を残すのは、 id を引いてから UPDATE するまでの間に
+ * 講師が添削を確定していた場合に、 確定済みの添削を巻き戻さないため (0 行 → 新規作成)。
+ */
+async function overwritePending(
+  db: Db,
+  tenantId: string,
+  studentId: string,
+  assignmentId: string,
+  input: SubmissionInput,
+): Promise<SubmissionSelect | undefined> {
+  const id = await pendingIdForAssignment(db, tenantId, studentId, assignmentId);
+  if (!id) return undefined;
+  const updated = await db
+    .update(submissions)
+    .set({
+      lessonId: input.lessonId,
+      courseTitle: input.courseTitle,
+      sectionTitle: input.sectionTitle,
+      assignmentTitle: input.assignmentTitle,
+      code: input.code,
+      priority: input.priority,
+      gradingSummary: input.gradingSummary,
+      attempt: sql`${submissions.attempt} + 1`,
+      submittedAt: new Date(),
+      // コードが変わっているので前回の AI 下書き / 総評は捨てる。
+      aiReady: false,
+      aiSuggestions: [],
+      rubric: [],
+      reviewNotes: "",
+      verdict: null,
+      reviewedAt: null,
+      reviewerId: null,
+    })
+    .where(and(eq(submissions.id, id), eq(submissions.status, "pending")))
+    .returning();
+  return updated[0];
+}
+
+/**
+ * 新しい提出を作る。 `assignmentId` があるときは「同一課題の未添削が無い」ことを
+ * 同じ 1 文に閉じ込める (NOT EXISTS)。 D1 は 1 文を原子的に実行するので、
+ * 同時 POST の両方が「無い」と判断して pending が 2 行できることがない。
+ *
+ * 省略した列は DDL の既定値 (`ai_ready` / `ai_suggestions` / `rubric` / `review_notes`)。
+ */
+async function insertUnlessPending(
+  db: Db,
+  id: string,
+  tenantId: string,
+  studentId: string,
+  input: SubmissionInput,
+  attempt: number,
+): Promise<void> {
+  const summary = input.gradingSummary ? JSON.stringify(input.gradingSummary) : null;
+  const values = sql`${id}, ${tenantId}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
+      ${input.courseTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
+      'pending', ${input.priority}, ${attempt}, ${summary}, ${Date.now()}`;
+  const guard = input.assignmentId
+    ? sql`WHERE NOT EXISTS (
+        SELECT 1 FROM submissions
+        WHERE tenant_id = ${tenantId} AND student_id = ${studentId}
+          AND assignment_id = ${input.assignmentId} AND status = 'pending'
+      )`
+    : sql``;
+  await db.run(sql`
+    INSERT INTO submissions (
+      id, tenant_id, student_id, lesson_id, assignment_id,
+      course_title, section_title, assignment_title, code,
+      status, priority, attempt, grading_summary, submitted_at
+    )
+    SELECT ${values}
+    ${guard}
+  `);
+}
+
+/** 競合でのやり直し上限。 1 文ずつの操作なので、 現実には 1〜2 周で収束する。 */
+const MAX_SUBMISSION_ROUNDS = 3;
+
+async function findById(db: Db, id: string): Promise<SubmissionSelect | undefined> {
+  const rows = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+  return rows[0];
+}
+
+/**
+ * 受講者: 自分の提出を作成する。
+ *
+ * 同一課題に未添削 (pending) が残っている場合はその行を上書きして `attempt` を進める
+ * (Issue #9)。 VS Code から詰まるたびにエスカレーションしてもキューが増殖しない。
+ */
 submissionsRoute.post("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -115,26 +268,64 @@ submissionsRoute.post("/api/submissions", async (c) => {
       code: string;
       priority: "high" | "normal" | "low";
       attempt: number;
+      gradingSummary?: unknown;
     };
 
-    const inserted = await db
-      .insert(submissions)
-      .values({
-        tenantId: caller.tenantId,
-        studentId: caller.id,
-        lessonId: body.lessonId ?? null,
-        assignmentId: body.assignmentId ?? null,
-        courseTitle: body.courseTitle,
-        sectionTitle: body.sectionTitle ?? null,
-        assignmentTitle: body.assignmentTitle,
-        code: body.code,
-        status: "pending",
-        priority: body.priority,
-        attempt: body.attempt,
-      })
-      .returning();
+    // 受講者が送る値なので、 形が違えば黙って捨てずに 400 で返す。
+    if (body.gradingSummary != null && !isGradingSummary(body.gradingSummary)) {
+      throw new ApiError("gradingSummary の形式が不正です", 400);
+    }
+
+    const input: SubmissionInput = {
+      lessonId: body.lessonId ?? null,
+      assignmentId: body.assignmentId ?? null,
+      courseTitle: body.courseTitle,
+      sectionTitle: body.sectionTitle ?? null,
+      assignmentTitle: body.assignmentTitle,
+      code: body.code,
+      priority: body.priority,
+      gradingSummary: parseGradingSummary(body.gradingSummary),
+    };
     const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
-    return c.json({ row: toRow(requireReturning(inserted, "submission insert"), profile) });
+
+    // 「上書き → 無ければ新規作成」を、 競合で 1 行も確保できなかったときだけやり直す。
+    //
+    // 未添削があるので INSERT を見送った直後に講師がその行を確定すると、 上書き先も
+    // 消えて 1 行も取れない。 どちらの経路も単一 SQL 文なので、 やり直せば
+    // 「未添削を上書き」か「新規作成」のどちらかに必ず収束する。
+    for (let round = 0; round < MAX_SUBMISSION_ROUNDS; round++) {
+      if (input.assignmentId) {
+        const overwritten = await overwritePending(
+          db,
+          caller.tenantId,
+          caller.id,
+          input.assignmentId,
+          input,
+        );
+        if (overwritten) {
+          return c.json({ row: toRow(overwritten, profile) });
+        }
+      }
+
+      const previous = input.assignmentId
+        ? await latestForAssignment(db, caller.tenantId, caller.id, input.assignmentId)
+        : null;
+      const id = crypto.randomUUID();
+      await insertUnlessPending(
+        db,
+        id,
+        caller.tenantId,
+        caller.id,
+        input,
+        nextSubmissionAttempt(previous, body.attempt),
+      );
+      const created = await findById(db, id);
+      if (created) {
+        return c.json({ row: toRow(created, profile) });
+      }
+      // 同時 POST に競り負けた。 勝った方の pending を上書きしに戻る。
+    }
+    throw new ApiError("提出の保存に失敗しました", 500);
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -181,6 +372,23 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
   }
 });
 
+function submissionChanged(): ApiError {
+  return new ApiError("この提出は学習者が更新しました。 添削キューから開き直してください", 409);
+}
+
+/**
+ * 講師が読み込んだ時点の `submitted_at` (ISO)。 解釈できない値は 400。
+ * (Invalid Date のまま比較すると、 壊れた入力が 409 に化けて原因が分からなくなる)
+ */
+function parseExpectedSubmittedAt(value: string | undefined): Date | undefined {
+  if (value === undefined) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new ApiError("expectedSubmittedAt の形式が不正です", 400);
+  }
+  return parsed;
+}
+
 /** staff: 提出物を更新 (添削)。 添削確定で受講者へ通知する。 */
 submissionsRoute.patch("/api/submissions/:id", async (c) => {
   try {
@@ -196,6 +404,11 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     }
 
     const patch = (await c.req.json()) as {
+      /**
+       * 講師が読み込んだ時点の `submitted_at` (ISO)。 その後に学習者が引き継ぎ直して
+       * いれば 409 で弾く — 見えていないコードに添削を確定させないため (Issue #9)。
+       */
+      expectedSubmittedAt?: string;
       status?: "pending" | "passed" | "resubmit" | "failed";
       priority?: "high" | "normal" | "low";
       attempt?: number;
@@ -206,6 +419,11 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       verdict?: "pass" | "resubmit" | "fail" | null;
       code?: string;
     };
+
+    const expected = parseExpectedSubmittedAt(patch.expectedSubmittedAt);
+    if (expected && expected.getTime() !== before.submittedAt.getTime()) {
+      throw submissionChanged();
+    }
 
     const set: Partial<SubmissionSelect> = {};
     if (patch.status !== undefined) set.status = patch.status;
@@ -226,7 +444,20 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     }
 
     if (Object.keys(set).length > 0) {
-      await db.update(submissions).set(set).where(eq(submissions.id, id));
+      // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
+      // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
+      const updated = await db
+        .update(submissions)
+        .set(set)
+        .where(
+          expected
+            ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
+            : eq(submissions.id, id),
+        )
+        .returning();
+      if (expected && !updated[0]) {
+        throw submissionChanged();
+      }
     }
 
     const after = requireReturning(

@@ -4,7 +4,9 @@
  * RLS: 受講者: insert + mine/本人 select。staff: テナント一覧/更新。
  */
 
+import { parseGradingSummary } from "@falcon/shared/review/grading-summary";
 import type {
+  GradingSummary,
   ReviewSuggestion,
   RubricCriterion,
   ReviewVerdict,
@@ -40,7 +42,13 @@ export type SubmissionPatch = Pick<
   | "reviewNotes"
   | "verdict"
   | "codeLines"
->;
+> & {
+  /**
+   * 講師が読み込んだ時点の `submittedAt` (ms)。 その後に学習者が引き継ぎ直していれば
+   * サーバが 409 を返す — 見えていないコードに添削を確定させないため (Issue #9)。
+   */
+  expectedSubmittedAt?: number;
+};
 
 interface SubmissionRow {
   id: string;
@@ -58,6 +66,7 @@ interface SubmissionRow {
   ai_ready: boolean;
   ai_suggestions: ReviewSuggestion[];
   rubric: RubricCriterion[];
+  grading_summary?: GradingSummary | null;
   review_notes: string;
   verdict: ReviewVerdict | null;
   submitted_at: string;
@@ -98,6 +107,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
     rubric: row.rubric ?? [],
     reviewNotes: row.review_notes ?? "",
     verdict: row.verdict,
+    gradingSummary: parseGradingSummary(row.grading_summary),
   };
 }
 
@@ -149,6 +159,9 @@ export async function patchSubmission(id: string, patch: SubmissionPatch): Promi
     {
       method: "PATCH",
       body: {
+        ...(patch.expectedSubmittedAt !== undefined
+          ? { expectedSubmittedAt: new Date(patch.expectedSubmittedAt).toISOString() }
+          : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
         ...(patch.attempt !== undefined ? { attempt: patch.attempt } : {}),

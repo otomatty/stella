@@ -3,6 +3,7 @@ import {
   exerciseRoot,
   isPathInsideDir,
 } from "@falcon/shared/vscode/exercise-paths";
+import type { Assignment } from "@falcon/shared/types";
 import * as vscode from "vscode";
 import { gradeFiles } from "./grader-host.js";
 import type { ExecutionResult } from "./grader-protocol.js";
@@ -65,7 +66,14 @@ async function readExerciseFiles(rootUri: vscode.Uri): Promise<Record<string, st
   return files;
 }
 
-export async function gradeActiveExercise(): Promise<ExecutionResult> {
+/** 採点 1 回ぶんの入出力。 「講師に引き継ぐ」 が採点した内容そのものを送れるようにする。 */
+export interface GradeRun {
+  assignment: Assignment;
+  files: Record<string, string>;
+  result: ExecutionResult;
+}
+
+export async function gradeActiveExercise(): Promise<GradeRun> {
   const assignmentId = resolveActiveAssignmentId();
   if (!assignmentId) {
     throw new Error("課題フォルダを開いてください");
@@ -74,5 +82,5 @@ export async function gradeActiveExercise(): Promise<ExecutionResult> {
   const rootUri = vscode.Uri.file(exerciseRoot(resolveHomeDir(), assignment.id));
   await saveDirtyExerciseFiles(rootUri);
   const files = await readExerciseFiles(rootUri);
-  return gradeFiles({ assignment, files });
+  return { assignment, files, result: await gradeFiles({ assignment, files }) };
 }

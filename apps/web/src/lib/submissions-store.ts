@@ -9,13 +9,26 @@ import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
 import { REVIEW_QUEUE, SUBMITTED_CODE, AI_SUGGESTIONS, RUBRIC } from "@/demo/fixtures";
 import type { Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
+import { ApiClientError } from "@/lib/api-client";
 import {
+  fetchSubmissionById,
   fetchSubmissionsForTenant,
   insertSubmission,
   patchSubmission,
   type InsertSubmissionInput,
   type SubmissionPatch,
 } from "@/lib/submissions-api";
+
+/**
+ * 添削を保存しようとしたら、 学習者がその提出を引き継ぎ直していた (Issue #9)。
+ * 講師が見ていないコードに添削を確定させないため、 呼び出し側で開き直させる。
+ */
+export class SubmissionConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SubmissionConflictError";
+  }
+}
 
 const STORAGE_KEY = "lms_submissions_v1";
 
@@ -231,6 +244,24 @@ export function getSubmission(tenantId: Tenant["id"], id: string): Submission | 
   return localTenantList(store, tenantId).find((s) => s.id === id);
 }
 
+function replaceRemote(tenantId: Tenant["id"], id: string, row: Submission): void {
+  const list = remoteList(tenantId);
+  const idx = list.findIndex((s) => s.id === id);
+  if (idx < 0) return;
+  const next = [...list];
+  next[idx] = row;
+  setRemoteList(tenantId, next);
+}
+
+/** 409 のときは講師のキャッシュを最新化してから知らせる (古いコードを表示し続けない)。 */
+async function refreshAfterConflict(tenantId: Tenant["id"], id: string): Promise<void> {
+  try {
+    replaceRemote(tenantId, id, await fetchSubmissionById(id));
+  } catch (err) {
+    console.error("[submissions-store] conflict refresh failed", err);
+  }
+}
+
 async function persistRemotePatch(
   tenantId: Tenant["id"],
   id: string,
@@ -239,7 +270,11 @@ async function persistRemotePatch(
 ): Promise<Submission | undefined> {
   const nextGen = (remotePatchGen.get(id) ?? 0) + 1;
   remotePatchGen.set(id, nextGen);
-  const apiPatch = toSubmissionPatch(patch);
+  const apiPatch: SubmissionPatch = {
+    ...toSubmissionPatch(patch),
+    // 講師が読み込んだ版。 学習者が引き継ぎ直していればサーバが 409 を返す。
+    expectedSubmittedAt: rollback.submittedAt,
+  };
   try {
     const saved = await patchSubmission(id, apiPatch);
     if (remotePatchGen.get(id) !== nextGen) return saved;
@@ -254,13 +289,11 @@ async function persistRemotePatch(
   } catch (err) {
     if (remotePatchGen.get(id) === nextGen) {
       console.error("[submissions-store] remote patch failed", err);
-      const list = remoteList(tenantId);
-      const idx = list.findIndex((s) => s.id === id);
-      if (idx >= 0) {
-        const next = [...list];
-        next[idx] = rollback;
-        setRemoteList(tenantId, next);
-      }
+      replaceRemote(tenantId, id, rollback);
+    }
+    if (err instanceof ApiClientError && err.status === 409) {
+      await refreshAfterConflict(tenantId, id);
+      throw new SubmissionConflictError(err.message);
     }
     return undefined;
   }
@@ -374,7 +407,9 @@ export async function createSubmissionAsync(
 
   try {
     const created = await insertSubmission(tenantId, toInsertPayload(base));
-    setRemoteList(tenantId, [created, ...remoteList(tenantId)]);
+    // 同一課題の未添削がある場合、 サーバは既存行を upsert して返す (Issue #9)。
+    // 素直に先頭へ足すと同じ id が 2 つ並ぶので、 id で置き換える。
+    setRemoteList(tenantId, [created, ...remoteList(tenantId).filter((s) => s.id !== created.id)]);
     return created;
   } catch (err) {
     console.error("[submissions-store] remote insert failed", err);

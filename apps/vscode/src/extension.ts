@@ -1,10 +1,11 @@
 import { exchangeVscodeLink } from "@falcon/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
 import { AuthExpiredError, initApi } from "./api.js";
-import { AuthStore, disposeAuthEvents } from "./auth.js";
+import { AuthStore, disposeAuthEvents, onDidChangeAuth } from "./auth.js";
 import { findNextLesson, resolveLessonForExercise } from "./catalog-progress.js";
 import {
   findCachedLesson,
+  findCachedLessonContext,
   getCachedCatalog,
   loadCatalog,
   markLessonComplete,
@@ -22,8 +23,19 @@ import {
   shouldResumeAfterLink,
   type PendingLesson,
 } from "./deep-link.js";
+import {
+  canEscalate,
+  clearEscalationAttempt,
+  escalateToInstructor,
+  rememberEscalationAttempt,
+} from "./escalate.js";
 import { openExercisePanel } from "./exercise-panel.js";
-import { formatGradeMessage, gradeActiveExercise, resolveActiveAssignmentId } from "./grader.js";
+import {
+  formatGradeMessage,
+  gradeActiveExercise,
+  resolveActiveAssignmentId,
+  type GradeRun,
+} from "./grader.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
@@ -45,8 +57,16 @@ function findCachedLessonForNode(node: LessonNode): CatalogLesson | undefined {
   return findCachedLesson(node.courseId, node.id);
 }
 
-async function resolveLessonForActiveExercise(): Promise<CatalogLesson | undefined> {
-  const assignmentId = resolveActiveAssignmentId();
+/**
+ * 課題 id からレッスンを引く。
+ *
+ * 採点は非同期なので、 走っている間に利用者が別の課題へエディタを移すことがある。
+ * 「今アクティブな課題」ではなく **採点した課題** で引かないと、 引き継ぎが別の
+ * レッスン / コースの下に保存されてしまう。
+ */
+async function resolveLessonForAssignment(
+  assignmentId: string | undefined,
+): Promise<CatalogLesson | undefined> {
   if (!assignmentId) {
     return undefined;
   }
@@ -57,6 +77,27 @@ async function resolveLessonForActiveExercise(): Promise<CatalogLesson | undefin
   }
   const catalog = await loadCatalog();
   return resolveLessonForExercise(assignmentId, active, catalog);
+}
+
+/**
+ * 採点結果を「講師に引き継ぐ」用に控える。
+ * クリアした / レッスンが特定できない採点は控えない (キューに流す対象ではない)。
+ */
+function rememberGradeRun(run: GradeRun, lesson: CatalogLesson | undefined): void {
+  if (run.result.evaluation.cleared || !lesson) {
+    clearEscalationAttempt();
+    return;
+  }
+  const context = findCachedLessonContext(lesson.courseId, lesson.id);
+  rememberEscalationAttempt({
+    assignment: run.assignment,
+    files: run.files,
+    result: run.result,
+    courseId: lesson.courseId,
+    courseTitle: context?.courseTitle ?? "コース",
+    lessonId: lesson.id,
+    sectionTitle: context?.sectionTitle ?? null,
+  });
 }
 
 async function showExerciseForLesson(
@@ -74,6 +115,8 @@ async function showExerciseForLesson(
     description: assignment.description,
     courseId: lesson.courseId,
     lessonId: lesson.id,
+    assignmentId,
+    canEscalate: canEscalate(assignmentId),
     ...(result ? { result } : {}),
     ...(next
       ? { nextLesson: { courseId: next.courseId, lessonId: next.id, title: next.title } }
@@ -234,6 +277,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     { dispose: disposeAuthEvents },
+    // 接続 / 切断で採点の控えを捨てる。 同じ VS Code に別の受講者が接続したとき、
+    // 前の受講者のコードと採点結果を新しい JWT で提出できてしまうのを防ぐ。
+    onDidChangeAuth(() => {
+      clearEscalationAttempt();
+    }),
     { dispose: () => grader.dispose() },
     vscode.window.registerUriHandler({
       handleUri(uri: vscode.Uri): void {
@@ -269,8 +317,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand("falcon.grade", async () => {
       try {
-        const result = await gradeActiveExercise();
-        const lesson = await resolveLessonForActiveExercise();
+        const run = await gradeActiveExercise();
+        const result = run.result;
+        const lesson = await resolveLessonForAssignment(run.assignment.id);
+        rememberGradeRun(run, lesson);
         if (lesson) {
           await showExerciseForLesson(lesson, result);
         }
@@ -293,6 +343,26 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showErrorMessage(message);
       }
     }),
+    vscode.commands.registerCommand(
+      "falcon.escalateToInstructor",
+      async (assignmentId?: string) => {
+        const target =
+          typeof assignmentId === "string" ? assignmentId : resolveActiveAssignmentId();
+        if (!target) {
+          void vscode.window.showInformationMessage("課題フォルダを開いてください");
+          return;
+        }
+        try {
+          const attempt = await escalateToInstructor(target);
+          void vscode.window.showInformationMessage(
+            `講師に引き継ぎました (${attempt} 回目)。 添削されると Web に通知が届きます`,
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          void vscode.window.showErrorMessage(message);
+        }
+      },
+    ),
     vscode.commands.registerCommand("falcon.resetExercise", async () => {
       const assignmentId = resolveActiveAssignmentId();
       if (!assignmentId) {
