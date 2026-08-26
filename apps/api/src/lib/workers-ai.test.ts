@@ -166,6 +166,77 @@ describe("直叩きフォールバック (AI_GATEWAY_ID 未設定時)", () => {
   });
 });
 
+describe("失敗時の診断情報", () => {
+  it("既定の読み上げ失敗は上流本文を ApiError に載せない", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ errors: [{ message: "Unified billing is not enabled" }] }), {
+        status: 401,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      synthesizeSpeech(envWithGateway(), "自己紹介をお願いします", "ja"),
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof Error &&
+        /401/.test(err.message) &&
+        !err.message.includes("Unified billing is not enabled"),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("診断付きの読み上げ失敗は上流本文を ApiError に載せる", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ errors: [{ message: "Unified billing is not enabled" }] }), {
+        status: 401,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      synthesizeSpeech(envWithGateway(), "自己紹介をお願いします", "ja", true),
+    ).rejects.toThrow(/401.*Unified billing is not enabled/);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("文字起こしの失敗は上流本文を ApiError に載せない", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ errors: [{ message: "Unified billing is not enabled" }] }), {
+        status: 401,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(transcribeAudio(envWithGateway(), new Uint8Array([1, 2, 3]))).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof Error &&
+        /401/.test(err.message) &&
+        !err.message.includes("Unified billing is not enabled"),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("JSON に audio が無いときは返却キーをエラーに含める", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true, result: { duration: 1.2 } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      synthesizeSpeech(envWithGateway(), "自己紹介をお願いします", "ja"),
+    ).rejects.toThrow(/keys=\[success,result\].*result\.keys=\[duration\]/);
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("buildTtsInput", () => {
   it("モデルごとに入力スキーマを組み替える", () => {
     expect(buildTtsInput("xai/grok-tts", "本文", "ja", "rex")).toEqual({

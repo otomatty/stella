@@ -330,8 +330,14 @@ async function putQuestionAudio(
   no: number,
   part: InterviewAudioPart,
   text: string,
+  includeUpstreamBody = false,
 ): Promise<void> {
-  const bytes = await synthesizeSpeech(env, text, env.INTERVIEW_TTS_LANG ?? "ja");
+  const bytes = await synthesizeSpeech(
+    env,
+    text,
+    env.INTERVIEW_TTS_LANG ?? "ja",
+    includeUpstreamBody,
+  );
   await bucket.put(ttsKey(tenantId, no, part), bytes, {
     httpMetadata: { contentType: "audio/mpeg" },
     customMetadata: { [INTERVIEW_AUDIO_TEXT_HASH_KEY]: interviewAudioTextHash(text) },
@@ -1290,7 +1296,8 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
         const locked = await withResourceLock(
           db,
           interviewQuestionLockId(caller.tenantId, target.no),
-          () => putQuestionAudio(c.env, bucket, caller.tenantId, target.no, target.part, text),
+          () =>
+            putQuestionAudio(c.env, bucket, caller.tenantId, target.no, target.part, text, true),
           { ttlMs: QUESTION_LOCK_TTL_MS },
         );
         if (!locked.ran) {
@@ -1303,11 +1310,11 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
         }
         results.push({ ...target, ok: true });
       } catch (e) {
-        results.push({
-          ...target,
-          ok: false,
-          error: e instanceof Error ? e.message : String(e),
-        });
+        const error = e instanceof Error ? e.message : String(e);
+        console.error(
+          `[interview-tts] generate failed no=${target.no} part=${target.part}: ${error}`,
+        );
+        results.push({ ...target, ok: false, error });
       }
     }
 

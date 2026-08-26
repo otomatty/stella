@@ -266,6 +266,14 @@ export interface GenerateAudioResult {
   results: Array<{ no: number; part: InterviewAudioPart; ok: boolean; error?: string }>;
 }
 
+/** 生成 API の失敗行を管理画面のトースト / コンソール向けに整形する。 */
+export function formatAudioGenerateErrors(results: GenerateAudioResult["results"]): string {
+  return results
+    .filter((r) => !r.ok)
+    .map((r) => `No.${r.no} (${r.part}): ${r.error?.trim() || "不明なエラー"}`)
+    .join("\n");
+}
+
 /**
  * admin: 指定セグメント (質問文 + 深掘り①〜③) の読み上げ音声を生成 (再生成は上書き)。
  * 1 回最大 10 セグメント。

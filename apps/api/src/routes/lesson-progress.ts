@@ -12,12 +12,15 @@
  */
 
 import { Hono } from "hono";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { normalizeProgressRows, type ProgressSyncInput } from "@falcon/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
 import { lessonProgress } from "../db/schema.js";
-import { buildStudyActivityIncrement } from "../lib/study-activity.js";
+import {
+  executeLessonProgressWrites,
+  assertProgressSyncSize,
+} from "../lib/lesson-progress-write.js";
 import type { Env } from "../env.js";
 
 export const lessonProgressRoute = new Hono<{ Bindings: Env }>();
@@ -68,55 +71,17 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
     const body = (await c.req.json()) as { rows?: ProgressSyncInput[] };
     const inputs = Array.isArray(body.rows) ? body.rows : [];
     if (inputs.length === 0) return c.json({ ok: true, written: 0 });
+    assertProgressSyncSize(inputs.length);
 
     // 不正行の除去と同一 lesson_id の集約 (SQLite の upsert は 1 文で同じ行を 2 度
     // 更新できないため、 重複を残すとリクエストごと失敗する)。
     const rows = normalizeProgressRows(inputs);
     if (rows.length === 0) return c.json({ ok: true, written: 0 });
+    assertProgressSyncSize(rows.length);
 
-    const values = rows.map((r) => ({
-      tenantId: caller.tenantId,
-      userId: caller.id,
-      lessonId: r.lessonId,
-      completed: r.completed,
-      lastPage: r.lastPage,
-      viewedPages: r.viewedPages,
-      watchedSec: r.watchedSec,
-      updatedAt: new Date(r.updatedAtMs),
-    }));
+    await executeLessonProgressWrites(db, caller.tenantId, caller.id, rows);
 
-    // 日別ログの加算量と LWW 判定は DB 側の 1 文に閉じ込める (アプリ側で先に SELECT して
-    // 差分を計算すると、 割り込みリクエストがあったとき進捗とログがズレる)。
-    const activityIncrements = rows
-      .filter((r) => r.countsTowardActivity)
-      .map((r) => buildStudyActivityIncrement(db, caller.tenantId, caller.id, r));
-
-    const progressUpsert = db
-      .insert(lessonProgress)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [lessonProgress.userId, lessonProgress.lessonId],
-        set: {
-          completed: sql`excluded.completed`,
-          lastPage: sql`excluded.last_page`,
-          viewedPages: sql`excluded.viewed_pages`,
-          watchedSec: sql`excluded.watched_sec`,
-          updatedAt: sql`excluded.updated_at`,
-        },
-        // conflict 時、 payload の updated_at が既存より新しい場合のみ更新 (LWW)。
-        setWhere: sql`excluded.updated_at > ${lessonProgress.updatedAt}`,
-      });
-
-    const [firstIncrement, ...restIncrements] = activityIncrements;
-    if (firstIncrement === undefined) {
-      await progressUpsert;
-    } else {
-      // 1 トランザクション (D1 batch) で書く。 日別ログの文は更新前の lesson_progress を
-      // 読んで増分を出すため、 必ず進捗 upsert より先に置くこと。
-      await db.batch([firstIncrement, ...restIncrements, progressUpsert]);
-    }
-
-    return c.json({ ok: true, written: values.length });
+    return c.json({ ok: true, written: rows.length });
   } catch (err) {
     return errorResponse(c, err);
   }

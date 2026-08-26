@@ -143,6 +143,11 @@ async function runModel(
   input: Record<string, unknown>,
   /** 応答を待つ上限 (ms)。 未指定なら待ち続ける (長い録音の文字起こし用)。 */
   timeoutMs?: number,
+  /**
+   * 上流本文を ApiError に載せるか。 読み上げ生成 (admin) だけ true。
+   * 文字起こしは受講者も叩くので本文はサーバログに限定する。
+   */
+  includeUpstreamBody = false,
 ): Promise<Response> {
   if (!gatewayConfigured(env) && isUnifiedBillingModel(model)) {
     // 直叩きへ落とすと `/ai/run/xai%2Fgrok-tts` で 404 になり原因が分かりにくいので、
@@ -178,19 +183,54 @@ async function runModel(
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     console.error(`[workers-ai] ${model} failed (${res.status}): ${text.slice(0, 300)}`);
-    throw new ApiError(`Workers AI の呼び出しに失敗しました (${res.status})`, 502);
+    throw new ApiError(formatWorkersAiHttpError(model, res.status, text, includeUpstreamBody), 502);
   }
   return res;
 }
 
-/** 質問文を読み上げモデル (既定 Grok TTS) で音声に合成する。 */
-export async function synthesizeSpeech(env: Env, text: string, lang: string): Promise<Uint8Array> {
+/** 上流の失敗本文をクライアントへ返せる長さに切り詰める。 */
+const UPSTREAM_SNIPPET = 240;
+
+export function formatWorkersAiHttpError(
+  model: string,
+  status: number,
+  body: string,
+  includeUpstreamBody = false,
+): string {
+  const detail = body.replace(/\s+/g, " ").trim().slice(0, UPSTREAM_SNIPPET);
+  return includeUpstreamBody && detail
+    ? `${model}: Workers AI の呼び出しに失敗しました (${status}): ${detail}`
+    : `${model}: Workers AI の呼び出しに失敗しました (${status})`;
+}
+
+/** JSON 応答のキーだけを残す (audio の base64 は載せない)。 */
+export function jsonResponseShape(data: unknown): string {
+  if (data === null || typeof data !== "object") return `value=${typeof data}`;
+  const keys = Object.keys(data);
+  const result = (data as { result?: unknown }).result;
+  if (result !== null && typeof result === "object") {
+    return `keys=[${keys.join(",")}] result.keys=[${Object.keys(result).join(",")}]`;
+  }
+  return `keys=[${keys.join(",")}]`;
+}
+
+/**
+ * 質問文を読み上げモデル (既定 Grok TTS) で音声に合成する。
+ * `includeUpstreamBody` は admin の一括生成だけ true。 質問 PATCH (sales 可) は既定の false。
+ */
+export async function synthesizeSpeech(
+  env: Env,
+  text: string,
+  lang: string,
+  includeUpstreamBody = false,
+): Promise<Uint8Array> {
   const model = ttsModel(env);
   const res = await runModel(
     env,
     model,
     buildTtsInput(model, text, lang, env.INTERVIEW_TTS_VOICE?.trim()),
     AI_REQUEST_TIMEOUT_MS,
+    includeUpstreamBody,
   );
   const contentType = res.headers.get("content-type") ?? "";
   // REST は通常 { result: { audio: "<base64 mp3>" } } を返すが、
@@ -199,11 +239,15 @@ export async function synthesizeSpeech(env: Env, text: string, lang: string): Pr
     // 直叩きは { result: { audio } }、 Gateway 経由は { audio } を返すことがある。
     const data = (await res.json()) as { audio?: string; result?: { audio?: string } };
     const b64 = data.result?.audio ?? data.audio;
-    if (!b64) throw new ApiError("音声の生成結果が空でした", 502);
+    if (!b64) {
+      throw new ApiError(`${model}: 音声の生成結果が空でした (${jsonResponseShape(data)})`, 502);
+    }
     return base64ToBytes(b64);
   }
   const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.length === 0) throw new ApiError("音声の生成結果が空でした", 502);
+  if (bytes.length === 0) {
+    throw new ApiError(`${model}: 音声の生成結果が空でした (binary, 0 bytes)`, 502);
+  }
   return bytes;
 }
 

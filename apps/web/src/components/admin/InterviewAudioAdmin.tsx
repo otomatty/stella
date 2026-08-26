@@ -25,8 +25,10 @@ import {
 } from "@falcon/shared/interview/audio";
 import {
   type AudioSegmentRef,
+  type GenerateAudioResult,
   fetchInterviewQuestions,
   fetchQuestionAudio,
+  formatAudioGenerateErrors,
   generateQuestionAudio,
 } from "@/lib/interview-prep-api";
 import { cn } from "@/lib/utils";
@@ -145,8 +147,8 @@ export function InterviewAudioAdmin() {
     });
   }, [rows, audioSet, staleSet, filter, query, segmentsByNo]);
 
-  /** 指定セグメントを生成し、 成功分を登録済みへ反映する。 失敗件数を返す。 */
-  const generate = async (targets: AudioSegmentRef[]): Promise<number> => {
+  /** 指定セグメントを生成し、 成功分を登録済みへ反映する。 失敗行を返す。 */
+  const generate = async (targets: AudioSegmentRef[]): Promise<GenerateAudioResult["results"]> => {
     const nos = targets.map((t) => t.no);
     setBusyNos((s) => new Set([...s, ...nos]));
     try {
@@ -161,7 +163,9 @@ export function InterviewAudioAdmin() {
           return next;
         });
       }
-      return results.length - ok.length;
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) console.error("[interview-tts] generate failed", failed);
+      return results;
     } finally {
       setBusyNos((s) => {
         const next = new Set(s);
@@ -177,8 +181,9 @@ export function InterviewAudioAdmin() {
     if (segments.length === 0) return;
     const regenerate = registeredCount(no) > 0;
     try {
-      const failed = await generate(segments.map(({ no: n, part }) => ({ no: n, part })));
-      if (failed > 0) toast.error(`No.${no} の音声生成に失敗しました`);
+      const results = await generate(segments.map(({ no: n, part }) => ({ no: n, part })));
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) toast.error(formatAudioGenerateErrors(failed));
       else toast(`No.${no} の音声を${regenerate ? "再生成" : "生成"}しました`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "音声生成に失敗しました");
@@ -190,18 +195,20 @@ export function InterviewAudioAdmin() {
     const targets: AudioSegmentRef[] = segments.map(({ no, part }) => ({ no, part }));
     if (targets.length === 0) return;
     setBulk({ done: 0, total: targets.length });
-    let failed = 0;
+    const failures: GenerateAudioResult["results"] = [];
     try {
       for (let i = 0; i < targets.length; i += BATCH) {
         const chunk = targets.slice(i, i + BATCH);
-        failed += await generate(chunk);
+        const results = await generate(chunk);
+        failures.push(...results.filter((r) => !r.ok));
         setBulk({ done: Math.min(i + chunk.length, targets.length), total: targets.length });
       }
-      if (failed > 0) toast.error(`${failed} 件の${verb}に失敗しました (再実行で埋められます)`);
+      if (failures.length > 0) toast.error(formatAudioGenerateErrors(failures));
       else toast(`${targets.length} 件の音声を${verb}しました`);
     } catch (e) {
       // レート制限 (429) などで中断しても、 成功済みは登録に反映されている。
-      toast.error(e instanceof Error ? e.message : "一括生成が中断しました");
+      const extra = e instanceof Error ? e.message : "一括生成が中断しました";
+      toast.error(failures.length > 0 ? `${formatAudioGenerateErrors(failures)}\n${extra}` : extra);
     } finally {
       setBulk(null);
     }
