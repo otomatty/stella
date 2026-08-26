@@ -50,4 +50,10 @@ export interface QuizSeed {
   lessonId: string;
   passScore: number;
   questions: QuizQuestionSeed[];
+  /**
+   * 生成元 practice.md の全文（改行 LF 正規化済み）。quiz レッスンは本文列を持たない
+   * ため、本文リビジョン (lesson_revisions) と配布 PDF はこれをスナップショット・
+   * 生成元にする。
+   */
+  sourceText: string;
 }

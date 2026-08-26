@@ -10,6 +10,7 @@
  */
 
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { buildContentManifest } from "@falcon/content";
 import type { QuizQuestionSeed } from "@falcon/content";
@@ -151,6 +152,17 @@ function emitCourse(tenantId: Tenant["id"], course: Course) {
         ? content.quizzes.find((q) => q.courseId === course.id && q.lessonId === lesson.id)
         : undefined;
       if (quizSeed) emitQuiz(tenantId, course.id, quizSeed);
+      // 本文リビジョン。quiz レッスンは markdown を持たないので practice.md 全文を積む。
+      const revisionSource = lesson.markdown ?? quizSeed?.sourceText;
+      if (revisionSource !== undefined) {
+        emitLessonRevision(
+          tenantId,
+          course.id,
+          lesson.id,
+          revisionSource,
+          revisionSource === lesson.markdown,
+        );
+      }
       if (lesson.assignmentId && !emittedAssignments.has(lesson.assignmentId)) {
         emittedAssignments.add(lesson.assignmentId);
         emitAssignment(tenantId, lesson.assignmentId);
@@ -227,6 +239,51 @@ function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
     retarget("submissions", "lesson_id"),
     retarget("lesson_materials", "lesson_id"),
     retarget("quizzes", "lesson_id"),
+  );
+}
+
+/**
+ * 教材本文のリビジョン履歴 (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 直前リビジョンとハッシュが違うときだけ 1 行積む — 同一内容の再 seed では増えない。
+ * D1 専用テーブルなので legacy Postgres には出さない。
+ *
+ * `guardLessonMarkdown` (slides / doc — source が lessons.markdown と同じ文字列のとき):
+ * seed は CMS のレッスン単位ロック (cms.ts の lesson-markdown:*) を取らないため、
+ * デプロイ中の CMS 編集と競れる。lessons 行が **まだこの seed の本文を保持している
+ * ときだけ** リビジョンを積むことで、「本文は CMS の B なのに最新リビジョンは seed の
+ * A」という取り残しを防ぐ (CMS が勝った場合はこの insert が no-op になり、CMS 側の
+ * リビジョンが最新のまま)。残る極小の交錯パターンでも、次の seed が本文を正本へ
+ * 戻すと同時にリビジョンも追い付くので恒久的な食い違いにはならない。
+ * 本文リテラルが 2 回入るため文が大きくなるが、最大教材 (~31KB) でも seed-d1.ts の
+ * 1 文 100KB 制限に収まる。超えたら chunkStatements が throw して気づける。
+ */
+function emitLessonRevision(
+  tenantId: Tenant["id"],
+  courseId: string,
+  lessonId: string,
+  source: string,
+  guardLessonMarkdown: boolean,
+) {
+  if (!isSqlite) return;
+  const id = lessonUuid(tenantId, courseId, lessonId);
+  const hash = createHash("sha256").update(source).digest("hex");
+  const latestHash = `select r.source_hash from lesson_revisions r where r.lesson_id = '${id}' order by r.revision desc limit 1`;
+  // migration 0031 の番兵行 (SHA-256 を SQL で計算できないための仮基準) は、seed が
+  // 正本のレッスンでは実ハッシュ入りの行に入れ替える。先に消すことで下の insert が
+  // revision 1 から振り直す。2 回目以降の seed では番兵行は無いので no-op。
+  lines.push(
+    `delete from lesson_revisions where lesson_id = '${id}' and source_hash = 'pre-versioning';`,
+  );
+  const lessonGuard = guardLessonMarkdown
+    ? `where exists (select 1 from lessons l where l.id = '${id}' and l.markdown = '${esc(source)}')`
+    : `where exists (select 1 from lessons l where l.id = '${id}')`;
+  lines.push(
+    [
+      "insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at)",
+      `select '${id}', coalesce((select max(r.revision) from lesson_revisions r where r.lesson_id = '${id}'), 0) + 1, '${hash}', '${esc(source)}', 'seed', null, ${nowExpr()}`,
+      lessonGuard,
+      `and coalesce((${latestHash}), '') <> '${hash}';`,
+    ].join(" "),
   );
 }
 
@@ -349,8 +406,61 @@ function emitInterviewQuestions(tenantId: string) {
   );
 }
 
+/** upload-pdfs.ts が出すマニフェスト 1 行ぶん。 */
+interface PdfManifestEntry {
+  tenantId: string;
+  courseSlug: string;
+  lessonId: string;
+  hash: string;
+  key: string;
+  fileName: string;
+  sizeBytes: number;
+}
+
+/**
+ * 自動生成 PDF (配布資料) の登録
+ * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ *
+ * `PDF_MANIFEST` に upload-pdfs.ts のマニフェストを渡されたときだけ出す (deploy が
+ * R2 への put を終えてから seed を流す — D1 が存在しないオブジェクトを指す時間を
+ * 作らない、サムネイルと同じ順序)。auto の行はレッスンにつき 1 行で常に最新版を
+ * 指し、版履歴は lesson_material_versions に積む。ハッシュが前回と同じなら版は
+ * 増えない (冪等)。旧版の R2 オブジェクトは消さない (版の保持は仕様)。
+ */
+function emitPdfMaterials() {
+  const manifestPath = process.env.PDF_MANIFEST;
+  if (!manifestPath || !isSqlite) return;
+  const entries = JSON.parse(readFileSync(manifestPath, "utf8")) as PdfManifestEntry[];
+  for (const e of entries) {
+    if (typeof e.sizeBytes !== "number") {
+      throw new Error(`pdf manifest: sizeBytes がありません: ${e.key}`);
+    }
+    const lessonId = lessonUuid(e.tenantId, e.courseSlug, e.lessonId);
+    const materialId = stableUuid(
+      `lesson-material-pdf:${e.tenantId}:${e.courseSlug}:${e.lessonId}`,
+    );
+    lines.push(
+      [
+        "insert into lesson_materials (id, lesson_id, path, file_name, size_bytes, mime_type, source, created_by, created_at)",
+        `select '${materialId}', l.id, '${esc(e.key)}', ${strLit(e.fileName)}, ${e.sizeBytes}, 'application/pdf', 'auto', null, ${nowExpr()}`,
+        `from lessons l where l.id = '${lessonId}'`,
+        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source;",
+      ].join(" "),
+    );
+    lines.push(
+      [
+        "insert into lesson_material_versions (material_id, version, path, source_hash, lesson_revision, size_bytes, created_at)",
+        `select '${materialId}', coalesce((select max(v.version) from lesson_material_versions v where v.material_id = '${materialId}'), 0) + 1, '${esc(e.key)}', '${e.hash}', (select max(r.revision) from lesson_revisions r where r.lesson_id = '${lessonId}'), ${e.sizeBytes}, ${nowExpr()}`,
+        `where exists (select 1 from lesson_materials m where m.id = '${materialId}')`,
+        `and coalesce((select v2.source_hash from lesson_material_versions v2 where v2.material_id = '${materialId}' order by v2.version desc limit 1), '') <> '${e.hash}';`,
+      ].join(" "),
+    );
+  }
+}
+
 for (const c of content.courses) emitCourse("ses", c);
 emitRetiredDemoCourses();
+emitPdfMaterials();
 
 emitInterviewQuestions("ses");
 

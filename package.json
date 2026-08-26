@@ -16,6 +16,8 @@
     "test": "vitest run",
     "content:check": "bun run --filter=@falcon/content check:ci",
     "content:upload:remote": "bun run --filter=@falcon/content upload:remote",
+    "content:pdf:sync": "bun run --filter=@falcon/content pdf:sync",
+    "content:pdf:sync:remote": "bun run --filter=@falcon/content pdf:sync:remote",
     "content:upload:thumbnails:remote": "bun run --filter=@falcon/content upload:thumbnails:remote",
     "deploy:api": "bun run --filter=@falcon/api deploy",
     "deploy:web": "bun run build && bun run --filter=@falcon/web deploy",

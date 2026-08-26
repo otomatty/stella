@@ -33,7 +33,9 @@ describe("export-seed-sql (sqlite)", () => {
     const webFundamentals = stableUuid("course:ses:web-fundamentals");
     const reactIntro = stableUuid("course:ses:react-intro");
     expect(sql).not.toContain("Web開発基礎");
-    expect(sql).not.toContain("Git / GitHub");
+    // "Git / GitHub" は git-basics の practice.md 本文 (lesson_revisions のスナップ
+    // ショット) に正当に現れるので、旧デモ講座の検査はコース insert に限定する。
+    expect(sql).not.toMatch(/insert into courses[^\n]*Git \/ GitHub/);
     expect(sql).not.toContain("React入門");
     expect(sql).toContain(`delete from courses where id = '${webFundamentals}'`);
     expect(sql).toContain(`delete from courses where id = '${reactIntro}'`);
@@ -47,6 +49,19 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("'git-basics'");
     expect(sql).toContain("Git 入門研修");
     expect(sql).not.toContain(`delete from courses where id = '${gitBasics}'`);
+  });
+
+  it("本文リビジョンを、直前とハッシュが違うときだけ積む", () => {
+    // slides / text は lessons.markdown、quiz は practice.md 全文がスナップショットになる。
+    const quizLesson = stableUuid("lesson:ses:typescript-basics:quiz-1-1");
+    expect(sql).toContain(
+      `insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at) select '${quizLesson}'`,
+    );
+    expect(sql).toMatch(
+      new RegExp(
+        `insert into lesson_revisions[^\\n]*'${quizLesson}'[\\s\\S]*?## 確認クイズ[\\s\\S]*?and coalesce\\(\\(select r\\.source_hash from lesson_revisions r where r\\.lesson_id = '${quizLesson}'`,
+      ),
+    );
   });
 
   it("スライドレッスンに本文 markdown が入る", () => {

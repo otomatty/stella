@@ -75,6 +75,7 @@ export {
   Maximize2,
   Minimize2,
   RotateCcw,
+  History,
   RefreshCw,
   Volume2,
   VolumeX,

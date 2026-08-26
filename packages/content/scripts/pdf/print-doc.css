@@ -1,0 +1,190 @@
+/**
+ * doc.md / practice.md の A4 縦 PDF 用スタイル。
+ *
+ * 配色・アクセントは Sports Force スキン (apps/web/src/components/learner/slides-skin.css /
+ * scripts/build_pptx.py) と同じトークンを使う。スライドと違い紙面は流し込みなので、
+ * コードは折り返す (pre-wrap)。
+ */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.8;
+  color: #33333a; /* TEXT */
+}
+
+/* 左上の講座名 (スライドの sf-header に相当) */
+.doc-header {
+  margin-bottom: 6mm;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #b7b7be; /* FAINT */
+}
+
+.doc-body h1 {
+  margin: 0 0 6mm;
+  font-size: 17pt;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0e0e10; /* INK */
+}
+
+.doc-body h2 {
+  margin: 8mm 0 3mm;
+  font-size: 13pt;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0e0e10;
+  break-after: avoid;
+}
+
+/* 見出し下のブランドグラデーションバー (スライドと同じ) */
+.doc-body h1::after,
+.doc-body h2::after {
+  content: "";
+  display: block;
+  width: 54px;
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 2mm;
+  background: linear-gradient(
+    90deg,
+    #0a33ff 0%,
+    #8330c7 34%,
+    #e62f9a 58%,
+    #ff2c61 78%,
+    #ff2e0d 100%
+  );
+}
+
+.doc-body h3 {
+  margin: 6mm 0 2mm;
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: #0e0e10;
+  break-after: avoid;
+}
+
+.doc-body h4 {
+  margin: 5mm 0 2mm;
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #0e0e10;
+  break-after: avoid;
+}
+
+.doc-body p,
+.doc-body ul,
+.doc-body ol {
+  margin: 0 0 3mm;
+}
+
+.doc-body ul,
+.doc-body ol {
+  padding-left: 6mm;
+}
+
+.doc-body li {
+  margin-bottom: 1mm;
+}
+
+.doc-body li::marker {
+  color: #e62f9a; /* PINK */
+}
+
+.doc-body strong {
+  font-weight: 700;
+  color: #e62f9a; /* PINK — スライドと同じアクセント */
+}
+
+.doc-body h1 strong,
+.doc-body h2 strong,
+.doc-body h3 strong,
+.doc-body h4 strong,
+.doc-body th strong {
+  color: inherit;
+}
+
+.doc-body :not(pre) > code {
+  font-family: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  font-size: 0.85em;
+  color: #b81e72; /* CODE_PINK */
+}
+
+.doc-body pre {
+  margin: 2mm 0 4mm;
+  padding: 4mm 5mm;
+  background: #f7f7f9; /* BG_SOFT */
+  border: 1px solid #dddde2; /* BORDER */
+  border-radius: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  break-inside: avoid;
+}
+
+.doc-body pre code {
+  font-family: "JetBrains Mono", Consolas, ui-monospace, monospace;
+  font-size: 8.5pt;
+  line-height: 1.6;
+  color: #33333a;
+  background: none;
+  padding: 0;
+  white-space: inherit;
+}
+
+.doc-body img {
+  display: block;
+  margin: 3mm auto 5mm;
+  max-width: 100%;
+  height: auto;
+}
+
+.doc-body table {
+  margin: 3mm auto 4mm;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
+
+.doc-body th,
+.doc-body td {
+  border: 1px solid #dddde2;
+  padding: 1.5mm 3.5mm;
+  vertical-align: middle;
+}
+
+.doc-body th {
+  background: #0e0e10; /* INK */
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.doc-body blockquote {
+  margin: 3mm 0;
+  padding: 1mm 4mm;
+  border-left: 3px solid #e62f9a;
+  color: #8a8a93; /* MUTED */
+}
+
+.doc-body a {
+  color: #b81e72;
+  text-decoration: underline;
+}
+
+/* practice: 解答編は必ず新しいページから始める (前半 = 問題 / 後半 = 解答) */
+.pdf-answers {
+  break-before: page;
+}

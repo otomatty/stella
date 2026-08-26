@@ -51,8 +51,27 @@ jobs:
       - name: Upload course materials (figures + thumbnails) to R2 (remote)
         run: bun run content:upload:remote
 
+      # 教材 PDF (配布資料) の差分生成 + R2 アップロード。R2 上の台帳
+      # (lesson-pdf/state.json — put 済みキーの記録) と突き合わせ、変わった教材だけ
+      # Playwright で PDF 化して put する。seed より先に流すのは図解・サムネイルと
+      # 同じ理由 (D1 が存在しないオブジェクトを指す時間を作らない)。マニフェストは
+      # 次の seed が PDF_MANIFEST で読む。
+      - name: Install Playwright Chromium
+        run: bunx --bun playwright install --with-deps chromium
+        working-directory: packages/content
+      # PDF_KEY_SALT (任意の長いランダム文字列を repo Secrets に登録) を設定すると
+      # R2 キーのハッシュが HMAC になり、リポジトリ内容からキーを計算できなくなる
+      # (公開バケット直リンクの緩和)。未設定でも動くが、キーは内容から計算可能。
+      # 途中で変えると全キーが変わり、次のデプロイで全教材が新版として作り直される。
+      - name: Generate & upload lesson PDFs to R2 (remote)
+        run: bun run content:pdf:sync:remote
+        env:
+          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
+
       - name: Seed D1 content (remote)
         run: bun run db:seed:remote:content
+        env:
+          PDF_MANIFEST: ${{ github.workspace }}/packages/content/dist/pdf-manifest.json
 
       - name: Deploy API
         run: bun run deploy:api

@@ -8,7 +8,15 @@
  */
 
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import type { SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
 
 const uuid = () =>
@@ -230,9 +238,70 @@ export const lessonMaterials = sqliteTable("lesson_materials", {
   fileName: text("file_name").notNull(),
   sizeBytes: integer("size_bytes").notNull().default(0),
   mimeType: text("mime_type").notNull().default("application/octet-stream"),
+  /** upload = 手動アップロード / auto = CI が教材から生成した PDF。auto 行はレッスンに
+   *  つき最新版 1 行で、履歴は lesson_material_versions が持つ。 */
+  source: text("source", { enum: ["upload", "auto"] })
+    .notNull()
+    .default("upload"),
   createdBy: text("created_by"),
   createdAt: tsNow("created_at"),
 });
+
+/**
+ * 配布資料の版履歴 (教材 PDF 自動生成 — docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * R2 のオブジェクトは版ごとに不変キー (`lesson-pdf/.../<sourceHash>.pdf`) で全版残し、
+ * この表が「何版がどのキーか」を持つ。受講者へは lesson_materials の最新 path のみ、
+ * staff は任意の版をダウンロードできる。
+ */
+export const lessonMaterialVersions = sqliteTable(
+  "lesson_material_versions",
+  {
+    materialId: text("material_id")
+      .notNull()
+      .references(() => lessonMaterials.id, { onDelete: "cascade" }),
+    /** 資料内の連番 (1..)。内容ハッシュが変わったときだけ増える。 */
+    version: integer("version").notNull(),
+    path: text("path").notNull(),
+    /** 生成元 (本文 + 参照アセット + ジェネレータ版) の内容ハッシュ。 */
+    sourceHash: text("source_hash").notNull(),
+    /** 生成元となった lesson_revisions.revision (同一レッスン内)。 */
+    lessonRevision: integer("lesson_revision"),
+    sizeBytes: integer("size_bytes").notNull().default(0),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.materialId, t.version] }),
+  }),
+);
+
+/**
+ * 教材本文のリビジョン履歴 (バージョン管理の新仕様)。
+ * seed (GitHub 正本) と CMS 編集の両方が、本文が変わったときだけ 1 行積む。
+ * markdown はスナップショット全文 — quiz レッスンは本文列を持たないため、
+ * 生成元 practice.md の全文を入れる。
+ */
+export const lessonRevisions = sqliteTable(
+  "lesson_revisions",
+  {
+    lessonId: text("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    /** レッスン内の連番 (1..)。 */
+    revision: integer("revision").notNull(),
+    /** markdown スナップショットの SHA-256 (hex)。直前リビジョンとの同一判定に使う。 */
+    sourceHash: text("source_hash").notNull(),
+    markdown: text("markdown"),
+    source: text("source", { enum: ["seed", "cms"] })
+      .notNull()
+      .default("seed"),
+    /** cms のときの編集者 profile id。seed は null。 */
+    createdBy: text("created_by"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.lessonId, t.revision] }),
+  }),
+);
 
 // ---------------------------------------------------------------
 // レッスン進捗
@@ -1003,6 +1072,8 @@ export const APP_TABLES = [
   "sections",
   "lessons",
   "lesson_materials",
+  "lesson_material_versions",
+  "lesson_revisions",
   "assignments",
   "lesson_progress",
   "study_activity",

@@ -257,7 +257,8 @@ function buildOneCourse(
       });
 
       const practiceFile = join(lessonPath, "practice.md");
-      const questions = parseQuiz(readFileSync(practiceFile, "utf8"));
+      const practiceSource = readFileSync(practiceFile, "utf8").replace(/\r\n/g, "\n");
+      const questions = parseQuiz(practiceSource);
       if (questions.length > 0) {
         const quizLessonId = `quiz-${key}`;
         lessons.push({
@@ -267,7 +268,13 @@ function buildOneCourse(
           duration: "5分",
           status: "todo",
         });
-        quizzes.push({ courseId: slug, lessonId: quizLessonId, passScore: 80, questions });
+        quizzes.push({
+          courseId: slug,
+          lessonId: quizLessonId,
+          passScore: 80,
+          questions,
+          sourceText: practiceSource,
+        });
       }
 
       // コード演習は VS Code 拡張で解く。course.json の exercises が正本で、

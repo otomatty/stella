@@ -33,6 +33,8 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import { recordLessonRevision } from "../lib/lesson-revision.js";
+import { withResourceLock } from "../lib/resource-lock.js";
 import {
   MAX_ARCHIVED_PRESETS_IN_AUDIT,
   archiveEmptiedPresetsStatement,
@@ -232,10 +234,14 @@ async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Pro
   const bucket = env.MATERIALS_BUCKET;
   if (!bucket) return;
   try {
+    // 自動生成 PDF (source=auto) の実体は消さない — R2 の版オブジェクトは全版保持が
+    // 仕様で (2026-08-26 spec)、教材が正本なので次の seed が行を作り直す。
     const rows = await db
       .select({ path: lessonMaterials.path })
       .from(lessonMaterials)
-      .where(inArray(lessonMaterials.lessonId, lessonIds));
+      .where(
+        and(inArray(lessonMaterials.lessonId, lessonIds), eq(lessonMaterials.source, "upload")),
+      );
     if (rows.length > 0) {
       await bucket.delete(rows.map((r) => r.path));
     }
@@ -553,18 +559,50 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
       totalPages: (input.total_pages as number | null) ?? null,
       totalSec: (input.total_sec as number | null) ?? null,
     };
+    // 本文のリビジョン記録つき保存。markdown が null になる保存 (type 変更等) も、
+    // 履歴のあるレッスンでは「本文が消えた」リビジョンとして残る (lesson-revision.ts)。
+    const save = async (): Promise<LessonSel> => {
+      let row: LessonSel;
+      if (input.id) {
+        row = requireReturning(
+          await db
+            .update(lessons)
+            .set({ ...values, updatedAt: new Date() })
+            .where(eq(lessons.id, input.id))
+            .returning(),
+          "lesson update",
+        );
+      } else {
+        row = requireReturning(
+          await db.insert(lessons).values(values).returning(),
+          "lesson insert",
+        );
+      }
+      await recordLessonRevision(db, {
+        lessonId: row.id,
+        markdown: row.markdown,
+        source: "cms",
+        createdBy: caller.id,
+      });
+      return row;
+    };
     let row: LessonSel;
     if (input.id) {
-      row = requireReturning(
-        await db
-          .update(lessons)
-          .set({ ...values, updatedAt: new Date() })
-          .where(eq(lessons.id, input.id))
-          .returning(),
-        "lesson update",
-      );
+      // 既存レッスンは「本文更新 → リビジョン記録」をレッスン単位で直列化する。
+      // 別々に走ると、同時保存の入れ違いで「本文は B なのに最新リビジョンは A」に
+      // なりうるため (D1 に比較交換が無いのは interview-prep と同じ事情)。
+      const locked = await withResourceLock(db, `lesson-markdown:${input.id}`, save);
+      if (!locked.ran) {
+        throw new ApiError(
+          "同じレッスンが他の操作で更新中です。少し待ってから保存し直してください",
+          409,
+        );
+      }
+      row = locked.value;
     } else {
-      row = requireReturning(await db.insert(lessons).values(values).returning(), "lesson insert");
+      // 新規レッスンの id は insert まで決まらないので、ロック無しで保存する
+      // (まだ誰も参照していない行なので競合しない)。
+      row = await save();
     }
     return c.json({ row: lessonToRow(row) });
   } catch (err) {

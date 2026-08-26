@@ -13,6 +13,7 @@ import type {
   CourseStatus,
   CourseWithChildren,
   LessonMaterialRow,
+  LessonMaterialVersionRow,
   LessonRow,
   LessonType,
   QuestionKind,
@@ -359,19 +360,25 @@ export async function deleteLessonMaterial(id: string): Promise<void> {
 }
 
 /**
- * 配布資料をダウンロードする。 API 経由のプロキシ (要 Authorization) のため、
- * fetch → Blob → a[download] で保存させる。
+ * 自動生成資料の版履歴 (staff のみ)。新しい版が先頭。
  */
-export async function downloadLessonMaterial(
-  material: Pick<LessonMaterialRow, "id" | "file_name">,
-): Promise<void> {
+export async function listLessonMaterialVersions(
+  materialId: string,
+): Promise<LessonMaterialVersionRow[]> {
+  const { rows } = await apiFetch<{ rows: LessonMaterialVersionRow[] }>(
+    `/api/materials/${encodeURIComponent(materialId)}/versions`,
+  );
+  return rows ?? [];
+}
+
+/** プロキシ経由 (要 Authorization) のダウンロード。 fetch → Blob → a[download] で保存させる。 */
+async function downloadViaProxy(apiPath: string, fileName: string): Promise<void> {
   const { getAccessToken } = await import("./auth-client");
   const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
   const token = getAccessToken();
-  const res = await fetch(
-    `${serverUrl}/api/materials/${encodeURIComponent(material.id)}/download`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-  );
+  const res = await fetch(`${serverUrl}${apiPath}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let message = `ダウンロードに失敗しました (${res.status})`;
@@ -388,13 +395,35 @@ export async function downloadLessonMaterial(
   try {
     const a = document.createElement("a");
     a.href = url;
-    a.download = material.file_name;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** 配布資料をダウンロードする。 */
+export async function downloadLessonMaterial(
+  material: Pick<LessonMaterialRow, "id" | "file_name">,
+): Promise<void> {
+  await downloadViaProxy(
+    `/api/materials/${encodeURIComponent(material.id)}/download`,
+    material.file_name,
+  );
+}
+
+/** 自動生成資料の指定版をダウンロードする (staff のみ)。ファイル名に版番号を付ける。 */
+export async function downloadLessonMaterialVersion(
+  material: Pick<LessonMaterialRow, "id" | "file_name">,
+  version: number,
+): Promise<void> {
+  const versionedName = material.file_name.replace(/(\.[^.]+)?$/, ` (v${version})$1`);
+  await downloadViaProxy(
+    `/api/materials/${encodeURIComponent(material.id)}/versions/${version}/download`,
+    versionedName,
+  );
 }
 
 /** UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。 */

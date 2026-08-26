@@ -15,13 +15,28 @@
     "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
     "check:ci": "node scripts/build.mjs --check-only",
+    "pdf": "bun run scripts/build-pdf.ts",
+    "pdf:sync": "bun run scripts/upload-pdfs.ts",
+    "pdf:sync:remote": "bun run scripts/upload-pdfs.ts --remote",
     "upload": "bun run scripts/upload-materials.ts",
     "upload:remote": "bun run scripts/upload-materials.ts --remote",
     "upload:thumbnails": "bun run scripts/upload-materials.ts --thumbnails",
     "upload:thumbnails:remote": "bun run scripts/upload-materials.ts --remote --thumbnails"
   },
   "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/noto-sans-jp": "^5.3.0",
+    "@types/hast": "^3.0.5",
     "@types/node": "^26.2.0",
-    "typescript": "^7.0.2"
+    "highlight.js": "^11.12.0",
+    "playwright": "1.58.2",
+    "rehype-highlight": "^7.0.2",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "typescript": "^7.0.2",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
   }
 }

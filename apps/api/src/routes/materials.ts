@@ -20,11 +20,18 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
 
-import { courses, enrollments, lessonMaterials, lessons, sections } from "../db/schema.js";
+import {
+  courses,
+  enrollments,
+  lessonMaterialVersions,
+  lessonMaterials,
+  lessons,
+  sections,
+} from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
@@ -51,6 +58,7 @@ const materialToRow = (m: MaterialSel) => ({
   file_name: m.fileName,
   size_bytes: m.sizeBytes,
   mime_type: m.mimeType,
+  source: m.source,
   created_by: m.createdBy,
   created_at: m.createdAt,
 });
@@ -282,6 +290,108 @@ materialsRoute.get("/api/materials", async (c) => {
   }
 });
 
+/**
+ * 自動生成資料 (source=auto) の版履歴。**staff のみ** — 旧版は「編集前の文面の
+ * 読み上げ」と同じ理屈で受講者には渡さない (受講者は常に最新版のみ)。
+ * R2 キー (path) は返さない — ダウンロードは常に id + version のプロキシ経由。
+ */
+materialsRoute.get("/api/materials/:id/versions", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+
+    const rows = await db
+      .select()
+      .from(lessonMaterials)
+      .where(eq(lessonMaterials.id, c.req.param("id")))
+      .limit(1);
+    const material = rows[0];
+    if (!material) throw new ApiError("資料が見つかりません", 404);
+    const info = await lessonCourseInfo(db, material.lessonId);
+    if (!info || info.tenantId !== caller.tenantId) {
+      throw new ApiError("資料が見つかりません", 404);
+    }
+
+    const versions = await db
+      .select({
+        version: lessonMaterialVersions.version,
+        sourceHash: lessonMaterialVersions.sourceHash,
+        lessonRevision: lessonMaterialVersions.lessonRevision,
+        sizeBytes: lessonMaterialVersions.sizeBytes,
+        createdAt: lessonMaterialVersions.createdAt,
+      })
+      .from(lessonMaterialVersions)
+      .where(eq(lessonMaterialVersions.materialId, material.id))
+      .orderBy(desc(lessonMaterialVersions.version));
+    return c.json({
+      rows: versions.map((v) => ({
+        version: v.version,
+        source_hash: v.sourceHash,
+        lesson_revision: v.lessonRevision,
+        size_bytes: v.sizeBytes,
+        created_at: v.createdAt,
+      })),
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 指定した版のダウンロード (staff のみ)。旧版の R2 オブジェクトは全版残っている。 */
+materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
+    const bucket = requireBucket(c.env);
+
+    const rows = await db
+      .select()
+      .from(lessonMaterials)
+      .where(eq(lessonMaterials.id, c.req.param("id")))
+      .limit(1);
+    const material = rows[0];
+    if (!material) throw new ApiError("資料が見つかりません", 404);
+    const info = await lessonCourseInfo(db, material.lessonId);
+    if (!info || info.tenantId !== caller.tenantId) {
+      throw new ApiError("資料が見つかりません", 404);
+    }
+
+    const versionNo = Number(c.req.param("version"));
+    if (!Number.isInteger(versionNo) || versionNo < 1) {
+      throw new ApiError("版番号が不正です", 400);
+    }
+    const versions = await db
+      .select()
+      .from(lessonMaterialVersions)
+      .where(
+        and(
+          eq(lessonMaterialVersions.materialId, material.id),
+          eq(lessonMaterialVersions.version, versionNo),
+        ),
+      )
+      .limit(1);
+    const version = versions[0];
+    if (!version) throw new ApiError("指定した版が見つかりません", 404);
+
+    const object = await bucket.get(version.path);
+    if (!object) throw new ApiError("資料の実体が見つかりません", 404);
+
+    // ファイル名に版番号を差し込む (`1-1 まとめ (v2).pdf`)。
+    const versionedName = material.fileName.replace(/(\.[^.]+)?$/, ` (v${version.version})$1`);
+    const encoded = encodeURIComponent(versionedName).replace(/'/g, "%27");
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": material.mimeType || "application/octet-stream",
+        "Content-Length": String(object.size),
+        "Content-Disposition": `attachment; filename*=UTF-8''${encoded}`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
 materialsRoute.get("/api/materials/:id/download", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
@@ -332,6 +442,12 @@ materialsRoute.delete("/api/materials/:id", async (c) => {
     const info = await lessonCourseInfo(db, material.lessonId);
     if (!info || info.tenantId !== caller.tenantId) {
       throw new ApiError("他テナントのリソースは操作できません", 403);
+    }
+
+    // 自動生成資料は削除させない — 教材 (GitHub) が正本で、消しても次の seed が
+    // 作り直すうえ、R2 の版オブジェクトは保持が仕様 (2026-08-26 spec)。
+    if (material.source === "auto") {
+      throw new ApiError("自動生成資料は削除できません (教材の変更で更新されます)", 400);
     }
 
     // DB 行を先に消す。 R2 削除失敗時は「一覧から見えない孤児オブジェクト」となり、

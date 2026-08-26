@@ -138,7 +138,22 @@ export interface LessonMaterialRow {
   file_name: string;
   size_bytes: number;
   mime_type: string;
+  /** upload = 手動アップロード / auto = CI が教材から生成した PDF (削除不可・版履歴あり)。 */
+  source: "upload" | "auto";
   created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * 自動生成資料の版履歴 1 行 (`GET /api/materials/:id/versions` / staff のみ)。
+ * ダウンロードは `GET /api/materials/:id/versions/:version/download`。
+ */
+export interface LessonMaterialVersionRow {
+  version: number;
+  source_hash: string;
+  /** 生成元となった本文リビジョン (lesson_revisions.revision)。 */
+  lesson_revision: number | null;
+  size_bytes: number;
   created_at: string;
 }
 
