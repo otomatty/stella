@@ -1,0 +1,19 @@
+{
+  "title": "JavaScript 入門研修",
+  "category": "プログラミング",
+  "color": "amber",
+  "description": "未経験からの JavaScript 研修。終了時には、HTML の末尾に script を置き、const / let・文字列・配列・if / else・for...of・関数を書ける。querySelector で要素を取り、addEventListener で click / keydown を聞き、textContent と classList で画面を変え、createElement + appendChild / remove と preventDefault までできる。",
+  "header": "JavaScript入門研修",
+  "tenantId": "ses",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-variables-numbers": "M1. 変数と数値",
+    "m2-strings": "M2. 文字列",
+    "m3-arrays": "M3. 配列",
+    "m4-conditionals": "M4. 条件分岐",
+    "m5-loops": "M5. ループ",
+    "m6-functions": "M6. 関数",
+    "m7-events": "M7. イベント",
+    "m8-objects-dom": "M8. オブジェクトとDOM"
+  }
+}

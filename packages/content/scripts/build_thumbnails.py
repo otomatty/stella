@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 17 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 18 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -497,6 +497,33 @@ def motif_page_composition(c: str) -> str:
     <rect x="74" y="40" width="400" height="468" rx="16" fill="none" stroke="{RULE_SOLID}" stroke-width="2.5"/>"""
 
 
+def motif_javascript(c: str) -> str:
+    """click で一覧に 1 行増える。 イベント → DOM 更新という講座の終端を 1 枚にする。"""
+    out = [
+        # click イベントの発生源になるボタンとカーソル
+        f'<rect x="150" y="52" width="248" height="84" rx="14" fill="{c}"/>',
+        (
+            '<text x="274" y="108" text-anchor="middle" '
+            f'font-family="\'Geist Mono\', monospace" font-size="40" font-weight="500" fill="{PAPER}">click</text>'
+        ),
+        f'<polygon points="374,112 410,148 388,151 400,175 386,182 374,157 360,170" fill="{INK}"/>',
+        # リスナーへ伝わる矢印
+        f'<line x1="274" y1="164" x2="274" y2="216" stroke="{RULE_SOLID}" stroke-width="6" stroke-linecap="round"/>',
+        f'<polygon points="274,244 258,218 290,218" fill="{RULE_SOLID}"/>',
+    ]
+    # 一覧。 最後の行が追加されたばかり (講座色で強調)。
+    for y, added in ((272, False), (360, False), (448, True)):
+        if added:
+            out.append(f'<rect x="54" y="{y}" width="440" height="72" rx="12" fill="{c}" opacity="0.14"/>')
+            out.append(f'<rect x="54" y="{y}" width="10" height="72" fill="{c}"/>')
+        out.append(
+            f'<rect x="54" y="{y}" width="440" height="72" rx="12" fill="none" stroke="{RULE_SOLID}" stroke-width="2.5"/>'
+        )
+        out.append(f'<rect x="94" y="{y + 29}" width="200" height="14" rx="7" fill="{c if added else RULE}"/>')
+    return "".join(out)
+
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -534,6 +561,12 @@ SPECS = {
         "title_size": 116,
         "subtitle": "入門研修",
         "motif": motif_page_composition,
+    },
+    "javascript-basics": {
+        "title": "JavaScript",
+        "title_size": 132,
+        "subtitle": "入門研修",
+        "motif": motif_javascript,
     },
     "python-testing-ci-basics": {
         "title": "Python",
