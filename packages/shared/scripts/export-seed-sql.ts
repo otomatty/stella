@@ -21,6 +21,7 @@ import type { Course, Lesson, Tenant } from "../../../apps/web/src/data/types.js
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { INTERVIEW_QUESTIONS } from "../src/interview/questions.js";
+import { lessonIdRemapStatements } from "./lesson-id-remap.js";
 
 const dialect = process.env.DIALECT === "sqlite" ? "sqlite" : "postgres";
 const isSqlite = dialect === "sqlite";
@@ -227,19 +228,10 @@ function emitPrune(courseUuid: string, sectionUuids: string[], lessonUuids: stri
   );
 }
 
-/** 旧 section 込み UUID を新 UUID へ付け替え、prune で進捗・受験が消えないようにする。 */
+/** 旧 section 込み UUID を新 UUID へ付け替え、prune で進捗・受験が消えないようにする。
+ *  新旧両方ある受講者は UNIQUE を踏むので、先に新 ID 行へ寄せてから旧行を消す。 */
 function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
-  if (pairs.length === 0) return;
-  const cases = pairs.map((p) => `when '${p.from}' then '${p.to}'`).join(" ");
-  const fromList = sqlIn(pairs.map((p) => p.from));
-  const retarget = (table: string, col: string) =>
-    `update ${tbl(table)} set ${col} = case ${col} ${cases} end where ${col} in (${fromList});`;
-  lines.push(
-    retarget("lesson_progress", "lesson_id"),
-    retarget("submissions", "lesson_id"),
-    retarget("lesson_materials", "lesson_id"),
-    retarget("quizzes", "lesson_id"),
-  );
+  lines.push(...lessonIdRemapStatements(pairs, tbl));
 }
 
 /**

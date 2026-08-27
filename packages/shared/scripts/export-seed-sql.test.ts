@@ -136,11 +136,27 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("旧レッスン UUID からの進捗付け替えと quiz.lesson_id 更新を出す", () => {
-    expect(sql).toMatch(/update lesson_progress set lesson_id = case lesson_id/i);
+    const mergeAt = sql.search(/update lesson_progress as dest set completed =/i);
+    const deleteAt = sql.search(/delete from lesson_progress where id in \(/i);
+    const remapAt = sql.search(/update lesson_progress set lesson_id = case lesson_id/i);
+    expect(mergeAt).toBeGreaterThan(-1);
+    expect(deleteAt).toBeGreaterThan(mergeAt);
+    expect(remapAt).toBeGreaterThan(deleteAt);
+    expect(sql).toMatch(/with map\(new_id, old_id\) as \(values /i);
     expect(sql).toMatch(/update quizzes set lesson_id = case lesson_id/i);
     expect(sql).toMatch(
       /on conflict \(id\) do update set lesson_id = excluded\.lesson_id, pass_score = excluded\.pass_score/i,
     );
+  });
+
+  it("レッスン ID 付け替えの各文は D1 の 100KB/query 制限に収まる", () => {
+    const stmts = [...sql.matchAll(/with map\([^)]+\) as \(values [^;]+;/gi)];
+    expect(stmts.length).toBeGreaterThan(0);
+    for (const m of stmts) {
+      const stmt = m[0];
+      if (stmt === undefined) continue;
+      expect(Buffer.byteLength(stmt) + 1).toBeLessThanOrEqual(100_000);
+    }
   });
 
   it("旧 quiz UUID の受験履歴を新 UUID へ付け替えてから消す", () => {
