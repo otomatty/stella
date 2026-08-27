@@ -17,6 +17,28 @@ export function isInterviewAudioPart(value: unknown): value is InterviewAudioPar
   return typeof value === "string" && (INTERVIEW_AUDIO_PARTS as readonly string[]).includes(value);
 }
 
+/** 質問音声タブから選べる読み上げモデル (生成 API の許可リストと共有)。 */
+export const INTERVIEW_TTS_MODEL_IDS = ["grok-tts", "openai/tts-1", "openai/tts-1-hd"] as const;
+
+export type InterviewTtsModelId = (typeof INTERVIEW_TTS_MODEL_IDS)[number];
+
+export const DEFAULT_INTERVIEW_TTS_MODEL_ID: InterviewTtsModelId = "grok-tts";
+
+export const INTERVIEW_TTS_MODEL_OPTIONS: ReadonlyArray<{
+  id: InterviewTtsModelId;
+  label: string;
+}> = [
+  { id: "grok-tts", label: "Grok TTS" },
+  { id: "openai/tts-1", label: "OpenAI tts-1" },
+  { id: "openai/tts-1-hd", label: "OpenAI tts-1-hd" },
+];
+
+export function isInterviewTtsModelId(value: unknown): value is InterviewTtsModelId {
+  return (
+    typeof value === "string" && (INTERVIEW_TTS_MODEL_IDS as readonly string[]).includes(value)
+  );
+}
+
 /** R2 オブジェクト名 (プレフィックスは含まない)。 */
 export function interviewAudioObjectName(no: number, part: InterviewAudioPart): string {
   return part === "question" ? `${no}.mp3` : `${no}-${part}.mp3`;

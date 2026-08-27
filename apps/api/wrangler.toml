@@ -16,7 +16,7 @@ INVITE_REDIRECT_URL = "https://falcon-web.a-sugai.workers.dev"
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
 CLOUDFLARE_ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0"
 # 未設定なら Anthropic 直叩き。Grok / Workers AI Unified Billing には必須。
-# AI_GATEWAY_ID = "falcon-ai"
+AI_GATEWAY_ID = "falcon-ai"
 # CHAT_PROVIDER = "grok"
 # CHAT_MODEL = "grok-4.6"
 # AI_GATEWAY_CF_API_TOKEN は secret (Workers AI Read 等の最小権限。deploy 用 CLOUDFLARE_API_TOKEN と別)。

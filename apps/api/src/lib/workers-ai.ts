@@ -13,6 +13,8 @@
  *     ローカル / CI で Gateway なしでも全機能が動くようにするため。
  */
 
+import { DEFAULT_INTERVIEW_TTS_MODEL_ID } from "@falcon/shared/interview/audio";
+
 import type { Env } from "../env.js";
 import { resolveUnifiedBillingGrokModel } from "./ai-gateway.js";
 import { ApiError } from "./authz.js";
@@ -34,7 +36,7 @@ const API_BASE = "https://api.cloudflare.com/client/v4/accounts";
  * `INTERVIEW_TTS_MODEL` で他モデルへ差し替えでき、 入力スキーマは
  * `buildTtsInput()` がモデルごとに組み立てる。
  */
-const DEFAULT_TTS_MODEL = "grok-tts";
+const DEFAULT_TTS_MODEL = DEFAULT_INTERVIEW_TTS_MODEL_ID;
 const DEFAULT_TTS_VOICE = "eve";
 const STT_MODEL = "@cf/openai/whisper-large-v3-turbo";
 
@@ -52,10 +54,31 @@ const STT_MODEL = "@cf/openai/whisper-large-v3-turbo";
  */
 export const AI_REQUEST_TIMEOUT_MS = 25_000;
 
-function ttsModel(env: Env): string {
-  const configured = env.INTERVIEW_TTS_MODEL?.trim() || DEFAULT_TTS_MODEL;
+/** 読み上げ 1 回の残り時間。 Gateway 応答と署名付き URL の取得で予算を分けない。 */
+export function remainingAiRequestTimeoutMs(startedAtMs: number, nowMs = Date.now()): number {
+  return Math.max(0, AI_REQUEST_TIMEOUT_MS - (nowMs - startedAtMs));
+}
+
+function ttsModel(env: Env, override?: string): string {
+  const configured = override?.trim() || env.INTERVIEW_TTS_MODEL?.trim() || DEFAULT_TTS_MODEL;
   // grok-tts → xai/grok-tts (Unified Billing のプロバイダ ID。 チャットと同じ規則)
   return resolveUnifiedBillingGrokModel(configured);
+}
+
+/**
+ * env の声は、解決したモデルが env 既定と同じ入力系統のときだけ使う。
+ * Grok の eve / OpenAI の nova / Aura の thalia を別系統へ載せない。
+ */
+function ttsVoiceFamily(model: string): "grok" | "openai" | "deepgram" | "other" {
+  if (model.includes("grok-tts")) return "grok";
+  if (model.includes("tts-1") || model.includes("gpt-4o-mini-tts")) return "openai";
+  if (model.includes("aura")) return "deepgram";
+  return "other";
+}
+
+function ttsVoice(env: Env, resolvedModel: string): string | undefined {
+  if (ttsVoiceFamily(ttsModel(env)) !== ttsVoiceFamily(resolvedModel)) return undefined;
+  return env.INTERVIEW_TTS_VOICE?.trim();
 }
 
 /**
@@ -69,9 +92,9 @@ export function buildTtsInput(
   lang: string,
   voice?: string,
 ): Record<string, unknown> {
-  // Grok TTS (xAI): text + voice + BCP-47 の language ("auto" で自動判定)
+  // Grok TTS (xAI): text + voice_id + BCP-47 の language ("auto" で自動判定)
   if (model.includes("grok-tts")) {
-    return { text, voice: voice || DEFAULT_TTS_VOICE, language: lang };
+    return { text, voice_id: voice || DEFAULT_TTS_VOICE, language: lang };
   }
   // OpenAI TTS (tts-1 / tts-1-hd): OpenAI 形式は本文が `input`
   if (model.includes("tts-1") || model.includes("gpt-4o-mini-tts")) {
@@ -214,6 +237,49 @@ export function jsonResponseShape(data: unknown): string {
   return `keys=[${keys.join(",")}]`;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (value === null || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+/**
+ * `/ai/run` の TTS 応答から audio を拾う。
+ *
+ * Grok TTS (Unified Billing) は Cloudflare 封筒
+ * `{ result: { state, result: { audio }, gatewayMetadata } }` で、 audio は
+ * 署名付き URL。 直叩き / 旧形は `{ result: { audio: base64 } }` や `{ audio }`。
+ */
+function ttsAudioField(data: unknown): string | undefined {
+  const top = asRecord(data);
+  if (!top) return undefined;
+  if (typeof top.audio === "string" && top.audio.length > 0) return top.audio;
+  const mid = asRecord(top.result);
+  if (!mid) return undefined;
+  if (typeof mid.audio === "string" && mid.audio.length > 0) return mid.audio;
+  const inner = asRecord(mid.result);
+  if (typeof inner?.audio === "string" && inner.audio.length > 0) return inner.audio;
+  return undefined;
+}
+
+async function bytesFromTtsAudioField(audio: string, timeoutMs?: number): Promise<Uint8Array> {
+  if (audio.startsWith("http://") || audio.startsWith("https://")) {
+    if (!audio.startsWith("https://")) {
+      throw new ApiError("音声 URL は https のみ受け付けます", 502);
+    }
+    const signal = timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs);
+    const res = await fetch(audio, signal ? { signal } : {});
+    if (!res.ok) {
+      throw new ApiError(`音声ファイルの取得に失敗しました (${res.status})`, 502);
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length === 0) {
+      throw new ApiError("音声ファイルの取得結果が空でした", 502);
+    }
+    return bytes;
+  }
+  return base64ToBytes(audio);
+}
+
 /**
  * 質問文を読み上げモデル (既定 Grok TTS) で音声に合成する。
  * `includeUpstreamBody` は admin の一括生成だけ true。 質問 PATCH (sales 可) は既定の false。
@@ -223,26 +289,31 @@ export async function synthesizeSpeech(
   text: string,
   lang: string,
   includeUpstreamBody = false,
+  modelId?: string,
 ): Promise<Uint8Array> {
-  const model = ttsModel(env);
+  const model = ttsModel(env, modelId);
+  const voice = ttsVoice(env, model);
+  const startedAt = Date.now();
   const res = await runModel(
     env,
     model,
-    buildTtsInput(model, text, lang, env.INTERVIEW_TTS_VOICE?.trim()),
+    buildTtsInput(model, text, lang, voice),
     AI_REQUEST_TIMEOUT_MS,
     includeUpstreamBody,
   );
   const contentType = res.headers.get("content-type") ?? "";
-  // REST は通常 { result: { audio: "<base64 mp3>" } } を返すが、
-  // 音声バイナリを直接返す構成にも耐えるようにしておく。
+  // Grok TTS は JSON 封筒 + 署名付き URL。 Workers AI 自前 TTS は base64 かバイナリ。
   if (contentType.includes("application/json")) {
-    // 直叩きは { result: { audio } }、 Gateway 経由は { audio } を返すことがある。
-    const data = (await res.json()) as { audio?: string; result?: { audio?: string } };
-    const b64 = data.result?.audio ?? data.audio;
-    if (!b64) {
+    const data: unknown = await res.json();
+    const audio = ttsAudioField(data);
+    if (!audio) {
       throw new ApiError(`${model}: 音声の生成結果が空でした (${jsonResponseShape(data)})`, 502);
     }
-    return base64ToBytes(b64);
+    const remaining = remainingAiRequestTimeoutMs(startedAt);
+    if (remaining <= 0) {
+      throw new ApiError(`${model}: 音声の生成が時間切れになりました`, 502);
+    }
+    return bytesFromTtsAudioField(audio, remaining);
   }
   const bytes = new Uint8Array(await res.arrayBuffer());
   if (bytes.length === 0) {

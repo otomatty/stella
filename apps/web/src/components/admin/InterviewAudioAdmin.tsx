@@ -22,6 +22,9 @@ import {
   type InterviewAudioSegment,
   interviewAudioSegmentId,
   interviewAudioSegments,
+  INTERVIEW_TTS_MODEL_OPTIONS,
+  isInterviewTtsModelId,
+  type InterviewTtsModelId,
 } from "@falcon/shared/interview/audio";
 import {
   type AudioSegmentRef,
@@ -63,6 +66,8 @@ export function InterviewAudioAdmin() {
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   /** 試聴中のセグメント (`12:deep1`)。 深掘りも 1 つずつ聞けるようにする。 */
   const [playingId, setPlayingId] = useState<string | null>(null);
+  /** 空は env の INTERVIEW_TTS_MODEL (未指定なら Grok)。 セレクトで上書きする。 */
+  const [ttsModel, setTtsModel] = useState<InterviewTtsModelId | "">("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   /**
    * 試聴リクエストの世代番号。 fetch 中に別の質問を試聴すると audioRef はまだ空で
@@ -152,7 +157,7 @@ export function InterviewAudioAdmin() {
     const nos = targets.map((t) => t.no);
     setBusyNos((s) => new Set([...s, ...nos]));
     try {
-      const { results } = await generateQuestionAudio(targets);
+      const { results } = await generateQuestionAudio(targets, ttsModel || undefined);
       const ok = results.filter((r) => r.ok).map((r) => interviewAudioSegmentId(r.no, r.part));
       if (ok.length > 0) {
         setAudioSet((s) => new Set([...s, ...ok]));
@@ -272,12 +277,11 @@ export function InterviewAudioAdmin() {
     <>
       {audioSet.size === 0 ? (
         <Card className="p-3 mb-3 border-warning/40 bg-warning/10 text-[12.5px] leading-relaxed">
-          <b>まず 1 問だけ生成して試聴してください。</b> 既定の読み上げモデルは Grok TTS (声{" "}
-          <span className="font-mono text-[11.5px]">eve</span>) で、 AI Gateway 経由で呼びます。
-          声色や読み上げが想定と違う場合は、 一括生成せずに{" "}
-          <span className="font-mono text-[11.5px]">INTERVIEW_TTS_VOICE</span> /{" "}
-          <span className="font-mono text-[11.5px]">INTERVIEW_TTS_MODEL</span>{" "}
-          を変更してから生成してください (コード変更は不要)。
+          <b>まず 1 問だけ生成して試聴してください。</b> 読み上げモデルは下のセレクトで切り替えます
+          (未指定はサーバの <span className="font-mono text-[11.5px]">INTERVIEW_TTS_MODEL</span>、
+          無ければ Grok TTS)。 声色が想定と違う場合は{" "}
+          <span className="font-mono text-[11.5px]">INTERVIEW_TTS_VOICE</span>{" "}
+          を変更してから生成してください。
         </Card>
       ) : null}
       <Card className="p-3 mb-4 flex flex-col gap-2">
@@ -292,10 +296,33 @@ export function InterviewAudioAdmin() {
               </>
             ) : null}
           </span>
+          <label
+            className="ml-auto flex items-center gap-1.5 text-[12px] text-ink-2"
+            htmlFor="interview-tts-model"
+          >
+            モデル
+            <select
+              id="interview-tts-model"
+              value={ttsModel}
+              disabled={bulk !== null}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || isInterviewTtsModelId(v)) setTtsModel(v);
+              }}
+              className="h-7 rounded-sm border border-border bg-card px-2 text-[12px]"
+            >
+              <option value="">環境の既定</option>
+              {INTERVIEW_TTS_MODEL_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
           {/* 質問編集からの作り直しが落ちたぶんの復旧口。 未登録の生成とは分けて数える。 */}
           <button
             type="button"
-            className={cn(btn, "ml-auto")}
+            className={btn}
             disabled={bulk !== null || stale.length === 0}
             onClick={() => void generateBulk(stale, "再生成")}
           >

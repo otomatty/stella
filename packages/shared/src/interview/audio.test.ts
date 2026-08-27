@@ -8,6 +8,7 @@ import {
   parseInterviewAudioObjectName,
   parseInterviewAudioSegmentId,
   splitDeepDive,
+  isInterviewTtsModelId,
 } from "./audio";
 
 describe("interviewAudioObjectName", () => {
@@ -93,5 +94,20 @@ describe("interviewAudioSegments", () => {
     expect(
       interviewAudioSegments({ no: 4, question: "Q", deep1: "→メモだけ" }).map((s) => s.part),
     ).toEqual(["question"]);
+  });
+});
+
+describe("isInterviewTtsModelId", () => {
+  it("管理画面から選べるモデルだけを許可する", () => {
+    expect(isInterviewTtsModelId("grok-tts")).toBe(true);
+    expect(isInterviewTtsModelId("openai/tts-1")).toBe(true);
+    expect(isInterviewTtsModelId("openai/tts-1-hd")).toBe(true);
+  });
+
+  it("未指定・未知・Workers AI 自前 TTS は拒否する", () => {
+    expect(isInterviewTtsModelId(undefined)).toBe(false);
+    expect(isInterviewTtsModelId("")).toBe(false);
+    expect(isInterviewTtsModelId("xai/grok-tts")).toBe(false);
+    expect(isInterviewTtsModelId("@cf/myshell-ai/melotts")).toBe(false);
   });
 });

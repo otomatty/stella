@@ -1142,6 +1142,70 @@ describe("深掘り音声 (#234)", () => {
   });
 });
 
+describe("音声生成のモデル指定", () => {
+  let env: Env;
+  let state: InterviewPrepTestState;
+  let bucket: ReturnType<typeof createFakeBucket>;
+
+  beforeEach(() => {
+    bucket = createFakeBucket();
+    env = createInterviewPrepTestEnv({ MATERIALS_BUCKET: bucket as unknown as R2Bucket });
+    state = createInterviewPrepTestState();
+    state.questions = [
+      { ...TEST_INTERVIEW_QUESTIONS[0], no: 101 },
+    ] as typeof TEST_INTERVIEW_QUESTIONS;
+    tts.configured = true;
+    tts.synthesize = vi.fn(async () => new Uint8Array([1, 2, 3]));
+    (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =
+      state;
+  });
+
+  it("未知の model は 400", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ nos: [101], model: "@cf/myshell-ai/melotts" }),
+      token,
+    });
+
+    expect(res.status).toBe(400);
+    expect(tts.synthesize).not.toHaveBeenCalled();
+  });
+
+  it("許可した model を読み上げに渡す", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ nos: [101], model: "openai/tts-1" }),
+      token,
+    });
+
+    expect(res.status).toBe(200);
+    expect(tts.synthesize).toHaveBeenCalled();
+    const args = tts.synthesize.mock.calls[0] as unknown[];
+    expect(args[4]).toBe("openai/tts-1");
+  });
+
+  it("model 未指定なら読み上げの上書きは渡さない", async () => {
+    const { app } = createTestApp(env);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ nos: [101] }),
+      token,
+    });
+
+    expect(res.status).toBe(200);
+    const args = tts.synthesize.mock.calls[0] as unknown[];
+    expect(args[4]).toBeUndefined();
+  });
+});
+
 describe("GET /api/interview-prep/assignments monitoring aggregates (#236)", () => {
   let env: Env;
   let state: InterviewPrepTestState;

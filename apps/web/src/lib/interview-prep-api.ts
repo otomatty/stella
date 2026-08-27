@@ -280,10 +280,11 @@ export function formatAudioGenerateErrors(results: GenerateAudioResult["results"
  */
 export async function generateQuestionAudio(
   segments: AudioSegmentRef[],
+  model?: string,
 ): Promise<GenerateAudioResult> {
   return apiFetch<GenerateAudioResult>("/api/interview-prep/audio/generate", {
     method: "POST",
-    body: { segments },
+    body: { segments, ...(model ? { model } : {}) },
   });
 }
 

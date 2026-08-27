@@ -24,6 +24,7 @@ import {
   interviewAudioTextHash,
   isInterviewAudioPart,
   isInterviewAudioStale,
+  isInterviewTtsModelId,
   parseInterviewAudioObjectName,
   parseInterviewAudioSegmentId,
 } from "@falcon/shared/interview/audio";
@@ -331,12 +332,14 @@ async function putQuestionAudio(
   part: InterviewAudioPart,
   text: string,
   includeUpstreamBody = false,
+  modelId?: string,
 ): Promise<void> {
   const bytes = await synthesizeSpeech(
     env,
     text,
     env.INTERVIEW_TTS_LANG ?? "ja",
     includeUpstreamBody,
+    modelId,
   );
   await bucket.put(ttsKey(tenantId, no, part), bytes, {
     httpMetadata: { contentType: "audio/mpeg" },
@@ -1107,6 +1110,14 @@ function parseAudioGenerateTargets(body: {
   return targets;
 }
 
+function parseAudioGenerateModel(raw: unknown): string | undefined {
+  if (raw === undefined) return undefined;
+  if (!isInterviewTtsModelId(raw)) {
+    throw new ApiError("model は grok-tts / openai/tts-1 / openai/tts-1-hd のいずれかです", 400);
+  }
+  return raw;
+}
+
 // ---------------------------------------------------------------------------
 // 音声 (Workers AI): 質問読み上げは admin が事前生成して R2 登録、 受講者向け GET は
 // 配信のみで AI を呼ばない。 回答の文字起こしは Whisper large-v3-turbo。
@@ -1239,14 +1250,16 @@ interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
  *
  * body は `{ nos: number[] }` (質問文のみ — 従来の形) と
  * `{ segments: [{ no, part }] }` (深掘りを含む) の両方を受ける。
+ * `model` は任意。 grok-tts / openai/tts-1 / openai/tts-1-hd。 未指定は env の既定。
  */
 interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "admin", "platform_admin");
 
-    const body = (await c.req.json()) as { nos?: unknown; segments?: unknown };
+    const body = (await c.req.json()) as { nos?: unknown; segments?: unknown; model?: unknown };
     const requested = parseAudioGenerateTargets(body);
+    const modelId = parseAudioGenerateModel(body.model);
 
     if (!workersAiConfigured(c.env)) {
       throw new ApiError("音声機能は未設定です (WORKERS_AI_API_TOKEN を設定してください)", 503);
@@ -1297,7 +1310,16 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
           db,
           interviewQuestionLockId(caller.tenantId, target.no),
           () =>
-            putQuestionAudio(c.env, bucket, caller.tenantId, target.no, target.part, text, true),
+            putQuestionAudio(
+              c.env,
+              bucket,
+              caller.tenantId,
+              target.no,
+              target.part,
+              text,
+              true,
+              modelId,
+            ),
           { ttlMs: QUESTION_LOCK_TTL_MS },
         );
         if (!locked.ran) {
@@ -1343,7 +1365,11 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
       targetType: "interview_question_audio",
       targetId: requested.map((t) => interviewAudioSegmentId(t.no, t.part)).join(","),
       ip: clientIp(c),
-      metadata: { requested: requested.length, succeeded: results.filter((r) => r.ok).length },
+      metadata: {
+        requested: requested.length,
+        succeeded: results.filter((r) => r.ok).length,
+        model: modelId ?? null,
+      },
     });
     return c.json({ results });
   } catch (err) {

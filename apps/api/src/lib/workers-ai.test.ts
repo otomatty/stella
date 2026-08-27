@@ -7,7 +7,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
 import {
+  AI_REQUEST_TIMEOUT_MS,
   buildTtsInput,
+  remainingAiRequestTimeoutMs,
   synthesizeSpeech,
   transcribeAudio,
   workersAiConfigured,
@@ -63,11 +65,11 @@ describe("Gateway 経由 (AI_GATEWAY_ID 構成時)", () => {
     // モデル名は URL ではなく body に載せる。 既定は Unified Billing の Grok TTS。
     const body = JSON.parse(init.body as string) as {
       model?: string;
-      input?: { text?: string; voice?: string; language?: string };
+      input?: { text?: string; voice_id?: string; language?: string };
     };
     expect(body.model).toBe("xai/grok-tts");
     expect(body.input?.text).toBe("自己紹介をお願いします");
-    expect(body.input?.voice).toBe("eve");
+    expect(body.input?.voice_id).toBe("eve");
     expect(body.input?.language).toBe("ja");
 
     vi.unstubAllGlobals();
@@ -94,6 +96,90 @@ describe("Gateway 経由 (AI_GATEWAY_ID 構成時)", () => {
     // MeloTTS は text/voice ではなく prompt/lang 形式
     expect(body.input?.prompt).toBe("自己紹介をお願いします");
     expect(body.input?.lang).toBe("ja");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("呼び出し側の model 指定が INTERVIEW_TTS_MODEL より優先される", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ audio: btoa("mp3") }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const env = {
+      ...envWithGateway(),
+      INTERVIEW_TTS_MODEL: "grok-tts",
+      INTERVIEW_TTS_VOICE: "eve",
+    } as Env;
+    await synthesizeSpeech(env, "自己紹介をお願いします", "ja", false, "openai/tts-1");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      model?: string;
+      input?: { input?: string; voice?: string; voice_id?: string };
+    };
+    expect(body.model).toBe("openai/tts-1");
+    expect(body.input?.input).toBe("自己紹介をお願いします");
+    expect(body.input?.voice).toBe("alloy");
+    expect(body.input?.voice_id).toBeUndefined();
+
+    vi.unstubAllGlobals();
+  });
+
+  it("env 既定が OpenAI なら INTERVIEW_TTS_VOICE をそのまま使う", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ audio: btoa("mp3") }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const env = {
+      ...envWithGateway(),
+      INTERVIEW_TTS_MODEL: "openai/tts-1",
+      INTERVIEW_TTS_VOICE: "nova",
+    } as Env;
+    await synthesizeSpeech(env, "自己紹介をお願いします", "ja");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      model?: string;
+      input?: { voice?: string };
+    };
+    expect(body.model).toBe("openai/tts-1");
+    expect(body.input?.voice).toBe("nova");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("env 既定と明示モデルの系統が違えば INTERVIEW_TTS_VOICE を載せない", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ audio: btoa("mp3") }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const env = {
+      ...envWithGateway(),
+      INTERVIEW_TTS_MODEL: "@cf/deepgram/aura-2-en",
+      INTERVIEW_TTS_VOICE: "thalia",
+    } as Env;
+    await synthesizeSpeech(env, "自己紹介をお願いします", "ja", false, "openai/tts-1");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      model?: string;
+      input?: { voice?: string; speaker?: string };
+    };
+    expect(body.model).toBe("openai/tts-1");
+    expect(body.input?.voice).toBe("alloy");
+    expect(body.input?.speaker).toBeUndefined();
 
     vi.unstubAllGlobals();
   });
@@ -235,13 +321,70 @@ describe("失敗時の診断情報", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("Gateway 応答と音声 URL 取得は同じ AI_REQUEST_TIMEOUT_MS を分け合う", () => {
+    expect(remainingAiRequestTimeoutMs(0, 0)).toBe(AI_REQUEST_TIMEOUT_MS);
+    expect(remainingAiRequestTimeoutMs(0, 20_000)).toBe(5_000);
+    expect(remainingAiRequestTimeoutMs(0, AI_REQUEST_TIMEOUT_MS)).toBe(0);
+    expect(remainingAiRequestTimeoutMs(0, AI_REQUEST_TIMEOUT_MS + 1_000)).toBe(0);
+  });
+
+  it("Grok TTS の Cloudflare 封筒 (URL) から音声バイトを取る", async () => {
+    const mp3 = new Uint8Array([0xff, 0xfb, 0x90, 0x00]);
+    const audioUrl = "https://ai-gateway-outputs.example.r2.cloudflarestorage.com/tts.mp3";
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (String(url).includes("/ai/run")) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            errors: [],
+            messages: [],
+            result: {
+              state: "Completed",
+              result: { audio: audioUrl },
+              gatewayMetadata: { keySource: "Unified" },
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      expect(String(url)).toBe(audioUrl);
+      return new Response(mp3, { status: 200, headers: { "content-type": "audio/mpeg" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bytes = await synthesizeSpeech(envWithGateway(), "自己紹介をお願いします", "ja");
+    expect(Array.from(bytes)).toEqual(Array.from(mp3));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("入れ子の result.audio が base64 でも読める", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          success: true,
+          result: { state: "Completed", result: { audio: btoa("mp3") }, gatewayMetadata: {} },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bytes = await synthesizeSpeech(envWithGateway(), "自己紹介をお願いします", "ja");
+    expect(new TextDecoder().decode(bytes)).toBe("mp3");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("buildTtsInput", () => {
   it("モデルごとに入力スキーマを組み替える", () => {
     expect(buildTtsInput("xai/grok-tts", "本文", "ja", "rex")).toEqual({
       text: "本文",
-      voice: "rex",
+      voice_id: "rex",
       language: "ja",
     });
     expect(buildTtsInput("openai/tts-1", "本文", "ja")).toEqual({
