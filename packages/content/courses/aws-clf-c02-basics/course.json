@@ -1,0 +1,20 @@
+{
+  "title": "AWS Cloud Practitioner 入門",
+  "category": "資格対策",
+  "color": "amber",
+  "description": "AWS Certified Cloud Practitioner (CLF-C02) の対策講座。平日10日で公式の4ドメインを一巡し、サービスの暗記ではなく「用途に合うサービスを選べる」状態を目指す。合格を保証するものではない。",
+  "header": "AWS Cloud Practitioner 入門",
+  "tenantId": "ses",
+  "modules": {
+    "m0-exam-map": "M0. 試験の見取り図",
+    "m1-economics-principles": "M1. クラウド経済と設計原則",
+    "m2-infra-deploy": "M2. グローバル基盤とデプロイ",
+    "m3-compute": "M3. コンピュート",
+    "m4-network": "M4. ネットワーク",
+    "m5-storage-db": "M5. ストレージとデータベース",
+    "m6-analytics-ai": "M6. 分析・AI・統合",
+    "m7-security": "M7. セキュリティ",
+    "m8-monitoring-migration": "M8. 監視と移行",
+    "m9-pricing-support": "M9. 料金・サポート・総復習"
+  }
+}

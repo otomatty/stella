@@ -524,6 +524,30 @@ def motif_javascript(c: str) -> str:
 
 
 
+def motif_aws_clf(c: str) -> str:
+    """リージョン > AZ の入れ子へ、オンプレミスから移行する。 講座の軸 (グローバル基盤と用途選択) を 1 枚にする。"""
+    azs = []
+    for i, x in enumerate((150, 330)):
+        filled = i == 0
+        fill = c if filled else PAPER
+        stroke = c if filled else RULE_SOLID
+        bar = PAPER if filled else RULE
+        azs.append(f"""
+    <rect x="{x}" y="148" width="140" height="192" rx="14" fill="{fill}" stroke="{stroke}" stroke-width="2.5"/>
+    <rect x="{x + 28}" y="196" width="84" height="12" rx="6" fill="{bar}"/>
+    <rect x="{x + 28}" y="224" width="56" height="12" rx="6" fill="{bar}"/>
+    <rect x="{x + 28}" y="276" width="84" height="12" rx="6" fill="{bar}"/>""")
+    return f"""
+    <rect x="112" y="96" width="388" height="288" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>
+    <rect x="144" y="120" width="120" height="10" rx="5" fill="{RULE}"/>
+    {"".join(azs)}
+    <rect x="112" y="428" width="150" height="72" rx="12" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>
+    <rect x="140" y="452" width="94" height="10" rx="5" fill="{RULE}"/>
+    <rect x="140" y="472" width="62" height="10" rx="5" fill="{RULE}"/>
+    <path d="M 294 464 L 420 464 L 420 398" stroke="{c}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+    <path d="M 406 406 L 420 388 L 434 406 Z" fill="{c}"/>"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
     "typescript-basics": {
@@ -597,6 +621,12 @@ SPECS = {
         "title_size": 148,
         "subtitle": "基本情報技術者試験",
         "motif": motif_fe_kamoku_b,
+    },
+    "aws-clf-c02-basics": {
+        "title": "AWS",
+        "title_size": 168,
+        "subtitle": "Cloud Practitioner 入門",
+        "motif": motif_aws_clf,
     },
     "ai-fluency-basics": {
         "title": "AI駆動開発",
