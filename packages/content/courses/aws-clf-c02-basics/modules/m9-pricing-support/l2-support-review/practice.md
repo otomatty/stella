@@ -10,9 +10,9 @@
 2. 白紙に2列の表を作り、左に「設問のキーワード」、右に「反射で出すもの」と見出しを付ける
 3. doc.md の反射表(6行)を写した上で、10日間の自分のつまずきから最低4行を追加する(例: 「ステートフル」→ セキュリティグループ、「専用線」→ Direct Connect)
 4. 完成した表を声に出して一巡し、詰まった行に印を付けて該当モジュールの doc.md を読み直す
-5. 最後に、受験までのToDoを3行で書く(公式の模擬問題を解く / 認定ページで最新情報を確認 / 弱いドメインの復習)
+5. 最後に、受験までのToDoを3行で書く(M10の模擬試験65問を解いて誤答分析 / 認定ページで最新情報を確認 / 弱いドメインの復習)
 
-この表が、この講座があなたの手元に残す最終成果物です。試験直前の30分は、この表と各日の絵だけを見返してください。
+この表は、次のM10の模擬試験と誤答分析でそのまま使います。試験直前の30分は、この表と各日の絵だけを見返してください。
 
 ## 演習問題
 
@@ -64,49 +64,49 @@ Trusted Advisorは、自分の環境をベストプラクティスと照らし�
 
 ## 確認クイズ
 
-### Q1. 専任のTAM(技術アカウントマネージャー)が付くサポートプランはどれですか。
+### Q1. 基幹システムをAWSで運用する大企業が、専任の技術担当者による継続的な支援と、四半期ごとの構成レビューを求めています。適切なサポートプランはどれですか。
 
-- A. Basic
-- B. Developer
-- C. Business
-- D. Enterprise
+- A. Business
+- B. Enterprise On-Ramp
+- C. Enterprise
+- D. Developer
 
 <details>
 <summary>答え</summary>
 
-**D** — 専任のTAMが付くのは最上位のEnterpriseです(Enterprise On-RampはTAMのプールへの相談)。「本番で24時間365日」ならBusiness以上、と判定キーワードで覚えます。
+**C** — 「専任の」TAMが付くのは最上位のEnterpriseです。Enterprise On-Rampは共有プールのTAMへ相談できるプランで、「専任」の一語がこの2択の決め手になります。Businessは24時間365日サポートですがTAMは付きません。
 
 </details>
 
-### Q2. 「使っていないリソースや、公開されたままのポートを点検して改善を推奨してくれる」のはどれですか。
+### Q2. 「開きっぱなしのポートや使われていないリソースがないか、環境をベストプラクティスと照らして定期点検したい」に合うものはどれですか。
 
 - A. Trusted Advisor
 - B. Health Dashboard
-- C. re:Post
+- C. Inspector
 - D. Pricing Calculator
 
 <details>
 <summary>答え</summary>
 
-**A** — ベストプラクティスとの差の点検・助言はTrusted Advisorです。Health DashboardはAWS側イベントの影響通知です。
+**A** — コスト・セキュリティ・耐障害性にわたる「環境全体の助言」はTrusted Advisorです。Inspectorも点検の仲間ですが、対象はEC2などの脆弱性(ソフトウェアの弱点)の診断で、コストや未使用リソースまでは見ません。この2択は点検の範囲で決めます。
 
 </details>
 
-### Q3. 「AWS側の障害が自分のリソースに影響しているかを確認する」のはどれですか。
+### Q3. 「東京リージョンで予定されているメンテナンスが、自社のRDSインスタンスに影響するかを確認したい」に合うものはどれですか。
 
 - A. Trusted Advisor
 - B. Health Dashboard
-- C. Marketplace
-- D. CloudFormation
+- C. CloudWatch
+- D. re:Post
 
 <details>
 <summary>答え</summary>
 
-**B** — 自分への影響つきの障害・メンテ情報はHealth Dashboardです。
+**B** — 「AWS側のイベントが自分のリソースに影響するか」はHealth Dashboardです。CloudWatchは自分のリソースの状態を測る道具で、AWS側の障害・メンテ情報は持ちません。助言のTrusted Advisorとの対比も頻出です。
 
 </details>
 
-### Q4. サードパーティ製ソフトウェアを見つけて導入できるカタログはどれですか。
+### Q4. 「サードパーティ製のセキュリティソフトをすぐ導入したい。支払いはAWSの請求にまとめたい」に合う入口はどれですか。
 
 - A. re:Post
 - B. Artifact
@@ -116,7 +116,7 @@ Trusted Advisorは、自分の環境をベストプラクティスと照らし�
 <details>
 <summary>答え</summary>
 
-**C** — 「買う」の入口がMarketplaceです。「頼む」ならパートナー、「聞く」ならre:Postと動詞で選びます。
+**C** — 出来合いのソフトを見つけて導入し、AWSの請求に載せられるカタログがMarketplaceです。パートナーは導入・構築を「頼む」相手の制度で、ソフトを「買う」ならMarketplace、と動詞で選びます。
 
 </details>
 

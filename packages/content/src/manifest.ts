@@ -185,6 +185,19 @@ function dropPracticeLink(markdown: string): string {
   return `${removed.trimEnd()}\n`;
 }
 
+/**
+ * 確認クイズの所要時間表示。
+ *
+ * レッスン末尾の確認クイズは 3〜5 問なので既定は「5分」。ただし模擬試験
+ * (aws-clf-c02-basics の M10 は 65 問) のような桁違いに長いクイズまで 5 分と
+ * 出すと、受講者と講師の時間見積もりが大きく狂う。10 問を超えるものだけ
+ * 1 問 80 秒で概算し、5 分単位に切り上げる。
+ */
+function quizDuration(questionCount: number): string {
+  if (questionCount <= 10) return "5分";
+  return `${Math.ceil((questionCount * 80) / 60 / 5) * 5}分`;
+}
+
 /** レッスンディレクトリ ID (`l1-variables`) と id (`1-1`) から doc/quiz の安定キーを作る。 */
 function lessonKey(topicIds: string[]): string {
   // トピック id は "1-1-2" 形式。先頭 2 節がレッスンを表す。
@@ -265,7 +278,7 @@ function buildOneCourse(
           id: quizLessonId,
           title: `${key} 確認クイズ`,
           type: "quiz",
-          duration: "5分",
+          duration: quizDuration(questions.length),
           status: "todo",
         });
         quizzes.push({

@@ -109,6 +109,60 @@ describe("buildContentManifest", () => {
   });
 });
 
+describe("buildContentManifest — 確認クイズの所要時間", () => {
+  function buildWithQuestions(count: number) {
+    const root = mkdtempSync(join(tmpdir(), "manifest-quiz-duration-"));
+    try {
+      const lessonDir = join(root, "gamma-basics", "modules", "m0-x", "l1-y");
+      mkdirSync(join(lessonDir, "t1-z"), { recursive: true });
+      writeFileSync(
+        join(root, "gamma-basics", "course.json"),
+        JSON.stringify({ title: "gamma 講座" }),
+      );
+      writeFileSync(
+        join(lessonDir, "t1-z", "slides.md"),
+        '---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n\n---\n\n# 2枚目\n',
+      );
+      writeFileSync(join(lessonDir, "doc.md"), "# ドキュメント\n");
+      const questions = Array.from({ length: count }, (_, i) =>
+        [
+          `### Q${i + 1}. 設問${i + 1}`,
+          "",
+          "- A. 正",
+          "- B. 誤",
+          "",
+          "<details>",
+          "<summary>答え</summary>",
+          "",
+          "**A** — 解説",
+          "",
+          "</details>",
+          "",
+        ].join("\n"),
+      );
+      writeFileSync(
+        join(lessonDir, "practice.md"),
+        ["# 演習", "", "## 確認クイズ", "", ...questions].join("\n"),
+      );
+      const { courses } = buildContentManifest(root);
+      const quiz = courses[0]?.sections?.[0]?.lessons.find((l) => l.type === "quiz");
+      return quiz?.duration;
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  it("レッスン末尾の短いクイズは 5分 のまま", () => {
+    expect(buildWithQuestions(5)).toBe("5分");
+    expect(buildWithQuestions(10)).toBe("5分");
+  });
+
+  it("模擬試験のような長いクイズは実時間で出す", () => {
+    // 65問 = 1問80秒で約87分 → 5分単位に切り上げて90分
+    expect(buildWithQuestions(65)).toBe("90分");
+  });
+});
+
 describe("buildContentManifest — 複数講座", () => {
   it("courses/ に並んだ講座をそれぞれ組み立てる", () => {
     const root = mkdtempSync(join(tmpdir(), "manifest-multi-"));

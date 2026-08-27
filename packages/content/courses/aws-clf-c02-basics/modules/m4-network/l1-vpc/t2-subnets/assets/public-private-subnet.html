@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>パブリックサブネットとプライベートサブネット</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 128 1200 512" width="1200" xmlns="http://www.w3.org/2000/svg">
+
+  <rect x="160" y="160" width="880" height="416" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="176" y="144" width="72" height="32" fill="#FFFFFF"/>
+  <text x="192" y="172" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="'Figtree', sans-serif" fill="#5C5C66">VPC</text>
+
+  <rect x="224" y="232" width="360" height="240" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="404" y="296" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">パブリックサブネット</text>
+  <text x="404" y="336" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">外に見せてよいもの</text>
+  <text x="404" y="408" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">Webサーバー・ELB</text>
+
+  <rect x="616" y="232" width="360" height="240" rx="12"
+        fill="rgba(230,47,154,0.08)" stroke="#E62F9A" stroke-width="2"/>
+  <text x="796" y="296" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">プライベートサブネット</text>
+  <text x="796" y="336" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E62F9A">外から直接つながらない</text>
+  <text x="796" y="408" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">データベース</text>
+
+  <text x="600" y="528" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">どちらのサブネットも、1つのAZの中に作る</text>
+</svg>
+</body>
+</html>

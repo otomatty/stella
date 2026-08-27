@@ -72,6 +72,8 @@
 
 試験では「複数アカウントの請求をまとめたい」(一括請求)、「組織全体で特定の操作を禁止したい」(SCP)が定番です。IAMポリシーは1アカウント内の権限、SCPは組織全体の制限、と効く範囲で区別してください。
 
+多アカウント運用の周辺には、選択肢に登場する仲間が3つあります。名前と一言だけ対応づけておいてください。複数アカウントへのサインインを1か所にまとめるのが **IAM Identity Center**(旧AWS SSO)、ガードレール付きの多アカウント環境をまとめて敷設するのが **Control Tower**、リソースのサイズの最適化案(ライトサイジングの提案)をくれるのが **Compute Optimizer** です。
+
 ## もっと知りたい人へ
 
 - 料金の考え方の白書(How AWS Pricing Works)は、このレッスンの内容の原文です: https://docs.aws.amazon.com/whitepapers/latest/how-aws-pricing-works/abstract-and-introduction.html

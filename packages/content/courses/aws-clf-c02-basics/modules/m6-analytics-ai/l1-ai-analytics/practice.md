@@ -1,13 +1,13 @@
 # レッスン6-1 演習 — AI・MLと分析
 
-対象トピック: 6-1-1 〜 6-1-4
+対象トピック: 6-1-1 〜 6-1-5
 
 ## 手元で試す
 
 「分析の川」と「AIの3層」を1枚にまとめるワークです。
 
 1. 紙の上半分に、左から右へ矢印を1本引き、「受ける → ためる → 調べる → 見せる」と4つの持ち場を書く
-2. それぞれの下にサービス名を置く(Kinesis / S3・Redshift / Athena・Redshift / QuickSight)
+2. それぞれの下にサービス名を置く(Kinesis / S3・Redshift / Athena・Redshift / QuickSight)。川の脇に「EMR(Spark/Hadoopで加工)」「OpenSearch(ログを全文検索)」の2つも書き添える
 3. 紙の下半分に3段の階段を描き、上から「AIサービス(呼ぶだけ)」「SageMaker(作る)」「インフラ(土台)」と書く
 4. AIサービスの段に、用途→名前の対応を4つ書く(画像=Rekognition / 文字起こし=Transcribe / 読み上げ=Polly / 翻訳=Translate)
 5. 最後に、自分の業務で「たまっているのに調べられていないデータ」を1つ思い浮かべ、川のどの持ち場のサービスがあれば調べられるかを1文で書く
@@ -92,17 +92,17 @@ Athenaです。S3上のデータへ直接SQLを実行できるため、データ
 
 </details>
 
-### Q3. 「S3のデータをそのままSQLで検索する、サーバーレスの分析サービス」はどれですか。
+### Q3. 「大量のアプリケーションログから特定のエラー文字列をほぼリアルタイムに検索し、ダッシュボードで監視したい」に最も適したサービスはどれですか。
 
 - A. Athena
-- B. RDS
-- C. ElastiCache
-- D. EBS
+- B. OpenSearch Service
+- C. Redshift
+- D. Glue
 
 <details>
 <summary>答え</summary>
 
-**A** — Athenaは置いたまま調べる道具です。RDSは業務データを日々さばくデータベースで、役割が違います。
+**B** — キーワードで「探す」全文検索はOpenSearch Serviceの持ち場です。Athenaもログを調べられますが、SQLでのその場の集計向きで、リアルタイムの検索・監視ダッシュボードという要件にはOpenSearchが合います。
 
 </details>
 
