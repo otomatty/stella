@@ -1,7 +1,7 @@
 /**
  * staff (instructor/admin) 向けの enrollment 取得 Hook (Issue #20)。
  *
- * - `useCourseEnrollments` … コース単位 (成績台帳などコースを軸にする画面向け)
+ * - `useStageEnrollments` … ステージ単位 (成績台帳などステージを軸にする画面向け)
  * - `useUsersEnrollments` … 選択中の受講者ぶん (受講登録画面は受講生を軸に選ぶ)
  * - `useEnrollmentSummaries` … 受講者ごとの件数だけ (受講登録画面の一覧バッジ)
  */
@@ -11,18 +11,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { EnrollmentRow, EnrollmentSummaryRow } from "@falcon/shared/cms/types";
 import {
   listEnrollmentSummaries,
-  listEnrollmentsForCourse,
+  listEnrollmentsForStage,
   listEnrollmentsForUsers,
 } from "@/lib/enrollments-api";
 
-interface UseCourseEnrollmentsResult {
+interface UseStageEnrollmentsResult {
   enrollments: EnrollmentRow[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
-export function useCourseEnrollments(courseId: string | null): UseCourseEnrollmentsResult {
+export function useStageEnrollments(stageId: string | null): UseStageEnrollmentsResult {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function useCourseEnrollments(courseId: string | null): UseCourseEnrollme
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!courseId) {
+    if (!stageId) {
       setEnrollments([]);
       setError(null);
       setLoading(false);
@@ -39,7 +39,7 @@ export function useCourseEnrollments(courseId: string | null): UseCourseEnrollme
     setLoading(true);
     setError(null);
     try {
-      const rows = await listEnrollmentsForCourse(courseId);
+      const rows = await listEnrollmentsForStage(stageId);
       if (reqId !== requestIdRef.current) return;
       setEnrollments(rows);
     } catch (err) {
@@ -48,16 +48,16 @@ export function useCourseEnrollments(courseId: string | null): UseCourseEnrollme
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [courseId]);
+  }, [stageId]);
 
-  // コース切替時は前コースの行を即クリアする。 ロード完了まで古い enrollments を
-  // 残すと、 切替直後のクリックで別コースの enrollment を削除/更新し得る。
-  // courseId にのみ依存させ、 操作後の手動 refetch (同一 courseId) ではクリアせず
+  // ステージ切替時は前ステージの行を即クリアする。 ロード完了まで古い enrollments を
+  // 残すと、 切替直後のクリックで別ステージの enrollment を削除/更新し得る。
+  // stageId にのみ依存させ、 操作後の手動 refetch (同一 stageId) ではクリアせず
   // テーブルのちらつきを防ぐ。
-  // biome-ignore lint/correctness/useExhaustiveDependencies: courseId 切替時だけ一覧を空にする
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stageId 切替時だけ一覧を空にする
   useEffect(() => {
     setEnrollments([]);
-  }, [courseId]);
+  }, [stageId]);
 
   useEffect(() => {
     void refetch();
@@ -70,7 +70,7 @@ export function useCourseEnrollments(courseId: string | null): UseCourseEnrollme
  * 選択中の受講者たちの enrollment。 受講登録画面は受講生を選んでから教材を割り当てるため、
  * 選択が変わるたびにその人数ぶんだけ取り直す (テナント全件は取らない)。
  */
-export function useUsersEnrollments(userIds: string[]): UseCourseEnrollmentsResult {
+export function useUsersEnrollments(userIds: string[]): UseStageEnrollmentsResult {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

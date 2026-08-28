@@ -15,7 +15,7 @@ function StudentsPage() {
         page="students"
         tenantId={s.tenantId}
         backendEnabled={s.backendEnabled}
-        highlightCourseId={null}
+        highlightStageId={null}
         highlightSeq={0}
       />
     </RoleGuard>

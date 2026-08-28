@@ -17,8 +17,8 @@ export interface EscalationAttempt {
   assignment: Assignment;
   files: Record<string, string>;
   result: ExecutionResult;
-  courseId: string;
-  courseTitle: string;
+  stageId: string;
+  stageTitle: string;
   lessonId: string;
   sectionTitle: string | null;
 }
@@ -61,7 +61,7 @@ export async function escalateToInstructor(assignmentId: string): Promise<number
   const body = buildEscalationSubmissionBody({
     lessonId: attempt.lessonId,
     assignmentId: attempt.assignment.id,
-    courseTitle: attempt.courseTitle,
+    stageTitle: attempt.stageTitle,
     sectionTitle: attempt.sectionTitle,
     assignmentTitle: attempt.assignment.title,
     files: attempt.files,

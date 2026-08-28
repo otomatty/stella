@@ -1,5 +1,5 @@
 /**
- * コース内のセクションとレッスンを drag-and-drop で並び替える管理 UI。
+ * ステージ内のセクションとレッスンを drag-and-drop で並び替える管理 UI。
  *
  * - 外側 `DndContext` でセクション並び替え (`SortableContext` strategy=vertical)
  * - 各セクション行は内側 `DndContext` を持ち、 そこにレッスン用の `SortableContext` を張る
@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { GripVertical, Plus, Edit, Trash } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import type {
-  CourseWithChildren,
+  StageWithChildren,
   LessonRow,
   LessonType,
   SectionRow,
@@ -46,7 +46,7 @@ import {
 import { LessonEditor } from "./LessonEditor";
 
 interface Props {
-  course: CourseWithChildren;
+  stage: StageWithChildren;
   tenantId: string;
   onChange: () => Promise<void> | void;
 }
@@ -65,16 +65,16 @@ const LESSON_TYPE_LABELS: Record<LessonType, string> = {
   code: "コード演習",
 };
 
-export function SectionList({ course, tenantId, onChange }: Props) {
-  const [sections, setSections] = useState<LocalSection[]>(course.sections);
+export function SectionList({ stage, tenantId, onChange }: Props) {
+  const [sections, setSections] = useState<LocalSection[]>(stage.sections);
   const [editingLesson, setEditingLesson] = useState<{
     sectionId: string;
     lesson: LessonRow | null;
   } | null>(null);
 
   useEffect(() => {
-    setSections(course.sections);
-  }, [course]);
+    setSections(stage.sections);
+  }, [stage]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -91,7 +91,7 @@ export function SectionList({ course, tenantId, onChange }: Props) {
     setSections(next);
     try {
       await reorderSections(
-        course.course.id,
+        stage.stage.id,
         next.map((s) => s.section.id),
       );
     } catch (err) {
@@ -128,7 +128,7 @@ export function SectionList({ course, tenantId, onChange }: Props) {
   const addSection = async () => {
     try {
       await upsertSection({
-        course_id: course.course.id,
+        stage_id: stage.stage.id,
         title: "新しいセクション",
         order: sections.length,
       });
@@ -146,7 +146,7 @@ export function SectionList({ course, tenantId, onChange }: Props) {
     try {
       await upsertSection({
         id: section.id,
-        course_id: section.course_id,
+        stage_id: section.stage_id,
         title,
         order: liveOrder,
       });
@@ -238,7 +238,7 @@ export function SectionList({ course, tenantId, onChange }: Props) {
       {editingLesson ? (
         <LessonEditor
           tenantId={tenantId}
-          courseId={course.course.id}
+          stageId={stage.stage.id}
           sectionId={editingLesson.sectionId}
           lesson={editingLesson.lesson}
           onClose={() => setEditingLesson(null)}

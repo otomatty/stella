@@ -1,7 +1,7 @@
 export const PENDING_LESSON_KEY = "pendingLesson";
 
 export interface PendingLesson {
-  courseId: string;
+  stageId: string;
   lessonId: string;
 }
 
@@ -16,24 +16,29 @@ export function parseLinkCode(query: string): string | undefined {
 
 export function parsePendingLesson(query: string): PendingLesson | undefined {
   const params = new URLSearchParams(query);
-  const courseId = params.get("courseId");
+  // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+  // 旧 Web がミントした `courseId=` だけの URI も開けるようにする。
+  const stageId = params.get("stageId") ?? params.get("courseId");
   const lessonId = params.get("lessonId");
-  if (!courseId || !lessonId) {
+  if (!stageId || !lessonId) {
     return undefined;
   }
-  return { courseId, lessonId };
+  return { stageId, lessonId };
 }
 
 export function readPendingLesson(value: unknown): PendingLesson | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const courseId = (value as { courseId?: unknown }).courseId;
+  // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+  // workspaceState に旧形 `{courseId, lessonId}` で残った保留ディープリンクを 1 回だけ救う。
+  const legacy = (value as { courseId?: unknown }).courseId;
+  const stageId = (value as { stageId?: unknown }).stageId ?? legacy;
   const lessonId = (value as { lessonId?: unknown }).lessonId;
-  if (typeof courseId !== "string" || typeof lessonId !== "string" || !courseId || !lessonId) {
+  if (typeof stageId !== "string" || typeof lessonId !== "string" || !stageId || !lessonId) {
     return undefined;
   }
-  return { courseId, lessonId };
+  return { stageId, lessonId };
 }
 
 /** Resume only after this `/link` exchange stored a token — not because one already exists. */
@@ -43,13 +48,13 @@ export function shouldResumeAfterLink(linkSucceeded: boolean): boolean {
 
 /** URI-driven opens always refetch. A warm cache must not skip the token check. */
 export async function loadLessonForUri<T>(
-  courseId: string,
+  stageId: string,
   lessonId: string,
   loadCatalog: () => Promise<unknown>,
-  findLesson: (courseId: string, lessonId: string) => T | undefined,
+  findLesson: (stageId: string, lessonId: string) => T | undefined,
 ): Promise<T | undefined> {
   await loadCatalog();
-  return findLesson(courseId, lessonId);
+  return findLesson(stageId, lessonId);
 }
 
 /** Missing lesson is a failed open — consumePendingOnSuccess must keep pendingLesson. */

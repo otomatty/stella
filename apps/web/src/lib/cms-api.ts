@@ -8,10 +8,10 @@
 
 import type {
   AssignmentRow,
-  CourseMaterialRow,
-  CourseRow,
-  CourseStatus,
-  CourseWithChildren,
+  StageMaterialRow,
+  StageRow,
+  StageStatus,
+  StageWithChildren,
   LessonMaterialRow,
   LessonMaterialVersionRow,
   LessonRow,
@@ -26,22 +26,22 @@ import type {
 import { apiFetch } from "./api-client";
 
 // ---------------------------------------------------------------
-// Courses
+// Stages
 // ---------------------------------------------------------------
 
-export async function listCourses(_tenantId: string): Promise<CourseRow[]> {
-  const { rows } = await apiFetch<{ rows: CourseRow[] }>("/api/cms/courses");
+export async function listStages(_tenantId: string): Promise<StageRow[]> {
+  const { rows } = await apiFetch<{ rows: StageRow[] }>("/api/cms/stages");
   return rows ?? [];
 }
 
-export async function getCourseWithChildren(courseId: string): Promise<CourseWithChildren | null> {
-  const { course } = await apiFetch<{ course: CourseWithChildren | null }>(
-    `/api/cms/courses/${encodeURIComponent(courseId)}`,
+export async function getStageWithChildren(stageId: string): Promise<StageWithChildren | null> {
+  const { stage } = await apiFetch<{ stage: StageWithChildren | null }>(
+    `/api/cms/stages/${encodeURIComponent(stageId)}`,
   );
-  return course ?? null;
+  return stage ?? null;
 }
 
-export interface UpsertCourseInput {
+export interface UpsertStageInput {
   id?: string;
   tenant_id: string;
   slug: string;
@@ -53,30 +53,30 @@ export interface UpsertCourseInput {
   duration_hours?: number | null;
   description?: string | null;
   instructor_name?: string | null;
-  status?: CourseStatus;
+  status?: StageStatus;
   require_all_lessons?: boolean;
   require_quiz_pass?: boolean;
   require_assignment_pass?: boolean;
   auto_issue_certificate?: boolean;
 }
 
-export async function upsertCourse(input: UpsertCourseInput): Promise<CourseRow> {
-  const { row } = await apiFetch<{ row: CourseRow }>("/api/cms/courses", {
+export async function upsertStage(input: UpsertStageInput): Promise<StageRow> {
+  const { row } = await apiFetch<{ row: StageRow }>("/api/cms/stages", {
     method: "POST",
     body: input,
   });
   return row;
 }
 
-export async function setCourseStatus(id: string, status: CourseStatus): Promise<void> {
-  await apiFetch(`/api/cms/courses/${encodeURIComponent(id)}/status`, {
+export async function setStageStatus(id: string, status: StageStatus): Promise<void> {
+  await apiFetch(`/api/cms/stages/${encodeURIComponent(id)}/status`, {
     method: "PATCH",
     body: { status },
   });
 }
 
-export async function deleteCourse(id: string): Promise<void> {
-  await apiFetch(`/api/cms/courses/${encodeURIComponent(id)}`, { method: "DELETE" });
+export async function deleteStage(id: string): Promise<void> {
+  await apiFetch(`/api/cms/stages/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 // ---------------------------------------------------------------
@@ -85,7 +85,7 @@ export async function deleteCourse(id: string): Promise<void> {
 
 export interface UpsertSectionInput {
   id?: string;
-  course_id: string;
+  stage_id: string;
   title: string;
   order?: number;
 }
@@ -102,10 +102,10 @@ export async function deleteSection(id: string): Promise<void> {
   await apiFetch(`/api/cms/sections/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export async function reorderSections(courseId: string, orderedIds: string[]): Promise<void> {
+export async function reorderSections(stageId: string, orderedIds: string[]): Promise<void> {
   await apiFetch("/api/cms/sections/reorder", {
     method: "POST",
-    body: { courseId, orderedIds },
+    body: { stageId, orderedIds },
   });
 }
 
@@ -301,7 +301,7 @@ export async function uploadMaterial(file: File, path: string): Promise<UploadMa
 // レッスン配布資料 (Issue #72)
 // ---------------------------------------------------------------
 
-/** レッスンに紐づく配布資料一覧。 受講者は同テナントの published コースのみ返る。 */
+/** レッスンに紐づく配布資料一覧。 受講者は同テナントの published ステージのみ返る。 */
 export async function listLessonMaterials(lessonId: string): Promise<LessonMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: LessonMaterialRow[] }>(
     `/api/materials?lessonId=${encodeURIComponent(lessonId)}`,
@@ -310,12 +310,12 @@ export async function listLessonMaterials(lessonId: string): Promise<LessonMater
 }
 
 /**
- * コース全体の配布資料一覧 (Issue #77 — コース詳細「教材をダウンロード」)。
+ * ステージ全体の配布資料一覧 (Issue #77 — ステージ詳細「教材をダウンロード」)。
  * セクション → レッスン → 登録順に並んだ状態で返る。
  */
-export async function listCourseMaterials(courseId: string): Promise<CourseMaterialRow[]> {
-  const { rows } = await apiFetch<{ rows: CourseMaterialRow[] }>(
-    `/api/materials?courseId=${encodeURIComponent(courseId)}`,
+export async function listStageMaterials(stageId: string): Promise<StageMaterialRow[]> {
+  const { rows } = await apiFetch<{ rows: StageMaterialRow[] }>(
+    `/api/materials?stageId=${encodeURIComponent(stageId)}`,
   );
   return rows ?? [];
 }
@@ -426,10 +426,15 @@ export async function downloadLessonMaterialVersion(
   );
 }
 
-/** UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。 */
+/**
+ * UI から呼ぶ前にパスをサニタイズする (邦字を許容しつつ衝突を避ける)。
+ *
+ * キー中の `courses/` は「コース → ステージ」改名前からの R2 プレフィックスで、
+ * **改名しない** — 変えると既にアップロード済みのオブジェクトを指せなくなる。
+ */
 export function buildMaterialPath(args: {
   tenantId: string;
-  courseId: string;
+  stageId: string;
   fileName: string;
 }): string {
   const safe = args.fileName.replace(/[^\p{L}\p{N}.-]+/gu, "_");
@@ -437,5 +442,5 @@ export function buildMaterialPath(args: {
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10);
-  return `tenant/${args.tenantId}/courses/${args.courseId}/${uniq}-${safe}`;
+  return `tenant/${args.tenantId}/courses/${args.stageId}/${uniq}-${safe}`;
 }

@@ -74,7 +74,7 @@ describe("resolveLessonDoc", () => {
   it("prefers markdown when both markdown and pdfPath exist", () => {
     const doc = resolveLessonDoc({
       id: "l1",
-      courseId: "c1",
+      stageId: "c1",
       title: "Intro",
       markdown: "# Hi",
       pdfPath: "slides/a.pdf",
@@ -89,14 +89,14 @@ describe("resolveLessonDoc", () => {
   it("is pdf-only when only pdfPath exists", () => {
     const doc = resolveLessonDoc({
       id: "l1",
-      courseId: "c1",
+      stageId: "c1",
       title: "Slides",
       pdfPath: "slides/a.pdf",
     });
     expect(doc).toEqual({
       kind: "pdf-only",
       title: "Slides",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
     });
   });
@@ -104,7 +104,7 @@ describe("resolveLessonDoc", () => {
   it("is empty when neither markdown nor pdfPath is present", () => {
     const doc = resolveLessonDoc({
       id: "l1",
-      courseId: "c1",
+      stageId: "c1",
       title: "Soon",
     });
     expect(doc.kind).toBe("empty");
@@ -126,7 +126,7 @@ describe("buildLessonDocHtml", () => {
     const html = buildLessonDocHtml({
       kind: "pdf-only",
       title: "Slides",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
     });
     expect(html).not.toMatch(/<script/i);

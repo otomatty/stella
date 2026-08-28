@@ -157,7 +157,7 @@ const AccountCard = ({
           />
           <p className="mt-1.5 text-[11.5px] text-ink-3 leading-relaxed">
             登録時に Google アカウントの名前が自動で設定されます。 ここで変更すると、 以降の Google
-            ログインでは上書きされません。 コース内の投稿者名や修了証にも使われます。
+            ログインでは上書きされません。 ステージ内の投稿者名や修了証にも使われます。
           </p>
         </div>
 

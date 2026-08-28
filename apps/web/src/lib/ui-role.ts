@@ -67,14 +67,14 @@ export function resolveUiRole(input: {
 }
 
 /**
- * 受講者シェルでは、 受講登録済み講座の course_id だけを検索候補に残す。
+ * 受講者シェルでは、 受講登録済み講座の stage_id だけを検索候補に残す。
  * 検索 API は staff に同テナントの全講座 (draft 含む) を返すため、 staff が
  * 受講者シェルを開いているときに未受講・下書きの講座が混ざらないようにする。
  */
 export function filterSearchResultsForLearner(
   results: SearchResult[],
-  allowedCourseIds: ReadonlySet<string> | null,
+  allowedStageIds: ReadonlySet<string> | null,
 ): SearchResult[] {
-  if (!allowedCourseIds) return results;
-  return results.filter((result) => allowedCourseIds.has(result.course_id));
+  if (!allowedStageIds) return results;
+  return results.filter((result) => allowedStageIds.has(result.stage_id));
 }

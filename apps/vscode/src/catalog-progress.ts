@@ -1,5 +1,5 @@
 import type { ProgressSyncInput } from "@falcon/shared/study/progress-sync";
-import type { CatalogCourse, CatalogLesson } from "./catalog.js";
+import type { CatalogStage, CatalogLesson } from "./catalog.js";
 
 /** Call POST only on a first clear. A later fail must not un-complete (OR). */
 export function shouldMarkLessonComplete(cleared: boolean, alreadyComplete: boolean): boolean {
@@ -24,20 +24,20 @@ export function lessonCompletePayload(
   };
 }
 
-export function flattenLessons(catalog: readonly CatalogCourse[]): CatalogLesson[] {
-  return catalog.flatMap((course) => course.sections.flatMap((section) => section.lessons));
+export function flattenLessons(catalog: readonly CatalogStage[]): CatalogLesson[] {
+  return catalog.flatMap((stage) => stage.sections.flatMap((section) => section.lessons));
 }
 
 export function findNextLesson(
-  catalog: readonly CatalogCourse[],
-  courseId: string,
+  catalog: readonly CatalogStage[],
+  stageId: string,
   lessonId: string,
 ): CatalogLesson | undefined {
-  const course = catalog.find((item) => item.id === courseId);
-  if (!course) {
+  const stage = catalog.find((item) => item.id === stageId);
+  if (!stage) {
     return undefined;
   }
-  const lessons = course.sections.flatMap((section) => section.lessons);
+  const lessons = stage.sections.flatMap((section) => section.lessons);
   const index = lessons.findIndex((item) => item.id === lessonId);
   if (index < 0) {
     return undefined;
@@ -46,7 +46,7 @@ export function findNextLesson(
 }
 
 export function findLessonByAssignmentId(
-  catalog: readonly CatalogCourse[],
+  catalog: readonly CatalogStage[],
   assignmentId: string,
 ): CatalogLesson | undefined {
   return flattenLessons(catalog).find((lesson) => lesson.assignmentId === assignmentId);
@@ -55,25 +55,25 @@ export function findLessonByAssignmentId(
 export interface ActiveExerciseIds {
   assignmentId: string;
   lessonId: string;
-  courseId: string;
+  stageId: string;
 }
 
 /** Prefer remembered lesson ids even when the catalog cache has not loaded that row. */
 export function resolveLessonForExercise(
   assignmentId: string,
   active: ActiveExerciseIds | undefined,
-  catalog: readonly CatalogCourse[],
+  catalog: readonly CatalogStage[],
 ): CatalogLesson | undefined {
   if (active?.assignmentId === assignmentId) {
     const cached = flattenLessons(catalog).find(
-      (lesson) => lesson.id === active.lessonId && lesson.courseId === active.courseId,
+      (lesson) => lesson.id === active.lessonId && lesson.stageId === active.stageId,
     );
     if (cached) {
       return cached;
     }
     return {
       id: active.lessonId,
-      courseId: active.courseId,
+      stageId: active.stageId,
       title: "",
       type: "code",
       completed: false,
@@ -84,15 +84,15 @@ export function resolveLessonForExercise(
 }
 
 export function isCatalogLessonComplete(
-  catalog: readonly CatalogCourse[],
+  catalog: readonly CatalogStage[],
   lessonId: string,
 ): boolean {
   return flattenLessons(catalog).some((lesson) => lesson.id === lessonId && lesson.completed);
 }
 
-export function markCatalogLessonComplete(catalog: CatalogCourse[], lessonId: string): void {
-  for (const course of catalog) {
-    for (const section of course.sections) {
+export function markCatalogLessonComplete(catalog: CatalogStage[], lessonId: string): void {
+  for (const stage of catalog) {
+    for (const section of stage.sections) {
       for (const lesson of section.lessons) {
         if (lesson.id === lessonId) {
           lesson.completed = true;

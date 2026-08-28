@@ -76,7 +76,7 @@ export interface Submission {
   studentName: string;
   studentInitials: string;
   avatarTone: ReviewAvatarTone;
-  courseTitle: string;
+  stageTitle: string;
   sectionTitle?: string;
   assignmentTitle: string;
   lessonId?: string;
@@ -99,7 +99,7 @@ export interface Submission {
 
 export interface ReviewDraftRequest {
   assignmentTitle: string;
-  courseTitle?: string;
+  stageTitle?: string;
   code: string;
   language?: ReviewDraftLanguage;
   /** 採点失敗サマリを整形したテキスト (あれば AI 下書きの材料にする)。 */

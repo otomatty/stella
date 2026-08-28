@@ -51,7 +51,7 @@ export const ReviewQueue = ({ tenantId, setPage, onOpenReview }: ReviewQueueProp
             <TableRow>
               <TableHead>受講者</TableHead>
               <TableHead>課題</TableHead>
-              <TableHead>コース</TableHead>
+              <TableHead>ステージ</TableHead>
               <TableHead>提出日時</TableHead>
               <TableHead>AI</TableHead>
               <TableHead>優先度</TableHead>
@@ -86,7 +86,7 @@ export const ReviewQueue = ({ tenantId, setPage, onOpenReview }: ReviewQueueProp
                     </div>
                   </TableCell>
                   <TableCell>{r.assignmentTitle}</TableCell>
-                  <TableCell className="text-ink-3">{r.courseTitle}</TableCell>
+                  <TableCell className="text-ink-3">{r.stageTitle}</TableCell>
                   <TableCell className="text-ink-3">{formatSubmittedAt(r.submittedAt)}</TableCell>
                   <TableCell>
                     {r.aiReady ? (

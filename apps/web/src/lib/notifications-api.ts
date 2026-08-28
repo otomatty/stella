@@ -10,8 +10,8 @@ import { apiFetch } from "./api-client";
 
 export interface ListAnnouncementsOpts {
   tenantId: string;
-  /** コース単位のお知らせに絞る (未指定時はテナント全体 + 全コース)。 */
-  courseId?: string;
+  /** ステージ単位のお知らせに絞る (未指定時はテナント全体 + 全ステージ)。 */
+  stageId?: string;
   /** 取得件数の上限 (既定 20)。 */
   limit?: number;
 }
@@ -19,7 +19,7 @@ export interface ListAnnouncementsOpts {
 /** 公開順 (published_at 降順) でお知らせを取得する。 */
 export async function listAnnouncements(opts: ListAnnouncementsOpts): Promise<AnnouncementRow[]> {
   const p = new URLSearchParams();
-  if (opts.courseId) p.set("courseId", opts.courseId);
+  if (opts.stageId) p.set("stageId", opts.stageId);
   if (opts.limit) p.set("limit", String(opts.limit));
   const qs = p.toString();
   const { rows } = await apiFetch<{ rows: AnnouncementRow[] }>(
@@ -30,8 +30,8 @@ export async function listAnnouncements(opts: ListAnnouncementsOpts): Promise<An
 
 export interface CreateAnnouncementInput {
   tenantId: string;
-  /** コース単位のお知らせにする場合の対象コース (省略 / null でテナント全体)。 */
-  courseId?: string | null;
+  /** ステージ単位のお知らせにする場合の対象ステージ (省略 / null でテナント全体)。 */
+  stageId?: string | null;
   title: string;
   body: string;
 }
@@ -43,7 +43,7 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
   const { row } = await apiFetch<{ row: AnnouncementRow }>("/api/announcements", {
     method: "POST",
     body: {
-      courseId: input.courseId ?? null,
+      stageId: input.stageId ?? null,
       title: input.title,
       body: input.body,
     },

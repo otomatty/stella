@@ -15,13 +15,16 @@
 | `user_disable` / `user_enable` | `POST /api/admin/users/disable` | `user/<userId>` | `disabled` |
 | `course_publish` / `course_unpublish` / `course_status_change` | `PATCH /api/cms/courses/:id/status` | `course/<courseId>` | `title`, `slug`, `from`, `to` |
 | `course_delete` | `DELETE /api/cms/courses/:id` | `course/<courseId>` | `title`, `slug`, `status`, `lesson_count` |
-| `enrollment_create` | `POST /api/enrollments` | `enrollment/<id>` | `user_id`, `course_id`, `required`, `due_at` |
-| `enrollment_update` | `PATCH /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `course_id`, `patch` |
-| `enrollment_delete` | `DELETE /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `course_id` |
+| `stage_self_start` | `POST /api/stages/:id/start` / 腕試しの飛び級 (`POST /api/skill-check/:stageId`) | `enrollment/<id>` | `stage_id`, `state`, `created`, `reactivated`, (飛び級のみ) `via: skill_check` |
+| `enrollment_update` | `PATCH /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id`, `patch` |
+| `enrollment_delete` | `DELETE /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id` |
 | `certificate_issue` | `POST /api/certificates/issue` | `certificate/<id>` | `cert_code`, `course_id`, `user_id`, `self_issued` |
 | `org_create` / `org_update` | `POST /api/admin/orgs/upsert` | `org/<orgId>` | `name`, `active` |
 | `test_mode_enable` / `test_mode_disable` | `POST /api/admin/settings` | `tenant/<tenantId>` | `test_mode` |
 | `r2_orphan_cleanup` | `POST /api/admin/r2/orphans/cleanup` | `storage` | `prefix`, `deleted`, `skipped` |
+| `discovery_generate` | `POST /api/cms/discovery/requests/:id/generate` | `discovery_material/<id>` | `request_id`, `stage_id`, `generator`, `question_count` |
+| `discovery_material_edit` | `PATCH /api/cms/discovery/materials/:id` | `discovery_material/<id>` | `stage_id`, `fields`, `question_count`, `approval_revoked` |
+| `discovery_review` | `PATCH /api/cms/discovery/materials/:id` | `discovery_material/<id>` | `stage_id`, `from`, `to`, `generator`, (本文編集で外れたときのみ) `reason: content_edited` |
 
 - 記録は共通ヘルパ `apps/api/src/lib/audit.ts` の `recordAudit()` が D1 へ INSERT する。
 - 実行者 (actor) は Bearer JWT から `getCaller()` で確定する。 ログインのみ、 JWT 発行前のため
@@ -31,8 +34,21 @@
   （記録側とラベル側のズレを型で防ぐ / Issue #64）。
 - コース状態変更は監査上の意味が違うため、 公開は `course_publish`、 公開→非公開は
   `course_unpublish`、 それ以外 (draft ⇄ archived 等) は `course_status_change` に分ける。
+- 受講登録の入口は Phase 3b で **受講者の自己開始** に一本化した。 記録するのは登録が
+  動いたとき (新規作成 / 期限切れからの再開) だけで、 2 度目以降の 「始める」 は
+  何も書かない (連打や再訪で行が増えると、 「いつ始めたか」 が読めなくなる)。
+  退役した割当の action (`enrollment_create` / `enrollment_bulk_create` /
+  `enrollment_bulk_delete` / `enrollment_preset_apply`) は **記録側の型から外した** ので
+  もう新規に記録されない。 過去ログは残るため、 ラベルは `DEPRECATED_LABELS` に移して
+  監査画面の絞り込みからは 「(旧)」 付きで引ける。
 - `certificate_issue` は新規発行時のみ記録する (既発行のべき等な再取得は操作ではない)。
   受講者本人の自己発行もあるため `self_issued` で区別する。
+- 発見教材 (Phase 4) は **生成・編集・レビューを別の action で残す**。 「AI が書いたものを
+  誰が公開したか」 と 「公開したものを誰がいつ書き換えたか」 は別の問いなので、 承認
+  (`discovery_review`) の記録だけでは経緯を追えない。 承認済み教材の本文 (題名 / 説明 /
+  設問) を変えるとサーバが承認を外して `draft` に落とすため、 その場合は
+  `discovery_material_edit` (`approval_revoked: true`) と `discovery_review`
+  (`to: draft`, `reason: content_edited`) の 2 行が並ぶ。
 - 招待前 (プロフィール未作成) の Google ログインは記録しない。 所属テナントが未確定で
   `tenant_id` を決められず、 そもそもアプリへ入れないため。
 

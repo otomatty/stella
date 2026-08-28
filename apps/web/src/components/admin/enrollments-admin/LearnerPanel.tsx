@@ -1,8 +1,11 @@
 /**
- * 受講登録画面の左ペイン ―「① 受講生を選ぶ」。
+ * 受講状況画面の左ペイン ―「受講生を選ぶ」。
  *
- * 行クリックで単独選択 (右ペインが 1 名の詳細割当になる)、 チェックボックスで複数選択
- * (右ペインが一括割当になる) と、 2 つの選び方を用意している。
+ * 行クリックで単独選択 (右ペインがその 1 名の受講状況になる)、 チェックボックスで複数選択
+ * (右ペインが複数名ぶんの一覧になる) と、 2 つの選び方を用意している。
+ *
+ * バッジの「n/m 件」は **自分で開始した数 / 公開教材の数**。 Phase 3b で割当が無くなり、
+ * 「割り当てられた数」ではなくなった。
  */
 
 import { useMemo } from "react";
@@ -35,7 +38,7 @@ interface Props {
   onSetVisibleSelected: (userIds: string[], selected: boolean) => void;
   /** 受講者 id → 割当件数 / 期限超過件数 (サーバ集計)。 */
   summaries: Map<string, EnrollmentSummaryRow>;
-  courseCount: number;
+  stageCount: number;
   loading: boolean;
 }
 
@@ -51,7 +54,7 @@ export function LearnerPanel({
   onToggle,
   onSetVisibleSelected,
   summaries,
-  courseCount,
+  stageCount,
   loading,
 }: Props) {
   const visible = useMemo(() => {
@@ -67,7 +70,7 @@ export function LearnerPanel({
       <div className="px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Users size={14} className="text-brand" />
-          <h2 className="text-[13px] font-semibold tracking-tight">① 受講生を選ぶ</h2>
+          <h2 className="text-[13px] font-semibold tracking-tight">受講生を選ぶ</h2>
           <span className="ml-auto text-[11.5px] text-ink-3">
             {selectedIds.size > 0 ? `${selectedIds.size} 名選択中` : `${visible.length} 名`}
           </span>
@@ -174,7 +177,7 @@ export function LearnerPanel({
                     <span className="flex shrink-0 flex-col items-end gap-1">
                       {p.role !== "student" ? <RoleBadge role={p.role} /> : null}
                       <span className="text-[11.5px] text-ink-3">
-                        {assigned}/{courseCount} 件
+                        {assigned}/{stageCount} 件
                       </span>
                       {overdue > 0 ? <Badge variant="warning">期限超過 {overdue}</Badge> : null}
                     </span>

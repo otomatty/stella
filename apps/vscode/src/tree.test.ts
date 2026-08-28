@@ -28,10 +28,10 @@ import { catalogErrorPlaceholder } from "./tree.js";
 
 describe("catalogErrorPlaceholder", () => {
   it("shows a catalog-error node that can refresh", () => {
-    expect(catalogErrorPlaceholder("コースの読み込みに失敗しました")).toEqual({
+    expect(catalogErrorPlaceholder("ステージの読み込みに失敗しました")).toEqual({
       kind: "placeholder",
       id: "falcon.catalog-error",
-      title: "コースの読み込みに失敗しました",
+      title: "ステージの読み込みに失敗しました",
       command: "falcon.refresh",
     });
   });

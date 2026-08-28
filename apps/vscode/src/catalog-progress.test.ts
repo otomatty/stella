@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CatalogCourse, CatalogLesson } from "./catalog.js";
+import type { CatalogStage, CatalogLesson } from "./catalog.js";
 import {
   findLessonByAssignmentId,
   findNextLesson,
@@ -11,7 +11,7 @@ import {
 } from "./catalog-progress.js";
 
 function lesson(
-  partial: Pick<CatalogLesson, "id" | "courseId" | "title"> & Partial<CatalogLesson>,
+  partial: Pick<CatalogLesson, "id" | "stageId" | "title"> & Partial<CatalogLesson>,
 ): CatalogLesson {
   return {
     type: "code",
@@ -20,23 +20,23 @@ function lesson(
   };
 }
 
-const catalog: CatalogCourse[] = [
+const catalog: CatalogStage[] = [
   {
     id: "c1",
-    title: "Course 1",
+    title: "Stage 1",
     sections: [
       {
         id: "s1",
         title: "Section 1",
         lessons: [
-          lesson({ id: "l1", courseId: "c1", title: "One", assignmentId: "asg-1" }),
-          lesson({ id: "l2", courseId: "c1", title: "Two", type: "text" }),
+          lesson({ id: "l1", stageId: "c1", title: "One", assignmentId: "asg-1" }),
+          lesson({ id: "l2", stageId: "c1", title: "Two", type: "text" }),
         ],
       },
       {
         id: "s2",
         title: "Section 2",
-        lessons: [lesson({ id: "l3", courseId: "c1", title: "Three", assignmentId: "asg-3" })],
+        lessons: [lesson({ id: "l3", stageId: "c1", title: "Three", assignmentId: "asg-3" })],
       },
     ],
   },
@@ -95,7 +95,7 @@ describe("findLessonByAssignmentId", () => {
 });
 
 describe("resolveLessonForExercise", () => {
-  const active = { assignmentId: "asg-1", lessonId: "l1", courseId: "c1" };
+  const active = { assignmentId: "asg-1", lessonId: "l1", stageId: "c1" };
 
   it("returns the catalog row when the cache has the remembered lesson", () => {
     expect(resolveLessonForExercise("asg-1", active, catalog)?.title).toBe("One");
@@ -105,7 +105,7 @@ describe("resolveLessonForExercise", () => {
     const resolved = resolveLessonForExercise("asg-1", active, []);
     expect(resolved).toEqual({
       id: "l1",
-      courseId: "c1",
+      stageId: "c1",
       title: "",
       type: "code",
       completed: false,
@@ -121,7 +121,7 @@ describe("resolveLessonForExercise", () => {
 
 describe("markCatalogLessonComplete", () => {
   it("sets completed true and never clears another lesson", () => {
-    const copy: CatalogCourse[] = structuredClone(catalog);
+    const copy: CatalogStage[] = structuredClone(catalog);
     markCatalogLessonComplete(copy, "l1");
     expect(isCatalogLessonComplete(copy, "l1")).toBe(true);
     expect(isCatalogLessonComplete(copy, "l2")).toBe(false);

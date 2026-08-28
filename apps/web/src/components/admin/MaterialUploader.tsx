@@ -18,7 +18,7 @@ type Kind = "video" | "pdf";
 interface Props {
   kind: Kind;
   tenantId: string;
-  courseId: string;
+  stageId: string;
   /** 現在保存されているパス。 未保存の場合は null。 */
   currentPath: string | null;
   onChange: (path: string | null) => void;
@@ -26,7 +26,7 @@ interface Props {
 
 const MAX_BYTES = 200 * 1024 * 1024; // 200MB
 
-export function MaterialUploader({ kind, tenantId, courseId, currentPath, onChange }: Props) {
+export function MaterialUploader({ kind, tenantId, stageId, currentPath, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -56,7 +56,7 @@ export function MaterialUploader({ kind, tenantId, courseId, currentPath, onChan
     }
     setUploading(true);
     try {
-      const path = buildMaterialPath({ tenantId, courseId, fileName: file.name });
+      const path = buildMaterialPath({ tenantId, stageId, fileName: file.name });
       const result = await uploadMaterial(file, path);
       onChange(result.path);
       toast.success("アップロードしました");

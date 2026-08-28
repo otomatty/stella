@@ -31,7 +31,7 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
     case "admin":
       return [
         { label: "KPIダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-        { label: "コース管理", icon: Book, onSelect: () => setPage("courses") },
+        { label: "ステージ管理", icon: Book, onSelect: () => setPage("stages") },
         { label: "ユーザー管理", icon: Users, onSelect: () => setPage("users") },
       ];
     case "sales":
@@ -48,10 +48,10 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
       return [
         { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
         {
-          label: "コース一覧",
-          description: "受講中のコースを開く",
+          label: "ステージ一覧",
+          description: "受講中のステージを開く",
           icon: Book,
-          onSelect: () => setPage("courses"),
+          onSelect: () => setPage("stages"),
         },
         { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
       ];

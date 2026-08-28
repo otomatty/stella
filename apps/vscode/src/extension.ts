@@ -54,7 +54,7 @@ import {
 } from "./workspace.js";
 
 function findCachedLessonForNode(node: LessonNode): CatalogLesson | undefined {
-  return findCachedLesson(node.courseId, node.id);
+  return findCachedLesson(node.stageId, node.id);
 }
 
 /**
@@ -62,7 +62,7 @@ function findCachedLessonForNode(node: LessonNode): CatalogLesson | undefined {
  *
  * 採点は非同期なので、 走っている間に利用者が別の課題へエディタを移すことがある。
  * 「今アクティブな課題」ではなく **採点した課題** で引かないと、 引き継ぎが別の
- * レッスン / コースの下に保存されてしまう。
+ * レッスン / ステージの下に保存されてしまう。
  */
 async function resolveLessonForAssignment(
   assignmentId: string | undefined,
@@ -88,13 +88,13 @@ function rememberGradeRun(run: GradeRun, lesson: CatalogLesson | undefined): voi
     clearEscalationAttempt();
     return;
   }
-  const context = findCachedLessonContext(lesson.courseId, lesson.id);
+  const context = findCachedLessonContext(lesson.stageId, lesson.id);
   rememberEscalationAttempt({
     assignment: run.assignment,
     files: run.files,
     result: run.result,
-    courseId: lesson.courseId,
-    courseTitle: context?.courseTitle ?? "コース",
+    stageId: lesson.stageId,
+    stageTitle: context?.stageTitle ?? "ステージ",
     lessonId: lesson.id,
     sectionTitle: context?.sectionTitle ?? null,
   });
@@ -109,17 +109,17 @@ async function showExerciseForLesson(
     return;
   }
   const assignment = await getAssignmentForGrading(assignmentId);
-  const next = findNextLesson(getCachedCatalog(), lesson.courseId, lesson.id);
+  const next = findNextLesson(getCachedCatalog(), lesson.stageId, lesson.id);
   openExercisePanel({
     assignmentTitle: assignment.title,
     description: assignment.description,
-    courseId: lesson.courseId,
+    stageId: lesson.stageId,
     lessonId: lesson.id,
     assignmentId,
     canEscalate: canEscalate(assignmentId),
     ...(result ? { result } : {}),
     ...(next
-      ? { nextLesson: { courseId: next.courseId, lessonId: next.id, title: next.title } }
+      ? { nextLesson: { stageId: next.stageId, lessonId: next.id, title: next.title } }
       : {}),
     alreadyCleared: lesson.completed || result?.evaluation.cleared === true,
   });
@@ -136,16 +136,16 @@ function falconConfig(key: "serverUrl" | "webUrl", fallback: string): string {
  */
 async function openWebForConnect(target?: PendingLesson): Promise<void> {
   const web = falconConfig("webUrl", "http://127.0.0.1:5173");
-  const path = target ? `/courses/${target.courseId}/lessons/${target.lessonId}` : "/courses";
+  const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
     "FALCON に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください",
   );
   await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
 }
 
-async function openDeepLinkedLesson(courseId: string, lessonId: string): Promise<void> {
+async function openDeepLinkedLesson(stageId: string, lessonId: string): Promise<void> {
   const lesson = requireDeepLinkedLesson(
-    await loadLessonForUri(courseId, lessonId, loadCatalog, findCachedLesson),
+    await loadLessonForUri(stageId, lessonId, loadCatalog, findCachedLesson),
   );
   openLessonNode(toLessonNode(lesson));
 }
@@ -154,7 +154,7 @@ async function resumePendingLesson(context: vscode.ExtensionContext): Promise<vo
   const leftover = await consumePendingOnSuccess(
     readPendingLesson(context.globalState.get(PENDING_LESSON_KEY)),
     async (pending) => {
-      await openDeepLinkedLesson(pending.courseId, pending.lessonId);
+      await openDeepLinkedLesson(pending.stageId, pending.lessonId);
     },
   );
   await context.globalState.update(PENDING_LESSON_KEY, leftover);
@@ -186,7 +186,7 @@ async function handleLessonUri(
   }
 
   try {
-    await openDeepLinkedLesson(pending.courseId, pending.lessonId);
+    await openDeepLinkedLesson(pending.stageId, pending.lessonId);
     await context.globalState.update(PENDING_LESSON_KEY, undefined);
   } catch (err) {
     if (err instanceof AuthExpiredError) {
@@ -299,17 +299,17 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand(
       "falcon.openInWeb",
-      async (courseId?: string, lessonId?: string) => {
+      async (stageId?: string, lessonId?: string) => {
         const web = falconConfig("webUrl", "http://127.0.0.1:5173");
         const path =
-          typeof courseId === "string" && typeof lessonId === "string"
-            ? `/courses/${courseId}/lessons/${lessonId}`
+          typeof stageId === "string" && typeof lessonId === "string"
+            ? `/stages/${stageId}/lessons/${lessonId}`
             : "";
         await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
       },
     ),
     vscode.commands.registerCommand("falcon.openLessonDoc", (node?: LessonNode) => {
-      if (!node?.id || !node.courseId) {
+      if (!node?.id || !node.stageId) {
         void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
         return;
       }
@@ -379,11 +379,11 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand(
       "falcon.openNextLesson",
-      (courseId?: string, lessonId?: string) => {
-        if (typeof courseId !== "string" || typeof lessonId !== "string") {
+      (stageId?: string, lessonId?: string) => {
+        if (typeof stageId !== "string" || typeof lessonId !== "string") {
           return;
         }
-        const next = findNextLesson(getCachedCatalog(), courseId, lessonId);
+        const next = findNextLesson(getCachedCatalog(), stageId, lessonId);
         if (!next) {
           void vscode.window.showInformationMessage("次のレッスンはありません");
           return;
@@ -400,7 +400,7 @@ export function activate(context: vscode.ExtensionContext): void {
         await openLessonCode(node);
         const lesson = findCachedLessonForNode(node) ?? {
           id: node.id,
-          courseId: node.courseId,
+          stageId: node.stageId,
           title: node.title,
           type: node.lessonType,
           completed: node.completed,

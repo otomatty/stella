@@ -17,6 +17,9 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { DiscoveryQuestion } from "@falcon/shared/discovery/types";
+import { EMPTY_HOF_CHAPTERS } from "@falcon/shared/hall-of-fame/types";
+import type { HallOfFameChapters, HallOfFamePathStage } from "@falcon/shared/hall-of-fame/types";
 import type { SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
 
 const uuid = () =>
@@ -121,11 +124,11 @@ export const profiles = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// コース / セクション / レッスン / 課題
+// ステージ / セクション / レッスン / 課題
 // ---------------------------------------------------------------
 
-export const courses = sqliteTable(
-  "courses",
+export const stages = sqliteTable(
+  "stages",
   {
     id: uuid(),
     tenantId: text("tenant_id")
@@ -142,7 +145,20 @@ export const courses = sqliteTable(
     thumbnailPath: text("thumbnail_path"),
     durationHours: integer("duration_hours"),
     description: text("description"),
-    /** 講師表示名 (Issue #74)。 未設定 (null / 空) のコースは受講者 UI で講師を表示しない。 */
+    /**
+     * 前提ステージの **slug** の JSON 配列文字列 (`["html-css-basics"]`)。null / 空配列は
+     * 前提なし。すべてクリアするまでこのステージは開けない (スキルツリーのハードロック)。
+     *
+     * UUID ではなく slug を入れる: 正本は教材リポジトリ (`courses/<slug>/course.json`) で、
+     * そちらは stage UUID を知らない。評価器 (`@falcon/shared/skill-map`) も slug で解く。
+     * `json()` ヘルパを使わないのは、既存行に既定値を入れずに null のまま足したいため。
+     */
+    prerequisites: text("prerequisites"),
+    /** 到達説明。「この星をともした人は◯◯ができる」のホバー表示に使う 1 文。 */
+    canDo: text("can_do"),
+    /** 霧の中の星に見せるテーマ名。視界外のステージはタイトルの代わりにこれだけを出す。 */
+    theme: text("theme"),
+    /** 講師表示名 (Issue #74)。 未設定 (null / 空) のステージは受講者 UI で講師を表示しない。 */
     instructorName: text("instructor_name"),
     status: text("status", { enum: ["draft", "published", "archived"] })
       .notNull()
@@ -160,15 +176,15 @@ export const courses = sqliteTable(
     updatedAt: tsNowUpd("updated_at"),
   },
   (t) => ({
-    tenantSlugUnique: uniqueIndex("courses_tenant_slug_uq").on(t.tenantId, t.slug),
+    tenantSlugUnique: uniqueIndex("stages_tenant_slug_uq").on(t.tenantId, t.slug),
   }),
 );
 
 export const sections = sqliteTable("sections", {
   id: uuid(),
-  courseId: text("course_id")
+  stageId: text("stage_id")
     .notNull()
-    .references(() => courses.id, { onDelete: "cascade" }),
+    .references(() => stages.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   order: integer("order").notNull().default(0),
   createdAt: tsNow("created_at"),
@@ -227,7 +243,7 @@ export const lessons = sqliteTable("lessons", {
 /**
  * レッスンに紐づく配布資料。 実体は R2 (`MATERIALS_BUCKET`) 上のオブジェクトで、
  * `path` は `tenant/{tenantId}/lessons/{lessonId}/...` 形式。
- * テナントはレッスン → セクション → コースの join で解決する (authz はアプリ層)。
+ * テナントはレッスン → セクション → ステージの join で解決する (authz はアプリ層)。
  */
 export const lessonMaterials = sqliteTable("lesson_materials", {
   id: uuid(),
@@ -360,6 +376,310 @@ export const studyActivity = sqliteTable(
   },
   (t) => ({
     userDateUnique: uniqueIndex("study_activity_user_date_uq").on(t.userId, t.date),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 学習経路の記録 (スキルツリーの統計 / Phase 1)
+// ---------------------------------------------------------------
+
+/**
+ * 「どの星をいつ点けたか」の追記ログ。受講開始 (`started`) とクリア (`cleared`) だけを積む。
+ *
+ * **進捗の正本ではない** — 状態の正本は `enrollments` / `certificates` で、こちらは
+ * 「何人が・どの順で・どれくらいの間隔で進んだか」を後から集計するための素材。したがって
+ * 書き込みは best-effort (失敗しても学習フローを止めない) で、同じ (user, stage, event) は
+ * 1 件だけ積む (割当のやり直しで `started` が増殖すると経路の統計が歪むため)。
+ * 「1 件だけ」は **一意索引で保証する** — アプリ側の「読んでから書く」だけでは、
+ * 読みと書きの隙に同じ組が入ったときに二重に積まれる (0034)。
+ */
+export const stagePathEvents = sqliteTable(
+  "stage_path_events",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    event: text("event", { enum: ["started", "cleared"] }).notNull(),
+    /** 発生時刻 (epoch ms)。 */
+    at: ts("at")
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    // 「このステージを何人が始めて何人がクリアしたか」の集計用。
+    tenantStageEventIdx: index("stage_path_events_tenant_stage_event_idx").on(
+      t.tenantId,
+      t.stageId,
+      t.event,
+    ),
+    // 「この受講者がどの順で進んだか」の再生用。
+    userAtIdx: index("stage_path_events_user_at_idx").on(t.userId, t.at),
+    // 同じ (受講者, ステージ, event) は 1 件だけ。insert + do nothing の衝突先でもある。
+    userStageEventUnique: uniqueIndex("stage_path_events_user_stage_event_uq").on(
+      t.userId,
+      t.stageId,
+      t.event,
+    ),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 学習フォーカスとキュー (ホームの「今日の一手 + 道のり」/ Phase 2)
+// ---------------------------------------------------------------
+
+/**
+ * 受講者が「いま進める」と決めた 1 ステージ。**同時に 1 つだけ**。
+ *
+ * Phase 1 は「直近に進捗が付いた未クリアのステージ」を毎回導出していたが、それだと
+ * クリア済みの星を読み返した直後にフォーカスが動くし、「◯◯を一時停止してこちらへ
+ * 切り替える」という受講者の意思がどこにも残らない。意思は端末をまたいで効くべきなので
+ * サーバに置く。まだ一度も選んでいない受講者には導出をフォールバックとして使う。
+ *
+ * `active_stage_id` が null なのは「明示的にフォーカスを外した」状態で、行ごと消さない
+ * のは「一度も選んでいない」と区別できるようにしておくため。
+ */
+export const learnerFocus = sqliteTable("learner_focus", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  tenantId: text("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  /** null = フォーカスなし (導出フォールバックに戻す)。 */
+  activeStageId: text("active_stage_id").references(() => stages.id, { onDelete: "set null" }),
+  updatedAt: tsNowUpd("updated_at"),
+});
+
+/**
+ * 「次にやるリスト」— アクティブでないステージを受講者が自分で並べる待ち行列。
+ *
+ * 学習の正本ではない (割当は `enrollments`、進捗は `lesson_progress`)。並べ替えても
+ * 何も解放されないし、消しても受講登録は残る。あくまで「次はこれをやる」という
+ * 本人のメモで、ホームの道の下に出す。
+ *
+ * `order` は 0 から詰めた連番。並べ替えのたびに API 側が振り直す (歯抜けを許すと
+ * 比較と挿入位置の扱いが場所ごとにぶれる)。
+ */
+export const stageQueue = sqliteTable(
+  "stage_queue",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    order: integer("order").notNull().default(0),
+    addedAt: tsNow("added_at"),
+  },
+  (t) => ({
+    // 同じステージを二重に積ませない。追加 (insert + do nothing) の衝突先でもある。
+    userStageUnique: uniqueIndex("stage_queue_user_stage_uq").on(t.userId, t.stageId),
+    userOrderIdx: index("stage_queue_user_order_idx").on(t.userId, t.order),
+  }),
+);
+
+/**
+ * 飛び級で開いた星 (Phase 3a)。
+ *
+ * 腕試し (SkillCheck) に合格すると 1 行入り、評価器 (`@falcon/shared/skill-map`) の
+ * `unlockedStageIds` として渡る = 前提を満たしていなくても `unlocked` になる。
+ *
+ * **クリア (修了) ではない。** 修了は従来どおり `enrollments.status = 'completed'` /
+ * 修了証で、この行は「入口の鍵を開けた」だけ。だから前提の充足判定には効かない
+ * (この星を前提に持つ次の星は開かない)。
+ *
+ * **一度開いた星は閉じない。** 不合格の受験を積んでも行は消さない (履歴は
+ * `skill_check_attempts` 側)。
+ */
+export const stageUnlocks = sqliteTable(
+  "stage_unlocks",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    /** 開いた経路。将来 staff の手動解放 / プレースメントが増えるので残す。 */
+    via: text("via", { enum: ["skill_check"] })
+      .notNull()
+      .default("skill_check"),
+    unlockedAt: tsNow("unlocked_at"),
+  },
+  (t) => ({
+    // 二重解放を許さない (合格のたびの upsert の衝突先)。
+    userStageUnique: uniqueIndex("stage_unlocks_user_stage_uq").on(t.userId, t.stageId),
+  }),
+);
+
+/**
+ * 腕試しの受験履歴 (Phase 3a)。
+ *
+ * `quiz_attempts` を流用しないのは、あちらが `quiz_id` 必須で 1 つの小テストに
+ * 紐づくため。腕試しはステージ内の複数の小テストから抜いた混成なので載せる
+ * `quiz_id` が無く、無理に 1 つ選ぶと XP の「合格した小テスト数」と受験回数上限に
+ * 混ざる (詳細は migration 0036 のコメント)。
+ */
+export const skillCheckAttempts = sqliteTable(
+  "skill_check_attempts",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    maxScore: integer("max_score").notNull(),
+    passed: integer("passed", { mode: "boolean" }).notNull(),
+    /** 出題した設問 id (出題は決定的だが、教材が編集されると再現できなくなる)。 */
+    questionIds: json<string[]>("question_ids", []),
+    answers: json<unknown[]>("answers", []),
+    submittedAt: tsNow("submitted_at"),
+  },
+  (t) => ({
+    userStageIdx: index("skill_check_attempts_user_stage_idx").on(
+      t.userId,
+      t.stageId,
+      t.submittedAt,
+    ),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 発見教材 (Discovery / Phase 4)
+// ---------------------------------------------------------------
+
+/**
+ * つまずきの記録 = 教材生成のリクエスト (Phase 4)。
+ *
+ * 小テストを同じ設問セットで 2 回落とす / 課題が再提出・不合格になる、といった
+ * 「詰まった文脈」をここへ 1 行ずつ積む。講師はこの待ち行列から下書きを生成する。
+ *
+ * **`user_id` を持たない。** 誰がつまずいたかは教材に紐づけない — 共有ライブラリに
+ * 個人の失敗履歴を残すと、講師の一覧が「誰が何を落としたか」の名簿になる。同じ
+ * 文脈のつまずきは何人ぶんでも 1 行に畳む (一意索引が upsert の衝突先)。
+ */
+export const discoveryRequests = sqliteTable(
+  "discovery_requests",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    /** つまずいた文脈のあるステージ (= 教材の源流。公開条件もここで判定する)。 */
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    /** つまずきの短文 (小テスト / 課題のタイトルから作る)。生成プロンプトの材料。 */
+    topic: text("topic").notNull(),
+    origin: text("origin", { enum: ["quiz_fail", "submission_resubmit"] })
+      .notNull()
+      .default("quiz_fail"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    topicUnique: uniqueIndex("discovery_requests_topic_uq").on(t.tenantId, t.stageId, t.topic),
+  }),
+);
+
+/**
+ * AI が生成した補強演習 (全ユーザー共有のライブラリ / Phase 4)。
+ *
+ * 受講者ごとの複製は作らない。誰に見せるかは **読み出し時に** 源流ステージの状態で
+ * 決める (`unlock_condition`)。
+ *
+ * **公開されるのは `review_status = 'approved'` だけ**。生成直後は必ず `draft` で、
+ * 講師が中身を読んで承認するまで受講者の応答には一切現れない (存在ごと出さない)。
+ */
+export const discoveryMaterials = sqliteTable(
+  "discovery_materials",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    /** 選択式設問の配列 (正答フラグ入り)。**受講者向けの応答では必ず落とす。** */
+    questions: json<DiscoveryQuestion[]>("questions", []),
+    source: text("source", { enum: ["ai"] })
+      .notNull()
+      .default("ai"),
+    /** 下書きを作った実体。`heuristic` は AI を呼べなかったときのフォールバック。 */
+    generator: text("generator", { enum: ["anthropic", "heuristic"] })
+      .notNull()
+      .default("anthropic"),
+    reviewStatus: text("review_status", { enum: ["draft", "approved", "rejected"] })
+      .notNull()
+      .default("draft"),
+    /** 公開条件。いまは 1 種類だが、将来の拡張用に自由文字列で持つ。 */
+    unlockCondition: text("unlock_condition").notNull().default("stage_active_or_cleared"),
+    /** 元になったリクエスト (リクエストを消しても教材は残す)。 */
+    requestId: text("request_id").references(() => discoveryRequests.id, { onDelete: "set null" }),
+    createdAt: tsNow("created_at"),
+    reviewedBy: text("reviewed_by"),
+    reviewedAt: ts("reviewed_at"),
+  },
+  (t) => ({
+    stageIdx: index("discovery_materials_stage_idx").on(t.tenantId, t.stageId, t.reviewStatus),
+  }),
+);
+
+/**
+ * 発見教材の受験記録 (Phase 4)。
+ *
+ * `quiz_attempts` を流用しないのは、あちらが `quiz_id` 必須で 1 つの小テストに
+ * 紐づくため (混ぜると XP の「合格した小テスト数」と小テストの受験回数上限に入る)。
+ */
+export const discoveryAttempts = sqliteTable(
+  "discovery_attempts",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    materialId: text("material_id")
+      .notNull()
+      .references(() => discoveryMaterials.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    maxScore: integer("max_score").notNull(),
+    percent: integer("percent").notNull(),
+    passed: integer("passed", { mode: "boolean" }).notNull(),
+    submittedAt: tsNow("submitted_at"),
+  },
+  (t) => ({
+    userMaterialIdx: index("discovery_attempts_user_material_idx").on(
+      t.userId,
+      t.materialId,
+      t.submittedAt,
+    ),
   }),
 );
 
@@ -497,9 +817,9 @@ export const enrollments = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    courseId: text("course_id")
+    stageId: text("stage_id")
       .notNull()
-      .references(() => courses.id, { onDelete: "cascade" }),
+      .references(() => stages.id, { onDelete: "cascade" }),
     assignedBy: text("assigned_by"),
     dueAt: ts("due_at"),
     required: integer("required", { mode: "boolean" }).notNull().default(false),
@@ -529,7 +849,7 @@ export const enrollments = sqliteTable(
     completedAt: ts("completed_at"),
   },
   (t) => ({
-    userCourseUnique: uniqueIndex("enrollments_user_course_uq").on(t.userId, t.courseId),
+    userStageUnique: uniqueIndex("enrollments_user_stage_uq").on(t.userId, t.stageId),
   }),
 );
 
@@ -540,10 +860,22 @@ export const enrollments = sqliteTable(
 /**
  * 「新入社員パック」 のように、 受講登録の組み合わせに名前を付けて保存したもの。
  *
- * 適用は 「その場で enrollments へ展開して終わり」 のスナップショット方式。 プリセットを
+ * 適用は 「その場で enrollments へ展開して終わり」 のスナップショット方式だった。 プリセットを
  * あとから編集しても、 適用済みの受講登録は追随しない (差分適用は `enrollments.preset_id`
  * を手掛かりに後から足せる)。 動的グループにすると、 教材を外したときの伝播や個別に
- * 伸ばした期限の扱いが一気に増えるため、 まずは展開して切り離す。
+ * 伸ばした期限の扱いが一気に増えるため、 展開して切り離す作りにしてあった。
+ *
+ * ## Phase 3b で運用廃止。 テーブルは履歴として残置
+ *
+ * 管理者が割り当てる運用そのものを廃止し、 受講者が自分で始める自律モデルへ移行した
+ * (`routes/stage-start.ts`)。 適用 API は 410 Gone、 適用 UI も無い。 それでもテーブルを
+ * drop しないのは 2 つの理由から:
+ *
+ *   - **移行が additive でない**。 既存の `enrollments.preset_id` が指す先を失わせない
+ *   - 監査ログ (`enrollment_preset_apply`) と過去の受講状況を突き合わせるのに要る
+ *
+ * 定義の CRUD (`routes/enrollment-presets.ts`) は残っているが、 新しく作っても適用先が
+ * 無い。 実質は過去データの置き場である。
  */
 export const enrollmentPresets = sqliteTable(
   "enrollment_presets",
@@ -588,9 +920,9 @@ export const enrollmentPresetItems = sqliteTable(
     presetId: text("preset_id")
       .notNull()
       .references(() => enrollmentPresets.id, { onDelete: "cascade" }),
-    courseId: text("course_id")
+    stageId: text("stage_id")
       .notNull()
-      .references(() => courses.id, { onDelete: "cascade" }),
+      .references(() => stages.id, { onDelete: "cascade" }),
     required: integer("required", { mode: "boolean" }).notNull().default(true),
     /** 基準日からの日数。 null なら期限なし。 */
     dueOffsetDays: integer("due_offset_days"),
@@ -598,9 +930,9 @@ export const enrollmentPresetItems = sqliteTable(
     order: integer("order").notNull().default(0),
   },
   (t) => ({
-    presetCourseUnique: uniqueIndex("enrollment_preset_items_preset_course_uq").on(
+    presetStageUnique: uniqueIndex("enrollment_preset_items_preset_stage_uq").on(
       t.presetId,
-      t.courseId,
+      t.stageId,
     ),
   }),
 );
@@ -614,7 +946,7 @@ export const announcements = sqliteTable("announcements", {
   tenantId: text("tenant_id")
     .notNull()
     .references(() => tenants.id, { onDelete: "cascade" }),
-  courseId: text("course_id"),
+  stageId: text("stage_id"),
   authorId: text("author_id"),
   authorName: text("author_name").notNull().default(""),
   title: text("title").notNull().default(""),
@@ -660,7 +992,7 @@ export const submissions = sqliteTable("submissions", {
   studentId: text("student_id"),
   lessonId: text("lesson_id"),
   assignmentId: text("assignment_id"),
-  courseTitle: text("course_title").notNull(),
+  stageTitle: text("stage_title").notNull(),
   sectionTitle: text("section_title"),
   assignmentTitle: text("assignment_title").notNull(),
   code: text("code").notNull(),
@@ -699,24 +1031,79 @@ export const certificates = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    courseId: text("course_id")
+    stageId: text("stage_id")
       .notNull()
-      .references(() => courses.id, { onDelete: "cascade" }),
+      .references(() => stages.id, { onDelete: "cascade" }),
     certCode: text("cert_code").notNull().unique(),
     issuedBy: text("issued_by"),
     issuedAt: tsNow("issued_at"),
     criteriaSnapshot: json<Record<string, unknown>>("criteria_snapshot", {}),
     recipientName: text("recipient_name").notNull(),
-    courseTitle: text("course_title").notNull(),
+    stageTitle: text("stage_title").notNull(),
     tenantName: text("tenant_name").notNull(),
     revoked: integer("revoked", { mode: "boolean" }).notNull().default(false),
   },
   (t) => ({
-    // 1 ユーザー 1 コースにつき 1 通。 発行 API はこの制約を前提に
+    // 1 ユーザー 1 ステージにつき 1 通。 発行 API はこの制約を前提に
     // `onConflictDoNothing` で競合時のべき等性を担保する (制約が無いと D1 が
     // "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint" で
     // 落ち、 修了証発行が常に 500 になる)。
-    userCourseUnique: uniqueIndex("certificates_user_course_uq").on(t.userId, t.courseId),
+    userStageUnique: uniqueIndex("certificates_user_stage_uq").on(t.userId, t.stageId),
+  }),
+);
+
+// ---------------------------------------------------------------
+// 殿堂 (Hall of Fame / Phase 5)
+// ---------------------------------------------------------------
+
+/**
+ * 殿堂に載る 1 人ぶんのストーリー (Phase 5)。
+ *
+ * **1 人 1 行**。推薦 → 記入 → 公開 → 辞退 / 取り下げまでを同じ行の `status` で表す。
+ * 履歴テーブルに分けないのは、殿堂に要るのは「今この人が載っているか」だけで、
+ * 辞退や取り下げの経緯を掘り返せる形にしておくこと自体が本人への圧力になるため
+ * (辞退は監査ログにも残さない — `@falcon/shared/admin/audit-actions` の注記を参照)。
+ *
+ * **序列の数値は持たない。** XP・レベル・クリア数はこの表に無く、公開応答にも出ない。
+ * 載るのは名前・ジョブ (名乗り)・引用・歩んだ道・4 章の本文だけ。
+ */
+export const hallOfFameEntries = sqliteTable(
+  "hall_of_fame_entries",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    /** 掲載される本人。プロフィールを消せば殿堂の行も消える (実名を残さない)。 */
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["nominated", "submitted", "published", "declined", "withdrawn"],
+    })
+      .notNull()
+      .default("nominated"),
+    /** 本人が名乗るジョブ (自由記述)。**表示専用** — 分類にも推薦にも使わない。 */
+    jobTitle: text("job_title").notNull().default(""),
+    quote: text("quote").notNull().default(""),
+    chapters: json<HallOfFameChapters>("chapters", EMPTY_HOF_CHAPTERS),
+    /**
+     * **公開した時点の**クリア済みステージの写し。参照ではなく写しにするのは、
+     * あとから教材が改名・非公開になっても、公開したときの「歩んだ道」がそのまま
+     * 残るようにするため (掲載は本人が同意した時点の姿で固定する)。
+     */
+    pathSnapshot: json<HallOfFamePathStage[]>("path_snapshot", []),
+    nominatedBy: text("nominated_by"),
+    nominatedAt: tsNow("nominated_at"),
+    submittedAt: ts("submitted_at"),
+    publishedBy: text("published_by"),
+    publishedAt: ts("published_at"),
+    /** 辞退 / 取り下げ / 非公開化で降りた時刻。 */
+    closedAt: ts("closed_at"),
+  },
+  (t) => ({
+    userUnique: uniqueIndex("hall_of_fame_user_uq").on(t.tenantId, t.userId),
+    statusIdx: index("hall_of_fame_status_idx").on(t.tenantId, t.status, t.publishedAt),
   }),
 );
 
@@ -727,7 +1114,7 @@ export const certificates = sqliteTable(
 /**
  * 面談対策の想定質問バンク。 正本はリポジトリの
  * `packages/shared/src/interview/questions.json` で、 seed が upsert/prune する
- * (教材コースと同じ運用 — CMS 編集 UI は無い)。
+ * (教材ステージと同じ運用 — CMS 編集 UI は無い)。
  */
 export const interviewQuestions = sqliteTable(
   "interview_questions",
@@ -1068,7 +1455,7 @@ export const APP_TABLES = [
   "auth_vscode_links",
   "tenants",
   "profiles",
-  "courses",
+  "stages",
   "sections",
   "lessons",
   "lesson_materials",
@@ -1077,6 +1464,14 @@ export const APP_TABLES = [
   "assignments",
   "lesson_progress",
   "study_activity",
+  "stage_path_events",
+  "learner_focus",
+  "stage_queue",
+  "stage_unlocks",
+  "skill_check_attempts",
+  "discovery_requests",
+  "discovery_materials",
+  "discovery_attempts",
   "quizzes",
   "quiz_questions",
   "quiz_options",
@@ -1090,6 +1485,7 @@ export const APP_TABLES = [
   "notifications",
   "submissions",
   "certificates",
+  "hall_of_fame_entries",
   "audit_logs",
   "support_inquiries",
   "interview_questions",

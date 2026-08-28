@@ -21,14 +21,14 @@ async function issueLinkCode(): Promise<string | undefined> {
   }
 }
 
-export function OpenInVscodeButton({ courseId, lessonId }: { courseId: string; lessonId: string }) {
+export function OpenInVscodeButton({ stageId, lessonId }: { stageId: string; lessonId: string }) {
   const [opening, setOpening] = useState(false);
 
   const handleOpen = async () => {
     setOpening(true);
     try {
       const code = await issueLinkCode();
-      location.assign(buildVscodeLessonUri(courseId, lessonId, code));
+      location.assign(buildVscodeLessonUri(stageId, lessonId, code));
     } finally {
       setOpening(false);
     }

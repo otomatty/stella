@@ -14,7 +14,6 @@ function EnrollmentsPage() {
       key={s.tenantId}
       tenantId={s.tenantId}
       backendEnabled={s.backendEnabled}
-      profileRole={s.profileRole}
     />
   );
 }

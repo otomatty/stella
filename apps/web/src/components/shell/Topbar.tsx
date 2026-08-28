@@ -9,14 +9,14 @@ import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { NotificationRow } from "@falcon/shared/cms/types";
 import type { SearchResult } from "@falcon/shared/search/types";
-import type { Course, Role, Tenant } from "@/data/types";
+import type { Stage, Role, Tenant } from "@/data/types";
 
 interface TopbarProps {
   actions?: ReactNode;
-  /** 検索パレットで選ばれたコース / レッスンへの遷移 (Issue #77)。 */
+  /** 検索パレットで選ばれたステージ / レッスンへの遷移 (Issue #77)。 */
   onSearchSelect: (result: SearchResult) => void;
   /** 受講者プレビュー時は公開講座に検索を限定する。 */
-  searchCourseIds?: ReadonlySet<string> | null;
+  searchStageIds?: ReadonlySet<string> | null;
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {
     role: Role;
@@ -27,7 +27,7 @@ interface TopbarProps {
     onMarkRead: (id: string) => void;
     onMarkAllRead: () => void;
     onAfterCreateAnnouncement: () => void;
-    courses: Course[];
+    stages: Stage[];
     onOpenSubmission?: (submissionId: string) => void;
   };
 }
@@ -38,12 +38,7 @@ function shortcutLabel(): string {
   return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘K" : "Ctrl K";
 }
 
-export const Topbar = ({
-  actions,
-  notify,
-  onSearchSelect,
-  searchCourseIds = null,
-}: TopbarProps) => {
+export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null }: TopbarProps) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -74,11 +69,11 @@ export const Topbar = ({
         type="button"
         onClick={() => setSearchOpen(true)}
         className="flex items-center gap-2 bg-sunken border border-border-2 rounded-full py-[7px] px-2 sm:pl-3.5 sm:pr-2 w-[34px] sm:w-[280px] justify-center sm:justify-start shrink-0 text-ink-3 text-[12.5px] hover:border-border-strong hover:text-ink-2"
-        aria-label="コース・レッスンを検索"
+        aria-label="ステージ・レッスンを検索"
       >
         <Search size={14} className="shrink-0" />
         <span className="hidden sm:block flex-1 min-w-0 text-left truncate">
-          コース・レッスンを検索…
+          ステージ・レッスンを検索…
         </span>
         <span className="hidden sm:block font-display text-[10px] font-bold text-ink-3 border border-border-2 rounded-full px-2 py-[2px] bg-card">
           {shortcutLabel()}
@@ -88,7 +83,7 @@ export const Topbar = ({
         open={searchOpen}
         onOpenChange={setSearchOpen}
         onSelect={onSearchSelect}
-        allowedCourseIds={searchCourseIds}
+        allowedStageIds={searchStageIds}
       />
       <NotificationCenter
         role={notify.role}
@@ -99,7 +94,7 @@ export const Topbar = ({
         onMarkRead={notify.onMarkRead}
         onMarkAllRead={notify.onMarkAllRead}
         onAfterCreateAnnouncement={notify.onAfterCreateAnnouncement}
-        courses={notify.courses}
+        stages={notify.stages}
         onOpenSubmission={notify.onOpenSubmission}
       />
       {/* ライト / ダークの切り替え。 未選択のうちは OS 設定に追従し、 押した時点で固定される。 */}

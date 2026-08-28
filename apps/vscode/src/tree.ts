@@ -6,15 +6,15 @@ import { onDidChangeAuth } from "./auth.js";
 import {
   clearCatalog,
   loadCatalog,
-  type CatalogCourse,
+  type CatalogStage,
   type CatalogLesson,
   type CatalogSection,
 } from "./catalog.js";
 
 export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web";
 
-export interface CourseNode {
-  kind: "course";
+export interface StageNode {
+  kind: "stage";
   id: string;
   title: string;
   sections: SectionNode[];
@@ -30,7 +30,7 @@ export interface SectionNode {
 export interface LessonNode {
   kind: "lesson";
   id: string;
-  courseId: string;
+  stageId: string;
   title: string;
   lessonType: LessonType;
   contextValue: LessonContextValue;
@@ -47,7 +47,7 @@ export interface PlaceholderNode {
   command?: string;
 }
 
-export type TreeNode = CourseNode | SectionNode | LessonNode | PlaceholderNode;
+export type TreeNode = StageNode | SectionNode | LessonNode | PlaceholderNode;
 
 const CONNECT_NODE: PlaceholderNode = {
   kind: "placeholder",
@@ -87,7 +87,7 @@ export function toLessonNode(lesson: CatalogLesson): LessonNode {
   return {
     kind: "lesson",
     id: lesson.id,
-    courseId: lesson.courseId,
+    stageId: lesson.stageId,
     title: lesson.title,
     lessonType: lesson.type,
     contextValue: contextValueFor(lesson.type),
@@ -107,12 +107,12 @@ function toSectionNode(section: CatalogSection): SectionNode {
   };
 }
 
-function toCourseNode(course: CatalogCourse): CourseNode {
+function toStageNode(stage: CatalogStage): StageNode {
   return {
-    kind: "course",
-    id: course.id,
-    title: course.title,
-    sections: course.sections.map(toSectionNode),
+    kind: "stage",
+    id: stage.id,
+    title: stage.title,
+    sections: stage.sections.map(toSectionNode),
   };
 }
 
@@ -122,7 +122,7 @@ export function lessonCommand(node: LessonNode): vscode.Command {
       return {
         command: "falcon.openInWeb",
         title: "Web で開く",
-        arguments: [node.courseId, node.id],
+        arguments: [node.stageId, node.id],
       };
     case "lesson-doc":
       return {
@@ -157,10 +157,10 @@ export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
 
   getTreeItem(element: TreeNode): vscode.TreeItem {
     switch (element.kind) {
-      case "course": {
+      case "stage": {
         const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.Collapsed);
-        item.id = `course:${element.id}`;
-        item.contextValue = "course";
+        item.id = `stage:${element.id}`;
+        item.contextValue = "stage";
         item.iconPath = new vscode.ThemeIcon("book");
         return item;
       }
@@ -172,7 +172,7 @@ export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       }
       case "lesson": {
         const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.None);
-        item.id = `lesson:${element.courseId}:${element.id}`;
+        item.id = `lesson:${element.stageId}:${element.id}`;
         item.contextValue = element.contextValue;
         item.iconPath = new vscode.ThemeIcon(element.completed ? "pass" : "circle-outline");
         item.command = lessonCommand(element);
@@ -199,7 +199,7 @@ export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       return this.rootNodes();
     }
     switch (element.kind) {
-      case "course":
+      case "stage":
         return element.sections;
       case "section":
         return element.lessons;
@@ -220,11 +220,11 @@ export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
       return [CONNECT_NODE];
     }
     try {
-      const courses = await loadCatalog();
+      const stages = await loadCatalog();
       if (generation !== this.loadGeneration) {
         return this.rootNodes();
       }
-      return courses.map(toCourseNode);
+      return stages.map(toStageNode);
     } catch (err) {
       if (generation !== this.loadGeneration) {
         return this.rootNodes();

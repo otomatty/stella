@@ -52,8 +52,8 @@ function remember(result: ExecutionResult): void {
     assignment,
     files: { "main.ts": "const sum = 0;", "lib/util.ts": "export const x = 1;" },
     result,
-    courseId: "c1",
-    courseTitle: "TypeScript 入門研修",
+    stageId: "c1",
+    stageTitle: "TypeScript 入門研修",
     lessonId: "l1",
     sectionTitle: "第 1 章",
   });
@@ -99,7 +99,7 @@ describe("escalateToInstructor", () => {
     const body = init.body as {
       lessonId: string;
       assignmentId: string;
-      courseTitle: string;
+      stageTitle: string;
       sectionTitle: string;
       assignmentTitle: string;
       code: string;
@@ -108,7 +108,7 @@ describe("escalateToInstructor", () => {
     };
     expect(body.lessonId).toBe("l1");
     expect(body.assignmentId).toBe("asg-1");
-    expect(body.courseTitle).toBe("TypeScript 入門研修");
+    expect(body.stageTitle).toBe("TypeScript 入門研修");
     expect(body.sectionTitle).toBe("第 1 章");
     expect(body.assignmentTitle).toBe("配列の合計");
     expect(body.priority).toBe("high");

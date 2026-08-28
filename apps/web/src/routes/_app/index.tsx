@@ -39,9 +39,10 @@ function DashboardPage() {
     <LearnerDashboard
       setPage={s.setPage}
       onOpenLesson={s.onOpenLesson}
-      courses={s.courses}
+      stages={s.stages}
       announcementsHook={s.announcementsHook}
-      coursesError={s.coursesError}
+      stagesError={s.stagesError}
+      refetchStages={s.refetchStages}
       onOpenSubmission={s.onOpenSubmission}
       studentName={s.studentName}
       currentUserId={s.currentUserId}

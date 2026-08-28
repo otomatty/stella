@@ -5,7 +5,7 @@ import type { ExecutionResult } from "./grader-protocol.js";
 const VIEW_TYPE = "falcon.exercise";
 
 export interface ExerciseNextLesson {
-  courseId: string;
+  stageId: string;
   lessonId: string;
   title: string;
 }
@@ -13,7 +13,7 @@ export interface ExerciseNextLesson {
 export interface ExercisePanelInput {
   assignmentTitle: string;
   description: string;
-  courseId: string;
+  stageId: string;
   lessonId: string;
   result?: ExecutionResult;
   nextLesson?: ExerciseNextLesson;
@@ -76,7 +76,7 @@ function nextLessonLink(input: ExercisePanelInput): string {
   if (!cleared || !input.nextLesson) {
     return "";
   }
-  const args = encodeURIComponent(JSON.stringify([input.courseId, input.lessonId]));
+  const args = encodeURIComponent(JSON.stringify([input.stageId, input.lessonId]));
   return `<p><a href="command:falcon.openNextLesson?${args}">次のレッスンへ</a></p>`;
 }
 

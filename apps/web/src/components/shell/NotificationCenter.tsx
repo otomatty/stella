@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { createAnnouncement } from "@/lib/notifications-api";
 import { cn } from "@/lib/utils";
 import type { NotificationRow, NotificationType } from "@falcon/shared/cms/types";
-import type { Course, Role, Tenant } from "@/data/types";
+import type { Stage, Role, Tenant } from "@/data/types";
 
 interface NotificationCenterProps {
   role: Role;
@@ -38,8 +38,8 @@ interface NotificationCenterProps {
   onMarkAllRead: () => void;
   /** お知らせ作成後に呼ぶ (通知一覧を再取得して fan-out を反映する)。 */
   onAfterCreateAnnouncement: () => void;
-  /** お知らせのコース指定に使う (任意。 空ならテナント全体)。 */
-  courses: Course[];
+  /** お知らせのステージ指定に使う (任意。 空ならテナント全体)。 */
+  stages: Stage[];
   onOpenSubmission?: (submissionId: string) => void;
 }
 
@@ -85,7 +85,7 @@ export const NotificationCenter = ({
   onMarkRead,
   onMarkAllRead,
   onAfterCreateAnnouncement,
-  courses,
+  stages,
   onOpenSubmission,
 }: NotificationCenterProps) => {
   const [open, setOpen] = useState(false);
@@ -157,7 +157,7 @@ export const NotificationCenter = ({
           {isStaff ? (
             <AnnouncementComposer
               tenantId={tenantId}
-              courses={courses}
+              stages={stages}
               onCreated={onAfterCreateAnnouncement}
             />
           ) : null}
@@ -227,22 +227,22 @@ export const NotificationCenter = ({
 
 interface AnnouncementComposerProps {
   tenantId: Tenant["id"];
-  courses: Course[];
+  stages: Stage[];
   onCreated: () => void;
 }
 
 /** 講師/管理者向けのお知らせ作成フォーム (通知センター内蔵)。 */
-const AnnouncementComposer = ({ tenantId, courses, onCreated }: AnnouncementComposerProps) => {
+const AnnouncementComposer = ({ tenantId, stages, onCreated }: AnnouncementComposerProps) => {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [courseId, setCourseId] = useState<string>("");
+  const [stageId, setStageId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setTitle("");
     setBody("");
-    setCourseId("");
+    setStageId("");
   };
 
   const handleSubmit = async () => {
@@ -256,7 +256,7 @@ const AnnouncementComposer = ({ tenantId, courses, onCreated }: AnnouncementComp
     try {
       await createAnnouncement({
         tenantId,
-        courseId: courseId || null,
+        stageId: stageId || null,
         title: t,
         body: b,
       });
@@ -322,12 +322,12 @@ const AnnouncementComposer = ({ tenantId, courses, onCreated }: AnnouncementComp
       />
       <select
         aria-label="お知らせの対象"
-        value={courseId}
-        onChange={(e) => setCourseId(e.target.value)}
+        value={stageId}
+        onChange={(e) => setStageId(e.target.value)}
         className="h-8 rounded-sm border border-input bg-card px-2 text-[12.5px]"
       >
         <option value="">テナント全体</option>
-        {courses.map((c) => (
+        {stages.map((c) => (
           <option key={c.id} value={c.id}>
             {c.title}
           </option>

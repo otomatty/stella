@@ -2,7 +2,7 @@
  * 横断検索パレット (Issue #77)。
  *
  * Topbar のダミー検索ボックスを置き換える実装。 `⌘K` / `Ctrl+K` で開き、
- * `GET /api/search` の結果 (コース / レッスン) を選ぶと該当画面へ遷移する。
+ * `GET /api/search` の結果 (ステージ / レッスン) を選ぶと該当画面へ遷移する。
  * ↑ ↓ で候補移動、 Enter で決定、 Esc で閉じる。
  */
 
@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 
 import type { SearchResult } from "@falcon/shared/search/types";
 import { Book, Loader2, Search } from "@/lib/icons";
-import { LessonTypeIcon } from "@/components/learner/CourseDetail";
+import { LessonTypeIcon } from "@/components/learner/StageDetail";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useSearch } from "@/hooks/useSearch";
 import { filterSearchResultsForLearner } from "@/lib/ui-role";
@@ -21,22 +21,22 @@ interface SearchPaletteProps {
   onOpenChange: (open: boolean) => void;
   onSelect: (result: SearchResult) => void;
   /** 受講者プレビュー時は公開講座の ID。 null なら API 結果をそのまま出す。 */
-  allowedCourseIds?: ReadonlySet<string> | null;
+  allowedStageIds?: ReadonlySet<string> | null;
 }
 
 export const SearchPalette = ({
   open,
   onOpenChange,
   onSelect,
-  allowedCourseIds = null,
+  allowedStageIds = null,
 }: SearchPaletteProps) => {
   const [input, setInput] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const { results: rawResults, loading, error, tooShort, unavailable } = useSearch(input, open);
   const results = useMemo(
-    () => filterSearchResultsForLearner(rawResults, allowedCourseIds),
-    [rawResults, allowedCourseIds],
+    () => filterSearchResultsForLearner(rawResults, allowedStageIds),
+    [rawResults, allowedStageIds],
   );
 
   // 開くたびに入力をリセットする (前回の検索語が残らないように)。
@@ -65,7 +65,7 @@ export const SearchPalette = ({
     if (error) return `検索に失敗しました: ${error}`;
     if (tooShort) return "2文字以上入力してください。";
     if (loading) return null;
-    return "一致するコース・レッスンはありません。";
+    return "一致するステージ・レッスンはありません。";
   }, [unavailable, error, tooShort, loading]);
 
   const handleSelect = (result: SearchResult) => {
@@ -94,7 +94,7 @@ export const SearchPalette = ({
         className="w-[min(calc(100vw-2rem),620px)] top-[18%] translate-y-0 p-0"
         onKeyDown={handleKeyDown}
       >
-        <DialogTitle className="sr-only">コース・レッスンを検索</DialogTitle>
+        <DialogTitle className="sr-only">ステージ・レッスンを検索</DialogTitle>
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border">
           <Search size={15} className="text-ink-3 shrink-0" />
           {/* コマンドパレットは開いた直後にそのまま打てることが前提のため autoFocus。 */}
@@ -102,8 +102,8 @@ export const SearchPalette = ({
             autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="コース・レッスンを検索…"
-            aria-label="コース・レッスンを検索"
+            placeholder="ステージ・レッスンを検索…"
+            aria-label="ステージ・レッスンを検索"
             className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm placeholder:text-ink-3"
           />
           {loading ? <Loader2 size={14} className="animate-spin text-ink-3" /> : null}
@@ -143,7 +143,7 @@ export const SearchPalette = ({
                   ) : null}
                 </div>
                 <span className="shrink-0 text-[11px] text-ink-3 mt-0.5">
-                  {result.kind === "course" ? "コース" : "レッスン"}
+                  {result.kind === "stage" ? "ステージ" : "レッスン"}
                 </span>
               </button>
             ))

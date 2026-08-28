@@ -26,7 +26,7 @@ function fixtureAnnouncements(tenantId: string): AnnouncementRow[] {
   return ANNOUNCEMENTS.map((a, i) => ({
     id: `fixture-${a.id}`,
     tenant_id: tenantId,
-    course_id: null,
+    stage_id: null,
     author_id: null,
     author_name: a.by,
     title: a.title,

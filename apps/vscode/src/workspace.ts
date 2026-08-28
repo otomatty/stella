@@ -17,7 +17,7 @@ export function resolveHomeDir(): string {
 
 export interface ExerciseLesson {
   id?: string;
-  courseId?: string;
+  stageId?: string;
   assignmentId?: string | null;
   completed?: boolean;
 }
@@ -25,7 +25,7 @@ export interface ExerciseLesson {
 export interface ActiveExerciseContext {
   assignmentId: string;
   lessonId: string;
-  courseId: string;
+  stageId: string;
 }
 
 let activeExercise: ActiveExerciseContext | undefined;
@@ -144,11 +144,11 @@ export async function openLessonCode(lesson: ExerciseLesson): Promise<vscode.Uri
     return undefined;
   }
   const assignment = await fetchAssignment(lesson.assignmentId);
-  if (lesson.id && lesson.courseId) {
+  if (lesson.id && lesson.stageId) {
     rememberActiveExercise({
       assignmentId: assignment.id,
       lessonId: lesson.id,
-      courseId: lesson.courseId,
+      stageId: lesson.stageId,
     });
   }
   return openExercise(assignment);

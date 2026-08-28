@@ -1,11 +1,11 @@
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 
 export function CodeLessonHandoff({
-  courseId,
+  stageId,
   lessonId,
   assignmentTitle,
 }: {
-  courseId: string;
+  stageId: string;
   lessonId: string;
   assignmentTitle?: string;
 }) {
@@ -22,7 +22,7 @@ export function CodeLessonHandoff({
       ) : null}
 
       <div className="mt-4">
-        <OpenInVscodeButton courseId={courseId} lessonId={lessonId} />
+        <OpenInVscodeButton stageId={stageId} lessonId={lessonId} />
       </div>
 
       <p className="max-md:hidden text-[13px] text-ink-3 mt-4">

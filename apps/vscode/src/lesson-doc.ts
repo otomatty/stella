@@ -3,7 +3,7 @@ import { findCachedLesson } from "./catalog.js";
 
 export interface LessonDocInput {
   id: string;
-  courseId: string;
+  stageId: string;
   title: string;
   markdown?: string | null;
   pdfPath?: string | null;
@@ -11,7 +11,7 @@ export interface LessonDocInput {
 
 export type LessonDocView =
   | { kind: "markdown"; title: string; bodyHtml: string }
-  | { kind: "pdf-only"; title: string; courseId: string; lessonId: string }
+  | { kind: "pdf-only"; title: string; stageId: string; lessonId: string }
   | { kind: "empty"; title: string };
 
 const VIEW_TYPE = "falcon.lessonDoc";
@@ -221,7 +221,7 @@ export function resolveLessonDoc(lesson: LessonDocInput): LessonDocView {
     return {
       kind: "pdf-only",
       title: lesson.title,
-      courseId: lesson.courseId,
+      stageId: lesson.stageId,
       lessonId: lesson.id,
     };
   }
@@ -233,7 +233,7 @@ function viewBody(view: LessonDocView): string {
     case "markdown":
       return view.bodyHtml;
     case "pdf-only": {
-      const args = encodeURIComponent(JSON.stringify([view.courseId, view.lessonId]));
+      const args = encodeURIComponent(JSON.stringify([view.stageId, view.lessonId]));
       return [
         `<h1>${escapeHtml(view.title)}</h1>`,
         "<p>このレッスンは PDF スライドです。拡張内では表示できません。</p>",
@@ -296,7 +296,7 @@ ${viewBody(view)}
 }
 
 function mergeWithCatalog(lesson: LessonDocInput): LessonDocInput {
-  const cached = findCachedLesson(lesson.courseId, lesson.id);
+  const cached = findCachedLesson(lesson.stageId, lesson.id);
   return {
     ...lesson,
     markdown: lesson.markdown?.trim() ? lesson.markdown : cached?.markdown,

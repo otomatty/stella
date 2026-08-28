@@ -1,7 +1,7 @@
 /**
  * `/admin/dash` — テナント KPI ダッシュボード (Issue #28)。
  *
- * KPI カード / 受講推移 / コース別完了率 / つまずき分析 / 受講状況サマリを、
+ * KPI カード / 受講推移 / ステージ別完了率 / つまずき分析 / 受講状況サマリを、
  * enrollment + lesson_progress + quiz_attempts + certificates から集計した実データで
  * 表示する (GET /api/analytics/tenant)。
  *
@@ -38,7 +38,7 @@ import type {
   TenantAnalytics,
 } from "@falcon/shared/cms/types";
 import { useTenantAnalytics } from "@/hooks/useAnalytics";
-import { ENROLLMENT_TREND, COMPLETION_BY_COURSE, STUMBLES } from "@/demo/fixtures";
+import { ENROLLMENT_TREND, COMPLETION_BY_STAGE, STUMBLES } from "@/demo/fixtures";
 
 interface Props {
   tenantId: string;
@@ -124,7 +124,7 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
         <KpiCard
           label={
             <>
-              <CheckCircle size={12} /> コース完了率
+              <CheckCircle size={12} /> ステージ完了率
             </>
           }
           value={analytics.completion_rate}
@@ -171,16 +171,16 @@ function LiveContent({ analytics }: { analytics: TenantAnalytics }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>コース別 完了率</CardTitle>
+            <CardTitle>ステージ別 完了率</CardTitle>
           </CardHeader>
           <div className="px-4 py-3.5">
-            {analytics.completion_by_course.length === 0 ? (
+            {analytics.completion_by_stage.length === 0 ? (
               <div className="py-6 text-center text-[12.5px] text-ink-3">
                 受講登録がまだありません。
               </div>
             ) : (
-              analytics.completion_by_course.map((c) => (
-                <div key={c.course_id} className="mb-3.5 last:mb-0">
+              analytics.completion_by_stage.map((c) => (
+                <div key={c.stage_id} className="mb-3.5 last:mb-0">
                   <div className="flex items-baseline gap-2 text-xs mb-1.5">
                     {/* 名前を伸縮列にする。 spacer で押し出すと狭幅で 1 文字ずつに潰れる。 */}
                     <span className="min-w-0 flex-1 font-medium">{c.name}</span>
@@ -411,7 +411,7 @@ function DashboardDemo() {
         <KpiCard
           label={
             <>
-              <CheckCircle size={12} /> コース完了率
+              <CheckCircle size={12} /> ステージ完了率
             </>
           }
           value={58}
@@ -475,10 +475,10 @@ function DashboardDemo() {
 
         <Card>
           <CardHeader>
-            <CardTitle>コース別 完了率</CardTitle>
+            <CardTitle>ステージ別 完了率</CardTitle>
           </CardHeader>
           <div className="px-4 py-3.5">
-            {COMPLETION_BY_COURSE.map((c) => (
+            {COMPLETION_BY_STAGE.map((c) => (
               <div key={c.name} className="mb-3.5 last:mb-0">
                 <div className="flex items-baseline gap-2 text-xs mb-1.5">
                   <span className="min-w-0 flex-1 font-medium">{c.name}</span>

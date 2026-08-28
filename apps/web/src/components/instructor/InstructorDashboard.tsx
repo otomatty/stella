@@ -70,7 +70,7 @@ export const InstructorDashboard = ({
           n: s.display_name,
           c: toneFromId(s.user_id),
           p: s.progress_pct,
-          course: s.course_title,
+          stage: s.stage_title,
           s: sv.label,
           sev: sv.sev,
         };
@@ -176,7 +176,7 @@ export const InstructorDashboard = ({
                     <span className="text-ink-3 font-normal">{r.assignmentTitle}</span>
                   </div>
                   <div className="text-xs text-ink-3 mt-0.5">
-                    {r.courseTitle} · 提出 {formatSubmittedAt(r.submittedAt)}
+                    {r.stageTitle} · 提出 {formatSubmittedAt(r.submittedAt)}
                   </div>
                 </div>
                 {r.aiReady ? (
@@ -226,7 +226,7 @@ export const InstructorDashboard = ({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium">{s.n}</div>
-                    <div className="text-[11.5px] text-ink-3">{s.course}</div>
+                    <div className="text-[11.5px] text-ink-3">{s.stage}</div>
                   </div>
                   <div className="w-20">
                     <Progress value={s.p} tone="ink" />
@@ -250,15 +250,15 @@ interface StudentRow {
   n: string;
   c: AvatarTone;
   p: number;
-  course: string;
+  stage: string;
   s: string;
   sev: "success" | "warning" | "danger";
 }
 
 // デモ専用のみデモ定数。
 const STUDENT_PROG_DEMO: StudentRow[] = [
-  { n: "田中 翔太", c: "c1", p: 62, course: "TypeScript 入門研修", s: "順調", sev: "success" },
-  { n: "佐藤 美咲", c: "c2", p: 38, course: "TypeScript 入門研修", s: "やや遅延", sev: "warning" },
-  { n: "鈴木 健一", c: "c3", p: 18, course: "TypeScript 入門研修", s: "遅延", sev: "danger" },
-  { n: "山田 優花", c: "c4", p: 85, course: "TypeScript 入門研修", s: "順調", sev: "success" },
+  { n: "田中 翔太", c: "c1", p: 62, stage: "TypeScript 入門研修", s: "順調", sev: "success" },
+  { n: "佐藤 美咲", c: "c2", p: 38, stage: "TypeScript 入門研修", s: "やや遅延", sev: "warning" },
+  { n: "鈴木 健一", c: "c3", p: 18, stage: "TypeScript 入門研修", s: "遅延", sev: "danger" },
+  { n: "山田 優花", c: "c4", p: 85, stage: "TypeScript 入門研修", s: "順調", sev: "success" },
 ];

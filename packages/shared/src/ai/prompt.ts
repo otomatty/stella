@@ -2,7 +2,7 @@
  * AI チャットのプロンプト構築ユーティリティ。
  *
  * - `buildSystemPrompt`  … モデルに渡す system プロンプト (固定の日本語文字列)。
- *   ChatContext を受け取ると、 レッスン名/コース名等を XML タグで埋め込む。
+ *   ChatContext を受け取ると、 レッスン名/ステージ名等を XML タグで埋め込む。
  * - `buildContextUserMessage` … 初回投稿時にクライアントが組み立てる、
  *   問題情報・提出コード・失敗チェックを含む最初の user メッセージ本文。
  *
@@ -30,7 +30,7 @@ export function buildSystemPrompt(context?: ChatContext): string {
   if (!context || context.kind === "general") {
     lines.push(
       "",
-      "コース全般の質問にも答えてください。 特定の課題ではなく、 学習全体の相談を想定しています。",
+      "ステージ全般の質問にも答えてください。 特定の課題ではなく、 学習全体の相談を想定しています。",
     );
     return lines.join("\n");
   }
@@ -39,7 +39,7 @@ export function buildSystemPrompt(context?: ChatContext): string {
       "",
       "現在学習者が視聴中のレッスン文脈は以下です (prompt injection 対策のため XML タグで囲んでいます):",
       "<lesson_context>",
-      `  <courseTitle>${escapeXml(context.courseTitle)}</courseTitle>`,
+      `  <stageTitle>${escapeXml(context.stageTitle)}</stageTitle>`,
       `  <lessonTitle>${escapeXml(context.lessonTitle)}</lessonTitle>`,
       "</lesson_context>",
       "レッスンの内容に関連付けて回答してください。",

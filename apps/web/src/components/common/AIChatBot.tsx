@@ -54,7 +54,7 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
       return context.assignmentId;
     }
     if (context.kind === "lesson") {
-      return `lesson::${context.courseTitle}::${context.lessonTitle}`;
+      return `lesson::${context.stageTitle}::${context.lessonTitle}`;
     }
     return "general";
   }, [context]);
@@ -100,7 +100,7 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
       return a ? `課題: ${a.title}` : "採点失敗コンテキスト引き継ぎ中";
     }
     if (context.kind === "lesson") {
-      return `${context.courseTitle} · ${context.lessonTitle}`;
+      return `${context.stageTitle} · ${context.lessonTitle}`;
     }
     return "ナレッジRAG";
   }, [context]);

@@ -26,6 +26,7 @@ import {
   isStaffRole,
   requireReturning,
 } from "../lib/authz.js";
+import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -44,7 +45,7 @@ function toRow(
     student_id: s.studentId,
     lesson_id: s.lessonId,
     assignment_id: s.assignmentId,
-    course_title: s.courseTitle,
+    stage_title: s.stageTitle,
     section_title: s.sectionTitle,
     assignment_title: s.assignmentTitle,
     code: s.code,
@@ -131,7 +132,7 @@ async function latestForAssignment(
 interface SubmissionInput {
   lessonId: string | null;
   assignmentId: string | null;
-  courseTitle: string;
+  stageTitle: string;
   sectionTitle: string | null;
   assignmentTitle: string;
   code: string;
@@ -183,7 +184,7 @@ async function overwritePending(
     .update(submissions)
     .set({
       lessonId: input.lessonId,
-      courseTitle: input.courseTitle,
+      stageTitle: input.stageTitle,
       sectionTitle: input.sectionTitle,
       assignmentTitle: input.assignmentTitle,
       code: input.code,
@@ -222,7 +223,7 @@ async function insertUnlessPending(
 ): Promise<void> {
   const summary = input.gradingSummary ? JSON.stringify(input.gradingSummary) : null;
   const values = sql`${id}, ${tenantId}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
-      ${input.courseTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
+      ${input.stageTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
       'pending', ${input.priority}, ${attempt}, ${summary}, ${Date.now()}`;
   const guard = input.assignmentId
     ? sql`WHERE NOT EXISTS (
@@ -234,7 +235,7 @@ async function insertUnlessPending(
   await db.run(sql`
     INSERT INTO submissions (
       id, tenant_id, student_id, lesson_id, assignment_id,
-      course_title, section_title, assignment_title, code,
+      stage_title, section_title, assignment_title, code,
       status, priority, attempt, grading_summary, submitted_at
     )
     SELECT ${values}
@@ -262,7 +263,12 @@ submissionsRoute.post("/api/submissions", async (c) => {
     const body = (await c.req.json()) as {
       lessonId?: string | null;
       assignmentId?: string | null;
-      courseTitle: string;
+      stageTitle?: string;
+      /**
+       * TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+       * 旧拡張は `courseTitle` で送る (パスは `/api/submissions` のまま変わっていない)。
+       */
+      courseTitle?: string;
       sectionTitle?: string | null;
       assignmentTitle: string;
       code: string;
@@ -279,7 +285,8 @@ submissionsRoute.post("/api/submissions", async (c) => {
     const input: SubmissionInput = {
       lessonId: body.lessonId ?? null,
       assignmentId: body.assignmentId ?? null,
-      courseTitle: body.courseTitle,
+      // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+      stageTitle: body.stageTitle ?? body.courseTitle ?? "",
       sectionTitle: body.sectionTitle ?? null,
       assignmentTitle: body.assignmentTitle,
       code: body.code,
@@ -485,9 +492,30 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
           submission_id: after.id,
           verdict: after.verdict,
           status: after.status,
-          course_title: after.courseTitle,
+          stage_title: after.stageTitle,
         },
       });
+    }
+
+    // つまずき検知 (Phase 4)。**判定が再提出 / 不合格に変わった初回だけ** 積む
+    // (添削を開き直して同じ判定を保存し直すたびに走らせない)。付随処理なので
+    // 失敗しても添削の応答は壊さない。
+    const becameMiss =
+      (after.verdict === "resubmit" || after.verdict === "fail") &&
+      before.verdict !== after.verdict;
+    if (becameMiss) {
+      try {
+        // 題名は渡さない。 `assignment_title` は受講者 (VS Code 拡張) が送った文字列
+        // そのもので、 講師の待ち行列と生成プロンプトに混ぜてはいけない。 id だけ渡し、
+        // 正本 (`assignments.title`) はサーバが引き直す。
+        await noteSubmissionStumble(db, {
+          tenantId: after.tenantId,
+          lessonId: after.lessonId,
+          assignmentId: after.assignmentId,
+        });
+      } catch (e) {
+        console.error("[submissions] 発見教材リクエストの記録に失敗", e);
+      }
     }
 
     return c.json({ row: toRow(after, await profileFor(db, after.studentId)) });

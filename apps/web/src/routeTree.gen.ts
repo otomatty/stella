@@ -17,6 +17,7 @@ import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAssignmentsRouteImport } from './routes/_app/assignments'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppCertificatesRouteImport } from './routes/_app/certificates'
+import { Route as AppDiscoveryRouteImport } from './routes/_app/discovery'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
 import { Route as AppInterviewPrepRouteImport } from './routes/_app/interview-prep'
@@ -25,6 +26,7 @@ import { Route as AppReportRouteImport } from './routes/_app/report'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppReviewQueueRouteImport } from './routes/_app/review-queue'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppSkillTreeRouteImport } from './routes/_app/skill-tree'
 import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -33,14 +35,21 @@ import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAdminAssignmentsRouteImport } from './routes/_app/admin/assignments'
 import { Route as AppAdminAuditRouteImport } from './routes/_app/admin/audit'
 import { Route as AppAdminEnrollmentsRouteImport } from './routes/_app/admin/enrollments'
+import { Route as AppAdminHallOfFameRouteImport } from './routes/_app/admin/hall-of-fame'
 import { Route as AppAdminOrgsRouteImport } from './routes/_app/admin/orgs'
 import { Route as AppAdminReportRouteImport } from './routes/_app/admin/report'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
+import { Route as AppHallOfFameIndexRouteImport } from './routes/_app/hall-of-fame.index'
+import { Route as AppHallOfFameEntryIdRouteImport } from './routes/_app/hall-of-fame.$entryId'
+import { Route as AppHallOfFameEditRouteImport } from './routes/_app/hall-of-fame.edit'
 import { Route as AppReviewsSubmissionIdRouteImport } from './routes/_app/reviews.$submissionId'
+import { Route as AppStagesIndexRouteImport } from './routes/_app/stages.index'
 import { Route as AppSubmissionsSubmissionIdRouteImport } from './routes/_app/submissions.$submissionId'
 import { Route as AppCoursesCourseIdIndexRouteImport } from './routes/_app/courses.$courseId.index'
+import { Route as AppStagesStageIdIndexRouteImport } from './routes/_app/stages.$stageId.index'
 import { Route as AppCoursesCourseIdLessonsLessonIdRouteImport } from './routes/_app/courses.$courseId.lessons.$lessonId'
+import { Route as AppStagesStageIdLessonsLessonIdRouteImport } from './routes/_app/stages.$stageId.lessons.$lessonId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -79,6 +88,11 @@ const AppAuditRoute = AppAuditRouteImport.update({
 const AppCertificatesRoute = AppCertificatesRouteImport.update({
   id: '/certificates',
   path: '/certificates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiscoveryRoute = AppDiscoveryRouteImport.update({
+  id: '/discovery',
+  path: '/discovery',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEnrollmentsRoute = AppEnrollmentsRouteImport.update({
@@ -121,6 +135,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSkillTreeRoute = AppSkillTreeRouteImport.update({
+  id: '/skill-tree',
+  path: '/skill-tree',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStudentsRoute = AppStudentsRouteImport.update({
   id: '/students',
   path: '/students',
@@ -161,6 +180,11 @@ const AppAdminEnrollmentsRoute = AppAdminEnrollmentsRouteImport.update({
   path: '/enrollments',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppAdminHallOfFameRoute = AppAdminHallOfFameRouteImport.update({
+  id: '/hall-of-fame',
+  path: '/hall-of-fame',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppAdminOrgsRoute = AppAdminOrgsRouteImport.update({
   id: '/orgs',
   path: '/orgs',
@@ -181,9 +205,29 @@ const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
   path: '/courses/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHallOfFameIndexRoute = AppHallOfFameIndexRouteImport.update({
+  id: '/hall-of-fame/',
+  path: '/hall-of-fame/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHallOfFameEntryIdRoute = AppHallOfFameEntryIdRouteImport.update({
+  id: '/hall-of-fame/$entryId',
+  path: '/hall-of-fame/$entryId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHallOfFameEditRoute = AppHallOfFameEditRouteImport.update({
+  id: '/hall-of-fame/edit',
+  path: '/hall-of-fame/edit',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReviewsSubmissionIdRoute = AppReviewsSubmissionIdRouteImport.update({
   id: '/reviews/$submissionId',
   path: '/reviews/$submissionId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStagesIndexRoute = AppStagesIndexRouteImport.update({
+  id: '/stages/',
+  path: '/stages/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSubmissionsSubmissionIdRoute =
@@ -197,10 +241,21 @@ const AppCoursesCourseIdIndexRoute = AppCoursesCourseIdIndexRouteImport.update({
   path: '/courses/$courseId/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStagesStageIdIndexRoute = AppStagesStageIdIndexRouteImport.update({
+  id: '/stages/$stageId/',
+  path: '/stages/$stageId/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCoursesCourseIdLessonsLessonIdRoute =
   AppCoursesCourseIdLessonsLessonIdRouteImport.update({
     id: '/courses/$courseId/lessons/$lessonId',
     path: '/courses/$courseId/lessons/$lessonId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppStagesStageIdLessonsLessonIdRoute =
+  AppStagesStageIdLessonsLessonIdRouteImport.update({
+    id: '/stages/$stageId/lessons/$lessonId',
+    path: '/stages/$stageId/lessons/$lessonId',
     getParentRoute: () => AppRoute,
   } as any)
 
@@ -212,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
+  '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
@@ -220,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/review': typeof AppReviewRoute
   '/review-queue': typeof AppReviewQueueRoute
   '/settings': typeof AppSettingsRoute
+  '/skill-tree': typeof AppSkillTreeRoute
   '/students': typeof AppStudentsRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -227,15 +284,22 @@ export interface FileRoutesByFullPath {
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
+  '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin/': typeof AppAdminIndexRoute
   '/courses/': typeof AppCoursesIndexRoute
+  '/hall-of-fame/': typeof AppHallOfFameIndexRoute
+  '/stages/': typeof AppStagesIndexRoute
   '/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
+  '/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
+  '/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/support': typeof SupportRoute
@@ -243,6 +307,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AppAssignmentsRoute
   '/audit': typeof AppAuditRoute
   '/certificates': typeof AppCertificatesRoute
+  '/discovery': typeof AppDiscoveryRoute
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
@@ -251,6 +316,7 @@ export interface FileRoutesByTo {
   '/review': typeof AppReviewRoute
   '/review-queue': typeof AppReviewQueueRoute
   '/settings': typeof AppSettingsRoute
+  '/skill-tree': typeof AppSkillTreeRoute
   '/students': typeof AppStudentsRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -259,15 +325,22 @@ export interface FileRoutesByTo {
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
+  '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
+  '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin': typeof AppAdminIndexRoute
   '/courses': typeof AppCoursesIndexRoute
+  '/hall-of-fame': typeof AppHallOfFameIndexRoute
+  '/stages': typeof AppStagesIndexRoute
   '/courses/$courseId': typeof AppCoursesCourseIdIndexRoute
+  '/stages/$stageId': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
+  '/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -278,6 +351,7 @@ export interface FileRoutesById {
   '/_app/assignments': typeof AppAssignmentsRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/certificates': typeof AppCertificatesRoute
+  '/_app/discovery': typeof AppDiscoveryRoute
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
   '/_app/interview-prep': typeof AppInterviewPrepRoute
@@ -286,6 +360,7 @@ export interface FileRoutesById {
   '/_app/review': typeof AppReviewRoute
   '/_app/review-queue': typeof AppReviewQueueRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/skill-tree': typeof AppSkillTreeRoute
   '/_app/students': typeof AppStudentsRoute
   '/_app/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -294,15 +369,22 @@ export interface FileRoutesById {
   '/_app/admin/assignments': typeof AppAdminAssignmentsRoute
   '/_app/admin/audit': typeof AppAdminAuditRoute
   '/_app/admin/enrollments': typeof AppAdminEnrollmentsRoute
+  '/_app/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/_app/admin/orgs': typeof AppAdminOrgsRoute
   '/_app/admin/report': typeof AppAdminReportRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
+  '/_app/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
+  '/_app/hall-of-fame/edit': typeof AppHallOfFameEditRoute
   '/_app/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/_app/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
+  '/_app/hall-of-fame/': typeof AppHallOfFameIndexRoute
+  '/_app/stages/': typeof AppStagesIndexRoute
   '/_app/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
+  '/_app/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/_app/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
+  '/_app/stages/$stageId/lessons/$lessonId': typeof AppStagesStageIdLessonsLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -314,6 +396,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/audit'
     | '/certificates'
+    | '/discovery'
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
@@ -322,6 +405,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/review-queue'
     | '/settings'
+    | '/skill-tree'
     | '/students'
     | '/users'
     | '/auth/callback'
@@ -329,15 +413,22 @@ export interface FileRouteTypes {
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
+    | '/admin/hall-of-fame'
     | '/admin/orgs'
     | '/admin/report'
     | '/admin/users'
+    | '/hall-of-fame/$entryId'
+    | '/hall-of-fame/edit'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin/'
     | '/courses/'
+    | '/hall-of-fame/'
+    | '/stages/'
     | '/courses/$courseId/'
+    | '/stages/$stageId/'
     | '/courses/$courseId/lessons/$lessonId'
+    | '/stages/$stageId/lessons/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/support'
@@ -345,6 +436,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/audit'
     | '/certificates'
+    | '/discovery'
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
@@ -353,6 +445,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/review-queue'
     | '/settings'
+    | '/skill-tree'
     | '/students'
     | '/users'
     | '/auth/callback'
@@ -361,15 +454,22 @@ export interface FileRouteTypes {
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
+    | '/admin/hall-of-fame'
     | '/admin/orgs'
     | '/admin/report'
     | '/admin/users'
+    | '/hall-of-fame/$entryId'
+    | '/hall-of-fame/edit'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin'
     | '/courses'
+    | '/hall-of-fame'
+    | '/stages'
     | '/courses/$courseId'
+    | '/stages/$stageId'
     | '/courses/$courseId/lessons/$lessonId'
+    | '/stages/$stageId/lessons/$lessonId'
   id:
     | '__root__'
     | '/_app'
@@ -379,6 +479,7 @@ export interface FileRouteTypes {
     | '/_app/assignments'
     | '/_app/audit'
     | '/_app/certificates'
+    | '/_app/discovery'
     | '/_app/enrollments'
     | '/_app/gradebook'
     | '/_app/interview-prep'
@@ -387,6 +488,7 @@ export interface FileRouteTypes {
     | '/_app/review'
     | '/_app/review-queue'
     | '/_app/settings'
+    | '/_app/skill-tree'
     | '/_app/students'
     | '/_app/users'
     | '/auth/callback'
@@ -395,15 +497,22 @@ export interface FileRouteTypes {
     | '/_app/admin/assignments'
     | '/_app/admin/audit'
     | '/_app/admin/enrollments'
+    | '/_app/admin/hall-of-fame'
     | '/_app/admin/orgs'
     | '/_app/admin/report'
     | '/_app/admin/users'
+    | '/_app/hall-of-fame/$entryId'
+    | '/_app/hall-of-fame/edit'
     | '/_app/reviews/$submissionId'
     | '/_app/submissions/$submissionId'
     | '/_app/admin/'
     | '/_app/courses/'
+    | '/_app/hall-of-fame/'
+    | '/_app/stages/'
     | '/_app/courses/$courseId/'
+    | '/_app/stages/$stageId/'
     | '/_app/courses/$courseId/lessons/$lessonId'
+    | '/_app/stages/$stageId/lessons/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -471,6 +580,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCertificatesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/discovery': {
+      id: '/_app/discovery'
+      path: '/discovery'
+      fullPath: '/discovery'
+      preLoaderRoute: typeof AppDiscoveryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/enrollments': {
       id: '/_app/enrollments'
       path: '/enrollments'
@@ -525,6 +641,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/skill-tree': {
+      id: '/_app/skill-tree'
+      path: '/skill-tree'
+      fullPath: '/skill-tree'
+      preLoaderRoute: typeof AppSkillTreeRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/students': {
@@ -583,6 +706,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminEnrollmentsRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/hall-of-fame': {
+      id: '/_app/admin/hall-of-fame'
+      path: '/hall-of-fame'
+      fullPath: '/admin/hall-of-fame'
+      preLoaderRoute: typeof AppAdminHallOfFameRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/orgs': {
       id: '/_app/admin/orgs'
       path: '/orgs'
@@ -611,11 +741,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoursesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/hall-of-fame/': {
+      id: '/_app/hall-of-fame/'
+      path: '/hall-of-fame'
+      fullPath: '/hall-of-fame/'
+      preLoaderRoute: typeof AppHallOfFameIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/hall-of-fame/$entryId': {
+      id: '/_app/hall-of-fame/$entryId'
+      path: '/hall-of-fame/$entryId'
+      fullPath: '/hall-of-fame/$entryId'
+      preLoaderRoute: typeof AppHallOfFameEntryIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/hall-of-fame/edit': {
+      id: '/_app/hall-of-fame/edit'
+      path: '/hall-of-fame/edit'
+      fullPath: '/hall-of-fame/edit'
+      preLoaderRoute: typeof AppHallOfFameEditRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reviews/$submissionId': {
       id: '/_app/reviews/$submissionId'
       path: '/reviews/$submissionId'
       fullPath: '/reviews/$submissionId'
       preLoaderRoute: typeof AppReviewsSubmissionIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/stages/': {
+      id: '/_app/stages/'
+      path: '/stages'
+      fullPath: '/stages/'
+      preLoaderRoute: typeof AppStagesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/submissions/$submissionId': {
@@ -632,11 +790,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoursesCourseIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/stages/$stageId/': {
+      id: '/_app/stages/$stageId/'
+      path: '/stages/$stageId'
+      fullPath: '/stages/$stageId/'
+      preLoaderRoute: typeof AppStagesStageIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/courses/$courseId/lessons/$lessonId': {
       id: '/_app/courses/$courseId/lessons/$lessonId'
       path: '/courses/$courseId/lessons/$lessonId'
       fullPath: '/courses/$courseId/lessons/$lessonId'
       preLoaderRoute: typeof AppCoursesCourseIdLessonsLessonIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/stages/$stageId/lessons/$lessonId': {
+      id: '/_app/stages/$stageId/lessons/$lessonId'
+      path: '/stages/$stageId/lessons/$lessonId'
+      fullPath: '/stages/$stageId/lessons/$lessonId'
+      preLoaderRoute: typeof AppStagesStageIdLessonsLessonIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -646,6 +818,7 @@ interface AppAdminRouteChildren {
   AppAdminAssignmentsRoute: typeof AppAdminAssignmentsRoute
   AppAdminAuditRoute: typeof AppAdminAuditRoute
   AppAdminEnrollmentsRoute: typeof AppAdminEnrollmentsRoute
+  AppAdminHallOfFameRoute: typeof AppAdminHallOfFameRoute
   AppAdminOrgsRoute: typeof AppAdminOrgsRoute
   AppAdminReportRoute: typeof AppAdminReportRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
@@ -656,6 +829,7 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminAssignmentsRoute: AppAdminAssignmentsRoute,
   AppAdminAuditRoute: AppAdminAuditRoute,
   AppAdminEnrollmentsRoute: AppAdminEnrollmentsRoute,
+  AppAdminHallOfFameRoute: AppAdminHallOfFameRoute,
   AppAdminOrgsRoute: AppAdminOrgsRoute,
   AppAdminReportRoute: AppAdminReportRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
@@ -672,6 +846,7 @@ interface AppRouteChildren {
   AppAssignmentsRoute: typeof AppAssignmentsRoute
   AppAuditRoute: typeof AppAuditRoute
   AppCertificatesRoute: typeof AppCertificatesRoute
+  AppDiscoveryRoute: typeof AppDiscoveryRoute
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
   AppInterviewPrepRoute: typeof AppInterviewPrepRoute
@@ -680,14 +855,21 @@ interface AppRouteChildren {
   AppReviewRoute: typeof AppReviewRoute
   AppReviewQueueRoute: typeof AppReviewQueueRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppSkillTreeRoute: typeof AppSkillTreeRoute
   AppStudentsRoute: typeof AppStudentsRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppHallOfFameEntryIdRoute: typeof AppHallOfFameEntryIdRoute
+  AppHallOfFameEditRoute: typeof AppHallOfFameEditRoute
   AppReviewsSubmissionIdRoute: typeof AppReviewsSubmissionIdRoute
   AppSubmissionsSubmissionIdRoute: typeof AppSubmissionsSubmissionIdRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
+  AppHallOfFameIndexRoute: typeof AppHallOfFameIndexRoute
+  AppStagesIndexRoute: typeof AppStagesIndexRoute
   AppCoursesCourseIdIndexRoute: typeof AppCoursesCourseIdIndexRoute
+  AppStagesStageIdIndexRoute: typeof AppStagesStageIdIndexRoute
   AppCoursesCourseIdLessonsLessonIdRoute: typeof AppCoursesCourseIdLessonsLessonIdRoute
+  AppStagesStageIdLessonsLessonIdRoute: typeof AppStagesStageIdLessonsLessonIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -696,6 +878,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssignmentsRoute: AppAssignmentsRoute,
   AppAuditRoute: AppAuditRoute,
   AppCertificatesRoute: AppCertificatesRoute,
+  AppDiscoveryRoute: AppDiscoveryRoute,
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
   AppInterviewPrepRoute: AppInterviewPrepRoute,
@@ -704,15 +887,22 @@ const AppRouteChildren: AppRouteChildren = {
   AppReviewRoute: AppReviewRoute,
   AppReviewQueueRoute: AppReviewQueueRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppSkillTreeRoute: AppSkillTreeRoute,
   AppStudentsRoute: AppStudentsRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
+  AppHallOfFameEntryIdRoute: AppHallOfFameEntryIdRoute,
+  AppHallOfFameEditRoute: AppHallOfFameEditRoute,
   AppReviewsSubmissionIdRoute: AppReviewsSubmissionIdRoute,
   AppSubmissionsSubmissionIdRoute: AppSubmissionsSubmissionIdRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
+  AppHallOfFameIndexRoute: AppHallOfFameIndexRoute,
+  AppStagesIndexRoute: AppStagesIndexRoute,
   AppCoursesCourseIdIndexRoute: AppCoursesCourseIdIndexRoute,
+  AppStagesStageIdIndexRoute: AppStagesStageIdIndexRoute,
   AppCoursesCourseIdLessonsLessonIdRoute:
     AppCoursesCourseIdLessonsLessonIdRoute,
+  AppStagesStageIdLessonsLessonIdRoute: AppStagesStageIdLessonsLessonIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

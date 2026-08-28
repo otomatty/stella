@@ -6,6 +6,7 @@ UI部品 入門研修(`ui-components-basics`)の次に受ける講座です。1 
 [WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/) の Landmarks パターンに合わせています。
 
 想定する受講順は `html-css-basics` → `modern-css-basics` → `ui-components-basics` → **本講座** です。
+前提講座: UI部品 入門研修(`ui-components-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
 
 ## 終了時の目標
 

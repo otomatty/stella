@@ -14,6 +14,7 @@ import {
   Book,
   Building,
   ClipboardList,
+  Compass,
   Code,
   Edit,
   FileText,
@@ -22,6 +23,8 @@ import {
   MessageCircle,
   Play,
   Shield,
+  Sparkles,
+  Star,
   Users,
 } from "@/lib/icons";
 import type { Role } from "@/data/types";
@@ -31,7 +34,8 @@ type LucideIcon = ComponentType<LucideProps>;
 
 export type NavId =
   | "dash"
-  | "courses"
+  | "stages"
+  | "skill-tree"
   | "lesson"
   | "cert"
   | "interview-prep"
@@ -44,6 +48,9 @@ export type NavId =
   | "report"
   | "audit"
   | "assignments"
+  | "discovery"
+  | "hall-of-fame"
+  | "hall-of-fame-admin"
   | "settings"
   | "__logout";
 
@@ -53,32 +60,48 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
+/**
+ * 殿堂 (Phase 5)。 **一覧の最後に置く**。
+ *
+ * 毎日の学習動線 (ダッシュボード → ステージ → レッスン) の途中に挟むと、 他人の
+ * 物語が「今日やること」の並びに混ざる。 いつでも行けるが、 急かさない位置に置く。
+ * 営業には出さない (受講者の物語を売り物の資料として扱わせない — 読めはする)。
+ */
+const HALL_OF_FAME_NAV: NavItem = { id: "hall-of-fame", label: "殿堂", icon: Star };
+
 const NAV: Record<Role, NavItem[]> = {
   learner: [
     { id: "dash", label: "ダッシュボード", icon: Home },
-    { id: "courses", label: "コース一覧", icon: Book },
+    { id: "stages", label: "ステージ一覧", icon: Book },
+    { id: "skill-tree", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "cert", label: "修了証", icon: Award },
+    HALL_OF_FAME_NAV,
   ],
   instructor: [
     { id: "dash", label: "ダッシュボード", icon: Home },
     { id: "review-queue", label: "添削待ち", icon: Edit },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "students", label: "担当受講者", icon: Users },
+    { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
-    { id: "courses", label: "コース", icon: Book },
+    { id: "stages", label: "ステージ", icon: Book },
+    HALL_OF_FAME_NAV,
   ],
   admin: [
     { id: "dash", label: "KPIダッシュボード", icon: BarChart },
-    { id: "courses", label: "コース管理", icon: Book },
+    { id: "stages", label: "ステージ管理", icon: Book },
     { id: "assignments", label: "課題管理", icon: Code },
-    { id: "enrollments", label: "受講登録", icon: ClipboardList },
+    { id: "discovery", label: "発見教材", icon: Sparkles },
+    { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
+    // 管理者の「殿堂」は運用画面 (推薦 / 公開)。 掲載そのものは運用画面から見に行ける。
+    { id: "hall-of-fame-admin", label: "殿堂", icon: Star },
   ],
   sales: [
     { id: "dash", label: "ダッシュボード", icon: Home },

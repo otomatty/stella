@@ -24,7 +24,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 /** DB に永続化する insert フィールドのみ */
 export type InsertSubmissionInput = Pick<
   Submission,
-  "courseTitle" | "sectionTitle" | "assignmentTitle" | "lessonId" | "assignmentId" | "codeLines"
+  "stageTitle" | "sectionTitle" | "assignmentTitle" | "lessonId" | "assignmentId" | "codeLines"
 > & {
   priority: ReviewPriority;
   attempt: number;
@@ -56,7 +56,7 @@ interface SubmissionRow {
   student_id: string | null;
   lesson_id: string | null;
   assignment_id: string | null;
-  course_title: string;
+  stage_title: string;
   section_title: string | null;
   assignment_title: string;
   code: string;
@@ -92,7 +92,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
     studentName: name,
     studentInitials: initials,
     avatarTone: toneFromStudentId(row.student_id),
-    courseTitle: row.course_title,
+    stageTitle: row.stage_title,
     sectionTitle: row.section_title ?? undefined,
     assignmentTitle: row.assignment_title,
     lessonId: row.lesson_id ?? undefined,
@@ -141,7 +141,7 @@ export async function insertSubmission(
     body: {
       lessonId: input.lessonId && UUID_RE.test(input.lessonId) ? input.lessonId : null,
       assignmentId: input.assignmentId ?? null,
-      courseTitle: input.courseTitle,
+      stageTitle: input.stageTitle,
       sectionTitle: input.sectionTitle ?? null,
       assignmentTitle: input.assignmentTitle,
       code: input.codeLines.join("\n"),

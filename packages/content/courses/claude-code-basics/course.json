@@ -5,6 +5,9 @@
   "description": "VS Code 上の Claude Code で手元のコードを直させるための研修。コーディングエージェントとチャットの違いから、許可とモードの選び方、Explore → Plan → Code → Commit の日常ワークフロー、コンテキスト管理までを扱う。最後に小さな修正を 1 本、通しで完走できるようになる。",
   "header": "Claude Code入門",
   "tenantId": "ses",
+  "prerequisites": ["ai-fluency-basics", "claude-chat-basics"],
+  "canDo": "AI に任せる所と自分で書く所を切り分けて進められる",
+  "theme": "AI と働く力",
   "modules": {
     "m0-agent": "M0. コーディングエージェント",
     "m1-vscode": "M1. VS Code で始める",

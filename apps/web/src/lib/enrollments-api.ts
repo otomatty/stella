@@ -3,7 +3,14 @@
  *
  * 旧 BaaS 直アクセス (RLS 配下) を Hono API 経由に置き換えた。 認可はサーバ側:
  *   - 受講者は自分の enrollment のみ read (`/api/enrollments/mine`)
- *   - instructor/admin は同テナントを read/write
+ *   - instructor/admin は同テナントを read
+ *
+ * **登録を作る書き込みは持たない** (Phase 3b)。 登録が生まれるのは受講者の自己開始
+ * (`lib/skill-map-api.ts` の `startStage`) だけで、 管理画面から割り当てることはできない。
+ *
+ * 一方で **始まったあとの後始末は staff の仕事として残る** — 期限の設定 / 完了の手直し
+ * (`updateEnrollment`) と、 誤って始めた登録の解除 (`deleteEnrollment`)。 どちらも
+ * 「受講状況」 画面の行メニューから呼ぶ。
  */
 
 import type {
@@ -22,11 +29,11 @@ export async function listEnrollmentsForUser(_userId: string): Promise<Enrollmen
 
 /** staff 向け: enrollment 一覧 (テナントはサーバが caller から解決する)。 */
 async function listEnrollments(filter: {
-  courseId?: string;
+  stageId?: string;
   userIds?: string[];
 }): Promise<EnrollmentRow[]> {
   const params = new URLSearchParams();
-  if (filter.courseId) params.set("courseId", filter.courseId);
+  if (filter.stageId) params.set("stageId", filter.stageId);
   if (filter.userIds?.length) params.set("userIds", filter.userIds.join(","));
   const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>(
     `/api/enrollments?${params.toString()}`,
@@ -34,9 +41,9 @@ async function listEnrollments(filter: {
   return rows ?? [];
 }
 
-/** staff 向け: あるコースに割り当てられている受講者の enrollment 一覧。 */
-export async function listEnrollmentsForCourse(courseId: string): Promise<EnrollmentRow[]> {
-  return listEnrollments({ courseId });
+/** staff 向け: あるステージに割り当てられている受講者の enrollment 一覧。 */
+export async function listEnrollmentsForStage(stageId: string): Promise<EnrollmentRow[]> {
+  return listEnrollments({ stageId });
 }
 
 /** サーバ側の `userIds` 上限に合わせたチャンクサイズ。 */
@@ -72,51 +79,26 @@ export async function listEnrollmentSummaries(): Promise<EnrollmentSummaryRow[]>
   return rows ?? [];
 }
 
-/** サーバ側の一括 API の上限 (`/api/enrollments/bulk`)。 これを超える指定は分割して送る。 */
-const BULK_MAX_USERS = 50;
-const BULK_MAX_COURSES = 50;
-const BULK_MAX_PAIRS = 500;
+/**
+ * Phase 3b: 一括割当 / 一括解除のクライアントは削除した。
+ *
+ * サーバ側の `POST /api/enrollments/bulk` は 410 Gone (`routes/enrollments.ts`)。
+ * 受講登録を作るのは受講者の自己開始 (`POST /api/stages/:id/start`) だけになったので、
+ * 割当を組み立てる `bulkChunks` / `bulkAssignEnrollments` / `bulkRemoveEnrollments` も
+ * ここには残していない。 個別の期限 / 状態の修正と解除は下の 2 つに残る。
+ */
 
-export interface BulkEnrollmentInput {
-  userIds: string[];
-  courseIds: string[];
-  dueAt?: string | null;
-  required?: boolean;
-}
-
-/** 受講者 × コースを、 サーバ上限に収まるリクエスト単位に分割する。 */
-function bulkChunks(
-  userIds: string[],
-  courseIds: string[],
-): Array<{ userIds: string[]; courseIds: string[] }> {
-  const chunks: Array<{ userIds: string[]; courseIds: string[] }> = [];
-  for (let ci = 0; ci < courseIds.length; ci += BULK_MAX_COURSES) {
-    const courses = courseIds.slice(ci, ci + BULK_MAX_COURSES);
-    // 1 リクエストの組数が上限を超えないよう、 コース数に応じて受講者を刻む。
-    const usersPerChunk = Math.max(
-      1,
-      Math.min(BULK_MAX_USERS, Math.floor(BULK_MAX_PAIRS / courses.length)),
-    );
-    for (let ui = 0; ui < userIds.length; ui += usersPerChunk) {
-      chunks.push({ userIds: userIds.slice(ui, ui + usersPerChunk), courseIds: courses });
-    }
-  }
-  return chunks;
-}
-
-/** 同時に投げる一括リクエストの上限。 */
-const BULK_CONCURRENCY = 4;
+/** 同時に投げる読み取りリクエストの上限。 */
+const READ_CONCURRENCY = 4;
 
 /**
- * `items` を最大 `BULK_CONCURRENCY` 並列で処理する。
+ * `items` を最大 `READ_CONCURRENCY` 並列で処理する。
  *
- * 一括割当は対象の組み合わせによってリクエスト数が増えるため、 まとめて `Promise.all` に
- * 渡すとスロットリングや部分適用を招く。 実行順は問わないので、 空いたワーカーから順に処理する。
+ * CSV 出力のように対象人数が多いと、 サーバ側の `userIds` 上限 (50 名) に合わせた
+ * 分割リクエストが増える。 まとめて `Promise.all` に渡すとスロットリングを招くため、
+ * 空いたワーカーから順に処理する (実行順は問わない)。
  */
-export async function mapWithConcurrency<T, R>(
-  items: T[],
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
+async function mapWithConcurrency<T, R>(items: T[], fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let next = 0;
   const worker = async () => {
@@ -128,71 +110,9 @@ export async function mapWithConcurrency<T, R>(
     }
   };
   await Promise.all(
-    Array.from({ length: Math.min(BULK_CONCURRENCY, items.length) }, () => worker()),
+    Array.from({ length: Math.min(READ_CONCURRENCY, items.length) }, () => worker()),
   );
   return results;
-}
-
-export interface BulkEnrollmentResult {
-  /** 実際に適用できた組数。 */
-  applied: number;
-  /** 失敗したリクエストのエラー (途中で失敗しても残りは続行する)。 */
-  errors: string[];
-}
-
-/**
- * 受講者 × コースをまとめて割り当てる。
- *
- * 組み合わせごとに個別 POST を並べると数百〜千のリクエストが同時に飛ぶため、
- * サーバの一括 API へ上限内のチャンクを順に送る。 途中で失敗しても残りは続け、
- * 適用できた件数と失敗内容を返して呼び出し側で表示・再取得できるようにする。
- */
-export async function bulkAssignEnrollments(
-  input: BulkEnrollmentInput,
-): Promise<BulkEnrollmentResult> {
-  const chunks = bulkChunks(input.userIds, input.courseIds);
-  let applied = 0;
-  const errors: string[] = [];
-  for (const chunk of chunks) {
-    try {
-      const { assigned } = await apiFetch<{ assigned: number }>("/api/enrollments/bulk", {
-        method: "POST",
-        body: {
-          action: "assign",
-          userIds: chunk.userIds,
-          courseIds: chunk.courseIds,
-          ...(input.dueAt !== undefined ? { dueAt: input.dueAt } : {}),
-          ...(input.required !== undefined ? { required: input.required } : {}),
-        },
-      });
-      applied += assigned ?? 0;
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : "unknown");
-    }
-  }
-  return { applied, errors };
-}
-
-/** 受講者 × コースの割当をまとめて解除する。 分割・部分失敗の扱いは割当と同じ。 */
-export async function bulkRemoveEnrollments(input: {
-  userIds: string[];
-  courseIds: string[];
-}): Promise<BulkEnrollmentResult> {
-  const chunks = bulkChunks(input.userIds, input.courseIds);
-  let applied = 0;
-  const errors: string[] = [];
-  for (const chunk of chunks) {
-    try {
-      const { removed } = await apiFetch<{ removed: number }>("/api/enrollments/bulk", {
-        method: "POST",
-        body: { action: "unassign", userIds: chunk.userIds, courseIds: chunk.courseIds },
-      });
-      applied += removed ?? 0;
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : "unknown");
-    }
-  }
-  return { applied, errors };
 }
 
 export interface UpdateEnrollmentPatch {
@@ -208,4 +128,32 @@ export async function updateEnrollment(id: string, patch: UpdateEnrollmentPatch)
     method: "PATCH",
     body: patch,
   });
+}
+
+/**
+ * 受講登録を解除する (行ごと消す)。
+ *
+ * 自己開始のモデルでも残す操作。 押し間違いで始めた星や、 退職者の整理のように
+ * 「無かったことにする」 必要が運用に残るため。 進捗そのもの (lesson_progress /
+ * 提出) は消えないので、 学び直しで始め直せば続きから見える。
+ */
+export async function deleteEnrollment(id: string): Promise<void> {
+  await apiFetch(`/api/enrollments/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/**
+ * 割当プリセットの id → 名前 (受講状況のバッジ用)。
+ *
+ * プリセットの **適用** は Phase 3b で退役したが、 移行前に作られた登録は
+ * `preset_id` で出自を指したまま残る。 名前を引かずに 「(削除済み)」 と出すと、
+ * 生きている定義まで削除済みに見える (嘘になる) ので、 staff だけが開くこの画面では
+ * 1 リクエストだけ払って実名を出す。 **失敗したらバッジを出さない** — 出自が読めない
+ * ことと 「消えた」 ことは違う。
+ */
+export async function listEnrollmentPresetNames(): Promise<Map<string, string>> {
+  const { rows } = await apiFetch<{ rows: { id: string; name: string }[] }>(
+    // 退役済み (archived) の定義も名前は引ける。 昔の登録が指す先はたいてい退役済み。
+    "/api/enrollment-presets?includeArchived=1",
+  );
+  return new Map((rows ?? []).map((row) => [row.id, row.name]));
 }

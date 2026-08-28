@@ -105,7 +105,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
         const summary = submission.gradingSummary;
         const draft = await fetchReviewDraft({
           assignmentTitle: submission.assignmentTitle,
-          courseTitle: submission.courseTitle,
+          stageTitle: submission.stageTitle,
           code: submission.codeLines.join("\n"),
           language: summary?.language ?? "js",
           ...(summary ? { gradingSummary: formatGradingSummaryText(summary) } : {}),
@@ -239,7 +239,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
             {submission.assignmentTitle} · {submission.studentName}
           </div>
           <div className="text-[11.5px] text-ink-3">
-            {submission.courseTitle}
+            {submission.stageTitle}
             {submission.sectionTitle ? ` / ${submission.sectionTitle}` : ""} · 提出{" "}
             {formatSubmittedAt(submission.submittedAt)} · {submission.attempt}回目
           </div>

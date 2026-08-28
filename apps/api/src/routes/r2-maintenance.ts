@@ -6,14 +6,14 @@
  *
  * 孤児が生まれる経路:
  *   - 教材の差し替え (`lessons.video_path` / `pdf_path` を上書きすると旧オブジェクトが残る)
- *   - 配布資料 / コース削除時の R2 削除失敗 (best-effort のためログだけ残して続行する)
+ *   - 配布資料 / ステージ削除時の R2 削除失敗 (best-effort のためログだけ残して続行する)
  *   - アップロード成功後に DB insert が落ちたケースの補償削除漏れ
  *
  * 安全側の設計:
  *   - テナント管理者以上のみ。 走査も削除も `tenant/<callerTenant>/` 配下に限定する。
  *   - 参照は「配布資料 (lesson_materials.path)」だけでなく
  *     「レッスンの動画 / スライド (lessons.video_path / pdf_path)」「レッスン本文
- *     (lessons.markdown) が埋め込む画像」「講座サムネイル (courses.thumbnail_path)」も数える。
+ *     (lessons.markdown) が埋め込む画像」「講座サムネイル (stages.thumbnail_path)」も数える。
  *     ここを漏らすと配信中の教材を消してしまう (教材の図解 SVG は本文からしか参照されない)。
  *   - 削除は棚卸しで返ったパスを呼び出し側が明示的に渡した場合のみ。 削除直前に
  *     参照有無を取り直し、 その間に参照が復活したパスはスキップする。
@@ -22,7 +22,7 @@
 import { Hono } from "hono";
 import { and, eq, gt, isNotNull, like, or } from "drizzle-orm";
 
-import { courses, lessonMaterials, lessons, sections } from "../db/schema.js";
+import { stages, lessonMaterials, lessons, sections } from "../db/schema.js";
 import { errorResponse, getCaller, requireTenantAdmin, ApiError } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
@@ -71,10 +71,10 @@ async function markdownReferencedPaths(db: Db, tenantId: string, into: Set<strin
       .select({ id: lessons.id, markdown: lessons.markdown })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
-      .innerJoin(courses, eq(courses.id, sections.courseId))
+      .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
         and(
-          eq(courses.tenantId, tenantId),
+          eq(stages.tenantId, tenantId),
           isNotNull(lessons.markdown),
           like(lessons.markdown, `%tenant/${tenantId}/%`),
           gt(lessons.id, lastId),
@@ -94,7 +94,7 @@ async function markdownReferencedPaths(db: Db, tenantId: string, into: Set<strin
 
 /**
  * テナント配下で「参照されている」R2 パスを集める。
- * 配布資料 + レッスンの動画 / スライド + 本文中の画像 + コースのサムネイルを対象にする。
+ * 配布資料 + レッスンの動画 / スライド + 本文中の画像 + ステージのサムネイルを対象にする。
  */
 async function referencedPaths(db: Db, tenantId: string): Promise<Set<string>> {
   const materialRows = await db
@@ -102,27 +102,27 @@ async function referencedPaths(db: Db, tenantId: string): Promise<Set<string>> {
     .from(lessonMaterials)
     .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
-    .where(eq(courses.tenantId, tenantId));
+    .innerJoin(stages, eq(stages.id, sections.stageId))
+    .where(eq(stages.tenantId, tenantId));
 
   const lessonRows = await db
     .select({ videoPath: lessons.videoPath, pdfPath: lessons.pdfPath })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(
       and(
-        eq(courses.tenantId, tenantId),
+        eq(stages.tenantId, tenantId),
         or(isNotNull(lessons.videoPath), isNotNull(lessons.pdfPath)),
       ),
     );
 
-  // 講座サムネイル (courses.thumbnail_path)。 キーが内容ハッシュ入りなので、
+  // 講座サムネイル (stages.thumbnail_path)。 キーが内容ハッシュ入りなので、
   // 差し替え前の世代は参照から外れ、 棚卸しに孤児として出る (掃除して良い)。
   const thumbnailRows = await db
-    .select({ path: courses.thumbnailPath })
-    .from(courses)
-    .where(and(eq(courses.tenantId, tenantId), isNotNull(courses.thumbnailPath)));
+    .select({ path: stages.thumbnailPath })
+    .from(stages)
+    .where(and(eq(stages.tenantId, tenantId), isNotNull(stages.thumbnailPath)));
 
   const set = new Set<string>();
   for (const r of materialRows) set.add(r.path);

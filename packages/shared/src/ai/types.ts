@@ -23,7 +23,7 @@ export interface ChatMessage {
  */
 export type ChatContext =
   | { kind: "general" }
-  | { kind: "lesson"; lessonTitle: string; courseTitle: string }
+  | { kind: "lesson"; lessonTitle: string; stageTitle: string }
   | {
       kind: "practice";
       assignmentId: string;

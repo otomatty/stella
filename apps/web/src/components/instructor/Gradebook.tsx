@@ -1,7 +1,7 @@
 /**
  * 講師/管理者向け成績台帳 (gradebook) (Issue #26)。
  *
- * コースを選ぶと、 受講登録された受講者ごとの達成状況 (進捗 + 小テスト + 課題) を
+ * ステージを選ぶと、 受講登録された受講者ごとの達成状況 (進捗 + 小テスト + 課題) を
  * 一覧表示する。 基準達成かつ未発行の受講者は、 この画面から修了証を承認発行できる。
  *
  * データは get_course_gradebook RPC (staff のみ / security definer) から取得する。
@@ -15,10 +15,10 @@ import { SkeletonRows } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Course } from "@/data/types";
-import type { CourseGradebook, EnrollmentStatus, GradebookEntry } from "@falcon/shared/cms/types";
+import type { Stage } from "@/data/types";
+import type { StageGradebook, EnrollmentStatus, GradebookEntry } from "@falcon/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
-import { fetchCourseGradebook, issueCertificate } from "@/lib/certificates-api";
+import { fetchStageGradebook, issueCertificate } from "@/lib/certificates-api";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 /** enrollment ステータスを日本語の表示語にする。 */
@@ -29,25 +29,25 @@ const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
 };
 
 interface GradebookProps {
-  courses: Course[];
+  stages: Stage[];
 }
 
-export const Gradebook = ({ courses }: GradebookProps) => {
-  const [courseId, setCourseId] = useState<string>(() => courses[0]?.id ?? "");
-  const [data, setData] = useState<CourseGradebook | null>(null);
+export const Gradebook = ({ stages }: GradebookProps) => {
+  const [stageId, setStageId] = useState<string>(() => stages[0]?.id ?? "");
+  const [data, setData] = useState<StageGradebook | null>(null);
   const [loading, setLoading] = useState(false);
   const [issuingUser, setIssuingUser] = useState<string | null>(null);
 
   const backendEnabled = isBackendConfigured();
 
   const load = useCallback(async () => {
-    if (!backendEnabled || !courseId) {
+    if (!backendEnabled || !stageId) {
       setData(null);
       return;
     }
     setLoading(true);
     try {
-      setData(await fetchCourseGradebook(courseId));
+      setData(await fetchStageGradebook(stageId));
     } catch (err) {
       console.error("[Gradebook] load failed", err);
       toast.error("成績台帳の取得に失敗しました");
@@ -55,22 +55,22 @@ export const Gradebook = ({ courses }: GradebookProps) => {
     } finally {
       setLoading(false);
     }
-  }, [backendEnabled, courseId]);
+  }, [backendEnabled, stageId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // courses は バックエンド設定時に非同期で到着する (初期は fixtures / 空)。
-  // 選択中の courseId が未設定 / 現在の一覧に無い場合は先頭コースへ補正し、
+  // stages は バックエンド設定時に非同期で到着する (初期は fixtures / 空)。
+  // 選択中の stageId が未設定 / 現在の一覧に無い場合は先頭ステージへ補正し、
   // ロード前の fixture id のまま台帳取得が空振りし続けるのを防ぐ。
   useEffect(() => {
-    const firstId = courses[0]?.id ?? "";
+    const firstId = stages[0]?.id ?? "";
     if (!firstId) return;
-    if (!courseId || !courses.some((c) => c.id === courseId)) {
-      setCourseId(firstId);
+    if (!stageId || !stages.some((c) => c.id === stageId)) {
+      setStageId(firstId);
     }
-  }, [courses, courseId]);
+  }, [stages, stageId]);
 
   const onExport = () => {
     if (!data || data.rows.length === 0) return;
@@ -110,16 +110,16 @@ export const Gradebook = ({ courses }: GradebookProps) => {
       ];
     });
     const stamp = new Date().toISOString().slice(0, 10);
-    const safeTitle = data.course_title.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40);
+    const safeTitle = data.stage_title.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40);
     downloadCsv(`gradebook-${safeTitle}-${stamp}.csv`, toCsv(headers, rows));
     toast.success("成績台帳を出力しました");
   };
 
   const onIssue = async (userId: string) => {
-    if (!courseId) return;
+    if (!stageId) return;
     setIssuingUser(userId);
     try {
-      const result = await issueCertificate(courseId, userId);
+      const result = await issueCertificate(stageId, userId);
       toast.success(result.already_existed ? "既に発行済みです" : "修了証を発行しました");
       await load();
     } catch (err) {
@@ -137,12 +137,12 @@ export const Gradebook = ({ courses }: GradebookProps) => {
         actions={
           <>
             <select
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              value={stageId}
+              onChange={(e) => setStageId(e.target.value)}
               className="h-8 rounded-sm border border-border-2 bg-card px-3 text-[13px]"
             >
-              {courses.length === 0 ? <option value="">コースなし</option> : null}
-              {courses.map((c) => (
+              {stages.length === 0 ? <option value="">ステージなし</option> : null}
+              {stages.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.title}
                 </option>
@@ -164,10 +164,10 @@ export const Gradebook = ({ courses }: GradebookProps) => {
       ) : loading ? (
         <SkeletonRows rows={5} className="py-6" />
       ) : !data ? (
-        <div className="text-[13px] text-ink-3">コースを選択してください。</div>
+        <div className="text-[13px] text-ink-3">ステージを選択してください。</div>
       ) : data.rows.length === 0 ? (
         <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
-          このコースに受講登録された受講者はいません。
+          このステージに受講登録された受講者はいません。
         </div>
       ) : (
         <GradebookTable

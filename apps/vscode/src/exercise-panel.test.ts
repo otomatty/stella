@@ -36,7 +36,7 @@ describe("buildExercisePanelHtml", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo <script>",
       description: "<script>alert(1)</script>\n# Prompt",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
     });
     expect(html).not.toMatch(/<script/i);
@@ -50,10 +50,10 @@ describe("buildExercisePanelHtml", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       result: failResult,
-      nextLesson: { courseId: "c1", lessonId: "l2", title: "Two" },
+      nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
     expect(html).toContain("未クリア");
     expect(html).toContain("prints ok");
@@ -67,7 +67,7 @@ describe("buildExercisePanelHtml", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       assignmentId: "a1",
       canEscalate: true,
@@ -83,7 +83,7 @@ describe("buildExercisePanelHtml", () => {
     const cleared = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       assignmentId: "a1",
       canEscalate: true,
@@ -94,7 +94,7 @@ describe("buildExercisePanelHtml", () => {
     const notGraded = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       assignmentId: "a1",
       canEscalate: true,
@@ -106,7 +106,7 @@ describe("buildExercisePanelHtml", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       assignmentId: "a1",
       canEscalate: false,
@@ -119,10 +119,10 @@ describe("buildExercisePanelHtml", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo",
       description: "do it",
-      courseId: "c1",
+      stageId: "c1",
       lessonId: "l1",
       result: clearResult,
-      nextLesson: { courseId: "c1", lessonId: "l2", title: "Two" },
+      nextLesson: { stageId: "c1", lessonId: "l2", title: "Two" },
     });
     expect(html).toContain("クリア");
     expect(html).toContain("次のレッスンへ");

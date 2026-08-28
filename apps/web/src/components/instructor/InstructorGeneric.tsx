@@ -13,17 +13,17 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { CourseThumb } from "@/components/common/CourseThumb";
+import { StageThumb } from "@/components/common/StageThumb";
 import type { AvatarTone, Tenant } from "@/data/types";
 import type { InstructorStudentProgress } from "@falcon/shared/cms/types";
-import { useCoursesForTenant } from "@/data/courses-source";
+import { useStagesForTenant } from "@/data/stages-source";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 import { cn } from "@/lib/utils";
 
 const titles: Record<string, string> = {
   students: "担当受講者",
   qa: "Q&A 未返信",
-  courses: "担当コース",
+  stages: "担当ステージ",
 };
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
@@ -51,9 +51,9 @@ interface Props {
   page: string;
   tenantId: Tenant["id"];
   backendEnabled: boolean;
-  /** 検索から指定されたコース。 一覧内で強調表示してスクロールする (Issue #77)。 */
-  highlightCourseId?: string | null;
-  /** 同じコースを選び直したときにも再度スクロールさせるための版番号。 */
+  /** 検索から指定されたステージ。 一覧内で強調表示してスクロールする (Issue #77)。 */
+  highlightStageId?: string | null;
+  /** 同じステージを選び直したときにも再度スクロールさせるための版番号。 */
   highlightSeq?: number;
 }
 
@@ -61,15 +61,15 @@ export const InstructorGeneric = ({
   page,
   tenantId,
   backendEnabled,
-  highlightCourseId = null,
+  highlightStageId = null,
   highlightSeq = 0,
 }: Props) => {
-  if (page === "courses") {
+  if (page === "stages") {
     return (
-      <InstructorCoursesPage
+      <InstructorStagesPage
         tenantId={tenantId}
         backendEnabled={backendEnabled}
-        highlightCourseId={highlightCourseId}
+        highlightStageId={highlightStageId}
         highlightSeq={highlightSeq}
       />
     );
@@ -113,10 +113,10 @@ function InstructorStudentsPage({
               ? (overview?.students ?? []).map((s, i) => {
                   const sv = severityOf(s);
                   return {
-                    key: `${s.user_id}:${s.course_title}`,
+                    key: `${s.user_id}:${s.stage_title}`,
                     name: s.display_name || `受講者 ${i + 1}`,
                     tone: toneFromId(s.user_id),
-                    course: s.course_title || "—",
+                    stage: s.stage_title || "—",
                     statusLabel: sv.label,
                     statusVariant: sv.variant,
                     updated: `${s.progress_pct}%`,
@@ -130,29 +130,29 @@ function InstructorStudentsPage({
   );
 }
 
-function InstructorCoursesPage({
+function InstructorStagesPage({
   tenantId,
   backendEnabled,
-  highlightCourseId,
+  highlightStageId,
   highlightSeq,
 }: {
   tenantId: Tenant["id"];
   backendEnabled: boolean;
-  highlightCourseId: string | null;
+  highlightStageId: string | null;
   highlightSeq: number;
 }) {
-  const { courses, loading, error } = useCoursesForTenant(tenantId, true);
+  const { stages, loading, error } = useStagesForTenant(tenantId, true);
   const highlightRef = useRef<HTMLDivElement>(null);
 
-  // 検索から来たコースを可視領域に入れる。 同じコースを選び直した場合も
+  // 検索から来たステージを可視領域に入れる。 同じステージを選び直した場合も
   // highlightSeq が変わるので再度スクロールする。
-  // biome-ignore lint/correctness/useExhaustiveDependencies: highlightSeq / courses は再スクロールのトリガー
+  // biome-ignore lint/correctness/useExhaustiveDependencies: highlightSeq / stages は再スクロールのトリガー
   useEffect(() => {
-    if (!highlightCourseId) return;
+    if (!highlightStageId) return;
     highlightRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [highlightCourseId, highlightSeq, courses]);
+  }, [highlightStageId, highlightSeq, stages]);
 
-  const rows = courses.map((c) => ({
+  const rows = stages.map((c) => ({
     key: c.id,
     title: c.title,
     color: c.color,
@@ -164,24 +164,24 @@ function InstructorCoursesPage({
 
   return (
     <>
-      <PageHeader title={titles.courses} sub="担当コース一覧" />
+      <PageHeader title={titles.stages} sub="担当ステージ一覧" />
       {backendEnabled && loading ? (
         <Card className="p-6">
           <SkeletonRows rows={4} />
         </Card>
       ) : backendEnabled && error ? (
         <Card className="p-12 text-center text-sm text-destructive">
-          コース一覧の取得に失敗しました: {error}
+          ステージ一覧の取得に失敗しました: {error}
         </Card>
       ) : rows.length === 0 ? (
-        <Card className="p-12 text-center text-sm text-ink-3">担当コースがありません。</Card>
+        <Card className="p-12 text-center text-sm text-ink-3">担当ステージがありません。</Card>
       ) : (
         <div
           className="grid gap-4"
           style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}
         >
           {rows.map((c) => {
-            const highlighted = c.key === highlightCourseId;
+            const highlighted = c.key === highlightStageId;
             return (
               <div
                 key={c.key}
@@ -192,7 +192,7 @@ function InstructorCoursesPage({
                 )}
               >
                 <div className="relative">
-                  <CourseThumb color={c.color} thumbnailPath={c.thumbnailPath} />
+                  <StageThumb color={c.color} thumbnailPath={c.thumbnailPath} />
                   <div className="absolute top-2.5 left-2.5">
                     <Badge variant={c.statusVariant}>{c.statusLabel}</Badge>
                   </div>
@@ -219,7 +219,7 @@ function StudentsTable({
     key: string;
     name: string;
     tone: AvatarTone;
-    course: string;
+    stage: string;
     statusLabel: string;
     statusVariant: "success" | "warning" | "danger";
     updated: string;
@@ -235,7 +235,7 @@ function StudentsTable({
         <TableHeader>
           <TableRow>
             <TableHead>名前</TableHead>
-            <TableHead>コース</TableHead>
+            <TableHead>ステージ</TableHead>
             <TableHead>状態</TableHead>
             <TableHead>進捗</TableHead>
             <TableHead />
@@ -252,7 +252,7 @@ function StudentsTable({
                   <span className="font-medium">{row.name}</span>
                 </div>
               </TableCell>
-              <TableCell className="text-ink-3">{row.course}</TableCell>
+              <TableCell className="text-ink-3">{row.stage}</TableCell>
               <TableCell>
                 <Badge variant={row.statusVariant}>{row.statusLabel}</Badge>
               </TableCell>
@@ -272,7 +272,7 @@ const DEMO_STUDENT_ROWS = [1, 2, 3, 4, 5, 6].map((i) => ({
   key: `demo-${i}`,
   name: `受講者 ${i}`,
   tone: toneForIndex(i - 1),
-  course: "TypeScript 入門研修",
+  stage: "TypeScript 入門研修",
   statusLabel: i % 2 ? "順調" : "要フォロー",
   statusVariant: (i % 2 ? "success" : "warning") as "success" | "warning",
   updated: `${i}時間前`,

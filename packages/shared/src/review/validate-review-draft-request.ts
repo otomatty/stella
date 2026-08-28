@@ -40,7 +40,7 @@ export function validateReviewDraftRequest(raw: unknown): Result {
     };
   }
   const language = toLanguage(o.language);
-  const courseTitle = typeof o.courseTitle === "string" ? o.courseTitle : undefined;
+  const stageTitle = typeof o.stageTitle === "string" ? o.stageTitle : undefined;
   const gradingSummary =
     typeof o.gradingSummary === "string" && o.gradingSummary.trim() ? o.gradingSummary : undefined;
   return {
@@ -49,7 +49,7 @@ export function validateReviewDraftRequest(raw: unknown): Result {
       assignmentTitle: o.assignmentTitle.trim(),
       code: o.code,
       language,
-      courseTitle,
+      stageTitle,
       gradingSummary,
     },
   };

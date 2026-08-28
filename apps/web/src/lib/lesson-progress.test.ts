@@ -1,14 +1,14 @@
 /**
  * 「続きから」 の再開位置の判定と、 進捗マージの単調性。
  *
- * 前者が壊れると受講者は毎回コース先頭に戻され (TypeScript 入門研修は 246 レッスン
+ * 前者が壊れると受講者は毎回ステージ先頭に戻され (TypeScript 入門研修は 246 レッスン
  * あるので実質やり直し)、 後者が壊れると完了済みの進捗が黙って消える。
  */
 
 import { describe, expect, it } from "vitest";
-import type { Course, Lesson, LessonStatus } from "@/data/types";
+import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import {
-  deriveCourseProgress,
+  deriveStageProgress,
   findNextLesson,
   mergeEntries,
   resolveLessonStatus,
@@ -21,7 +21,7 @@ function lesson(id: string, status: LessonStatus = "todo"): Lesson {
   return { id, title: id, type: "slides", duration: "3分", status };
 }
 
-const course: Course = {
+const stage: Stage = {
   id: "typescript-basics",
   title: "TypeScript 入門研修",
   category: "プログラミング",
@@ -41,12 +41,12 @@ const done = (updatedAt = "2026-08-12T00:00:00.000Z") => ({
 
 describe("findNextLesson", () => {
   it("何も完了していなければ先頭レッスン", () => {
-    expect(findNextLesson(course, {})?.lesson.id).toBe("a");
+    expect(findNextLesson(stage, {})?.lesson.id).toBe("a");
   });
 
   it("完了済みを飛ばして最初の未完了を返す", () => {
     const map: LessonProgressMap = { a: done(), b: done() };
-    const next = findNextLesson(course, map);
+    const next = findNextLesson(stage, map);
     expect(next?.lesson.id).toBe("c");
     // 表示用の番号もセクションをまたいで通しで数える
     expect(next?.sectionNumber).toBe(2);
@@ -63,12 +63,12 @@ describe("findNextLesson", () => {
         updatedAt: "2026-08-12T00:00:00.000Z",
       },
     };
-    expect(findNextLesson(course, map)?.lesson.id).toBe("b");
+    expect(findNextLesson(stage, map)?.lesson.id).toBe("b");
   });
 
   it("locked は再開位置にしない", () => {
-    const locked: Course = {
-      ...course,
+    const locked: Stage = {
+      ...stage,
       sections: [{ id: "m0", title: "M0", lessons: [lesson("a", "locked"), lesson("b")] }],
     };
     expect(findNextLesson(locked, {})?.lesson.id).toBe("b");
@@ -76,28 +76,28 @@ describe("findNextLesson", () => {
 
   it("全完了なら null", () => {
     const map: LessonProgressMap = { a: done(), b: done(), c: done(), d: done() };
-    expect(findNextLesson(course, map)).toBeNull();
+    expect(findNextLesson(stage, map)).toBeNull();
   });
 
-  it("レッスンが無いコース / undefined は null", () => {
+  it("レッスンが無いステージ / undefined は null", () => {
     expect(findNextLesson(undefined, {})).toBeNull();
-    expect(findNextLesson({ ...course, sections: [] }, {})).toBeNull();
+    expect(findNextLesson({ ...stage, sections: [] }, {})).toBeNull();
   });
 });
 
 describe("resumeLessonId", () => {
   it("未完了があればそこ", () => {
-    expect(resumeLessonId(course, { a: done() })).toBe("b");
+    expect(resumeLessonId(stage, { a: done() })).toBe("b");
   });
 
   it("全完了なら先頭へ戻す (ボタンを死なせない)", () => {
     const map: LessonProgressMap = { a: done(), b: done(), c: done(), d: done() };
-    expect(resumeLessonId(course, map)).toBe("a");
+    expect(resumeLessonId(stage, map)).toBe("a");
   });
 
   it("先頭が locked でも完了済みの非 locked があればそこへ戻す", () => {
-    const mixed: Course = {
-      ...course,
+    const mixed: Stage = {
+      ...stage,
       sections: [
         {
           id: "m0",
@@ -111,8 +111,8 @@ describe("resumeLessonId", () => {
   });
 
   it("すべて locked なら null (ロック行ガードを迂回しない)", () => {
-    const locked: Course = {
-      ...course,
+    const locked: Stage = {
+      ...stage,
       sections: [
         {
           id: "m0",
@@ -125,7 +125,7 @@ describe("resumeLessonId", () => {
   });
 
   it("レッスンが無ければ null", () => {
-    expect(resumeLessonId({ ...course, sections: [] }, {})).toBeNull();
+    expect(resumeLessonId({ ...stage, sections: [] }, {})).toBeNull();
   });
 });
 
@@ -165,7 +165,7 @@ describe("mergeEntries", () => {
   });
 });
 
-describe("resolveLessonStatus / deriveCourseProgress", () => {
+describe("resolveLessonStatus / deriveStageProgress", () => {
   it("エントリだけあるレッスンは active (読みかけが残る)", () => {
     const entry: LessonProgressEntry = {
       completed: false,
@@ -175,6 +175,6 @@ describe("resolveLessonStatus / deriveCourseProgress", () => {
   });
 
   it("完了数から進捗率を出す", () => {
-    expect(deriveCourseProgress(course, { a: done() }).progress).toBe(25);
+    expect(deriveStageProgress(stage, { a: done() }).progress).toBe(25);
   });
 });

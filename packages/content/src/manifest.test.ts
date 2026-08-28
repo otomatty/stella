@@ -468,3 +468,144 @@ describe("buildContentManifest — 講座サムネイル", () => {
     }
   });
 });
+
+// スキルツリー用の 3 フィールド (prerequisites / canDo / theme)。前提はハードロックに
+// なるので、綴り違い・自己参照・循環はここで落とす。
+describe("buildContentManifest — スキルツリーのフィールド", () => {
+  /** slug ごとに course.json の追加フィールドを差し替えられる最小の講座群を作る。 */
+  function writeCourses(root: string, configs: Record<string, Record<string, unknown>>): void {
+    for (const [slug, extra] of Object.entries(configs)) {
+      const topic = join(root, slug, "modules", "m0-x", "l1-y", "t1-z");
+      mkdirSync(topic, { recursive: true });
+      writeFileSync(
+        join(root, slug, "course.json"),
+        JSON.stringify({ title: `${slug} 講座`, category: "プログラミング", ...extra }),
+      );
+      writeFileSync(
+        join(topic, "slides.md"),
+        '---\nid: 0-1-1\ntitle: テスト\ntakeaway: "て"\n---\n\n# 1枚目\n',
+      );
+      writeFileSync(join(root, slug, "modules", "m0-x", "l1-y", "doc.md"), "# ドキュメント\n");
+      writeFileSync(join(root, slug, "modules", "m0-x", "l1-y", "practice.md"), "# 演習\n");
+    }
+  }
+
+  function withCourses(
+    configs: Record<string, Record<string, unknown>>,
+    run: (root: string) => void,
+  ): void {
+    const root = mkdtempSync(join(tmpdir(), "manifest-skillmap-"));
+    try {
+      writeCourses(root, configs);
+      run(root);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  it("prerequisites / canDo / theme が manifest に載る", () => {
+    withCourses(
+      {
+        "a-basics": { canDo: "A ができる", theme: "テーマ" },
+        "b-basics": { prerequisites: ["a-basics"], canDo: "B ができる", theme: "テーマ" },
+      },
+      (root) => {
+        const { courses } = buildContentManifest(root);
+        const b = courses.find((c) => c.id === "b-basics");
+        expect(b?.prerequisites).toEqual(["a-basics"]);
+        expect(b?.canDo).toBe("B ができる");
+        expect(b?.theme).toBe("テーマ");
+      },
+    );
+  });
+
+  it("書いていない講座は 3 つとも未設定のまま (前提なし扱い)", () => {
+    withCourses({ "a-basics": {} }, (root) => {
+      const a = buildContentManifest(root).courses[0];
+      expect(a?.prerequisites).toBeUndefined();
+      expect(a?.canDo).toBeUndefined();
+      expect(a?.theme).toBeUndefined();
+    });
+  });
+
+  it("空配列の prerequisites は前提なしに畳む", () => {
+    withCourses({ "a-basics": { prerequisites: [] } }, (root) => {
+      expect(buildContentManifest(root).courses[0]?.prerequisites).toBeUndefined();
+    });
+  });
+
+  it("存在しない slug を前提に書いたらビルドで落ちる", () => {
+    withCourses({ "a-basics": { prerequisites: ["typo-basics"] } }, (root) => {
+      expect(() => buildContentManifest(root)).toThrow(/存在しない講座/);
+    });
+  });
+
+  it("自分自身を前提に書いたらビルドで落ちる", () => {
+    withCourses({ "a-basics": { prerequisites: ["a-basics"] } }, (root) => {
+      expect(() => buildContentManifest(root)).toThrow(/自分自身/);
+    });
+  });
+
+  it("前提が循環したらビルドで落ちる", () => {
+    withCourses(
+      {
+        "a-basics": { prerequisites: ["b-basics"] },
+        "b-basics": { prerequisites: ["a-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/循環/);
+      },
+    );
+  });
+
+  it("prerequisites の重複はビルドで落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": { prerequisites: ["a-basics", "a-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/重複/);
+      },
+    );
+  });
+
+  it("canDo / theme が空文字ならビルドで落ちる", () => {
+    withCourses({ "a-basics": { canDo: "  " } }, (root) => {
+      expect(() => buildContentManifest(root)).toThrow(/canDo/);
+    });
+  });
+});
+
+// 実データ側の作り込み。次フェーズ (ホームのステージマップ) が読む前提なので、
+// 欠けたまま気付かずに進まないよう manifest 全体で検査する。
+describe("buildContentManifest — 実データのスキルツリー", () => {
+  const { courses } = buildContentManifest();
+
+  it("全講座に canDo と theme がある", () => {
+    const missing = courses.filter((c) => !c.canDo || !c.theme).map((c) => c.id);
+    expect(missing).toEqual([]);
+  });
+
+  it("theme はカテゴリごとに 1 つ", () => {
+    const byCategory = new Map<string, Set<string>>();
+    for (const c of courses) {
+      const themes = byCategory.get(c.category) ?? new Set<string>();
+      themes.add(c.theme ?? "");
+      byCategory.set(c.category, themes);
+    }
+    for (const [category, themes] of byCategory) {
+      expect([...themes], `カテゴリ ${category} のテーマ`).toHaveLength(1);
+    }
+  });
+
+  it("Claude Code 入門は 2 本の前提を持つ", () => {
+    const claudeCode = courses.find((c) => c.id === "claude-code-basics");
+    expect(claudeCode?.prerequisites).toEqual(["ai-fluency-basics", "claude-chat-basics"]);
+  });
+
+  it("前提を 1 つも持たない講座 (入口) が残っている", () => {
+    const entries = courses.filter((c) => (c.prerequisites ?? []).length === 0);
+    expect(entries.length).toBeGreaterThan(0);
+  });
+});

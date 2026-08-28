@@ -61,14 +61,14 @@ describe("buildEscalationSubmissionBody", () => {
   it("優先度 high・attempt 1 で送り、任意項目は null に落とす", () => {
     const body = buildEscalationSubmissionBody({
       assignmentId: "a1",
-      courseTitle: "TypeScript 入門研修",
+      stageTitle: "TypeScript 入門研修",
       assignmentTitle: "配列の合計",
       files: { "main.js": "const a = 1;" },
     });
     expect(body).toEqual({
       lessonId: null,
       assignmentId: "a1",
-      courseTitle: "TypeScript 入門研修",
+      stageTitle: "TypeScript 入門研修",
       sectionTitle: null,
       assignmentTitle: "配列の合計",
       code: "const a = 1;",

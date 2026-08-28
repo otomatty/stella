@@ -165,8 +165,8 @@ export interface EnrollmentReportRow {
   user_id: string;
   user_name: string;
   email: string | null;
-  course_id: string;
-  course_title: string;
+  stage_id: string;
+  stage_title: string;
   status: string;
   required: boolean;
   enrolled_at: string;
@@ -183,7 +183,7 @@ export interface GradeReportRow {
   user_id: string | null;
   user_name: string;
   email: string | null;
-  course_title: string;
+  stage_title: string;
   item_title: string;
   score: number | null;
   max_score: number | null;
@@ -199,7 +199,7 @@ export interface CertificateReportRow {
   user_id: string;
   user_name: string;
   email: string | null;
-  course_title: string;
+  stage_title: string;
   issued_at: string;
   issued_by: string | null;
   revoked: boolean;
@@ -256,7 +256,7 @@ export const REPORT_META: Record<ReportType, ReportMeta> = {
     headers: [
       "受講者",
       "メール",
-      "コース",
+      "ステージ",
       "受講状態",
       "必須",
       "登録日時",
@@ -275,7 +275,7 @@ export const REPORT_META: Record<ReportType, ReportMeta> = {
       "種別",
       "受講者",
       "メール",
-      "コース",
+      "ステージ",
       "対象",
       "スコア",
       "満点",
@@ -289,7 +289,7 @@ export const REPORT_META: Record<ReportType, ReportMeta> = {
     label: "修了証",
     description: "発行された修了証の一覧",
     fileBase: "report-certificates",
-    headers: ["認定番号", "受講者", "メール", "コース", "発行日時", "発行者ID", "状態"],
+    headers: ["認定番号", "受講者", "メール", "ステージ", "発行日時", "発行者ID", "状態"],
   },
   audit: {
     label: "監査",
@@ -351,7 +351,7 @@ export function reportRowToCells(type: ReportType, row: ReportRow): string[] {
       return [
         r.user_name,
         r.email ?? "",
-        r.course_title,
+        r.stage_title,
         ENROLLMENT_STATUS_LABEL[r.status] ?? r.status,
         r.required ? "必須" : "任意",
         formatReportDateTime(r.enrolled_at),
@@ -368,7 +368,7 @@ export function reportRowToCells(type: ReportType, row: ReportRow): string[] {
         r.kind === "quiz" ? "小テスト" : "課題",
         r.user_name,
         r.email ?? "",
-        r.course_title,
+        r.stage_title,
         r.item_title,
         r.score === null ? "" : String(r.score),
         r.max_score === null ? "" : String(r.max_score),
@@ -384,7 +384,7 @@ export function reportRowToCells(type: ReportType, row: ReportRow): string[] {
         r.cert_code,
         r.user_name,
         r.email ?? "",
-        r.course_title,
+        r.stage_title,
         formatReportDateTime(r.issued_at),
         r.issued_by ?? "",
         r.revoked ? "失効" : "有効",

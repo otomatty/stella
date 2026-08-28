@@ -7,7 +7,7 @@ export type Role = "learner" | "instructor" | "admin" | "sales";
 
 export type AvatarTone = "c1" | "c2" | "c3" | "c4" | "c5" | "c6";
 
-export type CourseColor = "indigo" | "green" | "amber" | "slate";
+export type StageColor = "indigo" | "green" | "amber" | "slate";
 
 export type LessonType = "video" | "slides" | "text" | "quiz" | "assignment" | "code";
 
@@ -58,13 +58,19 @@ export interface Section {
   lessons: Lesson[];
 }
 
-export interface Course {
+/**
+ * 受講単位 (旧 Course)。 ステージ → セクション → レッスンの木の根。
+ *
+ * 同名異義に注意: `@falcon/shared` (`packages/shared/src/types.ts`) の `Stage` は
+ * 演習カリキュラムの難易度段階 (S0-S5) で、 こちらとは別物。
+ */
+export interface Stage {
   id: string;
   title: string;
   category: string;
-  color: CourseColor;
+  color: StageColor;
   /**
-   * 一覧カードのサムネイル画像の R2 パス (`courses.thumbnail_path` 由来)。
+   * 一覧カードのサムネイル画像の R2 パス (`stages.thumbnail_path` 由来)。
    * 未設定なら color のストライプ表示にフォールバックする。
    */
   thumbnailPath?: string;
@@ -77,14 +83,34 @@ export interface Course {
   required?: boolean;
   description?: string;
   completed?: boolean;
+  /**
+   * 前提ステージの **slug** 配列 (`stages.prerequisites` の JSON 由来)。
+   * すべてクリアするまでこのステージは開けない (スキルツリーのハードロック)。
+   * id ではなく slug を持つのは、教材リポジトリが正本で slug しか知らないため。
+   */
+  prerequisites?: string[];
+  /** 到達説明。「この星をともした人は◯◯ができる」のホバー表示に使う 1 文。 */
+  canDo?: string;
+  /** 霧の中の星に見せるテーマ名。視界外のステージはタイトルの代わりにこれだけが見える。 */
+  theme?: string;
   sections?: Section[];
-  /** 修了基準 (DB 由来コースのみ)。 未定義なら表示しない。 */
+  /** 修了基準 (DB 由来ステージのみ)。 未定義なら表示しない。 */
   criteria?: {
     requireAllLessons: boolean;
     requireQuizPass: boolean;
     requireAssignmentPass: boolean;
   };
 }
+
+/**
+ * 教材リポジトリ (`packages/content`) 向けの別名。
+ *
+ * 教材側は 「講座 = course」 の語彙のまま (`courses/<slug>/course.json`) で、 course →
+ * stage の写像は seed exporter (`packages/shared/scripts/export-seed-sql.ts`) が担う。
+ * `packages/content/src/manifest.ts` / `material-pdf.ts` はこの型名で参照するので、
+ * 境界としてここに残す。 アプリ側の新規コードは `Stage` を使うこと。
+ */
+export type Course = Stage;
 
 export interface Announcement {
   id: number;
@@ -99,7 +125,7 @@ export interface ReviewItem {
   student: string;
   initials: string;
   c: AvatarTone;
-  course: string;
+  stage: string;
   assignment: string;
   submittedAt: string;
   aiReady: boolean;
@@ -123,7 +149,7 @@ export interface RubricCriterion {
   score: number;
 }
 
-export interface CompletionByCourse {
+export interface CompletionByStage {
   name: string;
   n: number;
   pct: number;

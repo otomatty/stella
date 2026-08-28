@@ -5,7 +5,9 @@
  * 例 (r2.dev): https://pub-xxxx.r2.dev
  * 例 (カスタムドメイン): https://materials.example.com
  *
- * パス形式は `tenant/{tenantId}/courses/{courseId}/{fileName}`。
+ * パス形式は `tenant/{tenantId}/courses/{stageId}/{fileName}`。 `courses/` は
+ * 「コース → ステージ」改名前からの R2 プレフィックスで、 既存オブジェクトを
+ * 指し続けるためそのまま使う。
  * 例: `getMaterialUrl('tenant/ses/courses/6b200629-c6af-5746-bf86-69718cfacf2f/01-http.pdf')`
  */
 

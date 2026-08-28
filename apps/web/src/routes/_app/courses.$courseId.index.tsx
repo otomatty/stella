@@ -1,32 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAppShell } from "@/components/shell/app-shell-context";
-import { CourseNotFoundNotice, EmptyCoursesNotice } from "@/components/shell/AppShell";
-import { RoleGuard } from "@/components/shell/RoleGuard";
-import { CourseDetail } from "@/components/learner/CourseDetail";
+/**
+ * 旧 URL 互換 — `/courses/$courseId` → `/stages/$stageId`。
+ * 詳細は `courses.index.tsx` の注記を参照。
+ */
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/courses/$courseId/")({
-  component: CourseDetailPage,
+  beforeLoad: ({ params }) => {
+    // 検索パラメータは引き継ぐ (`search: true`)。旧 URL には ?code=... 付きの
+    // ディープリンクがあり、既定では捨てられてしまうため。
+    throw redirect({
+      to: "/stages/$stageId",
+      params: { stageId: params.courseId },
+      search: true,
+      replace: true,
+    });
+  },
 });
-
-function CourseDetailPage() {
-  const s = useAppShell();
-  const { courseId } = Route.useParams();
-  const target = s.courses.find((c) => c.id === courseId);
-  return (
-    <RoleGuard allow={["learner"]}>
-      {target ? (
-        <CourseDetail
-          course={target}
-          setPage={s.setPage}
-          onOpenLesson={(lessonId) => s.onOpenLesson(target, lessonId)}
-          onOpenSubmission={s.onOpenSubmission}
-        />
-      ) : s.courses.length === 0 ? (
-        // コース取得前 (リロード直後) と受講コースゼロはこの表示 (旧挙動どおり)
-        <EmptyCoursesNotice setPage={s.setPage} />
-      ) : (
-        <CourseNotFoundNotice setPage={s.setPage} />
-      )}
-    </RoleGuard>
-  );
-}

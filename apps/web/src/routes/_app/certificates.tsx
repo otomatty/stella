@@ -12,7 +12,7 @@ function Certificates() {
   return (
     <RoleGuard allow={["learner"]}>
       <CertificatePage
-        courses={s.courses}
+        stages={s.stages}
         currentUserId={s.currentUserId}
         studentName={s.studentName}
         studentInitials={s.studentInitials}

@@ -4,14 +4,14 @@ import { toast } from "sonner";
 import { Sparkles } from "@/lib/icons";
 import { TENANTS } from "@/data/seed-catalog";
 import { CURRENT_USER } from "@/demo/fixtures";
-import type { Course, Role, Tenant, User } from "@/data/types";
+import type { Stage, Role, Tenant, User } from "@/data/types";
 import type { ChatContext } from "@falcon/shared/ai/types";
 import { LessonAIProvider } from "@/components/common/LessonAIContext";
-import { useCoursesForTenant, useEnrolledCoursesForTenant } from "@/data/courses-source";
+import { useStagesForTenant, useEnrolledStagesForTenant } from "@/data/stages-source";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
-import { configureRemoteSync, deriveCourseProgress } from "@/lib/lesson-progress";
+import { configureRemoteSync, deriveStageProgress } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import type { SearchResult } from "@falcon/shared/search/types";
 
@@ -32,26 +32,44 @@ import { useMyCertificates } from "@/hooks/useMyCertificates";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 
-type Stage = "login" | "tenant-select" | "app";
+/**
+ * シェルの表示フェーズ (受講者向けの学習単位である `Stage` とは別物)。
+ * fixtures フロー (バックエンド未設定) のときだけ分岐に使う。
+ */
+type AuthStage = "login" | "tenant-select" | "app";
 
 /** ログイン完了後に戻す URL の保存先 (AuthCallback が読み取る)。 */
 export const POST_LOGIN_REDIRECT_KEY = "falcon_post_login_redirect_v1";
 
 /**
- * 直近に開いていた受講位置。 コース本体は肥大 / 陳腐化するので ID だけを保存し、
+ * 直近に開いていた受講位置。 ステージ本体は肥大 / 陳腐化するので ID だけを保存し、
  * ダッシュボードの「続きから学習」やサイドバーの「現在のレッスン」の解決に使う。
  */
 interface LastLocation {
-  courseId: string;
+  stageId: string;
   lessonId: string | null;
 }
 
+/**
+ * TODO(stage-rename-compat): 旧形式の保存値の救済。 十分に行き渡ったら削除
+ * リネーム前に保存された `{ courseId, lessonId }` を 1 回だけ読み替える
+ * (次の保存で `stageId` 形に上書きされる)。
+ */
+type PersistedLastLocation = Partial<LastLocation> & { courseId?: string };
+
+function readLastLocation(saved: PersistedLastLocation | null | undefined): LastLocation | null {
+  const stageId = saved?.stageId ?? saved?.courseId;
+  if (!stageId) return null;
+  return { stageId, lessonId: saved?.lessonId ?? null };
+}
+
 interface PersistedState {
-  stage?: Stage;
+  /** localStorage `lms_state` のキー名は据え置き (保存済みの値を読み落とさないため)。 */
+  stage?: AuthStage;
   role?: Role;
   tenantId?: Tenant["id"];
   showAIBot?: boolean;
-  lastLocation?: LastLocation | null;
+  lastLocation?: PersistedLastLocation | null;
   /** staff が受講者シェルを開いているときだけ 'learner'。 API の role は変えない。 */
   uiRoleOverride?: Role | null;
 }
@@ -75,7 +93,8 @@ function loadSaved(): PersistedState | null {
 /** 旧ページキー → URL。 パラメータ付きページ (lesson / review 等) はアダプタ内で解決する。 */
 const PATH_BY_PAGE: Record<string, string> = {
   dash: "/",
-  courses: "/courses",
+  stages: "/stages",
+  "skill-tree": "/skill-tree",
   cert: "/certificates",
   "interview-prep": "/interview-prep",
   "review-queue": "/review-queue",
@@ -84,6 +103,11 @@ const PATH_BY_PAGE: Record<string, string> = {
   "daily-review": "/review",
   gradebook: "/gradebook",
   students: "/students",
+  // 発見教材は staff 共有ページ (講師も承認する)。 `/admin/*` の下には置かない。
+  discovery: "/discovery",
+  // 殿堂は全ロールが読める公開ページ。 管理者のナビだけは運用画面 (`/admin/*`) を指す。
+  "hall-of-fame": "/hall-of-fame",
+  "hall-of-fame-admin": "/admin/hall-of-fame",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   enrollments: "/admin/enrollments",
@@ -96,25 +120,27 @@ const PATH_BY_PAGE: Record<string, string> = {
 
 /** URL → 旧ページキー (Sidebar のアクティブ表示用)。 */
 function pageKeyFromPath(path: string): string {
-  if (path.startsWith("/courses/")) {
-    return path.includes("/lessons/") ? "lesson" : "course-detail";
+  if (path.startsWith("/stages/")) {
+    return path.includes("/lessons/") ? "lesson" : "stage-detail";
   }
+  // 殿堂は詳細 (`/hall-of-fame/<id>`) と記入 (`/hall-of-fame/edit`) でもナビを点ける。
+  if (path.startsWith("/hall-of-fame")) return "hall-of-fame";
   if (path.startsWith("/reviews/")) return "review";
   if (path.startsWith("/submissions/")) return "submission-result";
   const hit = Object.entries(PATH_BY_PAGE).find(([, p]) => p === path);
   return hit ? hit[0] : path.replace(/^\//, "") || "dash";
 }
 
-/** `/courses/$courseId/...` から courseId を取り出す (無ければ null)。 */
-function courseIdFromPath(path: string): string | null {
-  const m = path.match(/^\/courses\/([^/]+)/);
+/** `/stages/$stageId/...` から stageId を取り出す (無ければ null)。 */
+function stageIdFromPath(path: string): string | null {
+  const m = path.match(/^\/stages\/([^/]+)/);
   const id = m?.[1];
   return id ? decodeURIComponent(id) : null;
 }
 
-function firstLessonId(course: Course): string | null {
-  // 先頭セクションが空のコースがあるため、 全セクションを横断して最初のレッスンを取る。
-  return course.sections?.flatMap((sec) => sec.lessons).find(Boolean)?.id ?? null;
+function firstLessonId(stage: Stage): string | null {
+  // 先頭セクションが空のステージがあるため、 全セクションを横断して最初のレッスンを取る。
+  return stage.sections?.flatMap((sec) => sec.lessons).find(Boolean)?.id ?? null;
 }
 
 export function AppShell() {
@@ -141,7 +167,7 @@ export function AppShell() {
 
   // Lazy init from localStorage so StrictMode's double-effect can't overwrite
   // our restored state with fresh defaults.
-  const [stage, setStage] = useState<Stage>(() => {
+  const [authStage, setAuthStage] = useState<AuthStage>(() => {
     const saved = loadSaved()?.stage;
     if (saved === "app" || saved === "login") return saved;
     // 旧デモの tenant-select は廃止。保存されていてもアプリへ進む。
@@ -156,12 +182,12 @@ export function AppShell() {
   const [uiRoleOverride, setUiRoleOverride] = useState<Role | null>(
     () => loadSaved()?.uiRoleOverride ?? null,
   );
-  const [lastLocation, setLastLocation] = useState<LastLocation | null>(
-    () => loadSaved()?.lastLocation ?? null,
+  const [lastLocation, setLastLocation] = useState<LastLocation | null>(() =>
+    readLastLocation(loadSaved()?.lastLocation),
   );
-  // 検索パレット → コース管理のハイライト対象。 通常のページ遷移では毎回クリアする。
-  // `seq` は「同じコースを続けて選び直した」ことを子に伝えるための版番号。
-  const [highlightCourse, setHighlightCourse] = useState<{
+  // 検索パレット → ステージ管理のハイライト対象。 通常のページ遷移では毎回クリアする。
+  // `seq` は「同じステージを続けて選び直した」ことを子に伝えるための版番号。
+  const [highlightStage, setHighlightStage] = useState<{
     id: string;
     seq: number;
   } | null>(null);
@@ -170,9 +196,9 @@ export function AppShell() {
   const aiFabRef = useRef<HTMLButtonElement | null>(null);
   const [aiContext, setAiContext] = useState<ChatContext>({ kind: "general" });
   const [showAIBot, setShowAIBot] = useState(() => loadSaved()?.showAIBot ?? DEFAULTS.showAIBot);
-  // 「選択してから遷移する」旧 API (setCurrentCourse → setPage('course-detail') 等) の
+  // 「選択してから遷移する」旧 API (setCurrentStage → setPage('stage-detail') 等) の
   // 橋渡し。 URL が真実になったため state ではなく ref で十分。
-  const selectedCourseRef = useRef<Course | null>(null);
+  const selectedStageRef = useRef<Stage | null>(null);
   const reviewIdRef = useRef<string | null>(null);
   const prevSessionRef = useRef<{ tenantId: Tenant["id"]; role: Role } | null>(null);
 
@@ -224,32 +250,34 @@ export function AppShell() {
     return CURRENT_USER;
   }, [backendEnabled, profile, session]);
 
-  // 受講者は「自分に割り当てられたコース」(enrollment ベース) を見る。 instructor/admin は
-  // 従来どおりテナントのコース一覧を使う (公開コースを「探す」用途)。
+  // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
+  // 従来どおりテナントのステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
   // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
-  const browseCourses = useCoursesForTenant(
+  const browseStages = useStagesForTenant(
     effectiveTenant.id,
     effectiveRole !== "learner" && effectiveRole !== "sales",
   );
-  const enrolledCourses = useEnrolledCoursesForTenant(
+  const enrolledStages = useEnrolledStagesForTenant(
     effectiveTenant.id,
     session?.user.id ?? null,
     effectiveRole === "learner",
   );
-  // DB 由来コースは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
+  // DB 由来ステージは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
   const progressMap = useLessonProgressMap();
-  const rawCourses = effectiveRole === "learner" ? enrolledCourses.courses : browseCourses.courses;
-  const courses = useMemo(
-    () => rawCourses.map((c) => deriveCourseProgress(c, progressMap)),
-    [rawCourses, progressMap],
+  const rawStages = effectiveRole === "learner" ? enrolledStages.stages : browseStages.stages;
+  const stages = useMemo(
+    () => rawStages.map((c) => deriveStageProgress(c, progressMap)),
+    [rawStages, progressMap],
   );
 
-  const courseError = effectiveRole === "learner" ? enrolledCourses.error : browseCourses.error;
+  const stageError = effectiveRole === "learner" ? enrolledStages.error : browseStages.error;
+  // 自己開始 (Phase 3b) で受講登録が増えたときに、いま見ている側の一覧だけを取り直す。
+  const refetchStages = effectiveRole === "learner" ? enrolledStages.refetch : browseStages.refetch;
   // 検索 API は staff に同テナントの全講座 (draft 含む) を返すため、 staff が受講者シェルを
   // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
-  const scopeSearchToOwnCourses = effectiveRole === "learner" && canSwitchToLearner;
+  const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
   // LearnerDashboard への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(effectiveTenant.id, effectiveRole === "learner");
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
@@ -260,7 +288,7 @@ export function AppShell() {
       ? {
           cert: backendEnabled
             ? myCertificates.certificates.length
-            : courses.filter((c) => c.completed).length,
+            : stages.filter((c) => c.completed).length,
         }
       : effectiveRole === "instructor"
         ? {
@@ -281,8 +309,8 @@ export function AppShell() {
     [navigate],
   );
 
-  const setCurrentCourse = useCallback((c: Course) => {
-    selectedCourseRef.current = c;
+  const setCurrentStage = useCallback((c: Stage) => {
+    selectedStageRef.current = c;
   }, []);
   const onOpenReview = useCallback((id: string) => {
     reviewIdRef.current = id;
@@ -295,7 +323,7 @@ export function AppShell() {
       if (backendEnabled) {
         await authSignOut();
       }
-      setStage("login");
+      setAuthStage("login");
       await navigate({ to: "/" });
       toast("ログアウトしました");
     } catch (err) {
@@ -321,7 +349,7 @@ export function AppShell() {
    */
   const setPage = useCallback(
     (key: string) => {
-      setHighlightCourse(null);
+      setHighlightStage(null);
       if (key === "__logout") {
         void doLogout();
         return;
@@ -330,30 +358,30 @@ export function AppShell() {
         setAiOpen(true);
         return;
       }
-      if (key === "course-detail") {
-        // 戻る/進むで古いコースに戻った直後は ref が別コースを指しうるため URL を優先する。
-        const courseId = courseIdFromPath(pathname) ?? selectedCourseRef.current?.id;
+      if (key === "stage-detail") {
+        // 戻る/進むで古いステージに戻った直後は ref が別ステージを指しうるため URL を優先する。
+        const stageId = stageIdFromPath(pathname) ?? selectedStageRef.current?.id;
         void navigate(
-          courseId ? { to: "/courses/$courseId", params: { courseId } } : { to: "/courses" },
+          stageId ? { to: "/stages/$stageId", params: { stageId } } : { to: "/stages" },
         );
         return;
       }
       if (key === "lesson") {
-        // サイドバーの「現在のレッスン」。 受講位置 → 選択中コース → 先頭コースの順で解決。
+        // サイドバーの「現在のレッスン」。 受講位置 → 選択中ステージ → 先頭ステージの順で解決。
         const target =
-          (lastLocation && courses.find((c) => c.id === lastLocation.courseId)) ||
-          selectedCourseRef.current ||
-          courses[0];
+          (lastLocation && stages.find((c) => c.id === lastLocation.stageId)) ||
+          selectedStageRef.current ||
+          stages[0];
         const lessonId =
-          (target && lastLocation?.courseId === target.id ? lastLocation.lessonId : null) ??
+          (target && lastLocation?.stageId === target.id ? lastLocation.lessonId : null) ??
           (target ? firstLessonId(target) : null);
         if (target && lessonId) {
           void navigate({
-            to: "/courses/$courseId/lessons/$lessonId",
-            params: { courseId: target.id, lessonId },
+            to: "/stages/$stageId/lessons/$lessonId",
+            params: { stageId: target.id, lessonId },
           });
         } else {
-          void navigate({ to: "/courses" });
+          void navigate({ to: "/stages" });
         }
         return;
       }
@@ -373,7 +401,7 @@ export function AppShell() {
       }
       void navigate({ to: PATH_BY_PAGE[key] ?? "/" });
     },
-    [courses, doLogout, lastLocation, navigate, pathname],
+    [stages, doLogout, lastLocation, navigate, pathname],
   );
 
   /**
@@ -381,12 +409,12 @@ export function AppShell() {
    * 行クリック・ 検索パレットの共通導線。 開いた位置は `lastLocation` に控える。
    */
   const openLesson = useCallback(
-    (course: Course, lessonId: string) => {
-      selectedCourseRef.current = course;
-      setLastLocation({ courseId: course.id, lessonId });
+    (stage: Stage, lessonId: string) => {
+      selectedStageRef.current = stage;
+      setLastLocation({ stageId: stage.id, lessonId });
       void navigate({
-        to: "/courses/$courseId/lessons/$lessonId",
-        params: { courseId: course.id, lessonId },
+        to: "/stages/$stageId/lessons/$lessonId",
+        params: { stageId: stage.id, lessonId },
       });
     },
     [navigate],
@@ -397,45 +425,45 @@ export function AppShell() {
    * replace で履歴を汚さない (戻るでレッスンを 1 つずつ遡らせない)。
    */
   const handleActiveLessonChange = useCallback(
-    (courseId: string, lessonId: string) => {
+    (stageId: string, lessonId: string) => {
       setLastLocation((prev) =>
-        prev?.courseId === courseId && prev.lessonId === lessonId ? prev : { courseId, lessonId },
+        prev?.stageId === stageId && prev.lessonId === lessonId ? prev : { stageId, lessonId },
       );
       void navigate({
-        to: "/courses/$courseId/lessons/$lessonId",
-        params: { courseId, lessonId },
+        to: "/stages/$stageId/lessons/$lessonId",
+        params: { stageId, lessonId },
         replace: true,
       });
     },
     [navigate],
   );
 
-  /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はコース管理画面へ。 */
+  /** 検索パレットのヒットを開く。 受講者は受講画面、 staff はステージ管理画面へ。 */
   const handleSearchSelect = (result: SearchResult) => {
     if (effectiveRole === "learner") {
-      const target = courses.find((c) => c.id === result.course_id);
+      const target = stages.find((c) => c.id === result.stage_id);
       if (!target) {
-        toast.error("このコースは現在受講対象に含まれていません");
+        toast.error("このステージは現在受講対象に含まれていません");
         return;
       }
       if (result.kind === "lesson") {
         openLesson(target, result.id);
         return;
       }
-      selectedCourseRef.current = target;
+      selectedStageRef.current = target;
       void navigate({
-        to: "/courses/$courseId",
-        params: { courseId: target.id },
+        to: "/stages/$stageId",
+        params: { stageId: target.id },
       });
       return;
     }
-    // instructor / admin: コース管理画面へ。 admin は該当コースの編集画面を直接開き、
-    // instructor は一覧内で該当コースをハイライトする。
-    setHighlightCourse((prev) => ({
-      id: result.course_id,
+    // instructor / admin: ステージ管理画面へ。 admin は該当ステージの編集画面を直接開き、
+    // instructor は一覧内で該当ステージをハイライトする。
+    setHighlightStage((prev) => ({
+      id: result.stage_id,
       seq: (prev?.seq ?? 0) + 1,
     }));
-    void navigate({ to: "/courses" });
+    void navigate({ to: "/stages" });
   };
 
   // 未ログインで開いた保護 URL (共有リンク等) を控える。 Google OAuth は固定で
@@ -467,7 +495,7 @@ export function AppShell() {
     localStorage.setItem(
       "lms_state",
       JSON.stringify({
-        stage,
+        stage: authStage,
         role,
         tenantId: tenant.id,
         showAIBot,
@@ -475,7 +503,7 @@ export function AppShell() {
         uiRoleOverride,
       }),
     );
-  }, [stage, role, tenant, showAIBot, lastLocation, uiRoleOverride]);
+  }, [authStage, role, tenant, showAIBot, lastLocation, uiRoleOverride]);
 
   // レッスン進捗のサーバ同期 (Issue #21): バックエンド + profile が揃った時のみ有効化。
   // 未設定 / ログアウト時は null を渡して同期を停止し、 localStorage のみで動作させる。
@@ -523,15 +551,15 @@ export function AppShell() {
         />
       );
     }
-    // backendEnabled + session (+ profile or transient null): アプリへ進む (stage 関係なし)
+    // backendEnabled + session (+ profile or transient null): アプリへ進む (authStage 関係なし)
   } else {
     // 既存の fixtures フロー (バックエンド未設定時)
-    if (stage === "login") {
+    if (authStage === "login") {
       return (
         <LoginScreen
           onMockLogin={() => {
             setTenant(TENANTS[0] ?? tenant);
-            setStage("app");
+            setAuthStage("app");
             void navigate({ to: "/" });
           }}
         />
@@ -544,8 +572,8 @@ export function AppShell() {
   const shellValue: AppShellValue = {
     role: effectiveRole,
     setPage,
-    courses,
-    setCurrentCourse,
+    stages,
+    setCurrentStage,
     onOpenLesson: openLesson,
     onActiveLessonChange: handleActiveLessonChange,
     onOpenAIBot: () => setAiOpen(true),
@@ -558,12 +586,13 @@ export function AppShell() {
     studentName: effectiveUser.name,
     studentInitials: effectiveUser.initials,
     announcementsHook: announcements,
-    coursesError: courseError,
+    stagesError: stageError,
+    refetchStages,
     onOpenSubmission: openSubmissionResult,
     profileRole: profile?.role,
     profile,
     onProfileUpdated: refreshProfile,
-    highlightCourse,
+    highlightStage,
   };
 
   return (
@@ -585,7 +614,7 @@ export function AppShell() {
         <SidebarInset>
           <Topbar
             onSearchSelect={handleSearchSelect}
-            searchCourseIds={scopeSearchToOwnCourses ? new Set(courses.map((c) => c.id)) : null}
+            searchStageIds={scopeSearchToOwnStages ? new Set(stages.map((c) => c.id)) : null}
             notify={{
               role: effectiveRole,
               tenantId: effectiveTenant.id,
@@ -595,7 +624,7 @@ export function AppShell() {
               onMarkRead: (id) => void notifications.markRead(id),
               onMarkAllRead: () => void notifications.markAllRead(),
               onAfterCreateAnnouncement: () => void notifications.refetch(),
-              courses: browseCourses.courses,
+              stages: browseStages.stages,
               onOpenSubmission: openSubmissionResult,
             }}
           />
@@ -677,36 +706,37 @@ function NotFoundNotice({
   );
 }
 
-/** URL の courseId が受講対象に見つからないとき (削除 / 受講解除 / 共有リンク切れ)。 */
-export function CourseNotFoundNotice({ setPage }: { setPage: (p: string) => void }) {
+/** URL の stageId が受講対象に見つからないとき (削除 / 受講解除 / 共有リンク切れ)。 */
+export function StageNotFoundNotice({ setPage }: { setPage: (p: string) => void }) {
   return (
     <NotFoundNotice
-      title="コースが見つかりません"
-      description="このコースは削除されたか、 現在の受講対象に含まれていません。"
-      backLabel="コース一覧に戻る"
-      onBack={() => setPage("courses")}
+      title="ステージが見つかりません"
+      description="このステージは削除されたか、 現在の受講対象に含まれていません。"
+      backLabel="ステージ一覧に戻る"
+      onBack={() => setPage("stages")}
     />
   );
 }
 
-/** URL の lessonId がコース内に見つからないとき (削除 / 共有リンク切れ)。 */
+/** URL の lessonId がステージ内に見つからないとき (削除 / 共有リンク切れ)。 */
 export function LessonNotFoundNotice({ setPage }: { setPage: (p: string) => void }) {
   return (
     <NotFoundNotice
       title="レッスンが見つかりません"
-      description="このレッスンは削除されたか、 コースの構成が変更された可能性があります。"
-      backLabel="コース詳細に戻る"
-      onBack={() => setPage("course-detail")}
+      description="このレッスンは削除されたか、 ステージの構成が変更された可能性があります。"
+      backLabel="ステージ詳細に戻る"
+      onBack={() => setPage("stage-detail")}
     />
   );
 }
 
-export function EmptyCoursesNotice({ setPage }: { setPage: (p: string) => void }) {
+export function EmptyStagesNotice({ setPage }: { setPage: (p: string) => void }) {
   return (
     <div className="max-w-md mx-auto mt-16 text-center">
-      <div className="text-[15px] font-semibold mb-2">受講可能なコースがありません</div>
+      <div className="text-[15px] font-semibold mb-2">受講可能なステージがありません</div>
       <div className="text-[12.5px] text-ink-3 mb-4">
-        現在このテナントに公開中のコースはありません。 管理者がコースを公開するまでお待ちください。
+        現在このテナントに公開中のステージはありません。
+        管理者がステージを公開するまでお待ちください。
       </div>
       <button
         type="button"

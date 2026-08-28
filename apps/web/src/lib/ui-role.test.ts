@@ -97,30 +97,30 @@ describe("canManageInterviewPrepUi", () => {
 describe("filterSearchResultsForLearner", () => {
   const results = [
     {
-      kind: "course" as const,
+      kind: "stage" as const,
       id: "pub",
-      course_id: "pub",
+      stage_id: "pub",
       title: "公開",
       subtitle: null,
-      course_title: "公開",
+      stage_title: "公開",
       lesson_type: null,
     },
     {
       kind: "lesson" as const,
       id: "l1",
-      course_id: "draft",
+      stage_id: "draft",
       title: "下書き",
       subtitle: null,
-      course_title: "下書き",
+      stage_title: "下書き",
       lesson_type: null,
     },
   ];
 
-  it("keeps every hit when there is no course scope", () => {
+  it("keeps every hit when there is no stage scope", () => {
     expect(filterSearchResultsForLearner(results, null)).toEqual(results);
   });
 
-  it("drops hits whose course is outside the learner's own courses", () => {
+  it("drops hits whose stage is outside the learner's own stages", () => {
     expect(filterSearchResultsForLearner(results, new Set(["pub"]))).toEqual([results[0]]);
   });
 });

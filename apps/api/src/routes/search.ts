@@ -1,11 +1,11 @@
 /**
  * 横断検索 API (Issue #77) — `GET /api/search?q=...`
  *
- * Topbar の検索ボックスから呼ばれ、 コースとレッスンをまとめて引く。
+ * Topbar の検索ボックスから呼ばれ、 ステージとレッスンをまとめて引く。
  *
  * アプリ層認可 (materials.ts と同基準):
- *   - staff (instructor / admin / platform_admin) … 同テナントの全コース
- *   - student … published かつ閲覧可能な enrollment (active / completed) のコースのみ
+ *   - staff (instructor / admin / platform_admin) … 同テナントの全ステージ
+ *   - student … published かつ閲覧可能な enrollment (active / completed) のステージのみ
  *
  * ユーザー (profiles) は検索対象に含めない。 受講者一覧はロールによって遷移先が
  * 定まらず、 管理画面 (`/admin/users`) が専用の検索を持っているため。
@@ -27,7 +27,7 @@ import {
 
 import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
 
-import { courses, enrollments, lessons, sections } from "../db/schema.js";
+import { stages, enrollments, lessons, sections } from "../db/schema.js";
 import { errorResponse, getCaller, isStaffRole } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
@@ -42,25 +42,25 @@ const blankToNull = (value: string | null): string | null => {
 };
 
 /**
- * caller が検索してよいコース ID の集合を返す。
- * staff は同テナントの全コース、 受講者は published + 閲覧可能な enrollment のみ。
+ * caller が検索してよいステージ ID の集合を返す。
+ * staff は同テナントの全ステージ、 受講者は published + 閲覧可能な enrollment のみ。
  * null は「絞り込み不要 (テナント条件のみ)」を意味する。
  */
-async function visibleCourseIds(db: Db, caller: Caller): Promise<string[] | null> {
+async function visibleStageIds(db: Db, caller: Caller): Promise<string[] | null> {
   if (isStaffRole(caller.role)) return null;
   const rows = await db
-    .select({ courseId: enrollments.courseId })
+    .select({ stageId: enrollments.stageId })
     .from(enrollments)
-    .innerJoin(courses, eq(courses.id, enrollments.courseId))
+    .innerJoin(stages, eq(stages.id, enrollments.stageId))
     .where(
       and(
         eq(enrollments.userId, caller.id),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
-        eq(courses.tenantId, caller.tenantId),
-        eq(courses.status, "published"),
+        eq(stages.tenantId, caller.tenantId),
+        eq(stages.status, "published"),
       ),
     );
-  return rows.map((r) => r.courseId);
+  return rows.map((r) => r.stageId);
 }
 
 searchRoute.get("/api/search", async (c) => {
@@ -72,8 +72,8 @@ searchRoute.get("/api/search", async (c) => {
       return c.json({ query, results: [] });
     }
 
-    const scopedIds = await visibleCourseIds(db, caller);
-    // 受講中コースが 0 件の受講者は、 テナント条件だけで全件返さないよう早期に空を返す。
+    const scopedIds = await visibleStageIds(db, caller);
+    // 受講中ステージが 0 件の受講者は、 テナント条件だけで全件返さないよう早期に空を返す。
     if (scopedIds !== null && scopedIds.length === 0) {
       return c.json({ query, results: [] });
     }
@@ -82,32 +82,32 @@ searchRoute.get("/api/search", async (c) => {
     const pattern = buildLikePattern(query);
     const prefix = buildPrefixLikePattern(query);
 
-    const courseScope = scopedIds
-      ? inArray(courses.id, scopedIds)
-      : eq(courses.tenantId, caller.tenantId);
+    const stageScope = scopedIds
+      ? inArray(stages.id, scopedIds)
+      : eq(stages.tenantId, caller.tenantId);
 
-    const courseRows = await db
+    const stageRows = await db
       .select({
-        id: courses.id,
-        title: courses.title,
-        category: courses.category,
+        id: stages.id,
+        title: stages.title,
+        category: stages.category,
       })
-      .from(courses)
+      .from(stages)
       .where(
         and(
-          courseScope,
+          stageScope,
           or(
-            sql`${courses.title} LIKE ${pattern} ESCAPE '\\'`,
-            sql`${courses.category} LIKE ${pattern} ESCAPE '\\'`,
-            sql`${courses.description} LIKE ${pattern} ESCAPE '\\'`,
+            sql`${stages.title} LIKE ${pattern} ESCAPE '\\'`,
+            sql`${stages.category} LIKE ${pattern} ESCAPE '\\'`,
+            sql`${stages.description} LIKE ${pattern} ESCAPE '\\'`,
           ),
         ),
       )
       // LIMIT で切り落とす前に順序を確定させる (rankSearchResults と同じ優先順位)。
       // そうしないと前方一致が落ちて弱い部分一致だけが返ることがある。
       .orderBy(
-        sql`(CASE WHEN ${courses.title} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END)`,
-        asc(courses.title),
+        sql`(CASE WHEN ${stages.title} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END)`,
+        asc(stages.title),
       )
       .limit(SEARCH_KIND_LIMIT);
 
@@ -117,13 +117,13 @@ searchRoute.get("/api/search", async (c) => {
         title: lessons.title,
         type: lessons.type,
         sectionTitle: sections.title,
-        courseId: courses.id,
-        courseTitle: courses.title,
+        stageId: stages.id,
+        stageTitle: stages.title,
       })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
-      .innerJoin(courses, eq(courses.id, sections.courseId))
-      .where(and(courseScope, sql`${lessons.title} LIKE ${pattern} ESCAPE '\\'`))
+      .innerJoin(stages, eq(stages.id, sections.stageId))
+      .where(and(stageScope, sql`${lessons.title} LIKE ${pattern} ESCAPE '\\'`))
       .orderBy(
         sql`(CASE WHEN ${lessons.title} LIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END)`,
         asc(lessons.title),
@@ -131,13 +131,13 @@ searchRoute.get("/api/search", async (c) => {
       .limit(SEARCH_KIND_LIMIT);
 
     const results: SearchResult[] = [
-      ...courseRows.map<SearchResult>((row) => ({
-        kind: "course",
+      ...stageRows.map<SearchResult>((row) => ({
+        kind: "stage",
         id: row.id,
         title: row.title,
         subtitle: blankToNull(row.category),
-        course_id: row.id,
-        course_title: row.title,
+        stage_id: row.id,
+        stage_title: row.title,
         lesson_type: null,
       })),
       ...lessonRows.map<SearchResult>((row) => ({
@@ -145,13 +145,13 @@ searchRoute.get("/api/search", async (c) => {
         id: row.id,
         title: row.title,
         subtitle: blankToNull(
-          [row.courseTitle, row.sectionTitle]
+          [row.stageTitle, row.sectionTitle]
             .map((s) => s?.trim())
             .filter(Boolean)
             .join(" · "),
         ),
-        course_id: row.courseId,
-        course_title: row.courseTitle,
+        stage_id: row.stageId,
+        stage_title: row.stageTitle,
         lesson_type: row.type,
       })),
     ];

@@ -142,6 +142,29 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
   if (raw.color != null && !COURSE_COLORS.has(raw.color)) {
     throw new Error(`courses/${slug}/course.json の color が不正です: ${raw.color}`);
   }
+  if (raw.prerequisites != null) {
+    if (!Array.isArray(raw.prerequisites) || raw.prerequisites.some((p) => typeof p !== "string")) {
+      throw new Error(
+        `courses/${slug}/course.json の prerequisites は slug の配列にしてください。`,
+      );
+    }
+    const trimmed = raw.prerequisites.map((p) => p.trim());
+    if (trimmed.some((p) => p === "")) {
+      throw new Error(`courses/${slug}/course.json の prerequisites に空の slug があります。`);
+    }
+    if (trimmed.includes(slug)) {
+      throw new Error(`courses/${slug}/course.json の prerequisites が自分自身を指しています。`);
+    }
+    if (new Set(trimmed).size !== trimmed.length) {
+      throw new Error(`courses/${slug}/course.json の prerequisites に重複があります。`);
+    }
+  }
+  for (const field of ["canDo", "theme"] as const) {
+    const value = raw[field];
+    if (value != null && (typeof value !== "string" || value.trim() === "")) {
+      throw new Error(`courses/${slug}/course.json の ${field} は空でない文字列にしてください。`);
+    }
+  }
   const tenantId = raw.tenantId?.trim() || TENANT_ID;
   // seed は教材コースを TENANT_ID 固定で入れる。ここだけ別テナントを名乗れると、
   // コース行と R2 キーのテナントがずれる (どちらも黙って壊れる) ので先に落とす。
@@ -337,10 +360,55 @@ function buildOneCourse(
       progress: 0,
       description: config.description,
       ...(thumbnail ? { thumbnailPath: thumbnail.key } : {}),
+      // 空配列は「前提なし」と同義なので落とす (seed の JSON 列を null に保つ)。
+      ...(config.prerequisites && config.prerequisites.length > 0
+        ? { prerequisites: config.prerequisites.map((p) => p.trim()) }
+        : {}),
+      ...(config.canDo ? { canDo: config.canDo.trim() } : {}),
+      ...(config.theme ? { theme: config.theme.trim() } : {}),
       sections,
     },
     quizzes,
   };
+}
+
+/**
+ * 前提講座 (`prerequisites`) のグラフを検査する。
+ *
+ * 前提はスキルツリーの **ハードロック** なので、綴り違いや循環をそのまま D1 へ流すと
+ * 「誰も開けない講座」が黙って生まれる。実行時 (評価器) は安全側に倒して locked のまま
+ * にするだけなので、気付ける場所はここしかない。
+ */
+function assertPrerequisiteGraph(courses: Course[]): void {
+  const bySlug = new Map(courses.map((c) => [c.id, c]));
+  for (const course of courses) {
+    for (const prereq of course.prerequisites ?? []) {
+      if (!bySlug.has(prereq)) {
+        throw new Error(
+          `courses/${course.id}/course.json の prerequisites に存在しない講座があります: ${prereq}`,
+        );
+      }
+    }
+  }
+
+  // 深さ優先で後退辺 (= 循環) を探す。講座数は 2 桁なので素朴な再帰で足りる。
+  const visiting = new Set<string>();
+  const done = new Set<string>();
+  const path: string[] = [];
+  const walk = (slug: string): void => {
+    if (done.has(slug)) return;
+    if (visiting.has(slug)) {
+      const cycle = [...path.slice(path.indexOf(slug)), slug];
+      throw new Error(`course.json の prerequisites が循環しています: ${cycle.join(" → ")}`);
+    }
+    visiting.add(slug);
+    path.push(slug);
+    for (const prereq of bySlug.get(slug)?.prerequisites ?? []) walk(prereq);
+    path.pop();
+    visiting.delete(slug);
+    done.add(slug);
+  };
+  for (const course of courses) walk(course.id);
 }
 
 export function buildContentManifest(coursesRoot: string = defaultCoursesRoot()): {
@@ -358,6 +426,8 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
     courses.push(built.course);
     quizzes.push(...built.quizzes);
   }
+
+  assertPrerequisiteGraph(courses);
 
   return { courses, quizzes };
 }

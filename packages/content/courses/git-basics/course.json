@@ -5,6 +5,8 @@
   "description": "未経験からの Git 研修。変更の記録(commit)から履歴の読み方・やり直し・ブランチ・共有(push/pull)・プルリクエストまで、現場の基本操作を通す。",
   "header": "Git入門研修",
   "tenantId": "ses",
+  "canDo": "ブランチ・PR・レビューの往復を一人で回せる",
+  "theme": "Web とデータの実践",
   "modules": {
     "m0-orientation": "M0. オリエンテーション",
     "m1-first-commit": "M1. はじめてのコミット",

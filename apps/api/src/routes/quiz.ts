@@ -15,7 +15,7 @@ import { Hono } from "hono";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import {
-  courses,
+  stages,
   enrollments,
   lessons,
   quizAttempts,
@@ -29,6 +29,7 @@ import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type { LearnerQuizHistory, QuizAnswer } from "@falcon/shared/cms/types";
+import { noteQuizStumble } from "../lib/discovery-stumble.js";
 import { isExactSelection } from "../lib/quiz-grading.js";
 import { applyOutcomesToCards } from "../lib/srs-cards.js";
 
@@ -36,18 +37,18 @@ export const quizRoute = new Hono<{ Bindings: Env }>();
 
 /**
  * lesson が caller の同テナントで、かつアクセス可かを判定する。
- * ロールによらず published かつ当該コースに active enrollment があること。
+ * ロールによらず published かつ当該ステージに active enrollment があること。
  */
 async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): Promise<boolean> {
   const rows = await db
     .select({
-      status: courses.status,
-      tenantId: courses.tenantId,
-      courseId: courses.id,
+      status: stages.status,
+      tenantId: stages.tenantId,
+      stageId: stages.id,
     })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(lessons.id, lessonId))
     .limit(1);
   const row = rows[0];
@@ -61,7 +62,7 @@ async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): 
     .where(
       and(
         eq(enrollments.userId, caller.id),
-        eq(enrollments.courseId, row.courseId),
+        eq(enrollments.stageId, row.stageId),
         eq(enrollments.status, "active"),
       ),
     )
@@ -258,6 +259,22 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
       // 上のコメントの通り応答は壊さないが、 無言だと D1 障害等に気づけないので記録は残す。
       // 欠けたカードは backfillCards (routes/srs.ts) が次回 /api/srs/today で埋め直す。
       console.error("[quiz] SRS カード反映に失敗", e);
+    }
+
+    // つまずき検知 (Phase 4)。同じ小テストを 2 回落としたら「発見教材」のリクエストを
+    // 積む。SRS カードと同じく **本編の応答を壊さない付随処理** なので、失敗しても
+    // 採点結果はそのまま返す (講師の待ち行列に 1 行載らないだけ)。
+    if (!passed) {
+      try {
+        await noteQuizStumble(db, {
+          tenantId: caller.tenantId,
+          userId: caller.id,
+          quizId,
+          lessonId: quiz.lessonId,
+        });
+      } catch (e) {
+        console.error("[quiz] 発見教材リクエストの記録に失敗", e);
+      }
     }
 
     return c.json({ result: { score, max_score: max, passed, results } });

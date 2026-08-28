@@ -5,6 +5,7 @@
 構成は [MDN Web ドキュメント](https://developer.mozilla.org/) の CSS レイアウトクックブックと Learn web development に合わせています。
 
 想定する受講順は `html-css-basics` → `modern-css-basics` → **本講座** → `page-composition-basics` です。
+前提講座: モダンCSS 入門研修(`modern-css-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
 
 ## 終了時の目標
 

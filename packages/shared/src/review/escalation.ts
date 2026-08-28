@@ -16,7 +16,7 @@ export const ESCALATION_PRIORITY: ReviewPriority = "high";
 export interface EscalationSubmissionBody {
   lessonId: string | null;
   assignmentId: string;
-  courseTitle: string;
+  stageTitle: string;
   sectionTitle: string | null;
   assignmentTitle: string;
   code: string;
@@ -28,7 +28,7 @@ export interface EscalationSubmissionBody {
 export interface EscalationInput {
   lessonId?: string | null;
   assignmentId: string;
-  courseTitle: string;
+  stageTitle: string;
   sectionTitle?: string | null;
   assignmentTitle: string;
   /** 演習フォルダの相対パス → 中身。 */
@@ -85,7 +85,7 @@ export function buildEscalationSubmissionBody(input: EscalationInput): Escalatio
   return {
     lessonId: input.lessonId ?? null,
     assignmentId: input.assignmentId,
-    courseTitle: input.courseTitle,
+    stageTitle: input.stageTitle,
     sectionTitle: input.sectionTitle ?? null,
     assignmentTitle: input.assignmentTitle,
     code: concatExerciseFiles(input.files, input.entryFile),

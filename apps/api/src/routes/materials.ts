@@ -8,8 +8,8 @@
  *                                         lesson_materials 行も登録する (Issue #72)。
  * - GET    /api/materials?lessonId=...  … レッスンの配布資料一覧。
  *                                         受講者は published + active enrollment (quiz と同基準)。
- * - GET    /api/materials?courseId=...  … コース全体の配布資料一覧 (Issue #77 —
- *                                         コース詳細「教材をダウンロード」)。 認可は同上。
+ * - GET    /api/materials?stageId=...   … ステージ全体の配布資料一覧 (Issue #77 —
+ *                                         ステージ詳細「教材をダウンロード」)。 認可は同上。
  * - GET    /api/materials/:id/download  … R2 からのプロキシダウンロード (認可は一覧と同じ)。
  * - DELETE /api/materials/:id           … staff のみ。 DB 行を先に消し、 R2 はベストエフォート。
  *
@@ -25,7 +25,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
 
 import {
-  courses,
+  stages,
   enrollments,
   lessonMaterialVersions,
   lessonMaterials,
@@ -63,20 +63,20 @@ const materialToRow = (m: MaterialSel) => ({
   created_at: m.createdAt,
 });
 
-/** レッスンの所属テナント / コース公開状態 / コース ID を join で解決する。 */
-async function lessonCourseInfo(
+/** レッスンの所属テナント / ステージ公開状態 / ステージ ID を join で解決する。 */
+async function lessonStageInfo(
   db: Db,
   lessonId: string,
-): Promise<{ tenantId: string; courseStatus: string; courseId: string } | null> {
+): Promise<{ tenantId: string; stageStatus: string; stageId: string } | null> {
   const rows = await db
     .select({
-      tenantId: courses.tenantId,
-      courseStatus: courses.status,
-      courseId: courses.id,
+      tenantId: stages.tenantId,
+      stageStatus: stages.status,
+      stageId: stages.id,
     })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(lessons.id, lessonId))
     .limit(1);
   return rows[0] ?? null;
@@ -85,17 +85,17 @@ async function lessonCourseInfo(
 /**
  * 配布資料の閲覧認可。
  * - staff: 同テナントなら可
- * - student: published かつ当該コースに閲覧可能な enrollment
- *   (`active` に加えて `completed`。 修了済みコースも受講者のコース一覧に並ぶため、
- *    `active` だけにすると一覧に出ているコースの資料が 404 になる)
+ * - student: published かつ当該ステージに閲覧可能な enrollment
+ *   (`active` に加えて `completed`。 修了済みステージも受講者のステージ一覧に並ぶため、
+ *    `active` だけにすると一覧に出ているステージの資料が 404 になる)
  */
 async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string): Promise<void> {
-  const info = await lessonCourseInfo(db, lessonId);
+  const info = await lessonStageInfo(db, lessonId);
   if (!info || info.tenantId !== caller.tenantId) {
     throw new ApiError("レッスンが見つかりません", 404);
   }
   if (isStaffRole(caller.role)) return;
-  if (info.courseStatus !== "published") {
+  if (info.stageStatus !== "published") {
     throw new ApiError("レッスンが見つかりません", 404);
   }
   const enrolled = await db
@@ -104,7 +104,7 @@ async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string):
     .where(
       and(
         eq(enrollments.userId, caller.id),
-        eq(enrollments.courseId, info.courseId),
+        eq(enrollments.stageId, info.stageId),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
     )
@@ -149,7 +149,7 @@ materialsRoute.post("/api/materials/upload", async (c) => {
     let path: string;
     if (lessonId) {
       // レッスン配布資料: パスはサーバ側で組み立てる (クライアント指定パスを信用しない)。
-      const info = await lessonCourseInfo(db, lessonId);
+      const info = await lessonStageInfo(db, lessonId);
       if (!info || info.tenantId !== caller.tenantId) {
         throw new ApiError("レッスンが見つかりません", 404);
       }
@@ -211,26 +211,26 @@ materialsRoute.post("/api/materials/upload", async (c) => {
 });
 
 /**
- * コース全体の配布資料の閲覧認可。 レッスン単位 (`assertMaterialReadable`) と同基準を
- * コース行に対して直接適用する。
+ * ステージ全体の配布資料の閲覧認可。 レッスン単位 (`assertMaterialReadable`) と同基準を
+ * ステージ行に対して直接適用する。
  */
-async function assertCourseMaterialsReadable(
+async function assertStageMaterialsReadable(
   db: Db,
   caller: Caller,
-  courseId: string,
+  stageId: string,
 ): Promise<void> {
   const rows = await db
-    .select({ tenantId: courses.tenantId, status: courses.status })
-    .from(courses)
-    .where(eq(courses.id, courseId))
+    .select({ tenantId: stages.tenantId, status: stages.status })
+    .from(stages)
+    .where(eq(stages.id, stageId))
     .limit(1);
-  const course = rows[0];
-  if (!course || course.tenantId !== caller.tenantId) {
-    throw new ApiError("コースが見つかりません", 404);
+  const stage = rows[0];
+  if (!stage || stage.tenantId !== caller.tenantId) {
+    throw new ApiError("ステージが見つかりません", 404);
   }
   if (isStaffRole(caller.role)) return;
-  if (course.status !== "published") {
-    throw new ApiError("コースが見つかりません", 404);
+  if (stage.status !== "published") {
+    throw new ApiError("ステージが見つかりません", 404);
   }
   const enrolled = await db
     .select({ id: enrollments.id })
@@ -238,23 +238,23 @@ async function assertCourseMaterialsReadable(
     .where(
       and(
         eq(enrollments.userId, caller.id),
-        eq(enrollments.courseId, courseId),
+        eq(enrollments.stageId, stageId),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
     )
     .limit(1);
-  if (!enrolled[0]) throw new ApiError("コースが見つかりません", 404);
+  if (!enrolled[0]) throw new ApiError("ステージが見つかりません", 404);
 }
 
 materialsRoute.get("/api/materials", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const lessonId = c.req.query("lessonId");
-    const courseId = c.req.query("courseId");
+    const stageId = c.req.query("stageId");
 
-    // コース単位: レッスン → セクション → コースの join で束ねて返す (Issue #77)。
-    if (courseId) {
-      await assertCourseMaterialsReadable(db, caller, courseId);
+    // ステージ単位: レッスン → セクション → ステージの join で束ねて返す (Issue #77)。
+    if (stageId) {
+      await assertStageMaterialsReadable(db, caller, stageId);
       const rows = await db
         .select({
           material: lessonMaterials,
@@ -264,7 +264,7 @@ materialsRoute.get("/api/materials", async (c) => {
         .from(lessonMaterials)
         .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
-        .where(eq(sections.courseId, courseId))
+        .where(eq(sections.stageId, stageId))
         .orderBy(asc(sections.order), asc(lessons.order), asc(lessonMaterials.createdAt));
       return c.json({
         rows: rows.map((r) => ({
@@ -275,7 +275,7 @@ materialsRoute.get("/api/materials", async (c) => {
       });
     }
 
-    if (!lessonId) throw new ApiError("lessonId または courseId が必要です", 400);
+    if (!lessonId) throw new ApiError("lessonId または stageId が必要です", 400);
 
     await assertMaterialReadable(db, caller, lessonId);
 
@@ -307,7 +307,7 @@ materialsRoute.get("/api/materials/:id/versions", async (c) => {
       .limit(1);
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
-    const info = await lessonCourseInfo(db, material.lessonId);
+    const info = await lessonStageInfo(db, material.lessonId);
     if (!info || info.tenantId !== caller.tenantId) {
       throw new ApiError("資料が見つかりません", 404);
     }
@@ -351,7 +351,7 @@ materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) =>
       .limit(1);
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
-    const info = await lessonCourseInfo(db, material.lessonId);
+    const info = await lessonStageInfo(db, material.lessonId);
     if (!info || info.tenantId !== caller.tenantId) {
       throw new ApiError("資料が見つかりません", 404);
     }
@@ -439,7 +439,7 @@ materialsRoute.delete("/api/materials/:id", async (c) => {
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
 
-    const info = await lessonCourseInfo(db, material.lessonId);
+    const info = await lessonStageInfo(db, material.lessonId);
     if (!info || info.tenantId !== caller.tenantId) {
       throw new ApiError("他テナントのリソースは操作できません", 403);
     }

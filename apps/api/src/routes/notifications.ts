@@ -3,8 +3,8 @@
  *
  * 旧トリガー / RLS のアプリ層での再現:
  *   - お知らせ作成: author を caller から確定し、 対象受講者へ通知を fan-out する
- *     (course 指定 → 受講登録者、 未指定 → テナント全 student、 発信者自身は除外)。
- *   - お知らせ read: course 全体は全員、 course 指定は staff か当該コース受講者のみ。
+ *     (stage 指定 → 受講登録者、 未指定 → テナント全 student、 発信者自身は除外)。
+ *   - お知らせ read: stage 全体は全員、 stage 指定は staff か当該ステージ受講者のみ。
  *   - 通知は本人のみ read / 既読化。 生成はサーバ内ロジックからのみ (捏造防止)。
  */
 
@@ -29,7 +29,7 @@ export const notificationsRoute = new Hono<{ Bindings: Env }>();
 const A_COLS = {
   id: announcements.id,
   tenant_id: announcements.tenantId,
-  course_id: announcements.courseId,
+  stage_id: announcements.stageId,
   author_id: announcements.authorId,
   author_name: announcements.authorName,
   title: announcements.title,
@@ -50,32 +50,32 @@ const N_COLS = {
   created_at: notifications.createdAt,
 } as const;
 
-/** caller が受講登録しているコース ID の集合。 */
-async function enrolledCourseIds(db: Db, userId: string): Promise<string[]> {
+/** caller が受講登録しているステージ ID の集合。 */
+async function enrolledStageIds(db: Db, userId: string): Promise<string[]> {
   const rows = await db
-    .select({ courseId: enrollments.courseId })
+    .select({ stageId: enrollments.stageId })
     .from(enrollments)
     .where(eq(enrollments.userId, userId));
-  return rows.map((r) => r.courseId);
+  return rows.map((r) => r.stageId);
 }
 
 /** 公開順 (published_at 降順) でお知らせを取得する。 */
 notificationsRoute.get("/api/announcements", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const courseId = c.req.query("courseId");
+    const stageId = c.req.query("stageId");
     const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
     const isStaff = isStaffRole(caller.role);
 
     const conds = [eq(announcements.tenantId, caller.tenantId)];
-    if (courseId) conds.push(eq(announcements.courseId, courseId));
+    if (stageId) conds.push(eq(announcements.stageId, stageId));
 
     if (!isStaff) {
-      // 受講者: テナント全体 (course_id null) か、 登録済みコースのお知らせのみ。
-      const ids = await enrolledCourseIds(db, caller.id);
+      // 受講者: テナント全体 (stage_id null) か、 登録済みステージのお知らせのみ。
+      const ids = await enrolledStageIds(db, caller.id);
       const visible = ids.length
-        ? or(isNull(announcements.courseId), inArray(announcements.courseId, ids))
-        : isNull(announcements.courseId);
+        ? or(isNull(announcements.stageId), inArray(announcements.stageId, ids))
+        : isNull(announcements.stageId);
       if (visible) conds.push(visible);
     }
 
@@ -97,7 +97,7 @@ notificationsRoute.post("/api/announcements", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const body = (await c.req.json()) as {
-      courseId?: string | null;
+      stageId?: string | null;
       title: string;
       body: string;
     };
@@ -107,7 +107,7 @@ notificationsRoute.post("/api/announcements", async (c) => {
       .insert(announcements)
       .values({
         tenantId: caller.tenantId,
-        courseId: body.courseId ?? null,
+        stageId: body.stageId ?? null,
         authorId: caller.id,
         authorName: caller.name,
         title: body.title,
@@ -116,7 +116,7 @@ notificationsRoute.post("/api/announcements", async (c) => {
       .returning(A_COLS);
     const row = requireReturning(inserted, "announcement insert");
 
-    await fanoutAnnouncement(db, caller, row.id, row.course_id, row.title, row.body);
+    await fanoutAnnouncement(db, caller, row.id, row.stage_id, row.title, row.body);
     return c.json({ row });
   } catch (err) {
     return errorResponse(c, err);
@@ -128,19 +128,19 @@ async function fanoutAnnouncement(
   db: Db,
   caller: Caller,
   announcementId: string,
-  courseId: string | null,
+  stageId: string | null,
   title: string,
   body: string,
 ): Promise<void> {
   // 対象 student を解決する。
   const baseConds = [eq(profiles.tenantId, caller.tenantId), eq(profiles.role, "student")];
   let targetIds: string[];
-  if (courseId) {
+  if (stageId) {
     const rows = await db
       .select({ id: profiles.id })
       .from(profiles)
       .innerJoin(enrollments, eq(enrollments.userId, profiles.id))
-      .where(and(...baseConds, eq(enrollments.courseId, courseId)));
+      .where(and(...baseConds, eq(enrollments.stageId, stageId)));
     targetIds = rows.map((r) => r.id);
   } else {
     const rows = await db
@@ -159,7 +159,7 @@ async function fanoutAnnouncement(
       type: "announcement" as const,
       title,
       body,
-      payload: { announcement_id: announcementId, course_id: courseId },
+      payload: { announcement_id: announcementId, stage_id: stageId },
     })),
   );
 }

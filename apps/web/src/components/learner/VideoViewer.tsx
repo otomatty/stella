@@ -36,7 +36,7 @@ interface Props {
   videoPath: string;
   totalSec?: number;
   onComplete?: () => void;
-  /** 再生終了後に案内する次のレッスン名。 次が無いコース末尾では null。 */
+  /** 再生終了後に案内する次のレッスン名。 次が無いステージ末尾では null。 */
   nextLessonTitle?: string | null;
   /** 次のレッスンへ進む。 未指定 (次が無い) ならオーバーレイを出さない。 */
   onAdvanceNext?: (() => void) | undefined;

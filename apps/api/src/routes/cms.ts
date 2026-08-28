@@ -2,7 +2,13 @@
  * CMS API (旧 cms-api.ts の BaaS 直アクセス + RLS + reorder RPC の置き換え / Issue #10)。
  *
  * 認可 (旧 RLS):
- *   - courses/sections/lessons/assignments の read は同テナント、 published か staff。
+ *   - ステージ**一覧** (`GET /api/cms/stages`) は staff のみ。 受講者に返すと、 割り当てても
+ *     いない教材の題名・説明・所要時間がカタログとして丸ごと読める (スキルツリーの
+ *     「霧」は演出でしかなくなる)。 受講者 UI は enrollment を起点に詳細を引くので影響しない。
+ *   - ステージ**詳細** (`/api/cms/stages/:id` と旧拡張互換の `/api/cms/courses/:id`) は
+ *     staff、 または **そのステージに enrollment がある受講者**。 published の判定は
+ *     受講者側に残す (draft を受講登録しても中身は見えない)。
+ *   - sections/lessons/assignments の read は同テナント、 published か staff。
  *   - quizzes (CMS 編集) と listAssignments は staff のみ。
  *   - 書き込みはすべて同テナントの instructor/admin。 子要素は親のテナントを継承して検証する。
  *   - reorder は単一 UPDATE 相当を順序付き upsert で原子的に行う。
@@ -11,11 +17,13 @@
  */
 
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import {
   assignments,
-  courses,
+  stages,
+  enrollments,
   lessonMaterials,
   lessons,
   quizOptions,
@@ -38,7 +46,7 @@ import { withResourceLock } from "../lib/resource-lock.js";
 import {
   MAX_ARCHIVED_PRESETS_IN_AUDIT,
   archiveEmptiedPresetsStatement,
-  touchPresetsContainingCourseStatement,
+  touchPresetsContainingStageStatement,
 } from "../lib/enrollment-presets.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -46,7 +54,7 @@ import type { Env } from "../env.js";
 export const cmsRoute = new Hono<{ Bindings: Env }>();
 
 // --- mappers (Drizzle camelCase → 旧 DB 行 snake_case) ---
-type CourseSel = typeof courses.$inferSelect;
+type StageSel = typeof stages.$inferSelect;
 type SectionSel = typeof sections.$inferSelect;
 type LessonSel = typeof lessons.$inferSelect;
 type AssignmentSel = typeof assignments.$inferSelect;
@@ -54,7 +62,7 @@ type QuizSel = typeof quizzes.$inferSelect;
 type QuestionSel = typeof quizQuestions.$inferSelect;
 type OptionSel = typeof quizOptions.$inferSelect;
 
-const courseToRow = (c: CourseSel) => ({
+const stageToRow = (c: StageSel) => ({
   id: c.id,
   tenant_id: c.tenantId,
   slug: c.slug,
@@ -76,7 +84,7 @@ const courseToRow = (c: CourseSel) => ({
 });
 const sectionToRow = (s: SectionSel) => ({
   id: s.id,
-  course_id: s.courseId,
+  stage_id: s.stageId,
   title: s.title,
   order: s.order,
   created_at: s.createdAt,
@@ -148,72 +156,72 @@ const optionToRow = (o: OptionSel) => ({
 });
 
 // --- tenant 検証ヘルパ (子要素の書き込み時に親のテナント所属を確認) ---
-async function courseTenant(db: Db, courseId: string): Promise<string | null> {
+async function stageTenant(db: Db, stageId: string): Promise<string | null> {
   const rows = await db
-    .select({ t: courses.tenantId })
-    .from(courses)
-    .where(eq(courses.id, courseId))
+    .select({ t: stages.tenantId })
+    .from(stages)
+    .where(eq(stages.id, stageId))
     .limit(1);
   return rows[0]?.t ?? null;
 }
-/** 監査ログ用に、 テナント検証と同時にコースの現在値も取る (公開/削除の記録に使う)。 */
-async function courseAuditInfo(
+/** 監査ログ用に、 テナント検証と同時にステージの現在値も取る (公開/削除の記録に使う)。 */
+async function stageAuditInfo(
   db: Db,
-  courseId: string,
-): Promise<{ tenant: string; status: CourseSel["status"]; title: string; slug: string } | null> {
+  stageId: string,
+): Promise<{ tenant: string; status: StageSel["status"]; title: string; slug: string } | null> {
   const rows = await db
     .select({
-      tenant: courses.tenantId,
-      status: courses.status,
-      title: courses.title,
-      slug: courses.slug,
+      tenant: stages.tenantId,
+      status: stages.status,
+      title: stages.title,
+      slug: stages.slug,
     })
-    .from(courses)
-    .where(eq(courses.id, courseId))
+    .from(stages)
+    .where(eq(stages.id, stageId))
     .limit(1);
   return rows[0] ?? null;
 }
-async function sectionCourse(
+async function sectionStage(
   db: Db,
   sectionId: string,
-): Promise<{ courseId: string; tenant: string } | null> {
+): Promise<{ stageId: string; tenant: string } | null> {
   const rows = await db
-    .select({ courseId: sections.courseId, tenant: courses.tenantId })
+    .select({ stageId: sections.stageId, tenant: stages.tenantId })
     .from(sections)
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(sections.id, sectionId))
     .limit(1);
   return rows[0] ?? null;
 }
 async function lessonTenant(db: Db, lessonId: string): Promise<string | null> {
   const rows = await db
-    .select({ tenant: courses.tenantId })
+    .select({ tenant: stages.tenantId })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(lessons.id, lessonId))
     .limit(1);
   return rows[0]?.tenant ?? null;
 }
 async function quizTenant(db: Db, quizId: string): Promise<string | null> {
   const rows = await db
-    .select({ tenant: courses.tenantId })
+    .select({ tenant: stages.tenantId })
     .from(quizzes)
     .innerJoin(lessons, eq(lessons.id, quizzes.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(quizzes.id, quizId))
     .limit(1);
   return rows[0]?.tenant ?? null;
 }
 async function questionTenant(db: Db, questionId: string): Promise<string | null> {
   const rows = await db
-    .select({ tenant: courses.tenantId })
+    .select({ tenant: stages.tenantId })
     .from(quizQuestions)
     .innerJoin(quizzes, eq(quizzes.id, quizQuestions.quizId))
     .innerJoin(lessons, eq(lessons.id, quizzes.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(eq(quizQuestions.id, questionId))
     .limit(1);
   return rows[0]?.tenant ?? null;
@@ -224,7 +232,7 @@ function assertTenant(t: string | null, caller: Caller): void {
 }
 
 /**
- * レッスン削除 (直接 / section・course からの cascade) 前に、 紐づく配布資料の
+ * レッスン削除 (直接 / section・stage からの cascade) 前に、 紐づく配布資料の
  * R2 オブジェクトをベストエフォートで削除する (Issue #72)。
  * DB 行は FK cascade で消えるため、 ここでは R2 実体のみ扱う。
  * R2 未設定・削除失敗でもコンテンツ削除は妨げない (孤児はログに残す)。
@@ -251,8 +259,58 @@ async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Pro
 }
 
 // =================================================================
-// Courses
+// Stages
 // =================================================================
+
+/**
+ * この slug を前提 (`prerequisites`) に挙げている **公開中の** ステージを探す。
+ *
+ * 前提はスキルツリーのハードロックなので、 前提側を非公開にしたり消したりすると、
+ * 依存しているステージは **誰も開けない星** になる (評価器は未知 slug を「決して
+ * クリアされない前提」として安全側に倒すため、 画面には何も出ない)。 黙って壊れるより
+ * 操作を止める方がよいので、 呼び出し側はこれが空でなければ 409 にする。
+ *
+ * `prerequisites` は slug の JSON 配列文字列。 テナントのステージ数は 2 桁なので、
+ * SQL で JSON を舐めず全件引いて JS で判定する (D1 の json1 依存も増やさない)。
+ */
+async function publishedDependents(
+  db: Db,
+  tenantId: string,
+  slug: string,
+  excludeStageId: string,
+): Promise<{ id: string; title: string }[]> {
+  const rows = await db
+    .select({ id: stages.id, title: stages.title, prerequisites: stages.prerequisites })
+    .from(stages)
+    .where(and(eq(stages.tenantId, tenantId), eq(stages.status, "published")));
+  return rows
+    .filter((row) => {
+      if (row.id === excludeStageId) return false;
+      if (!row.prerequisites) return false;
+      try {
+        const parsed: unknown = JSON.parse(row.prerequisites);
+        return Array.isArray(parsed) && parsed.includes(slug);
+      } catch {
+        // 壊れた行は依存として数えない (評価器側で locked に倒れる別の問題)。
+        return false;
+      }
+    })
+    .map((row) => ({ id: row.id, title: row.title }));
+}
+
+/** 依存が残っているときの 409。 どれを直せばよいかタイトルで示す。 */
+function assertNoPublishedDependents(
+  dependents: { title: string }[],
+  action: "非公開に" | "削除",
+): void {
+  if (dependents.length === 0) return;
+  throw new ApiError(
+    `この教材を前提にしている公開中の教材があるため${action}できません: ${dependents
+      .map((d) => d.title)
+      .join(" / ")}。 先に依存側の前提を外すか非公開にしてください`,
+    409,
+  );
+}
 
 /** 講師表示名 (Issue #74) を正規化する。 未入力 / 空白のみは null (= 未設定) に倒す。 */
 function normalizeInstructorName(value: unknown): string | null {
@@ -261,61 +319,105 @@ function normalizeInstructorName(value: unknown): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-cmsRoute.get("/api/cms/courses", async (c) => {
+/**
+ * staff: 同テナントのステージ一覧 (CMS / 割当画面のカタログ)。
+ *
+ * **受講者には出さない。** スキルツリーは「まだ見えない星」を伏せるのが仕様で、
+ * その伏せ字は API 境界で守る必要がある (`routes/skill-map.ts` のヘッダ参照)。
+ * 一覧をそのまま返すと、 受講者が `curl` 一発で全教材の題名・説明を読めてしまい、
+ * 画面側の伏せ字が演出でしかなくなる。 受講者の一覧は
+ * `GET /api/enrollments/mine` (自分の割当) と `GET /api/skill-map/mine` (視界つき) が担う。
+ */
+cmsRoute.get("/api/cms/stages", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const conds = [eq(courses.tenantId, caller.tenantId)];
-    if (!isStaffRole(caller.role)) conds.push(eq(courses.status, "published"));
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
       .select()
-      .from(courses)
-      .where(and(...conds))
-      .orderBy(desc(courses.updatedAt));
-    return c.json({ rows: rows.map(courseToRow) });
+      .from(stages)
+      .where(eq(stages.tenantId, caller.tenantId))
+      .orderBy(desc(stages.updatedAt));
+    return c.json({ rows: rows.map(stageToRow) });
   } catch (err) {
     return errorResponse(c, err);
   }
 });
 
-cmsRoute.get("/api/cms/courses/:id", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    const courseId = c.req.param("id");
-    const courseRows = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
-    const course = courseRows[0];
-    if (!course || course.tenantId !== caller.tenantId) return c.json({ course: null });
-    if (course.status !== "published" && !isStaffRole(caller.role)) return c.json({ course: null });
+/**
+ * ステージ詳細 (木構造)。 応答の key を差し替えられるようにしてある — 旧
+ * `/api/cms/courses/:id` は外側 / 内側とも `course` で返していたため
+ * (`{ course: { course: row, sections: [...] } }`)。
+ */
+function stageDetailHandler(key: "stage" | "course") {
+  return async (c: Context<{ Bindings: Env }, "/:id">) => {
+    try {
+      const { caller, db } = await getCaller(c);
+      const stageId = c.req.param("id");
+      // 受講者が詳細を引けるのは **自分が受講登録されたステージ** だけ。 id を総当たり
+      // されても中身が漏れないよう、 ステージ行を引く前に判定する (存在の有無で応答が
+      // 変わると、 それ自体がカタログになる)。 旧 VS Code 拡張も受講中のステージしか
+      // 叩かない (`enrolledCourseIds` で絞ってから詳細を取る) ので、 この判定で壊れない。
+      if (!isStaffRole(caller.role)) {
+        const enrolled = await db
+          .select({ id: enrollments.id })
+          .from(enrollments)
+          .where(
+            and(
+              eq(enrollments.tenantId, caller.tenantId),
+              eq(enrollments.userId, caller.id),
+              eq(enrollments.stageId, stageId),
+            ),
+          )
+          .limit(1);
+        if (!enrolled[0]) throw new ApiError("この教材は受講登録されていません", 403);
+      }
+      const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
+      const stage = stageRows[0];
+      if (!stage || stage.tenantId !== caller.tenantId) return c.json({ [key]: null });
+      if (stage.status !== "published" && !isStaffRole(caller.role)) return c.json({ [key]: null });
 
-    const sectionRows = await db
-      .select()
-      .from(sections)
-      .where(eq(sections.courseId, courseId))
-      .orderBy(asc(sections.order));
-    const sectionIds = sectionRows.map((s) => s.id);
-    const lessonRows =
-      sectionIds.length > 0
-        ? await db
-            .select()
-            .from(lessons)
-            .where(inArray(lessons.sectionId, sectionIds))
-            .orderBy(asc(lessons.order))
-        : [];
+      const sectionRows = await db
+        .select()
+        .from(sections)
+        .where(eq(sections.stageId, stageId))
+        .orderBy(asc(sections.order));
+      const sectionIds = sectionRows.map((s) => s.id);
+      const lessonRows =
+        sectionIds.length > 0
+          ? await db
+              .select()
+              .from(lessons)
+              .where(inArray(lessons.sectionId, sectionIds))
+              .orderBy(asc(lessons.order))
+          : [];
 
-    return c.json({
-      course: {
-        course: courseToRow(course),
-        sections: sectionRows.map((s) => ({
-          section: sectionToRow(s),
-          lessons: lessonRows.filter((l) => l.sectionId === s.id).map(lessonToRow),
-        })),
-      },
-    });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
+      return c.json({
+        [key]: {
+          [key]: stageToRow(stage),
+          sections: sectionRows.map((s) => ({
+            section: sectionToRow(s),
+            lessons: lessonRows.filter((l) => l.sectionId === s.id).map(lessonToRow),
+          })),
+        },
+      });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  };
+}
 
-cmsRoute.post("/api/cms/courses", async (c) => {
+cmsRoute.get("/api/cms/stages/:id", stageDetailHandler("stage"));
+
+/**
+ * TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+ *
+ * VS Code 拡張は手動 VSIX / marketplace 配布で API と同時に更新できない。 旧拡張は
+ * `GET /api/cms/courses/:id` を叩いて `{ course: { course, sections } }` をパースするので、
+ * このエンドポイントだけ旧パス + 旧 key で残す (CMS 管理系の他ルートには広げない)。
+ */
+cmsRoute.get("/api/cms/courses/:id", stageDetailHandler("course"));
+
+cmsRoute.post("/api/cms/stages", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
@@ -325,7 +427,7 @@ cmsRoute.post("/api/cms/courses", async (c) => {
       slug: String(input.slug),
       title: String(input.title),
       category: (input.category as string | null) ?? null,
-      color: (input.color as CourseSel["color"]) ?? null,
+      color: (input.color as StageSel["color"]) ?? null,
       // サムネイルは教材リポジトリの seed が正本。 キーを送ってこないクライアント
       // (旧 CMS 画面) の保存で消えないよう、 明示的に来たときだけ更新する。
       ...("thumbnail_path" in input
@@ -335,52 +437,60 @@ cmsRoute.post("/api/cms/courses", async (c) => {
       description: (input.description as string | null) ?? null,
       // 空文字は「未設定」 に正規化する (受講者 UI で講師欄を出さないため)。
       instructorName: normalizeInstructorName(input.instructor_name),
-      status: (input.status as CourseSel["status"]) ?? "draft",
+      status: (input.status as StageSel["status"]) ?? "draft",
       requireAllLessons: (input.require_all_lessons as boolean) ?? true,
       requireQuizPass: (input.require_quiz_pass as boolean) ?? true,
       requireAssignmentPass: (input.require_assignment_pass as boolean) ?? true,
       autoIssueCertificate: (input.auto_issue_certificate as boolean) ?? true,
     };
-    let row: CourseSel;
+    let row: StageSel;
     if (input.id) {
-      assertTenant(await courseTenant(db, input.id), caller);
+      assertTenant(await stageTenant(db, input.id), caller);
       row = requireReturning(
         await db
-          .update(courses)
+          .update(stages)
           .set({ ...values, updatedAt: new Date() })
-          .where(eq(courses.id, input.id))
+          .where(eq(stages.id, input.id))
           .returning(),
-        "course update",
+        "stage update",
       );
     } else {
-      row = requireReturning(await db.insert(courses).values(values).returning(), "course insert");
+      row = requireReturning(await db.insert(stages).values(values).returning(), "stage insert");
     }
-    return c.json({ row: courseToRow(row) });
+    return c.json({ row: stageToRow(row) });
   } catch (err) {
     return errorResponse(c, err);
   }
 });
 
-cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
+cmsRoute.patch("/api/cms/stages/:id/status", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    const info = await courseAuditInfo(db, id);
+    const info = await stageAuditInfo(db, id);
     if (!info) throw new ApiError("対象が見つかりません", 404);
     assertTenant(info.tenant, caller);
-    const { status } = (await c.req.json()) as { status: CourseSel["status"] };
-    await db.update(courses).set({ status, updatedAt: new Date() }).where(eq(courses.id, id));
+    const { status } = (await c.req.json()) as { status: StageSel["status"] };
+    // 公開を降ろすときだけ、 この教材を前提にしている公開中の教材が無いか確かめる。
+    // 降ろした瞬間に依存側が「誰も開けない星」になるため (評価器は安全側に locked で倒す)。
+    if (info.status === "published" && status !== "published") {
+      assertNoPublishedDependents(
+        await publishedDependents(db, caller.tenantId, info.slug, id),
+        "非公開に",
+      );
+    }
+    await db.update(stages).set({ status, updatedAt: new Date() }).where(eq(stages.id, id));
     // 公開 / 非公開は監査上の意味が違うため action を分ける (Issue #64)。
     const wasPublished = info.status === "published";
     await recordAudit(db, caller, {
       action:
         status === "published"
-          ? "course_publish"
+          ? "stage_publish"
           : wasPublished
-            ? "course_unpublish"
-            : "course_status_change",
-      targetType: "course",
+            ? "stage_unpublish"
+            : "stage_status_change",
+      targetType: "stage",
       targetId: id,
       ip: clientIp(c),
       metadata: { title: info.title, slug: info.slug, from: info.status, to: status },
@@ -391,20 +501,26 @@ cmsRoute.patch("/api/cms/courses/:id/status", async (c) => {
   }
 });
 
-cmsRoute.delete("/api/cms/courses/:id", async (c) => {
+cmsRoute.delete("/api/cms/stages/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    const info = await courseAuditInfo(db, id);
+    const info = await stageAuditInfo(db, id);
     if (!info) throw new ApiError("対象が見つかりません", 404);
     assertTenant(info.tenant, caller);
+    // 前提に挙げられている教材を消すと、 依存側は「誰も開けない星」になる。 消す前に止める
+    // (削除は取り消せないので、 非公開より強く守る)。
+    assertNoPublishedDependents(
+      await publishedDependents(db, caller.tenantId, info.slug, id),
+      "削除",
+    );
     // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
     const lessonRows = await db
       .select({ id: lessons.id })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
-      .where(eq(sections.courseId, id));
+      .where(eq(sections.stageId, id));
     await deleteMaterialObjects(
       db,
       c.env,
@@ -418,14 +534,14 @@ cmsRoute.delete("/api/cms/courses/:id", async (c) => {
       // 版を進めるのは削除より前。 削除後は cascade で項目が消え、 影響を受けたプリセットを
       // 引けなくなる。 項目が減っただけのプリセットも 「内容が変わった」 ので版を進める
       // (適用中の分割送信が、 約束どおり 409 で止まるようにする)。
-      touchPresetsContainingCourseStatement(db, caller.tenantId, id),
-      db.delete(courses).where(eq(courses.id, id)),
+      touchPresetsContainingStageStatement(db, caller.tenantId, id),
+      db.delete(stages).where(eq(stages.id, id)),
       archiveEmptiedPresetsStatement(db, caller.tenantId),
     ]);
     // 削除後は行が消えるため、 タイトル等は削除前に取った値を残す。
     await recordAudit(db, caller, {
-      action: "course_delete",
-      targetType: "course",
+      action: "stage_delete",
+      targetType: "stage",
       targetId: id,
       ip: clientIp(c),
       metadata: {
@@ -461,12 +577,12 @@ cmsRoute.post("/api/cms/sections", async (c) => {
     requireRole(caller, "instructor", "admin", "platform_admin");
     const input = (await c.req.json()) as {
       id?: string;
-      course_id: string;
+      stage_id: string;
       title: string;
       order?: number;
     };
-    assertTenant(await courseTenant(db, input.course_id), caller);
-    const values = { courseId: input.course_id, title: input.title, order: input.order ?? 0 };
+    assertTenant(await stageTenant(db, input.stage_id), caller);
+    const values = { stageId: input.stage_id, title: input.title, order: input.order ?? 0 };
     let row: SectionSel;
     if (input.id) {
       row = requireReturning(
@@ -489,7 +605,7 @@ cmsRoute.delete("/api/cms/sections/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const sc = await sectionCourse(db, c.req.param("id"));
+    const sc = await sectionStage(db, c.req.param("id"));
     assertTenant(sc?.tenant ?? null, caller);
     // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
     const lessonRows = await db
@@ -512,18 +628,18 @@ cmsRoute.post("/api/cms/sections/reorder", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const { courseId, orderedIds } = (await c.req.json()) as {
-      courseId: string;
+    const { stageId, orderedIds } = (await c.req.json()) as {
+      stageId: string;
       orderedIds: string[];
     };
-    assertTenant(await courseTenant(db, courseId), caller);
-    // 順序付きで各行の order を更新する (course 内に限定)。 並列実行でレイテンシを抑える。
+    assertTenant(await stageTenant(db, stageId), caller);
+    // 順序付きで各行の order を更新する (stage 内に限定)。 並列実行でレイテンシを抑える。
     await Promise.all(
       orderedIds.map((id, i) =>
         db
           .update(sections)
           .set({ order: i })
-          .where(and(eq(sections.id, id), eq(sections.courseId, courseId))),
+          .where(and(eq(sections.id, id), eq(sections.stageId, stageId))),
       ),
     );
     return c.json({ ok: true });
@@ -544,7 +660,7 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
       id?: string;
       section_id: string;
     };
-    const sc = await sectionCourse(db, input.section_id);
+    const sc = await sectionStage(db, input.section_id);
     assertTenant(sc?.tenant ?? null, caller);
     const values = {
       sectionId: input.section_id,
@@ -632,7 +748,7 @@ cmsRoute.post("/api/cms/lessons/reorder", async (c) => {
       sectionId: string;
       orderedIds: string[];
     };
-    const sc = await sectionCourse(db, sectionId);
+    const sc = await sectionStage(db, sectionId);
     assertTenant(sc?.tenant ?? null, caller);
     await Promise.all(
       orderedIds.map((id, i) =>
@@ -873,17 +989,17 @@ cmsRoute.get("/api/cms/assignments/:id", async (c) => {
     const a = rows[0];
     if (!a || a.tenantId !== caller.tenantId) return c.json({ row: null });
     if (!isStaffRole(caller.role)) {
-      // 受講者は published コース配下のレッスンに紐付く課題のみ。
+      // 受講者は published ステージ配下のレッスンに紐付く課題のみ。
       const linked = await db
         .select({ id: lessons.id })
         .from(lessons)
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
-        .innerJoin(courses, eq(courses.id, sections.courseId))
+        .innerJoin(stages, eq(stages.id, sections.stageId))
         .where(
           and(
             eq(lessons.assignmentId, id),
-            eq(courses.status, "published"),
-            eq(courses.tenantId, caller.tenantId),
+            eq(stages.status, "published"),
+            eq(stages.tenantId, caller.tenantId),
           ),
         )
         .limit(1);

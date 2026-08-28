@@ -92,7 +92,7 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
         <div>
           <h1 className="text-[24px] tracking-tight font-semibold">{submission.assignmentTitle}</h1>
           <p className="text-[12.5px] text-ink-3 mt-1">
-            {submission.courseTitle} · 提出 {formatSubmittedAt(submission.submittedAt)} ·{" "}
+            {submission.stageTitle} · 提出 {formatSubmittedAt(submission.submittedAt)} ·{" "}
             {submission.attempt}回目
           </p>
         </div>

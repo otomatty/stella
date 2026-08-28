@@ -1,8 +1,8 @@
 /**
- * 横断検索 (コース / レッスン) の型と純粋関数 (Issue #77)。
+ * 横断検索 (ステージ / レッスン) の型と純粋関数 (Issue #77)。
  *
  * Topbar の検索ボックスはハンドラを持たない UI スタブだったため、
- * `GET /api/search` を追加して実際にコース・レッスンを引けるようにした。
+ * `GET /api/search` を追加して実際にステージ・レッスンを引けるようにした。
  * ここには API / フロントの双方が使うクエリ正規化・LIKE エスケープ・
  * 並び替えのロジックだけを置く (I/O は持たない)。
  */
@@ -10,19 +10,19 @@
 import type { LessonType } from "../cms/types.js";
 
 /** 検索ヒットの種別。 */
-export type SearchResultKind = "course" | "lesson";
+export type SearchResultKind = "stage" | "lesson";
 
 /** `GET /api/search` が返すヒット 1 件。 */
 export interface SearchResult {
   kind: SearchResultKind;
-  /** course なら courses.id、 lesson なら lessons.id。 */
+  /** stage なら stages.id、 lesson なら lessons.id。 */
   id: string;
   title: string;
-  /** 補足行 (course: カテゴリ / lesson: コース名 · セクション名)。 */
+  /** 補足行 (stage: カテゴリ / lesson: ステージ名 · セクション名)。 */
   subtitle: string | null;
-  /** 遷移先の解決に使うコース ID (lesson でも必ず入る)。 */
-  course_id: string;
-  course_title: string;
+  /** 遷移先の解決に使うステージ ID (lesson でも必ず入る)。 */
+  stage_id: string;
+  stage_title: string;
   /** lesson のときのみ。 アイコン表示に使う。 */
   lesson_type: LessonType | null;
 }
@@ -80,14 +80,14 @@ export function buildPrefixLikePattern(query: string): string {
 }
 
 /**
- * ヒットの並び替え。 「前方一致 → 部分一致」「コース → レッスン」「タイトル昇順」の順。
+ * ヒットの並び替え。 「前方一致 → 部分一致」「ステージ → レッスン」「タイトル昇順」の順。
  *
  * D1 (SQLite) 側で ORDER BY を組み立てると種別ごとのクエリを跨げないため、
  * マージ後にこの純粋関数で整える。
  */
 export function rankSearchResults(results: readonly SearchResult[], query: string): SearchResult[] {
   const needle = query.toLowerCase();
-  const kindRank: Record<SearchResultKind, number> = { course: 0, lesson: 1 };
+  const kindRank: Record<SearchResultKind, number> = { stage: 0, lesson: 1 };
   const score = (r: SearchResult): number => (r.title.toLowerCase().startsWith(needle) ? 0 : 1);
 
   return [...results].sort((a, b) => {

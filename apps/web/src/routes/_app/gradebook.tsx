@@ -11,7 +11,7 @@ function GradebookPage() {
   const s = useAppShell();
   return (
     <RoleGuard allow={["instructor", "admin"]}>
-      <Gradebook courses={s.courses} />
+      <Gradebook stages={s.stages} />
     </RoleGuard>
   );
 }

@@ -2,7 +2,7 @@
  * 管理レポート API (Issue #75)。
  *
  * 管理画面「レポート」の横断エクスポート経路。 KPI ダッシュボード (#28) は「今の状態」の
- * 集計、 成績台帳 (#26) はコース単位の一覧であるのに対し、 ここは「期間で切った明細を
+ * 集計、 成績台帳 (#26) はステージ単位の一覧であるのに対し、 ここは「期間で切った明細を
  * まとめて書き出す」ことを目的とする。 列定義は `@falcon/shared/admin/reports` に置き、
  * CSV 化はフロント (`lib/csv`) が行う (アプリ内の他の CSV 出力と同じ経路)。
  *
@@ -26,7 +26,7 @@ import {
 import {
   auditLogs,
   certificates,
-  courses,
+  stages,
   enrollments,
   lessonProgress,
   lessons,
@@ -187,8 +187,8 @@ async function enrollmentsReport(
       userId: enrollments.userId,
       userName: profiles.displayName,
       email: profiles.email,
-      courseId: enrollments.courseId,
-      courseTitle: courses.title,
+      stageId: enrollments.stageId,
+      stageTitle: stages.title,
       status: enrollments.status,
       required: enrollments.required,
       enrolledAt: enrollments.enrolledAt,
@@ -197,40 +197,40 @@ async function enrollmentsReport(
     })
     .from(enrollments)
     .innerJoin(profiles, eq(profiles.id, enrollments.userId))
-    .innerJoin(courses, eq(courses.id, enrollments.courseId))
+    .innerJoin(stages, eq(stages.id, enrollments.stageId))
     .where(and(...conds))
     .orderBy(desc(enrollments.enrolledAt))
     .limit(limit)
     .offset(offset);
 
   // 進捗率のための突合。 1 行ずつ問い合わせると N+1 になるため、 ページ分の
-  // course / user をまとめて引いてから JS で突き合わせる (analytics と同じ方針)。
-  const courseIds = [...new Set(page.map((r) => r.courseId))];
+  // stage / user をまとめて引いてから JS で突き合わせる (analytics と同じ方針)。
+  const stageIds = [...new Set(page.map((r) => r.stageId))];
   const userIds = [...new Set(page.map((r) => r.userId))];
 
   // D1 のバインド変数上限に収まるよう、 ID の一覧は分割して問い合わせる。
   const lessonRows = (
     await Promise.all(
-      chunk(courseIds, IN_CHUNK_SIZE).map((ids) =>
+      chunk(stageIds, IN_CHUNK_SIZE).map((ids) =>
         db
-          .select({ lessonId: lessons.id, courseId: sections.courseId })
+          .select({ lessonId: lessons.id, stageId: sections.stageId })
           .from(lessons)
           .innerJoin(sections, eq(sections.id, lessons.sectionId))
-          .where(inArray(sections.courseId, ids)),
+          .where(inArray(sections.stageId, ids)),
       ),
     )
   ).flat();
-  const lessonIdsByCourse = new Map<string, string[]>();
+  const lessonIdsByStage = new Map<string, string[]>();
   const pageLessonIds = new Set<string>();
   for (const r of lessonRows) {
-    const arr = lessonIdsByCourse.get(r.courseId) ?? [];
+    const arr = lessonIdsByStage.get(r.stageId) ?? [];
     arr.push(r.lessonId);
-    lessonIdsByCourse.set(r.courseId, arr);
+    lessonIdsByStage.set(r.stageId, arr);
     pageLessonIds.add(r.lessonId);
   }
 
   // 完了進捗はページ上の user に絞って読む。 レッスン ID でも絞りたいところだが、
-  // 二つ目の大きな IN 句はバインド変数上限に触れるため、 対象コース外のレッスンは
+  // 二つ目の大きな IN 句はバインド変数上限に触れるため、 対象ステージ外のレッスンは
   // 取得後に `pageLessonIds` で落とす。
   const progressRows = (
     await Promise.all(
@@ -257,15 +257,15 @@ async function enrollmentsReport(
   }
 
   const rows: EnrollmentReportRow[] = page.map((r) => {
-    const lessonIds = lessonIdsByCourse.get(r.courseId) ?? [];
+    const lessonIds = lessonIdsByStage.get(r.stageId) ?? [];
     const completed = completedByUser.get(r.userId) ?? new Set<string>();
     const done = lessonIds.filter((id) => completed.has(id)).length;
     return {
       user_id: r.userId,
       user_name: r.userName,
       email: r.email,
-      course_id: r.courseId,
-      course_title: r.courseTitle,
+      stage_id: r.stageId,
+      stage_title: r.stageTitle,
       status: r.status,
       required: r.required,
       enrolled_at: r.enrolledAt.toISOString(),
@@ -329,7 +329,7 @@ async function gradesReport(
       userName: profiles.displayName,
       email: profiles.email,
       lessonTitle: lessons.title,
-      courseTitle: courses.title,
+      stageTitle: stages.title,
       score: quizAttempts.score,
       maxScore: quizAttempts.maxScore,
       passed: quizAttempts.passed,
@@ -340,7 +340,7 @@ async function gradesReport(
     .leftJoin(quizzes, eq(quizzes.id, quizAttempts.quizId))
     .leftJoin(lessons, eq(lessons.id, quizzes.lessonId))
     .leftJoin(sections, eq(sections.id, lessons.sectionId))
-    .leftJoin(courses, eq(courses.id, sections.courseId))
+    .leftJoin(stages, eq(stages.id, sections.stageId))
     .where(and(...quizConds))
     .orderBy(desc(quizAttempts.submittedAt))
     .limit(head);
@@ -351,7 +351,7 @@ async function gradesReport(
       studentId: submissions.studentId,
       userName: profiles.displayName,
       email: profiles.email,
-      courseTitle: submissions.courseTitle,
+      stageTitle: submissions.stageTitle,
       assignmentTitle: submissions.assignmentTitle,
       status: submissions.status,
       submittedAt: submissions.submittedAt,
@@ -368,7 +368,7 @@ async function gradesReport(
     user_id: a.userId,
     user_name: a.userName,
     email: a.email,
-    course_title: a.courseTitle ?? "",
+    stage_title: a.stageTitle ?? "",
     item_title: a.lessonTitle ?? "",
     score: a.score,
     max_score: a.maxScore,
@@ -383,7 +383,7 @@ async function gradesReport(
     user_id: s.studentId,
     user_name: s.userName ?? "",
     email: s.email ?? null,
-    course_title: s.courseTitle,
+    stage_title: s.stageTitle,
     item_title: s.assignmentTitle,
     score: null,
     max_score: null,
@@ -428,7 +428,7 @@ async function certificatesReport(
       userId: certificates.userId,
       recipientName: certificates.recipientName,
       email: profiles.email,
-      courseTitle: certificates.courseTitle,
+      stageTitle: certificates.stageTitle,
       issuedAt: certificates.issuedAt,
       issuedBy: certificates.issuedBy,
       revoked: certificates.revoked,
@@ -445,7 +445,7 @@ async function certificatesReport(
     user_id: r.userId,
     user_name: r.recipientName,
     email: r.email ?? null,
-    course_title: r.courseTitle,
+    stage_title: r.stageTitle,
     issued_at: r.issuedAt.toISOString(),
     issued_by: r.issuedBy,
     revoked: r.revoked,

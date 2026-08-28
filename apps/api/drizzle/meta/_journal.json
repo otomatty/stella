@@ -218,6 +218,55 @@
       "when": 1788350000000,
       "tag": "0031_lesson_versioning",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1788400000000,
+      "tag": "0032_rename_courses_to_stages",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788450000000,
+      "tag": "0033_stage_graph_and_path_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1788500000000,
+      "tag": "0034_stage_path_events_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1788550000000,
+      "tag": "0035_learner_focus_and_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1788600000000,
+      "tag": "0036_stage_unlocks_and_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1788650000000,
+      "tag": "0037_discovery_materials",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1788700000000,
+      "tag": "0038_hall_of_fame",
+      "breakpoints": true
     }
   ]
 }

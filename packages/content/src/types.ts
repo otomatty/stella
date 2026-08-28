@@ -41,6 +41,25 @@ export interface CourseConfig {
   modules?: Record<string, string>;
   /** レッスンキー ("1-1" 形式) → VS Code 拡張で解くコード演習 */
   exercises?: Record<string, ExerciseRef[]>;
+  /**
+   * 前提講座の slug 配列。ここに挙げた講座を **すべてクリアするまで開けない**
+   * (スキルツリーのハードロック)。書けるのは `CURRICULUM.md` に「前提講座」として
+   * 散文で明記されているものだけ。推奨・任意の受講順はここに書かない
+   * (書いた瞬間ゲートになり、受講者が入れなくなる)。
+   *
+   * 未知 slug・自己参照・循環はビルドで落とす (manifest.ts)。
+   */
+  prerequisites?: string[];
+  /**
+   * 到達説明。「この星をともした人は◯◯ができる」のホバー表示に使う 1 文。
+   * 「〜できる」で終える。誇張しない (資格の合格保証などは書かない)。
+   */
+  canDo?: string;
+  /**
+   * 霧の中の星に見せるテーマ名。まだ視界に入っていない講座は、タイトルの代わりに
+   * これだけが見える。カテゴリ単位でそろえる (講座ごとに凝った名前を付けない)。
+   */
+  theme?: string;
 }
 
 export interface QuizSeed {

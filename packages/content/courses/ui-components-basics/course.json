@@ -5,6 +5,9 @@
   "description": "モダンCSS 入門の次に受ける、代表的な UI 部品を HTML と CSS だけで作る研修。カード・メディアオブジェクト・スプリットナビ・パンくずリスト・ページネーション・フォーム部品・details・ポップオーバー・宣言的なダイアログを、HTML 骨格 → レイアウト → トークン → 状態の 4 段階で 1 つずつ仕上げる。JavaScript は書かない。",
   "header": "UI部品入門研修",
   "tenantId": "ses",
+  "prerequisites": ["modern-css-basics"],
+  "canDo": "カードやナビなどの UI 部品を、HTML と CSS だけで組み立てられる",
+  "theme": "Web とデータの実践",
   "modules": {
     "m1-blocks": "M1. 情報のかたまり",
     "m2-navigation": "M2. ナビゲーション",

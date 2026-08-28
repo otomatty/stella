@@ -29,7 +29,7 @@ import { useProfiles } from "@/hooks/useProfiles";
 import { useAuditLogs, type AuditFilters } from "@/hooks/useAuditLogs";
 import { DEFAULT_LIST_LIMIT, listAllAuditLogs, type AuditLogRow } from "@/lib/audit-logs-api";
 import {
-  AUDIT_ACTION_LABELS,
+  AUDIT_ACTION_FILTER_LABELS,
   auditActionLabel,
   type AuditAction,
 } from "@falcon/shared/admin/audit-actions";
@@ -46,11 +46,11 @@ const ACTION_VARIANT: Partial<Record<AuditAction, ActionVariant>> = {
   user_role_change: "warning",
   user_disable: "danger",
   user_enable: "success",
-  course_publish: "success",
-  course_unpublish: "default",
-  course_status_change: "default",
-  course_delete: "danger",
-  enrollment_create: "info",
+  stage_publish: "success",
+  stage_unpublish: "default",
+  stage_status_change: "default",
+  stage_delete: "danger",
+  stage_self_start: "info",
   enrollment_update: "default",
   enrollment_delete: "danger",
   certificate_issue: "accent",
@@ -66,7 +66,8 @@ function actionVariant(action: string): ActionVariant {
 }
 
 // 操作種別フィルタの選択肢。 ラベル定義のキー順を踏襲する。
-const ACTION_OPTIONS = Object.keys(AUDIT_ACTION_LABELS);
+// 廃止済み action (`course_*`) も「(旧)」付きで並ぶ — 過去ログを絞り込めるようにするため。
+const ACTION_OPTIONS = Object.keys(AUDIT_ACTION_FILTER_LABELS);
 
 function actionLabel(action: string): string {
   return auditActionLabel(action);
@@ -291,7 +292,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
           <div className="py-10 text-center text-sm text-ink-3">
             {hasFilters
               ? "条件に一致する監査ログはありません。"
-              : "監査ログはまだありません。 ロール変更・コース公開・削除などの操作が記録されます。"}
+              : "監査ログはまだありません。 ロール変更・ステージ公開・削除などの操作が記録されます。"}
           </div>
         ) : (
           <Table>
@@ -355,15 +356,15 @@ const DEMO_ROWS = [
   {
     t: "2026-04-18 13:05:44",
     a: "sys_admin",
-    ac: "course_publish",
-    tg: "course/typescript-basics",
+    ac: "stage_publish",
+    tg: "stage/typescript-basics",
     ip: "10.0.0.1",
   },
   {
     t: "2026-04-18 12:18:30",
     a: "堀江メンター",
-    ac: "course_delete",
-    tg: "course/legacy-sql",
+    ac: "stage_delete",
+    tg: "stage/legacy-sql",
     ip: "10.0.3.22",
   },
   { t: "2026-04-18 11:02:09", a: "中村 理恵", ac: "user_invite", tg: "user/u_310", ip: "10.0.3.5" },

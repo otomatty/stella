@@ -15,7 +15,7 @@ import type { QuizAnswer } from "@falcon/shared/cms/types";
 
 import type { Env } from "../env.js";
 import {
-  courses,
+  stages,
   enrollments,
   lessons,
   quizAttempts,
@@ -42,7 +42,7 @@ const DAILY_MIN = 5;
 
 /**
  * 受講者がアクセスできるカードを due の古い順に返す。
- * published なコース + active な enrollment の設問に限定する (quiz.ts の
+ * published なステージ + active な enrollment の設問に限定する (quiz.ts の
  * isAuthorizedForLesson と同じ条件を join で畳んだもの)。
  */
 async function selectAccessibleCards(
@@ -58,11 +58,11 @@ async function selectAccessibleCards(
     .innerJoin(quizzes, eq(quizzes.id, quizQuestions.quizId))
     .innerJoin(lessons, eq(lessons.id, quizzes.lessonId))
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(courses, eq(courses.id, sections.courseId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
     .innerJoin(
       enrollments,
       and(
-        eq(enrollments.courseId, courses.id),
+        eq(enrollments.stageId, stages.id),
         eq(enrollments.userId, caller.id),
         eq(enrollments.status, "active"),
       ),
@@ -70,8 +70,8 @@ async function selectAccessibleCards(
     .where(
       and(
         eq(reviewCards.userId, caller.id),
-        eq(courses.tenantId, caller.tenantId),
-        eq(courses.status, "published"),
+        eq(stages.tenantId, caller.tenantId),
+        eq(stages.status, "published"),
         extra,
       ),
     )

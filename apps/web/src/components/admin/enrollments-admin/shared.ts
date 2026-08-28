@@ -1,18 +1,19 @@
 /**
- * 受講登録画面 (`/enrollments`) で共有する型と小物。
+ * 受講状況画面 (`/admin/enrollments`) で共有する型と小物。
  *
- * 画面は「受講生を選ぶ → その受講生に割り当てる教材を決める」の順で操作するため、
- * 受講者 (profile) × コースの割当状況を Map で引けるようにしておく。
+ * Phase 3b で割当を廃止したので、この画面は読み取り専用になった。 それでも
+ * 受講者 (profile) × ステージで引ける形は必要なので (「この人はこの星を始めたか」)、
+ * Map のかたちはそのまま残している。
  */
 
 import type { AdminProfileRow } from "@/lib/admin-users-api";
 import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
 
-/** 受講者 1 名分の割当状況 (courseId → enrollment)。 */
-export type EnrollmentsByCourse = Map<string, EnrollmentRow>;
+/** 受講者 1 名分の受講状況 (stageId → enrollment)。 */
+export type EnrollmentsByStage = Map<string, EnrollmentRow>;
 
-/** 受講者 id → その受講者の割当状況。 */
-export type EnrollmentIndex = Map<string, EnrollmentsByCourse>;
+/** 受講者 id → その受講者の受講状況。 */
+export type EnrollmentIndex = Map<string, EnrollmentsByStage>;
 
 /** enrollment ステータスを日本語の表示語にする。 */
 export const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
@@ -24,22 +25,20 @@ export const ENROLLMENT_STATUS_LABEL: Record<EnrollmentStatus, string> = {
 /**
  * 受講者リストの絞り込み軸。
  *
- * スタッフ (講師 / 管理者) への割当は「受講者画面を自分で確認する」ための例外で、
- * 明示的に選んだときだけ対象になる (受講者を対象にする操作が巻き込むことはない)。
- * 選択にスタッフが混ざっているときは右ペインで注意書きを出す。
+ * スタッフ (講師 / 管理者) も自分で受講を始められるので、 その状況もここから見る。
  */
 export type LearnerFilter = "student" | "staff";
 
-/** 教材リストの絞り込み軸。 */
-export type CourseFilter = "all" | "assigned" | "unassigned";
+/** 受講状況リストの絞り込み軸。 */
+export type StatusFilter = "all" | "active" | "completed" | "overdue";
 
-/** enrollment 配列を 受講者 id → (コース id → enrollment) に畳む。 */
+/** enrollment 配列を 受講者 id → (ステージ id → enrollment) に畳む。 */
 export function indexEnrollments(rows: EnrollmentRow[]): EnrollmentIndex {
   const index: EnrollmentIndex = new Map();
   for (const row of rows) {
-    const byCourse = index.get(row.user_id) ?? new Map<string, EnrollmentRow>();
-    byCourse.set(row.course_id, row);
-    index.set(row.user_id, byCourse);
+    const byStage = index.get(row.user_id) ?? new Map<string, EnrollmentRow>();
+    byStage.set(row.stage_id, row);
+    index.set(row.user_id, byStage);
   }
   return index;
 }

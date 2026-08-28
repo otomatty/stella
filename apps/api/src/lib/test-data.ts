@@ -4,7 +4,7 @@
  * テナントの `test_mode` が ON のとき、 ユーザー登録 (招待) の直後に呼ばれ、
  * 新規ユーザーがすぐ画面を確認できる状態を作る:
  *
- *   - student: テナントの published コースへの受講登録 (期限 30 日後 / 必須)
+ *   - student: テナントの published ステージへの受講登録 (期限 30 日後 / 必須)
  *              + 最初のレッスンを完了済みにする進捗
  *              + 直近数日の日別学習ログ (週間チャート / ストリークの確認用)
  *              + サンプル提出 (添削待ち 2 件 + 添削済み 1 件)
@@ -29,7 +29,7 @@ import type {
 
 import type { Db } from "../db/client.js";
 import {
-  courses,
+  stages,
   enrollments,
   lessonProgress,
   lessons,
@@ -237,7 +237,7 @@ interface SampleAuthor {
   initials: string | null;
 }
 
-interface CourseLesson {
+interface StageLesson {
   id: string;
   title: string;
   type: string;
@@ -294,32 +294,32 @@ export async function insertTestDataForNewUser(db: Db, target: TestDataTarget): 
 // ---------------------------------------------------------------
 
 async function insertStudentTestData(db: Db, target: TestDataTarget, now: Date): Promise<void> {
-  const published = await listPublishedCourses(db, target.tenantId);
+  const published = await listPublishedStages(db, target.tenantId);
 
   if (published.length > 0) {
     const dueAt = new Date(now.getTime() + TEST_ENROLLMENT_DUE_DAYS * 86_400_000);
     await db
       .insert(enrollments)
       .values(
-        published.map((course) => ({
+        published.map((stage) => ({
           tenantId: target.tenantId,
           userId: target.userId,
-          courseId: course.id,
+          stageId: stage.id,
           assignedBy: target.invitedBy,
           dueAt,
           required: true,
         })),
       )
       .onConflictDoNothing({
-        target: [enrollments.userId, enrollments.courseId],
+        target: [enrollments.userId, enrollments.stageId],
       });
 
-    const course = published[0];
-    if (!course) return;
-    const courseLessons = await listCourseLessons(db, course.id);
+    const stage = published[0];
+    if (!stage) return;
+    const stageLessons = await listStageLessons(db, stage.id);
 
-    // 最初のコースの最初のレッスンを完了済みにして、 進捗表示を確認できるようにする。
-    const firstLesson = courseLessons[0];
+    // 最初のステージの最初のレッスンを完了済みにして、 進捗表示を確認できるようにする。
+    const firstLesson = stageLessons[0];
     if (firstLesson) {
       await db
         .insert(lessonProgress)
@@ -341,7 +341,7 @@ async function insertStudentTestData(db: Db, target: TestDataTarget, now: Date):
       initials: initialsOf(target.displayName),
     };
 
-    await insertSampleSubmissions(db, target.tenantId, author, course.title, courseLessons, now);
+    await insertSampleSubmissions(db, target.tenantId, author, stage.title, stageLessons, now);
   }
 
   // 週間学習チャート / 連続学習ストリークをすぐ確認できるよう、 日別ログも入れる。
@@ -392,37 +392,37 @@ async function insertStaffTestData(db: Db, target: TestDataTarget, now: Date): P
   )[0];
   if (!student) return;
 
-  const published = await listPublishedCourses(db, target.tenantId);
-  const course = published[0];
-  if (!course) return;
+  const published = await listPublishedStages(db, target.tenantId);
+  const stage = published[0];
+  if (!stage) return;
 
-  const courseLessons = await listCourseLessons(db, course.id);
+  const stageLessons = await listStageLessons(db, stage.id);
   const author: SampleAuthor = {
     id: student.id,
     name: student.displayName,
     initials: student.initials ?? initialsOf(student.displayName),
   };
 
-  await insertSampleSubmissions(db, target.tenantId, author, course.title, courseLessons, now);
+  await insertSampleSubmissions(db, target.tenantId, author, stage.title, stageLessons, now);
 }
 
 // ---------------------------------------------------------------
 // 共通ヘルパ
 // ---------------------------------------------------------------
 
-async function listPublishedCourses(
+async function listPublishedStages(
   db: Db,
   tenantId: string,
 ): Promise<Array<{ id: string; title: string }>> {
   return db
-    .select({ id: courses.id, title: courses.title })
-    .from(courses)
-    .where(and(eq(courses.tenantId, tenantId), eq(courses.status, "published")))
-    .orderBy(asc(courses.createdAt));
+    .select({ id: stages.id, title: stages.title })
+    .from(stages)
+    .where(and(eq(stages.tenantId, tenantId), eq(stages.status, "published")))
+    .orderBy(asc(stages.createdAt));
 }
 
-/** コース配下のレッスンをセクション順 / レッスン順で返す。 */
-async function listCourseLessons(db: Db, courseId: string): Promise<CourseLesson[]> {
+/** ステージ配下のレッスンをセクション順 / レッスン順で返す。 */
+async function listStageLessons(db: Db, stageId: string): Promise<StageLesson[]> {
   return db
     .select({
       id: lessons.id,
@@ -433,23 +433,23 @@ async function listCourseLessons(db: Db, courseId: string): Promise<CourseLesson
     })
     .from(lessons)
     .innerJoin(sections, eq(lessons.sectionId, sections.id))
-    .where(eq(sections.courseId, courseId))
+    .where(eq(sections.stageId, stageId))
     .orderBy(asc(sections.order), asc(lessons.order));
 }
 
 /**
  * 講師の添削待ちキュー / 受講者の提出履歴を埋めるサンプル提出物。
- * 課題・演習レッスンが 1 件も無いコースでは何もしない。
+ * 課題・演習レッスンが 1 件も無いステージでは何もしない。
  */
 async function insertSampleSubmissions(
   db: Db,
   tenantId: string,
   author: SampleAuthor,
-  courseTitle: string,
-  courseLessons: readonly CourseLesson[],
+  stageTitle: string,
+  stageLessons: readonly StageLesson[],
   now: Date,
 ): Promise<void> {
-  const targets = courseLessons
+  const targets = stageLessons
     .filter((l) => (ASSIGNMENT_LESSON_TYPES as readonly string[]).includes(l.type))
     .slice(0, SUBMISSION_TEMPLATES.length);
   if (targets.length === 0) return;
@@ -464,7 +464,7 @@ async function insertSampleSubmissions(
         studentId: author.id,
         lessonId: lesson.id,
         assignmentId: lesson.assignmentId,
-        courseTitle,
+        stageTitle,
         sectionTitle: lesson.sectionTitle,
         assignmentTitle: lesson.title,
         code: t.code,
@@ -504,7 +504,7 @@ async function insertSampleSubmissions(
         submission_id: id,
         verdict: row.verdict,
         status: row.status,
-        course_title: row.courseTitle,
+        stage_title: row.stageTitle,
         test_data: true,
       },
     })),

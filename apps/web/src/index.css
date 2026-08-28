@@ -333,7 +333,7 @@
     color: oklch(var(--palette-fg-l) 0.11 90);
   }
 
-  /* Course thumbnail placeholder stripes (明度は --stripe-l1 / --stripe-l2) */
+  /* Stage thumbnail placeholder stripes (明度は --stripe-l1 / --stripe-l2) */
   .thumb-stripes {
     background-image: repeating-linear-gradient(
       45deg,
@@ -603,6 +603,120 @@
 
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============================================================
+   殿堂 (Hall of Fame) — アプリ内で唯一トーンが反転する夜空の空間 (Phase 5)
+   ------------------------------------------------------------
+   **ここだけテーマ設定 (light / dark) に従わない。** 殿堂は「学習の画面」ではなく
+   人の物語を読む場所で、明暗が切り替わると同じ物語が別物に見える。だから配色は
+   `.hof` の中で固定し、 `--bg` / `--ink` などのトークンは一切参照しない。
+   (ダークテーマでも同じ紺、 ライトテーマでも同じ紺。 色の値はここだけが持つ。)
+
+   コントラストは WCAG AA を満たす組み合わせだけを置いている:
+   金 #e8c46a / 本文 #f5f2ea / 補助 #cfc9e4 は、 いずれも背景 #131028 に対して 7:1 以上。
+   ============================================================ */
+
+.hof {
+  /* 夜空。 上が深く、 下がわずかに紫へ寄る (星が上に集まって見えるように) */
+  --hof-bg: #131028;
+  --hof-bg-2: #1b1740;
+  --hof-panel: rgba(255, 255, 255, 0.04);
+  --hof-gold: #e8c46a;
+  --hof-gold-2: #f3dda4;
+  --hof-gold-soft: rgba(232, 196, 106, 0.14);
+  --hof-line: rgba(232, 196, 106, 0.24);
+  --hof-ink: #f5f2ea;
+  --hof-ink-2: #cfc9e4;
+
+  background: var(--hof-bg);
+  color: var(--hof-ink);
+  /* 夜空の中では選択色もブランドのマゼンタではなく金にする。 */
+  &::selection,
+  & ::selection {
+    background: rgba(232, 196, 106, 0.28);
+  }
+}
+
+/* 引用と章題は明朝。 外部フォントは足さず、 OS 標準の明朝スタックだけを使う。 */
+.hof-serif {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  font-weight: 500;
+}
+
+/* 星空。 大きさと明るさの違う星を 3 層重ねて、 均一なドット柄に見えないようにする。 */
+.hof-stars {
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(1.2px 1.2px at 27% 62%, rgba(255, 255, 255, 0.65), transparent 60%),
+    radial-gradient(1.8px 1.8px at 41% 26%, rgba(255, 255, 255, 0.8), transparent 60%),
+    radial-gradient(1px 1px at 55% 71%, rgba(255, 255, 255, 0.55), transparent 60%),
+    radial-gradient(2px 2px at 68% 34%, rgba(232, 196, 106, 0.75), transparent 60%),
+    radial-gradient(1.2px 1.2px at 78% 12%, rgba(255, 255, 255, 0.7), transparent 60%),
+    radial-gradient(1.4px 1.4px at 88% 58%, rgba(255, 255, 255, 0.6), transparent 60%),
+    radial-gradient(1px 1px at 94% 30%, rgba(232, 196, 106, 0.6), transparent 60%),
+    radial-gradient(ellipse 120% 80% at 50% 0%, var(--hof-bg-2) 0%, var(--hof-bg) 70%);
+  /* 星の層はタイルとして敷き詰める (1 枚絵にすると、 広い面では星が数個しか出ない)。
+     最後の層 (夜空のグラデーション) だけは面いっぱいに 1 枚。 */
+  background-size:
+    340px 300px,
+    280px 260px,
+    420px 380px,
+    240px 220px,
+    520px 460px,
+    300px 340px,
+    380px 300px,
+    460px 420px,
+    100% 100%;
+  background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+}
+
+/* 金の輪 (アバター) と金の面 (タグ・ノード)。 */
+.hof-ring {
+  border: 1px solid var(--hof-gold);
+  background: var(--hof-gold-soft);
+  color: var(--hof-gold-2);
+}
+.hof-panel-bg {
+  background: var(--hof-panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.hof-panel-bg:hover {
+  border-color: var(--hof-line);
+}
+
+/**
+ * 星座の点灯。 星を 1 つずつ灯していく (`--i` が順番)。
+ *
+ * 全体で 2 秒以内に収める — 読み手を待たせる演出はスキップ導線が要る、 という判断を
+ * 「待たせない長さにする」側で解く。 `prefers-reduced-motion` では最初から点いた姿で出す。
+ */
+.hof-star {
+  animation: hof-star-in 0.5s ease-out backwards;
+  /* 遅延は星の数から JS が決める (`--d` 秒)。 星が増えても全体は 2 秒に収まる。 */
+  animation-delay: calc(var(--d, 0) * 1s);
+}
+.hof-link-line {
+  animation: hof-line-in 0.45s ease-out backwards;
+  animation-delay: calc(var(--d, 0) * 1s);
+}
+@keyframes hof-star-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes hof-line-in {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 100;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hof-star,
+  .hof-link-line {
+    animation: none;
   }
 }
 

@@ -4,14 +4,14 @@ import { Send, CheckCircle, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { Course, Lesson } from "@/data/types";
+import type { Stage, Lesson } from "@/data/types";
 import { createSubmission, createSubmissionAsync } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
 import type { Tenant } from "@/data/types";
 
 interface AssignmentSubmitPanelProps {
   tenantId: Tenant["id"];
-  course: Course;
+  stage: Stage;
   lesson: Lesson;
   sectionTitle?: string;
   studentName: string;
@@ -21,7 +21,7 @@ interface AssignmentSubmitPanelProps {
 
 export function AssignmentSubmitPanel({
   tenantId,
-  course,
+  stage,
   lesson,
   sectionTitle,
   studentName,
@@ -45,7 +45,7 @@ export function AssignmentSubmitPanel({
         studentName,
         studentInitials,
         avatarTone: "c1" as const,
-        courseTitle: course.title,
+        stageTitle: stage.title,
         sectionTitle,
         assignmentTitle: lesson.title,
         lessonId: lesson.id,

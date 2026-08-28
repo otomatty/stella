@@ -2,7 +2,7 @@
  * 割当プリセットの不変条件を保つためのヘルパ。
  *
  * プリセット API は 「項目 1 件以上」 を入力バリデーションで担保しているが、 教材の削除は
- * その外側から項目を消す (`enrollment_preset_items.course_id` は cascade)。 最後の 1 件が
+ * その外側から項目を消す (`enrollment_preset_items.stage_id` は cascade)。 最後の 1 件が
  * 消えると、 一覧には出るが適用は必ず失敗する空のプリセットが残る。 しかも教材の削除は
  * instructor でもできる一方、 プリセットの編集 / 削除は admin 以上なので、 壊した本人が
  * 直せない。 教材の削除と同じトランザクションで畳んでおく。
@@ -60,7 +60,7 @@ export function archiveEmptiedPresetsStatement(db: Db, tenantId: string) {
  * **教材を削除する文より前** に流すこと。 削除後は cascade で項目が消えており、
  * どのプリセットが影響を受けたのか引けなくなる。
  */
-export function touchPresetsContainingCourseStatement(db: Db, tenantId: string, courseId: string) {
+export function touchPresetsContainingStageStatement(db: Db, tenantId: string, stageId: string) {
   return db
     .update(enrollmentPresets)
     .set({ updatedAt: new Date() })
@@ -74,7 +74,7 @@ export function touchPresetsContainingCourseStatement(db: Db, tenantId: string, 
             .where(
               and(
                 eq(enrollmentPresetItems.presetId, enrollmentPresets.id),
-                eq(enrollmentPresetItems.courseId, courseId),
+                eq(enrollmentPresetItems.stageId, stageId),
               ),
             ),
         ),

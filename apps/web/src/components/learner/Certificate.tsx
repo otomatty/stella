@@ -3,9 +3,9 @@
  *
  * - バックエンド設定 + ログイン時: 実データで動作する。
  *   - 発行済みの修了証を一覧表示 (印刷 / 公開検証ページへのリンク付き)。
- *   - 受講中コースの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示し、
- *     基準達成かつ未発行のコースは受講者自身が「発行する」ボタンで発行できる
- *     (コースが auto_issue_certificate のときも、 ここでの発行が実体化トリガになる)。
+ *   - 受講中ステージの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示し、
+ *     基準達成かつ未発行のステージは受講者自身が「発行する」ボタンで発行できる
+ *     (ステージが auto_issue_certificate のときも、 ここでの発行が実体化トリガになる)。
  * - バックエンド未設定 (fixtures デモ) 時: 従来どおり静的テンプレートを表示する。
  */
 
@@ -16,17 +16,17 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
-import type { Course } from "@/data/types";
-import type { CertificateRow, CourseCompletion } from "@falcon/shared/cms/types";
+import type { Stage } from "@/data/types";
+import type { CertificateRow, StageCompletion } from "@falcon/shared/cms/types";
 import {
   buildVerificationUrl,
-  fetchMyCourseCompletion,
+  fetchMyStageCompletion,
   issueCertificate,
   listCertificatesForUser,
 } from "@/lib/certificates-api";
 
 interface CertificatePageProps {
-  courses: Course[];
+  stages: Stage[];
   currentUserId: string | null;
   studentName: string;
   studentInitials: string;
@@ -35,7 +35,7 @@ interface CertificatePageProps {
 }
 
 export const CertificatePage = ({
-  courses,
+  stages,
   currentUserId,
   studentName,
   studentInitials,
@@ -51,7 +51,7 @@ export const CertificatePage = ({
   }
   return (
     <LiveCertificates
-      courses={courses}
+      stages={stages}
       userId={currentUserId}
       studentInitials={studentInitials}
       tenantName={tenantName}
@@ -64,15 +64,15 @@ export const CertificatePage = ({
 // ---------------------------------------------------------------
 
 interface LiveProps {
-  courses: Course[];
+  stages: Stage[];
   userId: string;
   studentInitials: string;
   tenantName: string;
 }
 
-function LiveCertificates({ courses, userId, studentInitials, tenantName }: LiveProps) {
+function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveProps) {
   const [certs, setCerts] = useState<CertificateRow[]>([]);
-  const [completions, setCompletions] = useState<Record<string, CourseCompletion | null>>({});
+  const [completions, setCompletions] = useState<Record<string, StageCompletion | null>>({});
   const [loading, setLoading] = useState(true);
   const [issuingId, setIssuingId] = useState<string | null>(null);
 
@@ -82,9 +82,9 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
       const [certRows, completionPairs] = await Promise.all([
         listCertificatesForUser(userId),
         Promise.all(
-          courses.map(async (c) => {
+          stages.map(async (c) => {
             try {
-              return [c.id, await fetchMyCourseCompletion(c.id)] as const;
+              return [c.id, await fetchMyStageCompletion(c.id)] as const;
             } catch {
               return [c.id, null] as const;
             }
@@ -99,16 +99,16 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
     } finally {
       setLoading(false);
     }
-  }, [userId, courses]);
+  }, [userId, stages]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const onIssue = async (courseId: string) => {
-    setIssuingId(courseId);
+  const onIssue = async (stageId: string) => {
+    setIssuingId(stageId);
     try {
-      const result = await issueCertificate(courseId, userId);
+      const result = await issueCertificate(stageId, userId);
       toast.success(result.already_existed ? "修了証は既に発行済みです" : "修了証を発行しました");
       await load();
     } catch (err) {
@@ -118,17 +118,17 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
     }
   };
 
-  const certByCourse = new Map(certs.map((c) => [c.course_id, c]));
-  // 未発行で基準達成のコース (自動発行可なら本人発行、 不可なら講師承認待ち)。
-  const issuable = courses.filter((c) => !certByCourse.has(c.id) && completions[c.id]?.met);
-  // 受講中 (未達成 / 集計あり) のコース。
-  const inProgress = courses.filter(
-    (c) => !certByCourse.has(c.id) && completions[c.id] && !completions[c.id]?.met,
+  const certByStage = new Map(certs.map((c) => [c.stage_id, c]));
+  // 未発行で基準達成のステージ (自動発行可なら本人発行、 不可なら講師承認待ち)。
+  const issuable = stages.filter((c) => !certByStage.has(c.id) && completions[c.id]?.met);
+  // 受講中 (未達成 / 集計あり) のステージ。
+  const inProgress = stages.filter(
+    (c) => !certByStage.has(c.id) && completions[c.id] && !completions[c.id]?.met,
   );
 
   return (
     <>
-      <PageHeader title="修了証" sub="修了したコースの修了証を確認・発行できます" />
+      <PageHeader title="修了証" sub="修了したステージの修了証を確認・発行できます" />
 
       {loading ? (
         <SkeletonRows rows={3} className="py-6" />
@@ -179,7 +179,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
             <SectionTitle>発行済みの修了証</SectionTitle>
             {certs.length === 0 ? (
               <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
-                まだ発行された修了証はありません。 コースを修了すると、 ここから発行できます。
+                まだ発行された修了証はありません。 ステージを修了すると、 ここから発行できます。
               </div>
             ) : (
               <div className="flex flex-col gap-8">
@@ -193,7 +193,7 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
           {/* 受講中の達成状況 (成績台帳) */}
           {inProgress.length > 0 ? (
             <section>
-              <SectionTitle>受講中コースの達成状況</SectionTitle>
+              <SectionTitle>受講中ステージの達成状況</SectionTitle>
               <div className="flex flex-col gap-2">
                 {inProgress.map((c) => (
                   <CompletionRow
@@ -206,8 +206,8 @@ function LiveCertificates({ courses, userId, studentInitials, tenantName }: Live
             </section>
           ) : null}
 
-          {courses.length === 0 ? (
-            <div className="text-[13px] text-ink-3">受講登録されたコースがありません。</div>
+          {stages.length === 0 ? (
+            <div className="text-[13px] text-ink-3">受講登録されたステージがありません。</div>
           ) : null}
 
           <p className="text-[11.5px] text-ink-4">発行者: {tenantName}</p>
@@ -241,7 +241,7 @@ function IssuedCertificate({
       </div>
       <CertificateView
         recipientName={cert.recipient_name}
-        courseTitle={cert.course_title}
+        stageTitle={cert.stage_title}
         issuer={cert.tenant_name}
         issuedAt={formatIssuedAt(cert.issued_at)}
         certCode={cert.cert_code}
@@ -256,7 +256,7 @@ function CompletionRow({
   completion,
 }: {
   title: string;
-  completion: CourseCompletion | null;
+  completion: StageCompletion | null;
 }) {
   return (
     <div className="bg-card border border-border rounded-md px-4 py-3">
@@ -322,7 +322,7 @@ function DemoCertificate({ name, initials }: { name: string; initials: string })
       />
       <CertificateView
         recipientName={name}
-        courseTitle="TypeScript 入門研修"
+        stageTitle="TypeScript 入門研修"
         issuer="FALCON INFORMAL"
         issuedAt="2026-04-10"
         certCode="FLC-2026-4A9F-2E11"

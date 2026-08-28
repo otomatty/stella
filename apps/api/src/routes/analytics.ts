@@ -11,7 +11,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import {
   certificates,
-  courses,
+  stages,
   enrollments,
   lessonProgress,
   lessons,
@@ -53,7 +53,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
       .select({
         id: enrollments.id,
         userId: enrollments.userId,
-        courseId: enrollments.courseId,
+        stageId: enrollments.stageId,
         status: enrollments.status,
         enrolledAt: enrollments.enrolledAt,
       })
@@ -100,17 +100,17 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
       trend.push({ month: ym, label: `${m.getMonth() + 1}月`, count });
     }
 
-    // コース別の登録者数と完了率。
-    const courseRows = await db
-      .select({ id: courses.id, title: courses.title })
-      .from(courses)
-      .where(eq(courses.tenantId, tenantId));
-    const completionByCourse = courseRows
+    // ステージ別の登録者数と完了率。
+    const stageRows = await db
+      .select({ id: stages.id, title: stages.title })
+      .from(stages)
+      .where(eq(stages.tenantId, tenantId));
+    const completionByStage = stageRows
       .map((co) => {
-        const rows = enr.filter((e) => e.courseId === co.id);
+        const rows = enr.filter((e) => e.stageId === co.id);
         const n = rows.length;
         const done = rows.filter((e) => e.status === "completed").length;
-        return { course_id: co.id, name: co.title, n, pct: n === 0 ? 0 : round((done * 100) / n) };
+        return { stage_id: co.id, name: co.title, n, pct: n === 0 ? 0 : round((done * 100) / n) };
       })
       .filter((x) => x.n > 0)
       .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
@@ -129,7 +129,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
         new_enrollments_this_month: newMonth,
         new_enrollments_prev_month: newPrev,
         enrollment_trend: trend,
-        completion_by_course: completionByCourse,
+        completion_by_stage: completionByStage,
         stumbles,
         status_breakdown: {
           active: activeEnroll,
@@ -214,7 +214,7 @@ async function computeStumbles(
 /**
  * 講師ダッシュボード用の遅延 / 受講者進捗。
  *
- * 注: 講師 ↔ 受講者 / コースの担当割当モデルは存在しないため、 母集合はテナント全体の
+ * 注: 講師 ↔ 受講者 / ステージの担当割当モデルは存在しないため、 母集合はテナント全体の
  * enrollment (= テナント概況) とする。 越テナント参照は caller.tenantId で構造的に遮断する。
  */
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
@@ -227,7 +227,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
     const allEnr = await db
       .select({
         userId: enrollments.userId,
-        courseId: enrollments.courseId,
+        stageId: enrollments.stageId,
         status: enrollments.status,
         dueAt: enrollments.dueAt,
       })
@@ -250,33 +250,33 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
       .slice(0, 6);
 
     // Neon HTTP は 1 クエリ = 1 ラウンドトリップのため、 受講者ごとのループ内クエリ (N+1)
-    // を避け、 course / lesson / progress / profile をまとめて取得してから JS で突合する。
-    const sampleCourseIds = [...new Set(active.map((e) => e.courseId))];
+    // を避け、 stage / lesson / progress / profile をまとめて取得してから JS で突合する。
+    const sampleStageIds = [...new Set(active.map((e) => e.stageId))];
     const sampleUserIds = [...new Set(active.map((e) => e.userId))];
 
-    const sampleCourses =
-      sampleCourseIds.length > 0
+    const sampleStages =
+      sampleStageIds.length > 0
         ? await db
-            .select({ id: courses.id, title: courses.title })
-            .from(courses)
-            .where(and(eq(courses.tenantId, tenantId), inArray(courses.id, sampleCourseIds)))
+            .select({ id: stages.id, title: stages.title })
+            .from(stages)
+            .where(and(eq(stages.tenantId, tenantId), inArray(stages.id, sampleStageIds)))
         : [];
-    const courseTitleById = new Map(sampleCourses.map((co) => [co.id, co.title]));
+    const stageTitleById = new Map(sampleStages.map((co) => [co.id, co.title]));
 
-    // 対象コース配下の全レッスンを courseId ごとにグルーピング。
+    // 対象ステージ配下の全レッスンを stageId ごとにグルーピング。
     const sampleLessons =
-      sampleCourseIds.length > 0
+      sampleStageIds.length > 0
         ? await db
-            .select({ lessonId: lessons.id, courseId: sections.courseId })
+            .select({ lessonId: lessons.id, stageId: sections.stageId })
             .from(lessons)
             .innerJoin(sections, eq(sections.id, lessons.sectionId))
-            .where(inArray(sections.courseId, sampleCourseIds))
+            .where(inArray(sections.stageId, sampleStageIds))
         : [];
-    const lessonIdsByCourse = new Map<string, string[]>();
+    const lessonIdsByStage = new Map<string, string[]>();
     for (const r of sampleLessons) {
-      const arr = lessonIdsByCourse.get(r.courseId) ?? [];
+      const arr = lessonIdsByStage.get(r.stageId) ?? [];
       arr.push(r.lessonId);
-      lessonIdsByCourse.set(r.courseId, arr);
+      lessonIdsByStage.set(r.stageId, arr);
     }
 
     // 対象受講者の完了レッスンを userId ごとの集合に。
@@ -315,7 +315,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
     const profileById = new Map(sampleProfiles.map((p) => [p.id, p]));
 
     const students = active.map((e) => {
-      const lessonIds = lessonIdsByCourse.get(e.courseId) ?? [];
+      const lessonIds = lessonIdsByStage.get(e.stageId) ?? [];
       const total = lessonIds.length;
       const completed = completedByUser.get(e.userId) ?? new Set<string>();
       const done = total === 0 ? 0 : lessonIds.filter((id) => completed.has(id)).length;
@@ -324,7 +324,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
         user_id: e.userId,
         display_name: prof?.displayName ?? "",
         initials: prof?.initials ?? null,
-        course_title: courseTitleById.get(e.courseId) ?? "",
+        stage_title: stageTitleById.get(e.stageId) ?? "",
         progress_pct: total === 0 ? 0 : round((done * 100) / total),
         overdue: e.dueAt != null && e.dueAt < now,
       };

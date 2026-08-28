@@ -3,7 +3,19 @@
  *
  * アプリ層認可 (旧 RLS の置き換え):
  *   - 受講者は自分の enrollment のみ read … GET /api/enrollments/mine
- *   - instructor/admin は同テナントを read/write … 他ルートは requireRole + tenant 突合
+ *   - instructor/admin は同テナントを read … 他ルートは requireRole + tenant 突合
+ *
+ * ## Phase 3b: 割当は退役した
+ *
+ * 管理者がステージを割り当てる運用を廃止し、受講者が自分で始める自律モデルへ移行した。
+ * 登録を **作る** 口は `POST /api/stages/:id/start` (`routes/stage-start.ts`) だけで、
+ * このファイルに残っているのは読み取りと、運用のための後始末だけ:
+ *
+ *   - `POST /api/enrollments` / `POST /api/enrollments/bulk` … **410 Gone**。
+ *     404 にしないのは、綴り違いを疑って探し回らせないため (退役したことを伝える)
+ *   - `PATCH /api/enrollments/:id` … 残す。期限切れ処理・完了の手動修正に使う
+ *   - `DELETE /api/enrollments/:id` … 残す。誤って始めた星の取り消しに使う
+ *   - `GET` 系 … 残す。管理画面は「受講状況」(読み取り専用) になった
  */
 
 import { Hono } from "hono";
@@ -12,36 +24,24 @@ import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { enrollments } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole, ApiError } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import {
-  D1_MAX_BOUND_PARAMS,
-  MAX_COURSE_IDS,
-  MAX_PAIRS,
-  MAX_USER_IDS,
-  assertTenantTargets,
-  chunk,
-  rowsPerInsert,
-  uniqueIds,
-} from "../lib/enrollment-bulk.js";
+import { MAX_USER_IDS } from "../lib/enrollment-bulk.js";
+import { ENROLLMENT_SELECT } from "../lib/enrollment-write.js";
+import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Env } from "../env.js";
 
 export const enrollmentsRoute = new Hono<{ Bindings: Env }>();
 
-const SELECT = {
-  id: enrollments.id,
-  tenant_id: enrollments.tenantId,
-  user_id: enrollments.userId,
-  course_id: enrollments.courseId,
-  assigned_by: enrollments.assignedBy,
-  due_at: enrollments.dueAt,
-  required: enrollments.required,
-  status: enrollments.status,
-  // 割当プリセット由来の登録は出所を持つ (手動割当は null)。 画面が 「どのプリセットで
-  // 入った登録か」 を出せるよう一覧にも含める。
-  preset_id: enrollments.presetId,
-  preset_applied_at: enrollments.presetAppliedAt,
-  enrolled_at: enrollments.enrolledAt,
-  completed_at: enrollments.completedAt,
-} as const;
+/**
+ * 退役した割当 API の文言。
+ *
+ * 代わりの入口をそのまま書いておく — 呼び出し側 (古いフロント / 手元のスクリプト) が
+ * 410 を見たときに、次にどこを叩けばよいかがレスポンスだけで分かるようにする。
+ */
+const ASSIGNMENT_RETIRED_MESSAGE =
+  "受講登録の割当は廃止されました (Phase 3b)。受講者が自分で開始します: POST /api/stages/:id/start";
+
+/** 行の応答形は書き込み側 (`lib/enrollment-write.ts`) と共有する。 */
+const SELECT = ENROLLMENT_SELECT;
 
 /**
  * リクエストの日時文字列を Date にする。 空 / 未指定は null。
@@ -65,7 +65,10 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
       .from(enrollments)
       .where(eq(enrollments.userId, caller.id))
       .orderBy(asc(enrollments.enrolledAt));
-    return c.json({ rows });
+    // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
+    // 旧拡張は受講中ステージを `course_id` で読む。 これが無いと空カタログになり、
+    // `/api/cms/courses/:id` のエイリアスまで届かない。 このエンドポイントに限定。
+    return c.json({ rows: rows.map((row) => ({ ...row, course_id: row.stage_id })) });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -118,21 +121,21 @@ enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
 /**
  * staff: enrollment 一覧 (常に同テナントに限定)。
  *
- * `courseId` / `userId` / `userIds` (カンマ区切り, 最大 50) のいずれかが必須。
- * 無条件の全件取得は、 テナントが育つと受講者数 × コース数に比例して応答が膨らむため許さない
+ * `stageId` / `userId` / `userIds` (カンマ区切り, 最大 50) のいずれかが必須。
+ * 無条件の全件取得は、 テナントが育つと受講者数 × ステージ数に比例して応答が膨らむため許さない
  * (受講者一覧の件数表示は `/api/enrollments/summary` を使う)。
  */
 enrollmentsRoute.get("/api/enrollments", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const courseId = c.req.query("courseId");
+    const stageId = c.req.query("stageId");
     const userIds = (c.req.query("userIds") ?? c.req.query("userId") ?? "")
       .split(",")
       .map((id) => id.trim())
       .filter(Boolean);
-    if (!courseId && userIds.length === 0) {
-      throw new ApiError("courseId または userId が必要です", 400);
+    if (!stageId && userIds.length === 0) {
+      throw new ApiError("stageId または userId が必要です", 400);
     }
     if (userIds.length > MAX_USER_IDS) {
       throw new ApiError(`userIds は最大 ${MAX_USER_IDS} 件です`, 400);
@@ -143,7 +146,7 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
       .where(
         and(
           eq(enrollments.tenantId, caller.tenantId),
-          ...(courseId ? [eq(enrollments.courseId, courseId)] : []),
+          ...(stageId ? [eq(enrollments.stageId, stageId)] : []),
           ...(userIds.length > 0 ? [inArray(enrollments.userId, userIds)] : []),
         ),
       )
@@ -154,191 +157,36 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
   }
 });
 
-/** staff: 受講者にコースを割り当てる (upsert で二重登録防止)。 */
-enrollmentsRoute.post("/api/enrollments", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const body = (await c.req.json()) as {
-      userId: string;
-      courseId: string;
-      dueAt?: string | null;
-      required?: boolean;
-    };
-    if (!body.userId || !body.courseId) {
-      throw new ApiError("userId / courseId が必要です", 400);
-    }
-    await assertTenantTargets(db, caller.tenantId, [body.userId], [body.courseId]);
-    const dueAt = parseTimestamp(body.dueAt, "dueAt");
-    const required = body.required ?? true;
-    const rows = await db
-      .insert(enrollments)
-      .values({
-        tenantId: caller.tenantId,
-        userId: body.userId,
-        courseId: body.courseId,
-        assignedBy: caller.id,
-        dueAt,
-        required,
-      })
-      .onConflictDoUpdate({
-        target: [enrollments.userId, enrollments.courseId],
-        set: { assignedBy: caller.id, dueAt, required },
-      })
-      .returning(SELECT);
-    await recordAudit(db, caller, {
-      action: "enrollment_create",
-      targetType: "enrollment",
-      targetId: rows[0]?.id ?? null,
-      ip: clientIp(c),
-      metadata: {
-        user_id: body.userId,
-        course_id: body.courseId,
-        required,
-        due_at: body.dueAt ?? null,
-      },
-    });
-    return c.json({ row: rows[0] });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
 /**
- * staff: 受講者 × コースをまとめて割当 / 解除する (Issue #20 / 受講登録画面の一括操作)。
+ * 退役: 個別割当 (Phase 3b)。
  *
- * 組み合わせの数だけ個別 API を並べて叩くと、 50 名 × 20 コースで 1000 リクエストになり
- * スロットリングや部分適用を招く。 1 文の upsert / delete にまとめ、 監査も 1 件で残す。
- * 上限を超える指定は呼び出し側で分割する (`MAX_PAIRS`)。
+ * ルートを消さずに 410 を返すのは、 移行前のフロントや手元のスクリプトが 404 を
+ * 「パスを間違えた」 と読んで探し回るのを避けるため。 認可も見ずに即 410 にする —
+ * 「権限があれば通る」 と誤解させないことと、 退役の事実はロール依存の秘密ではないため。
  */
-enrollmentsRoute.post("/api/enrollments/bulk", async (c) => {
-  try {
-    const { caller, db } = await getCaller(c);
-    requireRole(caller, "instructor", "admin", "platform_admin");
-    const body = (await c.req.json()) as {
-      action?: "assign" | "unassign";
-      userIds?: string[];
-      courseIds?: string[];
-      dueAt?: string | null;
-      required?: boolean;
-    };
-    const action = body.action ?? "assign";
-    if (action !== "assign" && action !== "unassign") {
-      throw new ApiError("action は assign / unassign のいずれかです", 400);
-    }
-    const userIds = uniqueIds(body.userIds);
-    const courseIds = uniqueIds(body.courseIds);
-    if (userIds.length === 0 || courseIds.length === 0) {
-      throw new ApiError("userIds / courseIds が必要です", 400);
-    }
-    if (userIds.length > MAX_USER_IDS) {
-      throw new ApiError(`userIds は最大 ${MAX_USER_IDS} 件です`, 400);
-    }
-    if (courseIds.length > MAX_COURSE_IDS) {
-      throw new ApiError(`courseIds は最大 ${MAX_COURSE_IDS} 件です`, 400);
-    }
-    if (userIds.length * courseIds.length > MAX_PAIRS) {
-      throw new ApiError(`一度に扱えるのは ${MAX_PAIRS} 組までです`, 400);
-    }
+enrollmentsRoute.post("/api/enrollments", (c) =>
+  c.json({ error: ASSIGNMENT_RETIRED_MESSAGE }, 410),
+);
 
-    if (action === "unassign") {
-      // delete のバインドは tenant 1 + userIds + courseIds。 上限に収まるようコースを刻む。
-      const coursesPerStatement = D1_MAX_BOUND_PARAMS - 1 - userIds.length;
-      const statements = chunk(courseIds, coursesPerStatement).map((courses) =>
-        db
-          .delete(enrollments)
-          .where(
-            and(
-              eq(enrollments.tenantId, caller.tenantId),
-              inArray(enrollments.userId, userIds),
-              inArray(enrollments.courseId, courses),
-            ),
-          )
-          .returning({ id: enrollments.id }),
-      );
-      const [firstDelete, ...restDeletes] = statements;
-      // 複数文になる場合は D1 batch (1 トランザクション) で流す。
-      const deleted = firstDelete
-        ? restDeletes.length === 0
-          ? [await firstDelete]
-          : await db.batch([firstDelete, ...restDeletes])
-        : [];
-      const removed = deleted.reduce((n, rows) => n + rows.length, 0);
-      await recordAudit(db, caller, {
-        action: "enrollment_bulk_delete",
-        targetType: "enrollment",
-        ip: clientIp(c),
-        metadata: { user_ids: userIds, course_ids: courseIds, removed },
-      });
-      return c.json({ removed });
-    }
-
-    await assertTenantTargets(db, caller.tenantId, userIds, courseIds);
-    const dueAt = parseTimestamp(body.dueAt, "dueAt");
-    const required = body.required ?? true;
-    const values = userIds.flatMap((userId) =>
-      courseIds.map((courseId) => ({
-        tenantId: caller.tenantId,
-        userId,
-        courseId,
-        assignedBy: caller.id,
-        dueAt,
-        required,
-      })),
-    );
-    const buildInsert = (rowsChunk: typeof values) =>
-      db
-        .insert(enrollments)
-        .values(rowsChunk)
-        .onConflictDoUpdate({
-          target: [enrollments.userId, enrollments.courseId],
-          set: { assignedBy: caller.id, dueAt, required },
-        })
-        .returning({ id: enrollments.id });
-    const statements = chunk(
-      values,
-      rowsPerInsert((rows) => buildInsert(values.slice(0, rows))),
-    ).map(buildInsert);
-    const [firstInsert, ...restInserts] = statements;
-    // 複数文になる場合は D1 batch (1 トランザクション) で流す。
-    const inserted = firstInsert
-      ? restInserts.length === 0
-        ? [await firstInsert]
-        : await db.batch([firstInsert, ...restInserts])
-      : [];
-    const assigned = inserted.reduce((n, rows) => n + rows.length, 0);
-    await recordAudit(db, caller, {
-      action: "enrollment_bulk_create",
-      targetType: "enrollment",
-      ip: clientIp(c),
-      metadata: {
-        user_ids: userIds,
-        course_ids: courseIds,
-        assigned,
-        required,
-        due_at: body.dueAt ?? null,
-      },
-    });
-    return c.json({ assigned });
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
+/** 退役: 一括割当 / 一括解除 (Phase 3b)。 個別割当と同じ扱い。 */
+enrollmentsRoute.post("/api/enrollments/bulk", (c) =>
+  c.json({ error: ASSIGNMENT_RETIRED_MESSAGE }, 410),
+);
 
 /**
  * 対象 enrollment が caller と同テナントであることを保証し、 監査ログ用に
- * 対象の受講者 / コースを返す。
+ * 対象の受講者 / ステージを返す。
  */
 async function assertSameTenant(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
   id: string,
   tenantId: string,
-): Promise<{ userId: string; courseId: string }> {
+): Promise<{ userId: string; stageId: string }> {
   const rows = await db
     .select({
       tenant_id: enrollments.tenantId,
       user_id: enrollments.userId,
-      course_id: enrollments.courseId,
+      stage_id: enrollments.stageId,
     })
     .from(enrollments)
     .where(eq(enrollments.id, id))
@@ -347,7 +195,7 @@ async function assertSameTenant(
   if (rows[0].tenant_id !== tenantId) {
     throw new ApiError("他テナントの登録は操作できません", 403);
   }
-  return { userId: rows[0].user_id, courseId: rows[0].course_id };
+  return { userId: rows[0].user_id, stageId: rows[0].stage_id };
 }
 
 /** staff: 期限 / 必須 / ステータスを更新する。 */
@@ -374,12 +222,19 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
           : {}),
       })
       .where(eq(enrollments.id, id));
+    // staff が手で修了にした場合も 「星が点いた」 に含める (修了証の発行を伴わないため、
+    // certificates 側の記録では拾えない)。
+    if (patch.status === "completed") {
+      await recordStagePathEvents(db, caller.tenantId, "cleared", [
+        { userId: target.userId, stageId: target.stageId },
+      ]);
+    }
     await recordAudit(db, caller, {
       action: "enrollment_update",
       targetType: "enrollment",
       targetId: id,
       ip: clientIp(c),
-      metadata: { user_id: target.userId, course_id: target.courseId, patch },
+      metadata: { user_id: target.userId, stage_id: target.stageId, patch },
     });
     return c.json({ ok: true });
   } catch (err) {
@@ -400,7 +255,7 @@ enrollmentsRoute.delete("/api/enrollments/:id", async (c) => {
       targetType: "enrollment",
       targetId: id,
       ip: clientIp(c),
-      metadata: { user_id: target.userId, course_id: target.courseId },
+      metadata: { user_id: target.userId, stage_id: target.stageId },
     });
     return c.json({ ok: true });
   } catch (err) {

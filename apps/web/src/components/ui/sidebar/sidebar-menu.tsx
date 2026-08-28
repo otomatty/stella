@@ -197,7 +197,7 @@ export function SidebarMenuSkeleton({
   );
 }
 
-/** 入れ子のナビ (コース > レッスン など)。 畳んでいる間は出さない。 */
+/** 入れ子のナビ (ステージ > レッスン など)。 畳んでいる間は出さない。 */
 export const SidebarMenuSub = React.forwardRef<
   HTMLUListElement,
   React.ComponentPropsWithoutRef<"ul">

@@ -6,7 +6,7 @@
 import type {
   AISuggestion,
   Announcement,
-  CompletionByCourse,
+  CompletionByStage,
   ReviewItem,
   RubricCriterion,
   Stumble,
@@ -40,7 +40,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
     id: 3,
     title: "【重要】TypeScript 入門研修 教材の更新",
     date: "4月12日",
-    by: "コース作成",
+    by: "ステージ作成",
     unread: false,
   },
 ];
@@ -51,7 +51,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "田中 翔太",
     initials: "TS",
     c: "c1",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "変数と型の確認課題",
     submittedAt: "2時間前",
     aiReady: true,
@@ -62,7 +62,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "佐藤 美咲",
     initials: "SM",
     c: "c2",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "関数の確認課題",
     submittedAt: "4時間前",
     aiReady: true,
@@ -73,7 +73,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "鈴木 健一",
     initials: "SK",
     c: "c3",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "配列とオブジェクト",
     submittedAt: "昨日",
     aiReady: true,
@@ -84,7 +84,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "山田 優花",
     initials: "YY",
     c: "c4",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "型システムの確認",
     submittedAt: "昨日",
     aiReady: false,
@@ -95,7 +95,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "渡辺 拓海",
     initials: "WT",
     c: "c5",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "非同期処理（再提出）",
     submittedAt: "2日前",
     aiReady: true,
@@ -106,7 +106,7 @@ export const REVIEW_QUEUE: ReviewItem[] = [
     student: "中村 理恵",
     initials: "NR",
     c: "c6",
-    course: "TypeScript 入門研修",
+    stage: "TypeScript 入門研修",
     assignment: "実務への接続",
     submittedAt: "3日前",
     aiReady: true,
@@ -195,7 +195,7 @@ export const RUBRIC: RubricCriterion[] = [
 
 export const ENROLLMENT_TREND: number[] = [32, 45, 51, 63, 78, 89, 102, 118, 132, 141, 156, 163];
 
-export const COMPLETION_BY_COURSE: CompletionByCourse[] = [
+export const COMPLETION_BY_STAGE: CompletionByStage[] = [
   { name: "TypeScript 入門研修", n: 48, pct: 72 },
 ];
 

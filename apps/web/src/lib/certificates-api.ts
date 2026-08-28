@@ -8,8 +8,8 @@
 import type {
   CertificateRow,
   CertificateVerification,
-  CourseCompletion,
-  CourseGradebook,
+  StageCompletion,
+  StageGradebook,
   IssuedCertificate,
 } from "@falcon/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
@@ -20,18 +20,18 @@ export async function listCertificatesForUser(_userId: string): Promise<Certific
   return rows ?? [];
 }
 
-/** 受講者本人の、 あるコースの達成状況を取得する。 */
-export async function fetchMyCourseCompletion(courseId: string): Promise<CourseCompletion | null> {
-  const { completion } = await apiFetch<{ completion: CourseCompletion | null }>(
-    `/api/certificates/completion/${encodeURIComponent(courseId)}`,
+/** 受講者本人の、 あるステージの達成状況を取得する。 */
+export async function fetchMyStageCompletion(stageId: string): Promise<StageCompletion | null> {
+  const { completion } = await apiFetch<{ completion: StageCompletion | null }>(
+    `/api/certificates/completion/${encodeURIComponent(stageId)}`,
   );
   return completion ?? null;
 }
 
-/** staff 向け: コースの成績台帳 (受講者 × 達成状況) を取得する。 */
-export async function fetchCourseGradebook(courseId: string): Promise<CourseGradebook | null> {
-  const { gradebook } = await apiFetch<{ gradebook: CourseGradebook | null }>(
-    `/api/certificates/gradebook/${encodeURIComponent(courseId)}`,
+/** staff 向け: ステージの成績台帳 (受講者 × 達成状況) を取得する。 */
+export async function fetchStageGradebook(stageId: string): Promise<StageGradebook | null> {
+  const { gradebook } = await apiFetch<{ gradebook: StageGradebook | null }>(
+    `/api/certificates/gradebook/${encodeURIComponent(stageId)}`,
   );
   return gradebook ?? null;
 }
@@ -42,12 +42,12 @@ export async function fetchCourseGradebook(courseId: string): Promise<CourseGrad
  * 既発行ならべき等に既存の修了証を返す (already_existed=true)。
  */
 export async function issueCertificate(
-  courseId: string,
+  stageId: string,
   userId: string,
 ): Promise<IssuedCertificate> {
   const { certificate } = await apiFetch<{ certificate: IssuedCertificate }>(
     "/api/certificates/issue",
-    { method: "POST", body: { courseId, userId } },
+    { method: "POST", body: { stageId, userId } },
   );
   if (!certificate) throw new Error("発行結果が空でした");
   return certificate;

@@ -5,6 +5,9 @@
   "description": "Claude Code をプロジェクトに合わせて仕組み化するための研修。毎回効く約束を CLAUDE.md に短く書き、繰り返す手順を Skill として置き、調査や検証をサブエージェントに渡すまでを扱う。最後に、同じ指示をどの入れ物に置くかを判断できるようになる。",
   "header": "Skillsとサブエージェント",
   "tenantId": "ses",
+  "prerequisites": ["claude-code-basics"],
+  "canDo": "繰り返す手順を Skill にまとめ、調査をサブエージェントに渡せる",
+  "theme": "AI と働く力",
   "modules": {
     "m0-map": "M0. カスタマイズの地図",
     "m1-claude-md": "M1. CLAUDE.md",

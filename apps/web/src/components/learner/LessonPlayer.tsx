@@ -12,7 +12,7 @@ import {
   User,
   X,
 } from "@/lib/icons";
-import type { Course, Section, Lesson } from "@/data/types";
+import type { Stage, Section, Lesson } from "@/data/types";
 import type { ChatContext } from "@falcon/shared/ai/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/drawer";
 import { TopbarSlot } from "@/components/shell/TopbarSlot";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
-import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./CourseDetail";
+import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./StageDetail";
 import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
@@ -56,14 +56,14 @@ const SlidesViewer = lazy(() =>
 );
 
 interface LessonPlayerProps {
-  course: Course;
+  stage: Stage;
   setPage: (page: string) => void;
   tenantId: Tenant["id"];
   studentName: string;
   studentInitials: string;
   /**
    * 外から指定された開始レッスン (「続きから」・ シラバスの行クリック・ 検索パレット・
-   * リロード復帰)。 指定が無ければ従来どおりコース先頭のレッスンを開く。
+   * リロード復帰)。 指定が無ければ従来どおりステージ先頭のレッスンを開く。
    *
    * `seq` は選択のたびに増える版番号。 「検索で A → サイドバーで B → 再び検索で A」
    * のように同じレッスンを選び直したときも、 id だけでは変化を検出できず反映
@@ -74,7 +74,7 @@ interface LessonPlayerProps {
    * 表示中のレッスンが変わったときの通知。 親はこれを受講位置として控え、
    * リロード後に同じレッスンへ戻す。
    */
-  onActiveLessonChange?: (courseId: string, lessonId: string) => void;
+  onActiveLessonChange?: (stageId: string, lessonId: string) => void;
   /** AIChatBot を開くトリガ。 親が渡す。 */
   onOpenAIBot?: () => void;
   /** レッスンの文脈を AIChatBot に伝えるための setter。 */
@@ -84,7 +84,7 @@ interface LessonPlayerProps {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const LessonPlayer = ({
-  course,
+  stage,
   setPage,
   tenantId,
   studentName,
@@ -93,7 +93,7 @@ export const LessonPlayer = ({
   onActiveLessonChange,
   setAIContext,
 }: LessonPlayerProps) => {
-  const sections: Section[] = course.sections ?? [];
+  const sections: Section[] = stage.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
   const [activeLesson, setActiveLesson] = useState<string>(
     () => allLessons.find((l) => l.id === initialLesson?.id)?.id ?? allLessons[0]?.id ?? "",
@@ -103,9 +103,9 @@ export const LessonPlayer = ({
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
   //
-  // 初期値は null。 マウント時点の選択を「適用済み」にすると、 コース取得が終わる前に
+  // 初期値は null。 マウント時点の選択を「適用済み」にすると、 ステージ取得が終わる前に
   // マウントしたとき (リロード復帰) に上の useState が対象を見つけられず、 その後
-  // コースが届いても再適用されずコース先頭に落ちてしまう。
+  // ステージが届いても再適用されずステージ先頭に落ちてしまう。
   const selectionKey = initialLesson ? `${initialLesson.id}:${initialLesson.seq}` : null;
   const appliedSelectionRef = useRef<string | null>(null);
 
@@ -132,17 +132,17 @@ export const LessonPlayer = ({
     error: materialsError,
   } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled);
 
-  // 表示レッスンの解決。 「検索での選択の適用」と「コース切替時の先頭寄せ」を
-  // 1 つの効果にまとめている。 別々の効果にすると、 別コースのレッスンを検索から
-  // 選んだとき (course と initialLesson が同時に変わる) に同一コミット内で
+  // 表示レッスンの解決。 「検索での選択の適用」と「ステージ切替時の先頭寄せ」を
+  // 1 つの効果にまとめている。 別々の効果にすると、 別ステージのレッスンを検索から
+  // 選んだとき (stage と initialLesson が同時に変わる) に同一コミット内で
   // 後者が古い activeLesson を見て先頭レッスンに上書きしてしまうため。
   useEffect(() => {
     if (allLessons.length === 0) {
       if (activeLesson !== "") setActiveLesson("");
       return;
     }
-    // 1. 未適用の検索選択を最優先で反映する。 現在のコースにまだ含まれていない
-    //    (コース prop の反映待ち) 場合は適用済みにせず次のレンダーへ持ち越す。
+    // 1. 未適用の検索選択を最優先で反映する。 現在のステージにまだ含まれていない
+    //    (ステージ prop の反映待ち) 場合は適用済みにせず次のレンダーへ持ち越す。
     if (selectionKey && appliedSelectionRef.current !== selectionKey) {
       const selected = allLessons.find((l) => l.id === initialLesson?.id);
       if (selected) {
@@ -151,7 +151,7 @@ export const LessonPlayer = ({
         return;
       }
     }
-    // 2. コース切替等で activeLesson が現コースに無ければ先頭に揃える。
+    // 2. ステージ切替等で activeLesson が現ステージに無ければ先頭に揃える。
     if (!allLessons.some((l) => l.id === activeLesson)) {
       const first = allLessons[0];
       if (first) setActiveLesson(first.id);
@@ -160,8 +160,8 @@ export const LessonPlayer = ({
 
   // 表示中のレッスンを親へ伝える (リロード後の復帰位置になる)。
   useEffect(() => {
-    if (lessonObj) onActiveLessonChange?.(course.id, lessonObj.id);
-  }, [course.id, lessonObj, onActiveLessonChange]);
+    if (lessonObj) onActiveLessonChange?.(stage.id, lessonObj.id);
+  }, [stage.id, lessonObj, onActiveLessonChange]);
 
   const activeSectionIndex = useMemo(() => {
     if (!lessonObj) return 0;
@@ -173,7 +173,7 @@ export const LessonPlayer = ({
   const lessonIndexInSection =
     activeSection && lessonObj ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id) : 0;
 
-  // lessonObj が無いコースでも hook 順序を保つため空文字を渡す (内部で no-op)
+  // lessonObj が無いステージでも hook 順序を保つため空文字を渡す (内部で no-op)
   const { markComplete } = useLessonProgress(lessonObj?.id ?? "");
   const handleMarkComplete = () => {
     if (lessonObj) markComplete();
@@ -186,8 +186,8 @@ export const LessonPlayer = ({
   // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 locked はスキップして
   // 手前 / 先の解禁レッスンを探す。 無ければ null で、 ナビは端の表示になる。
   const neighbors = useMemo(
-    () => resolveLessonNeighbors(course, activeLesson, progressMap),
-    [course, activeLesson, progressMap],
+    () => resolveLessonNeighbors(stage, activeLesson, progressMap),
+    [stage, activeLesson, progressMap],
   );
 
   /**
@@ -199,7 +199,7 @@ export const LessonPlayer = ({
     window.scrollTo({ top: 0 });
   }, []);
 
-  const handleBackToCourse = useCallback(() => setPage("course-detail"), [setPage]);
+  const handleBackToStage = useCallback(() => setPage("stage-detail"), [setPage]);
 
   const nextLessonId = neighbors.next?.lesson.id ?? null;
   const handleAdvanceNext = useCallback(() => {
@@ -262,12 +262,12 @@ export const LessonPlayer = ({
     setAIContext({
       kind: "lesson",
       lessonTitle,
-      courseTitle: course.title,
+      stageTitle: stage.title,
     });
-  }, [lessonId, lessonTitle, course.title, setAIContext]);
+  }, [lessonId, lessonTitle, stage.title, setAIContext]);
 
   if (!lessonObj) {
-    return <div className="p-10 text-sm text-ink-3">このコースにはレッスンがありません。</div>;
+    return <div className="p-10 text-sm text-ink-3">このステージにはレッスンがありません。</div>;
   }
 
   const isQuiz = lessonObj.type === "quiz";
@@ -291,13 +291,13 @@ export const LessonPlayer = ({
       {isNarrow ? null : (
         <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[var(--shell-header-height)] max-h-[calc(100vh-var(--shell-header-height))]">
           <LessonToc
-            course={course}
+            stage={stage}
             sections={sections}
             progressPercent={progressPercent}
             progressMap={progressMap}
             activeLesson={activeLesson}
             onSelectLesson={goToLesson}
-            onBackToCourse={handleBackToCourse}
+            onBackToStage={handleBackToStage}
           />
         </aside>
       )}
@@ -321,7 +321,7 @@ export const LessonPlayer = ({
       </TopbarSlot>
 
       <Drawer open={tocOpen} onOpenChange={setTocOpen}>
-        {/* 中身は常設パネルと同じ LessonToc。 コース名はその先頭に出るので、
+        {/* 中身は常設パネルと同じ LessonToc。 ステージ名はその先頭に出るので、
             ヘッダは見出しと閉じるボタンだけに絞る。 */}
         <DrawerContent
           direction="left"
@@ -348,7 +348,7 @@ export const LessonPlayer = ({
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto py-3">
             <LessonToc
-              course={course}
+              stage={stage}
               sections={sections}
               progressPercent={progressPercent}
               progressMap={progressMap}
@@ -357,9 +357,9 @@ export const LessonPlayer = ({
                 goToLesson(lessonId);
                 setTocOpen(false);
               }}
-              onBackToCourse={() => {
+              onBackToStage={() => {
                 setTocOpen(false);
-                handleBackToCourse();
+                handleBackToStage();
               }}
             />
           </div>
@@ -369,7 +369,7 @@ export const LessonPlayer = ({
       <main className="min-w-0 flex flex-col">
         {isCode && lessonObj.assignmentId ? (
           <CodeLessonHandoff
-            courseId={course.id}
+            stageId={stage.id}
             lessonId={lessonObj.id}
             assignmentTitle={lessonObj.title}
           />
@@ -384,7 +384,7 @@ export const LessonPlayer = ({
                   totalSec={lessonObj.totalSec}
                   onComplete={handleMarkComplete}
                   nextLessonTitle={neighbors.next?.lesson.title ?? null}
-                  // 次が無いコース末尾では渡さない。 渡すと VideoViewer 側の
+                  // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
                   // canAdvance が true になり、 何もしないオーバーレイが出る。
                   onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
                 />
@@ -435,10 +435,10 @@ export const LessonPlayer = ({
                         <Clock size={12} /> {lessonObj.duration}
                       </span>
                     ) : null}
-                    {/* 講師名 (courses.instructor_name)。 未設定のコースでは何も出さない。 */}
-                    {course.enrolledBy ? (
+                    {/* 講師名 (stages.instructor_name)。 未設定のステージでは何も出さない。 */}
+                    {stage.enrolledBy ? (
                       <span className="flex items-center gap-1">
-                        <User size={12} /> {course.enrolledBy}
+                        <User size={12} /> {stage.enrolledBy}
                       </span>
                     ) : null}
                   </div>
@@ -466,7 +466,7 @@ export const LessonPlayer = ({
                   ) : isAssignment ? (
                     <AssignmentSubmitPanel
                       tenantId={tenantId}
-                      course={course}
+                      stage={stage}
                       lesson={lessonObj}
                       sectionTitle={activeSection?.title}
                       studentName={studentName}
@@ -480,7 +480,7 @@ export const LessonPlayer = ({
                       key={lessonObj.id}
                       lessonId={lessonObj.id}
                       markdown={lessonObj.markdown}
-                      header={course.title}
+                      header={stage.title}
                       onComplete={handleMarkComplete}
                     />
                   ) : isVideo || isSlides ? (
@@ -518,14 +518,14 @@ export const LessonPlayer = ({
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
-              onBackToCourse={handleBackToCourse}
+              onBackToStage={handleBackToStage}
               onDismiss={() => setCalloutDismissed(true)}
             />
           ) : null}
           <LessonNavFooter
             neighbors={neighbors}
             onSelectLesson={goToLesson}
-            onBackToCourse={handleBackToCourse}
+            onBackToStage={handleBackToStage}
           />
         </div>
       </main>
@@ -538,31 +538,31 @@ export const LessonPlayer = ({
  * ドロワーの中身として、 同じものを 2 か所で描く。
  */
 const LessonToc = ({
-  course,
+  stage,
   sections,
   progressPercent,
   progressMap,
   activeLesson,
   onSelectLesson,
-  onBackToCourse,
+  onBackToStage,
 }: {
-  course: Course;
+  stage: Stage;
   sections: Section[];
   progressPercent: number;
   progressMap: LessonProgressMap;
   activeLesson: string;
   onSelectLesson: (lessonId: string) => void;
-  onBackToCourse: () => void;
+  onBackToStage: () => void;
 }) => (
   <>
     <div className="px-[18px] pb-3.5 border-b border-border mb-2">
       <button
         type="button"
-        onClick={onBackToCourse}
+        onClick={onBackToStage}
         className="flex w-full items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta min-w-0"
       >
         <ChevronLeft size={12} className="shrink-0" />
-        <span className="truncate">{course.title}</span>
+        <span className="truncate">{stage.title}</span>
       </button>
       <div className="text-sm font-semibold leading-snug">進捗</div>
       <div className="text-[11.5px] text-ink-3 mt-1.5">

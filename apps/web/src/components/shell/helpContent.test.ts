@@ -7,20 +7,20 @@ describe("findHelpTopic", () => {
   });
 
   it("静的ルートは末尾スラッシュの有無に関わらずマッチする", () => {
-    expect(findHelpTopic("/courses")?.route).toBe("/courses");
-    expect(findHelpTopic("/courses/")?.route).toBe("/courses");
+    expect(findHelpTopic("/stages")?.route).toBe("/stages");
+    expect(findHelpTopic("/stages/")?.route).toBe("/stages");
   });
 
   it("動的セグメントは任意の 1 セグメントにマッチする", () => {
-    expect(findHelpTopic("/courses/typescript-basics")?.route).toBe("/courses/$courseId");
-    expect(findHelpTopic("/courses/ts/lessons/l1")?.route).toBe(
-      "/courses/$courseId/lessons/$lessonId",
+    expect(findHelpTopic("/stages/typescript-basics")?.route).toBe("/stages/$stageId");
+    expect(findHelpTopic("/stages/ts/lessons/l1")?.route).toBe(
+      "/stages/$stageId/lessons/$lessonId",
     );
   });
 
   it("セグメント数が違うパスにはマッチしない", () => {
-    // /courses/$courseId (2 セグメント) が 3 セグメントのパスを拾わないこと
-    expect(findHelpTopic("/courses/ts/extra")).toBeNull();
+    // /stages/$stageId (2 セグメント) が 3 セグメントのパスを拾わないこと
+    expect(findHelpTopic("/stages/ts/extra")).toBeNull();
   });
 
   it("定義の無い画面 (講師・管理者など) は null を返す", () => {

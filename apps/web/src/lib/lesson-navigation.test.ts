@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Course, Lesson, LessonStatus } from "@/data/types";
+import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
 import { flattenLessonNodes, resolveLessonNeighbors } from "@/lib/lesson-navigation";
 
@@ -14,7 +14,7 @@ function lesson(id: string, status: LessonStatus = "todo"): Lesson {
   return { id, title: id, type: "slides", duration: "3分", status };
 }
 
-const course: Course = {
+const stage: Stage = {
   id: "typescript-basics",
   title: "TypeScript 入門研修",
   category: "プログラミング",
@@ -31,21 +31,21 @@ const empty: LessonProgressMap = {};
 
 describe("flattenLessonNodes", () => {
   it("セクションを跨いで通し番号を振る", () => {
-    const nodes = flattenLessonNodes(course);
+    const nodes = flattenLessonNodes(stage);
     expect(nodes.map((n) => n.lesson.id)).toEqual(["a", "b", "c", "d"]);
     expect(nodes.map((n) => n.position)).toEqual([1, 2, 3, 4]);
     expect(nodes[2]?.section.id).toBe("m1");
   });
 
-  it("コース未指定 / セクション無しでは空", () => {
+  it("ステージ未指定 / セクション無しでは空", () => {
     expect(flattenLessonNodes(undefined)).toEqual([]);
-    expect(flattenLessonNodes({ ...course, sections: [] })).toEqual([]);
+    expect(flattenLessonNodes({ ...stage, sections: [] })).toEqual([]);
   });
 });
 
 describe("resolveLessonNeighbors", () => {
   it("同じセクション内の隣を返す", () => {
-    const n = resolveLessonNeighbors(course, "a", empty);
+    const n = resolveLessonNeighbors(stage, "a", empty);
     expect(n.prev).toBeNull();
     expect(n.next?.lesson.id).toBe("b");
     expect(n.nextStartsNewSection).toBe(false);
@@ -54,22 +54,22 @@ describe("resolveLessonNeighbors", () => {
   });
 
   it("セクションを跨ぐ移動には区切りの印を付ける", () => {
-    const n = resolveLessonNeighbors(course, "b", empty);
+    const n = resolveLessonNeighbors(stage, "b", empty);
     expect(n.next?.lesson.id).toBe("c");
     expect(n.nextStartsNewSection).toBe(true);
     expect(n.prev?.lesson.id).toBe("a");
   });
 
   it("最後のレッスンでは next が null", () => {
-    const n = resolveLessonNeighbors(course, "d", empty);
+    const n = resolveLessonNeighbors(stage, "d", empty);
     expect(n.next).toBeNull();
     expect(n.nextStartsNewSection).toBe(false);
     expect(n.prev?.lesson.id).toBe("c");
   });
 
   it("locked は飛ばして解禁済みの隣へ寄せる", () => {
-    const locked: Course = {
-      ...course,
+    const locked: Stage = {
+      ...stage,
       sections: [
         { id: "m0", title: "M0", lessons: [lesson("a"), lesson("b", "locked")] },
         { id: "m1", title: "M1", lessons: [lesson("c", "locked"), lesson("d")] },
@@ -83,8 +83,8 @@ describe("resolveLessonNeighbors", () => {
   });
 
   it("先が locked しか無ければ next は null", () => {
-    const locked: Course = {
-      ...course,
+    const locked: Stage = {
+      ...stage,
       sections: [{ id: "m0", title: "M0", lessons: [lesson("a"), lesson("b", "locked")] }],
     };
     expect(resolveLessonNeighbors(locked, "a", empty).next).toBeNull();
@@ -95,11 +95,11 @@ describe("resolveLessonNeighbors", () => {
     const map: LessonProgressMap = {
       b: { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
     };
-    expect(resolveLessonNeighbors(course, "a", map).next?.lesson.id).toBe("b");
+    expect(resolveLessonNeighbors(stage, "a", map).next?.lesson.id).toBe("b");
   });
 
-  it("コースに無いレッスン ID では前後とも null", () => {
-    const n = resolveLessonNeighbors(course, "zzz", empty);
+  it("ステージに無いレッスン ID では前後とも null", () => {
+    const n = resolveLessonNeighbors(stage, "zzz", empty);
     expect(n.current).toBeNull();
     expect(n.prev).toBeNull();
     expect(n.next).toBeNull();
@@ -107,37 +107,37 @@ describe("resolveLessonNeighbors", () => {
   });
 
   it("完了フラグは 「先が無い」 ではなく実際の done 件数で立つ", () => {
-    // 途中 (a) を残したままコース末尾 (d) だけ終えた状態。 next は無いが全完了ではない。
+    // 途中 (a) を残したままステージ末尾 (d) だけ終えた状態。 next は無いが全完了ではない。
     const skipped: LessonProgressMap = {
       b: { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
       c: { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
       d: { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
     };
-    const n = resolveLessonNeighbors(course, "d", skipped);
+    const n = resolveLessonNeighbors(stage, "d", skipped);
     expect(n.next).toBeNull();
-    expect(n.courseComplete).toBe(false);
+    expect(n.stageComplete).toBe(false);
     // 同じ理由で、 セクションに未完了が残っていればセクション完了にもしない。
-    expect(resolveLessonNeighbors(course, "b", skipped).nextStartsNewSection).toBe(true);
-    expect(resolveLessonNeighbors(course, "b", skipped).currentSectionComplete).toBe(false);
+    expect(resolveLessonNeighbors(stage, "b", skipped).nextStartsNewSection).toBe(true);
+    expect(resolveLessonNeighbors(stage, "b", skipped).currentSectionComplete).toBe(false);
   });
 
-  it("全件 done ならコース完了・セクション完了が立つ", () => {
+  it("全件 done ならステージ完了・セクション完了が立つ", () => {
     const all: LessonProgressMap = Object.fromEntries(
       ["a", "b", "c", "d"].map((id) => [
         id,
         { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
       ]),
     );
-    const n = resolveLessonNeighbors(course, "d", all);
-    expect(n.courseComplete).toBe(true);
+    const n = resolveLessonNeighbors(stage, "d", all);
+    expect(n.stageComplete).toBe(true);
     expect(n.currentSectionComplete).toBe(true);
     // セクション区切りでも、 そのセクションが埋まっていればセクション完了。
-    expect(resolveLessonNeighbors(course, "b", all).currentSectionComplete).toBe(true);
+    expect(resolveLessonNeighbors(stage, "b", all).currentSectionComplete).toBe(true);
   });
 
-  it("locked が残るセクション / コースは完了にしない", () => {
-    const locked: Course = {
-      ...course,
+  it("locked が残るセクション / ステージは完了にしない", () => {
+    const locked: Stage = {
+      ...stage,
       sections: [
         { id: "m0", title: "M0", lessons: [lesson("a"), lesson("b", "locked")] },
         { id: "m1", title: "M1", lessons: [lesson("c"), lesson("d")] },
@@ -148,11 +148,11 @@ describe("resolveLessonNeighbors", () => {
     );
     const n = resolveLessonNeighbors(locked, "a", map);
     expect(n.currentSectionComplete).toBe(false);
-    expect(n.courseComplete).toBe(false);
+    expect(n.stageComplete).toBe(false);
   });
 
-  it("レッスンが無いコースでは総数 0", () => {
-    expect(resolveLessonNeighbors({ ...course, sections: [] }, "a", empty).total).toBe(0);
+  it("レッスンが無いステージでは総数 0", () => {
+    expect(resolveLessonNeighbors({ ...stage, sections: [] }, "a", empty).total).toBe(0);
     expect(resolveLessonNeighbors(undefined, "a", empty).total).toBe(0);
   });
 });

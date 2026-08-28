@@ -12,12 +12,12 @@ import {
 
 function result(overrides: Partial<SearchResult> = {}): SearchResult {
   return {
-    kind: "course",
+    kind: "stage",
     id: "c1",
     title: "Web開発基礎",
     subtitle: "フロントエンド",
-    course_id: "c1",
-    course_title: "Web開発基礎",
+    stage_id: "c1",
+    stage_title: "Web開発基礎",
     lesson_type: null,
     ...overrides,
   };
@@ -96,11 +96,11 @@ describe("rankSearchResults", () => {
     expect(ranked.map((r) => r.id)).toEqual(["b", "a"]);
   });
 
-  it("同スコアならコースをレッスンより前に出す", () => {
+  it("同スコアならステージをレッスンより前に出す", () => {
     const ranked = rankSearchResults(
       [
         result({ id: "l1", kind: "lesson", title: "React Hooks", lesson_type: "video" }),
-        result({ id: "c1", kind: "course", title: "React Hooks" }),
+        result({ id: "c1", kind: "stage", title: "React Hooks" }),
       ],
       "react",
     );

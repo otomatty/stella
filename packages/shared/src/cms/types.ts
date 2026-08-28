@@ -1,7 +1,7 @@
 /**
  * CMS DB 行と UI ドメイン型を繋ぐ型 + マッパー。
  *
- * - DB 列は snake_case。 UI (apps/web/src/data/types.ts の Course / Section / Lesson) は camelCase。
+ * - DB 列は snake_case。 UI (apps/web/src/data/types.ts の Stage / Section / Lesson) は camelCase。
  *   - 受講者 UI が既存型を消費し続けられるよう、 マッパーで camelCase 形に正規化する。
  * - assignment は @falcon/shared の Assignment 型を直接 import して、 grading パイプラインを変更せずに済む形で読み戻す。
  */
@@ -24,10 +24,10 @@ import type {
 // 列レベル型
 // ---------------------------------------------------------------
 
-export type CourseStatus = "draft" | "published" | "archived";
+export type StageStatus = "draft" | "published" | "archived";
 export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin" | "sales";
 
-export type CourseColor = "indigo" | "green" | "amber" | "slate";
+export type StageColor = "indigo" | "green" | "amber" | "slate";
 
 export type LessonType = "video" | "slides" | "text" | "quiz" | "assignment" | "code";
 
@@ -69,13 +69,13 @@ export interface ProfileRow {
   created_at: string;
 }
 
-export interface CourseRow {
+export interface StageRow {
   id: string;
   tenant_id: string;
   slug: string;
   title: string;
   category: string | null;
-  color: CourseColor | null;
+  color: StageColor | null;
   /**
    * サムネイル画像の R2 パス。 列が未マイグレーションの環境では undefined になり得るため optional。
    * 教材リポジトリの `courses/<slug>/thumbnail.*` を seed が書き込む。
@@ -88,7 +88,7 @@ export interface CourseRow {
    * null / 空文字は「未設定」 として扱い、 受講者 UI では講師を表示しない。
    */
   instructor_name?: string | null;
-  status: CourseStatus;
+  status: StageStatus;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -104,7 +104,7 @@ export interface CourseRow {
 
 export interface SectionRow {
   id: string;
-  course_id: string;
+  stage_id: string;
   title: string;
   order: number;
   created_at: string;
@@ -158,10 +158,10 @@ export interface LessonMaterialVersionRow {
 }
 
 /**
- * コース単位で引いた配布資料 (`GET /api/materials?courseId=...` / Issue #77)。
+ * ステージ単位で引いた配布資料 (`GET /api/materials?stageId=...` / Issue #77)。
  * 一覧をレッスン・セクションでグルーピングできるよう表示名を同梱する。
  */
-export interface CourseMaterialRow extends LessonMaterialRow {
+export interface StageMaterialRow extends LessonMaterialRow {
   lesson_title: string;
   section_title: string;
 }
@@ -284,14 +284,14 @@ export interface QuizGradeResult {
 export type EnrollmentStatus = "active" | "completed" | "expired";
 
 /**
- * 受講登録 (Issue #20)。 「誰がどのコースを、 いつまでに受講するか」 を表す。
+ * 受講登録 (Issue #20)。 「誰がどのステージを、 いつまでに受講するか」 を表す。
  * 割当は instructor/admin が RLS 配下で行い、 受講者は自分の行のみ read 可能。
  */
 export interface EnrollmentRow {
   id: string;
   tenant_id: string;
   user_id: string;
-  course_id: string;
+  stage_id: string;
   assigned_by: string | null;
   due_at: string | null;
   required: boolean;
@@ -307,11 +307,11 @@ export interface EnrollmentRow {
  * 受講者ごとの受講登録サマリ (Issue #20 / 受講登録画面の一覧バッジ用)。
  *
  * 受講登録画面は受講者を軸に選ぶため、 一覧には「何件割り当てられているか」だけあればよい。
- * enrollment 全件を取ると受講者数 × コース数に比例して膨らむので、 サーバ側で集計して返す。
+ * enrollment 全件を取ると受講者数 × ステージ数に比例して膨らむので、 サーバ側で集計して返す。
  */
 export interface EnrollmentSummaryRow {
   user_id: string;
-  /** 割当済みコース数。 */
+  /** 割当済みステージ数。 */
   total: number;
   /** 期限を過ぎていて未完了の件数。 */
   overdue: number;
@@ -321,7 +321,7 @@ export interface EnrollmentSummaryRow {
 // 修了判定 / 成績台帳 / 修了証 (Issue #26)
 // ---------------------------------------------------------------
 
-/** コースの修了基準トグル。 compute_course_completion / gradebook が返す。 */
+/** ステージの修了基準トグル。 compute_course_completion / gradebook が返す。 */
 export interface CompletionCriteria {
   require_all_lessons: boolean;
   require_quiz_pass: boolean;
@@ -330,13 +330,13 @@ export interface CompletionCriteria {
 }
 
 /**
- * (受講者, コース) の達成状況。 compute_course_completion / get_my_course_completion
+ * (受講者, ステージ) の達成状況。 compute_course_completion / get_my_course_completion
  * RPC の戻り値に対応する。 進捗 + 小テスト + 課題を統合した修了判定の中核。
  */
-export interface CourseCompletion {
+export interface StageCompletion {
   user_id: string;
-  course_id: string;
-  course_title: string;
+  stage_id: string;
+  stage_title: string;
   total_lessons: number;
   completed_lessons: number;
   total_quizzes: number;
@@ -359,13 +359,13 @@ export interface GradebookEntry {
   enrollment_status: EnrollmentStatus;
   due_at: string | null;
   enrolled_at: string;
-  completion: CourseCompletion | null;
+  completion: StageCompletion | null;
 }
 
 /** get_course_gradebook RPC の戻り値。 */
-export interface CourseGradebook {
-  course_id: string;
-  course_title: string;
+export interface StageGradebook {
+  stage_id: string;
+  stage_title: string;
   criteria: CompletionCriteria;
   rows: GradebookEntry[];
 }
@@ -375,13 +375,13 @@ export interface CertificateRow {
   id: string;
   tenant_id: string;
   user_id: string;
-  course_id: string;
+  stage_id: string;
   cert_code: string;
   issued_by: string | null;
   issued_at: string;
-  criteria_snapshot: CourseCompletion | Record<string, unknown>;
+  criteria_snapshot: StageCompletion | Record<string, unknown>;
   recipient_name: string;
-  course_title: string;
+  stage_title: string;
   tenant_name: string;
   revoked: boolean;
 }
@@ -390,11 +390,11 @@ export interface CertificateRow {
 export interface IssuedCertificate {
   id: string;
   cert_code: string;
-  course_id: string;
+  stage_id: string;
   user_id: string;
   issued_at: string;
   recipient_name: string;
-  course_title: string;
+  stage_title: string;
   tenant_name: string;
   revoked: boolean;
   already_existed: boolean;
@@ -406,7 +406,7 @@ export interface CertificateVerification {
   reason?: "not_found" | "revoked";
   cert_code?: string;
   recipient_name?: string;
-  course_title?: string;
+  stage_title?: string;
   tenant_name?: string;
   issued_at?: string;
 }
@@ -422,9 +422,9 @@ export interface AnalyticsTrendPoint {
   count: number;
 }
 
-/** コース別の登録者数 n と完了率 pct。 */
-export interface AnalyticsCourseCompletion {
-  course_id: string;
+/** ステージ別の登録者数 n と完了率 pct。 */
+export interface AnalyticsStageCompletion {
+  stage_id: string;
   name: string;
   n: number;
   pct: number;
@@ -449,7 +449,7 @@ export interface TenantAnalytics {
   new_enrollments_this_month: number;
   new_enrollments_prev_month: number;
   enrollment_trend: AnalyticsTrendPoint[];
-  completion_by_course: AnalyticsCourseCompletion[];
+  completion_by_stage: AnalyticsStageCompletion[];
   stumbles: AnalyticsStumble[];
   status_breakdown: { active: number; completed: number; expired: number };
   generated_at: string;
@@ -460,7 +460,7 @@ export interface InstructorStudentProgress {
   user_id: string;
   display_name: string;
   initials: string | null;
-  course_title: string;
+  stage_title: string;
   progress_pct: number;
   overdue: boolean;
 }
@@ -478,13 +478,13 @@ export interface InstructorOverview {
 
 /**
  * お知らせ (アナウンス)。 講師/管理者が発信し、 受講者ダッシュボードに表示される。
- * course_id が null ならテナント全体、 set ならそのコース受講者向け。
+ * stage_id が null ならテナント全体、 set ならそのステージ受講者向け。
  * author_name は profiles の RLS を跨がず描画するための denormalize。
  */
 export interface AnnouncementRow {
   id: string;
   tenant_id: string;
-  course_id: string | null;
+  stage_id: string | null;
   author_id: string | null;
   author_name: string;
   title: string;
@@ -572,17 +572,17 @@ export interface UiSection {
   lessons: UiLesson[];
 }
 
-export interface UiCourse {
+export interface UiStage {
   id: string;
   title: string;
   category: string;
-  color: CourseColor;
-  /** サムネイル画像の R2 パス (`courses.thumbnail_path` 由来)。 未設定なら色のストライプ表示。 */
+  color: StageColor;
+  /** サムネイル画像の R2 パス (`stages.thumbnail_path` 由来)。 未設定なら色のストライプ表示。 */
   thumbnailPath?: string;
   duration?: number;
   lessonsCount: number;
   progress: number;
-  /** 講師表示名 (`courses.instructor_name` 由来)。 未設定なら省略される。 */
+  /** 講師表示名 (`stages.instructor_name` 由来)。 未設定なら省略される。 */
   enrolledBy?: string;
   dueAt?: string | null;
   /** 受講登録 (Issue #20) 由来。 必須 / 任意の区別。 */
@@ -590,7 +590,7 @@ export interface UiCourse {
   description?: string;
   completed?: boolean;
   sections?: UiSection[];
-  /** 修了基準 (CourseRow の require_* フラグ由来)。 受講者 UI の「修了条件」表示に使う。 */
+  /** 修了基準 (StageRow の require_* フラグ由来)。 受講者 UI の「修了条件」表示に使う。 */
   criteria?: {
     requireAllLessons: boolean;
     requireQuizPass: boolean;
@@ -629,12 +629,12 @@ export function mapSectionRowToUi(row: SectionRow, lessons: LessonRow[]): UiSect
   };
 }
 
-export interface CourseWithChildren {
-  course: CourseRow;
+export interface StageWithChildren {
+  stage: StageRow;
   sections: Array<{ section: SectionRow; lessons: LessonRow[] }>;
 }
 
-export function mapCourseToUi(input: CourseWithChildren): UiCourse {
+export function mapStageToUi(input: StageWithChildren): UiStage {
   const sections = input.sections
     .slice()
     .sort((a, b) => a.section.order - b.section.order)
@@ -642,23 +642,23 @@ export function mapCourseToUi(input: CourseWithChildren): UiCourse {
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
   // 空文字も「未設定」 とみなし、 キーごと落として UI 側の分岐を単純にする。
-  const instructorName = input.course.instructor_name?.trim();
+  const instructorName = input.stage.instructor_name?.trim();
   return {
-    id: input.course.id,
-    title: input.course.title,
-    category: input.course.category ?? "",
-    color: input.course.color ?? "indigo",
-    ...(input.course.thumbnail_path ? { thumbnailPath: input.course.thumbnail_path } : {}),
-    ...(input.course.duration_hours != null ? { duration: input.course.duration_hours } : {}),
+    id: input.stage.id,
+    title: input.stage.title,
+    category: input.stage.category ?? "",
+    color: input.stage.color ?? "indigo",
+    ...(input.stage.thumbnail_path ? { thumbnailPath: input.stage.thumbnail_path } : {}),
+    ...(input.stage.duration_hours != null ? { duration: input.stage.duration_hours } : {}),
     lessonsCount,
     progress: 0,
     ...(instructorName ? { enrolledBy: instructorName } : {}),
-    ...(input.course.description != null ? { description: input.course.description } : {}),
+    ...(input.stage.description != null ? { description: input.stage.description } : {}),
     sections,
     criteria: {
-      requireAllLessons: input.course.require_all_lessons ?? true,
-      requireQuizPass: input.course.require_quiz_pass ?? true,
-      requireAssignmentPass: input.course.require_assignment_pass ?? true,
+      requireAllLessons: input.stage.require_all_lessons ?? true,
+      requireQuizPass: input.stage.require_quiz_pass ?? true,
+      requireAssignmentPass: input.stage.require_assignment_pass ?? true,
     },
   };
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Course, Role, Tenant } from "@/data/types";
+import type { Stage, Role, Tenant } from "@/data/types";
 import type { ChatContext } from "@falcon/shared/ai/types";
 import type { ProfileRole } from "@falcon/shared/cms/types";
 import type { Profile } from "@/lib/auth";
@@ -13,11 +13,11 @@ import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
 export interface AppShellValue {
   role: Role;
   setPage: (p: string) => void;
-  courses: Course[];
-  /** 選択コースを控える (直後の setPage('course-detail') が参照する)。 */
-  setCurrentCourse: (c: Course) => void;
-  onOpenLesson: (course: Course, lessonId: string) => void;
-  onActiveLessonChange: (courseId: string, lessonId: string) => void;
+  stages: Stage[];
+  /** 選択ステージを控える (直後の setPage('stage-detail') が参照する)。 */
+  setCurrentStage: (c: Stage) => void;
+  onOpenLesson: (stage: Stage, lessonId: string) => void;
+  onActiveLessonChange: (stageId: string, lessonId: string) => void;
   onOpenAIBot: () => void;
   setAIContext: (ctx: ChatContext) => void;
   tenantId: Tenant["id"];
@@ -29,14 +29,21 @@ export interface AppShellValue {
   studentName: string;
   studentInitials: string;
   announcementsHook: UseAnnouncementsResult;
-  coursesError: string | null;
+  stagesError: string | null;
+  /**
+   * 受講中ステージの一覧を取り直す (Phase 3b)。
+   *
+   * 自己開始で受講登録がその場で増えるので、開始した画面から呼ばないと
+   * 「始めたのに一覧にも「続きから」にも出ない」状態が残る。
+   */
+  refetchStages: () => void;
   /** 添削結果画面へ遷移する。 */
   onOpenSubmission: (submissionId: string) => void;
   profileRole?: ProfileRole;
   profile: Profile | null;
   onProfileUpdated: () => Promise<void>;
-  /** 検索パレット→コース管理のハイライト対象。 seq は選び直し検出用の版番号。 */
-  highlightCourse: { id: string; seq: number } | null;
+  /** 検索パレット→ステージ管理のハイライト対象。 seq は選び直し検出用の版番号。 */
+  highlightStage: { id: string; seq: number } | null;
 }
 
 export const AppShellContext = createContext<AppShellValue | null>(null);

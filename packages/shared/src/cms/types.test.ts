@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { mapCourseToUi, type CourseRow, type CourseWithChildren } from "./types.js";
+import { mapStageToUi, type StageRow, type StageWithChildren } from "./types.js";
 
-function courseRow(overrides: Partial<CourseRow> = {}): CourseRow {
+function stageRow(overrides: Partial<StageRow> = {}): StageRow {
   return {
-    id: "course-1",
+    id: "stage-1",
     tenant_id: "ses",
     slug: "typescript-basics",
     title: "TypeScript 入門研修",
@@ -20,35 +20,35 @@ function courseRow(overrides: Partial<CourseRow> = {}): CourseRow {
   };
 }
 
-function withChildren(course: CourseRow): CourseWithChildren {
-  return { course, sections: [] };
+function withChildren(stage: StageRow): StageWithChildren {
+  return { stage, sections: [] };
 }
 
-describe("mapCourseToUi — 講師名 (Issue #74)", () => {
+describe("mapStageToUi — 講師名 (Issue #74)", () => {
   it("instructor_name を enrolledBy に載せる", () => {
-    const ui = mapCourseToUi(withChildren(courseRow({ instructor_name: "堀江メンター" })));
+    const ui = mapStageToUi(withChildren(stageRow({ instructor_name: "堀江メンター" })));
     expect(ui.enrolledBy).toBe("堀江メンター");
   });
 
   it("前後の空白を落とす", () => {
-    const ui = mapCourseToUi(withChildren(courseRow({ instructor_name: "  堀江メンター  " })));
+    const ui = mapStageToUi(withChildren(stageRow({ instructor_name: "  堀江メンター  " })));
     expect(ui.enrolledBy).toBe("堀江メンター");
   });
 
   it("null / 空白のみ / 未マイグレーション (undefined) では enrolledBy を付けない", () => {
     for (const value of [null, "", "   ", undefined]) {
-      const ui = mapCourseToUi(withChildren(courseRow({ instructor_name: value })));
+      const ui = mapStageToUi(withChildren(stageRow({ instructor_name: value })));
       expect(ui.enrolledBy).toBeUndefined();
       expect("enrolledBy" in ui).toBe(false);
     }
   });
 });
 
-describe("mapCourseToUi — サムネイル", () => {
+describe("mapStageToUi — サムネイル", () => {
   it("thumbnail_path を thumbnailPath に載せる", () => {
-    const ui = mapCourseToUi(
+    const ui = mapStageToUi(
       withChildren(
-        courseRow({
+        stageRow({
           thumbnail_path: "tenant/ses/courses/typescript-basics/thumbnail-abcd1234.webp",
         }),
       ),
@@ -58,7 +58,7 @@ describe("mapCourseToUi — サムネイル", () => {
 
   it("null / 空文字 / 未マイグレーション (undefined) では付けない (ストライプ表示のまま)", () => {
     for (const value of [null, "", undefined]) {
-      const ui = mapCourseToUi(withChildren(courseRow({ thumbnail_path: value })));
+      const ui = mapStageToUi(withChildren(stageRow({ thumbnail_path: value })));
       expect("thumbnailPath" in ui).toBe(false);
     }
   });

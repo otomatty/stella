@@ -97,7 +97,7 @@ function toInsertPayload(
   },
 ): InsertSubmissionInput {
   return {
-    courseTitle: base.courseTitle,
+    stageTitle: base.stageTitle,
     sectionTitle: base.sectionTitle,
     assignmentTitle: base.assignmentTitle,
     lessonId: base.lessonId,
@@ -187,7 +187,7 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
       studentName: r.student,
       studentInitials: r.initials,
       avatarTone: r.c,
-      courseTitle: r.course,
+      stageTitle: r.stage,
       assignmentTitle: r.assignment,
       codeLines: isFirst
         ? [...SUBMITTED_CODE]

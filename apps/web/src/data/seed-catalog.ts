@@ -1,6 +1,6 @@
 /**
  * D1 seed とデモ UI が参照するテナント一覧。
- * 教材コースは `packages/content` が正本で、 `export-seed-sql.ts` が組み立てる。
+ * 教材ステージは `packages/content` が正本で、 `export-seed-sql.ts` が組み立てる。
  * 提出キュー・KPI チャート等のデモ専用データは `@/demo/fixtures` に分離済み。
  */
 

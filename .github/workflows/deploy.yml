@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: verify → migrate → seed → api → web
+    name: verify → assets → migrate → api → seed → web
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -41,9 +41,12 @@ jobs:
         run: bun run build
 
       # --- デプロイ（直列。前段失敗で後段は動かない） ---
-      - name: Apply D1 migrations (remote)
-        run: bun run db:migrate:remote
-
+      #
+      # D1 スキーマに触れる 2 ステップ (migrate → seed) の間に、旧スキーマ前提の
+      # 稼働中 Worker が新スキーマを読む時間ができる。後方非互換な migration では
+      # そこが障害の窓になるので、時間の読めない R2 アップロード / PDF 生成を先に
+      # 済ませ、migrate → deploy:api → seed を隙間なく並べて窓を最小化する。
+      #
       # 教材画像 (図解 SVG + 講座サムネイル) を seed より先に R2 へ置く。
       # 順序が逆だと、D1 がまだ存在しないオブジェクトを指す時間ができる。
       # put は冪等なので毎回全件流す。並列 + リトライで 70 件程度なら 1 分前後。
@@ -68,13 +71,18 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      - name: Apply D1 migrations (remote)
+        run: bun run db:migrate:remote
+
+      - name: Deploy API
+        run: bun run deploy:api
+
+      # seed は wrangler d1 execute で D1 へ直接書く (Worker を経由しない) ので、
+      # deploy:api の後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
         run: bun run db:seed:remote:content
         env:
           PDF_MANIFEST: ${{ github.workspace }}/packages/content/dist/pdf-manifest.json
-
-      - name: Deploy API
-        run: bun run deploy:api
 
       - name: Deploy Web (build with VITE_* then deploy)
         run: bun run deploy:web

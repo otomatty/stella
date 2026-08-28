@@ -6,7 +6,7 @@ describe("linksForRole", () => {
     const setPage = vi.fn();
     const labels = linksForRole("sales", setPage).map((link) => link.label);
     expect(labels).toEqual(["ダッシュボード", "面談対策"]);
-    expect(labels).not.toContain("コース一覧");
+    expect(labels).not.toContain("ステージ一覧");
     expect(labels).not.toContain("修了証");
   });
 });

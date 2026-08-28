@@ -123,17 +123,17 @@ function validateContext(
       return { ok: true, value: { kind: "general" } };
     case "lesson": {
       const lessonTitle = (c as { lessonTitle?: unknown }).lessonTitle;
-      const courseTitle = (c as { courseTitle?: unknown }).courseTitle;
+      const stageTitle = (c as { stageTitle?: unknown }).stageTitle;
       if (
         typeof lessonTitle !== "string" ||
         lessonTitle.trim().length === 0 ||
-        typeof courseTitle !== "string" ||
-        courseTitle.trim().length === 0
+        typeof stageTitle !== "string" ||
+        stageTitle.trim().length === 0
       ) {
         return {
           ok: false,
           status: 400,
-          message: "lesson context requires lessonTitle and courseTitle",
+          message: "lesson context requires lessonTitle and stageTitle",
         };
       }
       return {
@@ -141,7 +141,7 @@ function validateContext(
         value: {
           kind: "lesson",
           lessonTitle: lessonTitle.trim(),
-          courseTitle: courseTitle.trim(),
+          stageTitle: stageTitle.trim(),
         },
       };
     }

@@ -17,7 +17,9 @@ import type { Env } from "../env.js";
 import { verifyAccessToken } from "./auth-jwt.js";
 
 export class ApiError extends Error {
-  status: 400 | 401 | 403 | 404 | 409 | 429 | 500 | 502 | 503;
+  // 410 は「あった機能を廃止した」ぶんだけ (Phase 3b の割当 API)。404 だと呼び出し側が
+  // 綴り違いを疑って探し回るので、退役したことが伝わる番号を使う。
+  status: 400 | 401 | 403 | 404 | 409 | 410 | 429 | 500 | 502 | 503;
   constructor(message: string, status: ApiError["status"]) {
     super(message);
     this.name = "ApiError";
@@ -141,6 +143,40 @@ export function canPracticeInterviewPrep(role: ProfileRole): boolean {
 /** 面談対策の練習系 API (自分の進捗を書く操作) の入口ガード。 */
 export function requireCanPracticeInterviewPrep(caller: Caller): void {
   if (!canPracticeInterviewPrep(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
+/**
+ * 腕試し (SkillCheck / 飛び級) を **受ける** 側になれるロール (Phase 3a)。
+ *
+ * `INTERVIEW_PREP_PRACTICE_ROLES` と同じ流儀・同じ顔ぶれ。管理者は運用の当事者として
+ * 受講者と同じ腕試しを試せる必要がある (出題や合格ラインの手触りを確かめる場が他に
+ * 無い) 一方、講師・営業は対象外 — 飛び級は「自分の星を開ける」操作で、他人の学習を
+ * 見る側のロールが自分の `stage_unlocks` を作っても意味が無く、受験履歴だけが増える。
+ */
+export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
+
+export function canTakeSkillCheck(role: ProfileRole): boolean {
+  return SKILL_CHECK_ROLES.includes(role);
+}
+
+/** 腕試し API (出題・採点の両方) の入口ガード。 */
+export function requireCanTakeSkillCheck(caller: Caller): void {
+  if (!canTakeSkillCheck(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
+/**
+ * ステージの自己開始 (`POST /api/stages/:id/start`) の入口ガード (Phase 3b)。
+ *
+ * 顔ぶれは腕試しと同じ (`SKILL_CHECK_ROLES`) — 飛び級で開いた星の自己登録と自己開始は
+ * 同じ「自分の学習を自分で始める」操作なので、片方だけ講師・営業に開けると
+ * 「受けられないのに始められる」がねじれる。
+ */
+export function requireCanStartStage(caller: Caller): void {
+  if (!canTakeSkillCheck(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }
 }

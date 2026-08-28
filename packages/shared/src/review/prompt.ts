@@ -47,7 +47,7 @@ export function buildReviewDraftUserMessage(req: ReviewDraftRequest): string {
   const fenceTicks = "`".repeat(Math.max(3, longestBacktickRun + 1));
   return [
     `<review_context>`,
-    `  <courseTitle>${escapeXml(req.courseTitle ?? "コース")}</courseTitle>`,
+    `  <stageTitle>${escapeXml(req.stageTitle ?? "ステージ")}</stageTitle>`,
     `  <assignmentTitle>${escapeXml(req.assignmentTitle)}</assignmentTitle>`,
     `</review_context>`,
     ...(req.gradingSummary

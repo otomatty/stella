@@ -5,19 +5,19 @@
  *   完了していなくても移動できる (順序の強制は locked が担う)。
  * - `LessonCompleteCallout`: **完了した瞬間だけ** 出す「次のレッスンへ」の CTA。
  *   開いた時点で既に完了済みのレッスンには出さない (読み返しのたびに祝われないように)。
- *   セクションの区切り / コースの最後では文面と行き先を切り替える。
+ *   セクションの区切り / ステージの最後では文面と行き先を切り替える。
  */
 
 import { Check, ChevronLeft, ChevronRight, GraduationCap, Sparkles, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import type { LessonNavNode, LessonNeighbors } from "@/lib/lesson-navigation";
 import { cn } from "@/lib/utils";
-import { LessonTypeIcon, lessonTypeLabel } from "./CourseDetail";
+import { LessonTypeIcon, lessonTypeLabel } from "./StageDetail";
 
 interface NavProps {
   neighbors: LessonNeighbors;
   onSelectLesson: (lessonId: string) => void;
-  onBackToCourse: () => void;
+  onBackToStage: () => void;
 }
 
 /** 前後どちらかのレッスンへ飛ぶカード。 */
@@ -67,7 +67,7 @@ const NavEdge = ({ label, action }: { label: string; action?: React.ReactNode })
 );
 
 /** 本文末尾に常設する前後ナビ。 */
-export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToCourse }: NavProps) => {
+export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToStage }: NavProps) => {
   const { current, prev, next, total } = neighbors;
   return (
     <nav aria-label="レッスンの移動" className="mt-8 border-t border-border pt-5">
@@ -83,8 +83,8 @@ export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToCourse }: N
           <NavEdge
             label="最後のレッスンです"
             action={
-              <Button size="sm" variant="outline" onClick={onBackToCourse}>
-                コース詳細へ
+              <Button size="sm" variant="outline" onClick={onBackToStage}>
+                ステージ詳細へ
               </Button>
             }
           />
@@ -100,28 +100,28 @@ export const LessonNavFooter = ({ neighbors, onSelectLesson, onBackToCourse }: N
   );
 };
 
-/** 完了直後の CTA。 セクションの区切り / コースの最後で文面と行き先を変える。 */
+/** 完了直後の CTA。 セクションの区切り / ステージの最後で文面と行き先を変える。 */
 export const LessonCompleteCallout = ({
   neighbors,
   onSelectLesson,
-  onBackToCourse,
+  onBackToStage,
   onDismiss,
 }: NavProps & { onDismiss: () => void }) => {
-  const { current, next, nextStartsNewSection, currentSectionComplete, courseComplete } = neighbors;
+  const { current, next, nextStartsNewSection, currentSectionComplete, stageComplete } = neighbors;
 
   // 節目として祝うのは実際に全部終わったときだけ。 「先に解禁レッスンが無い」 =
-  // コース完了 ではない (前後ナビは未完了でも移動できるので、 途中を飛ばして
+  // ステージ完了 ではない (前後ナビは未完了でも移動できるので、 途中を飛ばして
   // 末尾だけ終えることがある)。 セクションの区切りも同様に実完了で判定する。
-  const milestone = courseComplete
-    ? "course"
+  const milestone = stageComplete
+    ? "stage"
     : nextStartsNewSection && currentSectionComplete
       ? "section"
       : null;
 
-  const Icon = milestone === "course" ? GraduationCap : milestone === "section" ? Sparkles : Check;
+  const Icon = milestone === "stage" ? GraduationCap : milestone === "section" ? Sparkles : Check;
   const title =
-    milestone === "course"
-      ? "コースのレッスンをすべて完了しました"
+    milestone === "stage"
+      ? "ステージのレッスンをすべて完了しました"
       : milestone === "section" && current
         ? `セクション「${current.section.title}」を完了しました`
         : "レッスンを完了しました";
@@ -129,9 +129,9 @@ export const LessonCompleteCallout = ({
     ? nextStartsNewSection
       ? `次はセクション「${next.section.title}」の「${next.lesson.title}」です。`
       : `次は「${next.lesson.title}」です。`
-    : courseComplete
-      ? "お疲れさまでした。 修了の状況はコース詳細から確認できます。"
-      : "これがコースの最後のレッスンです。 未完了のレッスンが残っています。";
+    : stageComplete
+      ? "お疲れさまでした。 修了の状況はステージ詳細から確認できます。"
+      : "これがステージの最後のレッスンです。 未完了のレッスンが残っています。";
 
   return (
     // <output> は暗黙で role="status"。 完了は非同期に確定するので読み上げも通す。
@@ -156,8 +156,8 @@ export const LessonCompleteCallout = ({
               <ChevronRight size={13} />
             </Button>
           ) : (
-            <Button variant="accent" onClick={onBackToCourse}>
-              コース詳細へ
+            <Button variant="accent" onClick={onBackToStage}>
+              ステージ詳細へ
               <ChevronRight size={13} />
             </Button>
           )}

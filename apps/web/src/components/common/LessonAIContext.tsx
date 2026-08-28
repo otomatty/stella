@@ -1,7 +1,7 @@
 /**
  * LessonPlayer から AIChatBot へ「いま学習中の文脈」 を渡すための React Context。
  *
- * - dashboard / コース一覧では Provider なし → AIChatBot は general モードで動く
+ * - dashboard / ステージ一覧では Provider なし → AIChatBot は general モードで動く
  * - レッスン中は `kind: 'lesson'` を流す (code レッスン含む)
  */
 

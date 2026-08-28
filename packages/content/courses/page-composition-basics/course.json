@@ -5,6 +5,9 @@
   "description": "UI部品 入門の次に受ける、作った部品を 1 枚の静的ページに組み立てる研修。header / nav / main / footer の landmark でページの骨格を組み、カードの集合をグリッドで敷き詰め、短い本文でもフッタを下端に付け、skip link で最初のフォーカスを main へ通す。新しい部品は作らず、既習の部品と :root のトークンだけで 1 枚を仕上げる。",
   "header": "ページ構成入門研修",
   "tenantId": "ses",
+  "prerequisites": ["ui-components-basics"],
+  "canDo": "作った部品を 1 枚のページに組み上げ、骨格と導線を通せる",
+  "theme": "Web とデータの実践",
   "modules": {
     "m1-skeleton": "M1. ページの骨格",
     "m2-content": "M2. 本文を組む",

@@ -77,7 +77,7 @@ export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
             </div>
             <CertificateView
               recipientName={result.recipient_name ?? ""}
-              courseTitle={result.course_title ?? ""}
+              stageTitle={result.stage_title ?? ""}
               issuer={result.tenant_name ?? ""}
               issuedAt={result.issued_at ? formatIssuedAt(result.issued_at) : ""}
               certCode={result.cert_code ?? certCode}

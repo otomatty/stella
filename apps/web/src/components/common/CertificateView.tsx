@@ -5,7 +5,7 @@
 
 interface CertificateViewProps {
   recipientName: string;
-  courseTitle: string;
+  stageTitle: string;
   /** 発行者表示 (テナント名)。 */
   issuer: string;
   /** 発行日 (YYYY-MM-DD 等に整形済み)。 */
@@ -17,7 +17,7 @@ interface CertificateViewProps {
 
 export const CertificateView = ({
   recipientName,
-  courseTitle,
+  stageTitle,
   issuer,
   issuedAt,
   certCode,
@@ -36,7 +36,7 @@ export const CertificateView = ({
     <div className="text-sm text-ink-2 leading-relaxed mb-5 relative">
       上記の者は本学習プログラム
       <br />
-      <strong className="text-foreground text-[15px]">「{courseTitle}」</strong>
+      <strong className="text-foreground text-[15px]">「{stageTitle}」</strong>
       <br />
       の全カリキュラムを修了したことを認定します
     </div>

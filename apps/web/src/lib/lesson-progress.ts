@@ -12,7 +12,7 @@
  */
 
 import { isBackendConfigured } from "@/lib/backend";
-import type { Course, Lesson, LessonStatus } from "@/data/types";
+import type { Stage, Lesson, LessonStatus } from "@/data/types";
 
 const STORAGE_KEY = "lms_lesson_progress";
 const COMPLETION_THRESHOLD = 0.9;
@@ -457,22 +457,22 @@ export interface NextLessonInfo {
   lesson: Lesson;
   /** 1-indexed セクション番号 */
   sectionNumber: number;
-  /** コース内の通し番号 (1-indexed) */
+  /** ステージ内の通し番号 (1-indexed) */
   lessonNumber: number;
 }
 
 /**
- * コース内で最初の未完了レッスンを探す (進捗マップで実ステータスに解決してから)。
+ * ステージ内で最初の未完了レッスンを探す (進捗マップで実ステータスに解決してから)。
  * 「続きから」 の再開位置はここが唯一の判定元。 全完了 / レッスン無しなら null。
  */
 export function findNextLesson(
-  course: Course | undefined,
+  stage: Stage | undefined,
   map: LessonProgressMap,
 ): NextLessonInfo | null {
-  if (!course?.sections) return null;
+  if (!stage?.sections) return null;
   let flat = 0;
-  for (let si = 0; si < course.sections.length; si++) {
-    const section = course.sections[si];
+  for (let si = 0; si < stage.sections.length; si++) {
+    const section = stage.sections[si];
     if (!section) continue;
     for (const lesson of section.lessons) {
       flat += 1;
@@ -490,22 +490,22 @@ export function findNextLesson(
  * 最初の非 locked レッスンへ戻す (読み返しでボタンを死なせない / ロック行ガードを迂回しない)。
  * すべて locked / レッスン無しなら null。
  */
-export function resumeLessonId(course: Course | undefined, map: LessonProgressMap): string | null {
-  const next = findNextLesson(course, map);
+export function resumeLessonId(stage: Stage | undefined, map: LessonProgressMap): string | null {
+  const next = findNextLesson(stage, map);
   if (next) return next.lesson.id;
-  const lessons = course?.sections?.flatMap((s) => s.lessons) ?? [];
+  const lessons = stage?.sections?.flatMap((s) => s.lessons) ?? [];
   return lessons.find((l) => resolveLessonStatus(l, map) !== "locked")?.id ?? null;
 }
 
 /**
- * 進捗マップからコースの進捗率 (%) を導出して返す。
- * DB 由来コースは `mapCourseToUi` が progress=0 で返すため、 レッスン完了数から計算する。
- * レッスンを持たないコースはそのまま返す。
+ * 進捗マップからステージの進捗率 (%) を導出して返す。
+ * DB 由来ステージは `mapStageToUi` が progress=0 で返すため、 レッスン完了数から計算する。
+ * レッスンを持たないステージはそのまま返す。
  */
-export function deriveCourseProgress(course: Course, map: LessonProgressMap): Course {
-  const lessons = course.sections?.flatMap((s) => s.lessons) ?? [];
-  if (lessons.length === 0) return course;
+export function deriveStageProgress(stage: Stage, map: LessonProgressMap): Stage {
+  const lessons = stage.sections?.flatMap((s) => s.lessons) ?? [];
+  if (lessons.length === 0) return stage;
   const done = lessons.filter((l) => resolveLessonStatus(l, map) === "done").length;
-  const pct = course.completed ? 100 : Math.round((done / lessons.length) * 100);
-  return { ...course, progress: pct };
+  const pct = stage.completed ? 100 : Math.round((done / lessons.length) * 100);
+  return { ...stage, progress: pct };
 }

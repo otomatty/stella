@@ -27,7 +27,7 @@ import { QuizEditor } from "./QuizEditor";
 
 interface Props {
   tenantId: string;
-  courseId: string;
+  stageId: string;
   sectionId: string;
   lesson: LessonRow | null;
   onClose: () => void;
@@ -49,7 +49,7 @@ const TYPES: { value: LessonType; label: string }[] = [
 
 export function LessonEditor({
   tenantId,
-  courseId,
+  stageId,
   sectionId: _sectionId,
   lesson,
   onClose,
@@ -156,7 +156,7 @@ export function LessonEditor({
               <MaterialUploader
                 kind="video"
                 tenantId={tenantId}
-                courseId={courseId}
+                stageId={stageId}
                 currentPath={videoPath}
                 onChange={setVideoPath}
               />
@@ -177,7 +177,7 @@ export function LessonEditor({
               <MaterialUploader
                 kind="pdf"
                 tenantId={tenantId}
-                courseId={courseId}
+                stageId={stageId}
                 currentPath={pdfPath}
                 onChange={setPdfPath}
               />

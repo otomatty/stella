@@ -25,7 +25,7 @@ describe("export-seed-sql (sqlite)", () => {
     env: { ...process.env, DIALECT: "sqlite" },
   });
 
-  it("教材コースを upsert する", () => {
+  it("教材ステージを upsert する", () => {
     expect(sql).toContain("'typescript-basics'");
   });
 
@@ -34,21 +34,21 @@ describe("export-seed-sql (sqlite)", () => {
     const reactIntro = stableUuid("course:ses:react-intro");
     expect(sql).not.toContain("Web開発基礎");
     // "Git / GitHub" は git-basics の practice.md 本文 (lesson_revisions のスナップ
-    // ショット) に正当に現れるので、旧デモ講座の検査はコース insert に限定する。
-    expect(sql).not.toMatch(/insert into courses[^\n]*Git \/ GitHub/);
+    // ショット) に正当に現れるので、旧デモ講座の検査はステージ insert に限定する。
+    expect(sql).not.toMatch(/insert into stages[^\n]*Git \/ GitHub/);
     expect(sql).not.toContain("React入門");
-    expect(sql).toContain(`delete from courses where id = '${webFundamentals}'`);
-    expect(sql).toContain(`delete from courses where id = '${reactIntro}'`);
+    expect(sql).toContain(`delete from stages where id = '${webFundamentals}'`);
+    expect(sql).toContain(`delete from stages where id = '${reactIntro}'`);
     expect(sql).not.toMatch(/or \(tenant_id = '[^']+' and slug = '/);
-    expect(sql).toContain(`delete from sections where course_id = '${webFundamentals}';`);
-    expect(sql).not.toContain(`delete from sections where course_id = '${webFundamentals}');`);
+    expect(sql).toContain(`delete from sections where stage_id = '${webFundamentals}';`);
+    expect(sql).not.toContain(`delete from sections where stage_id = '${webFundamentals}');`);
   });
 
   it("slug を再利用した git-basics(Git 入門研修)は upsert し、旧デモ削除の対象にしない", () => {
     const gitBasics = stableUuid("course:ses:git-basics");
     expect(sql).toContain("'git-basics'");
     expect(sql).toContain("Git 入門研修");
-    expect(sql).not.toContain(`delete from courses where id = '${gitBasics}'`);
+    expect(sql).not.toContain(`delete from stages where id = '${gitBasics}'`);
   });
 
   it("本文リビジョンを、直前とハッシュが違うときだけ積む", () => {
@@ -74,11 +74,39 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("tenant/ses/courses/typescript-basics/assets/");
   });
 
-  // サムネイルは courses.thumbnail_path が正本。列が upsert から落ちると、
+  // サムネイルは stages.thumbnail_path が正本。列が upsert から落ちると、
   // 画像を差し替えても D1 が古いキーを指したままになる。
-  it("courses の upsert は thumbnail_path を含む", () => {
-    expect(sql).toMatch(/insert into courses \([^)]*\bthumbnail_path\b[^)]*\)/);
+  it("stages の upsert は thumbnail_path を含む", () => {
+    expect(sql).toMatch(/insert into stages \([^)]*\bthumbnail_path\b[^)]*\)/);
     expect(sql).toContain("thumbnail_path = excluded.thumbnail_path");
+  });
+
+  // スキルツリーの 3 列 (Phase 1)。教材 (course.json) が正本なので、列が upsert から
+  // 落ちると「前提を足したのに誰も開けない / 外したのにロックが残る」が黙って起きる。
+  it("stages の upsert は prerequisites / can_do / theme を含む", () => {
+    expect(sql).toMatch(
+      /insert into stages \([^)]*\bprerequisites\b[^)]*\bcan_do\b[^)]*\btheme\b[^)]*\)/,
+    );
+    expect(sql).toContain("prerequisites = excluded.prerequisites");
+    expect(sql).toContain("can_do = excluded.can_do");
+    expect(sql).toContain("theme = excluded.theme");
+  });
+
+  it("前提つきの講座は slug の JSON 配列で入る", () => {
+    // modern-css-basics は html-css-basics を前提にしている (course.json)。
+    const line = (sql.match(/^insert into stages .*'modern-css-basics'.*$/m) ?? [])[0];
+    expect(line).toBeDefined();
+    expect(line).toContain(`'["html-css-basics"]'`);
+  });
+
+  it("前提を書いていない講座は空配列ではなく null に畳む (ロックを残さない)", () => {
+    // 教材が正本。course.json から前提を外したら D1 も null に戻る必要がある
+    // ('[]' が残ると、読み直す側が「壊れた行」と区別できない)。
+    const line = (sql.match(/^insert into stages .*'aws-clf-c02-basics'.*$/m) ?? [])[0];
+    expect(line).toBeDefined();
+    // 並びは ... status, prerequisites, can_do, theme, created_at, updated_at。
+    expect(line).toMatch(/'published', null, '[^']*', '[^']*', cast\(unixepoch/);
+    expect(line).not.toContain("'[]'");
   });
 
   it("quiz / quiz_questions / quiz_options を emit する", () => {
@@ -96,25 +124,25 @@ describe("export-seed-sql (sqlite)", () => {
     }
   });
 
-  it("教材コースの sections を course_id だけで丸ごと wipe しない", () => {
-    const tsCourse = stableUuid("course:ses:typescript-basics");
-    expect(sql).not.toContain(`delete from sections where course_id = '${tsCourse}';`);
-    expect(sql).toContain(`delete from sections where course_id = '${tsCourse}' and id not in (`);
+  it("教材ステージの sections を stage_id だけで丸ごと wipe しない", () => {
+    const tsStage = stableUuid("course:ses:typescript-basics");
+    expect(sql).not.toContain(`delete from sections where stage_id = '${tsStage}';`);
+    expect(sql).toContain(`delete from sections where stage_id = '${tsStage}' and id not in (`);
   });
 
   it("教材から消えた lesson / section を prune する", () => {
     expect(sql).toMatch(
-      /delete from lessons where section_id in \(select id from sections where course_id = '[^']+'\) and id not in \(/i,
+      /delete from lessons where section_id in \(select id from sections where stage_id = '[^']+'\) and id not in \(/i,
     );
-    expect(sql).toMatch(/delete from sections where course_id = '[^']+' and id not in \(/i);
+    expect(sql).toMatch(/delete from sections where stage_id = '[^']+' and id not in \(/i);
     expect(sql).toMatch(
       /delete from lesson_progress where lesson_id not in \(select id from lessons\)/i,
     );
   });
 
-  it("sections は slug で既存コースに紐づけて upsert する", () => {
+  it("sections は slug で既存ステージに紐づけて upsert する", () => {
     expect(sql).toMatch(
-      /insert into sections \([^)]*\)\s*select[\s\S]*?\bfrom courses\b[\s\S]*?on conflict \(id\) do update/i,
+      /insert into sections \([^)]*\)\s*select[\s\S]*?\bfrom stages\b[\s\S]*?on conflict \(id\) do update/i,
     );
     expect(sql).toMatch(
       /insert into sections \([^)]*\)\s*select[\s\S]*?c\.id = '[0-9a-f-]{36}'[\s\S]*?on conflict \(id\) do update/i,
@@ -199,7 +227,7 @@ describe("export-seed-sql (sqlite)", () => {
 
   // 旧 category 列は contract リリース (#141) で drop 済み。 seed が書き戻すと
   // マイグレーション適用後の D1 で INSERT が落ちるため、 復活していないことを縛る。
-  // (courses.category は別物なので interview_questions の文だけを見る。 1 文 = 1 行)
+  // (stages.category は別物なので interview_questions の文だけを見る。 1 文 = 1 行)
   it("面談対策の insert は categories のみで旧 category 列を書かない", () => {
     const inserts = sql.match(/^insert into interview_questions .*$/gm) ?? [];
     expect(inserts.length).toBeGreaterThan(0);
@@ -226,30 +254,31 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).not.toContain("seed-enrollment-");
   });
 
-  it("教材コースは残す", () => {
+  it("教材ステージは残す", () => {
     expect(sql).toContain("'typescript-basics'");
     expect(sql).toMatch(/insert into lessons /);
   });
 
   it("デモ講座の削除は本番 seed でも出す", () => {
     expect(sql).toContain(
-      `delete from courses where id = '${stableUuid("course:ses:web-fundamentals")}'`,
+      `delete from stages where id = '${stableUuid("course:ses:web-fundamentals")}'`,
     );
     expect(sql).not.toContain("Web開発基礎");
   });
 });
 
-// quiz は教材コースにだけ紐づける。fixtures 側に同じ lesson.id が現れても
+// quiz は教材ステージにだけ紐づける。fixtures 側に同じ lesson.id が現れても
 // quiz を生やさないガードが消えたら落ちるよう、@falcon/content を差し替えて検証する。
 vi.mock("@falcon/content", async () => {
   const collidingLessonId = "l1";
 
   return {
+    // @falcon/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
     buildContentManifest: () => ({
       courses: [
         {
           id: "typescript-basics",
-          title: "教材コース（テスト用）",
+          title: "教材ステージ（テスト用）",
           sections: [
             {
               id: "s1",
@@ -273,7 +302,7 @@ vi.mock("@falcon/content", async () => {
   };
 });
 
-describe("quiz の紐付けは教材コースに限定される", () => {
+describe("quiz の紐付けは教材ステージに限定される", () => {
   it("同じ lesson.id を持つ fixtures レッスンには quiz を emit しない", async () => {
     process.env.DIALECT = "sqlite";
     const logs: string[] = [];
@@ -283,7 +312,7 @@ describe("quiz の紐付けは教材コースに限定される", () => {
     await import("./export-seed-sql.js");
     spy.mockRestore();
 
-    // 教材コース側の 1 件だけ。ガードが無ければ fixtures 側でも emit されて 2 件になる。
+    // 教材ステージ側の 1 件だけ。ガードが無ければ fixtures 側でも emit されて 2 件になる。
     expect(logs.join("\n").match(/^insert into quizzes /gm) ?? []).toHaveLength(1);
     // fixtures / problems を丸ごと in-process で読み込むので既定の 5s では足りない。
   }, 60_000);

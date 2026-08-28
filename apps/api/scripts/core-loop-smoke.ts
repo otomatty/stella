@@ -5,16 +5,24 @@
  *   SMOKE_BASE_URL=... bun run smoke:core
  *
  * 起動中の API に対して HTTP だけで
- * 「コース作成 → 公開 → 受講登録 → 進捗 → 課題提出 → 添削確定 → 通知 → 修了証発行 →
- *   監査ログ確認 → 後片付け」
+ * 「ステージ作成 → 公開 → **受講者が自分で開始** → 進捗 → 課題提出 → 添削確定 → 通知 →
+ *   修了証発行 → 監査ログ確認 → 後片付け」
  * を 1 本走らせ、 各ステップの結果を検証する。 ブラウザは使わないため CI でも回せる
  * (`.github/workflows/ci.yml` の core-loop ジョブ)。
+ *
+ * Phase 3b で **管理者の割当は廃止** した。 このスモークもその契約に合わせてあり、
+ * 学習者が `POST /api/stages/:id/start` で解放済みの星を自分で始める。 退役した
+ * 割当 API (`POST /api/enrollments` / `/bulk` / プリセット適用) が 410 を返すことも
+ * ここで見張る。 一方で **退役しなかったもの** も同じだけ見張る — 割当プリセットの
+ * 定義 CRUD (`PATCH /api/enrollment-presets/:id`) と、 始まったあとの staff の後始末
+ * (`PATCH /api/enrollments/:id` の期限設定 / 解除)。 まとめて消してしまう変更を
+ * 素通しさせないため。
  *
  * 認証は OAuth を通さず、 `AUTH_JWT_SECRET` で seed プロフィール用の JWT を直接発行する
  * (README「ローカルログイン」と同じ方法)。 そのため `login` の監査記録だけは対象外。
  *
  * 前提: `bun run db:migrate && bun run db:seed` 済みで、 API が起動していること。
- * 副作用: 作成したコース / 受講登録は最後に削除する。 提出物には削除 API がないため
+ * 副作用: 作成したステージ / 受講登録は最後に削除する。 提出物には削除 API がないため
  * `[smoke]` 付きの提出が 1 件残る (添削確定済みなのでキューには出ない)。
  */
 
@@ -161,9 +169,9 @@ async function main(): Promise<void> {
   // 再実行しても衝突しないよう slug に実行時刻を混ぜる。
   const stamp = Date.now().toString(36);
   const slug = `smoke-core-loop-${stamp}`;
-  const courseTitle = `[smoke] コア学習ループ ${stamp}`;
+  const stageTitle = `[smoke] コア学習ループ ${stamp}`;
 
-  let courseId = "";
+  let stageId = "";
   let lessonId = "";
   let quizId = "";
   let questionId = "";
@@ -173,7 +181,6 @@ async function main(): Promise<void> {
   let presetId = "";
   let soloPresetId = "";
   let sharedPresetId = "";
-  let sharedPresetUpdatedAt = "";
   let submissionId = "";
   const smokeAssignmentId = `smoke-assignment-${stamp}`;
   let certificateId = "";
@@ -196,7 +203,7 @@ async function main(): Promise<void> {
   });
 
   await step("営業は CMS API にアクセスできない (403)", async () => {
-    const r = await call("POST", "/api/cms/courses", {
+    const r = await call("POST", "/api/cms/stages", {
       token: sales,
       body: { slug: `smoke-sales-deny-${stamp}`, title: "[smoke] sales deny", status: "draft" },
     });
@@ -312,12 +319,12 @@ async function main(): Promise<void> {
     await ok("POST", "/api/me", { token: learner, body: { display_name: original } });
   });
 
-  await step("Admin がコースを作成する (draft)", async () => {
-    const res = await ok("POST", "/api/cms/courses", {
+  await step("Admin がステージを作成する (draft)", async () => {
+    const res = await ok("POST", "/api/cms/stages", {
       token: admin,
       body: {
         slug,
-        title: courseTitle,
+        title: stageTitle,
         category: "smoke",
         status: "draft",
         require_all_lessons: true,
@@ -326,15 +333,15 @@ async function main(): Promise<void> {
         auto_issue_certificate: true,
       },
     });
-    courseId = res.row.id;
-    assert(courseId, "course.id が返らない");
+    stageId = res.row.id;
+    assert(stageId, "stage.id が返らない");
     assert(res.row.status === "draft", `status が draft でない: ${res.row.status}`);
   });
 
   await step("Admin がセクションと課題レッスンを追加する", async () => {
     const section = await ok("POST", "/api/cms/sections", {
       token: admin,
-      body: { course_id: courseId, title: "[smoke] セクション", order: 0 },
+      body: { stage_id: stageId, title: "[smoke] セクション", order: 0 },
     });
     const lesson = await ok("POST", "/api/cms/lessons", {
       token: admin,
@@ -349,43 +356,127 @@ async function main(): Promise<void> {
     assert(lessonId, "lesson.id が返らない");
   });
 
-  await step("draft コースは受講者に見えない", async () => {
-    const res = await ok("GET", "/api/cms/courses", { token: learner });
-    const found = res.rows.some((r: { id: string }) => r.id === courseId);
-    assert(!found, "draft のコースが受講者の一覧に出ている");
+  // 受講者にカタログを渡さない (スキルツリーの「霧」を API 境界で守る)。 受講者から
+  // 見えるのは自分の割当 (`/api/enrollments/mine`) と視界つきの `/api/skill-map/mine` だけ。
+  await step("受講者はステージ一覧も未受講ステージの詳細も引けない", async () => {
+    const list = await call("GET", "/api/cms/stages", { token: learner });
+    assert(list.status === 403, `受講者にステージ一覧が返っている (${list.status})`);
+    const detail = await call("GET", `/api/cms/stages/${stageId}`, { token: learner });
+    assert(detail.status === 403, `未受講ステージの詳細が引けている (${detail.status})`);
   });
 
-  await step("Admin がコースを公開する", async () => {
-    await ok("PATCH", `/api/cms/courses/${courseId}/status`, {
+  await step("Admin がステージを公開する", async () => {
+    await ok("PATCH", `/api/cms/stages/${stageId}/status`, {
       token: admin,
       body: { status: "published" },
     });
-    const res = await ok("GET", "/api/cms/courses", { token: learner });
-    const found = res.rows.some((r: { id: string }) => r.id === courseId);
-    assert(found, "公開したコースが受講者の一覧に出ない");
+    const res = await ok("GET", "/api/cms/stages", { token: admin });
+    const row = (res.rows as Array<{ id: string; status: string }>).find((r) => r.id === stageId);
+    assert(row?.status === "published", "公開したステージが staff の一覧で published にならない");
+    // 公開しただけでは受講者に開かない (受講登録が要る)。
+    const detail = await call("GET", `/api/cms/stages/${stageId}`, { token: learner });
+    assert(detail.status === 403, `未受講のまま公開ステージが引けている (${detail.status})`);
   });
 
-  await step("Admin が受講者を登録する", async () => {
-    const res = await ok("POST", "/api/enrollments", {
-      token: admin,
-      body: { userId: LEARNER_ID, courseId, required: true },
-    });
-    enrollmentId = res.row.id;
+  await step(
+    "割当が無くても道に星が出て、次の一歩の候補になる (プレースメントの材料)",
+    async () => {
+      // Phase 3b: 受講登録は「割り当てられるもの」ではなくなった。 公開された星は登録が
+      // 無くても道に出て、 ホームのプレースメントが選ばせる候補 (`next_stage_ids`) に並ぶ。
+      const res = await ok("GET", "/api/skill-map/mine", { token: learner });
+      const node = (res.skill_map.stages as Array<{ id: string; enrolled?: boolean }>).find(
+        (row) => row.id === stageId,
+      );
+      assert(node, "公開したステージが受講者の道に出ない");
+      assert(node.enrolled === false, `始める前から enrolled になっている: ${node.enrolled}`);
+      assert(
+        (res.skill_map.next_stage_ids as string[]).includes(stageId),
+        "前提の無い公開ステージが「次の一歩」の候補に出ない",
+      );
+    },
+  );
+
+  await step("受講者が解放済みのステージを自分で開始する", async () => {
+    const res = await ok("POST", `/api/stages/${stageId}/start`, { token: learner });
+    enrollmentId = res.enrollment.id;
     assert(enrollmentId, "enrollment.id が返らない");
+    assert(res.created === true, "初回の開始が created:true にならない");
+    assert(res.state === "unlocked", `開始時の state が unlocked でない: ${res.state}`);
+    // 自己開始に期限は付かない (自分で始めた星がホームの「期限超過」に並ばないように)。
+    assert(res.enrollment.due_at === null, `自己開始に期限が付いている: ${res.enrollment.due_at}`);
+    assert(res.enrollment.required === false, "自己開始が必須扱いになっている");
+
     const mine = await ok("GET", "/api/enrollments/mine", { token: learner });
     assert(
-      mine.rows.some((r: { course_id: string }) => r.course_id === courseId),
+      mine.rows.some((r: { stage_id: string }) => r.stage_id === stageId),
       "受講者の enrollment 一覧に出ない",
+    );
+    // 受講登録が詳細を開ける唯一の鍵 (旧 VS Code 拡張もこの順で引く)。
+    const detail = await ok("GET", `/api/cms/stages/${stageId}`, { token: learner });
+    assert(detail.stage?.stage?.id === stageId, "自分で開始しても詳細が引けない");
+  });
+
+  await step("二重に開始しても登録は増えない (冪等)", async () => {
+    const again = await ok("POST", `/api/stages/${stageId}/start`, { token: learner });
+    assert(again.created === false, "2 回目の開始が created:true になっている");
+    assert(again.enrollment.id === enrollmentId, "2 回目の開始で別の登録が作られた");
+    const rows = await ok("GET", `/api/enrollments?userIds=${LEARNER_ID}`, { token: admin });
+    const hits = rows.rows.filter((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(hits.length === 1, `同じ星の登録が ${hits.length} 件ある (1 件のはず)`);
+  });
+
+  // クリア済みの星を弾くことは、実際にクリアしてからでないと確かめられない
+  // (修了証の発行まで進んだあとの 「修了後にもう一度開始できない」 ステップで見る)。
+  await step("存在しないステージは自分で開始できない", async () => {
+    // 存在しない星は 「割当が無い」 「霧の中」 と同じ汎用文言で断る (存在を漏らさない)。
+    const missing = await call("POST", `/api/stages/does-not-exist-${stamp}/start`, {
+      token: learner,
+    });
+    assert(missing.status === 400, `存在しない星は 400 を期待したが ${missing.status}`);
+    assert(
+      missing.body?.error === "受講登録のないステージは選べません",
+      `汎用文言と異なる: ${JSON.stringify(missing.body)}`,
     );
   });
 
-  await step("Admin が割当プリセットを作成する", async () => {
+  await step("学習を見る側のロール (講師 / 営業) は自己開始できない (403)", async () => {
+    for (const [label, token] of [
+      ["講師", instructor],
+      ["営業", sales],
+    ] as const) {
+      const r = await call("POST", `/api/stages/${stageId}/start`, { token });
+      assert(r.status === 403, `${label}: 403 を期待したが ${r.status}`);
+    }
+  });
+
+  await step("退役した割当 API は 410 を返す (Phase 3b)", async () => {
+    const retired: Array<[string, string, unknown]> = [
+      ["POST", "/api/enrollments", { userId: LEARNER_ID, stageId, required: true }],
+      [
+        "POST",
+        "/api/enrollments/bulk",
+        { action: "assign", userIds: [LEARNER_ID], stageIds: [stageId] },
+      ],
+    ];
+    for (const [method, path, body] of retired) {
+      const r = await call(method, path, { token: admin, body });
+      assert(r.status === 410, `${method} ${path} は 410 を期待したが ${r.status}`);
+      assert(
+        typeof r.body?.error === "string" && r.body.error.includes("/api/stages/"),
+        `410 の本文が代替の入口を案内していない: ${JSON.stringify(r.body)}`,
+      );
+    }
+  });
+
+  // プリセットは Phase 3b で **定義だけ** が残った (適用は 410)。 教材削除で空になった
+  // プリセットを退役させる CMS 側の後始末が、 まだ生きていることを見るために作る。
+  await step("Admin が割当プリセットを作成する (定義のみ)", async () => {
     const res = await ok("POST", "/api/enrollment-presets", {
       token: admin,
       body: {
         name: `[smoke] 新入社員パック ${stamp}`,
         description: "コア学習ループ スモーク用",
-        items: [{ course_id: courseId, required: true, due_offset_days: 14 }],
+        items: [{ stage_id: stageId, required: true, due_offset_days: 14 }],
       },
     });
     presetId = res.row.id;
@@ -396,175 +487,100 @@ async function main(): Promise<void> {
     // 名前はテナント内で一意。 同名の二重作成は 409。
     const dup = await call("POST", "/api/enrollment-presets", {
       token: admin,
-      body: { name: res.row.name, items: [{ course_id: courseId }] },
+      body: { name: res.row.name, items: [{ stage_id: stageId }] },
     });
     assert(dup.status === 409, `同名プリセットは 409 を期待したが ${dup.status}`);
+  });
+
+  await step("Admin が割当プリセットの定義を更新する (残置 CRUD)", async () => {
+    // 適用は退役したが **定義の更新は残置** している (過去の登録が `preset_id` で指す先の
+    // 名前や中身を直せないと、 受講状況の出自バッジが古い名前のままになる)。 退役した
+    // 適用の巻き添えで PATCH まで落ちていないことを、 ここ 1 ステップで見張る。
+    const res = await ok("PATCH", `/api/enrollment-presets/${presetId}`, {
+      token: admin,
+      body: {
+        name: `[smoke] 新入社員パック (改訂) ${stamp}`,
+        description: "名前と項目を差し替えた",
+        items: [{ stage_id: stageId, required: false, due_offset_days: 30 }],
+      },
+    });
+    assert(res.row.id === presetId, "更新で別の定義が作られている");
+    assert(res.row.name.includes("改訂"), `名前が更新されていない: ${res.row.name}`);
+    assert(res.row.items.length === 1, `items が 1 件でない: ${res.row.items.length}`);
+    assert(
+      res.row.items[0].due_offset_days === 30,
+      `項目が差し替わっていない: ${res.row.items[0].due_offset_days}`,
+    );
+
+    // 読み直しても同じ (応答だけ整えて保存していない、を弾く)。
+    const list = await ok("GET", "/api/enrollment-presets", { token: admin });
+    const stored = (list.rows as Array<{ id: string; name: string }>).find(
+      (r) => r.id === presetId,
+    );
+    assert(stored?.name === res.row.name, "更新後の名前が一覧に反映されていない");
+
+    const denied = await call("PATCH", `/api/enrollment-presets/${presetId}`, {
+      token: learner,
+      body: { name: `[smoke] 不正更新 ${stamp}` },
+    });
+    assert(denied.status === 403, `受講者の更新は 403 を期待したが ${denied.status}`);
   });
 
   await step("受講者はプリセットを作成できない (403)", async () => {
     const r = await call("POST", "/api/enrollment-presets", {
       token: learner,
-      body: { name: `[smoke] 不正 ${stamp}`, items: [{ course_id: courseId }] },
+      body: { name: `[smoke] 不正 ${stamp}`, items: [{ stage_id: stageId }] },
     });
     assert(r.status === 403, `403 を期待したが ${r.status}`);
   });
 
-  await step("実在しない基準日は 400 で弾く (期限が静かにずれない)", async () => {
-    // JS の Date は 2026-02-30 を NaN にせず 3/2 へ繰り上げる。 形式チェックだけだと
-    // 「受け付けたのに期限がずれる」 ため、 暦として実在するかまで見る (PR #151 のレビュー指摘)。
-    for (const baseDate of ["2026-02-30", "2026-04-31", "", "2026/04/01"]) {
+  await step("退役した割当プリセットの適用は 410 を返す (Phase 3b)", async () => {
+    // 定義の CRUD は残す (過去の `enrollments.preset_id` を引くために残置) が、
+    // 受講生へ展開する適用は無い。 dry-run も同じ。
+    for (const body of [
+      { userIds: [LEARNER_ID], baseDate: "2026-04-01", dryRun: true },
+      { userIds: [LEARNER_ID], baseDate: "2026-04-01", conflict: "overwrite" },
+    ]) {
       const r = await call("POST", `/api/enrollment-presets/${presetId}/apply`, {
         token: admin,
-        body: { userIds: [LEARNER_ID], baseDate, dryRun: true },
+        body,
       });
-      assert(
-        r.status === 400,
-        `baseDate=${JSON.stringify(baseDate)} は 400 を期待したが ${r.status}`,
-      );
+      assert(r.status === 410, `適用は 410 を期待したが ${r.status}`);
     }
-    // 省略も 400。 サーバ (UTC) の日付で代用すると JST では 1 日ずれるため既定値を置かない。
-    const omitted = await call("POST", `/api/enrollment-presets/${presetId}/apply`, {
-      token: admin,
-      body: { userIds: [LEARNER_ID], dryRun: true },
-    });
-    assert(omitted.status === 400, `baseDate 省略は 400 を期待したが ${omitted.status}`);
-  });
-
-  await step("編集後のプリセットへ古い版で適用しようとすると 409", async () => {
-    // 大人数への適用は分割送信になる。 その途中や見積もりの後に他の管理者が編集すると、
-    // 前半と後半で内容が変わる / 見ていない割当が通る (PR #151 のレビュー指摘)。
-    const before = await ok("GET", "/api/enrollment-presets", { token: admin });
-    const stale = before.rows.find((r: { id: string }) => r.id === presetId);
-    assert(stale?.updated_at, "updated_at が返らない");
-
-    // 版が一致していれば通る。
-    const fresh = await call("POST", `/api/enrollment-presets/${presetId}/apply`, {
-      token: admin,
-      body: {
-        userIds: [LEARNER_ID],
-        baseDate: "2026-04-01",
-        dryRun: true,
-        expectedUpdatedAt: stale.updated_at,
-      },
-    });
-    assert(fresh.status === 200, `一致する版は 200 を期待したが ${fresh.status}`);
-
-    // 編集して版を進めると、 古い版を指した適用は 409。
-    await ok("PATCH", `/api/enrollment-presets/${presetId}`, {
-      token: admin,
-      body: {
-        name: `[smoke] 新入社員パック ${stamp}`,
-        items: [{ course_id: courseId, required: true, due_offset_days: 14 }],
-      },
-    });
-    const conflicted = await call("POST", `/api/enrollment-presets/${presetId}/apply`, {
-      token: admin,
-      body: {
-        userIds: [LEARNER_ID],
-        baseDate: "2026-04-01",
-        dryRun: true,
-        expectedUpdatedAt: stale.updated_at,
-      },
-    });
-    assert(conflicted.status === 409, `古い版は 409 を期待したが ${conflicted.status}`);
-  });
-
-  await step("dry-run は既存登録をスキップと数え、 DB を変えない", async () => {
-    const res = await ok("POST", `/api/enrollment-presets/${presetId}/apply`, {
-      token: admin,
-      body: { userIds: [LEARNER_ID], baseDate: "2026-04-01", conflict: "skip", dryRun: true },
-    });
-    assert(res.dry_run === true, "dry_run が true でない");
-    assert(res.skipped === 1, `既存登録は skipped 1 を期待したが ${res.skipped}`);
-    assert(res.assigned === 0, `dry-run の assigned は 0 を期待したが ${res.assigned}`);
-    // 既存の enrollment (期限なしで作った) が dry-run で書き換わっていないこと。
+    // 適用が無い以上、 受講者の登録は自己開始ぶんだけ (期限は付かないまま)。
     const mine = await ok("GET", "/api/enrollments/mine", { token: learner });
-    const row = mine.rows.find((r: { course_id: string }) => r.course_id === courseId);
-    assert(row?.due_at === null, `dry-run で期限が書き込まれている: ${row?.due_at}`);
+    const row = mine.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(row?.due_at === null, `退役したはずの適用で期限が入っている: ${row?.due_at}`);
   });
 
-  await step("プリセット適用で期限が基準日から展開される", async () => {
-    const res = await ok("POST", `/api/enrollment-presets/${presetId}/apply`, {
+  await step("staff が付けた期限は、 受講者が開始し直しても消えない", async () => {
+    // 自己開始は期限を付けないが、 始まったあとに staff が締切を足す運用は残っている
+    // (`PATCH /api/enrollments/:id` — 受講状況の行メニュー)。 開始が冪等でも
+    // 「既定値で上書き」 していると、 受講者がホームでもう一度 「始める」 を押した
+    // だけで締切が消える。 一度きりの事故なうえ誰も気づけないので、 ここで見張る。
+    const dueAt = "2099-12-31T00:00:00.000Z";
+    await ok("PATCH", `/api/enrollments/${enrollmentId}`, {
       token: admin,
-      body: { userIds: [INSTRUCTOR_ID], baseDate: "2026-04-01", conflict: "skip" },
+      body: { due_at: dueAt, required: true },
     });
-    assert(res.assigned === 1, `assigned 1 を期待したが ${res.assigned}`);
-    const rows = await ok("GET", `/api/enrollments?userIds=${INSTRUCTOR_ID}`, { token: admin });
-    const row = rows.rows.find((r: { course_id: string }) => r.course_id === courseId);
-    assert(row, "適用した受講登録が見つからない");
-    // 2026-04-01 + 14 日 = 2026-04-15 (UTC 0 時)。
-    assert(
-      row.due_at === "2026-04-15T00:00:00.000Z",
-      `期限が基準日 + 14 日になっていない: ${row.due_at}`,
-    );
-    assert(row.required === true, "required がプリセットの指定を反映していない");
-    assert(row.preset_id === presetId, "preset_id が記録されていない");
-  });
 
-  await step("skip では既存の期限を上書きしない / overwrite では上書きする", async () => {
-    // 直前の適用で instructor は登録済み。 skip なら何も変わらない。
-    const skipped = await ok("POST", `/api/enrollment-presets/${presetId}/apply`, {
-      token: admin,
-      body: { userIds: [INSTRUCTOR_ID], baseDate: "2026-05-01", conflict: "skip" },
-    });
-    assert(skipped.skipped === 1, `skip で skipped 1 を期待したが ${skipped.skipped}`);
-    const afterSkip = await ok("GET", `/api/enrollments?userIds=${INSTRUCTOR_ID}`, {
-      token: admin,
-    });
-    const rowSkip = afterSkip.rows.find((r: { course_id: string }) => r.course_id === courseId);
+    const again = await ok("POST", `/api/stages/${stageId}/start`, { token: learner });
+    assert(again.created === false, "既存の登録があるのに created:true になっている");
     assert(
-      rowSkip.due_at === "2026-04-15T00:00:00.000Z",
-      `skip なのに期限が変わっている: ${rowSkip.due_at}`,
+      again.enrollment.due_at === dueAt,
+      `再開始で期限が書き換わった: ${again.enrollment.due_at}`,
     );
+    assert(again.enrollment.required === true, "再開始で必須フラグが既定値へ戻った");
 
-    const overwritten = await ok("POST", `/api/enrollment-presets/${presetId}/apply`, {
+    // 以降のステップ (修了条件 / 修了証) を期限超過の状態で回さないよう元に戻す。
+    // `due_at: null` を受け付けること自体も確かめておく (行メニューの 「期限を外す」)。
+    await ok("PATCH", `/api/enrollments/${enrollmentId}`, {
       token: admin,
-      body: { userIds: [INSTRUCTOR_ID], baseDate: "2026-05-01", conflict: "overwrite" },
+      body: { due_at: null, required: false },
     });
-    assert(
-      overwritten.overwritten === 1,
-      `overwrite で overwritten 1 を期待したが ${overwritten.overwritten}`,
-    );
-    const afterOverwrite = await ok("GET", `/api/enrollments?userIds=${INSTRUCTOR_ID}`, {
-      token: admin,
-    });
-    const rowOverwrite = afterOverwrite.rows.find(
-      (r: { course_id: string }) => r.course_id === courseId,
-    );
-    // 2026-05-01 + 14 日 = 2026-05-15。
-    assert(
-      rowOverwrite.due_at === "2026-05-15T00:00:00.000Z",
-      `overwrite で期限が更新されていない: ${rowOverwrite.due_at}`,
-    );
-  });
-
-  await step("別のプリセットを被せても登録の出自 (preset_id) は変わらない", async () => {
-    // preset_id は 「この登録を作ったプリセット」。 上書きで書き換えると、 差分適用の
-    // 手掛かりになる 「どのプリセットで登録した受講生か」 が崩れる (PR #151 のレビュー指摘)。
-    const other = await ok("POST", "/api/enrollment-presets", {
-      token: admin,
-      body: {
-        name: `[smoke] 別プリセット ${stamp}`,
-        items: [{ course_id: courseId, required: false, due_offset_days: 3 }],
-      },
-    });
-    await ok("POST", `/api/enrollment-presets/${other.row.id}/apply`, {
-      token: admin,
-      body: { userIds: [INSTRUCTOR_ID], baseDate: "2026-06-01", conflict: "overwrite" },
-    });
-    const rows = await ok("GET", `/api/enrollments?userIds=${INSTRUCTOR_ID}`, { token: admin });
-    const row = rows.rows.find((r: { course_id: string }) => r.course_id === courseId);
-    // 値は新しいプリセットのものに変わるが、 出自は最初に作ったプリセットのまま。
-    assert(
-      row.due_at === "2026-06-04T00:00:00.000Z",
-      `overwrite で期限が更新されていない: ${row.due_at}`,
-    );
-    assert(row.required === false, "overwrite で必須が更新されていない");
-    assert(
-      row.preset_id === presetId,
-      `出自が書き換わっている: ${row.preset_id} (期待: ${presetId})`,
-    );
-    await ok("DELETE", `/api/enrollment-presets/${other.row.id}`, { token: admin });
+    const mine = await ok("GET", "/api/enrollments/mine", { token: learner });
+    const cleared = mine.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(cleared?.due_at === null, `期限を外せていない: ${cleared?.due_at}`);
   });
 
   await step("受講者がレッスンを完了にする (進捗が永続化される)", async () => {
@@ -590,7 +606,7 @@ async function main(): Promise<void> {
   });
 
   await step("課題未合格の時点では修了条件を満たさない", async () => {
-    const res = await ok("GET", `/api/certificates/completion/${courseId}`, { token: learner });
+    const res = await ok("GET", `/api/certificates/completion/${stageId}`, { token: learner });
     assert(res.completion.met === false, "課題未合格なのに修了条件を満たしている");
   });
 
@@ -668,7 +684,7 @@ async function main(): Promise<void> {
       body: {
         lessonId,
         assignmentId: smokeAssignmentId,
-        courseTitle,
+        stageTitle,
         sectionTitle: "[smoke] セクション",
         assignmentTitle: "[smoke] 課題レッスン",
         code: "console.log('smoke');",
@@ -689,7 +705,7 @@ async function main(): Promise<void> {
       body: {
         lessonId,
         assignmentId: smokeAssignmentId,
-        courseTitle,
+        stageTitle,
         sectionTitle: "[smoke] セクション",
         assignmentTitle: "[smoke] 課題レッスン",
         code: "console.log('escalated');",
@@ -739,7 +755,7 @@ async function main(): Promise<void> {
       body: {
         lessonId,
         assignmentId: smokeAssignmentId,
-        courseTitle,
+        stageTitle,
         assignmentTitle: "[smoke] 課題レッスン",
         code: "console.log('re-escalated');",
         priority: "high",
@@ -804,7 +820,7 @@ async function main(): Promise<void> {
       body: {
         lessonId,
         assignmentId: smokeAssignmentId,
-        courseTitle,
+        stageTitle,
         sectionTitle: "[smoke] セクション",
         assignmentTitle: "[smoke] 課題レッスン",
         code: "console.log('after review');",
@@ -834,7 +850,7 @@ async function main(): Promise<void> {
       body: {
         lessonId,
         assignmentId: `${smokeAssignmentId}-invalid`,
-        courseTitle,
+        stageTitle,
         assignmentTitle: "[smoke] 不正サマリ",
         code: "console.log('bad');",
         priority: "normal",
@@ -846,13 +862,13 @@ async function main(): Promise<void> {
   });
 
   await step("修了条件を満たし、 修了証を発行できる", async () => {
-    const completion = await ok("GET", `/api/certificates/completion/${courseId}`, {
+    const completion = await ok("GET", `/api/certificates/completion/${stageId}`, {
       token: learner,
     });
     assert(completion.completion.met === true, "添削合格後も修了条件を満たさない");
     const res = await ok("POST", "/api/certificates/issue", {
       token: learner,
-      body: { courseId, userId: LEARNER_ID },
+      body: { stageId, userId: LEARNER_ID },
     });
     certificateId = res.certificate.id;
     certCode = res.certificate.cert_code;
@@ -864,7 +880,7 @@ async function main(): Promise<void> {
   await step("修了証の再発行はべき等で、 未認証でも検証できる", async () => {
     const again = await ok("POST", "/api/certificates/issue", {
       token: learner,
-      body: { courseId, userId: LEARNER_ID },
+      body: { stageId, userId: LEARNER_ID },
     });
     assert(again.certificate.already_existed === true, "2 回目の発行が新規扱いになっている");
     assert(again.certificate.cert_code === certCode, "cert_code が発行ごとに変わっている");
@@ -876,18 +892,49 @@ async function main(): Promise<void> {
     assert(verified.verification.cert_code === certCode, "検証結果の cert_code が一致しない");
   });
 
+  await step("クリア済みのステージは自分で開始できない (400)", async () => {
+    // 修了まで進んだ星は評価器が `cleared` を返す。 ここを通すと、 続けて呼ばれる
+    // `PUT /api/skill-map/active-stage` がクリア済みを弾いて行き止まりになるので、
+    // 開始の時点で断る。 **理由はそのまま返してよい** — 本人が終わらせた星なので、
+    // 霧の向こうを漏らす汎用文言 (存在しない星と同じ文言) にする必要が無い。
+    const r = await call("POST", `/api/stages/${stageId}/start`, { token: learner });
+    assert(r.status === 400, `クリア済みの開始は 400 を期待したが ${r.status}`);
+    assert(
+      r.body?.error === "クリア済みのステージです",
+      `クリア済みの文言と異なる: ${JSON.stringify(r.body)}`,
+    );
+
+    // 断られても登録は残る (「もう始められない」 と 「登録が消えた」 は別)。
+    const mine = await ok("GET", "/api/enrollments/mine", { token: learner });
+    assert(
+      mine.rows.some((row: { stage_id: string }) => row.stage_id === stageId),
+      "開始を断られた拍子に受講登録まで消えている",
+    );
+  });
+
   await step("主要操作が監査ログに残っている (Issue #64)", async () => {
     const res = await ok("GET", "/api/audit-logs?limit=200", { token: admin });
     const rows = res.rows as Array<{ action: string; target_id: string | null }>;
     const has = (action: string, targetId: string) =>
       rows.some((r) => r.action === action && r.target_id === targetId);
-    assert(has("course_publish", courseId), "course_publish が記録されていない");
-    assert(has("enrollment_create", enrollmentId), "enrollment_create が記録されていない");
+    assert(has("stage_publish", stageId), "stage_publish が記録されていない");
+    // Phase 3b: 登録を作るのは受講者の自己開始だけ (`enrollment_create` はもう出ない)。
+    assert(has("stage_self_start", enrollmentId), "stage_self_start が記録されていない");
+    assert(
+      !rows.some((r) => r.action === "enrollment_create" && r.target_id === enrollmentId),
+      "退役した enrollment_create が記録されている",
+    );
     assert(
       has("enrollment_preset_create", presetId),
       "enrollment_preset_create が記録されていない",
     );
-    assert(has("enrollment_preset_apply", presetId), "enrollment_preset_apply が記録されていない");
+    // 残置した定義の CRUD も監査に載る (適用だけが退役した)。
+    assert(
+      has("enrollment_preset_update", presetId),
+      "enrollment_preset_update が記録されていない",
+    );
+    // staff の後始末 (期限の設定 / 解除) も残る。
+    assert(has("enrollment_update", enrollmentId), "enrollment_update が記録されていない");
     // 過去の実行が残した行で通ってしまわないよう、 今回発行した修了証 ID で突き合わせる。
     assert(has("certificate_issue", certificateId), "certificate_issue が記録されていない");
   });
@@ -898,18 +945,18 @@ async function main(): Promise<void> {
     const name = `[smoke] 名前再利用 ${stamp}`;
     const first = await ok("POST", "/api/enrollment-presets", {
       token: admin,
-      body: { name, items: [{ course_id: courseId }] },
+      body: { name, items: [{ stage_id: stageId }] },
     });
     const dup = await call("POST", "/api/enrollment-presets", {
       token: admin,
-      body: { name, items: [{ course_id: courseId }] },
+      body: { name, items: [{ stage_id: stageId }] },
     });
     assert(dup.status === 409, `アクティブ同士の同名は 409 を期待したが ${dup.status}`);
 
     await ok("DELETE", `/api/enrollment-presets/${first.row.id}`, { token: admin });
     const again = await call("POST", "/api/enrollment-presets", {
       token: admin,
-      body: { name, items: [{ course_id: courseId }] },
+      body: { name, items: [{ stage_id: stageId }] },
     });
     assert(again.status === 200, `退役後の同名作成は 200 を期待したが ${again.status}`);
     await ok("DELETE", `/api/enrollment-presets/${again.body.row.id}`, { token: admin });
@@ -920,32 +967,31 @@ async function main(): Promise<void> {
       token: admin,
       body: {
         name: `[smoke] 単一教材 ${stamp}`,
-        items: [{ course_id: courseId, due_offset_days: 7 }],
+        items: [{ stage_id: stageId, due_offset_days: 7 }],
       },
     });
     soloPresetId = res.row.id;
     assert(soloPresetId, "preset.id が返らない");
 
     // 別教材も含むプリセット。 こちらは削除で空にならないので退役しないが、 中身は減る。
-    const others = await ok("GET", "/api/cms/courses", { token: admin });
-    const other = (others.rows as Array<{ id: string }>).find((r) => r.id !== courseId);
+    const others = await ok("GET", "/api/cms/stages", { token: admin });
+    const other = (others.rows as Array<{ id: string }>).find((r) => r.id !== stageId);
     assert(other, "スモーク用以外の教材が無い (seed 済みか確認)");
     const shared = await ok("POST", "/api/enrollment-presets", {
       token: admin,
       body: {
         name: `[smoke] 複数教材 ${stamp}`,
-        items: [{ course_id: courseId }, { course_id: other.id }],
+        items: [{ stage_id: stageId }, { stage_id: other.id }],
       },
     });
     sharedPresetId = shared.row.id;
-    sharedPresetUpdatedAt = shared.row.updated_at;
-    assert(sharedPresetUpdatedAt, "updated_at が返らない");
+    assert(shared.row.updated_at, "updated_at が返らない");
   });
 
   // --- 後片付け -----------------------------------------------------
-  // 失敗しても以降のステップを止めない。 コース削除で section / lesson / 進捗 /
+  // 失敗しても以降のステップを止めない。 ステージ削除で section / lesson / 進捗 /
   // 修了証は cascade で消える。
-  await step("後片付け: プリセット / 受講登録 / コースを削除する", async () => {
+  await step("後片付け: プリセット / 受講登録 / ステージを削除する", async () => {
     if (presetId) {
       await ok("DELETE", `/api/enrollment-presets/${presetId}`, { token: admin });
       const list = await ok("GET", "/api/enrollment-presets", { token: admin });
@@ -955,15 +1001,15 @@ async function main(): Promise<void> {
       );
     }
     if (enrollmentId) await ok("DELETE", `/api/enrollments/${enrollmentId}`, { token: admin });
-    if (courseId) await ok("DELETE", `/api/cms/courses/${courseId}`, { token: admin });
+    if (stageId) await ok("DELETE", `/api/cms/stages/${stageId}`, { token: admin });
     const res = await ok("GET", "/api/audit-logs?limit=200", { token: admin });
     const rows = res.rows as Array<{
       action: string;
       target_id: string | null;
       metadata: Record<string, unknown>;
     }>;
-    const deleteLog = rows.find((r) => r.action === "course_delete" && r.target_id === courseId);
-    assert(deleteLog, "course_delete が記録されていない");
+    const deleteLog = rows.find((r) => r.action === "stage_delete" && r.target_id === stageId);
+    assert(deleteLog, "stage_delete が記録されていない");
 
     // 教材を消すとプリセットの項目も cascade で消える。 空になったプリセットは
     // 「適用すれば必ず失敗する」 ので退役させ、 監査から辿れるようにしている。
@@ -978,24 +1024,10 @@ async function main(): Promise<void> {
       "巻き添えで退役したプリセットが監査ログに残っていない",
     );
 
-    // 空にならなかったプリセットは残るが、 中身は減っている。 版が進んでいないと、
-    // 適用中の分割送信が 「約束した 409 を出さずに減った内容で適用する」。
+    // 空にならなかったプリセットは残る (中身は 1 件減っている)。
     assert(
       list.rows.some((r: { id: string }) => r.id === sharedPresetId),
       "空にならなかったプリセットまで退役している",
-    );
-    const stale = await call("POST", `/api/enrollment-presets/${sharedPresetId}/apply`, {
-      token: admin,
-      body: {
-        userIds: [LEARNER_ID],
-        baseDate: "2026-04-01",
-        dryRun: true,
-        expectedUpdatedAt: sharedPresetUpdatedAt,
-      },
-    });
-    assert(
-      stale.status === 409,
-      `教材削除で中身が減ったプリセットは古い版で 409 を期待したが ${stale.status}`,
     );
     await ok("DELETE", `/api/enrollment-presets/${sharedPresetId}`, { token: admin });
   });
