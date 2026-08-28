@@ -9,11 +9,12 @@
     "lint": "biome ci .",
     "format": "biome format --write .",
     "dev:api": "bun --filter=@falcon/api dev",
-    "build": "bun --filter '@falcon/*' build && bun --filter informal build",
+    "build": "bun run --filter=@falcon/web build && bun run --filter=informal build",
     "preview": "bun --filter=@falcon/web preview",
     "preview:build": "bun run --filter=@falcon/web build && bun run --filter=@falcon/web preview",
     "typecheck": "bun --filter '@falcon/*' typecheck && bun --filter informal typecheck",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "content:check": "bun run --filter=@falcon/content check:ci",
     "content:upload:remote": "bun run --filter=@falcon/content upload:remote",
     "content:pdf:sync": "bun run --filter=@falcon/content pdf:sync",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
+    "@vitest/coverage-v8": "4.1.11",
     "vitest": "4.1.11"
   },
   "overrides": {

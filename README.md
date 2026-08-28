@@ -103,8 +103,8 @@ bun run dev
 `apps/web/.env.local` の `VITE_SERVER_URL` が API オリジンと一致していること。
 
 ```bash
-bun run build            # 全 workspace の build
-bun run typecheck        # 全 workspace の tsc --noEmit
+bun run typecheck        # 全 workspace の tsc --noEmit（型はこちらが見る）
+bun run build            # 成果物を出す workspace だけ（web = Vite / vscode = esbuild）
 ```
 
 特定 workspace だけ動かす場合:

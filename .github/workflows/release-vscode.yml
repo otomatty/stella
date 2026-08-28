@@ -1,7 +1,6 @@
 name: Release VS Code Extension
 
 # apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付する。
-# 検証（lint/typecheck/test/build）は deploy.yml 側で走るのでここではやらない。
 on:
   push:
     branches: [main]
@@ -17,8 +16,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # deploy.yml の検証ゲートは同じ push で並走するだけで、この job を止められない。
+  # 壊れた main から .vsix が出ないよう、ここでも通す。 .vsix を出すのに要るのは
+  # 型とテストなので scope=code で呼ぶ (lint / 教材検査 / E2E は deploy 側が見る)。
+  verify:
+    uses: ./.github/workflows/ci.yml
+    with:
+      scope: code
+
   release:
     name: package .vsix → GitHub Release
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,14 +38,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      # deploy.yml の検証ゲートは同じ push で並走するだけで、この job を止められない。
-      # 壊れた main から .vsix が出ないよう、ここでも通す（build は Package で走る）。
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Test
-        run: bun run test
 
       # apps/vscode/package.json の package スクリプトは対話プロンプト
       # （repository フィールド欠落の確認）で CI が止まるため、

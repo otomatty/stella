@@ -9,8 +9,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 検証ゲートは ci.yml が正本。 ここに書き写すと片方だけ直したときに乖離するため
+  # 呼ぶだけにする。 E2E (core-loop) もこの呼び出しに含まれるので、 main の
+  # 組み合わせで一度も E2E を通さないままデプロイする、 という穴が塞がる。
+  verify:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
-    name: verify → assets → migrate → api → seed → web
+    name: assets → migrate → api → seed → web
+    needs: verify
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -27,18 +34,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      # --- 検証ゲート（ci.yml と同内容） ---
-      - name: Lint
-        run: bun run lint
-      - name: Typecheck
-        run: bun run typecheck
-      - name: Content vocabulary check
-        run: bun run content:check
-      - name: Test
-        run: bun run test
-      - name: Build
-        run: bun run build
 
       # --- デプロイ（直列。前段失敗で後段は動かない） ---
       #

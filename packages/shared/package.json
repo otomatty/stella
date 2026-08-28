@@ -64,7 +64,6 @@
     "./skill-sheet/types": "./src/skill-sheet/types.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -74,6 +73,7 @@
     "@falcon/content": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   }
 }

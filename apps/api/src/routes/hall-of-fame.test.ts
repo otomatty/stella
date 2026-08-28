@@ -19,6 +19,7 @@ import type { HallOfFameChapters, HallOfFameStatus } from "@falcon/shared/hall-o
 import { EMPTY_HOF_CHAPTERS } from "@falcon/shared/hall-of-fame/types";
 
 import type { Env } from "../env.js";
+import { json } from "../testing/route-harness.js";
 import type { ProfileRole } from "../lib/authz.js";
 import { recordAudit } from "../lib/audit.js";
 import {
@@ -587,7 +588,9 @@ describe("公開 (管理者 / submitted からだけ)", () => {
     });
     expect(res.status).toBe(400);
     expect(store.get("hof-seed-learner")?.status).toBe("declined");
-    expect((await (await get("/api/hall-of-fame")).json()).entries).toHaveLength(0);
+    expect(
+      (await json<{ entries: unknown[] }>(await get("/api/hall-of-fame"))).entries,
+    ).toHaveLength(0);
   });
 
   it("非公開に戻すと申請済みへ戻り、監査に残る", async () => {

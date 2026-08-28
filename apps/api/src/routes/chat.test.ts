@@ -2,14 +2,14 @@
  * Issue #204 — POST /api/chat provider + AI Gateway behavior (TDD).
  */
 
-import { Hono } from "hono";
+import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
+import { mountTestApp } from "../testing/route-harness.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 import { chatRoute } from "./chat.js";
 import {
-  type CHAT_TEST_PROFILES,
   GATEWAY_ENV_VARS,
   createChatTestEnv,
   mintChatTestToken,
@@ -78,11 +78,7 @@ async function* sseEvents() {
   yield { type: "done" as const };
 }
 
-function createTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", chatRoute);
-  return app;
-}
+const createTestApp = (env: Env) => mountTestApp(env, chatRoute).app;
 
 async function postChat(app: Hono<{ Bindings: Env }>, env: Env, token?: string) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };

@@ -5,16 +5,15 @@
  * Expected route module: ./skill-sheet.js
  */
 
-import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
+import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { recordAudit } from "../lib/audit.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 import { skillSheetRoute } from "./skill-sheet.js";
 import {
   FORBIDDEN_PARSED_CONTACT_FIELDS,
-  type SEED_PROFILES,
   SKILL_SHEET_PARSE_PATH,
   SKILL_SHEET_SAVE_PATH,
   createDocxFile,
@@ -97,22 +96,17 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
   };
 });
 
-function createTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", skillSheetRoute);
-  return { app, env };
-}
+/** レスポンス本文のうち、 このファイルのテストが読む範囲。 */
+type SkillSheetBody = {
+  id: string;
+  status: string;
+  sections?: { basic?: Record<string, unknown> };
+  saved?: unknown;
+  rowCount?: number;
+  error: string;
+};
 
-async function request(
-  app: Hono<{ Bindings: Env }>,
-  env: Env,
-  path: string,
-  init: RequestInit & { token?: string },
-) {
-  const headers = new Headers(init.headers);
-  if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
-  return app.request(path, { ...init, headers }, env);
-}
+const createTestApp = (env: Env) => mountTestApp(env, skillSheetRoute);
 
 describe("POST /api/skill-sheets/parse", () => {
   let env: Env;
@@ -143,7 +137,7 @@ describe("POST /api/skill-sheets/parse", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<SkillSheetBody>(res);
     expect(body.status).toBe("DRAFT");
     expect(body.sections).toBeDefined();
     expect(body.saved).toBeUndefined();
@@ -176,7 +170,7 @@ describe("POST /api/skill-sheets/parse", () => {
       token,
     });
     expect(parseRes.status).toBe(200);
-    const draft = await parseRes.json();
+    const draft = await json<SkillSheetBody>(parseRes);
     expect(draft.status).toBe("DRAFT");
 
     const viewRes = await request(app, env, skillSheetViewPath("seed-learner"), {
@@ -198,7 +192,7 @@ describe("POST /api/skill-sheets/parse", () => {
       token,
     });
     expect(res.status).toBe(200);
-    const draft = await res.json();
+    const draft = await json<SkillSheetBody>(res);
 
     for (const field of FORBIDDEN_PARSED_CONTACT_FIELDS) {
       expect(draft).not.toHaveProperty(field);
@@ -219,7 +213,7 @@ describe("POST /api/skill-sheets/parse", () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await json<SkillSheetBody>(res);
     expect(body.error).toMatch(/対応|形式|format|pdf|xlsx/i);
   });
 
@@ -291,7 +285,7 @@ describe("PUT/POST /api/skill-sheets save", () => {
       token,
     });
     expect(first.status).toBe(200);
-    const firstBody = await first.json();
+    const firstBody = await json<SkillSheetBody>(first);
     expect(firstBody.id).toBeDefined();
 
     const updated = minimalSkillSheetV1();
@@ -303,7 +297,7 @@ describe("PUT/POST /api/skill-sheets save", () => {
       token,
     });
     expect(second.status).toBe(200);
-    const secondBody = await second.json();
+    const secondBody = await json<SkillSheetBody>(second);
     expect(secondBody.id).toBe(firstBody.id);
     expect(secondBody.rowCount ?? 1).toBe(1);
   });
@@ -408,7 +402,7 @@ describe("GET /api/skill-sheets/:profileId view", () => {
 
       expect(res.status).toBe(expectedStatus);
       if (expectedStatus === 200) {
-        const body = await res.json();
+        const body = await json<SkillSheetBody>(res);
         expect(body.sections).toBeDefined();
       }
     },

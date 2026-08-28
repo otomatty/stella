@@ -11,7 +11,8 @@ import { APP_TABLES, TABLE_COUNT } from "../src/db/schema.js";
 
 const apiDir = join(import.meta.dirname, "..");
 
-function d1Json<T>(command: string): T {
+/** 1 文の実行結果の行を返す。 wrangler は文ごとに `{ results: [...] }` を返す。 */
+function d1Json<T>(command: string): T[] {
   const out = execSync(
     `bunx wrangler d1 execute falcon-db --local --json --command ${JSON.stringify(command)}`,
     { cwd: apiDir, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
@@ -21,7 +22,7 @@ function d1Json<T>(command: string): T {
   const start = out.indexOf("[");
   const json = start >= 0 ? out.slice(start) : out;
   const parsed = JSON.parse(json) as Array<{ results: T[] }>;
-  return parsed[0]?.results ?? ([] as T);
+  return parsed[0]?.results ?? [];
 }
 
 async function main(): Promise<void> {

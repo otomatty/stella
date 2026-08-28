@@ -67,7 +67,11 @@ describe("stripForbiddenContactFields", () => {
       fullName: "Taro Yamada",
     };
 
-    const stripped = stripForbiddenContactFields(raw);
+    // 戻り値は Record<string, unknown> (どんな形の下書きでも受けるため) なので、
+    // ここで検証したい形を宣言してから読む。
+    const stripped = stripForbiddenContactFields(raw) as {
+      sections: { basic: Record<string, unknown> };
+    };
 
     for (const field of FORBIDDEN_PARSED_CONTACT_FIELDS) {
       expect(stripped).not.toHaveProperty(field);

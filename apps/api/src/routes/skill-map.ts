@@ -132,7 +132,7 @@ export function maskedLockReasons(
 export const UNSELECTABLE_STAGE_MESSAGE = "受講登録のないステージは選べません";
 
 /** 応答に載せる 1 つの星。視界に応じて欠ける項目がある。 */
-interface SkillMapStagePayload {
+export interface SkillMapStagePayload {
   id: string;
   state: SkillMapState;
   visibility: SkillMapVisibility;

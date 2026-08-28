@@ -23,7 +23,7 @@ import {
   loadSkillProfileCounts,
   loadStudyDays,
 } from "../lib/skill-map-data.js";
-import { skillMapRoute } from "./skill-map.js";
+import { skillMapRoute, type SkillMapStagePayload as StagePayload } from "./skill-map.js";
 
 // 発見教材 (Phase 4) の読み出し。このファイルは視界の秘匿だけを見るので、既定は
 // 「教材なし」。discovery の公開条件そのものは `routes/discovery.test.ts` が持つ。
@@ -98,17 +98,6 @@ function lineSource() {
     clearedStageIds: new Set(["id-a"]),
     activeStageId: undefined,
   };
-}
-
-interface StagePayload {
-  id: string;
-  state: string;
-  visibility: string;
-  title?: string;
-  can_do?: string;
-  theme?: string;
-  lock_reasons?: string[];
-  prerequisite_ids?: string[];
 }
 
 async function fetchStages(): Promise<Map<string, StagePayload>> {

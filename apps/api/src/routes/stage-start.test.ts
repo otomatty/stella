@@ -272,7 +272,8 @@ describe("POST /api/stages/:id/start", () => {
     vi.mocked(startSelfEnrollment).mockResolvedValueOnce({
       row: undefined,
       created: false,
-    } as Awaited<ReturnType<typeof startSelfEnrollment>>);
+      reactivated: false,
+    });
     expect((await start("stage-a")).status).toBe(500);
   });
 });

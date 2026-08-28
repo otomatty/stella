@@ -67,7 +67,7 @@ async function loadEnrollment(db: Db, tenantId: string, userId: string, stageId:
 /** `startSelfEnrollment()` の結果。 */
 export interface SelfEnrollmentResult {
   /** 登録行 (作成 / 再開 / 既存のいずれでも現在の行)。読み戻せなければ undefined。 */
-  row: Awaited<ReturnType<typeof loadEnrollment>>;
+  row: Awaited<ReturnType<typeof loadEnrollment>> | undefined;
   /** この呼び出しで登録が **生まれた** か。 */
   created: boolean;
   /** 期限切れだった登録を **受講中へ戻した** か。 */

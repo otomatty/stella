@@ -2,10 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM"],
+    "types": ["node"],
     "noEmit": true,
     "moduleDetection": "force",
     "allowImportingTsExtensions": false
   },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts"]
+  // テストと scripts も検査対象に入れる。 除外するとその範囲だけ strict の網の
+  // 外に出てしまい、 seed の正本 (scripts/export-seed-sql.ts) が型無しで通る。
+  "include": ["src/**/*.ts", "scripts/**/*.ts"]
 }

@@ -3,13 +3,14 @@
  * 対象ルート: ./interview-prep.js (GET/PUT practice-set, PUT progress/:no)
  */
 
-import { Hono } from "hono";
+import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PRACTICE_SET_SIZE } from "@falcon/shared/interview/practice-set";
 import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
 
 import type { Env } from "../env.js";
+import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { interviewPrepRoute } from "./interview-prep.js";
 import {
   INTERVIEW_PREP_PRACTICE_SET_PATH,
@@ -85,25 +86,31 @@ const TODAY = toStudyDate(new Date());
 const YESTERDAY = addStudyDays(TODAY, -1);
 const NEXT_MONTH = addStudyDays(TODAY, 30);
 
-function createTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", interviewPrepRoute);
-  return { app, env };
-}
+/**
+ * レスポンス本文のうち、 このファイルのテストが実際に読む範囲。
+ * 正本は interview-prep.ts の serializePracticeSet / 各ハンドラ。
+ */
+type SerializedSet = {
+  id: string;
+  question_nos: number[];
+  completed_nos: number[];
+  status: string;
+  started_percent: number;
+  total: number;
+  remaining: number;
+  next_no: number | null;
+};
+/** GET /practice-set (セットがある場合)。 */
+type PracticeSetBody = { set: SerializedSet; resumed: boolean; rows: { no: number }[] };
+/** PUT /practice-set/:id (終了)。 */
+type FinishBody = {
+  set: SerializedSet;
+  summary: { gainedPercent: number; currentPercent: number };
+};
+/** PUT 自己評価。 */
+type SelfRatingBody = { set: SerializedSet | null; due_date: string | null };
 
-async function request(
-  app: Hono<{ Bindings: Env }>,
-  env: Env,
-  path: string,
-  init: RequestInit & { token?: string } = {},
-) {
-  const headers = new Headers(init.headers);
-  if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
-  if (init.body && typeof init.body === "string" && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  return app.request(path, { ...init, headers }, env);
-}
+const createTestApp = (env: Env) => mountTestApp(env, interviewPrepRoute);
 
 describe("今日の練習セット (#235)", () => {
   let env: Env;
@@ -135,7 +142,7 @@ describe("今日の練習セット (#235)", () => {
 
     const res = await getSet(app);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<PracticeSetBody>(res);
 
     expect(body.set.question_nos).toHaveLength(PRACTICE_SET_SIZE);
     expect(body.set.status).toBe("active");
@@ -179,7 +186,7 @@ describe("今日の練習セット (#235)", () => {
     ];
     const { app } = createTestApp(env);
 
-    const body = await (await getSet(app)).json();
+    const body = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = body.set.question_nos;
 
     expect(nos[0]).toBe(201); // 「もう一度」が最優先
@@ -192,7 +199,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("中断したセットは同じ内容で再開でき、 準備ホームにも残る", async () => {
     const { app } = createTestApp(env);
-    const first = await (await getSet(app)).json();
+    const first = await json<PracticeSetBody>(await getSet(app));
 
     await request(app, env, interviewPrepProgressPath(first.set.question_nos[0]), {
       method: "PUT",
@@ -200,7 +207,7 @@ describe("今日の練習セット (#235)", () => {
       token,
     });
 
-    const resumed = await (await getSet(app)).json();
+    const resumed = await json<PracticeSetBody>(await getSet(app));
     expect(resumed.resumed).toBe(true);
     expect(resumed.set.id).toBe(first.set.id);
     expect(resumed.set.question_nos).toEqual(first.set.question_nos);
@@ -208,9 +215,9 @@ describe("今日の練習セット (#235)", () => {
     expect(resumed.set.next_no).toBe(first.set.question_nos[1]);
     expect(state.practiceSets).toHaveLength(1);
 
-    const questions = await (
-      await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { token })
-    ).json();
+    const questions = await json<{ activeSet: Record<string, unknown> }>(
+      await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { token }),
+    );
     expect(questions.activeSet).toMatchObject({
       id: first.set.id,
       total: PRACTICE_SET_SIZE,
@@ -310,7 +317,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("終了サマリに できた n/10 と準備率の伸びが出る", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = started.set.question_nos;
     expect(started.set.started_percent).toBe(0);
 
@@ -333,7 +340,7 @@ describe("今日の練習セット (#235)", () => {
       token,
     });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<FinishBody>(res);
 
     expect(body.set.status).toBe("done");
     expect(body.summary).toMatchObject({
@@ -348,14 +355,14 @@ describe("今日の練習セット (#235)", () => {
     expect(body.summary.gainedPercent).toBe(21);
 
     // 終了後は「途中のセット」が消え、 次の GET で新しいセットが始まる
-    const next = await (await getSet(app)).json();
+    const next = await json<PracticeSetBody>(await getSet(app));
     expect(next.resumed).toBe(false);
     expect(next.set.id).not.toBe(started.set.id);
   });
 
   it("消化記録は版数を進めながら 1 問ずつ積み上がる (取りこぼさない)", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = started.set.question_nos;
     expect(state.practiceSets[0]?.version).toBe(0);
 
@@ -373,7 +380,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("同じ質問をやり直すと最後の自己評価が残る", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const no: number = started.set.question_nos[0];
     const rate = async (event: string) =>
       request(app, env, interviewPrepProgressPath(no), {
@@ -397,7 +404,7 @@ describe("今日の練習セット (#235)", () => {
       ...practiceQuestionBank(12, 301).map((q) => ({ ...q, categories: ["JS"] })),
     ];
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     expect(started.set.question_nos.every((no: number) => no < 300)).toBe(true);
 
     state.assignments.set(`ses:${SEED_PROFILES.learner.id}`, {
@@ -409,7 +416,7 @@ describe("今日の練習セット (#235)", () => {
       assignedBy: SEED_PROFILES.sales.id,
     });
 
-    const next = await (await getSet(app)).json();
+    const next = await json<PracticeSetBody>(await getSet(app));
 
     expect(next.resumed).toBe(false);
     expect(next.set.id).not.toBe(started.set.id);
@@ -421,7 +428,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("終了済みセットへの記録は set_recorded=false で返す (黙って成功にしない)", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = started.set.question_nos;
 
     // 別タブが先に終了した状況
@@ -438,7 +445,7 @@ describe("今日の練習セット (#235)", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<SelfRatingBody>(res);
     // 自己評価そのものは保存される (SM-2 は進む) が、 セットには記録されていない
     expect(body).toMatchObject({ ok: true, set: null, set_recorded: false });
     expect(body.due_date).not.toBeNull();
@@ -459,7 +466,7 @@ describe("今日の練習セット (#235)", () => {
     // PHP (201〜212) で始めたセットのうち、 一部だけが JS へ移って見えなくなるケース
     state.questions = practiceQuestionBank(12);
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = started.set.question_nos;
     expect(nos).toHaveLength(PRACTICE_SET_SIZE);
 
@@ -477,7 +484,7 @@ describe("今日の練習セット (#235)", () => {
       revoked.includes(q.no) ? { ...q, categories: ["JS"] } : q,
     );
 
-    const resumed = await (await getSet(app)).json();
+    const resumed = await json<PracticeSetBody>(await getSet(app));
 
     // 同じセットのまま、 見えなくなった質問だけが落ちる
     expect(resumed.resumed).toBe(true);
@@ -492,7 +499,7 @@ describe("今日の練習セット (#235)", () => {
   it("出題対象でなくなった質問 (A → B / 逆質問) も刈り込む", async () => {
     state.questions = practiceQuestionBank(12);
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
     const nos: number[] = started.set.question_nos;
 
     // 教材更新で 1 問が B 推奨に、 1 問が逆質問になる (どちらも可視のまま)
@@ -503,7 +510,7 @@ describe("今日の練習セット (#235)", () => {
       return q;
     });
 
-    const resumed = await (await getSet(app)).json();
+    const resumed = await json<PracticeSetBody>(await getSet(app));
 
     expect(resumed.set.id).toBe(started.set.id);
     expect(resumed.set.question_nos).not.toContain(toB);
@@ -513,7 +520,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("他人のセットは終了できない", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
 
     const otherToken = await mintInterviewPrepTestToken("seed-learner-b");
     const res = await request(app, env, interviewPrepPracticeSetPath(started.set.id), {
@@ -541,7 +548,7 @@ describe("今日の練習セット (#235)", () => {
     state.questions = practiceQuestionBank(14);
     const { app } = createTestApp(env);
 
-    const body = await (await getSet(app)).json();
+    const body = await json<PracticeSetBody>(await getSet(app));
 
     expect(body.set).toBeNull();
     expect(body.rows).toEqual([]);
@@ -550,7 +557,7 @@ describe("今日の練習セット (#235)", () => {
 
   it("status が done 以外の終了リクエストは 400", async () => {
     const { app } = createTestApp(env);
-    const started = await (await getSet(app)).json();
+    const started = await json<PracticeSetBody>(await getSet(app));
 
     const res = await request(app, env, interviewPrepPracticeSetPath(started.set.id), {
       method: "PUT",

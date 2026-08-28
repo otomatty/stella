@@ -30,3 +30,6 @@ apps/api/.dev.vars
 
 # Vite ª vite.config.ts ÇÝÝÉìéêt@C
 vite.config.ts.timestamp-*.mjs
+
+# カバレッジレポート (bun run test:coverage)
+coverage/

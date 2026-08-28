@@ -13,6 +13,8 @@
       "!**/*.wasm",
       "!.wrangler",
       "!**/.wrangler",
+      "!coverage",
+      "!**/coverage",
       "!packages/shared/src/problems",
       "!**/packages/shared/src/problems",
       "!packages/content/design-system",

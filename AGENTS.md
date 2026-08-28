@@ -62,15 +62,21 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 ```bash
 bun run lint       # biome ci . (lint + format の CI ゲート)
 bun run typecheck  # tsc --noEmit across all workspaces
-bun run build      # Full production build (web uses Vite)
+bun run build      # 成果物を出す workspace だけ (web = Vite / vscode = esbuild)。型は typecheck 側
 ```
 
 Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`（lint + format）。`recommended` に加え `noNonNullAssertion` / a11y / `noDangerouslySetInnerHtml` / `noArrayIndexKey` / `noExplicitAny` / `noConsoleLog` などを error にしている。教材 `packages/shared/src/problems/**`・生成物・CLI scripts は ignore / override。TypeScript strict (`tsc --noEmit`) も併用する。
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`). Unit coverage is minimal (a few tests in `@falcon/shared`).
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts` と `apps/**/src/**/*.test.ts`)。現状 **116 ファイル / 1408 件**（shared 40・api 38・web 17・vscode 8・code-runner 7・content 6 ファイル）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
+
+カバレッジは `bun run test:coverage`（v8）。**閾値は置いていない** — 落とすためではなく手薄な場所を見えるようにするためで、数字は CI のジョブサマリに出る。
 
 End-to-end coverage is a **core-loop HTTP smoke** (`bun run smoke:core`, `apps/api/scripts/core-loop-smoke.ts`): with the API running it walks stage create → publish → **learner self-start** (`POST /api/stages/:id/start`; the admin assignment APIs are retired and answer 410) → progress → submit → review → notification → certificate → audit-log assertions → cleanup. No browser; auth is a self-minted JWT from `AUTH_JWT_SECRET`, so it needs `db:migrate` + `db:seed` and `dev:api` first. See README「コア学習ループの自動スモーク」.
 
-CI (`.github/workflows/ci.yml`) has two jobs: `verify` (lint → typecheck → test → build) and `core-loop` (migrate + seed local D1 → `wrangler dev` → `smoke:core`). Beyond these, still validate UI-level changes by hand in the running app.
+CI (`.github/workflows/ci.yml`) has two jobs: `verify` (typecheck → test → lint → content:check → 図解 lint → build) and `core-loop` (migrate + seed local D1 → `wrangler dev` → `smoke:core`)。**`ci.yml` が検証ゲートの正本**で、`deploy.yml` と `release-vscode.yml` は `uses:` で呼ぶだけ（同じ手順を書き写さない）。E2E は deploy 経路でも走る。ジョブ名 = ブランチ保護の必須チェック名なので `verify` / `core-loop` を安易に変えないこと。詳細は `docs/ci-cd.md`。
+
+型検査は 6 ワークスペースすべてで **テストと scripts も対象**（`exclude` を持つ tsconfig は無い）。範囲を狭めると、seed やスモークのように本番データに触るコードが strict の網から外れる。
+
+Beyond these, still validate UI-level changes by hand in the running app.

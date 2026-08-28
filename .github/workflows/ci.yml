@@ -1,16 +1,32 @@
 name: CI
 
+# 検証ゲートの正本。 PR で直接動くほか、 deploy.yml / release-vscode.yml から
+# `uses: ./.github/workflows/ci.yml` で呼ばれる。 ゲートを 3 つのワークフローに
+# 書き写すと片方だけ直したときに黙って乖離するので、 定義はここ 1 か所だけに置く。
 on:
   pull_request:
+  workflow_call:
+    inputs:
+      scope:
+        description: "full = 全ゲート + E2E / code = 型とテストだけ (.vsix を出す前の最小確認)"
+        type: string
+        default: full
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # PR は後から来た push で前の実行を捨てて構わない。 main への push (deploy /
+  # release から呼ばれる場合) は 1 本ずつ流し切る — 途中で切ると、 検証だけ通って
+  # デプロイされない中途半端な実行が残る。
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # ジョブ名はブランチ保護の必須ステータスチェック名になるため、 ジョブ ID を
+  # そのまま使う (`name:` を足さない)。 表示名を変えるとチェック名も変わり、
+  # 保護ルールが「存在しないチェック待ち」で固まる。
   verify:
-    name: lint / typecheck / test / build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -22,24 +38,60 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint
-        run: bun run lint
-
       - name: Typecheck
         run: bun run typecheck
 
+      # カバレッジは閾値を持たない (落とすためではなく、 手薄な場所を見えるように
+      # するため)。 数字はジョブのサマリに出す。
+      - name: Test
+        run: bun run test:coverage
+
+      # always() で走るので、 テストがカバレッジ生成前に落ちた場合もここへ来る。
+      # その時にファイルを読みに行くと MODULE_NOT_FOUND で二度目の赤が出て、
+      # 本当の失敗 (テスト) が埋もれる。 生成されている時だけ集計する。
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          {
+            echo "### カバレッジ"
+            echo '```'
+            if [ -f coverage/coverage-summary.json ]; then
+              node -e '
+                const s = require("./coverage/coverage-summary.json").total;
+                for (const k of ["statements", "branches", "functions", "lines"])
+                  console.log(`${k.padEnd(11)}: ${s[k].pct}% (${s[k].covered}/${s[k].total})`);
+              '
+            else
+              echo "summary unavailable (テストがカバレッジ生成前に終了)"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 以下は .vsix を出すだけの呼び出し (scope=code) では省く。
+      - name: Lint
+        if: inputs.scope != 'code'
+        run: bun run lint
+
       - name: Content vocabulary check
+        if: inputs.scope != 'code'
         run: bun run content:check
 
-      - name: Test
-        run: bun run test
+      # 図解 (SVG) のトークン検査。 content:check は Node だけで走る検査で打ち切る
+      # ため、 これまで CI では一度も動いていなかった。 標準ライブラリだけで動く
+      # ので runner の python3 をそのまま使う。
+      - name: Diagram token lint
+        if: inputs.scope != 'code'
+        run: python3 .claude/skills/diagram-design/lint-skin.py packages/content/courses
 
       - name: Build
+        if: inputs.scope != 'code'
         run: bun run build
 
   core-loop:
-    name: コア学習ループ スモーク (E2E)
+    if: inputs.scope != 'code'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       # wrangler の対話プロンプト / テレメトリ送信を CI では無効にする。
       WRANGLER_SEND_METRICS: "false"

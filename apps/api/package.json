@@ -8,7 +8,6 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply falcon-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply falcon-db --remote",
@@ -29,6 +28,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260820.1",
+    "@types/node": "^26.2.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "^7.0.2",
     "wrangler": "^4.125.0"

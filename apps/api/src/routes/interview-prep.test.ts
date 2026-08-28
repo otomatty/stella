@@ -5,13 +5,14 @@
  * Expected route module: ./interview-prep.js
  */
 
-import { Hono } from "hono";
+import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION } from "@falcon/shared/interview/fix-notes";
 import { interviewAudioTextHash } from "@falcon/shared/interview/audio";
 
 import type { Env } from "../env.js";
+import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { recordAudit } from "../lib/audit.js";
 import { interviewPrepRoute } from "./interview-prep.js";
 import { skillSheetRoute } from "./skill-sheet.js";
@@ -169,32 +170,35 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
   };
 });
 
-function createTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", interviewPrepRoute);
-  return { app, env };
-}
+/**
+ * レスポンス本文のうち、 このファイルのテストが読む範囲。
+ * 正本は interview-prep.ts の各ハンドラ。
+ */
+type QuestionRow = {
+  no: number;
+  question: string;
+  deep: string | null;
+  answer_template: string | null;
+  personal_answer_template: string | null;
+  draft_answer_template: string | null;
+  has_pending_draft: boolean;
+  fix_notes: { text: string; resolved_at: string | null }[];
+};
+type QuestionsBody = { rows: QuestionRow[]; profileId: string; assignedCategories: string[] };
+type AssignmentRow = {
+  profile_id: string;
+  interviewDate: string | null;
+  note: string | null;
+  role: string;
+};
+type AssignmentsBody = { rows: AssignmentRow[] };
+type FixNoteBody = {
+  note: { id: string; question_no: number; text: string; resolved_at: string | null };
+};
 
-function createCombinedTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", interviewPrepRoute);
-  app.route("/", skillSheetRoute);
-  return { app, env };
-}
+const createTestApp = (env: Env) => mountTestApp(env, interviewPrepRoute);
 
-async function request(
-  app: Hono<{ Bindings: Env }>,
-  env: Env,
-  path: string,
-  init: RequestInit & { token?: string },
-) {
-  const headers = new Headers(init.headers);
-  if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
-  if (init.body && typeof init.body === "string" && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-  return app.request(path, { ...init, headers }, env);
-}
+const createCombinedTestApp = (env: Env) => mountTestApp(env, interviewPrepRoute, skillSheetRoute);
 
 async function putAssignment(
   app: Hono<{ Bindings: Env }>,
@@ -455,10 +459,8 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find(
-      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.learner.id,
-    );
+    const body = await json<AssignmentsBody>(res);
+    const row = body.rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
     expect(row).toMatchObject({
       interviewDate: "2026-09-10",
       note: "案件A",
@@ -475,10 +477,8 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find(
-      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.learner.id,
-    );
+    const body = await json<AssignmentsBody>(res);
+    const row = body.rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
     expect(row?.interviewDate).toBe("2026-09-10");
     expect(row?.note).toBe("案件A");
   });
@@ -509,14 +509,12 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const dated = body.rows
-      .filter((r: { interviewDate?: string | null }) => r.interviewDate)
-      .map((r: { interviewDate: string }) => r.interviewDate);
+    const body = await json<AssignmentsBody>(res);
+    const dated = body.rows.filter((r) => r.interviewDate).map((r) => r.interviewDate);
     expect(dated).toEqual(["2026-09-05", "2026-09-10", "2026-09-20"]);
 
-    const unsetRows = body.rows.filter((r: { interviewDate?: string | null }) => !r.interviewDate);
-    const datedRows = body.rows.filter((r: { interviewDate?: string | null }) => r.interviewDate);
+    const unsetRows = body.rows.filter((r) => !r.interviewDate);
+    const datedRows = body.rows.filter((r) => r.interviewDate);
     expect(body.rows.indexOf(unsetRows[0])).toBeGreaterThan(
       body.rows.indexOf(datedRows[datedRows.length - 1]),
     );
@@ -554,7 +552,7 @@ describe("GET /api/interview-prep/questions learner payload (#205)", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<{ interviewDate: string | null; note: string | null }>(res);
     expect(body.interviewDate).toBe("2026-09-10");
     expect(body.note).toBe("ヘッダー用メモ");
   });
@@ -642,11 +640,11 @@ describe("GET /api/interview-prep/questions personal answer templates (#206)", (
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find((r: { no: number }) => r.no === 101);
-    expect(row.answer_template).toBe("共通A: 経験年数年です");
-    expect(row.personal_answer_template).toBeNull();
-    expect(row.answer_template).not.toMatch(/<span class="blank">/);
+    const body = await json<QuestionsBody>(res);
+    const row = body.rows.find((r) => r.no === 101);
+    expect(row?.answer_template).toBe("共通A: 経験年数年です");
+    expect(row?.personal_answer_template).toBeNull();
+    expect(row?.answer_template).not.toMatch(/<span class="blank">/);
   });
 
   it("returns personal_answer_template for assigned A questions when generated", async () => {
@@ -674,12 +672,12 @@ describe("GET /api/interview-prep/questions personal answer templates (#206)", (
     const res = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { method: "GET", token });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const rowA = body.rows.find((r: { no: number }) => r.no === 101);
-    const rowB = body.rows.find((r: { no: number }) => r.no === 102);
-    expect(rowA.personal_answer_template).toBe("PHP 5 年、Laravel で EC 保守を担当しています");
-    expect(rowB.personal_answer_template).toBeNull();
-    expect(rowB.answer_template).toBe("共通B: 具体例があります");
+    const body = await json<QuestionsBody>(res);
+    const rowA = body.rows.find((r) => r.no === 101);
+    const rowB = body.rows.find((r) => r.no === 102);
+    expect(rowA?.personal_answer_template).toBe("PHP 5 年、Laravel で EC 保守を担当しています");
+    expect(rowB?.personal_answer_template).toBeNull();
+    expect(rowB?.answer_template).toBe("共通B: 具体例があります");
   });
 
   it("exposes draft_answer_template separately when regeneration conflicts with manual edits", async () => {
@@ -700,11 +698,11 @@ describe("GET /api/interview-prep/questions personal answer templates (#206)", (
     const res = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { method: "GET", token });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find((r: { no: number }) => r.no === 101);
-    expect(row.personal_answer_template).toBe("手直し済みの型");
-    expect(row.draft_answer_template).toBe("新しい生成案");
-    expect(row.has_pending_draft).toBe(true);
+    const body = await json<QuestionsBody>(res);
+    const row = body.rows.find((r) => r.no === 101);
+    expect(row?.personal_answer_template).toBe("手直し済みの型");
+    expect(row?.draft_answer_template).toBe("新しい生成案");
+    expect(row?.has_pending_draft).toBe(true);
   });
 
   const staffViewRoles = [
@@ -739,9 +737,9 @@ describe("GET /api/interview-prep/questions personal answer templates (#206)", (
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
-      const row = body.rows.find((r: { no: number }) => r.no === 101);
-      expect(row.personal_answer_template).toBe("スタッフ閲覧用の個別型");
+      const body = await json<QuestionsBody>(res);
+      const row = body.rows.find((r) => r.no === 101);
+      expect(row?.personal_answer_template).toBe("スタッフ閲覧用の個別型");
       expect(body.profileId).toBe(SEED_PROFILES.learner.id);
     },
   );
@@ -886,7 +884,7 @@ describe("my-answer-memo retirement (#206)", () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<QuestionsBody>(res);
     for (const row of body.rows) {
       expect(row).not.toHaveProperty("my_answer");
     }
@@ -929,7 +927,7 @@ describe("改善点メモ (#234)", () => {
 
     const created = await addNote(token, 101, "  結論から  先に ");
     expect(created.status).toBe(201);
-    const createdBody = await created.json();
+    const createdBody = await json<FixNoteBody>(created);
     expect(createdBody.note).toMatchObject({
       question_no: 101,
       text: "結論から 先に",
@@ -940,18 +938,18 @@ describe("改善点メモ (#234)", () => {
     const { app } = createTestApp(env);
     const res = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { method: "GET", token });
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find((r: { no: number }) => r.no === 101);
-    expect(row.fix_notes).toHaveLength(1);
-    expect(row.fix_notes[0]).toMatchObject({ text: "結論から 先に", resolved_at: null });
-    const other = body.rows.find((r: { no: number }) => r.no === 104);
-    expect(other.fix_notes).toEqual([]);
+    const body = await json<QuestionsBody>(res);
+    const row = body.rows.find((r) => r.no === 101);
+    expect(row?.fix_notes).toHaveLength(1);
+    expect(row?.fix_notes[0]).toMatchObject({ text: "結論から 先に", resolved_at: null });
+    const other = body.rows.find((r) => r.no === 104);
+    expect(other?.fix_notes).toEqual([]);
   });
 
   it("メモを消し込むと resolved_at が入り、 取り消しで戻せる", async () => {
     const token = await mintInterviewPrepTestToken("seed-learner");
     const created = await addNote(token, 101, "数字を即答できるように");
-    const { note } = await created.json();
+    const { note } = await json<FixNoteBody>(created);
 
     const { app } = createTestApp(env);
     const resolved = await request(app, env, interviewPrepFixNotePath(note.id), {
@@ -960,7 +958,7 @@ describe("改善点メモ (#234)", () => {
       token,
     });
     expect(resolved.status).toBe(200);
-    expect((await resolved.json()).note.resolved_at).not.toBeNull();
+    expect((await json<FixNoteBody>(resolved)).note.resolved_at).not.toBeNull();
 
     const reopened = await request(app, env, interviewPrepFixNotePath(note.id), {
       method: "PUT",
@@ -968,7 +966,7 @@ describe("改善点メモ (#234)", () => {
       token,
     });
     expect(reopened.status).toBe(200);
-    expect((await reopened.json()).note.resolved_at).toBeNull();
+    expect((await json<FixNoteBody>(reopened)).note.resolved_at).toBeNull();
   });
 
   it("空文字のメモは 400 で保存しない", async () => {
@@ -1001,7 +999,7 @@ describe("改善点メモ (#234)", () => {
   it("他人のメモは消し込めない", async () => {
     const ownerToken = await mintInterviewPrepTestToken("seed-learner");
     const created = await addNote(ownerToken, 101, "本人のメモ");
-    const { note } = await created.json();
+    const { note } = await json<FixNoteBody>(created);
 
     const { app } = createTestApp(env);
     const otherToken = await mintInterviewPrepTestToken("seed-learner-b");
@@ -1024,7 +1022,7 @@ describe("改善点メモ (#234)", () => {
     for (let i = 0; i < FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION; i++) {
       const res = await addNote(token, 101, `メモ ${i}`);
       expect(res.status).toBe(201);
-      created.push((await res.json()).note.id);
+      created.push((await json<FixNoteBody>(res)).note.id);
     }
     const first = created[0] as string;
     const resolved = await request(app, env, interviewPrepFixNotePath(first), {
@@ -1050,7 +1048,7 @@ describe("改善点メモ (#234)", () => {
     const token = await mintInterviewPrepTestToken("seed-learner");
     const { app } = createTestApp(env);
     const created = await addNote(token, 101, "戻せるメモ");
-    const { note } = await created.json();
+    const { note } = await json<FixNoteBody>(created);
 
     await request(app, env, interviewPrepFixNotePath(note.id), {
       method: "PUT",
@@ -1064,13 +1062,13 @@ describe("改善点メモ (#234)", () => {
     });
 
     expect(reopened.status).toBe(200);
-    expect((await reopened.json()).note.resolved_at).toBeNull();
+    expect((await json<FixNoteBody>(reopened)).note.resolved_at).toBeNull();
   });
 
   it("resolved が真偽値でなければ 400", async () => {
     const token = await mintInterviewPrepTestToken("seed-learner");
     const created = await addNote(token, 101, "メモ");
-    const { note } = await created.json();
+    const { note } = await json<FixNoteBody>(created);
 
     const { app } = createTestApp(env);
     const res = await request(app, env, interviewPrepFixNotePath(note.id), {
@@ -1402,14 +1400,10 @@ describe("面談対策の対象者 (受講者 + 管理者)", () => {
     const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    const row = body.rows.find(
-      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.admin.id,
-    );
+    const body = await json<AssignmentsBody>(res);
+    const row = body.rows.find((r) => r.profile_id === SEED_PROFILES.admin.id);
     expect(row).toMatchObject({ role: "admin", categories: ["PHP"] });
-    const learner = body.rows.find(
-      (r: { profile_id: string }) => r.profile_id === SEED_PROFILES.learner.id,
-    );
+    const learner = body.rows.find((r) => r.profile_id === SEED_PROFILES.learner.id);
     expect(learner?.role).toBe("student");
   });
 
@@ -1428,8 +1422,8 @@ describe("面談対策の対象者 (受講者 + 管理者)", () => {
     expect(state.assignments.size).toBe(0);
 
     const list = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, { method: "GET", token });
-    const body = await list.json();
-    const ids = body.rows.map((r: { profile_id: string }) => r.profile_id);
+    const body = await json<AssignmentsBody>(list);
+    const ids = body.rows.map((r) => r.profile_id);
     expect(ids).not.toContain(SEED_PROFILES.instructor.id);
     expect(ids).not.toContain(SEED_PROFILES.sales.id);
   });
@@ -1535,10 +1529,10 @@ describe("面談対策の対象者 (受講者 + 管理者)", () => {
     );
 
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await json<QuestionsBody>(res);
     expect(body.assignedCategories).toEqual(["PHP"]);
     // PHP (101/102) + 全案件共通 (104)。 割当外の JS (103) は含めない。
-    expect(body.rows.map((r: { no: number }) => r.no).sort()).toEqual([101, 102, 104]);
+    expect(body.rows.map((r) => r.no).sort()).toEqual([101, 102, 104]);
   });
 });
 

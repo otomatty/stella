@@ -6,6 +6,5 @@
     "noEmit": true,
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "grader-webview/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "grader-webview/**/*.ts"]
 }

@@ -2,13 +2,13 @@
  * Issue #204 — POST /api/review-draft provider + JSON response behavior (TDD).
  */
 
-import { Hono } from "hono";
+import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Env } from "../env.js";
+import { json, mountTestApp } from "../testing/route-harness.js";
 import { reviewDraftRoute } from "./review-draft.js";
 import {
-  type CHAT_TEST_PROFILES,
   GATEWAY_ENV_VARS,
   createChatTestEnv,
   mintChatTestToken,
@@ -69,11 +69,7 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
   };
 });
 
-function createTestApp(env: Env) {
-  const app = new Hono<{ Bindings: Env }>();
-  app.route("/", reviewDraftRoute);
-  return app;
-}
+const createTestApp = (env: Env) => mountTestApp(env, reviewDraftRoute).app;
 
 async function postReviewDraft(app: Hono<{ Bindings: Env }>, env: Env, token: string) {
   return app.request(
@@ -108,7 +104,7 @@ describe("POST /api/review-draft provider switch (#204)", () => {
     expect(res.headers.get("Content-Type")).not.toContain("text/event-stream");
     expect(completeMessage).toHaveBeenCalled();
     expect(completeGrokMessage).not.toHaveBeenCalled();
-    const body = await res.json();
+    const body = await json<{ suggestions: unknown[]; rubric: unknown[] }>(res);
     expect(body.suggestions).toHaveLength(1);
     expect(body.rubric).toHaveLength(1);
   });

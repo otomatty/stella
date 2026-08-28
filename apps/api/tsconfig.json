@@ -2,10 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023"],
-    "types": ["@cloudflare/workers-types"],
+    // scripts (seed / スモーク) は Node で走るので Workers 型と両方要る。
+    "types": ["@cloudflare/workers-types", "node"],
     "noEmit": true,
-    "rootDir": "src"
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  // テストと scripts も検査対象に入れる。 除外するとその範囲だけ strict の網の
+  // 外に出てしまい、 seed やスモークの型の嘘が CI をすり抜ける。
+  "include": ["src/**/*.ts", "scripts/**/*.ts"]
 }

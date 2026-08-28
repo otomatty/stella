@@ -13,7 +13,6 @@
     "./run-tests-local": "./src/run-tests-local.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
