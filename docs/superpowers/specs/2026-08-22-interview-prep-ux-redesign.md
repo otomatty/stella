@@ -163,6 +163,8 @@ interview_recordings         -- 新規(Phase 2)。練習の録音 + 文字起こ
 
 実装済み(2026-08-22):
 
+> **更新 (一問一答化)**: 深掘り①〜③の読み上げ・出題は廃止した。受講者の回答に応答しない固定の追い質問は面談の再現になっておらず、`deep1`〜`deep3` はデータごと落としてある。以下の API のうち音声セグメント (`audioSegments` / `<no>:deep1` / `?part=`) に関する記述は現行ではない — 音声は 1 質問 1 本 (`audioNos` / `audioStaleNos`、R2 キー `interview-tts/<tenant>/<no>.mp3`) で、生成 API の body は `{ nos: number[] }` のみ。
+
 - `GET /api/interview-prep/questions` — レスポンスに `audioNos`(音声登録済み質問番号)/ `audioSegments`(深掘りを含むセグメント)/ progress (SM-2 の `srs_due_date` / `last_result` を含む)/ 改善点メモ (`fix_notes`)/ 中断中のセット (`activeSet`) を同梱。
 - `GET /api/interview-prep/questions/:no/audio?part=` — 登録済み読み上げ音声(MP3)の配信。`part` は `question`(既定)/ `deep1`〜`deep3`。AI は呼ばない。未登録 404 / 割当範囲外 403。
 - `POST /api/interview-prep/audio/generate` — admin 専用。`{ nos: number[] }`(質問文のみ)/ `{ segments: [{ no, part }] }`(深掘り込み)を合計 10 件まで TTS モデル(既定 Grok TTS)で生成し R2 へ登録(再生成は上書き)。監査ログあり。

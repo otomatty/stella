@@ -182,7 +182,7 @@ export function InterviewPrepAssignmentsPage({
       <>
         <PageHeader
           title="面談対策の質問編集"
-          sub="想定質問の文面を直します。質問文と深掘りを直すと読み上げ音声もその場で作り直されます"
+          sub="想定質問の文面を直します。質問文を直すと読み上げ音声もその場で作り直されます"
         />
         {tabs}
         {backendEnabled ? (

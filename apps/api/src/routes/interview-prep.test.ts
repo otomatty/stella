@@ -61,12 +61,10 @@ vi.mock("../lib/workers-ai.js", () => ({
 }));
 
 /** テナント別の音声キー (`interview-tts/<tenant>/<no>.mp3`)。 */
-const ttsKey = (no: number, part = "question") =>
-  `interview-tts/ses/${part === "question" ? `${no}.mp3` : `${no}-${part}.mp3`}`;
+const ttsKey = (no: number) => `interview-tts/ses/${no}.mp3`;
 
 /** テナント別キーになる前の共通キー (旧レイアウト)。 */
-const legacyTtsKey = (no: number, part = "question") =>
-  `interview-tts/${part === "question" ? `${no}.mp3` : `${no}-${part}.mp3`}`;
+const legacyTtsKey = (no: number) => `interview-tts/${no}.mp3`;
 
 /** R2 の代わり。 put / delete / list を素朴に覚えるだけ。 */
 function createFakeBucket() {
@@ -1081,7 +1079,7 @@ describe("改善点メモ (#234)", () => {
   });
 });
 
-describe("深掘り音声 (#234)", () => {
+describe("音声生成の一括上限", () => {
   let env: Env;
   let state: InterviewPrepTestState;
 
@@ -1092,51 +1090,31 @@ describe("深掘り音声 (#234)", () => {
       state;
   });
 
-  it("audio の part が不正なら 400", async () => {
+  it("1 リクエスト 10 問までに制限する (直列生成の実行時間を抑える)", async () => {
     const { app } = createTestApp(env);
-    const token = await mintInterviewPrepTestToken("seed-learner");
+    const token = await mintInterviewPrepTestToken("seed-admin");
 
-    const res = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/104/audio?part=deep9`, {
-      method: "GET",
+    const res = await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ nos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] }),
       token,
     });
 
     expect(res.status).toBe(400);
   });
 
-  it("生成は質問文と深掘りを合わせて 10 件までに制限する", async () => {
+  it("nos の指定が不正なら 400", async () => {
     const { app } = createTestApp(env);
     const token = await mintInterviewPrepTestToken("seed-admin");
 
-    const res = await request(app, env, "/api/interview-prep/audio/generate", {
-      method: "POST",
-      body: JSON.stringify({
-        nos: [101, 102, 103, 104, 105, 106],
-        segments: [
-          { no: 101, part: "deep1" },
-          { no: 101, part: "deep2" },
-          { no: 102, part: "deep1" },
-          { no: 102, part: "deep2" },
-          { no: 103, part: "deep1" },
-        ],
-      }),
-      token,
-    });
-
-    expect(res.status).toBe(400);
-  });
-
-  it("segments の指定が不正なら 400", async () => {
-    const { app } = createTestApp(env);
-    const token = await mintInterviewPrepTestToken("seed-admin");
-
-    const res = await request(app, env, "/api/interview-prep/audio/generate", {
-      method: "POST",
-      body: JSON.stringify({ segments: [{ no: 101, part: "answer" }] }),
-      token,
-    });
-
-    expect(res.status).toBe(400);
+    for (const body of [{ nos: [] }, { nos: [0] }, { nos: ["101"] }, { segments: [{ no: 1 }] }]) {
+      const res = await request(app, env, "/api/interview-prep/audio/generate", {
+        method: "POST",
+        body: JSON.stringify(body),
+        token,
+      });
+      expect(res.status).toBe(400);
+    }
   });
 });
 
@@ -1547,13 +1525,8 @@ describe("想定質問の編集 (#237)", () => {
     bucket = createFakeBucket();
     env = createInterviewPrepTestEnv({ MATERIALS_BUCKET: bucket as unknown as R2Bucket });
     state = createInterviewPrepTestState();
-    // 深掘りを持つ質問を 1 問用意する (音声セグメントが 2 つになる)。
     state.questions = [
-      {
-        ...TEST_INTERVIEW_QUESTIONS[0],
-        no: 101,
-        deep1: "直近の案件は？ → 規模と役割を先に言う",
-      },
+      { ...TEST_INTERVIEW_QUESTIONS[0], no: 101 },
       { ...TEST_INTERVIEW_QUESTIONS[1] },
     ] as typeof TEST_INTERVIEW_QUESTIONS;
     tts.configured = true;
@@ -1579,11 +1552,11 @@ describe("想定質問の編集 (#237)", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       row: { question: string };
-      audio: { regenerated: string[]; stale: string[] };
+      audio: { regenerated: boolean; stale: boolean };
     };
     expect(body.row.question).toBe("自己紹介をお願いします");
-    expect(body.audio.regenerated).toEqual(["101:question"]);
-    expect(body.audio.stale).toEqual([]);
+    expect(body.audio.regenerated).toBe(true);
+    expect(body.audio.stale).toBe(false);
     expect(tts.synthesize).toHaveBeenCalledTimes(1);
     expect(bucket.objects.has(ttsKey(101))).toBe(true);
   });
@@ -1616,41 +1589,18 @@ describe("想定質問の編集 (#237)", () => {
     });
   });
 
-  it("深掘りを直すとその深掘りの音声だけ作り直す", async () => {
-    const token = await mintInterviewPrepTestToken("seed-admin");
-
-    const res = await patch(token, 101, { deep1: "直近の案件を教えてください → メモ" });
-
-    const body = (await res.json()) as { audio: { regenerated: string[] } };
-    expect(body.audio.regenerated).toEqual(["101:deep1"]);
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
-    expect(bucket.objects.has(ttsKey(101))).toBe(false);
-  });
-
   it("読み上げない項目 (質問意図) を直しても音声は呼ばない", async () => {
     const token = await mintInterviewPrepTestToken("seed-admin");
 
     const res = await patch(token, 101, { intent: "意図を書き直した" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { audio: { regenerated: string[] } };
-    expect(body.audio.regenerated).toEqual([]);
+    const body = (await res.json()) as { audio: { regenerated: boolean } };
+    expect(body.audio.regenerated).toBe(false);
     expect(tts.synthesize).not.toHaveBeenCalled();
   });
 
-  it("深掘りを空にすると、 その音声は消える", async () => {
-    const token = await mintInterviewPrepTestToken("seed-admin");
-    await patch(token, 101, { deep1: "直近の案件を教えてください → メモ" });
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
-
-    const res = await patch(token, 101, { deep1: "" });
-
-    const body = (await res.json()) as { audio: { removed: string[] } };
-    expect(body.audio.removed).toEqual(["101:deep1"]);
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(false);
-  });
-
-  it("読み上げが未設定でも編集は保存し、 古いセグメントを返す", async () => {
+  it("読み上げが未設定でも編集は保存し、 音声が古いと返す", async () => {
     const token = await mintInterviewPrepTestToken("seed-admin");
     // 先に音声を作っておく (指紋つき)。 古いと判定できる状態にしてから止める。
     await patch(token, 101, { question: "先に作った文面" });
@@ -1659,15 +1609,15 @@ describe("想定質問の編集 (#237)", () => {
     const res = await patch(token, 101, { question: "読み上げ未設定でも保存される" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { audio: { stale: string[]; reason: string | null } };
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
     expect(state.questions?.find((q) => q.no === 101)?.question).toBe(
       "読み上げ未設定でも保存される",
     );
-    expect(body.audio.stale).toEqual(["101:question"]);
+    expect(body.audio.stale).toBe(true);
     expect(body.audio.reason).toMatch(/未設定/);
   });
 
-  it("TTS が落ちても編集は残り、 そのセグメントが古いと分かる", async () => {
+  it("TTS が落ちても編集は残り、 音声が古いと分かる", async () => {
     const token = await mintInterviewPrepTestToken("seed-admin");
     await patch(token, 101, { question: "先に作った文面" });
     tts.synthesize = vi.fn(async () => {
@@ -1677,9 +1627,9 @@ describe("想定質問の編集 (#237)", () => {
     const res = await patch(token, 101, { question: "音声だけ失敗する質問" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { audio: { stale: string[]; reason: string | null } };
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
     expect(state.questions?.find((q) => q.no === 101)?.question).toBe("音声だけ失敗する質問");
-    expect(body.audio.stale).toEqual(["101:question"]);
+    expect(body.audio.stale).toBe(true);
     expect(body.audio.reason).toMatch(/gateway 502/);
   });
 
@@ -1772,20 +1722,20 @@ describe("想定質問の編集 (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audioSegments: string[]; audioStaleSegments: string[] };
-    expect(body.audioSegments).toContain("101:question");
-    expect(body.audioStaleSegments).toEqual(["101:question"]);
+    const body = (await res.json()) as { audioNos: number[]; audioStaleNos: number[] };
+    expect(body.audioNos).toContain(101);
+    expect(body.audioStaleNos).toEqual([101]);
   });
 
-  it("指紋を持たない既存の音声は古い扱いにしない", async () => {
+  it("指紋を持たない既存の音声も古い扱いにする (書き換え前の読み上げなので)", async () => {
     bucket.objects.set(legacyTtsKey(101), {});
     const token = await mintInterviewPrepTestToken("seed-admin");
 
     const { app } = createTestApp(env);
     const res = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, { method: "GET", token });
 
-    const body = (await res.json()) as { audioStaleSegments: string[] };
-    expect(body.audioStaleSegments).toEqual([]);
+    const body = (await res.json()) as { audioStaleNos: number[] };
+    expect(body.audioStaleNos).toEqual([101]);
   });
 });
 
@@ -1847,8 +1797,8 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: learner,
     });
 
-    const body = (await res.json()) as { audioNos: number[]; audioSegments: string[] };
-    expect(body.audioSegments).not.toContain("101:question");
+    const body = (await res.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
     expect(body.audioNos).not.toContain(101);
   });
 
@@ -1870,8 +1820,8 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audioNos: number[]; audioSegments: string[] };
-    expect(body.audioSegments).not.toContain("101:question");
+    const body = (await res.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
     expect(body.audioNos).not.toContain(101);
   });
 
@@ -1885,8 +1835,8 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audioSegments: string[] };
-    expect(body.audioSegments).toContain("101:question");
+    const body = (await res.json()) as { audioNos: number[] };
+    expect(body.audioNos).toContain(101);
   });
 
   it("staff の一覧には残す (試聴してから再生成する導線のため)", async () => {
@@ -1899,9 +1849,9 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audioSegments: string[]; audioStaleSegments: string[] };
-    expect(body.audioSegments).toContain("101:question");
-    expect(body.audioStaleSegments).toContain("101:question");
+    const body = (await res.json()) as { audioNos: number[]; audioStaleNos: number[] };
+    expect(body.audioNos).toContain(101);
+    expect(body.audioStaleNos).toContain(101);
   });
 
   it("音声 URL を直接叩いても受講者には返さない (一覧から外すだけでは塞げない)", async () => {
@@ -1938,7 +1888,7 @@ describe("古い音声を受講者に届けない (#237)", () => {
     expect(res.status).toBe(200);
   });
 
-  it("指紋の無い旧音声は、 作り直せなかったときに消す (古いと判定できないため)", async () => {
+  it("指紋の無い旧音声は、 作り直せなくても消さない (古いと分かるので試聴 → 再生成できる)", async () => {
     // この仕組みより前に生成された音声 = customMetadata なし。
     bucket.objects.set(legacyTtsKey(101), {});
     tts.configured = false;
@@ -1947,14 +1897,15 @@ describe("古い音声を受講者に届けない (#237)", () => {
 
     const res = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101`, {
       method: "PATCH",
-      body: JSON.stringify({ question: "旧音声のまま残せない文面" }),
+      body: JSON.stringify({ question: "旧音声が追いつけない文面" }),
       token: admin,
     });
 
-    const body = (await res.json()) as { audio: { removed: string[]; stale: string[] } };
-    expect(body.audio.removed).toEqual(["101:question"]);
-    expect(body.audio.stale).toEqual([]);
-    expect(bucket.objects.has(ttsKey(101))).toBe(false);
+    const body = (await res.json()) as { audio: { stale: boolean } };
+    expect(body.audio.stale).toBe(true);
+    // 共有物なので消さない (他テナントがまだ使っている)。
+    expect(bucket.objects.has(legacyTtsKey(101))).toBe(true);
+    expect(bucket.delete).not.toHaveBeenCalled();
   });
 
   it("指紋つきの音声は消さずに残す (古いと分かるので再生成できる)", async () => {
@@ -1973,13 +1924,12 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audio: { removed: string[]; stale: string[] } };
-    expect(body.audio.stale).toEqual(["101:question"]);
-    expect(body.audio.removed).toEqual([]);
+    const body = (await res.json()) as { audio: { stale: boolean } };
+    expect(body.audio.stale).toBe(true);
     expect(bucket.objects.has(ttsKey(101))).toBe(true);
   });
 
-  it("そもそも音声が無いセグメントは「古い」と報告しない (未登録であって古くはない)", async () => {
+  it("そもそも音声が無い質問は「古い」と報告しない (未登録であって古くはない)", async () => {
     tts.configured = false;
     const admin = await mintInterviewPrepTestToken("seed-admin");
     const { app } = createTestApp(env);
@@ -1991,14 +1941,13 @@ describe("古い音声を受講者に届けない (#237)", () => {
     });
 
     const body = (await res.json()) as {
-      audio: { stale: string[]; removed: string[]; reason: string | null };
+      audio: { stale: boolean; reason: string | null };
     };
-    expect(body.audio.stale).toEqual([]);
-    expect(body.audio.removed).toEqual([]);
+    expect(body.audio.stale).toBe(false);
     expect(body.audio.reason).toBeNull();
   });
 
-  it("TTS が落ちたときも、 指紋の無い旧音声は残さない", async () => {
+  it("TTS が落ちたときも、 指紋の無い旧音声は消さずに古いと報告する", async () => {
     bucket.objects.set(legacyTtsKey(101), {});
     tts.synthesize = vi.fn(async () => {
       throw new Error("gateway 502");
@@ -2012,10 +1961,11 @@ describe("古い音声を受講者に届けない (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audio: { removed: string[]; reason: string | null } };
-    expect(body.audio.removed).toEqual(["101:question"]);
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
+    expect(body.audio.stale).toBe(true);
     expect(body.audio.reason).toMatch(/gateway 502/);
-    expect(bucket.objects.has(ttsKey(101))).toBe(false);
+    expect(bucket.objects.has(legacyTtsKey(101))).toBe(true);
+    expect(bucket.delete).not.toHaveBeenCalled();
   });
 });
 
@@ -2057,8 +2007,8 @@ describe("質問編集の読み上げはレート制限に従う (#237)", () => 
 
     expect(res.status).toBe(200);
     expect(tts.synthesize).not.toHaveBeenCalled();
-    const body = (await res.json()) as { audio: { regenerated: string[] } };
-    expect(body.audio.regenerated).toEqual([]);
+    const body = (await res.json()) as { audio: { regenerated: boolean } };
+    expect(body.audio.regenerated).toBe(false);
     // 編集そのものは保存する (音声の都合で編集を落とさない)。
     expect(state.questions?.find((q) => q.no === 101)?.question).toBe("上限に当たった保存");
   });
@@ -2154,13 +2104,15 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
 
     expect(res.status).toBe(200);
     expect(bucket.objects.has(legacyTtsKey(101))).toBe(true);
-    // このテナントからはもう使えないので、 消えた扱いで報告する。
-    const body = (await res.json()) as { audio: { removed: string[] } };
-    expect(body.audio.removed).toEqual(["101:question"]);
+    expect(bucket.delete).not.toHaveBeenCalled();
+    // 本文と合っていないので「古いまま」として報告する。
+    const body = (await res.json()) as { audio: { stale: boolean } };
+    expect(body.audio.stale).toBe(true);
   });
 
-  it("まだ誰も直していない質問は、 旧共通キーの音声をそのまま使える", async () => {
-    // 既存の登録済み音声をデプロイで捨てないための後方互換。
+  it("旧共通キーの音声は受講者へ渡さない (書き換え前の文面の読み上げなので)", async () => {
+    // 指紋を持たない = 想定質問を短い口語へ書き換えるより前の生成。 画面の質問文とは
+    // 食い違うので、 未編集の質問でも受講者には渡さない。
     bucket.objects.set(legacyTtsKey(101), {});
     const { app } = createTestApp(env);
     const learner = await mintInterviewPrepTestToken("seed-learner");
@@ -2169,12 +2121,32 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
       method: "GET",
       token: learner,
     });
-    const body = (await list.json()) as { audioSegments: string[] };
-    expect(body.audioSegments).toContain("101:question");
+    const body = (await list.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
 
     const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
       method: "GET",
       token: learner,
+    });
+    expect(audio.status).toBe(404);
+  });
+
+  it("旧共通キーの音声は staff には古いものとして見せる (試聴 → 再生成の導線)", async () => {
+    bucket.objects.set(legacyTtsKey(101), {});
+    const { app } = createTestApp(env);
+    const admin = await mintInterviewPrepTestToken("seed-admin");
+
+    const list = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, {
+      method: "GET",
+      token: admin,
+    });
+    const body = (await list.json()) as { audioNos: number[]; audioStaleNos: number[] };
+    expect(body.audioNos).toContain(101);
+    expect(body.audioStaleNos).toContain(101);
+
+    const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
+      method: "GET",
+      token: admin,
     });
     expect(audio.status).toBe(200);
   });
@@ -2192,8 +2164,8 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
       method: "GET",
       token: learner,
     });
-    const body = (await list.json()) as { audioSegments: string[] };
-    expect(body.audioSegments).not.toContain("101:question");
+    const body = (await list.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
 
     const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
       method: "GET",
@@ -2215,10 +2187,10 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      audio: { regenerated: string[]; stale: string[]; reason: string | null };
+      audio: { regenerated: boolean; stale: boolean; reason: string | null };
     };
-    expect(body.audio.regenerated).toEqual([]);
-    expect(body.audio.stale).toEqual(["101:question"]);
+    expect(body.audio.regenerated).toBe(false);
+    expect(body.audio.stale).toBe(true);
     expect(body.audio.reason).toMatch(/別の編集/);
   });
 
@@ -2240,8 +2212,8 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
       method: "GET",
       token: learner,
     });
-    const body = (await list.json()) as { audioSegments: string[] };
-    expect(body.audioSegments).not.toContain("101:question");
+    const body = (await list.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
 
     const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
       method: "GET",
@@ -2250,9 +2222,11 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
     expect(audio.status).toBe(404);
   });
 
-  it("正本へ戻したあとは、 正本の読み上げ (旧共通キー) に戻る", async () => {
+  it("正本へ戻しても、 編集後の文面で作った音声は受講者へ渡さない", async () => {
     // 編集 → 音声を作り直し → 正本へ戻す → seed が本文を戻す、 の後。 テナント側の
-    // 音声は編集後の文面のまま残るが、 正本の読み上げは本文と合っているので使える。
+    // 音声は編集後の文面のまま残るので、 本文とは食い違う。 かつては指紋を持たない
+    // 旧共通キーの読み上げで埋めていたが、 その音声も書き換え前の文面なので当てに
+    // できない —— 受講者には渡さず、 staff の再生成を待つ。
     const admin = await mintInterviewPrepTestToken("seed-admin");
     await patch(admin, { question: "編集した本文" });
     expect(bucket.objects.has(ttsKey(101))).toBe(true);
@@ -2270,10 +2244,34 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
       method: "GET",
       token: learner,
     });
-    const body = (await list.json()) as { audioSegments: string[]; audioStaleSegments: string[] };
-    // 作り直しを促すのではなく、 正本の読み上げをそのまま渡す。
-    expect(body.audioSegments).toContain("101:question");
-    expect(body.audioStaleSegments).not.toContain("101:question");
+    const body = (await list.json()) as { audioNos: number[] };
+    expect(body.audioNos).not.toContain(101);
+
+    const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
+      method: "GET",
+      token: learner,
+    });
+    expect(audio.status).toBe(404);
+  });
+
+  it("正本の文面で作り直せば、 その音声は受講者へ渡る (指紋が本文と一致する)", async () => {
+    // 上のケースの復旧手順。 admin が今の本文で作り直せば指紋が一致し、 現行に戻る。
+    const admin = await mintInterviewPrepTestToken("seed-admin");
+    const { app } = createTestApp(env);
+    await request(app, env, "/api/interview-prep/audio/generate", {
+      method: "POST",
+      body: JSON.stringify({ nos: [101] }),
+      token: admin,
+    });
+
+    const learner = await mintInterviewPrepTestToken("seed-learner");
+    const list = await request(app, env, INTERVIEW_PREP_QUESTIONS_PATH, {
+      method: "GET",
+      token: learner,
+    });
+    const body = (await list.json()) as { audioNos: number[]; audioStaleNos: number[] };
+    expect(body.audioNos).toContain(101);
+    expect(body.audioStaleNos).not.toContain(101);
 
     const audio = await request(app, env, `${INTERVIEW_PREP_QUESTIONS_PATH}/101/audio`, {
       method: "GET",
@@ -2295,8 +2293,8 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
       token: admin,
     });
 
-    const body = (await res.json()) as { audioSegments: string[] };
-    expect(body.audioSegments).toEqual(["101:question"]); // 旧共通キーぶんだけ
+    const body = (await res.json()) as { audioNos: number[] };
+    expect(body.audioNos).toEqual([101]); // 旧共通キーぶんだけ
     // 走査したのは自テナント配下と `interview-tts/` 直下のみ。
     const prefixes = bucket.list.mock.calls.map((c) => (c[0] as { prefix: string }).prefix);
     expect(prefixes).toContain("interview-tts/ses/");
@@ -2307,26 +2305,23 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
     expect(flat?.delimiter).toBe("/");
   });
 
-  it("空にする保存の最中に深掘りが書き直されたら、 その音声は消さない", async () => {
+  it("保存を確定させた直後に別の staff の保存が着地したら、 作り直せたと報告しない", async () => {
     const token = await mintInterviewPrepTestToken("seed-admin");
-    // 深掘りを足して音声も作っておく (fixture の deep1 は空)。
-    await patch(token, { deep1: "最初の深掘り" });
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
 
-    // こちらが「空にする」保存を確定させた直後に、 別の staff の保存が着地した状況。
+    // こちらが本文を確定させた直後に、 別の staff の保存が着地した状況。 合成は
+    // そのあとに走るので、 R2 に載るのは「もう正ではない文面」の読み上げになる。
     state.afterQuestionUpdate = () => {
       state.afterQuestionUpdate = undefined;
       const row = state.questions?.find((x) => x.no === 101);
-      if (row) row.deep1 = "別の staff が書き直した深掘り";
+      if (row) row.question = "別の staff が書き直した質問";
     };
 
-    const res = await patch(token, { deep1: "" });
+    const res = await patch(token, { question: "こちらが直した質問" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { audio: { removed: string[] } };
-    // 新しい本文に対して作られた音声を巻き添えで消さない。
-    expect(body.audio.removed).toEqual([]);
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
+    const body = (await res.json()) as { audio: { regenerated: boolean; stale: boolean } };
+    expect(body.audio.regenerated).toBe(false);
+    expect(body.audio.stale).toBe(true);
   });
 
   it("手動生成の最中に本文が変わったら、 成功として返さない", async () => {
@@ -2375,31 +2370,63 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
     expect(bucket.put).not.toHaveBeenCalled();
     expect(bucket.delete).not.toHaveBeenCalled();
     expect(bucket.objects.get(ttsKey(101))?.customMetadata).toEqual(before);
-    const body = (await res.json()) as { audio: { stale: string[]; reason: string | null } };
-    expect(body.audio.stale).toEqual(["101:question"]);
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
+    expect(body.audio.stale).toBe(true);
     expect(body.audio.reason).toMatch(/更新が進行中/);
   });
 
-  it("ロックを取れないときは、 深掘りを空にしても音声を消さない", async () => {
-    const token = await mintInterviewPrepTestToken("seed-admin");
-    await patch(token, { deep1: "消される前の深掘り" });
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
-    bucket.delete.mockClear();
-
-    // 削除は `syncQuestionAudio` の先頭で走るので、 「理由」を渡すだけでは
-    // 触らせない扱いにならない —— ロック未取得なら呼ばないこと自体を確かめる。
+  it("ロックを取れないとき、 旧共通キーしか無い質問も「作り直しが要る」と返す", async () => {
+    // この保存で編集印が入り、 その質問は旧共通キーの音声を使わなくなる。 テナント別
+    // だけを見て「追従は不要」と返すと、 渡せる音声が 1 つも無くなったことが admin に
+    // 伝わらないまま終わる。
+    bucket.objects.set(legacyTtsKey(101), {});
     state.lockBusy = true;
-    const res = await patch(token, { deep1: "" });
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await patch(token, { question: "ロックが取れないまま直した文面" });
 
     expect(res.status).toBe(200);
+    expect(bucket.put).not.toHaveBeenCalled();
     expect(bucket.delete).not.toHaveBeenCalled();
-    expect(bucket.objects.has(ttsKey(101, "deep1"))).toBe(true);
-    const body = (await res.json()) as { audio: { removed: string[]; stale: string[] } };
-    expect(body.audio.removed).toEqual([]);
-    expect(body.audio.stale).toEqual(["101:deep1"]);
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
+    expect(body.audio.stale).toBe(true);
+    expect(body.audio.reason).toMatch(/更新が進行中/);
   });
 
-  it("手動生成もロックを取れなければそのセグメントを諦める", async () => {
+  it("R2 が未設定なら、 ロックの取得可否によらず「作り直しが要る」と返す", async () => {
+    // ロックを取れた側と取れなかった側で答えが割れないこと。 どちらも本文だけ進み、
+    // 音声は書けていないので、 admin には同じ「作り直しが要る」を返す。
+    const noBucket = createInterviewPrepTestEnv();
+    const { app } = createTestApp(noBucket);
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    for (const busy of [false, true]) {
+      state.lockBusy = busy;
+      const res = await request(app, noBucket, `${INTERVIEW_PREP_QUESTIONS_PATH}/101`, {
+        method: "PATCH",
+        body: JSON.stringify({ question: `R2 未設定で直した文面 (${busy})` }),
+        token,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
+      expect(body.audio.stale).toBe(true);
+      expect(body.audio.reason).toMatch(/R2/);
+    }
+  });
+
+  it("ロックを取れず音声も一度も無い質問は「古い」と言わない (未登録であって古くはない)", async () => {
+    state.lockBusy = true;
+    const token = await mintInterviewPrepTestToken("seed-admin");
+
+    const res = await patch(token, { question: "音声を一度も作っていない質問" });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { audio: { stale: boolean; reason: string | null } };
+    expect(body.audio.stale).toBe(false);
+    expect(body.audio.reason).toBeNull();
+  });
+
+  it("手動生成もロックを取れなければその質問を諦める", async () => {
     const token = await mintInterviewPrepTestToken("seed-admin");
     const { app } = createTestApp(env);
     state.lockBusy = true;
@@ -2425,8 +2452,8 @@ describe("音声キーのテナント分離と競合 (#237)", () => {
     const res = await patch(token, { question: "2 回目" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { audio: { regenerated: string[] } };
-    expect(body.audio.regenerated).toEqual(["101:question"]);
+    const body = (await res.json()) as { audio: { regenerated: boolean } };
+    expect(body.audio.regenerated).toBe(true);
     expect(state.locks.size).toBe(0);
   });
 

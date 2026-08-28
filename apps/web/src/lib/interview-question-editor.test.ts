@@ -17,9 +17,6 @@ const row: StaffInterviewQuestion = {
   keywords: null,
   intent: "基礎",
   answer_template: "共通の型",
-  deep1: "直近の案件は？ → 規模と役割を先に言う",
-  deep2: null,
-  deep3: null,
   ng: null,
   criteria: null,
   is_reverse: false,
@@ -35,7 +32,7 @@ const draftOf = (over: Partial<InterviewQuestionDraft> = {}): InterviewQuestionD
 describe("toDraft", () => {
   it("null の項目は空文字にする (入力欄に null を入れない)", () => {
     const draft = toDraft(row);
-    expect(draft.deep2).toBe("");
+    expect(draft.ng).toBe("");
     expect(draft.question).toBe("自己紹介をお願いします");
   });
 
@@ -77,6 +74,6 @@ describe("diffPatch", () => {
   });
 
   it("空にした項目は空文字で送る (サーバ側で null に正規化される)", () => {
-    expect(diffPatch(row, draftOf({ deep1: "" }))).toEqual({ deep1: "" });
+    expect(diffPatch(row, draftOf({ answer_template: "" }))).toEqual({ answer_template: "" });
   });
 });

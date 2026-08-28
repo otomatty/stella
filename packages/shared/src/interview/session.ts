@@ -1,37 +1,9 @@
 /**
  * 面談対策 — 音声セッション (対話ログ UI) の純ロジック (Issue #234)。
  *
- * 1 問のやり取りは「面接官ターン (質問 → 深掘り①〜③)」の連なりで、 受講者は各ターンに
- * 録音で答える。 質問文は既定で非表示 (耳だけモード) なので、 テキストは振り返り用。
+ * 1 問は「面接官が質問を読み上げる → 受講者が録音で答える」の一往復。 質問文は既定で
+ * 非表示 (耳だけモード) なので、 テキストは振り返り用。
  */
-
-import { type InterviewAudioPart, splitDeepDive } from "./audio.js";
-
-export interface SessionTurn {
-  part: InterviewAudioPart;
-  /** 面接官が読み上げる一言。 */
-  ask: string;
-  /** 深掘りに付いている受講者向けの対策メモ (振り返りで出す)。 */
-  hint: string | null;
-}
-
-/** 質問 → 深掘り①〜③ のターン列。 本文が空の深掘りは飛ばす。 */
-export function buildSessionTurns(q: {
-  question: string;
-  deep1?: string | null;
-  deep2?: string | null;
-  deep3?: string | null;
-}): SessionTurn[] {
-  const turns: SessionTurn[] = [{ part: "question", ask: q.question, hint: null }];
-  for (const part of ["deep1", "deep2", "deep3"] as const) {
-    const raw = q[part];
-    if (!raw) continue;
-    const { ask, hint } = splitDeepDive(raw);
-    if (ask === "") continue;
-    turns.push({ part, ask, hint });
-  }
-  return turns;
-}
 
 /**
  * 目安時間 (`time`) を秒に直す。 "30秒" / "30〜45秒" / "1分30秒" などを受け、
@@ -63,13 +35,4 @@ export function timerTone(elapsedSec: number, limitSec: number | null): TimerTon
 export function formatElapsed(sec: number): string {
   const safe = Math.max(0, Math.floor(sec));
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
-}
-
-/**
- * 次の面接官ターン。 最後まで答え終えたら null (= 振り返りへ)。
- * パス (スキップ) も「答えた」と同じ扱いで次の深掘りへ進む。
- */
-export function nextTurnIndex(turns: readonly SessionTurn[], current: number): number | null {
-  const next = current + 1;
-  return next < turns.length ? next : null;
 }

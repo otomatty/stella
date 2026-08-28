@@ -5,9 +5,11 @@
  * 積み上がるスレッドにする。 1 問のやり取りは
  *   聞く (質問音声を自動再生。 質問文は既定で非表示 = 耳だけモード)
  *   → 答える (録音 + 経過タイマー。 目安時間を超えると色が変わる)
- *   → 深掘り①〜③ が音声で続く
  *   → 振り返り (自分の回答と 型 / NG / 評価軸 を並べ、 改善点メモを書く + 自己評価)
  * の順に進む。 マイクを使えない環境向けにサイレントモード (録音を省いて回答例を読む) を残す。
+ *
+ * 一問一答。 かつては深掘り①〜③が音声で続いたが、 受講者の回答に応答しない固定の
+ * 追い質問は面談の再現になっていなかったため廃止した。
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,8 +18,6 @@ import { Check, Loader2, Mic, Play, Plus, Square, Volume2 } from "@/lib/icons";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
-import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
-import { interviewAudioSegmentId } from "@falcon/shared/interview/audio";
 import {
   FIX_NOTE_CHIPS,
   type FixNote,
@@ -30,13 +30,7 @@ import {
   practiceSetProgress,
   remainingPracticeQuestions,
 } from "@falcon/shared/interview/practice-set";
-import {
-  type SessionTurn,
-  buildSessionTurns,
-  formatElapsed,
-  parseTimeLimitSec,
-  timerTone,
-} from "@falcon/shared/interview/session";
+import { formatElapsed, parseTimeLimitSec, timerTone } from "@falcon/shared/interview/session";
 import {
   addFixNote,
   fetchQuestionAudio,
@@ -47,8 +41,8 @@ import {
 } from "@/lib/interview-prep-api";
 import { cn } from "@/lib/utils";
 
-/** セグメントごとの objectURL キャッシュ (同じ音声を何度も取り直さない)。 */
-const ttsUrlCache = new Map<string, string>();
+/** 質問ごとの objectURL キャッシュ (同じ音声を何度も取り直さない)。 */
+const ttsUrlCache = new Map<number, string>();
 
 function shuffle(nos: number[]): number[] {
   const a = [...nos];
@@ -63,21 +57,13 @@ function shuffle(nos: number[]): number[] {
   return a;
 }
 
-/** 1 ターン分の自分の回答 (録音 + 文字起こし。 パスした場合は passed)。 */
+/** 自分の回答 (録音 + 文字起こし。 パスした場合は passed)。 */
 interface AnswerLog {
-  part: InterviewAudioPart;
   transcript: string | null;
   recordingUrl: string | null;
   elapsedSec: number;
   passed: boolean;
 }
-
-const DEEP_LABELS: Record<InterviewAudioPart, string> = {
-  question: "質問",
-  deep1: "深掘り①",
-  deep2: "深掘り②",
-  deep3: "深掘り③",
-};
 
 /**
  * 「今日の練習セット」(Issue #235) の実行コンテキスト。 渡されると出題は
@@ -99,7 +85,7 @@ export interface VoiceSessionSet {
 
 export function InterviewVoiceSession({
   pool,
-  audioSegments,
+  audioNos,
   backendEnabled,
   canRecordProgress,
   practiceSet,
@@ -107,8 +93,8 @@ export function InterviewVoiceSession({
   onFixNoteChange,
 }: {
   pool: LearnerInterviewQuestion[];
-  /** 音声が登録済みのセグメント (`12:deep1`)。 */
-  audioSegments: string[];
+  /** 音声が登録済みの質問番号。 */
+  audioNos: number[];
   backendEnabled: boolean;
   /** 自己評価・改善点メモを保存できるか (staff の受講者プレビューでは false)。 */
   canRecordProgress: boolean;
@@ -174,7 +160,7 @@ export function InterviewVoiceSession({
     setRound((r) => r + 1);
   }, [poolKey, setId]);
 
-  const audioSet = useMemo(() => new Set(audioSegments), [audioSegments]);
+  const audioSet = useMemo(() => new Set(audioNos), [audioNos]);
   const cur = pool.find((d) => d.no === order[qi % Math.max(order.length, 1)]);
   if (!cur) return null;
 
@@ -324,7 +310,7 @@ export function InterviewVoiceSession({
 }
 
 /**
- * 1 問のやり取り。 面接官ターン (質問 → 深掘り) を 1 つずつ進め、 終わったら振り返りへ。
+ * 1 問のやり取り。 質問を読み上げ → 受講者が答える → 振り返り、 の一往復。
  * `key={q.no}` で質問ごとに状態を捨てる (録音・再生の後始末は unmount で行う)。
  */
 function QuestionExchange({
@@ -339,7 +325,7 @@ function QuestionExchange({
   onFinish,
 }: {
   q: LearnerInterviewQuestion;
-  audioSet: Set<string>;
+  audioSet: Set<number>;
   backendEnabled: boolean;
   canRecordProgress: boolean;
   showText: boolean;
@@ -349,21 +335,15 @@ function QuestionExchange({
   /** 自己評価まで終えて次の質問へ。 event が null なら進捗は記録しない。 */
   onFinish: (event: ProgressEvent | null) => void;
 }) {
-  const turns = useMemo(() => buildSessionTurns(q), [q]);
   const limitSec = useMemo(() => parseTimeLimitSec(q.time), [q.time]);
 
-  const [turnIndex, setTurnIndex] = useState(0);
-  const [logs, setLogs] = useState<AnswerLog[]>([]);
+  const [log, setLog] = useState<AnswerLog | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [recState, setRecState] = useState<"idle" | "recording" | "transcribing">("idle");
-  /**
-   * 経過時間。 どのターンのものかを一緒に持ち、 表示は現在のターンのぶんだけに絞る —
-   * 遅れて届いた文字起こしでターンが進んだ後も、 前のターンの秒数が残らないようにする。
-   */
-  const [elapsed, setElapsed] = useState<{ turn: number; sec: number }>({ turn: 0, sec: 0 });
+  const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [playingPart, setPlayingPart] = useState<InterviewAudioPart | null>(null);
-  const [loadingPart, setLoadingPart] = useState<InterviewAudioPart | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
   /** 自動再生が拒否された (ブラウザのポリシー)。 バブルに手動再生を促す。 */
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   /** マイク取得中 (許可ダイアログ表示中を含む)。 ボタンを塞いで二重取得を防ぐ。 */
@@ -381,11 +361,11 @@ function QuestionExchange({
    */
   const aliveRef = useRef(true);
   /**
-   * 表示中のターン。 マイク許可のダイアログ中にパスされたかを、 解決後の
+   * 振り返りへ入ったか。 マイク許可のダイアログ中にパスされたかを、 解決後の
    * `startRecording` から見るために持つ (state はその時点の値に固定されている)。
    */
-  const turnIndexRef = useRef(turnIndex);
-  turnIndexRef.current = turnIndex;
+  const reviewingRef = useRef(reviewing);
+  reviewingRef.current = reviewing;
   /**
    * 録音時間を数えるインターバル。 パス・アンマウントは `onstop` を外してから
    * 止めるので、 停止処理はここから直接消す (onstop 任せだと回り続ける)。
@@ -400,15 +380,13 @@ function QuestionExchange({
   const playRequestRef = useRef(0);
   /**
    * マイク取得の世代番号。 パスやサイレント切替で録音を捨てるたびに進めて、 許可待ちの
-   * 取得も無効化する。 ターン番号だけでは最終ターンのパス (振り返りへ入るので turnIndex が
-   * 変わらない) を弾けず、 振り返り画面の裏で録音が始まってしまう。
+   * 取得も無効化する。 これが無いと、 振り返り画面の裏で録音が始まってしまう。
    */
   const acquireRequestRef = useRef(0);
   /** サイレントモードへ切り替わったかを非同期処理から見るための最新値。 */
   const silentRef = useRef(silent);
   silentRef.current = silent;
 
-  const currentTurn: SessionTurn | undefined = turns[turnIndex];
   const unresolved = useMemo(() => unresolvedFixNotes(q.fix_notes ?? []), [q.fix_notes]);
 
   // アンマウント時: 再生・録音を止めてマイクと objectURL を解放する。
@@ -434,79 +412,73 @@ function QuestionExchange({
   // 経過タイマー (録音中のみ)。
   useEffect(() => {
     if (recState !== "recording") return;
-    const t = setInterval(() => setElapsed((e) => ({ turn: e.turn, sec: e.sec + 1 })), 1000);
+    const t = setInterval(() => setElapsed((sec) => sec + 1), 1000);
     return () => clearInterval(t);
   }, [recState]);
 
   /**
-   * 鳴っている読み上げを止め、 取得中のものも無効化する。 回答を始める・ターンを
-   * 進める・振り返りへ入る、 のいずれでも呼ぶ — 進行中の取得を放置すると、
-   * 後から解決した音声が録音や次のターンに重なって鳴ってしまう。
+   * 鳴っている読み上げを止め、 取得中のものも無効化する。 回答を始める・振り返りへ
+   * 入る、 のいずれでも呼ぶ — 進行中の取得を放置すると、 後から解決した音声が
+   * 録音に重なって鳴ってしまう。
    */
   const stopPlayback = useCallback(() => {
     playRequestRef.current++;
     audioRef.current?.pause();
     audioRef.current = null;
-    setPlayingPart(null);
-    setLoadingPart(null);
+    setPlaying(false);
+    setLoadingAudio(false);
   }, []);
 
-  const playPart = useCallback(
-    async (part: InterviewAudioPart) => {
-      if (!backendEnabled) return;
-      // 音声が無いセグメントでも、 先に前の再生を止めてから抜ける。
-      stopPlayback();
-      if (!audioSet.has(interviewAudioSegmentId(q.no, part))) return;
-      /**
-       * 取得は非同期なので、 回線が遅いと「深掘りへ進む → 前のターンの音声が後から
-       * 解決して鳴る」が起こる。 aliveRef は質問の切り替え (unmount) しか見ないため、
-       * 同じ質問の中のターン移動はこの世代番号で弾く (最新の 1 本だけ再生する)。
-       */
-      const request = playRequestRef.current;
-      const isStale = () => !aliveRef.current || playRequestRef.current !== request;
-      try {
-        const id = interviewAudioSegmentId(q.no, part);
-        let url = ttsUrlCache.get(id);
-        if (!url) {
-          setLoadingPart(part);
-          const blob = await fetchQuestionAudio(q.no, part);
-          url = URL.createObjectURL(blob);
-          ttsUrlCache.set(id, url);
-        }
-        if (isStale()) return;
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => setPlayingPart((p) => (p === part ? null : p));
-        await audio.play();
-        if (isStale()) {
-          audio.pause();
-          return;
-        }
-        setPlayingPart(part);
-        setAutoplayBlocked(false);
-      } catch {
-        if (isStale()) return;
-        setPlayingPart(null);
-        // 自動再生が拒否される環境 (ユーザー操作なしの再生をブロックするブラウザ) が
-        // あるので、 バブルに「音声を再生」を出して手動で始められるようにする。
-        setAutoplayBlocked(true);
-      } finally {
-        if (!isStale()) setLoadingPart(null);
+  const playQuestion = useCallback(async () => {
+    if (!backendEnabled) return;
+    // 音声が無い質問でも、 先に前の再生を止めてから抜ける。
+    stopPlayback();
+    if (!audioSet.has(q.no)) return;
+    /**
+     * 取得は非同期なので、 回線が遅いと「答え始めた後に音声が解決して鳴る」が起こる。
+     * aliveRef は質問の切り替え (unmount) しか見ないため、 同じ質問の中の進行は
+     * この世代番号で弾く (最新の 1 本だけ再生する)。
+     */
+    const request = playRequestRef.current;
+    const isStale = () => !aliveRef.current || playRequestRef.current !== request;
+    try {
+      let url = ttsUrlCache.get(q.no);
+      if (!url) {
+        setLoadingAudio(true);
+        const blob = await fetchQuestionAudio(q.no);
+        url = URL.createObjectURL(blob);
+        ttsUrlCache.set(q.no, url);
       }
-    },
-    [audioSet, backendEnabled, q.no, stopPlayback],
-  );
+      if (isStale()) return;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => setPlaying(false);
+      await audio.play();
+      if (isStale()) {
+        audio.pause();
+        return;
+      }
+      setPlaying(true);
+      setAutoplayBlocked(false);
+    } catch {
+      if (isStale()) return;
+      setPlaying(false);
+      // 自動再生が拒否される環境 (ユーザー操作なしの再生をブロックするブラウザ) が
+      // あるので、 バブルに「音声を再生」を出して手動で始められるようにする。
+      setAutoplayBlocked(true);
+    } finally {
+      if (!isStale()) setLoadingAudio(false);
+    }
+  }, [audioSet, backendEnabled, q.no, stopPlayback]);
 
-  // 面接官ターンが進むたびに質問音声を自動再生する (サイレントモードでは鳴らさない)。
+  // 質問に入ったら読み上げを自動再生する (サイレントモードでは鳴らさない)。
   useEffect(() => {
-    const turn = turns[turnIndex];
-    // 振り返りへ入った・サイレントへ切り替えた・ターンが尽きた場合は鳴らさず止める。
-    if (silent || reviewing || !turn) {
+    if (silent || reviewing) {
       stopPlayback();
       return;
     }
-    void playPart(turn.part);
-  }, [turnIndex, turns, silent, reviewing, playPart, stopPlayback]);
+    void playQuestion();
+  }, [silent, reviewing, playQuestion, stopPlayback]);
 
   /**
    * サイレントモードへ切り替えたら、 鳴っている読み上げを止めて録音も破棄する。
@@ -519,30 +491,21 @@ function QuestionExchange({
     cancelRecording();
   }, [silent]);
 
-  /**
-   * 回答 1 件を積んで次のターンへ (最後まで来たら振り返りへ)。 `fromIndex` は回答した
-   * ターン — 文字起こしは数秒遅れて解決するため、 その間にパスして先へ進んでいることが
-   * ある。 進み方を単調 (Math.max) にして、 遅れて届いた結果でターンが巻き戻らないようにする。
-   */
-  const pushAnswer = (log: AnswerLog, fromIndex: number) => {
-    setLogs((ls) => [...ls.filter((l) => l.part !== log.part), log]);
-    if (fromIndex + 1 < turns.length) setTurnIndex((i) => Math.max(i, fromIndex + 1));
-    else setReviewing(true);
+  /** 回答を記録して振り返りへ。 */
+  const pushAnswer = (answer: AnswerLog) => {
+    setLog(answer);
+    setReviewing(true);
   };
 
-  const finishRecording = async (
-    rec: MediaRecorder,
-    turn: SessionTurn,
-    turnIndexAtStart: number,
-    seconds: number,
-  ) => {
+  const finishRecording = async (rec: MediaRecorder, seconds: number) => {
     for (const track of rec.stream.getTracks()) track.stop();
     if (!aliveRef.current) return;
     /**
-     * 文字起こしを待つ間にパスして次のターンの録音を始められる。 その場合この完了処理は
-     * 「もう現役ではない」レコーダーのもので、 録音状態を書き換えると走っている録音の
-     * 停止ボタンが消えてしまう。 回答ログは (単調な進み方で) 積んでよいが、
-     * 状態の更新は自分がまだ現役のときだけにする。
+     * 文字起こしを待つ間にパスできる (停止 → 文字起こし中もパスボタンは押せる)。
+     * パスは `cancelRecording` で `recorderRef` を空にするので、 その後に解決した
+     * この完了処理は「もう現役ではない」レコーダーのものになる。 その場合は
+     * 状態も回答ログも触らない —— 受講者が選んだ「パス」を、 遅れて届いた録音回答で
+     * 後から覆さないため。 サイレントモードへの切替で捨てた録音も同じ。
      */
     const isCurrentRecorder = () => recorderRef.current === rec;
     const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
@@ -561,34 +524,22 @@ function QuestionExchange({
       const r = await transcribeRecording(q.no, blob);
       transcript = r.transcript || "（無音、または聞き取れませんでした）";
     } catch (e) {
-      // 文字起こしに失敗しても録音自体は聞き直せる。 パスして次のターンへ移った後の
-      // 失敗は、 いま答えているターンの話ではないので画面には出さない (回答ログには
+      // 文字起こしに失敗しても録音自体は聞き直せる。 パスして先へ移った後の失敗は、
+      // いま答えている質問の話ではないので画面には出さない (回答ログには
       // 文字起こしなしとして残る)。
       if (aliveRef.current && isCurrentRecorder()) {
         setError(e instanceof Error ? e.message : "文字起こしに失敗しました");
       }
     }
     if (!aliveRef.current) return;
-    if (isCurrentRecorder()) {
-      recorderRef.current = null;
-      setRecState("idle");
-    }
-    pushAnswer(
-      {
-        part: turn.part,
-        transcript,
-        recordingUrl: url,
-        elapsedSec: seconds,
-        passed: false,
-      },
-      turnIndexAtStart,
-    );
+    // 現役でなくなっていたら、 ここまでの結果は捨てる (録音 URL は unmount で解放する)。
+    if (!isCurrentRecorder()) return;
+    recorderRef.current = null;
+    setRecState("idle");
+    pushAnswer({ transcript, recordingUrl: url, elapsedSec: seconds, passed: false });
   };
 
   const startRecording = async () => {
-    const turn = currentTurn;
-    if (!turn) return;
-    const turnIndexAtStart = turnIndex;
     // マイク許可のダイアログ中は recState が idle のままなので、 連打すると
     // getUserMedia が複数走って recorderRef が上書きされ、 先に立ち上がった
     // レコーダーを止める手段が無くなる。 取得中はここで弾く (ボタンも disabled)。
@@ -607,13 +558,12 @@ function QuestionExchange({
       // 許可のダイアログ中に質問が変わると、 クリーンアップは recorderRef が空のまま
       // 走り終えている。 ここで弾かないとマイクを掴んだまま録音が始まってしまう。
       // 同じ理由でパス・サイレントモードへの切替も弾く — 進んだ後に始まった録音は、
-      // 答え終えたはずのターンの回答として積まれ、 サイレント中や振り返り中は停止ボタンも
-      // 出ないまま録音が続いてしまう。 世代番号はパス (最終ターンの場合を含む) を、
-      // ターン番号は取りこぼしを二重に見る。 マイクは finally で解放する。
+      // 振り返り画面の裏で停止ボタンも出ないまま続いてしまう。 世代番号はパスを、
+      // 振り返りフラグは取りこぼしを二重に見る。 マイクは finally で解放する。
       if (
         !aliveRef.current ||
         acquireRequestRef.current !== acquireRequest ||
-        turnIndexRef.current !== turnIndexAtStart ||
+        reviewingRef.current ||
         silentRef.current
       ) {
         return;
@@ -635,12 +585,12 @@ function QuestionExchange({
       };
       rec.onstop = () => {
         clearTicker();
-        void finishRecording(rec, turn, turnIndexAtStart, seconds);
+        void finishRecording(rec, seconds);
       };
       rec.start();
       // ここから先はレコーダー側 (停止・アンマウント) がストリームを解放する。
       pending = undefined;
-      setElapsed({ turn: turnIndexAtStart, sec: 0 });
+      setElapsed(0);
       setRecState("recording");
     } catch {
       if (aliveRef.current) {
@@ -681,51 +631,30 @@ function QuestionExchange({
     setRecState("idle");
   };
 
-  const passTurn = () => {
-    const turn = currentTurn;
-    if (!turn) return;
+  const passQuestion = () => {
     stopPlayback();
     cancelRecording();
-    pushAnswer(
-      {
-        part: turn.part,
-        transcript: null,
-        recordingUrl: null,
-        elapsedSec: 0,
-        passed: true,
-      },
-      turnIndex,
-    );
+    pushAnswer({ transcript: null, recordingUrl: null, elapsedSec: 0, passed: true });
   };
 
-  // 表示するのは現在のターンで計った秒数だけ (別ターンのものは 0 = 未計測)。
-  const shownSec = elapsed.turn === turnIndex ? elapsed.sec : 0;
-  const tone = timerTone(shownSec, limitSec);
-  const logByPart = new Map(logs.map((l) => [l.part, l]));
+  const tone = timerTone(elapsed, limitSec);
 
   return (
     <div className="flex flex-col gap-3 p-4">
-      {/* 対話ログ: 面接官バブルと自分のバブルが交互に積み上がる */}
+      {/* 対話ログ: 面接官バブル → 自分のバブル */}
       <div className="flex flex-col gap-2.5">
-        {turns.slice(0, turnIndex + 1).map((turn, i) => (
-          <div key={turn.part} className="flex flex-col gap-2.5">
-            <InterviewerBubble
-              label={DEEP_LABELS[turn.part]}
-              text={turn.ask}
-              showText={showText || silent}
-              playing={playingPart === turn.part}
-              loading={loadingPart === turn.part}
-              hasAudio={backendEnabled && audioSet.has(interviewAudioSegmentId(q.no, turn.part))}
-              autoplayBlocked={autoplayBlocked}
-              onPlay={() => void playPart(turn.part)}
-              onRevealText={onRevealText}
-              isCurrent={!reviewing && i === turnIndex}
-            />
-            {logByPart.has(turn.part) ? (
-              <SelfBubble log={logByPart.get(turn.part) as AnswerLog} />
-            ) : null}
-          </div>
-        ))}
+        <InterviewerBubble
+          text={q.question}
+          showText={showText || silent}
+          playing={playing}
+          loading={loadingAudio}
+          hasAudio={backendEnabled && audioSet.has(q.no)}
+          autoplayBlocked={autoplayBlocked}
+          onPlay={() => void playQuestion()}
+          onRevealText={onRevealText}
+          isCurrent={!reviewing}
+        />
+        {log ? <SelfBubble log={log} /> : null}
       </div>
 
       {error ? <p className="text-[12px] text-destructive">{error}</p> : null}
@@ -733,7 +662,7 @@ function QuestionExchange({
       {!reviewing ? (
         <>
           {/* 答える直前に前回の改善点メモを 1 行で出す (= 改善ループ) */}
-          {unresolved.length > 0 && turnIndex === 0 ? (
+          {unresolved.length > 0 ? (
             <p className="text-[12px] text-warning bg-warning/10 rounded-sm px-3 py-2">
               前回の改善点: {unresolved.map((n) => n.text).join(" ・ ")}
             </p>
@@ -745,16 +674,12 @@ function QuestionExchange({
                 type="button"
                 className="inline-flex items-center justify-center gap-1.5 h-11 px-6 rounded-full sf-gradient-bg text-white text-[13.5px] font-bold cursor-pointer hover:brightness-105"
                 onClick={() =>
-                  pushAnswer(
-                    {
-                      part: currentTurn?.part ?? "question",
-                      transcript: null,
-                      recordingUrl: null,
-                      elapsedSec: 0,
-                      passed: false,
-                    },
-                    turnIndex,
-                  )
+                  pushAnswer({
+                    transcript: null,
+                    recordingUrl: null,
+                    elapsedSec: 0,
+                    passed: false,
+                  })
                 }
               >
                 声に出して答えた — 次へ
@@ -803,7 +728,7 @@ function QuestionExchange({
                       : "text-ink-3",
                 )}
               >
-                {formatElapsed(shownSec)}
+                {formatElapsed(elapsed)}
               </span>
               {limitSec ? (
                 <span className="text-[11.5px] text-ink-4">
@@ -814,9 +739,9 @@ function QuestionExchange({
               <button
                 type="button"
                 className="ml-auto text-[12px] text-ink-3 underline underline-offset-2 cursor-pointer"
-                onClick={passTurn}
+                onClick={passQuestion}
               >
-                このターンをパス
+                この質問をパス
               </button>
             </div>
           )}
@@ -824,8 +749,7 @@ function QuestionExchange({
       ) : (
         <ExchangeReview
           q={q}
-          turns={turns}
-          logs={logs}
+          log={log}
           canRecordProgress={canRecordProgress}
           onFixNoteChange={onFixNoteChange}
           onFinish={onFinish}
@@ -836,7 +760,6 @@ function QuestionExchange({
 }
 
 function InterviewerBubble({
-  label,
   text,
   showText,
   playing,
@@ -847,7 +770,6 @@ function InterviewerBubble({
   onPlay,
   onRevealText,
 }: {
-  label: string;
   text: string;
   showText: boolean;
   playing: boolean;
@@ -872,7 +794,7 @@ function InterviewerBubble({
       >
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-4">
-            {label}
+            質問
           </span>
           {hasAudio ? (
             <button
@@ -959,21 +881,18 @@ function SelfBubble({ log }: { log: AnswerLog }) {
 /** 振り返り: 自分の回答と 型 / NG / 評価軸 を並べ、 改善点メモと自己評価を記録する。 */
 function ExchangeReview({
   q,
-  turns,
-  logs,
+  log,
   canRecordProgress,
   onFixNoteChange,
   onFinish,
 }: {
   q: LearnerInterviewQuestion;
-  turns: SessionTurn[];
-  logs: AnswerLog[];
+  log: AnswerLog | null;
   canRecordProgress: boolean;
   onFixNoteChange: (note: FixNote) => void;
   onFinish: (event: ProgressEvent | null) => void;
 }) {
   const template = q.personal_answer_template ?? q.answer_template ?? null;
-  const logByPart = new Map(logs.map((l) => [l.part, l]));
 
   return (
     <div className="flex flex-col gap-4 border-t border-border pt-4">
@@ -981,28 +900,18 @@ function ExchangeReview({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-3">
           <div className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-4">
-            Your Answers ・ 自分の回答
+            Your Answer ・ 自分の回答
           </div>
-          {turns.map((turn) => {
-            const log = logByPart.get(turn.part);
-            return (
-              <div key={turn.part} className="flex flex-col gap-1">
-                <span className="text-[12px] font-medium">
-                  {DEEP_LABELS[turn.part]}: {turn.ask}
-                </span>
-                {log?.recordingUrl ? (
-                  // biome-ignore lint/a11y/useMediaCaption: 受講者自身の練習録音で、 内容は直下に文字起こしとして表示している
-                  <audio src={log.recordingUrl} controls className="h-8 w-full max-w-xs" />
-                ) : null}
-                <p className="text-[12.5px] text-ink-2 leading-relaxed whitespace-pre-wrap">
-                  {log?.passed ? "パス" : (log?.transcript ?? "（録音・文字起こしなし）")}
-                </p>
-                {turn.hint ? (
-                  <p className="text-[11.5px] text-ink-4 leading-relaxed">ヒント: {turn.hint}</p>
-                ) : null}
-              </div>
-            );
-          })}
+          <div className="flex flex-col gap-1">
+            <span className="text-[12px] font-medium">{q.question}</span>
+            {log?.recordingUrl ? (
+              // biome-ignore lint/a11y/useMediaCaption: 受講者自身の練習録音で、 内容は直下に文字起こしとして表示している
+              <audio src={log.recordingUrl} controls className="h-8 w-full max-w-xs" />
+            ) : null}
+            <p className="text-[12.5px] text-ink-2 leading-relaxed whitespace-pre-wrap">
+              {log?.passed ? "パス" : (log?.transcript ?? "（録音・文字起こしなし）")}
+            </p>
+          </div>
         </div>
         <div className="flex flex-col gap-3">
           {template ? <ReviewBlock label="Answer ・ 回答の型">{template}</ReviewBlock> : null}

@@ -273,7 +273,6 @@ export function InterviewPrepPage({
   const [rows, setRows] = useState<LearnerInterviewQuestion[]>([]);
   const [assigned, setAssigned] = useState<string[]>([]);
   const [audioNos, setAudioNos] = useState<number[]>([]);
-  const [audioSegments, setAudioSegments] = useState<string[]>([]);
   const [interviewDate, setInterviewDate] = useState<string | null>(null);
   const [interviewNote, setInterviewNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
@@ -360,7 +359,6 @@ export function InterviewPrepPage({
         seedConfirmed(r.rows);
         setAssigned(r.assignedCategories);
         setAudioNos(r.audioNos);
-        setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
         setActiveSet(r.activeSet ?? null);
@@ -390,7 +388,6 @@ export function InterviewPrepPage({
         seedConfirmed(r.rows);
         setAssigned(r.assignedCategories);
         setAudioNos(r.audioNos);
-        setAudioSegments(r.audioSegments);
         setInterviewDate(r.interviewDate ?? null);
         setInterviewNote(r.note ?? null);
         setActiveSet(r.activeSet ?? null);
@@ -893,7 +890,7 @@ export function InterviewPrepPage({
         practiceSet && setPool.length > 0 ? (
           <InterviewVoiceSession
             pool={setPool}
-            audioSegments={audioSegments}
+            audioNos={audioNos}
             backendEnabled={backendEnabled}
             canRecordProgress={canRecordProgress}
             practiceSet={{
@@ -942,7 +939,7 @@ export function InterviewPrepPage({
       ) : (
         <InterviewVoiceSession
           pool={pool}
-          audioSegments={audioSegments}
+          audioNos={audioNos}
           backendEnabled={backendEnabled}
           canRecordProgress={canRecordProgress}
           onProgress={reportProgress}
@@ -1018,7 +1015,7 @@ function FreqBadge({ freq }: { freq: "A" | "B" | "C" }) {
 
 /**
  * 準備ホームのチェックリスト: サブカテゴリごとにグループ化し、 質問ごとの
- * ステータスとグループの進捗を出す。 行を開くと 意図 → 回答の型 → 深掘り → NG → 評価軸。
+ * ステータスとグループの進捗を出す。 行を開くと 意図 → 触れたい要素 → 回答の型 → NG → 評価軸。
  * 未着手の質問を開いたら「型を読んだ」を記録する。
  */
 function PrepChecklist({
@@ -1172,8 +1169,6 @@ function QuestionDetail({
   onRefresh: () => void;
   onFixNoteChange: (note: FixNote) => void;
 }) {
-  const deeps = [d.deep1, d.deep2, d.deep3].filter((v): v is string => Boolean(v));
-  const [shownDeeps, setShownDeeps] = useState<Record<number, boolean>>({});
   const displayTemplate = d.personal_answer_template ?? d.answer_template ?? null;
   const canEditPersonal = backendEnabled && profileId && d.freq === "A" && !d.is_reverse;
   const [editing, setEditing] = useState(false);
@@ -1206,6 +1201,8 @@ function QuestionDetail({
   return (
     <div className="border-t border-border p-3.5 flex flex-col gap-3 bg-sunken/40">
       {d.intent ? <DetailBlock label="Intent ・ 質問の意図">{d.intent}</DetailBlock> : null}
+      {/* 質問文は面談どおり短くしてあるので、 触れてほしい具体はここに出す。 */}
+      {d.keywords ? <DetailBlock label="Keywords ・ 触れたい要素">{d.keywords}</DetailBlock> : null}
       {d.is_reverse ? (
         <p className="text-[12px] text-ink-3">
           これはあなたが面談官に「聞く」質問です。回答準備ではなく、質問文自体を覚えておきましょう。
@@ -1281,24 +1278,6 @@ function QuestionDetail({
                 この案を採用する
               </button>
             ) : null}
-          </div>
-        </DetailBlock>
-      ) : null}
-      {!d.is_reverse && deeps.length > 0 ? (
-        <DetailBlock label="Follow-up ・ 深掘り対応（答えてから開く）">
-          <div className="flex flex-col gap-1.5">
-            {deeps.map((t, i) => (
-              <div key={t}>
-                <button
-                  type="button"
-                  className="text-[12px] text-brand underline underline-offset-2 cursor-pointer"
-                  onClick={() => setShownDeeps((s) => ({ ...s, [i]: !s[i] }))}
-                >
-                  深掘り{"①②③"[i]} {shownDeeps[i] ? "を閉じる" : "を見る"}
-                </button>
-                {shownDeeps[i] ? <p className="mt-1">{t}</p> : null}
-              </div>
-            ))}
           </div>
         </DetailBlock>
       ) : null}

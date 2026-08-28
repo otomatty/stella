@@ -6,7 +6,6 @@
 
 import type { ProfileRole } from "@falcon/shared/cms/types";
 import type { InterviewQuestion } from "@falcon/shared/interview/types";
-import type { InterviewAudioPart } from "@falcon/shared/interview/audio";
 import type { InterviewQuestionPatch } from "@falcon/shared/interview/edit";
 import type { FixNote } from "@falcon/shared/interview/fix-notes";
 import { type MonitoringSummary, sortByInterviewDate } from "@falcon/shared/interview/monitoring";
@@ -131,13 +130,11 @@ export interface InterviewQuestionsResult {
   assignedCategories: string[];
   /** 読み上げ音声が登録済みの質問番号 (admin が事前生成)。 */
   audioNos: number[];
-  /** 音声が登録済みのセグメント (`12:question` / `12:deep1`)。 深掘りを含む。 */
-  audioSegments: string[];
   /**
-   * 登録済みだが本文と食い違うセグメント (Issue #237)。 質問文を直したあと
-   * 読み上げの作り直しに失敗した場合などに入る。 audioSegments の部分集合。
+   * 登録済みだが質問文と食い違う音声の質問番号 (Issue #237)。 質問文を直したあと
+   * 読み上げの作り直しに失敗した場合などに入る。
    */
-  audioStaleSegments: string[];
+  audioStaleNos: number[];
   /** 面談予定日 (参考情報)。未設定なら null。 */
   interviewDate?: string | null;
   note?: string | null;
@@ -153,8 +150,7 @@ export async function fetchInterviewQuestions(
   return {
     ...r,
     audioNos: r.audioNos ?? [],
-    audioSegments: r.audioSegments ?? [],
-    audioStaleSegments: r.audioStaleSegments ?? [],
+    audioStaleNos: r.audioStaleNos ?? [],
   };
 }
 
@@ -170,11 +166,12 @@ export type StaffInterviewQuestion = InterviewQuestion & {
 };
 
 /** 質問編集で音声に何が起きたか (`syncQuestionAudio` の戻り)。 */
+/** 編集を保存したとき、 その質問の読み上げ音声に何が起きたか。 */
 export interface QuestionAudioSync {
-  regenerated: string[];
-  removed: string[];
-  /** 本文は変わったが作り直せなかったセグメント。 管理画面から手で生成できる。 */
-  stale: string[];
+  /** 新しい質問文で作り直せた。 */
+  regenerated: boolean;
+  /** 質問文は変わったが音声が追いついていない。 管理画面から手で生成できる。 */
+  stale: boolean;
   reason: string | null;
 }
 
@@ -186,7 +183,7 @@ export interface UpdateQuestionResult {
 }
 
 /**
- * admin / sales: 想定質問 1 件を編集する。 読み上げテキストが変わったセグメントは
+ * admin / sales: 想定質問 1 件を編集する。 質問文が変わっていれば読み上げ音声は
  * サーバ側で作り直され、 結果が `audio` に入る (呼び出し側で生成し直す必要はない)。
  */
 export async function updateInterviewQuestion(
@@ -214,13 +211,9 @@ export async function releaseInterviewQuestionEdit(no: number): Promise<string |
   return r.release_requested_at ?? null;
 }
 
-/** 読み上げ音声 (MP3)。 深掘りは part で指定する。 未登録は 404 → ApiClientError。 */
-export async function fetchQuestionAudio(
-  no: number,
-  part: InterviewAudioPart = "question",
-): Promise<Blob> {
-  const query = part === "question" ? "" : `?part=${part}`;
-  const res = await apiFetchRaw(`/api/interview-prep/questions/${no}/audio${query}`);
+/** 読み上げ音声 (MP3)。 1 質問 1 音声。 未登録は 404 → ApiClientError。 */
+export async function fetchQuestionAudio(no: number): Promise<Blob> {
+  const res = await apiFetchRaw(`/api/interview-prep/questions/${no}/audio`);
   return res.blob();
 }
 
@@ -257,34 +250,26 @@ export async function transcribeRecording(no: number, audio: Blob): Promise<Tran
   return (await res.json()) as TranscribeResult;
 }
 
-export interface AudioSegmentRef {
-  no: number;
-  part: InterviewAudioPart;
-}
-
 export interface GenerateAudioResult {
-  results: Array<{ no: number; part: InterviewAudioPart; ok: boolean; error?: string }>;
+  results: Array<{ no: number; ok: boolean; error?: string }>;
 }
 
 /** 生成 API の失敗行を管理画面のトースト / コンソール向けに整形する。 */
 export function formatAudioGenerateErrors(results: GenerateAudioResult["results"]): string {
   return results
     .filter((r) => !r.ok)
-    .map((r) => `No.${r.no} (${r.part}): ${r.error?.trim() || "不明なエラー"}`)
+    .map((r) => `No.${r.no}: ${r.error?.trim() || "不明なエラー"}`)
     .join("\n");
 }
 
-/**
- * admin: 指定セグメント (質問文 + 深掘り①〜③) の読み上げ音声を生成 (再生成は上書き)。
- * 1 回最大 10 セグメント。
- */
+/** admin: 指定した質問の読み上げ音声を生成 (再生成は上書き)。 1 回最大 10 問。 */
 export async function generateQuestionAudio(
-  segments: AudioSegmentRef[],
+  nos: number[],
   model?: string,
 ): Promise<GenerateAudioResult> {
   return apiFetch<GenerateAudioResult>("/api/interview-prep/audio/generate", {
     method: "POST",
-    body: { segments, ...(model ? { model } : {}) },
+    body: { nos, ...(model ? { model } : {}) },
   });
 }
 

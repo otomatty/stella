@@ -1132,6 +1132,12 @@ export const interviewQuestions = sqliteTable(
     keywords: text("keywords"),
     intent: text("intent"),
     answerTemplate: text("answer_template"),
+    /**
+     * 深掘り①〜③ — **廃止済み** (一問一答化)。 誰も読み書きせず、 seed は常に null を
+     * 書く。 列を落とすのは次の deploy で行う: deploy は migrate → deploy:api → seed の
+     * 順なので、 読まなくなるのと同じ deploy で drop すると、 旧 Worker がまだ動いている
+     * 間に消えた列を select する窓ができる (2 段階の列削除)。
+     */
     deep1: text("deep1"),
     deep2: text("deep2"),
     deep3: text("deep3"),

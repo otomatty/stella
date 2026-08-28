@@ -16,22 +16,16 @@ import type { InterviewQuestion } from "@falcon/shared/interview/types";
 import { visibleQuestions } from "@falcon/shared/interview/filter";
 import {
   INTERVIEW_AUDIO_TEXT_HASH_KEY,
-  type InterviewAudioPart,
-  type InterviewAudioSegment,
   interviewAudioObjectName,
-  interviewAudioSegmentId,
-  interviewAudioSegments,
   interviewAudioTextHash,
-  isInterviewAudioPart,
   isInterviewAudioStale,
   isInterviewTtsModelId,
   parseInterviewAudioObjectName,
-  parseInterviewAudioSegmentId,
 } from "@falcon/shared/interview/audio";
 import {
   InterviewQuestionPatchError,
   type InterviewQuestionPatch,
-  changedAudioParts,
+  questionAudioChanged,
   normalizeInterviewQuestionPatch,
 } from "@falcon/shared/interview/edit";
 import {
@@ -113,9 +107,6 @@ const Q_SELECT = {
   keywords: interviewQuestions.keywords,
   intent: interviewQuestions.intent,
   answer_template: interviewQuestions.answerTemplate,
-  deep1: interviewQuestions.deep1,
-  deep2: interviewQuestions.deep2,
-  deep3: interviewQuestions.deep3,
   ng: interviewQuestions.ng,
   criteria: interviewQuestions.criteria,
   is_reverse: interviewQuestions.isReverse,
@@ -136,11 +127,11 @@ const TTS_PREFIX = "interview-tts";
 /**
  * 質問ロックの保持時間。 **中で走る処理の所要時間より長いこと** が直列化の前提。
  *
- * 1 つのロックの中を一番長く走るのは質問編集で、 質問文 + 深掘り①〜③ の最大 4
- * セグメントを順に合成する。 合成 1 回は `AI_REQUEST_TIMEOUT_MS` で頭打ちなので、
- * その 4 回ぶんに R2 の書き込みを足しても収まる長さを取る。
+ * 1 つのロックの中を一番長く走るのは質問編集で、 質問文の合成 1 回 + R2 の書き込み。
+ * 合成は `AI_REQUEST_TIMEOUT_MS` で頭打ちなので、 その 2 回ぶんの余裕を取る
+ * (再試行や R2 の遅れを吸収する厚み)。
  */
-const QUESTION_LOCK_TTL_MS = 4 * AI_REQUEST_TIMEOUT_MS + 30_000;
+const QUESTION_LOCK_TTL_MS = 2 * AI_REQUEST_TIMEOUT_MS + 30_000;
 
 /** 1 リクエストで生成できる質問数の上限 (TTS 呼び出しの直列実行時間を抑える)。 */
 const TTS_BATCH_LIMIT = 10;
@@ -148,8 +139,8 @@ const TTS_BATCH_LIMIT = 10;
 /** 練習録音の受け付け上限。 webm/opus なら 10 分超に相当し、 base64 化しても Workers の制限内。 */
 const MAX_RECORDING_BYTES = 8 * 1024 * 1024;
 
-function ttsKey(tenantId: string, no: number, part: InterviewAudioPart = "question"): string {
-  return `${TTS_PREFIX}/${tenantId}/${interviewAudioObjectName(no, part)}`;
+function ttsKey(tenantId: string, no: number): string {
+  return `${TTS_PREFIX}/${tenantId}/${interviewAudioObjectName(no)}`;
 }
 
 /**
@@ -161,19 +152,20 @@ function ttsKey(tenantId: string, no: number, part: InterviewAudioPart = "questi
  * 編集済みの質問だけ旧キーを見ないようにして (文面が変わっている可能性がある)、
  * 書き込み・削除は常にテナント別キーに対してのみ行う (共有物を壊さない)。
  */
-function legacyTtsKey(no: number, part: InterviewAudioPart = "question"): string {
-  return `${TTS_PREFIX}/${interviewAudioObjectName(no, part)}`;
+function legacyTtsKey(no: number): string {
+  return `${TTS_PREFIX}/${interviewAudioObjectName(no)}`;
 }
 
-/** R2 キー → テナント (旧キーは null) + 質問番号 + パート。 */
-function parseTtsObjectKey(
-  key: string,
-): { tenantId: string | null; no: number; part: InterviewAudioPart } | null {
+/**
+ * R2 キー → テナント (旧キーは null) + 質問番号。
+ * 深掘り時代の `<no>-deep1.mp3` は `parseInterviewAudioObjectName` が弾くので null。
+ */
+function parseTtsObjectKey(key: string): { tenantId: string | null; no: number } | null {
   const rest = key.slice(TTS_PREFIX.length + 1);
   const slash = rest.lastIndexOf("/");
-  const parsed = parseInterviewAudioObjectName(slash < 0 ? rest : rest.slice(slash + 1));
-  if (!parsed) return null;
-  return { tenantId: slash < 0 ? null : rest.slice(0, slash), ...parsed };
+  const no = parseInterviewAudioObjectName(slash < 0 ? rest : rest.slice(slash + 1));
+  if (no === null) return null;
+  return { tenantId: slash < 0 ? null : rest.slice(0, slash), no };
 }
 
 /**
@@ -214,59 +206,42 @@ async function listAudioObjects(
 }
 
 export interface AudioInventory {
-  /** 質問文の音声がある質問番号 (既存クライアント互換)。 */
+  /** 音声が登録済みの質問番号。 */
   audioNos: number[];
-  /** 登録済みの全セグメント (`12:question` / `12:deep1`)。 */
-  audioSegments: string[];
-  /** 登録時の本文と今の本文が食い違うセグメント (= 作り直しが要るもの)。 */
-  audioStaleSegments: string[];
+  /** 登録時の本文と今の質問文が食い違う質問番号 (= 作り直しが要るもの)。 */
+  audioStaleNos: number[];
 }
 
-const EMPTY_AUDIO_INVENTORY: AudioInventory = {
-  audioNos: [],
-  audioSegments: [],
-  audioStaleSegments: [],
-};
+const EMPTY_AUDIO_INVENTORY: AudioInventory = { audioNos: [], audioStaleNos: [] };
 
 /**
- * R2 上に音声が登録済みのセグメントを列挙する (質問一覧・管理画面の表示用)。
+ * R2 上に音声が登録済みの質問を列挙する (質問一覧・管理画面の表示用)。
  * 音声は任意の付加機能なので、 R2 の一時障害で質問一覧そのものを落とさない
  * (失敗時は空 = 再生ボタンを出さないだけ)。
  *
  * 併せて **古い音声** も割り出す。 生成時に読み上げテキストの指紋を
- * customMetadata へ載せてあるので、 今の本文の指紋と突き合わせれば
- * 「質問文が変わったのに音声が付いてこられていない」セグメントが分かる。
- * 指紋を持たない音声 (この仕組みより前の生成) は古い扱いにしない。
+ * customMetadata へ載せてあるので、 今の質問文の指紋と突き合わせれば
+ * 「質問文が変わったのに音声が付いてこられていない」質問が分かる。
+ * 指紋を持たない音声 (想定質問を短い口語へ書き換えるより前の生成) も古い扱いにする。
  */
-async function listAudioSegments(
+async function listQuestionAudio(
   bucket: R2Bucket | undefined,
   tenantId: string,
-  questions: readonly {
-    no: number;
-    question: string;
-    deep1?: string | null;
-    deep2?: string | null;
-    deep3?: string | null;
-  }[] = [],
+  questions: readonly { no: number; question: string }[] = [],
   /** このテナントが手で直した質問番号。 旧共通キーの音声を信用しない印。 */
   editedNos: ReadonlySet<number> = new Set(),
 ): Promise<AudioInventory> {
   if (!bucket) return EMPTY_AUDIO_INVENTORY;
-  /** セグメント ID → 今の読み上げテキスト。 */
-  const textById = new Map<string, string>();
-  for (const q of questions) {
-    for (const seg of interviewAudioSegments(q)) {
-      textById.set(interviewAudioSegmentId(seg.no, seg.part), seg.text);
-    }
-  }
+  /** 質問番号 → 今の読み上げテキスト。 */
+  const textByNo = new Map(questions.map((q) => [q.no, q.question]));
   try {
-    /** セグメント ID → 音声の指紋。 */
+    /** 質問番号 → 音声の指紋。 */
     const toMap = (objects: Array<{ key: string; hash: string | undefined }>) => {
-      const map = new Map<string, string | undefined>();
+      const map = new Map<number, string | undefined>();
       for (const obj of objects) {
         const parsed = parseTtsObjectKey(obj.key);
         if (!parsed) continue;
-        map.set(interviewAudioSegmentId(parsed.no, parsed.part), obj.hash);
+        map.set(parsed.no, obj.hash);
       }
       return map;
     };
@@ -276,43 +251,27 @@ async function listAudioSegments(
     // 旧共通キーは `interview-tts/` の直下だけ。 delimiter で他テナントの配下へ降りない。
     const legacy = toMap(await listAudioObjects(bucket, `${TTS_PREFIX}/`, "/"));
 
-    /** その音声が今の本文と食い違っていないか。 */
-    const fresh = (id: string, hash: string | undefined): boolean => {
-      const text = textById.get(id);
-      return text !== undefined && !isInterviewAudioStale(hash, text);
-    };
-
+    // 旧共通キーの音声は指紋を持たないので必ず「古い」判定になる (想定質問を短い
+    // 口語へ書き換えた時点で、 どれも書き換え前の読み上げだと分かっている)。 受講者へ
+    // は渡らないが、 テナント別がまだ無い質問では「R2 に旧い読み上げが在る」ことを
+    // staff に見せる —— 試聴してから作り直せるようにするため。
     const effective = new Map(own);
-    for (const [id, hash] of legacy) {
-      const parsed = parseInterviewAudioSegmentId(id);
-      // 編集済みの質問は旧共通キーを使わない。 その音声は編集前の文面かもしれず、
-      // 共有物なので消すこともできない (他テナントがまだ正しく使っている)。
-      if (parsed && editedNos.has(parsed.no)) continue;
-      // テナント別の音声が正 —— ただしそれが今の本文と食い違っていて、 正本の
-      // 読み上げの方が合っているなら、 そちらを使う。 「編集 → 音声を作り直し →
-      // 正本へ戻す → seed で本文が戻る」と、 テナント側の音声だけが編集後の文面の
-      // まま残る。 そこで正本の音声を無視すると、 手元に正しい読み上げがあるのに
-      // 受講者へは何も渡らず、 作り直しの費用まで掛かる。
-      if (effective.has(id) && (fresh(id, effective.get(id)) || !fresh(id, hash))) continue;
-      effective.set(id, hash);
+    for (const [no, hash] of legacy) {
+      // 編集済みの質問は旧共通キーを見ない。 その音声は編集前の文面かもしれず、
+      // 共有物なので消すこともできない (他テナントがまだ持っている)。
+      if (editedNos.has(no) || effective.has(no)) continue;
+      effective.set(no, hash);
     }
 
     const nos: number[] = [];
-    const segments: string[] = [];
-    const stale: string[] = [];
-    for (const [id, hash] of effective) {
-      const parsed = parseInterviewAudioSegmentId(id);
-      if (!parsed) continue;
-      if (parsed.part === "question") nos.push(parsed.no);
-      segments.push(id);
-      const text = textById.get(id);
-      if (text !== undefined && isInterviewAudioStale(hash, text)) stale.push(id);
+    const stale: number[] = [];
+    for (const [no, hash] of effective) {
+      nos.push(no);
+      const text = textByNo.get(no);
+      if (text !== undefined && isInterviewAudioStale(hash, text)) stale.push(no);
     }
-    return {
-      audioNos: nos.sort((a, b) => a - b),
-      audioSegments: segments.sort(),
-      audioStaleSegments: stale.sort(),
-    };
+    const asc = (a: number, b: number) => a - b;
+    return { audioNos: nos.sort(asc), audioStaleNos: stale.sort(asc) };
   } catch (e) {
     console.error("[interview-prep] failed to list question audio; serving without it", e);
     return EMPTY_AUDIO_INVENTORY;
@@ -320,7 +279,7 @@ async function listAudioSegments(
 }
 
 /**
- * 1 セグメントを読み上げて R2 へ登録する。 読み上げたテキストの指紋を
+ * 1 問を読み上げて R2 へ登録する。 読み上げたテキストの指紋を
  * customMetadata に残すのが要点で、 これが無いと後から
  * 「この音声はどの文面で作ったのか」が分からず古さを判定できない。
  */
@@ -329,7 +288,6 @@ async function putQuestionAudio(
   bucket: R2Bucket,
   tenantId: string,
   no: number,
-  part: InterviewAudioPart,
   text: string,
   includeUpstreamBody = false,
   modelId?: string,
@@ -341,7 +299,7 @@ async function putQuestionAudio(
     includeUpstreamBody,
     modelId,
   );
-  await bucket.put(ttsKey(tenantId, no, part), bytes, {
+  await bucket.put(ttsKey(tenantId, no), bytes, {
     httpMetadata: { contentType: "audio/mpeg" },
     customMetadata: { [INTERVIEW_AUDIO_TEXT_HASH_KEY]: interviewAudioTextHash(text) },
   });
@@ -356,20 +314,11 @@ async function putQuestionAudio(
  * 試聴 → 再生成の導線に載せる。
  */
 function learnerAudioInventory(inv: AudioInventory): AudioInventory {
-  if (inv.audioStaleSegments.length === 0) return inv;
-  const stale = new Set(inv.audioStaleSegments);
-  const staleNos = new Set(
-    inv.audioStaleSegments
-      .map((id) => parseInterviewAudioSegmentId(id))
-      .filter(
-        (p): p is { no: number; part: InterviewAudioPart } => p !== null && p.part === "question",
-      )
-      .map((p) => p.no),
-  );
+  if (inv.audioStaleNos.length === 0) return inv;
+  const stale = new Set(inv.audioStaleNos);
   return {
-    audioNos: inv.audioNos.filter((no) => !staleNos.has(no)),
-    audioSegments: inv.audioSegments.filter((id) => !stale.has(id)),
-    audioStaleSegments: inv.audioStaleSegments,
+    audioNos: inv.audioNos.filter((no) => !stale.has(no)),
+    audioStaleNos: inv.audioStaleNos,
   };
 }
 
@@ -661,11 +610,11 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       .orderBy(asc(interviewQuestions.no));
 
     const profileIdParam = c.req.query("profileId")?.trim() || null;
-    // 読み上げ音声が登録済みのセグメント。 UI はこれに含まれるものだけ再生する。
-    // 本文が変わったのに音声が追いついていないものは audioStaleSegments に出る。
+    // 読み上げ音声が登録済みの質問。 UI はこれに含まれるものだけ再生する。
+    // 本文が変わったのに音声が追いついていないものは audioStaleNos に出る。
     // 編集済みの質問は旧共通キーの音声を信用しない (編集前の文面かもしれない)。
     const editedNos = await loadEditedQuestionNos(db, caller.tenantId);
-    const { audioNos, audioSegments, audioStaleSegments } = await listAudioSegments(
+    const { audioNos, audioStaleNos } = await listQuestionAudio(
       c.env.MATERIALS_BUCKET,
       caller.tenantId,
       rows,
@@ -704,8 +653,8 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
          */
         const inventory =
           profileIdParam === caller.id && canPracticeInterviewPrep(caller.role)
-            ? learnerAudioInventory({ audioNos, audioSegments, audioStaleSegments })
-            : { audioNos, audioSegments, audioStaleSegments };
+            ? learnerAudioInventory({ audioNos, audioStaleNos })
+            : { audioNos, audioStaleNos };
         return c.json({
           rows: await attachFixNotes(
             db,
@@ -723,8 +672,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
           note: assigned[0]?.note ?? null,
           profileId: profileIdParam,
           audioNos: inventory.audioNos,
-          audioSegments: inventory.audioSegments,
-          audioStaleSegments: inventory.audioStaleSegments,
+          audioStaleNos: inventory.audioStaleNos,
           activeSet: summarizeActiveSet(
             await loadActivePracticeSet(db, caller.tenantId, profileIdParam),
           ),
@@ -734,8 +682,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
         rows: await attachEditMarks(db, caller.tenantId, mapStaffQuestionRows(rows)),
         assignedCategories: [...ASSIGNABLE_CATEGORIES],
         audioNos,
-        audioSegments,
-        audioStaleSegments,
+        audioStaleNos,
       });
     }
 
@@ -743,7 +690,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       throw new ApiError("権限がありません", 403);
     }
     // 受講者には本文と食い違う音声を渡さない (古い読み上げで練習させない)。
-    const learnerAudio = learnerAudioInventory({ audioNos, audioSegments, audioStaleSegments });
+    const learnerAudio = learnerAudioInventory({ audioNos, audioStaleNos });
     const assigned = await db
       .select({
         categories: interviewPrepAssignments.categories,
@@ -781,8 +728,7 @@ interviewPrepRoute.get("/api/interview-prep/questions", async (c) => {
       interviewDate: assigned[0]?.interviewDate ?? null,
       note: assigned[0]?.note ?? null,
       audioNos: learnerAudio.audioNos,
-      audioSegments: learnerAudio.audioSegments,
-      audioStaleSegments: learnerAudio.audioStaleSegments,
+      audioStaleNos: learnerAudio.audioStaleNos,
       // 中断したセットがあれば準備ホームに「途中のセットを再開」を出す (Issue #235)。
       activeSet: summarizeActiveSet(await loadActivePracticeSet(db, caller.tenantId, caller.id)),
     });
@@ -1063,47 +1009,18 @@ interviewPrepRoute.post(
 );
 
 /**
- * 生成対象セグメントの解釈。 `nos` は質問文のみ、 `segments` は深掘りを含む指定。
- * 重複は畳んで、 合計が TTS_BATCH_LIMIT を超えたら 400 (直列生成の実行時間を抑える)。
+ * 生成対象の質問番号の解釈。 重複は畳んで、 合計が TTS_BATCH_LIMIT を超えたら 400
+ * (直列生成の実行時間を抑える)。
  */
-function parseAudioGenerateTargets(body: {
-  nos?: unknown;
-  segments?: unknown;
-}): Array<{ no: number; part: InterviewAudioPart }> {
-  const targets: Array<{ no: number; part: InterviewAudioPart }> = [];
-  const seen = new Set<string>();
-  const push = (no: number, part: InterviewAudioPart) => {
-    const id = interviewAudioSegmentId(no, part);
-    if (seen.has(id)) return;
-    seen.add(id);
-    targets.push({ no, part });
-  };
-
-  if (body.nos !== undefined) {
-    if (
-      !Array.isArray(body.nos) ||
-      !body.nos.every((n): n is number => Number.isInteger(n) && (n as number) > 0)
-    ) {
-      throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
-    }
-    for (const no of body.nos) push(no, "question");
-  }
-  if (body.segments !== undefined) {
-    if (!Array.isArray(body.segments)) {
-      throw new ApiError("segments は { no, part } の配列で指定してください", 400);
-    }
-    for (const raw of body.segments) {
-      const seg = raw as { no?: unknown; part?: unknown };
-      if (!Number.isInteger(seg.no) || (seg.no as number) <= 0 || !isInterviewAudioPart(seg.part)) {
-        throw new ApiError("segments は { no, part } の配列で指定してください", 400);
-      }
-      push(seg.no as number, seg.part);
-    }
-  }
-
-  if (targets.length === 0) {
+function parseAudioGenerateTargets(body: { nos?: unknown }): number[] {
+  if (
+    !Array.isArray(body.nos) ||
+    body.nos.length === 0 ||
+    !body.nos.every((n): n is number => Number.isInteger(n) && (n as number) > 0)
+  ) {
     throw new ApiError("nos は質問番号 (正の整数) の配列で指定してください", 400);
   }
+  const targets = [...new Set(body.nos)];
   if (targets.length > TTS_BATCH_LIMIT) {
     throw new ApiError(`一度に生成できるのは ${TTS_BATCH_LIMIT} 件までです`, 400);
   }
@@ -1179,7 +1096,6 @@ async function pickQuestionAudio(
   bucket: R2Bucket,
   tenantId: string,
   no: number,
-  part: InterviewAudioPart,
   text: string | undefined,
   edited: boolean,
 ): Promise<{ object: R2ObjectBody | null; fresh: boolean }> {
@@ -1188,10 +1104,10 @@ async function pickQuestionAudio(
     text !== undefined &&
     !isInterviewAudioStale(o.customMetadata?.[INTERVIEW_AUDIO_TEXT_HASH_KEY], text);
 
-  const own = await bucket.get(ttsKey(tenantId, no, part));
+  const own = await bucket.get(ttsKey(tenantId, no));
   if (isFresh(own)) return { object: own, fresh: true };
   // 編集済みの質問では共通キーを見ない (編集前の文面の読み上げかもしれない)。
-  const shared = edited ? null : await bucket.get(legacyTtsKey(no, part));
+  const shared = edited ? null : await bucket.get(legacyTtsKey(no));
   if (isFresh(shared)) return { object: shared, fresh: true };
   return { object: own ?? shared, fresh: false };
 }
@@ -1199,26 +1115,19 @@ async function pickQuestionAudio(
 /**
  * 読み上げ音声 (MP3) の配信。 admin が事前生成して R2 に登録した音声を返すだけで、
  * ここでは AI を呼ばない。 未登録は 404 (UI は再生ボタンを出さない)。
- * `?part=deep1` で深掘り①〜③の音声も同じ経路で配信する (Issue #234)。
  */
 interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
   try {
     const no = parseQuestionNoParam(c.req.param("no"));
-    const partParam = c.req.query("part") ?? "question";
-    if (!isInterviewAudioPart(partParam)) {
-      throw new ApiError("part は question / deep1 / deep2 / deep3 で指定してください", 400);
-    }
     const { caller, question, edited } = await loadVisibleQuestion(c, no);
 
     const bucket = c.env.MATERIALS_BUCKET;
     if (!bucket) throw new ApiError("音声機能は未設定です (R2 バインディングなし)", 503);
-    const text = interviewAudioSegments(question).find((seg) => seg.part === partParam)?.text;
     const { object, fresh } = await pickQuestionAudio(
       bucket,
       caller.tenantId,
       no,
-      partParam,
-      text,
+      question.question,
       edited,
     );
     if (!object) throw new ApiError("この質問の音声は未登録です", 404);
@@ -1243,21 +1152,19 @@ interviewPrepRoute.get("/api/interview-prep/questions/:no/audio", async (c) => {
 });
 
 /**
- * admin: 指定したセグメント (質問文 / 深掘り①〜③) の読み上げ音声を TTS モデル
- * (既定 Grok TTS) で生成し R2 へ登録する。 既存キーは上書き (= 再生成)。
- * コスト管理のため生成はこのエンドポイントに閉じ、 1 回の呼び出しで最大
- * TTS_BATCH_LIMIT セグメントまで直列に処理する。
+ * admin: 指定した質問の読み上げ音声を TTS モデル (既定 Grok TTS) で生成し R2 へ
+ * 登録する。 既存キーは上書き (= 再生成)。 コスト管理のため生成はこのエンドポイントに
+ * 閉じ、 1 回の呼び出しで最大 TTS_BATCH_LIMIT 問まで直列に処理する。
  *
- * body は `{ nos: number[] }` (質問文のみ — 従来の形) と
- * `{ segments: [{ no, part }] }` (深掘りを含む) の両方を受ける。
- * `model` は任意。 grok-tts / openai/tts-1 / openai/tts-1-hd。 未指定は env の既定。
+ * body は `{ nos: number[] }`。 `model` は任意 (grok-tts / openai/tts-1 /
+ * openai/tts-1-hd)。 未指定は env の既定。
  */
 interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "admin", "platform_admin");
 
-    const body = (await c.req.json()) as { nos?: unknown; segments?: unknown; model?: unknown };
+    const body = (await c.req.json()) as { nos?: unknown; model?: unknown };
     const requested = parseAudioGenerateTargets(body);
     const modelId = parseAudioGenerateModel(body.model);
 
@@ -1270,73 +1177,45 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
     const limited = await enforceAiRateLimit(c);
     if (limited) return limited;
 
-    /** 質問番号 → セグメント (質問文 + 本文のある深掘り) の読み上げテキスト。 */
-    const loadTexts = async (): Promise<Map<number, Map<InterviewAudioPart, string>>> => {
+    /** 質問番号 → 読み上げテキスト (= 質問文)。 */
+    const loadTexts = async (): Promise<Map<number, string>> => {
       const questions = await db
-        .select({
-          no: interviewQuestions.no,
-          question: interviewQuestions.question,
-          deep1: interviewQuestions.deep1,
-          deep2: interviewQuestions.deep2,
-          deep3: interviewQuestions.deep3,
-        })
+        .select({ no: interviewQuestions.no, question: interviewQuestions.question })
         .from(interviewQuestions)
         .where(eq(interviewQuestions.tenantId, caller.tenantId));
-      const map = new Map<number, Map<InterviewAudioPart, string>>();
-      for (const q of questions) {
-        const segments: InterviewAudioSegment[] = interviewAudioSegments(q);
-        map.set(q.no, new Map(segments.map((seg) => [seg.part, seg.text])));
-      }
-      return map;
+      return new Map(questions.map((q) => [q.no, q.question]));
     };
     const textByNo = await loadTexts();
 
-    const results: Array<{ no: number; part: InterviewAudioPart; ok: boolean; error?: string }> =
-      [];
-    for (const target of requested) {
-      const text = textByNo.get(target.no)?.get(target.part);
+    const results: Array<{ no: number; ok: boolean; error?: string }> = [];
+    for (const no of requested) {
+      const text = textByNo.get(no);
       if (!text) {
-        results.push({
-          ...target,
-          ok: false,
-          error: target.part === "question" ? "質問が見つかりません" : "この深掘りは空です",
-        });
+        results.push({ no, ok: false, error: "質問が見つかりません" });
         continue;
       }
       try {
         // 質問編集と同じロックを取る。 編集の途中に割り込んで書くと、 本文と音声が
-        // 食い違ったまま残りうる。 取れなければこのセグメントだけ諦める。
+        // 食い違ったまま残りうる。 取れなければこの質問だけ諦める。
         const locked = await withResourceLock(
           db,
-          interviewQuestionLockId(caller.tenantId, target.no),
-          () =>
-            putQuestionAudio(
-              c.env,
-              bucket,
-              caller.tenantId,
-              target.no,
-              target.part,
-              text,
-              true,
-              modelId,
-            ),
+          interviewQuestionLockId(caller.tenantId, no),
+          () => putQuestionAudio(c.env, bucket, caller.tenantId, no, text, true, modelId),
           { ttlMs: QUESTION_LOCK_TTL_MS },
         );
         if (!locked.ran) {
           results.push({
-            ...target,
+            no,
             ok: false,
             error: "この質問は編集中です (しばらくしてから再生成してください)",
           });
           continue;
         }
-        results.push({ ...target, ok: true });
+        results.push({ no, ok: true });
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e);
-        console.error(
-          `[interview-tts] generate failed no=${target.no} part=${target.part}: ${error}`,
-        );
-        results.push({ ...target, ok: false, error });
+        console.error(`[interview-tts] generate failed no=${no}: ${error}`);
+        results.push({ no, ok: false, error });
       }
     }
 
@@ -1348,8 +1227,7 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
         const current = await loadTexts();
         for (const r of results) {
           if (!r.ok) continue;
-          const before = textByNo.get(r.no)?.get(r.part);
-          if (current.get(r.no)?.get(r.part) !== before) {
+          if (current.get(r.no) !== textByNo.get(r.no)) {
             r.ok = false;
             r.error = "生成中に本文が変わりました (作り直してください)";
           }
@@ -1363,7 +1241,7 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
     await recordAudit(db, caller, {
       action: "interview_tts_generate",
       targetType: "interview_question_audio",
-      targetId: requested.map((t) => interviewAudioSegmentId(t.no, t.part)).join(","),
+      targetId: requested.join(","),
       ip: clientIp(c),
       metadata: {
         requested: requested.length,
@@ -1381,22 +1259,22 @@ interviewPrepRoute.post("/api/interview-prep/audio/generate", async (c) => {
 // 質問文の編集 (admin / sales) — Issue #237
 //
 // 直した本文がそのまま読み上げに反映されないと、 画面の質問と音声が食い違ったまま
-// 受講者の練習に出てしまう。 そこで保存の延長で、 読み上げテキストが変わった
-// セグメントだけを作り直す。 音声は付加機能なので、 生成が落ちても保存自体は成功に
-// し、 どのセグメントが古いままかを応答で返して画面に出す。
+// 受講者の練習に出てしまう。 そこで保存の延長で、 質問文が変わったときだけ音声を
+// 作り直す (質問意図や回答の型を直しても読み上げは変わらない)。 音声は付加機能なので、
+// 生成が落ちても保存自体は成功にし、 音声が古いままかどうかを応答で返して画面に出す。
 // ---------------------------------------------------------------------------
 
-/** 編集の結果、 音声に何が起きたか。 */
+/** 編集の結果、 音声に何が起きたか。 1 質問 = 1 音声なので各項目は真偽値。 */
 interface AudioSyncResult {
-  /** 作り直せたセグメント (`12:question`)。 */
-  regenerated: string[];
-  /** 本文が空になったので消したセグメント。 */
-  removed: string[];
-  /** 本文は変わったが作り直せなかったセグメント (未設定・TTS 失敗)。 */
-  stale: string[];
-  /** stale の理由 (画面に出す 1 行)。 stale が空なら null。 */
+  /** 新しい質問文で作り直せた。 */
+  regenerated: boolean;
+  /** 質問文は変わったが音声が追いついていない (未設定・TTS 失敗)。 */
+  stale: boolean;
+  /** stale の理由 (画面に出す 1 行)。 stale でなければ null。 */
   reason: string | null;
 }
+
+const NO_AUDIO_CHANGE: AudioSyncResult = { regenerated: false, stale: false, reason: null };
 
 /**
  * ロックを取れなかったときの報告。 **R2 は読むだけで一切変更しない** のが要点。
@@ -1409,143 +1287,82 @@ async function reportUnsyncedAudio(
   bucket: R2Bucket | undefined,
   tenantId: string,
   no: number,
-  parts: InterviewAudioPart[],
+  changed: boolean,
   reason: string,
 ): Promise<AudioSyncResult> {
-  if (!bucket || parts.length === 0) return NO_AUDIO_CHANGE;
-  const stale: string[] = [];
-  for (const part of parts) {
-    try {
-      // 登録済みのものだけ「古い」と言う (未登録は古いのではなく無いだけ)。
-      if (await bucket.head(ttsKey(tenantId, no, part))) {
-        stale.push(interviewAudioSegmentId(no, part));
-      }
-    } catch (e) {
-      console.error(`[interview-prep] failed to inspect audio ${no}:${part}`, e);
-      stale.push(interviewAudioSegmentId(no, part));
-    }
+  if (!changed) return NO_AUDIO_CHANGE;
+  // R2 が無ければ何も確かめられないが、 本文が変わったのに音声は書けていない。
+  // ロックを取れた側 (`syncQuestionAudio`) と同じく「作り直しが要る」と返す。
+  if (!bucket) {
+    return {
+      regenerated: false,
+      stale: true,
+      reason: "音声の保存先 (R2) が未設定のため、 読み上げ音声は更新していません",
+    };
   }
-  return {
-    regenerated: [],
-    removed: [],
-    stale: stale.sort(),
-    reason: stale.length > 0 ? reason : null,
-  };
+  // 登録済みのものだけ「古い」と言う (未登録は古いのではなく無いだけ)。 旧共通キーも
+  // 見るのが要点 —— この保存で `edited_at` が入り、 その質問はもう旧共通キーの音声を
+  // 使わなくなる。 テナント別だけを見て「追従は不要」と返すと、 受講者に渡せる音声が
+  // 1 つも無くなったことを admin に伝えないまま終わる。
+  const stale = await hasUnsyncedAudio(bucket, tenantId, no);
+  return { regenerated: false, stale, reason: stale ? reason : null };
 }
 
-const NO_AUDIO_CHANGE: AudioSyncResult = {
-  regenerated: [],
-  removed: [],
-  stale: [],
-  reason: null,
-};
-
 /**
- * 作り直せなかったセグメントの後始末。 戻り値でどう報告するかが決まる。
+ * 作り直せなかったときに「音声が古いまま残っているか」を見る。 **消さない**。
  *
- *   - 音声が無い        … `"none"` (古いのではなく未登録。 報告しない)
- *   - 指紋つきの音声    … `"stale"` (今の本文と食い違うと後から分かる。 残す)
- *   - 指紋の無い旧音声  … `"retired"` (**消す**)
- *
- * 最後のケースが要点。 指紋を持たない音声 (この仕組みより前の生成) を残すと、
- * 次の一覧では「古いと分からない = 現行」と判定されてしまい、 古い読み上げが
- * 警告も再生成の導線もないまま再生できてしまう。 判定できないものを黙って
- * 残すより、 消して「未登録」にするほうが安全 (admin が生成し直せる)。
+ * かつてはここで指紋を持たない音声を消していた。 残すと次の一覧で「古いと分からない
+ * = 現行」と判定され、 警告も再生成の導線もないまま古い読み上げが再生できてしまう、
+ * というのが理由だったが、 `isInterviewAudioStale` が指紋の無い音声を古い側へ倒す
+ * ようになったのでその穴は塞がっている。 消す理由が無くなった以上は残す —— staff が
+ * 試聴してから作り直せるし、 共有物 (旧共通キー) を壊す経路も持たなくて済む。
  */
-async function retireUnverifiableAudio(
-  bucket: R2Bucket,
-  tenantId: string,
-  no: number,
-  part: InterviewAudioPart,
-): Promise<"none" | "stale" | "retired"> {
+async function hasUnsyncedAudio(bucket: R2Bucket, tenantId: string, no: number): Promise<boolean> {
   try {
-    const head = await bucket.head(ttsKey(tenantId, no, part));
-    if (head) {
-      if (head.customMetadata?.[INTERVIEW_AUDIO_TEXT_HASH_KEY]) return "stale";
-      await bucket.delete(ttsKey(tenantId, no, part));
-      return "retired";
-    }
-    // テナント別の音声が無いなら、 これまで使っていたのは旧共通キーの音声。
-    // 共有物なので消さず、 編集済み印による除外にまかせる — このテナントから
-    // 見れば「もう使えない」ので retired として報告する。
-    const shared = await bucket.head(legacyTtsKey(no, part));
-    return shared ? "retired" : "none";
+    // テナント別が無ければ、 これまで使っていたのは旧共通キーの音声。 どちらも
+    // 今の本文とは合っていないので、 在るなら「古いまま」として報告する。
+    return (
+      (await bucket.head(ttsKey(tenantId, no))) !== null ||
+      (await bucket.head(legacyTtsKey(no))) !== null
+    );
   } catch (e) {
     // R2 が読めないだけなら、 古いかもしれないものとして報告しておく。
-    console.error(`[interview-prep] failed to retire unverifiable audio ${no}:${part}`, e);
-    return "stale";
+    console.error(`[interview-prep] failed to inspect audio ${no}`, e);
+    return true;
   }
 }
 
 /**
- * 変わったセグメントの音声を作り直し、 消えたセグメントの音声を消す。
+ * 質問文が変わったときに読み上げ音声を作り直す。
  *
- * 生成は 1 件ずつ直列。 1 問あたり最大 4 セグメントなので TTS_BATCH_LIMIT の
- * 制約には収まる。 途中で失敗しても他のセグメントは続け、 失敗したものを
- * stale として返す (画面から手で再生成できる)。
+ * 失敗しても編集そのものは成功にし、 「古いまま」を返して画面から手で再生成できる
+ * ようにする (音声は付加機能)。
  */
 async function syncQuestionAudio(
   env: Env,
   tenantId: string,
   no: number,
-  question: {
-    no: number;
-    question: string;
-    deep1: string | null;
-    deep2: string | null;
-    deep3: string | null;
-  },
-  changed: InterviewAudioPart[],
-  removed: InterviewAudioPart[],
+  text: string,
+  changed: boolean,
   /** 生成を止める理由 (レート制限など)。 null なら生成してよい。 */
   blockedReason: string | null = null,
   /**
-   * 書き込み後に本文を読み直す手段。 合成は数秒かかるので、 その間に別の staff が
+   * 書き込み後に質問文を読み直す手段。 合成は数秒かかるので、 その間に別の staff が
    * 同じ質問を保存していると、 先に確定した本文の上へ後から終わった合成が乗る。
    * 書いたあとに現在の本文と突き合わせて、 追い越されていたら「作り直せた」とは
    * 報告しない (R2 の指紋も現在の本文と食い違うので、 一覧では古い音声として出る)。
    */
-  reloadTexts?: () => Promise<Map<InterviewAudioPart, string>>,
+  reloadText?: () => Promise<string | null>,
 ): Promise<AudioSyncResult> {
-  if (changed.length === 0 && removed.length === 0) return NO_AUDIO_CHANGE;
+  if (!changed) return NO_AUDIO_CHANGE;
 
   const bucket = env.MATERIALS_BUCKET;
   if (!bucket) {
     return {
-      ...NO_AUDIO_CHANGE,
-      stale: changed.map((part) => interviewAudioSegmentId(no, part)),
+      regenerated: false,
+      stale: true,
       reason: "音声の保存先 (R2) が未設定のため、 読み上げ音声は更新していません",
     };
-  }
-
-  // 本文が空になった深掘りの音声は残しても再生されないので消す。 消せなくても
-  // 編集を失敗にはしない (次の孤児掃除・再編集で消える)。
-  const removedIds: string[] = [];
-  if (removed.length > 0) {
-    // 消す直前に本文を読み直す。 こちらが「深掘りを空にする」保存を進めている間に
-    // 別の staff がその深掘りを書き直していると、 新しい本文に対して作られたばかりの
-    // 音声を落としてしまう。 本文が戻っていれば消さない。
-    let current: Map<InterviewAudioPart, string> | null = null;
-    if (reloadTexts) {
-      try {
-        current = await reloadTexts();
-      } catch (e) {
-        console.error(`[interview-prep] failed to re-read texts before delete for ${no}`, e);
-      }
-    }
-    for (const part of removed) {
-      if (current?.has(part)) continue;
-      try {
-        await bucket.delete(ttsKey(tenantId, no, part));
-        removedIds.push(interviewAudioSegmentId(no, part));
-      } catch (e) {
-        console.error(`[interview-prep] failed to delete stale audio ${no}:${part}`, e);
-      }
-    }
-  }
-
-  if (changed.length === 0) {
-    return { ...NO_AUDIO_CHANGE, removed: removedIds };
   }
 
   // 生成できない理由 (レート制限 / 未設定)。 どちらも「編集は残すが音声は追いつけない」
@@ -1556,56 +1373,34 @@ async function syncQuestionAudio(
       ? null
       : "読み上げが未設定のため、 音声は更新できていません (管理画面から生成できます)");
   if (blocked) {
-    const stale: string[] = [];
-    for (const part of changed) {
-      const outcome = await retireUnverifiableAudio(bucket, tenantId, no, part);
-      if (outcome === "stale") stale.push(interviewAudioSegmentId(no, part));
-      if (outcome === "retired") removedIds.push(interviewAudioSegmentId(no, part));
-    }
+    const stale = await hasUnsyncedAudio(bucket, tenantId, no);
+    return { regenerated: false, stale, reason: stale ? blocked : null };
+  }
+
+  try {
+    await putQuestionAudio(env, bucket, tenantId, no, text);
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e);
+    console.error(`[interview-prep] failed to regenerate audio ${no}`, e);
+    // 失敗した以上、 R2 に残っているのは前の本文の読み上げ。 古いと分かる形で
+    // 残るので (指紋の有無によらず古い判定になる)、 消さずに報告だけする。
     return {
-      regenerated: [],
-      removed: removedIds,
-      stale,
-      reason: stale.length > 0 || removedIds.length > 0 ? blocked : null,
+      regenerated: false,
+      stale: await hasUnsyncedAudio(bucket, tenantId, no),
+      reason: `読み上げ音声の更新に失敗しました (${error})`,
     };
   }
 
-  const textByPart = new Map(interviewAudioSegments(question).map((seg) => [seg.part, seg.text]));
-  const regenerated: string[] = [];
-  const stale: string[] = [];
-  let lastError: string | null = null;
-  for (const part of changed) {
-    const text = textByPart.get(part);
-    // 既に登録済みの音声が無いセグメントも作り直す — 編集した本文で初回生成される。
-    if (text === undefined) continue;
-    try {
-      await putQuestionAudio(env, bucket, tenantId, no, part, text);
-      regenerated.push(interviewAudioSegmentId(no, part));
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : String(e);
-      console.error(`[interview-prep] failed to regenerate audio ${no}:${part}`, e);
-      // 失敗した以上、 R2 に残っているのは前の本文の読み上げ。 古いと分かる形で
-      // 残せないものはここで消す (残すと現行として再生できてしまう)。
-      const outcome = await retireUnverifiableAudio(bucket, tenantId, no, part);
-      if (outcome === "stale") stale.push(interviewAudioSegmentId(no, part));
-      if (outcome === "retired") removedIds.push(interviewAudioSegmentId(no, part));
-    }
-  }
-  // 合成中に別の保存が本文を進めていないか確かめる。 追い越されたセグメントは
+  // 合成中に別の保存が本文を進めていないか確かめる。 追い越されていたら
   // 「今の本文の読み上げ」ではないので、 古い音声として扱う。
-  let overtaken = false;
-  if (regenerated.length > 0 && reloadTexts) {
+  if (reloadText) {
     try {
-      const current = await reloadTexts();
-      for (let i = regenerated.length - 1; i >= 0; i--) {
-        const id = regenerated[i] as string;
-        const part = parseInterviewAudioSegmentId(id)?.part;
-        if (!part) continue;
-        if (current.get(part) !== textByPart.get(part)) {
-          regenerated.splice(i, 1);
-          stale.push(id);
-          overtaken = true;
-        }
+      if ((await reloadText()) !== text) {
+        return {
+          regenerated: false,
+          stale: true,
+          reason: "保存中に別の編集が入ったため、 音声は作り直しが必要です",
+        };
       }
     } catch (e) {
       // 確認できないだけなら、 生成そのものは成功しているのでそのまま報告する。
@@ -1613,14 +1408,7 @@ async function syncQuestionAudio(
     }
   }
 
-  const reason = lastError
-    ? `読み上げ音声の更新に失敗しました (${lastError})`
-    : overtaken
-      ? "保存中に別の編集が入ったため、 音声は作り直しが必要です"
-      : stale.length > 0
-        ? "読み上げ音声の更新に失敗しました (原因不明)"
-        : null;
-  return { regenerated, removed: removedIds, stale: stale.sort(), reason };
+  return { regenerated: true, stale: false, reason: null };
 }
 
 /** パッチを適用したあとの質問 (音声の差分計算と応答に使う)。 */
@@ -1644,9 +1432,6 @@ function questionUpdateSet(patch: InterviewQuestionPatch) {
   if (patch.keywords !== undefined) set.keywords = patch.keywords;
   if (patch.intent !== undefined) set.intent = patch.intent;
   if (patch.answer_template !== undefined) set.answerTemplate = patch.answer_template;
-  if (patch.deep1 !== undefined) set.deep1 = patch.deep1;
-  if (patch.deep2 !== undefined) set.deep2 = patch.deep2;
-  if (patch.deep3 !== undefined) set.deep3 = patch.deep3;
   if (patch.ng !== undefined) set.ng = patch.ng;
   if (patch.criteria !== undefined) set.criteria = patch.criteria;
   if (patch.categories !== undefined) set.categories = patch.categories;
@@ -1693,7 +1478,7 @@ interviewPrepRoute.patch("/api/interview-prep/questions/:no", async (c) => {
       lockHeld: boolean,
     ): Promise<{ after: InterviewQuestion; audio: AudioSyncResult }> => {
       const after = applyQuestionPatch(before, patch);
-      const { changed, removed } = changedAudioParts(before, after);
+      const audioChanged = questionAudioChanged(before.question, after.question);
 
       await db
         .update(interviewQuestions)
@@ -1718,7 +1503,7 @@ interviewPrepRoute.patch("/api/interview-prep/questions/:no", async (c) => {
             c.env.MATERIALS_BUCKET,
             caller.tenantId,
             no,
-            [...changed, ...removed],
+            audioChanged,
             "同じ質問への更新が進行中のため、 音声は更新できていません (管理画面から再生成してください)",
           ),
         };
@@ -1728,7 +1513,7 @@ interviewPrepRoute.patch("/api/interview-prep/questions/:no", async (c) => {
       // (質問意図だけ直した保存で枠を減らさない)。 上限に当たっても編集は保存し、
       // 音声は「古いまま」として返す — 編集そのものを 429 で落とさない。
       let blocked: string | null = null;
-      if (changed.length > 0 && workersAiConfigured(c.env)) {
+      if (audioChanged && workersAiConfigured(c.env)) {
         const limited = await enforceAiRateLimit(c);
         if (limited) {
           blocked =
@@ -1740,14 +1525,10 @@ interviewPrepRoute.patch("/api/interview-prep/questions/:no", async (c) => {
         c.env,
         caller.tenantId,
         no,
-        after,
-        changed,
-        removed,
+        after.question,
+        audioChanged,
         blocked,
-        async () => {
-          const row = await loadRow();
-          return new Map(row ? interviewAudioSegments(row).map((seg) => [seg.part, seg.text]) : []);
-        },
+        async () => (await loadRow())?.question ?? null,
       );
       return { after, audio };
     };
@@ -1784,8 +1565,8 @@ interviewPrepRoute.patch("/api/interview-prep/questions/:no", async (c) => {
       ip: clientIp(c),
       metadata: {
         fields: Object.keys(patch),
-        audioRegenerated: audio.regenerated.length,
-        audioStale: audio.stale.length,
+        audioRegenerated: audio.regenerated,
+        audioStale: audio.stale,
       },
     });
 

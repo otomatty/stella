@@ -9,7 +9,6 @@
  * 「長すぎる」「空にした」を保存前に同じ文言で出せるようにここへ置く。
  */
 
-import { type InterviewAudioPart, interviewAudioSegments } from "./audio.js";
 import { COMMON_CATEGORY, isAssignableCategory } from "./types.js";
 
 /** 編集できるテキスト項目。 `no` と作成日時は変えられない (音声キー・履歴の同一性)。 */
@@ -20,9 +19,6 @@ export const INTERVIEW_QUESTION_TEXT_FIELDS = [
   "keywords",
   "intent",
   "answer_template",
-  "deep1",
-  "deep2",
-  "deep3",
   "ng",
   "criteria",
 ] as const;
@@ -43,9 +39,6 @@ export const INTERVIEW_QUESTION_MAX_LENGTH: Record<InterviewQuestionTextField, n
   keywords: 400,
   intent: 800,
   answer_template: 2000,
-  deep1: 600,
-  deep2: 600,
-  deep3: 600,
   ng: 1000,
   criteria: 1000,
 };
@@ -58,9 +51,6 @@ export const INTERVIEW_QUESTION_FIELD_LABELS: Record<InterviewQuestionTextField,
   keywords: "キーワード",
   intent: "質問意図",
   answer_template: "回答の型",
-  deep1: "深掘り①",
-  deep2: "深掘り②",
-  deep3: "深掘り③",
   ng: "避けたい回答",
   criteria: "評価軸",
 };
@@ -73,9 +63,6 @@ export interface InterviewQuestionPatch {
   keywords?: string | null;
   intent?: string | null;
   answer_template?: string | null;
-  deep1?: string | null;
-  deep2?: string | null;
-  deep3?: string | null;
   ng?: string | null;
   criteria?: string | null;
   categories?: string[];
@@ -181,35 +168,13 @@ export function normalizeInterviewQuestionPatch(raw: unknown): InterviewQuestion
   return patch;
 }
 
-interface AudioTextSource {
-  no: number;
-  question: string;
-  deep1?: string | null;
-  deep2?: string | null;
-  deep3?: string | null;
-}
-
 /**
- * 編集の前後で **読み上げテキストが変わった** セグメントを返す。
+ * 編集の前後で **読み上げテキスト (= 質問文) が変わったか**。
  *
- * 本文そのものではなくセグメント (深掘りは「→」の前だけ) で比べるのが要点:
- * 深掘りの後半は受講者向けの対策メモで音声に載らないため、 そこだけ直したときに
- * 音声を作り直すのは無駄なコストになる。 本文が空になったセグメントは
- * 「消すべき音声」として `removed` に入る。
+ * 1 質問 = 1 音声なので判定は質問文の一致だけ。 前後の空白は
+ * `normalizeInterviewQuestionPatch` が落としているので、 見えない差分で
+ * 音声を作り直すことはない。
  */
-export function changedAudioParts(
-  before: AudioTextSource,
-  after: AudioTextSource,
-): { changed: InterviewAudioPart[]; removed: InterviewAudioPart[] } {
-  const beforeText = new Map(interviewAudioSegments(before).map((s) => [s.part, s.text]));
-  const afterText = new Map(interviewAudioSegments(after).map((s) => [s.part, s.text]));
-  const changed: InterviewAudioPart[] = [];
-  const removed: InterviewAudioPart[] = [];
-  for (const [part, text] of afterText) {
-    if (beforeText.get(part) !== text) changed.push(part);
-  }
-  for (const part of beforeText.keys()) {
-    if (!afterText.has(part)) removed.push(part);
-  }
-  return { changed, removed };
+export function questionAudioChanged(before: string, after: string): boolean {
+  return before !== after;
 }

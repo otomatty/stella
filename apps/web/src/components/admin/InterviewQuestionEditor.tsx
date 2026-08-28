@@ -6,8 +6,8 @@
  * 直接直せる (Issue #237)。 直した行には「編集済み」が付き、 配信 (seed) で
  * 正本の文面に巻き戻らなくなる。
  *
- * 読み上げ音声は保存の延長でサーバが作り直す。 作り直せなかったセグメントは
- * 応答の `audio.stale` に入るので、 その場で「音声が古い」と伝えて質問音声タブへ
+ * 読み上げ音声は保存の延長でサーバが作り直す。 作り直せなかったときは応答の
+ * `audio.stale` が立つので、 その場で「音声が古い」と伝えて質問音声タブへ
  * 誘導する (admin だけがそのタブを持つため、 営業には文言だけ出す)。
  */
 
@@ -29,7 +29,6 @@ import {
   InterviewQuestionPatchError,
   normalizeInterviewQuestionPatch,
 } from "@falcon/shared/interview/edit";
-import { interviewAudioSegmentId } from "@falcon/shared/interview/audio";
 import {
   fetchInterviewQuestions,
   releaseInterviewQuestionEdit,
@@ -39,13 +38,10 @@ import {
 import { diffPatch, type InterviewQuestionDraft, toDraft } from "@/lib/interview-question-editor";
 import { cn } from "@/lib/utils";
 
-/** 1 行の入力欄 (質問文と深掘りは複数行、 残りは 1 行)。 */
+/** 複数行で入力する項目 (残りは 1 行)。 */
 const MULTILINE_FIELDS: readonly InterviewQuestionTextField[] = [
   "question",
   "answer_template",
-  "deep1",
-  "deep2",
-  "deep3",
   "ng",
   "criteria",
   "intent",
@@ -58,7 +54,8 @@ type StatusFilter = "all" | "edited";
 
 export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: boolean }) {
   const [rows, setRows] = useState<StaffInterviewQuestion[]>([]);
-  const [staleSegments, setStaleSegments] = useState<Set<string>>(new Set());
+  /** 音声が本文に追いついていない質問番号。 */
+  const [staleNos, setStaleNos] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -73,7 +70,7 @@ export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: bo
       .then((r) => {
         if (cancelled) return;
         setRows(r.rows as StaffInterviewQuestion[]);
-        setStaleSegments(new Set(r.audioStaleSegments));
+        setStaleNos(new Set(r.audioStaleNos));
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -137,17 +134,17 @@ export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: bo
       // 入力は生きているので、 応答で塗り替えると打った文字が黙って消える。 別の
       // 質問を開いていればなおさら (その下書きに前の質問の本文が入ってしまう)。
       // サーバ側の正規化 (前後の空白落とし等) は次の保存で送り直されるだけで済む。
-      setStaleSegments((prev) => {
+      const { regenerated, stale, reason } = result.audio;
+      setStaleNos((prev) => {
         const next = new Set(prev);
-        for (const id of [...result.audio.regenerated, ...result.audio.removed]) next.delete(id);
-        for (const id of result.audio.stale) next.add(id);
+        if (regenerated) next.delete(row.no);
+        if (stale) next.add(row.no);
         return next;
       });
-      const { regenerated, stale, reason } = result.audio;
-      if (stale.length > 0) {
-        toast.error(reason ?? `保存しましたが、 ${stale.length} 件の音声が古いままです`);
-      } else if (regenerated.length > 0) {
-        toast(`保存し、 読み上げ音声 ${regenerated.length} 件を作り直しました`);
+      if (stale) {
+        toast.error(reason ?? "保存しましたが、 読み上げ音声が古いままです");
+      } else if (regenerated) {
+        toast("保存し、 読み上げ音声を作り直しました");
       } else {
         toast("保存しました");
       }
@@ -174,12 +171,6 @@ export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: bo
     }
   };
 
-  /** その質問に古い音声が残っているか (質問文 + 深掘り①〜③)。 */
-  const hasStaleAudio = (no: number): boolean =>
-    (["question", "deep1", "deep2", "deep3"] as const).some((part) =>
-      staleSegments.has(interviewAudioSegmentId(no, part)),
-    );
-
   if (loading) {
     return (
       <Card className="p-6">
@@ -198,7 +189,7 @@ export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: bo
   return (
     <>
       <Card className="p-3 mb-3 border-warning/40 bg-warning/10 text-[12.5px] leading-relaxed">
-        質問文・深掘りを直すと、 <b>読み上げ音声もその場で作り直します</b>{" "}
+        質問文を直すと、 <b>読み上げ音声もその場で作り直します</b>{" "}
         (意図・評価軸など読み上げない項目を直したときは作り直しません)。 編集した質問は
         「編集済み」が付き、 配信のたびに正本の文面へ戻ることはなくなります。
       </Card>
@@ -235,7 +226,7 @@ export function InterviewQuestionEditor({ canManageAudio }: { canManageAudio: bo
         <div className="flex flex-col gap-1.5">
           {visible.map((row) => {
             const expanded = openNo === row.no;
-            const stale = hasStaleAudio(row.no);
+            const stale = staleNos.has(row.no);
             return (
               <Card key={row.no} className={cn("p-3", expanded && "ring-1 ring-brand/30")}>
                 <div className="flex items-center gap-3">

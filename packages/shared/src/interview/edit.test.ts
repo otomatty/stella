@@ -8,17 +8,11 @@ import { interviewAudioTextHash, isInterviewAudioStale } from "./audio";
 import {
   INTERVIEW_QUESTION_MAX_LENGTH,
   InterviewQuestionPatchError,
-  changedAudioParts,
   normalizeInterviewQuestionPatch,
+  questionAudioChanged,
 } from "./edit";
 
-const base = {
-  no: 12,
-  question: "自己紹介をお願いします",
-  deep1: "直近の案件は？ → 規模と役割を先に言う",
-  deep2: "",
-  deep3: null,
-};
+const base = { no: 12, question: "自己紹介をお願いします" };
 
 describe("normalizeInterviewQuestionPatch", () => {
   it("送った項目だけを含む (未指定は触らない)", () => {
@@ -40,7 +34,7 @@ describe("normalizeInterviewQuestionPatch", () => {
   });
 
   it("空にできる項目は null になる (seed と同じ表現)", () => {
-    expect(normalizeInterviewQuestionPatch({ deep1: "" })).toEqual({ deep1: null });
+    expect(normalizeInterviewQuestionPatch({ intent: "" })).toEqual({ intent: null });
   });
 
   it("NOT NULL の小分類だけは空文字のまま", () => {
@@ -82,36 +76,13 @@ describe("normalizeInterviewQuestionPatch", () => {
   });
 });
 
-describe("changedAudioParts", () => {
-  it("質問文を直したら質問の音声だけ作り直す", () => {
-    const { changed, removed } = changedAudioParts(base, { ...base, question: "直した質問" });
-    expect(changed).toEqual(["question"]);
-    expect(removed).toEqual([]);
+describe("questionAudioChanged", () => {
+  it("質問文が変われば音声を作り直す", () => {
+    expect(questionAudioChanged(base.question, "直した質問")).toBe(true);
   });
 
-  it("深掘りの「→」より後 (対策メモ) だけを直しても音声は作り直さない", () => {
-    const after = { ...base, deep1: "直近の案件は？ → メモだけ書き換えた" };
-    expect(changedAudioParts(base, after).changed).toEqual([]);
-  });
-
-  it("深掘りの読み上げ部分が変われば作り直す", () => {
-    const after = { ...base, deep1: "直近の案件を教えてください → 規模と役割を先に言う" };
-    expect(changedAudioParts(base, after).changed).toEqual(["deep1"]);
-  });
-
-  it("深掘りを空にしたら音声は消す対象になる", () => {
-    const { changed, removed } = changedAudioParts(base, { ...base, deep1: "" });
-    expect(changed).toEqual([]);
-    expect(removed).toEqual(["deep1"]);
-  });
-
-  it("深掘りを新しく足したら生成対象になる", () => {
-    const after = { ...base, deep2: "チームの規模は？" };
-    expect(changedAudioParts(base, after).changed).toEqual(["deep2"]);
-  });
-
-  it("読み上げに関係ない項目だけ直しても何も起きない", () => {
-    expect(changedAudioParts(base, { ...base })).toEqual({ changed: [], removed: [] });
+  it("質問文が同じなら作り直さない (意図や評価軸だけの編集)", () => {
+    expect(questionAudioChanged(base.question, base.question)).toBe(false);
   });
 });
 
@@ -124,10 +95,10 @@ describe("音声の古さ判定", () => {
     expect(isInterviewAudioStale(interviewAudioTextHash("こんにちは"), "こんばんは")).toBe(true);
   });
 
-  it("指紋を持たない古い音声は「古い」と決めつけない", () => {
-    expect(isInterviewAudioStale(undefined, "こんにちは")).toBe(false);
-    expect(isInterviewAudioStale(null, "こんにちは")).toBe(false);
-    expect(isInterviewAudioStale("", "こんにちは")).toBe(false);
+  it("指紋を持たない音声は古いとみなす (検証できないものを受講者へ渡さない)", () => {
+    expect(isInterviewAudioStale(undefined, "こんにちは")).toBe(true);
+    expect(isInterviewAudioStale(null, "こんにちは")).toBe(true);
+    expect(isInterviewAudioStale("", "こんにちは")).toBe(true);
   });
 
   it("指紋は環境によらず同じ値になる (16 進 8 桁)", () => {

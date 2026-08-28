@@ -1,21 +1,14 @@
 /**
- * 面談対策 — 読み上げ音声 (TTS) のセグメント定義。
+ * 面談対策 — 読み上げ音声 (TTS) のオブジェクト名と鮮度判定。
  *
  * 音声は admin が事前生成して R2 (`interview-tts/`) に登録し、 受講者への配信は
- * R2 読み出しのみ (AI を呼ばない)。 Issue #234 で対話ログ UI が深掘り①〜③も
- * 音声で流すようになったため、 1 質問あたり最大 4 セグメント (質問 + 深掘り 3) を持つ。
+ * R2 読み出しのみ (AI を呼ばない)。 1 質問 = 1 音声で、 オブジェクト名は `<no>.mp3`。
  *
- * オブジェクト名は質問だけ従来どおり `<no>.mp3` (既存の登録済み音声を活かす)、
- * 深掘りは `<no>-deep1.mp3` のように接尾辞を付ける。
+ * かつては深掘り①〜③も読み上げていたため 1 質問が最大 4 セグメントに割れていたが、
+ * 深掘りは受講者の回答に応答できず面談の再現になっていなかったため廃止した。
+ * 既存の `<no>-deep1.mp3` は参照されない (パースが弾く) —— 消さずに放置しても
+ * 配信・一覧に出てこないだけなので、 掃除は R2 側の運用で行う。
  */
-
-export const INTERVIEW_AUDIO_PARTS = ["question", "deep1", "deep2", "deep3"] as const;
-
-export type InterviewAudioPart = (typeof INTERVIEW_AUDIO_PARTS)[number];
-
-export function isInterviewAudioPart(value: unknown): value is InterviewAudioPart {
-  return typeof value === "string" && (INTERVIEW_AUDIO_PARTS as readonly string[]).includes(value);
-}
 
 /** 質問音声タブから選べる読み上げモデル (生成 API の許可リストと共有)。 */
 export const INTERVIEW_TTS_MODEL_IDS = ["grok-tts", "openai/tts-1", "openai/tts-1-hd"] as const;
@@ -40,76 +33,19 @@ export function isInterviewTtsModelId(value: unknown): value is InterviewTtsMode
 }
 
 /** R2 オブジェクト名 (プレフィックスは含まない)。 */
-export function interviewAudioObjectName(no: number, part: InterviewAudioPart): string {
-  return part === "question" ? `${no}.mp3` : `${no}-${part}.mp3`;
+export function interviewAudioObjectName(no: number): string {
+  return `${no}.mp3`;
 }
 
-/** R2 オブジェクト名 → 質問番号 + パート。 想定外の名前は null (一覧から無視する)。 */
-export function parseInterviewAudioObjectName(
-  name: string,
-): { no: number; part: InterviewAudioPart } | null {
-  const m = /^(\d+)(?:-(deep[123]))?\.mp3$/.exec(name);
+/**
+ * R2 オブジェクト名 → 質問番号。 想定外の名前は null (一覧から無視する)。
+ * 深掘り時代の `<no>-deep1.mp3` もここで落ちる。
+ */
+export function parseInterviewAudioObjectName(name: string): number | null {
+  const m = /^(\d+)\.mp3$/.exec(name);
   if (!m) return null;
   const no = Number.parseInt(m[1] as string, 10);
-  if (!Number.isInteger(no) || no <= 0) return null;
-  const part = (m[2] ?? "question") as InterviewAudioPart;
-  return { no, part };
-}
-
-/** API / UI がやり取りするセグメント識別子 (`12:question` / `12:deep1`)。 */
-export function interviewAudioSegmentId(no: number, part: InterviewAudioPart): string {
-  return `${no}:${part}`;
-}
-
-export function parseInterviewAudioSegmentId(
-  id: string,
-): { no: number; part: InterviewAudioPart } | null {
-  const [left, right] = id.split(":");
-  const no = Number.parseInt(left ?? "", 10);
-  if (!Number.isInteger(no) || no <= 0) return null;
-  if (!isInterviewAudioPart(right)) return null;
-  return { no, part: right };
-}
-
-/**
- * 深掘りの本文は「面接官が聞く一文→受講者向けの対策メモ」という形で入っている。
- * 音声で流すのも対話ログのバブルに出すのも前半だけで、 後半は振り返り用のヒント。
- */
-export function splitDeepDive(text: string): { ask: string; hint: string | null } {
-  const idx = text.indexOf("→");
-  if (idx < 0) return { ask: text.trim(), hint: null };
-  const ask = text.slice(0, idx).trim();
-  const hint = text.slice(idx + 1).trim();
-  return { ask, hint: hint === "" ? null : hint };
-}
-
-export interface InterviewAudioSegment {
-  no: number;
-  part: InterviewAudioPart;
-  /** 読み上げるテキスト (深掘りは「→」の前だけ)。 */
-  text: string;
-}
-
-/**
- * 1 質問の生成対象セグメント。 本文が空の深掘りは対象外 (登録すべき音声が無い)。
- * 逆質問 (受講者から聞く質問) は音声セッションで出題しないので呼び出し側で除く。
- */
-export function interviewAudioSegments(q: {
-  no: number;
-  question: string;
-  deep1?: string | null;
-  deep2?: string | null;
-  deep3?: string | null;
-}): InterviewAudioSegment[] {
-  const segments: InterviewAudioSegment[] = [{ no: q.no, part: "question", text: q.question }];
-  for (const part of ["deep1", "deep2", "deep3"] as const) {
-    const raw = q[part];
-    if (!raw) continue;
-    const { ask } = splitDeepDive(raw);
-    if (ask === "") continue;
-    segments.push({ no: q.no, part, text: ask });
-  }
-  return segments;
+  return Number.isInteger(no) && no > 0 ? no : null;
 }
 
 /**
@@ -135,14 +71,23 @@ export const INTERVIEW_AUDIO_TEXT_HASH_KEY = "textHash";
 /**
  * 登録済み音声が現在の本文より古いか。
  *
- * 指紋を持たない音声 (この仕組みより前に生成されたもの) は **古いと見なさない**。
- * 実際に古いかは分からないので、 全件を「要更新」で塗って再生成を促すより、
- * 変わったと分かっているものだけを挙げるほうが運用の判断を誤らせない。
+ * 指紋を持たない音声 (この仕組みより前に生成されたもの) も **古いとみなす**。
+ *
+ * かつては逆だった —— 実際に古いかは分からないので、 全件を「要更新」で塗るより
+ * 変わったと分かっているものだけを挙げるほうが運用の判断を誤らせない、 という
+ * 判断だった。 その前提は「指紋の無い音声は questions.json の文面そのままで
+ * 作られており、 正本が動いていないなら今も合っている」に乗っていたが、
+ * 想定質問を実面談どおりの短い口語へ書き換えた時点で 197 問すべての正本が動いた。
+ * 指紋が無い = この書き換えより前の生成 = 旧い文面の読み上げ、 と言い切れる。
+ *
+ * 検証できないものを「現行」に倒すと、 画面の質問文と食い違う読み上げが警告も
+ * 再生成の導線もないまま受講者に流れる (この仕組みが防ごうとしているもの)。
+ * 検証できないなら古い側へ倒し、 staff の試聴 → 再生成の導線に載せる。
  */
 export function isInterviewAudioStale(
   storedHash: string | null | undefined,
   currentText: string,
 ): boolean {
-  if (!storedHash) return false;
+  if (!storedHash) return true;
   return storedHash !== interviewAudioTextHash(currentText);
 }

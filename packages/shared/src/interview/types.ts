@@ -20,9 +20,6 @@ export interface InterviewQuestion {
   intent: string | null;
   /** 共通「回答の型」(プレーンテキスト。 Issue #206 で blank span を廃止) */
   answer_template: string | null;
-  deep1: string | null;
-  deep2: string | null;
-  deep3: string | null;
   /** 避けたい回答 */
   ng: string | null;
   /** 評価軸 */

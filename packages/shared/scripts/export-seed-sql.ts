@@ -399,6 +399,11 @@ function emitQuiz(
  * 画面の「正本の管理に戻す」で解除を予約してから seed する。 解除はその場では
  * 本文を戻さない (API は questions.json を持たない) ので、 予約 → この seed が
  * 本文を書き戻すのと同時に編集印も落とす、 という順で辻褄を合わせている。
+ *
+ * `deep1`〜`deep3` は深掘り廃止 (一問一答化) に伴い常に null を書く。 列そのものは
+ * まだ落とさない —— deploy は migrate → deploy:api → seed の順なので、 同じ deploy で
+ * 列を落とすと旧 Worker が消えた列を select する窓ができる。 この deploy で誰も
+ * 読まなくなってから、 次の deploy で drop column する (2 段階の列削除)。
  */
 function emitInterviewQuestions(tenantId: string) {
   const ids: string[] = [];
@@ -409,7 +414,7 @@ function emitInterviewQuestions(tenantId: string) {
     const id = stableUuid(`interview-q:${tenantId}:${q.no}`);
     ids.push(id);
     lines.push(
-      `insert into ${tbl("interview_questions")} (id, tenant_id, no, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, ${opt(q.deep1)}, ${opt(q.deep2)}, ${opt(q.deep3)}, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set categories = excluded.categories, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = excluded.deep1, deep2 = excluded.deep2, deep3 = excluded.deep3, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()}, edited_at = null, edited_by = null, release_requested_at = null where interview_questions.edited_at is null or interview_questions.release_requested_at is not null;`,
+      `insert into ${tbl("interview_questions")} (id, tenant_id, no, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, null, null, null, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set categories = excluded.categories, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = null, deep2 = null, deep3 = null, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()}, edited_at = null, edited_by = null, release_requested_at = null where interview_questions.edited_at is null or interview_questions.release_requested_at is not null;`,
     );
   }
   lines.push(

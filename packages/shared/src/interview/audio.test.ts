@@ -2,98 +2,46 @@ import { describe, expect, it } from "vitest";
 
 import {
   interviewAudioObjectName,
-  interviewAudioSegmentId,
-  interviewAudioSegments,
-  isInterviewAudioPart,
+  interviewAudioTextHash,
+  isInterviewAudioStale,
   parseInterviewAudioObjectName,
-  parseInterviewAudioSegmentId,
-  splitDeepDive,
   isInterviewTtsModelId,
 } from "./audio";
 
 describe("interviewAudioObjectName", () => {
-  it("質問は従来の <no>.mp3 のまま (既存の登録済み音声を活かす)", () => {
-    expect(interviewAudioObjectName(12, "question")).toBe("12.mp3");
-  });
-
-  it("深掘りは接尾辞を付ける", () => {
-    expect(interviewAudioObjectName(12, "deep1")).toBe("12-deep1.mp3");
-    expect(interviewAudioObjectName(12, "deep3")).toBe("12-deep3.mp3");
+  it("1 質問 1 音声で <no>.mp3", () => {
+    expect(interviewAudioObjectName(12)).toBe("12.mp3");
   });
 });
 
 describe("parseInterviewAudioObjectName", () => {
-  it("質問・深掘りの両方を戻せる", () => {
-    expect(parseInterviewAudioObjectName("12.mp3")).toEqual({ no: 12, part: "question" });
-    expect(parseInterviewAudioObjectName("12-deep2.mp3")).toEqual({ no: 12, part: "deep2" });
+  it("質問番号を戻せる", () => {
+    expect(parseInterviewAudioObjectName("12.mp3")).toBe(12);
   });
 
   it("想定外の名前は null", () => {
     expect(parseInterviewAudioObjectName("12.wav")).toBeNull();
     expect(parseInterviewAudioObjectName("abc.mp3")).toBeNull();
     expect(parseInterviewAudioObjectName("0.mp3")).toBeNull();
-    expect(parseInterviewAudioObjectName("12-deep4.mp3")).toBeNull();
-    expect(parseInterviewAudioObjectName("12-question.mp3")).toBeNull();
+  });
+
+  it("深掘り時代のキーは無視する (配信・一覧に出さない)", () => {
+    expect(parseInterviewAudioObjectName("12-deep1.mp3")).toBeNull();
+    expect(parseInterviewAudioObjectName("12-deep3.mp3")).toBeNull();
   });
 });
 
-describe("segment id", () => {
-  it("往復できる", () => {
-    expect(interviewAudioSegmentId(7, "deep1")).toBe("7:deep1");
-    expect(parseInterviewAudioSegmentId("7:deep1")).toEqual({ no: 7, part: "deep1" });
-    expect(parseInterviewAudioSegmentId("7:question")).toEqual({ no: 7, part: "question" });
+describe("isInterviewAudioStale", () => {
+  it("指紋が今の本文と食い違えば古い", () => {
+    const text = "経験年数は？";
+    expect(isInterviewAudioStale(interviewAudioTextHash(text), text)).toBe(false);
+    expect(isInterviewAudioStale(interviewAudioTextHash("別の文面"), text)).toBe(true);
   });
 
-  it("不正な id は null", () => {
-    expect(parseInterviewAudioSegmentId("7")).toBeNull();
-    expect(parseInterviewAudioSegmentId("7:deep9")).toBeNull();
-    expect(parseInterviewAudioSegmentId("x:question")).toBeNull();
-  });
-
-  it("isInterviewAudioPart", () => {
-    expect(isInterviewAudioPart("question")).toBe(true);
-    expect(isInterviewAudioPart("deep3")).toBe(true);
-    expect(isInterviewAudioPart("deep4")).toBe(false);
-    expect(isInterviewAudioPart(1)).toBe(false);
-  });
-});
-
-describe("splitDeepDive", () => {
-  it("「→」の前が面接官の一言、 後ろが受講者向けヒント", () => {
-    expect(splitDeepDive("その比率で何を担当しましたか？→具体を1〜2文で添える。")).toEqual({
-      ask: "その比率で何を担当しましたか？",
-      hint: "具体を1〜2文で添える。",
-    });
-  });
-
-  it("「→」が無ければ全文が質問", () => {
-    expect(splitDeepDive("もう少し詳しく教えてください")).toEqual({
-      ask: "もう少し詳しく教えてください",
-      hint: null,
-    });
-  });
-});
-
-describe("interviewAudioSegments", () => {
-  it("質問 + 本文のある深掘りだけを列挙し、 深掘りは「→」の前を読み上げる", () => {
-    expect(
-      interviewAudioSegments({
-        no: 3,
-        question: "経験年数は？",
-        deep1: "具体的には？→数字を添える",
-        deep2: "",
-        deep3: null,
-      }),
-    ).toEqual([
-      { no: 3, part: "question", text: "経験年数は？" },
-      { no: 3, part: "deep1", text: "具体的には？" },
-    ]);
-  });
-
-  it("ヒントだけの深掘り (→ の前が空) は音声化しない", () => {
-    expect(
-      interviewAudioSegments({ no: 4, question: "Q", deep1: "→メモだけ" }).map((s) => s.part),
-    ).toEqual(["question"]);
+  it("指紋を持たない音声 (書き換え前の生成) も古い扱いにする", () => {
+    expect(isInterviewAudioStale(undefined, "Q")).toBe(true);
+    expect(isInterviewAudioStale(null, "Q")).toBe(true);
+    expect(isInterviewAudioStale("", "Q")).toBe(true);
   });
 });
 
