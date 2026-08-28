@@ -1,0 +1,174 @@
+# スキルツリー同心円キャンバス + 入口講座 設計書
+
+日付: 2026-08-28
+ステータス: 実装済み
+
+## 目的
+
+スキルツリーページを「一覧」から「地図」にする。3 つをまとめて入れた。
+
+1. **同心円レイアウト** — 中心に入口の星、前提を進むほど外のリングへ広がる。
+   「基礎をクリアすると外の星が開く」という進行の向きが、絵の向きと一致する
+2. **Miro 風キャンバス** — 盤面をドラッグでパン、ホイール / ピンチでズーム。
+   星が増えても横スクロールで迷子にならない
+3. **入口講座 `it-basics` (ITのきほん)** — 全カテゴリの根になる本当に基本的な教材。
+   これをクリアすると既存の入門講座 (TypeScript / SQL / 資格対策 / AI 駆動開発 …) が開く
+4. **解放のゲーム演出** — 「前回は閉じていた星が開いた」「無かった星が現れた
+   (教材の公開)」を検出して、その星に 1 回だけアニメーションを付ける
+
+実装の所在:
+
+| 層 | ファイル |
+|---|---|
+| 前提グラフの正本 | `packages/content/courses/<slug>/course.json` の `prerequisites` (slug 配列) |
+| グラフ検査 (未知 slug / 自己参照 / 循環) | `packages/content/src/manifest.ts` `assertPrerequisiteGraph` / CI は `scripts/check-graph.ts` |
+| D1 への写し | `packages/shared/scripts/export-seed-sql.ts` → `stages.prerequisites` (JSON 列) |
+| 評価器 (状態 / 視界 / 解放条件) | `packages/shared/src/skill-map/evaluate.ts` (変更なし) |
+| 配信 API | `GET /api/skill-map/mine` (`apps/api/src/routes/skill-map.ts`、変更なし) |
+| 同心円レイアウト (純関数) | `apps/web/src/components/learner/tree/radial-layout.ts` |
+| パン / ズームの盤面 | `apps/web/src/components/learner/tree/SkillTreeCanvas.tsx` |
+| 解放 / 出現の差分検出 | `apps/web/src/components/learner/tree/celebration.ts` |
+| 画面 | `apps/web/src/components/learner/tree/SkillTree.tsx` / `SkillTreePage.tsx` |
+| 演出の CSS | `apps/web/src/index.css` の `tree-*` |
+| 入口講座 | `packages/content/courses/it-basics/` (3 モジュール / 3 レッスン / 11 トピック) |
+
+旧「深さ × カテゴリ列」レイアウト (`tree/layout.ts`) は削除した。
+
+## データ構造 — 前提関係はどこにあるか
+
+前提関係のデータ構造は Phase 0-5 で既に入っていたものをそのまま使う。今回は
+**グラフの中身** (全講座が入口講座に繋がる形) を教材側で整えた。
+
+```text
+course.json の prerequisites (slug 配列, AND 条件)
+  → manifest ビルドで検査 (未知 slug・自己参照・循環は CI で落ちる)
+  → seed で D1 stages.prerequisites (JSON) へ
+  → 評価器が locked / unlocked / active / cleared と視界 (full / name-only / fog) を導出
+  → API が視界に応じて伏せて配信、画面は写すだけ
+```
+
+決めたこと:
+
+| 論点 | 決定 |
+|---|---|
+| 前提の書き場所 | `course.json` のみ (CMS で編集しない)。教材が正本、という既存方針のまま |
+| 前提の書式 | slug 配列・AND。 「どれか 1 つ」は表現しない (評価器の既存仕様) |
+| 書いてよい条件 | その講座の `CURRICULUM.md` に前提講座として散文で明記されているものだけ。今回 10 講座の CURRICULUM.md に明記を足した |
+| 入口講座 | `it-basics` だけを前提なしにする。逆依存 (it-basics が他講座に依存) は作らない — 中心の星が閉じるとツリー全体が開かなくなる |
+
+`it-basics` を前提に持つ講座 (今回追加): typescript-basics / sql-basics /
+html-css-basics / git-basics / python-testing-ci-basics / test-design-basics /
+ai-fluency-basics / fe-kamoku-a / fe-kamoku-b / aws-clf-c02-basics。
+既存の連鎖 (html-css → modern-css → ui-components → page-composition、
+ai-fluency → claude-* 系) はそのまま。
+
+## 同心円レイアウト
+
+`radial-layout.ts`。決定的な純関数 (同じ入力なら同じ座標。force-directed は使わない)。
+
+- **リング** = 前提グラフのトポロジカル層 (root からの最長距離)。中心 (深さ 0) が
+  1 星だけならど真ん中の 1 点に置く
+- **角度** = カテゴリの扇形。星数に比例した角度 (最小角 0.5rad) を名前順に時計回り。
+  霧の星はカテゴリが来ないのでテーマ名で括る (旧レイアウトと同じ)
+- **半径は密度で押し広げる** — まず角度を確定させ、リングごとに **最も近い 2 星の
+  直線距離 (弦長)** が `MIN_SEPARATION` (150px) 以上になる半径まで広げる。内側から
+  単調増加なのでリングは逆転しない
+  - 弧長ではなく **弦長** で測る。星は円弧ではなく直線で重なるため
+  - 角度は半径の計算と配置で **同じ配列を使う**。扇を `n+1` 分割で配置しながら
+    半径を `n` ぶんで確保していたレビュー前の実装では、本番の資格対策 3 星が
+    112px 間隔になり 120px 幅のボタンが重なっていた
+  - 扇 **をまたぐ** 隣どうしも同じ判定に入れる (扇の境界を挟む 2 星は、扇の中の
+    間隔より近づきうる)
+- 霧のうちどの線にも触れていない星は最外リングの 1 つ先へ送る (旧レイアウトの
+  規則を踏襲。前提線の無い霧の星が中心に居座らないように)
+
+## キャンバス (パン / ズーム)
+
+`SkillTreeCanvas.tsx`。**ライブラリは足さず** Pointer Events で書いた
+(採用理由は下の技術スタック節)。
+
+- 背景ドラッグでパン (星のボタン上からは始めない)、ホイール / 2 本指ピンチで
+  カーソル位置基準のズーム (0.25×〜2×)、右上に拡大 / 縮小 / 全体表示ボタン
+- ホイールは `preventDefault` が要るので React の onWheel ではなく非 passive の
+  addEventListener
+- **視界の中心が指す盤面上の点を、星の外接範囲 (`layout.bounds`) + 余白の中に
+  留める**ようクランプする。この形なら「どの星も画面中央へ持ってこられる」と
+  「星の広がりから離れすぎない」が同時に成り立つ
+  - 盤面の矩形では判定しない。盤面は円に外接する正方形で四隅が空白なので、
+    「隅だけ見えていて星は全部画面外」を許してしまう
+  - 盤面の中心点で判定するのも誤り (レビュー前の実装)。中心を必ず画面内に置くと、
+    2× では中心から遠い星が画面へ入らず、拡大して詳細を見る操作が壊れる
+- キーボード: 星は `<button>` のまま Tab で辿れる。transform で動かした星は
+  ブラウザの自動スクロールでは見えないので、フォーカスされた星が視界外なら
+  `data-tree-x/y` を読んでパンして中央へ連れてくる (`onFocusCapture`)。
+  この移動も同じクランプを通す — 通さないと可動域の外へ出て、次の操作で引き戻され
+  フォーカス中の星が画面外へ消える
+- 旧実装の「横スクロール + 左詰め」の妥協 (届かない星を作らない代わりに中央寄せを
+  諦める) は、パンで全星に届くようになったので不要になった
+
+## 解放 / 出現の演出
+
+`celebration.ts` + `index.css` の `tree-*`。
+
+- サーバは「いまの状態」しか返さないので、**前回スナップショット (星 id →
+  state / visibility) を localStorage** (`falcon_skill_tree_seen_v1:<profileId>`)
+  に持ち、開くたびに差分を取る
+  - locked → unlocked / active … **解放** (輪が広がるバースト + 星の弾み + 「解放!」バッジ)
+  - 前回無かった・霧だった星が名前つきで見えた … **出現** (浮かび上がり + 「NEW」バッジ)。
+    教材の公開がこの経路で「新しい星が現れた」演出になる
+- 検出した瞬間に新スナップショットを保存するので **1 回きり**。初回訪問 (前回が
+  無い) は鳴らさない — 全星が「新しく現れた」ことになるため。複数同時は `--d` で
+  内側から順に灯す。`prefers-reduced-motion` では全部止める
+- 「前回保存した内容」は **誰のぶんか** まで覚える (`CelebrationMemory`)。認証層は
+  別タブの token 変更 (`storage` イベント) でも session を差し替えるので、画面を
+  開いたまま利用者が変わりうる。利用者だけ変わって木の形が同じとき、これが無いと
+  「保存済み」と誤判定して新しい利用者のぶんを書かず、前の利用者の「解放!/NEW」を
+  出したままになる。判断は純関数 `planCelebration` に置いて単体で試す
+- 位置合わせの `-50%` を keyframe に書かない。Tailwind v4 の `-translate-x-1/2` は
+  個別プロパティ `translate` を出すので、keyframe 側の `transform: translate(...)`
+  と合成されて二重にずれ、終了時に本来の位置へ跳ねる。keyframe は `scale` だけ書く
+- localStorage は本人の閲覧記録でしかなく、消えても次回が「初回」扱いに戻るだけ
+
+## 技術スタックの再提案 (検討の記録)
+
+「教材が公開されたらアンロックされたようなゲーム演出」の要件に対して検討した案:
+
+| 案 | 評価 |
+|---|---|
+| **現行スタック (React + SVG/DOM + CSS アニメーション + Pointer Events)** — 採用 | 依存ゼロ。必要な演出 (バースト / ポップ / バッジ) は CSS keyframes で足りる。決定的レイアウトは純関数のままテストできる。テーマトークン (`--brand` 等) をそのまま使える |
+| `@xyflow/react` (React Flow) — キャンバス基盤 | パン / ズーム / ミニマップが既製。ただしノード編集・接続などエディタ機能が主目的で、読み取り専用の地図には過剰。星の見た目・ポップオーバー・秘匿規則を custom node に移植し直すコストの割に、得るのはパン / ズームだけ |
+| `motion` (旧 framer-motion) — 演出強化 | spring / stagger / レイアウトアニメーションが宣言的に書ける。**将来、演出を増やすならこれを足すのが第一候補** (バンドル +30〜40KB gzip)。現時点の演出量では CSS で足りる |
+| `pixi.js` / WebGL | 星が数百〜数千になったときの描画性能と派手なパーティクル用。現在 20 星なので過剰。DOM でなくなるためアクセシビリティ (button / popover) を作り直す羽目になる |
+| `canvas-confetti` | クリア時の紙吹雪を足したくなったら最小コストで足せる (2KB)。今回は範囲外 |
+
+判断の軸: (1) 星は `<button>` のままにしてキーボード / 読み上げを壊さない、
+(2) レイアウトは決定的な純関数 (テスト済み) を保つ、(3) 依存はバンドルと保守の
+負債なので「CSS で書けない演出が要る」まで足さない。1〜3 を満たす最小構成が
+現行スタック + Pointer Events だった。星が 100 を超えて DOM が重くなったら
+SVG 描画の統合 (星も SVG 化) → それでも重ければ pixi.js、演出を本格化するなら
+motion、の順で再検討する。
+
+## 運用上の注意 (ロールアウト)
+
+- **既存受講者への影響**: 前提の追加はハードロックなので、`it-basics` を
+  クリアしていない受講者は既存講座が locked になる。進行中 (active) の 1 講座だけは
+  評価器が locked に落とさないので、いま進めている学習が突然閉じることはない。
+  受講登録済みでも active でない講座は閉じる — 既存の受講者には「まず ITのきほん を
+  クリアする」案内が要る。腕試し (飛び級) に合格すれば従来どおり前提を飛ばせる
+- seed 済みの環境は次の deploy (seed) で `stages.prerequisites` が更新されて反映される
+- `it-basics` は他講座の前提になったため、CMS からの非公開化・削除は 409 で
+  止まる (既存のガード)
+
+## 検証
+
+- `bun run --filter=@falcon/content check:ci` (語彙台帳 / スライド枚数 / 画像 /
+  前提グラフ 20 講座・循環なし)
+- `bun run lint` / `bun run typecheck` / `bun run test` (radial-layout 17 件・
+  celebration 13 件を含む 1408 tests)
+- ローカル実機 (D1 seed + `wrangler dev` + preview ビルド + Playwright):
+  同心円描画 / パン / ホイールズーム / クランプ / ポップオーバー / 解放・NEW 演出 /
+  `it-basics` のみ unlocked で他が locked になることを確認
+- レビュー指摘 (Codex / Cursor Bugbot) の 4 件は、直したあと実機で数値を測って確認:
+  星 20 個で **ボタンの重なり 0 件** (最近接ペアがちょうど 150px)、**2× でも
+  ドラッグだけで外周の星に到達**、出現演出中の `transform` が平行移動成分を持たない
+  (`matrix(0.3,0,0,0.3,0,0)`)

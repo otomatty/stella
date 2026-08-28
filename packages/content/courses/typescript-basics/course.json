@@ -5,6 +5,7 @@
   "description": "未経験からの TypeScript 研修。ショート動画 1 本で 1 つだけ覚える粒度で、値・型・関数・非同期まで通す。",
   "header": "TypeScript入門研修",
   "tenantId": "ses",
+  "prerequisites": ["it-basics"],
   "canDo": "型を使って、バグを未然に防ぐコードが書ける",
   "theme": "Web とデータの実践",
   "modules": {

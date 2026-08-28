@@ -1,0 +1,15 @@
+{
+  "title": "ITのきほん",
+  "category": "基礎",
+  "color": "green",
+  "description": "すべての講座の入口になる研修。この研修での学び方と、コンピュータ・インターネットの基本のことばを最初にそろえる。",
+  "header": "ITのきほん",
+  "tenantId": "ses",
+  "canDo": "コンピュータと Web の基本のことばを、自分のことばで説明できる",
+  "theme": "はじめの一歩",
+  "modules": {
+    "m0-orientation": "M0. この研修の歩き方",
+    "m1-computer": "M1. コンピュータのきほん",
+    "m2-internet": "M2. インターネットのきほん"
+  }
+}

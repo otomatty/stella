@@ -4,6 +4,8 @@ SES 未経験者向けの HTML/CSS 入門講座です。1 トピック = 覚え�
 ページの中身を作る HTML と、見た目を決める CSS を、文書の骨格から余白・配置・読みやすさまで通します。
 構成は [MDN Learn web development の Core](https://developer.mozilla.org/ja/docs/Learn_web_development/Core) の本経路に合わせています。
 
+- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
+
 ## 終了時の目標
 
 終了時、受講者はテキストエディタとブラウザーだけで 1 枚の静的ページを組み立てられます。

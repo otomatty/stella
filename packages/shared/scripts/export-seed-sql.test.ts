@@ -102,7 +102,8 @@ describe("export-seed-sql (sqlite)", () => {
   it("前提を書いていない講座は空配列ではなく null に畳む (ロックを残さない)", () => {
     // 教材が正本。course.json から前提を外したら D1 も null に戻る必要がある
     // ('[]' が残ると、読み直す側が「壊れた行」と区別できない)。
-    const line = (sql.match(/^insert into stages .*'aws-clf-c02-basics'.*$/m) ?? [])[0];
+    // it-basics はスキルツリーの入口 (唯一の前提なし講座)。
+    const line = (sql.match(/^insert into stages .*'it-basics'.*$/m) ?? [])[0];
     expect(line).toBeDefined();
     // 並びは ... status, prerequisites, can_do, theme, created_at, updated_at。
     expect(line).toMatch(/'published', null, '[^']*', '[^']*', cast\(unixepoch/);

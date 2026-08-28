@@ -8,6 +8,7 @@ Python で関数やスクリプトは書けるが、テストコードを書い�
 - 手を動かす部分: `practice.md` の「手元で試す」。手元の Python と pytest で実行して確かめる
 - コード演習(VS Code 拡張の採点)は **この講座にはありません**。採点基盤(`@falcon/code-runner`)のランナーは
   JavaScript / TypeScript / SQL の 3 つで、Python は対象外です(`@falcon/shared` の `Language` 型)
+- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
 - 対象外: デプロイ自動化(CD)、IaC、Docker の詳細、GitHub Actions の高度な構文(matrix・再利用ワークフロー等)、
   AWS 固有のテスト手法(Lambda / Glue、moto / LocalStack)、負荷試験・E2E ツールの実装、lint / 型チェッカーの詳細な設定方法
 

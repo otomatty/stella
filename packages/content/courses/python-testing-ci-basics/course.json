@@ -5,6 +5,7 @@
   "description": "Python の関数に pytest で単体テストを書き、失敗の出力を読んで直せるようになる研修。CI が落ちた理由を説明でき、テストしやすいコードへ書き換えるところまで通す。",
   "header": "Pythonテスト自動化とCI入門",
   "tenantId": "ses",
+  "prerequisites": ["it-basics"],
   "canDo": "pytest でテストを書き、CI が落ちた理由を読んで直せる",
   "theme": "Web とデータの実践",
   "modules": {

@@ -5,6 +5,7 @@ SES 未経験者向けの SQL 入門講座です。1 トピック = 覚えるこ
 
 - Web(LMS): スライド視聴・まとめ・確認クイズ(合格点 80)
 - コード演習: VS Code 拡張の SQL 採点(`sql.js` / SQLite)。`course.json` の `exercises` で各レッスンに配線
+- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
 - 対象外: ウィンドウ関数・トランザクション・インデックス・DDL/DML の書き込み系(INSERT/UPDATE/DELETE)
 
 ## 全体構成(6 モジュール / 6 レッスン / 24 トピック)

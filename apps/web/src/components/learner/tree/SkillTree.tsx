@@ -1,8 +1,11 @@
 /**
- * スキルツリー — 星座として見る学習の全体像 (Phase 3a)。
+ * スキルツリー — 星座として見る学習の全体像 (Phase 3a → 同心円 + キャンバス化)。
  *
  * ホームの「ステージの道」が 1 本の縦線で「今どこか」を見せるのに対し、こちらは
  * **俯瞰**。星 = ステージ (教材) で、クリアした星が灯り、前提が線で繋がる。
+ * 配置は同心円 (`radial-layout.ts`): 中心が入口の星、前提を進むほど外のリングへ
+ * 広がる。盤面は `SkillTreeCanvas` の上にあり、Miro のようにドラッグで動かし、
+ * ホイール / ピンチで拡縮できる。
  *
  * ## クライアントで秘匿を再実装しない
  *
@@ -13,11 +16,20 @@
  * ## 線は SVG・星は button
  *
  * 星は `<button>` にして、キーボードでも到達できるようにする (SVG の図形に
- * `tabindex` を付けるより素直で、Popover のアンカーにもそのまま使える)。前提の線だけ
- * を背後の SVG に敷き、座標は `layout.ts` の決定的な計算に任せる。
+ * `tabindex` を付けるより素直で、Popover のアンカーにもそのまま使える)。前提の線と
+ * リングのガイドだけを背後の SVG に敷き、座標は `radial-layout.ts` の決定的な計算に
+ * 任せる。
+ *
+ * ## 解放の演出は差分で 1 回だけ
+ *
+ * 「前回見たときは閉じていた星が開いた」「無かった星が現れた (教材の公開)」を
+ * `celebration.ts` が localStorage の前回スナップショットとの差分で検出し、その星に
+ * 1 回だけアニメーションを付ける (`index.css` の `tree-*`)。reduced-motion では
+ * すべて止まる。
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -25,10 +37,14 @@ import { Check, Lock, Play, Plus, Sparkles, Star } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
-import { layoutSkillTree, type TreeNode } from "./layout";
+import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
+import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
+import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
 
 interface SkillTreeProps {
   nodes: SkillMapStageNode[];
+  /** 演出のスナップショットを本人ごとに分けるためのキー。 */
+  currentUserId: string | null;
   activeStageId: string | null;
   /** 既に「次にやるリスト」に積んである星。 */
   queuedStageIds: string[];
@@ -48,6 +64,7 @@ function labelOf(node: SkillMapStageNode): string {
 
 export const SkillTree = ({
   nodes,
+  currentUserId,
   activeStageId,
   queuedStageIds,
   onStartStage,
@@ -56,10 +73,17 @@ export const SkillTree = ({
   className,
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
-  const layout = useMemo(() => layoutSkillTree(nodes), [nodes]);
-  // 星の周りに置くラベルぶんの余白。星の中心座標に足して使う。
-  const padX = 80;
-  const padY = 56;
+  const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
+  const celebrations = useSkillTreeCelebration(currentUserId, nodes);
+  const canvasRef = useRef<SkillTreeCanvasHandle | null>(null);
+  /** 演出の順番 (複数の星が同時に開いたとき、内側から順に灯す)。 */
+  const celebrationOrder = useMemo(() => {
+    const order = new Map<string, number>();
+    for (const placed of layout.nodes) {
+      if (celebrations.has(placed.node.id)) order.set(placed.node.id, order.size);
+    }
+    return order;
+  }, [layout, celebrations]);
 
   if (nodes.length === 0) {
     return (
@@ -70,74 +94,85 @@ export const SkillTree = ({
   }
 
   return (
-    // 星が増えると横に伸びるので、はみ出しはこの箱の中だけで横スクロールさせる。
-    <div className={cn("overflow-x-auto", className)}>
-      {/* `mx-auto` は使わない。星が箱より広いとき、左右に振り分けられた余白の左半分が
-          スクロール範囲の外に出て **左端の星に届かなくなる**。`w-max` の内容箱を
-          左詰めで置き、狭いときの中央寄せは親 (`justify-center` 相当) には頼らず
-          諦める — 届かない星を作らない方を採る。 */}
-      <div
-        className="relative w-max"
-        style={{ width: layout.width + padX * 2, height: layout.height + padY * 2 }}
+    <SkillTreeCanvas
+      worldWidth={layout.width}
+      worldHeight={layout.height}
+      contentBounds={layout.bounds}
+      handleRef={canvasRef}
+      className={className}
+    >
+      <svg
+        className="absolute inset-0"
+        width={layout.width}
+        height={layout.height}
+        aria-hidden="true"
       >
-        <svg
-          className="absolute inset-0"
-          width={layout.width + padX * 2}
-          height={layout.height + padY * 2}
-          aria-hidden="true"
-        >
-          <title>前提のつながり</title>
-          {layout.edges.map((edge) => (
-            <line
-              key={`${edge.fromId}-${edge.toId}`}
-              x1={edge.x1 + padX}
-              y1={edge.y1 + padY}
-              x2={edge.x2 + padX}
-              y2={edge.y2 + padY}
-              // 充足済み = 実線のブランド色 / 未充足 = 破線の薄い線。
-              stroke={edge.satisfied ? "var(--brand)" : "var(--line-strong)"}
-              strokeWidth={edge.satisfied ? 2 : 1}
-              strokeDasharray={edge.satisfied ? undefined : "4 4"}
-              opacity={edge.satisfied ? 0.9 : 0.55}
-            />
-          ))}
-        </svg>
-
-        {/* 列見出し (カテゴリ名)。線と星の下に敷いて、位置の手がかりだけにする。 */}
-        {layout.columns.map((column) => (
-          <div
-            key={column.key}
-            className="absolute -translate-x-1/2 text-[11px] font-semibold text-ink-4"
-            style={{ left: column.x + padX, top: 8 }}
-          >
-            {column.key}
-          </div>
-        ))}
-
-        {layout.nodes.map((placed) => (
-          <StarNode
-            key={placed.node.id}
-            placed={placed}
-            left={placed.x + padX}
-            top={placed.y + padY}
-            isActive={placed.node.id === activeStageId}
-            queued={queuedStageIds.includes(placed.node.id)}
-            onStartStage={onStartStage}
-            onQueueStage={onQueueStage}
-            onSkillCheck={onSkillCheck}
+        <title>前提のつながり</title>
+        {/* 同心円のガイド。進むほど外へ、という盤面の向きを線で示す。 */}
+        {layout.rings.map((ring) => (
+          <circle
+            key={ring.ring}
+            cx={layout.centerX}
+            cy={layout.centerY}
+            r={ring.radius}
+            fill="none"
+            stroke="var(--line)"
+            strokeWidth={1}
+            strokeDasharray="3 7"
           />
         ))}
-      </div>
-    </div>
+        {layout.edges.map((edge) => (
+          <line
+            key={`${edge.fromId}-${edge.toId}`}
+            x1={edge.x1}
+            y1={edge.y1}
+            x2={edge.x2}
+            y2={edge.y2}
+            // 充足済み = 実線のブランド色 / 未充足 = 破線の薄い線。
+            stroke={edge.satisfied ? "var(--brand)" : "var(--line-strong)"}
+            strokeWidth={edge.satisfied ? 2 : 1}
+            strokeDasharray={edge.satisfied ? undefined : "4 4"}
+            opacity={edge.satisfied ? 0.9 : 0.55}
+          />
+        ))}
+      </svg>
+
+      {/* 扇の見出し (カテゴリ名)。線と星の下に敷いて、位置の手がかりだけにする。 */}
+      {layout.sectors.map((sector) => (
+        <div
+          key={sector.key}
+          className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[11px] font-semibold text-ink-4"
+          style={{ left: sector.labelX, top: sector.labelY }}
+        >
+          {sector.key}
+        </div>
+      ))}
+
+      {layout.nodes.map((placed) => (
+        <StarNode
+          key={placed.node.id}
+          placed={placed}
+          isActive={placed.node.id === activeStageId}
+          queued={queuedStageIds.includes(placed.node.id)}
+          celebration={celebrations.get(placed.node.id)}
+          celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
+          onStartStage={onStartStage}
+          onQueueStage={onQueueStage}
+          onSkillCheck={onSkillCheck}
+        />
+      ))}
+    </SkillTreeCanvas>
   );
 };
 
 interface StarNodeProps {
-  placed: TreeNode;
-  left: number;
-  top: number;
+  placed: RadialNode;
   isActive: boolean;
   queued: boolean;
+  /** 差分で検出した演出 (「解放」/「出現」)。undefined なら演出なし。 */
+  celebration: CelebrationKind | undefined;
+  /** 複数の演出を内側から順に灯すための順番。 */
+  celebrationIndex: number;
   onStartStage: (stageId: string) => void;
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
@@ -145,10 +180,10 @@ interface StarNodeProps {
 
 const StarNode = ({
   placed,
-  left,
-  top,
   isActive,
   queued,
+  celebration,
+  celebrationIndex,
   onStartStage,
   onQueueStage,
   onSkillCheck,
@@ -159,6 +194,7 @@ const StarNode = ({
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
   const label = labelOf(node);
+  const isCenter = placed.ring === 0;
 
   /** 読み上げ用の状態語。見た目 (色・形) だけで区別させない。 */
   const stateText = fog
@@ -181,35 +217,51 @@ const StarNode = ({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={`${label}（${stateText}）`}
-          className="absolute flex w-[120px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{ left, top }}
+          aria-label={`${label}（${stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+          // フォーカス追従 (SkillTreeCanvas の onFocusCapture) 用の盤面座標。
+          data-tree-x={placed.x}
+          data-tree-y={placed.y}
+          className={cn(
+            "absolute flex w-[120px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            celebration === "appeared" ? "tree-appear" : "",
+          )}
+          style={{ left: placed.x, top: placed.y, "--d": celebrationIndex * 0.2 } as CSSProperties}
         >
-          <span
-            className={cn(
-              "grid h-9 w-9 place-items-center rounded-full border transition-colors",
-              cleared
-                ? "sf-gradient-bg border-transparent text-brand-foreground"
-                : isActive
-                  ? "border-brand bg-card text-brand"
-                  : node.state === "unlocked"
-                    ? "border-border-strong bg-card text-ink-2"
-                    : "border-dashed border-border-strong bg-sunken text-ink-4",
-              // 現在地だけ脈動させる。reduced-motion では止める。
-              isActive ? "animate-pulse motion-reduce:animate-none" : "",
-              fog ? "opacity-50" : "",
-            )}
-            aria-hidden="true"
-          >
-            {cleared ? (
-              <Star size={16} fill="currentColor" />
-            ) : isActive ? (
-              <Play size={14} />
-            ) : locked ? (
-              <Lock size={13} />
-            ) : (
-              <Sparkles size={14} />
-            )}
+          <span className="relative" aria-hidden="true">
+            {/* 解放の瞬間: 広がる輪 2 本 + 星の弾み。1 回きり (celebration は差分でしか立たない)。 */}
+            {celebration === "unlocked" ? (
+              <>
+                <span className="tree-burst" />
+                <span className="tree-burst tree-burst-late" />
+              </>
+            ) : null}
+            <span
+              className={cn(
+                "grid place-items-center rounded-full border transition-colors",
+                isCenter ? "h-12 w-12" : "h-9 w-9",
+                cleared
+                  ? "sf-gradient-bg border-transparent text-brand-foreground"
+                  : isActive
+                    ? "border-brand bg-card text-brand"
+                    : node.state === "unlocked"
+                      ? "border-border-strong bg-card text-ink-2"
+                      : "border-dashed border-border-strong bg-sunken text-ink-4",
+                // 現在地だけ脈動させる。reduced-motion では止める。
+                isActive ? "animate-pulse motion-reduce:animate-none" : "",
+                fog ? "opacity-50" : "",
+                celebration === "unlocked" ? "tree-unlock-pop" : "",
+              )}
+            >
+              {cleared ? (
+                <Star size={isCenter ? 20 : 16} fill="currentColor" />
+              ) : isActive ? (
+                <Play size={isCenter ? 18 : 14} />
+              ) : locked ? (
+                <Lock size={isCenter ? 16 : 13} />
+              ) : (
+                <Sparkles size={isCenter ? 18 : 14} />
+              )}
+            </span>
           </span>
           <span
             className={cn(
@@ -221,6 +273,11 @@ const StarNode = ({
           >
             {label}
           </span>
+          {celebration ? (
+            <span className="tree-new-badge" aria-hidden="true">
+              {celebration === "unlocked" ? "解放!" : "NEW"}
+            </span>
+          ) : null}
         </button>
       </PopoverTrigger>
 

@@ -5,6 +5,7 @@
   "description": "仕様からテストケースを設計し、pytest のテストコードに落とし、何を自動化するかを根拠つきで提案できるようになる研修。",
   "header": "テスト設計入門研修",
   "tenantId": "ses",
+  "prerequisites": ["it-basics"],
   "canDo": "観点表とテストケースで『動く』を示せる",
   "theme": "Web とデータの実践",
   "modules": {

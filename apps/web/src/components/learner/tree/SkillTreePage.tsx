@@ -122,7 +122,7 @@ export function SkillTreePage({
 
         <CardContent className={cn("px-0 pb-0")}>
           <p className="px-4 pb-3 text-[11.5px] text-ink-3 sm:px-6">
-            星をクリックすると、その星でできるようになることや解放条件が見られます。まだ開いていない星も、腕試しに合格すれば飛び級で開けます。
+            中心の星から始めて、外の星へ広がっていきます。盤面はドラッグで動かせます。星をクリックすると、その星でできるようになることや解放条件が見られます。まだ開いていない星も、腕試しに合格すれば飛び級で開けます。
           </p>
 
           {skillMap.loading && nodes.length === 0 ? (
@@ -137,6 +137,7 @@ export function SkillTreePage({
           ) : (
             <SkillTree
               nodes={nodes}
+              currentUserId={currentUserId}
               activeStageId={skillMap.map?.active_stage_id ?? null}
               queuedStageIds={stageQueue.queue}
               onStartStage={(stageId) =>
@@ -163,7 +164,8 @@ export function SkillTreePage({
                 run(() => stageQueue.add(stageId), "キューへの追加に失敗しました")
               }
               onSkillCheck={setCheckStageId}
-              className="pb-4"
+              // 盤面はスクロールではなくパン / ズームで見る箱。高さをここで決める。
+              className="mx-4 mb-4 h-[65vh] min-h-[420px] sm:mx-6"
             />
           )}
         </CardContent>

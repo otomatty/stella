@@ -5,6 +5,7 @@
   "description": "未経験からの SQL 研修。テーブルからデータを取り出す SELECT を軸に、絞り込み・並べ替え・結合・集計まで通す。",
   "header": "SQL入門研修",
   "tenantId": "ses",
+  "prerequisites": ["it-basics"],
   "canDo": "欲しい集計を JOIN と GROUP BY で自分で書ける",
   "theme": "Web とデータの実践",
   "modules": {

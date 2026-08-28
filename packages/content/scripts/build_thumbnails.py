@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 18 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 20 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -548,8 +548,38 @@ def motif_aws_clf(c: str) -> str:
     <path d="M 406 406 L 420 388 L 434 406 Z" fill="{c}"/>"""
 
 
+def motif_it_basics(c: str) -> str:
+    """中心の星から同心円状に外の星が開く。 スキルツリーの入口 (最初の講座) であることを 1 枚にする。"""
+    lines = []
+    nodes = []
+    for i, (x, y) in enumerate(((133, 133), (415, 133), (274, 474))):
+        locked = i == 2
+        stroke = RULE_SOLID if locked else c
+        dash = ' stroke-dasharray="10 8"' if locked else ""
+        lines.append(
+            f'<line x1="274" y1="274" x2="{x}" y2="{y}" stroke="{stroke}" stroke-width="4"{dash}/>'
+        )
+        bar = RULE if locked else c
+        nodes.append(f"""
+    <circle cx="{x}" cy="{y}" r="44" fill="{PAPER}" stroke="{stroke}" stroke-width="3"{dash}/>
+    <rect x="{x - 20}" y="{y - 6}" width="40" height="12" rx="6" fill="{bar}"/>""")
+    return f"""
+    <circle cx="274" cy="274" r="120" fill="none" stroke="{RULE}" stroke-width="2"/>
+    <circle cx="274" cy="274" r="200" fill="none" stroke="{RULE}" stroke-width="2" stroke-dasharray="4 10"/>
+    {"".join(lines)}
+    <circle cx="274" cy="274" r="60" fill="{c}"/>
+    <circle cx="274" cy="274" r="22" fill="{PAPER}"/>
+    {"".join(nodes)}"""
+
+
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
 SPECS = {
+    "it-basics": {
+        "title": "ITのきほん",
+        "title_size": 116,
+        "subtitle": "すべての講座の入口",
+        "motif": motif_it_basics,
+    },
     "typescript-basics": {
         "title": "TypeScript",
         "title_size": 132,
