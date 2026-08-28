@@ -1,5 +1,5 @@
 /**
- * スキルマップ (ステージの道) / スキルプロフィール / 「次にやるリスト」の
+ * スキルマップ / スキルプロフィール / 「次にやるリスト」の
  * データアクセス層 (Phase 2)。
  *
  * **秘匿はサーバ側で済んでいる。** 霧の星にはタイトルも slug も入っていないので、
@@ -12,7 +12,7 @@ import { apiFetch } from "./api-client";
 
 export type { SkillMapState, SkillMapVisibility };
 
-/** 道の上の星 1 つ。視界に応じて欠ける項目がある。 */
+/** スキルマップの星 1 つ。視界に応じて欠ける項目がある。 */
 export interface SkillMapStageNode {
   id: string;
   state: SkillMapState;
@@ -43,7 +43,7 @@ export interface FocusBonusPayload {
 }
 
 /**
- * 道の脇に灯る発見教材 (Phase 4)。
+ * スキルマップの脇に灯る発見教材 (Phase 4)。
  *
  * **サーバが公開条件で絞ったあとの配列** — 源流ステージが進行中 / クリア済みの、
  * 講師が承認した教材だけが入る。ロック中や霧の星の教材はそもそも配列に現れないので、

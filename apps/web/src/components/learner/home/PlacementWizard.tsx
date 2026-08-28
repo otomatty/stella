@@ -4,7 +4,7 @@
  * 管理者がステージを割り当てる運用を廃止したので、**何も始めていない受講者のホームは
  * 空っぽで始まる**。ここが最初の一歩を渡す場所で、3 つだけを伝える:
  *
- *   1. あいさつと仕組み (星をともす / 道は少し先まで見える)
+ *   1. あいさつと仕組み (星をともす / スキルマップは少し先まで見える)
  *   2. **どこから始めるか** … サーバの推奨順 (`next_stage_ids`) の上位を can-do 付きで
  *   3. もう知っている内容があるなら、スキルツリーの腕試しで飛び級できること
  *
@@ -130,9 +130,9 @@ export const PlacementWizard = ({
             <Sparkles size={16} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-[16px] font-semibold tracking-tight">学びの地図へようこそ</h2>
+            <h2 className="text-[16px] font-semibold tracking-tight">スキルマップへようこそ</h2>
             <p className="mt-1 text-[12.5px] leading-relaxed text-ink-2">
-              教材はひとつずつ「星」になっています。ひとつ終えると星がともり、その先の道が少しずつ見えてきます。
+              ひとつ終えると、スキルマップが少しずつ見えてきます。
               まずはどこから始めるか選びましょう。
             </p>
           </div>
@@ -155,7 +155,8 @@ export const PlacementWizard = ({
                   </div>
                   {node.can_do ? (
                     <p className="text-[12px] leading-relaxed text-ink-2">
-                      この星をともすと <strong className="text-foreground">{node.can_do}</strong>。
+                      このスキルを身につけると{" "}
+                      <strong className="text-foreground">{node.can_do}</strong>。
                     </p>
                   ) : null}
                   <Button
@@ -188,7 +189,7 @@ export const PlacementWizard = ({
             スキルツリーを見る
           </Button>
           <span className="text-[11.5px] text-ink-3">
-            腕試しに合格すると、先の星から始められます。
+            腕試しに合格すると、先のスキルから始められます。
           </span>
           <Button size="sm" variant="ghost" className="ml-auto" onClick={skip}>
             あとで選ぶ

@@ -334,7 +334,7 @@ skillCheckRoute.post("/api/skill-check/:stageId", async (c) => {
         percent: skillCheckPercent(score, maxScore),
         pass_score: SKILL_CHECK_PASS_SCORE,
         passed,
-        /** 飛び級で新しく開いた星か。画面の「新しい星が解放されました」の条件。 */
+        /** 飛び級で新しく開いた星か。画面の「新しいスキルが解放されました」の条件。 */
         unlocked,
         ...(unlockError ? { unlock_error: unlockError } : {}),
         // 到達説明は合格したときだけ返す。ロック星の到達説明は本来伏せる情報だが、

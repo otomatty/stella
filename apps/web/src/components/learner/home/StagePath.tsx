@@ -1,8 +1,8 @@
 /**
- * ステージの道 — ホームの主役 (Phase 2)。
+ * スキルマップ — ホームの主役 (Phase 2)。
  *
  * 縦一本のパスで「下 = 通ってきた過去 / 真ん中 = 現在地 / 上 = これから」を描く。
- * 上へ行くほど情報が薄くなり、いちばん上は霧 (テーマ名だけ)。
+ * 載せる星は `homePathNodes` でいまのコースの鎖に絞る。全体はスキルツリー。
  *
  * ## クライアントで秘匿を再実装しない
  *
@@ -18,12 +18,13 @@
  * 固定し、再取得のたびに星が入れ替わらないようにする。描画は上が未来なので逆順。
  */
 
-import { Check, Lock, Play, Plus, Sparkles } from "@/lib/icons";
+import { Check, Compass, Lock, Play, Plus, Sparkles } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
+import { homePathNodes } from "./home-path";
 
 /**
  * 発見教材 (✦) 1 つぶん (Phase 4)。
@@ -44,6 +45,10 @@ export interface DiscoveryMarker {
 
 interface StagePathProps {
   nodes: SkillMapStageNode[];
+  /** サーバの推奨順。進行中でないときの「次」の上限に使う。 */
+  nextStageIds?: string[];
+  /** スキルツリー (全体の俯瞰) へ。 */
+  onOpenTree?: () => void;
   activeStageId: string | null;
   /** 現在地の星に出す「続きから」。次のレッスンが決まらないときは undefined。 */
   resume?: { lessonTitle: string; onResume: () => void } | undefined;
@@ -91,6 +96,8 @@ function labelOf(node: SkillMapStageNode): string {
 
 export const StagePath = ({
   nodes,
+  nextStageIds = [],
+  onOpenTree,
   activeStageId,
   resume,
   activeProgress = 0,
@@ -102,11 +109,18 @@ export const StagePath = ({
   onOpenDiscovery,
   className,
 }: StagePathProps) => {
+  // ホームはいまのコースの鎖だけ。全体はスキルツリー。
+  // 発見教材の源流が鎖の外でも、開ける場所が要るので載せる。
+  const focused = homePathNodes(nodes, {
+    activeStageId,
+    nextStageIds,
+    extraStageIds: discoveries.map((d) => d.stage_id),
+  });
   // 下 = 過去。描画は上から (= 未来から) なので降順に並べる。
-  const ordered = [...nodes].sort(
+  const ordered = [...focused].sort(
     (a, b) => rankOf(b) - rankOf(a) || labelOf(a).localeCompare(labelOf(b), "ja"),
   );
-  const cleared = nodes.filter((n) => n.state === "cleared").length;
+  const cleared = focused.filter((n) => n.state === "cleared").length;
   /** 星ごとの ✦。源流の星がこの道に無い教材は描かない (置き場所が無い)。 */
   const discoveryByStage = new Map<string, DiscoveryMarker[]>();
   for (const d of discoveries) {
@@ -116,10 +130,16 @@ export const StagePath = ({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>ステージの道</CardTitle>
+        <CardTitle>スキルマップ</CardTitle>
         <CardActions>
+          {onOpenTree ? (
+            <Button size="sm" variant="ghost" onClick={onOpenTree}>
+              <Compass size={12} />
+              全体を見る
+            </Button>
+          ) : null}
           <span className="text-[11.5px] text-ink-3">
-            点灯 {cleared} / {nodes.length}
+            修了 {cleared} / {focused.length}
           </span>
         </CardActions>
       </CardHeader>
@@ -139,9 +159,11 @@ export const StagePath = ({
         </div>
       ) : null}
 
-      {nodes.length === 0 ? (
+      {focused.length === 0 ? (
         <div className="px-4 py-6 text-center text-[12.5px] text-ink-3">
-          まだ道がありません。教材が公開されると、ここに星が現れます。
+          {nodes.some((n) => n.state === "cleared")
+            ? "公開中のスキルはすべて修了しています。全体を見るから俯瞰できます。"
+            : "まだスキルマップがありません。教材が公開されると、ここにスキルが現れます。"}
         </div>
       ) : (
         <div className="relative px-4 py-4">

@@ -159,7 +159,7 @@ export const StageList = ({
               {/*
                 既定アクションは「キューに追加」。同時に進めるのは 1 ステージだけ、という
                 設計なので、一覧から直接乗り換えさせず「次にやるリスト」へ積む導線にする
-                (乗り換えはホームの道で、一時停止の確認を挟んで行う)。
+                (乗り換えはホームのスキルマップで、一時停止の確認を挟んで行う)。
               */}
               <div className="mt-auto flex items-center gap-2 border-t border-border px-4 py-2.5">
                 {isActive ? (

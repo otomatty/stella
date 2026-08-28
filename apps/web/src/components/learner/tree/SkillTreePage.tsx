@@ -1,11 +1,11 @@
 /**
  * スキルツリー画面 (Phase 3a)。
  *
- * ホームの「ステージの道」は今日の一手を決める場所、こちらは **全体を眺める場所**。
+ * ホームの「スキルマップ」は今日の一手を決める場所、こちらは **全体を眺める場所**。
  * 星座の俯瞰と、星ごとの腕試し (レベル測定 / 飛び級) をここに集める。
  *
- * ホームの道はこのフェーズでは変更しない — 2 つの見え方が同じデータ
- * (`GET /api/skill-map/mine`) を別の切り口で描いている、という関係にしておく。
+ * ホームのスキルマップはいまのコースの鎖だけを描く。こちらは同じデータ
+ * (`GET /api/skill-map/mine`) で全体を俯瞰する。
  */
 
 import { useState } from "react";
@@ -69,7 +69,7 @@ export function SkillTreePage({
   const handleFinished = (result: SkillCheckResult) => {
     if (result.unlocked) {
       // 解放と同時に自己開始の受講登録も作られる (= すぐ「ここから始める」が出る)。
-      toast.success(`新しい星が解放されました。ここから始められます — ${result.title}`);
+      toast.success(`新しいスキルが解放されました。ここから始められます — ${result.title}`);
       // 登録が増えたので、シェルの受講中一覧も取り直す (自己開始と同じ理由)。
       refetchStages();
     }
@@ -94,7 +94,7 @@ export function SkillTreePage({
           <CardActions>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-[11px] text-ink-3">点灯した星</div>
+                <div className="text-[11px] text-ink-3">修了したスキル</div>
                 <div className="text-[15px] font-semibold tabular-nums">
                   {cleared} / {nodes.length}
                 </div>
@@ -122,7 +122,7 @@ export function SkillTreePage({
 
         <CardContent className={cn("px-0 pb-0")}>
           <p className="px-4 pb-3 text-[11.5px] text-ink-3 sm:px-6">
-            中心の星から始めて、外の星へ広がっていきます。盤面はドラッグで動かせます。星をクリックすると、その星でできるようになることや解放条件が見られます。まだ開いていない星も、腕試しに合格すれば飛び級で開けます。
+            中心のスキルから始めて、外のスキルへ広がっていきます。盤面はドラッグで動かせます。スキルをクリックすると、そのスキルでできるようになることや解放条件が見られます。まだ開いていないスキルも、腕試しに合格すれば飛び級で開けます。
           </p>
 
           {skillMap.loading && nodes.length === 0 ? (
@@ -151,7 +151,7 @@ export function SkillTreePage({
                         return stageQueue.refetch();
                       })
                       .then(() => {
-                        // ホームの道は乗り換えに確認ダイアログを挟むが、ここは星の
+                        // ホームのスキルマップは乗り換えに確認ダイアログを挟むが、ここは星の
                         // ポップオーバーを開いて押す 2 手が既に確認になっている。
                         // 代わりに「切り替わった」ことを必ず文字で返す。
                         const title = nodes.find((n) => n.id === stageId)?.title;

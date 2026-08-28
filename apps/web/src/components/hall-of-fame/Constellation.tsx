@@ -80,7 +80,7 @@ export function Constellation({
       // 等比で収める (星を潰さない)。帯より縦が余ったぶんは中央に置く。
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label={`ともした星: ${stages.map((stage) => stage.title).join("、")}`}
+      aria-label={`修了したスキル: ${stages.map((stage) => stage.title).join("、")}`}
     >
       <title>{stages.map((stage) => stage.title).join(" → ")}</title>
       {points.map((point, i) => {

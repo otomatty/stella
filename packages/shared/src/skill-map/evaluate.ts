@@ -65,7 +65,7 @@ export interface SkillMapStage {
   title: string;
   /** 前提ステージの **slug**。空配列 = 入口の星。 */
   prerequisites: string[];
-  /** 到達説明「この星をともした人は◯◯ができる」。 */
+  /** 到達説明「このスキルを身につけた人は◯◯ができる」。 */
   canDo?: string;
   /** 霧の中で見せるテーマ名。 */
   theme?: string;

@@ -1,7 +1,7 @@
 /**
  * スキルツリー — 星座として見る学習の全体像 (Phase 3a → 同心円 + キャンバス化)。
  *
- * ホームの「ステージの道」が 1 本の縦線で「今どこか」を見せるのに対し、こちらは
+ * ホームの「スキルマップ」が 1 本の縦線で「今どこか」を見せるのに対し、こちらは
  * **俯瞰**。星 = ステージ (教材) で、クリアした星が灯り、前提が線で繋がる。
  * 配置は同心円 (`radial-layout.ts`): 中心が入口の星、前提を進むほど外のリングへ
  * 広がる。盤面は `SkillTreeCanvas` の上にあり、Miro のようにドラッグで動かし、
@@ -88,7 +88,7 @@ export const SkillTree = ({
   if (nodes.length === 0) {
     return (
       <div className={cn("px-4 py-10 text-center text-[12.5px] text-ink-3", className)}>
-        まだ星がありません。教材が公開されると、ここに現れます。
+        まだスキルがありません。教材が公開されると、ここに現れます。
       </div>
     );
   }
@@ -198,7 +198,7 @@ const StarNode = ({
 
   /** 読み上げ用の状態語。見た目 (色・形) だけで区別させない。 */
   const stateText = fog
-    ? "まだ霧の中"
+    ? "まだ見えない"
     : cleared
       ? "クリア済み"
       : isActive
@@ -287,8 +287,8 @@ const StarNode = ({
 
         {fog ? (
           <p className="mt-2 text-[12px] text-ink-3">
-            まだ霧の中です。{node.theme ? `${node.theme} のあたりに星があります。` : ""}
-            手前の星を進めると見えてきます。
+            まだ先のスキルです。{node.theme ? `${node.theme} のあたりにあります。` : ""}
+            手前のスキルを進めると見えてきます。
           </p>
         ) : locked ? (
           // ロック星に出してよいのは解放条件だけ (到達説明はそもそも届いていない)。
@@ -302,7 +302,7 @@ const StarNode = ({
           </div>
         ) : node.can_do ? (
           <p className="mt-2 text-[12px] text-ink-3">
-            この星をともした人は <strong className="text-ink-2">{node.can_do}</strong>。
+            このスキルを身につけた人は <strong className="text-ink-2">{node.can_do}</strong>。
           </p>
         ) : null}
 
@@ -344,7 +344,7 @@ const StarNode = ({
             {cleared ? (
               <span className="inline-flex items-center gap-1 self-center text-[11.5px] text-ink-3">
                 <Check size={12} />
-                この星は点灯済み
+                このスキルは修了済み
               </span>
             ) : null}
           </div>

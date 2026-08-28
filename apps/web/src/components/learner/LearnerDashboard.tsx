@@ -2,7 +2,7 @@
  * 受講者のホーム — 「今日の一手 + 道のり」の 1 スクロール (Phase 2)。
  *
  * 上から HUD (レベル / XP / 連続学習 / 集中ボーナス) → 解放通知 → 今日のプラン →
- * **ステージの道 (主役)** → 次にやるリスト、の順。その下に、これまでの記録
+ * **スキルマップ (主役)** → 次にやるリスト、の順。その下に、これまでの記録
  * (提出・添削履歴 / 週間学習時間 / お知らせ / 期限 / AI) を二次セクションとして残す。
  *
  * ## 前の版から変えたこと
@@ -126,7 +126,7 @@ export const LearnerDashboard = ({
   } = useStudyActivity(currentUserId, STUDY_ACTIVITY_DAYS, backendEnabled);
   // 「今日の復習」(SRS) の残り問題数。 カードが無い/今日ぶんゼロなら出さない。
   const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
-  // 道 (スキルマップ) と HUD (スキルプロフィール)、そして次にやるリスト。
+  // スキルマップと HUD (スキルプロフィール)、そして次にやるリスト。
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
 
@@ -420,7 +420,7 @@ export const LearnerDashboard = ({
       ) : null}
       {skillMap.error ? (
         <p className="text-sm text-destructive mb-3">
-          ステージの道の取得に失敗しました: {skillMap.error}
+          スキルマップの取得に失敗しました: {skillMap.error}
         </p>
       ) : null}
       {/* キューと切り替えの失敗も黙って捨てない (ステージ一覧と同じ流儀)。 */}
@@ -483,6 +483,8 @@ export const LearnerDashboard = ({
         {backendEnabled ? (
           <StagePath
             nodes={skillMap.map?.stages ?? []}
+            nextStageIds={skillMap.map?.next_stage_ids ?? []}
+            onOpenTree={() => setPage("skill-tree")}
             // 現在地はサーバの値がそのまま正 (引けなければ現在地なしで描く)。
             activeStageId={serverActiveStageId}
             resume={

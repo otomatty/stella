@@ -143,7 +143,7 @@ export function SkillCheckDialog({
           </DialogTitle>
           <DialogDescription>
             {testOut
-              ? "合格すると、前提のステージを終えていなくてもこの星が開きます（飛び級）。"
+              ? "合格すると、前提のステージを終えていなくてもこのスキルが開きます（飛び級）。"
               : "いまの力を測ります。結果はステージの進捗を変えません。"}
             {paper?.pass_score ? ` 最大 10 問・合格ライン ${paper.pass_score}%。` : ""}
             {paper?.supported ? ` 1 日 ${dailyLimit} 回まで受けられます。` : ""}
@@ -177,7 +177,9 @@ export function SkillCheckDialog({
                (429) ので、解かせる前に止める。 */
             <div className="py-8 text-center text-[12.5px] text-ink-3">
               本日の受験回数の上限に達しました。明日また挑戦できます。
-              <div className="mt-1 text-ink-4">（同じ星の腕試しは 1 日 {dailyLimit} 回まで）</div>
+              <div className="mt-1 text-ink-4">
+                （同じスキルの腕試しは 1 日 {dailyLimit} 回まで）
+              </div>
             </div>
           ) : (
             questions.map((q, index) => (
@@ -345,7 +347,7 @@ const ResultView = ({ result, dailyLimit }: { result: SkillCheckResult; dailyLim
       // 解放と同時に自己開始の受講登録も作られるので、「ここから始められる」まで言える。
       <div className="mx-auto mt-3 flex max-w-[420px] items-center justify-center gap-2 rounded-lg border border-brand bg-brand-soft px-4 py-3 text-[13px] text-brand-ink">
         <Sparkles size={14} />
-        新しい星が解放されました。ここから始められます — {result.title}
+        新しいスキルが解放されました。ここから始められます — {result.title}
       </div>
     ) : null}
 

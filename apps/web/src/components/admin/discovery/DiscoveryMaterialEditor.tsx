@@ -147,7 +147,8 @@ export function DiscoveryMaterialEditor({ material, onClose, onSaved }: Props) {
             {material.generator === "heuristic"
               ? "既存の確認テストから複製した下書きです"
               : "AI (Claude) が生成した下書きです"}
-            。 公開すると、このステージを進行中 / 修了した受講者の道に「✦ 発見」として並びます。
+            。 公開すると、このステージを進行中 / 修了した受講者のスキルマップに「✦
+            発見」として並びます。
           </DialogDescription>
         </DialogHeader>
 
