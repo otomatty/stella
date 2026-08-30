@@ -21,6 +21,18 @@
  * だけを背後の SVG に敷き、座標は `radial-layout.ts` の決定的な計算に任せる。
  * 島の名前は星団の上のタイトルとジャンプチップ・端の矢印で示す (円の背景は描かない)。
  *
+ * ## 詳細の器は幅で入れ替える
+ *
+ * 星をタップ / クリックしたときに出す詳細は、sm 以上ではその星に紐づくポップオーバー、
+ * スマホ幅 (`useIsMobileViewport`) では画面下から出るドロワー。スマホでポップオーバーを
+ * 出すと、星が盤面の transform の中にあるぶん指の下に潜り込み、幅も画面に対して大きすぎて
+ * 位置が定まらない。ドロワーなら盤面と重ならない場所に必ず出て、指の届く下端にボタンが並ぶ。
+ * **何を出すかは器ではなく `star-detail.ts` が決める** (器ごとに条件を書くとずれる)。
+ *
+ * ドロワーは星ごとに持たせず盤面に 1 つだけ置き、開いている星を id で指す
+ * (24 星ぶんの Dialog を積まない)。スマホは 1 タップで寄せながら開く — 詳細に名前が
+ * 出るので、デスクトップの「まず寄る」1 手目が要らない。
+ *
  * ## 解放の演出は差分で 1 回だけ
  *
  * 「前回見たときは閉じていた星が開いた」「無かった星が現れた (教材の公開)」を
@@ -30,21 +42,31 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowUp, Check, Lock, Play, Plus, Sparkles, Star } from "@/lib/icons";
+import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
+import { ArrowUp, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
 import { getMaterialUrl, isStorageConfigured } from "@/lib/storage";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
 import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
-import { fogObscured } from "./fog-display";
 import { offscreenMarkers, type ViewState } from "./offscreen";
 import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
+import { describeStar, hasStarActions, type StarDetail } from "./star-detail";
 
 interface SkillTreeProps {
   nodes: SkillMapStageNode[];
@@ -67,11 +89,6 @@ interface SkillTreeProps {
    */
   hud?: ReactNode;
   className?: string;
-}
-
-/** タイトルは霧の中でも届く (ぼかして出す)。無ければテーマ名 → 伏せ字に落ちる。 */
-function labelOf(node: SkillMapStageNode): string {
-  return node.title ?? node.theme ?? "？？？";
 }
 
 /**
@@ -190,6 +207,12 @@ export const SkillTree = ({
   const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
   const celebrations = useSkillTreeCelebration(currentUserId, nodes);
   const canvasRef = useRef<SkillTreeCanvasHandle | null>(null);
+  /** スマホ幅ではポップオーバーではなくボトムシートで詳細を出す。 */
+  const isMobile = useIsMobileViewport();
+  /** シートを開いている星 (instanceId)。複製した星は扇ごとに別の器として扱う。 */
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  /** シートを閉じたときにフォーカスを戻す先の星。 */
+  const sheetAnchorRef = useRef<HTMLButtonElement | null>(null);
   const [scale, setScale] = useState(1);
   /** 見え方 (画面端の矢印の計算用)。初回レンダー前は null。 */
   const [view, setView] = useState<ViewState | null>(null);
@@ -208,6 +231,28 @@ export const SkillTree = ({
       return !shouldZoom;
     },
     [scale],
+  );
+  /**
+   * スマホ: タップ 1 回で寄せながらシートを開く。
+   *
+   * デスクトップの「まず寄る」1 手目は、寄らないと星の名前が読めないための段。
+   * シートには名前も状態も出るので、スマホでは 1 手目から開いてよい (寄せるのは
+   * どの星を見ているかを盤面側でも示すため — シートは下端に出るので隠れない)。
+   */
+  const openSheet = useCallback((placed: RadialNode, anchor: HTMLButtonElement) => {
+    sheetAnchorRef.current = anchor;
+    canvasRef.current?.focusOn(placed.x, placed.y, FOCUS_SCALE);
+    setFocusedId(placed.instanceId);
+    setSheetId(placed.instanceId);
+  }, []);
+  // 幅が変わって器が入れ替わったら、開きっぱなしのシートは畳む。
+  useEffect(() => {
+    if (!isMobile) setSheetId(null);
+  }, [isMobile]);
+  /** シートに出す星。教材の公開状況が変わって消えたら閉じる。 */
+  const sheetNode = useMemo(
+    () => (sheetId ? (layout.nodes.find((n) => n.instanceId === sheetId) ?? null) : null),
+    [layout, sheetId],
   );
   /** 演出の順番 (複数の星が同時に開いたとき、内側から順に灯す)。 */
   const celebrationOrder = useMemo(() => {
@@ -371,6 +416,21 @@ export const SkillTree = ({
               </button>
             );
           })}
+          {/* 盤面に 1 つだけ置くボトムシート (スマホ幅のときの詳細)。Portal で body に出る
+              ので、この位置は「盤面が持ち主」という意味だけ。 */}
+          {isMobile ? (
+            <StarSheet
+              placed={sheetNode}
+              activeStageId={activeStageId}
+              queuedStageIds={queuedStageIds}
+              revealDev={revealDev}
+              anchorRef={sheetAnchorRef}
+              onClose={() => setSheetId(null)}
+              onStartStage={onStartStage}
+              onQueueStage={onQueueStage}
+              onSkillCheck={onSkillCheck}
+            />
+          ) : null}
         </>
       }
     >
@@ -466,6 +526,9 @@ export const SkillTree = ({
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
           onActivate={() => activateStar(placed)}
+          sheetMode={isMobile}
+          sheetOpen={sheetId === placed.instanceId}
+          onOpenSheet={(anchor) => openSheet(placed, anchor)}
           onStartStage={onStartStage}
           onQueueStage={onQueueStage}
           onSkillCheck={onSkillCheck}
@@ -487,10 +550,16 @@ interface StarNodeProps {
   /** 複数の演出を内側から順に灯すための順番。 */
   celebrationIndex: number;
   /**
-   * クリック 1 手目。false なら寄るだけでポップオーバーは開かない
+   * クリック 1 手目 (sm 以上)。false なら寄るだけでポップオーバーは開かない
    * (全体表示からのズームイン)。
    */
   onActivate: () => boolean;
+  /** スマホ幅か。true ならポップオーバーを持たず、盤面のボトムシートを開く。 */
+  sheetMode: boolean;
+  /** この星のシートが開いているか (`aria-expanded` に写す)。 */
+  sheetOpen: boolean;
+  /** シートを開く。閉じたあとフォーカスを戻せるよう、押した星そのものを渡す。 */
+  onOpenSheet: (anchor: HTMLButtonElement) => void;
   onStartStage: (stageId: string) => void;
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
@@ -505,6 +574,9 @@ const StarNode = ({
   celebration,
   celebrationIndex,
   onActivate,
+  sheetMode,
+  sheetOpen,
+  onOpenSheet,
   onStartStage,
   onQueueStage,
   onSkillCheck,
@@ -512,11 +584,10 @@ const StarNode = ({
 }: StarNodeProps) => {
   const [open, setOpen] = useState(false);
   const node = placed.node;
+  const detail = describeStar({ node, isActive, queued, revealDev });
   const fog = node.visibility === "fog";
-  const obscured = fogObscured(node.visibility, revealDev);
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
-  const label = labelOf(node);
   const isCenter = placed.ring === 0;
   const routeStyle = routeStyleOf(routeAccentOf(placed.sector));
   // 講座アイコン (単色シルエット)。見える星 (解放済み・進行中・クリア) だけ状態グリフを
@@ -527,23 +598,124 @@ const StarNode = ({
     !locked && node.icon_path && isStorageConfigured() ? getMaterialUrl(node.icon_path) : null,
   );
 
-  /** 読み上げ用の状態語。見た目 (色・形) だけで区別させない。 */
-  const stateText = obscured
-    ? "まだ見えない"
-    : fog
-      ? "まだ先（開発者表示）"
-      : cleared
-        ? "クリア済み"
-        : isActive
-          ? "進行中"
-          : locked
-            ? "未解放"
-            : "解放済み";
-
   const act = (run: () => void) => {
     setOpen(false);
     run();
   };
+
+  /*
+   * 器が入れ替わったら、開いたままのポップオーバーの状態を捨てる。
+   *
+   * 下の早期 return は Popover を描かなくするだけで `open` は残るので、幅が戻った
+   * とき (端末の回転で 640px を跨ぐ) に前の星の詳細が甦ってしまう。シートで別の星を
+   * 見たあとでも、甦るのは回転前に開いていた星のほう。
+   */
+  useEffect(() => {
+    if (sheetMode) setOpen(false);
+  }, [sheetMode]);
+
+  const star = (
+    <button
+      type="button"
+      aria-label={`${detail.label}（${detail.stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
+      // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
+      //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
+      {...(sheetMode
+        ? {
+            "aria-haspopup": "dialog" as const,
+            "aria-expanded": sheetOpen,
+            onClick: (event: ReactMouseEvent<HTMLButtonElement>) =>
+              onOpenSheet(event.currentTarget),
+          }
+        : {})}
+      // フォーカス追従 (SkillTreeCanvas の onFocusCapture) 用の盤面座標。
+      data-tree-x={placed.x}
+      data-tree-y={placed.y}
+      className={cn(
+        "absolute -translate-x-1/2 -translate-y-1/2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        celebration === "appeared" ? "tree-appear" : "",
+      )}
+      style={
+        {
+          left: placed.x,
+          top: placed.y,
+          "--d": celebrationIndex * 0.2,
+          ...routeStyle,
+        } as CSSProperties
+      }
+    >
+      <span className="relative block" aria-hidden="true">
+        {/* 解放の瞬間: 広がる輪 2 本 + 星の弾み。1 回きり (celebration は差分でしか立たない)。 */}
+        {celebration === "unlocked" ? (
+          <>
+            <span className="tree-burst" />
+            <span className="tree-burst tree-burst-late" />
+          </>
+        ) : null}
+        <span
+          className={cn(
+            "tree-star grid place-items-center rounded-full border transition-colors",
+            isCenter ? "h-11 w-11" : "h-8 w-8",
+            cleared
+              ? "tree-star-cleared"
+              : isActive
+                ? "tree-star-active"
+                : node.state === "unlocked"
+                  ? "tree-star-open"
+                  : "tree-star-locked",
+            // 現在地だけ脈動させる。reduced-motion では止める。
+            isActive ? "animate-pulse motion-reduce:animate-none" : "",
+            fog && detail.obscured ? "opacity-45" : fog ? "opacity-70" : "",
+            celebration === "unlocked" ? "tree-unlock-pop" : "",
+          )}
+        >
+          {iconUrl ? (
+            <span
+              className="tree-star-icon"
+              style={
+                {
+                  width: isCenter ? 22 : 16,
+                  height: isCenter ? 22 : 16,
+                  "--star-icon": `url("${iconUrl}")`,
+                } as CSSProperties
+              }
+            />
+          ) : cleared ? (
+            <Star size={isCenter ? 18 : 14} fill="currentColor" />
+          ) : isActive ? (
+            <Play size={isCenter ? 16 : 12} />
+          ) : locked ? (
+            <Lock size={isCenter ? 14 : 11} />
+          ) : (
+            <Sparkles size={isCenter ? 16 : 12} />
+          )}
+        </span>
+        {showLabel ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 w-[4.5rem] -translate-x-1/2 line-clamp-2 text-center text-[8px] leading-tight",
+              isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
+              // 霧の星は名前をぼかして「予告」だけ見せる。開発者モードではぼかさない。
+              detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
+            )}
+          >
+            {detail.label}
+          </span>
+        ) : null}
+        {celebration ? (
+          <span className="tree-new-badge" aria-hidden="true">
+            {celebration === "unlocked" ? "解放!" : "NEW"}
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+
+  // スマホ幅: 詳細は盤面のボトムシートが受け持つので、星はただのボタン。
+  if (sheetMode) {
+    return star;
+  }
 
   return (
     <Popover
@@ -553,170 +725,274 @@ const StarNode = ({
         setOpen(next);
       }}
     >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`${label}（${stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
-          // フォーカス追従 (SkillTreeCanvas の onFocusCapture) 用の盤面座標。
-          data-tree-x={placed.x}
-          data-tree-y={placed.y}
-          className={cn(
-            "absolute -translate-x-1/2 -translate-y-1/2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            celebration === "appeared" ? "tree-appear" : "",
-          )}
-          style={
-            {
-              left: placed.x,
-              top: placed.y,
-              "--d": celebrationIndex * 0.2,
-              ...routeStyle,
-            } as CSSProperties
-          }
-        >
-          <span className="relative block" aria-hidden="true">
-            {/* 解放の瞬間: 広がる輪 2 本 + 星の弾み。1 回きり (celebration は差分でしか立たない)。 */}
-            {celebration === "unlocked" ? (
-              <>
-                <span className="tree-burst" />
-                <span className="tree-burst tree-burst-late" />
-              </>
-            ) : null}
-            <span
-              className={cn(
-                "tree-star grid place-items-center rounded-full border transition-colors",
-                isCenter ? "h-11 w-11" : "h-8 w-8",
-                cleared
-                  ? "tree-star-cleared"
-                  : isActive
-                    ? "tree-star-active"
-                    : node.state === "unlocked"
-                      ? "tree-star-open"
-                      : "tree-star-locked",
-                // 現在地だけ脈動させる。reduced-motion では止める。
-                isActive ? "animate-pulse motion-reduce:animate-none" : "",
-                fog && obscured ? "opacity-45" : fog ? "opacity-70" : "",
-                celebration === "unlocked" ? "tree-unlock-pop" : "",
-              )}
-            >
-              {iconUrl ? (
-                <span
-                  className="tree-star-icon"
-                  style={
-                    {
-                      width: isCenter ? 22 : 16,
-                      height: isCenter ? 22 : 16,
-                      "--star-icon": `url("${iconUrl}")`,
-                    } as CSSProperties
-                  }
-                />
-              ) : cleared ? (
-                <Star size={isCenter ? 18 : 14} fill="currentColor" />
-              ) : isActive ? (
-                <Play size={isCenter ? 16 : 12} />
-              ) : locked ? (
-                <Lock size={isCenter ? 14 : 11} />
-              ) : (
-                <Sparkles size={isCenter ? 16 : 12} />
-              )}
-            </span>
-            {showLabel ? (
-              <span
-                className={cn(
-                  "pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 w-[4.5rem] -translate-x-1/2 line-clamp-2 text-center text-[8px] leading-tight",
-                  isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
-                  // 霧の星は名前をぼかして「予告」だけ見せる。開発者モードではぼかさない。
-                  obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
-                )}
-              >
-                {label}
-              </span>
-            ) : null}
-            {celebration ? (
-              <span className="tree-new-badge" aria-hidden="true">
-                {celebration === "unlocked" ? "解放!" : "NEW"}
-              </span>
-            ) : null}
-          </span>
-        </button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{star}</PopoverTrigger>
 
       <PopoverContent align="center" side="right" className="w-[280px]">
         <div className="text-[13px] font-semibold leading-snug">
-          {obscured ? (
+          {detail.obscured ? (
             // 名前はぼかしの予告だけ。読み上げにも流さない (状態語と本文で足りる)。
             <span aria-hidden="true" className="blur-[3px] select-none">
-              {label}
+              {detail.label}
             </span>
           ) : (
-            label
+            detail.label
           )}
         </div>
-        <div className="mt-0.5 text-[11px] text-ink-3">{stateText}</div>
+        <div className="mt-0.5 text-[11px] text-ink-3">{detail.stateText}</div>
 
-        {obscured ? (
-          <p className="mt-2 text-[12px] text-ink-3">
-            まだ先のスキルです。手前のスキルを進めるとはっきり見えてきます。
-          </p>
-        ) : locked ? (
-          // ロック星に出してよいのは解放条件だけ (到達説明はそもそも届いていない)。
-          <div className="mt-2 text-[12px] text-ink-3">
-            <div className="font-semibold text-ink-2">解放条件</div>
-            <div className="mt-0.5">
-              {(node.lock_reasons ?? []).length > 0
-                ? `${(node.lock_reasons ?? []).join(" / ")} をクリアすると開きます`
-                : "前提のステージをクリアすると開きます"}
-            </div>
-          </div>
-        ) : node.can_do ? (
-          <p className="mt-2 text-[12px] text-ink-3">
-            このスキルを身につけた人は <strong className="text-ink-2">{node.can_do}</strong>。
-          </p>
-        ) : null}
+        <StarBody detail={detail} size="sm" className="mt-2" />
 
-        {fog ? null : (
+        {hasStarActions(detail.actions) ? (
           <div className="mt-3 flex flex-wrap gap-2">
-            {locked ? (
-              <Button size="sm" variant="accent" onClick={() => act(() => onSkillCheck(node.id))}>
-                <Sparkles size={12} />
-                腕試しに挑戦（飛び級）
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => act(() => onSkillCheck(node.id))}>
-                腕試しで力試し
-              </Button>
-            )}
-
-            {/* 修了した星に着手の導線は出さない (サーバも切り替えを 400 で断る)。
-                解放済みなら **割り当ての有無によらず** 始められる (Phase 3b) —
-                受講登録は「ここから始める」を押した時点で自分で作る。
-                キューだけは受講登録のある星に限る (キュー API が登録を要求するため)。 */}
-            {!locked && !cleared && !isActive ? (
-              <>
-                <Button size="sm" onClick={() => act(() => onStartStage(node.id))}>
-                  ここから始める
-                </Button>
-                {queued || !node.enrolled ? null : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => act(() => onQueueStage(node.id))}
-                  >
-                    <Plus size={12} />
-                    キューに追加
-                  </Button>
-                )}
-              </>
-            ) : null}
-
-            {cleared ? (
-              <span className="inline-flex items-center gap-1 self-center text-[11.5px] text-ink-3">
-                <Check size={12} />
-                このスキルは修了済み
-              </span>
-            ) : null}
+            <StarActions
+              detail={detail}
+              stageId={node.id}
+              size="sm"
+              onAct={act}
+              onStartStage={onStartStage}
+              onQueueStage={onQueueStage}
+              onSkillCheck={onSkillCheck}
+            />
           </div>
-        )}
+        ) : null}
       </PopoverContent>
     </Popover>
+  );
+};
+
+interface StarSheetProps {
+  /**
+   * 開いている星。閉じている間は null。閉じるアニメーションの間も中身が要るので、
+   * 直前に開いていた星をこちらで覚えておく。
+   */
+  placed: RadialNode | null;
+  activeStageId: string | null;
+  queuedStageIds: string[];
+  revealDev: boolean;
+  /** 閉じたときにフォーカスを戻す星。 */
+  anchorRef: RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+  onStartStage: (stageId: string) => void;
+  onQueueStage: (stageId: string) => void;
+  onSkillCheck: (stageId: string) => void;
+}
+
+/**
+ * スマホ幅の詳細 — 画面下から出るドロワー。
+ *
+ * ポップオーバーと違って盤面と重ならない場所に必ず出るので、指で押した星が自分の指と
+ * シートの下に隠れない。中身 (名前・状態・本文・ボタン) は `star-detail.ts` の記述を
+ * ポップオーバーと共有し、器だけが違う。
+ */
+const StarSheet = ({
+  placed,
+  activeStageId,
+  queuedStageIds,
+  revealDev,
+  anchorRef,
+  onClose,
+  onStartStage,
+  onQueueStage,
+  onSkillCheck,
+}: StarSheetProps) => {
+  const lastRef = useRef<RadialNode | null>(null);
+  /**
+   * 腕試し (別のモーダル) へ渡して閉じたか。
+   *
+   * `SkillCheckDialog` は z-50 で開くのに対し、このシートの overlay は z-[100]。
+   * 閉じアニメーションの 200ms のあいだ overlay が受験画面の上に残り、その間の
+   * タップを飲んでしまう。渡したときは**アニメーションを省いて即座に畳み**、
+   * フォーカスも星へ戻さない (開いたダイアログの focus trap と取り合いになる)。
+   * 着手・キューは次のモーダルが無いので、従来どおり滑らせて閉じる。
+   */
+  const handedOffRef = useRef(false);
+  if (placed) {
+    lastRef.current = placed;
+    handedOffRef.current = false;
+  }
+  const shown = placed ?? lastRef.current;
+  if (!shown || (!placed && handedOffRef.current)) return null;
+
+  const node = shown.node;
+  const detail = describeStar({
+    node,
+    isActive: node.id === activeStageId,
+    queued: queuedStageIds.includes(node.id),
+    revealDev,
+  });
+  const act = (run: () => void) => {
+    onClose();
+    run();
+  };
+  // `act` は閉じてから実行するので、印はここで立てる (どちらも同じイベントの中なので、
+  // シートが畳まれるレンダーからは立った状態で見える)。
+  const handOffToSkillCheck = (stageId: string) => {
+    handedOffRef.current = true;
+    onSkillCheck(stageId);
+  };
+
+  return (
+    <Drawer
+      open={placed !== null}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent
+        className="max-h-[80dvh]"
+        onCloseAutoFocus={(event) => {
+          // 次のモーダルへ渡したときは、そちらが当てたフォーカスを奪わない。
+          if (handedOffRef.current) {
+            event.preventDefault();
+            return;
+          }
+          // この器にトリガーは無い (星を押したのは盤面) ので、戻す先は自分で指す。
+          // 任せると body に落ちて、次の Tab がヘッダーの先頭から始まってしまう。
+          const target = anchorRef.current;
+          if (target) {
+            event.preventDefault();
+            target.focus();
+          }
+        }}
+      >
+        <DrawerHeader className="flex-row items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <DrawerTitle className="text-[15px] leading-snug">
+              {detail.obscured ? (
+                <>
+                  {/* 名前はぼかしの予告だけ。読み上げには状態語だけを流す。 */}
+                  <span aria-hidden="true" className="blur-[3px] select-none">
+                    {detail.label}
+                  </span>
+                  <span className="sr-only">まだ見えないスキル</span>
+                </>
+              ) : (
+                detail.label
+              )}
+            </DrawerTitle>
+            <DrawerDescription className="mt-0.5">{detail.stateText}</DrawerDescription>
+          </div>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="閉じる">
+              <X size={14} />
+            </Button>
+          </DrawerClose>
+        </DrawerHeader>
+
+        <StarBody detail={detail} size="md" className="overflow-y-auto px-4 py-3" />
+
+        {hasStarActions(detail.actions) ? (
+          // 器の既定は下から積む (`flex-col-reverse`) が、ここは読む順 = 並ぶ順にする。
+          <DrawerFooter className="flex-col">
+            <StarActions
+              detail={detail}
+              stageId={node.id}
+              size="full"
+              onAct={act}
+              onStartStage={onStartStage}
+              onQueueStage={onQueueStage}
+              onSkillCheck={handOffToSkillCheck}
+            />
+          </DrawerFooter>
+        ) : null}
+      </DrawerContent>
+    </Drawer>
+  );
+};
+
+/** 詳細の本文 (予告 / 解放条件 / 到達説明)。器を跨いで同じ文面を出す。 */
+const StarBody = ({
+  detail,
+  size,
+  className,
+}: {
+  detail: StarDetail;
+  /** `md` はドロワー (スマホで読む文字)、`sm` はポップオーバー。 */
+  size: "sm" | "md";
+  className?: string;
+}) => {
+  const text = size === "md" ? "text-[13px]" : "text-[12px]";
+  const body = detail.body;
+  if (body.kind === "fog") {
+    return (
+      <p className={cn(text, "text-ink-3", className)}>
+        まだ先のスキルです。手前のスキルを進めるとはっきり見えてきます。
+      </p>
+    );
+  }
+  if (body.kind === "lock") {
+    return (
+      <div className={cn(text, "text-ink-3", className)}>
+        <div className="font-semibold text-ink-2">解放条件</div>
+        <div className="mt-0.5">{body.text}</div>
+      </div>
+    );
+  }
+  if (body.kind === "can-do") {
+    return (
+      <p className={cn(text, "text-ink-3", className)}>
+        このスキルを身につけた人は <strong className="text-ink-2">{body.text}</strong>。
+      </p>
+    );
+  }
+  return null;
+};
+
+interface StarActionsProps {
+  detail: StarDetail;
+  stageId: string;
+  /** `full` は幅いっぱい (ドロワー)、`sm` は行に流す (ポップオーバー)。 */
+  size: "sm" | "full";
+  /** 器を閉じてから実行する。 */
+  onAct: (run: () => void) => void;
+  onStartStage: (stageId: string) => void;
+  onQueueStage: (stageId: string) => void;
+  onSkillCheck: (stageId: string) => void;
+}
+
+/** 詳細のボタン列。並びは器を跨いで同じで、器が外側の箱だけを決める。 */
+const StarActions = ({
+  detail,
+  stageId,
+  size,
+  onAct,
+  onStartStage,
+  onQueueStage,
+  onSkillCheck,
+}: StarActionsProps) => {
+  const { skillCheck, start, queue, clearedNote } = detail.actions;
+  return (
+    <>
+      {skillCheck === "challenge" ? (
+        <Button size={size} variant="accent" onClick={() => onAct(() => onSkillCheck(stageId))}>
+          <Sparkles size={12} />
+          腕試しに挑戦（飛び級）
+        </Button>
+      ) : skillCheck === "try" ? (
+        <Button size={size} variant="outline" onClick={() => onAct(() => onSkillCheck(stageId))}>
+          腕試しで力試し
+        </Button>
+      ) : null}
+
+      {start ? (
+        <Button size={size} onClick={() => onAct(() => onStartStage(stageId))}>
+          ここから始める
+        </Button>
+      ) : null}
+
+      {queue ? (
+        <Button size={size} variant="ghost" onClick={() => onAct(() => onQueueStage(stageId))}>
+          <Plus size={12} />
+          キューに追加
+        </Button>
+      ) : null}
+
+      {clearedNote ? (
+        <span className="inline-flex items-center justify-center gap-1 self-center text-[11.5px] text-ink-3">
+          <Check size={12} />
+          このスキルは修了済み
+        </span>
+      ) : null}
+    </>
   );
 };
