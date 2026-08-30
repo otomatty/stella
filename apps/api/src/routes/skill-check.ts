@@ -10,10 +10,12 @@
  *
  * ## 受けられる星の範囲
  *
- * **視界が `full` / `name-only` の星だけ。** `fog` は 400 で、しかもフォーカス切り替えと
- * **同じ汎用文言** (`UNSELECTABLE_STAGE_MESSAGE`) を返す — 「霧の中だから駄目」と
- * 書き分けると、応答の違いから霧の向こうに星があること自体が読めてしまう。
- * ロック星でも `name-only` なら受けられる (そこが飛び級の入口)。
+ * **視界が `full` の星だけ** (`isSelectableVisibility`)。それより先は 400 で、しかも
+ * フォーカス切り替えと **同じ汎用文言** (`UNSELECTABLE_STAGE_MESSAGE`) を返す —
+ * 「霧の中だから駄目」と書き分けると、応答の違いから霧の向こうに星があること自体が
+ * 読めてしまう。ロック星でも解放条件まで見えていれば受けられる (そこが飛び級の入口) —
+ * 逆に言うと、飛び級で飛べるのは **1 歩先まで**。名前がぼやけている星 (2 歩先) の設問を
+ * 出すのは、視界の段が「まだ中身を語らない」と決めたことと矛盾する。
  *
  * 受けられるロールは `SKILL_CHECK_ROLES` (受講者 / 管理者)。講師・営業は 403。
  *
@@ -31,7 +33,7 @@
  * 引き換えに、**受講登録が守っていた「見せてよい設問の範囲」もここでは緩む** —
  * 登録の無いステージの設問文が最大 10 問ぶん読める。これは次の 2 つで受け止める:
  *
- *   - 視界 (`fog` の星は受験できない) が範囲を「もう名前が見えている星」に限る
+ *   - 視界 (`full` の星しか受験できない) が範囲を「もう解放条件まで見えている星」に限る
  *   - **受験回数の上限 (1 日 3 回)** が列挙の速度を潰す。プールが小さいステージでは
  *     出題が回転しない (`@falcon/shared/skill-map/skill-check` の JSDoc) ので、
  *     無制限に受けられると全設問の列挙も正答の総当たりも成立してしまう。
@@ -43,7 +45,7 @@
  *   繰り返し受けられるので、正答を返すと解答集を作れてしまう
  * - 設問そのものがステージの内容をどこまで明かすかは教材次第で、ここでは制御しない。
  *   「知っているなら飛ばしてよい」がテストアウトの本質なので、問題文を伏せる意味がない
- * - 霧の星の存在を漏らさない (上記の汎用文言)
+ * - 霧より先の星の存在を漏らさない (上記の汎用文言)
  *
  * ## 出題
  *
@@ -55,6 +57,7 @@
 
 import { Hono } from "hono";
 
+import { isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
 import type { SkillMapState, SkillMapVisibility } from "@falcon/shared/skill-map/evaluate";
 import {
   SKILL_CHECK_DAILY_LIMIT,
@@ -121,12 +124,12 @@ async function resolveStage(
   requireCanTakeSkillCheck(caller);
   const source = await loadSkillMapSource(db, caller, opts);
   const stage = source.stages.find((row) => row.id === stageId);
-  // 存在しない星と、霧の中の星と、他テナントの星を **同じ 400** に丸める。
+  // 存在しない星と、霧より先の星と、他テナントの星を **同じ 400** に丸める。
   if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
 
   const result = evaluateSkillMapFor(source);
-  const visibility = result.visibility.get(stageId) ?? "fog";
-  if (visibility === "fog") throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
+  const visibility = result.visibility.get(stageId) ?? "hidden";
+  if (!isSelectableVisibility(visibility)) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
 
   return {
     stageId,

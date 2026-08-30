@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RadialProgress } from "@/components/ui/radial-progress";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
-import { isDevModeEnabled, subscribeDevMode } from "@/lib/dev-mode";
+import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { cn } from "@/lib/utils";
 
@@ -41,13 +41,31 @@ export function SkillTreePage({
 }: SkillTreePageProps) {
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
-  const [revealDev, setRevealDev] = useState(isDevModeEnabled);
-  useEffect(() => subscribeDevMode(setRevealDev), []);
+  /**
+   * FAB の状態 (localStorage)。これ **だけ** ではぼかしを外さない。
+   *
+   * サーバが `DEV_MODE` を持たない本番では、応答の `dev_mode` が偽のままなので
+   * `revealDev` も偽になる (Issue #271 — クライアントの値だけで判断していたため、
+   * 本番の新規セッションで霧の星の実名が出ていた)。
+   */
+  const [devModeRequested, setDevModeRequested] = useState(isDevModeEnabled);
+  useEffect(() => subscribeDevMode(setDevModeRequested), []);
   /** 腕試しを開いている星 (null なら閉じている)。 */
   const [checkStageId, setCheckStageId] = useState<string | null>(null);
 
   const nodes = skillMap.map?.stages ?? [];
+  /**
+   * 段を素通しで描いてよいか = ローカルの設定 **かつ** サーバが確認した開発モード。
+   *
+   * 応答が来るまでは偽 = ぼかす側に倒す (先に描いてから伏せ直すと、一瞬だけ実名が出る)。
+   */
+  const revealDev = revealsDevMap(devModeRequested, skillMap.map?.dev_mode);
   const cleared = skillMap.map?.cleared_count ?? 0;
+  /**
+   * 「修了 x / y」の分母は配信対象の総数。応答の星数を使うと、視界が広がるたびに
+   * 分母が増えて「全体のどこまで来たか」が読めなくなる。
+   */
+  const totalStages = skillMap.map?.stage_count ?? nodes.length;
   const level = skillMap.profile?.level;
   const levelPercent =
     level && level.xp_into_level + level.xp_to_next_level > 0
@@ -95,7 +113,7 @@ export function SkillTreePage({
       <div className="text-[13px] font-semibold">スキルツリー</div>
       <div className="text-[12px] tabular-nums">
         <span className="tree-hint">修了 </span>
-        {cleared} / {nodes.length}
+        {cleared} / {totalStages}
       </div>
       <RadialProgress
         value={levelPercent}

@@ -12,6 +12,7 @@
 
 import { and, count, countDistinct, desc, eq, gte, inArray, max } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
+import { evaluateSkillMap, isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
 import type { SkillMapStage } from "@falcon/shared/skill-map/evaluate";
 import type { FocusCompletion } from "@falcon/shared/skill-map/focus";
 import { filterIslandStages } from "@falcon/shared/skill-map/islands";
@@ -110,6 +111,43 @@ export function shouldRevealDevMap(
   return true;
 }
 
+/**
+ * クライアントが「視界の段を 4 つとも扱える」と申告する **クエリ引数**。値は段の版。
+ *
+ * ## なぜ版を切るか
+ *
+ * `visibility` に `edge` / `hidden` を足したのは **wire の後方非互換な変更**で、
+ * それを知らない画面は `fog` 以外を普通の星として描く (旧 `describeStar()` は
+ * `visibility === "fog"` のときだけ操作を隠す)。デプロイは `deploy:api` →
+ * `deploy:web` の順で、しかも**開いたままのタブは古い bundle のまま**なので、
+ * 「新 API + 旧画面」は必ず起きる。そのとき線だけのはずの幽霊ノードが
+ * 「？？？」のロック星として描かれ、押すと必ず 400 になる腕試しボタンまで出る。
+ *
+ * そこで申告の無いクライアントには **幽霊ノードを配らない** (`full` / `fog` だけ)。
+ * 旧画面は今までどおり名前のある星だけを描き、失敗する導線も出ない。段を増やした
+ * ことを知っている画面だけが 4 段ぶんを受け取る。
+ *
+ * ## ヘッダではなくクエリ引数にする理由
+ *
+ * 独自ヘッダは **サーバ側の CORS 許可リストに載っていないとプリフライトで弾かれる**
+ * (= その API 呼び出しが丸ごと失敗する)。API をロールバックしたときのように
+ * 「新しい画面 + 古い API」になると、古い API はこのヘッダを知らないので、
+ * 意図した緩やかな縮退どころか **全ての API 呼び出しが落ちる**。
+ * クエリ引数なら CORS の対象外で、知らないサーバは黙って無視する。
+ *
+ * 画面が全部入れ替わったら、この引数ごと落としてよい (移行用の足場)。
+ */
+export const SKILL_MAP_TIERS_PARAM = "tiers";
+
+/** 幽霊ノード (`edge`) を配ってよい版。 */
+const SKILL_MAP_TIERS_WITH_EDGE = 2;
+
+/** そのリクエストの画面が幽霊ノードを描けるか (申告が無ければ否 = 配らない)。 */
+export function acceptsGhostStars(declared: string | undefined): boolean {
+  const version = Number.parseInt(declared ?? "", 10);
+  return Number.isFinite(version) && version >= SKILL_MAP_TIERS_WITH_EDGE;
+}
+
 /** Hono コンテキストから開発者表示フラグを読む。 */
 export function wantsDevReveal(c: {
   env: { DEV_MODE?: string };
@@ -168,7 +206,6 @@ export async function loadSkillMapSource(
   const clearedStageIds = await loadClearedStageIds(db, caller);
   const enrolledStageIds = await loadEnrolledStageIds(db, caller);
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
-  const active = await resolveActiveStage(db, caller, clearedStageIds, enrolledStageIds);
 
   // 島 (資格 / AI) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
   // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
@@ -178,22 +215,71 @@ export async function loadSkillMapSource(
     ? stageRows
     : filterIslandStages(stageRows, clearedStageIds);
 
+  const mapStages: SkillMapStage[] = visibleRows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category ?? "",
+    prerequisites: parsePrerequisites(row.prerequisites),
+    ...(row.parent ? { parent: row.parent } : {}),
+    ...(row.canDo ? { canDo: row.canDo } : {}),
+    ...(row.theme ? { theme: row.theme } : {}),
+    ...(row.iconPath ? { iconPath: row.iconPath } : {}),
+  }));
+
+  const active = await resolveActiveStage(
+    db,
+    caller,
+    clearedStageIds,
+    enrolledStageIds,
+    selectableActiveStages(mapStages, clearedStageIds, unlockedStageIds),
+  );
+
   return {
-    stages: visibleRows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      category: row.category ?? "",
-      prerequisites: parsePrerequisites(row.prerequisites),
-      ...(row.parent ? { parent: row.parent } : {}),
-      ...(row.canDo ? { canDo: row.canDo } : {}),
-      ...(row.theme ? { theme: row.theme } : {}),
-      ...(row.iconPath ? { iconPath: row.iconPath } : {}),
-    })),
+    stages: mapStages,
     clearedStageIds,
     enrolledStageIds,
     unlockedStageIds,
     ...(active.stageId ? { activeStageId: active.stageId, activeStageSource: active.source } : {}),
+  };
+}
+
+/**
+ * 「進行中」に据えてよい星 (視界が `full` のもの) を、**active を注入する前の地図**で数える。
+ *
+ * `active` の星は評価器で無条件に距離 0 の起点になる。つまり保存済みのフォーカスや
+ * 進捗由来のフォーカスをそのまま注入すると、**その星と隣が問答無用で `full` に昇格**し、
+ * slug・到達説明・解放条件まで返る。書き込み側 (`PUT /api/skill-map/active-stage`) は
+ * 霧より先の星を断るのに、読み出し側だけがそれを迂回できてしまう。
+ *
+ * 迂回は絵空事ではない: 視界の段を変える前は 2 歩先の星もフォーカスに保存できたので、
+ * **その頃の `learner_focus` 行がそのまま残っている**。新しい規則では `fog` になる星を、
+ * 古い行が `full` へ昇格させ続ける。
+ *
+ * そこで active を空にした地図を 1 度作り、そこで `full` の星だけを候補にする。
+ * 「クリア済みのフォーカスは読み出し側で導出へ落とす」のと同じ、読み書きの規則を
+ * 一致させるための判定。
+ */
+export function selectableActiveStages(
+  mapStages: SkillMapStage[],
+  clearedStageIds: Set<string>,
+  unlockedStageIds: Set<string>,
+): (stageId: string) => boolean {
+  let allowed: Set<string> | undefined;
+  return (stageId: string): boolean => {
+    if (allowed === undefined) {
+      const base = evaluateSkillMap({
+        stages: mapStages,
+        clearedStageIds,
+        ...(unlockedStageIds.size > 0 ? { unlockedStageIds } : {}),
+      });
+      allowed = new Set(
+        [...base.visibility.entries()]
+          .filter(([, visibility]) => isSelectableVisibility(visibility))
+          .map(([id]) => id),
+      );
+    }
+    return allowed.has(stageId);
   };
 }
 
@@ -235,6 +321,12 @@ export async function loadEnrolledStageIds(db: Db, caller: Caller): Promise<Set<
  * 返すと、教材 API は拒否するのにスキルマップだけが「進行中」と言い、そのステージの
  * 発見教材まで公開条件 (`active` または `cleared`) を満たしてしまう。
  */
+/**
+ * 保存済みフォーカスの「読める登録があり、まだクリアしていない」判定。
+ *
+ * **視界の判定はここには無い** — 星の集合が要るので `selectableActiveStages` が担い、
+ * `resolveActiveStage` が両方を AND で使う。
+ */
 export function isUsableFocus(
   chosen: string | undefined,
   clearedStageIds: Set<string>,
@@ -252,13 +344,17 @@ async function resolveActiveStage(
   caller: Caller,
   clearedStageIds: Set<string>,
   enrolledStageIds: Set<string>,
+  /** 視界の規則で「進行中」に据えてよい星か (`selectableActiveStages`)。 */
+  isSelectable: (stageId: string) => boolean,
 ): Promise<{ stageId?: string; source: "chosen" | "derived" }> {
   const chosen = await loadFocusStageId(db, caller);
-  if (isUsableFocus(chosen, clearedStageIds, enrolledStageIds)) {
+  if (isUsableFocus(chosen, clearedStageIds, enrolledStageIds) && isSelectable(chosen)) {
     return { stageId: chosen, source: "chosen" };
   }
-  const derived = await findActiveStageId(db, caller, clearedStageIds);
-  return { ...(derived ? { stageId: derived } : {}), source: "derived" };
+  // 視界の判定は候補を走査しながら掛ける — 先頭 1 件で打ち切ると、据えてよい古い星が
+  // あっても「進行中なし」になる (`pickActiveStageId` の JSDoc)。
+  const derived = await findActiveStageId(db, caller, clearedStageIds, isSelectable);
+  return { ...(derived !== undefined ? { stageId: derived } : {}), source: "derived" };
 }
 
 /** 保存済みのフォーカス (未設定 / 明示的な null なら undefined)。 */
@@ -363,6 +459,8 @@ async function findActiveStageId(
   db: Db,
   caller: Caller,
   clearedStageIds: Set<string>,
+  /** 視界の規則で「進行中」に据えてよい星か (`selectableActiveStages`)。 */
+  isSelectable: (stageId: string) => boolean,
 ): Promise<string | undefined> {
   const lastAt = max(lessonProgress.updatedAt);
   const rows = await db
@@ -374,7 +472,27 @@ async function findActiveStageId(
     .groupBy(sections.stageId)
     .orderBy(desc(lastAt))
     .limit(ACTIVE_STAGE_CANDIDATES);
-  return rows.find((row) => !clearedStageIds.has(row.stageId))?.stageId;
+  return pickActiveStageId(
+    rows.map((row) => row.stageId),
+    clearedStageIds,
+    isSelectable,
+  );
+}
+
+/**
+ * 進捗の新しい順に並んだ候補から、「進行中」に据えてよい最初の星を選ぶ。
+ *
+ * **弾いた候補で打ち切らない。** 先頭がクリア済み / 視界の外だったからといって
+ * 「進行中なし」に倒すと、その受講者が持っている**もう少し古い、据えてよい星**まで
+ * 一緒に落ちて、ホームの「続きから」も集中ボーナスも消える。上の
+ * `ACTIVE_STAGE_CANDIDATES` 件を数えている意味がなくなる。
+ */
+export function pickActiveStageId(
+  candidates: readonly string[],
+  clearedStageIds: Set<string>,
+  isSelectable: (stageId: string) => boolean,
+): string | undefined {
+  return candidates.find((stageId) => !clearedStageIds.has(stageId) && isSelectable(stageId));
 }
 
 export interface SkillProfileCounts {

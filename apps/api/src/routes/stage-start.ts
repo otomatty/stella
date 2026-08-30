@@ -37,6 +37,8 @@
 
 import { Hono } from "hono";
 
+import { isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
+
 import { ApiError, errorResponse, getCaller, requireCanStartStage } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
@@ -61,8 +63,9 @@ stageStartRoute.post("/api/stages/:id/start", async (c) => {
     if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
 
     const result = evaluateSkillMapFor(source);
-    // 霧の星も同じ文言。ここだけ「霧だから駄目」と書くと霧の存在が漏れる。
-    if ((result.visibility.get(stageId) ?? "fog") === "fog") {
+    // 霧より先 (`full` でない) の星も同じ文言。ここだけ「霧だから駄目」と書くと
+    // 霧の存在が漏れる。
+    if (!isSelectableVisibility(result.visibility.get(stageId) ?? "hidden")) {
       throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
     }
 

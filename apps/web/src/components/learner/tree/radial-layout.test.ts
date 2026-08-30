@@ -128,6 +128,55 @@ describe("layoutRadialSkillTree", () => {
     expect(layout.sectors.map((s) => s.key)).toContain("テーマZ");
   });
 
+  it("線だけの段 (幽霊ノード) も座標を持つ — 線の終点が要るので落とさない", () => {
+    const layout = layoutRadialSkillTree([
+      node({ id: "a", title: "A", state: "cleared" }),
+      // サーバは幽霊ノードに名前を返さない。扇 (category) と親だけが来る。
+      { id: "ghost", state: "locked", visibility: "edge", category: "基礎", parent_id: "a" },
+    ]);
+    expect(layout.nodes.map((n) => n.instanceId)).toContain("ghost");
+    expect(layout.edges.some((e) => e.fromId === "a" && e.toId === "ghost")).toBe(true);
+    // 手前の星より外側 (「その先へ続く」向きに線が伸びる)。
+    expect(distanceFromCenter(layout, "ghost")).toBeGreaterThan(0);
+  });
+
+  it("API が線を張れる扇だけを挙げるので、親の無い複製が生えない", () => {
+    // `GET /api/skill-map/mine` は、親が応答に載らない扇を `appearances` から落とす
+    // (BE 側の親が霧より先なら、Git の複製は FE 扇だけ)。その形で盤面を組むと、
+    // 複製は 1 つだけになり、バックエンド扇は開かない。
+    const layout = layoutRadialSkillTree([
+      node({ id: "it", title: "IT", state: "unlocked" }),
+      node({ id: "html", title: "HTML", category: "フロントエンド", parent_id: "it" }),
+      {
+        id: "js",
+        state: "locked",
+        visibility: "fog",
+        title: "JS",
+        category: "フロントエンド",
+        parent_id: "html",
+      },
+      {
+        id: "git",
+        state: "locked",
+        visibility: "edge",
+        category: "基礎",
+        appearances: ["フロントエンド"],
+        appearance_parent_ids: { フロントエンド: "js" },
+      },
+    ]);
+    expect(layout.nodes.filter((n) => n.node.id === "git")).toHaveLength(1);
+    expect(layout.sectors.map((s) => s.key)).not.toContain("バックエンド");
+    expect(layout.edges.some((e) => e.fromId === "js" && e.toId === "git")).toBe(true);
+  });
+
+  it("どの線にも触れていない幽霊ノードも最外リングの先へ送る", () => {
+    const layout = layoutRadialSkillTree([
+      ...tree(),
+      { id: "ghost", state: "locked", visibility: "edge", category: "テーマZ" },
+    ]);
+    expect(distanceFromCenter(layout, "ghost")).toBeGreaterThan(distanceFromCenter(layout, "c"));
+  });
+
   it("見えている星の前提として参照された霧の星は、その線に従って置く", () => {
     const layout = layoutRadialSkillTree([
       node({ id: "a", title: "A", state: "cleared" }),

@@ -12,6 +12,8 @@ import {
   isUsableFocus,
   loadEnrolledStageIds,
   parsePrerequisites,
+  pickActiveStageId,
+  selectableActiveStages,
   shouldRevealDevMap,
 } from "./skill-map-data.js";
 
@@ -202,6 +204,67 @@ describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)
     expect(q.params).toContain("completed");
     expect(q.params).not.toContain("expired");
     expect(q.params).toContain("ses");
+  });
+});
+
+describe("「進行中」に据えてよい星か (selectableActiveStages)", () => {
+  /** 一本道 a → b → c → d。クリア無しなら a が起点で、c は 2 歩・d は 3 歩。 */
+  const line = ["a", "b", "c", "d"].map((slug, i) => ({
+    id: id_(slug),
+    slug,
+    title: `${slug} の講座`,
+    category: "基礎",
+    prerequisites: i === 0 ? [] : [String(["a", "b", "c", "d"][i - 1])],
+  }));
+
+  const selectable = () => selectableActiveStages(line, new Set(), new Set());
+
+  it("手が届く星 (0〜1 歩) は据えてよい", () => {
+    const isSelectable = selectable();
+    expect(isSelectable(id_("a"))).toBe(true); // unlocked = 起点
+    expect(isSelectable(id_("b"))).toBe(true); // 1 歩
+  });
+
+  it("霧より先の星は据えない (保存済みフォーカスの迂回を塞ぐ)", () => {
+    // 視界の段を変える前は 2 歩先もフォーカスに保存できた。その行が残っていても、
+    // 読み出し側で `full` へ昇格させない (書き込み側は今この星を 400 で断る)。
+    const isSelectable = selectable();
+    expect(isSelectable(id_("c"))).toBe(false); // 2 歩 = 霧
+    expect(isSelectable(id_("d"))).toBe(false); // 3 歩 = 線だけ
+  });
+
+  it("知らない星も据えない", () => {
+    expect(selectable()("id-does-not-exist")).toBe(false);
+  });
+
+  it("飛び級で開いた星は据えてよい (前提が未充足でも起点)", () => {
+    const isSelectable = selectableActiveStages(line, new Set(), new Set([id_("d")]));
+    expect(isSelectable(id_("d"))).toBe(true);
+    // その隣 (c) も 1 歩に上がるので据えられる。
+    expect(isSelectable(id_("c"))).toBe(true);
+  });
+});
+
+describe("進捗から「進行中」を導く (pickActiveStageId)", () => {
+  const always = () => true;
+
+  it("進捗の新しい順に、最初の据えてよい星を採る", () => {
+    expect(pickActiveStageId(["a", "b"], new Set(), always)).toBe("a");
+  });
+
+  it("クリア済みで打ち切らず、次の候補まで見る", () => {
+    expect(pickActiveStageId(["done", "a"], new Set(["done"]), always)).toBe("a");
+  });
+
+  it("視界の外の候補でも打ち切らない (据えてよい古い星を落とさない)", () => {
+    // 前提が変わって遠のいた星が先頭に来ても、その後ろの星でホームの「続きから」を保つ。
+    const isSelectable = (id: string) => id !== "far";
+    expect(pickActiveStageId(["far", "a"], new Set(), isSelectable)).toBe("a");
+  });
+
+  it("どれも据えられなければ進行中なし", () => {
+    expect(pickActiveStageId(["far"], new Set(), () => false)).toBeUndefined();
+    expect(pickActiveStageId([], new Set(), always)).toBeUndefined();
   });
 });
 

@@ -2,8 +2,10 @@
  * スキルマップ / スキルプロフィール / 「次にやるリスト」の
  * データアクセス層 (Phase 2)。
  *
- * **秘匿はサーバ側で済んでいる。** 霧の星にはタイトルも slug も入っていないので、
- * 画面はここで受け取った形をそのまま描けばよい (クライアントで伏せ直さない)。
+ * **秘匿はサーバ側で済んでいる。** 霧の星には slug も解放条件も入っておらず、3 歩先
+ * (`edge`) には名前すら無く、4 歩以上先は配列に現れない。画面はここで受け取った形を
+ * そのまま描けばよい (クライアントで伏せ直さない)。段の仕様は
+ * `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。
  */
 
 import type { SkillMapState, SkillMapVisibility } from "@falcon/shared/skill-map/evaluate";
@@ -18,8 +20,9 @@ export interface SkillMapStageNode {
   state: SkillMapState;
   visibility: SkillMapVisibility;
   slug?: string;
-  /** 霧の星にも入る (画面はぼかして「予告」として出す)。 */
+  /** 霧の星にも入る (画面はぼかして「予告」として出す)。`edge` には入らない。 */
   title?: string;
+  /** 扇 (ルート / 島) の名前。`edge` の幽霊ノードにも入る (線の向きが決まらないため)。 */
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
@@ -86,11 +89,29 @@ export interface SkillMapMine {
   /** `chosen` = 受講者が選んだ / `derived` = 直近の進捗から導出。 */
   active_stage_source: "chosen" | "derived";
   cleared_count: number;
+  /**
+   * 受講登録が 1 つでもあるか (どの星かは伏せたまま)。
+   *
+   * 星ごとの `enrolled` は霧より先に付かないので、プレースメントの「まだ何も
+   * 始めていない」判定を星の配列で数えると、唯一の登録が 2 歩先にある受講者を
+   * 取りこぼす。古いバックエンドでは省略されるので、その場合だけ星から数える。
+   */
+  has_enrollment?: boolean;
+  /**
+   * 配信対象のステージ総数 (視界で落とす前)。「修了 x / y」の分母。
+   * 古いバックエンドを踏んだときは `stages.length` に落とす。
+   */
+  stage_count?: number;
   focus_bonus: FocusBonusPayload;
   generated_at: string;
   /** サーバの `DEV_MODE` が立っているか。FAB を出す判定。 */
   dev_mode_available?: boolean;
-  /** この応答が開発者表示か (島全配信 + 霧の名前を明かす)。 */
+  /**
+   * この応答が開発者表示か (島全配信 + 段を素通し)。
+   *
+   * **ぼかしを外してよいかはこの値で決める** — クライアントの localStorage だけで
+   * 判断すると、`DEV_MODE` の無い本番でもぼかしが外れる (Issue #271)。
+   */
   dev_mode?: boolean;
 }
 
@@ -146,8 +167,24 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
   return { created: res.created, state: res.state };
 }
 
+/**
+ * この画面が扱える視界の段の版 (API 側は `SKILL_MAP_TIERS_PARAM`)。
+ *
+ * `2` = `full` / `fog` / `edge` / `hidden` の 4 段を描ける。申告しない画面
+ * (デプロイ途中の旧 bundle・開いたままの古いタブ) に、API は幽霊ノード (`edge`) を
+ * 配らない — 旧 `describeStar()` はそれを普通のロック星として描き、必ず 400 になる
+ * 腕試しボタンまで出してしまうため。
+ *
+ * **ヘッダではなくクエリ引数**にしてある。独自ヘッダはサーバの CORS 許可リストに
+ * 無いとプリフライトで弾かれ、API をロールバックした瞬間に全ての API 呼び出しが
+ * 落ちる。クエリ引数なら CORS の対象外で、知らないサーバは黙って無視する。
+ */
+const SKILL_MAP_TIERS = "2";
+
 export async function getSkillMap(): Promise<SkillMapMine> {
-  const { skill_map } = await apiFetch<{ skill_map: SkillMapMine }>("/api/skill-map/mine");
+  const { skill_map } = await apiFetch<{ skill_map: SkillMapMine }>(
+    `/api/skill-map/mine?tiers=${SKILL_MAP_TIERS}`,
+  );
   return skill_map;
 }
 

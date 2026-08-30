@@ -42,7 +42,9 @@ vi.mock("../lib/stage-queue-data.js", () => ({
   isEnrolledInStage: vi.fn(),
 }));
 
-vi.mock("../lib/skill-map-data.js", () => ({
+vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
+  // 差し替えるのは I/O を持つ口だけ。純粋なヘルパ (視界の段の申告など) は本物を使う。
+  ...(await importOriginal<typeof import("../lib/skill-map-data.js")>()),
   // 開発モードはテストでは常に無効 (本番挙動を検証する)。
   isDevMode: () => false,
   wantsDevReveal: () => false,

@@ -93,6 +93,17 @@ describe("describeStar のボタン", () => {
     });
   });
 
+  it("霧より先の段にも何も出さない (飛び級の入口は 1 歩先まで)", () => {
+    for (const visibility of ["edge", "hidden"] as const) {
+      expect(describe1({ visibility, enrolled: true }).actions).toEqual({
+        skillCheck: "none",
+        start: false,
+        queue: false,
+        clearedNote: false,
+      });
+    }
+  });
+
   it("ロック星は飛び級の腕試しだけ", () => {
     expect(describe1({ state: "locked", enrolled: true }).actions).toEqual({
       skillCheck: "challenge",

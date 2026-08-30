@@ -795,6 +795,16 @@
   opacity: 0.95;
 }
 
+/*
+  3 歩先 (幽霊ノード) へ伸びる線。色と不透明度はインラインの linearGradient が持ち、
+  ここは太さと破線の刻みだけ。輝きフィルタは掛けない — 端で消していく線に glow を
+  足すと、消える手前が滲んで「まだ星がある」ように見える。
+*/
+.tree-edge-fade {
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+}
+
 .tree-star {
   color: rgba(235, 238, 255, 0.88);
 }

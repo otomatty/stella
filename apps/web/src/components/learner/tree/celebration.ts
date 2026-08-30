@@ -46,7 +46,9 @@ export function snapshotOf(nodes: SkillMapStageNode[]): Snapshot {
 /**
  * 前回スナップショットとの差分から演出対象を決める。純関数 (単体で試せる)。
  *
- * `prev` が null (初回) なら何も祝わない。霧の星はそもそも名前が無いので祝わない。
+ * `prev` が null (初回) なら何も祝わない。祝うのは **名前と中身まで見える段 (`full`)
+ * になった星だけ** — 霧 (名前がぼやけている) や線だけの段で「新登場」を出しても、
+ * 何が現れたのか読めないまま演出だけが走る。
  */
 export function celebrationsFor(
   prev: Snapshot | null,
@@ -55,9 +57,9 @@ export function celebrationsFor(
   const found = new Map<string, CelebrationKind>();
   if (prev === null) return found;
   for (const node of nodes) {
-    if (node.visibility === "fog") continue;
+    if (node.visibility !== "full") continue;
     const before = prev[node.id];
-    if (before === undefined || before.v === "fog") {
+    if (before === undefined || before.v !== "full") {
       found.set(node.id, "appeared");
       continue;
     }

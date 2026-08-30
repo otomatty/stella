@@ -2,8 +2,8 @@
  * スキルツリー (ステージグラフ) の評価器 — 純関数。I/O を持たない。
  *
  * 星 = 教材 (ステージ) そのもの。前提を満たしていない星は**開けない (locked)**。
- * 受講者に見せる範囲も同時に決める: 確定した過去は全部、具体的な未来は 2 歩、
- * その先は霧 (テーマ名だけ)。
+ * 受講者に見せる範囲も同時に決める: 確定した過去は全部、いま動ける 1 歩は中身まで、
+ * 2 歩先は霧 (名前が滲む予告)、3 歩先は線だけ、その先は無い。
  *
  * ## 仕様として決めたこと
  *
@@ -23,9 +23,17 @@
  *
  * **視界は無向グラフ上の最短距離**で決める。起点は「いま手が届く星」= cleared ∪ active ∪
  * unlocked の全体。そこから
- * - 距離 0〜1 → `full`      (中身まで見せる)
- * - 距離 2    → `name-only` (名前と解放条件だけ。到達説明は見せない)
- * - 距離 3 以上 → `fog`     (名前はぼかしの予告のみ。slug・到達説明・解放条件は見せない)
+ * - 距離 0〜1 → `full`   (中身まで見せる。ロック星は解放条件も)
+ * - 距離 2    → `fog`    (名前をぼかした予告だけ。解放条件も到達説明も slug も見せない)
+ * - 距離 3    → `edge`   (星を描かない。手前の星から伸びる線だけが「続き」を示す)
+ * - 距離 4 以上 → `hidden` (応答に載せない)
+ *
+ * 段を 1 歩ずつ削るのは、「中身が読める → 名前だけ滲む → 道があることだけ分かる →
+ * 何も無い」の 1 本にするため。解放条件を 2 歩先まで出していた頃 (`name-only`) は、
+ * その前提の名前から更に先の星の名前が読める面が広かった。距離 1 で切ると、
+ * **線 (親) を辿って出てくる前提**は必ず既に名前の見えている星になる (線に使わない
+ * AND の 2 本目は視界の外にあり得るので、伏せ字自体は呼び出し側に残る)。
+ * 距離が測れない星 (親の鎖が未知 slug や循環で切れている) も `hidden` に落ちる。
  *
  * 辺の向きを見ない (無向) のは、飛び級で先の星を点けたときに、飛ばした手前の星が
  * 霧に沈まないようにするため。起点に unlocked を含めるのは、1 つもクリアしていない
@@ -46,20 +54,43 @@
  *    「未公開 / 削除済みのステージ」か綴り違いのどちらかで、どちらにせよ受講者に
  *    見せてよい名前ではない。生の slug は URL や CMS の識別子でもあるため、
  *    呼び出し側の実装ミスで漏れないよう評価器の出口で落としきる
- * 2. **視界 (`fog`) による伏せ字は呼び出し側 (API)**。こちらは「誰に対して伏せるか」が
- *    配信側の責務で、評価器は `lockReasons[].stageId` を添えて判断材料だけ渡す
+ * 2. **視界による伏せ字は呼び出し側 (API)**。こちらは「誰に対して伏せるか」が
+ *    配信側の責務で、評価器は `lockReasons[].stageId` を添えて判断材料だけ渡す。
+ *    解放条件を出すのは `full` の星だけになったが、線の無い前提 (AND の 2 本目) は
+ *    遠くにあり得るので、伏せ字そのものは無くならない
  */
 
 /** 星の状態。`unlocked` は「前提を満たしていて今すぐ開ける」。 */
 export type SkillMapState = "cleared" | "active" | "unlocked" | "locked";
 
 /**
- * 星の見え方。
- * - `full`      … タイトル・到達説明まで見せてよい
- * - `name-only` … タイトルと解放条件だけ。到達説明は見せない
- * - `fog`       … タイトルはぼかしの予告のみ (画面側で伏せる)。解放条件や slug は出さない
+ * 星の見え方。段の由来と各段で何を返すかは `docs/superpowers/specs/
+ * 2026-08-30-skill-tree-fog-display-design.md`。
+ * - `full`   … タイトル・到達説明・解放条件まで見せてよい
+ * - `fog`    … タイトルはぼかしの予告のみ (画面側で伏せる)。解放条件や slug は出さない
+ * - `edge`   … 星そのものを描かない。手前の星から伸びる線だけが「続きがある」を示す
+ * - `hidden` … 何も出さない (API は応答の配列から落とす)
  */
-export type SkillMapVisibility = "full" | "name-only" | "fog";
+export type SkillMapVisibility = "full" | "fog" | "edge" | "hidden";
+
+/**
+ * 星として盤面に描いてよい段か (名前の有無は問わない — `fog` はぼかして描く)。
+ *
+ * `edge` は線の終点になる幽霊ノードで、星は描かない。`hidden` はそもそも届かない。
+ */
+export function isStarVisible(visibility: SkillMapVisibility): boolean {
+  return visibility === "full" || visibility === "fog";
+}
+
+/**
+ * 受講者が触れてよい段か (自己開始・腕試し・フォーカス切り替え)。
+ *
+ * 触れてよいのは解放条件まで見えている `full` だけ。断り文言は段で書き分けない
+ * (`UNSELECTABLE_STAGE_MESSAGE`) — 応答の違いから先に星があること自体が読めるため。
+ */
+export function isSelectableVisibility(visibility: SkillMapVisibility): boolean {
+  return visibility === "full";
+}
 
 /** 評価器に渡す 1 ステージぶんの情報。 */
 export interface SkillMapStage {
@@ -133,14 +164,18 @@ import { appearancePrerequisitesOf } from "./appearances.js";
 
 /** 視界の段: この距離までが `full`。 */
 const FULL_DISTANCE = 1;
-/** 視界の段: この距離までが `name-only`。以遠は `fog`。 */
-const NAME_ONLY_DISTANCE = 2;
+/** 視界の段: この距離までが `fog` (名前をぼかした予告)。 */
+const FOG_DISTANCE = 2;
+/** 視界の段: この距離までが `edge` (線だけ)。以遠は `hidden`。 */
+const EDGE_DISTANCE = 3;
 
 function visibilityForDistance(distance: number | undefined): SkillMapVisibility {
-  if (distance === undefined) return "fog";
+  // 距離が測れない星 (親の鎖が切れている) も「果ての先」と同じ扱いにする。
+  if (distance === undefined) return "hidden";
   if (distance <= FULL_DISTANCE) return "full";
-  if (distance <= NAME_ONLY_DISTANCE) return "name-only";
-  return "fog";
+  if (distance <= FOG_DISTANCE) return "fog";
+  if (distance <= EDGE_DISTANCE) return "edge";
+  return "hidden";
 }
 
 /**

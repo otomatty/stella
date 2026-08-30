@@ -3,7 +3,7 @@
  *
  * 見ているのは **API 境界の責務** だけ:
  *   - 霧の星は受験させない (しかもフォーカス切り替えと同じ汎用文言で断る)
- *   - name-only のロック星は受験でき、合格すると飛び級で開く
+ *   - `full` のロック星 (1 歩先) は受験でき、合格すると飛び級で開く
  *   - 不合格では開かない / 設問の足りないステージは非対応と伝える
  *   - 出題にも採点結果にも正答・解説を載せない
  *
@@ -64,7 +64,9 @@ vi.mock("../lib/discovery-data.js", () => ({
   loadPassedDiscoveryCount: vi.fn(async () => 0),
 }));
 
-vi.mock("../lib/skill-map-data.js", () => ({
+vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
+  // 差し替えるのは I/O を持つ口だけ。純粋なヘルパ (視界の段の申告など) は本物を使う。
+  ...(await importOriginal<typeof import("../lib/skill-map-data.js")>()),
   // 開発モードはテストでは常に無効 (本番挙動を検証する)。
   isDevMode: () => false,
   wantsDevReveal: () => false,
@@ -127,8 +129,12 @@ const post = (path: string, body: unknown) =>
   );
 
 /**
- * 一本道 a → b → c → d → e。a はクリア済みなので b は unlocked、c は full の locked、
- * d は name-only の locked (= 飛び級の入口)、e は霧。skill-map.test.ts と同じ形。
+ * 一本道 a → b → c → d → e。a / b はクリア済みなので c は unlocked、
+ * **d は `full` の locked (= 飛び級の入口)**、e は霧 (受験できない)。
+ * skill-map.test.ts と同じ形。
+ *
+ * 飛び級の入口を 1 歩先に置いてあるのは、視界の段が「触れてよいのは `full` だけ」に
+ * 揃ったため (`docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`)。
  */
 function lineSource(unlocked: Set<string>, enrolled: Set<string>) {
   const stage = (slug: string, prerequisites: string[]) => ({
@@ -148,7 +154,7 @@ function lineSource(unlocked: Set<string>, enrolled: Set<string>) {
       stage("d", ["c"]),
       stage("e", ["d"]),
     ],
-    clearedStageIds: new Set(["id-a"]),
+    clearedStageIds: new Set(["id-a", "id-b"]),
     activeStageId: undefined,
     unlockedStageIds: unlocked,
     // 受講登録は **明示的に空** から始める。腕試しが受講登録ゲートの例外である
@@ -307,7 +313,7 @@ describe("GET /api/skill-check/:stageId", () => {
     expect(res.status).toBe(401);
   });
 
-  it("霧の星は 400 (フォーカス切り替えと同じ汎用文言)", async () => {
+  it("霧の星は 400 (フォーカス切り替えと同じ汎用文言 = 飛び級は 1 歩先まで)", async () => {
     const res = await get("/api/skill-check/id-e");
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
@@ -321,9 +327,9 @@ describe("GET /api/skill-check/:stageId", () => {
     expect(body.error).toBe("受講登録のないステージは選べません");
   });
 
-  it("name-only のロック星は受験でき、飛び級の入口だと伝える", async () => {
+  it("1 歩先のロック星は受験でき、飛び級の入口だと伝える", async () => {
     const check = await fetchCheck("id-d");
-    expect(check.visibility).toBe("name-only");
+    expect(check.visibility).toBe("full");
     expect(check.state).toBe("locked");
     expect(check.supported).toBe(true);
     expect(check.test_out).toBe(true);

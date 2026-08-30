@@ -9,10 +9,19 @@
  *
  * ## クライアントで秘匿を再実装しない
  *
- * 何をどこまで見せるかは `GET /api/skill-map/mine` が決めていて、霧の星の通常応答は
- * タイトルと前提線まで (slug・解放条件は載せない)。ここは受け取った `state` ×
- * `visibility` を見た目に写すだけ。開発者モード (`revealDev`) のときだけ名前のぼかし
- * を外す — 開始や腕試しは visibility=fog のままサーバが断る。
+ * 何をどこまで見せるかは `GET /api/skill-map/mine` が決めていて、霧 (2 歩先) の通常応答は
+ * タイトルと前提線まで (slug・解放条件は載せない)、3 歩先は線を引くトポロジだけ、
+ * 4 歩以上先は応答に現れない。ここは受け取った `state` × `visibility` を見た目に写す
+ * だけ。開発者モード (`revealDev`) のときだけ段を素通しで描く — 開始や腕試しは
+ * `full` 以外をサーバが断る。段の仕様は
+ * `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。
+ *
+ * ## 3 歩先は星を描かず、線をフェードさせる
+ *
+ * `visibility === "edge"` の星は**幽霊ノード**。レイアウトは座標まで計算するが、
+ * ここでは星を描かず、手前の星から伸びる線だけを**外へ向かって透明になるグラデーション**で
+ * 引く。「道は続いている / でもその先は今の自分には関係ない / どこまで続くかは分からない」
+ * の 3 つを線 1 本で言うための表現。
  *
  * ## 線は SVG・星は button
  *
@@ -62,6 +71,7 @@ import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
 import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
+import { showsStar } from "./fog-display";
 import { offscreenMarkers, type ViewState } from "./offscreen";
 import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
 import { sectorLabelsInView } from "./sector-label";
@@ -81,7 +91,7 @@ interface SkillTreeProps {
   onQueueStage: (stageId: string) => void;
   /** 腕試しを開く。 */
   onSkillCheck: (stageId: string) => void;
-  /** 開発者モード: 霧の星の名前をぼかさない。 */
+  /** 開発者モード: 段を素通しし、幽霊ノードも星として描く。 */
   revealDev?: boolean;
   /**
    * 盤面の左上に浮かべる HUD (見出し・修了数・レベル)。島チップはこの下に並ぶ。
@@ -166,6 +176,17 @@ function showsAllLabels(scale: number): boolean {
 
 function showsFocusLabel(scale: number): boolean {
   return scale >= LABEL_FOCUS_SCALE;
+}
+
+/**
+ * グラデーション定義の id に使える文字列にする。
+ *
+ * 端点は `instanceId` (ステージ UUID、複製は `id::扇`) なので、`::` と扇名 (日本語) が
+ * そのまま入ると `url(#...)` の参照が壊れる。英数字以外を潰すだけで一意性は保たれる
+ * (元が UUID なので衝突しない)。
+ */
+function fadeIdOf(key: string): string {
+  return key.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 /** 線を星の核の縁で止める。中心まで引くと円を貫いて、中心から外れて見える。 */
@@ -262,13 +283,27 @@ export const SkillTree = ({
     }
     return order;
   }, [layout, celebrations]);
+  /** 星として描くか (幽霊ノードは線の終点でしかない)。 */
+  const drawsStar = useCallback(
+    (placed: RadialNode) => showsStar(placed.node.visibility, revealDev),
+    [revealDev],
+  );
   const starRadius = useMemo(() => {
     const radii = new Map<string, number>();
     for (const placed of layout.nodes) {
-      radii.set(placed.instanceId, placed.ring === 0 ? 22 : 16);
+      // 幽霊ノードには核が無いので、線をその座標ちょうどで終わらせる。
+      radii.set(placed.instanceId, !drawsStar(placed) ? 0 : placed.ring === 0 ? 22 : 16);
     }
     return radii;
-  }, [layout]);
+  }, [layout, drawsStar]);
+  /** 幽霊ノードへ伸びる線 (= フェードさせる線) の端点。 */
+  const ghostIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const placed of layout.nodes) {
+      if (!drawsStar(placed)) ids.add(placed.instanceId);
+    }
+    return ids;
+  }, [layout, drawsStar]);
   /**
    * ジャンプ先 (開発スキル = 中心のツリー + 島)。島は中心 1× の初期視点では視界の外
    * (中心から 1,000px 超) にあり、パンしなければ存在に気づけない。盤面の上のチップで
@@ -280,12 +315,25 @@ export const SkillTree = ({
    * 矢印は名前が全部出る倍率 (`showsAllLabels`) では消す — 寄って読んでいるときに
    * 縁の矢印と名前札が重なり、盤面の外の案内より目の前の星が優先だから。
    */
+  /**
+   * 星が 1 つも描かれない島は、タイトルもジャンプ先も出さない。
+   *
+   * 島の中身が全部 3 歩以上先だと、島タイトルだけが何も無い所に浮かぶ (島の中では
+   * 本土への線を引かないので、フェードする線すら出ない)。
+   */
+  const visibleIslands = useMemo(
+    () =>
+      layout.islands.filter((island) =>
+        layout.nodes.some((n) => n.sector === island.key && drawsStar(n)),
+      ),
+    [layout, drawsStar],
+  );
   const jumpTargets = useMemo(
     () => [
       { key: "開発スキル", x: layout.centerX, y: layout.centerY },
-      ...layout.islands.map((island) => ({ key: island.key, x: island.cx, y: island.cy })),
+      ...visibleIslands.map((island) => ({ key: island.key, x: island.cx, y: island.cy })),
     ],
-    [layout],
+    [layout, visibleIslands],
   );
   const markers = useMemo(
     () => (view && !showsAllLabels(view.scale) ? offscreenMarkers(jumpTargets, view) : []),
@@ -300,19 +348,19 @@ export const SkillTree = ({
     if (!view || !showsAllLabels(view.scale)) return [];
     const mainland = new Set(layout.sectors.map((s) => s.key));
     const stars = layout.nodes
-      .filter((n) => mainland.has(n.sector))
+      .filter((n) => mainland.has(n.sector) && drawsStar(n))
       .map((n) => ({
         sector: n.sector,
         x: n.x,
         y: n.y,
         radius: n.ring === 0 ? 22 : 16,
       }));
-    const hudH = layout.islands.length > 0 ? 100 : 56;
+    const hudH = visibleIslands.length > 0 ? 100 : 56;
     return sectorLabelsInView(stars, view, [
       { left: 8, top: 8, width: Math.min(420, Math.max(0, view.width - 72)), height: hudH },
       { left: Math.max(0, view.width - 52), top: 8, width: 44, height: 120 },
     ]);
-  }, [layout, view]);
+  }, [layout, view, drawsStar, visibleIslands]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
@@ -335,7 +383,7 @@ export const SkillTree = ({
   }
 
   const chips =
-    layout.islands.length > 0 ? (
+    visibleIslands.length > 0 ? (
       <nav className="flex flex-wrap gap-1" aria-label="島へ移動">
         {jumpTargets.map((target) => {
           const accent = routeAccentOf(target.key);
@@ -474,9 +522,46 @@ export const SkillTree = ({
           );
           // 線は行き先の星のルート色で塗る (中心から出る線が、進む先のルートを示す)。
           const accent = routeAccentOf(sectorOfId.get(edge.toId) ?? "");
+          // 幽霊ノード (3 歩先) に触れる線は、そちら側へ向かって透明になる。
+          // 「道は続いているが、どこまで続くかは分からない」を線 1 本で言う表現。
+          const fadeTo = ghostIds.has(edge.toId) ? "to" : ghostIds.has(edge.fromId) ? "from" : null;
+          const key = `${edge.fromId}-${edge.toId}`;
+          const stroke = accent
+            ? `rgb(${accent} / ${edge.satisfied ? 0.95 : 0.5})`
+            : "currentColor";
+          if (fadeTo !== null) {
+            const gradientId = `tree-edge-fade-${fadeIdOf(key)}`;
+            return (
+              <g key={key}>
+                <defs>
+                  <linearGradient
+                    id={gradientId}
+                    gradientUnits="userSpaceOnUse"
+                    x1={fadeTo === "to" ? ends.x1 : ends.x2}
+                    y1={fadeTo === "to" ? ends.y1 : ends.y2}
+                    x2={fadeTo === "to" ? ends.x2 : ends.x1}
+                    y2={fadeTo === "to" ? ends.y2 : ends.y1}
+                  >
+                    {/* 手前の星の縁は普通の未充足線と同じ濃さ。そこから 3 段で消す。 */}
+                    <stop offset="0%" stopColor={stroke} stopOpacity={0.55} />
+                    <stop offset="45%" stopColor={stroke} stopOpacity={0.28} />
+                    <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <line
+                  x1={ends.x1}
+                  y1={ends.y1}
+                  x2={ends.x2}
+                  y2={ends.y2}
+                  className="tree-edge-fade"
+                  stroke={`url(#${gradientId})`}
+                />
+              </g>
+            );
+          }
           return (
             <line
-              key={`${edge.fromId}-${edge.toId}`}
+              key={key}
               x1={ends.x1}
               y1={ends.y1}
               x2={ends.x2}
@@ -495,7 +580,7 @@ export const SkillTree = ({
           離れ小島がレイアウトの事故に見えないための唯一の道しるべ。盤面の縮尺に
           釣られると全体表示で読めなくなるので、逆スケールで画面上の大きさを保つ
           (地図アプリの地名ラベルと同じ扱い)。 */}
-      {layout.islands.map((island) => {
+      {visibleIslands.map((island) => {
         const accent = routeAccentOf(island.key);
         return (
           <div
@@ -514,7 +599,7 @@ export const SkillTree = ({
         );
       })}
 
-      {layout.nodes.map((placed) => (
+      {layout.nodes.filter(drawsStar).map((placed) => (
         <StarNode
           key={placed.instanceId}
           placed={placed}
@@ -614,10 +699,15 @@ const StarNode = ({
     if (sheetMode) setOpen(false);
   }, [sheetMode]);
 
+  // 見た目をぼかしている星は読み上げにも実名を流さない (Issue #272)。ぼかしが演出で
+  // あっても、画面で読めない名前がスクリーンリーダーにだけ届くのは情報設計として
+  // ちぐはぐで、「まだ見えない」という状態そのものが伝わらない。
+  const spokenLabel = detail.obscured ? "まだ見えないスキル" : detail.label;
+
   const star = (
     <button
       type="button"
-      aria-label={`${detail.label}（${detail.stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      aria-label={`${spokenLabel}（${detail.stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
       // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
       //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
@@ -730,10 +820,13 @@ const StarNode = ({
       <PopoverContent align="center" side="right" className="w-[280px]">
         <div className="text-[13px] font-semibold leading-snug">
           {detail.obscured ? (
-            // 名前はぼかしの予告だけ。読み上げにも流さない (状態語と本文で足りる)。
-            <span aria-hidden="true" className="blur-[3px] select-none">
-              {detail.label}
-            </span>
+            <>
+              {/* 名前はぼかしの予告だけ。読み上げには「まだ見えない」ことだけを流す。 */}
+              <span aria-hidden="true" className="blur-[3px] select-none">
+                {detail.label}
+              </span>
+              <span className="sr-only">まだ見えないスキル</span>
+            </>
           ) : (
             detail.label
           )}

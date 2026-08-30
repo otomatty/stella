@@ -37,13 +37,19 @@ describe("celebrationsFor", () => {
 
   it("霧が晴れて名前が見えた星を「出現」として拾う", () => {
     const prev = snapshotOf([{ id: "a", state: "locked", visibility: "fog" }]);
-    const found = celebrationsFor(prev, [node({ id: "a", visibility: "name-only" })]);
+    const found = celebrationsFor(prev, [node({ id: "a", visibility: "full" })]);
     expect(found.get("a")).toBe("appeared");
   });
 
-  it("霧のままの星は祝わない (名前が無いので祝いようがない)", () => {
+  it("霧のままの星は祝わない (名前がぼやけたままなので祝いようがない)", () => {
     const prev = snapshotOf([]);
     const found = celebrationsFor(prev, [{ id: "a", state: "locked", visibility: "fog" }]);
+    expect(found.size).toBe(0);
+  });
+
+  it("線だけの段に上がっただけの星も祝わない", () => {
+    const prev = snapshotOf([]);
+    const found = celebrationsFor(prev, [{ id: "a", state: "locked", visibility: "edge" }]);
     expect(found.size).toBe(0);
   });
 

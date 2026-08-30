@@ -15,15 +15,21 @@
  *
  *   - `locked` の星は **到達説明 (`can_do`) を返さない**。ロック中に見せるのは
  *     「何が要るか」(`lock_reasons`) だけ、という設計をここで確定させる
- *   - `name-only` の星はタイトルと解放条件まで。到達説明は返さない
- *   - `fog` の星は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
+ *   - `fog` の星 (2 歩先) は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
  *     ぼかして「予告」として見せる。前提線はリング = 深さの計算に要る)。slug・
- *     到達説明・解放条件・受講登録は返さない — URL を組める / 中身が分かる /
+ *     到達説明・**解放条件**・受講登録は返さない — URL を組める / 中身が分かる /
  *     個人の割当が読める情報は霧の向こうに出さない。テーマを持たないステージ
  *     (CMS で作った直後など) のテーマは `？？？` で埋める
- *   - **他の星の解放条件に混ぜて名前を漏らさない**。距離 3 以上の前提が
- *     `lock_reasons` にタイトルで出ると、霧の星の名前が手前の星から読めてしまう。
- *     そこも同じ規則 (テーマ名 → `？？？`) に伏せる
+ *   - `edge` の星 (3 歩先) は **線を引くためのトポロジだけ** (id・扇・親)。名前も
+ *     テーマも返さない。画面は星を描かず、手前の星から伸びる線を薄くフェードさせる
+ *   - `hidden` の星 (4 歩以上) は **配列から落とす**。id を返すだけでも「この先に星が
+ *     n 個ある」という情報になる。`edge` の星が **自分の親として** 指してよいのは
+ *     描かれる星だけ (幽霊どうしを結ぶと、どちらの端にも星の無い線が宙に浮く) —
+ *     逆向き、描かれる星の親が幽霊、は残す (それが「その先へ続く」フェード線)
+ *   - **他の星の解放条件に混ぜて名前を漏らさない**。`full` でない前提が
+ *     `lock_reasons` にタイトルで出ると、ぼかしたはずの名前が手前の星から読めてしまう。
+ *     そこも同じ規則 (テーマ名 → `？？？`) に伏せる (線の無い前提 = AND の 2 本目は
+ *     視界の外にあり得るので、解放条件を 1 歩先に絞ってもこの伏せ字は要る)
  *   - 発見教材 (`discoveries` / Phase 4) も同じ規則の下にある。載せるのは **承認済み
  *     かつ源流ステージが `active` / `cleared`** のものだけで、それ以外は存在ごと
  *     出さない — 教材名と説明はその星で何を学ぶかを直接語るため
@@ -32,7 +38,12 @@
 import { Hono } from "hono";
 import { isDiscoveryVisible } from "@falcon/shared/discovery/types";
 import { appearancePrerequisitesOf, appearancesOf } from "@falcon/shared/skill-map/appearances";
-import { evaluateSkillMap, parentSlugOf } from "@falcon/shared/skill-map/evaluate";
+import {
+  evaluateSkillMap,
+  isSelectableVisibility,
+  isStarVisible,
+  parentSlugOf,
+} from "@falcon/shared/skill-map/evaluate";
 import type {
   SkillMapLockReason,
   SkillMapState,
@@ -54,6 +65,8 @@ import {
   loadPassedDiscoveryIds,
 } from "../lib/discovery-data.js";
 import {
+  SKILL_MAP_TIERS_PARAM,
+  acceptsGhostStars,
   isDevMode,
   loadEnrolledStageIds,
   loadFocusCompletions,
@@ -103,32 +116,54 @@ const FOCUS_LOOKBACK_DAYS = 120;
  */
 const FOG_LABEL = "？？？";
 
-/** slug に対応する見た目の複製先。無ければ項目ごと付けない。 */
-function appearancesPayload(slug: string): { appearances?: string[] } {
-  const sectors = appearancesOf(slug);
-  return sectors && sectors.length > 0 ? { appearances: [...sectors] } : {};
-}
-
-/** 扇ごとの親 id。slug が無い霧でもレイアウトが線を張れるようにする。 */
-function appearanceParentPayload(
+/**
+ * 扇ごとの親 id。線を引いてよい親 (`accepts`) だけを挙げる。
+ */
+function appearanceParentIdsOf(
   slug: string,
-  idBySlug: Map<string, string>,
-): { appearance_parent_ids?: Record<string, string> } {
+  idBySlug: ReadonlyMap<string, string>,
+  accepts: (parentId: string) => boolean,
+): Record<string, string> | undefined {
   const groups = appearancePrerequisitesOf(slug);
-  if (!groups) return {};
+  if (!groups) return undefined;
   const mapped: Record<string, string> = {};
   for (const [sector, slugs] of Object.entries(groups)) {
     const id = idBySlug.get(slugs[0] ?? "");
-    if (id !== undefined) mapped[sector] = id;
+    if (id !== undefined && accepts(id)) mapped[sector] = id;
   }
-  return { appearance_parent_ids: mapped };
+  return mapped;
+}
+
+/**
+ * 見た目の複製先と、扇ごとの親 id。**線を張れる扇だけを挙げる。**
+ *
+ * 親が応答に載らない扇まで挙げると、盤面はその扇に**親の無い複製**を生やす
+ * (`radial-layout.ts` の `expandAppearances`)。名前も線も無い幽霊ノードだと、
+ * 誰にも見えない星のために扇がまるごと 1 つ開き、盤面に空白の楔が残る。
+ *
+ * どの扇にも張れないときは複製そのものを止める (項目ごと付けない) — 星は自分の
+ * `category` の扇に 1 つだけ置かれる。
+ */
+function appearancePayloads(
+  slug: string,
+  idBySlug: ReadonlyMap<string, string>,
+  accepts: (parentId: string) => boolean,
+): { appearances?: string[]; appearance_parent_ids?: Record<string, string> } {
+  const sectors = appearancesOf(slug);
+  if (!sectors || sectors.length === 0) return {};
+  const parents = appearanceParentIdsOf(slug, idBySlug, accepts);
+  // 扇ごとの前提を持たない複製 (カタログに組が無い) は、従来どおり全部の扇に置く。
+  if (!parents) return { appearances: [...sectors] };
+  const anchored = sectors.filter((sector) => parents[sector] !== undefined);
+  if (anchored.length === 0) return {};
+  return { appearances: anchored, appearance_parent_ids: parents };
 }
 
 /**
  * `locked` の星の解放条件を、**視界に応じて伏せた**表示名にする。
  *
- * 評価器は「誰に見せるか」を知らないので、距離 3 以上 (霧) にある前提のタイトルを
- * テーマ名 / 伏せ字へ落とすのはこちらの仕事。スキルマップの応答と自己開始の 400 文言が
+ * 評価器は「誰に見せるか」を知らないので、まだ名前の出ていない (`full` でない) 前提の
+ * タイトルをテーマ名 / 伏せ字へ落とすのはこちらの仕事。スキルマップの応答と自己開始の 400 文言が
  * 別々にこれを組み立てると、片方だけ緩んだときに手前の星の解放条件から霧の星の名前が
  * 読めてしまうので、1 か所に置いて両方から呼ぶ。
  */
@@ -139,9 +174,13 @@ export function maskedLockReasons(
   revealDev = false,
 ): string[] {
   const byId = new Map(source.stages.map((stage) => [stage.id, stage]));
+  const masked = (reason: SkillMapLockReason): boolean =>
+    !revealDev &&
+    reason.stageId !== undefined &&
+    (result.visibility.get(reason.stageId) ?? "hidden") !== "full";
   return (result.lockReasons.get(stageId) ?? []).map((reason: SkillMapLockReason) =>
-    !revealDev && reason.stageId !== undefined && result.visibility.get(reason.stageId) === "fog"
-      ? (byId.get(reason.stageId)?.theme ?? FOG_LABEL)
+    masked(reason)
+      ? ((reason.stageId === undefined ? undefined : byId.get(reason.stageId)?.theme) ?? FOG_LABEL)
       : reason.label,
   );
 }
@@ -149,11 +188,12 @@ export function maskedLockReasons(
 /**
  * フォーカスに選べない / 腕試しを受けられない星に返す汎用文言。
  *
- * 「存在しない」「割り当てられていない」「霧の中」を **区別しない**。理由を書き分けると、
+ * 「存在しない」「割り当てられていない」「霧より先」を **区別しない**。理由を書き分けると、
  * 応答の違いから他人の割当や未公開ステージ、霧の向こうの星の有無を探れてしまう。
  *
- * 腕試し (`routes/skill-check.ts`) も霧の星を同じ文言で断る — そちらだけ別の文言に
- * すると、2 つの API の応答を突き合わせて霧の中の星の有無が読めてしまう。
+ * 触れてよいのは `full` (0〜1 歩) の星だけ (`isSelectableVisibility`)。腕試し
+ * (`routes/skill-check.ts`) と自己開始 (`routes/stage-start.ts`) も同じ判定と同じ文言で
+ * 断る — どれか 1 つだけ別の文言にすると、応答を突き合わせて先の星の有無が読めてしまう。
  */
 export const UNSELECTABLE_STAGE_MESSAGE = "受講登録のないステージは選べません";
 
@@ -170,6 +210,11 @@ export interface SkillMapStagePayload {
    * 隠したい名前の教材はそもそも公開しない、が線引き。
    */
   title?: string;
+  /**
+   * 扇 (ルート / 島) の名前。**`edge` の星にも入る** — 幽霊ノードをどの扇のどの島に
+   * 置くかが決まらないと、線がまったく違う方向へ伸びてしまう。扇の名前は盤面に
+   * 既に見出しとして出ているものなので、名前の秘匿とは別の情報。
+   */
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバックでもある。 */
   theme?: string;
@@ -181,8 +226,8 @@ export interface SkillMapStagePayload {
   /** `full` かつ locked でない星にだけ入る。 */
   can_do?: string;
   /**
-   * locked かつ霧の外の星にだけ入る。未充足の前提の表示名 — 見えている前提はタイトル、
-   * 霧の中の前提はテーマ名 / 伏せ字、未知 slug は「非公開の教材」。
+   * `full` かつ locked の星にだけ入る (2 歩先から先には出さない)。未充足の前提の表示名 —
+   * 名前の見えている前提はタイトル、それ以外はテーマ名 / 伏せ字、未知 slug は「非公開の教材」。
    */
   lock_reasons?: string[];
   /**
@@ -196,19 +241,24 @@ export interface SkillMapStagePayload {
    * 線を引く親ステージの id (スキルツリーが星と星を線で結び、深さ = リングを決めるのに使う)。
    * 線は 1 本だけ。解放条件 (前提 AND) は `lock_reasons` が名前で出す。
    *
-   * **霧の星にも付ける。** 線が無いと盤面はその星の深さを計算できず、ずっと先の
-   * スキルが内側のリングに置かれてしまう (前提の浅い星ほど中心に近い、が崩れる)。
+   * **霧の星にも `edge` の星にも付ける。** 線が無いと盤面はその星の深さを計算できず、
+   * ずっと先のスキルが内側のリングに置かれてしまう (前提の浅い星ほど中心に近い、が崩れる)。
    * トポロジは教材カタログの構造であって個人の学習状況でも未公開の中身でもない。
+   * 応答に載らない星 (`hidden`) を指す親は付けない (端点の無い線は引けない)。
    */
   parent_id?: string;
   /**
    * 同じステージを複数の扇に置くときの扇名。実体は 1 つ (クリアは共有)。
-   * **霧の星にも付ける。** slug を出さない霧でも、レイアウトが複製できるようにする。
+   * **霧の星にも `edge` の星にも付ける。** slug を出さなくてもレイアウトが複製できるようにする。
+   *
+   * 挙げるのは **線を張れる扇だけ** (`appearance_parent_ids` に親がいる扇)。親の無い扇まで
+   * 挙げると、盤面がその扇に親の無い複製を生やし、空白の楔が残る。`edge` の複製では
+   * さらに、親も幽霊の扇を落とす (両端に星の無い線を引かない)。
    */
   appearances?: string[];
   /**
    * 扇ごとの親ステージ id。複製した星は自分の扇の親から線を引く。
-   * **霧の星にも付ける。**
+   * **霧の星にも `edge` の星にも付ける。**
    */
   appearance_parent_ids?: Record<string, string>;
 }
@@ -217,6 +267,9 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const revealDev = wantsDevReveal(c);
+    // 段を増やしたことを知らない画面には幽霊ノードを配らない (`SKILL_MAP_TIERS_PARAM`)。
+    // 開発者表示は自分の画面でしか使わないので、そちらは常に素通し。
+    const ghostStars = revealDev || acceptsGhostStars(c.req.query(SKILL_MAP_TIERS_PARAM));
     const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
     const result = evaluateSkillMapFor(source);
 
@@ -231,71 +284,140 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     /** 霧の中の星に出してよい唯一の名前 (テーマ名。無ければ伏せ字)。 */
     const fogNameOf = (stageId: string): string => byId.get(stageId)?.theme ?? FOG_LABEL;
 
-    // 線を引く親。前提は slug で書かれている (正本が id を知らないため) ので id へ解く。
-    // 未知 slug (未公開 / 削除済み) は解けないので線も引かない — 生の slug を
-    // 出さない評価器の規則を、こちらの項目でも同じに保つ。
-    const parentIdOf = (stage: SkillMapSource["stages"][number]): { parent_id?: string } => {
+    const visibilityOf = (stageId: string): SkillMapVisibility =>
+      result.visibility.get(stageId) ?? "hidden";
+
+    /** 自分の線の親 id (前提は slug で書かれているので id へ解く)。 */
+    const ownParentIdOf = (stage: SkillMapSource["stages"][number]): string | undefined => {
       const slug = parentSlugOf(stage);
-      const id = slug === undefined ? undefined : idBySlug.get(slug);
-      return id === undefined ? {} : { parent_id: id };
+      return slug === undefined ? undefined : idBySlug.get(slug);
     };
 
-    const payload: SkillMapStagePayload[] = source.stages.map((stage) => {
+    /**
+     * 線を引いてよい親か。
+     *
+     * - **応答に載らない星は端点にできない** (未知 slug・`hidden`・落とした幽霊)。
+     *   端点の届かない線は引けないうえ、id だけでも「その先に星がある」という情報になる
+     * - **幽霊ノード (`edge`) の線は、描かれる星 (`full` / `fog`) にしか繋がない。**
+     *   幽霊どうしを結ぶと、どちらの端にも星の無い線が宙に浮く。複製 (`appearances`)
+     *   では実際に起きる — Git は FE 扇では JS (霧) の次だが、BE 扇では Node (幽霊) の
+     *   次なので、その扇の線は「見えない星から見えない星へ」になってしまう
+     *
+     * 開発者表示は段を素通しで全部描くので、この制限は掛けない。
+     */
+    const acceptsParent = (
+      childId: string,
+      parentId: string | undefined,
+      ids: ReadonlySet<string>,
+    ): parentId is string => {
+      if (parentId === undefined || !ids.has(parentId)) return false;
+      if (revealDev || visibilityOf(childId) !== "edge") return true;
+      return isStarVisible(visibilityOf(parentId));
+    };
+
+    /**
+     * 応答に載せる星の id。開発者表示ではすべて、通常は `hidden` (4 歩以上) を落とす。
+     * 段を知らない画面 (`ghostStars` が偽) には `edge` も配らない。
+     *
+     * **幽霊ノード (`edge`) はここでは落とさない。** 線は親の側からも子の側からも
+     * 生えるので (`c` の親が幽霊 `x` なら、描かれる `c` から `x` へフェードする線が要る)、
+     * 「自分の親が星でない」だけで落とすと、必要なフェード線ごと消えてしまう。
+     * 幽霊は距離 3 = 必ず距離 2 の星と辺で繋がっているので、線を 1 本も持たない
+     * 幽霊はそもそも生まれない。
+     *
+     * 親 id の伏せ方をここから引くので、先に集合を作ってから 1 星ずつ組み立てる。
+     */
+    const delivered = new Set(
+      source.stages
+        .filter((stage) => {
+          const visibility = visibilityOf(stage.id);
+          if (revealDev) return true;
+          if (visibility === "hidden") return false;
+          // 旧い画面は `edge` を普通の星として描いてしまう (「？？？」のロック星 +
+          // 必ず 400 になる腕試しボタン)。申告の無いクライアントには配らない。
+          return ghostStars || isStarVisible(visibility);
+        })
+        .map((stage) => stage.id),
+    );
+
+    /** 線を引く親 (引いてよい相手のときだけ)。判定は `acceptsParent` に寄せる。 */
+    const parentIdOf = (stage: SkillMapSource["stages"][number]): { parent_id?: string } => {
+      const id = ownParentIdOf(stage);
+      return acceptsParent(stage.id, id, delivered) ? { parent_id: id } : {};
+    };
+
+    const payload: SkillMapStagePayload[] = source.stages.flatMap((stage) => {
       const state = result.states.get(stage.id) ?? "locked";
-      const visibility = result.visibility.get(stage.id) ?? "fog";
+      const visibility = visibilityOf(stage.id);
+      // 4 歩以上先と、線を引けない幽霊は存在ごと出さない (上の `delivered` を参照)。
+      if (!delivered.has(stage.id)) return [];
       const base: SkillMapStagePayload = {
         id: stage.id,
         state,
         visibility,
-        ...(stage.theme ? { theme: stage.theme } : {}),
-        ...appearancesPayload(stage.slug),
-        ...appearanceParentPayload(stage.slug, idBySlug),
+        ...appearancePayloads(stage.slug, idBySlug, (id) => acceptsParent(stage.id, id, delivered)),
       };
-      // 霧の星: 通常は名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
-      // slug・到達説明・解放条件・受講登録はここで止める。
-      // 開発者表示 (`revealDev`) では slug と解放条件も載せる — 視界は fog のまま
-      // (開始 / 腕試しは依然として断る) で、画面がぼかさず名前を出す材料にする。
+
+      // 開発者表示は段を素通し (名前も解放条件も載せる)。視界の値はそのままなので、
+      // 開始 / 腕試しは依然としてサーバが断る。
+      if (revealDev) {
+        return [
+          {
+            ...base,
+            slug: stage.slug,
+            title: stage.title,
+            category: stage.category,
+            ...(stage.theme ? { theme: stage.theme } : {}),
+            enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
+            ...parentIdOf(stage),
+            ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
+            ...(state === "locked"
+              ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
+              : {}),
+            ...(state !== "locked" && stage.canDo ? { can_do: stage.canDo } : {}),
+          },
+        ];
+      }
+
+      // 3 歩先: 線を引くためのトポロジだけ。名前もテーマも出さない (画面は星を描かず、
+      // 手前の星から伸びる線を薄くフェードさせるだけ)。距離 1 以上は必ず locked なので、
+      // 状態を載せても何も明かさない。
+      if (!isStarVisible(visibility)) {
+        return [{ ...base, category: stage.category, ...parentIdOf(stage) }];
+      }
+
+      // 2 歩先 (霧): 名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
+      // slug・到達説明・解放条件・受講登録・アイコンはここで止める。
       if (visibility === "fog") {
-        if (!revealDev) {
-          return {
+        return [
+          {
             ...base,
             theme: fogNameOf(stage.id),
             title: stage.title,
             category: stage.category,
             ...parentIdOf(stage),
-          };
-        }
-        return {
+          },
+        ];
+      }
+
+      // 0〜1 歩 (full): 名前・受講登録・アイコンまで。ロック星は解放条件、
+      // 開いている星は到達説明。
+      return [
+        {
           ...base,
           slug: stage.slug,
           title: stage.title,
           category: stage.category,
+          ...(stage.theme ? { theme: stage.theme } : {}),
           enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
           ...parentIdOf(stage),
           ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
           ...(state === "locked"
-            ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
+            ? { lock_reasons: maskedLockReasons(source, result, stage.id) }
             : {}),
-        };
-      }
-
-      const named: SkillMapStagePayload = {
-        ...base,
-        slug: stage.slug,
-        title: stage.title,
-        category: stage.category,
-        enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
-        ...parentIdOf(stage),
-        ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
-        ...(state === "locked"
-          ? { lock_reasons: maskedLockReasons(source, result, stage.id, revealDev) }
-          : {}),
-      };
-      // 到達説明は「もう手が届く星」にだけ。ロック中と 2 歩先は解放条件だけを見せる。
-      if (visibility === "full" && state !== "locked" && stage.canDo) {
-        named.can_do = stage.canDo;
-      }
-      return named;
+          ...(state !== "locked" && stage.canDo ? { can_do: stage.canDo } : {}),
+        },
+      ];
     });
 
     // 集中ボーナスは表示専用の係数 (XP の保存値は動かさない)。導出仕様は
@@ -341,6 +463,22 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           passed: passedIds.has(row.id),
         })),
         next_stage_ids: result.nextStageIds,
+        /**
+         * 受講登録が 1 つでもあるか。
+         *
+         * ホームのプレースメント (`LearnerDashboard`) は「受講登録が 0 件か」で出すが、
+         * 星ごとの `enrolled` は霧より先に出さない — 数え上げを星の配列に頼ると、
+         * 唯一の登録が 2 歩先にある受講者を「まだ何も始めていない」と誤判定する。
+         * どの星かは伏せたまま、有無だけを集約して返す。
+         */
+        has_enrollment: (source.enrolledStageIds?.size ?? 0) > 0,
+        /**
+         * 配信対象のステージ総数 (視界で落とす前)。盤面の「修了 x / y」の分母。
+         *
+         * `stages` の長さを分母にすると、先へ進むほど星が増えて分母も増え、
+         * 「全体のどこまで来たか」が読めなくなる。
+         */
+        stage_count: source.stages.length,
         active_stage_id: source.activeStageId ?? null,
         // `chosen` = 受講者が選んだ / `derived` = 直近の進捗から導出。
         active_stage_source: source.activeStageSource ?? "derived",
@@ -374,7 +512,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
  * フォーカスを導出へ落とすので、保存できてしまうと「保存したのに反映されない」
  * 書き込みになる。受け付けないことで読み書きの規則を一致させる。
  *
- * **霧の中の星も選ばせない** (下の秘匿の理由を参照)。
+ * **霧より先の星も選ばせない** (下の秘匿の理由を参照)。
  */
 skillMapRoute.put("/api/skill-map/active-stage", async (c) => {
   try {
@@ -404,12 +542,12 @@ skillMapRoute.put("/api/skill-map/active-stage", async (c) => {
         throw new ApiError("クリア済みのステージは選べません", 400);
       }
       const result = evaluateSkillMapFor(source);
-      // 霧の星を自分で active にすると、その星と隣接が即 full になり、視界制限が
+      // 霧より先の星を自分で active にすると、その星と隣接が即 full になり、視界制限が
       // 受講者の操作で無効化される。割当済みなのに霧の彼方にある稀なケースは、
       // 前提を進めれば自然に見えてくるので、ここで閉じる方を採る。
       // 文言は未受講 / 存在しないときと同じ — 400 の出方から「割り当てられてはいる」
       // ことを読み取れると、霧の中に星があること自体を漏らすため。
-      if ((result.visibility.get(stageId) ?? "fog") === "fog") {
+      if (!isSelectableVisibility(result.visibility.get(stageId) ?? "hidden")) {
         throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
       }
     }

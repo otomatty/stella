@@ -51,6 +51,8 @@ app.use("/api/*", async (c, next) => {
     // null を返すと Access-Control-Allow-Origin ヘッダ自体が送られない (= 不許可)。
     origin: (origin) => resolveCorsOrigin(origin, c.env.ALLOWED_ORIGINS),
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    // 画面が付ける独自ヘッダはここに挙げないと **全ての API 呼び出しが CORS で落ちる**
+    // (プリフライトの Access-Control-Allow-Headers に載らないため)。増やしたら必ず足す。
     allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER],
   });
   return corsMiddleware(c, next);

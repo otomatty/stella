@@ -14,7 +14,7 @@
  * ## 並び順
  *
  * 前提グラフの深さはサーバから来ないので、**状態と視界の段**で並べる
- * (`cleared → active → unlocked → locked → name-only → fog`)。同じ段の中はタイトル順で
+ * (`cleared → active → unlocked → locked → 霧より先`)。同じ段の中はタイトル順で
  * 固定し、再取得のたびに星が入れ替わらないようにする。描画は上が未来なので逆順。
  */
 
@@ -84,8 +84,8 @@ const RANK: Record<string, number> = {
 };
 
 function rankOf(node: SkillMapStageNode): number {
-  if (node.visibility === "fog") return 5;
-  if (node.visibility === "name-only") return 4;
+  // 名前が確定していない段 (霧より先) は、状態に関わらず最後尾。
+  if (node.visibility !== "full") return 4;
   return RANK[node.state] ?? 3;
 }
 
@@ -218,7 +218,7 @@ const PathNode = ({
   discoveries,
   onOpenDiscovery,
 }: PathNodeProps) => {
-  const fog = node.visibility === "fog";
+  const fog = node.visibility !== "full";
   const locked = node.state === "locked";
   const label = labelOf(node);
 

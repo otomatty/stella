@@ -41,13 +41,18 @@
  * なる)。島がそもそも応答に入るかはサーバが表示条件で決める — ここは届いた星を
  * 並べるだけ。
  *
- * ## 霧の星の置き場
+ * ## 霧の星と幽霊ノードの置き場
  *
- * どの線にも触れていない霧の星だけを最外の深さの 1 つ先へ送る (前提の線が来ない
- * 霧の星は深さ 0 になり、中心に居座ってしまうため)。見えている星の前提として
- * 参照されている霧の星は、線に従って本来の深さに置く。
+ * どの線にも触れていない「霧より先」の星だけを最外の深さの 1 つ先へ送る (前提の線が
+ * 来ない星は深さ 0 になり、中心に居座ってしまうため)。見えている星の前提として
+ * 参照されている星は、線に従って本来の深さに置く。
+ *
+ * 3 歩先の星 (`visibility === "edge"`) は **幽霊ノード** — ここでは普通に座標を計算し、
+ * 星を描かないのは `SkillTree.tsx` の仕事。線の終点にその座標が要るので、レイアウトから
+ * 落とすわけにはいかない (落とすと線の長さと向きを決め打ちにする羽目になる)。
  */
 
+import { isStarVisible } from "@falcon/shared/skill-map/evaluate";
 import { SKILL_MAP_ISLAND_CATEGORIES } from "@falcon/shared/skill-map/islands";
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
@@ -223,7 +228,8 @@ function lockCopyToSector(
   byId: ReadonlyMap<string, SkillMapStageNode>,
   sectorParentIds: readonly string[],
 ): SkillMapStageNode {
-  if (copy.visibility === "fog") return copy;
+  // 霧より先はサーバの段をそのまま使う (名前も解放条件も無いので扇ごとの鍵は要らない)。
+  if (!isStarVisible(copy.visibility)) return copy;
   if (copy.state === "cleared" || copy.state === "active" || copy.state === "locked") return copy;
   const isCleared = (id: string | undefined): boolean =>
     id !== undefined && byId.get(id)?.state === "cleared";
@@ -395,9 +401,9 @@ function layoutCluster(nodes: SkillMapStageNode[], opts?: { fillCircle?: boolean
     0,
     ...nodes.filter((n) => linked.has(keyOf(n))).map((n) => depths.get(keyOf(n)) ?? 0),
   );
-  // 線に触れていない霧の星は「その先」へ送る (中心に居座らせない)。
+  // 線に触れていない「霧より先」の星は「その先」へ送る (中心に居座らせない)。
   const ringOf = (node: SkillMapStageNode): number =>
-    node.visibility === "fog" && !linked.has(keyOf(node))
+    node.visibility !== "full" && !linked.has(keyOf(node))
       ? maxLinkedDepth + 1
       : (depths.get(keyOf(node)) ?? 0);
 

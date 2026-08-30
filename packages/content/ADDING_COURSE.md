@@ -95,14 +95,14 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 
 #### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）は `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |
 | `prerequisites` | slug の配列 | **ハードロック（解放条件）**。挙げた講座を全部クリアするまで、この講座は開けない。見た目の複製 (`appearances`) で扇ごとに前提を分けるときは和集合を書き、組は `appearancePrerequisites` へ |
 | `parent` | slug | **線を引く親**。`prerequisites` のうちの 1 つ。ツリーの線・配置・霧の距離はこの 1 本で決まる（1 つの星に線は 1 本しか入らない）。前提が 2 つ以上なら**必須**、1 つなら省略可（その 1 つが親）、0 なら書けない。線の無い前提も解放条件としては効き、ロック中の星の「解放条件」に名前で出る |
 | `canDo` | 1 文 | ホバーの到達説明「このスキルを身につけた人は◯◯ができる」 |
-| `theme` | 短い語 | まだ見えていないスキルに、タイトルの代わりに見せるテーマ名 |
+| `theme` | 短い語 | まだ見えていないスキルに、タイトルの代わりに見せるテーマ名。手前の星の「解放条件」に、この講座名の代わりとして並ぶのもこの語 |
 
 - `prerequisites` に書けるのは、その講座の `CURRICULUM.md` に**前提講座として散文で明記されているもの**だけです。「推奨」「任意」「想定する受講順」はゲートではないので書きません。書いた瞬間に、前提を終えていない受講者は講座を開けなくなります
 - `parent` は「この講座はどの講座の続きとして描くか」です。前提を後から足しても線は動きません（並び順に意味を持たせない）。複製 (`appearances`) を持つ講座は `parent` を書けず、`appearancePrerequisites.<扇>` にちょうど 1 つ書いた slug がその扇の親になります

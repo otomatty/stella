@@ -264,7 +264,12 @@ export const LearnerDashboard = ({
    */
   const [placementSkipped, setPlacementSkipped] = useState(false);
   const skipRemembered = useMemo(() => readPlacementSkipped(currentUserId), [currentUserId]);
-  const hasAnyEnrollment = (skillMap.map?.stages ?? []).some((node) => node.enrolled === true);
+  // 受講登録の有無はサーバの集約フラグを使う。星ごとの `enrolled` は霧より先に
+  // 付かないので、星の配列で数えると「唯一の登録が 2 歩先」の受講者を取りこぼし、
+  // 始めているのにプレースメントが出てしまう。古い応答のときだけ星から数える。
+  const hasAnyEnrollment =
+    skillMap.map?.has_enrollment ??
+    (skillMap.map?.stages ?? []).some((node) => node.enrolled === true);
   const showPlacement =
     backendEnabled &&
     skillMap.map !== null &&

@@ -98,7 +98,9 @@ export function homePathNodes(
     extraStageIds?: string[];
   },
 ): SkillMapStageNode[] {
-  const visible = nodes.filter((node) => node.visibility !== "fog");
+  // ホームの道に載せるのは名前も解放条件も確定している段だけ。ぼかした名前の星を
+  // 縦 1 本の道に混ぜると、「次に何をするか」を決める場のはずが読めない行で埋まる。
+  const visible = nodes.filter((node) => node.visibility === "full");
   const ids = new Set<string>();
   const active = options.activeStageId
     ? visible.find((node) => node.id === options.activeStageId)

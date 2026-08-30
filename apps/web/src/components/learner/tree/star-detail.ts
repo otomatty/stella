@@ -20,7 +20,7 @@ export function labelOf(node: SkillMapStageNode): string {
 
 /** 詳細の本文。器はこの種類で描き分ける。 */
 export type StarDetailBody =
-  /** 霧の星の予告文 (中身は語らない)。 */
+  /** 霧より先の星の予告文 (中身は語らない)。 */
   | { kind: "fog" }
   /** ロック星に出してよいのは解放条件だけ。 */
   | { kind: "lock"; text: string }
@@ -28,7 +28,7 @@ export type StarDetailBody =
   | { kind: "can-do"; text: string }
   | { kind: "none" };
 
-/** 出すボタン。霧の星には何も出さない (開始も腕試しもサーバが断る)。 */
+/** 出すボタン。霧より先の星には何も出さない (開始も腕試しもサーバが断る)。 */
 export interface StarDetailActions {
   /** 腕試し。`challenge` = ロック星の飛び級 (強調)、`try` = 解放済みの力試し。 */
   skillCheck: "none" | "challenge" | "try";
@@ -47,7 +47,7 @@ export function hasStarActions(actions: StarDetailActions): boolean {
 
 export interface StarDetail {
   label: string;
-  /** 名前をぼかすか (霧の星で、開発者モードでないとき)。 */
+  /** 名前をぼかすか (`full` より先の段で、開発者モードでないとき)。 */
   obscured: boolean;
   /** 読み上げ用の状態語。見た目 (色・形) だけで区別させない。 */
   stateText: string;
@@ -61,19 +61,20 @@ export interface StarDetailInput {
   isActive: boolean;
   /** 既に「次にやるリスト」に積んであるか。 */
   queued: boolean;
-  /** 開発者モード: 霧の星の名前をぼかさない。 */
+  /** 開発者モード: 段を素通しし、名前をぼかさない。 */
   revealDev: boolean;
 }
 
 export function describeStar({ node, isActive, queued, revealDev }: StarDetailInput): StarDetail {
-  const fog = node.visibility === "fog";
+  /** 霧より先 (= `full` でない) の段。名前は出しても行動の導線は出さない。 */
+  const beyond = node.visibility !== "full";
   const obscured = fogObscured(node.visibility, revealDev);
   const cleared = node.state === "cleared";
   const locked = node.state === "locked";
 
   const stateText = obscured
     ? "まだ見えない"
-    : fog
+    : beyond
       ? "まだ先（開発者表示）"
       : cleared
         ? "クリア済み"
@@ -98,8 +99,10 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
         ? { kind: "can-do", text: node.can_do }
         : { kind: "none" };
 
-  const actions: StarDetailActions = fog
-    ? { skillCheck: "none", start: false, queue: false, clearedNote: false }
+  const actions: StarDetailActions = beyond
+    ? // 霧より先の星には導線を出さない。開始も腕試しもフォーカスもサーバが断るので、
+      // ボタンを出すと「押せるのに必ず失敗する」になる。飛び級の入口は 1 歩先まで。
+      { skillCheck: "none", start: false, queue: false, clearedNote: false }
     : {
         skillCheck: locked ? "challenge" : "try",
         // 修了した星に着手の導線は出さない (サーバも切り替えを 400 で断る)。

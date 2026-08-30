@@ -23,7 +23,9 @@ import { loadEnrolledStageIds, loadSkillMapSource } from "../lib/skill-map-data.
 import { skillMapRoute } from "./skill-map.js";
 import { stageStartRoute } from "./stage-start.js";
 
-vi.mock("../lib/skill-map-data.js", () => ({
+vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
+  // 差し替えるのは I/O を持つ口だけ。純粋なヘルパ (視界の段の申告など) は本物を使う。
+  ...(await importOriginal<typeof import("../lib/skill-map-data.js")>()),
   // 開発モードはテストでは常に無効 (本番挙動を検証する)。
   isDevMode: () => false,
   wantsDevReveal: () => false,
@@ -78,12 +80,13 @@ const env = {} as Env;
 /**
  * 一本道 a → b → c → far → fog (id = slug)。
  *
- * 起点 (前提なし) は a なので、a = unlocked・b = locked (full)・c = name-only の locked・
- * far / fog は霧。cleared は個別に足す。
+ * 起点 (前提なし) は a なので、a = unlocked・b = locked (full)・c = 2 歩 (fog)・
+ * far 以遠はさらに先。cleared は個別に足す。
  *
- * c には **霧の中にある前提** (`stage-deep`) も持たせてある。deep は未知 slug を前提に
- * 持つので他の星と辺で繋がらず、c 経由の距離 3 = 霧に落ちる。「見えている星の解放条件
- * から霧の星の名前が読めない」ことを見るための配置。
+ * `stage-b2` は a の隣 (= 解放条件が出る 1 歩先) に置きつつ、**視界の外にある前提**
+ * (`stage-deep`) も持つ。deep は未知 slug を前提に持つので他の星と辺で繋がらず、
+ * 距離が測れない = 見せない側に落ちる。「見えている星の解放条件から、見えない星の
+ * 名前が読めない」ことを見るための配置。
  */
 function pathSource(cleared: string[] = []) {
   const stage = (slug: string, prerequisites: string[]) => ({
@@ -98,7 +101,9 @@ function pathSource(cleared: string[] = []) {
     stages: [
       stage("stage-a", []),
       stage("stage-b", ["stage-a"]),
-      stage("stage-c", ["stage-b", "stage-deep"]),
+      stage("stage-c", ["stage-b"]),
+      // 線は先頭 (stage-a) の 1 本。deep は「線の無い前提」で視界の外にいる。
+      stage("stage-b2", ["stage-a", "stage-deep"]),
       stage("stage-deep", ["stage-never-published"]),
       stage("stage-far", ["stage-c"]),
       stage("stage-fog", ["stage-far"]),
@@ -221,18 +226,18 @@ describe("POST /api/stages/:id/start", () => {
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 
-  it("前提が霧の中にあるロック星では、前提名をテーマ名に伏せる", async () => {
-    // stage-c は name-only で見えているが、その前提 stage-deep は霧の中 (距離 3)。
-    const res = await start("stage-c");
+  it("前提が視界の外にあるロック星では、前提名をテーマ名に伏せる", async () => {
+    // stage-b2 は 1 歩先 (full) で解放条件が出るが、その前提 stage-deep は視界の外。
+    const res = await start("stage-b2");
     expect(res.status).toBe(400);
     const message = await errorOf(res);
     // 見えている前提はそのまま、霧の前提はテーマ名に落ちる。
-    expect(message).toContain("stage-b の講座");
+    expect(message).toContain("stage-a の講座");
     expect(message).not.toContain("stage-deep");
     expect(message).toContain("テーマX");
   });
 
-  it("霧の星は汎用文言の 400 (存在しない星と区別しない)", async () => {
+  it("霧より先の星は汎用文言の 400 (存在しない星と区別しない)", async () => {
     const fog = await start("stage-far");
     const missing = await start("does-not-exist");
     expect(fog.status).toBe(400);
