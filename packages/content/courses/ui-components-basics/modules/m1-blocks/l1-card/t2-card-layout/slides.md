@@ -4,7 +4,7 @@ title: カードの中身は縦に積む
 takeaway: "カードの中身はflex-direction: columnで縦に積み、間隔はgapで空ける"
 introduces: []
 requires: [カード, HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 1-1-2
 # カードの中身は縦に積む
 
-UI部品入門研修 — Module 1 / レッスン1-1
+UI部品入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 骨格ができたので、2段階目のレイアウトです。並べ方だけを決めます。 -->
 

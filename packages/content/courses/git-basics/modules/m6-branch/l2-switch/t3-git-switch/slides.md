@@ -4,7 +4,7 @@ title: switchで移る
 takeaway: "git switch 名前 で移ると、フォルダの中身がそのブランチの状態になる"
 introduces: []
 requires: [switch, ブランチ, main, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-2-3
 # switchで移る
 
-Git入門研修 — Module 6 / レッスン6-2
+Git入門 — Module 6 / レッスン6-2
 
 <!-- ノート: -cなしのswitch、既にあるブランチへの移動です。移ると何が起きるのかを1つだけ押さえます。 -->
 

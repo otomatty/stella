@@ -4,7 +4,7 @@ title: 型も引数にできる
 takeaway: "ジェネリクスは、型を後から決められるようにする仕組み"
 introduces: [ジェネリクス, 型引数]
 requires: [関数, 引数, 型, 型エイリアス, any, 配列]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-1-1
 # 型も引数にできる
 
-TypeScript入門研修 — Module 6 / レッスン6-1
+TypeScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: Module 6はジェネリクスです。抽象度が上がりますが、Module 8の非同期処理で必ず必要になるので、ここで土台を作ります。 -->
 

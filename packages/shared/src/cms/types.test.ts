@@ -7,7 +7,7 @@ function stageRow(overrides: Partial<StageRow> = {}): StageRow {
     id: "stage-1",
     tenant_id: "ses",
     slug: "typescript-basics",
-    title: "TypeScript 入門研修",
+    title: "TypeScript 入門",
     category: "フロントエンド",
     color: "indigo",
     duration_hours: 28,

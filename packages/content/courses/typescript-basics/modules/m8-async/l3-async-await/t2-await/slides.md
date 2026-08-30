@@ -4,7 +4,7 @@ title: awaitで結果を待つ
 takeaway: "awaitはPromiseの結果が出るまで待ち、中身を取り出す"
 introduces: [await]
 requires: [async, Promise, then, 変数, const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-3-2
 # awaitで結果を待つ
 
-TypeScript入門研修 — Module 8 / レッスン8-3
+TypeScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: Module 8の山場です。ここが書けるようになると、実務の非同期コードがそのまま読めます。 -->
 

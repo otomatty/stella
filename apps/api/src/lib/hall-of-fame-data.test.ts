@@ -114,19 +114,19 @@ beforeEach(() => {
 
 describe("buildPathSnapshot", () => {
   it("公開ステージだけを、点いた順に写す", async () => {
-    addStage("stage-a", "HTML/CSS 入門研修", "published");
-    addStage("stage-b", "JavaScript 入門研修", "published");
+    addStage("stage-a", "HTML/CSS 入門", "published");
+    addStage("stage-b", "JavaScript 入門", "published");
     completeStage("stage-b", 5);
     completeStage("stage-a", 1);
 
     expect(await buildPathSnapshot(db, TENANT, USER)).toEqual([
-      { id: "stage-a", title: "HTML/CSS 入門研修" },
-      { id: "stage-b", title: "JavaScript 入門研修" },
+      { id: "stage-a", title: "HTML/CSS 入門" },
+      { id: "stage-b", title: "JavaScript 入門" },
     ]);
   });
 
   it("draft のステージは snapshot に入らない (未公開の教材名を漏らさない)", async () => {
-    addStage("stage-a", "HTML/CSS 入門研修", "published");
+    addStage("stage-a", "HTML/CSS 入門", "published");
     addStage("stage-secret", "社外秘の新研修 (下書き)", "draft");
     completeStage("stage-a", 1);
     completeStage("stage-secret", 2);
@@ -134,7 +134,7 @@ describe("buildPathSnapshot", () => {
     certify("stage-secret", 3);
 
     const path = await buildPathSnapshot(db, TENANT, USER);
-    expect(path).toEqual([{ id: "stage-a", title: "HTML/CSS 入門研修" }]);
+    expect(path).toEqual([{ id: "stage-a", title: "HTML/CSS 入門" }]);
     expect(JSON.stringify(path)).not.toContain("社外秘");
   });
 
@@ -147,13 +147,13 @@ describe("buildPathSnapshot", () => {
   });
 
   it("修了証だけの星も入り、失効した修了証は入らない", async () => {
-    addStage("stage-a", "SQL 入門研修", "published");
-    addStage("stage-b", "Git 入門研修", "published");
+    addStage("stage-a", "SQL 入門", "published");
+    addStage("stage-b", "Git 入門", "published");
     certify("stage-a", 2);
     certify("stage-b", 3, true);
 
     expect(await buildPathSnapshot(db, TENANT, USER)).toEqual([
-      { id: "stage-a", title: "SQL 入門研修" },
+      { id: "stage-a", title: "SQL 入門" },
     ]);
   });
 

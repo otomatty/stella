@@ -4,7 +4,7 @@ title: 関数の中の変数は外から見えない
 takeaway: "関数の中で宣言した変数は、その関数の中でしか使えない"
 introduces: [スコープ, ローカル変数]
 requires: [関数, 変数, 宣言, エラー, ブロック]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-1-3
 # 関数の中の変数は外から見えない
 
-JavaScript入門研修 — Module 6 / レッスン6-1
+JavaScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: スコープの初回です。「見えない=安全」というポジティブな枠で伝えます。 -->
 

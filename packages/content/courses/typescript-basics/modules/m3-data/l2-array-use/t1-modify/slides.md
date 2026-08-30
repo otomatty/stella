@@ -4,7 +4,7 @@ title: 要素の書き換えと追加
 takeaway: "要素はインデックスで書き換え、pushで末尾に追加する"
 introduces: [push]
 requires: [配列, 要素, インデックス, 代入]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-2-1
 # 要素の書き換えと追加
 
-TypeScript入門研修 — Module 3 / レッスン3-2
+TypeScript入門 — Module 3 / レッスン3-2
 
 <!-- ノート: レッスン3-2では、配列を実際に使っていきます。まずは中身を変える方法から。 -->
 

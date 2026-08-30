@@ -4,7 +4,7 @@ title: 文字色と背景色はコントラストで決める
 takeaway: "文字色と背景色は、明るさの差が十分にある組み合わせを選ぶ"
 introduces: [color, background-color, コントラスト]
 requires: [プロパティ, 値, 見た目]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-1-3
 # 文字色と背景色はコントラストで決める
 
-HTML/CSS入門研修 — Module 5 / レッスン5-1
+HTML/CSS入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 色の話です。好みではなく、読めるかどうかで決める観点を渡します。 -->
 

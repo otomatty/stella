@@ -4,7 +4,7 @@ title: 枠は消すだけにしない
 takeaway: "outline: noneで枠を消すなら、:focus-visibleで代わりの枠を必ず用意する"
 introduces: [outline]
 requires: [":focus-visible", フォーカス]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-3-2
 # 枠は消すだけにしない
 
-モダンCSS入門研修 — Module 3 / レッスン3-3
+モダンCSS入門 — Module 3 / レッスン3-3
 
 <!-- ノート: focus-visibleを知った上で、「枠を消してほしい」への正しい答え方を決めます。 -->
 

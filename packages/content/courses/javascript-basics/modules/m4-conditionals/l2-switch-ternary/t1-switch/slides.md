@@ -4,7 +4,7 @@ title: switchは値の一致で分岐する
 takeaway: "switchは、1つの値をcaseの値と見比べて分岐する"
 introduces: [switch, case, default, break]
 requires: [分岐, 値, ===, if, else if]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-2-1
 # switchは値の一致で分岐する
 
-JavaScript入門研修 — Module 4 / レッスン4-2
+JavaScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: if以外の分岐その1です。「===の連続はswitchが読みやすい」が使いどころです。 -->
 

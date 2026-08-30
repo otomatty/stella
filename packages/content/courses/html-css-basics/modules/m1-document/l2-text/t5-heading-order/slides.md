@@ -4,7 +4,7 @@ title: 見出しの番号は飛ばさない
 takeaway: "見出しはh1から順に使い、番号を飛ばさない"
 introduces: [見出しレベル]
 requires: [見出し, 階層, 段落, CSS]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-2-5
 # 見出しの番号は飛ばさない
 
-HTML/CSS入門研修 — Module 1 / レッスン1-2
+HTML/CSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 見出しの書き方は 1-2-1 で扱いました。ここは「番号の選び方」だけに絞ります。 -->
 

@@ -4,7 +4,7 @@ title: 変数は値に名前を付ける
 takeaway: "変数を宣言すると、値に名前を付けて後から使い回せる"
 introduces: [変数, 値, 宣言, let, 代入]
 requires: [JavaScript, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-1-1
 # 変数は値に名前を付ける
 
-JavaScript入門研修 — Module 1 / レッスン1-1
+JavaScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 言語の本体の最初のトピックです。変数はこの講座の全トピックの土台になります。 -->
 

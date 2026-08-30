@@ -4,7 +4,7 @@ title: 幅と位置は論理プロパティで決める
 takeaway: "ダイアログの幅と位置は、max-inline-sizeとmargin: autoで決める"
 introduces: []
 requires: [ダイアログ, 最前面]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-3-1
 # 幅と位置は論理プロパティで決める
 
-UI部品入門研修 — Module 4 / レッスン4-3
+UI部品入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 最後のレッスンです。開いたダイアログの見た目を、2段階目から仕上げます。 -->
 

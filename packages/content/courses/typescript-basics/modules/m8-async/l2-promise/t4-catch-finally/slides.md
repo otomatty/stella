@@ -4,7 +4,7 @@ title: catchとfinally
 takeaway: "rejectされた失敗はcatchで受け取り、finallyは成否に関わらず動く"
 introduces: []
 requires: [Promise, then, reject, Error, catch, finally, throw]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-2-4
 # catchとfinally
 
-TypeScript入門研修 — Module 8 / レッスン8-2
+TypeScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: レッスン8-2の最後です。5-4で学んだ例外処理と、名前も考え方も揃っています。 -->
 

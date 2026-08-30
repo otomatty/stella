@@ -4,7 +4,7 @@ title: summaryの印は置き換えられる
 takeaway: "summaryの既定の三角は::markerで消して、自分の印に置き換えられる"
 introduces: ["::marker"]
 requires: [details, summary]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-3-2
 # summaryの印は置き換えられる
 
-UI部品入門研修 — Module 3 / レッスン3-3
+UI部品入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 2段階目のレイアウトです。見出しの並びと印を整えます。 -->
 

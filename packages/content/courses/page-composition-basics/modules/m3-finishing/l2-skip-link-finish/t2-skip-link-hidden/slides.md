@@ -4,7 +4,7 @@ title: skip linkは普段は隠す
 takeaway: "skip linkは画面の外に置いておき、フォーカスされたときだけ見える位置に戻す"
 introduces: []
 requires: [skip link, フォーカス, トークン]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 3-2-2
 # skip linkは普段は隠す
 
-ページ構成入門研修 — Module 3 / レッスン3-2
+ページ構成入門 — Module 3 / レッスン3-2
 
 <!-- ノート: skip linkの見た目の話です。隠し方を間違えると、部品ごと消えます。 -->
 

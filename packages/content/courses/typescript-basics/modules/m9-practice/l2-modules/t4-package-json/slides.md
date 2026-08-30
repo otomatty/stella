@@ -4,7 +4,7 @@ title: package.json
 takeaway: "package.jsonはプロジェクトの設計図。これがあれば環境を再現できる"
 introduces: [package.json, dependencies]
 requires: [npm, パッケージ, node_modules]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-2-4
 # package.json
 
-TypeScript入門研修 — Module 9 / レッスン9-2
+TypeScript入門 — Module 9 / レッスン9-2
 
 <!-- ノート: レッスン9-2の最後です。プロジェクトの身分証明書にあたるファイルを扱います。 -->
 

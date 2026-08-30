@@ -1,12 +1,12 @@
-# ページ構成 入門研修 カリキュラム
+# ページ構成 入門 カリキュラム
 
-UI部品 入門研修(`ui-components-basics`)の次に受ける講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
+UI部品 入門(`ui-components-basics`)の次に受ける講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
 これまでの講座で作った部品と `:root` のトークンだけを使い、**1 枚の静的ページに組み立てる**ことを扱います。
 構成は [MDN Web ドキュメント](https://developer.mozilla.org/) の Structuring documents・CSS レイアウトクックブックと、
 [WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/) の Landmarks パターンに合わせています。
 
 想定する受講順は `html-css-basics` → `modern-css-basics` → `ui-components-basics` → **本講座** です。
-前提講座: UI部品 入門研修(`ui-components-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
+前提講座: UI部品 入門(`ui-components-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
 
 ## 終了時の目標
 
@@ -39,7 +39,7 @@ UI部品 入門研修(`ui-components-basics`)の次に受ける講座です。1 
 ## Baseline の注記
 
 3-1-3 / 3-1-4 で載せる Popover API と Invoker Commands API(`command` / `commandfor`)は、
-UI部品 入門研修と同じく MDN Baseline が **Newly available** です。動かない環境では書いた結果の確認に留め、
+UI部品 入門と同じく MDN Baseline が **Newly available** です。動かない環境では書いた結果の確認に留め、
 フォールバックの JavaScript は書きません。2-1-4 の `subgrid` は Baseline **Widely available** です。
 
 ## 全体構成(3 モジュール / 6 レッスン / 23 トピック)

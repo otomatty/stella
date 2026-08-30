@@ -4,7 +4,7 @@ title: querySelectorAllで全部取る
 takeaway: "querySelectorAllは、当てはまる要素すべてをまとめて返す"
 introduces: [querySelectorAll, NodeList]
 requires: [querySelector, セレクター, for...of, 配列, class]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-2-3
 # querySelectorAllで全部取る
 
-JavaScript入門研修 — Module 8 / レッスン8-2
+JavaScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: 複数取得です。for...ofで回せることを示せば、既習の道具がすべてつながります。 -->
 

@@ -4,7 +4,7 @@ title: navはaria-labelで区別する
 takeaway: "navが複数あるページでは、aria-labelで名前を付けてどのナビか区別する"
 introduces: [aria-label]
 requires: [nav, パンくずリスト, スプリットナビ, landmark]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 1-2-4
 # navはaria-labelで区別する
 
-ページ構成入門研修 — Module 1 / レッスン1-2
+ページ構成入門 — Module 1 / レッスン1-2
 
 <!-- ノート: ナビとパンくずを載せたので、このページにはnavが2つあります。その区別の話です。 -->
 

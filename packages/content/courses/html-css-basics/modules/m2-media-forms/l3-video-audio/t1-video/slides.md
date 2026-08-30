@@ -4,7 +4,7 @@ title: 動画はvideoに埋め込む
 takeaway: "動画はvideoのsrcにファイルを指定し、controlsで操作できるようにする"
 introduces: [動画, video, controls]
 requires: [要素, 属性, 属性値, src, 相対パス, 中身]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-3-1
 # 動画はvideoに埋め込む
 
-HTML/CSS入門研修 — Module 2 / レッスン2-3
+HTML/CSS入門 — Module 2 / レッスン2-3
 
 <!-- ノート: 画像と同じ「外のファイルを置く」話ですが、再生という操作が加わります。 -->
 

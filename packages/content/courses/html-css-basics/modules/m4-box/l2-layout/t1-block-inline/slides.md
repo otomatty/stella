@@ -4,7 +4,7 @@ title: ブロックは縦、インラインは横に並ぶ
 takeaway: "要素にはブロックとインラインがあり、既定の並ぶ向きが違う"
 introduces: [ブロック, インライン]
 requires: [ボックス, 要素, 段落, リンク]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-2-1
 # ブロックは縦、インラインは横に並ぶ
 
-HTML/CSS入門研修 — Module 4 / レッスン4-2
+HTML/CSS入門 — Module 4 / レッスン4-2
 
 <!-- ノート: 並べ方の話に入ります。まず、何もしなくてもどう並ぶのかを押さえます。 -->
 

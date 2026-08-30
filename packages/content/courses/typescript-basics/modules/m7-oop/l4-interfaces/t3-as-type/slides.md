@@ -4,7 +4,7 @@ title: インターフェースを型として使う
 takeaway: "形が合っていれば、implementsを書かなくてもその型として扱える"
 introduces: []
 requires: [インターフェース, 構造的型付け, 型注釈, クラス, implements, 配列]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-4-3
 # インターフェースを型として使う
 
-TypeScript入門研修 — Module 7 / レッスン7-4
+TypeScript入門 — Module 7 / レッスン7-4
 
 <!-- ノート: インターフェースの本当の使いどころです。5-5-2で学んだ構造的型付けと合流します。 -->
 

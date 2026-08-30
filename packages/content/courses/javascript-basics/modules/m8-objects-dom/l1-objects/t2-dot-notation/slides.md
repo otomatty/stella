@@ -4,7 +4,7 @@ title: ドット記法で読み書きする
 takeaway: "オブジェクトのプロパティは、オブジェクト.名前で読み書きできる"
 introduces: [ドット記法]
 requires: [オブジェクト, プロパティ, 代入, ドット, キー]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-1-2
 # ドット記法で読み書きする
 
-JavaScript入門研修 — Module 8 / レッスン8-1
+JavaScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: メソッド呼び出しで使ってきたドットが、プロパティ全般の読み書きだったという種明かしの回です。 -->
 

@@ -4,7 +4,7 @@ title: 現在のページはリンクにしない
 takeaway: "現在のページはリンクにせず、aria-currentを付けて見た目を反転する"
 introduces: []
 requires: [ページネーション, aria-current, 属性セレクタ, 状態]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-3-4
 # 現在のページはリンクにしない
 
-UI部品入門研修 — Module 2 / レッスン2-3
+UI部品入門 — Module 2 / レッスン2-3
 
 <!-- ノート: 4段階目の状態です。パンくずで使った印が、ここでも効きます。 -->
 

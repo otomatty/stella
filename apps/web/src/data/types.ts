@@ -74,6 +74,12 @@ export interface Stage {
    * 未設定なら color のストライプ表示にフォールバックする。
    */
   thumbnailPath?: string;
+  /**
+   * スキルツリーの星に出す講座アイコンの R2 パス (`stages.icon_path` 由来)。
+   * 正本は `packages/content/courses/<slug>/icon.svg` (単色シルエット)。
+   * 未設定なら星は状態グリフ (★/▶/🔒/✨) のまま。
+   */
+  iconPath?: string;
   duration?: number;
   lessonsCount: number;
   progress: number;
@@ -89,10 +95,20 @@ export interface Stage {
    * id ではなく slug を持つのは、教材リポジトリが正本で slug しか知らないため。
    */
   prerequisites?: string[];
+  /**
+   * スキルツリーで線を引く親の **slug** (`stages.parent` 由来。`prerequisites` のうちの 1 つ)。
+   * 未設定なら `prerequisites` の先頭を親に倒す (評価器 `parentSlugOf`)。
+   */
+  parent?: string;
   /** 到達説明。「このスキルを身につけた人は◯◯ができる」のホバー表示に使う 1 文。 */
   canDo?: string;
   /** まだ見えないスキルに見せるテーマ名。視界外のステージはタイトルの代わりにこれだけが見える。 */
   theme?: string;
+  /**
+   * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 行のまま
+   * (クリアは共有)。未設定なら `category` の扇に 1 つ。
+   */
+  appearances?: string[];
   sections?: Section[];
   /** 修了基準 (DB 由来ステージのみ)。 未定義なら表示しない。 */
   criteria?: {

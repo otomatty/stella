@@ -4,7 +4,7 @@ title: as const
 takeaway: "as constを付けると、値がそのままリテラル型に固定される"
 introduces: [as const]
 requires: [リテラル型, 型推論, オブジェクト, const, readonly, 配列]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-6-3
 # as const
 
-TypeScript入門研修 — Module 5 / レッスン5-6
+TypeScript入門 — Module 5 / レッスン5-6
 
 <!-- ノート: 1-5-4で「constは狭く、letは広く推論される」と学びました。ところがオブジェクトの中では、その狭さが効きません。その解決策です。 -->
 

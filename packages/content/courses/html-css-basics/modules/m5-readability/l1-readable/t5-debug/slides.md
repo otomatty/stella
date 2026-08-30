@@ -4,7 +4,7 @@ title: 効かない指定は5つの原因に切り分ける
 takeaway: "効かない宣言は、書き方・セレクタ・順序・詳細度・継承のどれが原因かを開発者ツールで確かめて直す"
 introduces: [切り分け]
 requires: [開発者ツール, カスケード, 上書き, 詳細度, 継承, 宣言, important]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-1-5
 # 効かない指定は5つの原因に切り分ける
 
-HTML/CSS入門研修 — Module 5 / レッスン5-1
+HTML/CSS入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 道具の使い方に続いて、調べ方の手順を渡します。ここが CSS の実務の入口です。 -->
 

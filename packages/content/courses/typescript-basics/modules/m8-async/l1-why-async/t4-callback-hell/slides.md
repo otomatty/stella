@@ -4,7 +4,7 @@ title: コールバック地獄
 takeaway: "非同期処理をコールバックでつなぐと、入れ子が深くなって読めなくなる"
 introduces: []
 requires: [setTimeout, コールバック, 非同期処理, ブロック]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-1-4
 # コールバック地獄
 
-TypeScript入門研修 — Module 8 / レッスン8-1
+TypeScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: レッスン8-1の最後です。次のレッスンでPromiseを学ぶ理由を、ここで体感してもらいます。 -->
 

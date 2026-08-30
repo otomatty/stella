@@ -4,7 +4,7 @@ title: 画像はmax-widthで箱に収める
 takeaway: "imgにmax-width: 100%を当てると、画像が置いた箱の幅からはみ出さなくなる"
 introduces: [置換要素]
 requires: []
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-2-2
 # 画像はmax-widthで箱に収める
 
-モダンCSS入門研修 — Module 3 / レッスン3-2
+モダンCSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 余白の次は、レイアウトを一番よく壊す犯人、画像です。 -->
 

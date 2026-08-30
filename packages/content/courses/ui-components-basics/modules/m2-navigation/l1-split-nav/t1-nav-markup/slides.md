@@ -4,7 +4,7 @@ title: ナビはnavとulで書く
 takeaway: "ナビゲーションは、navの中のulにリンクを1つずつ並べて書く"
 introduces: [ナビゲーション]
 requires: [HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-1-1
 # ナビはnavとulで書く
 
-UI部品入門研修 — Module 2 / レッスン2-1
+UI部品入門 — Module 2 / レッスン2-1
 
 <!-- ノート: Module 2 はナビゲーションの部品です。まずは骨格から作ります。 -->
 

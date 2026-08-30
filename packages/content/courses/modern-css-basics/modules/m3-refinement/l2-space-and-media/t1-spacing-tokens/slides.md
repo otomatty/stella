@@ -4,7 +4,7 @@ title: 余白は段階を決めてトークンにする
 takeaway: "余白の値は少ない段階に絞って、:rootのトークンにする"
 introduces: [段階]
 requires: [トークン, ":root", var]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-2-1
 # 余白は段階を決めてトークンにする
 
-モダンCSS入門研修 — Module 3 / レッスン3-2
+モダンCSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 色でやったトークン化を、余白にも広げます。 -->
 

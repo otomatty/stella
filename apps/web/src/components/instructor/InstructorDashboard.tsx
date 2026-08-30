@@ -257,8 +257,8 @@ interface StudentRow {
 
 // デモ専用のみデモ定数。
 const STUDENT_PROG_DEMO: StudentRow[] = [
-  { n: "田中 翔太", c: "c1", p: 62, stage: "TypeScript 入門研修", s: "順調", sev: "success" },
-  { n: "佐藤 美咲", c: "c2", p: 38, stage: "TypeScript 入門研修", s: "やや遅延", sev: "warning" },
-  { n: "鈴木 健一", c: "c3", p: 18, stage: "TypeScript 入門研修", s: "遅延", sev: "danger" },
-  { n: "山田 優花", c: "c4", p: 85, stage: "TypeScript 入門研修", s: "順調", sev: "success" },
+  { n: "田中 翔太", c: "c1", p: 62, stage: "TypeScript 入門", s: "順調", sev: "success" },
+  { n: "佐藤 美咲", c: "c2", p: 38, stage: "TypeScript 入門", s: "やや遅延", sev: "warning" },
+  { n: "鈴木 健一", c: "c3", p: 18, stage: "TypeScript 入門", s: "遅延", sev: "danger" },
+  { n: "山田 優花", c: "c4", p: 85, stage: "TypeScript 入門", s: "順調", sev: "success" },
 ];

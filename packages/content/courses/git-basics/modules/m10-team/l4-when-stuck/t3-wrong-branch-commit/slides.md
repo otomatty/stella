@@ -4,7 +4,7 @@ title: 間違った枝でコミットした
 takeaway: "間違った枝でコミットしても、そこから switch -c すればコミットごと新しい枝に移せる"
 introduces: []
 requires: [switch, -c, main, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-4-3
 # 間違った枝でコミットした
 
-Git入門研修 — Module 10 / レッスン10-4
+Git入門 — Module 10 / レッスン10-4
 
 <!-- ノート: 困りごとの具体例を1つ。誰もが一度はやる「枝を間違えたままコミット」の対処です。 -->
 

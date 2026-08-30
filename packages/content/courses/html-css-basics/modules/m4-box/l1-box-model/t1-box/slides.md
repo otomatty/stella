@@ -4,7 +4,7 @@ title: 要素は四角い箱として置かれる
 takeaway: "すべての要素は、幅と高さを持つ四角い箱として置かれる"
 introduces: [ボックス, 幅, 高さ, ボーダー]
 requires: [要素, プロパティ, 値, 見た目]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-1-1
 # 要素は四角い箱として置かれる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-1
+HTML/CSS入門 — Module 4 / レッスン4-1
 
 <!-- ノート: ここから配置の話です。まず、画面に何が並んでいるのかの捉え方を変えます。 -->
 

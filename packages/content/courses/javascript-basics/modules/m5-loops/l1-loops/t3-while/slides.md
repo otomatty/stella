@@ -4,7 +4,7 @@ title: whileは条件が続く限り繰り返す
 takeaway: "whileは、条件が真のあいだ繰り返し続ける"
 introduces: [while]
 requires: [ループ, 条件, 真偽値, 更新]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 5-1-3
 # whileは条件が続く限り繰り返す
 
-JavaScript入門研修 — Module 5 / レッスン5-1
+JavaScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 回数不定のループです。forとの使い分け(回数が決まっているか)が軸です。 -->
 

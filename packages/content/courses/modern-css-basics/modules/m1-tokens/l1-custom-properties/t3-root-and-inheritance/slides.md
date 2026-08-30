@@ -4,7 +4,7 @@ title: :rootに置くとページ全体で使える
 takeaway: "カスタムプロパティは子に継承されるので、:rootに置くとページ全体で使える"
 introduces: [":root", 継承]
 requires: [カスタムプロパティ, var]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 1-1-3
 # :rootに置くとページ全体で使える
 
-モダンCSS入門研修 — Module 1 / レッスン1-1
+モダンCSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 定義と参照ができました。次は「どこに定義するか」です。 -->
 

@@ -4,7 +4,7 @@ title: 戻す前にstatus
 takeaway: "どこまで戻るのかを status と diff で確かめてから戻す"
 introduces: []
 requires: [restore, status, diff, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-1-4
 # 戻す前にstatus
 
-Git入門研修 — Module 5 / レッスン5-1
+Git入門 — Module 5 / レッスン5-1
 
 <!-- ノート: レッスンの締めとして、restoreを安全に使う手順の型を覚えます。 -->
 

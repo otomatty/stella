@@ -40,7 +40,7 @@ import { Hono } from "hono";
 import { ApiError, errorResponse, getCaller, requireCanStartStage } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { startSelfEnrollment } from "../lib/enrollment-write.js";
-import { loadSkillMapSource } from "../lib/skill-map-data.js";
+import { wantsDevReveal, loadSkillMapSource } from "../lib/skill-map-data.js";
 import { UNSELECTABLE_STAGE_MESSAGE, evaluateSkillMapFor, maskedLockReasons } from "./skill-map.js";
 import type { Env } from "../env.js";
 
@@ -55,7 +55,7 @@ stageStartRoute.post("/api/stages/:id/start", async (c) => {
     requireCanStartStage(caller);
     const stageId = c.req.param("id");
 
-    const source = await loadSkillMapSource(db, caller);
+    const source = await loadSkillMapSource(db, caller, { showAllIslands: wantsDevReveal(c) });
     const stage = source.stages.find((row) => row.id === stageId);
     // 存在しない星・他テナントの星・未公開の星をまとめて汎用文言へ丸める。
     if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);

@@ -4,7 +4,7 @@ title: addで変更を分けられる
 takeaway: "ファイル単位で add すれば、1回の作業を複数のコミットに分けられる"
 introduces: []
 requires: [add, commit, コミット, ステージングエリア, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-4-4
 # addで変更を分けられる
 
-Git入門研修 — Module 2 / レッスン2-4
+Git入門 — Module 2 / レッスン2-4
 
 <!-- ノート: 1コミット1目的を実現する具体的な手つきです。addの2段階方式がここで効いてきます。 -->
 

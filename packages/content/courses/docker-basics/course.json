@@ -1,0 +1,14 @@
+{
+  "title": "Docker 入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】「自分のマシンでは動く」を卒業するためのコンテナ入門。",
+  "header": "Docker 入門",
+  "tenantId": "ses",
+  "prerequisites": ["cli-basics"],
+  "canDo": "Docker でアプリケーションをコンテナ化し、ローカルで動かせる",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

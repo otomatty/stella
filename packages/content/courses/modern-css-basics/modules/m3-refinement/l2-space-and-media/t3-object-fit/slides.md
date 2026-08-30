@@ -4,7 +4,7 @@ title: 収め方はobject-fitで決める
 takeaway: "枠と比率が合わない画像をどう収めるかは、object-fitで決める"
 introduces: [object-fit]
 requires: [置換要素]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-2-3
 # 収め方はobject-fitで決める
 
-モダンCSS入門研修 — Module 3 / レッスン3-2
+モダンCSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: はみ出しは止めました。今度は「決めた枠に、形の違う画像を収める」段です。 -->
 

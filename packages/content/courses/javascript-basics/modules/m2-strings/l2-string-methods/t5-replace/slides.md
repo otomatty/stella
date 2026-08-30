@@ -4,7 +4,7 @@ title: replaceで置き換える
 takeaway: "replaceは、見つけた文字列を新しい文字列に置き換える"
 introduces: [replace, replaceAll]
 requires: [メソッド, 文字列, const, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-2-5
 # replaceで置き換える
 
-JavaScript入門研修 — Module 2 / レッスン2-2
+JavaScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 文字列メソッドの締めです。「元は変わらず新しい文字列が返る」を改めて確認します。 -->
 

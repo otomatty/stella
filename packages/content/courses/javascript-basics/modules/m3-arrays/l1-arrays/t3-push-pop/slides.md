@@ -4,7 +4,7 @@ title: pushとpopで末尾を出し入れする
 takeaway: "pushは配列の末尾に要素を足し、popは末尾の要素を取り出す"
 introduces: [push, pop]
 requires: [配列, メソッド, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 3-1-3
 # pushとpopで末尾を出し入れする
 
-JavaScript入門研修 — Module 3 / レッスン3-1
+JavaScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 配列を「増減するリスト」として使えるようにするトピックです。M8の買い物リストの布石でもあります。 -->
 

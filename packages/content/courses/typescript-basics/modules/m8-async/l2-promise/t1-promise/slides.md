@@ -4,7 +4,7 @@ title: Promiseとは
 takeaway: "Promiseは「あとで結果が入る箱」。成功か失敗のどちらかに一度だけ決まる"
 introduces: [Promise, resolve, reject]
 requires: [非同期処理, コールバック, オブジェクト, 関数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-2-1
 # Promiseとは
 
-TypeScript入門研修 — Module 8 / レッスン8-2
+TypeScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: レッスン8-2はPromiseです。コールバック地獄を解決する仕組みで、現代のJavaScriptの非同期処理はすべてこの上に成り立っています。 -->
 

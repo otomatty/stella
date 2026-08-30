@@ -4,7 +4,7 @@ title: justify-contentは主軸の寄せ方
 takeaway: "justify-contentは、フレックスアイテムを主軸のどこに寄せるかを決める"
 introduces: [justify-content, space-between]
 requires: [主軸, フレックスコンテナ, フレックスアイテム, プロパティ, 値, gap]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-3-1
 # justify-contentは主軸の寄せ方
 
-HTML/CSS入門研修 — Module 4 / レッスン4-3
+HTML/CSS入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 既定の並びを覚えたので、ここからは並びの調整です。まず主軸から。 -->
 

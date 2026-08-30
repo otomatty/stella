@@ -4,7 +4,7 @@ title: 変数名は中身が分かる名前にする
 takeaway: "変数名は、中身が分かる英単語をcamelCaseでつなげて付ける"
 introduces: [変数名, camelCase]
 requires: [変数, 宣言, const, エラー]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-1-3
 # 変数名は中身が分かる名前にする
 
-JavaScript入門研修 — Module 1 / レッスン1-1
+JavaScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 名前の付け方は文法ではなく習慣ですが、読みやすさを最初に習慣化します。 -->
 

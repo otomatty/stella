@@ -4,7 +4,7 @@ title: NULLはIS NULLで調べる
 takeaway: "値が入っていないことを表す NULL は、= ではなく IS NULL で調べる"
 introduces: [NULL, IS NULL]
 requires: [WHERE, 比較演算子]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 2-1-5
 # NULLはIS NULLで調べる
 
-SQL入門研修 — Module 2 / レッスン2-1
+SQL入門 — Module 2 / レッスン2-1
 
 <!-- ノート: Module 2の締めくくりは、実務で必ず出会うNULLです。書き方をひとつだけ覚えれば怖くありません。 -->
 

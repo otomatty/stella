@@ -4,7 +4,7 @@ title: revertは履歴を消さない
 takeaway: "revert は履歴を消さないから、共有した後でも安全に使える"
 introduces: []
 requires: [revert, --amend, コミット, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-3-2
 # revertは履歴を消さない
 
-Git入門研修 — Module 5 / レッスン5-3
+Git入門 — Module 5 / レッスン5-3
 
 <!-- ノート: revertの一番の利点を押さえるトピックです。amendとの対比で理解します。 -->
 

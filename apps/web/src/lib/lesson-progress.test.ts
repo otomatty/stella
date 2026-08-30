@@ -1,7 +1,7 @@
 /**
  * 「続きから」 の再開位置の判定と、 進捗マージの単調性。
  *
- * 前者が壊れると受講者は毎回ステージ先頭に戻され (TypeScript 入門研修は 246 レッスン
+ * 前者が壊れると受講者は毎回ステージ先頭に戻され (TypeScript 入門は 246 レッスン
  * あるので実質やり直し)、 後者が壊れると完了済みの進捗が黙って消える。
  */
 
@@ -23,7 +23,7 @@ function lesson(id: string, status: LessonStatus = "todo"): Lesson {
 
 const stage: Stage = {
   id: "typescript-basics",
-  title: "TypeScript 入門研修",
+  title: "TypeScript 入門",
   category: "プログラミング",
   color: "indigo",
   lessonsCount: 4,

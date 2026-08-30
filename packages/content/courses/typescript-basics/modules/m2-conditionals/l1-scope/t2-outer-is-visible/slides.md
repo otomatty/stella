@@ -4,7 +4,7 @@ title: 内側からは外の変数が見える
 takeaway: "スコープは内側からは外が見える。外からは内側が見えない"
 introduces: []
 requires: [スコープ, ブロック, 変数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-1-2
 # 内側からは外の変数が見える
 
-TypeScript入門研修 — Module 2 / レッスン2-1
+TypeScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 前のトピックで「中の変数は外から見えない」ことを確認しました。では逆はどうなのかを、ここで決着させます。 -->
 

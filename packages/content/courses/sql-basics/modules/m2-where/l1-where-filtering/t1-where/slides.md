@@ -4,7 +4,7 @@ title: WHEREで行を絞り込む
 takeaway: "WHERE を付けると、条件に合う行だけに絞り込める"
 introduces: [WHERE, 条件, 絞り込み]
 requires: [SELECT, FROM, 行]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 2-1-1
 # WHEREで行を絞り込む
 
-SQL入門研修 — Module 2 / レッスン2-1
+SQL入門 — Module 2 / レッスン2-1
 
 <!-- ノート: Module 2の始まりです。列を選べるようになったので、今度は行を選びます。実務でいちばん使う書き方です。 -->
 

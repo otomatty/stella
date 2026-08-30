@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 仕上がった部品: ボタンとフォーカスリング (thumbnail の motif_ui_components の核)。 -->
+  <rect x="5" y="8" width="14" height="8" rx="4" fill="currentColor"/>
+  <rect x="1.5" y="4.5" width="21" height="15" rx="7.5" fill="none" stroke="currentColor" stroke-width="2"/>
+</svg>

@@ -4,7 +4,7 @@ title: git diffは未addの変更
 takeaway: "git diff が見せるのは、まだ add していない変更"
 introduces: []
 requires: [diff, add, ステージングエリア, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-2-1
 # git diffは未addの変更
 
-Git入門研修 — Module 2 / レッスン2-2
+Git入門 — Module 2 / レッスン2-2
 
 <!-- ノート: このレッスンではdiffの守備範囲を正確にします。まずは素のgit diffが何を見せているのかです。 -->
 

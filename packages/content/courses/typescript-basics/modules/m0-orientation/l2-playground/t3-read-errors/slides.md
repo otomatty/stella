@@ -4,7 +4,7 @@ title: エラーメッセージの読み方
 takeaway: "赤い波線にカーソルを乗せれば、何が悪いかが書いてある"
 introduces: []
 requires: [Playground, エラー, コンパイラー]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-2-3
 # エラーメッセージの読み方
 
-TypeScript入門研修 — Module 0 / レッスン0-2
+TypeScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: Module 0の最後のトピックです。これから何百回も出会うものとの、付き合い方を決めます。 -->
 

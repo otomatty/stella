@@ -4,7 +4,7 @@ title: 画像はimgのsrcで貼る
 takeaway: "画像はimgタグのsrc属性にファイルの場所を書いて表示する"
 introduces: [画像, img, src]
 requires: [タグ, 属性, 属性値, 終了タグ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-1-1
 # 画像はimgのsrcで貼る
 
-HTML/CSS入門研修 — Module 2 / レッスン2-1
+HTML/CSS入門 — Module 2 / レッスン2-1
 
 <!-- ノート: ここから文字以外のものをページに載せます。まずは画像です。 -->
 

@@ -4,7 +4,7 @@ title: 表は行と列でデータを並べる
 takeaway: "表はtableの中にtrで行を作り、その中にtdでセルを並べて作る"
 introduces: [表, table, tr, td, 行, 列, セル]
 requires: [要素, 入れ子, タグ, 中身]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-4-1
 # 表は行と列でデータを並べる
 
-HTML/CSS入門研修 — Module 2 / レッスン2-4
+HTML/CSS入門 — Module 2 / レッスン2-4
 
 <!-- ノート: 一覧やスケジュールは箇条書きでは表せません。ここから表の書き方に入ります。 -->
 

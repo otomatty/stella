@@ -4,7 +4,7 @@ title: ESLint
 takeaway: "ESLintは書き方の問題を指摘する。Prettierとは役割が違う"
 introduces: [ESLint, リンター]
 requires: [Prettier, フォーマッター, npm, バグ, 型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-4-3
 # ESLint
 
-TypeScript入門研修 — Module 9 / レッスン9-4
+TypeScript入門 — Module 9 / レッスン9-4
 
 <!-- ノート: もう1つの道具です。Prettierと混同されやすいので、役割の違いをはっきりさせます。 -->
 

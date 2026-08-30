@@ -4,7 +4,7 @@ title: strict
 takeaway: "strictはチェックを厳しくする設定の詰め合わせ。必ずtrueにする"
 introduces: []
 requires: [tsconfig.json, strict, any, 型, エラー]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-3-3
 # strict
 
-TypeScript入門研修 — Module 9 / レッスン9-3
+TypeScript入門 — Module 9 / レッスン9-3
 
 <!-- ノート: tsconfigでいちばん重要な設定です。ここまでの研修で当たり前だと思っていたことが、実はこの設定のおかげでした。 -->
 

@@ -4,7 +4,7 @@ title: Webページはブラウザーが組み立てる
 takeaway: "ブラウザーは、受け取ったファイルを読んで画面を組み立てている"
 introduces: [ブラウザー, Webページ, ファイル]
 requires: []
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 0-1-1
 # Webページはブラウザーが組み立てる
 
-HTML/CSS入門研修 — Module 0 / レッスン0-1
+HTML/CSS入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 最初のトピックです。これから何を作るのか、その前提になる仕組みを揃えます。 -->
 

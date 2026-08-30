@@ -4,7 +4,7 @@ title: async関数
 takeaway: "asyncを付けた関数は、returnした値が自動でPromiseに包まれる"
 introduces: [async]
 requires: [Promise, 関数, 戻り値, アロー関数, 型注釈, return]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-3-1
 # async関数
 
-TypeScript入門研修 — Module 8 / レッスン8-3
+TypeScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: レッスン8-3は async/await です。Promiseを同期処理のように書ける記法で、実務のコードはほぼこの形をしています。 -->
 

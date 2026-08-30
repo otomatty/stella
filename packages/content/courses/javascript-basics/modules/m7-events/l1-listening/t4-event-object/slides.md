@@ -4,7 +4,7 @@ title: イベントオブジェクトで詳しく知る
 takeaway: "リスナーの引数には、押されたキーなどの詳細が入ったイベントオブジェクトが渡される"
 introduces: [イベントオブジェクト, event.key]
 requires: [addEventListener, 引数, keydown, イベントリスナー]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-1-4
 # イベントオブジェクトで詳しく知る
 
-JavaScript入門研修 — Module 7 / レッスン7-1
+JavaScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: イベントの詳細情報です。「オブジェクト」という語はM8で正式に導入するため、ここでは固有名詞として扱います。 -->
 

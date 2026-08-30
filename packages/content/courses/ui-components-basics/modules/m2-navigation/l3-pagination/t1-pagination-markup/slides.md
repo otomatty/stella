@@ -4,7 +4,7 @@ title: ページ送りもnavとolで書く
 takeaway: "ページ送りは、navの中のolに前後と番号のリンクを並べて書く"
 introduces: [ページネーション]
 requires: [ナビゲーション, HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-3-1
 # ページ送りもnavとolで書く
 
-UI部品入門研修 — Module 2 / レッスン2-3
+UI部品入門 — Module 2 / レッスン2-3
 
 <!-- ノート: Module 2 の3つ目、一覧の下によくあるページ送りです。 -->
 

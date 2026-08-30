@@ -1,6 +1,10 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  SKILL_MAP_APPEARANCE_PREREQUISITES,
+  SKILL_MAP_APPEARANCES,
+} from "../../shared/src/skill-map/appearances.js";
 import { describe, expect, it } from "vitest";
 import { buildContentManifest, collectCourseThumbnails } from "./manifest.js";
 
@@ -12,8 +16,8 @@ describe("buildContentManifest", () => {
 
   it("courses/ 配下の講座を course.json から組み立てる", () => {
     expect(courses.map((c) => c.id)).toContain("typescript-basics");
-    expect(ts.category).toBe("プログラミング");
-    expect(ts.title).toBe("TypeScript 入門研修");
+    expect(ts.category).toBe("フロントエンド");
+    expect(ts.title).toBe("TypeScript 入門");
   });
 
   it("Section はモジュール 10 個", () => {
@@ -469,7 +473,7 @@ describe("buildContentManifest — 講座サムネイル", () => {
   });
 });
 
-// スキルツリー用の 3 フィールド (prerequisites / canDo / theme)。前提はハードロックに
+// スキルツリー用のフィールド (prerequisites / canDo / theme / appearances)。前提はハードロックに
 // なるので、綴り違い・自己参照・循環はここで落とす。
 describe("buildContentManifest — スキルツリーのフィールド", () => {
   /** slug ごとに course.json の追加フィールドを差し替えられる最小の講座群を作る。 */
@@ -515,6 +519,166 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
         expect(b?.prerequisites).toEqual(["a-basics"]);
         expect(b?.canDo).toBe("B ができる");
         expect(b?.theme).toBe("テーマ");
+      },
+    );
+  });
+
+  it("appearances が manifest に載る", () => {
+    withCourses(
+      {
+        "a-basics": { canDo: "A ができる", theme: "テーマ" },
+        "b-basics": {
+          prerequisites: ["a-basics"],
+          canDo: "B ができる",
+          theme: "テーマ",
+          appearances: ["フロントエンド", "バックエンド"],
+          appearancePrerequisites: {
+            フロントエンド: ["a-basics"],
+            バックエンド: ["a-basics"],
+          },
+        },
+      },
+      (root) => {
+        const { courses } = buildContentManifest(root);
+        expect(courses.find((c) => c.id === "b-basics")?.appearances).toEqual([
+          "フロントエンド",
+          "バックエンド",
+        ]);
+        expect(courses.find((c) => c.id === "a-basics")?.appearances).toBeUndefined();
+      },
+    );
+  });
+
+  it("appearances だけで appearancePrerequisites が無いと落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {
+          prerequisites: ["a-basics"],
+          appearances: ["フロントエンド", "バックエンド"],
+        },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/appearancePrerequisites/);
+      },
+    );
+  });
+
+  it("appearancePrerequisites の和集合が prerequisites と違うと落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {},
+        "c-basics": {
+          prerequisites: ["a-basics"],
+          appearances: ["フロントエンド", "バックエンド"],
+          appearancePrerequisites: {
+            フロントエンド: ["a-basics"],
+            バックエンド: ["b-basics"],
+          },
+        },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/和集合/);
+      },
+    );
+  });
+
+  it("prerequisites が 2 つ以上で parent が無いと落ちる", () => {
+    withCourses(
+      { "a-basics": {}, "b-basics": {}, "c-basics": { prerequisites: ["a-basics", "b-basics"] } },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/parent/);
+      },
+    );
+  });
+
+  it("parent が prerequisites に無いと落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {},
+        "c-basics": { prerequisites: ["a-basics"], parent: "b-basics" },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/含めて/);
+      },
+    );
+  });
+
+  it("前提なしの講座に parent は書けない", () => {
+    withCourses({ "a-basics": {}, "b-basics": { parent: "a-basics" } }, (root) => {
+      expect(() => buildContentManifest(root)).toThrow(/含めて/);
+    });
+  });
+
+  it("appearances と parent は併用できない (扇ごとの親は appearancePrerequisites)", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {},
+        "c-basics": {
+          prerequisites: ["a-basics", "b-basics"],
+          parent: "a-basics",
+          appearances: ["フロントエンド", "バックエンド"],
+          appearancePrerequisites: { フロントエンド: ["a-basics"], バックエンド: ["b-basics"] },
+        },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/併用/);
+      },
+    );
+  });
+
+  it("parent は manifest に載る。前提 1 つなら省略しても補完される", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": { prerequisites: ["a-basics"] },
+        "c-basics": { prerequisites: ["a-basics", "b-basics"], parent: "b-basics" },
+      },
+      (root) => {
+        const { courses } = buildContentManifest(root);
+        expect(courses.find((c) => c.id === "a-basics")?.parent).toBeUndefined();
+        expect(courses.find((c) => c.id === "b-basics")?.parent).toBe("a-basics");
+        expect(courses.find((c) => c.id === "c-basics")?.parent).toBe("b-basics");
+      },
+    );
+  });
+
+  it("appearances 持ちは扇が同じ前提でも parent を補完しない", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {
+          prerequisites: ["a-basics"],
+          appearances: ["フロントエンド", "バックエンド"],
+          appearancePrerequisites: { フロントエンド: ["a-basics"], バックエンド: ["a-basics"] },
+        },
+      },
+      (root) => {
+        const { courses } = buildContentManifest(root);
+        expect(courses.find((c) => c.id === "b-basics")?.parent).toBeUndefined();
+      },
+    );
+  });
+
+  it("appearancePrerequisites の扇に 2 つ書くと落ちる (扇ごとの親は 1 つ)", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {},
+        "c-basics": {
+          prerequisites: ["a-basics", "b-basics"],
+          appearances: ["フロントエンド", "バックエンド"],
+          appearancePrerequisites: {
+            フロントエンド: ["a-basics", "b-basics"],
+            バックエンド: ["b-basics"],
+          },
+        },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/ちょうど 1 つ/);
       },
     );
   });
@@ -599,9 +763,193 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     }
   });
 
-  it("Claude Code 入門は 2 本の前提を持つ", () => {
-    const claudeCode = courses.find((c) => c.id === "claude-code-basics");
-    expect(claudeCode?.prerequisites).toEqual(["ai-fluency-basics", "claude-chat-basics"]);
+  it("前提が 2 本の講座は parent で線を 1 本に決めている", () => {
+    const parentOf = (slug: string) => courses.find((c) => c.id === slug)?.parent;
+    expect(courses.find((c) => c.id === "claude-code-basics")?.prerequisites).toEqual([
+      "ai-fluency-basics",
+      "claude-chat-basics",
+    ]);
+    expect(parentOf("claude-code-basics")).toBe("claude-chat-basics");
+    expect(parentOf("claude-code-team")).toBe("claude-code-skills");
+    expect(parentOf("react-basics")).toBe("npm-build-basics");
+    // 前提 1 つの講座は省略 = その前提。
+    expect(parentOf("html-css-basics")).toBe("it-basics");
+    // 複製は扇ごとの親 (appearancePrerequisites) なので parent を持たない。
+    expect(parentOf("git-basics")).toBeUndefined();
+    expect(parentOf("it-basics")).toBeUndefined();
+  });
+
+  it("フロントエンド本線は HTML/CSS → JS で、Git と TypeScript に分かれ、npm は Git のあと", () => {
+    expect(courses.find((c) => c.id === "html-css-basics")?.prerequisites).toEqual(["it-basics"]);
+    expect(courses.find((c) => c.id === "javascript-basics")?.prerequisites).toEqual([
+      "html-css-basics",
+    ]);
+    expect(courses.find((c) => c.id === "typescript-basics")?.prerequisites).toEqual([
+      "javascript-basics",
+    ]);
+    expect(courses.find((c) => c.id === "git-basics")?.prerequisites).toEqual([
+      "javascript-basics",
+      "node-basics",
+    ]);
+    expect(courses.find((c) => c.id === "npm-build-basics")?.prerequisites).toEqual(["git-basics"]);
+    expect(courses.find((c) => c.id === "fetch-api-basics")?.prerequisites).toEqual([
+      "typescript-basics",
+    ]);
+    expect(courses.find((c) => c.id === "web-a11y-basics")?.prerequisites).toEqual([
+      "fetch-api-basics",
+    ]);
+    expect(courses.find((c) => c.id === "git-basics")?.category).toBe("基礎");
+    expect(courses.find((c) => c.id === "git-basics")?.appearances).toEqual([
+      "フロントエンド",
+      "バックエンド",
+    ]);
+    const gitJson = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "courses", "git-basics", "course.json"), "utf8"),
+    ) as { appearancePrerequisites?: Record<string, string[]> };
+    expect(gitJson.appearancePrerequisites).toEqual({
+      フロントエンド: ["javascript-basics"],
+      バックエンド: ["node-basics"],
+    });
+  });
+
+  it("appearances は実行時の正本 (@falcon/shared) と一致する", () => {
+    // 実行時に複製されるのは正本に載った slug だけ。教材が宣言しても正本に無ければ
+    // 画面には 1 つしか出ないので、両者を 1 対 1 に保つ。
+    const declared = courses.filter((c) => (c.appearances?.length ?? 0) > 0).map((c) => c.id);
+    expect(declared.sort()).toEqual(Object.keys(SKILL_MAP_APPEARANCES).sort());
+    for (const slug of declared) {
+      const json = JSON.parse(
+        readFileSync(join(import.meta.dirname, "..", "courses", slug, "course.json"), "utf8"),
+      ) as { appearances?: string[]; appearancePrerequisites?: Record<string, string[]> };
+      expect(json.appearances, slug).toEqual(SKILL_MAP_APPEARANCES[slug]);
+      expect(json.appearancePrerequisites, slug).toEqual(SKILL_MAP_APPEARANCE_PREREQUISITES[slug]);
+    }
+  });
+
+  it("カテゴリ = ルート (FE / BE) に既存講座と準備中講座が割り付いている", () => {
+    const byCategory = (cat: string) =>
+      courses
+        .filter((c) => c.category === cat)
+        .map((c) => c.id)
+        .sort();
+    expect(byCategory("フロントエンド")).toEqual(
+      [
+        "html-css-basics",
+        "javascript-basics",
+        "typescript-basics",
+        "modern-css-basics",
+        "ui-components-basics",
+        "page-composition-basics",
+        "fetch-api-basics",
+        "npm-build-basics",
+        "react-basics",
+        "web-a11y-basics",
+        "frontend-testing-basics",
+      ].sort(),
+    );
+    expect(byCategory("バックエンド")).toEqual(
+      [
+        "sql-basics",
+        "python-testing-ci-basics",
+        "test-design-basics",
+        "cli-basics",
+        "node-basics",
+        "typescript-node-basics",
+        "rest-api-basics",
+        "auth-basics",
+        "web-security-basics",
+        "db-design-basics",
+        "docker-basics",
+      ].sort(),
+    );
+  });
+
+  it("バックエンドの背骨は SQL → CLI → Node.js → TypeScript (サーバー) → REST API → 認証", () => {
+    expect(courses.find((c) => c.id === "sql-basics")?.prerequisites).toEqual(["it-basics"]);
+    expect(courses.find((c) => c.id === "cli-basics")?.prerequisites).toEqual(["sql-basics"]);
+    expect(courses.find((c) => c.id === "node-basics")?.prerequisites).toEqual(["cli-basics"]);
+    expect(courses.find((c) => c.id === "typescript-node-basics")?.prerequisites).toEqual([
+      "node-basics",
+    ]);
+    expect(courses.find((c) => c.id === "typescript-node-basics")?.category).toBe("バックエンド");
+    expect(courses.find((c) => c.id === "rest-api-basics")?.prerequisites).toEqual([
+      "typescript-node-basics",
+    ]);
+    expect(courses.find((c) => c.id === "auth-basics")?.prerequisites).toEqual(["rest-api-basics"]);
+  });
+
+  it("テストと CI は開発を知ってからの発展概念 (サーバー TS → Python CI → テスト設計)", () => {
+    expect(courses.find((c) => c.id === "python-testing-ci-basics")?.prerequisites).toEqual([
+      "typescript-node-basics",
+    ]);
+    expect(courses.find((c) => c.id === "test-design-basics")?.prerequisites).toEqual([
+      "python-testing-ci-basics",
+    ]);
+  });
+
+  it("スキルツリーの見た目の枝はどの星からも 2 本まで (島への橋は数えない)", () => {
+    const islandCategories = new Set(["AWS資格", "情報処理資格", "AI駆動開発"]);
+    const configs = new Map(
+      courses.map((c) => {
+        const json = JSON.parse(
+          readFileSync(join(import.meta.dirname, "..", "courses", c.id, "course.json"), "utf8"),
+        ) as { appearancePrerequisites?: Record<string, string[]> };
+        return [c.id, json] as const;
+      }),
+    );
+    type Inst = { key: string; slug: string; sector: string; cluster: string; prereqs: string[] };
+    const instances: Inst[] = [];
+    for (const course of courses) {
+      const sectors =
+        course.appearances && course.appearances.length > 0
+          ? course.appearances
+          : [course.category];
+      const cluster = islandCategories.has(course.category) ? course.category : "mainland";
+      for (const sector of sectors) {
+        const groups = configs.get(course.id)?.appearancePrerequisites;
+        instances.push({
+          key: `${course.id}::${sector}`,
+          slug: course.id,
+          sector,
+          cluster,
+          prereqs: groups?.[sector] ?? course.prerequisites ?? [],
+        });
+      }
+    }
+    const bySlug = new Map<string, Inst[]>();
+    for (const inst of instances) {
+      bySlug.set(inst.slug, [...(bySlug.get(inst.slug) ?? []), inst]);
+    }
+    const children = new Map<string, string[]>();
+    for (const child of instances) {
+      for (const prereq of child.prereqs) {
+        const copies = bySlug.get(prereq) ?? [];
+        const parent =
+          copies.find((p) => p.sector === child.sector) ??
+          copies.find((p) => p.cluster === child.cluster) ??
+          copies[0];
+        if (!parent || parent.cluster !== child.cluster) continue;
+        const list = children.get(parent.key) ?? [];
+        if (!list.includes(child.slug)) list.push(child.slug);
+        children.set(parent.key, list);
+      }
+    }
+    const over = [...children.entries()]
+      .filter(([, ch]) => ch.length > 2)
+      .map(([key, ch]) => `${key} → ${ch.join(", ")}`);
+    expect(over).toEqual([]);
+    expect(children.get("it-basics::基礎")?.sort()).toEqual(["html-css-basics", "sql-basics"]);
+  });
+
+  it("資格は AWS資格 / 情報処理資格 の島に分かれ、情報処理は 科目A → 科目B と段階進行", () => {
+    expect(courses.find((c) => c.id === "aws-clf-c02-basics")?.category).toBe("AWS資格");
+    expect(courses.find((c) => c.id === "fe-kamoku-a")?.category).toBe("情報処理資格");
+    expect(courses.find((c) => c.id === "fe-kamoku-b")?.category).toBe("情報処理資格");
+    expect(courses.find((c) => c.id === "aws-clf-c02-basics")?.prerequisites).toEqual([
+      "it-basics",
+    ]);
+    expect(courses.find((c) => c.id === "fe-kamoku-a")?.prerequisites).toEqual(["it-basics"]);
+    expect(courses.find((c) => c.id === "fe-kamoku-b")?.prerequisites).toEqual(["fe-kamoku-a"]);
   });
 
   it("前提を 1 つも持たない講座 (入口) が残っている", () => {

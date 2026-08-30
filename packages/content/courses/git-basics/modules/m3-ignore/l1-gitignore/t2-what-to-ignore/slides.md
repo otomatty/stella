@@ -4,7 +4,7 @@ title: 無視するのは作り直せるもの
 takeaway: "無視するのは生成物・ログ・依存フォルダなど「作り直せるもの」"
 introduces: [生成物]
 requires: [.gitignore, 記録, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-1-2
 # 無視するのは作り直せるもの
 
-Git入門研修 — Module 3 / レッスン3-1
+Git入門 — Module 3 / レッスン3-1
 
 <!-- ノート: .gitignoreの書き方は分かった。次は「何を書くべきか」という判断基準を1つだけ覚えます。 -->
 

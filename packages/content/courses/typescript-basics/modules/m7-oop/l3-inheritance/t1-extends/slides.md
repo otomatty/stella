@@ -4,7 +4,7 @@ title: extendsで継承する
 takeaway: "継承すると、親クラスのプロパティとメソッドを子クラスが受け継ぐ"
 introduces: [継承, 親クラス, 子クラス, protected]
 requires: [クラス, プロパティ, メソッド, 型引数の制約, new, private, アクセス修飾子]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-3-1
 # extendsで継承する
 
-TypeScript入門研修 — Module 7 / レッスン7-3
+TypeScript入門 — Module 7 / レッスン7-3
 
 <!-- ノート: レッスン7-3は継承です。強力ですが乱用されやすい機能なので、使いどころも一緒に伝えます。 -->
 

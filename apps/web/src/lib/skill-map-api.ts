@@ -18,20 +18,38 @@ export interface SkillMapStageNode {
   state: SkillMapState;
   visibility: SkillMapVisibility;
   slug?: string;
+  /** 霧の星にも入る (画面はぼかして「予告」として出す)。 */
   title?: string;
   category?: string;
-  /** 霧の中で見える唯一の手がかり (テーマ名 / 伏せ字)。 */
+  /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
+  /**
+   * 講座アイコン (単色シルエット SVG) の R2 キー。霧の外の星にだけ入る (アイコンの形は
+   * 正体を語るので、サーバが slug と同じ秘匿ルールで伏せる)。画面は CSS mask +
+   * currentColor で塗るため、ダーク / ライトどちらのテーマでも星の文字色に追従する。
+   */
+  icon_path?: string;
   can_do?: string;
   lock_reasons?: string[];
   enrolled?: boolean;
   /**
-   * 前提ステージの id (スキルツリーが星と星を線で結ぶのに使う)。
+   * 線を引く親ステージの id (スキルツリーが星と星を線で結び、深さ = リングを決めるのに使う)。
+   * 線は 1 本だけ。解放条件 (前提 AND) は `lock_reasons` が名前で持つ。
    *
-   * 霧の星には付かない (サーバが落としている)。線を引く / 引かないの判断も
-   * この項目の有無に従うだけで、こちらで「霧だから隠す」を足さない。
+   * 霧の星にも入る (線が無いと先のスキルが内側のリングに置かれてしまうため)。
+   * 見せる / 伏せるの判断はサーバの応答に従うだけで、こちらで足し引きしない。
    */
-  prerequisite_ids?: string[];
+  parent_id?: string;
+  /**
+   * 同じステージを複数の扇に置くときの扇名。実体は 1 つ (クリアは共有)。
+   * 霧の星にも入る (slug が無くてもレイアウトが複製できる)。
+   */
+  appearances?: string[];
+  /**
+   * 扇ごとの親ステージ id。複製した星は、自分の扇の親から線を引き、鍵もそれで見る。
+   * **霧の星にも付ける。** 線が無いとリングが崩れるのは `parent_id` と同じ。
+   */
+  appearance_parent_ids?: Record<string, string>;
 }
 
 /** 集中ボーナス (表示専用の係数。XP の保存値は動かさない)。 */
@@ -70,6 +88,10 @@ export interface SkillMapMine {
   cleared_count: number;
   focus_bonus: FocusBonusPayload;
   generated_at: string;
+  /** サーバの `DEV_MODE` が立っているか。FAB を出す判定。 */
+  dev_mode_available?: boolean;
+  /** この応答が開発者表示か (島全配信 + 霧の名前を明かす)。 */
+  dev_mode?: boolean;
 }
 
 export interface SkillProfileMine {

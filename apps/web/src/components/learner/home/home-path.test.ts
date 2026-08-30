@@ -13,17 +13,35 @@ const node = (over: Partial<SkillMapStageNode> & { id: string }): SkillMapStageN
 /** 入口 1 + 入門 3 (全部が入口の子) + その先 1。 */
 function catalog(): SkillMapStageNode[] {
   return [
-    node({ id: "it", title: "ITのきほん", state: "unlocked", prerequisite_ids: [] }),
-    node({ id: "ts", title: "TypeScript", state: "locked", prerequisite_ids: ["it"] }),
-    node({ id: "sql", title: "SQL", state: "locked", prerequisite_ids: ["it"] }),
-    node({ id: "html", title: "HTML/CSS", state: "locked", prerequisite_ids: ["it"] }),
+    node({ id: "it", title: "ITのきほん", state: "unlocked" }),
+    node({ id: "ts", title: "TypeScript", state: "locked", parent_id: "it" }),
+    node({ id: "sql", title: "SQL", state: "locked", parent_id: "it" }),
+    node({ id: "html", title: "HTML/CSS", state: "locked", parent_id: "it" }),
     node({
       id: "css",
       title: "モダンCSS",
       state: "locked",
-      prerequisite_ids: ["html"],
+      parent_id: "html",
     }),
     node({ id: "fog", state: "locked", visibility: "fog", theme: "先の分野" }),
+  ];
+}
+
+/** FE / BE に分かれた鎖と、両扇に置かれる Git (バックエンド側だけ進んでいる)。 */
+function forkedCatalog(): SkillMapStageNode[] {
+  return [
+    node({ id: "it", title: "ITのきほん", state: "cleared" }),
+    node({ id: "js", title: "JavaScript", state: "locked", parent_id: "it" }),
+    node({ id: "cli", title: "コマンドライン", state: "cleared", parent_id: "it" }),
+    node({ id: "node", title: "Node.js", state: "cleared", parent_id: "cli" }),
+    node({
+      id: "git",
+      title: "Git",
+      state: "active",
+      parent_id: "js",
+      appearances: ["フロントエンド", "バックエンド"],
+      appearance_parent_ids: { フロントエンド: "js", バックエンド: "node" },
+    }),
   ];
 }
 
@@ -38,6 +56,10 @@ describe("ancestorIdsOf", () => {
 
   it("入口は空", () => {
     expect(ancestorIdsOf("it", catalog())).toEqual([]);
+  });
+
+  it("複製は進んできた扇の親を辿る (Node から来た Git に JS の鎖を出さない)", () => {
+    expect(ancestorIdsOf("git", forkedCatalog())).toEqual(["node", "cli", "it"]);
   });
 });
 
@@ -159,7 +181,7 @@ describe("homePathNodes", () => {
         title: "Python",
         state: "unlocked",
         enrolled: true,
-        prerequisite_ids: ["it"],
+        parent_id: "it",
       }),
     ];
     const shown = homePathNodes(crowded, {
@@ -168,6 +190,29 @@ describe("homePathNodes", () => {
     });
     const enrolledShown = idsOf(shown).filter((id) => id !== "it");
     expect(enrolledShown).toHaveLength(HOME_PATH_MAX_NEXT);
+  });
+
+  it("複製 (Git) は扇ごとの親から進めていても「次」に出る", () => {
+    const routes = [
+      node({ id: "js", title: "JavaScript", state: "cleared" }),
+      node({ id: "node", title: "Node.js", state: "active" }),
+      node({
+        id: "git",
+        title: "Git",
+        state: "locked",
+        parent_id: "js",
+        appearance_parent_ids: { フロントエンド: "js", バックエンド: "node" },
+      }),
+    ];
+    const shown = homePathNodes(routes, { activeStageId: "node", nextStageIds: [] });
+    // Node ルートで進めていても Git が「次」に出る (親の鎖として js も付く)。
+    expect(idsOf(shown)).toContain("git");
+  });
+
+  it("進行中の複製の鎖は、進んできた扇の親をたどる", () => {
+    const shown = homePathNodes(forkedCatalog(), { activeStageId: "git", nextStageIds: [] });
+    expect(idsOf(shown)).toContain("node");
+    expect(idsOf(shown)).not.toContain("js");
   });
 
   it("全部クリアしたらカタログ全体は載せない", () => {

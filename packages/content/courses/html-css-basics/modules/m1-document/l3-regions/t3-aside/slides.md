@@ -4,7 +4,7 @@ title: 本筋から外れる補足はasideで囲む
 takeaway: "本筋から外れていて、無くても本文が成り立つ内容はasideで囲む"
 introduces: [aside, 補足]
 requires: [領域, section, article, div, main]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-3-3
 # 本筋から外れる補足はasideで囲む
 
-HTML/CSS入門研修 — Module 1 / レッスン1-3
+HTML/CSS入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 領域の最後です。ここまでの3つで囲めなかったものの置き場所を決めます。 -->
 

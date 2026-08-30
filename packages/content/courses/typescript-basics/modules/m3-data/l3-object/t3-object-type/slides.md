@@ -4,7 +4,7 @@ title: オブジェクトの型注釈
 takeaway: "オブジェクトの型は、プロパティ名と型の組を中かっこに並べて書く"
 introduces: []
 requires: [オブジェクト, プロパティ, 型注釈, 型推論, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-3-3
 # オブジェクトの型注釈
 
-TypeScript入門研修 — Module 3 / レッスン3-3
+TypeScript入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 前のトピックのエラーメッセージに、見慣れない形の型が出ていました。その正体をここで押さえます。 -->
 

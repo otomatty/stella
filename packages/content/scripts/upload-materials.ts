@@ -27,7 +27,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { assetPath, collectCourseThumbnails } from "../src/manifest.js";
+import { assetPath, collectCourseIcons, collectCourseThumbnails } from "../src/manifest.js";
 import { sortNatural } from "../src/natural-order.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -160,7 +160,10 @@ for (const slug of wantDiagrams ? dirsIn(coursesRoot) : []) {
   }
 }
 
-const thumbnails = wantThumbnails ? collectCourseThumbnails(coursesRoot) : [];
+// スキルツリーのアイコン (courses/<slug>/icon.svg) は講座単位の画像なのでサムネイルと同じ括り。
+const thumbnails = wantThumbnails
+  ? [...collectCourseThumbnails(coursesRoot), ...collectCourseIcons(coursesRoot)]
+  : [];
 for (const thumb of thumbnails) {
   targets.set(thumb.key, { source: thumb.sourceFile, contentType: thumb.contentType });
 }

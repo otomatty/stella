@@ -4,7 +4,7 @@ title: ページの大きな領域に名前を付ける
 takeaway: "ページの上下や本文といった大きな領域は、専用の要素で名前を付ける"
 introduces: [領域, header, nav, main, footer]
 requires: [div, 入れ子, body, 要素, 見出し]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-3-1
 # ページの大きな領域に名前を付ける
 
-HTML/CSS入門研修 — Module 1 / レッスン1-3
+HTML/CSS入門 — Module 1 / レッスン1-3
 
 <!-- ノート: ここからはページ全体の組み立てです。1-1-4 で覚えた div を、名前のある入れ物に置き換えていきます。 -->
 

@@ -4,7 +4,7 @@ title: amendは共有前だけ
 takeaway: "amend で作り直してよいのは、まだ共有していないコミットだけ"
 introduces: []
 requires: [--amend, コミット, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-2-3
 # amendは共有前だけ
 
-Git入門研修 — Module 5 / レッスン5-2
+Git入門 — Module 5 / レッスン5-2
 
 <!-- ノート: amendを使ってよい場面の線引きです。ルールとして1つだけ覚えてもらいます。 -->
 

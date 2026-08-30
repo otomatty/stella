@@ -4,7 +4,7 @@ title: font-familyは候補を並べて書く
 takeaway: "font-familyは使いたい書体から順に候補を並べ、最後に総称名で締める"
 introduces: [font-family, フォント, 総称フォント]
 requires: [プロパティ, 値, font-size, 見た目, 継承]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-2-1
 # font-familyは候補を並べて書く
 
-HTML/CSS入門研修 — Module 5 / レッスン5-2
+HTML/CSS入門 — Module 5 / レッスン5-2
 
 <!-- ノート: 文字の大きさと行間は扱いました。ここからは書体そのものです。 -->
 

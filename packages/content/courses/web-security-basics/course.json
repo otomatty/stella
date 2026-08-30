@@ -1,0 +1,14 @@
+{
+  "title": "Web セキュリティ入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】攻撃者の視点から代表的な脆弱性と防ぎ方を学ぶ研修。",
+  "header": "Web セキュリティ入門",
+  "tenantId": "ses",
+  "prerequisites": ["rest-api-basics"],
+  "canDo": "XSS・CSRF・SQL インジェクションの手口と防ぎ方を説明できる",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

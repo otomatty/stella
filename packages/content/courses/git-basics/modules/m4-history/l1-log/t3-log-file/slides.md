@@ -4,7 +4,7 @@ title: ファイルで絞る
 takeaway: "git log ファイル名 で、そのファイルの履歴だけに絞れる"
 introduces: []
 requires: [log, コミット, 履歴, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-1-3
 # ファイルで絞る
 
-Git入門研修 — Module 4 / レッスン4-1
+Git入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 履歴を「特定のファイルだけ」に絞り込む方法です。コマンドの後ろにファイル名を足すだけです。 -->
 

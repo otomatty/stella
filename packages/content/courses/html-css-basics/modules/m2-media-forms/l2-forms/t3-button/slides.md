@@ -4,7 +4,7 @@ title: buttonは押せる部品を作る
 takeaway: "buttonは、利用者が押して操作を始めるための部品を作る"
 introduces: [ボタン, button]
 requires: [要素, 入力欄, リンク, div]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-2-3
 # buttonは押せる部品を作る
 
-HTML/CSS入門研修 — Module 2 / レッスン2-2
+HTML/CSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: レッスン2-2の最後です。入力したものを送る、最後の部品です。 -->
 

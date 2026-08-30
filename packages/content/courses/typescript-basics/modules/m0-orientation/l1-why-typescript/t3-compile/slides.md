@@ -4,7 +4,7 @@ title: TypeScriptはJavaScriptに変換されて動く
 takeaway: "TypeScriptはJavaScriptに変換されてから動く。型は変換時に消える"
 introduces: [コンパイル]
 requires: [TypeScript, JavaScript, 実行, 型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-1-3
 # TypeScriptはJavaScriptに変換されて動く
 
-TypeScript入門研修 — Module 0 / レッスン0-1
+TypeScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: TypeScriptで書くと何が嬉しいかはわかりました。では、それがどうやって動くのかを1つだけ押さえます。 -->
 

@@ -4,7 +4,7 @@ title: noImplicitAnyとstrictNullChecks
 takeaway: "noImplicitAnyは型の書き忘れを、strictNullChecksは空チェック漏れを止める"
 introduces: [noImplicitAny]
 requires: [strict, any, strictNullChecks, 型注釈, 引数, undefined, 絞り込み]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-3-4
 # noImplicitAnyとstrictNullChecks
 
-TypeScript入門研修 — Module 9 / レッスン9-3
+TypeScript入門 — Module 9 / レッスン9-3
 
 <!-- ノート: レッスン9-3の最後です。strictの中でも特に効く2つを、名前と効果で結びつけます。 -->
 

@@ -4,7 +4,7 @@ title: 迷ったらundefinedに寄せる
 takeaway: "「値がない」はundefinedに統一する。nullは受け取るときだけ使う"
 introduces: []
 requires: [null, undefined]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-6-4
 # 迷ったらundefinedに寄せる
 
-TypeScript入門研修 — Module 1 / レッスン1-6
+TypeScript入門 — Module 1 / レッスン1-6
 
 <!-- ノート: nullとundefinedの意味の違いはわかりました。ただ実際に書くとき、その違いで毎回悩むのは非効率です。方針を1つ決めます。 -->
 

@@ -4,7 +4,7 @@ title: npmとパッケージ
 takeaway: "npm installで他人が作った部品を導入し、importで使える"
 introduces: [パッケージ, node_modules]
 requires: [npm, ターミナル, import, モジュール, Node.js]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-2-3
 # npmとパッケージ
 
-TypeScript入門研修 — Module 9 / レッスン9-2
+TypeScript入門 — Module 9 / レッスン9-2
 
 <!-- ノート: 自分で書いたファイルの取り込み方は分かりました。次は他人が作った部品を使う方法です。 -->
 

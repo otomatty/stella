@@ -4,7 +4,7 @@ title: restoreは取り戻せない
 takeaway: "restore で捨てた変更は取り戻せない(コミット前の変更は守られていない)"
 introduces: []
 requires: [restore, コミット, 変更, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-1-2
 # restoreは取り戻せない
 
-Git入門研修 — Module 5 / レッスン5-1
+Git入門 — Module 5 / レッスン5-1
 
 <!-- ノート: restoreの一番大事な注意点です。便利さとセットで、必ずこの性質を覚えてもらいます。 -->
 

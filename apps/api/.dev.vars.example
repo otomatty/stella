@@ -4,6 +4,11 @@ ANTHROPIC_MODEL=claude-sonnet-4-6
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ISOLATE_MEMORY_LIMIT=32
 
+# 開発モード (1 / true で有効)。ローカル開発専用 — 本番には設定しない。
+# 右下の FAB でオン/オフできる。オンのとき島を全配信し、霧の星の名前もぼかさない。
+# 解放条件はそのまま (見えるだけで locked の星は開かない)。
+# DEV_MODE=1
+
 # --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
 # JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
 AUTH_JWT_SECRET=dev-only-change-me-in-production

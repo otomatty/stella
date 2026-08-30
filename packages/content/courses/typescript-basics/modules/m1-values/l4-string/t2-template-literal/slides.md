@@ -4,7 +4,7 @@ title: テンプレートリテラル
 takeaway: "バッククォートで囲むと、文字列の中に変数を埋め込める"
 introduces: [テンプレートリテラル]
 requires: [バッククォート, 変数, string]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-4-2
 # テンプレートリテラル
 
-TypeScript入門研修 — Module 1 / レッスン1-4
+TypeScript入門 — Module 1 / レッスン1-4
 
 <!-- ノート: 3種類のクォートのうち、バッククォートだけが持つ特別な機能を見ます。実務で毎日使う書き方です。 -->
 

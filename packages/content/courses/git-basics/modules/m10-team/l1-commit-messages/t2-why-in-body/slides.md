@@ -4,7 +4,7 @@ title: なぜは本文に書く
 takeaway: "「なぜそうしたか」は1行空けて本文に書く"
 introduces: []
 requires: [commit, -m, コミットメッセージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-1-2
 # なぜは本文に書く
 
-Git入門研修 — Module 10 / レッスン10-1
+Git入門 — Module 10 / レッスン10-1
 
 <!-- ノート: 1行目は「何をしたか」の要約でした。今度は1行に収まらない「なぜ」の置き場所です。 -->
 

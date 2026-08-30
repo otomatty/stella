@@ -4,7 +4,7 @@ title: ApproveとRequest changes
 takeaway: "Approve は「取り込んでよい」、Request changes は「直してから」の意思表示"
 introduces: [Approve, Request changes]
 requires: [レビュー, PR, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-2-3
 # ApproveとRequest changes
 
-Git入門研修 — Module 9 / レッスン9-2
+Git入門 — Module 9 / レッスン9-2
 
 <!-- ノート: レビューの締めくくりとして、GitHubでレビュー結果を送るときに選ぶ2つのボタンの意味を押さえます。 -->
 

@@ -4,7 +4,7 @@ title: 要素は入れ子にできる
 takeaway: "要素の中に要素を入れると、親子の構造ができる"
 introduces: [入れ子, 親要素, 子要素, div]
 requires: [要素, body, 開始タグ, 終了タグ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-1-4
 # 要素は入れ子にできる
 
-HTML/CSS入門研修 — Module 1 / レッスン1-1
+HTML/CSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: レッスン1-1の最後です。HTMLが「構造」と呼ばれる理由がここで分かります。 -->
 

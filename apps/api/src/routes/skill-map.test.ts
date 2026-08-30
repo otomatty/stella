@@ -4,7 +4,7 @@
  * 見ているのは **API 境界の責務** だけ:
  *   - 認証されていなければ通さない
  *   - 呼び出した本人の caller で評価器を回す
- *   - 視界に応じて伏せる (locked に到達説明を返さない / fog にタイトルを返さない)
+ *   - 視界に応じて伏せる (locked に到達説明を返さない / fog に slug や解放条件を返さない)
  *
  * グラフ評価そのものは `@falcon/shared/skill-map` のユニットテストが持つので、
  * ここでは D1 の読み出し (`lib/skill-map-data.js`) をモックして固定の入力を流す。
@@ -22,6 +22,7 @@ import {
   loadSkillMapSource,
   loadSkillProfileCounts,
   loadStudyDays,
+  wantsDevReveal,
 } from "../lib/skill-map-data.js";
 import { skillMapRoute, type SkillMapStagePayload as StagePayload } from "./skill-map.js";
 
@@ -34,6 +35,10 @@ vi.mock("../lib/discovery-data.js", () => ({
 }));
 
 vi.mock("../lib/skill-map-data.js", () => ({
+  // 開発モードはテストでは常に無効 (本番挙動を検証する)。個別の describe で true にする。
+  isDevMode: vi.fn(() => false),
+  shouldRevealDevMap: vi.fn(() => false),
+  wantsDevReveal: vi.fn(() => false),
   loadSkillMapSource: vi.fn(),
   loadSkillProfileCounts: vi.fn(),
   loadStudyDays: vi.fn(),
@@ -86,6 +91,7 @@ function lineSource() {
     canDo: `${slug} ができる`,
     theme: "テーマ",
     category: "プログラミング",
+    iconPath: `tenant/ses/courses/${slug}/icon-abcd1234.svg`,
   });
   return {
     stages: [
@@ -108,6 +114,7 @@ async function fetchStages(): Promise<Map<string, StagePayload>> {
 }
 
 beforeEach(() => {
+  vi.mocked(wantsDevReveal).mockReturnValue(false);
   vi.mocked(loadSkillMapSource).mockResolvedValue(lineSource());
   vi.mocked(loadSkillProfileCounts).mockResolvedValue({
     completedLessons: 4,
@@ -159,14 +166,127 @@ describe("GET /api/skill-map/mine", () => {
     expect(d?.can_do).toBeUndefined();
   });
 
-  it("霧の星はテーマ名だけ (タイトルも解放条件も返さない)", async () => {
+  it("霧の星は名前・カテゴリ・前提線まで (slug・到達説明・解放条件は返さない)", async () => {
     const stages = await fetchStages();
     const e = stages.get("id-e");
     expect(e?.visibility).toBe("fog");
     expect(e?.theme).toBe("テーマ");
-    expect(e?.title).toBeUndefined();
+    // 名前は「ぼかしの予告」用に返す。伏せ方 (blur) は画面側の演出。
+    expect(e?.title).toBe("e の講座");
+    expect(e?.category).toBe("プログラミング");
+    // 線が無いと盤面が深さ = リングを計算できず、先の星が内側に置かれる。
+    expect(e?.parent_id).toBe("id-d");
+    expect(e?.slug).toBeUndefined();
     expect(e?.can_do).toBeUndefined();
     expect(e?.lock_reasons).toBeUndefined();
+    // アイコンの形は講座の正体を語るので、slug と同じく霧の中に出さない。
+    expect(e?.icon_path).toBeUndefined();
+  });
+
+  it("霧の外の星には講座アイコンの R2 キーを載せる", async () => {
+    const stages = await fetchStages();
+    expect(stages.get("id-a")?.icon_path).toBe("tenant/ses/courses/a/icon-abcd1234.svg");
+    expect(stages.get("id-d")?.icon_path).toBe("tenant/ses/courses/d/icon-abcd1234.svg");
+  });
+
+  it("appearances は霧の星にも載せる (slug が無くてもレイアウトが複製できる)", async () => {
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        {
+          id: "id-it",
+          slug: "it-basics",
+          title: "ITのきほん",
+          prerequisites: [],
+          category: "基礎",
+        },
+        {
+          id: "id-a",
+          slug: "a",
+          title: "a",
+          prerequisites: ["it-basics"],
+          category: "基礎",
+        },
+        {
+          id: "id-b",
+          slug: "b",
+          title: "b",
+          prerequisites: ["a"],
+          category: "基礎",
+        },
+        {
+          id: "id-git",
+          slug: "git-basics",
+          title: "Git 入門",
+          prerequisites: ["b"],
+          category: "基礎",
+        },
+      ],
+      // it クリア → a が起点。b = 1 歩 (full) / git = 2 歩... では霧に届かないので
+      // クリア無し = it が unlocked 起点。a=full, b=name-only, git=fog。
+      clearedStageIds: new Set<string>(),
+      activeStageId: undefined,
+    });
+    const stages = await fetchStages();
+    const git = stages.get("id-git");
+    expect(git?.visibility).toBe("fog");
+    expect(git?.appearances).toEqual(["フロントエンド", "バックエンド"]);
+    // 霧でも slug は出さない。appearances はカタログの置き場なので残す。
+    expect(git?.slug).toBeUndefined();
+    expect(stages.get("id-it")?.appearances).toBeUndefined();
+  });
+
+  it("扇ごとの親 id は霧の星にも載せる (複製先で線を張る)", async () => {
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        {
+          id: "id-it",
+          slug: "it-basics",
+          title: "ITのきほん",
+          prerequisites: [],
+          category: "基礎",
+        },
+        {
+          id: "id-html",
+          slug: "html-css-basics",
+          title: "HTML/CSS 入門",
+          prerequisites: ["it-basics"],
+          category: "フロントエンド",
+        },
+        {
+          id: "id-js",
+          slug: "javascript-basics",
+          title: "JavaScript 入門",
+          prerequisites: ["html-css-basics"],
+          category: "フロントエンド",
+        },
+        {
+          id: "id-node",
+          slug: "node-basics",
+          title: "Node.js 入門",
+          prerequisites: ["it-basics"],
+          category: "バックエンド",
+        },
+        {
+          id: "id-git",
+          slug: "git-basics",
+          title: "Git 入門",
+          prerequisites: ["javascript-basics", "node-basics"],
+          category: "基礎",
+        },
+      ],
+      clearedStageIds: new Set<string>(),
+      activeStageId: undefined,
+    });
+    const stages = await fetchStages();
+    const git = stages.get("id-git");
+    expect(git?.appearance_parent_ids).toEqual({
+      フロントエンド: "id-js",
+      バックエンド: "id-node",
+    });
+    expect(stages.get("id-it")?.appearance_parent_ids).toBeUndefined();
+    // 複製は扇ごとの親で線を張るので、実体側の parent_id は付けない材料が無い (前提 2 つ、parent 無し)
+    // — 先頭 (js) に倒れる。画面は appearance_parent_ids を優先する。
+    expect(git?.parent_id).toBe("id-js");
   });
 
   it("次の一歩とクリア数を返す", async () => {
@@ -183,7 +303,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(body.skill_map.active_stage_id).toBeNull();
   });
 
-  it("受講登録の有無を霧の外の星にだけ載せる (霧はテーマ名だけのまま)", async () => {
+  it("受講登録の有無を霧の外の星にだけ載せる (霧には個人の割当を漏らさない)", async () => {
     vi.mocked(loadSkillMapSource).mockResolvedValue({
       ...lineSource(),
       enrolledStageIds: new Set(["id-b"]),
@@ -195,12 +315,38 @@ describe("GET /api/skill-map/mine", () => {
     expect(Object.keys(stages.get("id-e") ?? {})).not.toContain("enrolled");
   });
 
-  it("前提の id を霧の外の星にだけ載せる (ツリーが線を引くのに使う)", async () => {
+  it("線を引く親の id を全部の星に載せる (ツリーが線とリング = 深さを決めるのに使う)", async () => {
     const stages = await fetchStages();
-    expect(stages.get("id-c")?.prerequisite_ids).toEqual(["id-b"]);
-    expect(stages.get("id-a")?.prerequisite_ids).toEqual([]);
-    // 霧の星はテーマ名だけ。前提の線も引かせない。
-    expect(Object.keys(stages.get("id-e") ?? {})).not.toContain("prerequisite_ids");
+    expect(stages.get("id-c")?.parent_id).toBe("id-b");
+    expect(stages.get("id-a")?.parent_id).toBeUndefined();
+    // 霧の星にも線は引く — 無いと先のスキルが内側のリングに置かれてしまう。
+    expect(stages.get("id-e")?.parent_id).toBe("id-d");
+    // 前提 id の配列は返さない (使い手が無い。解放条件は lock_reasons が名前で出す)。
+    expect(Object.keys(stages.get("id-c") ?? {})).not.toContain("prerequisite_ids");
+  });
+
+  it("前提が 2 つでも線は parent の 1 本。線の無い前提は解放条件に残る", async () => {
+    const base = lineSource();
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      ...base,
+      stages: [
+        ...base.stages,
+        {
+          id: "id-x",
+          slug: "x",
+          title: "x の講座",
+          prerequisites: ["a", "c"],
+          parent: "c",
+          category: "プログラミング",
+        },
+      ],
+    });
+    const stages = await fetchStages();
+    const x = stages.get("id-x");
+    expect(x?.parent_id).toBe("id-c");
+    expect(x?.state).toBe("locked");
+    // a はクリア済み (lineSource) なので、残る解放条件は c だけ。
+    expect(x?.lock_reasons).toEqual(["c の講座"]);
   });
 
   it("飛び級で開いた星は unlocked になり、視界の起点にもなる", async () => {
@@ -367,7 +513,8 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     const stages = await fetchStages();
     const p = stages.get("id-p");
     expect(p?.theme).toBe("？？？");
-    expect(p?.title).toBeUndefined();
+    // 名前は「ぼかしの予告」として返る (画面側で伏せる)。到達説明は届かないまま。
+    expect(p?.title).toBe("p の講座");
     expect(p?.can_do).toBeUndefined();
   });
 
@@ -388,5 +535,36 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     const reasons = stages.get("id-orphan")?.lock_reasons ?? [];
     expect(reasons).toEqual(["root1 の講座", "非公開の教材"]);
     expect(reasons.join()).not.toContain("does-not-exist");
+  });
+});
+
+describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
+  it("霧の星にも slug と解放条件を載せる (画面がぼかさず名前を出す材料)", async () => {
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const stages = await fetchStages();
+    const e = stages.get("id-e");
+    expect(e?.visibility).toBe("fog");
+    expect(e?.title).toBe("e の講座");
+    expect(e?.slug).toBe("e");
+    expect(e?.lock_reasons).toEqual(["d の講座"]);
+  });
+
+  it("応答に dev_mode を立て、本番では available も false のまま", async () => {
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const res = await get("/api/skill-map/mine");
+    const body = (await res.json()) as {
+      skill_map: { dev_mode?: boolean; dev_mode_available?: boolean };
+    };
+    expect(body.skill_map.dev_mode).toBe(true);
+    // isDevMode はモック既定 false = 本番相当。available は env の有無で、今回の
+    // リクエストが開発者表示かどうか (dev_mode) とは別フラグ。
+    expect(body.skill_map.dev_mode_available).toBe(false);
+  });
+
+  it("開発者表示オフでは霧の星に slug も解放条件も載せない", async () => {
+    const stages = await fetchStages();
+    const e = stages.get("id-e");
+    expect(e?.slug).toBeUndefined();
+    expect(e?.lock_reasons).toBeUndefined();
   });
 });

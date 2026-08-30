@@ -4,7 +4,7 @@ title: gapで並べた箱のすき間を空ける
 takeaway: "gapは、並べた子どうしのすき間だけをまとめて空ける"
 introduces: [gap, すき間]
 requires: [flex, 子要素, margin, プロパティ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-2-3
 # gapで並べた箱のすき間を空ける
 
-HTML/CSS入門研修 — Module 4 / レッスン4-2
+HTML/CSS入門 — Module 4 / レッスン4-2
 
 <!-- ノート: レッスン4-2の最後です。横に並べたあとの仕上げにあたる指定です。 -->
 

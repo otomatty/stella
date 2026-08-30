@@ -10,8 +10,9 @@
  * **前提の参照は slug**、状態のキーは **ステージ id**。正本 (`courses/<slug>/course.json`)
  * は id を知らないため、グラフの辺は slug で書き、評価器が id へ解く。
  *
- * **前提が複数あるときは AND** (全部クリアで開く)。「どれか 1 つ」は表現しない —
- * 教材側の散文が「A と B を終えていること」しか書いていないため。
+ * **前提が複数あるときは AND** (全部クリアで開く)。例外は見た目の複製
+ * (`appearances.ts` の扇ごとの前提) だけで、組どうしは OR (どれか 1 組を満たせば開く)。
+ * 通常の講座は AND のまま。
  *
  * **状態の優先順位**は cleared > active > unlocked > locked。
  * - `cleared` … クリア済み (修了)
@@ -24,11 +25,13 @@
  * unlocked の全体。そこから
  * - 距離 0〜1 → `full`      (中身まで見せる)
  * - 距離 2    → `name-only` (名前と解放条件だけ。到達説明は見せない)
- * - 距離 3 以上 → `fog`     (テーマ名だけ)
+ * - 距離 3 以上 → `fog`     (名前はぼかしの予告のみ。slug・到達説明・解放条件は見せない)
  *
  * 辺の向きを見ない (無向) のは、飛び級で先の星を点けたときに、飛ばした手前の星が
  * 霧に沈まないようにするため。起点に unlocked を含めるのは、1 つもクリアしていない
  * 受講者の視界が真っ白にならないようにするため (入口の星は常に unlocked)。
+ * 辺は **親** (`parent`、複製は扇ごとの前提) だけで、線の無い前提は視界に数えない —
+ * 画面に見える線と視界の広がり方を一致させる。
  *
  * **エラーは投げない。** 未知 slug と循環はビルド時 (`packages/content` の manifest) に
  * 落とすのが正で、実行時は安全側に倒す:
@@ -54,7 +57,7 @@ export type SkillMapState = "cleared" | "active" | "unlocked" | "locked";
  * 星の見え方。
  * - `full`      … タイトル・到達説明まで見せてよい
  * - `name-only` … タイトルと解放条件だけ。到達説明は見せない
- * - `fog`       … テーマ名だけ。タイトルも出さない
+ * - `fog`       … タイトルはぼかしの予告のみ (画面側で伏せる)。解放条件や slug は出さない
  */
 export type SkillMapVisibility = "full" | "name-only" | "fog";
 
@@ -65,10 +68,21 @@ export interface SkillMapStage {
   title: string;
   /** 前提ステージの **slug**。空配列 = 入口の星。 */
   prerequisites: string[];
+  /**
+   * スキルツリーで線を引く親の **slug** (`prerequisites` のうちの 1 つ)。視界の辺はこれだけ。
+   * 未設定なら `prerequisites` の先頭 (`parentSlugOf`)。複製 (`appearances.ts`) は扇ごとの
+   * 前提 (各 1 つ) が親なので、この項目は見ない。
+   */
+  parent?: string;
   /** 到達説明「このスキルを身につけた人は◯◯ができる」。 */
   canDo?: string;
   /** 霧の中で見せるテーマ名。 */
   theme?: string;
+  /**
+   * スキルツリーの星に出す講座アイコンの R2 キー (`stages.icon_path`)。
+   * 評価器は使わない素通しの項目 — 秘匿 (霧の星に出さない) は API 層が visibility で決める。
+   */
+  iconPath?: string;
   category: string;
   /** 「次の一歩」の並び順のヒント (小さいほど先)。未指定は最後尾。 */
   order?: number;
@@ -114,6 +128,8 @@ export interface SkillMapResult {
   /** 検出した前提の循環 (ステージ id の並び)。空なら健全。 */
   cycles: string[][];
 }
+
+import { appearancePrerequisitesOf } from "./appearances.js";
 
 /** 視界の段: この距離までが `full`。 */
 const FULL_DISTANCE = 1;
@@ -175,6 +191,60 @@ function findCycles(stages: SkillMapStage[], prereqIds: Map<string, string[]>): 
   return cycles;
 }
 
+/** 開く条件の組。カタログがあれば扇ごと (OR)、無ければ D1 の 1 組 (AND)。 */
+function prerequisiteGroupsOf(stage: SkillMapStage): string[][] {
+  const catalog = appearancePrerequisitesOf(stage.slug);
+  if (catalog) return Object.values(catalog).map((slugs) => [...slugs]);
+  return [stage.prerequisites];
+}
+
+/**
+ * 線を引く親の slug。`parent` → 前提の先頭 → なし。
+ * CMS で作った行は `parent` を持たないので、前提 1 つなら今までどおり線がつく。
+ */
+export function parentSlugOf(
+  stage: Pick<SkillMapStage, "parent" | "prerequisites">,
+): string | undefined {
+  return stage.parent ?? stage.prerequisites[0];
+}
+
+/** 視界の辺の元。複製は扇ごとの親 (各 1 つ)、通常は `parentSlugOf`。 */
+function parentSlugsOf(stage: SkillMapStage): string[] {
+  const catalog = appearancePrerequisitesOf(stage.slug);
+  if (catalog) return Object.values(catalog).flatMap((slugs) => slugs.slice(0, 1));
+  const parent = parentSlugOf(stage);
+  return parent === undefined ? [] : [parent];
+}
+
+function unmetReasonsFor(
+  slugs: readonly string[],
+  idBySlug: Map<string, string>,
+  stageById: Map<string, SkillMapStage>,
+  clearedStageIds: Set<string>,
+): SkillMapLockReason[] {
+  const unmet: SkillMapLockReason[] = [];
+  for (const slug of slugs) {
+    const id = idBySlug.get(slug);
+    if (id === undefined) {
+      unmet.push({ label: UNKNOWN_PREREQUISITE_LABEL });
+      continue;
+    }
+    if (!clearedStageIds.has(id)) {
+      unmet.push({ stageId: id, label: stageById.get(id)?.title ?? UNKNOWN_PREREQUISITE_LABEL });
+    }
+  }
+  return unmet;
+}
+
+function resolveIds(slugs: readonly string[], idBySlug: Map<string, string>): string[] {
+  const ids: string[] = [];
+  for (const slug of slugs) {
+    const id = idBySlug.get(slug);
+    if (id !== undefined) ids.push(id);
+  }
+  return ids;
+}
+
 /**
  * ステージグラフを評価して、状態・視界・解放条件・次の一歩を出す。
  *
@@ -188,34 +258,29 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
   for (const stage of stages) idBySlug.set(stage.slug, stage.id);
   const stageById = new Map(stages.map((s) => [s.id, s]));
 
+  const groupsOf = new Map<string, string[][]>();
   /** id → 前提の id 一覧 (入力に無い slug は落とす。ロック理由には別途残す)。 */
   const prereqIds = new Map<string, string[]>();
   for (const stage of stages) {
-    const ids: string[] = [];
-    for (const slug of stage.prerequisites) {
-      const id = idBySlug.get(slug);
-      if (id !== undefined) ids.push(id);
-    }
-    prereqIds.set(stage.id, ids);
+    const groups = prerequisiteGroupsOf(stage);
+    groupsOf.set(stage.id, groups);
+    prereqIds.set(stage.id, resolveIds([...new Set(groups.flat())], idBySlug));
   }
 
   const states = new Map<string, SkillMapState>();
   const lockReasons = new Map<string, SkillMapLockReason[]>();
 
   for (const stage of stages) {
-    // 未充足の前提。未知 slug は「決してクリアされない前提」として残す (安全側)。
-    const unmet: SkillMapLockReason[] = [];
-    for (const slug of stage.prerequisites) {
-      const id = idBySlug.get(slug);
-      if (id === undefined) {
-        // 生の slug は出さない (未公開 / 削除済みステージの識別子になりうる)。
-        unmet.push({ label: UNKNOWN_PREREQUISITE_LABEL });
-        continue;
-      }
-      if (!clearedStageIds.has(id)) {
-        unmet.push({ stageId: id, label: stageById.get(id)?.title ?? UNKNOWN_PREREQUISITE_LABEL });
-      }
-    }
+    const groups = groupsOf.get(stage.id) ?? [stage.prerequisites];
+    const unmet = unmetReasonsFor(
+      [...new Set(groups.flat())],
+      idBySlug,
+      stageById,
+      clearedStageIds,
+    );
+    const anyGroupMet = groups.some(
+      (group) => unmetReasonsFor(group, idBySlug, stageById, clearedStageIds).length === 0,
+    );
 
     if (clearedStageIds.has(stage.id)) {
       states.set(stage.id, "cleared");
@@ -225,7 +290,7 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
       states.set(stage.id, "active");
       continue;
     }
-    if (unmet.length === 0 || unlockedStageIds?.has(stage.id)) {
+    if (anyGroupMet || unlockedStageIds?.has(stage.id)) {
       states.set(stage.id, "unlocked");
       continue;
     }
@@ -233,14 +298,23 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
     lockReasons.set(stage.id, unmet);
   }
 
-  // 無向の隣接表 (視界の距離用)。
+  // 無向の隣接表 (視界の距離用)。辺は **親** だけ (画面の線と同じ 1 本)。線の無い前提は
+  // 解放条件としては効くが、視界はそちらへ伸びない (見えている線と広がり方を一致させる)。
+  // 複製は扇ごとに親を持つ。開いた星から満たしていない扇へ橋を渡さない (FE で Git を
+  // 開いても BE の Node が手前に見えないようにする)。ロック中は全扇の親を辿れる。
   const neighbours = new Map<string, Set<string>>();
   for (const stage of stages) neighbours.set(stage.id, new Set());
   for (const stage of stages) {
-    for (const prereq of prereqIds.get(stage.id) ?? []) {
-      if (prereq === stage.id) continue;
-      neighbours.get(stage.id)?.add(prereq);
-      neighbours.get(prereq)?.add(stage.id);
+    const parents = parentSlugsOf(stage);
+    const cleared = parents.filter((slug) => {
+      const parentId = idBySlug.get(slug);
+      return parentId !== undefined && clearedStageIds.has(parentId);
+    });
+    const visSlugs = states.get(stage.id) === "locked" || cleared.length === 0 ? parents : cleared;
+    for (const parent of resolveIds(visSlugs, idBySlug)) {
+      if (parent === stage.id) continue;
+      neighbours.get(stage.id)?.add(parent);
+      neighbours.get(parent)?.add(stage.id);
     }
   }
 

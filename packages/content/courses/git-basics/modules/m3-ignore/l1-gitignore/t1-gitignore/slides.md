@@ -4,7 +4,7 @@ title: .gitignoreで無視する
 takeaway: ".gitignore に書いたファイルを、Gitは無いものとして扱う"
 introduces: [.gitignore]
 requires: [リポジトリ, status, Untracked, add, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-1-1
 # .gitignoreで無視する
 
-Git入門研修 — Module 3 / レッスン3-1
+Git入門 — Module 3 / レッスン3-1
 
 <!-- ノート: ここからModule 3です。記録のやり方は覚えたので、今度は「記録しないもの」を決める道具を学びます。 -->
 

@@ -4,7 +4,7 @@ title: 制御フロー分析
 takeaway: "コンパイラーは分岐を追いかけて、その位置での型を決めている"
 introduces: [制御フロー分析, 型ガード]
 requires: [絞り込み, if, else, ユニオン型, undefined]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-2-1
 # 制御フロー分析
 
-TypeScript入門研修 — Module 5 / レッスン5-2
+TypeScript入門 — Module 5 / レッスン5-2
 
 <!-- ノート: レッスン5-2では絞り込みの仕組みそのものを扱います。2-3-2で「ifで型が確定する」と学びましたが、その裏側です。 -->
 

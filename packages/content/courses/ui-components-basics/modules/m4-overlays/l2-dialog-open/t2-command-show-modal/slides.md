@@ -4,7 +4,7 @@ title: commandでモーダルに開く
 takeaway: 'command="show-modal"のボタンは、commandforで指すdialogをモーダルで開く'
 introduces: [command, commandfor, モーダル]
 requires: [ダイアログ]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-2-2
 # commandでモーダルに開く
 
-UI部品入門研修 — Module 4 / レッスン4-2
+UI部品入門 — Module 4 / レッスン4-2
 
 <!-- ノート: ダイアログの開き方です。ここでもJavaScriptは書きません。 -->
 

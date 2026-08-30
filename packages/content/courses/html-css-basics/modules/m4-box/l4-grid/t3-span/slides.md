@@ -4,7 +4,7 @@ title: grid-columnで複数の列にまたがる
 takeaway: "grid-columnにspanを書くと、そのアイテムが複数の列にまたがる"
 introduces: [grid-column, span]
 requires: [グリッド, 列, セル, fr, repeat, 子要素]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-4-3
 # grid-columnで複数の列にまたがる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-4
+HTML/CSS入門 — Module 4 / レッスン4-4
 
 <!-- ノート: 格子に流し込むだけでは、強弱のない並びになります。ここで1マスの大きさを変えます。 -->
 

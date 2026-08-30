@@ -4,7 +4,7 @@ title: 値には種類がある
 takeaway: "値には数値・文字列・真偽値といった種類があり、種類で扱い方が変わる"
 introduces: [数値, 文字列, 真偽値, true, false]
 requires: [値, 変数, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-1-4
 # 値には種類がある
 
-JavaScript入門研修 — Module 1 / レッスン1-1
+JavaScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 型の初歩です。用語は「種類」で通し、深入りせず3種類の見分けだけ扱います。 -->
 

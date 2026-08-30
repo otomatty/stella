@@ -4,7 +4,7 @@ title: display:flexで子を横に並べる
 takeaway: "親にdisplay: flexを指定すると、子の要素が横に並ぶ"
 introduces: [display, flex]
 requires: [ブロック, 親要素, 子要素, プロパティ, div]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-2-2
 # display:flexで子を横に並べる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-2
+HTML/CSS入門 — Module 4 / レッスン4-2
 
 <!-- ノート: この講座でいちばん実務で使う指定です。カードを横に並べる、が一発でできます。 -->
 

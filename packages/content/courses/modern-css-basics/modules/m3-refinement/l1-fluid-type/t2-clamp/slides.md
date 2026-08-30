@@ -4,7 +4,7 @@ title: clamp()で下限と上限を決める
 takeaway: "clamp()は最小・普段・最大の3つの値で、画面幅に応じて滑らかに変わる文字サイズを作る"
 introduces: [clamp, 流体タイプ]
 requires: [vw, 拡大]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-1-2
 # clamp()で下限と上限を決める
 
-モダンCSS入門研修 — Module 3 / レッスン3-1
+モダンCSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: vw単独の問題を踏まえて、正しい形を作ります。 -->
 

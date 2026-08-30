@@ -4,7 +4,7 @@ title: 用語と説明の組はdlで表す
 takeaway: "用語とその説明が組になる並びは、dlの中にdtとddを並べて表す"
 introduces: [説明リスト, dl, dt, dd]
 requires: [リスト, 項目, 入れ子, 段落]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-4-4
 # 用語と説明の組はdlで表す
 
-HTML/CSS入門研修 — Module 1 / レッスン1-4
+HTML/CSS入門 — Module 1 / レッスン1-4
 
 <!-- ノート: リストは 1-2-3 で扱いました。ここでは3つ目のリスト、組をつくるリストです。 -->
 

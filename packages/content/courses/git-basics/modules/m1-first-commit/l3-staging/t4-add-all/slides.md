@@ -4,7 +4,7 @@ title: git add . は全部載せる
 takeaway: "git add . は変更を全部載せる(載せる前に status で中身を確かめる)"
 introduces: []
 requires: [add, status, ステージングエリア, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-3-4
 # git add . は全部載せる
 
-Git入門研修 — Module 1 / レッスン1-3
+Git入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 毎回ファイル名を打つのは大変、という不満に答える書き方です。便利さと注意をセットで渡します。 -->
 

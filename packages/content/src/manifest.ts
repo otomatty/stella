@@ -117,6 +117,26 @@ function resolveThumbnail(
 }
 
 /**
+ * スキルツリーの星に出す講座アイコン (`courses/<slug>/icon.svg`)。
+ *
+ * 単色シルエットの SVG で、色は持たず画面側が CSS mask + currentColor で塗る
+ * (ダーク / ライトどちらのテーマでも星の文字色に追従する)。キーはサムネイルと
+ * 同じく内容ハッシュ入りで、D1 `stages.icon_path` と R2 のキー計算を一致させる。
+ */
+function resolveIcon(courseDir: string, slug: string): CourseThumbnail | undefined {
+  const file = join(courseDir, "icon.svg");
+  if (!existsSync(file)) return undefined;
+  const hash = createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 8);
+  return {
+    slug,
+    tenantId: TENANT_ID,
+    sourceFile: file,
+    key: `tenant/${TENANT_ID}/courses/${slug}/icon-${hash}.svg`,
+    contentType: "image/svg+xml",
+  };
+}
+
+/**
  * 直下のディレクトリを自然順で返す。並び = セクション / レッスン / トピックの順序なので、
  * 辞書順にすると `m10-mock-exam` が `m1` と `m2` の間に割り込む。
  */
@@ -157,6 +177,112 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     }
     if (new Set(trimmed).size !== trimmed.length) {
       throw new Error(`courses/${slug}/course.json の prerequisites に重複があります。`);
+    }
+  }
+  if (raw.appearances != null) {
+    if (!Array.isArray(raw.appearances) || raw.appearances.some((s) => typeof s !== "string")) {
+      throw new Error(
+        `courses/${slug}/course.json の appearances は扇名 (文字列) の配列にしてください。`,
+      );
+    }
+    const trimmed = raw.appearances.map((s) => s.trim());
+    if (trimmed.some((s) => s === "")) {
+      throw new Error(`courses/${slug}/course.json の appearances に空の扇名があります。`);
+    }
+    if (new Set(trimmed).size !== trimmed.length) {
+      throw new Error(`courses/${slug}/course.json の appearances に重複があります。`);
+    }
+    if (trimmed.length < 2) {
+      throw new Error(
+        `courses/${slug}/course.json の appearances は 2 つ以上の扇にしてください (1 つなら category で足ります)。`,
+      );
+    }
+    // 扇ごとの親が無いと、複製は線の元も鍵も持てない (実行時は複製そのものを作らない)。
+    if (raw.appearancePrerequisites == null) {
+      throw new Error(
+        `courses/${slug}/course.json の appearances には appearancePrerequisites が必要です (全扇ぶんの親を書きます)。`,
+      );
+    }
+  }
+  if (raw.appearancePrerequisites != null) {
+    const sectors = (raw.appearances ?? []).map((s) => s.trim());
+    if (sectors.length === 0) {
+      throw new Error(
+        `courses/${slug}/course.json の appearancePrerequisites には appearances が必要です。`,
+      );
+    }
+    const groups = raw.appearancePrerequisites;
+    if (typeof groups !== "object" || Array.isArray(groups)) {
+      throw new Error(
+        `courses/${slug}/course.json の appearancePrerequisites は扇名 → slug 配列にしてください。`,
+      );
+    }
+    const keys = Object.keys(groups);
+    if ([...keys].sort().join("\0") !== [...sectors].sort().join("\0")) {
+      throw new Error(
+        `courses/${slug}/course.json の appearancePrerequisites のキーは appearances と同じ扇にしてください。`,
+      );
+    }
+    const union: string[] = [];
+    for (const sector of sectors) {
+      const slugs = groups[sector];
+      if (!Array.isArray(slugs) || slugs.some((p) => typeof p !== "string")) {
+        throw new Error(
+          `courses/${slug}/course.json の appearancePrerequisites.${sector} は slug の配列にしてください。`,
+        );
+      }
+      const trimmedSlugs = slugs.map((p) => p.trim());
+      if (trimmedSlugs.some((p) => p === "")) {
+        throw new Error(
+          `courses/${slug}/course.json の appearancePrerequisites.${sector} に空の slug があります。`,
+        );
+      }
+      if (trimmedSlugs.includes(slug)) {
+        throw new Error(
+          `courses/${slug}/course.json の appearancePrerequisites.${sector} が自分自身を指しています。`,
+        );
+      }
+      if (new Set(trimmedSlugs).size !== trimmedSlugs.length) {
+        throw new Error(
+          `courses/${slug}/course.json の appearancePrerequisites.${sector} に重複があります。`,
+        );
+      }
+      if (trimmedSlugs.length !== 1) {
+        throw new Error(
+          `courses/${slug}/course.json の appearancePrerequisites.${sector} は slug をちょうど 1 つにしてください (その扇の親 = 線の元)。`,
+        );
+      }
+      for (const prereq of trimmedSlugs) {
+        if (!union.includes(prereq)) union.push(prereq);
+      }
+    }
+    const listed = (raw.prerequisites ?? []).map((p) => p.trim());
+    if (listed.join("\0") !== union.join("\0")) {
+      throw new Error(
+        `courses/${slug}/course.json の prerequisites は appearancePrerequisites の和集合にしてください。`,
+      );
+    }
+  }
+  {
+    const listed = (raw.prerequisites ?? []).map((p) => p.trim());
+    if (raw.parent != null) {
+      if (typeof raw.parent !== "string" || raw.parent.trim() === "") {
+        throw new Error(`courses/${slug}/course.json の parent は slug (文字列) にしてください。`);
+      }
+      if (raw.appearances != null) {
+        throw new Error(
+          `courses/${slug}/course.json の parent は appearances と併用できません (扇ごとの親は appearancePrerequisites に書きます)。`,
+        );
+      }
+      if (!listed.includes(raw.parent.trim())) {
+        throw new Error(
+          `courses/${slug}/course.json の parent は prerequisites に含めてください: ${raw.parent}`,
+        );
+      }
+    } else if (listed.length >= 2 && raw.appearances == null) {
+      throw new Error(
+        `courses/${slug}/course.json の prerequisites が 2 つ以上なので、線を引く 1 つを parent に指定してください。`,
+      );
     }
   }
   for (const field of ["canDo", "theme"] as const) {
@@ -349,6 +475,15 @@ function buildOneCourse(
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
   const thumbnail = resolveThumbnail(courseDir, slug, config);
+  const icon = resolveIcon(courseDir, slug);
+  // 線を引く親。省略時は前提が 1 つならそれ (下流が「無い」を解釈しなくて済む)。
+  // ただし appearances 持ちは補完しない — 扇ごとの親は appearancePrerequisites が持つので、
+  // 全扇が同じ前提を指して和集合が 1 件になっても、この講座に parent は付かない。
+  const prerequisiteSlugs = (config.prerequisites ?? []).map((p) => p.trim());
+  const hasAppearances = (config.appearances?.length ?? 0) > 0;
+  const parent =
+    config.parent?.trim() ??
+    (prerequisiteSlugs.length === 1 && !hasAppearances ? prerequisiteSlugs[0] : undefined);
 
   return {
     course: {
@@ -360,12 +495,17 @@ function buildOneCourse(
       progress: 0,
       description: config.description,
       ...(thumbnail ? { thumbnailPath: thumbnail.key } : {}),
+      ...(icon ? { iconPath: icon.key } : {}),
       // 空配列は「前提なし」と同義なので落とす (seed の JSON 列を null に保つ)。
       ...(config.prerequisites && config.prerequisites.length > 0
         ? { prerequisites: config.prerequisites.map((p) => p.trim()) }
         : {}),
+      ...(parent ? { parent } : {}),
       ...(config.canDo ? { canDo: config.canDo.trim() } : {}),
       ...(config.theme ? { theme: config.theme.trim() } : {}),
+      ...(config.appearances && config.appearances.length > 0
+        ? { appearances: config.appearances.map((s) => s.trim()) }
+        : {}),
       sections,
     },
     quizzes,
@@ -449,4 +589,21 @@ export function collectCourseThumbnails(
     if (thumbnail) thumbnails.push(thumbnail);
   }
   return thumbnails;
+}
+
+/**
+ * 全講座のスキルツリーアイコンを列挙する。R2 へ流す `upload-materials.ts` が使う。
+ *
+ * キーは buildContentManifest() が D1 に入れる `stages.icon_path` と同じ計算なので、
+ * seed とアップロードが同じコミットから走る限り必ず一致する。
+ */
+export function collectCourseIcons(coursesRoot: string = defaultCoursesRoot()): CourseThumbnail[] {
+  const icons: CourseThumbnail[] = [];
+  for (const slug of dirsIn(coursesRoot)) {
+    const courseDir = join(coursesRoot, slug);
+    if (!existsSync(join(courseDir, "modules"))) continue;
+    const icon = resolveIcon(courseDir, slug);
+    if (icon) icons.push(icon);
+  }
+  return icons;
 }

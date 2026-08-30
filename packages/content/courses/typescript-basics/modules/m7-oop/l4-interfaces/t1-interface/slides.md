@@ -4,7 +4,7 @@ title: インターフェースとは
 takeaway: "インターフェースは、実装を持たない「形の約束」を書くもの"
 introduces: [インターフェース, interface]
 requires: [型エイリアス, オブジェクト, プロパティ, メソッド, 抽象クラス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-4-1
 # インターフェースとは
 
-TypeScript入門研修 — Module 7 / レッスン7-4
+TypeScript入門 — Module 7 / レッスン7-4
 
 <!-- ノート: Module 7の最後のレッスンです。7-3-5の抽象クラスより軽い、約束だけを表す仕組みを扱います。 -->
 

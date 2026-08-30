@@ -4,7 +4,7 @@ title: SELECTで列を選んで取り出す
 takeaway: "SELECT 列名 FROM テーブル名 で、欲しい列だけを取り出せる"
 introduces: [SELECT, FROM, 結果]
 requires: [テーブル, 列, SQL文, 問い合わせ]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 1-1-1
 # SELECTで列を選んで取り出す
 
-SQL入門研修 — Module 1 / レッスン1-1
+SQL入門 — Module 1 / レッスン1-1
 
 <!-- ノート: いよいよ最初のSQL文を書きます。この研修の軸になる、データを取り出す文です。 -->
 

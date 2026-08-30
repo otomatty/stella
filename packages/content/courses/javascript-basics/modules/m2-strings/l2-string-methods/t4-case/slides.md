@@ -4,7 +4,7 @@ title: 大文字・小文字をそろえてから比べる
 takeaway: "toLowerCaseなどで表記をそろえてから比べると、揺れに強くなる"
 introduces: [toLowerCase, toUpperCase, trim]
 requires: [メソッド, 文字列, ===, 変換]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-2-4
 # 大文字・小文字をそろえてから比べる
 
-JavaScript入門研修 — Module 2 / レッスン2-2
+JavaScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 「入力の揺れを吸収してから比較する」という実務の型を伝えるトピックです。 -->
 

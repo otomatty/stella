@@ -6,6 +6,7 @@
   "header": "検証・hooks・MCP",
   "tenantId": "ses",
   "prerequisites": ["claude-code-basics", "claude-code-skills"],
+  "parent": "claude-code-skills",
   "canDo": "生成した変更を検証し、hooks と MCP でチームに配れる",
   "theme": "AI と働く力",
   "modules": {

@@ -4,7 +4,7 @@ title: アロー関数は=>で短く書く
 takeaway: "アロー関数は、無名関数を=>で短く書ける書き方"
 introduces: [アロー関数, "=>"]
 requires: [無名関数, 関数, 引数, return, コールバック]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-2-4
 # アロー関数は=>で短く書く
 
-JavaScript入門研修 — Module 6 / レッスン6-2
+JavaScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: 現代のコードで最も見かける記法です。読み書き両方できる状態にします。 -->
 

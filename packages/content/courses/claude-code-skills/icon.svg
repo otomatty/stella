@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 指示の紙をどの入れ物に置くかを選ぶ (thumbnail の motif_claude_code_skills の核)。 -->
+  <rect x="7.5" y="1.5" width="9" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <path d="M12 8.5 V11.5 M12 11.5 H6 V15 M12 11.5 H18 V15" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="2.5" y="15" width="7" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="14.5" y="15" width="7" height="6.5" rx="1.5" fill="currentColor"/>
+</svg>

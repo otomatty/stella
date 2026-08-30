@@ -4,7 +4,7 @@ title: font-weightで文字の太さを決める
 takeaway: "font-weightは文字の太さを決め、太字にしたいだけのときはこれを使う"
 introduces: [font-weight, 太字]
 requires: [font-family, プロパティ, 値, strong, 見出し, 見た目]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-2-2
 # font-weightで文字の太さを決める
 
-HTML/CSS入門研修 — Module 5 / レッスン5-2
+HTML/CSS入門 — Module 5 / レッスン5-2
 
 <!-- ノート: 1-4-3 で「太字はCSSで」と言いました。その約束をここで回収します。 -->
 

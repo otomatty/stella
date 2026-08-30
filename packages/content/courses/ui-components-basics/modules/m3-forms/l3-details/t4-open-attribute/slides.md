@@ -4,7 +4,7 @@ title: 開いている間は[open]で選ぶ
 takeaway: "開いているdetailsは[open]の属性セレクタで選び、見た目を変えられる"
 introduces: ["[open]"]
 requires: [details, 開閉, 状態, 属性セレクタ]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-3-4
 # 開いている間は[open]で選ぶ
 
-UI部品入門研修 — Module 3 / レッスン3-3
+UI部品入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 4段階目の状態です。開閉の部品の状態は「開いているかどうか」です。 -->
 

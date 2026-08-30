@@ -4,7 +4,7 @@ title: 比較演算子は真偽値を返す
 takeaway: "=== や < などの比較演算子は、結果をtrueかfalseで返す"
 introduces: [比較演算子, ===, !==]
 requires: [真偽値, true, false, 数値, 演算子]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-2-3
 # 比較演算子は真偽値を返す
 
-JavaScript入門研修 — Module 1 / レッスン1-2
+JavaScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 条件分岐(M4)の土台になるトピックです。「比較の結果は値である」が核心です。 -->
 

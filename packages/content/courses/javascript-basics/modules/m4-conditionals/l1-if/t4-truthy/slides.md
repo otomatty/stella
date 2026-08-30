@@ -4,7 +4,7 @@ title: 値そのものも真偽として扱われる
 takeaway: "条件に値を書くと、空文字・0・NaNなどは偽、それ以外は真として扱われる"
 introduces: [truthy, falsy, 空文字]
 requires: [条件, if, 真偽値, 文字列, 数値]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-1-4
 # 値そのものも真偽として扱われる
 
-JavaScript入門研修 — Module 4 / レッスン4-1
+JavaScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: truthy/falsyです。読めることを目標にし、書く方は「明示的な比較」を推奨します。 -->
 

@@ -4,7 +4,7 @@ title: ケース表を parametrize へ
 takeaway: "ケース表の 1 行は pytest.mark.parametrize の 1 組にそのまま写せる"
 introduces: [parametrize]
 requires: [ケース表, pytest, テスト関数, assert, 境界値, 入力, 期待結果]
-header: "テスト設計入門研修"
+header: "テスト設計入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "テスト設計入門研修"
 # 3-2-4
 # ケース表を parametrize へ
 
-テスト設計入門研修 — Module 3 / レッスン3-2
+テスト設計入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 設計した表を、書き写す手間を最小にして実行可能にします。 -->
 

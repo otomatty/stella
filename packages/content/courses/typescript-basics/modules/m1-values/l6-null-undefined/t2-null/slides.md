@@ -4,7 +4,7 @@ title: null
 takeaway: "nullは「意図的に空である」ことを表す値。自然発生しない"
 introduces: [null]
 requires: [undefined, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-6-2
 # null
 
-TypeScript入門研修 — Module 1 / レッスン1-6
+TypeScript入門 — Module 1 / レッスン1-6
 
 <!-- ノート: 「値がない」を表す値の2つめです。undefinedとの違いが、このトピックの核心です。 -->
 

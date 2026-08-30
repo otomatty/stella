@@ -4,7 +4,7 @@ title: lengthで要素数を数える
 takeaway: "配列の要素数はlengthでわかる。最後のインデックスはlength - 1"
 introduces: [length]
 requires: [配列, 要素, インデックス, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-1-3
 # lengthで要素数を数える
 
-TypeScript入門研修 — Module 3 / レッスン3-1
+TypeScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 取り出し方はわかりました。では、いくつ入っているのかを知る方法です。 -->
 

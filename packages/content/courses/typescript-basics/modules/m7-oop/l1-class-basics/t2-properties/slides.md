@@ -4,7 +4,7 @@ title: プロパティの宣言
 takeaway: "クラスのプロパティは、名前と型を並べて宣言する"
 introduces: []
 requires: [クラス, プロパティ, 型注釈, インスタンス, 型推論]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-1-2
 # プロパティの宣言
 
-TypeScript入門研修 — Module 7 / レッスン7-1
+TypeScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: クラスのデータ部分の書き方です。型エイリアスとよく似ていますが、1つだけ厳しいルールがあります。 -->
 

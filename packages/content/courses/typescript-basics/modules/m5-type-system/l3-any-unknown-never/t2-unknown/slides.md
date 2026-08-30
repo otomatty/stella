@@ -4,7 +4,7 @@ title: unknown型
 takeaway: "unknownは「型がわからない」ことを正直に表す型"
 introduces: [unknown]
 requires: [any, 型, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-3-2
 # unknown型
 
-TypeScript入門研修 — Module 5 / レッスン5-3
+TypeScript入門 — Module 5 / レッスン5-3
 
 <!-- ノート: anyが危険なことは分かりました。では、本当に型が分からないときの正しい選択肢です。 -->
 

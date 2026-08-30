@@ -143,6 +143,12 @@ export const stages = sqliteTable(
      * `courses/<slug>/thumbnail.*` を seed が書き込む。null ならストライプ表示。
      */
     thumbnailPath: text("thumbnail_path"),
+    /**
+     * スキルツリーの星に出す講座アイコンの R2 キー。教材リポジトリの
+     * `courses/<slug>/icon.svg` (単色シルエット) を seed が書き込む。null なら
+     * 星は状態グリフ (★/▶/🔒/✨) のまま。
+     */
+    iconPath: text("icon_path"),
     durationHours: integer("duration_hours"),
     description: text("description"),
     /**
@@ -154,6 +160,12 @@ export const stages = sqliteTable(
      * `json()` ヘルパを使わないのは、既存行に既定値を入れずに null のまま足したいため。
      */
     prerequisites: text("prerequisites"),
+    /**
+     * スキルツリーで線を引く親の **slug** (`prerequisites` のうちの 1 つ)。線・配置・視界は
+     * この 1 本で決まり、解放条件は `prerequisites` 全部 (AND) のまま。null は評価器が
+     * `prerequisites` の先頭に倒す (前提 1 つのステージは今までどおり線がつく)。
+     */
+    parent: text("parent"),
     /** 到達説明。「この星をともした人は◯◯ができる」のホバー表示に使う 1 文。 */
     canDo: text("can_do"),
     /** 霧の中の星に見せるテーマ名。視界外のステージはタイトルの代わりにこれだけを出す。 */

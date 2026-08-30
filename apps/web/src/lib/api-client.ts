@@ -8,6 +8,7 @@
  */
 
 import { getAccessToken } from "./auth-client";
+import { DEV_MODE_HEADER, devModeHeaderValue, isDevModeEnabled } from "./dev-mode";
 
 /** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
 const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
@@ -38,7 +39,9 @@ export class ApiClientError extends Error {
  */
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, signal, anonymous = false } = options;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    [DEV_MODE_HEADER]: devModeHeaderValue(isDevModeEnabled()),
+  };
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
   if (!anonymous) {
@@ -85,7 +88,9 @@ export async function apiFetchRaw(
   } = {},
 ): Promise<Response> {
   const { method = "GET", body, contentType, signal } = options;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    [DEV_MODE_HEADER]: devModeHeaderValue(isDevModeEnabled()),
+  };
   if (contentType) headers["Content-Type"] = contentType;
   const token = getAccessToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;

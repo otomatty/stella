@@ -4,7 +4,7 @@ title: keyof型演算子
 takeaway: "keyofは、型のプロパティ名をリテラルのユニオン型にする"
 introduces: [keyof]
 requires: [型エイリアス, オブジェクト, プロパティ, ユニオン型, リテラル型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-2-2
 # keyof型演算子
 
-TypeScript入門研修 — Module 6 / レッスン6-2
+TypeScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: 型からプロパティ名の一覧を取り出す演算子です。次のトピックで、前の演算子と組み合わせます。 -->
 

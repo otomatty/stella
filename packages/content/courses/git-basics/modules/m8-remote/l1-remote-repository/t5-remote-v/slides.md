@@ -4,7 +4,7 @@ title: remote -vで確かめる
 takeaway: "git remote -v で、どのリモートと繋がっているかを確かめる"
 introduces: [remote, -v]
 requires: [リモート, origin, URL, clone]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-1-5
 # remote -vで確かめる
 
-Git入門研修 — Module 8 / レッスン8-1
+Git入門 — Module 8 / レッスン8-1
 
 <!-- ノート: リモート編の現在地確認コマンドです。statusと同じで、困ったらまず確かめる系のコマンドです。 -->
 

@@ -4,7 +4,7 @@ title: 引用符そのものを文字列に入れる
 takeaway: "囲みと別の引用符を使うか、\\でエスケープすれば引用符自体を書ける"
 introduces: [エスケープ, シングルクォート]
 requires: [文字列, 引用符, ダブルクォート, 構文エラー]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-1-3
 # 引用符そのものを文字列に入れる
 
-JavaScript入門研修 — Module 2 / レッスン2-1
+JavaScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 引用符の入れ子問題です。頻度は高くないですが、はまると長い定番のつまずきです。 -->
 

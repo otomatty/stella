@@ -246,7 +246,7 @@ describe("前提ステージの保護 (非公開 / 削除)", () => {
       stageFixture({
         id: "stage-css",
         slug: "modern-css-basics",
-        title: "モダンCSS 入門研修",
+        title: "モダンCSS 入門",
         prerequisites: '["html-css-basics"]',
       }),
     ];
@@ -258,14 +258,14 @@ describe("前提ステージの保護 (非公開 / 削除)", () => {
       body: JSON.stringify({ status: "draft" }),
     });
     expect(res.status).toBe(409);
-    expect(((await res.json()) as { error: string }).error).toContain("モダンCSS 入門研修");
+    expect(((await res.json()) as { error: string }).error).toContain("モダンCSS 入門");
     expect(state.updated).toEqual([]);
   });
 
   it("依存する公開ステージがあると削除できない (409)", async () => {
     const res = await request("/api/cms/stages/stage-html", { method: "DELETE" });
     expect(res.status).toBe(409);
-    expect(((await res.json()) as { error: string }).error).toContain("モダンCSS 入門研修");
+    expect(((await res.json()) as { error: string }).error).toContain("モダンCSS 入門");
   });
 
   it("依存側が非公開なら止めない", async () => {

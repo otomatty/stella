@@ -4,7 +4,7 @@ title: 型とは何か
 takeaway: "型とは、その変数に入れてよい値の種類のこと"
 introduces: [number, string, boolean]
 requires: [型, 変数, 代入]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-2-1
 # 型とは何か
 
-TypeScript入門研修 — Module 1 / レッスン1-2
+TypeScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: レッスン1-1では変数の作り方を学びました。ここからは、その変数に「何を入れてよいか」を決める仕組みに入ります。TypeScriptという名前の由来そのものです。 -->
 

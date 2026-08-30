@@ -4,7 +4,7 @@ title: SQL文の基本ルール
 takeaway: "SQL文はキーワードの組み合わせで書き、セミコロンで終える"
 introduces: [SQL文, キーワード, セミコロン]
 requires: [SQL, データベース]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 0-1-3
 # SQL文の基本ルール
 
-SQL入門研修 — Module 0 / レッスン0-1
+SQL入門 — Module 0 / レッスン0-1
 
 <!-- ノート: SQLが「頼むための言語」だと分かったところで、その頼みごと1つぶんの書き方のルールを覚えます。 -->
 

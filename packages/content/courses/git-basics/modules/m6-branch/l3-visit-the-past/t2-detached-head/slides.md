@@ -4,7 +4,7 @@ title: detached HEADは見学モード
 takeaway: "detached HEAD は「どの枝にも居ない見学モード」の表示(壊れていない)"
 introduces: [detached HEAD]
 requires: [HEAD, --detach, ブランチ, status]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-3-2
 # detached HEADは見学モード
 
-Git入門研修 — Module 6 / レッスン6-3
+Git入門 — Module 6 / レッスン6-3
 
 <!-- ノート: 過去を開いた直後に出る英語の表示が今回の主役です。初見で全員が不安になる表示なので、正体を先に知っておきます。 -->
 

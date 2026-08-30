@@ -4,7 +4,7 @@ title: オーバーライド
 takeaway: "子クラスで同じ名前のメソッドを書くと、親の実装を上書きできる"
 introduces: [オーバーライド]
 requires: [継承, メソッド, 親クラス, 子クラス, super, 戻り値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-3-3
 # オーバーライド
 
-TypeScript入門研修 — Module 7 / レッスン7-3
+TypeScript入門 — Module 7 / レッスン7-3
 
 <!-- ノート: 継承のいちばん実用的な使い方です。共通部分を受け継ぎつつ、違う部分だけを差し替えます。 -->
 

@@ -4,7 +4,7 @@ title: タグで囲んで要素を作る
 takeaway: "HTMLは、開始タグと終了タグで中身を囲んで要素を作る"
 introduces: [タグ, 開始タグ, 終了タグ, 要素]
 requires: [HTML, 中身]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-1-1
 # タグで囲んで要素を作る
 
-HTML/CSS入門研修 — Module 1 / レッスン1-1
+HTML/CSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: ここからHTMLの文法に入ります。この講座でいちばん基本になる書き方です。 -->
 

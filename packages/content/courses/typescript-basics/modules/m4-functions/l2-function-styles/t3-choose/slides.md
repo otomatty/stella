@@ -4,7 +4,7 @@ title: 3つの書き方をどう選ぶか
 takeaway: "本研修はアロー関数を基本にする。関数宣言も読めれば十分"
 introduces: []
 requires: [関数宣言, 関数式, アロー関数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-2-3
 # 3つの書き方をどう選ぶか
 
-TypeScript入門研修 — Module 4 / レッスン4-2
+TypeScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: レッスン4-2の最後です。3つ出そろったので、迷わないための基準を1つだけ決めます。 -->
 

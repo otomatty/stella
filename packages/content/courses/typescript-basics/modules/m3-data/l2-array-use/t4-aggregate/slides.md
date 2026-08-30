@@ -4,7 +4,7 @@ title: 繰り返しで集計する
 takeaway: "集計は、ループの外に置いたletの変数に足し込んでいく"
 introduces: []
 requires: [for-of, let, 再代入, number, スコープ]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-2-4
 # 繰り返しで集計する
 
-TypeScript入門研修 — Module 3 / レッスン3-2
+TypeScript入門 — Module 3 / レッスン3-2
 
 <!-- ノート: レッスン3-2の最後です。繰り返しの応用として、実務でいちばん多い使い方を1つ押さえます。 -->
 

@@ -1,0 +1,14 @@
+{
+  "title": "npm とビルドツール入門",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】パッケージマネージャとビルドツールで、現場と同じ開発環境を組み立てる研修。",
+  "header": "npm とビルドツール入門",
+  "tenantId": "ses",
+  "prerequisites": ["git-basics"],
+  "canDo": "npm でパッケージを導入し、ビルドツールで開発サーバーと本番ビルドを動かせる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

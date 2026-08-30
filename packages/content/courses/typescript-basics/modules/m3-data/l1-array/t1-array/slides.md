@@ -4,7 +4,7 @@ title: 配列とは
 takeaway: "配列は、同じ種類の値を順番に並べて1つにまとめたもの"
 introduces: [配列, 要素, 配列リテラル]
 requires: [値, 変数, 型注釈, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-1-1
 # 配列とは
 
-TypeScript入門研修 — Module 3 / レッスン3-1
+TypeScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: Module 3では、値をまとめて扱う方法に入ります。ここまでは変数1つに値1つでしたが、実務のデータはほとんどがまとまりです。 -->
 

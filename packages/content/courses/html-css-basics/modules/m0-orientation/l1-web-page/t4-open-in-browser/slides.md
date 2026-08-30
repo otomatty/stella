@@ -4,7 +4,7 @@ title: 保存して開けばすぐ試せる
 takeaway: "HTMLファイルは保存してブラウザーで開けば、その場で結果を確認できる"
 introduces: [拡張子, 保存, 再読み込み]
 requires: [ファイル, ブラウザー, HTML]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 0-1-4
 # 保存して開けばすぐ試せる
 
-HTML/CSS入門研修 — Module 0 / レッスン0-1
+HTML/CSS入門 — Module 0 / レッスン0-1
 
 <!-- ノート: レッスン0-1の最後です。ここから先、自分で手を動かすための道具立てを揃えます。 -->
 

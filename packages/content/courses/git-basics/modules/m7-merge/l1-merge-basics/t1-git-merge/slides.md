@@ -4,7 +4,7 @@ title: git mergeで取り込む
 takeaway: "git merge 枝名 は、その枝の変更を「今いる枝」へ取り込む"
 introduces: [merge, マージ]
 requires: [ブランチ, main, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-1-1
 # git mergeで取り込む
 
-Git入門研修 — Module 7 / レッスン7-1
+Git入門 — Module 7 / レッスン7-1
 
 <!-- ノート: Module 7 の最初のトピックです。枝を分けて積んだ変更を、いよいよ合流させます。 -->
 

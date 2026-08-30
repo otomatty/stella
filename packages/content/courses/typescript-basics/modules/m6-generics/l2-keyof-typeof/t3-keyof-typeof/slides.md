@@ -4,7 +4,7 @@ title: keyof typeof
 takeaway: "keyof typeof で、値から直接プロパティ名の型を作れる"
 introduces: []
 requires: [keyof, typeof型演算子, リテラル型, ユニオン型, as const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-2-3
 # keyof typeof
 
-TypeScript入門研修 — Module 6 / レッスン6-2
+TypeScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: 2つの演算子を組み合わせます。実務で最もよく見る形なので、ここは確実に読めるようにします。 -->
 

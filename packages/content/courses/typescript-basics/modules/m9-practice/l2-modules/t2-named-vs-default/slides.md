@@ -4,7 +4,7 @@ title: 名前付きとデフォルト
 takeaway: "本研修は名前付きエクスポートを基本にする。名前が固定されるため"
 introduces: [名前付きエクスポート, デフォルトエクスポート]
 requires: [export, import, モジュール]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-2-2
 # 名前付きとデフォルト
 
-TypeScript入門研修 — Module 9 / レッスン9-2
+TypeScript入門 — Module 9 / レッスン9-2
 
 <!-- ノート: exportの2つ目の書き方です。他人のコードで必ず見かけるので、読めるようにしておきます。 -->
 

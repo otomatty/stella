@@ -4,7 +4,7 @@ title: GitHubでリポジトリを作る
 takeaway: "GitHub で空のリポジトリを作ると、共有用の URL が手に入る"
 introduces: [URL]
 requires: [GitHub, リモート, リポジトリ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-1-2
 # GitHubでリポジトリを作る
 
-Git入門研修 — Module 8 / レッスン8-1
+Git入門 — Module 8 / レッスン8-1
 
 <!-- ノート: リモートの置き場をGitHub上に実際に用意する手順です。画面操作は少しだけで、覚えるのは1つです。 -->
 

@@ -4,7 +4,7 @@ title: git restoreで戻す
 takeaway: "git restore ファイル名 で、作業中の変更を捨てて最後のコミットに戻せる"
 introduces: [restore]
 requires: [コミット, 変更, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-1-1
 # git restoreで戻す
 
-Git入門研修 — Module 5 / レッスン5-1
+Git入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 「やり直す」モジュールの最初のトピックです。まずはコミット前の編集を捨てて戻す方法を1つだけ覚えます。 -->
 

@@ -4,7 +4,7 @@ title: git branchで一覧する
 takeaway: "git branch でブランチを一覧でき、今いる場所に * が付く"
 introduces: [branch]
 requires: [ブランチ, main, コマンド]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-2-1
 # git branchで一覧する
 
-Git入門研修 — Module 6 / レッスン6-2
+Git入門 — Module 6 / レッスン6-2
 
 <!-- ノート: このレッスンからブランチをコマンドで操作します。最初は現在地の確認から。statusと同じで、迷ったらまず見るコマンドです。 -->
 

@@ -4,7 +4,7 @@ title: マージコミット
 takeaway: "二股に育った枝は、両方を親に持つマージコミットで束ねられる"
 introduces: [マージコミット]
 requires: [マージ, コミット, ブランチ, main]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-1-4
 # マージコミット
 
-Git入門研修 — Module 7 / レッスン7-1
+Git入門 — Module 7 / レッスン7-1
 
 <!-- ノート: fast-forwardできない場合、つまり枝が二股に育った場合の合流のしかたです。 -->
 

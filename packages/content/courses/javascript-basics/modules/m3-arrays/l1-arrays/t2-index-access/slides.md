@@ -4,7 +4,7 @@ title: 番号で読み書きする
 takeaway: "配列[インデックス]で要素を読み書きでき、番号は0から数える"
 introduces: []
 requires: [配列, インデックス, 0始まり, 代入]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 3-1-2
 # 番号で読み書きする
 
-JavaScript入門研修 — Module 3 / レッスン3-1
+JavaScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: sliceで学んだ0始まりのインデックスが、配列でそのまま使えることを示すトピックです。 -->
 

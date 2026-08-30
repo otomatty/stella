@@ -4,7 +4,7 @@ title: privateで隠す
 takeaway: "privateを付けたプロパティは、クラスの外から触れなくなる"
 introduces: [カプセル化, アクセス修飾子, private, public]
 requires: [クラス, プロパティ, メソッド, this]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-2-1
 # privateで隠す
 
-TypeScript入門研修 — Module 7 / レッスン7-2
+TypeScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: レッスン7-2はカプセル化です。クラスの本当の価値は、実はここにあります。 -->
 

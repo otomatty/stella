@@ -4,7 +4,7 @@ title: ブランチの一生
 takeaway: "「作る → 積む → 合流 → 消す」がブランチの一生"
 introduces: []
 requires: [ブランチ, switch, -c, merge, branch, -d]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-3-3
 # ブランチの一生
 
-Git入門研修 — Module 7 / レッスン7-3
+Git入門 — Module 7 / レッスン7-3
 
 <!-- ノート: Module 6と7のまとめにあたるトピックです。ブランチの操作を1つの流れとして覚えます。 -->
 

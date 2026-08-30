@@ -4,7 +4,7 @@ title: メソッド
 takeaway: "クラスの中に書いた関数をメソッドと呼び、thisで自分のデータを使える"
 introduces: [メソッド]
 requires: [クラス, this, 関数, 戻り値, プロパティ, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-1-4
 # メソッド
 
-TypeScript入門研修 — Module 7 / レッスン7-1
+TypeScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: レッスン7-1の最後です。クラスの「処理」の部分を扱います。これでデータと処理が1つにまとまります。 -->
 

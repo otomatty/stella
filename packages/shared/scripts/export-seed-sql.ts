@@ -123,8 +123,9 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
       : "null";
   const canDo = stage.canDo ? `'${esc(stage.canDo)}'` : "null";
   const theme = stage.theme ? `'${esc(stage.theme)}'` : "null";
+  const parent = stage.parent ? `'${esc(stage.parent)}'` : "null";
   lines.push(
-    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, duration_hours, description, instructor_name, status, prerequisites, can_do, theme${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${canDo}, ${theme}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) do update set title = excluded.title, category = excluded.category, color = excluded.color, thumbnail_path = excluded.thumbnail_path, duration_hours = excluded.duration_hours, description = excluded.description, instructor_name = excluded.instructor_name, status = excluded.status, prerequisites = excluded.prerequisites, can_do = excluded.can_do, theme = excluded.theme, updated_at = ${nowExpr()};`,
+    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, icon_path, duration_hours, description, instructor_name, status, prerequisites, parent, can_do, theme${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.iconPath ? `'${esc(stage.iconPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${parent}, ${canDo}, ${theme}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) do update set title = excluded.title, category = excluded.category, color = excluded.color, thumbnail_path = excluded.thumbnail_path, icon_path = excluded.icon_path, duration_hours = excluded.duration_hours, description = excluded.description, instructor_name = excluded.instructor_name, status = excluded.status, prerequisites = excluded.prerequisites, parent = excluded.parent, can_do = excluded.can_do, theme = excluded.theme, updated_at = ${nowExpr()};`,
   );
 
   // stage 行は slug で upsert し、セクション配下はステージ id がこの seed の安定
@@ -198,7 +199,7 @@ function sqlIn(ids: string[]): string {
 }
 
 /** かつて seed していたデモ講座。再 seed で本番カタログから落とす。
- *  git-basics は同じ slug を教材講座(Git 入門研修)が再利用したため、ここには載せない。
+ *  git-basics は同じ slug を教材講座(Git 入門)が再利用したため、ここには載せない。
  *  安定 UUID が同一なので、載せると upsert 直後に新講座ごと消えてしまう。 */
 const RETIRED_DEMO_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   { tenantId: "ses", slug: "web-fundamentals" },
@@ -585,7 +586,7 @@ if (!contentOnly) {
   }
 
   lines.push(
-    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${tsLessonId}', 'S0-Ch00-01-print-hello', 'TypeScript 入門研修', ${strLit(tsStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
+    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${tsLessonId}', 'S0-Ch00-01-print-hello', 'TypeScript 入門', ${strLit(tsStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
   );
 }
 

@@ -4,7 +4,7 @@ title: dialogは既定で閉じている
 takeaway: "dialogは既定で閉じていて、開くまでページに表示されない"
 introduces: [ダイアログ]
 requires: [HTML骨格, 開閉]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-2-1
 # dialogは既定で閉じている
 
-UI部品入門研修 — Module 4 / レッスン4-2
+UI部品入門 — Module 4 / レッスン4-2
 
 <!-- ノート: Module 4 の2つ目です。確認や入力を、いったん受け止める面を作ります。 -->
 

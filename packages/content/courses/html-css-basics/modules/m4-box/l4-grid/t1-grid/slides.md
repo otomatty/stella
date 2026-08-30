@@ -4,7 +4,7 @@ title: display gridは格子に並べる
 takeaway: "親にdisplay: gridとgrid-template-columnsを書くと、子が決めた列数の格子に並ぶ"
 introduces: [グリッド, grid, grid-template-columns]
 requires: [display, 親要素, 子要素, 列, 行, flex, gap]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-4-1
 # display gridは格子に並べる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-4
+HTML/CSS入門 — Module 4 / レッスン4-4
 
 <!-- ノート: Flex は1方向でした。ここからは縦横をまとめて決める仕組みに入ります。 -->
 

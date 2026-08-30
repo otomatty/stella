@@ -4,7 +4,7 @@ title: switch -cで作って移る
 takeaway: "git switch -c 名前 で、新しいブランチを作ってそこへ移る"
 introduces: [switch, -c]
 requires: [ブランチ, main, オプション]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-2-2
 # switch -cで作って移る
 
-Git入門研修 — Module 6 / レッスン6-2
+Git入門 — Module 6 / レッスン6-2
 
 <!-- ノート: いよいよブランチを作ります。作る操作と移る操作を1コマンドで済ませる、実務でいちばんよく打つ形から覚えます。 -->
 

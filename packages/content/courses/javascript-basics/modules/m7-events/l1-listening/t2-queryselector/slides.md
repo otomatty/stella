@@ -4,7 +4,7 @@ title: querySelectorで相手の要素を取る
 takeaway: "document.querySelector()で、ページの要素を1つ取ってこられる"
 introduces: [document, querySelector, セレクター]
 requires: [要素, タグ, const, メソッド]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-1-2
 # querySelectorで相手の要素を取る
 
-JavaScript入門研修 — Module 7 / レッスン7-1
+JavaScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: JavaScriptとHTMLが初めてつながる瞬間です。最小限の取り方だけ扱い、深掘りはM8で行います。 -->
 

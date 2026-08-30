@@ -4,7 +4,7 @@ title: 分割代入引数
 takeaway: "引数の位置に分割代入を書くと、受け取ってすぐ中身を使える"
 introduces: []
 requires: [分割代入, 引数, 型エイリアス, アロー関数, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-6-2
 # 分割代入引数
 
-TypeScript入門研修 — Module 4 / レッスン4-6
+TypeScript入門 — Module 4 / レッスン4-6
 
 <!-- ノート: 分割代入は関数の引数でも使えます。次のトピックのパターンを組み立てる部品になります。 -->
 

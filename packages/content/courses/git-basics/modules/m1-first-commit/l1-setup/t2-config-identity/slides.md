@@ -4,7 +4,7 @@ title: 名乗りを設定する
 takeaway: "git config でユーザー名とメールを設定する(すべてのコミットに刻まれる)"
 introduces: [config, "--global", コミット]
 requires: [Git, コマンド, 記録, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-1-2
 # 名乗りを設定する
 
-Git入門研修 — Module 1 / レッスン1-1
+Git入門 — Module 1 / レッスン1-1
 
 <!-- ノート: Gitが使えると分かったら、次は「自分は誰か」を設定します。記録を始める前の必須の準備です。 -->
 

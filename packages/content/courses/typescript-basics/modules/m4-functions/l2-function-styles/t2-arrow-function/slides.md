@@ -4,7 +4,7 @@ title: アロー関数
 takeaway: "アロー関数は「引数 => 処理」と書く、関数式の短い書き方"
 introduces: [アロー関数]
 requires: [関数式, 引数, return, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-2-2
 # アロー関数
 
-TypeScript入門研修 — Module 4 / レッスン4-2
+TypeScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: 3つ目の書き方です。現代のTypeScriptでいちばんよく見る形なので、確実に読めるようにします。 -->
 

@@ -4,7 +4,7 @@ title: 条件分岐で型が確定する
 takeaway: "ifで値の有無を確かめると、そのブロックの中では型が確定する"
 introduces: [絞り込み]
 requires: [if, ユニオン型, undefined, strictNullChecks, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-3-2
 # 条件分岐で型が確定する
 
-TypeScript入門研修 — Module 2 / レッスン2-3
+TypeScript入門 — Module 2 / レッスン2-3
 
 <!-- ノート: レッスン1-6の最後に「値があるか確かめてから使う書き方はModule 2で学ぶ」と予告しました。その回収がここです。 -->
 

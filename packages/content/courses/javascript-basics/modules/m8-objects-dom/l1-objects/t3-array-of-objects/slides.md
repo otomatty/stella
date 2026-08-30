@@ -4,7 +4,7 @@ title: オブジェクトの配列が実務のデータ形
 takeaway: "実務のデータは、同じ形のオブジェクトを配列に並べた形で扱うことが多い"
 introduces: []
 requires: [オブジェクト, 配列, for...of, プロパティ, filter]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-1-3
 # オブジェクトの配列が実務のデータ形
 
-JavaScript入門研修 — Module 8 / レッスン8-1
+JavaScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: 新しい構文ゼロの統合トピックです。配列×オブジェクト×ループ×filterが一気につながります。 -->
 

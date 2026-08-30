@@ -4,7 +4,7 @@ title: INNER JOINでテーブルをつなぐ
 takeaway: "INNER JOIN ... ON で、IDが一致する行どうしをつなげて取り出せる"
 introduces: [JOIN, INNER JOIN, ON, 結合]
 requires: [ID, SELECT, FROM]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 4-1-2
 # INNER JOINでテーブルをつなぐ
 
-SQL入門研修 — Module 4 / レッスン4-1
+SQL入門 — Module 4 / レッスン4-1
 
 <!-- ノート: テーブルを分けたら、今度はつなげて見る番です。この研修で一番大きな山場ですが、書き方の型は1つだけです。 -->
 

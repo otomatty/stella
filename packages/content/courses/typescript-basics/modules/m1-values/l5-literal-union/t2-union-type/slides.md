@@ -4,7 +4,7 @@ title: ユニオン型
 takeaway: "型を「|」でつなぐと「AまたはB」を表せる"
 introduces: [ユニオン型]
 requires: [型注釈, 型, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-5-2
 # ユニオン型
 
-TypeScript入門研修 — Module 1 / レッスン1-5
+TypeScript入門 — Module 1 / レッスン1-5
 
 <!-- ノート: 前のトピックで、値そのものを型にできることを知りました。ここでは型を組み合わせる道具を1つ覚えます。 -->
 

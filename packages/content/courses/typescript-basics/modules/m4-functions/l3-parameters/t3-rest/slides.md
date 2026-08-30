@@ -4,7 +4,7 @@ title: 残余引数
 takeaway: "引数の前に「...」を付けると、残りをすべて配列で受け取れる"
 introduces: [残余引数]
 requires: [引数, 配列, for-of, 型注釈, length]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-3-3
 # 残余引数
 
-TypeScript入門研修 — Module 4 / レッスン4-3
+TypeScript入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 引数の個数が決まっていないときの書き方です。使う場面は限られますが、読めないと詰まるので押さえます。 -->
 

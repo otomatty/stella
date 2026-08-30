@@ -4,7 +4,7 @@ title: 今いる場所を確かめる
 takeaway: "pwd と ls で「今どこに居て、何があるか」を確かめる"
 introduces: [pwd, ls]
 requires: [ターミナル, コマンド, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-3-2
 # 今いる場所を確かめる
 
-Git入門研修 — Module 0 / レッスン0-3
+Git入門 — Module 0 / レッスン0-3
 
 <!-- ノート: ターミナルで最初に覚えるのは、操作ではなく「現在地の確認」です。コマンドを2つ導入します。 -->
 

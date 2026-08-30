@@ -4,7 +4,7 @@ title: emは読み方が変わる強調
 takeaway: "文の中で読み方が変わるほど強めたい語句はemで囲む"
 introduces: [em, 強調]
 requires: [要素, 段落, タグ, 中身]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-4-1
 # emは読み方が変わる強調
 
-HTML/CSS入門研修 — Module 1 / レッスン1-4
+HTML/CSS入門 — Module 1 / レッスン1-4
 
 <!-- ノート: 領域から文の中へ降りてきます。ここからは語句1つ単位の印です。 -->
 

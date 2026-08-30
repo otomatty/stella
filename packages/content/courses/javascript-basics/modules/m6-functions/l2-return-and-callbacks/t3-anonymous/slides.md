@@ -4,7 +4,7 @@ title: 名前のない関数をその場で書ける
 takeaway: "関数は名前を付けずに書いて、値として引数に渡せる"
 introduces: [無名関数, コールバック]
 requires: [関数, function, 引数, 変数, 配列]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-2-3
 # 名前のない関数をその場で書ける
 
-JavaScript入門研修 — Module 6 / レッスン6-2
+JavaScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: 「関数も値」という抽象度の高い一歩です。イベント(M7)とmap/filterの前提になります。 -->
 

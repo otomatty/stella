@@ -4,7 +4,7 @@ title: max-widthで伸び縮みさせる
 takeaway: "widthの代わりにmax-widthを使うと、狭い画面でははみ出さずに縮む"
 introduces: [max-width, 可変幅]
 requires: [幅, ボックス, 画像, ビューポート, 中央寄せ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-6-2
 # max-widthで伸び縮みさせる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-6
+HTML/CSS入門 — Module 4 / レッスン4-6
 
 <!-- ノート: viewport を書いても、幅を px で決め打っていると、はみ出しは直りません。 -->
 

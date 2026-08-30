@@ -14,6 +14,7 @@ import { and, count, countDistinct, desc, eq, gte, inArray, max } from "drizzle-
 import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
 import type { SkillMapStage } from "@falcon/shared/skill-map/evaluate";
 import type { FocusCompletion } from "@falcon/shared/skill-map/focus";
+import { filterIslandStages } from "@falcon/shared/skill-map/islands";
 import { toStudyDate } from "@falcon/shared/study/activity";
 
 import type { Db } from "../db/client.js";
@@ -77,6 +78,52 @@ export function parsePrerequisites(raw: string | null): string[] {
   }
 }
 
+/**
+ * 開発モードか (`Env.DEV_MODE`)。ローカル開発専用 — 本番には設定しない。
+ *
+ * 真なのは **開発者表示を出せる** こと。実際に出すかはリクエストヘッダ
+ * (`shouldRevealDevMap`) で、画面の FAB がオンのときだけ島を全配信し霧を明かする。
+ * 解放条件はそのまま — 見えるだけで locked の星は開かない。
+ */
+export function isDevMode(env: { DEV_MODE?: string }): boolean {
+  return env.DEV_MODE === "1" || env.DEV_MODE === "true";
+}
+
+/**
+ * クライアントが開発者表示を要求するヘッダ。値は `"1"` / `"0"`。
+ * 本番では `isDevMode` が偽なので、ヘッダを付けても無視する。
+ */
+export const DEV_MODE_HEADER = "X-Falcon-Dev-Mode";
+
+/**
+ * このリクエストで島を全配信し、霧の星も名前を明かしていいか。
+ *
+ * env オフ → 常に否。env オン + ヘッダ `"0"` / `"false"` → 否 (FAB オフ)。
+ * env オン + ヘッダ未指定は真 — 以前は env だけで出していた互換。
+ */
+export function shouldRevealDevMap(
+  env: { DEV_MODE?: string },
+  header: string | undefined,
+): boolean {
+  if (!isDevMode(env)) return false;
+  if (header === "0" || header === "false") return false;
+  return true;
+}
+
+/** Hono コンテキストから開発者表示フラグを読む。 */
+export function wantsDevReveal(c: {
+  env: { DEV_MODE?: string };
+  req: { header: (name: string) => string | undefined };
+}): boolean {
+  return shouldRevealDevMap(c.env, c.req.header(DEV_MODE_HEADER));
+}
+
+/** `loadSkillMapSource` の読み方の調整。 */
+export interface SkillMapLoadOptions {
+  /** 島の表示条件を無視して全ステージを返す (開発モード)。 */
+  showAllIslands?: boolean;
+}
+
 export interface SkillMapSource {
   stages: SkillMapStage[];
   clearedStageIds: Set<string>;
@@ -98,7 +145,11 @@ export interface SkillMapSource {
 }
 
 /** 呼び出し学習者ぶんの評価器入力を D1 から組み立てる。 */
-export async function loadSkillMapSource(db: Db, caller: Caller): Promise<SkillMapSource> {
+export async function loadSkillMapSource(
+  db: Db,
+  caller: Caller,
+  opts?: SkillMapLoadOptions,
+): Promise<SkillMapSource> {
   const stageRows = await db
     .select({
       id: stages.id,
@@ -106,8 +157,10 @@ export async function loadSkillMapSource(db: Db, caller: Caller): Promise<SkillM
       title: stages.title,
       category: stages.category,
       prerequisites: stages.prerequisites,
+      parent: stages.parent,
       canDo: stages.canDo,
       theme: stages.theme,
+      iconPath: stages.iconPath,
     })
     .from(stages)
     .where(and(eq(stages.tenantId, caller.tenantId), eq(stages.status, "published")));
@@ -117,15 +170,25 @@ export async function loadSkillMapSource(db: Db, caller: Caller): Promise<SkillM
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
   const active = await resolveActiveStage(db, caller, clearedStageIds, enrolledStageIds);
 
+  // 島 (資格 / AI) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
+  // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
+  // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
+  // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。
+  const visibleRows = opts?.showAllIslands
+    ? stageRows
+    : filterIslandStages(stageRows, clearedStageIds);
+
   return {
-    stages: stageRows.map((row) => ({
+    stages: visibleRows.map((row) => ({
       id: row.id,
       slug: row.slug,
       title: row.title,
       category: row.category ?? "",
       prerequisites: parsePrerequisites(row.prerequisites),
+      ...(row.parent ? { parent: row.parent } : {}),
       ...(row.canDo ? { canDo: row.canDo } : {}),
       ...(row.theme ? { theme: row.theme } : {}),
+      ...(row.iconPath ? { iconPath: row.iconPath } : {}),
     })),
     clearedStageIds,
     enrolledStageIds,

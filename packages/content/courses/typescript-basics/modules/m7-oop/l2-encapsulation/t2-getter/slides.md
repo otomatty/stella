@@ -4,7 +4,7 @@ title: getterで読み取り専用の窓口を作る
 takeaway: "getを付けたメソッドは、プロパティのように読める読み取り専用の窓口になる"
 introduces: [getter]
 requires: [private, メソッド, this, 戻り値, ドット記法, クラス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-2-2
 # getterで読み取り専用の窓口を作る
 
-TypeScript入門研修 — Module 7 / レッスン7-2
+TypeScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: privateで隠すと、外から値が読めなくなります。読むだけは許したい、という場面のための仕組みです。 -->
 

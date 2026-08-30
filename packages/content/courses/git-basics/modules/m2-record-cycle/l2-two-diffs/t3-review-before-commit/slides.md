@@ -4,7 +4,7 @@ title: コミット前にdiffを読む
 takeaway: "コミットの直前に diff --staged を読む習慣が、入れ間違いを防ぐ"
 introduces: []
 requires: [diff, --staged, commit, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-2-3
 # コミット前にdiffを読む
 
-Git入門研修 — Module 2 / レッスン2-2
+Git入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 2つのdiffを覚えた仕上げとして、実務で一番効く使いどころを習慣にします。 -->
 

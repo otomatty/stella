@@ -4,7 +4,7 @@ title: 配列は値を順番に並べる
 takeaway: "配列は[]で作り、複数の値を順番に持てる"
 introduces: [配列]
 requires: [値, 変数, const, 文字列]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 3-1-1
 # 配列は値を順番に並べる
 
-JavaScript入門研修 — Module 3 / レッスン3-1
+JavaScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 配列の導入です。「値が1つずつでは足りない」場面から入ります。 -->
 

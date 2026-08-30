@@ -4,7 +4,7 @@ title: git rmは削除の記録
 takeaway: "git rm は「このファイルを消した」という変更を記録する"
 introduces: [rm]
 requires: [変更, 記録, status, commit]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-3-1
 # git rmは削除の記録
 
-Git入門研修 — Module 2 / レッスン2-3
+Git入門 — Module 2 / レッスン2-3
 
 <!-- ノート: このレッスンでは、書き換え以外の変更を扱います。まずはファイルの削除です。 -->
 

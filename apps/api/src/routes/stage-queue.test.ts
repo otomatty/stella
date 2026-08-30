@@ -43,6 +43,10 @@ vi.mock("../lib/stage-queue-data.js", () => ({
 }));
 
 vi.mock("../lib/skill-map-data.js", () => ({
+  // 開発モードはテストでは常に無効 (本番挙動を検証する)。
+  isDevMode: () => false,
+  wantsDevReveal: () => false,
+  shouldRevealDevMap: () => false,
   loadSkillMapSource: vi.fn(),
   loadSkillProfileCounts: vi.fn(),
   loadStudyDays: vi.fn(),

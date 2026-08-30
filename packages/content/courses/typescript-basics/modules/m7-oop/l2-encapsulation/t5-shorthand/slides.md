@@ -4,7 +4,7 @@ title: コンストラクタショートハンド
 takeaway: "コンストラクタの引数に修飾子を付けると、宣言と代入を省略できる"
 introduces: []
 requires: [コンストラクタ, private, readonly, プロパティ, this, クラス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-2-5
 # コンストラクタショートハンド
 
-TypeScript入門研修 — Module 7 / レッスン7-2
+TypeScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: レッスン7-2の最後です。TypeScriptにしかない省略記法を1つ覚えます。実務のコードで頻繁に見かけます。 -->
 

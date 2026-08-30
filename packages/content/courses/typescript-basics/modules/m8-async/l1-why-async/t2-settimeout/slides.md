@@ -4,7 +4,7 @@ title: setTimeoutで後回しにする
 takeaway: "非同期処理は、時間のかかる仕事を後回しにして先に進む"
 introduces: [setTimeout, 非同期処理]
 requires: [コールバック, アロー関数, シングルスレッド, 同期処理, 引数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-1-2
 # setTimeoutで後回しにする
 
-TypeScript入門研修 — Module 8 / レッスン8-1
+TypeScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: 待たずに進む仕組みです。Module 4で学んだコールバックが、ここで本領を発揮します。 -->
 

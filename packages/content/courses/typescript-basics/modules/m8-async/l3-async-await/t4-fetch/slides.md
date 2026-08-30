@@ -4,7 +4,7 @@ title: fetchでAPIを呼ぶ
 takeaway: "fetchで取得したデータは型が保証されないので、自分で型を決めて扱う"
 introduces: [fetch]
 requires: [await, async, 型エイリアス, unknown, try, catch, Promise]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-3-4
 # fetchでAPIを呼ぶ
 
-TypeScript入門研修 — Module 8 / レッスン8-3
+TypeScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: Module 8の最後のトピックです。ここまでの道具をすべて使って、実務そのままのコードを書きます。 -->
 

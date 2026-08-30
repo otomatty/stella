@@ -4,7 +4,7 @@ title: Prettier
 takeaway: "Prettierはコードの見た目を自動で揃える。書式の議論をなくす道具"
 introduces: [Prettier, フォーマッター]
 requires: [ダブルクォート, ターミナル, npm, package.json]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-4-1
 # Prettier
 
-TypeScript入門研修 — Module 9 / レッスン9-4
+TypeScript入門 — Module 9 / レッスン9-4
 
 <!-- ノート: 研修最後のレッスンです。チームで開発するための道具を2つ扱います。まずは書式を揃えるほうから。 -->
 

@@ -4,7 +4,7 @@ title: ナビのリンクの状態を描く
 takeaway: "ナビのリンクは&:hoverで色を変え、&:focus-visibleで枠を出す"
 introduces: []
 requires: [ナビゲーション, 状態, ":focus-visible"]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-1-4
 # ナビのリンクの状態を描く
 
-UI部品入門研修 — Module 2 / レッスン2-1
+UI部品入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 4段階目です。前のトピックで下線を消したので、その代わりを用意します。 -->
 

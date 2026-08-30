@@ -4,7 +4,7 @@ title: 1PR1目的
 takeaway: "1つのPRには1つの目的だけ(小さいほど早く取り込まれる)"
 introduces: []
 requires: [PR, レビュー, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-1-3
 # 1PR1目的
 
-Git入門研修 — Module 9 / レッスン9-1
+Git入門 — Module 9 / レッスン9-1
 
 <!-- ノート: PRの流れが分かったところで、1つのPRに入れる変更の量の話をします。コミットの「1目的」と同じ考え方です。 -->
 

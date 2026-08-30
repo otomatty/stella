@@ -4,7 +4,7 @@ title: mainは完成の置き場
 takeaway: "main は既定のブランチで、完成した状態を置く場所"
 introduces: [main]
 requires: [ブランチ, コミット, init]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-1-2
 # mainは完成の置き場
 
-Git入門研修 — Module 6 / レッスン6-1
+Git入門 — Module 6 / レッスン6-1
 
 <!-- ノート: ブランチという言葉を覚えた直後に、実はもうずっと1本のブランチの上に居た、という種明かしをします。 -->
 

@@ -4,7 +4,7 @@ title: breakとcontinueで流れを変える
 takeaway: "breakはループ全体を抜け、continueはその回だけ飛ばす"
 introduces: [continue]
 requires: [ループ, break, if, for...of]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 5-1-5
 # breakとcontinueで流れを変える
 
-JavaScript入門研修 — Module 5 / レッスン5-1
+JavaScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: switchで学んだbreakがループでも使える、という再会のトピックです。 -->
 

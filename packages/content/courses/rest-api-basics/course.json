@@ -1,0 +1,14 @@
+{
+  "title": "HTTP と REST API 入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】フロントエンドとサーバーをつなぐ API を、設計から実装まで学ぶ研修。",
+  "header": "HTTP と REST API 入門",
+  "tenantId": "ses",
+  "prerequisites": ["typescript-node-basics"],
+  "canDo": "HTTP の仕組みを説明し、REST API を設計して Node.js で実装できる",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

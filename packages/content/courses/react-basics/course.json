@@ -1,0 +1,15 @@
+{
+  "title": "React 入門",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】コンポーネント指向のフレームワークで画面を部品として組み立てる研修。",
+  "header": "React 入門",
+  "tenantId": "ses",
+  "prerequisites": ["typescript-basics", "npm-build-basics"],
+  "parent": "npm-build-basics",
+  "canDo": "React のコンポーネントと状態管理で、対話的な画面を組み立てられる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

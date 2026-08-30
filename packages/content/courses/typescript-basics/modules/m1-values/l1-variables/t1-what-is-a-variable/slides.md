@@ -4,7 +4,7 @@ title: 変数とは
 takeaway: "変数は、値に名前を付けて後から呼び出す仕組み"
 introduces: [変数, 宣言, 代入, 参照]
 requires: [値, プログラム]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-1-1
 # 変数とは
 
-TypeScript入門研修 — Module 1 / レッスン1-1
+TypeScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: Module 0ではTypeScriptの概要とPlaygroundの使い方を見ました。ここからいよいよコードを書きます。最初のテーマは、すべてのプログラムの土台になる「変数」です。 -->
 

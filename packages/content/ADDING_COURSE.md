@@ -18,6 +18,9 @@ packages/content/courses/<slug>/
         ├─ thumbnail.webp                （任意。一覧カードのサムネイル）
         │         └── upload-materials ──► R2 ＋ seed ──► D1: courses.thumbnail_path
         │
+        ├─ icon.svg                      （任意。スキルツリーの星に出す単色アイコン）
+        │         └── upload-materials ──► R2 ＋ seed ──► D1: stages.icon_path
+        │
         └─ modules/**/assets/*.svg
                   └── upload-materials ──► R2
 ```
@@ -32,6 +35,7 @@ packages/content/courses/<slug>/
 | --- | --- |
 | `course.json` | コース（タイトル・説明） |
 | `thumbnail.webp` / `.png` / `.jpg` | 一覧カードのサムネイル（任意） |
+| `icon.svg` | スキルツリーの星に出す講座アイコン（任意） |
 | モジュールディレクトリ | セクション |
 | トピックの `slides.md` | レッスン（slides） |
 | `doc.md` | レッスン（text、まとめ） |
@@ -46,8 +50,8 @@ packages/content/courses/<slug>/
 | 項目 | 例 | 使われる場所 |
 | --- | --- | --- |
 | ディレクトリ名 = slug | `python-basics` | D1 `courses.slug`、安定 UUID、R2 パス |
-| 表示名 | Python 入門研修 | `course.json` の `title` |
-| header | `Python入門研修` | 各 `slides.md` の front-matter |
+| 表示名 | Python 入門 | `course.json` の `title` |
+| header | `Python入門` | 各 `slides.md` の front-matter |
 
 slug は後から変えない。変えるとコース UUID が変わり、進捗が切れる。既存の `typescript-basics` と並べて置く。
 
@@ -75,11 +79,11 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 
 ```json
 {
-  "title": "Python 入門研修",
+  "title": "Python 入門",
   "category": "プログラミング",
   "color": "indigo",
   "description": "未経験からの Python 研修。",
-  "header": "Python入門研修",
+  "header": "Python入門",
   "tenantId": "ses",
   "modules": {
     "m0-orientation": "M0. オリエンテーション"
@@ -89,22 +93,25 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 
 `color` は `indigo` / `green` / `amber` / `slate`。`tenantId` はいま seed が `ses` に載せる前提です。
 
-#### スキルツリー用の 3 つの任意フィールド
+#### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の 3 つの任意フィールドが決めます。値は manifest → seed 経由で D1 `stages.prerequisites` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |
-| `prerequisites` | slug の配列 | **ハードロック**。挙げた講座を全部クリアするまで、この講座は開けない |
+| `prerequisites` | slug の配列 | **ハードロック（解放条件）**。挙げた講座を全部クリアするまで、この講座は開けない。見た目の複製 (`appearances`) で扇ごとに前提を分けるときは和集合を書き、組は `appearancePrerequisites` へ |
+| `parent` | slug | **線を引く親**。`prerequisites` のうちの 1 つ。ツリーの線・配置・霧の距離はこの 1 本で決まる（1 つの星に線は 1 本しか入らない）。前提が 2 つ以上なら**必須**、1 つなら省略可（その 1 つが親）、0 なら書けない。線の無い前提も解放条件としては効き、ロック中の星の「解放条件」に名前で出る |
 | `canDo` | 1 文 | ホバーの到達説明「このスキルを身につけた人は◯◯ができる」 |
 | `theme` | 短い語 | まだ見えていないスキルに、タイトルの代わりに見せるテーマ名 |
 
 - `prerequisites` に書けるのは、その講座の `CURRICULUM.md` に**前提講座として散文で明記されているもの**だけです。「推奨」「任意」「想定する受講順」はゲートではないので書きません。書いた瞬間に、前提を終えていない受講者は講座を開けなくなります
-- 存在しない slug・自己参照・循環は `bun run content:check`（manifest ビルド）で落ちます
+- `parent` は「この講座はどの講座の続きとして描くか」です。前提を後から足しても線は動きません（並び順に意味を持たせない）。複製 (`appearances`) を持つ講座は `parent` を書けず、`appearancePrerequisites.<扇>` にちょうど 1 つ書いた slug がその扇の親になります
+- **1 つの星から出る枝は最大 2 本**です（スキルツリーの見た目）。3 本以上になるなら直列化する。島（資格 / AI）への橋は線を引かないのでこの上限に入れない
+- 存在しない slug・自己参照・循環・`parent` の不整合は `bun run content:check`（manifest ビルド）で落ちます
 - `canDo` は「〜できる」で終える 1 文。誇張しない（資格講座で合格を保証しない）
 - `theme` はカテゴリ単位でそろえます（講座ごとに凝った名前を付けない）。まだ見えない範囲では同じテーマのスキルが同じ名前で並ぶのが正です。省略するとまだ見えない範囲では `？？？` と表示されます（名前の無いスキルにはしない）
 - 前提に挙げられた講座は、依存側が公開中のあいだ **非公開にも削除もできません**（CMS が 409 で止めます）。順序を変えるときは依存側の `prerequisites` を先に外します
-- 3 つとも省略できます。省略した講座は「前提なし・到達説明なし・テーマなし」として扱われます
+- 全部省略できます。省略した講座は「前提なし・到達説明なし・テーマなし」として扱われます
 
 ### 3. カリキュラムを書いてから教材を置く
 
@@ -208,6 +215,20 @@ python packages/content/scripts/build_thumbnails.py <slug>     # 引数なしで
 - R2 のキーは内容ハッシュ入り（`tenant/<tenantId>/courses/<slug>/thumbnail-<hash>.webp`）。差し替えれば URL ごと変わるので、CDN / ブラウザのキャッシュに阻まれない
 - 古い世代のオブジェクトは `bun run r2:orphans` の棚卸しに出る（参照されるのは最新の 1 件だけ）
 - 反映は `main` への push だけでよい。デプロイが R2 へ流してから seed が D1 を更新する
+
+#### スキルツリーのアイコン（任意）
+
+講座ディレクトリ直下に `icon.svg` を置くと、スキルツリーの星（解放済み・進行中・クリア）の中がその講座のアイコンになる。置かなければ状態グリフ（★/▶/✨）のまま。ロックの星は 🔒 のまま、霧の星にはサーバがキーを渡さない（アイコンの形は講座の正体を語るため、slug と同じ秘匿ルール）。
+
+```text
+packages/content/courses/<slug>/icon.svg
+```
+
+- **単色シルエットで描く。** 画面は `<img>` ではなく CSS `mask-image` + `currentColor` で塗るので、SVG 側の色は捨てられ**アルファだけ**が使われる。色をハードコードしない（`fill="currentColor"` / `stroke="currentColor"`）。将来ライトモードを足すときも SVG は触らず、テーマ側の文字色の差し替えだけで追従する
+- **白抜きは効かない。** 黒丸の中に白いチェックを描いても、マスクでは塗りつぶしの円 1 つになる。中の記号は輪郭線で描くか、`fill-rule="evenodd"` で穴を開ける
+- `viewBox="0 0 24 24"`、線幅 1.5〜2.2。星の中で 16px（中心の星は 22px）に縮むので、図形は 1〜3 個に絞る
+- モチーフはサムネイル（`build_thumbnails.py` の `motif_*`）の「核」を 1 図形に単純化したもの（Git = ブランチ合流、SQL = 行が抜き出る表、科目A = 3×3 の格子）。サムネイルと同じ発想を継承してシリーズ感を保つ。外部ロゴは使わない
+- R2 のキーはサムネイルと同じく内容ハッシュ入り（`tenant/<tenantId>/courses/<slug>/icon-<hash>.svg`）で、`upload-materials.ts` がサムネイルと一緒に流す。反映は `main` への push だけでよい
 
 ### 7. ドキュメント
 

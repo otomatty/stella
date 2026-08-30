@@ -4,6 +4,7 @@
  */
 export {
   Home,
+  ArrowUp,
   BookOpen as Book,
   Play,
   Pause,

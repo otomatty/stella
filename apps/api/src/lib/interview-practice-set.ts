@@ -327,7 +327,7 @@ export async function recordPracticeSetAnswer(args: {
 }): Promise<PracticeSetRow | null> {
   for (let attempt = 0; attempt < ANSWER_WRITE_ATTEMPTS; attempt++) {
     const set = await loadPracticeSetById(args.db, args.tenantId, args.profileId, args.setId);
-    if (!set || set.status !== "active") return null;
+    if (set?.status !== "active") return null;
     if (!set.questionNos.includes(args.questionNo)) return set;
 
     const completedNos = withNo(set.completedNos, args.questionNo);

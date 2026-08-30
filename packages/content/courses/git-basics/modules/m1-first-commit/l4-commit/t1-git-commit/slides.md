@@ -4,7 +4,7 @@ title: git commitで記録する
 takeaway: 'git commit -m "メッセージ" で、記録が1つ増える'
 introduces: ["-m", コミットメッセージ]
 requires: [commit, add, ステージングエリア, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-4-1
 # git commitで記録する
 
-Git入門研修 — Module 1 / レッスン1-4
+Git入門 — Module 1 / レッスン1-4
 
 <!-- ノート: いよいよ2段階の2段目、はじめてのコミットを作ります。 -->
 

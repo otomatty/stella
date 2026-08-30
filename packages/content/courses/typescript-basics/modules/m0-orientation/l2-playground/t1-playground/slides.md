@@ -4,7 +4,7 @@ title: Playgroundで書き始める
 takeaway: "Playgroundを開けば、インストールなしでTypeScriptを書いて動かせる"
 introduces: [Playground]
 requires: [TypeScript, コンパイル]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-2-1
 # Playgroundで書き始める
 
-TypeScript入門研修 — Module 0 / レッスン0-2
+TypeScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: レッスン0-2では、実際にコードを書く場所を用意します。この研修はModule 8まで、ここだけで完結します。 -->
 

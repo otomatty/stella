@@ -4,7 +4,7 @@ title: strongは重要さの印
 takeaway: "読み飛ばされると困るほど重要な語句はstrongで囲む"
 introduces: [strong, 重要]
 requires: [em, 強調, 要素, 段落]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-4-2
 # strongは重要さの印
 
-HTML/CSS入門研修 — Module 1 / レッスン1-4
+HTML/CSS入門 — Module 1 / レッスン1-4
 
 <!-- ノート: em と対になるトピックです。違いは「強く読むか」ではなく「重要か」。 -->
 

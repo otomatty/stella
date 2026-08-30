@@ -4,7 +4,7 @@ title: 番号は横並びで置く位置を決める
 takeaway: "ページ送りの番号はflexで横に並べ、justify-contentで置く位置を決める"
 introduces: []
 requires: [ページネーション]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-3-2
 # 番号は横並びで置く位置を決める
 
-UI部品入門研修 — Module 2 / レッスン2-3
+UI部品入門 — Module 2 / レッスン2-3
 
 <!-- ノート: 2段階目のレイアウトです。横に並べたあと、どこに置くかを決めます。 -->
 

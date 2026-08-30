@@ -4,7 +4,7 @@ title: 抽象クラス
 takeaway: "abstractを付けると、newできない代わりに実装を子クラスへ義務づけられる"
 introduces: [抽象クラス, abstract]
 requires: [継承, メソッド, new, 親クラス, 子クラス, オーバーライド]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-3-5
 # 抽象クラス
 
-TypeScript入門研修 — Module 7 / レッスン7-3
+TypeScript入門 — Module 7 / レッスン7-3
 
 <!-- ノート: レッスン7-3の最後です。継承を「約束」として使う書き方を1つ覚えます。 -->
 

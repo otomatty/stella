@@ -17,7 +17,7 @@
   <ol>
     <li><a href="/">ホーム</a></li>
     <li><a href="/courses">研修一覧</a></li>
-    <li>UI部品 入門研修</li>
+    <li>UI部品 入門</li>
   </ol>
 </nav>
 ```
@@ -117,7 +117,7 @@
 そこで、HTML 側に印を付けます。
 
 ```html
-<li aria-current="page">UI部品 入門研修</li>
+<li aria-current="page">UI部品 入門</li>
 ```
 
 `aria-current` は「この項目がいまの現在地だ」と機械に伝える属性です。値の `page` は「現在のページ」を意味します。

@@ -4,7 +4,7 @@ title: 配列とオブジェクトを組み合わせる
 takeaway: "実務のデータはほぼ「オブジェクトの配列」の形になる"
 introduces: []
 requires: [型エイリアス, 配列, オブジェクト, for-of, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-4-4
 # 配列とオブジェクトを組み合わせる
 
-TypeScript入門研修 — Module 3 / レッスン3-4
+TypeScript入門 — Module 3 / レッスン3-4
 
 <!-- ノート: Module 3の最後のトピックです。ここまでの道具をすべて合流させて、実務のデータの形を作ります。 -->
 

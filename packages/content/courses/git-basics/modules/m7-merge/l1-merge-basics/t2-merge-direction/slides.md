@@ -4,7 +4,7 @@ title: 取り込む側に移ってから
 takeaway: "merge は取り込む側で実行する(main へ入れるなら main に居る)"
 introduces: []
 requires: [merge, マージ, main, switch, ブランチ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-1-2
 # 取り込む側に移ってから
 
-Git入門研修 — Module 7 / レッスン7-1
+Git入門 — Module 7 / レッスン7-1
 
 <!-- ノート: mergeの向きの話です。初回のマージで一番間違えやすいポイントを1つだけ押さえます。 -->
 

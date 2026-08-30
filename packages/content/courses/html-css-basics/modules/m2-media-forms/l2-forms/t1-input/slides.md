@@ -4,7 +4,7 @@ title: inputは入力欄を作る
 takeaway: "inputはtype属性で種類が変わる、1つの入力欄を作るタグ"
 introduces: [入力欄, input, type]
 requires: [タグ, 属性, 属性値, img]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-2-1
 # inputは入力欄を作る
 
-HTML/CSS入門研修 — Module 2 / レッスン2-2
+HTML/CSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: ここから利用者に入力してもらう部品を扱います。申し込みフォームの部品です。 -->
 

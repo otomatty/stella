@@ -4,7 +4,7 @@ title: number型
 takeaway: "TypeScriptは整数と小数を区別しない。数値はすべてnumber型"
 introduces: [四則演算]
 requires: [number, 型注釈, 型推論]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-3-2
 # number型
 
-TypeScript入門研修 — Module 1 / レッスン1-3
+TypeScript入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 全体地図が頭に入ったので、いちばん出番の多いnumber型から見ていきます。 -->
 

@@ -1,13 +1,18 @@
 {
-  "title": "Git 入門研修",
-  "category": "プログラミング",
+  "title": "Git 入門",
+  "category": "基礎",
   "color": "slate",
   "description": "未経験からの Git 研修。変更の記録(commit)から履歴の読み方・やり直し・ブランチ・共有(push/pull)・プルリクエストまで、現場の基本操作を通す。",
-  "header": "Git入門研修",
+  "header": "Git入門",
   "tenantId": "ses",
-  "prerequisites": ["it-basics"],
+  "prerequisites": ["javascript-basics", "node-basics"],
   "canDo": "ブランチ・PR・レビューの往復を一人で回せる",
-  "theme": "Web とデータの実践",
+  "theme": "はじめの一歩",
+  "appearances": ["フロントエンド", "バックエンド"],
+  "appearancePrerequisites": {
+    "フロントエンド": ["javascript-basics"],
+    "バックエンド": ["node-basics"]
+  },
   "modules": {
     "m0-orientation": "M0. オリエンテーション",
     "m1-first-commit": "M1. はじめてのコミット",

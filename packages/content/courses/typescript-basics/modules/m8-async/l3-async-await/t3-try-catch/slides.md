@@ -4,7 +4,7 @@ title: async/awaitのエラー処理
 takeaway: "awaitした処理の失敗は、try-catchでそのまま受け止められる"
 introduces: []
 requires: [await, async, try, catch, unknown, instanceof, Error, reject]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-3-3
 # async/awaitのエラー処理
 
-TypeScript入門研修 — Module 8 / レッスン8-3
+TypeScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: 非同期のエラー処理です。5-4で学んだ道具が、そのまま使えます。新しい記法は出てきません。 -->
 

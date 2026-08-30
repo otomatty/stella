@@ -1,4 +1,4 @@
-# テスト設計と品質保証 入門研修(test-design-basics)実装計画
+# テスト設計と品質保証 入門(test-design-basics)実装計画
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -18,7 +18,7 @@
 
 - **1 トピック = 1 takeaway。** takeaway は CURRICULUM.md の表と一字一句同じ文を front-matter・「結論」スライド・「まとめ」スライド・doc.md の引用に使う
 - スライドは `---` 区切りで **4〜6 枚**(機械検査)。コード例は **5 行以内・Python**(` ```python `)
-- front-matter 必須: `id` / `title` / `takeaway` / `introduces` / `requires` / `header: "テスト設計入門研修"`
+- front-matter 必須: `id` / `title` / `takeaway` / `introduces` / `requires` / `header: "テスト設計入門"`
 - 語彙台帳: `requires` に書く語は、それより前(自然順)のトピックの `introduces` に必ずある(`check_vocab.mjs` が落とす)。同じ語を二重に `introduces` しない
 - 確認クイズ書式(崩すと seed が throw): `## 確認クイズ` 見出し + `### Q1.` / `- A.` / `<details><summary>答え</summary>` / `**B** — 解説` / `</details>`。**選択式 3〜5 問・選択肢 3 つ以上**。見出しや設問が無いと**黙って quiz が作られない**ので雛形からコピーする
 - 各レッスンに `doc.md` と `practice.md` は**必須**(無いと manifest が落ちる)
@@ -75,7 +75,7 @@ packages/content/courses/test-design-basics/modules/
 
 1. `mkdir -p packages/content/courses/test-design-basics/modules/<module>/<lesson>/<topic>` を全トピック分
 2. 各トピックの `slides.md`: `packages/content/templates/topic-slides-template.md` をコピーして埋める
-   - `header` は `"テスト設計入門研修"` 固定。takeaway は CURRICULUM.md の文をそのまま
+   - `header` は `"テスト設計入門"` 固定。takeaway は CURRICULUM.md の文をそのまま
    - 構成: つかみの問い → 結論(takeaway) → 最小のコード or 具体例 → 対比・失敗例 → まとめ(takeaway 再掲)の 5 枚を基本形とする
    - コードが無い概念トピック(7 原則・レベル・戦略系)は「最小のコード」枠を**実務の具体例 1 つ**(表・箇条書き)に差し替える
 3. レッスンの `doc.md`: `templates/doc-template.md` をコピー。トピックと 1:1 の見出し(`## X-Y-N タイトル`)+ takeaway 引用 + スライドと同じ例で再構成
@@ -101,11 +101,11 @@ packages/content/courses/test-design-basics/modules/
 
 ```json
 {
-  "title": "テスト設計と品質保証 入門研修",
+  "title": "テスト設計と品質保証 入門",
   "category": "プログラミング",
   "color": "green",
   "description": "仕様からテストケースを設計し、pytest のテストコードに落とし、何を自動化するかを根拠つきで提案できるようになる研修。",
-  "header": "テスト設計入門研修",
+  "header": "テスト設計入門",
   "tenantId": "ses",
   "modules": {
     "m1-foundations": "M1. テストの基礎",
@@ -213,7 +213,7 @@ bun run dev       # 別プロセス
 ```
 
 - [ ] **Step 2: LMS 上のチェックリスト**(`ADDING_COURSE.md` の確認チェックリスト準拠)
-  - コース一覧に「テスト設計と品質保証 入門研修」と既存 7 講座が全部出る
+  - コース一覧に「テスト設計と品質保証 入門」と既存 7 講座が全部出る
   - セクション順が M1 → M2 → M3(ディレクトリ順)
   - 各レッスンが スライド → まとめ → 確認クイズ の順で、**13 レッスン全部にクイズがある**(黙殺の目視確認)
   - クイズが解けて合格点 80

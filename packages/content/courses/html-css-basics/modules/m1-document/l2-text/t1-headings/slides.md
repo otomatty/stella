@@ -4,7 +4,7 @@ title: 見出しはh1〜h6で階層を作る
 takeaway: "見出しはh1〜h6の番号で、内容の階層を表す"
 introduces: [見出し, 階層]
 requires: [要素, body, タグ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-2-1
 # 見出しはh1〜h6で階層を作る
 
-HTML/CSS入門研修 — Module 1 / レッスン1-2
+HTML/CSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: ここから実際によく使う要素を種類ごとに見ていきます。まずは見出しです。 -->
 

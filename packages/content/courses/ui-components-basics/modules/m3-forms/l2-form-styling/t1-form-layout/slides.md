@@ -4,7 +4,7 @@ title: 1行1組で縦に積む
 takeaway: "フォームはラベルと入力欄を1組にして、縦に積んで並べる"
 introduces: []
 requires: [select, textarea, fieldset]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-2-1
 # 1行1組で縦に積む
 
-UI部品入門研修 — Module 3 / レッスン3-2
+UI部品入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 前のレッスンで作った骨格に、ここから見た目を当てます。まずレイアウトです。 -->
 

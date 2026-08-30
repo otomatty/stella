@@ -4,7 +4,7 @@ title: 三項演算子
 takeaway: "三項演算子は、条件によって「値を選ぶ」ときに使う"
 introduces: [三項演算子]
 requires: [if, else, 条件, boolean, const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-2-4
 # 三項演算子
 
-TypeScript入門研修 — Module 2 / レッスン2-2
+TypeScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: レッスン2-2の最後です。ifと似ていますが、用途がはっきり違う道具を1つ覚えます。 -->
 

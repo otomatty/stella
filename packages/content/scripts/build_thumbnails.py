@@ -583,43 +583,43 @@ SPECS = {
     "typescript-basics": {
         "title": "TypeScript",
         "title_size": 132,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_typescript,
     },
     "sql-basics": {
         "title": "SQL",
         "title_size": 168,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_sql,
     },
     "html-css-basics": {
         "title": "HTML / CSS",
         "title_size": 116,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_html_css,
     },
     "modern-css-basics": {
         "title": "モダンCSS",
         "title_size": 116,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_modern_css,
     },
     "ui-components-basics": {
         "title": "UI部品",
         "title_size": 148,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_ui_components,
     },
     "page-composition-basics": {
         "title": "ページ構成",
         "title_size": 116,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_page_composition,
     },
     "javascript-basics": {
         "title": "JavaScript",
         "title_size": 132,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_javascript,
     },
     "python-testing-ci-basics": {
@@ -631,13 +631,13 @@ SPECS = {
     "test-design-basics": {
         "title": "テスト設計",
         "title_size": 132,
-        "subtitle": "品質保証 入門研修",
+        "subtitle": "品質保証 入門",
         "motif": motif_test_design,
     },
     "git-basics": {
         "title": "Git",
         "title_size": 168,
-        "subtitle": "入門研修",
+        "subtitle": "入門",
         "motif": motif_git,
     },
     "fe-kamoku-a": {

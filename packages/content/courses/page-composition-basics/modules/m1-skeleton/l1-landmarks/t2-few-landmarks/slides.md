@@ -4,7 +4,7 @@ title: landmarkは増やしすぎない
 takeaway: "mainはページに1つだけにして、landmarkは骨格の大きな区切りだけに絞る"
 introduces: []
 requires: [landmark, main, ページ, 骨格]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 1-1-2
 # landmarkは増やしすぎない
 
-ページ構成入門研修 — Module 1 / レッスン1-1
+ページ構成入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 骨格の要素を覚えると、あちこちに使いたくなります。今回はその歯止めの話です。 -->
 

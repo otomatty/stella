@@ -4,7 +4,7 @@ title: void型
 takeaway: "値を返さない関数の戻り値の型はvoidと書く"
 introduces: [void]
 requires: [関数, 戻り値, return, 型注釈, console.log, undefined]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-4-1
 # void型
 
-TypeScript入門研修 — Module 4 / レッスン4-4
+TypeScript入門 — Module 4 / レッスン4-4
 
 <!-- ノート: レッスン4-4では戻り値の側を掘り下げます。まずは「返さない」場合の書き方から。 -->
 

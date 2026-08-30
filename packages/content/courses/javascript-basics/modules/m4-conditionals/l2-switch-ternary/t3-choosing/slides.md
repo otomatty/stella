@@ -4,7 +4,7 @@ title: 分岐の書き方を使い分ける
 takeaway: "迷ったらifを使い、値の一致が並ぶならswitch、値を選ぶだけなら三項演算子にする"
 introduces: []
 requires: [if, else if, switch, 三項演算子, 条件]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-2-3
 # 分岐の書き方を使い分ける
 
-JavaScript入門研修 — Module 4 / レッスン4-2
+JavaScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: モジュール4のまとめ役です。新しい構文は出しません。判断基準だけを扱います。 -->
 

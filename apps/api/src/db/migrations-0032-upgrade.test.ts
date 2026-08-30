@@ -91,14 +91,14 @@ describe("0032 (courses → stages) を既存データの入った DB に適用�
       insert into profiles (id, tenant_id, role, display_name, created_at)
         values ('u1', 'ses', 'student', 'Seed Learner', 1);
       insert into courses (id, tenant_id, slug, title, status, thumbnail_path, created_at, updated_at)
-        values ('c1', 'ses', 'typescript-basics', 'TypeScript 入門研修', 'published', '${THUMB}', 1, 1);
+        values ('c1', 'ses', 'typescript-basics', 'TypeScript 入門', 'published', '${THUMB}', 1, 1);
       insert into sections (id, course_id, title, "order", created_at)
         values ('s1', 'c1', 'M1', 0, 1);
       insert into enrollments (id, tenant_id, user_id, course_id, status, enrolled_at)
         values ('e1', 'ses', 'u1', 'c1', 'active', 1);
       insert into certificates
         (id, tenant_id, user_id, course_id, cert_code, course_title, recipient_name, tenant_name, criteria_snapshot, issued_at)
-        values ('cert1', 'ses', 'u1', 'c1', 'FLC-2026-AAAA-BBBB', 'TypeScript 入門研修', 'Seed Learner', 'SES', '{}', 1);
+        values ('cert1', 'ses', 'u1', 'c1', 'FLC-2026-AAAA-BBBB', 'TypeScript 入門', 'Seed Learner', 'SES', '{}', 1);
     `);
   });
 
@@ -121,7 +121,7 @@ describe("0032 (courses → stages) を既存データの入った DB に適用�
     });
     expect(
       db.prepare("select stage_id, stage_title from certificates where id = 'cert1'").get(),
-    ).toEqual({ stage_id: "c1", stage_title: "TypeScript 入門研修" });
+    ).toEqual({ stage_id: "c1", stage_title: "TypeScript 入門" });
 
     // 旧名の表は残らない。
     const tables = (

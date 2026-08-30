@@ -4,7 +4,7 @@ title: Untrackedの意味
 takeaway: "Untracked は「Gitがまだ見ていない新しいファイル」という意味"
 introduces: [Untracked]
 requires: [status, Git, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-2-3
 # Untrackedの意味
 
-Git入門研修 — Module 1 / レッスン1-2
+Git入門 — Module 1 / レッスン1-2
 
 <!-- ノート: statusの表示に最初に出てくる英単語を1つ読めるようにします。 -->
 

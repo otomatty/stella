@@ -4,7 +4,7 @@ title: CSSはセレクタと宣言で書く
 takeaway: "CSSは「どれに」を表すセレクタと、「何を」を表す宣言の組で書く"
 introduces: [セレクタ, 宣言, プロパティ, 値]
 requires: [CSS, 見た目, 要素]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-1-1
 # CSSはセレクタと宣言で書く
 
-HTML/CSS入門研修 — Module 3 / レッスン3-1
+HTML/CSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: ここから見た目の担当に入ります。まずCSSの文の形を固定します。 -->
 

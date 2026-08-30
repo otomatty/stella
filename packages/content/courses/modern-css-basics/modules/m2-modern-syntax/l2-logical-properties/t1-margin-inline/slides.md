@@ -4,7 +4,7 @@ title: 余白は流れの向きで書ける
 takeaway: "margin-inlineは、文章が流れる向きを基準に左右の余白をまとめて指定する"
 introduces: [論理プロパティ, margin-inline]
 requires: []
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 2-2-1
 # 余白は流れの向きで書ける
 
-モダンCSS入門研修 — Module 2 / レッスン2-2
+モダンCSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: このレッスンは、上下左右の代わりに「文章の流れる向き」で書く新しい語彙です。 -->
 

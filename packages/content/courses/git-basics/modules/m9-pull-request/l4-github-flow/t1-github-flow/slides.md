@@ -4,7 +4,7 @@ title: GitHub Flowとは
 takeaway: "GitHub Flow は「main から枝を出し、PR で戻す」の繰り返し"
 introduces: [GitHub Flow]
 requires: [main, ブランチ, PR, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-4-1
 # GitHub Flowとは
 
-Git入門研修 — Module 9 / レッスン9-4
+Git入門 — Module 9 / レッスン9-4
 
 <!-- ノート: Module 9の仕上げです。ここまで学んだ1周の流れに、実は名前が付いています。それを押さえるのがこのレッスンです。 -->
 

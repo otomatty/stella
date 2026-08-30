@@ -4,7 +4,7 @@ title: mainは常に動く状態
 takeaway: "main は常に動く状態に保つ(だから main へ直接 push しない)"
 introduces: []
 requires: [main, push, PR, レビュー, GitHub Flow]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-4-2
 # mainは常に動く状態
 
-Git入門研修 — Module 9 / レッスン9-4
+Git入門 — Module 9 / レッスン9-4
 
 <!-- ノート: GitHub Flowを支える約束事の話です。なぜ全員がわざわざPRを経由するのか、その理由がここにあります。 -->
 

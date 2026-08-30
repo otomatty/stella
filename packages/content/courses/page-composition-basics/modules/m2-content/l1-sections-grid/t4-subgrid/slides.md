@@ -4,7 +4,7 @@ title: subgridで行の高さをそろえる
 takeaway: "隣のカードと行の高さをそろえたいときは、subgridで親のgridの行を借りる"
 introduces: [subgrid, 行]
 requires: [カード, grid, 見出し]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 2-1-4
 # subgridで行の高さをそろえる
 
-ページ構成入門研修 — Module 2 / レッスン2-1
+ページ構成入門 — Module 2 / レッスン2-1
 
 <!-- ノート: カードの集合の仕上げです。使わなくても崩れない、そろえたいときの上積みです。 -->
 

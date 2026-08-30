@@ -4,7 +4,7 @@ title: ReadonlyとRecord
 takeaway: "Readonlyは全プロパティを読み取り専用に、Recordは対応表の型を作る"
 introduces: [Readonly, Record]
 requires: [ユーティリティ型, readonly, オブジェクト, リテラル型, ユニオン型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-3-4
 # ReadonlyとRecord
 
-TypeScript入門研修 — Module 6 / レッスン6-3
+TypeScript入門 — Module 6 / レッスン6-3
 
 <!-- ノート: Module 6の最後のトピックです。実務で頻出のユーティリティ型を2つ、まとめて押さえます。 -->
 

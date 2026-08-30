@@ -4,7 +4,7 @@ title: 無限ループは更新忘れで起きる
 takeaway: "条件を偽にする更新を書き忘れると、ループは止まらなくなる"
 introduces: [無限ループ]
 requires: [while, 更新, 条件, for]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 5-1-4
 # 無限ループは更新忘れで起きる
 
-JavaScript入門研修 — Module 5 / レッスン5-1
+JavaScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: ループ最大の事故を安全に予習するトピックです。実際に踏ませるかは環境次第で判断。 -->
 

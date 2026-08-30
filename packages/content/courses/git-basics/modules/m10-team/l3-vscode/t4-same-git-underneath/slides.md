@@ -4,7 +4,7 @@ title: 裏では同じGit
 takeaway: "GUI の操作は裏では同じ Git(意味はこの研修で覚えたコマンドと同じ)"
 introduces: []
 requires: [ソース管理ビュー, add, commit, ターミナル]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-3-4
 # 裏では同じGit
 
-Git入門研修 — Module 10 / レッスン10-3
+Git入門 — Module 10 / レッスン10-3
 
 <!-- ノート: ボタンで add も commit もコンフリクト解決もできると分かりました。最後に、この画面とコマンドの関係を整理します。 -->
 

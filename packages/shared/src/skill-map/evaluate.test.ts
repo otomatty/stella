@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   UNKNOWN_PREREQUISITE_LABEL,
   evaluateSkillMap,
+  parentSlugOf,
   type SkillMapResult,
   type SkillMapStage,
 } from "./evaluate.js";
@@ -145,6 +146,46 @@ describe("evaluateSkillMap — 分岐 (前提が複数)", () => {
 });
 
 describe("evaluateSkillMap — 視界", () => {
+  /**
+   * root → a, root → b → c, x は a と c の両方を要求するが線 (parent) は c から。
+   * root と a をクリア: 起点は root / a / b (b は unlocked)。
+   */
+  const merge = (parent: string | undefined): SkillMapStage[] => [
+    stage("root"),
+    stage("a", ["root"]),
+    stage("b", ["root"]),
+    stage("c", ["b"]),
+    stage("x", ["a", "c"], parent === undefined ? {} : { parent }),
+  ];
+
+  it("視界は親の辺だけで伸びる (線の無い前提からは近づかない)", () => {
+    const r = evaluateSkillMap({
+      stages: merge("c"),
+      clearedStageIds: new Set([id("root"), id("a")]),
+    });
+    // 解放は AND のまま: a はクリア済みでも c が残っている。
+    expect(r.states.get(id("x"))).toBe("locked");
+    expect(reasonLabels(r, id("x"))).toEqual(["c の講座"]);
+    // 視界は c 経由だけ: b (起点) → c = 1 歩 → x = 2 歩。a から直接は近づかない。
+    expect(r.visibility.get(id("c"))).toBe("full");
+    expect(r.visibility.get(id("x"))).toBe("name-only");
+  });
+
+  it("parent 省略時は前提の先頭を親に倒す (CMS 由来の行の互換)", () => {
+    const r = evaluateSkillMap({
+      stages: merge(undefined),
+      clearedStageIds: new Set([id("root"), id("a")]),
+    });
+    // 先頭 = a が親。a (起点) → x = 1 歩。
+    expect(r.visibility.get(id("x"))).toBe("full");
+  });
+
+  it("parentSlugOf は parent → 前提の先頭 → undefined の順", () => {
+    expect(parentSlugOf({ parent: "c", prerequisites: ["a", "c"] })).toBe("c");
+    expect(parentSlugOf({ prerequisites: ["a", "c"] })).toBe("a");
+    expect(parentSlugOf({ prerequisites: [] })).toBeUndefined();
+  });
+
   it("起点から 0・1 歩は full、2 歩目は name-only、3 歩目以降は fog", () => {
     const r = evaluateSkillMap({ stages: line, clearedStageIds: new Set() });
     // a が unlocked (= 起点、距離 0)。
@@ -358,5 +399,74 @@ describe("evaluateSkillMap — slug の重複", () => {
 
     const newCleared = evaluateSkillMap({ stages, clearedStageIds: new Set(["id-dup-new"]) });
     expect(newCleared.states.get(id("next"))).toBe("unlocked");
+  });
+});
+
+describe("evaluateSkillMap — 扇ごとの前提 (appearances)", () => {
+  // Git と同じ形: D1 の prerequisites は和集合、開く条件は扇の組のどれか 1 つ (OR)。
+  const dual: SkillMapStage[] = [
+    stage("it-basics", [], { category: "基礎", title: "ITのきほん" }),
+    stage("html-css-basics", ["it-basics"], {
+      category: "フロントエンド",
+      title: "HTML/CSS 入門",
+    }),
+    stage("javascript-basics", ["html-css-basics"], {
+      category: "フロントエンド",
+      title: "JavaScript 入門",
+    }),
+    stage("cli-basics", ["it-basics"], {
+      category: "バックエンド",
+      title: "コマンドライン入門",
+    }),
+    stage("docker-basics", ["cli-basics"], { category: "バックエンド", title: "Docker 入門" }),
+    stage("node-basics", ["docker-basics"], {
+      category: "バックエンド",
+      title: "Node.js 入門",
+    }),
+    stage("git-basics", ["javascript-basics", "node-basics"], {
+      category: "基礎",
+      title: "Git 入門",
+    }),
+  ];
+
+  it("どちらも埋まっていなければ Git は開かない", () => {
+    const r = evaluateSkillMap({
+      stages: dual,
+      clearedStageIds: new Set([id("it-basics")]),
+    });
+    expect(r.states.get(id("git-basics"))).toBe("locked");
+  });
+
+  it("JavaScript だけクリアすれば Git は開く (フロントの組)", () => {
+    const r = evaluateSkillMap({
+      stages: dual,
+      clearedStageIds: new Set([id("it-basics"), id("html-css-basics"), id("javascript-basics")]),
+    });
+    expect(r.states.get(id("git-basics"))).toBe("unlocked");
+    expect(r.states.get(id("node-basics"))).toBe("locked");
+  });
+
+  it("Node.js だけクリアすれば Git は開く (バックの組)", () => {
+    const r = evaluateSkillMap({
+      stages: dual,
+      clearedStageIds: new Set([
+        id("it-basics"),
+        id("cli-basics"),
+        id("docker-basics"),
+        id("node-basics"),
+      ]),
+    });
+    expect(r.states.get(id("git-basics"))).toBe("unlocked");
+    expect(r.states.get(id("javascript-basics"))).toBe("locked");
+  });
+
+  it("片方の扇で開いても、満たしていない扇の前提へ視界が漏れない", () => {
+    const r = evaluateSkillMap({
+      stages: dual,
+      clearedStageIds: new Set([id("it-basics"), id("html-css-basics"), id("javascript-basics")]),
+    });
+    expect(r.states.get(id("git-basics"))).toBe("unlocked");
+    // Git が起点になっても Node へ橋を渡さない。it → cli → docker で Node は 2 歩 = name-only。
+    expect(r.visibility.get(id("node-basics"))).toBe("name-only");
   });
 });

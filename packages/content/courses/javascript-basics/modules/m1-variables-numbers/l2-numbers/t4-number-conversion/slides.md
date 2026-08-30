@@ -4,7 +4,7 @@ title: 文字列の数字はNumberで数値にする
 takeaway: "文字列の数字は、Number()で数値にしてから計算する"
 introduces: [Number, 変換]
 requires: [文字列, 数値, 算術演算子, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-2-4
 # 文字列の数字はNumberで数値にする
 
-JavaScript入門研修 — Module 1 / レッスン1-2
+JavaScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 「入力は文字列で届く」という、後の入力欄(M8)まで効く実務の落とし穴を先に踏んでおきます。 -->
 

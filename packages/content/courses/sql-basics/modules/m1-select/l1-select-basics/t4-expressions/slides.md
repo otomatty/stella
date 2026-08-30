@@ -4,7 +4,7 @@ title: 式もSELECTできる
 takeaway: "SELECT では列そのものだけでなく、計算した結果も取り出せる"
 introduces: [式]
 requires: [SELECT, AS, 列, 結果]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 1-1-4
 # 式もSELECTできる
 
-SQL入門研修 — Module 1 / レッスン1-1
+SQL入門 — Module 1 / レッスン1-1
 
 <!-- ノート: SELECTの締めくくりです。列をそのまま出すだけでなく、計算してから出せることを覚えます。 -->
 

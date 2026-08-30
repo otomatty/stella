@@ -4,7 +4,7 @@ title: 最新のmainから出す
 takeaway: "作業を始める前に main を pull してから、そこで枝を出す"
 introduces: []
 requires: [main, pull, switch, -c]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-2-2
 # 最新のmainから出す
 
-Git入門研修 — Module 10 / レッスン10-2
+Git入門 — Module 10 / レッスン10-2
 
 <!-- ノート: 名前の次は出発点です。枝をどこから出すか、作業を始めるときの型を1つ覚えます。 -->
 

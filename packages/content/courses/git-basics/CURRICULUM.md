@@ -1,4 +1,4 @@
-# Git 入門研修 カリキュラム
+# Git 入門 カリキュラム
 
 SES 未経験者向けの Git 操作入門講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
 「なぜ履歴が要るのか」から始めて、記録(commit)→ 読む(log/diff)→ やり直す → ブランチ → マージ →
@@ -7,7 +7,7 @@ SES 未経験者向けの Git 操作入門講座です。1 トピック = 覚え
 - Web(LMS): スライド視聴・まとめ・確認クイズ(合格点 80)で完走する
 - ハンズオン: `practice.md` に「手元の VS Code ターミナルで試す」手順を書く(自動採点はしない)
 - Git サンドボックス・コマンド自動採点は対象外(Issue #122 の方針)
-- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
+- 前提講座: **扇ごと**。フロントエンドの星は **JavaScript 入門 (`javascript-basics`)**、バックエンドの星は **Node.js 入門 (`node-basics`)** をクリアすると開きます (`course.json` の `appearancePrerequisites`)。実体は 1 講座のまま、スキルツリーでは両ルートの扇に星を出します (`appearances`)。クリアは共有です。どちらか一方のルートだけ進んでも Git を始められます (組どうしは OR)。HTML/CSS や ITのきほんだけは前提にしません。フロントの後続は準備中の **npm とビルドツール入門 (`npm-build-basics`)**。
 
 ## 設計方針
 
@@ -376,7 +376,7 @@ Issue #122 の 5 モジュール案(M0〜M4)を骨格として、1 トピック 
 ## 実装メモ(ADDING_COURSE.md 準拠)
 
 - slug: `git-basics` / 置き場: `packages/content/courses/git-basics/`
-- `course.json`: `header` = `Git入門研修`、`tenantId` = `ses`、`color` = `slate`、`modules` に上記 11 モジュールの表示名
+- `course.json`: `header` = `Git入門`、`tenantId` = `ses`、`color` = `slate`、`appearances` = フロントエンド / バックエンド（ツリー上の複製。実体は 1 講座）、`appearancePrerequisites` = FE は `javascript-basics` / BE は `node-basics`（`prerequisites` はその和集合）、`modules` に上記 11 モジュールの表示名
 - 旧デモ講座の削除は安定 UUID(`course:ses:git-basics`)のみ。CMS の別 ID コースは消さない(#119)
 - 各レッスン: スライド(`slides.md`)→ まとめ(`doc.md`)→ 確認クイズ(`practice.md`、合格点 80)
 - 確認クイズは「次に打つコマンドはどれか」形式を基本にする

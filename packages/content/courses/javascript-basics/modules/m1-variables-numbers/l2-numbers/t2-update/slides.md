@@ -4,7 +4,7 @@ title: 変数の値を更新する
 takeaway: "今の値を使った計算の結果を、同じ変数に入れ直せる"
 introduces: [更新, +=]
 requires: [変数, let, 再代入, 算術演算子]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-2-2
 # 変数の値を更新する
 
-JavaScript入門研修 — Module 1 / レッスン1-2
+JavaScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: count = count + 1 という、初見では奇妙に見える形を腹落ちさせるトピックです。 -->
 

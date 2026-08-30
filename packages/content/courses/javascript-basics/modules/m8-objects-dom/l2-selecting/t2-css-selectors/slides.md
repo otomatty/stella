@@ -4,7 +4,7 @@ title: querySelectorはCSSのセレクターで選ぶ
 takeaway: "querySelectorには、classやidなどCSSと同じセレクターが書ける"
 introduces: [class, id]
 requires: [querySelector, セレクター, DOM, CSS, タグ]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-2-2
 # querySelectorはCSSのセレクターで選ぶ
 
-JavaScript入門研修 — Module 8 / レッスン8-2
+JavaScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: M7ではタグ名だけでしたが、CSSで学んだセレクターがフルに使えることを明かします。 -->
 

@@ -4,7 +4,7 @@ title: important は最後の手段
 takeaway: "!importantは順序も詳細度も飛び越えて勝つので、最後の手段にする"
 introduces: [important]
 requires: [詳細度, カスケード, 上書き, 宣言, プロパティ, クラスセレクタ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-2-4
 # important は最後の手段
 
-HTML/CSS入門研修 — Module 3 / レッスン3-2
+HTML/CSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 勝ち負けの仕組みを3つ見てきました。最後に、その仕組みごと飛び越える書き方を扱います。 -->
 

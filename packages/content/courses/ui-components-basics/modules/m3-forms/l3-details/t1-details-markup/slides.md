@@ -4,7 +4,7 @@ title: detailsはJavaScriptなしで開閉する
 takeaway: "detailsとsummaryは、JavaScriptなしで開閉できる部品を作る"
 introduces: [details, summary, 開閉]
 requires: [HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-3-1
 # detailsはJavaScriptなしで開閉する
 
-UI部品入門研修 — Module 3 / レッスン3-3
+UI部品入門 — Module 3 / レッスン3-3
 
 <!-- ノート: Module 3 の最後は開閉です。ここからは、HTMLだけで動く部品を扱います。 -->
 

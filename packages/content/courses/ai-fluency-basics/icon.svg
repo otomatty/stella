@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 4 つの局面を回す: 2×2 のマスと今いる 1 マス (thumbnail の motif_ai_fluency の核)。 -->
+  <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" fill="currentColor"/>
+  <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+</svg>

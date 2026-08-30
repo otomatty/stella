@@ -4,7 +4,7 @@ title: returnは関数をそこで終える
 takeaway: "returnした時点で関数は終わり、後ろの行は実行されない"
 introduces: [早期リターン]
 requires: [return, 関数, if, 戻り値]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-2-2
 # returnは関数をそこで終える
 
-JavaScript入門研修 — Module 6 / レッスン6-2
+JavaScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: returnの終了作用と、それを活かした早期リターンのスタイルを扱います。 -->
 

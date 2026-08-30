@@ -1,13 +1,13 @@
 {
-  "title": "モダンCSS 入門研修",
-  "category": "プログラミング",
+  "title": "モダンCSS 入門",
+  "category": "フロントエンド",
   "color": "green",
   "description": "HTML/CSS 入門で作った 1 枚のページを、新しい部品を足さずに現代の書き方でやり直す中間研修。終了時には、:root に置いたデザイントークン(カスタムプロパティ)と、oklch()・color-mix() の色、入れ子のセレクタ、論理プロパティ、clamp() の流体タイプ、:focus-visible を使って、既存ページの見た目だけをトークン経由で作り直せる。",
-  "header": "モダンCSS入門研修",
+  "header": "モダンCSS入門",
   "tenantId": "ses",
   "prerequisites": ["html-css-basics"],
   "canDo": "既存ページの見た目を、トークンと現代の CSS で作り直せる",
-  "theme": "Web とデータの実践",
+  "theme": "Web の見た目と動き",
   "modules": {
     "m1-tokens": "M1. デザイントークン",
     "m2-modern-syntax": "M2. 現代の書き方",

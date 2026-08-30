@@ -4,7 +4,7 @@ title: DOMはHTMLを木として持つ
 takeaway: "ブラウザーはHTMLをDOMという木の形で持ち、JavaScriptはそれを書き換える"
 introduces: [DOM, DOMツリー, ノード]
 requires: [ブラウザー, HTML, JavaScript, 要素, document]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-2-1
 # DOMはHTMLを木として持つ
 
-JavaScript入門研修 — Module 8 / レッスン8-2
+JavaScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: これまで暗黙に使ってきた仕組みに名前を付ける回です。バブリングの経路もここで腑に落ちます。 -->
 

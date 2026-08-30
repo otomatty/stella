@@ -10,7 +10,7 @@ export const TENANTS: Tenant[] = [
   {
     id: "ses",
     name: "SES未経験エンジニア育成",
-    subtitle: "TypeScript 入門研修",
+    subtitle: "TypeScript 入門",
     icon: "cpu",
     active: 87,
   },

@@ -4,7 +4,7 @@ title: 相対パスでファイルの場所を指す
 takeaway: "相対パスは、いま書いているファイルから見た位置でファイルを指す"
 introduces: [相対パス, フォルダ]
 requires: [src, href, ファイル]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-1-3
 # 相対パスでファイルの場所を指す
 
-HTML/CSS入門研修 — Module 2 / レッスン2-1
+HTML/CSS入門 — Module 2 / レッスン2-1
 
 <!-- ノート: レッスン2-1の最後です。画像が表示されない原因の大半はここにあります。 -->
 

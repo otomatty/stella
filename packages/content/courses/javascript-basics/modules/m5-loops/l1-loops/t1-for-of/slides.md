@@ -4,7 +4,7 @@ title: for...ofで配列を順に処理する
 takeaway: "for...ofは、配列の要素を先頭から1つずつ取り出して繰り返す"
 introduces: [ループ, for...of, 繰り返し]
 requires: [配列, const, ブロック, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 5-1-1
 # for...ofで配列を順に処理する
 
-JavaScript入門研修 — Module 5 / レッスン5-1
+JavaScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: ループの主役をfor...ofに置きます。配列と組で使う一番出番の多い形です。 -->
 

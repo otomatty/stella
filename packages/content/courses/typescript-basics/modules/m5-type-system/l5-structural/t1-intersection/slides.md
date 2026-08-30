@@ -4,7 +4,7 @@ title: 交差型
 takeaway: "「&」で型をつなぐと、両方の性質をあわせ持つ型になる"
 introduces: [交差型]
 requires: [型エイリアス, オブジェクト, ユニオン型, プロパティ]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-5-1
 # 交差型
 
-TypeScript入門研修 — Module 5 / レッスン5-5
+TypeScript入門 — Module 5 / レッスン5-5
 
 <!-- ノート: レッスン5-5では型の組み合わせと、TypeScriptの型判定の根っこにある考え方を扱います。まずはユニオン型の相棒から。 -->
 

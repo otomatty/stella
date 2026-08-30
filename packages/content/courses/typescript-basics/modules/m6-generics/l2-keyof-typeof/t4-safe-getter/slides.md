@@ -4,7 +4,7 @@ title: インデックスアクセス型と安全な読み取り
 takeaway: "「型[キー]」でプロパティの型を取り出すと、戻り値の型まで正確になる"
 introduces: [インデックスアクセス型]
 requires: [keyof, typeof型演算子, ジェネリック関数, 型引数の制約, 戻り値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-2-4
 # インデックスアクセス型と安全な読み取り
 
-TypeScript入門研修 — Module 6 / レッスン6-2
+TypeScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: レッスン6-2の最後です。ここまでの道具を合流させて、実務で使える形にします。Module 6の到達点です。 -->
 

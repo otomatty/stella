@@ -4,7 +4,7 @@ title: git diffで変更を読む
 takeaway: "git diff で「これから記録しようとしている変更」を読める"
 introduces: [diff]
 requires: [変更, 記録, status, modified]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-1-2
 # git diffで変更を読む
 
-Git入門研修 — Module 2 / レッスン2-1
+Git入門 — Module 2 / レッスン2-1
 
 <!-- ノート: statusで「変わった」と分かった後、変更の中身を確かめるコマンドを1つ覚えます。 -->
 

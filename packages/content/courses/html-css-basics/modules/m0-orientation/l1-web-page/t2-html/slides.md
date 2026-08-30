@@ -4,7 +4,7 @@ title: HTMLはページの中身を書く
 takeaway: "HTMLは、ページに何を置くかを書くための言語"
 introduces: [HTML, 中身]
 requires: [Webページ, ファイル, ブラウザー]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 0-1-2
 # HTMLはページの中身を書く
 
-HTML/CSS入門研修 — Module 0 / レッスン0-1
+HTML/CSS入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 前のトピックで出てきた「中身のファイル」の正体を確定させます。 -->
 

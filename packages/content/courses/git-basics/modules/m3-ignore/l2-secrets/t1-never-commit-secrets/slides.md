@@ -4,7 +4,7 @@ title: 秘密はコミットしない
 takeaway: "パスワードやAPIキーは、コミットしてはいけない"
 introduces: [秘密情報, APIキー]
 requires: [コミット, 履歴, GitHub]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-2-1
 # 秘密はコミットしない
 
-Git入門研修 — Module 3 / レッスン3-2
+Git入門 — Module 3 / レッスン3-2
 
 <!-- ノート: このレッスンは安全の話です。技術というより、事故を起こさないための約束を3つ覚えます。 -->
 

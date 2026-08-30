@@ -4,7 +4,7 @@ title: ATDD
 takeaway: "ATDD は受け入れテストを先に書き、それを満たすように実装する進め方である"
 introduces: [ATDD]
 requires: [受け入れ基準, Given-When-Then, 受け入れテスト, シフトレフト, pytest, parametrize, テスト関数, assert, 早期テスト]
-header: "テスト設計入門研修"
+header: "テスト設計入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "テスト設計入門研修"
 # 4-3-3
 # ATDD
 
-テスト設計入門研修 — Module 4 / レッスン4-3
+テスト設計入門 — Module 4 / レッスン4-3
 
 <!-- ノート: シフトレフトを、いちばん左まで押し切った形です。 -->
 

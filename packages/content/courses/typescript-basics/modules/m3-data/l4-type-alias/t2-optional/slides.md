@@ -4,7 +4,7 @@ title: オプショナルプロパティ
 takeaway: "プロパティ名のうしろに「?」を付けると、あってもなくてもよくなる"
 introduces: [オプショナルプロパティ]
 requires: [型エイリアス, プロパティ, undefined, ユニオン型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-4-2
 # オプショナルプロパティ
 
-TypeScript入門研修 — Module 3 / レッスン3-4
+TypeScript入門 — Module 3 / レッスン3-4
 
 <!-- ノート: 型に名前が付きました。次は、実務のデータでほぼ必ず出てくる「任意項目」の書き方です。 -->
 

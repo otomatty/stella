@@ -4,7 +4,7 @@ title: TypeScriptを入れる
 takeaway: "TypeScriptは、プロジェクトごとにnpmで入れて使う"
 introduces: [npx]
 requires: [npm, ターミナル, TypeScript, Node.js]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-1-4
 # TypeScriptを入れる
 
-TypeScript入門研修 — Module 9 / レッスン9-1
+TypeScript入門 — Module 9 / レッスン9-1
 
 <!-- ノート: Node.jsとエディターが揃いました。次は、このフォルダでTypeScriptを使えるようにします。 -->
 

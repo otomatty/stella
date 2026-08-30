@@ -4,7 +4,7 @@ title: 関数とは
 takeaway: "関数は、入力を受け取って結果を返す処理に名前を付けたもの"
 introduces: [関数, 引数, 戻り値, 呼び出し]
 requires: [値, ブロック, 変数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-1-1
 # 関数とは
 
-TypeScript入門研修 — Module 4 / レッスン4-1
+TypeScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: Module 4は関数です。ここを越えると、書けるコードの規模が一段変わります。まずは関数が何なのかを1つだけ押さえます。 -->
 

@@ -4,7 +4,7 @@ title: constの配列でも中身は変えられる
 takeaway: "constが禁じるのは変数への再代入だけ。配列の中身は変えられる"
 introduces: []
 requires: [const, 配列, push, 再代入, 変数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-2-2
 # constの配列でも中身は変えられる
 
-TypeScript入門研修 — Module 3 / レッスン3-2
+TypeScript入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 前のトピックで気づいた人がいるはずです。constで宣言したのに、中身が変わっていました。ここを1つだけ整理します。 -->
 

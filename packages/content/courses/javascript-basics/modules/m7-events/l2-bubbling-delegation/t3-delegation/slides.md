@@ -4,7 +4,7 @@ title: 親で聞けばまとめて扱える
 takeaway: "並んだ要素のイベントは、親に1つのリスナーを置いてevent.targetで見分ける"
 introduces: [イベント委譲]
 requires: [バブリング, event.target, イベントリスナー, 親要素, for...of]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-2-3
 # 親で聞けばまとめて扱える
 
-JavaScript入門研修 — Module 7 / レッスン7-2
+JavaScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: バブリング+event.targetの合体技=委譲です。後続のAPG講座でも使う重要パターンです。 -->
 

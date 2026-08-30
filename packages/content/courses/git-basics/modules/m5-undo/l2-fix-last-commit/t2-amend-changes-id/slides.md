@@ -4,7 +4,7 @@ title: amendはIDが変わる
 takeaway: "amend すると ID が変わる(=前とは別のコミットになる)"
 introduces: []
 requires: [--amend, ハッシュ, log, --oneline, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-2-2
 # amendはIDが変わる
 
-Git入門研修 — Module 5 / レッスン5-2
+Git入門 — Module 5 / レッスン5-2
 
 <!-- ノート: amendの仕組みを正確に捉えるトピックです。この理解が次の判断の土台になります。 -->
 

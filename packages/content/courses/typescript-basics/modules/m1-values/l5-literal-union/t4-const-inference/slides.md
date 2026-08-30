@@ -4,7 +4,7 @@ title: constは狭く、letは広く推論される
 takeaway: "constはリテラル型に、letは広い型に推論される"
 introduces: []
 requires: [リテラル型, 型推論, const, let]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-5-4
 # constは狭く、letは広く推論される
 
-TypeScript入門研修 — Module 1 / レッスン1-5
+TypeScript入門 — Module 1 / レッスン1-5
 
 <!-- ノート: レッスン1-5の最後です。リテラル型は自分で書かなくても現れます。その仕組みを知っておくと、型の表示を見て混乱しなくなります。 -->
 

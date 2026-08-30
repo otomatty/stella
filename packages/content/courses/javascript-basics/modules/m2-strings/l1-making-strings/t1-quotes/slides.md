@@ -4,7 +4,7 @@ title: 文字列は引用符で囲む
 takeaway: "文字列は、ダブルクォートで囲んで作る"
 introduces: [引用符, ダブルクォート]
 requires: [文字列, 変数, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-1-1
 # 文字列は引用符で囲む
 
-JavaScript入門研修 — Module 2 / レッスン2-1
+JavaScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: ここまで見よう見まねで書いてきた"..."を正式に導入します。 -->
 

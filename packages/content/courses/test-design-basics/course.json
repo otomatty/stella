@@ -1,13 +1,13 @@
 {
-  "title": "テスト設計と品質保証 入門研修",
-  "category": "プログラミング",
+  "title": "テスト設計と品質保証 入門",
+  "category": "バックエンド",
   "color": "green",
   "description": "仕様からテストケースを設計し、pytest のテストコードに落とし、何を自動化するかを根拠つきで提案できるようになる研修。",
-  "header": "テスト設計入門研修",
+  "header": "テスト設計入門",
   "tenantId": "ses",
-  "prerequisites": ["it-basics"],
+  "prerequisites": ["python-testing-ci-basics"],
   "canDo": "観点表とテストケースで『動く』を示せる",
-  "theme": "Web とデータの実践",
+  "theme": "サーバーとデータの基盤",
   "modules": {
     "m1-foundations": "M1. テストの基礎",
     "m2-levels-types": "M2. 何をどこでテストするか",

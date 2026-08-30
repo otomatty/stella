@@ -4,7 +4,7 @@ title: color-mix()は2つの色を混ぜる
 takeaway: "color-mix()は、2つの色を指定した割合で混ぜた色を作る"
 introduces: [color-mix]
 requires: [oklch]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 1-2-2
 # color-mix()は2つの色を混ぜる
 
-モダンCSS入門研修 — Module 1 / レッスン1-2
+モダンCSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: oklchで色を1つ作れるようになりました。今度はその色から、派生の色を作ります。 -->
 

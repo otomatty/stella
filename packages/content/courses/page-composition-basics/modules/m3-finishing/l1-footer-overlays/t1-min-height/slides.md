@@ -4,7 +4,7 @@ title: bodyを画面の高さまで伸ばす
 takeaway: "本文が短いページでは、まずbodyをmin-height: 100svhで画面の高さまで伸ばす"
 introduces: [min-height, 100svh]
 requires: [footer, main, ページ]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 3-1-1
 # bodyを画面の高さまで伸ばす
 
-ページ構成入門研修 — Module 3 / レッスン3-1
+ページ構成入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 下端の仕上げに入ります。まず、フッタが浮く問題の前半を片づけます。 -->
 

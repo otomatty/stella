@@ -4,7 +4,7 @@ title: インストールを確認する
 takeaway: "インストール後は、ターミナルでnode -vとnpm -vを確認する"
 introduces: [LTS]
 requires: [Node.js, ターミナル, npm]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-1-2
 # インストールを確認する
 
-TypeScript入門研修 — Module 9 / レッスン9-1
+TypeScript入門 — Module 9 / レッスン9-1
 
 <!-- ノート: 入れただけでは終わりません。本当に使えるかを、自分の手で確かめます。 -->
 

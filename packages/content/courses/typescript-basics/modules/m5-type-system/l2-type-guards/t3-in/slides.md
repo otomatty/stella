@@ -4,7 +4,7 @@ title: in演算子による型ガード
 takeaway: "inでプロパティの有無を調べると、オブジェクトのユニオンを絞り込める"
 introduces: [in]
 requires: [型ガード, オブジェクト, プロパティ, ユニオン型, 型エイリアス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-2-3
 # in演算子による型ガード
 
-TypeScript入門研修 — Module 5 / レッスン5-2
+TypeScript入門 — Module 5 / レッスン5-2
 
 <!-- ノート: 型ガードの2つ目です。typeofが効かないオブジェクト同士を分ける道具です。 -->
 

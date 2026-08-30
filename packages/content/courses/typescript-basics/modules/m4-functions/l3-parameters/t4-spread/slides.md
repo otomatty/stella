@@ -4,7 +4,7 @@ title: スプレッド構文
 takeaway: "呼び出し側で「...」を付けると、配列を1つずつの引数に展開できる"
 introduces: [スプレッド構文]
 requires: [配列, 残余引数, 呼び出し, 引数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-3-4
 # スプレッド構文
 
-TypeScript入門研修 — Module 4 / レッスン4-3
+TypeScript入門 — Module 4 / レッスン4-3
 
 <!-- ノート: レッスン4-3の最後です。前のトピックと同じドット3つが、置く場所によって逆の意味になります。ここを整理します。 -->
 

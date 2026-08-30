@@ -1,0 +1,14 @@
+{
+  "title": "認証・認可入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】「誰か」と「何ができるか」を守る仕組みを、実装しながら学ぶ研修。",
+  "header": "認証・認可入門",
+  "tenantId": "ses",
+  "prerequisites": ["rest-api-basics"],
+  "canDo": "セッションとトークンの違いを説明し、API にログインと権限チェックを実装できる",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

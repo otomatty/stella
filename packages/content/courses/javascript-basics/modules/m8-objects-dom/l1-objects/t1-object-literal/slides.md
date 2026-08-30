@@ -4,7 +4,7 @@ title: オブジェクトは名前付きの値の集まり
 takeaway: "オブジェクトは{}で作り、名前を付けた値をひとまとめに持てる"
 introduces: [オブジェクト, プロパティ, キー]
 requires: [値, 変数, const, 文字列, 数値]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-1-1
 # オブジェクトは名前付きの値の集まり
 
-JavaScript入門研修 — Module 8 / レッスン8-1
+JavaScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: 最後のモジュールです。オブジェクトを最短で導入し、DOM操作で使う語彙(プロパティ)を支えます。 -->
 

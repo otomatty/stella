@@ -4,7 +4,7 @@ title: プリミティブ型は7種類
 takeaway: "プリミティブ型は7種類あるが、研修で使うのはnumber・string・booleanの3つ"
 introduces: [プリミティブ型, symbol, bigint]
 requires: [型, number, string, boolean]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-3-1
 # プリミティブ型は7種類
 
-TypeScript入門研修 — Module 1 / レッスン1-3
+TypeScript入門 — Module 1 / レッスン1-3
 
 <!-- ノート: レッスン1-2で型の書き方を学びました。ここからは型そのものを1つずつ見ていきます。まず全体地図を頭に入れます。 -->
 

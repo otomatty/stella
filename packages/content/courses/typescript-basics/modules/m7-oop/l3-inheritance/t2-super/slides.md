@@ -4,7 +4,7 @@ title: super
 takeaway: "子クラスのコンストラクタでは、最初にsuper()で親を初期化する"
 introduces: [super]
 requires: [継承, コンストラクタ, 親クラス, 子クラス, this, 引数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-3-2
 # super
 
-TypeScript入門研修 — Module 7 / レッスン7-3
+TypeScript入門 — Module 7 / レッスン7-3
 
 <!-- ノート: 子クラスに独自のプロパティを持たせるときのルールです。ここでエラーに出会う人が多いので、理由まで押さえます。 -->
 

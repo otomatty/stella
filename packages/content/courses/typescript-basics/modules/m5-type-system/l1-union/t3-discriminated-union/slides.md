@@ -4,7 +4,7 @@ title: 判別可能なユニオン型
 takeaway: "共通のプロパティにリテラル型の目印を付けると、確実に絞り込める"
 introduces: [判別可能なユニオン型, ディスクリミネータ]
 requires: [ユニオン型, リテラル型, オブジェクト, switch, 型エイリアス, 絞り込み]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-1-3
 # 判別可能なユニオン型
 
-TypeScript入門研修 — Module 5 / レッスン5-1
+TypeScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: レッスン5-1の山場です。実務のTypeScriptで最も価値のある設計パターンの1つを扱います。 -->
 

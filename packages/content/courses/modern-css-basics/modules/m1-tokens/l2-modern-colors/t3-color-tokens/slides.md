@@ -4,7 +4,7 @@ title: 色は役割の名前でトークンにする
 takeaway: "色は:rootのカスタムプロパティに役割の名前を付けて、トークンとして使い回す"
 introduces: [トークン]
 requires: [カスタムプロパティ, var, ":root", oklch, color-mix]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 1-2-3
 # 色は役割の名前でトークンにする
 
-モダンCSS入門研修 — Module 1 / レッスン1-2
+モダンCSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: レッスン1-1のカスタムプロパティと、このレッスンの色を組み合わせます。 -->
 

@@ -4,7 +4,7 @@ title: scriptタグはbodyの末尾に置く
 takeaway: "JavaScriptはscriptタグに書き、bodyの閉じタグの直前に置く"
 introduces: [scriptタグ, タグ, 要素, body]
 requires: [JavaScript, HTML]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-1-2
 # scriptタグはbodyの末尾に置く
 
-JavaScript入門研修 — Module 0 / レッスン0-1
+JavaScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: HTML/CSS入門で学んだ「タグで要素を作る」を思い出してもらいながら、JavaScriptの置き場所を決めます。 -->
 

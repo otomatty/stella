@@ -4,7 +4,7 @@ title: thenで結果を受け取る
 takeaway: "thenは結果が出たら動くコールバックを登録し、新しいPromiseを返す"
 introduces: [then]
 requires: [Promise, コールバック, 戻り値, resolve, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-2-2
 # thenで結果を受け取る
 
-TypeScript入門研修 — Module 8 / レッスン8-2
+TypeScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: Promiseの中身を取り出す方法です。そして、コールバック地獄が解ける瞬間でもあります。 -->
 

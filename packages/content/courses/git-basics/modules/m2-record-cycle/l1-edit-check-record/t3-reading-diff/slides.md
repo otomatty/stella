@@ -4,7 +4,7 @@ title: diffの読み方
 takeaway: "diff は - の行が変更前、+ の行が変更後"
 introduces: []
 requires: [diff, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-1-3
 # diffの読み方
 
-Git入門研修 — Module 2 / レッスン2-1
+Git入門 — Module 2 / レッスン2-1
 
 <!-- ノート: git diffの表示そのものを読めるようになる回です。覚える記号は2つだけです。 -->
 

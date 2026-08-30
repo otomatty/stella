@@ -4,7 +4,7 @@ title: git logで確かめる
 takeaway: "git log で、記録が積み上がったことを確かめられる"
 introduces: [log]
 requires: [コミット, 履歴, コミットメッセージ, ハッシュ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-4-4
 # git logで確かめる
 
-Git入門研修 — Module 1 / レッスン1-4
+Git入門 — Module 1 / レッスン1-4
 
 <!-- ノート: モジュールの締めくくり。自分の作った記録を自分の目で確かめます。 -->
 

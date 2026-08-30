@@ -4,7 +4,7 @@ title: satisfies
 takeaway: "satisfiesは型のチェックだけを行い、推論された狭い型を残す"
 introduces: [satisfies]
 requires: [型注釈, 型推論, as const, 型エイリアス, リテラル型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-6-4
 # satisfies
 
-TypeScript入門研修 — Module 5 / レッスン5-6
+TypeScript入門 — Module 5 / レッスン5-6
 
 <!-- ノート: Module 5の最後のトピックです。型注釈のジレンマを解く、比較的新しい演算子を扱います。 -->
 

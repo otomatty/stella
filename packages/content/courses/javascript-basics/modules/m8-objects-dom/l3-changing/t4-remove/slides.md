@@ -4,7 +4,7 @@ title: removeで要素を消す
 takeaway: "要素.remove()を呼ぶと、その要素はページから消える"
 introduces: [remove]
 requires: [要素, querySelector, メソッド, DOM, event.target]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-3-4
 # removeで要素を消す
 
-JavaScript入門研修 — Module 8 / レッスン8-3
+JavaScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: 削除です。委譲と組み合わせた「押した項目を消す」までを見せます。 -->
 

@@ -4,7 +4,7 @@ title: git cloneでコピーする
 takeaway: "git clone URL で、リモートを履歴ごと手元にコピーできる"
 introduces: [clone]
 requires: [リモート, URL, 履歴, 作業フォルダ, cd]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-1-3
 # git cloneでコピーする
 
-Git入門研修 — Module 8 / レッスン8-1
+Git入門 — Module 8 / レッスン8-1
 
 <!-- ノート: リモートと手元を繋ぐ最初のコマンドです。現場に配属されて最初に打つのも、たいていこのコマンドです。 -->
 

@@ -4,7 +4,7 @@ title: 下線を消すなら別の手がかりを残す
 takeaway: "text-decorationで下線を消すときは、色以外の手がかりを必ず残す"
 introduces: [text-decoration, 手がかり]
 requires: [リンク, コントラスト, プロパティ, 値, visited, hover]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-3-3
 # 下線を消すなら別の手がかりを残す
 
-HTML/CSS入門研修 — Module 5 / レッスン5-3
+HTML/CSS入門 — Module 5 / レッスン5-3
 
 <!-- ノート: リンクの見た目を整える最後のトピックです。よくある事故を1つ防ぎます。 -->
 

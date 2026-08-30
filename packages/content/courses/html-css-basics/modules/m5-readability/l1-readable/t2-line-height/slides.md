@@ -4,7 +4,7 @@ title: 行間を空けると文章が読みやすい
 takeaway: "line-heightを1.5〜1.8にすると、長い文章が読みやすくなる"
 introduces: [line-height, 行間]
 requires: [font-size, プロパティ, 値]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-1-2
 # 行間を空けると文章が読みやすい
 
-HTML/CSS入門研修 — Module 5 / レッスン5-1
+HTML/CSS入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 文字の大きさの次は、行と行のあいだです。効果が大きいわりに知られていません。 -->
 

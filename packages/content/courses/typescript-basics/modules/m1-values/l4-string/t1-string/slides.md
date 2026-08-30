@@ -4,7 +4,7 @@ title: string型とクォート
 takeaway: "文字列はクォートで囲む。研修ではダブルクォートを基本にする"
 introduces: [クォート, ダブルクォート, シングルクォート, バッククォート]
 requires: [string, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-4-1
 # string型とクォート
 
-TypeScript入門研修 — Module 1 / レッスン1-4
+TypeScript入門 — Module 1 / レッスン1-4
 
 <!-- ノート: レッスン1-4は文字列だけを扱います。業務データの多くは文字列なので、1レッスンかける価値があります。まずは書き方から。 -->
 

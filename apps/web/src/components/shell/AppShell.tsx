@@ -24,6 +24,7 @@ import { resolveUiRole } from "@/lib/ui-role";
 import { AppShellContext, type AppShellValue } from "@/components/shell/app-shell-context";
 
 import { AIChatBot } from "@/components/common/AIChatBot";
+import { DevModeFab } from "@/components/common/DevModeFab";
 import { TweaksPanel } from "@/components/common/TweaksPanel";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/skeleton";
@@ -567,7 +568,8 @@ export function AppShell() {
     }
   }
 
-  const isFlush = page === "lesson" || page === "review";
+  // スキルツリーは盤面そのものをコンテンツ領域にする (Card も余白も持たない)。
+  const isFlush = page === "lesson" || page === "review" || page === "skill-tree";
 
   const shellValue: AppShellValue = {
     role: effectiveRole,
@@ -659,6 +661,10 @@ export function AppShell() {
           {/* 閉じている間も mount したまま。 モバイルの Drawer が閉じアニメーションを出せるようにする。 */}
           <AIChatBot open={aiOpen} onClose={() => setAiOpen(false)} returnFocusRef={aiFabRef} />
         </LessonAIProvider>
+      ) : null}
+
+      {backendEnabled ? (
+        <DevModeFab stackedAboveAi={showAIBot && effectiveRole === "learner"} />
       ) : null}
 
       {/* Tweaks panel — backtick toggle.

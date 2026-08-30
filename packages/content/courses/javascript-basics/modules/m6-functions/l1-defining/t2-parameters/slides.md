@@ -4,7 +4,7 @@ title: 引数で値を渡す
 takeaway: "引数を使うと、呼び出すたびに違う値を関数へ渡せる"
 introduces: [引数, 仮引数]
 requires: [関数, 呼び出し, 値, 変数, 定義]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-1-2
 # 引数で値を渡す
 
-JavaScript入門研修 — Module 6 / レッスン6-1
+JavaScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: 関数を「値を受け取る機械」にするトピックです。 -->
 

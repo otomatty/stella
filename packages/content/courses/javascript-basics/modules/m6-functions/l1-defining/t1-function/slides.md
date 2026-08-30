@@ -4,7 +4,7 @@ title: 関数は処理に名前を付ける
 takeaway: "functionで処理をまとめて名前を付け、名前()で何度でも呼び出せる"
 introduces: [関数, function, 呼び出し, 定義]
 requires: [宣言, 実行, ブロック, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-1-1
 # 関数は処理に名前を付ける
 
-JavaScript入門研修 — Module 6 / レッスン6-1
+JavaScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: 変数は「値に名前」、関数は「処理に名前」。この対で導入します。 -->
 

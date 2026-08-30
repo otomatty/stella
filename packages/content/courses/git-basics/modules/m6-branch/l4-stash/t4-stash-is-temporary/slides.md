@@ -4,7 +4,7 @@ title: stashは一時置き
 takeaway: "stash は一時置き(長居させず、早めにコミットへ昇格させる)"
 introduces: []
 requires: [stash, pop, コミット, add]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-4-4
 # stashは一時置き
 
-Git入門研修 — Module 6 / レッスン6-4
+Git入門 — Module 6 / レッスン6-4
 
 <!-- ノート: stashの使い方を覚えた直後に、使いすぎへの歯止めをかける回です。道具の位置づけを1つ持ち帰ります。 -->
 

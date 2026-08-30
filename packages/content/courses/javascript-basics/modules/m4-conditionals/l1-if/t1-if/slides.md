@@ -4,7 +4,7 @@ title: ifは条件が真のときだけ実行する
 takeaway: "ifは、()の条件がtrueのときだけ{}の中を実行する"
 introduces: [if, 条件, ブロック]
 requires: [真偽値, true, 比較演算子, 実行]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-1-1
 # ifは条件が真のときだけ実行する
 
-JavaScript入門研修 — Module 4 / レッスン4-1
+JavaScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: プログラムが初めて「まっすぐ流れない」ようになるトピックです。 -->
 

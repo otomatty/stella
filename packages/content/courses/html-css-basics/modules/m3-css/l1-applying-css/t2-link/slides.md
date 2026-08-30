@@ -4,7 +4,7 @@ title: CSSは別ファイルにしてlinkで読み込む
 takeaway: "CSSは.cssファイルに分け、headのlinkで読み込む"
 introduces: [スタイルシート, link, rel]
 requires: [CSS, head, 属性, 相対パス, ファイル]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-1-2
 # CSSは別ファイルにしてlinkで読み込む
 
-HTML/CSS入門研修 — Module 3 / レッスン3-1
+HTML/CSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 書き方が分かったので、書いたものをどこに置くかを決めます。 -->
 

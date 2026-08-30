@@ -4,7 +4,7 @@ title: クリックでdiff
 takeaway: "変更ファイルをクリックすれば、diff が左右並びで読める"
 introduces: []
 requires: [ソース管理ビュー, diff, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-3-2
 # クリックでdiff
 
-Git入門研修 — Module 10 / レッスン10-3
+Git入門 — Module 10 / レッスン10-3
 
 <!-- ノート: ソース管理ビューには、変更したファイルの一覧が並んでいました。今度はそのファイルをクリックしてみます。 -->
 

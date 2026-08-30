@@ -4,7 +4,7 @@ title: formでひとまとまりにして送る
 takeaway: "1回で送りたい入力欄はformで囲み、中のbuttonが送る部品になる"
 introduces: [form, action, name, 送信]
 requires: [入力欄, input, ボタン, button, 属性, 属性値, label]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-2-5
 # formでひとまとまりにして送る
 
-HTML/CSS入門研修 — Module 2 / レッスン2-2
+HTML/CSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 欄とボタンが揃いました。最後に、それらを1つの申込としてまとめます。 -->
 

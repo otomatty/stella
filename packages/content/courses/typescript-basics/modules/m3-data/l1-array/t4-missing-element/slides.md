@@ -4,7 +4,7 @@ title: 存在しない要素はundefined
 takeaway: "範囲外のインデックスはundefinedになるが、型は教えてくれない"
 introduces: []
 requires: [インデックス, 配列, undefined, length, 型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-1-4
 # 存在しない要素はundefined
 
-TypeScript入門研修 — Module 3 / レッスン3-1
+TypeScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: レッスン3-1の最後です。TypeScriptが守ってくれない、数少ない場面の1つを正直に扱います。 -->
 

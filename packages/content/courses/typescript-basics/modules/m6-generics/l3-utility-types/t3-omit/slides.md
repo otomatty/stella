@@ -4,7 +4,7 @@ title: Omit
 takeaway: "Omit<T, K>は、Tから指定したプロパティを除いた型を作る"
 introduces: [Omit]
 requires: [Pick, ユーティリティ型, ユニオン型, リテラル型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-3-3
 # Omit
 
-TypeScript入門研修 — Module 6 / レッスン6-3
+TypeScript入門 — Module 6 / レッスン6-3
 
 <!-- ノート: Pickの裏返しです。使い分けの基準と、1つだけある落とし穴を押さえます。 -->
 

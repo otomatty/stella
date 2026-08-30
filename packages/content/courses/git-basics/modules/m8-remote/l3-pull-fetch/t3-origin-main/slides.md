@@ -4,7 +4,7 @@ title: origin/mainは控え
 takeaway: "origin/main は「最後に確認したリモートの位置」の手元の控え"
 introduces: [origin/main]
 requires: [origin, main, fetch, リモート, log]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-3-3
 # origin/mainは控え
 
-Git入門研修 — Module 8 / レッスン8-3
+Git入門 — Module 8 / レッスン8-3
 
 <!-- ノート: logの表示に出てくるorigin/mainという名前の正体です。読めると履歴の景色が変わります。 -->
 

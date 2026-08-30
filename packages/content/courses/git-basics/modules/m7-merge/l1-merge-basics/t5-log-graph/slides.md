@@ -4,7 +4,7 @@ title: --graphで形を見る
 takeaway: "git log --graph --oneline で、枝分かれと合流の形を確かめられる"
 introduces: [--graph]
 requires: [log, --oneline, マージコミット, ブランチ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-1-5
 # --graphで形を見る
 
-Git入門研修 — Module 7 / レッスン7-1
+Git入門 — Module 7 / レッスン7-1
 
 <!-- ノート: レッスン7-1の締めくくりです。マージした結果の形を、自分の目で確かめる方法を覚えます。 -->
 

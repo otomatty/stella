@@ -4,7 +4,7 @@ title: 幅はinline-sizeで書ける
 takeaway: "inline-sizeは、文章が流れる向きの寸法を表すwidthの論理版"
 introduces: [inline-size, max-inline-size]
 requires: [論理プロパティ, margin-inline]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 2-2-2
 # 幅はinline-sizeで書ける
 
-モダンCSS入門研修 — Module 2 / レッスン2-2
+モダンCSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 余白の次は寸法です。widthとheightにも論理版があります。 -->
 

@@ -4,7 +4,7 @@ title: デフォルト引数
 takeaway: "引数に「= 値」を書いておくと、省略時にその値が使われる"
 introduces: [デフォルト引数]
 requires: [引数, オプション引数, 型推論, undefined]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-3-2
 # デフォルト引数
 
-TypeScript入門研修 — Module 4 / レッスン4-3
+TypeScript入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 前のトピックで、省略できる引数は使うたびにundefinedの確認が要ることを見ました。それが不要になる書き方です。 -->
 

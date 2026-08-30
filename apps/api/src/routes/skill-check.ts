@@ -81,7 +81,11 @@ import {
   upsertStageUnlock,
 } from "../lib/skill-check-data.js";
 import type { SkillCheckQuestion } from "../lib/skill-check-data.js";
-import { loadSkillMapSource } from "../lib/skill-map-data.js";
+import {
+  loadSkillMapSource,
+  wantsDevReveal,
+  type SkillMapLoadOptions,
+} from "../lib/skill-map-data.js";
 import { UNSELECTABLE_STAGE_MESSAGE, evaluateSkillMapFor } from "./skill-map.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -107,10 +111,15 @@ interface StageContext {
  * GET と POST で同じ判定を通すためにここへ寄せる — 片方だけ緩むと、出題は断るのに
  * 採点は通る (= 直接 POST すれば飛び級できる) といった穴になる。
  */
-async function resolveStage(db: Db, caller: Caller, stageId: string): Promise<StageContext> {
+async function resolveStage(
+  db: Db,
+  caller: Caller,
+  stageId: string,
+  opts: SkillMapLoadOptions,
+): Promise<StageContext> {
   // ロールのゲートも 1 か所に寄せる (出題だけ通って採点が 403、の食い違いを作らない)。
   requireCanTakeSkillCheck(caller);
-  const source = await loadSkillMapSource(db, caller);
+  const source = await loadSkillMapSource(db, caller, opts);
   const stage = source.stages.find((row) => row.id === stageId);
   // 存在しない星と、霧の中の星と、他テナントの星を **同じ 400** に丸める。
   if (!stage) throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
@@ -157,7 +166,9 @@ function paperFor(ctx: StageContext, caller: Caller, attempt: number): string[] 
 skillCheckRoute.get("/api/skill-check/:stageId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const ctx = await resolveStage(db, caller, c.req.param("stageId"));
+    const ctx = await resolveStage(db, caller, c.req.param("stageId"), {
+      showAllIslands: wantsDevReveal(c),
+    });
 
     if (ctx.pool.length < SKILL_CHECK_MIN_QUESTIONS) {
       return c.json({ skill_check: unsupportedPayload(ctx) });
@@ -204,7 +215,9 @@ skillCheckRoute.get("/api/skill-check/:stageId", async (c) => {
 skillCheckRoute.post("/api/skill-check/:stageId", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const ctx = await resolveStage(db, caller, c.req.param("stageId"));
+    const ctx = await resolveStage(db, caller, c.req.param("stageId"), {
+      showAllIslands: wantsDevReveal(c),
+    });
 
     if (ctx.pool.length < SKILL_CHECK_MIN_QUESTIONS) {
       // GET で `supported: false` と伝えてある状態への POST。飛び級の抜け道に

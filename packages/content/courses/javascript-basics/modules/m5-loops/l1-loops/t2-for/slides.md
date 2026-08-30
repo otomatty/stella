@@ -4,7 +4,7 @@ title: forは回数で繰り返す
 takeaway: "forは、カウンター変数を使って決めた回数だけ繰り返す"
 introduces: [for, カウンター]
 requires: [ループ, let, 更新, 比較演算子, インデックス]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 5-1-2
 # forは回数で繰り返す
 
-JavaScript入門研修 — Module 5 / レッスン5-1
+JavaScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 古典的なforです。3つの部品(初期化・条件・更新)の読み解きが山場です。 -->
 

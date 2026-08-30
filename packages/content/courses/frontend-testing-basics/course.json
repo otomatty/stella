@@ -1,0 +1,14 @@
+{
+  "title": "フロントエンドテスト入門",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】壊れたらすぐ気づける UI を、テストの書き方から学ぶ研修。",
+  "header": "フロントエンドテスト入門",
+  "tenantId": "ses",
+  "prerequisites": ["npm-build-basics"],
+  "canDo": "Vitest と Testing Library で UI の振る舞いをテストできる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

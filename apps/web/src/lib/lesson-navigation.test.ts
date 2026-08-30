@@ -16,7 +16,7 @@ function lesson(id: string, status: LessonStatus = "todo"): Lesson {
 
 const stage: Stage = {
   id: "typescript-basics",
-  title: "TypeScript 入門研修",
+  title: "TypeScript 入門",
   category: "プログラミング",
   color: "indigo",
   lessonsCount: 4,

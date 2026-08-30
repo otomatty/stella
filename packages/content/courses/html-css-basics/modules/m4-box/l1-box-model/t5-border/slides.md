@@ -4,7 +4,7 @@ title: borderは太さ・線種・色をまとめて書く
 takeaway: "ボーダーはborderに太さ・線種・色の3つを空白で並べて指定する"
 introduces: [border, 線種]
 requires: [ボーダー, ボックス, プロパティ, 値, padding, 内側の余白]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-1-5
 # borderは太さ・線種・色をまとめて書く
 
-HTML/CSS入門研修 — Module 4 / レッスン4-1
+HTML/CSS入門 — Module 4 / レッスン4-1
 
 <!-- ノート: ボーダーは 4-1-1 から名前だけ出ていました。ここで実際に引きます。 -->
 

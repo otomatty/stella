@@ -4,7 +4,7 @@ title: --stagedでaddを取り消す
 takeaway: "git restore --staged で add だけを取り消す(ファイルの中身は変わらない)"
 introduces: []
 requires: [restore, add, ステージングエリア, --staged]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-1-3
 # --stagedでaddを取り消す
 
-Git入門研修 — Module 5 / レッスン5-1
+Git入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 今度は「編集は残したい、addだけ取り消したい」場面のやり直しです。 -->
 

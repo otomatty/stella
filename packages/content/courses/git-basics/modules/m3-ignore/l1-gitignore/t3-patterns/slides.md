@@ -4,7 +4,7 @@ title: パターンで書く
 takeaway: "フォルダは末尾 / 、まとめて指定は * で書ける"
 introduces: [パターン]
 requires: [.gitignore, 生成物]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-1-3
 # パターンで書く
 
-Git入門研修 — Module 3 / レッスン3-1
+Git入門 — Module 3 / レッスン3-1
 
 <!-- ノート: .gitignoreの書き方の2回目。1件ずつ書くのではなく、まとめて指定する方法を覚えます。 -->
 

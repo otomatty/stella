@@ -4,7 +4,7 @@ title: 少し書いては動かして確かめる
 takeaway: "一度に書き切らず、少し書くたびに保存して動かして確かめる"
 introduces: [保存, 再読み込み]
 requires: [実行, ブラウザー, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-2-1
 # 少し書いては動かして確かめる
 
-JavaScript入門研修 — Module 0 / レッスン0-2
+JavaScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: 書き方の前に「進め方」を固めるトピックです。この講座全体の作業リズムになります。 -->
 

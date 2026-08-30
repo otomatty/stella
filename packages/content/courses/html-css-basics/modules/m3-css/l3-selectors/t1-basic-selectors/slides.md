@@ -4,7 +4,7 @@ title: セレクタは要素・class・idで選ぶ
 takeaway: "当てる相手は、要素名・class・idの3つの書き分けで選ぶ"
 introduces: [要素セレクタ, IDセレクタ]
 requires: [セレクタ, クラスセレクタ, class, id, 属性, 宣言]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-3-1
 # セレクタは要素・class・idで選ぶ
 
-HTML/CSS入門研修 — Module 3 / レッスン3-3
+HTML/CSS入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 3-1 で要素名と class を使いました。ここで書き分けを整理し、id を足します。 -->
 

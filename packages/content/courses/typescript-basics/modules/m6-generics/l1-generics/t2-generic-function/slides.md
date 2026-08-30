@@ -4,7 +4,7 @@ title: ジェネリック関数の書き方
 takeaway: "関数名のうしろに「<T>」を書くと、Tを型として使える"
 introduces: [ジェネリック関数]
 requires: [ジェネリクス, 型引数, 関数, アロー関数, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-1-2
 # ジェネリック関数の書き方
 
-TypeScript入門研修 — Module 6 / レッスン6-1
+TypeScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: 前のトピックで見た書き方を、記号1つずつ分解します。見慣れない山かっこの意味をここで固めます。 -->
 

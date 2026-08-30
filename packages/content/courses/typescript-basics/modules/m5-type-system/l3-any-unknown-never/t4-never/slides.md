@@ -4,7 +4,7 @@ title: neverと網羅性チェック
 takeaway: "neverを使うと、分岐の書き漏れを実行前に検出できる"
 introduces: [never, 網羅性チェック]
 requires: [switch, 判別可能なユニオン型, 型注釈, 関数, default]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-3-4
 # neverと網羅性チェック
 
-TypeScript入門研修 — Module 5 / レッスン5-3
+TypeScript入門 — Module 5 / レッスン5-3
 
 <!-- ノート: レッスン5-3の最後です。2-4-3で「Module 5で分岐の書き漏れを検出する方法を学ぶ」と予告した、その回収です。 -->
 

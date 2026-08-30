@@ -4,7 +4,7 @@ title: ページはlandmarkで組む
 takeaway: "1枚のページの骨格は、header・nav・main・footerというlandmarkになる要素で組む"
 introduces: [ページ, 骨格, 部品, landmark, header, nav, main, footer]
 requires: []
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 1-1-1
 # ページはlandmarkで組む
 
-ページ構成入門研修 — Module 1 / レッスン1-1
+ページ構成入門 — Module 1 / レッスン1-1
 
 <!-- ノート: この講座の1本目です。部品はもう作ってあるので、ここからは1枚のページに組み立てていきます。 -->
 

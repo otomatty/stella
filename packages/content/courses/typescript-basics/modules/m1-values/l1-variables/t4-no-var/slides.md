@@ -4,7 +4,7 @@ title: varを使わない理由
 takeaway: "varは読めればよい。新しいコードではconstとletだけを使う"
 introduces: [var]
 requires: [const, let, 宣言]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-1-4
 # varを使わない理由
 
-TypeScript入門研修 — Module 1 / レッスン1-1
+TypeScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 変数の宣言キーワードには、実はもう1つvarというものがあります。古い記事やAIの出力で見かけるので、扱い方だけ決めておきます。 -->
 

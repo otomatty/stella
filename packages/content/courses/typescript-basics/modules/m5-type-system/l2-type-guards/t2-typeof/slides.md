@@ -4,7 +4,7 @@ title: typeofによる型ガード
 takeaway: "typeofで比べると、プリミティブ型のユニオンを絞り込める"
 introduces: []
 requires: [typeof, 型ガード, string, number, ユニオン型, 等価比較]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-2-2
 # typeofによる型ガード
 
-TypeScript入門研修 — Module 5 / レッスン5-2
+TypeScript入門 — Module 5 / レッスン5-2
 
 <!-- ノート: 型ガードの1つ目です。1-6-3で道具として紹介したtypeofが、ここで型を動かす役割を持ちます。 -->
 

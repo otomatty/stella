@@ -4,7 +4,7 @@ title: trackで字幕を付ける
 takeaway: "動画の内容を音に頼らず伝えるには、trackで字幕のファイルを添える"
 introduces: [track, 字幕, kind, default]
 requires: [video, controls, 属性, 属性値, 代替テキスト, 相対パス]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-3-3
 # trackで字幕を付ける
 
-HTML/CSS入門研修 — Module 2 / レッスン2-3
+HTML/CSS入門 — Module 2 / レッスン2-3
 
 <!-- ノート: 画像の alt と同じ考え方が、動画にもあります。ここで橋渡しをします。 -->
 

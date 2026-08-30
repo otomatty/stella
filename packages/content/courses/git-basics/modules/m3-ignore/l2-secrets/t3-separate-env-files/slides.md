@@ -4,7 +4,7 @@ title: 秘密はファイルを分ける
 takeaway: "秘密は設定ファイル(.envなど)に分けて、最初から .gitignore しておく"
 introduces: [.env]
 requires: [秘密情報, APIキー, .gitignore, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-2-3
 # 秘密はファイルを分ける
 
-Git入門研修 — Module 3 / レッスン3-2
+Git入門 — Module 3 / レッスン3-2
 
 <!-- ノート: レッスンの締めくくりは予防策です。うっかりを気合いではなく、仕組みで防ぎます。 -->
 

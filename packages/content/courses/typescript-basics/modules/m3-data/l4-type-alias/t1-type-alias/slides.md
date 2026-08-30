@@ -4,7 +4,7 @@ title: 型エイリアス
 takeaway: "typeで型に名前を付けると、同じ形を何度でも使い回せる"
 introduces: [型エイリアス]
 requires: [型注釈, オブジェクト, 型, プロパティ]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-4-1
 # 型エイリアス
 
-TypeScript入門研修 — Module 3 / レッスン3-4
+TypeScript入門 — Module 3 / レッスン3-4
 
 <!-- ノート: Module 3の最後のレッスンです。前のレッスンで感じた「型を書くのが長い」という不満を、ここで解消します。 -->
 

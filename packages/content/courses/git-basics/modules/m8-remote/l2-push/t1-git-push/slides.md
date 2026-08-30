@@ -4,7 +4,7 @@ title: git pushで送る
 takeaway: "git push で、手元のコミットをリモートへ送る"
 introduces: [push]
 requires: [コミット, リモート, origin, main]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-2-1
 # git pushで送る
 
-Git入門研修 — Module 8 / レッスン8-2
+Git入門 — Module 8 / レッスン8-2
 
 <!-- ノート: 共有の中心となるコマンドです。手元に積んだコミットを、ついにチームへ届けます。 -->
 

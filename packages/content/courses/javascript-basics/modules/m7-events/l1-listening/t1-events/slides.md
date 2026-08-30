@@ -4,7 +4,7 @@ title: イベントは画面で起きる出来事
 takeaway: "クリックやキー入力といった画面の出来事をイベントと呼ぶ"
 introduces: [イベント, click, keydown]
 requires: [ブラウザー, JavaScript, 動き]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-1-1
 # イベントは画面で起きる出来事
 
-JavaScript入門研修 — Module 7 / レッスン7-1
+JavaScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: ここから後半戦。「動きを付ける」という講座冒頭の約束を回収しはじめるモジュールです。 -->
 

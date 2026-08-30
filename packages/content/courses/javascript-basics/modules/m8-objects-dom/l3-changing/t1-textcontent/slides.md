@@ -4,7 +4,7 @@ title: textContentで文字を変える
 takeaway: "要素.textContentに代入すると、表示される文字が変わる"
 introduces: [textContent]
 requires: [querySelector, 代入, 文字列, DOM, プロパティ]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-3-1
 # textContentで文字を変える
 
-JavaScript入門研修 — Module 8 / レッスン8-3
+JavaScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: 初めて「画面が変わる」トピックです。console.logからの卒業になります。 -->
 

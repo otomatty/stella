@@ -4,7 +4,7 @@ title: implements
 takeaway: "implementsを書くと、クラスがその約束を守っているかを検査してもらえる"
 introduces: [implements]
 requires: [インターフェース, クラス, メソッド, プロパティ, 継承]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-4-2
 # implements
 
-TypeScript入門研修 — Module 7 / レッスン7-4
+TypeScript入門 — Module 7 / レッスン7-4
 
 <!-- ノート: インターフェースをクラスに適用する書き方です。抽象クラスの継承と似ていますが、性質が違います。 -->
 

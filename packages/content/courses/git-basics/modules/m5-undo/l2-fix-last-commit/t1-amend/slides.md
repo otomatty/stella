@@ -4,7 +4,7 @@ title: --amendで作り直す
 takeaway: "git commit --amend で、直前のコミットを作り直せる(メッセージ修正・入れ忘れ)"
 introduces: [--amend]
 requires: [commit, -m, コミットメッセージ, add]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-2-1
 # --amendで作り直す
 
-Git入門研修 — Module 5 / レッスン5-2
+Git入門 — Module 5 / レッスン5-2
 
 <!-- ノート: このレッスンでは「コミットした直後のやり直し」を扱います。まずはコマンドから覚えます。 -->
 

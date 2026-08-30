@@ -4,7 +4,7 @@ title: 内側で同じ名前を宣言すると外が隠れる
 takeaway: "内側で同じ名前を宣言すると、そのブロックの中では外の変数が隠れる"
 introduces: [シャドーイング]
 requires: [スコープ, ブロック, 宣言, const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-1-3
 # 内側で同じ名前を宣言すると外が隠れる
 
-TypeScript入門研修 — Module 2 / レッスン2-1
+TypeScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: レッスン2-1の最後です。内と外に同じ名前があったときの挙動を1つだけ押さえます。デバッグで必ず効いてきます。 -->
 

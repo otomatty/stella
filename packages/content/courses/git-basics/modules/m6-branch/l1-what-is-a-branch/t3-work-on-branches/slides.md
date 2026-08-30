@@ -4,7 +4,7 @@ title: 作業はブランチで
 takeaway: "作業は main に直接ではなく、作業用ブランチで行う"
 introduces: []
 requires: [main, ブランチ, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-1-3
 # 作業はブランチで
 
-Git入門研修 — Module 6 / レッスン6-1
+Git入門 — Module 6 / レッスン6-1
 
 <!-- ノート: mainが完成の置き場だと決めたので、では作業はどこでやるのか、という当然の続きに答えます。 -->
 

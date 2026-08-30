@@ -4,7 +4,7 @@ title: pushには認証が要る
 takeaway: "GitHub への push は本人確認が要る(パスワードではなくトークンやSSH鍵)"
 introduces: [認証, トークン, SSH]
 requires: [push, GitHub, リモート]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-2-4
 # pushには認証が要る
 
-Git入門研修 — Module 8 / レッスン8-2
+Git入門 — Module 8 / レッスン8-2
 
 <!-- ノート: 初回のpushで多くの人が止まる、本人確認の話です。仕組みが分かれば怖くありません。 -->
 

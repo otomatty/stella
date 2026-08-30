@@ -4,7 +4,7 @@ title: 位置の距離はinsetでまとめる
 takeaway: "positionで使うtop・right・bottom・leftは、insetでまとめて書ける"
 introduces: [inset]
 requires: [論理プロパティ]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 2-2-3
 # 位置の距離はinsetでまとめる
 
-モダンCSS入門研修 — Module 2 / レッスン2-2
+モダンCSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 論理プロパティの3本目。入門で学んだ位置指定の距離にも、まとめ書きがあります。 -->
 

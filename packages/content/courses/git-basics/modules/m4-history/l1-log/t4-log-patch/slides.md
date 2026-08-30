@@ -4,7 +4,7 @@ title: -pで差分ごと読む
 takeaway: "git log -p で、各コミットの差分も一緒に読める"
 introduces: [-p]
 requires: [log, diff, コミット, コミットメッセージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-1-4
 # -pで差分ごと読む
 
-Git入門研修 — Module 4 / レッスン4-1
+Git入門 — Module 4 / レッスン4-1
 
 <!-- ノート: レッスン4-1の締めくくりです。履歴を、メッセージだけでなく変更内容ごと読む方法を覚えます。 -->
 

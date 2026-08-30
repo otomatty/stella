@@ -4,7 +4,7 @@ title: Gitはターミナルで操作する
 takeaway: "Gitはターミナルに打つコマンドで操作する(GUIも裏では同じコマンド)"
 introduces: [ターミナル, コマンド]
 requires: [Git, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-3-1
 # Gitはターミナルで操作する
 
-Git入門研修 — Module 0 / レッスン0-3
+Git入門 — Module 0 / レッスン0-3
 
 <!-- ノート: このレッスンでは、Gitを触る前の最後の準備として、操作の入口になる画面と言葉を覚えます。 -->
 

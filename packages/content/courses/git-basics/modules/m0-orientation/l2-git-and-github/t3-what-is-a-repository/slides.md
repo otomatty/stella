@@ -4,7 +4,7 @@ title: リポジトリとは
 takeaway: "リポジトリは「作業フォルダ+その履歴」のセット"
 introduces: [リポジトリ, 作業フォルダ]
 requires: [Git, 履歴, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-2-3
 # リポジトリとは
 
-Git入門研修 — Module 0 / レッスン0-2
+Git入門 — Module 0 / レッスン0-2
 
 <!-- ノート: Gitの説明に必ず出てくる「リポジトリ」という語を、ここで定義します。 -->
 

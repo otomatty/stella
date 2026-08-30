@@ -4,7 +4,7 @@ title: 関数宣言と引数の型注釈
 takeaway: "引数には必ず型注釈を書く。ここだけは推論に任せられない"
 introduces: [関数宣言]
 requires: [関数, 引数, 型注釈, 型推論, number, string]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-1-2
 # 関数宣言と引数の型注釈
 
-TypeScript入門研修 — Module 4 / レッスン4-1
+TypeScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 関数の書き方に入ります。ここで、レッスン1-2で決めた「推論に任せる」という方針に例外が1つ現れます。 -->
 

@@ -4,7 +4,7 @@ title: 基本サイクル
 takeaway: "編集 → status → diff → add → commit が日々の基本サイクル"
 introduces: []
 requires: [status, diff, add, commit, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-1-4
 # 基本サイクル
 
-Git入門研修 — Module 2 / レッスン2-1
+Git入門 — Module 2 / レッスン2-1
 
 <!-- ノート: ここまでのコマンドを1本の流れにまとめます。毎日この順で手が動くようになるのがゴールです。 -->
 

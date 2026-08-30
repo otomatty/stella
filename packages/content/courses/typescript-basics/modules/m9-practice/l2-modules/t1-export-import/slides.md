@@ -4,7 +4,7 @@ title: exportとimport
 takeaway: "exportで公開し、importで取り込む。書かなければファイルの外から見えない"
 introduces: [モジュール, export, import]
 requires: [スコープ, 関数, 型エイリアス, tsc]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-2-1
 # exportとimport
 
-TypeScript入門研修 — Module 9 / レッスン9-2
+TypeScript入門 — Module 9 / レッスン9-2
 
 <!-- ノート: レッスン9-2はモジュールです。ファイルを分けて開発するための、最も基本的な仕組みを扱います。 -->
 

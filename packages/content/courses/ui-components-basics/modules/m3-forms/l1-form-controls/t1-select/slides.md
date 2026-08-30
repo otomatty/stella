@@ -4,7 +4,7 @@ title: selectは選択肢から選ばせる
 takeaway: "selectは、optionで並べた選択肢から1つ選ばせる入力部品"
 introduces: [select]
 requires: [HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-1-1
 # selectは選択肢から選ばせる
 
-UI部品入門研修 — Module 3 / レッスン3-1
+UI部品入門 — Module 3 / レッスン3-1
 
 <!-- ノート: Module 3 はフォームです。まず、まだ扱っていない入力部品を骨格から見ていきます。 -->
 

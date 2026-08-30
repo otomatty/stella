@@ -4,7 +4,7 @@ title: VS Code
 takeaway: "VS Codeは、型のチェック結果をその場で見せてくれるエディター"
 introduces: [VS Code, エディター]
 requires: [Node.js, TypeScript, エラー, 型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-1-3
 # VS Code
 
-TypeScript入門研修 — Module 9 / レッスン9-1
+TypeScript入門 — Module 9 / レッスン9-1
 
 <!-- ノート: コードを書くための道具です。Playgroundで見ていた赤い波線が、手元でも見られるようになります。 -->
 

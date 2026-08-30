@@ -4,7 +4,7 @@ title: 空になりうる値の型の書き方
 takeaway: "空になりうる値は「string | undefined」と書く"
 introduces: [strictNullChecks, strict]
 requires: [ユニオン型, undefined, string, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-6-5
 # 空になりうる値の型の書き方
 
-TypeScript入門研修 — Module 1 / レッスン1-6
+TypeScript入門 — Module 1 / レッスン1-6
 
 <!-- ノート: Module 1の最後のトピックです。ここまでに学んだユニオン型とundefinedが、1つの実用的な書き方に合流します。 -->
 

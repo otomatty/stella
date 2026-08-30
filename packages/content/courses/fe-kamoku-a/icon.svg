@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 9 分野を 1 マスずつ固める: 3×3 の格子と今やっている 1 マス (thumbnail の motif_fe_kamoku_a の核)。 -->
+  <rect x="2.5" y="2.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="9.5" y="2.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="16.5" y="2.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="2.5" y="9.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="currentColor"/>
+  <rect x="16.5" y="9.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="2.5" y="16.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="9.5" y="16.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="16.5" y="16.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+</svg>

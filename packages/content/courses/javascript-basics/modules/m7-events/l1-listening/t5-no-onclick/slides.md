@@ -4,7 +4,7 @@ title: onclick属性は使わない
 takeaway: "HTMLのonclick属性ではなく、JavaScript側のaddEventListenerで登録する"
 introduces: [onclick属性]
 requires: [addEventListener, イベント, タグ, 登録, HTML]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-1-5
 # onclick属性は使わない
 
-JavaScript入門研修 — Module 7 / レッスン7-1
+JavaScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: 検索結果や古い教材で必ず出会う書き方を、明確に「使わない」と宣言するトピックです。 -->
 

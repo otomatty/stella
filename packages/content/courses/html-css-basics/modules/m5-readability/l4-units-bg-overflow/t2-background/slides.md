@@ -4,7 +4,7 @@ title: 背景の画像はsizeで収め方を決める
 takeaway: "background-imageで敷いた画像は、background-sizeで収め方を決める"
 introduces: [background-image, background-size, cover]
 requires: [background-color, 画像, プロパティ, 値, 相対パス, ボックス, 幅, 高さ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-4-2
 # 背景の画像はsizeで収め方を決める
 
-HTML/CSS入門研修 — Module 5 / レッスン5-4
+HTML/CSS入門 — Module 5 / レッスン5-4
 
 <!-- ノート: 背景色は 5-1-3 で扱いました。ここは背景の画像です。 -->
 

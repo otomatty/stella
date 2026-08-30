@@ -4,7 +4,7 @@ title: マージ後は追いつく
 takeaway: "マージ後は手元の main を pull して、リモートに追いつく"
 introduces: []
 requires: [main, pull, リモート, switch, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-3-2
 # マージ後は追いつく
 
-Git入門研修 — Module 9 / レッスン9-3
+Git入門 — Module 9 / レッスン9-3
 
 <!-- ノート: GitHub上でマージした直後の手元の状態と、そこでやるべき1手を押さえます。 -->
 

@@ -4,7 +4,7 @@ title: リテラル型とユニオン型を組み合わせる
 takeaway: "リテラル型を「|」でつなぐと、決まった値だけを許す型になる"
 introduces: []
 requires: [リテラル型, ユニオン型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-5-3
 # リテラル型とユニオン型を組み合わせる
 
-TypeScript入門研修 — Module 1 / レッスン1-5
+TypeScript入門 — Module 1 / レッスン1-5
 
 <!-- ノート: リテラル型とユニオン型、それぞれ単体では地味でした。組み合わせた瞬間に、実務で最も使う型の書き方になります。 -->
 

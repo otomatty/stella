@@ -7,6 +7,7 @@
   "tenantId": "ses",
   "_comment_prerequisites": "任意。前提講座の slug 配列。CURRICULUM.md に「前提講座」と明記したものだけを書く (書くと未クリアの受講者は開けなくなる)。推奨の受講順は書かない。",
   "prerequisites": [],
+  "_comment_parent": "任意。線を引く親の slug (prerequisites の 1 つ)。前提が 2 つ以上なら必須、1 つなら省略可 (その 1 つ)、appearances 持ちには書かない (扇ごとの親は appearancePrerequisites)。",
   "_comment_canDo": "任意。到達説明。「このスキルを身につけた人は◯◯ができる」のホバー表示。「〜できる」で終える1文。誇張しない。",
   "canDo": "【この講座を終えた人ができること。1文】",
   "_comment_theme": "任意。まだ視界に入っていない講座に見せるテーマ名。カテゴリ単位でそろえる。",

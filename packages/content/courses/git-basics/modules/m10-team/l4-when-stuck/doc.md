@@ -78,7 +78,7 @@ git switch -c feature/member-search
 
 だから最後の型はこうです。**分からなくなったら、履歴を消すコマンドを打つ前に人に聞く。** コミットさえしてあれば、相談を待つ間に状況が悪化することはありません。`status` と `log --oneline` の結果を控えて、状況を説明できる形で聞きに行きましょう。聞くのは恥ではなく、チームの損失を防ぐ行動です。
 
-これで Git 入門研修は修了です。記録する(add / commit)、読む(status / log / diff)、やり直す(restore / revert)、分けて合流する(switch / merge)、共有する(push / pull / PR)。困ったときの型まで含めて、現場で使う道具はそろいました。
+これで Git 入門は修了です。記録する(add / commit)、読む(status / log / diff)、やり直す(restore / revert)、分けて合流する(switch / merge)、共有する(push / pull / PR)。困ったときの型まで含めて、現場で使う道具はそろいました。
 
 ## もっと知りたい人へ
 

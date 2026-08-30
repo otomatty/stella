@@ -4,7 +4,7 @@ title: Options Objectパターン
 takeaway: "引数が3つを超えたら、オブジェクト1つにまとめて名前付きで渡す"
 introduces: [Options Object]
 requires: [分割代入, 引数, オプショナルプロパティ, デフォルト引数, 型エイリアス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-6-3
 # Options Objectパターン
 
-TypeScript入門研修 — Module 4 / レッスン4-6
+TypeScript入門 — Module 4 / レッスン4-6
 
 <!-- ノート: Module 4の最後のトピックです。ここまでの道具を組み合わせて、実務でよく使われる設計パターンを1つ作ります。 -->
 

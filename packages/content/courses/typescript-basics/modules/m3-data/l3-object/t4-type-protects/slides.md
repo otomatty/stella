@@ -4,7 +4,7 @@ title: 型が守ってくれる2つのこと
 takeaway: "オブジェクトの型は、プロパティ名のタイポと、書き漏らしの両方を止める"
 introduces: []
 requires: [オブジェクト, プロパティ, 型注釈, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-3-4
 # 型が守ってくれる2つのこと
 
-TypeScript入門研修 — Module 3 / レッスン3-3
+TypeScript入門 — Module 3 / レッスン3-3
 
 <!-- ノート: レッスン3-3の最後です。オブジェクトに型を書くと何が起きるのかを、具体的に2つだけ確認します。 -->
 

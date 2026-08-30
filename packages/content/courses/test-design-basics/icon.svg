@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 境界値: 数直線と、境界をまたぐ 2 点 (thumbnail の motif_test_design の核)。 -->
+  <path d="M2 14 H22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12 4 V20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 2.5"/>
+  <circle cx="7.5" cy="14" r="2.6" fill="currentColor"/>
+  <circle cx="16.5" cy="14" r="2.6" fill="currentColor"/>
+</svg>

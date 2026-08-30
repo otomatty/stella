@@ -4,7 +4,7 @@ title: TypeScriptは間違いを実行前に見つける
 takeaway: "TypeScriptは、型を書くことで間違いを実行前に見つける"
 introduces: [TypeScript, 型, コンパイラー, エラー]
 requires: [JavaScript, バグ, 値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-1-2
 # TypeScriptは間違いを実行前に見つける
 
-TypeScript入門研修 — Module 0 / レッスン0-1
+TypeScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 前のトピックで「気づくのが遅い」という問題を見ました。この研修で学ぶ道具は、そこにまっすぐ効きます。 -->
 

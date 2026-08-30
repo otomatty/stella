@@ -4,7 +4,7 @@ title: 小数の計算には誤差がある
 takeaway: "小数の計算はぴったりにならないことがある。金額は整数で計算する"
 introduces: [浮動小数点誤差]
 requires: [number, 四則演算]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-3-3
 # 小数の計算には誤差がある
 
-TypeScript入門研修 — Module 1 / レッスン1-3
+TypeScript入門 — Module 1 / レッスン1-3
 
 <!-- ノート: number型は整数も小数も扱えます。ただし小数には、知らないと必ずハマる性質が1つあります。 -->
 

@@ -4,7 +4,7 @@ title: list-styleでマーカーを変える
 takeaway: "リストの先頭に付く印は、list-style-typeで種類を変えられる"
 introduces: [list-style-type, マーカー]
 requires: [リスト, 項目, プロパティ, 値, 見た目]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-3-1
 # list-styleでマーカーを変える
 
-HTML/CSS入門研修 — Module 5 / レッスン5-3
+HTML/CSS入門 — Module 5 / レッスン5-3
 
 <!-- ノート: リストは 1-2-3 で書けるようになりました。ここでその見た目を整えます。 -->
 

@@ -4,7 +4,7 @@ title: includesで含むか調べる
 takeaway: "includesは、その文字列が含まれているかをtrueかfalseで返す"
 introduces: [includes, startsWith]
 requires: [メソッド, 文字列, 真偽値, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-2-2
 # includesで含むか調べる
 
-JavaScript入門研修 — Module 2 / レッスン2-2
+JavaScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 最初の具体的なメソッドです。戻りが真偽値である点が条件分岐の布石になります。 -->
 

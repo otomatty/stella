@@ -4,7 +4,7 @@ title: 文字列は道具を持っている
 takeaway: "文字列にドットを付けると、lengthやメソッドという道具を使える"
 introduces: [メソッド, ドット, length]
 requires: [文字列, 値, 変数, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-2-1
 # 文字列は道具を持っている
 
-JavaScript入門研修 — Module 2 / レッスン2-2
+JavaScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: メソッドという語をここで導入します。配列・DOMまでずっと使う、この講座の最重要語の1つです。 -->
 

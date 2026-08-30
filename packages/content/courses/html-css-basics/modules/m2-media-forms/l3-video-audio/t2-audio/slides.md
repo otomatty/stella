@@ -4,7 +4,7 @@ title: 音声はaudioに埋め込む
 takeaway: "音声はaudioのsrcにファイルを指定し、videoと同じ書き方で埋め込む"
 introduces: [音声, audio]
 requires: [video, controls, src, 要素, 属性]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-3-2
 # 音声はaudioに埋め込む
 
-HTML/CSS入門研修 — Module 2 / レッスン2-3
+HTML/CSS入門 — Module 2 / レッスン2-3
 
 <!-- ノート: video を覚えたら audio はほぼ同じです。違いは1点だけなので、そこに集中します。 -->
 

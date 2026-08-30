@@ -4,7 +4,7 @@ title: カードの集合はgridで敷き詰める
 takeaway: "カードの集合は、repeat(auto-fill, minmax())のgridで幅に合わせて敷き詰める"
 introduces: [カード, grid, auto-fill, "minmax()", メディアクエリー]
 requires: [区画, gap, トークン]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 2-1-3
 # カードの集合はgridで敷き詰める
 
-ページ構成入門研修 — Module 2 / レッスン2-1
+ページ構成入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 部品講座で作ったカードを、いよいよ集合として並べます。この講座の山場の1つです。 -->
 

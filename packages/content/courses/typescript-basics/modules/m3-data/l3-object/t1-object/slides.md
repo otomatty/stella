@@ -4,7 +4,7 @@ title: オブジェクトとは
 takeaway: "オブジェクトは、種類の違う値に名前を付けて1つにまとめたもの"
 introduces: [オブジェクト, プロパティ, オブジェクトリテラル]
 requires: [値, 配列, 変数, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-3-1
 # オブジェクトとは
 
-TypeScript入門研修 — Module 3 / レッスン3-3
+TypeScript入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 配列は「同じ種類の値の並び」でした。ここでは、種類の違う値をまとめる道具に入ります。実務でいちばん出会うデータの形です。 -->
 

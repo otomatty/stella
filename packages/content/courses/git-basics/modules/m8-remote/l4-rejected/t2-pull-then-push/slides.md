@@ -4,7 +4,7 @@ title: pullしてからpush
 takeaway: "先に pull で取り込んでから、push し直せばよい"
 introduces: []
 requires: [rejected, pull, push, コンフリクト]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-4-2
 # pullしてからpush
 
-Git入門研修 — Module 8 / レッスン8-4
+Git入門 — Module 8 / レッスン8-4
 
 <!-- ノート: rejectedへの正しい対処です。手順は2つだけ。型として体に入れてしまいましょう。 -->
 

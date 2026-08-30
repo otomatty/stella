@@ -4,7 +4,7 @@ title: widthとheightで場所を先に確保する
 takeaway: "imgにwidthとheight属性を書くと、読み込み前から表示場所が確保される"
 introduces: [width, height, レイアウトのずれ]
 requires: [img, src, 属性, 属性値, 画像]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-1-4
 # widthとheightで場所を先に確保する
 
-HTML/CSS入門研修 — Module 2 / レッスン2-1
+HTML/CSS入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 画像が表示できるようになったので、次は「表示されるまでの間」の話です。 -->
 

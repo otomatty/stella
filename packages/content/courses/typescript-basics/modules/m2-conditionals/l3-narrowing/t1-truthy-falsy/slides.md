@@ -4,7 +4,7 @@ title: truthyな値とfalsyな値
 takeaway: "条件にはboolean以外も書ける。0と空文字はfalse扱いになる"
 introduces: [truthy, falsy]
 requires: [if, 条件, string, number, undefined, boolean]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-3-1
 # truthyな値とfalsyな値
 
-TypeScript入門研修 — Module 2 / レッスン2-3
+TypeScript入門 — Module 2 / レッスン2-3
 
 <!-- ノート: レッスン2-3では、条件分岐と型を組み合わせます。まずは、他人のコードを読むときに必ずぶつかる書き方から。 -->
 

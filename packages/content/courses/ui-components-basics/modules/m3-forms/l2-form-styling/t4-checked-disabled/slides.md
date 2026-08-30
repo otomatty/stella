@@ -4,7 +4,7 @@ title: 選択と操作不可を状態で描く
 takeaway: "選ばれている・操作できないという状態は、:checkedと:disabledで見た目を変える"
 introduces: [":checked", ":disabled"]
 requires: [ラジオボタン, チェックボックス, 状態]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-2-4
 # 選択と操作不可を状態で描く
 
-UI部品入門研修 — Module 3 / レッスン3-2
+UI部品入門 — Module 3 / レッスン3-2
 
 <!-- ノート: レッスン3-2の最後です。フォームには、フォーカス以外にも状態があります。 -->
 

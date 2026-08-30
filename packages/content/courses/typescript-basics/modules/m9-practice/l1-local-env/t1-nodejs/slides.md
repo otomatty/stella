@@ -4,7 +4,7 @@ title: Node.js
 takeaway: "Node.jsは、ブラウザの外でJavaScriptを動かすための実行環境"
 introduces: [Node.js, ターミナル, npm]
 requires: [JavaScript, 実行, Playground, プログラム]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-1-1
 # Node.js
 
-TypeScript入門研修 — Module 9 / レッスン9-1
+TypeScript入門 — Module 9 / レッスン9-1
 
 <!-- ノート: Module 9は実践編です。ここまでPlaygroundだけで進めてきましたが、実務では自分のPCで開発します。その準備を整えます。 -->
 

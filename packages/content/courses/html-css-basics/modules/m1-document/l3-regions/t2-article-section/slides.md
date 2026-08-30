@@ -4,7 +4,7 @@ title: 本文の区切りはsectionとarticleで示す
 takeaway: "本文の中の区切りは、単独で成り立つならarticle、章の一区切りならsectionで囲む"
 introduces: [section, article]
 requires: [領域, main, 見出し, 入れ子, 段落]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-3-2
 # 本文の区切りはsectionとarticleで示す
 
-HTML/CSS入門研修 — Module 1 / レッスン1-3
+HTML/CSS入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 大きな領域が決まったので、その中の区切りに進みます。使い分けは1つの問いだけで決まります。 -->
 

@@ -4,7 +4,7 @@ title: コンストラクタとthis
 takeaway: "コンストラクタはnewのときに動く初期化処理。thisは自分自身を指す"
 introduces: [コンストラクタ, this]
 requires: [クラス, new, プロパティ, 引数, インスタンス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-1-3
 # コンストラクタとthis
 
-TypeScript入門研修 — Module 7 / レッスン7-1
+TypeScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: レッスン7-1の山場です。クラスを実用にするための、いちばん重要な仕組みを扱います。 -->
 

@@ -1,4 +1,4 @@
-# テスト設計と品質保証 入門研修 — 設計書
+# テスト設計と品質保証 入門 — 設計書
 
 新講座 `test-design-basics` のカリキュラム設計。`packages/content/THEME_TO_COURSE.md` の STEP 0〜3 に相当する。
 本書の承認後、STEP 4(`CURRICULUM.md` の takeaway 一覧)を実装計画として作成する。
@@ -14,7 +14,7 @@
 
 ## 教材要件シート
 
-- 講座名 / slug: テスト設計と品質保証 入門研修 / `test-design-basics`
+- 講座名 / slug: テスト設計と品質保証 入門 / `test-design-basics`
 - 新講座 or 既存講座への追加: 新講座
 - category / color: プログラミング / `green`(pytest 講座と同系統のテスト講座のため)
 - 対象者(受講直前の状態): プログラミング入門(TypeScript 入門相当)修了後。簡単な関数・条件分岐が読める

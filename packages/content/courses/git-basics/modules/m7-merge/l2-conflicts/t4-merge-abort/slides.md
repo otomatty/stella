@@ -4,7 +4,7 @@ title: --abortでやり直す
 takeaway: "迷ったら git merge --abort で、マージ前の状態に戻ってやり直せる"
 introduces: [--abort]
 requires: [merge, マージ, コンフリクト, status]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-2-4
 # --abortでやり直す
 
-Git入門研修 — Module 7 / レッスン7-2
+Git入門 — Module 7 / レッスン7-2
 
 <!-- ノート: コンフリクトの最中の逃げ道です。これがあるからマージは怖くありません。 -->
 

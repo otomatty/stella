@@ -4,7 +4,7 @@ title: 普通に消してもよい
 takeaway: "エクスプローラで消しても、git add -A が削除を変更として拾ってくれる"
 introduces: [-A]
 requires: [add, rm, 変更, status]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-3-3
 # 普通に消してもよい
 
-Git入門研修 — Module 2 / レッスン2-3
+Git入門 — Module 2 / レッスン2-3
 
 <!-- ノート: git rmを使わずに消してしまった場合の話です。よくやる操作なので、救済策とセットで覚えます。 -->
 

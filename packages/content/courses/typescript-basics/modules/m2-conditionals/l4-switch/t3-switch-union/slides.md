@@ -4,7 +4,7 @@ title: switchとリテラルのユニオン型
 takeaway: "リテラルのユニオン型をswitchで分けると、候補の書き間違いを実行前に防げる"
 introduces: []
 requires: [switch, case, リテラル型, ユニオン型, 絞り込み]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-4-3
 # switchとリテラルのユニオン型
 
-TypeScript入門研修 — Module 2 / レッスン2-4
+TypeScript入門 — Module 2 / レッスン2-4
 
 <!-- ノート: Module 2の最後のトピックです。1-5-3で学んだ型と、いま学んだswitchが合流します。 -->
 

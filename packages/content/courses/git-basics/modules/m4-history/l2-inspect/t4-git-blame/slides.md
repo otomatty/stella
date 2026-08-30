@@ -4,7 +4,7 @@ title: git blameで書いた人を調べる
 takeaway: "git blame で「その行を最後に変えたコミットと人」を調べられる"
 introduces: [blame]
 requires: [コミット, ハッシュ, show, コミットメッセージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-2-4
 # git blameで書いた人を調べる
 
-Git入門研修 — Module 4 / レッスン4-2
+Git入門 — Module 4 / レッスン4-2
 
 <!-- ノート: モジュール4の最後は、コミット単位ではなく「行単位」でいきさつを調べる道具です。 -->
 

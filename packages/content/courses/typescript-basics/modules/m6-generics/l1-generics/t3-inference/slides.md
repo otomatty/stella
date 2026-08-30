@@ -4,7 +4,7 @@ title: 型引数は推論される
 takeaway: "型引数は渡した値から推論されるので、ふつうは書かなくてよい"
 introduces: []
 requires: [ジェネリック関数, 型引数, 型推論, 呼び出し]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-1-3
 # 型引数は推論される
 
-TypeScript入門研修 — Module 6 / レッスン6-1
+TypeScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: 前のトピックの呼び出しでは、型を1度も書きませんでした。なぜ動いたのかをここで説明します。 -->
 

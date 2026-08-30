@@ -4,7 +4,7 @@ title: CSSの当て方は3通りある
 takeaway: "CSSはstyle属性・style要素・外部ファイルの3通りで当てられ、既定は外部ファイル"
 introduces: [インラインスタイル, style属性, style要素]
 requires: [CSS, スタイルシート, link, head, 属性, 宣言, セレクタ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-1-4
 # CSSの当て方は3通りある
 
-HTML/CSS入門研修 — Module 3 / レッスン3-1
+HTML/CSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 外部ファイルの書き方は覚えました。ここで「なぜそれを選ぶのか」を他の2つとの比較で固めます。 -->
 

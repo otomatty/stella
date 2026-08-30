@@ -4,7 +4,7 @@ title: originは呼び名
 takeaway: "origin は clone 元のリモートに自動で付く呼び名"
 introduces: [origin]
 requires: [clone, リモート, URL]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-1-4
 # originは呼び名
 
-Git入門研修 — Module 8 / レッスン8-1
+Git入門 — Module 8 / レッスン8-1
 
 <!-- ノート: これから何度も目にするoriginという単語の正体を、ここで押さえます。 -->
 

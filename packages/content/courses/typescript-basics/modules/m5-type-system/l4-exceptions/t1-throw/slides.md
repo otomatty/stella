@@ -4,7 +4,7 @@ title: throwで異常を投げる
 takeaway: "throwは処理を中断し、呼び出し元まで異常を伝える"
 introduces: [throw, Error, 例外]
 requires: [関数, 実行, エラー, return, 戻り値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-4-1
 # throwで異常を投げる
 
-TypeScript入門研修 — Module 5 / レッスン5-4
+TypeScript入門 — Module 5 / レッスン5-4
 
 <!-- ノート: レッスン5-4は例外処理です。5-3でunknownを学んだ直後に置いているのには理由があり、それは最後のトピックで分かります。 -->
 

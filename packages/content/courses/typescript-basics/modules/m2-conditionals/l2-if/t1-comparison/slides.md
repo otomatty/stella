@@ -4,7 +4,7 @@ title: 比較演算子
 takeaway: "比較演算子の結果はboolean。等価の判定は「===」を使う"
 introduces: [比較演算子, 等価比較]
 requires: [boolean, number, string, true, false]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-2-1
 # 比較演算子
 
-TypeScript入門研修 — Module 2 / レッスン2-2
+TypeScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 条件分岐を書く前に、そもそも「条件」をどう作るのかを1つ押さえます。ここが分岐のすべての入口になります。 -->
 

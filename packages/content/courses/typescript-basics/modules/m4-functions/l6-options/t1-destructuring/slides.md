@@ -4,7 +4,7 @@ title: 分割代入
 takeaway: "オブジェクトから必要なプロパティだけを、同じ名前の変数に取り出せる"
 introduces: [分割代入]
 requires: [オブジェクト, プロパティ, const, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-6-1
 # 分割代入
 
-TypeScript入門研修 — Module 4 / レッスン4-6
+TypeScript入門 — Module 4 / レッスン4-6
 
 <!-- ノート: Module 4の最後のレッスンです。まずは、次のトピックで必要になる書き方を1つ覚えます。 -->
 

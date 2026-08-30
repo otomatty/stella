@@ -4,7 +4,7 @@ title: クラスのreadonly
 takeaway: "readonlyを付けたプロパティは、コンストラクタでだけ値を入れられる"
 introduces: []
 requires: [readonly, クラス, プロパティ, コンストラクタ, private]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-2-3
 # クラスのreadonly
 
-TypeScript入門研修 — Module 7 / レッスン7-2
+TypeScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: 3-4-3で型エイリアスに付けたreadonlyが、クラスでも使えます。ただしタイミングに1つ特徴があります。 -->
 

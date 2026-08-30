@@ -4,7 +4,7 @@ title: 注釈と推論、どちらを書くか
 takeaway: "初期値がある変数は推論に任せる。書くのは推論できないときだけ"
 introduces: []
 requires: [型推論, 型注釈, 初期値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-2-5
 # 注釈と推論、どちらを書くか
 
-TypeScript入門研修 — Module 1 / レッスン1-2
+TypeScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 型注釈と型推論、どちらでも同じ結果になることがわかりました。では実際に書くときの方針を1つだけ決めます。 -->
 

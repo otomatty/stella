@@ -4,7 +4,7 @@ title: COUNTで件数を数える
 takeaway: "COUNT(*) で、条件に合う行が何件あるかを数えられる"
 introduces: [集計, COUNT]
 requires: [SELECT, 行, WHERE]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 5-1-1
 # COUNTで件数を数える
 
-SQL入門研修 — Module 5 / レッスン5-1
+SQL入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 最後のModule 5は「まとめて数える」話です。行を取り出すのではなく、行から数字を作ります。 -->
 

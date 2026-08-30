@@ -4,7 +4,7 @@ title: -dは未マージを断る
 takeaway: "-d は未マージなら断ってくれる(-D の強制は本当によいか確かめてから)"
 introduces: [-D]
 requires: [-d, branch, ブランチ, マージ, log]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-3-2
 # -dは未マージを断る
 
-Git入門研修 — Module 7 / レッスン7-3
+Git入門 — Module 7 / レッスン7-3
 
 <!-- ノート: -dの安全装置の話です。断られたときの正しい受け止め方を押さえます。 -->
 

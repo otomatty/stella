@@ -4,7 +4,7 @@ title: 「+」の2つの顔
 takeaway: "「+」は相手が文字列なら連結、数値なら足し算になる"
 introduces: [文字列連結]
 requires: [string, number, 四則演算]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-4-3
 # 「+」の2つの顔
 
-TypeScript入門研修 — Module 1 / レッスン1-4
+TypeScript入門 — Module 1 / レッスン1-4
 
 <!-- ノート: レッスン1-4の最後は、Module 1でいちばん重要な落とし穴です。ここを知っているかどうかで、デバッグにかかる時間が変わります。 -->
 

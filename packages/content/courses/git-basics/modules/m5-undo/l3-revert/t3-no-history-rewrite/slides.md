@@ -4,7 +4,7 @@ title: 履歴を消す取り消しは封印
 takeaway: "履歴そのものを書き換える取り消し(reset --hard 等)は、この研修では使わない"
 introduces: [reset --hard]
 requires: [revert, コミット, 履歴, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-3-3
 # 履歴を消す取り消しは封印
 
-Git入門研修 — Module 5 / レッスン5-3
+Git入門 — Module 5 / レッスン5-3
 
 <!-- ノート: 検索すると必ず出会う危険なコマンドについて、名前と危険性だけを予防接種として伝えます。使い方は教えません。 -->
 

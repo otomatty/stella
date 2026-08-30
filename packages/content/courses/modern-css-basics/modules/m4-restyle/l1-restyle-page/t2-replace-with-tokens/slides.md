@@ -4,7 +4,7 @@ title: 宣言をトークンの参照に置き換える
 takeaway: "棚卸しした値を:rootのトークンにまとめ、各宣言をvar()の参照に置き換える"
 introduces: []
 requires: [棚卸し, トークン, ":root", var, oklch]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 4-1-2
 # 宣言をトークンの参照に置き換える
 
-モダンCSS入門研修 — Module 4 / レッスン4-1
+モダンCSS入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 棚卸しの表ができたら、いよいよCSSに手を入れます。 -->
 

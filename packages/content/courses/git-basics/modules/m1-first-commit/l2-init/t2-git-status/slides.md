@@ -4,7 +4,7 @@ title: git statusは現在地
 takeaway: "git status は今の状態を教えてくれる(困ったらまずこれを打つ)"
 introduces: [status]
 requires: [init, リポジトリ, コマンド]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-2-2
 # git statusは現在地
 
-Git入門研修 — Module 1 / レッスン1-2
+Git入門 — Module 1 / レッスン1-2
 
 <!-- ノート: この研修で一番よく打つことになるコマンドを紹介します。 -->
 

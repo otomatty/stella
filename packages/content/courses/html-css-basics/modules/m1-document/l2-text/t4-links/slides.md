@@ -4,7 +4,7 @@ title: リンクはaのhrefでつなぐ
 takeaway: "aのhref属性に行き先を書くと、クリックで移動できるリンクになる"
 introduces: [リンク, a, href]
 requires: [属性, 属性値, 要素]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-2-4
 # リンクはaのhrefでつなぐ
 
-HTML/CSS入門研修 — Module 1 / レッスン1-2
+HTML/CSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: レッスン1-2の最後です。ページを1枚で終わらせず、つなぐための要素を扱います。 -->
 

@@ -4,7 +4,7 @@ title: パンくずは順番のあるol
 takeaway: "パンくずリストは、上の階層から順にnavの中のolで並べる"
 introduces: [パンくずリスト]
 requires: [ナビゲーション, HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-2-1
 # パンくずは順番のあるol
 
-UI部品入門研修 — Module 2 / レッスン2-2
+UI部品入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 2つ目のナビ部品です。いまページのどこにいるかを示す帯を作ります。 -->
 
@@ -45,7 +45,7 @@ UI部品入門研修 — Module 2 / レッスン2-2
   <ol>
     <li><a href="/">ホーム</a></li>
     <li><a href="/courses">研修一覧</a></li>
-    <li>UI部品 入門研修</li>
+    <li>UI部品 入門</li>
   </ol>
 </nav>
 ```

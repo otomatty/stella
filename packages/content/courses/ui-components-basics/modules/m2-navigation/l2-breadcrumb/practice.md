@@ -11,7 +11,7 @@
   <ol>
     <li><a href="/">ホーム</a></li>
     <li><a href="/courses">研修一覧</a></li>
-    <li aria-current="page">UI部品 入門研修</li>
+    <li aria-current="page">UI部品 入門</li>
   </ol>
 </nav>
 ```

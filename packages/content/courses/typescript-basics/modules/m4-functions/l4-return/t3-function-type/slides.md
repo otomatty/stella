@@ -4,7 +4,7 @@ title: 関数の型
 takeaway: "関数そのものの型は「(引数: 型) => 戻り値の型」と書く"
 introduces: [関数型]
 requires: [関数, 引数, 戻り値, アロー関数, 型, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-4-3
 # 関数の型
 
-TypeScript入門研修 — Module 4 / レッスン4-4
+TypeScript入門 — Module 4 / レッスン4-4
 
 <!-- ノート: 4-2-1で「関数は値である」と学びました。値なら型があるはずです。その型の書き方です。 -->
 

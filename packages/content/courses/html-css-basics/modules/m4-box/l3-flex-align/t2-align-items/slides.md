@@ -4,7 +4,7 @@ title: align-itemsは交差軸の揃え方
 takeaway: "align-itemsは、フレックスアイテムを交差軸のどこに揃えるかを決める"
 introduces: [align-items]
 requires: [交差軸, フレックスコンテナ, フレックスアイテム, 高さ, justify-content]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-3-2
 # align-itemsは交差軸の揃え方
 
-HTML/CSS入門研修 — Module 4 / レッスン4-3
+HTML/CSS入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 主軸の次は交差軸。プロパティが違うだけで、考え方は同じです。 -->
 

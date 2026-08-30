@@ -1,4 +1,4 @@
-# テスト設計と品質保証 入門研修 カリキュラム(takeaway 一覧)
+# テスト設計と品質保証 入門 カリキュラム(takeaway 一覧)
 
 設計書: [2026-08-20-test-design-basics-design.md](../../../../docs/superpowers/specs/2026-08-20-test-design-basics-design.md)
 
@@ -8,7 +8,7 @@
 - Web(LMS): スライド視聴・まとめ・確認クイズ(合格点 80)
 - コード演習(自動採点): なし(Python はランナー対象外)
 - ハンズオン: practice.md の 2 段構え(①ケース表を書く → ②手元の Python + pytest で実装する)
-- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
+- 前提講座: **Python テスト自動化と CI 入門(`python-testing-ci-basics`)**。テスト設計は「何をどう作るか」を知らないと空回りする発展概念なので、テストの書き方と CI を通ってから受講します。ハンズオン(pytest 実装)の道具もそこでそろいます(`course.json` の `prerequisites` に対応)
 - 対象外: レビュープロセスの詳細、テストマネジメント論(見積り技法・構成管理)、ツール分類学、
   JSTQB 模擬試験、pytest の網羅的な機能解説、UI/E2E 自動化ツールの操作
 

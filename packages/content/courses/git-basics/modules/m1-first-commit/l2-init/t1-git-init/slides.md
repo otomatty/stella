@@ -4,7 +4,7 @@ title: git initで始める
 takeaway: "git init で、今のフォルダがリポジトリになる"
 introduces: [init]
 requires: [リポジトリ, 作業フォルダ, cd, コマンド]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-2-1
 # git initで始める
 
-Git入門研修 — Module 1 / レッスン1-2
+Git入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 準備が済んだので、自分のリポジトリを初めて作ります。 -->
 

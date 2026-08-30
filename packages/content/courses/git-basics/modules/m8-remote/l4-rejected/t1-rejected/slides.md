@@ -4,7 +4,7 @@ title: rejectedは先行の合図
 takeaway: "rejected はリモートが自分より先へ進んでいる合図(壊れていない)"
 introduces: [rejected]
 requires: [push, リモート, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-4-1
 # rejectedは先行の合図
 
-Git入門研修 — Module 8 / レッスン8-4
+Git入門 — Module 8 / レッスン8-4
 
 <!-- ノート: リモート編で最初に出会う赤いエラーです。意味が分かれば、まったく怖くないことを確かめます。 -->
 

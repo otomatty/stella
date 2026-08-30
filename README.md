@@ -1,6 +1,6 @@
 # FALCON INFORMAL
 
-SES未経験エンジニア向け **TypeScript 入門研修** を配信する LMS。教材の正本は `packages/content`。
+SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。教材の正本は `packages/content`。
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
 - コード演習する (VS Code 拡張 `falcon.informal`) — P2

@@ -4,7 +4,7 @@ title: ソース管理ビュー
 takeaway: "VS Code のソース管理ビューから add・commit・push ができる"
 introduces: [ソース管理ビュー]
 requires: [add, commit, push, ステージングエリア]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-3-1
 # ソース管理ビュー
 
-Git入門研修 — Module 10 / レッスン10-3
+Git入門 — Module 10 / レッスン10-3
 
 <!-- ノート: このレッスンでは、ここまでターミナルでやってきた操作をVS Codeの画面から行う方法を覚えます。まずは入口となる画面からです。 -->
 

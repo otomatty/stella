@@ -4,7 +4,7 @@ title: リストは箇条書きを表す
 takeaway: "並んだ項目はulまたはolの中にliを並べて表す"
 introduces: [リスト, 項目]
 requires: [入れ子, 親要素, 子要素, 段落]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-2-3
 # リストは箇条書きを表す
 
-HTML/CSS入門研修 — Module 1 / レッスン1-2
+HTML/CSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 業務のページで最も出番が多いのが箇条書きです。入れ子の実例にもなります。 -->
 

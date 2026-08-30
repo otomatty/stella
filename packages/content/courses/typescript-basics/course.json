@@ -1,13 +1,13 @@
 {
-  "title": "TypeScript 入門研修",
-  "category": "プログラミング",
+  "title": "TypeScript 入門",
+  "category": "フロントエンド",
   "color": "indigo",
   "description": "未経験からの TypeScript 研修。ショート動画 1 本で 1 つだけ覚える粒度で、値・型・関数・非同期まで通す。",
-  "header": "TypeScript入門研修",
+  "header": "TypeScript入門",
   "tenantId": "ses",
-  "prerequisites": ["it-basics"],
+  "prerequisites": ["javascript-basics"],
   "canDo": "型を使って、バグを未然に防ぐコードが書ける",
-  "theme": "Web とデータの実践",
+  "theme": "Web の見た目と動き",
   "modules": {
     "m0-orientation": "M0. オリエンテーション",
     "m1-values": "M1. 値と変数",

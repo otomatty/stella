@@ -4,7 +4,7 @@ title: floatは文章を回り込ませる
 takeaway: "floatを指定すると、その要素が左右に寄り、後ろの文章が回り込む"
 introduces: [float, 回り込み]
 requires: [通常フロー, 画像, 段落, ボックス, ブロック, margin]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-5-3
 # floatは文章を回り込ませる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-5
+HTML/CSS入門 — Module 4 / レッスン4-5
 
 <!-- ノート: 古い指定ですが、いまも現役の用途が1つだけあります。そこに絞ります。 -->
 

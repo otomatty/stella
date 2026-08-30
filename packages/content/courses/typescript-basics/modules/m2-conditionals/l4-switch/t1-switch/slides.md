@@ -4,7 +4,7 @@ title: switch文
 takeaway: "switchは1つの値を複数の候補と上から順に比べる"
 introduces: [switch, case, break, default]
 requires: [if, else, 等価比較, ブロック]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-4-1
 # switch文
 
-TypeScript入門研修 — Module 2 / レッスン2-4
+TypeScript入門 — Module 2 / レッスン2-4
 
 <!-- ノート: Module 2の最後のレッスンです。分岐の3つ目の道具、switchを扱います。 -->
 

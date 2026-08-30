@@ -4,7 +4,7 @@ title: 入力欄の値はvalueで読む
 takeaway: "入力欄のいまの中身は、要素.valueで文字列として取れる"
 introduces: [value, 入力欄]
 requires: [querySelector, 文字列, Number, フォーム, submit, preventDefault]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-3-5
 # 入力欄の値はvalueで読む
 
-JavaScript入門研修 — Module 8 / レッスン8-3
+JavaScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: 講座最後の新トピックです。これで買い物リストの部品がすべてそろいます。 -->
 

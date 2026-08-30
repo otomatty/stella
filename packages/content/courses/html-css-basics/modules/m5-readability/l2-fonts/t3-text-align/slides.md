@@ -4,7 +4,7 @@ title: text-alignは行の寄せ方
 takeaway: "text-alignは箱の中で行をどちらに寄せるかを決める"
 introduces: [text-align, 行揃え]
 requires: [段落, プロパティ, 値, 見出し, ボックス, 中央寄せ, 行間]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-2-3
 # text-alignは行の寄せ方
 
-HTML/CSS入門研修 — Module 5 / レッスン5-2
+HTML/CSS入門 — Module 5 / レッスン5-2
 
 <!-- ノート: 4-2-5 で「箱を中央に」を扱いました。ここは「文字を中央に」です。混同しやすいので対比します。 -->
 

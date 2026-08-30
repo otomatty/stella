@@ -4,7 +4,7 @@ title: HEAD~1は1つ前
 takeaway: "HEAD~1 のように、今いる場所から相対的にコミットを指せる"
 introduces: [HEAD~1]
 requires: [HEAD, show, コミット, ハッシュ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-2-3
 # HEAD~1は1つ前
 
-Git入門研修 — Module 4 / レッスン4-2
+Git入門 — Module 4 / レッスン4-2
 
 <!-- ノート: HEADを起点にして「1つ前」「2つ前」を指す書き方を覚えます。数字を変えるだけの単純なしくみです。 -->
 

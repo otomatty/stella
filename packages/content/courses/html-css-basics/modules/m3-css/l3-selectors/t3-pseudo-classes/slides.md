@@ -4,7 +4,7 @@ title: 擬似クラスは状態で当たる
 takeaway: "コロンで始まる擬似クラスを付けると、その要素が特定の状態のときだけ当たる"
 introduces: [擬似クラス, hover, focus]
 requires: [セレクタ, クラスセレクタ, リンク, 入力欄, 見た目, 宣言]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-3-3
 # 擬似クラスは状態で当たる
 
-HTML/CSS入門研修 — Module 3 / レッスン3-3
+HTML/CSS入門 — Module 3 / レッスン3-3
 
 <!-- ノート: ここまでは「どの要素か」でした。ここからは「どんな状態か」で選びます。 -->
 

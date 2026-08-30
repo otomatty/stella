@@ -4,7 +4,7 @@ title: catchの引数はunknown
 takeaway: "catchで受け取る値はunknown。使う前に確かめる必要がある"
 introduces: []
 requires: [catch, unknown, 型ガード, Error, 絞り込み, throw]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-4-3
 # catchの引数はunknown
 
-TypeScript入門研修 — Module 5 / レッスン5-4
+TypeScript入門 — Module 5 / レッスン5-4
 
 <!-- ノート: レッスン5-4の最後です。このレッスンを5-3の直後に置いた理由が、ここで明らかになります。 -->
 

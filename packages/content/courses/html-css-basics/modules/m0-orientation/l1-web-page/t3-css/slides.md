@@ -4,7 +4,7 @@ title: CSSは見た目を決める
 takeaway: "CSSは、HTMLで置いたものの見た目を決めるための言語"
 introduces: [CSS, 見た目]
 requires: [HTML, 中身]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 0-1-3
 # CSSは見た目を決める
 
-HTML/CSS入門研修 — Module 0 / レッスン0-1
+HTML/CSS入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 中身の担当がHTMLだと分かったので、もう一方の担当を確定させます。 -->
 

@@ -4,7 +4,7 @@ title: margin autoで箱を中央に置く
 takeaway: "幅を決めたブロックにmargin: 0 autoを指定すると、左右中央に置かれる"
 introduces: [中央寄せ, auto]
 requires: [margin, 外側の余白, 幅, ブロック, ボックス, プロパティ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-2-5
 # margin autoで箱を中央に置く
 
-HTML/CSS入門研修 — Module 4 / レッスン4-2
+HTML/CSS入門 — Module 4 / レッスン4-2
 
 <!-- ノート: 並べ方の最後です。1つの箱をページの中央に置く、という定番の型を渡します。 -->
 

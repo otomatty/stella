@@ -4,7 +4,7 @@ title: 戻り値の型を書く理由
 takeaway: "戻り値の型を書いておくと、実装ミスを関数の中で止められる"
 introduces: []
 requires: [関数, 戻り値, 型注釈, 型推論, return, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-4-2
 # 戻り値の型を書く理由
 
-TypeScript入門研修 — Module 4 / レッスン4-4
+TypeScript入門 — Module 4 / レッスン4-4
 
 <!-- ノート: 戻り値の型は推論できます。レッスン1-2の方針なら省略してよいはずです。ここだけ例外にしている理由を説明します。 -->
 

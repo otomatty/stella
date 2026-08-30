@@ -4,7 +4,7 @@ title: any型
 takeaway: "anyは全てのチェックを止める。使うとTypeScriptの利点が消える"
 introduces: [any]
 requires: [型, 型注釈, エラー, 実行, コンパイラー]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-3-1
 # any型
 
-TypeScript入門研修 — Module 5 / レッスン5-3
+TypeScript入門 — Module 5 / レッスン5-3
 
 <!-- ノート: レッスン5-3では「型が分からない」場面を扱います。まずは、使ってはいけないほうの選択肢から。 -->
 

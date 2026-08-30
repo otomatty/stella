@@ -4,7 +4,7 @@ title: returnで結果を返す
 takeaway: "returnで返した値は、呼び出した場所の値になる"
 introduces: [return, 戻り値]
 requires: [関数, 呼び出し, 引数, 値, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-2-1
 # returnで結果を返す
 
-JavaScript入門研修 — Module 6 / レッスン6-2
+JavaScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: console.logする関数から、値を返す関数への転換点です。 -->
 

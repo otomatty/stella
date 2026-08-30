@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Maximize2, ZoomIn, ZoomOut } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
+import type { ViewState } from "./offscreen";
 import type { RadialBounds } from "./radial-layout";
 
 /** ズームの範囲。下限は「全体が見える」より少し引ける程度、上限は文字が粗れない程度。 */
@@ -44,6 +45,11 @@ const ABSOLUTE_MIN_SCALE = 0.05;
 const STEP_SCALE = 1.25;
 /** 全体表示のときに盤面の周囲へ残す余白 (px)。 */
 const FIT_PAD = 24;
+/**
+ * 最初に開いたときの倍率。全体を箱に収めると (20 星でも 0.3× 前後まで縮み)
+ * 星どうしが画面上で離れて見える。1× で中心の星座を見せ、外周はパンで辿る。
+ */
+const HOME_SCALE = 1;
 
 interface Transform {
   x: number;
@@ -64,6 +70,11 @@ const clampScale = (scale: number, floor: number) => Math.min(MAX_SCALE, Math.ma
 export interface SkillTreeCanvasHandle {
   /** 盤面座標 (x, y) が視界に入るようにパンする (フォーカス追従用)。 */
   ensureVisible: (x: number, y: number) => void;
+  /**
+   * 指定した盤面座標へ寄せて拡大する。すでに `targetScale` 以上なら倍率はそのまま、
+   * 中心だけ合わせる (全体表示からのクリックで「まず寄る」ために使う)。
+   */
+  focusOn: (x: number, y: number, targetScale: number) => void;
   /** 全体を表示に戻す。 */
   fit: () => void;
 }
@@ -83,7 +94,16 @@ interface SkillTreeCanvasProps {
    */
   handleRef?: RefObject<SkillTreeCanvasHandle | null>;
   children: ReactNode;
+  /**
+   * 盤面と一緒に動かない前面の層 (島へのジャンプ / 画面端の矢印)。操作ボタンと
+   * 同じ層に置く — `children` は transform の中なので、そこに出すと一緒に流れる。
+   */
+  overlay?: ReactNode;
   className?: string;
+  /** 倍率が変わったとき (ラベルの出し分け用)。パンだけでは呼ばない。 */
+  onScaleChange?: (scale: number) => void;
+  /** 見え方 (平行移動 / 倍率 / 箱の大きさ) が変わるたび。画面端の矢印の計算用。 */
+  onViewChange?: (view: ViewState) => void;
 }
 
 /** パン開始を無視する要素 (星や操作ボタンの上ではドラッグを始めない)。 */
@@ -119,7 +139,10 @@ export const SkillTreeCanvas = ({
   contentBounds,
   handleRef,
   children,
+  overlay,
   className,
+  onScaleChange,
+  onViewChange,
 }: SkillTreeCanvasProps) => {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
@@ -227,11 +250,37 @@ export const SkillTreeCanvas = ({
     });
   }, [worldWidth, worldHeight, fitScaleOf, updateZoomFloor]);
 
-  // 初回と盤面サイズの変化時は全体を見せるところから始める。
+  /**
+   * 中心の星座を 1× で見せる初期視点。全体表示 (`fitView`) は右上のボタンに残す。
+   */
+  const homeView = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || worldWidth <= 0 || worldHeight <= 0) return;
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    if (vw <= 0 || vh <= 0) return;
+    updateZoomFloor(vw, vh);
+    const scale = clampScale(HOME_SCALE, zoomFloor.current);
+    // 入口の星 = 盤面の中心。星の外接の重心だと、外周の星に引っ張られて
+    // 入口が画面の端へ寄る。
+    const cx = worldWidth / 2;
+    const cy = worldHeight / 2;
+    setAnimated(true);
+    touched.current = false;
+    setTransform(
+      constrain({
+        scale,
+        x: vw / 2 - cx * scale,
+        y: vh / 2 - cy * scale,
+      }),
+    );
+  }, [worldWidth, worldHeight, constrain, updateZoomFloor]);
+
+  // 初回と盤面サイズの変化時は中心の星座から始める。
   // (星の増減 = 教材の公開でしか起きないので、閲覧中に不意に動く心配はない。)
   useLayoutEffect(() => {
-    fitView();
-  }, [fitView]);
+    homeView();
+  }, [homeView]);
 
   /**
    * 箱の大きさが変わったら、いまの見え方を作り直す。
@@ -240,7 +289,7 @@ export const SkillTreeCanvas = ({
    * 中身が寄ったまま / はみ出したままになる (画面の回転、ウィンドウのリサイズ、
    * サイドバーの開閉。この盤面は `65vh` で親の幅にも追従する)。
    *
-   * **まだ触っていないときだけ全体表示に組み直し、触ったあとは可動域へ丸めるだけ**に
+   * **まだ触っていないときだけ初期視点に組み直し、触ったあとは可動域へ丸めるだけ**に
    * する。リサイズのたびに全体表示へ戻すと、拡大して見ている最中にウィンドウを
    * 動かしただけで見ていた場所を失う。
    */
@@ -254,12 +303,12 @@ export const SkillTreeCanvas = ({
         updateZoomFloor(viewport.clientWidth, viewport.clientHeight);
         setTransform((t) => constrain(t));
       } else {
-        fitView();
+        homeView();
       }
     });
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [constrain, fitView, updateZoomFloor]);
+  }, [constrain, homeView, updateZoomFloor]);
 
   const zoomAt = useCallback(
     (cx: number, cy: number, factor: number) => {
@@ -414,18 +463,48 @@ export const SkillTreeCanvas = ({
     [constrain],
   );
 
+  const focusOn = useCallback(
+    (x: number, y: number, targetScale: number) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+      setAnimated(true);
+      touched.current = true;
+      setTransform((prev) => {
+        const scale = clampScale(Math.max(prev.scale, targetScale), zoomFloor.current);
+        return constrain({
+          scale,
+          x: viewport.clientWidth / 2 - x * scale,
+          y: viewport.clientHeight / 2 - y * scale,
+        });
+      });
+    },
+    [constrain],
+  );
+
   useEffect(() => {
-    if (handleRef) handleRef.current = { ensureVisible, fit: fitView };
+    onScaleChange?.(transform.scale);
+  }, [transform.scale, onScaleChange]);
+
+  // 箱の大きさはリサイズ時に transform も組み直される (上の ResizeObserver) ので、
+  // transform の変化を見ていれば足りる。
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    onViewChange?.({ ...transform, width: viewport.clientWidth, height: viewport.clientHeight });
+  }, [transform, onViewChange]);
+
+  useEffect(() => {
+    if (handleRef) handleRef.current = { ensureVisible, focusOn, fit: fitView };
     return () => {
       if (handleRef) handleRef.current = null;
     };
-  }, [handleRef, ensureVisible, fitView]);
+  }, [handleRef, ensureVisible, focusOn, fitView]);
 
   return (
     <div
       ref={viewportRef}
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border bg-sunken/40",
+        "tree-board relative select-none overflow-hidden rounded-lg border",
         dragging ? "cursor-grabbing" : "cursor-grab",
         className,
       )}
@@ -445,7 +524,7 @@ export const SkillTreeCanvas = ({
       }}
     >
       <div
-        className={cn("absolute left-0 top-0", animated && "transition-transform duration-200")}
+        className={cn("absolute left-0 top-0", animated && "transition-transform duration-300")}
         style={{
           width: worldWidth,
           height: worldHeight,
@@ -456,11 +535,14 @@ export const SkillTreeCanvas = ({
         {children}
       </div>
 
+      {overlay}
+
       {/* 操作ボタン。マウスを使わない人の拡縮の導線でもある。 */}
       <div className="absolute right-2 top-2 flex flex-col gap-1">
         <Button
           size="icon-sm"
           variant="outline"
+          className="tree-zoom-btn"
           aria-label="拡大"
           onClick={() => zoomByButton(STEP_SCALE)}
         >
@@ -469,17 +551,24 @@ export const SkillTreeCanvas = ({
         <Button
           size="icon-sm"
           variant="outline"
+          className="tree-zoom-btn"
           aria-label="縮小"
           onClick={() => zoomByButton(1 / STEP_SCALE)}
         >
           <ZoomOut size={14} />
         </Button>
-        <Button size="icon-sm" variant="outline" aria-label="全体を表示" onClick={fitView}>
+        <Button
+          size="icon-sm"
+          variant="outline"
+          className="tree-zoom-btn"
+          aria-label="全体を表示"
+          onClick={fitView}
+        >
           <Maximize2 size={14} />
         </Button>
       </div>
 
-      <div className="pointer-events-none absolute bottom-2 left-3 text-[10.5px] text-ink-4">
+      <div className="tree-hint pointer-events-none absolute bottom-2 left-3 text-[10.5px]">
         ドラッグで移動 · ホイール / ピンチで拡大縮小
       </div>
     </div>

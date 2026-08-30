@@ -4,7 +4,7 @@ title: 型推論
 takeaway: "型注釈を書かなくても、初期値から型は自動で決まる"
 introduces: [型推論, 初期値]
 requires: [型注釈, 型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-2-4
 # 型推論
 
-TypeScript入門研修 — Module 1 / レッスン1-2
+TypeScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 前のトピックで型注釈の効果を確認しました。ここでは、実は毎回書かなくてもよいという話をします。 -->
 

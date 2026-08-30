@@ -4,7 +4,7 @@ title: はみ出した中身はoverflowで決める
 takeaway: "箱に収まらない中身をどう扱うかは、overflowで決める"
 introduces: [overflow, スクロール]
 requires: [ボックス, 高さ, プロパティ, 値, 表, max-width]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-4-3
 # はみ出した中身はoverflowで決める
 
-HTML/CSS入門研修 — Module 5 / レッスン5-4
+HTML/CSS入門 — Module 5 / レッスン5-4
 
 <!-- ノート: この講座の最後のトピックです。高さを決めた箱で必ず出会う問題を扱います。 -->
 

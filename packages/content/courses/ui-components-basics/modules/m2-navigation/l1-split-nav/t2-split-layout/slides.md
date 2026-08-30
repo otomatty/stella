@@ -4,7 +4,7 @@ title: 離す項目はautoマージンで寄せる
 takeaway: "横並びのナビは、離したい項目にmargin-inline-start: autoを当てると端へ寄る"
 introduces: [スプリットナビ, autoマージン]
 requires: [ナビゲーション]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-1-2
 # 離す項目はautoマージンで寄せる
 
-UI部品入門研修 — Module 2 / レッスン2-1
+UI部品入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 2段階目のレイアウトです。ログインだけ右に離す、あの形を作ります。 -->
 

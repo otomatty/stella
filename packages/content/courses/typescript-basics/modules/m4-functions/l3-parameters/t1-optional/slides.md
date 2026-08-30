@@ -4,7 +4,7 @@ title: オプション引数
 takeaway: "引数名のうしろに「?」を付けると、渡さずに呼び出せる"
 introduces: [オプション引数]
 requires: [引数, undefined, オプショナルプロパティ, 型注釈, アロー関数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-3-1
 # オプション引数
 
-TypeScript入門研修 — Module 4 / レッスン4-3
+TypeScript入門 — Module 4 / レッスン4-3
 
 <!-- ノート: レッスン4-3では引数を柔軟にする道具を4つ扱います。まずは「渡さなくてもよい引数」から。 -->
 

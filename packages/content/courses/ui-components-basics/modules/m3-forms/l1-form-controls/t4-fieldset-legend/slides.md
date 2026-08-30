@@ -4,7 +4,7 @@ title: fieldsetで関連する入力をまとめる
 takeaway: "関連する入力はfieldsetで囲み、legendでそのまとまりの見出しを付ける"
 introduces: [fieldset, legend]
 requires: [ラジオボタン, チェックボックス]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-1-4
 # fieldsetで関連する入力をまとめる
 
-UI部品入門研修 — Module 3 / レッスン3-1
+UI部品入門 — Module 3 / レッスン3-1
 
 <!-- ノート: ラジオボタンのグループには、実はもう1つ足りないものがあります。 -->
 

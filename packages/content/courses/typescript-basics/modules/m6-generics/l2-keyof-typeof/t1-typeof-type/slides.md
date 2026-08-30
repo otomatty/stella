@@ -4,7 +4,7 @@ title: typeof型演算子
 takeaway: "型の位置で使うtypeofは、変数から型を取り出す"
 introduces: [typeof型演算子]
 requires: [型エイリアス, オブジェクト, typeof, as const, 型注釈, 型推論]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-2-1
 # typeof型演算子
 
-TypeScript入門研修 — Module 6 / レッスン6-2
+TypeScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: レッスン6-2では、既にある型や値から新しい型を作る道具を扱います。まずは値から型を取り出す演算子です。 -->
 

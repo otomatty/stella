@@ -1,0 +1,14 @@
+{
+  "title": "コマンドライン入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】バックエンド開発の足場になるターミナル操作を身につける研修。",
+  "header": "コマンドライン入門",
+  "tenantId": "ses",
+  "prerequisites": ["sql-basics"],
+  "canDo": "ターミナルでファイル操作・プロセス確認・コマンドの組み合わせができる",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

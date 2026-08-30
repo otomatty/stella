@@ -8,7 +8,7 @@ Python で関数やスクリプトは書けるが、テストコードを書い�
 - 手を動かす部分: `practice.md` の「手元で試す」。手元の Python と pytest で実行して確かめる
 - コード演習(VS Code 拡張の採点)は **この講座にはありません**。採点基盤(`@falcon/code-runner`)のランナーは
   JavaScript / TypeScript / SQL の 3 つで、Python は対象外です(`@falcon/shared` の `Language` 型)
-- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
+- 前提講座: **TypeScript 入門（サーバー）(`typescript-node-basics`)**。この講座は Python の文法を教えないため、バックエンドルートの言語段階(コマンドライン → Node.js → サーバー TypeScript)を通ってプログラムの読み書きができる状態を前提にします(`course.json` の `prerequisites` に対応)。テストと CI は「開発を知ってから」の発展概念として、入口直下には置きません
 - 対象外: デプロイ自動化(CD)、IaC、Docker の詳細、GitHub Actions の高度な構文(matrix・再利用ワークフロー等)、
   AWS 固有のテスト手法(Lambda / Glue、moto / LocalStack)、負荷試験・E2E ツールの実装、lint / 型チェッカーの詳細な設定方法
 
@@ -99,7 +99,7 @@ Python で関数やスクリプトは書けるが、テストコードを書い�
 ## 設計メモ(要件定義からの申し送り)
 
 - **前提講座**: この講座は Python の文法を教えません。関数・引数・戻り値・リスト・辞書・例外の読み書きができる状態を前提にします。
-  リポジトリに Python の入門講座が無いため、前提講座 slug の指定は **保留** です。Python 入門講座を追加したら、ここに slug を書いてください
+  リポジトリに Python の入門講座が無いため、プログラミングの読み書きの担保として `typescript-node-basics` を前提にしています(言語は違うが、関数・引数・例外のことばがそろう)。Python 入門講座を追加したら前提を差し替えてください
 - **語彙台帳は講座をまたぎません**。「テスト」「PR」「CI」などの前提語は、この講座の M0 / M3 で導入し直しています
 - **コード演習は配線していません**。理由は上記のとおり採点基盤が Python 非対応のためです。
   Python ランナーが追加されたら、L1-1 / L1-2 に `course.json` の `exercises` を足すのが最初の候補です

@@ -4,7 +4,7 @@ title: filter
 takeaway: "filterは、条件に合う要素だけを残した新しい配列を作る"
 introduces: [filter]
 requires: [配列, コールバック, boolean, 比較演算子, map]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-5-3
 # filter
 
-TypeScript入門研修 — Module 4 / レッスン4-5
+TypeScript入門 — Module 4 / レッスン4-5
 
 <!-- ノート: mapは要素数が変わりませんでした。減らしたいときの道具です。 -->
 

@@ -4,7 +4,7 @@ title: git showで中身を見る
 takeaway: "git show ID で、そのコミットのメッセージと差分を見る"
 introduces: [show]
 requires: [コミット, ハッシュ, コミットメッセージ, diff, --oneline]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-2-1
 # git showで中身を見る
 
-Git入門研修 — Module 4 / レッスン4-2
+Git入門 — Module 4 / レッスン4-2
 
 <!-- ノート: このレッスンでは、履歴の一覧ではなく「1つのコミット」を狙い撃ちで調べます。最初は git show です。 -->
 

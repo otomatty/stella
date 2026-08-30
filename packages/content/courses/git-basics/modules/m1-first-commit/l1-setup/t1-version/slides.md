@@ -4,7 +4,7 @@ title: インストールを確かめる
 takeaway: "git --version が表示されれば、Gitは使える状態にある"
 introduces: ["--version"]
 requires: [Git, ターミナル, コマンド, オプション]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-1-1
 # インストールを確かめる
 
-Git入門研修 — Module 1 / レッスン1-1
+Git入門 — Module 1 / レッスン1-1
 
 <!-- ノート: ここからいよいよ手を動かします。最初の一歩は、自分のPCでGitが使えるかどうかの確認です。 -->
 

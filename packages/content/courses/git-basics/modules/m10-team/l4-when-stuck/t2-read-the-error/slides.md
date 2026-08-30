@@ -4,7 +4,7 @@ title: エラーは次の一手を書いている
 takeaway: "Git のエラーメッセージには、次に打つべき一手が書いてある"
 introduces: []
 requires: [switch, commit, stash]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-4-2
 # エラーは次の一手を書いている
 
-Git入門研修 — Module 10 / レッスン10-4
+Git入門 — Module 10 / レッスン10-4
 
 <!-- ノート: 現在地の確かめ方の次は、Gitが赤い文字で何か言ってきたときの対処です。 -->
 

@@ -4,7 +4,7 @@ title: フォルダを移動する
 takeaway: "cd でフォルダを移動してから git コマンドを打つ"
 introduces: [cd]
 requires: [ターミナル, コマンド, pwd, Git, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-3-3
 # フォルダを移動する
 
-Git入門研修 — Module 0 / レッスン0-3
+Git入門 — Module 0 / レッスン0-3
 
 <!-- ノート: 現在地の確認の次は移動です。gitコマンドを打つ前の型として覚えます。 -->
 

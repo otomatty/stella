@@ -4,7 +4,7 @@ title: 「??」で既定値を用意する
 takeaway: "「??」は、左が null か undefined のときだけ右の値を使う"
 introduces: [null合体演算子]
 requires: [undefined, null, ユニオン型, 三項演算子, 絞り込み]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-3-3
 # 「??」で既定値を用意する
 
-TypeScript入門研修 — Module 2 / レッスン2-3
+TypeScript入門 — Module 2 / レッスン2-3
 
 <!-- ノート: レッスン2-3の最後です。「値がなければ代わりにこれ」を1行で書く演算子を1つ覚えます。実務で毎日使います。 -->
 

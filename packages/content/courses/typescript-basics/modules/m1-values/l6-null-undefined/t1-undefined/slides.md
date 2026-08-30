@@ -4,7 +4,7 @@ title: undefined
 takeaway: "undefinedは「値がまだ入っていない」ことを表す値"
 introduces: [undefined]
 requires: [変数, 宣言, 初期値, let]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-6-1
 # undefined
 
-TypeScript入門研修 — Module 1 / レッスン1-6
+TypeScript入門 — Module 1 / レッスン1-6
 
 <!-- ノート: Module 1の最後のレッスンです。テーマは「値がない」。バグの温床であり、TypeScriptがいちばん得意とする領域でもあります。 -->
 

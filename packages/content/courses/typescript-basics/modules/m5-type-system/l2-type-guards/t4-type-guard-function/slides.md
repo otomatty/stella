@@ -4,7 +4,7 @@ title: 型ガード関数
 takeaway: "戻り値の型を「引数 is 型」と書くと、判定を関数に切り出せる"
 introduces: [型ガード関数]
 requires: [型ガード, 関数, boolean, 戻り値, 型注釈, in, ユニオン型]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-2-4
 # 型ガード関数
 
-TypeScript入門研修 — Module 5 / レッスン5-2
+TypeScript入門 — Module 5 / レッスン5-2
 
 <!-- ノート: レッスン5-2の最後です。判定を関数にまとめたいときの書き方を1つ覚えます。 -->
 

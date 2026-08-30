@@ -4,7 +4,7 @@ title: 三項演算子は値を選ぶ
 takeaway: "条件 ? A : B は、条件によってAかBの値になる"
 introduces: [三項演算子, 式]
 requires: [条件, 真偽値, if, else, 代入]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-2-2
 # 三項演算子は値を選ぶ
 
-JavaScript入門研修 — Module 4 / レッスン4-2
+JavaScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: if文との違いは「値になる」こと。文と式の区別に軽く触れる回でもあります。 -->
 

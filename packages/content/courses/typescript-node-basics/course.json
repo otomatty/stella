@@ -1,0 +1,14 @@
+{
+  "title": "TypeScript 入門（サーバー）",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】サーバー側で TypeScript の型を使い、Node.js から小さなプログラムを書く研修。フロントエンドの TypeScript 入門とは別講座で、クリアは共有しない。",
+  "header": "TypeScript 入門（サーバー）",
+  "tenantId": "ses",
+  "prerequisites": ["node-basics"],
+  "canDo": "サーバー側の TypeScript で型を付けて、Node.js から小さなプログラムを書ける",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

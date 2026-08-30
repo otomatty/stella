@@ -4,7 +4,7 @@ title: カードはarticleで1つに囲む
 takeaway: "カードは、見出し・本文・リンクをarticleで1つに囲んだ部品"
 introduces: [部品, カード, HTML骨格]
 requires: []
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 1-1-1
 # カードはarticleで1つに囲む
 
-UI部品入門研修 — Module 1 / レッスン1-1
+UI部品入門 — Module 1 / レッスン1-1
 
 <!-- ノート: この講座の1本目です。最初の部品はカードで、まずHTMLだけを書きます。 -->
 

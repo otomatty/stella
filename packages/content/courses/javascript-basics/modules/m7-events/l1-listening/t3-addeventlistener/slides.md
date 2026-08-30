@@ -4,7 +4,7 @@ title: addEventListenerで処理を登録する
 takeaway: "addEventListenerで、イベントが起きたときに動く関数を登録できる"
 introduces: [addEventListener, イベントリスナー, 登録]
 requires: [イベント, querySelector, click, アロー関数, コールバック]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-1-3
 # addEventListenerで処理を登録する
 
-JavaScript入門研修 — Module 7 / レッスン7-1
+JavaScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: この講座の山場の1つ。「ボタンを押したら動く」が初めて実現します。 -->
 

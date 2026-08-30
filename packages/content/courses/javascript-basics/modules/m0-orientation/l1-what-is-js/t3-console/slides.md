@@ -4,7 +4,7 @@ title: コンソールで動きを確かめる
 takeaway: "console.logで出した値は、開発者ツールのコンソールで確認できる"
 introduces: [console.log, コンソール, 開発者ツール]
 requires: [JavaScript, ブラウザー, scriptタグ]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-1-3
 # コンソールで動きを確かめる
 
-JavaScript入門研修 — Module 0 / レッスン0-1
+JavaScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: HTML/CSS入門で使った開発者ツールに、JavaScript用の画面があることを紹介します。 -->
 

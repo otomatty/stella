@@ -2,7 +2,7 @@
 
 トピック形式(1トピック = ショート動画1本 = 覚えることが1つ)での全体構成です。定義は `CLAUDE.md`、執筆ルールは `STYLE_GUIDE.md` を参照してください。
 
-前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)。
+前提講座: **JavaScript 入門(`javascript-basics`)**。言語の基礎と DOM 操作を通してから、型を足します(`course.json` の `prerequisites` に対応)。ITのきほん → HTML/CSS 入門は、JavaScript 入門の前提として先に通るので、ここには重ねて書きません。後続は準備中の `react-basics`(npm とビルドツール入門も前提)と `fetch-api-basics`。バックエンドの TypeScript は別講座 (`typescript-node-basics`) で、この講座のクリアとは共有しません。
 
 **全10モジュール(M0〜M9)/ 42レッスン / 162トピック**(動画総時間の目安 約7時間)
 

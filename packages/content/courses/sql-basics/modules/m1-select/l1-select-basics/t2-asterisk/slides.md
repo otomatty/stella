@@ -4,7 +4,7 @@ title: "*で全列を取り出す"
 takeaway: "*(アスタリスク)を使うと、テーブルの全列を取り出せる"
 introduces: ["*"]
 requires: [SELECT, FROM, 列, テーブル]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 1-1-2
 # *で全列を取り出す
 
-SQL入門研修 — Module 1 / レッスン1-1
+SQL入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 列を選ぶ書き方の次は、全部まとめて取り出す書き方です。記号1文字だけの短いトピックです。 -->
 

@@ -4,7 +4,7 @@ title: ユニオン型は共通部分しか使えない
 takeaway: "ユニオン型の値は、どちらの型でもできることしか使えない"
 introduces: []
 requires: [ユニオン型, string, number, 型注釈, length]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-1-1
 # ユニオン型は共通部分しか使えない
 
-TypeScript入門研修 — Module 5 / レッスン5-1
+TypeScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: Module 5は型システムを深く扱います。1-5-2で学んだユニオン型を、実務で使えるところまで持っていきます。 -->
 

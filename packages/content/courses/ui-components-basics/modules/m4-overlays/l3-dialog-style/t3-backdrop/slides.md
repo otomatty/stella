@@ -4,7 +4,7 @@ title: 背面の暗さは::backdrop
 takeaway: "モーダルの背面の暗さは::backdropで指定する"
 introduces: ["::backdrop"]
 requires: [ダイアログ, モーダル]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-3-3
 # 背面の暗さは::backdrop
 
-UI部品入門研修 — Module 4 / レッスン4-3
+UI部品入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 講座の最後のトピックです。4段階目の状態にあたる、背面の見た目です。 -->
 

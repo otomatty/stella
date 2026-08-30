@@ -4,7 +4,7 @@ title: PRの流れ
 takeaway: "流れは、枝を push → PR を開く → レビュー → マージ"
 introduces: [レビュー]
 requires: [PR, ブランチ, push, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-1-2
 # PRの流れ
 
-Git入門研修 — Module 9 / レッスン9-1
+Git入門 — Module 9 / レッスン9-1
 
 <!-- ノート: PRが何かは押さえました。次は、PRを使った作業が始めから終わりまでどう進むのか、全体の流れを1本に通します。 -->
 

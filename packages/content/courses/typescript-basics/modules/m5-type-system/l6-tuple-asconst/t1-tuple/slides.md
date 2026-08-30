@@ -4,7 +4,7 @@ title: タプル
 takeaway: "タプルは、要素の型と個数を固定した配列"
 introduces: [タプル]
 requires: [配列, 型注釈, 要素, インデックス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-6-1
 # タプル
 
-TypeScript入門研修 — Module 5 / レッスン5-6
+TypeScript入門 — Module 5 / レッスン5-6
 
 <!-- ノート: Module 5の最後のレッスンです。型を固定するための道具を4つ扱います。まずは配列の特殊形から。 -->
 

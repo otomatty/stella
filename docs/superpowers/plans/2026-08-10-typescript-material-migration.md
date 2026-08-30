@@ -619,7 +619,7 @@ describe("parseSlides", () => {
       'takeaway: "constは再代入できない、letはできる"',
       "introduces: [const, let, 再代入]",
       "requires: [変数, 宣言, 代入]",
-      'header: "TypeScript入門研修"',
+      'header: "TypeScript入門"',
       "---",
       "",
       "# 1-1-2",
@@ -1156,7 +1156,7 @@ export function buildContentManifest(root: string = defaultRoot()): {
     courses: [
       {
         id: COURSE_SLUG,
-        title: "TypeScript 入門研修",
+        title: "TypeScript 入門",
         category: "プログラミング",
         color: "indigo",
         lessonsCount,
@@ -1575,7 +1575,7 @@ Expected: どちらも PASS
 bun run dev:api
 ```
 
-別ターミナルで `bun run dev` を起動し、`TypeScript 入門研修` → `M1. 値と変数` を開いて次を確認する。
+別ターミナルで `bun run dev` を起動し、`TypeScript 入門` → `M1. 値と変数` を開いて次を確認する。
 
 1. `1-1 ドキュメント`（text）— 見出し・コードブロック・`<details>` が崩れず出る
 2. `1-1-2 constとletの違い`（slides）— 4〜6 枚がページ送りでき、`1 / 5` のような枚数表示と進捗バーが動く。**講師ノートが表示されていないこと**を確認する
@@ -2564,7 +2564,7 @@ bun run db:seed:remote
 
 - [ ] **Step 4: 本番で受講者として通しで確認する**
 
-`TypeScript 入門研修` を開き、次の 4 つを確認する。
+`TypeScript 入門` を開き、次の 4 つを確認する。
 
 1. `1-1-2 constとletの違い` のスライドが表示され、ページ送りで進捗が記録される
 2. `1-1 ドキュメント` の本文と図解画像が表示される

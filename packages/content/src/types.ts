@@ -47,9 +47,22 @@ export interface CourseConfig {
    * 散文で明記されているものだけ。推奨・任意の受講順はここに書かない
    * (書いた瞬間ゲートになり、受講者が入れなくなる)。
    *
-   * 未知 slug・自己参照・循環はビルドで落とす (manifest.ts)。
+   * 未知 slug・自己参照・循環はビルドで落とす (manifest.ts)。スキルツリー上、
+   * 1 つの星から出る枝は **最大 2 本** (AND 合流は枝に数えないが、親側の線には
+   * なる)。3 本以上になるなら直列化する。島への橋は線を引かないので数えない。
+   *
+   * 見た目の複製 (`appearances`) がある講座は、扇ごとの前提を
+   * `appearancePrerequisites` に書く。そのときはこの配列は組の **和集合**
+   * (グラフ検査・seed 用) で、開く条件は組どうしの OR になる。
    */
   prerequisites?: string[];
+  /**
+   * スキルツリーで線を引く親 (slug)。`prerequisites` のうちの 1 つ。線・配置・視界は
+   * この 1 本で決まり、解放条件は `prerequisites` 全部 (AND) のまま。
+   * 前提が 2 つ以上なら必須、1 つなら省略可 (その 1 つが親)、0 なら書けない。
+   * `appearances` を持つ講座は扇ごとの親を `appearancePrerequisites` に書くので、これは書けない。
+   */
+  parent?: string;
   /**
    * 到達説明。「このスキルを身につけた人は◯◯ができる」のホバー表示に使う 1 文。
    * 「〜できる」で終える。誇張しない (資格の合格保証などは書かない)。
@@ -60,6 +73,18 @@ export interface CourseConfig {
    * これだけが見える。カテゴリ単位でそろえる (講座ごとに凝った名前を付けない)。
    */
   theme?: string;
+  /**
+   * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 講座のまま
+   * (クリアは共有)。未設定なら `category` の扇に 1 つ。実行時の正本は
+   * `@falcon/shared/skill-map/appearances` で、ここはドキュメント兼検査用。
+   */
+  appearances?: string[];
+  /**
+   * 扇ごとの前提 slug。キーは `appearances` と同じ扇名。実体のロックは
+   * どれか 1 組を満たせば開く (OR)。実行時の正本は
+   * `@falcon/shared/skill-map/appearances` の `SKILL_MAP_APPEARANCE_PREREQUISITES`。
+   */
+  appearancePrerequisites?: Record<string, string[]>;
 }
 
 export interface QuizSeed {

@@ -4,7 +4,7 @@ title: try-catch-finally
 takeaway: "tryで囲むと、投げられた例外をcatchで受け止められる"
 introduces: [try, catch, finally]
 requires: [throw, 例外, ブロック, Error]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-4-2
 # try-catch-finally
 
-TypeScript入門研修 — Module 5 / レッスン5-4
+TypeScript入門 — Module 5 / レッスン5-4
 
 <!-- ノート: 投げられた例外を受け止める側です。3つのブロックの役割を1つずつ確認します。 -->
 

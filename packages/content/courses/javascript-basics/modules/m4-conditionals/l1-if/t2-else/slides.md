@@ -4,7 +4,7 @@ title: elseとelse ifで道を分ける
 takeaway: "elseは条件が偽のときの道、else ifは条件を足した道を作る"
 introduces: [else, else if, 分岐]
 requires: [if, 条件, false, ブロック]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-1-2
 # elseとelse ifで道を分ける
 
-JavaScript入門研修 — Module 4 / レッスン4-1
+JavaScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: ifを2択・3択に広げるトピックです。「上から順に、最初に当たった道だけ」が核心です。 -->
 

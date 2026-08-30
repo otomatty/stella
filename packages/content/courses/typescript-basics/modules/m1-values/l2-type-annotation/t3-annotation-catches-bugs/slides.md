@@ -4,7 +4,7 @@ title: 型注釈が防いでくれるもの
 takeaway: "型注釈があると、違う種類の値を入れた瞬間に実行前のエラーで気づける"
 introduces: []
 requires: [型注釈, number, string]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-2-3
 # 型注釈が防いでくれるもの
 
-TypeScript入門研修 — Module 1 / レッスン1-2
+TypeScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 型注釈の書き方はわかりました。ここでは、それを書くと具体的に何が起きるのかを1つだけ確認します。 -->
 

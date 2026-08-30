@@ -4,7 +4,7 @@ title: pytest の最小形
 takeaway: "pytest は test_ で始まる関数の assert が成り立つかでテストの合否を決める"
 introduces: [pytest, テスト関数, assert]
 requires: [テストケース, 期待結果, 代表値, 自動テスト]
-header: "テスト設計入門研修"
+header: "テスト設計入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "テスト設計入門研修"
 # 3-1-5
 # pytest の最小形
 
-テスト設計入門研修 — Module 3 / レッスン3-1
+テスト設計入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 設計したケース表を、実行できる形に写します。ここが設計と実装の接点です。 -->
 

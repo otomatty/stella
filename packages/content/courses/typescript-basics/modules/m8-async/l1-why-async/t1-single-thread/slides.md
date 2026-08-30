@@ -4,7 +4,7 @@ title: JavaScriptはシングルスレッド
 takeaway: "JavaScriptは一度に1つの処理しかできない。だから待つと全部止まる"
 introduces: [シングルスレッド, 同期処理]
 requires: [JavaScript, 実行, 関数, プログラム]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-1-1
 # JavaScriptはシングルスレッド
 
-TypeScript入門研修 — Module 8 / レッスン8-1
+TypeScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: Module 8は非同期処理です。ここまでの道具がすべて揃ったので、実務のコードがそのまま読めるようになります。まずは前提となる仕組みから。 -->
 

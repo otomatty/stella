@@ -4,7 +4,7 @@ title: フォーカスは:focus-visibleで出す
 takeaway: "入力欄のフォーカスは、枠を消したままにせず:focus-visibleで出し直す"
 introduces: []
 requires: [select, textarea, 状態, ":focus-visible"]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-2-3
 # フォーカスは:focus-visibleで出す
 
-UI部品入門研修 — Module 3 / レッスン3-2
+UI部品入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 4段階目の状態です。フォームでは、フォーカスがいちばん大事な状態です。 -->
 

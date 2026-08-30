@@ -1,11 +1,11 @@
-# UI部品 入門研修 カリキュラム
+# UI部品 入門 カリキュラム
 
-モダンCSS 入門研修(`modern-css-basics`)の次に受ける講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
+モダンCSS 入門(`modern-css-basics`)の次に受ける講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
 代表的な UI 部品を **HTML と CSS だけで、部品ごとに段階的に** 作ります。
 構成は [MDN Web ドキュメント](https://developer.mozilla.org/) の CSS レイアウトクックブックと Learn web development に合わせています。
 
 想定する受講順は `html-css-basics` → `modern-css-basics` → **本講座** → `page-composition-basics` です。
-前提講座: モダンCSS 入門研修(`modern-css-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
+前提講座: モダンCSS 入門(`modern-css-basics`)。修了していないと本講座は開きません(スキルツリーのハードロック)。
 
 ## 終了時の目標
 

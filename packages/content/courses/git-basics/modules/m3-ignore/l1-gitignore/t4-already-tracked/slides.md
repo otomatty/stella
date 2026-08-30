@@ -4,7 +4,7 @@ title: 追跡済みは無視されない
 takeaway: "すでに追跡中のファイルは、.gitignore に書くだけでは無視されない"
 introduces: [追跡, --cached]
 requires: [.gitignore, コミット, status, rm, commit, -m]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 3-1-4
 # 追跡済みは無視されない
 
-Git入門研修 — Module 3 / レッスン3-1
+Git入門 — Module 3 / レッスン3-1
 
 <!-- ノート: .gitignoreのつまずきどころ第1位です。書いたのに効かない、という状況の正体を押さえます。 -->
 

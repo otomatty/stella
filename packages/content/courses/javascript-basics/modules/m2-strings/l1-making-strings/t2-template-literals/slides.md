@@ -4,7 +4,7 @@ title: テンプレートリテラルで埋め込む
 takeaway: "バッククォートで囲んだ文字列には、${}で変数の値を埋め込める"
 introduces: [テンプレートリテラル, バッククォート, 埋め込み]
 requires: [文字列, 変数, 引用符, const]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-1-2
 # テンプレートリテラルで埋め込む
 
-JavaScript入門研修 — Module 2 / レッスン2-1
+JavaScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 文字列組み立ての本線をテンプレートリテラルに置くトピックです。 -->
 

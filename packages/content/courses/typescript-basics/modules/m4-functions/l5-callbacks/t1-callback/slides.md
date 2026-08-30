@@ -4,7 +4,7 @@ title: コールバック
 takeaway: "関数は値なので、他の関数に引数として渡せる"
 introduces: [コールバック]
 requires: [関数型, アロー関数, 引数, 呼び出し, 型エイリアス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-5-1
 # コールバック
 
-TypeScript入門研修 — Module 4 / レッスン4-5
+TypeScript入門 — Module 4 / レッスン4-5
 
 <!-- ノート: レッスン4-5は Module 4 の山場です。4-2-1の「関数は値である」が、ここで実用になります。 -->
 

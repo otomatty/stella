@@ -4,7 +4,7 @@ title: HAVINGで集計結果を絞り込む
 takeaway: "集計した結果を絞り込むときは、WHERE ではなく HAVING を使う"
 introduces: [HAVING]
 requires: [GROUP BY, WHERE, 集計関数]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 5-1-4
 # HAVINGで集計結果を絞り込む
 
-SQL入門研修 — Module 5 / レッスン5-1
+SQL入門 — Module 5 / レッスン5-1
 
 <!-- ノート: この研修最後のトピックです。集計の後にもう一段絞り込む、仕上げの道具です。 -->
 

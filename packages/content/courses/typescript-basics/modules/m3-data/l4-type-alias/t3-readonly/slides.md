@@ -4,7 +4,7 @@ title: readonlyプロパティ
 takeaway: "プロパティの前にreadonlyを付けると、後から書き換えられなくなる"
 introduces: [readonly]
 requires: [型エイリアス, プロパティ, 代入, const, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-4-3
 # readonlyプロパティ
 
-TypeScript入門研修 — Module 3 / レッスン3-4
+TypeScript入門 — Module 3 / レッスン3-4
 
 <!-- ノート: 3-2-2で「constでも中身は変えられる」と学びました。では中身を守りたいときはどうするのか。その答えです。 -->
 

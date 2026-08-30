@@ -65,7 +65,11 @@ import {
   updateEntry,
 } from "../lib/hall-of-fame-data.js";
 import type { HallOfFameRow, HallOfFameRowWithProfile } from "../lib/hall-of-fame-data.js";
-import { loadSkillMapSource } from "../lib/skill-map-data.js";
+import {
+  loadSkillMapSource,
+  wantsDevReveal,
+  type SkillMapLoadOptions,
+} from "../lib/skill-map-data.js";
 import { evaluateSkillMapFor } from "./skill-map.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -137,11 +141,12 @@ async function resolveFollowStage(
   db: Db,
   caller: Caller,
   path: { id: string; title: string }[],
+  opts: SkillMapLoadOptions,
 ): Promise<{ stage_id: string; stage_title: string } | null> {
   if (caller.role !== "student") return null;
   if (path.length === 0) return null;
 
-  const source = await loadSkillMapSource(db, caller);
+  const source = await loadSkillMapSource(db, caller, opts);
   const result = evaluateSkillMapFor(source);
   const byId = new Map(source.stages.map((stage) => [stage.id, stage]));
 
@@ -338,7 +343,9 @@ hallOfFameRoute.get("/api/hall-of-fame/:id", async (c) => {
       throw new ApiError("この掲載は見つかりません", 404);
     }
 
-    const follow = await resolveFollowStage(db, caller, row.pathSnapshot);
+    const follow = await resolveFollowStage(db, caller, row.pathSnapshot, {
+      showAllIslands: wantsDevReveal(c),
+    });
     return c.json({
       entry: {
         ...cardPayload(row),

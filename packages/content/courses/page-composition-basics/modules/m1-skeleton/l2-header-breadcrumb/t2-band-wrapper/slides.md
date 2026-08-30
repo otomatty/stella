@@ -4,7 +4,7 @@ title: 帯は全幅、中身はwrapper
 takeaway: "headerの帯は全幅に伸ばし、中身はwrapperで本文と同じ幅の中央にそろえる"
 introduces: [帯, wrapper]
 requires: [header, main, トークン, ページ]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 1-2-2
 # 帯は全幅、中身はwrapper
 
-ページ構成入門研修 — Module 1 / レッスン1-2
+ページ構成入門 — Module 1 / レッスン1-2
 
 <!-- ノート: ヘッダの見た目の定番、全幅の帯と幅のそろった中身を作ります。 -->
 

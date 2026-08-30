@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { isBackendConfigured } from "@/lib/backend";
+import { subscribeDevMode } from "@/lib/dev-mode";
 import {
   addToStageQueue,
   getSkillMap,
@@ -97,6 +98,9 @@ export function useSkillMap(
   useEffect(() => {
     void refetch();
   }, [refetch]);
+
+  // FAB で開発者モードを切り替えるとヘッダが変わるので、道を取り直す。
+  useEffect(() => subscribeDevMode(() => void refetch()), [refetch]);
 
   const setActiveStage = useCallback(
     async (stageId: string | null) => {

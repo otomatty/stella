@@ -4,7 +4,7 @@ title: ブランチに戻る
 takeaway: "git switch main のようにブランチへ移れば、いつもの状態に戻る"
 introduces: []
 requires: [switch, main, detached HEAD, ブランチ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-3-3
 # ブランチに戻る
 
-Git入門研修 — Module 6 / レッスン6-3
+Git入門 — Module 6 / レッスン6-3
 
 <!-- ノート: 見学モードからの帰り道です。行き方・表示の意味ときて、最後に帰り方。これでレッスンが閉じます。 -->
 

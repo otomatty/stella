@@ -4,7 +4,7 @@ title: PRは取り込みの依頼
 takeaway: "プルリクエストは「このブランチを取り込んでほしい」という依頼と相談の場"
 introduces: [プルリクエスト, PR]
 requires: [ブランチ, GitHub, push, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-1-1
 # PRは取り込みの依頼
 
-Git入門研修 — Module 9 / レッスン9-1
+Git入門 — Module 9 / レッスン9-1
 
 <!-- ノート: ここからModule 9、プルリクエストの話に入ります。まずは「プルリクエストとは何か」を1つだけ押さえます。 -->
 

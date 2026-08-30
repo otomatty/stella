@@ -4,7 +4,7 @@ title: git mvは移動の記録
 takeaway: "git mv は「名前を変えた・移動した」という変更を記録する"
 introduces: [mv]
 requires: [変更, 記録, status, commit]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-3-2
 # git mvは移動の記録
 
-Git入門研修 — Module 2 / レッスン2-3
+Git入門 — Module 2 / レッスン2-3
 
 <!-- ノート: 削除に続いて、名前の変更と移動です。これも変更の一種として記録します。 -->
 

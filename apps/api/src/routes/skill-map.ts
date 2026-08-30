@@ -16,10 +16,11 @@
  *   - `locked` の星は **到達説明 (`can_do`) を返さない**。ロック中に見せるのは
  *     「何が要るか」(`lock_reasons`) だけ、という設計をここで確定させる
  *   - `name-only` の星はタイトルと解放条件まで。到達説明は返さない
- *   - `fog` の星は **テーマ名 (`theme`) だけ**。タイトルも slug もカテゴリも解放条件も
- *     返さない。テーマはカテゴリ相当の粗い括りで、そこだけは霧の中でも見える
- *     (「まだ名前も知らない星がこの辺りにある」ことが分かる)。テーマを持たない
- *     ステージ (CMS で作った直後など) は `？？？` で埋める
+ *   - `fog` の星は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
+ *     ぼかして「予告」として見せる。前提線はリング = 深さの計算に要る)。slug・
+ *     到達説明・解放条件・受講登録は返さない — URL を組める / 中身が分かる /
+ *     個人の割当が読める情報は霧の向こうに出さない。テーマを持たないステージ
+ *     (CMS で作った直後など) のテーマは `？？？` で埋める
  *   - **他の星の解放条件に混ぜて名前を漏らさない**。距離 3 以上の前提が
  *     `lock_reasons` にタイトルで出ると、霧の星の名前が手前の星から読めてしまう。
  *     そこも同じ規則 (テーマ名 → `？？？`) に伏せる
@@ -30,7 +31,8 @@
 
 import { Hono } from "hono";
 import { isDiscoveryVisible } from "@falcon/shared/discovery/types";
-import { evaluateSkillMap } from "@falcon/shared/skill-map/evaluate";
+import { appearancePrerequisitesOf, appearancesOf } from "@falcon/shared/skill-map/appearances";
+import { evaluateSkillMap, parentSlugOf } from "@falcon/shared/skill-map/evaluate";
 import type {
   SkillMapLockReason,
   SkillMapState,
@@ -52,12 +54,14 @@ import {
   loadPassedDiscoveryIds,
 } from "../lib/discovery-data.js";
 import {
+  isDevMode,
   loadEnrolledStageIds,
   loadFocusCompletions,
   loadSkillMapSource,
   loadSkillProfileCounts,
   loadStudyDays,
   saveFocusStageId,
+  wantsDevReveal,
 } from "../lib/skill-map-data.js";
 import type { SkillMapSource } from "../lib/skill-map-data.js";
 import { dropFromQueue } from "./stage-queue.js";
@@ -99,6 +103,27 @@ const FOCUS_LOOKBACK_DAYS = 120;
  */
 const FOG_LABEL = "？？？";
 
+/** slug に対応する見た目の複製先。無ければ項目ごと付けない。 */
+function appearancesPayload(slug: string): { appearances?: string[] } {
+  const sectors = appearancesOf(slug);
+  return sectors && sectors.length > 0 ? { appearances: [...sectors] } : {};
+}
+
+/** 扇ごとの親 id。slug が無い霧でもレイアウトが線を張れるようにする。 */
+function appearanceParentPayload(
+  slug: string,
+  idBySlug: Map<string, string>,
+): { appearance_parent_ids?: Record<string, string> } {
+  const groups = appearancePrerequisitesOf(slug);
+  if (!groups) return {};
+  const mapped: Record<string, string> = {};
+  for (const [sector, slugs] of Object.entries(groups)) {
+    const id = idBySlug.get(slugs[0] ?? "");
+    if (id !== undefined) mapped[sector] = id;
+  }
+  return { appearance_parent_ids: mapped };
+}
+
 /**
  * `locked` の星の解放条件を、**視界に応じて伏せた**表示名にする。
  *
@@ -111,10 +136,11 @@ export function maskedLockReasons(
   source: SkillMapSource,
   result: ReturnType<typeof evaluateSkillMapFor>,
   stageId: string,
+  revealDev = false,
 ): string[] {
   const byId = new Map(source.stages.map((stage) => [stage.id, stage]));
   return (result.lockReasons.get(stageId) ?? []).map((reason: SkillMapLockReason) =>
-    reason.stageId !== undefined && result.visibility.get(reason.stageId) === "fog"
+    !revealDev && reason.stageId !== undefined && result.visibility.get(reason.stageId) === "fog"
       ? (byId.get(reason.stageId)?.theme ?? FOG_LABEL)
       : reason.label,
   );
@@ -136,50 +162,62 @@ export interface SkillMapStagePayload {
   id: string;
   state: SkillMapState;
   visibility: SkillMapVisibility;
-  /** 霧の外でだけ入る。 */
+  /** 霧の外でだけ入る (URL・API の識別子は霧の中に出さない)。 */
   slug?: string;
+  /**
+   * タイトルは **霧の中でも入る**。スキルツリーは霧の星も名前を「ぼかして」見せる
+   * (先に何があるかの予告)。ぼかしは画面側の演出で、値そのものは開示している —
+   * 隠したい名前の教材はそもそも公開しない、が線引き。
+   */
   title?: string;
   category?: string;
-  /** 霧の中でも見える唯一の手がかり。 */
+  /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバックでもある。 */
   theme?: string;
+  /**
+   * 講座アイコン (単色シルエット SVG) の R2 キー。**霧の外でだけ入る** — アイコンの形は
+   * 講座の正体をそのまま語るので、slug と同じ秘匿ルールに従う。
+   */
+  icon_path?: string;
   /** `full` かつ locked でない星にだけ入る。 */
   can_do?: string;
   /**
-   * locked の星にだけ入る。未充足の前提の表示名 — 見えている前提はタイトル、
+   * locked かつ霧の外の星にだけ入る。未充足の前提の表示名 — 見えている前提はタイトル、
    * 霧の中の前提はテーマ名 / 伏せ字、未知 slug は「非公開の教材」。
    */
   lock_reasons?: string[];
   /**
    * 受講登録があるか (道の上で「今すぐ始められる星」を描き分けるのに使う)。
    *
-   * **霧の星には付けない。** 霧に出してよいのはテーマ名だけ、という規則を項目を
-   * 足すたびに緩めないため (「割り当てられた星がこの辺りにある」も情報になる)。
+   * **霧の星には付けない。** 名前 (title) は予告として見せるが、個人の割当状況まで
+   * 霧の向こうに出す理由はない (「割り当てられた星がこの辺りにある」も情報になる)。
    */
   enrolled?: boolean;
   /**
-   * 前提ステージの id (スキルツリーが星と星を線で結ぶのに使う)。
+   * 線を引く親ステージの id (スキルツリーが星と星を線で結び、深さ = リングを決めるのに使う)。
+   * 線は 1 本だけ。解放条件 (前提 AND) は `lock_reasons` が名前で出す。
    *
-   * **霧の星には付けない** — 霧に出すのはテーマ名だけ、の規則をここでも守る。
-   * 一方、霧の星が「見えている星の前提として」この配列に現れることは許す:
-   * その星の id と存在は応答に既にあり (テーマ名だけの行として返している)、
-   * 未充足なら `lock_reasons` にも伏せ字で並んでいるので、線 1 本で増える情報は
-   * 「そこに繋がっている」ことだけ。名前・カテゴリ・到達説明は依然として出ない。
-   *
-   * **`lock_reasons` と突き合わせると霧の星の id とテーマ名が対応づく点は受容する。**
-   * 手前の星の `prerequisite_ids` は順序どおりの id 列、`lock_reasons` は同じ前提の
-   * 表示名 (霧の中はテーマ名) の列なので、並べれば「この id はこのテーマ」まで解ける。
-   * ただしテーマ名は霧の星の行そのものが既に返している開示済みの情報で、増分は
-   * **トポロジ (どの星がどの星の前提か)** だけ。トポロジは教材カタログの構造であって
-   * 個人の学習状況でも未公開の中身でもなく、これを隠すには前提の線ごと落とすしかない
-   * (= スキルツリーが星の散らばりになる)。見取り図としての価値の方が大きいと判断した。
+   * **霧の星にも付ける。** 線が無いと盤面はその星の深さを計算できず、ずっと先の
+   * スキルが内側のリングに置かれてしまう (前提の浅い星ほど中心に近い、が崩れる)。
+   * トポロジは教材カタログの構造であって個人の学習状況でも未公開の中身でもない。
    */
-  prerequisite_ids?: string[];
+  parent_id?: string;
+  /**
+   * 同じステージを複数の扇に置くときの扇名。実体は 1 つ (クリアは共有)。
+   * **霧の星にも付ける。** slug を出さない霧でも、レイアウトが複製できるようにする。
+   */
+  appearances?: string[];
+  /**
+   * 扇ごとの親ステージ id。複製した星は自分の扇の親から線を引く。
+   * **霧の星にも付ける。**
+   */
+  appearance_parent_ids?: Record<string, string>;
 }
 
 skillMapRoute.get("/api/skill-map/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const source = await loadSkillMapSource(db, caller);
+    const revealDev = wantsDevReveal(c);
+    const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
     const result = evaluateSkillMapFor(source);
 
     if (result.cycles.length > 0) {
@@ -193,6 +231,15 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     /** 霧の中の星に出してよい唯一の名前 (テーマ名。無ければ伏せ字)。 */
     const fogNameOf = (stageId: string): string => byId.get(stageId)?.theme ?? FOG_LABEL;
 
+    // 線を引く親。前提は slug で書かれている (正本が id を知らないため) ので id へ解く。
+    // 未知 slug (未公開 / 削除済み) は解けないので線も引かない — 生の slug を
+    // 出さない評価器の規則を、こちらの項目でも同じに保つ。
+    const parentIdOf = (stage: SkillMapSource["stages"][number]): { parent_id?: string } => {
+      const slug = parentSlugOf(stage);
+      const id = slug === undefined ? undefined : idBySlug.get(slug);
+      return id === undefined ? {} : { parent_id: id };
+    };
+
     const payload: SkillMapStagePayload[] = source.stages.map((stage) => {
       const state = result.states.get(stage.id) ?? "locked";
       const visibility = result.visibility.get(stage.id) ?? "fog";
@@ -201,9 +248,36 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         state,
         visibility,
         ...(stage.theme ? { theme: stage.theme } : {}),
+        ...appearancesPayload(stage.slug),
+        ...appearanceParentPayload(stage.slug, idBySlug),
       };
-      // 霧の星はテーマ名だけ。テーマを持たないステージも「そこに星がある」ことは見せる。
-      if (visibility === "fog") return { ...base, theme: fogNameOf(stage.id) };
+      // 霧の星: 通常は名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
+      // slug・到達説明・解放条件・受講登録はここで止める。
+      // 開発者表示 (`revealDev`) では slug と解放条件も載せる — 視界は fog のまま
+      // (開始 / 腕試しは依然として断る) で、画面がぼかさず名前を出す材料にする。
+      if (visibility === "fog") {
+        if (!revealDev) {
+          return {
+            ...base,
+            theme: fogNameOf(stage.id),
+            title: stage.title,
+            category: stage.category,
+            ...parentIdOf(stage),
+          };
+        }
+        return {
+          ...base,
+          slug: stage.slug,
+          title: stage.title,
+          category: stage.category,
+          enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
+          ...parentIdOf(stage),
+          ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
+          ...(state === "locked"
+            ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
+            : {}),
+        };
+      }
 
       const named: SkillMapStagePayload = {
         ...base,
@@ -211,14 +285,10 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         title: stage.title,
         category: stage.category,
         enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
-        // 未知 slug (未公開 / 削除済み) は解けないので線も引かない — 生の slug を
-        // 出さない評価器の規則を、こちらの項目でも同じに保つ。
-        prerequisite_ids: stage.prerequisites.flatMap((slug) => {
-          const id = idBySlug.get(slug);
-          return id === undefined ? [] : [id];
-        }),
+        ...parentIdOf(stage),
+        ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
         ...(state === "locked"
-          ? { lock_reasons: maskedLockReasons(source, result, stage.id) }
+          ? { lock_reasons: maskedLockReasons(source, result, stage.id, revealDev) }
           : {}),
       };
       // 到達説明は「もう手が届く星」にだけ。ロック中と 2 歩先は解放条件だけを見せる。
@@ -282,6 +352,10 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           next_multiplier: focusBonus.nextMultiplier,
         },
         generated_at: new Date().toISOString(),
+        /** サーバの `DEV_MODE` が立っているか。FAB を出す判定に使う。 */
+        dev_mode_available: isDevMode(c.env),
+        /** この応答が開発者表示か (島全配信 + 霧の名前を明かす)。 */
+        dev_mode: revealDev,
       },
     });
   } catch (err) {
@@ -324,7 +398,7 @@ skillMapRoute.put("/api/skill-map/active-stage", async (c) => {
       }
 
       // 保存する前に評価器を 1 度回して、選んではいけない星を弾く。
-      const source = await loadSkillMapSource(db, caller);
+      const source = await loadSkillMapSource(db, caller, { showAllIslands: wantsDevReveal(c) });
       if (source.clearedStageIds.has(stageId)) {
         // クリア済みは秘密ではない (本人が終わらせた星) ので、そのまま理由を返す。
         throw new ApiError("クリア済みのステージは選べません", 400);

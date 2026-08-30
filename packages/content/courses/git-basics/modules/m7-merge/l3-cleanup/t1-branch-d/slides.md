@@ -4,7 +4,7 @@ title: branch -dで消す
 takeaway: "マージし終えたブランチは git branch -d で消す(消えるのは付箋だけ)"
 introduces: [-d]
 requires: [branch, ブランチ, マージ, コミット, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-3-1
 # branch -dで消す
 
-Git入門研修 — Module 7 / レッスン7-3
+Git入門 — Module 7 / レッスン7-3
 
 <!-- ノート: マージが済んだ後の片付けです。消すのが怖くない理由まで含めて押さえます。 -->
 

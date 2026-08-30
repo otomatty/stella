@@ -4,7 +4,7 @@ title: globalとローカルの設定
 takeaway: "--global はPC全体、指定なしはそのリポジトリだけの設定になる"
 introduces: []
 requires: [config, "--global", オプション, リポジトリ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-1-3
 # globalとローカルの設定
 
-Git入門研修 — Module 1 / レッスン1-1
+Git入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 前のトピックで設定した名乗りが「どこまで効くのか」を押さえます。 -->
 

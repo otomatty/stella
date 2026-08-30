@@ -4,6 +4,7 @@
 
 import { Hono } from "hono";
 
+import { isDevMode } from "../lib/skill-map-data.js";
 import type { Env } from "../env.js";
 
 export const healthzRoute = new Hono<{ Bindings: Env }>();
@@ -19,5 +20,7 @@ healthzRoute.get("/api/healthz", (c) => {
     // Google ログイン不具合の切り分けに使う (docs/google-login-troubleshooting.md)。
     googleOAuthConfigured: Boolean(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET),
     jwtConfigured: Boolean(c.env.AUTH_JWT_SECRET),
+    /** 開発者モード FAB を出していいか。本番には `DEV_MODE` を設定しない。 */
+    devModeAvailable: isDevMode(c.env),
   });
 });

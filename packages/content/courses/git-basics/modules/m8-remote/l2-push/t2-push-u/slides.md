@@ -4,7 +4,7 @@ title: 初回は-uで紐づける
 takeaway: "新しいブランチの初回は git push -u origin 枝名 で紐づける"
 introduces: [-u]
 requires: [push, ブランチ, origin, clone, main]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-2-2
 # 初回は-uで紐づける
 
-Git入門研修 — Module 8 / レッスン8-2
+Git入門 — Module 8 / レッスン8-2
 
 <!-- ノート: pushの唯一のつまずきポイント、新しいブランチの初回だけに要るひと手間を押さえます。 -->
 

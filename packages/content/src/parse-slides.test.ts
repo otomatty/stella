@@ -10,7 +10,7 @@ describe("parseSlides", () => {
       'takeaway: "constは再代入できない、letはできる"',
       "introduces: [const, let, 再代入]",
       "requires: [変数, 宣言, 代入]",
-      'header: "TypeScript入門研修"',
+      'header: "TypeScript入門"',
       "---",
       "",
       "# 1-1-2",

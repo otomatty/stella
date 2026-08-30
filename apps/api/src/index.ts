@@ -9,6 +9,7 @@ import type { Env } from "./env.js";
 import { getDb } from "./db/client.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
+import { DEV_MODE_HEADER } from "./lib/skill-map-data.js";
 import { adminRoute } from "./routes/admin.js";
 import { authRoute } from "./routes/auth.js";
 import { analyticsRoute } from "./routes/analytics.js";
@@ -50,7 +51,7 @@ app.use("/api/*", async (c, next) => {
     // null を返すと Access-Control-Allow-Origin ヘッダ自体が送られない (= 不許可)。
     origin: (origin) => resolveCorsOrigin(origin, c.env.ALLOWED_ORIGINS),
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER],
   });
   return corsMiddleware(c, next);
 });

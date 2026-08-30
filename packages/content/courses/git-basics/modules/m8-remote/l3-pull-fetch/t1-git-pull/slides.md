@@ -4,7 +4,7 @@ title: git pullで取り込む
 takeaway: "git pull で、リモートに増えたコミットを手元へ取り込む"
 introduces: [pull]
 requires: [リモート, コミット, push, fast-forward]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-3-1
 # git pullで取り込む
 
-Git入門研修 — Module 8 / レッスン8-3
+Git入門 — Module 8 / レッスン8-3
 
 <!-- ノート: pushの逆方向です。チームの変更を自分の手元に取り込む、毎朝打つことになるコマンドです。 -->
 

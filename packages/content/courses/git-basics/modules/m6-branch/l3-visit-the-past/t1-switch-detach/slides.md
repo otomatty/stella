@@ -4,7 +4,7 @@ title: 過去のコミットを開く
 takeaway: "git switch --detach ID で、過去のスナップショットをその場で開ける"
 introduces: [--detach]
 requires: [switch, スナップショット, ハッシュ, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-3-1
 # 過去のコミットを開く
 
-Git入門研修 — Module 6 / レッスン6-3
+Git入門 — Module 6 / レッスン6-3
 
 <!-- ノート: このレッスンは「過去を見に行く」です。履歴を読むだけでなく、過去の状態をフォルダごと開く方法を覚えます。 -->
 

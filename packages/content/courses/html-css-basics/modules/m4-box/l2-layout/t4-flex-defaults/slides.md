@@ -4,7 +4,7 @@ title: Flexの子は主軸に沿って縮む
 takeaway: "flexの子は既定で主軸に沿って1行に並び、収まらなければ縮む"
 introduces: [フレックスコンテナ, フレックスアイテム, 主軸, 交差軸]
 requires: [flex, display, 親要素, 子要素, 幅, gap]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-2-4
 # Flexの子は主軸に沿って縮む
 
-HTML/CSS入門研修 — Module 4 / レッスン4-2
+HTML/CSS入門 — Module 4 / レッスン4-2
 
 <!-- ノート: 「横に並ぶ」で止めると、あとで必ず「なぜ縮む」でつまずきます。ここで既定を回収します。 -->
 

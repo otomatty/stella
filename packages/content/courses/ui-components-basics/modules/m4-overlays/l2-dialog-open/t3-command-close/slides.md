@@ -4,7 +4,7 @@ title: 中のボタンでcloseする
 takeaway: 'ダイアログの中にcommand="close"のボタンを置くと、そのボタンで閉じられる'
 introduces: []
 requires: [ダイアログ, command, commandfor]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-2-3
 # 中のボタンでcloseする
 
-UI部品入門研修 — Module 4 / レッスン4-2
+UI部品入門 — Module 4 / レッスン4-2
 
 <!-- ノート: 開けたら、閉じ方も用意します。閉じられないダイアログは事故です。 -->
 

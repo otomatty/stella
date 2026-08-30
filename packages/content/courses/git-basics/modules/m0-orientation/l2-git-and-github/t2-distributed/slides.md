@@ -4,7 +4,7 @@ title: Gitは分散型
 takeaway: "Gitでは全員が完全な履歴のコピーを自分の手元に持つ"
 introduces: [分散型]
 requires: [Git, GitHub, 履歴, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-2-2
 # Gitは分散型
 
-Git入門研修 — Module 0 / レッスン0-2
+Git入門 — Module 0 / レッスン0-2
 
 <!-- ノート: Gitの履歴の持ち方には特徴があります。「分散型」という語を1つだけ導入します。 -->
 

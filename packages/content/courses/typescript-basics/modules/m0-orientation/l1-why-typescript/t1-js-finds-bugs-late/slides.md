@@ -4,7 +4,7 @@ title: JavaScriptは間違いに気づくのが遅い
 takeaway: "JavaScriptは、値の種類を間違えても実行するまで気づけない"
 introduces: [プログラム, 値, 実行, JavaScript, バグ]
 requires: []
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-1-1
 # JavaScriptは間違いに気づくのが遅い
 
-TypeScript入門研修 — Module 0 / レッスン0-1
+TypeScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 研修の最初のトピックです。TypeScriptの話に入る前に、なぜそれが必要とされたのかを1つだけ押さえます。 -->
 

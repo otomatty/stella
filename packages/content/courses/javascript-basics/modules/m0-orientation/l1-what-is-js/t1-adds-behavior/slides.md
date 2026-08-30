@@ -4,7 +4,7 @@ title: JavaScriptはページに動きを付ける
 takeaway: "JavaScriptは、HTMLとCSSで作ったページに動きを付けるための言語"
 introduces: [JavaScript, HTML, CSS, ブラウザー, 動き]
 requires: []
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-1-1
 # JavaScriptはページに動きを付ける
 
-JavaScript入門研修 — Module 0 / レッスン0-1
+JavaScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: HTML/CSS入門を終えた人が対象です。作った静的ページの「次」がこの講座だと伝えます。 -->
 

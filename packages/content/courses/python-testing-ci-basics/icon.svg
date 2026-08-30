@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- テスト結果の列: 通った行と落ちた行 (thumbnail の motif_python_testing の核)。
+       マスク用途 (アルファのみ) なので白抜きは使わず、丸は輪郭 + 中の記号も線で描く。 -->
+  <circle cx="6" cy="6.5" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M4.3 6.6 l1.3 1.5 2.4-2.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="12.5" y="5.5" width="9" height="2" rx="1" fill="currentColor"/>
+  <circle cx="6" cy="17.5" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M4.6 16.1 l2.8 2.8 M7.4 16.1 l-2.8 2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  <rect x="12.5" y="16.5" width="9" height="2" rx="1" fill="currentColor"/>
+</svg>

@@ -4,7 +4,7 @@ title: for-ofで1つずつ取り出す
 takeaway: "for-ofは、配列の要素を先頭から1つずつ取り出して繰り返す"
 introduces: [for-of, 繰り返し]
 requires: [配列, 要素, ブロック, const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-2-3
 # for-ofで1つずつ取り出す
 
-TypeScript入門研修 — Module 3 / レッスン3-2
+TypeScript入門 — Module 3 / レッスン3-2
 
 <!-- ノート: ここが Module 3 の山場です。配列と繰り返しが合流して、はじめて「まとめて処理する」ができるようになります。 -->
 

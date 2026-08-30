@@ -4,7 +4,7 @@ title: 1行の長さはchで抑える
 takeaway: "max-inline-sizeをchで指定すると、1行の文字数を読める長さに抑えられる"
 introduces: [ch]
 requires: [inline-size, max-inline-size]
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-1-3
 # 1行の長さはchで抑える
 
-モダンCSS入門研修 — Module 3 / レッスン3-1
+モダンCSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 文字サイズの次は、1行の長さです。読みやすさは行の長さでも決まります。 -->
 

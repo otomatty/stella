@@ -4,7 +4,7 @@ title: 本文はsectionで区切る
 takeaway: "mainの中身は、h2の見出しを持つsectionの区画で区切る"
 introduces: [section, 区画, 見出し]
 requires: [main, 骨格, ページ]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 2-1-1
 # 本文はsectionで区切る
 
-ページ構成入門研修 — Module 2 / レッスン2-1
+ページ構成入門 — Module 2 / レッスン2-1
 
 <!-- ノート: ここから本文の中身です。部品を並べる前に、本文の区切り方を決めます。 -->
 

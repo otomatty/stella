@@ -4,7 +4,7 @@ title: 同じ相手に当たると後の宣言が勝つ
 takeaway: "同じ条件で同じプロパティを指定したら、後に書いた宣言が勝つ"
 introduces: [カスケード, 上書き]
 requires: [宣言, セレクタ, プロパティ, スタイルシート]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-2-1
 # 同じ相手に当たると後の宣言が勝つ
 
-HTML/CSS入門研修 — Module 3 / レッスン3-2
+HTML/CSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: ここからは「書いたのに効かない」の原因を潰していきます。 -->
 

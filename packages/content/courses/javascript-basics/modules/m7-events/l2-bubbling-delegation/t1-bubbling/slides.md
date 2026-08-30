@@ -4,7 +4,7 @@ title: イベントは親へ伝わる
 takeaway: "clickなどのイベントは、起きた要素からその親、さらに親へと順に伝わっていく"
 introduces: [バブリング, 親要素]
 requires: [イベント, addEventListener, 要素, click]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-2-1
 # イベントは親へ伝わる
 
-JavaScript入門研修 — Module 7 / レッスン7-2
+JavaScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: バブリングです。最初は驚きの仕様ですが、委譲の土台として前向きに導入します。 -->
 

@@ -44,10 +44,10 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).not.toContain(`delete from sections where stage_id = '${webFundamentals}');`);
   });
 
-  it("slug を再利用した git-basics(Git 入門研修)は upsert し、旧デモ削除の対象にしない", () => {
+  it("slug を再利用した git-basics(Git 入門)は upsert し、旧デモ削除の対象にしない", () => {
     const gitBasics = stableUuid("course:ses:git-basics");
     expect(sql).toContain("'git-basics'");
-    expect(sql).toContain("Git 入門研修");
+    expect(sql).toContain("Git 入門");
     expect(sql).not.toContain(`delete from stages where id = '${gitBasics}'`);
   });
 
@@ -81,6 +81,13 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("thumbnail_path = excluded.thumbnail_path");
   });
 
+  // スキルツリーの講座アイコンは stages.icon_path が正本。列が upsert から落ちると、
+  // アイコンを差し替えても D1 が古いキー (= 消えない旧 R2 オブジェクト) を指したままになる。
+  it("stages の upsert は icon_path を含む", () => {
+    expect(sql).toMatch(/insert into stages \([^)]*\bicon_path\b[^)]*\)/);
+    expect(sql).toContain("icon_path = excluded.icon_path");
+  });
+
   // スキルツリーの 3 列 (Phase 1)。教材 (course.json) が正本なので、列が upsert から
   // 落ちると「前提を足したのに誰も開けない / 外したのにロックが残る」が黙って起きる。
   it("stages の upsert は prerequisites / can_do / theme を含む", () => {
@@ -103,10 +110,11 @@ describe("export-seed-sql (sqlite)", () => {
     // 教材が正本。course.json から前提を外したら D1 も null に戻る必要がある
     // ('[]' が残ると、読み直す側が「壊れた行」と区別できない)。
     // it-basics はスキルツリーの入口 (唯一の前提なし講座)。
-    const line = (sql.match(/^insert into stages .*'it-basics'.*$/m) ?? [])[0];
+    // slug 列で拾う (parent 列に 'it-basics' を持つ子の行と取り違えないため)。
+    const line = (sql.match(/^insert into stages .*'ses', 'it-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
-    // 並びは ... status, prerequisites, can_do, theme, created_at, updated_at。
-    expect(line).toMatch(/'published', null, '[^']*', '[^']*', cast\(unixepoch/);
+    // 並びは ... status, prerequisites, parent, can_do, theme, created_at, updated_at。
+    expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', cast\(unixepoch/);
     expect(line).not.toContain("'[]'");
   });
 

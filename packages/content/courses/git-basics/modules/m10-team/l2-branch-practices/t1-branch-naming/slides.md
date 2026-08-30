@@ -4,7 +4,7 @@ title: 枝名は種類/内容
 takeaway: "ブランチ名は feature/login-form のように「種類/内容」の型で付ける"
 introduces: []
 requires: [ブランチ, switch, -c]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-2-1
 # 枝名は種類/内容
 
-Git入門研修 — Module 10 / レッスン10-2
+Git入門 — Module 10 / レッスン10-2
 
 <!-- ノート: コミットメッセージと同じく、ブランチにも「伝わる名前」の型があります。このレッスンはブランチ運用の型を3つ押さえます。 -->
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildTodayPlan, TODAY_PLAN_MAX_MINUTES } from "./today-plan";
 
 const ACTIVE = {
-  stageTitle: "TypeScript 入門研修",
+  stageTitle: "TypeScript 入門",
   nextLessonTitle: "型注釈の基本",
   remainingLessons: 8,
 };

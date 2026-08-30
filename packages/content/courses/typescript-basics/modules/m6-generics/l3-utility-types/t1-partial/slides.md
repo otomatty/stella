@@ -4,7 +4,7 @@ title: ユーティリティ型とPartial
 takeaway: "Partial<T>は、Tの全プロパティを省略可能にした型を作る"
 introduces: [ユーティリティ型, Partial]
 requires: [型エイリアス, オプショナルプロパティ, ジェネリクス, 型引数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-3-1
 # ユーティリティ型とPartial
 
-TypeScript入門研修 — Module 6 / レッスン6-3
+TypeScript入門 — Module 6 / レッスン6-3
 
 <!-- ノート: Module 6の最後のレッスンです。ここまで学んだジェネリクスの応用が、実は標準で用意されています。 -->
 

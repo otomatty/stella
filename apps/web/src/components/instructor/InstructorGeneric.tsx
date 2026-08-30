@@ -272,7 +272,7 @@ const DEMO_STUDENT_ROWS = [1, 2, 3, 4, 5, 6].map((i) => ({
   key: `demo-${i}`,
   name: `受講者 ${i}`,
   tone: toneForIndex(i - 1),
-  stage: "TypeScript 入門研修",
+  stage: "TypeScript 入門",
   statusLabel: i % 2 ? "順調" : "要フォロー",
   statusVariant: (i % 2 ? "success" : "warning") as "success" | "warning",
   updated: `${i}時間前`,

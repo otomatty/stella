@@ -4,7 +4,7 @@ title: git stashで退避する
 takeaway: "git stash で、作業中の変更をいったん退避して手元をきれいにできる"
 introduces: [stash]
 requires: [変更, コミット, status, ブランチ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-4-2
 # git stashで退避する
 
-Git入門研修 — Module 6 / レッスン6-4
+Git入門 — Module 6 / レッスン6-4
 
 <!-- ノート: 切り替えを止められたときの解決策です。中途半端な変更の一時避難場所を覚えます。 -->
 

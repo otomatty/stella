@@ -4,7 +4,7 @@ title: splitとjoinで文字列と行き来する
 takeaway: "splitは文字列を配列に分け、joinは配列を1つの文字列につなぐ"
 introduces: [split, join, 区切り文字]
 requires: [配列, 文字列, メソッド, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 3-1-5
 # splitとjoinで文字列と行き来する
 
-JavaScript入門研修 — Module 3 / レッスン3-1
+JavaScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 文字列と配列の変換です。CSV的なデータの分解は実務での登場頻度が高い操作です。 -->
 

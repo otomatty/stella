@@ -4,7 +4,7 @@ title: --stagedはadd済みの変更
 takeaway: "git diff --staged で、add 済みの変更(コミットされる内容)を見る"
 introduces: [--staged]
 requires: [diff, add, ステージングエリア, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-2-2
 # --stagedはadd済みの変更
 
-Git入門研修 — Module 2 / レッスン2-2
+Git入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 素のdiffの守備範囲外だったadd済みの変更を見るオプションを覚えます。 -->
 

@@ -4,7 +4,7 @@ title: ドット記法
 takeaway: "プロパティはドットに続けて名前を書くと読み書きできる"
 introduces: [ドット記法]
 requires: [オブジェクト, プロパティ, 代入, const]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-3-2
 # ドット記法
 
-TypeScript入門研修 — Module 3 / レッスン3-3
+TypeScript入門 — Module 3 / レッスン3-3
 
 <!-- ノート: オブジェクトを作れました。次は中の値の出し入れです。ここまで何度か出てきた記法が、ようやく正体を現します。 -->
 

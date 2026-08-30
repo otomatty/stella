@@ -4,7 +4,7 @@ title: tscでコンパイルする
 takeaway: "tscはTypeScriptをJavaScriptに変換するコマンド"
 introduces: [tsc]
 requires: [コンパイル, Node.js, ターミナル, JavaScript, TypeScript, npm, npx]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-1-5
 # tscでコンパイルする
 
-TypeScript入門研修 — Module 9 / レッスン9-1
+TypeScript入門 — Module 9 / レッスン9-1
 
 <!-- ノート: レッスン9-1の最後です。0-1-3で学んだ「変換されて動く」を、自分の手で実行します。 -->
 

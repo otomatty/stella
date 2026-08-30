@@ -117,17 +117,24 @@ async function referencedPaths(db: Db, tenantId: string): Promise<Set<string>> {
       ),
     );
 
-  // 講座サムネイル (stages.thumbnail_path)。 キーが内容ハッシュ入りなので、
-  // 差し替え前の世代は参照から外れ、 棚卸しに孤児として出る (掃除して良い)。
+  // 講座サムネイル (stages.thumbnail_path) とスキルツリーアイコン (stages.icon_path)。
+  // キーが内容ハッシュ入りなので、 差し替え前の世代は参照から外れ、 棚卸しに孤児として
+  // 出る (掃除して良い)。
   const thumbnailRows = await db
-    .select({ path: stages.thumbnailPath })
+    .select({ path: stages.thumbnailPath, iconPath: stages.iconPath })
     .from(stages)
-    .where(and(eq(stages.tenantId, tenantId), isNotNull(stages.thumbnailPath)));
+    .where(
+      and(
+        eq(stages.tenantId, tenantId),
+        or(isNotNull(stages.thumbnailPath), isNotNull(stages.iconPath)),
+      ),
+    );
 
   const set = new Set<string>();
   for (const r of materialRows) set.add(r.path);
   for (const r of thumbnailRows) {
     if (r.path) set.add(r.path);
+    if (r.iconPath) set.add(r.iconPath);
   }
   for (const r of lessonRows) {
     if (r.videoPath) set.add(r.videoPath);

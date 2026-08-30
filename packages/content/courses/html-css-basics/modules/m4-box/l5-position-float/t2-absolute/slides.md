@@ -4,7 +4,7 @@ title: position absoluteは基準の箱に重ねる
 takeaway: "position: absoluteは通常フローから抜け、relativeを持つ先祖を基準に置かれる"
 introduces: [absolute, 重なり]
 requires: [position, relative, 通常フロー, 親要素, ボックス, 入れ子]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-5-2
 # position absoluteは基準の箱に重ねる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-5
+HTML/CSS入門 — Module 4 / レッスン4-5
 
 <!-- ノート: relative は「場所を残して動く」でした。absolute は場所ごと抜けます。 -->
 

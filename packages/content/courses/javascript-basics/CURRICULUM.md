@@ -1,4 +1,4 @@
-# JavaScript 入門研修 カリキュラム
+# JavaScript 入門 カリキュラム
 
 SES 未経験者向けの JavaScript 入門講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
 HTML/CSS で作った静的ページに動きを付けるところまでを、言語の基礎(変数・文字列・配列・分岐・ループ・関数)から
@@ -18,7 +18,8 @@ HTML/CSS で作った静的ページに動きを付けるところまでを、�
 
 - **必須:** `html-css-basics`(HTML と CSS の基本。JavaScript の経験は不要)
 - **任意:** `page-composition-basics`(後続の APG 対話 UI 講座の前には推奨。本講座のゲートではない)
-- **前提にしない:** `typescript-basics` / `modern-css-basics` / `ui-components-basics`
+- **後続:** `typescript-basics`(本線の次) と、Git 入門のフロントの星 (Git 側の `appearancePrerequisites`)。npm は Git のあと、fetch は TypeScript のあと。準備中の `web-a11y-basics` は fetch の先
+- **前提にしない:** `git-basics` / `modern-css-basics` / `ui-components-basics`
 
 ## 進め方と範囲
 

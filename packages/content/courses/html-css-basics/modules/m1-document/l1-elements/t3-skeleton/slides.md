@@ -4,7 +4,7 @@ title: HTMLファイルの決まった骨組み
 takeaway: "HTMLファイルは、headとbodyを持つ決まった骨組みから書き始める"
 introduces: [head, body, 骨組み]
 requires: [要素, 属性, ファイル, ブラウザー]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-1-3
 # HTMLファイルの決まった骨組み
 
-HTML/CSS入門研修 — Module 1 / レッスン1-1
+HTML/CSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 前のトピックまでは1行単位でした。ここでファイル1本の形を決めます。 -->
 

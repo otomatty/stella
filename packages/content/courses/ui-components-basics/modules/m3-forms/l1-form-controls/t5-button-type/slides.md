@@ -4,7 +4,7 @@ title: buttonのtypeを書き分ける
 takeaway: "フォームの中のbuttonは、送信ならsubmit、それ以外はtypeをbuttonにする"
 introduces: [buttonのtype]
 requires: [HTML骨格]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 3-1-5
 # buttonのtypeを書き分ける
 
-UI部品入門研修 — Module 3 / レッスン3-1
+UI部品入門 — Module 3 / レッスン3-1
 
 <!-- ノート: レッスン3-1の最後です。フォームの中のボタンには、書き忘れやすい属性があります。 -->
 

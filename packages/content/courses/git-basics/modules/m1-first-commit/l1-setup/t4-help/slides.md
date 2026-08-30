@@ -4,7 +4,7 @@ title: ヘルプを引く
 takeaway: "git help(または --help)で、コマンドの説明をいつでも引ける"
 introduces: [help]
 requires: [コマンド, オプション, config]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-1-4
 # ヘルプを引く
 
-Git入門研修 — Module 1 / レッスン1-1
+Git入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 準備の締めくくりに、「困ったら自分で調べる」ための道具を渡します。 -->
 

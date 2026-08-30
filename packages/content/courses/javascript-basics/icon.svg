@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- click イベント: ボタンとカーソル (thumbnail の motif_javascript の核)。 -->
+  <rect x="2" y="3.5" width="15" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M12.5 10 v11 l2.7-2.5 1.7 3.7 2.3-1-1.7-3.7 3.6-.4 Z" fill="currentColor"/>
+</svg>

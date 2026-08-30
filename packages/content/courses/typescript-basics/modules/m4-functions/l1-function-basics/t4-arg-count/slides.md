@@ -4,7 +4,7 @@ title: 引数は型も個数もチェックされる
 takeaway: "呼び出し側は、引数の型だけでなく個数もチェックされる"
 introduces: []
 requires: [関数, 引数, 呼び出し, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-1-4
 # 引数は型も個数もチェックされる
 
-TypeScript入門研修 — Module 4 / レッスン4-1
+TypeScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: レッスン4-1の最後です。関数を書く側だけでなく、呼び出す側にも型が効いているという話です。 -->
 

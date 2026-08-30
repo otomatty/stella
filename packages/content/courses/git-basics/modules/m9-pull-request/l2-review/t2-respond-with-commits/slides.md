@@ -4,7 +4,7 @@ title: 指摘には修正pushで応える
 takeaway: "指摘には同じブランチへ修正コミットを push して応える(PRに自動で反映される)"
 introduces: []
 requires: [PR, ブランチ, コミット, push]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-2-2
 # 指摘には修正pushで応える
 
-Git入門研修 — Module 9 / レッスン9-2
+Git入門 — Module 9 / レッスン9-2
 
 <!-- ノート: レビューで指摘をもらった後の、具体的な手の動かし方です。操作は今まで学んだことの組み合わせで済みます。 -->
 

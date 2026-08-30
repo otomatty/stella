@@ -4,7 +4,7 @@ title: flex-wrapで折り返しを許す
 takeaway: "flex-wrap: wrapを指定すると、1行に収まらないアイテムが次の行へ送られる"
 introduces: [flex-wrap, wrap, 折り返し]
 requires: [フレックスアイテム, 主軸, 幅, gap, align-items]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-3-3
 # flex-wrapで折り返しを許す
 
-HTML/CSS入門研修 — Module 4 / レッスン4-3
+HTML/CSS入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 4-2-4 で見た「縮む」既定を、ここで変えます。 -->
 

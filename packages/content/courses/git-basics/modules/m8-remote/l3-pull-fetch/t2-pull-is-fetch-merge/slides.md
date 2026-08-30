@@ -4,7 +4,7 @@ title: pull = fetch + merge
 takeaway: "pull は fetch(取り寄せ)と merge(取り込み)の合わせ技"
 introduces: [fetch]
 requires: [pull, merge, リモート, コミット, コンフリクト]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-3-2
 # pull = fetch + merge
 
-Git入門研修 — Module 8 / レッスン8-3
+Git入門 — Module 8 / レッスン8-3
 
 <!-- ノート: pullの中身を分解します。この分解が分かると、pullで起きることが全部説明できるようになります。 -->
 

@@ -4,7 +4,7 @@ title: GitとGitHubは別物
 takeaway: "Gitは履歴を記録する道具、GitHubはそれを共有して共同作業する場所"
 introduces: [Git, GitHub]
 requires: [バージョン管理, 履歴, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-2-1
 # GitとGitHubは別物
 
-Git入門研修 — Module 0 / レッスン0-2
+Git入門 — Module 0 / レッスン0-2
 
 <!-- ノート: このレッスンでは、前のレッスンで学んだ「履歴のしくみ」を実現する道具に名前を付けていきます。まずは一番混同されやすい2つの名前からです。 -->
 

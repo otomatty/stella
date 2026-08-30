@@ -4,7 +4,7 @@ title: 関数式
 takeaway: "関数は値なので、変数に入れて名前を付けられる"
 introduces: [関数式]
 requires: [関数宣言, const, 値, 変数, 呼び出し]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-2-1
 # 関数式
 
-TypeScript入門研修 — Module 4 / レッスン4-2
+TypeScript入門 — Module 4 / レッスン4-2
 
 <!-- ノート: レッスン4-2では、関数の書き方が3つあることを扱います。まず2つ目の書き方から。ここに後の回で効いてくる重要な考え方が入っています。 -->
 

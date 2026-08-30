@@ -4,7 +4,7 @@ title: ORDER BYで並べ替える
 takeaway: "ORDER BY を付けると、結果を指定した列の順に並べ替えられる"
 introduces: [ORDER BY, 昇順]
 requires: [SELECT, 結果]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 3-1-1
 # ORDER BYで並べ替える
 
-SQL入門研修 — Module 3 / レッスン3-1
+SQL入門 — Module 3 / レッスン3-1
 
 <!-- ノート: Module 3では、取り出した結果の見せ方を整えます。まずは並べ替えです。 -->
 

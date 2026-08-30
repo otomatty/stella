@@ -8,14 +8,14 @@
  * (`GET /api/skill-map/mine`) で全体を俯瞰する。
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import { RadialProgress } from "@/components/ui/radial-progress";
-import { SkeletonRows } from "@/components/ui/skeleton";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
+import { isDevModeEnabled, subscribeDevMode } from "@/lib/dev-mode";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,8 @@ export function SkillTreePage({
 }: SkillTreePageProps) {
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
+  const [revealDev, setRevealDev] = useState(isDevModeEnabled);
+  useEffect(() => subscribeDevMode(setRevealDev), []);
   /** 腕試しを開いている星 (null なら閉じている)。 */
   const [checkStageId, setCheckStageId] = useState<string | null>(null);
 
@@ -77,99 +79,94 @@ export function SkillTreePage({
     void skillMap.refetch();
   };
 
+  /** 盤面はヘッダーの下からビューポートの下端まで (LessonPlayer と同じ式)。 */
+  const boardClass = "h-[calc(100vh-var(--shell-header-height))] w-full";
+
   if (!backendEnabled) {
     return (
-      <div className="p-6 text-[12.5px] text-ink-3">
+      <BoardMessage className={boardClass}>
         スキルツリーは実データ（API）に接続しているときだけ表示します。
-      </div>
+      </BoardMessage>
     );
   }
 
+  const hud = (
+    <div className="tree-hud flex items-center gap-3 rounded-full border py-1.5 pl-4 pr-2">
+      <div className="text-[13px] font-semibold">スキルツリー</div>
+      <div className="text-[12px] tabular-nums">
+        <span className="tree-hint">修了 </span>
+        {cleared} / {nodes.length}
+      </div>
+      <RadialProgress
+        value={levelPercent}
+        size={36}
+        thickness={4}
+        label={
+          level
+            ? `レベル ${level.level} · 次のレベルまで ${level.xp_to_next_level} XP`
+            : "レベル読み込み中"
+        }
+      >
+        <div className="leading-none">
+          <div className="tree-hint text-[7px]">Lv</div>
+          <div className="text-[11px] font-semibold tabular-nums">{level?.level ?? "—"}</div>
+        </div>
+      </RadialProgress>
+    </div>
+  );
+
   return (
-    // 余白は AppShell の本文コンテナが持っている。ここで重ねると二重になる。
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>スキルツリー</CardTitle>
-          <CardActions>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-[11px] text-ink-3">修了したスキル</div>
-                <div className="text-[15px] font-semibold tabular-nums">
-                  {cleared} / {nodes.length}
-                </div>
-              </div>
-              <RadialProgress
-                value={levelPercent}
-                size={44}
-                thickness={5}
-                label={
-                  level
-                    ? `レベル ${level.level} · 次のレベルまで ${level.xp_to_next_level} XP`
-                    : "レベル読み込み中"
-                }
-              >
-                <div className="leading-none">
-                  <div className="text-[8px] text-ink-3">Lv</div>
-                  <div className="text-[12px] font-semibold tabular-nums">
-                    {level?.level ?? "—"}
-                  </div>
-                </div>
-              </RadialProgress>
-            </div>
-          </CardActions>
-        </CardHeader>
-
-        <CardContent className={cn("px-0 pb-0")}>
-          <p className="px-4 pb-3 text-[11.5px] text-ink-3 sm:px-6">
-            中心のスキルから始めて、外のスキルへ広がっていきます。盤面はドラッグで動かせます。スキルをクリックすると、そのスキルでできるようになることや解放条件が見られます。まだ開いていないスキルも、腕試しに合格すれば飛び級で開けます。
-          </p>
-
-          {skillMap.loading && nodes.length === 0 ? (
-            <SkeletonRows rows={5} className="px-4 pb-6 sm:px-6" />
-          ) : skillMap.error ? (
-            <div className="flex flex-wrap items-center gap-3 px-4 pb-6 sm:px-6">
-              <span className="text-[12.5px] text-danger">{skillMap.error}</span>
-              <Button size="sm" variant="ghost" onClick={() => void skillMap.refetch()}>
-                再読み込み
-              </Button>
-            </div>
-          ) : (
-            <SkillTree
-              nodes={nodes}
-              currentUserId={currentUserId}
-              activeStageId={skillMap.map?.active_stage_id ?? null}
-              queuedStageIds={stageQueue.queue}
-              onStartStage={(stageId) =>
-                run(
-                  () =>
-                    // Phase 3b: 押した時点で自己開始 (受講登録) → 進行中へ。
-                    skillMap
-                      .startStage(stageId)
-                      .then(() => {
-                        refetchStages();
-                        return stageQueue.refetch();
-                      })
-                      .then(() => {
-                        // ホームのスキルマップは乗り換えに確認ダイアログを挟むが、ここは星の
-                        // ポップオーバーを開いて押す 2 手が既に確認になっている。
-                        // 代わりに「切り替わった」ことを必ず文字で返す。
-                        const title = nodes.find((n) => n.id === stageId)?.title;
-                        toast.success(`${title ?? "このステージ"} を進行中にしました`);
-                      }),
-                  "ステージを始められませんでした",
-                )
-              }
-              onQueueStage={(stageId) =>
-                run(() => stageQueue.add(stageId), "キューへの追加に失敗しました")
-              }
-              onSkillCheck={setCheckStageId}
-              // 盤面はスクロールではなくパン / ズームで見る箱。高さをここで決める。
-              className="mx-4 mb-4 h-[65vh] min-h-[420px] sm:mx-6"
-            />
-          )}
-        </CardContent>
-      </Card>
+    // 余白も Card も持たない — シェルが flush で描くので、盤面がコンテンツ領域そのもの。
+    <>
+      {skillMap.loading && nodes.length === 0 ? (
+        <BoardMessage className={boardClass}>
+          <span role="status" aria-live="polite">
+            スキルツリーを読み込んでいます…
+          </span>
+        </BoardMessage>
+      ) : skillMap.error ? (
+        <BoardMessage className={boardClass}>
+          <span className="text-danger">{skillMap.error}</span>
+          <Button size="sm" variant="ghost" onClick={() => void skillMap.refetch()}>
+            再読み込み
+          </Button>
+        </BoardMessage>
+      ) : (
+        <SkillTree
+          nodes={nodes}
+          currentUserId={currentUserId}
+          activeStageId={skillMap.map?.active_stage_id ?? null}
+          queuedStageIds={stageQueue.queue}
+          onStartStage={(stageId) =>
+            run(
+              () =>
+                // Phase 3b: 押した時点で自己開始 (受講登録) → 進行中へ。
+                skillMap
+                  .startStage(stageId)
+                  .then(() => {
+                    refetchStages();
+                    return stageQueue.refetch();
+                  })
+                  .then(() => {
+                    // ホームのスキルマップは乗り換えに確認ダイアログを挟むが、ここは星の
+                    // ポップオーバーを開いて押す 2 手が既に確認になっている。
+                    // 代わりに「切り替わった」ことを必ず文字で返す。
+                    const title = nodes.find((n) => n.id === stageId)?.title;
+                    toast.success(`${title ?? "このステージ"} を進行中にしました`);
+                  }),
+              "ステージを始められませんでした",
+            )
+          }
+          onQueueStage={(stageId) =>
+            run(() => stageQueue.add(stageId), "キューへの追加に失敗しました")
+          }
+          onSkillCheck={setCheckStageId}
+          revealDev={revealDev}
+          hud={hud}
+          // 全面なので角丸と枠は要らない。
+          className={cn(boardClass, "rounded-none border-0")}
+        />
+      )}
 
       <SkillCheckDialog
         stageId={checkStageId}
@@ -177,6 +174,20 @@ export function SkillTreePage({
         onClose={() => setCheckStageId(null)}
         onFinished={handleFinished}
       />
+    </>
+  );
+}
+
+/** 盤面と同じ星空の上に、読み込み中 / エラー / 未接続の文言を置く (白いカードが出ない)。 */
+function BoardMessage({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "tree-board flex flex-wrap items-center justify-center gap-3 text-[12.5px] text-[rgb(235_238_255/0.88)]",
+        className,
+      )}
+    >
+      {children}
     </div>
   );
 }

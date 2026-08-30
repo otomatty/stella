@@ -4,7 +4,7 @@ title: 実行順序は書いた順ではない
 takeaway: "非同期処理は、同期処理がすべて終わったあとに実行される"
 introduces: []
 requires: [setTimeout, 非同期処理, 同期処理, console.log, シングルスレッド]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-1-3
 # 実行順序は書いた順ではない
 
-TypeScript入門研修 — Module 8 / レッスン8-1
+TypeScript入門 — Module 8 / レッスン8-1
 
 <!-- ノート: 非同期処理でいちばん驚くところです。ここを体感しておかないと、以降のコードが読めません。 -->
 

@@ -16,24 +16,40 @@ function nodeById(nodes: SkillMapStageNode[]): Map<string, SkillMapStageNode> {
   return new Map(nodes.map((node) => [node.id, node]));
 }
 
-/** `id` から前提を根まで辿る (循環は seen で止める)。 */
+/**
+ * `id` から親を根まで辿る (循環は seen で止める)。線 = 親なので、ホームの縦 1 本と一致する。
+ *
+ * 複製 (`appearance_parent_ids`) は進んできた扇の親を祖先にする — cleared な扇の親を
+ * 優先し、どれも cleared でなければ canonical な `parent_id` に戻す。Node から来た
+ * 受講者の Git に、通っていない JS の鎖を出さないため。
+ */
 export function ancestorIdsOf(id: string, nodes: SkillMapStageNode[]): string[] {
   const byId = nodeById(nodes);
+  const parentOf = (nodeId: string): string | undefined => {
+    const node = byId.get(nodeId);
+    if (!node) return undefined;
+    const cleared = Object.values(node.appearance_parent_ids ?? {}).filter(
+      (p) => byId.get(p)?.state === "cleared",
+    );
+    if (cleared.length === 0) return node.parent_id;
+    return cleared.find((p) => p === node.parent_id) ?? cleared[0];
+  };
   const found: string[] = [];
   const seen = new Set<string>([id]);
-  const stack = [...(byId.get(id)?.prerequisite_ids ?? [])];
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (current === undefined || seen.has(current)) continue;
+  let current = parentOf(id);
+  while (current !== undefined && !seen.has(current)) {
     seen.add(current);
     found.push(current);
-    for (const parent of byId.get(current)?.prerequisite_ids ?? []) stack.push(parent);
+    current = parentOf(current);
   }
   return found;
 }
 
 function childrenOf(id: string, nodes: SkillMapStageNode[]): SkillMapStageNode[] {
-  return nodes.filter((node) => node.prerequisite_ids?.includes(id));
+  // 複製は扇ごとの親でも子になる — どちらのルートで進めていてもホームの「次」に出す。
+  return nodes.filter(
+    (node) => node.parent_id === id || Object.values(node.appearance_parent_ids ?? {}).includes(id),
+  );
 }
 
 /**

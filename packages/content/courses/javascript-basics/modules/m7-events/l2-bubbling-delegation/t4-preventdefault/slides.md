@@ -4,7 +4,7 @@ title: preventDefaultで既定の動作を止める
 takeaway: "event.preventDefault()は、送信や移動などブラウザーの既定の動作を止める"
 introduces: [preventDefault, 既定の動作, submit, フォーム]
 requires: [イベントオブジェクト, addEventListener, メソッド, イベントリスナー]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-2-4
 # preventDefaultで既定の動作を止める
 
-JavaScript入門研修 — Module 7 / レッスン7-2
+JavaScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: M8の買い物リストで必須になるpreventDefaultを、フォーム送信を軸に導入します。 -->
 

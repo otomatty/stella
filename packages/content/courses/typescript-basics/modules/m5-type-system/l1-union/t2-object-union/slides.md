@@ -4,7 +4,7 @@ title: オブジェクトのユニオンは絞り込みにくい
 takeaway: "オブジェクトのユニオンは、typeofでは区別できない"
 introduces: []
 requires: [ユニオン型, オブジェクト, 絞り込み, 型エイリアス, typeof, プロパティ, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-1-2
 # オブジェクトのユニオンは絞り込みにくい
 
-TypeScript入門研修 — Module 5 / レッスン5-1
+TypeScript入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 絞り込めば使えることは2-3-2で学びました。ところが相手がオブジェクトになると、その手が使えません。 -->
 

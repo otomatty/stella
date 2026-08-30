@@ -4,7 +4,7 @@ title: typeは入力の種類に合わせて選ぶ
 takeaway: "typeは見た目ではなく、受け取りたい入力の種類に合わせて選ぶ"
 introduces: [チェックボックス, ラジオボタン, placeholder]
 requires: [input, type, 入力欄, label, for, id]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-2-4
 # typeは入力の種類に合わせて選ぶ
 
-HTML/CSS入門研修 — Module 2 / レッスン2-2
+HTML/CSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: type で種類が変わることは 2-2-1 で扱いました。ここは「どれを選ぶか」に絞ります。 -->
 

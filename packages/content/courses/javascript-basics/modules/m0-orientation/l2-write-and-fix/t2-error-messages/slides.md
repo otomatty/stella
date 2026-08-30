@@ -4,7 +4,7 @@ title: エラーメッセージは場所を教えてくれる
 takeaway: "エラーメッセージには、原因の種類と起きた行番号が書かれている"
 introduces: [エラー, エラーメッセージ, 行番号]
 requires: [コンソール, 実行, 行]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-2-2
 # エラーメッセージは場所を教えてくれる
 
-JavaScript入門研修 — Module 0 / レッスン0-2
+JavaScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: エラーを「怒られ」ではなく「手がかり」として読む姿勢をここで作ります。 -->
 

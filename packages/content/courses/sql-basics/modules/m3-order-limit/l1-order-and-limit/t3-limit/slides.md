@@ -4,7 +4,7 @@ title: LIMITで件数を絞る
 takeaway: "LIMIT を付けると、先頭から指定した件数だけを取り出せる"
 introduces: [LIMIT]
 requires: [ORDER BY, DESC]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 3-1-3
 # LIMITで件数を絞る
 
-SQL入門研修 — Module 3 / レッスン3-1
+SQL入門 — Module 3 / レッスン3-1
 
 <!-- ノート: Module 3の仕上げです。並べ替えと組み合わせると、実務の定番形が完成します。 -->
 

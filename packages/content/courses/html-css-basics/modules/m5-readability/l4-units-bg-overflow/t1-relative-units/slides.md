@@ -4,7 +4,7 @@ title: 相対的な単位は基準を持つ
 takeaway: "em・rem・%は、それぞれ何を基準にするかが決まっている"
 introduces: [絶対的な単位, 相対的な単位, em単位, rem, パーセント]
 requires: [px, font-size, 値, 親要素, 幅, プロパティ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-4-1
 # 相対的な単位は基準を持つ
 
-HTML/CSS入門研修 — Module 5 / レッスン5-4
+HTML/CSS入門 — Module 5 / レッスン5-4
 
 <!-- ノート: ここまで px だけを使ってきました。最後のレッスンで、他の単位を扱います。 -->
 

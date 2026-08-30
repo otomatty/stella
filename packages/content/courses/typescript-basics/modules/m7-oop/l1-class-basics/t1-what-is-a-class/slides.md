@@ -4,7 +4,7 @@ title: クラスとは
 takeaway: "クラスはデータと処理をまとめた設計図。newで実物を作る"
 introduces: [クラス, インスタンス, new]
 requires: [オブジェクト, 型エイリアス, 関数, プロパティ]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-1-1
 # クラスとは
 
-TypeScript入門研修 — Module 7 / レッスン7-1
+TypeScript入門 — Module 7 / レッスン7-1
 
 <!-- ノート: Module 7はオブジェクト指向です。ここまで「データは型エイリアス、処理は関数」と分けて書いてきました。それを1つにまとめる仕組みを扱います。 -->
 

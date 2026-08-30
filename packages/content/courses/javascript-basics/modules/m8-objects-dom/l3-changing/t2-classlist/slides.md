@@ -4,7 +4,7 @@ title: classListで見た目を切り替える
 takeaway: "classListのadd / remove / toggleで、要素のclassを付け外しできる"
 introduces: [classList, toggle]
 requires: [class, querySelector, CSS, メソッド, addEventListener]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-3-2
 # classListで見た目を切り替える
 
-JavaScript入門研修 — Module 8 / レッスン8-3
+JavaScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: 「見た目の変更はCSSに書き、JSはclassを切り替えるだけ」という実務の分担を教える重要トピックです。 -->
 

@@ -4,7 +4,7 @@ title: mapとfilterで配列を加工する
 takeaway: "mapは各要素を変換した配列を、filterは条件に合う要素だけの配列を作る"
 introduces: [map, filter]
 requires: [配列, アロー関数, コールバック, 戻り値, 真偽値]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 6-2-5
 # mapとfilterで配列を加工する
 
-JavaScript入門研修 — Module 6 / レッスン6-2
+JavaScript入門 — Module 6 / レッスン6-2
 
 <!-- ノート: コールバック活用の実益をここで回収します。M3で後送りにした配列加工です。 -->
 

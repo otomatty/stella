@@ -4,7 +4,7 @@ title: constとletの違い
 takeaway: "constは再代入できない、letはできる"
 introduces: [const, let, 再代入]
 requires: [変数, 宣言, 代入]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-1-2
 # constとletの違い
 
-TypeScript入門研修 — Module 1 / レッスン1-1
+TypeScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 前のトピックでは変数が「値に名前を付ける仕組み」だと確認しました。ここでは名前の付け方が2種類あることを学びます。 -->
 

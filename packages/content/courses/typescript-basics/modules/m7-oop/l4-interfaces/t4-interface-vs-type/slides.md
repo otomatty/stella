@@ -4,7 +4,7 @@ title: interfaceとtypeの使い分け
 takeaway: "本研修はtypeを基本にする。クラスの約束を書くときだけinterface"
 introduces: []
 requires: [インターフェース, 型エイリアス, 交差型, ユニオン型, implements]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-4-4
 # interfaceとtypeの使い分け
 
-TypeScript入門研修 — Module 7 / レッスン7-4
+TypeScript入門 — Module 7 / レッスン7-4
 
 <!-- ノート: Module 7の最後のトピックです。ほとんど同じことができる2つの書き方に、判断基準を1つ決めます。 -->
 

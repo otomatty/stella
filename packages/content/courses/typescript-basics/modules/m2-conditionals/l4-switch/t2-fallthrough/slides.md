@@ -4,7 +4,7 @@ title: breakの書き忘れ
 takeaway: "breakを書き忘れると、次のcaseの中身まで続けて実行される"
 introduces: [フォールスルー]
 requires: [switch, case, break]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-4-2
 # breakの書き忘れ
 
-TypeScript入門研修 — Module 2 / レッスン2-4
+TypeScript入門 — Module 2 / レッスン2-4
 
 <!-- ノート: switchの書き方はわかりました。ここでは、switchでいちばん有名な落とし穴を1つだけ押さえます。 -->
 

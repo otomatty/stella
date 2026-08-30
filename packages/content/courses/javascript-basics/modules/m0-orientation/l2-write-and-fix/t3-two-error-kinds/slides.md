@@ -4,7 +4,7 @@ title: 構文エラーと論理エラー
 takeaway: "エラーには、動かない構文エラーと、動くが結果が違う論理エラーがある"
 introduces: [構文エラー, 論理エラー, 構文]
 requires: [エラー, エラーメッセージ, 実行]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-2-3
 # 構文エラーと論理エラー
 
-JavaScript入門研修 — Module 0 / レッスン0-2
+JavaScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: 「エラーが出ない=正しい」ではない、という大事な区別を入れるトピックです。 -->
 

@@ -4,7 +4,7 @@ title: paddingは箱の内側の余白
 takeaway: "paddingは、ボーダーと中身のあいだに空ける内側の余白"
 introduces: [padding, 内側の余白]
 requires: [ボックス, ボーダー, プロパティ, 値]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-1-2
 # paddingは箱の内側の余白
 
-HTML/CSS入門研修 — Module 4 / レッスン4-1
+HTML/CSS入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 箱の見方ができたので、余白を2種類に分けます。まず内側です。 -->
 

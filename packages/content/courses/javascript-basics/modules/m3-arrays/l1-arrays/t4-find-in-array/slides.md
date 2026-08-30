@@ -4,7 +4,7 @@ title: 配列からも探せる
 takeaway: "includesは配列でも使え、indexOfは見つかった位置を返す"
 introduces: [indexOf]
 requires: [配列, includes, インデックス, 真偽値]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 3-1-4
 # 配列からも探せる
 
-JavaScript入門研修 — Module 3 / レッスン3-1
+JavaScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 文字列で学んだincludesが配列でも同じ形で使える、という「学びの再利用」のトピックです。 -->
 

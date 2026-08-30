@@ -4,7 +4,7 @@ title: classで当てる相手を選ぶ
 takeaway: "class属性を付けると、同じ見た目を必要な要素にだけ当てられる"
 introduces: [class, クラスセレクタ]
 requires: [属性, 属性値, セレクタ, 宣言]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-1-3
 # classで当てる相手を選ぶ
 
-HTML/CSS入門研修 — Module 3 / レッスン3-1
+HTML/CSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: レッスン3-1の最後です。実務のCSSはほとんどこの書き方で書かれています。 -->
 

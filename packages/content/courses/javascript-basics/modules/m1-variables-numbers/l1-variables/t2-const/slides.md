@@ -4,7 +4,7 @@ title: 基本はconstで宣言する
 takeaway: "変数は基本constで宣言し、後から入れ替えるものだけletにする"
 introduces: [const, 再代入]
 requires: [変数, 宣言, let, 代入]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-1-2
 # 基本はconstで宣言する
 
-JavaScript入門研修 — Module 1 / レッスン1-1
+JavaScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: let一択だと思ったところに、実務の既定であるconstを入れます。 -->
 

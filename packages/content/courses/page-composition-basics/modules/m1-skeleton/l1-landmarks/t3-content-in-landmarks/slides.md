@@ -4,7 +4,7 @@ title: 内容はlandmarkの中に置く
 takeaway: "目に見える内容は必ずどれかのlandmarkの中に置き、bodyへ直置きしない"
 introduces: []
 requires: [landmark, header, main, footer, ページ]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 1-1-3
 # 内容はlandmarkの中に置く
 
-ページ構成入門研修 — Module 1 / レッスン1-1
+ページ構成入門 — Module 1 / レッスン1-1
 
 <!-- ノート: landmarkの原則の後半です。数を絞るのと対になる、置き場所の話をします。 -->
 

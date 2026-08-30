@@ -8,9 +8,11 @@ import type { Caller } from "./authz.js";
 import { isEnrolledInStage } from "./stage-queue-data.js";
 import {
   INVALID_PREREQUISITE_SENTINEL,
+  isDevMode,
   isUsableFocus,
   loadEnrolledStageIds,
   parsePrerequisites,
+  shouldRevealDevMap,
 } from "./skill-map-data.js";
 
 const id_ = (slug: string) => `id-${slug}`;
@@ -54,6 +56,43 @@ describe("parsePrerequisites", () => {
   it("配列でない JSON も番兵にする", () => {
     const { value } = withSilencedError(() => parsePrerequisites('{"a":1}'));
     expect(value).toEqual([INVALID_PREREQUISITE_SENTINEL]);
+  });
+});
+
+describe("開発モードの判定 (isDevMode)", () => {
+  it("'1' / 'true' だけを開発モードとみなす", () => {
+    expect(isDevMode({ DEV_MODE: "1" })).toBe(true);
+    expect(isDevMode({ DEV_MODE: "true" })).toBe(true);
+  });
+
+  it("未設定・空文字・その他の値は本番挙動 (島の表示条件を適用)", () => {
+    // 本番に紛れ込んでも「明示的に 1/true」以外は無効 — 閉じすぎ側に倒す。
+    expect(isDevMode({})).toBe(false);
+    expect(isDevMode({ DEV_MODE: "" })).toBe(false);
+    expect(isDevMode({ DEV_MODE: "0" })).toBe(false);
+    expect(isDevMode({ DEV_MODE: "yes" })).toBe(false);
+  });
+});
+
+describe("開発者表示を出すか (shouldRevealDevMap)", () => {
+  const on = { DEV_MODE: "1" };
+
+  it("本番 (env オフ) ではヘッダが 1 でも出さない", () => {
+    // FAB を付けてもサーバが拒否すれば本番の霧 / 島は漏れない。
+    expect(shouldRevealDevMap({}, "1")).toBe(false);
+    expect(shouldRevealDevMap({ DEV_MODE: "0" }, "1")).toBe(false);
+  });
+
+  it("env オン + ヘッダ 1/true / 未指定は出す (未指定は互換: 以前は env だけで出していた)", () => {
+    expect(shouldRevealDevMap(on, "1")).toBe(true);
+    expect(shouldRevealDevMap(on, "true")).toBe(true);
+    expect(shouldRevealDevMap(on, undefined)).toBe(true);
+    expect(shouldRevealDevMap(on, "")).toBe(true);
+  });
+
+  it("env オンでもヘッダ 0/false なら出さない (FAB オフ)", () => {
+    expect(shouldRevealDevMap(on, "0")).toBe(false);
+    expect(shouldRevealDevMap(on, "false")).toBe(false);
   });
 });
 

@@ -4,7 +4,7 @@ title: FAQはdetailsを並べて作る
 takeaway: "FAQの区画は、detailsを縦に並べて質問ごとに開閉できるようにする"
 introduces: [details, FAQ]
 requires: [区画, 一覧, 部品]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 2-2-3
 # FAQはdetailsを並べて作る
 
-ページ構成入門研修 — Module 2 / レッスン2-2
+ページ構成入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 本文最後の区画、よくある質問です。開閉部品のdetailsを一覧に使います。 -->
 

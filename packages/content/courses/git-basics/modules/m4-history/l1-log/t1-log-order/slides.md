@@ -4,7 +4,7 @@ title: logは新しい順
 takeaway: "git log は履歴を新しい順に表示する"
 introduces: []
 requires: [log, コミット, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-1-1
 # logは新しい順
 
-Git入門研修 — Module 4 / レッスン4-1
+Git入門 — Module 4 / レッスン4-1
 
 <!-- ノート: ここからは、積み上げてきた履歴を「読む」モジュールです。最初は git log の表示順という基本を1つだけ押さえます。 -->
 

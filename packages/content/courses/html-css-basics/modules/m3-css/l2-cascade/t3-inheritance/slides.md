@@ -4,7 +4,7 @@ title: 文字の指定は子に受け継がれる
 takeaway: "文字にかかわる一部のプロパティは、親から子へ受け継がれる"
 introduces: [継承]
 requires: [親要素, 子要素, プロパティ, 値]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-2-3
 # 文字の指定は子に受け継がれる
 
-HTML/CSS入門研修 — Module 3 / レッスン3-2
+HTML/CSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: レッスン3-2の最後です。指定していないのに効いている、の正体です。 -->
 

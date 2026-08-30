@@ -4,7 +4,7 @@ title: DESCで大きい順に並べる
 takeaway: "ORDER BY 列名 DESC で、大きい順(降順)に並べ替えられる"
 introduces: [DESC, 降順]
 requires: [ORDER BY, 昇順]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 3-1-2
 # DESCで大きい順に並べる
 
-SQL入門研修 — Module 3 / レッスン3-1
+SQL入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 並べ替えの向きを逆にします。付け足すのはキーワード1つだけです。 -->
 

@@ -1,0 +1,14 @@
+{
+  "title": "Node.js 入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】ブラウザの外で JavaScript / TypeScript を動かし、サーバー側の入口に立つ研修。",
+  "header": "Node.js 入門",
+  "tenantId": "ses",
+  "prerequisites": ["cli-basics"],
+  "canDo": "Node.js で TypeScript を実行し、ファイルやネットワークを扱う小さなプログラムを書ける",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

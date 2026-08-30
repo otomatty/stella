@@ -4,7 +4,7 @@ title: addの後の編集は載らない
 takeaway: "add した後に編集した分は載っていない(もう一度 add する)"
 introduces: []
 requires: [add, status, ステージングエリア, 変更]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-3-5
 # addの後の編集は載らない
 
-Git入門研修 — Module 1 / レッスン1-3
+Git入門 — Module 1 / レッスン1-3
 
 <!-- ノート: ステージングエリアの仕組みで一番つまずきやすい落とし穴を扱います。 -->
 

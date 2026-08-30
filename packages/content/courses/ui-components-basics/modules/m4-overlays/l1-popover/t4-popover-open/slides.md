@@ -4,7 +4,7 @@ title: 開いている間は:popover-open
 takeaway: "開いているポップオーバーは:popover-openで選び、見た目を変えられる"
 introduces: [":popover-open"]
 requires: [ポップオーバー, 状態, 開閉]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-1-4
 # 開いている間は:popover-open
 
-UI部品入門研修 — Module 4 / レッスン4-1
+UI部品入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 4段階目の状態です。detailsの[open]に当たるものが、ここにもあります。 -->
 

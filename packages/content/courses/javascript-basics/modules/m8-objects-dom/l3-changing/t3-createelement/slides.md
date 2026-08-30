@@ -4,7 +4,7 @@ title: createElementとappendChildで要素を足す
 takeaway: "createElementで作った要素は、appendChildで親に差し込むと画面に現れる"
 introduces: [createElement, appendChild]
 requires: [document, DOM, 要素, textContent, 親要素]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 8-3-3
 # createElementとappendChildで要素を足す
 
-JavaScript入門研修 — Module 8 / レッスン8-3
+JavaScript入門 — Module 8 / レッスン8-3
 
 <!-- ノート: DOM操作の山場です。「作る」と「差し込む」の2段階を丁寧に分けます。 -->
 

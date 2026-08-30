@@ -4,7 +4,7 @@ title: 本文の文字サイズは16px前後にする
 takeaway: "本文のfont-sizeは16px前後を基準にし、小さくしすぎない"
 introduces: [font-size, px]
 requires: [プロパティ, 値, 継承, 段落]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-1-1
 # 本文の文字サイズは16px前後にする
 
-HTML/CSS入門研修 — Module 5 / レッスン5-1
+HTML/CSS入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 最後のモジュールです。作ったページを「読める」状態に仕上げます。 -->
 

@@ -4,7 +4,7 @@ title: なぜ既定をconstにするのか
 takeaway: "まずconstで書き、再代入が必要になったときだけletに変える"
 introduces: []
 requires: [const, let, 再代入]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-1-3
 # なぜ既定をconstにするのか
 
-TypeScript入門研修 — Module 1 / レッスン1-1
+TypeScript入門 — Module 1 / レッスン1-1
 
 <!-- ノート: constとletの違いはわかりました。では実際に書くとき、どちらを選べばよいのか。現場で広く使われている判断基準を1つだけ覚えます。 -->
 

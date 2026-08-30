@@ -4,7 +4,7 @@ title: 一覧で読めるかが品質
 takeaway: "log --oneline で読み返して意味が分かるかが、メッセージの品質"
 introduces: []
 requires: [log, --oneline, コミットメッセージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-1-4
 # 一覧で読めるかが品質
 
-Git入門研修 — Module 10 / レッスン10-1
+Git入門 — Module 10 / レッスン10-1
 
 <!-- ノート: 要約・本文・prefixと型を見てきました。最後に、自分のメッセージが良いかどうかを自分で確かめる方法です。 -->
 

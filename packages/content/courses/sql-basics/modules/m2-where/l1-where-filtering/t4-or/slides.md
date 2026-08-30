@@ -4,7 +4,7 @@ title: ORでどちらかを満たす行を選ぶ
 takeaway: "OR でつなぐと、どちらかの条件を満たす行を選べる"
 introduces: [OR]
 requires: [WHERE, AND]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 2-1-4
 # ORでどちらかを満たす行を選ぶ
 
-SQL入門研修 — Module 2 / レッスン2-1
+SQL入門 — Module 2 / レッスン2-1
 
 <!-- ノート: ANDとペアになるもうひとつのつなぎ方です。1文字違いで結果が大きく変わります。 -->
 

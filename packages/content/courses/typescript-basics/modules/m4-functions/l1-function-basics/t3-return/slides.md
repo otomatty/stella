@@ -4,7 +4,7 @@ title: returnで値を返す
 takeaway: "returnは値を返し、同時にその関数の処理をそこで終える"
 introduces: [return]
 requires: [関数, 戻り値, 型注釈, ブロック, if]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-1-3
 # returnで値を返す
 
-TypeScript入門研修 — Module 4 / レッスン4-1
+TypeScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 関数から結果を取り出す方法です。1つのキーワードに2つの働きがあるので、そこを押さえます。 -->
 

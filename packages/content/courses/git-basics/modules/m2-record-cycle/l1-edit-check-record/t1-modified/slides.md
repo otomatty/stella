@@ -4,7 +4,7 @@ title: modifiedの意味
 takeaway: "コミット済みのファイルを編集すると modified(変更あり)になる"
 introduces: [modified]
 requires: [コミット, 変更, status, Untracked]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 2-1-1
 # modifiedの意味
 
-Git入門研修 — Module 2 / レッスン2-1
+Git入門 — Module 2 / レッスン2-1
 
 <!-- ノート: Module 2 の最初のトピックです。コミットして終わりではなく、そこから始まる日々の編集をGitがどう見ているかを押さえます。 -->
 

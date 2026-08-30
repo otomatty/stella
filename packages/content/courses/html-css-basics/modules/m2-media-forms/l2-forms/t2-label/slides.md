@@ -4,7 +4,7 @@ title: labelは入力欄と説明を結び付ける
 takeaway: "labelのforとinputのidを同じ値にすると、説明と入力欄が結び付く"
 introduces: [label, for, id]
 requires: [入力欄, input, 属性, 属性値]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-2-2
 # labelは入力欄と説明を結び付ける
 
-HTML/CSS入門研修 — Module 2 / レッスン2-2
+HTML/CSS入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 入力欄を置けるようになったので、それを使えるフォームにする作法を扱います。 -->
 

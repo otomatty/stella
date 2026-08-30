@@ -4,7 +4,7 @@ title: 区切り記号は::afterで足す
 takeaway: "パンくずの区切り記号は文字として書かず、::afterで表示だけ足す"
 introduces: ["::after"]
 requires: [パンくずリスト]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-2-2
 # 区切り記号は::afterで足す
 
-UI部品入門研修 — Module 2 / レッスン2-2
+UI部品入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 2段階目のレイアウトです。横に並べ、間に区切り記号を置きます。 -->
 

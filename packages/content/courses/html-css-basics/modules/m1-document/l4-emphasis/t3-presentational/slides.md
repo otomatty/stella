@@ -4,7 +4,7 @@ title: 見た目だけ変えたいならCSSで変える
 takeaway: "太字や斜体にしたいだけなら、意味の印ではなくCSSで見た目を変える"
 introduces: [i, b]
 requires: [strong, 重要, em, 強調, CSS, 見た目]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-4-3
 # 見た目だけ変えたいならCSSで変える
 
-HTML/CSS入門研修 — Module 1 / レッスン1-4
+HTML/CSS入門 — Module 1 / レッスン1-4
 
 <!-- ノート: em と strong を覚えると、今度は何でもそれで囲みたくなります。そこに歯止めをかけます。 -->
 

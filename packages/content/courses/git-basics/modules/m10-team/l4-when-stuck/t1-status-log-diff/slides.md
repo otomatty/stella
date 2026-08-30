@@ -4,7 +4,7 @@ title: まずstatus/log/diff
 takeaway: "困ったらまず status・log・diff の3つで現在地を確かめる"
 introduces: []
 requires: [status, log, diff]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-4-1
 # まずstatus/log/diff
 
-Git入門研修 — Module 10 / レッスン10-4
+Git入門 — Module 10 / レッスン10-4
 
 <!-- ノート: 研修最後のレッスンです。新しいコマンドはもう出てきません。困ったときにどう動くか、という型を4つ覚えて仕上げます。 -->
 

@@ -4,7 +4,7 @@ title: インデックス
 takeaway: "要素は角かっこと番号で取り出す。番号は0から始まる"
 introduces: [インデックス]
 requires: [配列, 要素, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 3-1-2
 # インデックス
 
-TypeScript入門研修 — Module 3 / レッスン3-1
+TypeScript入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 値をまとめられました。次は、その中の1つを取り出す方法です。ここに未経験者が必ず引っかかるルールが1つあります。 -->
 

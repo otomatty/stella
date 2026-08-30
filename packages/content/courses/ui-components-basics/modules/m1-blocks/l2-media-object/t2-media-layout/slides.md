@@ -4,7 +4,7 @@ title: 横並びは上端でそろえる
 takeaway: "メディアオブジェクトはflexで横に並べ、align-items: flex-startで上端にそろえる"
 introduces: []
 requires: [メディアオブジェクト]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 1-2-2
 # 横並びは上端でそろえる
 
-UI部品入門研修 — Module 1 / レッスン1-2
+UI部品入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 2段階目のレイアウトです。横に並べるだけでなく、縦のそろえ方も決めます。 -->
 

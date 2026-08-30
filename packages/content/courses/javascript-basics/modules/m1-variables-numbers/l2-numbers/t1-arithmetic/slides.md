@@ -4,7 +4,7 @@ title: 算術演算子で計算する
 takeaway: "数値は + - * / % の算術演算子で計算できる"
 introduces: [演算子, 算術演算子, 剰余]
 requires: [数値, 変数, const, console.log]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 1-2-1
 # 算術演算子で計算する
 
-JavaScript入門研修 — Module 1 / レッスン1-2
+JavaScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: すでに使ってきた+や*を、演算子という語で正式に導入するトピックです。 -->
 

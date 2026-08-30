@@ -4,7 +4,7 @@ title: 骨組みの宣言は不具合を防いでいる
 takeaway: "doctype・charset・lang・ページ名の宣言は、それぞれ決まった不具合を防いでいる"
 introduces: [doctype, meta, charset, lang, ページ名]
 requires: [骨組み, head, 属性, 属性値, ブラウザー]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-1-5
 # 骨組みの宣言は不具合を防いでいる
 
-HTML/CSS入門研修 — Module 1 / レッスン1-1
+HTML/CSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 骨組みはコピーして使うもの、と伝えました。ここでは「なぜその行が要るのか」を1行ずつ回収します。 -->
 

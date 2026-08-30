@@ -4,7 +4,7 @@ title: targetとoutDir
 takeaway: "targetは変換後のJavaScriptの世代、outDirは出力先を決める"
 introduces: [target, outDir]
 requires: [tsconfig.json, コンパイル, JavaScript, モジュール]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-3-2
 # targetとoutDir
 
-TypeScript入門研修 — Module 9 / レッスン9-3
+TypeScript入門 — Module 9 / レッスン9-3
 
 <!-- ノート: まず読めるようになりたい2つの項目です。現場のtsconfigを開いたとき、いちばん上のほうにあります。 -->
 

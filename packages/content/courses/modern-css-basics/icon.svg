@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 1 つのデザイントークンが部品へ配られる (thumbnail の motif_modern_css の核)。 -->
+  <rect x="7" y="1.5" width="10" height="5" rx="2.5" fill="currentColor"/>
+  <path d="M12 6.5 V10.5 M12 10.5 H5 V14 M12 10.5 H19 V14 M12 10.5 V14" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="2.5" y="14" width="5" height="7.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="9.5" y="14" width="5" height="7.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="16.5" y="14" width="5" height="7.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+</svg>

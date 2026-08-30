@@ -4,7 +4,7 @@ title: git revertで打ち消す
 takeaway: "git revert ID は「反対の変更」を新しいコミットとして積む"
 introduces: [revert]
 requires: [コミット, ハッシュ, 履歴]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 5-3-1
 # git revertで打ち消す
 
-Git入門研修 — Module 5 / レッスン5-3
+Git入門 — Module 5 / レッスン5-3
 
 <!-- ノート: コミット済みの変更を取り消す方法です。この研修での取り消しの主役になるコマンドを覚えます。 -->
 

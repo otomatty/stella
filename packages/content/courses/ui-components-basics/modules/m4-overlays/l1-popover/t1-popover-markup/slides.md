@@ -4,7 +4,7 @@ title: popoverは属性2つで開閉する
 takeaway: "popover属性を付けた要素は、popovertargetで指すボタンだけで開閉できる"
 introduces: [ポップオーバー, popover属性, popovertarget]
 requires: [HTML骨格, 開閉]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 4-1-1
 # popoverは属性2つで開閉する
 
-UI部品入門研修 — Module 4 / レッスン4-1
+UI部品入門 — Module 4 / レッスン4-1
 
 <!-- ノート: Module 4 は、ページの上に重ねて出す部品です。まずはポップオーバーから。 -->
 

@@ -4,7 +4,7 @@ title: altは画像の代わりになる文
 takeaway: "alt属性には、画像が見えないときに代わりに伝わる文を書く"
 introduces: [alt, 代替テキスト]
 requires: [画像, img, src, 属性]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-1-2
 # altは画像の代わりになる文
 
-HTML/CSS入門研修 — Module 2 / レッスン2-1
+HTML/CSS入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 画像を貼れるようになったので、貼るときの必須の作法を1つ扱います。 -->
 

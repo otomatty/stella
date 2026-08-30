@@ -4,7 +4,7 @@ title: 履歴があれば戻れる
 takeaway: "履歴が残っていれば、壊れる前の状態にいつでも戻れる"
 introduces: []
 requires: [履歴, 変更, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 0-1-3
 # 履歴があれば戻れる
 
-Git入門研修 — Module 0 / レッスン0-1
+Git入門 — Module 0 / レッスン0-1
 
 <!-- ノート: 履歴のうれしさの1つ目、「戻れる」ことを押さえます。 -->
 

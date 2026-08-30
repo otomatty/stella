@@ -4,7 +4,7 @@ title: frは余った幅を配る単位
 takeaway: "列幅にfrを使うと、余った幅がその比率で配られる"
 introduces: [fr, repeat]
 requires: [grid-template-columns, グリッド, 列, 幅, gap]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-4-2
 # frは余った幅を配る単位
 
-HTML/CSS入門研修 — Module 4 / レッスン4-4
+HTML/CSS入門 — Module 4 / レッスン4-4
 
 <!-- ノート: 列幅を px で決め打つ問題を、ここで解きます。 -->
 

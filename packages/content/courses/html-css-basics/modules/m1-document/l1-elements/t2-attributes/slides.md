@@ -4,7 +4,7 @@ title: 属性でタグに情報を足す
 takeaway: "属性は開始タグの中に書き、その要素に追加の情報を与える"
 introduces: [属性, 属性値]
 requires: [タグ, 開始タグ, 要素]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-1-2
 # 属性でタグに情報を足す
 
-HTML/CSS入門研修 — Module 1 / レッスン1-1
+HTML/CSS入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 囲むだけでは足りない情報を、どこに書くかという話です。 -->
 

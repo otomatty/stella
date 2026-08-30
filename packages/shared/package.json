@@ -38,6 +38,8 @@
     "./hall-of-fame/types": "./src/hall-of-fame/types.ts",
     "./discovery/prompt": "./src/discovery/prompt.ts",
     "./skill-map/evaluate": "./src/skill-map/evaluate.ts",
+    "./skill-map/islands": "./src/skill-map/islands.ts",
+    "./skill-map/appearances": "./src/skill-map/appearances.ts",
     "./skill-map/xp": "./src/skill-map/xp.ts",
     "./skill-map/skill-check": "./src/skill-map/skill-check.ts",
     "./skill-map/focus": "./src/skill-map/focus.ts",

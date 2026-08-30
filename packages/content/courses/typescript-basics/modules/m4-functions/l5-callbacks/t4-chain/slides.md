@@ -4,7 +4,7 @@ title: つなげて書く
 takeaway: "mapもfilterも新しい配列を返すので、ドットでつなげて書ける"
 introduces: []
 requires: [map, filter, 配列, ドット記法]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-5-4
 # つなげて書く
 
-TypeScript入門研修 — Module 4 / レッスン4-5
+TypeScript入門 — Module 4 / レッスン4-5
 
 <!-- ノート: レッスン4-5の最後です。mapとfilterの性質から自然に導かれる書き方を1つ押さえます。 -->
 

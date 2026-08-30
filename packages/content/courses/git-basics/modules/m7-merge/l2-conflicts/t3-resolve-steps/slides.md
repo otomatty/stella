@@ -4,7 +4,7 @@ title: 直し方は編集→add→commit
 takeaway: "あるべき形に編集してマーカーを消し、add して commit すれば解決"
 introduces: []
 requires: [コンフリクト, マーカー, add, commit, -m]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-2-3
 # 直し方は編集→add→commit
 
-Git入門研修 — Module 7 / レッスン7-2
+Git入門 — Module 7 / レッスン7-2
 
 <!-- ノート: コンフリクトへの答え方です。特別なコマンドは出てきません。 -->
 

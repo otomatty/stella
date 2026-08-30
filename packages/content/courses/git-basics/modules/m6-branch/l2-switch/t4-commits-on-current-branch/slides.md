@@ -4,7 +4,7 @@ title: コミットは今いる枝に積まれる
 takeaway: "コミットは「今いるブランチ」に積まれる(commit の前に branch で確かめる)"
 introduces: []
 requires: [commit, branch, ブランチ, main]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-2-4
 # コミットは今いる枝に積まれる
 
-Git入門研修 — Module 6 / レッスン6-2
+Git入門 — Module 6 / レッスン6-2
 
 <!-- ノート: このレッスンの締め。ブランチ時代のコミットの大原則と、事故を防ぐ習慣を1つ持ち帰ります。 -->
 

@@ -4,7 +4,7 @@ title: 上から順に実行される
 takeaway: "JavaScriptは、書いた順に1行ずつ実行される"
 introduces: [実行, 行]
 requires: [JavaScript, console.log, scriptタグ]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 0-1-4
 # 上から順に実行される
 
-JavaScript入門研修 — Module 0 / レッスン0-1
+JavaScript入門 — Module 0 / レッスン0-1
 
 <!-- ノート: プログラムの実行順という、以降すべての前提になる感覚を最初に入れます。 -->
 

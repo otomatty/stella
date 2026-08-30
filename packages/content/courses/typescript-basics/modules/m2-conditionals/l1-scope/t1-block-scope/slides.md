@@ -4,7 +4,7 @@ title: ブロックとスコープ
 takeaway: "中かっこの中で宣言した変数は、その外からは見えない"
 introduces: [ブロック, スコープ]
 requires: [変数, 宣言, const, let]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-1-1
 # ブロックとスコープ
 
-TypeScript入門研修 — Module 2 / レッスン2-1
+TypeScript入門 — Module 2 / レッスン2-1
 
 <!-- ノート: Module 2からは、プログラムの流れを分ける方法に入ります。その前に、これから何度も出てくる中かっこの意味を1つだけ押さえます。 -->
 

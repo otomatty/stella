@@ -4,7 +4,7 @@ title: 現在地はaria-currentで示す
 takeaway: '現在地の項目はaria-current="page"で示し、その属性セレクタで見た目を変える'
 introduces: [aria-current, 属性セレクタ]
 requires: [パンくずリスト, 状態]
-header: "UI部品入門研修"
+header: "UI部品入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "UI部品入門研修"
 # 2-2-4
 # 現在地はaria-currentで示す
 
-UI部品入門研修 — Module 2 / レッスン2-2
+UI部品入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 4段階目の状態です。パンくずの状態は「いまどこか」です。 -->
 
@@ -41,7 +41,7 @@ UI部品入門研修 — Module 2 / レッスン2-2
 ## 最小のコード
 
 ```html
-<li aria-current="page">UI部品 入門研修</li>
+<li aria-current="page">UI部品 入門</li>
 ```
 
 ```css

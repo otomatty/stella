@@ -4,7 +4,7 @@ title: 仕上げは開発者ツールで確かめる
 takeaway: "ブラウザーの開発者ツールを使うと、当たっているCSSをその場で確かめられる"
 introduces: [開発者ツール]
 requires: [ブラウザー, CSS, 宣言, 上書き]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-1-4
 # 仕上げは開発者ツールで確かめる
 
-HTML/CSS入門研修 — Module 5 / レッスン5-1
+HTML/CSS入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 読みやすさの調整はここまでです。ここから、確かめるための道具を渡します。 -->
 

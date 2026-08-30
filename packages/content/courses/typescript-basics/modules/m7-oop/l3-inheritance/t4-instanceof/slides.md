@@ -4,7 +4,7 @@ title: instanceof
 takeaway: "instanceofは、そのクラスから作られたインスタンスかを判定する型ガード"
 introduces: [instanceof]
 requires: [継承, インスタンス, 型ガード, 絞り込み, クラス, Error]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-3-4
 # instanceof
 
-TypeScript入門研修 — Module 7 / レッスン7-3
+TypeScript入門 — Module 7 / レッスン7-3
 
 <!-- ノート: 5-4-3で「instanceofはModule 7で詳しく扱う」と予告した、その回収です。型ガードの4つ目でもあります。 -->
 

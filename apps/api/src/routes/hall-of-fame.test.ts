@@ -51,6 +51,10 @@ vi.mock("../lib/hall-of-fame-data.js", () => ({
 }));
 
 vi.mock("../lib/skill-map-data.js", () => ({
+  // 開発モードはテストでは常に無効 (本番挙動を検証する)。
+  isDevMode: () => false,
+  wantsDevReveal: () => false,
+  shouldRevealDevMap: () => false,
   loadSkillMapSource: vi.fn(),
 }));
 
@@ -227,30 +231,30 @@ beforeEach(() => {
     },
   );
   vi.mocked(buildPathSnapshot).mockResolvedValue([
-    { id: "id-a", title: "HTML/CSS 入門研修" },
-    { id: "id-b", title: "JavaScript 入門研修" },
-    { id: "id-c", title: "TypeScript 入門研修" },
-    { id: "id-d", title: "SQL 入門研修" },
+    { id: "id-a", title: "HTML/CSS 入門" },
+    { id: "id-b", title: "JavaScript 入門" },
+    { id: "id-c", title: "TypeScript 入門" },
+    { id: "id-d", title: "SQL 入門" },
   ]);
   // 閲覧者の道: a はクリア済み、b が進行中、c は開いている、d はロック。
   vi.mocked(loadSkillMapSource).mockImplementation(async () => ({
     stages: [
-      { id: "id-a", slug: "a", title: "HTML/CSS 入門研修", prerequisites: [], category: "web" },
+      { id: "id-a", slug: "a", title: "HTML/CSS 入門", prerequisites: [], category: "web" },
       {
         id: "id-b",
         slug: "b",
-        title: "JavaScript 入門研修",
+        title: "JavaScript 入門",
         prerequisites: ["a"],
         category: "web",
       },
       {
         id: "id-c",
         slug: "c",
-        title: "TypeScript 入門研修",
+        title: "TypeScript 入門",
         prerequisites: ["a"],
         category: "web",
       },
-      { id: "id-d", slug: "d", title: "SQL 入門研修", prerequisites: ["c"], category: "db" },
+      { id: "id-d", slug: "d", title: "SQL 入門", prerequisites: ["c"], category: "db" },
     ],
     clearedStageIds: new Set(["id-a"]),
     activeStageId: "id-b",
@@ -544,7 +548,7 @@ describe("公開 (管理者 / submitted からだけ)", () => {
           submittedAt: new Date(new Date(submittedAt).getTime() + 1000),
         });
       }
-      return [{ id: "id-a", title: "HTML/CSS 入門研修" }];
+      return [{ id: "id-a", title: "HTML/CSS 入門" }];
     });
 
     caller = { ...ADMIN };
@@ -666,7 +670,7 @@ describe("管理者の一覧 (未申請の下書きは載せない)", () => {
     const text = await (await get("/api/cms/hall-of-fame")).text();
     expect(text).not.toContain(FULL_CONTENT.quote);
     // 公開時に作った「歩んだ道」も一緒に伏せる。
-    expect(text).not.toContain("HTML/CSS 入門研修");
+    expect(text).not.toContain("HTML/CSS 入門");
   });
 });
 
@@ -819,7 +823,7 @@ describe("「この道をたどる」CTA", () => {
       follow: { stage_id: string; stage_title: string } | null;
     };
     // id-a はクリア済みなので飛ばし、進行中の id-b を指す。
-    expect(body.follow).toEqual({ stage_id: "id-b", stage_title: "JavaScript 入門研修" });
+    expect(body.follow).toEqual({ stage_id: "id-b", stage_title: "JavaScript 入門" });
   });
 
   it("たどれる星が無ければ CTA を出さない", async () => {

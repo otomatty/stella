@@ -4,7 +4,7 @@ title: チームの型に従う
 takeaway: "prefix などチームの型があるなら、自分の好みよりそれに従う"
 introduces: [prefix]
 requires: [コミットメッセージ, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 10-1-3
 # チームの型に従う
 
-Git入門研修 — Module 10 / レッスン10-1
+Git入門 — Module 10 / レッスン10-1
 
 <!-- ノート: 現場のコミットメッセージには、fix: や feat: のような見慣れない書き出しが付いていることがあります。あれが何なのかを押さえます。 -->
 

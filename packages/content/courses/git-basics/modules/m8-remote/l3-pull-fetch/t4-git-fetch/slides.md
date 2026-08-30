@@ -4,7 +4,7 @@ title: fetchなら見てから
 takeaway: "git fetch なら、取り寄せて中身を眺めてから取り込める"
 introduces: []
 requires: [fetch, origin/main, pull, log, --oneline]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-3-4
 # fetchなら見てから
 
-Git入門研修 — Module 8 / レッスン8-3
+Git入門 — Module 8 / レッスン8-3
 
 <!-- ノート: pullの部品だったfetchを、単体で使う場面です。慎重に取り込みたいときの選択肢になります。 -->
 

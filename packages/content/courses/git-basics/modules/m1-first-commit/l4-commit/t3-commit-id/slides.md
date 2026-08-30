@@ -4,7 +4,7 @@ title: コミットにはIDが付く
 takeaway: "コミットには英数字のID(ハッシュ)が付き、先頭7桁で指し示せる"
 introduces: [ハッシュ]
 requires: [コミット, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-4-3
 # コミットにはIDが付く
 
-Git入門研修 — Module 1 / レッスン1-4
+Git入門 — Module 1 / レッスン1-4
 
 <!-- ノート: コミットの呼び名、IDの話です。長い英数字の正体を知って怖くなくします。 -->
 

@@ -4,7 +4,7 @@ title: vwだけの文字サイズは拡大できない
 takeaway: "font-sizeをvwだけで書くと、利用者が文字を拡大できなくなる"
 introduces: [vw, 拡大]
 requires: []
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-1-1
 # vwだけの文字サイズは拡大できない
 
-モダンCSS入門研修 — Module 3 / レッスン3-1
+モダンCSS入門 — Module 3 / レッスン3-1
 
 <!-- ノート: Module 3は仕上げの調整です。まず文字サイズ。便利そうで危ない書き方から入ります。 -->
 

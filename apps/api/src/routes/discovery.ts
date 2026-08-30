@@ -47,7 +47,11 @@ import {
   loadDiscoveryMaterial,
 } from "../lib/discovery-data.js";
 import type { DiscoveryMaterialRow } from "../lib/discovery-data.js";
-import { loadSkillMapSource } from "../lib/skill-map-data.js";
+import {
+  loadSkillMapSource,
+  wantsDevReveal,
+  type SkillMapLoadOptions,
+} from "../lib/skill-map-data.js";
 import { UNSELECTABLE_STAGE_MESSAGE, evaluateSkillMapFor } from "./skill-map.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -60,7 +64,12 @@ export const discoveryRoute = new Hono<{ Bindings: Env }>();
  * GET と POST の両方がここを通る — 片方だけ緩むと、出題は断るのに採点は通る
  * (= 直接 POST すれば受験できる) 穴になる (`routes/skill-check.ts` と同じ流儀)。
  */
-async function resolveMaterial(db: Db, caller: Caller, id: string): Promise<DiscoveryMaterialRow> {
+async function resolveMaterial(
+  db: Db,
+  caller: Caller,
+  id: string,
+  opts: SkillMapLoadOptions,
+): Promise<DiscoveryMaterialRow> {
   // ロールのゲートも 1 か所に寄せる。顔ぶれは腕試しと同じ (受講者 + 管理者)。
   requireCanTakeSkillCheck(caller);
   const material = await loadDiscoveryMaterial(db, caller.tenantId, id);
@@ -68,7 +77,7 @@ async function resolveMaterial(db: Db, caller: Caller, id: string): Promise<Disc
   if (material?.reviewStatus !== "approved") {
     throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
   }
-  const source = await loadSkillMapSource(db, caller);
+  const source = await loadSkillMapSource(db, caller, opts);
   const result = evaluateSkillMapFor(source);
   if (!isDiscoveryVisible(result.states.get(material.stageId))) {
     throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
@@ -79,7 +88,9 @@ async function resolveMaterial(db: Db, caller: Caller, id: string): Promise<Disc
 discoveryRoute.get("/api/discovery/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const material = await resolveMaterial(db, caller, c.req.param("id"));
+    const material = await resolveMaterial(db, caller, c.req.param("id"), {
+      showAllIslands: wantsDevReveal(c),
+    });
     const history = await loadDiscoveryHistory(db, caller, material.id);
 
     return c.json({
@@ -111,7 +122,9 @@ discoveryRoute.get("/api/discovery/:id", async (c) => {
 discoveryRoute.post("/api/discovery/:id", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const material = await resolveMaterial(db, caller, c.req.param("id"));
+    const material = await resolveMaterial(db, caller, c.req.param("id"), {
+      showAllIslands: wantsDevReveal(c),
+    });
 
     type Body = { answers?: unknown };
     const body: Body = await c.req.json<Body>().catch(() => ({}) as Body);

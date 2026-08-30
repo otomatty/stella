@@ -4,7 +4,7 @@ title: コミットは2段階
 takeaway: "記録は2段階:add で選んで、commit で記録する"
 introduces: [add, commit]
 requires: [記録, 変更, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-3-1
 # コミットは2段階
 
-Git入門研修 — Module 1 / レッスン1-3
+Git入門 — Module 1 / レッスン1-3
 
 <!-- ノート: コマンドを打つ前に、Gitの記録が2段階だという設計だけを先に頭に入れます。 -->
 

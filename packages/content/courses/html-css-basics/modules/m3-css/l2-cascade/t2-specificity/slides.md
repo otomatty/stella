@@ -4,7 +4,7 @@ title: 詳細度が高いセレクタが優先される
 takeaway: "書いた順より先に、より細かく指定したセレクタの宣言が優先される"
 introduces: [詳細度]
 requires: [クラスセレクタ, セレクタ, カスケード, 上書き]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 3-2-2
 # 詳細度が高いセレクタが優先される
 
-HTML/CSS入門研修 — Module 3 / レッスン3-2
+HTML/CSS入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 順番の話だけでは説明できない現象を扱います。 -->
 

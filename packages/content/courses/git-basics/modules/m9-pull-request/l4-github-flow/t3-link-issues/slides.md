@@ -4,7 +4,7 @@ title: Issueと紐づける
 takeaway: "作業の理由は Issue に残し、PR から紐づける"
 introduces: [Issue]
 requires: [PR, GitHub, マージ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-4-3
 # Issueと紐づける
 
-Git入門研修 — Module 9 / レッスン9-4
+Git入門 — Module 9 / レッスン9-4
 
 <!-- ノート: Module 9の最後のトピックです。作業の「理由」をどこに残すか、GitHubのもう1つの道具を紹介します。 -->
 

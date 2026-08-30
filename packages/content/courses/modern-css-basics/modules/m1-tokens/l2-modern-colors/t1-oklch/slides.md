@@ -4,7 +4,7 @@ title: oklch()は明るさから色を作る
 takeaway: "oklch()は、明るさ・鮮やかさ・色相の3つの数字で色を書く"
 introduces: [oklch, 明るさ, 色相]
 requires: []
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 1-2-1
 # oklch()は明るさから色を作る
 
-モダンCSS入門研修 — Module 1 / レッスン1-2
+モダンCSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 前のレッスンで値に名前を付けました。このレッスンでは、覚えさせる色の値そのものを今どきにします。 -->
 

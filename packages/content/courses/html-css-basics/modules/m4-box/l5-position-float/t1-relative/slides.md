@@ -4,7 +4,7 @@ title: position relativeは元の位置からずらす
 takeaway: "position: relativeを指定すると、場所を保ったまま元の位置からずらせる"
 introduces: [通常フロー, position, relative]
 requires: [ボックス, ブロック, プロパティ, 値, margin]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-5-1
 # position relativeは元の位置からずらす
 
-HTML/CSS入門研修 — Module 4 / レッスン4-5
+HTML/CSS入門 — Module 4 / レッスン4-5
 
 <!-- ノート: ここまでは「流れに沿って並べる」話でした。ここからは流れを外れる置き方です。 -->
 

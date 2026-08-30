@@ -4,7 +4,7 @@ title: console.logで結果を確かめる
 takeaway: "console.logは、かっこの中の値を画面に表示する命令"
 introduces: [console.log]
 requires: [Playground, 値]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 0-2-2
 # console.logで結果を確かめる
 
-TypeScript入門研修 — Module 0 / レッスン0-2
+TypeScript入門 — Module 0 / レッスン0-2
 
 <!-- ノート: 書く場所はできました。次は、書いたコードが何を作ったのかを目で確かめる方法です。 -->
 

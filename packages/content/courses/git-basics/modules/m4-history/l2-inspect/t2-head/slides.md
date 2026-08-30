@@ -4,7 +4,7 @@ title: HEADは今いる場所
 takeaway: "HEAD は「自分が今どのコミットに居るか」を指す印"
 introduces: [HEAD]
 requires: [コミット, log, show, ハッシュ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-2-2
 # HEADは今いる場所
 
-Git入門研修 — Module 4 / レッスン4-2
+Git入門 — Module 4 / レッスン4-2
 
 <!-- ノート: log の画面に出てくる HEAD という表示の正体を押さえます。この研修で何度も出てくる大事な言葉です。 -->
 

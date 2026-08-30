@@ -1,0 +1,14 @@
+{
+  "title": "fetch と非同期通信 入門",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】JavaScript から Web API を呼び、JSON を受け取って画面に反映するまでを身につける研修。",
+  "header": "fetch と非同期通信 入門",
+  "tenantId": "ses",
+  "prerequisites": ["typescript-basics"],
+  "canDo": "fetch で Web API からデータを取得し、非同期処理の流れを自分のことばで説明できる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

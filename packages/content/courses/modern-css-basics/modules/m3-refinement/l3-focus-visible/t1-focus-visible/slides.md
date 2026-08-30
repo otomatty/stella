@@ -4,7 +4,7 @@ title: ":focus-visibleは必要なときだけ枠を出す"
 takeaway: ":focus-visibleは、キーボード操作のようにフォーカスの枠が必要なときだけ当たる"
 introduces: [":focus-visible", フォーカス]
 requires: []
-header: "モダンCSS入門研修"
+header: "モダンCSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "モダンCSS入門研修"
 # 3-3-1
 # :focus-visibleは必要なときだけ枠を出す
 
-モダンCSS入門研修 — Module 3 / レッスン3-3
+モダンCSS入門 — Module 3 / レッスン3-3
 
 <!-- ノート: 仕上げの3本目はフォーカスです。入門で「消すな」と学んだ枠を、今度は上手に出します。 -->
 

@@ -4,7 +4,7 @@ title: force pushは使わない
 takeaway: "強制 push は他人のコミットを消し得る(共有ブランチでは使わない)"
 introduces: [強制push]
 requires: [push, rejected, コミット, リモート, ブランチ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-4-3
 # force pushは使わない
 
-Git入門研修 — Module 8 / レッスン8-4
+Git入門 — Module 8 / レッスン8-4
 
 <!-- ノート: モジュールの締めは、やってはいけない操作の話です。存在と危険性だけを知っておきます。 -->
 

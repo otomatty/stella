@@ -4,7 +4,7 @@ title: メディアクエリーで幅ごとに切り替える
 takeaway: "メディアクエリーを1本書くと、決めた幅を境に別の宣言へ切り替えられる"
 introduces: [メディアクエリー, media, ブレークポイント]
 requires: [スタイルシート, 宣言, セレクタ, ビューポート, max-width, flex, flex-wrap]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-6-3
 # メディアクエリーで幅ごとに切り替える
 
-HTML/CSS入門研修 — Module 4 / レッスン4-6
+HTML/CSS入門 — Module 4 / レッスン4-6
 
 <!-- ノート: この講座で扱う最後の並べ方です。1本だけ書けるようにします。 -->
 

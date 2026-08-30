@@ -4,7 +4,7 @@ title: ASで別名を付ける
 takeaway: "AS を付けると、取り出した列に別名を付けられる"
 introduces: [AS, 別名]
 requires: [SELECT, 列, 結果]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 1-1-3
 # ASで別名を付ける
 
-SQL入門研修 — Module 1 / レッスン1-1
+SQL入門 — Module 1 / レッスン1-1
 
 <!-- ノート: 取り出す列を選べるようになったので、次は結果の列に名前を付け直す方法です。 -->
 

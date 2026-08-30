@@ -53,7 +53,7 @@ function remember(result: ExecutionResult): void {
     files: { "main.ts": "const sum = 0;", "lib/util.ts": "export const x = 1;" },
     result,
     stageId: "c1",
-    stageTitle: "TypeScript 入門研修",
+    stageTitle: "TypeScript 入門",
     lessonId: "l1",
     sectionTitle: "第 1 章",
   });
@@ -108,7 +108,7 @@ describe("escalateToInstructor", () => {
     };
     expect(body.lessonId).toBe("l1");
     expect(body.assignmentId).toBe("asg-1");
-    expect(body.stageTitle).toBe("TypeScript 入門研修");
+    expect(body.stageTitle).toBe("TypeScript 入門");
     expect(body.sectionTitle).toBe("第 1 章");
     expect(body.assignmentTitle).toBe("配列の合計");
     expect(body.priority).toBe("high");

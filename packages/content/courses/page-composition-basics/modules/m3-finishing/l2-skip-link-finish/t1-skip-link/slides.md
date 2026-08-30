@@ -4,7 +4,7 @@ title: skip linkでmainへ飛ばす
 takeaway: "ページの最初にmainへ飛ぶリンクを置くと、キーボードの利用者がナビの繰り返しを飛ばせる"
 introduces: [skip link, フォーカス]
 requires: [main, nav, header, リンク, ページ]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 3-2-1
 # skip linkでmainへ飛ばす
 
-ページ構成入門研修 — Module 3 / レッスン3-2
+ページ構成入門 — Module 3 / レッスン3-2
 
 <!-- ノート: 最後のレッスンです。ページに足す最後の1部品、skip linkから始めます。 -->
 

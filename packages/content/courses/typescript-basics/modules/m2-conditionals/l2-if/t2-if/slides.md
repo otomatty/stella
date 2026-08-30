@@ -4,7 +4,7 @@ title: if文
 takeaway: "ifは、条件がtrueのときだけブロックを実行する"
 introduces: [if, 条件]
 requires: [boolean, ブロック, 比較演算子, true]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-2-2
 # if文
 
-TypeScript入門研修 — Module 2 / レッスン2-2
+TypeScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 判定結果を作る道具はそろいました。ここでいよいよ、プログラムの流れを分けます。 -->
 

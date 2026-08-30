@@ -4,7 +4,7 @@ title: リテラル型
 takeaway: "値そのものを型にできる。その値しか代入できなくなる"
 introduces: [リテラル型]
 requires: [型注釈, string, 再代入]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-5-1
 # リテラル型
 
-TypeScript入門研修 — Module 1 / レッスン1-5
+TypeScript入門 — Module 1 / レッスン1-5
 
 <!-- ノート: ここまで型は「値の種類」でした。レッスン1-5では、その考え方を一段細かくします。発想の転換が必要なので、ゆっくりいきます。 -->
 

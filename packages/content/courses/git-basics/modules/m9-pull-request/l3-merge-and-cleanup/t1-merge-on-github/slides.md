@@ -4,7 +4,7 @@ title: PRのマージはGitHub上で
 takeaway: "PR のマージは GitHub 上のボタンで行う"
 introduces: []
 requires: [PR, マージ, merge, main]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 9-3-1
 # PRのマージはGitHub上で
 
-Git入門研修 — Module 9 / レッスン9-3
+Git入門 — Module 9 / レッスン9-3
 
 <!-- ノート: このレッスンではPRの締めくくり、マージと後片付けを扱います。まずはマージを「どこで」行うかです。 -->
 

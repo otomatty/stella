@@ -4,7 +4,7 @@ title: GROUP BYでグループごとに集計する
 takeaway: "GROUP BY を付けると、同じ値の行ごとにまとめて集計できる"
 introduces: [GROUP BY, グループ]
 requires: [集計関数, COUNT, 列]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 5-1-3
 # GROUP BYでグループごとに集計する
 
-SQL入門研修 — Module 5 / レッスン5-1
+SQL入門 — Module 5 / レッスン5-1
 
 <!-- ノート: 集計関数は全体をひとつにまとめました。今度は「顧客ごと」のように、まとまりごとに集計します。 -->
 

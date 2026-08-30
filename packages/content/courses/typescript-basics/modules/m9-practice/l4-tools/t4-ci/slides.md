@@ -4,7 +4,7 @@ title: 自動で回す
 takeaway: "整形は保存時に、検査はpush時に。人の手で回さない仕組みにする"
 introduces: [CI]
 requires: [Prettier, ESLint, VS Code, npm, tsc, package.json]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-4-4
 # 自動で回す
 
-TypeScript入門研修 — Module 9 / レッスン9-4
+TypeScript入門 — Module 9 / レッスン9-4
 
 <!-- ノート: 研修最後のトピックです。道具を揃えただけでは意味がない、という話をして締めます。 -->
 

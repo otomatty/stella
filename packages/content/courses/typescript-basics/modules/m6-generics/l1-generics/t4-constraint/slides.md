@@ -4,7 +4,7 @@ title: extendsで制約を付ける
 takeaway: "「T extends 型」と書くと、Tに入れられる型を限定できる"
 introduces: [型引数の制約]
 requires: [ジェネリック関数, 型引数, オブジェクト, プロパティ, length]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-1-4
 # extendsで制約を付ける
 
-TypeScript入門研修 — Module 6 / レッスン6-1
+TypeScript入門 — Module 6 / レッスン6-1
 
 <!-- ノート: レッスン6-1の最後です。ジェネリクスを実用にするための、最後の一手を押さえます。 -->
 

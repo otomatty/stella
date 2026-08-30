@@ -4,7 +4,7 @@ title: 設定は最小限にする
 takeaway: "Prettierの設定項目は意図的に少ない。既定のまま使うのが基本"
 introduces: []
 requires: [Prettier, package.json, ダブルクォート]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 9-4-2
 # 設定は最小限にする
 
-TypeScript入門研修 — Module 9 / レッスン9-4
+TypeScript入門 — Module 9 / レッスン9-4
 
 <!-- ノート: 設定ファイルの話ですが、伝えたいのは「設定しない」という方針です。 -->
 

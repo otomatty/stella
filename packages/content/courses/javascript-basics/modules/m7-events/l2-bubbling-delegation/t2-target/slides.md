@@ -4,7 +4,7 @@ title: event.targetで起きた場所が分かる
 takeaway: "event.targetには、イベントが実際に起きた要素が入っている"
 introduces: [event.target]
 requires: [イベントオブジェクト, バブリング, 要素]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 7-2-2
 # event.targetで起きた場所が分かる
 
-JavaScript入門研修 — Module 7 / レッスン7-2
+JavaScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: バブリングとセットの情報です。委譲の直前の部品になります。 -->
 

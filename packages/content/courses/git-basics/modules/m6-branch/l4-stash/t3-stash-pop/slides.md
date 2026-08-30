@@ -4,7 +4,7 @@ title: stash popで戻す
 takeaway: "git stash pop で、退避した変更を作業フォルダに戻す"
 introduces: [pop]
 requires: [stash, 変更, 作業フォルダ]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 6-4-3
 # stash popで戻す
 
-Git入門研修 — Module 6 / レッスン6-4
+Git入門 — Module 6 / レッスン6-4
 
 <!-- ノート: しまった変更の取り出し方です。stashとpopで往復がワンセット、というところまで持っていきます。 -->
 

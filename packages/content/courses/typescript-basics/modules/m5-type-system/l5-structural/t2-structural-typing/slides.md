@@ -4,7 +4,7 @@ title: 構造的型付け
 takeaway: "TypeScriptは型の名前ではなく、形が合っているかで判定する"
 introduces: [構造的型付け]
 requires: [型エイリアス, オブジェクト, プロパティ, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-5-2
 # 構造的型付け
 
-TypeScript入門研修 — Module 5 / レッスン5-5
+TypeScript入門 — Module 5 / レッスン5-5
 
 <!-- ノート: TypeScriptの型判定の根っこにある考え方です。ここを知らないと、後で「なぜ通るのか」が説明できなくなります。 -->
 

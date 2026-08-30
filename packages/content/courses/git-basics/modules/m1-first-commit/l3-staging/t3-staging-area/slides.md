@@ -4,7 +4,7 @@ title: ステージングエリアとは
 takeaway: "ステージングエリアは「次のコミットの下書き」置き場"
 introduces: [ステージングエリア]
 requires: [add, commit, コミット, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-3-3
 # ステージングエリアとは
 
-Git入門研修 — Module 1 / レッスン1-3
+Git入門 — Module 1 / レッスン1-3
 
 <!-- ノート: addで選んだものが置かれる場所に、正式な名前を付けます。 -->
 

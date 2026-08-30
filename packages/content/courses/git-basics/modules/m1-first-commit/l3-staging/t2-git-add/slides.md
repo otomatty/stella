@@ -4,7 +4,7 @@ title: git addで選ぶ
 takeaway: "git add ファイル名 で、次の記録に入れるファイルを選ぶ"
 introduces: []
 requires: [add, status, Untracked, 記録]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 1-3-2
 # git addで選ぶ
 
-Git入門研修 — Module 1 / レッスン1-3
+Git入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 2段階の1段目、addを実際に打ちます。 -->
 

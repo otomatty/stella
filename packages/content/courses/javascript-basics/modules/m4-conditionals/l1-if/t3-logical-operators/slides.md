@@ -4,7 +4,7 @@ title: &&と||で条件を組み合わせる
 takeaway: "&&は両方が真のとき、||はどちらかが真のときに全体が真になる"
 introduces: [論理演算子, "&&", "||", "!"]
 requires: [条件, 真偽値, if, 比較演算子]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 4-1-3
 # &&と||で条件を組み合わせる
 
-JavaScript入門研修 — Module 4 / レッスン4-1
+JavaScript入門 — Module 4 / レッスン4-1
 
 <!-- ノート: 複合条件です。日本語の「かつ」「または」に対応させて導入します。 -->
 

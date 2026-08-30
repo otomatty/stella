@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 枝分かれして合流するコミットグラフ (thumbnail の motif_git の核)。 -->
+  <path d="M2.5 18 H21.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M7 18 C7 11.5 9 8.5 12.5 8.5 C16 8.5 18 11.5 18 18" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="7" cy="18" r="2.3" fill="currentColor"/>
+  <circle cx="12.5" cy="8.5" r="2.3" fill="currentColor"/>
+  <circle cx="18" cy="18" r="2.3" fill="currentColor"/>
+</svg>

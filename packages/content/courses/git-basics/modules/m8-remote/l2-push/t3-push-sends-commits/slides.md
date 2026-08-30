@@ -4,7 +4,7 @@ title: 送られるのはコミットだけ
 takeaway: "push が送るのはコミットだけ(保存や add では届かない)"
 introduces: []
 requires: [push, コミット, add, commit, リモート]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 8-2-3
 # 送られるのはコミットだけ
 
-Git入門研修 — Module 8 / レッスン8-2
+Git入門 — Module 8 / レッスン8-2
 
 <!-- ノート: 「pushしたのに反映されていない」という定番の問い合わせを、仕組みで防ぐトピックです。 -->
 

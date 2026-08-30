@@ -4,7 +4,7 @@ title: 余った高さはmainの1frに渡す
 takeaway: "bodyを縦のgridにしてmainの行を1frにすると、余った高さをmainが受け取りfooterが下端に付く"
 introduces: [grid-template-rows, fr]
 requires: [footer, main, header, grid, min-height, 骨格]
-header: "ページ構成入門研修"
+header: "ページ構成入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "ページ構成入門研修"
 # 3-1-2
 # 余った高さはmainの1frに渡す
 
-ページ構成入門研修 — Module 3 / レッスン3-1
+ページ構成入門 — Module 3 / レッスン3-1
 
 <!-- ノート: 前のトピックで作った「余り」を配って、フッタを下端に付けます。 -->
 

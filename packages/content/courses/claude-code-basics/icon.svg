@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Explore → Plan → Code の階段を順に通す (thumbnail の motif_claude_code の核)。 -->
+  <rect x="2" y="2" width="6.5" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="8.75" y="8.75" width="6.5" height="6.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  <rect x="15.5" y="15.5" width="6.5" height="6.5" rx="1.5" fill="currentColor"/>
+</svg>

@@ -4,7 +4,7 @@ title: box-sizingで幅の数え方を揃える
 takeaway: "box-sizing: border-box にすると、widthがボーダーまで含めた幅になる"
 introduces: [box-sizing, border-box]
 requires: [幅, padding, ボーダー, プロパティ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-1-4
 # box-sizingで幅の数え方を揃える
 
-HTML/CSS入門研修 — Module 4 / レッスン4-1
+HTML/CSS入門 — Module 4 / レッスン4-1
 
 <!-- ノート: レッスン4-1の最後です。ここを知らないと、余白を足すたびにレイアウトが崩れます。 -->
 

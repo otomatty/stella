@@ -4,7 +4,7 @@ title: Pick
 takeaway: "Pick<T, K>は、Tから指定したプロパティだけを取り出した型を作る"
 introduces: [Pick]
 requires: [ユーティリティ型, keyof, ユニオン型, リテラル型, 型引数]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 6-3-2
 # Pick
 
-TypeScript入門研修 — Module 6 / レッスン6-3
+TypeScript入門 — Module 6 / レッスン6-3
 
 <!-- ノート: 型から必要な部分だけを取り出す道具です。実務では画面ごとに必要な項目が違うので、頻繁に使います。 -->
 

@@ -4,7 +4,7 @@ title: 型注釈の書き方
 takeaway: "型注釈は、変数名のうしろにコロンと型名を書く"
 introduces: [型注釈]
 requires: [型, 宣言, number, string]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-2-2
 # 型注釈の書き方
 
-TypeScript入門研修 — Module 1 / レッスン1-2
+TypeScript入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 前のトピックで型が「値の種類」だとわかりました。ここでは、その型をコードに書き表す構文を1つだけ覚えます。 -->
 

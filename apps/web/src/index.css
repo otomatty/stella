@@ -721,12 +721,145 @@
 }
 
 /* ============================================================
-   スキルツリー (learner/tree) — 解放 / 出現のゲーム演出
+   スキルツリー (learner/tree) — 盤面 + 解放 / 出現のゲーム演出
    ------------------------------------------------------------
-   celebration.ts が「前回見たときとの差分」で立てた 1 回きりの印にだけ付く。
-   複数同時のときは --d (秒) で内側の星から順に灯す。 演出の合計は 1 秒前後に
-   収め、 待たせない (殿堂の星座と同じ判断)。 reduced-motion では全部止める。
+   盤面はページのライト面から切り離した暗い星座。線と星の色はここだけで持つ
+   (ページの --ink / --line を使うと、暗いキャンバス上で沈む / 白飛びする)。
+   演出クラス (tree-appear ほか) は celebration.ts が差分で立てた 1 回きりの印
+   にだけ付く。 reduced-motion では全部止める。
    ============================================================ */
+
+.tree-board {
+  border-color: rgba(255, 255, 255, 0.08);
+  background-color: #070910;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, rgba(255, 255, 255, 0.38), transparent),
+    radial-gradient(1px 1px at 28% 72%, rgba(255, 255, 255, 0.22), transparent),
+    radial-gradient(1.4px 1.4px at 63% 24%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 81% 58%, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1.2px 1.2px at 47% 86%, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1px 1px at 91% 12%, rgba(255, 255, 255, 0.26), transparent),
+    radial-gradient(ellipse 85% 75% at 50% 48%, rgba(90, 28, 110, 0.32), transparent 62%),
+    radial-gradient(ellipse 55% 50% at 72% 78%, rgba(12, 48, 110, 0.34), transparent 65%),
+    radial-gradient(ellipse 40% 35% at 22% 30%, rgba(180, 40, 100, 0.14), transparent 70%);
+}
+
+.tree-hint {
+  color: rgba(230, 232, 245, 0.45);
+}
+
+/* 盤面の上に浮かべる HUD (見出し・修了数・レベル) と、盤面上の文言の色。 */
+.tree-hud {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(12, 14, 24, 0.72);
+  color: rgba(235, 238, 255, 0.88);
+}
+
+.tree-zoom-btn {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(12, 14, 24, 0.72);
+  color: rgba(235, 238, 255, 0.88);
+}
+
+.tree-zoom-btn:hover {
+  background: rgba(28, 32, 48, 0.9);
+  color: #fff;
+}
+
+.tree-jump-arrow {
+  color: rgba(235, 238, 255, 0.85);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+}
+
+.tree-jump-arrow:hover,
+.tree-jump-arrow:focus-visible {
+  color: #fff;
+}
+
+.tree-sector-label {
+  color: rgba(240, 160, 210, 0.72);
+  letter-spacing: 0.04em;
+}
+
+.tree-edge-lit {
+  stroke: var(--brand);
+  stroke-width: 2.6;
+  opacity: 1;
+}
+
+.tree-edge-dim {
+  stroke: rgba(190, 210, 255, 0.62);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+  opacity: 0.95;
+}
+
+.tree-star {
+  color: rgba(235, 238, 255, 0.88);
+}
+
+/* --route-* はルート (カテゴリ) 色。SkillTree.tsx がフロントエンド / バックエンドの
+   扇の星にだけ CSS 変数を立て、無い扇は従来色にフォールバックする。 */
+.tree-star-cleared {
+  border-color: transparent;
+  background: var(--sf-gradient-135);
+  color: #fff;
+  box-shadow:
+    0 0 10px var(--route-glow-strong, rgba(230, 47, 154, 0.65)),
+    0 0 22px rgba(130, 48, 200, 0.4);
+}
+
+.tree-star-active {
+  border-color: var(--brand);
+  background: rgba(20, 12, 28, 0.85);
+  color: var(--brand);
+  box-shadow:
+    0 0 8px rgba(230, 47, 154, 0.55),
+    0 0 18px rgba(230, 47, 154, 0.28);
+}
+
+.tree-star-open {
+  border-color: var(--route-border, rgba(230, 200, 230, 0.45));
+  background: rgba(28, 22, 40, 0.8);
+  color: rgba(245, 230, 250, 0.9);
+  box-shadow: 0 0 8px var(--route-glow, rgba(200, 180, 230, 0.2));
+}
+
+.tree-star-locked {
+  border-style: dashed;
+  border-color: var(--route-border-dim, rgba(190, 205, 240, 0.5));
+  background: rgba(16, 20, 36, 0.72);
+  color: rgba(210, 220, 245, 0.72);
+}
+
+/* 講座アイコン (R2 の単色シルエット SVG)。img ではなく mask + currentColor で塗る —
+   色は星の状態クラス (.tree-star-*) の color を継承するので、ライトモードのテーマを
+   足すときも SVG を触らずテーマ側の color 差し替えだけで追従する。 */
+.tree-star-icon {
+  display: block;
+  background-color: currentColor;
+  -webkit-mask-image: var(--star-icon);
+  mask-image: var(--star-icon);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.tree-star-label {
+  color: rgba(228, 232, 248, 0.82);
+}
+
+.tree-star-label-active {
+  color: #fff;
+}
+
+.tree-star-label-fog {
+  color: rgba(180, 190, 220, 0.5);
+}
 
 /* 新しく現れた星 (教材の公開・霧が晴れた)。 ふわっと浮かび上がる。
    **位置合わせの -50% はここで書かない。** 星のボタンは Tailwind の

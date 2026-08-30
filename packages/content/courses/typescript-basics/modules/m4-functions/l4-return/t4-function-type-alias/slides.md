@@ -4,7 +4,7 @@ title: 関数の型に名前を付ける
 takeaway: "関数の型も型エイリアスで名前を付けられる。名前が仕様書になる"
 introduces: []
 requires: [関数型, 型エイリアス, 型注釈]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-4-4
 # 関数の型に名前を付ける
 
-TypeScript入門研修 — Module 4 / レッスン4-4
+TypeScript入門 — Module 4 / レッスン4-4
 
 <!-- ノート: レッスン4-4の最後です。3-4-1で学んだ型エイリアスが、関数の型にもそのまま使えます。 -->
 

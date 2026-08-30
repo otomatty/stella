@@ -4,7 +4,7 @@ title: Promiseの型
 takeaway: "Promise<T>のTには、成功したときの結果の型を書く"
 introduces: []
 requires: [Promise, ジェネリクス, 型引数, 型注釈, 戻り値, void]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 8-2-3
 # Promiseの型
 
-TypeScript入門研修 — Module 8 / レッスン8-2
+TypeScript入門 — Module 8 / レッスン8-2
 
 <!-- ノート: Module 6でジェネリクスを学んでおいた理由が、ここで明らかになります。新しい記法は1つも出てきません。 -->
 

@@ -4,7 +4,7 @@ title: 段落はpで区切る
 takeaway: "文章のひとかたまりは、pで1段落ずつ区切る"
 introduces: [段落, 改行]
 requires: [要素, 見出し, タグ]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 1-2-2
 # 段落はpで区切る
 
-HTML/CSS入門研修 — Module 1 / レッスン1-2
+HTML/CSS入門 — Module 1 / レッスン1-2
 
 <!-- ノート: 見出しの次は本文です。ここに未経験者がいちばん引っかかる落とし穴があります。 -->
 

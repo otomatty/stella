@@ -4,7 +4,7 @@ title: fast-forward
 takeaway: "枝が一直線なら fast-forward(付箋が先へ進むだけ)で終わる"
 introduces: [fast-forward]
 requires: [マージ, main, ブランチ, コミット]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 7-1-3
 # fast-forward
 
-Git入門研修 — Module 7 / レッスン7-1
+Git入門 — Module 7 / レッスン7-1
 
 <!-- ノート: マージの一番簡単なパターンです。出力に出るfast-forwardという単語の意味を押さえます。 -->
 

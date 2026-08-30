@@ -4,7 +4,7 @@ title: リンクは状態の順番どおりに書く
 takeaway: "リンクの状態を指定するときは、link・visited・hover・focus・activeの順に書く"
 introduces: [visited, active, 状態の順番]
 requires: [擬似クラス, hover, focus, リンク, セレクタ, カスケード, 詳細度]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 5-3-2
 # リンクは状態の順番どおりに書く
 
-HTML/CSS入門研修 — Module 5 / レッスン5-3
+HTML/CSS入門 — Module 5 / レッスン5-3
 
 <!-- ノート: 擬似クラスは 3-3-3 で扱いました。リンクは状態が5つあり、順番に決まりがあります。 -->
 

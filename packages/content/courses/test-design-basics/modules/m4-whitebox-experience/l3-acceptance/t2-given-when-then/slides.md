@@ -4,7 +4,7 @@ title: Given-When-Then
 takeaway: "受け入れ基準は前提(Given)・操作(When)・期待(Then)の 3 部で書ける"
 introduces: [Given-When-Then]
 requires: [受け入れ基準, ユーザーストーリー, 入力, 手順, 期待結果, テストケース, 境界値]
-header: "テスト設計入門研修"
+header: "テスト設計入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "テスト設計入門研修"
 # 4-3-2
 # Given-When-Then
 
-テスト設計入門研修 — Module 4 / レッスン4-3
+テスト設計入門 — Module 4 / レッスン4-3
 
 <!-- ノート: 受け入れ基準の書き方の型です。テストケースの 3 点セットと同じ構造だと気づけるのが狙い。 -->
 

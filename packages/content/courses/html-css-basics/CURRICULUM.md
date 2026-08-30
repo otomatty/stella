@@ -1,10 +1,11 @@
-# HTML/CSS 入門研修 カリキュラム
+# HTML/CSS 入門 カリキュラム
 
 SES 未経験者向けの HTML/CSS 入門講座です。1 トピック = 覚えることが 1 つ(takeaway 1 文)の粒度で、
 ページの中身を作る HTML と、見た目を決める CSS を、文書の骨格から余白・配置・読みやすさまで通します。
 構成は [MDN Learn web development の Core](https://developer.mozilla.org/ja/docs/Learn_web_development/Core) の本経路に合わせています。
 
-- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)
+- 前提講座: **ITのきほん(`it-basics`)**。スキルツリーの入口講座で、コンピュータ・ファイル・Web の基本のことばをそろえてから受講します(`course.json` の `prerequisites` に対応)。ITのきほんから出る本土の枝の 1 本 (もう 1 本は SQL 入門)
+- 後続: フロントエンド本線は **JavaScript 入門(`javascript-basics`)** → **TypeScript 入門(`typescript-basics`)**。[Frontend Developer Roadmap](https://roadmap.sh/frontend) と同じ順。見た目の深化は **モダンCSS 入門(`modern-css-basics`)** へ続く。Git 入門は JavaScript のあとにフロントの扇へ出る共通スキルで、この講座の直後の後続ではない
 
 ## 終了時の目標
 

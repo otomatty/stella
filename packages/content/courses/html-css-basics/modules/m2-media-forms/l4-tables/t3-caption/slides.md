@@ -4,7 +4,7 @@ title: captionで表に題名を付ける
 takeaway: "その表が何の表かは、tableの先頭に置いたcaptionで示す"
 introduces: [caption]
 requires: [表, table, th, 見出し, 入れ子]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-4-3
 # captionで表に題名を付ける
 
-HTML/CSS入門研修 — Module 2 / レッスン2-4
+HTML/CSS入門 — Module 2 / レッスン2-4
 
 <!-- ノート: 表の最後のトピックです。表の外側に題名を置く方法を扱います。 -->
 

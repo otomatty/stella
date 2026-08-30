@@ -4,7 +4,7 @@ title: sliceで切り出す
 takeaway: "sliceは、0から数えたインデックスで指定した範囲を切り出す"
 introduces: [slice, インデックス, 0始まり]
 requires: [メソッド, 文字列, 数値, length]
-header: "JavaScript入門研修"
+header: "JavaScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "JavaScript入門研修"
 # 2-2-3
 # sliceで切り出す
 
-JavaScript入門研修 — Module 2 / レッスン2-2
+JavaScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: 0始まりのインデックスをここで導入します。配列(M3)でそのまま使う概念です。 -->
 

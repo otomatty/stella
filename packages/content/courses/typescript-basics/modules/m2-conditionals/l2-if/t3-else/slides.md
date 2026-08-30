@@ -4,7 +4,7 @@ title: elseとelse if
 takeaway: "elseは条件がfalseのとき、else ifは別の条件を続けて試すときに使う"
 introduces: [else]
 requires: [if, 条件, ブロック]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 2-2-3
 # elseとelse if
 
-TypeScript入門研修 — Module 2 / レッスン2-2
+TypeScript入門 — Module 2 / レッスン2-2
 
 <!-- ノート: ifだけでは「そうでないとき」を書けません。分岐を完成させる2つの道具を押さえます。 -->
 

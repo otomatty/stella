@@ -25,6 +25,16 @@ export interface Env {
   ALLOWED_ORIGINS: string;
   ISOLATE_MEMORY_LIMIT?: string;
 
+  /**
+   * 開発モード ("1" / "true" で有効)。 **ローカル開発専用 — 本番には設定しない**
+   * (wrangler.toml の [vars] にも deploy workflow にも載せないこと)。
+   *
+   * 有効のとき画面に開発者モード FAB が出る。オンにしたリクエストだけ、島を表示条件
+   * に関わらず配信し、霧の星の名前も明かす。解放条件はそのまま — 見えるだけで
+   * locked の星は開かない。
+   */
+  DEV_MODE?: string;
+
   // ---------------------------------------------------------------
   // Cloudflare D1 + 自前認証 (Google OAuth / JWT)
   // ---------------------------------------------------------------

@@ -4,7 +4,7 @@ title: enumは使わない
 takeaway: "enumは読めればよい。定数の集合はリテラルのユニオン型で書く"
 introduces: [enum]
 requires: [リテラル型, ユニオン型, オブジェクト, コンパイル, 型エイリアス]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-6-2
 # enumは使わない
 
-TypeScript入門研修 — Module 5 / レッスン5-6
+TypeScript入門 — Module 5 / レッスン5-6
 
 <!-- ノート: 既存コードで必ず出会う機能ですが、新しく書く必要はありません。付き合い方を決めます。 -->
 

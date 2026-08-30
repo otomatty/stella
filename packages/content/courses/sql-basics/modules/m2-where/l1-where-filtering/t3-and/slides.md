@@ -4,7 +4,7 @@ title: ANDで条件を重ねる
 takeaway: "AND でつなぐと、両方の条件を満たす行だけに絞れる"
 introduces: [AND]
 requires: [WHERE, 比較演算子]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 2-1-3
 # ANDで条件を重ねる
 
-SQL入門研修 — Module 2 / レッスン2-1
+SQL入門 — Module 2 / レッスン2-1
 
 <!-- ノート: 条件を1つ書けるようになったので、次は2つ重ねます。実務の絞り込みはほとんど複数条件です。 -->
 

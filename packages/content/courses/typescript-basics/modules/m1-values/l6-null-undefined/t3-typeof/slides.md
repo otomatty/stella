@@ -4,7 +4,7 @@ title: typeofと、nullの罠
 takeaway: "typeofは型名を文字列で返す。ただしnullだけは\"object\"を返す"
 introduces: [typeof]
 requires: [null, undefined, string, number]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-6-3
 # typeofと、nullの罠
 
-TypeScript入門研修 — Module 1 / レッスン1-6
+TypeScript入門 — Module 1 / レッスン1-6
 
 <!-- ノート: 値の種類を実行時に調べる道具を1つ紹介します。便利ですが、1か所だけ有名な罠があります。 -->
 

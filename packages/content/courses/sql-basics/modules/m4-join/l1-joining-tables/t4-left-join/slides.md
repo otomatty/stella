@@ -4,7 +4,7 @@ title: LEFT JOINで左の行を全部残す
 takeaway: "LEFT JOIN は左のテーブルの行を全部残し、相手がいない部分は NULL になる"
 introduces: [LEFT JOIN]
 requires: [INNER JOIN, NULL]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 4-1-4
 # LEFT JOINで左の行を全部残す
 
-SQL入門研修 — Module 4 / レッスン4-1
+SQL入門 — Module 4 / レッスン4-1
 
 <!-- ノート: INNER JOINには「消える行」があります。それを消さずに残したいときの、もう1つのJOINです。 -->
 

@@ -4,7 +4,7 @@ title: 集計関数は列をまとめて計算する
 takeaway: "SUM や AVG などの集計関数は、列の値をまとめてひとつの結果にする"
 introduces: [集計関数, SUM, AVG]
 requires: [COUNT, 列, 式]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 5-1-2
 # 集計関数は列をまとめて計算する
 
-SQL入門研修 — Module 5 / レッスン5-1
+SQL入門 — Module 5 / レッスン5-1
 
 <!-- ノート: COUNTには仲間がいます。数えるだけでなく、足したり平均したりする道具を一気に揃えます。 -->
 

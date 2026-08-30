@@ -4,7 +4,7 @@ title: 結合した結果も絞り込める
 takeaway: "JOIN した結果もひとつの表なので、WHERE や ORDER BY がそのまま使える"
 introduces: []
 requires: [JOIN, WHERE, ORDER BY]
-header: "SQL入門研修"
+header: "SQL入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "SQL入門研修"
 # 4-1-5
 # 結合した結果も絞り込める
 
-SQL入門研修 — Module 4 / レッスン4-1
+SQL入門 — Module 4 / レッスン4-1
 
 <!-- ノート: JOINの仕上げです。新しい構文は出てきません。今まで習ったものがJOINの上でもそのまま動く、という話です。 -->
 

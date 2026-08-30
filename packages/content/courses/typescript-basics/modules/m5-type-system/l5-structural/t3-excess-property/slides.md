@@ -4,7 +4,7 @@ title: 余剰プロパティチェック
 takeaway: "オブジェクトを直接書いて渡すときだけ、余分なプロパティが弾かれる"
 introduces: [余剰プロパティチェック]
 requires: [構造的型付け, オブジェクトリテラル, 変数, 型注釈, プロパティ]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-5-3
 # 余剰プロパティチェック
 
-TypeScript入門研修 — Module 5 / レッスン5-5
+TypeScript入門 — Module 5 / レッスン5-5
 
 <!-- ノート: レッスン5-5の最後です。構造的型付けの唯一の例外を1つ押さえます。ここを知らないと、通ったり通らなかったりする理由が分かりません。 -->
 

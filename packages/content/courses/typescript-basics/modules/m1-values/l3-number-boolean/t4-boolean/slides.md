@@ -4,7 +4,7 @@ title: boolean型
 takeaway: "boolean型に入る値はtrueとfalseの2つだけ"
 introduces: [true, false]
 requires: [boolean, 型注釈, string]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 1-3-4
 # boolean型
 
-TypeScript入門研修 — Module 1 / レッスン1-3
+TypeScript入門 — Module 1 / レッスン1-3
 
 <!-- ノート: 数値を見たので、次は真偽値です。地味に見えますが、条件分岐で主役になる型です。 -->
 

@@ -4,7 +4,7 @@ title: anyとunknownの違い
 takeaway: "anyは検査を素通りさせ、unknownは検査を強制する"
 introduces: []
 requires: [any, unknown, 型ガード, 絞り込み]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 5-3-3
 # anyとunknownの違い
 
-TypeScript入門研修 — Module 5 / レッスン5-3
+TypeScript入門 — Module 5 / レッスン5-3
 
 <!-- ノート: どちらも「何でも入る」型です。似て見える2つの、決定的な違いを1つだけ押さえます。 -->
 

@@ -4,7 +4,7 @@ title: viewportの指定で実際の幅に合わせる
 takeaway: "headにviewportのmetaを書くと、スマートフォンが実際の画面幅で表示する"
 introduces: [ビューポート, viewport]
 requires: [head, meta, 属性, 属性値, ブラウザー, 骨組み]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 4-6-1
 # viewportの指定で実際の幅に合わせる
 
-HTML/CSS入門研修 — Module 4 / レッスン4-6
+HTML/CSS入門 — Module 4 / レッスン4-6
 
 <!-- ノート: 最後のレッスンは画面幅です。まず、書かないと何も始まらない1行から。 -->
 

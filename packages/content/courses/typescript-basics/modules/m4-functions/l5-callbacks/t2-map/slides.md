@@ -4,7 +4,7 @@ title: map
 takeaway: "mapは、全要素を変換した新しい配列を作る"
 introduces: [map]
 requires: [配列, コールバック, アロー関数, for-of, 要素]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 4-5-2
 # map
 
-TypeScript入門研修 — Module 4 / レッスン4-5
+TypeScript入門 — Module 4 / レッスン4-5
 
 <!-- ノート: コールバックの実用です。配列を扱うとき、for-ofよりこちらを使う場面が実務では多くなります。 -->
 

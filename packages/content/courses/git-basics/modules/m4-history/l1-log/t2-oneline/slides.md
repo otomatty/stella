@@ -4,7 +4,7 @@ title: --onelineで一覧する
 takeaway: "git log --oneline で、1行1コミットの一覧になる"
 introduces: [--oneline]
 requires: [log, コミット, コミットメッセージ, ハッシュ, オプション]
-header: "Git入門研修"
+header: "Git入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "Git入門研修"
 # 4-1-2
 # --onelineで一覧する
 
-Git入門研修 — Module 4 / レッスン4-1
+Git入門 — Module 4 / レッスン4-1
 
 <!-- ノート: git log の表示を1行に圧縮するオプションを1つだけ覚えます。実務で一番よく打つ形です。 -->
 

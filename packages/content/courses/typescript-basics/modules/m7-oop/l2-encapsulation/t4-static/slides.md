@@ -4,7 +4,7 @@ title: static
 takeaway: "staticを付けると、インスタンスを作らずクラス名から直接使える"
 introduces: [static]
 requires: [クラス, インスタンス, メソッド, new, this]
-header: "TypeScript入門研修"
+header: "TypeScript入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "TypeScript入門研修"
 # 7-2-4
 # static
 
-TypeScript入門研修 — Module 7 / レッスン7-2
+TypeScript入門 — Module 7 / レッスン7-2
 
 <!-- ノート: これまで何度か使ってきた Math.round の正体が、ここで明らかになります。 -->
 

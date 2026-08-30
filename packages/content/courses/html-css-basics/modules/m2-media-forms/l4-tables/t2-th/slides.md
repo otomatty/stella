@@ -4,7 +4,7 @@ title: 見出しのセルはthで示す
 takeaway: "その行や列が何を表すかを示すセルは、tdではなくthで書く"
 introduces: [th, scope]
 requires: [表, セル, 行, 列, td, tr, 属性, 属性値]
-header: "HTML/CSS入門研修"
+header: "HTML/CSS入門"
 ---
 
 <!-- _class: lead -->
@@ -12,7 +12,7 @@ header: "HTML/CSS入門研修"
 # 2-4-2
 # 見出しのセルはthで示す
 
-HTML/CSS入門研修 — Module 2 / レッスン2-4
+HTML/CSS入門 — Module 2 / レッスン2-4
 
 <!-- ノート: 表の形はできました。ここで「どの列が何か」を機械にも伝えます。 -->
 
