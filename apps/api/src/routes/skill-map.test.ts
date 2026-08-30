@@ -190,7 +190,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(e?.title).toBeUndefined();
     expect(e?.theme).toBeUndefined();
     expect(e?.slug).toBeUndefined();
-    expect(e?.icon_path).toBeUndefined();
+    expect(e?.has_icon).toBeUndefined();
     expect(e?.lock_reasons).toBeUndefined();
     expect(Object.keys(e ?? {})).not.toContain("enrolled");
   });
@@ -233,13 +233,16 @@ describe("GET /api/skill-map/mine", () => {
     // 解放条件は 1 歩先まで。2 歩先の「何が要るか」は手前の星が既に語っている。
     expect(d?.lock_reasons).toBeUndefined();
     // アイコンの形は講座の正体を語るので、slug と同じく霧の中に出さない。
-    expect(d?.icon_path).toBeUndefined();
+    expect(d?.has_icon).toBeUndefined();
+    expect(Object.keys(d ?? {})).not.toContain("icon_path");
   });
 
-  it("霧の外の星には講座アイコンの R2 キーを載せる", async () => {
+  it("full の星にはアイコンがあることだけ載せる (R2 キーは出さない)", async () => {
     const stages = await fetchStages();
-    expect(stages.get("id-a")?.icon_path).toBe("tenant/ses/courses/a/icon-abcd1234.svg");
-    expect(stages.get("id-c")?.icon_path).toBe("tenant/ses/courses/c/icon-abcd1234.svg");
+    expect(stages.get("id-a")?.has_icon).toBe(true);
+    expect(stages.get("id-c")?.has_icon).toBe(true);
+    expect(stages.get("id-d")?.has_icon).toBeUndefined();
+    expect(Object.keys(stages.get("id-a") ?? {})).not.toContain("icon_path");
   });
 
   it("appearances は霧より先の星にも載せる (slug が無くてもレイアウトが複製できる)", async () => {
@@ -735,6 +738,7 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     expect(e?.title).toBe("e の講座");
     expect(e?.slug).toBe("e");
     expect(e?.lock_reasons).toEqual(["d の講座"]);
+    expect(e?.has_icon).toBeUndefined();
   });
 
   it("4 歩以上先も落とさない (開発者は全体の配置を見たい)", async () => {
@@ -764,5 +768,146 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     const e = stages.get("id-e");
     expect(e?.slug).toBeUndefined();
     expect(e?.lock_reasons).toBeUndefined();
+  });
+});
+
+/** R2 の get だけ覚える素朴なバケット (アイコンプロキシのテスト用)。 */
+function fakeMaterialsBucket(objects: Record<string, string>, onGet?: (key: string) => void) {
+  return {
+    get: async (key: string) => {
+      onGet?.(key);
+      const body = objects[key];
+      if (body === undefined) return null;
+      return { body, size: body.length, httpMetadata: { contentType: "image/svg+xml" } };
+    },
+  };
+}
+
+describe("GET /api/skill-map/stages/:id/icon", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"/>';
+  const iconPath = (slug: string) => `tenant/ses/courses/${slug}/icon-abcd1234.svg`;
+
+  beforeEach(() => {
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({
+      [iconPath("a")]: svg,
+      [iconPath("b")]: svg,
+      [iconPath("e")]: svg,
+    }) as unknown as Env["MATERIALS_BUCKET"];
+  });
+
+  it("認証が無ければ 401", async () => {
+    const res = await get("/api/skill-map/stages/id-a/icon", false);
+    expect(res.status).toBe(401);
+  });
+
+  it("霧の外の星の SVG を返す (R2 キーは応答に出さない)", async () => {
+    const res = await get("/api/skill-map/stages/id-a/icon");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toMatch(/image\/svg\+xml/);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(await res.text()).toBe(svg);
+  });
+
+  it("霧の星は存在ごと 404 (アイコンの有無で霧の中を探れない)", async () => {
+    const res = await get("/api/skill-map/stages/id-d/icon");
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("ステージが見つかりません");
+  });
+
+  it("幽霊ノード (3 歩先) も同じ 404 文言", async () => {
+    const res = await get("/api/skill-map/stages/id-e/icon");
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("ステージが見つかりません");
+  });
+
+  it("開発者表示でも霧の星のアイコンは出さない (開始できない星の正体を形で漏らさない)", async () => {
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const res = await get("/api/skill-map/stages/id-d/icon");
+    expect(res.status).toBe(404);
+  });
+
+  it("存在しない id も同じ 404 文言 (有無を区別しない)", async () => {
+    const res = await get("/api/skill-map/stages/id-no-such/icon");
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("ステージが見つかりません");
+  });
+
+  it("R2 に実体が無い星も 404", async () => {
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({}) as unknown as Env["MATERIALS_BUCKET"];
+    const res = await get("/api/skill-map/stages/id-a/icon");
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /api/skill-map/icons", () => {
+  const svgOf = (slug: string) => `<svg xmlns="http://www.w3.org/2000/svg" id="${slug}"/>`;
+  const iconPath = (slug: string) => `tenant/ses/courses/${slug}/icon-abcd1234.svg`;
+
+  beforeEach(() => {
+    vi.mocked(loadSkillMapSource).mockClear();
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({
+      [iconPath("a")]: svgOf("a"),
+      [iconPath("b")]: svgOf("b"),
+      [iconPath("c")]: svgOf("c"),
+      [iconPath("d")]: svgOf("d"),
+      [iconPath("e")]: svgOf("e"),
+    }) as unknown as Env["MATERIALS_BUCKET"];
+  });
+
+  it("認証が無ければ 401", async () => {
+    const res = await get("/api/skill-map/icons", false);
+    expect(res.status).toBe(401);
+  });
+
+  it("霧の外の SVG を 1 応答にまとめる (マップ評価は 1 回、R2 キーは出さない)", async () => {
+    const res = await get("/api/skill-map/icons");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(loadSkillMapSource).toHaveBeenCalledTimes(1);
+    const body = (await res.json()) as { icons: Record<string, string> };
+    expect(body.icons["id-a"]).toBe(svgOf("a"));
+    expect(body.icons["id-b"]).toBe(svgOf("b"));
+    expect(body.icons["id-c"]).toBe(svgOf("c"));
+    expect(body.icons["id-d"]).toBeUndefined();
+    expect(body.icons["id-e"]).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("tenant/ses/courses");
+  });
+
+  it("霧の星の R2 は取りに行かない (有無で霧の中を探れない)", async () => {
+    const keys: string[] = [];
+    env.MATERIALS_BUCKET = fakeMaterialsBucket(
+      {
+        [iconPath("a")]: svgOf("a"),
+        [iconPath("d")]: svgOf("d"),
+        [iconPath("e")]: svgOf("e"),
+      },
+      (key) => keys.push(key),
+    ) as unknown as Env["MATERIALS_BUCKET"];
+    const res = await get("/api/skill-map/icons");
+    expect(res.status).toBe(200);
+    expect(keys.some((key) => key.includes("/d/"))).toBe(false);
+    expect(keys.some((key) => key.includes("/e/"))).toBe(false);
+  });
+
+  it("開発者表示でも霧の星のアイコンは出さない", async () => {
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const res = await get("/api/skill-map/icons");
+    const body = (await res.json()) as { icons: Record<string, string> };
+    expect(body.icons["id-d"]).toBeUndefined();
+    expect(body.icons["id-e"]).toBeUndefined();
+  });
+
+  it("R2 に実体が無い星はキーごと落とす (200 のまま)", async () => {
+    env.MATERIALS_BUCKET = fakeMaterialsBucket({
+      [iconPath("b")]: svgOf("b"),
+    }) as unknown as Env["MATERIALS_BUCKET"];
+    const res = await get("/api/skill-map/icons");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { icons: Record<string, string> };
+    expect(body.icons["id-a"]).toBeUndefined();
+    expect(body.icons["id-b"]).toBe(svgOf("b"));
   });
 });

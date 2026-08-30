@@ -65,13 +65,14 @@ import {
 } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
+import { isApiConfigured } from "@/lib/api-client";
 import { ArrowUp, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
-import { getMaterialUrl, isStorageConfigured } from "@/lib/storage";
-import type { SkillMapStageNode } from "@/lib/skill-map-api";
+import { getSkillMapIcons, type SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
 import { useSkillTreeCelebration, type CelebrationKind } from "./celebration";
 import { showsStar } from "./fog-display";
+import { iconFetchKey } from "./icon-fetch-key";
 import { offscreenMarkers, type ViewState } from "./offscreen";
 import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
 import { sectorLabelsInView } from "./sector-label";
@@ -139,28 +140,48 @@ function routeStyleOf(accent: string | undefined): CSSProperties {
 }
 
 /**
- * 講座アイコンの画像が実際に届くまで待つ。
+ * 講座アイコンを JWT 付きで 1 回取り、mask-image 用の blob URL にする。
  *
- * mask-image は読み込み失敗を DOM イベントで教えてくれず、失敗した画像は透明として
- * 扱われて星の中身が**空白**になる (R2 に無い・ローカルの作業ツリーがまだデプロイされて
- * いない、など)。Image で先に到達を確かめ、届いた URL のときだけマスクに使う。
+ * 公開 R2 URL を mask に直接渡すと CORS でマスクが透明になり、星の中身が空白になる。
+ * 星ごとに取るとマップ評価 (D1) が N 回走るので、ツリー全体で 1 リクエストにする。
  * 届かない間・失敗したときは呼び出し側が状態グリフに落とす。
+ *
+ * 依存は `iconFetchKey` — 見える has_icon の集合か受講者が変わったら取り直す。
+ * 空配列だと、腕試しで霧が開けても初回のバッチのままになる。
  */
-function useLoadedImage(url: string | null): string | null {
-  const [loaded, setLoaded] = useState<string | null>(null);
+function useStageIconUrls(fetchKey: string): Map<string, string> {
+  const [urls, setUrls] = useState<Map<string, string>>(() => new Map());
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchKey は再取得トリガー (URL は固定)
   useEffect(() => {
-    if (!url) return;
-    let alive = true;
-    const probe = new Image();
-    probe.onload = () => {
-      if (alive) setLoaded(url);
-    };
-    probe.src = url;
+    if (!isApiConfigured()) return;
+    const ac = new AbortController();
+    let created: string[] = [];
+    void getSkillMapIcons(ac.signal)
+      .then((icons) => {
+        if (ac.signal.aborted) return;
+        const next = new Map<string, string>();
+        created = [];
+        for (const [id, svg] of Object.entries(icons)) {
+          if (ac.signal.aborted) {
+            for (const url of created) URL.revokeObjectURL(url);
+            created = [];
+            return;
+          }
+          const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+          created.push(url);
+          next.set(id, url);
+        }
+        setUrls(next);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setUrls(new Map());
+      });
     return () => {
-      alive = false;
+      ac.abort();
+      for (const url of created) URL.revokeObjectURL(url);
     };
-  }, [url]);
-  return loaded === url ? url : null;
+  }, [fetchKey]);
+  return urls;
 }
 
 /** クリックで寄せる倍率。全体表示からここに来ると名前が出る。 */
@@ -226,6 +247,7 @@ export const SkillTree = ({
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
   const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
+  const iconUrls = useStageIconUrls(iconFetchKey(currentUserId, nodes));
   const celebrations = useSkillTreeCelebration(currentUserId, nodes);
   const canvasRef = useRef<SkillTreeCanvasHandle | null>(null);
   /** スマホ幅ではポップオーバーではなくボトムシートで詳細を出す。 */
@@ -610,6 +632,11 @@ export const SkillTree = ({
           }
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
+          iconUrl={
+            placed.node.state !== "locked" && placed.node.has_icon
+              ? (iconUrls.get(placed.node.id) ?? null)
+              : null
+          }
           onActivate={() => activateStar(placed)}
           sheetMode={isMobile}
           sheetOpen={sheetId === placed.instanceId}
@@ -635,6 +662,11 @@ interface StarNodeProps {
   /** 複数の演出を内側から順に灯すための順番。 */
   celebrationIndex: number;
   /**
+   * 講座アイコンの blob URL。無い / 届いていないときは状態グリフ。
+   * ロックと霧は親が渡さない (ロックは南京錠のまま、霧はサーバが has_icon を伏せる)。
+   */
+  iconUrl: string | null;
+  /**
    * クリック 1 手目 (sm 以上)。false なら寄るだけでポップオーバーは開かない
    * (全体表示からのズームイン)。
    */
@@ -658,6 +690,7 @@ const StarNode = ({
   showLabel,
   celebration,
   celebrationIndex,
+  iconUrl,
   onActivate,
   sheetMode,
   sheetOpen,
@@ -676,12 +709,9 @@ const StarNode = ({
   const isCenter = placed.ring === 0;
   const routeStyle = routeStyleOf(routeAccentOf(placed.sector));
   // 講座アイコン (単色シルエット)。見える星 (解放済み・進行中・クリア) だけ状態グリフを
-  // 置き換える — ロックは 🔒 のまま (状態が読めなくなる)、霧はサーバが icon_path を
-  // 伏せているのでそもそも届かない。色は mask + currentColor で状態クラスから継承する。
+  // 置き換える — ロックは 🔒 のまま (状態が読めなくなる)、霧はサーバが has_icon を
+  // 伏せているので親が URL を渡さない。色は mask + currentColor で状態クラスから継承する。
   // 画像が届くまで (届かなければずっと) 状態グリフのまま。
-  const iconUrl = useLoadedImage(
-    !locked && node.icon_path && isStorageConfigured() ? getMaterialUrl(node.icon_path) : null,
-  );
 
   const act = (run: () => void) => {
     setOpen(false);

@@ -2,6 +2,7 @@
  * スキルツリー (ステージマップ) とスキルプロフィールの読み出し API (Phase 1)。
  *
  *   GET /api/skill-map/mine     … 星の状態・視界・解放条件・次の一歩
+ *   GET /api/skill-map/icons    … 霧の外の講座アイコン SVG を 1 応答にまとめる
  *   GET /api/skill-profile/mine … XP の内訳とレベル、学習ストリークの要約
  *
  * どちらも **呼び出した本人ぶんだけ** を返す。他人のマップを覗く用途 (講師の
@@ -197,6 +198,17 @@ export function maskedLockReasons(
  */
 export const UNSELECTABLE_STAGE_MESSAGE = "受講登録のないステージは選べません";
 
+/** アイコン読み出しの 404。存在しない / 霧 / 実体なしを区別しない。 */
+const STAGE_NOT_FOUND = "ステージが見つかりません";
+
+/** `full` で実ファイルがある星にだけ `has_icon` を付ける (形は正体を語る)。 */
+function hasIconPayload(
+  iconPath: string | undefined,
+  visibility: SkillMapVisibility,
+): { has_icon?: true } {
+  return iconPath && visibility === "full" ? { has_icon: true } : {};
+}
+
 /** 応答に載せる 1 つの星。視界に応じて欠ける項目がある。 */
 export interface SkillMapStagePayload {
   id: string;
@@ -219,10 +231,11 @@ export interface SkillMapStagePayload {
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバックでもある。 */
   theme?: string;
   /**
-   * 講座アイコン (単色シルエット SVG) の R2 キー。**霧の外でだけ入る** — アイコンの形は
-   * 講座の正体をそのまま語るので、slug と同じ秘匿ルールに従う。
+   * 講座アイコンがあるか。**霧の外でだけ true** — アイコンの形は講座の正体を語るので
+   * slug と同じ秘匿。実体は `GET /api/skill-map/icons` (JWT 必須) でまとめて取る。
+   * R2 キーはクライアントに出さない (公開バケット直リンクを足さないため)。
    */
-  icon_path?: string;
+  has_icon?: true;
   /** `full` かつ locked でない星にだけ入る。 */
   can_do?: string;
   /**
@@ -370,7 +383,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
             ...(stage.theme ? { theme: stage.theme } : {}),
             enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
             ...parentIdOf(stage),
-            ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
+            ...hasIconPayload(stage.iconPath, visibility),
             ...(state === "locked"
               ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
               : {}),
@@ -411,7 +424,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
           ...(stage.theme ? { theme: stage.theme } : {}),
           enrolled: source.enrolledStageIds?.has(stage.id) ?? false,
           ...parentIdOf(stage),
-          ...(stage.iconPath ? { icon_path: stage.iconPath } : {}),
+          ...hasIconPayload(stage.iconPath, visibility),
           ...(state === "locked"
             ? { lock_reasons: maskedLockReasons(source, result, stage.id) }
             : {}),
@@ -496,6 +509,90 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
         dev_mode: revealDev,
       },
     });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 講座アイコン SVG。JWT 必須、霧の星は 404。
+ *
+ * 画面は `mask-image` に載せるので、公開 R2 URL を直接渡すと CORS でマスクが黙って
+ * 落ちる。ここを通して blob URL にすると同じオリジンになり、キーもクライアントに出ない。
+ *
+ * キャッシュは付けない。同じブラウザでアカウントを切り替えたときや、視界が
+ * `full` → `fog` に落ちたときに、前の 200 が残ると認可を飛ばしてしまう。
+ */
+skillMapRoute.get("/api/skill-map/stages/:id/icon", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const stageId = c.req.param("id");
+    const revealDev = wantsDevReveal(c);
+    const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
+    const stage = source.stages.find((row) => row.id === stageId);
+    if (!stage) throw new ApiError(STAGE_NOT_FOUND, 404);
+
+    const result = evaluateSkillMapFor(source);
+    const visibility = result.visibility.get(stage.id) ?? "hidden";
+    if (visibility !== "full" || !stage.iconPath) {
+      throw new ApiError(STAGE_NOT_FOUND, 404);
+    }
+
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) {
+      throw new ApiError("教材ストレージ (R2 バインディング MATERIALS_BUCKET) が未設定です", 503);
+    }
+    const object = await bucket.get(stage.iconPath);
+    if (!object) throw new ApiError(STAGE_NOT_FOUND, 404);
+
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": object.httpMetadata?.contentType || "image/svg+xml",
+        "Cache-Control": "private, no-store",
+      },
+    });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 霧の外の講座アイコンを 1 回の評価でまとめて返す。
+ *
+ * 星ごとに `stages/:id/icon` を呼ぶと、マップ読み出し (D1 複数本) が星の数だけ走る。
+ * ホームの `/mine` に SVG を埋め込まないのは、マップ JSON を開くたびに R2 を踏まないため。
+ * ツリー画面だけがこれを取る。霧の星はキーごと載せない (有無で正体を探れない)。
+ */
+skillMapRoute.get("/api/skill-map/icons", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const revealDev = wantsDevReveal(c);
+    const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
+    const result = evaluateSkillMapFor(source);
+
+    const bucket = c.env.MATERIALS_BUCKET;
+    if (!bucket) {
+      throw new ApiError("教材ストレージ (R2 バインディング MATERIALS_BUCKET) が未設定です", 503);
+    }
+
+    const candidates = source.stages.filter((stage) => {
+      const visibility = result.visibility.get(stage.id) ?? "hidden";
+      return visibility === "full" && Boolean(stage.iconPath);
+    });
+
+    const icons: Record<string, string> = {};
+    await Promise.all(
+      candidates.map(async (stage) => {
+        const path = stage.iconPath;
+        if (!path) return;
+        const object = await bucket.get(path);
+        if (!object) return;
+        icons[stage.id] = await new Response(object.body).text();
+      }),
+    );
+
+    c.header("Cache-Control", "private, no-store");
+    return c.json({ icons });
   } catch (err) {
     return errorResponse(c, err);
   }

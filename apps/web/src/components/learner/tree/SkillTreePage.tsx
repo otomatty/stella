@@ -196,12 +196,12 @@ export function SkillTreePage({
   );
 }
 
-/** 盤面と同じ星空の上に、読み込み中 / エラー / 未接続の文言を置く (白いカードが出ない)。 */
+/** 盤面と同じ面の上に、読み込み中 / エラー / 未接続の文言を置く (白いカードが出ない)。 */
 function BoardMessage({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <div
       className={cn(
-        "tree-board flex flex-wrap items-center justify-center gap-3 text-[12.5px] text-[rgb(235_238_255/0.88)]",
+        "tree-board flex flex-wrap items-center justify-center gap-3 text-[12.5px]",
         className,
       )}
     >

@@ -27,11 +27,12 @@ export interface SkillMapStageNode {
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
   /**
-   * 講座アイコン (単色シルエット SVG) の R2 キー。霧の外の星にだけ入る (アイコンの形は
-   * 正体を語るので、サーバが slug と同じ秘匿ルールで伏せる)。画面は CSS mask +
-   * currentColor で塗るため、ダーク / ライトどちらのテーマでも星の文字色に追従する。
+   * 講座アイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
+   * サーバが slug と同じ秘匿ルールで伏せる)。実体は
+   * `GET /api/skill-map/icons` (JWT)。R2 キーはクライアントに出ない。
+   * 画面は blob URL を CSS mask + currentColor で塗る。
    */
-  icon_path?: string;
+  has_icon?: true;
   can_do?: string;
   lock_reasons?: string[];
   enrolled?: boolean;
@@ -186,6 +187,19 @@ export async function getSkillMap(): Promise<SkillMapMine> {
     `/api/skill-map/mine?tiers=${SKILL_MAP_TIERS}`,
   );
   return skill_map;
+}
+
+/**
+ * 霧の外の講座アイコン SVG をまとめて取る。呼び出し側が blob URL にして
+ * `URL.revokeObjectURL` する。`mask-image` は Authorization を付けられないので、
+ * JWT 付きで取ってから同じオリジンの blob を渡す (公開 R2 URL 直だと CORS で
+ * マスクが透明になる)。マップ JSON には埋め込まない (ホームが R2 を踏まないため)。
+ */
+export async function getSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
+  const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/icons", {
+    signal,
+  });
+  return res.icons;
 }
 
 export async function getSkillProfile(): Promise<SkillProfileMine> {
