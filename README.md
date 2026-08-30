@@ -438,7 +438,7 @@ ON の間に招待 (ユーザー登録) されたユーザーには、 直後に
 
 **通常のデプロイは GitHub Actions が自動実行する**（手動 `wrangler` ではない）。
 `pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
-`main` への push は `deploy.yml` が同じ検証 → D1 migrate(remote) → D1 seed(remote) → API デプロイ → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。
+`main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像 / PDF の R2 アップロード → D1 migrate(remote) → API デプロイ → D1 seed(remote) → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
 GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
 Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要。
 詳細（ワークフロー一覧・必須チェック設定・OAuth Console 手順・失敗時の再デプロイ）は
@@ -449,7 +449,7 @@ Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要�
 ### フロント — Cloudflare Workers Static Assets (`apps/web`)
 
 ```bash
-bun run deploy:web   # build + wrangler deploy
+bun run deploy:web   # web だけビルド + wrangler deploy
 ```
 
 - **環境変数** (ビルド時に焼き込み。通常は GitHub Actions Variables から供給):

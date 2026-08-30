@@ -8,8 +8,8 @@
  * 手順:
  *   1. R2 の状態オブジェクト (`lesson-pdf/state.json`) を読む。前回までに put した
  *      キーの台帳で、キーは内容ハッシュ入り・不変なので「台帳にある = 生成済み」。
- *      Cloudflare v4 API に R2 のオブジェクト一覧が無いため (wrangler も単一
- *      オブジェクトの get/put/delete しか使っていない)、一覧の代わりに台帳を持つ。
+ *      Cloudflare v4 API に R2 のオブジェクト一覧が無いため (lib/r2.ts も単一
+ *      オブジェクトの get/put/delete しか持たない)、一覧の代わりに台帳を持つ。
  *      deploy は concurrency group で直列なので台帳の競合更新は起きない。
  *   2. build-pdf.ts を台帳のスキップ付きで実行し、変わった教材だけ PDF 化する
  *   3. 台帳に無いキーだけ put する (冪等。旧版は消さない — 版の保持は仕様)
@@ -26,21 +26,19 @@
  * 損なわれない (時間だけかかる)。
  */
 
-import { execFile, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 
-const execFileAsync = promisify(execFile);
+import { createR2Client, putAll } from "./lib/r2.js";
 
 const BUCKET = "falcon-materials-public";
 const STATE_KEY = "lesson-pdf/state.json";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const contentRoot = resolve(here, "..");
-const apiDir = join(contentRoot, "..", "..", "apps", "api");
 
 const args = process.argv.slice(2);
 const remote = args.includes("--remote");
@@ -82,29 +80,13 @@ interface PdfState {
   objects: Record<string, number>;
 }
 
-function wranglerArgs(cmd: "get" | "put", key: string, file: string): string[] {
-  return [
-    "wrangler",
-    "r2",
-    "object",
-    cmd,
-    `${BUCKET}/${key}`,
-    "--file",
-    file,
-    ...(cmd === "put" ? ["--content-type", "application/json"] : []),
-    remote ? "--remote" : "--local",
-  ];
-}
+const r2 = createR2Client(BUCKET, remote);
 
 async function readState(): Promise<PdfState> {
-  const tmp = join(contentRoot, "dist", "pdf-state.remote.json");
-  rmSync(tmp, { force: true });
   try {
-    await execFileAsync("bunx", wranglerArgs("get", STATE_KEY, tmp), {
-      cwd: apiDir,
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    const parsed = JSON.parse(readFileSync(tmp, "utf8")) as PdfState;
+    const body = await r2.get(STATE_KEY);
+    if (body === null) throw new Error("台帳がありません (初回)");
+    const parsed = JSON.parse(new TextDecoder().decode(body)) as PdfState;
     if (parsed.version !== 1 || typeof parsed.objects !== "object") {
       throw new Error("unexpected state shape");
     }
@@ -118,78 +100,11 @@ async function readState(): Promise<PdfState> {
       }`,
     );
     return { version: 1, objects: {} };
-  } finally {
-    rmSync(tmp, { force: true });
   }
 }
 
 async function writeState(state: PdfState): Promise<void> {
-  const tmp = join(contentRoot, "dist", "pdf-state.next.json");
-  writeFileSync(tmp, JSON.stringify(state));
-  await execFileAsync("bunx", wranglerArgs("put", STATE_KEY, tmp), {
-    cwd: apiDir,
-    maxBuffer: 8 * 1024 * 1024,
-  });
-  rmSync(tmp, { force: true });
-}
-
-async function put(key: string, file: string): Promise<void> {
-  await execFileAsync(
-    "bunx",
-    [
-      "wrangler",
-      "r2",
-      "object",
-      "put",
-      `${BUCKET}/${key}`,
-      "--file",
-      file,
-      "--content-type",
-      "application/pdf",
-      remote ? "--remote" : "--local",
-    ],
-    // 並列実行なので出力は混ぜない。失敗したものだけ呼び出し側がまとめて出す。
-    { cwd: apiDir, maxBuffer: 8 * 1024 * 1024 },
-  );
-}
-
-const MAX_ATTEMPTS = 3;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** upload-materials.ts と同じ: 同時実行を絞り、リトライし、1 件でも失敗したら全体を失敗にする。 */
-async function putAll(entries: Array<{ key: string; file: string }>): Promise<void> {
-  const failures: string[] = [];
-  let next = 0;
-  let done = 0;
-  async function worker() {
-    for (;;) {
-      const entry = entries[next++];
-      if (!entry) return;
-      for (let attempt = 1; ; attempt++) {
-        try {
-          await put(entry.key, entry.file);
-          break;
-        } catch (e) {
-          if (attempt >= MAX_ATTEMPTS) {
-            failures.push(
-              `  ${entry.key} (${attempt} 回試行)\n    ${e instanceof Error ? e.message : String(e)}`,
-            );
-            break;
-          }
-          await sleep(attempt * 1000);
-        }
-      }
-      done++;
-      if (done % 10 === 0 || done === entries.length) console.log(`  ${done}/${entries.length} …`);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(concurrency, entries.length) }, worker));
-  if (failures.length > 0) {
-    console.error(
-      `\nR2 へのアップロードが ${failures.length} 件失敗しました:\n${failures.join("\n")}`,
-    );
-    process.exit(1);
-  }
+  await r2.put(STATE_KEY, new TextEncoder().encode(JSON.stringify(state)), "application/json");
 }
 
 async function main(): Promise<void> {
@@ -224,7 +139,13 @@ async function main(): Promise<void> {
     uploads.push({ key: e.key, file });
   }
   console.log(`アップロード対象: ${uploads.length} 件`);
-  if (uploads.length > 0) await putAll(uploads);
+  if (uploads.length > 0) {
+    await putAll(
+      r2,
+      uploads.map((u) => ({ ...u, contentType: "application/pdf" })),
+      concurrency,
+    );
+  }
 
   const finalEntries = entries.map((e) => {
     const local = join(outDir, e.key);

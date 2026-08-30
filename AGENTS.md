@@ -36,7 +36,7 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **教材の配布 PDF (自動生成):** slides.md / doc.md / practice.md はトピック単位 (= D1 レッスン単位) の配布 PDF に自動変換され、`lesson_materials` (source=auto) として受講者の「資料」タブ・「教材をダウンロード」に並ぶ。`main` への push で `packages/content/scripts/upload-pdfs.ts` が R2 (`lesson-pdf/<tenant>/<slug>/<lessonId>/<hash>.pdf`) の既存キーと突き合わせ、**変わった教材だけ** Playwright で PDF 化して put → seed が `PDF_MANIFEST` を読んで登録する。スライドは 16:9 で `slides-skin.css` をそのまま使い、doc / practice は A4 縦 (practice は前半 = 問題編 / 後半 = 解答編、講師ノートは載らない)。キーは内容ハッシュ入りで**旧版は削除しない** — 版履歴は `lesson_material_versions`、本文の履歴は `lesson_revisions` (seed / CMS 編集の両方が記録) が持ち、staff は `LessonMaterialsPanel` の「版履歴」から旧版をダウンロードできる (受講者は常に最新のみ)。ローカルは `bun run content:pdf:sync [slug]` → `PDF_MANIFEST=$PWD/packages/content/dist/pdf-manifest.json bun run db:seed`。設計は `docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md`。
 
-**Deploy:** GitHub Actions only — no manual `wrangler` deploys for the normal flow. `.github/workflows/ci.yml` gates PRs (lint/typecheck/test/build); `.github/workflows/deploy.yml` runs on push to `main` (gate → D1 migrate remote → R2 教材画像アップロード(図解 SVG + サムネイル) → D1 seed remote → deploy:api → deploy:web). Requires repo Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` and Variables `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`. See `docs/ci-cd.md`.
+**Deploy:** GitHub Actions only — no manual `wrangler` deploys for the normal flow. `.github/workflows/ci.yml` gates PRs (lint/typecheck/test/build); `.github/workflows/deploy.yml` runs on push to `main` (gate → 教材の変更判定 →〔変わっていれば R2 教材画像アップロード(図解 SVG + サムネイル) → 教材 PDF sync〕→ D1 migrate remote → deploy:api →〔変わっていれば D1 seed remote → 指紋の記録〕→ deploy:web。教材もスキーマも変えない push は R2 / Playwright / PDF / seed を丸ごと飛ばす — Issue #266). Requires repo Secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` and Variables `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`. See `docs/ci-cd.md`.
 
 **DB setup (local):** `bun run db:migrate && bun run db:seed && bun run smoke:d1`
 
@@ -72,7 +72,7 @@ Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts` と `apps/**/src/**/*.test.ts`)。現状 **116 ファイル / 1408 件**（shared 40・api 38・web 17・vscode 8・code-runner 7・content 6 ファイル）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **127 ファイル / 1534 件**。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
 
 カバレッジは `bun run test:coverage`（v8）。**閾値は置いていない** — 落とすためではなく手薄な場所を見えるようにするためで、数字は CI のジョブサマリに出る。
 

@@ -35,6 +35,20 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
+      # 判定は「seed に入るもの」の内容指紋 (packages/content・packages/shared・
+      # seed が読む apps/web の fixtures・seed / migration のコード) と、前回
+      # seed まで通ったときに R2 へ記録した指紋の比較。 コミット間の diff では
+      # なく内容そのものを見るので、 前回が seed の手前で落ちていた場合や Re-run /
+      # force push のあとでも「まだ入っていない教材を飛ばす」は起きない。
+      # PDF_KEY_SALT は PDF の R2 キーに入るので、塩を替えた push は教材が同じでも
+      # PDF と seed をやり直す必要がある。指紋にも混ぜる (記録に残るのは指紋だけ)。
+      - name: Check whether course content changed
+        id: content
+        run: bun run content:state:check:remote
+        env:
+          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
+
       # --- デプロイ（直列。前段失敗で後段は動かない） ---
       #
       # D1 スキーマに触れる 2 ステップ (migrate → seed) の間に、旧スキーマ前提の
@@ -44,9 +58,11 @@ jobs:
       #
       # 教材画像 (図解 SVG + 講座サムネイル) を seed より先に R2 へ置く。
       # 順序が逆だと、D1 がまだ存在しないオブジェクトを指す時間ができる。
-      # put は冪等なので毎回全件流す。並列 + リトライで 70 件程度なら 1 分前後。
+      # put は冪等なので、走るときは毎回全件流す (Cloudflare API 直叩きなので
+      # 126 件でも十数秒。 CLI を 1 ファイル 1 回起こしていた頃は 2 分半だった)。
       # CLOUDFLARE_API_TOKEN には「Workers R2 Storage: Edit」権限が要る。
       - name: Upload course materials (figures + thumbnails) to R2 (remote)
+        if: steps.content.outputs.changed == 'true'
         run: bun run content:upload:remote
 
       # 教材 PDF (配布資料) の差分生成 + R2 アップロード。R2 上の台帳
@@ -54,7 +70,20 @@ jobs:
       # Playwright で PDF 化して put する。seed より先に流すのは図解・サムネイルと
       # 同じ理由 (D1 が存在しないオブジェクトを指す時間を作らない)。マニフェストは
       # 次の seed が PDF_MANIFEST で読む。
+      #
+      # ブラウザは ~/.cache/ms-playwright に入る。 キャッシュのキーは
+      # packages/content の playwright のバージョン (bun.lock) で、 上がった日だけ
+      # 落とし直す。 OS 依存パッケージ (--with-deps) はキャッシュに載らないので
+      # install 自体は毎回呼ぶ (ブラウザ本体がキャッシュにあれば数秒で終わる)。
+      - name: Cache Playwright browsers
+        if: steps.content.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: playwright-${{ runner.os }}-
       - name: Install Playwright Chromium
+        if: steps.content.outputs.changed == 'true'
         run: bunx --bun playwright install --with-deps chromium
         working-directory: packages/content
       # PDF_KEY_SALT (任意の長いランダム文字列を repo Secrets に登録) を設定すると
@@ -62,22 +91,43 @@ jobs:
       # (公開バケット直リンクの緩和)。未設定でも動くが、キーは内容から計算可能。
       # 途中で変えると全キーが変わり、次のデプロイで全教材が新版として作り直される。
       - name: Generate & upload lesson PDFs to R2 (remote)
+        if: steps.content.outputs.changed == 'true'
         run: bun run content:pdf:sync:remote
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      # migrate / api / web は教材が変わっていなくても毎回。 migration が
+      # 「何もしない」判断は今どおり wrangler に任せる。
       - name: Apply D1 migrations (remote)
         run: bun run db:migrate:remote
 
       - name: Deploy API
         run: bun run deploy:api
 
-      # seed は wrangler d1 execute で D1 へ直接書く (Worker を経由しない) ので、
-      # deploy:api の後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
+      # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
+      # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
+        if: steps.content.outputs.changed == 'true'
         run: bun run db:seed:remote:content
         env:
           PDF_MANIFEST: ${{ github.workspace }}/packages/content/dist/pdf-manifest.json
 
+      # 指紋の記録は R2・PDF・seed が全部通ってから。 途中で落ちた回は記録されない
+      # ので、 次の push が (教材が変わっていなくても) もう一度フルで流す。
+      #
+      # ここだけ continue-on-error。 記録に失敗しても本番の状態は正しく、 起きるのは
+      # 「次のデプロイが教材パイプラインをもう一度流す」だけ。 それで web のデプロイを
+      # 止める方が損。
+      - name: Record course content fingerprint
+        if: steps.content.outputs.changed == 'true'
+        continue-on-error: true
+        run: bun run content:state:save:remote
+        env:
+          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
+
+      # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
+      # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない
+      # verify 側の成果物は本番向けではないため。 ここで web だけ建て直す
+      # (vscode 拡張は web のデプロイに要らない)。
       - name: Deploy Web (build with VITE_* then deploy)
         run: bun run deploy:web

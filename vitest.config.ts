@@ -11,7 +11,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/**/*.test.ts", "apps/**/src/**/*.test.ts"],
+    // scripts (seed / 教材アップロード) も対象。 デプロイでしか動かないコードほど
+    // 壊れたことに気づくのが遅いので、 型検査と同じく網の中に入れておく。
+    include: ["packages/**/*.test.ts", "apps/**/src/**/*.test.ts", "apps/**/scripts/**/*.test.ts"],
     environment: "node",
     // 閾値は置かない。 落とすためではなく、 どこが手薄かを見えるようにするため
     // (数字を見ないまま閾値だけ入れると、 通すためのテストが書かれる)。

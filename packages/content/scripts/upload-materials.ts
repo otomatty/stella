@@ -12,25 +12,19 @@
  * パスで、同じコミットの seed が D1 `courses.thumbnail_path` に書く値と必ず一致する。
  * デプロイ (`.github/workflows/deploy.yml`) は図解・サムネイルの両方をこのスクリプトで流す。
  *
- * `wrangler r2 object put` は 1 ファイルにつき 1 プロセスで、起動だけで数秒かかる。
- * 直列だと図解 68 件で 10 分を超えるので、同時実行数を絞って並列に投げる
- * (`--concurrency=N`、既定 8)。put 自体は冪等なので、失敗時はジョブごと再実行して良い。
- *
- * wrangler は apps/api をカレントディレクトリにして起動する。バケットのローカル実体は
- * `wrangler dev` が使う永続ディレクトリ (apps/api/.wrangler/state) に紐づくので、
- * 別ディレクトリから叩くと dev サーバから見えない場所に書き込んでしまう。
+ * put は冪等なので毎回全件流す。remote は Cloudflare API を直接叩くので (lib/r2.ts)、
+ * 126 件でも同時 8 本で十数秒。差分台帳を持たないのは意図的 — キーが内容ハッシュでない
+ * 図解 SVG では台帳が唯一の真実になり、`r2:orphans` で消したオブジェクトを
+ * 「put 済み」として飛ばしてしまう。全件 put が安いうちは、実体を毎回置き直す方が強い。
  */
 
-import { execFile } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 
 import { assetPath, collectCourseIcons, collectCourseThumbnails } from "../src/manifest.js";
 import { sortNatural } from "../src/natural-order.mjs";
-
-const execFileAsync = promisify(execFile);
+import { createR2Client, putAll } from "./lib/r2.js";
 
 const BUCKET = "falcon-materials-public";
 const remote = process.argv.includes("--remote");
@@ -41,79 +35,6 @@ const wantDiagrams = !onlyThumbnails || onlyDiagrams;
 const wantThumbnails = !onlyDiagrams || onlyThumbnails;
 const here = dirname(fileURLToPath(import.meta.url));
 const coursesRoot = join(here, "..", "courses");
-const apiDir = join(here, "..", "..", "..", "apps", "api");
-
-async function put(key: string, file: string, contentType: string): Promise<void> {
-  await execFileAsync(
-    "bunx",
-    [
-      "wrangler",
-      "r2",
-      "object",
-      "put",
-      `${BUCKET}/${key}`,
-      "--file",
-      file,
-      "--content-type",
-      contentType,
-      remote ? "--remote" : "--local",
-    ],
-    // 並列実行なので出力は混ぜない。失敗したものだけ呼び出し側がまとめて出す。
-    { cwd: apiDir, maxBuffer: 8 * 1024 * 1024 },
-  );
-}
-
-const MAX_ATTEMPTS = 3;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * 同時実行数を絞って走らせる。1 件でも失敗したら全体を失敗にする。
- *
- * リトライは必須。`--local` のバケット実体は miniflare の SQLite で、並列に書くと
- * 数件が "put: Unspecified error (0)" で落ちる。remote 側でも一時的なエラーは起きうる。
- * put は冪等なので、同じキーを投げ直して困ることはない。
- */
-async function putAll(entries: Array<[string, Target]>, concurrency: number): Promise<void> {
-  const failures: string[] = [];
-  let next = 0;
-  let done = 0;
-
-  async function worker() {
-    for (;;) {
-      const index = next++;
-      const entry = entries[index];
-      if (!entry) return;
-      const [key, target] = entry;
-      for (let attempt = 1; ; attempt++) {
-        try {
-          await put(key, target.source, target.contentType);
-          break;
-        } catch (e) {
-          if (attempt >= MAX_ATTEMPTS) {
-            failures.push(
-              `  ${key} (${attempt} 回試行)\n    ${e instanceof Error ? e.message : String(e)}`,
-            );
-            break;
-          }
-          await sleep(attempt * 1000);
-        }
-      }
-      done++;
-      if (done % 10 === 0 || done === entries.length) {
-        console.log(`  ${done}/${entries.length} …`);
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(concurrency, entries.length) }, worker));
-
-  if (failures.length > 0) {
-    console.error(
-      `\nR2 へのアップロードが ${failures.length} 件失敗しました:\n${failures.join("\n")}`,
-    );
-    process.exit(1);
-  }
-}
 
 function dirsIn(path: string): string[] {
   // 並びは manifest.ts と揃える (自然順)。ここは R2 キーの列挙なので順序に意味は
@@ -198,7 +119,16 @@ console.log(
   `${targets.size} 件を R2 (${remote ? "remote" : "local"}) へアップロードします ` +
     `(図解 ${targets.size - thumbnails.length} / サムネイル ${thumbnails.length}、同時 ${concurrency})`,
 );
-await putAll([...targets], concurrency);
+const client = createR2Client(BUCKET, remote);
+await putAll(
+  client,
+  [...targets].map(([key, target]) => ({
+    key,
+    file: target.source,
+    contentType: target.contentType,
+  })),
+  concurrency,
+);
 
 console.log(
   `✓ ${targets.size} 件をアップロードしました (図解 ${targets.size - thumbnails.length} / サムネイル ${thumbnails.length})`,
