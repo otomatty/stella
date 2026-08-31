@@ -185,6 +185,10 @@ async function main(): Promise<void> {
   const smokeAssignmentId = `smoke-assignment-${stamp}`;
   let certificateId = "";
   let certCode = "";
+  // 判定訂正の巻き戻しで消される 1 通目の修了証 id (監査ログの突合に使う)。
+  let reclaimedCertificateId = "";
+  // 添削確定後の引き継ぎで生まれる 2 件目の提出 (判定訂正のステップで両方を下げる)。
+  let secondSubmissionId = "";
 
   console.log(`コア学習ループ スモーク → ${BASE}\n`);
 
@@ -831,6 +835,7 @@ async function main(): Promise<void> {
     });
     assert(res.row.id !== submissionId, "確定済みの提出が上書きされた");
     assert(res.row.attempt === 4, `attempt が 4 でない: ${res.row.attempt}`);
+    secondSubmissionId = res.row.id;
 
     const before = await ok("GET", `/api/submissions/${submissionId}`, { token: learner });
     assert(before.row.verdict === "pass", "確定済みの添削が巻き戻された");
@@ -861,28 +866,45 @@ async function main(): Promise<void> {
     assert(r.status === 400, `400 を期待したが ${r.status}`);
   });
 
-  await step("修了条件を満たし、 修了証を発行できる", async () => {
+  await step("修了条件の達成で修了証が自動発行される", async () => {
+    // 講師の添削確定 (合格) が最後の条件だったので、 その時点でサーバが自動発行し、
+    // 受講登録も completed になっている — 受講者は何も操作しない。
     const completion = await ok("GET", `/api/certificates/completion/${stageId}`, {
       token: learner,
     });
     assert(completion.completion.met === true, "添削合格後も修了条件を満たさない");
-    const res = await ok("POST", "/api/certificates/issue", {
-      token: learner,
-      body: { stageId, userId: LEARNER_ID },
-    });
-    certificateId = res.certificate.id;
-    certCode = res.certificate.cert_code;
+    assert(
+      completion.completion.has_certificate === true,
+      "修了条件を満たしたのに修了証が自動発行されていない",
+    );
+
+    const mine = await ok("GET", "/api/certificates/mine", { token: learner });
+    const cert = mine.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(cert, "自分の修了証一覧に自動発行分が出ない");
+    certificateId = cert.id;
+    certCode = cert.cert_code;
     assert(certificateId, "certificate.id が返らない");
     assert(certCode, "cert_code が返らない");
-    assert(res.certificate.already_existed === false, "初回発行なのに already_existed が true");
+
+    const enrolled = await ok("GET", "/api/enrollments/mine", { token: learner });
+    const row = enrolled.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(row?.status === "completed", `自動発行で登録が completed にならない: ${row?.status}`);
   });
 
-  await step("修了証の再発行はべき等で、 未認証でも検証できる", async () => {
-    const again = await ok("POST", "/api/certificates/issue", {
+  await step("受講者は修了証を手動発行できない (staff 専用・再発行はべき等)", async () => {
+    // 受講者の手動発行は廃止 (条件達成での自動発行に置き換え)。
+    const denied = await call("POST", "/api/certificates/issue", {
       token: learner,
       body: { stageId, userId: LEARNER_ID },
     });
-    assert(again.certificate.already_existed === true, "2 回目の発行が新規扱いになっている");
+    assert(denied.status === 403, `受講者の発行は 403 を期待したが ${denied.status}`);
+
+    // staff の発行 (Gradebook) は残る。 既発行ならべき等に既存を返す。
+    const again = await ok("POST", "/api/certificates/issue", {
+      token: instructor,
+      body: { stageId, userId: LEARNER_ID },
+    });
+    assert(again.certificate.already_existed === true, "既発行なのに新規扱いになっている");
     assert(again.certificate.cert_code === certCode, "cert_code が発行ごとに変わっている");
     const verified = await ok("GET", `/api/certificates/verify/${certCode}`);
     assert(
@@ -890,6 +912,51 @@ async function main(): Promise<void> {
       `検証が valid でない: ${JSON.stringify(verified)}`,
     );
     assert(verified.verification.cert_code === certCode, "検証結果の cert_code が一致しない");
+  });
+
+  // 誤って付けた合格の訂正 (PR #288 レビュー指摘)。自動発行の修了証は、条件が崩れた
+  // 時点で削除 + 受講登録を active に巻き戻す。
+  await step("合格の取り消しで自動発行の修了証が巻き戻る", async () => {
+    reclaimedCertificateId = certificateId;
+
+    // 同じレッスンに合格提出が 2 件 (最初の提出と引き継ぎ直しの提出) あるため、
+    // 片方を下げただけでは条件は崩れない = 修了証は残る。
+    await ok("PATCH", `/api/submissions/${submissionId}`, {
+      token: instructor,
+      body: { status: "resubmit", verdict: "resubmit", reviewNotes: "[smoke] 判定訂正 1" },
+    });
+    const still = await ok("GET", `/api/certificates/completion/${stageId}`, { token: learner });
+    assert(still.completion.has_certificate === true, "条件が崩れていないのに修了証が消えた");
+
+    // もう 1 件も下げると全条件が崩れる → 修了証の削除 + 登録の active 戻し。
+    await ok("PATCH", `/api/submissions/${secondSubmissionId}`, {
+      token: instructor,
+      body: { status: "resubmit", verdict: "resubmit", reviewNotes: "[smoke] 判定訂正 2" },
+    });
+    const gone = await ok("GET", `/api/certificates/completion/${stageId}`, { token: learner });
+    assert(gone.completion.met === false, "合格を取り消したのに修了条件を満たしたまま");
+    assert(gone.completion.has_certificate === false, "合格を取り消したのに修了証が残っている");
+    const enrolled = await ok("GET", "/api/enrollments/mine", { token: learner });
+    const row = enrolled.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(row?.status === "active", `巻き戻しで登録が active に戻らない: ${row?.status}`);
+  });
+
+  await step("再び合格にすると修了証が発行し直される", async () => {
+    await ok("PATCH", `/api/submissions/${submissionId}`, {
+      token: instructor,
+      body: { status: "passed", verdict: "pass", reviewNotes: "[smoke] 合格に戻す" },
+    });
+    const completion = await ok("GET", `/api/certificates/completion/${stageId}`, {
+      token: learner,
+    });
+    assert(completion.completion.has_certificate === true, "再合格で修了証が発行し直されない");
+    // 以降のステップ (クリア済みの開始拒否 / 監査ログ) は発行し直した修了証を見る。
+    const mine = await ok("GET", "/api/certificates/mine", { token: learner });
+    const cert = mine.rows.find((r: { stage_id: string }) => r.stage_id === stageId);
+    assert(cert, "発行し直した修了証が一覧に出ない");
+    assert(cert.cert_code !== certCode, "削除したはずの修了証がそのまま残っている");
+    certificateId = cert.id;
+    certCode = cert.cert_code;
   });
 
   await step("クリア済みのステージは自分で開始できない (400)", async () => {
@@ -937,6 +1004,11 @@ async function main(): Promise<void> {
     assert(has("enrollment_update", enrollmentId), "enrollment_update が記録されていない");
     // 過去の実行が残した行で通ってしまわないよう、 今回発行した修了証 ID で突き合わせる。
     assert(has("certificate_issue", certificateId), "certificate_issue が記録されていない");
+    // 判定訂正で巻き戻した 1 通目も記録される (PR #288)。
+    assert(
+      has("certificate_reclaim", reclaimedCertificateId),
+      "certificate_reclaim が記録されていない",
+    );
   });
 
   await step("退役したプリセットの名前は再利用できる", async () => {

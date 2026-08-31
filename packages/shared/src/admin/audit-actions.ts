@@ -38,6 +38,8 @@ const LABELS = {
   enrollment_preset_delete: "割当プリセットの削除",
   // 修了証 (#26)
   certificate_issue: "修了証発行",
+  // 合格の取り消しで修了条件が崩れたとき、自動発行の修了証を巻き戻した記録 (PR #288)。
+  certificate_reclaim: "修了証の自動取り消し",
   // 組織マスタ (#29)
   org_create: "組織作成",
   org_update: "組織更新",

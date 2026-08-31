@@ -16,11 +16,13 @@ import { eq } from "drizzle-orm";
 import { normalizeProgressRows, type ProgressSyncInput } from "@falcon/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
+import { clientIp } from "../lib/audit.js";
 import { lessonProgress } from "../db/schema.js";
 import {
   executeLessonProgressWrites,
   assertProgressSyncSize,
 } from "../lib/lesson-progress-write.js";
+import { autoCompleteStagesIfMet, stageIdsOfLessons } from "../lib/stage-auto-complete.js";
 import type { Env } from "../env.js";
 
 export const lessonProgressRoute = new Hono<{ Bindings: Env }>();
@@ -81,7 +83,20 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
 
     await executeLessonProgressWrites(db, caller.tenantId, caller.id, rows);
 
-    return c.json({ ok: true, written: rows.length });
+    // 完了レッスンを含む同期は修了条件の自動判定を掛ける (満たしていれば修了証を
+    // 自動発行してクリアになる)。cleared_stages を画面が読んでクリアダイアログを出す。
+    const completedLessonIds = rows.filter((r) => r.completed).map((r) => r.lessonId);
+    const clearedStages =
+      completedLessonIds.length > 0
+        ? await autoCompleteStagesIfMet(db, {
+            actor: caller,
+            userId: caller.id,
+            stageIds: await stageIdsOfLessons(db, completedLessonIds),
+            ip: clientIp(c),
+          })
+        : [];
+
+    return c.json({ ok: true, written: rows.length, cleared_stages: clearedStages });
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -8,7 +8,10 @@
  */
 
 import { sql } from "drizzle-orm";
-import type { NormalizedProgressRow } from "@falcon/shared/study/progress-sync";
+import {
+  MAX_PROGRESS_SYNC_ROWS,
+  type NormalizedProgressRow,
+} from "@falcon/shared/study/progress-sync";
 
 import type { Db } from "../db/client.js";
 import { lessonProgress } from "../db/schema.js";
@@ -21,11 +24,20 @@ export const D1_MAX_QUERIES_PER_INVOCATION = 1000;
 /** getCaller など進捗書き込み以外のクエリ。 */
 export const PROGRESS_WRITE_QUERY_HEADROOM = 20;
 /**
+ * 受付上限 `MAX_PROGRESS_SYNC_ROWS` (= 600) の根拠。 正本は `@falcon/shared` に置く —
+ * クライアント (進捗ストアの flush) が同じ値で分割送信するため。
+ *
  * 最悪は全行が study_activity 対象。 1 チャンク = 行数ぶんの加算 + upsert 1 文。
  * 進捗 1 行は bind 9 個なので upsert は最大 11 行 (D1_MAX_BOUND_PARAMS=100)。
- * N + ceil(N/11) + headroom <= 1000 → N <= 898。 余裕を見て 800。
+ *
+ * 進捗の書き込み後に **修了条件の自動判定** (`stage-auto-complete.ts`) が同じ呼び出しの
+ * 中で走るため、 その分のクエリも収支に入れる: レッスン→ステージ解決 ceil(N/90)、
+ * 候補全ステージの達成判定の読み出し ~80、 発行 1 ステージあたりロック取得 (2) +
+ * ロック内の再確認 (登録 1 + 再判定 ~5) + batch(2) + 監査 1 + クリア通知 1 + 解放 1
+ * ≒ 13 で、 発行数は `MAX_ISSUES_PER_CALL` (15) で頭打ち → 判定側の最悪 ~275。
+ * N + ceil(N/11) + ceil(N/90) + 275 + headroom <= 1000 → N <= 640。 余裕を見て 600。
  */
-export const MAX_PROGRESS_SYNC_ROWS = 800;
+export { MAX_PROGRESS_SYNC_ROWS };
 
 export function assertProgressSyncSize(count: number): void {
   if (count > MAX_PROGRESS_SYNC_ROWS) {

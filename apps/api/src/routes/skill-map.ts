@@ -60,11 +60,13 @@ import {
 } from "@falcon/shared/study/activity";
 
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
+import { clientIp } from "../lib/audit.js";
 import {
   loadApprovedDiscoverySummaries,
   loadPassedDiscoveryCount,
   loadPassedDiscoveryIds,
 } from "../lib/discovery-data.js";
+import { autoCompleteEligibleStages } from "../lib/stage-auto-complete.js";
 import {
   SKILL_MAP_TIERS_PARAM,
   acceptsGhostStars,
@@ -283,6 +285,12 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     // 段を増やしたことを知らない画面には幽霊ノードを配らない (`SKILL_MAP_TIERS_PARAM`)。
     // 開発者表示は自分の画面でしか使わないので、そちらは常に素通し。
     const ghostStars = revealDev || acceptsGhostStars(c.req.query(SKILL_MAP_TIERS_PARAM));
+    // 修了条件を満たしたまま未クリアの星をここで埋める (修了証の自動発行)。イベントを
+    // 取りこぼした受講者 (自動発行の導入前に達成していた等) が、マップを開いた時点で
+    // クリア扱いになる。best-effort なので失敗してもマップは返る。
+    // 埋めたぶんは応答の `cleared_stages` に載せ、画面がクリアの通知とシェル側の
+    // 受講ステージ一覧の取り直しに使う。
+    const clearedStages = await autoCompleteEligibleStages(db, caller, caller.id, clientIp(c));
     const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
     const result = evaluateSkillMapFor(source);
 
@@ -462,6 +470,9 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     );
 
     return c.json({
+      // 入口のバックフィルで **この呼び出しが新しくクリアにした** ステージ。画面は
+      // これを見てクリアの通知を出し、シェルの受講ステージ一覧を取り直す。
+      cleared_stages: clearedStages,
       skill_map: {
         stages: payload,
         discoveries: visible.map((row) => ({

@@ -10,6 +10,9 @@
  * バックエンド未設定時はそもそも呼ばれない。
  */
 
+import type { StageClearedNotice } from "@falcon/shared/cms/types";
+import { MAX_PROGRESS_SYNC_ROWS } from "@falcon/shared/study/progress-sync";
+
 import type { LessonProgressEntry } from "@/lib/lesson-progress";
 import { apiFetch } from "@/lib/api-client";
 
@@ -56,17 +59,26 @@ export async function fetchProgressForUser(
 }
 
 /**
- * 複数エントリを 1 リクエストで upsert する (uuid 形式の lesson_id のみ)。
+ * 複数エントリを upsert する (uuid 形式の lesson_id のみ)。
  *
  * サーバ側 upsert が conflict 時に payload の updated_at が既存より新しい場合のみ
  * 更新するため、 端末間 Last-Write-Wins を担保する。 tenant_id はサーバが caller の
  * テナントを使うため送らない。
+ *
+ * **サーバの受付上限 (`MAX_PROGRESS_SYNC_ROWS`) の単位に刻んで送る。** オフラインで
+ * 溜めた分が上限を超えると、 1 リクエストにまとめる限り 400 を受けて同じ塊を再送し
+ * 続け、 永遠に届かない。 行は LWW でべき等なので、 分割の途中で失敗して全体を
+ * 再送しても壊れない。
+ *
+ * 完了行の同期でステージの修了条件が揃うと、 サーバが修了証を自動発行して
+ * `cleared_stages` に載せてくる。 呼び出し側 (進捗ストアの flush) はこれを
+ * クリアダイアログのイベントとして流す。
  */
 export async function upsertProgressBatch(
   _userId: string,
   _tenantId: string,
   entries: Array<{ lessonId: string; entry: LessonProgressEntry }>,
-): Promise<void> {
+): Promise<StageClearedNotice[]> {
   const rows = entries
     .filter(({ lessonId }) => isSyncableLessonId(lessonId))
     .map(({ lessonId, entry }) => ({
@@ -77,8 +89,15 @@ export async function upsertProgressBatch(
       watched_sec: entry.watchedSec ?? null,
       updated_at: entry.updatedAt,
     }));
-  if (rows.length === 0) return;
-  await apiFetch("/api/lesson-progress", { method: "POST", body: { rows } });
+  const cleared: StageClearedNotice[] = [];
+  for (let i = 0; i < rows.length; i += MAX_PROGRESS_SYNC_ROWS) {
+    const res = await apiFetch<{ cleared_stages?: StageClearedNotice[] }>("/api/lesson-progress", {
+      method: "POST",
+      body: { rows: rows.slice(i, i + MAX_PROGRESS_SYNC_ROWS) },
+    });
+    cleared.push(...(res.cleared_stages ?? []));
+  }
+  return cleared;
 }
 
 /**

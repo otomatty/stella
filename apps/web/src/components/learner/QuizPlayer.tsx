@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchQuizForLearner, submitQuizAttempt } from "@/lib/quiz-attempts-api";
+import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 import type {
   LearnerQuiz,
   LearnerQuizQuestion,
@@ -131,7 +132,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
         question_id: q.id,
         selected_option_ids: Array.from(answers[q.id] ?? []),
       }));
-      const graded = await submitQuizAttempt(quiz.quiz.id, payload);
+      const { result: graded, clearedStages } = await submitQuizAttempt(quiz.quiz.id, payload);
       setResult(graded);
       // 残り受験回数の判定に使うので、 再取得せずローカルの履歴も進めておく。
       setQuiz((prev) =>
@@ -151,6 +152,9 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
       if (graded.passed) {
         toast.success(`合格しました！ ${graded.score} / ${graded.max_score} 点`);
         onComplete?.();
+        // この合格でステージの修了条件が揃った (修了証が自動発行された) 場合は
+        // クリアダイアログを出す。通常は最後のレッスン完了 (進捗同期) 側で出る。
+        emitStageCleared(toStageClearedEvents(clearedStages));
       } else {
         toast.message(
           `不合格です (${graded.score} / ${graded.max_score} 点)。 再挑戦してください。`,

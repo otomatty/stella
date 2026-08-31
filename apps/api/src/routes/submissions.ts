@@ -26,7 +26,13 @@ import {
   isStaffRole,
   requireReturning,
 } from "../lib/authz.js";
+import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
+import {
+  autoCompleteStagesIfMet,
+  reclaimAutoCertificatesIfUnmet,
+  stageIdsOfLessons,
+} from "../lib/stage-auto-complete.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
@@ -495,6 +501,28 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
           stage_title: after.stageTitle,
         },
       });
+    }
+
+    // 合格の確定でこの課題のステージの修了条件が揃ったら自動でクリアにする
+    // (修了証の自動発行)。逆に、合格を外す保存では自動発行の修了証を巻き戻す —
+    // 誤って付けた合格が受講者を永久にクリア扱いにしないように。
+    //
+    // どちらを掛けるかは before との**遷移ではなく保存後の値**で決める。遷移で見ると、
+    // 同じ提出への同時 PATCH が両方古い before を読んだとき (pass → fail の順で確定)、
+    // fail 側が「pass から下がった」に見えず巻き戻しが走らない。保存後の値なら判定は
+    // べき等 — pass 保存は発行済みなら何もせず、非 pass 保存は自動発行が残っていて
+    // 条件が崩れたときだけ巻き戻すので、保存し直しがそのまま復旧手段にもなる。
+    // 判定対象は提出した受講者、監査ログの actor は確定した講師。
+    // best-effort — 失敗しても添削の確定は返す。
+    if (patch.verdict !== undefined && after.studentId && after.lessonId) {
+      const input = {
+        actor: caller,
+        userId: after.studentId,
+        stageIds: await stageIdsOfLessons(db, [after.lessonId]),
+        ip: clientIp(c),
+      };
+      if (after.verdict === "pass") await autoCompleteStagesIfMet(db, input);
+      else await reclaimAutoCertificatesIfUnmet(db, input);
     }
 
     // つまずき検知 (Phase 4)。**判定が再提出 / 不合格に変わった初回だけ** 積む

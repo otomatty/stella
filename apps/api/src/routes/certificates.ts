@@ -34,6 +34,11 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import {
+  autoCompleteEligibleStages,
+  completionMet,
+  genCertCode,
+} from "../lib/stage-auto-complete.js";
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -148,11 +153,14 @@ async function computeStageCompletion(
     passedAssignments = new Set(passed.map((s) => s.lessonId)).size;
   }
 
-  const met =
-    totalLessons > 0 &&
-    (!stage.requireAllLessons || completedLessons >= totalLessons) &&
-    (!stage.requireQuizPass || passedQuizzes >= totalQuizzes) &&
-    (!stage.requireAssignmentPass || passedAssignments >= totalAssignments);
+  const met = completionMet(stage, {
+    totalLessons,
+    completedLessons,
+    totalQuizzes,
+    passedQuizzes,
+    totalAssignments,
+    passedAssignments,
+  });
 
   const certRows = await db
     .select({ certCode: certificates.certCode })
@@ -292,11 +300,14 @@ async function batchComputeCompletions(
     const completedLessons = doneByUser.get(userId)?.size ?? 0;
     const passedQuizzes = quizByUser.get(userId)?.size ?? 0;
     const passedAssignments = assignByUser.get(userId)?.size ?? 0;
-    const met =
-      totalLessons > 0 &&
-      (!stage.requireAllLessons || completedLessons >= totalLessons) &&
-      (!stage.requireQuizPass || passedQuizzes >= totalQuizzes) &&
-      (!stage.requireAssignmentPass || passedAssignments >= totalAssignments);
+    const met = completionMet(stage, {
+      totalLessons,
+      completedLessons,
+      totalQuizzes,
+      passedQuizzes,
+      totalAssignments,
+      passedAssignments,
+    });
     const certCode = certByUser.get(userId) ?? null;
     result.set(userId, {
       user_id: userId,
@@ -326,12 +337,17 @@ async function batchComputeCompletions(
 certificatesRoute.get("/api/certificates/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
+    // 条件達成済みなのに未発行のステージをここで埋める (自動発行の導入前に達成して
+    // いた受講者の救済)。best-effort — 失敗しても一覧はそのまま返る。
+    // 埋めたぶんは `cleared_stages` で返し、画面がクリアの通知と受講ステージ一覧の
+    // 取り直しに使う — 黙って埋めると、並走して取得した一覧側だけが古いまま残る。
+    const clearedStages = await autoCompleteEligibleStages(db, caller, caller.id, clientIp(c));
     const rows = await db
       .select(CERT_COLS)
       .from(certificates)
       .where(eq(certificates.userId, caller.id))
       .orderBy(desc(certificates.issuedAt));
-    return c.json({ rows });
+    return c.json({ rows, cleared_stages: clearedStages });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -412,21 +428,17 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
   }
 });
 
-/** ランダムな cert_code を生成する (FLC-YYYY-XXXX-XXXX)。 */
-function genCertCode(): string {
-  const year = new Date().getFullYear();
-  const seg = () =>
-    Array.from(crypto.getRandomValues(new Uint8Array(2)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-  return `FLC-${year}-${seg()}-${seg()}`;
-}
-
-/** 修了証を発行する (基準達成が前提・べき等)。 */
+/**
+ * 修了証を発行する (基準達成が前提・べき等)。**staff 専用。**
+ *
+ * 受講者の手動発行 (`auto_issue_certificate` ステージの本人発行) は廃止した — 条件を
+ * 満たした時点でサーバが自動発行する (`lib/stage-auto-complete.ts`)。ここに残るのは
+ * 講師承認ステージの発行と、Gradebook からの手動発行だけ。
+ */
 certificatesRoute.post("/api/certificates/issue", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
+    requireRole(caller, "instructor", "admin", "platform_admin");
     const body = (await c.req.json()) as { stageId: string; userId: string };
     const { stageId, userId } = body;
     if (!stageId || !userId) throw new ApiError("stageId / userId が必要です", 400);
@@ -435,14 +447,6 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
     const stage = stageRows[0];
     if (!stage || stage.tenantId !== caller.tenantId) {
       throw new ApiError("stage not found", 404);
-    }
-    const isStaff = isStaffRole(caller.role);
-    if (!(userId === caller.id || isStaff)) {
-      throw new ApiError("not authorized to issue this certificate", 403);
-    }
-    // 自動発行を許可しないステージは本人発行を拒否 (講師承認のみ)。
-    if (!isStaff && !stage.autoIssueCertificate) {
-      throw new ApiError("certificate requires instructor approval", 403);
     }
     // 対象が同テナントかつ当該ステージに受講登録済みであること。
     const enr = await db
@@ -491,7 +495,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
         userId,
         stageId,
         certCode: genCertCode(),
-        issuedBy: isStaff ? caller.id : null,
+        issuedBy: caller.id,
         criteriaSnapshot: completion as unknown as Record<string, unknown>,
         recipientName: recipientRows[0].name,
         stageTitle: stage.title,
@@ -526,7 +530,6 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
     await recordStagePathEvents(db, stage.tenantId, "cleared", [{ userId, stageId }]);
 
     // 新規発行時のみ記録する (べき等な再取得は操作ではない)。
-    // 自己発行 (受講者本人 + auto_issue_certificate) もあるため actor は caller のまま。
     await recordAudit(db, caller, {
       action: "certificate_issue",
       targetType: "certificate",
@@ -536,7 +539,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
         cert_code: inserted[0].cert_code,
         stage_id: stageId,
         user_id: userId,
-        self_issued: !isStaff,
+        auto_issued: false,
       },
     });
 

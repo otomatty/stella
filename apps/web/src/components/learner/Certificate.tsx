@@ -3,15 +3,17 @@
  *
  * - バックエンド設定 + ログイン時: 実データで動作する。
  *   - 発行済みの修了証を一覧表示 (印刷 / 公開検証ページへのリンク付き)。
- *   - 受講中ステージの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示し、
- *     基準達成かつ未発行のステージは受講者自身が「発行する」ボタンで発行できる
- *     (ステージが auto_issue_certificate のときも、 ここでの発行が実体化トリガになる)。
+ *   - 受講中ステージの達成状況 (進捗 + 小テスト + 課題) を成績台帳として表示する。
+ *   - 修了証は**受講者が発行するものではない** — 修了条件を満たした時点でサーバが
+ *     自動発行する (講師承認ステージだけは staff の Gradebook 発行を待つ)。一覧の
+ *     取得 (`GET /api/certificates/mine`) 自体が未発行分のバックフィルを兼ねるので、
+ *     このページを開けば達成済みのステージは発行済みに揃う。
  * - バックエンド未設定 (fixtures デモ) 時: 従来どおり静的テンプレートを表示する。
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Download, ExternalLink, Loader2, Award, CheckCircle } from "@/lib/icons";
+import { Download, ExternalLink, Award, CheckCircle } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
 import { Button } from "@/components/ui/button";
@@ -21,7 +23,6 @@ import type { CertificateRow, StageCompletion } from "@falcon/shared/cms/types";
 import {
   buildVerificationUrl,
   fetchMyStageCompletion,
-  issueCertificate,
   listCertificatesForUser,
 } from "@/lib/certificates-api";
 
@@ -74,23 +75,22 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
   const [certs, setCerts] = useState<CertificateRow[]>([]);
   const [completions, setCompletions] = useState<Record<string, StageCompletion | null>>({});
   const [loading, setLoading] = useState(true);
-  const [issuingId, setIssuingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [certRows, completionPairs] = await Promise.all([
-        listCertificatesForUser(userId),
-        Promise.all(
-          stages.map(async (c) => {
-            try {
-              return [c.id, await fetchMyStageCompletion(c.id)] as const;
-            } catch {
-              return [c.id, null] as const;
-            }
-          }),
-        ),
-      ]);
+      // 一覧の取得が未発行分のバックフィルを兼ねるので、 達成状況の取得より先に済ませる
+      // (並走させると、 いま自動発行されたばかりの修了証が completion 側に映らない)。
+      const certRows = await listCertificatesForUser(userId);
+      const completionPairs = await Promise.all(
+        stages.map(async (c) => {
+          try {
+            return [c.id, await fetchMyStageCompletion(c.id)] as const;
+          } catch {
+            return [c.id, null] as const;
+          }
+        }),
+      );
       setCerts(certRows);
       setCompletions(Object.fromEntries(completionPairs));
     } catch (err) {
@@ -105,22 +105,9 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
     void load();
   }, [load]);
 
-  const onIssue = async (stageId: string) => {
-    setIssuingId(stageId);
-    try {
-      const result = await issueCertificate(stageId, userId);
-      toast.success(result.already_existed ? "修了証は既に発行済みです" : "修了証を発行しました");
-      await load();
-    } catch (err) {
-      toast.error(`発行に失敗しました: ${err instanceof Error ? err.message : "unknown"}`);
-    } finally {
-      setIssuingId(null);
-    }
-  };
-
   const certByStage = new Map(certs.map((c) => [c.stage_id, c]));
-  // 未発行で基準達成のステージ (自動発行可なら本人発行、 不可なら講師承認待ち)。
-  const issuable = stages.filter((c) => !certByStage.has(c.id) && completions[c.id]?.met);
+  // 基準達成・未発行 = 講師の承認待ち (自動発行ステージはバックフィルで発行済みになる)。
+  const awaitingApproval = stages.filter((c) => !certByStage.has(c.id) && completions[c.id]?.met);
   // 受講中 (未達成 / 集計あり) のステージ。
   const inProgress = stages.filter(
     (c) => !certByStage.has(c.id) && completions[c.id] && !completions[c.id]?.met,
@@ -128,18 +115,21 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
 
   return (
     <>
-      <PageHeader title="修了証" sub="修了したステージの修了証を確認・発行できます" />
+      <PageHeader
+        title="修了証"
+        sub="修了したステージの修了証を確認できます (修了条件を満たすと自動で発行されます)"
+      />
 
       {loading ? (
         <SkeletonRows rows={3} className="py-6" />
       ) : (
         <div className="flex flex-col gap-10">
-          {/* 発行可能 (基準達成・未発行) */}
-          {issuable.length > 0 ? (
+          {/* 基準達成・未発行 (講師承認ステージ、 または自動発行の反映待ち) */}
+          {awaitingApproval.length > 0 ? (
             <section>
-              <SectionTitle>発行可能な修了証</SectionTitle>
+              <SectionTitle>発行待ちの修了証</SectionTitle>
               <div className="flex flex-col gap-2">
-                {issuable.map((c) => {
+                {awaitingApproval.map((c) => {
                   const autoIssue = completions[c.id]?.criteria.auto_issue_certificate ?? true;
                   return (
                     <div
@@ -151,22 +141,12 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
                         <div className="text-[13.5px] font-medium truncate">{c.title}</div>
                         <div className="text-[12px] text-ink-3">修了基準を達成しました</div>
                       </div>
-                      {autoIssue ? (
-                        <Button
-                          variant="accent"
-                          disabled={issuingId === c.id}
-                          onClick={() => void onIssue(c.id)}
-                        >
-                          {issuingId === c.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Award size={14} />
-                          )}
-                          発行する
-                        </Button>
-                      ) : (
-                        <span className="text-[12px] text-ink-4 shrink-0">講師の承認待ち</span>
-                      )}
+                      <span className="text-[12px] text-ink-4 shrink-0 inline-flex items-center gap-1">
+                        <Award size={13} />
+                        {autoIssue
+                          ? "自動発行の反映待ち (再読み込みで表示されます)"
+                          : "講師の承認待ち"}
+                      </span>
                     </div>
                   );
                 })}
@@ -179,7 +159,7 @@ function LiveCertificates({ stages, userId, studentInitials, tenantName }: LiveP
             <SectionTitle>発行済みの修了証</SectionTitle>
             {certs.length === 0 ? (
               <div className="text-[13px] text-ink-3 bg-card border border-border rounded-md px-4 py-6 text-center">
-                まだ発行された修了証はありません。 ステージを修了すると、 ここから発行できます。
+                まだ発行された修了証はありません。 ステージの修了条件を満たすと自動で発行されます。
               </div>
             ) : (
               <div className="flex flex-col gap-8">

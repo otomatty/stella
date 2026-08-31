@@ -12,6 +12,7 @@
  */
 
 import { isBackendConfigured } from "@/lib/backend";
+import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
 
 const STORAGE_KEY = "lms_lesson_progress";
@@ -227,7 +228,12 @@ async function flushRemote(): Promise<void> {
     .filter((e): e is { lessonId: string; entry: LessonProgressEntry } => Boolean(e.entry));
   try {
     const { upsertProgressBatch } = await import("@/lib/lesson-progress-api");
-    await upsertProgressBatch(current.userId, current.tenantId, entries);
+    const clearedStages = await upsertProgressBatch(current.userId, current.tenantId, entries);
+    // 同期でステージの修了条件が揃った (サーバが修了証を自動発行した) 場合は、
+    // シェルのクリアダイアログへ流す。identity が切り替わっていたら前ユーザーの分なので出さない。
+    if (identity === current) {
+      emitStageCleared(toStageClearedEvents(clearedStages));
+    }
   } catch (err) {
     console.error("[lesson-progress] remote upsert failed", err);
     // 失敗分は remoteDirty に戻すだけに留める。 自動の即時再スケジュールは

@@ -24,6 +24,7 @@ import { resolveUiRole } from "@/lib/ui-role";
 import { AppShellContext, type AppShellValue } from "@/components/shell/app-shell-context";
 
 import { AIChatBot } from "@/components/common/AIChatBot";
+import { StageClearDialog } from "@/components/learner/StageClearDialog";
 import { DevModeFab } from "@/components/common/DevModeFab";
 import { TweaksPanel } from "@/components/common/TweaksPanel";
 import { Button } from "@/components/ui/button";
@@ -299,6 +300,16 @@ export function AppShell() {
   // 通知センター (Issue #25)。 バックエンド未設定 / 未ログイン時はフック内部で空になる。
   // userId を鍵に含め、 ユーザー切替時に前ユーザーの通知が残らないようにする。
   const notifications = useNotifications(effectiveTenant.id, session?.user.id ?? null, true);
+
+  // ステージの自動クリア (修了証の自動発行) を受けたら、受講ステージ一覧と修了証を
+  // 取り直す。取り直さないと、一覧・ダッシュボードの完了状態とサイドバーのバッジ件数が
+  // リロードまで古いままになる (enrollment / certificates はサーバ側で変わっている)。
+  const enrolledRefetch = enrolledStages.refetch;
+  const certificatesRefetch = myCertificates.refetch;
+  const onStageCleared = useCallback(() => {
+    void enrolledRefetch();
+    void certificatesRefetch();
+  }, [enrolledRefetch, certificatesRefetch]);
 
   const openSubmissionResult = useCallback(
     (id: string) => {
@@ -665,6 +676,14 @@ export function AppShell() {
 
       {backendEnabled ? (
         <DevModeFab stackedAboveAi={showAIBot && effectiveRole === "learner"} />
+      ) : null}
+
+      {/* ステージクリアの祝福 (進捗同期 / 小テスト合格のレスポンスから届く)。
+          クリアが起きるのは受講者の学習フローだけなので受講者シェルにだけ置く。
+          クリア = enrollment completed + 修了証発行なので、受講ステージ一覧と
+          修了証 (サイドバーのバッジ件数) をその場で取り直す。 */}
+      {backendEnabled && effectiveRole === "learner" ? (
+        <StageClearDialog onCleared={onStageCleared} />
       ) : null}
 
       {/* Tweaks panel — backtick toggle.

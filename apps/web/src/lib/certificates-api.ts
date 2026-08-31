@@ -8,15 +8,27 @@
 import type {
   CertificateRow,
   CertificateVerification,
+  StageClearedNotice,
   StageCompletion,
   StageGradebook,
   IssuedCertificate,
 } from "@falcon/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
+import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 
-/** 受講者本人の修了証一覧 (発行日降順)。 */
+/**
+ * 受講者本人の修了証一覧 (発行日降順)。
+ * サーバ側で「修了条件は達成済みなのに未発行」のステージを自動発行してから返すため、
+ * この取得自体がバックフィルを兼ねる。バックフィルで新しくクリアになったステージは
+ * クリアイベントへ流す — 黙って埋めると、並走して取得した受講ステージ一覧やダッシュ
+ * ボードだけが古いままになる (シェルがイベントで取り直す)。
+ */
 export async function listCertificatesForUser(_userId: string): Promise<CertificateRow[]> {
-  const { rows } = await apiFetch<{ rows: CertificateRow[] }>("/api/certificates/mine");
+  const { rows, cleared_stages } = await apiFetch<{
+    rows: CertificateRow[];
+    cleared_stages?: StageClearedNotice[];
+  }>("/api/certificates/mine");
+  emitStageCleared(toStageClearedEvents(cleared_stages));
   return rows ?? [];
 }
 
@@ -37,8 +49,9 @@ export async function fetchStageGradebook(stageId: string): Promise<StageGradebo
 }
 
 /**
- * 修了証を発行する (基準達成が前提)。
- * 受講者本人は自分の userId、 staff は対象受講者の userId を指定して承認発行できる。
+ * 修了証を発行する (基準達成が前提・**staff 専用**)。
+ * 受講者の手動発行は廃止 — 条件達成でサーバが自動発行する。ここに残るのは
+ * Gradebook からの承認発行 (講師承認ステージ含む) だけ。
  * 既発行ならべき等に既存の修了証を返す (already_existed=true)。
  */
 export async function issueCertificate(

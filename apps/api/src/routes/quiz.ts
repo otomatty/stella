@@ -29,6 +29,8 @@ import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type { LearnerQuizHistory, QuizAnswer } from "@falcon/shared/cms/types";
+import { clientIp } from "../lib/audit.js";
+import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { noteQuizStumble } from "../lib/discovery-stumble.js";
 import { isExactSelection } from "../lib/quiz-grading.js";
 import { applyOutcomesToCards } from "../lib/srs-cards.js";
@@ -38,8 +40,13 @@ export const quizRoute = new Hono<{ Bindings: Env }>();
 /**
  * lesson が caller の同テナントで、かつアクセス可かを判定する。
  * ロールによらず published かつ当該ステージに active enrollment があること。
+ * 可なら属するステージ id を返す (合格時の自動修了判定に使う)。不可なら null。
  */
-async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): Promise<boolean> {
+async function authorizedStageForLesson(
+  db: Db,
+  caller: Caller,
+  lessonId: string,
+): Promise<string | null> {
   const rows = await db
     .select({
       status: stages.status,
@@ -52,9 +59,9 @@ async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): 
     .where(eq(lessons.id, lessonId))
     .limit(1);
   const row = rows[0];
-  if (!row) return false;
-  if (row.tenantId !== caller.tenantId) return false;
-  if (row.status !== "published") return false;
+  if (!row) return null;
+  if (row.tenantId !== caller.tenantId) return null;
+  if (row.status !== "published") return null;
 
   const enrolled = await db
     .select({ id: enrollments.id })
@@ -67,7 +74,7 @@ async function isAuthorizedForLesson(db: Db, caller: Caller, lessonId: string): 
       ),
     )
     .limit(1);
-  return enrolled.length > 0;
+  return enrolled.length > 0 ? row.stageId : null;
 }
 
 /**
@@ -108,7 +115,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
     const quiz = quizRows[0];
     if (!quiz) return c.json({ quiz: null });
 
-    if (!(await isAuthorizedForLesson(db, caller, lessonId))) {
+    if ((await authorizedStageForLesson(db, caller, lessonId)) === null) {
       return c.json({ quiz: null });
     }
 
@@ -176,7 +183,8 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
     const quizRows = await db.select().from(quizzes).where(eq(quizzes.id, quizId)).limit(1);
     const quiz = quizRows[0];
     if (!quiz) throw new ApiError("quiz not found", 404);
-    if (!(await isAuthorizedForLesson(db, caller, quiz.lessonId))) {
+    const stageId = await authorizedStageForLesson(db, caller, quiz.lessonId);
+    if (stageId === null) {
       throw new ApiError("not authorized for this quiz", 403);
     }
 
@@ -277,7 +285,22 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
       }
     }
 
-    return c.json({ result: { score, max_score: max, passed, results } });
+    // 合格でこのステージの修了条件が揃ったら自動でクリアにする (修了証の自動発行)。
+    // 通常は最後のレッスン完了 (進捗同期) 側で揃うが、全レッスン完了後に残っていた
+    // 小テストへ後から合格するケースはここが最後のイベントになる。
+    const clearedStages = passed
+      ? await autoCompleteStagesIfMet(db, {
+          actor: caller,
+          userId: caller.id,
+          stageIds: [stageId],
+          ip: clientIp(c),
+        })
+      : [];
+
+    return c.json({
+      result: { score, max_score: max, passed, results },
+      cleared_stages: clearedStages,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -333,6 +333,16 @@ export interface CompletionCriteria {
  * (受講者, ステージ) の達成状況。 compute_course_completion / get_my_course_completion
  * RPC の戻り値に対応する。 進捗 + 小テスト + 課題を統合した修了判定の中核。
  */
+/**
+ * 修了条件の達成で自動的にクリア (修了証発行 + 受講登録の completed 化) になった
+ * ステージ。進捗同期 / 小テスト採点のレスポンスに載り、画面がクリアダイアログを出して
+ * スキルツリーへ誘導するのに使う。
+ */
+export interface StageClearedNotice {
+  stage_id: string;
+  stage_title: string;
+}
+
 export interface StageCompletion {
   user_id: string;
   stage_id: string;
@@ -497,6 +507,10 @@ export type NotificationType =
   | "announcement"
   | "review_completed"
   | "assignment_due"
+  // ステージの自動クリア (修了証の自動発行)。講師の合格確定が引き金のとき、開いた
+  // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、
+  // 永続する通知としても残す。
+  | "stage_cleared"
   | "interview_date_set"
   | "interview_answer_template_generated"
   | "interview_answer_template_failed";

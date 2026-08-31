@@ -98,3 +98,12 @@ export async function withResourceLock<T>(
 export function interviewQuestionLockId(tenantId: string, no: number): string {
   return `interview-question:${tenantId}:${no}`;
 }
+
+/**
+ * ステージクリアの自動判定 (発行 / 巻き戻し) の (受講者, ステージ) ロック ID。
+ * 合格の PATCH とその訂正が重なったとき、読んだ判定材料が書く前に古びる隙を閉じる
+ * (`stage-auto-complete.ts`)。
+ */
+export function stageClearLockId(tenantId: string, userId: string, stageId: string): string {
+  return `stage-clear:${tenantId}:${userId}:${stageId}`;
+}

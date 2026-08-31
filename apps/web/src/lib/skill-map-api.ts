@@ -8,9 +8,11 @@
  * `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。
  */
 
+import type { StageClearedNotice } from "@falcon/shared/cms/types";
 import type { SkillMapState, SkillMapVisibility } from "@falcon/shared/skill-map/evaluate";
 
 import { apiFetch } from "./api-client";
+import { emitStageCleared, toStageClearedEvents } from "./stage-clear-events";
 
 export type { SkillMapState, SkillMapVisibility };
 
@@ -183,9 +185,14 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
 const SKILL_MAP_TIERS = "2";
 
 export async function getSkillMap(): Promise<SkillMapMine> {
-  const { skill_map } = await apiFetch<{ skill_map: SkillMapMine }>(
-    `/api/skill-map/mine?tiers=${SKILL_MAP_TIERS}`,
-  );
+  const { skill_map, cleared_stages } = await apiFetch<{
+    skill_map: SkillMapMine;
+    cleared_stages?: StageClearedNotice[];
+  }>(`/api/skill-map/mine?tiers=${SKILL_MAP_TIERS}`);
+  // 入口のバックフィル (達成済み・未発行の自動発行) で新しくクリアになったステージは
+  // クリアイベントへ流す。マップ自体はクリア済みで返るが、シェルが持つ受講ステージ
+  // 一覧・修了証バッジはイベント経由の取り直しでしか揃わない。
+  emitStageCleared(toStageClearedEvents(cleared_stages));
   return skill_map;
 }
 

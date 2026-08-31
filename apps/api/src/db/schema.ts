@@ -980,6 +980,8 @@ export const notifications = sqliteTable("notifications", {
       "announcement",
       "review_completed",
       "assignment_due",
+      // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
+      "stage_cleared",
       "interview_date_set",
       "interview_answer_template_generated",
       "interview_answer_template_failed",

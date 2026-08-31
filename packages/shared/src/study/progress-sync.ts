@@ -17,6 +17,16 @@
 
 import { toStudyDate } from "./activity.js";
 
+/**
+ * `POST /api/lesson-progress` が 1 リクエストで受け付ける進捗行数の上限。
+ *
+ * 値の根拠は D1 のクエリ収支 (`apps/api/src/lib/lesson-progress-write.ts` の JSDoc)。
+ * **クライアント (進捗ストアの flush) はこの単位に刻んで送る** — サーバだけが持つと、
+ * オフラインで溜めた分が上限超過の 400 を受け、同じ塊を再送し続けて永遠に届かない。
+ * 行は端末間 LWW でべき等なので、分割送信の途中で失敗・再送しても壊れない。
+ */
+export const MAX_PROGRESS_SYNC_ROWS = 600;
+
 /** クライアントから届く進捗 1 行 (snake_case のまま)。 */
 export interface ProgressSyncInput {
   lesson_id: string;

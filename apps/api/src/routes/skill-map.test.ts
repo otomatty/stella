@@ -34,6 +34,12 @@ vi.mock("../lib/discovery-data.js", () => ({
   loadPassedDiscoveryCount: vi.fn(async () => 0),
 }));
 
+// 修了条件の自動判定 (/mine の入口で走るバックフィル)。このファイルの関心は視界の
+// 秘匿なので、常に「新しくクリアなし」。判定そのものは lib 側のテストが持つ。
+vi.mock("../lib/stage-auto-complete.js", () => ({
+  autoCompleteEligibleStages: vi.fn(async () => []),
+}));
+
 vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/skill-map-data.js")>()),
   // 開発モードはテストでは常に無効 (本番挙動を検証する)。個別の describe で true にする。
