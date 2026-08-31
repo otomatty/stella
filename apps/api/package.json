@@ -27,10 +27,10 @@
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260820.1",
+    "@cloudflare/workers-types": "^5.20260827.1",
     "@types/node": "^26.2.0",
     "drizzle-kit": "^0.31.10",
     "typescript": "^7.0.2",
-    "wrangler": "^4.125.0"
+    "wrangler": "^4.127.0"
   }
 }
