@@ -8,19 +8,22 @@
  * (`GET /api/skill-map/mine`) で全体を俯瞰する。
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { RadialProgress } from "@/components/ui/radial-progress";
+import type { Stage } from "@/data/types";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
+import { loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { cn } from "@/lib/utils";
 
 import { SkillCheckDialog } from "./SkillCheckDialog";
 import { SkillTree } from "./SkillTree";
+import { startDestination } from "./start-destination";
 
 interface SkillTreePageProps {
   currentUserId: string | null;
@@ -30,17 +33,39 @@ interface SkillTreePageProps {
    *
    * ここで星を始めると受講登録がその場で増えるので、シェルが持っている一覧
    * (ステージ一覧・ホームの「続きから」の材料) も取り直しておく。
+   *
+   * 戻り値の一覧は「始めた直後にどのレッスンを開くか」の判定に使う (state の反映を
+   * 待たずに済ませるため — `stages-source.ts` の `refetch` 参照)。
    */
-  refetchStages: () => void;
+  refetchStages: () => Promise<Stage[]>;
+  /** レッスン画面を開く (シェルの共通導線 = 受講位置も控える)。 */
+  onOpenLesson: (stage: Stage, lessonId: string) => void;
 }
 
 export function SkillTreePage({
   currentUserId,
   backendEnabled,
   refetchStages,
+  onOpenLesson,
 }: SkillTreePageProps) {
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
+  /**
+   * 開始の版番号と、この画面がまだ生きているか。
+   *
+   * 「ここから始める」は開始 → 一覧の取り直し → 進捗の決着待ちと最大数秒かかる。
+   * その間に受講者がサイドバーやブラウザの戻るで別の画面へ移ったり、別の星を
+   * 押し直したりしたら、あとから届く遷移は **受講者が選んだ行き先への割り込み**
+   * になる。押した時点の版を控えておき、着地の直前に照合して捨てる。
+   */
+  const startSeqRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   /**
    * FAB の状態 (localStorage)。これ **だけ** ではぼかしを外さない。
    *
@@ -91,7 +116,7 @@ export function SkillTreePage({
       // 解放と同時に自己開始の受講登録も作られる (= すぐ「ここから始める」が出る)。
       toast.success(`新しいスキルが解放されました。ここから始められます — ${result.title}`);
       // 登録が増えたので、シェルの受講中一覧も取り直す (自己開始と同じ理由)。
-      refetchStages();
+      void refetchStages();
     }
     // 合否によらず引き直す (解放されたかどうかの判断はサーバの応答に任せる)。
     void skillMap.refetch();
@@ -157,21 +182,30 @@ export function SkillTreePage({
           queuedStageIds={stageQueue.queue}
           onStartStage={(stageId) =>
             run(
-              () =>
-                // Phase 3b: 押した時点で自己開始 (受講登録) → 進行中へ。
-                skillMap
-                  .startStage(stageId)
-                  .then(() => {
-                    refetchStages();
-                    return stageQueue.refetch();
-                  })
-                  .then(() => {
-                    // ホームのスキルマップは乗り換えに確認ダイアログを挟むが、ここは星の
-                    // ポップオーバーを開いて押す 2 手が既に確認になっている。
-                    // 代わりに「切り替わった」ことを必ず文字で返す。
-                    const title = nodes.find((n) => n.id === stageId)?.title;
-                    toast.success(`${title ?? "このステージ"} を進行中にしました`);
-                  }),
+              // Phase 3b: 押した時点で自己開始 (受講登録) → 進行中へ。
+              // そのまま最初のレッスンまで開く (開始と学習開始を 1 手にまとめる)。
+              async () => {
+                const seq = ++startSeqRef.current;
+                await skillMap.startStage(stageId);
+                const [stages] = await Promise.all([refetchStages(), stageQueue.refetch()]);
+                // ホームのスキルマップは乗り換えに確認ダイアログを挟むが、ここは星の
+                // ポップオーバーを開いて押す 2 手が既に確認になっている。
+                // 代わりに「切り替わった」ことを必ず文字で返す。
+                const title = nodes.find((n) => n.id === stageId)?.title;
+                toast.success(`${title ?? "このステージ"} を進行中にしました`);
+                // 進捗は **この時点の値** を読む。描画時の値を閉じ込めると、サーバ進捗の
+                // 取り込みが決着する前に押した手が古い地図で遷移先を決めてしまい、
+                // 途中まで進めてある星 (解放済みで進行中でない星にも「ここから始める」
+                // は出る) を先頭レッスンへ引き戻す。
+                await whenProgressReady();
+                // 押したあとに画面を離れた / 別の星を押し直したなら、ここでの遷移は
+                // 受講者が選んだ行き先への割り込みになるので捨てる (開始自体は済んで
+                // いるので、上のトーストとステージ一覧に残る)。
+                if (!mountedRef.current || seq !== startSeqRef.current) return;
+                // 開くレッスンが決まらない星 (準備中の講座など) はツリーに留まる。
+                const target = startDestination(stages, stageId, loadMap());
+                if (target) onOpenLesson(target.stage, target.lessonId);
+              },
               "ステージを始められませんでした",
             )
           }

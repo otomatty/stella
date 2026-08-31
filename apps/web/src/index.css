@@ -1043,6 +1043,13 @@
   font-weight: 700;
   line-height: 1;
   padding: 3px 6px;
+  /*
+   * 器は星そのもの (32px / 中心 44px) なので、 折り返しを許すと「解放!」の幅
+   * (9px * 2 文字 + `!` + 左右の padding) が入りきらず 2 行に割れる。 印は 1 行で
+   * 読ませたいので折り返さず、 はみ出したぶんは星の上に被せる (盤面は星より
+   * ずっと広く、 tree-board の overflow まで届かない)。
+   */
+  white-space: nowrap;
   animation: tree-badge-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) backwards;
   animation-delay: calc(var(--d, 0) * 1s + 0.25s);
 }

@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mapStageToUi, type StageWithChildren, type UiStage } from "@falcon/shared/cms/types";
+import { createLatestRequest } from "@/data/latest-request";
 import type { Stage, Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getStageWithChildren, listStages } from "@/lib/cms-api";
@@ -29,12 +30,18 @@ interface UseStagesResult {
   error: string | null;
   source: DataSource;
   /**
-   * 一覧を取り直す。
+   * 一覧を取り直し、 **この呼び出しが読んだ一覧** を返す。
    *
    * Phase 3b で受講登録が **画面の操作から増える** ようになった (自己開始) ため、
    * 「開始したのに一覧に出ない」 状態を残さないよう明示的な取り直し口を持つ。
+   *
+   * 戻り値があるのは、 開始した直後に「そのステージの最初のレッスン」へ飛ぶ側
+   * (スキルツリーの「ここから始める」) が **待ってから** 遷移できるようにするため。
+   * state (`stages`) の更新を待たずに遷移すると、 一覧にまだ載っていない一瞬だけ
+   * 「ステージが見つかりません」が出る。 取得できなかった場合 (無効化・失敗) は空配列
+   * — 画面に出す error は state 側が持つ。
    */
-  refetch: () => void;
+  refetch: () => Promise<Stage[]>;
 }
 
 export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseStagesResult {
@@ -46,62 +53,77 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
   /**
    * 読み出しを 1 つの callback に閉じる。 `useEffect` は初回、 `refetch()` は明示的な
    * 取り直しに使い、 どちらも同じ経路を通る (useSkillMap と同じ流儀)。
-   * 途中で条件が変わったときの取りこぼしは版番号 (`requestIdRef`) で捨てる。
+   * 途中で条件が変わったときの取りこぼしは版番号 (`latest-request.ts`) で捨てる。
    */
-  const requestIdRef = useRef(0);
-  const load = useCallback(() => {
-    const reqId = ++requestIdRef.current;
-    const cancelled = () => reqId !== requestIdRef.current;
-    // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    if (!isBackendConfigured()) {
-      setStages(fixturesFor(tenantId));
-      setSource("fixtures");
-      setError(null);
-      setLoading(false);
-      return;
-    }
+  const requestRef = useRef(createLatestRequest<Stage[]>());
+  const fetchStages = useCallback(
+    async (reqId: number): Promise<Stage[]> => {
+      const request = requestRef.current;
+      const cancelled = () => !request.isCurrent(reqId);
+      /** 追い越されたときの戻り値。 state は新しい読み出しが埋める。 */
+      const superseded = () => request.joinLatest(reqId, []);
+      // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
+      if (!enabled) {
+        setLoading(false);
+        return [];
+      }
+      if (!isBackendConfigured()) {
+        const demo = fixturesFor(tenantId);
+        setStages(demo);
+        setSource("fixtures");
+        setError(null);
+        setLoading(false);
+        return demo;
+      }
 
-    setLoading(true);
-    void (async () => {
+      setLoading(true);
       try {
         const stageRows = await listStages(tenantId);
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         // クエリ成功 = DB を真実として採用する。 空 (= 未 seed / RLS で全部 draft 等) でも
         // fixtures に fallback しない (#10 — Codex P2: RLS で隠した draft が漏れるのを防ぐ)。
         if (stageRows.length === 0) {
           setStages([]);
           setSource("db");
           setError(null);
-          return;
+          return [];
         }
         const details = await Promise.all(stageRows.map((row) => getStageWithChildren(row.id)));
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         const withChildren: StageWithChildren[] = details.filter(
           (d): d is StageWithChildren => d !== null,
         );
         const ui: UiStage[] = withChildren.map(mapStageToUi);
         // UiStage は Stage と shape 互換 (cms/types.ts のコメント参照)。
-        setStages(ui as unknown as Stage[]);
+        const next = ui as unknown as Stage[];
+        setStages(next);
         setSource("db");
         setError(null);
+        return next;
       } catch (err) {
         console.error("[useStagesForTenant] DB fetch failed", err);
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         setStages([]);
         setSource("error");
         setError(err instanceof Error ? err.message : "fetch failed");
+        return [];
       } finally {
         if (!cancelled()) setLoading(false);
       }
-    })();
-  }, [tenantId, enabled]);
+    },
+    [tenantId, enabled],
+  );
+
+  /** 版番号を採ってから読み出し、 進行中として登録する (追い越された側の相乗り先)。 */
+  const load = useCallback((): Promise<Stage[]> => {
+    const reqId = requestRef.current.begin();
+    const promise = fetchStages(reqId);
+    requestRef.current.track(reqId, promise);
+    return promise;
+  }, [fetchStages]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   return { stages, loading, error, source, refetch: load };
@@ -130,35 +152,38 @@ export function useEnrolledStagesForTenant(
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<DataSource>(backend ? "db" : "fixtures");
   /** 読み出しは 1 つの callback に閉じる (上の `useStagesForTenant` と同じ理由)。 */
-  const requestIdRef = useRef(0);
-  const load = useCallback(() => {
-    const reqId = ++requestIdRef.current;
-    const cancelled = () => reqId !== requestIdRef.current;
-    // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    if (!isBackendConfigured()) {
-      setStages(fixturesFor(tenantId));
-      setSource("fixtures");
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    if (!userId) {
-      setStages([]);
-      setSource("db");
-      setError(null);
-      setLoading(false);
-      return;
-    }
+  const requestRef = useRef(createLatestRequest<Stage[]>());
+  const fetchStages = useCallback(
+    async (reqId: number): Promise<Stage[]> => {
+      const request = requestRef.current;
+      const cancelled = () => !request.isCurrent(reqId);
+      /** 追い越されたときの戻り値。 state は新しい読み出しが埋める。 */
+      const superseded = () => request.joinLatest(reqId, []);
+      // role 等で未使用の場合はフェッチしない (二重フェッチ抑止)。
+      if (!enabled) {
+        setLoading(false);
+        return [];
+      }
+      if (!isBackendConfigured()) {
+        const demo = fixturesFor(tenantId);
+        setStages(demo);
+        setSource("fixtures");
+        setError(null);
+        setLoading(false);
+        return demo;
+      }
+      if (!userId) {
+        setStages([]);
+        setSource("db");
+        setError(null);
+        setLoading(false);
+        return [];
+      }
 
-    setLoading(true);
-    void (async () => {
+      setLoading(true);
       try {
         const allEnrollments = await listEnrollmentsForUser(userId);
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         // 期限切れ (expired) の登録は一覧に出さない。 API 側は教材・資料・検索を
         // 一律で拒否するため、 ここに残すと「一覧には出るが開くと 404」になる。
         const enrollments = allEnrollments.filter((e) => isReadableEnrollmentStatus(e.status));
@@ -166,7 +191,7 @@ export function useEnrolledStagesForTenant(
           setStages([]);
           setSource("db");
           setError(null);
-          return;
+          return [];
         }
         // 1 ステージの取得失敗 (削除済み / 一時的なエラー等) で全体を error に
         // しないよう、 個別に catch して null に倒す。
@@ -178,7 +203,7 @@ export function useEnrolledStagesForTenant(
             }),
           ),
         );
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         const detailById = new Map(
           details.filter((d): d is StageWithChildren => d !== null).map((d) => [d.stage.id, d]),
         );
@@ -204,20 +229,31 @@ export function useEnrolledStagesForTenant(
         setStages(merged);
         setSource("db");
         setError(null);
+        return merged;
       } catch (err) {
         console.error("[useEnrolledStagesForTenant] DB fetch failed", err);
-        if (cancelled()) return;
+        if (cancelled()) return superseded();
         setStages([]);
         setSource("error");
         setError(err instanceof Error ? err.message : "fetch failed");
+        return [];
       } finally {
         if (!cancelled()) setLoading(false);
       }
-    })();
-  }, [tenantId, userId, enabled]);
+    },
+    [tenantId, userId, enabled],
+  );
+
+  /** 版番号を採ってから読み出し、 進行中として登録する (追い越された側の相乗り先)。 */
+  const load = useCallback((): Promise<Stage[]> => {
+    const reqId = requestRef.current.begin();
+    const promise = fetchStages(reqId);
+    requestRef.current.track(reqId, promise);
+    return promise;
+  }, [fetchStages]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   return { stages, loading, error, source, refetch: load };

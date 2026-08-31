@@ -35,8 +35,11 @@ export interface AppShellValue {
    *
    * 自己開始で受講登録がその場で増えるので、開始した画面から呼ばないと
    * 「始めたのに一覧にも「続きから」にも出ない」状態が残る。
+   *
+   * 取り直した一覧をそのまま返す — 開始した直後にそのステージのレッスンへ飛ぶ側
+   * (スキルツリーの「ここから始める」) が state の反映を待たずに済ませるため。
    */
-  refetchStages: () => void;
+  refetchStages: () => Promise<Stage[]>;
   /** 添削結果画面へ遷移する。 */
   onOpenSubmission: (submissionId: string) => void;
   profileRole?: ProfileRole;

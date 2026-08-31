@@ -19,6 +19,7 @@ function SkillTree() {
         currentUserId={s.currentUserId}
         backendEnabled={s.backendEnabled}
         refetchStages={s.refetchStages}
+        onOpenLesson={s.onOpenLesson}
       />
     </RoleGuard>
   );

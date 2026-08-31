@@ -158,6 +158,42 @@ export function isProgressReady(): boolean {
   return hydrated;
 }
 
+/** 取り込みの決着を待つ上限 (ms)。 超えたら手元の値で進む。 */
+const PROGRESS_READY_TIMEOUT_MS = 5000;
+
+/**
+ * サーバ進捗の取り込みの決着 (`isProgressReady`) を待つ。 済んでいれば即座に返る。
+ *
+ * 描画のたびに読む値 (`useLessonProgressMap`) ではなく **その瞬間の決着** が要る側
+ * のための口。 「どのレッスンを開くか」を取り込み前のローカル進捗で決めると、
+ * 続きがある受講者をステージ先頭へ引き戻す (スキルツリーの「ここから始める」)。
+ *
+ * 取り込みは失敗しても決着する (`hydrateFromRemote` の finally) が、 応答が返らない
+ * 経路で押した手が固まらないよう上限を置く。 超えたら `false` を返し、 呼び出し側は
+ * 手元の値で進む — 待ち続けて何も起きないより、 先頭から開くほうがまだ良い。
+ */
+export function whenProgressReady(timeoutMs = PROGRESS_READY_TIMEOUT_MS): Promise<boolean> {
+  if (isProgressReady()) return Promise.resolve(true);
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let unsubscribe: (() => void) | undefined;
+    const finish = (ready: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) clearTimeout(timer);
+      unsubscribe?.();
+      resolve(ready);
+    };
+    timer = setTimeout(() => finish(false), timeoutMs);
+    unsubscribe = subscribe(() => {
+      if (isProgressReady()) finish(true);
+    });
+    // 購読を張るまでの間に決着していたら拾う (setHydrated の通知を取りこぼさない)。
+    if (isProgressReady()) finish(true);
+  });
+}
+
 function setHydrated(next: boolean): void {
   if (hydrated === next) return;
   hydrated = next;

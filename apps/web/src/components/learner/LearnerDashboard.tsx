@@ -73,7 +73,7 @@ interface LearnerDashboardProps {
    * 一覧 (`stages`) に新しい星が入らず、サーバが指す現在地を引けないまま
    * 「進行中のステージが見つかりません」の案内が出てしまう。
    */
-  refetchStages: () => void;
+  refetchStages: () => Promise<unknown>;
   onOpenSubmission: (submissionId: string) => void;
   studentName: string;
   currentUserId: string | null;
@@ -219,8 +219,7 @@ export const LearnerDashboard = ({
    */
   const startStageFlow = async (stageId: string) => {
     await skillMap.startStage(stageId);
-    refetchStages();
-    await stageQueue.refetch();
+    await Promise.all([refetchStages(), stageQueue.refetch()]);
   };
   const runStart = (stageId: string) => runFocus(() => startStageFlow(stageId));
   /** キュー操作の失敗は Hook が `stageQueue.error` に積む (下で出している)。 */
