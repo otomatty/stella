@@ -952,6 +952,15 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     expect(courses.find((c) => c.id === "fe-kamoku-b")?.prerequisites).toEqual(["fe-kamoku-a"]);
   });
 
+  it("ITのきほんは学び方モジュールを持たない（画面のヘルプが担う）", () => {
+    const itBasics = courses.find((c) => c.id === "it-basics");
+    expect(itBasics?.sections?.map((s) => s.id)).toEqual(["m1-computer", "m2-internet"]);
+    const topicCount = itBasics?.sections
+      ?.flatMap((s) => s.lessons)
+      .filter((l) => l.type === "slides").length;
+    expect(topicCount).toBe(9);
+  });
+
   it("前提を 1 つも持たない講座 (入口) が残っている", () => {
     const entries = courses.filter((c) => (c.prerequisites ?? []).length === 0);
     expect(entries.length).toBeGreaterThan(0);
