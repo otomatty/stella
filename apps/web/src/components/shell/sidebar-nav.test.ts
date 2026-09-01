@@ -59,6 +59,14 @@ describe("navForRole", () => {
     }
   });
 
+  it("専用教材は講師と管理者だけに出す", () => {
+    expect(ids("instructor")).toContain("stage-grants");
+    expect(ids("admin")).toContain("stage-grants");
+    for (const role of ["learner", "sales"] as const) {
+      expect(ids(role)).not.toContain("stage-grants");
+    }
+  });
+
   it("殿堂は受講者と staff の一覧の最後に出す (Phase 5)", () => {
     // 毎日の学習動線に割り込ませない = 常に最後尾。
     for (const role of ["learner", "instructor"] as const) {

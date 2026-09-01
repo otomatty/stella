@@ -19,6 +19,9 @@ export interface QuizQuestionSeed {
 
 export type CourseColor = "indigo" | "green" | "amber" | "slate";
 
+/** スキルツリーのカタログ掲載範囲。省略 = catalog (全受講者)。 */
+export type CourseAudience = "catalog" | "granted";
+
 /** レッスンに紐づくコード演習。id は `@falcon/shared` の Assignment.id。 */
 export interface ExerciseRef {
   id: string;
@@ -85,6 +88,12 @@ export interface CourseConfig {
    * `@falcon/shared/skill-map/appearances` の `SKILL_MAP_APPEARANCE_PREREQUISITES`。
    */
   appearancePrerequisites?: Record<string, string[]>;
+  /**
+   * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (省略時の既定)。
+   * `granted` = スタッフが `stage_grants` で割り当てた受講者だけカタログに載る。
+   * 専用講座は catalog の親を 1 つ以上持ち、入口にはしない (manifest が検査)。
+   */
+  audience?: CourseAudience;
 }
 
 export interface QuizSeed {

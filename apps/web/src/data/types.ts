@@ -104,6 +104,8 @@ export interface Stage {
   canDo?: string;
   /** まだ見えないスキルに見せるテーマ名。視界外のステージはタイトルの代わりにこれだけが見える。 */
   theme?: string;
+  /** スキルツリーのカタログ掲載範囲 (`stages.audience` 由来)。省略 = catalog。 */
+  audience?: "catalog" | "granted";
   /**
    * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 行のまま
    * (クリアは共有)。未設定なら `category` の扇に 1 つ。

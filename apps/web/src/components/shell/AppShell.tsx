@@ -107,6 +107,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   students: "/students",
   // 発見教材は staff 共有ページ (講師も承認する)。 `/admin/*` の下には置かない。
   discovery: "/discovery",
+  "stage-grants": "/stage-grants",
   // 殿堂は全ロールが読める公開ページ。 管理者のナビだけは運用画面 (`/admin/*`) を指す。
   "hall-of-fame": "/hall-of-fame",
   "hall-of-fame-admin": "/admin/hall-of-fame",

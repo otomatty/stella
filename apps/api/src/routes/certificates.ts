@@ -34,6 +34,7 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
   autoCompleteEligibleStages,
   completionMet,
@@ -77,6 +78,13 @@ async function computeStageCompletion(
 
   const isStaff = isStaffRole(caller.role);
   if (!(userId === caller.id || isStaff)) return null;
+
+  // 受講者はカタログに無い専用星の題名・条件を UUID 直叩きで取れない。
+  // staff の成績台帳 / 発行は従来どおりテナント内の全ステージを見る。
+  if (!isStaff && !isCatalogAudience(stage.audience)) {
+    const visible = await learnerCanSeeGrantedStage(db, caller.id, caller.tenantId, stageId);
+    if (!visible) return null;
+  }
 
   // 対象ユーザーが同テナントであることを必須化する。
   const target = await db

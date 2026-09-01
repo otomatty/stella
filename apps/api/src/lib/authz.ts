@@ -129,6 +129,13 @@ export function requireCanManageInterviewPrep(caller: Caller): void {
   }
 }
 
+/** 専用ステージ (`audience = granted`) の割当。講師・管理者のみ (営業は対象外)。 */
+export function requireCanManageStageGrants(caller: Caller): void {
+  if (!isStaffRole(caller.role)) {
+    throw new ApiError("権限がありません", 403);
+  }
+}
+
 /**
  * 面談対策を「受ける」側になれるロール (受講者 / 管理者)。 管理者は受講者と同じ
  * 練習 (割当・今日の練習セット・進捗・改善点メモ) ができる。 講師・営業は対象外。

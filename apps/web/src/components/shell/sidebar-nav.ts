@@ -26,6 +26,7 @@ import {
   Sparkles,
   Star,
   Users,
+  UserPlus,
 } from "@/lib/icons";
 import type { Role } from "@/data/types";
 import type { ProfileRole } from "@falcon/shared/cms/types";
@@ -51,6 +52,7 @@ export type NavId =
   | "discovery"
   | "hall-of-fame"
   | "hall-of-fame-admin"
+  | "stage-grants"
   | "settings"
   | "__logout";
 
@@ -85,6 +87,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "students", label: "担当受講者", icon: Users },
     { id: "discovery", label: "発見教材", icon: Sparkles },
+    { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "stages", label: "ステージ", icon: Book },
     HALL_OF_FAME_NAV,
@@ -95,6 +98,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "assignments", label: "課題管理", icon: Code },
     { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
+    { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "users", label: "ユーザー管理", icon: Users },

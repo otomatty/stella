@@ -30,6 +30,7 @@ const LABELS = {
   // 退役した割当の action は `DEPRECATED_LABELS` にある (記録側の型から外して、
   // 「もう記録できない」 を型で担保する)。 更新 / 解除は staff の運用操作として残る。
   stage_self_start: "ステージの自己開始",
+  stage_grants_replace: "専用教材の割当",
   enrollment_update: "受講登録の更新",
   enrollment_delete: "受講登録の解除",
   // 割当プリセット (定義の CRUD だけ残置。 適用は退役)

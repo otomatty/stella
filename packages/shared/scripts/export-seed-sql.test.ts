@@ -90,13 +90,14 @@ describe("export-seed-sql (sqlite)", () => {
 
   // スキルツリーの 3 列 (Phase 1)。教材 (course.json) が正本なので、列が upsert から
   // 落ちると「前提を足したのに誰も開けない / 外したのにロックが残る」が黙って起きる。
-  it("stages の upsert は prerequisites / can_do / theme を含む", () => {
+  it("stages の upsert は prerequisites / can_do / theme / audience を含む", () => {
     expect(sql).toMatch(
-      /insert into stages \([^)]*\bprerequisites\b[^)]*\bcan_do\b[^)]*\btheme\b[^)]*\)/,
+      /insert into stages \([^)]*\bprerequisites\b[^)]*\bcan_do\b[^)]*\btheme\b[^)]*\baudience\b[^)]*\)/,
     );
     expect(sql).toContain("prerequisites = excluded.prerequisites");
     expect(sql).toContain("can_do = excluded.can_do");
     expect(sql).toContain("theme = excluded.theme");
+    expect(sql).toContain("audience = excluded.audience");
   });
 
   it("前提つきの講座は slug の JSON 配列で入る", () => {
@@ -113,8 +114,8 @@ describe("export-seed-sql (sqlite)", () => {
     // slug 列で拾う (parent 列に 'it-basics' を持つ子の行と取り違えないため)。
     const line = (sql.match(/^insert into stages .*'ses', 'it-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
-    // 並びは ... status, prerequisites, parent, can_do, theme, created_at, updated_at。
-    expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', cast\(unixepoch/);
+    // 並びは ... status, prerequisites, parent, can_do, theme, audience, created_at, updated_at。
+    expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', 'catalog', cast\(unixepoch/);
     expect(line).not.toContain("'[]'");
   });
 

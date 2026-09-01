@@ -32,6 +32,11 @@ import {
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
 import { loadUnlockedStageIds } from "./skill-check-data.js";
+import {
+  dropOrphanGrantedStages,
+  filterStagesByAudience,
+  loadGrantedStageIds,
+} from "./stage-audience.js";
 
 /**
  * 「いま進めている星」の候補として見る、直近に進捗が付いたステージの数。
@@ -199,9 +204,13 @@ export async function loadSkillMapSource(
       canDo: stages.canDo,
       theme: stages.theme,
       iconPath: stages.iconPath,
+      audience: stages.audience,
     })
     .from(stages)
     .where(and(eq(stages.tenantId, caller.tenantId), eq(stages.status, "published")));
+
+  const grantedStageIds = await loadGrantedStageIds(db, caller.id);
+  const audienceRows = filterStagesByAudience(stageRows, grantedStageIds);
 
   const clearedStageIds = await loadClearedStageIds(db, caller);
   const enrolledStageIds = await loadEnrolledStageIds(db, caller);
@@ -211,9 +220,10 @@ export async function loadSkillMapSource(
   // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
   // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
   // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。
-  const visibleRows = opts?.showAllIslands
-    ? stageRows
-    : filterIslandStages(stageRows, clearedStageIds);
+  const islandRows = opts?.showAllIslands
+    ? audienceRows
+    : filterIslandStages(audienceRows, clearedStageIds);
+  const visibleRows = dropOrphanGrantedStages(islandRows);
 
   const mapStages: SkillMapStage[] = visibleRows.map((row) => ({
     id: row.id,

@@ -739,6 +739,68 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
       expect(() => buildContentManifest(root)).toThrow(/canDo/);
     });
   });
+
+  it("granted は catalog の親を 1 つ以上必須", () => {
+    withCourses({ "x-basics": { audience: "granted" } }, (root) => {
+      expect(() => buildContentManifest(root)).toThrow(/granted.*prerequisites/);
+    });
+  });
+
+  it("catalog が granted を prerequisites に書くと落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": { audience: "granted", prerequisites: ["a-basics"] },
+        "c-basics": { prerequisites: ["b-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/granted 講座/);
+      },
+    );
+  });
+
+  it("granted どうしの親子は落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": { audience: "granted", prerequisites: ["a-basics"] },
+        "c-basics": { audience: "granted", prerequisites: ["b-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/catalog の親だけ/);
+      },
+    );
+  });
+
+  it("granted + appearances は落ちる", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": {
+          audience: "granted",
+          prerequisites: ["a-basics"],
+          appearances: ["扇A", "扇B"],
+          appearancePrerequisites: { 扇A: ["a-basics"], 扇B: ["a-basics"] },
+        },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/appearances を書けません/);
+      },
+    );
+  });
+
+  it("正しい granted 親子は通る", () => {
+    withCourses(
+      {
+        "a-basics": {},
+        "b-basics": { audience: "granted", prerequisites: ["a-basics"], canDo: "B", theme: "T" },
+      },
+      (root) => {
+        const { courses } = buildContentManifest(root);
+        expect(courses.find((c) => c.id === "b-basics")?.audience).toBe("granted");
+      },
+    );
+  });
 });
 
 // 実データ側の作り込み。次フェーズ (ホームのステージマップ) が読む前提なので、

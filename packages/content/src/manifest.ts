@@ -291,6 +291,25 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
       throw new Error(`courses/${slug}/course.json の ${field} は空でない文字列にしてください。`);
     }
   }
+  const audience = raw.audience ?? "catalog";
+  if (audience !== "catalog" && audience !== "granted") {
+    throw new Error(
+      `courses/${slug}/course.json の audience は "catalog" または "granted" にしてください: ${String(raw.audience)}`,
+    );
+  }
+  if (audience === "granted") {
+    const listed = (raw.prerequisites ?? []).map((p) => p.trim());
+    if (listed.length === 0) {
+      throw new Error(
+        `courses/${slug}/course.json の audience が granted のときは catalog の親 (prerequisites) を 1 つ以上書いてください。`,
+      );
+    }
+    if (raw.appearances != null) {
+      throw new Error(
+        `courses/${slug}/course.json の audience が granted のときは appearances を書けません。`,
+      );
+    }
+  }
   const tenantId = raw.tenantId?.trim() || TENANT_ID;
   // seed は教材コースを TENANT_ID 固定で入れる。ここだけ別テナントを名乗れると、
   // コース行と R2 キーのテナントがずれる (どちらも黙って壊れる) ので先に落とす。
@@ -503,6 +522,7 @@ function buildOneCourse(
       ...(parent ? { parent } : {}),
       ...(config.canDo ? { canDo: config.canDo.trim() } : {}),
       ...(config.theme ? { theme: config.theme.trim() } : {}),
+      ...(config.audience === "granted" ? { audience: "granted" as const } : {}),
       ...(config.appearances && config.appearances.length > 0
         ? { appearances: config.appearances.map((s) => s.trim()) }
         : {}),
@@ -551,6 +571,43 @@ function assertPrerequisiteGraph(courses: Course[]): void {
   for (const course of courses) walk(course.id);
 }
 
+/**
+ * `audience: granted` のグラフ制約。 catalog が granted を前提にすると他受講者が
+ * 永久ロックされる / ロック理由から名前が漏れるため、ビルドで落とす。
+ */
+function assertGrantedAudienceGraph(courses: Course[]): void {
+  const bySlug = new Map(courses.map((c) => [c.id, c]));
+  const grantedSlugs = new Set(courses.filter((c) => c.audience === "granted").map((c) => c.id));
+  if (grantedSlugs.size === 0) return;
+
+  for (const course of courses) {
+    if (course.audience !== "granted") {
+      for (const prereq of course.prerequisites ?? []) {
+        if (grantedSlugs.has(prereq)) {
+          throw new Error(
+            `courses/${course.id}/course.json の prerequisites に granted 講座を書けません: ${prereq}`,
+          );
+        }
+      }
+      if (course.parent != null && grantedSlugs.has(course.parent)) {
+        throw new Error(
+          `courses/${course.id}/course.json の parent に granted 講座を書けません: ${course.parent}`,
+        );
+      }
+      continue;
+    }
+
+    for (const prereq of course.prerequisites ?? []) {
+      const parent = bySlug.get(prereq);
+      if (parent?.audience === "granted") {
+        throw new Error(
+          `courses/${course.id}/course.json の granted 講座は catalog の親だけを prerequisites に書けます: ${prereq}`,
+        );
+      }
+    }
+  }
+}
+
 export function buildContentManifest(coursesRoot: string = defaultCoursesRoot()): {
   courses: Course[];
   quizzes: QuizSeed[];
@@ -568,6 +625,7 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
   }
 
   assertPrerequisiteGraph(courses);
+  assertGrantedAudienceGraph(courses);
 
   return { courses, quizzes };
 }

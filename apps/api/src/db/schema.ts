@@ -170,6 +170,13 @@ export const stages = sqliteTable(
     canDo: text("can_do"),
     /** 霧の中の星に見せるテーマ名。視界外のステージはタイトルの代わりにこれだけを出す。 */
     theme: text("theme"),
+    /**
+     * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (既定)。
+     * `granted` = `stage_grants` がある受講者だけカタログに載る (Git 正本の専用講座)。
+     */
+    audience: text("audience", { enum: ["catalog", "granted"] })
+      .notNull()
+      .default("catalog"),
     /** 講師表示名 (Issue #74)。 未設定 (null / 空) のステージは受講者 UI で講師を表示しない。 */
     instructorName: text("instructor_name"),
     status: text("status", { enum: ["draft", "published", "archived"] })
@@ -1195,6 +1202,29 @@ export const resourceLocks = sqliteTable("resource_locks", {
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/** 受講者ごとの専用ステージ (`audience = granted`) 割当。 マップ掲載のみ — enrollment は自己開始。 */
+export const stageGrants = sqliteTable(
+  "stage_grants",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    grantedBy: text("granted_by"),
+    grantedAt: tsNow("granted_at"),
+  },
+  (t) => ({
+    stageProfileUnique: uniqueIndex("stage_grants_stage_profile_uq").on(t.stageId, t.profileId),
+    profileIdx: index("stage_grants_profile_idx").on(t.profileId),
+  }),
+);
+
 /** 受講者ごとの面談対策カテゴリ割当。 共通カテゴリは割当に含めず常時表示。 */
 export const interviewPrepAssignments = sqliteTable(
   "interview_prep_assignments",
@@ -1488,6 +1518,7 @@ export const APP_TABLES = [
   "learner_focus",
   "stage_queue",
   "stage_unlocks",
+  "stage_grants",
   "skill_check_attempts",
   "discovery_requests",
   "discovery_materials",
