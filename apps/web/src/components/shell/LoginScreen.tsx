@@ -1,6 +1,8 @@
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Google } from "@/lib/icons";
 import { Brand } from "@/components/common/Brand";
+import { LoginAurora } from "@/components/shell/LoginAurora";
 import { Button } from "@/components/ui/button";
 import { isBackendConfigured } from "@/lib/backend";
 import { signInWithGoogle } from "@/lib/auth";
@@ -33,12 +35,10 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background">
-      <div className="flex items-center justify-center p-10">
-        <div className="w-full max-w-[380px]">
-          <div className="mb-12">
-            <Brand size="md" />
-          </div>
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] bg-background">
+      <div className="flex items-center justify-center p-8 md:p-10">
+        <div className="w-full max-w-[360px]">
+          <Brand size="md" className="mb-10" />
 
           <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
           <p className="text-ink-3 text-[13.5px] mb-7">Google アカウントでログインしてください。</p>
@@ -48,30 +48,38 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
             Googleでログイン
           </Button>
 
-          <div className="mt-8 text-[11.5px] text-ink-3 text-center">
-            ログインできない場合は{" "}
-            <a href="/support" className="text-brand underline underline-offset-2">
+          <p className="mt-8 text-[11.5px] leading-relaxed text-ink-3 text-center">
+            ログインできない場合は
+            <Link to="/support" className="text-brand underline underline-offset-2">
               サポート
-            </a>{" "}
+            </Link>
             までお問い合わせください。
-          </div>
+          </p>
         </div>
       </div>
 
       {/* アートの罫線・文字色が暗い地に載る前提で作られているので、 ここだけは
-          テーマに関係なく暗いまま固定する (スライドの lead 面と同じ #141418)。 */}
-      <div className="hidden md:flex bg-[#141418] text-white relative overflow-hidden p-12 flex-col justify-between">
+          テーマに関係なく暗いまま固定する (スライドの lead 面と同じ #141418)。
+          ダークテーマだと左の面 (#0d0d10) とほぼ同じ濃さになって「2 面ある」ことが
+          読めなくなるので、 継ぎ目にブランドグラデーションの 1px を立てて分ける。 */}
+      <div className="hidden md:flex bg-[#141418] text-white relative overflow-hidden p-12 flex-col justify-center">
+        <div className="absolute inset-y-0 left-0 w-px sf-gradient-bg opacity-70" />
+        <LoginAurora />
+        {/* 文字が乗る左側の暗幕。 オーロラは明るさが場所も時間も変わるので、
+            可読性はシェーダ側の調整ではなくこの層で担保する。 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#141418] via-[#141418]/55 to-transparent" />
         <div className="absolute inset-0 login-art-grid" />
+
         <div className="relative z-10">
-          <Brand size="md" inverted subtitle="" title="" />
-        </div>
-        <div className="relative z-10">
-          <div className="text-[26px] leading-snug tracking-tight max-w-[480px] font-medium">
-            「学ぶ人の、<span className="text-[oklch(75%_0.13_85)]">はじめの一歩</span> に。」
+          {/* white/35 は #141418 上で 3.21:1 しか出ず 11px の本文には足りない (AA は 4.5:1)。
+              オーロラが地を持ち上げるぶんの余裕も見て 55% (6.15:1) にしてある。 */}
+          <div className="text-[11px] font-display font-semibold tracking-[0.22em] text-white/55 mb-4">
+            LEARNING PLATFORM
           </div>
-        </div>
-        <div className="text-[12.5px] text-[oklch(75%_0.01_260)] relative z-10">
-          v1.0 Draft · 2テナント稼働中 · 219名の受講者が学習中
+          <p className="text-[28px] leading-snug tracking-tight max-w-[16em] font-medium">
+            「学ぶ人の、
+            <span className="sf-gradient-text-on-dark">はじめの一歩</span>に。」
+          </p>
         </div>
       </div>
     </div>

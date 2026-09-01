@@ -294,6 +294,15 @@
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
+  /* 暗い面 (ログインのアート面) 用。 フル版は始端の #0a33ff が #141418 に沈んで
+     先頭数文字が読めなくなるので、 マゼンタ〜レッドの明るい側だけを使う。 */
+  .sf-gradient-text-on-dark {
+    background: linear-gradient(90deg, #e62f9a 0%, #ff2c61 55%, #ff6a3d 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
   /* background-origin を border-box にしないと、 透明ボーダー付きの要素 (Button accent 等) で
      既定 (origin: padding-box + clip: border-box + repeat) によりボーダー帯へ隣のタイルが
      繰り返され、 左端に終端色 / 右端に始端色の 1px フリンジが出る。 */
@@ -378,6 +387,74 @@
       oklch(var(--stripe-l2) 0.02 240) 8px,
       oklch(var(--stripe-l2) 0.02 240) 16px
     );
+  }
+
+  /* Login art column — ブランド 3 色の光の玉がゆっくり漂う面。 罫線だけだと
+     ダークテーマで左の面と地続きに見えるので、 面そのものに色を持たせる。
+
+     ぼかしは filter: blur() ではなく radial-gradient の裾で作る — blur は毎フレーム
+     再描画が要るが、 グラデーションなら 1 度描いた層を transform で動かすだけで済み、
+     合成のみ (GPU) で回る。 終端も transparent ではなく同色の alpha 0 にする
+     (sRGB 補間で transparent = 透明な黒に寄り、 裾がくすむため)。 */
+  .login-art-aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .login-art-blob {
+    position: absolute;
+    width: 88%;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    will-change: transform;
+    /* 3 つの周期を互いに素にしてあるので、 重なりの見え方が一巡するのは実質
+       数時間先 = ログインを待つ数十秒のあいだは同じ絵が二度出ない。
+       負の delay は「途中から始める」ため — 3 つが同時に端へ揃うのを避ける。 */
+    animation: var(--blob-path) var(--blob-dur) ease-in-out infinite alternate;
+    animation-delay: var(--blob-delay);
+  }
+  .login-art-blob-1 {
+    left: -18%;
+    top: 42%;
+    background: radial-gradient(
+      closest-side,
+      rgba(230, 47, 154, 0.22) 0%,
+      rgba(230, 47, 154, 0.11) 38%,
+      rgba(230, 47, 154, 0.03) 68%,
+      rgba(230, 47, 154, 0) 100%
+    );
+    --blob-path: login-art-drift-1;
+    --blob-dur: 23s;
+    --blob-delay: -7s;
+  }
+  .login-art-blob-2 {
+    left: 44%;
+    top: -30%;
+    background: radial-gradient(
+      closest-side,
+      rgba(10, 51, 255, 0.26) 0%,
+      rgba(10, 51, 255, 0.13) 38%,
+      rgba(10, 51, 255, 0.04) 68%,
+      rgba(10, 51, 255, 0) 100%
+    );
+    --blob-path: login-art-drift-2;
+    --blob-dur: 31s;
+    --blob-delay: -13s;
+  }
+  .login-art-blob-3 {
+    left: 18%;
+    top: 66%;
+    width: 70%;
+    background: radial-gradient(
+      closest-side,
+      rgba(255, 46, 13, 0.13) 0%,
+      rgba(255, 46, 13, 0.06) 40%,
+      rgba(255, 46, 13, 0.02) 70%,
+      rgba(255, 46, 13, 0) 100%
+    );
+    --blob-path: login-art-drift-3;
+    --blob-dur: 41s;
+    --blob-delay: -29s;
   }
 
   /* Login art column grid background */
@@ -1260,5 +1337,63 @@
   & .hljs-deletion {
     color: #ffdcd7;
     background-color: #67060c;
+  }
+}
+
+/**
+ * ログイン画面のアート面を漂う光の玉。
+ *
+ * 3 本とも「往復」に見えないよう waypoint を非対称に置き、 それぞれ別の軌跡・別の周期で
+ * 回す。 動かすのは transform (と scale) だけなので再描画は起きない。
+ * `prefers-reduced-motion` では止めて、 初期位置のまま静かな残光として見せる。
+ */
+@keyframes login-art-drift-1 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  35% {
+    transform: translate3d(22%, -18%, 0) scale(1.12);
+  }
+  70% {
+    transform: translate3d(6%, -38%, 0) scale(0.94);
+  }
+  100% {
+    transform: translate3d(34%, -8%, 0) scale(1.06);
+  }
+}
+@keyframes login-art-drift-2 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  40% {
+    transform: translate3d(-26%, 24%, 0) scale(0.9);
+  }
+  75% {
+    transform: translate3d(-8%, 46%, 0) scale(1.14);
+  }
+  100% {
+    transform: translate3d(-34%, 16%, 0) scale(1);
+  }
+}
+@keyframes login-art-drift-3 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  30% {
+    transform: translate3d(30%, -26%, 0) scale(1.2);
+  }
+  65% {
+    transform: translate3d(48%, 8%, 0) scale(0.88);
+  }
+  100% {
+    transform: translate3d(12%, -34%, 0) scale(1.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-art-blob {
+    animation: none;
+    /* 動かさない層に合成レイヤを起こさせない。 will-change を残すと、 静止版を
+       受け取る人にだけ無駄な昇格レイヤが 3 枚残る。 */
+    will-change: auto;
   }
 }
