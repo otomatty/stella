@@ -207,6 +207,47 @@ describe("GET /api/skill-map/mine", () => {
     );
   });
 
+  it("旧画面の修了数は配った星だけ数える (落とした島のクリアを混ぜない)", async () => {
+    const stage = (slug: string, category: string, prerequisites: string[]) => ({
+      id: `id-${slug}`,
+      slug,
+      title: slug,
+      category,
+      prerequisites,
+      theme: category === "DevOps" ? "開発と運用をつなぐ" : "サーバーとデータの基盤",
+    });
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        stage("python-basics", "バックエンド", ["typescript-node-basics"]),
+        stage("devops-basics", "DevOps", ["python-basics"]),
+      ],
+      // 新画面で DevOps までクリアしたあと、古いタブが再取得する状況。
+      clearedStageIds: new Set(["id-python-basics", "id-devops-basics"]),
+      activeStageId: undefined,
+    });
+    const countsOf = async (res: Response) => {
+      const body = (await res.json()) as {
+        skill_map: { stage_count: number; cleared_count: number };
+      };
+      return {
+        stage_count: body.skill_map.stage_count,
+        cleared_count: body.skill_map.cleared_count,
+      };
+    };
+    expect(await countsOf(await getTiers2("/api/skill-map/mine"))).toEqual({
+      stage_count: 1,
+      cleared_count: 1,
+    });
+    expect(await countsOf(await getLegacy("/api/skill-map/mine"))).toEqual({
+      stage_count: 1,
+      cleared_count: 1,
+    });
+    expect(await countsOf(await get("/api/skill-map/mine"))).toEqual({
+      stage_count: 2,
+      cleared_count: 2,
+    });
+  });
+
   it("修了の分母は視界で落とす前の総数 (進むたびに分母が増えない)", async () => {
     const res = await get("/api/skill-map/mine");
     const body = (await res.json()) as {

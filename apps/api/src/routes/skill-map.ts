@@ -508,13 +508,21 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
          * 配信対象のステージ総数 (視界で落とす前)。盤面の「修了 x / y」の分母。
          *
          * `stages` の長さを分母にすると、先へ進むほど星が増えて分母も増え、
-         * 「全体のどこまで来たか」が読めなくなる。
+         * 「全体のどこまで来たか」が読めなくなる。旧画面に配らない島は
+         * `dropIslandsUnknownToClient` のあとなので、ここにも入らない。
          */
         stage_count: source.stages.length,
         active_stage_id: source.activeStageId ?? null,
         // `chosen` = 受講者が選んだ / `derived` = 直近の進捗から導出。
         active_stage_source: source.activeStageSource ?? "derived",
-        cleared_count: source.clearedStageIds.size,
+        /**
+         * 盤面の「修了 x / y」の分子。分母と同じ配信集合で数える。
+         *
+         * `clearedStageIds` は D1 上の全クリア (落とした島も含む)。そのまま
+         * size を返すと、新画面で DevOps をクリアしたあと古いタブが再取得した
+         * とき分母より分子が大きくなる。
+         */
+        cleared_count: [...source.clearedStageIds].filter((id) => byId.has(id)).length,
         focus_bonus: {
           streak_days: focusBonus.streakDays,
           multiplier: focusBonus.multiplier,
