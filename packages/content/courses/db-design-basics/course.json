@@ -2,13 +2,17 @@
   "title": "データベース設計入門",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】SQL の次の一歩として、壊れにくいテーブル設計を学ぶ研修。",
+  "description": "SQL の次の一歩として、壊れにくいテーブル設計を学ぶ研修。正規化・リレーション・インデックスを通し、業務の要件からテーブルを設計できるようにする。",
   "header": "データベース設計入門",
   "tenantId": "ses",
   "prerequisites": ["sql-basics"],
   "canDo": "正規化とリレーションを踏まえて、業務データのテーブルを設計できる",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-normalization": "M1. 正規化",
+    "m2-relation": "M2. リレーション",
+    "m3-index": "M3. インデックス",
+    "m4-practice": "M4. 設計演習"
   }
 }

@@ -2,13 +2,19 @@
   "title": "コマンドライン入門",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】バックエンド開発の足場になるターミナル操作を身につける研修。",
+  "description": "未経験からのコマンドライン研修。ターミナルでの移動・ファイル操作から、パイプ・環境変数・プロセス・シェルスクリプトまでを通す。",
   "header": "コマンドライン入門",
   "tenantId": "ses",
   "prerequisites": ["sql-basics"],
   "canDo": "ターミナルでファイル操作・プロセス確認・コマンドの組み合わせができる",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-look": "M1. 見る",
+    "m2-change": "M2. 変える",
+    "m3-search": "M3. 探す",
+    "m4-connect": "M4. つなぐ",
+    "m5-environment": "M5. 環境",
+    "m6-run": "M6. 動かす"
   }
 }

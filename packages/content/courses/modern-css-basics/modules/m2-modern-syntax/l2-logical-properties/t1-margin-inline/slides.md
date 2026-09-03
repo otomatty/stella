@@ -56,15 +56,11 @@ header: "モダンCSS入門"
 
 ---
 
-## 対応表
+## 向きが変わると差が出る
 
-| 従来(横書き) | 論理プロパティ |
-| --- | --- |
-| margin-left / right | margin-inline |
-| margin-top / bottom | margin-block |
-| padding-left / right | padding-inline |
+![w:900](assets/physical-vs-logical.svg)
 
-<!-- ノート: 図解代わりの対応表。paddingにも同じ形があります。2行が1行になるのが日々の利点です。 -->
+<!-- ノート: 図解枠。横書きでは同じ結果になるので違いが見えない。右から書く言語に切り替わったとき、物理プロパティは左のままずれ、論理プロパティは文の始まり側に付く。対応表はまとめの資料にある。 -->
 
 ---
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- ターミナルの窓とプロンプト (thumbnail の motif_cli の核)。 -->
+  <rect x="2.5" y="4" width="19" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M6.5 10 L9.5 12.5 L6.5 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12.5 15.5 H17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 96 1200 448" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+  <rect x="80" y="160" width="1040" height="160" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <rect x="112" y="192" width="128" height="96" rx="8"
+        fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <rect x="256" y="192" width="128" height="96" rx="8"
+        fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+  <rect x="400" y="192" width="128" height="96" rx="8"
+        fill="#FFFFFF" stroke="#0E0E10" stroke-width="2"/>
+
+  <line x1="112" y1="376" x2="1088" y2="376" stroke="#E62F9A" stroke-width="2.5"
+        marker-end="url(#arrow)"/>
+  <rect x="480" y="360" width="240" height="32" fill="#FFFFFF"/>
+  <text x="600" y="384" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">主軸(横方向)</text>
+
+  <text x="600" y="464" text-anchor="middle" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">justify-content は、この軸のどこに子を寄せるかを決める</text>
+</svg>

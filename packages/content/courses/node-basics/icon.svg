@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- ブラウザの外の実行環境 = 六角形の中で回る 1 本の流れ (thumbnail の motif_node の核)。 -->
+  <path d="M12 2.2 L20.5 7.1 V16.9 L12 21.8 L3.5 16.9 V7.1 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2.6 2.2"/>
+</svg>

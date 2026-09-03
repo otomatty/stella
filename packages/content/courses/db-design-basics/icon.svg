@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 2 つに分けた表がキーでつながる (thumbnail の motif_db_design の核)。 -->
+  <rect x="2" y="4.5" width="7.5" height="15" rx="1.8" fill="none" stroke="currentColor" stroke-width="2"/>
+  <rect x="14.5" y="4.5" width="7.5" height="15" rx="1.8" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M9.5 12 H14.5" stroke="currentColor" stroke-width="2"/>
+  <circle cx="12" cy="12" r="2.4" fill="currentColor"/>
+</svg>

@@ -2,13 +2,19 @@
   "title": "Node.js 入門",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】ブラウザの外で JavaScript / TypeScript を動かし、サーバー側の入口に立つ研修。",
+  "description": "未経験からの Node.js 研修。ブラウザの外で JavaScript を動かし、npm・モジュール・ファイル入出力・非同期処理から HTTP サーバーまでを通す。",
   "header": "Node.js 入門",
   "tenantId": "ses",
   "prerequisites": ["cli-basics"],
-  "canDo": "Node.js で TypeScript を実行し、ファイルやネットワークを扱う小さなプログラムを書ける",
+  "canDo": "Node.js でファイルやネットワークを扱う小さなプログラムを書き、npm でプロジェクトを組み立てられる",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-run": "M1. 実行する",
+    "m2-project": "M2. プロジェクト",
+    "m3-modules": "M3. モジュール",
+    "m4-io": "M4. ファイルと入出力",
+    "m5-async": "M5. 非同期処理",
+    "m6-http": "M6. HTTPサーバー"
   }
 }

@@ -69,6 +69,8 @@
 
 書き方は `padding` と同じです。値1つで四辺、値2つで上下と左右です。違うのは効く場所だけです。背景色は `margin` の領域には付きません。外側だからです。
 
+![中身の外側にpadding、その外側にborder、いちばん外側にmarginが広がる](t3-margin/assets/box-model-layers.svg)
+
 | したいこと | 使うもの |
 | --- | --- |
 | 枠や背景と文字を離す | padding |

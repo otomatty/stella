@@ -203,11 +203,11 @@ VS Code での始め方・許可とモード・Explore → Plan → Code → Com
   どちらか」という選択問題にしてください。Claude Code が使えるかどうかで有利不利が出る設問
   (画面の色・ボタンの位置・当日のコマンド一覧)は作りません
 - **コード演習は配線しません。** 学習対象がエージェントとの進め方なので、`course.json` に `exercises` を持ちません
-- **サムネイルは未作成です。** `packages/content/scripts/build_thumbnails.py` の `SPECS` に
-  `claude-code-basics` を足して生成してください(`python packages/content/scripts/build_thumbnails.py
-  claude-code-basics`)。モチーフは「4 つの段が順に進むワークフロー」で、この講座の中身(1 タスクを順に通す)を
-  1 つだけ図にします。手描きはしません。既存 11 講座と 1 つのシリーズに見えることが前提なので、
-  色や版面はスクリプトに任せ、外部ロゴは使いません
+- **サムネイルとアイコンは設置済みです。** `packages/content/scripts/build_thumbnails.py` の `SPECS` に
+  `claude-code-basics` があり、`thumbnail.webp` / `icon.svg` を生成済み。モチーフは「4 つの段が順に進む
+  ワークフロー」で、この講座の中身(1 タスクを順に通す)を 1 つだけ図にしたもの。作り直すときも手描きはせず
+  (`python packages/content/scripts/build_thumbnails.py claude-code-basics`)、色や版面はスクリプトに任せ、
+  外部ロゴは使いません
 - **シリーズの続きは別 slug です。** カスタマイズ(#197)とチーム運用(#198)はこの講座に足さず、後続講座に置きます。
   この講座を大きくしないことが、シリーズ 4 本目としての役割です
 

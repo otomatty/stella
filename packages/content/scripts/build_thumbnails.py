@@ -594,7 +594,103 @@ def motif_salesforce(c: str) -> str:
     {card(344, 306, 170, 126, False)}"""
 
 
+
+def motif_cli(c: str) -> str:
+    """ターミナルの窓。 プロンプトの記号と、打ち込んだコマンドの行が並ぶ。"""
+    rows = []
+    for i, (y, width) in enumerate(((268, 232), (332, 168), (396, 264))):
+        rows.append(f'<rect x="128" y="{y}" width="44" height="14" rx="7" fill="{c}"/>')
+        rows.append(f'<rect x="192" y="{y}" width="{width}" height="14" rx="7" fill="{RULE_SOLID}"/>')
+    return f"""
+    <rect x="72" y="128" width="404" height="292" rx="24" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>
+    <line x1="72" y1="196" x2="476" y2="196" stroke="{INK}" stroke-width="4"/>
+    <circle cx="112" cy="162" r="10" fill="{RULE_SOLID}"/>
+    <circle cx="148" cy="162" r="10" fill="{RULE_SOLID}"/>
+    <circle cx="184" cy="162" r="10" fill="{RULE_SOLID}"/>
+    {"".join(rows)}
+    <rect x="192" y="460" width="20" height="36" fill="{c}"/>
+    <rect x="128" y="460" width="44" height="14" rx="7" fill="{c}" opacity="0.4"/>
+"""
+
+
+def motif_node(c: str) -> str:
+    """ブラウザの外へ出た実行環境。 六角形の中で 1 本の流れが回り、外へ出入りする。"""
+    hexagon = "M 274 96 L 430 186 L 430 366 L 274 456 L 118 366 L 118 186 Z"
+    return f"""
+    <path d="{hexagon}" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>
+    <circle cx="274" cy="276" r="96" fill="none" stroke="{c}" stroke-width="4" stroke-dasharray="16 12"/>
+    <circle cx="274" cy="180" r="20" fill="{c}"/>
+    <rect x="196" y="336" width="156" height="16" rx="8" fill="{RULE_SOLID}"/>
+    <rect x="228" y="252" width="92" height="16" rx="8" fill="{INK}"/>
+    <line x1="40" y1="276" x2="112" y2="276" stroke="{RULE_SOLID}" stroke-width="4"/>
+    <line x1="436" y1="276" x2="508" y2="276" stroke="{RULE_SOLID}" stroke-width="4"/>
+"""
+
+
+def motif_typescript_node(c: str) -> str:
+    """型の枠が、サーバー側の値を受け止める。 通る値と弾かれる値を 1 組だけ描く。"""
+    return f"""
+    <rect x="96" y="128" width="356" height="120" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>
+    <rect x="136" y="176" width="128" height="20" rx="10" fill="{INK}"/>
+    <rect x="288" y="176" width="88" height="20" rx="10" fill="{c}"/>
+    <line x1="274" y1="248" x2="274" y2="308" stroke="{RULE_SOLID}" stroke-width="4"/>
+    <rect x="96" y="308" width="164" height="120" rx="20" fill="{c}" opacity="0.14"/>
+    <rect x="96" y="308" width="164" height="120" rx="20" fill="none" stroke="{c}" stroke-width="4"/>
+    <path d="M 148 372 L 172 396 L 212 344" fill="none" stroke="{c}" stroke-width="8" stroke-linecap="round"/>
+    <rect x="288" y="308" width="164" height="120" rx="20" fill="none" stroke="{RULE_SOLID}" stroke-width="4" stroke-dasharray="10 8"/>
+    <line x1="336" y1="348" x2="404" y2="392" stroke="{RULE_SOLID}" stroke-width="8" stroke-linecap="round"/>
+    <line x1="404" y1="348" x2="336" y2="392" stroke="{RULE_SOLID}" stroke-width="8" stroke-linecap="round"/>
+"""
+
+
+def motif_db_design(c: str) -> str:
+    """1 枚の表が 2 つに分かれ、キーでつながる。 正規化の核を 1 図にする。"""
+    def table(x: int, y: int, accent: bool) -> str:
+        bar = c if accent else RULE_SOLID
+        rows = "".join(
+            f'<rect x="{x + 24}" y="{y + 76 + i * 40}" width="120" height="14" rx="7" fill="{RULE_SOLID}"/>'
+            for i in range(3)
+        )
+        return f"""
+    <rect x="{x}" y="{y}" width="168" height="216" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="4"/>
+    <rect x="{x}" y="{y}" width="168" height="52" rx="20" fill="{bar}"/>
+    <rect x="{x}" y="{y + 32}" width="168" height="20" fill="{bar}"/>
+    {rows}"""
+    return f"""
+    {table(56, 168, True)}
+    {table(324, 168, False)}
+    <line x1="224" y1="276" x2="324" y2="276" stroke="{c}" stroke-width="4"/>
+    <circle cx="224" cy="276" r="14" fill="{c}"/>
+    <circle cx="324" cy="276" r="14" fill="{PAPER}" stroke="{c}" stroke-width="4"/>
+    <rect x="188" y="420" width="172" height="14" rx="7" fill="{RULE}"/>
+"""
+
+
 SPECS = {
+    "cli-basics": {
+        "title": "コマンドライン",
+        "title_size": 108,
+        "subtitle": "入門",
+        "motif": motif_cli,
+    },
+    "node-basics": {
+        "title": "Node.js",
+        "title_size": 152,
+        "subtitle": "入門",
+        "motif": motif_node,
+    },
+    "typescript-node-basics": {
+        "title": "TypeScript",
+        "title_size": 132,
+        "subtitle": "入門（サーバー）",
+        "motif": motif_typescript_node,
+    },
+    "db-design-basics": {
+        "title": "データベース設計",
+        "title_size": 96,
+        "subtitle": "入門",
+        "motif": motif_db_design,
+    },
     "salesforce-dev-basics": {
         "title": "Salesforce",
         "title_size": 132,

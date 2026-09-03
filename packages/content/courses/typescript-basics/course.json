@@ -19,5 +19,315 @@
     "m7-oop": "M7. クラスとインターフェース",
     "m8-async": "M8. 非同期処理",
     "m9-practice": "M9. 実務への接続"
+  },
+  "exercises": {
+    "0-1": [
+      {
+        "id": "S0-Ch00-011-string-plus-number",
+        "title": "演習: 文字列と数値を + でつなぐと何が起きるか"
+      },
+      {
+        "id": "S0-Ch00-012-error-timing",
+        "title": "演習: 型の取り違えに気づけるのはいつか"
+      },
+      {
+        "id": "S1-Ch00-013-type-erasure",
+        "title": "演習: 型は変換時に消える"
+      }
+    ],
+    "0-2": [
+      {
+        "id": "S0-Ch00-021-print-order-lines",
+        "title": "演習: 文字列と計算結果を順に表示する"
+      },
+      {
+        "id": "S0-Ch00-022-fix-unterminated-string",
+        "title": "演習: 閉じていない引用符を直す"
+      },
+      {
+        "id": "S1-Ch00-023-type-annotation-erased",
+        "title": "演習: 変換後の JavaScript から消えるもの"
+      }
+    ],
+    "1-1": [
+      {
+        "id": "S1-Ch01-111-declare-three-vars",
+        "title": "演習: 3 つの値をふさわしいキーワードで宣言する"
+      },
+      {
+        "id": "S1-Ch01-112-fix-const-reassign",
+        "title": "演習: const への再代入を直す"
+      },
+      {
+        "id": "S2-Ch01-113-rewrite-var",
+        "title": "演習: var を書き直して二度宣言に気づく"
+      }
+    ],
+    "1-2": [
+      {
+        "id": "S1-Ch01-121-annotate-four-vars",
+        "title": "演習: 4 つの変数に型注釈を付けて宣言する"
+      },
+      {
+        "id": "S1-Ch01-122-fix-string-to-number",
+        "title": "演習: number 型の変数に入れる値を直す"
+      },
+      {
+        "id": "S2-Ch01-123-declare-without-initializer",
+        "title": "演習: 初期値のない変数は undefined から始まる"
+      }
+    ],
+    "1-3": [
+      {
+        "id": "S1-Ch02-131-coffee-total",
+        "title": "演習: 小計・消費税額・合計を計算する"
+      },
+      {
+        "id": "S1-Ch02-132-boolean-flags",
+        "title": "演習: 3 つの状態を真偽値で表す"
+      },
+      {
+        "id": "S2-Ch02-133-float-compare",
+        "title": "演習: 小数の誤差で比較が外れるのを直す"
+      }
+    ],
+    "1-4": [
+      {
+        "id": "S1-Ch03-141-order-message",
+        "title": "演習: テンプレートリテラルで注文メッセージを組み立てる"
+      },
+      {
+        "id": "S1-Ch03-142-fix-template-literal",
+        "title": "演習: 埋め込みが働かない文字列を直す"
+      },
+      {
+        "id": "S2-Ch03-143-string-plus-number",
+        "title": "演習: 文字列のまま足し算していたのを直す"
+      }
+    ],
+    "1-5": [
+      {
+        "id": "S1-Ch01-151-order-status",
+        "title": "演習: 取りうる値だけを許す変数を宣言する"
+      },
+      {
+        "id": "S1-Ch01-152-fix-literal-case",
+        "title": "演習: リテラル型の大文字・小文字を直す"
+      },
+      {
+        "id": "S2-Ch01-153-union-employee-id",
+        "title": "演習: 数値と文字列のどちらも受け取れる変数"
+      }
+    ],
+    "1-6": [
+      {
+        "id": "S1-Ch01-161-optional-fields",
+        "title": "演習: 「値がないこともある」を型で表す"
+      },
+      {
+        "id": "S1-Ch01-162-typeof-primitives",
+        "title": "演習: typeof の結果を確かめる"
+      },
+      {
+        "id": "S2-Ch01-163-possibly-undefined",
+        "title": "演習: possibly undefined を止めてくれる理由"
+      }
+    ],
+    "2-1": [
+      {
+        "id": "S1-Ch01-211-block-scope-fix",
+        "title": "演習: ブロックの外から見えない変数を直す"
+      },
+      {
+        "id": "S1-Ch01-212-shadowing-predict",
+        "title": "演習: シャドーイングの出力を予想して確かめる"
+      },
+      {
+        "id": "S2-Ch01-213-fix-block-discount",
+        "title": "演習: ブロックの中の計算結果が外に届かない"
+      }
+    ],
+    "2-2": [
+      {
+        "id": "S1-Ch05-221-member-rank",
+        "title": "演習: ポイントで会員ランクを分ける"
+      },
+      {
+        "id": "S1-Ch05-222-payment-label",
+        "title": "演習: 三項演算子で表示用の文字列を選ぶ"
+      },
+      {
+        "id": "S2-Ch05-223-fix-else-if-order",
+        "title": "演習: else if の順序が結果を変える"
+      }
+    ],
+    "2-3": [
+      {
+        "id": "S1-Ch05-231-truthy-falsy-six",
+        "title": "演習: 6 つの値の truthy / falsy を確かめる"
+      },
+      {
+        "id": "S1-Ch05-232-note-default-value",
+        "title": "演習: 値がないときの既定値を 2 通りで書く"
+      },
+      {
+        "id": "S2-Ch05-233-narrow-coupon-code",
+        "title": "演習: undefined かもしれない値を絞り込んでから使う"
+      }
+    ],
+    "2-4": [
+      {
+        "id": "S1-Ch05-241-payment-method-switch",
+        "title": "演習: 支払い方法を switch で分ける"
+      },
+      {
+        "id": "S1-Ch05-242-fix-missing-break",
+        "title": "演習: break を書き忘れた switch を直す"
+      },
+      {
+        "id": "S2-Ch05-243-range-needs-if",
+        "title": "演習: 範囲の条件は switch では書けない"
+      }
+    ],
+    "3-1": [
+      {
+        "id": "S2-Ch04-311-declare-typed-arrays",
+        "title": "演習: 3 種類の配列を型注釈付きで宣言する"
+      },
+      {
+        "id": "S2-Ch04-312-fix-mixed-number-array",
+        "title": "演習: number[] に紛れ込んだ文字列を直す"
+      },
+      {
+        "id": "S2-Ch04-313-second-and-last",
+        "title": "演習: 要素数が変わっても最後の要素を取り出す"
+      }
+    ],
+    "3-2": [
+      {
+        "id": "S2-Ch04-321-update-and-push",
+        "title": "演習: 配列の書き換えと追加を順に確かめる"
+      },
+      {
+        "id": "S2-Ch04-322-for-of-total",
+        "title": "演習: for-of で 1 件ずつ表示しながら合計する"
+      },
+      {
+        "id": "S2-Ch04-323-sum-over-threshold",
+        "title": "演習: 条件に当たった要素だけを合計する"
+      }
+    ],
+    "3-3": [
+      {
+        "id": "S2-Ch08-331-task-object",
+        "title": "演習: オブジェクトを作って表示用に整える"
+      },
+      {
+        "id": "S2-Ch08-332-fix-missing-property",
+        "title": "演習: 足りないプロパティを補う"
+      },
+      {
+        "id": "S2-Ch08-333-fix-two-mistakes",
+        "title": "演習: 型の取り違えとプロパティ名のタイポを直す"
+      }
+    ],
+    "3-4": [
+      {
+        "id": "S2-Ch08-341-employee-type",
+        "title": "演習: 型エイリアスで社員の型を作る"
+      },
+      {
+        "id": "S2-Ch08-342-employee-list",
+        "title": "演習: 型エイリアスの配列を for-of で回す"
+      },
+      {
+        "id": "S2-Ch08-343-optional-department",
+        "title": "演習: 省略されたプロパティに既定値を用意する"
+      }
+    ],
+    "4-1": [
+      {
+        "id": "S2-Ch07-411-describe-product",
+        "title": "演習: 商品名と価格から説明文を返す関数を作る"
+      },
+      {
+        "id": "S2-Ch07-412-stock-label",
+        "title": "演習: 早期リターンで在庫ラベルを返す"
+      },
+      {
+        "id": "S3-Ch07-413-fix-calc-discount",
+        "title": "演習: 壊れた割引計算の関数を直す"
+      }
+    ],
+    "4-2": [
+      {
+        "id": "S2-Ch07-421-arrow-upper-label",
+        "title": "演習: 関数宣言をアロー関数に書き換える"
+      },
+      {
+        "id": "S2-Ch07-422-concise-arrow-pair",
+        "title": "演習: 中かっこと return を省いた 1 行のアロー関数"
+      },
+      {
+        "id": "S3-Ch07-423-fix-use-before-declaration",
+        "title": "演習: 宣言より前でアロー関数を呼べない"
+      }
+    ],
+    "4-3": [
+      {
+        "id": "S2-Ch07-431-price-label-default",
+        "title": "演習: デフォルト引数で割引率を省略できるようにする"
+      },
+      {
+        "id": "S2-Ch07-432-join-names-rest",
+        "title": "演習: 残余引数でいくつでも名前を受け取る"
+      },
+      {
+        "id": "S3-Ch07-433-spread-call-fix",
+        "title": "演習: 配列を残余引数の関数に渡す"
+      }
+    ],
+    "4-4": [
+      {
+        "id": "S2-Ch07-441-show-product-void",
+        "title": "演習: 表示するだけの関数と void"
+      },
+      {
+        "id": "S2-Ch07-442-formatter-type",
+        "title": "演習: 関数の型に名前を付けて使い回す"
+      },
+      {
+        "id": "S3-Ch07-443-return-type-annotation",
+        "title": "演習: エラーが呼び出し側で出る理由を直す"
+      }
+    ],
+    "4-5": [
+      {
+        "id": "S2-Ch09-451-bracket-all-map",
+        "title": "演習: map で全要素を飾り付けた新しい配列を作る"
+      },
+      {
+        "id": "S2-Ch09-452-filter-high-prices",
+        "title": "演習: filter で条件に合う要素だけ取り出す"
+      },
+      {
+        "id": "S3-Ch09-453-in-stock-labels",
+        "title": "演習: filter と map をつなげて絞り込みと変換をする"
+      }
+    ],
+    "4-6": [
+      {
+        "id": "S2-Ch07-461-destructure-product",
+        "title": "演習: 分割代入で必要なプロパティだけ取り出す"
+      },
+      {
+        "id": "S2-Ch07-462-label-destructured-param",
+        "title": "演習: 分割代入引数でオブジェクトを受け取る"
+      },
+      {
+        "id": "S3-Ch07-463-options-object-search",
+        "title": "演習: 並んだ引数を Options Object にまとめる"
+      }
+    ]
   }
 }

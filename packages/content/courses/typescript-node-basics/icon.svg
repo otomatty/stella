@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- サーバー側で型が値を受け止める: 箱の中のチェック (thumbnail の motif_typescript_node の核)。 -->
+  <rect x="2.5" y="3.5" width="19" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M7 12.2 L10.5 15.7 L17 8.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

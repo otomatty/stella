@@ -14,6 +14,8 @@
 
 主軸方向の寄せ方を決めるのが **justify-content** です。
 
+![横に並べた子の下に主軸を示す矢印が伸びている。justify-contentはこの軸上のどこに子を寄せるかを決める](t1-justify/assets/main-axis.svg)
+
 ```css
 .header {
   display: flex;

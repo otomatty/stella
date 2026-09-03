@@ -41,8 +41,9 @@ const user = { name: "田中", age: 28 };
 
 他の整形ツールは設定項目が数百ありましたが、Prettierは意図的に絞っています。**これは欠陥ではなく設計思想です。**
 
+プロジェクト直下に `.prettierrc` を置きます。
+
 ```json
-// .prettierrc
 {
   "semi": true,
   "singleQuote": false

@@ -34,6 +34,8 @@ HTML/CSS 入門では、余白を `margin-left` や `margin-top` のように上
 
 対応は次のとおりです。`padding` にも同じ形があります。
 
+![横書きでは同じ結果だが、右から書く言語ではmargin-leftは左のままずれ、margin-inline-startは文の始まり側に付く](t1-margin-inline/assets/physical-vs-logical.svg)
+
 | 従来(横書き) | 論理プロパティ |
 | --- | --- |
 | `margin-left` / `margin-right` | `margin-inline` |

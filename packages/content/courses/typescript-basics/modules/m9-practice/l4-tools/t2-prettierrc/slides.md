@@ -40,8 +40,9 @@ TypeScript入門 — Module 9 / レッスン9-4
 
 ## 設定ファイル
 
+プロジェクト直下の `.prettierrc`。
+
 ```json
-// .prettierrc
 {
   "semi": true,
   "singleQuote": false

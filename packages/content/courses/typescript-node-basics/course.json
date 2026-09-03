@@ -2,13 +2,18 @@
   "title": "TypeScript 入門（サーバー）",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】サーバー側で TypeScript の型を使い、Node.js から小さなプログラムを書く研修。フロントエンドの TypeScript 入門とは別講座で、クリアは共有しない。",
+  "description": "サーバー側の TypeScript 研修。型の基本・関数の型・オブジェクトの型を Node.js で動かしながら学び、外から来る値を境界で確認する書き方まで通す。",
   "header": "TypeScript 入門（サーバー）",
   "tenantId": "ses",
   "prerequisites": ["node-basics"],
   "canDo": "サーバー側の TypeScript で型を付けて、Node.js から小さなプログラムを書ける",
   "theme": "サーバーとデータの基盤",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-setup": "M1. 実行環境",
+    "m2-types": "M2. 基本の型",
+    "m3-functions": "M3. 関数の型",
+    "m4-objects": "M4. オブジェクトの型",
+    "m5-boundary": "M5. 外から来る値"
   }
 }

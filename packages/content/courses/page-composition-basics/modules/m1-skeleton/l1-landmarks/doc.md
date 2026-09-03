@@ -24,6 +24,8 @@
 </body>
 ```
 
+![headerの下にmain、その下にfooterが並ぶページの骨格](t1-landmark-elements/assets/page-landmarks.svg)
+
 - `header` … ページ上部の帯。サイト名とナビの置き場所
 - `nav` … サイト内を移動するリンクの集まり。ここでは `header` の中に置く
 - `main` … このページだけの本文。ページの主役

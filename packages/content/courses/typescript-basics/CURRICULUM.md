@@ -4,6 +4,8 @@
 
 前提講座: **JavaScript 入門(`javascript-basics`)**。言語の基礎と DOM 操作を通してから、型を足します(`course.json` の `prerequisites` に対応)。ITのきほん → HTML/CSS 入門は、JavaScript 入門の前提として先に通るので、ここには重ねて書きません。後続は準備中の `react-basics`(npm とビルドツール入門も前提)と `fetch-api-basics`。バックエンドの TypeScript は別講座 (`typescript-node-basics`) で、この講座のクリアとは共有しません。
 
+コード演習: VS Code 拡張の TypeScript 採点(QuickJS)。`course.json` の `exercises` で M0〜M4 の 22 レッスンに 3 問ずつ配線しています(計 66 問。詳細は末尾の「コード演習」)。
+
 **全10モジュール(M0〜M9)/ 42レッスン / 162トピック**(動画総時間の目安 約7時間)
 
 | | モジュール | ディレクトリ | L | T | 状態 |
@@ -186,3 +188,44 @@ L1-1 変数(4) / L1-2 型注釈と型推論(5) / L1-3 数値と真偽値(4) / L1
 
 ### L9-4 PrettierとESLint
 9-4-1 Prettier / 9-4-2 設定は最小限にする / 9-4-3 ESLint / 9-4-4 自動で回す
+
+---
+
+## コード演習(VS Code 拡張)
+
+手を動かす部分は **VS Code 拡張 (`falcon.informal`) のコード演習**で、`course.json` の `exercises` が正本です(課題本体は `@falcon/shared` の `src/problems/`、採点は QuickJS)。
+
+**この講座の修了には VS Code 拡張が要ります。** 演習を配線していない他の講座と違い、配線した 66 問は `type: "code"` のレッスンとして並び、既定の `require_all_lessons` に数えられます。Web だけではコード演習のレッスンを完了にできない(拡張への引き継ぎ画面が出る)ため、スライド → まとめ → 確認クイズだけでは修了になりません。
+
+**M0〜M4 の 22 レッスンに 3 問ずつ、計 66 問**を配線しています。問題 ID の 3 桁(`S1-Ch01-`**`121`**`-...`)がレッスン番号と対応します(`121` = L1-2 の 1 問目)。3 問はレッスンの takeaway を「新しい構文を書く」「壊れたコードを直す」「型や評価結果が実際どうなるかを確かめる」の組み合わせで押さえます(並びはレッスンごとに違います)。エントリファイルは `main.ts` です(`language: "typescript"`)。
+
+M5 以降(型システム・ジェネリクス・クラス・非同期・実務)は、対応する問題が問題集にまだ無いため配線していません。
+
+`src/problems/` にはこの 66 問のほかに **JavaScript の一般問題が 276 問**あります(`language` 未指定 = `javascript`、エントリは `main.js`)。こちらはレッスン単位ではなく**演習だけの段階(S0〜S5)で並んだ独立したカリキュラム**で、本講座には載せていません。
+
+配線した演習は `type: "code"` のレッスンとして並びます。修了条件の判定では、**`require_assignment_pass` が数えるのは `type: "assignment"` のレッスンだけ**なので(`apps/api/src/lib/stage-auto-complete.ts`)、コード演習は `require_all_lessons`(全レッスンの完了)の側で必須になります。どちらにせよ**講座に載せた演習はクリアの条件に入る**ので、載せる問題を増やすことは修了要件をそのまま増やすことになります。
+
+| レッスン | コード演習 |
+|---|---|
+| L0-1 なぜTypeScriptを学ぶのか | `S0-Ch00-011-string-plus-number` / `S0-Ch00-012-error-timing` / `S1-Ch00-013-type-erasure` |
+| L0-2 Playgroundを使う | `S0-Ch00-021-print-order-lines` / `S0-Ch00-022-fix-unterminated-string` / `S1-Ch00-023-type-annotation-erased` |
+| L1-1 変数 | `S1-Ch01-111-declare-three-vars` / `S1-Ch01-112-fix-const-reassign` / `S2-Ch01-113-rewrite-var` |
+| L1-2 型注釈と型推論 | `S1-Ch01-121-annotate-four-vars` / `S1-Ch01-122-fix-string-to-number` / `S2-Ch01-123-declare-without-initializer` |
+| L1-3 数値と真偽値 | `S1-Ch02-131-coffee-total` / `S1-Ch02-132-boolean-flags` / `S2-Ch02-133-float-compare` |
+| L1-4 文字列 | `S1-Ch03-141-order-message` / `S1-Ch03-142-fix-template-literal` / `S2-Ch03-143-string-plus-number` |
+| L1-5 リテラル型とユニオン型 | `S1-Ch01-151-order-status` / `S1-Ch01-152-fix-literal-case` / `S2-Ch01-153-union-employee-id` |
+| L1-6 nullとundefined | `S1-Ch01-161-optional-fields` / `S1-Ch01-162-typeof-primitives` / `S2-Ch01-163-possibly-undefined` |
+| L2-1 ブロックとスコープ | `S1-Ch01-211-block-scope-fix` / `S1-Ch01-212-shadowing-predict` / `S2-Ch01-213-fix-block-discount` |
+| L2-2 if文 | `S1-Ch05-221-member-rank` / `S1-Ch05-222-payment-label` / `S2-Ch05-223-fix-else-if-order` |
+| L2-3 絞り込み | `S1-Ch05-231-truthy-falsy-six` / `S1-Ch05-232-note-default-value` / `S2-Ch05-233-narrow-coupon-code` |
+| L2-4 switch文 | `S1-Ch05-241-payment-method-switch` / `S1-Ch05-242-fix-missing-break` / `S2-Ch05-243-range-needs-if` |
+| L3-1 配列 | `S2-Ch04-311-declare-typed-arrays` / `S2-Ch04-312-fix-mixed-number-array` / `S2-Ch04-313-second-and-last` |
+| L3-2 配列を使う | `S2-Ch04-321-update-and-push` / `S2-Ch04-322-for-of-total` / `S2-Ch04-323-sum-over-threshold` |
+| L3-3 オブジェクト | `S2-Ch08-331-task-object` / `S2-Ch08-332-fix-missing-property` / `S2-Ch08-333-fix-two-mistakes` |
+| L3-4 型エイリアス | `S2-Ch08-341-employee-type` / `S2-Ch08-342-employee-list` / `S2-Ch08-343-optional-department` |
+| L4-1 関数の基本 | `S2-Ch07-411-describe-product` / `S2-Ch07-412-stock-label` / `S3-Ch07-413-fix-calc-discount` |
+| L4-2 関数の書き方 | `S2-Ch07-421-arrow-upper-label` / `S2-Ch07-422-concise-arrow-pair` / `S3-Ch07-423-fix-use-before-declaration` |
+| L4-3 引数 | `S2-Ch07-431-price-label-default` / `S2-Ch07-432-join-names-rest` / `S3-Ch07-433-spread-call-fix` |
+| L4-4 戻り値と関数の型 | `S2-Ch07-441-show-product-void` / `S2-Ch07-442-formatter-type` / `S3-Ch07-443-return-type-annotation` |
+| L4-5 コールバック | `S2-Ch09-451-bracket-all-map` / `S2-Ch09-452-filter-high-prices` / `S3-Ch09-453-in-stock-labels` |
+| L4-6 分割代入とOptions Object | `S2-Ch07-461-destructure-product` / `S2-Ch07-462-label-destructured-param` / `S3-Ch07-463-options-object-search` |
