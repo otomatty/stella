@@ -1,0 +1,14 @@
+{
+  "title": "Python 入門",
+  "category": "バックエンド",
+  "color": "green",
+  "description": "【準備中】サーバー側の作業を自動化するための Python 入門。",
+  "header": "Python入門",
+  "tenantId": "ses",
+  "prerequisites": ["typescript-node-basics"],
+  "canDo": "Python でスクリプトを書き、標準ライブラリでファイルとデータを扱える",
+  "theme": "サーバーとデータの基盤",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

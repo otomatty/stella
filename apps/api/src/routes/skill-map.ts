@@ -39,6 +39,7 @@
 import { Hono } from "hono";
 import { isDiscoveryVisible } from "@falcon/shared/discovery/types";
 import { appearancePrerequisitesOf, appearancesOf } from "@falcon/shared/skill-map/appearances";
+import { dropIslandsUnknownToClient } from "@falcon/shared/skill-map/islands";
 import {
   evaluateSkillMap,
   isSelectableVisibility,
@@ -282,16 +283,23 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const revealDev = wantsDevReveal(c);
-    // 段を増やしたことを知らない画面には幽霊ノードを配らない (`SKILL_MAP_TIERS_PARAM`)。
-    // 開発者表示は自分の画面でしか使わないので、そちらは常に素通し。
-    const ghostStars = revealDev || acceptsGhostStars(c.req.query(SKILL_MAP_TIERS_PARAM));
+    // 段を増やしたこと / 新しい島を知らない画面には配らない (`SKILL_MAP_TIERS_PARAM`)。
+    // 開発者表示は自分の画面でしか使わないので、幽霊ノードは常に素通し。
+    // DevOps 島は旧 layout が本土の扇に混ぜて橋を引くので、申告が無いと落とす
+    // (FAB オンの古いタブでも同じ — レイアウト側がカテゴリを知らない)。
+    const declaredTiers = c.req.query(SKILL_MAP_TIERS_PARAM);
+    const ghostStars = revealDev || acceptsGhostStars(declaredTiers);
     // 修了条件を満たしたまま未クリアの星をここで埋める (修了証の自動発行)。イベントを
     // 取りこぼした受講者 (自動発行の導入前に達成していた等) が、マップを開いた時点で
     // クリア扱いになる。best-effort なので失敗してもマップは返る。
     // 埋めたぶんは応答の `cleared_stages` に載せ、画面がクリアの通知とシェル側の
     // 受講ステージ一覧の取り直しに使う。
     const clearedStages = await autoCompleteEligibleStages(db, caller, caller.id, clientIp(c));
-    const source = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
+    const loaded = await loadSkillMapSource(db, caller, { showAllIslands: revealDev });
+    const source = {
+      ...loaded,
+      stages: dropIslandsUnknownToClient(loaded.stages, declaredTiers),
+    };
     const result = evaluateSkillMapFor(source);
 
     if (result.cycles.length > 0) {

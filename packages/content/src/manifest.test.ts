@@ -835,6 +835,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     expect(parentOf("claude-code-basics")).toBe("claude-chat-basics");
     expect(parentOf("claude-code-team")).toBe("claude-code-skills");
     expect(parentOf("react-basics")).toBe("npm-build-basics");
+    expect(parentOf("kubernetes-basics")).toBe("cicd-basics");
     // 前提 1 つの講座は省略 = その前提。
     expect(parentOf("html-css-basics")).toBe("it-basics");
     // 複製は扇ごとの親 (appearancePrerequisites) なので parent を持たない。
@@ -923,6 +924,18 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
         "web-security-basics",
         "db-design-basics",
         "docker-basics",
+        "python-basics",
+      ].sort(),
+    );
+    expect(byCategory("DevOps")).toEqual(
+      [
+        "devops-basics",
+        "linux-ops-basics",
+        "networking-ops-basics",
+        "cicd-basics",
+        "kubernetes-basics",
+        "terraform-basics",
+        "observability-basics",
       ].sort(),
     );
   });
@@ -941,12 +954,40 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     expect(courses.find((c) => c.id === "auth-basics")?.prerequisites).toEqual(["rest-api-basics"]);
   });
 
-  it("テストと CI は開発を知ってからの発展概念 (サーバー TS → Python CI → テスト設計)", () => {
-    expect(courses.find((c) => c.id === "python-testing-ci-basics")?.prerequisites).toEqual([
+  it("テストと CI は開発を知ってからの発展概念 (サーバー TS → Python → Python CI → テスト設計)", () => {
+    expect(courses.find((c) => c.id === "python-basics")?.prerequisites).toEqual([
       "typescript-node-basics",
+    ]);
+    expect(courses.find((c) => c.id === "python-testing-ci-basics")?.prerequisites).toEqual([
+      "python-basics",
     ]);
     expect(courses.find((c) => c.id === "test-design-basics")?.prerequisites).toEqual([
       "python-testing-ci-basics",
+    ]);
+  });
+
+  it("DevOps 島は Python 入門の先に現れ、入口から Linux 運用と IaC に分かれる", () => {
+    expect(courses.find((c) => c.id === "devops-basics")?.category).toBe("DevOps");
+    expect(courses.find((c) => c.id === "devops-basics")?.prerequisites).toEqual(["python-basics"]);
+    expect(courses.find((c) => c.id === "linux-ops-basics")?.prerequisites).toEqual([
+      "devops-basics",
+    ]);
+    expect(courses.find((c) => c.id === "networking-ops-basics")?.prerequisites).toEqual([
+      "linux-ops-basics",
+    ]);
+    expect(courses.find((c) => c.id === "cicd-basics")?.prerequisites).toEqual([
+      "networking-ops-basics",
+    ]);
+    expect(courses.find((c) => c.id === "kubernetes-basics")?.prerequisites).toEqual([
+      "cicd-basics",
+      "docker-basics",
+    ]);
+    expect(courses.find((c) => c.id === "kubernetes-basics")?.parent).toBe("cicd-basics");
+    expect(courses.find((c) => c.id === "terraform-basics")?.prerequisites).toEqual([
+      "devops-basics",
+    ]);
+    expect(courses.find((c) => c.id === "observability-basics")?.prerequisites).toEqual([
+      "cicd-basics",
     ]);
   });
 

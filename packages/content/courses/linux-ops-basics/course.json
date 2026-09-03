@@ -1,0 +1,14 @@
+{
+  "title": "Linux 運用入門",
+  "category": "DevOps",
+  "color": "slate",
+  "description": "【準備中】サーバーに入ってからの Linux 運用入門。",
+  "header": "Linux運用入門",
+  "tenantId": "ses",
+  "prerequisites": ["devops-basics"],
+  "canDo": "Linux サーバーでプロセス・権限・サービスを調べて直せる",
+  "theme": "開発と運用をつなぐ",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

@@ -81,10 +81,10 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
 const app = new Hono<{ Bindings: Env }>().route("/", skillMapRoute);
 const env = {} as Env;
 
-/** 既定は「4 段を描ける画面」= 現行の web が付けるクエリ引数つき。 */
+/** 既定は「4 段 + DevOps 島を描ける画面」= 現行の web が付けるクエリ引数つき。 */
 const get = (path: string, auth = true) =>
   app.request(
-    `${path}${path.includes("?") ? "&" : "?"}tiers=2`,
+    `${path}${path.includes("?") ? "&" : "?"}tiers=3`,
     auth ? { headers: { Authorization: "Bearer test" } } : {},
     env,
   );
@@ -92,6 +92,10 @@ const get = (path: string, auth = true) =>
 /** 段を知らない画面 (デプロイ途中の旧 bundle / 開いたままの古いタブ)。 */
 const getLegacy = (path: string) =>
   app.request(path, { headers: { Authorization: "Bearer test" } }, env);
+
+/** `tiers=2` までを知る画面 (DevOps 島を島として描けない)。 */
+const getTiers2 = (path: string) =>
+  app.request(`${path}?tiers=2`, { headers: { Authorization: "Bearer test" } }, env);
 
 /**
  * 一本道 a → b → c → d → e → f。a はクリア済みなので、視界の起点は a (cleared) と
@@ -173,6 +177,34 @@ describe("GET /api/skill-map/mine", () => {
     // 必ず 400 になる腕試しボタンまで出してしまう。
     expect(stages.get("id-e")).toBeUndefined();
     expect(stages.get("id-f")).toBeUndefined();
+  });
+
+  it("DevOps 島は島として描ける画面にだけ配る (旧 layout が本土に混ぜないように)", async () => {
+    const stage = (slug: string, category: string, prerequisites: string[]) => ({
+      id: `id-${slug}`,
+      slug,
+      title: slug,
+      category,
+      prerequisites,
+      theme: category === "DevOps" ? "開発と運用をつなぐ" : "サーバーとデータの基盤",
+    });
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        stage("python-basics", "バックエンド", ["typescript-node-basics"]),
+        stage("devops-basics", "DevOps", ["python-basics"]),
+      ],
+      clearedStageIds: new Set(["id-python-basics"]),
+      activeStageId: undefined,
+    });
+    const idsOf = async (res: Response) => {
+      const body = (await res.json()) as { skill_map: { stages: StagePayload[] } };
+      return body.skill_map.stages.map((row) => row.id).sort();
+    };
+    expect(await idsOf(await getLegacy("/api/skill-map/mine"))).toEqual(["id-python-basics"]);
+    expect(await idsOf(await getTiers2("/api/skill-map/mine"))).toEqual(["id-python-basics"]);
+    expect(await idsOf(await get("/api/skill-map/mine"))).toEqual(
+      ["id-devops-basics", "id-python-basics"].sort(),
+    );
   });
 
   it("修了の分母は視界で落とす前の総数 (進むたびに分母が増えない)", async () => {

@@ -122,6 +122,8 @@ const ROUTE_ACCENTS = new Map<string, string>([
   ["資格で示す基礎力", "167 139 250"],
   ["AI駆動開発", "232 121 249"], // fuchsia-400
   ["AI と働く力", "232 121 249"],
+  ["DevOps", "251 146 60"], // orange-400
+  ["開発と運用をつなぐ", "251 146 60"],
 ]);
 
 function routeAccentOf(sector: string): string | undefined {
@@ -331,7 +333,7 @@ export const SkillTree = ({
    * (中心から 1,000px 超) にあり、パンしなければ存在に気づけない。盤面の上のチップで
    * 直接飛べるようにし、視界の外にある間は画面端に方向の矢印も出す (`offscreenMarkers`)。
    *
-   * 表示名は「本土」ではなく「開発スキル」— 隣に並ぶ島の名前 (AWS資格 / AI駆動開発)
+   * 表示名は「本土」ではなく「開発スキル」— 隣に並ぶ島の名前 (AWS資格 / AI駆動開発 / DevOps)
    * が内容の名前なので、場所の名前を混ぜると凡例として読めない。
    *
    * 矢印は名前が全部出る倍率 (`showsAllLabels`) では消す — 寄って読んでいるときに

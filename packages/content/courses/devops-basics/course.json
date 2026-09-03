@@ -1,0 +1,14 @@
+{
+  "title": "DevOps 入門",
+  "category": "DevOps",
+  "color": "slate",
+  "description": "【準備中】開発と運用をつなぎ、ソフトウェアを継続的に届ける考え方の入門。",
+  "header": "DevOps入門",
+  "tenantId": "ses",
+  "prerequisites": ["python-basics"],
+  "canDo": "DevOps が目指すことを説明し、開発と運用の分担を判断できる",
+  "theme": "開発と運用をつなぐ",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

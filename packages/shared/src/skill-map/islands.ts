@@ -13,6 +13,9 @@
  * 伏せるのはサーバ側 (`loadSkillMapSource`) — 画面で隠すだけだと DevTools で
  * 全部読めてしまい、条件が演出でしかなくなる。
  *
+ * 表示条件は島ごとに変えられる。資格 / AI は ITのきほん、DevOps はバックエンドの
+ * Python 入門、という具合に、本土のどこまで進んだ人にその島を見せるかを書く。
+ *
  * 表示条件は前提 (`prerequisites`) とは別の軸:
  *   - 前提 = その星を「開ける」条件 (ハードロック。lock_reasons に出る)
  *   - 表示条件 = 島が「地図に現れる」条件 (満たすまで存在も見せない)
@@ -43,6 +46,7 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "AWS資格", requires: ["it-basics"] },
   { category: "情報処理資格", requires: ["it-basics"] },
   { category: "AI駆動開発", requires: ["it-basics"] },
+  { category: "DevOps", requires: ["python-basics"] },
   { category: "Salesforce案件", requires: ["it-basics"] },
 ];
 
@@ -50,6 +54,36 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
 export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
   SKILL_MAP_ISLANDS.map((island) => island.category),
 );
+
+/**
+ * 島カテゴリ → それを**島として描ける**画面の `tiers` 下限。
+ *
+ * 載っていない島 (資格 / AI) は最初からあるので常に配る。載っている島は、申告が
+ * 下限未満の画面には**存在ごと落とす**。旧 bundle の `SKILL_MAP_ISLAND_CATEGORIES`
+ * に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が引かれてしまう
+ * (DevOps の親は `python-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
+ */
+export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
+  DevOps: 3,
+};
+
+/**
+ * 画面が島として描けないカテゴリのステージを落とす。
+ *
+ * `declaredTiers` は `GET /api/skill-map/mine?tiers=` の値。申告なし / 非数は 0。
+ */
+export function dropIslandsUnknownToClient<T extends { category?: string | null }>(
+  stages: readonly T[],
+  declaredTiers: string | undefined,
+): T[] {
+  const parsed = Number.parseInt(declaredTiers ?? "", 10);
+  const version = Number.isFinite(parsed) ? parsed : 0;
+  return stages.filter((stage) => {
+    const min = SKILL_MAP_ISLAND_MIN_TIERS[stage.category ?? ""];
+    return min === undefined || version >= min;
+  });
+}
 
 /**
  * 島の表示条件を適用し、見せてよいステージだけ残す。

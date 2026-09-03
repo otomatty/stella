@@ -28,6 +28,9 @@ apps/api/.dev.vars
 # Git worktrees (local)
 .worktrees
 
+# graphify 知識グラフの生成物（ルールは .cursor/rules/graphify.mdc）
+graphify-out/
+
 # Vite ª vite.config.ts ÇÝÝÉìéêt@C
 vite.config.ts.timestamp-*.mjs
 

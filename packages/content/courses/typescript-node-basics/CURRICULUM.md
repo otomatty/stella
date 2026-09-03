@@ -6,7 +6,7 @@
 
 - **到達目標 (canDo)**: サーバー側の TypeScript で型を付けて、Node.js から小さなプログラムを書ける
 - **前提講座**: `node-basics` (クリアしていないと開けない)
-- **後続 (スキルツリー)**: `rest-api-basics` と `python-testing-ci-basics`。Node.js から出る枝は Git（バック）と本講座の 2 本
+- **後続 (スキルツリー)**: `rest-api-basics` と `python-basics`。Node.js から出る枝は Git（バック）と本講座の 2 本。Python 入門の先にテストと CI、さらにそのクリアで DevOps 島が現れる
 - **フロントエンドの TypeScript 入門 (`typescript-basics`) とは別講座**。クリアは共有しない
 - **参考にしたロードマップ**: roadmap.sh のバックエンドロードマップ
 

@@ -224,13 +224,14 @@ describe("layoutRadialSkillTree", () => {
       node({ id: "root", title: "ITのきほん", category: "基礎", state: "unlocked" }),
       // it-basics 直下 (本土): フロントエンド 1 (html-css) /
       // バックエンド 2 (sql / cli)。Git は appearances で両ルートへ複製する。
-      // 島: AWS資格 1 / 情報処理資格 1 / AI駆動開発 1。
+      // 島: AWS資格 1 / 情報処理資格 1 / AI駆動開発 1 / DevOps 1。
       ...of("基礎", 1, "base"),
       ...of("フロントエンド", 1, "fe"),
       ...of("バックエンド", 2, "be"),
       ...of("AWS資格", 1, "aws"),
       ...of("情報処理資格", 1, "cert"),
       ...of("AI駆動開発", 1, "ai"),
+      ...of("DevOps", 1, "ops"),
     ]);
     expect(closestPair(layout)).toBeGreaterThanOrEqual(STAR_CORE);
   });
@@ -264,7 +265,8 @@ describe("layoutRadialSkillTree", () => {
       ["rest-api-basics", "バックエンド", ["typescript-node-basics"]],
       ["auth-basics", "バックエンド", ["rest-api-basics"]],
       ["web-security-basics", "バックエンド", ["rest-api-basics"]],
-      ["python-testing-ci-basics", "バックエンド", ["typescript-node-basics"]],
+      ["python-basics", "バックエンド", ["typescript-node-basics"]],
+      ["python-testing-ci-basics", "バックエンド", ["python-basics"]],
       ["test-design-basics", "バックエンド", ["python-testing-ci-basics"]],
       [
         "git-basics",
@@ -281,6 +283,13 @@ describe("layoutRadialSkillTree", () => {
       ["claude-code-basics", "AI駆動開発", ["claude-chat-basics", "ai-fluency-basics"]],
       ["claude-code-skills", "AI駆動開発", ["claude-code-basics"]],
       ["claude-code-team", "AI駆動開発", ["claude-code-basics", "claude-code-skills"]],
+      ["devops-basics", "DevOps", ["python-basics"]],
+      ["linux-ops-basics", "DevOps", ["devops-basics"]],
+      ["networking-ops-basics", "DevOps", ["linux-ops-basics"]],
+      ["cicd-basics", "DevOps", ["networking-ops-basics"]],
+      ["kubernetes-basics", "DevOps", ["cicd-basics", "docker-basics"]],
+      ["terraform-basics", "DevOps", ["devops-basics"]],
+      ["observability-basics", "DevOps", ["cicd-basics"]],
     ];
     return rows.map(([id, category, parentIds, appearances]) =>
       node({

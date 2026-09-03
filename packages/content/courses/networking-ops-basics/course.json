@@ -1,0 +1,14 @@
+{
+  "title": "ネットワーク運用入門",
+  "category": "DevOps",
+  "color": "slate",
+  "description": "【準備中】届ける経路を DNS・TLS・ポートで追うネットワーク運用入門。",
+  "header": "ネットワーク運用入門",
+  "tenantId": "ses",
+  "prerequisites": ["linux-ops-basics"],
+  "canDo": "リクエストがサーバーに届く経路を、DNS・TLS・ポートで説明できる",
+  "theme": "開発と運用をつなぐ",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}

@@ -173,16 +173,18 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
 /**
  * この画面が扱える視界の段の版 (API 側は `SKILL_MAP_TIERS_PARAM`)。
  *
- * `2` = `full` / `fog` / `edge` / `hidden` の 4 段を描ける。申告しない画面
- * (デプロイ途中の旧 bundle・開いたままの古いタブ) に、API は幽霊ノード (`edge`) を
- * 配らない — 旧 `describeStar()` はそれを普通のロック星として描き、必ず 400 になる
- * 腕試しボタンまで出してしまうため。
+ * `2` = `full` / `fog` / `edge` / `hidden` の 4 段を描ける。
+ * `3` = それに加え、DevOps を島として描ける (`SKILL_MAP_ISLAND_CATEGORIES` に
+ * 載っている)。申告しない画面 (デプロイ途中の旧 bundle・開いたままの古いタブ)
+ * に、API は幽霊ノード (`edge`) も DevOps 島も配らない — 旧 `describeStar()` は
+ * `edge` を普通のロック星として描き、旧 `layoutRadialSkillTree` は未知の島
+ * カテゴリを本土の扇に混ぜて Python から橋を引いてしまうため。
  *
  * **ヘッダではなくクエリ引数**にしてある。独自ヘッダはサーバの CORS 許可リストに
  * 無いとプリフライトで弾かれ、API をロールバックした瞬間に全ての API 呼び出しが
  * 落ちる。クエリ引数なら CORS の対象外で、知らないサーバは黙って無視する。
  */
-const SKILL_MAP_TIERS = "2";
+const SKILL_MAP_TIERS = "3";
 
 export async function getSkillMap(): Promise<SkillMapMine> {
   const { skill_map, cleared_stages } = await apiFetch<{

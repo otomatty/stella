@@ -1,0 +1,15 @@
+{
+  "title": "Kubernetes 入門",
+  "category": "DevOps",
+  "color": "slate",
+  "description": "【準備中】コンテナをクラスタで動かす Kubernetes 入門。",
+  "header": "Kubernetes入門",
+  "tenantId": "ses",
+  "prerequisites": ["cicd-basics", "docker-basics"],
+  "parent": "cicd-basics",
+  "canDo": "Pod と Service でコンテナをクラスタに載せ、状態を kubectl で確認できる",
+  "theme": "開発と運用をつなぐ",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  }
+}
