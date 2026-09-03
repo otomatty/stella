@@ -389,82 +389,115 @@
     );
   }
 
-  /* Login art column — ブランド 3 色の光の玉がゆっくり漂う面。 罫線だけだと
-     ダークテーマで左の面と地続きに見えるので、 面そのものに色を持たせる。
+  /* ログイン画面のアート面の土台 (WebGL 版が出るまで / 出られないときの夜空)。
 
+     WebGL 版と同じ構図 — 左下から右上へ抜ける帯と、 その上の星。 星は
+     radial-gradient の敷き詰めで描く (要素として並べると数百個ぶんの DOM になる)。
      ぼかしは filter: blur() ではなく radial-gradient の裾で作る — blur は毎フレーム
      再描画が要るが、 グラデーションなら 1 度描いた層を transform で動かすだけで済み、
      合成のみ (GPU) で回る。 終端も transparent ではなく同色の alpha 0 にする
      (sRGB 補間で transparent = 透明な黒に寄り、 裾がくすむため)。 */
-  .login-art-aurora {
+  .login-art-sky {
     position: absolute;
     inset: 0;
     overflow: hidden;
+    background: #141418;
   }
-  .login-art-blob {
+  .login-art-sky-band,
+  .login-art-sky-stars {
     position: absolute;
-    width: 88%;
-    aspect-ratio: 1;
-    border-radius: 9999px;
-    will-change: transform;
-    /* 3 つの周期を互いに素にしてあるので、 重なりの見え方が一巡するのは実質
-       数時間先 = ログインを待つ数十秒のあいだは同じ絵が二度出ない。
-       負の delay は「途中から始める」ため — 3 つが同時に端へ揃うのを避ける。 */
-    animation: var(--blob-path) var(--blob-dur) ease-in-out infinite alternate;
-    animation-delay: var(--blob-delay);
+    /* 帯の向きへ回すので、 回しても面が欠けない大きさを取る。 */
+    inset: -60%;
   }
-  .login-art-blob-1 {
-    left: -18%;
-    top: 42%;
-    background: radial-gradient(
-      closest-side,
-      rgba(230, 47, 154, 0.22) 0%,
-      rgba(230, 47, 154, 0.11) 38%,
-      rgba(230, 47, 154, 0.03) 68%,
-      rgba(230, 47, 154, 0) 100%
-    );
-    --blob-path: login-art-drift-1;
-    --blob-dur: 23s;
-    --blob-delay: -7s;
-  }
-  .login-art-blob-2 {
-    left: 44%;
-    top: -30%;
-    background: radial-gradient(
-      closest-side,
-      rgba(10, 51, 255, 0.26) 0%,
-      rgba(10, 51, 255, 0.13) 38%,
-      rgba(10, 51, 255, 0.04) 68%,
-      rgba(10, 51, 255, 0) 100%
-    );
-    --blob-path: login-art-drift-2;
-    --blob-dur: 31s;
-    --blob-delay: -13s;
-  }
-  .login-art-blob-3 {
-    left: 18%;
-    top: 66%;
-    width: 70%;
-    background: radial-gradient(
-      closest-side,
-      rgba(255, 46, 13, 0.13) 0%,
-      rgba(255, 46, 13, 0.06) 40%,
-      rgba(255, 46, 13, 0.02) 70%,
-      rgba(255, 46, 13, 0) 100%
-    );
-    --blob-path: login-art-drift-3;
-    --blob-dur: 41s;
-    --blob-delay: -29s;
-  }
+  /* 帯。 回した座標系での「上下方向のグラデーション」がそのまま帯の断面になる。
 
-  /* Login art column grid background */
-  .login-art-grid {
+     停止位置が 50% ではなく 52% なのは、 WebGL 版の帯が面の中心ではなく
+     BAND_CENTER = (0.14, 0.12) を通るため。 帯座標に直すと面の中心は帯の中心線から
+     0.044 面高ぶんずれており、 この要素は面の 2.2 倍の高さなので 2% にあたる。
+     ここを 50% のままにすると、 WebGL 版と CSS 版で帯が 40px ほど食い違う。 */
+  .login-art-sky-band {
+    transform: rotate(-54deg);
+    background: linear-gradient(
+      to bottom,
+      rgba(20, 20, 24, 0) 42%,
+      rgba(10, 51, 255, 0.1) 48%,
+      rgba(255, 224, 190, 0.16) 52%,
+      rgba(230, 47, 154, 0.08) 57%,
+      rgba(20, 20, 24, 0) 64%
+    );
+  }
+  .login-art-sky-stars {
+    will-change: transform;
+    /* 帯に沿って流す。 移動量 360px は下のどの背景タイルの整数倍でもあるので、
+       1 周したところで模様が継ぎ目なく戻る (linear + infinite で段差が出ない)。
+       2 層の周期を変えて手前を速くし、 視差で奥行きを出す。 */
+    animation: login-art-sky-drift var(--sky-dur) linear infinite;
+  }
+  /* 帯を埋める細かい星。 回した座標系の上下方向にマスクを掛けて帯の中へ寄せる。 */
+  .login-art-sky-stars-dust {
+    --sky-dur: 320s;
     background-image:
-      linear-gradient(to right, oklch(30% 0.01 260) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(30% 0.01 260) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity: 0.5;
-    mask-image: radial-gradient(ellipse at top right, black, transparent 70%);
+      radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 255, 255, 0.7) 0,
+        rgba(255, 255, 255, 0.7) 0.6px,
+        rgba(255, 255, 255, 0) 1.4px
+      ),
+      radial-gradient(
+        circle at 25% 70%,
+        rgba(198, 214, 255, 0.55) 0,
+        rgba(198, 214, 255, 0.55) 0.6px,
+        rgba(198, 214, 255, 0) 1.3px
+      );
+    background-size:
+      45px 45px,
+      72px 72px;
+    /* 帯と同じ 2% ぶん下へずらす (上の .login-art-sky-band のコメント参照)。 */
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 42%,
+      rgba(0, 0, 0, 1) 52%,
+      rgba(0, 0, 0, 0) 62%
+    );
+  }
+  /* 空全体に散る明るい星。 帯の外にも出るのでマスクは掛けない。 */
+  .login-art-sky-stars-bright {
+    --sky-dur: 200s;
+    background-image:
+      radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 255, 255, 0.9) 0,
+        rgba(255, 255, 255, 0.9) 0.9px,
+        rgba(255, 255, 255, 0) 2.2px
+      ),
+      radial-gradient(
+        circle at 70% 20%,
+        rgba(255, 236, 214, 0.7) 0,
+        rgba(255, 236, 214, 0.7) 0.8px,
+        rgba(255, 236, 214, 0) 2px
+      ),
+      radial-gradient(
+        circle at 20% 80%,
+        rgba(198, 214, 255, 0.6) 0,
+        rgba(198, 214, 255, 0.6) 0.7px,
+        rgba(198, 214, 255, 0) 1.8px
+      );
+    background-size:
+      90px 90px,
+      120px 120px,
+      180px 180px;
+  }
+  /* 縁の減光。 WebGL 版と同じで、 面の端が明るいと隣のログイン面との境が濁る。 */
+  .login-art-sky::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      rgba(20, 20, 24, 0) 25%,
+      rgba(20, 20, 24, 0.55) 75%,
+      rgba(20, 20, 24, 0.8) 100%
+    );
   }
 
   /* Video player placeholder */
@@ -1341,59 +1374,26 @@
 }
 
 /**
- * ログイン画面のアート面を漂う光の玉。
+ * ログイン画面のアート面の夜空を、 帯に沿ってゆっくり流す。
  *
- * 3 本とも「往復」に見えないよう waypoint を非対称に置き、 それぞれ別の軌跡・別の周期で
- * 回す。 動かすのは transform (と scale) だけなので再描画は起きない。
- * `prefers-reduced-motion` では止めて、 初期位置のまま静かな残光として見せる。
+ * 回転は帯の向き (-54deg) で、 移動はその座標系での水平方向 = 帯に沿う向き。
+ * 動かすのは transform だけなので再描画は起きない。 `prefers-reduced-motion` では
+ * 止めて、 初期位置のまま静かな星空として見せる。
  */
-@keyframes login-art-drift-1 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
+@keyframes login-art-sky-drift {
+  from {
+    transform: rotate(-54deg) translate3d(0, 0, 0);
   }
-  35% {
-    transform: translate3d(22%, -18%, 0) scale(1.12);
-  }
-  70% {
-    transform: translate3d(6%, -38%, 0) scale(0.94);
-  }
-  100% {
-    transform: translate3d(34%, -8%, 0) scale(1.06);
-  }
-}
-@keyframes login-art-drift-2 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  40% {
-    transform: translate3d(-26%, 24%, 0) scale(0.9);
-  }
-  75% {
-    transform: translate3d(-8%, 46%, 0) scale(1.14);
-  }
-  100% {
-    transform: translate3d(-34%, 16%, 0) scale(1);
-  }
-}
-@keyframes login-art-drift-3 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  30% {
-    transform: translate3d(30%, -26%, 0) scale(1.2);
-  }
-  65% {
-    transform: translate3d(48%, 8%, 0) scale(0.88);
-  }
-  100% {
-    transform: translate3d(12%, -34%, 0) scale(1.1);
+  to {
+    transform: rotate(-54deg) translate3d(360px, 0, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-art-blob {
+  .login-art-sky-stars {
     animation: none;
     /* 動かさない層に合成レイヤを起こさせない。 will-change を残すと、 静止版を
-       受け取る人にだけ無駄な昇格レイヤが 3 枚残る。 */
+       受け取る人にだけ無駄な昇格レイヤが 2 枚残る。 */
     will-change: auto;
+    transform: rotate(-54deg);
   }
 }

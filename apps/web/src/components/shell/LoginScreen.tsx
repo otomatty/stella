@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Google } from "@/lib/icons";
 import { Brand } from "@/components/common/Brand";
-import { LoginAurora } from "@/components/shell/LoginAurora";
+import { LoginMilkyWay } from "@/components/shell/LoginMilkyWay";
 import { Button } from "@/components/ui/button";
 import { isBackendConfigured } from "@/lib/backend";
 import { signInWithGoogle } from "@/lib/auth";
@@ -64,15 +64,16 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
           読めなくなるので、 継ぎ目にブランドグラデーションの 1px を立てて分ける。 */}
       <div className="hidden md:flex bg-[#141418] text-white relative overflow-hidden p-12 flex-col justify-center">
         <div className="absolute inset-y-0 left-0 w-px sf-gradient-bg opacity-70" />
-        <LoginAurora />
-        {/* 文字が乗る左側の暗幕。 オーロラは明るさが場所も時間も変わるので、
-            可読性はシェーダ側の調整ではなくこの層で担保する。 */}
+        <LoginMilkyWay />
+        {/* 文字が乗る左側の暗幕。 天の川は明るさが場所も時間も変わるので、
+            可読性はシェーダ側の調整ではなくこの層で担保する。
+            格子の飾りはここに重ねない — 星と同じ大きさの点と線が並ぶと、 どちらも
+            「細かい模様」として溶け合って、 帯が読めなくなる。 */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#141418] via-[#141418]/55 to-transparent" />
-        <div className="absolute inset-0 login-art-grid" />
 
         <div className="relative z-10">
           {/* white/35 は #141418 上で 3.21:1 しか出ず 11px の本文には足りない (AA は 4.5:1)。
-              オーロラが地を持ち上げるぶんの余裕も見て 55% (6.15:1) にしてある。 */}
+              天の川が地を持ち上げるぶんの余裕も見て 55% (6.15:1) にしてある。 */}
           <div className="text-[11px] font-display font-semibold tracking-[0.22em] text-white/55 mb-4">
             LEARNING PLATFORM
           </div>
