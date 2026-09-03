@@ -1,0 +1,21 @@
+{
+  "title": "Salesforce 開発 入門",
+  "category": "Salesforce案件",
+  "color": "indigo",
+  "description": "Salesforce 案件に配属されるメンバー向けの専用教材。オブジェクトと項目でできたデータモデルの読み方から、SOQL・Apex トリガ・テストまでを一巡し、「設定でできることは設定で、足りないところだけコードで」という platform の作法を身につける。認定資格の合格を保証するものではない。",
+  "header": "Salesforce開発入門",
+  "tenantId": "ses",
+  "audience": "granted",
+  "prerequisites": ["sql-basics"],
+  "canDo": "Salesforce のデータモデルを読み、一括処理の作法を守った Apex トリガとテストを書ける",
+  "theme": "業務システムの開発",
+  "modules": {
+    "m0-orientation": "M0. オリエンテーション",
+    "m1-data-model": "M1. データモデル",
+    "m2-access": "M2. アクセス権",
+    "m3-soql": "M3. SOQL",
+    "m4-apex": "M4. Apex",
+    "m5-test-release": "M5. テストとリリース",
+    "m6-ui-automation": "M6. 画面と自動化"
+  }
+}

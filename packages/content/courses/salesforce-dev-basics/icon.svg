@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 親オブジェクトに子がぶら下がるリレーション (thumbnail の motif_salesforce の核)。 -->
+  <rect x="7.5" y="2" width="9" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M12 8 V12 M4.5 16 V12 H19.5 V16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="1.5" y="16" width="6" height="5.5" rx="1.5" fill="currentColor"/>
+  <rect x="16.5" y="16" width="6" height="5.5" rx="1.5" fill="currentColor"/>
+</svg>

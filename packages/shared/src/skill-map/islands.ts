@@ -1,7 +1,10 @@
 /**
  * スキルツリーの「島」— 本土 (ITのきほん〜フロントエンド / バックエンド) から
- * 離れた場所に浮かぶ独立の星団。資格や AI のように「目的別の入り口」になる
- * まとまりを、本土の扇ではなく別の島として描く。
+ * 離れた場所に浮かぶ独立の星団。資格・AI・特定ベンダーの案件トラックのように
+ * 「目的別の入り口」になるまとまりを、本土の扇ではなく別の島として描く。
+ *
+ * 島の中身が `audience: granted` の講座だけなら、割り当てられていない受講者には
+ * 星が 1 つも残らないので島ごと現れない (`Salesforce案件` がこの形)。
  *
  * ## 島は「表示条件を満たした人」にだけ配信する
  *
@@ -40,6 +43,7 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "AWS資格", requires: ["it-basics"] },
   { category: "情報処理資格", requires: ["it-basics"] },
   { category: "AI駆動開発", requires: ["it-basics"] },
+  { category: "Salesforce案件", requires: ["it-basics"] },
 ];
 
 /** 島になるカテゴリ (レイアウトが本土の扇から外すのに使う)。 */

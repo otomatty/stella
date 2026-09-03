@@ -5,6 +5,7 @@ import {
   SKILL_MAP_APPEARANCE_PREREQUISITES,
   SKILL_MAP_APPEARANCES,
 } from "../../shared/src/skill-map/appearances.js";
+import { SKILL_MAP_ISLAND_CATEGORIES } from "../../shared/src/skill-map/islands.js";
 import { describe, expect, it } from "vitest";
 import { buildContentManifest, collectCourseThumbnails } from "./manifest.js";
 
@@ -950,7 +951,8 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
   });
 
   it("スキルツリーの見た目の枝はどの星からも 2 本まで (島への橋は数えない)", () => {
-    const islandCategories = new Set(["AWS資格", "情報処理資格", "AI駆動開発"]);
+    // 島は実行時の正本から引く (ここで書き写すと、島を足したときに枝の数え方だけ古くなる)。
+    const islandCategories = SKILL_MAP_ISLAND_CATEGORIES;
     const configs = new Map(
       courses.map((c) => {
         const json = JSON.parse(
@@ -1001,6 +1003,22 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       .map(([key, ch]) => `${key} → ${ch.join(", ")}`);
     expect(over).toEqual([]);
     expect(children.get("it-basics::基礎")?.sort()).toEqual(["html-css-basics", "sql-basics"]);
+  });
+
+  it("Salesforce 案件トラックは島に置いた専用星 (割り当てた受講者にだけ出す)", () => {
+    const course = courses.find((c) => c.id === "salesforce-dev-basics");
+    expect(course?.audience).toBe("granted");
+    // 島に置くのは、本土の扇に混ぜると sql-basics の枝が 3 本になるため。
+    // 島は「目的別の入り口」なので、案件トラックはこちらが本来の置き場所。
+    expect(course?.category).toBe("Salesforce案件");
+    expect(SKILL_MAP_ISLAND_CATEGORIES.has("Salesforce案件")).toBe(true);
+    // 親は catalog の公開講座 (granted は入口の星にできない)。
+    expect(course?.prerequisites).toEqual(["sql-basics"]);
+    // catalog 講座の前提に専用星を書くと、割り当てのない受講者が永久ロックされる。
+    for (const other of courses) {
+      if (other.audience === "granted") continue;
+      expect(other.prerequisites ?? [], other.id).not.toContain("salesforce-dev-basics");
+    }
   });
 
   it("資格は AWS資格 / 情報処理資格 の島に分かれ、情報処理は 科目A → 科目B と段階進行", () => {

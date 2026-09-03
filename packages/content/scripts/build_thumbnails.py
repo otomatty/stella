@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 20 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した 21 講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -573,7 +573,34 @@ def motif_it_basics(c: str) -> str:
 
 
 # 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
+def motif_salesforce(c: str) -> str:
+    """親オブジェクトのレコードに、子のレコードがぶら下がるリレーション。"""
+
+    def card(x: int, y: int, w: int, h: int, accent: bool) -> str:
+        head = c if accent else RULE_SOLID
+        return f"""
+    <rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
+    <rect x="{x + 20}" y="{y + 22}" width="{int(w * 0.52)}" height="14" rx="7" fill="{head}"/>
+    <rect x="{x + 20}" y="{y + 60}" width="{int(w * 0.68)}" height="12" rx="6" fill="{RULE}"/>
+    <rect x="{x + 20}" y="{y + 86}" width="{int(w * 0.42)}" height="12" rx="6" fill="{RULE}"/>"""
+
+    return f"""
+    <rect x="169" y="96" width="210" height="126" rx="14" fill="{c}" opacity="0.07"/>
+    {card(169, 96, 210, 126, True)}
+    <path d="M 274 222 V 262 M 119 262 H 429 M 119 262 V 306 M 429 262 V 306"
+      fill="none" stroke="{RULE_SOLID}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="274" cy="222" r="7" fill="{c}"/>
+    {card(34, 306, 170, 126, False)}
+    {card(344, 306, 170, 126, False)}"""
+
+
 SPECS = {
+    "salesforce-dev-basics": {
+        "title": "Salesforce",
+        "title_size": 132,
+        "subtitle": "開発 入門",
+        "motif": motif_salesforce,
+    },
     "it-basics": {
         "title": "ITのきほん",
         "title_size": 116,

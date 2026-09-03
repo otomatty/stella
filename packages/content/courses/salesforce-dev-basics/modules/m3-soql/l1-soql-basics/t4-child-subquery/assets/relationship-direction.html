@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>たどる向きで使う名前が変わる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; padding: 24px; background: #FFFFFF; }</style>
+</head>
+<body>
+<svg viewBox="0 64 1200 416" width="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#E62F9A"/>
+    </marker>
+  </defs>
+
+  <!-- 焦点はサブクエリで下る向き(accent)。上る向きは muted -->
+  <line x1="480" y1="352" x2="480" y2="192" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="720" y1="184" x2="720" y2="344" stroke="#E62F9A" stroke-width="2" marker-end="url(#arrow-accent)"/>
+
+  <rect x="400" y="96" width="400" height="88" rx="8"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="136" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">取引先</text>
+  <text x="600" y="168" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">Account</text>
+
+  <rect x="400" y="352" width="400" height="88" rx="8"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="392" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">商談</text>
+  <text x="600" y="424" text-anchor="middle" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#5C5C66">Opportunity</text>
+
+  <text x="456" y="252" text-anchor="end" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">子から親</text>
+  <text x="456" y="288" text-anchor="end" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">Account</text>
+
+  <text x="744" y="252" font-size="20"
+        font-family="'Noto Sans JP', sans-serif" fill="#5C5C66">親から子</text>
+  <text x="744" y="288" font-size="20"
+        font-family="'Geist Mono', monospace" fill="#0E0E10">Opportunities</text>
+</svg>
+</body>
+</html>

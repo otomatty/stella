@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 32 1200 408" width="1200" xmlns="http://www.w3.org/2000/svg"><defs><style>/*<![CDATA[*/@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Figtree:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');/*]]>*/</style></defs>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5C5C66"/>
+    </marker>
+  </defs>
+
+  <text x="48" y="80" font-size="16" font-weight="500" letter-spacing="0.18em"
+        font-family="'Figtree', sans-serif" fill="#8A8A93">1 TRANSACTION</text>
+  <rect x="48" y="96" width="1104" height="152" rx="12"
+        fill="none" stroke="#B7B7BE" stroke-width="2" stroke-dasharray="8 8"/>
+
+  <line x1="404" y1="172" x2="436" y2="172" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="764" y1="172" x2="796" y2="172" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="600" y1="248" x2="600" y2="308" stroke="#5C5C66" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="80" y="128" width="320" height="88" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="240" y="180" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">取引先を保存</text>
+
+  <rect x="440" y="128" width="320" height="88" rx="12"
+        fill="#FFFFFF" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="180" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">商談を保存</text>
+
+  <rect x="800" y="128" width="320" height="88" rx="12"
+        fill="rgba(229,52,43,0.08)" stroke="#E5342B" stroke-width="2"/>
+  <text x="960" y="168" text-anchor="middle" font-size="24"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">上限を超える</text>
+  <text x="960" y="200" text-anchor="middle" font-size="20" font-weight="500"
+        font-family="'Noto Sans JP', sans-serif" fill="#E5342B">例外が起きる</text>
+
+  <rect x="344" y="312" width="512" height="88" rx="12"
+        fill="#F7F7F9" stroke="#B7B7BE" stroke-width="2"/>
+  <text x="600" y="364" text-anchor="middle" font-size="24" font-weight="600"
+        font-family="'Noto Sans JP', sans-serif" fill="#0E0E10">保存した2件も巻き戻る</text>
+</svg>
