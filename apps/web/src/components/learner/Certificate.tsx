@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { DISPLAY_NAME } from "@falcon/shared/brand/display";
 import { toast } from "sonner";
 import { Download, ExternalLink, Award, CheckCircle } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -303,7 +304,7 @@ function DemoCertificate({ name, initials }: { name: string; initials: string })
       <CertificateView
         recipientName={name}
         stageTitle="TypeScript 入門"
-        issuer="FALCON INFORMAL"
+        issuer={DISPLAY_NAME}
         issuedAt="2026-04-10"
         certCode="FLC-2026-4A9F-2E11"
         initials={initials}

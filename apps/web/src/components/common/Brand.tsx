@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { DISPLAY_NAME } from "@falcon/shared/brand/display";
 import { BrandMark } from "@/components/common/BrandMark";
 
 interface BrandProps {
@@ -11,7 +12,7 @@ interface BrandProps {
 
 export const Brand = ({
   size = "sm",
-  title = "FALCON INFORMAL",
+  title = DISPLAY_NAME,
   subtitle = "",
   className,
 }: BrandProps) => {
@@ -24,7 +25,7 @@ export const Brand = ({
           markSize,
         )}
       >
-        <BrandMark className="w-full h-full" />
+        <BrandMark className="w-[62%] h-[62%]" />
       </div>
       {(title || subtitle) && (
         <div className="leading-tight">

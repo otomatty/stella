@@ -56,9 +56,9 @@ uniform float u_time;
 uniform float u_seed;
 
 const vec3 INK     = vec3(0.078, 0.078, 0.094); // #141418 — 面の地の色
-const vec3 BLUE    = vec3(0.039, 0.200, 1.000); // #0A33FF
-const vec3 MAGENTA = vec3(0.902, 0.184, 0.604); // #E62F9A
-const vec3 WARM    = vec3(1.000, 0.878, 0.741); // 濃い所に差す暖色
+const vec3 BLUE    = vec3(0.263, 0.220, 0.792); // #4338ca — night indigo
+const vec3 MAGENTA = vec3(0.655, 0.545, 0.980); // #a78bfa — star violet
+const vec3 WARM    = vec3(0.992, 0.827, 0.302); // #fcd34d — star gold
 const vec3 COOL    = vec3(0.863, 0.902, 1.000); // 帯の芯。 積分された星の光の色
 
 // --- hash --------------------------------------------------------------

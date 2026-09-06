@@ -1,3 +1,4 @@
+import { DISPLAY_NAME } from "@falcon/shared/brand/display";
 import { exchangeVscodeLink } from "@falcon/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
 import { AuthExpiredError, initApi } from "./api.js";
@@ -138,7 +139,7 @@ async function openWebForConnect(target?: PendingLesson): Promise<void> {
   const web = falconConfig("webUrl", "http://127.0.0.1:5173");
   const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
-    "FALCON に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください",
+    `${DISPLAY_NAME} に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください`,
   );
   await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
 }
@@ -228,7 +229,7 @@ async function linkFromLessonUri(code: string, auth: AuthStore): Promise<void> {
     void vscode.window.showErrorMessage(failure.message);
     return;
   }
-  void vscode.window.showInformationMessage("FALCON に接続しました");
+  void vscode.window.showInformationMessage(`${DISPLAY_NAME} に接続しました`);
 }
 
 /** 旧クライアント (接続専用ページ) からの `/link` URI 用。 */
@@ -243,7 +244,7 @@ async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean>
     void vscode.window.showErrorMessage(failure.message);
     return false;
   }
-  void vscode.window.showInformationMessage("FALCON に接続しました");
+  void vscode.window.showInformationMessage(`${DISPLAY_NAME} に接続しました`);
   return true;
 }
 

@@ -1,4 +1,5 @@
 import type { Assignment } from "@falcon/shared/types";
+import { DISPLAY_NAME } from "@falcon/shared/brand/display";
 import * as vscode from "vscode";
 import {
   isGradeErrorMessage,
@@ -89,7 +90,7 @@ export class GraderHost {
     const distRoot = vscode.Uri.joinPath(this.extensionUri, "dist");
     const panel = vscode.window.createWebviewPanel(
       VIEW_TYPE,
-      "FALCON Grader",
+      `${DISPLAY_NAME} Grader`,
       { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
       {
         enableScripts: true,

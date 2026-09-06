@@ -1,4 +1,5 @@
 import type { FileRouteTypes } from "@/routeTree.gen";
+import { helpAboutHeading } from "@falcon/shared/brand/display";
 
 /**
  * 画面連動ヘルプの静的定義。 Topbar の「?」で開く HelpDrawer が
@@ -246,7 +247,7 @@ export const GENERIC_HELP: { title: string; sections: HelpSection[] } = {
   title: "このアプリについて",
   sections: [
     {
-      heading: "FALCON INFORMAL とは",
+      heading: helpAboutHeading(),
       body: "動画・ドキュメント・クイズ・コード演習で学ぶ研修プラットフォームです。学習はダッシュボードまたはステージ一覧から始められます。",
     },
     {

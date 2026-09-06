@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChevronLeft, HelpCircle, Mail, Send, Loader2, CheckCircle } from "@/lib/icons";
+import { supportMailSubjectPrefix } from "@falcon/shared/brand/display";
 import { Brand } from "@/components/common/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ const LOGIN_FAQ: { q: string; a: string }[] = [
 export const SupportPage = () => {
   const apiReady = isApiConfigured();
   const mailtoHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-    "【FALCON INFORMAL】サポートのお問い合わせ",
+    `${supportMailSubjectPrefix()}サポートのお問い合わせ`,
   )}`;
 
   const [name, setName] = useState("");

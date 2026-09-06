@@ -1,10 +1,10 @@
 {
   "name": "informal",
-  "displayName": "FALCON INFORMAL",
+  "displayName": "STELLA",
   "publisher": "falcon",
   "version": "0.2.0",
   "private": true,
-  "description": "FALCON INFORMAL — VS Code extension for stage lessons and exercises",
+  "description": "STELLA — VS Code extension for stage lessons and exercises",
   "engines": { "vscode": "^1.96.0" },
   "main": "./dist/extension.js",
   "activationEvents": ["onUri", "onView:falcon.lessons"],
@@ -13,7 +13,7 @@
       "activitybar": [
         {
           "id": "falcon",
-          "title": "FALCON",
+          "title": "STELLA",
           "icon": "media/icon.svg"
         }
       ]
@@ -27,16 +27,16 @@
       ]
     },
     "commands": [
-      { "command": "falcon.connect", "title": "FALCON: Web で接続" },
-      { "command": "falcon.disconnect", "title": "FALCON: 切断" },
-      { "command": "falcon.refresh", "title": "FALCON: 再読み込み" },
-      { "command": "falcon.grade", "title": "FALCON: 採点を実行" },
-      { "command": "falcon.resetExercise", "title": "FALCON: 課題をリセット" },
-      { "command": "falcon.openInWeb", "title": "FALCON: Web で開く" },
-      { "command": "falcon.openLessonDoc", "title": "FALCON: ドキュメントを開く" },
-      { "command": "falcon.openLessonCode", "title": "FALCON: 演習を開く" },
-      { "command": "falcon.openNextLesson", "title": "FALCON: 次のレッスンへ" },
-      { "command": "falcon.escalateToInstructor", "title": "FALCON: 講師に引き継ぐ" }
+      { "command": "falcon.connect", "title": "STELLA: Web で接続" },
+      { "command": "falcon.disconnect", "title": "STELLA: 切断" },
+      { "command": "falcon.refresh", "title": "STELLA: 再読み込み" },
+      { "command": "falcon.grade", "title": "STELLA: 採点を実行" },
+      { "command": "falcon.resetExercise", "title": "STELLA: 課題をリセット" },
+      { "command": "falcon.openInWeb", "title": "STELLA: Web で開く" },
+      { "command": "falcon.openLessonDoc", "title": "STELLA: ドキュメントを開く" },
+      { "command": "falcon.openLessonCode", "title": "STELLA: 演習を開く" },
+      { "command": "falcon.openNextLesson", "title": "STELLA: 次のレッスンへ" },
+      { "command": "falcon.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" }
     ],
     "languages": [
       {

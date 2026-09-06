@@ -5,9 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
-   Design tokens — Sports Force / Tech&Boost
-   claude.ai/design のデザインシステム (tokens/colors.css ほか) 準拠。
-   白ベースのニアモノクロ + シグネチャの BLUE→MAGENTA→RED グラデーション。
+   Design tokens — STELLA night sky
+   夜空トーン + 星のシルエット。 LoginMilkyWay / スキルツリーの星メタファーに合わせる。
    ============================================================ */
 
 :root {
@@ -30,11 +29,11 @@
   --line-2: #dddde2;
   --line-strong: #b7b7be;
 
-  /* Brand — Sports Force magenta (ソロアクセント) */
-  --brand: #e62f9a;
-  --brand-hover: #b81e72;
-  --brand-soft: rgba(230, 47, 154, 0.12);
-  --brand-ink: #b81e72;
+  /* Brand — night-sky violet (ソロアクセント). AA ≥ 4.5:1 on white for link text. */
+  --brand: #5749db;
+  --brand-hover: #4335c6;
+  --brand-soft: rgba(87, 73, 219, 0.14);
+  --brand-ink: #6d28d9;
 
   /* primary (= ink) ボタンの hover 面 */
   --primary-hover: #33333a;
@@ -69,24 +68,23 @@
   --stripe-l1: 96%;
   --stripe-l2: 92%;
 
-  /* Sports Force / Tech&Boost ブランドトークン (デザインシステム tokens/colors.css より)。
-     受講者画面のリブランド (レッスン視聴から順次適用) で使う。 */
-  --sf-blue: #0a33ff;
-  --sf-violet: #8330c7;
-  --sf-magenta: #e62f9a;
-  --sf-rose: #ff2c61;
-  --sf-red: #ff2e0d;
+  /* STELLA night-sky brand tokens (legacy --sf-* names kept for Phase B compat). */
+  --sf-blue: #1e3a8a;
+  --sf-violet: #6366f1;
+  --sf-magenta: #7c3aed;
+  --sf-rose: #a78bfa;
+  --sf-red: #b45309;
   --sf-gradient: linear-gradient(
     90deg,
-    #0a33ff 0%,
-    #8330c7 34%,
-    #e62f9a 58%,
-    #ff2c61 78%,
-    #ff2e0d 100%
+    #1e3a8a 0%,
+    #4338ca 28%,
+    #7c3aed 55%,
+    #6d28d9 75%,
+    #b45309 100%
   );
-  --sf-gradient-135: linear-gradient(135deg, #0a33ff 0%, #e62f9a 55%, #ff2e0d 100%);
-  --sf-magenta-soft: rgba(230, 47, 154, 0.12);
-  --sf-magenta-ink: #b81e72;
+  --sf-gradient-135: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 55%, #b45309 100%);
+  --sf-magenta-soft: rgba(87, 73, 219, 0.14);
+  --sf-magenta-ink: #6d28d9;
 
   /* トップバーとサイドバーのロゴ行を同じ高さにする */
   --shell-header-height: 57px;
@@ -115,11 +113,11 @@
   --line-2: #34343d;
   --line-strong: #4d4d58;
 
-  /* マゼンタは暗い面だと沈むので少し明るい方に寄せる。 */
-  --brand: #f04fae;
-  --brand-hover: #ff7ac4;
-  --brand-soft: rgba(240, 79, 174, 0.18);
-  --brand-ink: #ff8fcb;
+  /* マゼンタ相当の星 violet は暗い面だと沈むので少し明るい方に寄せる。 */
+  --brand: #a78bfa;
+  --brand-hover: #c4b5fd;
+  --brand-soft: rgba(167, 139, 250, 0.18);
+  --brand-ink: #ddd6fe;
 
   --primary-hover: #d8d8df;
 
@@ -141,8 +139,8 @@
   --stripe-l1: 26%;
   --stripe-l2: 21%;
 
-  --sf-magenta-soft: rgba(240, 79, 174, 0.18);
-  --sf-magenta-ink: #ff8fcb;
+  --sf-magenta-soft: rgba(167, 139, 250, 0.18);
+  --sf-magenta-ink: #ddd6fe;
 }
 
 /* Tailwind v4 theme — maps tokens to utility classes */
@@ -150,10 +148,10 @@
   /* DS の --font-jp。 見出しも本文も Noto Sans JP (Inter は使わない)。 */
   --font-sans: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  /* Sports Force の英字見出し・数字用 (eyebrow / 大きなパーセンテージ) */
+  /* Display type for eyebrow / large numerals */
   --font-display: "Figtree", "Noto Sans JP", sans-serif;
 
-  /* Sports Force アクセント */
+  /* Night-sky accent (legacy sf-magenta utility names) */
   --color-sf-magenta: var(--sf-magenta);
   --color-sf-magenta-soft: var(--sf-magenta-soft);
   --color-sf-magenta-ink: var(--sf-magenta-ink);
@@ -261,7 +259,7 @@
     text-decoration: none;
   }
   ::selection {
-    background: rgba(230, 47, 154, 0.16);
+    background: rgba(124, 109, 240, 0.18);
   }
 
   ::-webkit-scrollbar {
@@ -286,7 +284,7 @@
    ============================================================ */
 
 @layer utilities {
-  /* Sports Force シグネチャ: グラデーション文字 / グラデーション塗り */
+  /* Night-sky signature: gradient text / gradient fill */
   .sf-gradient-text {
     background: var(--sf-gradient);
     -webkit-background-clip: text;
@@ -294,10 +292,10 @@
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
-  /* 暗い面 (ログインのアート面) 用。 フル版は始端の #0a33ff が #141418 に沈んで
-     先頭数文字が読めなくなるので、 マゼンタ〜レッドの明るい側だけを使う。 */
+  /* 暗い面 (ログインのアート面) 用。 深い indigo は #141418 に沈むので、
+     星の violet〜gold の明るい側だけを使う。 */
   .sf-gradient-text-on-dark {
-    background: linear-gradient(90deg, #e62f9a 0%, #ff2c61 55%, #ff6a3d 100%);
+    background: linear-gradient(90deg, #a78bfa 0%, #c4b5fd 55%, #fcd34d 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -422,7 +420,7 @@
       rgba(20, 20, 24, 0) 42%,
       rgba(10, 51, 255, 0.1) 48%,
       rgba(255, 224, 190, 0.16) 52%,
-      rgba(230, 47, 154, 0.08) 57%,
+      rgba(167, 139, 250, 0.1) 57%,
       rgba(20, 20, 24, 0) 64%
     );
   }
@@ -850,7 +848,7 @@
     radial-gradient(1px 1px at 81% 58%, rgba(14, 14, 16, 0.07), transparent),
     radial-gradient(1.2px 1.2px at 47% 86%, rgba(14, 14, 16, 0.06), transparent),
     radial-gradient(1px 1px at 91% 12%, rgba(14, 14, 16, 0.1), transparent),
-    radial-gradient(ellipse 85% 75% at 50% 48%, rgba(230, 47, 154, 0.07), transparent 62%),
+    radial-gradient(ellipse 85% 75% at 50% 48%, rgba(124, 109, 240, 0.08), transparent 62%),
     radial-gradient(ellipse 55% 50% at 72% 78%, rgba(10, 51, 255, 0.07), transparent 65%),
     radial-gradient(ellipse 40% 35% at 22% 30%, rgba(131, 48, 199, 0.05), transparent 70%);
 }
@@ -996,7 +994,7 @@
      クリアの白をここでも指定する。指定しないと mask の currentColor が薄紫になる。 */
   color: #fff;
   box-shadow:
-    0 0 10px var(--route-glow-strong, rgba(230, 47, 154, 0.65)),
+    0 0 10px var(--route-glow-strong, rgba(124, 109, 240, 0.65)),
     0 0 22px rgba(130, 48, 200, 0.4);
 }
 
@@ -1011,8 +1009,8 @@
   color: var(--brand);
   background: rgba(20, 12, 28, 0.85);
   box-shadow:
-    0 0 8px rgba(230, 47, 154, 0.55),
-    0 0 18px rgba(230, 47, 154, 0.28);
+    0 0 8px rgba(124, 109, 240, 0.55),
+    0 0 18px rgba(124, 109, 240, 0.28);
 }
 
 .tree-star-open {

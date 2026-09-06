@@ -1,7 +1,7 @@
 {
-  "name": "FALCON INFORMAL",
-  "short_name": "FALCON",
-  "description": "FALCON INFORMAL 学習管理システム",
+  "name": "STELLA",
+  "short_name": "STELLA",
+  "description": "STELLA 学習管理システム",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F7F7F9",
