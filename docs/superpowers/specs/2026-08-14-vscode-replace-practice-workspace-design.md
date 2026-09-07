@@ -6,7 +6,7 @@
 
 ## 背景
 
-FALCON INFORMAL の TypeScript 研修は、動画・ドキュメント・クイズを Web LMS で、コード演習を `apps/web` の PracticeWorkspace（ブラウザ内 CodeMirror + `@falcon/code-runner`）で進めている。現場のエンジニアは VS Code を日常使いしており、ブラウザ演習は補完・型チェック・複数ファイル・Git の点で劣る。
+FALCON INFORMAL の TypeScript 研修は、動画・ドキュメント・クイズを Web LMS で、コード演習を `apps/web` の PracticeWorkspace（ブラウザ内 CodeMirror + `@stella/code-runner`）で進めている。現場のエンジニアは VS Code を日常使いしており、ブラウザ演習は補完・型チェック・複数ファイル・Git の点で劣る。
 
 方針:
 
@@ -65,10 +65,10 @@ Google OAuth の redirect URI は今どおり `http(s)://<api>/api/auth/google/c
 ## 拡張の配置
 
 - パス: `apps/vscode`
-- package name: `@falcon/vscode`
+- package name: `@stella/vscode`
 - publisher / name: `falcon` / `informal`（拡張 ID `falcon.informal`）
 - ルート `workspaces` は既に `apps/*` なので追加不要
-- `@falcon/shared` と grader 用 `@falcon/code-runner` は esbuild で .vsix に同梱する
+- `@stella/shared` と grader 用 `@stella/code-runner` は esbuild で .vsix に同梱する
 
 設定:
 
@@ -99,7 +99,7 @@ Google OAuth の redirect URI は今どおり `http(s)://<api>/api/auth/google/c
 
 採点:
 
-- 隠し WebView（`retainContextWhenHidden`）が `@falcon/code-runner` の `runGrading` をブラウザ互換で実行する
+- 隠し WebView（`retainContextWhenHidden`）が `@stella/code-runner` の `runGrading` をブラウザ互換で実行する
 - ホストがワークスペースのファイルを読み、assignment + files を WebView に渡す
 - Lint / AST もこの WebView 内で、今の PracticeWorkspace と同じ `getLinter` / `analyzeAst` を採点時に一度回す
 - クリア条件は現行 `evaluate()` のまま（Lint error 0 + AST 充足 + 全テスト pass）

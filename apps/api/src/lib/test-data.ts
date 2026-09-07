@@ -18,14 +18,14 @@
  */
 
 import { and, asc, eq } from "drizzle-orm";
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 import type {
   ReviewPriority,
   ReviewSuggestion,
   ReviewVerdict,
   RubricCriterion,
   SubmissionStatus,
-} from "@falcon/shared/review/types";
+} from "@stella/shared/review/types";
 
 import type { Db } from "../db/client.js";
 import {

@@ -4,7 +4,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import type { AvatarTone } from "@/data/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 export const ROLE_LABEL: Record<ProfileRole, string> = {
   student: "受講者",

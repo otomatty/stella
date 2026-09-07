@@ -1,5 +1,5 @@
-import { DISPLAY_NAME } from "@falcon/shared/brand/display";
-import { exchangeVscodeLink } from "@falcon/shared/vscode/auth-exchange";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
+import { exchangeVscodeLink } from "@stella/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
 import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore, disposeAuthEvents, onDidChangeAuth } from "./auth.js";

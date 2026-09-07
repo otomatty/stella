@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Stage } from "@/data/types";
-import type { StageGradebook, EnrollmentStatus, GradebookEntry } from "@falcon/shared/cms/types";
+import type { StageGradebook, EnrollmentStatus, GradebookEntry } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchStageGradebook, issueCertificate } from "@/lib/certificates-api";
 import { downloadCsv, toCsv } from "@/lib/csv";

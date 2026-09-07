@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Submission } from "@falcon/shared/review/types";
+import type { Submission } from "@stella/shared/review/types";
 import { ChevronLeft } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { SkeletonRows } from "@/components/ui/skeleton";

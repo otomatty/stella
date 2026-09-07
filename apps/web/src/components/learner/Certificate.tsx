@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { DISPLAY_NAME } from "@falcon/shared/brand/display";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { toast } from "sonner";
 import { Download, ExternalLink, Award, CheckCircle } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -20,7 +20,7 @@ import { CertificateView, formatIssuedAt } from "@/components/common/Certificate
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import type { Stage } from "@/data/types";
-import type { CertificateRow, StageCompletion } from "@falcon/shared/cms/types";
+import type { CertificateRow, StageCompletion } from "@stella/shared/cms/types";
 import {
   buildVerificationUrl,
   fetchMyStageCompletion,

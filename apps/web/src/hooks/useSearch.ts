@@ -12,7 +12,7 @@ import {
   isSearchableQuery,
   normalizeSearchQuery,
   type SearchResult,
-} from "@falcon/shared/search/types";
+} from "@stella/shared/search/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { searchAll } from "@/lib/search-api";
 

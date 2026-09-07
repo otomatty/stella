@@ -10,7 +10,7 @@ import {
   emptySkillSheetSections,
   validateSkillSheetV1,
   type SkillSheetV1,
-} from "@falcon/shared/skill-sheet/types";
+} from "@stella/shared/skill-sheet/types";
 import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { Hono } from "hono";

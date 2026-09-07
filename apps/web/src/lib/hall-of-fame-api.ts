@@ -12,7 +12,7 @@ import type {
   HallOfFameChapters,
   HallOfFamePathStage,
   HallOfFameStatus,
-} from "@falcon/shared/hall-of-fame/types";
+} from "@stella/shared/hall-of-fame/types";
 
 import { apiFetch } from "./api-client";
 

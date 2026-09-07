@@ -27,7 +27,7 @@ packages/content/courses/<slug>/
 
 - 本文は `bun run db:seed`（本番は `db:seed:remote:content`）で D1 に入る
 - 図解 SVG とサムネイルは `main` への push で自動反映（デプロイが seed の前に R2 へ流す）
-- ローカルに入れるときだけ `bun run --filter=@falcon/content upload` を手で叩く
+- ローカルに入れるときだけ `bun run --filter=@stella/content upload` を手で叩く
 - 受講者が見るには講師 / 管理者が enrollment する。本番 seed は Google ログインした本人を自動登録しない
 - `practice.md` の確認クイズだけが LMS の quiz になる。ハンズオン本文は Assignment 化されていない
 
@@ -95,7 +95,7 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 
 #### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）は `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）は `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |
@@ -153,7 +153,7 @@ header: "【講座名】"
 
 ### 3.5 コード演習を配線する（任意）
 
-VS Code 拡張で解くコード演習は、`course.json` の `exercises` にレッスンキー（トピック id の先頭 2 節。`1-1-1` → `1-1`）で書く。id は `@falcon/shared` の `Assignment.id`。
+VS Code 拡張で解くコード演習は、`course.json` の `exercises` にレッスンキー（トピック id の先頭 2 節。`1-1-1` → `1-1`）で書く。id は `@stella/shared` の `Assignment.id`。
 
 ```json
 {
@@ -168,15 +168,15 @@ manifest がクイズの後ろに `type: "code"` のレッスン（`code-<Assign
 ### 4. 検査する
 
 ```bash
-bun run --filter=@falcon/content check:ci
-bun run --filter=@falcon/content materials -- courses/<slug>/modules
+bun run --filter=@stella/content check:ci
+bun run --filter=@stella/content materials -- courses/<slug>/modules
 ```
 
 ### 5. ローカル LMS に載せる
 
 ```bash
 bun run db:seed
-bun run --filter=@falcon/content upload    # 図解・サムネイルをローカル R2 に入れる
+bun run --filter=@stella/content upload    # 図解・サムネイルをローカル R2 に入れる
 ```
 
 manifest が `courses/` を全部読むので、`course.json` を置いた講座は seed に載る。コードの COURSE_SLUG 固定は不要。ローカル seed は各講座に `seed-learner` を登録する。本番では受講者を LMS 上で割り当てる。

@@ -5,7 +5,7 @@
  * - バックエンド設定済み: `submissions` テーブル (RLS)。実データは PATCH await
  */
 
-import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
+import type { Submission, ReviewVerdict } from "@stella/shared/review/types";
 import { REVIEW_QUEUE, SUBMITTED_CODE, AI_SUGGESTIONS, RUBRIC } from "@/demo/fixtures";
 import type { Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";

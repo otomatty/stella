@@ -4,12 +4,12 @@
  *   - staff: 全件 + 割当の read/write
  */
 
-import type { ProfileRole } from "@falcon/shared/cms/types";
-import type { InterviewQuestion } from "@falcon/shared/interview/types";
-import type { InterviewQuestionPatch } from "@falcon/shared/interview/edit";
-import type { FixNote } from "@falcon/shared/interview/fix-notes";
-import { type MonitoringSummary, sortByInterviewDate } from "@falcon/shared/interview/monitoring";
-import { toStudyDate } from "@falcon/shared/study/activity";
+import type { ProfileRole } from "@stella/shared/cms/types";
+import type { InterviewQuestion } from "@stella/shared/interview/types";
+import type { InterviewQuestionPatch } from "@stella/shared/interview/edit";
+import type { FixNote } from "@stella/shared/interview/fix-notes";
+import { type MonitoringSummary, sortByInterviewDate } from "@stella/shared/interview/monitoring";
+import { toStudyDate } from "@stella/shared/study/activity";
 import { apiFetch, apiFetchRaw } from "./api-client";
 
 /** 受講者向け GET /questions の行 (個別回答の型 + 学習ステータス付き)。 */

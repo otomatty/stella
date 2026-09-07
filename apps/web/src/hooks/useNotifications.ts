@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { NotificationRow } from "@falcon/shared/cms/types";
+import type { NotificationRow } from "@stella/shared/cms/types";
 import {
   listNotifications,
   markAllNotificationsRead,

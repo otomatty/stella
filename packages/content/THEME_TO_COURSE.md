@@ -99,16 +99,16 @@ Go になったら、**本文を書く前に**次を埋めます。埋まらな�
 | 評価 | 実体 | 制約 |
 | --- | --- | --- |
 | 確認クイズ | `practice.md` の `## 確認クイズ` が LMS の quiz レッスンになる | 選択式 3〜5 問、選択肢 2 つ以上、**合格点は 80 固定**。設問ブロックの書式崩れは throw するが、**見出しが無い・設問が 1 問も無い場合は黙って quiz が作られない**（§STEP 6） |
-| コード演習（自動採点） | `course.json` の `exercises` → VS Code 拡張で採点 | **`javascript` / `typescript` / `sql` のみ**（ランナーは QuickJS と sql.js だけ）。さらに **課題本体が `@falcon/shared` に実装済みであること**が前提（下記） |
+| コード演習（自動採点） | `course.json` の `exercises` → VS Code 拡張で採点 | **`javascript` / `typescript` / `sql` のみ**（ランナーは QuickJS と sql.js だけ）。さらに **課題本体が `@stella/shared` に実装済みであること**が前提（下記） |
 | ハンズオン・演習問題 | `practice.md` 本文。手を動かす課題と解答例 | 自動採点されない。Assignment 化もされていない |
 
 **ここが外部テーマの採否を左右します。** 例えば Python や Go をテーマにすると、スライド・まとめ・確認クイズは
 そのまま作れますが、**コード演習の自動採点は作れません**。その場合は要件段階で「評価は確認クイズ＋手動演習」と
 決め切ってください。後から採点を足そうとすると、ランナーの追加という別スコープの開発になります。
 
-**`course.json` に ID を書くだけでは採点されません。** `exercises` の ID は `@falcon/shared` の `Assignment.id` を
+**`course.json` に ID を書くだけでは採点されません。** `exercises` の ID は `@stella/shared` の `Assignment.id` を
 指す参照で、manifest はその ID をコピーして `type: "code"` のレッスンを生やすだけです。課題本体（テスト・
-スターターファイル）が `@falcon/shared` に無い場合、seed は `-- assignment ... not in shared — skipped` という
+スターターファイル）が `@stella/shared` に無い場合、seed は `-- assignment ... not in shared — skipped` という
 コメントを吐くだけで assignment 行を作らず、**LMS にはコード演習レッスンだけが残り、VS Code 拡張で開けません**。
 既存の課題を再利用しないなら、**課題の実装は教材執筆とは別作業**として要件・工数に積んでください。
 
@@ -224,9 +224,9 @@ Go になったら、**本文を書く前に**次を埋めます。埋まらな�
 mkdir -p packages/content/courses/<slug>/modules
 cp packages/content/templates/course.json packages/content/courses/<slug>/course.json
 # templates/topic-slides-template.md / doc-template.md / practice-template.md を配置してから本文を書く
-bun run --filter=@falcon/content check:ci
+bun run --filter=@stella/content check:ci
 bun run db:seed
-bun run --filter=@falcon/content upload     # 図解・サムネイルをローカル R2 に入れる
+bun run --filter=@stella/content upload     # 図解・サムネイルをローカル R2 に入れる
 ```
 
 - 1 レッスンにつき `doc.md` と `practice.md` は**必須**（無いと manifest が落ちます）
@@ -243,7 +243,7 @@ bun run --filter=@falcon/content upload     # 図解・サムネイルをロー�
 検査は 2 か所に分かれています。**教材ファイルの検査（`check:ci` / `materials`）だけでは、クイズ書式や
 `course.json` は検証されません。** manifest を組み立てる側（`bun run test` / seed）が落とします。
 
-`bun run --filter=@falcon/content check:ci`（= `materials --check-only`）/ `materials`:
+`bun run --filter=@stella/content check:ci`（= `materials --check-only`）/ `materials`:
 
 | 検査 | 落ちる条件 |
 | --- | --- |
@@ -269,7 +269,7 @@ bun run --filter=@falcon/content upload     # 図解・サムネイルをロー�
   「レッスン数ぶんクイズがあるか」を数えるテストは TypeScript 入門にハードコードされているため、**新講座では
   働きません**。見出しと設問は雛形から丸ごとコピーし、seed 後に LMS 上で全レッスンにクイズが出ることを
   目視で確認してください
-- **`exercises` に書いた ID が `@falcon/shared` に無くても止まりません。** manifest が検査するのは「対応する
+- **`exercises` に書いた ID が `@stella/shared` に無くても止まりません。** manifest が検査するのは「対応する
   レッスンがあるキーか」だけです。ID 自体が解決できない場合、seed は `-- assignment ... not in shared — skipped`
   を出して assignment 行を作らず、コード演習レッスンだけが LMS に残ります。**配線した演習は VS Code 拡張で
   実際に開いて解けることを確認してください**
@@ -329,5 +329,5 @@ bun run --filter=@falcon/content upload     # 図解・サムネイルをロー�
 | クイズが「用語を覚えたか」だけになる | 到達目標が「理解する」で書かれている | 観測可能な動詞に書き換え、目標ごとに測る問題を作る |
 | コード演習を作れないと後で気づく | 言語が js / ts / sql 以外 | 要件段階で評価方法を確定する（STEP 2） |
 | 講座が完成しない | 初回から大型（100+ トピック）を狙った | 標準規模に切り、続編を別講座に分ける |
-| seed 後に図解が表示されない | ローカル R2 に画像が入っていない (本番はデプロイが流す) | `bun run --filter=@falcon/content upload` を実行する |
+| seed 後に図解が表示されない | ローカル R2 に画像が入っていない (本番はデプロイが流す) | `bun run --filter=@stella/content upload` を実行する |
 | 進捗が消えた | slug を変更した | slug は変えない。変えるなら移行を別途設計する |

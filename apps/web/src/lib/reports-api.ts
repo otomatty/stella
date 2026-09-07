@@ -10,8 +10,8 @@ import type {
   ReportResult,
   ReportRow,
   ReportType,
-} from "@falcon/shared/admin/reports";
-import { reportPeriodToIso } from "@falcon/shared/admin/reports";
+} from "@stella/shared/admin/reports";
+import { reportPeriodToIso } from "@stella/shared/admin/reports";
 
 import { apiFetch } from "./api-client";
 

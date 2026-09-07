@@ -2,7 +2,7 @@
  * Grok non-streaming completion via AI Gateway Unified Billing REST (Issue #204).
  */
 
-import type { ChatRole } from "@falcon/shared/ai/types";
+import type { ChatRole } from "@stella/shared/ai/types";
 
 import type { Env } from "../env.js";
 import {

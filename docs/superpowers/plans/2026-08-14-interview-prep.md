@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - lint は Biome (`bun run lint`)、静的解析の主役は `bun run typecheck` (tsc strict)。
-- packages/shared 内部の相対 import は `.js` 拡張子付き (NodeNext)。web からは `@falcon/shared/<subpath>` (package.json の exports に登録必須)。
+- packages/shared 内部の相対 import は `.js` 拡張子付き (NodeNext)。web からは `@stella/shared/<subpath>` (package.json の exports に登録必須)。
 - コミットメッセージは既存に倣い `feat(scope): 日本語要約` 形式。
 - テナントは `ses` 固定 (既存教材コースと同じ)。
 - カテゴリ定数: 割当可能 = `PHP/JS` / `SQL` / `テスト`、常時表示 = `全案件共通`。優先度 = `A`(必修) / `B`(推奨) / `C`(参考)。
@@ -335,13 +335,13 @@ export const interviewPrepAssignments = sqliteTable(
 - [ ] **Step 2: マイグレーションを生成して適用**
 
 ```bash
-bun run --filter=@falcon/api db:generate
+bun run --filter=@stella/api db:generate
 ```
 
 Expected: `apps/api/drizzle/0011_*.sql` が生成され、`CREATE TABLE interview_questions` / `interview_prep_assignments` と 2 つの UNIQUE INDEX を含む。
 
 ```bash
-bun run --filter=@falcon/api db:migrate
+bun run --filter=@stella/api db:migrate
 ```
 
 Expected: `1 migration applied` 相当の出力。
@@ -386,7 +386,7 @@ emitInterviewQuestions("ses");
 - [ ] **Step 4: seed を流して行数を確認**
 
 ```bash
-bun run --filter=@falcon/api db:seed
+bun run --filter=@stella/api db:seed
 ```
 
 ```bash
@@ -412,7 +412,7 @@ git commit -m "feat(api): 面談対策の質問バンクと割当テーブルを
 - Modify: `packages/shared/src/admin/audit-actions.ts` (action ラベル追加)
 
 **Interfaces:**
-- Consumes: Task 1 の `ASSIGNABLE_CATEGORIES` / `COMMON_CATEGORY` / `isAssignableCategory` / `visibleQuestions` (`@falcon/shared/interview/*`)、Task 2 の Drizzle テーブル。
+- Consumes: Task 1 の `ASSIGNABLE_CATEGORIES` / `COMMON_CATEGORY` / `isAssignableCategory` / `visibleQuestions` (`@stella/shared/interview/*`)、Task 2 の Drizzle テーブル。
 - Produces:
   - `GET /api/interview-prep/questions` → `{ rows: InterviewQuestion[], assignedCategories: string[] }` (受講者: 割当+共通のみ / staff: 全件 + 全カテゴリ)
   - `GET /api/interview-prep/assignments` → `{ rows: { profile_id, display_name, email, categories }[] }` (staff のみ、テナント内の student 全員)
@@ -446,8 +446,8 @@ import { and, asc, eq } from "drizzle-orm";
 import {
   ASSIGNABLE_CATEGORIES,
   isAssignableCategory,
-} from "@falcon/shared/interview/types";
-import { visibleQuestions } from "@falcon/shared/interview/filter";
+} from "@stella/shared/interview/types";
+import { visibleQuestions } from "@stella/shared/interview/filter";
 
 import { interviewPrepAssignments, interviewQuestions, profiles } from "../db/schema.js";
 import {
@@ -693,7 +693,7 @@ git commit -m "feat(api): 面談対策の質問取得・割当APIを追加"
  *   - staff: 全件 + 割当の read/write
  */
 
-import type { InterviewQuestion } from "@falcon/shared/interview/types";
+import type { InterviewQuestion } from "@stella/shared/interview/types";
 import { apiFetch } from "./api-client";
 
 export interface InterviewQuestionsResult {
@@ -748,12 +748,12 @@ import { Loader2, ChevronDown, ChevronRight, Play, Pause, X } from '@/lib/icons'
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import type { InterviewQuestion } from '@falcon/shared/interview/types';
+import type { InterviewQuestion } from '@stella/shared/interview/types';
 import {
   ASSIGNABLE_CATEGORIES,
   COMMON_CATEGORY,
-} from '@falcon/shared/interview/types';
-import { INTERVIEW_QUESTIONS } from '@falcon/shared/interview/questions';
+} from '@stella/shared/interview/types';
+import { INTERVIEW_QUESTIONS } from '@stella/shared/interview/questions';
 import { fetchInterviewQuestions } from '@/lib/interview-prep-api';
 import { cn } from '@/lib/utils';
 
@@ -1300,7 +1300,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import { ASSIGNABLE_CATEGORIES } from '@falcon/shared/interview/types';
+import { ASSIGNABLE_CATEGORIES } from '@stella/shared/interview/types';
 import {
   listInterviewPrepAssignments,
   saveInterviewPrepAssignment,

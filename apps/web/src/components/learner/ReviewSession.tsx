@@ -10,9 +10,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
-import type { LearnerQuizQuestion } from "@falcon/shared/cms/types";
-import type { SrsAnswerResult, SrsTodaySummary } from "@falcon/shared/srs/types";
-import { shuffleLearnerQuizQuestions } from "@falcon/shared/quiz/shuffle";
+import type { LearnerQuizQuestion } from "@stella/shared/cms/types";
+import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
+import { shuffleLearnerQuizQuestions } from "@stella/shared/quiz/shuffle";
 import { getSrsToday, submitSrsAnswer } from "@/lib/srs-api";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";

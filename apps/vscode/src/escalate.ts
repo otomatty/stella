@@ -5,10 +5,10 @@
  * `POST /api/submissions` する。 レッスン完了にはしない (完了は自動採点クリアのまま)。
  */
 
-import { getEntryFile } from "@falcon/shared/assignment-helpers";
-import { buildEscalationSubmissionBody } from "@falcon/shared/review/escalation";
-import { buildGradingSummary } from "@falcon/shared/review/grading-summary";
-import type { Assignment } from "@falcon/shared/types";
+import { getEntryFile } from "@stella/shared/assignment-helpers";
+import { buildEscalationSubmissionBody } from "@stella/shared/review/escalation";
+import { buildGradingSummary } from "@stella/shared/review/grading-summary";
+import type { Assignment } from "@stella/shared/types";
 import { apiRequest } from "./api.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 

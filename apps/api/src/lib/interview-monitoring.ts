@@ -10,8 +10,8 @@
 
 import { eq } from "drizzle-orm";
 
-import { visibleQuestions } from "@falcon/shared/interview/filter";
-import { deriveQuestionPrepStatus, prepRate } from "@falcon/shared/interview/progress";
+import { visibleQuestions } from "@stella/shared/interview/filter";
+import { deriveQuestionPrepStatus, prepRate } from "@stella/shared/interview/progress";
 
 import { interviewPersonalTemplates, interviewProgress, interviewQuestions } from "../db/schema.js";
 import type { Db } from "../db/client.js";

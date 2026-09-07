@@ -6,8 +6,8 @@
 import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PRACTICE_SET_SIZE } from "@falcon/shared/interview/practice-set";
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
+import { PRACTICE_SET_SIZE } from "@stella/shared/interview/practice-set";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import type { Env } from "../env.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";

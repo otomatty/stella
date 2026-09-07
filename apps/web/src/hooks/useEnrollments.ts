@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { EnrollmentRow, EnrollmentSummaryRow } from "@falcon/shared/cms/types";
+import type { EnrollmentRow, EnrollmentSummaryRow } from "@stella/shared/cms/types";
 import {
   listEnrollmentSummaries,
   listEnrollmentsForStage,

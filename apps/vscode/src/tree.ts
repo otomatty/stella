@@ -1,4 +1,4 @@
-import type { LessonType } from "@falcon/shared/cms/types";
+import type { LessonType } from "@stella/shared/cms/types";
 import * as vscode from "vscode";
 import { AuthExpiredError } from "./api.js";
 import type { AuthStore } from "./auth.js";

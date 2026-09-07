@@ -1,4 +1,4 @@
-import { isStarVisible } from "@falcon/shared/skill-map/evaluate";
+import { isStarVisible } from "@stella/shared/skill-map/evaluate";
 
 import type { SkillMapVisibility } from "@/lib/skill-map-api";
 

@@ -11,7 +11,7 @@ import { sql } from "drizzle-orm";
 import {
   MAX_PROGRESS_SYNC_ROWS,
   type NormalizedProgressRow,
-} from "@falcon/shared/study/progress-sync";
+} from "@stella/shared/study/progress-sync";
 
 import type { Db } from "../db/client.js";
 import { lessonProgress } from "../db/schema.js";
@@ -24,7 +24,7 @@ export const D1_MAX_QUERIES_PER_INVOCATION = 1000;
 /** getCaller など進捗書き込み以外のクエリ。 */
 export const PROGRESS_WRITE_QUERY_HEADROOM = 20;
 /**
- * 受付上限 `MAX_PROGRESS_SYNC_ROWS` (= 600) の根拠。 正本は `@falcon/shared` に置く —
+ * 受付上限 `MAX_PROGRESS_SYNC_ROWS` (= 600) の根拠。 正本は `@stella/shared` に置く —
  * クライアント (進捗ストアの flush) が同じ値で分割送信するため。
  *
  * 最悪は全行が study_activity 対象。 1 チャンク = 行数ぶんの加算 + upsert 1 文。

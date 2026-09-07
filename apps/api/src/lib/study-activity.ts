@@ -20,7 +20,7 @@
  */
 
 import { sql } from "drizzle-orm";
-import type { NormalizedProgressRow } from "@falcon/shared/study/progress-sync";
+import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 
 import type { Db } from "../db/client.js";
 import { lessonProgress, studyActivity } from "../db/schema.js";

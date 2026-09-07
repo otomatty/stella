@@ -12,7 +12,7 @@
 
 import type { Context } from "hono";
 
-import type { AuditAction } from "@falcon/shared/admin/audit-actions";
+import type { AuditAction } from "@stella/shared/admin/audit-actions";
 
 import { auditLogs } from "../db/schema.js";
 import type { Db } from "../db/client.js";

@@ -12,7 +12,7 @@ import type {
   StageCompletion,
   StageGradebook,
   IssuedCertificate,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
 import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 

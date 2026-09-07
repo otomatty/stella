@@ -18,7 +18,7 @@ import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import type { AdminProfileRow } from "@/lib/admin-users-api";
-import type { EnrollmentSummaryRow } from "@falcon/shared/cms/types";
+import type { EnrollmentSummaryRow } from "@stella/shared/cms/types";
 import { RoleBadge, toneFromId } from "../users-admin/shared";
 import { type LearnerFilter, matchesProfile } from "./shared";
 

@@ -1,4 +1,4 @@
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Role } from "@/data/types";
 
 /** Issue #233 TDD contract — implementation pending in skill-sheet-ui.ts */

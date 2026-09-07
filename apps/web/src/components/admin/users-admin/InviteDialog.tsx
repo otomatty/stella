@@ -25,7 +25,7 @@ import {
   isValidEmail,
   type AssignableProfileRole,
   type InviteUserInput,
-} from "@falcon/shared/admin/types";
+} from "@stella/shared/admin/types";
 import { inviteUsers } from "@/lib/admin-users-api";
 
 import { ROLE_LABEL } from "./shared";

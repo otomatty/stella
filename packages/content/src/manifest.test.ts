@@ -876,7 +876,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     });
   });
 
-  it("appearances は実行時の正本 (@falcon/shared) と一致する", () => {
+  it("appearances は実行時の正本 (@stella/shared) と一致する", () => {
     // 実行時に複製されるのは正本に載った slug だけ。教材が宣言しても正本に無ければ
     // 画面には 1 つしか出ないので、両者を 1 対 1 に保つ。
     const declared = courses.filter((c) => (c.appearances?.length ?? 0) > 0).map((c) => c.id);

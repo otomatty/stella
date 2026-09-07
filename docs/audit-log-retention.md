@@ -29,7 +29,7 @@
 - 記録は共通ヘルパ `apps/api/src/lib/audit.ts` の `recordAudit()` が D1 へ INSERT する。
 - 実行者 (actor) は Bearer JWT から `getCaller()` で確定する。 ログインのみ、 JWT 発行前のため
   `profiles` 行から actor を組み立てる。
-- action の一覧とラベルは `@falcon/shared/admin/audit-actions` の `AuditAction` 型が唯一の定義。
+- action の一覧とラベルは `@stella/shared/admin/audit-actions` の `AuditAction` 型が唯一の定義。
   `recordAudit()` がこの型を受け取るため、 **未定義の action を記録することはできない**
   （記録側とラベル側のズレを型で防ぐ / Issue #64）。
 - コース状態変更は監査上の意味が違うため、 公開は `course_publish`、 公開→非公開は

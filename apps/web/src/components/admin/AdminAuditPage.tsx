@@ -32,13 +32,13 @@ import {
   AUDIT_ACTION_FILTER_LABELS,
   auditActionLabel,
   type AuditAction,
-} from "@falcon/shared/admin/audit-actions";
+} from "@stella/shared/admin/audit-actions";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 type ActionVariant = "default" | "success" | "warning" | "danger" | "info" | "accent";
 
 // 操作種別の配色。 表示ラベルはレポート (#75) と共通の
-// `@falcon/shared/admin/audit-actions` を使う。 未知の action は素のまま表示する。
+// `@stella/shared/admin/audit-actions` を使う。 未知の action は素のまま表示する。
 // キーは `AuditAction` に縛り、 記録側に無い action へ色だけ付ける事故を防ぐ。
 const ACTION_VARIANT: Partial<Record<AuditAction, ActionVariant>> = {
   login: "default",

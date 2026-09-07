@@ -1,5 +1,5 @@
 {
-  "name": "@falcon/code-runner",
+  "name": "@stella/code-runner",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@falcon/shared": "workspace:*",
+    "@stella/shared": "workspace:*",
     "eslint-linter-browserify": "^10.9.1",
     "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "quickjs-emscripten-core": "^0.32.0",

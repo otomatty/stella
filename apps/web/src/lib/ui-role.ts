@@ -1,6 +1,6 @@
-import type { ProfileRole } from "@falcon/shared/cms/types";
-import type { SearchResult } from "@falcon/shared/search/types";
-import { canManageInterviewPrep } from "@falcon/shared/admin/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
+import type { SearchResult } from "@stella/shared/search/types";
+import { canManageInterviewPrep } from "@stella/shared/admin/types";
 import type { Role } from "@/data/types";
 
 export function isStaffProfileRole(role: ProfileRole | undefined): boolean {

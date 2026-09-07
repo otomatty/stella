@@ -7,8 +7,8 @@ import { NotificationCenter } from "@/components/shell/NotificationCenter";
 import { SearchPalette } from "@/components/shell/SearchPalette";
 import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import type { NotificationRow } from "@falcon/shared/cms/types";
-import type { SearchResult } from "@falcon/shared/search/types";
+import type { NotificationRow } from "@stella/shared/cms/types";
+import type { SearchResult } from "@stella/shared/search/types";
 import type { Stage, Role, Tenant } from "@/data/types";
 
 interface TopbarProps {

@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
-import type { SearchResult } from "@falcon/shared/search/types";
+import type { SearchResult } from "@stella/shared/search/types";
 import { Book, Loader2, Search } from "@/lib/icons";
 import { LessonTypeIcon } from "@/components/learner/StageDetail";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

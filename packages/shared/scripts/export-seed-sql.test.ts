@@ -278,12 +278,12 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
 });
 
 // quiz は教材ステージにだけ紐づける。fixtures 側に同じ lesson.id が現れても
-// quiz を生やさないガードが消えたら落ちるよう、@falcon/content を差し替えて検証する。
-vi.mock("@falcon/content", async () => {
+// quiz を生やさないガードが消えたら落ちるよう、@stella/content を差し替えて検証する。
+vi.mock("@stella/content", async () => {
   const collidingLessonId = "l1";
 
   return {
-    // @falcon/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
+    // @stella/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
     buildContentManifest: () => ({
       courses: [
         {

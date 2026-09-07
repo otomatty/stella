@@ -1,9 +1,9 @@
 /**
  * 教材の画像 (図解 SVG / 講座サムネイル) を R2 へ流す。
  *
- *   bun run --filter=@falcon/content upload                  # local (--local)
- *   bun run --filter=@falcon/content upload:remote           # remote (--remote)
- *   bun run --filter=@falcon/content upload:thumbnails:remote # remote / サムネイルのみ
+ *   bun run --filter=@stella/content upload                  # local (--local)
+ *   bun run --filter=@stella/content upload:remote           # remote (--remote)
+ *   bun run --filter=@stella/content upload:thumbnails:remote # remote / サムネイルのみ
  *
  * スライド本文と doc.md は D1 の lessons.markdown に入るので、R2 に置くのは
  * 本文から参照される画像だけ。キーは manifest の assetPath() と一致していなければならない。

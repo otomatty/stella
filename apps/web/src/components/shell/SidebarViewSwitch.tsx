@@ -7,7 +7,7 @@
 
 import { Eye, GraduationCap } from "@/lib/icons";
 import { staffHomeLabel } from "@/lib/ui-role";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 interface SidebarViewSwitchProps {
   /** 受講者シェルを表示中か。 */

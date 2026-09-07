@@ -13,7 +13,7 @@ import { Brand } from "@/components/common/Brand";
 import { CertificateView, formatIssuedAt } from "@/components/common/CertificateView";
 import { isApiConfigured } from "@/lib/api-client";
 import { verifyCertificate } from "@/lib/certificates-api";
-import type { CertificateVerification } from "@falcon/shared/cms/types";
+import type { CertificateVerification } from "@stella/shared/cms/types";
 
 export const PublicCertificateVerify = ({ certCode }: { certCode: string }) => {
   const [state, setState] = useState<"loading" | "done">("loading");

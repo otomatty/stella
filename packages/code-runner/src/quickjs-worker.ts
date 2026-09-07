@@ -6,7 +6,7 @@
  * QuickJS WASM のロードと実行はワーカ内で完結するため、UI スレッドはブロックしない。
  */
 
-import type { RunTestsRequest, RunTestsResponse, TestResult } from "@falcon/shared/types";
+import type { RunTestsRequest, RunTestsResponse, TestResult } from "@stella/shared/types";
 
 import { getQuickJSModule, MEMORY_LIMIT_MB, QuickJsRunner } from "./quickjs-runner.js";
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash } from "@/lib/icons";
 import { FileTabs } from "@/practice/components/FileTabs";
 import { Editor } from "@/practice/components/Editor";
-import type { AssignmentFile, ESLintRuleConfig, Language } from "@falcon/shared/types";
+import type { AssignmentFile, ESLintRuleConfig, Language } from "@stella/shared/types";
 
 import { parseJsonOr } from "./draft";
 

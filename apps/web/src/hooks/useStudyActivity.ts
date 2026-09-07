@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { StudyActivitySummary } from "@falcon/shared/study/activity";
+import type { StudyActivitySummary } from "@stella/shared/study/activity";
 import { getMyStudyActivity } from "@/lib/study-activity-api";
 import { isBackendConfigured } from "@/lib/backend";
 

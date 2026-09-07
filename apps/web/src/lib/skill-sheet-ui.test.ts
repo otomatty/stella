@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Role } from "@/data/types";
 
 type SkillSheetUiModule = typeof import("./skill-sheet-ui.js");

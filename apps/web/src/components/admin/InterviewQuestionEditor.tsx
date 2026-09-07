@@ -20,7 +20,7 @@ import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
+import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@stella/shared/interview/types";
 import {
   INTERVIEW_QUESTION_FIELD_LABELS,
   INTERVIEW_QUESTION_MAX_LENGTH,
@@ -28,7 +28,7 @@ import {
   type InterviewQuestionTextField,
   InterviewQuestionPatchError,
   normalizeInterviewQuestionPatch,
-} from "@falcon/shared/interview/edit";
+} from "@stella/shared/interview/edit";
 import {
   fetchInterviewQuestions,
   releaseInterviewQuestionEdit,

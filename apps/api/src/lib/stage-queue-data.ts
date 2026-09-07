@@ -7,7 +7,7 @@
  */
 
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 
 import type { Db } from "../db/client.js";
 import { enrollments, stageQueue } from "../db/schema.js";

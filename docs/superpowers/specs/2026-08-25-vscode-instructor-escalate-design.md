@@ -27,7 +27,7 @@ localStorage 前提) のうち、 講師 UI・D1 永続化・学習者への結�
 | AI 下書き | **講師が Editor を開いた時の遅延生成のまま**。 提出時のバックグラウンド生成はやらない |
 | ステータス | `pending / passed / resubmit / failed` + `verdict` (現状維持)。 原文の `in_review` は導入しない |
 
-## 1. 共有純関数 — `@falcon/shared/review`
+## 1. 共有純関数 — `@stella/shared/review`
 
 ランタイム非依存。 拡張 / API / Web が同じ関数を使う。
 

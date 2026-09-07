@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { monitoringRisk } from "@falcon/shared/interview/monitoring";
+import { monitoringRisk } from "@stella/shared/interview/monitoring";
 import {
   applyAssignmentSave,
   mergeAssignmentAggregates,
@@ -91,7 +91,9 @@ describe("applyAssignmentSave — 割当カテゴリの変更", () => {
       row({ profile_id: "b", display_name: "B", interviewDate: "2026-09-20" }),
     ];
 
-    const next = applyAssignmentSave(rows, "b", { interviewDate: "2026-09-11" }, TODAY);
+    // sortByInterviewDate は today 基準で「これから → 済んだ → 未設定」に分ける。
+    // 固定 today を渡し、変更後も両方が「これから」に入るようにする。
+    const next = applyAssignmentSave(rows, "b", { interviewDate: "2026-09-05" }, "2026-09-01");
 
     expect(next.map((r) => r.profile_id)).toEqual(["b", "a"]);
   });

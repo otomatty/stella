@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { buildVscodeLessonUri } from "@falcon/shared";
+import { buildVscodeLessonUri } from "@stella/shared";
 import { Code, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";

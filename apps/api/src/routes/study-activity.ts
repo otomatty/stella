@@ -13,7 +13,7 @@ import {
   computeStreaks,
   toStudyDate,
   type StudyActivityDay,
-} from "@falcon/shared/study/activity";
+} from "@stella/shared/study/activity";
 
 import { errorResponse, getCaller } from "../lib/authz.js";
 import { studyActivity } from "../db/schema.js";

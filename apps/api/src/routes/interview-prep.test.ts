@@ -8,8 +8,8 @@
 import type { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION } from "@falcon/shared/interview/fix-notes";
-import { interviewAudioTextHash } from "@falcon/shared/interview/audio";
+import { FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION } from "@stella/shared/interview/fix-notes";
+import { interviewAudioTextHash } from "@stella/shared/interview/audio";
 
 import type { Env } from "../env.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
@@ -482,8 +482,9 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
   });
 
   it("sorts rows by interviewDate ascending with unset dates last", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-01T14:30:00.000Z"));
+    // GET /assignments の sortByInterviewDate は Date.now() 基準。 実行日によって
+    // 過去日が末尾に回るため、 全行が「これから」になる study day に固定する。
+    vi.setSystemTime(new Date("2026-08-31T15:00:00.000Z")); // JST 2026-09-01
     try {
       const { app } = createTestApp(env);
       const salesToken = await mintInterviewPrepTestToken("seed-sales");

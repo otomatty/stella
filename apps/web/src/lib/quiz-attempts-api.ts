@@ -11,7 +11,7 @@ import type {
   QuizAnswer,
   QuizGradeResult,
   StageClearedNotice,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
 
 /** 受講者向けの設問を取得する。 quiz 未作成 / 権限外なら null。 */

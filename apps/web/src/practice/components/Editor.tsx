@@ -11,9 +11,9 @@ import { javascript } from "@codemirror/lang-javascript";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import type { Extension } from "@codemirror/state";
 
-import type { ESLintRuleConfig, Language } from "@falcon/shared/types";
+import type { ESLintRuleConfig, Language } from "@stella/shared/types";
 import { useTheme } from "@/hooks/useTheme";
-import { getLinter } from "@falcon/code-runner/lint";
+import { getLinter } from "@stella/code-runner/lint";
 
 interface Props {
   code: string;

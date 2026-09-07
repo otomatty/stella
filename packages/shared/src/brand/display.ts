@@ -1,9 +1,10 @@
 /**
- * Phase A display-layer brand strings shown to humans.
+ * Display-layer brand strings shown to humans.
  *
- * Machine-readable identifiers (`@falcon/*`, `falcon.*`, localStorage keys, Worker
- * names, JWT claims) stay unchanged until Phase B.
+ * Package scope is `@stella/*` (Phase B). Runtime identifiers (Worker names,
+ * JWT iss/aud, localStorage keys, VS Code extension id) stay on legacy `falcon.*`.
  */
+export const PACKAGE_SCOPE = "@stella";
 export const DISPLAY_NAME = "STELLA";
 
 /** Command palette / activity bar prefix (e.g. `STELLA: 採点を実行`). */

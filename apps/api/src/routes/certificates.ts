@@ -43,7 +43,7 @@ import {
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
-import type { StageCompletion, GradebookEntry } from "@falcon/shared/cms/types";
+import type { StageCompletion, GradebookEntry } from "@stella/shared/cms/types";
 
 export const certificatesRoute = new Hono<{ Bindings: Env }>();
 

@@ -1,4 +1,4 @@
-import type { SkillSheetDraft, SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
+import type { SkillSheetDraft, SkillSheetV1 } from "@stella/shared/skill-sheet/types";
 
 /** Issue #233 TDD contract — implementation pending in skill-sheet-api.ts */
 export declare function parseSkillSheet(file: File): Promise<SkillSheetDraft>;

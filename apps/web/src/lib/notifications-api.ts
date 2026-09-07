@@ -5,7 +5,7 @@
  * author の確定・受講者への fan-out・本人限定の既読化はすべてサーバ側で行う。
  */
 
-import type { AnnouncementRow, NotificationRow } from "@falcon/shared/cms/types";
+import type { AnnouncementRow, NotificationRow } from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 
 export interface ListAnnouncementsOpts {

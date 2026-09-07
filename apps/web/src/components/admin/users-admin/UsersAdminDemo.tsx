@@ -16,7 +16,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import type { AvatarTone } from "@/data/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 import { RoleBadge } from "./shared";
 

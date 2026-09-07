@@ -25,7 +25,7 @@ import {
   validateUpsertOrganization,
   type InviteResult,
   type OrganizationRow,
-} from "@falcon/shared/admin/types";
+} from "@stella/shared/admin/types";
 import { Hono, type Context } from "hono";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 

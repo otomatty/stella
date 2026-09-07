@@ -2,7 +2,7 @@
  * 認証ラッパ (Cloudflare Workers Google OAuth / JWT)。
  */
 
-import type { ProfileRow, ProfileTenantInfo } from "@falcon/shared/cms/types";
+import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
 
 import { apiFetch, ApiClientError } from "./api-client";
 import {

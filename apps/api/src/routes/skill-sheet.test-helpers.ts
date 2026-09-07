@@ -19,7 +19,7 @@ export const SKILL_SHEET_V1_SECTIONS = [
 
 export type SkillSheetV1Section = (typeof SKILL_SHEET_V1_SECTIONS)[number];
 
-/** Minimal SkillSheet v1 contract (implementation: @falcon/shared/skill-sheet/types). */
+/** Minimal SkillSheet v1 contract (implementation: @stella/shared/skill-sheet/types). */
 export interface SkillSheetV1 {
   sections: Record<SkillSheetV1Section, unknown>;
 }

@@ -6,7 +6,7 @@
 
 **Architecture:** 既存 Hono/D1 と web ストアの局所拡張。提出 PATCH を await 化し、`GET /mine` / `GET /:id` と `ReviewResultView` で学習者ループを閉じる。クイズは enrollment ゲート、教材パスは `tenant/ses/courses/{uuid}/...` に寄せる。新 Provider は作らない。
 
-**Tech Stack:** React 19 + Vite (`apps/web`)、Hono + Drizzle + D1 (`apps/api`)、`@falcon/shared` review/cms types、Bun
+**Tech Stack:** React 19 + Vite (`apps/web`)、Hono + Drizzle + D1 (`apps/api`)、`@stella/shared` review/cms types、Bun
 
 ## Global Constraints
 
@@ -379,7 +379,7 @@ git add apps/api/src/routes/submissions.ts apps/web/src/lib/submissions-api.ts
 
 ```ts
 import { useCallback, useEffect, useState } from "react";
-import type { Submission } from "@falcon/shared/review/types";
+import type { Submission } from "@stella/shared/review/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchMySubmissions } from "@/lib/submissions-api";
 
@@ -434,7 +434,7 @@ export function useMySubmissions(enabled: boolean) {
 ```tsx
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Loader2 } from 'lucide-react';
-import type { Submission } from '@falcon/shared/review/types';
+import type { Submission } from '@stella/shared/review/types';
 import { Badge } from '@/components/ui/Badge';
 import { fetchSubmissionById } from '@/lib/submissions-api';
 import { formatSubmittedAt } from '@/lib/submissions-store';

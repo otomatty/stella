@@ -44,7 +44,7 @@ export interface Lesson {
   pdfPath?: string;
   /** `text` レッスンの本文 (将来 CMS 化までは fixtures 直書き) */
   markdown?: string;
-  /** `code` / `assignment` で参照する `@falcon/shared` の Assignment.id (P2 で使用) */
+  /** `code` / `assignment` で参照する `@stella/shared` の Assignment.id (P2 で使用) */
   assignmentId?: string;
   /** 想定総ページ数 (slides) — 進捗バー初期表示用、 実際の numPages は PDF 読み込み後に確定 */
   totalPages?: number;
@@ -61,7 +61,7 @@ export interface Section {
 /**
  * 受講単位 (旧 Course)。 ステージ → セクション → レッスンの木の根。
  *
- * 同名異義に注意: `@falcon/shared` (`packages/shared/src/types.ts`) の `Stage` は
+ * 同名異義に注意: `@stella/shared` (`packages/shared/src/types.ts`) の `Stage` は
  * 演習カリキュラムの難易度段階 (S0-S5) で、 こちらとは別物。
  */
 export interface Stage {

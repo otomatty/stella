@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { CertificateRow } from "@falcon/shared/cms/types";
+import type { CertificateRow } from "@stella/shared/cms/types";
 import { listCertificatesForUser } from "@/lib/certificates-api";
 import { isBackendConfigured } from "@/lib/backend";
 

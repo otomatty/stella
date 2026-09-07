@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { StageThumb } from "@/components/common/StageThumb";
-import type { StageColor, StageRow } from "@falcon/shared/cms/types";
+import type { StageColor, StageRow } from "@stella/shared/cms/types";
 import { deleteStage, setStageStatus, upsertStage } from "@/lib/cms-api";
 import { useCmsStages } from "@/hooks/useCmsStages";
 import { StageEditor } from "./StageEditor";

@@ -2,7 +2,7 @@
  * Drizzle スキーマ — Cloudflare D1 (SQLite)。
  *
  * 旧 Neon Postgres スキーマを SQLite 向けに移植。 snake_case 列名は
- * `@falcon/shared/cms/types` の行型と一致させ、 フロントのマッパーは無変更。
+ * `@stella/shared/cms/types` の行型と一致させ、 フロントのマッパーは無変更。
  *
  * 認可は Hono アプリ層 (`lib/authz.ts`) で行う。
  */
@@ -17,10 +17,10 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import type { DiscoveryQuestion } from "@falcon/shared/discovery/types";
-import { EMPTY_HOF_CHAPTERS } from "@falcon/shared/hall-of-fame/types";
-import type { HallOfFameChapters, HallOfFamePathStage } from "@falcon/shared/hall-of-fame/types";
-import type { SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
+import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
+import { EMPTY_HOF_CHAPTERS } from "@stella/shared/hall-of-fame/types";
+import type { HallOfFameChapters, HallOfFamePathStage } from "@stella/shared/hall-of-fame/types";
+import type { SkillSheetV1 } from "@stella/shared/skill-sheet/types";
 
 const uuid = () =>
   text("id")
@@ -156,7 +156,7 @@ export const stages = sqliteTable(
      * 前提なし。すべてクリアするまでこのステージは開けない (スキルツリーのハードロック)。
      *
      * UUID ではなく slug を入れる: 正本は教材リポジトリ (`courses/<slug>/course.json`) で、
-     * そちらは stage UUID を知らない。評価器 (`@falcon/shared/skill-map`) も slug で解く。
+     * そちらは stage UUID を知らない。評価器 (`@stella/shared/skill-map`) も slug で解く。
      * `json()` ヘルパを使わないのは、既存行に既定値を入れずに null のまま足したいため。
      */
     prerequisites: text("prerequisites"),
@@ -512,7 +512,7 @@ export const stageQueue = sqliteTable(
 /**
  * 飛び級で開いた星 (Phase 3a)。
  *
- * 腕試し (SkillCheck) に合格すると 1 行入り、評価器 (`@falcon/shared/skill-map`) の
+ * 腕試し (SkillCheck) に合格すると 1 行入り、評価器 (`@stella/shared/skill-map`) の
  * `unlockedStageIds` として渡る = 前提を満たしていなくても `unlocked` になる。
  *
  * **クリア (修了) ではない。** 修了は従来どおり `enrollments.status = 'completed'` /
@@ -1083,7 +1083,7 @@ export const certificates = sqliteTable(
  * **1 人 1 行**。推薦 → 記入 → 公開 → 辞退 / 取り下げまでを同じ行の `status` で表す。
  * 履歴テーブルに分けないのは、殿堂に要るのは「今この人が載っているか」だけで、
  * 辞退や取り下げの経緯を掘り返せる形にしておくこと自体が本人への圧力になるため
- * (辞退は監査ログにも残さない — `@falcon/shared/admin/audit-actions` の注記を参照)。
+ * (辞退は監査ログにも残さない — `@stella/shared/admin/audit-actions` の注記を参照)。
  *
  * **序列の数値は持たない。** XP・レベル・クリア数はこの表に無く、公開応答にも出ない。
  * 載るのは名前・ジョブ (名乗り)・引用・歩んだ道・4 章の本文だけ。

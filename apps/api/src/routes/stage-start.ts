@@ -12,7 +12,7 @@
  *
  * ## 開始してよい星の範囲は「評価器が決める」
  *
- * 受け取った id で登録を作る前に、必ず評価器 (`@falcon/shared/skill-map`) を 1 度回す。
+ * 受け取った id で登録を作る前に、必ず評価器 (`@stella/shared/skill-map`) を 1 度回す。
  * 通すのは **`unlocked` (未着手だが前提を満たした星) と `active` (既に登録のある星の
  * 再開 — 期限切れならここで受講中へ戻す)** だけ:
  *
@@ -37,7 +37,7 @@
 
 import { Hono } from "hono";
 
-import { isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
+import { isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 
 import { ApiError, errorResponse, getCaller, requireCanStartStage } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";

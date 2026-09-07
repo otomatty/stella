@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/d1";
 
-import { evaluateSkillMap } from "@falcon/shared/skill-map/evaluate";
+import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
 
 import type { Db } from "../db/client.js";
 import type { Caller } from "./authz.js";

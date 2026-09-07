@@ -8,7 +8,7 @@
 - **前提講座**: `typescript-node-basics` (クリアしていないと開けない)
 - **参考にしたロードマップ**: roadmap.sh の DevOps / バックエンドロードマップ（プログラミング言語）
 
-- **配置メモ**: この講座はバックエンド本土の星。クリアすると DevOps 島がスキルツリーに現れる（表示条件は `@falcon/shared/skill-map/islands`）。後続の本土は `python-testing-ci-basics`（pytest と CI の読み方）。
+- **配置メモ**: この講座はバックエンド本土の星。クリアすると DevOps 島がスキルツリーに現れる（表示条件は `@stella/shared/skill-map/islands`）。後続の本土は `python-testing-ci-basics`（pytest と CI の読み方）。
 ## 収録を予定している内容
 
 - 変数・型・制御構文

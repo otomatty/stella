@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { SrsTodaySummary } from "@falcon/shared/srs/types";
+import type { SrsTodaySummary } from "@stella/shared/srs/types";
 import { getSrsToday } from "@/lib/srs-api";
 import { isBackendConfigured } from "@/lib/backend";
 

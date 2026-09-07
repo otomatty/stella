@@ -2,9 +2,9 @@
  * 教材 (slides.md / doc.md / practice.md) を配布用 PDF に変換する
  * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
  *
- *   bun run --filter=@falcon/content pdf                      # 全講座
- *   bun run --filter=@falcon/content pdf -- typescript-basics # 講座を絞る
- *   bun run --filter=@falcon/content pdf -- --manifest out.json --skip existing-keys.txt
+ *   bun run --filter=@stella/content pdf                      # 全講座
+ *   bun run --filter=@stella/content pdf -- typescript-basics # 講座を絞る
+ *   bun run --filter=@stella/content pdf -- --manifest out.json --skip existing-keys.txt
  *
  * 見た目はアプリと同じ:
  * - slides … 16:9 (1280x720 / 1 スライド 1 ページ)。apps/web の slides-skin.css を

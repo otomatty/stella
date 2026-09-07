@@ -84,7 +84,7 @@ SES 未経験者向けの SQL 入門講座です。1 トピック = 覚えるこ
 | 6-1-4 | WHEREを忘れると全行に効く | UPDATEとDELETEでWHEREを書き忘れると、テーブルの全行が対象になる |
 | 6-1-5 | トランザクションなら取り消せる | BEGINで始めた変更は、COMMITで確定するかROLLBACKで取り消せる |
 
-コード演習: なし(SQL の課題は現在 SELECT 系の 9 問のみ。書き込み系の課題を `@falcon/shared` に追加したら、`course.json` の `exercises` に `6-1` を足す)
+コード演習: なし(SQL の課題は現在 SELECT 系の 9 問のみ。書き込み系の課題を `@stella/shared` に追加したら、`course.json` の `exercises` に `6-1` を足す)
 
 ### M7. テーブルを作る — レッスン7-1 テーブルを作る
 

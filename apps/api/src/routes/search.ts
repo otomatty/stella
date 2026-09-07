@@ -23,9 +23,9 @@ import {
   SEARCH_KIND_LIMIT,
   SEARCH_RESULT_LIMIT,
   type SearchResult,
-} from "@falcon/shared/search/types";
+} from "@stella/shared/search/types";
 
-import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 
 import { stages, enrollments, lessons, sections } from "../db/schema.js";
 import { errorResponse, getCaller, isStaffRole } from "../lib/authz.js";

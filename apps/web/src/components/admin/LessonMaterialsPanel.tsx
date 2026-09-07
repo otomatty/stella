@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { LessonMaterialRow, LessonMaterialVersionRow } from "@falcon/shared/cms/types";
+import type { LessonMaterialRow, LessonMaterialVersionRow } from "@stella/shared/cms/types";
 import { Upload, FileText, Loader2, Trash, History, Download, ChevronDown } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";

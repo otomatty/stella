@@ -35,7 +35,7 @@ import {
   upsertQuizOption,
   upsertQuizQuestion,
 } from "@/lib/cms-api";
-import type { QuestionKind } from "@falcon/shared/cms/types";
+import type { QuestionKind } from "@stella/shared/cms/types";
 
 interface Props {
   lessonId: string;

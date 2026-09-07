@@ -8,15 +8,15 @@
  * `lintAssignment` は現行 PracticeWorkspace と同じく `getLinter` + `analyzeAst` を一度呼ぶ。
  */
 
-import { analyzeAst } from "@falcon/shared/grading";
-import { getLanguage, getStaticAnalysisSettings } from "@falcon/shared/assignment-helpers";
+import { analyzeAst } from "@stella/shared/grading";
+import { getLanguage, getStaticAnalysisSettings } from "@stella/shared/assignment-helpers";
 import type {
   Assignment,
   ASTResult,
   ESLintRuleConfig,
   Language,
   LintViolation,
-} from "@falcon/shared/types";
+} from "@stella/shared/types";
 
 import { lintCode, type LintCodeOptions } from "./eslint-runner.js";
 

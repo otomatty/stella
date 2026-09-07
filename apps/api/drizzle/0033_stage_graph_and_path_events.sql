@@ -5,7 +5,7 @@
 --
 -- `stages.prerequisites` は **slug の JSON 配列文字列** (`["html-css-basics"]`)。
 -- UUID ではなく slug を入れるのは、正本が教材リポジトリ (`courses/<slug>/course.json`)
--- で、そちらは stage UUID を知らないため。評価器 (@falcon/shared/skill-map) も slug で解く。
+-- で、そちらは stage UUID を知らないため。評価器 (@stella/shared/skill-map) も slug で解く。
 ALTER TABLE `stages` ADD COLUMN `prerequisites` text;--> statement-breakpoint
 ALTER TABLE `stages` ADD COLUMN `can_do` text;--> statement-breakpoint
 ALTER TABLE `stages` ADD COLUMN `theme` text;--> statement-breakpoint

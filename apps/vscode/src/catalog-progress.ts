@@ -1,4 +1,4 @@
-import type { ProgressSyncInput } from "@falcon/shared/study/progress-sync";
+import type { ProgressSyncInput } from "@stella/shared/study/progress-sync";
 import type { CatalogStage, CatalogLesson } from "./catalog.js";
 
 /** Call POST only on a first clear. A later fail must not un-complete (OR). */

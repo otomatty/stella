@@ -9,13 +9,13 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { mapStageToUi, type StageWithChildren, type UiStage } from "@falcon/shared/cms/types";
+import { mapStageToUi, type StageWithChildren, type UiStage } from "@stella/shared/cms/types";
 import { createLatestRequest } from "@/data/latest-request";
 import type { Stage, Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getStageWithChildren, listStages } from "@/lib/cms-api";
 import { listEnrollmentsForUser } from "@/lib/enrollments-api";
-import { isReadableEnrollmentStatus } from "@falcon/shared/enrollment/access";
+import { isReadableEnrollmentStatus } from "@stella/shared/enrollment/access";
 
 /** デモ経路にカタログ stub は置かない。教材は D1 seed（packages/content）だけ。 */
 function fixturesFor(_tenantId: Tenant["id"]): Stage[] {

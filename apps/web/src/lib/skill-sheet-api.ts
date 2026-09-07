@@ -2,7 +2,7 @@
  * スキルシート Web API クライアント (Issue #203 / #233)。
  */
 
-import type { SkillSheetDraft, SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
+import type { SkillSheetDraft, SkillSheetV1 } from "@stella/shared/skill-sheet/types";
 
 function serverUrl(): string {
   return (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");

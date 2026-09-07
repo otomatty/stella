@@ -25,8 +25,8 @@ import type {
   LearnerQuizQuestion,
   QuizGradeResult,
   QuizQuestionResult,
-} from "@falcon/shared/cms/types";
-import { shuffleLearnerQuizQuestions } from "@falcon/shared/quiz/shuffle";
+} from "@stella/shared/cms/types";
+import { shuffleLearnerQuizQuestions } from "@stella/shared/quiz/shuffle";
 
 interface QuizPlayerProps {
   lessonId: string;

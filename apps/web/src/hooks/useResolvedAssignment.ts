@@ -2,7 +2,7 @@
  * Assignment を id から解決する Hook。
  *
  * 解決順 (バックエンド設定時):
- *  1. 初期表示用に `@falcon/shared` のバンドル版を fast-path として返す (あれば)
+ *  1. 初期表示用に `@stella/shared` のバンドル版を fast-path として返す (あれば)
  *  2. その後 async で API の assignments を問い合わせ、 ヒットしたら上書き
  *     — CMS で編集 / 新規作成されたバージョンを優先する (#10 — Codex P2)
  *  3. DB に無ければ shared の値を保持。 shared にも無ければ null
@@ -11,9 +11,9 @@
  */
 
 import { useEffect, useState } from "react";
-import type { Assignment } from "@falcon/shared/types";
-import { findAssignment } from "@falcon/shared/assignments";
-import { mapAssignmentRowToAssignment } from "@falcon/shared/cms/types";
+import type { Assignment } from "@stella/shared/types";
+import { findAssignment } from "@stella/shared/assignments";
+import { mapAssignmentRowToAssignment } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getAssignmentRow } from "@/lib/cms-api";
 

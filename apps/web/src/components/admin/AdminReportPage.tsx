@@ -6,7 +6,7 @@
  * 修了証 / 監査 の 4 種別を同じ期間指定・同じ表で扱う。
  *
  * 表示はプレビュー (先頭 200 件) にとどめ、 CSV 出力時は条件に一致する全件をページングで
- * 取得する。 列定義は `@falcon/shared/admin/reports` に集約しており、 プレビュー表と CSV は
+ * 取得する。 列定義は `@stella/shared/admin/reports` に集約しており、 プレビュー表と CSV は
  * 同じ変換関数を通るため列がずれない。
  *
  * バックエンド未設定時 (fixtures デモ経路): 実データが無いため、 デモ行は出さず案内のみ表示する。
@@ -27,7 +27,7 @@ import {
   type ReportPeriod,
   type ReportPeriodPreset,
   type ReportType,
-} from "@falcon/shared/admin/reports";
+} from "@stella/shared/admin/reports";
 
 import { Download, RefreshCw } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";

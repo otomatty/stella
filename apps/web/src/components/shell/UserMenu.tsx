@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { staffHomeLabel } from "@/lib/ui-role";
 import type { User } from "@/data/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 interface UserMenuProps {
   user: User;

@@ -1,4 +1,4 @@
-# @falcon/content — TypeScript入門 教材
+# @stella/content — TypeScript入門 教材
 
 社内の未経験エンジニア向けTypeScript研修教材の正本です。ショート動画の講義用スライドと、LMS掲載用のドキュメント(Markdown)・演習で構成されています。ここで書いた教材が `falcon-informal` の LMS に配信されます。
 

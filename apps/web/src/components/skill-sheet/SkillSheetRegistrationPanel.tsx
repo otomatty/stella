@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Loader2, Upload } from "@/lib/icons";
 import { toast } from "sonner";
-import type { ProfileRole } from "@falcon/shared/cms/types";
-import type { SkillSheetV1, SkillSheetV1Sections } from "@falcon/shared/skill-sheet/types";
-import { emptySkillSheetSections } from "@falcon/shared/skill-sheet/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
+import type { SkillSheetV1, SkillSheetV1Sections } from "@stella/shared/skill-sheet/types";
+import { emptySkillSheetSections } from "@stella/shared/skill-sheet/types";
 import type { Role } from "@/data/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

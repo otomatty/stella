@@ -1,5 +1,5 @@
 /**
- * FALCON INFORMAL API — Cloudflare Workers + Hono エントリ。
+ * STELLA API — Cloudflare Workers + Hono エントリ。
  */
 
 import { Hono } from "hono";

@@ -17,8 +17,8 @@ import type {
   TestCase,
   EvaluationResult,
   TestResult,
-} from "@falcon/shared/types";
-import type { AssignmentRow } from "@falcon/shared/cms/types";
+} from "@stella/shared/types";
+import type { AssignmentRow } from "@stella/shared/cms/types";
 
 export interface Draft {
   id: string;

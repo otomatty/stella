@@ -11,8 +11,8 @@
  * (QuickJS 実機での動作は grader WebView / Extension Development Host で確認する)
  */
 
-import { assignments } from "@falcon/shared/assignments";
-import type { Assignment } from "@falcon/shared/types";
+import { assignments } from "@stella/shared/assignments";
+import type { Assignment } from "@stella/shared/types";
 import { describe, expect, it } from "vitest";
 
 import { transpileFePseudo } from "./index.js";

@@ -24,13 +24,13 @@ import {
   normalizeFixNoteText,
   sortFixNotesForHistory,
   unresolvedFixNotes,
-} from "@falcon/shared/interview/fix-notes";
+} from "@stella/shared/interview/fix-notes";
 import {
   nextUnratedIndex,
   practiceSetProgress,
   remainingPracticeQuestions,
-} from "@falcon/shared/interview/practice-set";
-import { formatElapsed, parseTimeLimitSec, timerTone } from "@falcon/shared/interview/session";
+} from "@stella/shared/interview/practice-set";
+import { formatElapsed, parseTimeLimitSec, timerTone } from "@stella/shared/interview/session";
 import {
   addFixNote,
   fetchQuestionAudio,

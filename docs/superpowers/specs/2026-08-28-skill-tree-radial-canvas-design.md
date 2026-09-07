@@ -194,7 +194,7 @@ motion、の順で再検討する。
 
 ## 検証
 
-- `bun run --filter=@falcon/content check:ci` (語彙台帳 / スライド枚数 / 画像 /
+- `bun run --filter=@stella/content check:ci` (語彙台帳 / スライド枚数 / 画像 /
   前提グラフ 20 講座・循環なし)
 - `bun run lint` / `bun run typecheck` / `bun run test` (radial-layout 17 件・
   celebration 13 件を含む 1408 tests)

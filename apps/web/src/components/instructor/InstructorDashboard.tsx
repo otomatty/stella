@@ -16,7 +16,7 @@ import { Card, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import type { AvatarTone, Tenant } from "@/data/types";
-import type { InstructorStudentProgress } from "@falcon/shared/cms/types";
+import type { InstructorStudentProgress } from "@stella/shared/cms/types";
 import { useSubmissions } from "@/hooks/useSubmissions";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 import { formatSubmittedAt } from "@/lib/submissions-store";

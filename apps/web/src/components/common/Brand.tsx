@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { DISPLAY_NAME } from "@falcon/shared/brand/display";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { BrandMark } from "@/components/common/BrandMark";
 
 interface BrandProps {

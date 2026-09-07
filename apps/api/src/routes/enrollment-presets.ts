@@ -12,14 +12,14 @@
  *   - 定義 (作成 / 更新 / 削除) は admin 以上。 受講登録の運用ルールそのものだから
  *   - 参照は staff (instructor 以上)
  *
- * 設計の要点は `@falcon/shared/enrollment/preset` のヘッダを参照。 期限は絶対日付ではなく
+ * 設計の要点は `@stella/shared/enrollment/preset` のヘッダを参照。 期限は絶対日付ではなく
  * 基準日からのオフセットで持つ。
  */
 
 import { Hono } from "hono";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
-import { type PresetItemInput, validatePresetInput } from "@falcon/shared/enrollment/preset";
+import { type PresetItemInput, validatePresetInput } from "@stella/shared/enrollment/preset";
 
 import { stages, enrollmentPresetItems, enrollmentPresets } from "../db/schema.js";
 import type { Db } from "../db/client.js";

@@ -31,9 +31,9 @@ import type {
   ESLintRuleConfig,
   Language,
   LintPreset,
-} from "@falcon/shared/types";
-import { lintAssignment } from "@falcon/code-runner/lint";
-import { runGrading } from "@falcon/code-runner/runners";
+} from "@stella/shared/types";
+import { lintAssignment } from "@stella/code-runner/lint";
+import { runGrading } from "@stella/code-runner/runners";
 import { getAssignmentRow, upsertAssignment } from "@/lib/cms-api";
 
 import {

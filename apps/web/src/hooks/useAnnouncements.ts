@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { AnnouncementRow } from "@falcon/shared/cms/types";
+import type { AnnouncementRow } from "@stella/shared/cms/types";
 import { listAnnouncements } from "@/lib/notifications-api";
 import { isBackendConfigured } from "@/lib/backend";
 import { ANNOUNCEMENTS } from "@/demo/fixtures";

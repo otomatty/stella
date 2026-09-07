@@ -15,10 +15,10 @@ import type {
   Language,
   LintViolation,
   RunTestsResponse,
-} from "@falcon/shared/types";
-import type { CodeRunner } from "@falcon/shared/runner/types";
-import { getEntryFile, getLanguage } from "@falcon/shared/assignment-helpers";
-import { evaluate } from "@falcon/shared/grading/evaluate";
+} from "@stella/shared/types";
+import type { CodeRunner } from "@stella/shared/runner/types";
+import { getEntryFile, getLanguage } from "@stella/shared/assignment-helpers";
+import { evaluate } from "@stella/shared/grading/evaluate";
 
 import { fePseudoRunner } from "./fe-pseudo-runner.js";
 import { jsRunner } from "./js-runner.js";

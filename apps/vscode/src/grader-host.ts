@@ -1,5 +1,5 @@
-import type { Assignment } from "@falcon/shared/types";
-import { DISPLAY_NAME } from "@falcon/shared/brand/display";
+import type { Assignment } from "@stella/shared/types";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import * as vscode from "vscode";
 import {
   isGradeErrorMessage,

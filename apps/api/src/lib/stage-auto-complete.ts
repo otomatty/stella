@@ -17,7 +17,7 @@
 
 import { and, eq, inArray } from "drizzle-orm";
 
-import type { StageClearedNotice, StageCompletion } from "@falcon/shared/cms/types";
+import type { StageClearedNotice, StageCompletion } from "@stella/shared/cms/types";
 
 import type { Db } from "../db/client.js";
 import {

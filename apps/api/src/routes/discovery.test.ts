@@ -14,7 +14,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DiscoveryQuestion } from "@falcon/shared/discovery/types";
+import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
 
 import type { Env } from "../env.js";
 import type { ProfileRole } from "../lib/authz.js";

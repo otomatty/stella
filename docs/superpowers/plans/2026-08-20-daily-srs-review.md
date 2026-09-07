@@ -4,7 +4,7 @@
 
 **Goal:** クイズで解答した問題をSM-2間隔反復でスケジュールし、毎日「今日の復習」として再出題する。
 
-**Architecture:** SM-2純粋関数を `@falcon/shared` に置き、D1に `review_cards` / `review_logs` を追加。クイズ受験と復習解答の両方が同じカード更新関数を通る。APIは `/api/srs/today`(出題)と `/api/srs/answer`(1問採点)の2本。WebはダッシュボードカードとReviewSessionページ。
+**Architecture:** SM-2純粋関数を `@stella/shared` に置き、D1に `review_cards` / `review_logs` を追加。クイズ受験と復習解答の両方が同じカード更新関数を通る。APIは `/api/srs/today`(出題)と `/api/srs/answer`(1問採点)の2本。WebはダッシュボードカードとReviewSessionページ。
 
 **Tech Stack:** Hono + Drizzle (D1/SQLite) + Cloudflare Workers / Vite + React + TanStack Router / Vitest
 
@@ -16,14 +16,14 @@
 - TypeScript strict。`bun run typecheck` は全ワークスペース対象。新しいworktreeでは先に `bun install`(無いと `tsc` not found)。
 - `packages/shared` 内部のimportは相対パス+`.js` 拡張子(例: `import { x } from "../study/activity.js"`)。`apps/api` も同様に `.js` 拡張子。`apps/web` は `@/` エイリアス+拡張子なし。
 - `apps/web` の `src/routeTree.gen.ts` はVite pluginが生成する。**新しいrouteファイルを追加したら `bunx vite build`(apps/web内)を先に実行**してから typecheck する。`routeTree.gen.ts` が「変更あり・diff空」になったら `git restore` する。
-- 日付境界は必ず `@falcon/shared/study/activity` の `toStudyDate` / `addStudyDays`(JST固定オフセット)を使う。独自に日付を切らない。
+- 日付境界は必ず `@stella/shared/study/activity` の `toStudyDate` / `addStudyDays`(JST固定オフセット)を使う。独自に日付を切らない。
 - 復習は `quiz_attempts` に書かない・`max_attempts` を消費しない・`study_activity` に書かない。
 - テスト実行: リポジトリルートで `bun run test`(Vitest、`packages/**/*.test.ts` を拾う)。
 - コミットメッセージ末尾: `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`
 
 ---
 
-### Task 1: SM-2純粋関数 + 日付ヘルパ (`@falcon/shared`)
+### Task 1: SM-2純粋関数 + 日付ヘルパ (`@stella/shared`)
 
 **Files:**
 - Create: `packages/shared/src/srs/sm2.ts`
@@ -33,8 +33,8 @@
 - Modify: `packages/shared/package.json`(exports追加)
 
 **Interfaces:**
-- Produces: `sm2Next(prev: SrsCardState | null, correct: boolean): SrsCardState`、`interface SrsCardState { ease: number; intervalDays: number; reps: number }`、`INITIAL_EASE = 2.5`、`MIN_EASE = 1.3`(`@falcon/shared/srs/sm2`)
-- Produces: `studyDateStartMs(date: string, offsetMin?: number): number`(`@falcon/shared/study/activity`)— `YYYY-MM-DD`(JST)の日の開始をUTCミリ秒で返す
+- Produces: `sm2Next(prev: SrsCardState | null, correct: boolean): SrsCardState`、`interface SrsCardState { ease: number; intervalDays: number; reps: number }`、`INITIAL_EASE = 2.5`、`MIN_EASE = 1.3`(`@stella/shared/srs/sm2`)
+- Produces: `studyDateStartMs(date: string, offsetMin?: number): number`(`@stella/shared/study/activity`)— `YYYY-MM-DD`(JST)の日の開始をUTCミリ秒で返す
 
 - [ ] **Step 1: 失敗するテストを書く**
 
@@ -294,7 +294,7 @@ git commit -m "feat(api): SRS用のreview_cards / review_logsテーブルを追�
 - Consumes: Task 1の `sm2Next` / `SrsCardState`、Task 2の `reviewCards`
 - Produces: `isExactSelection(correct: ReadonlySet<string>, selected: ReadonlySet<string>): boolean`(`apps/api/src/lib/quiz-grading.ts`)
 - Produces: `applyOutcomesToCards(db: Db, tenantId: string, userId: string, outcomes: readonly QuestionOutcome[], at: Date): Promise<Map<string, UpdatedCard>>` — `QuestionOutcome = { questionId: string; correct: boolean }`、`UpdatedCard = SrsCardState & { id: string; questionId: string; dueDate: string }`(`apps/api/src/lib/srs-cards.ts`)
-- Produces: 型 `SrsTodaySummary { questions: LearnerQuizQuestion[]; answered_today: number; due_total: number; today: string }`、`SrsAnswerResult { question_id: string; correct: boolean; correct_option_ids: string[]; explanation: string | null; due_date: string; interval_days: number }`(`@falcon/shared/srs/types`)
+- Produces: 型 `SrsTodaySummary { questions: LearnerQuizQuestion[]; answered_today: number; due_total: number; today: string }`、`SrsAnswerResult { question_id: string; correct: boolean; correct_option_ids: string[]; explanation: string | null; due_date: string; interval_days: number }`(`@stella/shared/srs/types`)
 
 - [ ] **Step 1: 共有型を書く**
 
@@ -364,8 +364,8 @@ export function isExactSelection(
  */
 
 import { and, eq, inArray } from "drizzle-orm";
-import { sm2Next, type SrsCardState } from "@falcon/shared/srs/sm2";
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
+import { sm2Next, type SrsCardState } from "@stella/shared/srs/sm2";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import { reviewCards } from "../db/schema.js";
 import type { Db } from "../db/client.js";
@@ -513,9 +513,9 @@ git commit -m "feat(api): クイズ受験をSM-2カードに反映し採点関�
 
 import { Hono } from "hono";
 import { and, asc, count, eq, gt, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
-import { studyDateStartMs, toStudyDate } from "@falcon/shared/study/activity";
-import type { SrsTodaySummary } from "@falcon/shared/srs/types";
-import type { QuizAnswer } from "@falcon/shared/cms/types";
+import { studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
+import type { SrsTodaySummary } from "@stella/shared/srs/types";
+import type { QuizAnswer } from "@stella/shared/cms/types";
 
 import {
   courses,
@@ -851,7 +851,7 @@ git commit -m "feat(api): デイリー復習のSRS出題・解答APIを追加"
  * 採点はサーバ側で行い、 正解・解説は解答後にのみ受け取る。
  */
 
-import type { SrsAnswerResult, SrsTodaySummary } from "@falcon/shared/srs/types";
+import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
 
 import { apiFetch } from "./api-client";
 
@@ -887,7 +887,7 @@ export async function submitSrsAnswer(
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { SrsTodaySummary } from "@falcon/shared/srs/types";
+import type { SrsTodaySummary } from "@stella/shared/srs/types";
 import { getSrsToday } from "@/lib/srs-api";
 import { isBackendConfigured } from "@/lib/backend";
 
@@ -953,7 +953,7 @@ git commit -m "feat(web): SRS復習APIのクライアントとuseSrsToday Hook�
 - 生成物: `apps/web/src/routeTree.gen.ts` が更新される
 
 **Interfaces:**
-- Consumes: Task 5の `getSrsToday` / `submitSrsAnswer`、`@falcon/shared/cms/types` の `LearnerQuizQuestion`
+- Consumes: Task 5の `getSrsToday` / `submitSrsAnswer`、`@stella/shared/cms/types` の `LearnerQuizQuestion`
 - Produces: ルート `/review`(`_app` 配下、認証済みシェル内)
 
 - [ ] **Step 1: ReviewSessionコンポーネント**
@@ -972,8 +972,8 @@ git commit -m "feat(web): SRS復習APIのクライアントとuseSrsToday Hook�
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
-import type { LearnerQuizQuestion } from "@falcon/shared/cms/types";
-import type { SrsAnswerResult, SrsTodaySummary } from "@falcon/shared/srs/types";
+import type { LearnerQuizQuestion } from "@stella/shared/cms/types";
+import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
 import { getSrsToday, submitSrsAnswer } from "@/lib/srs-api";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";

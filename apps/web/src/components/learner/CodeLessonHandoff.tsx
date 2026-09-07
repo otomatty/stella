@@ -1,4 +1,4 @@
-import { DISPLAY_NAME } from "@falcon/shared/brand/display";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 
 export function CodeLessonHandoff({

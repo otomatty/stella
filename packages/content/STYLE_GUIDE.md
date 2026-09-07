@@ -66,7 +66,7 @@
 - 変数名・題材は業務っぽい例を優先(user, price, order, task など)。foo/barは使わない
 - `console.log`で結果が確認できる形にする(Playgroundで完結させる)
 - セミコロンあり、インデント2スペース、文字列はダブルクォート
-- **まだ導入していない語・構文を例に混ぜない**。判断は front-matter の語彙台帳で行い、`bun run --filter=@falcon/content materials` の検査で担保する
+- **まだ導入していない語・構文を例に混ぜない**。判断は front-matter の語彙台帳で行い、`bun run --filter=@stella/content materials` の検査で担保する
 - そのトピックの `takeaway` に関係しない要素をコード例に入れない(5行以内が目安)
 
 ## 図解のルール

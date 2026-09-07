@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { createAnnouncement } from "@/lib/notifications-api";
 import { cn } from "@/lib/utils";
-import type { NotificationRow, NotificationType } from "@falcon/shared/cms/types";
+import type { NotificationRow, NotificationType } from "@stella/shared/cms/types";
 import type { Stage, Role, Tenant } from "@/data/types";
 
 interface NotificationCenterProps {

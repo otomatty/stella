@@ -2,7 +2,7 @@
  * Grok chat via Cloudflare AI Gateway Unified Billing REST (Issue #204).
  */
 
-import type { ChatRole, ChatStreamEvent } from "@falcon/shared/ai/types";
+import type { ChatRole, ChatStreamEvent } from "@stella/shared/ai/types";
 
 import type { Env } from "../env.js";
 import {

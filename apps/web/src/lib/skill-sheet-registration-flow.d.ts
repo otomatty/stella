@@ -1,5 +1,5 @@
-import type { SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { SkillSheetV1 } from "@stella/shared/skill-sheet/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 /** Issue #233 TDD contract — implementation pending in skill-sheet-registration-flow.ts */
 export type SkillSheetRegistrationPhase = "idle" | "parsing" | "draft" | "saved" | "view";

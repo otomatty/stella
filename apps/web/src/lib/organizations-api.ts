@@ -8,7 +8,7 @@ import type {
   ListOrganizationsResponse,
   OrganizationRow,
   UpsertOrganizationInput,
-} from "@falcon/shared/admin/types";
+} from "@stella/shared/admin/types";
 
 import { apiFetch } from "./api-client";
 

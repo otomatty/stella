@@ -20,13 +20,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { formatGradingSummaryText } from "@falcon/shared/review/grading-summary";
+import { formatGradingSummaryText } from "@stella/shared/review/grading-summary";
 import type {
   GradingSummary,
   ReviewSuggestion,
   RubricCriterion,
   ReviewVerdict,
-} from "@falcon/shared/review/types";
+} from "@stella/shared/review/types";
 import { useSubmission, useSubmissions } from "@/hooks/useSubmissions";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchReviewDraft } from "@/lib/review-draft-api";

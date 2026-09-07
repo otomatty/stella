@@ -8,7 +8,7 @@
  * そのまま出す (自前で答え合わせをしない)。
  */
 
-import type { DiscoveryQuestion, DiscoveryReviewStatus } from "@falcon/shared/discovery/types";
+import type { DiscoveryQuestion, DiscoveryReviewStatus } from "@stella/shared/discovery/types";
 
 import { apiFetch } from "./api-client";
 

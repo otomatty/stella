@@ -8,7 +8,7 @@ import {
   stripForbiddenContactFields,
   validateSkillSheetV1,
   type SkillSheetDraft,
-} from "@falcon/shared/skill-sheet/types";
+} from "@stella/shared/skill-sheet/types";
 
 import {
   completeMessage as defaultCompleteMessage,

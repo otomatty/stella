@@ -164,6 +164,6 @@ JS (霧) の次だが、バックエンド扇では Node (幽霊) の次なの�
 ## 意図的に変えないこと
 
 - **線と解放条件は別物**のまま (`parent` 1 本 / 前提は AND)。霧の段は視界だけを決める
-- 島の表示条件 (`@falcon/shared/skill-map/islands`) は視界より手前のフィルタ。
+- 島の表示条件 (`@stella/shared/skill-map/islands`) は視界より手前のフィルタ。
   条件を満たさない島は距離を測る前に応答から落ちる
 - 発見教材 (`discoveries`) の公開条件 (源流が `active` / `cleared`) は据え置き

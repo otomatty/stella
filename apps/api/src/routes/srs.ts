@@ -9,9 +9,9 @@
 
 import { Hono } from "hono";
 import { and, asc, count, eq, gt, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
-import { studyDateStartMs, toStudyDate } from "@falcon/shared/study/activity";
-import type { SrsTodaySummary } from "@falcon/shared/srs/types";
-import type { QuizAnswer } from "@falcon/shared/cms/types";
+import { studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
+import type { SrsTodaySummary } from "@stella/shared/srs/types";
+import type { QuizAnswer } from "@stella/shared/cms/types";
 
 import type { Env } from "../env.js";
 import {

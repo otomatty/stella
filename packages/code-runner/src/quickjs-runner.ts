@@ -15,7 +15,7 @@ import {
   type QuickJSWASMModule,
 } from "quickjs-emscripten-core";
 
-import type { TestCase, TestKind, TestResult } from "@falcon/shared/types";
+import type { TestCase, TestKind, TestResult } from "@stella/shared/types";
 
 export const MEMORY_LIMIT_MB = 32;
 export const PER_TEST_WALL_TIMEOUT_MS = 3000;

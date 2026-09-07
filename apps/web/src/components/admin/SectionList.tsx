@@ -34,7 +34,7 @@ import type {
   LessonRow,
   LessonType,
   SectionRow,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import {
   deleteLesson,
   deleteSection,

@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { AssignmentRow } from "@falcon/shared/cms/types";
+import type { AssignmentRow } from "@stella/shared/cms/types";
 import { deleteAssignment, listAssignments } from "@/lib/cms-api";
 
 // CodeMirror + 採点ランナーを含む重いダイアログのため、 編集を開くまでロードしない。

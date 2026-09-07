@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { StageThumb } from "@/components/common/StageThumb";
 import type { AvatarTone, Tenant } from "@/data/types";
-import type { InstructorStudentProgress } from "@falcon/shared/cms/types";
+import type { InstructorStudentProgress } from "@stella/shared/cms/types";
 import { useStagesForTenant } from "@/data/stages-source";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 import { cn } from "@/lib/utils";

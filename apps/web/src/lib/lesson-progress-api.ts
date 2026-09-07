@@ -10,8 +10,8 @@
  * バックエンド未設定時はそもそも呼ばれない。
  */
 
-import type { StageClearedNotice } from "@falcon/shared/cms/types";
-import { MAX_PROGRESS_SYNC_ROWS } from "@falcon/shared/study/progress-sync";
+import type { StageClearedNotice } from "@stella/shared/cms/types";
+import { MAX_PROGRESS_SYNC_ROWS } from "@stella/shared/study/progress-sync";
 
 import type { LessonProgressEntry } from "@/lib/lesson-progress";
 import { apiFetch } from "@/lib/api-client";

@@ -13,7 +13,7 @@
 
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
-import { normalizeProgressRows, type ProgressSyncInput } from "@falcon/shared/study/progress-sync";
+import { normalizeProgressRows, type ProgressSyncInput } from "@stella/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireRole } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";

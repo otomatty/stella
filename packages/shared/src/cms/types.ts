@@ -3,7 +3,7 @@
  *
  * - DB 列は snake_case。 UI (apps/web/src/data/types.ts の Stage / Section / Lesson) は camelCase。
  *   - 受講者 UI が既存型を消費し続けられるよう、 マッパーで camelCase 形に正規化する。
- * - assignment は @falcon/shared の Assignment 型を直接 import して、 grading パイプラインを変更せずに済む形で読み戻す。
+ * - assignment は @stella/shared の Assignment 型を直接 import して、 grading パイプラインを変更せずに済む形で読み戻す。
  */
 
 import type {

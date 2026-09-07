@@ -1,5 +1,5 @@
 import type { FileRouteTypes } from "@/routeTree.gen";
-import { helpAboutHeading } from "@falcon/shared/brand/display";
+import { helpAboutHeading } from "@stella/shared/brand/display";
 
 /**
  * 画面連動ヘルプの静的定義。 Topbar の「?」で開く HelpDrawer が

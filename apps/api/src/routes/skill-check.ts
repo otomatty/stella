@@ -35,7 +35,7 @@
  *
  *   - 視界 (`full` の星しか受験できない) が範囲を「もう解放条件まで見えている星」に限る
  *   - **受験回数の上限 (1 日 3 回)** が列挙の速度を潰す。プールが小さいステージでは
- *     出題が回転しない (`@falcon/shared/skill-map/skill-check` の JSDoc) ので、
+ *     出題が回転しない (`@stella/shared/skill-map/skill-check` の JSDoc) ので、
  *     無制限に受けられると全設問の列挙も正答の総当たりも成立してしまう。
  *     上限判定は記録の INSERT に畳んであり、並列に投げても 1 本しか通らない
  *
@@ -50,15 +50,15 @@
  * ## 出題
  *
  * ステージ内の **既存クイズ設問** から最大 10 問。選び方は乱数ではなく
- * (利用者 × ステージ × 受験回数) から決まる (`@falcon/shared/skill-map/skill-check`)
+ * (利用者 × ステージ × 受験回数) から決まる (`@stella/shared/skill-map/skill-check`)
  * ので、出題 (GET) と採点 (POST) で保存なしに同じ受験票を再現できる。
  * 設問が 5 問に満たないステージは腕試し非対応として `supported: false` を返す。
  */
 
 import { Hono } from "hono";
 
-import { isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
-import type { SkillMapState, SkillMapVisibility } from "@falcon/shared/skill-map/evaluate";
+import { isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
+import type { SkillMapState, SkillMapVisibility } from "@stella/shared/skill-map/evaluate";
 import {
   SKILL_CHECK_DAILY_LIMIT,
   SKILL_CHECK_MAX_QUESTIONS,
@@ -67,7 +67,7 @@ import {
   selectSkillCheckPaper,
   skillCheckPassed,
   skillCheckPercent,
-} from "@falcon/shared/skill-map/skill-check";
+} from "@stella/shared/skill-map/skill-check";
 
 import { ApiError, errorResponse, getCaller, requireCanTakeSkillCheck } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";

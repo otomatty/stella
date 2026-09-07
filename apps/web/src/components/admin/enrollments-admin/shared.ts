@@ -7,7 +7,7 @@
  */
 
 import type { AdminProfileRow } from "@/lib/admin-users-api";
-import type { EnrollmentRow, EnrollmentStatus } from "@falcon/shared/cms/types";
+import type { EnrollmentRow, EnrollmentStatus } from "@stella/shared/cms/types";
 
 /** 受講者 1 名分の受講状況 (stageId → enrollment)。 */
 export type EnrollmentsByStage = Map<string, EnrollmentRow>;

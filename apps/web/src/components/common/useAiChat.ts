@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { ChatContext, ChatMessage, ChatRequest } from "@falcon/shared/ai/types";
+import type { ChatContext, ChatMessage, ChatRequest } from "@stella/shared/ai/types";
 
 import { streamChat } from "./api";
 import { loadHistory, saveHistory } from "./chat-store";

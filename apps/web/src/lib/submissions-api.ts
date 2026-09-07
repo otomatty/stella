@@ -4,7 +4,7 @@
  * RLS: 受講者: insert + mine/本人 select。staff: テナント一覧/更新。
  */
 
-import { parseGradingSummary } from "@falcon/shared/review/grading-summary";
+import { parseGradingSummary } from "@stella/shared/review/grading-summary";
 import type {
   GradingSummary,
   ReviewSuggestion,
@@ -14,7 +14,7 @@ import type {
   SubmissionStatus,
   ReviewPriority,
   ReviewAvatarTone,
-} from "@falcon/shared/review/types";
+} from "@stella/shared/review/types";
 import { apiFetch } from "./api-client";
 
 const AVATAR_TONES: ReviewAvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];

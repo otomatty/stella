@@ -1,21 +1,21 @@
 /**
  * 面談対策 — 「今日の練習セット」の DB 操作 (Issue #235)。
  *
- * 出題の選定そのものは `@falcon/shared/interview/practice-set` (純ロジック) に置き、
+ * 出題の選定そのものは `@stella/shared/interview/practice-set` (純ロジック) に置き、
  * ここは interview_progress の SM-2 更新と interview_practice_sets の
  * 作成 / 再開 / 記録 / 終了だけを持つ。 SM-2 はデイリー復習と同じ `sm2Next` を通す
  * (自己評価 2 択 → 正解 / 誤答の 2 値がそのまま入力になる)。
  */
 
 import { and, desc, eq } from "drizzle-orm";
-import { sm2Next, type SrsCardState } from "@falcon/shared/srs/sm2";
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
-import type { PracticeCandidate, PracticeSelfRating } from "@falcon/shared/interview/practice-set";
+import { sm2Next, type SrsCardState } from "@stella/shared/srs/sm2";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
+import type { PracticeCandidate, PracticeSelfRating } from "@stella/shared/interview/practice-set";
 import {
   PRACTICE_SET_SIZE,
   isPracticeTarget,
   selectPracticeSet,
-} from "@falcon/shared/interview/practice-set";
+} from "@stella/shared/interview/practice-set";
 
 import { interviewPracticeSets, interviewProgress } from "../db/schema.js";
 import type { Db } from "../db/client.js";

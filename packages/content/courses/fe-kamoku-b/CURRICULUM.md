@@ -7,7 +7,7 @@
 - 問題はすべて自作。公式のサンプル問題・公開問題は難易度と出題形式の校正基準としてのみ使う(転載しない)
 - 前提講座: **基本情報技術者 科目A対策(`fe-kamoku-a`)**。情報処理系の資格対策は 科目A → 科目B と段階的に進みます — 科目B の擬似言語はデータ構造・アルゴリズムのことば(科目A の範囲)がそろってからの方が定着するため(`course.json` の `prerequisites` に対応)
 - VS Code のコード演習は**本試験と同じ擬似言語**で解く(#133)。TypeScript への翻訳版ではない。
-  `@falcon/code-runner` が擬似言語を JS に落として QuickJS で実行し、1 起点の配列と整数除算の切り捨ても
+  `@stella/code-runner` が擬似言語を JS に落として QuickJS で実行し、1 起点の配列と整数除算の切り捨ても
   本試験どおりに評価される。課題は `packages/shared/src/problems/_lang/fe-pseudo/`、
   対応構文は `packages/code-runner/src/fe-pseudo/SYNTAX.md`
 
@@ -34,7 +34,7 @@ Web のレッスンで記法とトレースを学んだあと、VS Code 拡張�
 | 3-1 | スタックで括弧の対応を調べる | 配列 + 頂上の位置でスタックを表す |
 | 3-2 | 階乗を再帰で求める | 再帰と停止条件 |
 
-配線は `course.json` の `exercises`(キーはレッスンキー)。課題本体は `@falcon/shared` が正本で、
+配線は `course.json` の `exercises`(キーはレッスンキー)。課題本体は `@stella/shared` が正本で、
 模範解答が実際に全テストを通ることは `packages/code-runner/src/fe-pseudo/solutions.test.ts` が CI で検証する。
 
 ## M1. 擬似言語の読み方(実装済み: 2 レッスン / 8 トピック)

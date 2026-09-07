@@ -1,7 +1,7 @@
-import { getEntryFile } from "@falcon/shared/assignment-helpers";
-import { mapAssignmentRowToAssignment, type AssignmentRow } from "@falcon/shared/cms/types";
-import type { Assignment } from "@falcon/shared/types";
-import { exerciseRoot, filesToWrite } from "@falcon/shared/vscode/exercise-paths";
+import { getEntryFile } from "@stella/shared/assignment-helpers";
+import { mapAssignmentRowToAssignment, type AssignmentRow } from "@stella/shared/cms/types";
+import type { Assignment } from "@stella/shared/types";
+import { exerciseRoot, filesToWrite } from "@stella/shared/vscode/exercise-paths";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
 

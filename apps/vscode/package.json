@@ -73,8 +73,8 @@
     "package": "bun run build && bunx @vscode/vsce package --no-dependencies"
   },
   "dependencies": {
-    "@falcon/code-runner": "workspace:*",
-    "@falcon/shared": "workspace:*"
+    "@stella/code-runner": "workspace:*",
+    "@stella/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "1.96.0",

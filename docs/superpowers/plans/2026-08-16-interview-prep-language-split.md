@@ -67,7 +67,7 @@
   - `ASSIGNABLE_CATEGORIES: readonly string[]` — 上記10タグ
   - `COMMON_CATEGORY = "全案件共通"`
   - `isAssignableCategory(v: unknown): v is AssignableCategory`
-  - `tagMatches(tag: string, selected: string): boolean` — `@falcon/shared/interview/filter`
+  - `tagMatches(tag: string, selected: string): boolean` — `@stella/shared/interview/filter`
   - `visibleQuestions<T extends { categories: string[] }>(all: T[], assignedCategories: string[]): T[]`
   - D1 `interview_questions.categories` (text 列に JSON 配列)
   - API レスポンス `rows[].categories: string[]`
@@ -439,7 +439,7 @@ bun run test
 - [ ] **Step 10: マイグレーションを生成する**
 
 ```bash
-bun run --filter=@falcon/api db:generate
+bun run --filter=@stella/api db:generate
 ```
 
 `apps/api/drizzle/0013_*.sql` が生成される。
@@ -515,8 +515,8 @@ bunx wrangler d1 execute falcon-db --local --command "select categories, count(*
 `apps/web/src/components/learner/InterviewPrep.tsx` の8行目付近の import に `tagMatches` を足す。
 
 ```ts
-import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
-import { tagMatches } from "@falcon/shared/interview/filter";
+import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@stella/shared/interview/types";
+import { tagMatches } from "@stella/shared/interview/filter";
 ```
 
 - [ ] **Step 17: カテゴリチップの算出を書き換える**

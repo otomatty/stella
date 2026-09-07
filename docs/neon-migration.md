@@ -82,8 +82,8 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
 ## ランタイム設定 (ユーザー側で必要な作業)
 
 1. **Neon プロジェクト作成** → `DATABASE_URL` を取得。
-2. `bun run --filter=@falcon/api db:generate` で Drizzle マイグレーション SQL を生成 →
-   `bun run --filter=@falcon/api db:migrate` (要 `DATABASE_URL`) で Neon に適用。
+2. `bun run --filter=@stella/api db:generate` で Drizzle マイグレーション SQL を生成 →
+   `bun run --filter=@stella/api db:migrate` (要 `DATABASE_URL`) で Neon に適用。
    ※ 旧 `supabase/migrations/*.sql` の seed / 既存データは別途移送が必要。
 3. **Neon Auth** を有効化し、 Magic Link / Email OTP を設定。
    - `NEON_AUTH_JWKS_URL` (API) / `VITE_NEON_AUTH_URL` (web) を設定。

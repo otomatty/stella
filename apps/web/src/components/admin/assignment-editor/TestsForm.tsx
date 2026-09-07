@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash } from "@/lib/icons";
-import type { SqlTestCase, TestCase, TestKind } from "@falcon/shared/types";
+import type { SqlTestCase, TestCase, TestKind } from "@stella/shared/types";
 
 import type { FormProps } from "./draft";
 

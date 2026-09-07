@@ -3,7 +3,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { ChatRole, ChatStreamEvent } from "@falcon/shared/ai/types";
+import type { ChatRole, ChatStreamEvent } from "@stella/shared/ai/types";
 
 import type { Env } from "../env.js";
 import { resolveAnthropicClientConfig } from "./ai-gateway.js";

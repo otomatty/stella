@@ -25,7 +25,7 @@ Salesforce は「アプリを載せる土台」であって、開発者が最初
 
 ### 置き場所は「Salesforce案件」島
 
-`category` は新設の島 `Salesforce案件`(`@falcon/shared/skill-map/islands` に追加、表示条件は他の島と同じ `it-basics`)です。
+`category` は新設の島 `Salesforce案件`(`@stella/shared/skill-map/islands` に追加、表示条件は他の島と同じ `it-basics`)です。
 本土の扇に混ぜなかった理由は 2 つあります。
 
 - **枝の本数**: 前提の `sql-basics` にはすでに `cli-basics` と `db-design-basics` がぶら下がっていて、

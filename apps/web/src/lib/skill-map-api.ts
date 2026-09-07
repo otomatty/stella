@@ -8,8 +8,8 @@
  * `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。
  */
 
-import type { StageClearedNotice } from "@falcon/shared/cms/types";
-import type { SkillMapState, SkillMapVisibility } from "@falcon/shared/skill-map/evaluate";
+import type { StageClearedNotice } from "@stella/shared/cms/types";
+import type { SkillMapState, SkillMapVisibility } from "@stella/shared/skill-map/evaluate";
 
 import { apiFetch } from "./api-client";
 import { emitStageCleared, toStageClearedEvents } from "./stage-clear-events";

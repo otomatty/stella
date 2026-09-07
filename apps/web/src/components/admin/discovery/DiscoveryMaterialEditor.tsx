@@ -26,7 +26,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import type { DiscoveryQuestion } from "@falcon/shared/discovery/types";
+import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
 
 import { Button } from "@/components/ui/button";
 import {

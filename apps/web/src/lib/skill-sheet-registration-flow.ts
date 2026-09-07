@@ -2,8 +2,8 @@
  * スキルシート登録フロー reducer (Issue #233)。
  */
 
-import { emptySkillSheetSections, type SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import { emptySkillSheetSections, type SkillSheetV1 } from "@stella/shared/skill-sheet/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 import {
   canManualEntryAfterParseFailure,

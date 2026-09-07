@@ -49,13 +49,13 @@ import {
   type DiscoveryGenerator,
   type DiscoveryQuestion,
   type DiscoveryReviewStatus,
-} from "@falcon/shared/discovery/types";
+} from "@stella/shared/discovery/types";
 import {
   buildDiscoverySystemPrompt,
   buildDiscoveryUserMessage,
   parseDiscoveryDraftJson,
-} from "@falcon/shared/discovery/prompt";
-import { selectSkillCheckPaper } from "@falcon/shared/skill-map/skill-check";
+} from "@stella/shared/discovery/prompt";
+import { selectSkillCheckPaper } from "@stella/shared/skill-map/skill-check";
 
 import { stages } from "../db/schema.js";
 import { completeMessage } from "../lib/anthropic-complete.js";

@@ -14,11 +14,11 @@ import type {
   DiscoveryQuestion,
   DiscoveryRequestOrigin,
   DiscoveryReviewStatus,
-} from "@falcon/shared/discovery/types";
+} from "@stella/shared/discovery/types";
 import {
   DISCOVERY_UNLOCK_STAGE_ACTIVE_OR_CLEARED,
   normalizeDiscoveryQuestions,
-} from "@falcon/shared/discovery/types";
+} from "@stella/shared/discovery/types";
 
 import type { Db } from "../db/client.js";
 import {

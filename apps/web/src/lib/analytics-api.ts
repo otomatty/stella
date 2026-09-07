@@ -4,7 +4,7 @@
  * 集計はサーバ側 (`/api/analytics/*`) で行い、 同テナントの instructor/admin のみ実行できる。
  */
 
-import type { InstructorOverview, TenantAnalytics } from "@falcon/shared/cms/types";
+import type { InstructorOverview, TenantAnalytics } from "@stella/shared/cms/types";
 
 import { apiFetch } from "./api-client";
 

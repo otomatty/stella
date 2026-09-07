@@ -52,8 +52,8 @@ import {
   normalizeHofChapters,
   normalizeJobTitle,
   normalizeQuote,
-} from "@falcon/shared/hall-of-fame/types";
-import type { HallOfFameStatus } from "@falcon/shared/hall-of-fame/types";
+} from "@stella/shared/hall-of-fame/types";
+import type { HallOfFameStatus } from "@stella/shared/hall-of-fame/types";
 
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";

@@ -2,8 +2,8 @@
  * Issue #206 — personal answer template generation (Anthropic Message Batches).
  */
 
-import { plainAnswerTemplateText } from "@falcon/shared/interview/answer-template";
-import { COMMON_CATEGORY } from "@falcon/shared/interview/types";
+import { plainAnswerTemplateText } from "@stella/shared/interview/answer-template";
+import { COMMON_CATEGORY } from "@stella/shared/interview/types";
 import Anthropic from "@anthropic-ai/sdk";
 
 import type { Env } from "../env.js";

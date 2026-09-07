@@ -29,7 +29,7 @@ import {
   UserPlus,
 } from "@/lib/icons";
 import type { Role } from "@/data/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 
 type LucideIcon = ComponentType<LucideProps>;
 

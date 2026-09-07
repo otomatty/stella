@@ -33,8 +33,8 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import type { OrganizationRow } from "@falcon/shared/admin/types";
-import { isValidOrgId } from "@falcon/shared/admin/types";
+import type { OrganizationRow } from "@stella/shared/admin/types";
+import { isValidOrgId } from "@stella/shared/admin/types";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { upsertOrganization } from "@/lib/organizations-api";
 

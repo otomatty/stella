@@ -8,8 +8,8 @@
 
 import { and, count, desc, eq, exists, gte, inArray, lt, sql } from "drizzle-orm";
 
-import { SKILL_CHECK_DAILY_LIMIT } from "@falcon/shared/skill-map/skill-check";
-import { addStudyDays, studyDateStartMs, toStudyDate } from "@falcon/shared/study/activity";
+import { SKILL_CHECK_DAILY_LIMIT } from "@stella/shared/skill-map/skill-check";
+import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 
 import type { Db } from "../db/client.js";
 import {

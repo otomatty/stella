@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { Download } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
-import type { StageRow } from "@falcon/shared/cms/types";
+import type { StageRow } from "@stella/shared/cms/types";
 import { useCmsStages } from "@/hooks/useCmsStages";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useEnrollmentSummaries, useUsersEnrollments } from "@/hooks/useEnrollments";

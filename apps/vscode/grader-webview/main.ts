@@ -1,12 +1,12 @@
-import { getEntryFile } from "@falcon/shared/assignment-helpers";
-import { evaluate } from "@falcon/shared/grading";
-import type { Assignment, TestResult } from "@falcon/shared/types";
+import { getEntryFile } from "@stella/shared/assignment-helpers";
+import { evaluate } from "@stella/shared/grading";
+import type { Assignment, TestResult } from "@stella/shared/types";
 import {
   lintAssignment,
   runGrading,
   setQuickJsWorkerUrl,
   setSqlJsLocateFile,
-} from "@falcon/code-runner";
+} from "@stella/code-runner";
 import {
   isGradeRequest,
   type ExecutionResult,

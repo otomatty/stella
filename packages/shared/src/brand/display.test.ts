@@ -6,6 +6,7 @@ import {
   DISPLAY_COMMAND_PREFIX,
   DISPLAY_NAME,
   DISPLAY_SHORT_NAME,
+  PACKAGE_SCOPE,
   helpAboutHeading,
   supportMailSubjectPrefix,
 } from "./display";
@@ -14,7 +15,11 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const readRepoFile = (relativePath: string): string =>
   readFileSync(join(repoRoot, relativePath), "utf8");
 
-describe("display brand (Phase A)", () => {
+describe("display brand (Phase A + B)", () => {
+  it("exports PACKAGE_SCOPE for monorepo branding", () => {
+    expect(PACKAGE_SCOPE).toBe("@stella");
+  });
+
   it("human-facing product name is STELLA", () => {
     expect(DISPLAY_NAME).toBe("STELLA");
     expect(DISPLAY_SHORT_NAME).toBe("STELLA");
@@ -23,13 +28,25 @@ describe("display brand (Phase A)", () => {
     expect(supportMailSubjectPrefix()).toBe("【STELLA】");
   });
 
-  it("does not rename @falcon package scopes (Phase B)", () => {
-    const webPkg = JSON.parse(readRepoFile("apps/web/package.json")) as { name: string };
-    const sharedPkg = JSON.parse(readRepoFile("packages/shared/package.json")) as {
-      name: string;
-    };
-    expect(webPkg.name).toBe("@falcon/web");
-    expect(sharedPkg.name).toBe("@falcon/shared");
+  it("package scopes are @stella/* (Phase B)", () => {
+    const packages = [
+      ["apps/web/package.json", "@stella/web"],
+      ["apps/api/package.json", "@stella/api"],
+      ["packages/shared/package.json", "@stella/shared"],
+      ["packages/content/package.json", "@stella/content"],
+      ["packages/code-runner/package.json", "@stella/code-runner"],
+    ] as const;
+    for (const [relativePath, expectedName] of packages) {
+      const pkg = JSON.parse(readRepoFile(relativePath)) as { name: string };
+      expect(pkg.name, relativePath).toBe(expectedName);
+    }
+  });
+
+  it("root scripts filter @stella/* workspaces (Phase B)", () => {
+    const rootPkg = JSON.parse(readRepoFile("package.json")) as { scripts: Record<string, string> };
+    expect(rootPkg.scripts.dev).toContain("@stella/web");
+    expect(rootPkg.scripts.typecheck).toContain("@stella/*");
+    expect(rootPkg.scripts["content:check"]).toContain("@stella/content");
   });
 
   it("does not rename VS Code extension machine id (Phase B)", () => {

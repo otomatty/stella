@@ -6,9 +6,9 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChapterId, Language, Stage, TestKind } from "@falcon/shared/types";
-import { chapters } from "@falcon/shared/curriculum/chapters";
-import { stages } from "@falcon/shared/curriculum/stages";
+import type { ChapterId, Language, Stage, TestKind } from "@stella/shared/types";
+import { chapters } from "@stella/shared/curriculum/chapters";
+import { stages } from "@stella/shared/curriculum/stages";
 
 import { LANGUAGES, STAGES, TEST_KINDS, type FormProps } from "./draft";
 

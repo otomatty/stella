@@ -1,7 +1,7 @@
 /**
  * D1 疎通確認 (wrangler CLI 経由)。
  *
- *   bun run --filter=@falcon/api smoke
+ *   bun run --filter=@stella/api smoke
  */
 
 import { execSync } from "node:child_process";

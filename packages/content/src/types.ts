@@ -1,6 +1,6 @@
 /**
  * 教材ファイル（practice.md の確認クイズ）から生成する quiz seed 型。
- * DB 行型 (`@falcon/shared` の QuizRow / QuizQuestionRow / QuizOptionRow) へ
+ * DB 行型 (`@stella/shared` の QuizRow / QuizQuestionRow / QuizOptionRow) へ
  * export-seed-sql.ts が変換する。
  */
 
@@ -22,7 +22,7 @@ export type CourseColor = "indigo" | "green" | "amber" | "slate";
 /** スキルツリーのカタログ掲載範囲。省略 = catalog (全受講者)。 */
 export type CourseAudience = "catalog" | "granted";
 
-/** レッスンに紐づくコード演習。id は `@falcon/shared` の Assignment.id。 */
+/** レッスンに紐づくコード演習。id は `@stella/shared` の Assignment.id。 */
 export interface ExerciseRef {
   id: string;
   title: string;
@@ -79,13 +79,13 @@ export interface CourseConfig {
   /**
    * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 講座のまま
    * (クリアは共有)。未設定なら `category` の扇に 1 つ。実行時の正本は
-   * `@falcon/shared/skill-map/appearances` で、ここはドキュメント兼検査用。
+   * `@stella/shared/skill-map/appearances` で、ここはドキュメント兼検査用。
    */
   appearances?: string[];
   /**
    * 扇ごとの前提 slug。キーは `appearances` と同じ扇名。実体のロックは
    * どれか 1 組を満たせば開く (OR)。実行時の正本は
-   * `@falcon/shared/skill-map/appearances` の `SKILL_MAP_APPEARANCE_PREREQUISITES`。
+   * `@stella/shared/skill-map/appearances` の `SKILL_MAP_APPEARANCE_PREREQUISITES`。
    */
   appearancePrerequisites?: Record<string, string[]>;
   /**

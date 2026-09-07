@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type { Submission, ReviewVerdict } from "@falcon/shared/review/types";
+import type { Submission, ReviewVerdict } from "@stella/shared/review/types";
 import type { Tenant } from "@/data/types";
 import {
   listSubmissions,

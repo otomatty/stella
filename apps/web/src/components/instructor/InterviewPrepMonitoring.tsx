@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { sortFixNotesForHistory } from "@falcon/shared/interview/fix-notes";
+import { sortFixNotesForHistory } from "@stella/shared/interview/fix-notes";
 import {
   formatInterviewCountdown,
   formatLastPracticed,
@@ -39,9 +39,9 @@ import {
   type MonitoringRisk,
   sortByInterviewDate,
   summarizeMonitoring,
-} from "@falcon/shared/interview/monitoring";
-import { deriveQuestionPrepStatus } from "@falcon/shared/interview/progress";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+} from "@stella/shared/interview/monitoring";
+import { deriveQuestionPrepStatus } from "@stella/shared/interview/progress";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Role } from "@/data/types";
 import {
   fetchInterviewQuestions,

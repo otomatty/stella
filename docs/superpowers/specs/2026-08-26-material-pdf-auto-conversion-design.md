@@ -56,7 +56,7 @@ Playwright(Chromium)で印刷用 HTML を開き `page.pdf()` で出力する。*
 - **practice.md** → A4 縦。**第 1 部(問題編)**: ハンズオン + 演習問題(設問のみ) + 確認クイズ(設問・選択肢のみ)。**改ページ**。**第 2 部(解答編)**: 解答例と解説(`<details>` を展開して平文化) + 確認クイズの正解と解説。既存の `parseQuiz` / 節分割ロジックを流用する。
 - 画像: slides.md の画像参照はトピックの `assets/` 配下のローカルファイルへ解決する(R2 は経由しない — CI 上で完結させ、R2 反映待ちの競合も避ける)。
 - フォント: Noto Sans JP を npm(`@fontsource/noto-sans-jp` 等)で取り込み `@font-face` で埋め込む。CI で外部フェッチせず決定的にする。
-- ローカル実行: `bun run --filter=@falcon/content pdf [対象パス...]` で単体確認できるようにする(`build.mjs` と同じ流儀)。
+- ローカル実行: `bun run --filter=@stella/content pdf [対象パス...]` で単体確認できるようにする(`build.mjs` と同じ流儀)。
 
 ### 差分検知と R2 キー(不変・全版保持)
 

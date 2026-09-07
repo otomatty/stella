@@ -77,7 +77,7 @@ CMS で作ったステージ (null) は評価器の `parentSlugOf()` (`evaluate.
 前提 1 つのステージは今までどおり線がつく。前提が 2 つ以上で親が無い行は先頭を親にする
 (安全側。教材由来の行は検査で親が必ずある)。読み込み口 (`skill-map-data.ts`) は列を素通しするだけ。
 
-## 評価器 (`@falcon/shared/skill-map/evaluate.ts`)
+## 評価器 (`@stella/shared/skill-map/evaluate.ts`)
 
 - `SkillMapStage.parent?: string` (slug) を追加
 - **解放判定は変えない**: 前提 AND、複製は扇ごと OR

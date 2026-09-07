@@ -8,7 +8,7 @@
  * - 課題ごとに最新 `MAX_MESSAGES_PER_ASSIGNMENT` 件にキャップ
  */
 
-import type { ChatMessage } from "@falcon/shared/ai/types";
+import type { ChatMessage } from "@stella/shared/ai/types";
 
 const VERSION = 1;
 const PREFIX = "lms_ai_chat_history/";

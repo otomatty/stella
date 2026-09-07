@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { Stage, Role, Tenant } from "@/data/types";
-import type { ChatContext } from "@falcon/shared/ai/types";
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ChatContext } from "@stella/shared/ai/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Profile } from "@/lib/auth";
 import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
 

@@ -5,17 +5,17 @@ import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import type { LearnerInterviewQuestion, ProgressEvent } from "@/lib/interview-prep-api";
-import type { FixNote } from "@falcon/shared/interview/fix-notes";
-import { summarizeFixNotes } from "@falcon/shared/interview/fix-notes";
-import type { ProfileRole } from "@falcon/shared/cms/types";
-import { canPracticeInterviewPrep } from "@falcon/shared/admin/types";
-import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@falcon/shared/interview/types";
-import { tagMatches } from "@falcon/shared/interview/filter";
+import type { FixNote } from "@stella/shared/interview/fix-notes";
+import { summarizeFixNotes } from "@stella/shared/interview/fix-notes";
+import type { ProfileRole } from "@stella/shared/cms/types";
+import { canPracticeInterviewPrep } from "@stella/shared/admin/types";
+import { ASSIGNABLE_CATEGORIES, COMMON_CATEGORY } from "@stella/shared/interview/types";
+import { tagMatches } from "@stella/shared/interview/filter";
 import {
   deriveQuestionPrepStatus,
   prepRate,
   type QuestionPrepStatus,
-} from "@falcon/shared/interview/progress";
+} from "@stella/shared/interview/progress";
 import { PrepStatusPill } from "@/components/interview/PrepStatusPill";
 import {
   type ActiveSetSummary,
@@ -343,7 +343,7 @@ export function InterviewPrepPage({
     let cancelled = false;
     if (!backendEnabled) {
       // デモ (fixtures) モード: 全件表示。質問データ(200KB超)はメインチャンクに含めない。
-      import("@falcon/shared/interview/questions").then(({ INTERVIEW_QUESTIONS }) => {
+      import("@stella/shared/interview/questions").then(({ INTERVIEW_QUESTIONS }) => {
         if (cancelled) return;
         setRows(INTERVIEW_QUESTIONS);
         setAssigned([...ASSIGNABLE_CATEGORIES]);

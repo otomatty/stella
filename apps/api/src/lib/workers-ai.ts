@@ -13,7 +13,7 @@
  *     ローカル / CI で Gateway なしでも全機能が動くようにするため。
  */
 
-import { DEFAULT_INTERVIEW_TTS_MODEL_ID } from "@falcon/shared/interview/audio";
+import { DEFAULT_INTERVIEW_TTS_MODEL_ID } from "@stella/shared/interview/audio";
 
 import type { Env } from "../env.js";
 import { resolveUnifiedBillingGrokModel } from "./ai-gateway.js";

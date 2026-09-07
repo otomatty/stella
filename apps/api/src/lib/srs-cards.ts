@@ -8,8 +8,8 @@
  */
 
 import { and, eq, inArray } from "drizzle-orm";
-import { sm2Next, type SrsCardState } from "@falcon/shared/srs/sm2";
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
+import { sm2Next, type SrsCardState } from "@stella/shared/srs/sm2";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import { reviewCards, reviewLogs } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";

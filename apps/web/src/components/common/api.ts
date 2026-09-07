@@ -4,7 +4,7 @@
  * テスト実行系は #105 で `CodeRunner` 抽象 (`lib/runners/*`) に集約された。
  * このファイルは AI チャットの SSE クライアントだけを担当する。
  */
-import type { ChatRequest, ChatStreamEvent } from "@falcon/shared/ai/types";
+import type { ChatRequest, ChatStreamEvent } from "@stella/shared/ai/types";
 import { getAccessToken } from "@/lib/auth-client";
 
 /** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */

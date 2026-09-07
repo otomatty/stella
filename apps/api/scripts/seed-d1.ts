@@ -1,9 +1,9 @@
 /**
  * fixtures を D1 (SQLite) へ seed する。
  *
- *   bun run --filter=@falcon/api db:seed                   # local
- *   bun run --filter=@falcon/api db:seed:remote            # remote (検証 fixture 含む)
- *   bun run --filter=@falcon/api db:seed:remote:content    # remote (教材のみ)
+ *   bun run --filter=@stella/api db:seed                   # local
+ *   bun run --filter=@stella/api db:seed:remote            # remote (検証 fixture 含む)
+ *   bun run --filter=@stella/api db:seed:remote:content    # remote (教材のみ)
  *
  * remote は D1 HTTP API (`lib/d1-remote.ts`) に直列で流す。local だけ wrangler の
  * miniflare 実体に書く必要があるので `wrangler d1 execute --local` のまま。

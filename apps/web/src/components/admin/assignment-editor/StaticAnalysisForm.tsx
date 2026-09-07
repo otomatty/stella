@@ -5,7 +5,7 @@
 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { LintPreset } from "@falcon/shared/types";
+import type { LintPreset } from "@stella/shared/types";
 
 import { LINT_PRESETS, type FormProps } from "./draft";
 

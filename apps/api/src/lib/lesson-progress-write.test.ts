@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/d1";
-import type { NormalizedProgressRow } from "@falcon/shared/study/progress-sync";
+import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 
 import { D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import {

@@ -3,8 +3,8 @@
  * Reuses #203 API paths; expected production module: ./skill-sheet-api.js
  */
 
-import type { SkillSheetDraft, SkillSheetV1 } from "@falcon/shared/skill-sheet/types";
-import { emptySkillSheetSections } from "@falcon/shared/skill-sheet/types";
+import type { SkillSheetDraft, SkillSheetV1 } from "@stella/shared/skill-sheet/types";
+import { emptySkillSheetSections } from "@stella/shared/skill-sheet/types";
 
 export const SKILL_SHEET_PARSE_PATH = "/api/skill-sheets/parse";
 export const SKILL_SHEET_SAVE_PATH = "/api/skill-sheets";

@@ -26,8 +26,8 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import type { ProfileRole } from "@falcon/shared/cms/types";
-import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@falcon/shared/admin/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
+import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@stella/shared/admin/types";
 import { useProfiles } from "@/hooks/useProfiles";
 import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
 

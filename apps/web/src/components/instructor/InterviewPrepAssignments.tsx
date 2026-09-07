@@ -15,7 +15,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ASSIGNABLE_CATEGORIES } from "@falcon/shared/interview/types";
+import { ASSIGNABLE_CATEGORIES } from "@stella/shared/interview/types";
 import {
   applyAssignmentSave,
   listInterviewPrepAssignments,

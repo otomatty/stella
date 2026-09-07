@@ -2,9 +2,9 @@
  * POST /api/chat — Anthropic Claude または Grok への SSE プロキシ。
  */
 
-import { buildSystemPrompt } from "@falcon/shared/ai/prompt";
-import type { ChatStreamEvent } from "@falcon/shared/ai/types";
-import { validateChatRequest } from "@falcon/shared/ai/validate-chat-request";
+import { buildSystemPrompt } from "@stella/shared/ai/prompt";
+import type { ChatStreamEvent } from "@stella/shared/ai/types";
+import { validateChatRequest } from "@stella/shared/ai/validate-chat-request";
 import { Hono } from "hono";
 
 import type { Env } from "../env.js";

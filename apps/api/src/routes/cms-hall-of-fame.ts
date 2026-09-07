@@ -47,7 +47,7 @@ import {
   canPublish,
   isHofContentComplete,
   missingHofFields,
-} from "@falcon/shared/hall-of-fame/types";
+} from "@stella/shared/hall-of-fame/types";
 
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { ApiError, errorResponse, getCaller, requireTenantAdmin } from "../lib/authz.js";

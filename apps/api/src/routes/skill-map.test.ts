@@ -6,14 +6,14 @@
  *   - 呼び出した本人の caller で評価器を回す
  *   - 視界に応じて伏せる (locked に到達説明を返さない / fog に slug や解放条件を返さない)
  *
- * グラフ評価そのものは `@falcon/shared/skill-map` のユニットテストが持つので、
+ * グラフ評価そのものは `@stella/shared/skill-map` のユニットテストが持つので、
  * ここでは D1 の読み出し (`lib/skill-map-data.js`) をモックして固定の入力を流す。
  */
 
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { addStudyDays, toStudyDate } from "@falcon/shared/study/activity";
+import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import type { Env } from "../env.js";
 import { ApiError } from "../lib/authz.js";

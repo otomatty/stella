@@ -6,7 +6,7 @@
 
 **Architecture:** 教材はファイルが正本(`courses/<slug>/`)。トピック = `slides.md`(4〜6枚)、レッスン = `doc.md` + `practice.md`、`practice.md` の確認クイズだけが LMS の quiz になる。seed(`bun run db:seed`)で D1 に入る。コード演習の自動採点は配線しない(`course.json` に `exercises` を書かない)。
 
-**Tech Stack:** Markdown 教材 + `@falcon/content` のビルド検査(`check:ci`)/ manifest(`bun run test`)/ D1 seed。ハンズオンのコード例は Python + pytest(受講者の手元実行、採点なし)。
+**Tech Stack:** Markdown 教材 + `@stella/content` のビルド検査(`check:ci`)/ manifest(`bun run test`)/ D1 seed。ハンズオンのコード例は Python + pytest(受講者の手元実行、採点なし)。
 
 **正本ドキュメント(各タスクの実装者は必ず先に読む):**
 - 全 82 トピックの ID・タイトル・takeaway: `docs/superpowers/specs/2026-08-20-test-design-basics-curriculum.md`(Task 1 で `packages/content/courses/test-design-basics/CURRICULUM.md` へ移動。以後はそちらが正本)
@@ -26,7 +26,7 @@
 - 外部ロゴ・図の流用禁止。図解を足す場合は `.claude/skills/diagram-design/` 準拠(本計画では図解は必須にしない。fe / git 講座と同じく後追い可)
 - コミットは**モジュール単位**(`packages/content/CLAUDE.md` の指示)。コミット前に必ず検査を通す
 - 検査コマンド(全タスク共通):
-  - `bun run --filter=@falcon/content check:ci`(枚数・語彙・画像リンク)
+  - `bun run --filter=@stella/content check:ci`(枚数・語彙・画像リンク)
   - `bun run test`(manifest: front-matter・クイズ書式・course.json)
 - クイズの黙殺対策(全モジュールタスク共通): コミット前に次で全 practice.md にクイズ見出しと Q1 があることを確認する
   ```bash
@@ -83,7 +83,7 @@ packages/content/courses/test-design-basics/modules/
    - `## 手元で試す`: Python + pytest の写経 + 改造課題(python-testing-ci-basics の `m1-pytest/l1-basics/practice.md` が文体の実例)。**M1・M2 など実行物が無いレッスンは「ケース表を書く」紙上ハンズオンに差し替える**
    - `## 演習問題` + `## 解答例と解説`(`<details>`)
    - `## 確認クイズ`: 3〜5 問。各トピックの takeaway を 1 問以上でカバーする
-5. `bun run --filter=@falcon/content check:ci` を回す(語彙台帳エラーはトピック順・`introduces` の見直しで直す。**語を安易に足さない**)
+5. `bun run --filter=@stella/content check:ci` を回す(語彙台帳エラーはトピック順・`introduces` の見直しで直す。**語を安易に足さない**)
 
 ---
 
@@ -132,7 +132,7 @@ git mv docs/superpowers/specs/2026-08-20-test-design-basics-curriculum.md packag
 - [ ] **Step 4: 検査**
 
 ```bash
-bun run --filter=@falcon/content check:ci
+bun run --filter=@stella/content check:ci
 bun run test
 grep -rL "## 確認クイズ" packages/content/courses/test-design-basics/modules --include=practice.md
 ```
@@ -317,7 +317,7 @@ git commit -m "feat(content): テスト設計講座のサムネイルを追加"
 bun run lint
 bun run typecheck
 bun run test
-bun run --filter=@falcon/content check:ci
+bun run --filter=@stella/content check:ci
 bun run db:seed
 ```
 

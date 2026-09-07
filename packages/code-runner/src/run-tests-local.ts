@@ -3,8 +3,8 @@
  * メインスレッドをブロックしないために実体はワーカ側 (`quickjs-worker.ts`) で動かす。
  */
 
-import type { RunTestsRequest, RunTestsResponse } from "@falcon/shared/types";
-import { validateRunTestsBody } from "@falcon/shared/util/validate-run-tests-request";
+import type { RunTestsRequest, RunTestsResponse } from "@stella/shared/types";
+import { validateRunTestsBody } from "@stella/shared/util/validate-run-tests-request";
 
 import type { WorkerRequest, WorkerResponse } from "./quickjs-worker.js";
 

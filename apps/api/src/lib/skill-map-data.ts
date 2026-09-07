@@ -1,7 +1,7 @@
 /**
  * スキルツリー / スキルプロフィールの読み出し (Phase 1)。
  *
- * D1 から評価器 (`@falcon/shared/skill-map`) の入力を組み立てるところまでを持つ。
+ * D1 から評価器 (`@stella/shared/skill-map`) の入力を組み立てるところまでを持つ。
  * 判定そのものは純関数側にあり、ここは「どの行がクリア扱いか」の定義だけを担う。
  *
  * **クリアの定義は既存の修了判定に合わせる**: `enrollments.status = 'completed'`
@@ -11,12 +11,12 @@
  */
 
 import { and, count, countDistinct, desc, eq, gte, inArray, max } from "drizzle-orm";
-import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
-import { evaluateSkillMap, isSelectableVisibility } from "@falcon/shared/skill-map/evaluate";
-import type { SkillMapStage } from "@falcon/shared/skill-map/evaluate";
-import type { FocusCompletion } from "@falcon/shared/skill-map/focus";
-import { filterIslandStages } from "@falcon/shared/skill-map/islands";
-import { toStudyDate } from "@falcon/shared/study/activity";
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
+import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
+import type { SkillMapStage } from "@stella/shared/skill-map/evaluate";
+import type { FocusCompletion } from "@stella/shared/skill-map/focus";
+import { filterIslandStages } from "@stella/shared/skill-map/islands";
+import { toStudyDate } from "@stella/shared/study/activity";
 
 import type { Db } from "../db/client.js";
 import {
@@ -407,7 +407,7 @@ export async function saveFocusStageId(
  * 集中ボーナスの材料 — 完了したレッスンの「日付 × ステージ」。
  *
  * `lesson_progress` は行の最終状態しか持たないので、完了日は `updated_at` を
- * アプリ基準 TZ の日付に落として代用する (`@falcon/shared/skill-map/focus` の
+ * アプリ基準 TZ の日付に落として代用する (`@stella/shared/skill-map/focus` の
  * JSDoc に仕様として書いてある近似)。
  */
 export async function loadFocusCompletions(

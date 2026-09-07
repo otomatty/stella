@@ -36,7 +36,7 @@ import type {
   AnalyticsStumble,
   AnalyticsTrendPoint,
   TenantAnalytics,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import { useTenantAnalytics } from "@/hooks/useAnalytics";
 import { ENROLLMENT_TREND, COMPLETION_BY_STAGE, STUMBLES } from "@/demo/fixtures";
 

@@ -6,7 +6,7 @@
 
 **Architecture:** 既存の `profiles` + `auth_users` 招待モデルを維持し、自由オンボーディングと org 横断の穴を閉じる。新テーブル（`invites` / denylist）は作らない。ロールと staff 判定は共有型 + `authz.ts` に集約する。
 
-**Tech Stack:** Hono + Drizzle + D1 (`apps/api`)、React 19 + Vite (`apps/web`)、`@falcon/shared`、Vitest（`packages/**/*.test.ts`）、Bun
+**Tech Stack:** Hono + Drizzle + D1 (`apps/api`)、React 19 + Vite (`apps/web`)、`@stella/shared`、Vitest（`packages/**/*.test.ts`）、Bun
 
 ## Global Constraints
 
@@ -275,7 +275,7 @@ const TTL_SEC = 60 * 60 * 24; // 24 時間
 
 - [ ] **Step 3: typecheck（当該ファイル）**
 
-Run: `bun run --filter=@falcon/api typecheck`  
+Run: `bun run --filter=@stella/api typecheck`  
 Expected: PASS（または後続未変更箇所のみ）。
 
 - [ ] **Step 4: ステージング候補**
@@ -553,7 +553,7 @@ requireRole(caller, "instructor", "admin", "platform_admin");
 
 - [ ] **Step 2: typecheck**
 
-Run: `bun run --filter=@falcon/api typecheck`  
+Run: `bun run --filter=@stella/api typecheck`  
 Expected: PASS
 
 - [ ] **Step 3: ステージング候補**

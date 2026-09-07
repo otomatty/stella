@@ -206,9 +206,9 @@ bun run typecheck        # 全 workspace の tsc --noEmit
 特定 workspace だけ動かす場合:
 
 ```bash
-bun run --filter=@falcon/web dev
-bun run --filter=@falcon/api dev
-bun run --filter=@falcon/shared typecheck
+bun run --filter=@stella/web dev
+bun run --filter=@stella/api dev
+bun run --filter=@stella/shared typecheck
 ```
 
 ### 認証 (Google OAuth)

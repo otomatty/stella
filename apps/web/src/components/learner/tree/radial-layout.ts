@@ -52,8 +52,8 @@
  * 落とすわけにはいかない (落とすと線の長さと向きを決め打ちにする羽目になる)。
  */
 
-import { isStarVisible } from "@falcon/shared/skill-map/evaluate";
-import { SKILL_MAP_ISLAND_CATEGORIES } from "@falcon/shared/skill-map/islands";
+import { isStarVisible } from "@stella/shared/skill-map/evaluate";
+import { SKILL_MAP_ISLAND_CATEGORIES } from "@stella/shared/skill-map/islands";
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 

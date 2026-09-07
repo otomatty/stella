@@ -2,7 +2,7 @@
  * スキルシート UI 権限・画面モード (Issue #233)。
  */
 
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Role } from "@/data/types";
 
 export type SkillSheetUiMode = "register" | "proxy-register" | "view-only";

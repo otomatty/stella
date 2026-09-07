@@ -11,9 +11,9 @@
  * `profiles: { display_name, initials }` をネストしてフロントのマッパーを無変更に保つ。
  */
 
-import { nextSubmissionAttempt } from "@falcon/shared/review/escalation";
-import { isGradingSummary, parseGradingSummary } from "@falcon/shared/review/grading-summary";
-import type { GradingSummary } from "@falcon/shared/review/types";
+import { nextSubmissionAttempt } from "@stella/shared/review/escalation";
+import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/grading-summary";
+import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 

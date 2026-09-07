@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { msUntilNextStudyDay, toStudyDate } from "@falcon/shared/study/activity";
+import { msUntilNextStudyDay, toStudyDate } from "@stella/shared/study/activity";
 
 /**
  * アプリ基準 TZ (JST) の「今日」(`YYYY-MM-DD`)。 日付が変わったら採り直す。

@@ -10,7 +10,7 @@
 
 Git 正本 (`packages/content/courses/<slug>/course.json`) の講座に **`audience: granted`**
 を付け、**スタッフが選んだ受講者だけ**のスキルツリーに星として出す。教材は 1 実体の
-まま、評価器 (`@falcon/shared/skill-map/evaluate`) は触らず、**評価器に渡す前の
+まま、評価器 (`@stella/shared/skill-map/evaluate`) は触らず、**評価器に渡す前の
 カタログ**を人ごとに差し替える。
 
 | 語彙 | 意味 |

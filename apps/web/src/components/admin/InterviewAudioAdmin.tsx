@@ -13,12 +13,12 @@ import { Card } from "@/components/ui/card";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
-import type { InterviewQuestion } from "@falcon/shared/interview/types";
+import type { InterviewQuestion } from "@stella/shared/interview/types";
 import {
   INTERVIEW_TTS_MODEL_OPTIONS,
   isInterviewTtsModelId,
   type InterviewTtsModelId,
-} from "@falcon/shared/interview/audio";
+} from "@stella/shared/interview/audio";
 import {
   type GenerateAudioResult,
   fetchInterviewQuestions,

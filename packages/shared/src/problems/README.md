@@ -164,8 +164,8 @@ XX-chapter/
 スキャナがあるので、 既存・新規の課題が規約 1 / 3 / 5 を破っていないか確認できる:
 
 ```bash
-bun --filter @falcon/shared scan-starter-comments            # 全課題の詳細を表示
-bun --filter @falcon/shared scan-starter-comments --summary  # 章別件数のみ
+bun --filter @stella/shared scan-starter-comments            # 全課題の詳細を表示
+bun --filter @stella/shared scan-starter-comments --summary  # 章別件数のみ
 ```
 
 検出はヒューリスティック (リテラル JS の混入を中心に拾う) なので、 false positive はあり得る。 0 件でなければ少なくとも目視チェック対象として扱うのが目安。
@@ -183,10 +183,10 @@ bun --filter @falcon/shared scan-starter-comments --summary  # 章別件数の�
 リポジトリルートで:
 
 ```bash
-bun --filter @falcon/shared typecheck
-bun --filter @falcon/shared test
-bun --filter @falcon/shared check-integrity
-bun --filter @falcon/code-runner typecheck
+bun --filter @stella/shared typecheck
+bun --filter @stella/shared test
+bun --filter @stella/shared check-integrity
+bun --filter @stella/code-runner typecheck
 ```
 
-クライアントのビルドまで確認する場合は `bun --filter @falcon/code-runner build`。
+クライアントのビルドまで確認する場合は `bun --filter @stella/code-runner build`。

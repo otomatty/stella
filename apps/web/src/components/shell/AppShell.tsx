@@ -5,7 +5,7 @@ import { Sparkles } from "@/lib/icons";
 import { TENANTS } from "@/data/seed-catalog";
 import { CURRENT_USER } from "@/demo/fixtures";
 import type { Stage, Role, Tenant, User } from "@/data/types";
-import type { ChatContext } from "@falcon/shared/ai/types";
+import type { ChatContext } from "@stella/shared/ai/types";
 import { LessonAIProvider } from "@/components/common/LessonAIContext";
 import { useStagesForTenant, useEnrolledStagesForTenant } from "@/data/stages-source";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -13,7 +13,7 @@ import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
 import { configureRemoteSync, deriveStageProgress } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
-import type { SearchResult } from "@falcon/shared/search/types";
+import type { SearchResult } from "@stella/shared/search/types";
 
 import { AppSidebar } from "@/components/shell/AppSidebar";
 import { Topbar } from "@/components/shell/Topbar";

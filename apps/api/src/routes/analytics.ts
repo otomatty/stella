@@ -23,7 +23,7 @@ import {
 } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
 import type { Env } from "../env.js";
-import type { QuizAnswer } from "@falcon/shared/cms/types";
+import type { QuizAnswer } from "@stella/shared/cms/types";
 
 export const analyticsRoute = new Hono<{ Bindings: Env }>();
 

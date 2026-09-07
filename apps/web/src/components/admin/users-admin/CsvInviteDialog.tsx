@@ -19,7 +19,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { parseInviteCsv } from "@falcon/shared/admin/parse-invite-csv";
+import { parseInviteCsv } from "@stella/shared/admin/parse-invite-csv";
 import { inviteUsers } from "@/lib/admin-users-api";
 
 interface CsvInviteDialogProps {

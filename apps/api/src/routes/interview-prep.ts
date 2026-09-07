@@ -11,9 +11,9 @@
 import { Hono } from "hono";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
-import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@falcon/shared/interview/types";
-import type { InterviewQuestion } from "@falcon/shared/interview/types";
-import { visibleQuestions } from "@falcon/shared/interview/filter";
+import { ASSIGNABLE_CATEGORIES, isAssignableCategory } from "@stella/shared/interview/types";
+import type { InterviewQuestion } from "@stella/shared/interview/types";
+import { visibleQuestions } from "@stella/shared/interview/filter";
 import {
   INTERVIEW_AUDIO_TEXT_HASH_KEY,
   interviewAudioObjectName,
@@ -21,26 +21,26 @@ import {
   isInterviewAudioStale,
   isInterviewTtsModelId,
   parseInterviewAudioObjectName,
-} from "@falcon/shared/interview/audio";
+} from "@stella/shared/interview/audio";
 import {
   InterviewQuestionPatchError,
   type InterviewQuestionPatch,
   questionAudioChanged,
   normalizeInterviewQuestionPatch,
-} from "@falcon/shared/interview/edit";
+} from "@stella/shared/interview/edit";
 import {
   FIX_NOTE_MAX_UNRESOLVED_PER_QUESTION,
   normalizeFixNoteText,
-} from "@falcon/shared/interview/fix-notes";
+} from "@stella/shared/interview/fix-notes";
 import {
   PRACTICE_SET_SIZE,
   type PracticeCandidate,
   practiceSetProgress,
   summarizePracticeSet,
-} from "@falcon/shared/interview/practice-set";
-import { deriveQuestionPrepStatus, prepRate } from "@falcon/shared/interview/progress";
-import { sortByInterviewDate } from "@falcon/shared/interview/monitoring";
-import { toStudyDate } from "@falcon/shared/study/activity";
+} from "@stella/shared/interview/practice-set";
+import { deriveQuestionPrepStatus, prepRate } from "@stella/shared/interview/progress";
+import { sortByInterviewDate } from "@stella/shared/interview/monitoring";
+import { toStudyDate } from "@stella/shared/study/activity";
 
 import {
   interviewFixNotes,

@@ -11,15 +11,15 @@ SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。�
 ```text
 falcon-informal/
 ├── apps/
-│   ├── web/                  # @falcon/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
+│   ├── web/                  # @stella/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
-│   ├── api/                  # @falcon/api — Hono API → Cloudflare Workers
+│   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
 │   │   └── src/              # /api/chat, /api/healthz
 │   └── vscode/               # informal (`falcon.informal`) — 学習者のコード演習用 VS Code 拡張
 ├── packages/
-│   ├── shared/               # @falcon/shared — 課題型・カリキュラム・採点ロジック
-│   └── code-runner/          # @falcon/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
+│   ├── shared/               # @stella/shared — 課題型・カリキュラム・採点ロジック
+│   └── code-runner/          # @stella/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
 ├── apps/api/drizzle/         # Drizzle マイグレーション (Cloudflare D1)
 ├── tsconfig.base.json
 └── package.json              # Bun workspaces
@@ -110,9 +110,9 @@ bun run build            # 成果物を出す workspace だけ（web = Vite / vs
 特定 workspace だけ動かす場合:
 
 ```bash
-bun run --filter=@falcon/web dev
-bun run --filter=@falcon/api dev
-bun run --filter=@falcon/shared typecheck
+bun run --filter=@stella/web dev
+bun run --filter=@stella/api dev
+bun run --filter=@stella/shared typecheck
 ```
 
 ### コード演習（VS Code 拡張）
@@ -352,7 +352,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - `POST /api/lesson-progress` の upsert 時に、サーバが「反映前後の差分」
   (視聴秒数の増分 / 未完了 → 完了に変わったレッスン数) を当日分へ加算します。
   進捗と日別ログは D1 の batch で 1 トランザクションにまとめて書きます。
-- 日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります (`@falcon/shared/study/activity`)。
+- 日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります (`@stella/shared/study/activity`)。
 - `GET /api/study-activity/mine?days=14` が欠損日を 0 埋めした系列と連続学習日数を返し、
   受講者ダッシュボードの「週間学習時間」チャートと「連続学習」KPI がこれを描画します。
   受講者は自分のログのみ参照できます。
@@ -387,7 +387,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - 期間: 今月 / 先月 / 直近30日 / 直近90日 / 年初来 / 全期間 / 日付指定。
   日付境界はアプリ基準 TZ (Asia/Tokyo) で切ります。
 - 画面はプレビュー (先頭 200 件) を表示し、「CSV出力」は条件に一致する全件をページングで取得します。
-  列定義は `@falcon/shared/admin/reports` に集約しており、 プレビュー表と CSV は同じ変換を通ります。
+  列定義は `@stella/shared/admin/reports` に集約しており、 プレビュー表と CSV は同じ変換を通ります。
 - API: `GET /api/reports/:type?from=&to=&limit=&offset=` (from/to は ISO 日時 または `YYYY-MM-DD` · inclusive。
   日付だけを渡した場合はアプリ基準 TZ の日境界として解釈します)。
   同テナントの `admin` / `platform_admin` のみ。 母集合は caller のテナントに固定されます。

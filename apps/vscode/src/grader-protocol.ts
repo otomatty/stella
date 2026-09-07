@@ -4,7 +4,7 @@ import type {
   EvaluationResult,
   LintViolation,
   TestResult,
-} from "@falcon/shared/types";
+} from "@stella/shared/types";
 
 /** Same shape as `apps/web/src/practice/hooks/useGradeRunner.ts`. */
 export interface ExecutionResult {

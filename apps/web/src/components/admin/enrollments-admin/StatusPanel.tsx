@@ -51,7 +51,7 @@ import type { StageColor } from "@/data/types";
 import type { AdminProfileRow } from "@/lib/admin-users-api";
 import type { UpdateEnrollmentPatch } from "@/lib/enrollments-api";
 import { todayDateKey } from "@/lib/date-keys";
-import type { StageRow, EnrollmentRow } from "@falcon/shared/cms/types";
+import type { StageRow, EnrollmentRow } from "@stella/shared/cms/types";
 import { toneFromId } from "../users-admin/shared";
 import {
   ENROLLMENT_STATUS_LABEL,

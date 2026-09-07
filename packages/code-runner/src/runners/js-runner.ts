@@ -10,7 +10,7 @@
  * サポートしているので、 そのまま透過。
  */
 
-import type { CodeRunner, RunInput, RunOutput } from "@falcon/shared/runner/types";
+import type { CodeRunner, RunInput, RunOutput } from "@stella/shared/runner/types";
 
 import { runTestsLocally } from "../run-tests-local.js";
 

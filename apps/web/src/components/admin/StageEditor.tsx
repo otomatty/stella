@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import type { StageColor, StageStatus, StageWithChildren } from "@falcon/shared/cms/types";
+import type { StageColor, StageStatus, StageWithChildren } from "@stella/shared/cms/types";
 import { setStageStatus, upsertStage } from "@/lib/cms-api";
 import { useCmsStage } from "@/hooks/useCmsStages";
 import { SectionList } from "./SectionList";

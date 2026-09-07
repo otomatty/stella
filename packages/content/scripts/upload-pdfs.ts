@@ -2,8 +2,8 @@
  * 教材 PDF の差分生成 + R2 アップロード + seed 用マニフェスト出力
  * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
  *
- *   bun run --filter=@falcon/content pdf:sync             # local (--local)
- *   bun run --filter=@falcon/content pdf:sync -- --remote # remote (deploy 用)
+ *   bun run --filter=@stella/content pdf:sync             # local (--local)
+ *   bun run --filter=@stella/content pdf:sync -- --remote # remote (deploy 用)
  *
  * 手順:
  *   1. R2 の状態オブジェクト (`lesson-pdf/state.json`) を読む。前回までに put した

@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { StageRow, StageWithChildren } from "@falcon/shared/cms/types";
+import type { StageRow, StageWithChildren } from "@stella/shared/cms/types";
 import { getStageWithChildren, listStages } from "@/lib/cms-api";
 
 interface UseCmsStagesResult {

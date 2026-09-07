@@ -3,7 +3,7 @@
  *
  * 管理画面「レポート」の横断エクスポート経路。 KPI ダッシュボード (#28) は「今の状態」の
  * 集計、 成績台帳 (#26) はステージ単位の一覧であるのに対し、 ここは「期間で切った明細を
- * まとめて書き出す」ことを目的とする。 列定義は `@falcon/shared/admin/reports` に置き、
+ * まとめて書き出す」ことを目的とする。 列定義は `@stella/shared/admin/reports` に置き、
  * CSV 化はフロント (`lib/csv`) が行う (アプリ内の他の CSV 出力と同じ経路)。
  *
  * 認可は同テナントの admin / platform_admin のみ。 母集合を caller.tenantId に固定する
@@ -21,7 +21,7 @@ import {
   type GradeReportRow,
   type ReportRow,
   type ReportType,
-} from "@falcon/shared/admin/reports";
+} from "@stella/shared/admin/reports";
 
 import {
   auditLogs,

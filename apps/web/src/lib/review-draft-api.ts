@@ -1,5 +1,5 @@
-import type { ReviewDraftRequest, ReviewDraftResponse } from "@falcon/shared/review/types";
-import { buildHeuristicReviewDraft } from "@falcon/shared/review/heuristic-draft";
+import type { ReviewDraftRequest, ReviewDraftResponse } from "@stella/shared/review/types";
+import { buildHeuristicReviewDraft } from "@stella/shared/review/heuristic-draft";
 import { getAccessToken } from "./auth-client";
 
 function serverUrl(): string {

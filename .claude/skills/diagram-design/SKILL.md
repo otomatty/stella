@@ -75,7 +75,7 @@ python .claude/skills/diagram-design/lint-skin.py <path>          # skin違反(�
 python packages/content/scripts/diagram_export.py <path>          # SVG/PNGを生成し、日本語のはみ出しを検査
 ```
 
-`bun run --filter=@falcon/content materials` は上記2つを全図に対して実行してから pptx を再構築する。ビルドが通れば skin 違反もはみ出しも無いことが保証される。
+`bun run --filter=@stella/content materials` は上記2つを全図に対して実行してから pptx を再構築する。ビルドが通れば skin 違反もはみ出しも無いことが保証される。
 
 ## 出典
 

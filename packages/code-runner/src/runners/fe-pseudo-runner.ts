@@ -10,8 +10,8 @@
  * 「何行目の何が悪いのか」 が伝わらないため。
  */
 
-import type { CodeRunner, RunInput, RunOutput } from "@falcon/shared/runner/types";
-import type { TestResult } from "@falcon/shared/types";
+import type { CodeRunner, RunInput, RunOutput } from "@stella/shared/runner/types";
+import type { TestResult } from "@stella/shared/types";
 
 import { FePseudoError, transpileFePseudo } from "../fe-pseudo/index.js";
 import { jsRunner } from "./js-runner.js";

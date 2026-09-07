@@ -2,13 +2,13 @@
  * POST /api/review-draft — 講師向け AI 添削下書き (JSON)。
  */
 
-import { buildHeuristicReviewDraft } from "@falcon/shared/review/heuristic-draft";
-import { parseReviewDraftJson } from "@falcon/shared/review/parse-draft-json";
+import { buildHeuristicReviewDraft } from "@stella/shared/review/heuristic-draft";
+import { parseReviewDraftJson } from "@stella/shared/review/parse-draft-json";
 import {
   buildReviewDraftSystemPrompt,
   buildReviewDraftUserMessage,
-} from "@falcon/shared/review/prompt";
-import { validateReviewDraftRequest } from "@falcon/shared/review/validate-review-draft-request";
+} from "@stella/shared/review/prompt";
+import { validateReviewDraftRequest } from "@stella/shared/review/validate-review-draft-request";
 import { Hono } from "hono";
 
 import type { Env } from "../env.js";

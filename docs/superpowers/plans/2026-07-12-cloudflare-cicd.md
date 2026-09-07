@@ -319,7 +319,7 @@ git commit -m "ci: add PR gate (lint/typecheck/test/build) on pull_request"
 - Create（条件付き）: `apps/web/worker.ts`
 
 **Interfaces:**
-- Produces: `bun run --filter=@falcon/web deploy` が `wrangler deploy` を実行し `falcon-web` Worker を更新する。ルート `deploy:web`（build → web deploy）は中身が Workers になるだけで不変。
+- Produces: `bun run --filter=@stella/web deploy` が `wrangler deploy` を実行し `falcon-web` Worker を更新する。ルート `deploy:web`（build → web deploy）は中身が Workers になるだけで不変。
 
 - [ ] **Step 1: `apps/web/wrangler.toml` を Static Assets 構成へ書き換える**
 
@@ -358,7 +358,7 @@ Expected: `apps/web/public/_redirects` が削除される（SPA fallback は wra
 
 Run:
 ```bash
-bun run --filter=@falcon/web build
+bun run --filter=@stella/web build
 ```
 Expected: `apps/web/dist/index.html` と各種アセットが生成される。
 

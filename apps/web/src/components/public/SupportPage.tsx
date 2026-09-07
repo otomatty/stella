@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ChevronLeft, HelpCircle, Mail, Send, Loader2, CheckCircle } from "@/lib/icons";
-import { supportMailSubjectPrefix } from "@falcon/shared/brand/display";
+import { supportMailSubjectPrefix } from "@stella/shared/brand/display";
 import { Brand } from "@/components/common/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

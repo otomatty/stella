@@ -28,7 +28,7 @@ import { errorResponse, getCaller, ApiError } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
-import type { LearnerQuizHistory, QuizAnswer } from "@falcon/shared/cms/types";
+import type { LearnerQuizHistory, QuizAnswer } from "@stella/shared/cms/types";
 import { clientIp } from "../lib/audit.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { noteQuizStumble } from "../lib/discovery-stumble.js";

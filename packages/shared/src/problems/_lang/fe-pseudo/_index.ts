@@ -6,7 +6,7 @@
  * `chapterId` は SQL 課題と同様に既存の `Ch00` を流用する (擬似言語は
  * `curriculum/chapters.ts` の JS 章立てには対応しないため)。
  *
- * 採点は `@falcon/code-runner` の `fe-pseudo-runner` が担当し、 擬似言語を JS に
+ * 採点は `@stella/code-runner` の `fe-pseudo-runner` が担当し、 擬似言語を JS に
  * 落として QuickJS で実行する。 対応構文は
  * `packages/code-runner/src/fe-pseudo/SYNTAX.md` を参照。
  */

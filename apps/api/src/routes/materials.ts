@@ -22,7 +22,7 @@
 import { Hono } from "hono";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
-import { READABLE_ENROLLMENT_STATUSES } from "@falcon/shared/enrollment/access";
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 
 import {
   stages,

@@ -10,7 +10,7 @@
  *
  * ## 視界の強制はここで行う
  *
- * 評価器 (`@falcon/shared/skill-map`) は「何をどこまで見せてよいか」を返すだけで、
+ * 評価器 (`@stella/shared/skill-map`) は「何をどこまで見せてよいか」を返すだけで、
  * 実際に伏せるのは API の仕事。伏せる場所を画面側に委ねると、DevTools と
  * `curl` で全部読めてしまい、視界制限が演出でしかなくなる。したがって:
  *
@@ -37,28 +37,28 @@
  */
 
 import { Hono } from "hono";
-import { isDiscoveryVisible } from "@falcon/shared/discovery/types";
-import { appearancePrerequisitesOf, appearancesOf } from "@falcon/shared/skill-map/appearances";
-import { dropIslandsUnknownToClient } from "@falcon/shared/skill-map/islands";
+import { isDiscoveryVisible } from "@stella/shared/discovery/types";
+import { appearancePrerequisitesOf, appearancesOf } from "@stella/shared/skill-map/appearances";
+import { dropIslandsUnknownToClient } from "@stella/shared/skill-map/islands";
 import {
   evaluateSkillMap,
   isSelectableVisibility,
   isStarVisible,
   parentSlugOf,
-} from "@falcon/shared/skill-map/evaluate";
+} from "@stella/shared/skill-map/evaluate";
 import type {
   SkillMapLockReason,
   SkillMapState,
   SkillMapVisibility,
-} from "@falcon/shared/skill-map/evaluate";
-import { computeFocusBonus } from "@falcon/shared/skill-map/focus";
-import { computeXp, levelProgress } from "@falcon/shared/skill-map/xp";
+} from "@stella/shared/skill-map/evaluate";
+import { computeFocusBonus } from "@stella/shared/skill-map/focus";
+import { computeXp, levelProgress } from "@stella/shared/skill-map/xp";
 import {
   addStudyDays,
   computeStreaks,
   studyDateStartMs,
   toStudyDate,
-} from "@falcon/shared/study/activity";
+} from "@stella/shared/study/activity";
 
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
@@ -450,7 +450,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     });
 
     // 集中ボーナスは表示専用の係数 (XP の保存値は動かさない)。導出仕様は
-    // `@falcon/shared/skill-map/focus` の JSDoc にまとめてある。
+    // `@stella/shared/skill-map/focus` の JSDoc にまとめてある。
     const today = toStudyDate(new Date());
     const completions = await loadFocusCompletions(
       db,

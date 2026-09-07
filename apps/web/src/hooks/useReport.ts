@@ -11,7 +11,7 @@ import {
   type ReportPeriod,
   type ReportResult,
   type ReportType,
-} from "@falcon/shared/admin/reports";
+} from "@stella/shared/admin/reports";
 import { REPORT_PREVIEW_LIMIT, fetchReport } from "@/lib/reports-api";
 
 export interface UseReportResult {

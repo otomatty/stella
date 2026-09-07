@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { InstructorOverview, TenantAnalytics } from "@falcon/shared/cms/types";
+import type { InstructorOverview, TenantAnalytics } from "@stella/shared/cms/types";
 import { getInstructorOverview, getTenantAnalytics } from "@/lib/analytics-api";
 
 interface UseTenantAnalyticsResult {

@@ -6,7 +6,7 @@
 
 **Architecture:** 一括削除。ルート・コンポーネント・型を除去し、drizzle migration で `qa_answered` 通知削除後に `question_replies` / `questions` / `lesson_notes` を DROP する。AI 質問・添削 `reviewNotes`・教材講師ノート・`quiz_questions` は触らない。
 
-**Tech Stack:** Hono + Drizzle + D1 (`apps/api`)、React + Vite (`apps/web`)、`@falcon/shared`、Vitest、Bun
+**Tech Stack:** Hono + Drizzle + D1 (`apps/api`)、React + Vite (`apps/web`)、`@stella/shared`、Vitest、Bun
 
 ## Global Constraints
 
@@ -43,7 +43,7 @@
 
 - [ ] Remove `Question*` types and `qa_answered` from `NotificationType`
 - [ ] Delete notes-sync module + test; fix any re-exports
-- [ ] `bun run --filter=@falcon/shared test` (or root `bun run test`) for remaining tests
+- [ ] `bun run --filter=@stella/shared test` (or root `bun run test`) for remaining tests
 
 ### Task 2: API schema + migration + routes
 

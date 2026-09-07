@@ -7,7 +7,7 @@
 
 import { Linter } from "eslint-linter-browserify";
 
-import type { ESLintRuleConfig, LintViolation } from "@falcon/shared/types";
+import type { ESLintRuleConfig, LintViolation } from "@stella/shared/types";
 
 interface RawMessage {
   ruleId: string | null;

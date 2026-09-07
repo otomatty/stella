@@ -11,8 +11,8 @@
  * `RunInput.sqlSeed` が DDL + seed SQL に対応する。
  */
 
-import type { CodeRunner, RunInput, RunOutput } from "@falcon/shared/runner/types";
-import type { SqlRow, SqlTestCase, TestResult } from "@falcon/shared/types";
+import type { CodeRunner, RunInput, RunOutput } from "@stella/shared/runner/types";
+import type { SqlRow, SqlTestCase, TestResult } from "@stella/shared/types";
 
 import { memoizePromiseFactory } from "quickjs-emscripten-core";
 

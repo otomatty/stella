@@ -3,7 +3,7 @@
  *
  * `hall_of_fame_entries` への出入りと、公開時に固定する「歩んだ道」の組み立てを持つ。
  * **誰に見せてよいかの判定は置かない** — 状態の門番は純関数
- * (`@falcon/shared/hall-of-fame/types`) にあり、絞り込みはルート側が行う。
+ * (`@stella/shared/hall-of-fame/types`) にあり、絞り込みはルート側が行う。
  */
 
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -15,7 +15,7 @@ import {
   type HallOfFameChapters,
   type HallOfFamePathStage,
   type HallOfFameStatus,
-} from "@falcon/shared/hall-of-fame/types";
+} from "@stella/shared/hall-of-fame/types";
 
 import type { Db } from "../db/client.js";
 import { certificates, enrollments, hallOfFameEntries, profiles, stages } from "../db/schema.js";

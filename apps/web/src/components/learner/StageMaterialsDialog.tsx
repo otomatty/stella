@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { StageMaterialRow } from "@falcon/shared/cms/types";
+import type { StageMaterialRow } from "@stella/shared/cms/types";
 import { Download, FileText, Folder, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";

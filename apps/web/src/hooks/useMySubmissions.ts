@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Submission } from "@falcon/shared/review/types";
+import type { Submission } from "@stella/shared/review/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchMySubmissions } from "@/lib/submissions-api";
 

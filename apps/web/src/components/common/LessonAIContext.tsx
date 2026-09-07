@@ -6,7 +6,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { ChatContext } from "@falcon/shared/ai/types";
+import type { ChatContext } from "@stella/shared/ai/types";
 
 const LessonAIContextValue = createContext<ChatContext>({ kind: "general" });
 

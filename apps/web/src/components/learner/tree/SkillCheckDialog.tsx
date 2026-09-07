@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { SKILL_CHECK_DAILY_LIMIT } from "@falcon/shared/skill-map/skill-check";
+import { SKILL_CHECK_DAILY_LIMIT } from "@stella/shared/skill-map/skill-check";
 
 import { Button } from "@/components/ui/button";
 import {

@@ -112,7 +112,7 @@
   - PDF: Claude API の document コンテンツブロック(base64)としてネイティブ入力(スキャン PDF も vision で読める)
   - Excel: Workers 側で SheetJS 等でシート → CSV テキスト化してテキストとして入力(Claude API は xlsx を直接受けないため)
   - **structured outputs**(`output_config.format`、または strict tool schema)で共通フォーマット JSON に強制。モデルは `claude-opus-5` を既定(env で差し替え可)。ANTHROPIC_API_KEY 未設定時は 503(review-draft のようなヒューリスティックフォールバックは作らない — 誤解析の方が害が大きい)
-- **共通フォーマット**(`@falcon/shared` に型定義。v1 案):
+- **共通フォーマット**(`@stella/shared` に型定義。v1 案):
   ```
   SkillSheet {
     basic:   { years_total, current_role }

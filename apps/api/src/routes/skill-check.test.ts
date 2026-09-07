@@ -14,8 +14,8 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SKILL_CHECK_DAILY_LIMIT } from "@falcon/shared/skill-map/skill-check";
-import { toStudyDate } from "@falcon/shared/study/activity";
+import { SKILL_CHECK_DAILY_LIMIT } from "@stella/shared/skill-map/skill-check";
+import { toStudyDate } from "@stella/shared/study/activity";
 
 import type { Env } from "../env.js";
 import { recordAudit } from "../lib/audit.js";

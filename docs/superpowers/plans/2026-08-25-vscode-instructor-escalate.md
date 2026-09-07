@@ -3,7 +3,7 @@
 **Goal:** 自動採点で詰まった学習者が VS Code から講師の添削キューへエスカレーションでき、
 講師は採点失敗サマリと AI 下書きを見て添削を確定できる。
 
-**Architecture:** 純ロジック (サマリ整形 / ファイル連結 / upsert 判定) を `@falcon/shared/review`
+**Architecture:** 純ロジック (サマリ整形 / ファイル連結 / upsert 判定) を `@stella/shared/review`
 に置き、 D1 `submissions` に `grading_summary` 列を足す。 拡張は採点結果を控えて
 `POST /api/submissions` するだけ。 講師 UI は既存 (`ReviewQueue` / `ReviewEditor`) に
 「自動採点」タブを足す。

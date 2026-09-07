@@ -6,7 +6,7 @@
  * 実際の最大値から動的に決める。
  */
 
-import { studyDateWeekday, type StudyActivityDay } from "@falcon/shared/study/activity";
+import { studyDateWeekday, type StudyActivityDay } from "@stella/shared/study/activity";
 
 /** チャート右端側を強調する日数 (直近 1 週間)。 */
 const HIGHLIGHT_DAYS = 7;

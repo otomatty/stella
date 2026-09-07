@@ -27,7 +27,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { HallOfFameStatus } from "@falcon/shared/hall-of-fame/types";
+import type { HallOfFameStatus } from "@stella/shared/hall-of-fame/types";
 
 import { Search } from "@/lib/icons";
 import { isBackendConfigured } from "@/lib/backend";

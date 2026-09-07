@@ -20,8 +20,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-import { buildContentManifest } from "@falcon/content";
-import type { QuizQuestionSeed } from "@falcon/content";
+import { buildContentManifest } from "@stella/content";
+import type { QuizQuestionSeed } from "@stella/content";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";

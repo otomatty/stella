@@ -4,9 +4,9 @@
 
 **Goal:** 受講者のコード演習をブラウザの PracticeWorkspace から VS Code 拡張へ移し、Web は使い始め（ログイン・動画・クイズ）専用にする。
 
-**Architecture:** 拡張ホストが既存 LMS API を叩き、JWT はワンタイムの vscode-link で Web から受け取る。課題ファイルは `~/.falcon-informal/exercises/<assignmentId>/` に starter だけ展開する。採点は隠し WebView で現行 `@falcon/code-runner` の `runGrading` を回し、クリアを `/api/lesson-progress` に書く。
+**Architecture:** 拡張ホストが既存 LMS API を叩き、JWT はワンタイムの vscode-link で Web から受け取る。課題ファイルは `~/.falcon-informal/exercises/<assignmentId>/` に starter だけ展開する。採点は隠し WebView で現行 `@stella/code-runner` の `runGrading` を回し、クリアを `/api/lesson-progress` に書く。
 
-**Tech Stack:** VS Code Extension API 1.96+、esbuild、Hono / D1、`@falcon/shared`、`@falcon/code-runner`、Bun workspaces。
+**Tech Stack:** VS Code Extension API 1.96+、esbuild、Hono / D1、`@stella/shared`、`@stella/code-runner`、Bun workspaces。
 
 **Spec:** `docs/superpowers/specs/2026-08-14-vscode-replace-practice-workspace-design.md`
 
@@ -138,7 +138,7 @@ export const authVscodeLinks = sqliteTable("auth_vscode_links", {
 bun run db:generate
 bun run db:migrate
 bun run test apps/api/src/lib/vscode-link.test.ts
-bun run --filter=@falcon/api typecheck
+bun run --filter=@stella/api typecheck
 ```
 
 Expected: PASS。生成 SQL に `auth_vscode_links` がある。
@@ -216,7 +216,7 @@ Expected: 実装後 PASS
 
 - [ ] **Step 4: typecheck**
 
-Run: `bun run --filter=@falcon/web typecheck && bun run --filter=@falcon/shared typecheck`
+Run: `bun run --filter=@stella/web typecheck && bun run --filter=@stella/shared typecheck`
 Expected: PASS
 
 ---
@@ -240,7 +240,7 @@ Expected: PASS
 
 ```json
 {
-  "name": "@falcon/vscode",
+  "name": "@stella/vscode",
   "displayName": "FALCON INFORMAL",
   "publisher": "falcon",
   "version": "0.1.0",
@@ -292,7 +292,7 @@ Expected: PASS
     "package": "bun run build && bunx @vscode/vsce package --no-dependencies"
   },
   "dependencies": {
-    "@falcon/shared": "workspace:*"
+    "@stella/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "^1.96.0",
@@ -302,7 +302,7 @@ Expected: PASS
 }
 ```
 
-`esbuild.mjs` は `src/extension.ts` を CJS で `dist/extension.js` にバンドルする（VS Code 拡張ホスト向け）。`@falcon/shared` は bundle する。`vscode` は external。
+`esbuild.mjs` は `src/extension.ts` を CJS で `dist/extension.js` にバンドルする（VS Code 拡張ホスト向け）。`@stella/shared` は bundle する。`vscode` は external。
 
 `activate` の最小:
 
@@ -337,7 +337,7 @@ export function deactivate(): void {}
 - [ ] **Step 1: 上記ファイルを作成する**
 - [ ] **Step 2: `cd apps/vscode && bun install && bun run typecheck && bun run build`**
 Expected: `dist/extension.js` ができる
-- [ ] **Step 3: ルート `package.json` の `build` / `typecheck` が `@falcon/*` フィルタなので、拡張の `name` が `@falcon/vscode` なら自動で拾われる。ルート typecheck を一度回す**
+- [ ] **Step 3: ルート `package.json` の `build` / `typecheck` が `@stella/*` フィルタなので、拡張の `name` が `@stella/vscode` なら自動で拾われる。ルート typecheck を一度回す**
 
 Run: `bun run typecheck`
 Expected: PASS
@@ -505,7 +505,7 @@ describe("exerciseRoot", () => {
 - Create: `apps/vscode/grader-webview/main.ts`
 - Create: `apps/vscode/grader-webview/index.html`
 - Modify: `apps/vscode/esbuild.mjs`（`grader-webview/main.ts` を IIFE / ESM browser bundle として `dist/grader.js` に出す）
-- Move or share: Web の `apps/web/src/practice/lib/linters` を `packages/shared` か `packages/code-runner` に出すのは大きいので、**grader-webview が `@falcon/code-runner` の `runGrading` と、web からコピーせず `packages/shared` の `analyzeAst` + 既存 linter ディスパッチを使う**。linter が web 専用なら、grader-webview から `apps/web/src/practice/lib/linters` を import せず、同じモジュールを `packages/code-runner/src/lint.ts` に移す。移設がこのタスクの一部。呼び出し側（`AssignmentEditor` と PracticeWorkspace）の import を新パスに更新する
+- Move or share: Web の `apps/web/src/practice/lib/linters` を `packages/shared` か `packages/code-runner` に出すのは大きいので、**grader-webview が `@stella/code-runner` の `runGrading` と、web からコピーせず `packages/shared` の `analyzeAst` + 既存 linter ディスパッチを使う**。linter が web 専用なら、grader-webview から `apps/web/src/practice/lib/linters` を import せず、同じモジュールを `packages/code-runner/src/lint.ts` に移す。移設がこのタスクの一部。呼び出し側（`AssignmentEditor` と PracticeWorkspace）の import を新パスに更新する
 
 **Interfaces:**
 - Produces:
@@ -613,7 +613,7 @@ await apiRequest("/api/lesson-progress", {
 `isCode && assignmentId` の分岐を `<PracticeWorkspace />` から `<CodeLessonHandoff />` に置き換える。`onCleared` / `onAskAi` from practice は削除。
 
 - [ ] **Step 1: LessonPlayer の lazy import を削除し、handoff に差し替える**
-- [ ] **Step 2: `bun run --filter=@falcon/web typecheck` と `bun run build`（web）**
+- [ ] **Step 2: `bun run --filter=@stella/web typecheck` と `bun run build`（web）**
 Expected: PASS。practice チャンクが受講者ルートから消える
 - [ ] **Step 3: デスクトップで code レッスンを開き、エディタが無いこと。モバイル幅（DevTools）で案内文だけなこと**
 
@@ -636,7 +636,7 @@ Expected: PASS。practice チャンクが受講者ルートから消える
 **Files（残す）:**
 - `apps/web/src/practice/components/Editor.tsx`
 - `apps/web/src/practice/components/FileTabs.tsx`
-- `apps/web/src/practice/lib/linters/**` — Task 8 で移設済みならディレクトリごと削除し、`AssignmentEditor` は `@falcon/code-runner` を import
+- `apps/web/src/practice/lib/linters/**` — Task 8 で移設済みならディレクトリごと削除し、`AssignmentEditor` は `@stella/code-runner` を import
 
 **Files（修正）:**
 - `apps/web/src/components/admin/AssignmentEditor.tsx`
@@ -645,7 +645,7 @@ Expected: PASS。practice チャンクが受講者ルートから消える
 - `apps/web/vite.config.ts` のコメント（PracticeWorkspace 言及）
 
 - [ ] **Step 1: `rg PracticeWorkspace apps/web` が 0 件になるまで削除 / 張り替え**
-- [ ] **Step 2: `bun run --filter=@falcon/web typecheck && bun run --filter=@falcon/web build`**
+- [ ] **Step 2: `bun run --filter=@stella/web typecheck && bun run --filter=@stella/web build`**
 Expected: PASS
 - [ ] **Step 3: 講師の課題プレビューで「採点」がまだ動くことを確認する**
 

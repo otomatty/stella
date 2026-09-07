@@ -1,11 +1,11 @@
-import { isReadableEnrollmentStatus } from "@falcon/shared/enrollment/access";
+import { isReadableEnrollmentStatus } from "@stella/shared/enrollment/access";
 import type {
   StageWithChildren,
   EnrollmentRow,
   LessonRow,
   LessonType,
   SectionRow,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import { AuthExpiredError, apiRequest } from "./api.js";
 import {
   isCatalogLessonComplete,

@@ -37,7 +37,7 @@ import {
   isDiscoveryVisible,
   toDiscoveryPaper,
   type DiscoveryAnswer,
-} from "@falcon/shared/discovery/types";
+} from "@stella/shared/discovery/types";
 
 import { ApiError, errorResponse, getCaller, requireCanTakeSkillCheck } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";

@@ -10,7 +10,7 @@ import {
   INTERVIEW_QUESTION_TEXT_FIELDS,
   type InterviewQuestionPatch,
   type InterviewQuestionTextField,
-} from "@falcon/shared/interview/edit";
+} from "@stella/shared/interview/edit";
 import type { StaffInterviewQuestion } from "./interview-prep-api";
 
 export type InterviewQuestionDraft = Record<InterviewQuestionTextField, string> & {

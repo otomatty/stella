@@ -193,7 +193,7 @@ L1-1 変数(4) / L1-2 型注釈と型推論(5) / L1-3 数値と真偽値(4) / L1
 
 ## コード演習(VS Code 拡張)
 
-手を動かす部分は **VS Code 拡張 (`falcon.informal`) のコード演習**で、`course.json` の `exercises` が正本です(課題本体は `@falcon/shared` の `src/problems/`、採点は QuickJS)。
+手を動かす部分は **VS Code 拡張 (`falcon.informal`) のコード演習**で、`course.json` の `exercises` が正本です(課題本体は `@stella/shared` の `src/problems/`、採点は QuickJS)。
 
 **この講座の修了には VS Code 拡張が要ります。** 演習を配線していない他の講座と違い、配線した 66 問は `type: "code"` のレッスンとして並び、既定の `require_all_lessons` に数えられます。Web だけではコード演習のレッスンを完了にできない(拡張への引き継ぎ画面が出る)ため、スライド → まとめ → 確認クイズだけでは修了になりません。
 

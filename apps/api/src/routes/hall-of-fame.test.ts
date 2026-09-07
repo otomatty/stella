@@ -15,8 +15,8 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { HallOfFameChapters, HallOfFameStatus } from "@falcon/shared/hall-of-fame/types";
-import { EMPTY_HOF_CHAPTERS } from "@falcon/shared/hall-of-fame/types";
+import type { HallOfFameChapters, HallOfFameStatus } from "@stella/shared/hall-of-fame/types";
+import { EMPTY_HOF_CHAPTERS } from "@stella/shared/hall-of-fame/types";
 
 import type { Env } from "../env.js";
 import { json } from "../testing/route-harness.js";

@@ -459,7 +459,7 @@ function buildOneCourse(
       }
 
       // コード演習は VS Code 拡張で解く。course.json の exercises が正本で、
-      // assignment 本体は seed が @falcon/shared から引く。
+      // assignment 本体は seed が @stella/shared から引く。
       // レッスン id は assignment id から作る。配列の並び位置を使うと、演習の
       // 挿入・入れ替えで既存 id が別課題を指し、lesson_progress が付け替わる。
       for (const ex of config.exercises?.[key] ?? []) {

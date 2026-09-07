@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AssignmentRow, LessonRow, LessonType } from "@falcon/shared/cms/types";
+import type { AssignmentRow, LessonRow, LessonType } from "@stella/shared/cms/types";
 import { listAssignments, type UpsertLessonInput } from "@/lib/cms-api";
 import { LessonMaterialsPanel } from "./LessonMaterialsPanel";
 import { MaterialUploader } from "./MaterialUploader";

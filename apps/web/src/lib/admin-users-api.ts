@@ -4,8 +4,8 @@
  * 一覧 / 招待 / ロール変更 / 無効化 をすべて `/api/admin/users/*` (admin 認可) 経由で行う。
  */
 
-import type { ProfileRole, ProfileRow } from "@falcon/shared/cms/types";
-import type { InviteUserInput, InviteUsersResponse } from "@falcon/shared/admin/types";
+import type { ProfileRole, ProfileRow } from "@stella/shared/cms/types";
+import type { InviteUserInput, InviteUsersResponse } from "@stella/shared/admin/types";
 
 import { apiFetch } from "./api-client";
 

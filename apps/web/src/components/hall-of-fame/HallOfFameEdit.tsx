@@ -36,8 +36,8 @@ import {
   canEditOwnEntry,
   isHofContentComplete,
   missingHofFields,
-} from "@falcon/shared/hall-of-fame/types";
-import type { HallOfFameChapters, HallOfFameChapterKey } from "@falcon/shared/hall-of-fame/types";
+} from "@stella/shared/hall-of-fame/types";
+import type { HallOfFameChapters, HallOfFameChapterKey } from "@stella/shared/hall-of-fame/types";
 
 import { isBackendConfigured } from "@/lib/backend";
 import {

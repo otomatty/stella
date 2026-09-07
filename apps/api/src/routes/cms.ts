@@ -13,7 +13,7 @@
  *   - 書き込みはすべて同テナントの instructor/admin。 子要素は親のテナントを継承して検証する。
  *   - reorder は単一 UPDATE 相当を順序付き upsert で原子的に行う。
  *
- * 返却形は旧 DB 行 (snake_case) に合わせ、 フロントのマッパー (@falcon/shared/cms/types) を無変更に保つ。
+ * 返却形は旧 DB 行 (snake_case) に合わせ、 フロントのマッパー (@stella/shared/cms/types) を無変更に保つ。
  */
 
 import { Hono } from "hono";

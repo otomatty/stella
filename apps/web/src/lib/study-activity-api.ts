@@ -4,7 +4,7 @@
  * 集計はサーバ側 (`/api/study-activity/mine`) で行い、 受講者は自分のログのみ参照できる。
  */
 
-import type { StudyActivitySummary } from "@falcon/shared/study/activity";
+import type { StudyActivitySummary } from "@stella/shared/study/activity";
 
 import { apiFetch } from "./api-client";
 

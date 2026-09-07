@@ -1,9 +1,9 @@
 {
-  "name": "@falcon/api",
+  "name": "@stella/api",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "FALCON INFORMAL — Hono API on Cloudflare Workers",
+  "description": "STELLA — Hono API on Cloudflare Workers",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
-    "@falcon/shared": "workspace:*",
+    "@stella/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.5",
     "jose": "^6.2.9",

@@ -17,7 +17,7 @@ import type {
   EnrollmentRow,
   EnrollmentStatus,
   EnrollmentSummaryRow,
-} from "@falcon/shared/cms/types";
+} from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 import { todayDateKey } from "./date-keys";
 

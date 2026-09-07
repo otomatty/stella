@@ -139,7 +139,7 @@ export function requireCanManageStageGrants(caller: Caller): void {
 /**
  * 面談対策を「受ける」側になれるロール (受講者 / 管理者)。 管理者は受講者と同じ
  * 練習 (割当・今日の練習セット・進捗・改善点メモ) ができる。 講師・営業は対象外。
- * UI 側の双子は `@falcon/shared/admin/types` の同名関数。
+ * UI 側の双子は `@stella/shared/admin/types` の同名関数。
  */
 export const INTERVIEW_PREP_PRACTICE_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
 

@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { LessonMaterialRow } from "@falcon/shared/cms/types";
+import type { LessonMaterialRow } from "@stella/shared/cms/types";
 import { listLessonMaterials } from "@/lib/cms-api";
 import { isBackendConfigured } from "@/lib/backend";
 

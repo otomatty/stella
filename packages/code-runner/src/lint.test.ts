@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Assignment } from "@falcon/shared/types";
+import type { Assignment } from "@stella/shared/types";
 import { lintAssignment } from "./lint.js";
 
 function jsAssignment(language: Assignment["language"] = "javascript"): Assignment {

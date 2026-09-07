@@ -2,8 +2,8 @@ import {
   assignmentIdFromExercisePath,
   exerciseRoot,
   isPathInsideDir,
-} from "@falcon/shared/vscode/exercise-paths";
-import type { Assignment } from "@falcon/shared/types";
+} from "@stella/shared/vscode/exercise-paths";
+import type { Assignment } from "@stella/shared/types";
 import * as vscode from "vscode";
 import { gradeFiles } from "./grader-host.js";
 import type { ExecutionResult } from "./grader-protocol.js";

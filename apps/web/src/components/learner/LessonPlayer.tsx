@@ -13,7 +13,7 @@ import {
   X,
 } from "@/lib/icons";
 import type { Stage, Section, Lesson } from "@/data/types";
-import type { ChatContext } from "@falcon/shared/ai/types";
+import type { ChatContext } from "@stella/shared/ai/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -42,7 +42,7 @@ import {
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
 import { downloadLessonMaterial } from "@/lib/cms-api";
-import type { LessonMaterialRow } from "@falcon/shared/cms/types";
+import type { LessonMaterialRow } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";

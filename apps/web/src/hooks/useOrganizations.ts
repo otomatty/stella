@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { OrganizationRow } from "@falcon/shared/admin/types";
+import type { OrganizationRow } from "@stella/shared/admin/types";
 import { listOrganizations } from "@/lib/organizations-api";
 
 interface UseOrganizationsResult {

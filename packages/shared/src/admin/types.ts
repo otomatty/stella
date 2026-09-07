@@ -2,7 +2,7 @@
  * ユーザー管理 (招待 / ロール変更 / 無効化) の共有型。
  *
  * apps/web (呼び出し側) と apps/api (service-role 経由のハンドラ) の双方が
- * 同じ shape を参照できるよう @falcon/shared に置く。
+ * 同じ shape を参照できるよう @stella/shared に置く。
  */
 
 import type { ProfileRole } from "../cms/types.js";

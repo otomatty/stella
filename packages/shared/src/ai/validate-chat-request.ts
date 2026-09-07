@@ -2,7 +2,7 @@
  * `POST /api/chat` の入力バリデータ。
  *
  * Hono API ハンドラ (`apps/api`) から import される。
- * ランタイム依存を持たない純粋関数なので `@falcon/shared` に置く。
+ * ランタイム依存を持たない純粋関数なので `@stella/shared` に置く。
  *
  * 検証内容:
  * - context.kind が "practice" のとき assignmentId が必須。

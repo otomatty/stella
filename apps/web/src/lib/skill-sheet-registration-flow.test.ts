@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { emptySkillSheetSections } from "@falcon/shared/skill-sheet/types";
+import { emptySkillSheetSections } from "@stella/shared/skill-sheet/types";
 
 import { minimalSkillSheetV1, sampleParseDraft } from "./skill-sheet-api.test-helpers.js";
 

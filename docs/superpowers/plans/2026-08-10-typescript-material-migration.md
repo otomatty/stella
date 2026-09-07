@@ -4,7 +4,7 @@
 
 **Goal:** ts-course リポジトリの TypeScript 研修教材（160トピック / 42レッスン）と、その執筆ルール一式を falcon-informal に完全移行し、LMS 上で スライド・ドキュメント・クイズ・自動採点課題として動作させる。
 
-**Architecture:** 教材は `packages/content`（新規 Bun workspace `@falcon/content`）にファイルとして置き、**ファイルが唯一の正本**とする。D1 へは既存の `export-seed-sql.ts` パイプラインを拡張して流し込む（CMS 画面での編集は上書きされる前提）。スライドは `slides.md` を LMS 側で描画し（PDF も pptx も配信しない）、図解 SVG と動画だけを R2 に置いて DB はパスを持つ。演習問題は `@falcon/shared` の `Assignment` として書き起こし、既存の QuickJS 採点基盤に TypeScript 対応を追加して動かす。
+**Architecture:** 教材は `packages/content`（新規 Bun workspace `@stella/content`）にファイルとして置き、**ファイルが唯一の正本**とする。D1 へは既存の `export-seed-sql.ts` パイプラインを拡張して流し込む（CMS 画面での編集は上書きされる前提）。スライドは `slides.md` を LMS 側で描画し（PDF も pptx も配信しない）、図解 SVG と動画だけを R2 に置いて DB はパスを持つ。演習問題は `@stella/shared` の `Assignment` として書き起こし、既存の QuickJS 採点基盤に TypeScript 対応を追加して動かす。
 
 **スライド配信の方式（決定事項）:** LMS のスライドビューア（`SlidesViewer`、react-pdf）は PDF しか読めないが、**PDF は作らない**。`build_pptx.py`（626行）がスライドの見た目の唯一の正本で、そこから PDF を得るには LibreOffice 相当の外部エンジンが要る。代わりに `slides.md` そのものを LMS へ渡し、React 側でスライド単位に描画する。pptx は収録・編集用として残る。動画スライドと Web ページは用途が違うので、見た目が一致しないことは仕様であって欠陥ではない。
 
@@ -25,7 +25,7 @@
 ## File Structure
 
 ```text
-packages/content/                          # @falcon/content（新規 workspace）
+packages/content/                          # @stella/content（新規 workspace）
 ├── package.json
 ├── CLAUDE.md                              # ← ts-course/CLAUDE.md（教材執筆の指針）
 ├── STYLE_GUIDE.md                         # ← ts-course/STYLE_GUIDE.md
@@ -63,7 +63,7 @@ apps/api/scripts/seed-d1.ts                # 変更不要（export-seed-sql 経�
 
 ## Phase 0 — 受け入れ先の準備
 
-### Task 1: `@falcon/content` workspace の骨格を作る
+### Task 1: `@stella/content` workspace の骨格を作る
 
 **Files:**
 - Create: `packages/content/package.json`
@@ -79,7 +79,7 @@ apps/api/scripts/seed-d1.ts                # 変更不要（export-seed-sql 経�
 
 ```json
 {
-  "name": "@falcon/content",
+  "name": "@stella/content",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -115,7 +115,7 @@ cat packages/shared/tsconfig.json
 ```typescript
 /**
  * 教材ファイル（practice.md の確認クイズ）から生成する quiz seed 型。
- * DB 行型 (`@falcon/shared` の QuizRow / QuizQuestionRow / QuizOptionRow) へ
+ * DB 行型 (`@stella/shared` の QuizRow / QuizQuestionRow / QuizOptionRow) へ
  * export-seed-sql.ts が変換する。
  */
 
@@ -152,13 +152,13 @@ export type { QuizOptionSeed, QuizQuestionSeed, QuizSeed } from "./types.js";
 bun install && bun run typecheck
 ```
 
-Expected: `@falcon/content` が workspace として解決され、typecheck が PASS
+Expected: `@stella/content` が workspace として解決され、typecheck が PASS
 
 - [ ] **Step 6: コミット**
 
 ```bash
 git add packages/content package.json bun.lock
-git commit -m "feat(content): @falcon/content workspace の骨格を追加"
+git commit -m "feat(content): @stella/content workspace の骨格を追加"
 ```
 
 ### Task 2: 執筆ルールと diagram-design skill を移設する
@@ -199,9 +199,9 @@ rm -rf .claude/skills/diagram-design/__pycache__
 ## コマンド
 
 ```bash
-bun run --filter=@falcon/content materials        # 全トピックを pptx 化
-bun run --filter=@falcon/content materials -- modules/m1-values/l1-variables   # 一部だけ
-bun run --filter=@falcon/content check            # 語彙台帳の検査だけ（CI と同じ）
+bun run --filter=@stella/content materials        # 全トピックを pptx 化
+bun run --filter=@stella/content materials -- modules/m1-values/l1-variables   # 一部だけ
+bun run --filter=@stella/content check            # 語彙台帳の検査だけ（CI と同じ）
 ```
 
 Python 3 と `pip install python-pptx pygments playwright` / `playwright install chromium`、
@@ -220,10 +220,10 @@ grep -rn "modules/" .claude/skills/diagram-design/SKILL.md .claude/skills/diagra
 
 - [ ] **Step 4: `AGENTS.md` にパッケージ表の行を足す**
 
-`| `@falcon/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |` の直後に追加。
+`| `@stella/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js in-browser runners |` の直後に追加。
 
 ```markdown
-| `@falcon/content` | `packages/content` | 研修教材の正本（スライド / ドキュメント / 演習）。執筆ルールは `packages/content/CLAUDE.md` |
+| `@stella/content` | `packages/content` | 研修教材の正本（スライド / ドキュメント / 演習）。執筆ルールは `packages/content/CLAUDE.md` |
 ```
 
 - [ ] **Step 5: `.gitignore` に教材ビルド生成物を足す**
@@ -312,7 +312,7 @@ const lint = spawnSync("python",
 - [ ] **Step 5: 教材ビルドを通す**
 
 ```bash
-bun run --filter=@falcon/content materials
+bun run --filter=@stella/content materials
 ```
 
 Expected: 160トピック分の `slides.pptx` が生成される。Python 依存が無ければここで落ちるので、`pip install python-pptx pygments playwright && playwright install chromium` を先に済ませる。
@@ -349,7 +349,7 @@ if (process.argv.includes("--check-only")) process.exit(0);
 ルート `package.json` の `"test": "vitest run",` の直後に追加。
 
 ```json
-    "content:check": "bun run --filter=@falcon/content check:ci",
+    "content:check": "bun run --filter=@stella/content check:ci",
 ```
 
 `check_vocab.mjs` は `ROOT = packages/content` を基準に引数を解決し、省略時は `join(ROOT, "modules")` を見る。ルート相対のパスを渡すと二重連結で落ちるので、引数は渡さない。
@@ -573,7 +573,7 @@ Expected: 「枚数外れ」0 件、`empty: 0`、`noted` がスライド総数�
 Task 2 / 3 の時点では PDF を作る前提で書かれた記述が残っている。実態に合わせる。
 
 1. `packages/content/CLAUDE.md` — 「コマンド」節の `# 全トピックを pptx + PDF 化` から `+ PDF` を削り、`pptx→PDF 変換用の LibreOffice が必要` の一文を削除する
-2. `packages/content/CLAUDE.md` — `bun run --filter=@falcon/content check` に付いた `# 語彙台帳の検査だけ（CI と同じ）` は実態と違う（CI は `check:ci` を呼び、語彙台帳・画像リンク・スライド枚数の3つを検査する）。`check:ci` を案内する形に直す
+2. `packages/content/CLAUDE.md` — `bun run --filter=@stella/content check` に付いた `# 語彙台帳の検査だけ（CI と同じ）` は実態と違う（CI は `check:ci` を呼び、語彙台帳・画像リンク・スライド枚数の3つを検査する）。`check:ci` を案内する形に直す
 3. ルート `.gitignore` の `packages/content/modules/**/slides.pdf` を削除する（PDF は生成されない）
 4. 次を実行してヒットが無いことを確認する
 
@@ -1209,12 +1209,12 @@ git commit -m "feat(content): 教材ツリーから LMS コース定義を組み
 **Interfaces:**
 - Consumes: `buildContentManifest`（Task 8）
 
-- [ ] **Step 1: `@falcon/content` を shared の依存に足す**
+- [ ] **Step 1: `@stella/content` を shared の依存に足す**
 
 `packages/shared/package.json` の `dependencies`（無ければ新設）に追加。
 
 ```json
-    "@falcon/content": "workspace:*"
+    "@stella/content": "workspace:*"
 ```
 
 ```bash
@@ -1270,7 +1270,7 @@ Expected: FAIL（`typescript-basics` が SQL に含まれない）
 `export-seed-sql.ts` の import 群に追加。
 
 ```typescript
-import { buildContentManifest } from "@falcon/content";
+import { buildContentManifest } from "@stella/content";
 ```
 
 fixtures のコースを回しているループの直前に、教材の manifest を取り出す。
@@ -1603,8 +1603,8 @@ git commit -m "feat(web): text / slides レッスンで登録済み markdown を
 /**
  * 教材の図解 SVG を R2 へ流す。
  *
- *   bun run --filter=@falcon/content upload            # local (--local)
- *   bun run --filter=@falcon/content upload -- --remote
+ *   bun run --filter=@stella/content upload            # local (--local)
+ *   bun run --filter=@stella/content upload -- --remote
  *
  * スライド本文と doc.md は D1 の lessons.markdown に入るので、R2 に置くのは
  * 本文から参照される画像だけ。キーは manifest の assetPath() と一致していなければならない。
@@ -1680,7 +1680,7 @@ grep -n "bucket_name\|r2_buckets" -A 3 apps/api/wrangler.toml apps/api/wrangler.
 - [ ] **Step 4: ローカルにアップロードする**
 
 ```bash
-bun run --filter=@falcon/content upload
+bun run --filter=@stella/content upload
 ```
 
 Expected: `✓ SVG 68 件をアップロードしました`
@@ -2370,7 +2370,7 @@ git commit -m "feat(shared): M7 / M8 / M9 の演習 33 問を Assignment 化"
 - Create: `packages/content/src/assignment-map.ts`
 
 **Interfaces:**
-- Consumes: `assignments`（`@falcon/shared` の課題一覧 export）
+- Consumes: `assignments`（`@stella/shared` の課題一覧 export）
 - Produces: `assignmentIdsForLesson(lessonKey: string): string[]`
 
 - [ ] **Step 1: 失敗するテストを足す**
@@ -2386,7 +2386,7 @@ it("レッスンごとに code レッスンが 3 つ付く", () => {
 });
 
 it("全 code レッスンの assignmentId が実在する", async () => {
-  const { assignments } = await import("@falcon/shared");
+  const { assignments } = await import("@stella/shared");
   const known = new Set(assignments.map((a) => a.id));
   const codes = courses[0].sections?.flatMap((s) => s.lessons).filter((l) => l.type === "code") ?? [];
   expect(codes).toHaveLength(126);
@@ -2409,7 +2409,7 @@ Expected: FAIL（code レッスンが無い）
  * 統一してあるので、id を舐めて逆引きする。マッピング表を二重管理しない。
  */
 
-import { assignments } from "@falcon/shared";
+import { assignments } from "@stella/shared";
 
 /** "1-1" → id の 3 番目のセグメントが "11" で始まる 3 桁の課題（"111","112","113"）を返す。 */
 export function assignmentIdsForLesson(lessonKey: string): string[] {
@@ -2490,7 +2490,7 @@ git commit -m "feat(content): 演習課題を code レッスンとしてコー�
 `├── packages/` 配下の一覧に追加。
 
 ```text
-│   ├── content/              # @falcon/content — 研修教材の正本（スライド / doc / 演習）
+│   ├── content/              # @stella/content — 研修教材の正本（スライド / doc / 演習）
 ```
 
 - [ ] **Step 2: `README.md` に教材ビルドの節を足す**
@@ -2504,8 +2504,8 @@ git commit -m "feat(content): 演習課題を code レッスンとしてコー�
 （CMS 画面での編集は次の seed で上書きされる）。
 
 ```bash
-bun run --filter=@falcon/content materials   # pptx + 図解 SVG/PNG を生成
-bun run --filter=@falcon/content upload      # 図解 SVG を R2 (local) へ
+bun run --filter=@stella/content materials   # pptx + 図解 SVG/PNG を生成
+bun run --filter=@stella/content upload      # 図解 SVG を R2 (local) へ
 bun run db:seed                              # コース / レッスン / クイズ / 課題を D1 へ
 ```
 
@@ -2557,8 +2557,8 @@ Expected: すべて PASS
 - [ ] **Step 3: 本番の R2 と D1 に教材を流す**
 
 ```bash
-bun run --filter=@falcon/content materials
-bun run --filter=@falcon/content upload:remote
+bun run --filter=@stella/content materials
+bun run --filter=@stella/content upload:remote
 bun run db:seed:remote
 ```
 

@@ -7,7 +7,7 @@
  * それ以外だけをラベルする — 大多数を占める受講者の行を静かに保つため。
  */
 
-import type { ProfileRole } from "@falcon/shared/cms/types";
+import type { ProfileRole } from "@stella/shared/cms/types";
 import { ROLE_LABEL } from "@/components/admin/users-admin/shared";
 
 export function PrepTargetRoleBadge({ role }: { role: ProfileRole | undefined }) {

@@ -4,7 +4,7 @@
  * 採点はサーバ側で行い、 正解・解説は解答後にのみ受け取る。
  */
 
-import type { SrsAnswerResult, SrsTodaySummary } from "@falcon/shared/srs/types";
+import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
 
 import { apiFetch } from "./api-client";
 

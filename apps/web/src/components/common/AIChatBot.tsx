@@ -18,8 +18,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
-import { findAssignment } from "@falcon/shared/assignments";
-import { buildContextUserMessage } from "@falcon/shared/ai/prompt";
+import { findAssignment } from "@stella/shared/assignments";
+import { buildContextUserMessage } from "@stella/shared/ai/prompt";
 
 import { useAiChat } from "./useAiChat";
 import { useLessonAI } from "./LessonAIContext";

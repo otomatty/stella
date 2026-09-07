@@ -18,8 +18,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
-import { HOF_CHAPTERS } from "@falcon/shared/hall-of-fame/types";
-import type { HallOfFameChapters, HallOfFamePathStage } from "@falcon/shared/hall-of-fame/types";
+import { HOF_CHAPTERS } from "@stella/shared/hall-of-fame/types";
+import type { HallOfFameChapters, HallOfFamePathStage } from "@stella/shared/hall-of-fame/types";
 
 import { ChevronLeft } from "@/lib/icons";
 import { isBackendConfigured } from "@/lib/backend";

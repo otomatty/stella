@@ -254,7 +254,7 @@ Expected: `前提グラフ: 33 講座 ...` で終了コード 0。
 ```markdown
 #### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@falcon/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |
@@ -627,10 +627,10 @@ Expected: 直したテストが FAIL (`parent_id` が無い)。
 
 `apps/api/src/routes/skill-map.ts`:
 
-import に `parentSlugOf` を足す (評価器の import 行と同じモジュール `@falcon/shared/skill-map/evaluate` から。既存の import の形に合わせる):
+import に `parentSlugOf` を足す (評価器の import 行と同じモジュール `@stella/shared/skill-map/evaluate` から。既存の import の形に合わせる):
 
 ```ts
-import { parentSlugOf } from "@falcon/shared/skill-map/evaluate";
+import { parentSlugOf } from "@stella/shared/skill-map/evaluate";
 ```
 
 `appearancePrerequisitePayload` 関数を次に置き換える:

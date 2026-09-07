@@ -6,7 +6,7 @@
  * 色とラベルの正本はここ 1 か所に置く。
  */
 
-import { PREP_STATUS_LABELS, type QuestionPrepStatus } from "@falcon/shared/interview/progress";
+import { PREP_STATUS_LABELS, type QuestionPrepStatus } from "@stella/shared/interview/progress";
 import { cn } from "@/lib/utils";
 
 export const PREP_STATUS_PILL_CLASSES: Record<QuestionPrepStatus, string> = {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Assignment } from "@falcon/shared/types";
+import type { Assignment } from "@stella/shared/types";
 import type { ExecutionResult } from "./grader-protocol.js";
 
 const apiRequest = vi.fn();

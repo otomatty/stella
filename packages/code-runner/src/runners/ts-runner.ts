@@ -11,7 +11,7 @@
  *   メインスレッドの占有が問題になったら上記の契約拡張 + worker 側分岐へ移す。
  */
 
-import type { CodeRunner, RunInput, RunOutput } from "@falcon/shared/runner/types";
+import type { CodeRunner, RunInput, RunOutput } from "@stella/shared/runner/types";
 
 import { jsRunner } from "./js-runner.js";
 
