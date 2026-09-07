@@ -482,40 +482,46 @@ describe("GET /api/interview-prep/assignments interview date fields (#205)", () 
   });
 
   it("sorts rows by interviewDate ascending with unset dates last", async () => {
-    const { app } = createTestApp(env);
-    const salesToken = await mintInterviewPrepTestToken("seed-sales");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-01T14:30:00.000Z"));
+    try {
+      const { app } = createTestApp(env);
+      const salesToken = await mintInterviewPrepTestToken("seed-sales");
 
-    await putAssignment(
-      app,
-      env,
-      salesToken,
-      SEED_PROFILES.learnerB.id,
-      putAssignmentBody({ interviewDate: "2026-09-05" }),
-    );
-    await putAssignment(
-      app,
-      env,
-      salesToken,
-      SEED_PROFILES.learnerC.id,
-      putAssignmentBody({ interviewDate: "2026-09-20" }),
-    );
+      await putAssignment(
+        app,
+        env,
+        salesToken,
+        SEED_PROFILES.learnerB.id,
+        putAssignmentBody({ interviewDate: "2026-09-05" }),
+      );
+      await putAssignment(
+        app,
+        env,
+        salesToken,
+        SEED_PROFILES.learnerC.id,
+        putAssignmentBody({ interviewDate: "2026-09-20" }),
+      );
 
-    const token = await mintInterviewPrepTestToken("seed-admin");
-    const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, {
-      method: "GET",
-      token,
-    });
+      const token = await mintInterviewPrepTestToken("seed-admin");
+      const res = await request(app, env, INTERVIEW_PREP_ASSIGNMENTS_PATH, {
+        method: "GET",
+        token,
+      });
 
-    expect(res.status).toBe(200);
-    const body = await json<AssignmentsBody>(res);
-    const dated = body.rows.filter((r) => r.interviewDate).map((r) => r.interviewDate);
-    expect(dated).toEqual(["2026-09-05", "2026-09-10", "2026-09-20"]);
+      expect(res.status).toBe(200);
+      const body = await json<AssignmentsBody>(res);
+      const dated = body.rows.filter((r) => r.interviewDate).map((r) => r.interviewDate);
+      expect(dated).toEqual(["2026-09-05", "2026-09-10", "2026-09-20"]);
 
-    const unsetRows = body.rows.filter((r) => !r.interviewDate);
-    const datedRows = body.rows.filter((r) => r.interviewDate);
-    expect(body.rows.indexOf(unsetRows[0])).toBeGreaterThan(
-      body.rows.indexOf(datedRows[datedRows.length - 1]),
-    );
+      const unsetRows = body.rows.filter((r) => !r.interviewDate);
+      const datedRows = body.rows.filter((r) => r.interviewDate);
+      expect(body.rows.indexOf(unsetRows[0])).toBeGreaterThan(
+        body.rows.indexOf(datedRows[datedRows.length - 1]),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

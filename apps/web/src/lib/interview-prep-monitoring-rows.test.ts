@@ -91,7 +91,7 @@ describe("applyAssignmentSave — 割当カテゴリの変更", () => {
       row({ profile_id: "b", display_name: "B", interviewDate: "2026-09-20" }),
     ];
 
-    const next = applyAssignmentSave(rows, "b", { interviewDate: "2026-09-05" });
+    const next = applyAssignmentSave(rows, "b", { interviewDate: "2026-09-11" }, TODAY);
 
     expect(next.map((r) => r.profile_id)).toEqual(["b", "a"]);
   });
