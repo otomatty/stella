@@ -114,15 +114,27 @@ Settings → Secrets and variables → Actions で設定する。
 | `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL |
 | `VITE_MATERIALS_BASE_URL` | Web ビルド時に焼き込む教材配信ベース URL |
 
-## Google OAuth（Web オリジン変更に伴う手動作業・リポジトリ外）
+## Phase C の初回切替とデプロイ前処理
 
-Web が `*.pages.dev` から `*.workers.dev` に変わるため、Google Cloud Console で更新する。
+初回のマージは [インフラ移行手順](stella-infrastructure-migration.md) に従い、
+メンテナンス告知・旧環境の書き込み停止・D1/R2 の復元・新 Worker の secrets 設定を済ませてから行う。
+この変更で既存 JWT は全失効する。通常運用の途中にマージしない。
 
-1. Google Cloud Console → 該当プロジェクト → APIs & Services → Credentials
-2. 対象の OAuth 2.0 クライアント ID を開く
-3. **Authorized JavaScript origins** / **Authorized redirect URIs** に新 Web オリジン
-   `https://falcon-web.<account-subdomain>.workers.dev` を追加
-4. 移行期間は旧 `https://falcon-web.pages.dev` も残す（切替確認後に削除）
+`deploy:prepare` は最初のリモート処理として `stella-db` を Cloudflare API で検索し、
+checkout 内の `apps/api/wrangler.toml` の `database_id` を実 ID に置換する。
+教材指紋・seed・migration・API デプロイはすべてこの実 ID を使う。
+Git に記録したゼロ UUID はローカル開発専用。実 ID の自動作成・旧 DB へのフォールバックは行わない。
+DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と一致しない、
+教材 URL が未設定の場合は、教材アップロード前にジョブを停止する。
+この処理は DB の復元完了や R2 コピーの内容までは保証しない。移行担当者が手順書で照合する。
+
+Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
+
+- **Authorized JavaScript origins**: `https://stella-web.a-sugai.workers.dev`
+- **Authorized redirect URIs**: `https://stella-api.a-sugai.workers.dev/api/auth/google/callback`
+
+Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
+Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
@@ -140,7 +152,7 @@ Web が `*.pages.dev` から `*.workers.dev` に変わるため、Google Cloud C
   - seed: `bun run db:seed:remote:content`
   - 教材画像: `bun run content:upload:remote`（サムネイルだけなら `content:upload:thumbnails:remote`）
   - 教材の指紋を消す: `bun run content:state:reset:remote`（次のデプロイが教材パイプラインをフルで流す）
-  （ローカル実行時も `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` が必要）
+  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
 
 ## 検査の内訳（`verify` ジョブ）
 

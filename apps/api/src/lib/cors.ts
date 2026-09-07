@@ -1,5 +1,5 @@
 /**
- * CORS オリジン判定。 Workers / 旧 Pages Preview (`*.falcon-web.pages.dev` 等)
+ * CORS オリジン判定。 Workers / Preview (`*.preview.example.com` 等)
  * のワイルドカードに対応。
  *
  * パターン例:

@@ -15,7 +15,7 @@ import {
 
 /** wrangler.toml account_id / deploy CLOUDFLARE_ACCOUNT_ID convention. */
 const ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0";
-const GATEWAY_ID = "falcon-ai";
+const GATEWAY_ID = "stella-ai";
 
 describe("buildAnthropicGatewayBaseUrl", () => {
   it("constructs unified anthropic proxy URL from account and gateway env vars", () => {

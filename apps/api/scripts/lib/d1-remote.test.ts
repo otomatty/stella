@@ -8,7 +8,7 @@ import {
   splitSqlStatements,
 } from "./d1-remote.js";
 
-const WRANGLER_TOML = `name = "falcon-api"
+const WRANGLER_TOML = `name = "stella-api"
 account_id = "acct-from-toml"
 
 [vars]
@@ -21,7 +21,7 @@ database_id = "other-id"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "falcon-db"
+database_name = "stella-db"
 database_id = "db-id"
 `;
 
@@ -65,7 +65,7 @@ describe("chunkStatements", () => {
 describe("parseD1Config", () => {
   it("database_name が一致するブロックの database_id を読む", () => {
     vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
-    expect(parseD1Config(WRANGLER_TOML, "falcon-db")).toEqual({
+    expect(parseD1Config(WRANGLER_TOML, "stella-db")).toEqual({
       accountId: "acct-from-toml",
       databaseId: "db-id",
     });
@@ -74,7 +74,7 @@ describe("parseD1Config", () => {
 
   it("CLOUDFLARE_ACCOUNT_ID が env にあればそちらを使う", () => {
     vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "acct-from-env");
-    expect(parseD1Config(WRANGLER_TOML, "falcon-db").accountId).toBe("acct-from-env");
+    expect(parseD1Config(WRANGLER_TOML, "stella-db").accountId).toBe("acct-from-env");
     vi.unstubAllEnvs();
   });
 

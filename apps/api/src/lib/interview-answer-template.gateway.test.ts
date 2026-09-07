@@ -10,7 +10,7 @@ import { submitPersonalTemplateGenerationBatch } from "./interview-answer-templa
 const GATEWAY_ENV = {
   ANTHROPIC_API_KEY: "test-key",
   CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-  AI_GATEWAY_ID: "falcon-ai",
+  AI_GATEWAY_ID: "stella-ai",
 } as const;
 
 describe("submitPersonalTemplateGenerationBatch with AI Gateway (#206)", () => {

@@ -8,7 +8,7 @@ import { completeGrokMessage } from "./grok-complete.js";
 import { streamGrokChat } from "./grok-chat.js";
 
 const ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0";
-const GATEWAY_ID = "falcon-ai";
+const GATEWAY_ID = "stella-ai";
 
 describe("streamGrokChat Unified Billing", () => {
   it("POSTs to ai/v1/chat/completions with cf-aig-gateway-id and xai/grok model", async () => {

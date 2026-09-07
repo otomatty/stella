@@ -67,8 +67,8 @@ async function resolveToken(): Promise<string> {
   return new SignJWT({ email: `${ADMIN_ID}@example.local` })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(ADMIN_ID)
-    .setIssuer("falcon-api")
-    .setAudience("falcon-web")
+    .setIssuer("stella-api")
+    .setAudience("stella-web")
     .setIssuedAt()
     .setExpirationTime("10m")
     .sign(new TextEncoder().encode(secret));

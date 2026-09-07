@@ -20,7 +20,7 @@ const ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0";
 function envWithGateway(): Env {
   return {
     CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID,
-    AI_GATEWAY_ID: "falcon-ai",
+    AI_GATEWAY_ID: "stella-ai",
     AI_GATEWAY_CF_API_TOKEN: "cf-gateway-token",
   } as unknown as Env;
 }
@@ -61,7 +61,7 @@ describe("Gateway 経由 (AI_GATEWAY_ID 構成時)", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).not.toMatch(/\/ai\/run\/@cf\//);
     expect(url).not.toMatch(/\/workers-ai\//);
-    expect(new Headers(init.headers).get("cf-aig-gateway-id")).toBe("falcon-ai");
+    expect(new Headers(init.headers).get("cf-aig-gateway-id")).toBe("stella-ai");
     // モデル名は URL ではなく body に載せる。 既定は Unified Billing の Grok TTS。
     const body = JSON.parse(init.body as string) as {
       model?: string;
@@ -194,7 +194,7 @@ describe("Gateway 経由 (AI_GATEWAY_ID 構成時)", () => {
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).not.toMatch(/\/ai\/run\/@cf\//);
-    expect(new Headers(init.headers).get("cf-aig-gateway-id")).toBe("falcon-ai");
+    expect(new Headers(init.headers).get("cf-aig-gateway-id")).toBe("stella-ai");
     expect(result.text).toBe("こんにちは");
 
     vi.unstubAllGlobals();

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { transcribeAudioViaGateway } from "./workers-ai-audio.js";
 
 const ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0";
-const GATEWAY_ID = "falcon-ai";
+const GATEWAY_ID = "stella-ai";
 
 describe("transcribeAudioViaGateway", () => {
   it("sends cf-aig-gateway-id header when AI_GATEWAY_ID is set", async () => {

@@ -80,8 +80,8 @@ async function mintToken(secret: string, userId: string): Promise<string> {
   return new SignJWT({ email: `${userId}@example.local` })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
-    .setIssuer("falcon-api")
-    .setAudience("falcon-web")
+    .setIssuer("stella-api")
+    .setAudience("stella-web")
     .setIssuedAt()
     .setExpirationTime("1h")
     .sign(new TextEncoder().encode(secret));

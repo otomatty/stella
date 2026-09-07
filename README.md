@@ -29,7 +29,7 @@ falcon-informal/
 > フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
 > 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
 >
-> **デプロイ**: 旧 Cloudflare Pages から Workers Static Assets (`falcon-web`) へ移行済み。
+> **デプロイ**: 旧 Cloudflare Pages から Workers Static Assets (`stella-web`) へ移行済み。
 > デプロイは GitHub Actions（PR は `ci.yml` で検証ゲート、`main` は `deploy.yml` が自動デプロイ）。
 > 詳細は [`docs/ci-cd.md`](docs/ci-cd.md) を参照。
 
@@ -70,7 +70,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
 
 ### DB 初期化
 
-1. 初回のみ（リモート D1 を新規作成する場合）: `cd apps/api && wrangler d1 create falcon-db` → `wrangler.toml` の `database_id` を更新。
+1. ローカル D1 は同梱設定の専用 ID を使う。本番の新規作成・既存データ移行は [Phase C 移行手順](docs/stella-infrastructure-migration.md) を参照。`deploy:prepare` が新名の DB の実 ID を取得する。
 2. ローカル D1:
 
    ```bash
@@ -84,7 +84,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    受講登録まわりは 2 人の受講者で見分けます。`seed-learner` は全ステージに登録済みで、その行は **自己開始の履歴** の形（`assigned_by = seed-learner` / `required = 0` / 期限なし）です — Phase 3b で管理者からの割り当ては廃止したので、登録が生まれる道は受講者自身の「始める」だけになりました。`seed-learner2` は **受講登録が 0 件** で、「まだ何も始めていない人」の画面（ホームのプレースメント案内、スキルマップの推奨、受講状況の空表示）を確認するための固定ユーザーです。`bun run db:seed` を 2 回流しても、この 2 人の登録件数は変わりません（`seed-learner` は全ステージ、`seed-learner2` は 0 件のまま）:
 
    ```bash
-   bunx wrangler d1 execute falcon-db --local --command \
+   bunx wrangler d1 execute stella-db --local --command \
      "select user_id, count(*) from enrollments where user_id like 'seed-learner%' group by user_id"
    ```
 
@@ -143,10 +143,10 @@ CI では出さない。publisher は `falcon`。手元: `cd apps/vscode && bunx
 1. [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0 クライアント ID を作成。
 2. **認可済みリダイレクト URI** に以下を追加:
    - `http://127.0.0.1:8787/api/auth/google/callback` (ローカル)
-   - `https://falcon-api.a-sugai.workers.dev/api/auth/google/callback` (本番)
+   - `https://stella-api.a-sugai.workers.dev/api/auth/google/callback` (本番)
 3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
-4. Web は `https://falcon-web.a-sugai.workers.dev/auth/callback` で JWT を受け取る
+4. Web は `https://stella-web.a-sugai.workers.dev/auth/callback` で JWT を受け取る
    (SPA fallback は `apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
@@ -171,10 +171,10 @@ seed の `seed-admin` 等は Google ログイン用ではない。自分の emai
 ```bash
 cd apps/api
 
-wrangler d1 execute falcon-db --local --command \
+wrangler d1 execute stella-db --local --command \
   "insert into auth_users (id, email, created_at) values ('<uuid>', 'you@example.com', unixepoch() * 1000)"
 
-wrangler d1 execute falcon-db --local --command \
+wrangler d1 execute stella-db --local --command \
   "insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('<uuid>', 'ses', 'admin', 'You', 'Y', 'you@example.com', 0, unixepoch() * 1000)"
 ```
 
@@ -188,15 +188,15 @@ Admin / Instructor / プラットフォーム管理を検証するとき（`apps
 cd apps/api
 
 # テナント管理者
-wrangler d1 execute falcon-db --local --command \
+wrangler d1 execute stella-db --local --command \
   "update profiles set role='admin' where email='you@example.com'"
 
 # 講師
-wrangler d1 execute falcon-db --local --command \
+wrangler d1 execute stella-db --local --command \
   "update profiles set role='instructor' where email='you@example.com'"
 
 # プラットフォーム管理者（組織マスタなどテナント横断。招待 UI からは付与不可）
-wrangler d1 execute falcon-db --local --command \
+wrangler d1 execute stella-db --local --command \
   "update profiles set role='platform_admin' where email='you@example.com'"
 ```
 
@@ -295,8 +295,8 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 
 ### Cloudflare R2 (教材配信・アップロード)
 
-1. R2 バケット `falcon-materials-public` は `apps/api/wrangler.toml` の `[[r2_buckets]]` で Workers にバインド済み。
-   未作成の場合は Dashboard または `wrangler r2 bucket create falcon-materials-public` で作成する。
+1. R2 バケット `stella-materials-public` は `apps/api/wrangler.toml` の `[[r2_buckets]]` で Workers にバインド済み。
+   未作成の場合は Dashboard または `wrangler r2 bucket create stella-materials-public` で作成する。
 2. Dashboard → R2 → バケット → **Settings** で **Public Development URL** (`r2.dev`) または
    **Custom Domain** を有効化し、 公開ベース URL を `VITE_MATERIALS_BASE_URL` に設定する
    (例: `https://pub-xxxx.r2.dev`)。
@@ -453,30 +453,14 @@ Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要�
 詳細（ワークフロー一覧・必須チェック設定・OAuth Console 手順・失敗時の再デプロイ）は
 [`docs/ci-cd.md`](docs/ci-cd.md) を参照。
 
-以下はローカルからの手動デプロイ手順（初回セットアップ / 障害時の代替手段）。
+Phase C の初回切替は [インフラ移行手順](docs/stella-infrastructure-migration.md) に従う。
+全セッションが失効するため、告知とメンテナンス中の D1 / R2 移行を済ませてからマージする。
+本番 API は `https://stella-api.a-sugai.workers.dev`、Web は `https://stella-web.a-sugai.workers.dev`。
 
-### フロント — Cloudflare Workers Static Assets (`apps/web`)
-
-```bash
-bun run deploy:web   # web だけビルド + wrangler deploy
-```
-
-- **環境変数** (ビルド時に焼き込み。通常は GitHub Actions Variables から供給):
-  - `VITE_SERVER_URL` — Workers API URL
-  - `VITE_MATERIALS_BASE_URL` — R2 公開 URL
-- 本番 URL 例: `https://falcon-web.a-sugai.workers.dev`
-
-### API — Cloudflare Workers (`apps/api`)
-
-```bash
-cd apps/api
-wrangler d1 create falcon-db          # 初回: database_id を wrangler.toml に反映
-bun run db:migrate:remote
-wrangler secret put AUTH_JWT_SECRET
-wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put ANTHROPIC_API_KEY   # 任意
-bun run deploy
-```
+Deploy は教材処理の前に `bun run deploy:prepare` を実行し、`stella-db` の実 ID を取得する。
+Git 上のゼロ UUID はローカル専用で、本番デプロイには使わない。
+障害復旧で remote コマンドを直接実行するときも、`CLOUDFLARE_*` と `VITE_*` を設定し、
+リポジトリルートで `deploy:prepare` を先に実行する。復旧手順は `docs/ci-cd.md` を参照。
 
 **環境変数 / Secrets**
 

@@ -54,8 +54,8 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
       if (!token) throw new actual.ApiError("Authorization ヘッダが必要です", 401);
       const { jwtVerify } = await import("jose");
       const { payload } = await jwtVerify(token, new TextEncoder().encode(CHAT_TEST_JWT_SECRET), {
-        issuer: "falcon-api",
-        audience: "falcon-web",
+        issuer: "stella-api",
+        audience: "stella-web",
       });
       const profile = profileByToken[payload.sub as string];
       if (!profile) throw new actual.ApiError("プロフィールが見つかりません", 403);

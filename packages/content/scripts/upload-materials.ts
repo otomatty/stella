@@ -26,7 +26,7 @@ import { assetPath, collectCourseIcons, collectCourseThumbnails } from "../src/m
 import { sortNatural } from "../src/natural-order.mjs";
 import { createR2Client, putAll } from "./lib/r2.js";
 
-const BUCKET = "falcon-materials-public";
+const BUCKET = "stella-materials-public";
 const remote = process.argv.includes("--remote");
 /** 対象の絞り込み。既定は両方。 */
 const onlyThumbnails = process.argv.includes("--thumbnails");

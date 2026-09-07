@@ -28,8 +28,8 @@ import {
 import { createR2Client } from "./lib/r2.js";
 import { parseD1DatabaseId, readWranglerToml } from "./lib/wrangler-config.js";
 
-const BUCKET = "falcon-materials-public";
-const DATABASE_NAME = "falcon-db";
+const BUCKET = "stella-materials-public";
+const DATABASE_NAME = "stella-db";
 const here = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(here, "..", "..", "..");
 

@@ -23,6 +23,7 @@
     "content:state:check:remote": "bun run --filter=@stella/content state:check:remote",
     "content:state:save:remote": "bun run --filter=@stella/content state:save:remote",
     "content:state:reset:remote": "bun run --filter=@stella/content state:reset:remote",
+    "deploy:prepare": "bun run apps/api/scripts/prepare-deploy.ts",
     "deploy:api": "bun run --filter=@stella/api deploy",
     "deploy:web": "bun run --filter=@stella/web build && bun run --filter=@stella/web deploy",
     "smoke:d1": "bun run --filter=@stella/api smoke",

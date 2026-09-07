@@ -35,6 +35,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # 新名の D1 を検索し、この checkout の binding を実 ID に揃える。
+      # 教材の指紋・seed・migration・API は全てこの設定を読む。未準備なら書き込み前に停止。
+      - name: Resolve deployment database and validate URLs
+        run: bun run deploy:prepare
+
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
       # 判定は「seed に入るもの」の内容指紋 (packages/content・packages/shared・
       # seed が読む apps/web の fixtures・seed / migration のコード) と、前回

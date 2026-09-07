@@ -17,8 +17,8 @@ export async function mintChatTestToken(userId: string): Promise<string> {
   return new SignJWT({ email: `${userId}@example.local` })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
-    .setIssuer("falcon-api")
-    .setAudience("falcon-web")
+    .setIssuer("stella-api")
+    .setAudience("stella-web")
     .setIssuedAt()
     .setExpirationTime("1h")
     .sign(new TextEncoder().encode(CHAT_TEST_JWT_SECRET));
@@ -48,7 +48,7 @@ export const validReviewDraftBody = {
 
 export const GATEWAY_ENV_VARS = {
   CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-  AI_GATEWAY_ID: "falcon-ai",
+  AI_GATEWAY_ID: "stella-ai",
 } as const;
 
 export const mockReviewDraftJson = {

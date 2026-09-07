@@ -5,7 +5,7 @@
 export interface Env {
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
-  /** Cloudflare AI Gateway ID (例: falcon-ai)。未設定なら Anthropic 直叩き。 */
+  /** Cloudflare AI Gateway ID (例: stella-ai)。未設定なら Anthropic 直叩き。 */
   AI_GATEWAY_ID?: string;
   /**
    * ランタイム用 Cloudflare アカウント ID (wrangler.toml の account_id は deploy 専用で Workers に渡らない)。

@@ -56,8 +56,8 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
         token,
         new TextEncoder().encode("skill-sheet-test-secret"),
         {
-          issuer: "falcon-api",
-          audience: "falcon-web",
+          issuer: "stella-api",
+          audience: "stella-web",
         },
       );
       const profile = profileByToken[payload.sub as string];

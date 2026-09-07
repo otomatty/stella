@@ -146,7 +146,7 @@ export function collectPdfTargets(
  * ジェネレータ版のどれかが変わると変わる。R2 キーに入り、
  * lesson_material_versions.source_hash にもそのまま入る。
  *
- * バケット (falcon-materials-public) は公開 URL を持つため、キーが計算可能だと
+ * バケット (stella-materials-public) は公開 URL を持つため、キーが計算可能だと
  * 認可プロキシを迂回して直リンクで取れてしまう (PR #256 レビュー指摘)。環境変数
  * `PDF_KEY_SALT` (deploy の Secrets) が設定されていれば HMAC にしてキーを
  * 推測不能にする。未設定でも動くが、その場合キーはリポジトリ内容を持つ者には

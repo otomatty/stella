@@ -134,8 +134,8 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
       const token = header.replace(/^Bearer\s+/i, "").trim();
       const { jwtVerify } = await import("jose");
       const { payload } = await jwtVerify(token, new TextEncoder().encode(TEST_JWT_SECRET), {
-        issuer: "falcon-api",
-        audience: "falcon-web",
+        issuer: "stella-api",
+        audience: "stella-web",
       });
       const profile = profileByToken[payload.sub as string];
       if (!profile) throw new actual.ApiError("プロフィールが見つかりません", 403);
@@ -571,7 +571,7 @@ describe("skill sheet save triggers personal answer template generation (#206)",
     env = createInterviewPrepTestEnv({
       ANTHROPIC_API_KEY: "test-key",
       CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-      AI_GATEWAY_ID: "falcon-ai",
+      AI_GATEWAY_ID: "stella-ai",
     });
     state = createInterviewPrepTestState();
     (globalThis as { __interviewPrepTestState?: InterviewPrepTestState }).__interviewPrepTestState =

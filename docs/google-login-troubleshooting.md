@@ -31,7 +31,7 @@ curl -s https://<api-host>/api/healthz | jq
 ## 1. フロントの `VITE_SERVER_URL` (Workers Static Assets)
 
 - ビルド時に焼き込まれる `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
-  - 例: `https://falcon-api.a-sugai.workers.dev`
+  - 例: `https://stella-api.a-sugai.workers.dev`
   - 本番ビルドは GitHub Actions（`deploy.yml`）が実行し、値は Actions の Repository Variables
     `VITE_SERVER_URL` から供給される（詳細は [`docs/ci-cd.md`](ci-cd.md)）。
 - 未設定だとログインボタンを押しても遷移先が無く **無反応** になる
@@ -70,11 +70,11 @@ wrangler secret put GOOGLE_CLIENT_SECRET   # Google OAuth シークレット (�
 リダイレクト先がフォールバックになる (`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
 
 ```dotenv
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.a-sugai.workers.dev"
 ```
 
-旧 `https://falcon-web.pages.dev` / `https://*.falcon-web.pages.dev` は移行期間の暫定維持
-（切替確認後に削除予定）。
+Phase C の切替後は旧 Web / Pages オリジンを許可しない。
+全員の再ログインと VS Code の再接続が必要。手順は [インフラ移行](stella-infrastructure-migration.md) を参照。
 
 ## 5. SPA リダイレクト (`/auth/callback`)
 

@@ -14,7 +14,7 @@ const apiDir = join(import.meta.dirname, "..");
 /** 1 文の実行結果の行を返す。 wrangler は文ごとに `{ results: [...] }` を返す。 */
 function d1Json<T>(command: string): T[] {
   const out = execSync(
-    `bunx wrangler d1 execute falcon-db --local --json --command ${JSON.stringify(command)}`,
+    `bunx wrangler d1 execute stella-db --local --json --command ${JSON.stringify(command)}`,
     { cwd: apiDir, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
   );
   // wrangler が JSON の前にバナー (skills 案内等) を出力することがあるため、

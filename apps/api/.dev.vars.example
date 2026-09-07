@@ -41,7 +41,7 @@ WORKERS_AI_API_TOKEN=
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml [vars] CLOUDFLARE_ACCOUNT_ID と同値。 account_id だけでは Workers ランタイムに渡らない。
 CLOUDFLARE_ACCOUNT_ID=
-# 例: falcon-ai。未設定 = Anthropic 直叩き。
+# 例: stella-ai。未設定 = Anthropic 直叩き。
 AI_GATEWAY_ID=
 # chat / review-draft プロバイダ (既定 anthropic)。Grok 利用時は gateway 必須。
 # CHAT_PROVIDER=grok

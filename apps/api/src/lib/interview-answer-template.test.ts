@@ -106,7 +106,7 @@ describe("submitPersonalTemplateGenerationBatch (#206)", () => {
     const env = {
       ANTHROPIC_API_KEY: "test-key",
       CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-      AI_GATEWAY_ID: "falcon-ai",
+      AI_GATEWAY_ID: "stella-ai",
     } as Env;
 
     const result = await submitPersonalTemplateGenerationBatch({
@@ -154,7 +154,7 @@ describe("submitPersonalTemplateGenerationBatch (#206)", () => {
       env: {
         ANTHROPIC_API_KEY: "test-key",
         CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-        AI_GATEWAY_ID: "falcon-ai",
+        AI_GATEWAY_ID: "stella-ai",
       } as Env,
       tenantId: "ses",
       profileId: "seed-learner",

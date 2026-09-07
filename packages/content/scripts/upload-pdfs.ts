@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 
 import { createR2Client, putAll } from "./lib/r2.js";
 
-const BUCKET = "falcon-materials-public";
+const BUCKET = "stella-materials-public";
 const STATE_KEY = "lesson-pdf/state.json";
 
 const here = dirname(fileURLToPath(import.meta.url));

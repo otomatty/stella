@@ -22,7 +22,7 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 - **DB 層**: Drizzle ORM + D1 バインディング (`drizzle-orm/d1`)
 - **認証**: Google OAuth (`/api/auth/google`) + JWT (`AUTH_JWT_SECRET`)
 - **認可**: Hono アプリ層 (旧 RLS 相当)
-- **フロント**: Cloudflare Workers Static Assets (`falcon-web`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
+- **フロント**: Cloudflare Workers Static Assets (`stella-web`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
 - **デプロイ運用**: 手動 `wrangler` ではなく GitHub Actions（`.github/workflows/deploy.yml`）。`main` マージで D1 migrate（remote）→ D1 seed（remote）→ api → web を自動実行。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
 ## ローカル開発
@@ -46,52 +46,26 @@ bun run dev       # :5173
 
 **アカウント**: `a.sugai@a-cial.com` (`0a0dd103e779842ba2c67cbde20574a0`)
 
-| リソース | 状態 | ID / URL |
+以下は Phase C の移行先。作成・デプロイ済みという記録ではない。
+既存環境の切替は [Phase C 移行手順](stella-infrastructure-migration.md) に従う。
+
+| リソース | 準備 | ID / URL |
 |---------|------|----------|
-| D1 `falcon-db` | ✅ マイグレーション + seed 済 | `5c22102a-6c90-4433-b744-4f51f0f608f9` |
-| Worker `falcon-api` | ✅ デプロイ済 | https://falcon-api.a-sugai.workers.dev |
-| Worker `falcon-web` (Static Assets) | ✅ デプロイ済 | https://falcon-web.a-sugai.workers.dev（旧 Pages URL `https://falcon-web.pages.dev` は移行期間の CORS 許可のため暫定的に維持） |
-| Secret `AUTH_JWT_SECRET` | ✅ 設定済 | (wrangler secret) |
-| R2 `falcon-materials-public` | ✅ 作成 + 公開 URL 有効 | https://pub-bd7872ac470e4c649d6bc3cc86ac9ca7.r2.dev |
+| D1 `stella-db` | 新規作成 + 旧 DB の完全復元 | `deploy:prepare` が名前から実 ID を解決 |
+| Worker `stella-api` | GitHub Actions でデプロイ | https://stella-api.a-sugai.workers.dev |
+| Worker `stella-web` (Static Assets) | GitHub Actions でデプロイ | https://stella-web.a-sugai.workers.dev |
+| Secret `AUTH_JWT_SECRET` など | 新 Worker に再登録 | 旧 Worker の secret は自動継承されない |
+| R2 `stella-materials-public` | 全オブジェクトを移行 + 公開 URL を設定 | 新 URL を `VITE_MATERIALS_BASE_URL` に登録 |
+| R2 `stella-skill-sheets` | 原本を移行 | 非公開を維持 |
+| AI Gateway `stella-ai` | 認証・課金・プロバイダ設定を移行 | `AI_GATEWAY_ID` |
 
-以下は初回セットアップ / ローカルからの手動再デプロイ手順。`main` への通常のデプロイは
-GitHub Actions（`deploy.yml`）が自動実行する。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
+新規リソース作成・データコピー・secrets 登録・OAuth 更新の順序は移行手順に集約する。
+`main` へのデプロイは GitHub Actions（`deploy.yml`）が実行する。
+詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
-```bash
-# 1. D1 作成 (初回のみ)
-cd apps/api && wrangler d1 create falcon-db
-# wrangler.toml の database_id を更新
-
-# 2. マイグレーション + seed
-bun run db:migrate:remote
-# remote seed: wrangler d1 execute falcon-db --remote --file=...
-
-# 3. Secrets / Google OAuth
-wrangler secret put AUTH_JWT_SECRET
-wrangler secret put GOOGLE_CLIENT_SECRET
-# wrangler.toml [vars] または secret で GOOGLE_CLIENT_ID を設定
-# Google Cloud Console → 認可済みリダイレクト URI:
-#   https://falcon-api.a-sugai.workers.dev/api/auth/google/callback
-#   http://127.0.0.1:8787/api/auth/google/callback
-wrangler secret put ANTHROPIC_API_KEY   # 任意
-
-# 4. R2 (教材)
-cd apps/api
-wrangler r2 bucket create falcon-materials-public   # 初回のみ
-wrangler r2 bucket dev-url enable falcon-materials-public
-wrangler r2 bucket dev-url get falcon-materials-public  # → VITE_MATERIALS_BASE_URL
-
-# 5. API デプロイ
-bun run deploy:api
-
-# 6. Web (Workers Static Assets)
-cd apps/web
-VITE_SERVER_URL=https://falcon-api.a-sugai.workers.dev \
-VITE_MATERIALS_BASE_URL=https://pub-bd7872ac470e4c649d6bc3cc86ac9ca7.r2.dev \
-CLOUDFLARE_ACCOUNT_ID=0a0dd103e779842ba2c67cbde20574a0 \
-  bun run deploy
-# → https://falcon-web.a-sugai.workers.dev
-```
+Git 上の `database_id` はローカル専用。デプロイの冒頭で `bun run deploy:prepare` が
+`stella-db` の実 ID を検索し、同じ checkout の設定を更新する。教材指紋・seed・Wrangler は
+すべてその設定を読む。復旧時に remote コマンドを直接実行する場合も、この前処理が必要。
 
 ### 環境変数
 

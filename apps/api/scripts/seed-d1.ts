@@ -29,7 +29,7 @@ const contentOnly = process.argv.includes("--content-only");
 const viaWrangler = !remote || process.argv.includes("--wrangler");
 const apiDir = join(import.meta.dirname, "..");
 const rootDir = join(apiDir, "..", "..");
-const DATABASE_NAME = "falcon-db";
+const DATABASE_NAME = "stella-db";
 
 const dir = mkdtempSync(join(tmpdir(), "falcon-seed-"));
 const file = join(dir, "seed.sql");

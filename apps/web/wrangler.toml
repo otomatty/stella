@@ -1,5 +1,5 @@
 # Assets-only Worker (SPA). Deploy with `wrangler deploy` (not Pages).
-name = "falcon-web"
+name = "stella-web"
 compatibility_date = "2024-12-01"
 
 # API と同一アカウント。

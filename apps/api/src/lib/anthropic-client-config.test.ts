@@ -39,7 +39,7 @@ vi.mock("@anthropic-ai/sdk", () => {
 const GATEWAY_ENV = {
   ANTHROPIC_API_KEY: "sk-test",
   CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-  AI_GATEWAY_ID: "falcon-ai",
+  AI_GATEWAY_ID: "stella-ai",
   ANTHROPIC_MODEL: "claude-sonnet-4-6",
 } as const;
 
@@ -88,7 +88,7 @@ describe("streamChat Anthropic client config", () => {
       const iter = streamChat({
         env: {
           ANTHROPIC_API_KEY: "sk-test",
-          AI_GATEWAY_ID: "falcon-ai",
+          AI_GATEWAY_ID: "stella-ai",
         },
         system: "system",
         messages: [{ role: "user", content: "hi" }],

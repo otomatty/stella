@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createR2Client, putAll } from "./r2.js";
 
-const BUCKET = "falcon-materials-public";
+const BUCKET = "stella-materials-public";
 const originalFetch = globalThis.fetch;
 
 let dir: string;

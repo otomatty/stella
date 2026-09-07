@@ -1,4 +1,4 @@
-name = "falcon-api"
+name = "stella-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
@@ -9,14 +9,14 @@ account_id = "0a0dd103e779842ba2c67cbde20574a0"
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 GOOGLE_CLIENT_ID = "774089873889-iq12o3cq3ded2iu7aa15lru5753bo5a1.apps.googleusercontent.com"
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://falcon-web.a-sugai.workers.dev,https://falcon-web.pages.dev,https://*.falcon-web.pages.dev"
-INVITE_REDIRECT_URL = "https://falcon-web.a-sugai.workers.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.a-sugai.workers.dev"
+INVITE_REDIRECT_URL = "https://stella-web.a-sugai.workers.dev"
 
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
 CLOUDFLARE_ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0"
 # 未設定なら Anthropic 直叩き。Grok / Workers AI Unified Billing には必須。
-AI_GATEWAY_ID = "falcon-ai"
+AI_GATEWAY_ID = "stella-ai"
 # CHAT_PROVIDER = "grok"
 # CHAT_MODEL = "grok-4.6"
 # AI_GATEWAY_CF_API_TOKEN は secret (Workers AI Read 等の最小権限。deploy 用 CLOUDFLARE_API_TOKEN と別)。
@@ -39,8 +39,10 @@ simple = { limit = 5, period = 60 }
 # Cloudflare D1 — LMS データ (旧 Neon Postgres)。
 [[d1_databases]]
 binding = "DB"
-database_name = "falcon-db"
-database_id = "5c22102a-6c90-4433-b744-4f51f0f608f9"
+database_name = "stella-db"
+# ローカル専用 ID。本番は deploy:prepare が stella-db の実 ID に置換する。
+# 旧 DB の ID を流用しない。移行手順: docs/stella-infrastructure-migration.md
+database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "drizzle"
 
 [triggers]
@@ -49,9 +51,9 @@ crons = ["*/15 * * * *"]
 # 教材アップロード (Cloudflare R2)。
 [[r2_buckets]]
 binding = "MATERIALS_BUCKET"
-bucket_name = "falcon-materials-public"
+bucket_name = "stella-materials-public"
 
 # スキルシート原本 (Issue #203)。
 [[r2_buckets]]
 binding = "SKILL_SHEETS_BUCKET"
-bucket_name = "falcon-skill-sheets"
+bucket_name = "stella-skill-sheets"

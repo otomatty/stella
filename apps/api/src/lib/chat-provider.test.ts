@@ -9,7 +9,7 @@ import { resolveChatProvider, assertGrokGatewayConfigured } from "./chat-provide
 
 const GATEWAY_ENV = {
   CLOUDFLARE_ACCOUNT_ID: "0a0dd103e779842ba2c67cbde20574a0",
-  AI_GATEWAY_ID: "falcon-ai",
+  AI_GATEWAY_ID: "stella-ai",
 } as const;
 
 describe("resolveChatProvider", () => {
@@ -53,7 +53,7 @@ describe("assertGrokGatewayConfigured", () => {
       assertGrokGatewayConfigured({
         CHAT_PROVIDER: "grok",
         CHAT_MODEL: "grok-4.6",
-        AI_GATEWAY_ID: "falcon-ai",
+        AI_GATEWAY_ID: "stella-ai",
       }),
     ).toThrow(MissingGatewayConfigError);
   });

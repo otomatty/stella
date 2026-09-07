@@ -4,8 +4,8 @@
 
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
-const ISSUER = "falcon-api";
-const AUDIENCE = "falcon-web";
+const ISSUER = "stella-api";
+const AUDIENCE = "stella-web";
 const TTL_SEC = 60 * 60 * 24; // 24 時間
 
 function secretKey(secret: string): Uint8Array {
