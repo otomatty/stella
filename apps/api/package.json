@@ -19,7 +19,7 @@
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.122.0",
+    "@anthropic-ai/sdk": "^0.123.0",
     "@falcon/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.5",
