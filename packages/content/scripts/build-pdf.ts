@@ -359,6 +359,8 @@ async function main(): Promise<void> {
             failed.push(label);
             const reason = e instanceof Error ? e.message.split("\n")[0] : String(e);
             console.warn(`PDF failed ${label}: ${reason}`);
+            // 途中まで書かれた PDF は次回実行で「生成済み」と誤判定されるため削除する。
+            rmSync(job.outFile, { force: true });
             await page.close().catch(() => undefined);
             page = await browser.newPage();
             await blockRemote();
