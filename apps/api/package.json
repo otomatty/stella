@@ -19,11 +19,11 @@
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.123.0",
+    "@anthropic-ai/sdk": "^0.124.0",
     "@stella/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.5",
-    "jose": "^6.2.9",
+    "hono": "^4.13.7",
+    "jose": "^6.2.12",
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
