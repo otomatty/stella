@@ -3,18 +3,18 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
-# A.sugai@a-cial.com's Account
-account_id = "0a0dd103e779842ba2c67cbde20574a0"
+# saedgewell@gmail.com's Account
+account_id = "175c04a4465bcc9815b21176a852f0c0"
 
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 GOOGLE_CLIENT_ID = "774089873889-iq12o3cq3ded2iu7aa15lru5753bo5a1.apps.googleusercontent.com"
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.a-sugai.workers.dev"
-INVITE_REDIRECT_URL = "https://stella-web.a-sugai.workers.dev"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.saedgewell.workers.dev"
+INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
 
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
-CLOUDFLARE_ACCOUNT_ID = "0a0dd103e779842ba2c67cbde20574a0"
+CLOUDFLARE_ACCOUNT_ID = "175c04a4465bcc9815b21176a852f0c0"
 # 未設定なら Anthropic 直叩き。Grok / Workers AI Unified Billing には必須。
 AI_GATEWAY_ID = "stella-ai"
 # CHAT_PROVIDER = "grok"

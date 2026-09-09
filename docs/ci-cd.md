@@ -130,8 +130,8 @@ DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と�
 
 Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
 
-- **Authorized JavaScript origins**: `https://stella-web.a-sugai.workers.dev`
-- **Authorized redirect URIs**: `https://stella-api.a-sugai.workers.dev/api/auth/google/callback`
+- **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
+- **Authorized redirect URIs**: `https://stella-api.saedgewell.workers.dev/api/auth/google/callback`
 
 Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
 Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。

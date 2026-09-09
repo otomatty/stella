@@ -44,20 +44,17 @@ bun run dev       # :5173
 
 ## 本番デプロイ
 
-**アカウント**: `a.sugai@a-cial.com` (`0a0dd103e779842ba2c67cbde20574a0`)
-
-以下は Phase C の移行先。作成・デプロイ済みという記録ではない。
-既存環境の切替は [Phase C 移行手順](stella-infrastructure-migration.md) に従う。
+**アカウント**: `saedgewell@gmail.com` (`175c04a4465bcc9815b21176a852f0c0`)
 
 | リソース | 準備 | ID / URL |
 |---------|------|----------|
-| D1 `stella-db` | 新規作成 + 旧 DB の完全復元 | `deploy:prepare` が名前から実 ID を解決 |
-| Worker `stella-api` | GitHub Actions でデプロイ | https://stella-api.a-sugai.workers.dev |
-| Worker `stella-web` (Static Assets) | GitHub Actions でデプロイ | https://stella-web.a-sugai.workers.dev |
-| Secret `AUTH_JWT_SECRET` など | 新 Worker に再登録 | 旧 Worker の secret は自動継承されない |
-| R2 `stella-materials-public` | 全オブジェクトを移行 + 公開 URL を設定 | 新 URL を `VITE_MATERIALS_BASE_URL` に登録 |
-| R2 `stella-skill-sheets` | 原本を移行 | 非公開を維持 |
-| AI Gateway `stella-ai` | 認証・課金・プロバイダ設定を移行 | `AI_GATEWAY_ID` |
+| D1 `stella-db` | 新規作成。`deploy:prepare` が名前から実 ID を解決 | Git 上のゼロ UUID はローカル専用 |
+| Worker `stella-api` | GitHub Actions またはローカル `wrangler deploy` | https://stella-api.saedgewell.workers.dev |
+| Worker `stella-web` (Static Assets) | 同上 | https://stella-web.saedgewell.workers.dev |
+| Secret `AUTH_JWT_SECRET` など | Worker に登録 | `wrangler secret put` |
+| R2 `stella-materials-public` | 公開 URL を `VITE_MATERIALS_BASE_URL` に登録 | `https://pub-cc7cf3c40111439d989be39f89a6eb84.r2.dev` |
+| R2 `stella-skill-sheets` | 原本用。非公開を維持 | |
+| AI Gateway `stella-ai` | 未作成なら Anthropic 直叩きにフォールバック | `AI_GATEWAY_ID` |
 
 新規リソース作成・データコピー・secrets 登録・OAuth 更新の順序は移行手順に集約する。
 `main` へのデプロイは GitHub Actions（`deploy.yml`）が実行する。

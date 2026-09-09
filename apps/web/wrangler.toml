@@ -3,7 +3,7 @@ name = "stella-web"
 compatibility_date = "2024-12-01"
 
 # API と同一アカウント。
-account_id = "0a0dd103e779842ba2c67cbde20574a0"
+account_id = "175c04a4465bcc9815b21176a852f0c0"
 
 # Vite ビルド成果物を静的配信する。SPA なので 404 は index.html にフォールバック。
 [assets]

@@ -143,10 +143,10 @@ CI では出さない。publisher は `falcon`。手元: `cd apps/vscode && bunx
 1. [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0 クライアント ID を作成。
 2. **認可済みリダイレクト URI** に以下を追加:
    - `http://127.0.0.1:8787/api/auth/google/callback` (ローカル)
-   - `https://stella-api.a-sugai.workers.dev/api/auth/google/callback` (本番)
+   - `https://stella-api.saedgewell.workers.dev/api/auth/google/callback` (本番)
 3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
-4. Web は `https://stella-web.a-sugai.workers.dev/auth/callback` で JWT を受け取る
+4. Web は `https://stella-web.saedgewell.workers.dev/auth/callback` で JWT を受け取る
    (SPA fallback は `apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
@@ -455,7 +455,7 @@ Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要�
 
 Phase C の初回切替は [インフラ移行手順](docs/stella-infrastructure-migration.md) に従う。
 全セッションが失効するため、告知とメンテナンス中の D1 / R2 移行を済ませてからマージする。
-本番 API は `https://stella-api.a-sugai.workers.dev`、Web は `https://stella-web.a-sugai.workers.dev`。
+本番 API は `https://stella-api.saedgewell.workers.dev`、Web は `https://stella-web.saedgewell.workers.dev`。
 
 Deploy は教材処理の前に `bun run deploy:prepare` を実行し、`stella-db` の実 ID を取得する。
 Git 上のゼロ UUID はローカル専用で、本番デプロイには使わない。

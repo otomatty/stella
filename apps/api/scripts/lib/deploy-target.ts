@@ -2,7 +2,7 @@ import { parseD1Config } from "./d1-remote.js";
 
 const DATABASE_NAME = "stella-db";
 const LOCAL_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
-const API_ORIGIN = "https://stella-api.a-sugai.workers.dev";
+const API_ORIGIN = "https://stella-api.saedgewell.workers.dev";
 
 export function validateDeployUrls(
   serverUrl: string | undefined,

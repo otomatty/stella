@@ -77,13 +77,14 @@ describe("deployment database", () => {
 });
 
 describe("deployment URLs", () => {
-  const server = "https://stella-api.a-sugai.workers.dev";
+  const server = "https://stella-api.saedgewell.workers.dev";
   it("allows the new Web origin but rejects retired production origins", () => {
     const allowed = TOML.match(/^ALLOWED_ORIGINS = "([^"]+)"/m)?.[1] ?? "";
-    expect(isAllowedOrigin("https://stella-web.a-sugai.workers.dev", allowed)).toBe(true);
+    expect(isAllowedOrigin("https://stella-web.saedgewell.workers.dev", allowed)).toBe(true);
     expect(isAllowedOrigin("http://127.0.0.1:5173", allowed)).toBe(true);
     for (const origin of [
       "https://falcon-web.a-sugai.workers.dev",
+      "https://stella-web.a-sugai.workers.dev",
       "https://falcon-web.pages.dev",
       "https://preview.falcon-web.pages.dev",
     ]) {
@@ -95,7 +96,7 @@ describe("deployment URLs", () => {
       `${server}/api/auth/google/callback`,
     );
     expect(TOML.match(/^INVITE_REDIRECT_URL = "([^"]+)"/m)?.[1]).toBe(
-      "https://stella-web.a-sugai.workers.dev",
+      "https://stella-web.saedgewell.workers.dev",
     );
   });
   it("accepts the new API and a public materials origin", () => {
