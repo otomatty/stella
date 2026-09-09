@@ -288,65 +288,81 @@ async function main(): Promise<void> {
     const browser = await chromium.launch(executablePath ? { executablePath } : {});
     const htmlDir = mkdtempSync(join(tmpdir(), "falcon-pdf-"));
     let built = 0;
+    const failed: string[] = [];
     try {
       const queue = [...pending];
       const worker = async () => {
-        const page = await browser.newPage();
+        let page = await browser.newPage();
         // 生成の決定性と安全のため、ページからの外部ネットワークアクセスを遮断する。
         // 教材はローカルの file:// (本文 HTML・assets・フォント) だけで完結しており、
         // 本文が外部 URL を参照していても PDF はリポジトリ内容だけから決まる。
-        await page.route(
-          (url) => url.protocol !== "file:",
-          (route) => route.abort(),
-        );
+        const blockRemote = async () => {
+          await page.route(
+            (url) => url.protocol !== "file:",
+            (route) => route.abort(),
+          );
+        };
+        await blockRemote();
         for (;;) {
           const job = queue.shift();
           if (!job) break;
           const { target } = job;
-          const assets = new Map(target.assets.map((a) => [a.key, a.file]));
-          let html: string;
-          let isSlides = false;
-          if (target.kind === "slides") {
-            html = slidesHtml(target, assets);
-            isSlides = true;
-          } else if (target.kind === "practice") {
-            const { problems, answers } = splitPracticeForPdf(
-              target.source,
-              parseQuiz(target.source),
+          const label = `${target.courseSlug}/${target.lessonId}/${target.kind}`;
+          try {
+            const assets = new Map(target.assets.map((a) => [a.key, a.file]));
+            let html: string;
+            let isSlides = false;
+            if (target.kind === "slides") {
+              html = slidesHtml(target, assets);
+              isSlides = true;
+            } else if (target.kind === "practice") {
+              const { problems, answers } = splitPracticeForPdf(
+                target.source,
+                parseQuiz(target.source),
+              );
+              html = docHtml(target, assets, [problems, answers]);
+            } else {
+              html = docHtml(target, assets, [target.source]);
+            }
+            const htmlFile = join(htmlDir, `${job.hash}.html`);
+            writeFileSync(htmlFile, html);
+            // file:// 以外は上で abort しているので networkidle は永遠に来ないことがある
+            // (外部画像・フォントを参照する教材)。load + fonts.ready で足りる。
+            await page.goto(pathToFileURL(htmlFile).href, { waitUntil: "load" });
+            await page.evaluate(() => document.fonts.ready.then(() => undefined));
+            if (isSlides) await page.evaluate(AUTOSCALE_SCRIPT);
+            mkdirSync(dirname(job.outFile), { recursive: true });
+            await page.pdf(
+              isSlides
+                ? {
+                    path: job.outFile,
+                    width: "1280px",
+                    height: "720px",
+                    printBackground: true,
+                  }
+                : {
+                    path: job.outFile,
+                    format: "A4",
+                    printBackground: true,
+                    displayHeaderFooter: true,
+                    headerTemplate: "<span></span>",
+                    footerTemplate:
+                      '<div style="width:100%;text-align:center;font-size:8px;color:#8a8a93;">' +
+                      '<span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+                    margin: { top: "18mm", bottom: "20mm", left: "16mm", right: "16mm" },
+                  },
             );
-            html = docHtml(target, assets, [problems, answers]);
-          } else {
-            html = docHtml(target, assets, [target.source]);
+            rmSync(htmlFile, { force: true });
+            built++;
+            if (built % 25 === 0) console.log(`  ${built}/${pending.length}`);
+          } catch (e) {
+            failed.push(label);
+            const reason = e instanceof Error ? e.message.split("\n")[0] : String(e);
+            console.warn(`PDF failed ${label}: ${reason}`);
+            await page.close().catch(() => undefined);
+            page = await browser.newPage();
+            await blockRemote();
           }
-          const htmlFile = join(htmlDir, `${job.hash}.html`);
-          writeFileSync(htmlFile, html);
-          await page.goto(pathToFileURL(htmlFile).href, { waitUntil: "networkidle" });
-          await page.evaluate(() => document.fonts.ready.then(() => undefined));
-          if (isSlides) await page.evaluate(AUTOSCALE_SCRIPT);
-          mkdirSync(dirname(job.outFile), { recursive: true });
-          await page.pdf(
-            isSlides
-              ? {
-                  path: job.outFile,
-                  width: "1280px",
-                  height: "720px",
-                  printBackground: true,
-                }
-              : {
-                  path: job.outFile,
-                  format: "A4",
-                  printBackground: true,
-                  displayHeaderFooter: true,
-                  headerTemplate: "<span></span>",
-                  footerTemplate:
-                    '<div style="width:100%;text-align:center;font-size:8px;color:#8a8a93;">' +
-                    '<span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-                  margin: { top: "18mm", bottom: "20mm", left: "16mm", right: "16mm" },
-                },
-          );
-          rmSync(htmlFile, { force: true });
-          built++;
-          if (built % 25 === 0) console.log(`  ${built}/${pending.length}`);
         }
         await page.close();
       };
@@ -356,6 +372,11 @@ async function main(): Promise<void> {
       rmSync(htmlDir, { recursive: true, force: true });
     }
     console.log(`✓ generated ${built} PDFs`);
+    if (failed.length > 0) {
+      throw new Error(
+        `PDF generation failed for ${failed.length} targets: ${failed.slice(0, 10).join(", ")}`,
+      );
+    }
   }
 
   if (manifestPath) {
