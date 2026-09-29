@@ -489,6 +489,19 @@ ${cards}
 </body></html>`;
 }
 
+/** 1 トピックの出力一式。どれかが欠けていれば作り直す。 */
+function outputFiles(): string[] {
+  const base = [
+    "video.mp4",
+    "captions.vtt",
+    "chapters.vtt",
+    "poster.jpg",
+    "timeline.json",
+    "report.json",
+  ];
+  return captioned ? [...base, "preview-captioned.mp4"] : base;
+}
+
 // ---------------------------------------------------------------- main
 
 async function main(): Promise<void> {
@@ -528,40 +541,59 @@ async function main(): Promise<void> {
 
   const pending = plans.filter(({ topic, cues }) => {
     if (force) return true;
-    const report = join(outDir, topic.courseSlug, topic.id, "report.json");
-    if (!existsSync(report) || !existsSync(join(dirname(report), "video.mp4"))) return true;
-    return (
-      (JSON.parse(readFileSync(report, "utf8")) as TopicReport).sourceHash !==
-      sourceHashOf(topic, cues)
-    );
+    const topicOut = join(outDir, topic.courseSlug, topic.id);
+    // 1 つでも欠けていれば作り直す (途中で止まった回や、一部だけ消された出力を補う)。
+    if (outputFiles().some((f) => !existsSync(join(topicOut, f)))) return true;
+    const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
+    return report.sourceHash !== sourceHashOf(topic, cues);
   });
   console.log(
     `video: ${plans.length} topics with narration (generate ${pending.length}, up to date ${plans.length - pending.length}) — ${provider.identity}`,
   );
   console.log(`  ${await ffmpegVersion()}`);
 
-  // ② 読み上げ (全トピックの字幕をまとめて並列に)
+  // ② 読み上げ (全トピックの字幕をまとめて並列に)。同じ読み上げ文は 1 回だけ合成する。
+  // 失敗はトピック単位で数える — 1 つの字幕が再試行しても通らなくても、
+  // 他のトピックの動画は作る。
   const allCues = pending.flatMap((p) => p.cues);
+  const unique = [...new Map(allCues.map((c) => [c.hash, c.speech])).entries()];
   const ttsStart = Date.now();
   let synthesized = 0;
-  await mapPool(allCues, provider.concurrency, async (cue) => {
-    const res = await synthesizeCached(provider, cue.speech, cacheDir);
-    cue.file = res.file;
-    if (!res.cached) synthesized++;
+  const files = new Map<string, string>();
+  const ttsErrors = new Map<string, string>();
+  await mapPool(unique, provider.concurrency, async ([hash, speech]) => {
+    try {
+      const res = await synthesizeCached(provider, speech, cacheDir);
+      files.set(hash, res.file);
+      if (!res.cached) synthesized++;
+    } catch (e) {
+      ttsErrors.set(hash, (e as Error).message.split("\n")[0]);
+    }
   });
+  for (const cue of allCues) cue.file = files.get(cue.hash);
   const ttsMs = Date.now() - ttsStart;
   console.log(
-    `  TTS: ${allCues.length} cues (${synthesized} synthesized) in ${(ttsMs / 1000).toFixed(1)}s`,
+    `  TTS: ${allCues.length} cues / ${unique.length} unique (${synthesized} synthesized, ${ttsErrors.size} failed) in ${(ttsMs / 1000).toFixed(1)}s`,
   );
+  const buildable = pending.filter(({ topic, cues }) => {
+    const failed = cues.find((c) => ttsErrors.has(c.hash));
+    if (!failed) return true;
+    const label = `${topic.courseSlug}/${topic.id}`;
+    failures.push(
+      `${label}: 読み上げに失敗しました (slide ${failed.slide + 1} cue ${failed.index + 1}: ${ttsErrors.get(failed.hash)})`,
+    );
+    console.warn(`  ✗ ${label}: 読み上げに失敗した字幕があるので作りません`);
+    return false;
+  });
 
   const reports: TopicReport[] = [];
-  if (pending.length > 0) {
+  if (buildable.length > 0) {
     const executablePath = existsSync("/opt/pw-browsers/chromium")
       ? "/opt/pw-browsers/chromium"
       : undefined;
     const browser = await chromium.launch(executablePath ? { executablePath } : {});
     try {
-      await mapPool(pending, concurrency, async ({ topic, cues, warnings }) => {
+      await mapPool(buildable, concurrency, async ({ topic, cues, warnings }) => {
         const label = `${topic.courseSlug}/${topic.id}`;
         try {
           const report = await buildTopic(

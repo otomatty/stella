@@ -307,12 +307,39 @@ export interface CachedTts {
   cached: boolean;
 }
 
+/**
+ * 進行中・完了済みの合成 (プロセス内)。同じ読み上げ文を同時に頼まれても外部 TTS を
+ * 1 回しか呼ばず (重複課金しない)、同じキャッシュファイルへ別々の音声を書き合わない。
+ * `refresh` (異常長の作り直し) も 1 つの読み上げ文につき 1 回まで — 2 本目以降の
+ * トピックは作り直した音声をそのまま使う。
+ */
+const inflight = new Map<string, Promise<CachedTts>>();
+
 /** キャッシュにあればそれを、無ければ合成して書く。`refresh` はキャッシュを無視して作り直す。 */
-export async function synthesizeCached(
+export function synthesizeCached(
   provider: TtsProvider,
   speech: string,
   cacheDir: string,
   refresh = false,
+): Promise<CachedTts> {
+  const key = `${join(cacheDir, cueHash(provider.identity, speech))}${refresh ? "#refresh" : ""}`;
+  const running = inflight.get(key);
+  if (running) return running;
+  const job = synthesizeUncached(provider, speech, cacheDir, refresh);
+  inflight.set(key, job);
+  if (!refresh) {
+    // 通常の合成は終わったら外す (以降はディスクのキャッシュを読む)。作り直しは残す。
+    const forget = () => inflight.delete(key);
+    job.then(forget, forget);
+  }
+  return job;
+}
+
+async function synthesizeUncached(
+  provider: TtsProvider,
+  speech: string,
+  cacheDir: string,
+  refresh: boolean,
 ): Promise<CachedTts> {
   const hash = cueHash(provider.identity, speech);
   for (const ext of ["wav", "mp3"] as const) {

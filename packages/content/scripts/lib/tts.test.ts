@@ -146,6 +146,42 @@ describe("synthesizeCached", () => {
     }
   });
 
+  it("同じ読み上げ文を同時に頼まれても 1 回しか合成しない (作り直しも 1 回まで)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tts-cache-"));
+    try {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      const synthesize = vi.fn(async () => {
+        await gate;
+        return { bytes: new Uint8Array([1]), ext: "wav" as const };
+      });
+      const p: TtsProvider = {
+        identity: "t/2",
+        concurrency: 4,
+        nondeterministic: true,
+        synthesize,
+      };
+      const both = Promise.all([
+        synthesizeCached(p, "同時", dir),
+        synthesizeCached(p, "同時", dir),
+      ]);
+      release();
+      const [a, b] = await both;
+      expect(a.file).toBe(b.file);
+      expect(synthesize).toHaveBeenCalledTimes(1);
+      await Promise.all([
+        synthesizeCached(p, "同時", dir, true),
+        synthesizeCached(p, "同時", dir, true),
+      ]);
+      await synthesizeCached(p, "同時", dir, true);
+      expect(synthesize).toHaveBeenCalledTimes(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("声が変わればキーも変わる", () => {
     expect(cueHash("gemini/a", "文")).not.toBe(cueHash("gemini/b", "文"));
   });
