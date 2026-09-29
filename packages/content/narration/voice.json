@@ -1,0 +1,16 @@
+{
+  "provider": "gemini",
+  "gemini": {
+    "model": "gemini-3.8-flash-tts",
+    "voice": "Charon",
+    "style": "落ち着いた研修講師として、はっきり、ややゆっくり"
+  },
+  "grok": {
+    "model": "xai/grok-tts",
+    "voice": "eve",
+    "lang": "ja"
+  },
+  "openjtalk": {
+    "speed": 1.1
+  }
+}

@@ -90,6 +90,15 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ビルド生成物(`slides.pptx` / `assets/*.diagram.png` / `dist/`)は `.gitignore` 済みです。コミットしないでください。**`assets/*.svg` も生成物ですが、こちらはコミットします**(`slides.md` / `doc.md` が参照する正本のため)。
 
+### 教材動画 (PoC)
+
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます (設計と PoC の結果は `docs/superpowers/specs/2026-09-29-lesson-video-auto-generation-design.md`)。現状は **it-basics の全 9 トピックと typescript-basics 1-1-2 だけ**が台本を持ち、配信 (R2・D1・画面) は未実装です。
+
+- 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
+- **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
+- 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
+- 生成: `bun run content:video -- it-basics --tts openjtalk` → `dist/video/`。ffmpeg と `pip install pyopenjtalk-prebuilt "numpy<2"` が要ります。鍵のある環境では `--tts gemini` (`GEMINI_API_KEY`) / `--tts grok` (AI Gateway) を使います
+
 ## 絶対に守るルール
 
 1. **1トピック = 1 Takeaway を崩さない** — スライドを足したくなったら、まずトピックを割れないか考えてください。「関連情報」は Takeaway を強化する枠(図解 or 失敗例)1つだけに収めます。詰め込みは粒度の設計を壊します。
@@ -190,7 +199,7 @@ TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](
 
 - **図解SVGの不足** — 図解を持たないトピックが多い。`assets/` がないトピックには追加余地がある（HTML/CSS 入門 3 枚・モダンCSS 入門 / UI部品 入門 / ページ構成 入門 各 1 枚を導入済み。作図は `.claude/skills/diagram-design/` の規約に従い、`python .claude/skills/diagram-design/lint-skin.py` と `python packages/content/scripts/diagram_export.py` を通す）
 - **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは執筆済み 25 講座すべてに設置済み（準備中 17 講座は未設置）
-- **収録** — 162本の動画収録は未着手
+- **収録** — 162本の動画収録は未着手。人の収録の代わりに、台本 + TTS で自動生成する PoC がある (上の「教材動画 (PoC)」)
 - **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
 - **コード演習の空白** — TypeScript 入門は M5 以降、JavaScript 入門・HTML/CSS 系は全体にコード演習が無い（対応する課題が `@stella/shared` に無い、または採点基盤が対象言語・DOM を実行できないため）
 
