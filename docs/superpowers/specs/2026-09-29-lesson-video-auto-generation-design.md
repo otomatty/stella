@@ -1,7 +1,7 @@
 # 教材動画 (ナレーション付き解説動画) 自動生成・配信 設計書
 
 日付: 2026-09-29
-ステータス: 提案 (未実装)
+ステータス: 提案。**PoC 実装済み** (① 台本〜⑤ 書き出しをローカルで生成するところまで。R2・D1・API・UI・CI は未実装)。結果は末尾の「PoC の結果 (2026-09-29)」
 参考: 「テキストから音声付き解説動画を作る仕組み 設計書」(2026-09-28, Kamishibai.js + Gemini 3.8 Flash TTS。以下「参考設計書」)
 
 ## 目的
@@ -261,7 +261,7 @@ slide_i = start_{n-1} + dur_{n-1} + tail
 ## ⑤ 書き出し
 
 1. **音声を 1 本にする**: 字幕ごとの音声を timeline の時刻に無音で挟んで連結する (サンプル単位で正確)。loudnorm 2 パスで -16 LUFS / ピーク -1.5 dBTP にそろえ、AAC-LC 128 kbps / 48 kHz / mono にする。BGM は付けない
-2. **映像を作る**: スライドごとに静止画を表示時間ぶんの区間として符号化し (`-loop 1 -tune stillimage -r 30 -pix_fmt yuv420p`)、concat demuxer でつなぐ。切り替えはカット (講義動画として自然で、区間ごとにキーフレームが立つのでスライド頭へのシークが正確になる)
+2. **映像を作る**: スライドごとに静止画を表示時間ぶんの区間として符号化し (`-loop 1 -tune stillimage -r 10 -pix_fmt yuv420p`)、concat demuxer でつなぐ。静止画の切り替えだけなので **10fps** で足りる (PoC で 30fps より約 3 倍速く、ファイルも約半分)。切り替えはカット (講義動画として自然で、区間ごとにキーフレームが立つのでスライド頭へのシークが正確になる)
 3. **合わせる**: 映像を再圧縮せずに音声を載せ、`-movflags +faststart` を付けた `video.mp4` にする (Range 配信で頭から再生できる)
 4. **字幕**: timeline から `captions.vtt` を作る。チャプター (スライド開始時刻と見出し) は登録データとして D1 に入れる
 5. **報告**: `report.json` を作る (後述の品質チェック)。CI のジョブサマリにトピックごとの長さ・警告を並べ、R2 には置かない
@@ -283,7 +283,7 @@ ffmpeg は CI で apt から入れる。版は `VIDEO_GENERATOR_VERSION` に含�
   - PDF と同じく `PDF_KEY_SALT` による HMAC で計算不能にする (ラベル `lesson-video` を混ぜて PDF と名前空間を分ける)
   - **上書き・削除はしない**
 - 台帳 `lesson-video/state.json` は `upload-pdfs.ts` と同じ形 (キーの SHA-256 → サイズ)。TTS キャッシュの有無もここで判定する。台帳が読めなければ全件生成に倒す (内容アドレスなので正しさは崩れない)
-- 出力 1 本の目安は 2.5 分で 3〜6 MB。静止画主体の映像はほぼ音声の大きさになる。`lib/r2.ts` の単発 PUT で足りる見込みだが、上限は試作で確かめる
+- 出力 1 本の目安は **1 分あたり約 1.1 MB** (PoC 実測: 1.5〜2 分で 1.6〜2.4 MB。映像は 10fps の静止画で、大半が音声)。`lib/r2.ts` の単発 PUT で足りる
 
 ## DB スキーマ (migration `0042_lesson_videos.sql`)
 
@@ -340,7 +340,7 @@ concurrency: { group: video-main, cancel-in-progress: false }
 
 - **seed との独立。** seed は `lesson_videos` を触らず、`video.yml` は lessons を触らない。書く表が分かれているので、Deploy と並走しても壊れない。deploy の concurrency group に相乗りしない。GitHub は同じグループで保留を 1 つしか持たず、動画の保留がデプロイの保留を押しのけうるため
 - **遅れて届く教材との交錯。** `video.yml` が seed より新しいコミットで動画を作ると、D1 の本文はまだ古い。この場合は古さ判定で非表示になり、seed が追いついた時点で自動的に有効になる。新しいトピックは lessons が無いので登録を飛ばし、次の回に拾う
-- **1 回あたりの上限。** `max_topics` (既定 200) と推定費用の上限 (`VIDEO_BUDGET_USD`、既定 20 ドル) を超える分は次の回に回す。初回のバックフィルは講座を指定して手動で流す
+- **1 回あたりの上限。** `max_topics` (既定 200) と推定費用の上限 (`VIDEO_BUDGET_USD`、既定 20 ドル) を超える分は次の回に回す。初回のバックフィルは `workflow_dispatch` で講座を指定し、**講座ごとの matrix ジョブで並列に**流す (PoC 実測で 1 本約 45 CPU 秒。1 ジョブで全講座を回すと 6 時間の上限を超える)。TTS キャッシュと台帳は R2 にあるので、ジョブを分けても重複生成は起きない (台帳の更新だけは最後に 1 ジョブでまとめる)
 - **content 指紋からの除外。** 台本まわりのファイル (`narration.json`・`narration-readings.json`・`narration/`・`NARRATION_GUIDE.md`) は seed に入らないので、`content-fingerprint.ts` の対象から外す。台本だけの変更で R2 画像・PDF・seed が走らないようにする。Deploy 自体は走り、その完了で `video.yml` が起きる
 - **Secrets の追加。** `GEMINI_API_KEY` (または Grok 用の `AI_GATEWAY_ID` / `AI_GATEWAY_CF_API_TOKEN`)。`CLOUDFLARE_API_TOKEN` は R2 Edit と D1 Edit の既存権限で足りる
 
@@ -448,8 +448,8 @@ VS Code 拡張・スキルツリー・lesson の型 (`type`) は変えない。
 | 台本の下書き (Claude Opus 5.5) | 約 60〜120 ドル (Batches で半額側) | 1 トピック 入力 ~7K / 出力 ~3.5K トークン、$4 / $20 per MTok |
 | 読み上げ (Gemini 3.8 Flash TTS) | 約 45 ドル | 計 51 時間の音声、音声 1 秒 = 25 トークン (参考設計書の仮定)、出力 $9 / MTok |
 | 読み上げ (Grok TTS を選んだ場合) | 約 4 ドル | 計 92 万字、$4.20 / 100 万字 |
-| R2 保存 | 月 0.1 ドル程度 | 5〜7 GB (旧版の保持で単調増加) |
-| CI 時間 (初回) | 数時間 (講座ごとに分けて流す) | 1 本 20〜40 秒 (2 vCPU) × 1,231 ÷ 並列 2 |
+| R2 保存 | 月 0.05 ドル程度 | 約 3 GB (1 本 2.5 MB。旧版の保持で単調増加) |
+| CI 時間 (初回) | 約 15 CPU 時間 → **matrix で講座ごとに並列化が必須** | PoC 実測: 1 本あたり約 45 CPU 秒 (4 vCPU・並列 2 で 1 本 15 秒)。2 vCPU の 1 ジョブでは約 7.7 時間で、6 時間の上限を超える |
 | 定常 | 直したトピックの本数ぶん | 字幕 1 つの修正なら TTS 1 回 + 1 本の再エンコード |
 
 トークン換算・エンコード時間・TTS の応答時間は、どれも関門 1 の試作で実測して置き換える。
@@ -522,3 +522,77 @@ VS Code 拡張・スキルツリー・lesson の型 (`type`) は変えない。
 - CMS で作った講座の動画自動生成 (CMS の動画レッスンは従来どおり手動アップロード)
 - doc.md / practice.md の動画化 (動画はトピック = slides だけ)
 - 受講者への版履歴の公開
+
+## PoC の結果 (2026-09-29)
+
+設計の ① 台本〜⑤ 書き出しを、ローカルで動く形で実装した (R2・D1・API・UI・CI は未実装)。対象は it-basics の全 9 トピックと、コード・図解を含む typescript-basics 1-1-2 の計 10 本。
+
+### 実装したもの
+
+| ファイル | 役割 |
+| --- | --- |
+| `packages/content/NARRATION_GUIDE.md` | 台本の執筆ルール。`narrate` がそのままシステムプロンプトに入れる |
+| `packages/content/narration/voice.json` / `readings.json` | 声の設定 (既定 gemini) と共通の読み辞書 |
+| `packages/content/src/narration.ts` | 台本の読み込み・`slidesHash`・読み辞書・検証器 (純粋関数。テストあり) |
+| `packages/content/src/video-timeline.ts` | 音声長 → timeline・VTT・チャプター・フレーム境界 (テストあり) |
+| `packages/content/scripts/narrate.ts` | Claude (`claude-opus-5-5`、構造化出力、server-side fallback) による下書き。`--batch` / `--accept` / `--force` / `--dry-run` |
+| `packages/content/scripts/check-narration.ts` | 台本の検査。`check:ci` に追加 (台本の無いトピックは対象外) |
+| `packages/content/scripts/lib/tts.ts` | TTS の差し替え口: `gemini` / `grok` (AI Gateway) / `openjtalk` (ローカル) / `fake`。字幕単位のキャッシュと再試行 |
+| `packages/content/scripts/lib/ffmpeg.ts` | 無音削り・ナレーションの配置・loudnorm 2 パス・静止画の符号化・結合 |
+| `packages/content/scripts/lib/slide-html.ts` | PDF と共用するスライド HTML (build-pdf.ts から切り出し。全 1,231 トピックで切り出し前と同じ HTML になることを確認済み) |
+| `packages/content/scripts/build-video.ts` | ②〜⑤ の本体。`dist/video/<course>/<id>/` に `video.mp4`・`captions.vtt`・`chapters.vtt`・`poster.jpg`・`timeline.json`・`report.json`、一覧の `index.html` |
+
+```bash
+bun run --filter=@stella/content narration:check                          # 台本の検査
+bun run --filter=@stella/content narrate -- courses/it-basics --dry-run   # 下書きのプロンプト確認 (要 ANTHROPIC_API_KEY で実行)
+bun run content:video -- it-basics --tts openjtalk --captioned            # 動画生成 (鍵なし・ローカル TTS)
+python3 -m http.server -d packages/content/dist/video                     # 一覧ページ (字幕 <track> は HTTP で開く)
+```
+
+`--tts openjtalk` は `pip install pyopenjtalk-prebuilt "numpy<2"`、生成には ffmpeg (Ubuntu の apt 版 6.1.1 で確認) が要る。
+
+### 実測
+
+- **生成時間** (4 vCPU)
+  - 本番相当 (字幕焼き込みなし) は 9 本で 2 分 17 秒 (並列 2)。1 本あたり、音声の後処理 8〜11 秒・撮影 1.4〜2 秒・符号化 12〜21 秒で、約 45 CPU 秒
+  - TTS はキャッシュ済みなら 0.1 秒 (189 字幕中 0 件の再合成)。字幕を 1 つ直すと、呼び直すのはその 1 件だけ
+- **長さと同期**
+  - 手書きの台本 530〜750 字で、動画は 91〜125 秒 (Open JTalk は約 7 字/秒。検証器の見積り 5.5 字/秒より速い)
+  - 映像と音声の長さの差は 0.1 秒以内 (AAC の端数)
+  - スライドの切り替えは timeline の境界どおり (例: 42.01 秒の境界の前後 0.1 秒で切り替わる)
+- **大きさ**: 1.6〜2.4 MB/本 (1080p・10fps・AAC 128kbps mono)
+- **音量**: 全 10 本が -16.0〜-16.3 LUFS、ピーク -2.5〜-2.8 dBTP (基準 -16 ±1 LUFS / -1.5 dBTP 以下)
+- **台本の検査**: 10 本ともエラー・警告 0
+
+### 設計に反映したこと・分かったこと
+
+1. **映像は 10fps で足りる。** 30fps から 10fps にすると、符号化が約 3 倍速く、ファイルも約半分になった (26 秒の区間で 8.4 秒 → 3.1 秒)。⑤ を修正した。
+2. **ピークは AAC 変換で上がる。** loudnorm を -1.5 dBTP で掛けても、AAC にすると -0.8〜-1.4 dBTP になった。正規化は 2 パスの線形モードにし、上限を -3 dBTP で掛けることで基準内に収めた。
+3. **初回のバックフィルは 1 ジョブでは終わらない。** 2 vCPU の標準ランナーで全 1,231 本は約 7.7 時間かかり、ジョブの上限を超える。講座ごとの matrix が必須 (CI 節を修正)。
+4. **読み辞書は英語だけでは足りない。**
+   - Open JTalk は「拡張子」を「カクチョーコ」と読んだ
+   - `const` / `TypeScript` はアルファベット読みになった
+   - 辞書は仮名で書く (どの TTS でも同じ読みになる)
+   - Gemini / Grok が同じ語を正しく読むかは関門 1 で確かめ、辞書を育てる
+5. **講師ノートは「講座の中の位置」について嘘をつくことがある。**
+   - it-basics 2-1-4 のノートは「この講座の最後のトピック」と書いているが、実際は 2-1-5 が続く
+   - 台本ガイドに「講座の中の位置を言わない」を入れた
+   - 検査で機械的に落とす規則にするかは未定
+6. **takeaway に括弧を含むトピックがある** (1-1-1・2-1-2)。
+   - 結論の字幕は takeaway のまま括弧込みで出し、`speech` で「ハードウェア、つまり機械の部分を」と言い換える
+   - `speech` にも読み辞書を当てる仕様にした (辞書で直る語まで `speech` に書かなくて済む)
+7. **字幕を画面に重ねると、スライド下部の本文にかかりうる。**
+   - 字幕を焼き込んだ確認用プレビューでは、字幕の帯がスライドの下 15% ほどを覆った
+   - 本番の `<track>` も、ブラウザは映像の上に重ねて描く
+   - LMS のプレイヤーでは、`TextTrack` の `cuechange` を読んで**動画の下の欄に字幕を出す**ほうがよい (フェーズ 2 で決める)
+8. **60 字の字幕は 2 行に折り返し、2 行目が「す。」だけになることがある。** 確認用プレビューは `text-wrap: balance` で揃えた。プレイヤー側で字幕を描くなら同じ指定を使う。
+
+### 試せていないこと (関門 1 で行う)
+
+- **Gemini 3.8 Flash TTS / Grok TTS の実音声**
+  - この環境に鍵が無いため、実装は API の仕様どおりに書いたが呼んでいない
+  - 声・字幕ごとの声色の揺れ・読み違い・音声 1 秒あたりのトークン数は未計測
+- **Claude による台本の下書き (`narrate`)**
+  - 同じく鍵が無いため未実行。PoC の 10 本は、執筆エージェントがガイドに従って手で書いた (設計の「エージェントが直接書く」経路)
+  - `--dry-run` でプロンプトが組めることまでは確認済み
+- **Whisper による読み上げ検査** (フェーズ 4)

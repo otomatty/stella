@@ -13,7 +13,7 @@
     "materials": "node scripts/build.mjs",
     "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
-    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts",
+    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts",
     "check:graph": "bun run scripts/check-graph.ts",
     "pdf": "bun run scripts/build-pdf.ts",
     "pdf:sync": "bun run scripts/upload-pdfs.ts",
@@ -24,9 +24,13 @@
     "upload": "bun run scripts/upload-materials.ts",
     "upload:remote": "bun run scripts/upload-materials.ts --remote",
     "upload:thumbnails": "bun run scripts/upload-materials.ts --thumbnails",
-    "upload:thumbnails:remote": "bun run scripts/upload-materials.ts --remote --thumbnails"
+    "upload:thumbnails:remote": "bun run scripts/upload-materials.ts --remote --thumbnails",
+    "narrate": "bun run scripts/narrate.ts",
+    "narration:check": "bun run scripts/check-narration.ts",
+    "video": "bun run scripts/build-video.ts"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/noto-sans-jp": "^5.3.0",
     "@types/hast": "^3.0.5",

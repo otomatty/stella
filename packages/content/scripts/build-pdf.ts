@@ -29,24 +29,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import bash from "highlight.js/lib/languages/bash";
-import javascript from "highlight.js/lib/languages/javascript";
-import json from "highlight.js/lib/languages/json";
-import typescript from "highlight.js/lib/languages/typescript";
 import { chromium } from "playwright";
-import rehypeHighlight from "rehype-highlight";
-import rehypeStringify from "rehype-stringify";
-import remarkGfm from "remark-gfm";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import { unified } from "unified";
-import { visit } from "unist-util-visit";
-import type { Element, Root } from "hast";
 
 import {
   collectPdfTargets,
@@ -57,11 +44,17 @@ import {
 } from "../src/material-pdf.js";
 import { parseQuiz } from "../src/parse-quiz.js";
 import { splitPracticeForPdf } from "../src/practice-pdf.js";
+import {
+  AUTOSCALE_SCRIPT,
+  escapeHtml,
+  fontCss,
+  hljsCss,
+  renderMarkdown,
+  slidesHtml as renderSlidesHtml,
+} from "./lib/slide-html.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const contentRoot = resolve(here, "..");
-const repoRoot = resolve(contentRoot, "..", "..");
-const nodeRequire = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------- 引数
 
@@ -95,121 +88,20 @@ const skipKeyHashes = new Set<string>(
 );
 const keyHash = (key: string): string => createHash("sha256").update(key).digest("hex");
 
-// ---------------------------------------------------------------- markdown → HTML
+// ---------------------------------------------------------------- HTML 組み立て
+//
+// スライドの HTML はアプリの見た目の正本 (slides-skin.css) を読む lib/slide-html.ts が
+// 組む (教材動画と共用)。PDF はそこへ改ページの指定だけを足す。
 
-/** MarkdownSlides と同じ言語サブセット。未登録言語はハイライトなしで素通しになる。 */
-const highlightOptions = {
-  aliases: { typescript: ["ts"], javascript: ["js"], bash: ["sh"] },
-  languages: { typescript, javascript, bash, json },
-};
-
-/** MarkdownSlides と同じ: alt が `w:950` 形式なら装飾扱いで読み上げさせない。 */
-const MARP_SIZE_ALT = /^(?:[wh]:\d+%?\s*)+$/;
-
-function altWidth(alt: string | undefined): number {
-  const m = alt ? /w:(\d+)/.exec(alt) : null;
-  return m ? Number(m[1]) : 950;
-}
-
-/**
- * 画像の src (R2 オブジェクトキー) をローカルファイルの file:// URL に差し替える。
- * slides では pptx / アプリと同じく alt の `w:` を本文倍率連動の幅にする。
- */
-function rehypeLocalImages(options: { assets: Map<string, string>; slideWidths: boolean }) {
-  return (tree: Root) => {
-    visit(tree, "element", (node: Element) => {
-      if (node.tagName !== "img") return;
-      const src = node.properties.src;
-      if (typeof src === "string") {
-        const file = options.assets.get(src);
-        if (file) node.properties.src = pathToFileURL(file).href;
-      }
-      const alt = typeof node.properties.alt === "string" ? node.properties.alt : "";
-      if (MARP_SIZE_ALT.test(alt.trim())) node.properties.alt = "";
-      if (options.slideWidths) {
-        node.properties.style = `width: calc(${altWidth(alt)}px * var(--s))`;
-      }
-    });
-  };
-}
-
-function renderMarkdown(
-  markdown: string,
-  assets: Map<string, string>,
-  slideWidths: boolean,
-): string {
-  return unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRehype)
-    .use(rehypeHighlight, highlightOptions)
-    .use(rehypeLocalImages, { assets, slideWidths })
-    .use(rehypeStringify)
-    .processSync(markdown)
-    .toString();
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-// ---------------------------------------------------------------- CSS (フォント埋め込み)
-
-/** @fontsource の CSS を読み、相対 URL を file:// の絶対 URL に書き換える。 */
-function fontsourceCss(specifier: string): string {
-  const cssPath = nodeRequire.resolve(specifier);
-  const css = readFileSync(cssPath, "utf8");
-  const base = dirname(cssPath);
-  return css.replace(
-    /url\(\.\/(.+?)\)/g,
-    (_, rel: string) => `url(${pathToFileURL(join(base, rel)).href})`,
-  );
-}
-
-const fontCss = [
-  ...[400, 500, 700, 900].map((w) => fontsourceCss(`@fontsource/noto-sans-jp/${w}.css`)),
-  ...[400, 500].map((w) => fontsourceCss(`@fontsource/jetbrains-mono/${w}.css`)),
-].join("\n");
-
-const hljsCss = readFileSync(nodeRequire.resolve("highlight.js/styles/github.css"), "utf8");
-const skinCss = readFileSync(
-  join(repoRoot, "apps", "web", "src", "components", "learner", "slides-skin.css"),
-  "utf8",
-);
 const docCss = readFileSync(join(here, "pdf", "print-doc.css"), "utf8");
 
-// ---------------------------------------------------------------- HTML 組み立て
-
-const CLASS_DIRECTIVE = /<!--\s*_class:\s*(\w+)\s*-->/;
-
-function slidesHtml(target: PdfTarget, assets: Map<string, string>): string {
-  const slides = target.source
-    .split(/\n---\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const sections = slides
-    .map((slide, i) => {
-      const cls = CLASS_DIRECTIVE.exec(slide)?.[1] ?? null;
-      const body = slide.replace(CLASS_DIRECTIVE, "").trimStart();
-      const variant = cls === "lead" ? " is-lead" : cls === "summary" ? " is-summary" : "";
-      return [
-        `<div class="sf-slide${variant}">`,
-        `<div class="sf-header">${escapeHtml(target.courseTitle)}</div>`,
-        `<div class="sf-body">${renderMarkdown(body, assets, true)}</div>`,
-        `<div class="sf-pageno">${i + 1}</div>`,
-        "</div>",
-      ].join("");
-    })
-    .join("\n");
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>
-${fontCss}
-${hljsCss}
-${skinCss}
-@page { size: 1280px 720px; margin: 0; }
+const SLIDES_PRINT_CSS = `@page { size: 1280px 720px; margin: 0; }
 html, body { margin: 0; padding: 0; }
 .sf-slide { break-after: page; }
-.sf-slide:last-child { break-after: auto; }
-</style></head><body>${sections}</body></html>`;
+.sf-slide:last-child { break-after: auto; }`;
+
+function slidesHtml(target: PdfTarget, assets: Map<string, string>): string {
+  return renderSlidesHtml(target.source, target.courseTitle, assets, SLIDES_PRINT_CSS);
 }
 
 function docHtml(target: PdfTarget, assets: Map<string, string>, parts: string[]): string {
@@ -232,28 +124,6 @@ ${body}
 }
 
 // ---------------------------------------------------------------- 生成
-
-/** MarkdownSlides の本文倍率調整と同じロジックをページ内で実行する。 */
-const AUTOSCALE_SCRIPT = `
-(() => {
-  const BODY_AVAIL_H = 615;
-  const SCALE_MAX = 1.45;
-  const SCALE_MIN = 0.8;
-  for (const el of document.querySelectorAll(".sf-slide:not(.is-lead) .sf-body")) {
-    const overflows = () =>
-      el.scrollHeight > BODY_AVAIL_H ||
-      Array.from(el.querySelectorAll("pre, pre code")).some(
-        (node) => node.scrollWidth > node.clientWidth,
-      );
-    let scale = SCALE_MAX;
-    el.style.setProperty("--s", String(scale));
-    while (scale > SCALE_MIN && overflows()) {
-      scale = Math.round((scale - 0.05) * 100) / 100;
-      el.style.setProperty("--s", String(scale));
-    }
-  }
-})();
-`;
 
 interface ManifestEntry {
   tenantId: string;
