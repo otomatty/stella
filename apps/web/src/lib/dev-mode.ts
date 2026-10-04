@@ -14,7 +14,11 @@
 
 import { readStellaStorage } from "./brand-storage";
 
-export const DEV_MODE_HEADER = "X-Stella-Dev-Mode";
+/**
+ * 移行中は旧名のまま送る。新しい名前を足すと、API を戻した瞬間に
+ * そのヘッダが許可リストに無く、ブラウザが全呼び出しを落とす。
+ */
+export const DEV_MODE_HEADER = "X-Falcon-Dev-Mode";
 
 export const DEV_MODE_STORAGE_KEY = "stella_dev_mode_v1";
 

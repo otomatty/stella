@@ -20,8 +20,8 @@ describe("開発者モードの保存値", () => {
     expect(parseDevModeStored("true")).toBe(true);
   });
 
-  it("API へ付けるヘッダは 0/1 で、名前は X-Stella-Dev-Mode", () => {
-    expect(DEV_MODE_HEADER).toBe("X-Stella-Dev-Mode");
+  it("API へ付けるヘッダは 0/1 で、移行中の名前は X-Falcon-Dev-Mode", () => {
+    expect(DEV_MODE_HEADER).toBe("X-Falcon-Dev-Mode");
     expect(devModeHeaderValue(true)).toBe("1");
     expect(devModeHeaderValue(false)).toBe("0");
   });

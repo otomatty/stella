@@ -5,6 +5,7 @@ import {
   assignmentIdFromExercisePath,
   exerciseRoot,
   exerciseRootForPath,
+  preferredExercisePath,
   legacyExerciseRoot,
   filesToWrite,
 } from "@stella/shared/vscode/exercise-paths";
@@ -106,9 +107,11 @@ function activeExercisePath(assignmentId: string): string | undefined {
   const editorPath = vscode.window.activeTextEditor?.document.uri.fsPath;
   if (editorPath && assignmentIdFromExercisePath(editorPath, home) === assignmentId)
     return editorPath;
-  return vscode.workspace.workspaceFolders?.find(
-    (folder) => assignmentIdFromExercisePath(folder.uri.fsPath, home) === assignmentId,
-  )?.uri.fsPath;
+  return preferredExercisePath(
+    home,
+    assignmentId,
+    (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
+  );
 }
 
 async function writeStarterFiles(assignment: Assignment, overwrite: boolean): Promise<vscode.Uri> {

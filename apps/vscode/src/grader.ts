@@ -1,6 +1,7 @@
 import {
   assignmentIdFromExercisePath,
   exerciseRootForPath,
+  preferredExercisePath,
   isPathInsideDir,
 } from "@stella/shared/vscode/exercise-paths";
 import type { Assignment } from "@stella/shared/types";
@@ -84,9 +85,11 @@ export async function gradeActiveExercise(): Promise<GradeRun> {
   const activePath =
     editorPath && assignmentIdFromExercisePath(editorPath, home) === assignmentId
       ? editorPath
-      : vscode.workspace.workspaceFolders?.find(
-          (folder) => assignmentIdFromExercisePath(folder.uri.fsPath, home) === assignmentId,
-        )?.uri.fsPath;
+      : preferredExercisePath(
+          home,
+          assignmentId,
+          (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
+        );
   const rootUri = vscode.Uri.file(exerciseRootForPath(home, assignment.id, activePath));
   await saveDirtyExerciseFiles(rootUri);
   const files = await readExerciseFiles(rootUri);

@@ -4,6 +4,7 @@ import {
   assignmentIdFromExercisePath,
   exerciseRoot,
   exerciseRootForPath,
+  preferredExercisePath,
   filesToWrite,
   isPathInsideDir,
 } from "./exercise-paths.js";
@@ -32,6 +33,15 @@ describe("legacy exercise paths", () => {
     );
     expect(
       exerciseRootForPath("/home/u", "asg-1", "/home/u/.falcon-informal/exercises/asg-10/main.js"),
+    ).toBe("/home/u/.stella/exercises/asg-1");
+  });
+
+  it("prefers the new folder when both copies are open", () => {
+    expect(
+      preferredExercisePath("/home/u", "asg-1", [
+        "/home/u/.falcon-informal/exercises/asg-1",
+        "/home/u/.stella/exercises/asg-1",
+      ]),
     ).toBe("/home/u/.stella/exercises/asg-1");
   });
 });

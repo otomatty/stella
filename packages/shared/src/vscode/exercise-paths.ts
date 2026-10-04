@@ -11,6 +11,19 @@ export function legacyExerciseRoot(homeDir: string, assignmentId: string): strin
   return `${homeDir.replace(/[/\\]+$/, "")}/.falcon-informal/exercises/${assignmentId}`;
 }
 
+/** 同じ課題のフォルダーが新旧とも開いているときは、新しい方を採点する。 */
+export function preferredExercisePath(
+  homeDir: string,
+  assignmentId: string,
+  candidates: readonly string[],
+): string | undefined {
+  const matches = candidates.filter(
+    (path) => assignmentIdFromExercisePath(path, homeDir) === assignmentId,
+  );
+  const canonical = exerciseRoot(homeDir, assignmentId);
+  return matches.find((path) => isPathInsideDir(path, canonical)) ?? matches[0];
+}
+
 export function exerciseRootForPath(
   homeDir: string,
   assignmentId: string,
