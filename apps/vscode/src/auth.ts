@@ -15,8 +15,12 @@ export class AuthStore {
     // 同じ拡張スコープに残った旧キーだけ移せる。拡張 ID の変更時は再接続が必要。
     const legacy = await this.secrets.get(LEGACY_ACCESS_TOKEN_KEY);
     if (legacy === undefined) return null;
-    await this.secrets.store(ACCESS_TOKEN_KEY, legacy);
-    await this.secrets.delete(LEGACY_ACCESS_TOKEN_KEY);
+    try {
+      await this.secrets.store(ACCESS_TOKEN_KEY, legacy);
+      await this.secrets.delete(LEGACY_ACCESS_TOKEN_KEY);
+    } catch {
+      // 保存に失敗しても、読めた旧トークンでこの接続は続ける。
+    }
     return legacy;
   }
 

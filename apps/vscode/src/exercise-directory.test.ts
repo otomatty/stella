@@ -5,6 +5,8 @@ const state = vi.hoisted(() => ({
   existing: new Set<string>(),
   stat: vi.fn(),
   copy: vi.fn(),
+  rename: vi.fn(),
+  delete: vi.fn(),
   createDirectory: vi.fn(),
   documents: [] as { uri: { fsPath: string }; isDirty: boolean; save: () => Promise<boolean> }[],
 }));
@@ -24,7 +26,13 @@ vi.mock("vscode", () => ({
     }),
   },
   workspace: {
-    fs: { stat: state.stat, copy: state.copy, createDirectory: state.createDirectory },
+    fs: {
+      stat: state.stat,
+      copy: state.copy,
+      rename: state.rename,
+      delete: state.delete,
+      createDirectory: state.createDirectory,
+    },
     get textDocuments() {
       return state.documents;
     },
@@ -61,7 +69,21 @@ describe("existing exercise migration", () => {
     });
     await migrateExerciseDirectory(root, legacy);
     expect(events).toEqual(["save", "copy"]);
-    expect(state.copy).toHaveBeenCalledWith(legacy, root, { overwrite: false });
+    const staging = state.copy.mock.calls[0]?.[1] as Uri;
+    expect(staging.fsPath).not.toBe(root.fsPath);
+    expect(state.rename).toHaveBeenCalledWith(staging, root, { overwrite: false });
+  });
+
+  it("removes a partial copy when the move into place fails", async () => {
+    state.existing.add(legacy.fsPath);
+    state.copy.mockImplementation(async (_from: Uri, staging: Uri) => {
+      state.existing.add(staging.fsPath);
+    });
+    state.rename.mockRejectedValue(new Error("exists"));
+    await expect(migrateExerciseDirectory(root, legacy)).rejects.toThrow("exists");
+    const staging = state.copy.mock.calls[0]?.[1] as Uri;
+    expect(state.delete).toHaveBeenCalledWith(staging, { recursive: true });
+    expect(state.existing.has(root.fsPath)).toBe(false);
   });
 
   it("leaves a previously migrated exercise untouched", async () => {

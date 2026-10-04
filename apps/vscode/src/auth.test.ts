@@ -39,6 +39,15 @@ describe("STELLA secret keys", () => {
     expect(await auth.getToken()).toBeNull();
   });
 
+  it("returns the legacy token when the new key cannot be stored", async () => {
+    const secrets = secretsWith({ "falcon.accessToken": "saved" });
+    secrets.store = async () => {
+      throw new Error("busy");
+    };
+    expect(await new AuthStore(secrets).getToken()).toBe("saved");
+    expect(await secrets.get("falcon.accessToken")).toBe("saved");
+  });
+
   it("stores reconnect tokens under the new name only", async () => {
     const secrets = secretsWith({ "falcon.accessToken": "old" });
     await new AuthStore(secrets).setToken("reconnected");

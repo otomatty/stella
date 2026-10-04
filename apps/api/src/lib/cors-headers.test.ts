@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import worker from "../index.js";
 import type { Env } from "../env.js";
-import { DEV_MODE_HEADER } from "./skill-map-data.js";
+import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./skill-map-data.js";
 
 const ORIGIN = "http://localhost:5173";
 const env = { ALLOWED_ORIGINS: ORIGIN } as Env;
@@ -43,9 +43,13 @@ async function preflight(header: string): Promise<Set<string>> {
 
 describe("CORS の許可ヘッダ", () => {
   it("画面が全リクエストに付けるヘッダを許可する", async () => {
-    const allowed = await preflight([DEV_MODE_HEADER, "Authorization", "Content-Type"].join(", "));
+    const allowed = await preflight(
+      [DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER, "Authorization", "Content-Type"].join(", "),
+    );
     // `api-client.ts` が全リクエストに付けるもの。1 つでも落ちると全 API が CORS で失敗する。
+    // 旧タブはデプロイ後もしばらく旧名を送る。
     expect(allowed).toContain(DEV_MODE_HEADER.toLowerCase());
+    expect(allowed).toContain(LEGACY_DEV_MODE_HEADER.toLowerCase());
     expect(allowed).toContain("authorization");
     expect(allowed).toContain("content-type");
   });

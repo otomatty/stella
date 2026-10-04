@@ -57,7 +57,7 @@
 <p>M01は、VS Codeを初めて使う人が、学習用のフォルダーを開き、HTMLを保存・表示・変更し、次の教材を始められる環境を準備する教材にする。ソフトウェアを入れる手順と、日々使う操作を覚える演習を分ける。手順を見ながら導入できたことと、後日も自分で操作できることを別に記録する。</p>
 <p>既存のM01の35時間を細分化する提案であり、18教材パック・36週間・1,260時間の計画は維持する。本書は教材制作とLXP実装のための設計である。配布するインストーラーの版、LXP拡張の配布方法、スクリーンショット、スターターと診断機能は、実装・確認してから教材を公開する。</p>
 <h2 id="section-2">1 M01の到達目標</h2><p>学習者が、次の行動を資料を参照しながら自分で行えることを目標にする。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>行動</th>
@@ -122,7 +122,7 @@
 <p>ブラウザ版とWebView版は、共通の教材ID、単元ID、教材版、ステップIDを使う。ログイン前の進捗は、開始時に手動でステップを選び直せるようにする。ログイン後は保存した位置を共有する。ブラウザとVS Code拡張の接続方式は、実際のLXPの認証・配布方式を確認して決める。</p>
 <p>ブラウザだけでは、ローカルのソフトウェアやファイルの状態を十分に確認できない。導入前は学習者の確認と講師の支援を使い、拡張が起動した後に、許可された作業領域と決めた確認コマンドで診断する。</p>
 <h2 id="section-4">3 標準環境と導入の順序</h2><p>Windowsを主教材の初期案とし、macOSは独立した操作手順で用意する。受講者のOSを確定してから、対象OS・CPU・インストール方法と確認画面を制作する。WindowsとmacOSのコマンドや画面を一つの手順へ混在させない。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>準備するもの</th>
@@ -171,7 +171,7 @@
 <p>学習フォルダーは、学習者が書き込める自分のユーザーフォルダーにweb-trainingを作る初期案とする。講師は実際の端末で場所を確認する。教材に出す絶対パスのユーザー名は例であることを明示し、その文字列をそのまま作らせない。</p>
 <p>Windowsの主教材はPowerShell、macOSは研修で検証したシェルを使う。ターミナルの種類は画面上に表示する。Windowsでnpm.ps1の実行制限が起きる場合に備え、PowerShell向け手順ではnpm.cmdを使う方法を用意する。組織の設定や実行ポリシーを一律に変更させる手順にはしない。</p>
 <h2 id="section-5">4 35時間の単元構成</h2><p>時間には説明、操作、反復、関連知識、支援、確認を含む。未経験者の試行で調整し、インストールの待ち時間やネットワーク障害を学習者の能力の評価へ入れない。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>単元</th>
@@ -245,7 +245,7 @@
 <p>初日は、環境が正常なら、最初の3〜4時間を目安に「保存したHTMLの文字を変え、ブラウザで確認する」体験へ到達する構成を試す。U02・U03の残りの反復は後日に回せる。最初の一日がソフトウェアの導入だけで終わることを避け、環境に問題がある学習者には講師が導入支援を行う。</p>
 <p>確認BはM02開始後、おおむね一週間を空けて実施する。再インストールはさせず、閉じた状態から作業を再開し、別の短い仕様を実行できるかを確認する。M02の評価・復習時間へ計上する。</p>
 <h2 id="section-6">5 一つの操作を説明する形式</h2><p>一つのステップは通常5〜10分の小さな操作にする。インストールのダウンロードや待機は別に扱う。クリックごとに大量の試験を置かず、作業フォルダーを開く、保存する、表示する等の意味のある節目で確認する。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>画面に載せる項目</th>
@@ -287,7 +287,7 @@
 </tbody></table>
 </div><p>画像の中だけに操作内容を書かず、本文にもメニュー名と入力内容を記載する。小さい画面では画像を拡大できるようにする。動画を付ける場合も、静止画と短い手順で同じ操作をたどれるようにする。</p>
 <p>コードやコマンドにはコピー用のボタンを付ける。コピーする範囲へプロンプト記号や実行結果を混ぜない。実行結果は別の枠へ置き、版やパスが学習者によって違う箇所を説明する。最初は一つのコマンドを実行し、結果を読んでから次へ進む。</p>
-<h3 id="section-7">保存と更新のステップ例</h3><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h3 id="section-7">保存と更新のステップ例</h3><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>項目</th>
@@ -351,7 +351,7 @@
 <pre><code class="language-powershell">node --version</code></pre><pre><code class="language-powershell">npm.cmd --version</code></pre><pre><code class="language-powershell">git --version</code></pre><p>「何か数字が出たら合格」とはせず、コース環境に登録した対象版と照合する。ソフトウェアの導入後に認識されない場合は、保存してVS Codeとターミナルを再起動し、再確認する。</p>
 <p>ターミナル操作は<a href="https://code.visualstudio.com/docs/terminal/basics">VS CodeのTerminal Basics</a>、名前が同じコマンドと拡張子の扱いは<a href="https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence">PowerShellのCommand Precedence</a>を参照する。採用するシェルの版で手順を再現確認してから公開する。</p>
 <h2 id="section-10">6 基礎操作を繰り返す課題</h2><p>M01にも、基礎課題、接続練習、自力演習、修正演習を用意する。OS上の削除や移動の演習は、作り直せる練習ファイルに限定する。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>種類</th>
@@ -433,7 +433,7 @@
 </div><p>ファイル名や文章を変える小さな反復から始める。反復で扱った操作を、別題材の自力演習と後日の確認へつなぐ。すべてのインストールを繰り返すことは求めない。</p>
 <p>U05では、学習リポジトリ内にコミットの名前・メールを設定する手順を用意する。研修の識別ルールを使い、個人の既存Git設定を一括で上書きしない。設定の範囲は<a href="https://git-scm.com/docs/git-config">Git config</a>、リポジトリ作成は<a href="https://git-scm.com/docs/git-init">Git init</a>を参照する。GitHubアカウント作成、push、PRは後続の共同作業・提出教材で追加する。</p>
 <h2 id="section-11">7 LXPの画面と記録</h2><p>LXPでは「読む」「操作する」「確認する」を一つのステップとして表示する。画面上には現在のOS、ステップ、今回の完了条件を示し、長い環境構築手順を一ページにまとめない。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>LXPで用意する項目</th>
@@ -480,7 +480,7 @@
 </div><p>環境診断は、既存のLXP拡張が提供できる範囲を調べてから実装する。ブラウザ内で動くLXPの状態だけを見て、Node.jsやGitがローカルで使えると判断しない。WebViewへ任意のコマンド入力欄を設けず、runnerIdで登録した確認・実行を拡張へ依頼する。</p>
 <p>スターターは、学習者が作ったファイルを暗黙に上書きしない。練習ごとに別の作業フォルダーを使い、準備先と衝突を表示する。環境が壊れても、教材の表示と講師へ現象を伝える機能を使えるようにする。</p>
 <p>状態は少なくとも「未開始」「進行中」「環境の問題で保留」「環境準備完了」「確認A合格」「確認B合格」を分ける。実装上は環境状態と習得状態を別の記録にする。クリックで完了を押しただけでは、操作スキルの合格へ変換しない。</p>
-<h2 id="section-12">8 よくあるつまずきと支援</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-12">8 よくあるつまずきと支援</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>現象</th>
@@ -543,7 +543,7 @@
 <p>相談欄は「何をしようとしたか」「どこまで成功したか」「実行した操作またはコマンド」「表示されたメッセージ」を記入する形式にする。添付する画面やログの範囲を指定し、不要なユーザー名・認証情報等は含めない。相談できることもM01の到達目標として扱う。</p>
 <h2 id="section-13">9 完了条件と進級</h2><p>環境の準備は、VS Code、LXP、作業場所、Node.js・npm・Git、提供スターターの起動を確認して完了にする。手動確認と自動診断は記録上で区別する。</p>
 <p>操作の確認Aは、導入済みの環境で、初めて見る短いページ仕様を渡して行う。メニュー、公式資料、操作早見表の参照は許可する。講師が代わりに操作した場合は、環境を整えたことと学習者の自力確認を区別する。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>確認項目</th>
@@ -578,7 +578,7 @@
 </div><p>確認Bは、VS Codeを閉じた状態から再開する別題材の短い課題にする。確認Aの手順を記憶しただけでは完了できないように、フォルダー名と変更内容を変える。参照や支援の扱いは<a href="03-repeated-practice-and-assessment.html">反復演習と評価</a>を引き継ぐ。</p>
 <p>環境に問題がある場合は環境支援へ回し、可能なブラウザ上の用語・歴史の学習を進める。自力操作の不足は、その操作を使う短い問題を追加し、別の仕様で再確認する。M02は環境準備と確認Aを満たして開始し、遅延確認Bの結果は後続の自力・統合課題の進行へ反映する。</p>
 <h2 id="section-14">10 参照元と公開前の制作確認</h2><p>参照先は2026年10月4日に確認した。これは入口の選定であり、採用端末で手順を再現した記録とは分ける。実教材には該当する節・対象版・利用目的を追加し、<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>の条件で公開する。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>資料</th>
@@ -643,7 +643,7 @@
 <p>公式資料のURLや転送先は更新される。基本操作の参照先にはEditor tutorialの現行URLを採用し、資料名、該当する節、ページの内容が教材の目的と一致することを公開前に確認する。</p>
 <h2 id="section-15">11 VS Code拡張の選定と段階的な導入</h2><p>初日の標準構成は日本語表示とLXP拡張にする。M02でPrettier、M03でESLintを追加し、通信・テスト等の拡張はその操作を学ぶ単元で導入する。拡張の導入と使い方は、必要となる教材の時間へ含め、M01の35時間にすべてを詰め込まない。</p>
 <p>以下は2026年10月4日に公式資料・各拡張の配布元を確認した選定案である。拡張のIDは似た名称の拡張を区別するために記載する。実際の採用版と教材環境との互換性は、研修側の端末で確認してから確定する。</p>
-<h3 id="section-16">標準として採用する候補</h3><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h3 id="section-16">標準として採用する候補</h3><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>拡張と参照元</th>
@@ -680,7 +680,7 @@
 </div><p>Prettierは記述形式を整える道具、ESLintは設定した規則でコードを検査する道具として区別する。どちらも、仕様どおりに動くことを保証するテストとは別に扱う。導入するだけで規則や対象コードが整うとは説明しない。</p>
 <p>PrettierとESLintの実行用パッケージ・設定・lockfileは、教材のスターターに用意する。VS Code拡張の版と、プロジェクト内のPrettier・ESLintの版を別々に記録する。ローカルの実行パッケージと設定で、エディタ、LXPの確認、CIのチェックを対応付ける。参照元は<a href="https://prettier.io/docs/install">Prettierの導入</a>と<a href="https://eslint.org/docs/latest/use/getting-started">ESLintの導入</a>とする。</p>
 <p>最初は手動整形を練習し、保存と整形の役割を確認してから保存時の整形へ進む。ESLintもメッセージの理由を読むところから始め、自動修正を扱う際は差分を確認する。Reactのアクセシビリティでは、必要な段階で<a href="https://github.com/jsx-eslint/eslint-plugin-jsx-a11y">eslint-plugin-jsx-a11y</a>等のプロジェクト側の規則を追加できる。これは追加のVS Code拡張とは区別する。</p>
-<h3 id="section-17">学習段階で追加する候補</h3><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h3 id="section-17">学習段階で追加する候補</h3><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>拡張と参照元</th>

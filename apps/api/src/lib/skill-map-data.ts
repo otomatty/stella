@@ -100,6 +100,8 @@ export function isDevMode(env: { DEV_MODE?: string }): boolean {
  * 本番では `isDevMode` が偽なので、ヘッダを付けても無視する。
  */
 export const DEV_MODE_HEADER = "X-Stella-Dev-Mode";
+/** 開いたままの旧 Web タブが付ける名前。新ヘッダがあるときはそちらを優先する。 */
+export const LEGACY_DEV_MODE_HEADER = "X-Falcon-Dev-Mode";
 
 /**
  * このリクエストで島を全配信し、霧の星も名前を明かしていいか。
@@ -159,7 +161,10 @@ export function wantsDevReveal(c: {
   env: { DEV_MODE?: string };
   req: { header: (name: string) => string | undefined };
 }): boolean {
-  return shouldRevealDevMap(c.env, c.req.header(DEV_MODE_HEADER));
+  return shouldRevealDevMap(
+    c.env,
+    c.req.header(DEV_MODE_HEADER) ?? c.req.header(LEGACY_DEV_MODE_HEADER),
+  );
 }
 
 /** `loadSkillMapSource` の読み方の調整。 */

@@ -30,12 +30,48 @@ describe("auth across the STELLA rename", () => {
     expect(values.has("falcon_auth_token_v1")).toBe(false);
   });
 
+  it("keeps the session when logout cannot delete the token", async () => {
+    values.set("stella_auth_token_v1", tokenFor("learner"));
+    const storage = window.localStorage as { removeItem: (key: string) => void };
+    storage.removeItem = () => {
+      throw new Error("busy");
+    };
+    await expect(signOut()).rejects.toThrow("busy");
+    expect(getSession()?.user.id).toBe("learner");
+  });
+
   it("clears both keys on logout so an old session cannot return", async () => {
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
     values.set("stella_auth_token_v1", tokenFor("learner"));
     await signOut();
     expect(getAccessToken()).toBeNull();
     expect(values.size).toBe(0);
+  });
+
+  it("keeps the new session when the old key cannot be deleted", () => {
+    const token = tokenFor("new-learner");
+    values.set("falcon_auth_token_v1", tokenFor("old-learner"));
+    const storage = window.localStorage as { removeItem: (key: string) => void };
+    storage.removeItem = (key: string) => {
+      if (key === "falcon_auth_token_v1") throw new Error("busy");
+      values.delete(key);
+    };
+    expect(completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(token)}`)).toEqual({
+      ok: true,
+    });
+    expect(values.get("stella_auth_token_v1")).toBe(token);
+    expect(getSession()?.user.id).toBe("new-learner");
+  });
+
+  it("reports a failed login when the new key cannot be saved", () => {
+    const storage = window.localStorage as { setItem: (key: string, value: string) => void };
+    storage.setItem = () => {
+      throw new Error("quota");
+    };
+    expect(
+      completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(tokenFor("new-learner"))}`),
+    ).toEqual({ ok: false, error: "トークンを保存できませんでした" });
+    expect(getAccessToken()).toBeNull();
   });
 
   it("stores callback tokens under the new key and discards an old session", () => {

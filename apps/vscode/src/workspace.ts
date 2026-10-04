@@ -2,7 +2,9 @@ import { getEntryFile } from "@stella/shared/assignment-helpers";
 import { mapAssignmentRowToAssignment, type AssignmentRow } from "@stella/shared/cms/types";
 import type { Assignment } from "@stella/shared/types";
 import {
+  assignmentIdFromExercisePath,
   exerciseRoot,
+  exerciseRootForPath,
   legacyExerciseRoot,
   filesToWrite,
 } from "@stella/shared/vscode/exercise-paths";
@@ -99,11 +101,30 @@ export async function getAssignmentForGrading(assignmentId: string): Promise<Ass
   return fetchAssignment(assignmentId);
 }
 
+function activeExercisePath(assignmentId: string): string | undefined {
+  const home = resolveHomeDir();
+  const editorPath = vscode.window.activeTextEditor?.document.uri.fsPath;
+  if (editorPath && assignmentIdFromExercisePath(editorPath, home) === assignmentId)
+    return editorPath;
+  return vscode.workspace.workspaceFolders?.find(
+    (folder) => assignmentIdFromExercisePath(folder.uri.fsPath, home) === assignmentId,
+  )?.uri.fsPath;
+}
+
 async function writeStarterFiles(assignment: Assignment, overwrite: boolean): Promise<vscode.Uri> {
   rememberAssignment(assignment);
   const home = resolveHomeDir();
-  const rootUri = vscode.Uri.file(exerciseRoot(home, assignment.id));
-  await migrateExerciseDirectory(rootUri, vscode.Uri.file(legacyExerciseRoot(home, assignment.id)));
+  const canonical = exerciseRoot(home, assignment.id);
+  const rootPath = overwrite
+    ? exerciseRootForPath(home, assignment.id, activeExercisePath(assignment.id))
+    : canonical;
+  const rootUri = vscode.Uri.file(rootPath);
+  if (rootPath === canonical) {
+    await migrateExerciseDirectory(
+      rootUri,
+      vscode.Uri.file(legacyExerciseRoot(home, assignment.id)),
+    );
+  }
   await vscode.workspace.fs.createDirectory(rootUri);
 
   for (const file of filesToWrite(assignment)) {

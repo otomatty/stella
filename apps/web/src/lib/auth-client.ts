@@ -65,13 +65,22 @@ function readToken(): string | null {
   return readStellaStorage(window.localStorage, TOKEN_KEY);
 }
 
-function storeToken(token: string | null): void {
-  if (typeof window === "undefined") return;
+function storeToken(token: string | null): boolean {
+  if (typeof window === "undefined") return true;
   if (token) {
-    window.localStorage.setItem(TOKEN_KEY, token);
-    window.localStorage.removeItem("falcon_auth_token_v1");
+    try {
+      window.localStorage.setItem(TOKEN_KEY, token);
+    } catch {
+      return false;
+    }
+    try {
+      window.localStorage.removeItem("falcon_auth_token_v1");
+    } catch {
+      // 新キーは保存済み。旧キーが残っても次の読み取りは新キーを使う。
+    }
   } else removeStellaStorage(window.localStorage, TOKEN_KEY);
   emit(token ? sessionFromToken(token) : null);
+  return true;
 }
 
 function authCallbackUrl(): string {
@@ -97,7 +106,7 @@ export function completeAuthFromCallbackHash(
   const accessToken = params.get("access_token");
   if (!accessToken) return { ok: false, error: "トークンが返されませんでした" };
 
-  storeToken(accessToken);
+  if (!storeToken(accessToken)) return { ok: false, error: "トークンを保存できませんでした" };
   return { ok: true };
 }
 

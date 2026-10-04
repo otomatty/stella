@@ -76,6 +76,12 @@ describe("assignmentIdFromExercisePath", () => {
     expect(assignmentIdFromExercisePath("/home/u/other/main.js", "/home/u")).toBeUndefined();
   });
 
+  it("finds an assignment when the home path has a trailing slash", () => {
+    expect(
+      assignmentIdFromExercisePath("/home/u/.stella/exercises/asg-1/main.js", "/home/u/"),
+    ).toBe("asg-1");
+  });
+
   it("accepts Windows paths", () => {
     expect(
       assignmentIdFromExercisePath(

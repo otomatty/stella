@@ -42,6 +42,17 @@ describe("STELLA storage migration", () => {
     expect(storage.getItem("falcon_sidebar_open_v1")).toBe("0");
   });
 
+  it("keeps the current token when deleting it fails", () => {
+    const storage = storageWith({ falcon_auth_token_v1: "old", stella_auth_token_v1: "new" });
+    const remove = storage.removeItem;
+    storage.removeItem = (key: string) => {
+      if (key === "stella_auth_token_v1") throw new Error("busy");
+      remove(key);
+    };
+    expect(() => removeStellaStorage(storage, "stella_auth_token_v1")).toThrow("busy");
+    expect(storage.getItem("stella_auth_token_v1")).toBe("new");
+  });
+
   it("does not resurrect an old token after logout", () => {
     const storage = storageWith({ falcon_auth_token_v1: "old", stella_auth_token_v1: "new" });
     removeStellaStorage(storage, "stella_auth_token_v1");

@@ -56,7 +56,7 @@
     <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">LXP教材管理と実装の改訂設計</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
 <p>LXPは18の教材パックを個別に管理し、学習者には現在の単元と問題群を表示する。教材を分けても、前提スキル、確認結果、復習、提出履歴をコース全体で共有する。WebアプリをVS CodeのWebViewに埋め込み、拡張が実プロジェクトの操作と実行を担当する構成を引き継ぐ。</p>
 <p>現在のLXPの実装済み機能とDBは未確認である。以下は既存機能へ対応付ける要求仕様とする。教材本文、全問題、実行用スターター、LXP機能の実装は、この設計案とは別の制作物である。</p>
-<h2 id="section-2">1 分割教材の管理</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-2">1 分割教材の管理</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>管理対象</th>
@@ -172,7 +172,7 @@ instructor-private/
   &quot;knowledgeRefs&quot;: [&quot;UI.accessible-name&quot;, &quot;ENG.component-contract&quot;]
 }</code></pre><p>課題の完全な識別はコース、教材、単元、課題、版を組み合わせる。Q01等の短い番号だけで結果を保存しない。確認AとBは複数の予備仕様を持ち、学習者が見た問題を未見として再割当しない。</p>
 <h2 id="section-5">4 スキルと進級の改訂</h2><p>初回案のスキル群を引き継ぎ、UI部品・デザイン・統合を評価可能な小項目として追加する。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>追加するスキル群</th>
@@ -211,7 +211,7 @@ instructor-private/
 <p>WebViewから受け取った任意の文字列をコマンドとして実行しない。プロジェクトの準備では既存コードを上書きせず、衝突と準備先を示す。学習用のプレビューとLXP自身の画面を区別し、前者のエラーで学習画面を失わないようにする。</p>
 <p>部品プレビューでは通常、無効、エラー、長文等の状態を切り替えられるようにする。実アプリの連携は別の画面で確認する。バックエンドをまだ作らない段階では、固定したデータと疑似応答または提供APIを使う。</p>
 <p>iframeまたは同梱UIによる埋込み、postMessage、メッセージの検証、CSP、停止と再実行、正式評価環境の扱いは初回案を引き継ぐ。実装時には現行LXPの埋込み・認証方式を確認する。</p>
-<h2 id="section-8">7 UI評価の保存</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-8">7 UI評価の保存</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>証拠</th>

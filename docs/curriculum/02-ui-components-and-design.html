@@ -56,7 +56,7 @@
     <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">UIコンポーネントとデザインの教材設計</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
 <p>UIの参照資料はReact公式、HTML・WAIの資料、公開デザインシステムを中心に選ぶ。部品の仕様、操作、デザイン規則に使う資料を、<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>に従って教材へ表示する。</p>
 <p>UIの学習は、HTML・CSSの構造と見た目、JavaScriptの操作、Reactの再利用、画面と業務機能の連携へ進む。部品名を覚えるだけでなく、入力、状態、イベント、表示、操作の仕様を説明して実装できることを到達目標にする。</p>
-<h2 id="section-2">1 デザインで習得すること</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-2">1 デザインで習得すること</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>領域</th>
@@ -117,7 +117,7 @@
 </tbody></table>
 </div><p>M02では紙や簡単なワイヤーフレームから画面を作り、CSSで表現する。M06では操作と失敗を含む状態を設計し、M09では複数の部品に同じ規則を適用する。M10以降では実際のデータ量や通信結果で規則が保たれるかを確かめる。</p>
 <p>デザインツールの習得は補助に置く。画面の目的、配置、状態を説明できることを先に確認し、ツールの操作だけで合格にしない。</p>
-<h2 id="section-3">2 デザインの反復演習</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-3">2 デザインの反復演習</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>演習群</th>
@@ -153,7 +153,7 @@
 </tbody></table>
 </div><p>初期の演習では、文字サイズ、余白、色、画面幅の規則を配布する。例として余白を4、8、12、16、24、32pxの段階で定め、CSS変数にする。この値は教材用の提案であり、すべてのアプリに適用する標準ではない。後半では学習者が規則を選び、理由と変更の影響を説明する。</p>
 <p>デザイントークンは、色、余白、文字、角丸などの共通値に名前を付けたものとして導入する。M09では複数のButtonやTextFieldに規則を適用し、一つの値の変更でどの部品が変わるかを観察する。</p>
-<h2 id="section-4">3 UIコンポーネントの学習範囲</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-4">3 UIコンポーネントの学習範囲</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>部品</th>
@@ -238,7 +238,7 @@
 </div><p>Buttonや入力は標準HTML要素を土台にする。ボタンのtypeと操作、ダイアログの表示等は<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button">MDNのbutton</a>と<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog">dialog</a>を参照する。</p>
 <p>Comboboxや高度なDatePickerをゼロから作ることは必須にしない。複雑な部品には既存実装を使い、選択値、イベント、見た目、キーボード操作、アクセシビリティを確かめる。どこを自分で実装し、どこを標準要素やライブラリに任せるかも設計判断として学ぶ。</p>
 <h2 id="section-5">4 部品の仕様書</h2><p>各部品に一枚の短い仕様書を用意する。見た目だけでなく、他のコードがどのように使えるかを定める。</p>
-<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>項目</th>
@@ -293,7 +293,7 @@
 <h3 id="section-8">編集と削除確認の例</h3><p>編集では対象ID、元のデータ、編集用の値、送信状態を分ける。対象を切り替えたとき、前の対象のデータや遅れて届いた応答が混ざらないことを確かめる。</p>
 <p>削除確認では、対象の名前を示し、取消ならデータを変更しない。成功した場合だけ一覧を更新し、失敗した場合は再試行できる状態を保つ。閉じた後のフォーカスは起点へ戻す。削除によって起点が消えた場合は、残る項目や一覧内の適切な操作へ移す仕様を定める。</p>
 <p>部品間の状態共有には<a href="https://react.dev/learn/sharing-state-between-components">React公式の説明</a>を参照する。検索結果や件数のように既存の値から計算できるものは、不要なstateやEffectを増やさずに導出する。<a href="https://react.dev/learn/you-might-not-need-an-effect">React公式のEffectに関する説明</a>も教材に対応付ける。</p>
-<h2 id="section-9">6 連携課題で確認する失敗と境界</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<h2 id="section-9">6 連携課題で確認する失敗と境界</h2><div class="table-scroll"><table>
 <thead>
 <tr>
 <th>条件</th>

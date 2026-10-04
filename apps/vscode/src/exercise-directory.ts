@@ -24,6 +24,18 @@ export async function migrateExerciseDirectory(
       if (!(await document.save())) throw new Error("旧演習ファイルを保存できませんでした");
     }
   }
-  await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(root, ".."));
-  await vscode.workspace.fs.copy(legacy, root, { overwrite: false });
+  const parent = vscode.Uri.joinPath(root, "..");
+  const staging = vscode.Uri.joinPath(parent, `.migrate-${Date.now()}`);
+  await vscode.workspace.fs.createDirectory(parent);
+  try {
+    await vscode.workspace.fs.copy(legacy, staging, { overwrite: false });
+    await vscode.workspace.fs.rename(staging, root, { overwrite: false });
+  } catch (error) {
+    try {
+      if (await exists(staging)) await vscode.workspace.fs.delete(staging, { recursive: true });
+    } catch {
+      // コピー失敗を返す。一時フォルダーが残っても、新しい演習フォルダーは作らない。
+    }
+    throw error;
+  }
 }

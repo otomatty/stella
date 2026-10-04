@@ -15,6 +15,7 @@ import {
   pickActiveStageId,
   selectableActiveStages,
   shouldRevealDevMap,
+  wantsDevReveal,
 } from "./skill-map-data.js";
 
 const id_ = (slug: string) => `id-${slug}`;
@@ -95,6 +96,17 @@ describe("開発者表示を出すか (shouldRevealDevMap)", () => {
   it("env オンでもヘッダ 0/false なら出さない (FAB オフ)", () => {
     expect(shouldRevealDevMap(on, "0")).toBe(false);
     expect(shouldRevealDevMap(on, "false")).toBe(false);
+  });
+
+  it("旧ヘッダは新ヘッダが無いときだけ読む", () => {
+    const request = (headers: Record<string, string>) => ({
+      env: on,
+      req: { header: (name: string) => headers[name] },
+    });
+    expect(wantsDevReveal(request({ "X-Falcon-Dev-Mode": "1" }))).toBe(true);
+    expect(wantsDevReveal(request({ "X-Stella-Dev-Mode": "0", "X-Falcon-Dev-Mode": "1" }))).toBe(
+      false,
+    );
   });
 });
 
