@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { completeAuthFromCallbackHash, getAccessToken, getSession, signOut } from "./auth-client";
+import {
+  completeAuthFromCallbackHash,
+  getAccessToken,
+  getSession,
+  signOut,
+  subscribeToAuth,
+} from "./auth-client";
+
+const storageHandlers: Array<(event: StorageEvent) => void> = [];
 
 const values = new Map<string, string>();
 const tokenFor = (id: string, exp = Math.floor(Date.now() / 1000) + 3600): string =>
@@ -7,7 +15,12 @@ const tokenFor = (id: string, exp = Math.floor(Date.now() / 1000) + 3600): strin
 
 beforeEach(() => {
   values.clear();
+  storageHandlers.length = 0;
   vi.stubGlobal("window", {
+    addEventListener: (_type: string, handler: (event: StorageEvent) => void) => {
+      storageHandlers.push(handler);
+    },
+    removeEventListener: () => undefined,
     localStorage: {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => {
@@ -38,6 +51,49 @@ describe("auth across the STELLA rename", () => {
     };
     await expect(signOut()).rejects.toThrow("busy");
     expect(getSession()?.user.id).toBe("learner");
+  });
+
+  it("logs out when an old tab removes the same legacy token", () => {
+    const token = tokenFor("learner");
+    values.set("stella_auth_token_v1", token);
+    values.set("falcon_auth_token_v1", token);
+    const stop = subscribeToAuth(() => undefined);
+    values.delete("falcon_auth_token_v1");
+    storageHandlers[0]?.({
+      key: "falcon_auth_token_v1",
+      oldValue: token,
+      newValue: null,
+    } as StorageEvent);
+    expect(getAccessToken()).toBeNull();
+    stop();
+  });
+
+  it("keeps a newer login when a different legacy token is removed", () => {
+    const current = tokenFor("learner");
+    values.set("stella_auth_token_v1", current);
+    const stop = subscribeToAuth(() => undefined);
+    storageHandlers[0]?.({
+      key: "falcon_auth_token_v1",
+      oldValue: tokenFor("old-learner"),
+      newValue: null,
+    } as StorageEvent);
+    expect(getAccessToken()).toBe(current);
+    stop();
+  });
+
+  it("follows a legacy token change for the same session", () => {
+    const current = tokenFor("learner");
+    const next = tokenFor("next-learner");
+    values.set("stella_auth_token_v1", current);
+    const stop = subscribeToAuth(() => undefined);
+    storageHandlers[0]?.({
+      key: "falcon_auth_token_v1",
+      oldValue: current,
+      newValue: next,
+    } as StorageEvent);
+    expect(getAccessToken()).toBe(next);
+    expect(values.get("falcon_auth_token_v1")).toBeUndefined();
+    stop();
   });
 
   it("clears both keys on logout so an old session cannot return", async () => {

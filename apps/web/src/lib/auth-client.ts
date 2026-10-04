@@ -8,6 +8,7 @@
 import { readStellaStorage, removeStellaStorage } from "./brand-storage";
 
 const TOKEN_KEY = "stella_auth_token_v1";
+const LEGACY_TOKEN_KEY = "falcon_auth_token_v1";
 
 const serverUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.replace(/\/$/, "");
 
@@ -74,7 +75,7 @@ function storeToken(token: string | null): boolean {
       return false;
     }
     try {
-      window.localStorage.removeItem("falcon_auth_token_v1");
+      window.localStorage.removeItem(LEGACY_TOKEN_KEY);
     } catch {
       // 新キーは保存済み。旧キーが残っても次の読み取りは新キーを使う。
     }
@@ -138,7 +139,22 @@ export function getSession(): Session | null {
 export function subscribeToAuth(callback: Listener): () => void {
   listeners.add(callback);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === TOKEN_KEY) callback(e.newValue ? sessionFromToken(e.newValue) : null);
+    if (e.key === TOKEN_KEY) {
+      callback(e.newValue ? sessionFromToken(e.newValue) : null);
+      return;
+    }
+    // 旧タブのログアウトは旧キーだけ消す。今のトークンと同じときだけ追随する。
+    if (e.key !== LEGACY_TOKEN_KEY || e.oldValue !== readToken()) return;
+    if (!e.newValue) {
+      storeToken(null);
+      return;
+    }
+    try {
+      window.localStorage.setItem(TOKEN_KEY, e.newValue);
+    } catch {
+      return;
+    }
+    emit(sessionFromToken(e.newValue));
   };
   if (typeof window !== "undefined") window.addEventListener("storage", onStorage);
   return () => {
