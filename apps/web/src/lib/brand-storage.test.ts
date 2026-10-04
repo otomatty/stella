@@ -15,11 +15,11 @@ function storageWith(entries: Record<string, string>) {
 }
 
 describe("STELLA storage migration", () => {
-  it("moves a saved token and removes its legacy key", () => {
+  it("copies a saved token and leaves the legacy key for open tabs", () => {
     const storage = storageWith({ falcon_auth_token_v1: "saved-token" });
     expect(readStellaStorage(storage, "stella_auth_token_v1")).toBe("saved-token");
     expect(storage.getItem("stella_auth_token_v1")).toBe("saved-token");
-    expect(storage.getItem("falcon_auth_token_v1")).toBeNull();
+    expect(storage.getItem("falcon_auth_token_v1")).toBe("saved-token");
   });
 
   it("keeps the new value when both names exist", () => {

@@ -14,10 +14,10 @@ export function readStellaStorage(storage: BrandStorage, key: string): string | 
   if (legacy === null) return null;
   try {
     storage.setItem(key, legacy);
-    storage.removeItem(legacyKey);
   } catch {
     // 書けなければ旧値を残し、この読み取りでは使う。
   }
+  // 旧キーは消さない。開いたままの旧タブは削除をログアウトとして受け取る。
   return legacy;
 }
 

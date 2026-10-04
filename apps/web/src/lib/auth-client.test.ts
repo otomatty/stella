@@ -27,7 +27,7 @@ describe("auth across the STELLA rename", () => {
     values.set("falcon_auth_token_v1", token);
     expect(getSession()?.user.id).toBe("learner");
     expect(values.get("stella_auth_token_v1")).toBe(token);
-    expect(values.has("falcon_auth_token_v1")).toBe(false);
+    expect(values.get("falcon_auth_token_v1")).toBe(token);
   });
 
   it("keeps the session when logout cannot delete the token", async () => {
