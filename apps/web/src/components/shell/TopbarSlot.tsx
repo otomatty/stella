@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 /** Topbar 内の差し込み口の DOM id。 Topbar が空の入れ物を描き、 各画面がここへ portal する。 */
-export const TOPBAR_SLOT_ID = "falcon-topbar-slot";
+export const TOPBAR_SLOT_ID = "stella-topbar-slot";
 
 /**
  * Topbar のメニューボタン隣へ、 画面固有のナビゲーションを差し込む portal。

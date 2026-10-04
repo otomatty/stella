@@ -1,7 +1,5 @@
 # テスト設計と品質保証 入門 カリキュラム(takeaway 一覧)
 
-設計書: [2026-08-20-test-design-basics-design.md](../../../../docs/superpowers/specs/2026-08-20-test-design-basics-design.md)
-
 テストは「品質の情報を届ける活動」であり、テストケースは仕様から技法で導ける。
 設計したケースは pytest にそのまま写せて、リグレッション資産になる — この一本道を 6 モジュールで積む。
 

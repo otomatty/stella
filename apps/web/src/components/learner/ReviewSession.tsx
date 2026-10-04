@@ -1,6 +1,5 @@
 /**
- * デイリー復習 (SRS) の解答セッション
- * (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §5)。
+ * デイリー復習 (SRS) の解答セッション。
  *
  * QuizPlayer (一括提出 → 合否) と違い、 1 問ごとに採点 API を叩いて正誤と解説を
  * 即時表示する。 出題は GET /api/srs/today の due 順をベースに、 読み込み時に

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LXPカリキュラム改訂案の全体設計</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html" aria-current="page">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 設計書の分冊</a></li><li><a href="#section-3">2 初回案からの変更</a></li><li><a href="#section-4">3 学習の進み方</a></li><li><a href="#section-5">4 UIの学習を積み上げる例</a></li><li><a href="#section-6">5 到達目標と時間</a></li><li><a href="#section-7">6 最初に制作して試す範囲</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">LXPカリキュラム改訂案の全体設計</h1><p>作成日 2026年10月4日<br>版 2.2<br>状態 設計案</p>
+<p>プログラミング未経験者が、小規模なWebアプリの要件整理、デザイン、実装、テスト、公開、保守を自ら進められることを目標とする。今回の改訂では、UIコンポーネントの実装と既存機能との連携を明示し、基礎演習を繰り返す学習単位にカリキュラムを分割する。</p>
+<p>教材は18パックに分ける。それぞれのパックを短い単元に分け、各単元で解説、基礎課題、接続練習、自力演習、修正演習、統合課題、未見の確認、後日の復習を行う。前の教材のスキルとコードを使い、同じ考え方を別の題材でも確認する。</p>
+<p>標準案は週35時間、36週間、1,260時間とする。初回案の32週間に対し、JavaScriptの反復とUIの部品・画面統合に時間を追加する。設計と品質の学習は全教材へ分散し、後半の専用週ではそれまでの判断を整理する。時間は計画値として試行で調整し、必須の自力確認が終わったことを進級の条件にする。</p>
+<h2 id="section-2">1 設計書の分冊</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>文書</th>
+<th>読む目的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>この全体設計</td>
+<td>目標、期間、教材の分け方、初回案からの変更を確認する</td>
+</tr>
+<tr>
+<td><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></td>
+<td>18パックの前提、単元、成果物、学習時間を決める</td>
+</tr>
+<tr>
+<td><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></td>
+<td>部品、画面、状態、デザイン、既存機能との連携を設計する</td>
+</tr>
+<tr>
+<td><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></td>
+<td>問題の増やし方、支援、自力確認、復習、卒業判定を決める</td>
+</tr>
+<tr>
+<td><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></td>
+<td>分割教材の登録、依存関係、実行、提出、評価の記録を設計する</td>
+</tr>
+<tr>
+<td><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></td>
+<td>技術ごとの信頼できる資料、教材への表示、版管理、公開前の確認を決める</td>
+</tr>
+<tr>
+<td><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></td>
+<td>VS Code未経験者の導入、操作の反復、環境診断、進級を設計する</td>
+</tr>
+</tbody></table>
+</div><p>この7分冊は教材を作るための設計案である。学習者が読む実教材は18パックに分かれ、さらに単元ごとに配信する。設計書の分冊数と、学習者向けの教材パック数を区別する。</p>
+<p>版2.1では情報源の選定と、すべての単元への参照元の記載を追加する。解説、コード、図、課題と資料の対応を管理し、根拠と対象版を確認してから公開する。教材パック数、学習順序、36週間・1,260時間の計画は版2.0を引き継ぐ。</p>
+<p>版2.2ではM01の35時間を、VS Code未経験者向けの導入・基本操作・反復へ細分化する。ブラウザで読める導入案内からWebView内の学習へ移り、環境準備と自力操作の確認を別に管理する。</p>
+<h2 id="section-3">2 初回案からの変更</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>初回案</th>
+<th>改訂案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>教材の単位</td>
+<td>14段階の大きな学習範囲</td>
+<td>18パックと短い単元で登録・配信する</td>
+</tr>
+<tr>
+<td>制作の題材</td>
+<td>備品貸出管理を中心に成長させる</td>
+<td>小さな独立課題、教材内の統合、教材間の統合、卒業制作を配置する</td>
+</tr>
+<tr>
+<td>基礎演習</td>
+<td>課題の種類と進級基準を中心に定義</td>
+<td>同じ実装パターンを繰り返す問題群を各単元に用意する</td>
+</tr>
+<tr>
+<td>UIコンポーネント</td>
+<td>HTML・Reactの項目に含める</td>
+<td>HTML・CSS、DOM、React、画面統合の各段階で明示的に扱う</td>
+</tr>
+<tr>
+<td>デザイン</td>
+<td>配置・アクセシビリティ・UI改善を扱う</td>
+<td>情報設計、視覚の階層、余白、文字、色、状態、トークン、画面規則を反復する</td>
+</tr>
+<tr>
+<td>既存機能との連携</td>
+<td>共通アプリの機能追加で確認</td>
+<td>状態・イベント・API契約を渡し、既存の画面に部品を組み込む専用課題を作る</td>
+</tr>
+<tr>
+<td>情報源と参照元</td>
+<td>本文の関連箇所に参考資料を記載</td>
+<td>技術別の情報源を選び、各単元・課題の出典、対象版、利用箇所を登録する</td>
+</tr>
+<tr>
+<td>標準期間</td>
+<td>32週間、1,120時間</td>
+<td>36週間、1,260時間</td>
+</tr>
+</tbody></table>
+</div><p>初回の<a href="../LXP%20Web%E3%83%95%E3%83%AB%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E8%82%B2%E6%88%90%E3%82%AB%E3%83%AA%E3%82%AD%E3%83%A5%E3%83%A9%E3%83%A0%E8%A8%AD%E8%A8%88%E6%9B%B8.html">設計書</a>で定めたフルスタックの到達目標、基礎知識、読書、技術史、自力確認、WebViewと拡張の役割は引き継ぐ。期間、教材順序、教材単位、UIに関する内容は本改訂案を優先する。基礎知識等の対応先も、新しい教材IDへ付け直す。</p>
+<h2 id="section-4">3 学習の進み方</h2><p>学習者は、最初に一つの処理や部品を作り、入力や状態を変えた基礎課題を繰り返す。次に既習の処理と接続し、別題材で自力実装する。壊れた実装を直した後に、既存画面へ組み込む。その場で動くことと、後日も使えることを別々に確認する。</p>
+<pre><code class="language-text">解説と小さな例
+  → 同じ実装パターンの基礎課題
+  → 既習内容との接続練習
+  → 自力演習と修正演習
+  → 部品や機能の統合
+  → 未見の確認A
+  → 時間を空けた確認B</code></pre><p>全期間を一つのアプリだけで学ぶ構成にはしない。配列の集計では得点や購入明細、DOMではタスクや検索、Reactでは備品やイベントなどの小題材を使う。節目には以前作ったアプリを再利用し、別の題材を挟んでも知識がつながるようにする。</p>
+<h2 id="section-5">4 UIの学習を積み上げる例</h2><p>「登録フォーム」は次のように繰り返し扱う。毎回新しい仕組みを一つずつ増やし、既習の検証関数や表示部品を使う。</p>
+<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>教材</th>
+<th>今回実装するもの</th>
+<th>使い直す内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M02</td>
+<td>ラベル、入力、ボタン、説明文と余白</td>
+<td>HTMLの構造、CSSの規則</td>
+</tr>
+<tr>
+<td>M03〜M04</td>
+<td>必須、文字数、数量等の検証関数</td>
+<td>型、条件、文字列、関数</td>
+</tr>
+<tr>
+<td>M05〜M06</td>
+<td>入力イベント、エラー、確認ダイアログ</td>
+<td>フォーム、検証関数、DOM</td>
+</tr>
+<tr>
+<td>M07</td>
+<td>送信、待機、成功、失敗</td>
+<td>フォーム状態、HTTP、非同期、型</td>
+</tr>
+<tr>
+<td>M08〜M09</td>
+<td>Reactの入力部品とフォーム</td>
+<td>状態モデル、検証関数、表示規則</td>
+</tr>
+<tr>
+<td>M10</td>
+<td>既存の一覧・編集・通知との連携</td>
+<td>props、イベント、API契約、再取得</td>
+</tr>
+<tr>
+<td>M11〜M13</td>
+<td>自分のAPI、DB、利用者の権限</td>
+<td>画面の操作、入力・出力契約</td>
+</tr>
+<tr>
+<td>M14〜M18</td>
+<td>Next.js、公開環境、仕様変更</td>
+<td>部品、業務処理、テスト、運用</td>
+</tr>
+</tbody></table>
+</div><p>単純なHTML要素を使う部分から始め、Reactでは状態を持つ場所と部品間のデータの流れを扱う。<a href="https://react.dev/learn/sharing-state-between-components">React公式の状態共有の説明</a>を教材制作時の参照先にする。</p>
+<h2 id="section-6">5 到達目標と時間</h2><p>卒業時には、利用者の目的を画面と操作に落とし込み、部品の仕様、状態、データ、API、DB、認可を結び付けて実装できることを求める。資料を調べ、テストと操作確認を行い、公開後の障害や追加変更にも対応する。</p>
+<p>UIについては、見た目の再現、部品単体の実装、既存機能との連携、操作とアクセシビリティの確認をそれぞれ評価する。美的な好みではなく、提示されたデザイン規則、情報の優先度、入力・失敗時の理解しやすさ、操作の成立を判定する。</p>
+<p>週35時間の通常配分は、実装20時間、基礎知識5時間、書籍と品質3時間、技術史と調査3時間、確認・レビュー4時間とする。36週間ではそれぞれ720、180、108、108、144時間となり、合計1,260時間になる。卒業制作では配分を調整して制作に結び付ける。</p>
+<p>週30時間なら42週間、週40時間なら約32週間が目安となる。補習の2〜4週間は別枠で確保する。過去に確認できたスキルは開始診断で確かめ、重複する説明や支援付きの練習を減らせる。重要な未見・遅延確認は維持する。</p>
+<h2 id="section-7">6 最初に制作して試す範囲</h2><p>最初の試行は、M01の導入案内からVS Code内のLXPでの学習開始、保存・表示・変更、翌日の再開までを通す。VS Code未経験者の操作と、環境の不具合による支援を分けて観察する。</p>
+<p>続いて、JavaScriptの「条件抽出」、HTML・DOMの「入力とエラー」、Reactの「入力部品とフォーム」の代表単元を作る。同じスキルがどこで再利用されるかと、実装パターンを繰り返す問題量を確認する。Reactの学習試行は前提スキルを満たす学習者に行う。</p>
+<p>LXPでは、一単元の解説、基礎課題、接続練習、提出、修正、確認A、後日の確認Bまで通す。単一の課題だけの完了率ではなく、別題材への適用、支援量、復習後の実装、既存コードへの接続を観察してから教材制作を広げる。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

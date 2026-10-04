@@ -4,8 +4,7 @@
  *
  * **秘匿はサーバ側で済んでいる。** 霧の星には slug も解放条件も入っておらず、3 歩先
  * (`edge`) には名前すら無く、4 歩以上先は配列に現れない。画面はここで受け取った形を
- * そのまま描けばよい (クライアントで伏せ直さない)。段の仕様は
- * `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。
+ * そのまま描けばよい (クライアントで伏せ直さない)。
  */
 
 import type { StageClearedNotice } from "@stella/shared/cms/types";

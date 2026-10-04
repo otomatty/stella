@@ -20,7 +20,7 @@ export type Stage = "S0" | "S1" | "S2" | "S3" | "S4" | "S5";
 /**
  * 課題の対象言語。
  *
- * falcon-informal では JavaScript / TypeScript / SQL / 擬似言語に対応する。
+ * stella では JavaScript / TypeScript / SQL / 擬似言語に対応する。
  * TypeScript は実行前に JS へトランスパイルして QuickJS で動かす (型検査はしない)。
  * `fe-pseudo` は基本情報技術者試験 科目B の擬似言語で、 こちらも JS に落として
  * QuickJS で動かす (#133)。 新しい実行基盤は増やさない。

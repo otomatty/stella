@@ -2,7 +2,7 @@
  * CodeMirror 6 + ESLint プラグイン。
  * 編集中、ESLint の違反箇所が赤線/黄線でリアルタイム表示される。
  *
- * falcon-informal では JavaScript / TypeScript / SQL をサポート。
+ * stella では JavaScript / TypeScript / SQL をサポート。
  */
 
 import { useEffect, useMemo, useState } from "react";

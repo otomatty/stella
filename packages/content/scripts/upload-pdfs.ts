@@ -1,6 +1,5 @@
 /**
- * 教材 PDF の差分生成 + R2 アップロード + seed 用マニフェスト出力
- * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 教材 PDF の差分生成 + R2 アップロード + seed 用マニフェスト出力。
  *
  *   bun run --filter=@stella/content pdf:sync             # local (--local)
  *   bun run --filter=@stella/content pdf:sync -- --remote # remote (deploy 用)

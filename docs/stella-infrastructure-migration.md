@@ -21,7 +21,8 @@
 Cloudflare アカウント `0a0dd103e779842ba2c67cbde20574a0` と GitHub Secrets の名前は維持する。
 既存行の UUID、`stableUuid("course:...")`、R2 のオブジェクトキーも維持する。
 localStorage キー、VS Code 拡張 ID `falcon.informal`、設定名 `falcon.serverUrl` / `falcon.webUrl`、
-SecretStorage キーは Phase D の対象で、ここでは変更しない。
+SecretStorage キーは当時の Phase C の対象外。現在の新名と切替手順は
+[Phase D クライアント移行ガイド](stella-client-migration.md) を参照する。
 
 ## 切替方針
 

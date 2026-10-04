@@ -1,5 +1,5 @@
 /**
- * 教材本文のリビジョン記録 (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 教材本文のリビジョン記録。
  *
  * seed は SQL 側で同等の規則を実装している (packages/shared/scripts/export-seed-sql.ts の
  * emitLessonRevision)。こちらは CMS 編集用。

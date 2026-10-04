@@ -30,9 +30,9 @@ describe("catalogErrorPlaceholder", () => {
   it("shows a catalog-error node that can refresh", () => {
     expect(catalogErrorPlaceholder("ステージの読み込みに失敗しました")).toEqual({
       kind: "placeholder",
-      id: "falcon.catalog-error",
+      id: "stella.catalog-error",
       title: "ステージの読み込みに失敗しました",
-      command: "falcon.refresh",
+      command: "stella.refresh",
     });
   });
 });

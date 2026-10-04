@@ -1,9 +1,14 @@
 import { getEntryFile } from "@stella/shared/assignment-helpers";
 import { mapAssignmentRowToAssignment, type AssignmentRow } from "@stella/shared/cms/types";
 import type { Assignment } from "@stella/shared/types";
-import { exerciseRoot, filesToWrite } from "@stella/shared/vscode/exercise-paths";
+import {
+  exerciseRoot,
+  legacyExerciseRoot,
+  filesToWrite,
+} from "@stella/shared/vscode/exercise-paths";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
+import { migrateExerciseDirectory } from "./exercise-directory.js";
 
 export function resolveHomeDir(): string {
   const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
@@ -96,7 +101,9 @@ export async function getAssignmentForGrading(assignmentId: string): Promise<Ass
 
 async function writeStarterFiles(assignment: Assignment, overwrite: boolean): Promise<vscode.Uri> {
   rememberAssignment(assignment);
-  const rootUri = vscode.Uri.file(exerciseRoot(resolveHomeDir(), assignment.id));
+  const home = resolveHomeDir();
+  const rootUri = vscode.Uri.file(exerciseRoot(home, assignment.id));
+  await migrateExerciseDirectory(rootUri, vscode.Uri.file(legacyExerciseRoot(home, assignment.id)));
   await vscode.workspace.fs.createDirectory(rootUri);
 
   for (const file of filesToWrite(assignment)) {

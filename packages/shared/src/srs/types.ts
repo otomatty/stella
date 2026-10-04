@@ -1,6 +1,5 @@
 /**
- * デイリー復習 (SRS) の API 型
- * (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §4)。
+ * デイリー復習 (SRS) の API 型。
  * 設問は受講者向けサニタイズ済み (is_correct / explanation を含めない)。
  */
 

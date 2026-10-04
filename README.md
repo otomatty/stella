@@ -1,22 +1,24 @@
-# FALCON INFORMAL
+# STELLA
+
+名称変更後の既存利用者向け手順は [クライアント移行ガイド](docs/stella-client-migration.md) を参照してください。
 
 SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。教材の正本は `packages/content`。
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
-- コード演習する (VS Code 拡張 `falcon.informal`) — P2
+- コード演習する (VS Code 拡張 `stella.stella`) — P2
 - 採点される / AIに質問する — P2
 
 ## モノレポ構成
 
 ```text
-falcon-informal/
+stella/
 ├── apps/
 │   ├── web/                  # @stella/web — LMS フロント (Vite + React) → Cloudflare Workers (Static Assets)
 │   │   ├── src/              # Learner / Instructor / Admin UI
 │   │   └── vite-plugins/     # copy-sqljs-wasm
 │   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
 │   │   └── src/              # /api/chat, /api/healthz
-│   └── vscode/               # informal (`falcon.informal`) — 学習者のコード演習用 VS Code 拡張
+│   └── vscode/               # stella (`stella.stella`) — 学習者のコード演習用 VS Code 拡張
 ├── packages/
 │   ├── shared/               # @stella/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @stella/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
@@ -44,7 +46,7 @@ falcon-informal/
 - **Radix UI** プリミティブ
 - **Bun** (パッケージマネージャ / Workspaces)
 - **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
-- **VS Code 拡張** (`falcon.informal` / `apps/vscode`) — 学習者のコード演習
+- **VS Code 拡張** (`stella.stella` / `apps/vscode`) — 学習者のコード演習
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
 ## セットアップ（実データ開発・既定）
@@ -117,26 +119,26 @@ bun run --filter=@stella/shared typecheck
 
 ### コード演習（VS Code 拡張）
 
-学習者のコード演習はブラウザではなく VS Code 拡張 `falcon.informal`（`apps/vscode`）で行う。
+学習者のコード演習はブラウザではなく VS Code 拡張 `stella.stella`（`apps/vscode`）で行う。
 Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師の課題プレビュー（`AssignmentEditor`）だけ Web に残る。
 
 **学習者**
 
 1. Web にログインする
 2. 拡張を入れる（ローカルは `apps/vscode` で `bun run package` した VSIX。Marketplace は下記の手順のみ。このリポジトリからは公開しない）
-3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://falcon.informal/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
+3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://stella.stella/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
 
-JWT は拡張の SecretStorage（`falcon.accessToken`）に入る。設定にトークンを貼らない。
+JWT は拡張の SecretStorage（`stella.accessToken`）に入る。設定にトークンを貼らない。
 
 **開発者**
 
 `bun run dev:api` と `bun run dev` のあと、`apps/vscode` を VS Code で開いて F5 する（`.vscode/launch.json` の `extensionHost`。`--extensionDevelopmentPath` は `apps/vscode`）。モノレポルートを開いている場合は、同じ構成を `--extensionDevelopmentPath` が `apps/vscode` を指すようにしてから F5 する。
-設定の既定は `falcon.serverUrl` = `http://127.0.0.1:8787`、`falcon.webUrl` = `http://127.0.0.1:5173`。
+設定の既定は `stella.serverUrl` = `http://127.0.0.1:8787`、`stella.webUrl` = `http://127.0.0.1:5173`。
 詳細は [`apps/vscode/README.md`](apps/vscode/README.md)。
 
 **Marketplace（手順のみ・公開しない）**
 
-CI では出さない。publisher は `falcon`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login falcon` または `VSCE_PAT`）。
+CI では出さない。publisher は `stella`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login stella` または `VSCE_PAT`）。
 
 ### 認証 (Google OAuth)
 

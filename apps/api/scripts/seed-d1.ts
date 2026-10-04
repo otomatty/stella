@@ -31,7 +31,7 @@ const apiDir = join(import.meta.dirname, "..");
 const rootDir = join(apiDir, "..", "..");
 const DATABASE_NAME = "stella-db";
 
-const dir = mkdtempSync(join(tmpdir(), "falcon-seed-"));
+const dir = mkdtempSync(join(tmpdir(), "stella-seed-"));
 const file = join(dir, "seed.sql");
 const fd = openSync(file, "w");
 try {

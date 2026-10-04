@@ -41,7 +41,7 @@ HTML/CSS入門 — Module 1 / レッスン1-4
 ## 意味が別にある語句
 
 ```html
-<p><i>Falcon</i>は製品名です。</p>
+<p><i>Stella</i>は製品名です。</p>
 <p>単語 <b>margin</b> を覚えます。</p>
 ```
 

@@ -1,5 +1,5 @@
 /**
- * SRS カードの更新 (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §3)。
+ * SRS カードの更新。
  *
  * クイズ本編の受験 (`POST /api/quiz/:id/attempt`) と復習の解答 (`POST /api/srs/answer`) の
  * 両方がここを通り、 SM-2 の入力として一本化される。 復習経路は `withLogs` を立てると

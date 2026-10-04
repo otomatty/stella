@@ -14,7 +14,7 @@ export type LessonDocView =
   | { kind: "pdf-only"; title: string; stageId: string; lessonId: string }
   | { kind: "empty"; title: string };
 
-const VIEW_TYPE = "falcon.lessonDoc";
+const VIEW_TYPE = "stella.lessonDoc";
 
 let currentPanel: vscode.WebviewPanel | undefined;
 
@@ -237,7 +237,7 @@ function viewBody(view: LessonDocView): string {
       return [
         `<h1>${escapeHtml(view.title)}</h1>`,
         "<p>このレッスンは PDF スライドです。拡張内では表示できません。</p>",
-        `<p><a href="command:falcon.openInWeb?${args}">Web で開く</a></p>`,
+        `<p><a href="command:stella.openInWeb?${args}">Web で開く</a></p>`,
       ].join("\n");
     }
     case "empty":
@@ -317,7 +317,7 @@ export function openLessonDoc(lesson: LessonDocInput): void {
       {
         enableScripts: false,
         localResourceRoots: [],
-        enableCommandUris: ["falcon.openInWeb"],
+        enableCommandUris: ["stella.openInWeb"],
       },
     );
     currentPanel.onDidDispose(() => {

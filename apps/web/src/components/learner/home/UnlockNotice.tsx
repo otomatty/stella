@@ -26,11 +26,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Sparkles, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { readStellaStorage } from "@/lib/brand-storage";
 
 /** 端末 × 利用者ごとの「前回見たときに開いていた星」。 */
-const STORAGE_KEY_PREFIX = "falcon_seen_unlocked_stages_v1";
+const STORAGE_KEY_PREFIX = "stella_seen_unlocked_stages_v1";
 /** 端末 × 利用者ごとの「前回見たときに灯っていた発見教材」。 */
-const DISCOVERY_STORAGE_KEY_PREFIX = "falcon_seen_discoveries_v1";
+const DISCOVERY_STORAGE_KEY_PREFIX = "stella_seen_discoveries_v1";
 
 /**
  * 記憶のキー。**利用者ごとに分ける** (`PlacementWizard` の「あとで選ぶ」と同じ流儀)。
@@ -49,7 +50,7 @@ function seenKey(prefix: string, userId: string | null): string {
 function readSeen(key: string): string[] | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = readStellaStorage(window.localStorage, key);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : null;

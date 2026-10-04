@@ -21,8 +21,6 @@ Salesforce は「アプリを載せる土台」であって、開発者が最初
 - 割当はマップ掲載のみ。受講開始は従来どおり自己開始(`POST /api/stages/:id/start`)
 - 開発者モード(FAB)で霧や島を素通ししても、未割り当ての専用星は出ない
 
-仕様は `docs/superpowers/specs/2026-09-01-granted-stage-audience-design.md`。
-
 ### 置き場所は「Salesforce案件」島
 
 `category` は新設の島 `Salesforce案件`(`@stella/shared/skill-map/islands` に追加、表示条件は他の島と同じ `it-basics`)です。

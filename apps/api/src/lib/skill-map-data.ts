@@ -99,7 +99,7 @@ export function isDevMode(env: { DEV_MODE?: string }): boolean {
  * クライアントが開発者表示を要求するヘッダ。値は `"1"` / `"0"`。
  * 本番では `isDevMode` が偽なので、ヘッダを付けても無視する。
  */
-export const DEV_MODE_HEADER = "X-Falcon-Dev-Mode";
+export const DEV_MODE_HEADER = "X-Stella-Dev-Mode";
 
 /**
  * このリクエストで島を全配信し、霧の星も名前を明かしていいか。

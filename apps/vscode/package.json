@@ -1,42 +1,47 @@
 {
-  "name": "informal",
+  "name": "stella",
   "displayName": "STELLA",
-  "publisher": "falcon",
-  "version": "0.2.0",
+  "publisher": "stella",
+  "version": "0.3.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otomatty/stella.git",
+    "directory": "apps/vscode"
+  },
   "description": "STELLA — VS Code extension for stage lessons and exercises",
   "engines": { "vscode": "^1.96.0" },
   "main": "./dist/extension.js",
-  "activationEvents": ["onUri", "onView:falcon.lessons"],
+  "activationEvents": ["onUri", "onView:stella.lessons"],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "falcon",
+          "id": "stella",
           "title": "STELLA",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "falcon": [
+      "stella": [
         {
-          "id": "falcon.lessons",
+          "id": "stella.lessons",
           "name": "カリキュラム"
         }
       ]
     },
     "commands": [
-      { "command": "falcon.connect", "title": "STELLA: Web で接続" },
-      { "command": "falcon.disconnect", "title": "STELLA: 切断" },
-      { "command": "falcon.refresh", "title": "STELLA: 再読み込み" },
-      { "command": "falcon.grade", "title": "STELLA: 採点を実行" },
-      { "command": "falcon.resetExercise", "title": "STELLA: 課題をリセット" },
-      { "command": "falcon.openInWeb", "title": "STELLA: Web で開く" },
-      { "command": "falcon.openLessonDoc", "title": "STELLA: ドキュメントを開く" },
-      { "command": "falcon.openLessonCode", "title": "STELLA: 演習を開く" },
-      { "command": "falcon.openNextLesson", "title": "STELLA: 次のレッスンへ" },
-      { "command": "falcon.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" }
+      { "command": "stella.connect", "title": "STELLA: Web で接続" },
+      { "command": "stella.disconnect", "title": "STELLA: 切断" },
+      { "command": "stella.refresh", "title": "STELLA: 再読み込み" },
+      { "command": "stella.grade", "title": "STELLA: 採点を実行" },
+      { "command": "stella.resetExercise", "title": "STELLA: 課題をリセット" },
+      { "command": "stella.openInWeb", "title": "STELLA: Web で開く" },
+      { "command": "stella.openLessonDoc", "title": "STELLA: ドキュメントを開く" },
+      { "command": "stella.openLessonCode", "title": "STELLA: 演習を開く" },
+      { "command": "stella.openNextLesson", "title": "STELLA: 次のレッスンへ" },
+      { "command": "stella.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" }
     ],
     "languages": [
       {
@@ -56,11 +61,11 @@
     "snippets": [{ "language": "fe-pseudo", "path": "./snippets/fe-pseudo.json" }],
     "configuration": {
       "properties": {
-        "falcon.serverUrl": {
+        "stella.serverUrl": {
           "type": "string",
           "default": "http://127.0.0.1:8787"
         },
-        "falcon.webUrl": {
+        "stella.webUrl": {
           "type": "string",
           "default": "http://127.0.0.1:5173"
         }

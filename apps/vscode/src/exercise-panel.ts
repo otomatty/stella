@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { escapeHtml, markdownToHtml } from "./lesson-doc.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 
-const VIEW_TYPE = "falcon.exercise";
+const VIEW_TYPE = "stella.exercise";
 
 export interface ExerciseNextLesson {
   stageId: string;
@@ -65,7 +65,7 @@ function escalateLink(input: ExercisePanelInput): string {
   const args = encodeURIComponent(JSON.stringify([input.assignmentId]));
   return [
     `<div class="escalate">`,
-    `<p><a href="command:falcon.escalateToInstructor?${args}">講師に引き継ぐ</a></p>`,
+    `<p><a href="command:stella.escalateToInstructor?${args}">講師に引き継ぐ</a></p>`,
     `<p class="hint">いま採点したコードと失敗した項目を講師の添削キューに送ります。 レッスンの完了にはなりません。</p>`,
     `</div>`,
   ].join("\n");
@@ -77,7 +77,7 @@ function nextLessonLink(input: ExercisePanelInput): string {
     return "";
   }
   const args = encodeURIComponent(JSON.stringify([input.stageId, input.lessonId]));
-  return `<p><a href="command:falcon.openNextLesson?${args}">次のレッスンへ</a></p>`;
+  return `<p><a href="command:stella.openNextLesson?${args}">次のレッスンへ</a></p>`;
 }
 
 export function buildExercisePanelHtml(input: ExercisePanelInput): string {
@@ -140,7 +140,7 @@ export function openExercisePanel(input: ExercisePanelInput): void {
       {
         enableScripts: false,
         localResourceRoots: [],
-        enableCommandUris: ["falcon.openNextLesson", "falcon.escalateToInstructor"],
+        enableCommandUris: ["stella.openNextLesson", "stella.escalateToInstructor"],
       },
     );
     currentPanel.onDidDispose(() => {

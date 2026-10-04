@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { VSCODE_EXT_ID } from "../vscode/uris";
 import {
   DISPLAY_COMMAND_PREFIX,
   DISPLAY_NAME,
@@ -15,7 +16,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const readRepoFile = (relativePath: string): string =>
   readFileSync(join(repoRoot, relativePath), "utf8");
 
-describe("display brand (Phase A + B)", () => {
+describe("display brand (Phase A–D)", () => {
   it("exports PACKAGE_SCOPE for monorepo branding", () => {
     expect(PACKAGE_SCOPE).toBe("@stella");
   });
@@ -49,18 +50,20 @@ describe("display brand (Phase A + B)", () => {
     expect(rootPkg.scripts["content:check"]).toContain("@stella/content");
   });
 
-  it("does not rename VS Code extension machine id (Phase B)", () => {
+  it("uses STELLA for VS Code machine identifiers", () => {
     const vscodePkg = JSON.parse(readRepoFile("apps/vscode/package.json")) as {
       name: string;
+      publisher: string;
       contributes: { viewsContainers: { activitybar: { id: string }[] } };
     };
-    expect(vscodePkg.name).toBe("informal");
-    expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.id).toBe("falcon");
+    expect(vscodePkg.name).toBe("stella");
+    expect(VSCODE_EXT_ID).toBe(`${vscodePkg.publisher}.${vscodePkg.name}`);
+    expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.id).toBe("stella");
   });
 
-  it("does not rename localStorage auth token key (Phase B)", () => {
+  it("writes the auth token under the STELLA storage key", () => {
     const authClient = readRepoFile("apps/web/src/lib/auth-client.ts");
-    expect(authClient).toContain('const TOKEN_KEY = "falcon_auth_token_v1"');
+    expect(authClient).toContain('const TOKEN_KEY = "stella_auth_token_v1"');
   });
 
   it("web index.html document title is STELLA", () => {

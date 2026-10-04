@@ -1,5 +1,5 @@
 /**
- * デイリー復習 (SRS) API (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §4)。
+ * デイリー復習 (SRS) API。
  *
  * ルート名が `review` でないのは講師の課題添削 (review-draft / review-queue) と
  * 衝突するため。 受講者は自分のカードのみ参照でき、 出題は is_correct / explanation を

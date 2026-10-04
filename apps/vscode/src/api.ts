@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
 import type { AuthStore } from "./auth.js";
+import { stellaConfig } from "./config.js";
 
 export class AuthExpiredError extends Error {
   readonly status = 401 as const;
@@ -24,10 +24,7 @@ function requireAuthStore(): AuthStore {
 }
 
 function serverUrl(): string {
-  return vscode.workspace
-    .getConfiguration("falcon")
-    .get<string>("serverUrl", "http://127.0.0.1:8787")
-    .replace(/\/+$/, "");
+  return stellaConfig("serverUrl", "http://127.0.0.1:8787");
 }
 
 function errorMessage(data: unknown, fallback: string): string {

@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UIコンポーネントとデザインの教材設計</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html" aria-current="page">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 デザインで習得すること</a></li><li><a href="#section-3">2 デザインの反復演習</a></li><li><a href="#section-4">3 UIコンポーネントの学習範囲</a></li><li><a href="#section-5">4 部品の仕様書</a></li><li><a href="#section-6">5 部品から既存の画面へ接続する手順</a></li><li><a href="#section-9">6 連携課題で確認する失敗と境界</a></li><li><a href="#section-10">7 操作とアクセシビリティ</a></li><li><a href="#section-11">8 部品の状態見本と検証</a></li><li><a href="#section-12">9 UIの提出物と評価</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">UIコンポーネントとデザインの教材設計</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>UIの参照資料はReact公式、HTML・WAIの資料、公開デザインシステムを中心に選ぶ。部品の仕様、操作、デザイン規則に使う資料を、<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>に従って教材へ表示する。</p>
+<p>UIの学習は、HTML・CSSの構造と見た目、JavaScriptの操作、Reactの再利用、画面と業務機能の連携へ進む。部品名を覚えるだけでなく、入力、状態、イベント、表示、操作の仕様を説明して実装できることを到達目標にする。</p>
+<h2 id="section-2">1 デザインで習得すること</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>領域</th>
+<th>最初に学ぶこと</th>
+<th>後で使うこと</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>情報設計</td>
+<td>利用者の目的、情報の優先度、見出し、項目のまとまり</td>
+<td>一覧・詳細・登録・編集の画面構成</td>
+</tr>
+<tr>
+<td>視覚の階層</td>
+<td>見出し、本文、補足、主要な操作の区別</td>
+<td>重要な情報と操作を見つけやすくする</td>
+</tr>
+<tr>
+<td>配置と余白</td>
+<td>整列、まとまり、内側と外側の余白、Flexbox・Grid</td>
+<td>部品と画面の一貫した配置</td>
+</tr>
+<tr>
+<td>文字</td>
+<td>大きさ、行間、読み幅、長い文字列</td>
+<td>エラーや説明文が増えても読める画面</td>
+</tr>
+<tr>
+<td>色</td>
+<td>役割、コントラスト、色以外の表現</td>
+<td>成功、警告、エラー、無効状態</td>
+</tr>
+<tr>
+<td>操作の設計</td>
+<td>ラベル、説明、入力順、フォーカス、確認</td>
+<td>キーボード操作、失敗からのやり直し</td>
+</tr>
+<tr>
+<td>画面幅への対応</td>
+<td>折返し、縦積み、可変の幅</td>
+<td>狭い画面でのフォーム・一覧・操作</td>
+</tr>
+<tr>
+<td>状態の設計</td>
+<td>初期、入力、待機、成功、失敗、空、権限不足</td>
+<td>API連携と利用者へのフィードバック</td>
+</tr>
+<tr>
+<td>共通規則</td>
+<td>CSSの共通値とクラス</td>
+<td>デザイントークン、部品の種類、テーマ</td>
+</tr>
+<tr>
+<td>改善</td>
+<td>他者に操作してもらい、迷った場所を記録する</td>
+<td>要件に基づく修正と理由の説明</td>
+</tr>
+</tbody></table>
+</div><p>M02では紙や簡単なワイヤーフレームから画面を作り、CSSで表現する。M06では操作と失敗を含む状態を設計し、M09では複数の部品に同じ規則を適用する。M10以降では実際のデータ量や通信結果で規則が保たれるかを確かめる。</p>
+<p>デザインツールの習得は補助に置く。画面の目的、配置、状態を説明できることを先に確認し、ツールの操作だけで合格にしない。</p>
+<h2 id="section-3">2 デザインの反復演習</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>演習群</th>
+<th>繰り返し変える条件</th>
+<th>学習する判断</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>余白と整列</td>
+<td>カード、フォーム、一覧、通知</td>
+<td>どの項目を一つのまとまりにするか</td>
+</tr>
+<tr>
+<td>文字と階層</td>
+<td>見出し、価格、説明、注記、エラー</td>
+<td>何を先に読んでもらうか</td>
+</tr>
+<tr>
+<td>色と状態</td>
+<td>通常、選択、無効、成功、警告、エラー</td>
+<td>同じ意味に同じ表現を使う</td>
+</tr>
+<tr>
+<td>画面幅とデータ量</td>
+<td>短文・長文、1件・多数、狭い画面</td>
+<td>折返し、配置変更、スクロールをどこで使うか</td>
+</tr>
+<tr>
+<td>利用者の操作</td>
+<td>登録、編集、削除、再試行</td>
+<td>操作の結果と次の行動が分かるか</td>
+</tr>
+</tbody></table>
+</div><p>初期の演習では、文字サイズ、余白、色、画面幅の規則を配布する。例として余白を4、8、12、16、24、32pxの段階で定め、CSS変数にする。この値は教材用の提案であり、すべてのアプリに適用する標準ではない。後半では学習者が規則を選び、理由と変更の影響を説明する。</p>
+<p>デザイントークンは、色、余白、文字、角丸などの共通値に名前を付けたものとして導入する。M09では複数のButtonやTextFieldに規則を適用し、一つの値の変更でどの部品が変わるかを観察する。</p>
+<h2 id="section-4">3 UIコンポーネントの学習範囲</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>部品</th>
+<th>HTML・CSSとDOMで学ぶこと</th>
+<th>Reactで学ぶこと</th>
+<th>既存機能への接続</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Button</td>
+<td>要素の意味、type、サイズ、フォーカス、disabled</td>
+<td>種類、サイズ、無効・処理中、onClick</td>
+<td>登録、再試行、行の操作</td>
+</tr>
+<tr>
+<td>TextFieldとTextArea</td>
+<td>label、説明、入力、エラー、readonly</td>
+<td>value、onChange、名前、ID、エラー</td>
+<td>検証関数、登録・編集フォーム</td>
+</tr>
+<tr>
+<td>Select Checkbox Radio</td>
+<td>選択、初期値、状態、項目のまとまり</td>
+<td>options、選択値、変更イベント</td>
+<td>絞り込み、カテゴリ、同意</td>
+</tr>
+<tr>
+<td>Card Badge</td>
+<td>見出し、内容、状態の表示</td>
+<td>データと表示の分離、種類</td>
+<td>一覧、在庫や申請状態</td>
+</tr>
+<tr>
+<td>Alertと通知</td>
+<td>メッセージの意味、成功・失敗、閉じる操作</td>
+<td>状態と表示、再試行イベント</td>
+<td>通信結果、フォームの失敗</td>
+</tr>
+<tr>
+<td>空状態と待機表示</td>
+<td>空と失敗の違い、次の操作</td>
+<td>データ取得状態に対応した表示</td>
+<td>一覧、検索、API取得</td>
+</tr>
+<tr>
+<td>Dialog</td>
+<td>標準要素、開閉、確認、フォーカス</td>
+<td>開閉の契約、子の内容、確認・取消</td>
+<td>削除、編集、重要な操作</td>
+</tr>
+<tr>
+<td>開閉部品とTabs</td>
+<td>details等の要素、開閉、選択</td>
+<td>選択値、表示するパネル、操作</td>
+<td>詳細表示、設定、補足情報</td>
+</tr>
+<tr>
+<td>Tableと一覧</td>
+<td>見出し、行、長い内容、空の場合</td>
+<td>行データ、key、列、行のイベント</td>
+<td>検索、並び替え、行の更新</td>
+</tr>
+<tr>
+<td>Pagination</td>
+<td>件数とページの表示、選択</td>
+<td>現在ページ、総数、変更イベント</td>
+<td>検索条件とAPI取得</td>
+</tr>
+<tr>
+<td>Menu Popover</td>
+<td>適切な用途と操作の違い</td>
+<td>既存実装の契約とスタイル調整</td>
+<td>行のメニュー、補足の表示</td>
+</tr>
+<tr>
+<td>Combobox DatePicker</td>
+<td>仕様と操作が複雑になる理由</td>
+<td>ライブラリの利用と接続</td>
+<td>発展課題の検索候補や日時入力</td>
+</tr>
+</tbody></table>
+</div><p>Buttonや入力は標準HTML要素を土台にする。ボタンのtypeと操作、ダイアログの表示等は<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button">MDNのbutton</a>と<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog">dialog</a>を参照する。</p>
+<p>Comboboxや高度なDatePickerをゼロから作ることは必須にしない。複雑な部品には既存実装を使い、選択値、イベント、見た目、キーボード操作、アクセシビリティを確かめる。どこを自分で実装し、どこを標準要素やライブラリに任せるかも設計判断として学ぶ。</p>
+<h2 id="section-5">4 部品の仕様書</h2><p>各部品に一枚の短い仕様書を用意する。見た目だけでなく、他のコードがどのように使えるかを定める。</p>
+<div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>記載すること</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>目的</td>
+<td>何を表示し、どの操作を提供するか</td>
+</tr>
+<tr>
+<td>入力</td>
+<td>props、値、型、必須・任意、既定値</td>
+</tr>
+<tr>
+<td>出力</td>
+<td>どのイベントで、どの値を親へ通知するか</td>
+</tr>
+<tr>
+<td>状態</td>
+<td>通常、フォーカス、無効、処理中、エラー等の組合せ</td>
+</tr>
+<tr>
+<td>表示規則</td>
+<td>文字、色、余白、サイズ、長い内容、画面幅</td>
+</tr>
+<tr>
+<td>操作</td>
+<td>マウス、キーボード、フォーカスの移動</td>
+</tr>
+<tr>
+<td>責務</td>
+<td>自分が保持する状態と、親が保持する状態</td>
+</tr>
+<tr>
+<td>確認</td>
+<td>必須の状態見本、操作ケース、既存機能への影響</td>
+</tr>
+</tbody></table>
+</div><p>たとえばTextFieldは、<code>id</code>、<code>label</code>、<code>value</code>、<code>onChange</code>、<code>error</code>、<code>disabled</code>、<code>readOnly</code>等を扱う。利用者が入力した値をイベントで通知し、業務上の検証や保存は親のフォームや関数が担当する。単純な表示部品からAPIを直接呼ぶ構成は避け、呼出しを担う場所を説明させる。</p>
+<p>状態を一つのフラグに詰め込まない。入力値、フォーカス、開閉、送信状態のように同時に成立する状態を区別する。送信の「待機中、成功、失敗」のように相互排他な状態は、その遷移と表示を明示する。</p>
+<h2 id="section-6">5 部品から既存の画面へ接続する手順</h2><p>学習する接続は、部品を配置する、値を渡す、変更や操作を受け取る、業務処理を呼ぶ、結果で状態を更新する、既存機能が保たれたことを確かめる、という順序とする。</p>
+<h3 id="section-7">登録フォームの例</h3><ol>
+<li>既存画面のデータと操作を読み、追加するフォームの受入条件を整理する。</li>
+<li>TextField、Select、Buttonを配置し、親が入力値を保持する。</li>
+<li>既習の検証関数を使い、エラーを対応する入力に表示する。</li>
+<li>確認済みのAPI契約で送信し、送信中の表示と再操作の制御を行う。</li>
+<li>成功時に一覧のデータを更新または再取得し、完了を伝える。</li>
+<li>失敗時に入力を保持し、原因と再試行の方法を表示する。</li>
+<li>既存の検索や編集でも結果が正しく表示されるかを確認する。</li>
+</ol>
+<h3 id="section-8">編集と削除確認の例</h3><p>編集では対象ID、元のデータ、編集用の値、送信状態を分ける。対象を切り替えたとき、前の対象のデータや遅れて届いた応答が混ざらないことを確かめる。</p>
+<p>削除確認では、対象の名前を示し、取消ならデータを変更しない。成功した場合だけ一覧を更新し、失敗した場合は再試行できる状態を保つ。閉じた後のフォーカスは起点へ戻す。削除によって起点が消えた場合は、残る項目や一覧内の適切な操作へ移す仕様を定める。</p>
+<p>部品間の状態共有には<a href="https://react.dev/learn/sharing-state-between-components">React公式の説明</a>を参照する。検索結果や件数のように既存の値から計算できるものは、不要なstateやEffectを増やさずに導出する。<a href="https://react.dev/learn/you-might-not-need-an-effect">React公式のEffectに関する説明</a>も教材に対応付ける。</p>
+<h2 id="section-9">6 連携課題で確認する失敗と境界</h2><div class="table-scroll" tabindex="0" aria-label="表。狭い画面では横にスクロールできます。"><table>
+<thead>
+<tr>
+<th>条件</th>
+<th>学習者が確認する結果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>入力が不正</td>
+<td>保存せず、該当する入力に理由を表示する</td>
+</tr>
+<tr>
+<td>通信が遅い</td>
+<td>処理中が分かり、同じ操作の重複を抑える</td>
+</tr>
+<tr>
+<td>保存に失敗</td>
+<td>入力が残り、失敗と再試行を理解できる</td>
+</tr>
+<tr>
+<td>取得が0件</td>
+<td>空であることと次の操作を表示する</td>
+</tr>
+<tr>
+<td>権限が不足</td>
+<td>操作を拒否した結果を表示し、権限を誤解させない</td>
+</tr>
+<tr>
+<td>対象が別の場所で更新・削除された</td>
+<td>最新状態の取得や、操作を続けられない理由を示す</td>
+</tr>
+<tr>
+<td>対象・検索条件が変わった後に古い応答が届く</td>
+<td>現在の画面へ古い結果を混ぜない</td>
+</tr>
+<tr>
+<td>同じ部品を複数配置</td>
+<td>ID、ラベル、状態、イベントが他の部品と混ざらない</td>
+</tr>
+</tbody></table>
+</div><p>送信ボタンを無効にしただけで、サーバー上の重複処理を完全に防げたとは扱わない。M11〜M13でAPIとDB側の検証・整合性も確認する。</p>
+<h2 id="section-10">7 操作とアクセシビリティ</h2><p>部品の学習には、意味のある要素、名前と説明、キーボード操作、フォーカス、状態の伝達を含める。<a href="https://www.w3.org/WAI/ARIA/apg/">W3CのARIA Authoring Practices Guide</a>を複雑な部品の操作仕様の参照先にする。</p>
+<p>ダイアログではフォーカスの移動、閉じる操作、背景の操作を確認する。<a href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/">W3CのDialog Pattern</a>にある操作の考え方を、採用した標準要素やライブラリで確かめる。APGのサンプルを貼り付けるだけで製品の確認が完了したとは扱わない。</p>
+<p>成功や件数の変化等は、視覚的な表示に加え、必要な状態メッセージを支援技術へ伝える。<a href="https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html">W3CのStatus Messagesの解説</a>を参照する。修正に必要なエラーは一時的な通知だけに置かず、フォーム等で引き続き読めるようにする。</p>
+<h2 id="section-11">8 部品の状態見本と検証</h2><p>M09ではStorybook等で部品の状態見本を作る。通常、長い内容、無効、入力エラー、開閉、処理中等を、実際のAPIがなくても観察できるようにする。教材ではツールの基本設定を配布し、学習者は部品の入力と状態を変える。</p>
+<p>Storybookでは部品の状態をstoryとして記録できる。<a href="https://storybook.js.org/docs/writing-stories">公式のstoriesの説明</a>を参照する。アクセシビリティの自動確認も利用できるが、キーボード、フォーカス、実際の画面連携は手動・操作テストでも確認する。<a href="https://storybook.js.org/docs/writing-tests/accessibility-testing">公式のアクセシビリティテスト資料</a>を参照する。</p>
+<p>部品単体の見本が通ることと、実アプリへの統合が通ることを別の証拠として保存する。見本集の作成だけでM10の修了を確定しない。</p>
+<h2 id="section-12">9 UIの提出物と評価</h2><p>提出物は、部品の仕様、コード、状態見本、既存画面への接続、操作・失敗ケースの結果、変更理由とする。M02では静的な見本とCSS、M06ではDOMの操作、M09ではReactの契約と状態、M10では連携までを段階に応じて求める。</p>
+<p>評価は、配布したデザイン規則への適合、部品契約、状態と操作、既存機能の維持、失敗処理、アクセシビリティを基準にする。代表的な狭い画面・中間・PC幅を指定して確認し、文章量やデータ件数も変える。</p>
+<p>デザインの違いを指摘するときは「余白の規則と違う」「主要な操作が同じ重さで並ぶ」「エラーの対象が分からない」等、根拠を示す。講師の好みと同じ配色であることや、ピクセル単位の一致を一律の合格条件にしない。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

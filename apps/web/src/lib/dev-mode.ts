@@ -12,9 +12,11 @@
  * (`skill_map.dev_mode`) で、この値はそれと AND を取る (`SkillTreePage`)。
  */
 
-export const DEV_MODE_HEADER = "X-Falcon-Dev-Mode";
+import { readStellaStorage } from "./brand-storage";
 
-export const DEV_MODE_STORAGE_KEY = "falcon_dev_mode_v1";
+export const DEV_MODE_HEADER = "X-Stella-Dev-Mode";
+
+export const DEV_MODE_STORAGE_KEY = "stella_dev_mode_v1";
 
 /** localStorage の生の値をオン/オフにする。未保存はオフ (明示的に FAB で入れる)。 */
 export function parseDevModeStored(raw: string | null): boolean {
@@ -41,7 +43,7 @@ export function revealsDevMap(requested: boolean, serverDevMode: boolean | undef
 
 function readStored(): boolean {
   try {
-    return parseDevModeStored(localStorage.getItem(DEV_MODE_STORAGE_KEY));
+    return parseDevModeStored(readStellaStorage(localStorage, DEV_MODE_STORAGE_KEY));
   } catch {
     // 読めない (プライベートモードなど) ときも伏せる側へ倒す。
     return false;

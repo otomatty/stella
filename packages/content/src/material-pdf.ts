@@ -1,5 +1,5 @@
 /**
- * 教材 PDF 自動生成の共有ロジック (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 教材 PDF 自動生成の共有ロジック。
  *
  * - 生成対象 (トピック単位 = D1 レッスン単位) の列挙
  * - 生成元の内容ハッシュ (= R2 キーの一部。差分検知と版判定の正本)

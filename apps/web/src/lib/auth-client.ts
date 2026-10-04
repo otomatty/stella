@@ -5,7 +5,9 @@
  *   - コールバック後 JWT を localStorage に保持し、 api-client が Bearer に載せる
  */
 
-const TOKEN_KEY = "falcon_auth_token_v1";
+import { readStellaStorage, removeStellaStorage } from "./brand-storage";
+
+const TOKEN_KEY = "stella_auth_token_v1";
 
 const serverUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.replace(/\/$/, "");
 
@@ -60,13 +62,15 @@ function emit(session: Session | null): void {
 
 function readToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  return readStellaStorage(window.localStorage, TOKEN_KEY);
 }
 
 function storeToken(token: string | null): void {
   if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(TOKEN_KEY, token);
-  else window.localStorage.removeItem(TOKEN_KEY);
+  if (token) {
+    window.localStorage.setItem(TOKEN_KEY, token);
+    window.localStorage.removeItem("falcon_auth_token_v1");
+  } else removeStellaStorage(window.localStorage, TOKEN_KEY);
   emit(token ? sessionFromToken(token) : null);
 }
 

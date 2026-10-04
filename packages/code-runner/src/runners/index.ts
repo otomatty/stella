@@ -1,5 +1,5 @@
 /**
- * 言語別ランナーのディスパッチャ (falcon-informal P0)。
+ * 言語別ランナーのディスパッチャ (stella P0)。
  *
  * `getRunner(language)` は `CodeRunner` インタフェースを満たす言語別実装を返す。
  * 本プロジェクトでは JavaScript / TypeScript / SQL / 擬似言語 (fe-pseudo) に対応。

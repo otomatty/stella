@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { readStellaStorage } from "@/lib/brand-storage";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
 export type CelebrationKind = "unlocked" | "appeared";
@@ -35,7 +36,7 @@ interface SeenNode {
 
 export type Snapshot = Record<string, SeenNode>;
 
-const STORAGE_PREFIX = "falcon_skill_tree_seen_v1";
+const STORAGE_PREFIX = "stella_skill_tree_seen_v1";
 
 export function snapshotOf(nodes: SkillMapStageNode[]): Snapshot {
   const snapshot: Snapshot = {};
@@ -76,7 +77,7 @@ function storageKeyOf(userId: string): string {
 
 function readSnapshot(userId: string): Snapshot | null {
   try {
-    const raw = window.localStorage.getItem(storageKeyOf(userId));
+    const raw = readStellaStorage(window.localStorage, storageKeyOf(userId));
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
     return typeof parsed === "object" && parsed !== null ? (parsed as Snapshot) : null;

@@ -1,6 +1,5 @@
 /**
- * デイリー復習 (SRS) のデータアクセス層
- * (docs/superpowers/specs/2026-08-20-daily-srs-review-design.md §4)。
+ * デイリー復習 (SRS) のデータアクセス層。
  * 採点はサーバ側で行い、 正解・解説は解答後にのみ受け取る。
  */
 

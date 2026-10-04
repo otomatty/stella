@@ -283,7 +283,7 @@ export const lessonMaterials = sqliteTable("lesson_materials", {
 });
 
 /**
- * 配布資料の版履歴 (教材 PDF 自動生成 — docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 配布資料の版履歴 (教材 PDF 自動生成)。
  * R2 のオブジェクトは版ごとに不変キー (`lesson-pdf/.../<sourceHash>.pdf`) で全版残し、
  * この表が「何版がどのキーか」を持つ。受講者へは lesson_materials の最新 path のみ、
  * staff は任意の版をダウンロードできる。
@@ -761,7 +761,7 @@ export const quizAttempts = sqliteTable("quiz_attempts", {
 });
 
 // ---------------------------------------------------------------
-// デイリー復習 (SRS — docs/superpowers/specs/2026-08-20-daily-srs-review-design.md)
+// デイリー復習 (SRS)
 // ---------------------------------------------------------------
 
 /**

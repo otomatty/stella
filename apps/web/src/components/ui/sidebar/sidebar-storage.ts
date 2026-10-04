@@ -6,7 +6,9 @@
  */
 
 /** localStorage のキー。 値は `"1"` / `"0"`。 */
-export const SIDEBAR_STORAGE_KEY = "falcon_sidebar_open_v1";
+import { readStellaStorage } from "@/lib/brand-storage";
+
+export const SIDEBAR_STORAGE_KEY = "stella_sidebar_open_v1";
 
 /** 保存値を真偽値へ。 未保存 / 壊れた値のときは `fallback` を返す。 */
 export function parseSidebarOpen(raw: string | null, fallback: boolean): boolean {
@@ -19,7 +21,7 @@ export function parseSidebarOpen(raw: string | null, fallback: boolean): boolean
 export function readSidebarOpen(fallback: boolean): boolean {
   if (typeof window === "undefined") return fallback;
   try {
-    return parseSidebarOpen(localStorage.getItem(SIDEBAR_STORAGE_KEY), fallback);
+    return parseSidebarOpen(readStellaStorage(localStorage, SIDEBAR_STORAGE_KEY), fallback);
   } catch {
     // private モード等で読めない場合は既定値のまま進める
     return fallback;

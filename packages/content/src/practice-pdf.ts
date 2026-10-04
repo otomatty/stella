@@ -1,6 +1,5 @@
 /**
- * practice.md を配布 PDF 用に「前半 = 問題編 / 後半 = 解答編」へ再構成する
- * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * practice.md を配布 PDF 用に「前半 = 問題編 / 後半 = 解答編」へ再構成する。
  *
  * practice.md の定型 (parse-quiz.ts と同じ前提):
  *   # レッスンn-n 演習 — タイトル
