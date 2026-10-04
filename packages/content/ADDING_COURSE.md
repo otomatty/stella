@@ -95,7 +95,7 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 
 #### スキルツリー用の任意フィールド
 
-ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）は `docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
+ホームのステージマップ（スキルツリー）は、講座をスキルとして並べます。スキルの解放と見え方は `course.json` の任意フィールドが決めます。どこまで見えるか（0〜1 歩 = 名前と解放条件／2 歩 = ぼかした名前だけ／3 歩 = 線だけ／4 歩以上 = 出さない）。値は manifest → seed 経由で D1 `stages.prerequisites` / `parent` / `can_do` / `theme` に入り、評価器（`@stella/shared/skill-map`）が読みます。
 
 | フィールド | 型 | 何になるか |
 | --- | --- | --- |

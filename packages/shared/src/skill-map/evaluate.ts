@@ -64,8 +64,7 @@
 export type SkillMapState = "cleared" | "active" | "unlocked" | "locked";
 
 /**
- * 星の見え方。段の由来と各段で何を返すかは `docs/superpowers/specs/
- * 2026-08-30-skill-tree-fog-display-design.md`。
+ * 星の見え方。
  * - `full`   … タイトル・到達説明・解放条件まで見せてよい
  * - `fog`    … タイトルはぼかしの予告のみ (画面側で伏せる)。解放条件や slug は出さない
  * - `edge`   … 星そのものを描かない。手前の星から伸びる線だけが「続きがある」を示す

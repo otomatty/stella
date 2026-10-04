@@ -11,7 +11,7 @@ import {
 
 export type { ExecutionResult } from "./grader-protocol.js";
 
-const VIEW_TYPE = "falcon.grader";
+const VIEW_TYPE = "stella.grader";
 const GRADE_TIMEOUT_MS = 60_000;
 const READY_TIMEOUT_MS = 15_000;
 

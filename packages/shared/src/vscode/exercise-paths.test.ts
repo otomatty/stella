@@ -3,39 +3,64 @@ import type { Assignment } from "../types.js";
 import {
   assignmentIdFromExercisePath,
   exerciseRoot,
+  exerciseRootForPath,
+  preferredExercisePath,
   filesToWrite,
   isPathInsideDir,
 } from "./exercise-paths.js";
 
 describe("exerciseRoot", () => {
-  it("nests under .falcon-informal/exercises", () => {
+  it("nests under .stella/exercises", () => {
     expect(exerciseRoot("/home/u", "asg-1").replace(/\\/g, "/")).toBe(
-      "/home/u/.falcon-informal/exercises/asg-1",
+      "/home/u/.stella/exercises/asg-1",
     );
+  });
+});
+
+describe("legacy exercise paths", () => {
+  it("still finds assignments in saved legacy workspace folders", () => {
+    expect(
+      assignmentIdFromExercisePath("/home/u/.falcon-informal/exercises/asg-1/main.js", "/home/u"),
+    ).toBe("asg-1");
+  });
+
+  it("grades the folder currently open instead of a different copy", () => {
+    expect(
+      exerciseRootForPath("/home/u", "asg-1", "/home/u/.falcon-informal/exercises/asg-1/main.js"),
+    ).toBe("/home/u/.falcon-informal/exercises/asg-1");
+    expect(exerciseRootForPath("/home/u", "asg-1", "/home/u/.stella/exercises/asg-1/main.js")).toBe(
+      "/home/u/.stella/exercises/asg-1",
+    );
+    expect(
+      exerciseRootForPath("/home/u", "asg-1", "/home/u/.falcon-informal/exercises/asg-10/main.js"),
+    ).toBe("/home/u/.stella/exercises/asg-1");
+  });
+
+  it("prefers the new folder when both copies are open", () => {
+    expect(
+      preferredExercisePath("/home/u", "asg-1", [
+        "/home/u/.falcon-informal/exercises/asg-1",
+        "/home/u/.stella/exercises/asg-1",
+      ]),
+    ).toBe("/home/u/.stella/exercises/asg-1");
   });
 });
 
 describe("isPathInsideDir", () => {
   it("accepts the directory and files under it", () => {
     expect(
-      isPathInsideDir(
-        "/home/u/.falcon-informal/exercises/asg-1",
-        "/home/u/.falcon-informal/exercises/asg-1",
-      ),
+      isPathInsideDir("/home/u/.stella/exercises/asg-1", "/home/u/.stella/exercises/asg-1"),
     ).toBe(true);
     expect(
-      isPathInsideDir(
-        "/home/u/.falcon-informal/exercises/asg-1/main.js",
-        "/home/u/.falcon-informal/exercises/asg-1",
-      ),
+      isPathInsideDir("/home/u/.stella/exercises/asg-1/main.js", "/home/u/.stella/exercises/asg-1"),
     ).toBe(true);
   });
 
   it("rejects a prefix-sibling exercise folder", () => {
     expect(
       isPathInsideDir(
-        "/home/u/.falcon-informal/exercises/asg-10/main.js",
-        "/home/u/.falcon-informal/exercises/asg-1",
+        "/home/u/.stella/exercises/asg-10/main.js",
+        "/home/u/.stella/exercises/asg-1",
       ),
     ).toBe(false);
   });
@@ -43,8 +68,8 @@ describe("isPathInsideDir", () => {
   it("accepts Windows paths", () => {
     expect(
       isPathInsideDir(
-        "C:\\Users\\u\\.falcon-informal\\exercises\\asg-1\\main.js",
-        "C:\\Users\\u\\.falcon-informal\\exercises\\asg-1",
+        "C:\\Users\\u\\.stella\\exercises\\asg-1\\main.js",
+        "C:\\Users\\u\\.stella\\exercises\\asg-1",
       ),
     ).toBe(true);
   });
@@ -52,19 +77,25 @@ describe("isPathInsideDir", () => {
 
 describe("assignmentIdFromExercisePath", () => {
   it("reads the assignment id from a file under the exercise folder", () => {
-    expect(
-      assignmentIdFromExercisePath("/home/u/.falcon-informal/exercises/asg-1/main.js", "/home/u"),
-    ).toBe("asg-1");
+    expect(assignmentIdFromExercisePath("/home/u/.stella/exercises/asg-1/main.js", "/home/u")).toBe(
+      "asg-1",
+    );
   });
 
   it("returns undefined outside the exercise root", () => {
     expect(assignmentIdFromExercisePath("/home/u/other/main.js", "/home/u")).toBeUndefined();
   });
 
+  it("finds an assignment when the home path has a trailing slash", () => {
+    expect(
+      assignmentIdFromExercisePath("/home/u/.stella/exercises/asg-1/main.js", "/home/u/"),
+    ).toBe("asg-1");
+  });
+
   it("accepts Windows paths", () => {
     expect(
       assignmentIdFromExercisePath(
-        "C:\\Users\\u\\.falcon-informal\\exercises\\asg-1\\main.js",
+        "C:\\Users\\u\\.stella\\exercises\\asg-1\\main.js",
         "C:\\Users\\u",
       ),
     ).toBe("asg-1");

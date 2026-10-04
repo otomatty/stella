@@ -1,6 +1,7 @@
 import {
   assignmentIdFromExercisePath,
-  exerciseRoot,
+  exerciseRootForPath,
+  preferredExercisePath,
   isPathInsideDir,
 } from "@stella/shared/vscode/exercise-paths";
 import type { Assignment } from "@stella/shared/types";
@@ -79,7 +80,17 @@ export async function gradeActiveExercise(): Promise<GradeRun> {
     throw new Error("課題フォルダを開いてください");
   }
   const assignment = await getAssignmentForGrading(assignmentId);
-  const rootUri = vscode.Uri.file(exerciseRoot(resolveHomeDir(), assignment.id));
+  const home = resolveHomeDir();
+  const editorPath = vscode.window.activeTextEditor?.document.uri.fsPath;
+  const activePath =
+    editorPath && assignmentIdFromExercisePath(editorPath, home) === assignmentId
+      ? editorPath
+      : preferredExercisePath(
+          home,
+          assignmentId,
+          (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
+        );
+  const rootUri = vscode.Uri.file(exerciseRootForPath(home, assignment.id, activePath));
   await saveDirtyExerciseFiles(rootUri);
   const files = await readExerciseFiles(rootUri);
   return { assignment, files, result: await gradeFiles({ assignment, files }) };

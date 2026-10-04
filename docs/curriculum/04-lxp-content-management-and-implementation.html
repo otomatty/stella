@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LXP教材管理と実装の改訂設計</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html" aria-current="page">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 分割教材の管理</a></li><li><a href="#section-3">2 教材ファイルの構成</a></li><li><a href="#section-4">3 単元の登録例</a></li><li><a href="#section-5">4 スキルと進級の改訂</a></li><li><a href="#section-6">5 学習画面</a></li><li><a href="#section-7">6 プレビューと実行</a></li><li><a href="#section-8">7 UI評価の保存</a></li><li><a href="#section-9">8 制作と導入の順序</a></li><li><a href="#section-10">9 参照元を公開の必須条件にする</a></li><li><a href="#section-11">10 VS Code未導入の学習者への対応</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">LXP教材管理と実装の改訂設計</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>LXPは18の教材パックを個別に管理し、学習者には現在の単元と問題群を表示する。教材を分けても、前提スキル、確認結果、復習、提出履歴をコース全体で共有する。WebアプリをVS CodeのWebViewに埋め込み、拡張が実プロジェクトの操作と実行を担当する構成を引き継ぐ。</p>
+<p>現在のLXPの実装済み機能とDBは未確認である。以下は既存機能へ対応付ける要求仕様とする。教材本文、全問題、実行用スターター、LXP機能の実装は、この設計案とは別の制作物である。</p>
+<h2 id="section-2">1 分割教材の管理</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>管理対象</th>
+<th>主な情報</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>コース版</td>
+<td>目標、教材の順序、卒業基準、関連知識</td>
+<td>全体の整合性を保つ</td>
+</tr>
+<tr>
+<td>教材パック版</td>
+<td>M01〜M18、前提、単元、時間、修了基準</td>
+<td>個別に配信・改訂する</td>
+</tr>
+<tr>
+<td>単元版</td>
+<td>学習するパターン、既習スキル、説明、課題セット</td>
+<td>一つの考え方を反復する</td>
+</tr>
+<tr>
+<td>課題版</td>
+<td>種類、仕様、受入条件、素材、評価</td>
+<td>一問ごとの実装と判定を固定する</td>
+</tr>
+<tr>
+<td>スキル</td>
+<td>観察できる小項目、前提、証拠</td>
+<td>教材をまたぐ習得を記録する</td>
+</tr>
+<tr>
+<td>成果物の参照</td>
+<td>検証関数、UI部品、API契約、開始点</td>
+<td>前の実装を後の教材へ接続する</td>
+</tr>
+<tr>
+<td>復習予定</td>
+<td>スキル、確認A、確認B、予定日、結果</td>
+<td>定着と再確認を管理する</td>
+</tr>
+<tr>
+<td>参照元の版</td>
+<td>資料名、作成者、URL・節、資料の版、確認日、利用条件</td>
+<td>根拠と再利用条件を追えるようにする</td>
+</tr>
+<tr>
+<td>参照元の使用箇所</td>
+<td>単元・課題・本文のID、sourceRef、利用目的、対象環境、レビュー</td>
+<td>どの説明・受入条件に資料を使ったかを確認する</td>
+</tr>
+</tbody></table>
+</div><p>単元と課題には「使うスキル」と「今回評価するスキル」を区別して登録する。入力部品に検証関数を使っただけで、検証関数の自力実装まで確認できたとは扱わない。</p>
+<h2 id="section-3">2 教材ファイルの構成</h2><pre><code class="language-text">web-fullstack/
+  course.json
+  skills.json
+  knowledge-map.json
+  source-registry.json
+  environments/
+    frontend-01.json
+  materials/
+    M09-react-ui/
+      material.json
+      units/
+        text-field/
+          unit.json
+          references.json
+          00-はじめに.md
+          01-解説と参考例.md
+          02-基礎課題と接続練習.md
+          03-自力演習.md
+          04-修正演習.md
+          05-統合課題.md
+          06-確認と復習.md
+          07-関連知識.md
+          tasks.json
+          hints.json
+          assets/
+          starter/
+          tests-public/
+
+instructor-private/
+  tests-private/
+  solutions/
+  assessment-variants/
+  review-guides/</code></pre><p>課題の種類と表示順を登録情報で管理する。本文のファイル番号だけに依存して、基礎・接続・自力・修正・統合の順序を判定しない。講師用の解答と未見確認の素材は公開教材に含めず、実施時に必要なものだけを配信する。</p>
+<p>教材パック単位の公開版とコース全体の採用版を結び付ける。受講途中で問題、スターター、評価基準が暗黙に変わらないようにする。教材を分割しても、単元ごとに解説や依存ライブラリの版が矛盾しないことを公開前に確認する。</p>
+<p>source-registry.jsonで共有資料を管理し、references.jsonで単元の解説、コード、図、課題と資料の対応を登録する。environmentsには採用技術・実行環境の版を記録する。参照元の項目と公開条件は<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>に定める。</p>
+<h2 id="section-4">3 単元の登録例</h2><p>以下はM09の入力部品の例である。IDと項目名は初期案で、既存LXPの構造に対応付ける。各課題の仕様と公開・講師用評価は別レコードとして登録する。</p>
+<pre><code class="language-json">{
+  &quot;schemaVersion&quot;: &quot;2.1&quot;,
+  &quot;courseId&quot;: &quot;web-fullstack&quot;,
+  &quot;materialId&quot;: &quot;M09&quot;,
+  &quot;unitId&quot;: &quot;text-field&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;referencesFile&quot;: &quot;references.json&quot;,
+  &quot;environmentRef&quot;: &quot;frontend-01@1.0.0&quot;,
+  &quot;title&quot;: &quot;入力部品を作ってフォームにつなぐ&quot;,
+  &quot;requiredSkills&quot;: [&quot;WEB01.form&quot;, &quot;PRG02.function&quot;, &quot;UI01.props&quot;, &quot;UI01.state&quot;],
+  &quot;usedSkills&quot;: [&quot;WEB01.form&quot;, &quot;PRG02.validation&quot;, &quot;UI01.state&quot;],
+  &quot;assessedSkills&quot;: [&quot;CMP01.input-contract&quot;, &quot;DSN01.component-rules&quot;],
+  &quot;practiceGroups&quot;: [
+    { &quot;kind&quot;: &quot;basic&quot;, &quot;taskIds&quot;: [&quot;Q01&quot;, &quot;Q02&quot;, &quot;Q03&quot;, &quot;Q04&quot;, &quot;Q05&quot;, &quot;Q06&quot;, &quot;Q07&quot;, &quot;Q08&quot;] },
+    { &quot;kind&quot;: &quot;connection&quot;, &quot;taskIds&quot;: [&quot;C01&quot;, &quot;C02&quot;] },
+    { &quot;kind&quot;: &quot;independent&quot;, &quot;taskIds&quot;: [&quot;S01&quot;, &quot;S02&quot;] },
+    { &quot;kind&quot;: &quot;debug&quot;, &quot;taskIds&quot;: [&quot;R01&quot;, &quot;R02&quot;] }
+  ],
+  &quot;assessments&quot;: { &quot;initial&quot;: &quot;A&quot;, &quot;delayed&quot;: &quot;B&quot; },
+  &quot;reusedArtifacts&quot;: [&quot;M04.validation-functions&quot;],
+  &quot;laterIntegration&quot;: [&quot;M10.edit-form&quot;],
+  &quot;runnerIds&quot;: [&quot;component-preview&quot;, &quot;public-check&quot;, &quot;storybook&quot;],
+  &quot;knowledgeRefs&quot;: [&quot;UI.accessible-name&quot;, &quot;ENG.component-contract&quot;]
+}</code></pre><p>課題の完全な識別はコース、教材、単元、課題、版を組み合わせる。Q01等の短い番号だけで結果を保存しない。確認AとBは複数の予備仕様を持ち、学習者が見た問題を未見として再割当しない。</p>
+<h2 id="section-5">4 スキルと進級の改訂</h2><p>初回案のスキル群を引き継ぎ、UI部品・デザイン・統合を評価可能な小項目として追加する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>追加するスキル群</th>
+<th>小項目の例</th>
+<th>主な教材</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DSN01 デザイン規則</td>
+<td>情報の階層、余白、文字、色、画面幅、状態</td>
+<td>M02、M06、M09、M10</td>
+</tr>
+<tr>
+<td>CMP01 部品契約</td>
+<td>props、イベント、複数配置、再利用、状態見本</td>
+<td>M06、M09</td>
+</tr>
+<tr>
+<td>CMP02 操作とアクセシビリティ</td>
+<td>ラベル、キーボード、フォーカス、開閉、状態の伝達</td>
+<td>M02、M06、M09、M10</td>
+</tr>
+<tr>
+<td>INT01 画面と機能の統合</td>
+<td>フォーム検証、API接続、結果反映、既存機能の維持</td>
+<td>M07、M10、M14、M17</td>
+</tr>
+</tbody></table>
+</div><p>登録時に小項目IDと評価対象を検証する。前提のグラフに循環や未登録IDがないことも確認する。初回案の段階IDから教材IDへ変更する場合、意味が同じスキルの証拠は対応表で引き継ぐ。意味や難度が変わる確認を、単純なID変更で合格へ置き換えない。</p>
+<p>作業状態と習得状態を分け、自力確認と遅延確認の証拠を保持する。教材の修了率に加え、必須スキルの不足と、後続のどの課題が保留されるかを表示する。</p>
+<h2 id="section-6">5 学習画面</h2><p>コースマップには18パックと、その教材で作れるものを表示する。パックを開くと単元が並び、各単元には基礎、接続、自力、修正、統合、確認A、確認Bの状況を示す。</p>
+<p>課題画面の先頭には「今回作るもの」「前に学んだ何を使うか」「完成条件」「対象ファイル」を置く。現在の問題を中心に表示し、基礎課題をすべて一つの長い本文に連結して読み進める方式にはしない。</p>
+<p>UIの課題には部品の仕様、状態の選択、操作例、デザイン規則へのリンクを用意する。画面とコードを並べ、問題を変えても学習位置、入力したメモ、実行結果を復元する。教材を移る際は、再利用する成果物と必要な準備を案内する。</p>
+<p>説明と課題の近くに参照元と読む箇所を表示し、単元の末尾にも一覧を置く。共有する資料は登録情報から生成して表示する。WebViewとWeb画面、配布・印刷した教材で参照元を確認できるようにする。</p>
+<h2 id="section-7">6 プレビューと実行</h2><p>HTML・DOMの画面、Reactの部品見本、Storybook、アプリの画面、公開テストは、登録したrunnerIdごとに実行方法を固定する。LXPのWebViewから拡張へ課題IDとrunnerIdを渡し、拡張が作業領域と実行定義を解決する。</p>
+<p>WebViewから受け取った任意の文字列をコマンドとして実行しない。プロジェクトの準備では既存コードを上書きせず、衝突と準備先を示す。学習用のプレビューとLXP自身の画面を区別し、前者のエラーで学習画面を失わないようにする。</p>
+<p>部品プレビューでは通常、無効、エラー、長文等の状態を切り替えられるようにする。実アプリの連携は別の画面で確認する。バックエンドをまだ作らない段階では、固定したデータと疑似応答または提供APIを使う。</p>
+<p>iframeまたは同梱UIによる埋込み、postMessage、メッセージの検証、CSP、停止と再実行、正式評価環境の扱いは初回案を引き継ぐ。実装時には現行LXPの埋込み・認証方式を確認する。</p>
+<h2 id="section-8">7 UI評価の保存</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>証拠</th>
+<th>保存する内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>コード提出</td>
+<td>課題・素材の版、対象ファイル、内容ハッシュ、説明</td>
+</tr>
+<tr>
+<td>デザイン確認</td>
+<td>適用規則、画面幅、状態、画像や観察結果</td>
+</tr>
+<tr>
+<td>部品の確認</td>
+<td>props、状態見本、操作結果、複数配置</td>
+</tr>
+<tr>
+<td>統合の確認</td>
+<td>API契約、提供環境、操作、成功・失敗、既存機能</td>
+</tr>
+<tr>
+<td>自力確認</td>
+<td>課題の仕様、許可した参照、ヒント・解答・AI・講師支援</td>
+</tr>
+<tr>
+<td>復習</td>
+<td>確認Aと異なる仕様、日時、結果、追加の補習</td>
+</tr>
+</tbody></table>
+</div><p>ローカルのテスト成功と、講師レビューまたは隔離環境の正式評価を区別する。自動の画像差分を使う場合も、デザインの目的や操作の成立を画像だけで判断しない。</p>
+<h2 id="section-9">8 制作と導入の順序</h2><ol>
+<li>18パックの単元と前提スキルを確定する。</li>
+<li>採用する情報源と対象版を決め、参照元の登録・表示を用意する。</li>
+<li>M01のブラウザ上の導入案内、WebViewへの引継ぎ、基本操作を先に通し、続いて条件抽出、フォーム、React入力部品の代表単元を作る。</li>
+<li>基礎、接続、自力、修正、確認A・Bを一巡できるようにする。</li>
+<li>既存画面への統合課題を作り、部品単体と連携の評価を分ける。</li>
+<li>パック間の成果物の移動と、習得証拠の共有を確認する。</li>
+<li>未経験者の試行で問題数、所要時間、説明、補習を調整する。</li>
+<li>関連知識・書籍・歴史を対応付け、他のパックへ制作を広げる。</li>
+</ol>
+<p>初期に必要なLXP機能は、導入案内のWeb表示とWebViewへの引継ぎ、パック・単元・課題の表示、参照元の登録・表示・公開前の確認、固定した実行定義、コード提出、レビュー、支援記録、確認A・Bの管理、版と証拠の保存である。学習支援の高度な自動化は、この流れが成立した後に試行する。</p>
+<h2 id="section-10">9 参照元を公開の必須条件にする</h2><p>参照元、使用箇所、対象環境を登録し、説明や受入条件を資料が支えることを講師が確認してから単元を公開する。未登録のsourceRef、根拠としてのトップページのみの登録、版の不一致、再利用条件が未確認の素材、未承認の使用箇所は公開を止める。</p>
+<p>リンクがタイムアウト・アクセス制限となる場合は、削除された資料と分けて扱い、手動確認の記録を求める。構造とリンクの自動検査だけで内容の正しさを承認しない。公開された教材は参照元の版を保持し、資料の変更や訂正を新しい教材版へ反映する。</p>
+<h2 id="section-11">10 VS Code未導入の学習者への対応</h2><p>M01の導入手順は通常のブラウザでも配信し、LXP拡張の起動後に同じ教材版・単元・ステップへ戻れるようにする。OS別の手順と確認結果を持ち、環境の準備完了と操作スキルの習得を別に記録する。</p>
+<p>導入前は学習者と講師による確認を使う。拡張起動後の環境診断では、決めた確認コマンドと作業領域だけを使い、手動確認・診断・自力確認の証拠を区別する。詳細な学習画面、反復課題、支援、公開前の検証は<a href="06-m01-beginner-setup-and-basic-operations.html">M01の詳細設計</a>に定める。</p>
+<p>拡張の推奨は教材の段階ごとに管理する。初日の日本語表示とLXP、M02のPrettier、M03のESLint、後続の通信・テスト等を、環境定義と.vscode/extensions.jsonへ対応付ける。推薦一覧、実際の導入、採用版、有効状態、操作確認は別の情報として記録する。具体的な拡張IDと設定例はM01の詳細設計の「VS Code拡張の選定と段階的な導入」に定める。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

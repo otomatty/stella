@@ -51,17 +51,17 @@ export type TreeNode = StageNode | SectionNode | LessonNode | PlaceholderNode;
 
 const CONNECT_NODE: PlaceholderNode = {
   kind: "placeholder",
-  id: "falcon.connect",
+  id: "stella.connect",
   title: "Web で接続",
-  command: "falcon.connect",
+  command: "stella.connect",
 };
 
 export function catalogErrorPlaceholder(message: string): PlaceholderNode {
   return {
     kind: "placeholder",
-    id: "falcon.catalog-error",
+    id: "stella.catalog-error",
     title: message,
-    command: "falcon.refresh",
+    command: "stella.refresh",
   };
 }
 
@@ -120,19 +120,19 @@ export function lessonCommand(node: LessonNode): vscode.Command {
   switch (node.contextValue) {
     case "lesson-web":
       return {
-        command: "falcon.openInWeb",
+        command: "stella.openInWeb",
         title: "Web で開く",
         arguments: [node.stageId, node.id],
       };
     case "lesson-doc":
       return {
-        command: "falcon.openLessonDoc",
+        command: "stella.openLessonDoc",
         title: "ドキュメントを開く",
         arguments: [node],
       };
     case "lesson-code":
       return {
-        command: "falcon.openLessonCode",
+        command: "stella.openLessonCode",
         title: "演習を開く",
         arguments: [node],
       };
@@ -256,7 +256,7 @@ export function registerLessonTree(
   const provider = new LessonTreeProvider(auth);
   registeredProvider = provider;
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("falcon.lessons", provider),
+    vscode.window.registerTreeDataProvider("stella.lessons", provider),
     onDidChangeAuth(() => {
       clearCatalog();
       provider.refresh();

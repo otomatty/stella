@@ -1,4 +1,4 @@
--- 教材バージョン管理 (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)
+-- 教材バージョン管理
 -- 本文のリビジョン履歴と、自動生成 PDF (配布資料) の版履歴。
 CREATE TABLE `lesson_revisions` (
 	`lesson_id` text NOT NULL,

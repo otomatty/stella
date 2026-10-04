@@ -1,6 +1,5 @@
 /**
- * 教材動画のナレーション台本 (`narration.json`) の読み込み・指紋・読み上げ文・検証
- * (docs/superpowers/specs/2026-09-29-lesson-video-auto-generation-design.md の ①)。
+ * 教材動画のナレーション台本 (`narration.json`) の読み込み・指紋・読み上げ文・検証。
  *
  * 台本はトピックディレクトリに `slides.md` と並べて置く任意ファイル。
  * `slides[i]` が `splitSlides(slides.md)` の i 枚目に対応し、各スライドは字幕 (cue) の列を持つ。

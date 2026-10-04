@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M01 初心者向けの環境構築とVS Code基本操作</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html" aria-current="page">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 M01の到達目標</a></li><li><a href="#section-3">2 導入前から教材を読めるようにする</a></li><li><a href="#section-4">3 標準環境と導入の順序</a></li><li><a href="#section-5">4 35時間の単元構成</a></li><li><a href="#section-6">5 一つの操作を説明する形式</a></li><li><a href="#section-10">6 基礎操作を繰り返す課題</a></li><li><a href="#section-11">7 LXPの画面と記録</a></li><li><a href="#section-12">8 よくあるつまずきと支援</a></li><li><a href="#section-13">9 完了条件と進級</a></li><li><a href="#section-14">10 参照元と公開前の制作確認</a></li><li><a href="#section-15">11 VS Code拡張の選定と段階的な導入</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">M01 初心者向けの環境構築とVS Code基本操作</h1><p>作成日 2026年10月4日<br>版 2.2<br>状態 設計案<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>M01は、VS Codeを初めて使う人が、学習用のフォルダーを開き、HTMLを保存・表示・変更し、次の教材を始められる環境を準備する教材にする。ソフトウェアを入れる手順と、日々使う操作を覚える演習を分ける。手順を見ながら導入できたことと、後日も自分で操作できることを別に記録する。</p>
+<p>既存のM01の35時間を細分化する提案であり、18教材パック・36週間・1,260時間の計画は維持する。本書は教材制作とLXP実装のための設計である。配布するインストーラーの版、LXP拡張の配布方法、スクリーンショット、スターターと診断機能は、実装・確認してから教材を公開する。</p>
+<h2 id="section-2">1 M01の到達目標</h2><p>学習者が、次の行動を資料を参照しながら自分で行えることを目標にする。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>行動</th>
+<th>完了の証拠</th>
+<th>後続の教材で使う場面</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VS CodeとLXPを起動する</td>
+<td>教材を開き、閉じた後も同じ単元へ戻れる</td>
+<td>全教材の学習開始</td>
+</tr>
+<tr>
+<td>作業フォルダーを開く</td>
+<td>開いているフォルダーと、保存先を説明できる</td>
+<td>教材やプロジェクトの切替</td>
+</tr>
+<tr>
+<td>ファイルを作成・編集・保存する</td>
+<td>index.htmlを保存し、閉じて開き直せる</td>
+<td>HTML・CSS・JSの実装</td>
+</tr>
+<tr>
+<td>ブラウザで表示・更新する</td>
+<td>変更した見出しが表示される</td>
+<td>画面の制作と確認</td>
+</tr>
+<tr>
+<td>ターミナルを使う</td>
+<td>開いている場所を確認し、指定したコマンドを一つずつ実行できる</td>
+<td>JSの実行、依存関係、開発サーバー</td>
+</tr>
+<tr>
+<td>Node.js・npm・Gitを確認する</td>
+<td>教材で指定した版が使える</td>
+<td>M03以降の実行と変更管理</td>
+</tr>
+<tr>
+<td>ローカルサーバーを起動・停止する</td>
+<td>表示されたURLでページを開き、停止後に再起動できる</td>
+<td>Webアプリの開発</td>
+</tr>
+<tr>
+<td>変更を記録・説明する</td>
+<td>Gitの保存と差分を確認し、変更箇所を説明できる</td>
+<td>提出、レビュー、修正</td>
+</tr>
+<tr>
+<td>困った状態を説明する</td>
+<td>どこまで成功し、何が起きたかを短く伝えられる</td>
+<td>調査と相談</td>
+</tr>
+</tbody></table>
+</div><p>用語は行動の直前か直後に説明する。「フォルダー」は作業場所を開くとき、「拡張機能」はLXPを入れるとき、「サーバー」はURLでページを表示するときに扱う。キーボードのショートカットを暗記することは進級条件にしない。</p>
+<h2 id="section-3">2 導入前から教材を読めるようにする</h2><p>VS Code未導入の学習者は、WebView内の教材をまだ読めない。そのため、導入案内を通常のブラウザでも閲覧できるようにする。</p>
+<pre><code class="language-text">ブラウザで開始案内を読む
+  → PCとOSを確認する
+  → VS Codeを導入する
+  → 日本語表示とLXP拡張を準備する
+  → VS Code内でLXPを開く
+  → 同じ単元の続きから学ぶ</code></pre><p>ブラウザの案内は、VS Codeを再起動する間も開いておける構成にする。LXPのログインや拡張の起動がうまくいかない場合も、外側の案内と問い合わせ先を読めるようにする。必要な導入ページは配布・印刷用にも出力する。</p>
+<p>ブラウザ版とWebView版は、共通の教材ID、単元ID、教材版、ステップIDを使う。ログイン前の進捗は、開始時に手動でステップを選び直せるようにする。ログイン後は保存した位置を共有する。ブラウザとVS Code拡張の接続方式は、実際のLXPの認証・配布方式を確認して決める。</p>
+<p>ブラウザだけでは、ローカルのソフトウェアやファイルの状態を十分に確認できない。導入前は学習者の確認と講師の支援を使い、拡張が起動した後に、許可された作業領域と決めた確認コマンドで診断する。</p>
+<h2 id="section-4">3 標準環境と導入の順序</h2><p>Windowsを主教材の初期案とし、macOSは独立した操作手順で用意する。受講者のOSを確定してから、対象OS・CPU・インストール方法と確認画面を制作する。WindowsとmacOSのコマンドや画面を一つの手順へ混在させない。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>準備するもの</th>
+<th>導入する時点</th>
+<th>設計上の扱い</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>既存のブラウザ</td>
+<td>開始前</td>
+<td>研修で確認した対応ブラウザを案内する</td>
+</tr>
+<tr>
+<td>VS CodeのStable版</td>
+<td>U01</td>
+<td>研修で検証した版を記載し、公式配布元を案内する</td>
+</tr>
+<tr>
+<td>日本語表示</td>
+<td>U01</td>
+<td>公式の表示言語手順に沿い、Language Packを確認する</td>
+</tr>
+<tr>
+<td>LXP拡張</td>
+<td>U01</td>
+<td>公開済みなら拡張ID・発行者を指定する。未公開なら研修側のVSIX配布・更新手順を決める</td>
+</tr>
+<tr>
+<td>Node.jsとnpm</td>
+<td>最初のHTML表示後、U04</td>
+<td>検証したLTSの具体的な版をコース環境へ登録する。既存の適合版は再インストールしない</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>U05</td>
+<td>採用する版と公式の導入手順を記載する</td>
+</tr>
+<tr>
+<td>ローカルサーバー用スターター</td>
+<td>U06</td>
+<td>研修側が準備し、起動方法と依存関係を固定する</td>
+</tr>
+</tbody></table>
+</div><p>最初のHTML表示までは、ブラウザとVS Codeで進める。React、Next.js、DB、Docker、WSL、GitHubへの公開は、それを必要とする後続教材で導入する。最初の単元で用途がまだ分からない設定を大量に行わせない。</p>
+<p>WindowsのVS Code導入は、通常の個人用環境では公式のUser setupを入口にする。会社が管理する端末では、研修担当者が認められた導入方法を先に確認する。<a href="https://code.visualstudio.com/docs/setup/windows">VS CodeのWindows向け導入資料</a>はUser setupとSystem setupを区別している。</p>
+<p>学習フォルダーは、学習者が書き込める自分のユーザーフォルダーにweb-trainingを作る初期案とする。講師は実際の端末で場所を確認する。教材に出す絶対パスのユーザー名は例であることを明示し、その文字列をそのまま作らせない。</p>
+<p>Windowsの主教材はPowerShell、macOSは研修で検証したシェルを使う。ターミナルの種類は画面上に表示する。Windowsでnpm.ps1の実行制限が起きる場合に備え、PowerShell向け手順ではnpm.cmdを使う方法を用意する。組織の設定や実行ポリシーを一律に変更させる手順にはしない。</p>
+<h2 id="section-5">4 35時間の単元構成</h2><p>時間には説明、操作、反復、関連知識、支援、確認を含む。未経験者の試行で調整し、インストールの待ち時間やネットワーク障害を学習者の能力の評価へ入れない。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>単元</th>
+<th>学ぶ内容</th>
+<th align="right">時間</th>
+<th>手を動かす課題</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>U00 開始と事前確認</td>
+<td>PC、OS、ブラウザ、権限、配布元、学習の進め方</td>
+<td align="right">1</td>
+<td>自分の環境を確認し、該当する手順を選ぶ</td>
+</tr>
+<tr>
+<td>U01 VS CodeとLXPの準備</td>
+<td>導入、日本語表示、拡張、LXPの起動、戻り方</td>
+<td align="right">3</td>
+<td>起動・終了・再起動、同じ単元への復帰</td>
+</tr>
+<tr>
+<td>U02 画面とファイルの操作</td>
+<td>エクスプローラー、エディタ、タブ、作業フォルダー、作成・保存</td>
+<td align="right">5</td>
+<td>ファイルを作る、名前を変える、閉じて開き直す</td>
+</tr>
+<tr>
+<td>U03 最初のWebページ</td>
+<td>提供HTML、保存、ブラウザ表示、更新、リンクと相対パス</td>
+<td align="right">5</td>
+<td>見出しや文章を変えて表示し、別ページを作る</td>
+</tr>
+<tr>
+<td>U04 ターミナルと実行環境</td>
+<td>入力場所、現在のフォルダー、コマンド、Node.js・npm</td>
+<td align="right">4</td>
+<td>場所と版を確認し、エディタへの誤入力を直す</td>
+</tr>
+<tr>
+<td>U05 Gitで変更を残す</td>
+<td>Git導入、初期保存、変更と差分、再度の保存</td>
+<td align="right">4</td>
+<td>文章の変更を記録し、前後の差分を説明する</td>
+</tr>
+<tr>
+<td>U06 ローカルサーバーとWebの入口</td>
+<td>提供スターター、起動、localhost、ポート、停止、再起動</td>
+<td align="right">3</td>
+<td>同じページをURLで開き、停止・再起動する</td>
+</tr>
+<tr>
+<td>U07 統合・修正・自力確認</td>
+<td>新しい作業場所、既習操作、よくある失敗、確認A</td>
+<td align="right">4</td>
+<td>別題材のページを自分で準備し、保存・表示・変更・記録する</td>
+</tr>
+<tr>
+<td>横断学習と調整</td>
+<td>OSとファイル、Webの歴史、開発の記録、復習、支援の余裕</td>
+<td align="right">6</td>
+<td>操作と用語をつなぎ、学習記録を残す</td>
+</tr>
+<tr>
+<td>合計</td>
+<td>M01の全時間</td>
+<td align="right">35</td>
+<td>次のM02を始められる状態を確認する</td>
+</tr>
+</tbody></table>
+</div><p>横断学習の6時間に加え、各単元の中でも基礎知識・品質・確認を扱う。コース全体の実装・基礎・読書等の時間に二重計上しない。初週は導入と操作の比重を調整する。</p>
+<p>初日は、環境が正常なら、最初の3〜4時間を目安に「保存したHTMLの文字を変え、ブラウザで確認する」体験へ到達する構成を試す。U02・U03の残りの反復は後日に回せる。最初の一日がソフトウェアの導入だけで終わることを避け、環境に問題がある学習者には講師が導入支援を行う。</p>
+<p>確認BはM02開始後、おおむね一週間を空けて実施する。再インストールはさせず、閉じた状態から作業を再開し、別の短い仕様を実行できるかを確認する。M02の評価・復習時間へ計上する。</p>
+<h2 id="section-6">5 一つの操作を説明する形式</h2><p>一つのステップは通常5〜10分の小さな操作にする。インストールのダウンロードや待機は別に扱う。クリックごとに大量の試験を置かず、作業フォルダーを開く、保存する、表示する等の意味のある節目で確認する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>画面に載せる項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>今回すること</td>
+<td>「学習用のフォルダーを開く」等、一つの行動</td>
+</tr>
+<tr>
+<td>始める状態</td>
+<td>どのアプリを開き、どの画面から始めるか</td>
+</tr>
+<tr>
+<td>操作</td>
+<td>メニュー名、クリックする場所、入力する文字。最初はメニュー操作を主にする</td>
+</tr>
+<tr>
+<td>操作例の画像</td>
+<td>対象OS・表示言語・確認した版で撮影し、操作箇所を示す</td>
+</tr>
+<tr>
+<td>こうなれば完了</td>
+<td>保存先、表示された文字、URL、版等の観察できる結果</td>
+</tr>
+<tr>
+<td>よくある違い</td>
+<td>想定と異なる画面と、元の状態へ戻る方法</td>
+</tr>
+<tr>
+<td>小さな練習</td>
+<td>ファイル名や文章を変え、同じ操作を再度行う</td>
+</tr>
+<tr>
+<td>参照元</td>
+<td>公式ページの該当節、確認日、教材独自の判断</td>
+</tr>
+</tbody></table>
+</div><p>画像の中だけに操作内容を書かず、本文にもメニュー名と入力内容を記載する。小さい画面では画像を拡大できるようにする。動画を付ける場合も、静止画と短い手順で同じ操作をたどれるようにする。</p>
+<p>コードやコマンドにはコピー用のボタンを付ける。コピーする範囲へプロンプト記号や実行結果を混ぜない。実行結果は別の枠へ置き、版やパスが学習者によって違う箇所を説明する。最初は一つのコマンドを実行し、結果を読んでから次へ進む。</p>
+<h3 id="section-7">保存と更新のステップ例</h3><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>学習者に見せる内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>今回すること</td>
+<td>見出しの変更を保存し、ブラウザで確かめる</td>
+</tr>
+<tr>
+<td>始める状態</td>
+<td>VS Codeでindex.htmlを開き、同じファイルをブラウザでも表示している</td>
+</tr>
+<tr>
+<td>操作1</td>
+<td>見出しの文章を「今日の学習予定」に変更する</td>
+</tr>
+<tr>
+<td>操作2</td>
+<td>VS Codeの「ファイル」メニューから「保存」を選ぶ</td>
+</tr>
+<tr>
+<td>操作3</td>
+<td>ブラウザへ移り、更新ボタンを押す</td>
+</tr>
+<tr>
+<td>完了条件</td>
+<td>ブラウザの見出しが「今日の学習予定」になっている</td>
+</tr>
+<tr>
+<td>変わらない場合</td>
+<td>保存したか、ブラウザのURLが同じファイルかを確認する</td>
+</tr>
+<tr>
+<td>次の練習</td>
+<td>見出しを別の文章へ変更し、同じ操作を行う</td>
+</tr>
+</tbody></table>
+</div><p>この例は教材独自の操作課題である。保存操作は<a href="https://code.visualstudio.com/docs/editing/getting-started/editor-tutorial">VS Code Editor tutorial</a>、文書構造はMDN HTMLを参照する。OS・表示言語別の実画面を撮影して操作箇所を追加する。</p>
+<h3 id="section-8">最初のページの例</h3><p>U03では、次の教材独自のひな形を渡す。各タグの詳しい説明はM02で扱い、ここでは保存と表示の操作を練習する。</p>
+<pre><code class="language-html">&lt;!doctype html&gt;
+&lt;html lang=&quot;ja&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;UTF-8&quot;&gt;
+  &lt;title&gt;はじめてのページ&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Web学習を始めました&lt;/h1&gt;
+  &lt;p&gt;この文章を変更して、保存と表示を確かめます。&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre><ol>
+<li>VS Codeで開いた練習フォルダーにindex.htmlを作る。</li>
+<li>ひな形を入力またはコピーし、明示的に保存する。</li>
+<li>OSのファイル操作から、保存したindex.htmlをブラウザで開く。</li>
+<li>見出しを変更し、保存してからブラウザを更新する。</li>
+<li>VS Codeを閉じ、同じフォルダーとファイルを開き直す。</li>
+</ol>
+<p>ここではHTMLをローカルファイルとして表示する。U06でローカルサーバー経由の表示を追加し、ファイルの表示とHTTPでの取得の違いを確認する。ひな形は独自制作、要素と文書構造の参照元は<a href="https://developer.mozilla.org/en-US/docs/Web/HTML">MDN HTML</a>と<a href="https://html.spec.whatwg.org/multipage/">HTML Living Standard</a>とする。</p>
+<h3 id="section-9">環境確認コマンドの例</h3><p>WindowsのPowerShell向けの初期案である。実教材では各コマンドを別々の操作ステップへ分ける。macOSはnpm.cmdをnpmに替えた独立した手順を制作する。</p>
+<pre><code class="language-powershell">node --version</code></pre><pre><code class="language-powershell">npm.cmd --version</code></pre><pre><code class="language-powershell">git --version</code></pre><p>「何か数字が出たら合格」とはせず、コース環境に登録した対象版と照合する。ソフトウェアの導入後に認識されない場合は、保存してVS Codeとターミナルを再起動し、再確認する。</p>
+<p>ターミナル操作は<a href="https://code.visualstudio.com/docs/terminal/basics">VS CodeのTerminal Basics</a>、名前が同じコマンドと拡張子の扱いは<a href="https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence">PowerShellのCommand Precedence</a>を参照する。採用するシェルの版で手順を再現確認してから公開する。</p>
+<h2 id="section-10">6 基礎操作を繰り返す課題</h2><p>M01にも、基礎課題、接続練習、自力演習、修正演習を用意する。OS上の削除や移動の演習は、作り直せる練習ファイルに限定する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>種類</th>
+<th>課題の例</th>
+<th>今回確かめること</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>基礎Q01</td>
+<td>note.txtを作り、一行書いて保存する</td>
+<td>作成・入力・保存</td>
+</tr>
+<tr>
+<td>基礎Q02</td>
+<td>閉じたnote.txtを再度開く</td>
+<td>タブを閉じることとファイルの削除の違い</td>
+</tr>
+<tr>
+<td>基礎Q03</td>
+<td>練習ファイルの名前を変える</td>
+<td>ファイル名と拡張子</td>
+</tr>
+<tr>
+<td>基礎Q04</td>
+<td>practice-aとpractice-bを別々に開く</td>
+<td>作業フォルダーの切替</td>
+</tr>
+<tr>
+<td>基礎Q05</td>
+<td>見出しだけを変え、保存・更新する</td>
+<td>編集・保存・表示の関係</td>
+</tr>
+<tr>
+<td>基礎Q06</td>
+<td>ターミナルの現在の場所を確認する</td>
+<td>ファイルの保存場所とコマンドの実行場所</td>
+</tr>
+<tr>
+<td>接続C01</td>
+<td>U02で作ったフォルダーへU03のページを置く</td>
+<td>ファイル操作とHTML表示</td>
+</tr>
+<tr>
+<td>接続C02</td>
+<td>二つのページをリンクでつなぐ</td>
+<td>名前・位置・相対パス</td>
+</tr>
+<tr>
+<td>自力S01</td>
+<td>別の練習フォルダーで「学習予定」のページを表示する</td>
+<td>手順を組み合わせて再現する</td>
+</tr>
+<tr>
+<td>自力S02</td>
+<td>アプリを閉じた状態から作業を再開し、内容を変更する</td>
+<td>翌日の再開</td>
+</tr>
+<tr>
+<td>修正R01</td>
+<td>保存されていない変更を表示させる</td>
+<td>未保存とブラウザ更新</td>
+</tr>
+<tr>
+<td>修正R02</td>
+<td>違うフォルダー・違うファイルを開いている状態を直す</td>
+<td>対象の確認</td>
+</tr>
+<tr>
+<td>修正R03</td>
+<td>ファイル名が違うリンクを直す</td>
+<td>表示結果から保存先・名前を照合する</td>
+</tr>
+<tr>
+<td>統合T01</td>
+<td>提供スターターを起動し、ページを変更して差分を残す</td>
+<td>フォルダー、実行、表示、変更管理</td>
+</tr>
+</tbody></table>
+</div><p>ファイル名や文章を変える小さな反復から始める。反復で扱った操作を、別題材の自力演習と後日の確認へつなぐ。すべてのインストールを繰り返すことは求めない。</p>
+<p>U05では、学習リポジトリ内にコミットの名前・メールを設定する手順を用意する。研修の識別ルールを使い、個人の既存Git設定を一括で上書きしない。設定の範囲は<a href="https://git-scm.com/docs/git-config">Git config</a>、リポジトリ作成は<a href="https://git-scm.com/docs/git-init">Git init</a>を参照する。GitHubアカウント作成、push、PRは後続の共同作業・提出教材で追加する。</p>
+<h2 id="section-11">7 LXPの画面と記録</h2><p>LXPでは「読む」「操作する」「確認する」を一つのステップとして表示する。画面上には現在のOS、ステップ、今回の完了条件を示し、長い環境構築手順を一ページにまとめない。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>LXPで用意する項目</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>導入案内のWeb表示</td>
+<td>VS Code未導入・未ログインでも必要な案内を読める</td>
+</tr>
+<tr>
+<td>OS別の手順</td>
+<td>自分のOSだけを表示し、操作例・コマンド・確認画面を切り替える</td>
+</tr>
+<tr>
+<td>ステップの保存</td>
+<td>完了、保留、手動確認、診断結果を区別して残す</td>
+</tr>
+<tr>
+<td>ブラウザとWebViewの引継ぎ</td>
+<td>共通IDと教材版で続きへ戻れる</td>
+</tr>
+<tr>
+<td>環境診断</td>
+<td>拡張起動後に対象版、必要なファイル、登録した実行定義を確認する</td>
+</tr>
+<tr>
+<td>画面の復元</td>
+<td>教材を閉じた場合や端末を再起動した場合も再開手順が分かる</td>
+</tr>
+<tr>
+<td>困ったときの案内</td>
+<td>現象を選ぶと、確認箇所と一つずつの復帰操作を示す</td>
+</tr>
+<tr>
+<td>参照元</td>
+<td>ステップの近くに読む箇所を表示し、単元の一覧からも開ける</td>
+</tr>
+<tr>
+<td>支援の記録</td>
+<td>自力、手順参照、ヒント、講師操作、環境の不具合を分ける</td>
+</tr>
+</tbody></table>
+</div><p>環境診断は、既存のLXP拡張が提供できる範囲を調べてから実装する。ブラウザ内で動くLXPの状態だけを見て、Node.jsやGitがローカルで使えると判断しない。WebViewへ任意のコマンド入力欄を設けず、runnerIdで登録した確認・実行を拡張へ依頼する。</p>
+<p>スターターは、学習者が作ったファイルを暗黙に上書きしない。練習ごとに別の作業フォルダーを使い、準備先と衝突を表示する。環境が壊れても、教材の表示と講師へ現象を伝える機能を使えるようにする。</p>
+<p>状態は少なくとも「未開始」「進行中」「環境の問題で保留」「環境準備完了」「確認A合格」「確認B合格」を分ける。実装上は環境状態と習得状態を別の記録にする。クリックで完了を押しただけでは、操作スキルの合格へ変換しない。</p>
+<h2 id="section-12">8 よくあるつまずきと支援</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>現象</th>
+<th>最初に確認すること</th>
+<th>教材で示す復帰方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VS Codeの画面が例と違う</td>
+<td>OS、表示言語、開いているビュー</td>
+<td>メニューから必要なビューを開く。色や位置の違いだけで誤操作としない</td>
+</tr>
+<tr>
+<td>フォルダーが表示されない</td>
+<td>単独ファイルだけ開いていないか</td>
+<td>指定したフォルダーを開き直す</td>
+</tr>
+<tr>
+<td>変更がブラウザに出ない</td>
+<td>保存、更新、開いているファイルの場所</td>
+<td>保存して更新し、URL・保存先を照合する</td>
+</tr>
+<tr>
+<td>HTMLが文章として開く</td>
+<td>ファイル名、拡張子、ブラウザへの関連付け</td>
+<td>保存した名前を確認し、ブラウザで対象ファイルを開く</td>
+</tr>
+<tr>
+<td>nodeやgitが見つからない</td>
+<td>導入状態、PATH、導入前から開いているVS Code</td>
+<td>保存してVS Codeを再起動し、採用版を再確認する</td>
+</tr>
+<tr>
+<td>npm.ps1を実行できない</td>
+<td>WindowsのPowerShellでどのコマンドを実行したか</td>
+<td>検証済みのnpm.cmd手順へ案内する。制限の一括解除を求めない</td>
+</tr>
+<tr>
+<td>LXPが起動しない</td>
+<td>拡張ID・版、有効状態、必要なログイン、Workspace Trust</td>
+<td>該当する確認から一つずつ行い、ブラウザ版で案内を読む</td>
+</tr>
+<tr>
+<td>npmの準備が失敗する</td>
+<td>作業フォルダー、package.json・lockfile、ネットワーク</td>
+<td>準備先と提供スターターの版を確認する。組織の接続条件は講師へ引き継ぐ</td>
+</tr>
+<tr>
+<td>サーバーを開けない</td>
+<td>起動したターミナル、表示されたURL、停止、ポート競合</td>
+<td>実際のURLを開き、登録した停止・再起動手順を使う</td>
+</tr>
+<tr>
+<td>端末の設定変更が必要</td>
+<td>会社の管理方法、操作権限</td>
+<td>研修担当者の導入支援へ回し、学習スキルの不合格にしない</td>
+</tr>
+</tbody></table>
+</div><p>Workspace Trustは、自分で作った練習フォルダーや、出所を確認した研修資料を対象に説明する。すべてのフォルダーを一律に信頼させない。Restricted ModeでのLXP拡張の動作はmanifestと実装を確認する。<a href="https://code.visualstudio.com/docs/editing/workspaces/workspace-trust">VS CodeのWorkspace Trust</a>を参照元にする。</p>
+<p>相談欄は「何をしようとしたか」「どこまで成功したか」「実行した操作またはコマンド」「表示されたメッセージ」を記入する形式にする。添付する画面やログの範囲を指定し、不要なユーザー名・認証情報等は含めない。相談できることもM01の到達目標として扱う。</p>
+<h2 id="section-13">9 完了条件と進級</h2><p>環境の準備は、VS Code、LXP、作業場所、Node.js・npm・Git、提供スターターの起動を確認して完了にする。手動確認と自動診断は記録上で区別する。</p>
+<p>操作の確認Aは、導入済みの環境で、初めて見る短いページ仕様を渡して行う。メニュー、公式資料、操作早見表の参照は許可する。講師が代わりに操作した場合は、環境を整えたことと学習者の自力確認を区別する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>確認項目</th>
+<th>合格の条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>作業場所</td>
+<td>指定した新しい練習フォルダーを開いている</td>
+</tr>
+<tr>
+<td>作成・保存・表示</td>
+<td>指定した文章のHTMLを保存し、該当するページをブラウザで表示する</td>
+</tr>
+<tr>
+<td>変更</td>
+<td>一箇所の追加要求を実装し、保存・更新して確認する</td>
+</tr>
+<tr>
+<td>実行</td>
+<td>ターミナルの場所を確かめ、提供プロジェクトを起動・停止する</td>
+</tr>
+<tr>
+<td>記録</td>
+<td>自分の変更をGitで残し、差分を説明する</td>
+</tr>
+<tr>
+<td>修正・相談</td>
+<td>誤った保存先等を直せる。環境の問題は現象と試したことを伝えられる</td>
+</tr>
+</tbody></table>
+</div><p>確認Bは、VS Codeを閉じた状態から再開する別題材の短い課題にする。確認Aの手順を記憶しただけでは完了できないように、フォルダー名と変更内容を変える。参照や支援の扱いは<a href="03-repeated-practice-and-assessment.html">反復演習と評価</a>を引き継ぐ。</p>
+<p>環境に問題がある場合は環境支援へ回し、可能なブラウザ上の用語・歴史の学習を進める。自力操作の不足は、その操作を使う短い問題を追加し、別の仕様で再確認する。M02は環境準備と確認Aを満たして開始し、遅延確認Bの結果は後続の自力・統合課題の進行へ反映する。</p>
+<h2 id="section-14">10 参照元と公開前の制作確認</h2><p>参照先は2026年10月4日に確認した。これは入口の選定であり、採用端末で手順を再現した記録とは分ける。実教材には該当する節・対象版・利用目的を追加し、<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>の条件で公開する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>資料</th>
+<th>主に使う単元・説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://code.visualstudio.com/docs/setup/windows">VS Code Windows setup</a>、<a href="https://code.visualstudio.com/docs/setup/mac">macOS setup</a></td>
+<td>U00〜U01。導入方法、対象OS、導入後の確認</td>
+</tr>
+<tr>
+<td><a href="https://code.visualstudio.com/docs/editing/getting-started/editor-tutorial">VS Code Editor tutorial</a>、<a href="https://code.visualstudio.com/docs/editing/getting-started/userinterface">User interface</a></td>
+<td>U02。画面の名称、メニュー、ファイルの操作</td>
+</tr>
+<tr>
+<td><a href="https://code.visualstudio.com/docs/configure/locales">VS Code Display Language</a>、<a href="https://code.visualstudio.com/docs/configure/extensions/extensions">Extensions</a></td>
+<td>U01。日本語表示、拡張の導入・確認</td>
+</tr>
+<tr>
+<td><a href="https://code.visualstudio.com/docs/editing/workspaces/workspaces">VS Code Workspaces</a></td>
+<td>U02。ファイルと作業フォルダーの違い</td>
+</tr>
+<tr>
+<td><a href="https://code.visualstudio.com/docs/terminal/basics">VS Code Terminal Basics</a></td>
+<td>U04・U06。入力場所、コマンド、実行中の処理</td>
+</tr>
+<tr>
+<td><a href="https://code.visualstudio.com/docs/editing/workspaces/workspace-trust">VS Code Workspace Trust</a></td>
+<td>U01と支援。信頼する対象と拡張の動作</td>
+</tr>
+<tr>
+<td><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Installing_software">MDN Installing basic software</a>、<a href="https://developer.mozilla.org/en-US/docs/Web/HTML">MDN HTML</a></td>
+<td>U00・U03。ツールの役割、ページの表示、文書の構造</td>
+</tr>
+<tr>
+<td><a href="https://nodejs.org/en/download">Node.js公式Download</a>、<a href="https://nodejs.org/learn/getting-started/introduction-to-nodejs">Node.js Learn</a></td>
+<td>U04。採用版、実行環境の役割</td>
+</tr>
+<tr>
+<td><a href="https://git-scm.com/install/windows">Git for Windows</a>、<a href="https://git-scm.com/docs">Git公式Reference</a></td>
+<td>U05。導入、版、変更の保存と差分</td>
+</tr>
+<tr>
+<td><a href="https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence">PowerShell Command Precedence</a></td>
+<td>U04と支援。コマンド名・拡張子・シェルの違い</td>
+</tr>
+<tr>
+<td><a href="https://home.cern/science/computing/the-birth-of-the-web/short-history-web/">CERNのWeb史</a></td>
+<td>横断学習。文書、ブラウザ、サーバーが必要になった理由</td>
+</tr>
+</tbody></table>
+</div><p>次の確認を終えてから、この設計を学習者向け教材として公開する。</p>
+<ol>
+<li>対象OS・CPU・VS Code・Node.js・npm・Git・LXP拡張の版と導入方法を確定する。</li>
+<li>VS Code未導入の端末から、ブラウザ案内、導入、LXP起動までを通して確認する。</li>
+<li>学習者が使う権限・接続条件で手順を再現し、OS別の画像と結果を記録する。</li>
+<li>LXPの拡張ID、配布・更新方法、ログイン、再開、診断の範囲を確認する。</li>
+<li>提供スターターのpackage.json、lockfile、起動・停止、表示URLを固定し、授業環境で確認する。</li>
+<li>独自課題、使用した資料、画像の制作・利用条件を登録する。</li>
+<li>VS Code未経験者に試してもらい、迷った操作、時間、支援、翌日の再現を観察する。</li>
+</ol>
+<p>公式資料のURLや転送先は更新される。基本操作の参照先にはEditor tutorialの現行URLを採用し、資料名、該当する節、ページの内容が教材の目的と一致することを公開前に確認する。</p>
+<h2 id="section-15">11 VS Code拡張の選定と段階的な導入</h2><p>初日の標準構成は日本語表示とLXP拡張にする。M02でPrettier、M03でESLintを追加し、通信・テスト等の拡張はその操作を学ぶ単元で導入する。拡張の導入と使い方は、必要となる教材の時間へ含め、M01の35時間にすべてを詰め込まない。</p>
+<p>以下は2026年10月4日に公式資料・各拡張の配布元を確認した選定案である。拡張のIDは似た名称の拡張を区別するために記載する。実際の採用版と教材環境との互換性は、研修側の端末で確認してから確定する。</p>
+<h3 id="section-16">標準として採用する候補</h3><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>拡張と参照元</th>
+<th>拡張ID</th>
+<th>導入時期</th>
+<th>教材での用途と確認課題</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-ja">Japanese Language Pack</a></td>
+<td>MS-CEINTL.vscode-language-pack-ja</td>
+<td>M01 U01</td>
+<td>メニューを日本語で表示する。再起動後に教材の画面と照合する</td>
+</tr>
+<tr>
+<td>開発中のLXP拡張</td>
+<td>実際のmanifestで確定する</td>
+<td>M01 U01</td>
+<td>教材、プレビュー、提出、再開を案内する。公開先・ID・版は未確認</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode">Prettier - Code formatter</a></td>
+<td>esbenp.prettier-vscode</td>
+<td>M02</td>
+<td>HTML・CSSの整形から始め、JS・TSへ継続する。手動で整形し、前後の差分と読みやすさを確かめる</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint">ESLint</a></td>
+<td>dbaeumer.vscode-eslint</td>
+<td>M03</td>
+<td>未使用の変数等、教えた規則に対する診断を表示する。メッセージを読み、自分で原因を直す</td>
+</tr>
+</tbody></table>
+</div><p>Prettierは記述形式を整える道具、ESLintは設定した規則でコードを検査する道具として区別する。どちらも、仕様どおりに動くことを保証するテストとは別に扱う。導入するだけで規則や対象コードが整うとは説明しない。</p>
+<p>PrettierとESLintの実行用パッケージ・設定・lockfileは、教材のスターターに用意する。VS Code拡張の版と、プロジェクト内のPrettier・ESLintの版を別々に記録する。ローカルの実行パッケージと設定で、エディタ、LXPの確認、CIのチェックを対応付ける。参照元は<a href="https://prettier.io/docs/install">Prettierの導入</a>と<a href="https://eslint.org/docs/latest/use/getting-started">ESLintの導入</a>とする。</p>
+<p>最初は手動整形を練習し、保存と整形の役割を確認してから保存時の整形へ進む。ESLintもメッセージの理由を読むところから始め、自動修正を扱う際は差分を確認する。Reactのアクセシビリティでは、必要な段階で<a href="https://github.com/jsx-eslint/eslint-plugin-jsx-a11y">eslint-plugin-jsx-a11y</a>等のプロジェクト側の規則を追加できる。これは追加のVS Code拡張とは区別する。</p>
+<h3 id="section-17">学習段階で追加する候補</h3><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>拡張と参照元</th>
+<th>拡張ID</th>
+<th>導入時期</th>
+<th>用途と前提</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=humao.rest-client">REST Client</a></td>
+<td>humao.rest-client</td>
+<td>M07・M11</td>
+<td>.httpファイルからHTTPリクエストを送り、応答を見る。メソッド、ヘッダー、JSON、状態コードを観察する</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=vitest.explorer">Vitest</a></td>
+<td>vitest.explorer</td>
+<td>M05の単体テスト導入時</td>
+<td>Testingビューで実行・失敗・デバッグを確認する。先に教材のVitestをコマンドで実行できる状態を準備する</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=ms-playwright.playwright">Playwright Test for VSCode</a></td>
+<td>ms-playwright.playwright</td>
+<td>M10の画面連携・E2E導入時</td>
+<td>テスト実行と失敗の調査を行う。教材のPlaywright、対象ブラウザ、設定を準備する</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss">Tailwind CSS IntelliSense</a></td>
+<td>bradlc.vscode-tailwindcss</td>
+<td>Tailwind CSSを採用した教材だけ</td>
+<td>クラスの補完等を利用する。Tailwind自体の導入と設定が前提であり、現段階では必修に追加しない</td>
+</tr>
+<tr>
+<td><a href="https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens">Error Lens</a></td>
+<td>usernamehw.errorlens</td>
+<td>M03以降の任意</td>
+<td>診断をコード付近にも表示する。標準の問題ビューの読み方を先に学び、表示量を調整する</td>
+</tr>
+</tbody></table>
+</div><p>VitestとPlaywrightは、CLIでの実行とエディタでの操作を同じ設定へ結び付ける。拡張の操作確認は<a href="https://vitest.dev/guide/ide">VitestのIDE連携</a>と<a href="https://playwright.dev/docs/getting-started-vscode">PlaywrightのVS Codeガイド</a>を参照する。拡張からの成功はローカル確認の証拠であり、LXPの正式評価は既存の方針に従う。</p>
+<p>REST Clientの教材用リクエストは、提供APIか学習用のローカルAPIへ送る。実サービスの認証情報をサンプルへ書き込まず、教材で用意したデータと確認する操作を使う。HTTPそのものの根拠はM07の標準資料、拡張の使い方の根拠は配布元の資料として分ける。</p>
+<h3 id="section-18">標準機能とプレビューの構成</h3><p>HTML・CSS・JavaScript・TypeScriptの言語支援、Emmet、Gitの基本操作、JavaScriptのデバッグは、VS Codeの標準機能を学習の入口にする。参照元は<a href="https://code.visualstudio.com/docs/languages/html">HTML</a>、<a href="https://code.visualstudio.com/docs/languages/css">CSS</a>、<a href="https://code.visualstudio.com/docs/languages/javascript">JavaScript</a>、<a href="https://code.visualstudio.com/docs/languages/typescript">TypeScript</a>、<a href="https://code.visualstudio.com/docs/sourcecontrol/overview">Source control</a>とする。Node.js、Git、コンパイラ等の実行用ソフトウェアは別途準備する。</p>
+<p>プレビューは、M01のローカルファイル表示と提供スターター、後続のVite・Next.js等の開発サーバーをLXPの実行定義で案内する。採用したVS Code版に応じて、<a href="https://code.visualstudio.com/docs/debugtest/integrated-browser">標準のIntegrated Browser</a>でローカルHTMLやサーバーのURLを開く構成も使える。LXP教材を表示するWebViewと、学習者が作ったページのプレビューは、画面上で区別する。</p>
+<p>静的ページの簡易サーバーが別途必要なら、<a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server">MicrosoftのLive Preview</a>を追加候補として検証する。確認時の掲載内容には開発中・プレリリースの説明があるため、Stable版の研修で使うリリースと挙動を確認してから採用する。通常の教材で使うプレビュー経路は一つに決め、起動・停止・表示URLを統一して説明する。</p>
+<h3 id="section-19">教材の推奨一覧と設定例</h3><p>教材のスターターには、段階ごとの.vscode/extensions.jsonを同梱する。次はM02の公開済み拡張の推薦例であり、LXP拡張の実IDが確定したら追加する。</p>
+<pre><code class="language-json">{
+  &quot;recommendations&quot;: [
+    &quot;MS-CEINTL.vscode-language-pack-ja&quot;,
+    &quot;esbenp.prettier-vscode&quot;
+  ]
+}</code></pre><p>このファイルは推薦の一覧であり、拡張の自動インストールや版の固定には使えない。採用版の記録、導入手順、実際に有効かの確認を別に用意する。参照元は<a href="https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_workspace-recommended-extensions">VS CodeのWorkspace recommended extensions</a>とする。</p>
+<p>M02の.vscode/settings.jsonは次の初期案にする。プロジェクトには.prettierrc.json等のPrettier設定と、実行用の依存関係を用意する。この例は既存の受講者環境へ適用していない。</p>
+<pre><code class="language-json">{
+  &quot;files.autoSave&quot;: &quot;off&quot;,
+  &quot;editor.formatOnSave&quot;: false,
+  &quot;prettier.requireConfig&quot;: true,
+  &quot;[html]&quot;: {
+    &quot;editor.defaultFormatter&quot;: &quot;esbenp.prettier-vscode&quot;
+  },
+  &quot;[css]&quot;: {
+    &quot;editor.defaultFormatter&quot;: &quot;esbenp.prettier-vscode&quot;
+  }
+}</code></pre><p>M03ではJavaScript、M07ではTypeScript、M08ではReact用の言語設定を追加する。保存時の整形を有効にする変更も、教材の操作として説明する。既存の利用者設定の上書きを避けるため、必要に応じて講師が<a href="https://code.visualstudio.com/docs/configure/profiles">研修用Profile</a>を準備し、教材のワークスペース設定と使い分ける。</p>
+<h3 id="section-20">LXPとの連携と導入の確認</h3><p>各教材の環境定義には、拡張ID、採用版、導入目的、必要となる単元、必須・推奨・任意、依存パッケージ、参照元、確認日を登録する。LXPは現在の課題で必要なものを示し、拡張の導入、有効状態、設定、操作確認を分けて記録する。任意拡張がないことを進級の不合格にしない。</p>
+<p>LXP拡張から別の拡張を操作する場合は、採用版の公開APIや利用可能なコマンドを確認する。対象が変わる内部コマンドの呼出しを当然の前提にせず、通常のTestingビュー、ターミナル、メニューからの操作も用意する。LXPの学習画面を外部拡張の表示だけに依存させない。</p>
+<p>公開前には、研修の標準Profileで整形・診断・プレビュー・テスト・教材表示が同時に使えることを確認する。拡張本体のIDと対象版、プロジェクト内の実行パッケージ、設定ファイル、CLIの結果を照合する。導入する拡張を追加する際は、各教材の参照元にも配布元と利用した節を登録する。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

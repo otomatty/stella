@@ -3,6 +3,7 @@ import { exchangeVscodeLink } from "@stella/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
 import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore, disposeAuthEvents, onDidChangeAuth } from "./auth.js";
+import { stellaConfig } from "./config.js";
 import { findNextLesson, resolveLessonForExercise } from "./catalog-progress.js";
 import {
   findCachedLesson,
@@ -126,17 +127,13 @@ async function showExerciseForLesson(
   });
 }
 
-function falconConfig(key: "serverUrl" | "webUrl", fallback: string): string {
-  return vscode.workspace.getConfiguration("falcon").get<string>(key, fallback).replace(/\/+$/, "");
-}
-
 /**
  * 接続専用ページは持たない。 接続は Web のコードレッスンの「VS Code で開く」から始まり、
  * そのボタンが接続コードを載せた lesson URI を開く。 未接続で来た時は開きたいレッスン
  * (分かる場合) の Web ページへ送り返して、 同じボタンを押してもらう。
  */
 async function openWebForConnect(target?: PendingLesson): Promise<void> {
-  const web = falconConfig("webUrl", "http://127.0.0.1:5173");
+  const web = stellaConfig("webUrl", "http://127.0.0.1:5173");
   const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
     `${DISPLAY_NAME} に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください`,
@@ -204,7 +201,7 @@ async function handleLessonUri(
 async function exchangeLinkCode(code: string, auth: AuthStore): Promise<Error | undefined> {
   try {
     const token = await exchangeVscodeLink(
-      falconConfig("serverUrl", "http://127.0.0.1:8787"),
+      stellaConfig("serverUrl", "http://127.0.0.1:8787"),
       code,
       fetch,
     );
@@ -289,19 +286,19 @@ export function activate(context: vscode.ExtensionContext): void {
         void handleExtensionUri(uri, auth, context);
       },
     }),
-    vscode.commands.registerCommand("falcon.connect", async () => {
+    vscode.commands.registerCommand("stella.connect", async () => {
       await openWebForConnect();
     }),
-    vscode.commands.registerCommand("falcon.disconnect", async () => {
+    vscode.commands.registerCommand("stella.disconnect", async () => {
       await auth.clear();
     }),
-    vscode.commands.registerCommand("falcon.refresh", () => {
+    vscode.commands.registerCommand("stella.refresh", () => {
       refreshLessonTree();
     }),
     vscode.commands.registerCommand(
-      "falcon.openInWeb",
+      "stella.openInWeb",
       async (stageId?: string, lessonId?: string) => {
-        const web = falconConfig("webUrl", "http://127.0.0.1:5173");
+        const web = stellaConfig("webUrl", "http://127.0.0.1:5173");
         const path =
           typeof stageId === "string" && typeof lessonId === "string"
             ? `/stages/${stageId}/lessons/${lessonId}`
@@ -309,14 +306,14 @@ export function activate(context: vscode.ExtensionContext): void {
         await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
       },
     ),
-    vscode.commands.registerCommand("falcon.openLessonDoc", (node?: LessonNode) => {
+    vscode.commands.registerCommand("stella.openLessonDoc", (node?: LessonNode) => {
       if (!node?.id || !node.stageId) {
         void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
         return;
       }
       openLessonDoc(node);
     }),
-    vscode.commands.registerCommand("falcon.grade", async () => {
+    vscode.commands.registerCommand("stella.grade", async () => {
       try {
         const run = await gradeActiveExercise();
         const result = run.result;
@@ -345,7 +342,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
     vscode.commands.registerCommand(
-      "falcon.escalateToInstructor",
+      "stella.escalateToInstructor",
       async (assignmentId?: string) => {
         const target =
           typeof assignmentId === "string" ? assignmentId : resolveActiveAssignmentId();
@@ -364,7 +361,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
       },
     ),
-    vscode.commands.registerCommand("falcon.resetExercise", async () => {
+    vscode.commands.registerCommand("stella.resetExercise", async () => {
       const assignmentId = resolveActiveAssignmentId();
       if (!assignmentId) {
         void vscode.window.showInformationMessage("課題フォルダを開いてください");
@@ -379,7 +376,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
     vscode.commands.registerCommand(
-      "falcon.openNextLesson",
+      "stella.openNextLesson",
       (stageId?: string, lessonId?: string) => {
         if (typeof stageId !== "string" || typeof lessonId !== "string") {
           return;
@@ -392,7 +389,7 @@ export function activate(context: vscode.ExtensionContext): void {
         openLessonNode(toLessonNode(next));
       },
     ),
-    vscode.commands.registerCommand("falcon.openLessonCode", async (node?: LessonNode) => {
+    vscode.commands.registerCommand("stella.openLessonCode", async (node?: LessonNode) => {
       if (!node?.id) {
         void vscode.window.showInformationMessage("レッスンをサイドバーから選んでください");
         return;

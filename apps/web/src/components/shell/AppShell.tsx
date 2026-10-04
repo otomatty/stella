@@ -41,7 +41,7 @@ import { useAnnouncements } from "@/hooks/useAnnouncements";
 type AuthStage = "login" | "tenant-select" | "app";
 
 /** ログイン完了後に戻す URL の保存先 (AuthCallback が読み取る)。 */
-export const POST_LOGIN_REDIRECT_KEY = "falcon_post_login_redirect_v1";
+export const POST_LOGIN_REDIRECT_KEY = "stella_post_login_redirect_v1";
 
 /**
  * 直近に開いていた受講位置。 ステージ本体は肥大 / 陳腐化するので ID だけを保存し、

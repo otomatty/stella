@@ -23,6 +23,7 @@
  */
 
 import { useState } from "react";
+import { readStellaStorage } from "@/lib/brand-storage";
 
 import { AlertTriangle, Compass, Play, Sparkles } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ import { Card } from "@/components/ui/card";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
 /** 「あとで選ぶ」を押した記憶 (この端末 × この利用者だけ)。 */
-const SKIP_KEY_PREFIX = "falcon_placement_skipped_v1";
+const SKIP_KEY_PREFIX = "stella_placement_skipped_v1";
 
 /** 記憶のキー。 利用者が分からないときは共有キーに落ちる (ログイン前は出さない画面)。 */
 function skipKey(userId: string | null): string {
@@ -42,7 +43,7 @@ const MAX_CHOICES = 4;
 
 export function readPlacementSkipped(userId: string | null): boolean {
   try {
-    return localStorage.getItem(skipKey(userId)) === "1";
+    return readStellaStorage(localStorage, skipKey(userId)) === "1";
   } catch {
     // storage が使えない環境 (private window / 設定でブロック) では「スキップしていない」。
     return false;

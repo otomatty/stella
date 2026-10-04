@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>教材分割と学習順序</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html" aria-current="page">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 教材の階層</a></li><li><a href="#section-3">2 教材パックと時間</a></li><li><a href="#section-4">3 各教材の単元と接続</a></li><li><a href="#section-23">4 教材間をつなぐ成果物</a></li><li><a href="#section-24">5 基礎知識 読書 技術史の教材</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">教材分割と学習順序</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>各パックの参照資料は<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>の対応表で選び、単元・課題ごとに読む箇所と利用目的を登録する。</p>
+<p>カリキュラムは18の教材パックで構成する。各パックには前提、単元、繰り返す実装パターン、統合課題、自力確認を用意する。パックは個別に配信・改訂できるようにする一方、学習の依存関係と習得記録はコース全体で共有する。</p>
+<h2 id="section-2">1 教材の階層</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>単位</th>
+<th>意味</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>コース</td>
+<td>卒業までの目標と評価基準</td>
+<td>Webフルスタック育成</td>
+</tr>
+<tr>
+<td>教材パック</td>
+<td>配信と進級の単位</td>
+<td>JavaScript制御、React UI部品</td>
+</tr>
+<tr>
+<td>単元</td>
+<td>一つの主要な考え方を学ぶ単位</td>
+<td>条件抽出、入力部品、削除確認</td>
+</tr>
+<tr>
+<td>課題セット</td>
+<td>一単元内の例題、反復、接続、確認</td>
+<td>ボタンの状態を6問で実装する</td>
+</tr>
+<tr>
+<td>課題</td>
+<td>仕様と評価が一組になった単位</td>
+<td>送信中のボタンを実装する</td>
+</tr>
+</tbody></table>
+</div><p>単元の想定時間は通常3〜6時間、画面・APIとの統合では6〜10時間を初期案とする。各パックの時間には基礎知識、読書、調査、評価も含む。単元数と全問題数は、前提スキルと初回試行の所要時間から決める。</p>
+<h2 id="section-3">2 教材パックと時間</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>教材パック</th>
+<th>週</th>
+<th align="right">時間</th>
+<th>主な前提と修了時の制作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M01</td>
+<td>開発環境とWebの入口</td>
+<td>1</td>
+<td align="right">35</td>
+<td>前提なし。VS Codeを導入し、保存・表示・実行・Gitの変更記録を行う</td>
+</tr>
+<tr>
+<td>M02</td>
+<td>HTML CSSとデザイン基礎</td>
+<td>2〜3</td>
+<td align="right">70</td>
+<td>M01。規則に沿った案内サイト、部品の静的見本</td>
+</tr>
+<tr>
+<td>M03</td>
+<td>JavaScriptの値と制御</td>
+<td>4〜6</td>
+<td align="right">105</td>
+<td>M01。演算、条件、ループ、文字列の小問題</td>
+</tr>
+<tr>
+<td>M04</td>
+<td>JavaScriptのデータ 関数 状態</td>
+<td>7〜8</td>
+<td align="right">70</td>
+<td>M03。配列・オブジェクト・検証・状態更新の関数</td>
+</tr>
+<tr>
+<td>M05</td>
+<td>DOMと画面操作</td>
+<td>9〜10</td>
+<td align="right">70</td>
+<td>M02〜M04。検索、件数、入力エラーを更新する画面</td>
+</tr>
+<tr>
+<td>M06</td>
+<td>HTMLとJavaScriptのUI部品</td>
+<td>11〜12</td>
+<td align="right">70</td>
+<td>M05。フォーム、開閉、確認、状態表示を組み合わせる</td>
+</tr>
+<tr>
+<td>M07</td>
+<td>HTTP 非同期 TypeScript</td>
+<td>13〜14</td>
+<td align="right">70</td>
+<td>M04〜M06。提供APIの取得・送信と型・実行時検証</td>
+</tr>
+<tr>
+<td>M08</td>
+<td>Reactの基礎と状態</td>
+<td>15〜16</td>
+<td align="right">70</td>
+<td>M07。一覧・検索・フォームをReactで実装する</td>
+</tr>
+<tr>
+<td>M09</td>
+<td>ReactのUI部品とデザイン規則</td>
+<td>17〜18</td>
+<td align="right">70</td>
+<td>M08。共通部品、状態一覧、ライブラリの利用と調整</td>
+</tr>
+<tr>
+<td>M10</td>
+<td>UIと既存機能の連携</td>
+<td>19〜20</td>
+<td align="right">70</td>
+<td>M09。提供APIと既存画面へ部品を組み込む</td>
+</tr>
+<tr>
+<td>M11</td>
+<td>Node.jsとAPI</td>
+<td>21〜22</td>
+<td align="right">70</td>
+<td>M07、M10。画面のAPI契約を自分のAPIで実装する</td>
+</tr>
+<tr>
+<td>M12</td>
+<td>SQLとデータベース</td>
+<td>23〜24</td>
+<td align="right">70</td>
+<td>M11。保存、関連データ、整合性、マイグレーション</td>
+</tr>
+<tr>
+<td>M13</td>
+<td>認証 認可 セキュリティ</td>
+<td>25〜26</td>
+<td align="right">70</td>
+<td>M11〜M12。利用者と管理者の権限を実装する</td>
+</tr>
+<tr>
+<td>M14</td>
+<td>Next.jsとWebアプリ構成</td>
+<td>27〜28</td>
+<td align="right">70</td>
+<td>M08〜M13。画面・API・権限を保って移行する</td>
+</tr>
+<tr>
+<td>M15</td>
+<td>要件 設計 品質と改善</td>
+<td>29</td>
+<td align="right">35</td>
+<td>M14と各教材の品質演習。変更要求と測定に基づく改善</td>
+</tr>
+<tr>
+<td>M16</td>
+<td>公開 CIと運用</td>
+<td>30〜31</td>
+<td align="right">70</td>
+<td>M15。公開、設定、ログ、バックアップ、復旧</td>
+</tr>
+<tr>
+<td>M17</td>
+<td>未知のコードと技術の比較</td>
+<td>32</td>
+<td align="right">35</td>
+<td>M16。別プロジェクトの変更とAPIの比較</td>
+</tr>
+<tr>
+<td>M18</td>
+<td>個人でのフルスタック開発</td>
+<td>33〜36</td>
+<td align="right">140</td>
+<td>必須パックの修了。別業務のアプリを設計・公開・変更する</td>
+</tr>
+<tr>
+<td>合計</td>
+<td>18パック</td>
+<td>1〜36</td>
+<td align="right">1,260</td>
+<td>自力と遅延確認を含めて判定する</td>
+</tr>
+</tbody></table>
+</div><p>UIに直接関わるM02、M05、M06、M08、M09、M10は別パックとして扱う。HTTPやバックエンドの教材にも、それまでのUIを使う接続課題を置く。テストは独立した説明資料も用意し、実際の演習は各パックに含める。</p>
+<h2 id="section-4">3 各教材の単元と接続</h2><h3 id="section-5">M01 開発環境とWebの入口</h3><p>VS Code未経験者を対象に、ブラウザで読める導入案内から始める。単元は、事前確認、VS CodeとLXPの準備、画面とファイル、最初のHTML、ターミナルとNode.js・npm、Git、提供サーバー、統合と自力確認へ分ける。最初にページの保存・表示・変更を体験し、その後に必要な環境を準備する。</p>
+<p>ファイルの作成・保存・再開、フォルダー切替、表示更新、現在の場所の確認を繰り返す。修了確認は、新しい練習フォルダーで提示されたページを作り、表示・変更・実行して差分を説明すること。環境の導入完了と、自力操作の確認A・後日の確認Bを区別する。時間、操作例、支援、LXPの要求は<a href="06-m01-beginner-setup-and-basic-operations.html">M01の詳細設計</a>に定める。</p>
+<h3 id="section-6">M02 HTML CSSとデザイン基礎</h3><p>単元は、見出しと情報構造、リンク・画像・一覧、フォーム、ボックスモデルとカスケード、Flexbox・Grid、画面幅への対応、余白・文字・色の規則とする。</p>
+<p>ボタン、入力欄、カード、通知、表を静的な見本から繰り返し作る。文章量や画面幅を変え、崩れを直す。統合課題は案内サイトで、確認課題は別の画面仕様を提示する。部品の意味とデザイン規則をM05、M06、M09で使い直す。</p>
+<h3 id="section-7">M03 JavaScriptの値と制御</h3><p>単元は、値・変数・型、演算と変換、比較と条件、条件の組合せ、ループ、文字列、処理の追跡とデバッグとする。一つの実装パターンを8〜12問で練習し、境界と例外的な入力を変える。</p>
+<p>料金、送料、点数、件数、コードの検査など、小さい入力・出力の問題を使う。DOMやReactを使わず、処理を自分で組み立てられることを確認する。次にM04のデータ処理とM05の画面条件へ接続する。</p>
+<h3 id="section-8">M04 JavaScriptのデータ 関数 状態</h3><p>単元は、配列の走査・抽出・集計、オブジェクト、引数と戻り値、スコープと参照、純粋な計算と副作用、状態更新、探索・整列・計算量の入口とする。</p>
+<p>前に学んだ条件とループを使い、得点、購入明細、貸出データ等を扱う。検証関数と検索関数を成果物として残し、M05〜M10のフォーム・画面で再利用する。自力確認には別データと別の集計条件を使う。</p>
+<h3 id="section-9">M05 DOMと画面操作</h3><p>単元は、要素の取得、表示更新、イベント、入力の取得、配列から一覧を描画、入力検証、状態と表示の同期、モジュールと単体テストとする。</p>
+<p>表示する値、入力欄、絞り込み条件を変えた基礎課題を繰り返す。接続課題でM04の検索・検証関数を使う。統合課題はタスク一覧または備品検索とし、修正演習でイベントの重複、古い表示、空データの問題を扱う。</p>
+<h3 id="section-10">M06 HTMLとJavaScriptのUI部品</h3><p>単元は、操作ボタン、入力とエラー、チェック・選択、開閉、確認ダイアログ、通知・空状態、部品を組み合わせたフォームとする。</p>
+<p>HTML標準要素を土台に、DOMイベントと状態を付ける。まず同期処理のフォームを完成させ、M07で実際の通信待ちと失敗を加える。複雑な操作では標準要素や適切な実装を使い、操作とフォーカスの確認を学ぶ。</p>
+<h3 id="section-11">M07 HTTP 非同期 TypeScript</h3><p>単元は、HTTP契約、JSON、Promiseとasync/await、fetch、待機・成功・失敗、応答競合、型と絞り込み、外部データの実行時検証とする。</p>
+<p>提供APIとローカルの疑似応答を使う。取得、送信、空データ、失敗、再試行を小課題で繰り返し、M06のフォームを通信に接続する。環境の不具合と学習者のコードの失敗を区別して評価する。</p>
+<h3 id="section-12">M08 Reactの基礎と状態</h3><p>単元は、JSX、props、一覧とkey、state、イベント、制御された入力、状態共有、導出値、必要な副作用とする。</p>
+<p>既知のHTMLや関数を再利用して、カウンター、検索、入力、選択等を繰り返し作る。M05の画面をReactへ移す演習と、別題材の自力演習を両方行う。データと状態を持つ場所を説明して確認する。</p>
+<h3 id="section-13">M09 ReactのUI部品とデザイン規則</h3><p>単元は、Button、TextField、Select、Checkbox、Card・Badge、通知・空状態、ダイアログ、部品の仕様と状態見本、デザイントークン、ライブラリの利用と調整とする。</p>
+<p>単純な部品は自分で作り、props・イベント・状態の変化を練習する。複雑な操作の部品は、標準要素や既存ライブラリを用い、その契約、キーボード操作、テーマとの対応を確認する。Storybook等で部品の状態を一覧にし、他の画面で再利用する。</p>
+<h3 id="section-14">M10 UIと既存機能の連携</h3><p>単元は、既存コードの調査、入力フォームとAPI、編集、削除確認、検索・並び替え・ページ切替、権限による表示、非同期の結果と画面更新、統合テストとする。</p>
+<p>提供済みのAPI契約を使用して、部品を既存の一覧や編集画面に組み込む。既存機能が壊れていないことも確認する。権限による表示はここで学び、サーバー側の正式な認可はM13で実装・確認する。</p>
+<h3 id="section-15">M11 Node.jsとAPI</h3><p>単元は、Node.jsとブラウザ、依存関係、ルートとHTTP、検証、ミドルウェア、エラーとログ、APIテストとする。</p>
+<p>M10のAPI契約を自分のAPIで実装する。APIを置き換えても、UI部品と主要な画面操作を保つ。Expressを主教材、HonoをM17の比較教材とする初期案を引き継ぎ、採用先に応じて主従を変更できるようにする。</p>
+<h3 id="section-16">M12 SQLとデータベース</h3><p>単元は、ER図、主キー・外部キー・一意制約、CRUD、JOINと集計、索引、トランザクションと更新競合、マイグレーションとする。</p>
+<p>SQLの小課題を繰り返した後、M11の保存先をメモリからDBへ置き換える。空データ、重複、更新競合をUIからも確かめ、表示だけでは守れない整合性を説明する。</p>
+<h3 id="section-17">M13 認証 認可 セキュリティ</h3><p>単元は、認証と認可、セッションとCookie、利用者ごとの対象データ、管理操作、脆弱性、秘密情報、権限テストとする。</p>
+<p>未ログイン、他の利用者、管理者、権限不足等の組合せを反復する。ボタンを隠すことと、APIが操作を拒否することを別に確認する。UIの失敗表示と、サーバー側の権限検証を結び付ける。</p>
+<h3 id="section-18">M14 Next.jsとWebアプリ構成</h3><p>単元は、ルート、ServerとClient Components、描画とデータ取得、キャッシュ、公開と個人情報の境界、エラー表示とする。</p>
+<p>M10のUI部品とM11〜M13のAPI・DB・認可を保って移行する。業務処理を重複実装せず、画面側とサーバー側の責務を説明する。ルートの追加、個人データの表示、更新後の再表示を反復する。</p>
+<h3 id="section-19">M15 要件 設計 品質と改善</h3><p>単元は、受入条件と非機能要件、モデルとADR、変更の影響、リファクタリング、性能測定、レビューとする。このパックだけで設計・テストを初めて教える構成にせず、前の各パックの実践を整理する。</p>
+<p>既存画面への仕様変更と、計測した性能問題を題材にする。見た目、部品契約、API、DBに変更がどう波及するかを調べ、既存テストを使って改善する。</p>
+<h3 id="section-20">M16 公開 CIと運用</h3><p>単元は、Linuxとプロセス、設定と秘密情報、ビルドとCI、公開とHTTPS、ログと監視、バックアップと復元、切戻しとする。</p>
+<p>新しい環境での起動と公開を繰り返す。UIの実行時設定、API接続、権限、キャッシュも確認する。障害課題では画面の現象からログや通信を追い、原因を特定して復旧する。</p>
+<h3 id="section-21">M17 未知のコードと技術の比較</h3><p>単元は、構成の調査、処理の追跡、不具合の再現、最小の変更、回帰テスト、API実装の比較とする。</p>
+<p>初めて触るプロジェクトの画面やUI部品を変更する。複数のフレームワークを使ったAPIでも、契約・検証・認可・テストがどう対応するかを説明する。</p>
+<h3 id="section-22">M18 個人でのフルスタック開発</h3><p>33週目に要件と画面・データ・構成を設計し、34週目に主要フローを通す。35週目に品質、権限、公開、復旧を整え、36週目に未見の追加要求と不具合に対応する。</p>
+<p>卒業制作は共通演習と異なる業務を扱う。画面を構成する部品を自分で選び、デザイン規則と状態一覧を作り、API・DBと接続する。必須スキル、別題材への適用、遅延確認と運用の証拠を卒業判定に使う。</p>
+<h2 id="section-23">4 教材間をつなぐ成果物</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>成果物</th>
+<th>作成する教材</th>
+<th>後で使う教材</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>学習フォルダー、変更履歴、再開・相談の記録</td>
+<td>M01</td>
+<td>M02以降の準備・提出・調査</td>
+</tr>
+<tr>
+<td>HTML構造とCSSの規則</td>
+<td>M02</td>
+<td>M05、M06、M09、M10</td>
+</tr>
+<tr>
+<td>検証・検索・集計の関数</td>
+<td>M03〜M04</td>
+<td>M05、M07、M08、M10、M11</td>
+</tr>
+<tr>
+<td>UIの操作と状態の仕様</td>
+<td>M06〜M07</td>
+<td>M08〜M10、M14、M18</td>
+</tr>
+<tr>
+<td>Reactの部品と状態見本</td>
+<td>M09</td>
+<td>M10、M14〜M18</td>
+</tr>
+<tr>
+<td>APIの契約と疑似応答</td>
+<td>M07、M10</td>
+<td>M11〜M14</td>
+</tr>
+<tr>
+<td>テストと確認ケース</td>
+<td>各教材</td>
+<td>後続教材の置換・変更・修正</td>
+</tr>
+<tr>
+<td>設計と調査の記録</td>
+<td>各教材</td>
+<td>M15、M17、M18</td>
+</tr>
+</tbody></table>
+</div><p>教材ごとに別プロジェクトへ切り替える場合も、再利用する成果物と移す理由を説明する。前の実装の不具合で新しい学習を始められない場合は、固定した開始点を提供し、その利用と自力確認の結果を別々に記録する。</p>
+<h2 id="section-24">5 基礎知識 読書 技術史の教材</h2><p>基本情報の基礎、品質の用語、指定書籍の読書、技術史は、短い関連教材として分割して管理する。必要なパックの単元からリンクし、実装の問題を観察した後に仕組みを説明する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>関連教材</th>
+<th>主に結び付けるパック</th>
+<th>学習の証拠</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>コンピュータとOS</td>
+<td>M01、M11、M16</td>
+<td>ファイル、プロセス、権限、実行環境の説明</td>
+</tr>
+<tr>
+<td>数・論理・データ構造</td>
+<td>M03、M04、M12</td>
+<td>手で追った処理、計算量、検索・整合性の判断</td>
+</tr>
+<tr>
+<td>UIと情報設計</td>
+<td>M02、M06、M09、M10</td>
+<td>利用者の操作、画面規則、状態、改善</td>
+</tr>
+<tr>
+<td>ネットワークとWeb</td>
+<td>M07、M11、M14、M16</td>
+<td>通信観察、HTTP契約、Cookie、公開の説明</td>
+</tr>
+<tr>
+<td>DBとセキュリティ</td>
+<td>M12、M13、M16</td>
+<td>制約、認可、障害と復旧の確認</td>
+</tr>
+<tr>
+<td>開発・管理・戦略・法務</td>
+<td>全期間、M15、M18</td>
+<td>要件、見積り、業務価値、費用、ライセンス等のケース演習</td>
+</tr>
+<tr>
+<td>指定書籍と品質用語</td>
+<td>各パックとM15</td>
+<td>自分の実装や設計で考え方を使った記録</td>
+</tr>
+<tr>
+<td>技術の変遷と調査</td>
+<td>M02、M07〜M09、M14、M16、M17</td>
+<td>過去と現在の方式の比較、一次資料、実験と判断</td>
+</tr>
+</tbody></table>
+</div><p>指定書籍と基本情報の参照範囲は初回案を引き継ぐ。公開前に全項目の対応台帳を新しい教材IDで作成し、実装だけでは触れにくい知識は独立した演習で補う。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

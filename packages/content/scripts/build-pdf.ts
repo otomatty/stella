@@ -1,6 +1,5 @@
 /**
- * 教材 (slides.md / doc.md / practice.md) を配布用 PDF に変換する
- * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 教材 (slides.md / doc.md / practice.md) を配布用 PDF に変換する。
  *
  *   bun run --filter=@stella/content pdf                      # 全講座
  *   bun run --filter=@stella/content pdf -- typescript-basics # 講座を絞る
@@ -156,7 +155,7 @@ async function main(): Promise<void> {
       ? "/opt/pw-browsers/chromium"
       : undefined;
     const browser = await chromium.launch(executablePath ? { executablePath } : {});
-    const htmlDir = mkdtempSync(join(tmpdir(), "falcon-pdf-"));
+    const htmlDir = mkdtempSync(join(tmpdir(), "stella-pdf-"));
     let built = 0;
     const failed: string[] = [];
     try {

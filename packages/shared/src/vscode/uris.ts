@@ -1,4 +1,4 @@
-export const VSCODE_EXT_ID = "falcon.informal";
+export const VSCODE_EXT_ID = "stella.stella";
 
 export function buildVscodeLinkUri(code: string): string {
   return `vscode://${VSCODE_EXT_ID}/link?code=${encodeURIComponent(code)}`;

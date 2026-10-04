@@ -74,7 +74,7 @@ describe("buildExercisePanelHtml", () => {
       result: failResult,
     });
     expect(html).toContain("講師に引き継ぐ");
-    expect(html).toContain("command:falcon.escalateToInstructor");
+    expect(html).toContain("command:stella.escalateToInstructor");
     expect(html).toContain(encodeURIComponent(JSON.stringify(["a1"])));
     expect(html).not.toMatch(/<script/i);
   });
@@ -126,7 +126,7 @@ describe("buildExercisePanelHtml", () => {
     });
     expect(html).toContain("クリア");
     expect(html).toContain("次のレッスンへ");
-    expect(html).toContain("command:falcon.openNextLesson");
+    expect(html).toContain("command:stella.openNextLesson");
     expect(html).toContain("c1");
     expect(html).toContain("l1");
     expect(html).not.toMatch(/<script/i);

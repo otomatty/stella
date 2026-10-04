@@ -1,8 +1,8 @@
 /**
  * Display-layer brand strings shown to humans.
  *
- * Package scope is `@stella/*` (Phase B). Runtime identifiers (Worker names,
- * JWT iss/aud, localStorage keys, VS Code extension id) stay on legacy `falcon.*`.
+ * Package scope and runtime identifiers use STELLA. Legacy names are read only
+ * by migration adapters and documented in the migration guides.
  */
 export const PACKAGE_SCOPE = "@stella";
 export const DISPLAY_NAME = "STELLA";

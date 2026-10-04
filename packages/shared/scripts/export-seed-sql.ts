@@ -256,7 +256,7 @@ function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
 }
 
 /**
- * 教材本文のリビジョン履歴 (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 教材本文のリビジョン履歴。
  * 直前リビジョンとハッシュが違うときだけ 1 行積む — 同一内容の再 seed では増えない。
  * D1 専用テーブルなので legacy Postgres には出さない。
  *
@@ -436,8 +436,7 @@ interface PdfManifestEntry {
 }
 
 /**
- * 自動生成 PDF (配布資料) の登録
- * (docs/superpowers/specs/2026-08-26-material-pdf-auto-conversion-design.md)。
+ * 自動生成 PDF (配布資料) の登録。
  *
  * `PDF_MANIFEST` に upload-pdfs.ts のマニフェストを渡されたときだけ出す (deploy が
  * R2 への put を終えてから seed を流す — D1 が存在しないオブジェクトを指す時間を

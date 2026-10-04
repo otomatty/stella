@@ -1,9 +1,17 @@
 import { getEntryFile } from "@stella/shared/assignment-helpers";
 import { mapAssignmentRowToAssignment, type AssignmentRow } from "@stella/shared/cms/types";
 import type { Assignment } from "@stella/shared/types";
-import { exerciseRoot, filesToWrite } from "@stella/shared/vscode/exercise-paths";
+import {
+  assignmentIdFromExercisePath,
+  exerciseRoot,
+  exerciseRootForPath,
+  preferredExercisePath,
+  legacyExerciseRoot,
+  filesToWrite,
+} from "@stella/shared/vscode/exercise-paths";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
+import { migrateExerciseDirectory } from "./exercise-directory.js";
 
 export function resolveHomeDir(): string {
   const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
@@ -94,9 +102,32 @@ export async function getAssignmentForGrading(assignmentId: string): Promise<Ass
   return fetchAssignment(assignmentId);
 }
 
+function activeExercisePath(assignmentId: string): string | undefined {
+  const home = resolveHomeDir();
+  const editorPath = vscode.window.activeTextEditor?.document.uri.fsPath;
+  if (editorPath && assignmentIdFromExercisePath(editorPath, home) === assignmentId)
+    return editorPath;
+  return preferredExercisePath(
+    home,
+    assignmentId,
+    (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
+  );
+}
+
 async function writeStarterFiles(assignment: Assignment, overwrite: boolean): Promise<vscode.Uri> {
   rememberAssignment(assignment);
-  const rootUri = vscode.Uri.file(exerciseRoot(resolveHomeDir(), assignment.id));
+  const home = resolveHomeDir();
+  const canonical = exerciseRoot(home, assignment.id);
+  const rootPath = overwrite
+    ? exerciseRootForPath(home, assignment.id, activeExercisePath(assignment.id))
+    : canonical;
+  const rootUri = vscode.Uri.file(rootPath);
+  if (rootPath === canonical) {
+    await migrateExerciseDirectory(
+      rootUri,
+      vscode.Uri.file(legacyExerciseRoot(home, assignment.id)),
+    );
+  }
   await vscode.workspace.fs.createDirectory(rootUri);
 
   for (const file of filesToWrite(assignment)) {

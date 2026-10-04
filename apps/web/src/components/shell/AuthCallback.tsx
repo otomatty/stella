@@ -4,6 +4,7 @@ import { XCircle } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { completeAuthFromCallbackHash } from "@/lib/auth";
+import { readStellaStorage, removeStellaStorage } from "@/lib/brand-storage";
 import { POST_LOGIN_REDIRECT_KEY } from "@/components/shell/AppShell";
 
 export function AuthCallback() {
@@ -14,8 +15,8 @@ export function AuthCallback() {
     if (result.ok) {
       // ログイン前に開いていた保護 URL (共有リンク等) へ復元する。
       // 相対パスのみ許可 ('//' はプロトコル相対 URL になるため除外)。
-      const saved = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
-      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+      const saved = readStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
+      removeStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
       const dest = saved?.startsWith("/") && !saved.startsWith("//") ? saved : "/";
       window.location.replace(dest);
       return;

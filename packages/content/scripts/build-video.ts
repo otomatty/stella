@@ -1,6 +1,5 @@
 /**
- * 教材動画 (ナレーション付き解説動画) の生成 — PoC
- * (docs/superpowers/specs/2026-09-29-lesson-video-auto-generation-design.md の ②〜⑤)。
+ * 教材動画 (ナレーション付き解説動画) の生成 — PoC。
  *
  *   bun run --filter=@stella/content video -- courses/it-basics --tts openjtalk
  *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned

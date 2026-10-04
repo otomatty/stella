@@ -134,7 +134,7 @@ const post = (path: string, body: unknown) =>
  * skill-map.test.ts と同じ形。
  *
  * 飛び級の入口を 1 歩先に置いてあるのは、視界の段が「触れてよいのは `full` だけ」に
- * 揃ったため (`docs/superpowers/specs/2026-08-30-skill-tree-fog-display-design.md`)。
+ * 揃ったため。
  */
 function lineSource(unlocked: Set<string>, enrolled: Set<string>) {
   const stage = (slug: string, prerequisites: string[]) => ({

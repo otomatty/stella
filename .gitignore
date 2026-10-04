@@ -5,6 +5,7 @@ dist
 .vite
 .env
 .env.local
+.pdf-key-salt
 *.tsbuildinfo
 
 # Generated at build time from sql.js
@@ -13,9 +14,7 @@ apps/web/public/sqljs/
 # Generated at build time from pdfjs-dist (cmaps + standard_fonts)
 apps/web/public/pdfjs/
 
-# ææãã«ãçæç©ï¼.svg ã¯æ­£æ¬ãªã®ã§ã³ãããããï¼
-packages/content/modules/**/slides.pptx
-packages/content/modules/**/*.diagram.png
+# 教材ビルド生成物（.svg は正本なのでコミットする）
 packages/content/courses/**/slides.pptx
 packages/content/courses/**/*.diagram.png
 packages/content/dist/
@@ -31,8 +30,11 @@ apps/api/.dev.vars
 # graphify 知識グラフの生成物（ルールは .cursor/rules/graphify.mdc）
 graphify-out/
 
-# Vite ª vite.config.ts ÇÝÝÉìéêt@C
+# Vite が vite.config.ts 読み込み時に作る一時ファイル
 vite.config.ts.timestamp-*.mjs
 
 # カバレッジレポート (bun run test:coverage)
 coverage/
+
+# Packaged VS Code extensions
+*.vsix

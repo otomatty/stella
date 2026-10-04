@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>反復演習と評価の設計</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html" aria-current="page">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 既存教材から引き継ぐ方法</a></li><li><a href="#section-3">2 一単元の構成と問題数</a></li><li><a href="#section-4">3 一コマの流れ</a></li><li><a href="#section-5">4 JavaScriptの基礎課題の例</a></li><li><a href="#section-6">5 Reactの入力部品の課題セット例</a></li><li><a href="#section-10">6 フォームと削除確認の修正演習</a></li><li><a href="#section-11">7 自力と定着の判定</a></li><li><a href="#section-12">8 UIの評価基準</a></li><li><a href="#section-13">9 卒業判定への追加</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">反復演習と評価の設計</h1><p>版 2.2<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>独自の問題文には教材独自の課題であることを示し、用いる言語・API・操作の背景資料を付ける。同じ実装パターンの問題群では共通の参照を各問からたどれるようにする。詳細は<a href="05-sources-and-attribution.html">情報源と参照元の記載</a>に定める。</p>
+<p>M01では、作成・保存・表示・再開等の操作を反復する。インストールを繰り返すことは求めず、環境の不具合と操作スキルの不足を区別する。例題と確認は<a href="06-m01-beginner-setup-and-basic-operations.html">M01の詳細設計</a>に定める。</p>
+<p>現在のC#教材のように、一つの実装パターンを繰り返し、前に学んだ処理と組み合わせ、自力で使えるかを別問題で確かめる。プログラミングの関数だけでなく、CSSの配置、UIの状態、propsとイベント、API連携にも同じ学習方法を適用する。</p>
+<h2 id="section-2">1 既存教材から引き継ぐ方法</h2><p>現在の C# カリキュラムと配列の基礎課題は、同じ書き方の問題群、接続練習、自力演習、修正演習、確認Aと後日のBを使っている。この構成をWeb教材へ移す。</p>
+<ul>
+<li>新しい考え方を一つに絞った小さい例から始める。</li>
+<li>基礎の前半では見本を使い、後半では閉じて書く。</li>
+<li>一つの実装パターンを使い、入力、条件、状態、境界を変える。</li>
+<li>接続練習では、既習スキルを最低一つ明示して使う。</li>
+<li>自力演習では手順を示す支援を減らし、別の題材を使う。</li>
+<li>修正演習では、再現、原因、修正、回帰確認を残す。</li>
+<li>未見の確認Aと、時間を空けた確認Bを別にする。</li>
+<li>支援した問題は練習として扱い、自力確認には別問題を使う。</li>
+</ul>
+<h2 id="section-3">2 一単元の構成と問題数</h2><p>以下は初期の問題数の目安とする。全単元へ同じ数を強制せず、実装時間と学習目標で調整する。未経験者には既定の基礎課題をすべて用意し、既習スキルが開始診断で確認できた場合は重複する練習を調整する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>種類</th>
+<th>記号</th>
+<th>言語・データ処理の単元</th>
+<th>UI部品の単元</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>解説と参考例</td>
+<td>例</td>
+<td>1〜2例</td>
+<td>1〜2例</td>
+<td>処理や状態を予測して観察する</td>
+</tr>
+<tr>
+<td>基礎課題</td>
+<td>Q</td>
+<td>8〜12問</td>
+<td>6〜8問</td>
+<td>同じ実装パターンを繰り返す</td>
+</tr>
+<tr>
+<td>接続練習</td>
+<td>C</td>
+<td>2〜3問</td>
+<td>2〜3問</td>
+<td>既習の処理・部品とつなぐ</td>
+</tr>
+<tr>
+<td>自力演習</td>
+<td>S</td>
+<td>3〜5問</td>
+<td>2〜3問</td>
+<td>手順を選び、別の仕様を実装する</td>
+</tr>
+<tr>
+<td>修正演習</td>
+<td>R</td>
+<td>2〜3問</td>
+<td>2問程度</td>
+<td>再現と原因の特定から直す</td>
+</tr>
+<tr>
+<td>統合課題</td>
+<td>T</td>
+<td>パックの節目</td>
+<td>1課題またはパックの節目</td>
+<td>既存画面・機能に組み込む</td>
+</tr>
+<tr>
+<td>未見の確認</td>
+<td>A</td>
+<td>1課題以上</td>
+<td>1課題以上</td>
+<td>自力で実装・確認・説明する</td>
+</tr>
+<tr>
+<td>後日の確認</td>
+<td>B</td>
+<td>約1週間後</td>
+<td>約1週間後</td>
+<td>別問題で定着を確認する</td>
+</tr>
+</tbody></table>
+</div><p>問題数を増やすだけではなく、何を繰り返すかを決める。値だけを変えた問題から始め、その後に条件、境界、組合せ、利用場面を変える。学習者が「同じ考え方のどこを変えればよいか」を説明できるようにする。</p>
+<h2 id="section-4">3 一コマの流れ</h2><p>1コマ60〜90分を目安に、前回の短い問題を10〜15分で解き直し、説明と参考例を10〜15分で観察する。30〜45分で演習し、最後の10〜15分で自作ケース、誤りの原因、次の復習を記録する。60分枠では説明や演習を次のコマへ分ける。</p>
+<p>大きなフォームやAPIの統合は複数コマに分ける。実装を小さく区切り、その段階で動く操作を確認する。新しいライブラリ、通信、複雑な状態を一問で同時に導入しない。</p>
+<h2 id="section-5">4 JavaScriptの基礎課題の例</h2><p>単元は「条件に合う配列の要素を選ぶ」とする。前提は条件分岐とループで、配列の走査を新しく使う。最初は同じ走査と判定の構成を繰り返す。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>問題</th>
+<th>実装すること</th>
+<th>変える条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q01</td>
+<td>整数からk以上を選ぶ</td>
+<td>比較の基準</td>
+</tr>
+<tr>
+<td>Q02</td>
+<td>kより大きい値を選ぶ</td>
+<td>境界を含むか</td>
+</tr>
+<tr>
+<td>Q03</td>
+<td>k以下の値を選ぶ</td>
+<td>比較の向き</td>
+</tr>
+<tr>
+<td>Q04</td>
+<td>偶数を選ぶ</td>
+<td>条件式</td>
+</tr>
+<tr>
+<td>Q05</td>
+<td>範囲内の値を選ぶ</td>
+<td>条件の組合せ</td>
+</tr>
+<tr>
+<td>Q06</td>
+<td>対象が0件のときも処理する</td>
+<td>空の結果</td>
+</tr>
+<tr>
+<td>Q07</td>
+<td>空配列を処理する</td>
+<td>入力が0件</td>
+</tr>
+<tr>
+<td>Q08</td>
+<td>元の順を保って返す</td>
+<td>出力と配列操作</td>
+</tr>
+<tr>
+<td>Q09</td>
+<td>指定した長さ以上の文字列を選ぶ</td>
+<td>値の種類</td>
+</tr>
+<tr>
+<td>Q10</td>
+<td>オブジェクトの在庫数で選ぶ</td>
+<td>データの構造</td>
+</tr>
+</tbody></table>
+</div><p>Q09は文字列、Q10はオブジェクトを習得した時点で行い、未習の構造を突然混ぜない。M04の接続練習で検索語と在庫条件を組み合わせ、M05では同じ関数を検索画面に使う。</p>
+<p>自力演習では参加者や商品データ等を使い、出力順と条件を新しく指定する。修正演習では境界比較、空入力、元データの破壊などの不具合を扱う。</p>
+<h2 id="section-6">5 Reactの入力部品の課題セット例</h2><p>単元は「TextFieldを作り、フォームに接続する」とする。前提はHTMLのラベル、JavaScriptの検証関数、Reactのpropsとstateである。</p>
+<h3 id="section-7">基礎課題</h3><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>問題</th>
+<th>実装すること</th>
+<th>主に確認する内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q01</td>
+<td>labelと入力欄を持つ部品</td>
+<td>HTML構造、idとlabel</td>
+</tr>
+<tr>
+<td>Q02</td>
+<td>親から渡されたvalueを表示する</td>
+<td>props、値を渡す方向</td>
+</tr>
+<tr>
+<td>Q03</td>
+<td>変更した値を親へ通知する</td>
+<td>onChange、stateの場所</td>
+</tr>
+<tr>
+<td>Q04</td>
+<td>説明文とエラーを表示する</td>
+<td>関連付け、状態による表示</td>
+</tr>
+<tr>
+<td>Q05</td>
+<td>disabledとreadOnlyを扱う</td>
+<td>操作と状態の違い</td>
+</tr>
+<tr>
+<td>Q06</td>
+<td>同じ部品を二つ配置する</td>
+<td>idと状態の独立</td>
+</tr>
+<tr>
+<td>Q07</td>
+<td>長いlabelとエラーを表示する</td>
+<td>折返し、余白、狭い画面</td>
+</tr>
+<tr>
+<td>Q08</td>
+<td>別のフォームでも使う</td>
+<td>部品契約、スタイルの再利用</td>
+</tr>
+</tbody></table>
+</div><p>最初の基礎問題では部品の入口とpropsの仕様を配布する。後半は完成コードを閉じ、自分の実装と仕様だけで進める。</p>
+<h3 id="section-8">接続 自力 修正 統合</h3><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>種類</th>
+<th>課題</th>
+<th>使う既習スキルと確認</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C01</td>
+<td>必須・文字数の検証関数と接続する</td>
+<td>M04の関数、エラーの対応</td>
+</tr>
+<tr>
+<td>C02</td>
+<td>Selectと送信ボタンを組み合わせる</td>
+<td>状態共有、フォームの操作</td>
+</tr>
+<tr>
+<td>S01</td>
+<td>イベント受付の入力を作る</td>
+<td>別題材で同じ部品契約を適用する</td>
+</tr>
+<tr>
+<td>S02</td>
+<td>既存データの編集を作る</td>
+<td>初期値、変更値、取消</td>
+</tr>
+<tr>
+<td>R01</td>
+<td>ラベルが別の入力を指す不具合を直す</td>
+<td>idの重複、複数配置</td>
+</tr>
+<tr>
+<td>R02</td>
+<td>入力しても親の値が変わらない問題を直す</td>
+<td>値とイベントの流れ</td>
+</tr>
+<tr>
+<td>T01</td>
+<td>M10で既存一覧の編集APIに接続する</td>
+<td>送信、成功・失敗、一覧更新、既存機能の維持</td>
+</tr>
+</tbody></table>
+</div><p>M09の部品単元では同期処理と見本を確認し、APIとの統合T01はM10で行う。部品の確認と画面連携の確認を分け、途中で必要な前提を飛ばさない。</p>
+<h3 id="section-9">未見の確認</h3><p>確認Aでは別の業務の入力仕様を提示し、部品、検証、親の状態を本人が設計する。確認Bでは約1週間後に、入力の種類や初期値、エラー条件を変えた別課題を提示する。練習した同じ問題を再提出しただけで、自力や定着の確認にはしない。</p>
+<h2 id="section-10">6 フォームと削除確認の修正演習</h2><p>修正演習には、通常操作で見える不具合と、条件を変えると現れる不具合を用意する。教材側で再現条件と壊れたコードを固定し、解答を直接示すログだけにしない。</p>
+<ul>
+<li>送信ボタンを押すと、意図しないページ移動が起きる。</li>
+<li>入力エラーを直しても、古いエラーが残る。</li>
+<li>保存に失敗すると、入力内容が消える。</li>
+<li>保存後に詳細だけ更新され、一覧の内容が古いままになる。</li>
+<li>別の行を選んでも、前の対象の名前が確認ダイアログに残る。</li>
+<li>取消したのに削除処理が実行される。</li>
+<li>ダイアログを閉じた後に操作位置が分からなくなる。</li>
+<li>検索条件を変えた後、古い応答が届いて結果が戻る。</li>
+</ul>
+<p>学習者は、再現手順、期待と実際、原因、変更した箇所、回帰確認を残す。修正の大きさや講師と同じ実装であることを合格条件にしない。</p>
+<h2 id="section-11">7 自力と定着の判定</h2><p>課題の作業状態とスキルの習得を分ける。課題を完了していても、ヒントや解答を使った場合は、その支援条件を根拠に付ける。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>水準</th>
+<th>判定</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>未確認</td>
+<td>実装・説明の証拠が不足している</td>
+</tr>
+<tr>
+<td>支援付き</td>
+<td>手順や解答等の支援を受けて実施した</td>
+</tr>
+<tr>
+<td>自力で確認</td>
+<td>未見の仕様を実装・確認・説明できた</td>
+</tr>
+<tr>
+<td>時間を空けて確認</td>
+<td>後日の別課題でも適用できた</td>
+</tr>
+</tbody></table>
+</div><p>公式ドキュメントや文法の参照は自力確認で許可する。解法を示すヒント、解答参照、講師による実装指示、AIによる解答生成は支援として記録する。実務形式の課題ではAIを利用できるが、重要なスキルには解答生成を使わない確認も置く。</p>
+<p>確認Aで自力実施が成立すれば次へ進み、確認Bで定着を確認する。Bに不合格の場合、そのスキルを必須とする総合確認を保留する。独立した単元や関連知識は進められる。</p>
+<p>補習はつまずいたスキルの小問題を3問程度行い、最短でも翌日に未見の別問題で確認する。既出の確認問題を未見問題として再利用しない。予備を使い切った場合は、新しい仕様と期待結果を用意する。</p>
+<h2 id="section-12">8 UIの評価基準</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>評価対象</th>
+<th>成立を確認する証拠</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>デザイン</td>
+<td>配布規則、情報の階層、文字と余白、画面幅への対応</td>
+</tr>
+<tr>
+<td>部品の契約</td>
+<td>props、イベント、複数配置、状態の受け渡し</td>
+</tr>
+<tr>
+<td>操作</td>
+<td>入力、選択、開閉、確認・取消、キーボード、フォーカス</td>
+</tr>
+<tr>
+<td>画面連携</td>
+<td>既存機能と接続し、成功時に正しいデータと表示へ更新する</td>
+</tr>
+<tr>
+<td>失敗と境界</td>
+<td>無効、空、通信失敗、権限不足、応答競合等を扱う</td>
+</tr>
+<tr>
+<td>変更と説明</td>
+<td>新しい仕様を実装し、影響と理由を説明する</td>
+</tr>
+</tbody></table>
+</div><p>スクリーンショット、操作テスト、コードの説明を組み合わせる。部品の見た目だけ、テストの成功だけで判定を完結させない。公開済みの仕様を隠しケースで確認し、未説明の要件を判定に追加しない。</p>
+<h2 id="section-13">9 卒業判定への追加</h2><p>初回案のフルスタック実装、権限、整合性、テスト、公開、復旧、未見の変更・修正に加え、UIに次の証拠を求める。</p>
+<ul>
+<li>利用者の目的から画面と主要な操作を設計している。</li>
+<li>共通のデザイン規則と、必須の画面状態を示せる。</li>
+<li>複数画面で使う部品に、入力とイベントの契約がある。</li>
+<li>部品をAPIや業務機能へ接続し、成功・失敗時の操作が成立する。</li>
+<li>狭い画面、長いデータ、キーボード操作を確かめている。</li>
+<li>未見のUI変更を既存機能への影響を調べて実装できる。</li>
+</ul>
+<p>得意な見た目や多い機能数で、認可、データ破壊、操作不能等の必須未達を相殺しない。卒業制作はそれまでの共通題材と異なる業務で行う。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

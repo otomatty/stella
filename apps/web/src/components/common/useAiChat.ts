@@ -1,5 +1,5 @@
 /**
- * AI チャットの状態を管理する Hook (falcon-informal P2)。
+ * AI チャットの状態を管理する Hook (stella P2)。
  *
  * - 起動時に `chat-store` から履歴を読み込む (key は assignmentId または 'general')
  * - `send(text)` で user メッセージを追加し、SSE ストリームを開始する。

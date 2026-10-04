@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>情報源の選定と教材への参照元の記載</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#536174; --line:#d8e0e9; --accent:#155e75; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:auto; }
+    body { margin:0; color:var(--ink); background:#f3f5f8; font-family:"Yu Gothic UI","Meiryo",sans-serif; line-height:1.85; font-size:16px; }
+    a { color:var(--accent); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible, [tabindex]:focus-visible { outline:3px solid #0e7490; outline-offset:3px; }
+    .layout { max-width:1480px; margin:0 auto; padding:32px; display:grid; grid-template-columns:270px minmax(0,1fr); gap:30px; align-items:start; }
+    nav { position:sticky; top:24px; background:white; padding:22px; border:1px solid var(--line); border-radius:12px; max-height:calc(100vh - 48px); overflow:auto; }
+    nav p { margin:0 0 10px; font-weight:700; }
+    nav ol { margin:0; padding:0; list-style:none; }
+    nav li { margin:7px 0; font-size:14px; line-height:1.65; }
+    nav a { text-decoration:none; }
+    main { min-width:0; background:white; padding:44px; border:1px solid var(--line); border-radius:12px; }
+    h1 { font-size:30px; line-height:1.55; margin:0 0 24px; letter-spacing:.01em; }
+    h2 { margin:56px 0 20px; padding-top:12px; border-top:2px solid var(--line); font-size:24px; line-height:1.6; scroll-margin-top:24px; }
+    h3 { margin:34px 0 14px; font-size:19px; line-height:1.6; scroll-margin-top:24px; }
+    p { margin:16px 0; overflow-wrap:anywhere; }
+    ul,ol { padding-left:26px; }
+    li { margin:6px 0; }
+    .table-scroll { max-width:100%; overflow-x:auto; margin:22px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; line-height:1.7; }
+    th,td { padding:11px 13px; border:1px solid var(--line); text-align:left; vertical-align:top; min-width:100px; }
+    th { background:#eaf1f5; font-weight:700; }
+    tr:nth-child(even) td { background:#fafbfd; }
+    code { font-family:Consolas,"Yu Gothic UI",monospace; font-size:.9em; background:#edf2f7; border-radius:3px; padding:2px 4px; }
+    pre { background:#f5f7fa; border:1px solid var(--line); border-radius:8px; padding:20px; overflow-x:auto; line-height:1.65; }
+    pre code { padding:0; background:none; font-size:13px; }
+    figure { margin:24px 0; }
+    .diagram-scroll { overflow-x:auto; }
+    .diagram svg { display:block; min-width:760px; width:100%; font-family:"Yu Gothic UI","Meiryo",sans-serif; }
+    figcaption { margin-top:12px; color:var(--muted); font-size:14px; }
+    footer { margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .skip { position:absolute; left:-10000px; }
+    .skip:focus { left:20px; top:12px; z-index:2; background:white; padding:8px; }
+    @media(max-width:1080px) { .layout { display:block; max-width:1000px; padding:20px; } nav { position:static; max-height:none; margin-bottom:24px; } nav ol { columns:2; column-gap:24px; } nav li { break-inside:avoid; } main { padding:30px; } }
+    @media(max-width:580px) { body { font-size:15px; } .layout { padding:12px; } nav { padding:18px; } nav ol { columns:1; } main { padding:20px 16px; } h1 { font-size:24px; } h2 { font-size:21px; margin-top:42px; } h3 { font-size:18px; } th,td { min-width:135px; } }
+    @media print { @page { size:A4; margin:15mm; } body { background:white; font-size:10pt; } .layout { display:block; padding:0; max-width:none; } nav,.skip { display:none; } main { padding:0; border:none; border-radius:0; } h1 { font-size:20pt; } h2 { font-size:15pt; } h3 { font-size:12pt; } h1,h2,h3 { break-after:avoid; } table { font-size:8pt; } th,td { min-width:0; padding:6px; } tr,figure { break-inside:avoid; } thead { display:table-header-group; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:8pt; } pre code { font-size:8pt; } .table-scroll,.diagram-scroll { overflow:visible; } .diagram svg { min-width:0; } a { color:inherit; } footer { font-size:8pt; } }
+  
+    .document-list { padding-bottom:16px; margin-bottom:16px !important; border-bottom:1px solid var(--line); }
+    nav a[aria-current="page"] { font-weight:700; color:#172033; }
+    .edition { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    @media(max-width:1080px) { nav ol.document-list { columns:1; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">本文へ移動</a>
+  <div class="layout">
+    <nav aria-label="分冊と文書の目次"><p>改訂案 2.2</p><ol class="document-list"><li><a href="00-overall-design.html">全体設計</a></li><li><a href="01-content-split-and-learning-order.html">教材分割と学習順序</a></li><li><a href="02-ui-components-and-design.html">UIコンポーネントとデザイン</a></li><li><a href="03-repeated-practice-and-assessment.html">反復演習と評価</a></li><li><a href="04-lxp-content-management-and-implementation.html">LXP教材管理と実装</a></li><li><a href="05-sources-and-attribution.html" aria-current="page">情報源と参照元の記載</a></li><li><a href="06-m01-beginner-setup-and-basic-operations.html">M01初心者向け環境構築と基本操作</a></li></ol><p>この文書の目次</p><ol><li><a href="#section-2">1 情報源の役割</a></li><li><a href="#section-3">2 言語とWebの基本で使う情報源</a></li><li><a href="#section-4">3 フロントエンドとUIで使う情報源</a></li><li><a href="#section-5">4 バックエンド・テスト・公開で使う情報源</a></li><li><a href="#section-6">5 基礎知識・品質・技術史で使う情報源</a></li><li><a href="#section-7">6 18教材パックとの対応</a></li><li><a href="#section-8">7 教材に必ず記載する内容</a></li><li><a href="#section-10">8 LXPでのデータ管理</a></li><li><a href="#section-11">9 公開前の確認と更新</a></li><li><a href="#section-12">10 学習者自身が調べられるようにする</a></li></ol></nav>
+    <main id="content"><div class="edition">LXPカリキュラム改訂案 2.2</div><h1 id="section-1">情報源の選定と教材への参照元の記載</h1><p>作成日 2026年10月4日<br>版 2.2<br>状態 設計案<br><a href="00-overall-design.html">全体設計へ戻る</a></p>
+<p>教材は、公式ドキュメント、標準仕様、公的機関の資料、著者と版が確認できる書籍を根拠に制作する。すべての単元に参照元を載せ、解説、参考コード、図、演習の仕様のどこに使ったかを追えるようにする。教材パックの末尾に参考サイトをまとめるだけでは、記載要件を満たさない。</p>
+<p>本書は、18教材パックで使う情報源の選定と、LXPでの表示・管理・公開条件を定める。LXPの実装は未確認であり、参照元の管理や公開制御を実装済みとは扱わない。以下の参照先は2026年10月4日に入口または該当ページを確認した選定案である。各サイトの全内容を通読したことや、転載条件を一括確認したことを意味しない。</p>
+<h2 id="section-2">1 情報源の役割</h2><p>初学者には、その日の実装に必要な短い解説と、公式資料の読む箇所を渡す。仕様書の全読を課さず、学習が進むにつれて自分でAPIや根拠を探す練習を増やす。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>役割</th>
+<th>主に使う資料</th>
+<th>教材での使い方</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>学習用の説明</td>
+<td>MDN、公式の入門・Learn・Handbook、確認済みの書籍本文</td>
+<td>日本語で説明し直し、読むページと節を指定する</td>
+</tr>
+<tr>
+<td>仕様の確認</td>
+<td>WHATWG、W3C、Ecma、IETFのRFC</td>
+<td>教材制作者が挙動や用語を確認する。必要な箇所だけ学習者にも示す</td>
+</tr>
+<tr>
+<td>実装方法とAPI</td>
+<td>採用する製品・ライブラリの公式リファレンス</td>
+<td>引数、返値、制約、実行環境、版を確認する</td>
+</tr>
+<tr>
+<td>UIの設計例</td>
+<td>デジタル庁、GOV.UK等の公開デザインシステム</td>
+<td>余白、文字、色、状態、部品の仕様を比較する</td>
+</tr>
+<tr>
+<td>品質と開発の判断</td>
+<td>指定書籍、Google Engineering Practices、DORA、OWASP</td>
+<td>実際の変更・レビュー・テストへ結び付ける</td>
+</tr>
+<tr>
+<td>技術史</td>
+<td>開発元の発表、当時の文書、標準化の記録</td>
+<td>日付や出来事と、教材側の解釈を区別する</td>
+</tr>
+<tr>
+<td>独自の課題と観察</td>
+<td>教材の設計記録、再現可能な実験記録</td>
+<td>「教材独自の課題」「教材環境での観察」と明示する</td>
+</tr>
+</tbody></table>
+</div><p>MDNはWeb技術の学習・参照用資料として使う。HTMLやJavaScriptの規範的な仕様は、それぞれの標準化団体の文書で確認する。公式資料同士で説明が異なる場合も、対象バージョン、実行環境、説明の目的を先に確かめる。</p>
+<p>ブログ、Qiita、Zenn、動画、検索結果、AIの出力は、調べる入口や補助説明として使える。ただし、教材の技術的な主張は公式資料や再現確認で裏付ける。記事を参考にした場合はその記事も記載し、実際には読んでいない原典を読んだことにしない。AIの回答や検索の要約を、元資料の代わりに根拠として登録しない。</p>
+<h2 id="section-3">2 言語とWebの基本で使う情報源</h2><p>以下の一覧は制作時の入口である。実教材の参照元には、使った個別ページ・節・仕様項目を登録する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>技術</th>
+<th>学習者向けの主な情報源</th>
+<th>制作者が確認する仕様・資料</th>
+<th>主に確認すること</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Web全体</td>
+<td><a href="https://developer.mozilla.org/en-US/curriculum/core/">MDN Curriculum</a>、<a href="https://developer.mozilla.org/en-US/docs/Web">MDN Web Docs</a></td>
+<td>各技術の標準仕様</td>
+<td>学習範囲、ブラウザとサーバ、Webの基本用語</td>
+</tr>
+<tr>
+<td>VS Codeの導入・操作</td>
+<td><a href="https://code.visualstudio.com/docs/editing/getting-started/editor-tutorial">公式Editor tutorial</a>、<a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Installing_software">MDNのソフトウェア準備</a></td>
+<td><a href="https://code.visualstudio.com/docs/setup/windows">公式Windows setup</a>、<a href="https://code.visualstudio.com/docs/editing/workspaces/workspaces">Workspaces</a>、<a href="https://code.visualstudio.com/docs/terminal/basics">Terminal Basics</a>等</td>
+<td>導入、作業フォルダー、保存、表示、ターミナル。OSと手順の対象版を記録する</td>
+</tr>
+<tr>
+<td>HTML</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/HTML">MDN HTML</a></td>
+<td><a href="https://html.spec.whatwg.org/multipage/">WHATWG HTML Living Standard</a></td>
+<td>文書構造、要素の意味、フォーム、標準の操作</td>
+</tr>
+<tr>
+<td>CSS</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/CSS">MDN CSS</a></td>
+<td><a href="https://www.w3.org/Style/CSS/">W3C CSSの仕様一覧</a>から該当モジュール</td>
+<td>カスケード、ボックス、Flexbox、Grid、画面幅、対応状況</td>
+</tr>
+<tr>
+<td>JavaScript</td>
+<td><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide">MDN JavaScript Guide</a>と各APIのリファレンス</td>
+<td><a href="https://ecma-international.org/publications-and-standards/standards/ecma-262/">EcmaのECMA-262</a></td>
+<td>値、型、制御、関数、配列、例外、Promise、言語の挙動</td>
+</tr>
+<tr>
+<td>DOM・イベント</td>
+<td>MDNの該当するWeb APIのページ</td>
+<td><a href="https://dom.spec.whatwg.org/">WHATWG DOM Standard</a></td>
+<td>要素の取得、変更、イベント、伝播、ブラウザの機能</td>
+</tr>
+<tr>
+<td>fetch・HTTP</td>
+<td>MDNの該当API・HTTP解説</td>
+<td><a href="https://fetch.spec.whatwg.org/">WHATWG Fetch Standard</a>、<a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110 HTTP Semantics</a></td>
+<td>非同期通信、応答、メソッド、状態コード、オリジン</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td><a href="https://www.typescriptlang.org/docs/handbook/intro.html">公式Handbook</a></td>
+<td><a href="https://www.typescriptlang.org/docs/">公式Docs</a>のReference、TSConfig、リリース情報</td>
+<td>型、絞り込み、関数、オブジェクト、コンパイラ設定</td>
+</tr>
+<tr>
+<td>C#との比較・既存教材</td>
+<td><a href="https://learn.microsoft.com/ja-jp/dotnet/csharp/">Microsoft Learn C#ガイド</a></td>
+<td>同サイトの言語リファレンス・仕様と採用版の.NET API</td>
+<td>型、条件、配列、関数等の共通点と違い</td>
+</tr>
+</tbody></table>
+</div><p>JavaScriptの言語機能と、DOM・fetch等の実行環境が提供する機能を分けて説明する。TypeScriptの型確認と、実行時の入力検証も別の仕組みとして扱う。CSSは単一の「CSS3」の資料で済ませず、該当するモジュールの文書とブラウザ対応を確認する。</p>
+<p>日本語の公式資料・MDNがある場合は学習者の入口に使う。翻訳の更新が遅れている箇所は英語版と照合し、教材の説明は制作者が確認した内容を日本語で書く。日本語版と英語版を両方利用した場合は、両方のURLを残す。</p>
+<h2 id="section-4">3 フロントエンドとUIで使う情報源</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>技術・領域</th>
+<th>主な情報源</th>
+<th>教材での用途と注意</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reactの考え方</td>
+<td><a href="https://react.dev/learn">React Learn</a>、<a href="https://react.dev/learn/thinking-in-react">Thinking in React</a>、<a href="https://react.dev/learn/sharing-state-between-components">状態の共有</a></td>
+<td>部品分割、props、状態の配置、親子のデータの流れ</td>
+</tr>
+<tr>
+<td>Reactの部品API</td>
+<td><a href="https://react.dev/reference/react-dom/components/input">Reactのinputリファレンス</a>等、該当するAPIページ</td>
+<td>制御された入力、イベント、値と状態、部品の契約</td>
+</tr>
+<tr>
+<td>Next.js</td>
+<td><a href="https://nextjs.org/docs/app">公式App RouterのDocs</a>、<a href="https://nextjs.org/docs/app/getting-started/server-and-client-components">Server・Client Components</a></td>
+<td>ルーティング、実行場所、データ取得、公開。採用版とRouterを記載する</td>
+</tr>
+<tr>
+<td>Vite</td>
+<td><a href="https://vite.dev/guide/">公式Guide</a></td>
+<td>HTML・JS・Reactの開発環境、ビルド、環境変数。教材の構成に合わせて必要箇所を指定する</td>
+</tr>
+<tr>
+<td>デザインの基本と日本語の部品仕様</td>
+<td><a href="https://design.digital.go.jp/dads/">デジタル庁デザインシステム</a></td>
+<td>基本デザイン、トークン、入力やボタン等の仕様、状態、使い方を参照する</td>
+</tr>
+<tr>
+<td>別のデザイン規則との比較</td>
+<td><a href="https://design-system.service.gov.uk/styles/">GOV.UK Design SystemのStyles</a>とComponents・Patterns</td>
+<td>余白、文字、色、部品、画面の組合せを比較する。自分のアプリの規則を説明する材料にする</td>
+</tr>
+<tr>
+<td>アクセシビリティの基準</td>
+<td><a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2</a>、<a href="https://www.w3.org/WAI/WCAG22/quickref/">Quick Reference</a>とUnderstanding</td>
+<td>ラベル、コントラスト、キーボード、フォーカス、エラー、状態の伝達。達成基準番号を残す</td>
+</tr>
+<tr>
+<td>複合UI部品の操作</td>
+<td><a href="https://www.w3.org/WAI/ARIA/apg/">WAI-ARIA Authoring Practices Guide</a>、<a href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/">Dialogパターン</a></td>
+<td>キーボード操作、フォーカス、roleと状態を確認する。APGは実装ガイドであり、WCAGの規範本文とは区別する</td>
+</tr>
+<tr>
+<td>部品の見本と状態の確認</td>
+<td><a href="https://storybook.js.org/docs/writing-stories">StorybookのStories</a>、<a href="https://storybook.js.org/docs/writing-tests/accessibility-testing">アクセシビリティテスト</a></td>
+<td>通常、入力、無効、エラー、長文等を見比べる。自動検査に加えて操作を確認する</td>
+</tr>
+</tbody></table>
+</div><p>デザインシステムは、具体的な規則と部品仕様が公開されているため教材に向く。ただし、行政サービス等の前提を持つ設計例であり、すべてのWebアプリに同じ配色・余白・操作を要求する根拠にはしない。教材では「この課題で採用する規則」と「別の規則でも成立する理由」を区別する。</p>
+<p>HTMLの標準要素で実装できる入力やボタンから始める。複雑なMenu、Combobox、DatePicker等にライブラリを採用する場合は、採用時点でそのライブラリの公式Docs、該当部品、導入版、ライセンスを追加登録する。UIライブラリのAPIと、操作設計の根拠であるHTML・WAI資料の両方を参照する。現段階で複数のUIライブラリを必修に追加しない。</p>
+<h2 id="section-5">4 バックエンド・テスト・公開で使う情報源</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>技術・領域</th>
+<th>主な情報源</th>
+<th>教材での用途と注意</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Node.js</td>
+<td><a href="https://nodejs.org/learn/getting-started/introduction-to-nodejs">公式Learnの入門</a>、<a href="https://nodejs.org/api/">公式API</a></td>
+<td>ブラウザとの違い、モジュール、非同期、ファイル、HTTP、実行環境。APIは教材のNode.js版を選ぶ</td>
+</tr>
+<tr>
+<td>npm</td>
+<td><a href="https://docs.npmjs.com/">npm公式Docs</a></td>
+<td>package.json、scripts、依存関係、lockfile、再現するインストール</td>
+</tr>
+<tr>
+<td>Express</td>
+<td><a href="https://expressjs.com/en/guide/routing/">公式Routing</a>、<a href="https://expressjs.com/en/guide/using-middleware/">Middleware</a>、<a href="https://expressjs.com/en/advanced/best-practice-security/">Security</a></td>
+<td>HTTPの受け口、処理の順序、エラー、入力、セキュリティ。メジャー版を確認する</td>
+</tr>
+<tr>
+<td>Hono</td>
+<td><a href="https://hono.dev/docs">公式Docs</a>、<a href="https://hono.dev/docs/getting-started/nodejs">Node.js向け導入</a></td>
+<td>ルート、Context、Middleware、Web標準、Node.js用アダプター。実行環境と採用版を固定する</td>
+</tr>
+<tr>
+<td>SQL・PostgreSQL</td>
+<td><a href="https://www.postgresql.org/docs/current/tutorial.html">公式Tutorial</a>、<a href="https://www.postgresql.org/docs/">版別Docs</a></td>
+<td>表、キー、JOIN、制約、トランザクション、索引、権限。最終登録は採用メジャー版のURLにする</td>
+</tr>
+<tr>
+<td>認証・認可・Webセキュリティ</td>
+<td><a href="https://cheatsheetseries.owasp.org/">OWASP Cheat Sheet Series</a>、<a href="https://owasp.org/projects/asvs">ASVS</a>、<a href="https://nextjs.org/docs/app/guides/authentication">Next.jsの認証ガイド</a></td>
+<td>入力、セッション、認可、XSS・CSRF等の確認。利用する認証ライブラリの公式資料も採用後に追加する</td>
+</tr>
+<tr>
+<td>単体テスト</td>
+<td><a href="https://vitest.dev/guide/">Vitest公式Guide</a></td>
+<td>検証関数、境界値、例外、非同期、テスト環境と設定</td>
+</tr>
+<tr>
+<td>Reactの操作テスト</td>
+<td><a href="https://testing-library.com/docs/react-testing-library/intro/">React Testing Library公式Docs</a></td>
+<td>利用者の操作と結果で部品を確認する。導入した関連パッケージの版も残す</td>
+</tr>
+<tr>
+<td>E2Eテスト</td>
+<td><a href="https://playwright.dev/docs/intro">Playwright公式Docs</a>、<a href="https://playwright.dev/docs/best-practices">Best practices</a></td>
+<td>ブラウザ操作、画面とAPIの連携、待機、分離、失敗の調査</td>
+</tr>
+<tr>
+<td>Git</td>
+<td><a href="https://git-scm.com/docs">Git公式Reference</a></td>
+<td>差分、コミット、ブランチ、マージ、履歴、誤った変更の復旧</td>
+</tr>
+<tr>
+<td>CI</td>
+<td><a href="https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs">GitHub ActionsのNode.jsビルド・テスト</a></td>
+<td>インストール、チェック、成果物、実行環境。サンプル内の版をそのまま採用せず確認する</td>
+</tr>
+<tr>
+<td>コンテナ</td>
+<td><a href="https://docs.docker.com/get-started/">Docker公式Get started</a></td>
+<td>イメージ、コンテナ、ネットワーク、永続化、再現する環境</td>
+</tr>
+<tr>
+<td>公開環境・運用</td>
+<td>採用するホスティング・クラウドの公式Docs</td>
+<td>ビルド、環境変数、秘密情報、ログ、監視、バックアップ、復旧。採用先が決まった時点で登録する</td>
+</tr>
+<tr>
+<td>VS Code拡張・WebView</td>
+<td><a href="https://code.visualstudio.com/api/extension-guides/webview">VS Code公式Webview API</a></td>
+<td>LXP側の教材表示、通信、状態復元、CSP、ローカル資源、拡張の役割</td>
+</tr>
+</tbody></table>
+</div><p>ExpressとHonoは、APIの考え方を比較する資料として扱える。すべての課題を両方で二重に実装する計画にはしない。主教材の実装を一つに決め、M17で別の実装へ移す際に共通点と差分を確かめる。</p>
+<p>ORM、入力検証、認証、状態管理等の追加パッケージは、実際に採用するものだけ公式資料を登録する。教材の採用技術が増えるたびに、この一覧と単元の参照元を更新する。</p>
+<h2 id="section-6">5 基礎知識・品質・技術史で使う情報源</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>領域</th>
+<th>情報源</th>
+<th>使い方</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>基本情報技術者レベルの範囲</td>
+<td><a href="https://www.ipa.go.jp/shiken/syllabus/gaiyou.html">IPAの試験要綱・シラバス</a>、<a href="https://www.ipa.go.jp/shiken/syllabus/omgdg50000005kpe-att/syllabus_fe_ver9_2.pdf">基本情報技術者シラバスVer.9.2</a></td>
+<td>知識の対応表を作る。シラバスは範囲の根拠として使い、各概念の詳しい説明は別の資料で確認する</td>
+</tr>
+<tr>
+<td>データ構造・アルゴリズム</td>
+<td><a href="https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/">MIT OpenCourseWareのIntroduction to Algorithms</a>等の大学公式資料</td>
+<td>制作者が定義や計算量を確認する補助資料。講座全体や高度な課題を初学者の必修にしない</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td><a href="https://www.rfc-editor.org/rfc/rfc9110.html">HTTPのRFC 9110</a>、<a href="https://www.rfc-editor.org/rfc/rfc1034.html">DNSのRFC 1034</a>、<a href="https://www.rfc-editor.org/rfc/rfc8446.html">TLS 1.3のRFC 8446</a></td>
+<td>標準の用語と目的を確認し、ブラウザ・API・公開の操作に結び付ける。RFCの更新・廃止や関連文書も確認する</td>
+</tr>
+<tr>
+<td>指定書籍</td>
+<td><a href="https://www.oreilly.co.jp/books/9784814401789/">O&#39;Reilly Japanの『ソフトウェアエンジニアリングの基礎』</a>と購入した書籍本文</td>
+<td>読書と実装・設計・品質の振り返りを結び付ける。本文を参照した箇所は版、章・節、ページを記録する</td>
+</tr>
+<tr>
+<td>コードレビュー</td>
+<td><a href="https://google.github.io/eng-practices/review/">Google Engineering PracticesのCode Review</a></td>
+<td>変更の説明、設計、読みやすさ、テスト、レビューへの応答を練習する</td>
+</tr>
+<tr>
+<td>品質と継続的な公開</td>
+<td><a href="https://dora.dev/capabilities/continuous-delivery/">DORAのContinuous delivery</a></td>
+<td>小さな変更、テスト、公開、フィードバックの関係を考える。特定の開発手法の万能性や研修効果の保証に使わない</td>
+</tr>
+<tr>
+<td>Webの誕生</td>
+<td><a href="https://home.cern/science/computing/the-birth-of-the-web/short-history-web/">CERNのA short history of the Web</a></td>
+<td>当時の情報共有の課題、文書・リンク・サーバの成立を学ぶ</td>
+</tr>
+<tr>
+<td>TypeScriptの成立と変遷</td>
+<td><a href="https://devblogs.microsoft.com/typescript/ten-years-of-typescript/">開発元のTen Years of TypeScript</a></td>
+<td>JavaScriptで規模が大きくなる際の課題と、型を使う理由を考える</td>
+</tr>
+<tr>
+<td>各技術の変遷</td>
+<td>採用技術の公式発表、リリースノート、移行ガイド、提案記録</td>
+<td>「何が変わったか」と「教材側がどう評価するか」を分けて記載する</td>
+</tr>
+</tbody></table>
+</div><p>OS、メモリ、プロセス、ファイル、文字コードは、実際に扱うOS・ランタイムの公式資料と確認済みの基礎書を対応付ける。採用OSや基礎書が未確定の項目は、情報源未確定として制作台帳に残し、根拠を確認してから公開する。IPAの項目名だけで解説の正しさを確認したとは扱わない。</p>
+<p>指定書籍の書誌は、Nathaniel Schutta・Dan Vega著、村上列訳、O&#39;Reilly Japan、2026年、ISBN 978-4-8144-0178-9とする。本設計で確認したのは出版社の紹介と公開目次であり、書籍本文を読んだことにはしない。教材制作時に本文を読み、利用する章・節・ページを確定する。販売ページは書誌情報の根拠、本文は学習内容の根拠として別に管理する。</p>
+<p>技術史は「以前の技術が全面的に悪かったので新技術に置き換わった」という説明にしない。当時の制約、解決した問題、増えた複雑さ、現在も適する用途を扱う。日付や発表内容には一次資料を付け、「この理由で学習順序をこうした」は教材設計上の判断として書く。</p>
+<h2 id="section-7">6 18教材パックとの対応</h2><div class="table-scroll"><table>
+<thead>
+<tr>
+<th>教材</th>
+<th>主に使う情報源</th>
+<th>参照を調べる練習</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M01 開発環境とWebの入口</td>
+<td>VS Codeの導入・操作、MDN、採用環境の公式Docs、Git、CERN</td>
+<td>指定ページを開き、見出しと用語を探す</td>
+</tr>
+<tr>
+<td>M02 HTML・CSSとデザイン基礎</td>
+<td>MDN HTML・CSS、デジタル庁、WCAG</td>
+<td>要素の意味と、課題のデザイン規則の根拠を確かめる</td>
+</tr>
+<tr>
+<td>M03 JavaScriptの値と制御</td>
+<td>MDN JavaScript Guide、ECMA-262</td>
+<td>値・型・比較の説明と実行結果を対応付ける</td>
+</tr>
+<tr>
+<td>M04 JavaScriptのデータ・関数・状態</td>
+<td>MDN Guide・API、アルゴリズムの基礎資料</td>
+<td>配列APIの引数、返値、元の値の変更を調べる</td>
+</tr>
+<tr>
+<td>M05 DOMと画面操作</td>
+<td>MDN Web API、DOM Standard</td>
+<td>DOM・イベントが言語の機能と異なることを確認する</td>
+</tr>
+<tr>
+<td>M06 HTMLとJavaScriptのUI部品</td>
+<td>MDN HTML・DOM、デジタル庁、WAI</td>
+<td>入力・開閉・フォーカスの仕様を探す</td>
+</tr>
+<tr>
+<td>M07 HTTP・非同期・TypeScript</td>
+<td>MDN、Fetch、RFC 9110、TypeScript Handbook</td>
+<td>型の確認と通信・実行時の失敗を分けて調べる</td>
+</tr>
+<tr>
+<td>M08 Reactの基礎と状態</td>
+<td>React Learn・Reference</td>
+<td>自分の実装で誰が状態を持つかを説明する</td>
+</tr>
+<tr>
+<td>M09 ReactのUI部品とデザイン規則</td>
+<td>React、WAI、デザインシステム、Storybook</td>
+<td>部品の仕様・状態・操作の参照を結び付ける</td>
+</tr>
+<tr>
+<td>M10 UIと既存機能の連携</td>
+<td>React、通信の資料、Testing Library、Playwright</td>
+<td>保存・失敗・再表示を既存のAPI契約と照合する</td>
+</tr>
+<tr>
+<td>M11 Node.jsとAPI</td>
+<td>Node.js、npm、主教材のExpressまたはHono</td>
+<td>API、Middleware、実行環境の対象版を確認する</td>
+</tr>
+<tr>
+<td>M12 SQLとデータベース</td>
+<td>PostgreSQL公式Docs、確認済みの基礎書</td>
+<td>制約・トランザクションの節を根拠に仕様を説明する</td>
+</tr>
+<tr>
+<td>M13 認証・認可・セキュリティ</td>
+<td>OWASP、採用認証ライブラリ、フレームワーク公式Docs</td>
+<td>利用者と権限のチェック箇所を確認する</td>
+</tr>
+<tr>
+<td>M14 Next.jsとWebアプリ構成</td>
+<td>採用版のNext.js App Router Docs、React</td>
+<td>サーバ・クライアントの境界と版の差を調べる</td>
+</tr>
+<tr>
+<td>M15 要件・設計・品質と改善</td>
+<td>指定書籍、Google Engineering Practices、既習のテスト資料</td>
+<td>設計判断の理由と参照元を短く記録する</td>
+</tr>
+<tr>
+<td>M16 公開・CIと運用</td>
+<td>GitHub Actions、Docker、採用公開先、DORA</td>
+<td>サンプルの版と自分の環境の違いを確かめる</td>
+</tr>
+<tr>
+<td>M17 未知のコードと技術の比較</td>
+<td>比較する技術の公式Docs・リリースノート</td>
+<td>複数資料、最小再現、既存コードを照合する</td>
+</tr>
+<tr>
+<td>M18 個人でのフルスタック開発</td>
+<td>採用技術すべての公式資料、書籍、設計記録</td>
+<td>調査、採用理由、参照、再現環境を自分で残す</td>
+</tr>
+</tbody></table>
+</div><p>IPAの知識対応と、指定書籍の読書はコース全体に分散する。上表は中心となる資料の対応であり、当該教材だけで読むことを意味しない。未見確認で資料を許可する場合も、参照ページの存在を示すことと、完成解答を渡すことを区別する。</p>
+<p>M01のOS別導入、基本操作、配布・実行環境の資料と確認箇所は<a href="06-m01-beginner-setup-and-basic-operations.html">M01の詳細設計</a>に具体化する。公式ページの転送先が教材の目的と一致することも確認する。</p>
+<p>VS Code拡張は、正確な拡張ID、配布元の説明、公式の連携資料を登録する。Prettier・ESLint・Vitest・Playwright等では、エディタ拡張の使い方と、プロジェクト内の実行パッケージの使い方を別々の参照として扱う。選定先、段階、参照元はM01の詳細設計の「VS Code拡張の選定と段階的な導入」に記載する。</p>
+<h2 id="section-8">7 教材に必ず記載する内容</h2><p>単元ごとに参照元の一覧を持ち、各解説・参考例・図・課題から該当する参照元を指定する。参照元の登録を必須項目とし、資料を利用した範囲を講師が確認してから公開する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>登録する情報</th>
+<th>記載する内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>識別子</td>
+<td>改訂を区別できるsourceRef。公開済みの記録を上書きしない</td>
+</tr>
+<tr>
+<td>資料名と作成者</td>
+<td>ページ・書籍のタイトル、著者または発行・運営主体</td>
+</tr>
+<tr>
+<td>参照する場所</td>
+<td>該当ページのURLと見出し・節・仕様番号。書籍はISBN、版、章・節、ページ</td>
+</tr>
+<tr>
+<td>資料の版</td>
+<td>文書の版・発行日・改訂番号・commit等。更新型の資料はその旨と確認日</td>
+</tr>
+<tr>
+<td>教材への対応</td>
+<td>どの解説・コード・図・課題の、どの説明や受入条件に使ったか</td>
+</tr>
+<tr>
+<td>適用する環境</td>
+<td>教材の環境定義への参照。ライブラリ、ランタイム、Router、OS等の対象</td>
+</tr>
+<tr>
+<td>利用方法</td>
+<td>要約、引用、転載、コードの改変、図の改変、独自課題等</td>
+</tr>
+<tr>
+<td>再利用の条件</td>
+<td>コピー・引用・改変した資料の条件、必要な表示、確認したURLと日付</td>
+</tr>
+<tr>
+<td>確認記録</td>
+<td>内容確認日、確認者、確認範囲、リンク確認、レビュー状態</td>
+</tr>
+</tbody></table>
+</div><p>学習者の画面では、まず「何を確認する資料か」「読む場所」を見せ、詳細な管理項目は参照元の詳細に置く。WebViewでも通常のWeb画面でも同じ参照元を表示し、配布・印刷した教材にも一覧を含める。</p>
+<h3 id="section-9">本文と課題への記載例</h3><p>以下は表示形式の例である。</p>
+<blockquote>
+<p>入力値を親の状態として持ち、値と変更イベントを入力部品へ渡します。<br>参照元: React公式「Sharing State Between Components」。親へ状態を集める説明を参考に、教材用の例を作成。確認日 2026-10-04。<br>詳しく読む: <a href="https://react.dev/learn/sharing-state-between-components">Sharing State Between Components</a></p>
+</blockquote>
+<blockquote>
+<p>基礎課題Q01: ラベルをクリックしても、対応する入力へフォーカスが移るようにしてください。<br>課題は教材独自に作成。要素の関連付けの参照元: MDN「label」のラベルと入力を関連付ける節。<br>詳しく読む: <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/label">MDN label</a></p>
+</blockquote>
+<p>独自の演習に架空の「原作」を付けない。題材・数値・問題文は教材独自と明記し、用いる言語・API・操作の背景資料を示す。前の単元を再利用した課題は、その単元の版と参照元を引き継ぐ。基礎課題を繰り返す際は、共通の参照元を各問からたどれるようにし、同じ長い一覧を毎回表示する必要はない。</p>
+<p>制作者が独自に決めた余白や配色等は「この教材で採用する規則」と記載する。資料から要約した説明、直接引用、改変したコードや図、独自制作を混同しない。自作の図にも、元の概念を参考にした場合は参照元を付ける。</p>
+<p>参照元を記載することと、文章・コード・図を再利用できることは別に確認する。コピー・引用・改変する場合は該当資料の条件を確認し、必要な表示を教材に残す。例えばMDNにも<a href="https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Attrib_copyright_license">帰属表示とライセンスの案内</a>がある。単にリンクを載せればすべて転載できる、とは扱わない。</p>
+<h2 id="section-10">8 LXPでのデータ管理</h2><p>コース共通のsource-registry.jsonで資料を管理し、単元のreferences.jsonで使用箇所を管理する。重複入力を避けても、公開された単元の参照先は固定する。</p>
+<pre><code class="language-text">web-fullstack/
+  source-registry.json
+  environments/
+    frontend-01.json
+  materials/
+    M09-react-ui/
+      units/
+        text-field/
+          unit.json
+          references.json
+          tasks.json
+          01-解説と参考例.md</code></pre><p>次のJSONは登録形式の例であり、実際の承認記録ではない。確認日を入れたことと、内容・版・再利用条件のレビューが済んだことを分ける。</p>
+<pre><code class="language-json">{
+  &quot;schemaVersion&quot;: &quot;2.1&quot;,
+  &quot;sources&quot;: [
+    {
+      &quot;id&quot;: &quot;SRC-mdn-label-20261004&quot;,
+      &quot;title&quot;: &quot;label HTML element&quot;,
+      &quot;publisher&quot;: &quot;MDN Web Docs&quot;,
+      &quot;url&quot;: &quot;https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/label&quot;,
+      &quot;section&quot;: &quot;Associating a label with a form control&quot;,
+      &quot;kind&quot;: &quot;explanation&quot;,
+      &quot;language&quot;: &quot;en&quot;,
+      &quot;documentVersion&quot;: { &quot;kind&quot;: &quot;rolling&quot;, &quot;revision&quot;: null },
+      &quot;checkedAt&quot;: &quot;2026-10-04&quot;,
+      &quot;review&quot;: { &quot;status&quot;: &quot;draft&quot;, &quot;reviewer&quot;: null, &quot;reviewedAt&quot;: null }
+    }
+  ]
+}</code></pre><pre><code class="language-json">{
+  &quot;schemaVersion&quot;: &quot;2.1&quot;,
+  &quot;unitId&quot;: &quot;web-fullstack/M09/text-field@1.0.0&quot;,
+  &quot;environmentRef&quot;: &quot;frontend-01@1.0.0&quot;,
+  &quot;uses&quot;: [
+    {
+      &quot;contentId&quot;: &quot;basic/Q01&quot;,
+      &quot;sourceRefs&quot;: [&quot;SRC-mdn-label-20261004&quot;],
+      &quot;usedFor&quot;: &quot;ラベルと入力の関連付けという受入条件&quot;,
+      &quot;authorship&quot;: &quot;original-exercise&quot;,
+      &quot;reuse&quot;: &quot;concept-reference&quot;,
+      &quot;reviewStatus&quot;: &quot;draft&quot;
+    }
+  ]
+}</code></pre><p>上例は資料と課題の対応を示す最小例である。Reactの状態や参考コードを説明する実単元では、その参照も追加する。environmentRefの参照先には、package.json・lockfile・Node.js・Router・OS・ブラウザ等の対象と確認環境を登録する。環境レコードのない参照は公開できない。</p>
+<p>引用、転載、改変のレコードには、対象範囲、原作者、条件のURL、確認日、必要な帰属表示と教材上の表示位置を追加する。書籍レコードにはISBN、刊行年、版、章・節、ページ、本文を確認した記録を追加する。独自の実験を根拠にする場合は実験ID、コード、入力、結果、環境、日時を記録し、結果を一般仕様と断定しない。</p>
+<p>学習者へ渡す公開データと教材の出力には、資料名、作成者、参照箇所、URL、確認日、対象環境、利用方法、必要な帰属表示を含める。講師の内部レビュー記録と、学習者に必要な出典を分ける。講師用解答や非公開の評価素材が参照元のリンクから漏れないようにする。</p>
+<h2 id="section-11">9 公開前の確認と更新</h2><p>LXPの公開操作と教材ビルドに、次の検証を追加する。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>確認</th>
+<th>公開条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>参照元の有無</td>
+<td>各単元に参照一覧があり、解説・参考例・図・各課題に参照または独自制作の記録がある</td>
+</tr>
+<tr>
+<td>参照先の解決</td>
+<td>sourceRef、単元の使用箇所、環境、内部教材の版が存在する</td>
+</tr>
+<tr>
+<td>参照の具体性</td>
+<td>外部資料は該当ページ・節を指定する。技術のトップページだけでは内容の根拠として受け付けない</td>
+</tr>
+<tr>
+<td>対象版</td>
+<td>教材の技術・実行環境・Routerと資料が整合し、スターターと確認用コードがその環境で動く</td>
+</tr>
+<tr>
+<td>利用方法</td>
+<td>コピー・引用・改変の範囲と条件、必要な表示を確認し、未確認の素材を含めない</td>
+</tr>
+<tr>
+<td>講師レビュー</td>
+<td>資料が該当する説明・受入条件を支えることを確認し、draftからapprovedへ変更する</td>
+</tr>
+<tr>
+<td>リンク</td>
+<td>明確な削除・404や参照箇所の消失を解消する。タイムアウト・アクセス制限は別に扱い、手動確認とその記録を求める</td>
+</tr>
+<tr>
+<td>配信・出力</td>
+<td>学習画面、WebView、配布・印刷用出力で参照元と必要な表示を確認できる</td>
+</tr>
+</tbody></table>
+</div><p>JSONの検査やリンクの応答確認だけでは、資料が説明の根拠になっているかは判断できない。自動検査と講師による内容確認を併用する。学習者が必ず読む資料はアクセス条件も確認し、有料書籍を使う場合は必要部数や閲覧方法を研修側で用意する。</p>
+<p>更新型の公式Docsは、内容や既定の対象版が変わる。Node.jsとPostgreSQLは版別Docsを選び、Next.jsは版とRouter、Honoはランタイムとアダプターを残す。版固定のURLがない資料は確認日・見出し・利用した主張を記録し、公式リポジトリの改訂番号等を使える場合は併記する。確認日だけで当時の内容を完全に保存できるとは扱わない。</p>
+<p>教材を公開する前、次の受講期を開始する前、技術を更新する時に、対象版、参照先、コード、受入条件を再確認する。受講途中の参照元や問題を上書きせず、変更した単元を新しい版として公開する。重大な誤りを修正する場合は、影響を受ける課題・評価と受講者を特定して訂正を案内する。</p>
+<p>既存のC#教材にも同じ記載方針を適用する。ただし、現在の教材すべての出典を確認済みとは扱わない。単元ごとにMicrosoft Learn等と照合し、独自課題の表示、参照元、対象のC#・.NET版を順次整える。</p>
+<h2 id="section-12">10 学習者自身が調べられるようにする</h2><p>参照元は制作者の管理情報として閉じず、学習者が調べる練習に使う。</p>
+<ol>
+<li>M01〜M06では、指定した見出しから要素・関数の意味と使い方を探す。</li>
+<li>M07〜M10では、引数・返値・制約を読み、自分の実装と関連付ける。</li>
+<li>M11〜M14では、対象版、実行環境、成功・失敗、セキュリティ上の前提を確認する。</li>
+<li>M15〜M18では、公式資料と最小の再現コードを照合し、採用理由、判断の限界、参照元を短く記録する。</li>
+</ol>
+<p>提出には、使用した資料、読む箇所、そこから判断したことを残す欄を用意する。URLの数で評価せず、必要な根拠を見付け、自分のコードや設計へ適用できたかを確認する。講師側の教材にも同じ形式を使い、調査と参照の具体例を見せる。</p>
+<footer>この設計案は7分冊です。学習者向け教材は18パックへ分割します。原本は同じフォルダのMarkdownです。更新後は「node 教材管理/HTML/build-lxp-revised-design.mjs」でHTMLを生成できます。</footer></main>
+  </div>
+</body>
+</html>

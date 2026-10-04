@@ -122,7 +122,7 @@ describe("buildLessonDocHtml", () => {
     expect(html).toContain("<h1>Hi</h1>");
   });
 
-  it("offers falcon.openInWeb for pdf-only lessons", () => {
+  it("offers stella.openInWeb for pdf-only lessons", () => {
     const html = buildLessonDocHtml({
       kind: "pdf-only",
       title: "Slides",
@@ -130,7 +130,7 @@ describe("buildLessonDocHtml", () => {
       lessonId: "l1",
     });
     expect(html).not.toMatch(/<script/i);
-    expect(html).toContain("command:falcon.openInWeb");
+    expect(html).toContain("command:stella.openInWeb");
     expect(html).toContain("c1");
     expect(html).toContain("l1");
   });

@@ -9,7 +9,7 @@ import type { Env } from "./env.js";
 import { getDb } from "./db/client.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
-import { DEV_MODE_HEADER } from "./lib/skill-map-data.js";
+import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./lib/skill-map-data.js";
 import { adminRoute } from "./routes/admin.js";
 import { authRoute } from "./routes/auth.js";
 import { analyticsRoute } from "./routes/analytics.js";
@@ -54,7 +54,7 @@ app.use("/api/*", async (c, next) => {
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     // 画面が付ける独自ヘッダはここに挙げないと **全ての API 呼び出しが CORS で落ちる**
     // (プリフライトの Access-Control-Allow-Headers に載らないため)。増やしたら必ず足す。
-    allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER],
+    allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER],
   });
   return corsMiddleware(c, next);
 });

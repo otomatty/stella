@@ -6,7 +6,7 @@
 
 社内の**未経験エンジニア向けTypeScript研修教材**です。動画講義(ショート動画)とLMS掲載用のドキュメントの2本立てです。
 
-この教材は `falcon-informal` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `courses/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_COURSE.md](ADDING_COURSE.md)）。
+この教材は `stella` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `courses/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_COURSE.md](ADDING_COURSE.md)）。
 
 原典は [サバイバルTypeScript](https://typescriptbook.jp/)(CC BY-SA 4.0)ですが、**未経験者向けに順序・粒度を再設計した独自教材**であり、原典の翻訳や写しではありません。
 
@@ -92,7 +92,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (PoC)
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます (設計と PoC の結果は `docs/superpowers/specs/2026-09-29-lesson-video-auto-generation-design.md`)。現状は **it-basics の全 9 トピックと typescript-basics 1-1-2 だけ**が台本を持ち、配信 (R2・D1・画面) は未実装です。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。現状は **it-basics の全 9 トピックと typescript-basics 1-1-2 だけ**が台本を持ち、配信 (R2・D1・画面) は未実装です。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください

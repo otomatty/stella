@@ -1,7 +1,7 @@
 /**
  * 全章の Assignment を集約するルートエントリ。
  *
- * falcon-informal P0 では JavaScript の Ch00–Ch09 と、 言語別ディレクトリ
+ * stella P0 では JavaScript の Ch00–Ch09 と、 言語別ディレクトリ
  * (`_lang/sql/` / `_lang/fe-pseudo/`) を取り込む。
  * Python / PHP / Vitest mutation / ESLint config 課題は本プロジェクトのスコープ外 (将来枠)。
  *

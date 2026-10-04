@@ -5,7 +5,10 @@
  *   - コールバック後 JWT を localStorage に保持し、 api-client が Bearer に載せる
  */
 
-const TOKEN_KEY = "falcon_auth_token_v1";
+import { readStellaStorage, removeStellaStorage } from "./brand-storage";
+
+const TOKEN_KEY = "stella_auth_token_v1";
+const LEGACY_TOKEN_KEY = "falcon_auth_token_v1";
 
 const serverUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.replace(/\/$/, "");
 
@@ -60,14 +63,25 @@ function emit(session: Session | null): void {
 
 function readToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  return readStellaStorage(window.localStorage, TOKEN_KEY);
 }
 
-function storeToken(token: string | null): void {
-  if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(TOKEN_KEY, token);
-  else window.localStorage.removeItem(TOKEN_KEY);
+function storeToken(token: string | null): boolean {
+  if (typeof window === "undefined") return true;
+  if (token) {
+    try {
+      window.localStorage.setItem(TOKEN_KEY, token);
+    } catch {
+      return false;
+    }
+    try {
+      window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+    } catch {
+      // 新キーは保存済み。旧キーが残っても次の読み取りは新キーを使う。
+    }
+  } else removeStellaStorage(window.localStorage, TOKEN_KEY);
   emit(token ? sessionFromToken(token) : null);
+  return true;
 }
 
 function authCallbackUrl(): string {
@@ -93,7 +107,7 @@ export function completeAuthFromCallbackHash(
   const accessToken = params.get("access_token");
   if (!accessToken) return { ok: false, error: "トークンが返されませんでした" };
 
-  storeToken(accessToken);
+  if (!storeToken(accessToken)) return { ok: false, error: "トークンを保存できませんでした" };
   return { ok: true };
 }
 
@@ -125,7 +139,22 @@ export function getSession(): Session | null {
 export function subscribeToAuth(callback: Listener): () => void {
   listeners.add(callback);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === TOKEN_KEY) callback(e.newValue ? sessionFromToken(e.newValue) : null);
+    if (e.key === TOKEN_KEY) {
+      callback(e.newValue ? sessionFromToken(e.newValue) : null);
+      return;
+    }
+    // 旧タブのログアウトは旧キーだけ消す。今のトークンと同じときだけ追随する。
+    if (e.key !== LEGACY_TOKEN_KEY || e.oldValue !== readToken()) return;
+    if (!e.newValue) {
+      storeToken(null);
+      return;
+    }
+    try {
+      window.localStorage.setItem(TOKEN_KEY, e.newValue);
+    } catch {
+      return;
+    }
+    emit(sessionFromToken(e.newValue));
   };
   if (typeof window !== "undefined") window.addEventListener("storage", onStorage);
   return () => {

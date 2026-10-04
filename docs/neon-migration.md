@@ -89,5 +89,5 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
    - `NEON_AUTH_JWKS_URL` (API) / `VITE_NEON_AUTH_URL` (web) を設定。
    - `web/src/lib/neon-auth.ts` の Magic Link 送信 / トークン取り込みエンドポイントを
      実際の Neon Auth (Better Auth) のパスに合わせる (または公式 React SDK に置換)。
-4. **Cloudflare R2** バケット (`falcon-materials-public`) を Workers にバインド → 公開ベース URL を
+4. **Cloudflare R2** バケット (`stella-materials-public`) を Workers にバインド → 公開ベース URL を
    `VITE_MATERIALS_BASE_URL` に。 旧 `materials-public` バケットの中身を移送する。
