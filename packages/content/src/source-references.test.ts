@@ -4,14 +4,24 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  type AssignmentResolver,
   checkSourceReferences,
   createLegacyBaseline,
   isTechnologyLandingPage,
+  resolveSharedAssignment,
+  sharedAssignmentResolver,
   unitContentHash,
 } from "./check-source-references.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets, pdfSourceHash } from "./material-pdf.js";
+import { findAssignment } from "../../shared/src/problems/index.js";
 import {
+  getEntryFile,
+  getLanguage,
+  getStaticAnalysisSettings,
+} from "../../shared/src/assignment-helpers.js";
+import {
+  parseUnitReferences,
   publicReferences,
   readSourceRefs,
   readSourceRegistry,
@@ -195,6 +205,84 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(errors()).toEqual(new Set(Object.keys(baseline.units)));
   });
+  describe("旧演習の課題定義 (packages/shared/src/problems) を指紋に含める", () => {
+    const edited = "S0-FePseudo-Ch00-01-max-of-two";
+    function withEdit(change: (definition: Record<string, unknown>) => void): AssignmentResolver {
+      return (id) => {
+        const definition = resolveSharedAssignment(id);
+        if (id !== edited) return definition;
+        const copy = structuredClone(definition) as Record<string, unknown>;
+        change(copy);
+        return copy;
+      };
+    }
+    it.each<[string, (definition: Record<string, unknown>) => void]>([
+      ["説明", (d) => (d.description = `${d.description}\n補足を加えた。`)],
+      ["テスト", (d) => (d.tests = [...(d.tests as unknown[]), { name: "追加", code: "true" }])],
+      ["スターター", (d) => (d.starterFiles = [])],
+      ["解答", (d) => (d.solution = "// 別の解答")],
+      ["採点設定", (d) => (d.staticAnalysis = { eslint: { rules: { eqeqeq: "off" } }, ast: {} })],
+    ])("同じ ID のまま %s を変えると該当単元だけを必須にする", (_label, change) => {
+      const { root } = fixture();
+      cpSync(join(content, "courses/fe-kamoku-b"), join(root, "courses/fe-kamoku-b"), {
+        recursive: true,
+      });
+      const baseline = createLegacyBaseline(root, "test-base");
+      expect(checkSourceReferences(root, baseline).every((d) => d.severity === "warning")).toBe(
+        true,
+      );
+      const errors = checkSourceReferences(root, baseline, withEdit(change)).filter(
+        (d) => d.severity === "error",
+      );
+      expect(new Set(errors.map((d) => d.unitId))).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
+    });
+    it("seed と同じく Lint プリセットを合成した採点設定で比べ、既定値の明示だけでは変えない", () => {
+      const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
+      const shared = { findAssignment, getEntryFile, getLanguage, getStaticAnalysisSettings };
+      const before = unitContentHash(unit, undefined, sharedAssignmentResolver(shared));
+      expect(before).not.toBe(unitContentHash(unit, undefined, () => null));
+      // 擬似言語の課題は entryFile に starterFiles[0] と同じ main.fe を明示している。
+      // 省略しても seed が投入する入口ファイルは変わらない。
+      const implicitEntry = sharedAssignmentResolver({
+        ...shared,
+        findAssignment: (id) => {
+          const assignment = findAssignment(id);
+          return assignment && { ...assignment, entryFile: undefined };
+        },
+      });
+      expect(unitContentHash(unit, undefined, implicitEntry)).toBe(before);
+      const otherEntry = sharedAssignmentResolver({
+        ...shared,
+        findAssignment: (id) => {
+          const assignment = findAssignment(id);
+          return assignment && { ...assignment, entryFile: "other.fe" };
+        },
+      });
+      expect(unitContentHash(unit, undefined, otherEntry)).not.toBe(before);
+      const presetChanged = sharedAssignmentResolver({
+        ...shared,
+        getStaticAnalysisSettings: (assignment) => {
+          const settings = getStaticAnalysisSettings(assignment);
+          return { ...settings, eslintRules: { ...settings.eslintRules, curly: "off" } };
+        },
+      });
+      expect(unitContentHash(unit, undefined, presetChanged)).not.toBe(before);
+    });
+    it("課題定義のキー順では指紋を変えず、演習の無い単元は課題定義を読まない", () => {
+      const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
+      const reversed: AssignmentResolver = (id) => {
+        const definition = resolveSharedAssignment(id) as Record<string, unknown>;
+        return Object.fromEntries(Object.entries(definition).reverse());
+      };
+      expect(unitContentHash(unit, undefined, reversed)).toBe(unitContentHash(unit));
+      const resolved: string[] = [];
+      unitContentHash(join(content, "courses/fe-kamoku-b/modules/m4-security"), undefined, (id) => {
+        resolved.push(id);
+        return null;
+      });
+      expect(resolved).toEqual([]);
+    });
+  });
   it("course.json のキー順と空白だけを変えても未改訂の判定は維持する", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit, "static-web-01");
@@ -236,13 +324,85 @@ describe("参照元の公開ゲートと表示", () => {
   it("引用・改変は条件と帰属表示を必須にし、private への参照を拒否する", () => {
     const { root, unit } = fixture();
     patch(join(unit, "references.json"), (row) => {
-      (row.uses as Record<string, unknown>[])[0].reuse = "quote";
+      Object.assign((row.uses as Record<string, unknown>[])[0], {
+        authorship: "quotation",
+        reuse: "quote",
+      });
     });
     expect(checkSourceReferences(root).some((d) => d.message.includes("attribution"))).toBe(true);
     patch(join(root, "sources/registry.json"), (row) => {
       (row.sources as Record<string, unknown>[])[0].url = "https://example.org/private/solution.md";
     });
     expect(() => checkSourceReferences(root)).toThrow("HTTP(S)");
+  });
+  describe("制作区分 (authorship) と利用方法 (reuse) を両方向で一致させる", () => {
+    const use = (authorship: string, reuse: string) => ({
+      schemaVersion: "2.1",
+      unitId: "dev-env-basics/m0-first-page@1",
+      environmentRef: "static-web-01@1",
+      uses: [
+        {
+          contentId: "l1-save-and-preview/doc.md",
+          sourceRefs: ["SRC-mdn-html-20261005"],
+          usedFor: "見出しの説明",
+          authorship,
+          reuse,
+          reviewStatus: "approved",
+          attribution: {
+            text: "Original credit",
+            creator: "Fixture author",
+            scope: "一部",
+            conditionsUrl: "https://example.org/license",
+            checkedAt: "2026-10-05",
+            displayAt: "l1-save-and-preview/doc.md",
+          },
+        },
+      ],
+    });
+    it.each([
+      ["original", "quote"],
+      ["original-exercise", "reprint"],
+      ["summary", "quote"],
+      ["original", "adapt-code"],
+      ["summary", "adapt-diagram"],
+      ["quotation", "adapt-code"],
+      ["adapted", "reprint"],
+      ["quotation", "concept-reference"],
+      ["adapted", "original"],
+      ["summary", "original"],
+    ])("authorship %s と reuse %s は食い違うので拒否する", (authorship, reuse) => {
+      expect(() => parseUnitReferences(use(authorship, reuse))).toThrow("食い違います");
+    });
+    it.each([
+      ["quotation", "quote"],
+      ["quotation", "reprint"],
+      ["adapted", "adapt-code"],
+      ["adapted", "adapt-diagram"],
+      ["summary", "concept-reference"],
+      ["original", "concept-reference"],
+      ["original-exercise", "concept-reference"],
+      ["original", "original"],
+      ["original-exercise", "original"],
+    ])("authorship %s と reuse %s は通す", (authorship, reuse) => {
+      expect(parseUnitReferences(use(authorship, reuse)).uses[0]).toMatchObject({
+        authorship,
+        reuse,
+      });
+    });
+    it("独自制作と名乗る引用は公開ゲートで止める", () => {
+      const { root, unit } = fixture();
+      patch(join(unit, "references.json"), (row) => {
+        const [first] = row.uses as Record<string, unknown>[];
+        Object.assign(first, use("original", "quote").uses[0], { contentId: first.contentId });
+        (first.attribution as Record<string, unknown>).displayAt = first.contentId;
+      });
+      expect(checkSourceReferences(root)).toContainEqual(
+        expect.objectContaining({
+          severity: "error",
+          message: expect.stringContaining("食い違います"),
+        }),
+      );
+    });
   });
   it("図の出典も解説の近くに出し、帰属表示を省略しない", () => {
     const { root, unit } = fixture();

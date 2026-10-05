@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 import { readSourceRegistry } from "../src/source-references.js";
 import {
   checkSourceLink,
+  findManualConfirmation,
   parseManualLinkChecks,
   type SourceLinkResult,
 } from "../src/source-links.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sources = [...readSourceRegistry(root).values()];
+const registry = readSourceRegistry(root);
+const sources = [...registry.values()];
 const manualChecks = parseManualLinkChecks(
   JSON.parse(readFileSync(join(root, "sources/link-checks.json"), "utf8")),
 );
@@ -23,15 +25,12 @@ for (let i = 0; i < sources.length; i += 4)
 const manual = results
   .filter((r) => r.status === "manual-confirmation")
   .map((result) => {
-    const confirmation = manualChecks
-      .filter(
-        (m) =>
-          m.sourceRef === result.sourceRef &&
-          m.url === result.url &&
-          Date.now() - Date.parse(m.checkedAt) <= 7 * 24 * 60 * 60_000 &&
-          Date.parse(m.checkedAt) <= Date.now(),
-      )
-      .sort((a, b) => b.checkedAt.localeCompare(a.checkedAt))[0];
+    // 確認記録は、そのとき確かめた読む節・理由と一致するものだけを添える。
+    const confirmation = findManualConfirmation(
+      result,
+      registry.get(result.sourceRef) ?? {},
+      manualChecks,
+    );
     return { ...result, ...(confirmation ? { confirmation } : {}), pending: !confirmation };
   });
 const removed =
@@ -57,7 +56,7 @@ const summary =
         `- ${r.sourceRef}: ${r.status} (${r.reason}${r.httpStatus ? `, HTTP ${r.httpStatus}` : ""})${r.missingSections ? ` 見出しが見つからない節: ${r.missingSections.join(" / ")}` : ""}`,
     )
     .join("\n") +
-  "\n\nタイムアウト・アクセス制限・節の未検出は削除と区別します。手動確認は sources/link-checks.json に確認者・日時・結果・確認内容を残してください。\n";
+  "\n\nタイムアウト・アクセス制限・節の未検出は削除と区別します。手動確認は sources/link-checks.json に確認者・日時・結果・確認内容と、確かめた台帳の読む節 (section)・理由 (reason)・見つからなかった節 (missingSections) を残してください。節や理由が変わった資料は確認し直します。\n";
 writeFileSync(join(output, "source-link-summary.md"), summary);
 console.log(summary);
 if (pending && process.env.GITHUB_ACTIONS)

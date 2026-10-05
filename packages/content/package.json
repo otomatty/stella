@@ -29,7 +29,8 @@
     "narration:check": "bun run scripts/check-narration.ts",
     "video": "bun run scripts/build-video.ts",
     "check:references": "bun run scripts/check-references.ts",
-    "check:links": "bun run scripts/check-source-links.ts"
+    "check:links": "bun run scripts/check-source-links.ts",
+    "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

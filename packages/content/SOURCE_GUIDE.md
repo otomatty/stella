@@ -27,7 +27,7 @@
 }
 ```
 
-独自制作だけの箇所は `authorship: original` または `original-exercise`、`reuse: original`、`sourceRefs: []` と用途を記録できます。概念を資料に依拠する箇所にはその資料を付けます。引用は `quotation`、改変は `adapted` にして利用方法と一致させます。`quote`・`reprint`・`adapt-code`・`adapt-diagram` には `attribution` の `text`・`creator`・`scope`・`conditionsUrl`・`checkedAt`・`displayAt` を追加します。`displayAt` は利用する公開ファイルの `contentId` です。必要な表示を本文・図の近くと一覧に残します。
+独自制作だけの箇所は `authorship: original` または `original-exercise`、`reuse: original`、`sourceRefs: []` と用途を記録できます。概念を資料に依拠する箇所にはその資料を付けます。引用 (`quote`・`reprint`) は `quotation`、改変 (`adapt-code`・`adapt-diagram`) は `adapted`、要約 (`summary`) は `concept-reference` に限り、利用方法と制作区分を両方向で一致させます。`quote`・`reprint`・`adapt-code`・`adapt-diagram` には `attribution` の `text`・`creator`・`scope`・`conditionsUrl`・`checkedAt`・`displayAt` を追加します。`displayAt` は利用する公開ファイルの `contentId` です。必要な表示を本文・図の近くと一覧に残します。
 
 書籍は `kind: book` とし、`book` に `isbn`・`year`・`edition`・`pages`・`textChecked` を記録します。出版社の紹介を読んだだけで本文を確認済みにしません。節名・版は資料側の表記を使い、技術のトップページだけを根拠にしません。
 
@@ -41,7 +41,7 @@
 
 新形式は初回公開から必須です。旧形式では新規単元と内容を改訂した単元の全公開教材を必須にし、未改訂単元の不足は警告にします。`sources/legacy-units.json` は導入時点の旧単元の内容指紋です。**教材を改訂したときに基準を再生成しません。** 本文・コード・課題・解答・評価・画像・環境の変更は内容改訂として扱います。前提・parentの付け替え、参照元の追記だけでは指紋を変えません。
 
-指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。前提・parent・扇への配置は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、記録済みの `baseCommit` の教材から基準を再計算します。
+指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材と課題定義から基準を再計算します。
 
 文字の差分から誤字だけか内容改訂かは自動で判断できません。誤字・表記・レイアウトだけの場合は、講師が差分を確認して `exemptions` に単元ID・変更後の `contentHash`・`reason`・`reviewer`・`reviewedAt` を残します。例外はその内容指紋だけに有効で、新形式の必須検査は免除しません。指紋は `src/check-source-references.ts` の `unitContentHash(単元ディレクトリ, course.jsonのenvironment)` で計算します。
 
@@ -52,6 +52,6 @@
 - 404/410は削除としてジョブを失敗させます。教材や台帳は自動で削除しません。
 - URLの `#` はページ内のID、台帳の `section` はHTMLの見出し (h1〜h6) と照合します。空白・全角半角・大文字小文字の違いは区別しません。書籍の節とHTML以外の資料は照合しません。
 - タイムアウト・通信障害・アクセス制限・サーバー障害・アンカー未検出・節の見出し未検出は削除と分け、手動確認待ちとしてJSONレポート・ジョブサマリ・90日保存のartifactに残します。これらだけでは削除扱いの失敗にしません。
-- 人がブラウザーでページと読む節を確認し、`sources/link-checks.json` に `sourceRef`・`url`・`checkedAt`・`reviewer`・`result` (`available` / `removed`)・`note` を追加します。URLが同じで直近7日以内の確認記録を週次レポートに添えます。将来日付は使いません。削除と確認した記録はジョブの失敗対象です。
+- 人がブラウザーでページと読む節を確認し、`sources/link-checks.json` に `sourceRef`・`url`・`checkedAt`・`reviewer`・`result` (`available` / `removed`)・`note` と、確かめた内容として台帳の `section` (表記のまま)・レポートの理由 `reason` (`timeout`・`section-missing` など)・`section-missing` のときは見つからなかった節 `missingSections` を追加します。資料・URL・`section`・理由が同じで、見つからない節が確かめた範囲に収まる直近7日以内の記録だけを週次レポートに添えます。台帳の節を書き換えた・理由が変わった・新たな節を見失った資料は確認し直します。`section`・`reason` の無い記録は何を確かめたか分からないので添えません。将来日付は使いません。削除と確認した記録はジョブの失敗対象です。
 
 リンクの応答が正常でも内容・対象版・利用条件が正しいとは限りません。公開・技術更新時の講師レビューで節と本文の対応を再確認します。

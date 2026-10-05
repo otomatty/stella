@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import {
+  getEntryFile,
+  getLanguage,
+  getStaticAnalysisSettings,
+} from "../../shared/src/assignment-helpers.js";
+import { findAssignment } from "../../shared/src/problems/index.js";
 import { readEnvironment } from "./task-content.js";
 import { parseSlides } from "./parse-slides.js";
 import {
@@ -46,8 +52,57 @@ function normalizedJson(value: unknown): unknown {
   return value;
 }
 
-/** 内容と環境の変更を検出。前提・parent や参照元の追記だけでは改訂にならない。 */
-export function unitContentHash(directory: string, environment?: string): string {
+/** course.json の `exercises` の 1 レッスンぶん (`{ id, title }[]`) から課題 ID を取り出す。 */
+function exerciseIds(refs: unknown): string[] {
+  if (!Array.isArray(refs)) return [];
+  return refs.flatMap((ref) => {
+    const id = typeof ref === "object" && ref !== null ? (ref as { id?: unknown }).id : undefined;
+    return typeof id === "string" ? [id] : [];
+  });
+}
+/** 旧演習の ID から、seed が投入する課題定義を引く。無い ID は null。 */
+export type AssignmentResolver = (assignmentId: string) => unknown;
+/** 課題定義を引く @stella/shared の関数。基準の再計算では導入時点の版を差し込む。 */
+export interface SharedAssignmentModules {
+  findAssignment: typeof findAssignment;
+  getEntryFile: typeof getEntryFile;
+  getLanguage: typeof getLanguage;
+  getStaticAnalysisSettings: typeof getStaticAnalysisSettings;
+}
+/**
+ * seed (`export-seed-sql.ts` の `emitAssignment`) と同じく課題定義を引き、言語・入口ファイル・
+ * Lint プリセットを合成した静的解析を解決済みの値で上書きする。説明・スターター・テスト・
+ * 解答・採点設定のどれを変えても指紋が変わり、既定値を明示しただけでは変わらない。
+ */
+export function sharedAssignmentResolver(shared: SharedAssignmentModules): AssignmentResolver {
+  return (assignmentId) => {
+    const assignment = shared.findAssignment(assignmentId);
+    if (!assignment) return null;
+    const settings = shared.getStaticAnalysisSettings(assignment);
+    return {
+      ...assignment,
+      language: shared.getLanguage(assignment),
+      entryFile: shared.getEntryFile(assignment),
+      staticAnalysis: { eslint: { rules: settings.eslintRules }, ast: settings.ast },
+    };
+  };
+}
+export const resolveSharedAssignment: AssignmentResolver = sharedAssignmentResolver({
+  findAssignment,
+  getEntryFile,
+  getLanguage,
+  getStaticAnalysisSettings,
+});
+
+/**
+ * 内容と環境の変更を検出。前提・parent や参照元の追記だけでは改訂にならない。
+ * 旧演習は course.json の ID・題名に加えて、ID から引いた課題定義 (`resolveAssignment`) も含める。
+ */
+export function unitContentHash(
+  directory: string,
+  environment?: string,
+  resolveAssignment: AssignmentResolver = resolveSharedAssignment,
+): string {
   const hash = createHash("sha256").update(environment ?? "");
   const lessonKeys = new Set<string>();
   function walk(dir: string, prefix: string) {
@@ -91,16 +146,28 @@ export function unitContentHash(directory: string, environment?: string): string
   const modules = config.modules === undefined ? {} : object(config.modules, "course.modules");
   const exercises =
     config.exercises === undefined ? {} : object(config.exercises, "course.exercises");
+  const unitExercises = Object.entries(exercises).filter(([key]) => lessonKeys.has(key));
   const courseContent: Record<string, unknown> = {
     ...config,
     format: config.format ?? 1,
     modules: { [moduleId]: modules[moduleId] ?? moduleId },
-    exercises: Object.fromEntries(Object.entries(exercises).filter(([key]) => lessonKeys.has(key))),
+    exercises: Object.fromEntries(unitExercises),
   };
   // 学習内容と無関係な経路変更は除外し、演習・単元名は影響する単元だけに含める。
   for (const key of ["prerequisites", "parent", "appearances", "appearancePrerequisites"])
     delete courseContent[key];
   hash.update(`course.json\0${JSON.stringify(normalizedJson(courseContent))}`);
+  // 課題本体は @stella/shared にあり、同じ ID のまま説明・テスト・採点設定を変えられる。
+  // 演習の無い単元は従来どおりの指紋のまま。
+  const assignmentIds = [...new Set(unitExercises.flatMap(([, refs]) => exerciseIds(refs)))].sort();
+  if (assignmentIds.length > 0)
+    hash.update(
+      `assignments\0${JSON.stringify(
+        normalizedJson(
+          Object.fromEntries(assignmentIds.map((id) => [id, resolveAssignment(id) ?? null])),
+        ),
+      )}`,
+    );
   return hash.digest("hex");
 }
 export function listSourceUnits(
@@ -127,14 +194,22 @@ export function listSourceUnits(
   }
   return units;
 }
-export function createLegacyBaseline(root: string, baseCommit: string): LegacySourceBaseline {
+/**
+ * 旧単元の基準。`root` と `resolveAssignment` は記録する `baseCommit` 時点の教材と課題定義を
+ * 指す (`scripts/rebuild-legacy-baseline.ts`)。いまの教材から作ると改訂済みの単元が未改訂に見える。
+ */
+export function createLegacyBaseline(
+  root: string,
+  baseCommit: string,
+  resolveAssignment: AssignmentResolver = resolveSharedAssignment,
+): LegacySourceBaseline {
   return {
     schemaVersion: 1,
     baseCommit,
     units: Object.fromEntries(
       listSourceUnits(root)
         .filter((u) => u.format !== 2)
-        .map((u) => [u.unitId, unitContentHash(u.directory, u.environment)]),
+        .map((u) => [u.unitId, unitContentHash(u.directory, u.environment, resolveAssignment)]),
     ),
     exemptions: [],
   };
@@ -307,6 +382,7 @@ function checkUnit(
 export function checkSourceReferences(
   root: string,
   baseline?: LegacySourceBaseline,
+  resolveAssignment: AssignmentResolver = resolveSharedAssignment,
 ): SourceDiagnostic[] {
   const registry = readSourceRegistry(root);
   const recorded =
@@ -318,7 +394,7 @@ export function checkSourceReferences(
     throw new Error("旧単元の基準記録が不正です");
   const diagnostics: SourceDiagnostic[] = [];
   for (const unit of listSourceUnits(root)) {
-    const hash = unitContentHash(unit.directory, unit.environment);
+    const hash = unitContentHash(unit.directory, unit.environment, resolveAssignment);
     const exempt = recorded.exemptions.some(
       (e) =>
         e.unitId === unit.unitId &&

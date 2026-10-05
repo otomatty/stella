@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   checkSourceLink,
   type FetchSource,
+  findManualConfirmation,
   missingSourceSections,
   parseManualLinkChecks,
+  type SourceLinkResult,
   sourceSections,
 } from "./source-links.js";
 const source = { id: "SRC-test", url: "https://example.org/docs/specific-page" };
@@ -127,5 +129,116 @@ describe("参照元のリンク確認", () => {
     };
     expect(parseManualLinkChecks([record])).toHaveLength(1);
     expect(() => parseManualLinkChecks([{ ...record, note: "" }])).toThrow("note");
+  });
+  describe("手動確認は確かめた読む節と理由にだけ効く", () => {
+    const now = new Date("2026-10-08T00:00:00Z");
+    const registered = { ...source, section: "HTML とは / 見出し" };
+    const sectionMissing: SourceLinkResult = {
+      sourceRef: source.id,
+      url: source.url,
+      checkedAt: now.toISOString(),
+      status: "manual-confirmation",
+      reason: "section-missing",
+      httpStatus: 200,
+      missingSections: ["見出し"],
+    };
+    const timeout: SourceLinkResult = {
+      sourceRef: source.id,
+      url: source.url,
+      checkedAt: now.toISOString(),
+      status: "manual-confirmation",
+      reason: "timeout",
+    };
+    const record = {
+      sourceRef: source.id,
+      url: source.url,
+      section: registered.section,
+      reason: "section-missing",
+      missingSections: ["見出し"],
+      checkedAt: "2026-10-05",
+      reviewer: "teacher",
+      result: "available",
+      note: "見出しが「見出しと段落」に変わったが同じ内容を確認",
+    };
+    const [confirmed] = parseManualLinkChecks([record]);
+    it("同じ節・理由で、見失った節を確かめた記録を直近7日だけ添える", () => {
+      expect(findManualConfirmation(sectionMissing, registered, [confirmed], now)).toBe(confirmed);
+      // 見失った節が減っても、確かめた範囲に収まるので添える。
+      const [wider] = parseManualLinkChecks([
+        { ...record, missingSections: ["HTML とは", "見出し"] },
+      ]);
+      expect(findManualConfirmation(sectionMissing, registered, [wider], now)).toBe(wider);
+      expect(
+        findManualConfirmation(
+          sectionMissing,
+          registered,
+          [confirmed],
+          new Date("2026-10-12T00:00:01Z"),
+        ),
+      ).toBeUndefined();
+      expect(
+        findManualConfirmation(
+          sectionMissing,
+          registered,
+          [confirmed],
+          new Date("2026-10-04T00:00:00Z"),
+        ),
+      ).toBeUndefined();
+    });
+    it("台帳の読む節を書き換えたら、前の節を確かめた記録を添えない", () => {
+      expect(
+        findManualConfirmation(
+          sectionMissing,
+          { section: "HTML とは / 属性 / 見出し" },
+          [confirmed],
+          now,
+        ),
+      ).toBeUndefined();
+    });
+    it("理由が変わったら、別の理由を確かめた記録を添えない", () => {
+      const [timeoutCheck] = parseManualLinkChecks([
+        { ...record, reason: "timeout", missingSections: undefined },
+      ]);
+      expect(findManualConfirmation(timeout, registered, [timeoutCheck], now)).toBe(timeoutCheck);
+      // 先週はタイムアウトで確かめたが、今週は節の見出しが消えた。
+      expect(
+        findManualConfirmation(sectionMissing, registered, [timeoutCheck], now),
+      ).toBeUndefined();
+      expect(findManualConfirmation(timeout, registered, [confirmed], now)).toBeUndefined();
+    });
+    it("新たに見失った節は確かめた範囲に入らない", () => {
+      expect(
+        findManualConfirmation(
+          { ...sectionMissing, missingSections: ["HTML とは", "見出し"] },
+          registered,
+          [confirmed],
+          now,
+        ),
+      ).toBeUndefined();
+    });
+    it("節・理由の無い記録 (節の照合より前の形) は読めるが、どの結果にも添えない", () => {
+      const [legacy] = parseManualLinkChecks([
+        {
+          sourceRef: source.id,
+          url: source.url,
+          checkedAt: "2026-10-05",
+          reviewer: "teacher",
+          result: "available",
+          note: "ブラウザーでページを確認",
+        },
+      ]);
+      expect(legacy.reason).toBeUndefined();
+      expect(findManualConfirmation(sectionMissing, registered, [legacy], now)).toBeUndefined();
+      expect(findManualConfirmation(timeout, registered, [legacy], now)).toBeUndefined();
+    });
+    it.each([
+      ["reason だけ欠けた記録", { reason: undefined }, "reason"],
+      ["section だけ欠けた記録", { section: undefined }, "section"],
+      ["未知の理由", { reason: "ok" }, "reason"],
+      ["見失った節の無い section-missing", { missingSections: [] }, "missingSections"],
+      ["section-missing 以外の見失った節", { reason: "timeout" }, "missingSections"],
+    ])("確かめた内容が読めない記録を拒否する: %s", (_label, change, message) => {
+      expect(() => parseManualLinkChecks([{ ...record, ...change }])).toThrow(message);
+    });
   });
 });

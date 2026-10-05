@@ -1,22 +1,24 @@
 import { isPublicSourceUrl } from "../../shared/src/tasks/source-reference.js";
 
+/** 削除と分けて人の確認に回す理由。手動確認の記録はこのどれを確かめたかを持つ。 */
+export const MANUAL_CONFIRMATION_REASONS = [
+  "access-restricted",
+  "timeout",
+  "network-error",
+  "server-error",
+  "unexpected-response",
+  "anchor-missing",
+  "section-missing",
+] as const;
+export type ManualConfirmationReason = (typeof MANUAL_CONFIRMATION_REASONS)[number];
+
 export interface SourceLinkResult {
   sourceRef: string;
   url: string;
   finalUrl?: string;
   checkedAt: string;
   status: "available" | "removed" | "manual-confirmation";
-  reason:
-    | "ok"
-    | "http-404"
-    | "http-410"
-    | "access-restricted"
-    | "timeout"
-    | "network-error"
-    | "server-error"
-    | "unexpected-response"
-    | "anchor-missing"
-    | "section-missing";
+  reason: "ok" | "http-404" | "http-410" | ManualConfirmationReason;
   httpStatus?: number;
   /** ページの見出しに見つからなかった読む節。手動確認で見る場所を示す。 */
   missingSections?: string[];
@@ -159,11 +161,21 @@ export async function checkSourceLink(
 export interface ManualLinkCheck {
   sourceRef: string;
   url: string;
+  /** 確認したときの台帳の読む節。台帳の表記のまま写す。 */
+  section?: string;
+  /** 確かめた手動確認の理由。 */
+  reason?: ManualConfirmationReason;
+  /** `section-missing` のとき、見出しに見つからず人が確かめた節。 */
+  missingSections?: string[];
   checkedAt: string;
   reviewer: string;
   result: "available" | "removed";
   note: string;
 }
+/**
+ * `section` と `reason` は組で書く。両方とも無い記録は節の照合を入れる前の形として読めるが、
+ * 何を確かめたか分からないので週次レポートには添えない (`findManualConfirmation`)。
+ */
 export function parseManualLinkChecks(raw: unknown): ManualLinkCheck[] {
   if (!Array.isArray(raw))
     throw new Error("sources/link-checks.json は手動確認記録の配列が必要です");
@@ -180,7 +192,7 @@ export function parseManualLinkChecks(raw: unknown): ManualLinkCheck[] {
       !Number.isFinite(Date.parse(String(row.checkedAt)))
     )
       throw new Error("手動確認の URL・結果・日時が不正です");
-    return {
+    const check: ManualLinkCheck = {
       sourceRef: row.sourceRef as string,
       url: row.url,
       checkedAt: row.checkedAt as string,
@@ -188,5 +200,61 @@ export function parseManualLinkChecks(raw: unknown): ManualLinkCheck[] {
       result: row.result as ManualLinkCheck["result"],
       note: row.note as string,
     };
+    if (row.section === undefined && row.reason === undefined && row.missingSections === undefined)
+      return check;
+    if (typeof row.section !== "string" || !row.section.trim())
+      throw new Error("手動確認の section: 確認したときの台帳の読む節が必要です");
+    if (!MANUAL_CONFIRMATION_REASONS.some((reason) => reason === row.reason))
+      throw new Error(`手動確認の reason: ${MANUAL_CONFIRMATION_REASONS.join(" / ")} が必要です`);
+    check.section = row.section;
+    check.reason = row.reason as ManualConfirmationReason;
+    if (check.reason !== "section-missing") {
+      if (row.missingSections !== undefined)
+        throw new Error("手動確認の missingSections は section-missing のときだけ書けます");
+      return check;
+    }
+    const missing = row.missingSections;
+    if (
+      !Array.isArray(missing) ||
+      missing.length === 0 ||
+      !missing.every((name) => typeof name === "string" && name.trim())
+    )
+      throw new Error("手動確認の missingSections: 確かめた節の配列が必要です");
+    check.missingSections = missing as string[];
+    return check;
   });
+}
+
+const MANUAL_CHECK_TTL_MS = 7 * 24 * 60 * 60_000;
+function sameSections(a: string | undefined, b: string | undefined): boolean {
+  const left = sourceSections(a);
+  const right = sourceSections(b);
+  return left.length === right.length && left.every((name, i) => name === right[i]);
+}
+/**
+ * 手動確認待ちの結果に添える、直近7日以内の確認記録。人が確かめたのは記録した時点の読む節と
+ * 理由だけなので、資料ID・URLに加えて、台帳の `section`・手動確認の理由が同じで、見つからない節が
+ * 確かめた範囲に収まる記録に限る。節の書き換え・理由の変化・新たに見失った節は確認し直す。
+ */
+export function findManualConfirmation(
+  result: SourceLinkResult,
+  source: { section?: string },
+  checks: readonly ManualLinkCheck[],
+  now = new Date(),
+): ManualLinkCheck | undefined {
+  return checks
+    .filter((check) => {
+      const age = now.getTime() - Date.parse(check.checkedAt);
+      return (
+        check.sourceRef === result.sourceRef &&
+        check.url === result.url &&
+        age >= 0 &&
+        age <= MANUAL_CHECK_TTL_MS &&
+        check.reason !== undefined &&
+        check.reason === result.reason &&
+        sameSections(check.section, source.section) &&
+        (result.missingSections ?? []).every((name) => check.missingSections?.includes(name))
+      );
+    })
+    .sort((a, b) => b.checkedAt.localeCompare(a.checkedAt))[0];
 }

@@ -45,6 +45,22 @@ export interface SourceUse {
     displayAt: string;
   };
 }
+/**
+ * 利用方法ごとに名乗れる制作区分。要約・引用・改変・独自制作を混同しないよう、
+ * 引用 (quote / reprint) は quotation、改変 (adapt-*) は adapted、独自制作は
+ * original / original-exercise に限る。quotation・adapted は対応する利用方法にしか
+ * 現れないので、逆向き (quotation なのに concept-reference 等) もこの表で弾ける。
+ */
+const AUTHORSHIP_BY_REUSE: Readonly<
+  Record<SourceUse["reuse"], readonly SourceUse["authorship"][]>
+> = {
+  original: ["original", "original-exercise"],
+  "concept-reference": ["original", "original-exercise", "summary"],
+  quote: ["quotation"],
+  reprint: ["quotation"],
+  "adapt-code": ["adapted"],
+  "adapt-diagram": ["adapted"],
+};
 export interface UnitReferences {
   schemaVersion: "2.1";
   unitId: string;
@@ -178,14 +194,7 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
     const reuse = use.reuse as SourceUse["reuse"];
     if (
       !["original", "original-exercise", "summary", "quotation", "adapted"].includes(authorship) ||
-      ![
-        "original",
-        "concept-reference",
-        "quote",
-        "reprint",
-        "adapt-code",
-        "adapt-diagram",
-      ].includes(reuse)
+      !Object.hasOwn(AUTHORSHIP_BY_REUSE, reuse)
     )
       throw new Error(`${contentId}: authorship / reuse が不正です`);
     const result: SourceUse = {
@@ -196,11 +205,12 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
       reuse,
       reviewStatus: status(use.reviewStatus),
     };
-    if (
-      (authorship === "quotation" && !["quote", "reprint"].includes(reuse)) ||
-      (authorship === "adapted" && !["adapt-code", "adapt-diagram"].includes(reuse))
-    )
-      throw new Error(`${contentId}: 引用・改変の利用方法と条件を記録してください`);
+    // 片方向だけだと original のまま引用・改変を記録でき、「教材独自・引用」のような
+    // 食い違う表示が公開ゲートを通ってしまう。
+    if (!AUTHORSHIP_BY_REUSE[reuse].includes(authorship))
+      throw new Error(
+        `${contentId}: authorship ${authorship} と reuse ${reuse} が食い違います。引用は quotation、改変は adapted、独自制作は original / original-exercise にしてください`,
+      );
     if (
       result.sourceRefs.length === 0 &&
       (reuse !== "original" || !["original", "original-exercise"].includes(authorship))
