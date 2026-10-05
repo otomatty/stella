@@ -7,11 +7,17 @@ import {
 } from "../../shared/src/tasks/environment.js";
 import { isSafeRelativePattern } from "../../shared/src/tasks/manifest.js";
 import type { TaskBundle } from "../../shared/src/tasks/catalog.js";
+import {
+  publicReferences,
+  readSourceRegistry,
+  readUnitReferences,
+  referencedMarkdown,
+} from "./source-references.js";
+import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
 import { sortNatural } from "./natural-order.mjs";
 import {
   parseTaskDefinition,
   parseUnitConfig,
-  stringList,
   toRuntimeManifest,
   type TaskDefinition,
   type UnitConfig,
@@ -29,12 +35,7 @@ export interface UnitSeed {
   courseId: string;
   unitId: string;
   config: UnitConfig;
-  references: Reference[];
-}
-export interface Reference {
-  id: string;
-  title: string;
-  url: string;
+  references: PublicSourceReference[];
 }
 
 function json(file: string): unknown {
@@ -109,23 +110,10 @@ export function readUnit(
   const patterns = registryIds(root, "patterns.json");
   const config = parseUnitConfig(json(join(directory, "unit.json")));
   assertKnownSkills([...config.skills.uses, ...config.skills.assesses], skills);
-  const rawReferences = json(join(directory, "references.json"));
-  if (!Array.isArray(rawReferences)) throw new Error("references.json: 配列が必要です");
-  const references: Reference[] = rawReferences.map((v) => {
-    const row = record(v);
-    if (
-      typeof row.id !== "string" ||
-      typeof row.title !== "string" ||
-      typeof row.url !== "string" ||
-      !/^https?:\/\//.test(row.url)
-    )
-      throw new Error("references.json: id・title・URL が必要です");
-    return { id: row.id, title: row.title, url: row.url };
-  });
-  stringList(
-    references.map((r) => r.id),
-    "references.id",
-  );
+  const referenceMap = readUnitReferences(directory);
+  if (!referenceMap) throw new Error("references.json が必要です");
+  const registry = readSourceRegistry(root);
+  const references = publicReferences(referenceMap, registry);
   const tasksRoot = join(directory, "tasks");
   const tasks = sortNatural(readdirSync(tasksRoot)).map((taskId): TaskSeed => {
     const taskDir = join(tasksRoot, taskId);
@@ -153,7 +141,8 @@ export function readUnit(
       if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
         throw new Error(`課題に ${rel} が必要です: ${definition.id}`);
     }
-    const manifest = toRuntimeManifest(definition, environment);
+    const taskReferences = publicReferences(referenceMap, registry, `tasks/${taskId}/README.md`);
+    const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
     const files: Record<string, string> = {};
     // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
     const bundlePaths = new Set(["readme.md", ".stella"]);
@@ -175,7 +164,14 @@ export function readUnit(
     };
     addFiles(collectFiles(join(taskDir, "starter")));
     addFiles(collectFiles(join(taskDir, "tests"), "tests"));
-    files["README.md"] = readFileSync(join(taskDir, "README.md")).toString("base64");
+    files["README.md"] = Buffer.from(
+      referencedMarkdown(
+        readFileSync(join(taskDir, "README.md"), "utf8"),
+        taskReferences,
+        referenceMap,
+        `tasks/${taskId}/README.md`,
+      ),
+    ).toString("base64");
     // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
     files[".stella/task.json"] = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
     const privateFiles = {

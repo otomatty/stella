@@ -137,6 +137,21 @@ describe("export-seed-sql (sqlite)", () => {
     );
   });
 
+  it("知識クイズの公開本文は出典だけで、解答を含む正本は履歴に残す", () => {
+    const id = stableUuid("lesson:ses:dev-env-basics:quiz-0-1");
+    const statements = sql.split(/^insert into /m);
+    const published = statements.find(
+      (s) => s.startsWith("lessons (") && s.includes(`select '${id}'`),
+    );
+    expect(published).toContain("MDN Web Docs contributors");
+    expect(published).not.toContain("<details>");
+    const revision = statements.find(
+      (s) => s.startsWith("lesson_revisions (") && s.includes(`select '${id}'`),
+    );
+    expect(revision).toContain("## 知識問題");
+    expect(revision).toContain("<details>");
+  });
+
   it("スライドレッスンに本文 markdown が入る", () => {
     expect(sql).toMatch(
       /insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?プラットフォーム/,

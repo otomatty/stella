@@ -45,12 +45,14 @@ packages/content/courses/<slug>/
 
 ## 新カリキュラムの format 2
 
+参照元の作成・講師承認・旧形式への段階的な適用は [SOURCE_GUIDE.md](SOURCE_GUIDE.md) を参照してください。共通台帳は `sources/registry.json`、使用箇所は単元の `references.json` です。
+
 単元は **モジュール** に対応します。`course.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `courses/dev-env-basics/` です。format を省略した講座は従来の読み込み・seed・PDFのままです。
 
 ```text
 modules/<unit>/
   unit.json              # plannedHours、skills.uses / assesses、reuses（学習フォルダー内の成果物パス）
-  references.json        # [{ id, title, url }]。task.sources が参照する単元の台帳
+  references.json        # sourceRefs と教材の使用箇所・環境・レビュー状態
   <lesson>/
     <topic>/slides.md    # 従来どおり1 Takeaway、語彙台帳、4〜6枚
     doc.md              # 公開する解説

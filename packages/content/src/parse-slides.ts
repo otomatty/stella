@@ -4,6 +4,7 @@
  * 使うのはスカラーと文字列配列だけなので行単位で足りる。
  */
 
+import { readSourceRefs } from "./source-references.js";
 import { splitSlides } from "./split-slides.js";
 
 export interface SlidesFrontMatter {
@@ -13,6 +14,7 @@ export interface SlidesFrontMatter {
   introduces: string[];
   requires: string[];
   /** `---` 区切りで数えたスライド枚数 */
+  sourceRefs?: string[];
   slideCount: number;
 }
 
@@ -49,7 +51,9 @@ export function parseSlides(source: string): SlidesFrontMatter {
     if (!fields.has(key)) throw new Error(`front-matter に ${key} がありません`);
   }
 
+  const sourceRefs = readSourceRefs(source);
   return {
+    ...(sourceRefs === undefined ? {} : { sourceRefs }),
     id: unquote(fields.get("id") ?? ""),
     title: unquote(fields.get("title") ?? ""),
     takeaway: unquote(fields.get("takeaway") ?? ""),

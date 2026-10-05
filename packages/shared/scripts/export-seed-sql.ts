@@ -173,8 +173,8 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
         ? content.quizzes.find((q) => q.courseId === stage.id && q.lessonId === lesson.id)
         : undefined;
       if (quizSeed) emitQuiz(tenantId, stage.id, quizSeed);
-      // 本文リビジョン。quiz レッスンは markdown を持たないので practice.md 全文を積む。
-      const revisionSource = lesson.markdown ?? quizSeed?.sourceText;
+      // quiz の公開本文は参照元だけ。設問・解答を含む正本は非公開の履歴に積む。
+      const revisionSource = quizSeed?.sourceText ?? lesson.markdown;
       if (revisionSource !== undefined) {
         emitLessonRevision(
           tenantId,

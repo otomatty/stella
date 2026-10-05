@@ -1,4 +1,5 @@
 ---
+sourceRefs: [SRC-mdn-html-20261005]
 id: 0-1-1
 title: 保存したファイルを表示する
 takeaway: "ブラウザーには保存したHTMLの内容が表示されます。"

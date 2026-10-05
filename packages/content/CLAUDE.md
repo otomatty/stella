@@ -16,7 +16,7 @@
 
 format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・配布PDF・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
 
-教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略した講座には以下の既存規則を適用し、読み込み・seed・PDFを変更しません。
+教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略した講座は旧形式のまま読み込みます。参照元の対応を整えた単元には、同じ出典表示を加えます。未改訂単元の配信とPDFは維持します。
 
 ## 教材の単位(3層)
 
@@ -111,7 +111,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 1. **1トピック = 1 Takeaway を崩さない** — スライドを足したくなったら、まずトピックを割れないか考えてください。「関連情報」は Takeaway を強化する枠(図解 or 失敗例)1つだけに収めます。詰め込みは粒度の設計を壊します。
 2. **語彙台帳を必ず更新する** — トピックを追加・移動・改稿したら `introduces` / `requires` を更新し、`bun run --filter=@stella/content materials` で検査を通してください。
-3. **クレジット表記を教材本体に入れない** — スライド・ドキュメント本文・講師ノートに「サバイバルTypeScript」等の原典名を書かないでください(LMSドキュメント末尾の「もっと知りたい人へ」の参考リンクは例外として可)。集約先は**講座ごとの `CURRICULUM.md`** です(SQL 入門・HTML/CSS 入門・基本情報の各講座)。TypeScript 入門だけは歴史的経緯で `README.md` に置いています。
+3. **参照元と必要な帰属表示を教材に残す** — [新設計05](../../docs/curriculum/05-sources-and-attribution.md)に従い、台帳 `sources/registry.json` と単元の `references.json` に資料・使用箇所・対象環境・利用方法を記録します。トピック・まとめ・知識問題の front-matter は `sourceRefs`、課題の `task.json` は `sources` でIDを指定します。解説・課題の近く、単元末尾、IDE、配布PDFに出典を載せます。引用・転載・改変では条件と必要な表示も確認します。技術のトップページだけを根拠にせず、講師が対応を確認して `approved` にします。詳細は [SOURCE_GUIDE.md](SOURCE_GUIDE.md)。新形式は初回公開から必須、旧形式は新規・内容改訂の単元から必須、未改訂単元は警告です。
 4. **`STYLE_GUIDE.md` に従う** — 文体、コード例の書き方、構成のルールがすべて定義されています。新規作成・修正の前に読んでください。
 5. **図解は `.claude/skills/diagram-design/` の規約に従う** — 型を選び、テンプレートから作り、出力前チェックリストを通してください。配色・寸法の正本は `references/style-guide.md` です。
 
