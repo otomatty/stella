@@ -569,8 +569,14 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       "submission reload",
     );
 
-    // 添削確定の初回のみ通知 (旧 notify_review_completed: old.reviewed_at is null)。
-    if (before.reviewedAt == null && after.reviewedAt != null && after.studentId) {
+    // 初回の確定と判定の訂正を通知する。同じ判定や総評だけの保存では増やさない。
+    const reviewChanged =
+      before.reviewedAt != null && willReview && before.verdict !== after.verdict;
+    if (
+      (before.reviewedAt == null || reviewChanged) &&
+      after.reviewedAt != null &&
+      after.studentId
+    ) {
       const verdictBody =
         after.verdict === "pass"
           ? "合格しました。 おめでとうございます。"
@@ -583,7 +589,7 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
         userId: after.studentId,
         tenantId: after.tenantId,
         type: "review_completed",
-        title: `${after.assignmentTitle || "課題"} の添削が完了しました`,
+        title: `${after.assignmentTitle || "課題"} の添削${reviewChanged ? "結果が変更されました" : "が完了しました"}`,
         body: verdictBody,
         payload: {
           submission_id: after.id,

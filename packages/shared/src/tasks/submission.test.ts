@@ -1,8 +1,64 @@
 import { describe, expect, it } from "vitest";
 import { decodeFile, parseTaskSubmission, verifyTaskSubmission } from "./submission.js";
 import { submissionFixture } from "../testing/task-submission.js";
+import type { RunStepId, RunStepResult, StepStatus } from "./run-result.js";
+
+function step(id: RunStepId, status: StepStatus = "passed"): RunStepResult {
+  return { id, status, label: id, durationMs: 0, summary: status };
+}
 
 describe("提出の機械照合", () => {
+  it.each([
+    ["node-test", ["deps"], ["test"]],
+    ["e2e", ["deps", "browsers"], ["e2e"]],
+    ["next-app", ["deps", "browsers"], ["build", "e2e"]],
+  ] as const)(
+    "%s は準備済みの手順を省略して再実行しても照合に通る",
+    async (runner, cached, checks) => {
+      const { input, bundle } = await submissionFixture({ runner });
+      input.localResult.steps = [
+        ...cached.map((id) => step(id, "skipped")),
+        ...checks.map((id) => step(id)),
+        step("files"),
+      ];
+      expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+      input.localResult.steps = input.localResult.steps.filter((s) => s.id !== "deps");
+      expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
+    },
+  );
+  it("JavaScriptを提出しない課題はlint対象なしの省略を受け入れる", async () => {
+    const { input, bundle } = await submissionFixture({
+      runner: "node-test",
+      checks: { lint: true, format: false },
+    });
+    input.localResult.steps = [step("deps", "skipped"), step("lint", "skipped"), step("test")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+  });
+  it.each(["lint", "format", "test", "build", "e2e"] as const)(
+    "必須検査 %s の省略は準備の再利用として受け入れない",
+    async (skipped) => {
+      const { input, bundle } = await submissionFixture({
+        runner: skipped === "test" ? "node-test" : "next-app",
+        submit: { files: ["index.js"] },
+        checks: { lint: true, format: true },
+      });
+      input.files[0].path = "index.js";
+      input.localResult.files[0].path = "index.js";
+      input.localResult.steps = [
+        step("deps", "skipped"),
+        step("browsers", "skipped"),
+        step("lint"),
+        step("format"),
+        ...(skipped === "test" ? [step("test")] : [step("build"), step("e2e")]),
+      ];
+      input.localResult.steps = input.localResult.steps.map((s) =>
+        s.id === skipped ? { ...s, status: "skipped" } : s,
+      );
+      expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+        "必要な確認の結果が不足しています",
+      );
+    },
+  );
   it("宣言したファイル・手元の結果・配布ハッシュを照合する", async () => {
     const { input, bundle } = await submissionFixture();
     expect((await verifyTaskSubmission(parseTaskSubmission(input), bundle)).check).toEqual({

@@ -2,7 +2,13 @@ import picomatch from "picomatch";
 import type { TaskBundle } from "./catalog.js";
 import { normalizeForHash } from "./hash.js";
 import { isSafeRelativePattern } from "./manifest.js";
-import { canSubmit, decideOutcome, type HashedFile, type RunResult } from "./run-result.js";
+import {
+  canSubmit,
+  decideOutcome,
+  isLintableFile,
+  type HashedFile,
+  type RunResult,
+} from "./run-result.js";
 import { RUNNERS } from "./runners.js";
 
 export const SUBMISSION_LIMITS = {
@@ -263,7 +269,16 @@ export async function verifyTaskSubmission(
             ];
   if (
     required.some(
-      (id) => !input.localResult.steps.some((s) => s.id === id && s.status === "passed"),
+      (id) =>
+        !input.localResult.steps.some(
+          (s) =>
+            s.id === id &&
+            (s.status === "passed" ||
+              (s.status === "skipped" &&
+                (id === "deps" ||
+                  id === "browsers" ||
+                  (id === "lint" && !files.some((f) => isLintableFile(f.path)))))),
+        ),
     ) ||
     input.localResult.steps.some((s) => s.tests?.some((t) => t.status !== "passed"))
   )

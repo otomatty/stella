@@ -7,6 +7,7 @@ import {
   enrollments,
   lessonProgress,
   lessons,
+  notifications,
   profiles,
   sections,
   skillEvidence,
@@ -199,6 +200,37 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     );
     expect((await db.select().from(certificates)).length).toBe(1);
   });
+  it.each(["resubmit", "fail"] as const)(
+    "合格から%sへの訂正を通知し、判定が同じ保存や総評だけの編集では通知しない",
+    async (corrected) => {
+      const row = await submit();
+      const { app } = mountTestApp(env, submissionsRoute);
+      const patch = async (body: object) => {
+        const response = await request(app, env, `/api/submissions/${row.id}`, {
+          method: "PATCH",
+          token: instructorToken,
+          body: JSON.stringify(body),
+        });
+        expect(response.status, await response.clone().text()).toBe(200);
+      };
+      const notices = () =>
+        db.select().from(notifications).where(eq(notifications.type, "review_completed"));
+      await patch({ verdict: "pass" });
+      expect((await notices()).length).toBe(1);
+      await patch({ verdict: corrected, reviewNotes: "判定を訂正しました" });
+      expect((await notices()).length).toBe(2);
+      const correction = (await notices()).find((n) => n.payload.verdict === corrected);
+      expect(correction?.title).toContain("添削結果が変更されました");
+      expect(correction?.payload.submission_id).toBe(row.id);
+      expect((await db.select().from(certificates)).length).toBe(0);
+      expect((await db.select().from(taskProgress))[0].status).toBe("resubmit");
+      await patch({ verdict: corrected, reviewNotes: "同じ判定を保存" });
+      await patch({ reviewNotes: "総評だけを編集" });
+      expect((await notices()).length).toBe(2);
+      await patch({ verdict: "pass" });
+      expect((await notices()).length).toBe(3);
+    },
+  );
   it("支援付きの合格と AI の合格を区別する", async () => {
     fixture.input.support = [{ kind: "hint", at: "2026-10-05T00:00:00Z" }];
     const row = await submit();
