@@ -48,6 +48,20 @@ function buildFixture(root: string) {
 
 describe("Web の書き出し済み成果物の検査", () => {
   it.each([
+    ["manifest.json", '{"path":"private/answer.md"}'],
+    ["assets/single.js", "const path='private/answer.md'"],
+    ["assets/template.js", "const path=`private/answer.md`"],
+    ["windows.json", JSON.stringify({ path: "private\\answer.md" })],
+    [
+      "assets/relative.js.map",
+      JSON.stringify({ sourcesContent: ['const path="private/answer.md"'] }),
+    ],
+  ])("%s の引用符直後の private/ 参照を拒否する", (name, contents) => {
+    const root = fixture({ [name]: contents });
+    expect(() => assertSafeWebBuild(root)).toThrow("[no-private-content]");
+  });
+
+  it.each([
     ["assets/module.wasm", wasmWithMetadata('{"solution":"answer"}')],
     ["assets/payload.bin", Buffer.from([255, 0, ...Buffer.from('badSolutions:["wrong"]')])],
     ["payload", wasmWithMetadata("tasks/one/private/review.md")],
@@ -130,6 +144,14 @@ describe("Vite build の配信境界", () => {
     const root = fixture({
       "entry.js": 'export const title="Example"',
       "public/answers.json": '{"badSolutions":["answer"]}',
+    });
+    await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("publicDir の JSON に引用符付きの private/ 参照があれば拒否する", async () => {
+    const root = fixture({
+      "entry.js": 'export const title="Example"',
+      "public/manifest.json": '{"path":"private/answer.md"}',
     });
     await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
   });

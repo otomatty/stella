@@ -11,7 +11,8 @@ const PRIVATE_MODULE =
 const PRIVATE_PATH = /(?:^|[/\\])private[/\\]/;
 // JS の正規表現 /private\(set\)/ をパスと誤認しない。Windows のパスは
 // JS / JSON 内ではバックスラッシュが 2 個にエスケープされる。
-const PRIVATE_REFERENCE = /(?:^|[/\\])private(?:\/|\\\\)/;
+// 引用符・バッククォート直後の相対パスも検出する。
+const PRIVATE_REFERENCE = /(?:^|[/\\"'`])private(?:\/|\\\\)/;
 const ANSWER_PROPERTY = /(?:\b(?:solution|badSolutions)|["'](?:solution|badSolutions)["'])\s*:/;
 
 /** バイナリを含む全ファイルの ASCII マーカーを検査し、解答や private/ があれば拒否する。 */
