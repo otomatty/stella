@@ -1,0 +1,93 @@
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
+import { buildContentManifest } from "./manifest.js";
+import { collectPdfTargets } from "./material-pdf.js";
+import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
+
+const content = join(dirname(fileURLToPath(import.meta.url)), "..");
+const sample = join(content, "courses/dev-env-basics");
+const taskFile = join(sample, "modules/m0-first-page/tasks/q01-first-page/task.json");
+const roots: string[] = [];
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+function fixture() {
+  const root = mkdtempSync(join(tmpdir(), "stella-format-2-"));
+  roots.push(root);
+  mkdirSync(join(root, "courses"));
+  cpSync(sample, join(root, "courses/dev-env-basics"), { recursive: true });
+  for (const name of ["skills.json", "patterns.json", "environments"])
+    cpSync(join(content, name), join(root, name), { recursive: true });
+  return root;
+}
+describe("format 2 の教材", () => {
+  it("単元と課題を読み込み、runtime に執筆用の情報と解答を混ぜない", () => {
+    const manifest = buildContentManifest(join(fixture(), "courses"));
+    expect(manifest.courses[0]).toMatchObject({
+      format: 2,
+      duration: 3,
+      environment: "static-web-01",
+    });
+    expect(manifest.units[0].config.skills.assesses).toContain("html-document");
+    const task = manifest.tasks[0];
+    expect(task.bundle.manifest.environment?.id).toBe("static-web-01@1");
+    expect(task.bundle.manifest).not.toHaveProperty("review");
+    expect(task.bundle.manifest).not.toHaveProperty("pattern");
+    expect(Object.keys(task.bundle.files)).toEqual([
+      "index.html",
+      "tests/README.md",
+      "README.md",
+      ".stella/task.json",
+    ]);
+    expect(task.privateFiles["solution/index.html"]).toBeDefined();
+    expect(manifest.quizzes[0].source).toBe("knowledge");
+    expect(manifest.quizzes[0].questions.map((q) => q.kind)).toEqual([
+      "single",
+      "multiple",
+      "boolean",
+    ]);
+  });
+  it("台帳の未知ID・パスとIDの不一致は検査で落とす", () => {
+    const root = fixture();
+    const path = join(
+      root,
+      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/task.json",
+    );
+    const original = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    for (const patch of [
+      { pattern: "unknown" },
+      { sources: ["unknown"] },
+      { environment: "../private" },
+      { skills: { uses: ["unknown"], assesses: [] } },
+      { id: "dev-env-basics/m0-first-page/other" },
+    ]) {
+      writeFileSync(path, JSON.stringify({ ...original, ...patch }));
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow();
+    }
+  });
+  it("確認A・Bの支援と修正課題の記録を検査する", () => {
+    const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
+    expect(() => parseTaskDefinition({ ...raw, kind: "assessment-a" }, {})).toThrow();
+    expect(() => parseTaskDefinition({ ...raw, kind: "debug" }, {})).toThrow();
+    const parsed = parseTaskDefinition(raw, {});
+    expect(toRuntimeManifest(parsed, {})).not.toHaveProperty("support");
+  });
+  it("新形式PDFは公開解説と課題文だけで、旧形式は解答編を維持する", () => {
+    const targets = collectPdfTargets();
+    const fresh = targets.filter((t) => t.courseSlug === "dev-env-basics");
+    expect(fresh.map((t) => t.kind)).toEqual(["doc", "task"]);
+    expect(fresh.find((t) => t.kind === "task")?.source).toContain("単元の参照元");
+    expect(fresh.some((t) => /<details>|解答例/.test(t.source))).toBe(false);
+    expect(
+      targets.some(
+        (t) =>
+          t.courseSlug === "typescript-basics" &&
+          t.kind === "practice" &&
+          t.source.includes("解答例と解説"),
+      ),
+    ).toBe(true);
+  });
+});

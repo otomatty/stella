@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { buildVscodeLessonUri } from "@stella/shared";
+import { buildVscodeTaskUri } from "@stella/shared/vscode/uris";
 import { Code, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
@@ -21,14 +22,20 @@ async function issueLinkCode(): Promise<string | undefined> {
   }
 }
 
-export function OpenInVscodeButton({ stageId, lessonId }: { stageId: string; lessonId: string }) {
+export function OpenInVscodeButton(
+  props: { stageId: string; lessonId: string } | { taskId: string },
+) {
   const [opening, setOpening] = useState(false);
 
   const handleOpen = async () => {
     setOpening(true);
     try {
       const code = await issueLinkCode();
-      location.assign(buildVscodeLessonUri(stageId, lessonId, code));
+      location.assign(
+        "taskId" in props
+          ? buildVscodeTaskUri(props.taskId, code)
+          : buildVscodeLessonUri(props.stageId, props.lessonId, code),
+      );
     } finally {
       setOpening(false);
     }

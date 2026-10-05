@@ -35,6 +35,7 @@ const targets = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 function collect(dir, name) {
   const found = [];
   for (const entry of readdirSync(dir)) {
+    if (entry === "private" || entry === "tasks") continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
       found.push(...collect(full, name));

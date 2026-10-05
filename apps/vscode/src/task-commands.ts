@@ -14,6 +14,8 @@ import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunOutcome } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
+import { apiRequest } from "./api.js";
+import { readFileInRoot } from "./runner/files.js";
 import {
   findTaskRoot,
   type LoadedTask,
@@ -177,6 +179,19 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
       }
     }
     notify(result.outcome, output);
+    if (result.outcome === "passed") {
+      try {
+        const receipt = JSON.parse(
+          (await readFileInRoot(root, ".stella/distribution.json", 4096)).toString("utf8"),
+        ) as { taskId: string; contentHash: string };
+        if (receipt.taskId === manifest.id)
+          await apiRequest("/api/tasks/local-result", { method: "POST", body: receipt });
+      } catch (err) {
+        output.appendLine(
+          `手元の合格を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
   });
 }
 

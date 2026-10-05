@@ -10,6 +10,14 @@
 
 原典は [サバイバルTypeScript](https://typescriptbook.jp/)(CC BY-SA 4.0)ですが、**未経験者向けに順序・粒度を再設計した独自教材**であり、原典の翻訳や写しではありません。
 
+## 新カリキュラムの形式
+
+新カリキュラムは `course.json` の `format: 2` を使います。**単元＝モジュール**、レッスンの下のトピックは従来どおりです。単元直下に `unit.json`・`references.json`・`tasks/`、レッスン直下に `knowledge.md` を置きます。予定時間・環境・スキル・パターンの台帳と書き方は [ADDING_COURSE.md の format 2](ADDING_COURSE.md#新カリキュラムの-format-2)、見本は `courses/dev-env-basics/` にあります。
+
+format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・配布PDF・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
+
+教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略した講座には以下の既存規則を適用し、読み込み・seed・PDFを変更しません。
+
 ## 教材の単位(3層)
 
 粒度の定義がこの教材の設計の中心です。**モジュール / レッスン / トピック**の3層で構成します。

@@ -1,0 +1,14 @@
+{
+  "format": 2,
+  "title": "開発環境の準備",
+  "category": "基礎",
+  "color": "indigo",
+  "description": "作業フォルダーのHTMLを編集し、ブラウザーで変更を確かめます。",
+  "plannedHours": 3,
+  "environment": "static-web-01",
+  "modules": {
+    "m0-first-page": "最初のページを表示する"
+  },
+  "canDo": "HTMLを編集し、保存した変更をブラウザーで確認できる",
+  "theme": "はじめの一歩"
+}

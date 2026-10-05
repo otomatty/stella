@@ -19,6 +19,15 @@ import { fileURLToPath } from "node:url";
 import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.js";
 import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
+import { parseKnowledge } from "./parse-knowledge.js";
+import {
+  assertKnownSkills,
+  readEnvironment,
+  readUnit,
+  registryIds,
+  type TaskSeed,
+  type UnitSeed,
+} from "./task-content.js";
 import { parseSlides } from "./parse-slides.js";
 import { splitSlides } from "./split-slides.js";
 import type { CourseColor, CourseConfig, QuizSeed } from "./types.js";
@@ -156,6 +165,19 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     );
   }
   const raw = JSON.parse(readFileSync(file, "utf8")) as CourseConfig;
+  if (raw.format !== undefined && raw.format !== 1 && raw.format !== 2)
+    throw new Error(`courses/${slug}: format は 1 / 2 にしてください`);
+  if (raw.format === 2) {
+    if (
+      typeof raw.plannedHours !== "number" ||
+      !Number.isFinite(raw.plannedHours) ||
+      raw.plannedHours <= 0
+    )
+      throw new Error(`courses/${slug}: plannedHours は正の数にしてください`);
+    readEnvironment(dirname(dirname(courseDir)), raw.environment);
+    if (Object.keys(raw.exercises ?? {}).length)
+      throw new Error(`courses/${slug}: format 2 は exercises ではなく tasks を使います`);
+  }
   if (typeof raw.title !== "string" || raw.title.trim() === "") {
     throw new Error(`courses/${slug}/course.json の title が空です。`);
   }
@@ -378,17 +400,26 @@ function buildOneCourse(
   courseDir: string,
   modulesRoot: string,
   config: CourseConfig & { tenantId: string },
-): { course: Course; quizzes: QuizSeed[] } {
+): { course: Course; quizzes: QuizSeed[]; tasks: TaskSeed[]; units: UnitSeed[] } {
   const sections: Section[] = [];
   const quizzes: QuizSeed[] = [];
+  const tasks: TaskSeed[] = [];
+  const units: UnitSeed[] = [];
+  const contentRoot = dirname(dirname(courseDir));
   const moduleTitles = config.modules ?? {};
   const usedExerciseKeys = new Set<string>();
 
   for (const moduleDir of dirsIn(modulesRoot)) {
     const modulePath = join(modulesRoot, moduleDir);
     const lessons: Lesson[] = [];
+    if (config.format === 2) {
+      const loaded = readUnit(contentRoot, slug, moduleDir, modulePath);
+      units.push(loaded.unit);
+      tasks.push(...loaded.tasks);
+    }
 
     for (const lessonDir of dirsIn(modulePath)) {
+      if (config.format === 2 && lessonDir === "tasks") continue;
       const lessonPath = join(modulePath, lessonDir);
       const topicDirs = dirsIn(lessonPath);
       const topicIds: string[] = [];
@@ -424,6 +455,8 @@ function buildOneCourse(
       }
 
       const key = lessonKey(topicIds);
+      if (config.format === 2 && !key)
+        throw new Error(`${slug}/${moduleDir}/${lessonDir}: トピックが必要です`);
 
       const docFile = join(lessonPath, "doc.md");
       lessons.push({
@@ -437,9 +470,14 @@ function buildOneCourse(
         ),
       });
 
-      const practiceFile = join(lessonPath, "practice.md");
+      const practiceFile = join(lessonPath, config.format === 2 ? "knowledge.md" : "practice.md");
       const practiceSource = readFileSync(practiceFile, "utf8").replace(/\r\n/g, "\n");
-      const questions = parseQuiz(practiceSource);
+      const questions =
+        config.format === 2 ? parseKnowledge(practiceSource) : parseQuiz(practiceSource);
+      if (config.format === 2) {
+        const ids = registryIds(contentRoot, "skills.json");
+        for (const q of questions) assertKnownSkills(q.skills ?? [], ids);
+      }
       if (questions.length > 0) {
         const quizLessonId = `quiz-${key}`;
         lessons.push({
@@ -455,6 +493,7 @@ function buildOneCourse(
           passScore: 80,
           questions,
           sourceText: practiceSource,
+          ...(config.format === 2 ? { source: "knowledge" as const } : {}),
         });
       }
 
@@ -471,6 +510,21 @@ function buildOneCourse(
           duration: "10分",
           status: "todo",
           assignmentId: ex.id,
+        });
+      }
+    }
+
+    if (config.format === 2) {
+      const unit = units.find((u) => u.unitId === moduleDir);
+      const references = unit?.references.map((r) => `- [${r.title}](${r.url})`).join("\n") ?? "";
+      for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
+        lessons.push({
+          id: `task-${moduleDir}-${task.definition.id.split("/")[2]}`,
+          title: `${task.definition.title} 課題文`,
+          type: "text",
+          duration: "5分",
+          status: "todo",
+          markdown: `${readFileSync(join(task.directory, "README.md"), "utf8")}\n\n## 単元の参照元\n\n${references}\n`,
         });
       }
     }
@@ -507,6 +561,9 @@ function buildOneCourse(
   return {
     course: {
       id: slug,
+      ...(config.format === 2
+        ? { format: 2 as const, duration: config.plannedHours, environment: config.environment }
+        : {}),
       title: config.title,
       category: config.category ?? "",
       color: config.color ?? "indigo",
@@ -529,6 +586,8 @@ function buildOneCourse(
       sections,
     },
     quizzes,
+    tasks,
+    units,
   };
 }
 
@@ -611,9 +670,13 @@ function assertGrantedAudienceGraph(courses: Course[]): void {
 export function buildContentManifest(coursesRoot: string = defaultCoursesRoot()): {
   courses: Course[];
   quizzes: QuizSeed[];
+  tasks: TaskSeed[];
+  units: UnitSeed[];
 } {
   const courses: Course[] = [];
   const quizzes: QuizSeed[] = [];
+  const tasks: TaskSeed[] = [];
+  const units: UnitSeed[] = [];
 
   for (const slug of dirsIn(coursesRoot)) {
     const courseDir = join(coursesRoot, slug);
@@ -622,12 +685,14 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
     const built = buildOneCourse(slug, courseDir, modulesRoot, readCourseConfig(courseDir, slug));
     courses.push(built.course);
     quizzes.push(...built.quizzes);
+    tasks.push(...built.tasks);
+    units.push(...built.units);
   }
 
   assertPrerequisiteGraph(courses);
   assertGrantedAudienceGraph(courses);
 
-  return { courses, quizzes };
+  return { courses, quizzes, tasks, units };
 }
 
 /**

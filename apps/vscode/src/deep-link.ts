@@ -5,7 +5,7 @@ export interface PendingLesson {
   lessonId: string;
 }
 
-export function isExtensionUriPath(path: string, name: "link" | "lesson"): boolean {
+export function isExtensionUriPath(path: string, name: "link" | "lesson" | "task"): boolean {
   return path === `/${name}` || path === name;
 }
 

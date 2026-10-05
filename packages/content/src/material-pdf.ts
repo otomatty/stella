@@ -24,7 +24,7 @@ import type { QuizSeed } from "./types.js";
  */
 export const PDF_GENERATOR_VERSION = 1;
 
-export type PdfKind = "slides" | "doc" | "practice";
+export type PdfKind = "slides" | "doc" | "practice" | "task";
 
 export interface PdfAsset {
   /** R2 のオブジェクトキー (markdown 中の参照と同じ)。 */
@@ -61,7 +61,7 @@ function collectAssetMap(courseSlug: string): Map<string, string> {
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry);
-      if (!statSync(full).isDirectory()) continue;
+      if (!statSync(full).isDirectory() || ["private", "tasks"].includes(entry)) continue;
       if (entry === "assets") {
         const topicDir = basename(dir);
         for (const file of readdirSync(full)) {
@@ -107,13 +107,14 @@ export function collectPdfTargets(
       });
     for (const section of course.sections ?? []) {
       for (const lesson of section.lessons) {
+        if (course.format === 2 && lesson.type !== "text") continue;
         let kind: PdfKind;
         let source: string;
         if (lesson.type === "slides" && lesson.markdown) {
           kind = "slides";
           source = lesson.markdown;
         } else if (lesson.type === "text" && lesson.markdown) {
-          kind = "doc";
+          kind = course.format === 2 && lesson.id.startsWith("task-") ? "task" : "doc";
           source = lesson.markdown;
         } else if (lesson.type === "quiz") {
           const quiz = manifest.quizzes.find(

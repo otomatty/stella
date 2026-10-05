@@ -15,6 +15,15 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { splitSqlStatements } from "../../scripts/lib/d1-remote.js";
+import type { Env } from "../env.js";
+import { signAccessToken } from "../lib/auth-jwt.js";
+import { getDb } from "./client.js";
+import { tasksRoute } from "../routes/tasks.js";
+import { quizRoute } from "../routes/quiz.js";
+import { srsRoute } from "../routes/srs.js";
+import { mountTestApp, request, json } from "../testing/route-harness.js";
+import { taskCompletionCounts } from "../lib/task-completion.js";
+import type { TaskBundle, TaskSummary } from "@stella/shared/tasks/catalog";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DRIZZLE_DIR = join(HERE, "../../drizzle");
@@ -99,6 +108,50 @@ function countOf(db: DatabaseSync, table: string): number {
   return row.n;
 }
 
+/** Workers の SQL を実際の SQLite で実行する最小の D1 アダプター。 */
+function localD1(db: DatabaseSync): D1Database {
+  const prepare = (sql: string) => {
+    let values: (string | number | null)[] = [];
+    const query = {
+      bind: (...args: (string | number | null)[]) => {
+        values = args;
+        return query;
+      },
+      raw: async () => {
+        const stmt = db.prepare(sql);
+        stmt.setReturnArrays(true);
+        return stmt.all(...values);
+      },
+      all: async () => ({
+        results: db.prepare(sql).all(...values),
+        success: true,
+        meta: { changes: Number(db.prepare("select changes() as n").get()?.n ?? 0) },
+      }),
+      run: async () => ({
+        success: true,
+        results: [],
+        meta: { changes: Number(db.prepare(sql).run(...values).changes) },
+      }),
+    };
+    return query;
+  };
+  return {
+    prepare,
+    batch: async (queries: ReturnType<typeof prepare>[]) => {
+      db.exec("begin");
+      try {
+        const rows = [];
+        for (const q of queries) rows.push(await q.all());
+        db.exec("commit");
+        return rows;
+      } catch (err) {
+        db.exec("rollback");
+        throw err;
+      }
+    },
+  } as unknown as D1Database;
+}
+
 describe("外部キーの子側に索引がある", () => {
   const db = migratedDb();
 
@@ -148,6 +201,126 @@ describe("教材 seed の再実行", () => {
   beforeAll(() => {
     seedSql = loadContentSeedSql();
   }, 120_000);
+
+  it("format 2 を seed し、公開API・7状態・知識問題とSRS・旧課題を通せる", async () => {
+    const db = migratedDb();
+    applyScript(db, seedSql);
+    db.exec(
+      "insert into profiles (id, tenant_id, role, display_name, created_at) values ('u-format2', 'ses', 'student', '見本受講者', 1), ('u-unenrolled', 'ses', 'student', '未受講', 1)",
+    );
+    const stage = db
+      .prepare(
+        "select id, format, environment, duration_hours from stages where slug = 'dev-env-basics'",
+      )
+      .get() as { id: string; format: number; environment: string; duration_hours: number };
+    expect(stage).toMatchObject({ format: 2, duration_hours: 3, environment: "static-web-01" });
+    db.prepare(
+      "insert into enrollments (id, tenant_id, user_id, stage_id, status, required, enrolled_at) values ('en-format2', 'ses', 'u-format2', ?, 'active', 0, 1)",
+    ).run(stage.id);
+    const env = { DB: localD1(db), AUTH_JWT_SECRET: "test-format-2-secret" } as Env;
+    const { app } = mountTestApp(env, tasksRoute, quizRoute, srsRoute);
+    const token = await signAccessToken(env.AUTH_JWT_SECRET ?? "", "u-format2", "test@example.com");
+    const otherToken = await signAccessToken(
+      env.AUTH_JWT_SECRET ?? "",
+      "u-unenrolled",
+      "test@example.com",
+    );
+    const url = `/api/tasks/for-stage/${stage.id}`;
+    expect((await request(app, env, url)).status).toBe(401);
+    expect((await request(app, env, url, { token: otherToken })).status).toBe(404);
+    const list = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
+    expect(list.tasks).toHaveLength(1);
+    expect(list.tasks[0].status).toBe("not-started");
+    expect(JSON.stringify(list)).not.toMatch(/solution|rubric|bundle|private/);
+    const taskId = list.tasks[0].id;
+    const bundleUrl = `/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
+    expect((await request(app, env, bundleUrl, { token: otherToken })).status).toBe(404);
+    const { bundle } = await json<{ bundle: TaskBundle }>(
+      await request(app, env, bundleUrl, { token }),
+    );
+    expect(Object.keys(bundle.files)).not.toContain("private/solution/index.html");
+    expect(bundle.manifest).not.toHaveProperty("review");
+    const post = (body: unknown) =>
+      request(app, env, "/api/tasks/local-result", {
+        token,
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    expect((await post({ taskId, contentHash: "old" })).status).toBe(409);
+    expect((await post({ taskId, contentHash: bundle.contentHash, status: "passed" })).status).toBe(
+      200,
+    );
+    const local = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
+    expect(local.tasks[0].status).toBe("local-passed");
+    expect((await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.size).toBe(0);
+    db.prepare("update task_progress set status = 'passed' where task_id = ?").run(taskId);
+    await post({ taskId, contentHash: bundle.contentHash });
+    expect(
+      (await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.get("u-format2")
+        ?.size,
+    ).toBe(1);
+    const questionRows = db
+      .prepare(
+        'select q.id, q.kind, q.skills, z.lesson_id from quiz_questions q join quizzes z on q.quiz_id = z.id join lessons l on z.lesson_id = l.id join sections s on l.section_id = s.id where s.stage_id = ? order by q."order"',
+      )
+      .all(stage.id) as { id: string; kind: string; skills: string; lesson_id: string }[];
+    expect(questionRows.map((q) => q.kind)).toEqual(["single", "multiple", "boolean"]);
+    const quiz = db
+      .prepare("select id from quizzes where lesson_id = ?")
+      .get(questionRows[0].lesson_id) as { id: string };
+    const answers = questionRows.map((q) => ({
+      question_id: q.id,
+      selected_option_ids: (
+        db
+          .prepare("select id from quiz_options where question_id = ? and is_correct = 1")
+          .all(q.id) as { id: string }[]
+      ).map((o) => o.id),
+    }));
+    const attempt = await request(app, env, `/api/quiz/${quiz.id}/attempt`, {
+      token,
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    });
+    expect(attempt.status).toBe(200);
+    expect((await json<{ result: { passed: boolean } }>(attempt)).result.passed).toBe(true);
+    expect(
+      db.prepare("select count(*) as n from review_cards where user_id = 'u-format2'").get()?.n,
+    ).toBe(3);
+    db.prepare("update quizzes set source = 'practice' where id = ?").run(quiz.id);
+    const excluded = await json<{ review: { questions: unknown[] } }>(
+      await request(app, env, "/api/srs/today", { token }),
+    );
+    expect(excluded.review.questions).toHaveLength(0);
+    db.exec("delete from review_cards where user_id = 'u-format2'");
+    await request(app, env, `/api/quiz/${quiz.id}/attempt`, {
+      token,
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    });
+    expect(countOf(db, "review_cards")).toBe(0);
+    db.prepare("update quizzes set source = 'knowledge' where id = ?").run(quiz.id);
+    await request(app, env, `/api/quiz/${quiz.id}/attempt`, {
+      token,
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    });
+    db.exec("update review_cards set due_date = '2020-01-01' where user_id = 'u-format2'");
+    const today = await json<{ review: { questions: { skills: string[] }[] } }>(
+      await request(app, env, "/api/srs/today", { token }),
+    );
+    expect(today.review.questions).toHaveLength(3);
+    expect(today.review.questions.every((q) => q.skills.length > 0)).toBe(true);
+    const assignments = countOf(db, "assignments");
+    expect(assignments).toBeGreaterThan(0);
+    applyScript(db, seedSql);
+    expect(countOf(db, "assignments")).toBe(assignments);
+    expect(
+      db.prepare("select status from task_progress where task_id = ?").get(taskId)?.status,
+    ).toBe("passed");
+    expect(countOf(db, "tasks")).toBe(1);
+    expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
+    db.close();
+  });
 
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();

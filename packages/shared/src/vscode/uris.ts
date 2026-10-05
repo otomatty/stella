@@ -1,5 +1,11 @@
 export const VSCODE_EXT_ID = "stella.stella";
 
+export function buildVscodeTaskUri(taskId: string, code?: string): string {
+  const q = new URLSearchParams({ taskId });
+  if (code) q.set("code", code);
+  return `vscode://${VSCODE_EXT_ID}/task?${q.toString()}`;
+}
+
 export function buildVscodeLinkUri(code: string): string {
   return `vscode://${VSCODE_EXT_ID}/link?code=${encodeURIComponent(code)}`;
 }

@@ -115,7 +115,9 @@ describe("export-seed-sql (sqlite)", () => {
     const line = (sql.match(/^insert into stages .*'ses', 'it-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
     // 並びは ... status, prerequisites, parent, can_do, theme, audience, created_at, updated_at。
-    expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', 'catalog', cast\(unixepoch/);
+    expect(line).toMatch(
+      /'published', null, null, '[^']*', '[^']*', 'catalog', 1, null, cast\(unixepoch/,
+    );
     expect(line).not.toContain("'[]'");
   });
 
@@ -230,10 +232,15 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(/o\.is_correct <> /);
   });
 
-  it("設問ごとに正解がちょうど 1 つ（単一選択）", () => {
+  it("単一選択と正誤は正解1つ、複数選択には正解集合がある", () => {
     // 選択肢ラベルには `const price: number = 300;` のようにセミコロンを含むコードが
     // 入るので、1 文 = 1 行であることを使って行単位で読む。
     const correctByQuestion = new Map<string, number>();
+    const multipleIds = new Set(
+      [
+        ...sql.matchAll(/^insert into quiz_questions .*select '([^']+)', '[^']+', 'multiple'/gm),
+      ].map((m) => m[1]),
+    );
     for (const [, id] of sql.matchAll(/^insert into quiz_questions .*select '([^']+)'/gm)) {
       correctByQuestion.set(id, 0);
     }
@@ -247,7 +254,9 @@ describe("export-seed-sql (sqlite)", () => {
       }
     }
 
-    const notSingle = [...correctByQuestion].filter(([, n]) => n !== 1);
+    const notSingle = [...correctByQuestion].filter(([id, n]) =>
+      multipleIds.has(id) ? n < 1 : n !== 1,
+    );
     expect(notSingle).toEqual([]);
   });
 
@@ -307,6 +316,8 @@ vi.mock("@stella/content", async () => {
   return {
     // @stella/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
     buildContentManifest: () => ({
+      tasks: [],
+      units: [],
       courses: [
         {
           id: "typescript-basics",

@@ -135,6 +135,8 @@ export const stages = sqliteTable(
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
     slug: text("slug").notNull(),
+    format: integer("format").notNull().default(1),
+    environment: text("environment"),
     title: text("title").notNull(),
     category: text("category"),
     color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
@@ -212,6 +214,75 @@ export const sections = sqliteTable(
   },
   (t) => ({
     stageIdx: index("sections_stage_id_idx").on(t.stageId),
+  }),
+);
+
+export const contentUnits = sqliteTable("content_units", {
+  sectionId: text("section_id")
+    .primaryKey()
+    .references(() => sections.id, { onDelete: "cascade" }),
+  plannedHours: real("planned_hours").notNull(),
+  skills: json<{ uses: string[]; assesses: string[] }>("skills", { uses: [], assesses: [] }),
+  reuses: json<string[]>("reuses", []),
+  references: json<unknown[]>("references", []),
+});
+
+export const tasks = sqliteTable(
+  "tasks",
+  {
+    id: text("id").primaryKey(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => sections.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    kind: text("kind").notNull(),
+    pattern: text("pattern").notNull(),
+    skills: json<{ uses: string[]; assesses: string[] }>("skills", { uses: [], assesses: [] }),
+    estimatedMinutes: real("estimated_minutes").notNull(),
+    order: integer("order").notNull(),
+    contentHash: text("content_hash").notNull(),
+    definition: text("definition").notNull(),
+    bundle: text("bundle").notNull(),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+  },
+  (t) => ({ sectionIdx: index("tasks_section_id_idx").on(t.sectionId) }),
+);
+
+export const taskPrivate = sqliteTable("task_private", {
+  taskId: text("task_id")
+    .primaryKey()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  files: text("files").notNull(),
+});
+
+export const taskProgress = sqliteTable(
+  "task_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: [
+        "not-started",
+        "local-passed",
+        "submitted",
+        "ai-passed",
+        "instructor-pending",
+        "resubmit",
+        "passed",
+      ],
+    })
+      .notNull()
+      .default("not-started"),
+    contentHash: text("content_hash").notNull(),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId] }),
+    taskIdx: index("task_progress_task_id_idx").on(t.taskId),
   }),
 );
 
@@ -731,6 +802,9 @@ export const quizzes = sqliteTable(
     lessonId: text("lesson_id")
       .notNull()
       .references(() => lessons.id, { onDelete: "cascade" }),
+    source: text("source", { enum: ["practice", "knowledge"] })
+      .notNull()
+      .default("practice"),
     passScore: integer("pass_score").notNull().default(70),
     timeLimitSec: integer("time_limit_sec"),
     maxAttempts: integer("max_attempts"),
@@ -750,6 +824,7 @@ export const quizQuestions = sqliteTable(
       .notNull()
       .references(() => quizzes.id, { onDelete: "cascade" }),
     kind: text("kind", { enum: ["single", "multiple", "boolean"] }).notNull(),
+    skills: json<string[]>("skills", []),
     prompt: text("prompt").notNull().default(""),
     explanation: text("explanation"),
     points: integer("points").notNull().default(1),

@@ -42,6 +42,7 @@ import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
+import { openDistributedTask } from "./open-task.js";
 import {
   openLessonNode,
   refreshLessonTree,
@@ -251,6 +252,19 @@ async function handleExtensionUri(
   auth: AuthStore,
   context: vscode.ExtensionContext,
 ): Promise<void> {
+  if (isExtensionUriPath(uri.path, "task")) {
+    try {
+      const q = new URLSearchParams(uri.query);
+      const code = q.get("code");
+      if (code) await linkFromLessonUri(code, auth);
+      const taskId = q.get("taskId");
+      if (!taskId) throw new Error("課題 ID がありません");
+      await openDistributedTask(taskId);
+    } catch (err) {
+      void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+    return;
+  }
   if (isExtensionUriPath(uri.path, "link")) {
     const linked = await handleLinkUri(uri, auth);
     if (shouldResumeAfterLink(linked)) {

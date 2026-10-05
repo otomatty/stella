@@ -1,3 +1,4 @@
+import { taskCompletionCounts } from "./task-completion.js";
 /**
  * 修了条件を満たしたステージの修了証を**自動発行**する (受講者の手動発行の置き換え)。
  *
@@ -259,7 +260,9 @@ export async function reclaimAutoCertificatesIfUnmet(
           if (!cert || cert.issuedBy !== null || cert.revoked) return null;
 
           const counts =
-            (await batchComputeCounts(db, [stageId], userId)).get(stageId) ?? EMPTY_COUNTS;
+            (
+              await batchComputeCounts(db, [stageId], userId, stage.format === 2 ? [stageId] : [])
+            ).get(stageId) ?? EMPTY_COUNTS;
           if (completionMet(stage, counts)) return null;
 
           await db.batch([
@@ -369,6 +372,7 @@ async function runAutoComplete(
     db,
     targets.map((s) => s.id),
     userId,
+    targets.filter((s) => s.format === 2).map((s) => s.id),
   );
   const metStages = targets
     .filter((stage) => completionMet(stage, countsByStage.get(stage.id) ?? EMPTY_COUNTS))
@@ -418,7 +422,9 @@ async function runAutoComplete(
         if (!enrolled[0]) return null;
 
         const counts =
-          (await batchComputeCounts(db, [stage.id], userId)).get(stage.id) ?? EMPTY_COUNTS;
+          (
+            await batchComputeCounts(db, [stage.id], userId, stage.format === 2 ? [stage.id] : [])
+          ).get(stage.id) ?? EMPTY_COUNTS;
         if (!completionMet(stage, counts)) return null;
         // 修了証の発行と受講登録の completed 化は 1 batch (= D1 のトランザクション)。
         // 別々に流すと、発行だけ成功して落ちた場合に「修了証はあるのに登録が active の
@@ -533,6 +539,7 @@ async function batchComputeCounts(
   db: Db,
   stageIds: string[],
   userId: string,
+  taskStageIds: string[] = [],
 ): Promise<Map<string, CompletionCounts>> {
   const lessonRows = await selectChunked(stageIds, (slice) =>
     db
@@ -626,6 +633,12 @@ async function batchComputeCounts(
     const c = of(row.stageId);
     c.totalQuizzes += 1;
     if (passedQuizIds.has(row.quizId)) c.passedQuizzes += 1;
+  }
+  for (const stageId of taskStageIds) {
+    const taskCounts = await taskCompletionCounts(db, stageId, [userId]);
+    const c = of(stageId);
+    c.totalAssignments += taskCounts.total;
+    c.passedAssignments += taskCounts.passed.get(userId)?.size ?? 0;
   }
   return counts;
 }

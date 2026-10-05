@@ -463,7 +463,7 @@ export const LessonPlayer = ({
                 <TabsContent value="content">
                   {isQuiz ? (
                     <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
-                  ) : isAssignment ? (
+                  ) : isAssignment && stage.format !== 2 ? (
                     <AssignmentSubmitPanel
                       tenantId={tenantId}
                       stage={stage}
