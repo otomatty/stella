@@ -8,7 +8,7 @@ account_id = "175c04a4465bcc9815b21176a852f0c0"
 
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
-GOOGLE_CLIENT_ID = "774089873889-iq12o3cq3ded2iu7aa15lru5753bo5a1.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "998091191276-bfug8l2cm54llkhv078brdj3ovbtdfj8.apps.googleusercontent.com"
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.saedgewell.workers.dev"
 INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
 

@@ -208,6 +208,28 @@ describe("export-seed-sql (sqlite)", () => {
     );
   });
 
+  it("設問と選択肢は upsert し、教材から消えた行だけ prune する", () => {
+    const questionInserts = sql.match(/^insert into quiz_questions .*$/gm) ?? [];
+    const optionInserts = sql.match(/^insert into quiz_options .*$/gm) ?? [];
+    expect(questionInserts.length).toBeGreaterThan(0);
+    expect(optionInserts.length).toBeGreaterThan(0);
+    for (const line of questionInserts) {
+      expect(line).toContain("on conflict (id) do update set");
+      expect(line).toContain("prompt = excluded.prompt");
+    }
+    for (const line of optionInserts) {
+      expect(line).toContain("on conflict (id) do update set");
+      expect(line).toContain("label = excluded.label");
+    }
+    // 現行クイズの設問を無条件に消すと、cascade で復習カードが落ちる。
+    expect(sql).not.toMatch(/^delete from quiz_questions where quiz_id = '[^']+';$/m);
+    expect(sql).toMatch(/delete from quiz_questions where quiz_id = '[^']+' and id not in \(/);
+    expect(sql).toMatch(
+      /delete from quiz_options where question_id in \(select id from quiz_questions where quiz_id = '[^']+'\) and id not in \(/,
+    );
+    expect(sql).toMatch(/o\.is_correct <> /);
+  });
+
   it("設問ごとに正解がちょうど 1 つ（単一選択）", () => {
     // 選択肢ラベルには `const price: number = 300;` のようにセミコロンを含むコードが
     // 入るので、1 文 = 1 行であることを使って行単位で読む。

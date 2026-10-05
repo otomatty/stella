@@ -199,15 +199,21 @@ export const stages = sqliteTable(
   }),
 );
 
-export const sections = sqliteTable("sections", {
-  id: uuid(),
-  stageId: text("stage_id")
-    .notNull()
-    .references(() => stages.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  order: integer("order").notNull().default(0),
-  createdAt: tsNow("created_at"),
-});
+export const sections = sqliteTable(
+  "sections",
+  {
+    id: uuid(),
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => stages.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    order: integer("order").notNull().default(0),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    stageIdx: index("sections_stage_id_idx").on(t.stageId),
+  }),
+);
 
 export const assignments = sqliteTable("assignments", {
   id: text("id").primaryKey(),
@@ -234,26 +240,32 @@ export const assignments = sqliteTable("assignments", {
   updatedAt: tsNowUpd("updated_at"),
 });
 
-export const lessons = sqliteTable("lessons", {
-  id: uuid(),
-  sectionId: text("section_id")
-    .notNull()
-    .references(() => sections.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  type: text("type", {
-    enum: ["video", "slides", "text", "quiz", "assignment", "code"],
-  }).notNull(),
-  order: integer("order").notNull().default(0),
-  durationLabel: text("duration_label"),
-  videoPath: text("video_path"),
-  pdfPath: text("pdf_path"),
-  markdown: text("markdown"),
-  assignmentId: text("assignment_id"),
-  totalPages: integer("total_pages"),
-  totalSec: integer("total_sec"),
-  createdAt: tsNow("created_at"),
-  updatedAt: tsNowUpd("updated_at"),
-});
+export const lessons = sqliteTable(
+  "lessons",
+  {
+    id: uuid(),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => sections.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    type: text("type", {
+      enum: ["video", "slides", "text", "quiz", "assignment", "code"],
+    }).notNull(),
+    order: integer("order").notNull().default(0),
+    durationLabel: text("duration_label"),
+    videoPath: text("video_path"),
+    pdfPath: text("pdf_path"),
+    markdown: text("markdown"),
+    assignmentId: text("assignment_id"),
+    totalPages: integer("total_pages"),
+    totalSec: integer("total_sec"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    sectionIdx: index("lessons_section_id_idx").on(t.sectionId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // レッスン配布資料 (Issue #72)
@@ -264,23 +276,29 @@ export const lessons = sqliteTable("lessons", {
  * `path` は `tenant/{tenantId}/lessons/{lessonId}/...` 形式。
  * テナントはレッスン → セクション → ステージの join で解決する (authz はアプリ層)。
  */
-export const lessonMaterials = sqliteTable("lesson_materials", {
-  id: uuid(),
-  lessonId: text("lesson_id")
-    .notNull()
-    .references(() => lessons.id, { onDelete: "cascade" }),
-  path: text("path").notNull(),
-  fileName: text("file_name").notNull(),
-  sizeBytes: integer("size_bytes").notNull().default(0),
-  mimeType: text("mime_type").notNull().default("application/octet-stream"),
-  /** upload = 手動アップロード / auto = CI が教材から生成した PDF。auto 行はレッスンに
-   *  つき最新版 1 行で、履歴は lesson_material_versions が持つ。 */
-  source: text("source", { enum: ["upload", "auto"] })
-    .notNull()
-    .default("upload"),
-  createdBy: text("created_by"),
-  createdAt: tsNow("created_at"),
-});
+export const lessonMaterials = sqliteTable(
+  "lesson_materials",
+  {
+    id: uuid(),
+    lessonId: text("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+    fileName: text("file_name").notNull(),
+    sizeBytes: integer("size_bytes").notNull().default(0),
+    mimeType: text("mime_type").notNull().default("application/octet-stream"),
+    /** upload = 手動アップロード / auto = CI が教材から生成した PDF。auto 行はレッスンに
+     *  つき最新版 1 行で、履歴は lesson_material_versions が持つ。 */
+    source: text("source", { enum: ["upload", "auto"] })
+      .notNull()
+      .default("upload"),
+    createdBy: text("created_by"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),
+  }),
+);
 
 /**
  * 配布資料の版履歴 (教材 PDF 自動生成)。
@@ -706,59 +724,83 @@ export const discoveryAttempts = sqliteTable(
 // 小テスト
 // ---------------------------------------------------------------
 
-export const quizzes = sqliteTable("quizzes", {
-  id: uuid(),
-  lessonId: text("lesson_id")
-    .notNull()
-    .references(() => lessons.id, { onDelete: "cascade" }),
-  passScore: integer("pass_score").notNull().default(70),
-  timeLimitSec: integer("time_limit_sec"),
-  maxAttempts: integer("max_attempts"),
-  createdAt: tsNow("created_at"),
-  updatedAt: tsNowUpd("updated_at"),
-});
+export const quizzes = sqliteTable(
+  "quizzes",
+  {
+    id: uuid(),
+    lessonId: text("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    passScore: integer("pass_score").notNull().default(70),
+    timeLimitSec: integer("time_limit_sec"),
+    maxAttempts: integer("max_attempts"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    lessonIdx: index("quizzes_lesson_id_idx").on(t.lessonId),
+  }),
+);
 
-export const quizQuestions = sqliteTable("quiz_questions", {
-  id: uuid(),
-  quizId: text("quiz_id")
-    .notNull()
-    .references(() => quizzes.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["single", "multiple", "boolean"] }).notNull(),
-  prompt: text("prompt").notNull().default(""),
-  explanation: text("explanation"),
-  points: integer("points").notNull().default(1),
-  order: integer("order").notNull().default(0),
-  createdAt: tsNow("created_at"),
-  updatedAt: tsNowUpd("updated_at"),
-});
+export const quizQuestions = sqliteTable(
+  "quiz_questions",
+  {
+    id: uuid(),
+    quizId: text("quiz_id")
+      .notNull()
+      .references(() => quizzes.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["single", "multiple", "boolean"] }).notNull(),
+    prompt: text("prompt").notNull().default(""),
+    explanation: text("explanation"),
+    points: integer("points").notNull().default(1),
+    order: integer("order").notNull().default(0),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    quizIdx: index("quiz_questions_quiz_id_idx").on(t.quizId),
+  }),
+);
 
-export const quizOptions = sqliteTable("quiz_options", {
-  id: uuid(),
-  questionId: text("question_id")
-    .notNull()
-    .references(() => quizQuestions.id, { onDelete: "cascade" }),
-  label: text("label").notNull().default(""),
-  isCorrect: integer("is_correct", { mode: "boolean" }).notNull().default(false),
-  order: integer("order").notNull().default(0),
-});
+export const quizOptions = sqliteTable(
+  "quiz_options",
+  {
+    id: uuid(),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => quizQuestions.id, { onDelete: "cascade" }),
+    label: text("label").notNull().default(""),
+    isCorrect: integer("is_correct", { mode: "boolean" }).notNull().default(false),
+    order: integer("order").notNull().default(0),
+  },
+  (t) => ({
+    questionIdx: index("quiz_options_question_id_idx").on(t.questionId),
+  }),
+);
 
-export const quizAttempts = sqliteTable("quiz_attempts", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  quizId: text("quiz_id")
-    .notNull()
-    .references(() => quizzes.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  score: integer("score").notNull(),
-  maxScore: integer("max_score").notNull(),
-  passed: integer("passed", { mode: "boolean" }).notNull(),
-  answers: json<unknown[]>("answers", []),
-  submittedAt: tsNow("submitted_at"),
-});
+export const quizAttempts = sqliteTable(
+  "quiz_attempts",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    quizId: text("quiz_id")
+      .notNull()
+      .references(() => quizzes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    maxScore: integer("max_score").notNull(),
+    passed: integer("passed", { mode: "boolean" }).notNull(),
+    answers: json<unknown[]>("answers", []),
+    submittedAt: tsNow("submitted_at"),
+  },
+  (t) => ({
+    quizIdx: index("quiz_attempts_quiz_id_idx").on(t.quizId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // デイリー復習 (SRS)
@@ -792,6 +834,7 @@ export const reviewCards = sqliteTable(
   (t) => ({
     userQuestionUnique: uniqueIndex("review_cards_user_question_uq").on(t.userId, t.questionId),
     userDueIdx: index("review_cards_user_due_idx").on(t.userId, t.dueDate),
+    questionIdx: index("review_cards_question_id_idx").on(t.questionId),
   }),
 );
 
@@ -819,6 +862,7 @@ export const reviewLogs = sqliteTable(
   },
   (t) => ({
     userAnsweredIdx: index("review_logs_user_answered_idx").on(t.userId, t.answeredAt),
+    cardIdx: index("review_logs_card_id_idx").on(t.cardId),
   }),
 );
 
