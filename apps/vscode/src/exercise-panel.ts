@@ -21,6 +21,7 @@ export interface ExercisePanelInput {
   /** 未クリア時に「講師に引き継ぐ」 を出せるか (直近の採点が控えてある時だけ)。 */
   assignmentId?: string;
   canEscalate?: boolean;
+  canSubmit?: boolean;
 }
 
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -54,10 +55,13 @@ function renderGradeResults(result: ExecutionResult): string {
 }
 
 /**
- * 未クリアの採点直後にだけ出す「講師に引き継ぐ」。
- * クリア済み / 採点前は出さない (自動採点で通る課題を講師キューに流さない)。
+ * 成功は提出、未クリアは講師への引き継ぎ。
  */
 function escalateLink(input: ExercisePanelInput): string {
+  if (input.result?.evaluation.cleared && input.canSubmit && input.assignmentId) {
+    const args = encodeURIComponent(JSON.stringify([input.assignmentId]));
+    return `<div class="escalate"><p><a href="command:stella.submitExercise?${args}">提出</a></p><p class="hint">確認が通ったコードをレビューに提出します。レビューの合格で修了になります。</p></div>`;
+  }
   const failed = input.result !== undefined && !input.result.evaluation.cleared;
   if (!failed || !input.canEscalate || !input.assignmentId) {
     return "";
@@ -140,7 +144,11 @@ export function openExercisePanel(input: ExercisePanelInput): void {
       {
         enableScripts: false,
         localResourceRoots: [],
-        enableCommandUris: ["stella.openNextLesson", "stella.escalateToInstructor"],
+        enableCommandUris: [
+          "stella.openNextLesson",
+          "stella.escalateToInstructor",
+          "stella.submitExercise",
+        ],
       },
     );
     currentPanel.onDidDispose(() => {

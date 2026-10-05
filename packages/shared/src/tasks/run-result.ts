@@ -84,6 +84,8 @@ export interface RunResult {
   protected: HashedFile[];
   /** 実行したときの `.stella/task.json` の SHA-256。 */
   manifestSha256: string;
+  /** 実行時の配布記録から控えた教材の内容ハッシュ。旧 runner の結果では省略。 */
+  taskContentHash?: string;
 }
 
 /**

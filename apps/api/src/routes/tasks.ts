@@ -54,7 +54,9 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
     const result: TaskSummary[] = rows.map(({ contentHash, ...task }) => {
       const p = progressByTaskId.get(task.id);
       const status =
-        p && (p.contentHash === contentHash || p.status === "passed") ? p.status : "not-started";
+        p && (p.contentHash === contentHash || ["passed", "ai-passed"].includes(p.status))
+          ? p.status
+          : "not-started";
       return { ...task, kind: task.kind as TaskKind, status };
     });
     return c.json({ tasks: result });

@@ -25,6 +25,8 @@ import {
 import { autoCompleteStagesIfMet, stageIdsOfLessons } from "../lib/stage-auto-complete.js";
 import type { Env } from "../env.js";
 
+import { reviewedProgressRows } from "../lib/reviewed-progress.js";
+
 export const lessonProgressRoute = new Hono<{ Bindings: Env }>();
 
 const SELECT = {
@@ -77,7 +79,12 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
 
     // 不正行の除去と同一 lesson_id の集約 (SQLite の upsert は 1 文で同じ行を 2 度
     // 更新できないため、 重複を残すとリクエストごと失敗する)。
-    const rows = normalizeProgressRows(inputs);
+    const rows = await reviewedProgressRows(
+      db,
+      caller.tenantId,
+      caller.id,
+      normalizeProgressRows(inputs),
+    );
     if (rows.length === 0) return c.json({ ok: true, written: 0 });
     assertProgressSyncSize(rows.length);
 

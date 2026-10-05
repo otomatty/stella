@@ -15,9 +15,10 @@ import { nextSubmissionAttempt } from "@stella/shared/review/escalation";
 import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/grading-summary";
 import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
-import { notifications, profiles, submissions } from "../db/schema.js";
+import { notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
@@ -36,7 +37,15 @@ import {
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
+import {
+  createTaskSubmission,
+  readSubmissionFiles,
+  reviewTaskSubmission,
+  syncReviewedLesson,
+} from "../lib/task-submission.js";
+
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
+submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
 
 type SubmissionSelect = typeof submissions.$inferSelect;
 
@@ -44,6 +53,7 @@ type SubmissionSelect = typeof submissions.$inferSelect;
 function toRow(
   s: SubmissionSelect,
   profile: { display_name: string; initials: string | null } | null,
+  revealDrafts = false,
 ) {
   return {
     id: s.id,
@@ -55,14 +65,25 @@ function toRow(
     section_title: s.sectionTitle,
     assignment_title: s.assignmentTitle,
     code: s.code,
+    task_id: s.taskId,
+    task_content_hash: s.taskContentHash,
+    task_kind: s.taskKind,
+    local_result: s.localResult,
+    test_hashes: s.testHashes,
+    explanation: s.explanation,
+    debugging_record: s.debuggingRecord,
+    support_log: s.supportLog,
+    machine_check: s.machineCheck,
+    task_snapshot: s.taskSnapshot,
+    review_task_content_hash: s.reviewTaskContentHash,
     status: s.status,
     priority: s.priority,
     attempt: s.attempt,
     ai_ready: s.aiReady,
-    ai_suggestions: s.aiSuggestions,
-    rubric: s.rubric,
+    ai_suggestions: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.aiSuggestions,
+    rubric: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.rubric,
     grading_summary: parseGradingSummary(s.gradingSummary),
-    review_notes: s.reviewNotes,
+    review_notes: s.taskId && s.status === "pending" && !revealDrafts ? "" : s.reviewNotes,
     verdict: s.verdict,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
@@ -106,7 +127,9 @@ submissionsRoute.get("/api/submissions", async (c) => {
       }
     }
     return c.json({
-      rows: rows.map((r) => toRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null)),
+      rows: rows.map((r) =>
+        toRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
+      ),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -144,6 +167,7 @@ interface SubmissionInput {
   code: string;
   priority: "high" | "normal" | "low";
   gradingSummary: GradingSummary | null;
+  explanation: string | null;
 }
 
 /** 同一課題の未添削提出のうち最新の 1 件の id。 */
@@ -196,6 +220,7 @@ async function overwritePending(
       code: input.code,
       priority: input.priority,
       gradingSummary: input.gradingSummary,
+      explanation: input.explanation,
       attempt: sql`${submissions.attempt} + 1`,
       submittedAt: new Date(),
       // コードが変わっているので前回の AI 下書き / 総評は捨てる。
@@ -230,7 +255,7 @@ async function insertUnlessPending(
   const summary = input.gradingSummary ? JSON.stringify(input.gradingSummary) : null;
   const values = sql`${id}, ${tenantId}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
       ${input.stageTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
-      'pending', ${input.priority}, ${attempt}, ${summary}, ${Date.now()}`;
+      'pending', ${input.priority}, ${attempt}, ${summary}, ${input.explanation}, ${Date.now()}`;
   const guard = input.assignmentId
     ? sql`WHERE NOT EXISTS (
         SELECT 1 FROM submissions
@@ -242,7 +267,7 @@ async function insertUnlessPending(
     INSERT INTO submissions (
       id, tenant_id, student_id, lesson_id, assignment_id,
       stage_title, section_title, assignment_title, code,
-      status, priority, attempt, grading_summary, submitted_at
+      status, priority, attempt, grading_summary, explanation, submitted_at
     )
     SELECT ${values}
     ${guard}
@@ -266,7 +291,20 @@ async function findById(db: Db, id: string): Promise<SubmissionSelect | undefine
 submissionsRoute.post("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const body = (await c.req.json()) as {
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw new ApiError("提出データの JSON が不正です", 400);
+    }
+    if (raw && typeof raw === "object" && "taskId" in raw) {
+      const created = await createTaskSubmission(db, caller, c.env, raw);
+      return c.json(
+        { row: toRow(created, { display_name: caller.name, initials: caller.name.slice(0, 2) }) },
+        201,
+      );
+    }
+    const body = raw as {
       lessonId?: string | null;
       assignmentId?: string | null;
       stageTitle?: string;
@@ -281,11 +319,18 @@ submissionsRoute.post("/api/submissions", async (c) => {
       priority: "high" | "normal" | "low";
       attempt: number;
       gradingSummary?: unknown;
+      explanation?: unknown;
     };
 
     // 受講者が送る値なので、 形が違えば黙って捨てずに 400 で返す。
     if (body.gradingSummary != null && !isGradingSummary(body.gradingSummary)) {
       throw new ApiError("gradingSummary の形式が不正です", 400);
+    }
+    if (
+      body.explanation != null &&
+      (typeof body.explanation !== "string" || body.explanation.length > 20_000)
+    ) {
+      throw new ApiError("説明の形式が不正です", 400);
     }
 
     const input: SubmissionInput = {
@@ -298,6 +343,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       code: body.code,
       priority: body.priority,
       gradingSummary: parseGradingSummary(body.gradingSummary),
+      explanation: typeof body.explanation === "string" ? body.explanation.trim() : null,
     };
     const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
 
@@ -379,7 +425,18 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (!isStaff && !isOwner) {
       throw new ApiError("この提出を閲覧する権限がありません", 403);
     }
-    return c.json({ row: toRow(row, await profileFor(db, row.studentId)) });
+    const detail = toRow(row, await profileFor(db, row.studentId), isStaff);
+    if (row.taskId) {
+      const files = await readSubmissionFiles(db, c.env, row.id);
+      return c.json({
+        row: {
+          ...detail,
+          files: files.map(({ text: _text, ...file }) => file),
+          code: files.map((f) => `// ${f.path}\n${f.text}`).join("\n\n"),
+        },
+      });
+    }
+    return c.json({ row: detail });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -433,12 +490,25 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       code?: string;
     };
 
+    if (
+      !patch ||
+      typeof patch !== "object" ||
+      (patch.verdict !== undefined &&
+        patch.verdict !== null &&
+        !["pass", "resubmit", "fail"].includes(patch.verdict)) ||
+      (patch.status !== undefined &&
+        !["pending", "passed", "resubmit", "failed"].includes(patch.status)) ||
+      (patch.reviewNotes !== undefined && typeof patch.reviewNotes !== "string")
+    )
+      throw new ApiError("レビューの形式が不正です", 400);
     const expected = parseExpectedSubmittedAt(patch.expectedSubmittedAt);
     if (expected && expected.getTime() !== before.submittedAt.getTime()) {
       throw submissionChanged();
     }
 
     const set: Partial<SubmissionSelect> = {};
+    if (before.taskId && (patch.code !== undefined || patch.attempt !== undefined))
+      throw new ApiError("提出ファイルと試行は変更できません", 400);
     if (patch.status !== undefined) set.status = patch.status;
     if (patch.priority !== undefined) set.priority = patch.priority;
     if (patch.attempt !== undefined) set.attempt = patch.attempt;
@@ -446,16 +516,37 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     if (patch.aiSuggestions !== undefined) set.aiSuggestions = patch.aiSuggestions;
     if (patch.rubric !== undefined) set.rubric = patch.rubric;
     if (patch.reviewNotes !== undefined) set.reviewNotes = patch.reviewNotes;
-    if (patch.verdict !== undefined) set.verdict = patch.verdict;
+    const verdict =
+      patch.verdict ??
+      (patch.status === "passed"
+        ? "pass"
+        : patch.status === "resubmit"
+          ? "resubmit"
+          : patch.status === "failed"
+            ? "fail"
+            : undefined);
+    if (patch.verdict === null) set.verdict = null;
+    if (verdict !== undefined) {
+      set.verdict = verdict;
+      set.status = verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
+    }
+    if (before.taskId && (patch.verdict === null || patch.status === "pending"))
+      throw new ApiError("課題の確定判定は合格・再提出・不合格で訂正してください", 400);
     if (patch.code !== undefined) set.code = patch.code;
 
     // status が pending 以外になったら reviewed_at を打つ (旧 patchToUpdate 相当)。
-    const willReview = patch.status !== undefined && patch.status !== "pending";
+    const willReview = verdict !== undefined;
     if (willReview) {
       set.reviewedAt = new Date();
       set.reviewerId = caller.id;
     }
 
+    if (before.taskId && verdict) {
+      await reviewTaskSubmission(db, caller, id, verdict, patch.reviewNotes ?? before.reviewNotes);
+      // 確定判定は上のトランザクションで記録済み。下書き等の任意項目だけ更新する。
+      for (const key of ["verdict", "status", "reviewNotes", "reviewedAt", "reviewerId"] as const)
+        delete set[key];
+    }
     if (Object.keys(set).length > 0) {
       // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
       // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
@@ -514,11 +605,26 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     // 条件が崩れたときだけ巻き戻すので、保存し直しがそのまま復旧手段にもなる。
     // 判定対象は提出した受講者、監査ログの actor は確定した講師。
     // best-effort — 失敗しても添削の確定は返す。
-    if (patch.verdict !== undefined && after.studentId && after.lessonId) {
+    if (verdict !== undefined || patch.verdict === null) await syncReviewedLesson(db, after);
+    if (
+      (verdict !== undefined || patch.verdict === null) &&
+      after.studentId &&
+      (after.lessonId || after.taskId)
+    ) {
+      const taskStageRows = after.taskId
+        ? await db
+            .select({ stageId: sections.stageId })
+            .from(tasks)
+            .innerJoin(sections, eq(sections.id, tasks.sectionId))
+            .where(eq(tasks.id, after.taskId))
+            .limit(1)
+        : [];
       const input = {
         actor: caller,
         userId: after.studentId,
-        stageIds: await stageIdsOfLessons(db, [after.lessonId]),
+        stageIds: after.lessonId
+          ? await stageIdsOfLessons(db, [after.lessonId])
+          : taskStageRows.map((r) => r.stageId),
         ip: clientIp(c),
       };
       if (after.verdict === "pass") await autoCompleteStagesIfMet(db, input);
@@ -546,7 +652,7 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       }
     }
 
-    return c.json({ row: toRow(after, await profileFor(db, after.studentId)) });
+    return c.json({ row: toRow(after, await profileFor(db, after.studentId), true) });
   } catch (err) {
     return errorResponse(c, err);
   }

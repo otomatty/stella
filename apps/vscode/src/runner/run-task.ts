@@ -319,6 +319,8 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
 
 const STATE_GITIGNORE = `# STELLA の拡張が実行のたびに書き換えるファイル (task.json は配布物なので残す)
 last-run.json
+submission-notes.json
+support.json
 deps.json
 browsers.json
 tmp/

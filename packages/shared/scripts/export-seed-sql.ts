@@ -544,6 +544,14 @@ function emitPdfMaterials() {
 
 for (const c of content.courses) emitStage("ses", c);
 
+const skillRegistry = JSON.parse(
+  readFileSync(new URL("../../content/skills.json", import.meta.url), "utf8"),
+) as { id: string; title: string }[];
+for (const skill of skillRegistry)
+  lines.push(
+    `insert into skills (id, title) values (${strLit(skill.id)}, ${strLit(skill.title)}) on conflict (id) do update set title = excluded.title;`,
+  );
+
 // 新形式の単元・課題は assignments と別に持つ。private は公開 bundle に入れない。
 for (const unit of content.units) {
   const id = sectionIdMap.get(`ses:${unit.courseId}:${unit.unitId}`);
@@ -565,6 +573,9 @@ for (const [order, task] of content.tasks.entries()) {
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1;`,
+  );
+  lines.push(
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}) on conflict (task_id, content_hash) do nothing;`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,

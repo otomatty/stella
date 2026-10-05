@@ -145,7 +145,9 @@ async function computeStageCompletion(
   }
 
   // 課題 (assignment レッスン) 総数 + pass 数。
-  const assignmentLessonIds = lessonRows.filter((l) => l.type === "assignment").map((l) => l.id);
+  const assignmentLessonIds = lessonRows
+    .filter((l) => l.type === "assignment" || l.type === "code")
+    .map((l) => l.id);
   let totalAssignments = assignmentLessonIds.length;
   let passedAssignments = 0;
   if (assignmentLessonIds.length > 0) {
@@ -224,7 +226,9 @@ async function batchComputeCompletions(
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .where(eq(sections.stageId, stageId));
   const lessonIds = lessonRows.map((l) => l.id);
-  const assignmentLessonIds = lessonRows.filter((l) => l.type === "assignment").map((l) => l.id);
+  const assignmentLessonIds = lessonRows
+    .filter((l) => l.type === "assignment" || l.type === "code")
+    .map((l) => l.id);
   const totalLessons = lessonRows.length;
 
   const quizRows = await db

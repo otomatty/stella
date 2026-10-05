@@ -1,8 +1,8 @@
 /**
  * 「講師に引き継ぐ」 (Issue #9)。
  *
- * 自動採点で詰まった学習者が、 その場の提出コードと採点失敗サマリを添えて
- * `POST /api/submissions` する。 レッスン完了にはしない (完了は自動採点クリアのまま)。
+ * 旧形式の採点コードと結果を `POST /api/submissions` する。
+ * 成功時はレビューへの提出、失敗時は講師への引き継ぎ。修了はレビューで確定する。
  */
 
 import { getEntryFile } from "@stella/shared/assignment-helpers";
@@ -43,6 +43,41 @@ export function getEscalationAttempt(assignmentId: string): EscalationAttempt | 
 
 export function canEscalate(assignmentId: string | undefined): boolean {
   return assignmentId !== undefined && getEscalationAttempt(assignmentId) !== undefined;
+}
+
+export function canSubmitExercise(assignmentId: string | undefined): boolean {
+  return (
+    assignmentId !== undefined &&
+    lastAttempt?.assignment.id === assignmentId &&
+    lastAttempt.result.evaluation.cleared
+  );
+}
+
+/** 成功した採点時のコードをレビューに提出する。 */
+export async function submitPassedExercise(
+  assignmentId: string,
+  explanation: string,
+): Promise<number> {
+  if (!canSubmitExercise(assignmentId) || !lastAttempt) {
+    throw new Error("確認が通った課題がありません。先に採点を実行してください");
+  }
+  if (!explanation.trim()) throw new Error("説明を入力してください");
+  const attempt = lastAttempt;
+  const body = buildEscalationSubmissionBody({
+    lessonId: attempt.lessonId,
+    assignmentId: attempt.assignment.id,
+    stageTitle: attempt.stageTitle,
+    sectionTitle: attempt.sectionTitle,
+    assignmentTitle: attempt.assignment.title,
+    files: attempt.files,
+    entryFile: getEntryFile(attempt.assignment),
+    gradingSummary: buildGradingSummary(attempt.result, attempt.assignment.language),
+  });
+  const res = await apiRequest<SubmissionResponse>("/api/submissions", {
+    method: "POST",
+    body: { ...body, priority: "normal", explanation: explanation.trim() },
+  });
+  return res.row.attempt;
 }
 
 interface SubmissionResponse {

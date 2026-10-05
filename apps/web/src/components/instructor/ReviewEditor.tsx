@@ -20,6 +20,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SUPPORT_LABELS } from "@stella/shared/tasks/submission";
 import { formatGradingSummaryText } from "@stella/shared/review/grading-summary";
 import type {
   GradingSummary,
@@ -32,6 +33,8 @@ import { isBackendConfigured } from "@/lib/backend";
 import { fetchReviewDraft } from "@/lib/review-draft-api";
 import { SubmissionConflictError, formatSubmittedAt } from "@/lib/submissions-store";
 import type { Tenant } from "@/data/types";
+import { fetchSubmissionById } from "@/lib/submissions-api";
+import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -56,6 +59,27 @@ interface ReviewEditorProps {
 
 export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorProps) => {
   const submission = useSubmission(tenantId, submissionId);
+  const [taskDetail, setTaskDetail] = useState<Submission | undefined>();
+  const [selectedFile, setSelectedFile] = useState("");
+  useEffect(() => {
+    setTaskDetail(undefined);
+    setSelectedFile("");
+    if (!submission?.taskId) return;
+    let current = true;
+    void fetchSubmissionById(submission.id)
+      .then((detail) => {
+        if (current) {
+          setTaskDetail(detail);
+          setSelectedFile(detail.taskFiles?.[0]?.path ?? "");
+        }
+      })
+      .catch(() => {
+        if (current) toast.error("提出ファイルを読み出せませんでした");
+      });
+    return () => {
+      current = false;
+    };
+  }, [submission?.id, submission?.taskId]);
   const { update, finalize } = useSubmissions(tenantId);
 
   const [tab, setTab] = useState("ai");
@@ -86,7 +110,13 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     draftRequestedRef.current = null;
     setDraftLoading(false);
     // 詰まって引き継がれた提出は、 まず「どこで落ちたか」から読ませる。
-    setTab(submission.gradingSummary ? "grade" : "ai");
+    setTab(
+      submission.gradingSummary
+        ? "grade"
+        : submission.taskId && !submission.aiReady
+          ? "comment"
+          : "ai",
+    );
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
@@ -94,7 +124,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
   }, [submission]);
 
   useEffect(() => {
-    if (!submission || submission.aiReady) return;
+    if (!submission || submission.aiReady || submission.taskId) return;
     const version = submissionVersion(submission);
     if (draftRequestedRef.current === version) return;
     draftRequestedRef.current = version;
@@ -176,7 +206,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
   const commentedLines = new Set(suggestions.filter((s) => s.adopted === true).map((s) => s.line));
 
   const handleFinalize = async (v: ReviewVerdict) => {
-    if (finalizing) return;
+    if (finalizing || (submission.taskId && !taskDetail)) return;
     setFinalizing(true);
     try {
       let saved: Awaited<ReturnType<typeof finalize>>;
@@ -220,7 +250,13 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     }
   };
 
-  const codeLines = submission.codeLines;
+  const codeLines = submission.taskId
+    ? (taskDetail?.taskFiles?.find((f) => f.path === selectedFile)?.text ?? "").split("\n")
+    : submission.codeLines;
+  const taskText = submission.taskSnapshot?.files["README.md"];
+  const taskDescription = taskText
+    ? new TextDecoder().decode(Uint8Array.from(atob(taskText), (c) => c.charCodeAt(0)))
+    : "";
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-57px)]">
@@ -262,7 +298,11 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
             AI下書き準備済
           </Badge>
         ) : null}
-        <Button type="button" onClick={() => handleFinalize("resubmit")} disabled={finalizing}>
+        <Button
+          type="button"
+          onClick={() => handleFinalize("resubmit")}
+          disabled={finalizing || (!!submission.taskId && !taskDetail)}
+        >
           <ThumbsDown size={13} />
           再提出
         </Button>
@@ -270,7 +310,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
           type="button"
           variant="primary"
           onClick={() => handleFinalize("pass")}
-          disabled={finalizing}
+          disabled={finalizing || (!!submission.taskId && !taskDetail)}
         >
           <ThumbsUp size={13} />
           合格として確定
@@ -279,6 +319,68 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
 
       <div className="grid" style={{ gridTemplateColumns: "1fr 380px", minHeight: 0, flex: 1 }}>
         <div className="min-w-0 overflow-hidden flex flex-col">
+          {submission.taskId ? (
+            <div className="p-5 border-b border-border max-h-80 overflow-auto">
+              <details>
+                <summary>提出時の課題文</summary>
+                <pre className="whitespace-pre-wrap font-sans text-sm">{taskDescription}</pre>
+              </details>
+              <p className="text-sm mt-3">
+                {submission.machineCheck?.matched
+                  ? "機械の照合は一致しました"
+                  : "講師の確認が必要です"}
+              </p>
+              {submission.machineCheck?.reasons.map((reason) => (
+                <p className="text-sm text-warning" key={reason}>
+                  {reason}
+                </p>
+              ))}
+              <p className="whitespace-pre-wrap text-sm mt-3">{submission.explanation}</p>
+              {submission.debuggingRecord
+                ? Object.entries(submission.debuggingRecord).map(([key, value]) => (
+                    <p key={key} className="whitespace-pre-wrap text-sm">
+                      {
+                        {
+                          reproduction: "再現",
+                          expected: "期待と実際",
+                          cause: "原因",
+                          fix: "修正",
+                          regression: "回帰確認",
+                        }[key as keyof NonNullable<Submission["debuggingRecord"]>]
+                      }
+                      : {value}
+                    </p>
+                  ))
+                : null}
+              <p className="text-sm mt-3">
+                支援:{" "}
+                {submission.supportLog?.map((e) => SUPPORT_LABELS[e.kind]).join(" / ") || "なし"}
+              </p>
+              {submission.localResult?.steps.map((step) => (
+                <p className="text-sm" key={step.id}>
+                  {step.label}: {step.summary}
+                </p>
+              ))}
+              <label className="block text-sm mt-3">
+                提出ファイル{" "}
+                <select
+                  value={selectedFile}
+                  onChange={(e) => setSelectedFile(e.target.value)}
+                  className="bg-card border border-border rounded px-2 py-1"
+                >
+                  {taskDetail?.taskFiles?.map((f) => (
+                    <option value={f.path} key={f.path}>
+                      {f.path}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : submission.explanation ? (
+            <p className="p-5 border-b border-border whitespace-pre-wrap text-sm">
+              {submission.explanation}
+            </p>
+          ) : null}
           <div className="px-5 py-2.5 border-b border-border bg-card flex items-center gap-1.5">
             <Badge>提出コード</Badge>
             <div className="flex-1" />

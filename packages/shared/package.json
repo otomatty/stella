@@ -71,7 +71,9 @@
     "./skill-sheet/types": "./src/skill-sheet/types.ts",
     "./brand/display": "./src/brand/display.ts",
     "./tasks/catalog": "./src/tasks/catalog.ts",
-    "./vscode/uris": "./src/vscode/uris.ts"
+    "./vscode/uris": "./src/vscode/uris.ts",
+    "./tasks/submission": "./src/tasks/submission.ts",
+    "./testing/task-submission": "./src/testing/task-submission.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -80,10 +82,12 @@
     "@babel/parser": "^8.0.6",
     "@babel/traverse": "^8.0.6",
     "@babel/types": "^8.0.4",
-    "@stella/content": "workspace:*"
+    "@stella/content": "workspace:*",
+    "picomatch": "^4"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "@types/picomatch": "^4"
   }
 }

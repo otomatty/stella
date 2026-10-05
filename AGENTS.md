@@ -48,7 +48,10 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **Instructor review (Issue #8 / P3):** With the API running, submissions go through `/api/submissions` (D1). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`). localStorage `lms_submissions_v1` remains a demo/offline remnant — not the default path.
 
-**講師への引き継ぎ (Issue #9):** VS Code 拡張で採点が未クリアだったとき、演習パネルの「講師に引き継ぐ」が採点コードと採点失敗サマリ (`submissions.grading_summary`) を `POST /api/submissions` で送る。同一課題の未添削提出は upsert (`attempt++`) されキューに増殖しない。引き継いでもレッスン完了にはならない (完了は自動採点クリアのまま)。講師側は `ReviewEditor` の「自動採点」タブで詰まりを読み、AI 下書きは Editor を開いた時に遅延生成する。詳細は `apps/vscode/README.md`。
+**講師への引き継ぎ (Issue #9):** VS Code 拡張で採点が未クリアだったとき、演習パネルの「講師に引き継ぐ」が採点コードと採点失敗サマリ (`submissions.grading_summary`) を `POST /api/submissions` で送る。同一課題の未添削提出は upsert (`attempt++`) されキューに増殖しない。成功時は「提出」から説明を添えて通常のレビューへ送る。手元の採点だけでは修了せず、レビューの合格で完了する (#32)。講師側は `ReviewEditor` の「自動採点」タブで詰まりを読み、AI 下書きは Editor を開いた時に遅延生成する。詳細は `apps/vscode/README.md`。
+
+**新形式の課題の提出 (Issue #32):** 拡張は `canSubmit` の結果で提出と講師への相談を切り替える。`POST /api/submissions` の `taskId` 入りの本文は新形式で、ファイル・実行結果・テスト/設定のハッシュ・説明・支援・内容ハッシュをまとめる。ファイルは非公開 R2 `SUBMISSIONS_BUCKET`、試行は追記。配布記録 `.stella/distribution.json` の版を `task_revisions` と照合し、不一致は `instructor-pending`。一致は `submitted` で、AI 一次レビューの接続は #33。人/AI の合格は `task_progress` と `skill_evidence` に反映する。旧コードレッスンも自己申告では完了せず、レビューの合格で `lesson_progress` を更新する。詳細は `apps/vscode/README.md`。
+
 
 ### Key caveats
 

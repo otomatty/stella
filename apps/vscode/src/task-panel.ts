@@ -1,6 +1,6 @@
 /**
  * 「課題を確認する」の結果パネル。スクリプトは動かさず、HTML だけを描く。
- * 押せるリンクは「もう一度確認する」と「実行ログを表示」だけ。
+ * 合格時は提出、不合格時は講師への相談を案内する。
  */
 
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
@@ -24,6 +24,7 @@ export type TaskPanelInput =
       manifest: TaskManifest;
       result: RunResult /** 結果を残さない実行 (課題外の環境診断) */;
       standalone?: boolean;
+      root?: string;
     }
   | { kind: "invalid"; root: string; errors: string[] };
 
@@ -92,6 +93,10 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     .join(" / ");
   // 課題の外からの環境診断は、課題を探さずにもう一度診断する。
   const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.runTask";
+  const commandArgs = input.root ? `?${encodeURIComponent(JSON.stringify([input.root]))}` : "";
+  const action = canSubmit(result)
+    ? `<a href="command:stella.submitTask${commandArgs}">提出</a>`
+    : `<a href="command:stella.consultTask${commandArgs}">講師に相談</a>`;
   const footer = input.standalone
     ? ""
     : result.outcome === "cancelled"
@@ -107,6 +112,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),
     footer,
+    !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
     `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a></p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
@@ -198,7 +204,13 @@ export function showTaskPanel(input: TaskPanelInput): void {
     currentPanel = vscode.window.createWebviewPanel(VIEW_TYPE, title, vscode.ViewColumn.Beside, {
       enableScripts: false,
       localResourceRoots: [],
-      enableCommandUris: ["stella.runTask", "stella.diagnoseEnvironment", "stella.showRunLog"],
+      enableCommandUris: [
+        "stella.runTask",
+        "stella.diagnoseEnvironment",
+        "stella.showRunLog",
+        "stella.submitTask",
+        "stella.consultTask",
+      ],
     });
     currentPanel.onDidDispose(() => {
       currentPanel = undefined;

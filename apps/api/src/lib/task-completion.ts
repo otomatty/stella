@@ -21,7 +21,7 @@ export async function taskCompletionCounts(db: Db, stageId: string, userIds: str
         and(
           eq(sections.stageId, stageId),
           eq(tasks.active, true),
-          eq(taskProgress.status, "passed"),
+          inArray(taskProgress.status, ["passed", "ai-passed"]),
           inArray(taskProgress.userId, users),
         ),
       );

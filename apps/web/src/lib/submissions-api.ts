@@ -70,6 +70,15 @@ interface SubmissionRow {
   review_notes: string;
   verdict: ReviewVerdict | null;
   submitted_at: string;
+  task_id?: string;
+  task_content_hash?: string;
+  task_snapshot?: Submission["taskSnapshot"];
+  local_result?: Submission["localResult"];
+  machine_check?: Submission["machineCheck"];
+  explanation?: string;
+  debugging_record?: Submission["debuggingRecord"];
+  support_log?: Submission["supportLog"];
+  files?: { path: string; content: string }[];
   profiles?: { display_name: string; initials: string | null } | null;
 }
 
@@ -108,6 +117,18 @@ function rowToSubmission(row: SubmissionRow): Submission {
     reviewNotes: row.review_notes ?? "",
     verdict: row.verdict,
     gradingSummary: parseGradingSummary(row.grading_summary),
+    taskId: row.task_id,
+    taskContentHash: row.task_content_hash,
+    taskSnapshot: row.task_snapshot,
+    localResult: row.local_result,
+    machineCheck: row.machine_check,
+    explanation: row.explanation,
+    debuggingRecord: row.debugging_record,
+    supportLog: row.support_log,
+    taskFiles: row.files?.map((f) => ({
+      path: f.path,
+      text: new TextDecoder().decode(Uint8Array.from(atob(f.content), (c) => c.charCodeAt(0))),
+    })),
   };
 }
 

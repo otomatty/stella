@@ -560,7 +560,7 @@ async function batchComputeCounts(
   const lessonIds = lessonRows.map((row) => row.lessonId);
   const quizIds = quizRows.map((row) => row.quizId);
   const assignmentLessonIds = lessonRows
-    .filter((row) => row.type === "assignment")
+    .filter((row) => row.type === "assignment" || row.type === "code")
     .map((row) => row.lessonId);
 
   const doneLessonIds = new Set(
@@ -624,7 +624,7 @@ async function batchComputeCounts(
     const c = of(row.stageId);
     c.totalLessons += 1;
     if (doneLessonIds.has(row.lessonId)) c.completedLessons += 1;
-    if (row.type === "assignment") {
+    if (row.type === "assignment" || row.type === "code") {
       c.totalAssignments += 1;
       if (passedAssignmentLessonIds.has(row.lessonId)) c.passedAssignments += 1;
     }

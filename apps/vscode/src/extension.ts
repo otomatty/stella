@@ -10,7 +10,6 @@ import {
   findCachedLessonContext,
   getCachedCatalog,
   loadCatalog,
-  markLessonComplete,
   type CatalogLesson,
 } from "./catalog.js";
 import {
@@ -27,9 +26,11 @@ import {
 } from "./deep-link.js";
 import {
   canEscalate,
+  canSubmitExercise,
   clearEscalationAttempt,
   escalateToInstructor,
   rememberEscalationAttempt,
+  submitPassedExercise,
 } from "./escalate.js";
 import { openExercisePanel } from "./exercise-panel.js";
 import {
@@ -84,11 +85,10 @@ async function resolveLessonForAssignment(
 }
 
 /**
- * 採点結果を「講師に引き継ぐ」用に控える。
- * クリアした / レッスンが特定できない採点は控えない (キューに流す対象ではない)。
+ * 採点結果を提出・講師への引き継ぎ用に控える。
  */
 function rememberGradeRun(run: GradeRun, lesson: CatalogLesson | undefined): void {
-  if (run.result.evaluation.cleared || !lesson) {
+  if (!lesson) {
     clearEscalationAttempt();
     return;
   }
@@ -121,6 +121,7 @@ async function showExerciseForLesson(
     lessonId: lesson.id,
     assignmentId,
     canEscalate: canEscalate(assignmentId),
+    canSubmit: canSubmitExercise(assignmentId),
     ...(result ? { result } : {}),
     ...(next
       ? { nextLesson: { stageId: next.stageId, lessonId: next.id, title: next.title } }
@@ -354,15 +355,42 @@ export function activate(context: vscode.ExtensionContext): void {
             );
             return;
           }
-          await markLessonComplete(lesson.id);
-          refreshLessonTree();
-          void vscode.window.showInformationMessage(message);
+          void vscode.window.showInformationMessage(
+            `${message}。パネルの「提出」からレビューを受けてください。レビューの合格で修了します`,
+          );
         } else {
           void vscode.window.showWarningMessage(message);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         void vscode.window.showErrorMessage(message);
+      }
+    }),
+    vscode.commands.registerCommand("stella.submitExercise", async (assignmentId?: string) => {
+      const target = typeof assignmentId === "string" ? assignmentId : resolveActiveAssignmentId();
+      if (!canSubmitExercise(target) || !target) {
+        void vscode.window.showInformationMessage("先に課題の採点を通してください");
+        return;
+      }
+      const explanation = await vscode.window.showInputBox({
+        title: "提出の説明",
+        prompt: "実装した内容と、動作を確認した方法を説明してください",
+        ignoreFocusOut: true,
+        validateInput: (value) =>
+          !value.trim()
+            ? "説明を入力してください"
+            : value.length > 20_000
+              ? "説明が長すぎます"
+              : null,
+      });
+      if (explanation === undefined) return;
+      try {
+        const attempt = await submitPassedExercise(target, explanation);
+        void vscode.window.showInformationMessage(
+          `提出しました (${attempt} 回目)。レビューされると Web に通知が届きます`,
+        );
+      } catch (err) {
+        void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
       }
     }),
     vscode.commands.registerCommand(
