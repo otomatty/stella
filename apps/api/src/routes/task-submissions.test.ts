@@ -24,7 +24,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { reviewTaskSubmission } from "../lib/task-submission.js";
+import { reviewTaskSubmission, syncReviewedLesson } from "../lib/task-submission.js";
 import { taskCompletionCounts } from "../lib/task-completion.js";
 import { reviewedProgressRows } from "../lib/reviewed-progress.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -298,6 +298,99 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect((await db.select().from(submissions)).length).toBe(0);
     expect(objects.size).toBe(0);
   });
+  describe("確認Bの定着", () => {
+    const DAY = 86_400_000;
+    const hash = "c".repeat(64);
+    beforeEach(async () => {
+      await db.insert(tasks).values(
+        (
+          [
+            ["check-a", "assessment-a", "page"],
+            ["check-b", "assessment-b", "page"],
+            // 別パターンのAは、このBの前提にしない。
+            ["check-a-form", "assessment-a", "form"],
+          ] as const
+        ).map(([id, kind, pattern], i) => ({
+          id,
+          sectionId: "unit",
+          title: id,
+          kind,
+          pattern,
+          skills: { uses: [], assesses: ["html"] },
+          estimatedMinutes: 10,
+          order: i + 1,
+          contentHash: hash,
+          definition: "{}",
+          bundle: "{}",
+        })),
+      );
+    });
+    /** 確認課題の提出を作り、講師が合格にする。 */
+    async function passCheck(taskId: string, kind: string, submittedAt: Date) {
+      const id = crypto.randomUUID();
+      await db.insert(submissions).values({
+        id,
+        tenantId: "ses",
+        studentId: "learner",
+        stageTitle: "開発環境",
+        assignmentTitle: taskId,
+        code: "",
+        taskId,
+        taskKind: kind,
+        taskContentHash: hash,
+        assessedSkills: ["html"],
+        submittedAt,
+      });
+      await reviewTaskSubmission(db, caller, id, "pass", "");
+      return id;
+    }
+    const levelOf = async (submissionId: string) =>
+      (await db.select().from(skillEvidence).where(eq(skillEvidence.submissionId, submissionId)))[0]
+        ?.level;
+    /** 確認Aの初回合格日を過去にずらす (合格日は DB のトリガーが入れる)。 */
+    async function passA(passedAt: number) {
+      const id = await passCheck("check-a", "assessment-a", new Date(passedAt));
+      await db
+        .update(taskProgress)
+        .set({ passedAt: new Date(passedAt) })
+        .where(eq(taskProgress.taskId, "check-a"));
+      return id;
+    }
+
+    it("無関係な課題の古い証跡では、確認Aに合格していないBを定着にしない", async () => {
+      const basic = await submit();
+      await reviewTaskSubmission(db, caller, basic.id, "pass", "");
+      await db.update(skillEvidence).set({ createdAt: new Date(Date.now() - 30 * DAY) });
+      const b = await passCheck("check-b", "assessment-b", new Date());
+      expect(await levelOf(b)).toBe("independent");
+    });
+
+    it("確認Aの合格から7日たつ前に解いたBは、後でレビューしても定着にしない", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      await passA(aPassed);
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 3 * DAY));
+      expect(await levelOf(b)).toBe("independent");
+    });
+
+    it("同じ単元・パターンの確認Aの合格から7日後以降に解いたBを定着にする", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      await passA(aPassed);
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
+      expect(await levelOf(b)).toBe("retained");
+    });
+
+    it("確認Aが支援付きの合格なら、Bを定着にしない", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      const a = await passA(aPassed);
+      await db
+        .update(skillEvidence)
+        .set({ assisted: true, level: "supported" })
+        .where(eq(skillEvidence.submissionId, a));
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
+      expect(await levelOf(b)).toBe("independent");
+    });
+  });
+
   it("旧コードレッスンは自己申告で完了せず、講師の合格で完了する", async () => {
     await db.insert(lessons).values({
       id: "code",
@@ -431,6 +524,40 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     await legacyReview("code", "exercise", "pass");
     expect(await progressOf("code")).toBe(true);
     expect((await reviewedProgressRows(db, "ses", "learner", [sync])).rows[0].completed).toBe(true);
+  });
+
+  it("判定の訂正が同期と重なっても、進捗は最後に保存された判定に揃う", async () => {
+    await db.insert(lessons).values({
+      id: "code",
+      sectionId: "unit",
+      type: "code",
+      title: "演習",
+      assignmentId: "exercise",
+    });
+    await legacyReview("code", "exercise", "pass");
+    expect(await progressOf("code")).toBe(true);
+    const [stale] = await db.select().from(submissions).where(eq(submissions.lessonId, "code"));
+    // 遅れた合格側の同期が進捗を書く直前に、別の講師の不合格が保存される。
+    const prepare = database.binding.prepare.bind(database.binding);
+    let corrected = false;
+    const racing = getDb({
+      ...env,
+      DB: {
+        ...database.binding,
+        prepare: (query: string) => {
+          if (!corrected && /^insert into "lesson_progress"/i.test(query)) {
+            corrected = true;
+            database.sqlite
+              .prepare("update submissions set verdict = 'fail', status = 'failed' where id = ?")
+              .run(stale.id);
+          }
+          return prepare(query);
+        },
+      } as unknown as D1Database,
+    });
+    await syncReviewedLesson(racing, stale);
+    expect(corrected).toBe(true);
+    expect(await progressOf("code")).toBe(false);
   });
 
   describe("レビュー必須の前に自己申告で完了したコードレッスン", () => {

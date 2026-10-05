@@ -1,5 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
+import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
 import {
   parseTaskSubmission,
@@ -23,7 +24,6 @@ import {
 import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
-import { reviewedPassLessonIds } from "./reviewed-progress.js";
 import { canAccessTasks } from "./task-access.js";
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
@@ -245,25 +245,12 @@ export async function reviewTaskSubmission(
       ];
       if (verdict === "pass") {
         const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
+        const retained =
+          !assisted && row.taskKind === "assessment-b"
+            ? await retainedSkillIds(db, row.tenantId, row.studentId, row.taskId, row.submittedAt)
+            : new Set<string>();
         for (const skillId of row.assessedSkills) {
-          const [prior] = await db
-            .select({ id: skillEvidence.id })
-            .from(skillEvidence)
-            .where(
-              and(
-                eq(skillEvidence.userId, row.studentId),
-                eq(skillEvidence.skillId, skillId),
-                eq(skillEvidence.assisted, false),
-                sql`${skillEvidence.submissionId} <> ${id}`,
-                sql`${skillEvidence.createdAt} <= ${now.getTime() - 86400000}`,
-              ),
-            )
-            .limit(1);
-          const level = assisted
-            ? "supported"
-            : row.taskKind === "assessment-b" && prior
-              ? "retained"
-              : "independent";
+          const level = assisted ? "supported" : retained.has(skillId) ? "retained" : "independent";
           statements.push(
             db.insert(skillEvidence).values({
               tenantId: row.tenantId,
@@ -330,6 +317,70 @@ export async function reviewTaskSubmission(
 }
 
 /**
+ * 確認Bの合格を「定着」と数えてよいスキル。
+ *
+ * 学習ペースが確認Bを出すのと同じ基準で、同じ単元・同じパターンの確認A (有効なもの) に
+ * すべて合格し、その最後の初回合格日の 7 学習日後以降に提出したBだけが対象になる。
+ * 課題は日程で閉じていないので、早く解いたBや無関係な課題の証跡では定着にしない。
+ * そのうえで、それらの確認Aの支援なしの合格で同じスキルの証跡があるものに限る。
+ */
+async function retainedSkillIds(
+  db: Db,
+  tenantId: string,
+  studentId: string,
+  taskId: string,
+  submittedAt: Date,
+): Promise<Set<string>> {
+  const [b] = await db
+    .select({ sectionId: tasks.sectionId, pattern: tasks.pattern })
+    .from(tasks)
+    .where(eq(tasks.id, taskId))
+    .limit(1);
+  if (!b) return new Set();
+  const preceding = await db
+    .select({ id: tasks.id, passedAt: taskProgress.passedAt })
+    .from(tasks)
+    .leftJoin(
+      taskProgress,
+      and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, studentId)),
+    )
+    .where(
+      and(
+        eq(tasks.sectionId, b.sectionId),
+        eq(tasks.kind, "assessment-a"),
+        eq(tasks.pattern, b.pattern),
+        eq(tasks.active, true),
+      ),
+    );
+  // 対応するAがない教材ではBを定着の確認として扱わない。
+  if (preceding.length === 0) return new Set();
+  let lastPassed = 0;
+  for (const a of preceding) {
+    if (!a.passedAt) return new Set();
+    lastPassed = Math.max(lastPassed, a.passedAt.getTime());
+  }
+  const due = studyDateStartMs(addStudyDays(toStudyDate(lastPassed), 7));
+  if (submittedAt.getTime() < due) return new Set();
+  const evidence = await db
+    .selectDistinct({ skillId: skillEvidence.skillId })
+    .from(skillEvidence)
+    .innerJoin(submissions, eq(submissions.id, skillEvidence.submissionId))
+    .where(
+      and(
+        eq(skillEvidence.userId, studentId),
+        eq(skillEvidence.assisted, false),
+        eq(submissions.tenantId, tenantId),
+        eq(submissions.studentId, studentId),
+        inArray(
+          submissions.taskId,
+          preceding.map((a) => a.id),
+        ),
+      ),
+    );
+  return new Set(evidence.map((e) => e.skillId));
+}
+
+/**
  * 旧形式のコードレッスンもレビューの合格で完了する。
  *
  * lesson_id / assignment_id は受講者が送る値なので、同テナントのコードレッスンと
@@ -353,20 +404,35 @@ export async function syncReviewedLesson(db: Db, row: typeof submissions.$inferS
     )
     .limit(1);
   if (!lesson) return;
-  const passed = (await reviewedPassLessonIds(db, row.tenantId, row.studentId, [lesson.id])).has(
-    lesson.id,
-  );
+  // 合格の有無は書き込みと同じ文の中で読む。判定の保存とこの同期は別の文なので、
+  // 先に読んでから書くと、同じ提出への判定の訂正が重なったときに遅れた側が古い
+  // 「合格あり」で上書きしてしまう。最後の判定の保存のあとに走る同期は必ず最終の判定を読む。
+  const passed = db
+    .select({ one: sql`1` })
+    .from(submissions)
+    .innerJoin(
+      lessons,
+      and(eq(lessons.id, submissions.lessonId), eq(lessons.assignmentId, submissions.assignmentId)),
+    )
+    .where(
+      and(
+        eq(submissions.tenantId, row.tenantId),
+        eq(submissions.studentId, row.studentId),
+        eq(submissions.lessonId, lesson.id),
+        eq(submissions.verdict, "pass"),
+      ),
+    );
   await db
     .insert(lessonProgress)
     .values({
       tenantId: row.tenantId,
       userId: row.studentId,
       lessonId: lesson.id,
-      completed: passed,
+      completed: sql<boolean>`exists ${passed}`,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [lessonProgress.userId, lessonProgress.lessonId],
-      set: { completed: passed, updatedAt: new Date() },
+      set: { completed: sql`excluded.completed`, updatedAt: sql`excluded.updated_at` },
     });
 }
