@@ -216,10 +216,11 @@ export async function stageIdsOfLessons(db: Db, lessonIds: readonly string[]): P
  * - revoke ではなく **削除** にする: (user, stage) の一意索引があるため revoked 行が残ると
  *   再合格しても二度と自動発行できない。発行と取り消しの経緯は監査ログ側に残る
  * - 別の合格提出が同じレッスンに残っていれば条件は崩れていないので何もしない
- * - レッスン進捗・クイズ合格は単調 (取り消しが無い) ため、逆向きの入口は添削の
- *   verdict 訂正だけ
+ * - クイズ合格と通常のレッスン進捗は単調 (取り消しが無い) ため、逆向きの入口は添削の
+ *   verdict 訂正と、コードレッスンの進捗同期 (レビューの合格が無い自己申告の完了を
+ *   外したとき。`POST /api/lesson-progress`) の 2 つ
  *
- * best-effort — 失敗しても添削の保存 (呼び出し側の本編) は成功させる。
+ * best-effort — 失敗しても添削・進捗の保存 (呼び出し側の本編) は成功させる。
  */
 export async function reclaimAutoCertificatesIfUnmet(
   db: Db,

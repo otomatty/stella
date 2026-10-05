@@ -23,6 +23,7 @@ import {
 import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
+import { reviewedPassLessonIds } from "./reviewed-progress.js";
 import { canAccessTasks } from "./task-access.js";
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
@@ -326,40 +327,44 @@ export async function reviewTaskSubmission(
   return locked.value;
 }
 
-/** 旧形式のコードレッスンもレビューの合格で完了する。 */
+/**
+ * 旧形式のコードレッスンもレビューの合格で完了する。
+ *
+ * lesson_id / assignment_id は受講者が送る値なので、同テナントのコードレッスンと
+ * その課題の組を指す提出だけを進捗に結び付ける。文章・動画レッスンや別の課題を名乗る
+ * 提出は、合格しても進捗に触らない (提出と添削そのものは従来どおり残る)。
+ */
 export async function syncReviewedLesson(db: Db, row: typeof submissions.$inferSelect) {
-  if (!row.lessonId || !row.studentId) return;
+  if (!row.lessonId || !row.studentId || !row.assignmentId) return;
   const [lesson] = await db
     .select({ id: lessons.id })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
-    .where(and(eq(lessons.id, row.lessonId), eq(stages.tenantId, row.tenantId)))
-    .limit(1);
-  if (!lesson) return;
-  const [passed] = await db
-    .select({ id: submissions.id })
-    .from(submissions)
     .where(
       and(
-        eq(submissions.tenantId, row.tenantId),
-        eq(submissions.studentId, row.studentId),
-        eq(submissions.lessonId, row.lessonId),
-        eq(submissions.verdict, "pass"),
+        eq(lessons.id, row.lessonId),
+        eq(stages.tenantId, row.tenantId),
+        eq(lessons.type, "code"),
+        eq(lessons.assignmentId, row.assignmentId),
       ),
     )
     .limit(1);
+  if (!lesson) return;
+  const passed = (await reviewedPassLessonIds(db, row.tenantId, row.studentId, [lesson.id])).has(
+    lesson.id,
+  );
   await db
     .insert(lessonProgress)
     .values({
       tenantId: row.tenantId,
       userId: row.studentId,
-      lessonId: row.lessonId,
-      completed: !!passed,
+      lessonId: lesson.id,
+      completed: passed,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [lessonProgress.userId, lessonProgress.lessonId],
-      set: { completed: !!passed, updatedAt: new Date() },
+      set: { completed: passed, updatedAt: new Date() },
     });
 }

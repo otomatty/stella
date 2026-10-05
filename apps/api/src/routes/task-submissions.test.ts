@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
 import {
+  auditLogs,
   certificates,
   enrollments,
   lessonProgress,
@@ -28,6 +29,7 @@ import { taskCompletionCounts } from "../lib/task-completion.js";
 import { reviewedProgressRows } from "../lib/reviewed-progress.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
+import { lessonProgressRoute } from "./lesson-progress.js";
 import { submissionsRoute } from "./submissions.js";
 
 describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
@@ -293,7 +295,13 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect(objects.size).toBe(0);
   });
   it("旧コードレッスンは自己申告で完了せず、講師の合格で完了する", async () => {
-    await db.insert(lessons).values({ id: "code", sectionId: "unit", type: "code", title: "演習" });
+    await db.insert(lessons).values({
+      id: "code",
+      sectionId: "unit",
+      type: "code",
+      title: "演習",
+      assignmentId: "exercise",
+    });
     const rows = [
       {
         lessonId: "code",
@@ -306,7 +314,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         activityDate: "2026-10-05",
       },
     ];
-    expect((await reviewedProgressRows(db, "ses", "learner", rows))[0].completed).toBe(false);
+    expect((await reviewedProgressRows(db, "ses", "learner", rows)).rows[0].completed).toBe(false);
     const { app } = mountTestApp(env, submissionsRoute);
     const body = {
       lessonId: "code",
@@ -346,6 +354,195 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       (await db.select().from(lessonProgress).where(eq(lessonProgress.lessonId, "code")))[0]
         .completed,
     ).toBe(true);
-    expect((await reviewedProgressRows(db, "ses", "learner", rows))[0].completed).toBe(true);
+    expect((await reviewedProgressRows(db, "ses", "learner", rows)).rows[0].completed).toBe(true);
+  });
+
+  const progressOf = async (lessonId: string) =>
+    (await db.select().from(lessonProgress).where(eq(lessonProgress.lessonId, lessonId)))[0]
+      ?.completed;
+
+  /** 旧形式の提出 (受講者が lesson_id / assignment_id を送る) を作り、講師が判定する。 */
+  async function legacyReview(
+    lessonId: string,
+    assignmentId: string,
+    verdict: "pass" | "resubmit",
+  ) {
+    const { app } = mountTestApp(env, submissionsRoute);
+    const submitted = await request(app, env, "/api/submissions", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        lessonId,
+        assignmentId,
+        stageTitle: "開発環境",
+        assignmentTitle: "演習",
+        code: "x",
+        priority: "normal",
+      }),
+    });
+    expect(submitted.status, await submitted.clone().text()).toBe(200);
+    const { row } = await json<{ row: { id: string } }>(submitted);
+    const reviewed = await request(app, env, `/api/submissions/${row.id}`, {
+      method: "PATCH",
+      token: instructorToken,
+      body: JSON.stringify({ verdict }),
+    });
+    expect(reviewed.status, await reviewed.clone().text()).toBe(200);
+  }
+
+  it("コードレッスンとその課題の組を指さない旧形式の提出は、判定しても進捗に触らない", async () => {
+    await db.batch([
+      db.insert(lessons).values({ id: "intro", sectionId: "unit", type: "text", title: "読む2" }),
+      db.insert(lessons).values({
+        id: "code",
+        sectionId: "unit",
+        type: "code",
+        title: "演習",
+        assignmentId: "exercise",
+      }),
+    ]);
+    // 文章レッスンを名乗る提出の合格で完了を作らない。
+    await legacyReview("intro", "exercise", "pass");
+    expect(await progressOf("intro")).toBeUndefined();
+    // 自分で完了した文章レッスンを、名乗っただけの提出の再提出判定で未完了に戻さない。
+    await legacyReview("reading", "reading-exercise", "resubmit");
+    expect(await progressOf("reading")).toBe(true);
+    // 別の課題を名乗る提出の合格では、コードレッスンを完了にしない (同期でも同じ)。
+    await legacyReview("code", "other-exercise", "pass");
+    expect(await progressOf("code")).toBeUndefined();
+    const sync = {
+      lessonId: "code",
+      completed: true,
+      lastPage: null,
+      viewedPages: [],
+      watchedSec: null,
+      updatedAtMs: Date.now(),
+      countsTowardActivity: true,
+      activityDate: "2026-10-05",
+    };
+    expect((await reviewedProgressRows(db, "ses", "learner", [sync])).rows[0].completed).toBe(
+      false,
+    );
+    // そのレッスンの課題への提出の合格なら完了する。
+    await legacyReview("code", "exercise", "pass");
+    expect(await progressOf("code")).toBe(true);
+    expect((await reviewedProgressRows(db, "ses", "learner", [sync])).rows[0].completed).toBe(true);
+  });
+
+  describe("レビュー必須の前に自己申告で完了したコードレッスン", () => {
+    /** 旧講座: コードレッスン 1 つだけ。自己申告の完了で修了証が自動発行済み。 */
+    async function selfCompletedStage(issuedBy: string | null = null) {
+      await db.batch([
+        db.insert(stages).values({
+          id: "legacy",
+          tenantId: "ses",
+          slug: "legacy-ts",
+          title: "旧講座",
+          status: "published",
+        }),
+        db.insert(sections).values({ id: "legacy-unit", stageId: "legacy", title: "演習" }),
+        db.insert(lessons).values({
+          id: "legacy-code",
+          sectionId: "legacy-unit",
+          type: "code",
+          title: "演習",
+          assignmentId: "exercise",
+        }),
+        db.insert(enrollments).values({
+          tenantId: "ses",
+          userId: "learner",
+          stageId: "legacy",
+          status: "completed",
+          completedAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+        db.insert(lessonProgress).values({
+          tenantId: "ses",
+          userId: "learner",
+          lessonId: "legacy-code",
+          completed: true,
+          updatedAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+        db.insert(certificates).values({
+          tenantId: "ses",
+          userId: "learner",
+          stageId: "legacy",
+          certCode: "FLC-2026-0000-0001",
+          issuedBy,
+          recipientName: "受講者",
+          stageTitle: "旧講座",
+          tenantName: "テスト",
+        }),
+      ]);
+    }
+    async function syncCompleted(updatedAt: string) {
+      const { app } = mountTestApp(env, lessonProgressRoute);
+      const response = await request(app, env, "/api/lesson-progress", {
+        method: "POST",
+        token,
+        body: JSON.stringify({
+          rows: [
+            {
+              lesson_id: "legacy-code",
+              completed: true,
+              last_page: null,
+              viewed_pages: [],
+              watched_sec: null,
+              updated_at: updatedAt,
+            },
+          ],
+        }),
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+    }
+    const legacyCertificates = () =>
+      db.select().from(certificates).where(eq(certificates.stageId, "legacy"));
+    const legacyEnrollment = async () =>
+      (await db.select().from(enrollments).where(eq(enrollments.stageId, "legacy")))[0]?.status;
+
+    it("同期で完了が外れたら、自動発行の修了証と受講登録の修了を巻き戻す", async () => {
+      await selfCompletedStage();
+      await syncCompleted("2026-10-05T00:00:00.000Z");
+      expect(await progressOf("legacy-code")).toBe(false);
+      expect(await legacyCertificates()).toHaveLength(0);
+      expect(await legacyEnrollment()).toBe("active");
+      const audits = await db
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.action, "certificate_reclaim"));
+      expect(audits).toHaveLength(1);
+      expect(audits[0].metadata).toMatchObject({ stage_id: "legacy", user_id: "learner" });
+    });
+
+    it("完了が外れない同期 (LWW で負けた・合格がある) では巻き戻さない", async () => {
+      await selfCompletedStage();
+      // 端末の行が保存済みより古い。完了は保存済みのまま残る。
+      await syncCompleted("2025-12-31T00:00:00.000Z");
+      expect(await progressOf("legacy-code")).toBe(true);
+      expect(await legacyCertificates()).toHaveLength(1);
+      // そのレッスンの課題へのレビュー合格があれば、同期しても完了のまま。
+      await db.insert(submissions).values({
+        tenantId: "ses",
+        studentId: "learner",
+        lessonId: "legacy-code",
+        assignmentId: "exercise",
+        stageTitle: "旧講座",
+        assignmentTitle: "演習",
+        code: "x",
+        status: "passed",
+        verdict: "pass",
+      });
+      await syncCompleted("2026-10-05T00:00:00.000Z");
+      expect(await progressOf("legacy-code")).toBe(true);
+      expect(await legacyCertificates()).toHaveLength(1);
+      expect(await legacyEnrollment()).toBe("completed");
+    });
+
+    it("staff が発行した修了証は完了が外れても残す", async () => {
+      await selfCompletedStage("teacher");
+      await syncCompleted("2026-10-05T00:00:00.000Z");
+      expect(await progressOf("legacy-code")).toBe(false);
+      expect(await legacyCertificates()).toHaveLength(1);
+      expect(await legacyEnrollment()).toBe("completed");
+    });
   });
 });
