@@ -146,6 +146,34 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect((await db.select().from(taskProgress))[0].status).toBe("submitted");
     expect((await taskCompletionCounts(db, "stage", ["learner"])).passed.size).toBe(0);
   });
+  it("一覧は提出ごとの記録を返さず、詳細だけが返す", async () => {
+    const row = await submit();
+    const { app } = mountTestApp(env, submissionsRoute);
+    const detailKeys = [
+      "task_snapshot",
+      "local_result",
+      "test_hashes",
+      "debugging_record",
+      "support_log",
+      "machine_check",
+    ];
+    for (const [path, as] of [
+      ["/api/submissions", instructorToken],
+      ["/api/submissions/mine", token],
+    ] as const) {
+      const response = await request(app, env, path, { token: as });
+      expect(response.status, await response.clone().text()).toBe(200);
+      const { rows } = await json<{ rows: Record<string, unknown>[] }>(response);
+      expect(rows[0]).toMatchObject({ id: row.id, task_id: fixture.input.taskId });
+      for (const key of detailKeys) expect(rows[0]).not.toHaveProperty(key);
+    }
+    const detail = await request(app, env, `/api/submissions/${row.id}`, {
+      token: instructorToken,
+    });
+    const { row: full } = await json<{ row: Record<string, unknown> }>(detail);
+    for (const key of detailKeys) expect(full).toHaveProperty(key);
+    expect(full.task_snapshot).toMatchObject({ contentHash: fixture.bundle.contentHash });
+  });
   it("上限の50ファイルをD1の100バインド制限内で保存し、51件目は保存しない", async () => {
     fixture = await submissionFixture({ submit: { files: ["*.html"] } });
     const first = fixture.input.files[0];

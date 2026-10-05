@@ -253,7 +253,8 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
   const codeLines = submission.taskId
     ? (taskDetail?.taskFiles?.find((f) => f.path === selectedFile)?.text ?? "").split("\n")
     : submission.codeLines;
-  const taskText = submission.taskSnapshot?.files["README.md"];
+  // 提出時の課題・実行結果・記録は一覧に載らないので、詳細 (taskDetail) から読む。
+  const taskText = taskDetail?.taskSnapshot?.files["README.md"];
   const taskDescription = taskText
     ? new TextDecoder().decode(Uint8Array.from(atob(taskText), (c) => c.charCodeAt(0)))
     : "";
@@ -326,18 +327,20 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 <pre className="whitespace-pre-wrap font-sans text-sm">{taskDescription}</pre>
               </details>
               <p className="text-sm mt-3">
-                {submission.machineCheck?.matched
-                  ? "機械の照合は一致しました"
-                  : "講師の確認が必要です"}
+                {!taskDetail
+                  ? "提出内容を読み込んでいます"
+                  : taskDetail.machineCheck?.matched
+                    ? "機械の照合は一致しました"
+                    : "講師の確認が必要です"}
               </p>
-              {submission.machineCheck?.reasons.map((reason) => (
+              {taskDetail?.machineCheck?.reasons.map((reason) => (
                 <p className="text-sm text-warning" key={reason}>
                   {reason}
                 </p>
               ))}
               <p className="whitespace-pre-wrap text-sm mt-3">{submission.explanation}</p>
-              {submission.debuggingRecord
-                ? Object.entries(submission.debuggingRecord).map(([key, value]) => (
+              {taskDetail?.debuggingRecord
+                ? Object.entries(taskDetail.debuggingRecord).map(([key, value]) => (
                     <p key={key} className="whitespace-pre-wrap text-sm">
                       {
                         {
@@ -354,9 +357,11 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 : null}
               <p className="text-sm mt-3">
                 支援:{" "}
-                {submission.supportLog?.map((e) => SUPPORT_LABELS[e.kind]).join(" / ") || "なし"}
+                {taskDetail
+                  ? taskDetail.supportLog?.map((e) => SUPPORT_LABELS[e.kind]).join(" / ") || "なし"
+                  : ""}
               </p>
-              {submission.localResult?.steps.map((step) => (
+              {taskDetail?.localResult?.steps.map((step) => (
                 <p className="text-sm" key={step.id}>
                   {step.label}: {step.summary}
                 </p>

@@ -16,7 +16,7 @@ import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/gra
 import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 
 import { notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
 import {
@@ -49,9 +49,29 @@ submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 })
 
 type SubmissionSelect = typeof submissions.$inferSelect;
 
-/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える。 */
-function toRow(
-  s: SubmissionSelect,
+/**
+ * 一覧に載せない、提出 1 件ごとの記録 (提出時の課題・実行結果・修正記録・支援・照合結果)。
+ * 1 件で最大 1 MiB になりうるので、一覧の SELECT から外し、詳細 (`GET /api/submissions/:id`)
+ * だけが返す。
+ */
+const {
+  taskSnapshot: _taskSnapshot,
+  localResult: _localResult,
+  testHashes: _testHashes,
+  debuggingRecord: _debuggingRecord,
+  supportLog: _supportLog,
+  machineCheck: _machineCheck,
+  ...summaryColumns
+} = getTableColumns(submissions);
+
+type SubmissionSummary = Omit<
+  SubmissionSelect,
+  "taskSnapshot" | "localResult" | "testHashes" | "debuggingRecord" | "supportLog" | "machineCheck"
+>;
+
+/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。 */
+function toSummaryRow(
+  s: SubmissionSummary,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
 ) {
@@ -68,13 +88,7 @@ function toRow(
     task_id: s.taskId,
     task_content_hash: s.taskContentHash,
     task_kind: s.taskKind,
-    local_result: s.localResult,
-    test_hashes: s.testHashes,
     explanation: s.explanation,
-    debugging_record: s.debuggingRecord,
-    support_log: s.supportLog,
-    machine_check: s.machineCheck,
-    task_snapshot: s.taskSnapshot,
     review_task_content_hash: s.reviewTaskContentHash,
     status: s.status,
     priority: s.priority,
@@ -87,6 +101,23 @@ function toRow(
     verdict: s.verdict,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
+  };
+}
+
+/** 提出 1 件を返す応答の形。一覧の形に提出ごとの記録を足す。 */
+function toRow(
+  s: SubmissionSelect,
+  profile: { display_name: string; initials: string | null } | null,
+  revealDrafts = false,
+) {
+  return {
+    ...toSummaryRow(s, profile, revealDrafts),
+    local_result: s.localResult,
+    test_hashes: s.testHashes,
+    debugging_record: s.debuggingRecord,
+    support_log: s.supportLog,
+    machine_check: s.machineCheck,
+    task_snapshot: s.taskSnapshot,
   };
 }
 
@@ -109,7 +140,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
-      .select()
+      .select(summaryColumns)
       .from(submissions)
       .where(eq(submissions.tenantId, caller.tenantId))
       .orderBy(desc(submissions.submittedAt));
@@ -128,7 +159,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     }
     return c.json({
       rows: rows.map((r) =>
-        toRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
+        toSummaryRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
       ),
     });
   } catch (err) {
@@ -395,14 +426,14 @@ submissionsRoute.get("/api/submissions/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const rows = await db
-      .select()
+      .select(summaryColumns)
       .from(submissions)
       .where(and(eq(submissions.tenantId, caller.tenantId), eq(submissions.studentId, caller.id)))
       .orderBy(desc(submissions.submittedAt));
 
     const profile = await profileFor(db, caller.id);
     return c.json({
-      rows: rows.map((r) => toRow(r, profile)),
+      rows: rows.map((r) => toSummaryRow(r, profile)),
     });
   } catch (err) {
     return errorResponse(c, err);
