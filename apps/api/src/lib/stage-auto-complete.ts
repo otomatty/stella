@@ -40,6 +40,7 @@ import { recordAudit } from "./audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "./enrollment-bulk.js";
 import { stageClearLockId, withResourceLock } from "./resource-lock.js";
 import { recordStagePathEvents } from "./stage-path-events.js";
+import { passCountsForLesson } from "./reviewed-progress.js";
 
 /**
  * `inArray` に渡す id の 1 クエリあたりの件数。固定バインド (user_id やフラグ) の
@@ -602,11 +603,13 @@ async function batchComputeCounts(
         db
           .select({ lessonId: submissions.lessonId })
           .from(submissions)
+          .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
           .where(
             and(
               eq(submissions.studentId, userId),
               eq(submissions.verdict, "pass"),
               inArray(submissions.lessonId, slice),
+              passCountsForLesson(),
             ),
           ),
       )

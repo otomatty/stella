@@ -29,6 +29,7 @@ import { taskCompletionCounts } from "../lib/task-completion.js";
 import { reviewedProgressRows } from "../lib/reviewed-progress.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
+import { certificatesRoute } from "./certificates.js";
 import { lessonProgressRoute } from "./lesson-progress.js";
 import { submissionsRoute } from "./submissions.js";
 
@@ -541,6 +542,70 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       await selfCompletedStage("teacher");
       await syncCompleted("2026-10-05T00:00:00.000Z");
       expect(await progressOf("legacy-code")).toBe(false);
+      expect(await legacyCertificates()).toHaveLength(1);
+      expect(await legacyEnrollment()).toBe("completed");
+    });
+
+    it("別の課題を名乗る提出の合格は課題の合格に数えず、残った自己申告の完了と合わせても修了させない", async () => {
+      // まだ同期し直していない移行受講者: 自己申告の完了が残り、修了証はまだ無い。
+      await db.batch([
+        db.insert(stages).values({
+          id: "legacy",
+          tenantId: "ses",
+          slug: "legacy-ts",
+          title: "旧講座",
+          status: "published",
+        }),
+        db.insert(sections).values({ id: "legacy-unit", stageId: "legacy", title: "演習" }),
+        db.insert(lessons).values({
+          id: "legacy-code",
+          sectionId: "legacy-unit",
+          type: "code",
+          title: "演習",
+          assignmentId: "exercise",
+        }),
+        db.insert(enrollments).values({
+          tenantId: "ses",
+          userId: "learner",
+          stageId: "legacy",
+          status: "active",
+        }),
+        db.insert(lessonProgress).values({
+          tenantId: "ses",
+          userId: "learner",
+          lessonId: "legacy-code",
+          completed: true,
+          updatedAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+      ]);
+      const { app } = mountTestApp(env, certificatesRoute);
+      const passedAssignments = async () => {
+        const mine = await json<{ completion: { passed_assignments: number } }>(
+          await request(app, env, "/api/certificates/completion/legacy", { token }),
+        );
+        const { gradebook } = await json<{
+          gradebook: {
+            rows: { user_id: string; completion: { passed_assignments: number } | null }[];
+          };
+        }>(
+          await request(app, env, "/api/certificates/gradebook/legacy", {
+            token: instructorToken,
+          }),
+        );
+        return [
+          mine.completion.passed_assignments,
+          gradebook.rows.find((r) => r.user_id === "learner")?.completion?.passed_assignments,
+        ];
+      };
+
+      await legacyReview("legacy-code", "other-exercise", "pass");
+      expect(await passedAssignments()).toEqual([0, 0]);
+      expect(await legacyCertificates()).toHaveLength(0);
+      expect(await legacyEnrollment()).toBe("active");
+
+      // そのレッスンの課題への提出の合格なら数え、修了する。
+      await legacyReview("legacy-code", "exercise", "pass");
+      expect(await passedAssignments()).toEqual([1, 1]);
       expect(await legacyCertificates()).toHaveLength(1);
       expect(await legacyEnrollment()).toBe("completed");
     });

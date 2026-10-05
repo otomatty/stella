@@ -1,8 +1,21 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
 import { lessonProgress, lessons, sections, stages, submissions } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
+
+/**
+ * 合格提出をそのレッスンの課題の合格として数える条件。`submissions.lesson_id` で `lessons` を
+ * JOIN したクエリに足す。旧形式の提出の lesson_id / assignment_id は受講者が送る値なので、
+ * コードレッスンは提出の課題がレッスンの課題 (`lessons.assignment_id`) と一致するものだけ。
+ * assignment レッスンは従来どおり。
+ */
+export function passCountsForLesson() {
+  return or(
+    eq(lessons.type, "assignment"),
+    and(eq(lessons.type, "code"), eq(lessons.assignmentId, submissions.assignmentId)),
+  );
+}
 
 /** id リストのチャンク幅。固定バインド (テナント・受講者・判定) を引いて D1 の上限 100 に収める。 */
 const IDS_PER_QUERY = 90;
