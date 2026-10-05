@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "2.1",
+  "sources": [
+    {
+      "id": "SRC-mdn-html-20261005",
+      "title": "HTML: ウェブサイトのコンテンツの作成",
+      "publisher": "MDN Web Docs contributors",
+      "url": "https://developer.mozilla.org/ja/docs/Learn_web_development/Getting_started/Your_first_website/Creating_the_content",
+      "section": "HTML とは / 初めての HTML 文書の作成 / 見出し",
+      "kind": "explanation",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-05",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-05",
+        "scope": "HTML の構造・見出しと、保存後のブラウザー表示を扱う見本単元。解説・知識問題・課題の対応と教材独自制作を確認。チャットで講師承認。"
+      }
+    }
+  ]
+}

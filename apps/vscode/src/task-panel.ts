@@ -1,6 +1,6 @@
 /**
  * 「課題を確認する」の結果パネル。スクリプトは動かさず、HTML だけを描く。
- * 押せるリンクは「もう一度確認する」と「実行ログを表示」だけ。
+ * 出典の HTTP(S) リンクと、許可した再実行・ログ表示のコマンドだけを使う。
  */
 
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
@@ -13,6 +13,12 @@ import {
 } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
+import {
+  isPublicSourceUrl,
+  type PublicSourceReference,
+  SOURCE_AUTHORSHIP_LABELS,
+  SOURCE_REUSE_LABELS,
+} from "@stella/shared/tasks/source-reference";
 import { escapeHtml } from "./lesson-doc.js";
 
 const VIEW_TYPE = "stella.taskResult";
@@ -29,6 +35,17 @@ export type TaskPanelInput =
 
 function seconds(ms: number): string {
   return `${(ms / 1000).toFixed(1)} 秒`;
+}
+
+/** 帰属表示の文言と、原作者・再利用範囲・利用条件・条件の確認日。詳細に畳まず常に見せる。 */
+function attributionHtml(ref: PublicSourceReference): string {
+  if (!ref.attribution) return "";
+  const text = `<p>${escapeHtml(ref.attribution)}</p>`;
+  const terms = ref.attributionTerms;
+  if (!terms) return text;
+  const url = escapeHtml(terms.conditionsUrl);
+  const conditions = isPublicSourceUrl(terms.conditionsUrl) ? `<a href="${url}">${url}</a>` : url;
+  return `${text}<p>原作者: ${escapeHtml(terms.creator)} / 再利用範囲: ${escapeHtml(terms.scope)} / 利用条件: ${conditions} / 条件確認日: ${escapeHtml(terms.checkedAt)}</p>`;
 }
 
 function renderStep(step: RunStepResult): string {
@@ -104,6 +121,11 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const body = [
     `<h1>${escapeHtml(manifest.title)}</h1>`,
     `<p class="meta">${input.standalone ? "" : `${TASK_KIND_LABELS[manifest.kind]} ・ `}${escapeHtml(runner.label)}</p>`,
+    ...(manifest.references?.length
+      ? [
+          `<section class="references"><h2>参照元</h2><ul>${manifest.references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}<p>${escapeHtml(ref.usedFor)}</p><details><summary>出典の詳細</summary><p>資料: ${escapeHtml(ref.documentVersion)} / 確認日: ${escapeHtml(ref.checkedAt)} / 環境: ${escapeHtml(ref.environmentRef)}</p><p>${escapeHtml(SOURCE_AUTHORSHIP_LABELS[ref.authorship] ?? ref.authorship)} / ${escapeHtml(SOURCE_REUSE_LABELS[ref.reuse] ?? ref.reuse)}</p></details>${attributionHtml(ref)}</li>`).join("")}</ul></section>`,
+        ]
+      : []),
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),
     footer,

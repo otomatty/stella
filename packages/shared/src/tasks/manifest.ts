@@ -10,6 +10,7 @@
  */
 
 import { type EnvironmentRequirement, validateEnvironmentRequirement } from "./environment.js";
+import { parsePublicSourceReferences, type PublicSourceReference } from "./source-reference.js";
 import { isRunnerId, RUNNER_IDS, type RunnerId } from "./runners.js";
 
 /** 課題フォルダーの中で、拡張が使うディレクトリ。 */
@@ -81,6 +82,7 @@ export interface TaskManifest {
   protected: string[];
   /** 手元の実行で lint と整形の検査もするか。道具は課題の配布ファイルが持つ。 */
   checks: { lint: boolean; format: boolean };
+  references?: PublicSourceReference[];
   environment?: EnvironmentRequirement;
   static?: { checks: StaticCheck[] };
 }
@@ -247,6 +249,14 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     errors.push("runner が static-preview の課題には static.checks が要ります");
   }
 
+  let references: PublicSourceReference[] | undefined;
+  if (raw.references !== undefined) {
+    try {
+      references = parsePublicSourceReferences(raw.references);
+    } catch (error) {
+      errors.push(String(error));
+    }
+  }
   if (errors.length > 0) return { ok: false, errors };
 
   const manifest: TaskManifest = {
@@ -261,6 +271,7 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
   };
   if (raw.environment !== undefined)
     manifest.environment = raw.environment as EnvironmentRequirement;
+  if (references) manifest.references = references;
   if (staticChecks) manifest.static = { checks: staticChecks };
   return { ok: true, manifest };
 }

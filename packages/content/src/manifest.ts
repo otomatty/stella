@@ -17,6 +17,16 @@ import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.js";
+import {
+  publicReferences,
+  referenceContentIds,
+  readSourceRegistry,
+  readUnitReferences,
+  referencedMarkdown,
+  referenceNotesMarkdown,
+  referencesMarkdown,
+} from "./source-references.js";
+import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
 import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
 import { parseKnowledge } from "./parse-knowledge.js";
@@ -416,6 +426,26 @@ function buildOneCourse(
   for (const moduleDir of dirsIn(modulesRoot)) {
     const modulePath = join(modulesRoot, moduleDir);
     const lessons: Lesson[] = [];
+    let referenceMap: ReturnType<typeof readUnitReferences>;
+    let sourceRegistry: ReturnType<typeof readSourceRegistry> = new Map();
+    try {
+      referenceMap = readUnitReferences(modulePath);
+      if (referenceMap) {
+        sourceRegistry = readSourceRegistry(contentRoot);
+        publicReferences(referenceMap, sourceRegistry);
+      }
+    } catch (error) {
+      if (config.format === 2) throw error;
+      // 旧単元の不足は専用ゲートで改訂範囲に応じて警告／エラーにする。
+      referenceMap = undefined;
+    }
+    // 参照元の記録が無い単元 (未改訂の旧単元) は本文の画像を解析しない。
+    const contentReferences = (contentId: string, source = ""): PublicSourceReference[] =>
+      referenceMap
+        ? publicReferences(referenceMap, sourceRegistry, referenceContentIds(source, contentId))
+        : [];
+    const renderContent = (source: string, contentId: string): string =>
+      referencedMarkdown(source, contentReferences(contentId, source), referenceMap, contentId);
     if (config.format === 2) {
       const loaded = readUnit(contentRoot, slug, moduleDir, modulePath, skillIds);
       units.push(loaded.unit);
@@ -447,13 +477,25 @@ function buildOneCourse(
               rewriteImagePaths(slug, s.body, topicDir),
           )
           .join("\n\n---\n\n");
+        // 出典欄は最後のスライドに付ける (枚数 = totalPages を変えない)。独自制作だけの
+        // スライドは外部資料の一覧が空になるので、解説・知識問題・課題と同じ独自制作の記録を出す。
+        const slidesContentId = `${lessonDir}/${topicDir}/slides.md`;
         lessons.push({
           id: fm.id,
           title: fm.title,
           type: "slides",
           duration: "3分",
           status: "todo",
-          markdown: body,
+          markdown:
+            body +
+            (referenceMap
+              ? referenceNotesMarkdown(
+                  source,
+                  contentReferences(slidesContentId, source),
+                  referenceMap,
+                  slidesContentId,
+                )
+              : ""),
           totalPages: fm.slideCount,
         });
       }
@@ -470,7 +512,13 @@ function buildOneCourse(
         duration: "10分",
         status: "todo",
         markdown: dropPracticeLink(
-          rewriteImagePaths(slug, readFileSync(docFile, "utf8").replace(/\r\n/g, "\n")),
+          rewriteImagePaths(
+            slug,
+            renderContent(
+              readFileSync(docFile, "utf8").replace(/\r\n/g, "\n"),
+              `${lessonDir}/doc.md`,
+            ),
+          ),
         ),
       });
 
@@ -489,13 +537,29 @@ function buildOneCourse(
           type: "quiz",
           duration: quizDuration(questions.length),
           status: "todo",
+          ...(referenceMap
+            ? {
+                markdown: referencedMarkdown(
+                  "",
+                  contentReferences(
+                    `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
+                    practiceSource,
+                  ),
+                  referenceMap,
+                  `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
+                ),
+              }
+            : {}),
         });
         quizzes.push({
           courseId: slug,
           lessonId: quizLessonId,
           passScore: 80,
           questions,
-          sourceText: practiceSource,
+          sourceText: renderContent(
+            practiceSource,
+            `${lessonDir}/${config.format === 2 ? "knowledge.md" : "practice.md"}`,
+          ),
           ...(config.format === 2 ? { source: "knowledge" as const } : {}),
         });
       }
@@ -518,8 +582,6 @@ function buildOneCourse(
     }
 
     if (config.format === 2) {
-      const unit = units.find((u) => u.unitId === moduleDir);
-      const references = unit?.references.map((r) => `- [${r.title}](${r.url})`).join("\n") ?? "";
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         lessons.push({
           id: `task-${moduleDir}-${task.definition.id.split("/")[2]}`,
@@ -527,11 +589,19 @@ function buildOneCourse(
           type: "text",
           duration: "5分",
           status: "todo",
-          markdown: `${readFileSync(join(task.directory, "README.md"), "utf8")}\n\n## 単元の参照元\n\n${references}\n`,
+          markdown: Buffer.from(task.bundle.files["README.md"], "base64").toString("utf8"),
         });
       }
     }
 
+    if (referenceMap) {
+      const lastText = [...lessons].reverse().find((lesson) => lesson.type === "text");
+      if (lastText?.markdown)
+        lastText.markdown += referencesMarkdown(
+          publicReferences(referenceMap, sourceRegistry),
+          "単元の参照元",
+        );
+    }
     sections.push({
       id: moduleDir,
       title: moduleTitles[moduleDir] ?? moduleDir,
