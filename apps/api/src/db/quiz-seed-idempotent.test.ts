@@ -139,26 +139,38 @@ describe("教材 seed の再実行", () => {
     const db = migratedDb();
     applyScript(db, seedSql);
 
-    const question = db.prepare("select id from quiz_questions limit 1").get() as
-      | { id: string }
-      | undefined;
+    const questions = db.prepare("select id, prompt from quiz_questions limit 2").all() as {
+      id: string;
+      prompt: string;
+    }[];
+    const question = questions[0];
+    const shifted = questions[1];
     expect(question).toBeDefined();
-    if (question === undefined) return;
+    expect(shifted).toBeDefined();
+    if (question === undefined || shifted === undefined) return;
     const questionsBefore = countOf(db, "quiz_questions");
     const optionsBefore = countOf(db, "quiz_options");
-    expect(questionsBefore).toBeGreaterThan(0);
+    expect(questionsBefore).toBeGreaterThan(1);
 
     db.prepare(
       "insert into profiles (id, tenant_id, role, display_name, created_at) values ('u-srs', 'ses', 'student', 'SRS', 1)",
     ).run();
-    db.prepare(
+    const insertCard = db.prepare(
       `insert into review_cards (id, tenant_id, user_id, question_id, ease, interval_days, reps, due_date, last_reviewed_at, created_at)
-       values ('card-1', 'ses', 'u-srs', ?, 2.5, 4, 3, '2026-10-01', 1, 1)`,
-    ).run(question.id);
-    db.prepare(
+       values (?, 'ses', 'u-srs', ?, 2.5, 4, 3, '2026-10-01', 1, 1)`,
+    );
+    insertCard.run("card-1", question.id);
+    insertCard.run("card-2", shifted.id);
+    const insertLog = db.prepare(
       `insert into review_logs (id, tenant_id, user_id, card_id, question_id, correct, answered_at)
-       values ('log-1', 'ses', 'u-srs', 'card-1', ?, 1, 1)`,
-    ).run(question.id);
+       values (?, 'ses', 'u-srs', ?, ?, 1, 1)`,
+    );
+    insertLog.run("log-1", "card-1", question.id);
+    insertLog.run("log-2", "card-2", shifted.id);
+    db.prepare("update quiz_questions set prompt = ? where id = ?").run(
+      `${shifted.prompt} (moved)`,
+      shifted.id,
+    );
 
     applyScript(db, seedSql);
 
@@ -173,5 +185,10 @@ describe("教材 seed の再実行", () => {
     expect(db.prepare("select id from quiz_questions where id = ?").get(question.id)).toEqual({
       id: question.id,
     });
+    expect(db.prepare("select prompt from quiz_questions where id = ?").get(shifted.id)).toEqual({
+      prompt: shifted.prompt,
+    });
+    expect(db.prepare("select id from review_cards where id = 'card-2'").get()).toBeUndefined();
+    expect(db.prepare("select id from review_logs where id = 'log-2'").get()).toBeUndefined();
   }, 180_000);
 });

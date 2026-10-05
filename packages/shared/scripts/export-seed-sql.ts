@@ -338,7 +338,8 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
  * 設問・選択肢の UUID は並び順で安定しているので upsert し、教材から消えた行だけ
  * prune する。毎回 delete → insert すると quiz_questions の delete が
  * quiz_options と review_cards へ cascade し、索引が無い子表を全走査したうえで
- * 受講者の復習カードまで消える。
+ * 受講者の復習カードまで消える。並び順の ID なので、本文が入れ替わった設問の
+ * カードだけ先に落とす（同じ本文の再 seed では残す）。
  * 旧 UUID (`quiz:${tenant}:${lessonId}`) の受験履歴は新 UUID へ付け替えてから消す。
  */
 function emitQuiz(
@@ -376,6 +377,11 @@ function emitQuiz(
     const q = quiz.questions[i];
     const qUuid = stableUuid(`quiz-q:${tenantId}:${stageId}:${quiz.lessonId}:${i}`);
     questionIds.push(qUuid);
+    if (isSqlite) {
+      lines.push(
+        `delete from review_cards where question_id = '${qUuid}' and exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and qq.prompt <> ${strLit(q.prompt)});`,
+      );
+    }
     lines.push(
       [
         `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order"${isSqlite ? ", created_at, updated_at" : ""})`,
