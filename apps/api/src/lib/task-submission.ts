@@ -293,7 +293,7 @@ export async function reviewTaskSubmission(
                 ),
                 contentHash: sql<string>`task_content_hash`.as("content_hash"),
                 updatedAt: sql<Date>`${now.getTime()}`.as("updated_at"),
-                // 初回合格日はlearning_paceのtriggerで記録する。訂正・再保存では進めない。
+                // 初回の合格日は DB のトリガー (0044_learning_pace) が入れる。
                 passedAt: sql<Date | null>`null`.as("passed_at"),
               })
               .from(submissions)
