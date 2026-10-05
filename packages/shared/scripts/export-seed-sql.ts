@@ -335,7 +335,10 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
 /**
  * quiz / quiz_questions / quiz_options を emit する。
  * quiz UUID は stage + lesson.id（section 非依存）。講座を増やしても衝突しない。
- * 設問・選択肢は差分マージせず delete → insert（教材ファイルが唯一の正本）。
+ * 設問・選択肢の UUID は並び順で安定しているので upsert し、教材から消えた行だけ
+ * prune する。毎回 delete → insert すると quiz_questions の delete が
+ * quiz_options と review_cards へ cascade し、索引が無い子表を全走査したうえで
+ * 受講者の復習カードまで消える。
  * 旧 UUID (`quiz:${tenant}:${lessonId}`) の受験履歴は新 UUID へ付け替えてから消す。
  */
 function emitQuiz(
@@ -361,34 +364,54 @@ function emitQuiz(
       `update ${tbl("quiz_attempts")} set quiz_id = '${quizUuid}' where quiz_id = '${legacyQuizUuid}';`,
     );
   }
+  // 同じレッスンに残った別 UUID のクイズだけ落とす。現行の設問は消さない。
   lines.push(
     `delete from ${tbl("quiz_questions")} where quiz_id in (select id from ${tbl("quizzes")} where lesson_id = '${id}' and id != '${quizUuid}');`,
     `delete from ${tbl("quizzes")} where lesson_id = '${id}' and id != '${quizUuid}';`,
-    `delete from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}';`,
   );
 
+  const questionIds: string[] = [];
+  const optionIds: string[] = [];
   for (let i = 0; i < quiz.questions.length; i++) {
     const q = quiz.questions[i];
     const qUuid = stableUuid(`quiz-q:${tenantId}:${stageId}:${quiz.lessonId}:${i}`);
+    questionIds.push(qUuid);
     lines.push(
       [
         `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order"${isSqlite ? ", created_at, updated_at" : ""})`,
         `select '${qUuid}', '${quizUuid}', 'single', ${strLit(q.prompt)}, ${strLit(q.explanation)}, 1, ${i}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
-        `where exists (select 1 from ${tbl("quizzes")} z where z.id = '${quizUuid}');`,
+        `where exists (select 1 from ${tbl("quizzes")} z where z.id = '${quizUuid}')`,
+        `on conflict (id) do update set quiz_id = excluded.quiz_id, kind = excluded.kind, prompt = excluded.prompt, explanation = excluded.explanation, points = excluded.points, "order" = excluded."order", updated_at = ${nowExpr()};`,
       ].join(" "),
     );
     for (let j = 0; j < q.options.length; j++) {
       const o = q.options[j];
       const oUuid = stableUuid(`quiz-o:${tenantId}:${stageId}:${quiz.lessonId}:${i}:${j}`);
+      optionIds.push(oUuid);
       lines.push(
         [
           `insert into ${tbl("quiz_options")} (id, question_id, label, is_correct, "order")`,
           `select '${oUuid}', '${qUuid}', ${strLit(o.label)}, ${o.isCorrect ? (isSqlite ? "1" : "true") : isSqlite ? "0" : "false"}, ${j}`,
-          `where exists (select 1 from ${tbl("quiz_questions")} qq where qq.id = '${qUuid}');`,
+          `where exists (select 1 from ${tbl("quiz_questions")} qq where qq.id = '${qUuid}')`,
+          `on conflict (id) do update set question_id = excluded.question_id, label = excluded.label, is_correct = excluded.is_correct, "order" = excluded."order";`,
         ].join(" "),
       );
     }
   }
+
+  const questionsInQuiz = `select id from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}'`;
+  if (optionIds.length > 0) {
+    lines.push(
+      `delete from ${tbl("quiz_options")} where question_id in (${questionsInQuiz}) and id not in (${sqlIn(optionIds)});`,
+    );
+  } else if (questionIds.length > 0) {
+    lines.push(`delete from ${tbl("quiz_options")} where question_id in (${questionsInQuiz});`);
+  }
+  lines.push(
+    questionIds.length > 0
+      ? `delete from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}' and id not in (${sqlIn(questionIds)});`
+      : `delete from ${tbl("quiz_questions")} where quiz_id = '${quizUuid}';`,
+  );
 }
 
 /**
