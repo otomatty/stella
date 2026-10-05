@@ -30,12 +30,13 @@ const stage = (slug: string, category?: string): Row => ({
 const slugsOf = (rows: Row[]) => rows.map((r) => r.slug).sort();
 
 describe("filterIslandStages", () => {
-  const mainland = [stage("it-basics", "基礎"), stage("html-css-basics", "フロントエンド")];
+  const mainland = [stage("dev-env-basics", "基礎"), stage("html-css-basics", "フロントエンド")];
   const islands = [
     stage("aws-clf-c02-basics", "AWS資格"),
     stage("fe-kamoku-a", "情報処理資格"),
     stage("fe-kamoku-b", "情報処理資格"),
     stage("ai-fluency-basics", "AI駆動開発"),
+    stage("salesforce-dev-basics", "Salesforce案件"),
   ];
 
   it("条件を満たしていない島は存在ごと落ちる (本土は常に残る)", () => {
@@ -43,8 +44,8 @@ describe("filterIslandStages", () => {
     expect(slugsOf(visible)).toEqual(slugsOf(mainland));
   });
 
-  it("ITのきほんをクリアすると島が現れる (既定の表示条件)", () => {
-    const visible = filterIslandStages([...mainland, ...islands], new Set(["id-it-basics"]));
+  it("開発環境とWebの入口をクリアすると島が現れる (既定の表示条件)", () => {
+    const visible = filterIslandStages([...mainland, ...islands], new Set(["id-dev-env-basics"]));
     expect(slugsOf(visible)).toEqual(slugsOf([...mainland, ...islands]));
   });
 
@@ -52,9 +53,12 @@ describe("filterIslandStages", () => {
     const python = stage("python-basics", "バックエンド");
     const devops = stage("devops-basics", "DevOps");
     const rows = [...mainland, python, devops, ...islands];
-    const afterIt = filterIslandStages(rows, new Set(["id-it-basics"]));
+    const afterIt = filterIslandStages(rows, new Set(["id-dev-env-basics"]));
     expect(slugsOf(afterIt)).toEqual(slugsOf([...mainland, python, ...islands]));
-    const afterPython = filterIslandStages(rows, new Set(["id-it-basics", "id-python-basics"]));
+    const afterPython = filterIslandStages(
+      rows,
+      new Set(["id-dev-env-basics", "id-python-basics"]),
+    );
     expect(slugsOf(afterPython)).toEqual(slugsOf(rows));
   });
 
@@ -64,8 +68,8 @@ describe("filterIslandStages", () => {
   });
 
   it("requires の slug が入力に無い島は誰にも出ない (開きすぎより閉じすぎ)", () => {
-    // it-basics 行そのものが無い入力 = 条件の slug が解決できない。
-    const visible = filterIslandStages(islands, new Set(["id-it-basics"]));
+    // dev-env-basics 行そのものが無い入力 = 条件の slug が解決できない。
+    const visible = filterIslandStages(islands, new Set(["id-dev-env-basics"]));
     expect(visible).toEqual([]);
   });
 

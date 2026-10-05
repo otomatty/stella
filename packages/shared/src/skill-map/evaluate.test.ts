@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   UNKNOWN_PREREQUISITE_LABEL,
@@ -483,4 +483,18 @@ describe("evaluateSkillMap — 扇ごとの前提 (appearances)", () => {
     // Git が起点になっても Node へ橋を渡さない。it → cli → docker で Node は 2 歩 = fog。
     expect(r.visibility.get(id("node-basics"))).toBe("fog");
   });
+});
+
+// 退役した Git 講座を使う固定入力で、複製の汎用機能を引き続き検証する。
+vi.mock("./appearances.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./appearances.js")>();
+  return {
+    ...actual,
+    appearancesOf: (slug: string) =>
+      slug === "git-basics" ? ["フロントエンド", "バックエンド"] : undefined,
+    appearancePrerequisitesOf: (slug: string) =>
+      slug === "git-basics"
+        ? { フロントエンド: ["javascript-basics"], バックエンド: ["node-basics"] }
+        : undefined,
+  };
 });

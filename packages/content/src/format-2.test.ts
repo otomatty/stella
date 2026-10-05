@@ -28,9 +28,11 @@ describe("format 2 の教材", () => {
     const manifest = buildContentManifest(join(fixture(), "courses"));
     expect(manifest.courses[0]).toMatchObject({
       format: 2,
-      duration: 3,
+      title: "開発環境とWebの入口",
+      duration: 35,
       environment: "static-web-01",
     });
+    expect(manifest.units[0].config.plannedHours).toBe(3);
     expect(manifest.units[0].config.skills.assesses).toContain("html-document");
     const task = manifest.tasks[0];
     expect(task.bundle.manifest.environment?.id).toBe("static-web-01@1");
@@ -111,7 +113,7 @@ describe("format 2 の教材", () => {
     expect(
       targets.some(
         (t) =>
-          t.courseSlug === "typescript-basics" &&
+          t.courseSlug === "salesforce-dev-basics" &&
           t.kind === "practice" &&
           t.source.includes("解答例と解説"),
       ),

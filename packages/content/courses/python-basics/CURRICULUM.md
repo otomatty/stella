@@ -5,7 +5,7 @@
 ## 講座の概要
 
 - **到達目標 (canDo)**: Python でスクリプトを書き、標準ライブラリでファイルとデータを扱える
-- **前提講座**: `typescript-node-basics` (クリアしていないと開けない)
+- **前提講座**: `node-api-basics` (クリアしていないと開けない)
 - **参考にしたロードマップ**: roadmap.sh の DevOps / バックエンドロードマップ（プログラミング言語）
 
 - **配置メモ**: この講座はバックエンド本土の星。クリアすると DevOps 島がスキルツリーに現れる（表示条件は `@stella/shared/skill-map/islands`）。後続の本土は `python-testing-ci-basics`（pytest と CI の読み方）。

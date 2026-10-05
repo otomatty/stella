@@ -1,5 +1,5 @@
 /**
- * スキルツリーの「島」— 本土 (ITのきほん〜フロントエンド / バックエンド) から
+ * スキルツリーの「島」— 本土 (開発環境とWebの入口〜フロントエンド / バックエンド) から
  * 離れた場所に浮かぶ独立の星団。資格・AI・特定ベンダーの案件トラックのように
  * 「目的別の入り口」になるまとまりを、本土の扇ではなく別の島として描く。
  *
@@ -13,7 +13,7 @@
  * 伏せるのはサーバ側 (`loadSkillMapSource`) — 画面で隠すだけだと DevTools で
  * 全部読めてしまい、条件が演出でしかなくなる。
  *
- * 表示条件は島ごとに変えられる。資格 / AI は ITのきほん、DevOps はバックエンドの
+ * 表示条件は島ごとに変えられる。資格 / AI は 開発環境とWebの入口、DevOps はバックエンドの
  * Python 入門、という具合に、本土のどこまで進んだ人にその島を見せるかを書く。
  *
  * 表示条件は前提 (`prerequisites`) とは別の軸:
@@ -43,11 +43,11 @@ export interface SkillMapIsland {
 
 /** 島の一覧 (表示順ではなく定義。並びはレイアウト側がキー順に固定する)。 */
 export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
-  { category: "AWS資格", requires: ["it-basics"] },
-  { category: "情報処理資格", requires: ["it-basics"] },
-  { category: "AI駆動開発", requires: ["it-basics"] },
+  { category: "AWS資格", requires: ["dev-env-basics"] },
+  { category: "情報処理資格", requires: ["dev-env-basics"] },
+  { category: "AI駆動開発", requires: ["dev-env-basics"] },
   { category: "DevOps", requires: ["python-basics"] },
-  { category: "Salesforce案件", requires: ["it-basics"] },
+  { category: "Salesforce案件", requires: ["dev-env-basics"] },
 ];
 
 /** 島になるカテゴリ (レイアウトが本土の扇から外すのに使う)。 */

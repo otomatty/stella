@@ -5,7 +5,7 @@
   "description": "【準備中】サーバー側の作業を自動化するための Python 入門。",
   "header": "Python入門",
   "tenantId": "ses",
-  "prerequisites": ["typescript-node-basics"],
+  "prerequisites": ["node-api-basics"],
   "canDo": "Python でスクリプトを書き、標準ライブラリでファイルとデータを扱える",
   "theme": "サーバーとデータの基盤",
   "modules": {

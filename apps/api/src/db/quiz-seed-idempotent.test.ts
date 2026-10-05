@@ -215,7 +215,7 @@ describe("教材 seed の再実行", () => {
         "select id, format, environment, duration_hours from stages where slug = 'dev-env-basics'",
       )
       .get() as { id: string; format: number; environment: string; duration_hours: number };
-    expect(stage).toMatchObject({ format: 2, duration_hours: 3, environment: "static-web-01" });
+    expect(stage).toMatchObject({ format: 2, duration_hours: 35, environment: "static-web-01" });
     db.prepare(
       "insert into enrollments (id, tenant_id, user_id, stage_id, status, required, enrolled_at) values ('en-format2', 'ses', 'u-format2', ?, 'active', 0, 1)",
     ).run(stage.id);

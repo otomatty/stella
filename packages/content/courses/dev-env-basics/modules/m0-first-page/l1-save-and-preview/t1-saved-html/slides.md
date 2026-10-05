@@ -4,7 +4,7 @@ title: 保存したファイルを表示する
 takeaway: "ブラウザーには保存したHTMLの内容が表示されます。"
 introduces: [HTML, 保存, ブラウザー]
 requires: []
-header: "開発環境の準備"
+header: "開発環境とWebの入口"
 ---
 <!-- _class: lead -->
 # 保存したファイルを表示する

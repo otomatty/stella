@@ -4,8 +4,8 @@
  *   DIALECT=sqlite bun run packages/shared/scripts/export-seed-sql.ts   # D1
  *   bun run packages/shared/scripts/export-seed-sql.ts                  # Postgres (legacy)
  *
- * 教材ステージは upsert + prune（GitHub が正本）。旧デモ講座
- * (web-fundamentals 等) は安定 UUID で削除する。CMS で作った別 ID の
+ * 教材ステージは upsert + prune（GitHub が正本）。退役教材と旧デモ講座
+ * (it-basics / web-fundamentals 等) は安定 UUID で削除する。CMS で作った別 ID の
  * ステージのレッスンツリーは触らない。
  *
  * ここが course → stage の語彙の境界。教材リポジトリ (`packages/content`) は
@@ -199,10 +199,28 @@ function sqlIn(ids: string[]): string {
   return ids.map((id) => `'${id}'`).join(", ");
 }
 
-/** かつて seed していたデモ講座。再 seed で本番カタログから落とす。
- *  git-basics は同じ slug を教材講座(Git 入門)が再利用したため、ここには載せない。
- *  安定 UUID が同一なので、載せると upsert 直後に新講座ごと消えてしまう。 */
-const RETIRED_DEMO_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
+/** 退役した教材と旧デモ講座。引き継ぐ slug は含めない。
+ * 安定 UUID だけを削除し、CMS の別 ID のステージは残す。 */
+const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
+  { tenantId: "ses", slug: "it-basics" },
+  { tenantId: "ses", slug: "modern-css-basics" },
+  { tenantId: "ses", slug: "page-composition-basics" },
+  { tenantId: "ses", slug: "typescript-basics" },
+  { tenantId: "ses", slug: "typescript-node-basics" },
+  { tenantId: "ses", slug: "node-basics" },
+  { tenantId: "ses", slug: "db-design-basics" },
+  { tenantId: "ses", slug: "cli-basics" },
+  { tenantId: "ses", slug: "git-basics" },
+  { tenantId: "ses", slug: "fetch-api-basics" },
+  { tenantId: "ses", slug: "npm-build-basics" },
+  { tenantId: "ses", slug: "web-a11y-basics" },
+  { tenantId: "ses", slug: "frontend-testing-basics" },
+  { tenantId: "ses", slug: "rest-api-basics" },
+  { tenantId: "ses", slug: "web-security-basics" },
+  { tenantId: "ses", slug: "docker-basics" },
+  { tenantId: "ses", slug: "cicd-basics" },
+  { tenantId: "ses", slug: "linux-ops-basics" },
+  { tenantId: "ses", slug: "observability-basics" },
   { tenantId: "ses", slug: "web-fundamentals" },
   { tenantId: "ses", slug: "ciso-basic" },
   { tenantId: "ses", slug: "react-intro" },
@@ -211,8 +229,8 @@ const RETIRED_DEMO_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   { tenantId: "coach", slug: "first-aid" },
 ];
 
-function emitRetiredDemoStages() {
-  for (const { tenantId, slug } of RETIRED_DEMO_STAGES) {
+function emitRetiredStages() {
+  for (const { tenantId, slug } of RETIRED_STAGES) {
     // emitStage と同じ名前空間キー (`course:`) を使う。揃っていないと消せない。
     const stageUuid = stableUuid(`course:${tenantId}:${slug}`);
     const lessonsInStage = `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.stage_id = '${stageUuid}'`;
@@ -241,7 +259,11 @@ function emitRetiredDemoStages() {
  *  stage_id が安定 UUID と一致しない CMS ステージは触らない。 */
 function emitPrune(stageUuid: string, sectionUuids: string[], lessonUuids: string[]) {
   if (sectionUuids.length === 0) return;
+  const removedLessonsInStage = `select l.id from ${tbl("lessons")} l join ${tbl("sections")} s on s.id = l.section_id where s.stage_id = '${stageUuid}'${lessonUuids.length > 0 ? ` and l.id not in (${sqlIn(lessonUuids)})` : ""}`;
   lines.push(
+    // この2表の lesson_id は FK ではない。旧レッスンより先に消し、宙に浮く進捗・提出を残さない。
+    `delete from ${tbl("lesson_progress")} where lesson_id in (${removedLessonsInStage});`,
+    `delete from ${tbl("submissions")} where lesson_id in (${removedLessonsInStage});`,
     lessonUuids.length > 0
       ? `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}') and id not in (${sqlIn(lessonUuids)});`
       : `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}');`,
@@ -548,7 +570,7 @@ for (const [order, task] of content.tasks.entries()) {
   );
 }
 
-emitRetiredDemoStages();
+emitRetiredStages();
 emitPdfMaterials();
 
 emitInterviewQuestions("ses");
@@ -573,14 +595,13 @@ if (!contentOnly) {
    */
   const SEED_LEARNER2 = "seed-learner2";
   const SEED_SALES = "seed-sales";
-  const SEED_ENROLLMENT = "seed-enrollment-learner-typescript-basics";
   const SEED_SUBMISSION = "seed-submission-pending-1";
-  const tsStage = content.courses.find((c) => c.id === "typescript-basics");
-  const firstLesson = tsStage?.sections?.[0]?.lessons?.[0];
-  const tsLessonId =
-    tsStage && firstLesson
-      ? lessonUuid("ses", tsStage.id, firstLesson.id)
-      : lessonUuid("ses", "typescript-basics", "0-1-1");
+  const entryStage = content.courses.find((c) => c.id === "dev-env-basics");
+  const firstLesson = entryStage?.sections?.[0]?.lessons?.[0];
+  const entryLessonId =
+    entryStage && firstLesson
+      ? lessonUuid("ses", entryStage.id, firstLesson.id)
+      : lessonUuid("ses", "dev-env-basics", "m0-l1-t1");
   emitAssignment("ses", "S0-Ch00-01-print-hello");
 
   for (const p of [
@@ -640,11 +661,7 @@ if (!contentOnly) {
   // 既存行にも当て直す (`do update`) — 割当時代に seed が入れた行が残っている DB を
   // 流し直したときに、 新しい形へ収束させるため。 2 度流しても同じ 1 行のまま。
   for (const [id, slug] of [
-    ...content.courses.map((c) =>
-      c.id === "typescript-basics"
-        ? ([SEED_ENROLLMENT, c.id] as const)
-        : ([`seed-enrollment-learner-${c.id}`, c.id] as const),
-    ),
+    ...content.courses.map((c) => [`seed-enrollment-learner-${c.id}`, c.id] as const),
   ] as const) {
     lines.push(
       [
@@ -658,7 +675,7 @@ if (!contentOnly) {
   }
 
   lines.push(
-    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${tsLessonId}', 'S0-Ch00-01-print-hello', 'TypeScript 入門', ${strLit(tsStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
+    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${entryLessonId}', 'S0-Ch00-01-print-hello', ${strLit(entryStage?.title ?? "開発環境とWebの入口")}, ${strLit(entryStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
   );
 }
 

@@ -1,0 +1,15 @@
+{
+  "title": "HTTP・非同期・TypeScript",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】HTTP通信と非同期処理を、型とエラーを確かめながら実装できるようになるための講座です。",
+  "header": "HTTP・非同期・TypeScript",
+  "tenantId": "ses",
+  "prerequisites": ["javascript-data-basics", "dom-basics", "ui-components-basics"],
+  "canDo": "HTTP通信と非同期処理を、型とエラーを確かめながら実装できる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "ui-components-basics"
+}

@@ -35,7 +35,7 @@ import type { CourseColor, CourseConfig, QuizSeed } from "./types.js";
 /** 既存コード互換。新講座のテナントは course.json の tenantId。 */
 export const TENANT_ID = "ses";
 /** 既存コード互換。いま入っている講座の slug。 */
-export const COURSE_SLUG = "typescript-basics";
+export const COURSE_SLUG = "dev-env-basics";
 
 const COURSE_COLORS = new Set<CourseColor>(["indigo", "green", "amber", "slate"]);
 

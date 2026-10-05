@@ -5,7 +5,7 @@
   "description": "【準備中】届ける経路を DNS・TLS・ポートで追うネットワーク運用入門。",
   "header": "ネットワーク運用入門",
   "tenantId": "ses",
-  "prerequisites": ["linux-ops-basics"],
+  "prerequisites": ["devops-basics"],
   "canDo": "リクエストがサーバーに届く経路を、DNS・TLS・ポートで説明できる",
   "theme": "開発と運用をつなぐ",
   "modules": {

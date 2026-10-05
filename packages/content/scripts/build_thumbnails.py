@@ -3,7 +3,7 @@
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した 21 講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全講座 (SPECS に登録した講座) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
 全講座で共有する。
 
@@ -667,29 +667,103 @@ def motif_db_design(c: str) -> str:
 
 
 SPECS = {
-    "cli-basics": {
-        "title": "コマンドライン",
-        "title_size": 108,
-        "subtitle": "入門",
-        "motif": motif_cli,
+    "fullstack-capstone": {
+        "title": "フルスタック",
+        "title_size": 116,
+        "subtitle": "個人開発",
+        "motif": motif_page_composition,
+        "icon": "M12 2l11 8-11 8L1 10zm-8 13 8 5 8-5v5l-8 4-8-4z",
     },
-    "node-basics": {
+    "code-reading-basics": {
+        "title": "コード読解",
+        "title_size": 148,
+        "subtitle": "技術の比較",
+        "motif": motif_claude_code,
+        "icon": "M2 3h9v18H2zm11 0h9v18h-9z",
+    },
+    "deploy-ops-basics": {
+        "title": "公開・CI",
+        "title_size": 148,
+        "subtitle": "運用",
+        "motif": motif_claude_code_team,
+        "icon": "M10 3h4v10h4l-6 7-6-7h4zM3 21h18v2H3z",
+    },
+    "design-quality-basics": {
+        "title": "要件・設計",
+        "title_size": 148,
+        "subtitle": "品質と改善",
+        "motif": motif_test_design,
+        "icon": "M8 2h8v3h4v17H4V5h4z",
+    },
+    "nextjs-basics": {
+        "title": "Next.js",
+        "title_size": 116,
+        "subtitle": "Webアプリ構成",
+        "motif": motif_page_composition,
+        "icon": "M2 3h14v11H2zm16 4h4v14H6v-5h12z",
+    },
+    "auth-basics": {
+        "title": "認証・認可",
+        "title_size": 148,
+        "subtitle": "セキュリティ",
+        "motif": motif_test_design,
+        "icon": "M12 2l9 4v6c0 5-5 9-9 10-4-1-9-5-9-10V6z",
+    },
+    "node-api-basics": {
         "title": "Node.js",
-        "title_size": 152,
-        "subtitle": "入門",
+        "title_size": 116,
+        "subtitle": "API",
         "motif": motif_node,
+        "icon": "M12 2l10 6v8l-10 6-10-6V8z",
     },
-    "typescript-node-basics": {
-        "title": "TypeScript",
-        "title_size": 132,
-        "subtitle": "入門（サーバー）",
+    "ui-integration-basics": {
+        "title": "UI連携",
+        "title_size": 148,
+        "subtitle": "既存機能とつなぐ",
+        "motif": motif_page_composition,
+        "icon": "M2 7h8v10H2zm12 0h8v10h-8zM10 10h4v4h-4z",
+    },
+    "react-ui-basics": {
+        "title": "React",
+        "title_size": 148,
+        "subtitle": "UI部品とデザイン規則",
+        "motif": motif_modern_css,
+        "icon": "M2 3h20v5H2zm0 8h9v10H2zm12 0h8v10h-8z",
+    },
+    "react-basics": {
+        "title": "React",
+        "title_size": 148,
+        "subtitle": "基礎と状態",
+        "motif": motif_ui_components,
+        "icon": "M2 2h8v8H2zm12 0h8v8h-8zM8 14h8v8H8z",
+    },
+    "http-async-basics": {
+        "title": "HTTP",
+        "title_size": 148,
+        "subtitle": "非同期・TypeScript",
         "motif": motif_typescript_node,
+        "icon": "M2 5h15V2l5 5-5 5V9H2zm20 10H7v-3l-5 5 5 5v-3h15z",
     },
-    "db-design-basics": {
-        "title": "データベース設計",
-        "title_size": 96,
-        "subtitle": "入門",
-        "motif": motif_db_design,
+    "dom-basics": {
+        "title": "DOM",
+        "title_size": 148,
+        "subtitle": "画面操作",
+        "motif": motif_page_composition,
+        "icon": "M9 2h6v6H9zM2 16h6v6H2zm14 0h6v6h-6zM11 8h2v4h7v4h-2v-2H6v2H4v-4h7z",
+    },
+    "javascript-data-basics": {
+        "title": "JavaScript",
+        "title_size": 116,
+        "subtitle": "データ・関数・状態",
+        "motif": motif_typescript,
+        "icon": "M3 3h18v4H3zm0 7h18v4H3zm0 7h18v4H3z",
+    },
+    "dev-env-basics": {
+        "title": "開発環境",
+        "title_size": 148,
+        "subtitle": "Webの入口",
+        "motif": motif_cli,
+        "icon": "M3 3h18v13H3zm4 15h10v3H7z",
     },
     "salesforce-dev-basics": {
         "title": "Salesforce",
@@ -697,53 +771,33 @@ SPECS = {
         "subtitle": "開発 入門",
         "motif": motif_salesforce,
     },
-    "it-basics": {
-        "title": "ITのきほん",
-        "title_size": 116,
-        "subtitle": "すべての講座の入口",
-        "motif": motif_it_basics,
-    },
-    "typescript-basics": {
-        "title": "TypeScript",
-        "title_size": 132,
-        "subtitle": "入門",
-        "motif": motif_typescript,
-    },
     "sql-basics": {
         "title": "SQL",
-        "title_size": 168,
-        "subtitle": "入門",
+        "title_size": 148,
+        "subtitle": "データベース",
         "motif": motif_sql,
+        "icon": "M12 2c-5 0-9 1.5-9 4v12c0 2.5 4 4 9 4s9-1.5 9-4V6c0-2.5-4-4-9-4z",
     },
     "html-css-basics": {
         "title": "HTML / CSS",
         "title_size": 116,
-        "subtitle": "入門",
+        "subtitle": "デザイン基礎",
         "motif": motif_html_css,
-    },
-    "modern-css-basics": {
-        "title": "モダンCSS",
-        "title_size": 116,
-        "subtitle": "入門",
-        "motif": motif_modern_css,
+        "icon": "M2 4h20v16H2zM5 10v7h14v-7z",
     },
     "ui-components-basics": {
         "title": "UI部品",
         "title_size": 148,
-        "subtitle": "入門",
+        "subtitle": "HTMLとJavaScript",
         "motif": motif_ui_components,
-    },
-    "page-composition-basics": {
-        "title": "ページ構成",
-        "title_size": 116,
-        "subtitle": "入門",
-        "motif": motif_page_composition,
+        "icon": "M2 2h9v9H2zm11 0h9v9h-9zM2 13h9v9H2zm11 0h9v9h-9z",
     },
     "javascript-basics": {
         "title": "JavaScript",
-        "title_size": 132,
-        "subtitle": "入門",
+        "title_size": 116,
+        "subtitle": "値と制御",
         "motif": motif_javascript,
+        "icon": "M10 2h4v7h8v4h-8v9h-4v-9H2V9h8z",
     },
     "python-testing-ci-basics": {
         "title": "Python",
@@ -756,12 +810,6 @@ SPECS = {
         "title_size": 132,
         "subtitle": "品質保証 入門",
         "motif": motif_test_design,
-    },
-    "git-basics": {
-        "title": "Git",
-        "title_size": 168,
-        "subtitle": "入門",
-        "motif": motif_git,
     },
     "fe-kamoku-a": {
         "title": "科目A",
@@ -918,6 +966,9 @@ def build(slugs: list[str]) -> None:
                         f"左カラム {TEXT_MAX_WIDTH}px を超えてモチーフに重なります"
                     )
             png = page.screenshot(type="png")
+            if spec.get("icon"):
+                icon = COURSES / slug / "icon.svg"
+                icon.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="{spec["icon"]}"/></svg>\n', encoding="utf-8")
             out = COURSES / slug / "thumbnail.webp"
             Image.open(BytesIO(png)).convert("RGB").save(out, "WEBP", quality=WEBP_QUALITY, method=6)
             print(f"{out.relative_to(ROOT)}  {out.stat().st_size // 1024}KB")
