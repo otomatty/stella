@@ -28,6 +28,7 @@ function buildFixture(root: string) {
     root,
     logLevel: "silent",
     plugins: [noPrivateContent()],
+    worker: { format: "es", plugins: () => [noPrivateContent()] },
     build: {
       lib: { entry: path.join(root, "entry.js"), formats: ["es"] },
       minify: true,
@@ -111,5 +112,25 @@ describe("Vite build の配信境界", () => {
       "public/answers.json": '{"badSolutions":["answer"]}',
     });
     await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("Worker からの private/ の raw import も拒否する", async () => {
+    const root = fixture({
+      "entry.js":
+        'export const run=()=>new Worker(new URL("./worker.js", import.meta.url),{type:"module"})',
+      "worker.js":
+        'import note from "./packages/content/tasks/one/private/review.md?raw";postMessage(note)',
+      "packages/content/tasks/one/private/review.md": "Private rubric without property names",
+    });
+    await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("公開データだけを扱う Worker は許可する", async () => {
+    const root = fixture({
+      "entry.js":
+        'export const run=()=>new Worker(new URL("./worker.js", import.meta.url),{type:"module"})',
+      "worker.js": 'postMessage("ok")',
+    });
+    await expect(buildFixture(root)).resolves.toBeDefined();
   });
 });

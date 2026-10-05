@@ -35,6 +35,7 @@ export default defineConfig({
   // worker は ES モジュール (chunk 分割可) として出力する。
   worker: {
     format: "es",
+    plugins: () => [noPrivateContent()],
   },
   build: {
     rollupOptions: {

@@ -49,7 +49,8 @@ export function noPrivateContent(): Plugin {
     enforce: "pre",
     configResolved(config) {
       outDir = path.resolve(config.root, config.build.outDir);
-      write = config.build.write;
+      // worker の出力は親のビルドがまとめて書き出すため、親で一度だけ検査する。
+      write = config.build.write && !config.isWorker;
     },
     transform(_code, id) {
       const source = id.split("?")[0].replaceAll("\\", "/");
