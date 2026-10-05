@@ -397,6 +397,17 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect(await levelOf(b)).toBe("independent");
     });
 
+    it("定着にしたあとで確認Aの合格を訂正したらBは自力に戻り、合格に戻せば定着に戻る", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      const [, a2] = await passA(aPassed);
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
+      expect(await levelOf(b)).toBe("retained");
+      await reviewTaskSubmission(db, caller, a2, "fail", "訂正");
+      expect(await levelOf(b)).toBe("independent");
+      await reviewTaskSubmission(db, caller, a2, "pass", "再訂正");
+      expect(await levelOf(b)).toBe("retained");
+    });
+
     it("確認Aが支援付きの合格なら、Bを定着にしない", async () => {
       const aPassed = Date.now() - 10 * DAY;
       await passA(aPassed);

@@ -207,108 +207,129 @@ export async function reviewTaskSubmission(
   const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
   if (!initial?.taskId || !initial.studentId || initial.tenantId !== caller.tenantId)
     throw new ApiError("課題の提出が見つかりません", 404);
+  // 確認A・Bは同じ単元・パターンの組で定着を判定するので、組のレビューを直列化する。
+  // 課題ごとのロック (提出の保存と共有) の内側で取るので、取る順序は常に 課題 → 組。
+  const [scope] =
+    initial.taskKind === "assessment-a" || initial.taskKind === "assessment-b"
+      ? await db
+          .select({ sectionId: tasks.sectionId, pattern: tasks.pattern })
+          .from(tasks)
+          .where(eq(tasks.id, initial.taskId))
+          .limit(1)
+      : [];
+  const review = async () => {
+    const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+    if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
+    if (source === "ai" && (row.machineCheck?.matched !== true || row.submissionMode === "consult"))
+      throw new ApiError("この提出は人のレビューが必要です", 409);
+    const now = new Date();
+    const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
+      db
+        .update(submissions)
+        .set({
+          verdict,
+          status: verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit",
+          reviewNotes: notes,
+          reviewTaskContentHash: row.taskContentHash,
+          reviewSource: source,
+          reviewedAt: now,
+          reviewerId: source === "human" ? caller.id : null,
+        })
+        .where(eq(submissions.id, id)),
+      db.insert(submissionReviews).values({
+        submissionId: id,
+        taskContentHash: row.taskContentHash,
+        source,
+        reviewerId: source === "human" ? caller.id : null,
+        verdict,
+        notes,
+        createdAt: now,
+      }),
+      db.delete(skillEvidence).where(eq(skillEvidence.submissionId, id)),
+    ];
+    if (verdict === "pass") {
+      const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
+      const basis =
+        !assisted && row.taskKind === "assessment-b" && scope
+          ? await retentionBasis(db, row.tenantId, row.studentId, scope)
+          : null;
+      for (const skillId of row.assessedSkills) {
+        const level = assisted ? "supported" : unassistedLevel(basis, row.submittedAt, skillId);
+        statements.push(
+          db.insert(skillEvidence).values({
+            tenantId: row.tenantId,
+            userId: row.studentId,
+            skillId,
+            level,
+            submissionId: id,
+            assisted,
+            createdAt: now,
+          }),
+        );
+      }
+    }
+    // 合格がある限り教材更新・再提出では取り消さない。合格が無ければ最新試行の状態を使う。
+    statements.push(
+      db
+        .insert(taskProgress)
+        .select(
+          db
+            .select({
+              userId: sql<string>`${row.studentId}`.as("user_id"),
+              taskId: sql<string>`${row.taskId}`.as("task_id"),
+              status: sql<
+                typeof taskProgress.$inferSelect.status
+              >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when json_extract(machine_check, '$.matched') = 1 then 'submitted' else 'instructor-pending' end`.as(
+                "status",
+              ),
+              contentHash: sql<string>`task_content_hash`.as("content_hash"),
+              updatedAt: sql<Date>`${now.getTime()}`.as("updated_at"),
+              // 初回の合格日は DB のトリガー (0044_learning_pace) が入れる。
+              passedAt: sql<Date | null>`null`.as("passed_at"),
+            })
+            .from(submissions)
+            .where(
+              and(
+                eq(submissions.tenantId, row.tenantId),
+                eq(submissions.studentId, row.studentId),
+                eq(submissions.taskId, row.taskId),
+              ),
+            )
+            .orderBy(
+              desc(sql`case when verdict = 'pass' then 1 else 0 end`),
+              desc(submissions.attempt),
+            )
+            .limit(1),
+        )
+        .onConflictDoUpdate({
+          target: [taskProgress.userId, taskProgress.taskId],
+          set: {
+            contentHash: sql`excluded.content_hash`,
+            status: sql`excluded.status`,
+            updatedAt: now,
+          },
+        }),
+    );
+    await db.batch(statements);
+    // 確認Aの判定が変わると、同じ組の確認Bの定着の前提も変わる。
+    if (scope && row.taskKind === "assessment-a")
+      await recomputeRetained(db, row.tenantId, row.studentId, scope);
+    const [after] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+    return after;
+  };
   const locked = await withResourceLock(
     db,
     `task-submission:${initial.tenantId}:${initial.studentId}:${initial.taskId}`,
     async () => {
-      const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
-      if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
-      if (
-        source === "ai" &&
-        (row.machineCheck?.matched !== true || row.submissionMode === "consult")
-      )
-        throw new ApiError("この提出は人のレビューが必要です", 409);
-      const now = new Date();
-      const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
-        db
-          .update(submissions)
-          .set({
-            verdict,
-            status: verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit",
-            reviewNotes: notes,
-            reviewTaskContentHash: row.taskContentHash,
-            reviewSource: source,
-            reviewedAt: now,
-            reviewerId: source === "human" ? caller.id : null,
-          })
-          .where(eq(submissions.id, id)),
-        db.insert(submissionReviews).values({
-          submissionId: id,
-          taskContentHash: row.taskContentHash,
-          source,
-          reviewerId: source === "human" ? caller.id : null,
-          verdict,
-          notes,
-          createdAt: now,
-        }),
-        db.delete(skillEvidence).where(eq(skillEvidence.submissionId, id)),
-      ];
-      if (verdict === "pass") {
-        const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
-        const retained =
-          !assisted && row.taskKind === "assessment-b"
-            ? await retainedSkillIds(db, row.tenantId, row.studentId, row.taskId, row.submittedAt)
-            : new Set<string>();
-        for (const skillId of row.assessedSkills) {
-          const level = assisted ? "supported" : retained.has(skillId) ? "retained" : "independent";
-          statements.push(
-            db.insert(skillEvidence).values({
-              tenantId: row.tenantId,
-              userId: row.studentId,
-              skillId,
-              level,
-              submissionId: id,
-              assisted,
-              createdAt: now,
-            }),
-          );
-        }
-      }
-      // 合格がある限り教材更新・再提出では取り消さない。合格が無ければ最新試行の状態を使う。
-      statements.push(
-        db
-          .insert(taskProgress)
-          .select(
-            db
-              .select({
-                userId: sql<string>`${row.studentId}`.as("user_id"),
-                taskId: sql<string>`${row.taskId}`.as("task_id"),
-                status: sql<
-                  typeof taskProgress.$inferSelect.status
-                >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when json_extract(machine_check, '$.matched') = 1 then 'submitted' else 'instructor-pending' end`.as(
-                  "status",
-                ),
-                contentHash: sql<string>`task_content_hash`.as("content_hash"),
-                updatedAt: sql<Date>`${now.getTime()}`.as("updated_at"),
-                // 初回の合格日は DB のトリガー (0044_learning_pace) が入れる。
-                passedAt: sql<Date | null>`null`.as("passed_at"),
-              })
-              .from(submissions)
-              .where(
-                and(
-                  eq(submissions.tenantId, row.tenantId),
-                  eq(submissions.studentId, row.studentId),
-                  eq(submissions.taskId, row.taskId),
-                ),
-              )
-              .orderBy(
-                desc(sql`case when verdict = 'pass' then 1 else 0 end`),
-                desc(submissions.attempt),
-              )
-              .limit(1),
-          )
-          .onConflictDoUpdate({
-            target: [taskProgress.userId, taskProgress.taskId],
-            set: {
-              contentHash: sql`excluded.content_hash`,
-              status: sql`excluded.status`,
-              updatedAt: now,
-            },
-          }),
+      if (!scope) return review();
+      const inner = await withResourceLock(
+        db,
+        `task-assessment:${initial.tenantId}:${initial.studentId}:${scope.sectionId}:${scope.pattern}`,
+        review,
+        { ttlMs: 120_000 },
       );
-      await db.batch(statements);
-      const [after] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
-      return after;
+      if (!inner.ran) throw new ApiError("別の提出・レビューを保存中です", 409);
+      return inner.value;
     },
     { ttlMs: 120_000 },
   );
@@ -316,27 +337,22 @@ export async function reviewTaskSubmission(
   return locked.value;
 }
 
+type AssessmentScope = { sectionId: string; pattern: string };
+
 /**
- * 確認Bの合格を「定着」と数えてよいスキル。
+ * 確認Bの合格を「定着」と数える前提。満たさなければ null。
  *
  * 学習ペースが確認Bを出すのと同じ基準で、同じ単元・同じパターンの確認A (有効なもの) に
- * すべて合格し、その最後の初回合格日の 7 学習日後以降に提出したBだけが対象になる。
+ * すべて合格していて、その最後の初回合格日の 7 学習日後 (`due`) 以降に提出したBだけが対象になる。
  * 課題は日程で閉じていないので、早く解いたBや無関係な課題の証跡では定着にしない。
- * そのうえで、それらの確認Aの支援なしの合格で同じスキルの証跡があるものに限る。
+ * そのうえで、それらの確認Aの支援なしの合格で証跡があるスキル (`skills`) に限る。
  */
-async function retainedSkillIds(
+async function retentionBasis(
   db: Db,
   tenantId: string,
   studentId: string,
-  taskId: string,
-  submittedAt: Date,
-): Promise<Set<string>> {
-  const [b] = await db
-    .select({ sectionId: tasks.sectionId, pattern: tasks.pattern })
-    .from(tasks)
-    .where(eq(tasks.id, taskId))
-    .limit(1);
-  if (!b) return new Set();
+  scope: AssessmentScope,
+): Promise<{ due: number; skills: Set<string> } | null> {
   const preceding = await db
     .select({ id: tasks.id, status: taskProgress.status, passedAt: taskProgress.passedAt })
     .from(tasks)
@@ -346,22 +362,20 @@ async function retainedSkillIds(
     )
     .where(
       and(
-        eq(tasks.sectionId, b.sectionId),
+        eq(tasks.sectionId, scope.sectionId),
         eq(tasks.kind, "assessment-a"),
-        eq(tasks.pattern, b.pattern),
+        eq(tasks.pattern, scope.pattern),
         eq(tasks.active, true),
       ),
     );
   // 対応するAがない教材ではBを定着の確認として扱わない。
-  if (preceding.length === 0) return new Set();
+  if (preceding.length === 0) return null;
   let lastPassed = 0;
   for (const a of preceding) {
     // 合格を訂正しても同じ版なら passed_at は残る (0044 のトリガー) ので、今の状態も見る。
-    if (!a.passedAt || (a.status !== "passed" && a.status !== "ai-passed")) return new Set();
+    if (!a.passedAt || (a.status !== "passed" && a.status !== "ai-passed")) return null;
     lastPassed = Math.max(lastPassed, a.passedAt.getTime());
   }
-  const due = studyDateStartMs(addStudyDays(toStudyDate(lastPassed), 7));
-  if (submittedAt.getTime() < due) return new Set();
   const evidence = await db
     .selectDistinct({ skillId: skillEvidence.skillId })
     .from(skillEvidence)
@@ -378,7 +392,62 @@ async function retainedSkillIds(
         ),
       ),
     );
-  return new Set(evidence.map((e) => e.skillId));
+  return {
+    due: studyDateStartMs(addStudyDays(toStudyDate(lastPassed), 7)),
+    skills: new Set(evidence.map((e) => e.skillId)),
+  };
+}
+
+/** 支援なしで合格した確認Bの水準。 */
+function unassistedLevel(
+  basis: { due: number; skills: Set<string> } | null,
+  submittedAt: Date,
+  skillId: string,
+) {
+  return basis && submittedAt.getTime() >= basis.due && basis.skills.has(skillId)
+    ? ("retained" as const)
+    : ("independent" as const);
+}
+
+/**
+ * 確認Aの判定を確定・訂正したあと、同じ組の確認Bの支援なしの証跡の水準を付け直す。
+ * Aの合格を取り消せば定着は自力に戻り、合格に戻せば定着に戻る。支援付きの証跡は変えない。
+ */
+async function recomputeRetained(
+  db: Db,
+  tenantId: string,
+  studentId: string,
+  scope: AssessmentScope,
+) {
+  const rows = await db
+    .select({
+      id: skillEvidence.id,
+      skillId: skillEvidence.skillId,
+      level: skillEvidence.level,
+      submittedAt: submissions.submittedAt,
+    })
+    .from(skillEvidence)
+    .innerJoin(submissions, eq(submissions.id, skillEvidence.submissionId))
+    .innerJoin(tasks, eq(tasks.id, submissions.taskId))
+    .where(
+      and(
+        eq(submissions.tenantId, tenantId),
+        eq(submissions.studentId, studentId),
+        eq(submissions.taskKind, "assessment-b"),
+        eq(tasks.sectionId, scope.sectionId),
+        eq(tasks.pattern, scope.pattern),
+        eq(skillEvidence.assisted, false),
+      ),
+    );
+  if (rows.length === 0) return;
+  const basis = await retentionBasis(db, tenantId, studentId, scope);
+  const [first, ...rest] = rows.flatMap((r) => {
+    const level = unassistedLevel(basis, r.submittedAt, r.skillId);
+    return level === r.level
+      ? []
+      : [db.update(skillEvidence).set({ level }).where(eq(skillEvidence.id, r.id))];
+  });
+  if (first) await db.batch([first, ...rest]);
 }
 
 /**
