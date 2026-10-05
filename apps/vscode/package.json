@@ -13,6 +13,13 @@
   "engines": { "vscode": "^1.96.0" },
   "main": "./dist/extension.js",
   "activationEvents": ["onUri", "onView:stella.lessons"],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "信頼していないフォルダーでは、課題の確認 (テストや npm の実行) をしません。",
+      "restrictedConfigurations": ["stella.serverUrl", "stella.webUrl"]
+    }
+  },
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -41,7 +48,10 @@
       { "command": "stella.openLessonDoc", "title": "STELLA: ドキュメントを開く" },
       { "command": "stella.openLessonCode", "title": "STELLA: 演習を開く" },
       { "command": "stella.openNextLesson", "title": "STELLA: 次のレッスンへ" },
-      { "command": "stella.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" }
+      { "command": "stella.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" },
+      { "command": "stella.runTask", "title": "STELLA: 課題を確認する" },
+      { "command": "stella.diagnoseEnvironment", "title": "STELLA: 開発環境を診断する" },
+      { "command": "stella.showRunLog", "title": "STELLA: 実行ログを表示する" }
     ],
     "languages": [
       {
@@ -63,11 +73,15 @@
       "properties": {
         "stella.serverUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:8787"
+          "default": "http://127.0.0.1:8787",
+          "scope": "application",
+          "description": "STELLA の API のオリジン。ユーザー設定でだけ変えられる (開いたフォルダーの設定では変わらない)"
         },
         "stella.webUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:5173"
+          "default": "http://127.0.0.1:5173",
+          "scope": "application",
+          "description": "STELLA の Web のオリジン。ユーザー設定でだけ変えられる"
         }
       }
     }
@@ -79,9 +93,13 @@
   },
   "dependencies": {
     "@stella/code-runner": "workspace:*",
-    "@stella/shared": "workspace:*"
+    "@stella/shared": "workspace:*",
+    "parse5": "^8",
+    "picomatch": "^4"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/picomatch": "^4",
     "@types/vscode": "1.96.0",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"

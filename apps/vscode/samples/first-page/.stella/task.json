@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "dev-env-basics/u03-first-page/q05",
+  "title": "見出しを変えて保存・表示する",
+  "kind": "basic",
+  "runner": "static-preview",
+  "submit": { "files": ["index.html"] },
+  "static": {
+    "checks": [
+      { "type": "html-document", "path": "index.html" },
+      { "type": "element-text", "path": "index.html", "tag": "h1", "text": "今日の学習予定" },
+      { "type": "links-resolve", "path": "index.html" }
+    ]
+  }
+}

@@ -10,7 +10,7 @@ STELLA is a Learning Management System (LMS) monorepo using **Bun workspaces**. 
 |---------|------|---------|
 | `@stella/web` | `apps/web` | Vite + React frontend → Cloudflare Workers (Static Assets, `stella-web`; port 5173 dev). Login / video / docs / quiz / CMS — not learner code exercises |
 | `@stella/api` | `apps/api` | Hono API on Cloudflare Workers (port 8787) |
-| `stella` (`stella.stella`) | `apps/vscode` | VS Code extension for learner code exercises. F5 Extension Development Host; settings `stella.serverUrl` / `stella.webUrl` |
+| `stella` (`stella.stella`) | `apps/vscode` | VS Code extension for learner code exercises (legacy QuickJS grading + the task runner for new-format `.stella/task.json` tasks). F5 Extension Development Host; settings `stella.serverUrl` / `stella.webUrl` (user settings only) |
 | `@stella/shared` | `packages/shared` | Types, curriculum, grading logic |
 | `@stella/code-runner` | `packages/code-runner` | QuickJS WASM + sql.js runners (extension grader WebView + admin AssignmentEditor)。擬似言語 (`fe-pseudo`) は `src/fe-pseudo/` で JS に落として QuickJS に相乗り。対応構文は `src/fe-pseudo/SYNTAX.md` |
 | `@stella/content` | `packages/content` | 教材の正本。講座は `courses/<slug>/`。執筆ルールは `packages/content/CLAUDE.md`。導入手順（新講座が既定）は `packages/content/ADDING_COURSE.md` |
@@ -23,6 +23,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 ```
 
 **Learner code exercises:** After `dev:api` and `dev`, open `apps/vscode` in VS Code and press F5 (`extensionHost` in `apps/vscode/.vscode/launch.json`, `--extensionDevelopmentPath` = `apps/vscode`). Opening the monorepo root does not F5 the extension unless you add the same `extensionHost` config with `--extensionDevelopmentPath` pointing at `apps/vscode`. Connect from a lesson's 「VS Code で開く」 (it mints a one-time link code and opens `vscode://stella.stella/lesson?...&code=...`; there is no separate connect page). JWT is stored in SecretStorage `stella.accessToken` — do not paste a token into settings. Local install: `cd apps/vscode && bun run package` then Install from VSIX. Marketplace recipe (do not run): `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies` as publisher `stella`; no CI. See `apps/vscode/README.md`.
+
+**新形式の課題の手元実行 (task runner):** 課題フォルダーの `.stella/task.json` (型と検証は `@stella/shared/tasks/*`) を、拡張の `STELLA: 課題を確認する` が runnerId ごとの**固定の手順** (`apps/vscode/src/runner/steps.ts`。npm ci → ESLint / Prettier → Vitest / Playwright / next build、HTML の確認、環境診断) で実行し、結果を `.stella/last-run.json` に残す。課題ファイルや画面の文字列はコマンドにしない・シェルを通さない・Workspace Trust で信頼したフォルダーでだけプロセスを起動する。サーバーではコードを実行しない (合否は手元の実行 → 提出 → AI の一次レビュー → 必要なら講師。設計は `docs/curriculum/07-stella-adoption-redesign.md`)。見本は `apps/vscode/samples/`。`stella.serverUrl` / `webUrl` はユーザー設定だけを読む (ワークスペース設定で API の宛先と JWT の送り先を変えさせない)。
 
 **Default local loop:** copy env from examples → `bun run db:migrate && bun run db:seed && bun run smoke:d1` → `dev:api` + `dev` → Google login → D1-backed UI. See `README.md` setup section for role promotion (`admin` / `instructor`) and the manual verification checklist.
 
@@ -77,7 +79,7 @@ Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **127 ファイル / 1534 件**。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **164 ファイル / 1883 件**。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
 
 カバレッジは `bun run test:coverage`（v8）。**閾値は置いていない** — 落とすためではなく手薄な場所を見えるようにするためで、数字は CI のジョブサマリに出る。
 

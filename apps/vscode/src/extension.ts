@@ -41,6 +41,7 @@ import {
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
+import { registerTaskCommands } from "./task-commands.js";
 import {
   openLessonNode,
   refreshLessonTree,
@@ -272,6 +273,7 @@ export function activate(context: vscode.ExtensionContext): void {
   initApi(auth);
   const grader = initGraderHost(context.extensionUri);
   registerLessonTree(context, auth);
+  registerTaskCommands(context);
 
   context.subscriptions.push(
     { dispose: disposeAuthEvents },

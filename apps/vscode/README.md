@@ -29,12 +29,42 @@
 
 コマンドパレットの `STELLA: 講師に引き継ぐ` も同じ動きをする（引数なしなら開いている課題）。
 
+## 新形式の課題を手元で確かめる（`.stella/task.json`）
+
+新カリキュラム（`docs/curriculum/07-stella-adoption-redesign.md` §5）の課題は、受講者の端末で実行して確かめる。課題フォルダーに `.stella/task.json` があれば、そのフォルダーが課題になる。課題のファイルを開いた状態で次のコマンドを使う。
+
+| コマンド | 動き |
+|------|------|
+| `STELLA: 課題を確認する` | 課題の runner の手順を順に実行し、結果のパネルを開く。結果は `.stella/last-run.json` に残る |
+| `STELLA: 開発環境を診断する` | Node.js・npm・Git の版を確かめる。課題の `environment` があれば、その要件と照合する |
+| `STELLA: 実行ログを表示する` | 道具の出力（出力パネル「STELLA 実行ログ」）を開く |
+
+- **実行するのは固定の手順だけ。** 課題が選べるのは `runner`（runnerId）と、lint・整形をするか（`checks`）だけで、起動するコマンドと引数は拡張の `src/runner/steps.ts` が決める。課題ファイルや画面の文字列をコマンドとして実行しない。シェルも通さない。
+- **信頼したフォルダーでだけ実行する。** Workspace Trust で信頼していないフォルダーでは、プロセスを起動する手順（npm・テスト・診断）を実行しない。HTML の確認（`static-preview`）は拡張の中でファイルを読むだけなので動く。
+- **道具は受講者の端末のもの。** Node.js・npm・Git は PATH から探す（拡張自身の実行環境は使わない）。Vitest・ESLint・Prettier・Playwright・Next.js は課題フォルダーの `node_modules` に入ったものを Node.js で直接起動する。依存パッケージは初回に `npm ci`（lockfile が無ければ `npm install`）で準備し、`package.json` と lockfile が変わるまで再実行しない。
+- **失敗を 2 種類に分ける。** 受講者のコードや置き場所の問題は「要修正」、Node.js が無い・npm の準備に失敗したなど環境の問題は「環境の問題」にする。環境の問題が出たら、残りの手順は省略する。
+- **保存していない変更**があれば、保存してから確かめるか尋ねる（確かめるのは保存した内容）。
+- 提出するファイル（`submit.files`）と配布したファイル（`protected`）の内容ハッシュを結果に添える。ハッシュは BOM を外し、CRLF を LF にそろえてから取る（Windows の改行変換で「改変」と誤判定しないため）。
+
+| runnerId | 手順 |
+|------|------|
+| `static-preview` | HTML の確認（Node.js 不要） |
+| `env-diagnose` | 開発環境の診断 |
+| `node-test` / `dom-test` / `http-mock` / `react-test` / `storybook` / `api-test` / `db` | 依存の準備 → lint・整形（指定時）→ Vitest |
+| `e2e` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ Playwright |
+| `next-app` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ `next build` → Playwright |
+| `ci-deploy` | 手元では実行しない（CI の結果を使う） |
+
+試すときは `apps/vscode/samples/` の見本を開く（`samples/README.md`）。定義の型と検証は `@stella/shared/tasks/*`。提出・AI の一次レビューは次の段階で足す。旧形式の演習（`STELLA: 採点を実行`、QuickJS）はそのまま残る。
+
 ## 設定
 
 | 設定 | 既定 | 用途 |
 |------|------|------|
 | `stella.serverUrl` | `http://127.0.0.1:8787` | API オリジン |
 | `stella.webUrl` | `http://127.0.0.1:5173` | Web オリジン（未接続時に開き直すレッスンページなど） |
+
+どちらも**ユーザー設定でだけ**変えられる（`scope: application`）。ワークスペース設定（`.vscode/settings.json`）の値は読まない。学習用のプロジェクトを開いただけで API の宛先が変わり、ログインのトークンが別のサーバーへ送られるのを防ぐため。
 
 ## 開発（Extension Development Host）
 
