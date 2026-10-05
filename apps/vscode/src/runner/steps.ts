@@ -4,7 +4,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   checkToolVersion,
@@ -17,7 +17,7 @@ import {
 import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunStepId, RunStepResult, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
-import { asCliPath } from "./files.js";
+import { asCliPath, writeStateFile } from "./files.js";
 import {
   parseEslintReport,
   parsePlaywrightReport,
@@ -231,8 +231,11 @@ export const depsStep: StepDefinition = {
     // npm install は lockfile を作るので、準備のあとの状態で印を付ける
     // (付け直さないと、次の実行で lockfile ができたことを変更とみなしてやり直す)。
     const prepared = await depsFingerprint(ctx, pkgFile, lockFile);
-    await mkdir(stateFile(ctx.root), { recursive: true });
-    await writeFile(marker, `${JSON.stringify({ fingerprint: prepared }, null, 2)}\n`);
+    await writeStateFile(
+      ctx.root,
+      "deps.json",
+      `${JSON.stringify({ fingerprint: prepared }, null, 2)}\n`,
+    );
     return { status: "passed", summary: "依存パッケージを準備しました" };
   },
 };
@@ -357,7 +360,11 @@ export const browsersStep: StepDefinition = {
         out,
       );
     }
-    await writeFile(marker, `${JSON.stringify({ version: bin.version }, null, 2)}\n`);
+    await writeStateFile(
+      ctx.root,
+      "browsers.json",
+      `${JSON.stringify({ version: bin.version }, null, 2)}\n`,
+    );
     return { status: "passed", summary: "テスト用ブラウザを準備しました" };
   },
 };

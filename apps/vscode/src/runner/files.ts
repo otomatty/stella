@@ -6,11 +6,12 @@
  * フォルダーの全ファイルを読むと、node_modules があるだけで全部を送ってしまう)。
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { lstat, open, readdir, realpath } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
+import { TASK_STATE_DIR } from "@stella/shared/tasks/manifest";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
 import picomatch from "picomatch";
 
@@ -32,6 +33,8 @@ export const LIMITS = {
   submitFiles: 50,
   fileBytes: 1024 * 1024,
   totalBytes: 5 * 1024 * 1024,
+  /** 配布ファイル (ハッシュを取るだけで送らない) の 1 ファイルの上限。lockfile も収まる大きさ。 */
+  protectedFileBytes: 10 * 1024 * 1024,
 } as const;
 
 export class TooManyFilesError extends Error {}
@@ -84,6 +87,9 @@ export function sha256Hex(bytes: Uint8Array): string {
 /** 課題フォルダーの外を指すパス・シンボリックリンク・通常のファイルでないものを読もうとした。 */
 export class UnsafePathError extends Error {}
 
+/** 読もうとしたファイルが上限より大きい。 */
+export class FileTooLargeError extends Error {}
+
 function isInside(root: string, file: string): boolean {
   const rel = path.relative(root, file);
   return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
@@ -118,13 +124,22 @@ export async function isFileInRoot(root: string, rel: string): Promise<boolean> 
 /**
  * 課題フォルダーの中にある通常のファイルを読む。確かめてから開くまでの間に
  * リンクへ差し替えられても追わないよう、使える OS では O_NOFOLLOW で開く。
+ * maxBytes を超えるファイルは読み込まずに FileTooLargeError を投げる。
  */
-export async function readFileInRoot(root: string, rel: string): Promise<Buffer> {
+export async function readFileInRoot(
+  root: string,
+  rel: string,
+  maxBytes: number = Number.POSITIVE_INFINITY,
+): Promise<Buffer> {
   const file = await resolveFileInRoot(root, rel);
   const handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
-    if (!(await handle.stat()).isFile()) {
+    const info = await handle.stat();
+    if (!info.isFile()) {
       throw new UnsafePathError(`${rel} は通常のファイルではありません`);
+    }
+    if (info.size > maxBytes) {
+      throw new FileTooLargeError(`${rel} が大きすぎます (${maxBytes / (1024 * 1024)}MB まで)`);
     }
     return await handle.readFile();
   } finally {
@@ -132,9 +147,20 @@ export async function readFileInRoot(root: string, rel: string): Promise<Buffer>
   }
 }
 
-export async function hashFile(root: string, rel: string): Promise<HashedFile> {
-  const bytes = await readFileInRoot(root, rel);
+export async function hashFile(root: string, rel: string, maxBytes?: number): Promise<HashedFile> {
+  const bytes = await readFileInRoot(root, rel, maxBytes);
   return { path: rel, sha256: sha256Hex(normalizeForHash(bytes)), bytes: bytes.byteLength };
+}
+
+/** 1 件ずつ順に読む。同時に読むと、大きなファイルが並んだときにメモリを使い切る。 */
+export async function hashFiles(
+  root: string,
+  files: readonly string[],
+  maxBytes: number,
+): Promise<HashedFile[]> {
+  const hashed: HashedFile[] = [];
+  for (const rel of files) hashed.push(await hashFile(root, rel, maxBytes));
+  return hashed;
 }
 
 export interface SizeProblem {
@@ -159,6 +185,67 @@ export async function checkSubmitSizes(
     tooMany: files.length > LIMITS.submitFiles,
     totalTooLarge: total > LIMITS.totalBytes,
   };
+}
+
+function errorCode(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code: unknown }).code)
+    : undefined;
+}
+
+/** `.stella/` が課題フォルダーの中の本物のフォルダーであることを確かめる (無ければ作る)。 */
+async function ensureStateDir(root: string): Promise<string> {
+  const dir = path.join(root, TASK_STATE_DIR);
+  let info: Awaited<ReturnType<typeof lstat>> | undefined;
+  try {
+    info = await lstat(dir);
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") throw error;
+  }
+  if (!info) {
+    await mkdir(dir);
+  } else if (!info.isDirectory()) {
+    // lstat なので、リンクはフォルダーを指していてもここに来る。
+    throw new UnsafePathError(`${TASK_STATE_DIR} がフォルダーではありません (リンクは使えません)`);
+  }
+  const [realRoot, realDir] = await Promise.all([realpath(root), realpath(dir)]);
+  if (!isInside(realRoot, realDir)) {
+    throw new UnsafePathError(`${TASK_STATE_DIR} が課題フォルダーの外を指しています`);
+  }
+  return dir;
+}
+
+/**
+ * 拡張の状態ファイル (`.stella/<name>`) を書く。信頼していないフォルダーでも HTML の確認は
+ * 結果を残すので、置かれていたリンクをたどって課題フォルダーの外を書き換えないようにする。
+ * 新しいファイルを `wx` (O_EXCL。リンクも既存とみなして失敗する) で作ってから名前を付け替える。
+ * 付け替えは置き換え先がリンクでもリンクそのものを置き換え、リンク先には書かない。
+ * keepExisting なら、すでに何か (リンクを含む) があれば何もしない。
+ */
+export async function writeStateFile(
+  root: string,
+  name: string,
+  content: string,
+  options: { keepExisting?: boolean } = {},
+): Promise<void> {
+  const dir = await ensureStateDir(root);
+  const file = path.join(dir, name);
+  if (options.keepExisting) {
+    try {
+      await writeFile(file, content, { flag: "wx" });
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST") throw error;
+    }
+    return;
+  }
+  const temp = path.join(dir, `.${name}.${randomUUID()}.tmp`);
+  await writeFile(temp, content, { flag: "wx" });
+  try {
+    await rename(temp, file);
+  } catch (error) {
+    await rm(temp, { force: true });
+    throw error;
+  }
 }
 
 /** コマンドに渡すときの相対パス。`-` で始まる名前がオプションと読まれないよう `./` を付ける。 */

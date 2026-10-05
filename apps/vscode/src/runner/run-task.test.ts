@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
@@ -246,6 +246,32 @@ describe("runTask (Vitest の手順)", () => {
   });
 });
 
+describe("runTask (提出の上限)", () => {
+  it("上限を超えた提出は要修正にし、ファイルを読み込まない", async () => {
+    const root = await makeTask({
+      "index.html": "<h1>x</h1>",
+      "movie.html": "x".repeat(1024 * 1024 + 1),
+    });
+    const result = await runTask({
+      root,
+      manifest: manifest({
+        runner: "static-preview",
+        submit: { files: ["*.html"] },
+        protected: [],
+        checks: { lint: false, format: false },
+        static: { checks: [{ type: "file-exists", path: "index.html" }] },
+      }),
+      manifestSha256: "m",
+      env: { PATH: "" },
+    });
+    const files = result.steps.find((s) => s.id === "files");
+    expect(files?.status).toBe("failed");
+    expect(files?.summary).toContain("movie.html が大きすぎます");
+    expect(result.files).toEqual([]);
+    expect(result.outcome).toBe("failed");
+  });
+});
+
 describe("runTask (HTML の確認)", () => {
   it("Node.js が無くても動く", async () => {
     const root = await makeTask({
@@ -410,6 +436,21 @@ describe("findTaskRoot / loadTask / saveRunResult", () => {
       root,
       errors: [".stella/task.json が JSON として読めません"],
     });
+  });
+
+  it("last-run.json がリンクでも、リンク先を書き換えない", async () => {
+    const outside = await makeTask({ "victim.txt": "keep" });
+    const root = await makeTask({ ".stella/task.json": "{}" });
+    await symlink(path.join(outside, "victim.txt"), path.join(root, ".stella", "last-run.json"));
+    const result = await runTask({
+      root,
+      manifest: manifest({ runner: "ci-deploy", submit: { files: ["x"] }, protected: [] }),
+      manifestSha256: "m",
+    });
+    await saveRunResult(root, result);
+    expect(await readFile(path.join(outside, "victim.txt"), "utf8")).toBe("keep");
+    const saved = JSON.parse(await readFile(path.join(root, ".stella", "last-run.json"), "utf8"));
+    expect(saved.taskId).toBe("javascript-data-basics/u03-filter/q01");
   });
 
   it("結果と .gitignore を書く", async () => {

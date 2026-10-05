@@ -1,16 +1,19 @@
-import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   asCliPath,
   checkSubmitSizes,
+  FileTooLargeError,
   hashFile,
+  hashFiles,
   isFileInRoot,
   listFiles,
   matchPatterns,
   readFileInRoot,
   UnsafePathError,
+  writeStateFile,
 } from "./files.js";
 
 async function makeTree(files: Record<string, string>): Promise<string> {
@@ -83,6 +86,55 @@ describe("課題フォルダーの外を読まない", () => {
     expect(await isFileInRoot(root, "link.txt")).toBe(false);
     expect(await isFileInRoot(root, "../secret.txt")).toBe(false);
     expect(await isFileInRoot(root, "a.js")).toBe(true);
+  });
+});
+
+describe("上限より大きいファイルは読み込まない", () => {
+  it("maxBytes を超えたら FileTooLargeError", async () => {
+    const root = await makeTree({ "big.txt": "x".repeat(2048), "small.txt": "x" });
+    await expect(readFileInRoot(root, "big.txt", 1024)).rejects.toBeInstanceOf(FileTooLargeError);
+    await expect(hashFiles(root, ["small.txt", "big.txt"], 1024)).rejects.toThrow(
+      "big.txt が大きすぎます",
+    );
+    expect((await hashFiles(root, ["small.txt"], 1024)).map((f) => f.path)).toEqual(["small.txt"]);
+  });
+});
+
+describe("writeStateFile", () => {
+  it(".stella が無ければ作って書く", async () => {
+    const root = await makeTree({ "a.js": "" });
+    await writeStateFile(root, "last-run.json", "{}\n");
+    expect(await readFile(path.join(root, ".stella", "last-run.json"), "utf8")).toBe("{}\n");
+  });
+
+  it("置かれていたリンクはたどらず、リンクそのものを置き換える", async () => {
+    const outside = await makeTree({ "victim.txt": "keep" });
+    const root = await makeTree({ ".stella/task.json": "{}" });
+    await symlink(path.join(outside, "victim.txt"), path.join(root, ".stella", "last-run.json"));
+    await writeStateFile(root, "last-run.json", "{}\n");
+    expect(await readFile(path.join(outside, "victim.txt"), "utf8")).toBe("keep");
+    const written = path.join(root, ".stella", "last-run.json");
+    expect((await lstat(written)).isFile()).toBe(true);
+    expect(await readFile(written, "utf8")).toBe("{}\n");
+  });
+
+  it("keepExisting は、リンク (先が無くても) があれば何もしない", async () => {
+    const outside = await makeTree({});
+    const root = await makeTree({ ".stella/task.json": "{}" });
+    const target = path.join(outside, "created-by-link.txt");
+    await symlink(target, path.join(root, ".stella", ".gitignore"));
+    await writeStateFile(root, ".gitignore", "x\n", { keepExisting: true });
+    await expect(stat(target)).rejects.toThrow();
+  });
+
+  it(".stella がリンクなら書かない", async () => {
+    const outside = await makeTree({});
+    const root = await makeTree({ "a.js": "" });
+    await symlink(outside, path.join(root, ".stella"));
+    await expect(writeStateFile(root, "last-run.json", "{}")).rejects.toBeInstanceOf(
+      UnsafePathError,
+    );
+    await expect(stat(path.join(outside, "last-run.json"))).rejects.toThrow();
   });
 });
 

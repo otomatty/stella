@@ -81,7 +81,16 @@ async function confirmUnsaved(root: string): Promise<boolean> {
     asIs,
   );
   if (choice === save) {
-    for (const doc of dirty) await doc.save();
+    for (const doc of dirty) {
+      // 読み取り専用・保存時の処理の失敗・競合の取り消しでは false が返る。そのまま
+      // 確かめると、エディターと違うディスクの内容で結果を残してしまう。
+      if (!(await doc.save())) {
+        void vscode.window.showWarningMessage(
+          `${path.basename(doc.uri.fsPath)} を保存できなかったため、確認をやめました。保存してからもう一度実行してください`,
+        );
+        return false;
+      }
+    }
     return true;
   }
   return choice === asIs;
@@ -153,9 +162,20 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
   if (!(await confirmUnsaved(root))) return;
   await runWithProgress(output, `課題を確認しています: ${manifest.title}`, async (signal, log) => {
     const result = await runTask({ root, manifest, manifestSha256, signal, log });
-    // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
-    if (result.outcome !== "cancelled") await saveRunResult(root, result);
     showTaskPanel({ kind: "result", manifest, result });
+    // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
+    if (result.outcome !== "cancelled") {
+      try {
+        await saveRunResult(root, result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        output.appendLine(`結果を保存できませんでした: ${message}`);
+        void vscode.window.showWarningMessage(
+          `確認の結果を .stella/last-run.json に保存できませんでした: ${message}`,
+        );
+        return;
+      }
+    }
     notify(result.outcome, output);
   });
 }

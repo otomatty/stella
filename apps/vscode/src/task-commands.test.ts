@@ -173,6 +173,25 @@ describe("stella.runTask", () => {
     expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
   });
 
+  it("保存できなかったファイルがあれば、ディスクの古い内容で確かめない", async () => {
+    const root = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+    state.folders = [root];
+    state.warningChoice = "保存して確認する";
+    state.dirtyDocs = [
+      {
+        isDirty: true,
+        uri: { scheme: "file", fsPath: path.join(root, "index.html") },
+        save: vi.fn(async () => false),
+      },
+    ];
+    await run("stella.runTask");
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringContaining("index.html を保存できなかったため"),
+    );
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+    await expect(readFile(path.join(root, ".stella", "last-run.json"), "utf8")).rejects.toThrow();
+  });
+
   it("ワークスペースの外で開いたファイルからは課題を探さない", async () => {
     const outsideTask = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
     const workspace = await mkdtemp(path.join(tmpdir(), "stella-ws-"));

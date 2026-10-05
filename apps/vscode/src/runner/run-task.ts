@@ -5,12 +5,11 @@
  * 確認や画面表示は拡張側 (task-commands.ts) が受け持つ。
  */
 
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import {
   parseTaskManifest,
   TASK_MANIFEST_PATH,
-  TASK_STATE_DIR,
   type TaskManifest,
 } from "@stella/shared/tasks/manifest";
 import {
@@ -23,14 +22,16 @@ import { normalizeForHash } from "@stella/shared/tasks/hash";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
   checkSubmitSizes,
-  hashFile,
+  FileTooLargeError,
+  hashFiles,
+  LIMITS,
   listFiles,
   matchPatterns,
   readFileInRoot,
   sha256Hex,
   TooManyFilesError,
   UnsafePathError,
-  LIMITS,
+  writeStateFile,
 } from "./files.js";
 import { buildPlan } from "./plans.js";
 import { childEnv, type ProcessOutcome, type ProcessSpec, runProcess } from "./process.js";
@@ -122,6 +123,14 @@ async function resolveToolchain(
   return { node, npm };
 }
 
+function readProblem(error: unknown): string {
+  // 一覧のあとにファイルがリンクへ差し替えられた・大きくなった・消えた。提出物として扱わない。
+  if (error instanceof UnsafePathError)
+    return `${error.message}。シンボリックリンクは提出できません`;
+  if (error instanceof FileTooLargeError) return error.message;
+  return "ファイルを読めませんでした";
+}
+
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
@@ -166,12 +175,13 @@ async function collectFiles(
     for (const problem of sizes.problems) {
       problems.push(`${problem.path} が大きすぎます (1MB まで)`);
     }
-    files = await Promise.all(submit.files.map((f) => hashFile(root, f)));
-    protectedFiles = await Promise.all(prot.files.map((f) => hashFile(root, f)));
+    // 上限を超えた提出は受け付けないので読まない (動画や生成物を誤って含めたときに、
+    // 全部をメモリへ載せて拡張ごと止めないため)。
+    const withinLimits = !sizes.tooMany && !sizes.totalTooLarge && sizes.problems.length === 0;
+    if (withinLimits) files = await hashFiles(root, submit.files, LIMITS.fileBytes);
+    protectedFiles = await hashFiles(root, prot.files, LIMITS.protectedFileBytes);
   } catch (error) {
-    // 一覧のあとにファイルがリンクへ差し替えられた・消えた。提出物として扱わない。
-    const reason = error instanceof UnsafePathError ? error.message : "ファイルを読めませんでした";
-    problems.push(`${reason}。シンボリックリンクは提出できません`);
+    problems.push(readProblem(error));
     files = [];
     protectedFiles = [];
   }
@@ -307,11 +317,11 @@ browsers.json
 tmp/
 `;
 
-/** 結果を `.stella/last-run.json` に残す。提出のときに読み直す。 */
+/**
+ * 結果を `.stella/last-run.json` に残す。提出のときに読み直す。
+ * 信頼していないフォルダーでも呼ばれるので、置かれていたリンクはたどらない (writeStateFile)。
+ */
 export async function saveRunResult(root: string, result: RunResult): Promise<void> {
-  const dir = path.join(root, TASK_STATE_DIR);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, "last-run.json"), `${JSON.stringify(result, null, 2)}\n`);
-  const ignore = path.join(dir, ".gitignore");
-  if (!(await isFile(ignore))) await writeFile(ignore, STATE_GITIGNORE);
+  await writeStateFile(root, "last-run.json", `${JSON.stringify(result, null, 2)}\n`);
+  await writeStateFile(root, ".gitignore", STATE_GITIGNORE, { keepExisting: true });
 }
