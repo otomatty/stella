@@ -604,7 +604,7 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 variant="accent"
                 className="w-full mb-3"
                 onClick={() => verdict && handleFinalize(verdict)}
-                disabled={!verdict || finalizing}
+                disabled={!verdict || finalizing || (!!submission.taskId && !taskDetail)}
               >
                 採点を確定
               </Button>

@@ -175,7 +175,13 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
   if (manifest.runner !== "static-preview" && !(await requireTrust())) return;
   if (!(await confirmUnsaved(root))) return;
   await runWithProgress(output, `課題を確認しています: ${manifest.title}`, async (signal, log) => {
-    const receipt = await readDistribution(root);
+    // 配布記録が壊れていても手元の確認は続ける (提出時の prepareTaskSubmission で改めて検証する)。
+    const receipt = await readDistribution(root).catch((error: unknown) => {
+      output.appendLine(
+        `配布記録を読めませんでした: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return undefined;
+    });
     const result = await runTask({ root, manifest, manifestSha256, signal, log });
     if (receipt?.taskId === manifest.id) result.taskContentHash = receipt.contentHash;
     // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
