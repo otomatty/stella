@@ -362,8 +362,12 @@ function markdownBody(source: string): string {
  * (`![図][page]`・`![page][]`・`![page]` と `[page]: assets/page.svg`) の画像も拾う。
  * コード・HTML コメントの中の画像の書き方は画像として描かれないので数えない。
  */
+/** 構文解析器は使い回す (教材全体の manifest で文書ごとに組み立て直すと重い)。 */
+const markdownParser = unified().use(remarkParse).use(remarkGfm).freeze();
 export function markdownImageDestinations(source: string): string[] {
-  const tree = unified().use(remarkParse).use(remarkGfm).parse(markdownBody(source));
+  // 画像の構文は必ず `![` を含むので、無い文書は解析しない。
+  if (!source.includes("![")) return [];
+  const tree = markdownParser.parse(markdownBody(source));
   // ラベルは構文木の identifier (大文字小文字・空白を正規化した値) で引く。同じラベルの
   // 定義が重なったら CommonMark と同じく最初の定義を使う。
   const definitions = new Map<string, string>();

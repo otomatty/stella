@@ -437,8 +437,11 @@ function buildOneCourse(
       // 旧単元の不足は専用ゲートで改訂範囲に応じて警告／エラーにする。
       referenceMap = undefined;
     }
+    // 参照元の記録が無い単元 (未改訂の旧単元) は本文の画像を解析しない。
     const contentReferences = (contentId: string, source = ""): PublicSourceReference[] =>
-      publicReferences(referenceMap, sourceRegistry, referenceContentIds(source, contentId));
+      referenceMap
+        ? publicReferences(referenceMap, sourceRegistry, referenceContentIds(source, contentId))
+        : [];
     const renderContent = (source: string, contentId: string): string =>
       referencedMarkdown(source, contentReferences(contentId, source), referenceMap, contentId);
     if (config.format === 2) {
