@@ -342,8 +342,8 @@ type AssessmentScope = { sectionId: string; pattern: string };
 /**
  * 確認Bの合格を「定着」と数える前提。満たさなければ null。
  *
- * 学習ペースが確認Bを出すのと同じ基準で、同じ単元・同じパターンの確認A (有効なもの) に
- * すべて合格していて、その最後の初回合格日の 7 学習日後 (`due`) 以降に提出したBだけが対象になる。
+ * 学習ペースが確認Bを出すのと同じ基準で、同じ単元・同じパターンの確認A (有効なもの) の
+ * 今の版にすべて合格していて、その最後の初回合格日の 7 学習日後 (`due`) 以降に提出したBだけが対象になる。
  * 課題は日程で閉じていないので、早く解いたBや無関係な課題の証跡では定着にしない。
  * そのうえで、それらの確認Aの支援なしの合格で証跡があるスキル (`skills`) に限る。
  */
@@ -354,7 +354,13 @@ async function retentionBasis(
   scope: AssessmentScope,
 ): Promise<{ due: number; skills: Set<string> } | null> {
   const preceding = await db
-    .select({ id: tasks.id, status: taskProgress.status, passedAt: taskProgress.passedAt })
+    .select({
+      id: tasks.id,
+      hash: tasks.contentHash,
+      progressHash: taskProgress.contentHash,
+      status: taskProgress.status,
+      passedAt: taskProgress.passedAt,
+    })
     .from(tasks)
     .leftJoin(
       taskProgress,
@@ -373,7 +379,13 @@ async function retentionBasis(
   let lastPassed = 0;
   for (const a of preceding) {
     // 合格を訂正しても同じ版なら passed_at は残る (0044 のトリガー) ので、今の状態も見る。
-    if (!a.passedAt || (a.status !== "passed" && a.status !== "ai-passed")) return null;
+    // 学習ペースと同じく、今の版の確認Aへの合格だけを数える (旧版の合格は進捗に残っても使わない)。
+    if (
+      !a.passedAt ||
+      a.progressHash !== a.hash ||
+      (a.status !== "passed" && a.status !== "ai-passed")
+    )
+      return null;
     lastPassed = Math.max(lastPassed, a.passedAt.getTime());
   }
   const evidence = await db

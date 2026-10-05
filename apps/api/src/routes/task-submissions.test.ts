@@ -408,6 +408,17 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect(await levelOf(b)).toBe("retained");
     });
 
+    it("確認Aの教材が更新されたら、旧版への合格ではBを定着にしない", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      await passA(aPassed);
+      await db
+        .update(tasks)
+        .set({ contentHash: "d".repeat(64) })
+        .where(eq(tasks.id, "check-a2"));
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
+      expect(await levelOf(b)).toBe("independent");
+    });
+
     it("確認Aが支援付きの合格なら、Bを定着にしない", async () => {
       const aPassed = Date.now() - 10 * DAY;
       await passA(aPassed);
