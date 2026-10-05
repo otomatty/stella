@@ -1,0 +1,15 @@
+{
+  "title": "要件・設計・品質と改善",
+  "category": "フルスタック",
+  "color": "amber",
+  "description": "【準備中】要件を整理し、設計とレビューを通して実装を改善できるようになるための講座です。",
+  "header": "要件・設計・品質と改善",
+  "tenantId": "ses",
+  "prerequisites": ["nextjs-basics"],
+  "canDo": "要件を整理し、設計とレビューを通して実装を改善できる",
+  "theme": "Web アプリを作り、届ける力",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "nextjs-basics"
+}

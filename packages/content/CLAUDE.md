@@ -4,7 +4,7 @@
 
 ## このディレクトリは何か
 
-社内の**未経験エンジニア向けTypeScript研修教材**です。動画講義(ショート動画)とLMS掲載用のドキュメントの2本立てです。
+社内の**未経験エンジニア向け研修教材**です。動画講義(ショート動画)とLMS掲載用のドキュメントの2本立てです。
 
 この教材は `stella` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `courses/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_COURSE.md](ADDING_COURSE.md)）。
 
@@ -16,7 +16,7 @@
 
 | 層 | 定義 | 目安 | 成果物 |
 | --- | --- | --- | --- |
-| モジュール | 大テーマ | 全10モジュール(M0〜M9) | — |
+| モジュール | 旧形式の大テーマ、新形式の単元 | 講座ごとに構成する | — |
 | レッスン | LMSの1回分・演習の単位 | 3〜5トピック | `doc.md` / `practice.md` |
 | **トピック** | **ショート動画1本 = 覚えることが1つ** | 2〜3分 / 4〜6スライド | `slides.md` |
 
@@ -39,7 +39,7 @@ packages/content/templates/     # 新規作成用の雛形
 packages/content/STYLE_GUIDE.md # 執筆ルール(文体・コード例・図解・構成)
 ```
 
-例: `packages/content/courses/typescript-basics/modules/m1-values/l1-variables/t2-const-and-let/slides.md`
+例: `packages/content/courses/salesforce-dev-basics/modules/m0-orientation/l1-platform/t1-what-is-salesforce/slides.md`
 
 ## 語彙台帳 — 前後関係は検査で守る
 
@@ -67,7 +67,7 @@ header: "TypeScript入門"
 
 ```bash
 bun run --filter=@stella/content materials        # 全トピックを pptx 化
-bun run --filter=@stella/content materials -- courses/typescript-basics/modules/m1-values/l1-variables   # 一部だけ
+bun run --filter=@stella/content materials -- courses/salesforce-dev-basics/modules/m0-orientation/l1-platform   # 一部だけ
 bun run --filter=@stella/content check:ci         # 語彙台帳・画像リンク・スライド枚数の検査（CI と同じ）
 ```
 
@@ -92,12 +92,12 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (PoC)
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。現状は **it-basics の全 9 トピックと typescript-basics 1-1-2 だけ**が台本を持ち、配信 (R2・D1・画面) は未実装です。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両講座の退役に伴い、旧台本は Git 履歴に保存されています。生成基盤は残していますが、現行カタログには台本のあるトピックはありません。配信 (R2・D1・画面) は未実装です。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
 - 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
-- 生成: `bun run content:video -- it-basics --tts openjtalk` → `dist/video/`。ffmpeg と `pip install pyopenjtalk-prebuilt "numpy<2"` が要ります。鍵のある環境では `--tts gemini` (`GEMINI_API_KEY`) / `--tts grok` (AI Gateway) を使います
+- 生成: `bun run content:video -- dev-env-basics --tts openjtalk` → `dist/video/`。ffmpeg と `pip install pyopenjtalk-prebuilt "numpy<2"` が要ります。鍵のある環境では `--tts gemini` (`GEMINI_API_KEY`) / `--tts grok` (AI Gateway) を使います
 
 ## 絶対に守るルール
 
@@ -133,75 +133,17 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 ## 現在の状態
 
-**全モジュールがトピック形式です。** 全10モジュール(M0〜M9)/ 42レッスン / 162トピックで完成しています。旧形式の教材は残っていません。
+教材は `courses/<slug>/modules/` が正本です。新18講座と残す17講座の計35講座があります。新18講座は M0 の準備中案内だけを持ち、新形式の教材・課題は #28・#41 で作成します。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中なので、準備中は計23講座です。
 
-**教材本体は `courses/<slug>/modules/` です。** TypeScript 入門は `courses/typescript-basics/`。`bun run --filter=@stella/content materials` で162トピック分の pptx が生成できます。コード演習は `course.json` の `exercises` で `@stella/shared` の TypeScript 課題（`src/problems/` のうち `language: "typescript"` の 66 問）に配線され、VS Code 拡張で採点されます。問題 ID の 3 桁がレッスン番号（`S1-Ch01-121-...` = L1-2 の 1 問目）で、M0〜M4 の 22 レッスンに 3 問ずつ。M5 以降は対応する問題がまだありません。同じ `src/problems/` にある残り 276 問は `language` 未指定＝ JavaScript の独立した段階別（S0〜S5）演習で、講座には載せていません。
+唯一の前提なし講座は `dev-env-basics` です。この講座には前提を追加しないでください。新18講座の slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
-**SQL 入門（`courses/sql-basics/`）があります。** 8 モジュール / 8 レッスン / 32 トピックで、構成は [courses/sql-basics/CURRICULUM.md](courses/sql-basics/CURRICULUM.md)。SELECT から JOIN・集計までに加えて、M6 で書き込み（INSERT/UPDATE/DELETE とトランザクション）、M7 でテーブル定義（CREATE TABLE / データ型 / 主キー）を扱います。コード演習は `course.json` の `exercises` で `@stella/shared` の SQL 課題（`_lang/sql/`、SELECT 系 9 問）に配線され、VS Code 拡張で採点されます（M6 / M7 は対応する課題が無く未配線）。原典クレジットは CURRICULUM.md に集約しています。
+AWS資格・情報処理資格・AI駆動開発・Salesforce案件は `dev-env-basics` クリアで現れる島です。DevOps は `python-basics` クリアで現れます。表示条件は `@stella/shared/skill-map/islands` に定義します。Salesforce は `audience: granted` の専用星で、割り当てられた受講者だけに出ます。Git の独立講座は退役し、Git の練習は新講座へ分散します。複製を扱う機能は維持していますが、現行カタログに複製する講座はありません。
 
-**HTML/CSS 入門（`courses/html-css-basics/`）があります。** 6 モジュール / 22 レッスン / 83 トピックで、構成は [courses/html-css-basics/CURRICULUM.md](courses/html-css-basics/CURRICULUM.md)。ITのきほんから出る本土 2 本の 1 本（もう 1 本は SQL）。フロントエンド本線の起点（次は JavaScript 入門。Git 入門は JavaScript のあとにフロントの扇へ出る）。MDN Learn web development の Core 本経路に合わせており、Flex に加えて Grid・位置指定・最小限のレスポンシブ（`viewport` と幅 1 本の `@media`）まで扱います。見た目の自動採点は現時点の採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に留め、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。原典クレジットは CURRICULUM.md に集約しています。
+退役した19講座の教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-**モダンCSS 入門（`courses/modern-css-basics/`）があります。** 4 モジュール / 9 レッスン / 28 トピックで、構成は [courses/modern-css-basics/CURRICULUM.md](courses/modern-css-basics/CURRICULUM.md)。HTML/CSS 入門の次に受ける中間講座で、入門で作った 1 枚のページを新しい部品を足さずに現代の書き方（`:root` のデザイントークン・`oklch()`/`color-mix()`・入れ子・論理プロパティ・`clamp()` の流体タイプ・`:focus-visible`）で見た目だけやり直します。`@layer`・コンテナクエリ・`@property` は対象外。HTML/CSS 入門と同じく見た目の自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は 1 トピック（2-1-1 論理プロパティ）に導入済みで、残りのトピックには追加余地があります。原典クレジットは CURRICULUM.md に集約しています。
+新18講座のサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、#20 の PoC を再開します。
 
-**UI部品 入門（`courses/ui-components-basics/`）があります。** 4 モジュール / 11 レッスン / 44 トピックで、構成は [courses/ui-components-basics/CURRICULUM.md](courses/ui-components-basics/CURRICULUM.md)。モダンCSS 入門の次に受ける講座で、代表的な UI 部品（カード・メディアオブジェクト・スプリットナビ・パンくずリスト・ページネーション・フォーム部品・`details`・ポップオーバー・宣言的な `dialog`）を **HTML 骨格 → レイアウト → トークン → 状態** の 4 段階で 1 つずつ作ります。JavaScript / DOM・WAI-ARIA APG の対話ウィジェット・カードの集合グリッド（後続の `page-composition-basics` の範囲）は対象外。Popover API と Invoker Commands API は MDN Baseline が Newly available なので、動かない環境ではフォールバックの JavaScript を書かない方針を CURRICULUM.md と本文に明記しています。HTML/CSS 入門・モダンCSS 入門と同じく見た目の自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は 1 トピック（1-2-2 メディアオブジェクトの上端そろえ）に導入済みで、残りのトピックには追加余地があります。原典クレジットは CURRICULUM.md に集約しています。
-
-**ページ構成 入門（`courses/page-composition-basics/`）があります。** 3 モジュール / 6 レッスン / 23 トピックで、構成は [courses/page-composition-basics/CURRICULUM.md](courses/page-composition-basics/CURRICULUM.md)。UI部品 入門の次に受ける講座（Web 系列の到達点）で、既習の部品と `:root` のトークンだけを使って `header` / `nav` / `main` / `footer` のある 1 枚の静的ページに組み立てます（landmark の原則・帯 + wrapper・`repeat(auto-fill, minmax())` のカード集合・任意の `subgrid`・sticky footer・popover / dialog を 1 つずつ・skip link・幅 1 本の `@media` recap）。部品の HTML/CSS の初出とトークン定義の初出は置きません（再導入のみ）。HTML/CSS 入門と同じく見た目の自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は 1 トピック（1-1-1 ページの骨格）に導入済みで、残りのトピックには追加余地があります。原典クレジットは CURRICULUM.md に集約しています。
-
-**JavaScript 入門（`courses/javascript-basics/`）があります。** 9 モジュール / 17 レッスン / 68 トピックで、構成は [courses/javascript-basics/CURRICULUM.md](courses/javascript-basics/CURRICULUM.md)。HTML/CSS 入門の次、TypeScript 入門の前に受けられる講座で、MDN Learn web development の Core Scripting 本経路に合わせて、言語の基礎（変数・数値・文字列・配列・条件分岐・ループ・関数）からイベント（`addEventListener`・バブリング・委譲・`preventDefault`）と DOM 操作（`querySelector` / `textContent` / `classList` / `createElement` + `appendChild` / `remove`）までを扱います。TypeScript・`fetch` / Promise・JSON・APG ウィジェット実装・インライン `onclick` は対象外（`querySelector` を本線にし、`getElementById` は読解のみ）。採点基盤の JS ランナー（QuickJS）に DOM / `document` が無いため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（テキストエディタ + ブラウザー。終端はレッスン 8-3 の買い物リスト）に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Python テスト自動化と CI 入門（`courses/python-testing-ci-basics/`）があります。** 7 モジュール / 8 レッスン / 28 トピックで、構成は [courses/python-testing-ci-basics/CURRICULUM.md](courses/python-testing-ci-basics/CURRICULUM.md)。前提は Python 入門（`python-basics`、準備中）。採点基盤（`@stella/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Python 入門（`courses/python-basics/`）は準備中です。** バックエンドのサーバー TypeScript の先に置き、クリアすると pytest / テスト設計の本土と **DevOps 島**が開きます。M0 の案内 1 トピックだけを持ち、本執筆時は ADDING_COURSE.md の手順で足します。
-
-**Git 入門（`courses/git-basics/`）があります。** 11 モジュール / 37 レッスン / 141 トピックで、構成は [courses/git-basics/CURRICULUM.md](courses/git-basics/CURRICULUM.md)。基礎カテゴリの共通スキルで、スキルツリーでは実体 1 講座のまま両ルートの扇に星を出す（`appearances`。クリアは共有）。フロントの星は JavaScript 入門のあと、バックの星は Node.js 入門のあとに開く（`appearancePrerequisites`。扇ごとにちょうど 1 つで、それがその扇の親 = 線の元。組どうしは OR）。フロントエンド本線（JS → TS）の前提にはしない。Git サンドボックス・コマンド自動採点が採点基盤にないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元の VS Code のターミナルで試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。旧デモ講座と同じ slug を再利用しており、seed の旧デモ削除リスト（`export-seed-sql.ts` の `RETIRED_DEMO_COURSES`）からは外してあります。図解 SVG は優先 8 トピック(9 枚。Issue #177)に導入済みで、残りのトピックには追加余地があります。原典クレジットは CURRICULUM.md に集約しています。
-
-**コマンドライン入門（`courses/cli-basics/`）があります。** 7 モジュール / 9 レッスン / 39 トピックで、構成は [courses/cli-basics/CURRICULUM.md](courses/cli-basics/CURRICULUM.md)。バックエンドの背骨（sql → cli → node → typescript-node → rest-api）の 1 本目で、前提は SQL 入門。ターミナルとシェルの切り分けからファイル操作・grep/find・パイプとリダイレクト・環境変数と PATH・プロセス・シェルスクリプトまでを扱います（vim/nano の操作・chmod の数字・sed/awk・SSH は対象外）。ターミナル操作を採点するサンドボックスが採点基盤に無いため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。取り返しのつかない操作（`rm` / `kill`）は確認手順とセットで教え、`rm -rf` と `kill -9` は打たせません。サムネイル（`thumbnail.webp`）とアイコン（`icon.svg`）は設置済み（`build_thumbnails.py` の `SPECS` に登録）。図解 SVG は未作成。
-
-**Node.js 入門（`courses/node-basics/`）があります。** 7 モジュール / 7 レッスン / 30 トピックで、構成は [courses/node-basics/CURRICULUM.md](courses/node-basics/CURRICULUM.md)。背骨の 2 本目で、前提はコマンドライン入門。実行環境としての Node.js（ブラウザとの違い）・REPL・npm と package.json・モジュール（ESM / CommonJS）・fs / path / process・イベントループと async/await・`node:http` の最小サーバーまでを扱います（フレームワーク・DB 接続・ストリーム・テストは対象外）。**バックエンドのルートは `javascript-basics` を通らない**ため、0-1-4 で「この講座で書く JavaScript は変数・関数・オブジェクトの 3 つまで」と宣言し、コード例もその範囲に収めています。採点基盤（QuickJS で 1 ファイル実行）が `node:` の組み込みモジュールもファイル分割も扱えないため、**コード演習は配線していません**。サムネイル（`thumbnail.webp`）とアイコン（`icon.svg`）は設置済み（`build_thumbnails.py` の `SPECS` に登録）。図解 SVG は未作成。
-
-**TypeScript 入門（サーバー）（`courses/typescript-node-basics/`）があります。** 6 モジュール / 6 レッスン / 25 トピックで、構成は [courses/typescript-node-basics/CURRICULUM.md](courses/typescript-node-basics/CURRICULUM.md)。背骨の 3 本目で、前提は Node.js 入門。`tsc` / `tsconfig`（strict）/ `@types/node` の環境作りから、基本の型・関数の型・オブジェクトの型、`unknown` と「境界で 1 度だけ確認する」設計までを扱います。**フロントエンドの TypeScript 入門（`typescript-basics`、162 トピック）とは別講座**で、クリアも共有せず、**範囲を絞ること自体が設計**です（ジェネリクス・クラス・デコレーター・高度な型演算・`interface` は対象外と 0-1-3 で明示）。演習は `~/ts-node-practice` の 1 プロジェクトを 5 レッスンで共有するので、わざと型エラーを起こしたファイルはその場で戻す手順を各所に入れています。採点基盤が `tsc` のビルドを扱えないため、**コード演習は配線していません**。サムネイル（`thumbnail.webp`）とアイコン（`icon.svg`）は設置済み（`build_thumbnails.py` の `SPECS` に登録）。図解 SVG は未作成。
-
-**データベース設計入門（`courses/db-design-basics/`）があります。** 5 モジュール / 5 レッスン / 20 トピックで、構成は [courses/db-design-basics/CURRICULUM.md](courses/db-design-basics/CURRICULUM.md)。前提は SQL 入門で、正規化（第1〜第3）・リレーション（外部キー / 1 対多 / 多対多 / 参照整合性）・インデックス・要件からの設計演習を扱います（ER 図の記法・第4正規形以降・分離レベル・物理設計は対象外）。全体を貫く問いは「変更が起きたときに直す場所が何か所か」で、正規形はその手段として導入します。成果物が SQL 文ではなく設計の判断のため、**コード演習は配線していません**。サムネイル（`thumbnail.webp`）とアイコン（`icon.svg`）は設置済み（`build_thumbnails.py` の `SPECS` に登録）。図解 SVG は未作成。
-
-**基本情報技術者試験の対策講座があります。** 科目A対策（`courses/fe-kamoku-a/`）と科目B対策（`courses/fe-kamoku-b/`）の2講座で、IPA シラバスの「大分類 → 中分類」を「モジュール → レッスン」に写像しています。スキルツリーでは 科目A → 科目B の段階進行（科目B の前提は `fe-kamoku-a`）。科目Aは M1 基礎理論〜M10 模擬試験（21 レッスン / 86 トピック）、科目Bは M1 擬似言語〜M5 総合演習（10 レッスン / 30 トピック）が実装済み。問題はすべて自作で、IPA 過去問・サンプル問題の転載はしません（参照元クレジットは各講座の CURRICULUM.md に集約）。模擬試験モジュール（科目A の M10 / 科目B の M5）の確認クイズだけは、出題範囲がそのレッスンに閉じない意図的な例外です。残りは各 CURRICULUM.md の全体計画を参照。
-
-**AWS Cloud Practitioner 入門（`courses/aws-clf-c02-basics/`）があります。** 12 モジュール / 22 レッスン / 91 トピックで、構成は [courses/aws-clf-c02-basics/CURRICULUM.md](courses/aws-clf-c02-basics/CURRICULUM.md)。AWS Certified Cloud Practitioner (CLF-C02) の対策講座で、平日10日(1日 ≒ 1モジュール)で公式試験ガイドの4ドメインを一巡し、11日目に本番と同じ65問の自作模擬試験(M10。各問の解説にドメインと復習先トピック ID 付き)を解き、12日目の直前対策(M11)で誤答を潰してから受験日を決めます。M11 はまぎらわしいサービスの切り分け 5 トピック(11-1)・M10 と重複しないドメイン別ドリル 40 問(11-2)・受験の手続きと当日 4 トピック(11-3)の 3 レッスンで、手続きや料金の数値には調査日(2026-09-01)を明記し「申し込み前に公式ページで確認」を本文に入れています。セキュリティ(M7)と AI/ML(レッスン6-1)を独立させ、200 サービスの暗記ではなく in-scope 代表サービスの「用途選択」に寄せています(ロングテールの in-scope サービスは各レッスン末尾の補完トピックと M10 doc の「一言辞書」でカバー)。問題はすべて自作で、公式 Practice Question・非公式問題集の転載はしません(合格保証もしません)。学習対象が用途選択の判断であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」(紙の上の概念マップ・判定練習。有料の AWS アカウントやコンソール操作は完走条件にしない)に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は優先 10 トピック(10 枚)に導入済みで、残りのトピックには追加余地があります。試験情報の調査日(初回 2026-08-27 / 再確認 2026-09-01)と参照元クレジットは CURRICULUM.md に集約しています。**執筆環境から AWS ドメイン(`aws.amazon.com` / `docs.aws.amazon.com`)へは egress で到達できません** — 事実確認は Web 検索経由で公式ページの記述を突き合わせる形になります。
-
-**テスト設計と品質保証 入門（`courses/test-design-basics/`）があります。** 6 モジュール / 21 レッスン / 82 トピックで、構成は [courses/test-design-basics/CURRICULUM.md](courses/test-design-basics/CURRICULUM.md)。採点基盤（`@stella/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Python を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」に置き、受講者が手元の Python + pytest で実行します。図解 SVG は未作成(`assets/` を持つトピックが無い)。原典クレジットは CURRICULUM.md に集約しています。
-
-**AI駆動開発の考え方（`courses/ai-fluency-basics/`）があります。** 5 モジュール / 7 レッスン / 28 トピックで、構成は [courses/ai-fluency-basics/CURRICULUM.md](courses/ai-fluency-basics/CURRICULUM.md)。Claude 研修シリーズの 1 本目で、製品操作を出さずに AI 駆動開発の考え方（4D と LLM の限界）だけを扱います。学習対象が判断であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（チャット画面や紙の上の判断演習）に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Claude チャット入門（`courses/claude-chat-basics/`）があります。** 4 モジュール / 7 レッスン / 26 トピックで、構成は [courses/claude-chat-basics/CURRICULUM.md](courses/claude-chat-basics/CURRICULUM.md)。Claude 研修シリーズの 2 本目で、claude.ai の会話・Projects・Artifacts までを扱います（Cowork / Claude Code は M3 の予告のみで操作手順は対象外）。学習対象が画面上の進め方であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（claude.ai での実践。アカウントが無い受講者は飛ばしてもスライド → まとめ → 確認クイズだけで完走できます）。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Cowork 入門（`courses/claude-cowork-basics/`）があります。** 6 モジュール / 6 レッスン / 26 トピックで、構成は [courses/claude-cowork-basics/CURRICULUM.md](courses/claude-cowork-basics/CURRICULUM.md)。Claude 研修シリーズの 3 本目で、チャットとの違い・ワークスペース・文脈の渡し方・タスクループ・プラグイン・向き不向きと安全を扱います（プラグイン自作・MCP サーバー・Claude Code の操作手順は対象外。コード編集の本編は Claude Code 講座に残します）。学習対象が任せ方の判断であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（Cowork での実践。使えない環境の受講者は飛ばしてもスライド → まとめ → 確認クイズだけで完走できます）。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Claude Code 入門（`courses/claude-code-basics/`）があります。** 6 モジュール / 8 レッスン / 28 トピックで、構成は [courses/claude-code-basics/CURRICULUM.md](courses/claude-code-basics/CURRICULUM.md)。Claude 研修シリーズの 4 本目で、コーディングエージェントとは何か・VS Code での始め方・許可とモード・Explore → Plan → Code → Commit の日常ワークフロー・コンテキスト管理・1 タスクの完走を扱います（CLAUDE.md ファイル / Skills / サブエージェント / hooks / MCP などのカスタマイズは後続講座の範囲。CLI は紹介のみ、JetBrains は対象外）。学習対象がエージェントとの進め方であってコードそのものではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（VS Code 上の Claude Code での実践。使えない環境の受講者は飛ばしてもスライド → まとめ → 確認クイズだけで完走できます）。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**Skills とサブエージェント（`courses/claude-code-skills/`）があります。** 6 モジュール / 6 レッスン / 26 トピックで、構成は [courses/claude-code-skills/CURRICULUM.md](courses/claude-code-skills/CURRICULUM.md)。Claude 研修シリーズの 5 本目で、繰り返す指示の仕組み化を CLAUDE.md・Skill・サブエージェント・hook という 4 つの入れ物の使い分けとして扱います（CLAUDE.md と Skill は書けるまで、サブエージェントは渡す判断まで、hooks は名前と使いどころのみ。hooks の実装・MCP・実行スクリプト付き Skill は次講座の範囲）。成果物が Markdown の文章であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（VS Code 上の Claude Code で CLAUDE.md と SKILL.md を書く実践。使えない環境の受講者は飛ばしてもスライド → まとめ → 確認クイズだけで完走できます）。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**検証・hooks・MCP（`courses/claude-code-team/`）があります。** 6 モジュール / 6 レッスン / 25 トピックで、構成は [courses/claude-code-team/CURRICULUM.md](courses/claude-code-team/CURRICULUM.md)。Claude 研修シリーズの 6 本目（到達点）で、生成した変更の検証（テスト・lint・自分の目）・検証手順の Skill 化・hooks の実装判断・既存 MCP サーバーの接続（使う側のみ、自作はしない）・チームへの展開（リポジトリと個人用の分離、GitHub の @claude は紹介のみ）を扱います。成果物が検証の判断と設定であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（VS Code 上の Claude Code での実践。使えない環境の受講者は飛ばしてもスライド → まとめ → 確認クイズだけで完走できます）。図解 SVG は未作成（`assets/` を持つトピックが無い）。原典クレジットは CURRICULUM.md に集約しています。
-
-**ITのきほん（`courses/it-basics/`）があります。** 2 モジュール / 2 レッスン / 9 トピックで、構成は [courses/it-basics/CURRICULUM.md](courses/it-basics/CURRICULUM.md)。**スキルツリーの入口（中心のスキル）になる唯一の前提なし講座**で、コンピュータ・インターネットの本当に基本のことばをそろえます（スキルツリーの使い方・レッスンの型は画面のヘルプが担うので教材には書かない）。いちばん答えられるようになってほしい問いは「URL を開いてから画面が出るまで、何が起きているか」です。本土から出る枝は **2 本**（html-css-basics / sql-basics）。cli-basics は sql-basics の先。島のうち資格 / AI（ai-fluency-basics / fe-kamoku-a / aws-clf-c02-basics）は it-basics クリアが**表示条件**で、本土から線は引かない。DevOps 島は **python-basics クリア**が表示条件。フロントエンド本線は html-css-basics → javascript-basics から Git（フロント）と typescript-basics に分かれ、npm は Git のあと、fetch は TypeScript のあと。バックエンドの背骨は sql-basics → cli-basics → node-basics → typescript-node-basics → rest-api-basics（準備中）で、git-basics は実体 1 講座のまま両ルートの扇に置く。python-basics → python-testing-ci-basics → test-design-basics は開発を知ってからの発展概念として typescript-node-basics の先、fe-kamoku-b は fe-kamoku-a の先（情報処理系の段階進行）。どの星からも出る枝は最大 2 本。**この講座に前提を書いてはいけません**（中心のスキルが閉じるとツリー全体が開かなくなる）。学習対象がことばの理解であってコードではないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（自分の PC と紙の上）に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。図解 SVG は未作成（`assets/` を持つトピックが無い）。
-
-**Salesforce 開発 入門（`courses/salesforce-dev-basics/`）があります。** 7 モジュール / 9 レッスン / 34 トピックで、構成は [courses/salesforce-dev-basics/CURRICULUM.md](courses/salesforce-dev-basics/CURRICULUM.md)。**この LMS で最初の「ユーザー専用星」（`course.json` の `"audience": "granted"`）** で、seed しても全員のカタログには載らず、講師・管理者が「専用教材」画面（`/stage-grants`）で割り当てた受講者だけスキルツリーに星が出ます。Salesforce 案件に配属されるメンバー向けに、オブジェクトと項目でできたデータモデルの読み方から SOQL・Apex トリガ・テストまでを一巡し、「設定でできることは設定で、足りないところだけコードで」という platform の作法を扱います（Visualforce・Aura・LWC の実装・非同期 Apex・外部連携・DevOps Center の実務手順は対象外）。骨格は Salesforce Certified Platform Developer I 試験ガイドが公表している 5 領域に合わせ、未経験者がつまずく順に並べ替えています。採点基盤（`@stella/code-runner`）のランナーが JavaScript / TypeScript / SQL のみで Apex を実行できないため、**コード演習は配線していません**（`course.json` に `exercises` を持たない）。手を動かす部分は `practice.md` の「手元で試す」（無償の Developer Edition 組織。会社の本番組織では行わない）に置き、LMS 上はスライド → まとめ → 確認クイズだけで完走できます。**置き場所は島「Salesforce案件」** — 本土の扇に混ぜると前提の sql-basics から出る枝が 3 本になり「枝は最大 2 本」の検査に当たるため、島にして橋線を引かず、ハードロック（`prerequisites: ["sql-basics"]`）だけを効かせています。島の中身が granted 講座だけなので、割り当てのない受講者には島ごと現れません。図解 SVG は 6 トピック（0-1-1 / 1-2-2 / 2-1-1 / 3-1-4 / 4-2-4 / 6-1-3）に導入済みで、残りのトピックには追加余地があります。原典クレジットと商標の注記は CURRICULUM.md に集約しています。
-
-**スキルツリーは [roadmap.sh](https://roadmap.sh/) を参考にした「本土 2 ルート + 島」構成です（カテゴリ = ルート / 島）。** 本土のカテゴリは「基礎」（it-basics。git-basics は基礎カテゴリのまま、ツリー上は FE / BE の両扇に出す）・「フロントエンド」（html-css → js から Git と ts に分かれ、CSS 系列は html-css から）・「バックエンド」（sql から cli / db-design。python-basics → python-testing-ci → test-design は typescript-node-basics の先の発展概念。背骨は sql → cli → node → typescript-node-basics → rest-api）の 3 つ。ITのきほんから出る枝は最大 2 本なので、DevOps は第 3 の本土ルートにはせず島にする。**どの星からも出る枝は最大 2 本**（AND 合流は枝に数えない）。**「AWS資格」（aws-clf-c02-basics）・「情報処理資格」（fe-kamoku-a → fe-kamoku-b の段階進行）・「AI駆動開発」（Claude 研修シリーズ）は it-basics クリアで現れる島**。「DevOps」は [roadmap.sh/devops](https://roadmap.sh/devops) を参考にした島で、**python-basics クリアが表示条件**（バックエンドの Python を学ぶまで盤面に出ない）。入口は devops-basics、枝は linux-ops → networking-ops → cicd（そこから kubernetes / observability）と terraform。kubernetes は docker-basics も前提（線は引かない）。**「Salesforce案件」（salesforce-dev-basics）も島**で、表示条件は it-basics、中身は granted 専用星なので未割り当ての受講者には島ごと現れない。表示条件は `@stella/shared/skill-map/islands` で島ごとに設定し、満たした受講者にだけスキルツリーへ現れる。theme はカテゴリごとに 1 つ（フロントエンド =「Web の見た目と動き」、バックエンド =「サーバーとデータの基盤」、AWS資格 =「資格で示すクラウド力」、情報処理資格 =「資格で示す基礎力」、DevOps =「開発と運用をつなぐ」、Salesforce案件 =「業務システムの開発」）。**準備中のプレースホルダ講座が 17 件あります**（FE: fetch-api-basics / npm-build-basics / react-basics / web-a11y-basics / frontend-testing-basics、BE: rest-api-basics / auth-basics / web-security-basics / docker-basics / python-basics、DevOps: devops-basics / linux-ops-basics / networking-ops-basics / cicd-basics / kubernetes-basics / terraform-basics / observability-basics）。各プレースホルダは M0 に「この講座で学ぶこと」1 トピックだけを持ち、description が「【準備中】」で始まります。本執筆時は ADDING_COURSE.md の手順で M1 以降を足し、CURRICULUM.md を確定版に書き換えてください（ツリー上の位置＝前提はプレースホルダの時点で確定済み）。
-
-TypeScript 入門の全体構成は **[courses/typescript-basics/CURRICULUM.md](courses/typescript-basics/CURRICULUM.md)** にあります。新しい講座を足すときは **[ADDING_COURSE.md](ADDING_COURSE.md)** が正本です。
-
-**LMS への投入は整備済みです。** `main` への push で `db:seed:remote:content` が走り、`courses/` 配下の各講座が D1 に upsert されます。スライド・まとめ・確認クイズの本文は `lessons.markdown` に入ります。図解 SVG は D1 ではなく R2 ですが、こちらもデプロイに含まれる（seed の前に全件アップロードする）ので、手動実行は不要です。ローカルに入れるときだけ `bun run --filter=@stella/content upload` を叩いてください。
-
-**講座サムネイルは執筆済みの 25 講座に入っています（`courses/<slug>/thumbnail.webp`。準備中のプレースホルダ 17 講座は color のストライプ表示にフォールバック）。** 一覧カードがその画像になります。16:9 / 推奨 1600×900 / 400KB 以内で、規格は `bun run content:check` が検査します。図解 SVG と同じくデプロイで R2 に反映されるので、手動アップロードは不要です。画像は手で描かず `scripts/build_thumbnails.py`（`bun run --filter=@stella/content thumbnails`）が生成します。25 枚が 1 つのシリーズに見えることが前提なので、新しい講座もスクリプトの `SPECS` に足してください。外部ロゴは使いません（商標の許諾が要るうえ、公認教材だという誤認を生むため）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「6. サムネイル」。
-
-**スキルツリーの講座アイコンも同じ 25 講座に入っています（`courses/<slug>/icon.svg`）。** 星の中（解放済み・進行中・クリア）に出る 24×24 の**単色シルエット**で、サムネイルのモチーフの「核」を 1 図形に単純化したもの。画面は認可付き API から SVG を取り CSS mask + `currentColor` で塗るので SVG に色を持たせず（アルファだけが使われる。白抜きは効かない）。R2 キーは内容ハッシュ入り（`stages.icon_path`）でサムネイルと一緒にデプロイが流します。準備中のプレースホルダ講座には置いていません（状態グリフのまま）。詳細は [ADDING_COURSE.md](ADDING_COURSE.md) の「スキルツリーのアイコン」。
-
-未着手の課題:
-
-- **図解SVGの不足** — 図解を持たないトピックが多い。`assets/` がないトピックには追加余地がある（HTML/CSS 入門 3 枚・モダンCSS 入門 / UI部品 入門 / ページ構成 入門 各 1 枚を導入済み。作図は `.claude/skills/diagram-design/` の規約に従い、`python .claude/skills/diagram-design/lint-skin.py` と `python packages/content/scripts/diagram_export.py` を通す）
-- **画像素材の追加** — 実画面のスクリーンショット(Playground・VS Code)の挿入。講座サムネイルは執筆済み 25 講座すべてに設置済み（準備中 17 講座は未設置）
-- **収録** — 162本の動画収録は未着手。人の収録の代わりに、台本 + TTS で自動生成する PoC がある (上の「教材動画 (PoC)」)
-- **演習問題の Assignment 化** — `practice.md` の演習を LMS の Assignment として扱えるようにする作業は未着手
-- **コード演習の空白** — TypeScript 入門は M5 以降、JavaScript 入門・HTML/CSS 系は全体にコード演習が無い（対応する課題が `@stella/shared` に無い、または採点基盤が対象言語・DOM を実行できないため）
+残す教材の本文は維持します。新規講座と教材の追加手順は [ADDING_COURSE.md](ADDING_COURSE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 
 ## 作業の進め方
 

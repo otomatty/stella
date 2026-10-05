@@ -1,0 +1,22 @@
+{
+  "title": "Next.jsとWebアプリ構成",
+  "category": "フルスタック",
+  "color": "amber",
+  "description": "【準備中】Next.jsで画面とサーバーを組み合わせ、Webアプリを構成できるようになるための講座です。",
+  "header": "Next.jsとWebアプリ構成",
+  "tenantId": "ses",
+  "prerequisites": [
+    "react-basics",
+    "react-ui-basics",
+    "ui-integration-basics",
+    "node-api-basics",
+    "sql-basics",
+    "auth-basics"
+  ],
+  "canDo": "Next.jsで画面とサーバーを組み合わせ、Webアプリを構成できる",
+  "theme": "Web アプリを作り、届ける力",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "auth-basics"
+}

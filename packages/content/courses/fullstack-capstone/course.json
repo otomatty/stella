@@ -1,0 +1,15 @@
+{
+  "title": "個人でのフルスタック開発",
+  "category": "フルスタック",
+  "color": "amber",
+  "description": "【準備中】要件から公開まで、個人でフルスタックのWebアプリを開発できるようになるための講座です。",
+  "header": "個人でのフルスタック開発",
+  "tenantId": "ses",
+  "prerequisites": ["code-reading-basics"],
+  "canDo": "要件から公開まで、個人でフルスタックのWebアプリを開発できる",
+  "theme": "Web アプリを作り、届ける力",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "code-reading-basics"
+}

@@ -1,0 +1,15 @@
+{
+  "title": "公開・CIと運用",
+  "category": "フルスタック",
+  "color": "amber",
+  "description": "【準備中】CIで変更を確かめ、Webアプリを公開して運用できるようになるための講座です。",
+  "header": "公開・CIと運用",
+  "tenantId": "ses",
+  "prerequisites": ["design-quality-basics"],
+  "canDo": "CIで変更を確かめ、Webアプリを公開して運用できる",
+  "theme": "Web アプリを作り、届ける力",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "design-quality-basics"
+}

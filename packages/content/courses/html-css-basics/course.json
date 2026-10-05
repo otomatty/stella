@@ -1,19 +1,15 @@
 {
-  "title": "HTML/CSS 入門",
+  "title": "HTML/CSSとデザイン基礎",
   "category": "フロントエンド",
-  "color": "amber",
-  "description": "未経験からの HTML/CSS 研修。終了時には、テキストエディタとブラウザーだけで 1 枚の静的ページを組み立てられる。見出し階層・リスト・リンク・代替テキスト付き画像・label 付き入力と button を HTML で置き、CSS を別ファイルと class で当て、余白と flex で箱を並べ、文字サイズ・行間・コントラストを読める状態にし、開発者ツールで効かない指定を順序・詳細度・継承のどれで直すかを判断できる。",
-  "header": "HTML/CSS入門",
+  "color": "indigo",
+  "description": "【準備中】HTMLとCSSで、読みやすく画面幅に対応したページを作れるようになるための講座です。",
+  "header": "HTML/CSSとデザイン基礎",
   "tenantId": "ses",
-  "prerequisites": ["it-basics"],
-  "canDo": "デザインを見ながら、1枚の静的ページを HTML と CSS で組み立てられる",
+  "prerequisites": ["dev-env-basics"],
+  "canDo": "HTMLとCSSで、読みやすく画面幅に対応したページを作れる",
   "theme": "Web の見た目と動き",
   "modules": {
-    "m0-orientation": "M0. オリエンテーション",
-    "m1-document": "M1. 文書の骨格",
-    "m2-media-forms": "M2. メディアとフォーム",
-    "m3-css": "M3. CSS の当て方",
-    "m4-box": "M4. 箱と配置",
-    "m5-readability": "M5. 読みやすさ"
-  }
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "dev-env-basics"
 }

@@ -8,7 +8,7 @@
  *
  * ## 扇ごとの前提
  *
- * 複製した星の前提は扇で分けられる (Git はフロントが JS のあと、バックが Node のあと)。
+ * 複製した星の前提は扇で分けられる (扇ごとに親を定義する)。
  * 実体のロックは **どれか 1 組を満たせば開く** (OR)。片方のルートだけ進む受講者を
  * もう片方の講座まで待たせないため。D1 の `prerequisites` は組の和集合 (グラフ検査・
  * seed 用) で、開く条件の正本はこのモジュール。
@@ -20,10 +20,10 @@
  * 未知 slug は複製しない (扇は `category` のまま 1 つ)。
  */
 
+/** 現在のカリキュラムには複製する講座はない。Git は各講座へ分散した。 */
+
 /** slug → 置く扇の名前 (category と同じ語彙)。 */
-export const SKILL_MAP_APPEARANCES: Readonly<Record<string, readonly string[]>> = {
-  "git-basics": ["フロントエンド", "バックエンド"],
-};
+export const SKILL_MAP_APPEARANCES: Readonly<Record<string, readonly string[]>> = {};
 
 /**
  * slug → 扇名 → その複製を開く前提 slug。
@@ -34,12 +34,7 @@ export const SKILL_MAP_APPEARANCES: Readonly<Record<string, readonly string[]>> 
  */
 export const SKILL_MAP_APPEARANCE_PREREQUISITES: Readonly<
   Record<string, Readonly<Record<string, readonly string[]>>>
-> = {
-  "git-basics": {
-    フロントエンド: ["javascript-basics"],
-    バックエンド: ["node-basics"],
-  },
-};
+> = {};
 
 /** その slug を複数の扇に置くときの扇名。無ければ `undefined` (複製しない)。 */
 export function appearancesOf(slug: string): readonly string[] | undefined {
