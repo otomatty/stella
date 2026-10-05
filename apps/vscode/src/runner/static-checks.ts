@@ -7,7 +7,7 @@ import path from "node:path";
 import type { StaticCheck } from "@stella/shared/tasks/manifest";
 import type { TestCaseResult } from "@stella/shared/tasks/run-result";
 import { type DefaultTreeAdapterMap, parse } from "parse5";
-import { isFileInRoot, readFileInRoot } from "./files.js";
+import { FileTooLargeError, isFileInRoot, LIMITS, readFileInRoot } from "./files.js";
 
 type Node = DefaultTreeAdapterMap["node"];
 type Element = DefaultTreeAdapterMap["element"];
@@ -48,10 +48,16 @@ function attr(element: Element, name: string): string | undefined {
 /**
  * HTML を読む。課題フォルダーの中の通常のファイルだけを読み、シンボリックリンクや
  * 外を指すパスは「無い」として扱う (信頼していないフォルダーでも動くため)。
+ * 提出できる大きさ (1MB) を超えるものは読み込まない。
  */
 async function loadHtml(root: string, rel: string): Promise<Document | string> {
   if (!(await isFileInRoot(root, rel))) return `${rel} がありません`;
-  return parse(new TextDecoder().decode(await readFileInRoot(root, rel)));
+  try {
+    return parse(new TextDecoder().decode(await readFileInRoot(root, rel, LIMITS.fileBytes)));
+  } catch (error) {
+    if (error instanceof FileTooLargeError) return error.message;
+    throw error;
+  }
 }
 
 /** リンク先がローカルのファイルを指すときだけ、課題フォルダーからの相対パスを返す。 */

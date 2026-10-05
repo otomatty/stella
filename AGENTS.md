@@ -79,7 +79,7 @@ Linting is **Biome** (`biome.json`), not ESLint. `bun run lint` は `biome ci .`
 
 ### Testing
 
-Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **164 ファイル / 1879 件**。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
+Automated tests run with **Vitest** (`bun run test`; config `vitest.config.ts`; specs matched by `packages/**/*.test.ts`・`apps/**/src/**/*.test.ts`・`apps/**/scripts/**/*.test.ts`)。現状 **164 ファイル / 1883 件**。デプロイでしか動かない `apps/**/scripts` の spec も対象に入れている（壊れたことに気づくのが遅い場所ほど網に入れる）。route テストは Hono アプリを組み立てて D1 アクセス層を `vi.mock` で差し替える形で、共通の足場は `apps/api/src/testing/route-harness.ts`（`mountTestApp` / `request` / `json<T>`）に置いてある。`apps/api/src/db/migrations-0032-upgrade.test.ts` だけは `node:sqlite` で 0000〜0031 を実適用してから 0032 を当て、行の消失・FK 追随・索引を検証する。
 
 カバレッジは `bun run test:coverage`（v8）。**閾値は置いていない** — 落とすためではなく手薄な場所を見えるようにするためで、数字は CI のジョブサマリに出る。
 

@@ -35,7 +35,14 @@ export const LIMITS = {
   totalBytes: 5 * 1024 * 1024,
   /** 配布ファイル (ハッシュを取るだけで送らない) の 1 ファイルの上限。lockfile も収まる大きさ。 */
   protectedFileBytes: 10 * 1024 * 1024,
+  /** `.stella/task.json` の上限。信頼の確認より前に読むので小さく抑える。 */
+  manifestBytes: 64 * 1024,
 } as const;
+
+function formatLimit(bytes: number): string {
+  const mb = 1024 * 1024;
+  return bytes >= mb ? `${Math.round(bytes / mb)}MB` : `${Math.round(bytes / 1024)}KB`;
+}
 
 export class TooManyFilesError extends Error {}
 
@@ -139,7 +146,7 @@ export async function readFileInRoot(
       throw new UnsafePathError(`${rel} は通常のファイルではありません`);
     }
     if (info.size > maxBytes) {
-      throw new FileTooLargeError(`${rel} が大きすぎます (${maxBytes / (1024 * 1024)}MB まで)`);
+      throw new FileTooLargeError(`${rel} が大きすぎます (${formatLimit(maxBytes)} まで)`);
     }
     return await handle.readFile();
   } finally {

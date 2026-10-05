@@ -17,7 +17,7 @@ import {
 import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunStepId, RunStepResult, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
-import { asCliPath, writeStateFile } from "./files.js";
+import { asCliPath, LIMITS, writeStateFile } from "./files.js";
 import {
   parseEslintReport,
   parsePlaywrightReport,
@@ -246,10 +246,25 @@ export const depsStep: StepDefinition = {
 
 const LINTABLE = /\.(c|m)?(j|t)sx?$/;
 
+/**
+ * 提出の上限を超えていれば、道具に渡さず省略する。上限超えは最後の「提出するファイルの
+ * 確認」が要修正として報告する。何百ものパスを渡すと Windows ではコマンドラインの長さを
+ * 超えて起動できず、直し方の分からない環境のエラーになってしまう。
+ */
+function tooManySubmitFiles(ctx: StepContext): StepOutcome | null {
+  if (ctx.submitFiles.length <= LIMITS.submitFiles) return null;
+  return {
+    status: "skipped",
+    summary: `提出するファイルが多すぎるため省略しました (${LIMITS.submitFiles} 件まで)`,
+  };
+}
+
 export const lintStep: StepDefinition = {
   id: "lint",
   label: "lint (ESLint)",
   async run(ctx) {
+    const tooMany = tooManySubmitFiles(ctx);
+    if (tooMany) return tooMany;
     const bin = await packageBin(ctx, "eslint", "eslint", "ESLint");
     if (isOutcome(bin)) return bin;
     const files = ctx.submitFiles.filter((f) => LINTABLE.test(f));
@@ -276,6 +291,8 @@ export const formatStep: StepDefinition = {
   id: "format",
   label: "整形 (Prettier)",
   async run(ctx) {
+    const tooMany = tooManySubmitFiles(ctx);
+    if (tooMany) return tooMany;
     const bin = await packageBin(ctx, "prettier", "prettier", "Prettier");
     if (isOutcome(bin)) return bin;
     if (ctx.submitFiles.length === 0)

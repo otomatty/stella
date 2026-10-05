@@ -78,11 +78,18 @@ export async function findTaskRoot(
 
 export async function loadTask(root: string): Promise<LoadedTask> {
   // BOM 付き (Windows のメモ帳など) でも読めるよう、ハッシュと同じ正規化を通してから読む。
+  // 信頼の確認より前に読むので、大きさに上限を掛ける (巨大な定義で拡張を止めさせない)。
   let normalized: Uint8Array;
   try {
-    normalized = normalizeForHash(await readFileInRoot(root, TASK_MANIFEST_PATH));
-  } catch {
-    return { ok: false, root, errors: [`${TASK_MANIFEST_PATH} を読めませんでした`] };
+    normalized = normalizeForHash(
+      await readFileInRoot(root, TASK_MANIFEST_PATH, LIMITS.manifestBytes),
+    );
+  } catch (error) {
+    const message =
+      error instanceof FileTooLargeError
+        ? error.message
+        : `${TASK_MANIFEST_PATH} を読めませんでした`;
+    return { ok: false, root, errors: [message] };
   }
   let raw: unknown;
   try {

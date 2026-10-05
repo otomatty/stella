@@ -108,6 +108,17 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("結果は残していません");
   });
 
+  it("課題の外からの環境診断は、課題ではなく診断をやり直す", () => {
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({ outcome: "passed", steps: [] }),
+      standalone: true,
+    });
+    expect(html).toContain('href="command:stella.diagnoseEnvironment"');
+    expect(html).not.toContain('href="command:stella.runTask"');
+  });
+
   it("定義の誤りを一覧にする", () => {
     const html = buildTaskPanelHtml({ kind: "invalid", root: "/w/<t>", errors: ["runner は <x>"] });
     expect(html).toContain("課題の定義を読めません");

@@ -96,6 +96,14 @@ describe("信頼していないフォルダーでも外のファイルを読ま�
     ]);
     expect(JSON.stringify(results)).not.toContain("社外秘");
   });
+
+  it("提出できる大きさ (1MB) を超える HTML は読み込まない", async () => {
+    const root = await makeSite({ "index.html": `<h1>x</h1>${" ".repeat(1024 * 1024)}` });
+    const results = await runStaticChecks(root, [
+      { type: "element-text", path: "index.html", tag: "h1", text: "x" },
+    ]);
+    expect(results.map((r) => r.message)).toEqual(["index.html が大きすぎます (1MB まで)"]);
+  });
 });
 
 describe("localTarget", () => {

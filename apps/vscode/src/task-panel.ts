@@ -90,6 +90,8 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const versions = Object.entries(result.toolVersions)
     .map(([tool, version]) => `${tool} ${version}`)
     .join(" / ");
+  // 課題の外からの環境診断は、課題を探さずにもう一度診断する。
+  const retryCommand = input.standalone ? "stella.diagnoseEnvironment" : "stella.runTask";
   const footer = input.standalone
     ? ""
     : result.outcome === "cancelled"
@@ -105,7 +107,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),
     footer,
-    `<p class="links"><a href="command:stella.runTask">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a></p>`,
+    `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a></p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
   return { title: manifest.title, body };
@@ -196,7 +198,7 @@ export function showTaskPanel(input: TaskPanelInput): void {
     currentPanel = vscode.window.createWebviewPanel(VIEW_TYPE, title, vscode.ViewColumn.Beside, {
       enableScripts: false,
       localResourceRoots: [],
-      enableCommandUris: ["stella.runTask", "stella.showRunLog"],
+      enableCommandUris: ["stella.runTask", "stella.diagnoseEnvironment", "stella.showRunLog"],
     });
     currentPanel.onDidDispose(() => {
       currentPanel = undefined;

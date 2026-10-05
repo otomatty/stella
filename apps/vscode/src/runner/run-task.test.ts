@@ -17,6 +17,12 @@ async function makeTask(files: Record<string, string>): Promise<string> {
   return root;
 }
 
+async function makeFile(root: string, rel: string, content: string): Promise<void> {
+  const file = path.join(root, ...rel.split("/"));
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, content);
+}
+
 /**
  * 課題フォルダーに置く偽の道具。本物と同じ引数を受け取り、本物の出力形式
  * (`__fixtures__/` と同じ形) を書き出す。手順が正しい引数で道具を起動し、
@@ -227,6 +233,31 @@ describe("runTask (Vitest の手順)", () => {
     expect(result.steps[0]?.summary).toMatch(/Node\.js が見つかりません/);
   });
 
+  it("提出が多すぎれば lint・整形に渡さず、提出ファイルの確認で要修正にする", async () => {
+    const { root, npmCli } = await vitestTask(
+      "export const f = (v, k) => v.filter((x) => x >= k);\n",
+    );
+    for (let i = 0; i < 51; i++) {
+      await makeFile(root, `src/gen/f${i}.js`, "export {};\n");
+    }
+    const result = await runTask({
+      root,
+      manifest: manifest({ submit: { files: ["src/**/*.js"] } }),
+      manifestSha256: "m",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.steps.map((s) => [s.id, s.status])).toEqual([
+      ["deps", "passed"],
+      ["lint", "skipped"],
+      ["format", "skipped"],
+      ["test", "passed"],
+      ["files", "failed"],
+    ]);
+    expect(result.steps[1]?.summary).toContain("提出するファイルが多すぎる");
+    expect(result.steps[4]?.summary).toContain("提出するファイルが多すぎます");
+    expect(result.outcome).toBe("failed");
+  });
+
   it("提出ファイルや配布ファイルが見つからなければ要修正", async () => {
     const { root, npmCli } = await vitestTask(
       "export const f = (v, k) => v.filter((x) => x >= k);\n",
@@ -403,6 +434,15 @@ describe("findTaskRoot / loadTask / saveRunResult", () => {
     expect(
       await findTaskRoot(path.join(root, "inner", "x.js"), [path.join(root, "inner")]),
     ).toBeNull();
+  });
+
+  it("大きすぎる task.json は読まない", async () => {
+    const root = await makeTask({ ".stella/task.json": `{"x":"${"a".repeat(64 * 1024)}"}` });
+    expect(await loadTask(root)).toEqual({
+      ok: false,
+      root,
+      errors: [".stella/task.json が大きすぎます (64KB まで)"],
+    });
   });
 
   it("BOM 付きの task.json も読める", async () => {
