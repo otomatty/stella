@@ -73,6 +73,7 @@
     "./tasks/catalog": "./src/tasks/catalog.ts",
     "./vscode/uris": "./src/vscode/uris.ts",
     "./tasks/submission": "./src/tasks/submission.ts",
+    "./tasks/submission-support": "./src/tasks/submission-support.ts",
     "./testing/task-submission": "./src/testing/task-submission.ts"
   },
   "scripts": {

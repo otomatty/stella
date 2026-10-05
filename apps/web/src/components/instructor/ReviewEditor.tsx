@@ -20,7 +20,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { SUPPORT_LABELS } from "@stella/shared/tasks/submission";
+import { SUPPORT_LABELS } from "@stella/shared/tasks/submission-support";
 import { formatGradingSummaryText } from "@stella/shared/review/grading-summary";
 import type {
   GradingSummary,

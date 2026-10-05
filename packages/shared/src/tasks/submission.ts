@@ -10,26 +10,15 @@ import {
   type RunResult,
 } from "./run-result.js";
 import { RUNNERS } from "./runners.js";
+import { SUPPORT_KINDS } from "./submission-support.js";
+
+export { SUPPORT_KINDS, SUPPORT_LABELS } from "./submission-support.js";
 
 export const SUBMISSION_LIMITS = {
   files: 50,
   fileBytes: 1024 * 1024,
   totalBytes: 5 * 1024 * 1024,
   metadataBytes: 1024 * 1024,
-};
-export const SUPPORT_KINDS = [
-  "hint",
-  "solution",
-  "fixed-start",
-  "instructor",
-  "ai-answer",
-] as const;
-export const SUPPORT_LABELS: Record<(typeof SUPPORT_KINDS)[number], string> = {
-  hint: "解法のヒント",
-  solution: "解答の表示",
-  "fixed-start": "固定した開始点",
-  instructor: "講師からの実装支援",
-  "ai-answer": "AI による解答生成",
 };
 export interface SupportEvent {
   kind: (typeof SUPPORT_KINDS)[number];
