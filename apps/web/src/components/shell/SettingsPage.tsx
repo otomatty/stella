@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { Loader2, Save } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { TenantSettingsCard } from "@/components/admin/TenantSettingsCard";
+import { LearningPacePanel } from "@/components/learner/LearningPacePanel";
+import { LearningPaceManager } from "@/components/instructor/LearningPaceManager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +63,10 @@ export const SettingsPage = ({
         backendEnabled={backendEnabled}
         onProfileUpdated={onProfileUpdated}
       />
+      {backendEnabled && profile && role !== "sales" && role !== "instructor" ? (
+        <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
+      ) : null}
+      {backendEnabled && role === "admin" ? <LearningPaceManager admin /> : null}
       {role === "admin" ? <TenantSettingsCard backendEnabled={backendEnabled} /> : null}
     </div>
   </>

@@ -167,13 +167,15 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
   const raw = JSON.parse(readFileSync(file, "utf8")) as CourseConfig;
   if (raw.format !== undefined && raw.format !== 1 && raw.format !== 2)
     throw new Error(`courses/${slug}: format は 1 / 2 にしてください`);
-  if (raw.format === 2) {
+  if (raw.format === 2 || raw.plannedHours !== undefined) {
     if (
       typeof raw.plannedHours !== "number" ||
       !Number.isFinite(raw.plannedHours) ||
       raw.plannedHours <= 0
     )
       throw new Error(`courses/${slug}: plannedHours は正の数にしてください`);
+  }
+  if (raw.format === 2) {
     readEnvironment(dirname(dirname(courseDir)), raw.environment);
     if (Object.keys(raw.exercises ?? {}).length)
       throw new Error(`courses/${slug}: format 2 は exercises ではなく tasks を使います`);
@@ -562,9 +564,8 @@ function buildOneCourse(
   return {
     course: {
       id: slug,
-      ...(config.format === 2
-        ? { format: 2 as const, duration: config.plannedHours, environment: config.environment }
-        : {}),
+      ...(config.format === 2 ? { format: 2 as const, environment: config.environment } : {}),
+      ...(config.plannedHours === undefined ? {} : { duration: config.plannedHours }),
       title: config.title,
       category: config.category ?? "",
       color: config.color ?? "indigo",

@@ -52,6 +52,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 ### Key caveats
 
+- **学習ペース (Issue #40)**: ホーム・設定の「学習のペース」は `GET /api/learning-pace` で都度計算する。週35時間 / `dev-env-basics` の初回開始日が既定。目標日を `enrollments.due_at` に書かない。進捗は現行ハッシュの課題合格とレッスン完了の予定時間。管理者は設定から `learner_instructors` の担当を決め、担当講師だけが他者のペース・診断を編集できる。既存cronが1週超の差を担当へ週1通通知する。確認Bは `task_progress.passed_at` の7日後。詳細は `docs/learning-pace.md`。
+
 - **「コース」→「ステージ」改名 (Phase 0)**: 受講者向けの学習単位はアプリ側では **ステージ / `Stage` / `stages`** で統一している (Web ルート `/stages/$stageId`、API `/api/cms/stages`、D1 `stages` 表 + `stage_id` / `stage_title` 列)。旧 URL `/courses...` は薄いリダイレクトルートだけ残してある。**教材リポジトリ (`packages/content`) は「講座 = course」の語彙のまま** (`courses/<slug>/course.json`、`CourseConfig`、`QuizSeed.courseId`) で、course → stage の写像は seed exporter (`packages/shared/scripts/export-seed-sql.ts`) が担う。R2 キー (`tenant/<id>/courses/...`)、`stableUuid` の名前空間キー (`course:<tenant>:<slug>`)、`assignments.stage` (VS Code 演習の S0〜S5) は**改名対象外** — 値を変えると既存の R2 オブジェクト / ステージ UUID / 演習の段階指定が壊れる。`packages/shared/src/curriculum/stages.ts` の `StageInfo` も演習の段階であって受講単位ではない。
 - **Bun toolchain**: Bun is the package manager/runtime but is NOT preinstalled on a bare VM. The startup update script installs it to `~/.bun/bin` (and appends it to `~/.bashrc`). If `bun` is not found in a shell, run `export PATH="$HOME/.bun/bin:$PATH"`.
 - **Codebase exploration (graphify)**: 知識グラフは `graphify-out/`。構成・依存を探すときは Read / Grep / Glob / Bash の前に `graphify query "<question>"`（または `path` / `explain`）。直接ファイルを読むのは、graphify で見当を付けたあとの行編集か、`graphify-out/graph.json` がまだ無いときだけ。コードを直したら `graphify update .`（AST のみ、API 費用なし）。Cursor ルールは `.cursor/rules/graphify.mdc`。サブエージェントにも同じ制約を渡す。

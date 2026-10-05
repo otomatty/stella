@@ -5,6 +5,7 @@
   "description": "【準備中】値と条件を整理し、JavaScriptで処理の流れを書けるようになるための講座です。",
   "header": "JavaScriptの値と制御",
   "tenantId": "ses",
+  "plannedHours": 105,
   "prerequisites": ["dev-env-basics"],
   "canDo": "値と条件を整理し、JavaScriptで処理の流れを書ける",
   "theme": "Web の見た目と動き",

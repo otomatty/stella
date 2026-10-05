@@ -5,6 +5,7 @@
   "description": "【準備中】CIで変更を確かめ、Webアプリを公開して運用できるようになるための講座です。",
   "header": "公開・CIと運用",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["design-quality-basics"],
   "canDo": "CIで変更を確かめ、Webアプリを公開して運用できる",
   "theme": "Web アプリを作り、届ける力",
