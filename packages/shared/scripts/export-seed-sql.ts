@@ -338,8 +338,8 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
  * 設問・選択肢の UUID は並び順で安定しているので upsert し、教材から消えた行だけ
  * prune する。毎回 delete → insert すると quiz_questions の delete が
  * quiz_options と review_cards へ cascade し、索引が無い子表を全走査したうえで
- * 受講者の復習カードまで消える。並び順の ID なので、本文が入れ替わった設問の
- * カードだけ先に落とす（同じ本文の再 seed では残す）。
+ * 受講者の復習カードまで消える。並び順の ID なので、本文か選択肢（文面・正誤）が
+ * 入れ替わった設問のカードだけ先に落とす（同じ内容の再 seed では残す）。
  * 旧 UUID (`quiz:${tenant}:${lessonId}`) の受験履歴は新 UUID へ付け替えてから消す。
  */
 function emitQuiz(
@@ -378,8 +378,24 @@ function emitQuiz(
     const qUuid = stableUuid(`quiz-q:${tenantId}:${stageId}:${quiz.lessonId}:${i}`);
     questionIds.push(qUuid);
     if (isSqlite) {
+      const optionPreds: string[] = [];
+      const optionUuids: string[] = [];
+      for (let j = 0; j < q.options.length; j++) {
+        const o = q.options[j];
+        if (o === undefined) continue;
+        const oUuid = stableUuid(`quiz-o:${tenantId}:${stageId}:${quiz.lessonId}:${i}:${j}`);
+        optionUuids.push(oUuid);
+        const correct = o.isCorrect ? "1" : "0";
+        optionPreds.push(
+          `(o.id = '${oUuid}' and (o.label <> ${strLit(o.label)} or o.is_correct <> ${correct}))`,
+        );
+      }
+      const optionMismatch =
+        optionUuids.length === 0
+          ? `(select count(*) from quiz_options o where o.question_id = '${qUuid}') <> 0`
+          : `exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and o.id not in (${sqlIn(optionUuids)})) or (select count(*) from quiz_options o where o.question_id = '${qUuid}') <> ${optionUuids.length} or exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and (${optionPreds.join(" or ")}))`;
       lines.push(
-        `delete from review_cards where question_id = '${qUuid}' and exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and qq.prompt <> ${strLit(q.prompt)});`,
+        `delete from review_cards where question_id = '${qUuid}' and (exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and qq.prompt <> ${strLit(q.prompt)}) or ${optionMismatch});`,
       );
     }
     lines.push(

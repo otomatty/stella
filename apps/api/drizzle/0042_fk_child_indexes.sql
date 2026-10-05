@@ -13,3 +13,5 @@ CREATE INDEX `quiz_questions_quiz_id_idx` ON `quiz_questions` (`quiz_id`);
 CREATE INDEX `quiz_options_question_id_idx` ON `quiz_options` (`question_id`);
 --> statement-breakpoint
 CREATE INDEX `review_cards_question_id_idx` ON `review_cards` (`question_id`);
+--> statement-breakpoint
+CREATE INDEX `review_logs_card_id_idx` ON `review_logs` (`card_id`);

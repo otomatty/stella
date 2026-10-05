@@ -856,6 +856,7 @@ export const reviewLogs = sqliteTable(
   },
   (t) => ({
     userAnsweredIdx: index("review_logs_user_answered_idx").on(t.userId, t.answeredAt),
+    cardIdx: index("review_logs_card_id_idx").on(t.cardId),
   }),
 );
 

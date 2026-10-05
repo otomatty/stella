@@ -227,9 +227,7 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(
       /delete from quiz_options where question_id in \(select id from quiz_questions where quiz_id = '[^']+'\) and id not in \(/,
     );
-    expect(sql).toMatch(
-      /delete from review_cards where question_id = '[^']+' and exists \(select 1 from quiz_questions qq where qq.id = '[^']+' and qq.prompt <> /,
-    );
+    expect(sql).toMatch(/o\.is_correct <> /);
   });
 
   it("設問ごとに正解がちょうど 1 つ（単一選択）", () => {

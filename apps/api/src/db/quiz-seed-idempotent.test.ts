@@ -28,6 +28,7 @@ const FK_INDEXES = [
   "quiz_questions_quiz_id_idx",
   "quiz_options_question_id_idx",
   "review_cards_question_id_idx",
+  "review_logs_card_id_idx",
 ] as const;
 
 interface JournalEntry {
@@ -114,6 +115,7 @@ describe("外部キーの子側に索引がある", () => {
       ["lessons_section_id_idx", "delete from lessons where section_id = 'x'"],
       ["sections_stage_id_idx", "delete from sections where stage_id = 'x'"],
       ["review_cards_question_id_idx", "delete from review_cards where question_id = 'x'"],
+      ["review_logs_card_id_idx", "delete from review_logs where card_id = 'x'"],
       ["lesson_materials_lesson_id_idx", "delete from lesson_materials where lesson_id = 'x'"],
     ] as const;
     for (const [indexName, sql] of plans) {
@@ -125,6 +127,10 @@ describe("外部キーの子側に索引がある", () => {
     expect(questionPlan).toContain("quiz_options_question_id_idx");
     expect(questionPlan).toContain("review_cards_question_id_idx");
     expect(questionPlan).not.toMatch(/SCAN quiz_options|SCAN review_cards/);
+
+    const cardPlan = planOf(db, "delete from review_cards where question_id = 'x'");
+    expect(cardPlan).toContain("review_logs_card_id_idx");
+    expect(cardPlan).not.toMatch(/SCAN review_logs/);
   });
 });
 
@@ -139,18 +145,20 @@ describe("教材 seed の再実行", () => {
     const db = migratedDb();
     applyScript(db, seedSql);
 
-    const questions = db.prepare("select id, prompt from quiz_questions limit 2").all() as {
+    const questions = db.prepare("select id, prompt from quiz_questions limit 3").all() as {
       id: string;
       prompt: string;
     }[];
     const question = questions[0];
     const shifted = questions[1];
+    const rekeyed = questions[2];
     expect(question).toBeDefined();
     expect(shifted).toBeDefined();
-    if (question === undefined || shifted === undefined) return;
+    expect(rekeyed).toBeDefined();
+    if (question === undefined || shifted === undefined || rekeyed === undefined) return;
     const questionsBefore = countOf(db, "quiz_questions");
     const optionsBefore = countOf(db, "quiz_options");
-    expect(questionsBefore).toBeGreaterThan(1);
+    expect(questionsBefore).toBeGreaterThan(2);
 
     db.prepare(
       "insert into profiles (id, tenant_id, role, display_name, created_at) values ('u-srs', 'ses', 'student', 'SRS', 1)",
@@ -161,16 +169,21 @@ describe("教材 seed の再実行", () => {
     );
     insertCard.run("card-1", question.id);
     insertCard.run("card-2", shifted.id);
+    insertCard.run("card-3", rekeyed.id);
     const insertLog = db.prepare(
       `insert into review_logs (id, tenant_id, user_id, card_id, question_id, correct, answered_at)
        values (?, 'ses', 'u-srs', ?, ?, 1, 1)`,
     );
     insertLog.run("log-1", "card-1", question.id);
     insertLog.run("log-2", "card-2", shifted.id);
+    insertLog.run("log-3", "card-3", rekeyed.id);
     db.prepare("update quiz_questions set prompt = ? where id = ?").run(
       `${shifted.prompt} (moved)`,
       shifted.id,
     );
+    db.prepare(
+      "update quiz_options set is_correct = case is_correct when 1 then 0 else 1 end where id = (select id from quiz_options where question_id = ? limit 1)",
+    ).run(rekeyed.id);
 
     applyScript(db, seedSql);
 
@@ -190,5 +203,7 @@ describe("教材 seed の再実行", () => {
     });
     expect(db.prepare("select id from review_cards where id = 'card-2'").get()).toBeUndefined();
     expect(db.prepare("select id from review_logs where id = 'log-2'").get()).toBeUndefined();
+    expect(db.prepare("select id from review_cards where id = 'card-3'").get()).toBeUndefined();
+    expect(db.prepare("select id from review_logs where id = 'log-3'").get()).toBeUndefined();
   }, 180_000);
 });
