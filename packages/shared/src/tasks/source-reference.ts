@@ -11,7 +11,20 @@ export interface PublicSourceReference {
   usedFor: string;
   authorship: string;
   reuse: string;
+  /** 引用・転載・改変で教材に残す帰属表示の文言。 */
   attribution?: string;
+  /**
+   * 帰属表示の根拠。文言 (`attribution`) に原作者や条件の URL が書かれているとは限らないので、
+   * 台帳で必須にしている項目を文言と組で配る。
+   */
+  attributionTerms?: PublicAttributionTerms;
+}
+/** 帰属表示に要る原作者・再利用範囲・利用条件の URL・条件の確認日。 */
+export interface PublicAttributionTerms {
+  creator: string;
+  scope: string;
+  conditionsUrl: string;
+  checkedAt: string;
 }
 
 export function isPublicSourceUrl(value: unknown): value is string {
@@ -63,6 +76,30 @@ export function parsePublicSourceReferences(raw: unknown): PublicSourceReference
       if (typeof row.attribution !== "string" || !row.attribution.trim())
         throw new Error("references.attribution は空でない文字列が必要です");
       result.attribution = row.attribution;
+    }
+    // 文言だけ・条件だけでは帰属表示として足りないので、組でしか通さない。
+    if ((row.attribution === undefined) !== (row.attributionTerms === undefined))
+      throw new Error("references.attribution と attributionTerms は組で書いてください");
+    if (row.attributionTerms !== undefined) {
+      const terms = row.attributionTerms as Record<string, unknown>;
+      if (typeof terms !== "object" || terms === null || Array.isArray(terms))
+        throw new Error("references.attributionTerms はオブジェクトで書いてください");
+      const field = (key: "creator" | "scope" | "checkedAt"): string => {
+        const text = terms[key];
+        if (typeof text !== "string" || !text.trim())
+          throw new Error(`references.attributionTerms.${key} は空でない文字列が必要です`);
+        return text.trim();
+      };
+      if (!isPublicSourceUrl(terms.conditionsUrl))
+        throw new Error(
+          "references.attributionTerms.conditionsUrl は公開の HTTP(S) URL が必要です",
+        );
+      result.attributionTerms = {
+        creator: field("creator"),
+        scope: field("scope"),
+        conditionsUrl: new URL(terms.conditionsUrl).href,
+        checkedAt: field("checkedAt"),
+      };
     }
     return result;
   });

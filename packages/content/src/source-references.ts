@@ -1,5 +1,9 @@
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
 import { isSafeRelativePattern } from "../../shared/src/tasks/manifest.js";
 import {
   isPublicSourceUrl,
@@ -239,7 +243,7 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
         text: text(attr.text, "attribution.text"),
         creator: text(attr.creator, "原作者"),
         scope: text(attr.scope, "再利用範囲"),
-        conditionsUrl: attr.conditionsUrl,
+        conditionsUrl: new URL(attr.conditionsUrl).href,
         checkedAt: date(attr.checkedAt, "条件確認日"),
         displayAt: text(attr.displayAt, "表示位置"),
       };
@@ -309,7 +313,19 @@ export function publicReferences(
           usedFor: use.usedFor,
           authorship: use.authorship,
           reuse: use.reuse,
-          ...(use.attribution ? { attribution: use.attribution.text } : {}),
+          // 文言 (text) に原作者や条件が書かれているとは限らない。台帳で必須にした項目は
+          // 文言と一緒に配り、表示側でも省略しない。表示位置 (displayAt) は配らない。
+          ...(use.attribution
+            ? {
+                attribution: use.attribution.text,
+                attributionTerms: {
+                  creator: use.attribution.creator,
+                  scope: use.attribution.scope,
+                  conditionsUrl: use.attribution.conditionsUrl,
+                  checkedAt: use.attribution.checkedAt,
+                },
+              }
+            : {}),
         };
       }),
     );
@@ -317,45 +333,53 @@ export function publicReferences(
 function markdownText(value: string): string {
   return value.replace(/[\\`*_{}\[\]<>]/g, "\\$&").replace(/[\r\n]+/g, " ");
 }
+/**
+ * 帰属表示の文言と、その根拠 (原作者・再利用範囲・利用条件・条件の確認日)。条件の URL は
+ * 文言に混ぜてエスケープすると GFM の自動リンクが `\_` ごと href にしてしまうので、リンクで書く。
+ */
+function attributionMarkdown(ref: PublicSourceReference): string {
+  if (!ref.attribution) return "";
+  const terms = ref.attributionTerms;
+  return `\n  - ${markdownText(ref.attribution)}${terms ? `\n  - 原作者: ${markdownText(terms.creator)} / 再利用範囲: ${markdownText(terms.scope)} / 利用条件: [${markdownText(terms.conditionsUrl)}](<${terms.conditionsUrl}>) / 条件確認日: ${terms.checkedAt}` : ""}`;
+}
 export function referencesMarkdown(refs: PublicSourceReference[], heading = "参照元"): string {
   if (refs.length === 0) return "";
   const rows = new Map<string, PublicSourceReference>();
-  for (const ref of refs) rows.set(`${ref.id}:${ref.usedFor}:${ref.attribution ?? ""}`, ref);
-  return `\n\n## ${heading}\n\n${[...rows.values()].map((r) => `- [${markdownText(r.title)}](<${r.url}>) — ${markdownText(r.publisher)} / ${markdownText(r.section)}\n  - 確認すること: ${markdownText(r.usedFor)}\n  - ${SOURCE_AUTHORSHIP_LABELS[r.authorship]}・${SOURCE_REUSE_LABELS[r.reuse]} / 資料: ${markdownText(r.documentVersion)} / 確認日: ${r.checkedAt} / 環境: ${markdownText(r.environmentRef)}${r.attribution ? `\n  - ${markdownText(r.attribution)}` : ""}`).join("\n")}\n`;
+  for (const ref of refs)
+    rows.set(
+      `${ref.id}:${ref.usedFor}:${ref.attribution ?? ""}:${JSON.stringify(ref.attributionTerms ?? null)}`,
+      ref,
+    );
+  return `\n\n## ${heading}\n\n${[...rows.values()].map((r) => `- [${markdownText(r.title)}](<${r.url}>) — ${markdownText(r.publisher)} / ${markdownText(r.section)}\n  - 確認すること: ${markdownText(r.usedFor)}\n  - ${SOURCE_AUTHORSHIP_LABELS[r.authorship]}・${SOURCE_REUSE_LABELS[r.reuse]} / 資料: ${markdownText(r.documentVersion)} / 確認日: ${r.checkedAt} / 環境: ${markdownText(r.environmentRef)}${attributionMarkdown(r)}`).join("\n")}\n`;
+}
+/** front-matter は本文ではない。受講者の本文 (referencedMarkdown) と同じ範囲を読む。 */
+function markdownBody(source: string): string {
+  return /^---\r?\n/.test(source) ? stripFrontMatter(source) : source;
 }
 /**
- * Markdown の画像の参照先。CommonMark と同じく `<...>` 囲み・対になった括弧・バックスラッシュの
- * エスケープを読み、空白の後ろのタイトル (`"caption"`) は含めない。
+ * Markdown の画像の参照先。受講者の画面・配布 PDF と同じ CommonMark + GFM の構文木で読むので、
+ * alt のエスケープ (`![a\]b](...)`)・`<...>` 囲み・括弧・タイトル付きの参照先も、参照形式
+ * (`![図][page]`・`![page][]`・`![page]` と `[page]: assets/page.svg`) の画像も拾う。
+ * コード・HTML コメントの中の画像の書き方は画像として描かれないので数えない。
  */
 export function markdownImageDestinations(source: string): string[] {
+  const tree = unified().use(remarkParse).use(remarkGfm).parse(markdownBody(source));
+  // ラベルは構文木の identifier (大文字小文字・空白を正規化した値) で引く。同じラベルの
+  // 定義が重なったら CommonMark と同じく最初の定義を使う。
+  const definitions = new Map<string, string>();
+  visit(tree, "definition", (node) => {
+    if (!definitions.has(node.identifier)) definitions.set(node.identifier, node.url);
+  });
   const destinations: string[] = [];
-  for (const m of source.matchAll(/!\[[^\]]*\]\(/g)) {
-    let i = (m.index ?? 0) + m[0].length;
-    while (source[i] === " " || source[i] === "\t") i++;
-    if (source[i] === "<") {
-      const end = source.indexOf(">", i + 1);
-      const newline = source.indexOf("\n", i + 1);
-      if (end > i && (newline === -1 || end < newline)) destinations.push(source.slice(i + 1, end));
-      continue;
-    }
-    let depth = 0;
-    let destination = "";
-    for (; i < source.length; i++) {
-      const ch = source[i];
-      if (ch === "\\" && /[!-/:-@[-`{-~]/.test(source[i + 1] ?? "")) {
-        destination += source[++i];
-        continue;
-      }
-      if (/\s/.test(ch)) break;
-      if (ch === "(") depth++;
-      else if (ch === ")") {
-        if (depth === 0) break;
-        depth--;
-      }
-      destination += ch;
-    }
-    if (destination) destinations.push(destination);
-  }
+  visit(tree, (node) => {
+    const url =
+      node.type === "image"
+        ? node.url
+        : node.type === "imageReference"
+          ? definitions.get(node.identifier)
+          : undefined;
+    if (url) destinations.push(url);
+  });
   return destinations;
 }
 export function referenceContentIds(source: string, contentId: string): string[] {
@@ -391,7 +415,7 @@ export function referencedMarkdown(
   contentId?: string,
 ): string {
   // 参照元の記録が読めない単元でも、front-matter (sourceRefs) を受講者の本文に出さない。
-  const body = /^---\r?\n/.test(source) ? stripFrontMatter(source) : source;
+  const body = markdownBody(source);
   if (!refs) return body;
   return body + referenceNotesMarkdown(source, references, refs, contentId);
 }

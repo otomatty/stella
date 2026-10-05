@@ -28,6 +28,7 @@ import {
   getLanguage,
   getStaticAnalysisSettings,
 } from "../../shared/src/assignment-helpers.js";
+import { parsePublicSourceReferences } from "../../shared/src/tasks/source-reference.js";
 import {
   parseUnitReferences,
   publicReferences,
@@ -486,6 +487,38 @@ describe("参照元の公開ゲートと表示", () => {
       "m0/l1/t1/assets/b).svg",
     ]);
   });
+  it("alt のエスケープと参照形式の画像も使用箇所に結び付け、コードの中の画像は数えない", () => {
+    const source = [
+      "---",
+      "sourceRefs: [SRC-a]",
+      "note: ![front](t1/assets/front.svg)",
+      "---",
+      "![a\\]b](t1/assets/escaped.svg)",
+      "",
+      "![図][Page] と ![page][] と ![page]、未定義の ![none] は画像にならない。",
+      "",
+      "`![code](t1/assets/span.svg)`",
+      "",
+      "```md",
+      "![fence](t1/assets/fence.svg)",
+      "```",
+      "",
+      "    ![indented](t1/assets/indented.svg)",
+      "",
+      "<!-- ![comment](t1/assets/comment.svg) -->",
+      "",
+      '[ PAGE ]: t1/assets/page.svg "タイトル"',
+      "[page]: t1/assets/second-definition.svg",
+      "[unused]: t1/assets/unused.svg",
+    ].join("\n");
+    expect(referenceContentIds(source, "m0/l1/doc.md")).toEqual([
+      "m0/l1/doc.md",
+      "m0/l1/t1/assets/escaped.svg",
+      "m0/l1/t1/assets/page.svg",
+      "m0/l1/t1/assets/page.svg",
+      "m0/l1/t1/assets/page.svg",
+    ]);
+  });
   it("参照元の記録が無くても front-matter (sourceRefs) を本文に出さない", () => {
     const body = referencedMarkdown("---\nsourceRefs: [mdn-html]\n---\n# 本文\n", [], undefined);
     expect(body).not.toContain("sourceRefs");
@@ -757,11 +790,12 @@ describe("参照元の公開ゲートと表示", () => {
         reuse: "adapt-diagram",
         reviewStatus: "approved",
         attribution: {
+          // 文言には原作者も条件も書かない。台帳の項目から補って表示することを確かめる。
           text: "Original diagram credit",
           creator: "Fixture author",
-          scope: "全体",
-          conditionsUrl: "https://example.org/license",
-          checkedAt: "2026-10-05",
+          scope: "図の配色と配置",
+          conditionsUrl: "https://example.org/Attrib_copyright_license",
+          checkedAt: "2026-09-30",
           displayAt: "l1-save-and-preview/t1-saved-html/assets/page.svg",
         },
       });
@@ -773,12 +807,31 @@ describe("参照元の公開ゲートと表示", () => {
     const markdown = manifest.courses[0].sections?.[0].lessons.find((l) =>
       l.id.startsWith("doc-"),
     )?.markdown;
-    expect(markdown).toContain("Original diagram credit");
+    const attribution = [
+      "Original diagram credit",
+      "原作者: Fixture author",
+      "再利用範囲: 図の配色と配置",
+      // URL はエスケープした文字列ではなくリンク先として書く (GFM の自動リンクに `\_` が混ざらない)。
+      "利用条件: [https://example.org/Attrib\\_copyright\\_license](<https://example.org/Attrib_copyright_license>)",
+      "条件確認日: 2026-09-30",
+    ];
+    for (const part of attribution) expect(markdown).toContain(part);
     const registry = readSourceRegistry(root);
     const refs = readUnitReferences(unit);
-    expect(referencesMarkdown(publicReferences(refs, registry))).toContain(
-      "Original diagram credit",
-    );
+    const references = publicReferences(refs, registry);
+    for (const part of attribution) expect(referencesMarkdown(references)).toContain(part);
+    // 課題の manifest と同じ公開境界を通しても、帰属表示の項目を落とさない。表示位置は配らない。
+    const credited = parsePublicSourceReferences(references).find((r) => r.attribution);
+    expect(credited).toMatchObject({
+      attribution: "Original diagram credit",
+      attributionTerms: {
+        creator: "Fixture author",
+        scope: "図の配色と配置",
+        conditionsUrl: "https://example.org/Attrib_copyright_license",
+        checkedAt: "2026-09-30",
+      },
+    });
+    expect(JSON.stringify(credited)).not.toContain("displayAt");
   });
   it("独自制作だけのスライドにも解説と同じ独自制作の記録を出す", () => {
     const { root, unit } = fixture();

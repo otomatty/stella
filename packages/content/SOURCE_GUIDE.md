@@ -28,7 +28,7 @@
 }
 ```
 
-独自制作だけの箇所は `authorship: original` または `original-exercise`、`reuse: original`、`sourceRefs: []` と用途を記録できます。概念を資料に依拠する箇所にはその資料を付けます。引用 (`quote`・`reprint`) は `quotation`、改変 (`adapt-code`・`adapt-diagram`) は `adapted`、要約 (`summary`) は `concept-reference` に限り、利用方法と制作区分を両方向で一致させます。`quote`・`reprint`・`adapt-code`・`adapt-diagram` には `attribution` の `text`・`creator`・`scope`・`conditionsUrl`・`checkedAt`・`displayAt` を追加します。`displayAt` は利用する公開ファイルの `contentId` です。必要な表示を本文・図の近くと一覧に残します。
+独自制作だけの箇所は `authorship: original` または `original-exercise`、`reuse: original`、`sourceRefs: []` と用途を記録できます。概念を資料に依拠する箇所にはその資料を付けます。引用 (`quote`・`reprint`) は `quotation`、改変 (`adapt-code`・`adapt-diagram`) は `adapted`、要約 (`summary`) は `concept-reference` に限り、利用方法と制作区分を両方向で一致させます。`quote`・`reprint`・`adapt-code`・`adapt-diagram` には `attribution` の `text`・`creator`・`scope`・`conditionsUrl`・`checkedAt`・`displayAt` を追加します。`displayAt` は利用する公開ファイルの `contentId` です。必要な表示を本文・図の近くと一覧に残します。表示と課題の配布データには `text` に加えて原作者・再利用範囲・条件のURL・条件確認日を自動で添えるので、`text` にそれらを書き写す必要はありません。
 
 書籍は `kind: book` とし、`book` に `isbn`・`year`・`edition`・`pages`・`textChecked` を記録します。出版社の紹介を読んだだけで本文を確認済みにしません。節名・版は資料側の表記を使い、技術のトップページだけを根拠にしません。
 

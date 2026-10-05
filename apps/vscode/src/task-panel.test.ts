@@ -87,6 +87,12 @@ describe("buildTaskPanelHtml", () => {
             authorship: "original-exercise",
             reuse: "concept-reference",
             attribution: "Required credit",
+            attributionTerms: {
+              creator: "<b>Fixture author</b>",
+              scope: "図の配色と配置",
+              conditionsUrl: "https://example.org/Attrib_copyright_license",
+              checkedAt: "2026-09-30",
+            },
           },
         ],
       },
@@ -97,6 +103,13 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("見出しの受入条件");
     expect(html).toContain("教材独自の課題 / 概念の参照");
     expect(html).toContain("Required credit");
+    expect(html).toContain("原作者: &lt;b&gt;Fixture author&lt;/b&gt;");
+    expect(html).not.toContain("<b>");
+    expect(html).toContain("再利用範囲: 図の配色と配置");
+    expect(html).toContain(
+      '利用条件: <a href="https://example.org/Attrib_copyright_license">https://example.org/Attrib_copyright_license</a>',
+    );
+    expect(html).toContain("条件確認日: 2026-09-30");
     expect(html).toContain("static-web-01@1");
   });
 
