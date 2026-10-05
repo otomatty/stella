@@ -2,9 +2,9 @@
  * 認証済みユーザー自身のプロフィール API (旧 auth.ts の profiles 直アクセスの置き換え)。
  *
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
- *   POST /api/me  … 表示名の自己更新のみ / 未招待は invite_required
+ *   POST /api/me  … 表示名・週の時間・開始日の自己更新 / 未招待は invite_required
  *
- * 更新できるのは display_name だけ。 role / tenant / email は招待とログイン (JWT) が真実なので、
+ * role / tenant / email は招待とログイン (JWT) が真実なので、
  * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
  *
  * getCaller は「プロフィール必須」だが、 ここは JWT 検証のみで profile 有無を判定するため
@@ -13,11 +13,13 @@
 
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
+import { parsePaceSettings } from "@stella/shared/study/pace";
 
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
 import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
 import type { Env } from "../env.js";
+import { paceProfileUpdate } from "../lib/learning-pace.js";
 
 export const meRoute = new Hono<{ Bindings: Env }>();
 
@@ -34,6 +36,8 @@ const PROFILE_COLS = {
   email: profiles.email,
   disabled: profiles.disabled,
   created_at: profiles.createdAt,
+  weekly_hours: profiles.weeklyHours,
+  learning_start_date: profiles.learningStartDate,
 } as const;
 
 meRoute.get("/api/me", async (c) => {
@@ -56,6 +60,7 @@ meRoute.get("/api/me", async (c) => {
     if (!row) {
       throw new ApiError("invite_required", 403);
     }
+    if (row.disabled) throw new ApiError("このアカウントは無効化されています", 403);
     const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
     return c.json({
       profile,
@@ -79,36 +84,41 @@ meRoute.post("/api/me", async (c) => {
     const payload = await verifyToken(c);
     const userId = payload.sub as string;
     const db = getDb(c.env);
-    const body = (await c.req.json().catch(() => null)) as {
-      display_name?: unknown;
-    } | null;
-
-    const displayName = typeof body?.display_name === "string" ? body.display_name.trim() : "";
-    if (!displayName) {
-      throw new ApiError("ユーザー名を入力してください", 400);
+    const raw: unknown = await c.req.json().catch(() => null);
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw))
+      throw new ApiError("更新する設定を入力してください", 400);
+    const body = raw as Record<string, unknown>;
+    const update: Partial<typeof profiles.$inferInsert> = {};
+    if ("display_name" in body) {
+      const displayName = typeof body.display_name === "string" ? body.display_name.trim() : "";
+      if (!displayName) throw new ApiError("ユーザー名を入力してください", 400);
+      if (displayName.length > MAX_DISPLAY_NAME_LENGTH)
+        throw new ApiError(`ユーザー名は${MAX_DISPLAY_NAME_LENGTH}文字以内で入力してください`, 400);
+      Object.assign(update, {
+        displayName,
+        initials: displayName.slice(0, 2).toUpperCase(),
+        nameSource: "user",
+      });
     }
-    if (displayName.length > MAX_DISPLAY_NAME_LENGTH) {
-      throw new ApiError(`ユーザー名は${MAX_DISPLAY_NAME_LENGTH}文字以内で入力してください`, 400);
+    try {
+      Object.assign(update, paceProfileUpdate(parsePaceSettings(body), userId));
+    } catch (err) {
+      throw new ApiError(err instanceof Error ? err.message : "学習設定が不正です", 400);
     }
+    if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
 
     const existing = await db
-      .select({ id: profiles.id })
+      .select({ id: profiles.id, disabled: profiles.disabled })
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);
     if (!existing[0]) {
       throw new ApiError("invite_required", 403);
     }
+    if (existing[0].disabled) throw new ApiError("このアカウントは無効化されています", 403);
 
     // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
-    await db
-      .update(profiles)
-      .set({
-        displayName,
-        initials: displayName.slice(0, 2).toUpperCase(),
-        nameSource: "user",
-      })
-      .where(eq(profiles.id, userId));
+    await db.update(profiles).set(update).where(eq(profiles.id, userId));
 
     const rows = await db
       .select(PROFILE_COLS)

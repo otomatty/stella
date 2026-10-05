@@ -39,6 +39,7 @@ export type LessonProgressMap = Record<string, LessonProgressEntry>;
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
+const syncedListeners = new Set<Listener>();
 let cache: LessonProgressMap = readFromStorage();
 let pendingFlush: ReturnType<typeof setTimeout> | null = null;
 
@@ -269,6 +270,8 @@ async function flushRemote(): Promise<void> {
     // シェルのクリアダイアログへ流す。identity が切り替わっていたら前ユーザーの分なので出さない。
     if (identity === current) {
       emitStageCleared(toStageClearedEvents(clearedStages));
+      if (entries.some(({ entry }) => entry.completed))
+        for (const listener of syncedListeners) listener();
     }
   } catch (err) {
     console.error("[lesson-progress] remote upsert failed", err);
@@ -387,6 +390,12 @@ export function loadMap(): LessonProgressMap {
 export function subscribe(listener: Listener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** 完了進捗がサーバに届いてから、予定時間を使う表示を取り直す。 */
+export function subscribeProgressSynced(listener: Listener): () => void {
+  syncedListeners.add(listener);
+  return () => syncedListeners.delete(listener);
 }
 
 export function getEntry(lessonId: string): LessonProgressEntry | undefined {

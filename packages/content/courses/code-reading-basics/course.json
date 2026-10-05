@@ -5,6 +5,7 @@
   "description": "【準備中】未知のコードを調べ、技術を比較して最小の変更を提案できるようになるための講座です。",
   "header": "未知のコードと技術の比較",
   "tenantId": "ses",
+  "plannedHours": 35,
   "prerequisites": ["deploy-ops-basics"],
   "canDo": "未知のコードを調べ、技術を比較して最小の変更を提案できる",
   "theme": "Web アプリを作り、届ける力",

@@ -5,6 +5,7 @@
   "description": "【準備中】HTMLとJavaScriptで、状態と操作を持つUI部品を作れるようになるための講座です。",
   "header": "HTMLとJavaScriptのUI部品",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["dom-basics"],
   "canDo": "HTMLとJavaScriptで、状態と操作を持つUI部品を作れる",
   "theme": "Web の見た目と動き",

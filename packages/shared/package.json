@@ -44,6 +44,7 @@
     "./skill-map/skill-check": "./src/skill-map/skill-check.ts",
     "./skill-map/focus": "./src/skill-map/focus.ts",
     "./study/activity": "./src/study/activity.ts",
+    "./study/pace": "./src/study/pace.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
     "./srs/sm2": "./src/srs/sm2.ts",
     "./srs/types": "./src/srs/types.ts",
@@ -74,7 +75,8 @@
     "./vscode/uris": "./src/vscode/uris.ts",
     "./tasks/submission": "./src/tasks/submission.ts",
     "./tasks/submission-support": "./src/tasks/submission-support.ts",
-    "./testing/task-submission": "./src/testing/task-submission.ts"
+    "./testing/task-submission": "./src/testing/task-submission.ts",
+    "./tasks/source-reference": "./src/tasks/source-reference.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

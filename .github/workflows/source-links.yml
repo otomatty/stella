@@ -1,0 +1,39 @@
+name: Source links
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Check registered sources
+        run: bun run --filter=@stella/content check:links
+      - name: Save link and manual confirmation records
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-link-report
+          path: |
+            packages/content/dist/source-link-report.json
+            packages/content/dist/source-link-summary.md
+          retention-days: 90
+      - name: Publish result summary
+        if: always()
+        run: |
+          if [ -f packages/content/dist/source-link-summary.md ]; then
+            cat packages/content/dist/source-link-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi

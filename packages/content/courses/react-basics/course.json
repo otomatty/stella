@@ -5,6 +5,7 @@
   "description": "【準備中】Reactのコンポーネントと状態で、対話的な画面を作れるようになるための講座です。",
   "header": "Reactの基礎と状態",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["http-async-basics"],
   "canDo": "Reactのコンポーネントと状態で、対話的な画面を作れる",
   "theme": "Web の見た目と動き",

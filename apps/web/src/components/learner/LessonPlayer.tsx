@@ -462,7 +462,14 @@ export const LessonPlayer = ({
 
                 <TabsContent value="content">
                   {isQuiz ? (
-                    <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
+                    <>
+                      <QuizPlayer lessonId={lessonObj.id} onComplete={handleMarkComplete} />
+                      {lessonObj.markdown ? (
+                        <div className="mt-6">
+                          <LessonMarkdown>{lessonObj.markdown}</LessonMarkdown>
+                        </div>
+                      ) : null}
+                    </>
                   ) : isAssignment && stage.format !== 2 ? (
                     <AssignmentSubmitPanel
                       tenantId={tenantId}

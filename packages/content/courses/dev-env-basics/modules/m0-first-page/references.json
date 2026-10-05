@@ -1,7 +1,40 @@
-[
-  {
-    "id": "mdn-html",
-    "title": "MDN: HTML の基本",
-    "url": "https://developer.mozilla.org/ja/docs/Learn_web_development/Getting_started/Your_first_website/Creating_the_content"
-  }
-]
+{
+  "schemaVersion": "2.1",
+  "unitId": "dev-env-basics/m0-first-page@1",
+  "contentHash": "eb00c4db441aa96c745dc557d8cd8611d3c62c91c875de39cfc9f5815d74345f",
+  "environmentRef": "static-web-01@1",
+  "uses": [
+    {
+      "contentId": "l1-save-and-preview/t1-saved-html/slides.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "HTML の文書と見出しを書き、保存したファイルをブラウザーで確認する説明と自作のコード例",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-save-and-preview/doc.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "HTML がページの構造を記述すること、保存とブラウザー表示を対応させる説明",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-save-and-preview/knowledge.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "HTML の文書構造と、表示を確認する前に保存するという自作問題の正答・解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q01-first-page/README.md",
+      "sourceRefs": ["SRC-mdn-html-20261005"],
+      "usedFor": "教材独自の課題。HTML 文書と h1 の見出しを保存し、表示して確かめる受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}

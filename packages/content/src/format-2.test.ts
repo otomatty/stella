@@ -19,7 +19,7 @@ function fixture() {
   roots.push(root);
   mkdirSync(join(root, "courses"));
   cpSync(sample, join(root, "courses/dev-env-basics"), { recursive: true });
-  for (const name of ["skills.json", "patterns.json", "environments"])
+  for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
   return root;
 }

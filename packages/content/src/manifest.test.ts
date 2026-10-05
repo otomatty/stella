@@ -8,6 +8,7 @@ import {
 import { SKILL_MAP_ISLAND_CATEGORIES } from "../../shared/src/skill-map/islands.js";
 import { describe, expect, it } from "vitest";
 import { buildContentManifest, collectCourseThumbnails } from "./manifest.js";
+import { LEARNING_PROGRAM_SLUGS } from "../../shared/src/study/pace.js";
 
 describe("buildContentManifest", () => {
   const { courses, quizzes } = buildContentManifest();
@@ -19,6 +20,32 @@ describe("buildContentManifest", () => {
     expect(courses.map((c) => c.id)).toContain("salesforce-dev-basics");
     expect(sample.category).toBe("Salesforce案件");
     expect(sample.title).toBe("Salesforce 開発 入門");
+  });
+
+  it("標準18講座の予定時間が教材から入り、合計1260時間になる", () => {
+    const program = courses.filter((course) =>
+      (LEARNING_PROGRAM_SLUGS as readonly string[]).includes(course.id),
+    );
+    expect(program).toHaveLength(18);
+    expect(program.every((course) => (course.duration ?? 0) > 0)).toBe(true);
+    expect(program.reduce((sum, course) => sum + (course.duration ?? 0), 0)).toBe(1260);
+  });
+
+  it("旧形式でも予定時間をそのまま使い、未設定は空のまま、不正値は拒否する", () => {
+    const root = mkdtempSync(join(tmpdir(), "manifest-planned-hours-"));
+    const courseDir = join(root, "legacy");
+    mkdirSync(join(courseDir, "modules"), { recursive: true });
+    const file = join(courseDir, "course.json");
+    try {
+      writeFileSync(file, JSON.stringify({ title: "旧講座", plannedHours: 27.5 }));
+      expect(buildContentManifest(root).courses[0].duration).toBe(27.5);
+      writeFileSync(file, JSON.stringify({ title: "旧講座" }));
+      expect(buildContentManifest(root).courses[0].duration).toBeUndefined();
+      writeFileSync(file, JSON.stringify({ title: "旧講座", plannedHours: -1 }));
+      expect(() => buildContentManifest(root)).toThrow(/plannedHours/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("Section はモジュール 7 個", () => {
