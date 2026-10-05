@@ -388,16 +388,19 @@ async function retentionBasis(
       return null;
     lastPassed = Math.max(lastPassed, a.passedAt.getTime());
   }
+  // 証跡も今の版の確認Aへの提出に限る。版が変わって確かめなくなったスキルの古い証跡は使わない。
   const evidence = await db
     .selectDistinct({ skillId: skillEvidence.skillId })
     .from(skillEvidence)
     .innerJoin(submissions, eq(submissions.id, skillEvidence.submissionId))
+    .innerJoin(tasks, eq(tasks.id, submissions.taskId))
     .where(
       and(
         eq(skillEvidence.userId, studentId),
         eq(skillEvidence.assisted, false),
         eq(submissions.tenantId, tenantId),
         eq(submissions.studentId, studentId),
+        eq(submissions.taskContentHash, tasks.contentHash),
         inArray(
           submissions.taskId,
           preceding.map((a) => a.id),

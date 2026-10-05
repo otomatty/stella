@@ -108,9 +108,14 @@ export function decideOutcome(
   return "passed";
 }
 
-/** 提出してよい結果か。全部の手順が通り、提出するファイルがあること。 */
-export function canSubmit(result: Pick<RunResult, "outcome" | "files">): boolean {
-  return result.outcome === "passed" && result.files.length > 0;
+/**
+ * 提出してよい結果か。全部の手順が通り、提出するファイルがあること。
+ * 環境診断は提出ファイルを持たない (`submit.files: []` を許す唯一の runner) ので、通れば提出できる。
+ */
+export function canSubmit(result: Pick<RunResult, "outcome" | "files" | "runner">): boolean {
+  return (
+    result.outcome === "passed" && (result.files.length > 0 || result.runner === "env-diagnose")
+  );
 }
 
 export const RUN_OUTCOME_LABELS: Readonly<Record<RunOutcome, string>> = {

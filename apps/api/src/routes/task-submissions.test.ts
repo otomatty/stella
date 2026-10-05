@@ -355,7 +355,15 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       );
     });
     /** 確認課題の提出を作り、講師が合格にする。 */
-    async function passCheck(taskId: string, kind: string, submittedAt: Date) {
+    async function passCheck(
+      taskId: string,
+      kind: string,
+      submittedAt: Date,
+      version: { contentHash: string; skills: string[]; attempt?: number } = {
+        contentHash: hash,
+        skills: ["html"],
+      },
+    ) {
       const id = crypto.randomUUID();
       await db.insert(submissions).values({
         id,
@@ -366,8 +374,9 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         code: "",
         taskId,
         taskKind: kind,
-        taskContentHash: hash,
-        assessedSkills: ["html"],
+        taskContentHash: version.contentHash,
+        assessedSkills: version.skills,
+        attempt: version.attempt ?? 1,
         submittedAt,
       });
       await reviewTaskSubmission(db, caller, id, "pass", "");
@@ -445,6 +454,46 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         .where(eq(tasks.id, "check-a2"));
       const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
       expect(await levelOf(b)).toBe("independent");
+    });
+
+    it("確認Aの新しい版で確かめなくなったスキルは、旧版の証跡ではBを定着にしない", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      await passA(aPassed);
+      // 確認Aを改訂し、html ではなく css を確かめる版にする。受講者は新しい版にも合格する。
+      const revised = { contentHash: "e".repeat(64), skills: ["css"], attempt: 2 };
+      await db.insert(skills).values({ id: "css", title: "CSS" });
+      for (const taskId of ["check-a", "check-a2"]) {
+        await db
+          .update(tasks)
+          .set({ contentHash: revised.contentHash })
+          .where(eq(tasks.id, taskId));
+        await passCheck(taskId, "assessment-a", new Date(aPassed), revised);
+        await db
+          .update(taskProgress)
+          .set({ passedAt: new Date(aPassed) })
+          .where(eq(taskProgress.taskId, taskId));
+      }
+      // 確認Aは今の版で合格しているので、前提そのものは満たす (css なら定着になる)。
+      expect(
+        (await db.select().from(taskProgress)).filter((p) => p.taskId.startsWith("check-a")),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ taskId: "check-a", contentHash: revised.contentHash }),
+          expect.objectContaining({ taskId: "check-a2", contentHash: revised.contentHash }),
+        ]),
+      );
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY), {
+        contentHash: hash,
+        skills: ["html", "css"],
+      });
+      const levels = await db
+        .select({ skillId: skillEvidence.skillId, level: skillEvidence.level })
+        .from(skillEvidence)
+        .where(eq(skillEvidence.submissionId, b));
+      expect(Object.fromEntries(levels.map((l) => [l.skillId, l.level]))).toEqual({
+        html: "independent",
+        css: "retained",
+      });
     });
 
     it("確認Aが支援付きの合格なら、Bを定着にしない", async () => {

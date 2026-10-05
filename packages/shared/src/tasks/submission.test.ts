@@ -26,6 +26,25 @@ describe("提出の機械照合", () => {
       expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
     },
   );
+  it("提出ファイルを持たない環境診断は、通っていれば照合に通る", async () => {
+    const { input, bundle } = await submissionFixture({
+      runner: "env-diagnose",
+      submit: { files: [] },
+      protected: [],
+    });
+    input.files = [];
+    input.protected = [];
+    input.localResult.files = [];
+    input.localResult.protected = [];
+    input.localResult.steps = [step("diagnose")];
+    expect((await verifyTaskSubmission(input, bundle)).check).toEqual({
+      matched: true,
+      reasons: [],
+    });
+    input.localResult.steps = [step("diagnose", "failed")];
+    input.localResult.outcome = "failed";
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
+  });
   it("JavaScriptを提出しない課題はlint対象なしの省略を受け入れる", async () => {
     const { input, bundle } = await submissionFixture({
       runner: "node-test",
