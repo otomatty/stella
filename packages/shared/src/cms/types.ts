@@ -53,6 +53,8 @@ export interface ProfileTenantInfo {
 }
 
 export interface ProfileRow {
+  weekly_hours?: number;
+  learning_start_date?: string | null;
   id: string;
   tenant_id: string;
   role: ProfileRole;
@@ -509,6 +511,7 @@ export type NotificationType =
   | "announcement"
   | "review_completed"
   | "assignment_due"
+  | "learning_pace_delayed"
   // ステージの自動クリア (修了証の自動発行)。講師の合格確定が引き金のとき、開いた
   // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、
   // 永続する通知としても残す。

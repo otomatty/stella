@@ -21,6 +21,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle, Clock, ChevronRight, MessageCircle, Sparkles, TrendingUp } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { LearningPacePanel } from "./LearningPacePanel";
 import { KpiCard } from "@/components/common/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +203,7 @@ export const LearnerDashboard = ({
    * 画面上は「押しても何も起きない」になる。ここで受けて必ず文字にする。
    */
   const [focusError, setFocusError] = useState<string | null>(null);
+  const [paceRevision, setPaceRevision] = useState(0);
   const runFocus = (op: () => Promise<unknown>) => {
     setFocusError(null);
     void op().catch((err: unknown) =>
@@ -219,6 +221,7 @@ export const LearnerDashboard = ({
    */
   const startStageFlow = async (stageId: string) => {
     await skillMap.startStage(stageId);
+    setPaceRevision((revision) => revision + 1);
     await Promise.all([refetchStages(), stageQueue.refetch()]);
   };
   const runStart = (stageId: string) => runFocus(() => startStageFlow(stageId));
@@ -476,6 +479,9 @@ export const LearnerDashboard = ({
       />
 
       <div className="flex flex-col gap-4 mb-8">
+        {backendEnabled && currentUserId ? (
+          <LearningPacePanel key={currentUserId} revision={paceRevision} />
+        ) : null}
         <TodayPlan
           plan={plan}
           reviewDone={Boolean(review && review.questions.length === 0 && review.answered_today > 0)}

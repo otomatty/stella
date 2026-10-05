@@ -5,6 +5,7 @@
   "description": "【準備中】要件から公開まで、個人でフルスタックのWebアプリを開発できるようになるための講座です。",
   "header": "個人でのフルスタック開発",
   "tenantId": "ses",
+  "plannedHours": 140,
   "prerequisites": ["code-reading-basics"],
   "canDo": "要件から公開まで、個人でフルスタックのWebアプリを開発できる",
   "theme": "Web アプリを作り、届ける力",

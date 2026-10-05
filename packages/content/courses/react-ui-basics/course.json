@@ -5,6 +5,7 @@
   "description": "【準備中】デザイン規則に沿ったReactのUI部品を実装し、状態を確認できるようになるための講座です。",
   "header": "ReactのUI部品とデザイン規則",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["react-basics"],
   "canDo": "デザイン規則に沿ったReactのUI部品を実装し、状態を確認できる",
   "theme": "Web の見た目と動き",

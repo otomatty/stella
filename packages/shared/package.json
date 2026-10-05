@@ -44,6 +44,7 @@
     "./skill-map/skill-check": "./src/skill-map/skill-check.ts",
     "./skill-map/focus": "./src/skill-map/focus.ts",
     "./study/activity": "./src/study/activity.ts",
+    "./study/pace": "./src/study/pace.ts",
     "./study/progress-sync": "./src/study/progress-sync.ts",
     "./srs/sm2": "./src/srs/sm2.ts",
     "./srs/types": "./src/srs/types.ts",

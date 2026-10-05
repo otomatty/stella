@@ -5,6 +5,7 @@
   "description": "【準備中】HTMLとCSSで、読みやすく画面幅に対応したページを作れるようになるための講座です。",
   "header": "HTML/CSSとデザイン基礎",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["dev-env-basics"],
   "canDo": "HTMLとCSSで、読みやすく画面幅に対応したページを作れる",
   "theme": "Web の見た目と動き",

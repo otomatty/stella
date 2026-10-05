@@ -5,6 +5,7 @@
   "description": "【準備中】本人確認とアクセス権を分け、安全なAPIを実装できるようになるための講座です。",
   "header": "認証・認可・セキュリティ",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["node-api-basics", "sql-basics"],
   "canDo": "本人確認とアクセス権を分け、安全なAPIを実装できる",
   "theme": "サーバーとデータの基盤",

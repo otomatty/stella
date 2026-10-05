@@ -5,6 +5,7 @@
   "description": "【準備中】Next.jsで画面とサーバーを組み合わせ、Webアプリを構成できるようになるための講座です。",
   "header": "Next.jsとWebアプリ構成",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": [
     "react-basics",
     "react-ui-basics",

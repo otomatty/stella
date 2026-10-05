@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { LearningPaceManager } from "./LearningPaceManager";
 import { KpiCard } from "@/components/common/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +98,8 @@ export const InstructorDashboard = ({
           </>
         }
       />
+
+      {backendEnabled ? <LearningPaceManager /> : null}
 
       <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
         <KpiCard

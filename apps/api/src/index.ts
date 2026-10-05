@@ -29,6 +29,8 @@ import { interviewPrepRoute } from "./routes/interview-prep.js";
 import { lessonProgressRoute } from "./routes/lesson-progress.js";
 import { materialsRoute } from "./routes/materials.js";
 import { meRoute } from "./routes/me.js";
+import { learningPaceRoute } from "./routes/learning-pace.js";
+import { notifyPaceDelays } from "./lib/learning-pace.js";
 import { notificationsRoute } from "./routes/notifications.js";
 import { quizRoute } from "./routes/quiz.js";
 import { tasksRoute } from "./routes/tasks.js";
@@ -70,6 +72,7 @@ app.route("/", lessonProgressRoute);
 app.route("/", studyActivityRoute);
 app.route("/", srsRoute);
 app.route("/", meRoute);
+app.route("/", learningPaceRoute);
 app.route("/", enrollmentsRoute);
 app.route("/", enrollmentPresetsRoute);
 app.route("/", interviewPrepRoute);
@@ -103,6 +106,11 @@ export default {
     ctx.waitUntil(
       runSubmissionOrphanCleanup(env, getDb(env)).catch((e) => {
         console.error("[cron] submission orphan cleanup failed", e);
+      }),
+    );
+    ctx.waitUntil(
+      notifyPaceDelays(getDb(env)).catch((e) => {
+        console.error("[cron] learning pace notification failed", e);
       }),
     );
     ctx.waitUntil(
