@@ -63,6 +63,16 @@ function patch(file: string, change: (row: Record<string, unknown>) => void) {
   change(row);
   writeFileSync(file, JSON.stringify(row));
 }
+function append(file: string, text: string) {
+  writeFileSync(file, readFileSync(file, "utf8") + text);
+}
+/** 内容を改訂した単元の版を上げ、確認し直した内容の指紋を記録する。 */
+function reReview(unit: string, version: string) {
+  patch(join(unit, "references.json"), (row) => {
+    row.unitId = `dev-env-basics/m0-first-page@${version}`;
+    row.contentHash = unitContentHash(unit, "static-web-01");
+  });
+}
 describe("参照元の公開ゲートと表示", () => {
   it("承認済みで具体的な参照と環境がある単元は通す", () => {
     const { root } = fixture();
@@ -93,6 +103,80 @@ describe("参照元の公開ゲートと表示", () => {
       row.unitId = "dev-env-basics/m0-first-page@1.0.0";
     });
     expect(checkSourceReferences(root)).toEqual([]);
+  });
+  describe("unitId の版を確認した内容に結び付ける", () => {
+    const task = "tasks/q01-first-page";
+    it.each<[string, (unit: string, root: string) => void]>([
+      ["解説", (unit) => append(join(unit, "l1-save-and-preview/doc.md"), "\n説明を加える。\n")],
+      [
+        "課題の採点",
+        (unit) =>
+          patch(join(unit, `${task}/task.json`), (row) => {
+            (row.static as { checks: Record<string, unknown>[] }).checks[1].text = "別の見出し";
+          }),
+      ],
+      ["課題のテスト", (unit) => append(join(unit, `${task}/tests/README.md`), "\n確認を足す。\n")],
+      [
+        "解答例",
+        (unit) => append(join(unit, `${task}/private/solution/index.html`), "<!-- 別解 -->"),
+      ],
+      [
+        "単元名",
+        (_unit, root) =>
+          patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+            (row.modules as Record<string, string>)["m0-first-page"] = "変更した単元名";
+          }),
+      ],
+    ])("同じ版のまま%sを変えると止め、版を上げて確認し直せば通す", (_label, change) => {
+      const { root, unit } = fixture();
+      change(unit, root);
+      expect(checkSourceReferences(root)).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          message: expect.stringContaining("contentHash"),
+        }),
+      ]);
+      reReview(unit, "2");
+      expect(checkSourceReferences(root)).toEqual([]);
+    });
+    it("references.json・sourceRefs・課題の sources と JSON の書式だけの変更では指紋を変えない", () => {
+      const { root, unit } = fixture();
+      const before = unitContentHash(unit, "static-web-01");
+      patch(join(unit, "references.json"), (row) => {
+        (row.uses as Record<string, unknown>[])[0].usedFor = "対応の説明を書き直した";
+      });
+      expect(checkSourceReferences(root)).toEqual([]);
+      const doc = join(unit, "l1-save-and-preview/doc.md");
+      writeFileSync(doc, readFileSync(doc, "utf8").replace(/^sourceRefs: .*$/m, "sourceRefs: []"));
+      const file = join(unit, `${task}/task.json`);
+      const definition = { ...JSON.parse(readFileSync(file, "utf8")), sources: [] };
+      writeFileSync(file, JSON.stringify(Object.fromEntries(Object.entries(definition).reverse())));
+      expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    });
+    it.each([undefined, "", "abc", "A".repeat(64), `${"0".repeat(63)}g`])(
+      "確認した内容の指紋 contentHash (%s) が無い・不正な references.json を拒否する",
+      (contentHash) => {
+        const file = join(content, "courses/dev-env-basics/modules/m0-first-page/references.json");
+        const row = { ...JSON.parse(readFileSync(file, "utf8")), contentHash };
+        expect(() => parseUnitReferences(row)).toThrow("contentHash");
+      },
+    );
+    it("旧単元の references.json も版と内容を結び付け、改訂した単元ではエラーにする", () => {
+      const { root, unit } = fixture();
+      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+        delete row.format;
+      });
+      reReview(unit, "1");
+      const baseline = createLegacyBaseline(root, "test-base");
+      expect(checkSourceReferences(root, baseline)).toEqual([]);
+      append(join(unit, "l1-save-and-preview/doc.md"), "\n説明を加える。\n");
+      expect(checkSourceReferences(root, baseline)).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          message: expect.stringContaining("contentHash"),
+        }),
+      ]);
+    });
   });
   it.each([
     "unregistered",
@@ -154,6 +238,43 @@ describe("参照元の公開ゲートと表示", () => {
         .filter((d) => d.unitId.endsWith("/m0-first-page"))
         .every((d) => d.severity === "warning"),
     ).toBe(true);
+  });
+  describe("旧単元の例外は実在する確認日の記録だけを認める", () => {
+    function revisedWithExemption(reviewedAt: string) {
+      const { root, unit } = fixture();
+      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+        delete row.format;
+      });
+      rmSync(join(unit, "references.json"));
+      const baseline = createLegacyBaseline(root, "test-base");
+      append(join(unit, "l1-save-and-preview/doc.md"), "\n表記を直す。\n");
+      baseline.exemptions.push({
+        unitId: "dev-env-basics/m0-first-page",
+        contentHash: unitContentHash(unit, "static-web-01"),
+        reason: "表記だけの修正を確認",
+        reviewer: "fixture-reviewer",
+        reviewedAt,
+      });
+      return checkSourceReferences(root, baseline);
+    }
+    it.each(["2026-99-99", "2026-02-30", "2025-02-29", "2026-13-01", "2026-10-5"])(
+      "確認日 %s の例外では改訂済みの単元を免除しない",
+      (reviewedAt) => {
+        expect(revisedWithExemption(reviewedAt).some((d) => d.severity === "error")).toBe(true);
+      },
+    );
+    it.each(["2026-10-05", "2024-02-29"])("確認日 %s の例外は免除する", (reviewedAt) => {
+      const diagnostics = revisedWithExemption(reviewedAt);
+      expect(diagnostics.length).toBeGreaterThan(0);
+      expect(diagnostics.every((d) => d.severity === "warning")).toBe(true);
+    });
+    it("台帳の日付も同じ基準で検査し、形だけ合う日付を理由つきで拒否する", () => {
+      const { root } = fixture();
+      patch(join(root, "sources/registry.json"), (row) => {
+        (row.sources as Record<string, unknown>[])[0].checkedAt = "2026-99-99";
+      });
+      expect(() => checkSourceReferences(root)).toThrow("YYYY-MM-DD");
+    });
   });
   it("前提の変更と参照元の追記では未改訂の基準を変えない", () => {
     const { root, unit } = fixture();
@@ -339,6 +460,7 @@ describe("参照元の公開ゲートと表示", () => {
     const use = (authorship: string, reuse: string) => ({
       schemaVersion: "2.1",
       unitId: "dev-env-basics/m0-first-page@1",
+      contentHash: "0".repeat(64),
       environmentRef: "static-web-01@1",
       uses: [
         {
@@ -429,6 +551,8 @@ describe("参照元の公開ゲートと表示", () => {
         },
       });
     });
+    // 図と本文を足したので、版を上げて確認し直した内容として記録する。
+    reReview(unit, "2");
     expect(checkSourceReferences(root)).toEqual([]);
     const manifest = buildContentManifest(join(root, "courses"));
     const markdown = manifest.courses[0].sections?.[0].lessons.find((l) =>

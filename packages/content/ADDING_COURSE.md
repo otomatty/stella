@@ -52,7 +52,7 @@ packages/content/courses/<slug>/
 ```text
 modules/<unit>/
   unit.json              # plannedHours、skills.uses / assesses、reuses（学習フォルダー内の成果物パス）
-  references.json        # sourceRefs と教材の使用箇所・環境・レビュー状態
+  references.json        # sourceRefs と教材の使用箇所・環境・レビュー状態・確認した版の内容指紋
   <lesson>/
     <topic>/slides.md    # 従来どおり1 Takeaway、語彙台帳、4〜6枚
     doc.md              # 公開する解説

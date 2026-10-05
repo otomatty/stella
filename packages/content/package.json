@@ -30,7 +30,8 @@
     "video": "bun run scripts/build-video.ts",
     "check:references": "bun run scripts/check-references.ts",
     "check:links": "bun run scripts/check-source-links.ts",
-    "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts"
+    "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts",
+    "hash:unit": "bun run scripts/unit-hash.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

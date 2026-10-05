@@ -10,6 +10,7 @@ import { findAssignment } from "../../shared/src/problems/index.js";
 import { readEnvironment } from "./task-content.js";
 import { parseSlides } from "./parse-slides.js";
 import {
+  isCalendarDate,
   object,
   parseUnitId,
   publicContentFiles,
@@ -95,7 +96,27 @@ export const resolveSharedAssignment: AssignmentResolver = sharedAssignmentResol
 });
 
 /**
- * 内容と環境の変更を検出。前提・parent や参照元の追記だけでは改訂にならない。
+ * 課題定義 (`tasks/<課題>/task.json`)。`sources` は front-matter の sourceRefs と同じ参照元の
+ * 対応なので外し、キー順・空白は course.json と同じく正規化する。読めない JSON は課題の検査が
+ * 報告するので、ここではそのままの内容で指紋に含める。
+ */
+function taskDefinitionContent(path: string): string | Buffer {
+  const raw = readFileSync(path);
+  let row: unknown;
+  try {
+    row = JSON.parse(raw.toString("utf8"));
+  } catch {
+    return raw;
+  }
+  if (!row || typeof row !== "object" || Array.isArray(row)) return raw;
+  const content = { ...(row as Record<string, unknown>) };
+  delete content.sources;
+  return JSON.stringify(normalizedJson(content));
+}
+
+/**
+ * 内容と環境の変更を検出。前提・parent や参照元の追記 (references.json、front-matter の
+ * sourceRefs、課題の sources) だけでは改訂にならない。
  * 旧演習は course.json の ID・題名に加えて、ID から引いた課題定義 (`resolveAssignment`) も含める。
  */
 export function unitContentHash(
@@ -115,9 +136,9 @@ export function unitContentHash(
       if (stat.isDirectory()) walk(path, rel);
       else if (/\.(md|json|html|svg|png|webp|jpg|ts|js|css)$/.test(entry)) {
         hash.update(`${rel}\0`);
+        const parts = rel.split("/");
         if (entry.endsWith(".md")) {
           let content = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
-          const parts = rel.split("/");
           if (
             entry === "slides.md" &&
             parts.length === 3 &&
@@ -133,7 +154,9 @@ export function unitContentHash(
             return fields ? `---\n${fields}\n---\n` : "";
           });
           hash.update(content);
-        } else hash.update(readFileSync(path));
+        } else if (entry === "task.json" && parts.length === 3 && parts[0] === "tasks")
+          hash.update(taskDefinitionContent(path));
+        else hash.update(readFileSync(path));
       }
     }
   }
@@ -304,12 +327,18 @@ function checkUnit(
   directory: string,
   refs: UnitReferences | undefined,
   registry: Map<string, SourceRecord>,
+  contentHash: string,
   environment?: string,
 ): string[] {
   const problems: string[] = [];
   if (!refs) return ["references.json がありません"];
   if (parseUnitId(refs.unitId).path !== unitId)
     problems.push(`unitId が単元と一致しません: ${refs.unitId}`);
+  // 版は参照元を確認した内容を指す。同じ版のまま内容を変えると、受講者が見た版と区別できない。
+  if (refs.contentHash !== contentHash)
+    problems.push(
+      `contentHash が ${refs.unitId} で確認した内容と一致しません。内容を改訂したら unitId の版を上げ、参照元と本文・課題の対応を確認し直してから、contentHash を今の指紋 (bun run --filter=@stella/content hash:unit -- ${unitId}) に更新してください`,
+    );
   const envParts = /^([a-z0-9][a-z0-9._-]*)@([^@]+)$/.exec(refs.environmentRef);
   if (!envParts) problems.push("environmentRef: ID@version の環境定義が必要です");
   else {
@@ -401,7 +430,7 @@ export function checkSourceReferences(
         e.contentHash === hash &&
         e.reason.trim() &&
         e.reviewer.trim() &&
-        /^\d{4}-\d{2}-\d{2}$/.test(e.reviewedAt),
+        isCalendarDate(e.reviewedAt),
     );
     const required = unit.format === 2 || (recorded.units[unit.unitId] !== hash && !exempt);
     try {
@@ -412,6 +441,7 @@ export function checkSourceReferences(
         unit.directory,
         refs,
         registry,
+        hash,
         unit.environment,
       ))
         diagnostics.push({

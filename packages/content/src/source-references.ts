@@ -64,6 +64,11 @@ const AUTHORSHIP_BY_REUSE: Readonly<
 export interface UnitReferences {
   schemaVersion: "2.1";
   unitId: string;
+  /**
+   * `unitId` の版で参照元を確認した単元の内容指紋 (`unitContentHash`)。同じ版のまま
+   * 本文・課題・採点を変えると一致しなくなり、公開ゲートが版の更新と再確認を求める。
+   */
+  contentHash: string;
   environmentRef: string;
   uses: SourceUse[];
 }
@@ -77,10 +82,15 @@ function text(raw: unknown, at: string): string {
   if (typeof raw !== "string" || !raw.trim()) throw new Error(`${at}: 空でない文字列が必要です`);
   return raw.trim();
 }
+/** 実在する暦日の YYYY-MM-DD か。`2026-99-99`・`2026-02-30` のように形だけ合う値は通さない。 */
+export function isCalendarDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  return !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value;
+}
 function date(raw: unknown, at: string): string {
   const value = text(raw, at);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || new Date(value).toISOString().slice(0, 10) !== value)
-    throw new Error(`${at}: YYYY-MM-DD の日付が必要です`);
+  if (!isCalendarDate(value)) throw new Error(`${at}: YYYY-MM-DD の日付が必要です`);
   return value;
 }
 function status(raw: unknown): "draft" | "approved" {
@@ -181,6 +191,11 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
     throw new Error("references.json: schemaVersion 2.1 と uses 配列が必要です");
   const unitId = text(row.unitId, "unitId");
   parseUnitId(unitId);
+  if (typeof row.contentHash !== "string" || !/^[0-9a-f]{64}$/.test(row.contentHash))
+    throw new Error(
+      "contentHash: unitId の版で確認した単元の内容指紋 (64 桁の16進数、bun run --filter=@stella/content hash:unit で表示) が必要です",
+    );
+  const contentHash = row.contentHash;
   const uses = row.uses.map((value): SourceUse => {
     const use = object(value, "uses");
     const contentId = text(use.contentId, "contentId");
@@ -236,6 +251,7 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
   return {
     schemaVersion: "2.1",
     unitId,
+    contentHash,
     environmentRef: text(row.environmentRef, "environmentRef"),
     uses,
   };
