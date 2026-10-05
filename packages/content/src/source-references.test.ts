@@ -34,6 +34,7 @@ import {
   readSourceRefs,
   readSourceRegistry,
   readUnitReferences,
+  referenceContentIds,
   referencedMarkdown,
   referencesMarkdown,
 } from "./source-references.js";
@@ -469,6 +470,21 @@ describe("参照元の公開ゲートと表示", () => {
     rmSync(join(unit, "zz2"));
     writeFileSync(join(unit, "zz1"), "Xzz2\0Y");
     expect(unitContentHash(unit)).not.toBe(split);
+  });
+  it("画像の参照先はタイトル・括弧・<> 囲みを Markdown の規則で読んで使用箇所に結び付ける", () => {
+    const source = [
+      '![図](t1/assets/page.svg "キャプション")',
+      "![図](t1/assets/a(1).svg)",
+      "![図](<t1/assets/my page.svg>)",
+      "![図](t1/assets/b\\).svg 'title')",
+    ].join("\n");
+    expect(referenceContentIds(source, "m0/l1/doc.md")).toEqual([
+      "m0/l1/doc.md",
+      "m0/l1/t1/assets/page.svg",
+      "m0/l1/t1/assets/a(1).svg",
+      "m0/l1/t1/assets/my page.svg",
+      "m0/l1/t1/assets/b).svg",
+    ]);
   });
   it("参照元の記録が無くても front-matter (sourceRefs) を本文に出さない", () => {
     const body = referencedMarkdown("---\nsourceRefs: [mdn-html]\n---\n# 本文\n", [], undefined);

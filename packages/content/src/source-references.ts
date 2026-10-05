@@ -323,11 +323,46 @@ export function referencesMarkdown(refs: PublicSourceReference[], heading = "参
   for (const ref of refs) rows.set(`${ref.id}:${ref.usedFor}:${ref.attribution ?? ""}`, ref);
   return `\n\n## ${heading}\n\n${[...rows.values()].map((r) => `- [${markdownText(r.title)}](<${r.url}>) — ${markdownText(r.publisher)} / ${markdownText(r.section)}\n  - 確認すること: ${markdownText(r.usedFor)}\n  - ${SOURCE_AUTHORSHIP_LABELS[r.authorship]}・${SOURCE_REUSE_LABELS[r.reuse]} / 資料: ${markdownText(r.documentVersion)} / 確認日: ${r.checkedAt} / 環境: ${markdownText(r.environmentRef)}${r.attribution ? `\n  - ${markdownText(r.attribution)}` : ""}`).join("\n")}\n`;
 }
+/**
+ * Markdown の画像の参照先。CommonMark と同じく `<...>` 囲み・対になった括弧・バックスラッシュの
+ * エスケープを読み、空白の後ろのタイトル (`"caption"`) は含めない。
+ */
+export function markdownImageDestinations(source: string): string[] {
+  const destinations: string[] = [];
+  for (const m of source.matchAll(/!\[[^\]]*\]\(/g)) {
+    let i = (m.index ?? 0) + m[0].length;
+    while (source[i] === " " || source[i] === "\t") i++;
+    if (source[i] === "<") {
+      const end = source.indexOf(">", i + 1);
+      const newline = source.indexOf("\n", i + 1);
+      if (end > i && (newline === -1 || end < newline)) destinations.push(source.slice(i + 1, end));
+      continue;
+    }
+    let depth = 0;
+    let destination = "";
+    for (; i < source.length; i++) {
+      const ch = source[i];
+      if (ch === "\\" && /[!-/:-@[-`{-~]/.test(source[i + 1] ?? "")) {
+        destination += source[++i];
+        continue;
+      }
+      if (/\s/.test(ch)) break;
+      if (ch === "(") depth++;
+      else if (ch === ")") {
+        if (depth === 0) break;
+        depth--;
+      }
+      destination += ch;
+    }
+    if (destination) destinations.push(destination);
+  }
+  return destinations;
+}
 export function referenceContentIds(source: string, contentId: string): string[] {
   return [
     contentId,
-    ...[...source.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((m) =>
-      posix.normalize(posix.join(posix.dirname(contentId), m[1])),
+    ...markdownImageDestinations(source).map((destination) =>
+      posix.normalize(posix.join(posix.dirname(contentId), destination)),
     ),
   ];
 }
