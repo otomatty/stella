@@ -774,6 +774,47 @@ describe("参照元の公開ゲートと表示", () => {
       );
     });
   });
+  it("画像の参照先は ?・# を外してデコードし、外部 URL は教材のファイルとして扱わない", () => {
+    const source = [
+      "![図](t1/assets/page.svg#detail)",
+      "![図](t1/assets/page.svg?v=2)",
+      "![図](t1/assets/my%20page.svg)",
+      "![図](https://example.org/remote.svg)",
+      "![図](//cdn.example.org/remote.svg)",
+      "![図](data:image/svg+xml;base64,PHN2Zy8+)",
+    ].join("\n");
+    expect(referenceContentIds(source, "m0/l1/doc.md")).toEqual([
+      "m0/l1/doc.md",
+      "m0/l1/t1/assets/page.svg",
+      "m0/l1/t1/assets/page.svg",
+      "m0/l1/t1/assets/my page.svg",
+    ]);
+  });
+  it("課題の README に埋め込んだ図の出典も課題文と配布 manifest に載せる", () => {
+    const { root, unit } = fixture();
+    const task = join(unit, "tasks/q01-first-page");
+    mkdirSync(join(task, "assets"));
+    writeFileSync(join(task, "assets/flow.svg"), "<svg/>");
+    append(join(task, "README.md"), "\n![保存と表示の流れ](assets/flow.svg#step)\n");
+    patch(join(unit, "references.json"), (row) => {
+      (row.uses as Record<string, unknown>[]).push({
+        contentId: "tasks/q01-first-page/assets/flow.svg",
+        sourceRefs: ["SRC-mdn-html-20261005"],
+        usedFor: "課題文の図で示す保存と表示の流れ",
+        authorship: "summary",
+        reuse: "concept-reference",
+        reviewStatus: "approved",
+      });
+    });
+    reReview(unit, "2");
+    expect(checkSourceReferences(root)).toEqual([]);
+    const bundle = buildContentManifest(join(root, "courses")).tasks[0].bundle;
+    expect(bundle.manifest.references?.map((r) => r.usedFor)).toContain(
+      "課題文の図で示す保存と表示の流れ",
+    );
+    const readme = Buffer.from(bundle.files["README.md"], "base64").toString("utf8");
+    expect(readme).toContain("課題文の図で示す保存と表示の流れ");
+  });
   it("図の出典も解説の近くに出し、帰属表示を省略しない", () => {
     const { root, unit } = fixture();
     const assets = join(unit, "l1-save-and-preview/t1-saved-html/assets");

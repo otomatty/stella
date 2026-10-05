@@ -11,6 +11,7 @@ import {
   publicReferences,
   readSourceRegistry,
   readUnitReferences,
+  referenceContentIds,
   referencedMarkdown,
 } from "./source-references.js";
 import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
@@ -141,7 +142,14 @@ export function readUnit(
       if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
         throw new Error(`課題に ${rel} が必要です: ${definition.id}`);
     }
-    const taskReferences = publicReferences(referenceMap, registry, `tasks/${taskId}/README.md`);
+    // README に埋め込んだ図も、図ごとの出典・帰属表示を課題文と manifest に載せる。
+    const readmeId = `tasks/${taskId}/README.md`;
+    const readme = readFileSync(join(taskDir, "README.md"), "utf8");
+    const taskReferences = publicReferences(
+      referenceMap,
+      registry,
+      referenceContentIds(readme, readmeId),
+    );
     const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
     const files: Record<string, string> = {};
     // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
@@ -165,12 +173,7 @@ export function readUnit(
     addFiles(collectFiles(join(taskDir, "starter")));
     addFiles(collectFiles(join(taskDir, "tests"), "tests"));
     files["README.md"] = Buffer.from(
-      referencedMarkdown(
-        readFileSync(join(taskDir, "README.md"), "utf8"),
-        taskReferences,
-        referenceMap,
-        `tasks/${taskId}/README.md`,
-      ),
+      referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
     ).toString("base64");
     // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
     files[".stella/task.json"] = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");

@@ -386,12 +386,26 @@ export function markdownImageDestinations(source: string): string[] {
   });
   return destinations;
 }
+/**
+ * 画像の参照先を教材内のファイルのパスにする。`?v=2`・`#detail` は外し、`%20` などは
+ * デコードする。外部 URL (`https:`・`data:`・`//host`) は教材のファイルではないので null。
+ */
+function imageFilePath(destination: string): string | null {
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(destination)) return null;
+  const path = destination.replace(/[?#][\s\S]*$/, "");
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
 export function referenceContentIds(source: string, contentId: string): string[] {
   return [
     contentId,
-    ...markdownImageDestinations(source).map((destination) =>
-      posix.normalize(posix.join(posix.dirname(contentId), destination)),
-    ),
+    ...markdownImageDestinations(source).flatMap((destination) => {
+      const path = imageFilePath(destination);
+      return path ? [posix.normalize(posix.join(posix.dirname(contentId), path))] : [];
+    }),
   ];
 }
 /**
