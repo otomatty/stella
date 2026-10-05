@@ -30,13 +30,13 @@
     "video": "bun run scripts/build-video.ts"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.123.0",
+    "@anthropic-ai/sdk": "^0.131.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/noto-sans-jp": "^5.3.0",
     "@types/hast": "^3.0.5",
     "@types/node": "^26.6.4",
     "highlight.js": "^11.12.0",
-    "playwright": "1.62.1",
+    "playwright": "1.63.0",
     "rehype-highlight": "^7.0.2",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
