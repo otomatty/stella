@@ -31,9 +31,28 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .where(and(eq(sections.stageId, stageId), eq(tasks.active, true)))
       .orderBy(asc(sections.order), asc(tasks.order));
-    const progress = await db.select().from(taskProgress).where(eq(taskProgress.userId, caller.id));
+    const progress =
+      rows.length === 0
+        ? []
+        : await db
+            .select({
+              taskId: taskProgress.taskId,
+              status: taskProgress.status,
+              contentHash: taskProgress.contentHash,
+            })
+            .from(taskProgress)
+            .innerJoin(tasks, eq(tasks.id, taskProgress.taskId))
+            .innerJoin(sections, eq(sections.id, tasks.sectionId))
+            .where(
+              and(
+                eq(taskProgress.userId, caller.id),
+                eq(sections.stageId, stageId),
+                eq(tasks.active, true),
+              ),
+            );
+    const progressByTaskId = new Map(progress.map((p) => [p.taskId, p]));
     const result: TaskSummary[] = rows.map(({ contentHash, ...task }) => {
-      const p = progress.find((p) => p.taskId === task.id);
+      const p = progressByTaskId.get(task.id);
       const status =
         p && (p.contentHash === contentHash || p.status === "passed") ? p.status : "not-started";
       return { ...task, kind: task.kind as TaskKind, status };
@@ -81,7 +100,7 @@ tasksRoute.post("/api/tasks/local-result", async (c) => {
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
       .limit(1);
-    if (!row || !(await canAccessTasks(db, caller, row.stageId)))
+    if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
       throw new ApiError("task not found", 404);
     if (row.contentHash !== body.contentHash)
       throw new ApiError("教材が更新されています。課題を開き直してください", 409);

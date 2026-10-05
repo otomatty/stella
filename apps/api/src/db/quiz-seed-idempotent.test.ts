@@ -246,6 +246,17 @@ describe("教材 seed の再実行", () => {
         method: "POST",
         body: JSON.stringify(body),
       });
+    const resultBody = { taskId, contentHash: bundle.contentHash };
+    db.exec("update enrollments set status = 'completed' where id = 'en-format2'");
+    expect((await request(app, env, url, { token })).status).toBe(200);
+    expect((await request(app, env, bundleUrl, { token })).status).toBe(200);
+    expect((await post(resultBody)).status).toBe(404);
+    expect(countOf(db, "task_progress")).toBe(0);
+    db.exec("update enrollments set status = 'expired' where id = 'en-format2'");
+    expect((await request(app, env, url, { token })).status).toBe(404);
+    expect((await request(app, env, bundleUrl, { token })).status).toBe(404);
+    expect((await post(resultBody)).status).toBe(404);
+    db.exec("update enrollments set status = 'active' where id = 'en-format2'");
     expect((await post({ taskId, contentHash: "old" })).status).toBe(409);
     expect((await post({ taskId, contentHash: bundle.contentHash, status: "passed" })).status).toBe(
       200,
@@ -254,6 +265,12 @@ describe("教材 seed の再実行", () => {
     expect(local.tasks[0].status).toBe("local-passed");
     expect((await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.size).toBe(0);
     db.prepare("update task_progress set status = 'passed' where task_id = ?").run(taskId);
+    db.exec("update enrollments set status = 'completed' where id = 'en-format2'");
+    const completed = await json<{ tasks: TaskSummary[] }>(await request(app, env, url, { token }));
+    expect(completed.tasks[0].status).toBe("passed");
+    expect((await request(app, env, bundleUrl, { token })).status).toBe(200);
+    expect((await post(resultBody)).status).toBe(404);
+    db.exec("update enrollments set status = 'active' where id = 'en-format2'");
     await post({ taskId, contentHash: bundle.contentHash });
     expect(
       (await taskCompletionCounts(getDb(env), stage.id, ["u-format2"])).passed.get("u-format2")

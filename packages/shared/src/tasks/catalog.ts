@@ -41,7 +41,11 @@ export interface TaskBundle {
   files: Record<string, string>;
 }
 
-/** API・配布・教材検査で同じ公開境界を使う。余分な top-level 情報を返さない。 */
+/**
+ * API・配布・教材検査で同じ公開境界を使い、余分な top-level 情報を除く。
+ * bundle は教材側で README・starter・tests から組み立て、private は別に保存する。
+ * この検証はその構造の境界を確認するもの。本文の機密性は執筆レビューで確認する。
+ */
 export function parsePublicTaskBundle(raw: unknown): TaskBundle {
   if (
     typeof raw !== "object" ||

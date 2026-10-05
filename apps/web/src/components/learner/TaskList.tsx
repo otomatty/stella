@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TASK_STATUS_LABELS, type TaskSummary } from "@stella/shared/tasks/catalog";
 import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import { apiFetch } from "@/lib/api-client";
@@ -9,37 +9,40 @@ export function TaskList({ stageId }: { stageId: string }) {
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const load = useCallback(
-    async (signal?: AbortSignal) => {
-      try {
-        const data = await apiFetch<{ tasks: TaskSummary[] }>(
-          `/api/tasks/for-stage/${encodeURIComponent(stageId)}`,
-          { signal },
-        );
-        if (!signal?.aborted) {
-          setTasks(data.tasks);
-          setError(null);
-          setLoaded(true);
-        }
-      } catch (err) {
-        if (!signal?.aborted) {
-          setError(err instanceof Error ? err.message : "課題を取得できませんでした");
-          setLoaded(true);
-        }
-      }
-    },
-    [stageId],
-  );
-  useEffect(() => {
+  const pending = useRef<AbortController | null>(null);
+  const load = useCallback(async () => {
+    pending.current?.abort();
     const controller = new AbortController();
+    pending.current = controller;
+    const { signal } = controller;
     setLoaded(false);
+    setTasks([]);
+    setError(null);
+    try {
+      const data = await apiFetch<{ tasks: TaskSummary[] }>(
+        `/api/tasks/for-stage/${encodeURIComponent(stageId)}`,
+        { signal },
+      );
+      if (!signal.aborted) {
+        setTasks(data.tasks);
+        setError(null);
+        setLoaded(true);
+      }
+    } catch (err) {
+      if (!signal.aborted) {
+        setError(err instanceof Error ? err.message : "課題を取得できませんでした");
+        setLoaded(true);
+      }
+    }
+  }, [stageId]);
+  useEffect(() => {
     const refresh = () => {
-      void load(controller.signal);
+      void load();
     };
     refresh();
     window.addEventListener("focus", refresh);
     return () => {
-      controller.abort();
+      pending.current?.abort();
       window.removeEventListener("focus", refresh);
     };
   }, [load]);

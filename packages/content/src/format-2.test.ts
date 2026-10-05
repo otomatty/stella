@@ -50,6 +50,33 @@ describe("format 2 の教材", () => {
       "boolean",
     ]);
   });
+  it("非公開領域の本文は、公開用と似た名前でも bundle・レッスン・PDF に混ぜない", () => {
+    const root = fixture();
+    const taskDir = join(root, "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page");
+    const marker = "PRIVATE_CONTENT_MARKER_28";
+    for (const rel of [
+      "private/solution/README.md",
+      "private/solution/index.html",
+      "private/variants/README.md",
+      "private/explanation.md",
+      "private/review.md",
+      "hints.md",
+    ])
+      writeFileSync(join(taskDir, rel), marker);
+    const manifest = buildContentManifest(join(root, "courses"));
+    const task = manifest.tasks[0];
+    expect(
+      Object.values(task.privateFiles).some((v) => Buffer.from(v, "base64").toString() === marker),
+    ).toBe(true);
+    const publicText = Object.values(task.bundle.files)
+      .map((v) => Buffer.from(v, "base64").toString())
+      .join("\n");
+    expect(publicText).not.toContain(marker);
+    expect(JSON.stringify(manifest.courses)).not.toContain(marker);
+    expect(collectPdfTargets(manifest).some((target) => target.source.includes(marker))).toBe(
+      false,
+    );
+  });
   it("台帳の未知ID・パスとIDの不一致は検査で落とす", () => {
     const root = fixture();
     const path = join(
