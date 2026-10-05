@@ -220,6 +220,8 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
         db.select().from(notifications).where(eq(notifications.type, "review_completed"));
       await patch({ verdict: "pass" });
       expect((await notices()).length).toBe(1);
+      const firstPassedAt = (await db.select().from(taskProgress))[0].passedAt;
+      expect(firstPassedAt).toBeInstanceOf(Date);
       await patch({ verdict: corrected, reviewNotes: "判定を訂正しました" });
       expect((await notices()).length).toBe(2);
       const correction = (await notices()).find((n) => n.payload.verdict === corrected);
@@ -232,6 +234,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect((await notices()).length).toBe(2);
       await patch({ verdict: "pass" });
       expect((await notices()).length).toBe(3);
+      expect((await db.select().from(taskProgress))[0].passedAt).toEqual(firstPassedAt);
     },
   );
   it("支援付きの合格と AI の合格を区別する", async () => {

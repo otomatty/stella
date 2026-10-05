@@ -4,14 +4,18 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** D1 のバインド上限と batch のトランザクションも再現する実 SQLite のテスト用アダプター。 */
-export function sqliteD1() {
+export function sqliteD1(options: { beforeMigration?: string } = {}) {
   const sqlite = new DatabaseSync(":memory:");
   const directory = join(dirname(fileURLToPath(import.meta.url)), "../../drizzle");
   const journal = JSON.parse(readFileSync(`${directory}/meta/_journal.json`, "utf8")) as {
     entries: { tag: string }[];
   };
-  for (const entry of journal.entries)
+  if (options.beforeMigration && !journal.entries.some((e) => e.tag === options.beforeMigration))
+    throw new Error(`Migration not found: ${options.beforeMigration}`);
+  for (const entry of journal.entries) {
+    if (entry.tag === options.beforeMigration) break;
     sqlite.exec(readFileSync(`${directory}/${entry.tag}.sql`, "utf8"));
+  }
   sqlite.exec("pragma foreign_keys = on");
   class Statement {
     constructor(
