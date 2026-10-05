@@ -85,6 +85,8 @@ jobs:
 
       - name: Build
         if: inputs.scope != 'code'
+        # Web の build plugin が全成果物 (遅延チャンク / public / worker / map)
+        # の解答と private/ の混入を検査する (#35)。
         run: bun run build
 
   core-loop:

@@ -1,18 +1,13 @@
 /**
  * Assignment を id から解決する Hook。
  *
- * 解決順 (バックエンド設定時):
- *  1. 初期表示用に `@stella/shared` のバンドル版を fast-path として返す (あれば)
- *  2. その後 async で API の assignments を問い合わせ、 ヒットしたら上書き
- *     — CMS で編集 / 新規作成されたバージョンを優先する (#10 — Codex P2)
- *  3. DB に無ければ shared の値を保持。 shared にも無ければ null
- *
- * バックエンド未設定時は 1 だけで完了 (従来通り fixtures 動作)。
+ * 認証付き API の課題データだけを使う。課題定義の静的 import は解答例まで
+ * Web の配信物へ混ぜるため、デモや API エラー時にも行わない (#35)。
+ * id が null の間は問い合わせない (通常のレッスンや閉じたチャット)。
  */
 
 import { useEffect, useState } from "react";
 import type { Assignment } from "@stella/shared/types";
-import { findAssignment } from "@stella/shared/assignments";
 import { mapAssignmentRowToAssignment } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { getAssignmentRow } from "@/lib/cms-api";
@@ -23,49 +18,43 @@ interface Result {
   error: string | null;
 }
 
-export function useResolvedAssignment(id: string): Result {
+/** id がある間だけ API から課題を取得し、別の id に対する古い応答は採用しない。 */
+export function useResolvedAssignment(id: string | null): Result {
   const backendEnabled = isBackendConfigured();
-  const sharedFallback = findAssignment(id) ?? null;
-
-  const [assignment, setAssignment] = useState<Assignment | null>(sharedFallback);
-  // shared にも DB にも無い可能性があるので、 バックエンドが有効で shared に無い時のみ「読込中」を出す。
-  const [loading, setLoading] = useState(backendEnabled && !sharedFallback);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<{ id: string | null; result: Result }>({
+    id,
+    result: { assignment: null, loading: backendEnabled && id !== null, error: null },
+  });
 
   useEffect(() => {
-    const fallback = findAssignment(id) ?? null;
-    if (!backendEnabled) {
-      setAssignment(fallback);
-      setLoading(false);
-      setError(null);
+    if (!backendEnabled || id === null) {
+      setState({ id, result: { assignment: null, loading: false, error: null } });
       return;
     }
     let cancelled = false;
-    setError(null);
-    // id が変わったら必ず fallback を即時セットする。 そうしないと前 lesson の課題が
-    // DB lookup 完了まで残り、 学習者が別の課題を解いてしまう恐れがある (#10 — Codex P2)。
-    setAssignment(fallback);
-    // shared にあれば fast-path で表示しつつ DB も問い合わせて差分があれば反映 (SWR 風)。
-    // shared に無い場合のみスピナー表示。
-    setLoading(!fallback);
+    setState({ id, result: { assignment: null, loading: true, error: null } });
     (async () => {
       try {
         const row = await getAssignmentRow(id);
         if (cancelled) return;
-        if (row) {
-          // DB の最新版を優先 (CMS 編集を反映)。
-          setAssignment(mapAssignmentRowToAssignment(row));
-        } else {
-          // DB に無ければ shared を採用 (RLS で隠れた可能性 / seed 未実行)。
-          setAssignment(fallback);
-        }
+        setState({
+          id,
+          result: {
+            assignment: row ? mapAssignmentRowToAssignment(row) : null,
+            loading: false,
+            error: null,
+          },
+        });
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "unknown");
-        // DB エラー時は shared にフォールバックして UI を壊さない。
-        setAssignment(fallback);
-      } finally {
-        if (!cancelled) setLoading(false);
+        setState({
+          id,
+          result: {
+            assignment: null,
+            loading: false,
+            error: err instanceof Error ? err.message : "unknown",
+          },
+        });
       }
     })();
     return () => {
@@ -73,5 +62,9 @@ export function useResolvedAssignment(id: string): Result {
     };
   }, [id, backendEnabled]);
 
-  return { assignment, loading, error };
+  // effect の実行前の render でも、前の課題を新しい文脈へ渡さない。
+  if (!backendEnabled || state.id !== id) {
+    return { assignment: null, loading: backendEnabled && id !== null, error: null };
+  }
+  return state.result;
 }
