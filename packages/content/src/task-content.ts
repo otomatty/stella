@@ -142,14 +142,16 @@ export function readUnit(
       if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
         throw new Error(`課題に ${rel} が必要です: ${definition.id}`);
     }
-    // README に埋め込んだ図も、図ごとの出典・帰属表示を課題文と manifest に載せる。
     const readmeId = `tasks/${taskId}/README.md`;
     const readme = readFileSync(join(taskDir, "README.md"), "utf8");
-    const taskReferences = publicReferences(
-      referenceMap,
-      registry,
-      referenceContentIds(readme, readmeId),
-    );
+    // 課題の配布物 (starter・tests・README・manifest) にも LMS の課題文にも教材内の画像は
+    // 載らないので、README から参照すると受講者には壊れた画像になる。公開前に止める。
+    const contentIds = referenceContentIds(readme, readmeId);
+    if (contentIds.length > 1)
+      throw new Error(
+        `課題の README に教材内の画像は使えません (配布されません): ${contentIds.slice(1).join(", ")} (${definition.id})`,
+      );
+    const taskReferences = publicReferences(referenceMap, registry, contentIds);
     const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
     const files: Record<string, string> = {};
     // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。

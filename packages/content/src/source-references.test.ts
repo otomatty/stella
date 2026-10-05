@@ -790,30 +790,15 @@ describe("参照元の公開ゲートと表示", () => {
       "m0/l1/t1/assets/my page.svg",
     ]);
   });
-  it("課題の README に埋め込んだ図の出典も課題文と配布 manifest に載せる", () => {
+  it("課題の README から教材内の画像は参照できない (配布されず壊れた画像になる)", () => {
     const { root, unit } = fixture();
     const task = join(unit, "tasks/q01-first-page");
     mkdirSync(join(task, "assets"));
     writeFileSync(join(task, "assets/flow.svg"), "<svg/>");
     append(join(task, "README.md"), "\n![保存と表示の流れ](assets/flow.svg#step)\n");
-    patch(join(unit, "references.json"), (row) => {
-      (row.uses as Record<string, unknown>[]).push({
-        contentId: "tasks/q01-first-page/assets/flow.svg",
-        sourceRefs: ["SRC-mdn-html-20261005"],
-        usedFor: "課題文の図で示す保存と表示の流れ",
-        authorship: "summary",
-        reuse: "concept-reference",
-        reviewStatus: "approved",
-      });
-    });
-    reReview(unit, "2");
-    expect(checkSourceReferences(root)).toEqual([]);
-    const bundle = buildContentManifest(join(root, "courses")).tasks[0].bundle;
-    expect(bundle.manifest.references?.map((r) => r.usedFor)).toContain(
-      "課題文の図で示す保存と表示の流れ",
+    expect(() => buildContentManifest(join(root, "courses"))).toThrow(
+      "課題の README に教材内の画像は使えません (配布されません): tasks/q01-first-page/assets/flow.svg",
     );
-    const readme = Buffer.from(bundle.files["README.md"], "base64").toString("utf8");
-    expect(readme).toContain("課題文の図で示す保存と表示の流れ");
   });
   it("図の出典も解説の近くに出し、帰属表示を省略しない", () => {
     const { root, unit } = fixture();
