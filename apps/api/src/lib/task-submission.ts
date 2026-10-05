@@ -338,7 +338,7 @@ async function retainedSkillIds(
     .limit(1);
   if (!b) return new Set();
   const preceding = await db
-    .select({ id: tasks.id, passedAt: taskProgress.passedAt })
+    .select({ id: tasks.id, status: taskProgress.status, passedAt: taskProgress.passedAt })
     .from(tasks)
     .leftJoin(
       taskProgress,
@@ -356,7 +356,8 @@ async function retainedSkillIds(
   if (preceding.length === 0) return new Set();
   let lastPassed = 0;
   for (const a of preceding) {
-    if (!a.passedAt) return new Set();
+    // 合格を訂正しても同じ版なら passed_at は残る (0044 のトリガー) ので、今の状態も見る。
+    if (!a.passedAt || (a.status !== "passed" && a.status !== "ai-passed")) return new Set();
     lastPassed = Math.max(lastPassed, a.passedAt.getTime());
   }
   const due = studyDateStartMs(addStudyDays(toStudyDate(lastPassed), 7));

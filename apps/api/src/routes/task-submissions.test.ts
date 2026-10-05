@@ -307,6 +307,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
           [
             ["check-a", "assessment-a", "page"],
             ["check-b", "assessment-b", "page"],
+            ["check-a2", "assessment-a", "page"],
             // 別パターンのAは、このBの前提にしない。
             ["check-a-form", "assessment-a", "form"],
           ] as const
@@ -347,14 +348,17 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     const levelOf = async (submissionId: string) =>
       (await db.select().from(skillEvidence).where(eq(skillEvidence.submissionId, submissionId)))[0]
         ?.level;
-    /** 確認Aの初回合格日を過去にずらす (合格日は DB のトリガーが入れる)。 */
+    /** 同じパターンの確認Aに合格し、初回合格日を過去にずらす (合格日は DB のトリガーが入れる)。 */
     async function passA(passedAt: number) {
-      const id = await passCheck("check-a", "assessment-a", new Date(passedAt));
-      await db
-        .update(taskProgress)
-        .set({ passedAt: new Date(passedAt) })
-        .where(eq(taskProgress.taskId, "check-a"));
-      return id;
+      const ids: string[] = [];
+      for (const taskId of ["check-a", "check-a2"]) {
+        ids.push(await passCheck(taskId, "assessment-a", new Date(passedAt)));
+        await db
+          .update(taskProgress)
+          .set({ passedAt: new Date(passedAt) })
+          .where(eq(taskProgress.taskId, taskId));
+      }
+      return ids;
     }
 
     it("無関係な課題の古い証跡では、確認Aに合格していないBを定着にしない", async () => {
@@ -379,13 +383,24 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect(await levelOf(b)).toBe("retained");
     });
 
+    it("同じパターンの確認Aのどれかの合格が訂正されたら、Bを定着にしない", async () => {
+      const aPassed = Date.now() - 10 * DAY;
+      const [, a2] = await passA(aPassed);
+      // 同じ版のまま訂正しても passed_at はトリガーが残すが、状態は合格でなくなる。
+      await reviewTaskSubmission(db, caller, a2, "resubmit", "訂正");
+      const [corrected] = await db
+        .select()
+        .from(taskProgress)
+        .where(eq(taskProgress.taskId, "check-a2"));
+      expect(corrected).toMatchObject({ status: "resubmit", passedAt: new Date(aPassed) });
+      const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
+      expect(await levelOf(b)).toBe("independent");
+    });
+
     it("確認Aが支援付きの合格なら、Bを定着にしない", async () => {
       const aPassed = Date.now() - 10 * DAY;
-      const a = await passA(aPassed);
-      await db
-        .update(skillEvidence)
-        .set({ assisted: true, level: "supported" })
-        .where(eq(skillEvidence.submissionId, a));
+      await passA(aPassed);
+      await db.update(skillEvidence).set({ assisted: true, level: "supported" });
       const b = await passCheck("check-b", "assessment-b", new Date(aPassed + 8 * DAY));
       expect(await levelOf(b)).toBe("independent");
     });
