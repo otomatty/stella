@@ -18,6 +18,7 @@ interface Result {
   error: string | null;
 }
 
+/** id がある間だけ API から課題を取得し、別の id に対する古い応答は採用しない。 */
 export function useResolvedAssignment(id: string | null): Result {
   const backendEnabled = isBackendConfigured();
   const [state, setState] = useState<{ id: string | null; result: Result }>({

@@ -2,7 +2,7 @@
  * Web の配信物に課題の解答を混ぜない (#35)。遅延 import や raw import も拒否し、
  * 最後に publicDir・worker・source map を含む書き出し済みの成果物を検査する。
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
 
@@ -13,7 +13,15 @@ const PRIVATE_PATH = /(?:^|[/\\])private[/\\]/;
 // JS / JSON 内ではバックスラッシュが 2 個にエスケープされる。
 const PRIVATE_REFERENCE = /(?:^|[/\\])private(?:\/|\\\\)/;
 const ANSWER_PROPERTY = /(?:\b(?:solution|badSolutions)|["'](?:solution|badSolutions)["'])\s*:/;
-const TEXT_ASSET = /\.(?:[cm]?js|json|map|html|css|txt|md|svg)$/i;
+
+/** バイナリを含む全ファイルの ASCII マーカーを検査し、解答や private/ があれば拒否する。 */
+function assertSafeFileContents(file: string): void {
+  // Latin-1 は各バイトをそのまま文字へ写す。拡張子や UTF-8 としての妥当性に依存しない。
+  const contents = readFileSync(file, "latin1");
+  if (ANSWER_PROPERTY.test(contents) || PRIVATE_REFERENCE.test(contents)) {
+    throw new Error(`[no-private-content] answer or private/ content: ${file}`);
+  }
+}
 
 /** CLI を通らない Vite build でも検査するため、build plugin から呼ぶ。 */
 export function assertSafeWebBuild(outDir: string): void {
@@ -26,19 +34,15 @@ export function assertSafeWebBuild(outDir: string): void {
       }
       if (entry.isDirectory()) {
         inspect(file);
-      } else if (TEXT_ASSET.test(entry.name)) {
-        const text = readFileSync(file, "utf8");
-        if (ANSWER_PROPERTY.test(text) || PRIVATE_REFERENCE.test(text)) {
-          throw new Error(
-            `[no-private-content] answer or private/ content in Web build: ${relative}`,
-          );
-        }
+      } else {
+        assertSafeFileContents(file);
       }
     }
   }
   inspect(outDir);
 }
 
+/** 通常・Worker の import と書き出し後の成果物を検査し、違反した Web build を失敗させる。 */
 export function noPrivateContent(): Plugin {
   let outDir = "";
   let write = false;
@@ -57,6 +61,9 @@ export function noPrivateContent(): Plugin {
       if (PRIVATE_MODULE.test(source)) {
         this.error(`[no-private-content] Web must fetch assignment data from the API: ${source}`);
       }
+      // ?url の小さなバイナリは data URL になるので、エンコード前のファイルも検査する。
+      // Vite の仮想モジュールは実ファイルを持たないため、ここでは読み出さない。
+      if (path.isAbsolute(source) && existsSync(source)) assertSafeFileContents(source);
       return null;
     },
     buildEnd(error) {

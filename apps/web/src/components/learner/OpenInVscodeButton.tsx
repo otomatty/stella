@@ -21,6 +21,7 @@ async function issueLinkCode(): Promise<string | undefined> {
   }
 }
 
+/** 接続コード付きの URI で、指定されたレッスンまたはタスクを VS Code に開く。 */
 export function OpenInVscodeButton(
   props: { stageId: string; lessonId: string } | { taskId: string },
 ) {

@@ -7,7 +7,8 @@ import { assertSafeWebBuild, noPrivateContent } from "../vite-plugins/no-private
 
 const fixtures: string[] = [];
 
-function fixture(files: Record<string, string>): string {
+/** 成果物とモジュールを隔離した一時ディレクトリに置き、テスト後の削除対象に登録する。 */
+function fixture(files: Record<string, string | Uint8Array>): string {
   const root = mkdtempSync(path.join(tmpdir(), "stella-web-build-"));
   fixtures.push(root);
   for (const [name, contents] of Object.entries(files)) {
@@ -22,6 +23,15 @@ afterEach(() => {
   for (const root of fixtures.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
+/** 空の WASM モジュールに任意のメタデータを持つ custom section を追加する。 */
+function wasmWithMetadata(contents: string): Uint8Array {
+  const data = Buffer.from(contents);
+  // section の長さは 1 バイトの LEB128 に収まる、このテストの短いデータに限定する。
+  if (data.length >= 127) throw new Error("test metadata is too long");
+  return new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 0, data.length + 1, 0, ...data]);
+}
+
+/** 本番と同じ通常・Worker の検査プラグインを使い、Vite の書き出しまで実行する。 */
 function buildFixture(root: string) {
   return build({
     configFile: false,
@@ -37,6 +47,15 @@ function buildFixture(root: string) {
 }
 
 describe("Web の書き出し済み成果物の検査", () => {
+  it.each([
+    ["assets/module.wasm", wasmWithMetadata('{"solution":"answer"}')],
+    ["assets/payload.bin", Buffer.from([255, 0, ...Buffer.from('badSolutions:["wrong"]')])],
+    ["payload", wasmWithMetadata("tasks/one/private/review.md")],
+  ])("拡張子に関係なく %s 内の解答と private/ を検出する", (name, contents) => {
+    const root = fixture({ [name]: contents });
+    expect(() => assertSafeWebBuild(root)).toThrow("[no-private-content]");
+  });
+
   it.each([
     ["assets/index.js", 'const a={solution:"console.log(42)"}'],
     ["assets/lazy-assignment.js", 'const a={badSolutions:[{code:"wrong"}]}'],
@@ -60,6 +79,7 @@ describe("Web の書き出し済み成果物の検査", () => {
       "assets/index.js": 'const a={title:"Example",description:"Find a solution",tests:[]}',
       "assets/worker.mjs": 'postMessage({result:"ok"})',
       "assets/highlight.js": String.raw`const syntax = /private\(set\)/`,
+      "assets/safe.wasm": wasmWithMetadata("public metadata"),
     });
     expect(() => assertSafeWebBuild(root)).not.toThrow();
   });
@@ -112,6 +132,30 @@ describe("Vite build の配信境界", () => {
       "public/answers.json": '{"badSolutions":["answer"]}',
     });
     await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("publicDir からコピーされた WASM 内の解答も検出する", async () => {
+    const root = fixture({
+      "entry.js": 'export const title="Example"',
+      "public/module.wasm": wasmWithMetadata('{"solution":"answer"}'),
+    });
+    await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("data URL に埋め込まれる前のバイナリアセットも検査する", async () => {
+    const root = fixture({
+      "entry.js": 'export { default } from "./module.wasm?url"',
+      "module.wasm": wasmWithMetadata('{"badSolutions":["answer"]}'),
+    });
+    await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("解答を持たないバイナリアセットの data URL は許可する", async () => {
+    const root = fixture({
+      "entry.js": 'export { default } from "./module.wasm?url"',
+      "module.wasm": wasmWithMetadata("public metadata"),
+    });
+    await expect(buildFixture(root)).resolves.toBeDefined();
   });
 
   it("Worker からの private/ の raw import も拒否する", async () => {

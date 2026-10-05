@@ -48,9 +48,11 @@ const GENERAL_INTRO = "学習アシスタント AI です。 教材内容や演�
 export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => {
   const context = useLessonAI();
   const isMobile = useIsMobileViewport();
-  const { assignment } = useResolvedAssignment(
-    open && context.kind === "practice" ? context.assignmentId : null,
-  );
+  const {
+    assignment,
+    loading: assignmentLoading,
+    error: assignmentError,
+  } = useResolvedAssignment(open && context.kind === "practice" ? context.assignmentId : null);
 
   const storageKey = useMemo(() => {
     if (context.kind === "practice") {
@@ -73,6 +75,14 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
 
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // 手動送信で履歴が埋まると bootstrapIfEmpty が働かなくなるため、
+  // 課題の取得と初回コンテキストの履歴への追加を待つ。
+  const practiceContextPending =
+    context.kind === "practice" && (assignmentLoading || !assignment || messages.length === 0);
+  const practiceContextError =
+    open && context.kind === "practice" && !assignmentLoading && !assignment
+      ? `課題情報を取得できません${assignmentError ? `: ${assignmentError}` : ""}。チャットを開き直して再試行してください。`
+      : null;
 
   // practice context で履歴が空なら、 第 1 ユーザーメッセージを context summary で組み立てて送信。
   // 閉じている間は投げない (開いて初めてアシスタントが動き出す)。
@@ -95,16 +105,17 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
 
   const subtitle = useMemo(() => {
     if (context.kind === "practice") {
+      if (practiceContextError) return "課題情報を取得できません";
       return assignment ? `課題: ${assignment.title}` : "採点失敗コンテキスト引き継ぎ中";
     }
     if (context.kind === "lesson") {
       return `${context.stageTitle} · ${context.lessonTitle}`;
     }
     return "ナレッジRAG";
-  }, [context, assignment]);
+  }, [context, assignment, practiceContextError]);
 
   const handleSend = () => {
-    if (!draft.trim() || streaming) {
+    if (!draft.trim() || streaming || practiceContextPending) {
       return;
     }
     send(draft);
@@ -114,7 +125,13 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
   const contextNotice =
     context.kind === "practice" ? (
       <div className="mx-3 mt-2 shrink-0 rounded-md border border-dashed border-brand bg-brand-soft px-2.5 py-1.5 text-[11px] text-brand-ink">
-        失敗した課題のコンテキストを引き継いでいます
+        {assignmentLoading
+          ? "課題情報を読み込んでいます…"
+          : practiceContextError
+            ? "課題のコンテキストを引き継げませんでした"
+            : messages.length === 0
+              ? "課題のコンテキストを準備しています…"
+              : "失敗した課題のコンテキストを引き継いでいます"}
       </div>
     ) : null;
 
@@ -129,9 +146,9 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
       {streaming || draftAssistant ? (
         <Message from="assistant" body={draftAssistant} streaming={streaming} />
       ) : null}
-      {error ? (
+      {practiceContextError || error ? (
         <div className="text-[12px] text-danger rounded-md border border-danger/30 bg-danger-soft px-3 py-2">
-          {error}
+          {practiceContextError ?? error}
         </div>
       ) : null}
     </div>
@@ -140,7 +157,15 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
   const composer = (
     <div className="px-3.5 py-3 border-t border-border flex gap-2 items-end bg-card">
       <Textarea
-        placeholder={streaming ? "応答中…" : "教材について質問…"}
+        placeholder={
+          practiceContextError
+            ? "課題情報を取得できません"
+            : streaming
+              ? "応答中…"
+              : practiceContextPending
+                ? "課題のコンテキストを準備中…"
+                : "教材について質問…"
+        }
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -149,14 +174,14 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
             handleSend();
           }
         }}
-        disabled={streaming}
+        disabled={streaming || practiceContextPending}
         className="min-h-[38px] max-h-[120px] text-[13px] py-2 px-2.5"
       />
       <Button
         variant="accent"
         size="icon"
         onClick={handleSend}
-        disabled={streaming || draft.trim().length === 0}
+        disabled={streaming || practiceContextPending || draft.trim().length === 0}
         aria-label="送信"
       >
         <Send size={13} />
