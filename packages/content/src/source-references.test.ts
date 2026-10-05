@@ -1,4 +1,12 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,7 +78,7 @@ function append(file: string, text: string) {
 function reReview(unit: string, version: string) {
   patch(join(unit, "references.json"), (row) => {
     row.unitId = `dev-env-basics/m0-first-page@${version}`;
-    row.contentHash = unitContentHash(unit, "static-web-01");
+    row.contentHash = unitContentHash(unit);
   });
 }
 describe("参照元の公開ゲートと表示", () => {
@@ -141,7 +149,7 @@ describe("参照元の公開ゲートと表示", () => {
     });
     it("references.json・sourceRefs・課題の sources と JSON の書式だけの変更では指紋を変えない", () => {
       const { root, unit } = fixture();
-      const before = unitContentHash(unit, "static-web-01");
+      const before = unitContentHash(unit);
       patch(join(unit, "references.json"), (row) => {
         (row.uses as Record<string, unknown>[])[0].usedFor = "対応の説明を書き直した";
       });
@@ -151,7 +159,142 @@ describe("参照元の公開ゲートと表示", () => {
       const file = join(unit, `${task}/task.json`);
       const definition = { ...JSON.parse(readFileSync(file, "utf8")), sources: [] };
       writeFileSync(file, JSON.stringify(Object.fromEntries(Object.entries(definition).reverse())));
-      expect(unitContentHash(unit, "static-web-01")).toBe(before);
+      expect(unitContentHash(unit)).toBe(before);
+    });
+    it.each<[string, string, string | Buffer, string | Buffer]>([
+      [
+        "スターターの .tsx",
+        "starter/src/App.tsx",
+        "export const App = () => <h1>見出し</h1>;\n",
+        "export const App = () => <h2>見出し</h2>;\n",
+      ],
+      ["テストの .jsx", "tests/app.test.jsx", "test('h1', () => {});\n", "test('h2', () => {});\n"],
+      [
+        "解答の .sql",
+        "private/solution/schema.sql",
+        "create table t (id int);\n",
+        "create table t (id text);\n",
+      ],
+      ["設定の .yaml", "starter/compose.yaml", "services: {}\n", "services: { web: {} }\n"],
+      ["拡張子の無いファイル", "starter/Dockerfile", "FROM node:22\n", "FROM node:24\n"],
+      // UTF-8 として読むとどちらも U+FFFD になるバイト列。バイトのまま比べる。
+      [
+        "バイナリのロックファイル",
+        "starter/bun.lockb",
+        Buffer.from([0, 0xff, 1]),
+        Buffer.from([0, 0xfe, 1]),
+      ],
+    ])("課題の%sを足す・変えると止める", (_label, rel, initial, changed) => {
+      const { root, unit } = fixture();
+      const file = join(unit, task, rel);
+      const original = unitContentHash(unit);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, initial);
+      const added = unitContentHash(unit);
+      expect(added).not.toBe(original);
+      writeFileSync(file, changed);
+      expect(unitContentHash(unit)).not.toBe(added);
+      expect(checkSourceReferences(root)).toEqual([
+        expect.objectContaining({
+          severity: "error",
+          message: expect.stringContaining("contentHash"),
+        }),
+      ]);
+      reReview(unit, "2");
+      expect(checkSourceReferences(root)).toEqual([]);
+    });
+    it("外す参照元の記録は単元直下の references.json と公開教材の sourceRefs だけで、配布するファイルの同名の記述は含める", () => {
+      const { unit } = fixture();
+      const nested = join(unit, task, "starter/references.json");
+      const starterMd = join(unit, task, "starter/notes.md");
+      writeFileSync(nested, '{"items":[1]}');
+      writeFileSync(starterMd, "---\nsourceRefs: [a]\n---\n本文\n");
+      const before = unitContentHash(unit);
+      writeFileSync(nested, '{"items":[2]}');
+      expect(unitContentHash(unit)).not.toBe(before);
+      const afterNested = unitContentHash(unit);
+      writeFileSync(starterMd, "---\nsourceRefs: [b]\n---\n本文\n");
+      expect(unitContentHash(unit)).not.toBe(afterNested);
+    });
+    describe("講座と課題が指す環境定義を同じ ID のままでも指紋に含める", () => {
+      it.each<[string, (env: Record<string, unknown>) => void]>([
+        ["要件", (env) => (env.requirements = { node: { min: "22.12.0" } })],
+        ["対象ブラウザー", (env) => (env.browser = "Chromium 140 以降")],
+      ])("版を変えずに%sを変えると止める", (_label, change) => {
+        const { root, unit } = fixture();
+        const before = unitContentHash(unit);
+        patch(join(root, "environments/static-web-01.json"), change);
+        expect(unitContentHash(unit)).not.toBe(before);
+        expect(checkSourceReferences(root)).toEqual([
+          expect.objectContaining({
+            severity: "error",
+            message: expect.stringContaining("contentHash"),
+          }),
+        ]);
+        reReview(unit, "2");
+        expect(checkSourceReferences(root)).toEqual([]);
+      });
+      it("環境の版を上げて environmentRef だけ追随させても、単元の版の更新と再確認を求める", () => {
+        const { root, unit } = fixture();
+        patch(join(root, "environments/static-web-01.json"), (env) => {
+          env.version = "2";
+        });
+        patch(join(unit, "references.json"), (row) => {
+          row.environmentRef = "static-web-01@2";
+        });
+        expect(checkSourceReferences(root)).toEqual([
+          expect.objectContaining({
+            severity: "error",
+            message: expect.stringContaining("contentHash"),
+          }),
+        ]);
+        reReview(unit, "2");
+        expect(checkSourceReferences(root)).toEqual([]);
+      });
+      it("講座と違う環境を指す課題はその環境定義も含め、キー順だけの違いでは変えない", () => {
+        const { root, unit } = fixture();
+        const other = join(root, "environments/node-22.json");
+        writeFileSync(other, JSON.stringify({ id: "node-22", version: "1", requirements: {} }));
+        patch(join(unit, `${task}/task.json`), (row) => {
+          row.environment = "node-22";
+        });
+        const before = unitContentHash(unit);
+        writeFileSync(other, JSON.stringify({ requirements: {}, version: "1", id: "node-22" }));
+        expect(unitContentHash(unit)).toBe(before);
+        patch(other, (env) => {
+          env.requirements = { node: { min: "22.12.0" } };
+        });
+        expect(unitContentHash(unit)).not.toBe(before);
+      });
+    });
+    it("指紋から外す生成物・OS の管理ファイルは .gitignore 済みで、置いても指紋を変えない", () => {
+      const { unit } = fixture();
+      const before = unitContentHash(unit);
+      const topic = join(unit, "l1-save-and-preview/t1-saved-html");
+      mkdirSync(join(topic, "assets"));
+      writeFileSync(join(topic, "slides.pptx"), "pptx");
+      writeFileSync(join(topic, "assets/figure.diagram.png"), "png");
+      writeFileSync(join(unit, ".DS_Store"), "junk");
+      mkdirSync(join(unit, `${task}/starter/node_modules/pkg`), { recursive: true });
+      writeFileSync(join(unit, `${task}/starter/node_modules/pkg/index.js`), "x");
+      mkdirSync(join(unit, `${task}/tests/__pycache__`));
+      writeFileSync(join(unit, `${task}/tests/__pycache__/test.pyc`), "x");
+      expect(unitContentHash(unit)).toBe(before);
+      // コミットできる名前を外すと、配布する内容の変更を見逃す。
+      const ignored = readFileSync(join(content, "../../.gitignore"), "utf8").split("\n");
+      for (const line of [
+        ".DS_Store",
+        "node_modules",
+        "packages/content/courses/**/slides.pptx",
+        "packages/content/courses/**/*.diagram.png",
+        "packages/content/**/__pycache__/",
+      ])
+        expect(ignored).toContain(line);
+    });
+    it("シンボリックリンクは黙って飛ばさず止める", () => {
+      const { unit } = fixture();
+      symlinkSync(join(unit, "unit.json"), join(unit, `${task}/starter/linked.json`));
+      expect(() => unitContentHash(unit)).toThrow("シンボリックリンク");
     });
     it.each([undefined, "", "abc", "A".repeat(64), `${"0".repeat(63)}g`])(
       "確認した内容の指紋 contentHash (%s) が無い・不正な references.json を拒否する",
@@ -228,7 +371,7 @@ describe("参照元の公開ゲートと表示", () => {
     ).toBe(true);
     baseline.exemptions.push({
       unitId: "dev-env-basics/m0-first-page",
-      contentHash: unitContentHash(unit, "static-web-01"),
+      contentHash: unitContentHash(unit),
       reason: "表記だけの修正を確認",
       reviewer: "fixture-reviewer",
       reviewedAt: "2026-10-05",
@@ -236,6 +379,35 @@ describe("参照元の公開ゲートと表示", () => {
     expect(
       checkSourceReferences(root, baseline)
         .filter((d) => d.unitId.endsWith("/m0-first-page"))
+        .every((d) => d.severity === "warning"),
+    ).toBe(true);
+  });
+  it("基準に無い旧単元は例外を記録しても必須のまま", () => {
+    const { root, unit } = fixture();
+    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      delete row.format;
+    });
+    rmSync(join(unit, "references.json"));
+    const baseline = createLegacyBaseline(root, "test-base");
+    const added = join(root, "courses/dev-env-basics/modules/m1-new");
+    cpSync(unit, added, { recursive: true });
+    baseline.exemptions.push({
+      unitId: "dev-env-basics/m1-new",
+      contentHash: unitContentHash(added),
+      reason: "表記だけの修正を確認",
+      reviewer: "fixture-reviewer",
+      reviewedAt: "2026-10-05",
+    });
+    const diagnostics = checkSourceReferences(root, baseline);
+    expect(diagnostics.filter((d) => d.unitId === "dev-env-basics/m1-new")).toEqual([
+      expect.objectContaining({
+        severity: "error",
+        message: expect.stringContaining("references.json"),
+      }),
+    ]);
+    expect(
+      diagnostics
+        .filter((d) => d.unitId === "dev-env-basics/m0-first-page")
         .every((d) => d.severity === "warning"),
     ).toBe(true);
   });
@@ -250,7 +422,7 @@ describe("参照元の公開ゲートと表示", () => {
       append(join(unit, "l1-save-and-preview/doc.md"), "\n表記を直す。\n");
       baseline.exemptions.push({
         unitId: "dev-env-basics/m0-first-page",
-        contentHash: unitContentHash(unit, "static-web-01"),
+        contentHash: unitContentHash(unit),
         reason: "表記だけの修正を確認",
         reviewer: "fixture-reviewer",
         reviewedAt,
@@ -278,7 +450,7 @@ describe("参照元の公開ゲートと表示", () => {
   });
   it("前提の変更と参照元の追記では未改訂の基準を変えない", () => {
     const { root, unit } = fixture();
-    const before = unitContentHash(unit, "static-web-01");
+    const before = unitContentHash(unit);
     writeFileSync(join(unit, "references.json"), "{}");
     patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
       row.parent = "another";
@@ -286,19 +458,19 @@ describe("参照元の公開ゲートと表示", () => {
       row.appearances = ["new-island"];
       row.appearancePrerequisites = { "new-island": ["another"] };
     });
-    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    expect(unitContentHash(unit)).toBe(before);
   });
   it("講座の予定時間 (plannedHours) の追加・変更では指紋を変えない", () => {
     const { root, unit } = fixture();
-    const before = unitContentHash(unit, "static-web-01");
+    const before = unitContentHash(unit);
     patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
       row.plannedHours = 123;
     });
-    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    expect(unitContentHash(unit)).toBe(before);
     patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
       delete row.plannedHours;
     });
-    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    expect(unitContentHash(unit)).toBe(before);
   });
   it.each(["id", "title"])(
     "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
@@ -372,8 +544,8 @@ describe("参照元の公開ゲートと表示", () => {
     it("seed と同じく Lint プリセットを合成した採点設定で比べ、既定値の明示だけでは変えない", () => {
       const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
       const shared = { findAssignment, getEntryFile, getLanguage, getStaticAnalysisSettings };
-      const before = unitContentHash(unit, undefined, sharedAssignmentResolver(shared));
-      expect(before).not.toBe(unitContentHash(unit, undefined, () => null));
+      const before = unitContentHash(unit, sharedAssignmentResolver(shared));
+      expect(before).not.toBe(unitContentHash(unit, () => null));
       // 擬似言語の課題は entryFile に starterFiles[0] と同じ main.fe を明示している。
       // 省略しても seed が投入する入口ファイルは変わらない。
       const implicitEntry = sharedAssignmentResolver({
@@ -383,7 +555,7 @@ describe("参照元の公開ゲートと表示", () => {
           return assignment && { ...assignment, entryFile: undefined };
         },
       });
-      expect(unitContentHash(unit, undefined, implicitEntry)).toBe(before);
+      expect(unitContentHash(unit, implicitEntry)).toBe(before);
       const otherEntry = sharedAssignmentResolver({
         ...shared,
         findAssignment: (id) => {
@@ -391,7 +563,7 @@ describe("参照元の公開ゲートと表示", () => {
           return assignment && { ...assignment, entryFile: "other.fe" };
         },
       });
-      expect(unitContentHash(unit, undefined, otherEntry)).not.toBe(before);
+      expect(unitContentHash(unit, otherEntry)).not.toBe(before);
       const presetChanged = sharedAssignmentResolver({
         ...shared,
         getStaticAnalysisSettings: (assignment) => {
@@ -399,7 +571,7 @@ describe("参照元の公開ゲートと表示", () => {
           return { ...settings, eslintRules: { ...settings.eslintRules, curly: "off" } };
         },
       });
-      expect(unitContentHash(unit, undefined, presetChanged)).not.toBe(before);
+      expect(unitContentHash(unit, presetChanged)).not.toBe(before);
     });
     it("課題定義のキー順では指紋を変えず、演習の無い単元は課題定義を読まない", () => {
       const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
@@ -407,9 +579,9 @@ describe("参照元の公開ゲートと表示", () => {
         const definition = resolveSharedAssignment(id) as Record<string, unknown>;
         return Object.fromEntries(Object.entries(definition).reverse());
       };
-      expect(unitContentHash(unit, undefined, reversed)).toBe(unitContentHash(unit));
+      expect(unitContentHash(unit, reversed)).toBe(unitContentHash(unit));
       const resolved: string[] = [];
-      unitContentHash(join(content, "courses/fe-kamoku-b/modules/m4-security"), undefined, (id) => {
+      unitContentHash(join(content, "courses/fe-kamoku-b/modules/m4-security"), (id) => {
         resolved.push(id);
         return null;
       });
@@ -418,14 +590,14 @@ describe("参照元の公開ゲートと表示", () => {
   });
   it("course.json のキー順と空白だけを変えても未改訂の判定は維持する", () => {
     const { root, unit } = fixture();
-    const before = unitContentHash(unit, "static-web-01");
+    const before = unitContentHash(unit);
     const file = join(root, "courses/dev-env-basics/course.json");
     const config = JSON.parse(readFileSync(file, "utf8"));
     writeFileSync(
       file,
       JSON.stringify(Object.fromEntries(Object.entries(config).reverse()), null, 4),
     );
-    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    expect(unitContentHash(unit)).toBe(before);
   });
   it("本文・単元末尾・IDEの配布manifest・PDFから同じ出典を読める", () => {
     const { root } = fixture();

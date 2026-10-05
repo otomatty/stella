@@ -40,21 +40,33 @@
 
 ## 単元の版と内容の指紋
 
-`unitId` の版は、参照元と本文・課題の対応を確認した単元の内容を指します。`contentHash` にその内容の指紋を記録し、`bun run content:check` が今の内容と照合します。同じ版のまま本文・コード・課題・解答・評価・画像・環境や `course.json` の教材に関わる項目を変えると一致しなくなり、新形式の単元と、新規・改訂した旧単元ではエラーになります (未改訂の旧単元は警告)。受講途中の版を上書きしないよう、内容を改訂したら新しい版にします。
+`unitId` の版は、参照元と本文・課題の対応を確認した単元の内容を指します。`contentHash` にその内容の指紋を記録し、`bun run content:check` が今の内容と照合します。同じ版のまま本文・コード・課題・解答・評価・画像・環境定義や `course.json` の教材に関わる項目を変えると一致しなくなり、新形式の単元と、新規・改訂した旧単元ではエラーになります (未改訂の旧単元は警告)。受講途中の版を上書きしないよう、内容を改訂したら新しい版にします。
 
 1. `unitId` の版を上げます (`@1` → `@2`)。
 2. 改訂した箇所の参照元と本文・課題の対応を確認し直し、`uses` を更新します。
 3. `bun run --filter=@stella/content hash:unit -- <slug>/<module>` が表示する指紋を `contentHash` に記録します。
 
-指紋の範囲は次節の旧単元の改訂判定と同じです。`references.json` の編集と、front-matter の `sourceRefs`・課題の `sources` の付け替えだけでは指紋は変わらず、版も上げません。検査は指紋の一致までしか見ないので、レビューでは `contentHash` の変更に版の更新が伴っているかを確認します。
+指紋の範囲は次節の旧単元の改訂判定と同じで、受講者が見るもの・採点と配布が使うものを全部含めます。
+
+- 単元ディレクトリの通常のファイルは拡張子を問わず全部含めます。課題のスターター・テスト・解答・類題の `.tsx`・`.sql`・`.yaml`・拡張子の無いファイルやバイナリも、相対パスとバイト列のまま比べます。
+- 講座と各課題の `task.json` が指す環境定義 (`environments/<ID>.json`) は、IDではなく定義の中身を含めます。同じIDのまま版・要件・対象ブラウザーを変えても指紋が変わります。
+- `course.json` の教材に関わる項目と、`exercises` から引く旧演習の課題定義を含めます (次節)。
+
+除くのは次だけです。
+
+- 参照元の対応の記録: 単元直下の `references.json`、公開教材 (`private`・`starter`・`tests` の外の `slides.md`・`doc.md`・`practice.md`・`knowledge.md`・`README.md`) の front-matter の `sourceRefs`、課題の `task.json` の `sources`。スターターなどそのまま配るファイルの同名の記述は内容として含めます。
+- `course.json` の前提・parent・扇への配置と予定時間 (`plannedHours`)。
+- `.gitignore` 済みでコミットにも配布にも届かないもの: `materials` が作る `slides.pptx`・`*.diagram.png`、`node_modules`・`__pycache__`・`.git`、OS の `.DS_Store`。ほかの名前は除かないので、生成物を増やすときは `.gitignore` と `unitContentHash` の除外を揃えます。
+
+シンボリックリンクと通常のファイル以外 (FIFO など) は指紋の計算でエラーにします。`references.json` の編集と、`sourceRefs`・`sources` の付け替えだけでは指紋は変わらず、版も上げません。検査は指紋の一致までしか見ないので、レビューでは `contentHash` の変更に版の更新が伴っているかを確認します。
 
 ## 旧単元の改訂を判定する
 
 新形式は初回公開から必須です。旧形式では新規単元と内容を改訂した単元の全公開教材を必須にし、未改訂単元の不足は警告にします。`sources/legacy-units.json` は導入時点の旧単元の内容指紋です。**教材を改訂したときに基準を再生成しません。** 本文・コード・課題・解答・評価・画像・環境の変更は内容改訂として扱います。前提・parentの付け替え、参照元の追記だけでは指紋を変えません。
 
-指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置と予定時間 (`plannedHours`、学習ペースの見積もり) は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材と課題定義から基準を再計算し、`references.json` の `contentHash` も `hash:unit` で記録し直します (内容は変わっていないので版は上げません)。
+指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置と予定時間 (`plannedHours`、学習ペースの見積もり) は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材・環境定義・課題定義から基準を再計算し、`references.json` の `contentHash` も `hash:unit` で記録し直します (内容は変わっていないので版は上げません)。
 
-文字の差分から誤字だけか内容改訂かは自動で判断できません。誤字・表記・レイアウトだけの場合は、講師が差分を確認して `exemptions` に単元ID・変更後の `contentHash`・`reason`・`reviewer`・`reviewedAt` を残します。`reviewedAt` は実在する日付を YYYY-MM-DD で書きます。`2026-02-30` のように形だけ合う日付の例外は効きません。例外はその内容指紋だけに有効で、新形式の必須検査は免除しません。指紋は `bun run --filter=@stella/content hash:unit -- <slug>/<module>` で確かめます (`src/check-source-references.ts` の `unitContentHash`)。
+文字の差分から誤字だけか内容改訂かは自動で判断できません。誤字・表記・レイアウトだけの場合は、講師が差分を確認して `exemptions` に単元ID・変更後の `contentHash`・`reason`・`reviewer`・`reviewedAt` を残します。`reviewedAt` は実在する日付を YYYY-MM-DD で書きます。`2026-02-30` のように形だけ合う日付の例外は効きません。例外はその内容指紋だけに有効で、基準 (`units`) にある旧単元にだけ効きます。基準に無い新規の旧単元と新形式の必須検査は免除しません。指紋は `bun run --filter=@stella/content hash:unit -- <slug>/<module>` で確かめます (`src/check-source-references.ts` の `unitContentHash`)。
 
 ## 週次のリンク確認
 

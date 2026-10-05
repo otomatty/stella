@@ -23,4 +23,4 @@ for (const target of targets)
   }
 for (const unit of units)
   if (targets.length === 0 || targets.some((target) => matches(unit.unitId, target)))
-    console.log(`${unit.unitId}\t${unitContentHash(unit.directory, unit.environment)}`);
+    console.log(`${unit.unitId}\t${unitContentHash(unit.directory)}`);
