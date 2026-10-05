@@ -197,6 +197,80 @@ describe("学習ペース", () => {
     expect(sunday.thisWeek.reduce((sum, u) => sum + u.minutes, 0)).toBe(60);
     expect(sunday.finishDate).toBe("2026-10-13");
   });
+  describe("講座の残りがBの解禁待ちだけのとき", () => {
+    // 週7時間 = 1日60分。親は修了済みで、HTMLとJSのどちらも着手できる。
+    const settings = { weeklyHours: 7, startDate: "2026-10-05" };
+    const parent = stage([], { id: "parent", completed: true, units: [] });
+    const html = (a: PaceTask) => {
+      const s = stage([a, task("B", "assessment-b")], {
+        id: "html",
+        slug: "html-css-basics",
+        prerequisites: [parent.slug],
+        minutes: 120,
+      });
+      s.units[0].minutes = 120;
+      return s;
+    };
+    const js = (prerequisites: string[]) => {
+      const s = stage([], { id: "js", slug: "javascript-basics", prerequisites, minutes: 600 });
+      s.units[0] = { ...s.units[0], id: "js-unit", minutes: 600 };
+      return s;
+    };
+    const passedA = {
+      ...task("A", "assessment-a"),
+      status: "passed" as const,
+      passedDate: "2026-10-05",
+    };
+    const summary = (result: ReturnType<typeof compute>) => ({
+      targets: result.targets.map(({ stageId, targetDate }) => ({ stageId, targetDate })),
+      finishDate: result.finishDate,
+      thisWeek: result.thisWeek.map(({ unitId, minutes }) => ({ unitId, minutes })),
+    });
+
+    it("待つ間は前提を満たした兄弟講座を進め、解禁したBを割り込ませる", () => {
+      // HTMLのBは10/12解禁 (420分後)。JSを420分進め、Bの60分のあと残り180分に戻る。
+      expect(summary(compute([parent, html(passedA), js([parent.slug])], { settings }))).toEqual({
+        targets: [
+          { stageId: "parent", targetDate: "2026-10-05" },
+          { stageId: "html", targetDate: "2026-10-13" },
+          { stageId: "js", targetDate: "2026-10-16" },
+        ],
+        finishDate: "2026-10-16",
+        thisWeek: [{ unitId: "js-unit", minutes: 420 }],
+      });
+      // Aが未合格なら、Aの60分を終えた時点から7日待つ。その間もJSを進める。
+      expect(
+        summary(
+          compute([parent, html(task("A", "assessment-a")), js([parent.slug])], { settings }),
+        ),
+      ).toEqual({
+        targets: [
+          { stageId: "parent", targetDate: "2026-10-05" },
+          { stageId: "html", targetDate: "2026-10-14" },
+          { stageId: "js", targetDate: "2026-10-17" },
+        ],
+        finishDate: "2026-10-17",
+        thisWeek: [
+          { unitId: "unit", minutes: 60 },
+          { unitId: "js-unit", minutes: 360 },
+        ],
+      });
+    });
+    it("Bを待つ講座の子講座は、Bを終えて講座が完了するまで始めない", () => {
+      // JSがHTMLの子なら解放はBの後。待つ7日は空き、終了日は兄弟の場合 (10/16) より遅い。
+      expect(
+        summary(compute([parent, html(passedA), js(["html-css-basics"])], { settings })),
+      ).toEqual({
+        targets: [
+          { stageId: "parent", targetDate: "2026-10-05" },
+          { stageId: "html", targetDate: "2026-10-13" },
+          { stageId: "js", targetDate: "2026-10-23" },
+        ],
+        finishDate: "2026-10-23",
+        thisWeek: [],
+      });
+    });
+  });
   it.each([false, true])(
     "未合格AからのB予測は完了・診断済みの練習を足し直さない (%s)",
     (diagnosed) => {

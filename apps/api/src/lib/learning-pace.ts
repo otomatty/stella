@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import {
   calculateLearningPace,
   LEARNING_PROGRAM_SLUGS,
@@ -6,6 +7,7 @@ import {
   type PaceSettings,
   type PaceStage,
   type PaceUnit,
+  studyWeekStart,
 } from "@stella/shared/study/pace";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { toStudyDate } from "@stella/shared/study/activity";
@@ -26,6 +28,7 @@ import {
   taskProgress,
 } from "../db/schema.js";
 import { ApiError, type Caller } from "./authz.js";
+import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { loadClearedStageIds, loadSkillMapSource, parsePrerequisites } from "./skill-map-data.js";
 
 /** null は dev-env-basics の初回開始日に戻す。予定の目標日には書き込まない。 */
@@ -234,8 +237,23 @@ export async function visibleLearningPace(db: Db, learner: Caller, pace: Learnin
   };
 }
 
-/** 既存の15分cronで監視。1人・担当・週につき1通にして再実行にも耐える。 */
+/** 受講者・担当講師・週につき1通。cron の事前の除外と挿入で同じ ID を使う。 */
+function paceDelayNotificationId(learnerId: string, instructorId: string, weekStart: string) {
+  return `pace:${learnerId}:${instructorId}:${weekStart}`;
+}
+
+/** 通知 ID を `inArray` で引くときの 1 クエリあたりの件数。type のぶんを上限から引く。 */
+const NOTIFICATION_IDS_PER_QUERY = D1_MAX_BOUND_PARAMS - 10;
+
+/**
+ * 既存の15分cronで監視。1人・担当・週につき1通にして再実行にも耐える。
+ *
+ * 今週すでに通知した組は計画を計算し直さない (1人あたり約10クエリ。cron は同じ起動の
+ * 他の処理と D1 のクエリ上限を分け合う)。1人の計算・挿入が失敗しても後続の受講者は続ける。
+ */
 export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date())) {
+  const weekStart = studyWeekStart(today);
+  const instructor = alias(profiles, "instructor");
   const rows = await db
     .select({
       id: profiles.id,
@@ -243,38 +261,57 @@ export async function notifyPaceDelays(db: Db, today = toStudyDate(new Date())) 
       role: profiles.role,
       name: profiles.displayName,
       email: profiles.email,
-      instructorId: learnerInstructors.instructorId,
+      instructorId: instructor.id,
     })
     .from(learnerInstructors)
     .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-    .where(eq(profiles.disabled, false));
-  for (const learner of rows) {
-    const [instructor] = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(
-        and(
-          eq(profiles.id, learner.instructorId),
-          eq(profiles.tenantId, learner.tenantId),
-          eq(profiles.role, "instructor"),
-          eq(profiles.disabled, false),
-        ),
-      )
-      .limit(1);
-    if (!instructor) continue;
-    const pace = await loadLearningPace(db, learner as Caller, today);
-    if (!pace.needsInstructor) continue;
-    await db
-      .insert(notifications)
-      .values({
-        id: `pace:${learner.id}:${instructor.id}:${pace.weekStart}`,
-        userId: instructor.id,
-        tenantId: learner.tenantId,
-        type: "learning_pace_delayed",
-        title: `${learner.name}さんの学習ペースを確認してください`,
-        body: `進んだ予定時間が目安より${Math.round(-pace.differenceMinutes / 60)}時間少なくなっています。残りの予定は引き直しています。週の時間や支援を相談してください。`,
-        payload: { learner_id: learner.id, delay_days: pace.delayDays },
-      })
-      .onConflictDoNothing({ target: notifications.id });
+    // 担当は同じテナントの有効な講師だけ。受講者ごとに引き直さず 1 クエリで絞る。
+    .innerJoin(
+      instructor,
+      and(
+        eq(instructor.id, learnerInstructors.instructorId),
+        eq(instructor.tenantId, profiles.tenantId),
+        eq(instructor.role, "instructor"),
+        eq(instructor.disabled, false),
+      ),
+    )
+    .where(eq(profiles.disabled, false))
+    .orderBy(asc(learnerInstructors.learnerId));
+  const candidates = rows.map((learner) => ({
+    learner,
+    id: paceDelayNotificationId(learner.id, learner.instructorId, weekStart),
+  }));
+  // 今週の ID を主キーで引くだけ。過去の週の通知は読まない。
+  const notified = new Set<string>();
+  for (const ids of chunk(
+    candidates.map((c) => c.id),
+    NOTIFICATION_IDS_PER_QUERY,
+  )) {
+    const existing = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(and(eq(notifications.type, "learning_pace_delayed"), inArray(notifications.id, ids)));
+    for (const row of existing) notified.add(row.id);
+  }
+  for (const { learner, id } of candidates) {
+    if (notified.has(id)) continue;
+    try {
+      const pace = await loadLearningPace(db, learner as Caller, today);
+      if (!pace.needsInstructor) continue;
+      await db
+        .insert(notifications)
+        .values({
+          id,
+          userId: learner.instructorId,
+          tenantId: learner.tenantId,
+          type: "learning_pace_delayed",
+          title: `${learner.name}さんの学習ペースを確認してください`,
+          body: `進んだ予定時間が目安より${Math.round(-pace.differenceMinutes / 60)}時間少なくなっています。残りの予定は引き直しています。週の時間や支援を相談してください。`,
+          payload: { learner_id: learner.id, delay_days: pace.delayDays },
+        })
+        .onConflictDoNothing({ target: notifications.id });
+    } catch (e) {
+      console.error("[cron] learning pace notification failed", { learnerId: learner.id }, e);
+    }
   }
 }

@@ -141,6 +141,11 @@ export function isPassed(status: TaskStatus): boolean {
   return status === "passed" || status === "ai-passed";
 }
 
+/** 月曜始まりの週。今週の目安と、遅れ通知の週ごとの重複排除が同じ境界を使う。 */
+export function studyWeekStart(date: string): string {
+  return addStudyDays(date, -((studyDateWeekday(date) + 6) % 7));
+}
+
 /** 前提の順を守り、同順位は slug で決める。DB の返す順序に依存しない。 */
 function orderedStages(stages: PaceStage[]): PaceStage[] {
   const bySlug = new Map(stages.map((s) => [s.slug, s]));
@@ -191,47 +196,80 @@ interface RemainingUnit {
   assessments: { minutes: number; releaseAt: number | null; showInWeek: boolean }[];
 }
 
-/** 1人の時間軸。Bの解禁を待つ間は次の単元へ進み、解禁したBから順に取り組む。 */
-function scheduleStage(
-  units: RemainingUnit[],
-  start: number,
+interface ReadyAssessment {
+  minutes: number;
+  releaseAt: number;
+  week: PaceWeekUnit | null;
+}
+
+/** 講座ごとの残り。`finishedAt` は最後の単元・Bを終える時間軸上の時点。 */
+interface StagePlan {
+  prerequisites: StagePlan[];
+  units: RemainingUnit[];
+  index: number;
+  ready: ReadyAssessment[];
+  finishedAt: number | null;
+}
+
+/**
+ * 1人の時間軸に全講座を置く。講座の中は単元の順に進め、Bの解禁を待つ間は次の単元へ進む。
+ * 講座の残りが未解禁のBだけになったら、前提を終えた別の講座 (同じ親の兄弟など) を進め、
+ * 解禁したBから順に割り込ませる。子講座は親のBまで終えてから始める (アプリの解放と同じ)。
+ * 進めている講座は単元が残る限り続け、講座を行き来させない。
+ */
+function scheduleStages(
+  plans: StagePlan[],
   dailyMinutes: number,
   record: (unit: PaceWeekUnit | null, start: number, end: number) => void,
-): number {
-  const ready = units.flatMap((unit) =>
-    unit.assessments.flatMap((b) =>
-      b.releaseAt === null
-        ? []
-        : [{ minutes: b.minutes, releaseAt: b.releaseAt, week: b.showInWeek ? unit.week : null }],
-    ),
-  );
-  let cursor = start;
-  let index = 0;
-  while (index < units.length || ready.length) {
-    const unit = units[index];
-    if (unit && unit.minutes === 0) {
-      for (const b of unit.assessments)
-        if (b.releaseAt === null)
-          ready.push({ minutes: b.minutes, releaseAt: cursor + 7 * dailyMinutes, week: unit.week });
-      index++;
+): void {
+  let cursor = 0;
+  let current: StagePlan | undefined;
+  for (;;) {
+    // 前提順に見るので、親がこの時点で終わった子も同じ周で着手できる。
+    const open: StagePlan[] = [];
+    for (const plan of plans) {
+      if (plan.finishedAt !== null || plan.prerequisites.some((p) => p.finishedAt === null))
+        continue;
+      for (
+        let unit = plan.units[plan.index];
+        unit && unit.minutes === 0;
+        unit = plan.units[++plan.index]
+      )
+        for (const b of unit.assessments)
+          if (b.releaseAt === null)
+            plan.ready.push({
+              minutes: b.minutes,
+              releaseAt: cursor + 7 * dailyMinutes,
+              week: unit.week,
+            });
+      if (plan.index >= plan.units.length && plan.ready.length === 0) plan.finishedAt = cursor;
+      else open.push(plan);
+    }
+    let next: { plan: StagePlan; b: ReadyAssessment } | undefined;
+    for (const plan of open) {
+      plan.ready.sort((a, b) => a.releaseAt - b.releaseAt);
+      const b = plan.ready[0];
+      if (b && (!next || b.releaseAt < next.b.releaseAt)) next = { plan, b };
+    }
+    if (next && next.b.releaseAt <= cursor) {
+      record(next.b.week, cursor, cursor + next.b.minutes);
+      cursor += next.b.minutes;
+      next.plan.ready.shift();
       continue;
     }
-    ready.sort((a, b) => a.releaseAt - b.releaseAt);
-    const b = ready[0];
-    if (b && b.releaseAt <= cursor) {
-      record(b.week, cursor, cursor + b.minutes);
-      cursor += b.minutes;
-      ready.shift();
-    } else if (unit) {
-      const minutes = Math.min(unit.minutes, b ? b.releaseAt - cursor : Infinity);
+    if (!current || current.index >= current.units.length)
+      current = open.find((p) => p.index < p.units.length);
+    const unit = current?.units[current.index];
+    if (unit) {
+      const minutes = Math.min(unit.minutes, next ? next.b.releaseAt - cursor : Infinity);
       record(unit.week, cursor, cursor + minutes);
       cursor += minutes;
       unit.minutes -= minutes;
-    } else if (b) {
-      cursor = b.releaseAt;
-    }
+    } else if (next) {
+      // どの講座にも今できる単元がない。最も早いBの解禁まで進める。
+      cursor = next.b.releaseAt;
+    } else return;
   }
-  return cursor;
 }
 
 /**
@@ -248,7 +286,7 @@ export function calculateLearningPace(input: {
 }): LearningPace {
   const { today, settings } = input;
   const dailyMinutes = (settings.weeklyHours * 60) / 7;
-  const weekStart = addStudyDays(today, -((studyDateWeekday(today) + 6) % 7));
+  const weekStart = studyWeekStart(today);
   const weekEnd = addStudyDays(weekStart, 6);
   const started = settings.startDate !== null && settings.startDate <= today;
   const anchor = started ? today : settings.startDate;
@@ -258,14 +296,12 @@ export function calculateLearningPace(input: {
         (studyDateStartMs(addStudyDays(weekEnd, 1)) - studyDateStartMs(anchor)) / DAY_MS,
       ) * dailyMinutes
     : 0;
-  const targets: PaceTarget[] = [];
   const weeklyUnits = new Map<string, PaceWeekUnit>();
   const assessments: PaceAssessment[] = [];
   let totalMinutes = 0;
   let completedMinutes = 0;
   let skippedPracticeMinutes = 0;
   let cumulativeRemaining = 0;
-  let calendarMinutes = 0;
   let incomplete = false;
   const recordWeek = (unit: PaceWeekUnit | null, start: number, end: number) => {
     const minutes = Math.max(0, Math.min(end, weekUntil) - start);
@@ -279,6 +315,8 @@ export function calculateLearningPace(input: {
     });
   };
 
+  const plans = new Map<string, StagePlan>();
+  const scheduled: { stage: PaceStage; plan: StagePlan; remainingMinutes: number }[] = [];
   for (const stage of orderedStages(input.stages)) {
     let stageRemaining = 0;
     const work: RemainingUnit[] = [];
@@ -371,16 +409,35 @@ export function calculateLearningPace(input: {
       work.push({ minutes: undetailed, week: null, assessments: [] });
     }
     cumulativeRemaining += stageRemaining;
-    calendarMinutes = scheduleStage(work, calendarMinutes, dailyMinutes, recordWeek);
-    targets.push({
-      stageId: stage.id,
-      title: stage.title,
-      remainingMinutes: stageRemaining,
-      targetDate: anchor
-        ? addStudyDays(anchor, calendarDayOffset(calendarMinutes / dailyMinutes))
-        : null,
-    });
+    const plan: StagePlan = {
+      // 前提順に並べてあるので、計画に含まれる前提はすでに登録済み。
+      prerequisites: stage.prerequisites.flatMap((slug) => plans.get(slug) ?? []),
+      units: work,
+      index: 0,
+      ready: work.flatMap(({ assessments, week }) =>
+        assessments.flatMap(({ minutes, releaseAt, showInWeek }) =>
+          releaseAt === null ? [] : [{ minutes, releaseAt, week: showInWeek ? week : null }],
+        ),
+      ),
+      // 修了済みは前提の計画によらず完了。アプリの解放と同じく直接の前提だけを見る。
+      finishedAt: stage.completed ? 0 : null,
+    };
+    plans.set(stage.slug, plan);
+    scheduled.push({ stage, plan, remainingMinutes: stageRemaining });
   }
+  scheduleStages(
+    scheduled.map(({ plan }) => plan),
+    dailyMinutes,
+    recordWeek,
+  );
+  const dateAt = (minutes: number) =>
+    anchor ? addStudyDays(anchor, calendarDayOffset(minutes / dailyMinutes)) : null;
+  const targets: PaceTarget[] = scheduled.map(({ stage, plan, remainingMinutes }) => ({
+    stageId: stage.id,
+    title: stage.title,
+    remainingMinutes,
+    targetDate: dateAt(plan.finishedAt ?? 0),
+  }));
   const expectedMinutes =
     started && settings.startDate
       ? Math.min(
@@ -403,9 +460,7 @@ export function calculateLearningPace(input: {
     delayDays,
     needsInstructor: delayDays > 7,
     remainingWeeks: cumulativeRemaining / (settings.weeklyHours * 60),
-    finishDate: anchor
-      ? addStudyDays(anchor, calendarDayOffset(calendarMinutes / dailyMinutes))
-      : null,
+    finishDate: dateAt(Math.max(0, ...scheduled.map(({ plan }) => plan.finishedAt ?? 0))),
     targets,
     thisWeek: [...weeklyUnits.values()],
     assessments: assessments.sort((a, b) => a.dueDate.localeCompare(b.dueDate)),

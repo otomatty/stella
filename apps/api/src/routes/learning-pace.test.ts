@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LearningPace } from "@stella/shared/study/pace";
 import { addStudyDays } from "@stella/shared/study/activity";
 import { learningPaceRoute } from "./learning-pace.js";
@@ -370,6 +370,47 @@ describe("進捗・確認B・通知", () => {
       { user_id: "teacher", type: "learning_pace_delayed" },
     ]);
     expect(sqlite.prepare("select due_at from enrollments").all()).toEqual([]);
+  });
+  it("1人の計算が失敗しても後続へ通知し、今週通知済みの組は計算し直さない", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {
+      // 握り潰す。呼ばれた回数と受講者だけを確かめる。
+    });
+    try {
+      // a-broken (先に処理される) のテナントは前提が循環した教材で、計画の計算が例外になる。
+      sqlite.exec(`
+        insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) values ('a-broken', 'other', 'student', '計算できない受講者', 0, 'google', 1);
+        insert into learner_instructors values ('a-broken', 'foreign-teacher'), ('learner', 'teacher');
+        update profiles set learning_start_date='2026-10-05' where id in ('learner', 'a-broken');
+        insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次の講座','published',1,35,'catalog',1,1);
+        insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, prerequisites, created_at, updated_at) values
+          ('loop-a','other','dev-env-basics','循環A','published',1,35,'catalog','["html-css-basics"]',1,1),
+          ('loop-b','other','html-css-basics','循環B','published',1,35,'catalog','["dev-env-basics"]',1,1);
+      `);
+      const notified = () =>
+        sqlite.prepare("select id, user_id from notifications order by id").all();
+      await notifyPaceDelays(getDb(env), "2026-10-13");
+      expect(notified()).toEqual([{ id: "pace:learner:teacher:2026-10-12", user_id: "teacher" }]);
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(error.mock.calls[0]?.[1]).toEqual({ learnerId: "a-broken" });
+      // 同じ週 (日曜まで) は通知済みの組を飛ばす。計算しないので循環した教材でも例外にならない。
+      sqlite.exec(
+        "insert into notifications (id, user_id, tenant_id, type, created_at) values ('pace:a-broken:foreign-teacher:2026-10-12', 'foreign-teacher', 'other', 'learning_pace_delayed', 1)",
+      );
+      error.mockClear();
+      await notifyPaceDelays(getDb(env), "2026-10-18");
+      expect(error).not.toHaveBeenCalled();
+      expect(notified()).toHaveLength(2);
+      // 翌週は改めて計算する。
+      await notifyPaceDelays(getDb(env), "2026-10-19");
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(notified()).toEqual([
+        { id: "pace:a-broken:foreign-teacher:2026-10-12", user_id: "foreign-teacher" },
+        { id: "pace:learner:teacher:2026-10-12", user_id: "teacher" },
+        { id: "pace:learner:teacher:2026-10-19", user_id: "teacher" },
+      ]);
+    } finally {
+      error.mockRestore();
+    }
   });
 });
 
