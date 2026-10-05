@@ -84,7 +84,12 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
 tasksRoute.post("/api/tasks/local-result", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const body: unknown = await c.req.json();
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      throw new ApiError("invalid JSON", 400);
+    }
     if (
       !body ||
       typeof body !== "object" ||

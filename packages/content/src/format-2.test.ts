@@ -79,6 +79,44 @@ describe("format 2 の教材", () => {
       false,
     );
   });
+  it.each(["README.md", "readme.md", ".stella", "tests", "tests/README.md", "tests/readme.md"])(
+    "starter/%s が予約済みの配布パスと衝突したら拒否する",
+    (rel) => {
+      const root = fixture();
+      const file = join(
+        root,
+        "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter",
+        rel,
+      );
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, "starter must not replace authored files");
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("配布ファイルが衝突");
+    },
+  );
+  it("starter の .stella 内にはファイルを置けない", () => {
+    const root = fixture();
+    const dir = join(
+      root,
+      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/.stella",
+    );
+    mkdirSync(dir);
+    writeFileSync(join(dir, "task.json"), "{}");
+    expect(() => buildContentManifest(join(root, "courses"))).toThrow(".stella を置けません");
+  });
+  it("衝突しない starter/tests のファイルは課題側の tests と一緒に配布する", () => {
+    const root = fixture();
+    const dir = join(
+      root,
+      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/tests",
+    );
+    mkdirSync(dir);
+    writeFileSync(join(dir, "learner-notes.txt"), "learner notes");
+    const files = buildContentManifest(join(root, "courses")).tasks[0].bundle.files;
+    expect(Buffer.from(files["tests/learner-notes.txt"], "base64").toString()).toBe(
+      "learner notes",
+    );
+    expect(files["tests/README.md"]).toBeDefined();
+  });
   it("台帳の未知ID・パスとIDの不一致は検査で落とす", () => {
     const root = fixture();
     const path = join(

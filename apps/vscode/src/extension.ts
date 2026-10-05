@@ -138,7 +138,7 @@ async function openWebForConnect(target?: PendingLesson): Promise<void> {
   const web = stellaConfig("webUrl", "http://127.0.0.1:5173");
   const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
-    `${DISPLAY_NAME} に接続していません。 Web のコードレッスンで「VS Code で開く」を押してください`,
+    `${DISPLAY_NAME} に接続していません。 Web の課題一覧またはコードレッスンで「VS Code で開く」を押してください`,
   );
   await vscode.env.openExternal(vscode.Uri.parse(`${web}${path}`));
 }
@@ -259,8 +259,16 @@ async function handleExtensionUri(
       if (code) await linkFromLessonUri(code, auth);
       const taskId = q.get("taskId");
       if (!taskId) throw new Error("課題 ID がありません");
+      if (!(await auth.getToken())) {
+        await openWebForConnect();
+        return;
+      }
       await openDistributedTask(taskId);
     } catch (err) {
+      if (err instanceof AuthExpiredError) {
+        await openWebForConnect();
+        return;
+      }
       void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
     }
     return;

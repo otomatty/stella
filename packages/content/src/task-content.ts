@@ -104,8 +104,8 @@ export function readUnit(
   courseId: string,
   unitId: string,
   directory: string,
+  skills = registryIds(root, "skills.json"),
 ): { unit: UnitSeed; tasks: TaskSeed[] } {
-  const skills = registryIds(root, "skills.json");
   const patterns = registryIds(root, "patterns.json");
   const config = parseUnitConfig(json(join(directory, "unit.json")));
   assertKnownSkills([...config.skills.uses, ...config.skills.assesses], skills);
@@ -154,10 +154,27 @@ export function readUnit(
         throw new Error(`課題に ${rel} が必要です: ${definition.id}`);
     }
     const manifest = toRuntimeManifest(definition, environment);
-    const files = {
-      ...collectFiles(join(taskDir, "starter")),
-      ...collectFiles(join(taskDir, "tests"), "tests"),
+    const files: Record<string, string> = {};
+    // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
+    const bundlePaths = new Set(["readme.md", ".stella"]);
+    const addFiles = (collected: Record<string, string>) => {
+      for (const [key, value] of Object.entries(collected)) {
+        const normalized = key.toLowerCase();
+        if (
+          [...bundlePaths].some(
+            (other) =>
+              normalized === other ||
+              normalized.startsWith(`${other}/`) ||
+              other.startsWith(`${normalized}/`),
+          )
+        )
+          throw new Error(`配布ファイルが衝突しています: ${key} (${definition.id})`);
+        bundlePaths.add(normalized);
+        files[key] = value;
+      }
     };
+    addFiles(collectFiles(join(taskDir, "starter")));
+    addFiles(collectFiles(join(taskDir, "tests"), "tests"));
     files["README.md"] = readFileSync(join(taskDir, "README.md")).toString("base64");
     // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
     files[".stella/task.json"] = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");

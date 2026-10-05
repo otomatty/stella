@@ -249,6 +249,16 @@ describe("教材 seed の再実行", () => {
         body: JSON.stringify(body),
       });
     const resultBody = { taskId, contentHash: bundle.contentHash };
+    for (const body of ["", "{", '{"taskId":']) {
+      const invalid = await request(app, env, "/api/tasks/local-result", {
+        token,
+        method: "POST",
+        body,
+      });
+      expect(invalid.status).toBe(400);
+      expect(await json<{ error: string }>(invalid)).toEqual({ error: "invalid JSON" });
+    }
+    expect(countOf(db, "task_progress")).toBe(0);
     db.exec("update enrollments set status = 'completed' where id = 'en-format2'");
     expect((await request(app, env, url, { token })).status).toBe(200);
     expect((await request(app, env, bundleUrl, { token })).status).toBe(200);

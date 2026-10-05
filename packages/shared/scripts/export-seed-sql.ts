@@ -554,8 +554,9 @@ for (const unit of content.units) {
 }
 for (const course of content.courses.filter((c) => c.format === 2)) {
   const stageId = stageIdMap.get(`ses:${course.id}`);
+  if (!stageId) throw new Error(`format 2 stage missing: ${course.id}`);
   lines.push(
-    `update tasks set active = 0 where section_id in (select id from sections where stage_id = ${strLit(stageId ?? "")});`,
+    `update tasks set active = 0 where section_id in (select id from sections where stage_id = ${strLit(stageId)});`,
   );
 }
 for (const [order, task] of content.tasks.entries()) {

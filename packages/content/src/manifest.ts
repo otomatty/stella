@@ -406,6 +406,8 @@ function buildOneCourse(
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
   const contentRoot = dirname(dirname(courseDir));
+  const skillIds =
+    config.format === 2 ? registryIds(contentRoot, "skills.json") : new Set<string>();
   const moduleTitles = config.modules ?? {};
   const usedExerciseKeys = new Set<string>();
 
@@ -413,7 +415,7 @@ function buildOneCourse(
     const modulePath = join(modulesRoot, moduleDir);
     const lessons: Lesson[] = [];
     if (config.format === 2) {
-      const loaded = readUnit(contentRoot, slug, moduleDir, modulePath);
+      const loaded = readUnit(contentRoot, slug, moduleDir, modulePath, skillIds);
       units.push(loaded.unit);
       tasks.push(...loaded.tasks);
     }
@@ -475,8 +477,7 @@ function buildOneCourse(
       const questions =
         config.format === 2 ? parseKnowledge(practiceSource) : parseQuiz(practiceSource);
       if (config.format === 2) {
-        const ids = registryIds(contentRoot, "skills.json");
-        for (const q of questions) assertKnownSkills(q.skills ?? [], ids);
+        for (const q of questions) assertKnownSkills(q.skills ?? [], skillIds);
       }
       if (questions.length > 0) {
         const quizLessonId = `quiz-${key}`;
