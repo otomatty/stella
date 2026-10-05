@@ -1,4 +1,5 @@
 {
+  "format": 2,
   "title": "開発環境とWebの入口",
   "category": "基礎",
   "color": "slate",
@@ -6,9 +7,11 @@
   "header": "開発環境とWebの入口",
   "tenantId": "ses",
   "prerequisites": [],
+  "plannedHours": 35,
+  "environment": "static-web-01",
   "canDo": "開発環境を整え、HTMLの変更をブラウザーで確認できる",
   "theme": "開発を始める力",
   "modules": {
-    "m0-orientation": "M0. この講座について"
+    "m0-first-page": "最初のページを表示する"
   }
 }

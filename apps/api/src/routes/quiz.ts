@@ -123,6 +123,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
       .select({
         id: quizQuestions.id,
         kind: quizQuestions.kind,
+        skills: quizQuestions.skills,
         prompt: quizQuestions.prompt,
         points: quizQuestions.points,
         order: quizQuestions.order,
@@ -146,6 +147,7 @@ quizRoute.get("/api/quiz/for-lesson/:lessonId", async (c) => {
     const questions = questionRows.map((q) => ({
       id: q.id,
       kind: q.kind,
+      skills: q.skills,
       prompt: q.prompt,
       points: q.points,
       order: q.order,

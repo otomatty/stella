@@ -11,6 +11,8 @@ export interface QuizOptionSeed {
 }
 
 export interface QuizQuestionSeed {
+  kind?: "single" | "multiple" | "boolean";
+  skills?: string[];
   /** 設問文（"Q1. " の接頭辞を除いたもの） */
   prompt: string;
   explanation: string;
@@ -30,6 +32,9 @@ export interface ExerciseRef {
 
 /** courses/<slug>/course.json。slug はディレクトリ名。 */
 export interface CourseConfig {
+  format?: 1 | 2;
+  plannedHours?: number;
+  environment?: string;
   title: string;
   category?: string;
   color?: CourseColor;
@@ -97,6 +102,7 @@ export interface CourseConfig {
 }
 
 export interface QuizSeed {
+  source?: "practice" | "knowledge";
   /** 所属講座。lessonId は講座内でのみ一意なので、seed 照合に両方使う。 */
   courseId: string;
   /** 紐づく lesson の安定キー（manifest が振る Lesson.id と一致させる） */

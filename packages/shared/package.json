@@ -69,7 +69,9 @@
     "./interview/session": "./src/interview/session.ts",
     "./interview/practice-set": "./src/interview/practice-set.ts",
     "./skill-sheet/types": "./src/skill-sheet/types.ts",
-    "./brand/display": "./src/brand/display.ts"
+    "./brand/display": "./src/brand/display.ts",
+    "./tasks/catalog": "./src/tasks/catalog.ts",
+    "./vscode/uris": "./src/vscode/uris.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

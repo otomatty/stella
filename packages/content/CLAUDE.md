@@ -10,6 +10,14 @@
 
 原典は [サバイバルTypeScript](https://typescriptbook.jp/)(CC BY-SA 4.0)ですが、**未経験者向けに順序・粒度を再設計した独自教材**であり、原典の翻訳や写しではありません。
 
+## 新カリキュラムの形式
+
+新カリキュラムは `course.json` の `format: 2` を使います。**単元＝モジュール**、レッスンの下のトピックは従来どおりです。単元直下に `unit.json`・`references.json`・`tasks/`、レッスン直下に `knowledge.md` を置きます。予定時間・環境・スキル・パターンの台帳と書き方は [ADDING_COURSE.md の format 2](ADDING_COURSE.md#新カリキュラムの-format-2)、見本は `courses/dev-env-basics/` にあります。
+
+format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・配布PDF・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
+
+教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略した講座には以下の既存規則を適用し、読み込み・seed・PDFを変更しません。
+
 ## 教材の単位(3層)
 
 粒度の定義がこの教材の設計の中心です。**モジュール / レッスン / トピック**の3層で構成します。
@@ -133,7 +141,7 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 ## 現在の状態
 
-教材は `courses/<slug>/modules/` が正本です。新18講座と残す17講座の計35講座があります。新18講座は M0 の準備中案内だけを持ち、新形式の教材・課題は #28・#41 で作成します。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中なので、準備中は計23講座です。
+教材は `courses/<slug>/modules/` が正本です。新18講座と残す17講座の計35講座があります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、講座全体の予定は35時間です。ほかの新17講座は M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つ講座も全体は準備中です。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中なので、準備中は計23講座です。
 
 唯一の前提なし講座は `dev-env-basics` です。この講座には前提を追加しないでください。新18講座の slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 

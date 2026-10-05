@@ -22,6 +22,7 @@ import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
 import { StageThumb } from "@/components/common/StageThumb";
 import { StageMaterialsDialog } from "@/components/learner/StageMaterialsDialog";
+import { TaskList } from "./TaskList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
@@ -149,6 +150,7 @@ export const StageDetail = ({
             </p>
           ) : null}
 
+          {stage.format === 2 ? <TaskList stageId={stage.id} /> : null}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>シラバス</CardTitle>

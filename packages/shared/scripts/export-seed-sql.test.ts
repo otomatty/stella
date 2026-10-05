@@ -119,7 +119,7 @@ describe("export-seed-sql (sqlite)", () => {
 
   it("seed-learner の登録と提出は新しい入口に紐づく", () => {
     expect(sql).toContain("seed-enrollment-learner-dev-env-basics");
-    expect(sql).toContain(stableUuid("lesson:ses:dev-env-basics:m0-l1-t1"));
+    expect(sql).toContain(stableUuid("lesson:ses:dev-env-basics:0-1-1"));
     expect(sql).toContain("開発環境とWebの入口");
     expect(sql).not.toContain("seed-enrollment-learner-typescript-basics");
   });
@@ -187,8 +187,10 @@ describe("export-seed-sql (sqlite)", () => {
     // slug 列で拾う (parent 列に 'dev-env-basics' を持つ子の行と取り違えないため)。
     const line = (sql.match(/^insert into stages .*'ses', 'dev-env-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
-    // 並びは ... status, prerequisites, parent, can_do, theme, audience, created_at, updated_at。
-    expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', 'catalog', cast\(unixepoch/);
+    // 並びは ... status, prerequisites, parent, can_do, theme, audience, format, environment。
+    expect(line).toMatch(
+      /'published', null, null, '[^']*', '[^']*', 'catalog', 2, 'static-web-01', cast\(unixepoch/,
+    );
     expect(line).not.toContain("'[]'");
   });
 
@@ -303,10 +305,15 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toMatch(/o\.is_correct <> /);
   });
 
-  it("設問ごとに正解がちょうど 1 つ（単一選択）", () => {
+  it("単一選択と正誤は正解1つ、複数選択には正解集合がある", () => {
     // 選択肢ラベルには `const price: number = 300;` のようにセミコロンを含むコードが
     // 入るので、1 文 = 1 行であることを使って行単位で読む。
     const correctByQuestion = new Map<string, number>();
+    const multipleIds = new Set(
+      [
+        ...sql.matchAll(/^insert into quiz_questions .*select '([^']+)', '[^']+', 'multiple'/gm),
+      ].map((m) => m[1]),
+    );
     for (const [, id] of sql.matchAll(/^insert into quiz_questions .*select '([^']+)'/gm)) {
       correctByQuestion.set(id, 0);
     }
@@ -320,7 +327,9 @@ describe("export-seed-sql (sqlite)", () => {
       }
     }
 
-    const notSingle = [...correctByQuestion].filter(([, n]) => n !== 1);
+    const notSingle = [...correctByQuestion].filter(([id, n]) =>
+      multipleIds.has(id) ? n < 1 : n !== 1,
+    );
     expect(notSingle).toEqual([]);
   });
 
@@ -521,6 +530,8 @@ vi.mock("@stella/content", async () => {
   return {
     // @stella/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
     buildContentManifest: () => ({
+      tasks: [],
+      units: [],
       courses: [
         {
           id: "salesforce-dev-basics",

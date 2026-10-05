@@ -1,7 +1,7 @@
 # 開発環境とWebの入口のカリキュラム
 
 状態は準備中です。新カリキュラムのM01に対応します。
-予定時間は35時間です。教材本体と新形式の課題は #28・#41 で作成します。
+講座全体の予定時間は35時間です。教材本体は #41 で作成します。
 
 ## 到達目標
 
@@ -20,4 +20,10 @@
 
 ## 執筆時の扱い
 
-現在はM0の準備中案内だけを置いています。新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_COURSE.md` に従います。
+現在は #28 の format 2 の見本単元 `m0-first-page` を置いています。
+この単元は3時間の予定で、講座全体の35時間のうちの一部です。
+HTMLの文書を作り、保存してブラウザーで確認します。
+参照元は単元の `references.json` に記録します。
+
+単元はモジュール、1コマは既存のレッスンディレクトリに対応します。
+新形式の執筆は `docs/curriculum/07-stella-adoption-redesign.md` と `packages/content/ADDING_COURSE.md` に従います。

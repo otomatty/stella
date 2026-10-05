@@ -13,7 +13,7 @@
     "materials": "node scripts/build.mjs",
     "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
-    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts",
+    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts && bun run scripts/check-tasks.ts",
     "check:graph": "bun run scripts/check-graph.ts",
     "pdf": "bun run scripts/build-pdf.ts",
     "pdf:sync": "bun run scripts/upload-pdfs.ts",

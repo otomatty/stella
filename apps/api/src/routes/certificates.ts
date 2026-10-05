@@ -1,3 +1,4 @@
+import { taskCompletionCounts } from "../lib/task-completion.js";
 /**
  * 修了判定 / 成績台帳 / 修了証 API
  * (旧 compute_course_completion / get_my_course_completion / get_course_gradebook /
@@ -145,7 +146,7 @@ async function computeStageCompletion(
 
   // 課題 (assignment レッスン) 総数 + pass 数。
   const assignmentLessonIds = lessonRows.filter((l) => l.type === "assignment").map((l) => l.id);
-  const totalAssignments = assignmentLessonIds.length;
+  let totalAssignments = assignmentLessonIds.length;
   let passedAssignments = 0;
   if (assignmentLessonIds.length > 0) {
     const passed = await db
@@ -159,6 +160,12 @@ async function computeStageCompletion(
         ),
       );
     passedAssignments = new Set(passed.map((s) => s.lessonId)).size;
+  }
+
+  if (stage.format === 2) {
+    const taskCounts = await taskCompletionCounts(db, stageId, [userId]);
+    totalAssignments += taskCounts.total;
+    passedAssignments += taskCounts.passed.get(userId)?.size ?? 0;
   }
 
   const met = completionMet(stage, {
@@ -304,16 +311,19 @@ async function batchComputeCompletions(
   const certByUser = new Map<string, string>();
   for (const r of certRows) certByUser.set(r.userId, r.certCode);
 
+  const taskCounts = stage.format === 2 ? await taskCompletionCounts(db, stageId, userIds) : null;
   for (const userId of userIds) {
     const completedLessons = doneByUser.get(userId)?.size ?? 0;
     const passedQuizzes = quizByUser.get(userId)?.size ?? 0;
-    const passedAssignments = assignByUser.get(userId)?.size ?? 0;
+    const passedAssignments =
+      (assignByUser.get(userId)?.size ?? 0) + (taskCounts?.passed.get(userId)?.size ?? 0);
+    const totalTaskAssignments = totalAssignments + (taskCounts?.total ?? 0);
     const met = completionMet(stage, {
       totalLessons,
       completedLessons,
       totalQuizzes,
       passedQuizzes,
-      totalAssignments,
+      totalAssignments: totalTaskAssignments,
       passedAssignments,
     });
     const certCode = certByUser.get(userId) ?? null;
@@ -325,7 +335,7 @@ async function batchComputeCompletions(
       completed_lessons: completedLessons,
       total_quizzes: totalQuizzes,
       passed_quizzes: passedQuizzes,
-      total_assignments: totalAssignments,
+      total_assignments: totalTaskAssignments,
       passed_assignments: passedAssignments,
       criteria: {
         require_all_lessons: stage.requireAllLessons,

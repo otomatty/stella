@@ -8,7 +8,7 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, count, eq, gt, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, gt, gte, inArray, lt, lte, or, type SQL } from "drizzle-orm";
 import { studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 import type { SrsTodaySummary } from "@stella/shared/srs/types";
 import type { QuizAnswer } from "@stella/shared/cms/types";
@@ -72,6 +72,7 @@ async function selectAccessibleCards(
         eq(reviewCards.userId, caller.id),
         eq(stages.tenantId, caller.tenantId),
         eq(stages.status, "published"),
+        or(eq(stages.format, 1), eq(quizzes.source, "knowledge")),
         extra,
       ),
     )
@@ -209,6 +210,7 @@ srsRoute.get("/api/srs/today", async (c) => {
           .select({
             id: quizQuestions.id,
             kind: quizQuestions.kind,
+            skills: quizQuestions.skills,
             prompt: quizQuestions.prompt,
             points: quizQuestions.points,
             order: quizQuestions.order,

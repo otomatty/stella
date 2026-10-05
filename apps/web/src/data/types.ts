@@ -65,6 +65,8 @@ export interface Section {
  * 演習カリキュラムの難易度段階 (S0-S5) で、 こちらとは別物。
  */
 export interface Stage {
+  format?: 1 | 2;
+  environment?: string;
   id: string;
   title: string;
   category: string;

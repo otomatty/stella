@@ -24,6 +24,7 @@ const SEED = [];
 function collect(dir) {
   const found = [];
   for (const entry of readdirSync(dir)) {
+    if (entry === "private" || entry === "tasks") continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) found.push(...collect(full));
     else if (entry === "slides.md") found.push(full);

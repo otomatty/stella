@@ -1,0 +1,7 @@
+{
+  "id": "static-web-01",
+  "version": "1",
+  "os": ["windows", "macos", "linux"],
+  "browser": "Chromium 131 以降",
+  "requirements": {}
+}

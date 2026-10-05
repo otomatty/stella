@@ -71,6 +71,7 @@ const stageToRow = (c: StageSel) => ({
   color: c.color,
   thumbnail_path: c.thumbnailPath,
   duration_hours: c.durationHours,
+  format: c.format === 2 ? (2 as const) : (1 as const),
   description: c.description,
   instructor_name: c.instructorName,
   status: c.status,

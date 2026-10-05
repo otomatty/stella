@@ -7,11 +7,19 @@
  * (片方だけ確定して「カードは進んだのにログが無い」状態を作らない)。
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { sm2Next, type SrsCardState } from "@stella/shared/srs/sm2";
 import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
-import { reviewCards, reviewLogs } from "../db/schema.js";
+import {
+  reviewCards,
+  reviewLogs,
+  quizQuestions,
+  quizzes,
+  lessons,
+  sections,
+  stages,
+} from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 import type { Db } from "../db/client.js";
 
@@ -45,6 +53,31 @@ export async function applyOutcomesToCards(
   opts: { withLogs?: boolean } = {},
 ): Promise<Map<string, UpdatedCard>> {
   const updated = new Map<string, UpdatedCard>();
+  if (outcomes.length === 0) return updated;
+
+  // format 2 の復習元は knowledge.md だけ。旧形式の小テスト復習は保つ。
+  const eligible = new Set<string>();
+  for (const ids of chunk(
+    outcomes.map((o) => o.questionId),
+    50,
+  )) {
+    const rows = await db
+      .select({ id: quizQuestions.id })
+      .from(quizQuestions)
+      .innerJoin(quizzes, eq(quizzes.id, quizQuestions.quizId))
+      .innerJoin(lessons, eq(lessons.id, quizzes.lessonId))
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .innerJoin(stages, eq(stages.id, sections.stageId))
+      .where(
+        and(
+          inArray(quizQuestions.id, ids),
+          eq(stages.tenantId, tenantId),
+          or(eq(stages.format, 1), eq(quizzes.source, "knowledge")),
+        ),
+      );
+    for (const row of rows) eligible.add(row.id);
+  }
+  outcomes = outcomes.filter((o) => eligible.has(o.questionId));
   if (outcomes.length === 0) return updated;
 
   // D1 のバインド上限があるため chunk して読む (バックフィル経路は設問数が多くなり得る)。

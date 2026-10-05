@@ -61,6 +61,7 @@ for (const slug of wantDiagrams ? dirsIn(coursesRoot) : []) {
   if (!existsSync(root)) continue;
   for (const moduleDir of dirsIn(root)) {
     for (const lessonDir of dirsIn(join(root, moduleDir))) {
+      if (lessonDir === "tasks" || lessonDir === "private") continue;
       const lessonPath = join(root, moduleDir, lessonDir);
       for (const topicDir of dirsIn(lessonPath)) {
         const assetsDir = join(lessonPath, topicDir, "assets");

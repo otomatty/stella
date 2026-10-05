@@ -43,6 +43,48 @@ packages/content/courses/<slug>/
 
 ---
 
+## 新カリキュラムの format 2
+
+単元は **モジュール** に対応します。`course.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `courses/dev-env-basics/` です。format を省略した講座は従来の読み込み・seed・PDFのままです。
+
+```text
+modules/<unit>/
+  unit.json              # plannedHours、skills.uses / assesses、reuses（学習フォルダー内の成果物パス）
+  references.json        # [{ id, title, url }]。task.sources が参照する単元の台帳
+  <lesson>/
+    <topic>/slides.md    # 従来どおり1 Takeaway、語彙台帳、4〜6枚
+    doc.md              # 公開する解説
+    knowledge.md        # アプリで解く知識問題
+  tasks/<task>/
+    task.json
+    README.md           # 課題文と参照リンク
+    starter/            # 内容を作業フォルダー直下へ配布
+    tests/              # tests/ として配布
+    hints.md
+    private/
+      solution/         # starter を上書きした状態で手元のランナーに合格する解答例
+      explanation.md
+      review.md
+      variants/         # 未出題の予備。空の場合は .gitkeep を置く
+```
+
+`unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定です。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
+
+`task.json` の必須項目は `id`（`<講座>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
+
+- `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
+- `review`: `rubric` に `{ id, criterion, required }`、`escalateWhen` に追加条件の文字列配列を書きます。
+- `support`: `hintLevels`、`solutionUnlock`（`passed` / `attempts-or-passed`）。後者は正の整数 `attempts` も必要です。確認A・Bはヒント0段、解答は合格後です。
+- `protected`・`checks`・`static` は拡張用manifestと同じ形です。`.stella/task.json` は生成時に環境要件を解決し、実行に必要な項目だけを取り出します。任意コマンドは定義できません。
+
+知識問題は各設問の見出しを `### Q1. 設問文` とし、直後に `<!-- kind: single; skills: html-document -->` を書きます。種別は `single` / `multiple` / `boolean`、スキルはカンマ区切りです。選択肢と `<details>` の解答は旧クイズと同じ形で、複数選択の正解は `**A, C** — 解説` と書きます。正誤は `A. 正しい` / `B. 誤り` の2択です。新形式のSRSカードはこの知識問題だけから作り、設問のスキルIDを返します。
+
+`bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
+
+課題は D1 の `tasks`、非公開の素材は `task_private`、状態は `task_progress` に投入します。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
+
+LMS は7状態と「VS Code で開く」を表示します。拡張は `~/web-training/<講座>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
+
 ## A. 新しい講座を作る（既定）
 
 ### 1. slug を決める

@@ -70,6 +70,7 @@ export interface ProfileRow {
 }
 
 export interface StageRow {
+  format?: 1 | 2;
   id: string;
   tenant_id: string;
   slug: string;
@@ -233,6 +234,7 @@ export interface LearnerQuizOption {
 }
 
 export interface LearnerQuizQuestion {
+  skills?: string[];
   id: string;
   kind: QuestionKind;
   prompt: string;
@@ -587,6 +589,7 @@ export interface UiSection {
 }
 
 export interface UiStage {
+  format?: 1 | 2;
   id: string;
   title: string;
   category: string;
@@ -659,6 +662,7 @@ export function mapStageToUi(input: StageWithChildren): UiStage {
   const instructorName = input.stage.instructor_name?.trim();
   return {
     id: input.stage.id,
+    ...(input.stage.format === 2 ? { format: 2 as const } : {}),
     title: input.stage.title,
     category: input.stage.category ?? "",
     color: input.stage.color ?? "indigo",
