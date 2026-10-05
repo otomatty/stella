@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { readEnvironment } from "./task-content.js";
+import { parseSlides } from "./parse-slides.js";
 import {
   object,
+  parseUnitId,
   publicContentFiles,
   readSourceRefs,
   readSourceRegistry,
@@ -31,9 +33,23 @@ export interface LegacySourceBaseline {
   }[];
 }
 
+function normalizedJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizedJson);
+  if (value && typeof value === "object") {
+    const row = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(row)
+        .sort()
+        .map((key) => [key, normalizedJson(row[key])]),
+    );
+  }
+  return value;
+}
+
 /** 内容と環境の変更を検出。前提・parent や参照元の追記だけでは改訂にならない。 */
 export function unitContentHash(directory: string, environment?: string): string {
   const hash = createHash("sha256").update(environment ?? "");
+  const lessonKeys = new Set<string>();
   function walk(dir: string, prefix: string) {
     for (const entry of readdirSync(dir).sort()) {
       const path = join(dir, entry);
@@ -46,6 +62,13 @@ export function unitContentHash(directory: string, environment?: string): string
         hash.update(`${rel}\0`);
         if (entry.endsWith(".md")) {
           let content = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+          const parts = rel.split("/");
+          if (
+            entry === "slides.md" &&
+            parts.length === 3 &&
+            !["tasks", "private"].includes(parts[0])
+          )
+            lessonKeys.add(parseSlides(content).id.split("-").slice(0, 2).join("-"));
           content = content.replace(/^---\n([\s\S]*?)\n---\n/, (_whole, head: string) => {
             const fields = head
               .split("\n")
@@ -60,6 +83,24 @@ export function unitContentHash(directory: string, environment?: string): string
     }
   }
   walk(directory, "");
+  const config = object(
+    JSON.parse(readFileSync(join(dirname(dirname(directory)), "course.json"), "utf8")),
+    "course.json",
+  );
+  const moduleId = basename(directory);
+  const modules = config.modules === undefined ? {} : object(config.modules, "course.modules");
+  const exercises =
+    config.exercises === undefined ? {} : object(config.exercises, "course.exercises");
+  const courseContent: Record<string, unknown> = {
+    ...config,
+    format: config.format ?? 1,
+    modules: { [moduleId]: modules[moduleId] ?? moduleId },
+    exercises: Object.fromEntries(Object.entries(exercises).filter(([key]) => lessonKeys.has(key))),
+  };
+  // 学習内容と無関係な経路変更は除外し、演習・単元名は影響する単元だけに含める。
+  for (const key of ["prerequisites", "parent", "appearances", "appearancePrerequisites"])
+    delete courseContent[key];
+  hash.update(`course.json\0${JSON.stringify(normalizedJson(courseContent))}`);
   return hash.digest("hex");
 }
 export function listSourceUnits(
@@ -118,7 +159,7 @@ function checkUnit(
 ): string[] {
   const problems: string[] = [];
   if (!refs) return ["references.json がありません"];
-  if (refs.unitId.split("@")[0] !== unitId)
+  if (parseUnitId(refs.unitId).path !== unitId)
     problems.push(`unitId が単元と一致しません: ${refs.unitId}`);
   const envParts = /^([a-z0-9][a-z0-9._-]*)@([^@]+)$/.exec(refs.environmentRef);
   if (!envParts) problems.push("environmentRef: ID@version の環境定義が必要です");

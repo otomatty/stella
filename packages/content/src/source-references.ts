@@ -151,10 +151,20 @@ export function parseSourceRegistry(raw: unknown): Map<string, SourceRecord> {
 export function readSourceRegistry(root: string): Map<string, SourceRecord> {
   return parseSourceRegistry(JSON.parse(readFileSync(join(root, "sources/registry.json"), "utf8")));
 }
+export function parseUnitId(value: string): { path: string; version: string } {
+  const match =
+    /^([A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*)@((?:0|[1-9]\d*)(?:\.(?:0|[1-9]\d*))*)$/.exec(
+      value,
+    );
+  if (!match) throw new Error("unitId: <slug>/<module>@<数字またはドット区切りの版> が必要です");
+  return { path: match[1], version: match[2] };
+}
 export function parseUnitReferences(raw: unknown): UnitReferences {
   const row = object(raw, "references.json");
   if (row.schemaVersion !== "2.1" || !Array.isArray(row.uses))
     throw new Error("references.json: schemaVersion 2.1 と uses 配列が必要です");
+  const unitId = text(row.unitId, "unitId");
+  parseUnitId(unitId);
   const uses = row.uses.map((value): SourceUse => {
     const use = object(value, "uses");
     const contentId = text(use.contentId, "contentId");
@@ -215,7 +225,7 @@ export function parseUnitReferences(raw: unknown): UnitReferences {
   });
   return {
     schemaVersion: "2.1",
-    unitId: text(row.unitId, "unitId"),
+    unitId,
     environmentRef: text(row.environmentRef, "environmentRef"),
     uses,
   };

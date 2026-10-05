@@ -58,6 +58,32 @@ describe("参照元の公開ゲートと表示", () => {
     expect(checkSourceReferences(root)).toEqual([]);
   });
   it.each([
+    "dev-env-basics/m0-first-page",
+    "dev-env-basics/m0-first-page@",
+    "dev-env-basics/m0-first-page@1@2",
+    "dev-env-basics/m0-first-page@draft",
+    "dev-env-basics/m0-first-page@1.",
+    "dev-env-basics/m0-first-page@1.0/extra",
+    "dev-env-basics/m0-first-page@1 2",
+    "dev-env-basics/m0-first-page@01",
+    "dev-env-basics/another@1",
+  ])("版を含む unitId の形式と対応先を検査する: %s", (unitId) => {
+    const { root, unit } = fixture();
+    patch(join(unit, "references.json"), (row) => {
+      row.unitId = unitId;
+    });
+    expect(checkSourceReferences(root)).toEqual([
+      expect.objectContaining({ severity: "error", message: expect.stringContaining("unitId") }),
+    ]);
+  });
+  it("ドット区切りの版を持つ単元も検査を通す", () => {
+    const { root, unit } = fixture();
+    patch(join(unit, "references.json"), (row) => {
+      row.unitId = "dev-env-basics/m0-first-page@1.0.0";
+    });
+    expect(checkSourceReferences(root)).toEqual([]);
+  });
+  it.each([
     "unregistered",
     "landing",
     "draft",
@@ -124,7 +150,59 @@ describe("参照元の公開ゲートと表示", () => {
     writeFileSync(join(unit, "references.json"), "{}");
     patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
       row.parent = "another";
+      row.prerequisites = ["another"];
+      row.appearances = ["new-island"];
+      row.appearancePrerequisites = { "new-island": ["another"] };
     });
+    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+  });
+  it.each(["id", "title"])(
+    "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
+    (field) => {
+      const { root } = fixture();
+      const course = join(root, "courses/fe-kamoku-b");
+      cpSync(join(content, "courses/fe-kamoku-b"), course, { recursive: true });
+      const baseline = createLegacyBaseline(root, "test-base");
+      expect(checkSourceReferences(root, baseline).every((d) => d.severity === "warning")).toBe(
+        true,
+      );
+      patch(join(course, "course.json"), (row) => {
+        const exercises = row.exercises as Record<string, Record<string, string>[]>;
+        exercises["1-1"][0][field] = `changed-${field}`;
+      });
+      const errors = checkSourceReferences(root, baseline).filter((d) => d.severity === "error");
+      expect(new Set(errors.map((d) => d.unitId))).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
+    },
+  );
+  it("講座の到達目標の変更は全単元、単元名の変更は該当単元を改訂済みとして扱う", () => {
+    const { root } = fixture();
+    const course = join(root, "courses/fe-kamoku-b");
+    cpSync(join(content, "courses/fe-kamoku-b"), course, { recursive: true });
+    const baseline = createLegacyBaseline(root, "test-base");
+    patch(join(course, "course.json"), (row) => {
+      (row.modules as Record<string, string>)["m1-pseudo"] = "変更した単元名";
+    });
+    const errors = () =>
+      new Set(
+        checkSourceReferences(root, baseline)
+          .filter((d) => d.severity === "error")
+          .map((d) => d.unitId),
+      );
+    expect(errors()).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
+    patch(join(course, "course.json"), (row) => {
+      row.canDo = "変更した到達目標";
+    });
+    expect(errors()).toEqual(new Set(Object.keys(baseline.units)));
+  });
+  it("course.json のキー順と空白だけを変えても未改訂の判定は維持する", () => {
+    const { root, unit } = fixture();
+    const before = unitContentHash(unit, "static-web-01");
+    const file = join(root, "courses/dev-env-basics/course.json");
+    const config = JSON.parse(readFileSync(file, "utf8"));
+    writeFileSync(
+      file,
+      JSON.stringify(Object.fromEntries(Object.entries(config).reverse()), null, 4),
+    );
     expect(unitContentHash(unit, "static-web-01")).toBe(before);
   });
   it("本文・単元末尾・IDEの配布manifest・PDFから同じ出典を読める", () => {
