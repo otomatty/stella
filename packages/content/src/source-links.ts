@@ -132,7 +132,14 @@ export async function checkSourceLink(
     }
     const body = await response.text();
     if (url.hash) {
-      const anchor = decodeURIComponent(url.hash.slice(1));
+      // 不正なパーセントエンコードは通信の失敗ではないので、生の値のまま照合する。
+      const raw = url.hash.slice(1);
+      let anchor = raw;
+      try {
+        anchor = decodeURIComponent(raw);
+      } catch {
+        // そのまま照合する
+      }
       const ids = [...body.matchAll(/(?:id|name)\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
       if (!ids.includes(anchor))
         return { ...details, status: "manual-confirmation", reason: "anchor-missing" };

@@ -56,6 +56,17 @@ describe("参照元のリンク確認", () => {
       "anchor-missing",
     );
   });
+  it("不正なパーセントエンコードのアンカーは通信の失敗にせず、生の値で照合する", async () => {
+    const src = { ...source, url: `${source.url}#a%E0` };
+    const response = (body: string) =>
+      new Response(body, { headers: { "content-type": "text/html" } });
+    expect((await checkSourceLink(src, async () => response('<h2 id="a%E0">A</h2>'))).status).toBe(
+      "available",
+    );
+    expect((await checkSourceLink(src, async () => response("no section"))).reason).toBe(
+      "anchor-missing",
+    );
+  });
   describe("台帳の読む節 (section) だけで場所を示す資料", () => {
     const html = (body: string) =>
       new Response(body, { headers: { "content-type": "text/html; charset=utf-8" } });

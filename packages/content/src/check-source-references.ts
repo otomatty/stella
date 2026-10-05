@@ -174,7 +174,10 @@ export function unitContentHash(
         continue;
       }
       if (!stat.isFile()) throw new Error(`単元に通常のファイル以外は置けません: ${rel}`);
-      hash.update(`${rel}\0`);
+      // パスと内容の長さを前に置き、ファイルの境界を一意にする (内容に \0 やパスを含めても
+      // 別のファイル構成と同じ指紋にならない)。
+      const update = (data: string | Buffer) =>
+        hash.update(`${rel}\0${Buffer.byteLength(data)}\0`).update(data);
       const parts = rel.split("/");
       if (sourcedMarkdown.has(rel)) {
         let content = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
@@ -188,12 +191,12 @@ export function unitContentHash(
             .trim();
           return fields ? `---\n${fields}\n---\n` : "";
         });
-        hash.update(content);
+        update(content);
       } else if (entry === "task.json" && parts.length === 3 && parts[0] === "tasks") {
         const task = taskDefinitionContent(path);
         if (typeof task.environment === "string") environments.add(task.environment);
-        hash.update(task.content);
-      } else hash.update(readFileSync(path));
+        update(task.content);
+      } else update(readFileSync(path));
     }
   }
   walk(directory, "");
@@ -227,8 +230,10 @@ export function unitContentHash(
   // 環境の無い単元 (旧形式) は従来どおりの指紋のまま。
   if (typeof config.environment === "string") environments.add(config.environment);
   const root = dirname(dirname(courseDirectory));
-  for (const id of [...environments].sort())
-    hash.update(`environment\0${id}\0`).update(environmentContent(root, id));
+  for (const id of [...environments].sort()) {
+    const content = environmentContent(root, id);
+    hash.update(`environment\0${id}\0${Buffer.byteLength(content)}\0`).update(content);
+  }
   // 課題本体は @stella/shared にあり、同じ ID のまま説明・テスト・採点設定を変えられる。
   // 演習の無い単元は従来どおりの指紋のまま。
   const assignmentIds = [...new Set(unitExercises.flatMap(([, refs]) => exerciseIds(refs)))].sort();

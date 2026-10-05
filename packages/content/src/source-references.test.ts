@@ -34,6 +34,7 @@ import {
   readSourceRefs,
   readSourceRegistry,
   readUnitReferences,
+  referencedMarkdown,
   referencesMarkdown,
 } from "./source-references.js";
 
@@ -459,6 +460,20 @@ describe("参照元の公開ゲートと表示", () => {
       row.appearancePrerequisites = { "new-island": ["another"] };
     });
     expect(unitContentHash(unit)).toBe(before);
+  });
+  it("ファイルの境界を指紋に含め、内容に区切りやパスを入れた別の構成と区別する", () => {
+    const { unit } = fixture();
+    writeFileSync(join(unit, "zz1"), "X");
+    writeFileSync(join(unit, "zz2"), "Y");
+    const split = unitContentHash(unit);
+    rmSync(join(unit, "zz2"));
+    writeFileSync(join(unit, "zz1"), "Xzz2\0Y");
+    expect(unitContentHash(unit)).not.toBe(split);
+  });
+  it("参照元の記録が無くても front-matter (sourceRefs) を本文に出さない", () => {
+    const body = referencedMarkdown("---\nsourceRefs: [mdn-html]\n---\n# 本文\n", [], undefined);
+    expect(body).not.toContain("sourceRefs");
+    expect(body).toContain("# 本文");
   });
   it("講座の予定時間 (plannedHours) の追加・変更では指紋を変えない", () => {
     const { root, unit } = fixture();

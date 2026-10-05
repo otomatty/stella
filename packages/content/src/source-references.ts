@@ -355,8 +355,9 @@ export function referencedMarkdown(
   refs?: UnitReferences,
   contentId?: string,
 ): string {
-  if (!refs) return source;
+  // 参照元の記録が読めない単元でも、front-matter (sourceRefs) を受講者の本文に出さない。
   const body = /^---\r?\n/.test(source) ? stripFrontMatter(source) : source;
+  if (!refs) return body;
   return body + referenceNotesMarkdown(source, references, refs, contentId);
 }
 
