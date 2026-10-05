@@ -7,11 +7,13 @@ import { fileURLToPath } from "node:url";
 
 import { copySqlJsWasm } from "./vite-plugins/copy-sqljs-wasm.js";
 import { copyPdfjsAssets } from "./vite-plugins/copy-pdfjs-assets.js";
+import { noPrivateContent } from "./vite-plugins/no-private-content.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
+    noPrivateContent(),
     // autoCodeSplitting は無効: 下記 manualChunks / lazy 設計に干渉させない。
     tanstackRouter({ target: "react", autoCodeSplitting: false }),
     react(),

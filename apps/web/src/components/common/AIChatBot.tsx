@@ -18,7 +18,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
-import { findAssignment } from "@stella/shared/assignments";
+import { useResolvedAssignment } from "@/hooks/useResolvedAssignment";
 import { buildContextUserMessage } from "@stella/shared/ai/prompt";
 
 import { useAiChat } from "./useAiChat";
@@ -48,6 +48,9 @@ const GENERAL_INTRO = "学習アシスタント AI です。 教材内容や演�
 export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => {
   const context = useLessonAI();
   const isMobile = useIsMobileViewport();
+  const { assignment } = useResolvedAssignment(
+    open && context.kind === "practice" ? context.assignmentId : null,
+  );
 
   const storageKey = useMemo(() => {
     if (context.kind === "practice") {
@@ -74,16 +77,12 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
   // practice context で履歴が空なら、 第 1 ユーザーメッセージを context summary で組み立てて送信。
   // 閉じている間は投げない (開いて初めてアシスタントが動き出す)。
   useEffect(() => {
-    if (!open || context.kind !== "practice") {
-      return;
-    }
-    const assignment = findAssignment(context.assignmentId);
-    if (!assignment) {
+    if (!open || context.kind !== "practice" || !assignment) {
       return;
     }
     const initial = buildContextUserMessage(assignment, context.userCode, context.summary);
     bootstrapIfEmpty(initial);
-  }, [open, context, bootstrapIfEmpty]);
+  }, [open, context, assignment, bootstrapIfEmpty]);
 
   // 末尾自動スクロール
   // biome-ignore lint/correctness/useExhaustiveDependencies: 新着メッセージで再スクロールする
@@ -96,14 +95,13 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
 
   const subtitle = useMemo(() => {
     if (context.kind === "practice") {
-      const a = findAssignment(context.assignmentId);
-      return a ? `課題: ${a.title}` : "採点失敗コンテキスト引き継ぎ中";
+      return assignment ? `課題: ${assignment.title}` : "採点失敗コンテキスト引き継ぎ中";
     }
     if (context.kind === "lesson") {
       return `${context.stageTitle} · ${context.lessonTitle}`;
     }
     return "ナレッジRAG";
-  }, [context]);
+  }, [context, assignment]);
 
   const handleSend = () => {
     if (!draft.trim() || streaming) {

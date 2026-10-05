@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { buildVscodeLessonUri } from "@stella/shared";
-import { buildVscodeTaskUri } from "@stella/shared/vscode/uris";
+import { buildVscodeLessonUri, buildVscodeTaskUri } from "@stella/shared/vscode/uris";
 import { Code, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
