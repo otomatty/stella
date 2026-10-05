@@ -202,6 +202,8 @@ describe("教材 seed の再実行", () => {
     seedSql = loadContentSeedSql();
   }, 120_000);
 
+  // 全マイグレーションと全教材の seed を2回適用する結合テスト。
+  // カバレッジ計測中の CI でも完走できるよう、このテストだけ上限を30秒にする。
   it("format 2 を seed し、公開API・7状態・知識問題とSRS・旧課題を通せる", async () => {
     const db = migratedDb();
     applyScript(db, seedSql);
@@ -337,7 +339,7 @@ describe("教材 seed の再実行", () => {
     expect(countOf(db, "tasks")).toBe(1);
     expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
     db.close();
-  });
+  }, 30_000);
 
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();
