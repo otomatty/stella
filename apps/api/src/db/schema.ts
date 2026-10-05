@@ -251,6 +251,7 @@ export const learningPaceChanges = sqliteTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     date: text("date").notNull(),
     weeklyHours: real("weekly_hours").notNull(),
+    previousWeeklyHours: real("previous_weekly_hours").notNull(),
   },
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.date] }) }),
 );

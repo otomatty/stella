@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LearningPace } from "@stella/shared/study/pace";
 import { apiFetch } from "@/lib/api-client";
+import { subscribeProgressSynced } from "@/lib/lesson-progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,9 +14,11 @@ const date = (value: string | null) => value?.replaceAll("-", "/") ?? "開始後
 export function LearningPacePanel({
   userId,
   onSaved,
+  revision = 0,
 }: {
   userId?: string;
   onSaved?: () => Promise<void>;
+  revision?: number;
 }) {
   const [pace, setPace] = useState<LearningPace | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +26,8 @@ export function LearningPacePanel({
   const [weeklyHours, setWeeklyHours] = useState("35");
   const [startDate, setStartDate] = useState("");
   const requestId = useRef(0);
+  const inputsInitialized = useRef(false);
+  const previousRevision = useRef(revision);
   const lifetime = useRef<AbortController | null>(null);
   const refresh = useCallback(
     async (signal?: AbortSignal, syncInputs = true) => {
@@ -34,9 +39,10 @@ export function LearningPacePanel({
         );
         if (signal?.aborted || id !== requestId.current) return;
         setPace(result.pace);
-        if (syncInputs) {
+        if (syncInputs || !inputsInitialized.current) {
           setWeeklyHours(String(result.pace.settings.weeklyHours));
           setStartDate(result.pace.settings.startDate ?? "");
+          inputsInitialized.current = true;
         }
         setError(null);
       } catch (err) {
@@ -52,11 +58,18 @@ export function LearningPacePanel({
     void refresh(controller.signal);
     const onFocus = () => void refresh(controller.signal, false);
     window.addEventListener("focus", onFocus);
+    const unsubscribe = userId ? undefined : subscribeProgressSynced(onFocus);
     return () => {
       controller.abort();
       window.removeEventListener("focus", onFocus);
+      unsubscribe?.();
     };
-  }, [refresh]);
+  }, [refresh, userId]);
+  useEffect(() => {
+    if (previousRevision.current === revision) return;
+    previousRevision.current = revision;
+    void refresh(lifetime.current?.signal, false);
+  }, [revision, refresh]);
   const save = async () => {
     setSaving(true);
     try {

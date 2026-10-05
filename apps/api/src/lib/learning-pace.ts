@@ -107,7 +107,11 @@ export async function loadLearningPace(
   const ids = rows.map((s) => s.id);
   const [changes, diagnostics, cleared] = await Promise.all([
     db
-      .select({ date: learningPaceChanges.date, weeklyHours: learningPaceChanges.weeklyHours })
+      .select({
+        date: learningPaceChanges.date,
+        weeklyHours: learningPaceChanges.weeklyHours,
+        previousWeeklyHours: learningPaceChanges.previousWeeklyHours,
+      })
       .from(learningPaceChanges)
       .where(eq(learningPaceChanges.userId, learner.id)),
     db

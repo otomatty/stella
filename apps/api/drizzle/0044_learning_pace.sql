@@ -13,6 +13,7 @@ CREATE TABLE learning_pace_changes (
   user_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   date text NOT NULL,
   weekly_hours real NOT NULL,
+  previous_weekly_hours real NOT NULL,
   PRIMARY KEY (user_id, date)
 );
 --> statement-breakpoint
@@ -46,8 +47,8 @@ END;
 CREATE TRIGGER learning_pace_hours_changed AFTER UPDATE OF weekly_hours ON profiles
 WHEN OLD.weekly_hours <> NEW.weekly_hours
 BEGIN
-  INSERT INTO learning_pace_changes (user_id, date, weekly_hours)
-  VALUES (NEW.id, date('now', '+9 hours'), NEW.weekly_hours)
+  INSERT INTO learning_pace_changes (user_id, date, weekly_hours, previous_weekly_hours)
+  VALUES (NEW.id, date('now', '+9 hours'), NEW.weekly_hours, OLD.weekly_hours)
   ON CONFLICT(user_id, date) DO UPDATE SET weekly_hours = excluded.weekly_hours;
 END;
 --> statement-breakpoint

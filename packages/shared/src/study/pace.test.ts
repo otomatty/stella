@@ -158,6 +158,63 @@ describe("学習ペース", () => {
     expect(result.thisWeek[0].minutes).toBe(60);
     expect(compute([stage([a, { ...b, status: "passed" }])]).assessments).toEqual([]);
   });
+  it("日曜解禁のBは日曜の容量だけを使い、それ以前は別の単元に割り当てる", () => {
+    const a = { ...task("A", "assessment-a"), status: "passed" as const, passedDate: "2026-10-04" };
+    const first = stage([a, task("B", "assessment-b", 90)], { minutes: 150 });
+    first.units[0].minutes = 150;
+    const next = { ...stage().units[0], id: "next-unit", minutes: 420 };
+    first.units.push(next);
+    first.minutes += next.minutes;
+    const result = compute([first], { settings: { weeklyHours: 7, startDate: "2026-10-05" } });
+    expect(result.thisWeek.map(({ unitId, minutes }) => ({ unitId, minutes }))).toEqual([
+      { unitId: "next-unit", minutes: 360 },
+      { unitId: "unit", minutes: 60 },
+    ]);
+  });
+  it("同時に解禁する複数のBは終了予定でも今週の容量でも重ならない", () => {
+    const units = [0, 1].map((i) => ({
+      ...stage().units[0],
+      id: `unit-${i}`,
+      minutes: 120,
+      tasks: [
+        { ...task(`A-${i}`, "assessment-a"), status: "passed" as const, passedDate: "2026-10-05" },
+        task(`B-${i}`, "assessment-b"),
+      ],
+    }));
+    const result = compute([stage([], { minutes: 240, units })], {
+      settings: { weeklyHours: 7, startDate: "2026-10-05" },
+    });
+    expect(result.finishDate).toBe("2026-10-14");
+    expect(result.targets[0].targetDate).toBe("2026-10-14");
+    expect(result.thisWeek).toEqual([]);
+    const releasedThisWeek = units.map((u) => ({
+      ...u,
+      tasks: [{ ...u.tasks[0], passedDate: "2026-10-04" }, u.tasks[1]],
+    }));
+    const sunday = compute([stage([], { minutes: 240, units: releasedThisWeek })], {
+      settings: { weeklyHours: 7, startDate: "2026-10-05" },
+    });
+    expect(sunday.thisWeek.reduce((sum, u) => sum + u.minutes, 0)).toBe(60);
+    expect(sunday.finishDate).toBe("2026-10-13");
+  });
+  it.each([false, true])(
+    "未合格AからのB予測は完了・診断済みの練習を足し直さない (%s)",
+    (diagnosed) => {
+      const s = stage([
+        { ...task("practice", "basic"), status: "passed" },
+        task("A", "assessment-a", 30),
+        task("B", "assessment-b", 30),
+      ]);
+      s.units[0].lessons[0].completed = true;
+      const result = compute([s], {
+        settings: { weeklyHours: 7, startDate: "2026-10-05" },
+        confirmedSkills: diagnosed ? new Set(["known"]) : undefined,
+      });
+      expect(result.targets[0].remainingMinutes).toBe(60);
+      expect(result.finishDate).toBe("2026-10-13");
+      expect(result.thisWeek[0].minutes).toBe(30);
+    },
+  );
   it("差がちょうど1週なら通知せず、超えたら残りだけ引き直す", () => {
     const s = stage([], { minutes: 1260 * 60, units: [] });
     expect(compute([s], { today: "2026-10-12" })).toMatchObject({
@@ -174,12 +231,20 @@ describe("学習ペース", () => {
       today: "2026-10-19",
       settings: { weeklyHours: 40, startDate: "2026-10-05" },
       changes: [
-        { date: "2026-10-12", weeklyHours: 30 },
-        { date: "2026-10-19", weeklyHours: 40 },
+        { date: "2026-10-12", weeklyHours: 30, previousWeeklyHours: 35 },
+        { date: "2026-10-19", weeklyHours: 40, previousWeeklyHours: 30 },
       ],
     });
     expect(result.expectedMinutes).toBe(65 * 60);
     expect(result.remainingWeeks).toBe(31.5);
+  });
+  it("初回変更より前や開始日を過去に直した期間は、保存した変更前の時間を使う", () => {
+    const result = compute([stage([], { minutes: 1260 * 60, units: [] })], {
+      today: "2026-10-19",
+      settings: { weeklyHours: 40, startDate: "2026-10-05" },
+      changes: [{ date: "2026-10-12", weeklyHours: 40, previousWeeklyHours: 30 }],
+    });
+    expect(result.expectedMinutes).toBe(70 * 60);
   });
   it("準備中のコマを捏造せず、週末は残り1日分だけを目安にする", () => {
     const result = compute([stage()], {

@@ -38,6 +38,7 @@ export interface PaceSettings {
 export interface PaceChange {
   date: string;
   weeklyHours: number;
+  previousWeeklyHours: number;
 }
 export interface PaceTask {
   id: string;
@@ -165,7 +166,7 @@ function orderedStages(stages: PaceStage[]): PaceStage[] {
 /** 過去の時間設定を積分する。週の時間の変更で過去の進み具合を改変しない。 */
 function expectedAt(start: string, today: string, changes: PaceChange[], current: number): number {
   const sorted = [...changes].sort((a, b) => a.date.localeCompare(b.date));
-  let hours = sorted.length ? DEFAULT_WEEKLY_HOURS : current;
+  let hours = sorted[0]?.previousWeeklyHours ?? current;
   let cursor = start;
   let minutes = 0;
   for (const change of sorted) {
@@ -182,6 +183,55 @@ function expectedAt(start: string, today: string, changes: PaceChange[], current
     minutes +
     (Math.max(0, (studyDateStartMs(today) - studyDateStartMs(cursor)) / DAY_MS) * hours * 60) / 7
   );
+}
+
+interface RemainingUnit {
+  minutes: number;
+  week: PaceWeekUnit | null;
+  assessments: { minutes: number; releaseAt: number | null; showInWeek: boolean }[];
+}
+
+/** 1人の時間軸。Bの解禁を待つ間は次の単元へ進み、解禁したBから順に取り組む。 */
+function scheduleStage(
+  units: RemainingUnit[],
+  start: number,
+  dailyMinutes: number,
+  record: (unit: PaceWeekUnit | null, start: number, end: number) => void,
+): number {
+  const ready = units.flatMap((unit) =>
+    unit.assessments.flatMap((b) =>
+      b.releaseAt === null
+        ? []
+        : [{ minutes: b.minutes, releaseAt: b.releaseAt, week: b.showInWeek ? unit.week : null }],
+    ),
+  );
+  let cursor = start;
+  let index = 0;
+  while (index < units.length || ready.length) {
+    const unit = units[index];
+    if (unit && unit.minutes === 0) {
+      for (const b of unit.assessments)
+        if (b.releaseAt === null)
+          ready.push({ minutes: b.minutes, releaseAt: cursor + 7 * dailyMinutes, week: unit.week });
+      index++;
+      continue;
+    }
+    ready.sort((a, b) => a.releaseAt - b.releaseAt);
+    const b = ready[0];
+    if (b && b.releaseAt <= cursor) {
+      record(b.week, cursor, cursor + b.minutes);
+      cursor += b.minutes;
+      ready.shift();
+    } else if (unit) {
+      const minutes = Math.min(unit.minutes, b ? b.releaseAt - cursor : Infinity);
+      record(unit.week, cursor, cursor + minutes);
+      cursor += minutes;
+      unit.minutes -= minutes;
+    } else if (b) {
+      cursor = b.releaseAt;
+    }
+  }
+  return cursor;
 }
 
 /**
@@ -202,34 +252,37 @@ export function calculateLearningPace(input: {
   const weekEnd = addStudyDays(weekStart, 6);
   const started = settings.startDate !== null && settings.startDate <= today;
   const anchor = started ? today : settings.startDate;
-  let weeklyBudget = anchor
+  const weekUntil = anchor
     ? Math.max(
         0,
         (studyDateStartMs(addStudyDays(weekEnd, 1)) - studyDateStartMs(anchor)) / DAY_MS,
       ) * dailyMinutes
     : 0;
   const targets: PaceTarget[] = [];
-  const thisWeek: PaceWeekUnit[] = [];
+  const weeklyUnits = new Map<string, PaceWeekUnit>();
   const assessments: PaceAssessment[] = [];
   let totalMinutes = 0;
   let completedMinutes = 0;
   let skippedPracticeMinutes = 0;
   let cumulativeRemaining = 0;
-  let calendarDays = 0;
+  let calendarMinutes = 0;
   let incomplete = false;
+  const recordWeek = (unit: PaceWeekUnit | null, start: number, end: number) => {
+    const minutes = Math.max(0, Math.min(end, weekUntil) - start);
+    if (!unit || minutes === 0) return;
+    const previous = weeklyUnits.get(unit.unitId);
+    const allocated = (previous?.minutes ?? 0) + minutes;
+    weeklyUnits.set(unit.unitId, {
+      ...unit,
+      minutes: allocated,
+      sessions: Math.ceil(allocated / 90),
+    });
+  };
 
   for (const stage of orderedStages(input.stages)) {
     let stageRemaining = 0;
-    let earliestFinishDays = 0;
+    const work: RemainingUnit[] = [];
     const detailedMinutes = stage.units.reduce((n, u) => n + u.minutes, 0);
-    const addRemaining = (unit: PaceWeekUnit, minutes: number) => {
-      stageRemaining += minutes;
-      if (weeklyBudget > 0 && minutes > 0) {
-        const allocated = Math.min(weeklyBudget, minutes);
-        thisWeek.push({ ...unit, minutes: allocated, sessions: Math.ceil(allocated / 90) });
-        weeklyBudget -= allocated;
-      }
-    };
     for (const unit of stage.units) {
       const taskMinutes = unit.tasks.reduce((n, t) => n + t.minutes, 0);
       const lessonBudget = Math.max(0, unit.minutes - taskMinutes);
@@ -238,7 +291,7 @@ export function calculateLearningPace(input: {
       let earned = 0;
       let skipped = 0;
       let blockedBMinutes = 0;
-      let readyBMinutes = 0;
+      const delayed: RemainingUnit["assessments"] = [];
       for (const task of unit.tasks) {
         const assessment = task.kind === "assessment-a" || task.kind === "assessment-b";
         if (
@@ -266,22 +319,22 @@ export function calculateLearningPace(input: {
                 .at(-1) ?? "";
             const dueDate = addStudyDays(passedDate, 7);
             assessments.push({ taskId: task.id, stageId: stage.id, title: task.title, dueDate });
-            if (dueDate <= weekEnd) readyBMinutes += task.minutes;
-            if (anchor)
-              earliestFinishDays = Math.max(
-                earliestFinishDays,
-                Math.max(0, (studyDateStartMs(dueDate) - studyDateStartMs(anchor)) / DAY_MS) +
-                  task.minutes / dailyMinutes,
-              );
+            delayed.push({
+              minutes: task.minutes,
+              releaseAt:
+                Math.max(
+                  0,
+                  (studyDateStartMs(dueDate) - studyDateStartMs(anchor ?? today)) / DAY_MS,
+                ) * dailyMinutes,
+              showInWeek: true,
+            });
           } else if (preceding.length) {
-            // Aが未合格なら、残りの学習後にも7日間の間隔を確保する。
-            earliestFinishDays = Math.max(
-              earliestFinishDays,
-              calendarDays +
-                (stageRemaining + Math.max(0, unit.minutes - task.minutes)) / dailyMinutes +
-                7 +
-                task.minutes / dailyMinutes,
-            );
+            // 完了・診断を差し引いた通常の学習が終わった時点から7日間待つ。
+            delayed.push({ minutes: task.minutes, releaseAt: null, showInWeek: true });
+          } else {
+            // 対応するAがない教材ではBの実施日を捏造しない。
+            incomplete = true;
+            delayed.push({ minutes: task.minutes, releaseAt: 0, showInWeek: false });
           }
         }
       }
@@ -295,10 +348,11 @@ export function calculateLearningPace(input: {
       completedMinutes += earned;
       skippedPracticeMinutes += skipped;
       const remaining = Math.max(0, budget - skipped - earned);
-      // 確認BはAの7日後まで「今週のコマ」に入れない。
-      const eligible = Math.max(0, remaining - blockedBMinutes + readyBMinutes);
-      addRemaining(
-        {
+      stageRemaining += remaining;
+      work.push({
+        minutes: Math.max(0, remaining - blockedBMinutes),
+        assessments: delayed,
+        week: {
           stageId: stage.id,
           unitId: unit.id,
           title: unit.title,
@@ -306,22 +360,25 @@ export function calculateLearningPace(input: {
           sessions: 0,
           lessons: unit.lessons.filter((l) => !l.completed).map(({ id, title }) => ({ id, title })),
         },
-        Math.min(remaining, eligible),
-      );
-      stageRemaining += remaining - Math.min(remaining, eligible);
+      });
     }
     const undetailed = Math.max(0, stage.minutes - detailedMinutes);
     if (undetailed > 0 || detailedMinutes > stage.minutes) incomplete = true;
     totalMinutes += undetailed;
     if (stage.completed) completedMinutes += undetailed;
-    else stageRemaining += undetailed;
+    else {
+      stageRemaining += undetailed;
+      work.push({ minutes: undetailed, week: null, assessments: [] });
+    }
     cumulativeRemaining += stageRemaining;
-    calendarDays = Math.max(calendarDays + stageRemaining / dailyMinutes, earliestFinishDays);
+    calendarMinutes = scheduleStage(work, calendarMinutes, dailyMinutes, recordWeek);
     targets.push({
       stageId: stage.id,
       title: stage.title,
       remainingMinutes: stageRemaining,
-      targetDate: anchor ? addStudyDays(anchor, calendarDayOffset(calendarDays)) : null,
+      targetDate: anchor
+        ? addStudyDays(anchor, calendarDayOffset(calendarMinutes / dailyMinutes))
+        : null,
     });
   }
   const expectedMinutes =
@@ -346,9 +403,11 @@ export function calculateLearningPace(input: {
     delayDays,
     needsInstructor: delayDays > 7,
     remainingWeeks: cumulativeRemaining / (settings.weeklyHours * 60),
-    finishDate: anchor ? addStudyDays(anchor, calendarDayOffset(calendarDays)) : null,
+    finishDate: anchor
+      ? addStudyDays(anchor, calendarDayOffset(calendarMinutes / dailyMinutes))
+      : null,
     targets,
-    thisWeek,
+    thisWeek: [...weeklyUnits.values()],
     assessments: assessments.sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
     incomplete,
   };

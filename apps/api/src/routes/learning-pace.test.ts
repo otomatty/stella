@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { LearningPace } from "@stella/shared/study/pace";
+import { addStudyDays } from "@stella/shared/study/activity";
 import { learningPaceRoute } from "./learning-pace.js";
 import { meRoute } from "./me.js";
 import { getDb } from "../db/client.js";
@@ -162,6 +163,27 @@ describe("学習ペースのプロフィールと開始日", () => {
       sqlite.prepare("select weekly_hours from learning_pace_changes where user_id='learner'").get()
         ?.weekly_hours,
     ).toBe(30);
+  });
+  it("初期設定が30時間でも、初回変更と同日の再変更で過去の期待時間を変えない", async () => {
+    const today = String(sqlite.prepare("select date('now', '+9 hours') as date").get()?.date);
+    sqlite
+      .prepare(
+        "insert into profiles (id, tenant_id, role, display_name, weekly_hours, learning_start_date, created_at) values ('custom', 'ses', 'student', '別ペース', 30, ?, 1)",
+      )
+      .run(addStudyDays(today, -7));
+    const custom = { ...learner, id: "custom" };
+    expect((await loadLearningPace(getDb(env), custom, today)).expectedMinutes).toBe(30 * 60);
+    expect((await write("/api/me", { weekly_hours: 40 }, "custom")).status).toBe(200);
+    expect((await loadLearningPace(getDb(env), custom, today)).expectedMinutes).toBe(30 * 60);
+    expect((await write("/api/me", { weekly_hours: 45 }, "custom")).status).toBe(200);
+    expect(
+      sqlite
+        .prepare(
+          "select weekly_hours, previous_weekly_hours from learning_pace_changes where user_id='custom'",
+        )
+        .get(),
+    ).toEqual({ weekly_hours: 45, previous_weekly_hours: 30 });
+    expect((await loadLearningPace(getDb(env), custom, today)).expectedMinutes).toBe(30 * 60);
   });
   it.each([{ weekly_hours: 0 }, { weekly_hours: "35" }, { learning_start_date: "2026-02-29" }, {}])(
     "不正な設定をDBに書かない: %s",
