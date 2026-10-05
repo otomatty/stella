@@ -135,10 +135,14 @@ export const StageList = ({
                     <span className="flex items-center gap-1">
                       <Video size={11} /> {c.lessonsCount}レッスン
                     </span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-ink-4" />
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} /> 約{c.duration ?? 20}時間
-                    </span>
+                    {c.duration != null ? (
+                      <>
+                        <span className="w-[3px] h-[3px] rounded-full bg-ink-4" />
+                        <span className="flex items-center gap-1">
+                          <Clock size={11} /> 約{c.duration}時間
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                   <Progress value={c.progress} tone="brand" className="mt-2" />
                   <div className="flex items-center justify-between text-xs text-ink-3">

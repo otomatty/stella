@@ -5,6 +5,7 @@
   "description": "【準備中】既存機能を保ちながらUIをつなぎ、統合テストで確認できるようになるための講座です。",
   "header": "UIと既存機能の連携",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["react-ui-basics"],
   "canDo": "既存機能を保ちながらUIをつなぎ、統合テストで確認できる",
   "theme": "Web の見た目と動き",

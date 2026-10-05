@@ -5,6 +5,7 @@
   "description": "【準備中】DOMとイベントを使い、入力に応じて画面を更新できるようになるための講座です。",
   "header": "DOMと画面操作",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["html-css-basics", "javascript-basics", "javascript-data-basics"],
   "canDo": "DOMとイベントを使い、入力に応じて画面を更新できる",
   "theme": "Web の見た目と動き",

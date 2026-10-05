@@ -5,6 +5,7 @@
   "description": "【準備中】SQLでデータを読み書きし、関係と制約を設計できるようになるための講座です。",
   "header": "SQLとデータベース",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["node-api-basics"],
   "canDo": "SQLでデータを読み書きし、関係と制約を設計できる",
   "theme": "サーバーとデータの基盤",

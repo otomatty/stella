@@ -21,6 +21,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle, Clock, ChevronRight, MessageCircle, Sparkles, TrendingUp } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import { LearningPacePanel } from "./LearningPacePanel";
 import { KpiCard } from "@/components/common/KpiCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -476,6 +477,7 @@ export const LearnerDashboard = ({
       />
 
       <div className="flex flex-col gap-4 mb-8">
+        {backendEnabled && currentUserId ? <LearningPacePanel key={currentUserId} /> : null}
         <TodayPlan
           plan={plan}
           reviewDone={Boolean(review && review.questions.length === 0 && review.answered_today > 0)}

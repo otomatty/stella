@@ -116,6 +116,8 @@ export const profiles = sqliteTable(
     avatarUrl: text("avatar_url"),
     email: text("email"),
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+    weeklyHours: real("weekly_hours").notNull().default(35),
+    learningStartDate: text("learning_start_date"),
     createdAt: tsNow("created_at"),
   },
   (t) => ({
@@ -151,7 +153,7 @@ export const stages = sqliteTable(
      * 星は状態グリフ (★/▶/🔒/✨) のまま。
      */
     iconPath: text("icon_path"),
-    durationHours: integer("duration_hours"),
+    durationHours: real("duration_hours"),
     description: text("description"),
     /**
      * 前提ステージの **slug** の JSON 配列文字列 (`["html-css-basics"]`)。null / 空配列は
@@ -227,6 +229,49 @@ export const contentUnits = sqliteTable("content_units", {
   references: json<unknown[]>("references", []),
 });
 
+/** 担当講師との接点。予定日は保存せず、設定・確認の根拠だけを持つ。 */
+export const learnerInstructors = sqliteTable(
+  "learner_instructors",
+  {
+    learnerId: text("learner_id")
+      .primaryKey()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    instructorId: text("instructor_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ instructorIdx: index("learner_instructors_instructor_idx").on(t.instructorId) }),
+);
+
+export const learningPaceChanges = sqliteTable(
+  "learning_pace_changes",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    weeklyHours: real("weekly_hours").notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.userId, t.date] }) }),
+);
+
+export const learningDiagnostics = sqliteTable(
+  "learning_diagnostics",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    skillId: text("skill_id").notNull(),
+    confirmedBy: text("confirmed_by").references(() => profiles.id, { onDelete: "set null" }),
+    evidence: text("evidence").notNull(),
+    confirmedAt: tsNow("confirmed_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.skillId] }),
+    confirmerIdx: index("learning_diagnostics_confirmer_idx").on(t.confirmedBy),
+  }),
+);
+
 export const tasks = sqliteTable(
   "tasks",
   {
@@ -279,6 +324,7 @@ export const taskProgress = sqliteTable(
       .default("not-started"),
     contentHash: text("content_hash").notNull(),
     updatedAt: tsNowUpd("updated_at"),
+    passedAt: ts("passed_at"),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.taskId] }),
@@ -1106,6 +1152,7 @@ export const notifications = sqliteTable("notifications", {
       "announcement",
       "review_completed",
       "assignment_due",
+      "learning_pace_delayed",
       // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
       "stage_cleared",
       "interview_date_set",

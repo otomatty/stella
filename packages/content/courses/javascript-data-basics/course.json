@@ -5,6 +5,7 @@
   "description": "【準備中】配列とオブジェクトを関数で扱い、状態の変化を整理できるようになるための講座です。",
   "header": "JavaScriptのデータ・関数・状態",
   "tenantId": "ses",
+  "plannedHours": 70,
   "prerequisites": ["javascript-basics"],
   "canDo": "配列とオブジェクトを関数で扱い、状態の変化を整理できる",
   "theme": "Web の見た目と動き",
