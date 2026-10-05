@@ -4,7 +4,7 @@
 
 ## 書く順序
 
-1. `sources/registry.json` に資料を登録します。IDは改訂を区別する名前にし、承認・公開済みの資料を書き換えず新しいIDを追加します。資料名・発行主体・個別URL・読む節・言語・資料の版・確認日を記録します。更新型の資料は `documentVersion.kind: rolling` とし、取得できる改訂番号を `revision` に残します。
+1. `sources/registry.json` に資料を登録します。IDは改訂を区別する名前にし、承認・公開済みの資料を書き換えず新しいIDを追加します。資料名・発行主体・個別URL・読む節・言語・資料の版・確認日を記録します。読む節 (`section`) はページの見出しの表記で書き、複数あるときは ` / ` で区切ります。技術・資料群のトップページや目次 (MDN の `/docs/Web`・`/docs/Web/HTML`、`/docs`・`/guide` で終わるURLなど) は、節名を書いても根拠にできません。更新型の資料は `documentVersion.kind: rolling` とし、取得できる改訂番号を `revision` に残します。
 2. 単元の `references.json` を schemaVersion `2.1` で作ります。`unitId` は `<slug>/<module>@<版>` で、版には `1` や `1.0.0` のような数字またはドット区切りの数字を使います。`environmentRef` は `<環境ID>@<版>`、`uses` は使用箇所ごとの記録です。環境IDは `environments/<ID>.json` の版と一致させます。
 3. 各 `uses` に公開ファイルの相対パス `contentId`、`sourceRefs`、何を裏付けたかを示す `usedFor`、`authorship`、`reuse`、`reviewStatus` を書きます。解説・参考例・図・課題の対応は講師が確認します。図は `l1-…/t1-…/assets/図.svg` のように個別に記録し、本文に埋め込んだ図の出典も近くに表示します。非公開領域は対応先にしません。
 4. `slides.md`・`doc.md`・`knowledge.md`・旧形式の `practice.md` の冒頭に `sourceRefs: [SRC-…]` を持つ front-matter を置きます。課題は `task.json` の既存の `sources` を使います。単元の対応表とIDの集合を一致させます。
@@ -50,7 +50,8 @@
 `.github/workflows/source-links.yml` が週1回と手動実行で台帳のURLを調べます。
 
 - 404/410は削除としてジョブを失敗させます。教材や台帳は自動で削除しません。
-- タイムアウト・通信障害・アクセス制限・サーバー障害・アンカー未検出は削除と分け、手動確認待ちとしてJSONレポート・ジョブサマリ・90日保存のartifactに残します。これらだけでは削除扱いの失敗にしません。
+- URLの `#` はページ内のID、台帳の `section` はHTMLの見出し (h1〜h6) と照合します。空白・全角半角・大文字小文字の違いは区別しません。書籍の節とHTML以外の資料は照合しません。
+- タイムアウト・通信障害・アクセス制限・サーバー障害・アンカー未検出・節の見出し未検出は削除と分け、手動確認待ちとしてJSONレポート・ジョブサマリ・90日保存のartifactに残します。これらだけでは削除扱いの失敗にしません。
 - 人がブラウザーでページと読む節を確認し、`sources/link-checks.json` に `sourceRef`・`url`・`checkedAt`・`reviewer`・`result` (`available` / `removed`)・`note` を追加します。URLが同じで直近7日以内の確認記録を週次レポートに添えます。将来日付は使いません。削除と確認した記録はジョブの失敗対象です。
 
 リンクの応答が正常でも内容・対象版・利用条件が正しいとは限りません。公開・技術更新時の講師レビューで節と本文の対応を再確認します。

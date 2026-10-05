@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkSourceLink, parseManualLinkChecks } from "./source-links.js";
+import {
+  checkSourceLink,
+  type FetchSource,
+  missingSourceSections,
+  parseManualLinkChecks,
+  sourceSections,
+} from "./source-links.js";
 const source = { id: "SRC-test", url: "https://example.org/docs/specific-page" };
 describe("参照元のリンク確認", () => {
   it.each([404, 410])("HTTP %s は削除として記録する", async (status) => {
@@ -47,6 +53,68 @@ describe("参照元のリンク確認", () => {
     expect((await checkSourceLink(src, async () => response("no section"))).reason).toBe(
       "anchor-missing",
     );
+  });
+  describe("台帳の読む節 (section) だけで場所を示す資料", () => {
+    const html = (body: string) =>
+      new Response(body, { headers: { "content-type": "text/html; charset=utf-8" } });
+    const page = [
+      '<h1 id="creating">HTML: ウェブサイトのコンテンツの作成</h1>',
+      '<h2 id="what"><a href="#what">HTMLとは</a></h2>',
+      '<h3 id="first">初めての&nbsp;HTML&#x3000;文書の作成</h3>',
+      "<H2>3.1 見出し &amp; 段落</H2>",
+    ].join("\n");
+    const sectioned = { ...source, section: "HTML とは / 初めての HTML 文書の作成 / 見出し" };
+    it("` / ` で区切った節を、空白・全角・タグ・文字参照の違いを吸収して見出しと照合する", async () => {
+      expect(sourceSections(sectioned.section)).toEqual([
+        "HTML とは",
+        "初めての HTML 文書の作成",
+        "見出し",
+      ]);
+      expect(sourceSections("Request/Response の違い")).toEqual(["Request/Response の違い"]);
+      const fetcher = vi.fn<FetchSource>(async () => html(page));
+      expect(await checkSourceLink(sectioned, fetcher)).toMatchObject({
+        status: "available",
+        reason: "ok",
+      });
+      // HEAD では節を確かめられないので、最初から本文を取る。
+      expect(fetcher.mock.calls.map((c) => c[1].method)).toEqual(["GET"]);
+    });
+    it("ページが残っていても節の見出しが消えたら、削除ではなく手動確認に回す", async () => {
+      const result = await checkSourceLink(
+        { ...sectioned, section: "HTML とは / 属性 / 見出し" },
+        async () => html(page),
+      );
+      expect(result).toMatchObject({
+        status: "manual-confirmation",
+        reason: "section-missing",
+        httpStatus: 200,
+        missingSections: ["属性"],
+      });
+    });
+    it("本文中の語だけでは節の見出しとみなさない", () => {
+      expect(
+        missingSourceSections("<p>属性について</p><h2>見出し</h2>", ["属性", "見出し"]),
+      ).toEqual(["属性"]);
+    });
+    it("節が消えても 404 / 410 のときだけ削除にする", async () => {
+      expect(
+        await checkSourceLink(sectioned, async () => new Response(null, { status: 404 })),
+      ).toMatchObject({ status: "removed", reason: "http-404" });
+    });
+    it("書籍の節は紹介ページに載らないので照合しない", async () => {
+      const fetcher = vi.fn<FetchSource>(async () => html("<h1>書誌</h1>"));
+      expect(await checkSourceLink({ ...sectioned, kind: "book" }, fetcher)).toMatchObject({
+        status: "available",
+      });
+      expect(fetcher.mock.calls.map((c) => c[1].method)).toEqual(["HEAD"]);
+    });
+    it("URL の # と台帳の節を両方確かめる", async () => {
+      const src = { ...sectioned, url: `${source.url}#what` };
+      expect((await checkSourceLink(src, async () => html(page))).status).toBe("available");
+      expect(
+        (await checkSourceLink({ ...src, section: "属性" }, async () => html(page))).reason,
+      ).toBe("section-missing");
+    });
   });
   it("手動確認には確認者・結果・日時・内容を残す", () => {
     const record = {

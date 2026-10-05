@@ -305,6 +305,24 @@ export function referenceContentIds(source: string, contentId: string): string[]
     ),
   ];
 }
+/**
+ * 本文の後ろに付ける出典欄。独自制作の記録を外部資料の一覧より先に出す。
+ * 解説・知識問題・課題・スライドで文言を揃えるため、本文の組み立て方が違ってもここを通す。
+ * `source` は使用箇所 (本文と図) を解決するための元ファイルの本文。
+ */
+export function referenceNotesMarkdown(
+  source: string,
+  references: PublicSourceReference[],
+  refs: UnitReferences,
+  contentId?: string,
+): string {
+  const ids = contentId ? referenceContentIds(source, contentId) : [];
+  const originals = refs.uses.filter((u) => ids.includes(u.contentId) && u.reuse === "original");
+  return (
+    originals.map((u) => `\n\n> 教材独自に作成: ${markdownText(u.usedFor)}\n`).join("") +
+    referencesMarkdown(references)
+  );
+}
 export function referencedMarkdown(
   source: string,
   references: PublicSourceReference[],
@@ -312,14 +330,8 @@ export function referencedMarkdown(
   contentId?: string,
 ): string {
   if (!refs) return source;
-  const ids = contentId ? referenceContentIds(source, contentId) : [];
-  const originals = refs.uses.filter((u) => ids.includes(u.contentId) && u.reuse === "original");
   const body = /^---\r?\n/.test(source) ? stripFrontMatter(source) : source;
-  return (
-    body +
-    originals.map((u) => `\n\n> 教材独自に作成: ${markdownText(u.usedFor)}\n`).join("") +
-    referencesMarkdown(references)
-  );
+  return body + referenceNotesMarkdown(source, references, refs, contentId);
 }
 
 /** 公開教材だけ列挙する。private/ とスターター・実行用テストは出典の対応先にしない。 */

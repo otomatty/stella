@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   checkSourceReferences,
   createLegacyBaseline,
+  isTechnologyLandingPage,
   unitContentHash,
 } from "./check-source-references.js";
 import { buildContentManifest } from "./manifest.js";
@@ -278,6 +279,88 @@ describe("参照元の公開ゲートと表示", () => {
     const refs = readUnitReferences(unit);
     expect(referencesMarkdown(publicReferences(refs, registry))).toContain(
       "Original diagram credit",
+    );
+  });
+  it("独自制作だけのスライドにも解説と同じ独自制作の記録を出す", () => {
+    const { root, unit } = fixture();
+    const slides = join(unit, "l1-save-and-preview/t1-saved-html/slides.md");
+    writeFileSync(
+      slides,
+      readFileSync(slides, "utf8").replace(/^sourceRefs: .*$/m, "sourceRefs: []"),
+    );
+    patch(join(unit, "references.json"), (row) => {
+      const use = (row.uses as Record<string, unknown>[])[0];
+      expect(use.contentId).toBe("l1-save-and-preview/t1-saved-html/slides.md");
+      Object.assign(use, {
+        sourceRefs: [],
+        usedFor: "教材独自のスライド構成",
+        authorship: "original",
+        reuse: "original",
+      });
+    });
+    expect(checkSourceReferences(root)).toEqual([]);
+    const manifest = buildContentManifest(join(root, "courses"));
+    const lessons = manifest.courses[0].sections?.flatMap((s) => s.lessons) ?? [];
+    const markdown = lessons.find((l) => l.type === "slides")?.markdown ?? "";
+    expect(markdown).toContain("> 教材独自に作成: 教材独自のスライド構成");
+    expect(markdown).not.toContain("## 参照元");
+    // 出典欄は最後のスライドに付け、枚数は変えない。
+    expect(markdown.split("\n\n---\n\n").at(-1)).toContain("教材独自に作成");
+  });
+  it.each([
+    "https://react.dev/",
+    "https://developer.mozilla.org/en-US/docs/Web",
+    "https://developer.mozilla.org/ja/docs/Web/",
+    "https://developer.mozilla.org/en-US/docs/Web/HTML",
+    "https://developer.mozilla.org/en-US/docs/Web/HTML#key_resources",
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide",
+    "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content",
+    "https://developer.mozilla.org/en-US/curriculum/core/",
+    "https://www.typescriptlang.org/docs/handbook/intro.html",
+    "https://nextjs.org/docs/app",
+    "https://react.dev/learn",
+    "https://react.dev/reference/react",
+    "https://vite.dev/guide/",
+    "https://nodejs.org/api/",
+    "https://www.postgresql.org/docs/current/tutorial.html",
+    "https://docs.pytest.org/en/stable/",
+    "https://html.spec.whatwg.org/multipage/",
+    "https://learn.microsoft.com/ja-jp/dotnet/csharp/",
+    "https://www.w3.org/WAI/ARIA/apg/",
+    "https://docs.github.com/en/actions",
+  ])("技術・資料群の入口 %s を個別の根拠と認めない", (url) => {
+    expect(isTechnologyLandingPage({ url })).toBe(true);
+  });
+  it.each([
+    "https://developer.mozilla.org/ja/docs/Learn_web_development/Getting_started/Your_first_website/Creating_the_content",
+    "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements",
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions",
+    "https://developer.mozilla.org/en-US/docs/Web/API/Document",
+    "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+    "https://nextjs.org/docs/app/getting-started/server-and-client-components",
+    "https://react.dev/learn/thinking-in-react",
+    "https://vite.dev/guide/#scaffolding-your-first-vite-project",
+    "https://vitest.dev/api/vi",
+    "https://nodejs.org/api/fs.html",
+    "https://www.postgresql.org/docs/16/ddl-constraints.html",
+    "https://dom.spec.whatwg.org/#concept-tree",
+    "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/",
+    "https://example.org/docs/specific-page",
+  ])("個別ページ %s は根拠として通す", (url) => {
+    expect(isTechnologyLandingPage({ url })).toBe(false);
+  });
+  it("節名を書いても技術のトップページは公開ゲートで止める", () => {
+    const { root } = fixture();
+    patch(join(root, "sources/registry.json"), (row) => {
+      const source = (row.sources as Record<string, unknown>[])[0];
+      source.url = "https://developer.mozilla.org/en-US/docs/Web";
+      source.section = "HTML とは / 見出し";
+    });
+    expect(checkSourceReferences(root)).toContainEqual(
+      expect.objectContaining({
+        severity: "error",
+        message: expect.stringContaining("トップページ"),
+      }),
     );
   });
   it("空配列で独自制作を明示でき、不正な front-matter を黙って捨てない", () => {

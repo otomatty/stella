@@ -23,6 +23,7 @@ import {
   readSourceRegistry,
   readUnitReferences,
   referencedMarkdown,
+  referenceNotesMarkdown,
   referencesMarkdown,
 } from "./source-references.js";
 import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
@@ -471,6 +472,9 @@ function buildOneCourse(
               rewriteImagePaths(slug, s.body, topicDir),
           )
           .join("\n\n---\n\n");
+        // 出典欄は最後のスライドに付ける (枚数 = totalPages を変えない)。独自制作だけの
+        // スライドは外部資料の一覧が空になるので、解説・知識問題・課題と同じ独自制作の記録を出す。
+        const slidesContentId = `${lessonDir}/${topicDir}/slides.md`;
         lessons.push({
           id: fm.id,
           title: fm.title,
@@ -480,7 +484,12 @@ function buildOneCourse(
           markdown:
             body +
             (referenceMap
-              ? referencesMarkdown(contentReferences(`${lessonDir}/${topicDir}/slides.md`, source))
+              ? referenceNotesMarkdown(
+                  source,
+                  contentReferences(slidesContentId, source),
+                  referenceMap,
+                  slidesContentId,
+                )
               : ""),
           totalPages: fm.slideCount,
         });

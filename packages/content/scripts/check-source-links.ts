@@ -14,7 +14,8 @@ const manualChecks = parseManualLinkChecks(
   JSON.parse(readFileSync(join(root, "sources/link-checks.json"), "utf8")),
 );
 const results: SourceLinkResult[] = [];
-// 同時接続を4件に抑え、タイムアウトは資料ごとに記録する。
+// 同時接続を4件に抑え、タイムアウトは資料ごとに記録する。台帳の読む節 (section) も渡し、
+// ページが残っていても節の見出しが消えていれば手動確認に回す。
 for (let i = 0; i < sources.length; i += 4)
   results.push(
     ...(await Promise.all(sources.slice(i, i + 4).map((source) => checkSourceLink(source)))),
@@ -53,7 +54,7 @@ const summary =
   results
     .map(
       (r) =>
-        `- ${r.sourceRef}: ${r.status} (${r.reason}${r.httpStatus ? `, HTTP ${r.httpStatus}` : ""})`,
+        `- ${r.sourceRef}: ${r.status} (${r.reason}${r.httpStatus ? `, HTTP ${r.httpStatus}` : ""})${r.missingSections ? ` 見出しが見つからない節: ${r.missingSections.join(" / ")}` : ""}`,
     )
     .join("\n") +
   "\n\nタイムアウト・アクセス制限・節の未検出は削除と区別します。手動確認は sources/link-checks.json に確認者・日時・結果・確認内容を残してください。\n";

@@ -139,15 +139,89 @@ export function createLegacyBaseline(root: string, baseCommit: string): LegacySo
     exemptions: [],
   };
 }
+/** パス先頭のロケール (`/en-US/docs`・`/ja/docs`・`/ja-jp/dotnet`・`/ja_jp/lambda`)。 */
+const LOCALE_SEGMENT = /^[a-z]{2}(?:[-_][a-z]{2,4})?$/;
+/** 版の切り替え (`/docs/current/`・`/3/`・`/en/stable/`・`/latest-v20.x/`・`/4x/`)。 */
+const VERSION_SEGMENT = /^(?:current|latest|stable|(?:latest-)?v?\d+(?:x|(?:\.(?:\d+|x))*))$/;
+/** 末尾に来ると資料群の目次・入口になる区分名。 */
+const INDEX_SEGMENTS = new Set([
+  "docs",
+  "doc",
+  "documentation",
+  "guide",
+  "guides",
+  "learn",
+  "reference",
+  "references",
+  "api",
+  "apis",
+  "handbook",
+  "curriculum",
+  "multipage",
+  "manual",
+  "tutorial",
+  "tutorials",
+  "library",
+]);
+/**
+ * 既知の資料サイトで、技術・資料群の入口になるパス (ロケール・版・拡張子・index を除いた形)。
+ * 目次と各ページへの案内が中心のページなので、`#` で節を指しても根拠にしない。
+ * ホストはサブドメイン (`www.`・`ja.` など) も含めて照合する。
+ */
+const LANDING_PATHS: readonly (readonly [host: string, path: RegExp])[] = [
+  // Web 全体・技術ごとのトップとその Guide / Reference、学習領域・モジュールの目次。
+  [
+    "developer.mozilla.org",
+    /^(?:docs\/(?:web(?:\/[^/]+(?:\/(?:guides?|reference|tutorials|how_to))?)?|(?:learn|learn_web_development)(?:\/[^/]+){0,2}|glossary)|curriculum(?:\/[^/]+)?)$/,
+  ],
+  ["typescriptlang.org", /^docs\/handbook\/intro$/],
+  ["nextjs.org", /^docs\/(?:app|pages)(?:\/(?:getting-started|guides|api-reference))?$/],
+  ["react.dev", /^reference\/react(?:-dom)?(?:\/(?:hooks|components|apis))?$/],
+  ["learn.microsoft.com", /^dotnet(?:\/[^/]+)?$/],
+  ["docs.github.com", /^[^/]+$/],
+  ["docs.aws.amazon.com", /^[^/]+(?:\/[^/]+)?$/],
+  ["w3.org", /^(?:style\/css|wai(?:\/aria\/apg(?:\/patterns)?)?)$/],
+  ["design.digital.go.jp", /^dads$/],
+  ["design-system.service.gov.uk", /^(?:styles|components|patterns|get-started)$/],
+];
+function landingPathSegments(url: URL): string[] {
+  const segments = url.pathname
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      let decoded = segment;
+      try {
+        decoded = decodeURIComponent(segment);
+      } catch {
+        // 不正なエスケープはそのまま比べる。
+      }
+      return decoded.toLowerCase().replace(/\.(?:html?|php|aspx?|md)$/, "");
+    });
+  if (segments.length > 0 && LOCALE_SEGMENT.test(segments[0])) segments.shift();
+  const path = segments.filter((segment) => !VERSION_SEGMENT.test(segment));
+  if (path.at(-1) === "index") path.pop();
+  return path;
+}
+/**
+ * 技術・資料群のトップページや目次。台帳の `section` は自由記述なので、個別ページかどうかは
+ * URL で判断する。既知のサイトは入口のパスを、それ以外はサイトのトップと `docs`・`guide`
+ * などの区分名で終わるパスを入口とみなす。単一ページの仕様書のように URL の `#` で節を
+ * 指す場合は、既知の入口でなければ個別の根拠として扱う (節の実在は週次のリンク確認が見る)。
+ */
 export function isTechnologyLandingPage(source: Pick<SourceRecord, "url">): boolean {
   const url = new URL(source.url);
+  const segments = landingPathSegments(url);
+  const path = segments.join("/");
+  if (
+    LANDING_PATHS.some(
+      ([host, pattern]) =>
+        (url.hostname === host || url.hostname.endsWith(`.${host}`)) && pattern.test(path),
+    )
+  )
+    return true;
   if (url.hash) return false;
-  const path = url.pathname.replace(/\/+$/, "").toLowerCase();
-  return (
-    !path ||
-    /\/(docs|guide|learn|reference|api|handbook|curriculum|multipage)$/.test(path) ||
-    /\/docs\/web\/(html|css|javascript)(\/guide)?$/.test(path)
-  );
+  const last = segments.at(-1);
+  return last === undefined || INDEX_SEGMENTS.has(last);
 }
 function checkUnit(
   root: string,
@@ -188,7 +262,9 @@ function checkUnit(
       if (source.review.status !== "approved")
         problems.push(`${id}: レビュー状態が approved ではありません`);
       if (isTechnologyLandingPage(source))
-        problems.push(`${id}: 技術のトップページだけを根拠にできません`);
+        problems.push(
+          `${id}: 技術のトップページだけを根拠にできません。読む節のある個別ページの URL を登録してください`,
+        );
     }
   }
   for (const file of files) {

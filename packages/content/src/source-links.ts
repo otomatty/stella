@@ -15,20 +15,71 @@ export interface SourceLinkResult {
     | "network-error"
     | "server-error"
     | "unexpected-response"
-    | "anchor-missing";
+    | "anchor-missing"
+    | "section-missing";
   httpStatus?: number;
+  /** ページの見出しに見つからなかった読む節。手動確認で見る場所を示す。 */
+  missingSections?: string[];
 }
 export type FetchSource = (url: string, init: RequestInit) => Promise<Response>;
 
-/** 削除と、応答を確認できない状態を分ける。本文や台帳を自動で削除しない。 */
+/** 台帳の `section` は読む節を ` / ` で区切る。`Request/Response` のような節名は割らない。 */
+export function sourceSections(section: string | undefined): string[] {
+  return (section ?? "")
+    .split(/\s+[/／]\s+/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+const NAMED_ENTITIES: Readonly<Record<string, string>> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+function decodeEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
+    if (!name.startsWith("#")) return NAMED_ENTITIES[name.toLowerCase()] ?? whole;
+    const code = /^#x/i.test(name)
+      ? Number.parseInt(name.slice(2), 16)
+      : Number.parseInt(name.slice(1), 10);
+    return code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+  });
+}
+/** 全角・半角、大文字・小文字、空白 (和文の前後の空白の有無を含む) の違いでは見失わない。 */
+function headingKey(text: string): string {
+  return decodeEntities(text).normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+}
+/**
+ * 読む節のうち、ページの見出し (h1〜h6) に見つからないもの。見出しの前後に付く節番号や
+ * 記号は許すため、見出しが節名を含めば見つかったとみなす。
+ */
+export function missingSourceSections(html: string, sections: readonly string[]): string[] {
+  const headings = [...html.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1\s*>/gi)].map((m) =>
+    headingKey(m[2].replace(/<[^>]*>/g, "")),
+  );
+  return sections.filter((name) => {
+    const key = headingKey(name);
+    return !headings.some((heading) => heading.includes(key));
+  });
+}
+
+/**
+ * 削除と、応答を確認できない状態を分ける。本文や台帳を自動で削除しない。
+ * URL の `#` と台帳の `section` が指す場所は、HTML の本文を取得して確かめる。
+ * 書籍の節は販売・紹介ページに載らないので照合しない。
+ */
 export async function checkSourceLink(
-  source: { id: string; url: string },
+  source: { id: string; url: string; section?: string; kind?: string },
   fetcher: FetchSource = fetch,
   timeoutMs = 10_000,
   now = new Date(),
 ): Promise<SourceLinkResult> {
   const base = { sourceRef: source.id, url: source.url, checkedAt: now.toISOString() };
   if (!isPublicSourceUrl(source.url)) throw new Error("参照元に公開資料の HTTP(S) URL が必要です");
+  const sections = source.kind === "book" ? [] : sourceSections(source.section);
   const controller = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -37,8 +88,9 @@ export async function checkSourceLink(
   }, timeoutMs);
   try {
     const url = new URL(source.url);
+    const readsBody = Boolean(url.hash) || sections.length > 0;
     let response = await fetcher(source.url, {
-      method: url.hash ? "GET" : "HEAD",
+      method: readsBody ? "GET" : "HEAD",
       redirect: "follow",
       signal: controller.signal,
     });
@@ -71,13 +123,27 @@ export async function checkSourceLink(
         reason: response.status >= 500 ? "server-error" : "unexpected-response",
       };
     }
-    if (url.hash && response.headers.get("content-type")?.includes("text/html")) {
-      const body = await response.text();
+    // 見出しを照合できるのは HTML だけ。PDF などは応答の確認にとどめる。
+    if (!readsBody || !response.headers.get("content-type")?.includes("text/html")) {
+      await response.body?.cancel();
+      return { ...details, status: "available", reason: "ok" };
+    }
+    const body = await response.text();
+    if (url.hash) {
       const anchor = decodeURIComponent(url.hash.slice(1));
       const ids = [...body.matchAll(/(?:id|name)\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
       if (!ids.includes(anchor))
         return { ...details, status: "manual-confirmation", reason: "anchor-missing" };
-    } else await response.body?.cancel();
+    }
+    // 節が消えてもページは残るので削除にはせず、人がページと節を確かめる。
+    const missingSections = missingSourceSections(body, sections);
+    if (missingSections.length > 0)
+      return {
+        ...details,
+        status: "manual-confirmation",
+        reason: "section-missing",
+        missingSections,
+      };
     return { ...details, status: "available", reason: "ok" };
   } catch {
     return {
