@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "dev-env-basics/u04-terminal/q01",
+  "title": "Node.js・npm・Git の版を確かめる",
+  "kind": "basic",
+  "runner": "env-diagnose",
+  "submit": { "files": [] },
+  "environment": {
+    "id": "web-training-01",
+    "node": { "min": "22.12.0", "maxMajor": 24 },
+    "npm": { "min": "10.0.0" },
+    "git": { "min": "2.40.0" }
+  }
+}

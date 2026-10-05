@@ -1,0 +1,34 @@
+[
+  {
+    "filePath": "/work/task/src/filter.js",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "severity": 2,
+        "message": "'unused' is assigned a value but never used.",
+        "line": 8,
+        "column": 5,
+        "nodeType": "Identifier",
+        "messageId": "unusedVar",
+        "endLine": 8,
+        "endColumn": 11,
+        "suggestions": [
+          {
+            "messageId": "removeVar",
+            "data": { "varName": "unused" },
+            "fix": { "range": [146, 160], "text": "" },
+            "desc": "Remove unused variable 'unused'."
+          }
+        ]
+      }
+    ],
+    "suppressedMessages": [],
+    "errorCount": 1,
+    "fatalErrorCount": 0,
+    "warningCount": 0,
+    "fixableErrorCount": 0,
+    "fixableWarningCount": 0,
+    "source": "export function selectAtLeast(values, k) {\n  const result = [];\n  for (const v of values) {\n    if (v > k) result.push(v);\n  }\n  return result;\n}\nvar unused = 1\n",
+    "usedDeprecatedRules": []
+  }
+]
