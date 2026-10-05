@@ -29,6 +29,7 @@ const FK_INDEXES = [
   "quiz_options_question_id_idx",
   "review_cards_question_id_idx",
   "review_logs_card_id_idx",
+  "quiz_attempts_quiz_id_idx",
 ] as const;
 
 interface JournalEntry {
@@ -131,6 +132,13 @@ describe("外部キーの子側に索引がある", () => {
     const cardPlan = planOf(db, "delete from review_cards where question_id = 'x'");
     expect(cardPlan).toContain("review_logs_card_id_idx");
     expect(cardPlan).not.toMatch(/SCAN review_logs/);
+
+    const attemptUpdate = planOf(db, "update quiz_attempts set quiz_id = 'y' where quiz_id = 'x'");
+    expect(attemptUpdate).toContain("quiz_attempts_quiz_id_idx");
+    expect(attemptUpdate).not.toMatch(/SCAN quiz_attempts/);
+    const quizDelete = planOf(db, "delete from quizzes where lesson_id = 'x'");
+    expect(quizDelete).toContain("quiz_attempts_quiz_id_idx");
+    expect(quizDelete).not.toMatch(/SCAN quiz_attempts/);
   });
 });
 

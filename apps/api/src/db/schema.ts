@@ -778,23 +778,29 @@ export const quizOptions = sqliteTable(
   }),
 );
 
-export const quizAttempts = sqliteTable("quiz_attempts", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  quizId: text("quiz_id")
-    .notNull()
-    .references(() => quizzes.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  score: integer("score").notNull(),
-  maxScore: integer("max_score").notNull(),
-  passed: integer("passed", { mode: "boolean" }).notNull(),
-  answers: json<unknown[]>("answers", []),
-  submittedAt: tsNow("submitted_at"),
-});
+export const quizAttempts = sqliteTable(
+  "quiz_attempts",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    quizId: text("quiz_id")
+      .notNull()
+      .references(() => quizzes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    maxScore: integer("max_score").notNull(),
+    passed: integer("passed", { mode: "boolean" }).notNull(),
+    answers: json<unknown[]>("answers", []),
+    submittedAt: tsNow("submitted_at"),
+  },
+  (t) => ({
+    quizIdx: index("quiz_attempts_quiz_id_idx").on(t.quizId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // デイリー復習 (SRS)
