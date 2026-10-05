@@ -173,6 +173,18 @@ describe("stella.runTask", () => {
     expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
   });
 
+  it("ワークスペースの外で開いたファイルからは課題を探さない", async () => {
+    const outsideTask = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+    const workspace = await mkdtemp(path.join(tmpdir(), "stella-ws-"));
+    state.folders = [workspace];
+    state.activeFile = path.join(outsideTask, "index.html");
+    await run("stella.runTask");
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining(".stella/task.json がある課題フォルダー"),
+    );
+  });
+
   it("定義の誤りはパネルで知らせる", async () => {
     const root = await makeTask({ ...staticTask, runner: "bash" }, {});
     state.folders = [root];

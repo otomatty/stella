@@ -11,7 +11,8 @@
 import type { RunnerId } from "./runners.js";
 
 export type StepStatus = "passed" | "failed" | "error" | "skipped";
-export type RunOutcome = "passed" | "failed" | "error";
+/** `cancelled` は受講者が途中で止めた実行。何も確かめていないので合格にしない。 */
+export type RunOutcome = "passed" | "failed" | "error" | "cancelled";
 
 export type RunStepId =
   | "deps"
@@ -85,10 +86,18 @@ export interface RunResult {
   manifestSha256: string;
 }
 
-/** 手順の結果から全体の結果を決める。エラーが 1 つでもあれば error を優先する。 */
-export function decideOutcome(steps: readonly Pick<RunStepResult, "status">[]): RunOutcome {
+/**
+ * 手順の結果から全体の結果を決める。中断を最優先し、次にエラー、失敗の順。
+ * 1 つも手順が通っていない (すべて省略) ときは合格にしない — 何も確かめていないため。
+ */
+export function decideOutcome(
+  steps: readonly Pick<RunStepResult, "status">[],
+  options: { cancelled?: boolean } = {},
+): RunOutcome {
+  if (options.cancelled) return "cancelled";
   if (steps.some((step) => step.status === "error")) return "error";
   if (steps.some((step) => step.status === "failed")) return "failed";
+  if (!steps.some((step) => step.status === "passed")) return "error";
   return "passed";
 }
 
@@ -101,6 +110,7 @@ export const RUN_OUTCOME_LABELS: Readonly<Record<RunOutcome, string>> = {
   passed: "すべて通りました",
   failed: "直すところがあります",
   error: "環境の問題で確認できませんでした",
+  cancelled: "確認を中断しました",
 };
 
 export const STEP_STATUS_LABELS: Readonly<Record<StepStatus, string>> = {

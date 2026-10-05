@@ -7,7 +7,8 @@
  */
 
 import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, open, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
@@ -80,8 +81,59 @@ export function sha256Hex(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+/** 課題フォルダーの外を指すパス・シンボリックリンク・通常のファイルでないものを読もうとした。 */
+export class UnsafePathError extends Error {}
+
+function isInside(root: string, file: string): boolean {
+  const rel = path.relative(root, file);
+  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+/**
+ * 課題フォルダーの中にある通常のファイルの場所を確かめる。シンボリックリンクと、
+ * 途中のフォルダーのリンクで課題フォルダーの外に出るパスは受け付けない。
+ * 信頼していないフォルダーでも動く HTML の確認から、外のファイルを読ませないため。
+ */
+export async function resolveFileInRoot(root: string, rel: string): Promise<string> {
+  const file = path.resolve(root, ...rel.split("/"));
+  if (!isInside(path.resolve(root), file))
+    throw new UnsafePathError(`${rel} は課題フォルダーの外です`);
+  const info = await lstat(file);
+  if (!info.isFile()) throw new UnsafePathError(`${rel} は通常のファイルではありません`);
+  const [realRoot, realFile] = await Promise.all([realpath(root), realpath(file)]);
+  if (!isInside(realRoot, realFile)) throw new UnsafePathError(`${rel} は課題フォルダーの外です`);
+  return file;
+}
+
+/** 課題フォルダーの中にある通常のファイルなら true (無い・リンク・外なら false)。 */
+export async function isFileInRoot(root: string, rel: string): Promise<boolean> {
+  try {
+    await resolveFileInRoot(root, rel);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 課題フォルダーの中にある通常のファイルを読む。確かめてから開くまでの間に
+ * リンクへ差し替えられても追わないよう、使える OS では O_NOFOLLOW で開く。
+ */
+export async function readFileInRoot(root: string, rel: string): Promise<Buffer> {
+  const file = await resolveFileInRoot(root, rel);
+  const handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    if (!(await handle.stat()).isFile()) {
+      throw new UnsafePathError(`${rel} は通常のファイルではありません`);
+    }
+    return await handle.readFile();
+  } finally {
+    await handle.close();
+  }
+}
+
 export async function hashFile(root: string, rel: string): Promise<HashedFile> {
-  const bytes = await readFile(path.join(root, ...rel.split("/")));
+  const bytes = await readFileInRoot(root, rel);
   return { path: rel, sha256: sha256Hex(normalizeForHash(bytes)), bytes: bytes.byteLength };
 }
 
@@ -98,7 +150,7 @@ export async function checkSubmitSizes(
   const problems: SizeProblem[] = [];
   let total = 0;
   for (const rel of files) {
-    const size = (await stat(path.join(root, ...rel.split("/")))).size;
+    const size = (await lstat(await resolveFileInRoot(root, rel))).size;
     total += size;
     if (size > LIMITS.fileBytes) problems.push({ path: rel, reason: "too-large" });
   }

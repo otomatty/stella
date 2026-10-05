@@ -92,11 +92,13 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     .join(" / ");
   const footer = input.standalone
     ? ""
-    : canSubmit(result)
-      ? `<p class="next">手元の確認はすべて通りました。</p>`
-      : result.outcome === "error"
-        ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度確認してください。</p>`
-        : `<p class="next">直したら、保存してもう一度確認してください。</p>`;
+    : result.outcome === "cancelled"
+      ? `<p class="next">途中で止めたので、結果は残していません。もう一度確認してください。</p>`
+      : canSubmit(result)
+        ? `<p class="next">手元の確認はすべて通りました。</p>`
+        : result.outcome === "error"
+          ? `<p class="next">環境の問題は、教材の「困ったときの案内」を見るか、講師に相談してください。直したら、もう一度確認してください。</p>`
+          : `<p class="next">直したら、保存してもう一度確認してください。</p>`;
   const body = [
     `<h1>${escapeHtml(manifest.title)}</h1>`,
     `<p class="meta">${input.standalone ? "" : `${TASK_KIND_LABELS[manifest.kind]} ・ `}${escapeHtml(runner.label)}</p>`,
@@ -158,6 +160,7 @@ export function buildTaskPanelHtml(input: TaskPanelInput): string {
     .outcome.passed { color: var(--vscode-testing-iconPassed); }
     .outcome.failed { color: var(--vscode-testing-iconFailed); }
     .outcome.error { color: var(--vscode-editorWarning-foreground); }
+    .outcome.cancelled { color: var(--vscode-descriptionForeground); }
     .step {
       margin: 0.75rem 0;
       padding: 0.6rem 0.9rem;

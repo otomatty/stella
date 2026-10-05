@@ -16,6 +16,7 @@ import {
 } from "@stella/shared/tasks/environment";
 import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunStepId, RunStepResult, TestCaseResult } from "@stella/shared/tasks/run-result";
+import { RUNNERS } from "@stella/shared/tasks/runners";
 import { asCliPath } from "./files.js";
 import {
   parseEslintReport,
@@ -144,6 +145,30 @@ function isOutcome(value: unknown): value is StepOutcome {
 // 依存パッケージ
 // ---------------------------------------------------------------
 
+/** runner の手順と checks が課題フォルダーの node_modules に求めるパッケージ。 */
+export function requiredPackages(manifest: TaskManifest): string[] {
+  const plan = RUNNERS[manifest.runner].plan;
+  const packages: string[] = [];
+  if (plan === "vitest") packages.push("vitest");
+  if (plan === "playwright" || plan === "next") packages.push("@playwright/test");
+  if (plan === "next") packages.push("next");
+  if (manifest.checks.lint) packages.push("eslint");
+  if (manifest.checks.format) packages.push("prettier");
+  return packages;
+}
+
+/**
+ * 準備に使うパッケージが実際に入っているか。node_modules が残っていても、中身を
+ * 消すと指紋は変わらないので、印だけを信じると準備を省いたまま道具が見つからなくなる。
+ */
+async function packagesPresent(ctx: StepContext): Promise<boolean> {
+  for (const name of requiredPackages(ctx.manifest)) {
+    const manifest = path.join(ctx.root, "node_modules", ...name.split("/"), "package.json");
+    if (!(await exists(manifest))) return false;
+  }
+  return exists(path.join(ctx.root, "node_modules"));
+}
+
 /** package.json・lockfile・Node.js の major 版が同じなら、準備をやり直さない。 */
 async function depsFingerprint(
   ctx: StepContext,
@@ -177,10 +202,7 @@ export const depsStep: StepDefinition = {
     const fingerprint = await depsFingerprint(ctx, pkgFile, lockFile);
     const marker = stateFile(ctx.root, "deps.json");
     const previous = (await readJson(marker)) as { fingerprint?: string } | undefined;
-    if (
-      previous?.fingerprint === fingerprint &&
-      (await exists(path.join(ctx.root, "node_modules")))
-    ) {
+    if (previous?.fingerprint === fingerprint && (await packagesPresent(ctx))) {
       return { status: "skipped", summary: "準備済みです" };
     }
     if (!ctx.npm) {
@@ -197,7 +219,6 @@ export const depsStep: StepDefinition = {
       ],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.deps,
-      viaCmdShim: ctx.npm.viaCmdShim,
     });
     const stopped = interrupted(out, "依存パッケージの準備", "error");
     if (stopped) return stopped;
@@ -427,7 +448,6 @@ async function toolVersionOutput(ctx: StepContext, tool: EnvironmentTool): Promi
       args: [...ctx.npm.prefixArgs, "--version"],
       cwd: ctx.root,
       timeoutMs: TIMEOUTS.version,
-      viaCmdShim: ctx.npm.viaCmdShim,
     };
   } else if (tool === "git") {
     const git = await findExecutable("git", ctx.env, ctx.platform);
@@ -444,6 +464,9 @@ export const diagnoseStep: StepDefinition = {
   label: "開発環境の診断",
   async run(ctx) {
     const environment = ctx.manifest.environment;
+    // 課題が要件を書いた道具だけを調べる。dev-env-basics では Node.js・npm を入れる単元
+    // (06 U04) のあとに Git を入れる単元 (U05) が来るので、U04 の診断で Git が無いことを
+    // 不合格にしない。要件が 1 つも無いとき (課題の外からの診断) は 3 つとも調べる。
     const listed = ENVIRONMENT_TOOLS.filter((tool) => environment?.[tool] !== undefined);
     const tools = listed.length > 0 ? listed : [...ENVIRONMENT_TOOLS];
     const tests: TestCaseResult[] = [];

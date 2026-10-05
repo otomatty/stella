@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -78,6 +78,23 @@ describe("runStaticChecks", () => {
       "about.html がありません",
       "missing.html がありません",
     ]);
+  });
+});
+
+describe("信頼していないフォルダーでも外のファイルを読まない", () => {
+  it("シンボリックリンクの HTML は「無い」として扱い、中身を結果に出さない", async () => {
+    const outside = await makeSite({ "secret.html": "<h1>社外秘の見出し</h1>" });
+    const root = await makeSite({});
+    await symlink(path.join(outside, "secret.html"), path.join(root, "index.html"));
+    const results = await runStaticChecks(root, [
+      { type: "element-text", path: "index.html", tag: "h1", text: "x" },
+      { type: "file-exists", path: "index.html" },
+    ]);
+    expect(results.map((r) => r.message)).toEqual([
+      "index.html がありません",
+      "index.html がありません",
+    ]);
+    expect(JSON.stringify(results)).not.toContain("社外秘");
   });
 });
 

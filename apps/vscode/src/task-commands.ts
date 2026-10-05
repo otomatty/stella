@@ -11,6 +11,7 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import type { RunOutcome } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import {
@@ -33,13 +34,20 @@ function isInside(file: string, dir: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
-/** 開いているファイル、なければワークスペースのフォルダーから課題フォルダーを探す。 */
+/**
+ * 開いているファイル、なければワークスペースのフォルダーから課題フォルダーを探す。
+ * 探すのはワークスペースのフォルダーの中だけ。外のファイルを開いていても、その親を
+ * たどらない — 信頼したのはワークスペースのフォルダーで、外の課題ではないため。
+ */
 async function locateTask(): Promise<string | null> {
   const roots = workspaceRoots();
   const active = vscode.window.activeTextEditor?.document.uri;
   if (active?.scheme === "file") {
-    const found = await findTaskRoot(active.fsPath, roots);
-    if (found) return found;
+    const owner = roots.find((root) => isInside(active.fsPath, root));
+    if (owner) {
+      const found = await findTaskRoot(active.fsPath, [owner]);
+      if (found) return found;
+    }
   }
   for (const root of roots) {
     const found = await findTaskRoot(root, [root]);
@@ -109,8 +117,10 @@ async function runWithProgress(
   }
 }
 
-function notify(outcome: "passed" | "failed" | "error", output: vscode.OutputChannel): void {
-  if (outcome === "passed") {
+function notify(outcome: RunOutcome, output: vscode.OutputChannel): void {
+  if (outcome === "cancelled") {
+    void vscode.window.showInformationMessage("確認を中断しました");
+  } else if (outcome === "passed") {
     void vscode.window.showInformationMessage("手元の確認がすべて通りました");
   } else if (outcome === "failed") {
     void vscode.window.showWarningMessage("直すところがあります。結果のパネルを確認してください");
@@ -143,7 +153,8 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
   if (!(await confirmUnsaved(root))) return;
   await runWithProgress(output, `課題を確認しています: ${manifest.title}`, async (signal, log) => {
     const result = await runTask({ root, manifest, manifestSha256, signal, log });
-    await saveRunResult(root, result);
+    // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
+    if (result.outcome !== "cancelled") await saveRunResult(root, result);
     showTaskPanel({ kind: "result", manifest, result });
     notify(result.outcome, output);
   });

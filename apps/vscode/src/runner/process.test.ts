@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { childEnv, quoteForCmd, runProcess, stripAnsi, tailLines } from "./process.js";
+import { childEnv, runProcess, stripAnsi, tailLines } from "./process.js";
 
 const node = process.execPath;
 const base = { file: node, cwd: tmpdir(), env: process.env, timeoutMs: 10_000 };
@@ -58,22 +58,25 @@ describe("runProcess", () => {
     expect(out.stdout.endsWith("END")).toBe(true);
   });
 
+  it("始める前に中断されていれば、起動せずに中断として返す", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const out = await runProcess(
+      { ...base, args: ["-e", "require('node:fs').writeFileSync('should-not-run', '')"] },
+      { signal: controller.signal },
+    );
+    expect(out).toMatchObject({ aborted: true, exitCode: null, stdout: "", timedOut: false });
+  });
+
   it("起動できなければ spawnError", async () => {
     const out = await runProcess({ ...base, file: "/no/such/binary", args: [] });
     expect(out.spawnError).toBe("ENOENT");
   });
 });
 
-describe("childEnv / quoteForCmd / stripAnsi / tailLines", () => {
+describe("childEnv / stripAnsi / tailLines", () => {
   it("対話と色を止める", () => {
     expect(childEnv({ PATH: "/bin" })).toMatchObject({ PATH: "/bin", CI: "1", NO_COLOR: "1" });
-  });
-
-  it("空白入りのパスを引用する", () => {
-    expect(quoteForCmd("C:\\Program Files\\nodejs\\npm.cmd")).toBe(
-      '"C:\\Program Files\\nodejs\\npm.cmd"',
-    );
-    expect(quoteForCmd("--no-audit")).toBe("--no-audit");
   });
 
   it("色指定を外し、末尾の行を返す", () => {

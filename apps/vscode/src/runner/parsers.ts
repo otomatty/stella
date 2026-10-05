@@ -102,6 +102,15 @@ function summarizeTests(tests: TestCaseResult[], reportedFailure: boolean): Pars
   if (failed > 0) {
     return { status: "failed", summary: `${counted} 件中 ${passed} 件が通りました`, tests };
   }
+  // すべて省略 (test.skip など) なら、何も確かめていないので通さない。
+  if (counted === 0) {
+    return {
+      status: "failed",
+      summary:
+        "実行されたテストがありません (すべて省略されています)。テストの skip を外してください",
+      tests,
+    };
+  }
   if (reportedFailure) {
     return {
       status: "failed",

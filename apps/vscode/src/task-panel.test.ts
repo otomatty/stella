@@ -98,6 +98,16 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("講師に相談してください");
   });
 
+  it("中断した実行は結果を残さないと伝える", () => {
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({ outcome: "cancelled" }),
+    });
+    expect(html).toContain("確認を中断しました");
+    expect(html).toContain("結果は残していません");
+  });
+
   it("定義の誤りを一覧にする", () => {
     const html = buildTaskPanelHtml({ kind: "invalid", root: "/w/<t>", errors: ["runner は <x>"] });
     expect(html).toContain("課題の定義を読めません");

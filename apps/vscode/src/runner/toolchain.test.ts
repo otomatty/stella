@@ -20,14 +20,24 @@ describe("findExecutable", () => {
     expect(found).toBe("/opt/node/bin/node");
   });
 
-  it("Windows は PATHEXT を付けて探し、環境変数名の大小を問わない", async () => {
+  it("Windows は PATHEXT の .exe を付けて探し、環境変数名の大小を問わない", async () => {
+    const found = await findExecutable(
+      "node",
+      { Path: 'C:\\Windows;"C:\\Program Files\\nodejs"', PATHEXT: ".COM;.EXE;.BAT;.CMD" },
+      "win32",
+      fakeFs(["C:\\Program Files\\nodejs\\node.exe"]),
+    );
+    expect(found).toBe("C:\\Program Files\\nodejs\\node.exe");
+  });
+
+  it("Windows の .cmd / .bat はシェル無しで起動できないので探さない", async () => {
     const found = await findExecutable(
       "npm",
-      { Path: 'C:\\Windows;"C:\\Program Files\\nodejs"', PATHEXT: ".EXE;.CMD" },
+      { PATH: "C:\\tools", PATHEXT: ".COM;.EXE;.BAT;.CMD" },
       "win32",
-      fakeFs(["C:\\Program Files\\nodejs\\npm.cmd"]),
+      fakeFs(["C:\\tools\\npm.cmd", "C:\\tools\\npm.bat"]),
     );
-    expect(found).toBe("C:\\Program Files\\nodejs\\npm.cmd");
+    expect(found).toBeNull();
   });
 
   it("見つからなければ null", async () => {
@@ -53,7 +63,6 @@ describe("resolveNpm", () => {
     expect(npm).toEqual({
       file: "C:\\Program Files\\nodejs\\node.exe",
       prefixArgs: ["C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js"],
-      viaCmdShim: false,
     });
   });
 
@@ -70,15 +79,38 @@ describe("resolveNpm", () => {
     ]);
   });
 
-  it("npm-cli.js が無ければ PATH の npm.cmd を cmd.exe 経由で使う", async () => {
+  it("npm.cmd だけが PATH にある場合は、その隣の npm-cli.js を Node.js で動かす", async () => {
     const npm = await resolveNpm(
       "C:\\volta\\node.exe",
-      { PATH: "C:\\volta", PATHEXT: ".EXE;.CMD" },
+      { PATH: "C:\\volta;C:\\npm-global", PATHEXT: ".EXE;.CMD" },
       "win32",
-      fakeFs(["C:\\volta\\npm.cmd"]),
+      fakeFs(["C:\\npm-global\\npm.cmd", "C:\\npm-global\\node_modules\\npm\\bin\\npm-cli.js"]),
       async (file) => file,
     );
-    expect(npm).toEqual({ file: "C:\\volta\\npm.cmd", prefixArgs: [], viaCmdShim: true });
+    expect(npm).toEqual({
+      file: "C:\\volta\\node.exe",
+      prefixArgs: ["C:\\npm-global\\node_modules\\npm\\bin\\npm-cli.js"],
+    });
+  });
+
+  it("npm-cli.js が見つからなければ .exe のシムを使い、.cmd しか無ければ見つからない扱い", async () => {
+    const env = { PATH: "C:\\shims", PATHEXT: ".EXE;.CMD" };
+    const exe = await resolveNpm(
+      null,
+      env,
+      "win32",
+      fakeFs(["C:\\shims\\npm.exe"]),
+      async (f) => f,
+    );
+    expect(exe).toEqual({ file: "C:\\shims\\npm.exe", prefixArgs: [] });
+    const cmdOnly = await resolveNpm(
+      null,
+      env,
+      "win32",
+      fakeFs(["C:\\shims\\npm.cmd"]),
+      async (f) => f,
+    );
+    expect(cmdOnly).toBeNull();
   });
 });
 

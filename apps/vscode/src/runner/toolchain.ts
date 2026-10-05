@@ -29,7 +29,10 @@ function pathModule(platform: NodeJS.Platform): typeof path.posix {
   return platform === "win32" ? path.win32 : path.posix;
 }
 
-/** PATH から実行ファイルを探す。Windows は PATHEXT の拡張子も試す。 */
+/**
+ * PATH から実行ファイルを探す。Windows は PATHEXT の順に .exe / .com だけを試す。
+ * プロセスはシェルを通さずに起動するので、.cmd / .bat は起動できず、探さない。
+ */
 export async function findExecutable(
   name: string,
   env: NodeJS.ProcessEnv,
@@ -37,18 +40,14 @@ export async function findExecutable(
   exists: FileExists = isFile,
 ): Promise<string | null> {
   const p = pathModule(platform);
-  const dirs = (readEnv(env, "PATH") ?? "")
-    .split(platform === "win32" ? ";" : ":")
-    .map((dir) => dir.replace(/^"(.*)"$/, "$1"))
-    .filter((dir) => dir.length > 0);
   const extensions =
     platform === "win32"
-      ? (readEnv(env, "PATHEXT") ?? ".COM;.EXE;.BAT;.CMD")
+      ? (readEnv(env, "PATHEXT") ?? ".COM;.EXE")
           .split(";")
-          .filter((ext) => ext.length > 0)
           .map((ext) => ext.toLowerCase())
+          .filter((ext) => ext === ".exe" || ext === ".com")
       : [""];
-  for (const dir of dirs) {
+  for (const dir of pathDirs(env, platform)) {
     for (const ext of extensions) {
       const candidate = p.join(dir, name + ext);
       if (await exists(candidate)) return candidate;
@@ -57,18 +56,36 @@ export async function findExecutable(
   return null;
 }
 
-/** npm の起動方法。npm-cli.js を Node.js で直接動かすのが基本。 */
+function pathDirs(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): string[] {
+  return (readEnv(env, "PATH") ?? "")
+    .split(platform === "win32" ? ";" : ":")
+    .map((dir) => dir.replace(/^"(.*)"$/, "$1"))
+    .filter((dir) => dir.length > 0);
+}
+
+/** npm の起動方法。npm-cli.js を Node.js で直接動かすのが基本。シェルは通さない。 */
 export interface NpmInvocation {
   file: string;
   prefixArgs: string[];
-  viaCmdShim: boolean;
+}
+
+/** フォルダーに入っている npm 本体 (npm-cli.js) の候補。 */
+function npmCliCandidates(dir: string, platform: NodeJS.Platform): string[] {
+  const p = pathModule(platform);
+  const sibling = p.join(dir, "node_modules", "npm", "bin", "npm-cli.js");
+  return platform === "win32"
+    ? [sibling]
+    : [p.join(dir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"), sibling];
 }
 
 /**
- * Node.js と同じ場所に入っている npm を探す。
- * - Windows の公式インストーラー: `<node のフォルダー>/node_modules/npm/bin/npm-cli.js`
- * - macOS・Linux (公式・Homebrew・nvm): `<node のフォルダー>/../lib/node_modules/npm/bin/npm-cli.js`
- * 見つからなければ PATH の npm を使う (Windows の npm.cmd は cmd.exe 経由で起動する)。
+ * npm を探す。順に次を試す。
+ * 1. Node.js と同じ場所の npm-cli.js (Windows の公式インストーラー・nvm-windows は
+ *    `<node のフォルダー>/node_modules/npm`、macOS・Linux の公式・Homebrew・nvm は
+ *    `<node のフォルダー>/../lib/node_modules/npm`)。シンボリックリンクの実体の場所も見る。
+ * 2. PATH の各フォルダーの npm-cli.js (npm.cmd だけが PATH にある場合の本体)。
+ * 3. PATH の npm の実行ファイル (macOS・Linux のスクリプト、Windows の .exe のシム)。
+ * Windows の npm.cmd はシェル無しで起動できないので使わない。
  */
 export async function resolveNpm(
   nodePath: string | null,
@@ -86,25 +103,16 @@ export async function resolveNpm(
     } catch {
       // シンボリックリンクでなければそのまま。
     }
+    dirs.push(...pathDirs(env, platform));
     for (const dir of dirs) {
-      const candidates =
-        platform === "win32"
-          ? [p.join(dir, "node_modules", "npm", "bin", "npm-cli.js")]
-          : [
-              p.join(dir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
-              p.join(dir, "node_modules", "npm", "bin", "npm-cli.js"),
-            ];
-      for (const candidate of candidates) {
-        if (await exists(candidate)) {
-          return { file: nodePath, prefixArgs: [p.normalize(candidate)], viaCmdShim: false };
-        }
+      for (const candidate of npmCliCandidates(dir, platform)) {
+        if (await exists(candidate))
+          return { file: nodePath, prefixArgs: [p.normalize(candidate)] };
       }
     }
   }
   const npm = await findExecutable("npm", env, platform, exists);
-  if (!npm) return null;
-  const isCmd = platform === "win32" && /\.(cmd|bat)$/i.test(npm);
-  return { file: npm, prefixArgs: [], viaCmdShim: isCmd };
+  return npm ? { file: npm, prefixArgs: [] } : null;
 }
 
 /**

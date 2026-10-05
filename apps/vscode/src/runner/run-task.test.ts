@@ -110,7 +110,7 @@ describe("runTask (Vitest の手順)", () => {
       root,
       manifest: manifest(),
       manifestSha256: "m",
-      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } },
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
       log: (text) => logs.push(text),
     });
     expect(result.steps.map((s) => [s.id, s.status])).toEqual([
@@ -138,13 +138,23 @@ describe("runTask (Vitest の手順)", () => {
       root,
       manifest: manifest(),
       manifestSha256: "m",
-      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } },
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
     });
     expect(again.steps[0]).toMatchObject({
       id: "deps",
       status: "skipped",
       summary: "準備済みです",
     });
+
+    // 道具のパッケージが消えていれば、印が同じでも準備をやり直す。
+    await rm(path.join(root, "node_modules", "vitest"), { recursive: true });
+    const afterRemoval = await runTask({
+      root,
+      manifest: manifest(),
+      manifestSha256: "m",
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(afterRemoval.steps[0]).toMatchObject({ id: "deps", status: "passed" });
   });
 
   it("テストと整形の失敗をまとめて返す (失敗では止めない)", async () => {
@@ -155,7 +165,7 @@ describe("runTask (Vitest の手順)", () => {
       root,
       manifest: manifest(),
       manifestSha256: "m",
-      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } },
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
     });
     expect(result.outcome).toBe("failed");
     const format = result.steps.find((s) => s.id === "format");
@@ -175,7 +185,7 @@ describe("runTask (Vitest の手順)", () => {
       root,
       manifest: manifest(),
       manifestSha256: "m",
-      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } },
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
     });
     const format = result.steps.find((s) => s.id === "format");
     expect(format?.status).toBe("failed");
@@ -190,7 +200,7 @@ describe("runTask (Vitest の手順)", () => {
       npmCli,
       `${FAKE_NPM}\nfs.writeFileSync("package-lock.json", JSON.stringify({ lockfileVersion: 3 }));\n`,
     );
-    const toolchain = { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } };
+    const toolchain = { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } };
     const first = await runTask({ root, manifest: manifest(), manifestSha256: "m", toolchain });
     expect(first.steps[0]?.status).toBe("passed");
     expect(JSON.parse(await readFile(path.join(root, "npm-args.json"), "utf8"))[0]).toBe("install");
@@ -228,7 +238,7 @@ describe("runTask (Vitest の手順)", () => {
         protected: ["tests/**", "vitest.config.js"],
       }),
       manifestSha256: "m",
-      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli], viaCmdShim: false } },
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
     });
     const files = result.steps.find((s) => s.id === "files");
     expect(files?.status).toBe("failed");
@@ -261,6 +271,44 @@ describe("runTask (HTML の確認)", () => {
     });
     expect(result.outcome).toBe("passed");
     expect(result.steps.map((s) => s.id)).toEqual(["static", "files"]);
+  });
+});
+
+describe("runTask (中断)", () => {
+  it("始める前に中断されたら、何も確かめていないので合格にしない", async () => {
+    const root = await makeTask({ "index.html": "<h1>x</h1>" });
+    const controller = new AbortController();
+    controller.abort();
+    const result = await runTask({
+      root,
+      manifest: manifest({
+        runner: "static-preview",
+        submit: { files: ["index.html"] },
+        protected: [],
+        checks: { lint: false, format: false },
+        static: { checks: [{ type: "file-exists", path: "index.html" }] },
+      }),
+      manifestSha256: "m",
+      signal: controller.signal,
+      env: { PATH: "" },
+    });
+    expect(result.outcome).toBe("cancelled");
+    expect(result.steps.every((s) => s.status === "skipped")).toBe(true);
+    expect(result.files).toEqual([]);
+  });
+
+  it("Node.js の版を調べている最中に中断しても、例外にせず中断として返す", async () => {
+    const { root, npmCli } = await vitestTask("x");
+    const controller = new AbortController();
+    controller.abort();
+    const result = await runTask({
+      root,
+      manifest: manifest(),
+      manifestSha256: "m",
+      signal: controller.signal,
+      toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
+    });
+    expect(result.outcome).toBe("cancelled");
   });
 });
 
@@ -329,6 +377,30 @@ describe("findTaskRoot / loadTask / saveRunResult", () => {
     expect(
       await findTaskRoot(path.join(root, "inner", "x.js"), [path.join(root, "inner")]),
     ).toBeNull();
+  });
+
+  it("BOM 付きの task.json も読める", async () => {
+    const root = await makeTask({});
+    await mkdir(path.join(root, ".stella"), { recursive: true });
+    const body = JSON.stringify({
+      schemaVersion: 1,
+      id: "dev-env-basics/u03-first-page/q01",
+      title: "BOM",
+      kind: "basic",
+      runner: "static-preview",
+      submit: { files: ["index.html"] },
+      static: { checks: [{ type: "file-exists", path: "index.html" }] },
+    });
+    await writeFile(
+      path.join(root, ".stella", "task.json"),
+      `\uFEFF${body.replace(/,/g, ",\r\n")}`,
+    );
+    const loaded = await loadTask(root);
+    expect(loaded.ok).toBe(true);
+    // ハッシュは BOM と改行の違いに左右されない。
+    await writeFile(path.join(root, ".stella", "task.json"), body.replace(/,/g, ",\n"));
+    const plain = await loadTask(root);
+    expect(plain.ok && loaded.ok && plain.manifestSha256 === loaded.manifestSha256).toBe(true);
   });
 
   it("定義の誤りを返す", async () => {

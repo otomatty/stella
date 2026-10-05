@@ -5,7 +5,7 @@
  * 確認や画面表示は拡張側 (task-commands.ts) が受け持つ。
  */
 
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   parseTaskManifest,
@@ -19,14 +19,17 @@ import {
   type RunResult,
   type RunStepResult,
 } from "@stella/shared/tasks/run-result";
+import { normalizeForHash } from "@stella/shared/tasks/hash";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
   checkSubmitSizes,
   hashFile,
   listFiles,
   matchPatterns,
+  readFileInRoot,
   sha256Hex,
   TooManyFilesError,
+  UnsafePathError,
   LIMITS,
 } from "./files.js";
 import { buildPlan } from "./plans.js";
@@ -73,15 +76,16 @@ export async function findTaskRoot(
 }
 
 export async function loadTask(root: string): Promise<LoadedTask> {
-  let text: string;
+  // BOM 付き (Windows のメモ帳など) でも読めるよう、ハッシュと同じ正規化を通してから読む。
+  let normalized: Uint8Array;
   try {
-    text = await readFile(path.join(root, ...TASK_MANIFEST_PATH.split("/")), "utf8");
+    normalized = normalizeForHash(await readFileInRoot(root, TASK_MANIFEST_PATH));
   } catch {
     return { ok: false, root, errors: [`${TASK_MANIFEST_PATH} を読めませんでした`] };
   }
   let raw: unknown;
   try {
-    raw = JSON.parse(text);
+    raw = JSON.parse(new TextDecoder().decode(normalized));
   } catch {
     return { ok: false, root, errors: [`${TASK_MANIFEST_PATH} が JSON として読めません`] };
   }
@@ -91,7 +95,7 @@ export async function loadTask(root: string): Promise<LoadedTask> {
     ok: true,
     root,
     manifest: parsed.manifest,
-    manifestSha256: sha256Hex(new TextEncoder().encode(text.replace(/\r\n/g, "\n"))),
+    manifestSha256: sha256Hex(normalized),
   };
 }
 
@@ -153,14 +157,24 @@ async function collectFiles(
     );
     missing.push(...prot.unmatched);
   }
-  const sizes = await checkSubmitSizes(root, submit.files);
-  if (sizes.tooMany) problems.push(`提出するファイルが多すぎます (${LIMITS.submitFiles} 件まで)`);
-  if (sizes.totalTooLarge) problems.push("提出するファイルの合計が大きすぎます (5MB まで)");
-  for (const problem of sizes.problems) {
-    problems.push(`${problem.path} が大きすぎます (1MB まで)`);
+  let files: HashedFile[] = [];
+  let protectedFiles: HashedFile[] = [];
+  try {
+    const sizes = await checkSubmitSizes(root, submit.files);
+    if (sizes.tooMany) problems.push(`提出するファイルが多すぎます (${LIMITS.submitFiles} 件まで)`);
+    if (sizes.totalTooLarge) problems.push("提出するファイルの合計が大きすぎます (5MB まで)");
+    for (const problem of sizes.problems) {
+      problems.push(`${problem.path} が大きすぎます (1MB まで)`);
+    }
+    files = await Promise.all(submit.files.map((f) => hashFile(root, f)));
+    protectedFiles = await Promise.all(prot.files.map((f) => hashFile(root, f)));
+  } catch (error) {
+    // 一覧のあとにファイルがリンクへ差し替えられた・消えた。提出物として扱わない。
+    const reason = error instanceof UnsafePathError ? error.message : "ファイルを読めませんでした";
+    problems.push(`${reason}。シンボリックリンクは提出できません`);
+    files = [];
+    protectedFiles = [];
   }
-  const files = await Promise.all(submit.files.map((f) => hashFile(root, f)));
-  const protectedFiles = await Promise.all(prot.files.map((f) => hashFile(root, f)));
   const step: RunStepResult = {
     ...base,
     status: problems.length > 0 ? "failed" : "passed",
@@ -274,7 +288,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     schemaVersion: 1,
     taskId: manifest.id,
     runner: manifest.runner,
-    outcome: decideOutcome(steps),
+    outcome: decideOutcome(steps, { cancelled: options.signal?.aborted === true }),
     startedAt: startedAt.toISOString(),
     durationMs: Date.now() - startedAt.getTime(),
     platform,

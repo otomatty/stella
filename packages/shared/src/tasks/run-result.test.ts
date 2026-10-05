@@ -7,7 +7,16 @@ describe("decideOutcome", () => {
     expect(decideOutcome([{ status: "failed" }, { status: "error" }])).toBe("error");
     expect(decideOutcome([{ status: "passed" }, { status: "failed" }])).toBe("failed");
     expect(decideOutcome([{ status: "passed" }, { status: "skipped" }])).toBe("passed");
-    expect(decideOutcome([])).toBe("passed");
+  });
+
+  it("何も通っていなければ合格にしない", () => {
+    expect(decideOutcome([])).toBe("error");
+    expect(decideOutcome([{ status: "skipped" }, { status: "skipped" }])).toBe("error");
+  });
+
+  it("中断は何より優先する", () => {
+    expect(decideOutcome([{ status: "passed" }], { cancelled: true })).toBe("cancelled");
+    expect(decideOutcome([{ status: "error" }], { cancelled: true })).toBe("cancelled");
   });
 });
 
@@ -19,6 +28,7 @@ describe("canSubmit", () => {
     expect(canSubmit({ outcome: "passed", files: [] })).toBe(false);
     expect(canSubmit({ outcome: "failed", files: [file] })).toBe(false);
     expect(canSubmit({ outcome: "error", files: [file] })).toBe(false);
+    expect(canSubmit({ outcome: "cancelled", files: [file] })).toBe(false);
   });
 });
 

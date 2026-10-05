@@ -3,11 +3,11 @@
  * ファイルを読んで判定する。外部プロセスは起動しない。
  */
 
-import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import type { StaticCheck } from "@stella/shared/tasks/manifest";
 import type { TestCaseResult } from "@stella/shared/tasks/run-result";
 import { type DefaultTreeAdapterMap, parse } from "parse5";
+import { isFileInRoot, readFileInRoot } from "./files.js";
 
 type Node = DefaultTreeAdapterMap["node"];
 type Element = DefaultTreeAdapterMap["element"];
@@ -45,23 +45,13 @@ function attr(element: Element, name: string): string | undefined {
   return element.attrs.find((a) => a.name === name)?.value;
 }
 
-async function exists(file: string): Promise<boolean> {
-  try {
-    return (await stat(file)).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function resolveInside(root: string, file: string): string | null {
-  const resolved = path.resolve(root, ...file.split("/"));
-  return resolved === root || resolved.startsWith(root + path.sep) ? resolved : null;
-}
-
+/**
+ * HTML を読む。課題フォルダーの中の通常のファイルだけを読み、シンボリックリンクや
+ * 外を指すパスは「無い」として扱う (信頼していないフォルダーでも動くため)。
+ */
 async function loadHtml(root: string, rel: string): Promise<Document | string> {
-  const file = resolveInside(root, rel);
-  if (!file || !(await exists(file))) return `${rel} がありません`;
-  return parse(await readFile(file, "utf8"));
+  if (!(await isFileInRoot(root, rel))) return `${rel} がありません`;
+  return parse(new TextDecoder().decode(await readFileInRoot(root, rel)));
 }
 
 /** リンク先がローカルのファイルを指すときだけ、課題フォルダーからの相対パスを返す。 */
@@ -130,8 +120,7 @@ function defaultName(check: StaticCheck): string {
 
 async function runCheck(root: string, check: StaticCheck): Promise<string | null> {
   if (check.type === "file-exists") {
-    const file = resolveInside(root, check.path);
-    return file && (await exists(file)) ? null : `${check.path} がありません`;
+    return (await isFileInRoot(root, check.path)) ? null : `${check.path} がありません`;
   }
 
   const doc = await loadHtml(root, check.path);
@@ -181,10 +170,9 @@ async function runCheck(root: string, check: StaticCheck): Promise<string | null
         if (value === undefined) continue;
         const target = localTarget(check.path, value);
         if (target === null) continue;
-        const file = target.startsWith("../") ? null : resolveInside(root, target);
-        if (!file) {
+        if (target.startsWith("../")) {
           broken.push(`${value} (課題フォルダーの外を指しています)`);
-        } else if (!(await exists(file))) {
+        } else if (!(await isFileInRoot(root, target))) {
           broken.push(value);
         }
       }
@@ -204,8 +192,7 @@ async function runCheck(root: string, check: StaticCheck): Promise<string | null
         );
       });
       if (!linked) return `<link rel="stylesheet" href="${check.href}"> が見つかりません`;
-      const file = wanted ? resolveInside(root, wanted) : null;
-      return file && (await exists(file)) ? null : `${check.href} がありません`;
+      return wanted && (await isFileInRoot(root, wanted)) ? null : `${check.href} がありません`;
     }
   }
 }

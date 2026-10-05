@@ -7,20 +7,15 @@
  * - 出力は末尾だけを持つ。巨大なログでメモリを使い切らないため。
  */
 
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 
 export interface ProcessSpec {
-  /** 実行ファイルの絶対パス。 */
+  /** 実行ファイルの絶対パス。シェルは通さないので、Windows の .cmd / .bat は起動できない。 */
   file: string;
   args: readonly string[];
   cwd: string;
   env: NodeJS.ProcessEnv;
   timeoutMs: number;
-  /**
-   * Windows の `.cmd` (npm.cmd など) を起動するときだけ true。Node.js は `.cmd` を
-   * シェル無しで起動できないため、cmd.exe 経由にする。引数は固定の文字列に限る。
-   */
-  viaCmdShim?: boolean;
 }
 
 export interface ProcessOptions {
@@ -65,11 +60,6 @@ class TailBuffer {
   }
 }
 
-/** cmd.exe に渡す 1 引数を引用する。固定の引数しか来ないが、空白入りのパスに備える。 */
-export function quoteForCmd(value: string): string {
-  return /^[A-Za-z0-9_\-.:/\\=@]+$/.test(value) ? value : `"${value.replace(/"/g, '""')}"`;
-}
-
 function killTree(pid: number, platform: NodeJS.Platform): void {
   try {
     if (platform === "win32") {
@@ -98,14 +88,37 @@ export function runProcess(
   const started = Date.now();
 
   return new Promise((resolve) => {
+    // 始める前に中断されていれば、起動しない。
+    if (options.signal?.aborted) {
+      resolve({
+        exitCode: null,
+        stdout: "",
+        stderr: "",
+        truncated: false,
+        timedOut: false,
+        aborted: true,
+        durationMs: 0,
+      });
+      return;
+    }
+
     let settled = false;
     let timedOut = false;
     let aborted = false;
+    let child: ChildProcess | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
+    const stop = () => {
+      if (child?.pid !== undefined) killTree(child.pid, platform);
+    };
+    const onAbort = () => {
+      aborted = true;
+      stop();
+    };
     const finish = (exitCode: number | null, spawnError?: string) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      if (timer !== undefined) clearTimeout(timer);
       options.signal?.removeEventListener("abort", onAbort);
       resolve({
         exitCode,
@@ -119,36 +132,22 @@ export function runProcess(
       });
     };
 
-    if (options.signal?.aborted) {
-      aborted = true;
-      finish(null);
+    try {
+      child = spawn(spec.file, [...spec.args], {
+        cwd: spec.cwd,
+        env: spec.env,
+        shell: false,
+        windowsHide: true,
+        detached: platform !== "win32",
+      });
+    } catch (error) {
+      // Windows で .cmd を渡したときなど、同期的に失敗することがある。
+      const code = (error as NodeJS.ErrnoException).code;
+      finish(null, code ?? (error instanceof Error ? error.message : String(error)));
       return;
     }
 
-    const useShim = spec.viaCmdShim === true && platform === "win32";
-    const child = useShim
-      ? spawn([spec.file, ...spec.args].map(quoteForCmd).join(" "), {
-          cwd: spec.cwd,
-          env: spec.env,
-          shell: true,
-          windowsHide: true,
-        })
-      : spawn(spec.file, [...spec.args], {
-          cwd: spec.cwd,
-          env: spec.env,
-          shell: false,
-          windowsHide: true,
-          detached: platform !== "win32",
-        });
-
-    const stop = () => {
-      if (child.pid !== undefined) killTree(child.pid, platform);
-    };
-    const onAbort = () => {
-      aborted = true;
-      stop();
-    };
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       timedOut = true;
       stop();
     }, spec.timeoutMs);

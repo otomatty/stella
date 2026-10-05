@@ -49,6 +49,37 @@ describe("parseVitestReport", () => {
     expect(parseVitestReport(fixture("vitest-none.json"), ROOT)?.status).toBe("error");
   });
 
+  it("すべて省略されたテストは通さない", () => {
+    const parsed = parseVitestReport(
+      {
+        success: true,
+        testResults: [
+          {
+            name: `${ROOT}/a.test.js`,
+            status: "skipped",
+            assertionResults: [{ title: "a", status: "skipped" }],
+          },
+        ],
+      },
+      ROOT,
+    );
+    expect(parsed?.status).toBe("failed");
+    expect(parsed?.summary).toMatch(/すべて省略/);
+    const playwright = parsePlaywrightReport(
+      {
+        suites: [
+          {
+            title: "a.spec.js",
+            specs: [{ title: "x", file: "a.spec.js", tests: [{ status: "skipped", results: [] }] }],
+          },
+        ],
+        errors: [],
+      },
+      ROOT,
+    );
+    expect(playwright?.status).toBe("failed");
+  });
+
   it("形が違えば null", () => {
     expect(parseVitestReport({}, ROOT)).toBeNull();
     expect(parseVitestReport(undefined, ROOT)).toBeNull();

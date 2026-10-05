@@ -1,8 +1,17 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { asCliPath, checkSubmitSizes, hashFile, listFiles, matchPatterns } from "./files.js";
+import {
+  asCliPath,
+  checkSubmitSizes,
+  hashFile,
+  isFileInRoot,
+  listFiles,
+  matchPatterns,
+  readFileInRoot,
+  UnsafePathError,
+} from "./files.js";
 
 async function makeTree(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "stella-files-"));
@@ -56,6 +65,24 @@ describe("hashFile", () => {
     expect(lf.sha256).toBe(crlf.sha256);
     expect(lf.bytes).toBe(4);
     expect(crlf.bytes).toBe(6);
+  });
+});
+
+describe("課題フォルダーの外を読まない", () => {
+  it("シンボリックリンクは一覧に出さず、読もうとしても拒む", async () => {
+    const outside = await makeTree({ "secret.txt": "secret" });
+    const root = await makeTree({ "a.js": "" });
+    await symlink(path.join(outside, "secret.txt"), path.join(root, "link.txt"));
+    await symlink(outside, path.join(root, "linked-dir"));
+    expect(await listFiles(root)).toEqual(["a.js"]);
+    await expect(readFileInRoot(root, "link.txt")).rejects.toBeInstanceOf(UnsafePathError);
+    await expect(hashFile(root, "link.txt")).rejects.toBeInstanceOf(UnsafePathError);
+    await expect(readFileInRoot(root, "linked-dir/secret.txt")).rejects.toBeInstanceOf(
+      UnsafePathError,
+    );
+    expect(await isFileInRoot(root, "link.txt")).toBe(false);
+    expect(await isFileInRoot(root, "../secret.txt")).toBe(false);
+    expect(await isFileInRoot(root, "a.js")).toBe(true);
   });
 });
 
