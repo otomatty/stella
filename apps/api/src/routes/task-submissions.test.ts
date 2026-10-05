@@ -480,6 +480,25 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect((await reviewedProgressRows(db, "ses", "learner", rows)).rows[0].completed).toBe(true);
   });
 
+  /** lesson_progress を書く文の直前に、別の講師がその提出を不合格に訂正する D1 を作る。 */
+  function correctedBeforeProgressWrite(submissionId: string) {
+    const prepare = database.binding.prepare.bind(database.binding);
+    let corrected = false;
+    const binding = {
+      ...database.binding,
+      prepare: (query: string) => {
+        if (!corrected && /^insert into "lesson_progress"/i.test(query)) {
+          corrected = true;
+          database.sqlite
+            .prepare("update submissions set verdict = 'fail', status = 'failed' where id = ?")
+            .run(submissionId);
+        }
+        return prepare(query);
+      },
+    } as unknown as D1Database;
+    return { env: { ...env, DB: binding } as Env, corrected: () => corrected };
+  }
+
   const progressOf = async (lessonId: string) =>
     (await db.select().from(lessonProgress).where(eq(lessonProgress.lessonId, lessonId)))[0]
       ?.completed;
@@ -564,25 +583,44 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect(await progressOf("code")).toBe(true);
     const [stale] = await db.select().from(submissions).where(eq(submissions.lessonId, "code"));
     // 遅れた合格側の同期が進捗を書く直前に、別の講師の不合格が保存される。
-    const prepare = database.binding.prepare.bind(database.binding);
-    let corrected = false;
-    const racing = getDb({
-      ...env,
-      DB: {
-        ...database.binding,
-        prepare: (query: string) => {
-          if (!corrected && /^insert into "lesson_progress"/i.test(query)) {
-            corrected = true;
-            database.sqlite
-              .prepare("update submissions set verdict = 'fail', status = 'failed' where id = ?")
-              .run(stale.id);
-          }
-          return prepare(query);
-        },
-      } as unknown as D1Database,
+    const racing = correctedBeforeProgressWrite(stale.id);
+    await syncReviewedLesson(getDb(racing.env), stale);
+    expect(racing.corrected()).toBe(true);
+    expect(await progressOf("code")).toBe(false);
+  });
+
+  it("端末の同期が合格を読んだあとに合格が訂正されても、進捗は訂正を上書きしない", async () => {
+    await db.insert(lessons).values({
+      id: "code",
+      sectionId: "unit",
+      type: "code",
+      title: "演習",
+      assignmentId: "exercise",
     });
-    await syncReviewedLesson(racing, stale);
-    expect(corrected).toBe(true);
+    await legacyReview("code", "exercise", "pass");
+    expect(await progressOf("code")).toBe(true);
+    const [passed] = await db.select().from(submissions).where(eq(submissions.lessonId, "code"));
+    const racing = correctedBeforeProgressWrite(passed.id);
+    const { app } = mountTestApp(racing.env, lessonProgressRoute);
+    const response = await request(app, racing.env, "/api/lesson-progress", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        rows: [
+          {
+            lesson_id: "code",
+            completed: true,
+            last_page: null,
+            viewed_pages: [],
+            watched_sec: null,
+            // 時計が進んだ端末: LWW では端末の書き込みが勝つ。
+            updated_at: new Date(Date.now() + 60_000).toISOString(),
+          },
+        ],
+      }),
+    });
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(racing.corrected()).toBe(true);
     expect(await progressOf("code")).toBe(false);
   });
 
