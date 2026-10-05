@@ -7,5 +7,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "vite-plugins"]
+  "include": ["vite.config.ts", "vite-plugins", "scripts"]
 }
