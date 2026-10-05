@@ -1,5 +1,17 @@
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import {
+  closeSync,
+  mkdtempSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  rmdirSync,
+  unlinkSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,16 +29,33 @@ function stableUuid(key: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/** seed-d1 と同じく stdout をファイルへ直接書く。Windows の大きな pipe 出力も避ける。 */
+function exportSql(contentOnly = false): string {
+  const dir = mkdtempSync(join(tmpdir(), "stella-seed-test-"));
+  const file = join(dir, "seed.sql");
+  const fd = openSync(file, "w");
+  try {
+    try {
+      execSync("bun run packages/shared/scripts/export-seed-sql.ts", {
+        cwd: fileURLToPath(new URL("../../..", import.meta.url)),
+        stdio: ["ignore", fd, "inherit"],
+        env: { ...process.env, DIALECT: "sqlite", CONTENT_ONLY: contentOnly ? "1" : "0" },
+      });
+    } finally {
+      closeSync(fd);
+    }
+    return readFileSync(file, "utf8");
+  } finally {
+    unlinkSync(file);
+    rmdirSync(dir);
+  }
+}
+
 describe("export-seed-sql (sqlite)", () => {
-  const sql = execSync("bun run packages/shared/scripts/export-seed-sql.ts", {
-    cwd: fileURLToPath(new URL("../../..", import.meta.url)),
-    encoding: "utf8",
-    maxBuffer: 256 * 1024 * 1024,
-    env: { ...process.env, DIALECT: "sqlite" },
-  });
+  const sql = exportSql();
 
   it("教材ステージを upsert する", () => {
-    expect(sql).toContain("'typescript-basics'");
+    expect(sql).toContain("'salesforce-dev-basics'");
   });
 
   it("デモ講座は seed せず、安定 UUID だけ削除する", () => {
@@ -44,16 +73,60 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).not.toContain(`delete from sections where stage_id = '${webFundamentals}');`);
   });
 
-  it("slug を再利用した git-basics(Git 入門)は upsert し、旧デモ削除の対象にしない", () => {
-    const gitBasics = stableUuid("course:ses:git-basics");
-    expect(sql).toContain("'git-basics'");
-    expect(sql).toContain("Git 入門");
-    expect(sql).not.toContain(`delete from stages where id = '${gitBasics}'`);
+  it("退役した19講座の安定 UUID を削除し、引き継ぐ6講座は削除しない", () => {
+    const retired = [
+      "it-basics",
+      "modern-css-basics",
+      "page-composition-basics",
+      "typescript-basics",
+      "typescript-node-basics",
+      "node-basics",
+      "db-design-basics",
+      "cli-basics",
+      "git-basics",
+      "fetch-api-basics",
+      "npm-build-basics",
+      "web-a11y-basics",
+      "frontend-testing-basics",
+      "rest-api-basics",
+      "web-security-basics",
+      "docker-basics",
+      "cicd-basics",
+      "linux-ops-basics",
+      "observability-basics",
+    ];
+    for (const slug of retired) {
+      const id = stableUuid(`course:ses:${slug}`);
+      expect(sql.includes(`delete from stages where id = '${id}';`), slug).toBe(true);
+      expect(sql.includes(`delete from enrollments where stage_id = '${id}';`), slug).toBe(true);
+      expect(sql.includes(`delete from certificates where stage_id = '${id}';`), slug).toBe(true);
+      expect(sql).not.toMatch(new RegExp(`^insert into stages .*'ses', '${slug}',`, "m"));
+    }
+    for (const slug of [
+      "html-css-basics",
+      "javascript-basics",
+      "ui-components-basics",
+      "react-basics",
+      "sql-basics",
+      "auth-basics",
+    ]) {
+      expect(sql, slug).not.toContain(
+        `delete from stages where id = '${stableUuid(`course:ses:${slug}`)}';`,
+      );
+      expect(sql, slug).toMatch(new RegExp(`^insert into stages .*'ses', '${slug}',`, "m"));
+    }
+  });
+
+  it("seed-learner の登録と提出は新しい入口に紐づく", () => {
+    expect(sql).toContain("seed-enrollment-learner-dev-env-basics");
+    expect(sql).toContain(stableUuid("lesson:ses:dev-env-basics:m0-l1-t1"));
+    expect(sql).toContain("開発環境とWebの入口");
+    expect(sql).not.toContain("seed-enrollment-learner-typescript-basics");
   });
 
   it("本文リビジョンを、直前とハッシュが違うときだけ積む", () => {
     // slides / text は lessons.markdown、quiz は practice.md 全文がスナップショットになる。
-    const quizLesson = stableUuid("lesson:ses:typescript-basics:quiz-1-1");
+    const quizLesson = stableUuid("lesson:ses:salesforce-dev-basics:quiz-0-1");
     expect(sql).toContain(
       `insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at) select '${quizLesson}'`,
     );
@@ -66,12 +139,12 @@ describe("export-seed-sql (sqlite)", () => {
 
   it("スライドレッスンに本文 markdown が入る", () => {
     expect(sql).toMatch(
-      /insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?constは再代入できない/,
+      /insert into lessons \([^)]*\)\s*select[\s\S]*?'slides'[\s\S]*?プラットフォーム/,
     );
   });
 
   it("図解画像は R2 の絶対パスで入る", () => {
-    expect(sql).toContain("tenant/ses/courses/typescript-basics/assets/");
+    expect(sql).toContain("tenant/ses/courses/salesforce-dev-basics/assets/");
   });
 
   // サムネイルは stages.thumbnail_path が正本。列が upsert から落ちると、
@@ -101,18 +174,18 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("前提つきの講座は slug の JSON 配列で入る", () => {
-    // modern-css-basics は html-css-basics を前提にしている (course.json)。
-    const line = (sql.match(/^insert into stages .*'modern-css-basics'.*$/m) ?? [])[0];
+    // dom-basics は複数の講座 を前提にしている (course.json)。
+    const line = (sql.match(/^insert into stages .*'dom-basics'.*$/m) ?? [])[0];
     expect(line).toBeDefined();
-    expect(line).toContain(`'["html-css-basics"]'`);
+    expect(line).toContain(`'["html-css-basics","javascript-basics","javascript-data-basics"]'`);
   });
 
   it("前提を書いていない講座は空配列ではなく null に畳む (ロックを残さない)", () => {
     // 教材が正本。course.json から前提を外したら D1 も null に戻る必要がある
     // ('[]' が残ると、読み直す側が「壊れた行」と区別できない)。
-    // it-basics はスキルツリーの入口 (唯一の前提なし講座)。
-    // slug 列で拾う (parent 列に 'it-basics' を持つ子の行と取り違えないため)。
-    const line = (sql.match(/^insert into stages .*'ses', 'it-basics',.*$/m) ?? [])[0];
+    // dev-env-basics はスキルツリーの入口 (唯一の前提なし講座)。
+    // slug 列で拾う (parent 列に 'dev-env-basics' を持つ子の行と取り違えないため)。
+    const line = (sql.match(/^insert into stages .*'ses', 'dev-env-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
     // 並びは ... status, prerequisites, parent, can_do, theme, audience, created_at, updated_at。
     expect(line).toMatch(/'published', null, null, '[^']*', '[^']*', 'catalog', cast\(unixepoch/);
@@ -135,7 +208,7 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("教材ステージの sections を stage_id だけで丸ごと wipe しない", () => {
-    const tsStage = stableUuid("course:ses:typescript-basics");
+    const tsStage = stableUuid("course:ses:salesforce-dev-basics");
     expect(sql).not.toContain(`delete from sections where stage_id = '${tsStage}';`);
     expect(sql).toContain(`delete from sections where stage_id = '${tsStage}' and id not in (`);
   });
@@ -166,8 +239,8 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("レッスン UUID は section に依存せず、移動時は section_id を更新する", () => {
-    const withoutSection = stableUuid("lesson:ses:typescript-basics:1-1-2");
-    const withSection = stableUuid("lesson:ses:typescript-basics:m1-values:1-1-2");
+    const withoutSection = stableUuid("lesson:ses:salesforce-dev-basics:0-1-1");
+    const withSection = stableUuid("lesson:ses:salesforce-dev-basics:m0-orientation:0-1-1");
     expect(sql).toContain(`'${withoutSection}'`);
     expect(sql).not.toMatch(new RegExp(`select '${withSection}'`));
     expect(sql).toMatch(/on conflict \(id\) do update set section_id = excluded\.section_id/i);
@@ -198,13 +271,13 @@ describe("export-seed-sql (sqlite)", () => {
   });
 
   it("旧 quiz UUID の受験履歴を新 UUID へ付け替えてから消す", () => {
-    const newQuiz = stableUuid("quiz:ses:typescript-basics:quiz-1-1");
-    const legacyQuiz = stableUuid("quiz:ses:quiz-1-1");
+    const newQuiz = stableUuid("quiz:ses:salesforce-dev-basics:quiz-0-1");
+    const legacyQuiz = stableUuid("quiz:ses:quiz-0-1");
     expect(sql).toContain(
       `update quiz_attempts set quiz_id = '${newQuiz}' where quiz_id = '${legacyQuiz}'`,
     );
     expect(sql).toContain(
-      `delete from quizzes where lesson_id = '${stableUuid("lesson:ses:typescript-basics:quiz-1-1")}' and id != '${newQuiz}'`,
+      `delete from quizzes where lesson_id = '${stableUuid("lesson:ses:salesforce-dev-basics:quiz-0-1")}' and id != '${newQuiz}'`,
     );
   });
 
@@ -269,15 +342,156 @@ describe("export-seed-sql (sqlite)", () => {
       expect(line).not.toMatch(/\bcategory\b/);
     }
   });
+
+  it("既存 DB の退役講座と子レコードを削除し、再利用する講座の登録・修了証と CMS 講座を保持する", () => {
+    const root = fileURLToPath(new URL("../../..", import.meta.url));
+    const stageId = (slug: string) => stableUuid(`course:ses:${slug}`);
+    const db = new DatabaseSync(":memory:");
+    try {
+      const migrations = join(root, "apps/api/drizzle");
+      db.exec("pragma foreign_keys = off");
+      for (const file of readdirSync(migrations)
+        .filter((file) => file.endsWith(".sql"))
+        .sort()) {
+        db.exec(readFileSync(join(migrations, file), "utf8"));
+      }
+      db.exec("pragma foreign_keys = on");
+      db.exec(sql);
+      db.exec(`insert into profiles (id, tenant_id, role, display_name, created_at)
+      values ('upgrade-learner', 'ses', 'student', '受講者', 1)`);
+
+      const retired = stageId("typescript-basics");
+      db.prepare(`insert into stages (id, tenant_id, slug, title, status, created_at, updated_at)
+      values (?, 'ses', 'typescript-basics', '旧教材', 'published', 1, 1)`).run(retired);
+      db.prepare(`insert into sections (id, stage_id, title, "order", created_at)
+      values ('old-section', ?, '旧単元', 0, 1)`).run(retired);
+      db.exec(`
+      insert into lessons (id, section_id, title, type, "order", created_at, updated_at)
+        values ('old-lesson', 'old-section', '旧課題', 'quiz', 0, 1, 1);
+      insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+        values ('old-progress', 'ses', 'upgrade-learner', 'old-lesson', 1, 1);
+      insert into lesson_materials (id, lesson_id, path, file_name, created_at)
+        values ('old-material', 'old-lesson', 'old.pdf', 'old.pdf', 1);
+      insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_at)
+        values ('old-lesson', 1, 'old-hash', '旧本文', 'seed', 1);
+      insert into submissions (id, tenant_id, student_id, lesson_id, stage_title, assignment_title, code, submitted_at)
+        values ('old-submission', 'ses', 'upgrade-learner', 'old-lesson', '旧教材', '旧課題', '', 1);
+      insert into quizzes (id, lesson_id, created_at, updated_at)
+        values ('old-quiz', 'old-lesson', 1, 1);
+      insert into quiz_questions (id, quiz_id, kind, created_at, updated_at)
+        values ('old-question', 'old-quiz', 'single', 1, 1);
+      insert into quiz_options (id, question_id) values ('old-option', 'old-question');
+      insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, submitted_at)
+        values ('old-attempt', 'ses', 'old-quiz', 'upgrade-learner', 1, 1, 1, 1);
+    `);
+      const reused = [
+        "html-css-basics",
+        "javascript-basics",
+        "ui-components-basics",
+        "react-basics",
+        "sql-basics",
+        "auth-basics",
+      ];
+      for (const slug of ["typescript-basics", ...reused]) {
+        db.prepare(`insert into enrollments (id, tenant_id, user_id, stage_id, status, enrolled_at)
+        values (?, 'ses', 'upgrade-learner', ?, 'active', 1)`).run(
+          `enrollment-${slug}`,
+          stageId(slug),
+        );
+        db.prepare(`insert into certificates (id, tenant_id, user_id, stage_id, cert_code, stage_title, recipient_name, tenant_name, issued_at)
+        values (?, 'ses', 'upgrade-learner', ?, ?, '旧教材', '受講者', 'SES', 1)`).run(
+          `certificate-${slug}`,
+          stageId(slug),
+          `CERT-${slug}`,
+        );
+      }
+      db.prepare(`insert into announcements (id, tenant_id, stage_id, title, created_at, published_at)
+      values ('old-announcement', 'ses', ?, '旧講座のお知らせ', 1, 1)`).run(retired);
+      db.exec(`insert into stages (id, tenant_id, slug, title, status, created_at, updated_at)
+      values ('cms-stage', 'ses', 'web-fundamentals', 'CMS 教材', 'published', 1, 1);
+      insert into sections (id, stage_id, title, "order", created_at)
+      values ('cms-section', 'cms-stage', 'CMS 単元', 0, 1)`);
+
+      // 引き継ぐ stage の旧レッスンも消す。FK のない進捗・提出だけ残る事故を検出する。
+      const html = stageId("html-css-basics");
+      db.prepare(`insert into sections (id, stage_id, title, "order", created_at)
+        values ('reused-old-section', ?, '旧単元', 99, 1)`).run(html);
+      db.exec(`
+        insert into lessons (id, section_id, title, type, "order", created_at, updated_at)
+          values ('reused-old-lesson', 'reused-old-section', '旧本文', 'text', 0, 1, 1);
+        insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+          values ('reused-old-progress', 'ses', 'upgrade-learner', 'reused-old-lesson', 1, 1);
+        insert into submissions (id, tenant_id, student_id, lesson_id, stage_title, assignment_title, code, submitted_at)
+          values ('reused-old-submission', 'ses', 'upgrade-learner', 'reused-old-lesson', 'HTML/CSS', '旧課題', '', 1);
+      `);
+      const retainedLesson = db
+        .prepare(`select l.id from lessons l join sections s on s.id = l.section_id
+        where s.stage_id = ? and s.id <> 'reused-old-section' limit 1`)
+        .get(html) as { id: string };
+      db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+        values ('retained-progress', 'ses', 'upgrade-learner', ?, 1, 1)`).run(retainedLesson.id);
+
+      // 同じ seed を再適用しても削除・履歴作成が増殖しない。
+      db.exec(sql);
+      const revisions = db.prepare("select count(*) as count from lesson_revisions").get();
+      db.exec(sql);
+      expect(db.prepare("select count(*) as count from lesson_revisions").get()).toEqual(revisions);
+      expect(db.prepare("select id from stages where id = ?").get(retired)).toBeUndefined();
+      for (const [table, column, value] of [
+        ["sections", "id", "old-section"],
+        ["sections", "id", "reused-old-section"],
+        ["lessons", "id", "reused-old-lesson"],
+        ["lesson_progress", "id", "reused-old-progress"],
+        ["submissions", "id", "reused-old-submission"],
+        ["lessons", "id", "old-lesson"],
+        ["lesson_progress", "id", "old-progress"],
+        ["lesson_materials", "id", "old-material"],
+        ["lesson_revisions", "lesson_id", "old-lesson"],
+        ["submissions", "id", "old-submission"],
+        ["quizzes", "id", "old-quiz"],
+        ["quiz_questions", "id", "old-question"],
+        ["quiz_options", "id", "old-option"],
+        ["quiz_attempts", "id", "old-attempt"],
+        ["enrollments", "id", "enrollment-typescript-basics"],
+        ["certificates", "id", "certificate-typescript-basics"],
+      ] as const) {
+        expect(
+          db.prepare(`select * from ${table} where ${column} = ?`).get(value),
+          table,
+        ).toBeUndefined();
+      }
+      expect(
+        db.prepare("select stage_id from announcements where id = 'old-announcement'").get(),
+      ).toEqual({ stage_id: null });
+      for (const slug of reused) {
+        expect(db.prepare("select id from stages where slug = ?").get(slug)).toEqual({
+          id: stageId(slug),
+        });
+        expect(
+          db.prepare("select stage_id from enrollments where id = ?").get(`enrollment-${slug}`),
+        ).toEqual({ stage_id: stageId(slug) });
+        expect(
+          db.prepare("select stage_id from certificates where id = ?").get(`certificate-${slug}`),
+        ).toEqual({ stage_id: stageId(slug) });
+      }
+      expect(db.prepare("select title from stages where id = 'cms-stage'").get()).toEqual({
+        title: "CMS 教材",
+      });
+      expect(db.prepare("select stage_id from sections where id = 'cms-section'").get()).toEqual({
+        stage_id: "cms-stage",
+      });
+      expect(
+        db.prepare("select lesson_id from lesson_progress where id = 'retained-progress'").get(),
+      ).toEqual({ lesson_id: retainedLesson.id });
+      expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
+    } finally {
+      db.close();
+    }
+  }, 60_000);
 });
 
 describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
-  const sql = execSync("bun run packages/shared/scripts/export-seed-sql.ts", {
-    cwd: fileURLToPath(new URL("../../..", import.meta.url)),
-    encoding: "utf8",
-    maxBuffer: 256 * 1024 * 1024,
-    env: { ...process.env, DIALECT: "sqlite", CONTENT_ONLY: "1" },
-  });
+  const sql = exportSql(true);
 
   it("検証用 fixture を出さない", () => {
     expect(sql).not.toContain("seed-admin");
@@ -287,7 +501,7 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
   });
 
   it("教材ステージは残す", () => {
-    expect(sql).toContain("'typescript-basics'");
+    expect(sql).toContain("'salesforce-dev-basics'");
     expect(sql).toMatch(/insert into lessons /);
   });
 
@@ -309,7 +523,7 @@ vi.mock("@stella/content", async () => {
     buildContentManifest: () => ({
       courses: [
         {
-          id: "typescript-basics",
+          id: "salesforce-dev-basics",
           title: "教材ステージ（テスト用）",
           sections: [
             {
@@ -322,7 +536,7 @@ vi.mock("@stella/content", async () => {
       ],
       quizzes: [
         {
-          courseId: "typescript-basics",
+          courseId: "salesforce-dev-basics",
           lessonId: collidingLessonId,
           passScore: 80,
           questions: [

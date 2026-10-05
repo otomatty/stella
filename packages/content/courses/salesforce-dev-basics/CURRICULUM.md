@@ -23,13 +23,9 @@ Salesforce は「アプリを載せる土台」であって、開発者が最初
 
 ### 置き場所は「Salesforce案件」島
 
-`category` は新設の島 `Salesforce案件`(`@stella/shared/skill-map/islands` に追加、表示条件は他の島と同じ `it-basics`)です。
-本土の扇に混ぜなかった理由は 2 つあります。
-
-- **枝の本数**: 前提の `sql-basics` にはすでに `cli-basics` と `db-design-basics` がぶら下がっていて、
-  「1 つの星から出る枝は最大 2 本」(`manifest.test.ts` が検査)に当たる
-- **性格**: Salesforce は本土(FE / BE)の続きではなく、資格や AI と同じ「目的別の入り口」。
-  島は本土から橋線を引かないので、`sql-basics` の枝を増やさずに前提だけを効かせられる
+`category` は新設の島 `Salesforce案件`(`@stella/shared/skill-map/islands` に追加、表示条件は資格・AI の島と同じ `dev-env-basics` のクリア)です。
+Salesforce は本土のフルスタック研修に続けて全員が学ぶ内容ではなく、案件に応じて学ぶ内容です。
+資格や AI と同じ目的別の島に置き、本土から橋線を引かずに `sql-basics` の前提だけを効かせます。
 
 `prerequisites` の `sql-basics` はハードロックとして効き、未クリアの受講者にはロック理由として名前が出ます。
 島には他に catalog の講座を置いていないので、**割り当てのない受講者には島ごと現れません**

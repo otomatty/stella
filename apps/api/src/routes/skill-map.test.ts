@@ -990,3 +990,17 @@ describe("GET /api/skill-map/icons", () => {
     expect(body.icons["id-b"]).toBe(svgOf("b"));
   });
 });
+
+// 退役した Git 講座を使う固定入力で、複製の汎用機能を引き続き検証する。
+vi.mock("@stella/shared/skill-map/appearances", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@stella/shared/skill-map/appearances")>();
+  return {
+    ...actual,
+    appearancesOf: (slug: string) =>
+      slug === "git-basics" ? ["フロントエンド", "バックエンド"] : undefined,
+    appearancePrerequisitesOf: (slug: string) =>
+      slug === "git-basics"
+        ? { フロントエンド: ["javascript-basics"], バックエンド: ["node-basics"] }
+        : undefined,
+  };
+});

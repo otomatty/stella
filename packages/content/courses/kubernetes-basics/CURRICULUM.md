@@ -5,11 +5,11 @@
 ## 講座の概要
 
 - **到達目標 (canDo)**: Pod と Service でコンテナをクラスタに載せ、状態を kubectl で確認できる
-- **前提講座**: `cicd-basics`, `docker-basics` (クリアしていないと開けない)
-- **線の親**: `cicd-basics`（前提が 2 つあるので明示）
+- **前提講座**: `devops-basics`・`networking-ops-basics`・`deploy-ops-basics`。線の親は `networking-ops-basics`。
+- **線の親**: `networking-ops-basics`（前提は3つ、線はネットワーク運用から）
 - **参考にしたロードマップ**: roadmap.sh の DevOps ロードマップ（Container Orchestration）
 
-- **配置メモ**: 前提講座は `cicd-basics` と `docker-basics`。線の親は CI/CD（島の中）。Docker 入門はバックエンドの星で、クリアするまで Kubernetes は開けない（島への橋は引かない。ロック理由に Docker 入門の名前が出る）。
+- **配置メモ**: DevOps島のネットワーク運用の先に置きます。本土の公開・CIと運用も解放条件に含みますが、島への橋線は引きません。
 ## 収録を予定している内容
 
 - なぜコンテナをオーケストレーションするか

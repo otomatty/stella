@@ -1,14 +1,15 @@
 {
-  "title": "認証・認可入門",
+  "title": "認証・認可・セキュリティ",
   "category": "バックエンド",
   "color": "green",
-  "description": "【準備中】「誰か」と「何ができるか」を守る仕組みを、実装しながら学ぶ研修。",
-  "header": "認証・認可入門",
+  "description": "【準備中】本人確認とアクセス権を分け、安全なAPIを実装できるようになるための講座です。",
+  "header": "認証・認可・セキュリティ",
   "tenantId": "ses",
-  "prerequisites": ["rest-api-basics"],
-  "canDo": "セッションとトークンの違いを説明し、API にログインと権限チェックを実装できる",
+  "prerequisites": ["node-api-basics", "sql-basics"],
+  "canDo": "本人確認とアクセス権を分け、安全なAPIを実装できる",
   "theme": "サーバーとデータの基盤",
   "modules": {
     "m0-orientation": "M0. この講座について"
-  }
+  },
+  "parent": "sql-basics"
 }

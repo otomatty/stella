@@ -5,7 +5,7 @@
 ## 講座の概要
 
 - **到達目標 (canDo)**: リクエストがサーバーに届く経路を、DNS・TLS・ポートで説明できる
-- **前提講座**: `linux-ops-basics` (クリアしていないと開けない)
+- **前提講座**: `devops-basics` (クリアしていないと開けない)
 - **参考にしたロードマップ**: roadmap.sh の DevOps ロードマップ（Networking, Protocols and Security）
 
 - **配置メモ**: 基本情報 科目A のネットワーク知識とは別に、運用で触る経路の話に寄せる。

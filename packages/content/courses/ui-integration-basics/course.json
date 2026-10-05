@@ -1,0 +1,15 @@
+{
+  "title": "UIと既存機能の連携",
+  "category": "フロントエンド",
+  "color": "indigo",
+  "description": "【準備中】既存機能を保ちながらUIをつなぎ、統合テストで確認できるようになるための講座です。",
+  "header": "UIと既存機能の連携",
+  "tenantId": "ses",
+  "prerequisites": ["react-ui-basics"],
+  "canDo": "既存機能を保ちながらUIをつなぎ、統合テストで確認できる",
+  "theme": "Web の見た目と動き",
+  "modules": {
+    "m0-orientation": "M0. この講座について"
+  },
+  "parent": "react-ui-basics"
+}

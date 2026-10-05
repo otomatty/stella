@@ -15,13 +15,14 @@ import {
 } from "./appearances";
 
 describe("appearancesOf", () => {
-  it("Git はフロントエンドとバックエンドの両方に現れる", () => {
-    expect(appearancesOf("git-basics")).toEqual(["フロントエンド", "バックエンド"]);
+  it("退役した Git 講座は複製の対応表に残さない", () => {
+    expect(appearancesOf("git-basics")).toBeUndefined();
+    expect(appearancePrerequisitesOf("git-basics")).toBeUndefined();
   });
 
   it("表に無い slug は複製しない (扇は category のまま)", () => {
-    expect(appearancesOf("it-basics")).toBeUndefined();
-    expect(appearancesOf("typescript-basics")).toBeUndefined();
+    expect(appearancesOf("dev-env-basics")).toBeUndefined();
+    expect(appearancesOf("http-async-basics")).toBeUndefined();
   });
 
   it("対応表のキーは slug、値は空でない扇名", () => {
@@ -35,15 +36,13 @@ describe("appearancesOf", () => {
 });
 
 describe("appearancePrerequisitesOf", () => {
-  it("Git は扇ごとに前提が違う (FE は JS、BE は Node)", () => {
-    expect(appearancePrerequisitesOf("git-basics")).toEqual({
-      フロントエンド: ["javascript-basics"],
-      バックエンド: ["node-basics"],
-    });
+  it("退役した Git 講座は複製の対応表に残さない", () => {
+    expect(appearancesOf("git-basics")).toBeUndefined();
+    expect(appearancePrerequisitesOf("git-basics")).toBeUndefined();
   });
 
   it("表に無い slug は扇ごとの前提を持たない", () => {
-    expect(appearancePrerequisitesOf("it-basics")).toBeUndefined();
+    expect(appearancePrerequisitesOf("dev-env-basics")).toBeUndefined();
     expect(appearancePrerequisitesOf("javascript-basics")).toBeUndefined();
   });
 
