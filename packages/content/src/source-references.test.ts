@@ -288,6 +288,18 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(unitContentHash(unit, "static-web-01")).toBe(before);
   });
+  it("講座の予定時間 (plannedHours) の追加・変更では指紋を変えない", () => {
+    const { root, unit } = fixture();
+    const before = unitContentHash(unit, "static-web-01");
+    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      row.plannedHours = 123;
+    });
+    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      delete row.plannedHours;
+    });
+    expect(unitContentHash(unit, "static-web-01")).toBe(before);
+  });
   it.each(["id", "title"])(
     "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
     (field) => {

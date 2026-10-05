@@ -176,8 +176,15 @@ export function unitContentHash(
     modules: { [moduleId]: modules[moduleId] ?? moduleId },
     exercises: Object.fromEntries(unitExercises),
   };
-  // 学習内容と無関係な経路変更は除外し、演習・単元名は影響する単元だけに含める。
-  for (const key of ["prerequisites", "parent", "appearances", "appearancePrerequisites"])
+  // 学習内容と無関係な経路変更・予定時間 (学習ペースの見積もり) は除外し、演習・単元名は
+  // 影響する単元だけに含める。
+  for (const key of [
+    "prerequisites",
+    "parent",
+    "appearances",
+    "appearancePrerequisites",
+    "plannedHours",
+  ])
     delete courseContent[key];
   hash.update(`course.json\0${JSON.stringify(normalizedJson(courseContent))}`);
   // 課題本体は @stella/shared にあり、同じ ID のまま説明・テスト・採点設定を変えられる。

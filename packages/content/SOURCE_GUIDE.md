@@ -52,7 +52,7 @@
 
 新形式は初回公開から必須です。旧形式では新規単元と内容を改訂した単元の全公開教材を必須にし、未改訂単元の不足は警告にします。`sources/legacy-units.json` は導入時点の旧単元の内容指紋です。**教材を改訂したときに基準を再生成しません。** 本文・コード・課題・解答・評価・画像・環境の変更は内容改訂として扱います。前提・parentの付け替え、参照元の追記だけでは指紋を変えません。
 
-指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材と課題定義から基準を再計算し、`references.json` の `contentHash` も `hash:unit` で記録し直します (内容は変わっていないので版は上げません)。
+指紋には `course.json` の教材に関わる項目も含めます。単元名と `exercises` は該当単元のものだけを含め、講座のタイトル・説明・到達目標などは全単元に反映します。`exercises` の演習は ID・題名に加えて、seed が `packages/shared/src/problems` から引く課題定義 (説明・スターター・テスト・解答・採点設定) も含めるので、同じIDのまま課題を直しても改訂になります。前提・parent・扇への配置と予定時間 (`plannedHours`、学習ペースの見積もり) は除外し、JSONのキー順や空白だけの違いは正規化します。指紋の計算方法を更新する場合は、`bun run --filter=@stella/content baseline:legacy` で記録済みの `baseCommit` の教材と課題定義から基準を再計算し、`references.json` の `contentHash` も `hash:unit` で記録し直します (内容は変わっていないので版は上げません)。
 
 文字の差分から誤字だけか内容改訂かは自動で判断できません。誤字・表記・レイアウトだけの場合は、講師が差分を確認して `exemptions` に単元ID・変更後の `contentHash`・`reason`・`reviewer`・`reviewedAt` を残します。`reviewedAt` は実在する日付を YYYY-MM-DD で書きます。`2026-02-30` のように形だけ合う日付の例外は効きません。例外はその内容指紋だけに有効で、新形式の必須検査は免除しません。指紋は `bun run --filter=@stella/content hash:unit -- <slug>/<module>` で確かめます (`src/check-source-references.ts` の `unitContentHash`)。
 
