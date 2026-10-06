@@ -198,6 +198,56 @@ describe("課題の配布", () => {
     expect(conflict.reason).toBe("damaged");
     expect(conflict.files).toEqual(["README.md"]);
   });
+  it("再オープン時に配布ファイルが課題フォルダーの中へのリンクでも不足として示す", async () => {
+    const training = await root();
+    const withTests: TaskBundle = {
+      ...bundle,
+      files: { ...bundle.files, "tests/a.test.js": Buffer.from("test").toString("base64") },
+    };
+    const installed = await installTask(training, withTests);
+    await writeFile(path.join(installed, "notes.txt"), "learner notes");
+    await rm(path.join(installed, "README.md"));
+    await symlink(path.join(installed, "notes.txt"), path.join(installed, "README.md"));
+    // 途中のフォルダーがリンクでも同じ (中身が同じでも配布物とはみなさない)。
+    await rename(path.join(installed, "tests"), path.join(installed, "my-tests"));
+    await symlink(path.join(installed, "my-tests"), path.join(installed, "tests"));
+    const conflict = await conflictOf(installTask(training, withTests));
+    expect(conflict.reason).toBe("damaged");
+    expect(conflict.files.sort()).toEqual(["README.md", "tests/a.test.js"]);
+  });
+  it("横に配る途中でフォルダーをリンクに差し替えられても、学習フォルダーの外に書かない", async () => {
+    const training = await root();
+    const elsewhere = await root();
+    const target = path.join(training, "course/unit/q1");
+    await mkdir(target, { recursive: true });
+    await writeFile(path.join(target, "notes.txt"), "learner notes");
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    // 最初のファイル (index.js) を書いた直後、用意済みの .stella を外へのリンクに差し替える。
+    vi.mocked(writeFile).mockImplementationOnce(async (...args) => {
+      await actual.writeFile(...args);
+      await actual.rename(path.join(target, ".stella"), path.join(target, ".stella-moved"));
+      await symlink(elsewhere, path.join(target, ".stella"));
+    });
+    await expect(installTask(training, bundle)).rejects.toThrow("通常のフォルダー");
+    expect(await readdir(elsewhere)).toEqual([]);
+    expect(await readFile(path.join(target, "notes.txt"), "utf8")).toBe("learner notes");
+    // 自分が書いたファイルは片付ける。
+    expect((await readdir(target)).sort()).toEqual([".stella", ".stella-moved", "notes.txt"]);
+  });
+  it("初めての配布の途中で親フォルダーをリンクに差し替えられても、外に書かない", async () => {
+    const training = await root();
+    const elsewhere = await root();
+    const unit = path.join(training, "course/unit");
+    await mkdir(unit, { recursive: true });
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(writeFile).mockImplementationOnce(async (...args) => {
+      await actual.writeFile(...args);
+      await actual.rename(unit, path.join(training, "course/unit-moved"));
+      await symlink(elsewhere, unit);
+    });
+    await expect(installTask(training, bundle)).rejects.toThrow("通常のフォルダー");
+    expect(await readdir(elsewhere)).toEqual([]);
+  });
   it.each([".stella/support.json", ".stella/distribution.json", "private/solution.js", "./x.js"])(
     "配布物に %s があれば配らない",
     async (rel) => {

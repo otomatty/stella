@@ -6,7 +6,11 @@ import {
   type EnvironmentRequirement,
 } from "../../shared/src/tasks/environment.js";
 import { isSafeRelativePattern } from "../../shared/src/tasks/manifest.js";
-import { FIXED_START_SUFFIX, type TaskBundle } from "../../shared/src/tasks/catalog.js";
+import {
+  bundleSizeProblem,
+  FIXED_START_SUFFIX,
+  type TaskBundle,
+} from "../../shared/src/tasks/catalog.js";
 import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
   publicReferences,
@@ -199,6 +203,8 @@ export function readUnit(
     };
     const starter = collectFiles(join(taskDir, "starter"));
     const files = assemble(starter);
+    const tooLarge = bundleSizeProblem(files);
+    if (tooLarge) throw new Error(`${tooLarge}: ${definition.id}`);
     const privateFiles = {
       ...collectFiles(join(taskDir, "private/solution"), "solution"),
       ...collectFiles(join(taskDir, "private/variants"), "variants"),
@@ -250,6 +256,8 @@ function readFixedStart(
   if (definition.kind.startsWith("assessment-"))
     throw new Error(`確認A・Bには固定した開始点を置けません: ${definition.id}`);
   const fixedStart = assemble(collectFiles(dir));
+  const tooLarge = bundleSizeProblem(fixedStart);
+  if (tooLarge) throw new Error(`固定した開始点の${tooLarge}: ${definition.id}`);
   const protectedOf = (all: Record<string, string>) =>
     Object.keys(all)
       .filter((path) => matchesPattern(path, definition.protected))

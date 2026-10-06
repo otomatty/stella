@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { TASK_BUNDLE_LIMITS } from "../../shared/src/tasks/catalog.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
@@ -197,6 +198,19 @@ describe("format 2 の教材", () => {
       const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
       writeFileSync(path, JSON.stringify({ ...raw, protected: ["tests/**", "config.json"] }));
       expect(() => buildContentManifest(join(root, "courses"))).toThrow("protected");
+    });
+    it("大きすぎる配布ファイル・開始点は検査で落とす", () => {
+      const big = "x".repeat(TASK_BUNDLE_LIMITS.fileBytes + 1);
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ "vendor.js": big }), "courses")),
+      ).toThrow("固定した開始点の");
+      const half = "x".repeat(Math.ceil(TASK_BUNDLE_LIMITS.totalBytes / 2) + 1);
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ "a.js": half, "b.js": half }), "courses")),
+      ).toThrow("合計が大きすぎます");
+      const root = fixture();
+      writeFileSync(join(root, taskRel, "starter/vendor.js"), big);
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("大きすぎます");
     });
     it("private/ や .stella を置けない", () => {
       expect(() =>

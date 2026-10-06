@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import {
+  bundleSizeProblem,
   parsePublicTaskBundle,
   type TaskBundleResponse,
   type TaskSummary,
@@ -148,6 +149,12 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       contentHash: row.contentHash,
       files: JSON.parse(row.files),
     });
+    // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
+    const tooLarge = bundleSizeProblem(bundle.files);
+    if (tooLarge) {
+      console.error("[tasks] 固定した開始点が上限を超えています", row.id, tooLarge);
+      throw new ApiError("固定した開始点を配れません。講師に相談してください", 500);
+    }
     await db
       .insert(taskFixedStartUses)
       .values({

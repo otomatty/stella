@@ -50,6 +50,35 @@ export interface TaskBundleResponse {
 }
 
 /**
+ * 配布一式 (通常の配布・固定した開始点) の大きさの上限。どちらも D1 の 1 行 (約 2MB) に
+ * base64 の JSON で入り、Worker が 1 回の要求で丸ごと読む。base64 で 4/3 倍になっても
+ * 1 行に収まり、拡張が配布ファイルのハッシュを取る上限 (10MB) より十分小さい大きさにする。
+ */
+export const TASK_BUNDLE_LIMITS = {
+  fileBytes: 1024 * 1024,
+  totalBytes: 1_200_000,
+} as const;
+
+function decodedBytes(base64: string): number {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/** 配布一式が上限を超えていれば理由を返す (教材の検査と API の両方で使う)。 */
+export function bundleSizeProblem(files: Record<string, string>): string | undefined {
+  let total = 0;
+  for (const [path, encoded] of Object.entries(files)) {
+    const bytes = decodedBytes(encoded);
+    if (bytes > TASK_BUNDLE_LIMITS.fileBytes)
+      return `${path} が大きすぎます (1 ファイル ${TASK_BUNDLE_LIMITS.fileBytes} バイトまで)`;
+    total += bytes;
+  }
+  if (total > TASK_BUNDLE_LIMITS.totalBytes)
+    return `配布ファイルの合計が大きすぎます (${total} バイト。${TASK_BUNDLE_LIMITS.totalBytes} バイトまで)`;
+  return undefined;
+}
+
+/**
  * 固定した開始点を置くフォルダー名の接尾辞 (`<課題>-fixed-start/`)。元の課題フォルダーの
  * 隣に別のフォルダーとして置き、学習者のファイルに触れない。課題 ID の末尾には使えない。
  */

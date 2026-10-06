@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import type { TaskBundle, TaskBundleResponse, TaskSummary } from "@stella/shared/tasks/catalog";
+import {
+  TASK_BUNDLE_LIMITS,
+  type TaskBundle,
+  type TaskBundleResponse,
+  type TaskSummary,
+} from "@stella/shared/tasks/catalog";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
 import {
@@ -213,6 +218,18 @@ describe("課題の配布 API (実 SQLite)", () => {
     await addFixedStart("b".repeat(64));
     expect((await json<TaskBundleResponse>(await bundleOf())).fixedStart).toBe(false);
     expect((await fixedStart()).status).toBe(404);
+    expect(await db.select().from(taskFixedStartUses)).toEqual([]);
+  });
+
+  it("上限を超えた開始点は配らず、利用も記録しない", async () => {
+    fixedStartFiles["vendor.js"] = Buffer.alloc(TASK_BUNDLE_LIMITS.fileBytes + 1, 1).toString(
+      "base64",
+    );
+    await addFixedStart();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect((await fixedStart()).status).toBe(500);
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
     expect(await db.select().from(taskFixedStartUses)).toEqual([]);
   });
 

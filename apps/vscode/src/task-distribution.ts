@@ -1,8 +1,10 @@
+import { constants } from "node:fs";
 import {
   lstat,
   mkdir,
   mkdtemp,
   readdir,
+  realpath,
   rename,
   rm,
   rmdir,
@@ -17,7 +19,7 @@ import {
 } from "@stella/shared/tasks/catalog";
 import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/manifest";
 import type { SupportEvent } from "@stella/shared/tasks/submission";
-import { isFileInRoot, LIMITS, readFileInRoot } from "./runner/files.js";
+import { LIMITS, readFileInRoot } from "./runner/files.js";
 
 /** 通常の配布と、前の実装が壊れていて進めないときの「固定した開始点」(01 §4)。 */
 export type TaskVariant = "standard" | "fixed-start";
@@ -99,6 +101,62 @@ async function ensureDirectoryIn(
   return current;
 }
 
+function isInside(dir: string, target: string): boolean {
+  const rel = path.relative(dir, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/**
+ * base から dir までの各フォルダーが、リンクでない本物のフォルダーかを書き込み・削除の直前に
+ * 確かめる (realpath でも base の中にあることを確かめる)。準備の途中でフォルダーをリンクに
+ * 差し替えられても、学習フォルダーの外を書き換えないため。
+ */
+async function assertPlainDirectory(base: string, dir: string): Promise<void> {
+  const rel = path.relative(base, dir);
+  if (!isInside(base, dir)) throw new Error(`配布先が学習フォルダーの外です: ${dir}`);
+  let current = base;
+  for (const segment of rel ? rel.split(path.sep) : []) {
+    current = path.join(current, segment);
+    const found = await info(current);
+    if (!found?.isDirectory() || found.isSymbolicLink())
+      throw new Error(`配布先に通常のフォルダーが必要です: ${current}`);
+  }
+  const [realBase, realDir] = await Promise.all([realpath(base), realpath(dir)]);
+  if (!isInside(realBase, realDir)) throw new Error(`配布先が学習フォルダーの外です: ${dir}`);
+}
+
+async function isPlainDirectory(base: string, dir: string): Promise<boolean> {
+  return assertPlainDirectory(base, dir).then(
+    () => true,
+    () => false,
+  );
+}
+
+/** 新しいファイルとしてだけ作る。既存のファイルにもリンクにも書かない (O_EXCL・O_NOFOLLOW)。 */
+const CREATE_NEW =
+  constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0);
+
+async function writeNewFile(base: string, dir: string, name: string, data: Buffer): Promise<void> {
+  await assertPlainDirectory(base, dir);
+  await writeFile(path.join(dir, name), data, { flag: CREATE_NEW });
+}
+
+/**
+ * 課題フォルダーの中の通常のファイルか。途中のフォルダーも最後のファイルもリンクなら false。
+ * 課題フォルダーの中を指すリンク (README.md → notes.txt など) も配布物とはみなさない。
+ */
+async function isPlainFile(root: string, rel: string): Promise<boolean> {
+  const segments = rel.split("/");
+  let current = root;
+  for (let i = 0; i < segments.length; i += 1) {
+    current = path.join(current, segments[i]);
+    const found = await info(current);
+    if (!found || found.isSymbolicLink()) return false;
+    if (i === segments.length - 1 ? !found.isFile() : !found.isDirectory()) return false;
+  }
+  return true;
+}
+
 function assertDistributable(bundle: TaskBundle): string[] {
   const parsed = parseTaskManifest(bundle.manifest);
   if (!parsed.ok || bundle.manifest.id.split("/").length !== 3)
@@ -171,6 +229,10 @@ async function changedFiles(root: string, bundle: TaskBundle): Promise<string[]>
   const changed: string[] = [];
   for (const [rel, encoded] of Object.entries(bundle.files)) {
     if ((await collisions(root, [rel])).length === 0) continue;
+    if (!(await isPlainFile(root, rel))) {
+      changed.push(rel);
+      continue;
+    }
     try {
       const current = await readFileInRoot(root, rel, LIMITS.protectedFileBytes);
       if (!current.equals(Buffer.from(encoded, "base64"))) changed.push(rel);
@@ -210,22 +272,33 @@ function filesToWrite(
 
 /**
  * 既存の (空でない) 課題フォルダーに、同じ名前のファイルが無いと確かめたうえで足す。
- * どれも新規作成 (`wx`) で、失敗したら自分が作ったものだけを片付ける。
+ * フォルダーを先にそろえ、ファイルは 1 つずつ書く直前にフォルダーの並びを確かめ直して
+ * 新規作成だけで書く。失敗したら自分が作ったものだけを、学習フォルダーの中に限って片付ける。
  */
-async function installBeside(root: string, entries: [string, Buffer][]): Promise<void> {
+async function installBeside(
+  base: string,
+  root: string,
+  entries: [string, Buffer][],
+): Promise<void> {
   const createdFiles: string[] = [];
   const createdDirs: string[] = [];
   try {
+    const targets: [dir: string, name: string, data: Buffer][] = [];
     for (const [rel, data] of entries) {
       const segments = rel.split("/");
       const dir = await ensureDirectoryIn(root, segments.slice(0, -1), createdDirs);
-      const file = path.join(dir, segments[segments.length - 1]);
-      await writeFile(file, data, { flag: "wx" });
-      createdFiles.push(file);
+      targets.push([dir, segments[segments.length - 1], data]);
+    }
+    for (const [dir, name, data] of targets) {
+      await writeNewFile(base, dir, name, data);
+      createdFiles.push(path.join(dir, name));
     }
   } catch (error) {
-    for (const file of createdFiles.reverse()) await rm(file, { force: true });
-    for (const dir of createdDirs.reverse()) await rmdir(dir).catch(() => undefined);
+    // リンクに差し替えられたフォルダーの先は消さない (学習フォルダーの外かもしれない)。
+    for (const file of createdFiles.reverse())
+      if (await isPlainDirectory(base, path.dirname(file))) await rm(file, { force: true });
+    for (const dir of createdDirs.reverse())
+      if (await isPlainDirectory(base, dir)) await rmdir(dir).catch(() => undefined);
     throw error;
   }
 }
@@ -270,7 +343,7 @@ export async function installTask(
     if (receipt.contentHash !== bundle.contentHash)
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
     const missing: string[] = [];
-    for (const rel of paths) if (!(await isFileInRoot(root, rel))) missing.push(rel);
+    for (const rel of paths) if (!(await isPlainFile(root, rel))) missing.push(rel);
     if (missing.length > 0) throw new TaskInstallConflict("damaged", root, missing);
     return root;
   }
@@ -280,7 +353,7 @@ export async function installTask(
       entries.map(([rel]) => rel),
     );
     if (clashes.length > 0) throw new TaskInstallConflict("occupied", root, clashes);
-    await installBeside(root, entries);
+    await installBeside(base, root, entries);
     return root;
   }
   // 同じ親の下で組み立て、完成したディレクトリだけを rename で公開する。
@@ -290,14 +363,16 @@ export async function installTask(
     for (const [rel, data] of entries) {
       const parts = rel.split("/");
       const dir = await ensureDirectoryIn(staging, parts.slice(0, -1));
-      await writeFile(path.join(dir, parts[parts.length - 1]), data, { flag: "wx" });
+      await writeNewFile(base, dir, parts[parts.length - 1], data);
     }
+    // 公開の直前にも、親のフォルダーがリンクに差し替えられていないか確かめる。
+    await assertPlainDirectory(base, staging);
     // Windows でも rename できるよう空の既存フォルダーだけを除く。
     // 配布中にファイルが追加された場合は rmdir が失敗し、そのファイルを保持する。
     if (rootInfo) await rmdir(root);
     await rename(staging, root);
     return root;
   } finally {
-    await rm(staging, { recursive: true, force: true });
+    if (await isPlainDirectory(base, parent)) await rm(staging, { recursive: true, force: true });
   }
 }
