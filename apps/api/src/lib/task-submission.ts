@@ -27,6 +27,7 @@ import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { canAccessTasks } from "./task-access.js";
+import { withRecordedFixedStart } from "./task-fixed-start.js";
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
   let input: TaskSubmissionInput;
@@ -75,6 +76,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   } catch (e) {
     throw new ApiError(e instanceof Error ? e.message : "提出が不正です", 400);
   }
+  const supportLog = await withRecordedFixedStart(db, caller.id, task.id, input.support);
   const bucket = env.SUBMISSIONS_BUCKET;
   if (!bucket) throw new ApiError("提出ファイルの保存先が未設定です", 503);
   const id = crypto.randomUUID();
@@ -116,7 +118,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           testHashes: input.protected,
           explanation: input.explanation,
           debuggingRecord: input.debuggingRecord ?? null,
-          supportLog: input.support,
+          supportLog,
           machineCheck: verified.check,
           taskSnapshot: { ...bundle, files: { "README.md": bundle.files["README.md"] ?? "" } },
           assessedSkills: definition.skills.assesses,

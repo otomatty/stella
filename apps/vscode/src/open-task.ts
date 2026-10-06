@@ -1,25 +1,298 @@
-import { homedir } from "node:os";
-import path from "node:path";
-import * as vscode from "vscode";
-import type { TaskBundle } from "@stella/shared/tasks/catalog";
-import { apiRequest } from "./api.js";
-import { installTask } from "./task-distribution.js";
+/**
+ * LMS から課題を受け取り、学習フォルダーに準備して開く (07 §4.4)。
+ *
+ * - Web の「VS Code で開く」(接続コード付きの task URI) → openDistributedTask
+ * - STELLA: 固定した開始点から始める → 前の実装が壊れていて進めないとき (01 §4)
+ * - STELLA: 学習フォルダーを選ぶ → 学習フォルダーの場所を変える
+ *
+ * 学習フォルダーはウィンドウの唯一のフォルダーとして開く。ワークスペースへフォルダーを
+ * 足すと無題のマルチルートになるため。フォルダーを開くとウィンドウが読み込み直されて
+ * 拡張も起動し直すので、開きたい課題を globalState に控え、起動時に課題文を開く。
+ */
 
-export async function openDistributedTask(taskId: string): Promise<void> {
-  const { bundle } = await apiRequest<{ bundle: TaskBundle }>(
-    `/api/tasks/bundle?${new URLSearchParams({ taskId })}`,
+import path from "node:path";
+import type { TaskBundle, TaskBundleResponse } from "@stella/shared/tasks/catalog";
+import * as vscode from "vscode";
+import { apiRequest } from "./api.js";
+import { findTaskRoot, loadTask } from "./runner/run-task.js";
+import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
+import { readDistribution } from "./task-submission.js";
+import { resolveTrainingRoot } from "./training-folder.js";
+
+type StateStore = Pick<vscode.Memento, "get" | "update">;
+
+export const PENDING_TASK_KEY = "stella.pendingTaskOpen";
+/** 読み込み直しを待つ時間。過ぎた控えは捨てる (後で同じフォルダーを開いても勝手に開かない)。 */
+const PENDING_TTL_MS = 10 * 60 * 1000;
+
+export interface PendingTaskOpen {
+  trainingRoot: string;
+  taskRoot: string;
+  at: number;
+}
+
+let output: vscode.OutputChannel | undefined;
+function preparationLog(): vscode.OutputChannel {
+  output ??= vscode.window.createOutputChannel("STELLA 課題の準備");
+  return output;
+}
+
+function isInside(dir: string, target: string): boolean {
+  const rel = path.relative(dir, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/** 開いているウィンドウのフォルダーに、課題フォルダーが含まれているか。 */
+export function windowShowsFolder(folders: readonly string[], target: string): boolean {
+  return folders.some((folder) => isInside(folder, target));
+}
+
+export function readPendingTaskOpen(value: unknown, now = Date.now()): PendingTaskOpen | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const { trainingRoot, taskRoot, at } = value as Record<string, unknown>;
+  if (
+    typeof trainingRoot !== "string" ||
+    typeof taskRoot !== "string" ||
+    typeof at !== "number" ||
+    !path.isAbsolute(trainingRoot) ||
+    !isInside(trainingRoot, taskRoot) ||
+    now - at > PENDING_TTL_MS ||
+    at > now + 60_000
+  )
+    return undefined;
+  return { trainingRoot, taskRoot, at };
+}
+
+function workspaceFolders(): string[] {
+  return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
+}
+
+async function showTaskReadme(taskRoot: string): Promise<void> {
+  const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
+  await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(readme));
+  // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開けている)。
+  await vscode.commands.executeCommand("revealInExplorer", readme).then(
+    () => undefined,
+    () => undefined,
   );
-  if (bundle.manifest.id !== taskId) throw new Error("配布する課題の ID が一致しません");
-  const trainingRoot = path.join(homedir(), "web-training");
-  const root = await installTask(trainingRoot, bundle);
-  if (!vscode.workspace.workspaceFolders?.some((f) => f.uri.fsPath === trainingRoot)) {
-    vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders?.length ?? 0, 0, {
-      uri: vscode.Uri.file(trainingRoot),
-      name: "web-training",
-    });
+}
+
+/**
+ * 課題文を開く。学習フォルダーがまだウィンドウに無ければ、学習フォルダーを開く
+ * (読み込み直したあと resumePendingTaskOpen が課題文を開く)。
+ */
+async function openTaskInWindow(
+  state: StateStore,
+  trainingRoot: string,
+  taskRoot: string,
+): Promise<void> {
+  const folders = workspaceFolders();
+  if (windowShowsFolder(folders, taskRoot)) {
+    await showTaskReadme(taskRoot);
+    return;
   }
-  const readme = await vscode.workspace.openTextDocument(
-    vscode.Uri.file(path.join(root, "README.md")),
+  let forceNewWindow = false;
+  if (folders.length > 0 || vscode.workspace.workspaceFile) {
+    const here = "このウィンドウで開く";
+    const other = "新しいウィンドウで開く";
+    const choice = await vscode.window.showInformationMessage(
+      "課題を準備しました。学習フォルダーを開いて課題文を表示します",
+      {
+        modal: true,
+        detail: `学習フォルダー: ${trainingRoot}\n課題フォルダー: ${taskRoot}\n\nこのウィンドウで開くと、いま開いているフォルダーは閉じます。`,
+      },
+      here,
+      other,
+    );
+    if (!choice) return;
+    forceNewWindow = choice === other;
+  }
+  const pending: PendingTaskOpen = { trainingRoot, taskRoot, at: Date.now() };
+  await state.update(PENDING_TASK_KEY, pending);
+  await vscode.commands.executeCommand(
+    "vscode.openFolder",
+    vscode.Uri.file(trainingRoot),
+    forceNewWindow ? { forceNewWindow: true } : { forceReuseWindow: true },
   );
-  await vscode.window.showTextDocument(readme);
+}
+
+/** 起動時に、学習フォルダーを開く前に控えた課題文を開く。別のウィンドウ向けの控えは残す。 */
+export async function resumePendingTaskOpen(state: StateStore): Promise<void> {
+  const raw = state.get<unknown>(PENDING_TASK_KEY);
+  if (raw === undefined) return;
+  const pending = readPendingTaskOpen(raw);
+  if (!pending) {
+    await state.update(PENDING_TASK_KEY, undefined);
+    return;
+  }
+  if (!windowShowsFolder(workspaceFolders(), pending.taskRoot)) return;
+  await state.update(PENDING_TASK_KEY, undefined);
+  await showTaskReadme(pending.taskRoot);
+}
+
+const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {
+  occupied:
+    "準備先のファイルを別の場所へ移すか、フォルダーの名前を変えてから、もう一度「VS Code で開く」を押してください。",
+  updated:
+    "今の課題フォルダーは前の版のまま開いて、続きの作業と提出ができます。新しい版で始めるときは、課題フォルダーの名前を変えてから開き直してください。",
+  damaged:
+    "足りないファイルは自動では戻しません。課題フォルダーの名前を変えてから開き直すと、新しく準備します。自分のファイルは名前を変えたフォルダーに残ります。",
+};
+
+/** 上書きせずに止めた準備の、準備先と衝突したファイルを示す (04 §6)。 */
+async function showConflict(
+  state: StateStore,
+  trainingRoot: string,
+  conflict: TaskInstallConflict,
+): Promise<void> {
+  const log = preparationLog();
+  log.appendLine(`[${new Date().toLocaleString()}] 課題を準備できませんでした (上書きしません)`);
+  log.appendLine(`理由: ${conflict.summary}`);
+  log.appendLine(`準備先: ${conflict.target}`);
+  log.appendLine(`衝突したファイル (${conflict.files.length} 件):`);
+  for (const file of conflict.files) log.appendLine(`  - ${file}`);
+  log.appendLine(CONFLICT_GUIDANCE[conflict.reason]);
+  log.appendLine("");
+  const shown = conflict.files.slice(0, 10).map((file) => `・${file}`);
+  if (conflict.files.length > shown.length)
+    shown.push(`ほか ${conflict.files.length - shown.length} 件 (一覧は出力パネル)`);
+  const openExisting = "今のフォルダーを開く";
+  const showList = "一覧を表示";
+  const reveal = "準備先を表示";
+  const actions =
+    conflict.reason === "occupied" ? [showList, reveal] : [openExisting, showList, reveal];
+  const choice = await vscode.window.showWarningMessage(
+    `${conflict.summary}。学習者のファイルは上書きしません`,
+    {
+      modal: true,
+      detail: [
+        `準備先: ${conflict.target}`,
+        ...(shown.length > 0 ? ["衝突したファイル:", ...shown] : []),
+        "",
+        CONFLICT_GUIDANCE[conflict.reason],
+      ].join("\n"),
+    },
+    ...actions,
+  );
+  if (choice === openExisting) await openTaskInWindow(state, trainingRoot, conflict.target);
+  else if (choice === showList) log.show(true);
+  else if (choice === reveal)
+    await vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(conflict.target));
+}
+
+async function prepareAndOpen(
+  state: StateStore,
+  bundle: TaskBundle,
+  variant: TaskVariant,
+): Promise<void> {
+  const trainingRoot = await resolveTrainingRoot(state);
+  if (!trainingRoot) return;
+  let taskRoot: string;
+  try {
+    taskRoot = await installTask(trainingRoot, bundle, { variant });
+  } catch (error) {
+    if (error instanceof TaskInstallConflict) {
+      await showConflict(state, trainingRoot, error);
+      return;
+    }
+    throw error;
+  }
+  await openTaskInWindow(state, trainingRoot, taskRoot);
+}
+
+function bundleUrl(taskId: string): string {
+  return `/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
+}
+
+/** Web の「VS Code で開く」から来た課題を準備して開く。 */
+export async function openDistributedTask(
+  context: Pick<vscode.ExtensionContext, "globalState">,
+  taskId: string,
+): Promise<void> {
+  const { bundle } = await apiRequest<TaskBundleResponse>(bundleUrl(taskId));
+  if (bundle.manifest.id !== taskId) throw new Error("配布する課題の ID が一致しません");
+  await prepareAndOpen(context.globalState, bundle, "standard");
+}
+
+/** 開いているファイルの課題フォルダーから、LMS の課題 ID を引く (ワークスペースの中だけ)。 */
+async function activeTaskId(): Promise<string | undefined> {
+  const active = vscode.window.activeTextEditor?.document.uri;
+  if (active?.scheme !== "file") return undefined;
+  const owner = workspaceFolders().find((folder) => isInside(folder, active.fsPath));
+  if (!owner) return undefined;
+  const root = await findTaskRoot(active.fsPath, [owner]);
+  if (!root) return undefined;
+  const receipt = await readDistribution(root).catch(() => undefined);
+  if (receipt) return receipt.taskId;
+  const loaded = await loadTask(root);
+  return loaded.ok ? loaded.manifest.id : undefined;
+}
+
+/**
+ * 前の課題の実装が壊れていて、この課題を始められないときに、固定した開始点を配る。
+ * 今の課題フォルダーは変えず、隣の `<課題>-fixed-start/` に準備する。使ったことは
+ * LMS と `.stella/support.json` に記録され、提出は「支援付き」になる。
+ */
+async function startFromFixedStart(state: StateStore): Promise<void> {
+  const taskId = await activeTaskId();
+  if (!taskId) {
+    void vscode.window.showInformationMessage(
+      "固定した開始点を使う課題のファイル (課題文など) を開いてから実行してください",
+    );
+    return;
+  }
+  const { fixedStart } = await apiRequest<TaskBundleResponse>(bundleUrl(taskId));
+  if (!fixedStart) {
+    void vscode.window.showInformationMessage(
+      "この課題には固定した開始点がありません。進められないときは「STELLA: 講師に相談する」を使ってください",
+    );
+    return;
+  }
+  const use = "固定した開始点を使う";
+  const choice = await vscode.window.showWarningMessage(
+    "固定した開始点から始めますか",
+    {
+      modal: true,
+      detail: [
+        "前の課題の実装が壊れていて、この課題を始められないときに使います。",
+        "・前の課題まで動く状態のファイルを、別のフォルダー (<課題>-fixed-start) に準備します。今の課題フォルダーは変えません。",
+        "・使ったことは記録され、この課題の提出は「支援付き」になります。罰ではなく、学習の記録です。",
+      ].join("\n"),
+    },
+    use,
+  );
+  if (choice !== use) return;
+  const { bundle } = await apiRequest<{ bundle: TaskBundle }>("/api/tasks/fixed-start", {
+    method: "POST",
+    body: { taskId },
+  });
+  if (bundle.manifest.id !== taskId) throw new Error("配布する課題の ID が一致しません");
+  await prepareAndOpen(state, bundle, "fixed-start");
+}
+
+async function reportErrors(work: () => Promise<void>): Promise<void> {
+  try {
+    await work();
+  } catch (error) {
+    void vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+  }
+}
+
+export function registerTaskOpening(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(
+    preparationLog(),
+    vscode.commands.registerCommand("stella.chooseTrainingFolder", () =>
+      reportErrors(async () => {
+        const root = await resolveTrainingRoot(context.globalState, { ask: true });
+        if (root)
+          void vscode.window.showInformationMessage(
+            `学習フォルダーを ${root} にしました。次に開く課題から、この中に準備します`,
+          );
+      }),
+    ),
+    vscode.commands.registerCommand("stella.startFromFixedStart", () =>
+      reportErrors(() => startFromFixedStart(context.globalState)),
+    ),
+  );
+  void reportErrors(() => resumePendingTaskOpen(context.globalState));
 }

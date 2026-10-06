@@ -584,7 +584,7 @@ function buildOneCourse(
     if (config.format === 2) {
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         lessons.push({
-          id: `task-${moduleDir}-${task.definition.id.split("/")[2]}`,
+          id: task.lessonId,
           title: `${task.definition.title} 課題文`,
           type: "text",
           duration: "5分",

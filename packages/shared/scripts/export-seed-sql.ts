@@ -571,14 +571,22 @@ for (const [order, task] of content.tasks.entries()) {
   const d = task.definition;
   const sectionId = sectionIdMap.get(`ses:${task.courseId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
+  // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
+  const lessonId = lessonUuid("ses", task.courseId, task.lessonId);
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1;`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${strLit(lessonId)}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id;`,
   );
   lines.push(
     `insert into task_revisions (task_id, content_hash, definition, bundle, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}) on conflict (task_id, content_hash) do nothing;`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,
+  );
+  // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
+  lines.push(
+    task.fixedStart
+      ? `insert into task_fixed_starts (task_id, content_hash, files) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(task.fixedStart))}) on conflict (task_id) do update set content_hash = excluded.content_hash, files = excluded.files;`
+      : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
 

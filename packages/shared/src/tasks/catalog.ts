@@ -33,6 +33,8 @@ export interface TaskSummary {
   skills: { uses: string[]; assesses: string[] };
   estimatedMinutes: number;
   status: TaskStatus;
+  /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
+  lessonId: string | null;
 }
 /** 公開用の明示的なファイル一覧。private とレビュー用の素材はここに載せない。 */
 export interface TaskBundle {
@@ -40,6 +42,18 @@ export interface TaskBundle {
   contentHash: string;
   files: Record<string, string>;
 }
+
+/** `GET /api/tasks/bundle` の応答。`fixedStart` はこの版に固定した開始点があるか。 */
+export interface TaskBundleResponse {
+  bundle: TaskBundle;
+  fixedStart: boolean;
+}
+
+/**
+ * 固定した開始点を置くフォルダー名の接尾辞 (`<課題>-fixed-start/`)。元の課題フォルダーの
+ * 隣に別のフォルダーとして置き、学習者のファイルに触れない。課題 ID の末尾には使えない。
+ */
+export const FIXED_START_SUFFIX = "-fixed-start";
 
 /**
  * API・配布・教材検査で同じ公開境界を使い、余分な top-level 情報を除く。

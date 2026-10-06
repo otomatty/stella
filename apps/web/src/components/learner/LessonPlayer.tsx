@@ -47,6 +47,7 @@ import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
 import { CodeLessonHandoff } from "./CodeLessonHandoff";
+import { TaskLessonHandoff } from "./TaskLessonHandoff";
 import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
 import { QuizPlayer } from "./QuizPlayer";
 import type { Tenant } from "@/data/types";
@@ -442,6 +443,9 @@ export const LessonPlayer = ({
                       </span>
                     ) : null}
                   </div>
+                  {stage.format === 2 && isText ? (
+                    <TaskLessonHandoff stageId={stage.id} lessonId={lessonObj.id} />
+                  ) : null}
                 </div>
               </div>
 
