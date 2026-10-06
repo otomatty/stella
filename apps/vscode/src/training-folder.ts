@@ -17,8 +17,20 @@ export const DEFAULT_TRAINING_FOLDER = "web-training";
 
 type Memento = Pick<vscode.Memento, "get" | "update">;
 
-function samePath(a: string, b: string): boolean {
-  return path.relative(path.resolve(a), path.resolve(b)) === "";
+/**
+ * 同じ場所を指すパスか。Windows・macOS は大文字と小文字を区別しない (VS Code の fsPath は
+ * Windows のドライブ文字を小文字にするので、表記の違いで別の場所と判断しないため)。
+ */
+export function samePath(
+  a: string,
+  b: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  const normalize = (p: string) => {
+    const resolved = path.resolve(p);
+    return platform === "win32" || platform === "darwin" ? resolved.toLowerCase() : resolved;
+  };
+  return normalize(a) === normalize(b);
 }
 
 /** 学習フォルダーに使えない場所なら理由を返す。ドライブの直下とホームフォルダーそのものは避ける。 */

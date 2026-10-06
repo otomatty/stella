@@ -9,7 +9,7 @@
  * 足すと無題のマルチルートになるため。フォルダーを開くと、ウィンドウが読み込み直される
  * (拡張も起動し直す) か、学習フォルダーをすでに開いている別のウィンドウへ切り替わる。
  * どちらでも課題文を開けるよう、開く課題を控え (pending-task-open.ts)、学習フォルダーの
- * ウィンドウが起動したとき・前面に来たときに受け取る。このウィンドウが学習フォルダーを
+ * ウィンドウが起動したとき・前面に来たときに受け取る。このウィンドウが学習フォルダーだけを
  * 開いていれば、読み込み直さずにそのまま課題文を開く。
  */
 
@@ -21,7 +21,7 @@ import { savePendingTaskOpen, takePendingTaskOpen } from "./pending-task-open.js
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
 import { readDistribution } from "./task-submission.js";
-import { resolveTrainingRoot } from "./training-folder.js";
+import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
 type StateStore = Pick<vscode.Memento, "get" | "update">;
 
@@ -49,9 +49,12 @@ function isInside(dir: string, target: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
-/** 開いているウィンドウのフォルダーに、課題フォルダーが含まれているか。 */
-export function windowShowsFolder(folders: readonly string[], target: string): boolean {
-  return folders.some((folder) => isInside(folder, target));
+/**
+ * このウィンドウが学習フォルダーだけを開いているか。祖先 (ホームなど)・講座のフォルダー・
+ * 学習フォルダーを含むマルチルートは違う — 学習フォルダーを唯一のフォルダーにするため。
+ */
+export function windowIsTrainingRoot(folders: readonly string[], trainingRoot: string): boolean {
+  return folders.length === 1 && samePath(folders[0], trainingRoot);
 }
 
 function workspaceFolders(): string[] {
@@ -69,8 +72,8 @@ async function showTaskReadme(taskRoot: string): Promise<void> {
 }
 
 /**
- * 課題文を開く。このウィンドウが課題フォルダーを含むフォルダーを開いていれば、そのまま開く。
- * 無ければ学習フォルダーを開く (読み込み直したウィンドウか、切り替わった先の学習フォルダーの
+ * 課題文を開く。このウィンドウが学習フォルダーだけを開いていれば、そのまま開く。
+ * それ以外は学習フォルダーを開く (読み込み直したウィンドウか、切り替わった先の学習フォルダーの
  * ウィンドウで resumePendingTaskOpen が課題文を開く)。
  */
 async function openTaskInWindow(
@@ -79,7 +82,7 @@ async function openTaskInWindow(
   taskRoot: string,
 ): Promise<void> {
   const folders = workspaceFolders();
-  if (windowShowsFolder(folders, taskRoot)) {
+  if (windowIsTrainingRoot(folders, trainingRoot)) {
     await showTaskReadme(taskRoot);
     return;
   }
@@ -109,15 +112,15 @@ async function openTaskInWindow(
 }
 
 /**
- * 控えた課題が、このウィンドウで開いているフォルダーの中にあれば受け取って課題文を開く。
+ * このウィンドウが控えた課題の学習フォルダーだけを開いていれば、受け取って課題文を開く。
  * 拡張の起動時 (読み込み直したウィンドウ) と、ウィンドウが前面に来たとき (すでに学習
  * フォルダーを開いていたウィンドウへ切り替わったとき) に呼ぶ。別のウィンドウ向けの控えは残す。
  */
 export async function resumePendingTaskOpen(pendingDir: string): Promise<void> {
   const folders = workspaceFolders();
-  if (folders.length === 0) return;
+  if (folders.length !== 1) return;
   const pending = await takePendingTaskOpen(pendingDir, (p) =>
-    windowShowsFolder(folders, p.taskRoot),
+    windowIsTrainingRoot(folders, p.trainingRoot),
   );
   if (pending) await showTaskReadme(pending.taskRoot);
 }

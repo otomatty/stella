@@ -73,7 +73,7 @@ import {
   registerTaskOpening,
   resumePendingTaskOpen,
   settledTaskOpening,
-  windowShowsFolder,
+  windowIsTrainingRoot,
 } from "./open-task.js";
 import {
   PENDING_TTL_MS,
@@ -81,7 +81,12 @@ import {
   savePendingTaskOpen,
   takePendingTaskOpen,
 } from "./pending-task-open.js";
-import { TRAINING_ROOT_KEY, resolveTrainingRoot, trainingRootProblem } from "./training-folder.js";
+import {
+  TRAINING_ROOT_KEY,
+  resolveTrainingRoot,
+  samePath,
+  trainingRootProblem,
+} from "./training-folder.js";
 
 const taskId = "course/unit/q1";
 const bundle: TaskBundle = {
@@ -323,10 +328,53 @@ describe("課題を開く", () => {
     expect(await pendingFiles()).toEqual(["pending-task-open.json"]);
     expect(await takePendingTaskOpen(pendingDir, () => true)).toEqual(saved);
   });
-  it("ウィンドウのフォルダーが課題フォルダーを含むかで判断する", () => {
-    expect(windowShowsFolder([training], taskRoot())).toBe(true);
-    expect(windowShowsFolder([path.join(training, "course")], taskRoot())).toBe(true);
-    expect(windowShowsFolder([path.join(training, "other")], taskRoot())).toBe(false);
+  it("学習フォルダーだけを開いているウィンドウかで判断する", () => {
+    expect(windowIsTrainingRoot([training], training)).toBe(true);
+    expect(windowIsTrainingRoot([state.home], training)).toBe(false);
+    expect(windowIsTrainingRoot([path.join(training, "course")], training)).toBe(false);
+    expect(windowIsTrainingRoot([training, state.home], training)).toBe(false);
+    expect(windowIsTrainingRoot([], training)).toBe(false);
+    // Windows・macOS では大文字と小文字の違い (ドライブ文字など) を同じ場所とみなす。
+    expect(samePath("/Users/a/Web-Training", "/users/a/web-training", "darwin")).toBe(true);
+    expect(samePath("/home/a/Web-Training", "/home/a/web-training", "linux")).toBe(false);
+  });
+});
+
+describe("学習フォルダーを唯一のフォルダーにする", () => {
+  const others = () => ({
+    ancestor: [state.home],
+    course: [path.join(training, "course")],
+    multiRoot: [training, path.join(state.home, "other-project")],
+  });
+  it.each(["ancestor", "course", "multiRoot"] as const)(
+    "%s のウィンドウでは課題文をその場で開かず、学習フォルダーを開く",
+    async (kind) => {
+      state.folders = others()[kind];
+      state.showInformationMessage.mockResolvedValueOnce("このウィンドウで開く");
+      await openDistributedTask(context, taskId);
+      expect(openedFolder()).toEqual([
+        "vscode.openFolder",
+        { scheme: "file", fsPath: training },
+        { forceReuseWindow: true },
+      ]);
+      expect(state.showTextDocument).not.toHaveBeenCalled();
+      // そのウィンドウが前面に来ても、控えは受け取らない。
+      registerTaskOpening(context);
+      await focusWindow();
+      expect(state.showTextDocument).not.toHaveBeenCalled();
+      expect(await pendingFiles()).toEqual(["pending-task-open.json"]);
+      // 学習フォルダーだけのウィンドウが受け取る。
+      state.folders = [training];
+      await focusWindow();
+      expect(state.showTextDocument).toHaveBeenCalledTimes(1);
+      readmeOpened(taskRoot());
+    },
+  );
+  it("学習フォルダーだけを開いているウィンドウでは、その場で課題文を開く", async () => {
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    expect(openedFolder()).toBeUndefined();
+    readmeOpened(taskRoot());
   });
 });
 
