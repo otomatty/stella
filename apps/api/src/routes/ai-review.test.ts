@@ -581,6 +581,74 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect((await db.select().from(aiReviewJobs))[0]).toMatchObject({ state: "done", attempts: 3 });
   });
 
+  describe("想定外の失敗 (例外) が続く行", () => {
+    /** 上限 (3 回) まで、やり直しの間隔を空けて処理し直す。 */
+    async function runUntilGiveUp() {
+      let now = Date.now();
+      const outcomes = [];
+      for (let i = 0; i < 3; i++) {
+        outcomes.push(...(await run(() => now)));
+        now += 61_000;
+      }
+      return outcomes;
+    }
+
+    it("試行回数の上限で行を閉じ、AI が判定できなかったとして人に回す", async () => {
+      await db.delete(tasks);
+      await seedTask("assessment-a", {
+        rubric: [{ id: "heading", criterion: "見出しが内容を表している", required: true }],
+        escalateWhen: [],
+      });
+      const row = await submit();
+      expect(row.ai_review_status).toBe("queued");
+      // 提出のあとで支援の記録を読めなくなった (AI を呼ぶ前に毎回例外になる)。
+      database.sqlite.exec("drop table task_support_events");
+      expect(await runUntilGiveUp()).toEqual(["gave-up"]);
+      expect(complete).not.toHaveBeenCalled();
+      const [job] = await db.select().from(aiReviewJobs);
+      expect(job).toMatchObject({ state: "done", attempts: 3 });
+      expect(job?.lastError).toContain("task_support_events");
+      expect((await reviews())[0]).toMatchObject({
+        outcome: "escalated",
+        failure: "error",
+        routeReasons: ["ai-unavailable"],
+        disposition: "applied",
+      });
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved).toMatchObject({ verdict: null, aiReviewStatus: "escalated" });
+      expect(await progress()).toBe("instructor-pending");
+      // 閉じた行は次の処理で取らない。
+      expect(await run(() => Date.now() + 3_600_000)).toEqual([]);
+    });
+
+    it("失敗の記録も当てられない (提出のロックを取れない) ときでも、AI の確認待ちのまま残さない", async () => {
+      const row = await submit();
+      // 当てる処理 (人に回すのも) が毎回例外になる。
+      database.sqlite.exec("drop table resource_locks");
+      expect(await runUntilGiveUp()).toEqual(["gave-up"]);
+      expect((await db.select().from(aiReviewJobs))[0]).toMatchObject({ state: "done" });
+      const [saved] = database.sqlite
+        .prepare("select ai_review_status, verdict from submissions where id = ?")
+        .all(row.id) as { ai_review_status: string; verdict: string | null }[];
+      expect(saved).toEqual({ ai_review_status: "escalated", verdict: null });
+      expect(await progress()).toBe("instructor-pending");
+    });
+
+    it("照合の記録の JSON が壊れた提出は、例外にせず照合の食い違いとして人に回す", async () => {
+      complete.mockResolvedValue(answer(aiOutput()));
+      const row = await submit();
+      database.sqlite.exec(
+        `update submissions set machine_check = '{broken' where id = '${row.id}'`,
+      );
+      expect(await run()).toEqual(["applied"]);
+      expect((await reviews())[0]).toMatchObject({
+        outcome: "escalated",
+        routeReasons: ["machine-check"],
+      });
+      expect(await progress()).toBe("instructor-pending");
+    });
+  });
+
   it("提出に無いファイル・範囲外の行を指す所見は受講者に見せず、AI の原文は記録に残す", async () => {
     const valid = {
       file: "index.html",

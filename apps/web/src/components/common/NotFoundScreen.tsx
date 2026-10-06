@@ -21,8 +21,8 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
       return [
         { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
         {
-          label: "添削待ち",
-          description: "提出物のレビュー",
+          label: "レビュー",
+          description: "人に回した提出と AI の合格の確認",
           icon: Edit,
           onSelect: () => setPage("review-queue"),
         },

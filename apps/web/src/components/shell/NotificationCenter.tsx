@@ -18,6 +18,7 @@ import {
   X,
   Send,
   CalendarClock,
+  MessageCircle,
   Sparkles,
 } from "@/lib/icons";
 import { SkeletonRows } from "@/components/ui/skeleton";
@@ -46,6 +47,7 @@ interface NotificationCenterProps {
 const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; label: string }> = {
   announcement: { icon: Megaphone, tone: "text-brand", label: "お知らせ" },
   review_completed: { icon: Check, tone: "text-success", label: "添削完了" },
+  review_comment: { icon: MessageCircle, tone: "text-brand", label: "講師のコメント" },
   assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
@@ -183,7 +185,10 @@ export const NotificationCenter = ({
                     key={n.id}
                     onClick={() => {
                       if (!n.read) onMarkRead(n.id);
-                      if (n.type === "review_completed" && onOpenSubmission) {
+                      if (
+                        (n.type === "review_completed" || n.type === "review_comment") &&
+                        onOpenSubmission
+                      ) {
                         const submissionId = n.payload?.submission_id;
                         if (typeof submissionId === "string" && submissionId.length > 0) {
                           onOpenSubmission(submissionId);

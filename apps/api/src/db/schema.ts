@@ -9,6 +9,7 @@
 
 import { sql } from "drizzle-orm";
 import {
+  customType,
   index,
   integer,
   primaryKey,
@@ -38,6 +39,31 @@ const tsNowUpd = (name: string) =>
     .$onUpdateFn(() => new Date());
 const json = <T>(name: string, fallback: T) =>
   text(name, { mode: "json" }).$type<T>().notNull().default(fallback);
+
+/** 列の JSON を読む。壊れていれば null (読めない記録) にする。 */
+export function parseJsonOrNull(value: unknown): unknown {
+  if (typeof value !== "string") return value ?? null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 壊れた JSON を読んでも例外にしない、null を許す JSON の列 (#34)。
+ *
+ * `text(..., { mode: "json" })` は読むときに `JSON.parse` するので、1 列でも壊れた行があると、
+ * その行を全列で読む経路 (提出の詳細・判定の確定・AI の処理) がすべて 500 になり、人が確定も
+ * できなくなる。読めない値は null として返し、DB の元の文字列は書き換えない (壊れているかは
+ * `json_valid` で別に確かめる)。書き込みは `mode: "json"` と同じ `JSON.stringify`。
+ */
+const safeJson = <T>(name: string) =>
+  customType<{ data: T; driverData: string }>({
+    dataType: () => "text",
+    toDriver: (value) => JSON.stringify(value),
+    fromDriver: (value) => parseJsonOrNull(value) as T,
+  })(name);
 
 // ---------------------------------------------------------------
 // 認証 (Workers 自前 Google OAuth / JWT)
@@ -901,7 +927,8 @@ export const discoveryRequests = sqliteTable(
       .references(() => stages.id, { onDelete: "cascade" }),
     /** つまずきの短文 (小テスト / 課題のタイトルから作る)。生成プロンプトの材料。 */
     topic: text("topic").notNull(),
-    origin: text("origin", { enum: ["quiz_fail", "submission_resubmit"] })
+    // review_common は講師が並べて見た共通のつまずき (#34)。text 列なのでマイグレーション不要。
+    origin: text("origin", { enum: ["quiz_fail", "submission_resubmit", "review_common"] })
       .notNull()
       .default("quiz_fail"),
     createdAt: tsNow("created_at"),
@@ -1311,6 +1338,8 @@ export const notifications = sqliteTable("notifications", {
       "learner_stumble",
       // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
       "stage_cleared",
+      // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。受講者宛て。
+      "review_comment",
       "interview_date_set",
       "interview_answer_template_generated",
       "interview_answer_template_failed",
@@ -1350,25 +1379,16 @@ export const submissions = sqliteTable("submissions", {
   ruleSetHash: text("rule_set_hash"),
   taskKind: text("task_kind"),
   submissionMode: text("submission_mode"),
-  localResult: text("local_result", { mode: "json" }).$type<
-    import("@stella/shared/tasks/run-result").RunResult
-  >(),
-  testHashes: text("test_hashes", { mode: "json" }).$type<
-    import("@stella/shared/tasks/run-result").HashedFile[]
-  >(),
+  // 提出ごとの記録は壊れていても行を読めるようにする (`safeJson`)。壊れた記録の列名は
+  // `SUBMISSION_RECORD_COLUMNS` で `json_valid` を確かめて staff に返す。
+  localResult: safeJson<import("@stella/shared/tasks/run-result").RunResult>("local_result"),
+  testHashes: safeJson<import("@stella/shared/tasks/run-result").HashedFile[]>("test_hashes"),
   explanation: text("explanation"),
-  debuggingRecord: text("debugging_record", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").DebuggingRecord
-  >(),
-  supportLog: text("support_log", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").SupportEvent[]
-  >(),
-  machineCheck: text("machine_check", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").MachineCheck
-  >(),
-  taskSnapshot: text("task_snapshot", { mode: "json" }).$type<
-    import("@stella/shared/tasks/catalog").TaskBundle
-  >(),
+  debuggingRecord:
+    safeJson<import("@stella/shared/tasks/submission").DebuggingRecord>("debugging_record"),
+  supportLog: safeJson<import("@stella/shared/tasks/submission").SupportEvent[]>("support_log"),
+  machineCheck: safeJson<import("@stella/shared/tasks/submission").MachineCheck>("machine_check"),
+  taskSnapshot: safeJson<import("@stella/shared/tasks/catalog").TaskBundle>("task_snapshot"),
   assessedSkills: json<string[]>("assessed_skills", []),
   reviewTaskContentHash: text("review_task_content_hash"),
   reviewSource: text("review_source", { enum: ["ai", "human"] }),
@@ -1389,13 +1409,24 @@ export const submissions = sqliteTable("submissions", {
   aiSuggestions: json<unknown[]>("ai_suggestions", []),
   rubric: json<unknown[]>("rubric", []),
   /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ (Issue #9)。 Web 提出は null。 */
-  gradingSummary: text("grading_summary", { mode: "json" }).$type<unknown>(),
+  gradingSummary: safeJson<unknown>("grading_summary"),
   reviewNotes: text("review_notes").notNull().default(""),
   verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
   submittedAt: tsNow("submitted_at"),
   reviewedAt: ts("reviewed_at"),
   reviewerId: text("reviewer_id"),
 });
+
+/** 提出ごとの JSON の記録の列 (壊れていても行は読める。壊れているかは `json_valid` で見る)。 */
+export const SUBMISSION_RECORD_COLUMNS = [
+  "machine_check",
+  "local_result",
+  "test_hashes",
+  "debugging_record",
+  "support_log",
+  "task_snapshot",
+  "grading_summary",
+] as const;
 
 /** ファイルは非公開 R2 に保存する。DB は索引と検証済みの内容ハッシュだけを持つ。 */
 export const submissionFiles = sqliteTable(
@@ -1522,6 +1553,96 @@ export const aiReviews = sqliteTable(
   (t) => ({
     submissionIdx: index("ai_reviews_submission_idx").on(t.submissionId, t.createdAt),
     tenantIdx: index("ai_reviews_tenant_idx").on(t.tenantId, t.createdAt),
+  }),
+);
+
+/**
+ * AI が合格にした提出を人が確認した記録 (#34、07 §6.4 の 6)。期間は限らない。
+ * confirmed = 確認済み、commented = 判定を変えずにコメントを足した (受講者へ通知)、
+ * overturned = 再提出に覆した (その提出の合格とスキルの証拠を取り消し、理由を受講者へ通知)。
+ */
+export const submissionChecks = sqliteTable(
+  "submission_checks",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    aiReviewId: text("ai_review_id").references(() => aiReviews.id, { onDelete: "set null" }),
+    reviewerId: text("reviewer_id").references(() => profiles.id, { onDelete: "set null" }),
+    result: text("result", { enum: ["confirmed", "commented", "overturned"] }).notNull(),
+    comment: text("comment").notNull().default(""),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    submissionIdx: index("submission_checks_submission_idx").on(t.submissionId, t.createdAt),
+    tenantIdx: index("submission_checks_tenant_idx").on(t.tenantId, t.createdAt),
+    reviewerIdx: index("submission_checks_reviewer_idx").on(t.reviewerId),
+    aiReviewIdx: index("submission_checks_ai_review_idx").on(t.aiReviewId),
+  }),
+);
+
+/**
+ * 人が AI の判定を覆した記録 (#34、07 §6.4 の 7)。ルーブリックと AI への指示の改善に使う。
+ * post-check = AI が合格にした提出を事後確認で覆した、final-review = 人に回した提出で
+ * AI の判定案と違う判定 (合格か否か) にした。AI の所見は `ai_reviews` を引く。
+ */
+export const aiReviewOverrides = sqliteTable(
+  "ai_review_overrides",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    aiReviewId: text("ai_review_id")
+      .notNull()
+      .references(() => aiReviews.id, { onDelete: "cascade" }),
+    source: text("source", { enum: ["post-check", "final-review"] }).notNull(),
+    aiVerdict: text("ai_verdict", { enum: ["pass", "resubmit"] }).notNull(),
+    humanVerdict: text("human_verdict", { enum: ["pass", "resubmit", "fail"] }).notNull(),
+    reviewerId: text("reviewer_id").references(() => profiles.id, { onDelete: "set null" }),
+    note: text("note").notNull().default(""),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    tenantIdx: index("ai_review_overrides_tenant_idx").on(t.tenantId, t.createdAt),
+    submissionIdx: index("ai_review_overrides_submission_idx").on(t.submissionId),
+    aiReviewIdx: index("ai_review_overrides_ai_review_idx").on(t.aiReviewId),
+    reviewerIdx: index("ai_review_overrides_reviewer_idx").on(t.reviewerId),
+  }),
+);
+
+/**
+ * コメント集 (#34、07 §6.4 の 4)。課題のパターンごとに、よくある違反と定型コメントを持つ。
+ * `stage_id` が null ならテナントの全講座、`pattern` が null なら講座の全パターンに出す。
+ */
+export const reviewCommentTemplates = sqliteTable(
+  "review_comment_templates",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    stageId: text("stage_id").references(() => stages.id, { onDelete: "cascade" }),
+    pattern: text("pattern"),
+    /** コーディング規則の ID (`coding_rules` は seed で入れ直すので外部キーにしない)。 */
+    ruleId: text("rule_id"),
+    violation: text("violation").notNull(),
+    body: text("body").notNull(),
+    createdBy: text("created_by").references(() => profiles.id, { onDelete: "set null" }),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    scopeIdx: index("review_comment_templates_scope_idx").on(t.tenantId, t.stageId, t.pattern),
+    stageIdx: index("review_comment_templates_stage_idx").on(t.stageId),
+    creatorIdx: index("review_comment_templates_creator_idx").on(t.createdBy),
   }),
 );
 

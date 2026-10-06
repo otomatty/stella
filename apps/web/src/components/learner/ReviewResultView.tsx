@@ -181,6 +181,28 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
             </Card>
           )}
 
+          {submission.staffComments && submission.staffComments.length > 0 ? (
+            // AI で合格した提出に、講師があとから足したコメント (判定は変わらない、#34)。
+            <Card>
+              <CardHeader>
+                <CardTitle>講師からのコメント</CardTitle>
+              </CardHeader>
+              <CardContent className="text-[13px] leading-relaxed text-ink-2">
+                {submission.staffComments.map((c) => (
+                  <div
+                    key={`${c.createdAt}:${c.comment}`}
+                    className="py-2 border-b border-border last:border-b-0"
+                  >
+                    <p className="whitespace-pre-wrap">{c.comment}</p>
+                    <p className="text-[11.5px] text-ink-3 mt-1">
+                      {new Date(c.createdAt).toLocaleDateString("ja-JP")}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>ルーブリック</CardTitle>

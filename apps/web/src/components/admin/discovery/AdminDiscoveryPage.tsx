@@ -47,6 +47,7 @@ const STATUS_META = {
 const ORIGIN_LABEL: Record<string, string> = {
   quiz_fail: "確認テストの不合格",
   submission_resubmit: "課題の再提出・不合格",
+  review_common: "レビューで見つけた共通のつまずき",
 };
 
 function formatDate(iso: string): string {

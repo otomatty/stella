@@ -15,6 +15,7 @@ import {
 import type { Db } from "../db/client.js";
 import {
   aiReviewJobs,
+  aiReviewOverrides,
   aiReviews,
   lessonProgress,
   lessons,
@@ -22,6 +23,7 @@ import {
   sections,
   skillEvidence,
   stages,
+  submissionChecks,
   submissionFiles,
   submissionReviews,
   submissions,
@@ -424,7 +426,7 @@ function recomputeTaskProgress(
           taskId: sql<string>`${row.taskId}`.as("task_id"),
           status: sql<
             typeof taskProgress.$inferSelect.status
-          >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when ai_review_status = 'queued' or (ai_review_status is null and json_extract(machine_check, '$.matched') = 1) then 'submitted' else 'instructor-pending' end`.as(
+          >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when ai_review_status = 'queued' or (ai_review_status is null and case when json_valid(machine_check) then json_extract(machine_check, '$.matched') end = 1) then 'submitted' else 'instructor-pending' end`.as(
             "status",
           ),
           contentHash: sql<string>`task_content_hash`.as("content_hash"),
@@ -498,9 +500,63 @@ export async function escalateTaskSubmission(
   if (!locked.ran) throw new ApiError("別の提出・レビューを保存中です", 409);
 }
 
+/** AI の判定案と人の判定が、合格か否かで食い違うか。 */
+function overridesAi(aiVerdict: "pass" | "resubmit", human: "pass" | "resubmit" | "fail") {
+  return (aiVerdict === "pass") !== (human === "pass");
+}
+
+/**
+ * 提出に当てた AI の結果のうち最新のもの (人の判定を AI の判定と比べるのに使う)。
+ * `outcome` を渡すと、その結果 (AI で確定 / 人に回した) だけを見る。
+ */
+async function appliedAiReview(db: Db, submissionId: string, outcome: "confirmed" | "escalated") {
+  const [applied] = await db
+    .select({ id: aiReviews.id, proposedVerdict: aiReviews.proposedVerdict })
+    .from(aiReviews)
+    .where(
+      and(
+        eq(aiReviews.submissionId, submissionId),
+        eq(aiReviews.outcome, outcome),
+        eq(aiReviews.disposition, "applied"),
+      ),
+    )
+    .orderBy(desc(aiReviews.createdAt))
+    .limit(1);
+  return applied ?? null;
+}
+
+/**
+ * 覆したあとの初回の合格日を付け直す文。0044 のトリガーは「最初に合格した日」を同じ版の間
+ * 保つので、覆した合格の日付が残ると、出し直して合格したときに確認Bの予定 (学習ペース) が
+ * 取り消した合格から数えられてしまう。残っている合格 (同じ版) の最初の合格の記録から付け直し、
+ * 合格が残っていなければ消す。合格の記録が無い古い行は今の値を残す。
+ */
+function resetPassedAt(db: Db, row: { tenantId: string; studentId: string; taskId: string }) {
+  const firstRemainingPass = sql`(select min(r.created_at) from submission_reviews r
+    join submissions s on s.id = r.submission_id
+    where s.tenant_id = ${row.tenantId} and s.student_id = ${row.studentId}
+      and s.task_id = ${row.taskId} and s.verdict = 'pass' and r.verdict = 'pass'
+      and s.task_content_hash = ${taskProgress.contentHash})`;
+  return db
+    .update(taskProgress)
+    .set({
+      passedAt: sql`case when ${taskProgress.status} in ('passed', 'ai-passed') then coalesce(${firstRemainingPass}, ${taskProgress.passedAt}) else null end`,
+    })
+    .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId)));
+}
+
 /**
  * 人と AI の一次レビューが共有する確定処理。AI は人に回す条件に当たる提出を合格にせず、
  * 人が先に確定した提出・新しい提出がある試行には結果を当てない (`aiReviewId` を置き換え済みにする)。
+ *
+ * 人の判定では、AI の判定と比べた記録も同じ batch で残す (#34)。
+ * - AI が合格にした提出を人が合格以外にした = 事後確認で覆した。確認の記録 (`submission_checks`)
+ *   と覆した記録を足し、この提出の合格・スキルの証拠・初回の合格日を取り消す (同じ課題の別の
+ *   提出の合格は残る)。受講者には理由を知らせる。
+ * - 人に回した提出の最初の判定が AI の判定案と食い違えば、覆した記録を足す。
+ *
+ * `requireUndecided` は「まだ誰も確定していない」ことを、`requireAiPass` は「AI の合格のまま」
+ * であることを課題のロックの中で確かめる (二重の確定・別の講師の確定との競合を 409 にする)。
  */
 export async function reviewTaskSubmission(
   db: Db,
@@ -509,7 +565,12 @@ export async function reviewTaskSubmission(
   verdict: "pass" | "resubmit" | "fail",
   notes: string,
   source: "human" | "ai" = "human",
-  options: { aiReviewId?: string; waitMs?: number } = {},
+  options: {
+    aiReviewId?: string;
+    waitMs?: number;
+    requireUndecided?: boolean;
+    requireAiPass?: boolean;
+  } = {},
 ) {
   const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
   if (!initial?.taskId || !initial.studentId || initial.tenantId !== caller.tenantId)
@@ -541,6 +602,19 @@ export async function reviewTaskSubmission(
         throw e;
       }
     }
+    if (options.requireUndecided && row.verdict !== null)
+      throw new ApiError("別の講師が先に確定しました。提出を開き直してください", 409);
+    const aiPassed = row.verdict === "pass" && row.reviewSource === "ai";
+    if (options.requireAiPass && !aiPassed)
+      throw new ApiError("この提出はもう AI の合格ではありません。提出を開き直してください", 409);
+    // 人が AI の合格を合格以外にした = 事後確認で覆した。
+    const overturned = source === "human" && aiPassed && verdict !== "pass";
+    const confirmedReview = overturned ? await appliedAiReview(db, id, "confirmed") : null;
+    // 人に回した提出の最初の判定。AI の判定案と食い違えば覆した記録を残す。
+    const escalatedReview =
+      source === "human" && row.verdict === null && row.aiReviewStatus === "escalated"
+        ? await appliedAiReview(db, id, "escalated")
+        : null;
     const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
       db
         .update(submissions)
@@ -579,8 +653,55 @@ export async function reviewTaskSubmission(
           .set({ disposition: "applied", appliedAt: now })
           .where(eq(aiReviews.id, options.aiReviewId)),
       );
+    if (overturned) {
+      statements.push(
+        db.insert(submissionChecks).values({
+          tenantId: row.tenantId,
+          submissionId: id,
+          aiReviewId: confirmedReview?.id ?? null,
+          reviewerId: caller.id,
+          result: "overturned",
+          comment: notes,
+          createdAt: now,
+        }),
+      );
+      if (confirmedReview)
+        statements.push(
+          db.insert(aiReviewOverrides).values({
+            tenantId: row.tenantId,
+            submissionId: id,
+            aiReviewId: confirmedReview.id,
+            source: "post-check",
+            aiVerdict: "pass",
+            humanVerdict: verdict,
+            reviewerId: caller.id,
+            note: notes,
+            createdAt: now,
+          }),
+        );
+    }
+    if (escalatedReview?.proposedVerdict && overridesAi(escalatedReview.proposedVerdict, verdict))
+      statements.push(
+        db.insert(aiReviewOverrides).values({
+          tenantId: row.tenantId,
+          submissionId: id,
+          aiReviewId: escalatedReview.id,
+          source: "final-review",
+          aiVerdict: escalatedReview.proposedVerdict,
+          humanVerdict: verdict,
+          reviewerId: caller.id,
+          note: notes,
+          createdAt: now,
+        }),
+      );
     // 通知は課題のロックの中で読んだ保存前の行から決め、判定と同じ batch で書く。
     const notice = reviewNotification(row, verdict);
+    if (notice && overturned) {
+      // 覆したときは理由を知らせる (07 §6.4 の 6)。
+      const reason = notes.trim();
+      notice.title = `${row.assignmentTitle || "課題"} の合格が${verdict === "fail" ? "不合格" : "再提出"}に変わりました`;
+      notice.body = `講師が確認し、AI の合格を取り消しました。${reason ? `理由: ${reason.slice(0, 300)}` : "フィードバックを確認してください。"}`;
+    }
     if (notice) statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
       // 提出の申告に加え、この提出より前の AI チャット・相談などの記録も支援に数える (#38)。
@@ -614,6 +735,11 @@ export async function reviewTaskSubmission(
         now,
       ),
     );
+    // 進捗を付け直した後に置く (トリガーが残した覆した合格の日付を上書きする)。
+    if (overturned)
+      statements.push(
+        resetPassedAt(db, { tenantId: row.tenantId, studentId: row.studentId, taskId: row.taskId }),
+      );
     await db.batch(statements);
     // 確認Aの判定が変わると、同じ組の確認Bの定着の前提も変わる。
     if (scope && row.taskKind === "assessment-a")

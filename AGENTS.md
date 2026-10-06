@@ -60,6 +60,8 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **新形式の課題の提出 (Issue #32):** 拡張は `canSubmit` の結果で提出と講師への相談を切り替える。`POST /api/submissions` の `taskId` 入りの本文は新形式で、ファイル・実行結果・テスト/設定のハッシュ・説明・支援・内容ハッシュをまとめる。ファイルは非公開 R2 `SUBMISSIONS_BUCKET`、試行は追記。配布記録 `.stella/distribution.json` の版を `task_revisions` と照合し、不一致は `instructor-pending`。一致は `submitted` (画面では「AI が確認中」) で、AI の一次レビュー (#33) に回る。人/AI の合格は `task_progress` と `skill_evidence` に反映する。旧コードレッスンも自己申告では完了せず、レビューの合格で `lesson_progress` を更新する。詳細は `apps/vscode/README.md`。
 
+**講師のレビュー画面 (Issue #34):** 講師と管理者のサイドバーの「レビュー」(`/review-queue`)。人に回した提出を理由 (相談・ハッシュの不一致・AI の判定不能・規則の違反・確信度、旧形式は別) で分け (`@stella/shared/review/review-desk`)、待ち時間・理由・担当者で並べる。AI が確認中・置き換えた提出は人の件数に数えない。未確定の提出の確定は `PATCH /api/submissions/:id` の `expectUndecided` で 1 回だけ (先に確定されていれば 409)。AI が合格にした提出は「AI が合格にした提出」タブから期間を限らず確認でき、`POST /api/submissions/:id/checks` で確認済み・コメント (受講者へ通知) ・再提出に覆す (その提出の合格・証拠・初回の合格日だけを取り消す)。記録は `submission_checks` と `ai_review_overrides`、コメント集は `review_comment_templates`、同じ課題の並べ見と見直しの数字は `/api/review-desk/*` (`apps/api/src/lib/review-desk.ts`)。受講者向けの API は確定前の AI 所見を返さないまま。詳細は `docs/curriculum/07-stella-adoption-redesign.md` §6.9。
+
 
 ### Key caveats
 

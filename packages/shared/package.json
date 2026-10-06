@@ -36,6 +36,7 @@
     "./review/escalation": "./src/review/escalation.ts",
     "./review/ai-review": "./src/review/ai-review.ts",
     "./review/solution-leak": "./src/review/solution-leak.ts",
+    "./review/review-desk": "./src/review/review-desk.ts",
     "./discovery/types": "./src/discovery/types.ts",
     "./hall-of-fame/types": "./src/hall-of-fame/types.ts",
     "./discovery/prompt": "./src/discovery/prompt.ts",
