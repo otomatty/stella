@@ -749,6 +749,44 @@ describe("つまずきの検知 (cron)", () => {
       });
       return id;
     }
+    /** AI の判定待ちの提出 (新形式・相談でない)。判定はまだ当たっていない。 */
+    async function pending() {
+      const id = `judged-${++order}`;
+      const at = new Date(now.getTime() - (20 - order) * HOUR);
+      await db.insert(submissions).values({
+        id,
+        tenantId: "ses",
+        studentId: "learner",
+        taskId: "practice",
+        taskContentHash: HASH,
+        taskKind: "basic",
+        submissionMode: "submit",
+        stageTitle: "開発環境",
+        assignmentTitle: `課題${order}`,
+        code: "",
+        submittedAt: at,
+        aiReviewStatus: "queued",
+      });
+      return id;
+    }
+    /** 判定待ちの提出に、あとから AI の判定が当たった。 */
+    async function resolve(id: string, outcome: "confirmed" | "escalated") {
+      await db.update(submissions).set({ aiReviewStatus: outcome }).where(eq(submissions.id, id));
+      await db.insert(aiReviews).values({
+        submissionId: id,
+        tenantId: "ses",
+        taskId: "practice",
+        taskContentHash: HASH,
+        taskKind: "basic",
+        outcome,
+        routeReasons: outcome === "escalated" ? ["rubric-unmet"] : [],
+        promptVersion: "test",
+        thresholdVersion: "test",
+        disposition: "applied",
+        appliedAt: new Date(now.getTime() - 60_000),
+        createdAt: new Date(now.getTime() - 60_000),
+      });
+    }
     const escalationAlerts = async () =>
       (await stumbles()).filter((n) => n.payload.signal === "review-escalations");
 
@@ -845,6 +883,32 @@ describe("つまずきの検知 (cron)", () => {
       await judged("escalated", ["rubric-unmet"], { at: daysAgo(35), appliedAt: daysAgo(29) });
       await judged("escalated", ["rubric-unmet"], { at: daysAgo(2) });
       await judged("escalated", ["rubric-unmet"], { at: daysAgo(1) });
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+    });
+
+    it("間に AI の判定待ちの提出があれば、そこで止めて判定が当たるのを待つ (人に回れば知らせる)", async () => {
+      await keepActive();
+      await judged("escalated");
+      await judged("escalated");
+      const waiting = await pending();
+      await judged("escalated");
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+      await resolve(waiting, "escalated");
+      await notifyStumbles(db, now);
+      expect((await escalationAlerts()).map((n) => n.payload.submission_ids)).toEqual([
+        ["judged-1", "judged-2", waiting, "judged-4"],
+      ]);
+    });
+
+    it("判定待ちの提出が AI の合格になれば、続きは無かったことになる", async () => {
+      await keepActive();
+      await judged("escalated");
+      await judged("escalated");
+      const waiting = await pending();
+      await judged("escalated");
+      await resolve(waiting, "confirmed");
       await notifyStumbles(db, now);
       expect(await escalationAlerts()).toEqual([]);
     });

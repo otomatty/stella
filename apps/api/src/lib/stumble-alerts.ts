@@ -467,6 +467,37 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
         r.learnerId && r.at !== null ? [[r.learnerId, Number(r.at)] as const] : [],
       ),
     );
+    // AI の判定待ち (`queued`) の新形式の提出のうち、いちばん新しいものの日時。判定は提出ごとに別の
+    // ジョブで当たるので、提出の順と違う順で当たる。判定待ちを飛び越えて数えると、あとでそれが
+    // AI の合格になったとき、続きが無かったことになる。そこで判定待ちに当たったら止め、判定が
+    // 当たったあとの cron で改めて数える。置き換え済み (`superseded`) と、人が先に確定した提出
+    // (`human`) は判定が当たらないので待たない。提出時に人に回すと決まった提出 (照合の食い違いなど)
+    // は `escalated` で、判定が当たっても合格にはならないので、待たずに当たってから数える。
+    const waiting = new Map(
+      (
+        await db
+          .select({
+            learnerId: submissions.studentId,
+            at: sql<number | null>`max(${submissions.submittedAt})`,
+          })
+          .from(submissions)
+          .where(
+            and(
+              eq(submissions.tenantId, tenantId),
+              inArray(
+                submissions.studentId,
+                part.map((p) => p.learnerId),
+              ),
+              eq(submissions.submissionMode, "submit"),
+              eq(submissions.aiReviewStatus, "queued"),
+              gte(submissions.submittedAt, new Date(now.getTime() - REVIEW_ESCALATION_LOOKBACK_MS)),
+            ),
+          )
+          .groupBy(submissions.studentId)
+      ).flatMap((r) =>
+        r.learnerId && r.at !== null ? [[r.learnerId, Number(r.at)] as const] : [],
+      ),
+    );
     // 受講者ごとに振り分ける (並びは保つ)。
     const byLearner = new Map<string, typeof rows>();
     for (const row of rows) {
@@ -477,9 +508,12 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
     }
     for (const pair of part) {
       // 新しい順。AI で確定した提出で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
+      // 判定待ちの提出より前 (提出の順) には進まない。
+      const stopAt = waiting.get(pair.learnerId) ?? Number.NEGATIVE_INFINITY;
       const streak: typeof rows = [];
       const seen = new Set<string>();
       for (const row of byLearner.get(pair.learnerId) ?? []) {
+        if (row.submittedAt.getTime() <= stopAt) break;
         if (seen.has(row.submissionId)) continue;
         seen.add(row.submissionId);
         if (row.outcome === "confirmed") break;
