@@ -167,27 +167,36 @@ interface HelpContext {
 const PASSED: readonly TaskStatus[] = ["passed", "ai-passed"];
 
 /**
- * 素材の版 (task_private と同じ形の JSON) を、出す素材に分ける。`hints.md` を段に分けられない
- * 素材は、ヒントを出さず解答例も合格後だけにする (いちばん厳しい側)。本文はログに出さない。
+ * 1 つの版の方針 (定義の `support`) を、その版自身の `hints.md` と合わせる。ほかの版の値では
+ * 書き換えない (版ごとの方針はそのまま判定し、`intersectHelpAccess` で重ねる)。`hints.md` を段に
+ * 分けられない素材は、ヒントを出さず解答例も合格後だけにする (いちばん厳しい側)。本文はログに出さない。
  */
+function versionPolicy(
+  taskId: string,
+  definition: unknown,
+  files: Record<string, string>,
+): { support: TaskSupportConfig; hints: TaskHint[] } {
+  const support = supportConfigOf(definition);
+  const parsed =
+    files["hints.md"] !== undefined ? parseTaskHints(decodeBase64(files["hints.md"])) : null;
+  if (parsed?.ok)
+    // その版の段に分けられたヒントより多くは数えない (開けない段を待たせない)。
+    return {
+      support: { ...support, hintLevels: Math.min(support.hintLevels, parsed.hints.length) },
+      hints: parsed.hints,
+    };
+  // 教材の検査で止めている形の誤り。
+  if (parsed) console.warn("[task-help] hints.md を段に分けられません", taskId);
+  return { support: { hintLevels: 0, solutionUnlock: "passed" }, hints: [] };
+}
+
+/** 素材の版 (task_private と同じ形の JSON) を、出す素材に分ける。 */
 async function servedVersion(
   taskId: string,
   version: { contentHash: string; kind: TaskKind; definition: unknown; filesJson: string },
 ): Promise<ServedVersion> {
   const files = JSON.parse(version.filesJson) as Record<string, string>;
-  let support = supportConfigOf(version.definition);
-  let hints: TaskHint[] = [];
-  const parsed =
-    files["hints.md"] !== undefined ? parseTaskHints(decodeBase64(files["hints.md"])) : null;
-  if (parsed?.ok) {
-    hints = parsed.hints;
-    // 段に分けられたヒントより多くは数えない (開けない段を待たせない)。
-    support = { ...support, hintLevels: Math.min(support.hintLevels, hints.length) };
-  } else {
-    // 教材の検査で止めている形の誤り。
-    if (parsed) console.warn("[task-help] hints.md を段に分けられません", taskId);
-    support = { hintLevels: 0, solutionUnlock: "passed" };
-  }
+  const { support, hints } = versionPolicy(taskId, version.definition, files);
   return {
     contentHash: version.contentHash,
     privateHash: await sha256Hex(version.filesJson),
@@ -356,12 +365,15 @@ async function loadHelpContext(
     progress && (progress.contentHash === row.contentHash || passed)
       ? progress.status
       : "not-started";
-  // 今の版の表。出す版が今の版なら、段の数は出す素材に合わせる。
-  const current = supportConfigOf(JSON.parse(row.definition));
+  // 今の版の方針は、今の版の定義と素材だけで決める (前の版の段の数などで書き換えない)。
   const support =
     served?.contentHash === row.contentHash
       ? served.support
-      : { ...current, hintLevels: Math.min(current.hintLevels, served?.hints.length ?? Infinity) };
+      : versionPolicy(
+          row.id,
+          JSON.parse(row.definition),
+          JSON.parse(row.privateFiles ?? "{}") as Record<string, string>,
+        ).support;
   return {
     task: { id: row.id, title: row.title, kind, contentHash: row.contentHash },
     support,
@@ -392,13 +404,23 @@ function accessOf(ctx: HelpContext): TaskHelpAccess {
   const current = taskHelpAccess({ ...facts, kind: ctx.task.kind, support: ctx.support });
   const { served } = ctx;
   if (!served) return staleHelpAccess(current);
-  const access =
-    served.contentHash === ctx.task.contentHash
-      ? current
-      : intersectHelpAccess(
-          current,
-          taskHelpAccess({ ...facts, kind: served.kind, support: served.support }),
-        );
+  let access = current;
+  if (served.contentHash !== ctx.task.contentHash) {
+    // 前の版を出すときは、今の版の表とその版の表をそれぞれの方針のまま重ねる (両方で開けるもの)。
+    access = intersectHelpAccess(
+      current,
+      taskHelpAccess({ ...facts, kind: served.kind, support: served.support }),
+    );
+    // 今の版の「ヒントのあとに解答例」の段の数に、前の版のヒントでは届かない (前の版を開き切った)。
+    // 解答例は閉じたまま、最新を受け取り直すよう案内する。
+    if (
+      !access.solution.open &&
+      access.solution.reason === "hints-first" &&
+      facts.openedHintLevel >= served.support.hintLevels &&
+      served.support.hintLevels < ctx.support.hintLevels
+    )
+      access = { ...access, solution: { open: false, reason: "stale-version" } };
+  }
   return {
     ...access,
     solution: served.solution.length > 0 ? access.solution : NOT_OFFERED,

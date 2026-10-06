@@ -523,6 +523,38 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       expect(await opens()).toHaveLength(4);
     });
 
+    it("今の版でヒントが増えたら、前の版のヒントを開き切っても解答例を開かず受け取り直しを案内する", async () => {
+      // 今の版は 3 段 (after-hints)。前の版は 2 段。
+      await db
+        .update(tasks)
+        .set({
+          definition: JSON.stringify({ support: { hintLevels: 3, solutionUnlock: "after-hints" } }),
+        })
+        .where(eq(tasks.id, fixture.input.taskId));
+      await db
+        .update(taskPrivate)
+        .set({
+          files: JSON.stringify({
+            ...PRIVATE_FILES,
+            "hints.md": encode("## ヒント1\nA\n\n## ヒント2\nB\n\n## ヒント3\nC\n"),
+          }),
+        })
+        .where(eq(taskPrivate.taskId, fixture.input.taskId));
+      await addOldRevision();
+      await ok(await openAt(OLD_HASH, "hint", 1));
+      const opened = await ok(await openAt(OLD_HASH, "hint", 2));
+      expect(opened.hints.map((h) => h.state)).toEqual(["opened", "opened"]);
+      expect(opened.solution).toEqual({ state: "locked", reason: "stale-version" });
+      const refused = await openAt(OLD_HASH, "solution");
+      expect(refused.status).toBe(409);
+      expect(leaked(await refused.text(), OLD.solution, MARK.solution)).toEqual([]);
+      expect((await opens()).map((o) => o.item)).toEqual(["hint", "hint"]);
+      // 今の版では 3 段目を開いてから解答例を開ける (今の版の方針はそのまま)。
+      expect((await ok(await help())).solution).toEqual({ state: "locked", reason: "hints-first" });
+      await ok(await open("hint", 3));
+      expect((await ok(await help())).solution).toEqual({ state: "available" });
+    });
+
     it("前の版の素材の版が分からなければ、素材を出さず受け取り直しを案内する", async () => {
       await addOldRevision({ privateHash: null });
       const body = await ok(await helpAt(OLD_HASH));
