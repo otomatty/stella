@@ -23,6 +23,7 @@ import {
   submissions,
   taskLocalRuns,
   taskProgress,
+  taskFixedStartUses,
   taskSupportEvents,
   tasks,
   tenants,
@@ -550,6 +551,69 @@ describe("週次の育成メモを書く (cron)", () => {
     complete.mockResolvedValueOnce(answer("", "refusal"));
     expect(await runMentorMemoCron(env, db, () => NOW.getTime())).toEqual(["fallback"]);
     expect((await memoRows())[0]).toMatchObject({ source: "fallback", failure: "refusal" });
+  });
+
+  it("週が閉じてもすぐには書かず、猶予の間に届いた提出の支援を前の週に数えてから書く", async () => {
+    // 月曜 09:00 (日本時間)。前の週は閉じたが、日曜に使った支援がまだ届いていない。
+    const monday = new Date("2026-10-12T00:00:00Z");
+    expect(await runMentorMemoCron(env, db, () => monday.getTime())).toEqual([]);
+    expect((await memoRows())[0]).toMatchObject({ weekStart: WEEK, state: "queued" });
+    await db.insert(submissions).values({
+      id: "late",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submissionMode: "submit",
+      submittedAt: new Date("2026-10-12T02:00:00Z"),
+      supportLog: [{ kind: "solution", at: "2026-10-11T10:00:00.000Z" }],
+    });
+    // 猶予 (週の終わりから 24 時間) の間は書かない。
+    expect(await runMentorMemoCron(env, db, () => monday.getTime() + 14 * 3_600_000)).toEqual([]);
+    // 火曜 00:01 (日本時間) を過ぎたら書く。
+    expect(
+      await runMentorMemoCron(env, db, () => new Date("2026-10-12T15:01:00Z").getTime()),
+    ).toEqual(["fallback"]);
+    expect((await memoRows())[0]?.material?.support).toMatchObject({ solution: 1 });
+  });
+
+  it("固定した開始点は受け取った週の支援に数え、提出に写った同じ受け取りとは重ねない", async () => {
+    await db.insert(taskFixedStartUses).values({
+      tenantId: "ses",
+      userId: "learner",
+      taskId: "practice",
+      contentHash: HASH,
+      usedAt: new Date("2026-10-07T00:00:00Z"),
+    });
+    // 受け取ったあと、まだ提出していない。
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    expect((await memoRows())[0]?.material?.support).toEqual({ "fixed-start": 1 });
+
+    // 提出すると、拡張の記録 (受け取りと時刻が少し違う) とサーバーの写しが支援に載る。
+    await db.delete(mentorMemos);
+    await db.insert(submissions).values({
+      id: "with-fixed-start",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submissionMode: "submit",
+      submittedAt: new Date("2026-10-08T00:00:00Z"),
+      supportLog: [
+        { kind: "fixed-start", at: "2026-10-07T00:00:04.000Z", detail: "固定した開始点から始めた" },
+        { kind: "fixed-start", at: "2026-10-07T00:00:00.000Z" },
+      ],
+    });
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    expect((await memoRows())[0]?.material?.support).toEqual({ "fixed-start": 1 });
   });
 
   it("週末に使った支援を週明けに提出しても、支援の時刻の週に数える (提出の数は提出の日時で数える)", async () => {

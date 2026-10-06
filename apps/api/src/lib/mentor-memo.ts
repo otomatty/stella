@@ -54,6 +54,7 @@ import {
   studyActivity,
   submissionReviews,
   submissions,
+  taskFixedStartUses,
   taskLocalRuns,
   taskProgress,
   taskSupportEvents,
@@ -86,6 +87,12 @@ const STREAK_MIN = 3;
 export function memoWeekOf(today: string): string {
   return addStudyDays(studyWeekStart(today), -7);
 }
+
+/**
+ * 週が閉じてから書くまでの猶予。支援の記録は提出に添えて届くので、日曜に使った支援は月曜以降の
+ * 提出で初めて届く。猶予の間に届いた支援を前の週に数えてから書く (猶予を過ぎて届いたものは数えない)。
+ */
+export const MEMO_GRACE_MS = 24 * 60 * 60_000;
 
 /** cron が止まって積み損ねた週をさかのぼる上限 (前の週を含めた週の数)。 */
 export const MEMO_BACKFILL_WEEKS = 4;
@@ -211,7 +218,8 @@ async function enqueueWeek(
     tenantId: l.tenantId,
     learnerId: l.id,
     weekStart,
-    nextAttemptAt: now,
+    // 週の終わりから猶予を置いて書く (さかのぼって積んだ古い週は、すぐに書く)。
+    nextAttemptAt: new Date(Math.max(now.getTime(), weekEnd.getTime() + MEMO_GRACE_MS)),
     createdAt: now,
   }));
   const [first] = values;
@@ -294,145 +302,168 @@ export async function collectMemoMaterial(
     console.error("[mentor-memo] learning pace failed", { learnerId: learner.id }, e);
     return null;
   });
-  const [days, sinceWeek, passed, evidence, stumbles, streaks, recorded, aiResults, humanReviews] =
-    await Promise.all([
-      db
-        .select({
-          date: studyActivity.date,
-          watchedSec: studyActivity.watchedSec,
-          completed: studyActivity.completedLessons,
-        })
-        .from(studyActivity)
-        .where(
-          and(
-            eq(studyActivity.userId, learner.id),
-            eq(studyActivity.tenantId, tenant),
-            gte(studyActivity.date, weekStart),
-            lte(studyActivity.date, weekEnd),
-          ),
+  const [
+    days,
+    sinceWeek,
+    passed,
+    evidence,
+    stumbles,
+    streaks,
+    recorded,
+    fixedStarts,
+    aiResults,
+    humanReviews,
+  ] = await Promise.all([
+    db
+      .select({
+        date: studyActivity.date,
+        watchedSec: studyActivity.watchedSec,
+        completed: studyActivity.completedLessons,
+      })
+      .from(studyActivity)
+      .where(
+        and(
+          eq(studyActivity.userId, learner.id),
+          eq(studyActivity.tenantId, tenant),
+          gte(studyActivity.date, weekStart),
+          lte(studyActivity.date, weekEnd),
         ),
-      // 週の始まりから生成の時点までの提出。支援の記録は提出に添えて届くので、週末に使った支援が
-      // 翌週の提出に載ることがある。提出の数は提出の日時で、支援は支援の時刻で週に配る。
-      db
-        .select({
-          at: submissions.submittedAt,
-          mode: submissions.submissionMode,
-          supportLog: submissions.supportLog,
-        })
-        .from(submissions)
-        .where(
-          and(
-            eq(submissions.tenantId, tenant),
-            eq(submissions.studentId, learner.id),
-            gte(submissions.submittedAt, from),
-          ),
+      ),
+    // 週の始まりから生成の時点までの提出。支援の記録は提出に添えて届くので、週末に使った支援が
+    // 翌週の提出に載ることがある。提出の数は提出の日時で、支援は支援の時刻で週に配る。
+    db
+      .select({
+        at: submissions.submittedAt,
+        mode: submissions.submissionMode,
+        supportLog: submissions.supportLog,
+      })
+      .from(submissions)
+      .where(
+        and(
+          eq(submissions.tenantId, tenant),
+          eq(submissions.studentId, learner.id),
+          gte(submissions.submittedAt, from),
         ),
-      // 課題の表はテナントを持たないので、単元 → ステージで絞る。
-      db
-        .select({ title: tasks.title, kind: tasks.kind })
-        .from(taskProgress)
-        .innerJoin(tasks, eq(tasks.id, taskProgress.taskId))
-        .innerJoin(sections, eq(sections.id, tasks.sectionId))
-        .innerJoin(stages, eq(stages.id, sections.stageId))
-        .where(
-          and(
-            eq(taskProgress.userId, learner.id),
-            eq(stages.tenantId, tenant),
-            gte(taskProgress.passedAt, from),
-            lt(taskProgress.passedAt, to),
-          ),
-        )
-        .orderBy(asc(taskProgress.passedAt)),
-      db
-        .select({
-          skillId: skillEvidence.skillId,
-          title: skills.title,
-          level: skillEvidence.level,
-          at: skillEvidence.createdAt,
-        })
-        .from(skillEvidence)
-        .innerJoin(skills, eq(skills.id, skillEvidence.skillId))
-        .where(
-          and(
-            eq(skillEvidence.userId, learner.id),
-            eq(skillEvidence.tenantId, tenant),
-            lt(skillEvidence.createdAt, to),
-          ),
+      ),
+    // 課題の表はテナントを持たないので、単元 → ステージで絞る。
+    db
+      .select({ title: tasks.title, kind: tasks.kind })
+      .from(taskProgress)
+      .innerJoin(tasks, eq(tasks.id, taskProgress.taskId))
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .innerJoin(stages, eq(stages.id, sections.stageId))
+      .where(
+        and(
+          eq(taskProgress.userId, learner.id),
+          eq(stages.tenantId, tenant),
+          gte(taskProgress.passedAt, from),
+          lt(taskProgress.passedAt, to),
         ),
-      // つまずきの通知 ID は作る側と同じ接頭辞 (`stumbleIdPrefix`) で始まるので、主キーの範囲で引く。
-      db
-        .select({
-          id: notifications.id,
-          signal: sql<string | null>`json_extract(${notifications.payload}, '$.signal')`,
-        })
-        .from(notifications)
-        .where(
-          and(
-            or(...STUMBLE_SIGNALS.map((signal) => stumbleIdRange(signal, learner.id))),
-            eq(notifications.tenantId, tenant),
-            eq(notifications.type, "learner_stumble"),
-            sql`json_extract(${notifications.payload}, '$.learner_id') = ${learner.id}`,
-            gte(notifications.createdAt, from),
-            lt(notifications.createdAt, to),
-          ),
+      )
+      .orderBy(asc(taskProgress.passedAt)),
+    db
+      .select({
+        skillId: skillEvidence.skillId,
+        title: skills.title,
+        level: skillEvidence.level,
+        at: skillEvidence.createdAt,
+      })
+      .from(skillEvidence)
+      .innerJoin(skills, eq(skills.id, skillEvidence.skillId))
+      .where(
+        and(
+          eq(skillEvidence.userId, learner.id),
+          eq(skillEvidence.tenantId, tenant),
+          lt(skillEvidence.createdAt, to),
         ),
-      db
-        .select({ title: tasks.title, streak: taskLocalRuns.failureStreak })
-        .from(taskLocalRuns)
-        .innerJoin(tasks, eq(tasks.id, taskLocalRuns.taskId))
-        .where(
-          and(
-            eq(taskLocalRuns.userId, learner.id),
-            eq(taskLocalRuns.tenantId, tenant),
-            gte(taskLocalRuns.failureStreak, STREAK_MIN),
-          ),
-        )
-        .orderBy(desc(taskLocalRuns.failureStreak))
-        .limit(5),
-      db
-        .select({ kind: taskSupportEvents.kind })
-        .from(taskSupportEvents)
-        .where(
-          and(
-            eq(taskSupportEvents.userId, learner.id),
-            eq(taskSupportEvents.tenantId, tenant),
-            gte(taskSupportEvents.createdAt, from),
-            lt(taskSupportEvents.createdAt, to),
-          ),
+      ),
+    // つまずきの通知 ID は作る側と同じ接頭辞 (`stumbleIdPrefix`) で始まるので、主キーの範囲で引く。
+    db
+      .select({
+        id: notifications.id,
+        signal: sql<string | null>`json_extract(${notifications.payload}, '$.signal')`,
+      })
+      .from(notifications)
+      .where(
+        and(
+          or(...STUMBLE_SIGNALS.map((signal) => stumbleIdRange(signal, learner.id))),
+          eq(notifications.tenantId, tenant),
+          eq(notifications.type, "learner_stumble"),
+          sql`json_extract(${notifications.payload}, '$.learner_id') = ${learner.id}`,
+          gte(notifications.createdAt, from),
+          lt(notifications.createdAt, to),
         ),
-      // その週に提出へ当てた AI の結果 (受講者に見せたかどうかによらず、講師向けの集計に使う)。
-      db
-        .select({
-          submissionId: aiReviews.submissionId,
-          outcome: aiReviews.outcome,
-          reasons: aiReviews.routeReasons,
-          results: aiReviews.rubricResults,
-        })
-        .from(aiReviews)
-        .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
-        .where(
-          and(
-            eq(submissions.tenantId, tenant),
-            eq(submissions.studentId, learner.id),
-            eq(aiReviews.disposition, "applied"),
-            gte(aiReviews.appliedAt, from),
-            lt(aiReviews.appliedAt, to),
-          ),
+      ),
+    db
+      .select({ title: tasks.title, streak: taskLocalRuns.failureStreak })
+      .from(taskLocalRuns)
+      .innerJoin(tasks, eq(tasks.id, taskLocalRuns.taskId))
+      .where(
+        and(
+          eq(taskLocalRuns.userId, learner.id),
+          eq(taskLocalRuns.tenantId, tenant),
+          gte(taskLocalRuns.failureStreak, STREAK_MIN),
         ),
-      db
-        .select({ verdict: submissionReviews.verdict })
-        .from(submissionReviews)
-        .innerJoin(submissions, eq(submissions.id, submissionReviews.submissionId))
-        .where(
-          and(
-            eq(submissions.tenantId, tenant),
-            eq(submissions.studentId, learner.id),
-            eq(submissionReviews.source, "human"),
-            gte(submissionReviews.createdAt, from),
-            lt(submissionReviews.createdAt, to),
-          ),
+      )
+      .orderBy(desc(taskLocalRuns.failureStreak))
+      .limit(5),
+    db
+      .select({ kind: taskSupportEvents.kind })
+      .from(taskSupportEvents)
+      .where(
+        and(
+          eq(taskSupportEvents.userId, learner.id),
+          eq(taskSupportEvents.tenantId, tenant),
+          gte(taskSupportEvents.createdAt, from),
+          lt(taskSupportEvents.createdAt, to),
         ),
-    ]);
+      ),
+    // 固定した開始点の受け取り。受け取りの正本はこの表で、提出の支援記録に載るのはその写し
+    // (サーバーの写しか拡張の記録)。提出していなくても、受け取った週の支援に数える。
+    db
+      .select({ usedAt: taskFixedStartUses.usedAt })
+      .from(taskFixedStartUses)
+      .where(
+        and(
+          eq(taskFixedStartUses.userId, learner.id),
+          eq(taskFixedStartUses.tenantId, tenant),
+          gte(taskFixedStartUses.usedAt, from),
+          lt(taskFixedStartUses.usedAt, to),
+        ),
+      ),
+    // その週に提出へ当てた AI の結果 (受講者に見せたかどうかによらず、講師向けの集計に使う)。
+    db
+      .select({
+        submissionId: aiReviews.submissionId,
+        outcome: aiReviews.outcome,
+        reasons: aiReviews.routeReasons,
+        results: aiReviews.rubricResults,
+      })
+      .from(aiReviews)
+      .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
+      .where(
+        and(
+          eq(submissions.tenantId, tenant),
+          eq(submissions.studentId, learner.id),
+          eq(aiReviews.disposition, "applied"),
+          gte(aiReviews.appliedAt, from),
+          lt(aiReviews.appliedAt, to),
+        ),
+      ),
+    db
+      .select({ verdict: submissionReviews.verdict })
+      .from(submissionReviews)
+      .innerJoin(submissions, eq(submissions.id, submissionReviews.submissionId))
+      .where(
+        and(
+          eq(submissions.tenantId, tenant),
+          eq(submissions.studentId, learner.id),
+          eq(submissionReviews.source, "human"),
+          gte(submissionReviews.createdAt, from),
+          lt(submissionReviews.createdAt, to),
+        ),
+      ),
+  ]);
 
   const submitted = sinceWeek.filter((s) => s.at < to);
   const activeDates = new Set(
@@ -479,11 +510,15 @@ export async function collectMemoMaterial(
   };
   for (const e of recorded)
     if (SERVER_SUPPORT_KINDS.includes(e.kind)) add(e.kind as SupportRecordKind);
+  if (fixedStarts.length > 0) support["fixed-start"] = fixedStarts.length;
   const seen = new Set<string>();
   for (const s of submitted) if (s.mode === "consult") add("consult");
   for (const s of sinceWeek) {
     for (const e of s.supportLog ?? []) {
       if (!DECLARED_SUPPORT_KINDS.includes(e.kind)) continue;
+      // 固定した開始点は受け取りの記録で数えた。提出に載った写しは時刻がずれることもある
+      // (拡張は手元の時刻で残す) ので、時刻で突き合わせず、写しは数えない。
+      if (e.kind === "fixed-start") continue;
       if (s.mode === "consult" && e.kind === "instructor" && e.detail === CONSULT_SUPPORT_DETAIL)
         continue;
       const at = new Date(e.at);
