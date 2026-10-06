@@ -28,10 +28,12 @@ import {
   stages,
   submissionReviews,
   submissions,
+  taskFixedStartUses,
   taskLocalRuns,
   taskSupportEvents,
   tasks,
 } from "../db/schema.js";
+import { fixedStartUsesOf } from "./task-fixed-start.js";
 
 /** 1 課題あたりに返す記録の件数。回数 (`counts`) は全件で数える。 */
 const EVENTS_PER_TASK = 50;
@@ -130,7 +132,8 @@ export async function recordSupportEvent(
 
 /**
  * 提出の申告 (`support_log`) と相談の提出のほかに、この提出より前に支援を受けていたか。
- * サーバーの記録 (AI チャットなど) と、同じ課題での講師への相談を数える。
+ * サーバーの記録 (AI チャットなど)、同じ課題での講師への相談、固定した開始点の受け取り
+ * (この課題の開始点と、この課題の実装を含む後の課題の開始点、#31) を数える。
  * 人のレビューは数えない — 再提出の指摘を受けて直すのは通常の流れで、支援付きにすると
  * 一度で通らなかった提出がすべて支援付きになるため (03 §7 の「講師による実装指示」とは別)。
  */
@@ -151,6 +154,17 @@ export async function hasRecordedSupport(
     )
     .limit(1);
   if (recorded) return true;
+  const [fixedStart] = await db
+    .select({ one: sql`1` })
+    .from(taskFixedStartUses)
+    .where(
+      and(
+        fixedStartUsesOf({ tenantId: row.tenantId, userId: row.studentId, taskId: row.taskId }),
+        lte(taskFixedStartUses.usedAt, row.submittedAt),
+      ),
+    )
+    .limit(1);
+  if (fixedStart) return true;
   const [consulted] = await db
     .select({ one: sql`1` })
     .from(submissions)

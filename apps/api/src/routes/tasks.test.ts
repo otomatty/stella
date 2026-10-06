@@ -25,6 +25,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { hasRecordedSupport } from "../lib/task-support.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { submissionsRoute } from "./submissions.js";
@@ -361,6 +362,39 @@ describe("課題の配布 API (実 SQLite)", () => {
       .from(taskProgress)
       .where(eq(taskProgress.taskId, EARLIER_ID));
     expect(progress?.status).toBe("instructor-pending");
+  });
+
+  it("提出の処理中に受け取った開始点も、受け取りが提出の時刻より前なら支援に数える", async () => {
+    const earlier = await addEarlierTask("assessment-a");
+    await addFixedStart();
+    await coverEarlierTask();
+    expect((await submit(earlier.input)).status).toBe(201);
+    const [row] = await submittedOf(EARLIER_ID);
+    const scope = {
+      tenantId: row.tenantId,
+      studentId: row.studentId ?? "",
+      taskId: EARLIER_ID,
+      submittedAt: row.submittedAt,
+    };
+    expect(await hasRecordedSupport(db, scope)).toBe(false);
+    // 提出の読み出しより後に記録が届いたが、受け取りの時刻は提出より前 (読み漏れ)。AI の判定の
+    // 直前とスキルの証拠を作るときに `hasRecordedSupport` が拾う。
+    await db.insert(taskFixedStartUses).values({
+      tenantId: row.tenantId,
+      userId: scope.studentId,
+      taskId: fixture.input.taskId,
+      contentHash: fixture.bundle.contentHash,
+      usedAt: new Date(row.submittedAt.getTime() - 1),
+      coveredTaskIds: [EARLIER_ID],
+    });
+    expect(await hasRecordedSupport(db, scope)).toBe(true);
+    // 提出より後の受け取りは、その提出の支援に数えない。
+    expect(
+      await hasRecordedSupport(db, {
+        ...scope,
+        submittedAt: new Date(row.submittedAt.getTime() - 2),
+      }),
+    ).toBe(false);
   });
 
   it("開始点を使っていない提出の支援記録は変えない", async () => {
