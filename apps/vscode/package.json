@@ -10,7 +10,9 @@
     "directory": "apps/vscode"
   },
   "description": "STELLA — VS Code extension for stage lessons and exercises",
-  "engines": { "vscode": "^1.96.0" },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
   "main": "./dist/extension.js",
   "activationEvents": ["onUri", "onView:stella.lessons"],
   "capabilities": {
@@ -39,19 +41,70 @@
       ]
     },
     "commands": [
-      { "command": "stella.connect", "title": "STELLA: Web で接続" },
-      { "command": "stella.disconnect", "title": "STELLA: 切断" },
-      { "command": "stella.refresh", "title": "STELLA: 再読み込み" },
-      { "command": "stella.grade", "title": "STELLA: 採点を実行" },
-      { "command": "stella.resetExercise", "title": "STELLA: 課題をリセット" },
-      { "command": "stella.openInWeb", "title": "STELLA: Web で開く" },
-      { "command": "stella.openLessonDoc", "title": "STELLA: ドキュメントを開く" },
-      { "command": "stella.openLessonCode", "title": "STELLA: 演習を開く" },
-      { "command": "stella.openNextLesson", "title": "STELLA: 次のレッスンへ" },
-      { "command": "stella.escalateToInstructor", "title": "STELLA: 講師に引き継ぐ" },
-      { "command": "stella.runTask", "title": "STELLA: 課題を確認する" },
-      { "command": "stella.diagnoseEnvironment", "title": "STELLA: 開発環境を診断する" },
-      { "command": "stella.showRunLog", "title": "STELLA: 実行ログを表示する" }
+      {
+        "command": "stella.connect",
+        "title": "STELLA: Web で接続"
+      },
+      {
+        "command": "stella.disconnect",
+        "title": "STELLA: 切断"
+      },
+      {
+        "command": "stella.refresh",
+        "title": "STELLA: 再読み込み"
+      },
+      {
+        "command": "stella.grade",
+        "title": "STELLA: 採点を実行"
+      },
+      {
+        "command": "stella.resetExercise",
+        "title": "STELLA: 課題をリセット"
+      },
+      {
+        "command": "stella.openInWeb",
+        "title": "STELLA: Web で開く"
+      },
+      {
+        "command": "stella.openLessonDoc",
+        "title": "STELLA: ドキュメントを開く"
+      },
+      {
+        "command": "stella.openLessonCode",
+        "title": "STELLA: 演習を開く"
+      },
+      {
+        "command": "stella.openNextLesson",
+        "title": "STELLA: 次のレッスンへ"
+      },
+      {
+        "command": "stella.submitExercise",
+        "title": "STELLA: 採点した演習を提出する"
+      },
+      {
+        "command": "stella.escalateToInstructor",
+        "title": "STELLA: 講師に引き継ぐ"
+      },
+      {
+        "command": "stella.runTask",
+        "title": "STELLA: 課題を確認する"
+      },
+      {
+        "command": "stella.diagnoseEnvironment",
+        "title": "STELLA: 開発環境を診断する"
+      },
+      {
+        "command": "stella.showRunLog",
+        "title": "STELLA: 実行ログを表示する"
+      },
+      {
+        "command": "stella.submitTask",
+        "title": "STELLA: 課題を提出する"
+      },
+      {
+        "command": "stella.consultTask",
+        "title": "STELLA: 講師に相談する"
+      }
     ],
     "languages": [
       {
@@ -68,7 +121,12 @@
         "path": "./syntaxes/fe-pseudo.tmLanguage.json"
       }
     ],
-    "snippets": [{ "language": "fe-pseudo", "path": "./snippets/fe-pseudo.json" }],
+    "snippets": [
+      {
+        "language": "fe-pseudo",
+        "path": "./snippets/fe-pseudo.json"
+      }
+    ],
     "configuration": {
       "properties": {
         "stella.serverUrl": {

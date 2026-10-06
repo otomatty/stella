@@ -40,6 +40,7 @@ import { recordAudit } from "./audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "./enrollment-bulk.js";
 import { stageClearLockId, withResourceLock } from "./resource-lock.js";
 import { recordStagePathEvents } from "./stage-path-events.js";
+import { passCountsForLesson } from "./reviewed-progress.js";
 
 /**
  * `inArray` に渡す id の 1 クエリあたりの件数。固定バインド (user_id やフラグ) の
@@ -216,10 +217,11 @@ export async function stageIdsOfLessons(db: Db, lessonIds: readonly string[]): P
  * - revoke ではなく **削除** にする: (user, stage) の一意索引があるため revoked 行が残ると
  *   再合格しても二度と自動発行できない。発行と取り消しの経緯は監査ログ側に残る
  * - 別の合格提出が同じレッスンに残っていれば条件は崩れていないので何もしない
- * - レッスン進捗・クイズ合格は単調 (取り消しが無い) ため、逆向きの入口は添削の
- *   verdict 訂正だけ
+ * - クイズ合格と通常のレッスン進捗は単調 (取り消しが無い) ため、逆向きの入口は添削の
+ *   verdict 訂正と、コードレッスンの進捗同期 (レビューの合格が無い自己申告の完了を
+ *   外したとき。`POST /api/lesson-progress`) の 2 つ
  *
- * best-effort — 失敗しても添削の保存 (呼び出し側の本編) は成功させる。
+ * best-effort — 失敗しても添削・進捗の保存 (呼び出し側の本編) は成功させる。
  */
 export async function reclaimAutoCertificatesIfUnmet(
   db: Db,
@@ -560,7 +562,7 @@ async function batchComputeCounts(
   const lessonIds = lessonRows.map((row) => row.lessonId);
   const quizIds = quizRows.map((row) => row.quizId);
   const assignmentLessonIds = lessonRows
-    .filter((row) => row.type === "assignment")
+    .filter((row) => row.type === "assignment" || row.type === "code")
     .map((row) => row.lessonId);
 
   const doneLessonIds = new Set(
@@ -601,11 +603,13 @@ async function batchComputeCounts(
         db
           .select({ lessonId: submissions.lessonId })
           .from(submissions)
+          .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
           .where(
             and(
               eq(submissions.studentId, userId),
               eq(submissions.verdict, "pass"),
               inArray(submissions.lessonId, slice),
+              passCountsForLesson(),
             ),
           ),
       )
@@ -624,7 +628,7 @@ async function batchComputeCounts(
     const c = of(row.stageId);
     c.totalLessons += 1;
     if (doneLessonIds.has(row.lessonId)) c.completedLessons += 1;
-    if (row.type === "assignment") {
+    if (row.type === "assignment" || row.type === "code") {
       c.totalAssignments += 1;
       if (passedAssignmentLessonIds.has(row.lessonId)) c.passedAssignments += 1;
     }

@@ -15,9 +15,10 @@ import { nextSubmissionAttempt } from "@stella/shared/review/escalation";
 import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/grading-summary";
 import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { bodyLimit } from "hono/body-limit";
+import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 
-import { notifications, profiles, submissions } from "../db/schema.js";
+import { notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
@@ -28,6 +29,8 @@ import {
 } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
+import { withResourceLock } from "../lib/resource-lock.js";
+import { reviewNotification } from "../lib/review-notification.js";
 import {
   autoCompleteStagesIfMet,
   reclaimAutoCertificatesIfUnmet,
@@ -36,14 +39,43 @@ import {
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 
+import {
+  createTaskSubmission,
+  readSubmissionFiles,
+  reviewTaskSubmission,
+  syncReviewedLesson,
+} from "../lib/task-submission.js";
+
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
+submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
 
 type SubmissionSelect = typeof submissions.$inferSelect;
 
-/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える。 */
-function toRow(
-  s: SubmissionSelect,
+/**
+ * 一覧に載せない、提出 1 件ごとの記録 (提出時の課題・実行結果・修正記録・支援・照合結果)。
+ * 1 件で最大 1 MiB になりうるので、一覧の SELECT から外し、詳細 (`GET /api/submissions/:id`)
+ * だけが返す。
+ */
+const {
+  taskSnapshot: _taskSnapshot,
+  localResult: _localResult,
+  testHashes: _testHashes,
+  debuggingRecord: _debuggingRecord,
+  supportLog: _supportLog,
+  machineCheck: _machineCheck,
+  ...summaryColumns
+} = getTableColumns(submissions);
+
+type SubmissionSummary = Omit<
+  SubmissionSelect,
+  "taskSnapshot" | "localResult" | "testHashes" | "debuggingRecord" | "supportLog" | "machineCheck"
+>;
+
+/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。 */
+function toSummaryRow(
+  s: SubmissionSummary,
   profile: { display_name: string; initials: string | null } | null,
+  revealDrafts = false,
 ) {
   return {
     id: s.id,
@@ -55,17 +87,39 @@ function toRow(
     section_title: s.sectionTitle,
     assignment_title: s.assignmentTitle,
     code: s.code,
+    task_id: s.taskId,
+    task_content_hash: s.taskContentHash,
+    task_kind: s.taskKind,
+    explanation: s.explanation,
+    review_task_content_hash: s.reviewTaskContentHash,
     status: s.status,
     priority: s.priority,
     attempt: s.attempt,
     ai_ready: s.aiReady,
-    ai_suggestions: s.aiSuggestions,
-    rubric: s.rubric,
+    ai_suggestions: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.aiSuggestions,
+    rubric: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.rubric,
     grading_summary: parseGradingSummary(s.gradingSummary),
-    review_notes: s.reviewNotes,
+    review_notes: s.taskId && s.status === "pending" && !revealDrafts ? "" : s.reviewNotes,
     verdict: s.verdict,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
+  };
+}
+
+/** 提出 1 件を返す応答の形。一覧の形に提出ごとの記録を足す。 */
+function toRow(
+  s: SubmissionSelect,
+  profile: { display_name: string; initials: string | null } | null,
+  revealDrafts = false,
+) {
+  return {
+    ...toSummaryRow(s, profile, revealDrafts),
+    local_result: s.localResult,
+    test_hashes: s.testHashes,
+    debugging_record: s.debuggingRecord,
+    support_log: s.supportLog,
+    machine_check: s.machineCheck,
+    task_snapshot: s.taskSnapshot,
   };
 }
 
@@ -88,7 +142,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const rows = await db
-      .select()
+      .select(summaryColumns)
       .from(submissions)
       .where(eq(submissions.tenantId, caller.tenantId))
       .orderBy(desc(submissions.submittedAt));
@@ -106,7 +160,9 @@ submissionsRoute.get("/api/submissions", async (c) => {
       }
     }
     return c.json({
-      rows: rows.map((r) => toRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null)),
+      rows: rows.map((r) =>
+        toSummaryRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
+      ),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -144,6 +200,7 @@ interface SubmissionInput {
   code: string;
   priority: "high" | "normal" | "low";
   gradingSummary: GradingSummary | null;
+  explanation: string | null;
 }
 
 /** 同一課題の未添削提出のうち最新の 1 件の id。 */
@@ -196,6 +253,7 @@ async function overwritePending(
       code: input.code,
       priority: input.priority,
       gradingSummary: input.gradingSummary,
+      explanation: input.explanation,
       attempt: sql`${submissions.attempt} + 1`,
       submittedAt: new Date(),
       // コードが変わっているので前回の AI 下書き / 総評は捨てる。
@@ -230,7 +288,7 @@ async function insertUnlessPending(
   const summary = input.gradingSummary ? JSON.stringify(input.gradingSummary) : null;
   const values = sql`${id}, ${tenantId}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
       ${input.stageTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
-      'pending', ${input.priority}, ${attempt}, ${summary}, ${Date.now()}`;
+      'pending', ${input.priority}, ${attempt}, ${summary}, ${input.explanation}, ${Date.now()}`;
   const guard = input.assignmentId
     ? sql`WHERE NOT EXISTS (
         SELECT 1 FROM submissions
@@ -242,7 +300,7 @@ async function insertUnlessPending(
     INSERT INTO submissions (
       id, tenant_id, student_id, lesson_id, assignment_id,
       stage_title, section_title, assignment_title, code,
-      status, priority, attempt, grading_summary, submitted_at
+      status, priority, attempt, grading_summary, explanation, submitted_at
     )
     SELECT ${values}
     ${guard}
@@ -266,7 +324,20 @@ async function findById(db: Db, id: string): Promise<SubmissionSelect | undefine
 submissionsRoute.post("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const body = (await c.req.json()) as {
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw new ApiError("提出データの JSON が不正です", 400);
+    }
+    if (raw && typeof raw === "object" && "taskId" in raw) {
+      const created = await createTaskSubmission(db, caller, c.env, raw);
+      return c.json(
+        { row: toRow(created, { display_name: caller.name, initials: caller.name.slice(0, 2) }) },
+        201,
+      );
+    }
+    const body = raw as {
       lessonId?: string | null;
       assignmentId?: string | null;
       stageTitle?: string;
@@ -281,11 +352,18 @@ submissionsRoute.post("/api/submissions", async (c) => {
       priority: "high" | "normal" | "low";
       attempt: number;
       gradingSummary?: unknown;
+      explanation?: unknown;
     };
 
     // 受講者が送る値なので、 形が違えば黙って捨てずに 400 で返す。
     if (body.gradingSummary != null && !isGradingSummary(body.gradingSummary)) {
       throw new ApiError("gradingSummary の形式が不正です", 400);
+    }
+    if (
+      body.explanation != null &&
+      (typeof body.explanation !== "string" || body.explanation.length > 20_000)
+    ) {
+      throw new ApiError("説明の形式が不正です", 400);
     }
 
     const input: SubmissionInput = {
@@ -298,6 +376,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       code: body.code,
       priority: body.priority,
       gradingSummary: parseGradingSummary(body.gradingSummary),
+      explanation: typeof body.explanation === "string" ? body.explanation.trim() : null,
     };
     const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
 
@@ -349,14 +428,14 @@ submissionsRoute.get("/api/submissions/mine", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const rows = await db
-      .select()
+      .select(summaryColumns)
       .from(submissions)
       .where(and(eq(submissions.tenantId, caller.tenantId), eq(submissions.studentId, caller.id)))
       .orderBy(desc(submissions.submittedAt));
 
     const profile = await profileFor(db, caller.id);
     return c.json({
-      rows: rows.map((r) => toRow(r, profile)),
+      rows: rows.map((r) => toSummaryRow(r, profile)),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -379,7 +458,18 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (!isStaff && !isOwner) {
       throw new ApiError("この提出を閲覧する権限がありません", 403);
     }
-    return c.json({ row: toRow(row, await profileFor(db, row.studentId)) });
+    const detail = toRow(row, await profileFor(db, row.studentId), isStaff);
+    if (row.taskId) {
+      const files = await readSubmissionFiles(db, c.env, row.id);
+      return c.json({
+        row: {
+          ...detail,
+          files: files.map(({ text: _text, ...file }) => file),
+          code: files.map((f) => `// ${f.path}\n${f.text}`).join("\n\n"),
+        },
+      });
+    }
+    return c.json({ row: detail });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -433,12 +523,25 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       code?: string;
     };
 
+    if (
+      !patch ||
+      typeof patch !== "object" ||
+      (patch.verdict !== undefined &&
+        patch.verdict !== null &&
+        !["pass", "resubmit", "fail"].includes(patch.verdict)) ||
+      (patch.status !== undefined &&
+        !["pending", "passed", "resubmit", "failed"].includes(patch.status)) ||
+      (patch.reviewNotes !== undefined && typeof patch.reviewNotes !== "string")
+    )
+      throw new ApiError("レビューの形式が不正です", 400);
     const expected = parseExpectedSubmittedAt(patch.expectedSubmittedAt);
     if (expected && expected.getTime() !== before.submittedAt.getTime()) {
       throw submissionChanged();
     }
 
     const set: Partial<SubmissionSelect> = {};
+    if (before.taskId && (patch.code !== undefined || patch.attempt !== undefined))
+      throw new ApiError("提出ファイルと試行は変更できません", 400);
     if (patch.status !== undefined) set.status = patch.status;
     if (patch.priority !== undefined) set.priority = patch.priority;
     if (patch.attempt !== undefined) set.attempt = patch.attempt;
@@ -446,62 +549,70 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     if (patch.aiSuggestions !== undefined) set.aiSuggestions = patch.aiSuggestions;
     if (patch.rubric !== undefined) set.rubric = patch.rubric;
     if (patch.reviewNotes !== undefined) set.reviewNotes = patch.reviewNotes;
-    if (patch.verdict !== undefined) set.verdict = patch.verdict;
+    const verdict =
+      patch.verdict ??
+      (patch.status === "passed"
+        ? "pass"
+        : patch.status === "resubmit"
+          ? "resubmit"
+          : patch.status === "failed"
+            ? "fail"
+            : undefined);
+    if (patch.verdict === null) set.verdict = null;
+    if (verdict !== undefined) {
+      set.verdict = verdict;
+      set.status = verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
+    }
+    if (before.taskId && (patch.verdict === null || patch.status === "pending"))
+      throw new ApiError("課題の確定判定は合格・再提出・不合格で訂正してください", 400);
     if (patch.code !== undefined) set.code = patch.code;
 
     // status が pending 以外になったら reviewed_at を打つ (旧 patchToUpdate 相当)。
-    const willReview = patch.status !== undefined && patch.status !== "pending";
+    const willReview = verdict !== undefined;
     if (willReview) {
       set.reviewedAt = new Date();
       set.reviewerId = caller.id;
     }
 
+    if (before.taskId && verdict) {
+      await reviewTaskSubmission(db, caller, id, verdict, patch.reviewNotes ?? before.reviewNotes);
+      // 確定判定は上のトランザクションで記録済み。下書き等の任意項目だけ更新する。
+      for (const key of ["verdict", "status", "reviewNotes", "reviewedAt", "reviewerId"] as const)
+        delete set[key];
+    }
     if (Object.keys(set).length > 0) {
-      // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
-      // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
-      const updated = await db
-        .update(submissions)
-        .set(set)
-        .where(
-          expected
-            ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
-            : eq(submissions.id, id),
-        )
-        .returning();
-      if (expected && !updated[0]) {
-        throw submissionChanged();
-      }
+      // 旧形式の判定の書き込みは提出ごとに直列化し、その中で読んだ保存前の行から通知を決める
+      // (新形式は reviewTaskSubmission が課題のロックの中で同じことをする)。
+      const notifyVerdict = !before.taskId && verdict !== undefined ? verdict : null;
+      const locked = await withResourceLock(db, `submission-review:${id}`, async () => {
+        const [current] = notifyVerdict
+          ? await db.select().from(submissions).where(eq(submissions.id, id)).limit(1)
+          : [];
+        // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
+        // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
+        const updated = await db
+          .update(submissions)
+          .set(set)
+          .where(
+            expected
+              ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
+              : eq(submissions.id, id),
+          )
+          .returning();
+        if (expected && !updated[0]) {
+          throw submissionChanged();
+        }
+        // 初回の確定と判定の訂正を通知する。同じ判定や総評だけの保存では増やさない。
+        const notice = current && notifyVerdict ? reviewNotification(current, notifyVerdict) : null;
+        if (notice) await db.insert(notifications).values(notice);
+      });
+      if (!locked.ran) throw new ApiError("別の講師が同じ提出を保存中です", 409);
     }
 
     const after = requireReturning(
       await db.select().from(submissions).where(eq(submissions.id, id)).limit(1),
       "submission reload",
     );
-
-    // 添削確定の初回のみ通知 (旧 notify_review_completed: old.reviewed_at is null)。
-    if (before.reviewedAt == null && after.reviewedAt != null && after.studentId) {
-      const verdictBody =
-        after.verdict === "pass"
-          ? "合格しました。 おめでとうございます。"
-          : after.verdict === "resubmit"
-            ? "再提出が必要です。 フィードバックを確認してください。"
-            : after.verdict === "fail"
-              ? "残念ながら不合格です。 フィードバックを確認してください。"
-              : "フィードバックが届いています。";
-      await db.insert(notifications).values({
-        userId: after.studentId,
-        tenantId: after.tenantId,
-        type: "review_completed",
-        title: `${after.assignmentTitle || "課題"} の添削が完了しました`,
-        body: verdictBody,
-        payload: {
-          submission_id: after.id,
-          verdict: after.verdict,
-          status: after.status,
-          stage_title: after.stageTitle,
-        },
-      });
-    }
 
     // 合格の確定でこの課題のステージの修了条件が揃ったら自動でクリアにする
     // (修了証の自動発行)。逆に、合格を外す保存では自動発行の修了証を巻き戻す —
@@ -514,11 +625,26 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     // 条件が崩れたときだけ巻き戻すので、保存し直しがそのまま復旧手段にもなる。
     // 判定対象は提出した受講者、監査ログの actor は確定した講師。
     // best-effort — 失敗しても添削の確定は返す。
-    if (patch.verdict !== undefined && after.studentId && after.lessonId) {
+    if (verdict !== undefined || patch.verdict === null) await syncReviewedLesson(db, after);
+    if (
+      (verdict !== undefined || patch.verdict === null) &&
+      after.studentId &&
+      (after.lessonId || after.taskId)
+    ) {
+      const taskStageRows = after.taskId
+        ? await db
+            .select({ stageId: sections.stageId })
+            .from(tasks)
+            .innerJoin(sections, eq(sections.id, tasks.sectionId))
+            .where(eq(tasks.id, after.taskId))
+            .limit(1)
+        : [];
       const input = {
         actor: caller,
         userId: after.studentId,
-        stageIds: await stageIdsOfLessons(db, [after.lessonId]),
+        stageIds: after.lessonId
+          ? await stageIdsOfLessons(db, [after.lessonId])
+          : taskStageRows.map((r) => r.stageId),
         ip: clientIp(c),
       };
       if (after.verdict === "pass") await autoCompleteStagesIfMet(db, input);
@@ -546,7 +672,7 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       }
     }
 
-    return c.json({ row: toRow(after, await profileFor(db, after.studentId)) });
+    return c.json({ row: toRow(after, await profileFor(db, after.studentId), true) });
   } catch (err) {
     return errorResponse(c, err);
   }

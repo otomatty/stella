@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import { contentHash, verifyTaskSubmission } from "@stella/shared/tasks/submission";
 import { describe, expect, it } from "vitest";
 import { findTaskRoot, loadTask, runTask, saveRunResult } from "./run-task.js";
 
@@ -112,10 +113,13 @@ describe("runTask (Vitest の手順)", () => {
       "export const f = (v, k) => v.filter((x) => x >= k);\n",
     );
     const logs: string[] = [];
+    const task = manifest();
+    const manifestText = JSON.stringify(task);
+    const manifestSha256 = await contentHash(Buffer.from(manifestText));
     const result = await runTask({
       root,
-      manifest: manifest(),
-      manifestSha256: "m",
+      manifest: task,
+      manifestSha256,
       toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
       log: (text) => logs.push(text),
     });
@@ -142,8 +146,8 @@ describe("runTask (Vitest の手順)", () => {
     // 2 回目は依存の準備を省く。
     const again = await runTask({
       root,
-      manifest: manifest(),
-      manifestSha256: "m",
+      manifest: task,
+      manifestSha256,
       toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
     });
     expect(again.steps[0]).toMatchObject({
@@ -151,6 +155,31 @@ describe("runTask (Vitest の手順)", () => {
       status: "skipped",
       summary: "準備済みです",
     });
+    const encodedFiles = {
+      ".stella/task.json": Buffer.from(manifestText).toString("base64"),
+      "src/filter.js": (await readFile(path.join(root, "src/filter.js"))).toString("base64"),
+      "tests/filter.test.js": (await readFile(path.join(root, "tests/filter.test.js"))).toString(
+        "base64",
+      ),
+    };
+    // runnerが実際に返した再実行の結果を、そのまま提出の機械照合に通す。
+    expect(
+      (
+        await verifyTaskSubmission(
+          {
+            taskId: task.id,
+            contentHash: "a".repeat(64),
+            mode: "submit",
+            files: [{ path: "src/filter.js", content: encodedFiles["src/filter.js"] }],
+            localResult: again,
+            protected: again.protected,
+            explanation: "境界値を含めて確認しました",
+            support: [],
+          },
+          { manifest: task, contentHash: "a".repeat(64), files: encodedFiles },
+        )
+      ).check.matched,
+    ).toBe(true);
 
     // 道具のパッケージが消えていれば、印が同じでも準備をやり直す。
     await rm(path.join(root, "node_modules", "vitest"), { recursive: true });

@@ -15,7 +15,12 @@ import {
   formatVersion,
 } from "@stella/shared/tasks/environment";
 import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
-import type { RunStepId, RunStepResult, TestCaseResult } from "@stella/shared/tasks/run-result";
+import {
+  isLintableFile,
+  type RunStepId,
+  type RunStepResult,
+  type TestCaseResult,
+} from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { asCliPath, LIMITS, writeStateFile } from "./files.js";
 import {
@@ -244,8 +249,6 @@ export const depsStep: StepDefinition = {
 // lint・整形
 // ---------------------------------------------------------------
 
-const LINTABLE = /\.(c|m)?(j|t)sx?$/;
-
 /**
  * 提出の上限を超えていれば、道具に渡さず省略する。上限超えは最後の「提出するファイルの
  * 確認」が要修正として報告する。何百ものパスを渡すと Windows ではコマンドラインの長さを
@@ -267,7 +270,7 @@ export const lintStep: StepDefinition = {
     if (tooMany) return tooMany;
     const bin = await packageBin(ctx, "eslint", "eslint", "ESLint");
     if (isOutcome(bin)) return bin;
-    const files = ctx.submitFiles.filter((f) => LINTABLE.test(f));
+    const files = ctx.submitFiles.filter(isLintableFile);
     if (files.length === 0)
       return { status: "skipped", summary: "lint の対象になるファイルがありません" };
     const output = await tmpFile(ctx.root, "eslint.json");

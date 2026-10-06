@@ -73,6 +73,26 @@ function toValues(
   }));
 }
 
+/**
+ * 同テナントのコードレッスンの完了は、書き込むその文の中でレビューの合格から決め直す
+ * (`reviewedProgressRows` と同じ条件: 提出の課題がレッスンの課題と一致する合格)。
+ * 合格を先に読んでから書くと、その間に講師が合格を訂正したとき、端末の時刻が LWW で
+ * 勝てば古い「合格あり」で訂正を上書きしてしまう。新規行は端末の値を入れるが、
+ * 訂正側の同期 (`syncReviewedLesson`) が判定の保存のあとに必ず決め直す。
+ * 定数は SQL に直に書き、1 行あたりのバインド数を増やさない。
+ */
+const reviewedCompleted = sql`case when exists (
+  select 1 from lessons l
+  inner join sections se on se.id = l.section_id
+  inner join stages st on st.id = se.stage_id
+  where l.id = excluded.lesson_id and l.type = 'code' and st.tenant_id = excluded.tenant_id
+) then exists (
+  select 1 from submissions s
+  inner join lessons l on l.id = s.lesson_id and l.assignment_id = s.assignment_id
+  where s.tenant_id = excluded.tenant_id and s.student_id = excluded.user_id
+    and s.lesson_id = excluded.lesson_id and s.verdict = 'pass'
+) else excluded.completed end`;
+
 function buildProgressUpsert(db: Db, values: ProgressValue[]) {
   return db
     .insert(lessonProgress)
@@ -80,7 +100,7 @@ function buildProgressUpsert(db: Db, values: ProgressValue[]) {
     .onConflictDoUpdate({
       target: [lessonProgress.userId, lessonProgress.lessonId],
       set: {
-        completed: sql`excluded.completed`,
+        completed: reviewedCompleted,
         lastPage: sql`excluded.last_page`,
         viewedPages: sql`excluded.viewed_pages`,
         watchedSec: sql`excluded.watched_sec`,

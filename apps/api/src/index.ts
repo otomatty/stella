@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import type { Env } from "./env.js";
 import { getDb } from "./db/client.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
+import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./lib/skill-map-data.js";
 import { adminRoute } from "./routes/admin.js";
@@ -102,6 +103,11 @@ app.route("/", searchRoute);
 export default {
   fetch: app.fetch,
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      runSubmissionOrphanCleanup(env, getDb(env)).catch((e) => {
+        console.error("[cron] submission orphan cleanup failed", e);
+      }),
+    );
     ctx.waitUntil(
       notifyPaceDelays(getDb(env)).catch((e) => {
         console.error("[cron] learning pace notification failed", e);

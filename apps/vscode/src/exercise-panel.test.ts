@@ -32,6 +32,24 @@ const clearResult: ExecutionResult = {
 };
 
 describe("buildExercisePanelHtml", () => {
+  it("成功した採点結果は提出、未通過は引き継ぎだけを表示する", () => {
+    const input = {
+      assignmentTitle: "Demo",
+      description: "do it",
+      stageId: "c1",
+      lessonId: "l1",
+      assignmentId: "a1",
+      canSubmit: true,
+      canEscalate: true,
+    };
+    const passed = buildExercisePanelHtml({ ...input, result: clearResult });
+    expect(passed).toContain("command:stella.submitExercise");
+    expect(passed).not.toContain("command:stella.escalateToInstructor");
+    const failed = buildExercisePanelHtml({ ...input, result: failResult });
+    expect(failed).toContain("command:stella.escalateToInstructor");
+    expect(failed).not.toContain("command:stella.submitExercise");
+    expect(buildExercisePanelHtml(input)).not.toContain("command:stella.submitExercise");
+  });
   it("escapes raw HTML in the assignment prompt and does not emit scripts", () => {
     const html = buildExercisePanelHtml({
       assignmentTitle: "Demo <script>",

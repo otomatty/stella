@@ -22,8 +22,14 @@ import {
   executeLessonProgressWrites,
   assertProgressSyncSize,
 } from "../lib/lesson-progress-write.js";
-import { autoCompleteStagesIfMet, stageIdsOfLessons } from "../lib/stage-auto-complete.js";
+import {
+  autoCompleteStagesIfMet,
+  reclaimAutoCertificatesIfUnmet,
+  stageIdsOfLessons,
+} from "../lib/stage-auto-complete.js";
 import type { Env } from "../env.js";
+
+import { reviewedProgressRows, storedCompletedLessonIds } from "../lib/reviewed-progress.js";
 
 export const lessonProgressRoute = new Hono<{ Bindings: Env }>();
 
@@ -77,11 +83,48 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
 
     // 不正行の除去と同一 lesson_id の集約 (SQLite の upsert は 1 文で同じ行を 2 度
     // 更新できないため、 重複を残すとリクエストごと失敗する)。
-    const rows = normalizeProgressRows(inputs);
+    const { rows, reviewedLessonIds } = await reviewedProgressRows(
+      db,
+      caller.tenantId,
+      caller.id,
+      normalizeProgressRows(inputs),
+    );
     if (rows.length === 0) return c.json({ ok: true, written: 0 });
     assertProgressSyncSize(rows.length);
 
+    // レビューの合格が無いので未完了に揃えたコードレッスンのうち、 いま完了で保存されて
+    // いるもの (= レビュー必須になる前に自己申告で完了した行)。 この同期で完了が外れうる。
+    const completedBefore = await storedCompletedLessonIds(
+      db,
+      caller.id,
+      rows.filter((r) => reviewedLessonIds.has(r.lessonId) && !r.completed).map((r) => r.lessonId),
+    );
+
     await executeLessonProgressWrites(db, caller.tenantId, caller.id, rows);
+
+    // 実際に完了が外れた (LWW で勝った) レッスンのステージは、 添削の verdict 訂正と
+    // 同じく修了条件を再判定し、 満たさなくなった自動発行の修了証と completed の
+    // 受講登録を巻き戻す。 staff 発行・revoke 済み・条件を満たしたままのものは触らない。
+    // 外れるのはレッスンごとに一度きり (以後は未完了で保存済み) で、 巻き戻しには
+    // 発行のような読み出し時の再判定も無いため、 ここで取りこぼさない。 best-effort。
+    if (completedBefore.length > 0) {
+      try {
+        const stillCompleted = new Set(
+          await storedCompletedLessonIds(db, caller.id, completedBefore),
+        );
+        const cleared = completedBefore.filter((id) => !stillCompleted.has(id));
+        if (cleared.length > 0) {
+          await reclaimAutoCertificatesIfUnmet(db, {
+            actor: caller,
+            userId: caller.id,
+            stageIds: await stageIdsOfLessons(db, cleared),
+            ip: clientIp(c),
+          });
+        }
+      } catch (e) {
+        console.error("[lesson-progress] 完了が外れたレッスンの巻き戻しに失敗 (同期は継続)", e);
+      }
+    }
 
     // 完了レッスンを含む同期は修了条件の自動判定を掛ける (満たしていれば修了証を
     // 自動発行してクリアになる)。cleared_stages を画面が読んでクリアダイアログを出す。

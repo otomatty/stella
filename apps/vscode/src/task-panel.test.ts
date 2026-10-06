@@ -133,6 +133,8 @@ describe("buildTaskPanelHtml", () => {
     });
     expect(html).toContain("すべて通りました");
     expect(html).toContain("手元の確認はすべて通りました");
+    expect(html).toContain("command:stella.submitTask");
+    expect(html).not.toContain("command:stella.consultTask");
   });
 
   it("環境の問題は講師への相談を案内する", () => {
@@ -142,6 +144,8 @@ describe("buildTaskPanelHtml", () => {
       result: result({ outcome: "error" }),
     });
     expect(html).toContain("講師に相談してください");
+    expect(html).toContain("command:stella.consultTask");
+    expect(html).not.toContain("command:stella.submitTask");
   });
 
   it("中断した実行は結果を残さないと伝える", () => {

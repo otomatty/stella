@@ -151,9 +151,11 @@
         "@babel/traverse": "^8.0.6",
         "@babel/types": "^8.0.4",
         "@stella/content": "workspace:*",
+        "picomatch": "^4",
       },
       "devDependencies": {
         "@types/node": "^26.6.4",
+        "@types/picomatch": "^4",
         "typescript": "^7.0.2",
       },
     },

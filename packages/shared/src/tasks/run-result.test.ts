@@ -24,11 +24,15 @@ describe("canSubmit", () => {
   const file = { path: "src/a.js", sha256: "x", bytes: 1 };
 
   it("全部通っていて、提出するファイルがあるときだけ", () => {
-    expect(canSubmit({ outcome: "passed", files: [file] })).toBe(true);
-    expect(canSubmit({ outcome: "passed", files: [] })).toBe(false);
-    expect(canSubmit({ outcome: "failed", files: [file] })).toBe(false);
-    expect(canSubmit({ outcome: "error", files: [file] })).toBe(false);
-    expect(canSubmit({ outcome: "cancelled", files: [file] })).toBe(false);
+    const runner = "node-test" as const;
+    expect(canSubmit({ outcome: "passed", files: [file], runner })).toBe(true);
+    expect(canSubmit({ outcome: "passed", files: [], runner })).toBe(false);
+    expect(canSubmit({ outcome: "failed", files: [file], runner })).toBe(false);
+    expect(canSubmit({ outcome: "error", files: [file], runner })).toBe(false);
+    expect(canSubmit({ outcome: "cancelled", files: [file], runner })).toBe(false);
+    // 環境診断は提出ファイルを持たないので、通れば提出できる。
+    expect(canSubmit({ outcome: "passed", files: [], runner: "env-diagnose" })).toBe(true);
+    expect(canSubmit({ outcome: "failed", files: [], runner: "env-diagnose" })).toBe(false);
   });
 });
 

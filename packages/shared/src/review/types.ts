@@ -95,6 +95,15 @@ export interface Submission {
   verdict: ReviewVerdict | null;
   /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ。 Web 提出は null。 */
   gradingSummary?: GradingSummary | null;
+  taskId?: string;
+  taskContentHash?: string;
+  taskSnapshot?: import("../tasks/catalog.js").TaskBundle;
+  localResult?: import("../tasks/run-result.js").RunResult;
+  machineCheck?: import("../tasks/submission.js").MachineCheck;
+  explanation?: string;
+  debuggingRecord?: import("../tasks/submission.js").DebuggingRecord;
+  supportLog?: import("../tasks/submission.js").SupportEvent[];
+  taskFiles?: { path: string; text: string }[];
 }
 
 export interface ReviewDraftRequest {

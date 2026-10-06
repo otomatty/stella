@@ -35,6 +35,7 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import { passCountsForLesson } from "../lib/reviewed-progress.js";
 import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
   autoCompleteEligibleStages,
@@ -145,18 +146,22 @@ async function computeStageCompletion(
   }
 
   // 課題 (assignment レッスン) 総数 + pass 数。
-  const assignmentLessonIds = lessonRows.filter((l) => l.type === "assignment").map((l) => l.id);
+  const assignmentLessonIds = lessonRows
+    .filter((l) => l.type === "assignment" || l.type === "code")
+    .map((l) => l.id);
   let totalAssignments = assignmentLessonIds.length;
   let passedAssignments = 0;
   if (assignmentLessonIds.length > 0) {
     const passed = await db
       .select({ lessonId: submissions.lessonId })
       .from(submissions)
+      .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
       .where(
         and(
           eq(submissions.studentId, userId),
           eq(submissions.verdict, "pass"),
           inArray(submissions.lessonId, assignmentLessonIds),
+          passCountsForLesson(),
         ),
       );
     passedAssignments = new Set(passed.map((s) => s.lessonId)).size;
@@ -224,7 +229,9 @@ async function batchComputeCompletions(
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .where(eq(sections.stageId, stageId));
   const lessonIds = lessonRows.map((l) => l.id);
-  const assignmentLessonIds = lessonRows.filter((l) => l.type === "assignment").map((l) => l.id);
+  const assignmentLessonIds = lessonRows
+    .filter((l) => l.type === "assignment" || l.type === "code")
+    .map((l) => l.id);
   const totalLessons = lessonRows.length;
 
   const quizRows = await db
@@ -268,11 +275,13 @@ async function batchComputeCompletions(
       ? await db
           .select({ userId: submissions.studentId, lessonId: submissions.lessonId })
           .from(submissions)
+          .innerJoin(lessons, eq(lessons.id, submissions.lessonId))
           .where(
             and(
               eq(submissions.verdict, "pass"),
               inArray(submissions.studentId, userIds),
               inArray(submissions.lessonId, assignmentLessonIds),
+              passCountsForLesson(),
             ),
           )
       : [];

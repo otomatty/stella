@@ -73,6 +73,9 @@
     "./brand/display": "./src/brand/display.ts",
     "./tasks/catalog": "./src/tasks/catalog.ts",
     "./vscode/uris": "./src/vscode/uris.ts",
+    "./tasks/submission": "./src/tasks/submission.ts",
+    "./tasks/submission-support": "./src/tasks/submission-support.ts",
+    "./testing/task-submission": "./src/testing/task-submission.ts",
     "./tasks/source-reference": "./src/tasks/source-reference.ts"
   },
   "scripts": {
@@ -82,10 +85,12 @@
     "@babel/parser": "^8.0.6",
     "@babel/traverse": "^8.0.6",
     "@babel/types": "^8.0.4",
-    "@stella/content": "workspace:*"
+    "@stella/content": "workspace:*",
+    "picomatch": "^4"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "@types/picomatch": "^4"
   }
 }

@@ -11,6 +11,11 @@
 import type { RunnerId } from "./runners.js";
 
 export type StepStatus = "passed" | "failed" | "error" | "skipped";
+
+/** ESLint が検査する提出ファイル。runner と提出の機械照合で同じ対象を使う。 */
+export function isLintableFile(path: string): boolean {
+  return /\.(c|m)?(j|t)sx?$/.test(path);
+}
 /** `cancelled` は受講者が途中で止めた実行。何も確かめていないので合格にしない。 */
 export type RunOutcome = "passed" | "failed" | "error" | "cancelled";
 
@@ -84,6 +89,8 @@ export interface RunResult {
   protected: HashedFile[];
   /** 実行したときの `.stella/task.json` の SHA-256。 */
   manifestSha256: string;
+  /** 実行時の配布記録から控えた教材の内容ハッシュ。旧 runner の結果では省略。 */
+  taskContentHash?: string;
 }
 
 /**
@@ -101,9 +108,14 @@ export function decideOutcome(
   return "passed";
 }
 
-/** 提出してよい結果か。全部の手順が通り、提出するファイルがあること。 */
-export function canSubmit(result: Pick<RunResult, "outcome" | "files">): boolean {
-  return result.outcome === "passed" && result.files.length > 0;
+/**
+ * 提出してよい結果か。全部の手順が通り、提出するファイルがあること。
+ * 環境診断は提出ファイルを持たない (`submit.files: []` を許す唯一の runner) ので、通れば提出できる。
+ */
+export function canSubmit(result: Pick<RunResult, "outcome" | "files" | "runner">): boolean {
+  return (
+    result.outcome === "passed" && (result.files.length > 0 || result.runner === "env-diagnose")
+  );
 }
 
 export const RUN_OUTCOME_LABELS: Readonly<Record<RunOutcome, string>> = {

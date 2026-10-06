@@ -57,3 +57,8 @@ bucket_name = "stella-materials-public"
 [[r2_buckets]]
 binding = "SKILL_SHEETS_BUCKET"
 bucket_name = "stella-skill-sheets"
+
+# 提出コードは公開教材バケットに置かない。
+[[r2_buckets]]
+binding = "SUBMISSIONS_BUCKET"
+bucket_name = "stella-submissions"

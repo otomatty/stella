@@ -59,6 +59,9 @@ export interface Env {
    */
   MATERIALS_BUCKET?: R2Bucket;
 
+  /** 提出コード専用の非公開バケット。公開教材とは分離する。 */
+  SUBMISSIONS_BUCKET?: R2Bucket;
+
   /**
    * Cloudflare R2 — スキルシート原本 (PDF/xlsx) アップロード用。
    * `wrangler.toml` の `[[r2_buckets]]` で `SKILL_SHEETS_BUCKET` としてバインドする。

@@ -9,10 +9,12 @@ vi.mock("./api.js", () => ({ apiRequest }));
 
 const {
   canEscalate,
+  canSubmitExercise,
   clearEscalationAttempt,
   escalateToInstructor,
   getEscalationAttempt,
   rememberEscalationAttempt,
+  submitPassedExercise,
 } = await import("./escalate.js");
 
 const assignment: Assignment = {
@@ -123,6 +125,36 @@ describe("escalateToInstructor", () => {
 
   it("採点していなければ送らずにエラーを返す", async () => {
     await expect(escalateToInstructor("asg-1")).rejects.toThrow("先に採点");
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe("submitPassedExercise", () => {
+  it("成功した採点コードと説明を通常優先度でレビューに送る", async () => {
+    remember(cleared);
+    expect(canSubmitExercise("asg-1")).toBe(true);
+    expect(canSubmitExercise("other")).toBe(false);
+    apiRequest.mockResolvedValue({ row: { id: "s1", attempt: 1 } });
+    await expect(submitPassedExercise("asg-1", " 配列を合計してテストで確認 ")).resolves.toBe(1);
+    expect(apiRequest).toHaveBeenCalledWith("/api/submissions", {
+      method: "POST",
+      body: expect.objectContaining({
+        lessonId: "l1",
+        priority: "normal",
+        explanation: "配列を合計してテストで確認",
+        gradingSummary: expect.objectContaining({ cleared: true }),
+        code: expect.stringContaining("const sum = 0;"),
+      }),
+    });
+  });
+  it("未通過・未採点・説明なしの通常提出を拒否する", async () => {
+    expect(canSubmitExercise(undefined)).toBe(false);
+    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に採点");
+    remember(failed);
+    expect(canSubmitExercise("asg-1")).toBe(false);
+    await expect(submitPassedExercise("asg-1", "説明")).rejects.toThrow("先に採点");
+    remember(cleared);
+    await expect(submitPassedExercise("asg-1", " ")).rejects.toThrow("説明");
     expect(apiRequest).not.toHaveBeenCalled();
   });
 });

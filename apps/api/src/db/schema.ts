@@ -294,6 +294,21 @@ export const tasks = sqliteTable(
   (t) => ({ sectionIdx: index("tasks_section_id_idx").on(t.sectionId) }),
 );
 
+/** 配布した版は seed の更新で上書きしない。 */
+export const taskRevisions = sqliteTable(
+  "task_revisions",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    contentHash: text("content_hash").notNull(),
+    definition: text("definition").notNull(),
+    bundle: text("bundle").notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
+);
+
 export const taskPrivate = sqliteTable("task_private", {
   taskId: text("task_id")
     .primaryKey()
@@ -1184,6 +1199,32 @@ export const submissions = sqliteTable("submissions", {
   sectionTitle: text("section_title"),
   assignmentTitle: text("assignment_title").notNull(),
   code: text("code").notNull(),
+  taskId: text("task_id"),
+  taskContentHash: text("task_content_hash"),
+  taskKind: text("task_kind"),
+  submissionMode: text("submission_mode"),
+  localResult: text("local_result", { mode: "json" }).$type<
+    import("@stella/shared/tasks/run-result").RunResult
+  >(),
+  testHashes: text("test_hashes", { mode: "json" }).$type<
+    import("@stella/shared/tasks/run-result").HashedFile[]
+  >(),
+  explanation: text("explanation"),
+  debuggingRecord: text("debugging_record", { mode: "json" }).$type<
+    import("@stella/shared/tasks/submission").DebuggingRecord
+  >(),
+  supportLog: text("support_log", { mode: "json" }).$type<
+    import("@stella/shared/tasks/submission").SupportEvent[]
+  >(),
+  machineCheck: text("machine_check", { mode: "json" }).$type<
+    import("@stella/shared/tasks/submission").MachineCheck
+  >(),
+  taskSnapshot: text("task_snapshot", { mode: "json" }).$type<
+    import("@stella/shared/tasks/catalog").TaskBundle
+  >(),
+  assessedSkills: json<string[]>("assessed_skills", []),
+  reviewTaskContentHash: text("review_task_content_hash"),
+  reviewSource: text("review_source", { enum: ["ai", "human"] }),
   status: text("status", {
     enum: ["pending", "passed", "resubmit", "failed"],
   })
@@ -1204,6 +1245,66 @@ export const submissions = sqliteTable("submissions", {
   reviewedAt: ts("reviewed_at"),
   reviewerId: text("reviewer_id"),
 });
+
+/** ファイルは非公開 R2 に保存する。DB は索引と検証済みの内容ハッシュだけを持つ。 */
+export const submissionFiles = sqliteTable(
+  "submission_files",
+  {
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+    objectKey: text("object_key").notNull(),
+    sha256: text("sha256").notNull(),
+    bytes: integer("bytes").notNull(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.submissionId, t.path] }) }),
+);
+export const submissionReviews = sqliteTable(
+  "submission_reviews",
+  {
+    id: uuid(),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    taskContentHash: text("task_content_hash"),
+    source: text("source", { enum: ["ai", "human"] }).notNull(),
+    reviewerId: text("reviewer_id"),
+    verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }).notNull(),
+    notes: text("notes").notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({ submissionIdx: index("submission_reviews_submission_idx").on(t.submissionId) }),
+);
+export const skills = sqliteTable("skills", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+});
+export const skillEvidence = sqliteTable(
+  "skill_evidence",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    skillId: text("skill_id")
+      .notNull()
+      .references(() => skills.id),
+    level: text("level", { enum: ["supported", "independent", "retained"] }).notNull(),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    assisted: integer("assisted", { mode: "boolean" }).notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    evidenceUnique: uniqueIndex("skill_evidence_submission_skill_uq").on(t.submissionId, t.skillId),
+    userIdx: index("skill_evidence_user_idx").on(t.userId),
+  }),
+);
 
 // ---------------------------------------------------------------
 // 修了証
