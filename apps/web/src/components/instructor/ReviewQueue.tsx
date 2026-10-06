@@ -111,7 +111,15 @@ export const ReviewQueue = ({
                   <TableCell>
                     {r.aiReviewStatus ? (
                       // 新形式の提出は提出直後に AI が一次レビューする (07 §6.2)。
-                      <Badge variant={r.aiReviewStatus === "escalated" ? "warning" : "accent"}>
+                      <Badge
+                        variant={
+                          r.aiReviewStatus === "escalated"
+                            ? "warning"
+                            : r.aiReviewStatus === "human"
+                              ? "default"
+                              : "accent"
+                        }
+                      >
                         <Sparkles size={10} />
                         {r.aiReviewStatus === "escalated"
                           ? "人に回した"

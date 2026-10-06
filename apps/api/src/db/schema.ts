@@ -1366,7 +1366,7 @@ export const submissions = sqliteTable("submissions", {
   reviewSource: text("review_source", { enum: ["ai", "human"] }),
   /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
   aiReviewStatus: text("ai_review_status", {
-    enum: ["queued", "confirmed", "escalated", "superseded"],
+    enum: ["queued", "confirmed", "escalated", "superseded", "human"],
   }),
   status: text("status", {
     enum: ["pending", "passed", "resubmit", "failed"],

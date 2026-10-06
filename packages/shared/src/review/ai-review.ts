@@ -502,13 +502,17 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
   };
 }
 
-/** 提出ごとの AI の状態。queued = AI が確認中、escalated = 人に回した。 */
-export type AiReviewStatus = "queued" | "confirmed" | "escalated" | "superseded";
+/**
+ * 提出ごとの AI の状態。queued = AI が確認中、escalated = 人に回した、
+ * human = AI の結果が出る前に講師が確定した (AI の結果は一致率の評価のために記録だけする)。
+ */
+export type AiReviewStatus = "queued" | "confirmed" | "escalated" | "superseded" | "human";
 export const AI_REVIEW_STATUS_LABELS: Record<AiReviewStatus, string> = {
   queued: "AI が確認中",
   confirmed: "AI で合格",
   escalated: "講師の確認待ち",
   superseded: "新しい提出に置き換え",
+  human: "講師が先に確定",
 };
 
 /** staff に返す AI 一次レビューの記録 (`ai_reviews` の行)。 */

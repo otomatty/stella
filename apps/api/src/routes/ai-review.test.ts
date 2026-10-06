@@ -790,9 +790,17 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       body: JSON.stringify({ verdict: "resubmit", reviewNotes: "見出しを直してください" }),
     });
     expect(patched.status, await patched.clone().text()).toBe(200);
+    // AI の確認待ちのまま講師が確定したら「AI が確認中」を残さない。
+    expect((await json<{ row: { ai_review_status: string } }>(patched)).row.ai_review_status).toBe(
+      "human",
+    );
     expect(await run()).toEqual(["superseded"]);
     const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
-    expect(saved).toMatchObject({ verdict: "resubmit", reviewSource: "human" });
+    expect(saved).toMatchObject({
+      verdict: "resubmit",
+      reviewSource: "human",
+      aiReviewStatus: "human",
+    });
     expect(await progress()).toBe("resubmit");
     // 一致率の評価に使うので、AI の結果は置き換え済みとして残す。
     expect((await reviews())[0]).toMatchObject({ outcome: "confirmed", disposition: "superseded" });
@@ -850,8 +858,9 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     const latest = await submit();
     const status = async (id: string) =>
       (await db.select().from(submissions).where(eq(submissions.id, id)))[0];
+    // 講師が先に確定した試行は「講師が先に確定」のまま、置き換え済みにしない。
     expect(await status(decided.id)).toMatchObject({
-      aiReviewStatus: "queued",
+      aiReviewStatus: "human",
       verdict: "resubmit",
     });
     expect(await status(consulted.id)).toMatchObject({

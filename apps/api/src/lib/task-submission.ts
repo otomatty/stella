@@ -540,7 +540,13 @@ export async function reviewTaskSubmission(
           reviewSource: source,
           reviewedAt: now,
           reviewerId: source === "human" ? caller.id : null,
-          ...(source === "ai" ? { aiReviewStatus: "confirmed" as const } : {}),
+          // AI の確認待ちのまま講師が確定したら「講師が先に確定」にする (「AI が確認中」を残さない)。
+          // AI の結果は後から届いても当てず、一致率の評価のために記録だけする。
+          ...(source === "ai"
+            ? { aiReviewStatus: "confirmed" as const }
+            : row.aiReviewStatus === "queued"
+              ? { aiReviewStatus: "human" as const }
+              : {}),
         })
         .where(eq(submissions.id, id)),
       db.insert(submissionReviews).values({
