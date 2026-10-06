@@ -11,6 +11,7 @@
 
 import { homedir } from "node:os";
 import path from "node:path";
+import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { toLocalRunReport } from "@stella/shared/tasks/local-report";
 import { canSubmit, type RunOutcome } from "@stella/shared/tasks/run-result";
@@ -32,6 +33,7 @@ import {
   type DebuggingRecord,
 } from "@stella/shared/tasks/submission";
 import { readFileInRoot, writeStateFile } from "./runner/files.js";
+import type { CiRunInput } from "./runner/steps.js";
 import {
   readDistribution,
   readRecordedSupport,
@@ -160,6 +162,47 @@ function notify(outcome: RunOutcome, output: vscode.OutputChannel): void {
   }
 }
 
+/** 前回の確認で控えた CI の申告 (同じ課題のときだけ)。読めなければ undefined。 */
+async function previousCiClaim(root: string, taskId: string): Promise<CiRunClaim | undefined> {
+  try {
+    const raw: unknown = JSON.parse(
+      new TextDecoder().decode(await readFileInRoot(root, ".stella/last-run.json", 1024 * 1024)),
+    );
+    return isRunResult(raw) && raw.taskId === taskId ? raw.ci : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * CI と公開の課題で、GitHub Actions の実行の URL と公開先の URL を尋ねる (07 §5.5)。
+ * 形だけを確かめ、GitHub には問い合わせない。前回の確認で控えた URL を初期値にする。
+ * 取り消したら undefined (確認しない)。
+ */
+async function askCiRun(root: string, manifest: TaskManifest): Promise<CiRunInput | undefined> {
+  const previous = await previousCiClaim(root, manifest.id);
+  const runUrl = await vscode.window.showInputBox({
+    title: "CI の実行 (1/2)",
+    prompt:
+      "push したあとの GitHub Actions の実行の画面の URL。実行が成功してから入力してください (LMS が提出のときに GitHub で確かめます)",
+    placeHolder: "https://github.com/<owner>/<repo>/actions/runs/<番号>",
+    value: previous?.runUrl ?? "",
+    ignoreFocusOut: true,
+    validateInput: (value) => runUrlProblem(value.trim()) ?? undefined,
+  });
+  if (runUrl === undefined) return undefined;
+  const deployUrl = await vscode.window.showInputBox({
+    title: "公開先 (2/2)",
+    prompt: "公開したページの URL (https://…)",
+    placeHolder: "https://<公開先のドメイン>/",
+    value: previous?.deployUrl ?? "",
+    ignoreFocusOut: true,
+    validateInput: (value) => deployUrlProblem(value.trim()) ?? undefined,
+  });
+  if (deployUrl === undefined) return undefined;
+  return { runUrl: runUrl.trim(), deployUrl: deployUrl.trim() };
+}
+
 async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
   const root = await locateTask();
   if (!root) {
@@ -177,6 +220,12 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
   // HTML の確認は拡張の中でファイルを読むだけなので、信頼していないフォルダーでも動かす。
   if (manifest.runner !== "static-preview" && !(await requireTrust())) return;
   if (!(await confirmUnsaved(root))) return;
+  // CI と公開の課題は、手元では GitHub の実行の URL と公開先を控え、コミットを確かめるだけ。
+  let ci: CiRunInput | undefined;
+  if (manifest.runner === "ci-deploy") {
+    ci = await askCiRun(root, manifest);
+    if (!ci) return;
+  }
   await runWithProgress(output, `課題を確認しています: ${manifest.title}`, async (signal, log) => {
     // 配布記録が壊れていても手元の確認は続ける (提出時の prepareTaskSubmission で改めて検証する)。
     const receipt = await readDistribution(root).catch((error: unknown) => {
@@ -185,7 +234,7 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
       );
       return undefined;
     });
-    const result = await runTask({ root, manifest, manifestSha256, signal, log });
+    const result = await runTask({ root, manifest, manifestSha256, signal, log, ci });
     if (receipt?.taskId === manifest.id) result.taskContentHash = receipt.contentHash;
     // 中断した実行は何も確かめていないので、前回の結果を上書きしない。
     if (result.outcome !== "cancelled") {

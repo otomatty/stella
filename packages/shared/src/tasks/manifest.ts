@@ -9,6 +9,8 @@
  * 指す書き方 (絶対パス・`..`) は受け付けない — 提出で読むファイルを課題の中に閉じる。
  */
 
+import picomatch from "picomatch";
+import { isCiWorkflowPath } from "./ci-run.js";
 import { type EnvironmentRequirement, validateEnvironmentRequirement } from "./environment.js";
 import { parsePublicSourceReferences, type PublicSourceReference } from "./source-reference.js";
 import { isRunnerId, RUNNER_IDS, type RunnerId } from "./runners.js";
@@ -85,6 +87,13 @@ export interface TaskManifest {
   references?: PublicSourceReference[];
   environment?: EnvironmentRequirement;
   static?: { checks: StaticCheck[] };
+  /**
+   * CI と公開 (`ci-deploy`) の課題が指定する GitHub Actions のワークフロー
+   * (リポジトリの一番上からのパス。例 `.github/workflows/deploy.yml`)。提出を受けた API が、
+   * 受講者の申告した実行がこのワークフローのものかを確かめる (07 §5.5)。ci-deploy の課題に必須で、
+   * ほかの runner には書けない。
+   */
+  ci?: { workflow: string };
 }
 
 export type ParseTaskManifestResult =
@@ -249,6 +258,32 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     errors.push("runner が static-preview の課題には static.checks が要ります");
   }
 
+  let ci: TaskManifest["ci"];
+  if (raw.ci !== undefined) {
+    const workflow = isObject(raw.ci) ? raw.ci.workflow : undefined;
+    if (raw.runner !== "ci-deploy") {
+      errors.push("ci は runner が ci-deploy の課題だけに書けます");
+    } else if (!isCiWorkflowPath(workflow)) {
+      errors.push(
+        "ci.workflow は .github/workflows/ の下の .yml・.yaml のパスで書いてください (例 .github/workflows/deploy.yml)",
+      );
+    } else if (
+      ![...submitFiles, ...protectedPatterns].some((pattern) =>
+        picomatch(pattern, { dot: true })(workflow),
+      )
+    ) {
+      // レビューで読む (提出) か、改変を照合する (配布) ファイルにする。どちらでもないと、
+      // 実行したワークフローの中身を誰も確かめない。
+      errors.push("ci.workflow は submit.files か protected に当たるパスにしてください");
+    } else {
+      ci = { workflow };
+    }
+  } else if (raw.runner === "ci-deploy") {
+    errors.push(
+      "runner が ci-deploy の課題には ci.workflow (確かめる GitHub Actions のワークフロー) が要ります",
+    );
+  }
+
   let references: PublicSourceReference[] | undefined;
   if (raw.references !== undefined) {
     try {
@@ -273,5 +308,6 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     manifest.environment = raw.environment as EnvironmentRequirement;
   if (references) manifest.references = references;
   if (staticChecks) manifest.static = { checks: staticChecks };
+  if (ci) manifest.ci = ci;
   return { ok: true, manifest };
 }

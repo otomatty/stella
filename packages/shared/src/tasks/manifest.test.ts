@@ -146,6 +146,70 @@ describe("parseTaskManifest", () => {
   });
 });
 
+describe("parseTaskManifest (CI と公開の課題)", () => {
+  const ci = (overrides: Record<string, unknown> = {}) =>
+    base({
+      runner: "ci-deploy",
+      submit: { files: [".github/workflows/deploy.yml", "site/**"] },
+      protected: ["tests/**"],
+      ci: { workflow: ".github/workflows/deploy.yml" },
+      ...overrides,
+    });
+
+  it("確かめるワークフローを読む", () => {
+    const result = parseTaskManifest(ci());
+    expect(result.ok && result.manifest.ci).toEqual({ workflow: ".github/workflows/deploy.yml" });
+  });
+
+  it("ci-deploy の課題にはワークフローの指定が要る", () => {
+    const result = parseTaskManifest(ci({ ci: undefined }));
+    expect(result.ok ? [] : result.errors).toEqual([
+      "runner が ci-deploy の課題には ci.workflow (確かめる GitHub Actions のワークフロー) が要ります",
+    ]);
+  });
+
+  it("ほかの runner には書けない", () => {
+    const result = parseTaskManifest(base({ ci: { workflow: ".github/workflows/deploy.yml" } }));
+    expect(result.ok ? [] : result.errors).toEqual([
+      "ci は runner が ci-deploy の課題だけに書けます",
+    ]);
+  });
+
+  it(".github/workflows/ の下の YAML だけを受け付ける", () => {
+    for (const workflow of [
+      "deploy.yml",
+      ".github/workflows/../deploy.yml",
+      ".github/workflows/sub/deploy.yml",
+      ".github/workflows/deploy.json",
+      "/.github/workflows/deploy.yml",
+      ".github/workflows/.yml",
+      ".github\\workflows\\deploy.yml",
+      42,
+    ]) {
+      const result = parseTaskManifest(ci({ ci: { workflow } }));
+      expect(result.ok, String(workflow)).toBe(false);
+    }
+    expect(
+      parseTaskManifest(
+        ci({
+          ci: { workflow: ".github/workflows/ci.yaml" },
+          submit: { files: [".github/workflows/*.yaml"] },
+        }),
+      ).ok,
+    ).toBe(true);
+  });
+
+  it("ワークフローは提出か配布のファイルにする (中身を誰かが確かめる)", () => {
+    const result = parseTaskManifest(ci({ submit: { files: ["site/**"] }, protected: [] }));
+    expect(result.ok ? [] : result.errors).toEqual([
+      "ci.workflow は submit.files か protected に当たるパスにしてください",
+    ]);
+    expect(
+      parseTaskManifest(ci({ submit: { files: ["site/**"] }, protected: [".github/**"] })).ok,
+    ).toBe(true);
+  });
+});
+
 describe("isSafeRelativePattern", () => {
   it("相対の glob を通す", () => {
     for (const pattern of [

@@ -6,6 +6,7 @@
  * しきい値をコードで当てて決める。しきい値を変えても AI への指示は変えずに済む。
  */
 
+import { ciCheckStatusFrom } from "../tasks/ci-run.js";
 import type { TaskKind } from "../tasks/manifest.js";
 import type { MachineCheck, SupportEvent } from "../tasks/submission.js";
 
@@ -13,7 +14,7 @@ import type { MachineCheck, SupportEvent } from "../tasks/submission.js";
  * しきい値の版。表 (`MIN_CONFIDENCE`) と人に回す条件を変えたら上げる。
  * レビュー結果ごとに記録し、人の判定との一致率を版ごとに比べる (07 §13)。
  */
-export const AI_REVIEW_THRESHOLD_VERSION = "2026-10-06";
+export const AI_REVIEW_THRESHOLD_VERSION = "2026-10-06.2";
 
 export const RUBRIC_RESULTS = ["met", "unmet", "undetermined"] as const;
 export type RubricResult = (typeof RUBRIC_RESULTS)[number];
@@ -44,6 +45,8 @@ export const PSEUDO_FILES = {
   explanation: "#explanation",
   debuggingRecord: "#debugging-record",
   localResult: "#local-result",
+  /** CI と公開の課題で、API が GitHub で実行を確かめた結果 (07 §5.5)。 */
+  ciRun: "#ci-run",
 } as const;
 
 export interface EvidenceRef {
@@ -247,6 +250,8 @@ export const ESCALATE_WHEN_LABELS: Record<EscalateWhen, string> = {
 
 export const ROUTE_REASONS = [
   "machine-check",
+  "ci-mismatch",
+  "ci-unverified",
   "unallowed-support",
   "consult",
   "ai-unavailable",
@@ -261,6 +266,8 @@ export const ROUTE_REASONS = [
 export type RouteReason = (typeof ROUTE_REASONS)[number];
 export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "machine-check": "機械の照合で食い違いがある",
+  "ci-mismatch": "CI の実行が提出と食い違う",
+  "ci-unverified": "CI の実行を GitHub で照合できなかった",
   "unallowed-support": "確認A・Bで許されていない支援の記録がある",
   consult: "受講者が講師への相談を求めた",
   "ai-unavailable": "AI が判定できなかった",
@@ -346,6 +353,11 @@ export function forcedHumanReasons(input: {
     (!input.machineCheck.matched && (mismatches.length > 0 || input.mode !== "consult"))
   )
     reasons.push("machine-check");
+  // CI と公開の課題で、API が GitHub で確かめた実行 (07 §5.5)。食い違いは受講者の側、
+  // 照合できない (非公開・回数制限・GitHub の不調) は受講者の取り組みと限らないので分ける。
+  const ci = ciCheckStatusFrom(input.machineCheck?.ci);
+  if (ci === "mismatch") reasons.push("ci-mismatch");
+  else if (ci === "unverifiable") reasons.push("ci-unverified");
   // 確認A・Bはヒント・解答・固定の開始点・実装支援・AI チャット・相談をどれも使わずに解く (07 §8)。
   // 提出に添えた申告とサーバーの記録のどちらかがあれば人に回す。
   if (

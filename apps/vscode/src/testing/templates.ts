@@ -26,6 +26,15 @@ export const TEMPLATE_RUNNERS = [
   "next-app",
 ] as const satisfies readonly RunnerId[];
 
+/**
+ * CI と公開のテンプレート (07 §5.5)。テストは受講者の GitHub Actions が動かすので、Node.js の
+ * 道具 (lockfile・ESLint・Prettier) を持たず、ワークフローの雛形を持つ。検査は別に書く。
+ */
+export const CI_TEMPLATE_RUNNER = "ci-deploy" as const satisfies RunnerId;
+
+/** `packages/content/templates/runners/` のフォルダー。 */
+export const TEMPLATE_DIRS = [...TEMPLATE_RUNNERS, CI_TEMPLATE_RUNNER] as const;
+
 /** テンプレートの task-fields.json。課題の task.json に写す runner まわりの項目。 */
 export interface TaskFields {
   runner: RunnerId;
@@ -33,6 +42,8 @@ export interface TaskFields {
   submit: { files: string[] };
   protected: string[];
   checks: { lint: boolean; format: boolean };
+  /** CI と公開の課題が指定するワークフロー。 */
+  ci?: { workflow: string };
 }
 
 export interface EnvironmentFile {
@@ -42,6 +53,8 @@ export interface EnvironmentFile {
   template: string;
   requirements: Record<string, unknown>;
   libraries: Record<string, string>;
+  /** CI と公開の環境台帳だけが持つ、GitHub Actions の実行環境と action の版。 */
+  ci?: { runsOn: string; node: string; actions: Record<string, string> };
 }
 
 export async function readJson<T>(file: string): Promise<T> {

@@ -51,6 +51,7 @@ import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
 import { AiReviewPanel } from "./AiReviewPanel";
+import { CiRunPanel } from "./CiRunPanel";
 import { CommentTemplatePicker } from "./CommentTemplatePicker";
 import { PostCheckPanel } from "./PostCheckPanel";
 
@@ -414,7 +415,9 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
               <p className="text-sm mt-3">
                 {!taskDetail
                   ? "提出内容を読み込んでいます"
-                  : taskDetail.machineCheck?.matched
+                  : taskDetail.machineCheck?.matched &&
+                      (!taskDetail.machineCheck.ci ||
+                        taskDetail.machineCheck.ci.status === "verified")
                     ? "機械の照合は一致しました"
                     : "講師の確認が必要です"}
               </p>
@@ -433,6 +436,12 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                   {reason}
                 </p>
               ))}
+              {taskDetail ? (
+                <CiRunPanel
+                  check={taskDetail.machineCheck?.ci}
+                  claim={taskDetail.localResult?.ci}
+                />
+              ) : null}
               <p className="whitespace-pre-wrap text-sm mt-3">{submission.explanation}</p>
               {taskDetail?.debuggingRecord
                 ? Object.entries(taskDetail.debuggingRecord).map(([key, value]) => (

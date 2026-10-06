@@ -50,9 +50,12 @@ export const REVIEW_ESCALATION_LOOKBACK_MS = 30 * 86_400_000;
  * 受講者の取り組みに関わる、人に回した理由。AI や教材の都合 (AI が判定できない・必須の評価項目が
  * 無い・所見の位置ずれ・返信と解答例の重なり) だけで回った提出は、続きに数えも切りもしない。
  * 講師への相談は受講者が自分で選ぶ支援なので、相談の提出はそもそも見ない。
+ * CI の照合は、食い違い (失敗した実行・別のコミット・別のワークフロー) だけを数える。照合できない
+ * (GitHub の回数制限・不調など) は受講者の取り組みと限らない (07 §5.5)。
  */
 export const LEARNER_ESCALATION_REASONS: readonly RouteReason[] = [
   "machine-check",
+  "ci-mismatch",
   "unallowed-support",
   "rubric-unmet",
   "rubric-undetermined",

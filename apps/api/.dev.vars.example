@@ -4,6 +4,10 @@ ANTHROPIC_MODEL=claude-sonnet-4-6
 # 提出の AI 一次レビューだけ別のモデルにするとき (構造化出力に対応したモデル)。未設定なら ANTHROPIC_MODEL。
 # ANTHROPIC_API_KEY が空なら AI は判定できず、提出はすべて講師の確認待ちになる。
 # AI_REVIEW_MODEL=
+# CI と公開 (ci-deploy) の課題の提出で、GitHub Actions の実行を GitHub の公開 API で確かめるときの
+# トークン (任意)。未設定でも動く (未認証は IP ごとに 1 時間 60 回)。権限なしの fine-grained トークン
+# (Public Repositories (read-only)) にする。本番は `wrangler secret put GITHUB_API_TOKEN`。
+# GITHUB_API_TOKEN=
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ISOLATE_MEMORY_LIMIT=32
 

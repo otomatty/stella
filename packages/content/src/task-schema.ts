@@ -59,6 +59,8 @@ export interface TaskDefinition {
   protected: string[];
   checks: TaskManifest["checks"];
   static?: TaskManifest["static"];
+  /** CI と公開 (`ci-deploy`) の課題が指定する GitHub Actions のワークフロー。ci-deploy の課題に必須。 */
+  ci?: TaskManifest["ci"];
   /**
    * 固定した開始点 (`fixed-start/`) が動く実装を含む前の課題 (課題 ID)。開始点を受け取った
    * 受講者は、これらの課題の以後の提出も支援付きになる。開始点のある課題だけが書き、無い課題は
@@ -251,5 +253,7 @@ export function toRuntimeManifest(
     checks: task.checks,
     environment,
     ...(task.static ? { static: task.static } : {}),
+    // CI と公開の課題が指定するワークフロー。API が提出の実行と照らし合わせる (07 §5.5)。
+    ...(task.ci ? { ci: task.ci } : {}),
   };
 }

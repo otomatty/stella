@@ -57,6 +57,7 @@
     "./tasks/manifest": "./src/tasks/manifest.ts",
     "./tasks/environment": "./src/tasks/environment.ts",
     "./tasks/run-result": "./src/tasks/run-result.ts",
+    "./tasks/ci-run": "./src/tasks/ci-run.ts",
     "./tasks/hash": "./src/tasks/hash.ts",
     "./tasks/local-report": "./src/tasks/local-report.ts",
     "./tasks/support-record": "./src/tasks/support-record.ts",

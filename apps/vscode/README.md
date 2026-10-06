@@ -79,7 +79,15 @@
 | `node-test` / `dom-test` / `http-mock` / `react-test` / `storybook` / `api-test` / `db` | 依存の準備 → lint・整形（指定時）→ Vitest |
 | `e2e` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ Playwright |
 | `next-app` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ `next build` → Playwright |
-| `ci-deploy` | 手元では実行しない（CI の結果を使う。結果を提出に添える仕組みは未実装で、設計は 07 §5.5） |
+| `ci-deploy` | 実行の URL と公開先の URL を尋ねて形を確かめる → Git でコミット済みかを確かめ、手元のコミットを控える（テストは受講者の GitHub Actions が動かす。後述） |
+
+**CI と公開（`ci-deploy`、07 §5.5）。** テストと公開は受講者の GitHub リポジトリの GitHub Actions が行う。受講者は push して Actions の実行が成功したら「課題を確認する」を実行し、入力欄に実行の URL（`https://github.com/<owner>/<repo>/actions/runs/<番号>`）と公開先の URL（`https://…`）を入れる。
+
+- 拡張は URL の形だけを確かめる（`@stella/shared/tasks/ci-run`）。実行の URL は https・`github.com`・owner と repo の文字種・`runs/<番号>` の厳密な形だけを受け付け、`?`・`#`・末尾の `/`・ジョブの画面・ポート・`@` は受け付けない。公開先は https の公開のドメインだけ（localhost・IP アドレス・ポート・利用者名は不可）。**拡張は GitHub に通信せず、トークンも扱わない。**
+- Git は固定の引数（`rev-parse --show-prefix`・`rev-parse --verify --quiet HEAD`・`-c core.fsmonitor=false status --porcelain=v1 -z --untracked-files=no --ignore-submodules=all`・`ls-files -z`）で、信頼したフォルダーでだけ起動する。入力された URL やファイル名を引数に入れない。課題フォルダーがリポジトリの一番上であること（Actions は一番上の `.github/workflows/` だけを読む）、提出・配布のファイルと課題のワークフロー（`task.json` の `ci.workflow`）がすべてコミット済みで変更が無いことを確かめる。提出するファイルが、CI が実行したコミットの中身と同じであるようにするため。
+- Git が無い・リポジトリでない・コミットが無い・コミットしていないファイルがあるときは、パネルで直し方を出す。URL は形が正しければ控える（講師への相談で講師が開ける）。
+- 控えた URL と手元のコミット（`git rev-parse HEAD`）は `.stella/last-run.json` の `ci` に残り、提出に入る。次に確認するときは前の URL が入力欄の初期値になる。
+- 提出を受けた API が、GitHub の公開 API で実行が成功で終わったこと・同じコミットの実行であること・課題のワークフローの実行であることを確かめる。確かめられない（非公開のリポジトリ・回数制限など）・食い違うときは講師の確認待ちになる。リポジトリは公開にする。
 
 試すときは `apps/vscode/samples/` の見本を開く（`samples/README.md`。Windows・macOS の実機での確認項目もここ）。課題を作るときの runner ごとのテンプレート（`package.json`・lockfile・テストと lint・整形の設定）は `packages/content/templates/runners/`。テンプレートと手順の食い違いは `src/runner/templates.test.ts` が見る。定義の型と検証は `@stella/shared/tasks/*`。提出の手順は後述。AI の一次レビューは #33 で接続する。旧形式の演習（`STELLA: 採点を実行`、QuickJS）も成功後に「提出」し、レビューの合格で修了する。
 
@@ -150,6 +158,8 @@ bunx @vscode/vsce publish --no-dependencies
 提出時は説明と使った支援を記入します。修正課題では再現・期待と実際・原因・修正・回帰確認も記録します。入力は `.stella/submission-notes.json` に残り、通信に失敗しても再利用できます。固定した開始点の配布側が `.stella/support.json` に残した `{ kind, at, detail? }` の記録も提出に含みます (`kind`: hint / solution / fixed-start / instructor / ai-answer)。課題パネルで開いたヒント・解答例・解説は、LMS が自分の記録から提出の支援記録に足します。公式資料の参照だけなら支援を選ぶ必要はありません。
 
 配布処理 (#31) は `.stella/distribution.json` に `{ "taskId": "<講座>/<単元>/<課題>", "contentHash": "<SHA-256>" }` (固定した開始点は `"variant": "fixed-start"` 付き) を保存します。拡張は実行時にもこの版を結果に控えます。教材が更新されても、保存した版の提出とレビューを続けられます。配布記録が無いローカルの見本を現在の教材の版として提出することはできません。
+
+CI と公開 (`ci-deploy`) の課題では、提出に実行の URL・公開先の URL・手元のコミットが入ります。API は提出を受けたときに GitHub の公開 API (`GET /repos/{owner}/{repo}/actions/runs/{id}`。URL は実行の URL から取り出した owner・repo・番号で組み立て直し、公開先には問い合わせない) で実行を 1 回確かめ、結果を提出の機械の照合 (`machine_check.ci`) に残します。照合できない・食い違う提出は講師の確認待ちになり、講師のレビュー画面に実行と公開先へのリンクと照合の理由が出ます。API に任意で `GITHUB_API_TOKEN` (権限なしの fine-grained トークン) を設定すると、未認証の回数制限 (1 時間 60 回) に当たりにくくなります。
 
 API は `/api/submissions` に6点をまとめて受け取り、ファイルを非公開 R2 に保存します。提出ごとに別の ID・試行番号が入り、前の試行は上書きしません。テスト・設定・実行結果との不一致、相談、確認A・Bの支援付きの提出は講師の確認待ちにします。それ以外は `submitted` (画面では「AI が確認中」) として保存し、AI が一次レビューします (#33)。しきい値を満たせば AI で合格、満たさなければ講師の確認待ちになります。講師は提出時の課題文・ファイル・説明・支援と AI の判定の理由をレビュー画面で確認できます。合格すると課題進捗とスキル証拠が更新されます。
 

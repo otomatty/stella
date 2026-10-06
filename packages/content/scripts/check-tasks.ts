@@ -14,6 +14,16 @@ async function solutionPasses(task: TaskSeed, distributed: Record<string, string
     for (const [key, value] of Object.entries(task.privateFiles)) {
       if (key.startsWith("solution/")) files[key.slice("solution/".length)] = value;
     }
+    // CI と公開の課題は受講者の GitHub Actions で動くので、手元ではワークフローのファイルが
+    // そろうことだけを確かめる (拡張の手順は実行の URL とコミットを控えるだけ。07 §5.5)。
+    if (task.bundle.manifest.runner === "ci-deploy") {
+      const workflow = task.bundle.manifest.ci?.workflow;
+      if (!workflow || !(workflow in files))
+        throw new Error(
+          `${task.definition.id}: ${label}に解答例を重ねても、ワークフロー ${workflow ?? "(指定なし)"} がありません`,
+        );
+      return;
+    }
     for (const [key, value] of Object.entries(files)) {
       await mkdir(dirname(join(root, key)), { recursive: true });
       await writeFile(join(root, key), Buffer.from(value, "base64"));

@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   activeFile: undefined as string | undefined,
   folders: [] as string[],
   warningChoice: undefined as string | undefined,
+  /** 入力欄に順に返す値 (undefined は取り消し)。 */
+  inputs: [] as (string | undefined)[],
   dirtyDocs: [] as {
     isDirty: boolean;
     uri: { scheme: string; fsPath: string };
@@ -22,6 +24,7 @@ const vscodeMock = vi.hoisted(() => ({
   showErrorMessage: vi.fn(),
   executeCommand: vi.fn(),
   showTaskPanel: vi.fn(),
+  showInputBox: vi.fn(),
 }));
 
 vi.mock("vscode", () => ({
@@ -46,6 +49,10 @@ vi.mock("vscode", () => ({
     showErrorMessage: (...args: unknown[]) => {
       vscodeMock.showErrorMessage(...args);
       return Promise.resolve(undefined);
+    },
+    showInputBox: (options: unknown) => {
+      vscodeMock.showInputBox(options);
+      return Promise.resolve(state.inputs.shift());
     },
     withProgress: (_options: unknown, task: (p: unknown, t: unknown) => Promise<void>) =>
       task({}, { onCancellationRequested: vi.fn() }),
@@ -108,6 +115,7 @@ beforeEach(() => {
   state.activeFile = undefined;
   state.folders = [];
   state.warningChoice = undefined;
+  state.inputs = [];
   state.dirtyDocs = [];
   registerTaskCommands({ subscriptions: [] } as never);
 });
@@ -211,6 +219,75 @@ describe("stella.runTask", () => {
     expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "invalid", root }),
     );
+  });
+});
+
+describe("stella.runTask (CI と公開の課題)", () => {
+  const WORKFLOW = ".github/workflows/deploy.yml";
+  const ciTask = {
+    schemaVersion: 1,
+    id: "deploy-ops-basics/u05-ci/q01",
+    title: "テストが通ってから公開する",
+    kind: "basic",
+    runner: "ci-deploy",
+    submit: { files: [WORKFLOW] },
+    ci: { workflow: WORKFLOW },
+  };
+  const runUrl = "https://github.com/yamada/web-deploy/actions/runs/123456";
+  const deployUrl = "https://yamada.github.io/web-deploy/";
+  type InputOptions = {
+    value?: string;
+    validateInput?: (value: string) => string | undefined;
+  };
+  const inputOptions = (index: number) =>
+    vscodeMock.showInputBox.mock.calls[index]?.[0] as InputOptions;
+
+  it("信頼していないフォルダーでは、URL を尋ねず Git も起動しない", async () => {
+    const root = await makeTask(ciTask, { [WORKFLOW]: "name: Deploy\n" });
+    state.trusted = false;
+    state.folders = [root];
+    await run("stella.runTask");
+    expect(vscodeMock.showInputBox).not.toHaveBeenCalled();
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+  });
+
+  it("実行の URL と公開先の URL を形だけ確かめて尋ね、取り消したら確認しない", async () => {
+    const root = await makeTask(ciTask, { [WORKFLOW]: "name: Deploy\n" });
+    state.folders = [root];
+    state.inputs = [runUrl, undefined];
+    await run("stella.runTask");
+    expect(vscodeMock.showInputBox).toHaveBeenCalledTimes(2);
+    const first = inputOptions(0);
+    expect(first.validateInput?.(runUrl)).toBeUndefined();
+    expect(first.validateInput?.(` ${runUrl} `)).toBeUndefined();
+    expect(first.validateInput?.(`${runUrl}?x=1`)).toContain("https://github.com/");
+    expect(
+      first.validateInput?.("https://github.com@evil.example/a/b/actions/runs/1"),
+    ).toBeTruthy();
+    const second = inputOptions(1);
+    expect(second.validateInput?.(deployUrl)).toBeUndefined();
+    expect(second.validateInput?.("http://localhost:3000")).toBeTruthy();
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+  });
+
+  it("入力した URL を結果に残し、次の確認の初期値にする", async () => {
+    const root = await makeTask(ciTask, { [WORKFLOW]: "name: Deploy\n" });
+    state.folders = [root];
+    state.inputs = [` ${runUrl} `, deployUrl];
+    await run("stella.runTask");
+    // Git のリポジトリではないので要修正になるが、形を確かめた URL は控える。
+    expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "result",
+        result: expect.objectContaining({ outcome: "failed", ci: { runUrl, deployUrl } }),
+      }),
+    );
+    const saved = JSON.parse(await readFile(path.join(root, ".stella", "last-run.json"), "utf8"));
+    expect(saved.ci).toEqual({ runUrl, deployUrl });
+    vscodeMock.showInputBox.mockClear();
+    state.inputs = [undefined];
+    await run("stella.runTask");
+    expect(inputOptions(0).value).toBe(runUrl);
   });
 });
 

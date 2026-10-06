@@ -1,0 +1,21 @@
+{
+  "runner": "ci-deploy",
+  "environment": "ci-deploy-01",
+  "submit": {
+    "files": [
+      ".github/workflows/deploy.yml",
+      "site/**"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "ci": {
+    "workflow": ".github/workflows/deploy.yml"
+  }
+}

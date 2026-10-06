@@ -1,5 +1,6 @@
 import picomatch from "picomatch";
 import type { TaskBundle } from "./catalog.js";
+import { type CiRunCheck, parseCiRunClaim } from "./ci-run.js";
 import { normalizeForHash } from "./hash.js";
 import { isSafeRelativePattern } from "./manifest.js";
 import {
@@ -46,6 +47,12 @@ export interface TaskSubmissionInput {
 export interface MachineCheck {
   matched: boolean;
   reasons: string[];
+  /**
+   * CI と公開 (`ci-deploy`) の課題で、API が GitHub の公開 API で実行を確かめた結果 (07 §5.5)。
+   * `matched` はファイル・ハッシュ・手元の結果の照合だけを表し、CI の結果はここで別に持つ
+   * (人に回す理由とキューを分けるため)。ほかの runner では省略。
+   */
+  ci?: CiRunCheck;
 }
 export const HASH_RE = /^[a-f0-9]{64}$/;
 const object = (v: unknown): v is Record<string, unknown> =>
@@ -92,6 +99,7 @@ export function isRunResult(v: unknown): v is RunResult {
     HASH_RE.test(v.manifestSha256) &&
     (v.taskContentHash === undefined ||
       (typeof v.taskContentHash === "string" && HASH_RE.test(v.taskContentHash))) &&
+    (v.ci === undefined || parseCiRunClaim(v.ci) !== null) &&
     hashedFiles(v.files) &&
     hashedFiles(v.protected) &&
     Array.isArray(v.steps) &&
@@ -162,7 +170,11 @@ export function parseTaskSubmission(v: unknown): TaskSubmissionInput {
     throw new Error("修正記録の形式が不正です");
   if (JSON.stringify({ ...v, files: [] }).length > SUBMISSION_LIMITS.metadataBytes)
     throw new Error("提出の記録が大きすぎます");
-  return v as unknown as TaskSubmissionInput;
+  const input = v as unknown as TaskSubmissionInput;
+  // CI の申告は知っている項目だけで組み直して残す (受講者の入力の余分な項目を保存しない)。
+  const ci = parseCiRunClaim(input.localResult.ci);
+  if (ci) input.localResult = { ...input.localResult, ci };
+  return input;
 }
 export function decodeFile(content: string): Uint8Array {
   if (
@@ -272,5 +284,8 @@ export async function verifyTaskSubmission(
     input.localResult.steps.some((s) => s.tests?.some((t) => t.status !== "passed"))
   )
     reasons.push("必要な確認の結果が不足しています");
+  // CI と公開の課題は、実行の URL と手元のコミットが無いと API が GitHub で照合できない。
+  if (manifest.runner === "ci-deploy" && !input.localResult.ci?.commit)
+    reasons.push("CI の実行の URL と手元のコミットの記録がありません");
   return { check: { matched: reasons.length === 0, reasons }, files };
 }
