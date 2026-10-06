@@ -1,8 +1,12 @@
+import { execFile } from "node:child_process";
 import { cp, mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
+import { canSubmit } from "@stella/shared/tasks/run-result";
 import { describe, expect, it } from "vitest";
 import {
+  CI_TEMPLATE_RUNNER,
   readEnvironmentFile,
   readTaskFields,
   SAMPLES_DIR,
@@ -108,6 +112,92 @@ describe("samples", () => {
       }
       // テンプレートの提出ファイルが「直した後」の形。見本は直す前から始める。
       expect(changed.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("ci-deploy (テンプレートから作った見本)", () => {
+    const runner = CI_TEMPLATE_RUNNER;
+    const execFileAsync = promisify(execFile);
+
+    it("定義が正しく、テンプレートの項目と環境台帳に合う", async () => {
+      const loaded = await loadTask(sample(runner));
+      if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+      const fields = await readTaskFields(runner);
+      expect(loaded.manifest).toMatchObject({
+        runner,
+        submit: fields.submit,
+        protected: fields.protected,
+        checks: fields.checks,
+        ci: fields.ci,
+      });
+      const env = await readEnvironmentFile(fields.environment);
+      expect(loaded.manifest.environment).toEqual({
+        ...env.requirements,
+        id: `${env.id}@${env.version}`,
+      });
+    });
+
+    it("提出ファイルのほかはテンプレートと同じで、ワークフローはテストを待たずに公開する (直す前)", async () => {
+      const files = await listFiles(sample(runner));
+      expect(files).toEqual(await templateFiles(runner));
+      const fields = await readTaskFields(runner);
+      const submit = matchPatterns(files, fields.submit.files).files;
+      const changed: string[] = [];
+      for (const file of files) {
+        const actual = await readFile(path.join(sample(runner), ...file.split("/")));
+        if (actual.equals(await readFile(templateFile(runner, file)))) continue;
+        expect(submit, `${file} はテンプレートと同じにしてください`).toContain(file);
+        changed.push(file);
+      }
+      expect(changed).toEqual([".github/workflows/deploy.yml"]);
+      const workflow = await readFile(templateFile(runner, ".github/workflows/deploy.yml"), "utf8");
+      const before = await readFile(
+        path.join(sample(runner), ".github", "workflows", "deploy.yml"),
+        "utf8",
+      );
+      expect(workflow).toMatch(/^ {4}needs: test$/m);
+      expect(before).not.toMatch(/needs: test/);
+    });
+
+    it("見本をリポジトリにしてコミットすると、手元の確認が通って提出できる結果になる", async () => {
+      const root = path.join(await mkdtemp(path.join(tmpdir(), "stella-sample-")), "公開 の課題");
+      await cp(sample(runner), root, { recursive: true });
+      const env = {
+        ...process.env,
+        GIT_CONFIG_NOSYSTEM: "1",
+        GIT_CONFIG_GLOBAL: path.join(tmpdir(), "stella-no-gitconfig"),
+        GIT_AUTHOR_NAME: "学習者",
+        GIT_AUTHOR_EMAIL: "learner@example.com",
+        GIT_COMMITTER_NAME: "学習者",
+        GIT_COMMITTER_EMAIL: "learner@example.com",
+      };
+      const git = (...args: string[]) => execFileAsync("git", args, { cwd: root, env });
+      await git("init", "-q");
+      await git("add", "-A");
+      await git("commit", "-q", "-m", "見本");
+      const loaded = await loadTask(root);
+      if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+      const ci = {
+        runUrl: "https://github.com/yamada/ci-deploy-sample/actions/runs/1",
+        deployUrl: "https://yamada.github.io/ci-deploy-sample/",
+      };
+      const result = await runTask({
+        root,
+        manifest: loaded.manifest,
+        manifestSha256: loaded.manifestSha256,
+        ci,
+        env,
+      });
+      expect(result.steps.map((step) => [step.id, step.status])).toEqual([
+        ["test", "passed"],
+        ["files", "passed"],
+      ]);
+      expect(result.ci).toEqual({
+        ...ci,
+        commit: (await git("rev-parse", "HEAD")).stdout.trim(),
+      });
+      expect(canSubmit(result)).toBe(true);
+      expect(JSON.stringify(result)).not.toContain(root);
     });
   });
 });

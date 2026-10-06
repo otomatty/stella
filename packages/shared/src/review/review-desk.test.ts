@@ -19,6 +19,11 @@ describe("人に回した提出のキューの分け方", () => {
       reviewQueueGroup({ taskId: "c/u/t", routeReasons });
     expect(group("consult", "machine-check")).toBe("consult");
     expect(group("machine-check", "low-confidence")).toBe("mismatch");
+    // CI の照合 (07 §5.5) は、食い違いも照合できなかったものも「CI の照合」に入れる。
+    expect(group("ci-mismatch", "low-confidence")).toBe("ci");
+    expect(group("ci-unverified")).toBe("ci");
+    expect(group("machine-check", "ci-mismatch")).toBe("mismatch");
+    expect(group("consult", "ci-unverified")).toBe("consult");
     expect(group("ai-unavailable")).toBe("ai-failed");
     expect(group("no-rubric")).toBe("ai-failed");
     expect(group("rubric-unmet", "low-confidence")).toBe("rule");

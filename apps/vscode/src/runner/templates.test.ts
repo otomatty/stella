@@ -1,5 +1,8 @@
-import { readdir, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { cp, mkdtemp, readdir, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 import {
   checkToolVersion,
   formatVersion,
@@ -12,9 +15,11 @@ import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/m
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { describe, expect, it } from "vitest";
 import {
+  CI_TEMPLATE_RUNNER,
   readEnvironmentFile,
   readJson,
   readTaskFields,
+  TEMPLATE_DIRS,
   TEMPLATE_RUNNERS,
   TEMPLATES_DIR,
   templateFile,
@@ -57,7 +62,7 @@ describe("runner ごとの課題テンプレート", () => {
   it("フォルダーの一覧が、テンプレートを用意した runner と一致する", async () => {
     const entries = await readdir(TEMPLATES_DIR, { withFileTypes: true });
     const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
-    expect(dirs.sort()).toEqual([...TEMPLATE_RUNNERS].sort());
+    expect(dirs.sort()).toEqual([...TEMPLATE_DIRS].sort());
   });
 
   describe.each(TEMPLATE_RUNNERS)("%s", (runner) => {
@@ -232,5 +237,100 @@ describe("runner ごとの課題テンプレート", () => {
         expect(checkToolVersion(version, node).ok, version).toBe(false);
       }
     });
+  });
+});
+
+describe("CI と公開のテンプレート (ci-deploy)", () => {
+  const runner = CI_TEMPLATE_RUNNER;
+  const execFileAsync = promisify(execFile);
+
+  it("task-fields.json が課題の定義として正しく、ワークフローと公開するファイルを提出にする", async () => {
+    const fields = await readTaskFields(runner);
+    expect(fields.runner).toBe(runner);
+    const parsed = parseTaskManifest(await templateManifest(runner));
+    expect(parsed.ok ? [] : parsed.errors).toEqual([]);
+    const files = await templateFiles(runner);
+    expect(matchPatterns(files, fields.submit.files).unmatched).toEqual([]);
+    expect(matchPatterns(files, fields.protected).unmatched).toEqual([]);
+    const submit = matchPatterns(files, fields.submit.files).files;
+    const prot = matchPatterns(files, fields.protected).files;
+    // ワークフローはレビューで読むので提出、テストと package.json は改変に気づけるよう配布で守る。
+    expect(fields.ci?.workflow).toBe(".github/workflows/deploy.yml");
+    expect(submit).toContain(fields.ci?.workflow);
+    expect(prot).toEqual(expect.arrayContaining(["package.json", "tests/summary.test.js"]));
+    expect(submit.filter((file) => prot.includes(file))).toEqual([]);
+    expect(fields.checks).toEqual({ lint: false, format: false });
+  });
+
+  it("配布できるファイル名だけで、依存パッケージや拡張の作業フォルダーを含まない", async () => {
+    for (const file of await templateFiles(runner)) {
+      expect(isSafeRelativePattern(file), file).toBe(true);
+      expect(/^[\x20-\x7e]+$/.test(file), file).toBe(true);
+      expect(file.split("/").some((s) => ["node_modules", ".stella", "private"].includes(s))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("依存パッケージを持たず、npm test は Node.js のテストランナーを使う (CI に lockfile が要らない)", async () => {
+    const pkg = await readJson<PackageJson & { scripts?: Record<string, string> }>(
+      templateFile(runner, "package.json"),
+    );
+    expect(pkg.dependencies ?? {}).toEqual({});
+    expect(pkg.devDependencies ?? {}).toEqual({});
+    expect(pkg.scripts?.test).toBe('node --test "tests/**/*.test.js"');
+    const ignore = (await readFile(templateFile(runner, ".gitignore"), "utf8")).split(/\r?\n/);
+    expect(ignore).toContain("node_modules/");
+  });
+
+  it("ワークフローは、テストが通ってから公開し、権限を絞り、外部の action をコミットで固定する", async () => {
+    const yaml = await readFile(templateFile(runner, ".github/workflows/deploy.yml"), "utf8");
+    const env = await readEnvironmentFile((await readTaskFields(runner)).environment);
+    const actions = env.ci?.actions ?? {};
+    const uses = [...yaml.matchAll(/uses: ([\w./-]+)@(\S+)(?: # (\S+))?/g)];
+    expect(uses.length).toBeGreaterThan(0);
+    for (const [, action, ref, version] of uses) {
+      // タグは付け替えられるので、コミットで固定し、版はコメントと環境台帳に残す。
+      expect(ref, action).toMatch(/^[0-9a-f]{40}$/);
+      expect(version, action).toBe(actions[action as string]);
+    }
+    expect(new Set(uses.map((u) => u[1]))).toEqual(new Set(Object.keys(actions)));
+    expect(yaml).toMatch(/^on:\n {2}push:\n {4}branches: \[main\]$/m);
+    expect(yaml).toMatch(/^permissions:\n {2}contents: read$/m);
+    expect(yaml).toMatch(/^ {2}deploy:\n(?: {4}#.*\n)? {4}needs: test$/m);
+    expect(yaml).toMatch(/^ {6}pages: write$/m);
+    expect(yaml).toMatch(/^ {6}id-token: write$/m);
+    // チェックアウトした認証情報を後のステップに残さない。
+    const checkouts = uses.filter((u) => u[1] === "actions/checkout").length;
+    expect(yaml.match(/persist-credentials: false/g)?.length).toBe(checkouts);
+    expect(yaml).toContain(`node-version: ${env.ci?.node}`);
+    expect(yaml).toContain(`runs-on: ${env.ci?.runsOn}`);
+    expect(yaml).toContain("- run: npm test");
+    expect(yaml).toMatch(/^ {10}path: site$/m);
+  });
+
+  it("テンプレートのテストが、直した後の実装で通る (node --test)", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "stella-ci-template-"));
+    await cp(path.join(TEMPLATES_DIR, runner, "starter"), dir, { recursive: true });
+    await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
+      recursive: true,
+    });
+    const { stdout } = await execFileAsync("node", ["--test", "tests/**/*.test.js"], { cwd: dir });
+    expect(stdout).toMatch(/# pass 3/);
+    expect(stdout).toMatch(/# fail 0/);
+  });
+
+  it("環境台帳が、手元の Node.js・Git の要件と CI の版を記録している", async () => {
+    const fields = await readTaskFields(runner);
+    const env = await readEnvironmentFile(fields.environment);
+    expect(env).toMatchObject({
+      id: fields.environment,
+      runner,
+      template: `templates/runners/${runner}`,
+      libraries: {},
+    });
+    expect(validateEnvironmentRequirement(env.requirements, env.id)).toEqual([]);
+    expect(env.requirements).toHaveProperty("git.min");
+    expect(env.requirements).toHaveProperty("node.min");
   });
 });

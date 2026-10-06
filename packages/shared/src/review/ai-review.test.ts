@@ -204,6 +204,36 @@ describe("AI の判定によらず人に回す", () => {
         support: [],
       }),
     ).toEqual(["consult"]);
+    // CI の照合 (07 §5.5): 食い違いと照合できなかったものを分けて人に回す。
+    const ci = (status: string) => ({ ...matched, ci: { status } }) as never;
+    expect(
+      forcedHumanReasons({
+        kind: "basic",
+        mode: "submit",
+        machineCheck: ci("verified"),
+        support: [],
+      }),
+    ).toEqual([]);
+    expect(
+      forcedHumanReasons({
+        kind: "basic",
+        mode: "submit",
+        machineCheck: ci("mismatch"),
+        support: [],
+      }),
+    ).toEqual(["ci-mismatch"]);
+    expect(
+      forcedHumanReasons({
+        kind: "basic",
+        mode: "submit",
+        machineCheck: ci("unverifiable"),
+        support: [],
+      }),
+    ).toEqual(["ci-unverified"]);
+    // 壊れた記録は確かめたことにしない。
+    expect(
+      forcedHumanReasons({ kind: "basic", mode: "submit", machineCheck: ci("??"), support: [] }),
+    ).toEqual(["ci-unverified"]);
     const hint = [{ kind: "hint" as const, at: "2026-10-05T00:00:00Z" }];
     // 練習では支援を使ってよい (支援付きとして記録するだけ)。
     expect(
