@@ -67,6 +67,8 @@
 - **保存していない変更**があれば、保存してから確かめるか尋ねる（確かめるのは保存した内容）。
 - **OS 別の手順はタブで出す。** レッスンのドキュメント（まとめ・課題文）と課題文のパネルは、`:::os windows` / `:::os macos` のブロックを OS のタブにする。WebView はスクリプトを動かさないので、ラジオボタンと CSS だけで切り替える。既定のタブは `process.platform`（`win32` → Windows、`darwin` → macOS、それ以外は Windows）。
 - 提出するファイル（`submit.files`）と配布したファイル（`protected`）の内容ハッシュを結果に添える。ハッシュは BOM を外し、CRLF を LF にそろえてから取る（Windows の改行変換で「改変」と誤判定しないため）。
+- **Windows では** npm を `npm.cmd` ではなく `node.exe` で `npm-cli.js` を直接起動する。PATH からは `.exe`・`.com` だけを探す（`.cmd`・`.bat` はシェル無しで起動できない）。時間切れ・中断のときは `%SystemRoot%\System32\taskkill.exe /T /F` で子孫のプロセスごと止める（macOS・Linux はプロセスグループに SIGKILL）。結果に出すパスは、ドライブ文字の大小や日本語のパスの符号化（`file:///C:/Users/%E5%B1%B1…`）の違いがあっても課題フォルダーからの相対パスにする。
+- 道具の利用状況の送信（Next.js・Storybook のテレメトリー）は、環境変数で止めて起動する。
 - **LMS に送るのは要約だけ（#38）。** 配布した課題（`.stella/distribution.json` がある課題）を確かめるたびに、合格は `POST /api/tasks/local-result`、失敗・環境の問題は `POST /api/tasks/local-runs` に送る。送るのは課題 ID・配布した版の内容ハッシュ・全体の結果・通らなかった手順の種類（`lint`・`test` など）・テストの件数だけで、コード・ファイル名・テスト名・メッセージ・ログ・端末の情報は送らない（`@stella/shared/tasks/local-report`）。担当講師は「同じ課題で失敗が続く」ことを知るのに使い、受講者も Web の課題一覧で自分の回数を見られる。中断した実行と、配布記録のない見本は送らない。
 
 | runnerId | 手順 |
@@ -76,9 +78,9 @@
 | `node-test` / `dom-test` / `http-mock` / `react-test` / `storybook` / `api-test` / `db` | 依存の準備 → lint・整形（指定時）→ Vitest |
 | `e2e` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ Playwright |
 | `next-app` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ `next build` → Playwright |
-| `ci-deploy` | 手元では実行しない（CI の結果を使う） |
+| `ci-deploy` | 手元では実行しない（CI の結果を使う。結果を提出に添える仕組みは未実装で、設計は 07 §5.5） |
 
-試すときは `apps/vscode/samples/` の見本を開く（`samples/README.md`）。定義の型と検証は `@stella/shared/tasks/*`。提出の手順は後述。AI の一次レビューは #33 で接続する。旧形式の演習（`STELLA: 採点を実行`、QuickJS）も成功後に「提出」し、レビューの合格で修了する。
+試すときは `apps/vscode/samples/` の見本を開く（`samples/README.md`。Windows・macOS の実機での確認項目もここ）。課題を作るときの runner ごとのテンプレート（`package.json`・lockfile・テストと lint・整形の設定）は `packages/content/templates/runners/`。テンプレートと手順の食い違いは `src/runner/templates.test.ts` が見る。定義の型と検証は `@stella/shared/tasks/*`。提出の手順は後述。AI の一次レビューは #33 で接続する。旧形式の演習（`STELLA: 採点を実行`、QuickJS）も成功後に「提出」し、レビューの合格で修了する。
 
 ## 設定
 

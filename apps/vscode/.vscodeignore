@@ -6,3 +6,5 @@ esbuild.mjs
 tsconfig.json
 node_modules/**
 **/*.vsix
+# 拡張の動作確認用の見本 (受講者には配らない)
+samples/**

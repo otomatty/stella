@@ -3,6 +3,7 @@
  * 形は各道具の実際の出力から取ったフィクスチャ (`__fixtures__/`) で確かめている。
  */
 
+import { pathToFileURL } from "node:url";
 import type { LintFinding, StepStatus, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { stripAnsi } from "./process.js";
 
@@ -19,22 +20,73 @@ export function cleanMessage(message: string, root: string, maxLines = 8): strin
 /** 文中の課題フォルダーの絶対パスを相対パスにする。 */
 export function relativize(text: string, root: string): string {
   const slashed = root.replace(/\\/g, "/");
-  const fileUrl = slashed.startsWith("/") ? `file://${slashed}` : `file:///${slashed}`;
-  const variants = new Set([fileUrl, root, slashed]);
+  // 長い書き方から外す (短い書き方を先に外すと、file URL の途中だけが消えて残る)。
+  // 置き換えは文字列のまま行うので、フォルダー名の `%`・`#`・`?` も文字どおりに扱う。
+  const variants = [...new Set([...fileUrlForms(root, slashed), root, slashed])]
+    .flatMap(withBothDriveCases)
+    .filter((variant) => variant.length > 0)
+    .sort((a, b) => b.length - a.length);
   let out = text;
   for (const variant of variants) {
-    if (!variant) continue;
     out = out.split(`${variant}/`).join("").split(`${variant}\\`).join("");
   }
   return out;
 }
 
+const WINDOWS_ROOT = /^(?:[A-Za-z]:[\\/]|\\\\)/;
+
+/**
+ * 課題フォルダーの file URL の書き方。道具によって符号化の仕方が違うので、すべて外す。
+ * - 符号化しない (`file:///C:/Users/山田 太郎/…`)
+ * - 空白・日本語だけを符号化する (encodeURI と同じ。`#`・`?` はそのまま)
+ * - Node.js の pathToFileURL (`#`・`?`・`%` も符号化する)
+ * Windows のパスかどうかは、拡張が動く OS ではなく課題フォルダーの書き方で決める。
+ */
+function fileUrlForms(root: string, slashed: string): string[] {
+  const plain = slashed.startsWith("/") ? `file://${slashed}` : `file:///${slashed}`;
+  const forms = [plain];
+  // 対にならないサロゲートを含む名前は符号化できない。
+  try {
+    forms.push(encodeURI(plain));
+  } catch {
+    // 符号化できない名前。この書き方は省く。
+  }
+  try {
+    const href = pathToFileURL(root, { windows: WINDOWS_ROOT.test(root) }).href;
+    forms.push(href.replace(/\/+$/, ""));
+  } catch {
+    // 同上。
+  }
+  return forms;
+}
+
+const DRIVE = /^(file:\/\/\/)?([A-Za-z]):/;
+
+/**
+ * Windows のドライブ文字は、VS Code からは `c:`、道具の出力では `C:` のように大小が
+ * 混ざって届く。どちらの書き方でも課題フォルダーと分かるよう、両方を返す。
+ */
+function withBothDriveCases(text: string): string[] {
+  const match = DRIVE.exec(text);
+  if (!match) return [text];
+  const rest = text.slice(match[0].length);
+  const prefix = match[1] ?? "";
+  const drive = match[2] ?? "";
+  return [`${prefix}${drive.toLowerCase()}:${rest}`, `${prefix}${drive.toUpperCase()}:${rest}`];
+}
+
+function upperDrive(text: string): string {
+  return text.replace(DRIVE, (_, prefix: string | undefined, drive: string) => {
+    return `${prefix ?? ""}${drive.toUpperCase()}:`;
+  });
+}
+
 export function relativePath(file: string, root: string): string {
-  const normalizedRoot = root.replace(/\\/g, "/").replace(/\/+$/, "");
-  const normalized = file.replace(/\\/g, "/");
+  const normalizedRoot = upperDrive(root.replace(/\\/g, "/").replace(/\/+$/, ""));
+  const normalized = upperDrive(file.replace(/\\/g, "/"));
   return normalized.startsWith(`${normalizedRoot}/`)
     ? normalized.slice(normalizedRoot.length + 1)
-    : normalized;
+    : file.replace(/\\/g, "/");
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

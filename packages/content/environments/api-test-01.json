@@ -1,0 +1,25 @@
+{
+  "id": "api-test-01",
+  "version": "1",
+  "runner": "api-test",
+  "template": "templates/runners/api-test",
+  "os": ["windows", "macos", "linux"],
+  "requirements": {
+    "node": {
+      "min": "22.13.0",
+      "majors": [22, 24]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  },
+  "libraries": {
+    "@eslint/js": "10.0.1",
+    "@hono/node-server": "2.1.3",
+    "eslint": "10.12.0",
+    "globals": "17.13.0",
+    "hono": "4.13.13",
+    "prettier": "3.9.9",
+    "vitest": "5.0.3"
+  }
+}

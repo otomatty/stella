@@ -19,6 +19,10 @@
       "!**/packages/shared/src/problems",
       "!packages/content/design-system",
       "!**/packages/content/design-system",
+      "!packages/content/templates/runners",
+      "!**/packages/content/templates/runners",
+      "!apps/vscode/samples",
+      "!**/apps/vscode/samples",
       "!**/apps/web/src/routeTree.gen.ts",
       "!**/apps/web/public/pdf.worker.min.mjs"
     ]

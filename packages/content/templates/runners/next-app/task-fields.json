@@ -1,0 +1,25 @@
+{
+  "runner": "next-app",
+  "environment": "next-app-01",
+  "submit": {
+    "files": [
+      "app/layout.jsx",
+      "app/page.jsx",
+      "app/todo-form.jsx"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "next.config.mjs",
+    "playwright.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

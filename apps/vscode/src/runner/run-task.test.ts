@@ -420,6 +420,29 @@ describe("runTask (環境の診断)", () => {
     expect(result.steps).toHaveLength(1);
     expect(result.outcome).toBe("failed");
   });
+
+  it("使えない major 版 (Node.js 23 など) は、範囲の中でも要修正にする", async () => {
+    const major = Number(process.versions.node.split(".")[0]);
+    const root = await makeTask({});
+    const result = await runTask({
+      root,
+      manifest: manifest({
+        runner: "env-diagnose",
+        submit: { files: [] },
+        protected: [],
+        environment: { node: { min: `${major - 1}.0.0`, majors: [major - 1, major + 1] } },
+      }),
+      manifestSha256: "m",
+      env: { PATH: "" },
+      toolchain: { node: NODE, npm: null },
+    });
+    const node = result.steps[0]?.tests?.[0];
+    expect(node?.status).toBe("failed");
+    expect(node?.message).toBe(
+      `この版は使えません (${process.versions.node})。${major - 1}.0.0 以上、${major - 1}・${major + 1} 系 が必要です`,
+    );
+    expect(result.outcome).toBe("failed");
+  });
 });
 
 describe("runTask (CI の課題)", () => {

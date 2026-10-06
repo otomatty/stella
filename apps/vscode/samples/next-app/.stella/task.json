@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "nextjs-basics/samples/next-app",
+  "title": "ページの題名を付ける",
+  "kind": "basic",
+  "runner": "next-app",
+  "submit": {
+    "files": [
+      "app/layout.jsx",
+      "app/page.jsx",
+      "app/todo-form.jsx"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "next.config.mjs",
+    "playwright.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "next-app-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

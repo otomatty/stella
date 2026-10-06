@@ -1,0 +1,23 @@
+{
+  "runner": "db",
+  "environment": "db-01",
+  "submit": {
+    "files": [
+      "src/todos.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "db/schema.sql",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
