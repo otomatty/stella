@@ -400,6 +400,13 @@
       "when": 1791331200011,
       "tag": "0059_task_help_opens_opened_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "6",
+      "when": 1791331200012,
+      "tag": "0060_variant_first_slot_recompute",
+      "breakpoints": true
     }
   ]
 }
