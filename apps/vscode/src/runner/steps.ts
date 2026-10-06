@@ -14,6 +14,12 @@ import {
   type EnvironmentTool,
   formatVersion,
 } from "@stella/shared/tasks/environment";
+import {
+  type CiRunClaim,
+  COMMIT_SHA,
+  deployUrlProblem,
+  runUrlProblem,
+} from "@stella/shared/tasks/ci-run";
 import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
 import {
   isLintableFile,
@@ -22,7 +28,7 @@ import {
   type TestCaseResult,
 } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
-import { asCliPath, LIMITS, writeStateFile } from "./files.js";
+import { asCliPath, LIMITS, listFiles, matchPatterns, writeStateFile } from "./files.js";
 import {
   parseEslintReport,
   parsePlaywrightReport,
@@ -48,7 +54,17 @@ export interface StepContext {
   submitFiles: readonly string[];
   /** 道具の版を書き込む (環境診断が使う)。 */
   toolVersions: Partial<Record<EnvironmentTool, string>>;
+  /** CI と公開の課題で、受講者が入力した実行・公開先の URL (拡張の入力欄から)。 */
+  ci?: CiRunInput;
+  /** 手順が結果に残すもの (CI の申告)。 */
+  outputs: { ci?: CiRunClaim };
   exec: (spec: Omit<ProcessSpec, "env"> & { env?: NodeJS.ProcessEnv }) => Promise<ProcessOutcome>;
+}
+
+/** CI と公開の課題で、受講者が入力する 2 つの URL。 */
+export interface CiRunInput {
+  runUrl: string;
+  deployUrl: string;
 }
 
 export interface StepDefinition {
@@ -66,6 +82,7 @@ export const TIMEOUTS = {
   build: 5 * 60_000,
   e2e: 5 * 60_000,
   version: 15_000,
+  git: 30_000,
 } as const;
 
 const NODE_MISSING =
@@ -538,13 +555,158 @@ export const diagnoseStep: StepDefinition = {
   },
 };
 
+const GIT_MISSING =
+  "Git が見つかりません。教材の手順で Git を入れてから、VS Code を再起動してください";
+
+/** `git status --porcelain=v1 -z` の出力から、変更のあるファイル (リポジトリの一番上からのパス)。 */
+export function parsePorcelainZ(output: string): Set<string> {
+  const changed = new Set<string>();
+  const entries = output.split("\0");
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i] ?? "";
+    if (entry.length < 4) continue;
+    changed.add(entry.slice(3));
+    // 名前の変更・複製は、次の項目に元の名前が続く。
+    if (entry[0] === "R" || entry[0] === "C") {
+      const original = entries[++i];
+      if (original) changed.add(original);
+    }
+  }
+  return changed;
+}
+
+/**
+ * CI と公開 (`ci-deploy`)。テストは受講者の GitHub Actions で動くので、手元では次だけをする (07 §5.5)。
+ * 1. 入力された実行の URL と公開先の URL の形を確かめる (GitHub には問い合わせない)。
+ * 2. 課題フォルダーがリポジトリの一番上で、提出・配布のファイルとワークフローがすべてコミット
+ *    済みであることを確かめ、手元のコミット (`git rev-parse HEAD`) を控える。
+ *    提出するファイルが、CI が実行したコミットの中身と同じであるようにするため。
+ * Git は固定の引数で起動し、入力された文字列やファイル名を引数に入れない。
+ */
 export const ciStep: StepDefinition = {
   id: "test",
-  label: "CI の結果",
-  async run() {
+  label: "CI の実行と公開先",
+  async run(ctx) {
+    const input = ctx.ci;
+    if (!input) {
+      return {
+        status: "error",
+        summary:
+          "実行の URL と公開先の URL が入力されていません。もう一度「課題を確認する」を実行してください",
+      };
+    }
+    const problems = [runUrlProblem(input.runUrl), deployUrlProblem(input.deployUrl)].filter(
+      (p): p is string => p !== null,
+    );
+    if (problems.length > 0) return { status: "failed", summary: problems.join("。") };
+    const workflow = ctx.manifest.ci?.workflow;
+    if (!workflow) {
+      return { status: "error", summary: "課題の定義に、確かめるワークフローがありません" };
+    }
+    // URL は形を確かめたので、コミットが読めなくても控える (講師への相談で講師が開ける)。
+    const claim: CiRunClaim = { runUrl: input.runUrl, deployUrl: input.deployUrl };
+    ctx.outputs.ci = claim;
+
+    const git = await findExecutable("git", ctx.env, ctx.platform);
+    if (!git) return { status: "error", summary: GIT_MISSING };
+    const env = { ...ctx.env, GIT_TERMINAL_PROMPT: "0", GIT_OPTIONAL_LOCKS: "0", LC_ALL: "C" };
+    const runGit = (args: string[]) =>
+      ctx.exec({ file: git, args, cwd: ctx.root, timeoutMs: TIMEOUTS.git, env });
+
+    const top = await runGit(["rev-parse", "--show-prefix"]);
+    const topStopped = interrupted(top, "Git", "error");
+    if (topStopped) return topStopped;
+    if (top.exitCode !== 0) {
+      if (/not a git repository/i.test(top.stderr)) {
+        return {
+          status: "failed",
+          summary:
+            "課題フォルダーが Git のリポジトリになっていません。教材の手順でリポジトリを作り、コミットして GitHub に push してください",
+        };
+      }
+      return errorOutcome("Git でリポジトリを確かめられませんでした", top);
+    }
+    if (top.stdout.trim() !== "") {
+      return {
+        status: "failed",
+        summary:
+          "課題フォルダーを Git のリポジトリの一番上にしてください。GitHub Actions はリポジトリの一番上の .github/workflows/ だけを読みます",
+      };
+    }
+
+    const head = await runGit(["rev-parse", "--verify", "--quiet", "HEAD"]);
+    const headStopped = interrupted(head, "Git", "error");
+    if (headStopped) return headStopped;
+    if (head.exitCode !== 0) {
+      return {
+        status: "failed",
+        summary:
+          "まだコミットがありません。コミットして GitHub に push し、Actions の実行が通ってから確認してください",
+      };
+    }
+    const commit = head.stdout.trim().toLowerCase();
+    if (!COMMIT_SHA.test(commit)) return errorOutcome("手元のコミットを読み取れませんでした", head);
+    claim.commit = commit;
+
+    // 確かめるファイル: 提出・配布のファイルと、課題が指定したワークフロー。
+    let listed: string[];
+    try {
+      listed = await listFiles(ctx.root);
+    } catch {
+      return { status: "error", summary: "課題フォルダーを読めませんでした" };
+    }
+    if (!listed.includes(workflow)) {
+      return {
+        status: "failed",
+        summary: `ワークフローのファイル (${workflow}) が課題フォルダーにありません`,
+        files: [workflow],
+      };
+    }
+    const targets = [
+      ...new Set([
+        ...ctx.submitFiles,
+        ...matchPatterns(listed, ctx.manifest.protected).files,
+        workflow,
+      ]),
+    ];
+
+    // fsmonitor の設定はコマンドを起動しうるので、この確認では使わない。
+    const status = await runGit([
+      "-c",
+      "core.fsmonitor=false",
+      "status",
+      "--porcelain=v1",
+      "-z",
+      "--untracked-files=no",
+      "--ignore-submodules=all",
+    ]);
+    const statusStopped = interrupted(status, "Git", "error");
+    if (statusStopped) return statusStopped;
+    if (status.exitCode !== 0 || status.truncated) {
+      return errorOutcome("Git で変更の有無を確かめられませんでした", status);
+    }
+    const tracked = await runGit(["ls-files", "-z"]);
+    const trackedStopped = interrupted(tracked, "Git", "error");
+    if (trackedStopped) return trackedStopped;
+    if (tracked.exitCode !== 0 || tracked.truncated) {
+      return errorOutcome(
+        "Git でコミット済みのファイルを確かめられませんでした (node_modules などをコミットしていないか確認してください)",
+        tracked,
+      );
+    }
+    const changed = parsePorcelainZ(status.stdout);
+    const committed = new Set(tracked.stdout.split("\0").filter(Boolean));
+    const uncommitted = targets.filter((f) => changed.has(f) || !committed.has(f)).sort();
+    if (uncommitted.length > 0) {
+      return {
+        status: "failed",
+        summary: `コミットしていないファイルが ${uncommitted.length} 件あります。コミットして push し、その実行が通ってから、新しい実行の URL でもう一度確認してください`,
+        files: uncommitted,
+      };
+    }
     return {
-      status: "error",
-      summary: "この課題は手元では確かめません。GitHub Actions の結果で確認します",
+      status: "passed",
+      summary: `コミット ${commit.slice(0, 7)} と実行・公開先の URL を控えました。提出すると、LMS が GitHub で実行の結果を確かめます`,
     };
   },
 };

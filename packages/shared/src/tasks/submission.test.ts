@@ -147,3 +147,49 @@ describe("提出の機械照合", () => {
     );
   });
 });
+
+describe("CI と公開の課題の提出 (07 §5.5)", () => {
+  const claim = {
+    runUrl: "https://github.com/yamada/web-deploy/actions/runs/123",
+    deployUrl: "https://yamada.github.io/web-deploy/",
+    commit: "0123456789abcdef0123456789abcdef01234567",
+  };
+  async function ciFixture() {
+    const fixture = await submissionFixture({
+      runner: "ci-deploy",
+      static: undefined,
+      ci: { workflow: ".github/workflows/deploy.yml" },
+    });
+    fixture.input.localResult.steps = [step("test"), step("files")];
+    return fixture;
+  }
+  it("実行の URL と手元のコミットがそろえば、ファイルの照合は通る (GitHub の照合は API が行う)", async () => {
+    const { input, bundle } = await ciFixture();
+    input.localResult.ci = claim;
+    expect((await verifyTaskSubmission(input, bundle)).check).toEqual({
+      matched: true,
+      reasons: [],
+    });
+  });
+  it("申告が無い・コミットが無いときは人に回す", async () => {
+    const { input, bundle } = await ciFixture();
+    expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+      "CI の実行の URL と手元のコミットの記録がありません",
+    );
+    input.localResult.ci = { runUrl: claim.runUrl, deployUrl: claim.deployUrl };
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(false);
+  });
+  it("申告の形を確かめ、余分な項目は残さない", async () => {
+    const { input } = await ciFixture();
+    input.localResult.ci = { ...claim, note: "x" } as typeof claim;
+    expect(parseTaskSubmission(input).localResult.ci).toEqual(claim);
+    for (const bad of [
+      { ...claim, runUrl: "https://evil.example/yamada/web-deploy/actions/runs/123" },
+      { ...claim, deployUrl: "javascript:alert(1)" },
+      { ...claim, commit: "HEAD" },
+    ]) {
+      input.localResult.ci = bad;
+      expect(() => parseTaskSubmission(input)).toThrow("提出データの形式が不正です");
+    }
+  });
+});

@@ -18,6 +18,7 @@ import type { Confidence, RouteReason } from "./ai-review.js";
 export const REVIEW_QUEUE_GROUPS = [
   "consult",
   "mismatch",
+  "ci",
   "ai-failed",
   "rule",
   "confidence",
@@ -27,6 +28,9 @@ export type ReviewQueueGroup = (typeof REVIEW_QUEUE_GROUPS)[number];
 export const REVIEW_QUEUE_GROUP_LABELS: Record<ReviewQueueGroup, string> = {
   consult: "相談",
   mismatch: "ハッシュの不一致",
+  // CI と公開の課題で、GitHub の実行を照合できなかった・食い違った (07 §5.5)。講師は実行と
+  // 公開先のリンクを開いて確かめる。
+  ci: "CI の照合",
   "ai-failed": "AI の判定不能",
   rule: "規則の違反",
   confidence: "確信度",
@@ -37,6 +41,8 @@ export const REVIEW_QUEUE_GROUP_LABELS: Record<ReviewQueueGroup, string> = {
 const GROUP_OF_REASON: Record<RouteReason, Exclude<ReviewQueueGroup, "legacy">> = {
   consult: "consult",
   "machine-check": "mismatch",
+  "ci-mismatch": "ci",
+  "ci-unverified": "ci",
   "ai-unavailable": "ai-failed",
   // 課題に必須の評価項目が無いと、AI は合否を出せない。
   "no-rubric": "ai-failed",

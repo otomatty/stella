@@ -1,10 +1,16 @@
+import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import { canSubmit } from "@stella/shared/tasks/run-result";
 import { contentHash, verifyTaskSubmission } from "@stella/shared/tasks/submission";
 import { describe, expect, it } from "vitest";
 import { findTaskRoot, loadTask, runTask, saveRunResult } from "./run-task.js";
+import { parsePorcelainZ } from "./steps.js";
+
+const execFileAsync = promisify(execFile);
 
 const NODE = process.execPath;
 
@@ -445,16 +451,198 @@ describe("runTask (環境の診断)", () => {
   });
 });
 
-describe("runTask (CI の課題)", () => {
-  it("手元では実行しない", async () => {
-    const root = await makeTask({ "a.yml": "" });
-    const result = await runTask({
+describe("runTask (CI と公開の課題)", () => {
+  const WORKFLOW = ".github/workflows/deploy.yml";
+  const ci = {
+    runUrl: "https://github.com/yamada/web-deploy/actions/runs/123456",
+    deployUrl: "https://yamada.github.io/web-deploy/",
+  };
+  const ciManifest = manifest({
+    runner: "ci-deploy",
+    submit: { files: [WORKFLOW, "site/**"] },
+    protected: ["tests/**"],
+    checks: { lint: false, format: false },
+    ci: { workflow: WORKFLOW },
+  });
+  // 受講者の設定 (署名・既定のブランチなど) に左右されないよう、設定を読まずに Git を動かす。
+  const gitEnv = {
+    ...process.env,
+    GIT_CONFIG_NOSYSTEM: "1",
+    GIT_CONFIG_GLOBAL: path.join(tmpdir(), "stella-no-gitconfig"),
+    GIT_AUTHOR_NAME: "学習者",
+    GIT_AUTHOR_EMAIL: "learner@example.com",
+    GIT_COMMITTER_NAME: "学習者",
+    GIT_COMMITTER_EMAIL: "learner@example.com",
+  };
+  async function git(root: string, ...args: string[]): Promise<string> {
+    const { stdout } = await execFileAsync("git", args, { cwd: root, env: gitEnv });
+    return stdout.trim();
+  }
+  const files = {
+    [WORKFLOW]: "name: Deploy\non: push\n",
+    "site/index.html": "<h1>公開</h1>\n",
+    "tests/a.test.js": "// 配布したテスト\n",
+    ".gitignore": "node_modules/\nsecret/\n",
+  };
+  async function committedRepo(extra: Record<string, string> = {}): Promise<string> {
+    const root = await makeTask({ ...files, ...extra });
+    await git(root, "init", "-q");
+    await git(root, "add", "-A");
+    await git(root, "commit", "-q", "-m", "最初のコミット");
+    return root;
+  }
+  function run(root: string, input: typeof ci | null = ci, env: NodeJS.ProcessEnv = gitEnv) {
+    return runTask({
       root,
-      manifest: manifest({ runner: "ci-deploy", submit: { files: ["a.yml"] }, protected: [] }),
+      manifest: ciManifest,
       manifestSha256: "m",
+      ci: input ?? undefined,
+      env,
     });
+  }
+
+  it("コミット済みの課題で、URL と手元のコミットを控えて通す", async () => {
+    const root = await committedRepo();
+    const result = await run(root);
+    expect(result.steps.map((s) => [s.id, s.status])).toEqual([
+      ["test", "passed"],
+      ["files", "passed"],
+    ]);
+    expect(result.outcome).toBe("passed");
+    expect(result.ci).toEqual({ ...ci, commit: await git(root, "rev-parse", "HEAD") });
+    expect(canSubmit(result)).toBe(true);
+    expect(result.files.map((f) => f.path)).toEqual([WORKFLOW, "site/index.html"]);
+  });
+
+  it("形の悪い URL は Git を起動する前に要修正にし、控えない", async () => {
+    const root = await committedRepo();
+    const result = await run(root, {
+      runUrl: "https://github.com/yamada/web-deploy/actions/runs/123456/",
+      deployUrl: "http://localhost:3000/",
+    });
+    expect(result.steps[0]).toMatchObject({ status: "failed" });
+    expect(result.steps[0]?.summary).toContain("実行の URL");
+    expect(result.steps[0]?.summary).toContain("https://");
+    expect(result.ci).toBeUndefined();
+    expect(canSubmit(result)).toBe(false);
+  });
+
+  it("URL が入力されていなければ環境の問題として止める", async () => {
+    const root = await committedRepo();
+    const result = await run(root, null);
     expect(result.outcome).toBe("error");
-    expect(result.steps[0]?.summary).toMatch(/GitHub Actions/);
+    expect(result.steps[0]?.summary).toContain("入力されていません");
+  });
+
+  it("Git が無ければ案内する (URL は控える)", async () => {
+    const root = await committedRepo();
+    const result = await run(root, ci, { PATH: "" });
+    expect(result.outcome).toBe("error");
+    expect(result.steps[0]?.summary).toContain("Git が見つかりません");
+    expect(result.ci).toEqual(ci);
+    expect(canSubmit(result)).toBe(false);
+  });
+
+  it("リポジトリでないフォルダー・コミットの無いリポジトリ・リポジトリの途中のフォルダーは要修正", async () => {
+    const plain = await makeTask(files);
+    expect((await run(plain)).steps[0]).toMatchObject({
+      status: "failed",
+      summary: expect.stringContaining("Git のリポジトリになっていません"),
+    });
+    const empty = await makeTask(files);
+    await git(empty, "init", "-q");
+    expect((await run(empty)).steps[0]).toMatchObject({
+      status: "failed",
+      summary: expect.stringContaining("まだコミットがありません"),
+    });
+    const parent = await makeTask({ "README.md": "" });
+    await git(parent, "init", "-q");
+    for (const [rel, content] of Object.entries(files))
+      await makeFile(parent, `task/${rel}`, content);
+    await git(parent, "add", "-A");
+    await git(parent, "commit", "-q", "-m", "x");
+    expect((await run(path.join(parent, "task"))).steps[0]).toMatchObject({
+      status: "failed",
+      summary: expect.stringContaining("リポジトリの一番上"),
+    });
+  });
+
+  it("コミットしていない変更・コミットしていないファイル・無視したファイルを示す", async () => {
+    const root = await committedRepo();
+    await writeFile(path.join(root, "site", "index.html"), "<h1>直した</h1>\n");
+    await makeFile(root, "site/new.js", "export {};\n");
+    await makeFile(root, "tests/secret/ignored.test.js", "");
+    await writeFile(path.join(root, ".gitignore"), "node_modules/\nignored.test.js\n");
+    await git(root, "add", ".gitignore");
+    await git(root, "commit", "-q", "-m", "無視を足す");
+    const result = await run(root);
+    expect(result.steps[0]).toMatchObject({
+      status: "failed",
+      files: ["site/index.html", "site/new.js", "tests/secret/ignored.test.js"],
+    });
+    expect(result.steps[0]?.summary).toContain("コミットしていないファイルが 3 件");
+    // コミットは読めたので控える (講師への相談でリンクを開ける)。提出はできない。
+    expect(result.ci?.commit).toMatch(/^[0-9a-f]{40}$/);
+    expect(canSubmit(result)).toBe(false);
+    // 提出・配布でないファイルの変更は問わない。
+    await rm(path.join(root, "tests", "secret"), { recursive: true });
+    await git(root, "add", "-A");
+    await git(root, "commit", "-q", "-m", "すべて");
+    await writeFile(path.join(root, "README.md"), "メモ\n");
+    expect((await run(root)).steps[0]?.status).toBe("passed");
+  });
+
+  it("課題が指定したワークフローが無ければ要修正", async () => {
+    const root = await committedRepo();
+    await git(root, "rm", "-q", WORKFLOW);
+    await git(root, "commit", "-q", "-m", "消した");
+    expect((await run(root)).steps[0]).toMatchObject({ status: "failed", files: [WORKFLOW] });
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "Git は固定の引数で起動し、入力された URL を引数に入れない",
+    async () => {
+      const root = await committedRepo();
+      const bin = await mkdtemp(path.join(tmpdir(), "stella-git-"));
+      const log = path.join(bin, "args.log");
+      const realGit = (await execFileAsync("which", ["git"])).stdout.trim();
+      await writeFile(
+        path.join(bin, "git"),
+        `#!/bin/sh\nprintf '%s\\n' "$@" >> "${log}"\nexec "${realGit}" "$@"\n`,
+        { mode: 0o755 },
+      );
+      const result = await run(root, ci, { ...gitEnv, PATH: bin });
+      expect(result.outcome).toBe("passed");
+      const args = await readFile(log, "utf8");
+      expect(args).not.toContain("github.com");
+      expect(args).not.toContain("github.io");
+      expect(args.trim().split("\n")).toEqual([
+        "rev-parse",
+        "--show-prefix",
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        "HEAD",
+        "-c",
+        "core.fsmonitor=false",
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=no",
+        "--ignore-submodules=all",
+        "ls-files",
+        "-z",
+      ]);
+    },
+  );
+});
+
+describe("parsePorcelainZ", () => {
+  it("変更のあるファイルと、名前を変えたファイルの元の名前を読む", () => {
+    expect([...parsePorcelainZ(" M site/a.js\0R  site/new.js\0site/old.js\0A  b c.txt\0")]).toEqual(
+      ["site/a.js", "site/new.js", "site/old.js", "b c.txt"],
+    );
+    expect(parsePorcelainZ("").size).toBe(0);
   });
 });
 

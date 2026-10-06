@@ -35,7 +35,7 @@ import {
 } from "./files.js";
 import { buildPlan } from "./plans.js";
 import { childEnv, type ProcessOutcome, type ProcessSpec, runProcess } from "./process.js";
-import { TIMEOUTS, type StepContext } from "./steps.js";
+import { type CiRunInput, TIMEOUTS, type StepContext } from "./steps.js";
 import { findExecutable, type NpmInvocation, resolveNpm } from "./toolchain.js";
 
 export type LoadedTask =
@@ -119,6 +119,8 @@ export interface RunTaskOptions {
   /** 道具の場所を差し替える (テスト用)。 */
   toolchain?: { node: string | null; npm: NpmInvocation | null };
   now?: () => Date;
+  /** CI と公開の課題で、受講者が入力した実行・公開先の URL (07 §5.5)。 */
+  ci?: CiRunInput;
 }
 
 async function resolveToolchain(
@@ -253,6 +255,8 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     npm: toolchain.npm,
     submitFiles,
     toolVersions,
+    ...(options.ci ? { ci: options.ci } : {}),
+    outputs: {},
     exec,
   };
 
@@ -314,6 +318,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     files,
     protected: protectedFiles,
     manifestSha256: options.manifestSha256,
+    ...(ctx.outputs.ci ? { ci: ctx.outputs.ci } : {}),
   };
 }
 

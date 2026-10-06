@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "deploy-ops-basics/samples/ci-deploy",
+  "title": "テストが通ってから公開するワークフローにする",
+  "kind": "basic",
+  "runner": "ci-deploy",
+  "submit": {
+    "files": [
+      ".github/workflows/deploy.yml",
+      "site/**"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "ci": {
+    "workflow": ".github/workflows/deploy.yml"
+  },
+  "environment": {
+    "id": "ci-deploy-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "git": {
+      "min": "2.40.0"
+    }
+  }
+}

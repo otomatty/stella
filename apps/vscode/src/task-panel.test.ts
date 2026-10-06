@@ -169,6 +169,45 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain('href="command:stella.runTask"');
   });
 
+  it("CI と公開の課題は、控えた実行・公開先・コミットを出す (リンクは https だけ)", () => {
+    const commit = "0123456789abcdef0123456789abcdef01234567";
+    const html = buildTaskPanelHtml({
+      kind: "result",
+      manifest: {
+        ...manifest,
+        runner: "ci-deploy",
+        ci: { workflow: ".github/workflows/deploy.yml" },
+      },
+      result: result({
+        runner: "ci-deploy",
+        outcome: "passed",
+        steps: [],
+        files: [{ path: "site/index.html", sha256: "a".repeat(64), bytes: 1 }],
+        ci: {
+          runUrl: "https://github.com/yamada/web-deploy/actions/runs/1",
+          deployUrl: "https://yamada.github.io/web-deploy/?q=<b>",
+          commit,
+        },
+      }),
+    });
+    expect(html).toContain('<a href="https://github.com/yamada/web-deploy/actions/runs/1">');
+    expect(html).toContain("https://yamada.github.io/web-deploy/?q=&lt;b&gt;");
+    expect(html).not.toContain("<b>");
+    expect(html).toContain(commit);
+    expect(html).toContain(".github/workflows/deploy.yml");
+    expect(html).toContain("command:stella.submitTask");
+    // 形の違う URL (last-run.json の書き換えなど) はリンクにしない。
+    const bad = buildTaskPanelHtml({
+      kind: "result",
+      manifest,
+      result: result({
+        ci: { runUrl: "javascript:alert(1)", deployUrl: "http://example.com/" },
+      }),
+    });
+    expect(bad).not.toContain('href="javascript:');
+    expect(bad).not.toContain('href="http://example.com');
+  });
+
   it("定義の誤りを一覧にする", () => {
     const html = buildTaskPanelHtml({ kind: "invalid", root: "/w/<t>", errors: ["runner は <x>"] });
     expect(html).toContain("課題の定義を読めません");

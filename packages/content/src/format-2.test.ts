@@ -139,6 +139,25 @@ describe("format 2 の教材", () => {
       expect(() => buildContentManifest(join(root, "courses"))).toThrow();
     }
   });
+  it("CI と公開の課題は、確かめるワークフローを必須にし、配布の定義に写す (07 §5.5)", () => {
+    const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
+    const workflow = ".github/workflows/deploy.yml";
+    const ci = {
+      ...raw,
+      runner: "ci-deploy",
+      static: undefined,
+      submit: { ...(raw.submit as object), files: [workflow, "site/**"] },
+      ci: { workflow },
+    };
+    const parsed = parseTaskDefinition(ci, {});
+    expect(toRuntimeManifest(parsed, {}).ci).toEqual({ workflow });
+    expect(() => parseTaskDefinition({ ...ci, ci: undefined }, {})).toThrow("ci.workflow");
+    expect(() => parseTaskDefinition({ ...ci, ci: { workflow: "deploy.yml" } }, {})).toThrow(
+      "ci.workflow",
+    );
+    // ほかの runner の課題の定義には写さない (内容ハッシュを変えない)。
+    expect(toRuntimeManifest(parseTaskDefinition(raw, {}), {})).not.toHaveProperty("ci");
+  });
   it("確認A・Bの支援と修正課題の記録を検査する", () => {
     const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
     expect(() => parseTaskDefinition({ ...raw, kind: "assessment-a" }, {})).toThrow();

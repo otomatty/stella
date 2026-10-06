@@ -5,6 +5,7 @@
  * 課題文 (README.md) を OS のタブ付きで開くパネルも、ここに置く。
  */
 
+import { type CiRunClaim, safeHttpsHref } from "@stella/shared/tasks/ci-run";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
 import {
@@ -114,6 +115,24 @@ function renderStep(step: RunStepResult): string {
   return parts.join("\n");
 }
 
+/** 外へのリンク。https の URL だけをリンクにし、それ以外は文字のまま出す。 */
+function externalLink(url: string): string {
+  const href = safeHttpsHref(url);
+  return href ? `<a href="${escapeHtml(href)}">${escapeHtml(url)}</a>` : escapeHtml(url);
+}
+
+/** CI と公開の課題で控えた、実行・公開先の URL と手元のコミット (07 §5.5)。 */
+export function ciClaimHtml(claim: CiRunClaim | undefined, workflow: string | undefined): string {
+  if (!claim) return "";
+  return [
+    `<section class="ci"><h2>CI の実行と公開先</h2><ul>`,
+    `<li>実行: ${externalLink(claim.runUrl)}</li>`,
+    `<li>公開先: ${externalLink(claim.deployUrl)}</li>`,
+    claim.commit ? `<li>手元のコミット: <code>${escapeHtml(claim.commit)}</code></li>` : "",
+    `</ul><p class="hint">提出すると、LMS が GitHub の公開 API で、この実行が成功で終わったこと・手元と同じコミットの実行であること・課題のワークフロー${workflow ? ` (<code>${escapeHtml(workflow)}</code>)` : ""} の実行であることを確かめます。リポジトリは公開にしてください。確かめられないときは講師が確認します。</p></section>`,
+  ].join("");
+}
+
 function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   title: string;
   body: string;
@@ -144,6 +163,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     referencesHtml(manifest.references),
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),
+    ciClaimHtml(result.ci, manifest.ci?.workflow),
     footer,
     !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
     `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
