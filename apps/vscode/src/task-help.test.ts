@@ -9,8 +9,10 @@ const state = vi.hoisted(() => ({
   folders: [] as string[],
   html: [] as string[],
   warningChoice: undefined as string | undefined,
-  /** 拡張の接続が変わったときのリスナー (`onDidChangeAuth`)。 */
+  /** 拡張の接続が変わったときのリスナー (`onDidChangeAuthSession`)。 */
   authListeners: [] as (() => void)[],
+  /** 接続の世代 (`authSession()`)。 */
+  session: 0,
   /** 作ったヘルプのパネル。閉じたかを見る。 */
   panels: [] as { disposed: boolean }[],
   /** 仮想ドキュメントの変更を知らせた URI。 */
@@ -88,6 +90,7 @@ vi.mock("vscode", () => ({
     },
     openTextDocument: mocks.openTextDocument,
     registerTextDocumentContentProvider: () => ({ dispose: vi.fn() }),
+    onDidCloseTextDocument: () => ({ dispose: vi.fn() }),
   },
   commands: {
     registerCommand: (id: string, handler: (...args: unknown[]) => Promise<void> | void) => {
@@ -99,11 +102,18 @@ vi.mock("vscode", () => ({
 }));
 vi.mock("./api.js", () => ({ apiRequest: mocks.apiRequest }));
 vi.mock("./auth.js", () => ({
-  onDidChangeAuth: (listener: () => void) => {
+  authSession: () => state.session,
+  AuthSessionChanged: class extends Error {},
+  onDidChangeAuthSession: (listener: () => void) => {
     state.authListeners.push(listener);
     return { dispose: vi.fn() };
   },
 }));
+/** 接続を切り替える (auth.ts と同じく、世代を進めてから同期的に知らせる)。 */
+function switchLearner(): void {
+  state.session += 1;
+  for (const listener of state.authListeners) listener();
+}
 
 const { buildTaskHelpHtml, registerTaskHelp, solutionContent } = await import("./task-help.js");
 
@@ -366,6 +376,7 @@ describe("課題パネルのコマンド", () => {
     expect(await solutionContent(left)).toBe("<h1>A</h1>");
     expect(mocks.apiRequest).toHaveBeenCalledWith(
       `/api/tasks/help?${new URLSearchParams({ taskId: TASK_ID, contentHash: HASH })}`,
+      { session: expect.any(Number) },
     );
   });
 
@@ -395,7 +406,7 @@ describe("課題パネルのコマンド", () => {
       help({ phase: "passed", status: "passed", solution: { state: "available" } }),
     );
     expect(state.authListeners.length).toBeGreaterThan(0);
-    for (const listener of state.authListeners) listener();
+    switchLearner();
 
     expect(state.panels.every((panel) => panel.disposed)).toBe(true);
     expect(state.fired).toContainEqual(left);
@@ -433,7 +444,7 @@ describe("課題パネルのコマンド", () => {
       const html = state.html.length;
       const running = start();
       await vi.waitFor(() => expect(mocks.apiRequest).toHaveBeenCalledTimes(calls));
-      for (const listener of state.authListeners) listener();
+      switchLearner();
       release(leakedHelp());
       const result = await running;
       // パネルを作り直さず、前の受講者の本文をどこにも出さない。
@@ -482,6 +493,7 @@ describe("課題パネルのコマンド", () => {
     expect(mocks.apiRequest).toHaveBeenLastCalledWith("/api/tasks/help/open", {
       method: "POST",
       body: { taskId: TASK_ID, item: "solution", contentHash: HASH },
+      session: expect.any(Number),
     });
   });
 
@@ -492,6 +504,7 @@ describe("課題パネルのコマンド", () => {
     expect(mocks.apiRequest).toHaveBeenCalledWith("/api/tasks/help/open", {
       method: "POST",
       body: { taskId: TASK_ID, item: "hint", level: 1, contentHash: HASH },
+      session: expect.any(Number),
     });
   });
 

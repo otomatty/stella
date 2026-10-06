@@ -34,7 +34,7 @@ import {
 } from "@stella/shared/tasks/manifest";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
-import { onDidChangeAuth } from "./auth.js";
+import { AuthSessionChanged, authSession, onDidChangeAuthSession } from "./auth.js";
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
 import { loadTask } from "./runner/run-task.js";
 import { isInside, locateTask, workspaceRoots } from "./task-commands.js";
@@ -273,35 +273,30 @@ ${body}
 // ---------------------------------------------------------------
 
 let solutionChanged: vscode.EventEmitter<vscode.Uri> | undefined;
-/**
- * 接続の世代。接続が変わる (受講者の切り替え・切断) たびに進める。コマンドと仮想ドキュメントの
- * 読み込みは、最初の取得より前に世代を取り (`session`)、取得のたびに確かめる (`fetchInSession`)。
- */
-let authGeneration = 0;
 
-/** 取得の途中で接続が変わったので、前の受講者の応答を捨てて処理をやめた。 */
-class AuthChanged extends Error {
-  constructor() {
-    super("LMS への接続が変わったため、処理をやめました");
-  }
-}
+/*
+ * 接続の世代 (`authSession()`) は、トークンを書き換える前に同期的に進む (auth.ts)。コマンドと
+ * 仮想ドキュメントの読み込みは、最初の取得より前に世代を取り、`fetchInSession` で取得のたびに
+ * 確かめる。
+ */
 
 function assertSession(session: number): void {
-  if (session !== authGeneration) throw new AuthChanged();
+  if (session !== authSession()) throw new AuthSessionChanged();
 }
 
 /**
- * 接続の世代 `session` の間だけ有効な取得。送る前と応答が返ったときに世代を確かめ、変わっていれば
- * 応答を捨てる。取得の途中で受講者が切り替わっても、前の受講者の解放済みの素材を描かず、
- * 新しい受講者の名前で開く記録も送らない。拡張の LMS への取得はすべてこれを通す。
+ * 接続の世代 `session` の間だけ有効な取得。世代とそのときのトークンを組で使い (トークンを読んだ
+ * あとで世代を確かめ、await を挟まずに送る)、応答が返ったときにも世代を確かめる。取得の途中や
+ * 接続の切り替えの途中で受講者が変わっても、前の受講者の解放済みの素材を描かず、前の受講者の
+ * 操作を新しい受講者の名前で送らない。拡張の LMS への取得はすべてこれを通す。
  */
 async function fetchInSession<T>(
   session: number,
   path: string,
-  init?: Parameters<typeof apiRequest>[1],
+  init: Parameters<typeof apiRequest>[1] = {},
 ): Promise<T> {
   assertSession(session);
-  const result = await (init === undefined ? apiRequest<T>(path) : apiRequest<T>(path, init));
+  const result = await apiRequest<T>(path, { ...init, session });
   assertSession(session);
   return result;
 }
@@ -329,12 +324,14 @@ const UNAVAILABLE =
  * 解答例のファイルだけを返す。サーバーが本文を返さなければ (未解放・開いた記録が無い・別の
  * 受講者・未接続) 案内だけを返す。
  */
-export async function solutionContent(uri: { path: string; query: string }): Promise<string> {
+export async function solutionContent(
+  uri: { path: string; query: string },
+  session = authSession(),
+): Promise<string> {
   const [, encodedTaskId = "", ...rest] = uri.path.split("/");
   const rel = rest.join("/");
   const contentHash = new URLSearchParams(uri.query).get("contentHash") ?? "";
   if (!encodedTaskId || !rel || !/^[a-f0-9]{64}$/.test(contentHash)) return UNAVAILABLE;
-  const session = authGeneration;
   try {
     const help = await fetchInSession<TaskHelpResponse>(
       session,
@@ -348,6 +345,41 @@ export async function solutionContent(uri: { path: string; query: string }): Pro
   } catch {
     return UNAVAILABLE;
   }
+}
+
+const RELOADING =
+  "LMS への接続が変わりました。いま接続している受講者で解答例を確かめ直しています…\n";
+
+/**
+ * 開いている解答例のドキュメントに、どの接続の世代で確かめた中身を出したか (URI → 世代と本文)。
+ * 本文は同じ世代の読み直しにだけ使い、接続が変わったら捨てる (`forgetTaskHelp`)。
+ */
+const shown = new Map<string, { session: number; text: string }>();
+
+/**
+ * 仮想ドキュメントの提供元。接続が変わったあとの読み直しでは、応答を待たずに案内の文へ同期的に
+ * 差し替え (VS Code は非同期の応答が返るまで前の本文を出し続けるため)、今の接続で確かめてから
+ * もう一度出し直す。API が落ちていても、前の受講者の解答例は残らない。
+ */
+export function provideSolutionContent(uri: {
+  path: string;
+  query: string;
+  toString(): string;
+}): string | Promise<string> {
+  const key = uri.toString();
+  const session = authSession();
+  const previous = shown.get(key);
+  if (previous?.session === session) return previous.text;
+  const load = solutionContent(uri, session).then((text) => {
+    if (session === authSession()) shown.set(key, { session, text });
+    return text;
+  });
+  if (!previous) return load;
+  shown.set(key, { session, text: RELOADING });
+  void load.then(() => {
+    if (session === authSession()) solutionChanged?.fire(uri as vscode.Uri);
+  });
+  return RELOADING;
 }
 
 let helpPanel: vscode.WebviewPanel | undefined;
@@ -420,7 +452,7 @@ async function render(session: number, target: HelpTarget, help: TaskHelpRespons
         )
       ).row;
     } catch (error) {
-      if (error instanceof AuthChanged) throw error;
+      if (error instanceof AuthSessionChanged) throw error;
       review = null;
     }
   }
@@ -432,13 +464,16 @@ async function render(session: number, target: HelpTarget, help: TaskHelpRespons
   );
   // 開いている解答例のドキュメントに、読み直してよいことを知らせる (中身はサーバーで確かめて読む)。
   if (help.solution.state === "opened")
-    for (const file of help.solution.files ?? [])
-      solutionChanged?.fire(solutionUri(target.taskId, file.path, target.contentHash));
+    for (const file of help.solution.files ?? []) {
+      const uri = solutionUri(target.taskId, file.path, target.contentHash);
+      shown.delete(uri.toString());
+      solutionChanged?.fire(uri);
+    }
 }
 
 /** パネルを開く。合格後に自動で開く種別 (基礎・接続) は、まだ開いていない解答例と解説を開く。 */
 async function showTaskHelpCommand(requested?: unknown): Promise<void> {
-  const session = authGeneration;
+  const session = authSession();
   const target = await resolveTarget(requested);
   let help = await fetchInSession<TaskHelpResponse>(
     session,
@@ -464,7 +499,7 @@ async function openTaskHelpItemCommand(
     throw new Error("開けない素材です");
   if (item === "hint" && (typeof level !== "number" || !Number.isInteger(level) || level < 1))
     throw new Error("ヒントの段が不正です");
-  const session = authGeneration;
+  const session = authSession();
   const target = await resolveTarget(requested);
   if (item === "solution") {
     const current = await fetchInSession<TaskHelpResponse>(
@@ -505,7 +540,7 @@ async function openTaskHelpItemCommand(
 async function compareTaskSolutionCommand(requested: unknown, rel: unknown): Promise<void> {
   if (typeof rel !== "string" || !isSafeRelativePattern(rel) || /[*?{}[\]]/.test(rel))
     throw new Error("解答例を開き直してから、もう一度選んでください");
-  const session = authGeneration;
+  const session = authSession();
   const target = await resolveTarget(requested);
   const help = await fetchInSession<TaskHelpResponse>(
     session,
@@ -544,7 +579,7 @@ async function reportErrors(work: () => Promise<void>): Promise<void> {
     await work();
   } catch (error) {
     // 接続が変わってやめた処理は知らせない (パネルは閉じており、前の受講者の応答は捨てた)。
-    if (error instanceof AuthChanged) return;
+    if (error instanceof AuthSessionChanged) return;
     void vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
   }
 }
@@ -555,9 +590,10 @@ async function reportErrors(work: () => Promise<void>): Promise<void> {
  * 開いた記録の無い受講者には案内だけになる)。拡張は解答例を控えていない。
  */
 export function forgetTaskHelp(): void {
-  authGeneration += 1;
   helpPanel?.dispose();
   helpPanel = undefined;
+  // 出した本文を捨てる (前の世代の印だけ残し、次の読み直しで案内の文へ同期的に差し替える)。
+  for (const key of shown.keys()) shown.set(key, { session: -1, text: "" });
   for (const document of vscode.workspace.textDocuments)
     if (document.uri.scheme === SOLUTION_SCHEME) solutionChanged?.fire(document.uri);
 }
@@ -566,11 +602,15 @@ export function registerTaskHelp(context: vscode.ExtensionContext): void {
   solutionChanged = new vscode.EventEmitter<vscode.Uri>();
   const provider: vscode.TextDocumentContentProvider = {
     onDidChange: solutionChanged.event,
-    provideTextDocumentContent: (uri) => solutionContent(uri),
+    provideTextDocumentContent: (uri) => provideSolutionContent(uri),
   };
   context.subscriptions.push(
     solutionChanged,
-    onDidChangeAuth(() => forgetTaskHelp()),
+    // 世代が進んだ直後 (トークンを書き換える前) に同期的に消す。
+    onDidChangeAuthSession(() => forgetTaskHelp()),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      shown.delete(document.uri.toString());
+    }),
     vscode.workspace.registerTextDocumentContentProvider(SOLUTION_SCHEME, provider),
     vscode.commands.registerCommand("stella.showTaskHelp", (root?: unknown) =>
       reportErrors(() => showTaskHelpCommand(root)),

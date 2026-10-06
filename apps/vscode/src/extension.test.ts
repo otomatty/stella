@@ -62,6 +62,7 @@ beforeEach(() => {
   activate({
     subscriptions: [],
     secrets: {
+      onDidChange: () => ({ dispose: vi.fn() }),
       get: async (key: string) => state.secrets.get(key),
       store: async (key: string, value: string) => {
         state.secrets.set(key, value);

@@ -295,6 +295,8 @@ async function handleExtensionUri(
 export function activate(context: vscode.ExtensionContext): void {
   const auth = new AuthStore(context.secrets);
   initApi(auth);
+  // 別のウィンドウでの接続・切断も、このウィンドウの接続の切り替えとして扱う (#36)。
+  context.subscriptions.push(auth.watchExternalChanges());
   const grader = initGraderHost(context.extensionUri);
   registerLessonTree(context, auth);
   registerTaskCommands(context);
