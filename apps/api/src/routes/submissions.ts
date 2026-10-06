@@ -19,6 +19,7 @@ import { bodyLimit } from "hono/body-limit";
 import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 
 import {
+  aiReviews,
   learnerInstructors,
   notifications,
   profiles,
@@ -52,6 +53,8 @@ import {
   reviewTaskSubmission,
   syncReviewedLesson,
 } from "../lib/task-submission.js";
+import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
+import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
 submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
@@ -78,12 +81,19 @@ type SubmissionSummary = Omit<
   "taskSnapshot" | "localResult" | "testHashes" | "debuggingRecord" | "supportLog" | "machineCheck"
 >;
 
-/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。 */
+/**
+ * DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。
+ *
+ * `revealDrafts` は staff のときだけ true。受講者には、人か AI が確定する前の下書き
+ * (AI の指摘・ルーブリック・総評) を返さない。確定後も、講師が採用した指摘だけを返す (07 §6.3)。
+ */
 function toSummaryRow(
   s: SubmissionSummary,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
+  aiReviewReady = false,
 ) {
+  const decided = s.verdict !== null;
   return {
     id: s.id,
     tenant_id: s.tenantId,
@@ -102,12 +112,23 @@ function toSummaryRow(
     status: s.status,
     priority: s.priority,
     attempt: s.attempt,
-    ai_ready: s.aiReady,
-    ai_suggestions: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.aiSuggestions,
-    rubric: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.rubric,
+    ai_ready: revealDrafts ? s.aiReady : false,
+    ai_suggestions: revealDrafts
+      ? s.aiSuggestions
+      : decided
+        ? s.aiSuggestions.filter(
+            (x) =>
+              typeof x === "object" && x !== null && (x as { adopted?: unknown }).adopted === true,
+          )
+        : [],
+    rubric: revealDrafts || decided ? s.rubric : [],
     grading_summary: parseGradingSummary(s.gradingSummary),
-    review_notes: s.taskId && s.status === "pending" && !revealDrafts ? "" : s.reviewNotes,
+    review_notes: revealDrafts || decided ? s.reviewNotes : "",
     verdict: s.verdict,
+    review_source: s.reviewSource,
+    ai_review_status: s.aiReviewStatus,
+    // 新形式の提出の AI 一次レビューが記録済みか (staff だけ)。旧形式の `ai_ready` と並べて数える。
+    ai_review_ready: revealDrafts && aiReviewReady,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
   };
@@ -118,9 +139,10 @@ function toRow(
   s: SubmissionSelect,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
+  aiReviewReady = false,
 ) {
   return {
-    ...toSummaryRow(s, profile, revealDrafts),
+    ...toSummaryRow(s, profile, revealDrafts, aiReviewReady),
     local_result: s.localResult,
     test_hashes: s.testHashes,
     debugging_record: s.debuggingRecord,
@@ -144,6 +166,24 @@ async function profileFor(
 }
 
 /**
+ * 提出に AI 一次レビューの結果が記録されているか (一覧の SELECT に足す列)。
+ * 外側の submissions は表名付きで指す (列名だけだと内側の ai_reviews.id に解決されてしまう)。
+ */
+const aiReviewReadyColumn =
+  sql<boolean>`exists (select 1 from ai_reviews where ai_reviews.submission_id = "submissions"."id")`.mapWith(
+    Boolean,
+  );
+
+async function aiReviewReadyOf(db: Db, id: string): Promise<boolean> {
+  const [hit] = await db
+    .select({ id: aiReviews.id })
+    .from(aiReviews)
+    .where(eq(aiReviews.submissionId, id))
+    .limit(1);
+  return Boolean(hit);
+}
+
+/**
  * staff: テナント内の提出物一覧 (新着順)。
  * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
  * 省略時はこれまでどおりテナント全体。
@@ -156,7 +196,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     if (assigned !== undefined && assigned !== "mine")
       throw new ApiError("assigned には mine だけを指定できます", 400);
     const rows = await db
-      .select(summaryColumns)
+      .select({ ...summaryColumns, aiReviewReady: aiReviewReadyColumn })
       .from(submissions)
       .where(
         and(
@@ -188,7 +228,12 @@ submissionsRoute.get("/api/submissions", async (c) => {
     }
     return c.json({
       rows: rows.map((r) =>
-        toSummaryRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
+        toSummaryRow(
+          r,
+          r.studentId ? (profMap.get(r.studentId) ?? null) : null,
+          true,
+          r.aiReviewReady,
+        ),
       ),
     });
   } catch (err) {
@@ -359,6 +404,18 @@ submissionsRoute.post("/api/submissions", async (c) => {
     }
     if (raw && typeof raw === "object" && "taskId" in raw) {
       const created = await createTaskSubmission(db, caller, c.env, raw);
+      // 応答を返したあと、この提出の AI 一次レビューを始める。間に合わなければ cron が拾う。
+      try {
+        c.executionCtx.waitUntil(
+          processAiReviewQueue(c.env, db, {
+            submissionId: created.id,
+            maxJobs: 1,
+            timeoutMs: AI_REVIEW_TIMEOUTS.afterSubmit,
+          }).catch((e) => console.error("[ai-review] after submit", e)),
+        );
+      } catch {
+        // ExecutionContext の無い環境 (テスト) では cron の処理に任せる。
+      }
       return c.json(
         { row: toRow(created, { display_name: caller.name, initials: caller.name.slice(0, 2) }) },
         201,
@@ -485,12 +542,19 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (!isStaff && !isOwner) {
       throw new ApiError("この提出を閲覧する権限がありません", 403);
     }
-    const detail = toRow(row, await profileFor(db, row.studentId), isStaff);
+    // AI の所見は staff には判定の理由・下書きまで返す。受講者には AI で確定した提出の
+    // 返信と所見だけを返し、人に回した提出・判定前の提出の AI の所見は返さない (07 §6.3)。
+    const aiReview = row.taskId && isStaff ? await latestAiReview(db, row.id) : null;
+    const detail = toRow(row, await profileFor(db, row.studentId), isStaff, aiReview !== null);
     if (row.taskId) {
       const files = await readSubmissionFiles(db, c.env, row.id);
+      const ai = isStaff
+        ? { ai_review: aiReview }
+        : { ai_feedback: await learnerAiFeedback(db, row) };
       return c.json({
         row: {
           ...detail,
+          ...ai,
           files: files.map(({ text: _text, ...file }) => file),
           code: files.map((f) => `// ${f.path}\n${f.text}`).join("\n\n"),
         },
@@ -699,7 +763,14 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       }
     }
 
-    return c.json({ row: toRow(after, await profileFor(db, after.studentId), true) });
+    return c.json({
+      row: toRow(
+        after,
+        await profileFor(db, after.studentId),
+        true,
+        after.taskId ? await aiReviewReadyOf(db, after.id) : false,
+      ),
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

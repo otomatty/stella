@@ -603,6 +603,12 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,
   );
+  // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
+  // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
+  const privateJson = JSON.stringify(task.privateFiles);
+  lines.push(
+    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(createHash("sha256").update(privateJson).digest("hex"))}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
+  );
   // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
   lines.push(
     task.fixedStart
@@ -610,6 +616,19 @@ for (const [order, task] of content.tasks.entries()) {
       : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
+
+// コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分)。AI の一次レビューと
+// 人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す (レビュー結果は内容ハッシュで残る)。
+const codingRules = content.codingRules ?? [];
+for (const rule of codingRules)
+  lines.push(
+    `insert into coding_rules (id, scope, position, title, statement, applies_to, introduced_in, exception, content_hash) values (${strLit(rule.id)}, ${strLit(rule.scope)}, ${rule.position}, ${strLit(rule.title)}, ${strLit(rule.statement)}, ${strLit(rule.appliesTo)}, ${strLit(rule.introducedIn)}, ${rule.exception ? strLit(rule.exception) : "null"}, ${strLit(rule.contentHash)}) on conflict (id) do update set scope = excluded.scope, position = excluded.position, title = excluded.title, statement = excluded.statement, applies_to = excluded.applies_to, introduced_in = excluded.introduced_in, exception = excluded.exception, content_hash = excluded.content_hash;`,
+  );
+lines.push(
+  codingRules.length
+    ? `delete from coding_rules where id not in (${codingRules.map((r) => strLit(r.id)).join(", ")});`
+    : "delete from coding_rules;",
+);
 
 emitRetiredStages();
 emitPdfMaterials();

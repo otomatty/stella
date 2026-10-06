@@ -4,6 +4,7 @@ import {
   type TaskManifest,
 } from "../../shared/src/tasks/manifest.js";
 import type { EnvironmentRequirement } from "../../shared/src/tasks/environment.js";
+import { ESCALATE_WHEN } from "../../shared/src/review/ai-review.js";
 
 export interface SkillRefs {
   uses: string[];
@@ -24,6 +25,11 @@ export interface TaskDefinition {
   environment: string;
   submit: { files: string[]; explanation: boolean; debuggingRecord: boolean };
   review: {
+    /**
+     * 適用するコーディング規則 (`coding-rules.md` の ID) と必須・任意。書かない課題は持たない
+     * (定義を変えずに課題の内容ハッシュを保つため)。
+     */
+    rules?: { id: string; required: boolean }[];
     rubric: { id: string; criterion: string; required: boolean }[];
     escalateWhen: string[];
   };
@@ -94,18 +100,46 @@ export function parseTaskDefinition(
     throw new Error("id: <講座>/<単元>/<課題> が必要です");
   const submit = object(value.submit, "submit");
   const review = object(value.review, "review");
-  if (!Array.isArray(review.rubric) || review.rubric.length === 0)
-    throw new Error("review.rubric: 評価項目が必要です");
+  if (!Array.isArray(review.rubric)) throw new Error("review.rubric: 配列が必要です");
   const rubric = review.rubric.map((v) => {
     const row = object(v, "rubric");
+    const criterion = text(row.criterion, "rubric.criterion");
+    // ルーブリックはコードを見て当否を決められる文で書く。尺度での採点にしない (07 §6.3)。
+    if (/\d\s*[〜~～-]\s*\d|点満点|採点|[?？]$/.test(criterion))
+      throw new Error(
+        `rubric.criterion: 尺度や問いではなく、当否を決められる文で書いてください: ${criterion}`,
+      );
     return {
       id: text(row.id, "rubric.id"),
-      criterion: text(row.criterion, "rubric.criterion"),
+      criterion,
       required: boolean(row.required, "rubric.required"),
     };
   });
   if (new Set(rubric.map((r) => r.id)).size !== rubric.length)
     throw new Error("rubric.id: 重複があります");
+  const rules =
+    review.rules === undefined
+      ? undefined
+      : (() => {
+          if (!Array.isArray(review.rules)) throw new Error("review.rules: 配列が必要です");
+          return review.rules.map((v) => {
+            const row = object(v, "review.rules");
+            return {
+              id: text(row.id, "review.rules.id"),
+              required: boolean(row.required, "review.rules.required"),
+            };
+          });
+        })();
+  const ruleIds = (rules ?? []).map((r) => r.id);
+  if (new Set(ruleIds).size !== ruleIds.length) throw new Error("review.rules: 重複があります");
+  if (rubric.some((r) => ruleIds.includes(r.id)))
+    throw new Error("rubric.id: 規則の ID と同じ ID は使えません");
+  if (![...rubric, ...(rules ?? [])].some((r) => r.required))
+    throw new Error("review: 必須の評価項目 (rubric か rules) が 1 つ以上必要です");
+  const escalateWhen = stringList(review.escalateWhen, "review.escalateWhen");
+  for (const condition of escalateWhen)
+    if (!(ESCALATE_WHEN as readonly string[]).includes(condition))
+      throw new Error(`review.escalateWhen: ${ESCALATE_WHEN.join(" / ")} のどれかにしてください`);
   const support = object(value.support, "support");
   if (!Number.isInteger(support.hintLevels) || Number(support.hintLevels) < 0)
     throw new Error("support.hintLevels: 0 以上の整数が必要です");
@@ -135,7 +169,7 @@ export function parseTaskDefinition(
     pattern: text(value.pattern, "pattern"),
     skills: parseSkills(value.skills, "skills"),
     submit: { files: parsed.manifest.submit.files, explanation, debuggingRecord },
-    review: { rubric, escalateWhen: stringList(review.escalateWhen, "review.escalateWhen") },
+    review: { ...(rules ? { rules } : {}), rubric, escalateWhen },
     support: {
       hintLevels: Number(support.hintLevels),
       solutionUnlock: support.solutionUnlock,

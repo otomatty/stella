@@ -40,6 +40,7 @@ import {
 } from "./task-content.js";
 import { parseSlides } from "./parse-slides.js";
 import { splitSlides } from "./split-slides.js";
+import { assertTaskRules, type CodingRule, readCodingRules } from "./coding-rules.js";
 import type { CourseColor, CourseConfig, QuizSeed } from "./types.js";
 
 /** 既存コード互換。新講座のテナントは course.json の tenantId。 */
@@ -746,6 +747,7 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
   quizzes: QuizSeed[];
   tasks: TaskSeed[];
   units: UnitSeed[];
+  codingRules: CodingRule[];
   /** 配布 PDF を OS ごとに分ける講座の slug (course.json の `pdfByOs`)。 */
   pdfByOs: string[];
 } {
@@ -771,7 +773,38 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
   assertPrerequisiteGraph(courses);
   assertGrantedAudienceGraph(courses);
 
-  return { courses, quizzes, tasks, units, pdfByOs };
+  // 課題が指すコーディング規則の存在・範囲・導入済みかを確かめる (07 §6.4.1)。
+  // 前提は準備中の講座 (modules が無い) を経由しうるので、全講座の course.json から引く。
+  const codingRules = readCodingRules(dirname(coursesRoot));
+  const prerequisites = new Map<string, string[]>();
+  const prerequisitesOf = (slug: string): string[] => {
+    if (!prerequisites.has(slug)) {
+      const file = join(coursesRoot, slug, "course.json");
+      const raw = existsSync(file)
+        ? (JSON.parse(readFileSync(file, "utf8")) as { prerequisites?: unknown })
+        : {};
+      prerequisites.set(
+        slug,
+        Array.isArray(raw.prerequisites)
+          ? raw.prerequisites.filter((p): p is string => typeof p === "string")
+          : [],
+      );
+    }
+    return prerequisites.get(slug) ?? [];
+  };
+  for (const task of tasks)
+    assertTaskRules(
+      {
+        id: task.definition.id,
+        courseId: task.courseId,
+        unitId: task.unitId,
+        rules: task.definition.review.rules ?? [],
+      },
+      codingRules,
+      prerequisitesOf,
+    );
+
+  return { courses, quizzes, tasks, units, pdfByOs, codingRules };
 }
 
 /**

@@ -76,7 +76,8 @@ modules/<unit>/
 `task.json` の必須項目は `id`（`<講座>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
 
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
-- `review`: `rubric` に `{ id, criterion, required }`、`escalateWhen` に追加条件の文字列配列を書きます。
+- `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
+- コーディング規則の正本は [coding-rules.md](coding-rules.md) (プログラム共通) と `courses/<slug>/coding-rules.md` (講座の追加分) です。課題が指せるのは共通の規則と自分の講座の規則だけで、導入より前の課題では必須にできません。後の講座でも使う規則は共通の規則に書きます。書式は coding-rules.md の冒頭を参照してください。
 - `support`: `hintLevels`、`solutionUnlock`（`passed` / `attempts-or-passed`）。後者は正の整数 `attempts` も必要です。確認A・Bはヒント0段、解答は合格後です。
 - `protected`・`checks`・`static` は拡張用manifestと同じ形です。`.stella/task.json` は生成時に環境要件を解決し、実行に必要な項目だけを取り出します。任意コマンドは定義できません。
 
@@ -84,7 +85,7 @@ modules/<unit>/
 
 `bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
-課題は D1 の `tasks`、非公開の素材は `task_private`、状態は `task_progress` に投入します。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
+課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<講座>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
 

@@ -52,11 +52,13 @@ bun run dev        # Vite on :5173 — requires apps/web/.env.local with VITE_SE
 
 **DB setup (local):** `bun run db:migrate && bun run db:seed && bun run smoke:d1`
 
-**Instructor review (Issue #8 / P3):** With the API running, submissions go through `/api/submissions` (D1). `POST /api/review-draft` generates AI review drafts (heuristic fallback without `ANTHROPIC_API_KEY`). localStorage `lms_submissions_v1` remains a demo/offline remnant — not the default path.
+**Instructor review (Issue #8 / P3):** With the API running, submissions go through `/api/submissions` (D1). `POST /api/review-draft` generates AI review drafts for legacy (`assignments`) submissions only (heuristic fallback without `ANTHROPIC_API_KEY`). localStorage `lms_submissions_v1` remains a demo/offline remnant — not the default path.
 
-**講師への引き継ぎ (Issue #9):** VS Code 拡張で採点が未クリアだったとき、演習パネルの「講師に引き継ぐ」が採点コードと採点失敗サマリ (`submissions.grading_summary`) を `POST /api/submissions` で送る。同一課題の未添削提出は upsert (`attempt++`) されキューに増殖しない。成功時は「提出」から説明を添えて通常のレビューへ送る。手元の採点だけでは修了せず、レビューの合格で完了する (#32)。講師側は `ReviewEditor` の「自動採点」タブで詰まりを読み、AI 下書きは Editor を開いた時に遅延生成する。詳細は `apps/vscode/README.md`。
+**提出の AI 一次レビュー (Issue #33):** 新形式の課題の提出は `ai_review_jobs` に積まれ、応答後の `waitUntil` と cron (15 分ごと) が処理する (リースで二重処理を防ぎ、AI の呼び出しは 60 秒に 20 回まで。Batch は使わない)。構造化出力 (`output_config.format`) で返させたルーブリックの結果と確信度に、07 §6.3 のしきい値をコードで当てて「AI で確定」か「人に回す」かを決める (`@stella/shared/review/ai-review`)。`ANTHROPIC_API_KEY` が無い・拒否・時間切れ・形式の誤りは人に回す (自動で合格にしない)。モデルは `AI_REVIEW_MODEL` (未設定なら `ANTHROPIC_MODEL`)。受講者への返信は解答例と機械的に照合する。受講者向け API は AI で確定した提出の返信と所見だけを返し、人に回した提出には「講師の確認待ち」だけを出す。結果は `ai_reviews` に版 (モデル・指示・しきい値) と規則の内容ハッシュ付きで残り、`bun run --filter=@stella/api ai-review:eval` が人の判定との一致率を出す。コーディング規則の正本は `packages/content/coding-rules.md` と講座の `coding-rules.md` で、課題は `task.json` の `review.rules` で ID を指す。詳細は `docs/curriculum/07-stella-adoption-redesign.md` §6.8。
 
-**新形式の課題の提出 (Issue #32):** 拡張は `canSubmit` の結果で提出と講師への相談を切り替える。`POST /api/submissions` の `taskId` 入りの本文は新形式で、ファイル・実行結果・テスト/設定のハッシュ・説明・支援・内容ハッシュをまとめる。ファイルは非公開 R2 `SUBMISSIONS_BUCKET`、試行は追記。配布記録 `.stella/distribution.json` の版を `task_revisions` と照合し、不一致は `instructor-pending`。一致は `submitted` で、AI 一次レビューの接続は #33。人/AI の合格は `task_progress` と `skill_evidence` に反映する。旧コードレッスンも自己申告では完了せず、レビューの合格で `lesson_progress` を更新する。詳細は `apps/vscode/README.md`。
+**講師への引き継ぎ (Issue #9):** VS Code 拡張で採点が未クリアだったとき、演習パネルの「講師に引き継ぐ」が採点コードと採点失敗サマリ (`submissions.grading_summary`) を `POST /api/submissions` で送る。同一課題の未添削提出は upsert (`attempt++`) されキューに増殖しない。成功時は「提出」から説明を添えて通常のレビューへ送る。手元の採点だけでは修了せず、レビューの合格で完了する (#32)。講師側は `ReviewEditor` の「自動採点」タブで詰まりを読み、旧形式の AI 下書きは Editor を開いた時に遅延生成する (新形式は提出直後の AI 一次レビューの結果を出す)。詳細は `apps/vscode/README.md`。
+
+**新形式の課題の提出 (Issue #32):** 拡張は `canSubmit` の結果で提出と講師への相談を切り替える。`POST /api/submissions` の `taskId` 入りの本文は新形式で、ファイル・実行結果・テスト/設定のハッシュ・説明・支援・内容ハッシュをまとめる。ファイルは非公開 R2 `SUBMISSIONS_BUCKET`、試行は追記。配布記録 `.stella/distribution.json` の版を `task_revisions` と照合し、不一致は `instructor-pending`。一致は `submitted` (画面では「AI が確認中」) で、AI の一次レビュー (#33) に回る。人/AI の合格は `task_progress` と `skill_evidence` に反映する。旧コードレッスンも自己申告では完了せず、レビューの合格で `lesson_progress` を更新する。詳細は `apps/vscode/README.md`。
 
 
 ### Key caveats

@@ -106,6 +106,16 @@ export interface Submission {
   debuggingRecord?: import("../tasks/submission.js").DebuggingRecord;
   supportLog?: import("../tasks/submission.js").SupportEvent[];
   taskFiles?: { path: string; text: string }[];
+  /** 新形式の提出の AI 一次レビューの状態。旧形式は null。 */
+  aiReviewStatus?: import("./ai-review.js").AiReviewStatus | null;
+  /** 確定した判定が AI か人か。 */
+  reviewSource?: "ai" | "human" | null;
+  /** 受講者向け: AI で確定した提出の返信と所見 (人に回した提出では null)。 */
+  aiFeedback?: import("./ai-review.js").LearnerAiFeedback | null;
+  /** staff 向け: 新形式の提出の AI 一次レビューが記録済みか (旧形式の `aiReady` に当たる)。 */
+  aiReviewReady?: boolean;
+  /** staff 向け: 最新の AI 一次レビュー (人に回した理由・所見・返信案)。 */
+  aiReview?: import("./ai-review.js").AiReviewRecord | null;
 }
 
 export interface ReviewDraftRequest {

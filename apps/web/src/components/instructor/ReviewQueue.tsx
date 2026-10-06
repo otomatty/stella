@@ -1,3 +1,4 @@
+import { AI_REVIEW_STATUS_LABELS } from "@stella/shared/review/ai-review";
 import { Filter, Sliders, ChevronRight, Sparkles } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { formatSubmittedAt } from "@/lib/submissions-store";
 import type { Tenant } from "@/data/types";
 import type { AvatarTone } from "@/data/types";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
+import { hasAiDraft } from "@/lib/ai-draft";
 
 interface ReviewQueueProps {
   tenantId: Tenant["id"];
@@ -42,7 +44,7 @@ export const ReviewQueue = ({
     ? allPending.filter((s) => s.studentId && scope.assignedIds.has(s.studentId))
     : allPending;
   const others = allPending.length - pending.length;
-  const aiReadyCount = pending.filter((s) => s.aiReady).length;
+  const aiReadyCount = pending.filter(hasAiDraft).length;
 
   return (
     <>
@@ -107,7 +109,23 @@ export const ReviewQueue = ({
                   <TableCell className="text-ink-3">{r.stageTitle}</TableCell>
                   <TableCell className="text-ink-3">{formatSubmittedAt(r.submittedAt)}</TableCell>
                   <TableCell>
-                    {r.aiReady ? (
+                    {r.aiReviewStatus ? (
+                      // 新形式の提出は提出直後に AI が一次レビューする (07 §6.2)。
+                      <Badge
+                        variant={
+                          r.aiReviewStatus === "escalated"
+                            ? "warning"
+                            : r.aiReviewStatus === "human"
+                              ? "default"
+                              : "accent"
+                        }
+                      >
+                        <Sparkles size={10} />
+                        {r.aiReviewStatus === "escalated"
+                          ? "人に回した"
+                          : AI_REVIEW_STATUS_LABELS[r.aiReviewStatus]}
+                      </Badge>
+                    ) : r.aiReady ? (
                       <Badge variant="accent">
                         <Sparkles size={10} />
                         準備済
