@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   countHelpAttempts,
   helpItemAvailability,
-  intersectHelpAccess,
   parseHelpContentHash,
   parseHelpOpenRequest,
   parseTaskHints,
   SOLUTION_UNLOCK_ATTEMPTS,
+  sameHelpPolicy,
   staleHelpAccess,
   supportConfigOf,
   TASK_HELP_POLICIES,
@@ -142,27 +142,37 @@ describe("taskHelpAccess (07 §8 の表)", () => {
   });
 });
 
-describe("intersectHelpAccess / staleHelpAccess", () => {
-  it("今の版と手元の版の両方で開けるものだけを開ける", () => {
-    const basic = taskHelpAccess(facts({ openedHintLevel: 2 }));
-    const assessment = taskHelpAccess(
-      facts({ kind: "assessment-a", support: { hintLevels: 0, solutionUnlock: "passed" } }),
+describe("sameHelpPolicy / staleHelpAccess", () => {
+  const basic = {
+    kind: "basic" as const,
+    support: { hintLevels: 2, solutionUnlock: "after-hints" as const },
+  };
+  it("種別・段数・解答例を開く条件・回数がすべて同じときだけ同じ方針とする", () => {
+    expect(sameHelpPolicy(basic, { ...basic, support: { ...basic.support } })).toBe(true);
+    expect(sameHelpPolicy(basic, { ...basic, support: { ...basic.support, hintLevels: 3 } })).toBe(
+      false,
     );
-    const both = intersectHelpAccess(basic, assessment);
-    expect(both.referencesOnly).toBe(true);
-    expect(both.hints).toEqual([]);
-    expect(both.solution).toEqual({ open: false, reason: "passed" });
-    expect(intersectHelpAccess(assessment, basic).solution.open).toBe(false);
-    const stricter = taskHelpAccess(
-      facts({ support: { hintLevels: 1, solutionUnlock: "passed" }, openedHintLevel: 1 }),
-    );
-    expect(intersectHelpAccess(basic, stricter).hints).toEqual([{ open: true }]);
-    expect(intersectHelpAccess(basic, stricter).solution).toEqual({
-      open: false,
-      reason: "passed",
-    });
-    const passed = taskHelpAccess(facts({ passed: true }));
-    expect(intersectHelpAccess(passed, passed).autoOpen).toEqual(["solution", "explanation"]);
+    expect(
+      sameHelpPolicy(basic, { ...basic, support: { ...basic.support, solutionUnlock: "passed" } }),
+    ).toBe(false);
+    expect(sameHelpPolicy(basic, { ...basic, kind: "connection" })).toBe(false);
+    const independent = {
+      kind: "independent" as const,
+      support: { hintLevels: 1, solutionUnlock: "attempts-or-passed" as const },
+    };
+    // 回数の省略は既定の回数と同じ。
+    expect(
+      sameHelpPolicy(independent, {
+        ...independent,
+        support: { ...independent.support, attempts: SOLUTION_UNLOCK_ATTEMPTS },
+      }),
+    ).toBe(true);
+    expect(
+      sameHelpPolicy(independent, {
+        ...independent,
+        support: { ...independent.support, attempts: 3 },
+      }),
+    ).toBe(false);
   });
 
   it("素材の版が分からなければ、段の数だけ見せてすべて閉じる", () => {

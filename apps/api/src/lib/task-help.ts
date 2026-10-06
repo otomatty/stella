@@ -6,7 +6,9 @@
  * - 本文は受講者の手元の版 (配布記録の contentHash) の素材から読む。今の版なら `task_private`、
  *   前の版なら、その版を配っていたときの素材の版 (`task_revisions.private_hash` →
  *   `task_private_versions`)。素材の版が分からない版 (知らない版・記録する前の版) には素材を出さず、
- *   受け取り直しを案内する。判定は今の版の表で行い、前の版ならその版の表とも重ねる (緩くしない)。
+ *   受け取り直しを案内する。前の版の素材を出すのは、その版の解放の方針 (種別・ヒントの段数・
+ *   解答例を開く条件・挑戦の回数) が今の版と同じときだけで、判定は今の版の表で行う。方針が違えば
+ *   素材を出さず、受け取り直しを案内する。
  * - 返すのはヒント (`hints.md` の段)・解答例 (`solution/`)・解説 (`explanation.md`) だけで、
  *   予備の類題 (`variants/`) とレビューの観点 (`review.md`) はどの条件でも返さない。
  * - 開いたら `task_help_opens` に記録してから返す (記録できなければ返さない)。記録は提出の支援
@@ -24,8 +26,8 @@ import {
   type HelpItemView,
   helpItemAvailability,
   type HelpSolutionFile,
-  intersectHelpAccess,
   parseTaskHints,
+  sameHelpPolicy,
   staleHelpAccess,
   supportConfigOf,
   type TaskHelpAccess,
@@ -154,7 +156,10 @@ interface HelpContext {
   /** 今の版の課題。判定は今の版の表で行う。 */
   task: { id: string; title: string; kind: TaskKind; contentHash: string };
   support: TaskSupportConfig;
-  /** 出す版。素材の版が分からない (知らない版・記録する前の版) なら null で、素材を出さない。 */
+  /**
+   * 出す版。素材の版が分からない (知らない版・記録する前の版) か、方針が今の版と違う前の版なら
+   * null で、素材を出さない。
+   */
   served: ServedVersion | null;
   status: TaskStatus;
   passed: boolean;
@@ -168,7 +173,7 @@ const PASSED: readonly TaskStatus[] = ["passed", "ai-passed"];
 
 /**
  * 1 つの版の方針 (定義の `support`) を、その版自身の `hints.md` と合わせる。ほかの版の値では
- * 書き換えない (版ごとの方針はそのまま判定し、`intersectHelpAccess` で重ねる)。`hints.md` を段に
+ * 書き換えない (前の版は、方針が今の版と同じときだけ出す)。`hints.md` を段に
  * 分けられない素材は、ヒントを出さず解答例も合格後だけにする (いちばん厳しい側)。本文はログに出さない。
  */
 function versionPolicy(
@@ -365,7 +370,7 @@ async function loadHelpContext(
     progress && (progress.contentHash === row.contentHash || passed)
       ? progress.status
       : "not-started";
-  // 今の版の方針は、今の版の定義と素材だけで決める (前の版の段の数などで書き換えない)。
+  // 今の版の方針は、今の版の定義と素材だけで決める (前の版の値で書き換えない)。
   const support =
     served?.contentHash === row.contentHash
       ? served.support
@@ -374,10 +379,15 @@ async function loadHelpContext(
           JSON.parse(row.definition),
           JSON.parse(row.privateFiles ?? "{}") as Record<string, string>,
         ).support;
+  // 前の版の素材を出すのは、解放の方針が今の版と同じときだけ。違えば素材を出さず、受け取り
+  // 直しを案内する (今の版の表で判定し、段や回数の表示も今の版のものと一致させる)。
+  const sameVersionPolicy =
+    served !== null &&
+    sameHelpPolicy({ kind, support }, { kind: served.kind, support: served.support });
   return {
     task: { id: row.id, title: row.title, kind, contentHash: row.contentHash },
     support,
-    served,
+    served: sameVersionPolicy ? served : null,
     status,
     passed,
     opens,
@@ -392,8 +402,8 @@ async function loadHelpContext(
 const NOT_OFFERED: HelpAvailability = { open: false, reason: "not-offered" };
 
 /**
- * 表の判定 (今の版。前の版を出すならその版の表とも重ねる) に、素材が無いこと (解答例のファイルや
- * 解説が無い) と、出す版の素材が分からないことを重ねる。
+ * 今の版の表の判定に、素材が無いこと (解答例のファイルや解説が無い) と、出す版の素材を出せない
+ * こと (素材の版が分からない・方針が今の版と違う前の版) を重ねる。
  */
 function accessOf(ctx: HelpContext): TaskHelpAccess {
   const facts = {
@@ -404,28 +414,11 @@ function accessOf(ctx: HelpContext): TaskHelpAccess {
   const current = taskHelpAccess({ ...facts, kind: ctx.task.kind, support: ctx.support });
   const { served } = ctx;
   if (!served) return staleHelpAccess(current);
-  let access = current;
-  if (served.contentHash !== ctx.task.contentHash) {
-    // 前の版を出すときは、今の版の表とその版の表をそれぞれの方針のまま重ねる (両方で開けるもの)。
-    access = intersectHelpAccess(
-      current,
-      taskHelpAccess({ ...facts, kind: served.kind, support: served.support }),
-    );
-    // 今の版の「ヒントのあとに解答例」の段の数に、前の版のヒントでは届かない (前の版を開き切った)。
-    // 解答例は閉じたまま、最新を受け取り直すよう案内する。
-    if (
-      !access.solution.open &&
-      access.solution.reason === "hints-first" &&
-      facts.openedHintLevel >= served.support.hintLevels &&
-      served.support.hintLevels < ctx.support.hintLevels
-    )
-      access = { ...access, solution: { open: false, reason: "stale-version" } };
-  }
   return {
-    ...access,
-    solution: served.solution.length > 0 ? access.solution : NOT_OFFERED,
-    explanation: served.explanation !== null ? access.explanation : NOT_OFFERED,
-    autoOpen: access.autoOpen.filter((item) =>
+    ...current,
+    solution: served.solution.length > 0 ? current.solution : NOT_OFFERED,
+    explanation: served.explanation !== null ? current.explanation : NOT_OFFERED,
+    autoOpen: current.autoOpen.filter((item) =>
       item === "solution" ? served.solution.length > 0 : served.explanation !== null,
     ),
   };

@@ -478,10 +478,23 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       "review.md": encode(MARK.review),
     });
     const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+    const BASIC = { hintLevels: 2, solutionUnlock: "after-hints" };
+    const hintsOf = (levels: number) =>
+      Array.from({ length: levels }, (_, i) => `## ヒント${i + 1}\n段 ${i + 1}\n`).join("\n");
     /** 前の版の課題と、その版で配っていた非公開の素材の版。 */
-    async function addOldRevision(options: { privateHash?: string | null; kind?: TaskKind } = {}) {
-      const privateHash =
-        options.privateHash === undefined ? sha256(OLD_FILES) : options.privateHash;
+    async function addOldRevision(
+      options: {
+        privateHash?: string | null;
+        kind?: TaskKind;
+        support?: Record<string, unknown>;
+        hints?: string;
+      } = {},
+    ) {
+      const files =
+        options.hints === undefined
+          ? OLD_FILES
+          : JSON.stringify({ ...JSON.parse(OLD_FILES), "hints.md": encode(options.hints) });
+      const privateHash = options.privateHash === undefined ? sha256(files) : options.privateHash;
       const bundle = {
         ...fixture.bundle,
         contentHash: OLD_HASH,
@@ -490,18 +503,24 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       await db.insert(taskRevisions).values({
         taskId: fixture.input.taskId,
         contentHash: OLD_HASH,
-        definition: JSON.stringify({ support: { hintLevels: 2, solutionUnlock: "after-hints" } }),
+        definition: JSON.stringify({ support: options.support ?? BASIC }),
         bundle: JSON.stringify(bundle),
         privateHash,
       });
       if (privateHash)
         await db
           .insert(taskPrivateVersions)
-          .values({ taskId: fixture.input.taskId, privateHash, files: OLD_FILES });
+          .values({ taskId: fixture.input.taskId, privateHash, files });
     }
-    beforeEach(() => setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" }));
+    /** 今の版の hints.md を差し替える。 */
+    const setCurrentHints = (markdown: string) =>
+      db
+        .update(taskPrivate)
+        .set({ files: JSON.stringify({ ...PRIVATE_FILES, "hints.md": encode(markdown) }) })
+        .where(eq(taskPrivate.taskId, fixture.input.taskId));
 
-    it("前の版の受講者には、その版のヒント・解答例・解説を出し、記録も出した版にする", async () => {
+    it("方針が同じ前の版の受講者には、その版のヒント・解答例・解説を出し、記録も出した版にする", async () => {
+      await setup("basic", BASIC);
       await addOldRevision();
       const first = await ok(await openAt(OLD_HASH, "hint", 1));
       expect(first.hints[0]).toMatchObject({ state: "opened", markdown: OLD.hint1 });
@@ -523,39 +542,84 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       expect(await opens()).toHaveLength(4);
     });
 
-    it("今の版でヒントが増えたら、前の版のヒントを開き切っても解答例を開かず受け取り直しを案内する", async () => {
-      // 今の版は 3 段 (after-hints)。前の版は 2 段。
-      await db
-        .update(tasks)
-        .set({
-          definition: JSON.stringify({ support: { hintLevels: 3, solutionUnlock: "after-hints" } }),
-        })
-        .where(eq(tasks.id, fixture.input.taskId));
-      await db
-        .update(taskPrivate)
-        .set({
-          files: JSON.stringify({
-            ...PRIVATE_FILES,
-            "hints.md": encode("## ヒント1\nA\n\n## ヒント2\nB\n\n## ヒント3\nC\n"),
-          }),
-        })
-        .where(eq(taskPrivate.taskId, fixture.input.taskId));
-      await addOldRevision();
-      await ok(await openAt(OLD_HASH, "hint", 1));
-      const opened = await ok(await openAt(OLD_HASH, "hint", 2));
-      expect(opened.hints.map((h) => h.state)).toEqual(["opened", "opened"]);
-      expect(opened.solution).toEqual({ state: "locked", reason: "stale-version" });
-      const refused = await openAt(OLD_HASH, "solution");
-      expect(refused.status).toBe(409);
-      expect(leaked(await refused.text(), OLD.solution, MARK.solution)).toEqual([]);
-      expect((await opens()).map((o) => o.item)).toEqual(["hint", "hint"]);
-      // 今の版では 3 段目を開いてから解答例を開ける (今の版の方針はそのまま)。
-      expect((await ok(await help())).solution).toEqual({ state: "locked", reason: "hints-first" });
-      await ok(await open("hint", 3));
-      expect((await ok(await help())).solution).toEqual({ state: "available" });
+    it.each([
+      {
+        label: "今の版でヒントが減った (前の版 3 段・今の版 2 段)",
+        current: { kind: "basic" as TaskKind, support: BASIC, hints: hintsOf(2) },
+        old: { support: { hintLevels: 3, solutionUnlock: "after-hints" }, hints: hintsOf(3) },
+      },
+      {
+        label: "今の版でヒントが増えた (前の版 2 段・今の版 3 段)",
+        current: {
+          kind: "basic" as TaskKind,
+          support: { hintLevels: 3, solutionUnlock: "after-hints" },
+          hints: hintsOf(3),
+        },
+        old: { support: BASIC, hints: hintsOf(2) },
+      },
+      {
+        label: "挑戦の回数が違う (前の版 5 回・今の版 3 回)",
+        current: {
+          kind: "independent" as TaskKind,
+          support: { hintLevels: 1, solutionUnlock: "attempts-or-passed", attempts: 3 },
+          hints: hintsOf(1),
+        },
+        old: {
+          kind: "independent" as TaskKind,
+          support: { hintLevels: 1, solutionUnlock: "attempts-or-passed", attempts: 5 },
+          hints: hintsOf(1),
+        },
+        failedRuns: 3,
+      },
+      {
+        label: "解答例を開く条件が違う (前の版は合格後)",
+        current: { kind: "basic" as TaskKind, support: BASIC, hints: hintsOf(2) },
+        old: { support: { hintLevels: 2, solutionUnlock: "passed" }, hints: hintsOf(2) },
+      },
+      {
+        label: "種別が違う (前の版は確認A)",
+        current: { kind: "basic" as TaskKind, support: BASIC, hints: hintsOf(2) },
+        old: {
+          kind: "assessment-a" as TaskKind,
+          support: { hintLevels: 0, solutionUnlock: "passed" },
+          hints: "",
+        },
+      },
+    ])("方針が違う前の版には素材を出さず、受け取り直しを案内する: $label", async (c) => {
+      await setup(c.current.kind, c.current.support);
+      await setCurrentHints(c.current.hints);
+      await addOldRevision(c.old);
+      if (c.failedRuns)
+        await db.insert(taskLocalRuns).values({
+          userId: "learner",
+          taskId: fixture.input.taskId,
+          tenantId: "ses",
+          contentHash: fixture.bundle.contentHash,
+          failedRuns: c.failedRuns,
+          lastOutcome: "failed",
+          firstRunAt: new Date(),
+          lastRunAt: new Date(),
+        });
+      const body = await ok(await helpAt(OLD_HASH));
+      expect(body.hints.every((h) => h.state === "locked" && h.reason === "stale-version")).toBe(
+        true,
+      );
+      expect(body.solution).toEqual({ state: "locked", reason: "stale-version" });
+      expect(body.explanation).toEqual({ state: "locked", reason: "stale-version" });
+      expect(leaked(body, ...Object.values(MARK), ...Object.values(OLD))).toEqual([]);
+      for (const [item, level] of [
+        ["hint", 1],
+        ["solution", undefined],
+        ["explanation", undefined],
+      ] as const)
+        expect((await openAt(OLD_HASH, item, level)).status).toBe(409);
+      expect(await opens()).toEqual([]);
+      // 今の版は今の版の方針のまま開ける。
+      expect((await ok(await help())).hints[0]?.state ?? "none").not.toBe("locked");
     });
 
     it("前の版の素材の版が分からなければ、素材を出さず受け取り直しを案内する", async () => {
+      await setup("basic", BASIC);
       await addOldRevision({ privateHash: null });
       const body = await ok(await helpAt(OLD_HASH));
       expect(body.hints).toEqual([
@@ -574,6 +638,7 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     });
 
     it("知らない版を名乗っても、今の版の素材を出さない", async () => {
+      await setup("basic", BASIC);
       const unknown = "c".repeat(64);
       expect((await ok(await helpAt(unknown))).solution).toEqual({
         state: "locked",
@@ -582,16 +647,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       expect((await openAt(unknown, "hint", 1)).status).toBe(409);
       expect(await opens()).toEqual([]);
       expect((await openAt("not-a-hash", "hint", 1)).status).toBe(400);
-    });
-
-    it("前の版の種別が厳しければ、その版でも今の版でも開けるものだけを出す", async () => {
-      await addOldRevision({ kind: "assessment-a" });
-      const body = await ok(await helpAt(OLD_HASH));
-      expect(body.referencesOnly).toBe(true);
-      expect(body.hints).toEqual([]);
-      expect(body.solution.state).toBe("locked");
-      expect((await openAt(OLD_HASH, "hint", 1)).status).toBe(403);
-      expect(await opens()).toEqual([]);
     });
   });
 

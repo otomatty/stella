@@ -235,27 +235,23 @@ export function taskHelpAccess(facts: TaskHelpFacts): TaskHelpAccess {
   };
 }
 
-function both(a: HelpAvailability, b: HelpAvailability): HelpAvailability {
-  if (!a.open) return a;
-  return b;
-}
-
 /**
- * 2 つの判定の両方で開けるものだけを開けるとする。受講者の手元の版が今の版と違うとき、今の版の
- * 判定と手元の版の判定を重ね、どちらかより緩くならないようにする (種別が版で変わった課題など)。
+ * 2 つの版の解放の方針 (種別・ヒントの段数・解答例を開く条件・挑戦の回数) が同じか。受講者の
+ * 手元の版が今の版と違うとき、方針が同じならその版の素材を今の版の判定で出し、違えば素材を
+ * 出さずに受け取り直しを案内する (2 つの表を重ねると、段や回数の表示が今の版とずれ、
+ * 行き止まりができるため)。段数は各版の `hints.md` に合わせたあとの値を比べる。
  */
-export function intersectHelpAccess(a: TaskHelpAccess, b: TaskHelpAccess): TaskHelpAccess {
-  const levels = Math.min(a.hints.length, b.hints.length);
-  return {
-    phase: a.phase,
-    referencesOnly: a.referencesOnly || b.referencesOnly,
-    notice: a.notice ?? b.notice,
-    hints: Array.from({ length: levels }, (_, i) => both(a.hints[i], b.hints[i])),
-    solution: both(a.solution, b.solution),
-    explanation: both(a.explanation, b.explanation),
-    autoOpen: a.autoOpen.filter((item) => b.autoOpen.includes(item)),
-    attempts: a.attempts,
-  };
+export function sameHelpPolicy(
+  a: { kind: TaskKind; support: TaskSupportConfig },
+  b: { kind: TaskKind; support: TaskSupportConfig },
+): boolean {
+  return (
+    a.kind === b.kind &&
+    effectiveHintLevels(a.kind, a.support) === effectiveHintLevels(b.kind, b.support) &&
+    a.support.solutionUnlock === b.support.solutionUnlock &&
+    (a.support.attempts ?? SOLUTION_UNLOCK_ATTEMPTS) ===
+      (b.support.attempts ?? SOLUTION_UNLOCK_ATTEMPTS)
+  );
 }
 
 /** 素材を出せないとき (手元の版の素材が分からない) の判定。ヒントの段の数だけは見せる。 */
