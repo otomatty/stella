@@ -196,6 +196,9 @@ export function parseAiReviewOutput(raw: string): AiReviewOutput | null {
       note: item.note,
     });
   }
+  // 同じ項目を 2 回返した応答は、結果が一致していても形の誤りとして扱う (人に回る)。
+  // どちらかを選ぶと、先頭の「満たす」で後ろの「満たさない」を隠しうるため。
+  if (new Set(rubric.map((r) => r.id)).size !== rubric.length) return null;
   const findings: AiFinding[] = [];
   for (const f of v.findings) {
     if (
@@ -367,7 +370,7 @@ export interface NormalizedRubricResult extends AiRubricResult {
 }
 
 /**
- * 課題の項目に AI の結果を当てる。AI が返さなかった項目は「判断できない」、
+ * 課題の項目に AI の結果を当てる。AI が返さなかった項目と 2 回以上返した項目は「判断できない」、
  * 課題に無い項目は捨てる。根拠は提出に実在するファイルと行の範囲だけを残す。
  */
 export function normalizeRubricResults(
@@ -376,7 +379,9 @@ export function normalizeRubricResults(
   lines: LineCounts,
 ): NormalizedRubricResult[] {
   return rubric.map((item) => {
-    const found = output.rubric.find((r) => r.id === item.id);
+    const matches = output.rubric.filter((r) => r.id === item.id);
+    // `parseAiReviewOutput` は重複を弾くが、ここでも 2 件以上なら「判断できない」に倒す。
+    const found = matches.length === 1 ? matches[0] : undefined;
     return {
       id: item.id,
       criterion: item.criterion,

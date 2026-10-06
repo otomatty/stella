@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 import { forcedHumanReasons } from "@stella/shared/review/ai-review";
@@ -141,6 +141,9 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           aiReviewStatus: forced.length === 0 ? "queued" : "escalated",
         });
         // 同じ課題を出し直したら、前の試行の AI レビューは新しい提出で置き換える (07 §6.3)。
+        // 置き換えるのは判定前の試行 (AI の確認待ちと、人に回して講師の確認を待つもの) だけで、
+        // AI か人が確定した試行は残す。講師が置き換え済みの試行を開いて確定しても、進捗は
+        // 「合格があれば合格、無ければ最新の試行」で付け直すので、新しい試行の状態は崩れない。
         const earlier = db
           .select({ id: submissions.id })
           .from(submissions)
@@ -161,7 +164,8 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
               eq(submissions.studentId, caller.id),
               eq(submissions.taskId, task.id),
               ne(submissions.id, id),
-              eq(submissions.aiReviewStatus, "queued"),
+              isNull(submissions.verdict),
+              inArray(submissions.aiReviewStatus, ["queued", "escalated"]),
             ),
           );
         const cancel = db

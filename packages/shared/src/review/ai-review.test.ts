@@ -263,6 +263,29 @@ describe("AI の応答の検証", () => {
     ];
     expect(parseAiReviewOutput(JSON.stringify(badSeverity))).toBeNull();
   });
+  it("同じ項目を 2 回返した応答は、結果が食い違っても一致していても形の誤りにする", () => {
+    const evidence = [{ file: "index.html", startLine: 1, endLine: 1 }];
+    for (const second of ["unmet", "met"] as const) {
+      const out = output({ heading: "met" }, "high");
+      out.rubric.push({ id: "heading", result: second, evidence, note: "" });
+      expect(parseAiReviewOutput(JSON.stringify(out))).toBeNull();
+    }
+  });
+  it("判定に重複した項目が渡っても、先頭の結果では確定しない", () => {
+    const out = output({ "CR-NAME-01": "met", heading: "met" }, "high");
+    out.rubric.push({
+      id: "heading",
+      result: "unmet",
+      evidence: out.rubric[0]?.evidence ?? [],
+      note: "",
+    });
+    const decision = route("basic", out);
+    expect(decision.results.find((r) => r.id === "heading")?.result).toBe("undetermined");
+    expect(decision).toMatchObject({
+      outcome: "escalated",
+      reasons: ["rubric-undetermined", "low-confidence"],
+    });
+  });
   it("スキーマはすべてのオブジェクトで追加のキーを禁じる (構造化出力の条件)", () => {
     const objects: unknown[] = [];
     const walk = (node: unknown) => {

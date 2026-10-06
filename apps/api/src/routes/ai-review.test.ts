@@ -402,6 +402,20 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(await progress()).toBe("instructor-pending");
   });
 
+  it("同じ項目を 2 回返した応答は形の誤りとして人に回す", async () => {
+    const out = aiOutput();
+    out.rubric.push({ ...out.rubric[1], result: "unmet" } as AiReviewOutput["rubric"][number]);
+    complete.mockResolvedValue(answer(out));
+    await submit();
+    await run();
+    expect((await reviews())[0]).toMatchObject({
+      outcome: "escalated",
+      failure: "invalid-format",
+      routeReasons: ["ai-unavailable"],
+    });
+    expect(await progress()).toBe("instructor-pending");
+  });
+
   it("時間切れは時間を空けてやり直し、上限に達したら人に回す", async () => {
     complete.mockRejectedValue(new Anthropic.APIConnectionTimeoutError());
     await submit();
@@ -590,6 +604,44 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(complete).toHaveBeenCalledTimes(1);
     const [latest] = await db.select().from(submissions).where(eq(submissions.id, second.id));
     expect(latest.verdict).toBe("pass");
+  });
+
+  it("出し直したら人に回した判定前の試行も置き換え済みにし、確定した試行は残す", async () => {
+    const { app } = mountTestApp(env, submissionsRoute);
+    const patch = async (id: string, verdict: string) => {
+      const response = await request(app, env, `/api/submissions/${id}`, {
+        method: "PATCH",
+        token: instructorToken,
+        body: JSON.stringify({ verdict }),
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+    };
+    const decided = await submit();
+    await patch(decided.id, "resubmit");
+    const consulted = await submit({ ...fixture.input, mode: "consult" });
+    expect(consulted.ai_review_status).toBe("escalated");
+    const latest = await submit();
+    const status = async (id: string) =>
+      (await db.select().from(submissions).where(eq(submissions.id, id)))[0];
+    expect(await status(decided.id)).toMatchObject({
+      aiReviewStatus: "queued",
+      verdict: "resubmit",
+    });
+    expect(await status(consulted.id)).toMatchObject({
+      aiReviewStatus: "superseded",
+      verdict: null,
+    });
+    expect(await status(latest.id)).toMatchObject({ aiReviewStatus: "queued" });
+    const jobs = await db.select().from(aiReviewJobs);
+    expect(jobs.find((j) => j.submissionId === consulted.id)?.state).toBe("cancelled");
+    expect(await progress()).toBe("submitted");
+    // 置き換え済みの試行を講師が開いて確定しても、進捗は最新の試行に従う (合格なら合格を残す)。
+    await patch(consulted.id, "resubmit");
+    expect(await progress()).toBe("submitted");
+    expect((await mine()).find((r) => r.id === consulted.id)).toMatchObject({
+      ai_review_status: "superseded",
+      verdict: "resubmit",
+    });
   });
 
   it("リース中の行は別の処理が取らず、60 秒に 20 回を超えて呼ばない", async () => {
