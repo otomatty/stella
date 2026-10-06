@@ -14,7 +14,7 @@
     "vscode": "^1.96.0"
   },
   "main": "./dist/extension.js",
-  "activationEvents": ["onUri", "onView:stella.lessons"],
+  "activationEvents": ["onUri", "onView:stella.lessons", "onStartupFinished"],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
@@ -104,6 +104,14 @@
       {
         "command": "stella.consultTask",
         "title": "STELLA: 講師に相談する"
+      },
+      {
+        "command": "stella.chooseTrainingFolder",
+        "title": "STELLA: 学習フォルダーを選ぶ"
+      },
+      {
+        "command": "stella.startFromFixedStart",
+        "title": "STELLA: 固定した開始点から始める"
       },
       {
         "command": "stella.showTaskReadme",
