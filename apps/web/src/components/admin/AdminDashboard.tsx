@@ -3,7 +3,7 @@
  *
  * KPI カード / 受講推移 / ステージ別完了率 / つまずき分析 / 受講状況サマリを、
  * enrollment + lesson_progress + quiz_attempts + certificates から集計した実データで
- * 表示する (GET /api/analytics/tenant)。
+ * 表示する (GET /api/analytics/tenant)。その下に週次の育成メモ (#38、GET /api/mentor-memos) を置く。
  *
  * バックエンド (Neon) 未接続時 (dev fixtures フロー): DB が無いため、 従来の固定サンプルを表示する。
  */
@@ -38,6 +38,7 @@ import type {
   TenantAnalytics,
 } from "@stella/shared/cms/types";
 import { useTenantAnalytics } from "@/hooks/useAnalytics";
+import { WeeklyMemoPanel } from "@/components/instructor/WeeklyMemoPanel";
 import { ENROLLMENT_TREND, COMPLETION_BY_STAGE, STUMBLES } from "@/demo/fixtures";
 
 interface Props {
@@ -89,6 +90,11 @@ function DashboardLive({ tenantId }: { tenantId: string }) {
       ) : (
         <LiveContent analytics={analytics} />
       )}
+
+      {/* 週次の育成メモ (#38)。管理者にはテナントの、担当講師のいる受講者全員のメモが出る。 */}
+      <div className="mt-6">
+        <WeeklyMemoPanel audience="tenant" />
+      </div>
     </>
   );
 }

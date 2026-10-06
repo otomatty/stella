@@ -33,6 +33,8 @@ import { meRoute } from "./routes/me.js";
 import { learningPaceRoute } from "./routes/learning-pace.js";
 import { notifyPaceDelays } from "./lib/learning-pace.js";
 import { notifyStumbles } from "./lib/stumble-alerts.js";
+import { runMentorMemoCron } from "./lib/mentor-memo.js";
+import { mentorMemosRoute } from "./routes/mentor-memos.js";
 import { notificationsRoute } from "./routes/notifications.js";
 import { quizRoute } from "./routes/quiz.js";
 import { tasksRoute } from "./routes/tasks.js";
@@ -77,6 +79,7 @@ app.route("/", studyActivityRoute);
 app.route("/", srsRoute);
 app.route("/", meRoute);
 app.route("/", learningPaceRoute);
+app.route("/", mentorMemosRoute);
 app.route("/", enrollmentsRoute);
 app.route("/", enrollmentPresetsRoute);
 app.route("/", interviewPrepRoute);
@@ -128,6 +131,12 @@ export default {
     ctx.waitUntil(
       notifyStumbles(getDb(env)).catch((e) => {
         console.error("[cron] stumble notification failed", e);
+      }),
+    );
+    // 週次の育成メモ。前の週のぶんを積み、数件ずつ書く (受講者が待たないので急がない)。
+    ctx.waitUntil(
+      runMentorMemoCron(env, getDb(env)).catch((e) => {
+        console.error("[cron] mentor memo failed", e);
       }),
     );
     ctx.waitUntil(
