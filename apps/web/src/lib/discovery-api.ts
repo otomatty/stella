@@ -8,7 +8,11 @@
  * そのまま出す (自前で答え合わせをしない)。
  */
 
-import type { DiscoveryQuestion, DiscoveryReviewStatus } from "@stella/shared/discovery/types";
+import type {
+  DiscoveryQuestion,
+  DiscoveryRequestOrigin,
+  DiscoveryReviewStatus,
+} from "@stella/shared/discovery/types";
 
 import { apiFetch } from "./api-client";
 
@@ -85,7 +89,7 @@ export interface DiscoveryRequestRow {
   stage_id: string;
   stage_title: string | null;
   topic: string;
-  origin: "quiz_fail" | "submission_resubmit";
+  origin: DiscoveryRequestOrigin;
   created_at: string;
   /** この文脈から既に作られた教材の数 (0 = 未生成)。 */
   material_count: number;

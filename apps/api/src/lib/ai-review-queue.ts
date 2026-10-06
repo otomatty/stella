@@ -10,17 +10,27 @@
  * - 呼び出し回数の上限: AI エンドポイントと同じく 60 秒に 20 回。直近 60 秒にリースを取った数を
  *   リースを取る文の中で数えるので、同時に走る Worker が上限を超えない。
  * - 受講者が結果を待つ処理なので Batch API は使わない (07 §6.6)。
+ * - 想定外の失敗 (例外) も試行回数の上限で止める。上限に達したら行を閉じ、「AI が判定できなかった」
+ *   として人に回す (AI が止まっても、提出は人のキューで必ず受け止める。07 §6.3)。
  */
 
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { aiReviewJobs, submissions } from "../db/schema.js";
+import { aiReviewJobs, submissions, taskProgress } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { applyAiReview, pendingAiReviewId, runAiReview } from "./ai-review.js";
+import {
+  applyAiReview,
+  escalateUnreviewable,
+  pendingAiReviewId,
+  runAiReview,
+} from "./ai-review.js";
 
 /** AI を呼ぶ回数の上限 (AI エンドポイントの `AI_RATE_LIMITER` と同じ 60 秒に 20 回)。 */
 export const AI_REVIEW_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
-/** AI の呼び出しをやり直す上限。超えたら「AI が判定できなかった」として人に回す。 */
+/**
+ * AI の呼び出しをやり直す上限。超えたら「AI が判定できなかった」として人に回す。
+ * 想定外の失敗 (例外) も同じ上限で止める (リースを取った回数で数える)。
+ */
 export const MAX_AI_REVIEW_ATTEMPTS = 3;
 /** 提出直後 (waitUntil は応答後 30 秒まで) と cron の、AI 1 回あたりの待ち時間。 */
 export const AI_REVIEW_TIMEOUTS = { afterSubmit: 20_000, sweep: 60_000 };
@@ -85,10 +95,15 @@ export async function leaseAiReviewJob(
 }
 
 /** リースを持ったまま行を閉じる (完了)。リースを失っていたら何もしない。 */
-async function finishJob(db: Db, job: LeasedJob, now: number) {
+async function finishJob(db: Db, job: LeasedJob, now: number, error: string | null = null) {
   await db
     .update(aiReviewJobs)
-    .set({ state: "done", finishedAt: new Date(now), leaseUntil: null, lastError: null })
+    .set({
+      state: "done",
+      finishedAt: new Date(now),
+      leaseUntil: null,
+      lastError: error?.slice(0, 500) ?? null,
+    })
     .where(
       and(
         eq(aiReviewJobs.submissionId, job.submissionId),
@@ -116,7 +131,14 @@ async function releaseJob(db: Db, job: LeasedJob, now: number, delayMs: number, 
     );
 }
 
-export type JobOutcome = "applied" | "superseded" | "retry" | "busy" | "skipped";
+export type JobOutcome =
+  | "applied"
+  | "superseded"
+  | "retry"
+  | "busy"
+  | "skipped"
+  /** 想定外の失敗が上限まで続き、行を閉じて人に回した。 */
+  | "gave-up";
 
 /** リースした 1 件を処理する。 */
 export async function processLeasedJob(
@@ -161,6 +183,51 @@ export async function processLeasedJob(
 }
 
 /**
+ * 想定外の失敗が上限まで続いた行を閉じ、提出を人に回す。
+ *
+ * AI の呼び出しの失敗は `runAiReview` が回数で止めて記録するが、教材・提出の読み出しや当てはめで
+ * 投げた例外は回数で止まらない。閉じないとリースの期限ごとに同じ失敗を繰り返し、提出は
+ * 「AI が確認中」のまま人のキューにも入らない。
+ */
+async function giveUpJob(db: Db, job: LeasedJob, now: number, error: string): Promise<JobOutcome> {
+  try {
+    const applied = await escalateUnreviewable(db, job.submissionId, error);
+    if (applied === "busy") {
+      // 人が同じ提出を確定している最中。次の試行で記録済みの失敗を当て直す。
+      await releaseJob(db, job, now, BUSY_BACKOFF_MS, "提出のロックを取れませんでした");
+      return "busy";
+    }
+  } catch (e) {
+    console.error("[ai-review] give up failed", job.submissionId, e);
+    // 失敗の記録も当てられない (壊れた行など)。AI の確認待ちのまま残さず、提出の状態だけを
+    // 人に回す。判定前で AI の確認待ちの提出に限るので、人の判定や新しい提出は上書きしない。
+    const escalated = and(
+      eq(submissions.id, job.submissionId),
+      isNull(submissions.verdict),
+      eq(submissions.aiReviewStatus, "queued"),
+    );
+    const of = (column: string) =>
+      sql`(select ${sql.raw(column)} from submissions where id = ${job.submissionId} and verdict is null and ai_review_status = 'queued')`;
+    await db.batch([
+      // 進捗の文を先に置く (提出の状態を変えたあとでは、どの提出が対象かを読めない)。
+      db
+        .update(taskProgress)
+        .set({ status: "instructor-pending", updatedAt: new Date(now) })
+        .where(
+          and(
+            eq(taskProgress.status, "submitted"),
+            sql`${taskProgress.userId} = ${of("student_id")}`,
+            sql`${taskProgress.taskId} = ${of("task_id")}`,
+          ),
+        ),
+      db.update(submissions).set({ aiReviewStatus: "escalated" }).where(escalated),
+    ]);
+  }
+  await finishJob(db, job, now, error);
+  return "gave-up";
+}
+
+/**
  * 待ち行列を処理する。`submissionId` を渡すとその提出だけを見る (提出直後の waitUntil)。
  * 上限に達したか処理できる行が無くなったら終わる。残りは次の cron が拾う。
  */
@@ -199,17 +266,17 @@ export async function processAiReviewQueue(
           }),
         );
       } catch (e) {
-        // 想定外の失敗。リースを返して後でやり直す (やり直しの上限は AI の呼び出し回数で数える)。
+        // 想定外の失敗。上限まではリースを返して後でやり直し、上限に達したら閉じて人に回す。
         console.error("[ai-review] job failed", job.submissionId, e);
-        await releaseJob(
-          db,
-          job,
-          now(),
-          RETRY_BACKOFF_MS[0] ?? 60_000,
-          e instanceof Error ? e.message : "unknown",
-        ).catch(() => {
-          // 返せなくてもリースの期限で開く。
-        });
+        const error = e instanceof Error ? e.message : "unknown";
+        try {
+          if (job.attempts >= MAX_AI_REVIEW_ATTEMPTS)
+            outcomes.push(await giveUpJob(db, job, now(), error));
+          else await releaseJob(db, job, now(), RETRY_BACKOFF_MS[0] ?? 60_000, error);
+        } catch (inner) {
+          // 返せなくてもリースの期限で開く (次の試行で上限の判定をし直す)。
+          console.error("[ai-review] release failed", job.submissionId, inner);
+        }
       }
     }
   };

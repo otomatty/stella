@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -50,8 +50,38 @@ function readJson<T>(file: string, fallback: T): T {
   return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as T) : fallback;
 }
 
+/**
+ * 読み辞書 (`{ "表記": "読み" }`) を読む。ファイルが無ければ空の辞書。
+ *
+ * 値が文字列でないと読み上げ文に `123` や `[object Object]` が混ざり、空だと表記が
+ * 消える。どちらも合成までは静かに通ってしまうので、読んだ時点で弾く。
+ */
+export function loadReadings(file: string): Readings {
+  if (!existsSync(file)) return {};
+  const shown = relative(contentRoot, file).startsWith("..") ? file : relative(contentRoot, file);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(file, "utf8"));
+  } catch (e) {
+    throw new Error(`${shown}: 読み辞書の JSON を読めません (${(e as Error).message})`);
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${shown}: 読み辞書は { "表記": "読み" } のオブジェクトにしてください`);
+  }
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value !== "string") {
+      throw new Error(`${shown}: "${key}" の読みが文字列ではありません (${JSON.stringify(value)})`);
+    }
+    if (value.trim() === "") {
+      throw new Error(`${shown}: "${key}" の読みが空です`);
+    }
+  }
+  // 検査だけして、パース結果をそのまま返す (`{}` へ写すと `__proto__` のキーが消える)。
+  return parsed as Readings;
+}
+
 export function loadGlobalReadings(): Readings {
-  return readJson<Readings>(join(contentRoot, "narration", "readings.json"), {});
+  return loadReadings(join(contentRoot, "narration", "readings.json"));
 }
 
 function topicDirsOf(dir: string): string[] {
@@ -97,7 +127,7 @@ export function collectNarrationTopics(selectors: string[] = []): NarrationTopic
     });
     const readings = mergeReadings(
       globalReadings,
-      readJson<Readings>(join(courseDir, "narration-readings.json"), {}),
+      loadReadings(join(courseDir, "narration-readings.json")),
     );
     const dirs = topicDirsOf(join(courseDir, "modules"));
     const vocabulary: string[] = [];

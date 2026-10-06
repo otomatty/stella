@@ -1,6 +1,7 @@
 import {
   AI_FAILURE_LABELS,
   AI_REVIEW_STATUS_LABELS,
+  type AiFinding,
   type AiReviewRecord,
   type AiReviewStatus,
   CONFIDENCE_LABELS,
@@ -18,13 +19,20 @@ interface AiReviewPanelProps {
   review: AiReviewRecord | null | undefined;
   /** 返信案を総評へ入れる。 */
   onUseReply: (text: string) => void;
+  /** 所見を総評へ入れて直す (再提出にするとき、#34)。 */
+  onUseFindings?: (findings: AiFinding[]) => void;
 }
 
 /**
  * 新形式の提出の AI 一次レビュー (07 §6.4 の 1・2)。人に回した理由・確信度・ルーブリックの
  * 結果と根拠・所見・受講者への返信案を並べる。下書きは提出直後に作られている。
  */
-export const AiReviewPanel = ({ status, review, onUseReply }: AiReviewPanelProps) => {
+export const AiReviewPanel = ({
+  status,
+  review,
+  onUseReply,
+  onUseFindings,
+}: AiReviewPanelProps) => {
   if (!review) {
     return (
       <div className="text-ink-3 text-[12.5px] flex items-center gap-2">
@@ -111,6 +119,17 @@ export const AiReviewPanel = ({ status, review, onUseReply }: AiReviewPanelProps
               <p>{finding.comment}</p>
             </div>
           ))}
+          {/* 受講者に入れてよいのは、箇所が提出に実在し解答例と重ならない所見だけ (照合済み)。 */}
+          {onUseFindings && (reply?.findings.length ?? 0) > 0 ? (
+            <Button
+              size="sm"
+              type="button"
+              className="mt-2"
+              onClick={() => onUseFindings(reply?.findings ?? [])}
+            >
+              所見を総評に入れて直す
+            </Button>
+          ) : null}
         </section>
       ) : null}
       {reply ? (

@@ -2,7 +2,9 @@
  * AI 一次レビューの評価用データと、人の判定との一致率 (07 §6.3・§6.6)。
  *
  * 人がレビューした提出 (submission_reviews の source = human) に、その提出の AI の結果
- * (ai_reviews) を突き合わせる。モデル・指示・しきい値の版ごとにまとめ、どの組み合わせが
+ * (ai_reviews) を突き合わせる。AI が合格にした提出を人が事後確認で「確認済み」「コメント」に
+ * した提出 (#34、submission_checks) も、人が合格を認めた例として含める (覆したものは人の
+ * レビューの行が残るのでそちらで数える)。モデル・指示・しきい値の版ごとにまとめ、どの組み合わせが
  * 人の判定に近いかを比べる。しきい値の見直しの目安 (07 §6.3) も同じ表で見る。
  */
 
@@ -44,17 +46,30 @@ export interface EvalExample {
   humanVerdict: "pass" | "resubmit" | "fail";
 }
 
-/** 評価用データを取り出す SQL。人の判定は提出ごとに最後の 1 件を使う。 */
+/**
+ * 評価用データを取り出す SQL。人の判定は提出ごとに最後の 1 件を使う。同じ時刻の人の判定が
+ * 2 件あっても AI の結果 1 件につき 1 行になるよう、`row_number()` で提出ごとに 1 件に絞る
+ * (時刻の最大で結合すると、同時刻の判定の数だけ同じ例が重なって数えられる)。
+ * 人のレビューが無く、事後確認で確認済み・コメントにした AI の合格は、人の判定を合格とみなす。
+ */
 export const EVAL_SOURCE_SQL = `
+with human as (
+  select submission_id, verdict,
+    row_number() over (partition by submission_id order by created_at desc, id desc) as rn
+  from submission_reviews
+  where source = 'human'
+),
+checked as (
+  select distinct submission_id from submission_checks where result in ('confirmed', 'commented')
+)
 select r.id as ai_review_id, r.submission_id, r.task_id, r.task_kind, r.task_content_hash,
   r.outcome, r.route_reasons, r.confidence, r.proposed_verdict, r.failure, r.model,
-  r.prompt_version, r.threshold_version, h.verdict as human_verdict
+  r.prompt_version, r.threshold_version, coalesce(h.verdict, 'pass') as human_verdict
 from ai_reviews r
-join submission_reviews h on h.submission_id = r.submission_id and h.source = 'human'
-  and h.created_at = (
-    select max(x.created_at) from submission_reviews x
-    where x.submission_id = r.submission_id and x.source = 'human'
-  )
+left join human h on h.submission_id = r.submission_id and h.rn = 1
+left join checked c on c.submission_id = r.submission_id
+  and r.outcome = 'confirmed' and r.disposition = 'applied'
+where h.verdict is not null or c.submission_id is not null
 order by r.created_at`.trim();
 
 export function toExample(row: EvalSourceRow): EvalExample {
