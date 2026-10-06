@@ -5,6 +5,11 @@ import {
 } from "../../shared/src/tasks/manifest.js";
 import type { EnvironmentRequirement } from "../../shared/src/tasks/environment.js";
 import { ESCALATE_WHEN } from "../../shared/src/review/ai-review.js";
+import {
+  SOLUTION_UNLOCKS,
+  TASK_HELP_POLICIES,
+  type SolutionUnlock,
+} from "../../shared/src/tasks/help.js";
 
 export interface SkillRefs {
   uses: string[];
@@ -33,9 +38,13 @@ export interface TaskDefinition {
     rubric: { id: string; criterion: string; required: boolean }[];
     escalateWhen: string[];
   };
+  /**
+   * ヒントの段数と、取り組み中に解答例を開ける条件 (07 §8)。種別ごとに書ける値は
+   * `TASK_HELP_POLICIES` が決める。`attempts` は `attempts-or-passed` の回数 (省略すると既定)。
+   */
   support: {
     hintLevels: number;
-    solutionUnlock: "passed" | "attempts-or-passed";
+    solutionUnlock: SolutionUnlock;
     attempts?: number;
   };
   sources: string[];
@@ -149,19 +158,30 @@ export function parseTaskDefinition(
   const support = object(value.support, "support");
   if (!Number.isInteger(support.hintLevels) || Number(support.hintLevels) < 0)
     throw new Error("support.hintLevels: 0 以上の整数が必要です");
-  if (support.solutionUnlock !== "passed" && support.solutionUnlock !== "attempts-or-passed")
-    throw new Error("support.solutionUnlock: passed / attempts-or-passed が必要です");
+  if (!(SOLUTION_UNLOCKS as readonly unknown[]).includes(support.solutionUnlock))
+    throw new Error(`support.solutionUnlock: ${SOLUTION_UNLOCKS.join(" / ")} のどれかが必要です`);
+  const solutionUnlock = support.solutionUnlock as SolutionUnlock;
+  // 回数は省略すると既定 (SOLUTION_UNLOCK_ATTEMPTS)。回数で開かない課題には書かせない。
+  if (support.attempts !== undefined && solutionUnlock !== "attempts-or-passed")
+    throw new Error("support.attempts: solutionUnlock が attempts-or-passed の課題だけに書けます");
   const attempts =
-    support.solutionUnlock === "attempts-or-passed"
-      ? positive(support.attempts, "support.attempts")
-      : undefined;
+    support.attempts === undefined ? undefined : positive(support.attempts, "support.attempts");
   if (attempts !== undefined && !Number.isInteger(attempts))
     throw new Error("support.attempts: 整数が必要です");
   const explanation = boolean(submit.explanation, "submit.explanation");
   const debuggingRecord = boolean(submit.debuggingRecord, "submit.debuggingRecord");
-  const assessment = parsed.manifest.kind.startsWith("assessment-");
-  if (assessment && (support.hintLevels !== 0 || support.solutionUnlock !== "passed"))
+  const kind = parsed.manifest.kind;
+  const assessment = kind.startsWith("assessment-");
+  // 解放の順番は種別ごとに決まっている (07 §8)。教材は種別の方針の中でだけ選べる。
+  const policy = TASK_HELP_POLICIES[kind];
+  if (assessment && (support.hintLevels !== 0 || solutionUnlock !== "passed"))
     throw new Error("確認A・B: ヒントなし、解答は合格後にしてください");
+  if (!policy.hints && support.hintLevels !== 0)
+    throw new Error("統合: 取り組み中は仕様・参照元だけを使うので、ヒントは 0 段にしてください");
+  if (!policy.solutionUnlocks.includes(solutionUnlock))
+    throw new Error(
+      `support.solutionUnlock: ${kind} の課題は ${policy.solutionUnlocks.join(" / ")} のどれかにしてください`,
+    );
   if (
     ["independent", "integration", "assessment-a", "assessment-b"].includes(parsed.manifest.kind) &&
     !explanation
@@ -199,7 +219,7 @@ export function parseTaskDefinition(
     review: { ...(rules ? { rules } : {}), rubric, escalateWhen },
     support: {
       hintLevels: Number(support.hintLevels),
-      solutionUnlock: support.solutionUnlock,
+      solutionUnlock,
       ...(attempts === undefined ? {} : { attempts }),
     },
     sources: stringList(value.sources, "sources"),

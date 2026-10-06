@@ -382,6 +382,42 @@ export const taskFixedStartUses = sqliteTable(
   }),
 );
 
+/**
+ * 受講者がヒント・解答例・解説を開いた記録 (#36・07 §8)。素材ごと (ヒントは段ごと) に最初の 1 回を
+ * 残す。提出の支援記録に `hint`・`solution` を足す根拠になり、確認A・Bでは許されない支援として
+ * 人に回す判定 (#33) にも使う。段を持つので「ヒントを最後まで開く」の検知 (#38) にも使える。
+ * 罰ではなく記録で、合格後に開いたものも `after_pass` を付けて残す (後の提出の支援には数える)。
+ */
+export const taskHelpOpens = sqliteTable(
+  "task_help_opens",
+  {
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    /** `hint` / `solution` / `explanation`。予備の類題とレビューの観点は開けないので無い。 */
+    item: text("item", { enum: ["hint", "solution", "explanation"] }).notNull(),
+    /** ヒントの段 (1〜)。解答例・解説は 0。 */
+    level: integer("level").notNull().default(0),
+    /** 開いた時点の課題の版と、非公開の素材の版 (task_private_versions と同じ式)。 */
+    contentHash: text("content_hash").notNull(),
+    privateHash: text("private_hash").notNull(),
+    /** 合格 (AI か人) の判定のあとに開いたか。 */
+    afterPass: integer("after_pass", { mode: "boolean" }).notNull().default(false),
+    openedAt: tsNow("opened_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId, t.item, t.level] }),
+    taskIdx: index("task_help_opens_task_idx").on(t.taskId),
+    tenantIdx: index("task_help_opens_tenant_idx").on(t.tenantId),
+  }),
+);
+
 export const taskProgress = sqliteTable(
   "task_progress",
   {

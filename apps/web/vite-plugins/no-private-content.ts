@@ -1,13 +1,15 @@
 /**
  * Web の配信物に課題の解答を混ぜない (#35)。遅延 import や raw import も拒否し、
  * 最後に publicDir・worker・source map を含む書き出し済みの成果物を検査する。
+ * 新形式の課題のヒント (`tasks/<課題>/hints.md`) も、解放条件を満たした受講者にだけ API が返す
+ * 素材なので (#36)、`private/` と同じく取り込ませない。
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
 
 const PRIVATE_MODULE =
-  /(?:^|\/)packages\/shared\/src\/(?:assignments\.ts$|problems(?:\/|$))|(?:^|\/)packages\/content\/(?:.*\/)?private(?:\/|$)/;
+  /(?:^|\/)packages\/shared\/src\/(?:assignments\.ts$|problems(?:\/|$))|(?:^|\/)packages\/content\/(?:.*\/)?(?:private(?:\/|$)|tasks\/[^/]+\/hints\.md$)/;
 const PRIVATE_PATH = /(?:^|[/\\])private[/\\]/;
 // JS の正規表現 /private\(set\)/ をパスと誤認しない。Windows のパスは
 // JS / JSON 内ではバックスラッシュが 2 個にエスケープされる。

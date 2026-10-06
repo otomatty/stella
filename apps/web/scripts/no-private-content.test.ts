@@ -130,6 +130,12 @@ describe("Vite build の配信境界", () => {
       "Private review rubric without answer property names",
     ],
     [
+      "新形式の課題のヒント (hints.md) の raw import",
+      'export { default } from "./packages/content/courses/example/modules/m0/tasks/one/hints.md?raw"',
+      "packages/content/courses/example/modules/m0/tasks/one/hints.md",
+      "## ヒント1 方針\nHint without answer property names",
+    ],
+    [
       "private/ の URL import",
       'export { default } from "./packages/content/courses/example/tasks/one/private/answer.txt?url"',
       "packages/content/courses/example/tasks/one/private/answer.txt",

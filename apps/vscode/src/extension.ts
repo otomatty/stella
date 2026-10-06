@@ -43,6 +43,7 @@ import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
+import { registerTaskHelp } from "./task-help.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
 import {
   openLessonNode,
@@ -297,6 +298,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const grader = initGraderHost(context.extensionUri);
   registerLessonTree(context, auth);
   registerTaskCommands(context);
+  // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。
+  registerTaskHelp(context);
   // 学習フォルダーを開いて読み込み直したウィンドウでは、ここで控えた課題文を開く。
   registerTaskOpening(context);
 
