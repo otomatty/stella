@@ -274,10 +274,37 @@ ${body}
 
 let solutionChanged: vscode.EventEmitter<vscode.Uri> | undefined;
 /**
- * 接続の世代。接続が変わる (受講者の切り替え・切断) たびに進める。仮想ドキュメントの読み込みの
- * 途中で接続が変わったら、前の受講者の権限で取った解答例を返さない。
+ * 接続の世代。接続が変わる (受講者の切り替え・切断) たびに進める。コマンドと仮想ドキュメントの
+ * 読み込みは、最初の取得より前に世代を取り (`session`)、取得のたびに確かめる (`fetchInSession`)。
  */
 let authGeneration = 0;
+
+/** 取得の途中で接続が変わったので、前の受講者の応答を捨てて処理をやめた。 */
+class AuthChanged extends Error {
+  constructor() {
+    super("LMS への接続が変わったため、処理をやめました");
+  }
+}
+
+function assertSession(session: number): void {
+  if (session !== authGeneration) throw new AuthChanged();
+}
+
+/**
+ * 接続の世代 `session` の間だけ有効な取得。送る前と応答が返ったときに世代を確かめ、変わっていれば
+ * 応答を捨てる。取得の途中で受講者が切り替わっても、前の受講者の解放済みの素材を描かず、
+ * 新しい受講者の名前で開く記録も送らない。拡張の LMS への取得はすべてこれを通す。
+ */
+async function fetchInSession<T>(
+  session: number,
+  path: string,
+  init?: Parameters<typeof apiRequest>[1],
+): Promise<T> {
+  assertSession(session);
+  const result = await (init === undefined ? apiRequest<T>(path) : apiRequest<T>(path, init));
+  assertSession(session);
+  return result;
+}
 
 /**
  * 解答例の仮想ドキュメントの URI。拡張子を残し、エディタの色分けを効かせる。中身は持たず、
@@ -307,12 +334,12 @@ export async function solutionContent(uri: { path: string; query: string }): Pro
   const rel = rest.join("/");
   const contentHash = new URLSearchParams(uri.query).get("contentHash") ?? "";
   if (!encodedTaskId || !rel || !/^[a-f0-9]{64}$/.test(contentHash)) return UNAVAILABLE;
-  const generation = authGeneration;
+  const session = authGeneration;
   try {
-    const help = await apiRequest<TaskHelpResponse>(
+    const help = await fetchInSession<TaskHelpResponse>(
+      session,
       helpUrl(decodeURIComponent(encodedTaskId), contentHash),
     );
-    if (generation !== authGeneration) return UNAVAILABLE;
     const file =
       help.solution.state === "opened"
         ? help.solution.files?.find((f) => f.path === rel)
@@ -382,22 +409,23 @@ async function resolveTarget(requested: unknown): Promise<HelpTarget> {
   };
 }
 
-async function render(target: HelpTarget, help: TaskHelpResponse): Promise<void> {
-  const generation = authGeneration;
+async function render(session: number, target: HelpTarget, help: TaskHelpResponse): Promise<void> {
   let review: LearnerSubmissionView | null = null;
   if (help.latestSubmission) {
     try {
       review = (
-        await apiRequest<{ row: LearnerSubmissionView }>(
+        await fetchInSession<{ row: LearnerSubmissionView }>(
+          session,
           `/api/submissions/${encodeURIComponent(help.latestSubmission.id)}`,
         )
       ).row;
-    } catch {
+    } catch (error) {
+      if (error instanceof AuthChanged) throw error;
       review = null;
     }
   }
-  // 描く前に接続が変わっていたら、前の受講者の素材を描かない。
-  if (generation !== authGeneration) return;
+  // 描く前に接続が変わっていたら、前の受講者の素材を描かない (閉じたパネルを作り直さない)。
+  assertSession(session);
   showHelpPanel(
     buildTaskHelpHtml({ help, manifest: target.manifest, root: target.root, review }),
     `支援: ${help.title}`,
@@ -410,16 +438,20 @@ async function render(target: HelpTarget, help: TaskHelpResponse): Promise<void>
 
 /** パネルを開く。合格後に自動で開く種別 (基礎・接続) は、まだ開いていない解答例と解説を開く。 */
 async function showTaskHelpCommand(requested?: unknown): Promise<void> {
+  const session = authGeneration;
   const target = await resolveTarget(requested);
-  let help = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
+  let help = await fetchInSession<TaskHelpResponse>(
+    session,
+    helpUrl(target.taskId, target.contentHash),
+  );
   for (const item of help.autoOpen) {
     if (help[item].state !== "available") continue;
-    help = await apiRequest<TaskHelpResponse>("/api/tasks/help/open", {
+    help = await fetchInSession<TaskHelpResponse>(session, "/api/tasks/help/open", {
       method: "POST",
       body: { taskId: target.taskId, item, contentHash: target.contentHash },
     });
   }
-  await render(target, help);
+  await render(session, target, help);
 }
 
 /** パネルのリンクから、ヒント 1 段・解答例・解説を開く。合格前の解答例だけは開く前に確かめる。 */
@@ -432,9 +464,13 @@ async function openTaskHelpItemCommand(
     throw new Error("開けない素材です");
   if (item === "hint" && (typeof level !== "number" || !Number.isInteger(level) || level < 1))
     throw new Error("ヒントの段が不正です");
+  const session = authGeneration;
   const target = await resolveTarget(requested);
   if (item === "solution") {
-    const current = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
+    const current = await fetchInSession<TaskHelpResponse>(
+      session,
+      helpUrl(target.taskId, target.contentHash),
+    );
     if (current.phase === "working") {
       const open = "解答例を開く";
       const choice = await vscode.window.showWarningMessage(
@@ -449,7 +485,8 @@ async function openTaskHelpItemCommand(
       if (choice !== open) return;
     }
   }
-  const help = await apiRequest<TaskHelpResponse>("/api/tasks/help/open", {
+  // 確かめるダイアログの間に接続が変わっていたら、新しい受講者の名前で開かない (送る前に確かめる)。
+  const help = await fetchInSession<TaskHelpResponse>(session, "/api/tasks/help/open", {
     method: "POST",
     body: {
       taskId: target.taskId,
@@ -458,7 +495,7 @@ async function openTaskHelpItemCommand(
       contentHash: target.contentHash,
     },
   });
-  await render(target, help);
+  await render(session, target, help);
 }
 
 /**
@@ -468,8 +505,12 @@ async function openTaskHelpItemCommand(
 async function compareTaskSolutionCommand(requested: unknown, rel: unknown): Promise<void> {
   if (typeof rel !== "string" || !isSafeRelativePattern(rel) || /[*?{}[\]]/.test(rel))
     throw new Error("解答例を開き直してから、もう一度選んでください");
+  const session = authGeneration;
   const target = await resolveTarget(requested);
-  const help = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
+  const help = await fetchInSession<TaskHelpResponse>(
+    session,
+    helpUrl(target.taskId, target.contentHash),
+  );
   if (help.solution.state !== "opened" || !help.solution.files?.some((f) => f.path === rel))
     throw new Error("解答例を開き直してから、もう一度選んでください");
   const left = solutionUri(target.taskId, rel, target.contentHash);
@@ -479,6 +520,7 @@ async function compareTaskSolutionCommand(requested: unknown, rel: unknown): Pro
     (stat) => stat.isFile(),
     () => false,
   );
+  assertSession(session);
   if (!exists) {
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(left), {
       preview: true,
@@ -501,6 +543,8 @@ async function reportErrors(work: () => Promise<void>): Promise<void> {
   try {
     await work();
   } catch (error) {
+    // 接続が変わってやめた処理は知らせない (パネルは閉じており、前の受講者の応答は捨てた)。
+    if (error instanceof AuthChanged) return;
     void vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
   }
 }

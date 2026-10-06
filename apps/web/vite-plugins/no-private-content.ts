@@ -16,6 +16,14 @@ const PRIVATE_PATH = /(?:^|[/\\])private[/\\]/;
 // 引用符・バッククォート直後の相対パスも検出する。
 const PRIVATE_REFERENCE = /(?:^|[/\\"'`])private(?:\/|\\\\)/;
 const ANSWER_PROPERTY = /(?:\b(?:solution|badSolutions)|["'](?:solution|badSolutions)["'])\s*:/;
+// 新形式の課題のヒント (#36)。publicDir や別の手順でコピーされると transform を通らないので、
+// 書き出し済みの成果物でもパスと中身を見る。パスは `tasks/<課題>/hints.md`。
+const HINTS_PATH = /(?:^|\/)tasks\/[^/]+\/hints\.md$/;
+// 中身は hints.md の段の見出し「## ヒント<番号>」が行頭 (JS の文字列では `\n` の直後) にあること。
+// 「解法のヒント」のような語や、番号の無い見出しは通す。ファイルは Latin-1 で読むので、
+// UTF-8 のバイト列と、ASCII に逃がした `\u30d2\u30f3\u30c8` の両方を探す。
+const HINT_WORD = `(?:${Buffer.from("ヒント", "utf8").toString("latin1")}|\\\\u30[dD]2\\\\u30[fF]3\\\\u30[cC]8)`;
+const HINT_HEADING = new RegExp(`(?:^|\\\\n)##[ \\t]+${HINT_WORD}[ \\t]*\\d`, "m");
 
 /** バイナリを含む全ファイルの ASCII マーカーを検査し、解答や private/ があれば拒否する。 */
 function assertSafeFileContents(file: string): void {
@@ -23,6 +31,9 @@ function assertSafeFileContents(file: string): void {
   const contents = readFileSync(file, "latin1");
   if (ANSWER_PROPERTY.test(contents) || PRIVATE_REFERENCE.test(contents)) {
     throw new Error(`[no-private-content] answer or private/ content: ${file}`);
+  }
+  if (HINT_HEADING.test(contents)) {
+    throw new Error(`[no-private-content] task hints (hints.md) content: ${file}`);
   }
 }
 
@@ -32,8 +43,12 @@ export function assertSafeWebBuild(outDir: string): void {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const file = path.join(dir, entry.name);
       const relative = path.relative(outDir, file);
-      if (PRIVATE_PATH.test(relative.replaceAll("\\", "/") + (entry.isDirectory() ? "/" : ""))) {
+      const normalized = relative.replaceAll("\\", "/");
+      if (PRIVATE_PATH.test(normalized + (entry.isDirectory() ? "/" : ""))) {
         throw new Error(`[no-private-content] private/ file in Web build: ${relative}`);
+      }
+      if (!entry.isDirectory() && HINTS_PATH.test(normalized)) {
+        throw new Error(`[no-private-content] task hints (hints.md) in Web build: ${relative}`);
       }
       if (entry.isDirectory()) {
         inspect(file);

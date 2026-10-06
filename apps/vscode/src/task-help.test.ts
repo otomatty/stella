@@ -407,6 +407,67 @@ describe("課題パネルのコマンド", () => {
     expect(mocks.executeCommand).not.toHaveBeenCalled();
   });
 
+  describe("取得の途中で接続が変わったら、前の受講者の応答を使わない", () => {
+    const SECRET = "PREVIOUS_LEARNER_SECRET_57";
+    const leakedHelp = () =>
+      help({
+        phase: "passed",
+        status: "passed",
+        hints: [{ level: 1, state: "opened", title: SECRET, markdown: SECRET }],
+        solution: {
+          state: "opened",
+          files: [{ path: "index.html", content: encode(`<h1>${SECRET}</h1>`) }],
+        },
+        explanation: { state: "opened", markdown: SECRET },
+      });
+    /** 次の取得を止めておき、接続を切り替えてから前の受講者の応答を返す。 */
+    async function switchWhileFetching(start: () => unknown, calls = 1) {
+      let release: (value: unknown) => void = () => undefined;
+      mocks.apiRequest.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          }),
+      );
+      const panels = state.panels.length;
+      const html = state.html.length;
+      const running = start();
+      await vi.waitFor(() => expect(mocks.apiRequest).toHaveBeenCalledTimes(calls));
+      for (const listener of state.authListeners) listener();
+      release(leakedHelp());
+      const result = await running;
+      // パネルを作り直さず、前の受講者の本文をどこにも出さない。
+      expect(state.panels.slice(panels).length).toBe(0);
+      expect(state.html.slice(html).join("\n")).not.toContain(SECRET);
+      expect(JSON.stringify(mocks.showErrorMessage.mock.calls)).not.toContain(SECRET);
+      return result;
+    }
+
+    it("パネルを開く取得 (GET)", async () => {
+      await switchWhileFetching(() => run("stella.showTaskHelp", root));
+      expect(state.panels.every((panel) => panel.disposed)).toBe(true);
+    });
+
+    it("ヒントを開く取得 (POST)", async () => {
+      await switchWhileFetching(() => run("stella.openTaskHelpItem", root, "hint", 1));
+    });
+
+    it("解答例の仮想ドキュメントの読み込み", async () => {
+      const content = await switchWhileFetching(() =>
+        solutionContent({
+          path: `/${encodeURIComponent(TASK_ID)}/index.html`,
+          query: new URLSearchParams({ contentHash: HASH }).toString(),
+        }),
+      );
+      expect(content).not.toContain(SECRET);
+    });
+
+    it("差分を開く前の確認", async () => {
+      await switchWhileFetching(() => run("stella.compareTaskSolution", root, "index.html"));
+      expect(mocks.executeCommand).not.toHaveBeenCalled();
+    });
+  });
+
   it("合格前の解答例は確かめてから開き、やめたら開かない", async () => {
     mocks.apiRequest.mockResolvedValue(help({ solution: { state: "available" } }));
     await run("stella.openTaskHelpItem", root, "solution");

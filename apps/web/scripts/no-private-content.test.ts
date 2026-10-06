@@ -98,6 +98,34 @@ describe("Web の書き出し済み成果物の検査", () => {
     expect(() => assertSafeWebBuild(root)).not.toThrow();
   });
 
+  it.each([
+    ["課題のヒントのファイル", "tasks/q01-first-page/hints.md", "見出しの無いメモ"],
+    ["コピーされたヒントの本文 (Markdown)", "notes.md", "## ヒント1 方針\n見出しは h1 です。\n"],
+    [
+      "JS に埋め込まれたヒント",
+      "assets/index.js",
+      'const h="\\n## ヒント2 手がかりのコード\\n<h1>"',
+    ],
+    [
+      "テンプレートリテラルに埋め込まれたヒント",
+      "assets/lazy.js",
+      "const h=`前置き\n## ヒント1\n本文`",
+    ],
+    ["ASCII に逃がしたヒント", "assets/escaped.js", 'const h="\\n## \\u30d2\\u30f3\\u30c8 1\\n"'],
+  ])("%s を拒否する (#36)", (_label, name, contents) => {
+    const root = fixture({ [name]: contents });
+    expect(() => assertSafeWebBuild(root)).toThrow("[no-private-content]");
+  });
+
+  it("ヒントという語や Markdown の見出しは許可する", () => {
+    const root = fixture({
+      "assets/index.js":
+        'const a={label:"解法のヒント"};const b="## 使い方\\n";const c="ヒントを開く"',
+      "assets/help.md": "## ヒント集について\n番号の無い見出し\n",
+    });
+    expect(() => assertSafeWebBuild(root)).not.toThrow();
+  });
+
   it("成果物が無ければ検査を成功扱いにしない", () => {
     const root = fixture({});
     expect(() => assertSafeWebBuild(path.join(root, "missing-dist"))).toThrow();
@@ -150,6 +178,14 @@ describe("Vite build の配信境界", () => {
     const root = fixture({
       "entry.js": 'export const title="Example"',
       "public/answers.json": '{"badSolutions":["answer"]}',
+    });
+    await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
+  });
+
+  it("publicDir からコピーされた課題のヒント (hints.md) もビルドを失敗させる (#36)", async () => {
+    const root = fixture({
+      "entry.js": 'export const title="Example"',
+      "public/tasks/q01-first-page/hints.md": "## ヒント1 方針\n見出しは h1 です。\n",
     });
     await expect(buildFixture(root)).rejects.toThrow("[no-private-content]");
   });
