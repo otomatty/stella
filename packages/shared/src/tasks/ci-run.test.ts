@@ -118,6 +118,10 @@ describe("deployUrlProblem", () => {
       "https://10.0.0.1/",
       "https://[::1]/",
       "https://example.com:8443/",
+      // 既定のポート (`:443`) と空のポートは URL の正規化で消えるので、書かれた形で止める。
+      "https://example.com:443/page",
+      "https://example.com:443",
+      "https://example.com:/page",
       "https://user:pass@example.com/",
       "https://intranet/",
       "https://example.com\\@evil.example/",

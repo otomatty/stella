@@ -98,7 +98,10 @@ export function deployUrlProblem(value: unknown): string | null {
   if (url.protocol !== "https:") return "公開先の URL は https:// で始めてください";
   if (url.username || url.password)
     return "公開先の URL に利用者名やパスワードは入れないでください";
-  if (url.port) return "公開先の URL にポート番号は入れないでください";
+  // `new URL` は既定のポート (`:443`) と空のポート (`:`) を消すので、書かれた形の authority でも見る。
+  const authority = value.slice("https://".length).split(/[/?#]/, 1)[0] ?? "";
+  if (url.port || /:\d*$/.test(authority.slice(authority.lastIndexOf("@") + 1)))
+    return "公開先の URL にポート番号は入れないでください";
   const host = url.hostname;
   if (host === "localhost" || host.endsWith(".localhost"))
     return "手元 (localhost) ではなく、公開した URL を入力してください";
