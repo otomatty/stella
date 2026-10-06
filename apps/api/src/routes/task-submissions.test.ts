@@ -10,6 +10,7 @@ import {
   lessons,
   notifications,
   profiles,
+  resourceLocks,
   sections,
   skillEvidence,
   skills,
@@ -265,6 +266,67 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
       expect((await db.select().from(taskProgress))[0].passedAt).toEqual(firstPassedAt);
     },
   );
+  it("同じ提出への確定が重なっても、初回の確定と訂正を 1 回ずつ通知する", async () => {
+    await db.insert(lessons).values({
+      id: "code",
+      sectionId: "unit",
+      type: "code",
+      title: "演習",
+      assignmentId: "exercise",
+    });
+    const { app } = mountTestApp(env, submissionsRoute);
+    const legacy = await request(app, env, "/api/submissions", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        lessonId: "code",
+        assignmentId: "exercise",
+        stageTitle: "開発環境",
+        assignmentTitle: "演習",
+        code: "x",
+        priority: "normal",
+      }),
+    });
+    expect(legacy.status, await legacy.clone().text()).toBe(200);
+    const legacyId = (await json<{ row: { id: string } }>(legacy)).row.id;
+    const task = await submit();
+    for (const [id, lockId] of [
+      [task.id, `task-submission:ses:learner:${fixture.input.taskId}`],
+      [legacyId, `submission-review:${legacyId}`],
+    ]) {
+      // 判定の書き込みを先に塞ぎ、両方の要求が保存前の行を読んでから書き込みを待つようにする。
+      await db
+        .insert(resourceLocks)
+        .values({ id: lockId, holder: "test", expiresAt: new Date(Date.now() + 60_000) });
+      const released = new Promise<void>((resolve) =>
+        setTimeout(() => {
+          void db
+            .delete(resourceLocks)
+            .where(eq(resourceLocks.id, lockId))
+            .then(() => resolve());
+        }, 100),
+      );
+      const responses = await Promise.all(
+        (["pass", "fail"] as const).map((verdict) =>
+          request(app, env, `/api/submissions/${id}`, {
+            method: "PATCH",
+            token: instructorToken,
+            body: JSON.stringify({ verdict }),
+          }),
+        ),
+      );
+      await released;
+      for (const r of responses) expect(r.status, await r.clone().text()).toBe(200);
+      const notices = (
+        await db.select().from(notifications).where(eq(notifications.type, "review_completed"))
+      ).filter((n) => n.payload.submission_id === id);
+      expect(notices).toHaveLength(2);
+      expect(notices.filter((n) => n.title.endsWith("が完了しました"))).toHaveLength(1);
+      expect(notices.filter((n) => n.title.endsWith("結果が変更されました"))).toHaveLength(1);
+      expect(new Set(notices.map((n) => n.payload.verdict))).toEqual(new Set(["pass", "fail"]));
+    }
+  });
+
   it("支援付きの合格と AI の合格を区別する", async () => {
     fixture.input.support = [{ kind: "hint", at: "2026-10-05T00:00:00Z" }];
     const row = await submit();

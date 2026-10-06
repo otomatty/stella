@@ -11,6 +11,7 @@ import type { Db } from "../db/client.js";
 import {
   lessonProgress,
   lessons,
+  notifications,
   sections,
   skillEvidence,
   stages,
@@ -24,6 +25,7 @@ import {
 import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
+import { reviewNotification } from "./review-notification.js";
 import { canAccessTasks } from "./task-access.js";
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
@@ -247,6 +249,9 @@ export async function reviewTaskSubmission(
       }),
       db.delete(skillEvidence).where(eq(skillEvidence.submissionId, id)),
     ];
+    // 通知は課題のロックの中で読んだ保存前の行から決め、判定と同じ batch で書く。
+    const notice = reviewNotification(row, verdict);
+    if (notice) statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
       const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
       const basis =

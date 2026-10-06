@@ -29,6 +29,8 @@ import {
 } from "../lib/authz.js";
 import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
+import { withResourceLock } from "../lib/resource-lock.js";
+import { reviewNotification } from "../lib/review-notification.js";
 import {
   autoCompleteStagesIfMet,
   reclaimAutoCertificatesIfUnmet,
@@ -579,57 +581,38 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
         delete set[key];
     }
     if (Object.keys(set).length > 0) {
-      // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
-      // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
-      const updated = await db
-        .update(submissions)
-        .set(set)
-        .where(
-          expected
-            ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
-            : eq(submissions.id, id),
-        )
-        .returning();
-      if (expected && !updated[0]) {
-        throw submissionChanged();
-      }
+      // 旧形式の判定の書き込みは提出ごとに直列化し、その中で読んだ保存前の行から通知を決める
+      // (新形式は reviewTaskSubmission が課題のロックの中で同じことをする)。
+      const notifyVerdict = !before.taskId && verdict !== undefined ? verdict : null;
+      const locked = await withResourceLock(db, `submission-review:${id}`, async () => {
+        const [current] = notifyVerdict
+          ? await db.select().from(submissions).where(eq(submissions.id, id)).limit(1)
+          : [];
+        // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
+        // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
+        const updated = await db
+          .update(submissions)
+          .set(set)
+          .where(
+            expected
+              ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
+              : eq(submissions.id, id),
+          )
+          .returning();
+        if (expected && !updated[0]) {
+          throw submissionChanged();
+        }
+        // 初回の確定と判定の訂正を通知する。同じ判定や総評だけの保存では増やさない。
+        const notice = current && notifyVerdict ? reviewNotification(current, notifyVerdict) : null;
+        if (notice) await db.insert(notifications).values(notice);
+      });
+      if (!locked.ran) throw new ApiError("別の講師が同じ提出を保存中です", 409);
     }
 
     const after = requireReturning(
       await db.select().from(submissions).where(eq(submissions.id, id)).limit(1),
       "submission reload",
     );
-
-    // 初回の確定と判定の訂正を通知する。同じ判定や総評だけの保存では増やさない。
-    const reviewChanged =
-      before.reviewedAt != null && willReview && before.verdict !== after.verdict;
-    if (
-      (before.reviewedAt == null || reviewChanged) &&
-      after.reviewedAt != null &&
-      after.studentId
-    ) {
-      const verdictBody =
-        after.verdict === "pass"
-          ? "合格しました。 おめでとうございます。"
-          : after.verdict === "resubmit"
-            ? "再提出が必要です。 フィードバックを確認してください。"
-            : after.verdict === "fail"
-              ? "残念ながら不合格です。 フィードバックを確認してください。"
-              : "フィードバックが届いています。";
-      await db.insert(notifications).values({
-        userId: after.studentId,
-        tenantId: after.tenantId,
-        type: "review_completed",
-        title: `${after.assignmentTitle || "課題"} の添削${reviewChanged ? "結果が変更されました" : "が完了しました"}`,
-        body: verdictBody,
-        payload: {
-          submission_id: after.id,
-          verdict: after.verdict,
-          status: after.status,
-          stage_title: after.stageTitle,
-        },
-      });
-    }
 
     // 合格の確定でこの課題のステージの修了条件が揃ったら自動でクリアにする
     // (修了証の自動発行)。逆に、合格を外す保存では自動発行の修了証を巻き戻す —
