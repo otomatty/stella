@@ -251,6 +251,7 @@ export const ROUTE_REASONS = [
   "rubric-unmet",
   "rubric-undetermined",
   "low-confidence",
+  "misplaced-finding",
   "task-condition",
   "solution-leak",
 ] as const;
@@ -264,6 +265,7 @@ export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "rubric-unmet": "必須項目に「満たさない」がある",
   "rubric-undetermined": "必須項目に「判断できない」がある",
   "low-confidence": "確信度がしきい値に届かない",
+  "misplaced-finding": "所見が提出に無いファイル・行を指している",
   "task-condition": "課題ごとの追加条件に当たった",
   "solution-leak": "返信が解答例のコードと重なった",
 };
@@ -343,13 +345,19 @@ export function forcedHumanReasons(input: {
 /** 根拠のファイルと行の範囲。提出ファイルと説明などの記録の行数。 */
 export type LineCounts = ReadonlyMap<string, number>;
 
+/** 根拠・所見の箇所が、提出に実在するファイル (記録) と行の範囲を指しているか。 */
+export function isValidLocation(ref: EvidenceRef, lines: LineCounts): boolean {
+  const count = lines.get(ref.file);
+  return (
+    count !== undefined &&
+    ref.startLine >= 1 &&
+    ref.startLine <= ref.endLine &&
+    ref.endLine <= count
+  );
+}
+
 function validEvidence(evidence: EvidenceRef[], lines: LineCounts): EvidenceRef[] {
-  return evidence.filter((e) => {
-    const count = lines.get(e.file);
-    return (
-      count !== undefined && e.startLine >= 1 && e.startLine <= e.endLine && e.endLine <= count
-    );
-  });
+  return evidence.filter((e) => isValidLocation(e, lines));
 }
 
 export interface NormalizedRubricResult extends AiRubricResult {
@@ -419,6 +427,11 @@ export interface RoutingDecision {
   confidence: Confidence | null;
   results: NormalizedRubricResult[];
   proposedVerdict: "pass" | "resubmit" | null;
+  /**
+   * AI の所見ごとに、箇所が提出に実在するか (`output.findings` と同じ並び)。
+   * 受講者に見せるのは true のものだけ。AI の原文は記録にそのまま残す。
+   */
+  findingsValid: boolean[];
 }
 
 /**
@@ -432,6 +445,7 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
   const reasons = new Set<RouteReason>(input.forced);
   let confidence: Confidence | null = null;
   let results: NormalizedRubricResult[] = [];
+  const findingsValid = (input.output?.findings ?? []).map((f) => isValidLocation(f, input.lines));
   if (!input.output) {
     reasons.add("ai-unavailable");
   } else {
@@ -448,11 +462,17 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
       results.some((r) => !r.required && r.result === "unmet")
     )
       reasons.add("task-condition");
+    // 重い所見は箇所が誤っていても数える (箇所の誤りで人に回す条件を外さない)。
     if (
       input.escalateWhen.includes("major-finding") &&
       input.output.findings.some((f) => f.severity === "major")
     )
       reasons.add("task-condition");
+    // 提出に無いファイル・行を指す所見は、受講者に見せない (呼び出し側が外す)。根拠の付いた
+    // ルーブリックの結果で確定できる練習はそのまま確定してよいが、スキルの証拠になる課題
+    // (統合・確認A・B) は、AI の出力の一部が提出と合わない時点で人に回す。
+    if (isEvidenceKind(input.kind) && findingsValid.some((valid) => !valid))
+      reasons.add("misplaced-finding");
   }
   if (input.leakEscalates) reasons.add("solution-leak");
   const ordered = ROUTE_REASONS.filter((r) => reasons.has(r));
@@ -462,6 +482,7 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
     confidence,
     results,
     proposedVerdict: input.output ? proposedVerdict(results) : null,
+    findingsValid,
   };
 }
 

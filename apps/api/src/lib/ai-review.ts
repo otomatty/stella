@@ -396,8 +396,10 @@ export async function runAiReview(
     const replyCount =
       1 + output.learnerReply.goodPoints.length + output.learnerReply.nextSteps.length;
     const replyLeaked = (leak?.hits ?? []).some((i) => i < replyCount);
+    // 受講者に見せる所見は、箇所が提出に実在し (根拠と同じ `lines` で確かめる)、解答例とも
+    // 重ならないものだけ。AI の原文 (`findings`) は評価と講師の確認のためにそのまま記録する。
     const findings: AiFinding[] = output.findings.filter(
-      (_, i) => !(leak?.hits ?? []).includes(replyCount + i),
+      (_, i) => decision.findingsValid[i] === true && !(leak?.hits ?? []).includes(replyCount + i),
     );
     learnerReply = { ...(replyLeaked ? SAFE_REPLY : output.learnerReply), findings };
   }

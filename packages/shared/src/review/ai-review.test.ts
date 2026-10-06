@@ -113,6 +113,45 @@ describe("人に回すかどうかのしきい値 (07 §6.3)", () => {
   });
 });
 
+describe("所見の箇所の確かめ", () => {
+  const findings = [
+    { file: "index.html", startLine: 2, endLine: 4, severity: "minor" as const, comment: "実在" },
+    {
+      file: "missing.html",
+      startLine: 1,
+      endLine: 1,
+      severity: "info" as const,
+      comment: "架空のファイル",
+    },
+    {
+      file: "index.html",
+      startLine: 9,
+      endLine: 11,
+      severity: "info" as const,
+      comment: "範囲外の行",
+    },
+    { file: "index.html", startLine: 0, endLine: 1, severity: "info" as const, comment: "0 行目" },
+    { file: "#explanation", startLine: 1, endLine: 2, severity: "info" as const, comment: "説明" },
+  ];
+  const out = () => output({ "CR-NAME-01": "met", heading: "met" }, "high", { findings });
+  it("提出に無いファイル・範囲外の行を指す所見を見分け、練習はそのまま確定する", () => {
+    const decision = route("basic", out());
+    expect(decision.findingsValid).toEqual([true, false, false, false, true]);
+    expect(decision).toMatchObject({ outcome: "confirmed", reasons: [] });
+  });
+  it("統合・確認A・Bは、箇所の誤った所見があれば人に回す", () => {
+    for (const kind of ["integration", "assessment-a", "assessment-b"])
+      expect(route(kind, out()).reasons).toEqual(["misplaced-finding"]);
+    const valid = output({ "CR-NAME-01": "met", heading: "met" }, "high", {
+      findings: [findings[0], findings[4]].filter((f) => f !== undefined),
+    });
+    expect(route("assessment-a", valid)).toMatchObject({
+      outcome: "confirmed",
+      findingsValid: [true, true],
+    });
+  });
+});
+
 describe("根拠の確かめ", () => {
   it("実在しないファイル・範囲外の行は根拠から外し、必須項目に根拠が無ければ確信度を低にする", () => {
     const out = output({ "CR-NAME-01": "met", heading: "met" }, "high");

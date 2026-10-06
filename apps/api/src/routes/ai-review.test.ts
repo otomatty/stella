@@ -420,6 +420,71 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect((await db.select().from(aiReviewJobs))[0]).toMatchObject({ state: "done", attempts: 3 });
   });
 
+  it("提出に無いファイル・範囲外の行を指す所見は受講者に見せず、AI の原文は記録に残す", async () => {
+    const valid = {
+      file: "index.html",
+      startLine: 1,
+      endLine: 2,
+      severity: "info" as const,
+      comment: "実在する箇所",
+    };
+    complete.mockResolvedValue(
+      answer(
+        aiOutput({
+          findings: [
+            valid,
+            {
+              file: "src/missing.js",
+              startLine: 1,
+              endLine: 3,
+              severity: "minor",
+              comment: "架空のファイル",
+            },
+            {
+              file: "index.html",
+              startLine: 2,
+              endLine: 40,
+              severity: "minor",
+              comment: "範囲外の行",
+            },
+          ],
+        }),
+      ),
+    );
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const [review] = await reviews();
+    expect(review).toMatchObject({ outcome: "confirmed", routeReasons: [] });
+    expect(review?.findings).toHaveLength(3);
+    expect(review?.learnerReply?.findings).toEqual([valid]);
+    const learnerView = await detail(row.id, token);
+    expect(learnerView.ai_feedback).toMatchObject({ findings: [valid] });
+    expect(JSON.stringify(learnerView)).not.toContain("架空のファイル");
+    expect(JSON.stringify(learnerView)).not.toContain("範囲外の行");
+  });
+
+  it("確認で箇所の誤った所見があれば人に回す", async () => {
+    await db.delete(tasks);
+    await seedTask("assessment-a", {
+      rubric: [{ id: "heading", criterion: "見出しが内容を表している", required: true }],
+      escalateWhen: [],
+    });
+    const out = aiOutput({
+      findings: [
+        { file: "index.html", startLine: 5, endLine: 5, severity: "info", comment: "範囲外" },
+      ],
+    });
+    out.rubric = out.rubric.slice(1);
+    complete.mockResolvedValue(answer(out));
+    const row = await submit();
+    await run();
+    expect((await reviews())[0]).toMatchObject({
+      outcome: "escalated",
+      routeReasons: ["misplaced-finding"],
+    });
+    expect((await detail(row.id, token)).ai_feedback).toBeNull();
+  });
+
   it("練習で返信が解答例と重なったら、返信を差し替えて確定する", async () => {
     complete.mockResolvedValue(
       answer(aiOutput({ learnerReply: { message: LEAKY, goodPoints: [], nextSteps: [] } })),
