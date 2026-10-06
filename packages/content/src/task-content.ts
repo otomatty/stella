@@ -6,7 +6,12 @@ import {
   type EnvironmentRequirement,
 } from "../../shared/src/tasks/environment.js";
 import { isSafeRelativePattern } from "../../shared/src/tasks/manifest.js";
-import type { TaskBundle } from "../../shared/src/tasks/catalog.js";
+import {
+  bundleSizeProblem,
+  FIXED_START_SUFFIX,
+  type TaskBundle,
+} from "../../shared/src/tasks/catalog.js";
+import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
   publicReferences,
   readSourceRegistry,
@@ -27,9 +32,17 @@ import {
 export interface TaskSeed {
   courseId: string;
   unitId: string;
+  /** 課題文を載せるレッスンのキー。seed がこのレッスンと課題を結び、Web の「VS Code で開く」に使う。 */
+  lessonId: string;
   definition: TaskDefinition;
   bundle: TaskBundle;
   privateFiles: Record<string, string>;
+  /**
+   * 固定した開始点 (任意。`fixed-start/`)。starter の代わりに置く一式で、tests・README・
+   * `.stella/task.json` は通常の配布と同じ。前の課題の動く実装を含みうるので bundle に混ぜず、
+   * 受講者が求めたときだけ API が返す。
+   */
+  fixedStart?: Record<string, string>;
   directory: string;
 }
 export interface UnitSeed {
@@ -120,6 +133,11 @@ export function readUnit(
     const taskDir = join(tasksRoot, taskId);
     if (!lstatSync(taskDir).isDirectory())
       throw new Error(`tasks/: ディレクトリが必要です: ${taskId}`);
+    // 学習フォルダーでは `<課題>-fixed-start/` を固定した開始点に使う。課題と取り違えない。
+    if (taskId.endsWith(FIXED_START_SUFFIX))
+      throw new Error(
+        `課題のフォルダー名を ${FIXED_START_SUFFIX} で終わらせることはできません: ${taskId}`,
+      );
     const raw = record(json(join(taskDir, "task.json")));
     const environment = readEnvironment(root, raw.environment);
     const definition = parseTaskDefinition(raw, environment);
@@ -153,13 +171,21 @@ export function readUnit(
       );
     const taskReferences = publicReferences(referenceMap, registry, contentIds);
     const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
-    const files: Record<string, string> = {};
-    // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
-    const bundlePaths = new Set(["readme.md", ".stella"]);
-    const addFiles = (collected: Record<string, string>) => {
-      for (const [key, value] of Object.entries(collected)) {
+    const testFiles = collectFiles(join(taskDir, "tests"), "tests");
+    const readmeFile = Buffer.from(
+      referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
+    ).toString("base64");
+    // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
+    const manifestFile = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
+    /** starter (または固定した開始点) に tests・README・task.json を足した配布一式。 */
+    const assemble = (starter: Record<string, string>) => {
+      const files: Record<string, string> = {};
+      // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
+      const bundlePaths = new Set(["readme.md", ".stella"]);
+      for (const [key, value] of Object.entries({ ...starter, ...testFiles })) {
         const normalized = key.toLowerCase();
         if (
+          (key in starter && key in testFiles) ||
           [...bundlePaths].some(
             (other) =>
               normalized === other ||
@@ -171,14 +197,14 @@ export function readUnit(
         bundlePaths.add(normalized);
         files[key] = value;
       }
+      files["README.md"] = readmeFile;
+      files[".stella/task.json"] = manifestFile;
+      return files;
     };
-    addFiles(collectFiles(join(taskDir, "starter")));
-    addFiles(collectFiles(join(taskDir, "tests"), "tests"));
-    files["README.md"] = Buffer.from(
-      referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
-    ).toString("base64");
-    // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
-    files[".stella/task.json"] = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
+    const starter = collectFiles(join(taskDir, "starter"));
+    const files = assemble(starter);
+    const tooLarge = bundleSizeProblem(files);
+    if (tooLarge) throw new Error(`${tooLarge}: ${definition.id}`);
     const privateFiles = {
       ...collectFiles(join(taskDir, "private/solution"), "solution"),
       ...collectFiles(join(taskDir, "private/variants"), "variants"),
@@ -186,17 +212,72 @@ export function readUnit(
       "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
       "hints.md": readFileSync(join(taskDir, "hints.md")).toString("base64"),
     };
+    const fixedStart = readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
+    // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
     const contentHash = createHash("sha256")
-      .update(JSON.stringify({ definition, files }))
+      .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
       .digest("hex");
     return {
       courseId,
       unitId,
+      lessonId: `task-${unitId}-${taskId}`,
       definition,
       bundle: { manifest, contentHash, files },
       privateFiles,
+      ...(fixedStart ? { fixedStart } : {}),
       directory: taskDir,
     };
   });
   return { unit: { courseId, unitId, config, references }, tasks };
+}
+
+/**
+ * `fixed-start/` (任意) を読み、配布一式を組み立てる。提出の照合が通常の配布と同じ
+ * テスト・設定で行われるよう protected のファイルは変えさせず、この課題の解答例も配らない。
+ */
+function readFixedStart(
+  taskDir: string,
+  definition: TaskDefinition,
+  starter: Record<string, string>,
+  files: Record<string, string>,
+  privateFiles: Record<string, string>,
+  assemble: (starter: Record<string, string>) => Record<string, string>,
+): Record<string, string> | undefined {
+  const dir = join(taskDir, "fixed-start");
+  let stat: ReturnType<typeof lstatSync>;
+  try {
+    stat = lstatSync(dir);
+  } catch {
+    return undefined;
+  }
+  if (stat.isSymbolicLink() || !stat.isDirectory())
+    throw new Error(`fixed-start はディレクトリにしてください: ${definition.id}`);
+  // 確認A・Bは公式ドキュメントの参照だけで解く (07 §8)。支援になる開始点は置かない。
+  if (definition.kind.startsWith("assessment-"))
+    throw new Error(`確認A・Bには固定した開始点を置けません: ${definition.id}`);
+  const fixedStart = assemble(collectFiles(dir));
+  const tooLarge = bundleSizeProblem(fixedStart);
+  if (tooLarge) throw new Error(`固定した開始点の${tooLarge}: ${definition.id}`);
+  const protectedOf = (all: Record<string, string>) =>
+    Object.keys(all)
+      .filter((path) => matchesPattern(path, definition.protected))
+      .sort();
+  const expected = protectedOf(files);
+  const actual = protectedOf(fixedStart);
+  if (
+    expected.length !== actual.length ||
+    expected.some((path, i) => path !== actual[i] || files[path] !== fixedStart[path])
+  )
+    throw new Error(
+      `固定した開始点ではテスト・設定 (protected) を変えられません: ${definition.id}`,
+    );
+  for (const [key, value] of Object.entries(privateFiles)) {
+    if (!key.startsWith("solution/")) continue;
+    const rel = key.slice("solution/".length);
+    if (fixedStart[rel] === value && starter[rel] !== value)
+      throw new Error(
+        `固定した開始点に、この課題の解答例と同じファイルは置けません: ${rel} (${definition.id})`,
+      );
+  }
+  return fixedStart;
 }

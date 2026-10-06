@@ -529,6 +529,47 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).toMatch(/insert into lessons /);
   });
 
+  it("課題の private/ とヒントは task_private にだけ入り、配布 bundle・レッスンに出ない", () => {
+    const taskDir = new URL(
+      "../../content/courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/",
+      import.meta.url,
+    );
+    const statements = sql.split("\n");
+    for (const rel of [
+      "private/solution/index.html",
+      "private/explanation.md",
+      "private/review.md",
+      "hints.md",
+    ]) {
+      const body = readFileSync(new URL(rel, taskDir));
+      const carrying = statements.filter((line) => line.includes(body.toString("base64")));
+      expect(carrying.length, rel).toBeGreaterThan(0);
+      expect(
+        carrying.every((line) => line.startsWith("insert into task_private ")),
+        rel,
+      ).toBe(true);
+    }
+    // 解説・レビューの観点の本文は、レッスンの markdown としても出ない。
+    for (const rel of ["private/explanation.md", "private/review.md"]) {
+      const lastLine = readFileSync(new URL(rel, taskDir), "utf8").trim().split("\n").at(-1);
+      expect(lastLine && sql.includes(lastLine), rel).toBe(false);
+    }
+  });
+
+  it("課題を課題文のレッスンと結び、固定した開始点の無い課題は開始点を消す", () => {
+    const lessonId = stableUuid("lesson:ses:dev-env-basics:task-m0-first-page-q01-first-page");
+    expect(sql).toContain(`insert into lessons (id, section_id, title, type, "order"`);
+    expect(sql).toContain(`select '${lessonId}', s.id,`);
+    expect(sql).toMatch(
+      new RegExp(
+        `insert into tasks \\([^)]*lesson_id\\) values \\('dev-env-basics/m0-first-page/q01-first-page',.*'${lessonId}'\\) on conflict`,
+      ),
+    );
+    expect(sql).toContain(
+      "delete from task_fixed_starts where task_id = 'dev-env-basics/m0-first-page/q01-first-page';",
+    );
+  });
+
   it("デモ講座の削除は本番 seed でも出す", () => {
     expect(sql).toContain(
       `delete from stages where id = '${stableUuid("course:ses:web-fundamentals")}'`,

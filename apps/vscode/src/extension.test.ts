@@ -5,7 +5,7 @@ const state = vi.hoisted(() => ({
   handler: undefined as { handleUri: (uri: { path: string; query: string }) => void } | undefined,
   secrets: new Map<string, string>(),
   fetch: vi.fn<typeof fetch>(),
-  openTask: vi.fn<(taskId: string) => Promise<void>>(),
+  openTask: vi.fn<(context: unknown, taskId: string) => Promise<void>>(),
   openExternal: vi.fn(),
   showInformationMessage: vi.fn(),
   showErrorMessage: vi.fn(),
@@ -39,7 +39,10 @@ vi.mock("./exercise-panel.js", () => ({}));
 vi.mock("./grader.js", () => ({}));
 vi.mock("./lesson-doc.js", () => ({}));
 vi.mock("./workspace.js", () => ({}));
-vi.mock("./open-task.js", () => ({ openDistributedTask: state.openTask }));
+vi.mock("./open-task.js", () => ({
+  openDistributedTask: state.openTask,
+  registerTaskOpening: vi.fn(),
+}));
 
 import { apiRequest } from "./api.js";
 import { activate } from "./extension.js";
@@ -52,7 +55,7 @@ beforeEach(() => {
   state.secrets.clear();
   state.fetch.mockReset();
   vi.stubGlobal("fetch", state.fetch);
-  state.openTask.mockImplementation(async (id) => {
+  state.openTask.mockImplementation(async (_context, id) => {
     await apiRequest(`/api/tasks/bundle?${new URLSearchParams({ taskId: id })}`);
   });
   activate({
@@ -115,7 +118,7 @@ describe("task URI の接続導線", () => {
     await vi.waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(2));
     await state.openTask.mock.results[0].value;
     expect(state.secrets.get("stella.accessToken")).toBe("new-token");
-    expect(state.openTask).toHaveBeenCalledWith(taskId);
+    expect(state.openTask).toHaveBeenCalledWith(expect.anything(), taskId);
     expect(state.fetch).toHaveBeenLastCalledWith(
       bundleUrl,
       expect.objectContaining({ headers: expect.any(Headers) }),
@@ -132,7 +135,7 @@ describe("task URI の接続導線", () => {
     dispatch();
     await vi.waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(1));
     await state.openTask.mock.results[0].value;
-    expect(state.openTask).toHaveBeenCalledWith(taskId);
+    expect(state.openTask).toHaveBeenCalledWith(expect.anything(), taskId);
     const headers = new Headers(state.fetch.mock.calls[0][1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer saved-token");
     expect(state.openExternal).not.toHaveBeenCalled();

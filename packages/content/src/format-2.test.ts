@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { TASK_BUNDLE_LIMITS } from "../../shared/src/tasks/catalog.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
@@ -141,6 +142,102 @@ describe("format 2 の教材", () => {
     expect(() => parseTaskDefinition({ ...raw, kind: "debug" }, {})).toThrow();
     const parsed = parseTaskDefinition(raw, {});
     expect(toRuntimeManifest(parsed, {})).not.toHaveProperty("support");
+  });
+  it("課題ごとに課題文のレッスンを作り、seed が課題と結ぶキーを持つ", () => {
+    const manifest = buildContentManifest(join(fixture(), "courses"));
+    const lessons = (manifest.courses[0]?.sections ?? []).flatMap((section) => section.lessons);
+    const task = manifest.tasks[0];
+    expect(task?.lessonId).toBe("task-m0-first-page-q01-first-page");
+    expect(lessons.find((lesson) => lesson.id === task?.lessonId)?.type).toBe("text");
+  });
+  describe("固定した開始点 (fixed-start/)", () => {
+    const taskRel = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+    function withFixedStart(files: Record<string, string>) {
+      const root = fixture();
+      for (const [rel, text] of Object.entries(files)) {
+        const file = join(root, taskRel, "fixed-start", rel);
+        mkdirSync(dirname(file), { recursive: true });
+        writeFileSync(file, text);
+      }
+      return root;
+    }
+    it("bundle に混ぜず、tests・README・task.json は通常の配布と同じにする", () => {
+      const plain = buildContentManifest(join(fixture(), "courses")).tasks[0];
+      const root = withFixedStart({
+        "index.html": "<!doctype html><title>開始点</title>",
+        "lib/validate.js": "export const ok = true;",
+      });
+      const task = buildContentManifest(join(root, "courses")).tasks[0];
+      expect(task.bundle.files).toEqual(plain.bundle.files);
+      expect(task.bundle.files).not.toHaveProperty("lib/validate.js");
+      expect(Object.keys(task.fixedStart ?? {}).sort()).toEqual(
+        [
+          ".stella/task.json",
+          "README.md",
+          "index.html",
+          "lib/validate.js",
+          "tests/README.md",
+        ].sort(),
+      );
+      for (const rel of ["README.md", ".stella/task.json", "tests/README.md"])
+        expect(task.fixedStart?.[rel]).toBe(task.bundle.files[rel]);
+      // 開始点を足した版は別の版として配る。開始点の無い課題の版は変わらない。
+      expect(task.bundle.contentHash).not.toBe(plain.bundle.contentHash);
+      expect(plain.fixedStart).toBeUndefined();
+    });
+    it("この課題の解答例をそのまま配らない", () => {
+      const root = fixture();
+      const solution = readFileSync(join(root, taskRel, "private/solution/index.html"), "utf8");
+      mkdirSync(join(root, taskRel, "fixed-start"));
+      writeFileSync(join(root, taskRel, "fixed-start/index.html"), solution);
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("解答例と同じ");
+    });
+    it("テスト・設定 (protected) を変えられない", () => {
+      const root = withFixedStart({ "config.json": "{}" });
+      const path = join(root, taskRel, "task.json");
+      const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+      writeFileSync(path, JSON.stringify({ ...raw, protected: ["tests/**", "config.json"] }));
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("protected");
+    });
+    it("大きすぎる配布ファイル・開始点は検査で落とす", () => {
+      const big = "x".repeat(TASK_BUNDLE_LIMITS.fileBytes + 1);
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ "vendor.js": big }), "courses")),
+      ).toThrow("固定した開始点の");
+      const half = "x".repeat(Math.ceil(TASK_BUNDLE_LIMITS.totalBytes / 2) + 1);
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ "a.js": half, "b.js": half }), "courses")),
+      ).toThrow("合計が大きすぎます");
+      const root = fixture();
+      writeFileSync(join(root, taskRel, "starter/vendor.js"), big);
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("大きすぎます");
+    });
+    it("private/ や .stella を置けない", () => {
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ "private/a.txt": "x" }), "courses")),
+      ).toThrow("private を置けません");
+      expect(() =>
+        buildContentManifest(join(withFixedStart({ ".stella/task.json": "{}" }), "courses")),
+      ).toThrow(".stella を置けません");
+    });
+    it("確認A・Bには置けず、課題名に予約した接尾辞を使えない", () => {
+      const root = withFixedStart({ "index.html": "<!doctype html>" });
+      const path = join(root, taskRel, "task.json");
+      const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+      writeFileSync(
+        path,
+        JSON.stringify({
+          ...raw,
+          kind: "assessment-a",
+          support: { hintLevels: 0, solutionUnlock: "passed" },
+          submit: { ...(raw.submit as object), explanation: true },
+        }),
+      );
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("確認A・B");
+      const renamed = fixture();
+      cpSync(join(renamed, taskRel), join(renamed, `${taskRel}-fixed-start`), { recursive: true });
+      expect(() => buildContentManifest(join(renamed, "courses"))).toThrow("-fixed-start");
+    });
   });
   it("新形式PDFは公開解説と課題文だけで、旧形式は解答編を維持する", () => {
     const targets = collectPdfTargets();

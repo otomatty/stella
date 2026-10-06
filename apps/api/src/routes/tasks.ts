@@ -1,9 +1,20 @@
 import { Hono } from "hono";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { parsePublicTaskBundle, type TaskSummary } from "@stella/shared/tasks/catalog";
+import {
+  bundleSizeProblem,
+  parsePublicTaskBundle,
+  type TaskBundleResponse,
+  type TaskSummary,
+} from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import type { Env } from "../env.js";
-import { sections, tasks, taskProgress } from "../db/schema.js";
+import {
+  sections,
+  taskFixedStarts,
+  taskFixedStartUses,
+  tasks,
+  taskProgress,
+} from "../db/schema.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTasks } from "../lib/task-access.js";
 
@@ -25,6 +36,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         pattern: tasks.pattern,
         skills: tasks.skills,
         estimatedMinutes: tasks.estimatedMinutes,
+        lessonId: tasks.lessonId,
         contentHash: tasks.contentHash,
       })
       .from(tasks)
@@ -65,18 +77,95 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
   }
 });
 
+/**
+ * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
+ * 固定した開始点は返さない。固定した開始点は「あるか」だけを返し、本体は下の POST で渡す。
+ */
 tasksRoute.get("/api/tasks/bundle", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const [row] = await db
-      .select({ bundle: tasks.bundle, stageId: sections.stageId })
+      .select({
+        bundle: tasks.bundle,
+        contentHash: tasks.contentHash,
+        stageId: sections.stageId,
+        fixedStartHash: taskFixedStarts.contentHash,
+      })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTasks(db, caller, row.stageId)))
       throw new ApiError("task not found", 404);
-    return c.json({ bundle: parsePublicTaskBundle(JSON.parse(row.bundle)) });
+    const response: TaskBundleResponse = {
+      bundle: parsePublicTaskBundle(JSON.parse(row.bundle)),
+      fixedStart: row.fixedStartHash === row.contentHash,
+    };
+    return c.json(response);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * 固定した開始点を渡す (01 §4・07 §4.4)。前の実装が壊れていて先へ進めない受講者向けで、
+ * 前の課題の動く実装を含みうるので、渡す前に利用を記録する。記録できなければ渡さない。
+ * 記録は提出の支援記録に `fixed-start` を足す根拠になる (lib/task-fixed-start.ts)。
+ */
+tasksRoute.post("/api/tasks/fixed-start", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      throw new ApiError("invalid JSON", 400);
+    }
+    if (!body || typeof body !== "object" || !("taskId" in body) || typeof body.taskId !== "string")
+      throw new ApiError("taskId is required", 400);
+    const [row] = await db
+      .select({
+        id: tasks.id,
+        bundle: tasks.bundle,
+        contentHash: tasks.contentHash,
+        stageId: sections.stageId,
+        files: taskFixedStarts.files,
+        fixedStartHash: taskFixedStarts.contentHash,
+      })
+      .from(tasks)
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
+      .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
+      .limit(1);
+    if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
+      throw new ApiError("task not found", 404);
+    // seed 後に版が変わった開始点 (古い版のテストと組んだもの) は配らない。
+    if (!row.files || row.fixedStartHash !== row.contentHash)
+      throw new ApiError("この課題には固定した開始点がありません", 404);
+    const { manifest } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const bundle = parsePublicTaskBundle({
+      manifest,
+      contentHash: row.contentHash,
+      files: JSON.parse(row.files),
+    });
+    // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
+    const tooLarge = bundleSizeProblem(bundle.files);
+    if (tooLarge) {
+      console.error("[tasks] 固定した開始点が上限を超えています", row.id, tooLarge);
+      throw new ApiError("固定した開始点を配れません。講師に相談してください", 500);
+    }
+    await db
+      .insert(taskFixedStartUses)
+      .values({
+        tenantId: caller.tenantId,
+        userId: caller.id,
+        taskId: row.id,
+        contentHash: row.contentHash,
+        usedAt: new Date(),
+      })
+      .onConflictDoNothing();
+    return c.json({ bundle });
   } catch (err) {
     return errorResponse(c, err);
   }
