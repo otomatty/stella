@@ -63,9 +63,12 @@ describe("format 2 の教材", () => {
       "private/variants/README.md",
       "private/explanation.md",
       "private/review.md",
-      "hints.md",
     ])
       writeFileSync(join(taskDir, rel), marker);
+    writeFileSync(
+      join(taskDir, "hints.md"),
+      `## ヒント1 方針\n${marker}\n\n## ヒント2\n${marker}\n`,
+    );
     const manifest = buildContentManifest(join(root, "courses"));
     const task = manifest.tasks[0];
     expect(
@@ -142,6 +145,77 @@ describe("format 2 の教材", () => {
     expect(() => parseTaskDefinition({ ...raw, kind: "debug" }, {})).toThrow();
     const parsed = parseTaskDefinition(raw, {});
     expect(toRuntimeManifest(parsed, {})).not.toHaveProperty("support");
+  });
+  it("解答例を開く条件とヒントの段を、種別の方針 (07 §8) の中でだけ選ばせる", () => {
+    const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
+    const submit = { ...(raw.submit as object), explanation: true };
+    const as = (kind: string, support: Record<string, unknown>, extra = {}) =>
+      parseTaskDefinition({ ...raw, kind, submit, support, ...extra }, {});
+    // 基礎・接続: ヒントのあとに解答例 (既定) か、合格後。挑戦の回数では開かない。
+    expect(as("basic", { hintLevels: 2, solutionUnlock: "after-hints" }).support).toEqual({
+      hintLevels: 2,
+      solutionUnlock: "after-hints",
+    });
+    expect(() => as("basic", { hintLevels: 2, solutionUnlock: "attempts-or-passed" })).toThrow(
+      "after-hints / passed",
+    );
+    // 自力・修正: 挑戦の回数か合格後。回数は省略すると既定、書くなら正の整数。
+    expect(
+      as("independent", { hintLevels: 1, solutionUnlock: "attempts-or-passed" }).support,
+    ).toEqual({ hintLevels: 1, solutionUnlock: "attempts-or-passed" });
+    expect(
+      as("independent", { hintLevels: 1, solutionUnlock: "attempts-or-passed", attempts: 3 })
+        .support.attempts,
+    ).toBe(3);
+    expect(() =>
+      as("independent", { hintLevels: 1, solutionUnlock: "attempts-or-passed", attempts: 1.5 }),
+    ).toThrow("整数");
+    expect(() => as("independent", { hintLevels: 1, solutionUnlock: "after-hints" })).toThrow(
+      "attempts-or-passed / passed",
+    );
+    expect(() =>
+      as("independent", { hintLevels: 1, solutionUnlock: "passed", attempts: 3 }),
+    ).toThrow("support.attempts");
+    // 統合: 取り組み中は参照元だけ。ヒントは置けない。
+    expect(() => as("integration", { hintLevels: 1, solutionUnlock: "passed" })).toThrow("統合");
+    expect(as("integration", { hintLevels: 0, solutionUnlock: "passed" }).support).toEqual({
+      hintLevels: 0,
+      solutionUnlock: "passed",
+    });
+    expect(() => as("basic", { hintLevels: 0, solutionUnlock: "later" })).toThrow(
+      "support.solutionUnlock",
+    );
+  });
+  describe("hints.md の段", () => {
+    const hintsFile = (root: string) =>
+      join(root, "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/hints.md");
+    it("見本の hints.md を段に分け、private の素材として持つ", () => {
+      const task = buildContentManifest(join(fixture(), "courses")).tasks[0];
+      expect(task.definition.support.hintLevels).toBe(2);
+      expect(Buffer.from(task.privateFiles["hints.md"], "base64").toString()).toContain(
+        "## ヒント2 手がかりのコード",
+      );
+    });
+    it.each([
+      ["段の数が hintLevels と違う", "## ヒント1 方針\nA\n", "段の数 (1)"],
+      ["見出しの形が違う", "## ヒント1\nA\n## 答え\nB\n", "見出しは"],
+      ["前置きがある", "はじめに\n## ヒント1\nA\n## ヒント2\nB\n", "より前に本文"],
+    ])("%s hints.md は検査で落とす", (_label, markdown, message) => {
+      const root = fixture();
+      writeFileSync(hintsFile(root), markdown);
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow(message);
+    });
+    it("非公開の素材が D1 の 1 行に収まらなければ落とす", () => {
+      const root = fixture();
+      writeFileSync(
+        join(
+          root,
+          "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/private/variants/big.txt",
+        ),
+        "x".repeat(TASK_BUNDLE_LIMITS.fileBytes + 1),
+      );
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow("非公開の素材");
+    });
   });
   it("課題ごとに課題文のレッスンを作り、seed が課題と結ぶキーを持つ", () => {
     const manifest = buildContentManifest(join(fixture(), "courses"));
@@ -276,6 +350,7 @@ describe("format 2 の教材", () => {
         support: { hintLevels: 0, solutionUnlock: "passed" },
         submit: { ...(raw.submit as object), explanation: true },
       });
+      writeFileSync(join(root, taskRel, "hints.md"), "");
       expect(() => build(root)).toThrow("確認A・B");
       const renamed = fixture();
       const original = `${unitRel}/q01-first-page`;

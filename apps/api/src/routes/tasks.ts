@@ -8,6 +8,7 @@ import {
 } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
+import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
 import type { Env } from "../env.js";
 import {
   sections,
@@ -18,6 +19,7 @@ import {
 } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTasks } from "../lib/task-access.js";
+import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -82,6 +84,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
  * 固定した開始点は返さない。固定した開始点は「あるか」だけを返し、本体は下の POST で渡す。
+ * ヒント・解答例・解説は解放条件を見て `/api/tasks/help` が返す。
  */
 tasksRoute.get("/api/tasks/bundle", async (c) => {
   try {
@@ -183,6 +186,52 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       })
       .onConflictDoNothing();
     return c.json({ bundle });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * ヒント・解答例・解説の解放の状態 (#36・07 §8)。`contentHash` は受講者の手元の版 (配布記録) で、
+ * 本文はその版の素材のうち、その版で開いた記録があり今も開ける素材だけに付く。予備の類題と
+ * レビューの観点は返さない。読むだけで記録はしない。
+ */
+tasksRoute.get("/api/tasks/help", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    let contentHash: string | undefined;
+    try {
+      contentHash = parseHelpContentHash(c.req.query("contentHash"));
+    } catch (e) {
+      throw new ApiError(e instanceof Error ? e.message : "invalid contentHash", 400);
+    }
+    return c.json(await getTaskHelp(db, caller, c.req.query("taskId") ?? "", contentHash));
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/**
+ * ヒント 1 段・解答例・解説のどれかを開く。解放条件はサーバーが判定し、満たさなければ 403、
+ * 手元の版 (`contentHash`) の素材が分からなければ 409 で何も返さない。開いたことを出した版で
+ * 記録してから本文を返す (提出の支援記録に入る。罰ではなく記録)。
+ */
+tasksRoute.post("/api/tasks/help/open", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw new ApiError("invalid JSON", 400);
+    }
+    let request: ReturnType<typeof parseHelpOpenRequest>;
+    try {
+      request = parseHelpOpenRequest(raw);
+    } catch (e) {
+      throw new ApiError(e instanceof Error ? e.message : "invalid request", 400);
+    }
+    return c.json(await openTaskHelp(db, caller, request));
   } catch (err) {
     return errorResponse(c, err);
   }

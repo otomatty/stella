@@ -117,6 +117,10 @@
         "command": "stella.showTaskReadme",
         "title": "STELLA: 課題文を表示する",
         "icon": "$(preview)"
+      },
+      {
+        "command": "stella.showTaskHelp",
+        "title": "STELLA: ヒント・解答・レビューの結果を表示する"
       }
     ],
     "menus": {

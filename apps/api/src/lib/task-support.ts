@@ -11,6 +11,7 @@ import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import type { LocalRunReport } from "@stella/shared/tasks/local-report";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
+import { helpOpenDetail, helpSupportKind } from "@stella/shared/tasks/help";
 import {
   CONSULT_SUPPORT_DETAIL,
   RECORDED_SUPPORT_KINDS,
@@ -29,11 +30,13 @@ import {
   submissionReviews,
   submissions,
   taskFixedStartUses,
+  taskHelpOpens,
   taskLocalRuns,
   taskSupportEvents,
   tasks,
 } from "../db/schema.js";
 import { fixedStartUsesOf } from "./task-fixed-start.js";
+import { helpOpensOf } from "./task-help.js";
 
 /** 1 課題あたりに返す記録の件数。回数 (`counts`) は全件で数える。 */
 const EVENTS_PER_TASK = 50;
@@ -133,7 +136,8 @@ export async function recordSupportEvent(
 /**
  * 提出の申告 (`support_log`) と相談の提出のほかに、この提出より前に支援を受けていたか。
  * サーバーの記録 (AI チャットなど)、同じ課題での講師への相談、固定した開始点の受け取り
- * (この課題の開始点と、この課題の実装を含む後の課題の開始点、#31) を数える。
+ * (この課題の開始点と、この課題の実装を含む後の課題の開始点、#31)、ヒント・解答例・解説を
+ * 開いた記録 (#36。合格後に開いたものも、その後の提出には数える) を数える。
  * 人のレビューは数えない — 再提出の指摘を受けて直すのは通常の流れで、支援付きにすると
  * 一度で通らなかった提出がすべて支援付きになるため (03 §7 の「講師による実装指示」とは別)。
  */
@@ -165,6 +169,17 @@ export async function hasRecordedSupport(
     )
     .limit(1);
   if (fixedStart) return true;
+  const [opened] = await db
+    .select({ one: sql`1` })
+    .from(taskHelpOpens)
+    .where(
+      and(
+        helpOpensOf({ tenantId: row.tenantId, userId: row.studentId, taskId: row.taskId }),
+        lte(taskHelpOpens.openedAt, row.submittedAt),
+      ),
+    )
+    .limit(1);
+  if (opened) return true;
   const [consulted] = await db
     .select({ one: sql`1` })
     .from(submissions)
@@ -229,7 +244,7 @@ export async function loadTaskSupport(
     stageTitle: stages.title,
     order: sql<number>`${sections.order} * 100000 + ${tasks.order}`,
   };
-  const [stageTasks, submitted, reviews, recorded, runs, evidence] = await Promise.all([
+  const [stageTasks, submitted, reviews, recorded, runs, evidence, opens] = await Promise.all([
     scope.stageId
       ? db
           .select(meta)
@@ -324,6 +339,25 @@ export async function loadTaskSupport(
         ),
       )
       .orderBy(desc(submissions.submittedAt)),
+    db
+      .select({
+        ...meta,
+        item: taskHelpOpens.item,
+        level: taskHelpOpens.level,
+        afterPass: taskHelpOpens.afterPass,
+        at: taskHelpOpens.openedAt,
+      })
+      .from(taskHelpOpens)
+      .innerJoin(tasks, eq(tasks.id, taskHelpOpens.taskId))
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .innerJoin(stages, eq(stages.id, sections.stageId))
+      .where(
+        and(
+          where,
+          eq(taskHelpOpens.tenantId, scope.tenantId),
+          eq(taskHelpOpens.userId, scope.userId),
+        ),
+      ),
   ]);
 
   type Meta = { [K in keyof typeof meta]: (typeof stageTasks)[number][K] };
@@ -362,6 +396,25 @@ export async function loadTaskSupport(
   };
 
   for (const t of stageTasks) recordOf(t);
+  // ヒント・解答例・解説を開いた記録は、開いたときに 1 件ずつ出す (提出が無くても見える)。版を
+  // 変えて開き直した分は重ねない (素材・段ごとに最初の 1 件)。提出の支援記録には同じ記録が LMS の
+  // 分として同じ時刻で写るので (`withRecordedHelp`)、そちらは数えない。
+  const openedAt = new Set<string>();
+  const firstOpens = new Set<string>();
+  for (const o of [...opens].sort((a, b) => a.at.getTime() - b.at.getTime())) {
+    const first = `${o.taskId}|${o.item}|${o.level}`;
+    if (firstOpens.has(first)) continue;
+    firstOpens.add(first);
+    const kind = helpSupportKind(o.item);
+    const at = o.at.toISOString();
+    openedAt.add(`${o.taskId}|${kind}|${at}`);
+    push(recordOf(o), {
+      kind,
+      at,
+      source: "recorded",
+      detail: helpOpenDetail({ item: o.item, level: o.level, afterPass: o.afterPass }),
+    });
+  }
   for (const s of submitted) {
     const r = recordOf(s);
     if (s.mode === "consult")
@@ -373,6 +426,7 @@ export async function loadTaskSupport(
         continue;
       const at = new Date(e.at);
       if (Number.isNaN(at.getTime())) continue;
+      if (openedAt.has(`${s.taskId}|${e.kind}|${at.toISOString()}`)) continue;
       push(r, {
         kind: e.kind,
         at: at.toISOString(),

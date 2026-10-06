@@ -26,7 +26,7 @@
   },
   "support": {
     "hintLevels": 2,
-    "solutionUnlock": "passed"
+    "solutionUnlock": "after-hints"
   },
   "sources": ["SRC-mdn-html-20261005"],
   "estimatedMinutes": 30,

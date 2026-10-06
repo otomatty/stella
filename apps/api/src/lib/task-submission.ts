@@ -40,6 +40,7 @@ import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTasks } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
+import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport } from "./task-support.js";
 
 async function sha256Hex(text: string): Promise<string> {
@@ -122,19 +123,21 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   let committed = false;
   try {
     const now = new Date();
-    // 固定した開始点の受け取りは、提出の時刻を決めてから読む (提出の処理中に受け取った開始点を
-    // 読み漏らさない)。読み漏れた受け取りがあっても、受け取りが提出の時刻より前なら
-    // `hasRecordedSupport` が AI の判定の直前とスキルの証拠を作るときに数える。
-    const supportLog = await withRecordedFixedStart(
+    // 固定した開始点の受け取りとヒント・解答例・解説を開いた記録 (#36) は、提出の時刻を決めてから
+    // 読む (提出の処理中の受け取り・開いた記録を読み漏らさない)。読み漏れた記録があっても、記録が
+    // 提出の時刻より前なら `hasRecordedSupport` が AI の判定の直前とスキルの証拠を作るときに数える。
+    const supportScope = { tenantId: caller.tenantId, userId: caller.id, taskId: task.id };
+    const supportLog = await withRecordedHelp(
       db,
-      { tenantId: caller.tenantId, userId: caller.id, taskId: task.id },
-      input.support,
+      supportScope,
+      await withRecordedFixedStart(db, supportScope, input.support, now),
       now,
     );
     // 照合の食い違い・確認A・Bの支援・相談は、AI の結果を待たずに人のキューへ入れる (07 §6.3)。
     // それでも AI の下書きは作るので、どちらも AI の待ち行列には積む。確認A・Bの支援は、提出の
     // 申告に加えてサーバーの記録 (課題の AI チャット・相談、#38) も見る。支援記録は LMS が足した
-    // 固定した開始点 (後の課題の開始点が、この課題の実装を含んでいた場合も) を含めたものを見る。
+    // 固定した開始点 (後の課題の開始点が、この課題の実装を含んでいた場合も) と、開いたヒント・
+    // 解答例・解説 (#36) を含めたものを見る。
     const forced = forcedHumanReasons({
       kind: bundle.manifest.kind,
       mode: input.mode,
