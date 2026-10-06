@@ -3,27 +3,71 @@
  */
 
 import { buildSystemPrompt } from "@stella/shared/ai/prompt";
-import type { ChatStreamEvent } from "@stella/shared/ai/types";
+import type { ChatContext, ChatStreamEvent } from "@stella/shared/ai/types";
 import { validateChatRequest } from "@stella/shared/ai/validate-chat-request";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
+import type { Db } from "../db/client.js";
+import { sections, stages, tasks } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { MissingApiKeyError, streamChat } from "../lib/anthropic.js";
 import { assertGrokGatewayConfigured, resolveChatProvider } from "../lib/chat-provider.js";
 import { streamGrokChat } from "../lib/grok-chat.js";
-import { errorResponse, getCaller } from "../lib/authz.js";
+import { ApiError, type Caller, errorResponse, getCaller } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
+import { canAccessTasks } from "../lib/task-access.js";
+import { recordSupportEvent } from "../lib/task-support.js";
 
 const SERVER_TIMEOUT_MS = 75_000;
 
 export const chatRoute = new Hono<{ Bindings: Env }>();
 
+/**
+ * 課題の相談は、受講中の課題に限って受け付ける (#38)。AI を呼ぶ前に課題を引き直して確かめ、
+ * 題名はクライアントの値を使わない。支援としての記録は、応答が届き始めてから行う (下の stream)。
+ */
+async function taskChatContext(
+  db: Db,
+  caller: Caller,
+  context: Extract<ChatContext, { kind: "task" }>,
+): Promise<{ context: ChatContext; taskId: string }> {
+  const [task] = await db
+    .select({ id: tasks.id, title: tasks.title, stageId: stages.id, stageTitle: stages.title })
+    .from(tasks)
+    .innerJoin(sections, eq(sections.id, tasks.sectionId))
+    .innerJoin(stages, eq(stages.id, sections.stageId))
+    .where(and(eq(tasks.id, context.taskId), eq(tasks.active, true)))
+    .limit(1);
+  if (!task || !(await canAccessTasks(db, caller, task.stageId)))
+    throw new ApiError("課題が見つかりません", 404);
+  return {
+    context: { kind: "task", taskId: task.id, taskTitle: task.title, stageTitle: task.stageTitle },
+    taskId: task.id,
+  };
+}
+
+/** 記録に失敗しても、受講者への応答は止めない。 */
+async function recordAiChatSupport(db: Db, caller: Caller, taskId: string) {
+  try {
+    await recordSupportEvent(db, {
+      tenantId: caller.tenantId,
+      userId: caller.id,
+      taskId,
+      kind: "ai-chat",
+    });
+  } catch (e) {
+    console.error("[chat] AI チャットの支援の記録に失敗", { taskId }, e);
+  }
+}
+
 chatRoute.post("/api/chat", async (c) => {
   const limited = await enforceAiRateLimit(c);
   if (limited) return limited;
 
+  let auth: Awaited<ReturnType<typeof getCaller>>;
   try {
-    await getCaller(c);
+    auth = await getCaller(c);
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -52,9 +96,23 @@ chatRoute.post("/api/chat", async (c) => {
     return c.json({ error: new MissingApiKeyError().message }, 500);
   }
 
+  let context = body.context;
+  /** 支援として記録する課題。受講者が読めることを確かめた ID だけが入る。 */
+  let supportTaskId: string | null = null;
+  if (context?.kind === "task") {
+    try {
+      const verified = await taskChatContext(auth.db, auth.caller, context);
+      context = verified.context;
+      supportTaskId = verified.taskId;
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  }
+  let supportRecorded = false;
+
   const encoder = new TextEncoder();
   const requestSignal = c.req.raw.signal;
-  const system = buildSystemPrompt(body.context);
+  const system = buildSystemPrompt(context);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -85,6 +143,12 @@ chatRoute.post("/api/chat", async (c) => {
               });
         for await (const event of iter) {
           send(event);
+          // 応答の最初の文字が届いたときに 1 度だけ記録する。応答が返らなかった相談
+          // (失敗・時間切れ・中断) は支援に数えない。
+          if (event.type === "text" && event.delta && supportTaskId && !supportRecorded) {
+            supportRecorded = true;
+            await recordAiChatSupport(auth.db, auth.caller, supportTaskId);
+          }
           if (event.type === "done") {
             break;
           }

@@ -11,7 +11,13 @@ function ReviewQueuePage() {
   const s = useAppShell();
   return (
     <RoleGuard allow={["instructor"]}>
-      <ReviewQueue tenantId={s.tenantId} setPage={s.setPage} onOpenReview={s.onOpenReview} />
+      <ReviewQueue
+        tenantId={s.tenantId}
+        setPage={s.setPage}
+        onOpenReview={s.onOpenReview}
+        currentUserId={s.currentUserId}
+        backendEnabled={s.backendEnabled}
+      />
     </RoleGuard>
   );
 }

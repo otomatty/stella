@@ -13,6 +13,7 @@ import {
   certificates,
   stages,
   enrollments,
+  learnerInstructors,
   lessonProgress,
   lessons,
   profiles,
@@ -21,7 +22,7 @@ import {
   quizQuestions,
   sections,
 } from "../db/schema.js";
-import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireRole } from "../lib/authz.js";
 import type { Env } from "../env.js";
 import type { QuizAnswer } from "@stella/shared/cms/types";
 
@@ -214,25 +215,45 @@ async function computeStumbles(
 /**
  * 講師ダッシュボード用の遅延 / 受講者進捗。
  *
- * 注: 講師 ↔ 受講者 / ステージの担当割当モデルは存在しないため、 母集合はテナント全体の
- * enrollment (= テナント概況) とする。 越テナント参照は caller.tenantId で構造的に遮断する。
+ * 母集合は既定でテナント全体の enrollment (= テナント概況)。 `?assigned=mine` で、
+ * 呼び出した講師が担当する受講者 (`learner_instructors`) だけに絞る (#38)。
+ * `assigned_learners` は絞り込みの有無によらず、 呼び出した講師の担当の人数を返す。
+ * 越テナント参照は caller.tenantId で構造的に遮断する。
  */
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
+    const assigned = c.req.query("assigned");
+    if (assigned !== undefined && assigned !== "mine")
+      throw new ApiError("assigned には mine だけを指定できます", 400);
     const tenantId = caller.tenantId;
     const now = new Date();
 
-    const allEnr = await db
-      .select({
-        userId: enrollments.userId,
-        stageId: enrollments.stageId,
-        status: enrollments.status,
-        dueAt: enrollments.dueAt,
-      })
-      .from(enrollments)
-      .where(eq(enrollments.tenantId, tenantId));
+    const mine = await db
+      .select({ id: learnerInstructors.learnerId })
+      .from(learnerInstructors)
+      .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
+      .where(
+        and(
+          eq(learnerInstructors.instructorId, caller.id),
+          eq(profiles.tenantId, tenantId),
+          eq(profiles.disabled, false),
+        ),
+      );
+    const mineIds = new Set(mine.map((r) => r.id));
+
+    const allEnr = (
+      await db
+        .select({
+          userId: enrollments.userId,
+          stageId: enrollments.stageId,
+          status: enrollments.status,
+          dueAt: enrollments.dueAt,
+        })
+        .from(enrollments)
+        .where(eq(enrollments.tenantId, tenantId))
+    ).filter((e) => !assigned || mineIds.has(e.userId));
 
     const overdue = allEnr.filter(
       (e) => e.status === "active" && e.dueAt != null && e.dueAt < now,
@@ -334,6 +355,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
       overview: {
         overdue_learners: overdue,
         total_learners: totalLearners,
+        assigned_learners: mineIds.size,
         students,
       },
     });

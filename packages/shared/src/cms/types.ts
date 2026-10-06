@@ -491,6 +491,8 @@ export interface InstructorStudentProgress {
 export interface InstructorOverview {
   overdue_learners: number;
   total_learners: number;
+  /** 呼び出した講師が担当する受講者の数 (#38)。`?assigned=mine` の有無によらない。 */
+  assigned_learners?: number;
   students: InstructorStudentProgress[];
 }
 
@@ -520,6 +522,8 @@ export type NotificationType =
   | "review_completed"
   | "assignment_due"
   | "learning_pace_delayed"
+  // つまずきの検知 (#38)。担当講師宛てで、payload に受講者・種類・課題を持つ。
+  | "learner_stumble"
   // ステージの自動クリア (修了証の自動発行)。講師の合格確定が引き金のとき、開いた
   // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、
   // 永続する通知としても残す。

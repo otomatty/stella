@@ -98,6 +98,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
   return {
     id: row.id,
     tenantId: row.tenant_id,
+    studentId: row.student_id,
     studentName: name,
     studentInitials: initials,
     avatarTone: toneFromStudentId(row.student_id),

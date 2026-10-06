@@ -28,6 +28,7 @@ import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { canAccessTasks } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
+import { hasRecordedSupport } from "./task-support.js";
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
   let input: TaskSubmissionInput;
@@ -255,7 +256,11 @@ export async function reviewTaskSubmission(
     const notice = reviewNotification(row, verdict);
     if (notice) statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
-      const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
+      // 提出の申告に加え、この提出より前の AI チャット・相談などの記録も支援に数える (#38)。
+      const assisted =
+        (row.supportLog?.length ?? 0) > 0 ||
+        row.submissionMode === "consult" ||
+        (await hasRecordedSupport(db, { ...row, studentId: row.studentId, taskId: row.taskId }));
       const basis =
         !assisted && row.taskKind === "assessment-b" && scope
           ? await retentionBasis(db, row.tenantId, row.studentId, scope)

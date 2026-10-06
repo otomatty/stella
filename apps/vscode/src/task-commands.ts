@@ -12,7 +12,9 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import { toLocalRunReport } from "@stella/shared/tasks/local-report";
 import { canSubmit, type RunOutcome } from "@stella/shared/tasks/run-result";
+import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
@@ -200,13 +202,19 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
     }
     showTaskPanel({ kind: "result", manifest, result, root });
     notify(result.outcome, output);
-    if (result.outcome === "passed") {
+    // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
+    // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
+    // (旧 API は local-result の本文を見ずに合格として扱うため)。
+    const report = receipt?.taskId === manifest.id ? toLocalRunReport(result, receipt) : null;
+    if (report) {
       try {
-        if (receipt?.taskId === manifest.id)
-          await apiRequest("/api/tasks/local-result", { method: "POST", body: receipt });
+        await apiRequest(
+          report.outcome === "passed" ? "/api/tasks/local-result" : "/api/tasks/local-runs",
+          { method: "POST", body: report },
+        );
       } catch (err) {
         output.appendLine(
-          `手元の合格を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
+          `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
@@ -319,7 +327,11 @@ async function submitTaskCommand(
           detail: "受講者の申告",
         });
     if (mode === "consult")
-      support.push({ kind: "instructor", at: new Date().toISOString(), detail: "講師への相談" });
+      support.push({
+        kind: "instructor",
+        at: new Date().toISOString(),
+        detail: CONSULT_SUPPORT_DETAIL,
+      });
     const notes = { explanation, ...(debuggingRecord ? { debuggingRecord } : {}), support };
     await writeStateFile(root, "submission-notes.json", `${JSON.stringify(notes, null, 2)}\n`);
     const row = await sendTaskSubmission(root, mode, notes);
