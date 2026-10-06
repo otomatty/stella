@@ -4,8 +4,11 @@
  * - 何を開けるかはサーバー (`/api/tasks/help`) が `@stella/shared/tasks/help` の表で決める。
  *   拡張は同じ表の結果を表示するだけで、本文は開いた素材のぶんしか受け取らない。
  * - 開くと支援の記録に残る (罰ではなく記録)。合格前の解答例だけ、開く前に確かめる。
- * - 解答例は学習フォルダーに書き出さない。読み取り専用の仮想ドキュメント (`stella-solution:`) に
- *   置き、VS Code の差分エディタ (`vscode.diff`) で自分のコードと並べる。
+ * - 素材は配布記録 (`.stella/distribution.json`) の版のものを受け取る (手元の版と違う版を出さない)。
+ * - 解答例は学習フォルダーに書き出さず、拡張にも控えない。読み取り専用の仮想ドキュメント
+ *   (`stella-solution:`) は開くたびに今の接続の受講者で LMS に確かめて読み、VS Code の差分エディタ
+ *   (`vscode.diff`) で自分のコードと並べる。接続が変わったら、ヘルプのパネルを閉じ、開いている
+ *   解答例のドキュメントを読み直させる (前の受講者の解答例を残さない)。
  * - パネルはスクリプトを動かさない。リンクは公開の HTTP(S) と、このファイルが登録する固定の
  *   コマンドだけ。コマンドの引数 (課題フォルダー・素材の種類・段・ファイル) は受け取るたびに検証し、
  *   課題ファイルや画面の文字列をコマンドにしない。ファイルを読むだけなので信頼は問わない。
@@ -31,6 +34,7 @@ import {
 } from "@stella/shared/tasks/manifest";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
+import { onDidChangeAuth } from "./auth.js";
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
 import { loadTask } from "./runner/run-task.js";
 import { isInside, locateTask, workspaceRoots } from "./task-commands.js";
@@ -268,32 +272,55 @@ ${body}
 // コマンド
 // ---------------------------------------------------------------
 
-/** 開いた解答例 (課題 ID → パス → base64)。仮想ドキュメントの中身で、ディスクには置かない。 */
-const solutions = new Map<string, Map<string, string>>();
 let solutionChanged: vscode.EventEmitter<vscode.Uri> | undefined;
+/**
+ * 接続の世代。接続が変わる (受講者の切り替え・切断) たびに進める。仮想ドキュメントの読み込みの
+ * 途中で接続が変わったら、前の受講者の権限で取った解答例を返さない。
+ */
+let authGeneration = 0;
 
-/** 解答例の仮想ドキュメントの URI。拡張子を残し、エディタの色分けを効かせる。 */
-export function solutionUri(taskId: string, rel: string): vscode.Uri {
+/**
+ * 解答例の仮想ドキュメントの URI。拡張子を残し、エディタの色分けを効かせる。中身は持たず、
+ * 開くたびにサーバーで今の受講者の解放と開いた記録を確かめて読む (拡張には解答例を控えない)。
+ */
+export function solutionUri(taskId: string, rel: string, contentHash: string): vscode.Uri {
   return vscode.Uri.from({
     scheme: SOLUTION_SCHEME,
     path: `/${encodeURIComponent(taskId)}/${rel}`,
+    query: new URLSearchParams({ contentHash }).toString(),
   });
 }
 
-function rememberSolution(help: TaskHelpResponse): void {
-  if (help.solution.state !== "opened" || !help.solution.files) return;
-  const files = new Map(help.solution.files.map((f) => [f.path, f.content]));
-  solutions.set(help.taskId, files);
-  for (const rel of files.keys()) solutionChanged?.fire(solutionUri(help.taskId, rel));
-}
+const helpUrl = (taskId: string, contentHash: string) =>
+  `/api/tasks/help?${new URLSearchParams({ taskId, contentHash })}`;
 
-/** 仮想ドキュメントの中身。開いた解答例だけを返し、無ければ開き直しを案内する。 */
-export function solutionContent(uri: { path: string }): string {
-  const [, taskId = "", ...rest] = uri.path.split("/");
-  const content = solutions.get(decodeURIComponent(taskId))?.get(rest.join("/"));
-  return content === undefined
-    ? "解答例を読み込めません。「STELLA: ヒント・解答・レビューの結果を表示する」から開き直してください。\n"
-    : decode(content);
+const UNAVAILABLE =
+  "解答例を表示できません。いま接続している受講者がこの課題の解答例を開いていないか、LMS に接続していません。「STELLA: ヒント・解答・レビューの結果を表示する」から開き直してください。\n";
+
+/**
+ * 仮想ドキュメントの中身。今の接続の受講者で LMS に問い合わせ、手元の版でその受講者が開いた
+ * 解答例のファイルだけを返す。サーバーが本文を返さなければ (未解放・開いた記録が無い・別の
+ * 受講者・未接続) 案内だけを返す。
+ */
+export async function solutionContent(uri: { path: string; query: string }): Promise<string> {
+  const [, encodedTaskId = "", ...rest] = uri.path.split("/");
+  const rel = rest.join("/");
+  const contentHash = new URLSearchParams(uri.query).get("contentHash") ?? "";
+  if (!encodedTaskId || !rel || !/^[a-f0-9]{64}$/.test(contentHash)) return UNAVAILABLE;
+  const generation = authGeneration;
+  try {
+    const help = await apiRequest<TaskHelpResponse>(
+      helpUrl(decodeURIComponent(encodedTaskId), contentHash),
+    );
+    if (generation !== authGeneration) return UNAVAILABLE;
+    const file =
+      help.solution.state === "opened"
+        ? help.solution.files?.find((f) => f.path === rel)
+        : undefined;
+    return file ? decode(file.content) : UNAVAILABLE;
+  } catch {
+    return UNAVAILABLE;
+  }
 }
 
 let helpPanel: vscode.WebviewPanel | undefined;
@@ -327,6 +354,8 @@ function showHelpPanel(html: string, title: string): void {
 interface HelpTarget {
   root: string;
   taskId: string;
+  /** 配布記録 (`.stella/distribution.json`) の版。素材はこの版のものを受け取る。 */
+  contentHash: string;
   manifest: TaskManifest;
 }
 
@@ -345,13 +374,16 @@ async function resolveTarget(requested: unknown): Promise<HelpTarget> {
     throw new Error(
       "LMS から配布した課題だけで使えます。Web の「VS Code で開く」から課題を開いてください",
     );
-  return { root, taskId: receipt.taskId, manifest: loaded.manifest };
+  return {
+    root,
+    taskId: receipt.taskId,
+    contentHash: receipt.contentHash,
+    manifest: loaded.manifest,
+  };
 }
 
-const helpUrl = (taskId: string) => `/api/tasks/help?${new URLSearchParams({ taskId })}`;
-
 async function render(target: HelpTarget, help: TaskHelpResponse): Promise<void> {
-  rememberSolution(help);
+  const generation = authGeneration;
   let review: LearnerSubmissionView | null = null;
   if (help.latestSubmission) {
     try {
@@ -364,21 +396,27 @@ async function render(target: HelpTarget, help: TaskHelpResponse): Promise<void>
       review = null;
     }
   }
+  // 描く前に接続が変わっていたら、前の受講者の素材を描かない。
+  if (generation !== authGeneration) return;
   showHelpPanel(
     buildTaskHelpHtml({ help, manifest: target.manifest, root: target.root, review }),
     `支援: ${help.title}`,
   );
+  // 開いている解答例のドキュメントに、読み直してよいことを知らせる (中身はサーバーで確かめて読む)。
+  if (help.solution.state === "opened")
+    for (const file of help.solution.files ?? [])
+      solutionChanged?.fire(solutionUri(target.taskId, file.path, target.contentHash));
 }
 
 /** パネルを開く。合格後に自動で開く種別 (基礎・接続) は、まだ開いていない解答例と解説を開く。 */
 async function showTaskHelpCommand(requested?: unknown): Promise<void> {
   const target = await resolveTarget(requested);
-  let help = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId));
+  let help = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
   for (const item of help.autoOpen) {
     if (help[item].state !== "available") continue;
     help = await apiRequest<TaskHelpResponse>("/api/tasks/help/open", {
       method: "POST",
-      body: { taskId: target.taskId, item },
+      body: { taskId: target.taskId, item, contentHash: target.contentHash },
     });
   }
   await render(target, help);
@@ -396,7 +434,7 @@ async function openTaskHelpItemCommand(
     throw new Error("ヒントの段が不正です");
   const target = await resolveTarget(requested);
   if (item === "solution") {
-    const current = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId));
+    const current = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
     if (current.phase === "working") {
       const open = "解答例を開く";
       const choice = await vscode.window.showWarningMessage(
@@ -413,23 +451,28 @@ async function openTaskHelpItemCommand(
   }
   const help = await apiRequest<TaskHelpResponse>("/api/tasks/help/open", {
     method: "POST",
-    body: { taskId: target.taskId, item: item as HelpItem, ...(item === "hint" ? { level } : {}) },
+    body: {
+      taskId: target.taskId,
+      item: item as HelpItem,
+      ...(item === "hint" ? { level } : {}),
+      contentHash: target.contentHash,
+    },
   });
   await render(target, help);
 }
 
-/** 解答例と自分のコードを差分エディタで並べる。自分のファイルが無ければ解答例だけを開く。 */
+/**
+ * 解答例と自分のコードを差分エディタで並べる。自分のファイルが無ければ解答例だけを開く。
+ * 並べる前に、今の受講者がこの版の解答例を開いた記録があり、そのファイルがあるかをサーバーで確かめる。
+ */
 async function compareTaskSolutionCommand(requested: unknown, rel: unknown): Promise<void> {
-  const target = await resolveTarget(requested);
-  const files = solutions.get(target.taskId);
-  if (
-    typeof rel !== "string" ||
-    !isSafeRelativePattern(rel) ||
-    /[*?{}[\]]/.test(rel) ||
-    !files?.has(rel)
-  )
+  if (typeof rel !== "string" || !isSafeRelativePattern(rel) || /[*?{}[\]]/.test(rel))
     throw new Error("解答例を開き直してから、もう一度選んでください");
-  const left = solutionUri(target.taskId, rel);
+  const target = await resolveTarget(requested);
+  const help = await apiRequest<TaskHelpResponse>(helpUrl(target.taskId, target.contentHash));
+  if (help.solution.state !== "opened" || !help.solution.files?.some((f) => f.path === rel))
+    throw new Error("解答例を開き直してから、もう一度選んでください");
+  const left = solutionUri(target.taskId, rel, target.contentHash);
   const own = path.join(target.root, ...rel.split("/"));
   if (!isInside(own, target.root)) throw new Error("課題フォルダーの外のファイルは開けません");
   const exists = await lstat(own).then(
@@ -462,6 +505,19 @@ async function reportErrors(work: () => Promise<void>): Promise<void> {
   }
 }
 
+/**
+ * 接続が変わった (受講者の切り替え・切断): 前の受講者の素材を残さない。ヘルプのパネルを閉じ、
+ * 開いている解答例のドキュメントには読み直しを知らせる (今の接続でサーバーに確かめ直すので、
+ * 開いた記録の無い受講者には案内だけになる)。拡張は解答例を控えていない。
+ */
+export function forgetTaskHelp(): void {
+  authGeneration += 1;
+  helpPanel?.dispose();
+  helpPanel = undefined;
+  for (const document of vscode.workspace.textDocuments)
+    if (document.uri.scheme === SOLUTION_SCHEME) solutionChanged?.fire(document.uri);
+}
+
 export function registerTaskHelp(context: vscode.ExtensionContext): void {
   solutionChanged = new vscode.EventEmitter<vscode.Uri>();
   const provider: vscode.TextDocumentContentProvider = {
@@ -470,6 +526,7 @@ export function registerTaskHelp(context: vscode.ExtensionContext): void {
   };
   context.subscriptions.push(
     solutionChanged,
+    onDidChangeAuth(() => forgetTaskHelp()),
     vscode.workspace.registerTextDocumentContentProvider(SOLUTION_SCHEME, provider),
     vscode.commands.registerCommand("stella.showTaskHelp", (root?: unknown) =>
       reportErrors(() => showTaskHelpCommand(root)),

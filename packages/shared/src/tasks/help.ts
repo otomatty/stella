@@ -131,6 +131,7 @@ export const HELP_LOCK_REASONS = [
   "attempts",
   "passed",
   "not-offered",
+  "stale-version",
 ] as const;
 export type HelpLockReason = (typeof HELP_LOCK_REASONS)[number];
 
@@ -140,6 +141,8 @@ export const HELP_LOCK_LABELS: Readonly<Record<HelpLockReason, string>> = {
   attempts: "決まった回数の挑戦のあとか、合格後に開けます",
   passed: "合格後に開けます",
   "not-offered": "この種別の課題では表示しません",
+  // 受講者の手元の版に対応する素材の版が分からない (知らない版・素材の版を記録する前の版)。
+  "stale-version": "手元の課題が古い版です。最新を受け取り直すと開けます",
 };
 
 export type HelpAvailability = { open: true } | { open: false; reason: HelpLockReason };
@@ -231,6 +234,44 @@ export function taskHelpAccess(facts: TaskHelpFacts): TaskHelpAccess {
       unlock === "attempts-or-passed" ? { count: Math.max(0, facts.attempts), required } : null,
   };
 }
+
+function both(a: HelpAvailability, b: HelpAvailability): HelpAvailability {
+  if (!a.open) return a;
+  return b;
+}
+
+/**
+ * 2 つの判定の両方で開けるものだけを開けるとする。受講者の手元の版が今の版と違うとき、今の版の
+ * 判定と手元の版の判定を重ね、どちらかより緩くならないようにする (種別が版で変わった課題など)。
+ */
+export function intersectHelpAccess(a: TaskHelpAccess, b: TaskHelpAccess): TaskHelpAccess {
+  const levels = Math.min(a.hints.length, b.hints.length);
+  return {
+    phase: a.phase,
+    referencesOnly: a.referencesOnly || b.referencesOnly,
+    notice: a.notice ?? b.notice,
+    hints: Array.from({ length: levels }, (_, i) => both(a.hints[i], b.hints[i])),
+    solution: both(a.solution, b.solution),
+    explanation: both(a.explanation, b.explanation),
+    autoOpen: a.autoOpen.filter((item) => b.autoOpen.includes(item)),
+    attempts: a.attempts,
+  };
+}
+
+/** 素材を出せないとき (手元の版の素材が分からない) の判定。ヒントの段の数だけは見せる。 */
+export function staleHelpAccess(access: TaskHelpAccess): TaskHelpAccess {
+  const stale: HelpAvailability = { open: false, reason: "stale-version" };
+  return {
+    ...access,
+    hints: access.hints.map(() => stale),
+    solution: stale,
+    explanation: stale,
+    autoOpen: [],
+  };
+}
+
+/** 課題の版 (配布記録の contentHash) の形。 */
+export const HELP_CONTENT_HASH = /^[a-f0-9]{64}$/;
 
 /** 開いた記録に残す素材の種類。予備の類題・レビューの観点はここに無い (受講者へ返さない)。 */
 export const HELP_ITEMS = ["hint", "solution", "explanation"] as const;
@@ -395,6 +436,7 @@ export function parseHelpOpenRequest(raw: unknown): {
   taskId: string;
   item: HelpItem;
   level?: number;
+  contentHash?: string;
 } {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw))
     throw new Error("本文はオブジェクトで送ってください");
@@ -403,7 +445,9 @@ export function parseHelpOpenRequest(raw: unknown): {
   if (typeof body.item !== "string" || !(HELP_ITEMS as readonly string[]).includes(body.item))
     throw new Error(`item は ${HELP_ITEMS.join(" / ")} のどれかにしてください`);
   const item = body.item as HelpItem;
-  if (item !== "hint") return { taskId: body.taskId, item };
+  const contentHash = parseHelpContentHash(body.contentHash);
+  const version = contentHash === undefined ? {} : { contentHash };
+  if (item !== "hint") return { taskId: body.taskId, item, ...version };
   if (
     typeof body.level !== "number" ||
     !Number.isInteger(body.level) ||
@@ -411,7 +455,18 @@ export function parseHelpOpenRequest(raw: unknown): {
     body.level > 50
   )
     throw new Error("level は 1 以上の整数で送ってください");
-  return { taskId: body.taskId, item, level: body.level };
+  return { taskId: body.taskId, item, level: body.level, ...version };
+}
+
+/**
+ * 受講者の手元の版 (配布記録の contentHash)。省略できる (省略すると今の版として扱う)。
+ * 送るなら SHA-256 の 16 進 64 文字に限る。
+ */
+export function parseHelpContentHash(raw: unknown): string | undefined {
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  if (typeof raw !== "string" || !HELP_CONTENT_HASH.test(raw))
+    throw new Error("contentHash は課題の版 (16 進 64 文字) で送ってください");
+  return raw;
 }
 
 /** D1 の課題の定義 (教材の task.json) から `support` を読む。読めなければ最も厳しい設定。 */

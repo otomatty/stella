@@ -9,6 +9,14 @@ const state = vi.hoisted(() => ({
   folders: [] as string[],
   html: [] as string[],
   warningChoice: undefined as string | undefined,
+  /** 拡張の接続が変わったときのリスナー (`onDidChangeAuth`)。 */
+  authListeners: [] as (() => void)[],
+  /** 作ったヘルプのパネル。閉じたかを見る。 */
+  panels: [] as { disposed: boolean }[],
+  /** 仮想ドキュメントの変更を知らせた URI。 */
+  fired: [] as unknown[],
+  /** 開いているドキュメント。 */
+  documents: [] as { uri: unknown }[],
 }));
 const mocks = vi.hoisted(() => ({
   apiRequest: vi.fn(),
@@ -22,13 +30,16 @@ const mocks = vi.hoisted(() => ({
 vi.mock("vscode", () => ({
   EventEmitter: class {
     event = vi.fn();
-    fire = vi.fn();
+    fire = vi.fn((uri: unknown) => {
+      state.fired.push(uri);
+    });
     dispose = vi.fn();
   },
   Uri: {
-    from: (parts: { scheme: string; path: string }) => ({
+    from: (parts: { scheme: string; path: string; query?: string }) => ({
       ...parts,
-      toString: () => `${parts.scheme}:${parts.path}`,
+      query: parts.query ?? "",
+      toString: () => `${parts.scheme}:${parts.path}${parts.query ? `?${parts.query}` : ""}`,
     }),
     file: (fsPath: string) => ({ scheme: "file", fsPath }),
   },
@@ -38,10 +49,20 @@ vi.mock("vscode", () => ({
       return undefined;
     },
     createWebviewPanel: () => {
+      const onDispose: (() => void)[] = [];
+      const record = { disposed: false };
+      state.panels.push(record);
       const panel = {
         title: "",
         reveal: vi.fn(),
-        onDidDispose: vi.fn(),
+        onDidDispose: (listener: () => void) => {
+          onDispose.push(listener);
+          return { dispose: vi.fn() };
+        },
+        dispose: () => {
+          record.disposed = true;
+          for (const listener of onDispose) listener();
+        },
         webview: {
           set html(value: string) {
             state.html.push(value);
@@ -62,7 +83,9 @@ vi.mock("vscode", () => ({
     get workspaceFolders() {
       return state.folders.map((fsPath) => ({ uri: { fsPath } }));
     },
-    textDocuments: [],
+    get textDocuments() {
+      return state.documents;
+    },
     openTextDocument: mocks.openTextDocument,
     registerTextDocumentContentProvider: () => ({ dispose: vi.fn() }),
   },
@@ -75,10 +98,18 @@ vi.mock("vscode", () => ({
   },
 }));
 vi.mock("./api.js", () => ({ apiRequest: mocks.apiRequest }));
+vi.mock("./auth.js", () => ({
+  onDidChangeAuth: (listener: () => void) => {
+    state.authListeners.push(listener);
+    return { dispose: vi.fn() };
+  },
+}));
 
 const { buildTaskHelpHtml, registerTaskHelp, solutionContent } = await import("./task-help.js");
 
 const TASK_ID = "dev-env-basics/m0-first-page/q01-first-page";
+/** 配布記録 (`.stella/distribution.json`) の版。 */
+const HASH = "a".repeat(64);
 const encode = (text: string) => Buffer.from(text).toString("base64");
 
 function help(overrides: Partial<TaskHelpResponse> = {}): TaskHelpResponse {
@@ -257,8 +288,12 @@ describe("課題パネルのコマンド", () => {
   let root: string;
   beforeEach(async () => {
     vi.clearAllMocks();
+    mocks.apiRequest.mockReset();
     state.handlers.clear();
     state.html = [];
+    state.authListeners = [];
+    state.fired = [];
+    state.documents = [];
     state.warningChoice = undefined;
     root = await mkdtemp(path.join(tmpdir(), "stella-help-"));
     await mkdir(path.join(root, ".stella"), { recursive: true });
@@ -276,7 +311,7 @@ describe("課題パネルのコマンド", () => {
     );
     await writeFile(
       path.join(root, ".stella", "distribution.json"),
-      JSON.stringify({ taskId: TASK_ID, contentHash: "a".repeat(64) }),
+      JSON.stringify({ taskId: TASK_ID, contentHash: HASH }),
     );
     await writeFile(path.join(root, "index.html"), "<h1>ここを変更します</h1>");
     state.folders = [root];
@@ -302,23 +337,20 @@ describe("課題パネルのコマンド", () => {
         }),
       )
       .mockResolvedValueOnce(help({ ...opened, explanation: { state: "available" } }))
-      .mockResolvedValueOnce(opened);
+      .mockResolvedValue(opened);
     await run("stella.showTaskHelp", root);
     expect(mocks.showErrorMessage).not.toHaveBeenCalled();
+    // 配布記録の版 (手元の版) を付けて問い合わせ、その版の素材を受け取る。
     expect(mocks.apiRequest.mock.calls.map((c) => c[0])).toEqual([
-      `/api/tasks/help?${new URLSearchParams({ taskId: TASK_ID })}`,
+      `/api/tasks/help?${new URLSearchParams({ taskId: TASK_ID, contentHash: HASH })}`,
       "/api/tasks/help/open",
       "/api/tasks/help/open",
     ]);
     expect(mocks.apiRequest.mock.calls[1][1]).toMatchObject({
       method: "POST",
-      body: { taskId: TASK_ID, item: "solution" },
+      body: { taskId: TASK_ID, item: "solution", contentHash: HASH },
     });
     expect(state.html.at(-1)).toContain("&lt;h1&gt;A&lt;/h1&gt;");
-    // 開いた解答例は仮想ドキュメントにだけ置く。
-    expect(solutionContent({ path: `/${encodeURIComponent(TASK_ID)}/index.html` })).toBe(
-      "<h1>A</h1>",
-    );
 
     await run("stella.compareTaskSolution", root, "index.html");
     expect(mocks.executeCommand).toHaveBeenCalledWith(
@@ -328,6 +360,51 @@ describe("課題パネルのコマンド", () => {
       "index.html: 解答例 ↔ 自分のコード",
       { preview: true },
     );
+    // 解答例は仮想ドキュメントにだけ置き、開くたびにサーバーで今の受講者の記録を確かめる。
+    const left = mocks.executeCommand.mock.calls[0][1] as { path: string; query: string };
+    mocks.apiRequest.mockClear();
+    expect(await solutionContent(left)).toBe("<h1>A</h1>");
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      `/api/tasks/help?${new URLSearchParams({ taskId: TASK_ID, contentHash: HASH })}`,
+    );
+  });
+
+  it("接続が変わったら、ヘルプのパネル・解答例の控え・開いている解答例の中身が残らない", async () => {
+    const opened = help({
+      phase: "passed",
+      status: "passed",
+      solution: {
+        state: "opened",
+        files: [{ path: "index.html", content: encode("<h1>SECRET_57</h1>") }],
+      },
+      explanation: { state: "opened", markdown: "解説" },
+    });
+    mocks.apiRequest.mockResolvedValue(opened);
+    await run("stella.showTaskHelp", root);
+    await run("stella.compareTaskSolution", root, "index.html");
+    const diff = mocks.executeCommand.mock.calls.find((call) => call[0] === "vscode.diff");
+    const left = diff?.[1] as { scheme: string; path: string; query: string };
+    expect(left.scheme).toBe("stella-solution");
+    state.documents = [{ uri: left }];
+    expect(await solutionContent(left)).toBe("<h1>SECRET_57</h1>");
+    expect(state.panels.some((panel) => !panel.disposed)).toBe(true);
+
+    // 別の受講者が接続する。この受講者はまだ解答例を開いていない (サーバーは本文を返さない)。
+    mocks.apiRequest.mockReset();
+    mocks.apiRequest.mockResolvedValue(
+      help({ phase: "passed", status: "passed", solution: { state: "available" } }),
+    );
+    expect(state.authListeners.length).toBeGreaterThan(0);
+    for (const listener of state.authListeners) listener();
+
+    expect(state.panels.every((panel) => panel.disposed)).toBe(true);
+    expect(state.fired).toContainEqual(left);
+    const after = await solutionContent(left);
+    expect(after).not.toContain("SECRET_57");
+    // 控えから比べられない (サーバーで開いた記録がない)。
+    mocks.executeCommand.mockClear();
+    await run("stella.compareTaskSolution", root, "index.html");
+    expect(mocks.executeCommand).not.toHaveBeenCalled();
   });
 
   it("合格前の解答例は確かめてから開き、やめたら開かない", async () => {
@@ -343,7 +420,7 @@ describe("課題パネルのコマンド", () => {
     await run("stella.openTaskHelpItem", root, "solution");
     expect(mocks.apiRequest).toHaveBeenLastCalledWith("/api/tasks/help/open", {
       method: "POST",
-      body: { taskId: TASK_ID, item: "solution" },
+      body: { taskId: TASK_ID, item: "solution", contentHash: HASH },
     });
   });
 
@@ -353,7 +430,7 @@ describe("課題パネルのコマンド", () => {
     expect(mocks.showWarningMessage).not.toHaveBeenCalled();
     expect(mocks.apiRequest).toHaveBeenCalledWith("/api/tasks/help/open", {
       method: "POST",
-      body: { taskId: TASK_ID, item: "hint", level: 1 },
+      body: { taskId: TASK_ID, item: "hint", level: 1, contentHash: HASH },
     });
   });
 

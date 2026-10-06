@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   countHelpAttempts,
   helpItemAvailability,
+  intersectHelpAccess,
+  parseHelpContentHash,
   parseHelpOpenRequest,
   parseTaskHints,
   SOLUTION_UNLOCK_ATTEMPTS,
+  staleHelpAccess,
   supportConfigOf,
   TASK_HELP_POLICIES,
   type TaskHelpFacts,
@@ -139,6 +142,41 @@ describe("taskHelpAccess (07 §8 の表)", () => {
   });
 });
 
+describe("intersectHelpAccess / staleHelpAccess", () => {
+  it("今の版と手元の版の両方で開けるものだけを開ける", () => {
+    const basic = taskHelpAccess(facts({ openedHintLevel: 2 }));
+    const assessment = taskHelpAccess(
+      facts({ kind: "assessment-a", support: { hintLevels: 0, solutionUnlock: "passed" } }),
+    );
+    const both = intersectHelpAccess(basic, assessment);
+    expect(both.referencesOnly).toBe(true);
+    expect(both.hints).toEqual([]);
+    expect(both.solution).toEqual({ open: false, reason: "passed" });
+    expect(intersectHelpAccess(assessment, basic).solution.open).toBe(false);
+    const stricter = taskHelpAccess(
+      facts({ support: { hintLevels: 1, solutionUnlock: "passed" }, openedHintLevel: 1 }),
+    );
+    expect(intersectHelpAccess(basic, stricter).hints).toEqual([{ open: true }]);
+    expect(intersectHelpAccess(basic, stricter).solution).toEqual({
+      open: false,
+      reason: "passed",
+    });
+    const passed = taskHelpAccess(facts({ passed: true }));
+    expect(intersectHelpAccess(passed, passed).autoOpen).toEqual(["solution", "explanation"]);
+  });
+
+  it("素材の版が分からなければ、段の数だけ見せてすべて閉じる", () => {
+    const stale = staleHelpAccess(taskHelpAccess(facts({ passed: true, openedHintLevel: 2 })));
+    expect(stale.hints).toEqual([
+      { open: false, reason: "stale-version" },
+      { open: false, reason: "stale-version" },
+    ]);
+    expect(stale.solution).toEqual({ open: false, reason: "stale-version" });
+    expect(stale.explanation).toEqual({ open: false, reason: "stale-version" });
+    expect(stale.autoOpen).toEqual([]);
+  });
+});
+
 describe("countHelpAttempts", () => {
   it("手元の確認の失敗と提出の試行を足す", () => {
     expect(countHelpAttempts({ failedLocalRuns: 3, submissions: 2 })).toBe(5);
@@ -204,8 +242,14 @@ describe("parseHelpOpenRequest", () => {
       taskId: "a/b/c",
       item: "solution",
     });
+    expect(
+      parseHelpOpenRequest({ taskId: "a/b/c", item: "explanation", contentHash: "d".repeat(64) }),
+    ).toEqual({ taskId: "a/b/c", item: "explanation", contentHash: "d".repeat(64) });
+    expect(parseHelpContentHash(undefined)).toBeUndefined();
+    expect(() => parseHelpContentHash("../x")).toThrow("contentHash");
     for (const raw of [
       null,
+      { taskId: "a/b/c", item: "solution", contentHash: "A".repeat(64) },
       { taskId: "a/b/c", item: "variants" },
       { taskId: "a/b/c", item: "review" },
       { taskId: "a/b/c", item: "hint" },

@@ -309,6 +309,13 @@ export const taskRevisions = sqliteTable(
     definition: text("definition").notNull(),
     bundle: text("bundle").notNull(),
     createdAt: tsNow("created_at"),
+    /**
+     * この版を配っていたときの非公開の素材の版 (`task_private_versions.private_hash`)。seed がこの版を
+     * 今の版として入れるたびに書き直すので、前の版には「その版が今の版だった最後の素材」が残る。
+     * 手元の版が古い受講者に、その版のヒント・解答例・解説を出すのに使う (#36)。素材の版を
+     * 記録する前の版は null (分からないので素材を出さない) (0054)。
+     */
+    privateHash: text("private_hash"),
   },
   (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
 );
@@ -383,8 +390,8 @@ export const taskFixedStartUses = sqliteTable(
 );
 
 /**
- * 受講者がヒント・解答例・解説を開いた記録 (#36・07 §8)。素材ごと (ヒントは段ごと) に最初の 1 回を
- * 残す。提出の支援記録に `hint`・`solution` を足す根拠になり、確認A・Bでは許されない支援として
+ * 受講者がヒント・解答例・解説を開いた記録 (#36・07 §8)。素材ごと (ヒントは段ごと)・出した版
+ * (課題の版と素材の版) ごとに最初の 1 回を残す。提出の支援記録に `hint`・`solution` を足す根拠になり、確認A・Bでは許されない支援として
  * 人に回す判定 (#33) にも使う。段を持つので「ヒントを最後まで開く」の検知 (#38) にも使える。
  * 罰ではなく記録で、合格後に開いたものも `after_pass` を付けて残す (後の提出の支援には数える)。
  */
@@ -412,7 +419,10 @@ export const taskHelpOpens = sqliteTable(
     openedAt: tsNow("opened_at"),
   },
   (t) => ({
-    pk: primaryKey({ columns: [t.userId, t.taskId, t.item, t.level] }),
+    // 出した版ごとに残す。手元の版が違えば、同じ素材でも開き直して記録してから本文を返す。
+    pk: primaryKey({
+      columns: [t.userId, t.taskId, t.item, t.level, t.contentHash, t.privateHash],
+    }),
     taskIdx: index("task_help_opens_task_idx").on(t.taskId),
     tenantIdx: index("task_help_opens_tenant_idx").on(t.tenantId),
   }),

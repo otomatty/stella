@@ -8,7 +8,7 @@ import {
 } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
-import { parseHelpOpenRequest } from "@stella/shared/tasks/help";
+import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
 import type { Env } from "../env.js";
 import {
   sections,
@@ -192,21 +192,29 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
 });
 
 /**
- * ヒント・解答例・解説の解放の状態 (#36・07 §8)。本文は、受講者が開いた記録があり今も開ける
- * 素材だけに付く。予備の類題とレビューの観点は返さない。読むだけで記録はしない。
+ * ヒント・解答例・解説の解放の状態 (#36・07 §8)。`contentHash` は受講者の手元の版 (配布記録) で、
+ * 本文はその版の素材のうち、その版で開いた記録があり今も開ける素材だけに付く。予備の類題と
+ * レビューの観点は返さない。読むだけで記録はしない。
  */
 tasksRoute.get("/api/tasks/help", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    return c.json(await getTaskHelp(db, caller, c.req.query("taskId") ?? ""));
+    let contentHash: string | undefined;
+    try {
+      contentHash = parseHelpContentHash(c.req.query("contentHash"));
+    } catch (e) {
+      throw new ApiError(e instanceof Error ? e.message : "invalid contentHash", 400);
+    }
+    return c.json(await getTaskHelp(db, caller, c.req.query("taskId") ?? "", contentHash));
   } catch (err) {
     return errorResponse(c, err);
   }
 });
 
 /**
- * ヒント 1 段・解答例・解説のどれかを開く。解放条件はサーバーが判定し、満たさなければ 403 で
- * 何も返さない。開いたことを記録してから本文を返す (提出の支援記録に入る。罰ではなく記録)。
+ * ヒント 1 段・解答例・解説のどれかを開く。解放条件はサーバーが判定し、満たさなければ 403、
+ * 手元の版 (`contentHash`) の素材が分からなければ 409 で何も返さない。開いたことを出した版で
+ * 記録してから本文を返す (提出の支援記録に入る。罰ではなく記録)。
  */
 tasksRoute.post("/api/tasks/help/open", async (c) => {
   try {

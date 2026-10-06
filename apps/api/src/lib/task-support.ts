@@ -396,10 +396,15 @@ export async function loadTaskSupport(
   };
 
   for (const t of stageTasks) recordOf(t);
-  // ヒント・解答例・解説を開いた記録は、開いたときに 1 件ずつ出す (提出が無くても見える)。提出の
-  // 支援記録には同じ記録が LMS の分として同じ時刻で写るので (`withRecordedHelp`)、そちらは数えない。
+  // ヒント・解答例・解説を開いた記録は、開いたときに 1 件ずつ出す (提出が無くても見える)。版を
+  // 変えて開き直した分は重ねない (素材・段ごとに最初の 1 件)。提出の支援記録には同じ記録が LMS の
+  // 分として同じ時刻で写るので (`withRecordedHelp`)、そちらは数えない。
   const openedAt = new Set<string>();
-  for (const o of opens) {
+  const firstOpens = new Set<string>();
+  for (const o of [...opens].sort((a, b) => a.at.getTime() - b.at.getTime())) {
+    const first = `${o.taskId}|${o.item}|${o.level}`;
+    if (firstOpens.has(first)) continue;
+    firstOpens.add(first);
     const kind = helpSupportKind(o.item);
     const at = o.at.toISOString();
     openedAt.add(`${o.taskId}|${kind}|${at}`);

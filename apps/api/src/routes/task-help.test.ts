@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import type { TaskHelpResponse } from "@stella/shared/tasks/help";
@@ -14,6 +15,7 @@ import {
   taskHelpOpens,
   taskLocalRuns,
   taskPrivate,
+  taskPrivateVersions,
   taskProgress,
   taskRevisions,
   tasks,
@@ -163,6 +165,20 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       method: "POST",
       token: as,
       body: JSON.stringify({ taskId: fixture.input.taskId, item, level }),
+    });
+  /** 受講者の手元の版 (配布記録の contentHash) を付けた呼び出し。 */
+  const helpAt = (contentHash: string) =>
+    request(
+      app(),
+      env,
+      `/api/tasks/help?${new URLSearchParams({ taskId: fixture.input.taskId, contentHash })}`,
+      { token },
+    );
+  const openAt = (contentHash: string, item: string, level?: number) =>
+    request(app(), env, "/api/tasks/help/open", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ taskId: fixture.input.taskId, item, level, contentHash }),
     });
   const pass = (status: "passed" | "ai-passed" = "passed") =>
     db.insert(taskProgress).values({
@@ -446,6 +462,124 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     await pass();
     expect((await ok(await open("solution"))).solution.state).toBe("opened");
     expect((await open("explanation")).status).toBe(403);
+  });
+
+  describe("受講者の手元の版 (配布記録の contentHash) の素材だけを出す", () => {
+    const OLD_HASH = "b".repeat(64);
+    const OLD = {
+      hint1: "OLD_HINT_ONE_57",
+      solution: "OLD_SOLUTION_57",
+      explanation: "OLD_EXPLANATION_57",
+    };
+    const OLD_FILES = JSON.stringify({
+      "hints.md": encode(`## ヒント1 方針\n${OLD.hint1}\n\n## ヒント2\n二段目\n`),
+      "solution/index.html": encode(`<h1>${OLD.solution}</h1>`),
+      "explanation.md": encode(OLD.explanation),
+      "review.md": encode(MARK.review),
+    });
+    const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+    /** 前の版の課題と、その版で配っていた非公開の素材の版。 */
+    async function addOldRevision(options: { privateHash?: string | null; kind?: TaskKind } = {}) {
+      const privateHash =
+        options.privateHash === undefined ? sha256(OLD_FILES) : options.privateHash;
+      const bundle = {
+        ...fixture.bundle,
+        contentHash: OLD_HASH,
+        manifest: { ...fixture.bundle.manifest, kind: options.kind ?? "basic" },
+      };
+      await db.insert(taskRevisions).values({
+        taskId: fixture.input.taskId,
+        contentHash: OLD_HASH,
+        definition: JSON.stringify({ support: { hintLevels: 2, solutionUnlock: "after-hints" } }),
+        bundle: JSON.stringify(bundle),
+        privateHash,
+      });
+      if (privateHash)
+        await db
+          .insert(taskPrivateVersions)
+          .values({ taskId: fixture.input.taskId, privateHash, files: OLD_FILES });
+    }
+    beforeEach(() => setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" }));
+
+    it("前の版の受講者には、その版のヒント・解答例・解説を出し、記録も出した版にする", async () => {
+      await addOldRevision();
+      const first = await ok(await openAt(OLD_HASH, "hint", 1));
+      expect(first.hints[0]).toMatchObject({ state: "opened", markdown: OLD.hint1 });
+      expect(leaked(first, ...Object.values(MARK))).toEqual([]);
+      expect(await opens()).toMatchObject([
+        { item: "hint", level: 1, contentHash: OLD_HASH, privateHash: sha256(OLD_FILES) },
+      ]);
+      await ok(await openAt(OLD_HASH, "hint", 2));
+      const solved = await ok(await openAt(OLD_HASH, "solution"));
+      expect(JSON.stringify(solved)).toContain(encode(`<h1>${OLD.solution}</h1>`));
+      expect(leaked(solved, MARK.solution, MARK.hint1, MARK.hint2)).toEqual([]);
+      // 今の版で読むと、前の版で開いた本文は出さない (今の版の本文は開き直して記録する)。
+      const current = await ok(await help());
+      expect(current.hints[0]).toEqual({ level: 1, state: "available" });
+      expect(current.solution).toEqual({ state: "available" });
+      expect(JSON.stringify(current)).not.toContain(OLD.hint1);
+      const reopened = await ok(await open("hint", 1));
+      expect(reopened.hints[0]).toMatchObject({ markdown: MARK.hint1 });
+      expect(await opens()).toHaveLength(4);
+    });
+
+    it("前の版の素材の版が分からなければ、素材を出さず受け取り直しを案内する", async () => {
+      await addOldRevision({ privateHash: null });
+      const body = await ok(await helpAt(OLD_HASH));
+      expect(body.hints).toEqual([
+        { level: 1, state: "locked", reason: "stale-version" },
+        { level: 2, state: "locked", reason: "stale-version" },
+      ]);
+      expect(body.solution).toEqual({ state: "locked", reason: "stale-version" });
+      expect(body.explanation).toEqual({ state: "locked", reason: "stale-version" });
+      expect(leaked(body, ...Object.values(MARK), ...Object.values(OLD))).toEqual([]);
+      const refused = await openAt(OLD_HASH, "hint", 1);
+      expect(refused.status).toBe(409);
+      const text = await refused.text();
+      expect(text).toContain("手元の課題が古い版です。最新を受け取り直すと開けます");
+      expect(leaked(text, ...Object.values(MARK), ...Object.values(OLD))).toEqual([]);
+      expect(await opens()).toEqual([]);
+    });
+
+    it("知らない版を名乗っても、今の版の素材を出さない", async () => {
+      const unknown = "c".repeat(64);
+      expect((await ok(await helpAt(unknown))).solution).toEqual({
+        state: "locked",
+        reason: "stale-version",
+      });
+      expect((await openAt(unknown, "hint", 1)).status).toBe(409);
+      expect(await opens()).toEqual([]);
+      expect((await openAt("not-a-hash", "hint", 1)).status).toBe(400);
+    });
+
+    it("前の版の種別が厳しければ、その版でも今の版でも開けるものだけを出す", async () => {
+      await addOldRevision({ kind: "assessment-a" });
+      const body = await ok(await helpAt(OLD_HASH));
+      expect(body.referencesOnly).toBe(true);
+      expect(body.hints).toEqual([]);
+      expect(body.solution.state).toBe("locked");
+      expect((await openAt(OLD_HASH, "hint", 1)).status).toBe(403);
+      expect(await opens()).toEqual([]);
+    });
+  });
+
+  it("同じ時刻の提出は、試行の番号が大きい方を最新にする", async () => {
+    await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
+    const submittedAt = new Date("2026-10-05T00:00:00Z");
+    const row = {
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: fixture.input.taskId,
+      stageTitle: "開発環境",
+      assignmentTitle: "課題",
+      code: "",
+      submittedAt,
+    };
+    await db.insert(submissions).values([
+      { ...row, id: "first", attempt: 1 },
+      { ...row, id: "second", attempt: 2 },
+    ]);
+    expect((await ok(await help())).latestSubmission).toEqual({ id: "second", attempt: 2 });
   });
 
   it("hints.md を段に分けられない課題は、ヒントを出さず解答例も合格後だけにする", async () => {
