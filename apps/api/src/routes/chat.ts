@@ -24,14 +24,14 @@ const SERVER_TIMEOUT_MS = 75_000;
 export const chatRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * 課題の相談は、受講中の課題に限って受け付け、課題の支援として記録する (#38)。
- * 題名はクライアントの値を使わず、課題から引き直す。
+ * 課題の相談は、受講中の課題に限って受け付ける (#38)。AI を呼ぶ前に課題を引き直して確かめ、
+ * 題名はクライアントの値を使わない。支援としての記録は、応答が届き始めてから行う (下の stream)。
  */
 async function taskChatContext(
   db: Db,
   caller: Caller,
   context: Extract<ChatContext, { kind: "task" }>,
-): Promise<ChatContext> {
+): Promise<{ context: ChatContext; taskId: string }> {
   const [task] = await db
     .select({ id: tasks.id, title: tasks.title, stageId: stages.id, stageTitle: stages.title })
     .from(tasks)
@@ -41,13 +41,24 @@ async function taskChatContext(
     .limit(1);
   if (!task || !(await canAccessTasks(db, caller, task.stageId)))
     throw new ApiError("課題が見つかりません", 404);
-  await recordSupportEvent(db, {
-    tenantId: caller.tenantId,
-    userId: caller.id,
+  return {
+    context: { kind: "task", taskId: task.id, taskTitle: task.title, stageTitle: task.stageTitle },
     taskId: task.id,
-    kind: "ai-chat",
-  });
-  return { kind: "task", taskId: task.id, taskTitle: task.title, stageTitle: task.stageTitle };
+  };
+}
+
+/** 記録に失敗しても、受講者への応答は止めない。 */
+async function recordAiChatSupport(db: Db, caller: Caller, taskId: string) {
+  try {
+    await recordSupportEvent(db, {
+      tenantId: caller.tenantId,
+      userId: caller.id,
+      taskId,
+      kind: "ai-chat",
+    });
+  } catch (e) {
+    console.error("[chat] AI チャットの支援の記録に失敗", { taskId }, e);
+  }
 }
 
 chatRoute.post("/api/chat", async (c) => {
@@ -86,13 +97,18 @@ chatRoute.post("/api/chat", async (c) => {
   }
 
   let context = body.context;
+  /** 支援として記録する課題。受講者が読めることを確かめた ID だけが入る。 */
+  let supportTaskId: string | null = null;
   if (context?.kind === "task") {
     try {
-      context = await taskChatContext(auth.db, auth.caller, context);
+      const verified = await taskChatContext(auth.db, auth.caller, context);
+      context = verified.context;
+      supportTaskId = verified.taskId;
     } catch (err) {
       return errorResponse(c, err);
     }
   }
+  let supportRecorded = false;
 
   const encoder = new TextEncoder();
   const requestSignal = c.req.raw.signal;
@@ -127,6 +143,12 @@ chatRoute.post("/api/chat", async (c) => {
               });
         for await (const event of iter) {
           send(event);
+          // 応答の最初の文字が届いたときに 1 度だけ記録する。応答が返らなかった相談
+          // (失敗・時間切れ・中断) は支援に数えない。
+          if (event.type === "text" && event.delta && supportTaskId && !supportRecorded) {
+            supportRecorded = true;
+            await recordAiChatSupport(auth.db, auth.caller, supportTaskId);
+          }
           if (event.type === "done") {
             break;
           }

@@ -6,7 +6,8 @@
  *   課題ごとに束ねて返す。正本が既にあるもの (相談・レビュー) は写さず、読むときに束ねる。
  */
 
-import { and, desc, eq, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, lt, lte, sql } from "drizzle-orm";
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import type { LocalRunReport } from "@stella/shared/tasks/local-report";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
@@ -21,6 +22,7 @@ import {
 } from "@stella/shared/tasks/support-record";
 import type { Db } from "../db/client.js";
 import {
+  enrollments,
   sections,
   skillEvidence,
   stages,
@@ -97,7 +99,13 @@ export function localRunUpsert(
     });
 }
 
-/** サーバーが見た支援を 1 件残す。種類は `RECORDED_SUPPORT_KINDS` に限る。 */
+/**
+ * サーバーが見た支援を 1 件残す。種類は `RECORDED_SUPPORT_KINDS` に限る。
+ *
+ * ここでは種類しか確かめない。呼び出し側は、課題が有効で、そのテナントの受講者が
+ * 読める課題であること (`canAccessTasks`) を先に確かめ、ID はサーバーで引き直した値を渡す。
+ * 受講者が送った課題 ID をそのまま渡すと、他人・他テナントの課題の水準を「支援付き」にできてしまう。
+ */
 export async function recordSupportEvent(
   db: Db,
   event: {
@@ -167,14 +175,36 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
  * 省略すると記録のある課題だけを返す。認可は呼び出し側で済ませる。
  *
  * どの読み出しも課題 → 単元 → ステージで同じテナントに絞る (課題表はテナントを持たない)。
+ * `readableOnly` を付けると、受講者が今読めるステージ (`canAccessTasks` と同じ条件: 公開中の
+ * format 2 で、受講中か修了) の課題だけにする。受講者本人に返すときに使い、受講をやめた・
+ * 非公開になったステージの課題名を出さない。
  */
 export async function loadTaskSupport(
   db: Db,
-  scope: { tenantId: string; userId: string; stageId?: string },
+  scope: { tenantId: string; userId: string; stageId?: string; readableOnly?: boolean },
 ): Promise<TaskSupportRecord[]> {
   const where = and(
     eq(stages.tenantId, scope.tenantId),
     scope.stageId ? eq(sections.stageId, scope.stageId) : undefined,
+    scope.readableOnly
+      ? and(
+          eq(stages.status, "published"),
+          eq(stages.format, 2),
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(enrollments)
+              .where(
+                and(
+                  eq(enrollments.stageId, stages.id),
+                  eq(enrollments.tenantId, scope.tenantId),
+                  eq(enrollments.userId, scope.userId),
+                  inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+                ),
+              ),
+          ),
+        )
+      : undefined,
   );
   const meta = {
     taskId: tasks.id,

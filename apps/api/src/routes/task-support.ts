@@ -32,7 +32,14 @@ taskSupportRoute.get("/api/task-support", async (c) => {
       // 課題一覧 (`/api/tasks/for-stage`) と同じく、受講していないステージの課題名は出さない。
       throw new ApiError("task stage not found", 404);
     }
-    const records = await loadTaskSupport(db, { tenantId: caller.tenantId, userId, stageId });
+    // 本人には今読めるステージの課題だけを返す (ステージを省略しても、受講をやめた・
+    // 非公開になったステージの課題名を出さない)。講師・管理者はテナントの範囲で見る。
+    const records = await loadTaskSupport(db, {
+      tenantId: caller.tenantId,
+      userId,
+      stageId,
+      readableOnly: userId === caller.id,
+    });
     return c.json({ tasks: records });
   } catch (err) {
     return errorResponse(c, err);

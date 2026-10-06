@@ -4,14 +4,14 @@
  * 見る合図は次の 3 つ。ヒントを最後まで開く (#36) と、人に回る提出が続く (#33) は後で足す。
  * - 同じ課題で手元の確認の失敗が続く (`task_local_runs`)
  * - 数日進まない (学習の記録が平日 3 日ない)
- * - 確認 B が再提出・不合格になる
+ * - 確認 B が再提出・不合格になる (同じ課題の後の試行で合格していれば除く)
  *
  * 知らせすぎないよう、通知 ID を出来事ごとに決めて同じ出来事を 2 度送らない。
  * 手元の失敗は、さらに受講者 1 人につき 1 日 1 通にまとめる。
  * 送った出来事は ID を主キーで引いて先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 
-import { and, asc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNull, lte, notExists, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { addStudyDays, studyDateWeekday, toStudyDate } from "@stella/shared/study/activity";
 import type { Db } from "../db/client.js";
@@ -21,7 +21,6 @@ import {
   profiles,
   submissions,
   taskLocalRuns,
-  taskProgress,
   tasks,
 } from "../db/schema.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
@@ -234,6 +233,7 @@ async function notifyIdle(db: Db, pairs: Pair[], today: string) {
 }
 
 async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
+  const later = alias(submissions, "later");
   const rows = await db
     .select({
       id: submissions.id,
@@ -250,8 +250,23 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
         eq(submissions.taskKind, "assessment-b"),
         gte(submissions.reviewedAt, new Date(now.getTime() - ASSESSMENT_B_WINDOW_MS)),
         inArray(submissions.verdict, ["resubmit", "fail"]),
-        // 後の試行で合格していれば知らせない。
-        sql`not exists (select 1 from ${taskProgress} where ${taskProgress.userId} = ${submissions.studentId} and ${taskProgress.taskId} = ${submissions.taskId} and ${taskProgress.status} in ('passed', 'ai-passed'))`,
+        // 同じ課題の後の試行で合格していれば知らせない。課題の進捗 (task_progress) は
+        // 一度でも合格すると合格のまま残るので、合格した後に落ちた (後退した) ことを見落とす。
+        // 試行の順は提出の保存がロックの中で振る attempt で決める (レビューの確定と同じ順)。
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(later)
+            .where(
+              and(
+                eq(later.tenantId, submissions.tenantId),
+                eq(later.studentId, submissions.studentId),
+                eq(later.taskId, submissions.taskId),
+                eq(later.verdict, "pass"),
+                gt(later.attempt, submissions.attempt),
+              ),
+            ),
+        ),
       ),
     );
   const candidates = rows.flatMap((row) => {

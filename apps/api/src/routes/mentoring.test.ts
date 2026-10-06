@@ -404,6 +404,31 @@ describe("支援の記録 (GET /api/task-support)", () => {
     expect(records.map((r) => r.taskId)).toEqual(["practice"]);
     expect((await get("/api/task-support?userId=learner", "outsider")).status).toBe(404);
   });
+
+  it("ステージを省略しても、本人には今読めるステージの課題だけを返す", async () => {
+    await seedSupport();
+    const mine = async () =>
+      (await json<{ tasks: TaskSupportRecord[] }>(await get("/api/task-support", "learner"))).tasks;
+    expect((await mine()).map((r) => r.taskId)).toEqual(["practice"]);
+    // 受講が期限切れになった・ステージが非公開になったら、課題名ごと出さない。
+    await db
+      .update(enrollments)
+      .set({ status: "expired" })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await mine()).toEqual([]);
+    await db
+      .update(enrollments)
+      .set({ status: "completed" })
+      .where(eq(enrollments.userId, "learner"));
+    expect((await mine()).map((r) => r.taskId)).toEqual(["practice"]);
+    await db.update(stages).set({ status: "draft" }).where(eq(stages.id, "stage"));
+    expect(await mine()).toEqual([]);
+    // 講師はテナントの範囲で見る。
+    const teacher = await json<{ tasks: TaskSupportRecord[] }>(
+      await get("/api/task-support?userId=learner", "teacher"),
+    );
+    expect(teacher.tasks.map((r) => r.taskId)).toEqual(["practice"]);
+  });
 });
 
 describe("支援の記録を習得の水準に反映する", () => {
@@ -476,6 +501,7 @@ describe("支援の記録を習得の水準に反映する", () => {
 describe("課題の AI チャット", () => {
   async function* events() {
     yield { type: "text" as const, delta: "考え方は" };
+    yield { type: "text" as const, delta: "次の 1 歩から" };
     yield { type: "done" as const };
   }
   const body = (taskId: string) => ({
@@ -493,6 +519,33 @@ describe("課題の AI チャット", () => {
     const system = streamChat.mock.calls[0]?.[0]?.system as string;
     expect(system).toContain("課題1");
     expect(system).not.toContain("書き換えた題名");
+  });
+
+  it("応答が届く前に失敗した相談は記録しない", async () => {
+    streamChat.mockImplementation(async function* () {
+      yield { type: "error" as const, message: "upstream failed" };
+    });
+    const failed = await post("/api/chat", body("practice"), "learner");
+    expect(await failed.text()).toContain("upstream failed");
+    streamChat.mockImplementation(async function* () {
+      yield { type: "text" as const, delta: "" };
+      throw new Error("timeout");
+    });
+    await (await post("/api/chat", body("practice"), "learner")).text();
+    expect(await db.select().from(taskSupportEvents)).toEqual([]);
+  });
+
+  it("記録に失敗しても応答は止めない", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    streamChat.mockImplementation(() => events());
+    database.sqlite.exec("drop table task_support_events");
+    const res = await post("/api/chat", body("practice"), "learner");
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain("次の 1 歩から");
+    expect(text).toContain('"done"');
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
   });
 
   it("受講していない課題の相談は 404 で、記録もしない", async () => {
@@ -582,10 +635,9 @@ describe("つまずきの検知 (cron)", () => {
     expect(sent[0]?.payload).toMatchObject({ signal: "idle", last_active: "2026-10-08" });
   });
 
-  it("確認Bの再提出・不合格を 1 度だけ知らせる。後で合格していれば知らせない", async () => {
-    await keepActive();
-    await db.insert(submissions).values({
-      id: "b-fail",
+  const bAttempt = (id: string, attempt: number, verdict: "pass" | "resubmit" | "fail") =>
+    db.insert(submissions).values({
+      id,
       tenantId: "ses",
       studentId: "learner",
       taskId: "B",
@@ -595,20 +647,58 @@ describe("つまずきの検知 (cron)", () => {
       stageTitle: "開発環境",
       assignmentTitle: "確認B",
       code: "",
-      verdict: "resubmit",
-      status: "resubmit",
-      reviewedAt: new Date(now.getTime() - HOUR),
+      attempt,
+      verdict,
+      status: verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit",
+      submittedAt: new Date(now.getTime() - (5 - attempt) * HOUR),
+      reviewedAt: new Date(now.getTime() - (4 - attempt) * HOUR),
     });
-    await notifyStumbles(db, now);
-    await notifyStumbles(db, now);
-    expect((await stumbles()).map((n) => n.payload.signal)).toEqual(["assessment-b"]);
 
-    await db.delete(notifications);
+  it("確認Bの再提出・不合格を 1 度だけ知らせる", async () => {
+    await keepActive();
+    await bAttempt("b-fail", 1, "resubmit");
+    await notifyStumbles(db, now);
+    await notifyStumbles(db, now);
+    const sent = await stumbles();
+    expect(sent.map((n) => n.payload)).toMatchObject([
+      { signal: "assessment-b", submission_id: "b-fail" },
+    ]);
+  });
+
+  it("落ちた後の試行で合格していれば知らせない", async () => {
+    await keepActive();
+    await bAttempt("b-fail", 1, "fail");
+    await bAttempt("b-pass", 2, "pass");
     await db
       .insert(taskProgress)
       .values({ userId: "learner", taskId: "B", contentHash: HASH, status: "passed" });
     await notifyStumbles(db, now);
     expect(await stumbles()).toEqual([]);
+  });
+
+  it("後の合格が再提出に訂正されていれば、前の不合格も知らせる", async () => {
+    await keepActive();
+    await bAttempt("b-fail", 1, "fail");
+    await bAttempt("b-corrected", 2, "resubmit");
+    await notifyStumbles(db, now);
+    expect((await stumbles()).map((n) => n.payload.submission_id).sort()).toEqual([
+      "b-corrected",
+      "b-fail",
+    ]);
+  });
+
+  it("合格した後の試行で落ちたら知らせる (課題の進捗が合格のままでも見落とさない)", async () => {
+    await keepActive();
+    await bAttempt("b-pass", 1, "pass");
+    await bAttempt("b-regress", 2, "resubmit");
+    // 合格がある限り、課題の進捗は合格のまま残る (reviewTaskSubmission と同じ)。
+    await db
+      .insert(taskProgress)
+      .values({ userId: "learner", taskId: "B", contentHash: HASH, status: "passed" });
+    await notifyStumbles(db, now);
+    expect((await stumbles()).map((n) => n.payload)).toMatchObject([
+      { signal: "assessment-b", submission_id: "b-regress" },
+    ]);
   });
 
   it("担当のない受講者、無効な講師、別テナントの講師には知らせない", async () => {

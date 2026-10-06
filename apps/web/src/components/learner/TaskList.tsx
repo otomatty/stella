@@ -27,6 +27,8 @@ export function TaskList({
     const { signal } = controller;
     setLoaded(false);
     setTasks([]);
+    // 前に読んだステージ・時点の記録を、読み直している間に出さない。
+    setSupport(new Map());
     setError(null);
     // 支援の記録は補助の表示。取れなくても課題の一覧は出す。
     void apiFetch<{ tasks: TaskSupportRecord[] }>(
