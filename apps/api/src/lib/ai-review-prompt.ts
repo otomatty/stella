@@ -22,8 +22,11 @@ import type { RunResult } from "@stella/shared/tasks/run-result";
 import type { DebuggingRecord, SupportEvent } from "@stella/shared/tasks/submission";
 import { SUPPORT_LABELS } from "@stella/shared/tasks/submission-support";
 
-/** 指示 (下の `INSTRUCTIONS`) と入力の組み立てを変えたら上げる。レビュー結果ごとに記録する。 */
-export const AI_REVIEW_PROMPT_VERSION = "2026-10-06.1";
+/**
+ * 指示 (下の `INSTRUCTIONS`) と入力の組み立てを変えたら上げる。レビュー結果ごとに記録する。
+ * 本番が使う版。版は登録簿 (`AI_REVIEW_PROMPTS`) に載っていなければならない。
+ */
+export const AI_REVIEW_PROMPT_VERSION: AiReviewPromptVersion = "2026-10-06.1";
 
 /** 提出ごとに変わる部分 (課題文・解答例・提出) の上限。超えたら AI に渡さず人に回す。 */
 export const MAX_REVIEW_INPUT_CHARS = 150_000;
@@ -110,6 +113,24 @@ ${Object.entries(KIND_REVIEW_FOCUS)
   .map(([kind, focus]) => `- ${TASK_KIND_LABELS[kind as TaskKind]}: ${focus}`)
   .join("\n")}`;
 
+/**
+ * 指示の版の登録簿 (版の名前 → 指示の本文)。本番は `AI_REVIEW_PROMPT_VERSION` の版を使う。
+ *
+ * 候補の指示は、版の名前 (本番が `ai_reviews.prompt_version` に記録するのと同じ語彙) を付けて
+ * ここに並べ、`ai-review:replay` で人がレビューした提出に当て直して本番の版と比べる (07 §6.8)。
+ * 採用するときは `AI_REVIEW_PROMPT_VERSION` をその版に替える。前の版は消さずに残してよい。
+ * 登録簿が持つのは指示の本文だけで、入力の組み立て (並び・区切り・提出の書き方) はどの版も
+ * 今のコードを使う。
+ */
+export const AI_REVIEW_PROMPTS = {
+  "2026-10-06.1": { instructions: INSTRUCTIONS },
+} as const satisfies Record<string, { instructions: string }>;
+export type AiReviewPromptVersion = keyof typeof AI_REVIEW_PROMPTS;
+
+export function isAiReviewPromptVersion(version: string): version is AiReviewPromptVersion {
+  return Object.hasOwn(AI_REVIEW_PROMPTS, version);
+}
+
 function renderRules(rules: CodingRuleText[]): string {
   return rules
     .map((r) =>
@@ -169,11 +190,15 @@ export interface BuiltReviewPrompt {
   variableChars: number;
 }
 
-export function buildAiReviewPrompt(material: ReviewMaterial): BuiltReviewPrompt {
+/** 入力を組み立てる。指示の版を渡さなければ本番の版 (`AI_REVIEW_PROMPT_VERSION`)。 */
+export function buildAiReviewPrompt(
+  material: ReviewMaterial,
+  version: AiReviewPromptVersion = AI_REVIEW_PROMPT_VERSION,
+): BuiltReviewPrompt {
   const rules = renderRuleBlocks(material);
   const cache = { type: "ephemeral" as const };
   const system: TextBlockParam[] = [
-    { type: "text", text: INSTRUCTIONS },
+    { type: "text", text: AI_REVIEW_PROMPTS[version].instructions },
     { type: "text", text: rules.common, cache_control: cache },
     { type: "text", text: rules.course, cache_control: cache },
   ];
