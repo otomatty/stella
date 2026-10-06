@@ -122,8 +122,18 @@ function readableTasksOf(db: Db, caller: Caller) {
 }
 type ReadableTask = Awaited<ReturnType<typeof readableTasksOf>>[number];
 
-/** その課題の最初の合格の提出が支援付きか。合格の提出が見つからなければ自力として扱う。 */
-async function firstPassAssisted(db: Db, scope: Scope, taskId: string): Promise<boolean> {
+/**
+ * 合格 (`task_progress` の今の合格) の最初の提出が支援付きか。`task_progress.passed_at` は版が
+ * 変わったあとの合格ではその版の最初の合格日になるので、提出も進捗と同じ版 (`contentHash`) の
+ * 合格に絞り、起点の日時と同じ合格で判定する (旧版の合格の支援を持ち込まない)。合格の提出が
+ * 見つからなければ自力として扱う。
+ */
+async function firstPassAssisted(
+  db: Db,
+  scope: Scope,
+  taskId: string,
+  contentHash: string | null,
+): Promise<boolean> {
   const [pass] = await db
     .select({
       tenantId: submissions.tenantId,
@@ -138,6 +148,7 @@ async function firstPassAssisted(db: Db, scope: Scope, taskId: string): Promise<
         eq(submissions.studentId, scope.userId),
         eq(submissions.taskId, taskId),
         eq(submissions.verdict, "pass"),
+        contentHash === null ? undefined : eq(submissions.taskContentHash, contentHash),
       ),
     )
     .orderBy(asc(submissions.submittedAt))
@@ -147,16 +158,37 @@ async function firstPassAssisted(db: Db, scope: Scope, taskId: string): Promise<
 }
 
 /**
+ * 受講者が今読めるステージの、パターンごとの練習 (類題でも確認Bでもない課題) と、通常の確認Bが
+ * あるパターン。練習が 1 つも無いパターン (教材から外れた・受講をやめた) は、新しい出題を積まず、
+ * 積んであっても出さない (出した類題はそのまま解ける)。
+ */
+function practiceOf(readable: ReadableTask[]) {
+  const practiceByPattern = new Map<string, ReadableTask[]>();
+  const regularB = new Set<string>();
+  for (const task of readable) {
+    if (task.variantOf !== null) continue;
+    if (task.kind === "assessment-b") {
+      regularB.add(task.pattern);
+      continue;
+    }
+    practiceByPattern.set(task.pattern, [...(practiceByPattern.get(task.pattern) ?? []), task]);
+  }
+  return { practiceByPattern, regularB };
+}
+
+/**
  * パターンの起点: 練習 (類題でも確認Bでもない、そのパターンの課題) にすべて合格した時点。
  * 確認Bは起点のあとに解く後日の確認なので含めない。合格は課題一覧と同じく、版が変わっても合格。
  */
-function completionOf(practice: ReadableTask[]): { at: number; lastTaskId: string } | null {
+function completionOf(
+  practice: ReadableTask[],
+): { at: number; lastTaskId: string; lastHash: string | null } | null {
   if (practice.length === 0) return null;
-  let last: { at: number; lastTaskId: string } | null = null;
+  let last: { at: number; lastTaskId: string; lastHash: string | null } | null = null;
   for (const task of practice) {
     if (!task.status || !PASSED.includes(task.status) || !task.passedAt) return null;
     const at = task.passedAt.getTime();
-    if (!last || at > last.at) last = { at, lastTaskId: task.id };
+    if (!last || at > last.at) last = { at, lastTaskId: task.id, lastHash: task.progressHash };
   }
   return last;
 }
@@ -192,6 +224,7 @@ async function syncIssued(db: Db, scope: Scope, rows: ReviewRow[], now: Date) {
       id: tasks.id,
       active: tasks.active,
       status: taskProgress.status,
+      progressHash: taskProgress.contentHash,
       passedAt: taskProgress.passedAt,
     })
     .from(tasks)
@@ -215,7 +248,7 @@ async function syncIssued(db: Db, scope: Scope, rows: ReviewRow[], now: Date) {
       await db.update(variantReviews).set({ status: "withdrawn", updatedAt: now }).where(where);
       changed = true;
     } else if (state.status && PASSED.includes(state.status) && state.passedAt) {
-      const assisted = await firstPassAssisted(db, scope, state.id);
+      const assisted = await firstPassAssisted(db, scope, state.id, state.progressHash);
       await db
         .update(variantReviews)
         .set({
@@ -241,18 +274,11 @@ async function planNext(
 ) {
   const byPattern = new Map<string, ReviewRow[]>();
   for (const row of rows) byPattern.set(row.pattern, [...(byPattern.get(row.pattern) ?? []), row]);
-  const practiceByPattern = new Map<string, ReadableTask[]>();
-  const regularB = new Set<string>();
-  for (const task of readable) {
-    if (task.variantOf !== null) continue;
-    if (task.kind === "assessment-b") {
-      regularB.add(task.pattern);
-      continue;
-    }
-    practiceByPattern.set(task.pattern, [...(practiceByPattern.get(task.pattern) ?? []), task]);
-  }
+  const { practiceByPattern, regularB } = practiceOf(readable);
   let planned = false;
   for (const [pattern, records] of byPattern) {
+    // 読める練習が無くなったパターンは新しい段を積まない。
+    if (!practiceByPattern.has(pattern)) continue;
     const slot = nextVariantSlot(
       records.map((r) => ({
         step: r.step,
@@ -281,7 +307,7 @@ async function planNext(
     judged += 1;
     const completion: PatternCompletion = {
       at: reached.at,
-      assisted: await firstPassAssisted(db, scope, reached.lastTaskId),
+      assisted: await firstPassAssisted(db, scope, reached.lastTaskId, reached.lastHash),
     };
     const slot = nextVariantSlot([], completion, {
       hasRegularAssessmentB: regularB.has(pattern),
@@ -310,8 +336,14 @@ async function issueDue(
   // 1 日 1 問。教材から外れて取り下げた出題は数えない (同じ日に出し直せる)。
   if (rows.some((r) => r.status !== "withdrawn" && r.issuedAt && toStudyDate(r.issuedAt) === today))
     return;
+  const { practiceByPattern } = practiceOf(readable);
   const due = rows
-    .filter((r) => (r.status === "scheduled" || r.status === "out-of-stock") && r.dueOn <= today)
+    .filter(
+      (r) =>
+        (r.status === "scheduled" || r.status === "out-of-stock") &&
+        r.dueOn <= today &&
+        practiceByPattern.has(r.pattern),
+    )
     .sort(
       (a, b) =>
         a.dueOn.localeCompare(b.dueOn) || a.step - b.step || a.pattern.localeCompare(b.pattern),
@@ -403,7 +435,8 @@ export async function loadTodayVariant(
  * 時間を空けた類題の自力の合格で「時間を空けて確認」にできるスキル (#39)。出題の目的が時間を
  * 空けた類題 (3 日後・1 週間後・3 週間後) で、提出が出題のあとのときだけ。確認Bの定着
  * (`retentionBasis`) と同じく、出題より前に同じパターンの課題に支援なしで合格した証拠がある
- * スキルに限る (後日の別問題でも適用できた、03 §7)。当たらなければ null。
+ * スキルに限る (後日の別問題でも適用できた、03 §7)。証拠は出題の時点で確定していたもの
+ * (証拠の作成も出題より前) に限る。当たらなければ null。
  */
 export async function variantRetentionSkills(
   db: Db,
@@ -437,7 +470,9 @@ export async function variantRetentionSkills(
         eq(submissions.studentId, row.studentId),
         eq(tasks.pattern, row.pattern),
         ne(submissions.taskId, row.taskId),
+        // 出題の時点で確定していた証拠だけ。出題より前の提出でも、判定が出題のあとなら使わない。
         lt(submissions.submittedAt, review.issuedAt),
+        lt(skillEvidence.createdAt, review.issuedAt),
       ),
     );
   return new Set(evidence.map((e) => e.skillId));

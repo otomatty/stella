@@ -439,11 +439,11 @@ describe("類題の出題 (#39)", () => {
       code: "",
       submittedAt: noonOf("2026-10-01"),
     });
+    // 判定 (証拠を作る時刻) も出題より前にする。
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(noonOf("2026-10-01"));
     await reviewTaskSubmission(db, teacher, "parent-pass", "pass", "ok");
-    await db
-      .update(taskProgress)
-      .set({ passedAt: noonOf("2026-10-01") })
-      .where(eq(taskProgress.taskId, PARENT));
+    vi.setSystemTime(noonOf("2026-10-04"));
     const issued = await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04"));
     expect(issued?.purpose).toBe("day3");
     const [review] = await reviewsOf("learner");
@@ -463,6 +463,7 @@ describe("類題の出題 (#39)", () => {
       code: "",
       submittedAt,
     });
+    vi.setSystemTime(new Date(submittedAt.getTime() + 60_000));
     await reviewTaskSubmission(db, teacher, "variant-pass", "pass", "ok");
     const [evidence] = await db
       .select()
@@ -486,6 +487,202 @@ describe("類題の出題 (#39)", () => {
     expect((await reviewsOf("learner")).map((r) => [r.purpose, r.dueOn])).toEqual([
       ["day3", "2026-10-04"],
       ["week3", "2026-10-22"],
+    ]);
+  });
+
+  it("出題のあとに確定した証拠は「時間を空けて確認」の根拠にしない", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // 10/1 に練習を合格 (証拠なし)。同じ日に出し直した提出は講師の判定待ちのまま。
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    await db.insert(submissions).values({
+      id: "late-review",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: PARENT,
+      taskContentHash: "a".repeat(64),
+      taskKind: "basic",
+      submissionMode: "submit",
+      supportLog: [],
+      assessedSkills: ["html"],
+      stageTitle: "開発環境",
+      assignmentTitle: "課題",
+      code: "",
+      attempt: 2,
+      submittedAt: new Date(noonOf("2026-10-01").getTime() + 3_600_000),
+    });
+    // 10/4 に類題を出題したあと、10/5 に講師が先の提出を合格にする (証拠は 10/5 にできる)。
+    vi.setSystemTime(noonOf("2026-10-04"));
+    const issued = await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04"));
+    expect(issued?.purpose).toBe("day3");
+    vi.setSystemTime(noonOf("2026-10-05"));
+    await reviewTaskSubmission(db, teacher, "late-review", "pass", "ok");
+    // 10/6 に類題を自力で合格しても、出題の時点で無かった証拠では「時間を空けて確認」にしない。
+    vi.setSystemTime(noonOf("2026-10-06"));
+    await db.insert(submissions).values({
+      id: "variant-pass",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: issued?.taskId ?? "",
+      taskContentHash: "a".repeat(64),
+      taskKind: "independent",
+      submissionMode: "submit",
+      supportLog: [],
+      assessedSkills: ["html"],
+      stageTitle: "開発環境",
+      assignmentTitle: "類題",
+      code: "",
+      submittedAt: noonOf("2026-10-06"),
+    });
+    await reviewTaskSubmission(db, teacher, "variant-pass", "pass", "ok");
+    const [evidence] = await db
+      .select()
+      .from(skillEvidence)
+      .where(eq(skillEvidence.submissionId, "variant-pass"));
+    expect(evidence).toMatchObject({ skillId: "html", level: "independent", assisted: false });
+  });
+
+  it("起点の支援は今の版の合格 (passed_at と同じ合格) で判定する", async () => {
+    // 旧版を 10/1 にヒント付きで合格し、改訂版を 10/10 に自力で合格した。
+    await db.batch([
+      db.insert(submissions).values([
+        {
+          id: "old-version",
+          tenantId: "ses",
+          studentId: "learner",
+          taskId: PARENT,
+          taskContentHash: "b".repeat(64),
+          taskKind: "basic",
+          submissionMode: "submit",
+          supportLog: [{ kind: "hint", at: noonOf("2026-10-01").toISOString(), detail: "ヒント" }],
+          assessedSkills: ["html"],
+          stageTitle: "開発環境",
+          assignmentTitle: "課題",
+          code: "",
+          verdict: "pass",
+          status: "passed",
+          attempt: 1,
+          submittedAt: noonOf("2026-10-01"),
+        },
+        {
+          id: "new-version",
+          tenantId: "ses",
+          studentId: "learner",
+          taskId: PARENT,
+          taskContentHash: "a".repeat(64),
+          taskKind: "basic",
+          submissionMode: "submit",
+          supportLog: [],
+          assessedSkills: ["html"],
+          stageTitle: "開発環境",
+          assignmentTitle: "課題",
+          code: "",
+          verdict: "pass",
+          status: "passed",
+          attempt: 2,
+          submittedAt: noonOf("2026-10-10"),
+        },
+      ]),
+      db.insert(taskProgress).values({
+        userId: "learner",
+        taskId: PARENT,
+        status: "passed",
+        contentHash: "a".repeat(64),
+        updatedAt: noonOf("2026-10-10"),
+        passedAt: noonOf("2026-10-10"),
+      }),
+    ]);
+    await db
+      .update(taskProgress)
+      .set({ passedAt: noonOf("2026-10-10") })
+      .where(eq(taskProgress.taskId, PARENT));
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-10"));
+    expect(await reviewsOf("learner")).toMatchObject([
+      { step: 1, purpose: "day3", dueOn: "2026-10-13", status: "scheduled" },
+    ]);
+  });
+
+  it("出した類題の支援も、今の版の合格で判定する", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    const issued = await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04"));
+    const taskId = issued?.taskId ?? "";
+    // 類題の旧版をヒント付きで合格したあと、改訂版を自力で合格した。
+    await db.batch([
+      db.insert(submissions).values([
+        {
+          id: "variant-old",
+          tenantId: "ses",
+          studentId: "learner",
+          taskId,
+          taskContentHash: "b".repeat(64),
+          taskKind: "independent",
+          submissionMode: "submit",
+          supportLog: [{ kind: "hint", at: noonOf("2026-10-04").toISOString(), detail: "ヒント" }],
+          assessedSkills: ["html"],
+          stageTitle: "開発環境",
+          assignmentTitle: "類題",
+          code: "",
+          verdict: "pass",
+          status: "passed",
+          attempt: 1,
+          submittedAt: noonOf("2026-10-04"),
+        },
+        {
+          id: "variant-new",
+          tenantId: "ses",
+          studentId: "learner",
+          taskId,
+          taskContentHash: "a".repeat(64),
+          taskKind: "independent",
+          submissionMode: "submit",
+          supportLog: [],
+          assessedSkills: ["html"],
+          stageTitle: "開発環境",
+          assignmentTitle: "類題",
+          code: "",
+          verdict: "pass",
+          status: "passed",
+          attempt: 2,
+          submittedAt: noonOf("2026-10-05"),
+        },
+      ]),
+      db.insert(taskProgress).values({
+        userId: "learner",
+        taskId,
+        status: "passed",
+        contentHash: "a".repeat(64),
+        updatedAt: noonOf("2026-10-05"),
+        passedAt: noonOf("2026-10-05"),
+      }),
+    ]);
+    await db
+      .update(taskProgress)
+      .set({ passedAt: noonOf("2026-10-05") })
+      .where(eq(taskProgress.taskId, taskId));
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-06"));
+    expect(
+      (await reviewsOf("learner")).map((r) => [r.purpose, r.status, r.passedAssisted]),
+    ).toEqual([
+      ["day3", "passed", false],
+      ["week1", "scheduled", null],
+    ]);
+  });
+
+  it("読めるパターンの練習が無くなったら新しい段を積まず、出した類題はそのまま解ける", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    const issued = await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04"));
+    const taskId = issued?.taskId ?? "";
+    // 練習の課題が教材から外れた (seed が無効にした)。出した類題は残っている。
+    await db.update(tasks).set({ active: false }).where(eq(tasks.id, PARENT));
+    expect(await loadTodayVariant(db, caller("learner"), noonOf("2026-10-05"))).toMatchObject({
+      taskId,
+      purpose: "day3",
+    });
+    expect((await bundleOf(taskId)).status).toBe(200);
+    // 出した類題に合格しても、次の段 (1 週間後) は積まない。
+    await recordPass("learner", taskId, noonOf("2026-10-05"), false);
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-20"));
+    expect((await reviewsOf("learner")).map((r) => [r.purpose, r.status])).toEqual([
+      ["day3", "passed"],
     ]);
   });
 });
