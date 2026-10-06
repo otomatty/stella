@@ -654,11 +654,19 @@ export const lessons = sqliteTable(
     assignmentId: text("assignment_id"),
     totalPages: integer("total_pages"),
     totalSec: integer("total_sec"),
+    /**
+     * ログインなしで読めるレッスン (Issue #41)。教材の `unit.json` に `"public": true` を書いた
+     * 単元のスライドとまとめに seed が入れ、公開 API (`routes/public-content.ts`) だけが読む。
+     * 教材が正本で seed が毎回書き直す。CMS は書かない (作ったレッスンは既定の false のまま)。
+     */
+    public: integer("public", { mode: "boolean" }).notNull().default(false),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
   (t) => ({
     sectionIdx: index("lessons_section_id_idx").on(t.sectionId),
+    // 公開 API は匿名で叩かれるので、印のある行だけを引く (表を全走査させない)。
+    publicIdx: index("lessons_public_idx").on(t.sectionId).where(sql`public = 1`),
   }),
 );
 

@@ -8,7 +8,6 @@ import {
   certificates,
   enrollments,
   lessonProgress,
-  lessons,
   sections,
   stages,
   studyActivity,
@@ -50,10 +49,11 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
     await db.batch([
       db.insert(stages).values({ id: "legacy", tenantId: "ses", slug: "legacy", title: "旧講座" }),
       db.insert(sections).values({ id: "unit", stageId: "legacy", title: "演習" }),
-      db.insert(lessons).values([
-        { id: "code", sectionId: "unit", type: "code", title: "演習", assignmentId: "exercise" },
-        { id: "text", sectionId: "unit", type: "text", title: "説明" },
-      ]),
+    ]);
+    // lessons も後の移行で列が増える (0056 の public)。この時点の列だけで入れる。
+    database.sqlite.exec(`insert into lessons (id, section_id, type, title, assignment_id, created_at, updated_at) values
+      ('code', 'unit', 'code', '演習', 'exercise', 1, 1), ('text', 'unit', 'text', '説明', null, 1, 1)`);
+    await db.batch([
       db.insert(enrollments).values({
         tenantId: "ses",
         userId: "learner",

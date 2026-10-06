@@ -10,7 +10,17 @@
  * manifest 側で講師ノート除去済み・ `\n\n---\n\n` 連結済みなので、 ここは割るだけで足りる。
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -254,15 +264,113 @@ interface Props {
   onComplete?: () => void;
 }
 
-export function MarkdownSlides({ lessonId, markdown, header = "", onComplete }: Props) {
-  const slides = useMemo(
-    () =>
-      markdown
-        .split(/\n---\n/)
-        .map((s) => s.trim())
-        .filter(Boolean),
-    [markdown],
+/** slides.md の本文を 1 枚ずつに割る (manifest が `\n\n---\n\n` で連結済み)。 */
+function splitMarkdownSlides(markdown: string): string[] {
+  return markdown
+    .split(/\n---\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const NoSlides = () => (
+  <div className="prose-lms">
+    <p className="text-ink-3">このレッスンにはスライドが登録されていません。</p>
+  </div>
+);
+
+/**
+ * スライドの表示部分 (キャンバス・矢印キー・前へ / 次へ)。進捗の記録は持たず、行の右に
+ * 並べるもの (`children`) と下に出すもの (`footer`) を呼び出し側が決める。
+ */
+function SlideDeck({
+  slides,
+  header,
+  page,
+  setPage,
+  children,
+  footer,
+}: {
+  slides: string[];
+  header: string;
+  page: number;
+  setPage: Dispatch<SetStateAction<number>>;
+  children?: ReactNode;
+  footer?: ReactNode;
+}) {
+  const total = slides.length;
+
+  const go = useCallback(
+    (next: number) => {
+      setPage((p) => (total > 0 ? Math.min(Math.max(next, 1), total) : p));
+    },
+    [total, setPage],
   );
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
+      switch (e.key) {
+        case "ArrowLeft":
+        case "PageUp":
+          e.preventDefault();
+          setPage((p) => Math.max(1, p - 1));
+          break;
+        case "ArrowRight":
+        case "PageDown":
+          e.preventDefault();
+          setPage((p) => Math.min(total, p + 1));
+          break;
+        case "Home":
+          e.preventDefault();
+          setPage(1);
+          break;
+        case "End":
+          e.preventDefault();
+          setPage(total);
+          break;
+      }
+    },
+    [total, setPage],
+  );
+
+  return (
+    <div>
+      <div
+        role="application"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: 矢印キー操作のためコンテナがフォーカスを持つ
+        tabIndex={0}
+        aria-label={`スライド ${page} / ${total}`}
+        className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+        onKeyDown={onKeyDown}
+      >
+        <SlideCanvas key={page} source={slides[page - 1] ?? ""} header={header} pageNo={page} />
+      </div>
+
+      <div className="flex items-center gap-3 mt-4 flex-wrap">
+        <Button variant="outline" onClick={() => go(page - 1)} disabled={page <= 1}>
+          <ChevronLeft size={14} aria-hidden="true" />
+          前へ
+        </Button>
+        <span
+          className="text-[12.5px] text-ink-3 tabular-nums min-w-[56px] text-center"
+          aria-live="polite"
+        >
+          {page} / {total}
+        </span>
+        <Button variant="outline" onClick={() => go(page + 1)} disabled={page >= total}>
+          次へ
+          <ChevronRight size={14} aria-hidden="true" />
+        </Button>
+        {children}
+      </div>
+      {footer}
+    </div>
+  );
+}
+
+export function MarkdownSlides({ lessonId, markdown, header = "", onComplete }: Props) {
+  const slides = useMemo(() => splitMarkdownSlides(markdown), [markdown]);
   const total = slides.length;
 
   const { entry, recordPage, markComplete } = useLessonProgress(lessonId);
@@ -295,101 +403,57 @@ export function MarkdownSlides({ lessonId, markdown, header = "", onComplete }: 
     }
   }, [entry?.completed, onComplete]);
 
-  const go = useCallback(
-    (next: number) => {
-      setPage((p) => (total > 0 ? Math.min(Math.max(next, 1), total) : p));
-    },
-    [total],
-  );
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
-      switch (e.key) {
-        case "ArrowLeft":
-        case "PageUp":
-          e.preventDefault();
-          setPage((p) => Math.max(1, p - 1));
-          break;
-        case "ArrowRight":
-        case "PageDown":
-          e.preventDefault();
-          setPage((p) => Math.min(total, p + 1));
-          break;
-        case "Home":
-          e.preventDefault();
-          setPage(1);
-          break;
-        case "End":
-          e.preventDefault();
-          setPage(total);
-          break;
-      }
-    },
-    [total],
-  );
-
-  if (total === 0) {
-    return (
-      <div className="prose-lms">
-        <p className="text-ink-3">このレッスンにはスライドが登録されていません。</p>
-      </div>
-    );
-  }
+  if (total === 0) return <NoSlides />;
 
   const isCompleted = entry?.completed === true;
   const viewedCount = entry?.viewedPages?.length ?? 0;
   const progressPct = Math.round((viewedCount / total) * 100);
 
   return (
-    <div>
-      <div
-        role="application"
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: 矢印キー操作のためコンテナがフォーカスを持つ
-        tabIndex={0}
-        aria-label={`スライド ${page} / ${total}`}
-        className="rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
-        onKeyDown={onKeyDown}
-      >
-        <SlideCanvas key={page} source={slides[page - 1] ?? ""} header={header} pageNo={page} />
-      </div>
-
-      <div className="flex items-center gap-3 mt-4 flex-wrap">
-        <Button variant="outline" onClick={() => go(page - 1)} disabled={page <= 1}>
-          <ChevronLeft size={14} aria-hidden="true" />
-          前へ
-        </Button>
-        <span
-          className="text-[12.5px] text-ink-3 tabular-nums min-w-[56px] text-center"
-          aria-live="polite"
-        >
-          {page} / {total}
-        </span>
-        <Button variant="outline" onClick={() => go(page + 1)} disabled={page >= total}>
-          次へ
-          <ChevronRight size={14} aria-hidden="true" />
-        </Button>
-        <div className="flex-1 min-w-[100px]">
-          <Progress value={progressPct} tone="brand" />
+    <SlideDeck
+      slides={slides}
+      header={header}
+      page={page}
+      setPage={setPage}
+      footer={
+        <div className="text-[11.5px] text-ink-3 mt-2">
+          閲覧 {viewedCount} / {total} ページ ({progressPct}%)
         </div>
-        {isCompleted ? (
-          <span className="inline-flex items-center gap-1 text-success text-[12px]">
-            <Check size={13} aria-hidden="true" />
-            完了済み
-          </span>
-        ) : (
-          <Button variant="accent" onClick={markComplete}>
-            <Check size={13} aria-hidden="true" />
-            完了にする
-          </Button>
-        )}
+      }
+    >
+      <div className="flex-1 min-w-[100px]">
+        <Progress value={progressPct} tone="brand" />
       </div>
-      <div className="text-[11.5px] text-ink-3 mt-2">
-        閲覧 {viewedCount} / {total} ページ ({progressPct}%)
-      </div>
-    </div>
+      {isCompleted ? (
+        <span className="inline-flex items-center gap-1 text-success text-[12px]">
+          <Check size={13} aria-hidden="true" />
+          完了済み
+        </span>
+      ) : (
+        <Button variant="accent" onClick={markComplete}>
+          <Check size={13} aria-hidden="true" />
+          完了にする
+        </Button>
+      )}
+    </SlideDeck>
   );
+}
+
+/**
+ * 進捗を記録しないスライド。ログインなしで読む公開の導入案内 (`/start`。Issue #41) で使う —
+ * 未ログインの閲覧を、あとでログインした人の進捗に混ぜない。
+ */
+export function PlainMarkdownSlides({
+  markdown,
+  header = "",
+}: {
+  markdown: string;
+  header?: string;
+}) {
+  const slides = useMemo(() => splitMarkdownSlides(markdown), [markdown]);
+  const [page, setPage] = useState(1);
+  if (slides.length === 0) return <NoSlides />;
+  return <SlideDeck slides={slides} header={header} page={page} setPage={setPage} />;
 }
 
 export default MarkdownSlides;

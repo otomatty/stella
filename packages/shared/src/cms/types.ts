@@ -434,6 +434,42 @@ export interface CertificateVerification {
 }
 
 // ---------------------------------------------------------------
+// ログインなしで読める教材 (Issue #41)
+// ---------------------------------------------------------------
+
+/** 公開 API が返すレッスンの種類。スライドとまとめ (本文) だけで、知識問題・課題は返さない。 */
+export type PublicLessonType = "slides" | "text";
+
+/** ログインなしで読めるレッスンの一覧の 1 行 (`GET /api/public/units`)。本文は持たない。 */
+export interface PublicLessonSummary {
+  id: string;
+  title: string;
+  type: PublicLessonType;
+  duration_label: string | null;
+}
+
+/**
+ * ログインなしで読める単元 (教材の `unit.json` に `"public": true`)。ステージは題名だけを返し、
+ * 説明・前提・ほかの単元は返さない。
+ */
+export interface PublicUnit {
+  /** 単元 (セクション) の id */
+  id: string;
+  title: string;
+  stage_title: string;
+  lessons: PublicLessonSummary[];
+}
+
+/** ログインなしで読めるレッスン 1 件 (`GET /api/public/lessons/:id`)。 */
+export interface PublicLesson extends PublicLessonSummary {
+  markdown: string;
+  total_pages: number | null;
+  unit_id: string;
+  unit_title: string;
+  stage_title: string;
+}
+
+// ---------------------------------------------------------------
 // 分析ダッシュボード (Issue #28)
 // ---------------------------------------------------------------
 

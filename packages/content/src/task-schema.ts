@@ -19,6 +19,13 @@ export interface UnitConfig {
   plannedHours: number;
   skills: SkillRefs;
   reuses: string[];
+  /**
+   * ログインなしで読める単元 (Issue #41)。VS Code を入れる前に読む最初の単元 (06 の U00〜U01) に
+   * 付ける。付けた単元のスライドとまとめは、未ログインの Web (`/start`) と公開 API が返す。
+   * 課題 (`tasks/`) を置けず、前提のない catalog の講座にだけ置ける (manifest が検査する)。
+   * 書かない単元は持たない。
+   */
+  public?: boolean;
 }
 export interface TaskDefinition {
   id: string;
@@ -100,6 +107,7 @@ export function parseUnitConfig(raw: unknown): UnitConfig {
     plannedHours: positive(value.plannedHours, "plannedHours"),
     skills: parseSkills(value.skills, "skills"),
     reuses,
+    ...(value.public === undefined ? {} : { public: boolean(value.public, "public") }),
   };
 }
 

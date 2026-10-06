@@ -36,6 +36,7 @@ import { notifyStumbles } from "./lib/stumble-alerts.js";
 import { runMentorMemoCron } from "./lib/mentor-memo.js";
 import { mentorMemosRoute } from "./routes/mentor-memos.js";
 import { notificationsRoute } from "./routes/notifications.js";
+import { publicContentRoute } from "./routes/public-content.js";
 import { quizRoute } from "./routes/quiz.js";
 import { tasksRoute } from "./routes/tasks.js";
 import { taskSupportRoute } from "./routes/task-support.js";
@@ -104,6 +105,8 @@ app.route("/", reportsRoute);
 app.route("/", reviewDeskRoute);
 app.route("/", submissionsRoute);
 app.route("/", supportRoute);
+// ログインなしで読める教材 (Issue #41)。認証付きの経路とは分け、ここだけが印のあるレッスンを返す。
+app.route("/", publicContentRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
 app.route("/", r2MaintenanceRoute);

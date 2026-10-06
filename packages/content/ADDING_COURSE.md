@@ -116,6 +116,21 @@ LMS は7状態と「VS Code で開く」を表示します。課題文のレッ�
 
 WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きい講座は `course.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かない講座は1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
 
+### ログインなしで読める単元
+
+VS Code を入れる前に読む単元 (`dev-env-basics` の U00〜U01) は、`unit.json` に `"public": true` を書くと、ログインなしの Web (`/start`) で読めるようになります。単元ごとに付け、レッスンごとには付けません (U00〜U01 は単元全体が導入前に読む内容のため)。
+
+```json
+{ "plannedHours": 1, "skills": { "uses": [], "assesses": [] }, "reuses": [], "public": true }
+```
+
+- 公開されるのは、その単元のスライドとまとめ (`doc.md`) だけです。知識問題 (`knowledge.md`) はログイン後に解きます。図解は公開の R2 から読めるので、未ログインでも出ます
+- 課題 (`tasks/`) は置けません。課題の配布と提出はログイン後の拡張が行うためです。課題の無い単元は `tasks/` を置かなくて構いません
+- 置けるのは、前提 (`prerequisites`) が無く、`audience` が `catalog` の講座だけです (いまは `dev-env-basics` だけ)。前提のある講座の本文は、スキルツリーの霧やロックの向こうにあるので公開しません
+- 違反は `bun run content:check` が落とします。`"public"` は `true` / `false` だけを受け付けます
+- 印は seed が D1 `lessons.public` に書き、公開 API (`GET /api/public/units`・`GET /api/public/lessons/:id`) だけが読みます。外せば次の seed で公開が止まります。`unit.json` は単元の内容指紋 (`references.json` の `contentHash`) に含まれないので、印を付け外ししても指紋は変わりません
+- 公開するテナントは API の `PUBLIC_CONTENT_TENANT_ID` (`apps/api/wrangler.toml` の `[vars]`、`ses`) です
+
 ## A. 新しい講座を作る（既定）
 
 ### 1. slug を決める

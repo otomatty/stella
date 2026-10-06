@@ -322,6 +322,12 @@ function emitLessonRevision(
   );
 }
 
+/**
+ * レッスンの upsert。`public` (ログインなしで読める印。Issue #41) は教材が正本なので毎回
+ * 書き直す — `unit.json` から `public` を外したら、次の seed で公開 API から消える。
+ * CMS で作ったレッスンは列の既定 (0) のまま公開されない。D1 専用の列なので legacy
+ * Postgres には出さない。
+ */
 function emitLesson(
   tenantId: Tenant["id"],
   stageId: string,
@@ -332,11 +338,11 @@ function emitLesson(
   const id = lessonUuid(tenantId, stageId, lesson.id);
   lines.push(
     [
-      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", created_at, updated_at" : ""})`,
-      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${lesson.videoPath ? `'${esc(lesson.videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, created_at, updated_at" : ""})`,
+      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${lesson.videoPath ? `'${esc(lesson.videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
-      `on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, type = excluded.type, "order" = excluded."order", duration_label = excluded.duration_label, video_path = excluded.video_path, pdf_path = excluded.pdf_path, markdown = excluded.markdown, assignment_id = excluded.assignment_id, total_pages = excluded.total_pages, total_sec = excluded.total_sec${isSqlite ? `, updated_at = ${nowExpr()}` : ""};`,
+      `on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, type = excluded.type, "order" = excluded."order", duration_label = excluded.duration_label, video_path = excluded.video_path, pdf_path = excluded.pdf_path, markdown = excluded.markdown, assignment_id = excluded.assignment_id, total_pages = excluded.total_pages, total_sec = excluded.total_sec${isSqlite ? `, public = excluded.public, updated_at = ${nowExpr()}` : ""};`,
     ].join(" "),
   );
 }

@@ -50,6 +50,11 @@ export interface Lesson {
   totalPages?: number;
   /** 想定総再生秒数 (video) — 進捗バー初期表示用、 実際の duration は loadedmetadata で確定 */
   totalSec?: number;
+  /**
+   * ログインなしで読めるレッスン (Issue #41)。教材の `unit.json` に `"public": true` を書いた
+   * 単元のスライドとまとめに manifest が付け、seed が `lessons.public` に入れる。
+   */
+  public?: boolean;
 }
 
 export interface Section {

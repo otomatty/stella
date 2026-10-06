@@ -123,4 +123,17 @@ export interface Env {
    * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
    */
   SUPPORT_RATE_LIMITER?: RateLimit;
+
+  /**
+   * ログインなしで読める教材 (`GET /api/public/*`。Issue #41) のテナント。未ログインでは JWT から
+   * テナントが決まらないので、ここで決める (wrangler.toml の [vars]。教材の seed と同じ `ses`)。
+   * 未設定なら公開 API は何も返さない (一覧は空、本文は 404)。
+   */
+  PUBLIC_CONTENT_TENANT_ID?: string;
+
+  /**
+   * ログインなしで読める教材 (`GET /api/public/*`) の Rate Limiting バインディング。
+   * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
+   */
+  PUBLIC_CONTENT_RATE_LIMITER?: RateLimit;
 }
