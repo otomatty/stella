@@ -13,7 +13,7 @@ import {
   sections,
   stages,
   studyActivity,
-  submissions,
+  type submissions,
   tenants,
 } from "./schema.js";
 import type { Env } from "../env.js";
@@ -101,17 +101,29 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
     (await db.select().from(lessonProgress).where(eq(lessonProgress.lessonId, "code")))[0];
   const enrollment = async () => (await db.select().from(enrollments))[0];
   async function pass(overrides: Partial<typeof submissions.$inferInsert> = {}) {
-    await db.insert(submissions).values({
+    const row = {
       tenantId: "ses",
       studentId: "learner",
       lessonId: "code",
       assignmentId: "exercise",
-      stageTitle: "旧講座",
-      assignmentTitle: "演習",
-      code: "x",
       verdict: "pass",
       ...overrides,
-    });
+    };
+    // 後の移行で submissions に列が増えても直前のスキーマに入れられるよう、列を明示して SQL で入れる。
+    database.sqlite
+      .prepare(
+        `insert into submissions (id, tenant_id, student_id, lesson_id, assignment_id, stage_title,
+          assignment_title, code, verdict, submitted_at) values (?, ?, ?, ?, ?, '旧講座', '演習', 'x', ?, ?)`,
+      )
+      .run(
+        crypto.randomUUID(),
+        row.tenantId,
+        row.studentId ?? null,
+        row.lessonId ?? null,
+        row.assignmentId ?? null,
+        row.verdict ?? null,
+        Date.now(),
+      );
   }
 
   it.each([OLD, new Date("2099-01-01T00:00:00Z")])(

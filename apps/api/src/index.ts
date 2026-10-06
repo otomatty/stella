@@ -7,6 +7,7 @@ import { cors } from "hono/cors";
 
 import type { Env } from "./env.js";
 import { getDb } from "./db/client.js";
+import { runAiReviewSweep } from "./lib/ai-review-queue.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
@@ -111,6 +112,12 @@ export default {
     ctx.waitUntil(
       notifyPaceDelays(getDb(env)).catch((e) => {
         console.error("[cron] learning pace notification failed", e);
+      }),
+    );
+    // 提出直後に処理しきれなかった AI 一次レビュー (時間切れ・やり直し・ロック待ち) を拾う。
+    ctx.waitUntil(
+      runAiReviewSweep(env, getDb(env)).catch((e) => {
+        console.error("[cron] ai review sweep failed", e);
       }),
     );
     ctx.waitUntil(

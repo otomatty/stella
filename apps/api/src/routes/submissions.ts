@@ -45,6 +45,8 @@ import {
   reviewTaskSubmission,
   syncReviewedLesson,
 } from "../lib/task-submission.js";
+import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
+import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
 submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
@@ -71,12 +73,18 @@ type SubmissionSummary = Omit<
   "taskSnapshot" | "localResult" | "testHashes" | "debuggingRecord" | "supportLog" | "machineCheck"
 >;
 
-/** DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。 */
+/**
+ * DB 行 + 投稿者プロフィールを旧 PostgREST 形 (snake_case + profiles ネスト) に整える (一覧用)。
+ *
+ * `revealDrafts` は staff のときだけ true。受講者には、人か AI が確定する前の下書き
+ * (AI の指摘・ルーブリック・総評) を返さない。確定後も、講師が採用した指摘だけを返す (07 §6.3)。
+ */
 function toSummaryRow(
   s: SubmissionSummary,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
 ) {
+  const decided = s.verdict !== null;
   return {
     id: s.id,
     tenant_id: s.tenantId,
@@ -95,12 +103,21 @@ function toSummaryRow(
     status: s.status,
     priority: s.priority,
     attempt: s.attempt,
-    ai_ready: s.aiReady,
-    ai_suggestions: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.aiSuggestions,
-    rubric: s.taskId && s.status === "pending" && !revealDrafts ? [] : s.rubric,
+    ai_ready: revealDrafts ? s.aiReady : false,
+    ai_suggestions: revealDrafts
+      ? s.aiSuggestions
+      : decided
+        ? s.aiSuggestions.filter(
+            (x) =>
+              typeof x === "object" && x !== null && (x as { adopted?: unknown }).adopted === true,
+          )
+        : [],
+    rubric: revealDrafts || decided ? s.rubric : [],
     grading_summary: parseGradingSummary(s.gradingSummary),
-    review_notes: s.taskId && s.status === "pending" && !revealDrafts ? "" : s.reviewNotes,
+    review_notes: revealDrafts || decided ? s.reviewNotes : "",
     verdict: s.verdict,
+    review_source: s.reviewSource,
+    ai_review_status: s.aiReviewStatus,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
   };
@@ -332,6 +349,18 @@ submissionsRoute.post("/api/submissions", async (c) => {
     }
     if (raw && typeof raw === "object" && "taskId" in raw) {
       const created = await createTaskSubmission(db, caller, c.env, raw);
+      // 応答を返したあと、この提出の AI 一次レビューを始める。間に合わなければ cron が拾う。
+      try {
+        c.executionCtx.waitUntil(
+          processAiReviewQueue(c.env, db, {
+            submissionId: created.id,
+            maxJobs: 1,
+            timeoutMs: AI_REVIEW_TIMEOUTS.afterSubmit,
+          }).catch((e) => console.error("[ai-review] after submit", e)),
+        );
+      } catch {
+        // ExecutionContext の無い環境 (テスト) では cron の処理に任せる。
+      }
       return c.json(
         { row: toRow(created, { display_name: caller.name, initials: caller.name.slice(0, 2) }) },
         201,
@@ -461,9 +490,15 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     const detail = toRow(row, await profileFor(db, row.studentId), isStaff);
     if (row.taskId) {
       const files = await readSubmissionFiles(db, c.env, row.id);
+      // AI の所見は staff には判定の理由・下書きまで返す。受講者には AI で確定した提出の
+      // 返信と所見だけを返し、人に回した提出・判定前の提出の AI の所見は返さない (07 §6.3)。
+      const ai = isStaff
+        ? { ai_review: await latestAiReview(db, row.id) }
+        : { ai_feedback: await learnerAiFeedback(db, row) };
       return c.json({
         row: {
           ...detail,
+          ...ai,
           files: files.map(({ text: _text, ...file }) => file),
           code: files.map((f) => `// ${f.path}\n${f.text}`).join("\n\n"),
         },

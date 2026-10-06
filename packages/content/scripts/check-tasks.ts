@@ -5,7 +5,16 @@ import { buildContentManifest } from "../src/manifest.js";
 import { runTask } from "../../../apps/vscode/src/runner/run-task.js";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
 
-const { tasks } = buildContentManifest();
+const { tasks, codingRules } = buildContentManifest();
+// コーディング規則の正本 (07 §6.4.1)。課題が指す規則の存在・範囲・導入済みかは
+// buildContentManifest が確かめる。正本そのものが無いことはここで止める。
+if (!codingRules.some((rule) => rule.scope === "common"))
+  throw new Error("packages/content/coding-rules.md (共通のコーディング規則) がありません");
+console.log(
+  `コーディング規則: 共通 ${codingRules.filter((r) => r.scope === "common").length} 件・講座 ${
+    codingRules.filter((r) => r.scope !== "common").length
+  } 件`,
+);
 for (const task of tasks) {
   parsePublicTaskBundle(task.bundle);
   const root = await mkdtemp(join(tmpdir(), "stella-solution-"));

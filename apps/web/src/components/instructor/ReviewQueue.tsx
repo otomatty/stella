@@ -1,3 +1,4 @@
+import { AI_REVIEW_STATUS_LABELS } from "@stella/shared/review/ai-review";
 import { Filter, Sliders, ChevronRight, Sparkles } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,15 @@ export const ReviewQueue = ({ tenantId, setPage, onOpenReview }: ReviewQueueProp
                   <TableCell className="text-ink-3">{r.stageTitle}</TableCell>
                   <TableCell className="text-ink-3">{formatSubmittedAt(r.submittedAt)}</TableCell>
                   <TableCell>
-                    {r.aiReady ? (
+                    {r.aiReviewStatus ? (
+                      // 新形式の提出は提出直後に AI が一次レビューする (07 §6.2)。
+                      <Badge variant={r.aiReviewStatus === "escalated" ? "warning" : "accent"}>
+                        <Sparkles size={10} />
+                        {r.aiReviewStatus === "escalated"
+                          ? "人に回した"
+                          : AI_REVIEW_STATUS_LABELS[r.aiReviewStatus]}
+                      </Badge>
+                    ) : r.aiReady ? (
                       <Badge variant="accent">
                         <Sparkles size={10} />
                         準備済
