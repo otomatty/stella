@@ -10,6 +10,7 @@ import {
   countPending,
   subscribeSubmissions,
 } from "@/lib/submissions-store";
+import { hasAiDraft } from "@/lib/ai-draft";
 
 function getServerSnapshot(tenantId: Tenant["id"]) {
   return listSubmissions(tenantId);
@@ -48,7 +49,7 @@ export function useSubmissions(tenantId: Tenant["id"]) {
   const getById = useCallback((id: string) => getSubmission(tenantId, id), [tenantId]);
 
   const pendingCount = submissions.filter((s) => s.status === "pending").length;
-  const aiReadyCount = submissions.filter((s) => s.status === "pending" && s.aiReady).length;
+  const aiReadyCount = submissions.filter((s) => s.status === "pending" && hasAiDraft(s)).length;
 
   return {
     submissions,

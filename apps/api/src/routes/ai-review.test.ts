@@ -24,6 +24,7 @@ import {
   taskPrivateVersions,
   taskProgress,
   taskRevisions,
+  taskSupportEvents,
   tasks,
   tenants,
 } from "../db/schema.js";
@@ -435,6 +436,32 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(staffView.ai_review).toMatchObject({ routeReasons: ["low-confidence"] });
   });
 
+  it("staff の一覧・詳細・保存の応答に、AI 一次レビューが記録済みかを載せる (受講者には載せない)", async () => {
+    complete.mockResolvedValue(answer(aiOutput({ confidence: "low" })));
+    const row = await submit();
+    const { app } = mountTestApp(env, submissionsRoute);
+    const staffList = async () =>
+      (
+        await json<{ rows: { id: string; ai_review_ready: boolean }[] }>(
+          await request(app, env, "/api/submissions", { token: instructorToken }),
+        )
+      ).rows.find((r) => r.id === row.id);
+    expect((await staffList())?.ai_review_ready).toBe(false);
+    await run();
+    expect((await staffList())?.ai_review_ready).toBe(true);
+    expect((await detail(row.id, instructorToken)).ai_review_ready).toBe(true);
+    const patched = await request(app, env, `/api/submissions/${row.id}`, {
+      method: "PATCH",
+      token: instructorToken,
+      body: JSON.stringify({ reviewNotes: "下書き" }),
+    });
+    expect((await json<{ row: { ai_review_ready: boolean } }>(patched)).row.ai_review_ready).toBe(
+      true,
+    );
+    expect((await mine())[0]).toMatchObject({ ai_review_ready: false });
+    expect((await detail(row.id, token)).ai_review_ready).toBe(false);
+  });
+
   it("統合・確認は確信度が中なら人に回す", async () => {
     await db.delete(tasks);
     await seedTask("assessment-a", {
@@ -611,6 +638,86 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       routeReasons: ["solution-leak"],
     });
     expect((await detail(row.id, token)).ai_feedback).toBeNull();
+  });
+
+  describe("サーバーが記録した支援 (課題の AI チャット・相談、#38)", () => {
+    const recordSupport = (createdAt: Date) =>
+      db.insert(taskSupportEvents).values({
+        tenantId: "ses",
+        userId: "learner",
+        taskId: fixture.input.taskId,
+        kind: "ai-chat",
+        createdAt,
+      });
+    const passAll = () => {
+      const out = aiOutput();
+      out.rubric = out.rubric.slice(1);
+      return answer(out);
+    };
+    beforeEach(async () => {
+      await db.delete(tasks);
+      await seedTask("assessment-a", {
+        rubric: [{ id: "heading", criterion: "見出しが内容を表している", required: true }],
+        escalateWhen: [],
+      });
+    });
+
+    it("確認Aの前に AI チャットの記録があれば、提出の時点で人に回し、AI は合格にしない", async () => {
+      await recordSupport(new Date(Date.now() - 60_000));
+      complete.mockResolvedValue(passAll());
+      const row = await submit();
+      expect(row.ai_review_status).toBe("escalated");
+      expect(await progress()).toBe("instructor-pending");
+      await run();
+      expect((await reviews())[0]).toMatchObject({
+        outcome: "escalated",
+        routeReasons: ["unallowed-support"],
+        proposedVerdict: "pass",
+      });
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved).toMatchObject({ verdict: null, aiReviewStatus: "escalated" });
+      expect((await detail(row.id, token)).ai_feedback).toBeNull();
+    });
+
+    it("AI の結果を記録したあとに届いた記録でも、合格にせず人に回す (確認待ちのまま残さない)", async () => {
+      const row = await submit();
+      expect(row.ai_review_status).toBe("queued");
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      // AI の呼び出し中に、提出より前の時刻の記録が書き込まれた (遅れて届いた記録)。
+      complete.mockImplementation(async () => {
+        await recordSupport(new Date((saved?.submittedAt.getTime() ?? Date.now()) - 1_000));
+        return passAll();
+      });
+      expect(await run()).toEqual(["applied"]);
+      expect((await reviews())[0]).toMatchObject({
+        outcome: "escalated",
+        routeReasons: ["unallowed-support"],
+        disposition: "applied",
+      });
+      const [after] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(after).toMatchObject({ verdict: null, aiReviewStatus: "escalated" });
+      expect(await progress()).toBe("instructor-pending");
+      expect(await db.select().from(skillEvidence)).toHaveLength(0);
+    });
+
+    it("練習では記録があっても AI で確定でき、証拠は支援付きになる", async () => {
+      await db.delete(tasks);
+      await seedTask("basic", {
+        rubric: [{ id: "heading", criterion: "見出しが内容を表している", required: true }],
+        escalateWhen: [],
+      });
+      await recordSupport(new Date(Date.now() - 60_000));
+      complete.mockResolvedValue(passAll());
+      const row = await submit();
+      expect(row.ai_review_status).toBe("queued");
+      expect(await run()).toEqual(["applied"]);
+      expect((await reviews())[0]).toMatchObject({ outcome: "confirmed", routeReasons: [] });
+      expect(await progress()).toBe("ai-passed");
+      expect((await db.select().from(skillEvidence))[0]).toMatchObject({
+        level: "supported",
+        assisted: true,
+      });
+    });
   });
 
   it("相談・照合の食い違いは提出の時点で講師の確認待ちにし、AI は下書きだけを作る", async () => {

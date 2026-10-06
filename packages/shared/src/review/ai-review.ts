@@ -329,6 +329,11 @@ export function forcedHumanReasons(input: {
   mode: string | null;
   machineCheck: MachineCheck | null;
   support: SupportEvent[] | null;
+  /**
+   * 提出より前に、サーバーが記録した支援 (課題の AI チャット・講師への相談など) があるか。
+   * 呼び出し側が DB で調べて渡す (この関数は純粋に保つ)。
+   */
+  recordedSupport?: boolean;
 }): RouteReason[] {
   const reasons: RouteReason[] = [];
   if (input.mode === "consult") reasons.push("consult");
@@ -341,8 +346,12 @@ export function forcedHumanReasons(input: {
     (!input.machineCheck.matched && (mismatches.length > 0 || input.mode !== "consult"))
   )
     reasons.push("machine-check");
-  // 確認A・Bはヒント・解答・固定の開始点・実装支援をどれも使わずに解く (07 §8)。
-  if (isAssessmentKind(input.kind ?? "") && (input.support?.length ?? 0) > 0)
+  // 確認A・Bはヒント・解答・固定の開始点・実装支援・AI チャット・相談をどれも使わずに解く (07 §8)。
+  // 提出に添えた申告とサーバーの記録のどちらかがあれば人に回す。
+  if (
+    isAssessmentKind(input.kind ?? "") &&
+    ((input.support?.length ?? 0) > 0 || input.recordedSupport === true)
+  )
     reasons.push("unallowed-support");
   return reasons;
 }

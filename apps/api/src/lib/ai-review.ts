@@ -25,6 +25,7 @@ import {
   isEvidenceKind,
   type LearnerAiFeedback,
   parseAiReviewOutput,
+  ROUTE_REASONS,
   type ReviewRubricItem,
 } from "@stella/shared/review/ai-review";
 import { checkSolutionLeak } from "@stella/shared/review/solution-leak";
@@ -55,7 +56,9 @@ import { MissingApiKeyError } from "./anthropic.js";
 import { ApiError, type Caller } from "./authz.js";
 import { autoCompleteStagesIfMet } from "./stage-auto-complete.js";
 import {
+  AiReviewNeedsHuman,
   AiReviewNotApplicable,
+  assessmentRecordedSupport,
   escalateTaskSubmission,
   readSubmissionFiles,
   reviewTaskSubmission,
@@ -344,6 +347,7 @@ export async function runAiReview(
     mode: row.submissionMode,
     machineCheck: row.machineCheck ?? null,
     support: row.supportLog ?? null,
+    recordedSupport: await assessmentRecordedSupport(db, row),
   });
   let call: AiCallResult;
   let prompt: ReturnType<typeof buildAiReviewPrompt> | null = null;
@@ -511,6 +515,27 @@ export async function applyAiReview(
     return "applied";
   } catch (e) {
     if (e instanceof AiReviewNotApplicable) return "superseded";
+    if (e instanceof AiReviewNeedsHuman) {
+      // 記録したあとに人に回す条件に当たった (支援の記録が後から届いた等)。結果を「人に回す」に
+      // 切り替えて当てる。ロックを取れなければ次の試行で同じ結果 (人に回す) を当て直す。
+      await db
+        .update(aiReviews)
+        .set({
+          outcome: "escalated",
+          routeReasons: ROUTE_REASONS.filter(
+            (r) => review.routeReasons.includes(r) || e.reasons.includes(r),
+          ),
+        })
+        .where(eq(aiReviews.id, review.id));
+      try {
+        await escalateTaskSubmission(db, row.id, review.id, waitMs);
+        return "applied";
+      } catch (inner) {
+        if (inner instanceof AiReviewNotApplicable) return "superseded";
+        if (inner instanceof ApiError && inner.status === 409) return "busy";
+        throw inner;
+      }
+    }
     if (e instanceof ApiError && e.status === 409) return "busy";
     throw e;
   }

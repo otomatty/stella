@@ -1,7 +1,11 @@
 import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
-import { forcedHumanReasons } from "@stella/shared/review/ai-review";
+import {
+  forcedHumanReasons,
+  isAssessmentKind,
+  type RouteReason,
+} from "@stella/shared/review/ai-review";
 import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
 import {
   parseTaskSubmission,
@@ -114,16 +118,25 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   }
   let committed = false;
   try {
+    const now = new Date();
     // 照合の食い違い・確認A・Bの支援・相談は、AI の結果を待たずに人のキューへ入れる (07 §6.3)。
-    // それでも AI の下書きは作るので、どちらも AI の待ち行列には積む。
+    // それでも AI の下書きは作るので、どちらも AI の待ち行列には積む。確認A・Bの支援は、提出の
+    // 申告に加えてサーバーの記録 (課題の AI チャット・相談、#38) も見る。
     const forced = forcedHumanReasons({
       kind: bundle.manifest.kind,
       mode: input.mode,
       machineCheck: verified.check,
       support: input.support,
+      recordedSupport:
+        isAssessmentKind(bundle.manifest.kind) &&
+        (await hasRecordedSupport(db, {
+          tenantId: caller.tenantId,
+          studentId: caller.id,
+          taskId: task.id,
+          submittedAt: now,
+        })),
     });
     const progressStatus = forced.length === 0 ? "submitted" : "instructor-pending";
-    const now = new Date();
     // 非公開の素材 (解答例・観点) の版を、課題の版と同じ時点で記録する。課題の版のハッシュは
     // 非公開の素材を含まないので、素材の内容ハッシュで別に持つ (seed と同じ式)。今の task_private が
     // この提出の版の素材だと言えるのは、提出の版が今の版と同じときだけ。違えば記録せず、AI は
@@ -301,6 +314,34 @@ export class AiReviewNotApplicable extends ApiError {
   }
 }
 
+/**
+ * AI が合格にしようとした提出が、当てる直前に人に回す条件に当たった (例: 確定までの間に
+ * 確認A・Bの支援の記録が届いた)。結果を捨てずに「人に回す」へ切り替えるために分ける。
+ */
+export class AiReviewNeedsHuman extends ApiError {
+  constructor(readonly reasons: RouteReason[]) {
+    super("この提出は人のレビューが必要です", 409);
+    this.name = "AiReviewNeedsHuman";
+  }
+}
+
+/** 確認A・Bで、提出より前にサーバーが記録した支援があるか (提出の申告とは別、#38)。 */
+export async function assessmentRecordedSupport(
+  db: Db,
+  row: Pick<
+    typeof submissions.$inferSelect,
+    "tenantId" | "studentId" | "taskId" | "taskKind" | "submittedAt"
+  >,
+) {
+  if (!isAssessmentKind(row.taskKind ?? "") || !row.studentId || !row.taskId) return false;
+  return hasRecordedSupport(db, {
+    tenantId: row.tenantId,
+    studentId: row.studentId,
+    taskId: row.taskId,
+    submittedAt: row.submittedAt,
+  });
+}
+
 /** 課題のロック (提出の保存・確定と共有)。確認A・Bの組のロックより先に取る。 */
 export function taskSubmissionLockId(tenantId: string, studentId: string, taskId: string) {
   return `task-submission:${tenantId}:${studentId}:${taskId}`;
@@ -321,16 +362,18 @@ async function assertAiApplicable(
   const allowed = outcome === "confirmed" ? ["queued"] : ["queued", "escalated"];
   if (!row.aiReviewStatus || !allowed.includes(row.aiReviewStatus))
     throw new AiReviewNotApplicable();
-  if (
-    outcome === "confirmed" &&
-    forcedHumanReasons({
+  if (outcome === "confirmed") {
+    // 人に回す条件は、AI の結果を記録したあとに届いた支援の記録も含めて当てる直前に確かめ直す。
+    // 当たれば合格にせず、呼び出し側が「人に回す」に切り替える (確認待ちのまま残さない)。
+    const forced = forcedHumanReasons({
       kind: row.taskKind,
       mode: row.submissionMode,
       machineCheck: row.machineCheck ?? null,
       support: row.supportLog ?? null,
-    }).length > 0
-  )
-    throw new AiReviewNotApplicable();
+      recordedSupport: await assessmentRecordedSupport(db, row),
+    });
+    if (forced.length > 0) throw new AiReviewNeedsHuman(forced);
+  }
   const [newer] = await db
     .select({ id: submissions.id })
     .from(submissions)

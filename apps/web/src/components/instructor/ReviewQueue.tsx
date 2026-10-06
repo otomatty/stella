@@ -19,6 +19,7 @@ import { formatSubmittedAt } from "@/lib/submissions-store";
 import type { Tenant } from "@/data/types";
 import type { AvatarTone } from "@/data/types";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
+import { hasAiDraft } from "@/lib/ai-draft";
 
 interface ReviewQueueProps {
   tenantId: Tenant["id"];
@@ -43,7 +44,7 @@ export const ReviewQueue = ({
     ? allPending.filter((s) => s.studentId && scope.assignedIds.has(s.studentId))
     : allPending;
   const others = allPending.length - pending.length;
-  const aiReadyCount = pending.filter((s) => s.aiReady).length;
+  const aiReadyCount = pending.filter(hasAiDraft).length;
 
   return (
     <>

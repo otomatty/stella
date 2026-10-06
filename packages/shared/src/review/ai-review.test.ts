@@ -216,6 +216,12 @@ describe("AI の判定によらず人に回す", () => {
     expect(
       forcedHumanReasons({ kind: "basic", mode: "submit", machineCheck: null, support: null }),
     ).toEqual(["machine-check"]);
+    // サーバーが記録した支援 (課題の AI チャット・相談) も、確認A・Bだけ人に回す。
+    const recorded = { mode: "submit", machineCheck: matched, support: [], recordedSupport: true };
+    expect(forcedHumanReasons({ ...recorded, kind: "assessment-b" })).toEqual([
+      "unallowed-support",
+    ]);
+    expect(forcedHumanReasons({ ...recorded, kind: "basic" })).toEqual([]);
   });
   it("AI がすべて満たすと答えても、提出の時点の条件があれば人に回す", () => {
     expect(route("basic", ok, { forced: ["consult"] })).toMatchObject({

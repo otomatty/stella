@@ -19,6 +19,7 @@ import { bodyLimit } from "hono/body-limit";
 import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 
 import {
+  aiReviews,
   learnerInstructors,
   notifications,
   profiles,
@@ -90,6 +91,7 @@ function toSummaryRow(
   s: SubmissionSummary,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
+  aiReviewReady = false,
 ) {
   const decided = s.verdict !== null;
   return {
@@ -125,6 +127,8 @@ function toSummaryRow(
     verdict: s.verdict,
     review_source: s.reviewSource,
     ai_review_status: s.aiReviewStatus,
+    // 新形式の提出の AI 一次レビューが記録済みか (staff だけ)。旧形式の `ai_ready` と並べて数える。
+    ai_review_ready: revealDrafts && aiReviewReady,
     submitted_at: s.submittedAt.toISOString(),
     profiles: profile,
   };
@@ -135,9 +139,10 @@ function toRow(
   s: SubmissionSelect,
   profile: { display_name: string; initials: string | null } | null,
   revealDrafts = false,
+  aiReviewReady = false,
 ) {
   return {
-    ...toSummaryRow(s, profile, revealDrafts),
+    ...toSummaryRow(s, profile, revealDrafts, aiReviewReady),
     local_result: s.localResult,
     test_hashes: s.testHashes,
     debugging_record: s.debuggingRecord,
@@ -161,6 +166,24 @@ async function profileFor(
 }
 
 /**
+ * 提出に AI 一次レビューの結果が記録されているか (一覧の SELECT に足す列)。
+ * 外側の submissions は表名付きで指す (列名だけだと内側の ai_reviews.id に解決されてしまう)。
+ */
+const aiReviewReadyColumn =
+  sql<boolean>`exists (select 1 from ai_reviews where ai_reviews.submission_id = "submissions"."id")`.mapWith(
+    Boolean,
+  );
+
+async function aiReviewReadyOf(db: Db, id: string): Promise<boolean> {
+  const [hit] = await db
+    .select({ id: aiReviews.id })
+    .from(aiReviews)
+    .where(eq(aiReviews.submissionId, id))
+    .limit(1);
+  return Boolean(hit);
+}
+
+/**
  * staff: テナント内の提出物一覧 (新着順)。
  * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
  * 省略時はこれまでどおりテナント全体。
@@ -173,7 +196,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     if (assigned !== undefined && assigned !== "mine")
       throw new ApiError("assigned には mine だけを指定できます", 400);
     const rows = await db
-      .select(summaryColumns)
+      .select({ ...summaryColumns, aiReviewReady: aiReviewReadyColumn })
       .from(submissions)
       .where(
         and(
@@ -205,7 +228,12 @@ submissionsRoute.get("/api/submissions", async (c) => {
     }
     return c.json({
       rows: rows.map((r) =>
-        toSummaryRow(r, r.studentId ? (profMap.get(r.studentId) ?? null) : null, true),
+        toSummaryRow(
+          r,
+          r.studentId ? (profMap.get(r.studentId) ?? null) : null,
+          true,
+          r.aiReviewReady,
+        ),
       ),
     });
   } catch (err) {
@@ -514,13 +542,14 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (!isStaff && !isOwner) {
       throw new ApiError("この提出を閲覧する権限がありません", 403);
     }
-    const detail = toRow(row, await profileFor(db, row.studentId), isStaff);
+    // AI の所見は staff には判定の理由・下書きまで返す。受講者には AI で確定した提出の
+    // 返信と所見だけを返し、人に回した提出・判定前の提出の AI の所見は返さない (07 §6.3)。
+    const aiReview = row.taskId && isStaff ? await latestAiReview(db, row.id) : null;
+    const detail = toRow(row, await profileFor(db, row.studentId), isStaff, aiReview !== null);
     if (row.taskId) {
       const files = await readSubmissionFiles(db, c.env, row.id);
-      // AI の所見は staff には判定の理由・下書きまで返す。受講者には AI で確定した提出の
-      // 返信と所見だけを返し、人に回した提出・判定前の提出の AI の所見は返さない (07 §6.3)。
       const ai = isStaff
-        ? { ai_review: await latestAiReview(db, row.id) }
+        ? { ai_review: aiReview }
         : { ai_feedback: await learnerAiFeedback(db, row) };
       return c.json({
         row: {
@@ -734,7 +763,14 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
       }
     }
 
-    return c.json({ row: toRow(after, await profileFor(db, after.studentId), true) });
+    return c.json({
+      row: toRow(
+        after,
+        await profileFor(db, after.studentId),
+        true,
+        after.taskId ? await aiReviewReadyOf(db, after.id) : false,
+      ),
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

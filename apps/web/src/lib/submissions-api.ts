@@ -81,6 +81,7 @@ interface SubmissionRow {
   files?: { path: string; content: string }[];
   profiles?: { display_name: string; initials: string | null } | null;
   ai_review_status?: Submission["aiReviewStatus"];
+  ai_review_ready?: boolean;
   review_source?: Submission["reviewSource"];
   ai_feedback?: Submission["aiFeedback"];
   ai_review?: Submission["aiReview"];
@@ -135,6 +136,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
       text: new TextDecoder().decode(Uint8Array.from(atob(f.content), (c) => c.charCodeAt(0))),
     })),
     aiReviewStatus: row.ai_review_status ?? null,
+    aiReviewReady: row.ai_review_ready === true,
     reviewSource: row.review_source ?? null,
     aiFeedback: row.ai_feedback ?? null,
     aiReview: row.ai_review ?? null,
