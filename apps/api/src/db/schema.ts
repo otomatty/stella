@@ -483,6 +483,7 @@ export const taskSupportEvents = sqliteTable(
 /**
  * 週次の育成メモ (#38・07 §6.5)。受講者 1 人・週 1 枚 (受講者と週で一意)。講師向けで、
  * 受講者本人の API には返さない。15分の cron が積み (`queued`)、数件ずつ書く (`ready`)。
+ * 材料を集められないまま試行の上限に達したら `failed` で終える。
  * 待ち行列の列 (attempts〜last_error) は `lib/mentor-memo.ts` のリースに使う。
  */
 export const mentorMemos = sqliteTable(
@@ -497,7 +498,7 @@ export const mentorMemos = sqliteTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     /** 要約した週の月曜 (日本時間の YYYY-MM-DD)。 */
     weekStart: text("week_start").notNull(),
-    state: text("state", { enum: ["queued", "ready"] })
+    state: text("state", { enum: ["queued", "ready", "failed"] })
       .notNull()
       .default("queued"),
     attempts: integer("attempts").notNull().default(0),

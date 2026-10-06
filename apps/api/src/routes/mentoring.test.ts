@@ -715,7 +715,7 @@ describe("つまずきの検知 (cron)", () => {
     async function judged(
       outcome: "confirmed" | "escalated",
       reasons: string[] = ["rubric-unmet"],
-      opts: { mode?: "submit" | "consult"; at?: Date } = {},
+      opts: { mode?: "submit" | "consult"; at?: Date; appliedAt?: Date } = {},
     ) {
       const id = `judged-${++order}`;
       const at = opts.at ?? new Date(now.getTime() - (20 - order) * HOUR);
@@ -744,7 +744,7 @@ describe("つまずきの検知 (cron)", () => {
         promptVersion: "test",
         thresholdVersion: "test",
         disposition: "applied",
-        appliedAt: new Date(at.getTime() + 60_000),
+        appliedAt: opts.appliedAt ?? new Date(at.getTime() + 60_000),
         createdAt: at,
       });
       return id;
@@ -799,6 +799,32 @@ describe("つまずきの検知 (cron)", () => {
         "judged-5",
         "judged-6",
       ]);
+    });
+
+    const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * HOUR);
+
+    it("前の提出の判定が遅れて当たり、続きがそろったときも知らせる (1 度だけ)", async () => {
+      await keepActive();
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(6), appliedAt: daysAgo(6) });
+      // 2 件目の判定はやり直しで遅れ、3 件目より後に当たった。
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(5), appliedAt: daysAgo(0.1) });
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(4), appliedAt: daysAgo(4) });
+      await notifyStumbles(db, now);
+      await notifyStumbles(db, now);
+      const sent = await escalationAlerts();
+      expect(sent.map((n) => n.payload.submission_ids)).toEqual([
+        ["judged-1", "judged-2", "judged-3"],
+      ]);
+    });
+
+    it("続きは提出の日時で 30 日さかのぼる (判定が遅れて当たった古い提出は数えない)", async () => {
+      await keepActive();
+      // 35 日前の提出の判定が、29 日前に当たった。
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(35), appliedAt: daysAgo(29) });
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(2) });
+      await judged("escalated", ["rubric-unmet"], { at: daysAgo(1) });
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
     });
 
     it("AI で合格した提出を挟めば続きは切れ、古い続きは知らせない", async () => {

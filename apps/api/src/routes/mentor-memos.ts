@@ -106,6 +106,7 @@ mentorMemosRoute.post("/api/mentor-memos/:id/actions", async (c) => {
     } | null;
     if (!body || typeof body !== "object" || Array.isArray(body) || !isMemoAction(body.kind))
       throw new ApiError("対応を選んでください", 400);
+    if (memo.state === "failed") throw new ApiError("この週の育成メモは作れませんでした", 409);
     if (memo.state !== "ready") throw new ApiError("育成メモを作成中です", 409);
     const now = new Date();
     const record: MentorMemoActionRecord = {

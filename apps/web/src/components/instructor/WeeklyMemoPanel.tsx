@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardActions, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { memosForWeek } from "./weekly-memo-week";
 
 interface MemoList {
   week: string;
@@ -73,9 +74,19 @@ export function WeeklyMemoPanel() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
-  const shown = data?.week ?? week;
+  // 見出し・操作は求めた週に合わせる。週を切り替えて取得している間は、前の週のメモを出さない。
+  const shown = week ?? data?.week ?? null;
+  const memos = memosForWeek(data, week);
+  const goTo = (next: string) => {
+    setError(null);
+    setWeek(next);
+  };
   const replace = (memo: MentorMemoView) =>
-    setData((d) => (d ? { ...d, memos: d.memos.map((m) => (m.id === memo.id ? memo : m)) } : d));
+    setData((d) =>
+      d && d.week === memo.weekStart
+        ? { ...d, memos: d.memos.map((m) => (m.id === memo.id ? memo : m)) }
+        : d,
+    );
   return (
     <Card className="mb-5">
       <CardHeader>
@@ -86,19 +97,19 @@ export function WeeklyMemoPanel() {
             variant="ghost"
             aria-label="前の週"
             disabled={!shown}
-            onClick={() => shown && setWeek(addStudyDays(shown, -7))}
+            onClick={() => shown && goTo(addStudyDays(shown, -7))}
           >
             <ChevronLeft size={14} />
           </Button>
           <span className="text-xs text-ink-3">
-            {data ? `${date(data.week)}〜${date(data.weekEnd)}` : ""}
+            {shown ? `${date(shown)}〜${date(addStudyDays(shown, 6))}` : ""}
           </span>
           <Button
             size="icon-sm"
             variant="ghost"
             aria-label="次の週"
             disabled={!shown || !latest || shown >= latest}
-            onClick={() => shown && setWeek(addStudyDays(shown, 7))}
+            onClick={() => shown && goTo(addStudyDays(shown, 7))}
           >
             <ChevronRight size={14} />
           </Button>
@@ -114,13 +125,13 @@ export function WeeklyMemoPanel() {
             {error}
           </p>
         ) : null}
-        {!data && !error ? <p className="text-sm text-ink-3">読み込んでいます</p> : null}
-        {data && data.memos.length === 0 ? (
+        {!memos && !error ? <p className="text-sm text-ink-3">読み込んでいます</p> : null}
+        {memos && memos.length === 0 ? (
           <p className="text-sm text-ink-3">
             この週のメモはありません。担当している受講者のメモは、週明けに順に作ります。
           </p>
         ) : null}
-        {data?.memos.map((memo) => (
+        {memos?.map((memo) => (
           <MemoItem key={memo.id} memo={memo} onChanged={replace} />
         ))}
       </CardContent>
@@ -163,7 +174,9 @@ function MemoItem({
       <section className="border border-border rounded-md p-3">
         <div className="text-sm font-medium">{memo.learnerName}</div>
         <p className="text-sm text-ink-3 mt-1">
-          メモを作成しています。しばらくしてから開いてください。
+          {memo.state === "failed"
+            ? "この週のメモを作れませんでした。学習のペースと課題ごとの支援の記録を直接確認してください。"
+            : "メモを作成しています。しばらくしてから開いてください。"}
         </p>
       </section>
     );

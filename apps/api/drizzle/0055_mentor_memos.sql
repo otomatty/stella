@@ -1,12 +1,13 @@
 -- 週次の育成メモ (#38・07 §6.5)。受講者 1 人・週 1 枚。講師向けで、受講者本人の API には返さない。
 -- 15分の cron が前の週の行を積み (state = queued)、数件ずつ材料を集めて AI に書かせる (ready)。
--- AI が使えないときも機械的な要約で ready にする。受講者・週で一意なので、何度積んでも 1 枚。
+-- AI が使えないときも機械的な要約で ready にする。材料を集められないまま試行の上限に達したら
+-- failed で終える (last_error を残す)。受講者・週で一意なので、何度積んでも 1 枚。
 CREATE TABLE mentor_memos (
   id text PRIMARY KEY NOT NULL,
   tenant_id text NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   learner_id text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   week_start text NOT NULL,
-  state text NOT NULL DEFAULT 'queued' CHECK (state IN ('queued', 'ready')),
+  state text NOT NULL DEFAULT 'queued' CHECK (state IN ('queued', 'ready', 'failed')),
   attempts integer NOT NULL DEFAULT 0,
   next_attempt_at integer NOT NULL,
   lease_id text,

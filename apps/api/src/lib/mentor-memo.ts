@@ -67,6 +67,7 @@ import type { Caller } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
 import { loadLearningPace } from "./learning-pace.js";
 import { buildMentorMemoPrompt, MENTOR_MEMO_PROMPT_VERSION } from "./mentor-memo-prompt.js";
+import { stumbleIdPrefix } from "./stumble-alerts.js";
 
 /** 1 回の cron で書くメモの数。AI の一次レビューと AI の呼び出し・D1 のクエリを分け合う。 */
 export const MEMOS_PER_RUN = 5;
@@ -86,13 +87,57 @@ export function memoWeekOf(today: string): string {
   return addStudyDays(studyWeekStart(today), -7);
 }
 
+/** cron が止まって積み損ねた週をさかのぼる上限 (前の週を含めた週の数)。 */
+export const MEMO_BACKFILL_WEEKS = 4;
+
 /**
- * 担当のいる受講者ごとに、前の週のメモを積む。担当は同じテナントの有効な講師だけ。
- * その週の終わりまでに受講を始めていた受講者だけを積む (受講中の登録か、その週以降に修了した登録がある)。
- * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。
+ * 前の週のメモを積む。cron が週をまたいで止まっていたときのために、直近
+ * `MEMO_BACKFILL_WEEKS` 週のうちまだ無い週も積む。ただしさかのぼるのは、そのテナントで最初に
+ * メモを作った週 (機能を入れた週) より後の週だけ。メモが 1 枚も無いテナント (初めてのデプロイ) は
+ * 前の週だけにして、過去の週をまとめて作らない。
  */
 export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<number> {
-  const weekStart = memoWeekOf(toStudyDate(now));
+  const latest = memoWeekOf(toStudyDate(now));
+  // 索引 (tenant_id, week_start) で引く。今回の cron で積む前の値を使う。
+  const firstWeeks = new Map(
+    (
+      await db
+        .select({
+          tenantId: mentorMemos.tenantId,
+          week: sql<string>`min(${mentorMemos.weekStart})`,
+        })
+        .from(mentorMemos)
+        .groupBy(mentorMemos.tenantId)
+    ).map((r) => [r.tenantId, r.week]),
+  );
+  let total = 0;
+  for (let i = 0; i < MEMO_BACKFILL_WEEKS; i++) {
+    const weekStart = addStudyDays(latest, -7 * i);
+    const eligible =
+      i === 0
+        ? null
+        : new Set(
+            [...firstWeeks].flatMap(([tenantId, first]) => (first < weekStart ? [tenantId] : [])),
+          );
+    // 古い週ほど条件を満たすテナントは減るので、無くなったらそこで止める。
+    if (eligible && eligible.size === 0) break;
+    total += await enqueueWeek(db, weekStart, eligible, now);
+  }
+  return total;
+}
+
+/**
+ * 担当のいる受講者ごとに、1 つの週のメモを積む。担当は同じテナントの有効な講師だけ。
+ * その週の終わりまでに受講を始めていた受講者だけを積む (受講中の登録か、その週以降に修了した登録がある)。
+ * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。`tenants` を渡すと、
+ * そのテナントの受講者だけを積む (null はすべて)。
+ */
+async function enqueueWeek(
+  db: Db,
+  weekStart: string,
+  tenants: ReadonlySet<string> | null,
+  now: Date,
+): Promise<number> {
   const weekBegin = new Date(studyDateStartMs(weekStart));
   const weekEnd = new Date(studyDateStartMs(addStudyDays(weekStart, 7)));
   const instructor = alias(profiles, "instructor");
@@ -140,8 +185,9 @@ export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<numb
       ),
     )
     .orderBy(asc(profiles.id));
-  if (learners.length === 0) return 0;
-  const values = learners.map((l) => ({
+  const targets = tenants ? learners.filter((l) => tenants.has(l.tenantId)) : learners;
+  if (targets.length === 0) return 0;
+  const values = targets.map((l) => ({
     id: crypto.randomUUID(),
     tenantId: l.tenantId,
     learnerId: l.id,
@@ -229,7 +275,7 @@ export async function collectMemoMaterial(
     console.error("[mentor-memo] learning pace failed", { learnerId: learner.id }, e);
     return null;
   });
-  const [days, submitted, passed, evidence, stumbles, streaks, recorded, aiResults, humanReviews] =
+  const [days, sinceWeek, passed, evidence, stumbles, streaks, recorded, aiResults, humanReviews] =
     await Promise.all([
       db
         .select({
@@ -246,6 +292,8 @@ export async function collectMemoMaterial(
             lte(studyActivity.date, weekEnd),
           ),
         ),
+      // 週の始まりから生成の時点までの提出。支援の記録は提出に添えて届くので、週末に使った支援が
+      // 翌週の提出に載ることがある。提出の数は提出の日時で、支援は支援の時刻で週に配る。
       db
         .select({
           at: submissions.submittedAt,
@@ -258,7 +306,6 @@ export async function collectMemoMaterial(
             eq(submissions.tenantId, tenant),
             eq(submissions.studentId, learner.id),
             gte(submissions.submittedAt, from),
-            lt(submissions.submittedAt, to),
           ),
         ),
       // 課題の表はテナントを持たないので、単元 → ステージで絞る。
@@ -293,7 +340,7 @@ export async function collectMemoMaterial(
             lt(skillEvidence.createdAt, to),
           ),
         ),
-      // つまずきの通知 ID は `stumble:<signal>:<learnerId>:...` なので、主キーの範囲で引く。
+      // つまずきの通知 ID は作る側と同じ接頭辞 (`stumbleIdPrefix`) で始まるので、主キーの範囲で引く。
       db
         .select({
           id: notifications.id,
@@ -304,7 +351,7 @@ export async function collectMemoMaterial(
           and(
             or(
               ...STUMBLE_SIGNALS.map((signal) => {
-                const prefix = `stumble:${signal}:${learner.id}:`;
+                const prefix = stumbleIdPrefix(signal, learner.id);
                 return and(
                   gte(notifications.id, prefix),
                   lt(notifications.id, `${prefix.slice(0, -1)};`),
@@ -376,6 +423,7 @@ export async function collectMemoMaterial(
         ),
     ]);
 
+  const submitted = sinceWeek.filter((s) => s.at < to);
   const activeDates = new Set(
     days.filter((d) => d.watchedSec > 0 || d.completed > 0).map((d) => d.date),
   );
@@ -411,8 +459,9 @@ export async function collectMemoMaterial(
       stumbleCounts[signal] = (stumbleCounts[signal] ?? 0) + 1;
     }
 
-  // 支援の量。提出に添えた支援は試行ごとに繰り返し載るので、種類と時刻で 1 件にまとめる
-  // (`loadTaskSupport` と同じ)。人のレビューは `reviews` で数える。
+  // 支援の量。講師への相談は相談の提出の日時、提出に添えた支援は支援そのものの時刻で週に配る。
+  // 添えた支援は試行ごとに繰り返し載るので、種類と時刻で 1 件にまとめる (`loadTaskSupport` と同じ)。
+  // 人のレビューは `reviews` で数える。
   const support: Partial<Record<SupportRecordKind, number>> = {};
   const add = (kind: SupportRecordKind) => {
     support[kind] = (support[kind] ?? 0) + 1;
@@ -420,8 +469,8 @@ export async function collectMemoMaterial(
   for (const e of recorded)
     if (SERVER_SUPPORT_KINDS.includes(e.kind)) add(e.kind as SupportRecordKind);
   const seen = new Set<string>();
-  for (const s of submitted) {
-    if (s.mode === "consult") add("consult");
+  for (const s of submitted) if (s.mode === "consult") add("consult");
+  for (const s of sinceWeek) {
     for (const e of s.supportLog ?? []) {
       if (!DECLARED_SUPPORT_KINDS.includes(e.kind)) continue;
       if (s.mode === "consult" && e.kind === "instructor" && e.detail === CONSULT_SUPPORT_DETAIL)
@@ -607,7 +656,24 @@ async function releaseMemo(db: Db, memo: LeasedMemo, now: number, error: string)
     );
 }
 
-export type MemoOutcome = "ai" | "fallback" | "retry" | "skipped";
+/**
+ * 試行の上限に達したメモを「作れなかった」で終える。機械的な要約も材料が要るので書けない。
+ * 終えたメモはもうリースしないので、待ち行列に残り続けない。
+ */
+async function failMemo(db: Db, memo: LeasedMemo, error: string) {
+  await db
+    .update(mentorMemos)
+    .set({ state: "failed", leaseId: null, leaseUntil: null, lastError: error.slice(0, 500) })
+    .where(
+      and(
+        eq(mentorMemos.id, memo.id),
+        eq(mentorMemos.leaseId, memo.leaseId),
+        eq(mentorMemos.state, "queued"),
+      ),
+    );
+}
+
+export type MemoOutcome = "ai" | "fallback" | "retry" | "failed" | "skipped";
 
 /** リースした 1 件を書く。 */
 export async function processLeasedMemo(
@@ -622,6 +688,12 @@ export async function processLeasedMemo(
     eq(mentorMemos.leaseId, memo.leaseId),
     eq(mentorMemos.state, "queued"),
   );
+  // 上限を超えた試行は、前の試行がリースを持ったまま止まった (返しも終えもしなかった) ときだけ
+  // 起きる。同じところで止まり続けないよう、材料を集め直さずに終える。
+  if (memo.attempts > MAX_MEMO_ATTEMPTS) {
+    await failMemo(db, memo, "処理の途中で止まった試行が上限を超えました");
+    return "failed";
+  }
   const [learner] = await db
     .select({
       id: profiles.id,
@@ -693,12 +765,15 @@ export async function processMentorMemoQueue(
     try {
       outcomes.push(await processLeasedMemo(env, db, memo, { timeoutMs: opts.timeoutMs, now }));
     } catch (e) {
-      // 材料集めの失敗など。リースを返して次の cron でやり直す (回数はリースで数える)。
+      // 材料集めの失敗など。上限まではリースを返して次の cron でやり直し (回数はリースで数える)、
+      // 上限に達したら「作れなかった」で終える (AI の失敗と違い、機械的な要約も書けない)。
       console.error("[mentor-memo] memo failed", memo.id, e);
-      await releaseMemo(db, memo, now(), e instanceof Error ? e.message : "unknown").catch(() => {
-        // 返せなくてもリースの期限で開く。
+      const error = e instanceof Error ? e.message : "unknown";
+      const last = memo.attempts >= MAX_MEMO_ATTEMPTS;
+      await (last ? failMemo(db, memo, error) : releaseMemo(db, memo, now(), error)).catch(() => {
+        // 書き戻せなくてもリースの期限で開き、次の試行が上限を超えて終える。
       });
-      outcomes.push("retry");
+      outcomes.push(last ? "failed" : "retry");
     }
   }
   return outcomes;

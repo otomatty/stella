@@ -14,6 +14,7 @@
 
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, notExists, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
+import type { StumbleSignal } from "@stella/shared/mentoring/weekly-memo";
 import { ROUTE_REASON_LABELS, type RouteReason } from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateWeekday, toStudyDate } from "@stella/shared/study/activity";
 import type { Db } from "../db/client.js";
@@ -38,9 +39,12 @@ export const IDLE_WEEKDAYS = 3;
 export const ASSESSMENT_B_WINDOW_MS = 3 * 86_400_000;
 /** 人に回る提出が続く: AI の一次レビューが続けて人に回した提出の数の下限。 */
 export const REVIEW_ESCALATION_STREAK = 3;
-/** 最後に人に回した判定をさかのぼる期間。導入時に過去の判定をまとめて送らないため。 */
+/**
+ * 知らせる続きの、判定が当たった時刻 (`ai_reviews.applied_at`) の期間。続きの中で最後に当たった
+ * 判定がこの期間に入るときだけ知らせる。導入時に過去の判定をまとめて送らないため。
+ */
 export const REVIEW_ESCALATION_WINDOW_MS = 3 * 86_400_000;
-/** 続きを数えるためにさかのぼる期間。これより前の判定は続きに数えない。 */
+/** 続きを数えるためにさかのぼる、提出の日時 (`submitted_at`) の期間。これより前の提出は数えない。 */
 export const REVIEW_ESCALATION_LOOKBACK_MS = 30 * 86_400_000;
 /**
  * 受講者の取り組みに関わる、人に回した理由。AI や教材の都合 (AI が判定できない・必須の評価項目が
@@ -112,8 +116,26 @@ export function weekdaysBetween(from: string, to: string, limit = 31): number {
   return n;
 }
 
-const stumbleId = (signal: string, pair: Pair, key: string) =>
-  `stumble:${signal}:${pair.learnerId}:${pair.instructorId}:${key}`;
+/**
+ * 通知 ID の種類の部分。手元の失敗だけは種類の名前 (`local-failures`) と違う `local` のまま
+ * (導入時の ID。変えると送った通知を引けなくなり、同じ日に 2 通目を送ってしまう)。
+ */
+const SIGNAL_ID_SEGMENT: Record<StumbleSignal, string> = {
+  "local-failures": "local",
+  idle: "idle",
+  "assessment-b": "assessment-b",
+  "review-escalations": "review-escalations",
+};
+
+/**
+ * 受講者 1 人・種類 1 つのつまずきの通知 ID の接頭辞 (`stumble:<種類>:<受講者>:`)。
+ * 育成メモの材料もこの接頭辞で引く (作る側と読む側で文字列を書き写さない)。
+ */
+export const stumbleIdPrefix = (signal: StumbleSignal, learnerId: string) =>
+  `stumble:${SIGNAL_ID_SEGMENT[signal]}:${learnerId}:`;
+
+const stumbleId = (signal: StumbleSignal, pair: Pair, key: string) =>
+  `${stumbleIdPrefix(signal, pair.learnerId)}${pair.instructorId}:${key}`;
 
 /** 既に送った通知の ID。主キーで引くだけで、過去の通知は読まない。 */
 async function sentIds(db: Db, ids: string[]): Promise<Set<string>> {
@@ -169,11 +191,11 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
   // 1 日 1 通まで。今日すでに送っていれば、残りの課題は翌日に回す (連続が続いていれば)。
   const sent = await sentIds(
     db,
-    [...byLearner.values()].map(({ pair }) => stumbleId("local", pair, today)),
+    [...byLearner.values()].map(({ pair }) => stumbleId("local-failures", pair, today)),
   );
   for (const { pair, rows: list } of byLearner.values()) {
     const [first] = list;
-    const id = stumbleId("local", pair, today);
+    const id = stumbleId("local-failures", pair, today);
     if (!first || sent.has(id)) continue;
     try {
       const rest = list.length - 1;
@@ -329,10 +351,15 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
 }
 
 /**
- * 人に回る提出が続く。受講者の新形式の提出 (相談を除く) に当てた AI の一次レビューを新しい順に
- * たどり、AI で確定した提出に当たるまでに、受講者の取り組みを理由に人に回した提出が
+ * 人に回る提出が続く。受講者の新形式の提出 (相談を除く) に当てた AI の一次レビューを、提出の
+ * 新しい順にたどり、AI で確定した提出に当たるまでに、受講者の取り組みを理由に人に回した提出が
  * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。続きごとに 1 度 (続きの最初の提出で ID を
  * 決める) なので、続きが伸びても知らせ直さない。AI で合格して切れたあとの新しい続きは改めて知らせる。
+ *
+ * 時間の軸は 2 つを使い分ける。続きの並びと 30 日の期間は受講者の提出の順 (`submitted_at`) で、
+ * 判定がやり直しなどで遅れて当たっても、提出の順は変わらない。「直近 3 日」だけは判定が当たった時刻
+ * (`applied_at`) で見る。前の提出の判定が遅れて当たり、そこで続きがそろうこともあるので、続きの中で
+ * 最後に当たった判定を起点にする (最新の提出の判定の時刻で見ると、そろった続きを取りこぼす)。
  */
 async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Date) {
   const applied = and(
@@ -365,11 +392,20 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       reasons: RouteReason[];
     }[];
   }[] = [];
-  for (const part of chunk(learners, 50)) {
+  // テナントごとに、受講者を 50 人ずつ引く (テナントでも絞り、ほかのテナントの提出を読まない)。
+  const byTenant = new Map<string, Pair[]>();
+  for (const pair of learners) {
+    const list = byTenant.get(pair.tenantId) ?? [];
+    list.push(pair);
+    byTenant.set(pair.tenantId, list);
+  }
+  const parts = [...byTenant].flatMap(([tenantId, list]) =>
+    chunk(list, 50).map((part) => ({ tenantId, part })),
+  );
+  for (const { tenantId, part } of parts) {
     const rows = await db
       .select({
         learnerId: submissions.studentId,
-        tenantId: submissions.tenantId,
         submissionId: submissions.id,
         taskId: submissions.taskId,
         title: submissions.assignmentTitle,
@@ -382,32 +418,40 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       .where(
         and(
           applied,
+          eq(submissions.tenantId, tenantId),
           inArray(
             submissions.studentId,
             part.map((p) => p.learnerId),
           ),
-          gte(aiReviews.appliedAt, new Date(now.getTime() - REVIEW_ESCALATION_LOOKBACK_MS)),
+          gte(submissions.submittedAt, new Date(now.getTime() - REVIEW_ESCALATION_LOOKBACK_MS)),
         ),
       )
       .orderBy(desc(submissions.submittedAt), desc(aiReviews.appliedAt));
+    // 受講者ごとに振り分ける (並びは保つ)。
+    const byLearner = new Map<string, typeof rows>();
+    for (const row of rows) {
+      if (!row.learnerId) continue;
+      const list = byLearner.get(row.learnerId) ?? [];
+      list.push(row);
+      byLearner.set(row.learnerId, list);
+    }
     for (const pair of part) {
       // 新しい順。AI で確定した提出で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
       const streak: typeof rows = [];
       const seen = new Set<string>();
-      for (const row of rows) {
-        if (row.learnerId !== pair.learnerId || row.tenantId !== pair.tenantId) continue;
+      for (const row of byLearner.get(pair.learnerId) ?? []) {
         if (seen.has(row.submissionId)) continue;
         seen.add(row.submissionId);
         if (row.outcome === "confirmed") break;
         if (row.reasons.some((r) => LEARNER_ESCALATION_REASONS.includes(r))) streak.push(row);
       }
-      const [latest] = streak;
       const first = streak[streak.length - 1];
+      // 続きがそろった時刻 = 続きの中で最後に当たった判定の時刻。
+      const completedAt = Math.max(0, ...streak.map((r) => r.appliedAt?.getTime() ?? 0));
       if (
         streak.length < REVIEW_ESCALATION_STREAK ||
-        !latest?.appliedAt ||
         !first ||
-        latest.appliedAt.getTime() < now.getTime() - REVIEW_ESCALATION_WINDOW_MS
+        completedAt < now.getTime() - REVIEW_ESCALATION_WINDOW_MS
       )
         continue;
       candidates.push({

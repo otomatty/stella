@@ -36,6 +36,7 @@ import {
   memoWeekOf,
   runMentorMemoCron,
 } from "../lib/mentor-memo.js";
+import { notifyStumbles } from "../lib/stumble-alerts.js";
 import { MENTOR_MEMO_PROMPT_VERSION } from "../lib/mentor-memo-prompt.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -365,6 +366,61 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
   });
 
+  it("メモが 1 枚も無いテナントは前の週だけを積み、過去の週をまとめて作らない", async () => {
+    await db
+      .update(enrollments)
+      .set({ enrolledAt: new Date("2026-08-01T00:00:00Z") })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
+    expect((await memoRows()).map((r) => r.weekStart)).toEqual([WEEK]);
+  });
+
+  it("cron が止まって積み損ねた週は、直近 4 週までさかのぼって積む", async () => {
+    await db
+      .update(enrollments)
+      .set({ enrolledAt: new Date("2026-08-01T00:00:00Z") })
+      .where(eq(enrollments.userId, "learner"));
+    // 8/31 の週からメモを作っていた。そのあと cron が止まっていた。
+    await db.insert(mentorMemos).values({
+      tenantId: "ses",
+      learnerId: "learner",
+      weekStart: "2026-08-31",
+      state: "ready",
+      nextAttemptAt: NOW,
+    });
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(4);
+    expect((await memoRows()).map((r) => r.weekStart).sort()).toEqual([
+      "2026-08-31",
+      "2026-09-14",
+      "2026-09-21",
+      "2026-09-28",
+      WEEK,
+    ]);
+    expect(await enqueueWeeklyMemos(db, new Date(NOW.getTime() + 15 * MIN))).toBe(0);
+  });
+
+  it("テナントで最初にメモを作った週とそれより前には、さかのぼって積まない", async () => {
+    await db
+      .update(enrollments)
+      .set({ enrolledAt: new Date("2026-08-01T00:00:00Z") })
+      .where(eq(enrollments.userId, "learner"));
+    // 9/21 の週に機能を入れた (この週のメモは別の受講者にだけある)。
+    await db.insert(mentorMemos).values({
+      tenantId: "ses",
+      learnerId: "late",
+      weekStart: "2026-09-21",
+      state: "ready",
+      nextAttemptAt: NOW,
+    });
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(2);
+    expect(
+      (await memoRows())
+        .filter((r) => r.learnerId === "learner")
+        .map((r) => r.weekStart)
+        .sort(),
+    ).toEqual(["2026-09-28", WEEK]);
+  });
+
   it("同じ受講者・週は一意 (同時に積んでも 2 枚にならない)", async () => {
     await enqueueWeeklyMemos(db, NOW);
     await expect(
@@ -480,11 +536,186 @@ describe("週次の育成メモを書く (cron)", () => {
     expect((await memoRows())[0]).toMatchObject({ source: "fallback", failure: "refusal" });
   });
 
+  it("週末に使った支援を週明けに提出しても、支援の時刻の週に数える (提出の数は提出の日時で数える)", async () => {
+    await seedWeek();
+    await db.insert(submissions).values({
+      id: "monday",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submissionMode: "submit",
+      submittedAt: new Date("2026-10-12T01:00:00Z"),
+      supportLog: [
+        // 日曜 19:00 (日本時間) に解答を開き、月曜に提出した。
+        { kind: "solution", at: "2026-10-11T10:00:00.000Z" },
+        // 前の試行と同じ支援は 1 件のまま。
+        { kind: "hint", at: "2026-10-07T00:30:00.000Z" },
+        // 次の週に使った支援は数えない。
+        { kind: "instructor", at: "2026-10-11T16:00:00.000Z" },
+      ],
+    });
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    const [memo] = await memoRows();
+    expect(memo?.material?.support).toEqual({ hint: 1, "ai-chat": 1, consult: 1, solution: 1 });
+    expect(memo?.material?.activity).toMatchObject({ activeDays: 4, submissions: 2 });
+  });
+
+  it("材料を集められないまま試行の上限に達したら、作れなかったメモとして終える", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    database.sqlite.exec("drop table task_support_events");
+    let at = NOW.getTime();
+    for (let i = 1; i < MAX_MEMO_ATTEMPTS; i++) {
+      expect(await runMentorMemoCron(env, db, () => at)).toEqual(["retry"]);
+      expect((await memoRows())[0]).toMatchObject({ state: "queued", attempts: i, leaseId: null });
+      at += 15 * MIN;
+    }
+    expect(await runMentorMemoCron(env, db, () => at)).toEqual(["failed"]);
+    const [memo] = await memoRows();
+    expect(memo).toMatchObject({
+      state: "failed",
+      attempts: MAX_MEMO_ATTEMPTS,
+      leaseId: null,
+      summary: null,
+    });
+    expect(memo?.lastError).toContain("task_support_events");
+    // 終えたメモはもう取らない。
+    expect(await runMentorMemoCron(env, db, () => at + 15 * MIN)).toEqual([]);
+    // 講師の画面には「作れなかった」として出し、対応は受け付けない。
+    const res = await get(`/api/mentor-memos?week=${WEEK}`, "teacher");
+    const body = await json<{ memos: MentorMemoView[] }>(res);
+    expect(body.memos).toMatchObject([{ state: "failed", summary: null }]);
+    const acted = await post(`/api/mentor-memos/${memo?.id}/actions`, { kind: "watch" }, "teacher");
+    expect(acted.status).toBe(409);
+    log.mockRestore();
+  });
+
+  it("処理の途中で止まった試行が上限を超えたら、材料を集め直さずに作れなかったメモとして終える", async () => {
+    await enqueueWeeklyMemos(db, NOW);
+    // リースを取ったまま Worker が止まり、期限が切れた試行が続いた。
+    await db.update(mentorMemos).set({
+      attempts: MAX_MEMO_ATTEMPTS,
+      leaseId: "lost",
+      leaseUntil: new Date(NOW.getTime() - MIN),
+    });
+    expect(await runMentorMemoCron(env, db, () => NOW.getTime())).toEqual(["failed"]);
+    expect((await memoRows())[0]).toMatchObject({ state: "failed", leaseId: null });
+  });
+
   it("積んだあとに無効になった受講者のメモは書かずに消す", async () => {
     await enqueueWeeklyMemos(db, NOW);
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "learner"));
     expect(await runMentorMemoCron(env, db, () => NOW.getTime())).toEqual(["skipped"]);
     expect(await memoRows()).toEqual([]);
+  });
+});
+
+describe("つまずきの知らせをメモの材料に載せる", () => {
+  /** 木曜 12:00 (日本時間)。メモを書く週の中で、つまずきの検知を動かす。 */
+  const IN_WEEK = new Date("2026-10-08T03:00:00Z");
+  afterEach(() => vi.useRealTimers());
+
+  async function stumbleInWeek() {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(IN_WEEK);
+    await notifyStumbles(db, IN_WEEK);
+    vi.useRealTimers();
+  }
+  const keepActive = () =>
+    db
+      .insert(studyActivity)
+      .values({ tenantId: "ses", userId: "learner", date: "2026-10-07", watchedSec: 60 });
+  async function escalated(id: string, hoursAgo: number) {
+    const at = new Date(IN_WEEK.getTime() - hoursAgo * 3_600_000);
+    await db.insert(submissions).values({
+      id,
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      submissionMode: "submit",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submittedAt: at,
+    });
+    await db.insert(aiReviews).values({
+      submissionId: id,
+      tenantId: "ses",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      outcome: "escalated",
+      routeReasons: ["rubric-unmet"],
+      promptVersion: "t",
+      thresholdVersion: "t",
+      disposition: "applied",
+      appliedAt: at,
+      createdAt: at,
+    });
+  }
+
+  const setups: Record<string, () => Promise<unknown>> = {
+    "local-failures": async () => {
+      await keepActive();
+      await db.insert(taskLocalRuns).values({
+        userId: "learner",
+        taskId: "practice",
+        tenantId: "ses",
+        contentHash: HASH,
+        failedRuns: 5,
+        failureStreak: 5,
+        streakStartedAt: new Date(IN_WEEK.getTime() - 2 * 3_600_000),
+        lastOutcome: "failed",
+        firstRunAt: new Date(IN_WEEK.getTime() - 2 * 3_600_000),
+        lastRunAt: new Date(IN_WEEK.getTime() - MIN),
+      });
+    },
+    // 最後の学習は 10/2 (金)。月・火・水と記録がない。
+    idle: () =>
+      db
+        .insert(studyActivity)
+        .values({ tenantId: "ses", userId: "learner", date: "2026-10-02", watchedSec: 60 }),
+    "assessment-b": async () => {
+      await keepActive();
+      await db.insert(submissions).values({
+        id: "b",
+        tenantId: "ses",
+        studentId: "learner",
+        taskId: "practice",
+        taskContentHash: HASH,
+        taskKind: "assessment-b",
+        submissionMode: "submit",
+        stageTitle: "開発環境",
+        assignmentTitle: "確認B",
+        code: "",
+        verdict: "resubmit",
+        status: "resubmit",
+        submittedAt: new Date(IN_WEEK.getTime() - 3 * 3_600_000),
+        reviewedAt: new Date(IN_WEEK.getTime() - 3_600_000),
+      });
+    },
+    "review-escalations": async () => {
+      await keepActive();
+      for (const [i, id] of ["e1", "e2", "e3"].entries()) await escalated(id, 10 - i);
+    },
+  };
+
+  it.each(Object.keys(setups))("%s の知らせが材料に載る", async (signal) => {
+    await setups[signal]?.();
+    await stumbleInWeek();
+    const sent = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.type, "learner_stumble"));
+    expect(sent.map((n) => n.payload.signal)).toEqual([signal]);
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    expect((await memoRows())[0]?.material?.stumbles).toEqual({ [signal]: 1 });
   });
 });
 

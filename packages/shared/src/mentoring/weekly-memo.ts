@@ -118,7 +118,8 @@ export interface MentorMemoView {
   learnerName: string;
   weekStart: string;
   weekEnd: string;
-  state: "queued" | "ready";
+  /** failed = 材料を集められないまま試行の上限に達した (この週のメモは作れなかった)。 */
+  state: "queued" | "ready" | "failed";
   source: "ai" | "fallback" | null;
   summary: string | null;
   observations: string[];
@@ -250,11 +251,14 @@ export function fallbackAction(m: MentorMemoMaterial): MemoAction {
 /** API キーが無い・AI が失敗したときの機械的な要約。材料の数字だけで書く。 */
 export function buildFallbackMemo(m: MentorMemoMaterial): MentorMemoOutput {
   const action = fallbackAction(m);
-  const pace = m.pace?.started
-    ? m.pace.differenceHours >= 0
-      ? `予定どおりに進んでいます (目安との差 +${hours(m.pace.differenceHours)}時間)。`
-      : `目安より${hours(-m.pace.differenceHours)}時間遅れています。`
-    : "学習ペースはまだ計算されていません。";
+  // 材料の事実 (`materialFacts`) と同じく、未計算と未開始を分ける。
+  const pace = !m.pace
+    ? "学習ペースはまだ計算されていません。"
+    : !m.pace.started
+      ? "まだ学習を始めていません。"
+      : m.pace.differenceHours >= 0
+        ? `予定どおりに進んでいます (目安との差 +${hours(m.pace.differenceHours)}時間)。`
+        : `目安より${hours(-m.pace.differenceHours)}時間遅れています。`;
   const activity =
     m.activity.activeDays === 0
       ? "この週は学習の記録がありませんでした。"

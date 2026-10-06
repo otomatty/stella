@@ -128,6 +128,14 @@ describe("機械的な要約", () => {
     expect(facts.join("\n")).toContain("確信度がしきい値に届かない 1");
   });
 
+  it("未開始の受講者の要約は、未計算ではなく未開始と書く (材料の事実と食い違わない)", () => {
+    const pace = material().pace as NonNullable<MentorMemoMaterial["pace"]>;
+    const m = material({ pace: { ...pace, started: false } });
+    expect(buildFallbackMemo(m).summary).toContain("まだ学習を始めていません");
+    expect(buildFallbackMemo(m).summary).not.toContain("計算されていません");
+    expect(materialFacts(m)[0]).toContain("未開始");
+  });
+
   it("ペースが計算できない・未開始でも書ける", () => {
     expect(materialFacts(material({ pace: null }))[0]).toBe("学習ペース: 計算できませんでした");
     expect(buildFallbackMemo(material({ pace: null })).summary).toContain("まだ計算されていません");
