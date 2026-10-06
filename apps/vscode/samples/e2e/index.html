@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ToDo</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>ToDo</h1>
+      <form id="todo-form">
+        <label for="todo-title">やること</label>
+        <input id="todo-title" name="title" required />
+        <button type="submit">追加</button>
+      </form>
+      <p id="todo-error" role="alert"></p>
+      <ul id="todo-list" aria-label="ToDo の一覧"></ul>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

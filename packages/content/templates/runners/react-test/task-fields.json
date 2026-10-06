@@ -1,0 +1,23 @@
+{
+  "runner": "react-test",
+  "environment": "react-test-01",
+  "submit": {
+    "files": [
+      "src/Counter.jsx"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vite.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

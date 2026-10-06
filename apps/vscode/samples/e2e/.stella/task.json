@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "ui-integration-basics/samples/e2e",
+  "title": "追加したら入力欄を空に戻す",
+  "kind": "basic",
+  "runner": "e2e",
+  "submit": {
+    "files": [
+      "src/main.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "playwright.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "src/style.css",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "e2e-01@1",
+    "node": {
+      "min": "22.13.0",
+      "maxMajor": 24
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

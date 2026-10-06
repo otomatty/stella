@@ -20,7 +20,10 @@ export function cleanMessage(message: string, root: string, maxLines = 8): strin
 export function relativize(text: string, root: string): string {
   const slashed = root.replace(/\\/g, "/");
   const fileUrl = slashed.startsWith("/") ? `file://${slashed}` : `file:///${slashed}`;
-  const variants = new Set([fileUrl, root, slashed]);
+  // 日本語や空白を含むパスは、file URL では %E6%97%A5 のように符号化されて出る。
+  const variants = new Set(
+    [fileUrl, encodedUrl(fileUrl), root, slashed].flatMap(withBothDriveCases),
+  );
   let out = text;
   for (const variant of variants) {
     if (!variant) continue;
@@ -29,12 +32,42 @@ export function relativize(text: string, root: string): string {
   return out;
 }
 
+/** Windows のファイル名には対にならないサロゲートが入りうる。符号化できなければ使わない。 */
+function encodedUrl(url: string): string {
+  try {
+    return encodeURI(url);
+  } catch {
+    return url;
+  }
+}
+
+const DRIVE = /^(file:\/\/\/)?([A-Za-z]):/;
+
+/**
+ * Windows のドライブ文字は、VS Code からは `c:`、道具の出力では `C:` のように大小が
+ * 混ざって届く。どちらの書き方でも課題フォルダーと分かるよう、両方を返す。
+ */
+function withBothDriveCases(text: string): string[] {
+  const match = DRIVE.exec(text);
+  if (!match) return [text];
+  const rest = text.slice(match[0].length);
+  const prefix = match[1] ?? "";
+  const drive = match[2] ?? "";
+  return [`${prefix}${drive.toLowerCase()}:${rest}`, `${prefix}${drive.toUpperCase()}:${rest}`];
+}
+
+function upperDrive(text: string): string {
+  return text.replace(DRIVE, (_, prefix: string | undefined, drive: string) => {
+    return `${prefix ?? ""}${drive.toUpperCase()}:`;
+  });
+}
+
 export function relativePath(file: string, root: string): string {
-  const normalizedRoot = root.replace(/\\/g, "/").replace(/\/+$/, "");
-  const normalized = file.replace(/\\/g, "/");
+  const normalizedRoot = upperDrive(root.replace(/\\/g, "/").replace(/\/+$/, ""));
+  const normalized = upperDrive(file.replace(/\\/g, "/"));
   return normalized.startsWith(`${normalizedRoot}/`)
     ? normalized.slice(normalizedRoot.length + 1)
-    : normalized;
+    : file.replace(/\\/g, "/");
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

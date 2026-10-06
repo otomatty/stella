@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "http-async-basics/samples/http-mock",
+  "title": "通信の失敗をエラーにする",
+  "kind": "basic",
+  "runner": "http-mock",
+  "submit": {
+    "files": [
+      "src/todos.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "http-mock-01@1",
+    "node": {
+      "min": "22.13.0",
+      "maxMajor": 24
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

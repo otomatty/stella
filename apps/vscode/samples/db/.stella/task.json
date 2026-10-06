@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "sql-basics/samples/db",
+  "title": "終わっていない ToDo だけを取り出す",
+  "kind": "basic",
+  "runner": "db",
+  "submit": {
+    "files": [
+      "src/todos.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "db/schema.sql",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "db-01@1",
+    "node": {
+      "min": "22.13.0",
+      "maxMajor": 24
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

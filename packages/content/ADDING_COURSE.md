@@ -81,7 +81,7 @@ modules/<unit>/
 
 知識問題は各設問の見出しを `### Q1. 設問文` とし、直後に `<!-- kind: single; skills: html-document -->` を書きます。種別は `single` / `multiple` / `boolean`、スキルはカンマ区切りです。選択肢と `<details>` の解答は旧クイズと同じ形で、複数選択の正解は `**A, C** — 解説` と書きます。正誤は `A. 正しい` / `B. 誤り` の2択です。新形式のSRSカードはこの知識問題だけから作り、設問のスキルIDを返します。
 
-`bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
+`bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
 課題は D1 の `tasks`、非公開の素材は `task_private`、状態は `task_progress` に投入します。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
 

@@ -1,0 +1,25 @@
+{
+  "runner": "storybook",
+  "environment": "storybook-01",
+  "submit": {
+    "files": [
+      "src/Button.stories.jsx"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vite.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    ".storybook/**",
+    "src/Button.jsx",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
