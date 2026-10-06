@@ -1,3 +1,13 @@
+import {
+  DEFAULT_OS,
+  OS_LABELS,
+  type OsBlock,
+  type OsName,
+  orderedOsBlocks,
+  osFromNodePlatform,
+  parseOsBlocks,
+  pickOsBlock,
+} from "@stella/shared/markdown/os-blocks";
 import * as vscode from "vscode";
 import { findCachedLesson } from "./catalog.js";
 
@@ -110,7 +120,7 @@ function renderTable(header: string[], rows: string[][]): string {
 }
 
 /** Escape raw HTML first, then emit GFM-equivalent tags. No HTML passthrough. */
-export function markdownToHtml(markdown: string): string {
+function renderBlocks(markdown: string): string {
   const stripped = markdown.replaceAll("\r\n", "\n").replace(CLASS_DIRECTIVE, "");
   const escaped = escapeHtml(stripped);
   const lines = escaped.split("\n");
@@ -208,13 +218,84 @@ export function markdownToHtml(markdown: string): string {
   return out.join("\n");
 }
 
-export function resolveLessonDoc(lesson: LessonDocInput): LessonDocView {
+/** 教材の OS 別ブロックで既定に開く OS。拡張は端末の OS を正確に知っている (07 §11)。 */
+export function defaultOsForPlatform(platform: string = process.platform): OsName {
+  return osFromNodePlatform(platform) ?? DEFAULT_OS;
+}
+
+/**
+ * OS 別ブロック 1 組をタブにする。WebView はスクリプトを動かさないので、ラジオボタンと
+ * CSS (`OS_TABS_CSS`) だけで切り替える。OS 名は定数なので属性へそのまま入れてよい。
+ */
+function osTabsHtml(blocks: readonly OsBlock[], os: OsName, group: number): string {
+  const ordered = orderedOsBlocks(blocks);
+  const active = pickOsBlock(ordered, os)?.os;
+  const name = `os-tabs-${group}`;
+  const tabs = ordered
+    .map(
+      (b) =>
+        `<input type="radio" class="os-tab-input" name="${name}" id="${name}-${b.os}" value="${b.os}"${b.os === active ? " checked" : ""} /><label class="os-tab" for="${name}-${b.os}">${OS_LABELS[b.os]}</label>`,
+    )
+    .join("");
+  const panels = ordered
+    .map((b) => `<div class="os-panel" data-os="${b.os}">\n${renderBlocks(b.markdown)}\n</div>`)
+    .join("\n");
+  return `<div class="os-tabs" role="group" aria-label="OS ごとの手順">${tabs}\n${panels}\n</div>`;
+}
+
+/** OS 別ブロックのタブの見た目。`buildLessonDocHtml` と課題文のパネルが使う。 */
+export const OS_TABS_CSS = `
+    .os-tabs {
+      margin: 1rem 0;
+      padding: 0 1rem 0.25rem;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+    }
+    .os-tab-input { position: absolute; opacity: 0; pointer-events: none; }
+    .os-tab {
+      display: inline-block;
+      padding: 0.45rem 0.8rem 0.35rem;
+      cursor: pointer;
+      color: var(--vscode-descriptionForeground);
+      border-bottom: 2px solid transparent;
+    }
+    .os-tab-input:checked + .os-tab {
+      color: var(--vscode-foreground);
+      font-weight: 600;
+      border-bottom-color: var(--vscode-focusBorder);
+    }
+    .os-tab-input:focus-visible + .os-tab { outline: 1px solid var(--vscode-focusBorder); }
+    .os-panel { display: none; border-top: 1px solid var(--vscode-panel-border); }
+    .os-tab-input[value="windows"]:checked ~ .os-panel[data-os="windows"],
+    .os-tab-input[value="macos"]:checked ~ .os-panel[data-os="macos"] { display: block; }`;
+
+/**
+ * 教材の markdown を HTML にする。生の HTML は文字として出す。
+ * まとめ・課題文の OS 別ブロック (`:::os windows` / `:::os macos`) は OS のタブにし、
+ * `options.os` (既定は端末の OS) のタブを開いておく。
+ */
+export function markdownToHtml(markdown: string, options: { os?: OsName } = {}): string {
+  const { segments } = parseOsBlocks(markdown);
+  if (!segments.some((s) => s.kind === "os")) return renderBlocks(markdown);
+  const os = options.os ?? defaultOsForPlatform();
+  let group = 0;
+  return segments
+    .map((s) =>
+      s.kind === "markdown" ? renderBlocks(s.markdown) : osTabsHtml(s.blocks, os, ++group),
+    )
+    .join("\n");
+}
+
+export function resolveLessonDoc(
+  lesson: LessonDocInput,
+  os: OsName = defaultOsForPlatform(),
+): LessonDocView {
   const markdown = lesson.markdown?.trim();
   if (markdown) {
     return {
       kind: "markdown",
       title: lesson.title,
-      bodyHtml: markdownToHtml(markdown),
+      bodyHtml: markdownToHtml(markdown, { os }),
     };
   }
   if (lesson.pdfPath?.trim()) {
@@ -286,7 +367,7 @@ export function buildLessonDocHtml(view: LessonDocView): string {
       border: 1px solid var(--vscode-panel-border);
       padding: 0.35rem 0.6rem;
       text-align: left;
-    }
+    }${OS_TABS_CSS}
   </style>
 </head>
 <body>

@@ -19,6 +19,7 @@ import type {
   TestCase,
   TestKind,
 } from "../types.js";
+import type { OsName } from "../markdown/os-blocks.js";
 
 // ---------------------------------------------------------------
 // 列レベル型
@@ -55,6 +56,8 @@ export interface ProfileTenantInfo {
 export interface ProfileRow {
   weekly_hours?: number;
   learning_start_date?: string | null;
+  /** 教材の OS 別ブロックで既定に開く OS。null / 未取得は端末から推定する。 */
+  os_preference?: OsName | null;
   id: string;
   tenant_id: string;
   role: ProfileRole;

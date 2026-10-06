@@ -99,6 +99,12 @@ export interface CourseConfig {
    * 専用講座は catalog の親を 1 つ以上持ち、入口にはしない (manifest が検査)。
    */
   audience?: CourseAudience;
+  /**
+   * OS 別のブロック (`:::os`) を含むまとめ・課題文の配布 PDF を、Windows 版と macOS 版に
+   * 分けて作る (07 §11)。OS の差が大きい講座 (`dev-env-basics`) に付ける。省略時は 1 つの
+   * PDF に両方の OS の手順を見出し付きで並べる。
+   */
+  pdfByOs?: boolean;
 }
 
 export interface QuizSeed {

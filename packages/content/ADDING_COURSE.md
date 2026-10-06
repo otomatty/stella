@@ -87,6 +87,8 @@ modules/<unit>/
 
 LMS は7状態と「VS Code で開く」を表示します。拡張は `~/web-training/<講座>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
 
+WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きい講座は `course.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かない講座は1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
+
 ## A. 新しい講座を作る（既定）
 
 ### 1. slug を決める
@@ -220,7 +222,7 @@ bun run --filter=@stella/content materials -- courses/<slug>/modules
 
 ```bash
 bun run db:seed
-bun run --filter=@stella/content upload    # 図解・サムネイルをローカル R2 に入れる
+bun run --filter=@stella/content upload    # 図解・OS 別の画像・サムネイルをローカル R2 に入れる
 ```
 
 manifest が `courses/` を全部読むので、`course.json` を置いた講座は seed に載る。コードの COURSE_SLUG 固定は不要。ローカル seed は各講座に `seed-learner` を登録する。本番では受講者を LMS 上で割り当てる。

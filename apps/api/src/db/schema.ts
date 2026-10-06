@@ -118,6 +118,8 @@ export const profiles = sqliteTable(
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     weeklyHours: real("weekly_hours").notNull().default(35),
     learningStartDate: text("learning_start_date"),
+    /** 教材の OS 別ブロック (07 §11) で既定に開く OS。null は端末から推定する。 */
+    osPreference: text("os_preference", { enum: ["windows", "macos"] }),
     createdAt: tsNow("created_at"),
   },
   (t) => ({

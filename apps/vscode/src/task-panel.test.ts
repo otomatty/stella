@@ -1,7 +1,7 @@
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunResult } from "@stella/shared/tasks/run-result";
 import { describe, expect, it, vi } from "vitest";
-import { buildTaskPanelHtml } from "./task-panel.js";
+import { buildTaskPanelHtml, buildTaskReadmeHtml } from "./task-panel.js";
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
@@ -174,5 +174,32 @@ describe("buildTaskPanelHtml", () => {
     expect(html).toContain("課題の定義を読めません");
     expect(html).toContain("/w/&lt;t&gt;");
     expect(html).toContain("runner は &lt;x&gt;");
+  });
+});
+
+describe("課題文のパネル", () => {
+  const markdown = [
+    "# 最初のページを作る",
+    "",
+    ":::os windows",
+    "エクスプローラーで `index.html` を開きます。",
+    ":::",
+    ":::os macos",
+    "Finder で `index.html` を開きます。<script>alert(1)</script>",
+    ":::",
+  ].join("\n");
+
+  it("OS のタブ付きで描き、指定した OS のタブを開いておく", () => {
+    const html = buildTaskReadmeHtml({ title: "最初のページ", markdown, os: "macos" });
+    expect(html).toMatch(/value="macos" checked/);
+    expect(html).toContain("エクスプローラーで <code>index.html</code> を開きます。");
+    expect(html).toContain("Finder で");
+  });
+
+  it("スクリプトを含めず、生の HTML は文字のまま出す", () => {
+    const html = buildTaskReadmeHtml({ title: "<課題>", markdown, os: "windows" });
+    expect(html).not.toMatch(/<script/i);
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("<title>&lt;課題&gt;</title>");
   });
 });

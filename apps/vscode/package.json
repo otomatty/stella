@@ -104,8 +104,22 @@
       {
         "command": "stella.consultTask",
         "title": "STELLA: 講師に相談する"
+      },
+      {
+        "command": "stella.showTaskReadme",
+        "title": "STELLA: 課題文を表示する",
+        "icon": "$(preview)"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "stella.showTaskReadme",
+          "when": "resourceFilename == README.md && resourcePath =~ /web-training/",
+          "group": "navigation"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "fe-pseudo",
