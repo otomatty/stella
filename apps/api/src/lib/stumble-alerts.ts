@@ -1,21 +1,24 @@
 /**
  * つまずきの検知 (#38・07 §6.5)。既存の15分の cron で、担当講師に知らせる。
  *
- * 見る合図は次の 3 つ。ヒントを最後まで開く (#36) と、人に回る提出が続く (#33) は後で足す。
+ * 見る合図は次の 4 つ。ヒントを最後まで開く (#36) は後で足す。
  * - 同じ課題で手元の確認の失敗が続く (`task_local_runs`)
  * - 数日進まない (学習の記録が平日 3 日ない)
  * - 確認 B が再提出・不合格になる (同じ課題の後の試行で合格していれば除く)
+ * - 人に回る提出が続く (AI の一次レビューが、受講者の取り組みを理由に続けて人に回した)
  *
  * 知らせすぎないよう、通知 ID を出来事ごとに決めて同じ出来事を 2 度送らない。
  * 手元の失敗は、さらに受講者 1 人につき 1 日 1 通にまとめる。
  * 送った出来事は ID を主キーで引いて先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 
-import { and, asc, eq, gt, gte, inArray, isNull, lte, notExists, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, notExists, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
+import { ROUTE_REASON_LABELS, type RouteReason } from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateWeekday, toStudyDate } from "@stella/shared/study/activity";
 import type { Db } from "../db/client.js";
 import {
+  aiReviews,
   learnerInstructors,
   notifications,
   profiles,
@@ -33,6 +36,25 @@ export const LOCAL_FAILURE_MIN_SPAN_MS = 60 * 60_000;
 export const IDLE_WEEKDAYS = 3;
 /** 確認 B の判定をさかのぼる期間。導入時に過去の判定をまとめて送らないため。 */
 export const ASSESSMENT_B_WINDOW_MS = 3 * 86_400_000;
+/** 人に回る提出が続く: AI の一次レビューが続けて人に回した提出の数の下限。 */
+export const REVIEW_ESCALATION_STREAK = 3;
+/** 最後に人に回した判定をさかのぼる期間。導入時に過去の判定をまとめて送らないため。 */
+export const REVIEW_ESCALATION_WINDOW_MS = 3 * 86_400_000;
+/** 続きを数えるためにさかのぼる期間。これより前の判定は続きに数えない。 */
+export const REVIEW_ESCALATION_LOOKBACK_MS = 30 * 86_400_000;
+/**
+ * 受講者の取り組みに関わる、人に回した理由。AI や教材の都合 (AI が判定できない・必須の評価項目が
+ * 無い・所見の位置ずれ・返信と解答例の重なり) だけで回った提出は、続きに数えも切りもしない。
+ * 講師への相談は受講者が自分で選ぶ支援なので、相談の提出はそもそも見ない。
+ */
+export const LEARNER_ESCALATION_REASONS: readonly RouteReason[] = [
+  "machine-check",
+  "unallowed-support",
+  "rubric-unmet",
+  "rubric-undetermined",
+  "low-confidence",
+  "task-condition",
+];
 
 interface Pair {
   learnerId: string;
@@ -306,6 +328,130 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
   }
 }
 
+/**
+ * 人に回る提出が続く。受講者の新形式の提出 (相談を除く) に当てた AI の一次レビューを新しい順に
+ * たどり、AI で確定した提出に当たるまでに、受講者の取り組みを理由に人に回した提出が
+ * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。続きごとに 1 度 (続きの最初の提出で ID を
+ * 決める) なので、続きが伸びても知らせ直さない。AI で合格して切れたあとの新しい続きは改めて知らせる。
+ */
+async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Date) {
+  const applied = and(
+    eq(aiReviews.disposition, "applied"),
+    eq(submissions.submissionMode, "submit"),
+  );
+  // 直近に人に回した受講者だけを見る (15分ごとに全員の履歴を読まない)。
+  const recent = await db
+    .selectDistinct({ learnerId: submissions.studentId, tenantId: submissions.tenantId })
+    .from(aiReviews)
+    .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
+    .where(
+      and(
+        applied,
+        eq(aiReviews.outcome, "escalated"),
+        gte(aiReviews.appliedAt, new Date(now.getTime() - REVIEW_ESCALATION_WINDOW_MS)),
+      ),
+    );
+  const learners = recent.flatMap((r) => {
+    const pair = r.learnerId ? pairs.get(r.learnerId) : undefined;
+    return pair && pair.tenantId === r.tenantId ? [pair] : [];
+  });
+  const candidates: {
+    pair: Pair;
+    id: string;
+    streak: {
+      submissionId: string;
+      taskId: string | null;
+      title: string;
+      reasons: RouteReason[];
+    }[];
+  }[] = [];
+  for (const part of chunk(learners, 50)) {
+    const rows = await db
+      .select({
+        learnerId: submissions.studentId,
+        tenantId: submissions.tenantId,
+        submissionId: submissions.id,
+        taskId: submissions.taskId,
+        title: submissions.assignmentTitle,
+        outcome: aiReviews.outcome,
+        reasons: aiReviews.routeReasons,
+        appliedAt: aiReviews.appliedAt,
+      })
+      .from(aiReviews)
+      .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
+      .where(
+        and(
+          applied,
+          inArray(
+            submissions.studentId,
+            part.map((p) => p.learnerId),
+          ),
+          gte(aiReviews.appliedAt, new Date(now.getTime() - REVIEW_ESCALATION_LOOKBACK_MS)),
+        ),
+      )
+      .orderBy(desc(submissions.submittedAt), desc(aiReviews.appliedAt));
+    for (const pair of part) {
+      // 新しい順。AI で確定した提出で続きが切れる。AI や教材の都合だけで回った提出は飛ばす。
+      const streak: typeof rows = [];
+      const seen = new Set<string>();
+      for (const row of rows) {
+        if (row.learnerId !== pair.learnerId || row.tenantId !== pair.tenantId) continue;
+        if (seen.has(row.submissionId)) continue;
+        seen.add(row.submissionId);
+        if (row.outcome === "confirmed") break;
+        if (row.reasons.some((r) => LEARNER_ESCALATION_REASONS.includes(r))) streak.push(row);
+      }
+      const [latest] = streak;
+      const first = streak[streak.length - 1];
+      if (
+        streak.length < REVIEW_ESCALATION_STREAK ||
+        !latest?.appliedAt ||
+        !first ||
+        latest.appliedAt.getTime() < now.getTime() - REVIEW_ESCALATION_WINDOW_MS
+      )
+        continue;
+      candidates.push({
+        pair,
+        id: stumbleId("review-escalations", pair, first.submissionId),
+        streak: streak.reverse(),
+      });
+    }
+  }
+  const sent = await sentIds(
+    db,
+    candidates.map((c) => c.id),
+  );
+  for (const { pair, id, streak } of candidates) {
+    if (sent.has(id)) continue;
+    const reasons = LEARNER_ESCALATION_REASONS.filter((r) =>
+      streak.some((s) => s.reasons.includes(r)),
+    ).map((r) => ROUTE_REASON_LABELS[r]);
+    const latest = streak[streak.length - 1];
+    try {
+      await insertOnce(db, {
+        id,
+        userId: pair.instructorId,
+        tenantId: pair.tenantId,
+        type: "learner_stumble",
+        title: `${pair.learnerName}さんの提出が続けて講師の確認に回っています`,
+        body: `直近の提出${streak.length}件 (最新は「${latest?.title ?? ""}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+        payload: {
+          learner_id: pair.learnerId,
+          signal: "review-escalations",
+          submission_ids: streak.map((s) => s.submissionId),
+          task_ids: [...new Set(streak.flatMap((s) => (s.taskId ? [s.taskId] : [])))],
+        },
+      });
+    } catch (e) {
+      console.error(
+        "[cron] stumble notification failed",
+        { learnerId: pair.learnerId, signal: "review-escalations" },
+        e,
+      );
+    }
+  }
+}
+
 /** 15分の cron から呼ぶ。1 つの合図が失敗しても、ほかの合図は続ける。 */
 export async function notifyStumbles(db: Db, now = new Date()) {
   const list = await assignedPairs(db);
@@ -316,6 +462,7 @@ export async function notifyStumbles(db: Db, now = new Date()) {
     notifyLocalFailures(db, pairs, now, today),
     notifyIdle(db, list, today),
     notifyAssessmentB(db, pairs, now),
+    notifyReviewEscalations(db, pairs, now),
   ]);
   for (const r of results)
     if (r.status === "rejected") console.error("[cron] stumble detection failed", r.reason);

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 import { getDb } from "../db/client.js";
 import {
+  aiReviews,
   enrollments,
   learnerInstructors,
   notifications,
@@ -27,7 +28,11 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { notifyStumbles, weekdaysBetween } from "../lib/stumble-alerts.js";
+import {
+  notifyStumbles,
+  REVIEW_ESCALATION_STREAK,
+  weekdaysBetween,
+} from "../lib/stumble-alerts.js";
 import { reviewTaskSubmission } from "../lib/task-submission.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -699,6 +704,120 @@ describe("つまずきの検知 (cron)", () => {
     expect((await stumbles()).map((n) => n.payload)).toMatchObject([
       { signal: "assessment-b", submission_id: "b-regress" },
     ]);
+  });
+
+  describe("人に回る提出が続く", () => {
+    let order = 0;
+    beforeEach(() => {
+      order = 0;
+    });
+    /** 新形式の提出 1 件と、その提出に当てた AI の一次レビュー。古いものから順に足す。 */
+    async function judged(
+      outcome: "confirmed" | "escalated",
+      reasons: string[] = ["rubric-unmet"],
+      opts: { mode?: "submit" | "consult"; at?: Date } = {},
+    ) {
+      const id = `judged-${++order}`;
+      const at = opts.at ?? new Date(now.getTime() - (20 - order) * HOUR);
+      await db.insert(submissions).values({
+        id,
+        tenantId: "ses",
+        studentId: "learner",
+        taskId: "practice",
+        taskContentHash: HASH,
+        taskKind: "basic",
+        submissionMode: opts.mode ?? "submit",
+        stageTitle: "開発環境",
+        assignmentTitle: `課題${order}`,
+        code: "",
+        submittedAt: at,
+        aiReviewStatus: outcome,
+      });
+      await db.insert(aiReviews).values({
+        submissionId: id,
+        tenantId: "ses",
+        taskId: "practice",
+        taskContentHash: HASH,
+        taskKind: "basic",
+        outcome,
+        routeReasons: reasons as never,
+        promptVersion: "test",
+        thresholdVersion: "test",
+        disposition: "applied",
+        appliedAt: new Date(at.getTime() + 60_000),
+        createdAt: at,
+      });
+      return id;
+    }
+    const escalationAlerts = async () =>
+      (await stumbles()).filter((n) => n.payload.signal === "review-escalations");
+
+    it(`AI が続けて ${REVIEW_ESCALATION_STREAK} 件人に回したら、続きごとに 1 度だけ知らせる`, async () => {
+      await keepActive();
+      await judged("confirmed");
+      const first = await judged("escalated", ["rubric-unmet"]);
+      await judged("escalated", ["low-confidence"]);
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+      const third = await judged("escalated", ["machine-check", "ai-unavailable"]);
+      await notifyStumbles(db, now);
+      await notifyStumbles(db, now);
+      let sent = await escalationAlerts();
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ userId: "teacher", tenantId: "ses" });
+      expect(sent[0]?.payload).toMatchObject({
+        learner_id: "learner",
+        submission_ids: [first, "judged-3", third],
+        task_ids: ["practice"],
+      });
+      expect(sent[0]?.body).toContain("必須項目に「満たさない」がある");
+      // 続きが伸びても知らせ直さない。
+      await judged("escalated");
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toHaveLength(1);
+      // AI で合格して切れたあとの新しい続きは、改めて知らせる。
+      await judged("confirmed");
+      for (let i = 0; i < REVIEW_ESCALATION_STREAK; i++) await judged("escalated");
+      await notifyStumbles(db, now);
+      sent = await escalationAlerts();
+      expect(sent).toHaveLength(2);
+    });
+
+    it("AI や教材の都合だけで回った提出と、講師への相談は数えない", async () => {
+      await keepActive();
+      await judged("escalated");
+      await judged("escalated", ["ai-unavailable"]);
+      await judged("escalated", ["no-rubric", "solution-leak", "misplaced-finding"]);
+      await judged("escalated", ["consult"], { mode: "consult" });
+      await judged("escalated", ["low-confidence"]);
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+      await judged("escalated", ["rubric-undetermined"]);
+      await notifyStumbles(db, now);
+      expect((await escalationAlerts())[0]?.payload.submission_ids).toEqual([
+        "judged-1",
+        "judged-5",
+        "judged-6",
+      ]);
+    });
+
+    it("AI で合格した提出を挟めば続きは切れ、古い続きは知らせない", async () => {
+      await keepActive();
+      await judged("escalated");
+      await judged("escalated");
+      await judged("confirmed");
+      await judged("escalated");
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+
+      await db.delete(aiReviews);
+      await db.delete(submissions);
+      const old = new Date(now.getTime() - 5 * 24 * HOUR);
+      for (let i = 0; i < REVIEW_ESCALATION_STREAK; i++)
+        await judged("escalated", ["rubric-unmet"], { at: new Date(old.getTime() + i * HOUR) });
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toEqual([]);
+    });
   });
 
   it("担当のない受講者、無効な講師、別テナントの講師には知らせない", async () => {

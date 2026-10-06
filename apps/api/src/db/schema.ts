@@ -480,6 +480,63 @@ export const taskSupportEvents = sqliteTable(
   }),
 );
 
+/**
+ * 週次の育成メモ (#38・07 §6.5)。受講者 1 人・週 1 枚 (受講者と週で一意)。講師向けで、
+ * 受講者本人の API には返さない。15分の cron が積み (`queued`)、数件ずつ書く (`ready`)。
+ * 待ち行列の列 (attempts〜last_error) は `lib/mentor-memo.ts` のリースに使う。
+ */
+export const mentorMemos = sqliteTable(
+  "mentor_memos",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    learnerId: text("learner_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    /** 要約した週の月曜 (日本時間の YYYY-MM-DD)。 */
+    weekStart: text("week_start").notNull(),
+    state: text("state", { enum: ["queued", "ready"] })
+      .notNull()
+      .default("queued"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: ts("next_attempt_at").notNull(),
+    leaseId: text("lease_id"),
+    leaseUntil: ts("lease_until"),
+    lastError: text("last_error"),
+    /** ai = AI が書いた、fallback = 機械的な要約 (API キーが無い・AI が失敗した)。 */
+    source: text("source", { enum: ["ai", "fallback"] }),
+    summary: text("summary"),
+    observations: json<string[]>("observations", []),
+    suggestedAction: text("suggested_action", { enum: ["message", "pace", "watch"] }),
+    actionReason: text("action_reason"),
+    messageDraft: text("message_draft"),
+    /** 材料の要約 (数字と課題・スキルの名前だけ)。 */
+    material: text("material", { mode: "json" }).$type<
+      import("@stella/shared/mentoring/weekly-memo").MentorMemoMaterial
+    >(),
+    /** AI を使わなかった理由 (unavailable・refusal・timeout・invalid-format・error)。 */
+    failure: text("failure"),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    usage: text("usage", { mode: "json" }).$type<Record<string, number | null>>(),
+    generatedAt: ts("generated_at"),
+    /** 講師の対応 (一言・ペースの調整・様子見) を追記する。 */
+    actions: json<import("@stella/shared/mentoring/weekly-memo").MentorMemoActionRecord[]>(
+      "actions",
+      [],
+    ),
+    handledAt: ts("handled_at"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    learnerWeekUnique: uniqueIndex("mentor_memos_learner_week_uq").on(t.learnerId, t.weekStart),
+    dueIdx: index("mentor_memos_due_idx").on(t.state, t.nextAttemptAt),
+    tenantWeekIdx: index("mentor_memos_tenant_week_idx").on(t.tenantId, t.weekStart),
+  }),
+);
+
 export const assignments = sqliteTable("assignments", {
   id: text("id").primaryKey(),
   tenantId: text("tenant_id")
@@ -1309,6 +1366,8 @@ export const notifications = sqliteTable("notifications", {
       "learning_pace_delayed",
       // つまずきの検知 (#38)。担当講師宛て。
       "learner_stumble",
+      // 週次の育成メモから担当講師が送る一言 (#38)。受講者宛て。text 列なのでマイグレーション不要。
+      "mentor_message",
       // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
       "stage_cleared",
       "interview_date_set",
@@ -1522,6 +1581,7 @@ export const aiReviews = sqliteTable(
   (t) => ({
     submissionIdx: index("ai_reviews_submission_idx").on(t.submissionId, t.createdAt),
     tenantIdx: index("ai_reviews_tenant_idx").on(t.tenantId, t.createdAt),
+    appliedIdx: index("ai_reviews_applied_idx").on(t.appliedAt),
   }),
 );
 
