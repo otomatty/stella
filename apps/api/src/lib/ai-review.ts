@@ -165,18 +165,22 @@ async function loadMaterial(
     introducedIn: r.introducedIn,
     exception: r.exception,
   });
+  // 提出の版が参照する規則が正本から消えていたら、本文なしでは判定できないので AI を呼ばずに
+  // 人に回す (AI が本文の無い項目に「満たす」と答えても確定させない)。
+  const missingRules = ruleRefs.filter((ref) => !ruleRows.some((r) => r.id === ref.id));
+  if (missingRules.length > 0)
+    return {
+      failure: "stale-material",
+      detail: `規則の本文が見つかりません: ${missingRules.map((ref) => ref.id).join(", ")}`,
+    };
   const commonRules = ruleRows.filter((r) => r.scope === "common").map(toText);
   const courseRules = ruleRows.filter((r) => r.scope === task.slug).map(toText);
   const rubric: ReviewRubricItem[] = [
-    ...ruleRefs.map((ref) => {
+    ...ruleRefs.flatMap((ref) => {
       const rule = ruleRows.find((r) => r.id === ref.id);
-      return {
-        id: ref.id,
-        // 正本から消えた規則は判定できないので、AI は「判断できない」と答え、人に回る。
-        criterion: rule ? rule.statement : "(この規則の本文が見つかりません)",
-        required: ref.required,
-        rule: true,
-      };
+      return rule
+        ? [{ id: ref.id, criterion: rule.statement, required: ref.required, rule: true }]
+        : [];
     }),
     ...(definition.review?.rubric ?? []).map((item) => ({ ...item, rule: false })),
   ];

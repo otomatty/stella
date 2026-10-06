@@ -290,7 +290,7 @@ export const AI_FAILURE_LABELS: Record<AiFailure, string> = {
   timeout: "AI の応答が時間内に返りませんでした",
   "invalid-format": "AI の応答の形式が誤っていました",
   "too-large": "提出が大きく AI に渡せませんでした",
-  "stale-material": "提出時の版の解答例・観点が残っていないため、AI は判定していません",
+  "stale-material": "提出時の版の解答例・観点・規則が残っていないため、AI は判定していません",
   error: "AI の呼び出しに失敗しました",
 };
 

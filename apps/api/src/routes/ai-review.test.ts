@@ -406,6 +406,21 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect((await reviews())[0]).toMatchObject({ failure: "stale-material", outcome: "escalated" });
   });
 
+  it("提出の版が参照する規則が正本から消えていたら、AI を呼ばずに人に回す", async () => {
+    complete.mockResolvedValue(answer(aiOutput()));
+    await submit();
+    await db.delete(codingRules).where(eq(codingRules.id, "CR-SCOPE-01"));
+    await run();
+    expect(complete).not.toHaveBeenCalled();
+    expect((await reviews())[0]).toMatchObject({
+      outcome: "escalated",
+      failure: "stale-material",
+      routeReasons: ["ai-unavailable"],
+      learnerReply: null,
+    });
+    expect(await progress()).toBe("instructor-pending");
+  });
+
   it("人に回した提出は「講師の確認待ち」にし、受講者向けの API から AI の所見を返さない", async () => {
     const out = aiOutput({ confidence: "medium" });
     out.rubric[1].evidence = [{ file: "missing.html", startLine: 1, endLine: 1 }];
