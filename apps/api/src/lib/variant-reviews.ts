@@ -19,6 +19,7 @@ import { toStudyDate } from "@stella/shared/study/activity";
 import type { TaskStatus } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import {
+  assistDecidingPass,
   CHECK_VARIANT_KINDS,
   nextVariantSlot,
   type PatternCompletion,
@@ -179,18 +180,29 @@ function practiceOf(readable: ReadableTask[]) {
 /**
  * パターンの起点: 練習 (類題でも確認Bでもない、そのパターンの課題) にすべて合格した時点。
  * 確認Bは起点のあとに解く後日の確認なので含めない。合格は課題一覧と同じく、版が変わっても合格。
+ * 自力か支援付きかは、練習のうち種別がいちばん難しい課題の合格で決める (`assistDecidingPass`)。
  */
 function completionOf(
   practice: ReadableTask[],
-): { at: number; lastTaskId: string; lastHash: string | null } | null {
+): { at: number; decidingTaskId: string; decidingHash: string | null } | null {
   if (practice.length === 0) return null;
-  let last: { at: number; lastTaskId: string; lastHash: string | null } | null = null;
+  const passes: { id: string; kind: string; passedAt: number; hash: string | null }[] = [];
   for (const task of practice) {
     if (!task.status || !PASSED.includes(task.status) || !task.passedAt) return null;
-    const at = task.passedAt.getTime();
-    if (!last || at > last.at) last = { at, lastTaskId: task.id, lastHash: task.progressHash };
+    passes.push({
+      id: task.id,
+      kind: task.kind,
+      passedAt: task.passedAt.getTime(),
+      hash: task.progressHash,
+    });
   }
-  return last;
+  const deciding = assistDecidingPass(passes);
+  if (!deciding) return null;
+  return {
+    at: Math.max(...passes.map((p) => p.passedAt)),
+    decidingTaskId: deciding.id,
+    decidingHash: deciding.hash,
+  };
 }
 
 async function insertSlot(db: Db, scope: Scope, pattern: string, slot: VariantSlot, now: Date) {
@@ -307,7 +319,7 @@ async function planNext(
     judged += 1;
     const completion: PatternCompletion = {
       at: reached.at,
-      assisted: await firstPassAssisted(db, scope, reached.lastTaskId, reached.lastHash),
+      assisted: await firstPassAssisted(db, scope, reached.decidingTaskId, reached.decidingHash),
     };
     const slot = nextVariantSlot([], completion, {
       hasRegularAssessmentB: regularB.has(pattern),

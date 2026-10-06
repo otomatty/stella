@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { studyDateStartMs } from "../study/activity.js";
 import {
+  assistDecidingPass,
   nextVariantSlot,
   pickVariant,
   variantKindProblem,
@@ -160,6 +161,44 @@ describe("類題を出す時期", () => {
         B,
       ),
     ).toMatchObject({ step: 4, purpose: "remedial" });
+  });
+});
+
+describe("自力か支援付きかを決める課題", () => {
+  it("解いた順ではなく、種別がいちばん難しい課題で決める", () => {
+    // 自力課題を先に解き、易しい基礎課題を最後に解いても、自力課題で決める。
+    expect(
+      assistDecidingPass([
+        { id: "independent", kind: "independent", passedAt: at("2026-10-01") },
+        { id: "basic", kind: "basic", passedAt: at("2026-10-03") },
+      ])?.id,
+    ).toBe("independent");
+    expect(
+      assistDecidingPass([
+        { id: "basic", kind: "basic", passedAt: at("2026-10-01") },
+        { id: "connection", kind: "connection", passedAt: at("2026-10-02") },
+        { id: "a", kind: "assessment-a", passedAt: at("2026-10-01") },
+        { id: "debug", kind: "debug", passedAt: at("2026-10-05") },
+      ])?.id,
+    ).toBe("a");
+  });
+  it("同じ種別なら最後に合格した課題で決める (基礎だけのパターンは今までと同じ)", () => {
+    expect(
+      assistDecidingPass([
+        { id: "basic-1", kind: "basic", passedAt: at("2026-10-01") },
+        { id: "basic-3", kind: "basic", passedAt: at("2026-10-03") },
+        { id: "basic-2", kind: "basic", passedAt: at("2026-10-02") },
+      ])?.id,
+    ).toBe("basic-3");
+  });
+  it("知らない種別はいちばん下に置き、合格が無ければ null", () => {
+    expect(
+      assistDecidingPass([
+        { id: "unknown", kind: "future-kind", passedAt: at("2026-10-05") },
+        { id: "basic", kind: "basic", passedAt: at("2026-10-01") },
+      ])?.id,
+    ).toBe("basic");
+    expect(assistDecidingPass([])).toBeNull();
   });
 });
 
