@@ -21,6 +21,7 @@ import {
   stages,
   submissions,
   taskPrivate,
+  taskPrivateVersions,
   taskProgress,
   taskRevisions,
   tasks,
@@ -329,57 +330,61 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(text).toContain("1| <!doctype html>");
   });
 
-  /** 提出のあとに教材を版 B に更新した状態を作る (task_private は seed のたびに最新で上書きされる)。 */
-  async function seedVersionB(revisionAPrivate: string | null) {
-    const encode = (text: string) => Buffer.from(text).toString("base64");
-    const hashB = "b".repeat(64);
-    const privateB = JSON.stringify({
-      "solution/index.html": encode('<section class="hero-banner">版 B の解答例</section>\n'),
-      "review.md": encode("版 B の観点"),
-    });
-    await db.batch([
-      db.update(tasks).set({ contentHash: hashB }).where(eq(tasks.id, fixture.input.taskId)),
-      db.insert(taskRevisions).values({
-        taskId: fixture.input.taskId,
-        contentHash: hashB,
-        definition: (await db.select().from(taskRevisions))[0]?.definition ?? "{}",
-        bundle: JSON.stringify({ ...fixture.bundle, contentHash: hashB }),
-        privateFiles: privateB,
+  const encode = (text: string) => Buffer.from(text).toString("base64");
+  /** seed が非公開の素材だけを差し替えた状態 (課題の版のハッシュは変わらない)。 */
+  const replacePrivate = (solution: string, guide: string) =>
+    db.update(taskPrivate).set({
+      files: JSON.stringify({
+        "solution/index.html": encode(solution),
+        "review.md": encode(guide),
       }),
-      db.update(taskPrivate).set({ files: privateB }),
-      db
-        .update(taskRevisions)
-        .set({ privateFiles: revisionAPrivate })
-        .where(eq(taskRevisions.contentHash, fixture.bundle.contentHash)),
-    ]);
-  }
-  const privateA = (guide: string) =>
-    JSON.stringify({
-      "solution/index.html": Buffer.from(SOLUTION).toString("base64"),
-      "review.md": Buffer.from(guide).toString("base64"),
     });
-  const promptText = () =>
-    JSON.stringify([complete.mock.calls[0]?.[0].system, complete.mock.calls[0]?.[0].messages]);
+  const promptOf = (call: number) =>
+    JSON.stringify([
+      complete.mock.calls[call]?.[0].system,
+      complete.mock.calls[call]?.[0].messages,
+    ]);
 
-  it("教材が更新されても、提出時の版の解答例と観点でレビューし、照合する", async () => {
+  it("素材だけが差し替わっても、提出は受け付けた時点の解答例と観点でレビュー・照合する", async () => {
     complete.mockResolvedValue(
-      answer(aiOutput({ learnerReply: { message: LEAKY, goodPoints: [], nextSteps: [] } })),
+      // 確定するとステージを修了して次の提出ができないので、人に回る結果にする。
+      answer(
+        aiOutput({
+          confidence: "low",
+          learnerReply: { message: LEAKY, goodPoints: [], nextSteps: [] },
+        }),
+      ),
     );
-    await submit();
-    await seedVersionB(privateA("版 A の観点"));
+    const first = await submit();
+    const [saved] = await db.select().from(submissions).where(eq(submissions.id, first.id));
+    expect(saved?.taskPrivateHash).toMatch(/^[a-f0-9]{64}$/);
+    await replacePrivate(
+      '<section class="hero-banner">差し替え後の解答例</section>\n',
+      "差し替え後の観点",
+    );
     await run();
-    expect(promptText()).toContain("版 A の観点");
-    expect(promptText()).toContain("page-title");
-    expect(promptText()).not.toContain("版 B の観点");
-    expect(promptText()).not.toContain("hero-banner");
-    // 照合も版 A の解答例で行う (版 B の解答例では当たらない返信)。
+    expect(promptOf(0)).toContain("見出しを飾りに使う");
+    expect(promptOf(0)).toContain("page-title");
+    expect(promptOf(0)).not.toContain("差し替え後");
+    // 照合も受け付けた時点の解答例で行う (差し替え後の解答例では当たらない返信)。
     expect((await reviews())[0]?.leakCheck).toMatchObject({ action: "sanitize", hits: [0] });
+
+    // 差し替え後の提出は、差し替え後の素材を読む。
+    const second = await submit();
+    await run();
+    expect(promptOf(1)).toContain("差し替え後の観点");
+    expect(promptOf(1)).not.toContain("見出しを飾りに使う");
+    const [latest] = await db.select().from(submissions).where(eq(submissions.id, second.id));
+    expect(latest?.taskPrivateHash).not.toBe(saved?.taskPrivateHash);
+    expect(await db.select().from(taskPrivateVersions)).toHaveLength(2);
   });
 
-  it("提出時の版の素材が無く、今の版とも違えば AI を呼ばずに人に回す", async () => {
+  it("今の版と違う課題の版への提出は素材の版を記録せず、AI を呼ばずに人に回す", async () => {
     complete.mockResolvedValue(answer(aiOutput()));
-    await submit();
-    await seedVersionB(null);
+    await db.update(tasks).set({ contentHash: "b".repeat(64) });
+    const row = await submit();
+    const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+    expect(saved?.taskPrivateHash).toBeNull();
     await run();
     expect(complete).not.toHaveBeenCalled();
     expect((await reviews())[0]).toMatchObject({
@@ -391,16 +396,13 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(await progress()).toBe("instructor-pending");
   });
 
-  it("版ごとの素材があれば、同じ版の最新の手直しを読む", async () => {
+  it("記録した素材の版の行が無ければ人に回す", async () => {
     complete.mockResolvedValue(answer(aiOutput()));
     await submit();
-    await db.update(taskRevisions).set({ privateFiles: privateA("手直し前の観点") });
-    // 同じ版の素材の手直し (seed の上書き)。task_private より版ごとの記録を優先する。
-    await db.update(taskRevisions).set({ privateFiles: privateA("手直し後の観点") });
+    await db.delete(taskPrivateVersions);
     await run();
-    expect(promptText()).toContain("手直し後の観点");
-    expect(promptText()).not.toContain("手直し前の観点");
-    expect(promptText()).not.toContain("見出しを飾りに使う");
+    expect(complete).not.toHaveBeenCalled();
+    expect((await reviews())[0]).toMatchObject({ failure: "stale-material", outcome: "escalated" });
   });
 
   it("人に回した提出は「講師の確認待ち」にし、受講者向けの API から AI の所見を返さない", async () => {

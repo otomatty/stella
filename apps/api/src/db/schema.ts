@@ -304,11 +304,6 @@ export const taskRevisions = sqliteTable(
     contentHash: text("content_hash").notNull(),
     definition: text("definition").notNull(),
     bundle: text("bundle").notNull(),
-    /**
-     * その版の非公開の素材 (`private/` の解答例・観点など、task_private と同じ形の JSON)。
-     * 受講者向けの API では返さない。AI の一次レビューが提出時の版の素材を読む (0048)。
-     */
-    privateFiles: text("private_files"),
     createdAt: tsNow("created_at"),
   },
   (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
@@ -320,6 +315,25 @@ export const taskPrivate = sqliteTable("task_private", {
     .references(() => tasks.id, { onDelete: "cascade" }),
   files: text("files").notNull(),
 });
+
+/**
+ * 非公開の素材 (`private/` の解答例・観点など、task_private と同じ形の JSON) の版。追記だけで
+ * 書き換えない。課題の版 (content_hash) は非公開の素材を含まないので、素材の内容ハッシュ
+ * (`private_hash`) で別に版を持つ。提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (0048)。
+ * 受講者向けの API では返さない。
+ */
+export const taskPrivateVersions = sqliteTable(
+  "task_private_versions",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    privateHash: text("private_hash").notNull(),
+    files: text("files").notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.taskId, t.privateHash] }) }),
+);
 
 export const taskProgress = sqliteTable(
   "task_progress",
@@ -1206,6 +1220,8 @@ export const submissions = sqliteTable("submissions", {
   code: text("code").notNull(),
   taskId: text("task_id"),
   taskContentHash: text("task_content_hash"),
+  /** 提出を受け付けた時点の非公開の素材の版 (`task_private_versions`)。分からなければ null (0048)。 */
+  taskPrivateHash: text("task_private_hash"),
   taskKind: text("task_kind"),
   submissionMode: text("submission_mode"),
   localResult: text("local_result", { mode: "json" }).$type<

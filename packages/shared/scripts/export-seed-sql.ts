@@ -575,12 +575,16 @@ for (const [order, task] of content.tasks.entries()) {
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1;`,
   );
   lines.push(
-    // 配布した版の定義と bundle は上書きしない。非公開の素材は版のハッシュに含まれないので、
-    // 同じ版の手直し (解答例・観点の修正) だけは最新で上書きする。AI のレビューは提出時の版の素材を読む。
-    `insert into task_revisions (task_id, content_hash, definition, bundle, private_files, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${strLit(JSON.stringify(task.privateFiles))}, ${nowExpr()}) on conflict (task_id, content_hash) do update set private_files = excluded.private_files;`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}) on conflict (task_id, content_hash) do nothing;`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,
+  );
+  // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
+  // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
+  const privateJson = JSON.stringify(task.privateFiles);
+  lines.push(
+    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(createHash("sha256").update(privateJson).digest("hex"))}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
   );
 }
 

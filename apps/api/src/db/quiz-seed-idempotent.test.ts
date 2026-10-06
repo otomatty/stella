@@ -7,6 +7,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { closeSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -351,35 +352,29 @@ describe("教材 seed の再実行", () => {
     db.close();
   }, 30_000);
 
-  it("課題の版ごとに非公開の素材を残し、同じ版の素材だけを最新で上書きする", () => {
+  it("非公開の素材の版を内容ハッシュで追記し、seed を流し直しても既存の版を書き換えない", () => {
     const db = migratedDb();
     applyScript(db, seedSql);
-    const rows = () =>
+    const versions = () =>
       db
         .prepare(
-          `select r.task_id, r.content_hash, r.definition, r.private_files, p.files
-           from task_revisions r join task_private p on p.task_id = r.task_id`,
+          `select v.task_id, v.private_hash, v.files, p.files as current
+           from task_private_versions v join task_private p on p.task_id = v.task_id`,
         )
-        .all() as {
-        task_id: string;
-        content_hash: string;
-        definition: string;
-        private_files: string | null;
-        files: string;
-      }[];
-    const seeded = rows();
+        .all() as { task_id: string; private_hash: string; files: string; current: string }[];
+    const seeded = versions();
     expect(seeded.length).toBeGreaterThan(0);
     for (const row of seeded) {
-      expect(row.private_files).toBe(row.files);
-      expect(Object.keys(JSON.parse(row.private_files ?? "{}"))).toContain("review.md");
+      // API が提出の時点で取る版と同じ式 (task_private の JSON の SHA-256)。
+      expect(row.private_hash).toBe(createHash("sha256").update(row.current).digest("hex"));
+      expect(row.files).toBe(row.current);
     }
-    // 同じ版の素材の手直しは seed が上書きし、配布した版の定義は上書きしない。
-    db.exec("update task_revisions set private_files = '{}', definition = 'kept'");
+    // 追記だけ: 既存の版の行は seed で上書きしない。
+    db.exec("update task_private_versions set files = 'kept'");
     applyScript(db, seedSql);
-    for (const row of rows()) {
-      expect(row.private_files).toBe(row.files);
-      expect(row.definition).toBe("kept");
-    }
+    const again = versions();
+    expect(again).toHaveLength(seeded.length);
+    for (const row of again) expect(row.files).toBe("kept");
   });
 
   it("復習カードと解答ログを残し、設問数も変えない", () => {

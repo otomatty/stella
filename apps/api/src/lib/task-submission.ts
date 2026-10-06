@@ -21,6 +21,8 @@ import {
   submissionFiles,
   submissionReviews,
   submissions,
+  taskPrivate,
+  taskPrivateVersions,
   taskProgress,
   taskRevisions,
   tasks,
@@ -30,6 +32,11 @@ import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { canAccessTasks } from "./task-access.js";
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
   let input: TaskSubmissionInput;
@@ -44,10 +51,13 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
       stageId: sections.stageId,
       stageTitle: stages.title,
       sectionTitle: sections.title,
+      contentHash: tasks.contentHash,
+      privateFiles: taskPrivate.files,
     })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
+    .leftJoin(taskPrivate, eq(taskPrivate.taskId, tasks.id))
     .where(and(eq(tasks.id, input.taskId), eq(tasks.active, true)))
     .limit(1);
   if (!task || !(await canAccessTasks(db, caller, task.stageId, "write")))
@@ -111,6 +121,14 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     });
     const progressStatus = forced.length === 0 ? "submitted" : "instructor-pending";
     const now = new Date();
+    // 非公開の素材 (解答例・観点) の版を、課題の版と同じ時点で記録する。課題の版のハッシュは
+    // 非公開の素材を含まないので、素材の内容ハッシュで別に持つ (seed と同じ式)。今の task_private が
+    // この提出の版の素材だと言えるのは、提出の版が今の版と同じときだけ。違えば記録せず、AI は
+    // 判定しない (人に回る)。
+    const privateVersion =
+      task.privateFiles !== null && task.contentHash === input.contentHash
+        ? { hash: await sha256Hex(task.privateFiles), files: task.privateFiles }
+        : null;
     const result = await withResourceLock(
       db,
       taskSubmissionLockId(caller.tenantId, caller.id, task.id),
@@ -139,6 +157,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           attempt,
           submittedAt: now,
           aiReviewStatus: forced.length === 0 ? "queued" : "escalated",
+          taskPrivateHash: privateVersion?.hash ?? null,
         });
         // 同じ課題を出し直したら、前の試行の AI レビューは新しい提出で置き換える (07 §6.3)。
         // 置き換えるのは判定前の試行 (AI の確認待ちと、人に回して講師の確認を待つもの) だけで、
@@ -180,6 +199,20 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           nextAttemptAt: now,
           enqueuedAt: now,
         });
+        // 受け付けた時点の非公開の素材を版として残す (seed と同じ版なら既存の行のまま)。
+        const keepPrivate = privateVersion
+          ? [
+              db
+                .insert(taskPrivateVersions)
+                .values({
+                  taskId: task.id,
+                  privateHash: privateVersion.hash,
+                  files: privateVersion.files,
+                  createdAt: now,
+                })
+                .onConflictDoNothing(),
+            ]
+          : [];
         const progress = db
           .insert(taskProgress)
           .values({
@@ -203,6 +236,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           supersede,
           cancel,
           enqueue,
+          ...keepPrivate,
         ]);
         committed = true;
         const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);

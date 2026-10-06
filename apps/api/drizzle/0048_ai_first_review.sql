@@ -58,16 +58,19 @@ CREATE INDEX ai_reviews_submission_idx ON ai_reviews(submission_id, created_at);
 --> statement-breakpoint
 CREATE INDEX ai_reviews_tenant_idx ON ai_reviews(tenant_id, created_at);
 --> statement-breakpoint
--- 非公開の素材 (解答例・観点とよくある違反) を課題の版ごとに残す。task_private は seed のたびに
--- 最新で上書きされるので、AI のレビューは提出時の版 (content_hash) の素材をここから読む。
--- 版のハッシュは非公開の素材を含まないので、同じ版の素材の手直しは seed が上書きする。
-ALTER TABLE task_revisions ADD COLUMN private_files text;
---> statement-breakpoint
--- 今の版にだけ、いまの task_private を写す。古い版の素材は分からないので空のまま (AI は判定しない)。
-UPDATE task_revisions SET private_files = (
-  SELECT p.files FROM task_private p JOIN tasks t ON t.id = p.task_id
-  WHERE p.task_id = task_revisions.task_id AND t.content_hash = task_revisions.content_hash
+-- 非公開の素材 (解答例・観点とよくある違反) を、素材そのものの版 (private_hash) ごとに残す。
+-- 課題の版 (content_hash) は非公開の素材を含まず、task_private は seed のたびに最新で上書きされる。
+-- 行は追記だけで書き換えない。提出は受け付けた時点の素材の版を task_private_hash に記録し、
+-- AI のレビューはその版を読む。
+CREATE TABLE task_private_versions (
+  task_id text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  private_hash text NOT NULL,
+  files text NOT NULL,
+  created_at integer NOT NULL,
+  PRIMARY KEY (task_id, private_hash)
 );
+--> statement-breakpoint
+ALTER TABLE submissions ADD COLUMN task_private_hash text;
 --> statement-breakpoint
 -- コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分) を seed で入れる。
 CREATE TABLE coding_rules (
@@ -114,4 +117,21 @@ WHERE status = 'submitted' AND EXISTS (
       SELECT max(m.attempt) FROM submissions m
       WHERE m.tenant_id = s.tenant_id AND m.student_id = s.student_id AND m.task_id = s.task_id
     )
+);
+--> statement-breakpoint
+-- 導入前の未判定の提出のうち、課題の版が今の版と同じものだけ、今の task_private を素材の版とみなす
+-- (SQL では内容ハッシュを計算できないので、版の名前は migrated-<課題の版> にする)。
+-- 版が違う提出は素材が分からないので空のままにし、AI は判定せずに人に回す。
+INSERT OR IGNORE INTO task_private_versions (task_id, private_hash, files, created_at)
+SELECT t.id, 'migrated-' || t.content_hash, p.files, unixepoch() * 1000
+FROM tasks t JOIN task_private p ON p.task_id = t.id
+WHERE EXISTS (
+  SELECT 1 FROM submissions s
+  WHERE s.task_id = t.id AND s.task_content_hash = t.content_hash AND s.verdict IS NULL
+);
+--> statement-breakpoint
+UPDATE submissions SET task_private_hash = 'migrated-' || task_content_hash
+WHERE task_id IS NOT NULL AND verdict IS NULL AND EXISTS (
+  SELECT 1 FROM tasks t JOIN task_private p ON p.task_id = t.id
+  WHERE t.id = submissions.task_id AND t.content_hash = submissions.task_content_hash
 );

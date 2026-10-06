@@ -30,10 +30,11 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       db.insert(tasks).values(
         (
           [
-            ["page", "basic"],
-            ["check", "assessment-a"],
+            ["page", "basic", "h"],
+            ["check", "assessment-a", "h"],
+            ["updated", "basic", "new"],
           ] as const
-        ).map(([id, kind], order) => ({
+        ).map(([id, kind, contentHash], order) => ({
           id,
           sectionId: "unit",
           title: id,
@@ -41,7 +42,7 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
           pattern: "p",
           estimatedMinutes: 10,
           order,
-          contentHash: "h",
+          contentHash,
           definition: "{}",
           bundle: "{}",
         })),
@@ -70,11 +71,11 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       1,
       null,
     );
-    // 版ごとの非公開の素材は、今の版 (tasks.content_hash) にだけ task_private を写す。
+    // 教材の更新後に残った、古い課題の版への未判定の提出。
+    insert.run("stale", "更新", "updated", "basic", matched, "[]", 1, null);
     database.sqlite.exec(`
-      insert into task_private (task_id, files) values ('page', '{"review.md":"cmV2aWV3"}');
-      insert into task_revisions (task_id, content_hash, definition, bundle, created_at)
-        values ('page', 'h', '{}', '{}', 0), ('page', 'old', '{}', '{}', 0);
+      insert into task_private (task_id, files) values
+        ('page', '{"review.md":"cGFnZQ=="}'), ('updated', '{"review.md":"bmV3"}');
     `);
     for (const statement of SQL.split("--> statement-breakpoint")) database.sqlite.exec(statement);
   });
@@ -88,18 +89,27 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       decided: null,
       latest: "queued",
       old: "superseded",
+      stale: "queued",
       support: "escalated",
     });
   });
 
-  it("今の版にだけ非公開の素材を写し、古い版は空のままにする", () => {
-    const revisions = database.sqlite
-      .prepare("select content_hash, private_files from task_revisions order by content_hash")
-      .all();
-    expect(revisions).toEqual([
-      { content_hash: "h", private_files: '{"review.md":"cmV2aWV3"}' },
-      { content_hash: "old", private_files: null },
-    ]);
+  it("課題の版が今の版と同じ未判定の提出にだけ、今の素材を版として記録する", () => {
+    const rows = database.sqlite
+      .prepare("select id, task_private_hash from submissions order by id")
+      .all() as { id: string; task_private_hash: string | null }[];
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.task_private_hash]))).toEqual({
+      decided: null,
+      latest: "migrated-h",
+      old: "migrated-h",
+      stale: null,
+      support: null,
+    });
+    expect(
+      database.sqlite
+        .prepare("select task_id, private_hash, files from task_private_versions")
+        .all(),
+    ).toEqual([{ task_id: "page", private_hash: "migrated-h", files: '{"review.md":"cGFnZQ=="}' }]);
   });
 
   it("人に回したものも下書きのために待ち行列に積み、進捗を「講師の確認待ち」にそろえる", () => {
@@ -108,6 +118,7 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       .all();
     expect(jobs).toEqual([
       { submission_id: "latest", state: "queued" },
+      { submission_id: "stale", state: "queued" },
       { submission_id: "support", state: "queued" },
     ]);
     const progress = database.sqlite

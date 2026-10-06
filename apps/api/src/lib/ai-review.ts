@@ -36,7 +36,7 @@ import {
   sections,
   stages,
   submissions,
-  taskPrivate,
+  taskPrivateVersions,
   taskRevisions,
   tasks,
 } from "../db/schema.js";
@@ -111,39 +111,41 @@ async function loadMaterial(
   if (!row.taskId || !row.taskContentHash)
     return { failure: "error", detail: "課題の提出ではありません" };
   const [task] = await db
-    .select({
-      stageId: sections.stageId,
-      slug: stages.slug,
-      contentHash: tasks.contentHash,
-      privateFiles: taskPrivate.files,
-    })
+    .select({ stageId: sections.stageId, slug: stages.slug })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
-    .leftJoin(taskPrivate, eq(taskPrivate.taskId, tasks.id))
     .where(eq(tasks.id, row.taskId))
     .limit(1);
   const [revision] = await db
-    .select({
-      definition: taskRevisions.definition,
-      bundle: taskRevisions.bundle,
-      privateFiles: taskRevisions.privateFiles,
-    })
+    .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
     .from(taskRevisions)
     .where(
       and(eq(taskRevisions.taskId, row.taskId), eq(taskRevisions.contentHash, row.taskContentHash)),
     )
     .limit(1);
   if (!task || !revision) return { failure: "error", detail: "課題の版が見つかりません" };
-  // 解答例と観点は提出時の版のものを読む。版ごとの記録が無い (0048 より前の版) ときは、
-  // 今の版と同じ場合に限って task_private を使う。版が違えば別の解答例で判定・照合してしまうので、
-  // AI は呼ばずに人に回す。
-  const privateSource =
-    revision.privateFiles ?? (task.contentHash === row.taskContentHash ? task.privateFiles : null);
-  if (!privateSource)
+  // 解答例と観点は、提出を受け付けた時点の素材の版を読む。版が記録されていない提出
+  // (今の版と違う課題の版への提出、0048 より前で素材が分からない提出) と、版の行が無い提出は、
+  // 別の解答例で判定・照合しないよう AI を呼ばずに人に回す。
+  const [privateVersion] = row.taskPrivateHash
+    ? await db
+        .select({ files: taskPrivateVersions.files })
+        .from(taskPrivateVersions)
+        .where(
+          and(
+            eq(taskPrivateVersions.taskId, row.taskId),
+            eq(taskPrivateVersions.privateHash, row.taskPrivateHash),
+          ),
+        )
+        .limit(1)
+    : [];
+  if (!privateVersion)
     return {
       failure: "stale-material",
-      detail: `提出時の版 (${row.taskContentHash.slice(0, 12)}) の非公開の素材がありません`,
+      detail: row.taskPrivateHash
+        ? `非公開の素材の版 (${row.taskPrivateHash.slice(0, 20)}) がありません`
+        : "提出時の非公開の素材の版が記録されていません",
     };
   const definition = JSON.parse(revision.definition) as TaskDefinitionReview;
   const ruleRefs = definition.review?.rules ?? [];
@@ -175,7 +177,7 @@ async function loadMaterial(
     }),
     ...(definition.review?.rubric ?? []).map((item) => ({ ...item, rule: false })),
   ];
-  const privateFiles = JSON.parse(privateSource) as Record<string, string>;
+  const privateFiles = JSON.parse(privateVersion.files) as Record<string, string>;
   const solution = Object.entries(privateFiles)
     .filter(([path]) => path.startsWith("solution/"))
     .map(([path, value]) => ({ path: path.slice("solution/".length), text: decodeBase64(value) }));
