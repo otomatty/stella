@@ -311,6 +311,26 @@ describe("類題の出題 (#39)", () => {
     });
   });
 
+  it("自力か支援付きかは、解いた順ではなく種別がいちばん難しい練習の合格で決める", async () => {
+    const independent = "dev-env-basics/u01/page-independent";
+    await addTask(independent, "independent", 10, null);
+    // learner: 自力課題をヒント付きで解き、最後に基礎課題を自力で解く → 支援付き (補習)
+    await recordPass("learner", independent, noonOf("2026-10-01"), true);
+    await recordPass("learner", PARENT, noonOf("2026-10-02"), false);
+    // learner2: 基礎課題をヒント付きで解き、最後に自力課題を自力で解く → 自力 (3 日後)
+    await recordPass("learner2", PARENT, noonOf("2026-10-01"), true);
+    await recordPass("learner2", independent, noonOf("2026-10-02"), false);
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-02"));
+    await loadTodayVariant(db, caller("learner2"), noonOf("2026-10-02"));
+    // 起点はどちらも練習をすべて終えた 10/2 のまま。
+    expect(await reviewsOf("learner")).toMatchObject([
+      { step: 1, purpose: "remedial", dueOn: "2026-10-03", status: "scheduled" },
+    ]);
+    expect(await reviewsOf("learner2")).toMatchObject([
+      { step: 1, purpose: "day3", dueOn: "2026-10-05", status: "scheduled" },
+    ]);
+  });
+
   it("同じ類題を 2 度出さず、1 日 1 問・合格するまで次を出さない", async () => {
     await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
     const first = await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04"));

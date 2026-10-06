@@ -11,7 +11,7 @@
  *
  * 出す時期:
  * - パターンの練習 (同じパターンの課題のうち確認B以外) にすべて合格した時点を起点にする。
- *   起点の合格 (最後に合格した課題の合格) が自力なら、約 3 日後・約 1 週間後 (= 確認B)・
+ *   起点の合格 (練習のうち種別がいちばん難しい課題の合格。`assistDecidingPass`) が自力なら、約 3 日後・約 1 週間後 (= 確認B)・
  *   約 3 週間後に確認用の類題を出す。教材に通常の確認B (類題でない `assessment-b`) がある
  *   パターンは、1 週間後の枠をその確認Bに任せて類題を出さない (学習ペースの確認Bと二重にしない)。
  * - 起点の合格が支援付きなら、間隔を短くし、補習の小問題を 3 問 (1 日 1 問、前の合格の翌日から)、
@@ -106,6 +106,44 @@ export interface VariantSlotRecord {
   passedAt: number | null;
   /** 合格が支援付きだったか。合格前は null。 */
   passedAssisted: boolean | null;
+}
+
+/**
+ * 自力か支援付きかを決める課題の種別の順 (難しい順)。パターンの練習のうち、この順でいちばん上の
+ * 種別の課題の解け方で決める。最後に合格した課題で決めると、難しい課題をヒント付きで解いたあと
+ * 易しい課題を自力で解けば「自力」になり、解く順番で結果が変わるため。
+ * 確認Bは起点のあとに解くので練習に入らない。
+ */
+export const ASSIST_DECIDING_KIND_ORDER: readonly TaskKind[] = [
+  "assessment-a",
+  "integration",
+  "independent",
+  "debug",
+  "connection",
+  "basic",
+];
+
+/**
+ * パターンの練習の合格のうち、自力か支援付きかを決める 1 つ (`ASSIST_DECIDING_KIND_ORDER` で
+ * いちばん上の種別。同じ種別なら最後に合格したもの)。合格が無ければ null。
+ */
+export function assistDecidingPass<T extends { kind: string; passedAt: number }>(
+  passes: readonly T[],
+): T | null {
+  const rank = (kind: string) => {
+    const i = (ASSIST_DECIDING_KIND_ORDER as readonly string[]).indexOf(kind);
+    return i === -1 ? ASSIST_DECIDING_KIND_ORDER.length : i;
+  };
+  let best: T | null = null;
+  for (const pass of passes) {
+    if (
+      !best ||
+      rank(pass.kind) < rank(best.kind) ||
+      (rank(pass.kind) === rank(best.kind) && pass.passedAt > best.passedAt)
+    )
+      best = pass;
+  }
+  return best;
 }
 
 /** パターンの練習をすべて合格した時点 (起点) と、その合格が支援付きだったか。 */

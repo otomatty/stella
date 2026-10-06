@@ -48,6 +48,11 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 - `starter/.github/workflows/deploy.yml` は、`main` への push でテスト (`npm test` = `node --test`) を実行し、通ったら `site/` を GitHub Pages に公開する。外部の action はコミットで固定し、版をコメントと環境台帳の `ci.actions` に残す。権限は既定で `contents: read`、公開の権限 (`pages: write`・`id-token: write`) は `deploy` のジョブだけに渡し、チェックアウトの認証情報は残さない (`persist-credentials: false`)。
 - 依存パッケージを持たない (Node.js のテストランナーだけを使う) ので、CI に lockfile と `npm ci` が要らない。依存を足す課題は、ほかのテンプレートと同じく版を固定し、lockfile を置き、ワークフローに `npm ci` を足す。
 - 受講者のリポジトリでは、課題フォルダーがリポジトリの一番上になる (Actions は一番上の `.github/workflows/` だけを読む)。課題文に、公開リポジトリにすること・Pages の公開元を「GitHub Actions」にすることを書く。
+- 拡張は「課題を確認する」で、課題フォルダーがリポジトリの一番上であることと、提出・配布のファイルとワークフローがコミット済みであることを確かめる (CI が動かしたコミットと、レビューするファイルを同じにするため。決定、07 §5.5)。学習フォルダー全体を 1 つのリポジトリにしていると通らないので、課題文に次の手順を入れる。
+  1. 課題フォルダーで `git init` し、変更をコミットする (学習フォルダーや単元のフォルダーではなく、課題フォルダーをリポジトリにする)。
+  2. GitHub に公開リポジトリを作って push し、リポジトリの設定で Pages の公開元を「GitHub Actions」にする。
+  3. Actions の実行が成功したら、その実行の画面の URL (`…/actions/runs/<番号>`) と公開先の URL を控える。
+  4. 「課題を確認する」で 2 つの URL を入力する。push のあとに手元を直したら、もう一度コミット・push し、新しい実行の URL を入力する。
 - `bun run content:check` は、解答例を重ねた配布ファイルにワークフローがそろうことだけを確かめる (CI は GitHub で動く)。テンプレートのテストが通ることは `templates.test.ts` が `node --test` で確かめる。
 
 ## 道具の版を上げる
