@@ -72,6 +72,10 @@ CREATE TABLE task_private_versions (
 --> statement-breakpoint
 ALTER TABLE submissions ADD COLUMN task_private_hash text;
 --> statement-breakpoint
+-- 提出を受け付けた時点のコーディング規則の版。規則は seed で上書きされるので、AI のレビューは
+-- 今の版と食い違えば人に回す。既存の提出は規則の正本より前なので null のまま (今の規則で見る)。
+ALTER TABLE submissions ADD COLUMN rule_set_hash text;
+--> statement-breakpoint
 -- コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分) を seed で入れる。
 CREATE TABLE coding_rules (
   id text PRIMARY KEY NOT NULL,

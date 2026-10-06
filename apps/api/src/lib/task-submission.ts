@@ -35,6 +35,7 @@ import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
+import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTasks } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { hasRecordedSupport } from "./task-support.js";
@@ -55,6 +56,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .select({
       id: tasks.id,
       stageId: sections.stageId,
+      stageSlug: stages.slug,
       stageTitle: stages.title,
       sectionTitle: sections.title,
       contentHash: tasks.contentHash,
@@ -145,6 +147,8 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
       task.privateFiles !== null && task.contentHash === input.contentHash
         ? { hash: await sha256Hex(task.privateFiles), files: task.privateFiles }
         : null;
+    // コーディング規則の版も受け付けた時点で記録する (規則は seed で上書きされるため)。
+    const ruleSetHash = (await loadCodingRuleSet(db, task.stageSlug)).hash;
     const result = await withResourceLock(
       db,
       taskSubmissionLockId(caller.tenantId, caller.id, task.id),
@@ -174,6 +178,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           submittedAt: now,
           aiReviewStatus: forced.length === 0 ? "queued" : "escalated",
           taskPrivateHash: privateVersion?.hash ?? null,
+          ruleSetHash,
         });
         // 同じ課題を出し直したら、前の試行の AI レビューは新しい提出で置き換える (07 §6.3)。
         // 置き換えるのは判定前の試行 (AI の確認待ちと、人に回して講師の確認を待つもの) だけで、

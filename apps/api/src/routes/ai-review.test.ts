@@ -421,6 +421,35 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(await progress()).toBe("instructor-pending");
   });
 
+  it("提出のあとにコーディング規則が変わったら、AI を呼ばずに人に回す", async () => {
+    complete.mockResolvedValue(answer(aiOutput()));
+    const row = await submit();
+    const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+    expect(saved?.ruleSetHash).toMatch(/^[a-f0-9]{64}$/);
+    await db
+      .update(codingRules)
+      .set({ statement: "後から足した要件", contentHash: "d".repeat(64) })
+      .where(eq(codingRules.id, "DEV-HTML-01"));
+    await run();
+    expect(complete).not.toHaveBeenCalled();
+    expect((await reviews())[0]).toMatchObject({
+      outcome: "escalated",
+      failure: "stale-material",
+      routeReasons: ["ai-unavailable"],
+      learnerReply: null,
+    });
+    expect(await progress()).toBe("instructor-pending");
+  });
+
+  it("規則の版が無い提出 (0048 より前) は今の規則でレビューする", async () => {
+    complete.mockResolvedValue(answer(aiOutput()));
+    const row = await submit();
+    await db.update(submissions).set({ ruleSetHash: null }).where(eq(submissions.id, row.id));
+    await run();
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect((await reviews())[0]?.failure).toBeNull();
+  });
+
   it("人に回した提出は「講師の確認待ち」にし、受講者向けの API から AI の所見を返さない", async () => {
     const out = aiOutput({ confidence: "medium" });
     out.rubric[1].evidence = [{ file: "missing.html", startLine: 1, endLine: 1 }];

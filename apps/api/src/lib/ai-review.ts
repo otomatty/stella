@@ -29,11 +29,10 @@ import {
   type ReviewRubricItem,
 } from "@stella/shared/review/ai-review";
 import { checkSolutionLeak } from "@stella/shared/review/solution-leak";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   aiReviews,
-  codingRules,
   sections,
   stages,
   submissions,
@@ -46,14 +45,13 @@ import { MissingGatewayConfigError } from "./ai-gateway.js";
 import {
   AI_REVIEW_PROMPT_VERSION,
   buildAiReviewPrompt,
-  type CodingRuleText,
   MAX_REVIEW_INPUT_CHARS,
   type ReviewMaterial,
-  renderRuleBlocks,
 } from "./ai-review-prompt.js";
 import { completeJsonSchema, resolveAnthropicModel } from "./anthropic-complete.js";
 import { MissingApiKeyError } from "./anthropic.js";
 import { ApiError, type Caller } from "./authz.js";
+import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { autoCompleteStagesIfMet } from "./stage-auto-complete.js";
 import {
   AiReviewNeedsHuman,
@@ -88,11 +86,6 @@ interface LoadedMaterial {
 
 function decodeBase64(value: string): string {
   return new TextDecoder().decode(Uint8Array.from(atob(value), (c) => c.charCodeAt(0)));
-}
-
-async function sha256Hex(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 interface TaskDefinitionReview {
@@ -152,19 +145,15 @@ async function loadMaterial(
     };
   const definition = JSON.parse(revision.definition) as TaskDefinitionReview;
   const ruleRefs = definition.review?.rules ?? [];
-  const ruleRows = await db
-    .select()
-    .from(codingRules)
-    .where(inArray(codingRules.scope, ["common", task.slug]))
-    .orderBy(codingRules.position);
-  const toText = (r: typeof codingRules.$inferSelect): CodingRuleText => ({
-    id: r.id,
-    title: r.title,
-    statement: r.statement,
-    appliesTo: r.appliesTo,
-    introducedIn: r.introducedIn,
-    exception: r.exception,
-  });
+  const ruleSet = await loadCodingRuleSet(db, task.slug);
+  const ruleRows = ruleSet.rows;
+  // 提出のあとに規則が変わっていたら、受け付けた時点に無かった規則で判定しないよう人に回す。
+  // 版が null の提出は 0048 より前のもの (規則の正本がまだ無かった) なので、今の規則で見る。
+  if (row.ruleSetHash !== null && row.ruleSetHash !== ruleSet.hash)
+    return {
+      failure: "stale-material",
+      detail: `提出のあとにコーディング規則が変わりました (${row.ruleSetHash.slice(0, 12)} → ${ruleSet.hash.slice(0, 12)})`,
+    };
   // 提出の版が参照する規則が正本から消えていたら、本文なしでは判定できないので AI を呼ばずに
   // 人に回す (AI が本文の無い項目に「満たす」と答えても確定させない)。
   const missingRules = ruleRefs.filter((ref) => !ruleRows.some((r) => r.id === ref.id));
@@ -173,8 +162,7 @@ async function loadMaterial(
       failure: "stale-material",
       detail: `規則の本文が見つかりません: ${missingRules.map((ref) => ref.id).join(", ")}`,
     };
-  const commonRules = ruleRows.filter((r) => r.scope === "common").map(toText);
-  const courseRules = ruleRows.filter((r) => r.scope === task.slug).map(toText);
+  const { commonRules, courseRules } = ruleSet;
   const rubric: ReviewRubricItem[] = [
     ...ruleRefs.flatMap((ref) => {
       const rule = ruleRows.find((r) => r.id === ref.id);
@@ -224,7 +212,6 @@ async function loadMaterial(
       support: row.supportLog ?? [],
     },
   };
-  const blocks = renderRuleBlocks(material);
   return {
     material,
     stageId: task.stageId,
@@ -238,7 +225,7 @@ async function loadMaterial(
       required: ref.required,
       contentHash: ruleRows.find((r) => r.id === ref.id)?.contentHash ?? null,
     })),
-    ruleSetHash: await sha256Hex(`${blocks.common}\n\n${blocks.course}`),
+    ruleSetHash: ruleSet.hash,
     escalateWhen: definition.review?.escalateWhen ?? [],
   };
 }

@@ -1335,6 +1335,11 @@ export const submissions = sqliteTable("submissions", {
   taskContentHash: text("task_content_hash"),
   /** 提出を受け付けた時点の非公開の素材の版 (`task_private_versions`)。分からなければ null (0048)。 */
   taskPrivateHash: text("task_private_hash"),
+  /**
+   * 提出を受け付けた時点のコーディング規則の版 (AI に渡す規則の本文のハッシュ)。今の版と違えば
+   * AI は判定せずに人に回す。0048 より前の提出 (規則の正本がまだ無かった) は null (0048)。
+   */
+  ruleSetHash: text("rule_set_hash"),
   taskKind: text("task_kind"),
   submissionMode: text("submission_mode"),
   localResult: text("local_result", { mode: "json" }).$type<
