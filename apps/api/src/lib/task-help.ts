@@ -364,12 +364,13 @@ async function loadHelpContext(
       .orderBy(asc(taskHelpOpens.openedAt)),
     loadServed(db, { ...row, kind }, contentHash),
   ]);
-  // 一覧 (`/api/tasks/for-stage`) と同じく、合格は版が変わっても合格のまま。
+  // 一覧 (`/api/tasks/for-stage`) と同じく、合格は版が変わっても合格のまま。それ以外の状態は、
+  // 受講者の手元の版 (送られた版。省略すれば今の版) の進み具合として読む。前の版で提出した
+  // 受講者の課題パネルにも「AI が確認中」などの今の状態を出す。
   const passed = progress !== undefined && PASSED.includes(progress.status);
+  const version = contentHash ?? row.contentHash;
   const status: TaskStatus =
-    progress && (progress.contentHash === row.contentHash || passed)
-      ? progress.status
-      : "not-started";
+    progress && (progress.contentHash === version || passed) ? progress.status : "not-started";
   // 今の版の方針は、今の版の定義と素材だけで決める (前の版の値で書き換えない)。
   const support =
     served?.contentHash === row.contentHash

@@ -618,6 +618,35 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       expect((await ok(await help())).hints[0]?.state ?? "none").not.toBe("locked");
     });
 
+    it.each(["submitted", "instructor-pending"] as const)(
+      "前の版で提出して %s の受講者には、その版の課題パネルで今の状態を返す",
+      async (status) => {
+        await setup("basic", BASIC);
+        await addOldRevision();
+        await db.insert(taskProgress).values({
+          userId: "learner",
+          taskId: fixture.input.taskId,
+          contentHash: OLD_HASH,
+          status,
+        });
+        await db.insert(submissions).values({
+          id: "old-version-submission",
+          tenantId: "ses",
+          studentId: "learner",
+          taskId: fixture.input.taskId,
+          taskContentHash: OLD_HASH,
+          stageTitle: "開発環境",
+          assignmentTitle: "課題",
+          code: "",
+        });
+        const body = await ok(await helpAt(OLD_HASH));
+        expect(body.status).toBe(status);
+        expect(body.latestSubmission).toEqual({ id: "old-version-submission", attempt: 1 });
+        // 今の版のフォルダーから見れば、その版ではまだ何もしていない (これまでどおり)。
+        expect((await ok(await help())).status).toBe("not-started");
+      },
+    );
+
     it("前の版の素材の版が分からなければ、素材を出さず受け取り直しを案内する", async () => {
       await setup("basic", BASIC);
       await addOldRevision({ privateHash: null });
