@@ -25,9 +25,11 @@ import {
   tenants,
 } from "../../src/db/schema.js";
 import type { Env } from "../../src/env.js";
+import { loadMaterial } from "../../src/lib/ai-review.js";
 import {
   AI_REVIEW_PROMPT_VERSION,
   AI_REVIEW_PROMPTS,
+  buildAiReviewPrompt,
   isAiReviewPromptVersion,
 } from "../../src/lib/ai-review-prompt.js";
 import { processAiReviewQueue } from "../../src/lib/ai-review-queue.js";
@@ -385,6 +387,13 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     (database.sqlite.prepare(EVAL_SOURCE_SQL).all() as unknown as EvalSourceRow[])
       .map(toExample)
       .sort((a, b) => order.indexOf(a.submissionId) - order.indexOf(b.submissionId));
+  const loadMaterialFor = async (id: string) => {
+    const [row] = await db.select().from(submissions).where(eq(submissions.id, id));
+    if (!row) throw new Error("提出が無い");
+    const loaded = await loadMaterial(db, env, row);
+    if ("failure" in loaded) throw new Error(loaded.detail);
+    return loaded;
+  };
   const candidates = [
     parseCandidate(MODEL, MODEL),
     parseCandidate(`claude-haiku-4-5@${AI_REVIEW_PROMPT_VERSION}`, MODEL),
@@ -425,6 +434,47 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     // 受講者の名前・メール・ID は AI に送らない。
     const sent = JSON.stringify(items[0]?.requests);
     for (const secret of [STUDENT, STUDENT_NAME, STUDENT_EMAIL]) expect(sent).not.toContain(secret);
+  });
+
+  it("CI と公開の課題の照合 (#ci-run) も、本番と同じ今の組み立てで入力と人に回す条件に入る", async () => {
+    const id = await reviewed("resubmit");
+    await db
+      .update(submissions)
+      .set({
+        machineCheck: {
+          matched: true,
+          reasons: [],
+          ci: {
+            status: "mismatch",
+            problems: ["commit-mismatch"],
+            checkedAt: "2026-10-06T00:00:00Z",
+            workflow: ".github/workflows/deploy.yml",
+            claim: {
+              runUrl: "https://github.com/learner/site/actions/runs/1",
+              deployUrl: "https://learner.github.io/site/",
+              commit: "a".repeat(40),
+            },
+            run: null,
+            httpStatus: 200,
+            authenticated: false,
+          },
+        },
+      })
+      .where(eq(submissions.id, id));
+    const { items } = await prepareReplay({ db, env }, subjectsOf(examples()), candidates, {
+      limit: null,
+    });
+    const [item] = items;
+    expect(item?.judge.forced).toEqual(["ci-mismatch"]);
+    expect(item?.judge.lines).toContainEqual(["#ci-run", expect.any(Number)]);
+    const sent = JSON.stringify(item?.requests[0]?.messages);
+    expect(sent).toContain('<record name=\\"#ci-run\\"');
+    expect(sent).toContain("照合の結果: 提出と食い違います");
+    // 前の版 (CI の照合を足す前) の指示でも、入力の組み立ては今のコードを使う。
+    const old = buildAiReviewPrompt((await loadMaterialFor(id)).material, "2026-10-06.1");
+    expect(old.system[0]?.text).toBe(AI_REVIEW_PROMPTS["2026-10-06.1"].instructions);
+    expect(old.system[0]?.text).not.toContain("CI の照合");
+    expect(old.lines.has("#ci-run")).toBe(true);
   });
 
   it("素材の版が残っていない・規則の版が食い違う・提出が無いものは判定しない。--limit は送る提出だけを数える", async () => {
