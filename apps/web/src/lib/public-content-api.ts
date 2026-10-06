@@ -3,7 +3,7 @@
  *
  * 公開の導入案内 (`/start`) が使う。トークンも独自ヘッダも付けない素の GET にする — 応答は
  * 誰に対しても同じなので Authorization を送る理由が無く、独自ヘッダが無ければ CORS の
- * プリフライトも要らない (ブラウザーのキャッシュも効く)。
+ * プリフライトも要らない。
  */
 
 import type { PublicLesson, PublicUnit } from "@stella/shared/cms/types";

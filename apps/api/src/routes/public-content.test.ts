@@ -73,7 +73,7 @@ describe("GET /api/public/units", () => {
   it("ログインなしで、印のある入口の単元のスライドとまとめだけを並べる", async () => {
     const res = await get("/api/public/units");
     expect(res.status).toBe(200);
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=300");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
     const { units } = await json<{ units: PublicUnit[] }>(res);
     expect(units).toEqual([
       {
@@ -126,7 +126,7 @@ describe("GET /api/public/lessons/:id", () => {
   it("印のあるレッスンの本文を、ログインなしで返す (OS 別のブロックもそのまま)", async () => {
     const res = await get("/api/public/lessons/u00-doc");
     expect(res.status).toBe(200);
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=300");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
     const { lesson } = await json<{ lesson: PublicLesson }>(res);
     expect(lesson).toEqual({
       id: "u00-doc",

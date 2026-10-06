@@ -21,8 +21,9 @@
  * 決める。リクエストからは選ばせない。未設定なら何も返さない (一覧は空、本文は 404)。
  * Authorization を付けて呼ばれても読まない (ログイン済みでも同じ応答)。
  *
- * 匿名で叩けるので、IP 単位のレート制限 (`PUBLIC_CONTENT_RATE_LIMITER`) とブラウザーの
- * キャッシュ (`Cache-Control: public, max-age=300`) で負荷を抑える。応答は誰に対しても同じ。
+ * 匿名で叩けるので、IP 単位のレート制限 (`PUBLIC_CONTENT_RATE_LIMITER`) で負荷を抑える。
+ * 応答はキャッシュさせない (`Cache-Control: no-store`)。印を外して seed したら、その時点で
+ * 読めなくなるようにするため (ブラウザーや途中の共有キャッシュに古い本文を残さない)。
  */
 
 import { Hono } from "hono";
@@ -40,8 +41,8 @@ export const publicContentRoute = new Hono<{ Bindings: Env }>();
 
 const PUBLIC_LESSON_TYPES: PublicLessonType[] = ["slides", "text"];
 
-/** 教材が変わるのは deploy の seed のときだけなので、数分の遅れは許す。 */
-const CACHE_CONTROL = "public, max-age=300";
+/** 公開を止めた本文をキャッシュから読ませない (ファイル冒頭)。 */
+const CACHE_CONTROL = "no-store";
 
 function publicTenant(env: Env): string | null {
   return env.PUBLIC_CONTENT_TENANT_ID?.trim() || null;
