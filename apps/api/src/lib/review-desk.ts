@@ -50,6 +50,7 @@ import {
   notifications,
   profiles,
   reviewCommentTemplates,
+  SUBMISSION_RECORD_COLUMNS,
   sections,
   stages,
   submissionChecks,
@@ -102,6 +103,26 @@ async function taskStage(db: Db, tenantId: string, taskId: string) {
     .where(and(eq(tasks.id, taskId), eq(stages.tenantId, tenantId)))
     .limit(1);
   return task ?? null;
+}
+
+/**
+ * staff: 提出の JSON の記録のうち、壊れていて読めない列 (`SUBMISSION_RECORD_COLUMNS` の名前)。
+ * 読み出しは壊れた列を null にして続ける (`safeJson`) ので、講師の画面には「読めない」ことを
+ * 別に知らせる。DB の元の文字列は書き換えない。
+ */
+export async function brokenRecordsOf(db: Db, submissionId: string): Promise<string[]> {
+  const columns = Object.fromEntries(
+    SUBMISSION_RECORD_COLUMNS.map((column) => [
+      column,
+      sql<number>`${sql.raw(`case when ${column} is not null and not json_valid(${column}) then 1 else 0 end`)}`,
+    ]),
+  ) as Record<(typeof SUBMISSION_RECORD_COLUMNS)[number], SQL<number>>;
+  const [row] = await db
+    .select(columns)
+    .from(submissions)
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+  return row ? SUBMISSION_RECORD_COLUMNS.filter((column) => Number(row[column]) === 1) : [];
 }
 
 // ---------------------------------------------------------------

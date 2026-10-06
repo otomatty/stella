@@ -621,17 +621,30 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       expect(await run(() => Date.now() + 3_600_000)).toEqual([]);
     });
 
-    it("失敗の記録も当てられない壊れた行でも、AI の確認待ちのまま残さない", async () => {
+    it("失敗の記録も当てられない (提出のロックを取れない) ときでも、AI の確認待ちのまま残さない", async () => {
       const row = await submit();
-      database.sqlite.exec(
-        `update submissions set machine_check = '{broken' where id = '${row.id}'`,
-      );
+      // 当てる処理 (人に回すのも) が毎回例外になる。
+      database.sqlite.exec("drop table resource_locks");
       expect(await runUntilGiveUp()).toEqual(["gave-up"]);
       expect((await db.select().from(aiReviewJobs))[0]).toMatchObject({ state: "done" });
       const [saved] = database.sqlite
         .prepare("select ai_review_status, verdict from submissions where id = ?")
         .all(row.id) as { ai_review_status: string; verdict: string | null }[];
       expect(saved).toEqual({ ai_review_status: "escalated", verdict: null });
+      expect(await progress()).toBe("instructor-pending");
+    });
+
+    it("照合の記録の JSON が壊れた提出は、例外にせず照合の食い違いとして人に回す", async () => {
+      complete.mockResolvedValue(answer(aiOutput()));
+      const row = await submit();
+      database.sqlite.exec(
+        `update submissions set machine_check = '{broken' where id = '${row.id}'`,
+      );
+      expect(await run()).toEqual(["applied"]);
+      expect((await reviews())[0]).toMatchObject({
+        outcome: "escalated",
+        routeReasons: ["machine-check"],
+      });
       expect(await progress()).toBe("instructor-pending");
     });
   });

@@ -57,6 +57,7 @@ import {
 } from "../lib/task-submission.js";
 import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
 import {
+  brokenRecordsOf,
   machineMatchedColumn,
   staffCommentsOf,
   submissionChecksOf,
@@ -617,8 +618,13 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     if (row.taskId) {
       const files = await readSubmissionFiles(db, c.env, row.id);
       // staff には事後確認の記録を、受講者には講師が判定を変えずに足したコメントだけを返す (#34)。
+      // 壊れて読めない記録 (null で返る) は、staff にだけ列名で知らせる。
       const ai = isStaff
-        ? { ai_review: aiReview, checks: await submissionChecksOf(db, row.id) }
+        ? {
+            ai_review: aiReview,
+            checks: await submissionChecksOf(db, row.id),
+            broken_records: await brokenRecordsOf(db, row.id),
+          }
         : {
             ai_feedback: await learnerAiFeedback(db, row),
             staff_comments: await staffCommentsOf(db, row.id),

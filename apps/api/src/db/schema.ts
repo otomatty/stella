@@ -9,6 +9,7 @@
 
 import { sql } from "drizzle-orm";
 import {
+  customType,
   index,
   integer,
   primaryKey,
@@ -38,6 +39,31 @@ const tsNowUpd = (name: string) =>
     .$onUpdateFn(() => new Date());
 const json = <T>(name: string, fallback: T) =>
   text(name, { mode: "json" }).$type<T>().notNull().default(fallback);
+
+/** 列の JSON を読む。壊れていれば null (読めない記録) にする。 */
+export function parseJsonOrNull(value: unknown): unknown {
+  if (typeof value !== "string") return value ?? null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 壊れた JSON を読んでも例外にしない、null を許す JSON の列 (#34)。
+ *
+ * `text(..., { mode: "json" })` は読むときに `JSON.parse` するので、1 列でも壊れた行があると、
+ * その行を全列で読む経路 (提出の詳細・判定の確定・AI の処理) がすべて 500 になり、人が確定も
+ * できなくなる。読めない値は null として返し、DB の元の文字列は書き換えない (壊れているかは
+ * `json_valid` で別に確かめる)。書き込みは `mode: "json"` と同じ `JSON.stringify`。
+ */
+const safeJson = <T>(name: string) =>
+  customType<{ data: T; driverData: string }>({
+    dataType: () => "text",
+    toDriver: (value) => JSON.stringify(value),
+    fromDriver: (value) => parseJsonOrNull(value) as T,
+  })(name);
 
 // ---------------------------------------------------------------
 // 認証 (Workers 自前 Google OAuth / JWT)
@@ -1353,25 +1379,16 @@ export const submissions = sqliteTable("submissions", {
   ruleSetHash: text("rule_set_hash"),
   taskKind: text("task_kind"),
   submissionMode: text("submission_mode"),
-  localResult: text("local_result", { mode: "json" }).$type<
-    import("@stella/shared/tasks/run-result").RunResult
-  >(),
-  testHashes: text("test_hashes", { mode: "json" }).$type<
-    import("@stella/shared/tasks/run-result").HashedFile[]
-  >(),
+  // 提出ごとの記録は壊れていても行を読めるようにする (`safeJson`)。壊れた記録の列名は
+  // `SUBMISSION_RECORD_COLUMNS` で `json_valid` を確かめて staff に返す。
+  localResult: safeJson<import("@stella/shared/tasks/run-result").RunResult>("local_result"),
+  testHashes: safeJson<import("@stella/shared/tasks/run-result").HashedFile[]>("test_hashes"),
   explanation: text("explanation"),
-  debuggingRecord: text("debugging_record", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").DebuggingRecord
-  >(),
-  supportLog: text("support_log", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").SupportEvent[]
-  >(),
-  machineCheck: text("machine_check", { mode: "json" }).$type<
-    import("@stella/shared/tasks/submission").MachineCheck
-  >(),
-  taskSnapshot: text("task_snapshot", { mode: "json" }).$type<
-    import("@stella/shared/tasks/catalog").TaskBundle
-  >(),
+  debuggingRecord:
+    safeJson<import("@stella/shared/tasks/submission").DebuggingRecord>("debugging_record"),
+  supportLog: safeJson<import("@stella/shared/tasks/submission").SupportEvent[]>("support_log"),
+  machineCheck: safeJson<import("@stella/shared/tasks/submission").MachineCheck>("machine_check"),
+  taskSnapshot: safeJson<import("@stella/shared/tasks/catalog").TaskBundle>("task_snapshot"),
   assessedSkills: json<string[]>("assessed_skills", []),
   reviewTaskContentHash: text("review_task_content_hash"),
   reviewSource: text("review_source", { enum: ["ai", "human"] }),
@@ -1392,13 +1409,24 @@ export const submissions = sqliteTable("submissions", {
   aiSuggestions: json<unknown[]>("ai_suggestions", []),
   rubric: json<unknown[]>("rubric", []),
   /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ (Issue #9)。 Web 提出は null。 */
-  gradingSummary: text("grading_summary", { mode: "json" }).$type<unknown>(),
+  gradingSummary: safeJson<unknown>("grading_summary"),
   reviewNotes: text("review_notes").notNull().default(""),
   verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
   submittedAt: tsNow("submitted_at"),
   reviewedAt: ts("reviewed_at"),
   reviewerId: text("reviewer_id"),
 });
+
+/** 提出ごとの JSON の記録の列 (壊れていても行は読める。壊れているかは `json_valid` で見る)。 */
+export const SUBMISSION_RECORD_COLUMNS = [
+  "machine_check",
+  "local_result",
+  "test_hashes",
+  "debugging_record",
+  "support_log",
+  "task_snapshot",
+  "grading_summary",
+] as const;
 
 /** ファイルは非公開 R2 に保存する。DB は索引と検証済みの内容ハッシュだけを持つ。 */
 export const submissionFiles = sqliteTable(

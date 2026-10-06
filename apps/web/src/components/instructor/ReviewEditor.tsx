@@ -62,6 +62,17 @@ function submissionVersion(submission: { id: string; submittedAt: number }): str
   return `${submission.id}:${submission.submittedAt}`;
 }
 
+/** 壊れていて読めない記録の列名 → 表示名 (#34)。 */
+const BROKEN_RECORD_LABELS: Record<string, string> = {
+  machine_check: "照合の記録",
+  local_result: "手元の実行結果",
+  test_hashes: "テストのハッシュ",
+  debugging_record: "修正の記録",
+  support_log: "支援の記録",
+  task_snapshot: "提出時の課題文",
+  grading_summary: "自動採点の記録",
+};
+
 const severityDot: Record<ReviewSuggestion["severity"], string> = {
   high: "bg-danger",
   med: "bg-warning",
@@ -407,6 +418,16 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                     ? "機械の照合は一致しました"
                     : "講師の確認が必要です"}
               </p>
+              {taskDetail?.brokenRecords?.length ? (
+                // 壊れた記録は空として表示している。合否は講師が提出ファイルを見て決める (#34)。
+                <p className="text-sm text-warning mt-1 flex items-center gap-1">
+                  <AlertTriangle size={13} />
+                  {taskDetail.brokenRecords
+                    .map((column) => BROKEN_RECORD_LABELS[column] ?? column)
+                    .join("・")}
+                  を読めません。提出ファイルを見て判定してください。
+                </p>
+              ) : null}
               {taskDetail?.machineCheck?.reasons.map((reason) => (
                 <p className="text-sm text-warning" key={reason}>
                   {reason}

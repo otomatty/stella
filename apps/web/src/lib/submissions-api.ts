@@ -96,6 +96,7 @@ interface SubmissionRow {
   task_pattern?: string | null;
   checks?: Submission["checks"];
   staff_comments?: Submission["staffComments"];
+  broken_records?: string[];
 }
 
 function toneFromStudentId(studentId: string | null): ReviewAvatarTone {
@@ -162,6 +163,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
     taskPattern: row.task_pattern,
     checks: row.checks,
     staffComments: row.staff_comments,
+    brokenRecords: row.broken_records,
   };
 }
 

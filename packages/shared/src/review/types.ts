@@ -131,6 +131,8 @@ export interface Submission {
   checks?: import("./review-desk.js").SubmissionCheckRecord[];
   /** 受講者向け (詳細): 講師が判定を変えずに足したコメント (#34)。 */
   staffComments?: import("./review-desk.js").StaffComment[];
+  /** staff 向け (詳細): 壊れていて読めない記録の列名 (`machine_check` など)。読めない記録は null で返る。 */
+  brokenRecords?: string[];
 }
 
 export interface ReviewDraftRequest {

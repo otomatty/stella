@@ -561,6 +561,40 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     ]);
   });
 
+  it.each([
+    ["pass", "passed"],
+    ["resubmit", "resubmit"],
+  ] as const)(
+    "照合の記録が壊れた提出も、詳細を開いて人が確定でき (%s)、受講者の詳細も返す",
+    async (verdict, status) => {
+      const id = await submit("learner2", "consult");
+      database.sqlite.exec(`update submissions set machine_check = '{broken' where id = '${id}'`);
+      const staffView = await call(`/api/submissions/${id}`, "teacher");
+      expect(staffView.status, await staffView.clone().text()).toBe(200);
+      // 壊れた記録は読めないことが分かるように返す (元の文字列は書き換えない)。
+      expect((await json<{ row: Record<string, unknown> }>(staffView)).row).toMatchObject({
+        machine_check: null,
+        broken_records: ["machine_check"],
+      });
+      const patched = await call(`/api/submissions/${id}`, "teacher", {
+        method: "PATCH",
+        body: JSON.stringify({ verdict, reviewNotes: "確認しました", expectUndecided: true }),
+      });
+      expect(patched.status, await patched.clone().text()).toBe(200);
+      expect(await row(id)).toMatchObject({ verdict, status, reviewSource: "human" });
+      const [raw] = database.sqlite
+        .prepare("select machine_check from submissions where id = ?")
+        .all(id) as { machine_check: string }[];
+      expect(raw?.machine_check).toBe("{broken");
+      const learnerView = await call(`/api/submissions/${id}`, "learner2");
+      expect(learnerView.status, await learnerView.clone().text()).toBe(200);
+      expect((await json<{ row: Record<string, unknown> }>(learnerView)).row).not.toHaveProperty(
+        "broken_records",
+      );
+      expect((await call("/api/submissions/mine", "learner2")).status).toBe(200);
+    },
+  );
+
   describe("同じ課題の提出を並べて見る", () => {
     it("ルーブリックを改訂しても、前の版の項目の結果を題名つきで残す", async () => {
       const unmet = aiOutput({ confidence: "high" });
