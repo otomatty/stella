@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { getDb } from "./client.js";
-import { sections, stages, tasks, tenants } from "./schema.js";
+import { sections, stages, tenants } from "./schema.js";
 
 const TAG = "0054_task_help_opens";
 const SQL = readFileSync(
@@ -23,21 +23,13 @@ describe("0054: 課題の版に、その版を配っていたときの素材の�
         .insert(stages)
         .values({ id: "stage", tenantId: "ses", slug: "dev-env-basics", title: "入口", format: 2 }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "単元" }),
-      db.insert(tasks).values({
-        id: "page",
-        sectionId: "unit",
-        title: "page",
-        kind: "basic",
-        pattern: "p",
-        estimatedMinutes: 10,
-        order: 0,
-        contentHash: "now",
-        definition: "{}",
-        bundle: "{}",
-      }),
     ]);
-    // task_revisions はこの移行で列が増えるので、移行前の列だけで入れる。
+    // task_revisions はこの移行で、tasks は後の移行 (0057 の variant_of) で列が増えるので、
+    // この時点の列だけで入れる。
     database.sqlite.exec(`
+      insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order",
+        content_hash, definition, bundle)
+        values ('page', 'unit', 'page', 'basic', 'p', '{}', 10, 0, 'now', '{}', '{}');
       insert into task_revisions (task_id, content_hash, definition, bundle, created_at)
         values ('page', 'before', '{}', '{}', 1), ('page', 'now', '{}', '{}', 2);
       insert into task_private (task_id, files) values ('page', '{"hints.md":"new"}');

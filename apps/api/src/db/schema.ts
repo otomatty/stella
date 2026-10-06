@@ -320,8 +320,19 @@ export const tasks = sqliteTable(
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     /** seed が課題ごとに作る課題文のレッスン (`lessons.id`)。そのレッスンの「VS Code で開く」が課題を配る。 */
     lessonId: text("lesson_id"),
+    /**
+     * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39・0057)。類題は講座の
+     * 課題一覧・学習ペース・修了の判定に出さず (`isNull(tasks.variantOf)` で絞る)、出題した受講者
+     * (`variant_reviews`) にだけ配る。親が教材から外れても類題のままにするため外部キーにしない。
+     */
+    variantOf: text("variant_of"),
   },
-  (t) => ({ sectionIdx: index("tasks_section_id_idx").on(t.sectionId) }),
+  (t) => ({
+    sectionIdx: index("tasks_section_id_idx").on(t.sectionId),
+    variantPatternIdx: index("tasks_variant_pattern_idx")
+      .on(t.pattern)
+      .where(sql`variant_of IS NOT NULL`),
+  }),
 );
 
 /** 配布した版は seed の更新で上書きしない。 */
@@ -453,6 +464,58 @@ export const taskHelpOpens = sqliteTable(
     tenantIdx: index("task_help_opens_tenant_idx").on(t.tenantId),
     // つまずきの検知 (ヒントを最後まで開く) が、直近に開いた記録を15分ごとに引く (0059)。
     openedIdx: index("task_help_opens_opened_idx").on(t.openedAt),
+  }),
+);
+
+/**
+ * 受講者ごとの類題の出題 (#39・07 §7.2・03 §7)。1 行 = 受講者・パターンの 1 回の出題で、
+ * `step` は 1 から順。出す時期と目的は `@stella/shared/tasks/variants` の `nextVariantSlot` が決め、
+ * 今日の類題の画面を開いたときに積む・出す (`lib/variant-reviews.ts`)。
+ * 受講者・パターンの同じ段を 2 度積まない・同じ類題を 2 度出さない・出したまま合格していない類題は
+ * 受講者ごとに 1 つ、を一意制約で守る。
+ */
+export const variantReviews = sqliteTable(
+  "variant_reviews",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    pattern: text("pattern").notNull(),
+    step: integer("step").notNull(),
+    purpose: text("purpose", {
+      enum: ["day3", "week1", "week3", "remedial", "unseen"],
+    }).notNull(),
+    /** 間隔を数える起点 (自力の間隔の始まり)。 */
+    anchorAt: ts("anchor_at").notNull(),
+    /** 出す日 (日本時間の学習日 `YYYY-MM-DD`)。 */
+    dueOn: text("due_on").notNull(),
+    status: text("status", {
+      enum: ["scheduled", "issued", "passed", "out-of-stock", "withdrawn"],
+    })
+      .notNull()
+      .default("scheduled"),
+    /** 出した類題 (`tasks.id`)。出す前・在庫切れは null。 */
+    variantTaskId: text("variant_task_id").references(() => tasks.id, { onDelete: "cascade" }),
+    issuedAt: ts("issued_at"),
+    passedAt: ts("passed_at"),
+    /** 合格が支援付きだったか (`isAssistedSubmission`)。合格前は null。 */
+    passedAssisted: integer("passed_assisted", { mode: "boolean" }),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    stepUq: uniqueIndex("variant_reviews_step_uq").on(t.tenantId, t.userId, t.pattern, t.step),
+    variantUq: uniqueIndex("variant_reviews_variant_uq").on(t.tenantId, t.userId, t.variantTaskId),
+    openUq: uniqueIndex("variant_reviews_open_uq")
+      .on(t.tenantId, t.userId)
+      .where(sql`status = 'issued'`),
+    userIdx: index("variant_reviews_user_idx").on(t.userId),
+    variantTaskIdx: index("variant_reviews_variant_task_idx").on(t.variantTaskId),
+    tenantStatusIdx: index("variant_reviews_tenant_status_idx").on(t.tenantId, t.status),
   }),
 );
 

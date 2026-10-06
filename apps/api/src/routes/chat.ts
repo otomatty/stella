@@ -16,7 +16,7 @@ import { assertGrokGatewayConfigured, resolveChatProvider } from "../lib/chat-pr
 import { streamGrokChat } from "../lib/grok-chat.js";
 import { ApiError, type Caller, errorResponse, getCaller } from "../lib/authz.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
-import { canAccessTasks } from "../lib/task-access.js";
+import { canAccessTask } from "../lib/task-access.js";
 import { recordSupportEvent } from "../lib/task-support.js";
 
 const SERVER_TIMEOUT_MS = 75_000;
@@ -33,13 +33,20 @@ async function taskChatContext(
   context: Extract<ChatContext, { kind: "task" }>,
 ): Promise<{ context: ChatContext; taskId: string }> {
   const [task] = await db
-    .select({ id: tasks.id, title: tasks.title, stageId: stages.id, stageTitle: stages.title })
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      stageId: stages.id,
+      stageTitle: stages.title,
+      variantOf: tasks.variantOf,
+    })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(and(eq(tasks.id, context.taskId), eq(tasks.active, true)))
     .limit(1);
-  if (!task || !(await canAccessTasks(db, caller, task.stageId)))
+  // 予備の類題 (#39) は出題した受講者だけが相談できる (題名も出題前は返さない)。
+  if (!task || !(await canAccessTask(db, caller, task)))
     throw new ApiError("課題が見つかりません", 404);
   return {
     context: { kind: "task", taskId: task.id, taskTitle: task.title, stageTitle: task.stageTitle },

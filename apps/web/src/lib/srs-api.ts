@@ -4,6 +4,7 @@
  */
 
 import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
+import type { TodayVariantReview } from "@stella/shared/tasks/variants";
 
 import { apiFetch } from "./api-client";
 
@@ -24,4 +25,15 @@ export async function submitSrsAnswer(
   });
   if (!result) throw new Error("採点結果が空でした");
   return result;
+}
+
+/**
+ * 今日の類題 (コードの復習、#39)。同じ実装パターンの別の問題を時間を空けて 1 問出す。
+ * 無ければ null。類題そのものは「VS Code で開く」から拡張が受け取る。
+ */
+export async function getTodayVariant(): Promise<TodayVariantReview | null> {
+  const { variant } = await apiFetch<{ variant: TodayVariantReview | null }>(
+    "/api/variant-reviews/today",
+  );
+  return variant ?? null;
 }

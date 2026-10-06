@@ -613,7 +613,9 @@ function buildOneCourse(
     }
 
     if (config.format === 2) {
+      // 類題 (#39) は課題文のレッスンを作らない。出題した受講者にだけ拡張が配る。
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
+        if (task.lessonId === null) continue;
         lessons.push({
           id: task.lessonId,
           title: `${task.definition.title} 課題文`,
@@ -640,7 +642,8 @@ function buildOneCourse(
     });
   }
 
-  assertFixedStartCovers(tasks);
+  // 固定した開始点が実装を含むのは講座の課題だけ (類題は出題した受講者にしか配らない)。
+  assertFixedStartCovers(tasks.filter((t) => !t.variantOf));
 
   // タイポしたキーの演習が黙って消えないように、未使用キーはビルドで落とす。
   const unusedExerciseKeys = Object.keys(config.exercises ?? {}).filter(

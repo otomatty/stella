@@ -60,7 +60,6 @@ describe("format 2 の教材", () => {
     for (const rel of [
       "private/solution/README.md",
       "private/solution/index.html",
-      "private/variants/README.md",
       "private/explanation.md",
       "private/review.md",
     ])
@@ -229,7 +228,7 @@ describe("format 2 の教材", () => {
       writeFileSync(
         join(
           root,
-          "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/private/variants/big.txt",
+          "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/private/solution/big.txt",
         ),
         "x".repeat(TASK_BUNDLE_LIMITS.fileBytes + 1),
       );

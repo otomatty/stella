@@ -1,5 +1,5 @@
 import { type Handler, Hono } from "hono";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -18,7 +18,7 @@ import {
   taskProgress,
 } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
-import { canAccessTasks } from "../lib/task-access.js";
+import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
@@ -30,7 +30,8 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
     const stageId = c.req.param("stageId");
     if (!(await canAccessTasks(db, caller, stageId)))
       throw new ApiError("task stage not found", 404);
-    // definition と bundle と task_private は一覧の SELECT に含めない。
+    // definition と bundle と task_private は一覧の SELECT に含めない。予備の類題 (#39) は
+    // 講座の課題一覧に出さない (出題した受講者にだけ、今日の類題として出す)。
     const rows = await db
       .select({
         id: tasks.id,
@@ -45,7 +46,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .where(and(eq(sections.stageId, stageId), eq(tasks.active, true)))
+      .where(and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)))
       .orderBy(asc(sections.order), asc(tasks.order));
     const progress =
       rows.length === 0
@@ -64,6 +65,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
                 eq(taskProgress.userId, caller.id),
                 eq(sections.stageId, stageId),
                 eq(tasks.active, true),
+                isNull(tasks.variantOf),
               ),
             );
     const progressByTaskId = new Map(progress.map((p) => [p.taskId, p]));
@@ -91,9 +93,11 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
     const { caller, db } = await getCaller(c);
     const [row] = await db
       .select({
+        id: tasks.id,
         bundle: tasks.bundle,
         contentHash: tasks.contentHash,
         stageId: sections.stageId,
+        variantOf: tasks.variantOf,
         fixedStartHash: taskFixedStarts.contentHash,
       })
       .from(tasks)
@@ -101,8 +105,8 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
       .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
-    if (!row || !(await canAccessTasks(db, caller, row.stageId)))
-      throw new ApiError("task not found", 404);
+    // 予備の類題は出題した受講者にだけ配る (#39)。
+    if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
     const response: TaskBundleResponse = {
       bundle: parsePublicTaskBundle(JSON.parse(row.bundle)),
       fixedStart: row.fixedStartHash === row.contentHash,
@@ -149,6 +153,7 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
         contentHash: tasks.contentHash,
         definition: tasks.definition,
         stageId: sections.stageId,
+        variantOf: tasks.variantOf,
         files: taskFixedStarts.files,
         fixedStartHash: taskFixedStarts.contentHash,
       })
@@ -157,7 +162,7 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
       .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
       .limit(1);
-    if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
+    if (!row || !(await canAccessTask(db, caller, row, "write")))
       throw new ApiError("task not found", 404);
     // seed 後に版が変わった開始点 (古い版のテストと組んだもの) は配らない。
     if (!row.files || row.fixedStartHash !== row.contentHash)
@@ -269,12 +274,17 @@ const handleLocalRun =
           400,
         );
       const [row] = await db
-        .select({ id: tasks.id, contentHash: tasks.contentHash, stageId: sections.stageId })
+        .select({
+          id: tasks.id,
+          contentHash: tasks.contentHash,
+          stageId: sections.stageId,
+          variantOf: tasks.variantOf,
+        })
         .from(tasks)
         .innerJoin(sections, eq(sections.id, tasks.sectionId))
         .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
         .limit(1);
-      if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
+      if (!row || !(await canAccessTask(db, caller, row, "write")))
         throw new ApiError("task not found", 404);
       if (row.contentHash !== body.contentHash)
         throw new ApiError("教材が更新されています。課題を開き直してください", 409);

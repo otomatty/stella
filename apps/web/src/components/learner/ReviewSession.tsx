@@ -1,5 +1,5 @@
 /**
- * デイリー復習 (SRS) の解答セッション。
+ * デイリー復習 (SRS) の解答セッション。 コードの「今日の類題」(#39) も上に並べる。
  *
  * QuizPlayer (一括提出 → 合否) と違い、 1 問ごとに採点 API を叩いて正誤と解説を
  * 即時表示する。 出題は GET /api/srs/today の due 順をベースに、 読み込み時に
@@ -14,6 +14,7 @@ import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types"
 import { shuffleLearnerQuizQuestions } from "@stella/shared/quiz/shuffle";
 import { getSrsToday, submitSrsAnswer } from "@/lib/srs-api";
 import { PageHeader } from "@/components/common/PageHeader";
+import { TodayVariantCard } from "./TodayVariantCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -118,6 +119,9 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
           )
         }
       />
+
+      {/* コードの復習: 同じパターンの類題を 1 問 (#39)。無い日は何も出さない。 */}
+      <TodayVariantCard enabled={backendEnabled && currentUserId !== null} />
 
       {loading ? (
         <Skeleton className="h-40 w-full" />

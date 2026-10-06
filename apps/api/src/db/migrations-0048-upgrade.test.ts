@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { getDb } from "./client.js";
-import { sections, stages, taskProgress, tasks, tenants } from "./schema.js";
+import { sections, stages, taskProgress, tenants } from "./schema.js";
 
 const TAG = "0048_ai_first_review";
 const SQL = readFileSync(
@@ -28,30 +28,18 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
         .insert(stages)
         .values({ id: "stage", tenantId: "ses", slug: "dev-env-basics", title: "入口", format: 2 }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "単元" }),
-      db.insert(tasks).values(
-        (
-          [
-            ["page", "basic", "h"],
-            ["check", "assessment-a", "h"],
-            ["updated", "basic", "new"],
-          ] as const
-        ).map(([id, kind, contentHash], order) => ({
-          id,
-          sectionId: "unit",
-          title: id,
-          kind,
-          pattern: "p",
-          estimatedMinutes: 10,
-          order,
-          contentHash,
-          definition: "{}",
-          bundle: "{}",
-        })),
-      ),
-      db
-        .insert(taskProgress)
-        .values({ userId: "learner", taskId: "check", status: "submitted", contentHash: "h" }),
     ]);
+    // tasks も後の移行 (0057 の variant_of) で列が増えるので、この時点の列だけで入れる。
+    database.sqlite.exec(`
+      insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order",
+        content_hash, definition, bundle)
+      values ('page', 'unit', 'page', 'basic', 'p', '{}', 10, 0, 'h', '{}', '{}'),
+        ('check', 'unit', 'check', 'assessment-a', 'p', '{}', 10, 1, 'h', '{}', '{}'),
+        ('updated', 'unit', 'updated', 'basic', 'p', '{}', 10, 2, 'new', '{}', '{}');
+    `);
+    await db
+      .insert(taskProgress)
+      .values({ userId: "learner", taskId: "check", status: "submitted", contentHash: "h" });
     const insert = database.sqlite.prepare(`
       insert into submissions (id, tenant_id, student_id, stage_title, assignment_title, code, task_id,
         task_kind, task_content_hash, machine_check, support_log, attempt, verdict, submitted_at)

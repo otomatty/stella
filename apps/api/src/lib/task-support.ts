@@ -6,7 +6,7 @@
  *   課題ごとに束ねて返す。正本が既にあるもの (相談・レビュー) は写さず、読むときに束ねる。
  */
 
-import { and, desc, eq, exists, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import type { LocalRunReport } from "@stella/shared/tasks/local-report";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
@@ -196,6 +196,29 @@ export async function hasRecordedSupport(
   return Boolean(consulted);
 }
 
+/**
+ * 合格した提出が支援付きか。提出に添えた支援 (受講者の申告と LMS が足した記録)・講師への相談
+ * としての提出・その提出より前のサーバーの記録 (`hasRecordedSupport`) のどれかがあれば支援付き。
+ * スキルの証拠の水準 (`reviewTaskSubmission`) と、類題を出す時期 (#39) が同じ判定を使う。
+ */
+export async function isAssistedSubmission(
+  db: Db,
+  row: {
+    tenantId: string;
+    studentId: string;
+    taskId: string;
+    submittedAt: Date;
+    supportLog: readonly unknown[] | null;
+    submissionMode: string | null;
+  },
+): Promise<boolean> {
+  return (
+    (row.supportLog?.length ?? 0) > 0 ||
+    row.submissionMode === "consult" ||
+    (await hasRecordedSupport(db, row))
+  );
+}
+
 const LEVEL_RANK: Record<EvidenceLevel, number> = { supported: 0, independent: 1, retained: 2 };
 const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格" } as const;
 
@@ -251,7 +274,8 @@ export async function loadTaskSupport(
           .from(tasks)
           .innerJoin(sections, eq(sections.id, tasks.sectionId))
           .innerJoin(stages, eq(stages.id, sections.stageId))
-          .where(and(where, eq(tasks.active, true)))
+          // 予備の類題 (#39) はステージの課題として並べない (出題した類題は記録があれば出る)。
+          .where(and(where, eq(tasks.active, true), isNull(tasks.variantOf)))
       : Promise.resolve([]),
     db
       .select({

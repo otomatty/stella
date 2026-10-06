@@ -62,6 +62,7 @@
     "./tasks/local-report": "./src/tasks/local-report.ts",
     "./tasks/support-record": "./src/tasks/support-record.ts",
     "./tasks/help": "./src/tasks/help.ts",
+    "./tasks/variants": "./src/tasks/variants.ts",
     "./search/types": "./src/search/types.ts",
     "./enrollment/access": "./src/enrollment/access.ts",
     "./enrollment/preset": "./src/enrollment/preset.ts",
