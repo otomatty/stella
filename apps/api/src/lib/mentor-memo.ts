@@ -182,26 +182,42 @@ async function enqueueWeek(
                 eq(enrollments.tenantId, profiles.tenantId),
                 lt(enrollments.enrolledAt, weekEnd),
                 // 週の途中で修了した受講者も、その週の材料があるので積む (修了すると active でなくなる)。
-                // 修了の時刻が無い登録 (登録の編集で状態だけ変えたもの) は、その週に学習の記録が
-                // あれば積む (時刻で判断できないので、週の材料があるかで決める)。
+                // 修了の時刻が無い登録 (登録の編集で状態だけ変えたもの) は、その週に学習の記録か
+                // 提出があれば積む (時刻で判断できないので、週の材料があるかで決める。材料の
+                // 「学習した日」と同じく、学習の記録と提出の両方を見る)。
                 or(
                   eq(enrollments.status, "active"),
                   and(eq(enrollments.status, "completed"), gte(enrollments.completedAt, weekBegin)),
                   and(
                     eq(enrollments.status, "completed"),
                     isNull(enrollments.completedAt),
-                    exists(
-                      db
-                        .select({ one: sql`1` })
-                        .from(studyActivity)
-                        .where(
-                          and(
-                            eq(studyActivity.userId, profiles.id),
-                            eq(studyActivity.tenantId, profiles.tenantId),
-                            gte(studyActivity.date, weekStart),
-                            lte(studyActivity.date, addStudyDays(weekStart, 6)),
+                    or(
+                      exists(
+                        db
+                          .select({ one: sql`1` })
+                          .from(studyActivity)
+                          .where(
+                            and(
+                              eq(studyActivity.userId, profiles.id),
+                              eq(studyActivity.tenantId, profiles.tenantId),
+                              gte(studyActivity.date, weekStart),
+                              lte(studyActivity.date, addStudyDays(weekStart, 6)),
+                            ),
                           ),
-                        ),
+                      ),
+                      exists(
+                        db
+                          .select({ one: sql`1` })
+                          .from(submissions)
+                          .where(
+                            and(
+                              eq(submissions.studentId, profiles.id),
+                              eq(submissions.tenantId, profiles.tenantId),
+                              gte(submissions.submittedAt, weekBegin),
+                              lt(submissions.submittedAt, weekEnd),
+                            ),
+                          ),
+                      ),
                     ),
                   ),
                 ),

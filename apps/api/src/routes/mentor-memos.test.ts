@@ -375,6 +375,28 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
   });
 
+  it("修了の時刻が無い登録は、その週に提出だけがあっても積む", async () => {
+    await db
+      .update(enrollments)
+      .set({ status: "completed", completedAt: null })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
+    await db.insert(submissions).values({
+      id: "only-submission",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submissionMode: "submit",
+      submittedAt: new Date("2026-10-08T01:00:00Z"),
+    });
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
+  });
+
   it("担当が無効・別テナントの講師なら積まない", async () => {
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
