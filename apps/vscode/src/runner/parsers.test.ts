@@ -183,6 +183,56 @@ describe("relativize / cleanMessage", () => {
     );
   });
 
+  describe("フォルダー名に #・?・%・空白・日本語を含む", () => {
+    // 符号化の違う file URL は、どの道具がどの書き方で出しても外す。
+    const cases = [
+      {
+        os: "Windows",
+        root: "C:\\Users\\山田 太郎\\web#1\\100%完了",
+        forms: [
+          // Node.js の pathToFileURL (`#`・`%` も符号化する)
+          "file:///C:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web%231/100%25%E5%AE%8C%E4%BA%86",
+          // encodeURI と同じ (`#` はそのまま)
+          "file:///C:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web#1/100%25%E5%AE%8C%E4%BA%86",
+          // ドライブ文字が小文字
+          "file:///c:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web%231/100%25%E5%AE%8C%E4%BA%86",
+          // 符号化しない
+          "file:///C:/Users/山田 太郎/web#1/100%完了",
+          "C:/Users/山田 太郎/web#1/100%完了",
+        ],
+        native: "C:\\Users\\山田 太郎\\web#1\\100%完了\\tests\\a.test.js",
+      },
+      {
+        os: "POSIX",
+        root: "/home/山田 太郎/課題 #1?/100%完了",
+        forms: [
+          "file:///home/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/%E8%AA%B2%E9%A1%8C%20%231%3F/100%25%E5%AE%8C%E4%BA%86",
+          "file:///home/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/%E8%AA%B2%E9%A1%8C%20#1?/100%25%E5%AE%8C%E4%BA%86",
+          "file:///home/山田 太郎/課題 #1?/100%完了",
+        ],
+        native: "/home/山田 太郎/課題 #1?/100%完了/tests/a.test.js",
+      },
+    ];
+
+    it.each(cases)("$os: どの書き方の file URL も、元のパスも外す", ({ root, forms, native }) => {
+      for (const form of forms) {
+        const message = `Error: Cannot find module '${form}/src/a.js' imported from ${native}`;
+        const cleaned = relativize(message, root);
+        expect(cleaned).toMatch(
+          /^Error: Cannot find module 'src\/a\.js' imported from tests.a\.test\.js$/,
+        );
+        expect(cleaned).not.toContain("山田");
+        expect(cleaned).not.toContain("%E5%B1%B1");
+      }
+    });
+
+    it.each(cases)("$os: % を含む名前でも、似た別のフォルダーは消さない", ({ root }) => {
+      // `100%完了` を符号化の目印と取り違えて、別のフォルダー (`100%25完了`) まで消さない。
+      const other = root.replace("100%完了", "100%25完了");
+      expect(relativize(`${other}/src/a.js`, root)).toBe(`${other}/src/a.js`);
+    });
+  });
+
   it("符号化できない名前 (対にならないサロゲート) のフォルダーでも止まらない", () => {
     expect(relativize("at C:\\a\uD800\\src\\x.js", "C:\\a\uD800")).toBe("at src\\x.js");
   });

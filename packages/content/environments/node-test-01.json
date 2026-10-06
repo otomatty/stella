@@ -5,8 +5,13 @@
   "template": "templates/runners/node-test",
   "os": ["windows", "macos", "linux"],
   "requirements": {
-    "node": { "min": "22.13.0", "maxMajor": 24 },
-    "npm": { "min": "10.0.0" }
+    "node": {
+      "min": "22.13.0",
+      "majors": [22, 24]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
   },
   "libraries": {
     "@eslint/js": "10.0.1",

@@ -288,7 +288,7 @@ packages/content/
 | `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(設計は§5.5、未実装) |
 | `quickjs`(旧) | fe-kamoku-b、CMSのプレビュー | 今のまま |
 
-runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。
+runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
 
 - **db: PGliteに決める。** 2026年10月にPGlite 0.5.8(PostgreSQL 18.3)をNode.js 22とVitestで動かし、表の作成・挿入・検索、制約違反、トランザクションの取り消しを確かめた。`npm ci`だけで入り、WASMなのでOSごとのネイティブ部品が無い(WindowsとmacOSの実機での確認は§5.5の残りの作業に含める)。コンテナは、WindowsでWSL2と仮想化の有効化・管理者権限が要り、Docker Desktopは大きな組織では有料で、会社が管理する端末では入れられないことがある。最初の環境構築でつまずく箇所を増やすため、採らない。
   - 制限: 接続は1つだけで、同時接続とロックは扱えない。拡張機能は同梱のものだけ。`pg`などのドライバーからはつながず、テストはPGliteの`query`を使う。
@@ -330,7 +330,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **確認:** Vitest・ESLint・Prettier・Playwrightの実際の出力で読み取りを確かめた。見本の課題は`apps/vscode/samples/`。
 - **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
-  - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
+  - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
   - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。
 - **Windows・macOS:** npmの解決(`npm-cli.js`をNode.jsで直接起動)、PATHの探索(`.exe`・`.com`だけ)、時間切れ・中断での停止(`taskkill /T /F`)、長いパスと日本語のパスを、OSを差し替えた単体テストで確かめた。実機での確認は残っている。確認項目は`apps/vscode/samples/README.md`。
 

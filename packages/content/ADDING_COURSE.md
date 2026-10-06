@@ -70,7 +70,7 @@ modules/<unit>/
       variants/         # 未出題の予備。空の場合は .gitkeep を置く
 ```
 
-`unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定です。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
+`unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定 (`min`・`maxMajor`・`majors`) です。Node.js は奇数版 (23 など) に対応しない道具が多いので、`"majors": [22, 24]` のように使える版を並べます。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
 
 `task.json` の必須項目は `id`（`<講座>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
 

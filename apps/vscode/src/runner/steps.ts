@@ -486,6 +486,13 @@ async function toolVersionOutput(ctx: StepContext, tool: EnvironmentTool): Promi
   return out.stdout.trim() || null;
 }
 
+const VERSION_PROBLEM: Readonly<Record<"too-old" | "too-new" | "unsupported", string>> = {
+  "too-old": "版が古いです",
+  "too-new": "版が新しすぎます",
+  // Node.js 23 のように、範囲の中でも道具が対応していない版。
+  unsupported: "この版は使えません",
+};
+
 export const diagnoseStep: StepDefinition = {
   id: "diagnose",
   label: "開発環境の診断",
@@ -511,7 +518,7 @@ export const diagnoseStep: StepDefinition = {
             ? "見つかりません。教材の手順で入れてから、VS Code を再起動してください"
             : check.reason === "unparsable"
               ? "版を読み取れませんでした"
-              : `${check.reason === "too-old" ? "版が古いです" : "版が新しすぎます"} (${found})。${need} が必要です`;
+              : `${VERSION_PROBLEM[check.reason]} (${found})。${need} が必要です`;
       }
       tests.push({
         name: `${ENVIRONMENT_TOOL_LABELS[tool]} ${found}${need ? ` (必要: ${need})` : ""}`.trim(),

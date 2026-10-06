@@ -1,6 +1,13 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { validateEnvironmentRequirement } from "@stella/shared/tasks/environment";
+import {
+  checkToolVersion,
+  formatVersion,
+  parseVersion,
+  type ToolRequirement,
+  type Version,
+  validateEnvironmentRequirement,
+} from "@stella/shared/tasks/environment";
 import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/manifest";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { describe, expect, it } from "vitest";
@@ -14,6 +21,7 @@ import {
   templateFiles,
   templateManifest,
 } from "../testing/templates.js";
+import { satisfiesRange } from "../testing/semver-range.js";
 import { matchPatterns } from "./files.js";
 import { requiredPackages } from "./steps.js";
 
@@ -38,6 +46,8 @@ interface LockEntry {
   resolved?: string;
   integrity?: string;
   link?: boolean;
+  optional?: boolean;
+  engines?: { node?: string };
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
@@ -183,6 +193,44 @@ describe("runner ごとの課題テンプレート", () => {
       expect(env.requirements).toHaveProperty("node.min");
       const pkg = await readJson<PackageJson>(path.join(dir, "starter", "package.json"));
       expect(env.libraries).toEqual({ ...pkg.dependencies, ...pkg.devDependencies });
+    });
+
+    it("環境台帳の Node.js の要件が通す版は、lockfile のどの依存の engines も満たす", async () => {
+      const env = await readEnvironmentFile((await readTaskFields(runner)).environment);
+      const node = env.requirements.node as ToolRequirement;
+      const lock = await readJson<{ packages: Record<string, LockEntry> }>(
+        path.join(dir, "starter", "package-lock.json"),
+      );
+      // 他の OS 用の任意の依存は、合わなければ npm が入れずに飛ばすので除く。
+      const ranges = Object.entries(lock.packages).flatMap(([key, entry]) =>
+        entry.engines?.node && !entry.optional ? [[key, entry.engines.node] as const] : [],
+      );
+      // 各 major の最初と最後の版、よく境目になる minor、要件の min ちょうどを試す。
+      const probes: Version[] = [];
+      for (let major = 16; major <= 30; major++) {
+        probes.push([major, 0, 0], [major, 12, 0], [major, 13, 0], [major, 999, 999]);
+      }
+      const min = node.min ? parseVersion(node.min) : null;
+      if (min) probes.push(min);
+      const accepted = probes.filter((v) => checkToolVersion(`v${formatVersion(v)}`, node).ok);
+      expect(accepted.length).toBeGreaterThan(0);
+      const problems = accepted.flatMap((v) =>
+        ranges
+          .filter(([, range]) => !satisfiesRange(v, range))
+          .map(([key, range]) => `Node.js ${formatVersion(v)}: ${key} は ${range}`),
+      );
+      expect(problems).toEqual([]);
+    });
+
+    it("Node.js は 22.13 以上の 22 系と 24 系だけを通す (23 などの奇数版は通さない)", async () => {
+      const env = await readEnvironmentFile((await readTaskFields(runner)).environment);
+      const node = env.requirements.node as ToolRequirement;
+      for (const version of ["v22.13.0", "v22.22.0", "v24.0.0", "v24.11.1"]) {
+        expect(checkToolVersion(version, node).ok, version).toBe(true);
+      }
+      for (const version of ["v20.19.0", "v22.12.0", "v23.0.0", "v23.11.0", "v25.0.0", "v26.0.0"]) {
+        expect(checkToolVersion(version, node).ok, version).toBe(false);
+      }
     });
   });
 });

@@ -30,6 +30,7 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 
 ## 決めごと
 
+- **Node.js は 22.13 以上の 22 系と 24 系だけ。** 環境台帳の `requirements.node` は `{ "min": "22.13.0", "majors": [22, 24] }`。道具の多くが `^22.13.0 || >=24` のように奇数版 (23) を外しているので、`majors` で偶数の版だけを並べる (`maxMajor` だけでは 23 を通してしまう)。この要件で通る版が lockfile の全依存の `engines` を満たすことは `templates.test.ts` が確かめる。
 - **結果の形式はテンプレートで決めない。** 拡張が `--reporter=json` と出力先を引数で渡す。設定に `reporters`・`outputFile` を書くと結果を読めなくなる。
 - **整形の改行は `endOfLine: "auto"`。** Windows で作ったファイル (CRLF) を「整形が必要」と誤って判定しない。`.prettierignore` で `package-lock.json` と `.stella/` を外し、`npm run format` で配布ファイルの内容ハッシュを変えない。
 - **画面を開く道具は npm を通さずに起動する。** Playwright の `webServer` は `node node_modules/<道具>/...` で起動する (Windows でも同じ書き方で動く)。待ち受けは `127.0.0.1` に限り、Windows のファイアウォールの確認を出さない。
@@ -41,7 +42,7 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 ## 道具の版を上げる
 
 1. `starter/package.json` の版を書き換え、`starter/` で `npm install --package-lock-only` を実行して lockfile を作り直す。
-2. 環境台帳に新しい ID (例 `node-test-02`) を作り、`libraries` を新しい版にする。古い台帳は残す (過去の課題の記録が参照する)。`task-fields.json` の `environment` を新しい ID にする。
+2. 環境台帳に新しい ID (例 `node-test-02`) を作り、`libraries` を新しい版にする。新しい道具が求める Node.js の版 (`engines`) に合わせて `requirements.node` も見直す。古い台帳は残す (過去の課題の記録が参照する)。`task-fields.json` の `environment` を新しい ID にする。
 3. `apps/vscode/samples/<runner>/` の見本も同じファイルに更新し、`bun run test` でテンプレートの検査 (`apps/vscode/src/runner/templates.test.ts`・`samples.test.ts`) を通す。
 4. 見本を Extension Development Host で開き、「課題を確認する」で最後まで通ることを確かめる (`apps/vscode/samples/README.md`)。
 
