@@ -46,7 +46,7 @@
 前の課題の実装が壊れていて、いまの課題を始められないときは、課題のファイルを開いて `STELLA: 固定した開始点から始める` を実行する。教材に開始点がある課題だけ使える。
 
 - 確認のあと `POST /api/tasks/fixed-start` で受け取り、**隣の `<課題>-fixed-start/` に準備する。** 元の課題フォルダーは変えない。
-- 使ったことは LMS（`task_fixed_start_uses`）と `.stella/support.json`（`kind: fixed-start`）に記録され、その課題の提出は「支援付き」になる。手元の記録を消しても、LMS の記録から提出の支援記録に足される。罰ではなく記録。
+- 使ったことは LMS（`task_fixed_start_uses`）と `.stella/support.json`（`kind: fixed-start`）に記録され、その課題の提出は「支援付き」になる。手元の記録を消しても、LMS の記録から提出の支援記録に足される。開始点が実装を含む前の課題（教材の `fixedStart.covers`）も、受け取ったあとの提出は LMS の記録から「支援付き」になる（前の課題のフォルダーの `.stella/support.json` には書かない）。罰ではなく記録。
 - 配布記録は `{ "taskId", "contentHash", "variant": "fixed-start" }`。テスト・設定（`protected`）は通常の配布と同じなので、提出の照合はそのまま通る。
 
 ## 新形式の課題を手元で確かめる（`.stella/task.json`）

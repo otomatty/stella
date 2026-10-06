@@ -351,7 +351,10 @@ export const taskFixedStarts = sqliteTable("task_fixed_starts", {
   files: text("files").notNull(),
 });
 
-/** 固定した開始点を受け取った記録。提出の支援記録に `fixed-start` を足す根拠になる。 */
+/**
+ * 固定した開始点を受け取った記録。その課題と、開始点が実装を含む前の課題の提出の支援記録に
+ * `fixed-start` を足す根拠になる。
+ */
 export const taskFixedStartUses = sqliteTable(
   "task_fixed_start_uses",
   {
@@ -366,6 +369,11 @@ export const taskFixedStartUses = sqliteTable(
       .references(() => tasks.id, { onDelete: "cascade" }),
     contentHash: text("content_hash").notNull(),
     usedAt: tsNow("used_at"),
+    /**
+     * 受け取った版の開始点が実装を含む前の課題 (教材の `fixedStart.covers`)。受け取ったあとの
+     * それらの課題の提出も支援付きにする。受け取った時点の教材で決め、あとから変えない。
+     */
+    coveredTaskIds: text("covered_task_ids", { mode: "json" }).$type<string[] | null>(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.taskId, t.contentHash] }),

@@ -31,6 +31,7 @@ import { sortNatural } from "./natural-order.mjs";
 import { parseQuiz } from "./parse-quiz.js";
 import { parseKnowledge } from "./parse-knowledge.js";
 import {
+  assertFixedStartCovers,
   assertKnownSkills,
   readEnvironment,
   readUnit,
@@ -611,6 +612,8 @@ function buildOneCourse(
       lessons,
     });
   }
+
+  assertFixedStartCovers(tasks);
 
   // タイポしたキーの演習が黙って消えないように、未使用キーはビルドで落とす。
   const unusedExerciseKeys = Object.keys(config.exercises ?? {}).filter(
