@@ -29,7 +29,7 @@ import { DevModeFab } from "@/components/common/DevModeFab";
 import { TweaksPanel } from "@/components/common/TweaksPanel";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { usePendingReviewCount } from "@/hooks/useSubmissions";
+import { usePendingReviewCount, useSubmissionsAutoRefresh } from "@/hooks/useSubmissions";
 import { useMyCertificates } from "@/hooks/useMyCertificates";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
@@ -284,6 +284,11 @@ export function AppShell() {
   // LearnerDashboard への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(effectiveTenant.id, effectiveRole === "learner");
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
+  // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
+  useSubmissionsAutoRefresh(
+    effectiveTenant.id,
+    backendEnabled && (effectiveRole === "instructor" || effectiveRole === "admin"),
+  );
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
   const myCertificates = useMyCertificates(session?.user.id ?? null, effectiveRole === "learner");
   const sidebarCounts =
@@ -293,7 +298,7 @@ export function AppShell() {
             ? myCertificates.certificates.length
             : stages.filter((c) => c.completed).length,
         }
-      : effectiveRole === "instructor"
+      : effectiveRole === "instructor" || effectiveRole === "admin"
         ? {
             "review-queue": pendingReviewCount,
           }

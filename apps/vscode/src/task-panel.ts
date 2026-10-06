@@ -5,6 +5,7 @@
  * 課題文 (README.md) を OS のタブ付きで開くパネルも、ここに置く。
  */
 
+import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
 import {
   canSubmit,
@@ -55,6 +56,12 @@ function attributionHtml(ref: PublicSourceReference): string {
   const url = escapeHtml(terms.conditionsUrl);
   const conditions = isPublicSourceUrl(terms.conditionsUrl) ? `<a href="${url}">${url}</a>` : url;
   return `${text}<p>原作者: ${escapeHtml(terms.creator)} / 再利用範囲: ${escapeHtml(terms.scope)} / 利用条件: ${conditions} / 条件確認日: ${escapeHtml(terms.checkedAt)}</p>`;
+}
+
+/** 課題の参照元 (出典・読む箇所・用途・帰属表示)。リンクは公開の HTTP(S) だけ。 */
+export function referencesHtml(references: readonly PublicSourceReference[] | undefined): string {
+  if (!references?.length) return "";
+  return `<section class="references"><h2>参照元</h2><ul>${references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}<p>${escapeHtml(ref.usedFor)}</p><details><summary>出典の詳細</summary><p>資料: ${escapeHtml(ref.documentVersion)} / 確認日: ${escapeHtml(ref.checkedAt)} / 環境: ${escapeHtml(ref.environmentRef)}</p><p>${escapeHtml(SOURCE_AUTHORSHIP_LABELS[ref.authorship] ?? ref.authorship)} / ${escapeHtml(SOURCE_REUSE_LABELS[ref.reuse] ?? ref.reuse)}</p></details>${attributionHtml(ref)}</li>`).join("")}</ul></section>`;
 }
 
 function renderStep(step: RunStepResult): string {
@@ -134,16 +141,12 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   const body = [
     `<h1>${escapeHtml(manifest.title)}</h1>`,
     `<p class="meta">${input.standalone ? "" : `${TASK_KIND_LABELS[manifest.kind]} ・ `}${escapeHtml(runner.label)}</p>`,
-    ...(manifest.references?.length
-      ? [
-          `<section class="references"><h2>参照元</h2><ul>${manifest.references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}<p>${escapeHtml(ref.usedFor)}</p><details><summary>出典の詳細</summary><p>資料: ${escapeHtml(ref.documentVersion)} / 確認日: ${escapeHtml(ref.checkedAt)} / 環境: ${escapeHtml(ref.environmentRef)}</p><p>${escapeHtml(SOURCE_AUTHORSHIP_LABELS[ref.authorship] ?? ref.authorship)} / ${escapeHtml(SOURCE_REUSE_LABELS[ref.reuse] ?? ref.reuse)}</p></details>${attributionHtml(ref)}</li>`).join("")}</ul></section>`,
-        ]
-      : []),
+    referencesHtml(manifest.references),
     `<p class="outcome ${result.outcome}">${RUN_OUTCOME_LABELS[result.outcome]}</p>`,
     ...result.steps.map(renderStep),
     footer,
     !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
-    `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a></p>`,
+    `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
   return { title: manifest.title, body };
@@ -240,6 +243,7 @@ export function showTaskPanel(input: TaskPanelInput): void {
         "stella.showRunLog",
         "stella.submitTask",
         "stella.consultTask",
+        "stella.showTaskHelp",
       ],
     });
     currentPanel.onDidDispose(() => {

@@ -530,6 +530,8 @@ export type NotificationType =
   // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、
   // 永続する通知としても残す。
   | "stage_cleared"
+  // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。payload に submission_id。
+  | "review_comment"
   | "interview_date_set"
   | "interview_answer_template_generated"
   | "interview_answer_template_failed";

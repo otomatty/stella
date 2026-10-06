@@ -116,6 +116,23 @@ export interface Submission {
   aiReviewReady?: boolean;
   /** staff 向け: 最新の AI 一次レビュー (人に回した理由・所見・返信案)。 */
   aiReview?: import("./ai-review.js").AiReviewRecord | null;
+  /** staff 向け (一覧): 最新の AI 一次レビューの人に回した理由。キューの分類に使う (#34)。 */
+  routeReasons?: import("./ai-review.js").RouteReason[];
+  /** staff 向け (一覧): 最新の AI 一次レビューの確信度と判定案。 */
+  aiConfidence?: import("./ai-review.js").Confidence | null;
+  aiProposedVerdict?: "pass" | "resubmit" | null;
+  /** staff 向け (一覧): 受講者の担当講師 (#38)。担当者で並べるのに使う。 */
+  assigneeId?: string | null;
+  assigneeName?: string | null;
+  /** staff 向け (一覧): 課題の講座とパターン (コメント集の当てはめ・同じ課題をまとめて見る)。 */
+  stageId?: string | null;
+  taskPattern?: string | null;
+  /** staff 向け (詳細): AI が合格にした提出を人が確認した記録 (#34)。 */
+  checks?: import("./review-desk.js").SubmissionCheckRecord[];
+  /** 受講者向け (詳細): 講師が判定を変えずに足したコメント (#34)。 */
+  staffComments?: import("./review-desk.js").StaffComment[];
+  /** staff 向け (詳細): 壊れていて読めない記録の列名 (`machine_check` など)。読めない記録は null で返る。 */
+  brokenRecords?: string[];
 }
 
 export interface ReviewDraftRequest {

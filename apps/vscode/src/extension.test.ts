@@ -35,6 +35,7 @@ vi.mock("vscode", () => ({
 vi.mock("./tree.js", () => ({ registerLessonTree: vi.fn() }));
 vi.mock("./grader-host.js", () => ({ initGraderHost: () => ({ dispose: vi.fn() }) }));
 vi.mock("./task-commands.js", () => ({ registerTaskCommands: vi.fn() }));
+vi.mock("./task-help.js", () => ({ registerTaskHelp: vi.fn() }));
 vi.mock("./exercise-panel.js", () => ({}));
 vi.mock("./grader.js", () => ({}));
 vi.mock("./lesson-doc.js", () => ({}));
@@ -61,6 +62,7 @@ beforeEach(() => {
   activate({
     subscriptions: [],
     secrets: {
+      onDidChange: () => ({ dispose: vi.fn() }),
       get: async (key: string) => state.secrets.get(key),
       store: async (key: string, value: string) => {
         state.secrets.set(key, value);

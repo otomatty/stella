@@ -78,14 +78,37 @@ modules/<unit>/
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
 - コーディング規則の正本は [coding-rules.md](coding-rules.md) (プログラム共通) と `courses/<slug>/coding-rules.md` (講座の追加分) です。課題が指せるのは共通の規則と自分の講座の規則だけで、導入より前の課題では必須にできません。後の講座でも使う規則は共通の規則に書きます。書式は coding-rules.md の冒頭を参照してください。
-- `support`: `hintLevels`、`solutionUnlock`（`passed` / `attempts-or-passed`）。後者は正の整数 `attempts` も必要です。確認A・Bはヒント0段、解答は合格後です。
+- `support`: `hintLevels`（ヒントの段数）と `solutionUnlock`（取り組み中に解答例を開ける条件）。解答を「隠す」より「出す順番」を決める項目で、種別ごとに書ける値が決まっています（07 §8。判定は `@stella/shared/tasks/help` の `TASK_HELP_POLICIES`）。
+
+  | 種別 | `solutionUnlock` | ヒント | 合格後 |
+  | --- | --- | --- | --- |
+  | 基礎・接続 | `after-hints`（ヒントを最後まで開いた次の段で解答例）か `passed` | 開ける | 解答例と解説を自動で開く |
+  | 自力・修正 | `attempts-or-passed`（決まった回数の挑戦のあとか合格後）か `passed` | 開ける | 解答例と解説（別解・選び方の理由） |
+  | 統合 | `passed` | 0段（取り組み中は仕様・状態見本・API 契約だけ） | 解答例（とレビューの所見） |
+  | 確認A・B | `passed` | 0段（公式ドキュメントと文法の参照だけ） | 確認Aだけ解答例。確認Bは出さない |
+
+  `attempts` は `attempts-or-passed` の回数で、省略すると5回（`SOLUTION_UNLOCK_ATTEMPTS`）です。1回の挑戦は、手元の確認で失敗した1回（環境のエラーは数えない）と、提出1回（相談を含む）です。ほかの条件には書けません。
+- `hints.md`: ヒントの段を `## ヒント<番号> <題>` の見出しで分けます。番号は1から順に振り、段の数を `support.hintLevels` とそろえます。段の順は「方針 → 手がかりのコード」で、解答例は書きません（`private/solution/` が最後の段として出ます）。段の中では `###` 以下の見出しとコードブロックを使えます。最初の見出しより前に本文は置けません。ヒント0段の課題は空（かコメントだけ）にします。題は段を開いたときに見出しとして出ます（開く前は「ヒント2」のように番号だけ）。`content:check` が形と段の数を検査します。
+
+  ````markdown
+  ## ヒント1 方針
+
+  見出しは `h1` 要素の中の文字です。…
+
+  ## ヒント2 手がかりのコード
+
+  ```html
+  <h1>（ここに指定の見出しを書きます）</h1>
+  ```
+  ````
+
 - `protected`・`checks`・`static` は拡張用manifestと同じ形です。`.stella/task.json` は生成時に環境要件を解決し、実行に必要な項目だけを取り出します。任意コマンドは定義できません。
 
 知識問題は各設問の見出しを `### Q1. 設問文` とし、直後に `<!-- kind: single; skills: html-document -->` を書きます。種別は `single` / `multiple` / `boolean`、スキルはカンマ区切りです。選択肢と `<details>` の解答は旧クイズと同じ形で、複数選択の正解は `**A, C** — 解説` と書きます。正誤は `A. 正しい` / `B. 誤り` の2択です。新形式のSRSカードはこの知識問題だけから作り、設問のスキルIDを返します。
 
 `bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
-課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
+課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。ヒント・解答例 (`private/solution/`)・解説 (`private/explanation.md`) は、解放条件を満たした受講者が拡張の課題パネルで開いたときだけ `/api/tasks/help` が返し、開いたことを記録します (提出は「支援付き」になります。罰ではなく記録です)。`private/review.md` と予備の類題 (`private/variants/`) はどの条件でも受講者へ返しません。非公開の素材 (`private/` と `hints.md`) は合わせて配布一式と同じ大きさまでです (D1 の 1 行に収めるため)。
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<講座>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
 
