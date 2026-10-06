@@ -358,6 +358,22 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
   });
 
+  it("修了の時刻が無い登録は、その週に学習の記録があれば積む", async () => {
+    await db
+      .update(enrollments)
+      .set({ status: "completed", completedAt: null })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
+    await db.insert(studyActivity).values({
+      tenantId: "ses",
+      userId: "learner",
+      date: "2026-10-07",
+      watchedSec: 300,
+      completedLessons: 1,
+    });
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
+  });
+
   it("担当が無効・別テナントの講師なら積まない", async () => {
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
