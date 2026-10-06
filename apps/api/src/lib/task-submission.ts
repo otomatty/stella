@@ -32,6 +32,8 @@ import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { canAccessTasks } from "./task-access.js";
+import { withRecordedFixedStart } from "./task-fixed-start.js";
+import { hasRecordedSupport } from "./task-support.js";
 
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -88,6 +90,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   } catch (e) {
     throw new ApiError(e instanceof Error ? e.message : "提出が不正です", 400);
   }
+  const supportLog = await withRecordedFixedStart(db, caller.id, task.id, input.support);
   const bucket = env.SUBMISSIONS_BUCKET;
   if (!bucket) throw new ApiError("提出ファイルの保存先が未設定です", 503);
   const id = crypto.randomUUID();
@@ -146,7 +149,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           testHashes: input.protected,
           explanation: input.explanation,
           debuggingRecord: input.debuggingRecord ?? null,
-          supportLog: input.support,
+          supportLog,
           machineCheck: verified.check,
           taskSnapshot: { ...bundle, files: { "README.md": bundle.files["README.md"] ?? "" } },
           assessedSkills: definition.skills.assesses,
@@ -514,7 +517,11 @@ export async function reviewTaskSubmission(
     const notice = reviewNotification(row, verdict);
     if (notice) statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
-      const assisted = (row.supportLog?.length ?? 0) > 0 || row.submissionMode === "consult";
+      // 提出の申告に加え、この提出より前の AI チャット・相談などの記録も支援に数える (#38)。
+      const assisted =
+        (row.supportLog?.length ?? 0) > 0 ||
+        row.submissionMode === "consult" ||
+        (await hasRecordedSupport(db, { ...row, studentId: row.studentId, taskId: row.taskId }));
       const basis =
         !assisted && row.taskKind === "assessment-b" && scope
           ? await retentionBasis(db, row.tenantId, row.studentId, scope)

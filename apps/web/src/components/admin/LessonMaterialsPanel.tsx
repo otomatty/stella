@@ -8,7 +8,9 @@
  *
  * 自動生成資料 (source=auto — CI が教材から作る PDF。2026-08-26 spec) は削除できない
  * かわりに「版履歴」を開ける。旧版は R2 に全部残っており、staff は任意の版を
- * ダウンロードできる (受講者は常に最新版のみ)。
+ * ダウンロードできる (受講者は常に最新版のみ)。OS ごとに分ける・分けないを切り替えて
+ * 教材から作らなくなった自動生成資料も「配布終了」として並べ、版履歴をたどれるようにする
+ * (受講者の資料タブには出ない)。
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -122,7 +124,7 @@ export function LessonMaterialsPanel({ lessonId }: { lessonId: string | null }) 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
-  const { materials, loading, error, refetch } = useLessonMaterials(lessonId);
+  const { materials, loading, error, refetch } = useLessonMaterials(lessonId, true, true);
 
   if (!lessonId) {
     return (
@@ -242,6 +244,16 @@ export function LessonMaterialsPanel({ lessonId }: { lessonId: string | null }) 
                       {m.source === "auto" ? (
                         <span className="shrink-0 rounded bg-sunken px-1 text-[10.5px] text-ink-3">
                           自動生成
+                        </span>
+                      ) : null}
+                      {m.archived_at ? (
+                        // OS ごとに分ける・分けないを切り替えて作らなくなった資料。
+                        // 受講者には出ないが、版履歴から旧版を取れる。
+                        <span
+                          className="shrink-0 rounded bg-sunken px-1 text-[10.5px] text-ink-3"
+                          title="教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。"
+                        >
+                          配布終了
                         </span>
                       ) : null}
                     </div>

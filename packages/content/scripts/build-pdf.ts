@@ -11,6 +11,8 @@
  * - doc / practice … A4 縦 (scripts/pdf/print-doc.css)。practice は前半 = 問題編、
  *   後半 = 解答編 (src/practice-pdf.ts) に再構成し、講師ノートは manifest 側で
  *   除去済みの本文だけを使う。
+ * - まとめ・課題文の OS 別のブロック (`:::os`) は、OS ごとに分けた PDF (`target.os`) なら
+ *   その OS のものだけ、それ以外は両方を「Windows の場合」「macOS の場合」と並べる (07 §11)。
  *
  * 出力は `--out` (既定 dist/pdf) 配下に R2 キーと同じパスで置く。キーは内容ハッシュ
  * 入りで不変なので、既に存在するファイル / `--skip` で渡された既存キーは再生成しない。
@@ -41,8 +43,10 @@ import {
   pdfSourceHash,
   type PdfTarget,
 } from "../src/material-pdf.js";
+import { OS_LABELS } from "../../shared/src/markdown/os-blocks.js";
 import { parseQuiz } from "../src/parse-quiz.js";
 import { splitPracticeForPdf } from "../src/practice-pdf.js";
+import { docBodyHtml } from "./lib/doc-html.js";
 import {
   AUTOSCALE_SCRIPT,
   escapeHtml,
@@ -103,21 +107,24 @@ function slidesHtml(target: PdfTarget, assets: Map<string, string>): string {
   return renderSlidesHtml(target.source, target.courseTitle, assets, SLIDES_PRINT_CSS);
 }
 
-function docHtml(target: PdfTarget, assets: Map<string, string>, parts: string[]): string {
+function docHtml(target: PdfTarget, parts: string[]): string {
   const body = parts
     .filter((p) => p.trim() !== "")
     .map((p, i) =>
       i === 0
-        ? `<main class="doc-body">${renderMarkdown(p, assets, false)}</main>`
-        : `<main class="doc-body pdf-answers">${renderMarkdown(p, assets, false)}</main>`,
+        ? `<main class="doc-body">${p}</main>`
+        : `<main class="doc-body pdf-answers">${p}</main>`,
     )
     .join("\n");
+  const header = target.os
+    ? `${target.courseTitle} ・ ${OS_LABELS[target.os]} 版`
+    : target.courseTitle;
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>
 ${fontCss}
 ${hljsCss}
 ${docCss}
 </style></head><body>
-<div class="doc-header">${escapeHtml(target.courseTitle)}</div>
+<div class="doc-header">${escapeHtml(header)}</div>
 ${body}
 </body></html>`;
 }
@@ -129,6 +136,8 @@ interface ManifestEntry {
   courseSlug: string;
   lessonId: string;
   kind: PdfTarget["kind"];
+  /** OS ごとに分けた PDF の OS。分けない PDF には無い。 */
+  os?: PdfTarget["os"];
   hash: string;
   key: string;
   fileName: string;
@@ -176,7 +185,7 @@ async function main(): Promise<void> {
           const job = queue.shift();
           if (!job) break;
           const { target } = job;
-          const label = `${target.courseSlug}/${target.lessonId}/${target.kind}`;
+          const label = `${target.courseSlug}/${target.lessonId}/${target.kind}${target.os ? `/${target.os}` : ""}`;
           try {
             const assets = new Map(target.assets.map((a) => [a.key, a.file]));
             let html: string;
@@ -189,9 +198,14 @@ async function main(): Promise<void> {
                 target.source,
                 parseQuiz(target.source),
               );
-              html = docHtml(target, assets, [problems, answers]);
+              html = docHtml(
+                target,
+                [problems, answers].map((part) =>
+                  part.trim() === "" ? "" : renderMarkdown(part, assets, false),
+                ),
+              );
             } else {
-              html = docHtml(target, assets, [target.source]);
+              html = docHtml(target, [docBodyHtml(target.source, assets, target.os)]);
             }
             const htmlFile = join(htmlDir, `${job.hash}.html`);
             writeFileSync(htmlFile, html);
@@ -256,6 +270,7 @@ async function main(): Promise<void> {
       courseSlug: j.target.courseSlug,
       lessonId: j.target.lessonId,
       kind: j.target.kind,
+      ...(j.target.os ? { os: j.target.os } : {}),
       hash: j.hash,
       key: j.key,
       fileName: pdfFileName(j.target),

@@ -235,6 +235,14 @@ describe("教材 seed の再実行", () => {
     expect(list.tasks).toHaveLength(1);
     expect(list.tasks[0].status).toBe("not-started");
     expect(JSON.stringify(list)).not.toMatch(/solution|rubric|bundle|private/);
+    // 課題文のレッスンと結ばれ、そのレッスンからも「VS Code で開く」で課題を配れる (#31)。
+    expect(
+      db
+        .prepare(
+          "select l.type from lessons l join sections s on l.section_id = s.id where l.id = ? and s.stage_id = ?",
+        )
+        .get(list.tasks[0].lessonId, stage.id),
+    ).toEqual({ type: "text" });
     const taskId = list.tasks[0].id;
     const bundleUrl = `/api/tasks/bundle?${new URLSearchParams({ taskId })}`;
     expect((await request(app, env, bundleUrl, { token: otherToken })).status).toBe(404);

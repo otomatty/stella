@@ -18,7 +18,14 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 
-import { notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
+import {
+  learnerInstructors,
+  notifications,
+  profiles,
+  sections,
+  tasks,
+  submissions,
+} from "../db/schema.js";
 import {
   errorResponse,
   getCaller,
@@ -153,15 +160,35 @@ async function profileFor(
   return rows[0] ?? null;
 }
 
-/** staff: テナント内の提出物一覧 (新着順)。 */
+/**
+ * staff: テナント内の提出物一覧 (新着順)。
+ * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
+ * 省略時はこれまでどおりテナント全体。
+ */
 submissionsRoute.get("/api/submissions", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
+    const assigned = c.req.query("assigned");
+    if (assigned !== undefined && assigned !== "mine")
+      throw new ApiError("assigned には mine だけを指定できます", 400);
     const rows = await db
       .select(summaryColumns)
       .from(submissions)
-      .where(eq(submissions.tenantId, caller.tenantId))
+      .where(
+        and(
+          eq(submissions.tenantId, caller.tenantId),
+          assigned
+            ? inArray(
+                submissions.studentId,
+                db
+                  .select({ id: learnerInstructors.learnerId })
+                  .from(learnerInstructors)
+                  .where(eq(learnerInstructors.instructorId, caller.id)),
+              )
+            : undefined,
+        ),
+      )
       .orderBy(desc(submissions.submittedAt));
 
     // 投稿者プロフィールを 1 クエリでまとめて引く (N+1 回避)。

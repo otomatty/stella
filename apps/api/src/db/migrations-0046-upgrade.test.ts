@@ -9,7 +9,6 @@ import {
   enrollments,
   lessonProgress,
   lessons,
-  profiles,
   sections,
   stages,
   studyActivity,
@@ -40,15 +39,15 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
     database = sqliteD1({ beforeMigration: TAG });
     env = { DB: database.binding, AUTH_JWT_SECRET: "test-secret" } as Env;
     db = getDb(env);
+    await db.insert(tenants).values([
+      { id: "ses", name: "テスト" },
+      { id: "another", name: "別" },
+    ]);
+    // profiles は後の移行で列が増える (0049 の os_preference など)。スキーマから insert すると
+    // 移行前の DB に無い列まで書いてしまうので、この時点の列だけで入れる。
+    database.sqlite.exec(`insert into profiles (id, tenant_id, role, display_name, created_at) values
+      ('learner', 'ses', 'student', '受講者', 1), ('other', 'ses', 'student', '別の受講者', 1)`);
     await db.batch([
-      db.insert(tenants).values([
-        { id: "ses", name: "テスト" },
-        { id: "another", name: "別" },
-      ]),
-      db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", role: "student", displayName: "受講者" },
-        { id: "other", tenantId: "ses", role: "student", displayName: "別の受講者" },
-      ]),
       db.insert(stages).values({ id: "legacy", tenantId: "ses", slug: "legacy", title: "旧講座" }),
       db.insert(sections).values({ id: "unit", stageId: "legacy", title: "演習" }),
       db.insert(lessons).values([

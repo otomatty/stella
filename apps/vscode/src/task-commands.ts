@@ -4,6 +4,7 @@
  * - STELLA: 課題を確認する   … 開いているファイルの課題フォルダーで runner を実行する
  * - STELLA: 開発環境を診断する … Node.js・npm・Git の版を確かめる
  * - STELLA: 実行ログを表示する … 道具の出力をそのまま見る
+ * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読む (ファイルを読むだけ)
  *
  * 外部プロセスを起動するので、信頼したフォルダー (Workspace Trust) でだけ実行する。
  */
@@ -11,7 +12,9 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import { toLocalRunReport } from "@stella/shared/tasks/local-report";
 import { canSubmit, type RunOutcome } from "@stella/shared/tasks/run-result";
+import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiRequest } from "./api.js";
@@ -35,7 +38,7 @@ import {
   readSubmissionNotes,
   sendTaskSubmission,
 } from "./task-submission.js";
-import { showTaskPanel } from "./task-panel.js";
+import { showTaskPanel, showTaskReadme } from "./task-panel.js";
 
 let running = false;
 
@@ -199,13 +202,19 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
     }
     showTaskPanel({ kind: "result", manifest, result, root });
     notify(result.outcome, output);
-    if (result.outcome === "passed") {
+    // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
+    // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
+    // (旧 API は local-result の本文を見ずに合格として扱うため)。
+    const report = receipt?.taskId === manifest.id ? toLocalRunReport(result, receipt) : null;
+    if (report) {
       try {
-        if (receipt?.taskId === manifest.id)
-          await apiRequest("/api/tasks/local-result", { method: "POST", body: receipt });
+        await apiRequest(
+          report.outcome === "passed" ? "/api/tasks/local-result" : "/api/tasks/local-runs",
+          { method: "POST", body: report },
+        );
       } catch (err) {
         output.appendLine(
-          `手元の合格を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
+          `手元の確認の結果を LMS に反映できませんでした: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
@@ -318,7 +327,11 @@ async function submitTaskCommand(
           detail: "受講者の申告",
         });
     if (mode === "consult")
-      support.push({ kind: "instructor", at: new Date().toISOString(), detail: "講師への相談" });
+      support.push({
+        kind: "instructor",
+        at: new Date().toISOString(),
+        detail: CONSULT_SUPPORT_DETAIL,
+      });
     const notes = { explanation, ...(debuggingRecord ? { debuggingRecord } : {}), support };
     await writeStateFile(root, "submission-notes.json", `${JSON.stringify(notes, null, 2)}\n`);
     const row = await sendTaskSubmission(root, mode, notes);
@@ -329,6 +342,31 @@ async function submitTaskCommand(
     void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
   } finally {
     submitting = false;
+  }
+}
+
+/** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
+const README_MAX_BYTES = 1024 * 1024;
+
+/** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */
+async function showTaskReadmeCommand(): Promise<void> {
+  const root = await locateTask();
+  if (!root) {
+    void vscode.window.showInformationMessage(
+      "課題フォルダーのファイルを開いてから実行してください (.stella/task.json がある課題フォルダー)",
+    );
+    return;
+  }
+  try {
+    const loaded = await loadTask(root);
+    const markdown = new TextDecoder().decode(
+      await readFileInRoot(root, "README.md", README_MAX_BYTES),
+    );
+    showTaskReadme({ title: loaded.ok ? loaded.manifest.title : path.basename(root), markdown });
+  } catch (e) {
+    void vscode.window.showErrorMessage(
+      `課題文を表示できませんでした: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -345,5 +383,6 @@ export function registerTaskCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.runTask", () => runTaskCommand(output)),
     vscode.commands.registerCommand("stella.diagnoseEnvironment", () => diagnoseCommand(output)),
     vscode.commands.registerCommand("stella.showRunLog", () => output.show(true)),
+    vscode.commands.registerCommand("stella.showTaskReadme", () => showTaskReadmeCommand()),
   );
 }

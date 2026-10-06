@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { getDb } from "./client.js";
-import { profiles, sections, stages, taskProgress, tasks, tenants } from "./schema.js";
+import { sections, stages, taskProgress, tasks, tenants } from "./schema.js";
 
 const TAG = "0048_ai_first_review";
 const SQL = readFileSync(
@@ -18,11 +18,12 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
     // 直前のスキーマに実データを入れてから移行 SQL を当てる。submissions は列が足りないので SQL で入れる。
     database = sqliteD1({ beforeMigration: TAG });
     const db = getDb({ DB: database.binding } as Env);
+    await db.insert(tenants).values({ id: "ses", name: "テスト" });
+    // profiles は後の移行 (0049 の os_preference など) で列が増える。スキーマから insert すると
+    // 移行前の DB に無い列まで書いてしまうので、この時点の列だけで入れる。
+    database.sqlite.exec(`insert into profiles (id, tenant_id, role, display_name, created_at)
+      values ('learner', 'ses', 'student', '受講者', 1)`);
     await db.batch([
-      db.insert(tenants).values({ id: "ses", name: "テスト" }),
-      db
-        .insert(profiles)
-        .values({ id: "learner", tenantId: "ses", role: "student", displayName: "受講者" }),
       db
         .insert(stages)
         .values({ id: "stage", tenantId: "ses", slug: "dev-env-basics", title: "入口", format: 2 }),

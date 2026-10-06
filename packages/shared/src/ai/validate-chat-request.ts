@@ -145,6 +145,30 @@ function validateContext(
         },
       };
     }
+    case "task": {
+      // 題名は表示用。サーバーは taskId から課題を引き直し、この題名をプロンプトに使わない。
+      const ct = c as { taskId?: unknown; taskTitle?: unknown; stageTitle?: unknown };
+      if (
+        typeof ct.taskId !== "string" ||
+        ct.taskId.trim().length === 0 ||
+        ct.taskId.length > 300 ||
+        typeof ct.taskTitle !== "string" ||
+        ct.taskTitle.length > 300 ||
+        typeof ct.stageTitle !== "string" ||
+        ct.stageTitle.length > 300
+      ) {
+        return { ok: false, status: 400, message: "task context requires taskId" };
+      }
+      return {
+        ok: true,
+        value: {
+          kind: "task",
+          taskId: ct.taskId.trim(),
+          taskTitle: ct.taskTitle.trim(),
+          stageTitle: ct.stageTitle.trim(),
+        },
+      };
+    }
     case "practice": {
       const cp = c as {
         assignmentId?: unknown;

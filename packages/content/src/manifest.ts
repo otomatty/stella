@@ -191,6 +191,8 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     if (Object.keys(raw.exercises ?? {}).length)
       throw new Error(`courses/${slug}: format 2 は exercises ではなく tasks を使います`);
   }
+  if (raw.pdfByOs !== undefined && typeof raw.pdfByOs !== "boolean")
+    throw new Error(`courses/${slug}/course.json の pdfByOs は true / false にしてください`);
   if (typeof raw.title !== "string" || raw.title.trim() === "") {
     throw new Error(`courses/${slug}/course.json の title が空です。`);
   }
@@ -585,7 +587,7 @@ function buildOneCourse(
     if (config.format === 2) {
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         lessons.push({
-          id: `task-${moduleDir}-${task.definition.id.split("/")[2]}`,
+          id: task.lessonId,
           title: `${task.definition.title} 課題文`,
           type: "text",
           duration: "5分",
@@ -746,17 +748,22 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
   tasks: TaskSeed[];
   units: UnitSeed[];
   codingRules: CodingRule[];
+  /** 配布 PDF を OS ごとに分ける講座の slug (course.json の `pdfByOs`)。 */
+  pdfByOs: string[];
 } {
   const courses: Course[] = [];
   const quizzes: QuizSeed[] = [];
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
+  const pdfByOs: string[] = [];
 
   for (const slug of dirsIn(coursesRoot)) {
     const courseDir = join(coursesRoot, slug);
     const modulesRoot = join(courseDir, "modules");
     if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
-    const built = buildOneCourse(slug, courseDir, modulesRoot, readCourseConfig(courseDir, slug));
+    const config = readCourseConfig(courseDir, slug);
+    const built = buildOneCourse(slug, courseDir, modulesRoot, config);
+    if (config.pdfByOs) pdfByOs.push(slug);
     courses.push(built.course);
     quizzes.push(...built.quizzes);
     tasks.push(...built.tasks);
@@ -797,7 +804,7 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
       prerequisitesOf,
     );
 
-  return { courses, quizzes, tasks, units, codingRules };
+  return { courses, quizzes, tasks, units, pdfByOs, codingRules };
 }
 
 /**

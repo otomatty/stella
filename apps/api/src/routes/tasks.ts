@@ -1,11 +1,24 @@
-import { Hono } from "hono";
+import { type Handler, Hono } from "hono";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { parsePublicTaskBundle, type TaskSummary } from "@stella/shared/tasks/catalog";
+import {
+  bundleSizeProblem,
+  parsePublicTaskBundle,
+  type TaskBundleResponse,
+  type TaskSummary,
+} from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
+import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import type { Env } from "../env.js";
-import { sections, tasks, taskProgress } from "../db/schema.js";
+import {
+  sections,
+  taskFixedStarts,
+  taskFixedStartUses,
+  tasks,
+  taskProgress,
+} from "../db/schema.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTasks } from "../lib/task-access.js";
+import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
 
@@ -25,6 +38,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         pattern: tasks.pattern,
         skills: tasks.skills,
         estimatedMinutes: tasks.estimatedMinutes,
+        lessonId: tasks.lessonId,
         contentHash: tasks.contentHash,
       })
       .from(tasks)
@@ -65,25 +79,43 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
   }
 });
 
+/**
+ * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
+ * 固定した開始点は返さない。固定した開始点は「あるか」だけを返し、本体は下の POST で渡す。
+ */
 tasksRoute.get("/api/tasks/bundle", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     const [row] = await db
-      .select({ bundle: tasks.bundle, stageId: sections.stageId })
+      .select({
+        bundle: tasks.bundle,
+        contentHash: tasks.contentHash,
+        stageId: sections.stageId,
+        fixedStartHash: taskFixedStarts.contentHash,
+      })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTasks(db, caller, row.stageId)))
       throw new ApiError("task not found", 404);
-    return c.json({ bundle: parsePublicTaskBundle(JSON.parse(row.bundle)) });
+    const response: TaskBundleResponse = {
+      bundle: parsePublicTaskBundle(JSON.parse(row.bundle)),
+      fixedStart: row.fixedStartHash === row.contentHash,
+    };
+    return c.json(response);
   } catch (err) {
     return errorResponse(c, err);
   }
 });
 
-/** 手元の合格は自己申告の記録。AI・講師の判定へ昇格させる経路にはしない。 */
-tasksRoute.post("/api/tasks/local-result", async (c) => {
+/**
+ * 固定した開始点を渡す (01 §4・07 §4.4)。前の実装が壊れていて先へ進めない受講者向けで、
+ * 前の課題の動く実装を含みうるので、渡す前に利用を記録する。記録できなければ渡さない。
+ * 記録は提出の支援記録に `fixed-start` を足す根拠になる (lib/task-fixed-start.ts)。
+ */
+tasksRoute.post("/api/tasks/fixed-start", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     let body: unknown;
@@ -92,41 +124,124 @@ tasksRoute.post("/api/tasks/local-result", async (c) => {
     } catch {
       throw new ApiError("invalid JSON", 400);
     }
-    if (
-      !body ||
-      typeof body !== "object" ||
-      !("taskId" in body) ||
-      !("contentHash" in body) ||
-      typeof body.taskId !== "string" ||
-      typeof body.contentHash !== "string"
-    )
-      throw new ApiError("taskId and contentHash are required", 400);
+    if (!body || typeof body !== "object" || !("taskId" in body) || typeof body.taskId !== "string")
+      throw new ApiError("taskId is required", 400);
     const [row] = await db
-      .select({ id: tasks.id, contentHash: tasks.contentHash, stageId: sections.stageId })
+      .select({
+        id: tasks.id,
+        bundle: tasks.bundle,
+        contentHash: tasks.contentHash,
+        stageId: sections.stageId,
+        files: taskFixedStarts.files,
+        fixedStartHash: taskFixedStarts.contentHash,
+      })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .leftJoin(taskFixedStarts, eq(taskFixedStarts.taskId, tasks.id))
       .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
       throw new ApiError("task not found", 404);
-    if (row.contentHash !== body.contentHash)
-      throw new ApiError("教材が更新されています。課題を開き直してください", 409);
+    // seed 後に版が変わった開始点 (古い版のテストと組んだもの) は配らない。
+    if (!row.files || row.fixedStartHash !== row.contentHash)
+      throw new ApiError("この課題には固定した開始点がありません", 404);
+    const { manifest } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const bundle = parsePublicTaskBundle({
+      manifest,
+      contentHash: row.contentHash,
+      files: JSON.parse(row.files),
+    });
+    // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
+    const tooLarge = bundleSizeProblem(bundle.files);
+    if (tooLarge) {
+      console.error("[tasks] 固定した開始点が上限を超えています", row.id, tooLarge);
+      throw new ApiError("固定した開始点を配れません。講師に相談してください", 500);
+    }
     await db
-      .insert(taskProgress)
+      .insert(taskFixedStartUses)
       .values({
+        tenantId: caller.tenantId,
         userId: caller.id,
         taskId: row.id,
         contentHash: row.contentHash,
-        status: "local-passed",
-        updatedAt: new Date(),
+        usedAt: new Date(),
       })
-      .onConflictDoUpdate({
-        target: [taskProgress.userId, taskProgress.taskId],
-        set: { contentHash: row.contentHash, status: "local-passed", updatedAt: new Date() },
-        setWhere: inArray(taskProgress.status, ["not-started", "local-passed", "resubmit"]),
-      });
-    return c.json({ ok: true });
+      .onConflictDoNothing();
+    return c.json({ bundle });
   } catch (err) {
     return errorResponse(c, err);
   }
 });
+
+/**
+ * 手元の確認の結果を受け取る (#38)。受け取るのは要約だけで、コードやメッセージは来ない。
+ *
+ * 合格は従来の `/api/tasks/local-result`、失敗・エラーは `/api/tasks/local-runs` に分ける。
+ * 旧 API は local-result の本文を検証せずに合格として扱うので、失敗を同じ道で送ると、
+ * API を戻したときに失敗が「手元で合格」として残ってしまう。別の道なら旧 API は 404 で捨てる。
+ */
+const handleLocalRun =
+  (accepts: "passed" | "failures"): Handler<{ Bindings: Env }> =>
+  async (c) => {
+    try {
+      const { caller, db } = await getCaller(c);
+      let raw: unknown;
+      try {
+        raw = await c.req.json();
+      } catch {
+        throw new ApiError("invalid JSON", 400);
+      }
+      let body: LocalRunReport;
+      try {
+        body = parseLocalRunReport(raw);
+      } catch (e) {
+        throw new ApiError(e instanceof Error ? e.message : "invalid local result", 400);
+      }
+      if ((body.outcome === "passed") !== (accepts === "passed"))
+        throw new ApiError(
+          accepts === "passed"
+            ? "失敗・エラーは /api/tasks/local-runs に送ってください"
+            : "合格は /api/tasks/local-result に送ってください",
+          400,
+        );
+      const [row] = await db
+        .select({ id: tasks.id, contentHash: tasks.contentHash, stageId: sections.stageId })
+        .from(tasks)
+        .innerJoin(sections, eq(sections.id, tasks.sectionId))
+        .where(and(eq(tasks.id, body.taskId), eq(tasks.active, true)))
+        .limit(1);
+      if (!row || !(await canAccessTasks(db, caller, row.stageId, "write")))
+        throw new ApiError("task not found", 404);
+      if (row.contentHash !== body.contentHash)
+        throw new ApiError("教材が更新されています。課題を開き直してください", 409);
+      const runs = localRunUpsert(db, { userId: caller.id, tenantId: caller.tenantId }, row, body);
+      if (body.outcome !== "passed") {
+        await runs;
+        return c.json({ ok: true });
+      }
+      // 手元の合格は自己申告の記録。AI・講師の判定へ昇格させる経路にはしない。
+      await db.batch([
+        db
+          .insert(taskProgress)
+          .values({
+            userId: caller.id,
+            taskId: row.id,
+            contentHash: row.contentHash,
+            status: "local-passed",
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [taskProgress.userId, taskProgress.taskId],
+            set: { contentHash: row.contentHash, status: "local-passed", updatedAt: new Date() },
+            setWhere: inArray(taskProgress.status, ["not-started", "local-passed", "resubmit"]),
+          }),
+        runs,
+      ]);
+      return c.json({ ok: true });
+    } catch (err) {
+      return errorResponse(c, err);
+    }
+  };
+
+tasksRoute.post("/api/tasks/local-result", handleLocalRun("passed"));
+tasksRoute.post("/api/tasks/local-runs", handleLocalRun("failures"));
