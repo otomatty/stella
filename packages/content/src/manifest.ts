@@ -411,6 +411,28 @@ function lessonKey(topicIds: string[]): string {
   return first.split("-").slice(0, 2).join("-");
 }
 
+/**
+ * ログインなしで読める単元 (`unit.json` の `public`) を置ける講座か。
+ *
+ * 公開するのは VS Code を入れる前に読む入口の単元だけ。前提のある講座はスキルツリーで
+ * 霧やロックの向こうにあり、本文を未ログインで読めると、伏せている講座の中身が漏れる。
+ * 専用星 (`audience: granted`) は割り当てた受講者にしか見せない講座なので置けない。
+ */
+function assertPublicUnitCourse(
+  slug: string,
+  unitId: string,
+  config: CourseConfig & { tenantId: string },
+): void {
+  if (config.audience === "granted")
+    throw new Error(
+      `courses/${slug}/modules/${unitId}: audience が granted の講座には、ログインなしで読める単元 (unit.json の public) を置けません`,
+    );
+  if ((config.prerequisites ?? []).length > 0 || (config.appearances ?? []).length > 0)
+    throw new Error(
+      `courses/${slug}/modules/${unitId}: ログインなしで読める単元 (unit.json の public) は、前提のない講座 (スキルツリーの入口) にだけ置けます`,
+    );
+}
+
 function buildOneCourse(
   slug: string,
   courseDir: string,
@@ -450,10 +472,13 @@ function buildOneCourse(
         : [];
     const renderContent = (source: string, contentId: string): string =>
       referencedMarkdown(source, contentReferences(contentId, source), referenceMap, contentId);
+    let publicUnit = false;
     if (config.format === 2) {
       const loaded = readUnit(contentRoot, slug, moduleDir, modulePath, skillIds);
       units.push(loaded.unit);
       tasks.push(...loaded.tasks);
+      publicUnit = loaded.unit.config.public === true;
+      if (publicUnit) assertPublicUnitCourse(slug, moduleDir, config);
     }
 
     for (const lessonDir of dirsIn(modulePath)) {
@@ -490,6 +515,7 @@ function buildOneCourse(
           type: "slides",
           duration: "3分",
           status: "todo",
+          ...(publicUnit ? { public: true } : {}),
           markdown:
             body +
             (referenceMap
@@ -515,6 +541,7 @@ function buildOneCourse(
         type: "text",
         duration: "10分",
         status: "todo",
+        ...(publicUnit ? { public: true } : {}),
         markdown: dropPracticeLink(
           rewriteImagePaths(
             slug,

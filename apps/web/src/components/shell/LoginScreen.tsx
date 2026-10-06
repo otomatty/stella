@@ -4,6 +4,8 @@ import { Google } from "@/lib/icons";
 import { Brand } from "@/components/common/Brand";
 import { LoginMilkyWay } from "@/components/shell/LoginMilkyWay";
 import { Button } from "@/components/ui/button";
+import { usePublicUnits } from "@/hooks/usePublicContent";
+import { isApiConfigured } from "@/lib/api-client";
 import { isBackendConfigured } from "@/lib/backend";
 import { signInWithGoogle } from "@/lib/auth";
 
@@ -13,6 +15,9 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
+  // ログインなしで読める導入案内 (Issue #41)。公開の単元があるときだけ入口を出す
+  // (本文がまだ無い間は、空の案内ページへ誘わない)。
+  const { data: publicUnits } = usePublicUnits(isApiConfigured());
   const handleGoogleLogin = () => {
     if (!isBackendConfigured()) {
       // fixtures デモ (バックエンド未設定) はモックログインへ。
@@ -47,6 +52,16 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
             <Google width={16} height={16} />
             Googleでログイン
           </Button>
+
+          {publicUnits.length > 0 ? (
+            <p className="mt-5 text-[12.5px] leading-relaxed text-ink-3">
+              はじめての方は、ログインの前に
+              <Link to="/start" className="text-brand underline underline-offset-2">
+                VS Code の準備
+              </Link>
+              を読めます。
+            </p>
+          ) : null}
 
           <p className="mt-8 text-[11.5px] leading-relaxed text-ink-3 text-center">
             ログインできない場合は

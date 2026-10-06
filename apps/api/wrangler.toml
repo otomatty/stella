@@ -11,6 +11,9 @@ ANTHROPIC_MODEL = "claude-sonnet-4-6"
 GOOGLE_CLIENT_ID = "998091191276-bfug8l2cm54llkhv078brdj3ovbtdfj8.apps.googleusercontent.com"
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.saedgewell.workers.dev"
 INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
+# ログインなしで読める教材 (GET /api/public/*。Issue #41) のテナント。未ログインでは JWT から
+# テナントが決まらないので、教材を seed するテナント (ses) をここで決める。外すと公開 API は何も返さない。
+PUBLIC_CONTENT_TENANT_ID = "ses"
 
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
@@ -35,6 +38,14 @@ name = "SUPPORT_RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1002"
 simple = { limit = 5, period = 60 }
+
+# ログインなしで読める教材 (公開の導入案内) のレート制限 — 匿名の連打対策。研修初日に
+# 同じ拠点 (同じ IP) の受講者が一斉に開いても詰まらない値にしてある。
+[[unsafe.bindings]]
+name = "PUBLIC_CONTENT_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1003"
+simple = { limit = 300, period = 60 }
 
 # Cloudflare D1 — LMS データ (旧 Neon Postgres)。
 [[d1_databases]]

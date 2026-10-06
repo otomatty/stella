@@ -34,6 +34,7 @@ import { learningPaceRoute } from "./routes/learning-pace.js";
 import { notifyPaceDelays } from "./lib/learning-pace.js";
 import { notifyStumbles } from "./lib/stumble-alerts.js";
 import { notificationsRoute } from "./routes/notifications.js";
+import { publicContentRoute } from "./routes/public-content.js";
 import { quizRoute } from "./routes/quiz.js";
 import { tasksRoute } from "./routes/tasks.js";
 import { taskSupportRoute } from "./routes/task-support.js";
@@ -99,6 +100,8 @@ app.route("/", analyticsRoute);
 app.route("/", reportsRoute);
 app.route("/", submissionsRoute);
 app.route("/", supportRoute);
+// ログインなしで読める教材 (Issue #41)。認証付きの経路とは分け、ここだけが印のあるレッスンを返す。
+app.route("/", publicContentRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
 app.route("/", r2MaintenanceRoute);

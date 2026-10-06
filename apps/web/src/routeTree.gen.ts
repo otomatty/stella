@@ -31,6 +31,8 @@ import { Route as AppStageGrantsRouteImport } from './routes/_app/stage-grants'
 import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as StartIndexRouteImport } from './routes/start.index'
+import { Route as StartLessonIdRouteImport } from './routes/start.$lessonId'
 import { Route as VerifyCertCodeRouteImport } from './routes/verify.$certCode'
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAdminAssignmentsRouteImport } from './routes/_app/admin/assignments'
@@ -161,6 +163,16 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StartIndexRoute = StartIndexRouteImport.update({
+  id: '/start/',
+  path: '/start/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartLessonIdRoute = StartLessonIdRouteImport.update({
+  id: '/start/$lessonId',
+  path: '/start/$lessonId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifyCertCodeRoute = VerifyCertCodeRouteImport.update({
   id: '/verify/$certCode',
   path: '/verify/$certCode',
@@ -287,7 +299,9 @@ export interface FileRoutesByFullPath {
   '/students': typeof AppStudentsRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/start/$lessonId': typeof StartLessonIdRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
+  '/start/': typeof StartIndexRoute
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
@@ -328,8 +342,10 @@ export interface FileRoutesByTo {
   '/students': typeof AppStudentsRoute
   '/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/start/$lessonId': typeof StartLessonIdRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
   '/': typeof AppIndexRoute
+  '/start': typeof StartIndexRoute
   '/admin/assignments': typeof AppAdminAssignmentsRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/enrollments': typeof AppAdminEnrollmentsRoute
@@ -373,8 +389,10 @@ export interface FileRoutesById {
   '/_app/students': typeof AppStudentsRoute
   '/_app/users': typeof AppUsersRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/start/$lessonId': typeof StartLessonIdRoute
   '/verify/$certCode': typeof VerifyCertCodeRoute
   '/_app/': typeof AppIndexRoute
+  '/start/': typeof StartIndexRoute
   '/_app/admin/assignments': typeof AppAdminAssignmentsRoute
   '/_app/admin/audit': typeof AppAdminAuditRoute
   '/_app/admin/enrollments': typeof AppAdminEnrollmentsRoute
@@ -419,7 +437,9 @@ export interface FileRouteTypes {
     | '/students'
     | '/users'
     | '/auth/callback'
+    | '/start/$lessonId'
     | '/verify/$certCode'
+    | '/start/'
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
@@ -460,8 +480,10 @@ export interface FileRouteTypes {
     | '/students'
     | '/users'
     | '/auth/callback'
+    | '/start/$lessonId'
     | '/verify/$certCode'
     | '/'
+    | '/start'
     | '/admin/assignments'
     | '/admin/audit'
     | '/admin/enrollments'
@@ -504,8 +526,10 @@ export interface FileRouteTypes {
     | '/_app/students'
     | '/_app/users'
     | '/auth/callback'
+    | '/start/$lessonId'
     | '/verify/$certCode'
     | '/_app/'
+    | '/start/'
     | '/_app/admin/assignments'
     | '/_app/admin/audit'
     | '/_app/admin/enrollments'
@@ -531,7 +555,9 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   SupportRoute: typeof SupportRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  StartLessonIdRoute: typeof StartLessonIdRoute
   VerifyCertCodeRoute: typeof VerifyCertCodeRoute
+  StartIndexRoute: typeof StartIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -688,6 +714,20 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start/': {
+      id: '/start/'
+      path: '/start'
+      fullPath: '/start/'
+      preLoaderRoute: typeof StartIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start/$lessonId': {
+      id: '/start/$lessonId'
+      path: '/start/$lessonId'
+      fullPath: '/start/$lessonId'
+      preLoaderRoute: typeof StartLessonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$certCode': {
@@ -932,7 +972,9 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   SupportRoute: SupportRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  StartLessonIdRoute: StartLessonIdRoute,
   VerifyCertCodeRoute: VerifyCertCodeRoute,
+  StartIndexRoute: StartIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -129,6 +129,14 @@ export function readUnit(
   const registry = readSourceRegistry(root);
   const references = publicReferences(referenceMap, registry);
   const tasksRoot = join(directory, "tasks");
+  // ログインなしで読める単元は、本文だけを公開する。課題は受講者の作業と提出・レビューを
+  // 伴い、配布もログイン後の拡張が行うので置かせない (課題文のレッスンも公開しない)。
+  if (config.public && existsSync(tasksRoot))
+    throw new Error(
+      `ログインなしで読める単元 (unit.json の public) には課題 (tasks/) を置けません: ${courseId}/${unitId}`,
+    );
+  // 課題の無い単元 (読むだけの導入の単元など) は tasks/ を置かない。印を外しても読み込める。
+  if (!existsSync(tasksRoot)) return { unit: { courseId, unitId, config, references }, tasks: [] };
   const tasks = sortNatural(readdirSync(tasksRoot)).map((taskId): TaskSeed => {
     const taskDir = join(tasksRoot, taskId);
     if (!lstatSync(taskDir).isDirectory())

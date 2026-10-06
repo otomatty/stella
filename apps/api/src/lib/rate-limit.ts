@@ -56,3 +56,10 @@ export function enforceAiRateLimit(c: Context<{ Bindings: Env }>): Promise<Respo
 export function enforceSupportRateLimit(c: Context<{ Bindings: Env }>): Promise<Response | null> {
   return enforce(c, c.env.SUPPORT_RATE_LIMITER);
 }
+
+/** ログインなしで読める教材 (公開・認証前) の読み出し用のレート制限。 */
+export function enforcePublicContentRateLimit(
+  c: Context<{ Bindings: Env }>,
+): Promise<Response | null> {
+  return enforce(c, c.env.PUBLIC_CONTENT_RATE_LIMITER);
+}

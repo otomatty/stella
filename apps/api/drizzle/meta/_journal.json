@@ -358,6 +358,13 @@
       "when": 1791331200004,
       "tag": "0052_fixed_start_covers",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "6",
+      "when": 1791331200008,
+      "tag": "0056_public_lessons",
+      "breakpoints": true
     }
   ]
 }
