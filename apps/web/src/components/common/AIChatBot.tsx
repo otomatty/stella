@@ -61,6 +61,9 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
     if (context.kind === "lesson") {
       return `lesson::${context.stageTitle}::${context.lessonTitle}`;
     }
+    if (context.kind === "task") {
+      return `task::${context.taskId}`;
+    }
     return "general";
   }, [context]);
 
@@ -111,6 +114,9 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
     if (context.kind === "lesson") {
       return `${context.stageTitle} · ${context.lessonTitle}`;
     }
+    if (context.kind === "task") {
+      return `課題: ${context.taskTitle}`;
+    }
     return "ナレッジRAG";
   }, [context, assignment, practiceContextError]);
 
@@ -132,6 +138,11 @@ export const AIChatBot = ({ open, onClose, returnFocusRef }: AIChatBotProps) => 
             : messages.length === 0
               ? "課題のコンテキストを準備しています…"
               : "失敗した課題のコンテキストを引き継いでいます"}
+      </div>
+    ) : context.kind === "task" ? (
+      // 送る前に知らせる。課題の相談は支援の記録に残り、この課題の合格は「支援付き」になる (#38)。
+      <div className="mx-3 mt-2 shrink-0 rounded-md border border-dashed border-brand bg-brand-soft px-2.5 py-1.5 text-[11px] text-brand-ink">
+        この課題についての相談は支援として記録され、この課題の合格は「支援付き」になります。公式資料や文法の確認なら、相談せずに調べても構いません。
       </div>
     ) : null;
 

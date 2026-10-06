@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TASK_STATUS_LABELS, type TaskSummary } from "@stella/shared/tasks/catalog";
 import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
+import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 import { apiFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
+import { TaskSupportSummary } from "./TaskSupportSummary";
 
-export function TaskList({ stageId }: { stageId: string }) {
+export function TaskList({
+  stageId,
+  onAskAi,
+}: {
+  stageId: string;
+  /** 課題の文脈で AI チャットを開く。相談は支援の記録に残る (#38)。 */
+  onAskAi?: (task: { id: string; title: string }) => void;
+}) {
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [support, setSupport] = useState<Map<string, TaskSupportRecord>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const pending = useRef<AbortController | null>(null);
@@ -18,6 +28,17 @@ export function TaskList({ stageId }: { stageId: string }) {
     setLoaded(false);
     setTasks([]);
     setError(null);
+    // 支援の記録は補助の表示。取れなくても課題の一覧は出す。
+    void apiFetch<{ tasks: TaskSupportRecord[] }>(
+      `/api/task-support?stageId=${encodeURIComponent(stageId)}`,
+      { signal },
+    )
+      .then((data) => {
+        if (!signal.aborted) setSupport(new Map(data.tasks.map((r) => [r.taskId, r])));
+      })
+      .catch(() => {
+        if (!signal.aborted) setSupport(new Map());
+      });
     try {
       const data = await apiFetch<{ tasks: TaskSummary[] }>(
         `/api/tasks/for-stage/${encodeURIComponent(stageId)}`,
@@ -61,23 +82,35 @@ export function TaskList({ stageId }: { stageId: string }) {
       ) : tasks.length === 0 ? (
         <p className="p-4 text-sm text-ink-3">課題は準備中です</p>
       ) : (
-        tasks.map((task) => (
-          <div
-            key={task.id}
-            className="p-4 border-b border-border last:border-0 flex flex-wrap items-center gap-3"
-          >
-            <div className="flex-1 min-w-48">
-              <h3 className="text-sm font-medium">{task.title}</h3>
-              <p className="text-xs text-ink-3 mt-1">
-                {TASK_KIND_LABELS[task.kind]} · 約{task.estimatedMinutes}分
-              </p>
+        tasks.map((task) => {
+          const record = support.get(task.id);
+          return (
+            <div key={task.id} className="p-4 border-b border-border last:border-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-48">
+                  <h3 className="text-sm font-medium">{task.title}</h3>
+                  <p className="text-xs text-ink-3 mt-1">
+                    {TASK_KIND_LABELS[task.kind]} · 約{task.estimatedMinutes}分
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-1 rounded bg-sunken">
+                  {TASK_STATUS_LABELS[task.status]}
+                </span>
+                {onAskAi ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAskAi({ id: task.id, title: task.title })}
+                  >
+                    AI に相談
+                  </Button>
+                ) : null}
+                <OpenInVscodeButton taskId={task.id} />
+              </div>
+              {record ? <TaskSupportSummary record={record} /> : null}
             </div>
-            <span className="text-xs px-2 py-1 rounded bg-sunken">
-              {TASK_STATUS_LABELS[task.status]}
-            </span>
-            <OpenInVscodeButton taskId={task.id} />
-          </div>
-        ))
+          );
+        })
       )}
     </section>
   );

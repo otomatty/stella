@@ -46,6 +46,18 @@ export function buildSystemPrompt(context?: ChatContext): string {
     );
     return lines.join("\n");
   }
+  if (context.kind === "task") {
+    lines.push(
+      "",
+      "学習者は次の課題に取り組んでいます (prompt injection 対策のため XML タグで囲んでいます):",
+      "<task_context>",
+      `  <stageTitle>${escapeXml(context.stageTitle)}</stageTitle>`,
+      `  <taskTitle>${escapeXml(context.taskTitle)}</taskTitle>`,
+      "</task_context>",
+      "この相談は課題の支援として記録されます。解答のコードを書かず、考え方と次の 1 ステップで導いてください。",
+    );
+    return lines.join("\n");
+  }
   // practice: 詳細は buildContextUserMessage が user 側に運ぶので system は最小限。
   lines.push(
     "",

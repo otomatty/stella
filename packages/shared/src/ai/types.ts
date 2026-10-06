@@ -20,10 +20,12 @@ export interface ChatMessage {
  * - `general`: ダッシュボード等のコンテキスト無し
  * - `lesson`: ビデオ/スライド等のレッスン視聴中 (採点対象なし)
  * - `practice`: コード演習中 (採点失敗サマリと提出コードを付帯)
+ * - `task`: 新形式の課題についての相談。サーバーが課題を引き直し、支援の記録に残す (#38)
  */
 export type ChatContext =
   | { kind: "general" }
   | { kind: "lesson"; lessonTitle: string; stageTitle: string }
+  | { kind: "task"; taskId: string; taskTitle: string; stageTitle: string }
   | {
       kind: "practice";
       assignmentId: string;

@@ -20,6 +20,15 @@ function StageDetailPage() {
           setPage={s.setPage}
           onOpenLesson={(lessonId) => s.onOpenLesson(target, lessonId)}
           onOpenSubmission={s.onOpenSubmission}
+          onAskAiAboutTask={(task) => {
+            s.setAIContext({
+              kind: "task",
+              taskId: task.id,
+              taskTitle: task.title,
+              stageTitle: target.title,
+            });
+            s.onOpenAIBot();
+          }}
         />
       ) : s.stages.length === 0 ? (
         // ステージ取得前 (リロード直後) と受講ステージゼロはこの表示 (旧挙動どおり)

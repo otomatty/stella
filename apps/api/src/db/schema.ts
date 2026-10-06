@@ -348,6 +348,72 @@ export const taskProgress = sqliteTable(
   }),
 );
 
+/**
+ * 手元の確認の要約 (#38)。受講者・課題ごとに 1 行の回数だけを持つ。
+ * 実行ごとの履歴・コード・メッセージは持たない (07 §6.5)。版が変わると連続の失敗を数え直す。
+ */
+export const taskLocalRuns = sqliteTable(
+  "task_local_runs",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    contentHash: text("content_hash").notNull(),
+    passedRuns: integer("passed_runs").notNull().default(0),
+    failedRuns: integer("failed_runs").notNull().default(0),
+    errorRuns: integer("error_runs").notNull().default(0),
+    /** 最後の合格から続けて失敗した回数。環境のエラーは数えない。 */
+    failureStreak: integer("failure_streak").notNull().default(0),
+    streakStartedAt: ts("streak_started_at"),
+    /** この連続の失敗を担当講師に知らせた時刻。連続が切れると消す。 */
+    streakAlertedAt: ts("streak_alerted_at"),
+    lastOutcome: text("last_outcome", { enum: ["passed", "failed", "error"] }).notNull(),
+    lastFailedSteps: json<string[]>("last_failed_steps", []),
+    lastTestsPassed: integer("last_tests_passed"),
+    lastTestsFailed: integer("last_tests_failed"),
+    firstRunAt: ts("first_run_at").notNull(),
+    lastRunAt: ts("last_run_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId] }),
+    taskIdx: index("task_local_runs_task_id_idx").on(t.taskId),
+    streakIdx: index("task_local_runs_streak_idx").on(t.failureStreak),
+  }),
+);
+
+/**
+ * サーバーが記録する課題ごとの支援 (#38)。いまは AI チャット。
+ * kind は text なので、ヒント・解答の表示 (#36) などの種類を足しても表は変えない。
+ */
+export const taskSupportEvents = sqliteTable(
+  "task_support_events",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    detail: text("detail"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    userTaskIdx: index("task_support_events_user_task_idx").on(t.userId, t.taskId, t.createdAt),
+    taskIdx: index("task_support_events_task_id_idx").on(t.taskId),
+  }),
+);
+
 export const assignments = sqliteTable("assignments", {
   id: text("id").primaryKey(),
   tenantId: text("tenant_id")
@@ -1169,6 +1235,8 @@ export const notifications = sqliteTable("notifications", {
       "review_completed",
       "assignment_due",
       "learning_pace_delayed",
+      // つまずきの検知 (#38)。担当講師宛て。
+      "learner_stumble",
       // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
       "stage_cleared",
       "interview_date_set",

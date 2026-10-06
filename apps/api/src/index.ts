@@ -31,9 +31,11 @@ import { materialsRoute } from "./routes/materials.js";
 import { meRoute } from "./routes/me.js";
 import { learningPaceRoute } from "./routes/learning-pace.js";
 import { notifyPaceDelays } from "./lib/learning-pace.js";
+import { notifyStumbles } from "./lib/stumble-alerts.js";
 import { notificationsRoute } from "./routes/notifications.js";
 import { quizRoute } from "./routes/quiz.js";
 import { tasksRoute } from "./routes/tasks.js";
+import { taskSupportRoute } from "./routes/task-support.js";
 import { r2MaintenanceRoute } from "./routes/r2-maintenance.js";
 import { reportsRoute } from "./routes/reports.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
@@ -90,6 +92,7 @@ app.route("/", auditLogsRoute);
 app.route("/", notificationsRoute);
 app.route("/", quizRoute);
 app.route("/", tasksRoute);
+app.route("/", taskSupportRoute);
 app.route("/", certificatesRoute);
 app.route("/", analyticsRoute);
 app.route("/", reportsRoute);
@@ -111,6 +114,11 @@ export default {
     ctx.waitUntil(
       notifyPaceDelays(getDb(env)).catch((e) => {
         console.error("[cron] learning pace notification failed", e);
+      }),
+    );
+    ctx.waitUntil(
+      notifyStumbles(getDb(env)).catch((e) => {
+        console.error("[cron] stumble notification failed", e);
       }),
     );
     ctx.waitUntil(

@@ -48,6 +48,7 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   review_completed: { icon: Check, tone: "text-success", label: "添削完了" },
   assignment_due: { icon: Bell, tone: "text-warning", label: "課題期限" },
   learning_pace_delayed: { icon: Bell, tone: "text-warning", label: "学習ペース" },
+  learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージクリア" },
   interview_date_set: { icon: CalendarClock, tone: "text-brand", label: "面談予定" },
   interview_answer_template_generated: {
