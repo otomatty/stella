@@ -184,6 +184,8 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
         // 置き換えるのは判定前の試行 (AI の確認待ちと、人に回して講師の確認を待つもの) だけで、
         // AI か人が確定した試行は残す。講師が置き換え済みの試行を開いて確定しても、進捗は
         // 「合格があれば合格、無ければ最新の試行」で付け直すので、新しい試行の状態は崩れない。
+        // 待ちを取り消すのも判定前の試行だけ。講師が先に確定した試行の AI は、一致率の評価のために
+        // 結果を記録するので取り消さない。
         const earlier = db
           .select({ id: submissions.id })
           .from(submissions)
@@ -193,6 +195,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
               eq(submissions.studentId, caller.id),
               eq(submissions.taskId, task.id),
               ne(submissions.id, id),
+              isNull(submissions.verdict),
             ),
           );
         const supersede = db

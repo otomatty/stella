@@ -870,6 +870,8 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     expect(await status(latest.id)).toMatchObject({ aiReviewStatus: "queued" });
     const jobs = await db.select().from(aiReviewJobs);
     expect(jobs.find((j) => j.submissionId === consulted.id)?.state).toBe("cancelled");
+    // 講師が先に確定した試行の AI は、一致率の評価のために取り消さない。
+    expect(jobs.find((j) => j.submissionId === decided.id)?.state).toBe("queued");
     expect(await progress()).toBe("submitted");
     // 置き換え済みの試行を講師が開いて確定しても、進捗は最新の試行に従う (合格なら合格を残す)。
     await patch(consulted.id, "resubmit");
