@@ -17,7 +17,9 @@ import { join } from "node:path";
 
 import {
   MAX_CHUNK_BYTES,
+  type RowsWritten,
   chunkStatements,
+  describeRowsWritten,
   executeChunks,
   parseD1Config,
   splitSqlStatements,
@@ -58,6 +60,8 @@ console.log(
     `${viaWrangler ? ", wrangler" : ", HTTP API"})`,
 );
 const startedAt = Date.now();
+/** D1 の HTTP API が返した書き込み行数。wrangler の CLI 経由では返らないので null のまま。 */
+let written: RowsWritten | null = null;
 
 if (viaWrangler) {
   for (let i = 0; i < chunks.length; i++) {
@@ -82,7 +86,7 @@ if (viaWrangler) {
     readFileSync(join(apiDir, "wrangler.toml"), "utf8"),
     DATABASE_NAME,
   );
-  await executeChunks(
+  written = await executeChunks(
     {
       accountId,
       databaseId,
@@ -97,3 +101,6 @@ if (viaWrangler) {
 }
 
 console.log(`✓ seed 完了 (${((Date.now() - startedAt) / 1000).toFixed(1)}s)`);
+// 書き込み行数は HTTP API の応答にだけある (wrangler の CLI 経由では返らないので出さない)。
+// seed は内容の変わった行だけを書くので、教材をほとんど変えていない回は 0 に近い。
+if (written) console.log(`  ${describeRowsWritten(written)}`);
