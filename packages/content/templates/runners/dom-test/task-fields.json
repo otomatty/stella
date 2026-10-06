@@ -1,0 +1,24 @@
+{
+  "runner": "dom-test",
+  "environment": "dom-test-01",
+  "submit": {
+    "files": [
+      "src/counter.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

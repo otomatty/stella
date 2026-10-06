@@ -71,7 +71,7 @@ modules/<unit>/
       variants/         # 未出題の予備。空の場合は .gitkeep を置く
 ```
 
-`unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定です。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
+`unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定 (`min`・`maxMajor`・`majors`) です。Node.js は奇数版 (23 など) に対応しない道具が多いので、`"majors": [22, 24]` のように使える版を並べます。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
 
 `task.json` の必須項目は `id`（`<講座>/<単元>/<課題>`）・`title`・`kind`・`pattern`・`skills`・`runner`・`environment`・`submit`・`review`・`support`・`sources`・`estimatedMinutes` です。
 
@@ -83,7 +83,7 @@ modules/<unit>/
 
 知識問題は各設問の見出しを `### Q1. 設問文` とし、直後に `<!-- kind: single; skills: html-document -->` を書きます。種別は `single` / `multiple` / `boolean`、スキルはカンマ区切りです。選択肢と `<details>` の解答は旧クイズと同じ形で、複数選択の正解は `**A, C** — 解説` と書きます。正誤は `A. 正しい` / `B. 誤り` の2択です。新形式のSRSカードはこの知識問題だけから作り、設問のスキルIDを返します。
 
-`bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
+`bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
 課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。`private/`・ヒント・解答・予備は拡張に配りません。段階的な解放と提出・AIレビューの経路は後続の実装でこの定義を使います。
 

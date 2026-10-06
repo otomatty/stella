@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "node-api-basics/samples/api-test",
+  "title": "ToDo の API に入力の確認を足す",
+  "kind": "basic",
+  "runner": "api-test",
+  "submit": {
+    "files": [
+      "src/app.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "api-test-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

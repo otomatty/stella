@@ -6,6 +6,7 @@ import {
   parsePlaywrightReport,
   parsePrettierList,
   parseVitestReport,
+  relativePath,
   relativize,
 } from "./parsers.js";
 
@@ -167,6 +168,94 @@ describe("relativize / cleanMessage", () => {
   it("Windows のパスと file URL も相対にする", () => {
     expect(relativize("at C:\\work\\task\\src\\a.js", "C:\\work\\task")).toBe("at src\\a.js");
     expect(relativize("file:///C:/work/task/src/a.js", "C:\\work\\task")).toBe("src/a.js");
+  });
+
+  it("日本語・空白を含むパスは、符号化された file URL からも外す", () => {
+    const root = "C:\\Users\\山田 太郎\\web-training\\javascript-basics\\u01\\q01";
+    const message =
+      "Error: Cannot find module 'file:///C:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web-training/javascript-basics/u01/q01/src/a.js' imported from C:\\Users\\山田 太郎\\web-training\\javascript-basics\\u01\\q01\\tests\\a.test.js";
+    expect(relativize(message, root)).toBe(
+      "Error: Cannot find module 'src/a.js' imported from tests\\a.test.js",
+    );
+    expect(relativize("at /Users/山田/課題/src/a.js", "/Users/山田/課題")).toBe("at src/a.js");
+    expect(relativize("file:///Users/%E5%B1%B1%E7%94%B0/q01/src/a.js", "/Users/山田/q01")).toBe(
+      "src/a.js",
+    );
+  });
+
+  describe("フォルダー名に #・?・%・空白・日本語を含む", () => {
+    // 符号化の違う file URL は、どの道具がどの書き方で出しても外す。
+    const cases = [
+      {
+        os: "Windows",
+        root: "C:\\Users\\山田 太郎\\web#1\\100%完了",
+        forms: [
+          // Node.js の pathToFileURL (`#`・`%` も符号化する)
+          "file:///C:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web%231/100%25%E5%AE%8C%E4%BA%86",
+          // encodeURI と同じ (`#` はそのまま)
+          "file:///C:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web#1/100%25%E5%AE%8C%E4%BA%86",
+          // ドライブ文字が小文字
+          "file:///c:/Users/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/web%231/100%25%E5%AE%8C%E4%BA%86",
+          // 符号化しない
+          "file:///C:/Users/山田 太郎/web#1/100%完了",
+          "C:/Users/山田 太郎/web#1/100%完了",
+        ],
+        native: "C:\\Users\\山田 太郎\\web#1\\100%完了\\tests\\a.test.js",
+      },
+      {
+        os: "POSIX",
+        root: "/home/山田 太郎/課題 #1?/100%完了",
+        forms: [
+          "file:///home/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/%E8%AA%B2%E9%A1%8C%20%231%3F/100%25%E5%AE%8C%E4%BA%86",
+          "file:///home/%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E/%E8%AA%B2%E9%A1%8C%20#1?/100%25%E5%AE%8C%E4%BA%86",
+          "file:///home/山田 太郎/課題 #1?/100%完了",
+        ],
+        native: "/home/山田 太郎/課題 #1?/100%完了/tests/a.test.js",
+      },
+    ];
+
+    it.each(cases)("$os: どの書き方の file URL も、元のパスも外す", ({ root, forms, native }) => {
+      for (const form of forms) {
+        const message = `Error: Cannot find module '${form}/src/a.js' imported from ${native}`;
+        const cleaned = relativize(message, root);
+        expect(cleaned).toMatch(
+          /^Error: Cannot find module 'src\/a\.js' imported from tests.a\.test\.js$/,
+        );
+        expect(cleaned).not.toContain("山田");
+        expect(cleaned).not.toContain("%E5%B1%B1");
+      }
+    });
+
+    it.each(cases)("$os: % を含む名前でも、似た別のフォルダーは消さない", ({ root }) => {
+      // `100%完了` を符号化の目印と取り違えて、別のフォルダー (`100%25完了`) まで消さない。
+      const other = root.replace("100%完了", "100%25完了");
+      expect(relativize(`${other}/src/a.js`, root)).toBe(`${other}/src/a.js`);
+    });
+  });
+
+  it("符号化できない名前 (対にならないサロゲート) のフォルダーでも止まらない", () => {
+    expect(relativize("at C:\\a\uD800\\src\\x.js", "C:\\a\uD800")).toBe("at src\\x.js");
+  });
+
+  it("ドライブ文字の大小が違っても課題フォルダーと分かる", () => {
+    // VS Code の fsPath は c:、道具の出力は C: になることがある。
+    expect(relativize("at C:\\work\\task\\src\\a.js", "c:\\work\\task")).toBe("at src\\a.js");
+    expect(relativize("file:///c:/work/task/src/a.js", "C:\\work\\task")).toBe("src/a.js");
+  });
+});
+
+describe("relativePath", () => {
+  it("Windows の日本語のパスと、ドライブ文字の大小違いを相対パスにする", () => {
+    const root = "c:\\Users\\山田 太郎\\web-training\\dom-basics\\u02\\q03";
+    expect(
+      relativePath("C:/Users/山田 太郎/web-training/dom-basics/u02/q03/tests/a.test.js", root),
+    ).toBe("tests/a.test.js");
+    expect(relativePath(`${root}\\tests\\a.test.js`, root)).toBe("tests/a.test.js");
+  });
+
+  it("課題フォルダーの外のパスは、区切りだけをそろえて返す", () => {
+    expect(relativePath("D:\\other\\a.js", "C:\\work\\task")).toBe("D:/other/a.js");
+    expect(relativePath("/work/task2/a.js", "/work/task")).toBe("/work/task2/a.js");
   });
 
   it("行数を絞る", () => {

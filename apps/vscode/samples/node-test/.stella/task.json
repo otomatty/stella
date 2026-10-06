@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "javascript-basics/samples/node-test",
+  "title": "あいさつの文を返す関数を直す",
+  "kind": "basic",
+  "runner": "node-test",
+  "submit": {
+    "files": [
+      "src/greet.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "node-test-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

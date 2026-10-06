@@ -4,6 +4,7 @@ import {
   compareVersions,
   describeRequirement,
   parseVersion,
+  validateEnvironmentRequirement,
 } from "./environment.js";
 
 describe("parseVersion", () => {
@@ -54,9 +55,47 @@ describe("checkToolVersion", () => {
   });
 });
 
+describe("checkToolVersion (使える major 版)", () => {
+  // 道具の多くが ^22.13.0 || ^24.0.0 のように偶数の LTS だけに対応する。
+  const requirement = { min: "22.13.0", majors: [22, 24] };
+
+  it("一覧の major 版で、min 以上なら ok", () => {
+    expect(checkToolVersion("v22.13.0", requirement).ok).toBe(true);
+    expect(checkToolVersion("v22.22.0", requirement).ok).toBe(true);
+    expect(checkToolVersion("v24.0.0", requirement).ok).toBe(true);
+    expect(checkToolVersion("v24.11.1", requirement).ok).toBe(true);
+  });
+
+  it("一覧の間の major 版 (23) は unsupported、min 未満は too-old、上は too-new", () => {
+    expect(checkToolVersion("v23.11.0", requirement)).toEqual({
+      ok: false,
+      reason: "unsupported",
+      version: [23, 11, 0],
+    });
+    expect(checkToolVersion("v22.12.0", requirement)).toMatchObject({ reason: "too-old" });
+    expect(checkToolVersion("v20.19.0", requirement)).toMatchObject({ reason: "too-old" });
+    expect(checkToolVersion("v25.0.0", requirement)).toMatchObject({ reason: "too-new" });
+    expect(checkToolVersion("v26.1.0", requirement)).toMatchObject({ reason: "too-new" });
+  });
+});
+
 describe("describeRequirement", () => {
   it("画面向けの文にする", () => {
     expect(describeRequirement({ min: "22.12.0", maxMajor: 24 })).toBe("22.12.0 以上、24 系まで");
+    expect(describeRequirement({ min: "22.13.0", majors: [22, 24] })).toBe(
+      "22.13.0 以上、22・24 系",
+    );
     expect(describeRequirement(undefined)).toBe("");
+  });
+});
+
+describe("validateEnvironmentRequirement", () => {
+  it("majors は重複の無い整数の配列に限る", () => {
+    expect(validateEnvironmentRequirement({ node: { majors: [22, 24] } }, "env")).toEqual([]);
+    for (const majors of [[], [22, 22], [22.5], ["22"], 22]) {
+      expect(validateEnvironmentRequirement({ node: { majors } }, "env")).toEqual([
+        "env.node.majors は重複の無い整数の配列で書いてください (例 [22, 24])",
+      ]);
+    }
   });
 });

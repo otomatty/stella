@@ -282,7 +282,7 @@ packages/content/
 
 | runnerId | 使う講座 | 手元での実行 |
 | --- | --- | --- |
-| `static-preview` | dev-env-basics, html-css-basics | HTMLを開く・ローカルサーバー、HTML・CSSの検査、画面幅別のスクリーンショット |
+| `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
 | `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
@@ -290,10 +290,21 @@ packages/content/
 | `react-test` / `storybook` | react-basics, react-ui-basics, ui-integration-basics | Vitest + Testing Library、Storybookの状態見本 |
 | `e2e` | ui-integration-basics, nextjs-basics, deploy-ops-basics | Playwright |
 | `api-test` | node-api-basics, auth-basics | APIテスト(Express/Hono) |
-| `db` | sql-basics, auth-basics | PostgreSQL(PGliteまたはコンテナ。要検証) |
-| `next-app` | nextjs-basics | Next.jsの開発サーバーとテスト |
-| `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える |
+| `db` | sql-basics, auth-basics | PostgreSQL(PGlite。決定、下記) |
+| `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
+| `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(設計は§5.5、未実装) |
 | `quickjs`(旧) | fe-kamoku-b、CMSのプレビュー | 今のまま |
+
+runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
+
+- **db: PGliteに決める。** 2026年10月にPGlite 0.5.8(PostgreSQL 18.3)をNode.js 22とVitestで動かし、表の作成・挿入・検索、制約違反、トランザクションの取り消しを確かめた。`npm ci`だけで入り、WASMなのでOSごとのネイティブ部品が無い(WindowsとmacOSの実機での確認は§5.5の残りの作業に含める)。コンテナは、WindowsでWSL2と仮想化の有効化・管理者権限が要り、Docker Desktopは大きな組織では有料で、会社が管理する端末では入れられないことがある。最初の環境構築でつまずく箇所を増やすため、採らない。
+  - 制限: 接続は1つだけで、同時接続とロックは扱えない。拡張機能は同梱のものだけ。`pg`などのドライバーからはつながず、テストはPGliteの`query`を使う。
+  - 1つで約0.8GBのメモリを使い、作るのに2〜3秒かかる。テンプレートは空のDBを1回作って`clone()`(約0.5秒)で複製し、テストのファイルを1つずつ実行する。
+  - コンテナは、Dockerを学ぶ`deploy-ops-basics`で学習の対象として扱う。
+- **static-preview: ローカルサーバーと画面幅別のスクリーンショットは入れない。** static-previewは、Node.jsを入れる前でも、信頼していないフォルダーでも動くよう、拡張の中でファイルを読むだけにしている。
+  - ローカルサーバーは、06のU06で受講者が自分で起動・停止すること自体が学習内容である。U06の「ローカルサーバー用スターター」は教材の配布物として作る。
+  - 画面幅の確認にはブラウザーが要る。画面幅を扱う課題(html-css-basicsの画面幅の単元など、Node.jsを入れた後)は`e2e`のrunnerを使う。テンプレートに、幅375・768・1280pxで横にはみ出さないことをPlaywrightで確かめる例を入れた。
+  - スクリーンショットを提出に添えてレビューに使うかは、提出に画像を載せる仕組みと合わせて、AIの一次レビューのあとに決める。
 
 ### 5.3 拡張に求めること
 
@@ -324,6 +335,11 @@ packages/content/
 - **拡張のコマンド:** `STELLA: 課題を確認する`、`STELLA: 開発環境を診断する`、`STELLA: 実行ログを表示する`。結果はパネルと`.stella/last-run.json`に残る。
 - **安全面:** Workspace Trustで信頼したフォルダーでだけプロセスを起動する。`stella.serverUrl`・`stella.webUrl`はユーザー設定だけを読む。
 - **確認:** Vitest・ESLint・Prettier・Playwrightの実際の出力で読み取りを確かめた。見本の課題は`apps/vscode/samples/`。
+- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。
+  - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
+  - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
+  - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。
+- **Windows・macOS:** npmの解決(`npm-cli.js`をNode.jsで直接起動)、PATHの探索(`.exe`・`.com`だけ)、時間切れ・中断での停止(`taskkill /T /F`)、長いパスと日本語のパスを、OSを差し替えた単体テストで確かめた。実機での確認は残っている。確認項目は`apps/vscode/samples/README.md`。
 
 - **課題の配布(#31):** APIから課題を受け取り、学習フォルダーへ配る(§4.4)。`apps/vscode/src/open-task.ts`・`task-distribution.ts`・`training-folder.ts`。
 
@@ -331,6 +347,13 @@ packages/content/
 
 - 提出とAIの一次レビュー(§6)。実装の状況は§6.8。
 - 課題パネルのヒント・解答の表示(§8)。
+- WindowsとmacOSの実機での確認(Issue #37)。
+- `ci-deploy`でCIの結果を提出に添える仕組み。設計は次のとおりとする。
+  - 受講者は自分のGitHubリポジトリにpushし、GitHub Actionsの実行が成功したら、その実行のURL(`https://github.com/<owner>/<repo>/actions/runs/<数字>`)と公開先のURLを提出に添える。
+  - 拡張は、入力されたURLの形だけを確かめる。GitHubには問い合わせず、トークンも扱わない。手元のコミット(`git rev-parse HEAD`、固定の引数)を結果に控える。
+  - APIは提出を受けたときに、GitHubの公開API(`GET /repos/{owner}/{repo}/actions/runs/{id}`)で、実行が成功で終わったこと、コミットが控えと一致すること、課題が指定したワークフローであることを確かめ、結果を提出と一緒に保存する。
+  - 照合できないとき(非公開のリポジトリ、APIの回数制限、食い違い)は講師の確認待ちにする(§6.3)。レビュー画面には実行と公開先へのリンクを出す。
+  - 提出の形式・API・レビュー画面はAIの一次レビュー(#33)で変わるため、その後に実装する。
 
 ## 6 提出・評価・レビュー
 

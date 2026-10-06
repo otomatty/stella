@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "react-ui-basics/samples/storybook",
+  "title": "ボタンの状態見本を足す",
+  "kind": "basic",
+  "runner": "storybook",
+  "submit": {
+    "files": [
+      "src/Button.stories.jsx"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vite.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    ".storybook/**",
+    "src/Button.jsx",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "storybook-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

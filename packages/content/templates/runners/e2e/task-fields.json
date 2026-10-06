@@ -1,0 +1,24 @@
+{
+  "runner": "e2e",
+  "environment": "e2e-01",
+  "submit": {
+    "files": [
+      "src/main.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "playwright.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "src/style.css",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

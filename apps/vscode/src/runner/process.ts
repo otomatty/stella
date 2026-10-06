@@ -7,7 +7,8 @@
  * - 出力は末尾だけを持つ。巨大なログでメモリを使い切らないため。
  */
 
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, type SpawnOptions, spawn } from "node:child_process";
+import { readEnv } from "./toolchain.js";
 
 export interface ProcessSpec {
   /** 実行ファイルの絶対パス。シェルは通さないので、Windows の .cmd / .bat は起動できない。 */
@@ -60,21 +61,71 @@ class TailBuffer {
   }
 }
 
-function killTree(pid: number, platform: NodeJS.Platform): void {
+/**
+ * Windows でプロセスを子ごと止めるコマンド。taskkill の `/T` が子孫までたどり、`/F` で
+ * 強制終了する。taskkill は PATH ではなく Windows のフォルダーから決め打ちで起動する
+ * (課題フォルダーに置かれた taskkill.exe を拾わないため)。
+ */
+export function windowsTreeKill(
+  pid: number,
+  env: NodeJS.ProcessEnv,
+): { file: string; args: string[] } {
+  const systemRoot = (readEnv(env, "SystemRoot") ?? "C:\\Windows").replace(/[\\/]+$/, "");
+  return {
+    file: `${systemRoot}\\System32\\taskkill.exe`,
+    args: ["/pid", String(pid), "/T", "/F"],
+  };
+}
+
+export interface KillTreeDeps {
+  spawn: (file: string, args: string[], options: SpawnOptions) => Pick<ChildProcess, "on">;
+  kill: (pid: number, signal: NodeJS.Signals) => void;
+  env: NodeJS.ProcessEnv;
+}
+
+const defaultKillDeps: KillTreeDeps = {
+  spawn: (file, args, options) => spawn(file, args, options),
+  kill: (pid, signal) => process.kill(pid, signal),
+  env: process.env,
+};
+
+/** 時間切れ・中断のとき、起動したプロセスを子ごと止める。 */
+export function killTree(
+  pid: number,
+  platform: NodeJS.Platform,
+  deps: KillTreeDeps = defaultKillDeps,
+): void {
   try {
     if (platform === "win32") {
-      const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
-      spawn(`${systemRoot}\\System32\\taskkill.exe`, ["/pid", String(pid), "/T", "/F"], {
-        windowsHide: true,
-        stdio: "ignore",
-      }).on("error", () => undefined);
+      const { file, args } = windowsTreeKill(pid, deps.env);
+      deps
+        .spawn(file, args, { windowsHide: true, stdio: "ignore", shell: false })
+        .on("error", () => undefined);
     } else {
       // detached で起動しているので、負の pid でプロセスグループごと止まる。
-      process.kill(-pid, "SIGKILL");
+      deps.kill(-pid, "SIGKILL");
     }
   } catch {
     // すでに終わっている。
   }
+}
+
+/**
+ * 起動の設定。シェルは通さない。POSIX は新しいプロセスグループにして、止めるときに
+ * グループごと止める。Windows は detached にすると別のコンソールが開くので使わず、
+ * taskkill /T で子孫をたどる。
+ */
+export function spawnOptions(
+  spec: Pick<ProcessSpec, "cwd" | "env">,
+  platform: NodeJS.Platform,
+): SpawnOptions {
+  return {
+    cwd: spec.cwd,
+    env: spec.env,
+    shell: false,
+    windowsHide: true,
+    detached: platform !== "win32",
+  };
 }
 
 export function runProcess(
@@ -133,13 +184,7 @@ export function runProcess(
     };
 
     try {
-      child = spawn(spec.file, [...spec.args], {
-        cwd: spec.cwd,
-        env: spec.env,
-        shell: false,
-        windowsHide: true,
-        detached: platform !== "win32",
-      });
+      child = spawn(spec.file, [...spec.args], spawnOptions(spec, platform));
     } catch (error) {
       // Windows で .cmd を渡したときなど、同期的に失敗することがある。
       const code = (error as NodeJS.ErrnoException).code;
@@ -168,7 +213,10 @@ export function runProcess(
   });
 }
 
-/** 子プロセスに渡す環境変数。対話や色付き出力を止める。 */
+/**
+ * 子プロセスに渡す環境変数。対話や色付き出力を止める。
+ * 課題の道具 (Next.js・Storybook) が受講者の端末から利用状況を送らないようにもする。
+ */
 export function childEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return {
     ...base,
@@ -178,6 +226,8 @@ export function childEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     npm_config_update_notifier: "false",
     npm_config_fund: "false",
     npm_config_audit: "false",
+    NEXT_TELEMETRY_DISABLED: "1",
+    STORYBOOK_DISABLE_TELEMETRY: "1",
   };
 }
 

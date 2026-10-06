@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "dom-basics/samples/dom-test",
+  "title": "ボタンで数を増やす",
+  "kind": "basic",
+  "runner": "dom-test",
+  "submit": {
+    "files": [
+      "src/counter.js"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "vitest.setup.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "index.html",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "dom-test-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

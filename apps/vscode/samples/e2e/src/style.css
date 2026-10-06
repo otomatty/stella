@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}

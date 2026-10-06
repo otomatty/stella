@@ -20,6 +20,11 @@ export interface ToolRequirement {
   min?: string;
   /** この major 版まで (例 22 なら 23 以降は対象外)。 */
   maxMajor?: number;
+  /**
+   * 使える major 版 (例 [22, 24])。書くと、ほかの major は対象外になる。Node.js の奇数版
+   * (23 など) は短期間で終わり、道具の多くが対応を書かないので、偶数の LTS だけを並べる。
+   */
+  majors?: number[];
 }
 
 export interface EnvironmentRequirement {
@@ -60,12 +65,18 @@ export function describeRequirement(requirement: ToolRequirement | undefined): s
   const parts: string[] = [];
   if (requirement.min) parts.push(`${requirement.min} 以上`);
   if (requirement.maxMajor !== undefined) parts.push(`${requirement.maxMajor} 系まで`);
+  if (requirement.majors !== undefined) parts.push(`${requirement.majors.join("・")} 系`);
   return parts.join("、");
 }
 
 export type ToolCheck =
   | { ok: true; version: Version }
-  | { ok: false; reason: "missing" | "unparsable" | "too-old" | "too-new"; version?: Version };
+  | {
+      ok: false;
+      /** unsupported は、範囲の中でも使えない major 版 (Node.js 23 など)。 */
+      reason: "missing" | "unparsable" | "too-old" | "too-new" | "unsupported";
+      version?: Version;
+    };
 
 /** 見つかった版 (コマンドの出力。見つからなければ null) が要件を満たすか。 */
 export function checkToolVersion(
@@ -83,6 +94,12 @@ export function checkToolVersion(
   }
   if (requirement?.maxMajor !== undefined && version[0] > requirement.maxMajor) {
     return { ok: false, reason: "too-new", version };
+  }
+  const majors = requirement?.majors;
+  if (majors && majors.length > 0 && !majors.includes(version[0])) {
+    if (version[0] > Math.max(...majors)) return { ok: false, reason: "too-new", version };
+    if (version[0] < Math.min(...majors)) return { ok: false, reason: "too-old", version };
+    return { ok: false, reason: "unsupported", version };
   }
   return { ok: true, version };
 }
@@ -109,12 +126,21 @@ export function validateEnvironmentRequirement(raw: unknown, at: string): string
       errors.push(`${at}.${tool} はオブジェクトで書いてください`);
       continue;
     }
-    const { min, maxMajor } = req as Record<string, unknown>;
+    const { min, maxMajor, majors } = req as Record<string, unknown>;
     if (min !== undefined && (typeof min !== "string" || parseVersion(min) === null)) {
       errors.push(`${at}.${tool}.min は "22.12.0" のような版番号で書いてください`);
     }
     if (maxMajor !== undefined && (typeof maxMajor !== "number" || !Number.isInteger(maxMajor))) {
       errors.push(`${at}.${tool}.maxMajor は整数で書いてください`);
+    }
+    if (
+      majors !== undefined &&
+      (!Array.isArray(majors) ||
+        majors.length === 0 ||
+        majors.some((m) => typeof m !== "number" || !Number.isInteger(m) || m < 0) ||
+        new Set(majors).size !== majors.length)
+    ) {
+      errors.push(`${at}.${tool}.majors は重複の無い整数の配列で書いてください (例 [22, 24])`);
     }
   }
   return errors;
