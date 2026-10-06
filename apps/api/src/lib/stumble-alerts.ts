@@ -12,7 +12,7 @@
  * 送った出来事は ID を主キーで引いて先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, notExists, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, notExists, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { StumbleSignal } from "@stella/shared/mentoring/weekly-memo";
 import { ROUTE_REASON_LABELS, type RouteReason } from "@stella/shared/review/ai-review";
@@ -136,6 +136,12 @@ export const stumbleIdPrefix = (signal: StumbleSignal, learnerId: string) =>
 
 const stumbleId = (signal: StumbleSignal, pair: Pair, key: string) =>
   `${stumbleIdPrefix(signal, pair.learnerId)}${pair.instructorId}:${key}`;
+
+/** 受講者 1 人・種類 1 つのつまずきの通知を、主キーの範囲で引く条件 (接頭辞の次の文字の手前まで)。 */
+export function stumbleIdRange(signal: StumbleSignal, learnerId: string) {
+  const prefix = stumbleIdPrefix(signal, learnerId);
+  return and(gte(notifications.id, prefix), lt(notifications.id, `${prefix.slice(0, -1)};`));
+}
 
 /** 既に送った通知の ID。主キーで引くだけで、過去の通知は読まない。 */
 async function sentIds(db: Db, ids: string[]): Promise<Set<string>> {
@@ -353,8 +359,13 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
 /**
  * 人に回る提出が続く。受講者の新形式の提出 (相談を除く) に当てた AI の一次レビューを、提出の
  * 新しい順にたどり、AI で確定した提出に当たるまでに、受講者の取り組みを理由に人に回した提出が
- * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。続きごとに 1 度 (続きの最初の提出で ID を
- * 決める) なので、続きが伸びても知らせ直さない。AI で合格して切れたあとの新しい続きは改めて知らせる。
+ * `REVIEW_ESCALATION_STREAK` 件以上続いていれば知らせる。
+ *
+ * 続きごとに 1 度。続きの境目は、受講者が最後に AI で確定した提出 (提出の順。30 日より前でも引く)
+ * で決める。その境目より後の提出を含む知らせを、この講師にすでに送っていれば送らない (知らせに
+ * 続きの最後の提出の日時を残しておき、境目と比べる)。続きの最初の提出で ID を決めると、続きが
+ * 30 日の期間を超えたときに最初の提出が期間から落ち、同じ続きを知らせ直してしまう。続きが伸びても
+ * 知らせ直さず、AI で合格して切れたあとの新しい続きは改めて知らせる。
  *
  * 時間の軸は 2 つを使い分ける。続きの並びと 30 日の期間は受講者の提出の順 (`submitted_at`) で、
  * 判定がやり直しなどで遅れて当たっても、提出の順は変わらない。「直近 3 日」だけは判定が当たった時刻
@@ -384,12 +395,14 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
   });
   const candidates: {
     pair: Pair;
-    id: string;
+    /** 続きの境目 (最後に AI で確定した提出の日時、ミリ秒)。無ければ 0。 */
+    segmentStart: number;
     streak: {
       submissionId: string;
       taskId: string | null;
       title: string;
       reasons: RouteReason[];
+      submittedAt: Date;
     }[];
   }[] = [];
   // テナントごとに、受講者を 50 人ずつ引く (テナントでも絞り、ほかのテナントの提出を読まない)。
@@ -412,6 +425,7 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
         outcome: aiReviews.outcome,
         reasons: aiReviews.routeReasons,
         appliedAt: aiReviews.appliedAt,
+        submittedAt: submissions.submittedAt,
       })
       .from(aiReviews)
       .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
@@ -427,6 +441,32 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
         ),
       )
       .orderBy(desc(submissions.submittedAt), desc(aiReviews.appliedAt));
+    // 続きの境目 = 受講者が最後に AI で確定した提出の日時。30 日の期間の外にあっても引く。
+    const cuts = new Map(
+      (
+        await db
+          .select({
+            learnerId: submissions.studentId,
+            at: sql<number | null>`max(${submissions.submittedAt})`,
+          })
+          .from(aiReviews)
+          .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
+          .where(
+            and(
+              applied,
+              eq(aiReviews.outcome, "confirmed"),
+              eq(submissions.tenantId, tenantId),
+              inArray(
+                submissions.studentId,
+                part.map((p) => p.learnerId),
+              ),
+            ),
+          )
+          .groupBy(submissions.studentId)
+      ).flatMap((r) =>
+        r.learnerId && r.at !== null ? [[r.learnerId, Number(r.at)] as const] : [],
+      ),
+    );
     // 受講者ごとに振り分ける (並びは保つ)。
     const byLearner = new Map<string, typeof rows>();
     for (const row of rows) {
@@ -445,45 +485,57 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
         if (row.outcome === "confirmed") break;
         if (row.reasons.some((r) => LEARNER_ESCALATION_REASONS.includes(r))) streak.push(row);
       }
-      const first = streak[streak.length - 1];
       // 続きがそろった時刻 = 続きの中で最後に当たった判定の時刻。
       const completedAt = Math.max(0, ...streak.map((r) => r.appliedAt?.getTime() ?? 0));
       if (
         streak.length < REVIEW_ESCALATION_STREAK ||
-        !first ||
         completedAt < now.getTime() - REVIEW_ESCALATION_WINDOW_MS
       )
         continue;
       candidates.push({
         pair,
-        id: stumbleId("review-escalations", pair, first.submissionId),
+        segmentStart: cuts.get(pair.learnerId) ?? 0,
         streak: streak.reverse(),
       });
     }
   }
-  const sent = await sentIds(
-    db,
-    candidates.map((c) => c.id),
-  );
-  for (const { pair, id, streak } of candidates) {
-    if (sent.has(id)) continue;
-    const reasons = LEARNER_ESCALATION_REASONS.filter((r) =>
-      streak.some((s) => s.reasons.includes(r)),
-    ).map((r) => ROUTE_REASON_LABELS[r]);
+  for (const { pair, segmentStart, streak } of candidates) {
     const latest = streak[streak.length - 1];
+    if (!latest) continue;
     try {
+      // 同じ続き (境目より後の提出) をこの講師にすでに知らせていれば送らない。
+      const [already] = await db
+        .select({ one: sql`1` })
+        .from(notifications)
+        .where(
+          and(
+            stumbleIdRange("review-escalations", pair.learnerId),
+            eq(notifications.type, "learner_stumble"),
+            eq(notifications.userId, pair.instructorId),
+            sql`json_extract(${notifications.payload}, '$.last_submitted_at') > ${segmentStart}`,
+          ),
+        )
+        .limit(1);
+      if (already) continue;
+      const reasons = LEARNER_ESCALATION_REASONS.filter((r) =>
+        streak.some((s) => s.reasons.includes(r)),
+      ).map((r) => ROUTE_REASON_LABELS[r]);
+      // ID は続きの最後の提出で決める (同時に動いた cron の二重の挿入を主キーで防ぐ)。
+      const id = stumbleId("review-escalations", pair, latest.submissionId);
       await insertOnce(db, {
         id,
         userId: pair.instructorId,
         tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんの提出が続けて講師の確認に回っています`,
-        body: `直近の提出${streak.length}件 (最新は「${latest?.title ?? ""}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
+        body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
         payload: {
           learner_id: pair.learnerId,
           signal: "review-escalations",
           submission_ids: streak.map((s) => s.submissionId),
           task_ids: [...new Set(streak.flatMap((s) => (s.taskId ? [s.taskId] : [])))],
+          // 続きの最後の提出の日時。次の cron が、同じ続きを知らせたかを境目と比べて決める。
+          last_submitted_at: latest.submittedAt.getTime(),
         },
       });
     } catch (e) {

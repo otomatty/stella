@@ -797,6 +797,18 @@ describe("講師の対応 (POST /api/mentor-memos/:id/actions)", () => {
     expect(JSON.stringify(sent)).not.toContain("関数名");
   });
 
+  it("管理者も一言を送れる (担当講師のいる受講者のメモ)", async () => {
+    const res = await act({ kind: "message", message: "管理者からの声掛けです。" }, "admin");
+    expect(res.status, await res.clone().text()).toBe(200);
+    expect(await learnerNotifications()).toMatchObject([
+      {
+        title: "管理者さんからの一言",
+        body: "管理者からの声掛けです。",
+        payload: { from_id: "admin" },
+      },
+    ]);
+  });
+
   it("ペースの調整は、調整後のペースをサーバーが読み直して残す。様子見も残す", async () => {
     await db
       .update(profiles)

@@ -67,7 +67,7 @@ import type { Caller } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
 import { loadLearningPace } from "./learning-pace.js";
 import { buildMentorMemoPrompt, MENTOR_MEMO_PROMPT_VERSION } from "./mentor-memo-prompt.js";
-import { stumbleIdPrefix } from "./stumble-alerts.js";
+import { stumbleIdRange } from "./stumble-alerts.js";
 
 /** 1 回の cron で書くメモの数。AI の一次レビューと AI の呼び出し・D1 のクエリを分け合う。 */
 export const MEMOS_PER_RUN = 5;
@@ -349,15 +349,7 @@ export async function collectMemoMaterial(
         .from(notifications)
         .where(
           and(
-            or(
-              ...STUMBLE_SIGNALS.map((signal) => {
-                const prefix = stumbleIdPrefix(signal, learner.id);
-                return and(
-                  gte(notifications.id, prefix),
-                  lt(notifications.id, `${prefix.slice(0, -1)};`),
-                );
-              }),
-            ),
+            or(...STUMBLE_SIGNALS.map((signal) => stumbleIdRange(signal, learner.id))),
             eq(notifications.tenantId, tenant),
             eq(notifications.type, "learner_stumble"),
             sql`json_extract(${notifications.payload}, '$.learner_id') = ${learner.id}`,

@@ -118,7 +118,7 @@ export const InstructorDashboard = ({
         }
       />
 
-      {backendEnabled ? <WeeklyMemoPanel /> : null}
+      {backendEnabled ? <WeeklyMemoPanel audience="assigned" /> : null}
       {backendEnabled ? <LearningPaceManager /> : null}
 
       <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>

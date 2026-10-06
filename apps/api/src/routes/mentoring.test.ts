@@ -817,6 +817,28 @@ describe("つまずきの検知 (cron)", () => {
       ]);
     });
 
+    it("30 日を超えて続く続きに足しても知らせ直さず、AI の合格で切れたあとの新しい続きは知らせる", async () => {
+      await keepActive();
+      // 40 日前に AI で合格し、35 日前から人に回る提出が続いている。
+      await judged("confirmed", [], { at: daysAgo(40), appliedAt: daysAgo(40) });
+      for (const d of [35, 34, 33])
+        await judged("escalated", ["rubric-unmet"], { at: daysAgo(d), appliedAt: daysAgo(d) });
+      await notifyStumbles(db, daysAgo(32.9));
+      expect(await escalationAlerts()).toHaveLength(1);
+      // 続きの最初の提出が 30 日の期間から落ちても、同じ続きなので知らせ直さない。
+      for (const d of [3, 2, 1])
+        await judged("escalated", ["rubric-unmet"], { at: daysAgo(d), appliedAt: daysAgo(d) });
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toHaveLength(1);
+      // AI で合格して切れたあとの新しい続きは、改めて知らせる。
+      await judged("confirmed", [], { at: daysAgo(0.9), appliedAt: daysAgo(0.9) });
+      for (const d of [0.8, 0.7, 0.6])
+        await judged("escalated", ["rubric-unmet"], { at: daysAgo(d), appliedAt: daysAgo(d) });
+      await notifyStumbles(db, now);
+      await notifyStumbles(db, now);
+      expect(await escalationAlerts()).toHaveLength(2);
+    });
+
     it("続きは提出の日時で 30 日さかのぼる (判定が遅れて当たった古い提出は数えない)", async () => {
       await keepActive();
       // 35 日前の提出の判定が、29 日前に当たった。

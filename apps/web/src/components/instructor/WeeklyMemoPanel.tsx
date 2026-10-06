@@ -1,5 +1,6 @@
 /**
  * 週次の育成メモ (#38・07 §6.5)。担当講師が 5 分で読み、その場で一言の声掛けかペースの調整をする。
+ * 講師ダッシュボード (今担当している受講者) と、管理者のダッシュボード (テナントの全員) に置く。
  *
  * - メモは講師向け。受講者本人には見せない (API も講師・管理者にしか返さない)。
  * - 一言は講師が直してから送る。送るのは講師が書いた文だけ (受講者への通知)。
@@ -24,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardActions, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { memosForWeek } from "./weekly-memo-week";
+import { type MemoAudience, memosForWeek, weeklyMemoIntro } from "./weekly-memo-view";
 
 interface MemoList {
   week: string;
@@ -46,7 +47,8 @@ function formatAt(iso: string): string {
       });
 }
 
-export function WeeklyMemoPanel() {
+export function WeeklyMemoPanel({ audience = "assigned" }: { audience?: MemoAudience }) {
+  const intro = weeklyMemoIntro(audience);
   const [week, setWeek] = useState<string | null>(null);
   const [latest, setLatest] = useState<string | null>(null);
   const [data, setData] = useState<MemoList | null>(null);
@@ -117,8 +119,9 @@ export function WeeklyMemoPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-ink-3">
-          担当している受講者の1週間の様子です。予定と実績の差・スキル・つまずき・支援・レビューの結果から
-          AI が書きます (使えないときは記録からの機械的な要約)。受講者には見せません。
+          {intro.scope}
+          予定と実績の差・スキル・つまずき・支援・レビューの結果から AI が書きます
+          (使えないときは記録からの機械的な要約)。受講者には見せません。
         </p>
         {error ? (
           <p role="alert" className="text-sm text-destructive">
@@ -126,11 +129,7 @@ export function WeeklyMemoPanel() {
           </p>
         ) : null}
         {!memos && !error ? <p className="text-sm text-ink-3">読み込んでいます</p> : null}
-        {memos && memos.length === 0 ? (
-          <p className="text-sm text-ink-3">
-            この週のメモはありません。担当している受講者のメモは、週明けに順に作ります。
-          </p>
-        ) : null}
+        {memos && memos.length === 0 ? <p className="text-sm text-ink-3">{intro.empty}</p> : null}
         {memos?.map((memo) => (
           <MemoItem key={memo.id} memo={memo} onChanged={replace} />
         ))}
