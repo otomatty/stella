@@ -78,7 +78,8 @@
     "./tasks/submission": "./src/tasks/submission.ts",
     "./tasks/submission-support": "./src/tasks/submission-support.ts",
     "./testing/task-submission": "./src/testing/task-submission.ts",
-    "./tasks/source-reference": "./src/tasks/source-reference.ts"
+    "./tasks/source-reference": "./src/tasks/source-reference.ts",
+    "./markdown/os-blocks": "./src/markdown/os-blocks.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

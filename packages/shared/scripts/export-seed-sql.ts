@@ -496,6 +496,8 @@ interface PdfManifestEntry {
   tenantId: string;
   courseSlug: string;
   lessonId: string;
+  /** OS ごとに分けた PDF (course.json の `pdfByOs`) の OS。分けない PDF には無い。 */
+  os?: string;
   hash: string;
   key: string;
   fileName: string;
@@ -507,28 +509,42 @@ interface PdfManifestEntry {
  *
  * `PDF_MANIFEST` に upload-pdfs.ts のマニフェストを渡されたときだけ出す (deploy が
  * R2 への put を終えてから seed を流す — D1 が存在しないオブジェクトを指す時間を
- * 作らない、サムネイルと同じ順序)。auto の行はレッスンにつき 1 行で常に最新版を
- * 指し、版履歴は lesson_material_versions に積む。ハッシュが前回と同じなら版は
- * 増えない (冪等)。旧版の R2 オブジェクトは消さない (版の保持は仕様)。
+ * 作らない、サムネイルと同じ順序)。auto の行はレッスンにつき 1 行 (OS ごとに分けた
+ * PDF は OS ごとに 1 行) で常に最新版を指し、版履歴は lesson_material_versions に積む。
+ * ハッシュが前回と同じなら版は増えない (冪等)。旧版の R2 オブジェクトは消さない (版の
+ * 保持は仕様)。
+ *
+ * OS ごとに分ける・分けないを切り替えたレッスンでは、マニフェストに無くなった auto の
+ * 行に `archived_at` を付ける。受講者の一覧とダウンロードからは外れる (「まとめ.pdf」と
+ * 「まとめ (Windows).pdf」が並んで古い方を開かないように) が、行と版履歴は残すので staff は
+ * 旧版を取れる。また作るようになった資料は upsert が `archived_at` を戻し、版履歴の続きに
+ * 積む。マニフェストに載らないレッスン (講座を絞ったローカル実行) は触らない。
  */
 function emitPdfMaterials() {
   const manifestPath = process.env.PDF_MANIFEST;
   if (!manifestPath || !isSqlite) return;
   const entries = JSON.parse(readFileSync(manifestPath, "utf8")) as PdfManifestEntry[];
+  /** レッスンの UUID → そのレッスンで今回登録する auto 資料の ID。 */
+  const current = new Map<string, string[]>();
   for (const e of entries) {
     if (typeof e.sizeBytes !== "number") {
       throw new Error(`pdf manifest: sizeBytes がありません: ${e.key}`);
     }
+    if (e.os !== undefined && e.os !== "windows" && e.os !== "macos") {
+      throw new Error(`pdf manifest: 未知の OS です: ${e.os} (${e.key})`);
+    }
     const lessonId = lessonUuid(e.tenantId, e.courseSlug, e.lessonId);
+    // OS を分けない PDF の ID は従来のまま (既存の行と版履歴を引き継ぐ)。
     const materialId = stableUuid(
-      `lesson-material-pdf:${e.tenantId}:${e.courseSlug}:${e.lessonId}`,
+      `lesson-material-pdf:${e.tenantId}:${e.courseSlug}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
     );
+    current.set(lessonId, [...(current.get(lessonId) ?? []), materialId]);
     lines.push(
       [
         "insert into lesson_materials (id, lesson_id, path, file_name, size_bytes, mime_type, source, created_by, created_at)",
         `select '${materialId}', l.id, '${esc(e.key)}', ${strLit(e.fileName)}, ${e.sizeBytes}, 'application/pdf', 'auto', null, ${nowExpr()}`,
         `from lessons l where l.id = '${lessonId}'`,
-        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source;",
+        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source, archived_at = null;",
       ].join(" "),
     );
     lines.push(
@@ -538,6 +554,11 @@ function emitPdfMaterials() {
         `where exists (select 1 from lesson_materials m where m.id = '${materialId}')`,
         `and coalesce((select v2.source_hash from lesson_material_versions v2 where v2.material_id = '${materialId}' order by v2.version desc limit 1), '') <> '${e.hash}';`,
       ].join(" "),
+    );
+  }
+  for (const [lessonId, materialIds] of current) {
+    lines.push(
+      `update lesson_materials set archived_at = ${nowExpr()} where lesson_id = '${lessonId}' and source = 'auto' and archived_at is null and id not in (${materialIds.map((id) => `'${id}'`).join(", ")});`,
     );
   }
 }
@@ -571,14 +592,22 @@ for (const [order, task] of content.tasks.entries()) {
   const d = task.definition;
   const sectionId = sectionIdMap.get(`ses:${task.courseId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
+  // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
+  const lessonId = lessonUuid("ses", task.courseId, task.lessonId);
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1;`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${strLit(lessonId)}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id;`,
   );
   lines.push(
     `insert into task_revisions (task_id, content_hash, definition, bundle, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}) on conflict (task_id, content_hash) do nothing;`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,
+  );
+  // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
+  lines.push(
+    task.fixedStart
+      ? `insert into task_fixed_starts (task_id, content_hash, files) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(task.fixedStart))}) on conflict (task_id) do update set content_hash = excluded.content_hash, files = excluded.files;`
+      : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
 

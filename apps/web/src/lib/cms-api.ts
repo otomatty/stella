@@ -301,10 +301,17 @@ export async function uploadMaterial(file: File, path: string): Promise<UploadMa
 // レッスン配布資料 (Issue #72)
 // ---------------------------------------------------------------
 
-/** レッスンに紐づく配布資料一覧。 受講者は同テナントの published ステージのみ返る。 */
-export async function listLessonMaterials(lessonId: string): Promise<LessonMaterialRow[]> {
+/**
+ * レッスンに紐づく配布資料一覧。 受講者は同テナントの published ステージのみ返る。
+ * `includeArchived` は staff の管理画面用で、 教材から作らなくなった自動生成資料も含める
+ * (旧版を版履歴から取るため)。
+ */
+export async function listLessonMaterials(
+  lessonId: string,
+  { includeArchived = false }: { includeArchived?: boolean } = {},
+): Promise<LessonMaterialRow[]> {
   const { rows } = await apiFetch<{ rows: LessonMaterialRow[] }>(
-    `/api/materials?lessonId=${encodeURIComponent(lessonId)}`,
+    `/api/materials?lessonId=${encodeURIComponent(lessonId)}${includeArchived ? "&includeArchived=1" : ""}`,
   );
   return rows ?? [];
 }

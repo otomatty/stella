@@ -118,6 +118,8 @@ export const profiles = sqliteTable(
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     weeklyHours: real("weekly_hours").notNull().default(35),
     learningStartDate: text("learning_start_date"),
+    /** 教材の OS 別ブロック (07 §11) で既定に開く OS。null は端末から推定する。 */
+    osPreference: text("os_preference", { enum: ["windows", "macos"] }),
     createdAt: tsNow("created_at"),
   },
   (t) => ({
@@ -290,6 +292,8 @@ export const tasks = sqliteTable(
     definition: text("definition").notNull(),
     bundle: text("bundle").notNull(),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    /** seed が課題ごとに作る課題文のレッスン (`lessons.id`)。そのレッスンの「VS Code で開く」が課題を配る。 */
+    lessonId: text("lesson_id"),
   },
   (t) => ({ sectionIdx: index("tasks_section_id_idx").on(t.sectionId) }),
 );
@@ -315,6 +319,41 @@ export const taskPrivate = sqliteTable("task_private", {
     .references(() => tasks.id, { onDelete: "cascade" }),
   files: text("files").notNull(),
 });
+
+/**
+ * 固定した開始点 (#31)。前の課題の動く実装を含むので通常の配布と分け、受講者が
+ * 求めたときだけ返す。`content_hash` は seed 時の課題の版で、今の版と一致するときだけ配る。
+ */
+export const taskFixedStarts = sqliteTable("task_fixed_starts", {
+  taskId: text("task_id")
+    .primaryKey()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  contentHash: text("content_hash").notNull(),
+  files: text("files").notNull(),
+});
+
+/** 固定した開始点を受け取った記録。提出の支援記録に `fixed-start` を足す根拠になる。 */
+export const taskFixedStartUses = sqliteTable(
+  "task_fixed_start_uses",
+  {
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    contentHash: text("content_hash").notNull(),
+    usedAt: tsNow("used_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId, t.contentHash] }),
+    taskIdx: index("task_fixed_start_uses_task_idx").on(t.taskId),
+    tenantIdx: index("task_fixed_start_uses_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export const taskProgress = sqliteTable(
   "task_progress",
@@ -493,6 +532,12 @@ export const lessonMaterials = sqliteTable(
       .default("upload"),
     createdBy: text("created_by"),
     createdAt: tsNow("created_at"),
+    /**
+     * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えたレッスンの旧資料)。
+     * 行と版履歴は残して staff が旧版を取れるようにし、受講者の一覧とダウンロードからは外す。
+     * 同じ資料をまた作るようになったら seed が null に戻す。
+     */
+    archivedAt: ts("archived_at"),
   },
   (t) => ({
     lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),

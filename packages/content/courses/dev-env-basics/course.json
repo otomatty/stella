@@ -9,6 +9,7 @@
   "prerequisites": [],
   "plannedHours": 35,
   "environment": "static-web-01",
+  "pdfByOs": true,
   "canDo": "開発環境を整え、HTMLの変更をブラウザーで確認できる",
   "theme": "開発を始める力",
   "modules": {

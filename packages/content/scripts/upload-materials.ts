@@ -1,5 +1,5 @@
 /**
- * 教材の画像 (図解 SVG / 講座サムネイル) を R2 へ流す。
+ * 教材の画像 (図解 SVG・OS ごとの画面などのラスター画像 / 講座サムネイル) を R2 へ流す。
  *
  *   bun run --filter=@stella/content upload                  # local (--local)
  *   bun run --filter=@stella/content upload:remote           # remote (--remote)
@@ -19,7 +19,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { assetPath, collectCourseIcons, collectCourseThumbnails } from "../src/manifest.js";
@@ -53,6 +53,19 @@ interface Target {
   contentType: string;
 }
 
+/**
+ * トピックの assets/ から上げる画像。OS ごとの手順の画面 (`name.windows.png` /
+ * `name.macos.png`。07 §11) はラスター画像になる。図解の元 (.html) と、ビルドが作る
+ * `.diagram.png` (pptx 用・gitignore 済み) は上げない。
+ */
+const ASSET_CONTENT_TYPES: Record<string, string> = {
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+};
+
 const targets = new Map<string, Target>();
 const collisions: string[] = [];
 
@@ -67,7 +80,8 @@ for (const slug of wantDiagrams ? dirsIn(coursesRoot) : []) {
         const assetsDir = join(lessonPath, topicDir, "assets");
         if (!existsSync(assetsDir)) continue;
         for (const file of readdirSync(assetsDir).sort()) {
-          if (!file.endsWith(".svg")) continue;
+          const contentType = ASSET_CONTENT_TYPES[extname(file).toLowerCase()];
+          if (!contentType || file.endsWith(".diagram.png")) continue;
           const key = assetPath(slug, topicDir, file);
           const source = join(assetsDir, file);
           const seen = targets.get(key);
@@ -75,7 +89,7 @@ for (const slug of wantDiagrams ? dirsIn(coursesRoot) : []) {
             collisions.push(`  ${key}\n    ${seen.source}\n    ${source}`);
             continue;
           }
-          targets.set(key, { source, contentType: "image/svg+xml" });
+          targets.set(key, { source, contentType });
         }
       }
     }
