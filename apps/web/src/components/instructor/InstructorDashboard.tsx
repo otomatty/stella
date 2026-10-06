@@ -20,14 +20,17 @@ import type { AvatarTone, Tenant } from "@/data/types";
 import type { InstructorStudentProgress } from "@stella/shared/cms/types";
 import { useSubmissions } from "@/hooks/useSubmissions";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
+import { useAssignedScope } from "@/hooks/useAssignedScope";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 import { cn } from "@/lib/utils";
+import { AssignedScopeToggle } from "./AssignedScopeToggle";
 
 interface InstructorDashboardProps {
   tenantId: Tenant["id"];
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
   backendEnabled: boolean;
+  currentUserId?: string | null;
 }
 
 const AVATAR_TONES: AvatarTone[] = ["c1", "c2", "c3", "c4", "c5", "c6"];
@@ -53,11 +56,24 @@ export const InstructorDashboard = ({
   setPage,
   onOpenReview,
   backendEnabled,
+  currentUserId = null,
 }: InstructorDashboardProps) => {
-  const { submissions, pendingCount, aiReadyCount } = useSubmissions(tenantId);
-  const pending = submissions.filter((s) => s.status === "pending");
+  const { submissions } = useSubmissions(tenantId);
+  const scope = useAssignedScope(currentUserId, backendEnabled);
+  const pending = submissions.filter(
+    (s) =>
+      s.status === "pending" &&
+      (!scope.assignedOnly || (s.studentId != null && scope.assignedIds.has(s.studentId))),
+  );
+  const pendingCount = pending.length;
+  const aiReadyCount = pending.filter((s) => s.aiReady).length;
 
-  const { overview } = useInstructorOverview(tenantId, backendEnabled);
+  // 担当の取得が済んでから引く (全員 → 担当の順に 2 度引かない)。
+  const { overview } = useInstructorOverview(
+    tenantId,
+    backendEnabled && scope.ready,
+    scope.assignedOnly,
+  );
 
   // デモ専用のみデモ定数。backendEnabled 時は overview null → KPI 0 / 空リスト。
   const overdueLearners = overview ? overview.overdue_learners : backendEnabled ? 0 : 4;
@@ -84,9 +100,10 @@ export const InstructorDashboard = ({
     <>
       <PageHeader
         title="講師ダッシュボード"
-        sub="担当受講者の進捗 · 添削"
+        sub={scope.assignedOnly ? "担当受講者の進捗 · 添削" : "受講者の進捗 · 添削"}
         actions={
           <>
+            <AssignedScopeToggle scope={scope} />
             <Button>
               <Calendar size={14} />
               今週の予定
@@ -208,7 +225,7 @@ export const InstructorDashboard = ({
 
         <Card>
           <CardHeader>
-            <CardTitle>担当受講者の進捗</CardTitle>
+            <CardTitle>{scope.assignedOnly ? "担当受講者の進捗" : "受講者の進捗"}</CardTitle>
           </CardHeader>
           <div>
             {students.length === 0 ? (

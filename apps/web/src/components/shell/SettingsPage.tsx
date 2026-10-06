@@ -7,11 +7,13 @@
  *
  * メール / ロール / 所属テナントは招待とログインが真実なので読み取り専用で見せる。
  * テナント管理者にはテナント設定 (テストモード) も同じ画面に並べる。
+ * 教材の OS 別の手順で既定に開く OS (profiles.os_preference) もここで変える。
  */
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { isOsName, OS_LABELS, OS_NAMES, type OsName } from "@stella/shared/markdown/os-blocks";
 import { Loader2, Save } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { TenantSettingsCard } from "@/components/admin/TenantSettingsCard";
@@ -22,7 +24,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { updateMyDisplayName, type Profile } from "@/lib/auth";
+import { detectBrowserOs, setViewOs, updateMyOsPreference } from "@/lib/os-preference";
 import type { Role } from "@/data/types";
 
 /** サーバ側 (POST /api/me) と揃える。 */
@@ -63,6 +67,9 @@ export const SettingsPage = ({
         backendEnabled={backendEnabled}
         onProfileUpdated={onProfileUpdated}
       />
+      {backendEnabled && profile ? (
+        <OsPreferenceCard profile={profile} onProfileUpdated={onProfileUpdated} />
+      ) : null}
       {backendEnabled && profile && role !== "sales" && role !== "instructor" ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
@@ -181,6 +188,74 @@ const AccountCard = ({
           メールアドレス・ロール・所属は管理者が管理します。
           変更が必要な場合は管理者へ依頼してください。
         </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/** 教材の OS 別の手順 (07 §11) で既定に開く OS。選んだ時点で保存する。 */
+const OsPreferenceCard = ({
+  profile,
+  onProfileUpdated,
+}: {
+  profile: Profile;
+  onProfileUpdated: () => Promise<void>;
+}) => {
+  const [saving, setSaving] = useState(false);
+  const detected = detectBrowserOs();
+  const saved = profile.os_preference ?? null;
+
+  const onChange = async (value: string) => {
+    const next = isOsName(value) ? value : null;
+    if (next === saved) return;
+    setSaving(true);
+    try {
+      await updateMyOsPreference(next);
+      setViewOs(profile.id, null);
+      await onProfileUpdated();
+      toast.success("教材の OS を保存しました");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "教材の OS を保存できませんでした");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const options: { value: "auto" | OsName; label: string }[] = [
+    {
+      value: "auto",
+      label: detected
+        ? `自動 (この端末から判定: ${OS_LABELS[detected]})`
+        : "自動 (判定できないときは Windows)",
+    },
+    ...OS_NAMES.map((os) => ({ value: os, label: OS_LABELS[os] })),
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>教材の OS</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-[12.5px] text-ink-3 leading-relaxed">
+          まとめと課題文の OS ごとの手順を、最初にどの OS のタブで開くかを選びます。
+          教材のタブを切り替えると、ほかの OS の手順も読めます。
+        </p>
+        <RadioGroup
+          value={saved ?? "auto"}
+          disabled={saving}
+          onValueChange={(value) => void onChange(value)}
+          aria-label="教材の OS"
+        >
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center gap-2">
+              <RadioGroupItem value={option.value} id={`os-preference-${option.value}`} />
+              <Label htmlFor={`os-preference-${option.value}`} className="mb-0 font-normal">
+                {option.label}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </CardContent>
     </Card>
   );

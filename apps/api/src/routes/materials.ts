@@ -10,7 +10,10 @@
  *                                         受講者は published + active enrollment (quiz と同基準)。
  * - GET    /api/materials?stageId=...   … ステージ全体の配布資料一覧 (Issue #77 —
  *                                         ステージ詳細「教材をダウンロード」)。 認可は同上。
- * - GET    /api/materials/:id/download  … R2 からのプロキシダウンロード (認可は一覧と同じ)。
+ *   どちらも教材から作らなくなった auto 資料 (`archived_at`) は外す。staff は
+ *   `includeArchived=1` で含められる (配布資料の管理画面で旧版をたどるため)。
+ * - GET    /api/materials/:id/download  … R2 からのプロキシダウンロード (認可は一覧と同じ。
+ *                                         `archived_at` のある資料は staff だけ)。
  * - DELETE /api/materials/:id           … staff のみ。 DB 行を先に消し、 R2 はベストエフォート。
  *
  * R2 の `path` はクライアントへ返さない (バケットが公開 URL を持つ場合の直リンク緩和)。
@@ -20,7 +23,7 @@
  */
 
 import { Hono } from "hono";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 
@@ -61,7 +64,18 @@ const materialToRow = (m: MaterialSel) => ({
   source: m.source,
   created_by: m.createdBy,
   created_at: m.createdAt,
+  archived_at: m.archivedAt,
 });
+
+/**
+ * 一覧に出す資料。教材から作らなくなった auto 資料 (`archived_at`) は外し、staff が
+ * `includeArchived=1` を付けたとき (配布資料の管理画面) だけ含める — 旧版を版履歴から取るため。
+ */
+function listedMaterials(caller: Caller, includeArchived: string | undefined) {
+  return includeArchived === "1" && isStaffRole(caller.role)
+    ? undefined
+    : isNull(lessonMaterials.archivedAt);
+}
 
 /** レッスンの所属テナント / ステージ公開状態 / ステージ ID を join で解決する。 */
 async function lessonStageInfo(
@@ -251,6 +265,7 @@ materialsRoute.get("/api/materials", async (c) => {
     const { caller, db } = await getCaller(c);
     const lessonId = c.req.query("lessonId");
     const stageId = c.req.query("stageId");
+    const listed = listedMaterials(caller, c.req.query("includeArchived"));
 
     // ステージ単位: レッスン → セクション → ステージの join で束ねて返す (Issue #77)。
     if (stageId) {
@@ -264,7 +279,7 @@ materialsRoute.get("/api/materials", async (c) => {
         .from(lessonMaterials)
         .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
-        .where(eq(sections.stageId, stageId))
+        .where(and(eq(sections.stageId, stageId), listed))
         .orderBy(asc(sections.order), asc(lessons.order), asc(lessonMaterials.createdAt));
       return c.json({
         rows: rows.map((r) => ({
@@ -282,7 +297,7 @@ materialsRoute.get("/api/materials", async (c) => {
     const rows = await db
       .select()
       .from(lessonMaterials)
-      .where(eq(lessonMaterials.lessonId, lessonId))
+      .where(and(eq(lessonMaterials.lessonId, lessonId), listed))
       .orderBy(asc(lessonMaterials.createdAt));
     return c.json({ rows: rows.map(materialToRow) });
   } catch (err) {
@@ -406,6 +421,9 @@ materialsRoute.get("/api/materials/:id/download", async (c) => {
     if (!material) throw new ApiError("資料が見つかりません", 404);
 
     await assertMaterialReadable(db, caller, material.lessonId);
+    // 作らなくなった資料は受講者に渡さない (旧版と同じく staff だけが取れる)。
+    if (material.archivedAt && !isStaffRole(caller.role))
+      throw new ApiError("資料が見つかりません", 404);
 
     const object = await bucket.get(material.path);
     if (!object) throw new ApiError("資料の実体が見つかりません", 404);

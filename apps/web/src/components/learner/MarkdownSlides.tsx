@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { getMaterialUrl } from "@/lib/storage";
 import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
+import { hasOsBlocks, parseOsBlocks } from "@stella/shared/markdown/os-blocks";
+import { OsTabs } from "./OsTabs";
 
 /**
  * 教材 markdown の画像 src は R2 のオブジェクトキー (URL ではない) なので公開 URL へ解決する。
@@ -75,8 +77,7 @@ const highlightOptions = {
   languages: { typescript, javascript, bash, json },
 } satisfies RehypeHighlightOptions;
 
-/** レッスン本文 markdown の共通描画。 text レッスンとスライド 1 枚の両方で使う。 */
-export function LessonMarkdown({ children }: { children: string }) {
+function MarkdownBody({ children }: { children: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -85,6 +86,38 @@ export function LessonMarkdown({ children }: { children: string }) {
     >
       {children}
     </ReactMarkdown>
+  );
+}
+
+const renderMarkdownBody = (markdown: string) => <MarkdownBody>{markdown}</MarkdownBody>;
+
+/**
+ * レッスン本文 markdown の共通描画 (text レッスン・確認クイズの出典欄)。
+ *
+ * まとめと課題文の OS 別ブロック (`:::os windows` / `:::os macos`) は OS のタブにする。
+ * 区切りは `@stella/shared/markdown/os-blocks` が決め、前後の本文とタブの中身は
+ * それぞれ同じ react-markdown で描く。
+ */
+export function LessonMarkdown({ children }: { children: string }) {
+  const segments = useMemo(
+    () => (hasOsBlocks(children) ? parseOsBlocks(children).segments : null),
+    [children],
+  );
+  if (!segments) return <MarkdownBody>{children}</MarkdownBody>;
+  return (
+    <>
+      {segments.map((segment) =>
+        segment.kind === "markdown" ? (
+          <MarkdownBody key={`md-${segment.line}`}>{segment.markdown}</MarkdownBody>
+        ) : (
+          <OsTabs
+            key={`os-${segment.line}`}
+            blocks={segment.blocks}
+            renderMarkdown={renderMarkdownBody}
+          />
+        ),
+      )}
+    </>
   );
 }
 

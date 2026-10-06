@@ -118,6 +118,8 @@ export const profiles = sqliteTable(
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     weeklyHours: real("weekly_hours").notNull().default(35),
     learningStartDate: text("learning_start_date"),
+    /** 教材の OS 別ブロック (07 §11) で既定に開く OS。null は端末から推定する。 */
+    osPreference: text("os_preference", { enum: ["windows", "macos"] }),
     createdAt: tsNow("created_at"),
   },
   (t) => ({
@@ -290,6 +292,8 @@ export const tasks = sqliteTable(
     definition: text("definition").notNull(),
     bundle: text("bundle").notNull(),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    /** seed が課題ごとに作る課題文のレッスン (`lessons.id`)。そのレッスンの「VS Code で開く」が課題を配る。 */
+    lessonId: text("lesson_id"),
   },
   (t) => ({ sectionIdx: index("tasks_section_id_idx").on(t.sectionId) }),
 );
@@ -315,6 +319,41 @@ export const taskPrivate = sqliteTable("task_private", {
     .references(() => tasks.id, { onDelete: "cascade" }),
   files: text("files").notNull(),
 });
+
+/**
+ * 固定した開始点 (#31)。前の課題の動く実装を含むので通常の配布と分け、受講者が
+ * 求めたときだけ返す。`content_hash` は seed 時の課題の版で、今の版と一致するときだけ配る。
+ */
+export const taskFixedStarts = sqliteTable("task_fixed_starts", {
+  taskId: text("task_id")
+    .primaryKey()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  contentHash: text("content_hash").notNull(),
+  files: text("files").notNull(),
+});
+
+/** 固定した開始点を受け取った記録。提出の支援記録に `fixed-start` を足す根拠になる。 */
+export const taskFixedStartUses = sqliteTable(
+  "task_fixed_start_uses",
+  {
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    contentHash: text("content_hash").notNull(),
+    usedAt: tsNow("used_at"),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId, t.contentHash] }),
+    taskIdx: index("task_fixed_start_uses_task_idx").on(t.taskId),
+    tenantIdx: index("task_fixed_start_uses_tenant_idx").on(t.tenantId),
+  }),
+);
 
 export const taskProgress = sqliteTable(
   "task_progress",
@@ -345,6 +384,72 @@ export const taskProgress = sqliteTable(
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.taskId] }),
     taskIdx: index("task_progress_task_id_idx").on(t.taskId),
+  }),
+);
+
+/**
+ * 手元の確認の要約 (#38)。受講者・課題ごとに 1 行の回数だけを持つ。
+ * 実行ごとの履歴・コード・メッセージは持たない (07 §6.5)。版が変わると連続の失敗を数え直す。
+ */
+export const taskLocalRuns = sqliteTable(
+  "task_local_runs",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    contentHash: text("content_hash").notNull(),
+    passedRuns: integer("passed_runs").notNull().default(0),
+    failedRuns: integer("failed_runs").notNull().default(0),
+    errorRuns: integer("error_runs").notNull().default(0),
+    /** 最後の合格から続けて失敗した回数。環境のエラーは数えない。 */
+    failureStreak: integer("failure_streak").notNull().default(0),
+    streakStartedAt: ts("streak_started_at"),
+    /** この連続の失敗を担当講師に知らせた時刻。連続が切れると消す。 */
+    streakAlertedAt: ts("streak_alerted_at"),
+    lastOutcome: text("last_outcome", { enum: ["passed", "failed", "error"] }).notNull(),
+    lastFailedSteps: json<string[]>("last_failed_steps", []),
+    lastTestsPassed: integer("last_tests_passed"),
+    lastTestsFailed: integer("last_tests_failed"),
+    firstRunAt: ts("first_run_at").notNull(),
+    lastRunAt: ts("last_run_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.taskId] }),
+    taskIdx: index("task_local_runs_task_id_idx").on(t.taskId),
+    streakIdx: index("task_local_runs_streak_idx").on(t.failureStreak),
+  }),
+);
+
+/**
+ * サーバーが記録する課題ごとの支援 (#38)。いまは AI チャット。
+ * kind は text なので、ヒント・解答の表示 (#36) などの種類を足しても表は変えない。
+ */
+export const taskSupportEvents = sqliteTable(
+  "task_support_events",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    detail: text("detail"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    userTaskIdx: index("task_support_events_user_task_idx").on(t.userId, t.taskId, t.createdAt),
+    taskIdx: index("task_support_events_task_id_idx").on(t.taskId),
   }),
 );
 
@@ -427,6 +532,12 @@ export const lessonMaterials = sqliteTable(
       .default("upload"),
     createdBy: text("created_by"),
     createdAt: tsNow("created_at"),
+    /**
+     * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えたレッスンの旧資料)。
+     * 行と版履歴は残して staff が旧版を取れるようにし、受講者の一覧とダウンロードからは外す。
+     * 同じ資料をまた作るようになったら seed が null に戻す。
+     */
+    archivedAt: ts("archived_at"),
   },
   (t) => ({
     lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),
@@ -1169,6 +1280,8 @@ export const notifications = sqliteTable("notifications", {
       "review_completed",
       "assignment_due",
       "learning_pace_delayed",
+      // つまずきの検知 (#38)。担当講師宛て。
+      "learner_stumble",
       // ステージの自動クリア (修了証の自動発行)。text 列なのでマイグレーション不要。
       "stage_cleared",
       "interview_date_set",

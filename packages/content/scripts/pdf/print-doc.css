@@ -188,3 +188,24 @@ body {
 .pdf-answers {
   break-before: page;
 }
+
+/* OS 別の手順 (`:::os`)。OS を分けない PDF は両方の OS を見出し付きで並べる (07 §11)。 */
+.doc-body .os-block {
+  margin: 4mm 0;
+  padding: 2mm 4mm;
+  background: #f7f7f9; /* BG_SOFT */
+  border: 1px solid #dddde2; /* BORDER */
+  border-radius: 4px;
+}
+
+.doc-body .os-block-heading {
+  margin: 0 0 1.5mm;
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #0e0e10; /* INK */
+  break-after: avoid;
+}
+
+.doc-body .os-block > :last-child {
+  margin-bottom: 0;
+}

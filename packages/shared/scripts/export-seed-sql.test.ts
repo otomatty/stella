@@ -8,6 +8,7 @@ import {
   readFileSync,
   rmdirSync,
   unlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -30,7 +31,7 @@ function stableUuid(key: string): string {
 }
 
 /** seed-d1 と同じく stdout をファイルへ直接書く。Windows の大きな pipe 出力も避ける。 */
-function exportSql(contentOnly = false): string {
+function exportSql(contentOnly = false, extraEnv: Record<string, string> = {}): string {
   const dir = mkdtempSync(join(tmpdir(), "stella-seed-test-"));
   const file = join(dir, "seed.sql");
   const fd = openSync(file, "w");
@@ -39,7 +40,12 @@ function exportSql(contentOnly = false): string {
       execSync("bun run packages/shared/scripts/export-seed-sql.ts", {
         cwd: fileURLToPath(new URL("../../..", import.meta.url)),
         stdio: ["ignore", fd, "inherit"],
-        env: { ...process.env, DIALECT: "sqlite", CONTENT_ONLY: contentOnly ? "1" : "0" },
+        env: {
+          ...process.env,
+          DIALECT: "sqlite",
+          CONTENT_ONLY: contentOnly ? "1" : "0",
+          ...extraEnv,
+        },
       });
     } finally {
       closeSync(fd);
@@ -529,11 +535,138 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(sql).toMatch(/insert into lessons /);
   });
 
+  it("課題の private/ とヒントは task_private にだけ入り、配布 bundle・レッスンに出ない", () => {
+    const taskDir = new URL(
+      "../../content/courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/",
+      import.meta.url,
+    );
+    const statements = sql.split("\n");
+    for (const rel of [
+      "private/solution/index.html",
+      "private/explanation.md",
+      "private/review.md",
+      "hints.md",
+    ]) {
+      const body = readFileSync(new URL(rel, taskDir));
+      const carrying = statements.filter((line) => line.includes(body.toString("base64")));
+      expect(carrying.length, rel).toBeGreaterThan(0);
+      expect(
+        carrying.every((line) => line.startsWith("insert into task_private ")),
+        rel,
+      ).toBe(true);
+    }
+    // 解説・レビューの観点の本文は、レッスンの markdown としても出ない。
+    for (const rel of ["private/explanation.md", "private/review.md"]) {
+      const lastLine = readFileSync(new URL(rel, taskDir), "utf8").trim().split("\n").at(-1);
+      expect(lastLine && sql.includes(lastLine), rel).toBe(false);
+    }
+  });
+
+  it("課題を課題文のレッスンと結び、固定した開始点の無い課題は開始点を消す", () => {
+    const lessonId = stableUuid("lesson:ses:dev-env-basics:task-m0-first-page-q01-first-page");
+    expect(sql).toContain(`insert into lessons (id, section_id, title, type, "order"`);
+    expect(sql).toContain(`select '${lessonId}', s.id,`);
+    expect(sql).toMatch(
+      new RegExp(
+        `insert into tasks \\([^)]*lesson_id\\) values \\('dev-env-basics/m0-first-page/q01-first-page',.*'${lessonId}'\\) on conflict`,
+      ),
+    );
+    expect(sql).toContain(
+      "delete from task_fixed_starts where task_id = 'dev-env-basics/m0-first-page/q01-first-page';",
+    );
+  });
+
   it("デモ講座の削除は本番 seed でも出す", () => {
     expect(sql).toContain(
       `delete from stages where id = '${stableUuid("course:ses:web-fundamentals")}'`,
     );
     expect(sql).not.toContain("Web開発基礎");
+  });
+});
+
+describe("export-seed-sql (自動生成 PDF)", () => {
+  /** PDF_MANIFEST を渡したときの資料の SQL だけを取り出す。 */
+  function pdfSql(entries: object[]): string {
+    const dir = mkdtempSync(join(tmpdir(), "stella-pdf-manifest-"));
+    const file = join(dir, "pdf-manifest.json");
+    writeFileSync(file, JSON.stringify(entries));
+    try {
+      return exportSql(true, { PDF_MANIFEST: file })
+        .split("\n")
+        .filter((line) => /lesson_material/.test(line))
+        .join("\n");
+    } finally {
+      unlinkSync(file);
+      rmdirSync(dir);
+    }
+  }
+  const entry = (os?: "windows" | "macos", hash = `hash-${os ?? "both"}`) => ({
+    tenantId: "ses",
+    courseSlug: "dev-env-basics",
+    lessonId: "doc-0-1",
+    kind: "doc",
+    ...(os ? { os } : {}),
+    hash,
+    key: `lesson-pdf/ses/dev-env-basics/doc-0-1/${hash}.pdf`,
+    fileName: os ? `0-1 まとめ (${os}).pdf` : "0-1 まとめ.pdf",
+    sizeBytes: 10,
+  });
+
+  it("OS ごとに分けた PDF は OS ごとの資料にし、分け方を変えても旧資料と版履歴を残して一覧から外す", () => {
+    const root = fileURLToPath(new URL("../../..", import.meta.url));
+    const combined = pdfSql([entry()]);
+    const combinedRevised = pdfSql([entry(undefined, "hash-both-2")]);
+    const byOs = pdfSql([entry("windows"), entry("macos")]);
+    const db = new DatabaseSync(":memory:");
+    try {
+      for (const file of readdirSync(join(root, "apps/api/drizzle"))
+        .filter((f) => f.endsWith(".sql"))
+        .sort())
+        db.exec(readFileSync(join(root, "apps/api/drizzle", file), "utf8"));
+      db.exec("pragma foreign_keys = on");
+      db.exec(exportSql(true));
+      const id = (os?: string) =>
+        stableUuid(`lesson-material-pdf:ses:dev-env-basics:doc-0-1${os ? `:${os}` : ""}`);
+      /** 資料ごとの [配っているか, 版の数, 最新版のキー]。 */
+      const state = () =>
+        Object.fromEntries(
+          (
+            db
+              .prepare(
+                "select m.id, m.archived_at is null as listed, m.path, (select count(*) from lesson_material_versions v where v.material_id = m.id) as versions from lesson_materials m where m.source = 'auto'",
+              )
+              .all() as { id: string; listed: number; path: string; versions: number }[]
+          ).map((r) => [r.id, [r.listed === 1, r.versions, r.path.split("/").pop()]]),
+        );
+      db.exec(combined);
+      expect(state()).toEqual({ [id()]: [true, 1, "hash-both.pdf"] });
+      // 分ける: 旧資料は行と版履歴を残し、一覧からだけ外す
+      db.exec(byOs);
+      expect(state()).toEqual({
+        [id()]: [false, 1, "hash-both.pdf"],
+        [id("windows")]: [true, 1, "hash-windows.pdf"],
+        [id("macos")]: [true, 1, "hash-macos.pdf"],
+      });
+      // 同じマニフェストをもう一度流しても版は増えない
+      db.exec(byOs);
+      expect(state()[id("windows")]).toEqual([true, 1, "hash-windows.pdf"]);
+      // まとめる: 前の資料に戻し、版履歴の続きに積む。OS ごとの資料は残して外す
+      db.exec(combinedRevised);
+      expect(state()).toEqual({
+        [id()]: [true, 2, "hash-both-2.pdf"],
+        [id("windows")]: [false, 1, "hash-windows.pdf"],
+        [id("macos")]: [false, 1, "hash-macos.pdf"],
+      });
+      // また分ける: 中身が同じなら版を増やさずに戻す
+      db.exec(byOs);
+      expect(state()).toEqual({
+        [id()]: [false, 2, "hash-both-2.pdf"],
+        [id("windows")]: [true, 1, "hash-windows.pdf"],
+        [id("macos")]: [true, 1, "hash-macos.pdf"],
+      });
+    } finally {
+      db.close();
+    }
   });
 });
 

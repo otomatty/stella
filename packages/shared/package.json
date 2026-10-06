@@ -55,6 +55,8 @@
     "./tasks/environment": "./src/tasks/environment.ts",
     "./tasks/run-result": "./src/tasks/run-result.ts",
     "./tasks/hash": "./src/tasks/hash.ts",
+    "./tasks/local-report": "./src/tasks/local-report.ts",
+    "./tasks/support-record": "./src/tasks/support-record.ts",
     "./search/types": "./src/search/types.ts",
     "./enrollment/access": "./src/enrollment/access.ts",
     "./enrollment/preset": "./src/enrollment/preset.ts",
@@ -76,7 +78,8 @@
     "./tasks/submission": "./src/tasks/submission.ts",
     "./tasks/submission-support": "./src/tasks/submission-support.ts",
     "./testing/task-submission": "./src/testing/task-submission.ts",
-    "./tasks/source-reference": "./src/tasks/source-reference.ts"
+    "./tasks/source-reference": "./src/tasks/source-reference.ts",
+    "./markdown/os-blocks": "./src/markdown/os-blocks.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

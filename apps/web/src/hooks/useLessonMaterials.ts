@@ -21,6 +21,8 @@ export interface UseLessonMaterialsResult {
 export function useLessonMaterials(
   lessonId: string | null,
   enabled = true,
+  /** staff の管理画面だけ true。 教材から作らなくなった自動生成資料も並べる。 */
+  includeArchived = false,
 ): UseLessonMaterialsResult {
   const [materials, setMaterials] = useState<LessonMaterialRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export function useLessonMaterials(
     setLoading(true);
     setError(null);
     try {
-      const rows = await listLessonMaterials(lessonId);
+      const rows = await listLessonMaterials(lessonId, { includeArchived });
       if (reqId !== requestIdRef.current) return;
       setMaterials(rows);
     } catch (err) {
@@ -49,7 +51,7 @@ export function useLessonMaterials(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [active, lessonId]);
+  }, [active, lessonId, includeArchived]);
 
   useEffect(() => {
     void refetch();

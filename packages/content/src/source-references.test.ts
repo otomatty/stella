@@ -536,6 +536,17 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(unitContentHash(unit)).toBe(before);
   });
+  it("配布 PDF を OS ごとに分けるか (pdfByOs) の切り替えでは指紋を変えない", () => {
+    const { root, unit } = fixture();
+    const before = unitContentHash(unit);
+    for (const value of [false, true, undefined]) {
+      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+        if (value === undefined) delete row.pdfByOs;
+        else row.pdfByOs = value;
+      });
+      expect(unitContentHash(unit)).toBe(before);
+    }
+  });
   it.each(["id", "title"])(
     "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
     (field) => {

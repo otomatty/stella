@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TaskSupportSummary } from "@/components/learner/TaskSupportSummary";
+import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 
 interface Learners {
   learners: { id: string; name: string; instructorId: string | null }[];
@@ -99,6 +101,7 @@ export function LearningPaceManager({ admin = false }: { admin?: boolean }) {
               </div>
             ) : null}
             <LearningPacePanel key={`${selected}:${revision}`} userId={selected} />
+            <TaskSupportPanel key={`support-${selected}`} userId={selected} />
             <DiagnosisForm
               key={`diagnosis-${selected}`}
               userId={selected}
@@ -223,6 +226,55 @@ function DiagnosisForm({ userId, onChanged }: { userId: string; onChanged: () =>
           確認済みとして登録
         </Button>
       </form>
+    </details>
+  );
+}
+
+/** 課題ごとの支援の記録 (#38)。受講者が自分の課題一覧で見るものと同じ内容。 */
+function TaskSupportPanel({ userId }: { userId: string }) {
+  const [records, setRecords] = useState<TaskSupportRecord[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    apiFetch<{ tasks: TaskSupportRecord[] }>(
+      `/api/task-support?userId=${encodeURIComponent(userId)}`,
+      { signal: controller.signal },
+    )
+      .then((data) => {
+        if (!controller.signal.aborted) setRecords(data.tasks);
+      })
+      .catch((err: unknown) => {
+        if (!controller.signal.aborted)
+          setError(err instanceof Error ? err.message : "支援の記録を取得できませんでした");
+      });
+    return () => controller.abort();
+  }, [userId]);
+  return (
+    <details>
+      <summary className="cursor-pointer text-sm font-semibold">課題ごとの支援の記録</summary>
+      <p className="text-xs text-ink-3 mt-2">
+        ヒント・解答の表示、講師への相談、人のレビュー、AI
+        チャット、手元の確認の回数です。人のレビュー以外の支援があった合格は「支援付き」になります。
+      </p>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : !records ? (
+        <p className="text-sm text-ink-3 mt-2">読み込んでいます</p>
+      ) : records.length === 0 ? (
+        <p className="text-sm text-ink-3 mt-2">まだ記録がありません</p>
+      ) : (
+        <ul className="mt-2 space-y-3">
+          {records.map((r) => (
+            <li key={r.taskId}>
+              <div className="text-sm font-medium">{r.title}</div>
+              <div className="text-xs text-ink-3">{r.stageTitle}</div>
+              <TaskSupportSummary record={r} />
+            </li>
+          ))}
+        </ul>
+      )}
     </details>
   );
 }
