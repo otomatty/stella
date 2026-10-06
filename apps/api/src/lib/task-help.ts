@@ -10,7 +10,8 @@
  *   解答例を開く条件・挑戦の回数) が今の版と同じときだけで、判定は今の版の表で行う。方針が違えば
  *   素材を出さず、受け取り直しを案内する。
  * - 返すのはヒント (`hints.md` の段)・解答例 (`solution/`)・解説 (`explanation.md`) だけで、
- *   予備の類題 (`variants/`) とレビューの観点 (`review.md`) はどの条件でも返さない。
+ *   予備の類題 (`variants/`) とレビューの観点 (`review.md`) はどの条件でも返さない。類題 (#39) は
+ *   それぞれ自分の課題の行として入り、出題した受講者にだけ、その類題の種別の方針で素材を返す。
  * - 開いたら `task_help_opens` に記録してから返す (記録できなければ返さない)。記録は提出の支援
  *   記録に足し (`withRecordedHelp`)、水準と確認A・Bの人に回す判定 (`hasRecordedSupport`) にも効く。
  *   固定した開始点 (`task_fixed_start_uses` → `withRecordedFixedStart`) と同じ形にそろえている。
@@ -51,7 +52,7 @@ import {
   tasks,
 } from "../db/schema.js";
 import { ApiError, type Caller } from "./authz.js";
-import { canAccessTasks } from "./task-access.js";
+import { canAccessTask } from "./task-access.js";
 
 type Scope = { tenantId: string; userId: string; taskId: string };
 
@@ -282,8 +283,9 @@ async function loadServed(
 }
 
 /**
- * 受講者が読める課題 (`canAccessTasks`: 同じテナントの公開中の format 2 で、受講中か修了) の
- * 解放の判定に要るものを集める。読めない課題は 404 (課題があるかどうかも返さない)。
+ * 受講者が読める課題 (`canAccessTask`: 同じテナントの公開中の format 2 で、受講中か修了。予備の
+ * 類題は出題した受講者だけ、#39) の解放の判定に要るものを集める。読めない課題は 404 (課題がある
+ * かどうかも返さない)。類題の解放の条件は、その類題の種別の方針 (`taskHelpAccess`) に従う。
  */
 async function loadHelpContext(
   db: Db,
@@ -299,6 +301,7 @@ async function loadHelpContext(
       contentHash: tasks.contentHash,
       definition: tasks.definition,
       stageId: sections.stageId,
+      variantOf: tasks.variantOf,
       privateFiles: taskPrivate.files,
     })
     .from(tasks)
@@ -306,8 +309,7 @@ async function loadHelpContext(
     .leftJoin(taskPrivate, eq(taskPrivate.taskId, tasks.id))
     .where(and(eq(tasks.id, taskId), eq(tasks.active, true)))
     .limit(1);
-  if (!row || !(await canAccessTasks(db, caller, row.stageId)))
-    throw new ApiError("task not found", 404);
+  if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
   const kind = row.kind as TaskKind;
   const scope = { tenantId: caller.tenantId, userId: caller.id, taskId: row.id };
   const [[progress], [runs], [submitted], [latest], opens, served] = await Promise.all([

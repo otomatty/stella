@@ -1,15 +1,18 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { sections, tasks, taskProgress } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
 
-/** 手元の合格だけでは修了しない。確定した合格は教材更新後も保持する。 */
+/**
+ * 手元の合格だけでは修了しない。確定した合格は教材更新後も保持する。
+ * 予備の類題 (#39) は講座の課題ではないので、分母にも分子にも数えない。
+ */
 export async function taskCompletionCounts(db: Db, stageId: string, userIds: string[]) {
   const rows = await db
     .select({ id: tasks.id })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .where(and(eq(sections.stageId, stageId), eq(tasks.active, true)));
+    .where(and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)));
   const passed = new Map<string, Set<string>>();
   for (const users of chunk(userIds, 50)) {
     const progress = await db
@@ -21,6 +24,7 @@ export async function taskCompletionCounts(db: Db, stageId: string, userIds: str
         and(
           eq(sections.stageId, stageId),
           eq(tasks.active, true),
+          isNull(tasks.variantOf),
           inArray(taskProgress.status, ["passed", "ai-passed"]),
           inArray(taskProgress.userId, users),
         ),

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import {
   validateEnvironmentRequirement,
   type EnvironmentRequirement,
@@ -12,6 +12,7 @@ import {
   type TaskBundle,
 } from "../../shared/src/tasks/catalog.js";
 import { parseTaskHints } from "../../shared/src/tasks/help.js";
+import { variantKindProblem } from "../../shared/src/tasks/variants.js";
 import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
   publicReferences,
@@ -33,8 +34,16 @@ import {
 export interface TaskSeed {
   courseId: string;
   unitId: string;
-  /** 課題文を載せるレッスンのキー。seed がこのレッスンと課題を結び、Web の「VS Code で開く」に使う。 */
-  lessonId: string;
+  /**
+   * 課題文を載せるレッスンのキー。seed がこのレッスンと課題を結び、Web の「VS Code で開く」に使う。
+   * 類題は null (レッスンを作らない。出題した受講者にだけ配る)。
+   */
+  lessonId: string | null;
+  /**
+   * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題は講座の課題一覧・
+   * レッスン・学習ペース・修了の判定に出さず、出題した受講者にだけ配る。
+   */
+  variantOf?: string;
   definition: TaskDefinition;
   bundle: TaskBundle;
   privateFiles: Record<string, string>;
@@ -115,6 +124,29 @@ export function collectFiles(root: string, prefix = ""): Record<string, string> 
   walk(root, prefix);
   return files;
 }
+/** 単元の課題を読むときに共通で使う台帳と参照元。 */
+interface UnitContext {
+  root: string;
+  courseId: string;
+  unitId: string;
+  skills: Set<string>;
+  patterns: Set<string>;
+  referenceMap: NonNullable<ReturnType<typeof readUnitReferences>>;
+  registry: ReturnType<typeof readSourceRegistry>;
+  references: PublicSourceReference[];
+}
+
+/** 課題 (類題を含む) に必ず置くファイルとフォルダー。 */
+const TASK_REQUIRED_PATHS = [
+  "README.md",
+  "hints.md",
+  "starter",
+  "tests",
+  "private/solution",
+  "private/explanation.md",
+  "private/review.md",
+] as const;
+
 export function readUnit(
   root: string,
   courseId: string,
@@ -138,113 +170,181 @@ export function readUnit(
     );
   // 課題の無い単元 (読むだけの導入の単元など) は tasks/ を置かない。印を外しても読み込める。
   if (!existsSync(tasksRoot)) return { unit: { courseId, unitId, config, references }, tasks: [] };
-  const tasks = sortNatural(readdirSync(tasksRoot)).map((taskId): TaskSeed => {
+  const ctx: UnitContext = {
+    root,
+    courseId,
+    unitId,
+    skills,
+    patterns,
+    referenceMap,
+    registry,
+    references,
+  };
+  const tasks: TaskSeed[] = [];
+  const variants: TaskSeed[] = [];
+  for (const taskId of sortNatural(readdirSync(tasksRoot))) {
     const taskDir = join(tasksRoot, taskId);
     if (!lstatSync(taskDir).isDirectory())
       throw new Error(`tasks/: ディレクトリが必要です: ${taskId}`);
-    // 学習フォルダーでは `<課題>-fixed-start/` を固定した開始点に使う。課題と取り違えない。
-    if (taskId.endsWith(FIXED_START_SUFFIX))
+    const task = readTask(ctx, taskDir, taskId);
+    tasks.push(task);
+    variants.push(...readVariants(ctx, task));
+  }
+  // 類題の ID は単元の課題と同じ `<講座>/<単元>/<名前>` で、学習フォルダーの置き場所にもなる。
+  // 課題・ほかの類題と同じ名前は使えない。
+  const ids = new Set<string>();
+  for (const task of [...tasks, ...variants]) {
+    if (ids.has(task.definition.id))
+      throw new Error(`課題・類題の ID が重複しています: ${task.definition.id}`);
+    ids.add(task.definition.id);
+  }
+  return { unit: { courseId, unitId, config, references }, tasks: [...tasks, ...variants] };
+}
+
+/**
+ * 課題の `private/variants/` を読む。予備の類題は 1 問 1 フォルダーで、中身は課題と同じ形
+ * (task.json・README.md・hints.md・starter/・tests/・private/)。空の在庫は `.gitkeep` だけを置く。
+ */
+function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
+  const variantsRoot = join(parent.directory, "private/variants");
+  const variants: TaskSeed[] = [];
+  for (const name of sortNatural(readdirSync(variantsRoot))) {
+    const path = join(variantsRoot, name);
+    const stat = lstatSync(path);
+    if (name === ".gitkeep" && stat.isFile()) continue;
+    if (stat.isSymbolicLink() || !stat.isDirectory())
       throw new Error(
-        `課題のフォルダー名を ${FIXED_START_SUFFIX} で終わらせることはできません: ${taskId}`,
+        `private/variants/ には類題を 1 問 1 フォルダーで置いてください (空なら .gitkeep だけ): ${name} (${parent.definition.id})`,
       );
-    const raw = record(json(join(taskDir, "task.json")));
-    const environment = readEnvironment(root, raw.environment);
-    const definition = parseTaskDefinition(raw, environment);
-    if (definition.id !== `${courseId}/${unitId}/${taskId}`)
-      throw new Error(`task.id とディレクトリが一致しません: ${definition.id}`);
-    if (!patterns.has(definition.pattern)) throw new Error(`未知のパターン: ${definition.pattern}`);
-    assertKnownSkills([...definition.skills.uses, ...definition.skills.assesses], skills);
-    for (const id of definition.sources)
-      if (!references.some((r) => r.id === id)) throw new Error(`未知の参照元: ${id}`);
-    for (const rel of [
-      "README.md",
-      "hints.md",
-      "starter",
-      "tests",
-      "private/solution",
-      "private/explanation.md",
-      "private/review.md",
-      "private/variants",
-    ]) {
-      if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
-        throw new Error(`課題に ${rel} が必要です: ${definition.id}`);
-    }
-    const readmeId = `tasks/${taskId}/README.md`;
-    const readme = readFileSync(join(taskDir, "README.md"), "utf8");
-    // 課題の配布物 (starter・tests・README・manifest) にも LMS の課題文にも教材内の画像は
-    // 載らないので、README から参照すると受講者には壊れた画像になる。公開前に止める。
-    const contentIds = referenceContentIds(readme, readmeId);
-    if (contentIds.length > 1)
+    variants.push(readTask(ctx, path, name, parent));
+  }
+  return variants;
+}
+
+/**
+ * 課題 1 つ (`parent` を渡すとその課題の類題) を読み、配布一式と非公開の素材を組み立てる。
+ * 類題は親と同じパターンで、レッスンを作らず、固定した開始点と入れ子の予備を持たない。
+ */
+function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: TaskSeed): TaskSeed {
+  const { root, courseId, unitId, referenceMap, registry } = ctx;
+  const label = parent ? "類題" : "課題";
+  // 学習フォルダーでは `<課題>-fixed-start/` を固定した開始点に使う。課題と取り違えない。
+  if (taskId.endsWith(FIXED_START_SUFFIX))
+    throw new Error(
+      `${label}のフォルダー名を ${FIXED_START_SUFFIX} で終わらせることはできません: ${taskId}`,
+    );
+  const raw = record(json(join(taskDir, "task.json")));
+  const environment = readEnvironment(root, raw.environment);
+  const definition = parseTaskDefinition(raw, environment);
+  if (definition.id !== `${courseId}/${unitId}/${taskId}`)
+    throw new Error(`task.id とディレクトリが一致しません: ${definition.id}`);
+  if (!ctx.patterns.has(definition.pattern))
+    throw new Error(`未知のパターン: ${definition.pattern}`);
+  assertKnownSkills([...definition.skills.uses, ...definition.skills.assesses], ctx.skills);
+  for (const id of definition.sources)
+    if (!ctx.references.some((r) => r.id === id)) throw new Error(`未知の参照元: ${id}`);
+  if (parent) {
+    // 類題は同じ実装パターンの別の問題 (07 §7.2)。パターンを変えたら類題ではない。
+    if (definition.pattern !== parent.definition.pattern)
       throw new Error(
-        `課題の README に教材内の画像は使えません (配布されません): ${contentIds.slice(1).join(", ")} (${definition.id})`,
+        `類題のパターン (${definition.pattern}) が親の課題 (${parent.definition.pattern}) と違います: ${definition.id}`,
       );
-    const taskReferences = publicReferences(referenceMap, registry, contentIds);
-    const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
-    const testFiles = collectFiles(join(taskDir, "tests"), "tests");
-    const readmeFile = Buffer.from(
-      referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
-    ).toString("base64");
-    // ヒント・解答例・解説は配布物に入れない。解放条件 (07 §8) を満たした受講者にだけ
-    // API (`/api/tasks/help`) が返す。ここでは README と実行に必要なファイルだけを配る。
-    const manifestFile = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
-    /** starter (または固定した開始点) に tests・README・task.json を足した配布一式。 */
-    const assemble = (starter: Record<string, string>) => {
-      const files: Record<string, string> = {};
-      // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
-      const bundlePaths = new Set(["readme.md", ".stella"]);
-      for (const [key, value] of Object.entries({ ...starter, ...testFiles })) {
-        const normalized = key.toLowerCase();
-        if (
-          (key in starter && key in testFiles) ||
-          [...bundlePaths].some(
-            (other) =>
-              normalized === other ||
-              normalized.startsWith(`${other}/`) ||
-              other.startsWith(`${normalized}/`),
-          )
+    const kindProblem = variantKindProblem(definition.kind);
+    if (kindProblem) throw new Error(`${kindProblem}: ${definition.id}`);
+    if (definition.fixedStart)
+      throw new Error(`類題には fixedStart を書けません: ${definition.id}`);
+    for (const rel of ["private/variants", "fixed-start"])
+      if (existsSync(join(taskDir, rel)))
+        throw new Error(`類題には ${rel} を置けません: ${definition.id}`);
+  }
+  for (const rel of parent ? TASK_REQUIRED_PATHS : [...TASK_REQUIRED_PATHS, "private/variants"]) {
+    if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
+      throw new Error(`${label}に ${rel} が必要です: ${definition.id}`);
+  }
+  // 類題の課題文は単元の参照元の記録 (references.json) に載らない非公開の場所にあるので、
+  // 参照元は親の課題文のものを使う。教材内の画像を参照できないのは課題と同じ。
+  const readmeId = parent
+    ? `tasks/${basename(parent.directory)}/private/variants/${taskId}/README.md`
+    : `tasks/${taskId}/README.md`;
+  const readme = readFileSync(join(taskDir, "README.md"), "utf8");
+  // 課題の配布物 (starter・tests・README・manifest) にも LMS の課題文にも教材内の画像は
+  // 載らないので、README から参照すると受講者には壊れた画像になる。公開前に止める。
+  const contentIds = referenceContentIds(readme, readmeId);
+  if (contentIds.length > 1)
+    throw new Error(
+      `${label}の README に教材内の画像は使えません (配布されません): ${contentIds.slice(1).join(", ")} (${definition.id})`,
+    );
+  const taskReferences = parent
+    ? (parent.bundle.manifest.references ?? [])
+    : publicReferences(referenceMap, registry, contentIds);
+  const manifest = { ...toRuntimeManifest(definition, environment), references: taskReferences };
+  const testFiles = collectFiles(join(taskDir, "tests"), "tests");
+  const readmeFile = Buffer.from(
+    referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
+  ).toString("base64");
+  // ヒント・解答例・解説は配布物に入れない。解放条件 (07 §8) を満たした受講者にだけ
+  // API (`/api/tasks/help`) が返す。ここでは README と実行に必要なファイルだけを配る。
+  const manifestFile = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
+  /** starter (または固定した開始点) に tests・README・task.json を足した配布一式。 */
+  const assemble = (starter: Record<string, string>) => {
+    const files: Record<string, string> = {};
+    // Windows でも衝突する名前と、ファイル・ディレクトリの競合を検出する。
+    const bundlePaths = new Set(["readme.md", ".stella"]);
+    for (const [key, value] of Object.entries({ ...starter, ...testFiles })) {
+      const normalized = key.toLowerCase();
+      if (
+        (key in starter && key in testFiles) ||
+        [...bundlePaths].some(
+          (other) =>
+            normalized === other ||
+            normalized.startsWith(`${other}/`) ||
+            other.startsWith(`${normalized}/`),
         )
-          throw new Error(`配布ファイルが衝突しています: ${key} (${definition.id})`);
-        bundlePaths.add(normalized);
-        files[key] = value;
-      }
-      files["README.md"] = readmeFile;
-      files[".stella/task.json"] = manifestFile;
-      return files;
-    };
-    const starter = collectFiles(join(taskDir, "starter"));
-    const files = assemble(starter);
-    const tooLarge = bundleSizeProblem(files);
-    if (tooLarge) throw new Error(`${tooLarge}: ${definition.id}`);
-    const hints = readFileSync(join(taskDir, "hints.md"));
-    assertHintSteps(hints.toString("utf8"), definition);
-    const privateFiles = {
-      ...collectFiles(join(taskDir, "private/solution"), "solution"),
-      ...collectFiles(join(taskDir, "private/variants"), "variants"),
-      "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
-      "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
-      "hints.md": hints.toString("base64"),
-    };
-    // 非公開の素材は D1 の 1 行 (task_private) に入り、API が 1 回の要求で読む。配布一式と同じ上限。
-    const privateTooLarge = bundleSizeProblem(privateFiles);
-    if (privateTooLarge)
-      throw new Error(`非公開の素材 (private/・hints.md) の${privateTooLarge}: ${definition.id}`);
-    const fixedStart = readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
-    // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
-    const contentHash = createHash("sha256")
-      .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
-      .digest("hex");
-    return {
-      courseId,
-      unitId,
-      lessonId: `task-${unitId}-${taskId}`,
-      definition,
-      bundle: { manifest, contentHash, files },
-      privateFiles,
-      ...(fixedStart ? { fixedStart } : {}),
-      directory: taskDir,
-    };
-  });
-  return { unit: { courseId, unitId, config, references }, tasks };
+      )
+        throw new Error(`配布ファイルが衝突しています: ${key} (${definition.id})`);
+      bundlePaths.add(normalized);
+      files[key] = value;
+    }
+    files["README.md"] = readmeFile;
+    files[".stella/task.json"] = manifestFile;
+    return files;
+  };
+  const starter = collectFiles(join(taskDir, "starter"));
+  const files = assemble(starter);
+  const tooLarge = bundleSizeProblem(files);
+  if (tooLarge) throw new Error(`${tooLarge}: ${definition.id}`);
+  const hints = readFileSync(join(taskDir, "hints.md"));
+  assertHintSteps(hints.toString("utf8"), definition);
+  // 予備の類題 (`private/variants/`) は親の素材に入れない。類題はそれぞれ自分の課題として
+  // seed され、出題した受講者にだけ配る (#39)。
+  const privateFiles = {
+    ...collectFiles(join(taskDir, "private/solution"), "solution"),
+    "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
+    "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
+    "hints.md": hints.toString("base64"),
+  };
+  // 非公開の素材は D1 の 1 行 (task_private) に入り、API が 1 回の要求で読む。配布一式と同じ上限。
+  const privateTooLarge = bundleSizeProblem(privateFiles);
+  if (privateTooLarge)
+    throw new Error(`非公開の素材 (private/・hints.md) の${privateTooLarge}: ${definition.id}`);
+  const fixedStart = parent
+    ? undefined
+    : readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
+  // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
+  const contentHash = createHash("sha256")
+    .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
+    .digest("hex");
+  return {
+    courseId,
+    unitId,
+    lessonId: parent ? null : `task-${unitId}-${taskId}`,
+    ...(parent ? { variantOf: parent.definition.id } : {}),
+    definition,
+    bundle: { manifest, contentHash, files },
+    privateFiles,
+    ...(fixedStart ? { fixedStart } : {}),
+    directory: taskDir,
+  };
 }
 
 /**

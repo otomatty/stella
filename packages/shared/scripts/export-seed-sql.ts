@@ -599,9 +599,12 @@ for (const [order, task] of content.tasks.entries()) {
   const sectionId = sectionIdMap.get(`ses:${task.courseId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
   // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
-  const lessonId = lessonUuid("ses", task.courseId, task.lessonId);
+  // 予備の類題 (#39) はレッスンを持たず、親の課題 ID (variant_of) を持つ。出題した受講者にだけ配る。
+  const lessonId =
+    task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
+  const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${strLit(lessonId)}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id;`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${lessonId}, ${variantOf}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id, variant_of = excluded.variant_of;`,
   );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。

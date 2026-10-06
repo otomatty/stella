@@ -38,10 +38,11 @@ import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
-import { canAccessTasks } from "./task-access.js";
+import { canAccessTask } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
-import { hasRecordedSupport } from "./task-support.js";
+import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
+import { variantRetentionSkills } from "./variant-reviews.js";
 
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -63,6 +64,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
       stageTitle: stages.title,
       sectionTitle: sections.title,
       contentHash: tasks.contentHash,
+      variantOf: tasks.variantOf,
       privateFiles: taskPrivate.files,
     })
     .from(tasks)
@@ -71,7 +73,8 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .leftJoin(taskPrivate, eq(taskPrivate.taskId, tasks.id))
     .where(and(eq(tasks.id, input.taskId), eq(tasks.active, true)))
     .limit(1);
-  if (!task || !(await canAccessTasks(db, caller, task.stageId, "write")))
+  // 予備の類題 (#39) は出題した受講者だけが提出できる。
+  if (!task || !(await canAccessTask(db, caller, task, "write")))
     throw new ApiError("課題が見つかりません", 404);
   const [revision] = await db
     .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
@@ -578,16 +581,21 @@ export async function reviewTaskSubmission(
   const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
   if (!initial?.taskId || !initial.studentId || initial.tenantId !== caller.tenantId)
     throw new ApiError("課題の提出が見つかりません", 404);
+  const [meta] = await db
+    .select({ sectionId: tasks.sectionId, pattern: tasks.pattern, variantOf: tasks.variantOf })
+    .from(tasks)
+    .where(eq(tasks.id, initial.taskId))
+    .limit(1);
   // 確認A・Bは同じ単元・パターンの組で定着を判定するので、組のレビューを直列化する。
   // 課題ごとのロック (提出の保存と共有) の内側で取るので、取る順序は常に 課題 → 組。
-  const [scope] =
-    initial.taskKind === "assessment-a" || initial.taskKind === "assessment-b"
-      ? await db
-          .select({ sectionId: tasks.sectionId, pattern: tasks.pattern })
-          .from(tasks)
-          .where(eq(tasks.id, initial.taskId))
-          .limit(1)
-      : [];
+  // 予備の類題 (#39) は組に入れない。時間を空けて確認できたかは出題の記録で決める。
+  const scope: AssessmentScope | undefined =
+    meta &&
+    meta.variantOf === null &&
+    (initial.taskKind === "assessment-a" || initial.taskKind === "assessment-b")
+      ? { sectionId: meta.sectionId, pattern: meta.pattern }
+      : undefined;
+  const variantPattern = meta?.variantOf ? meta.pattern : null;
   const review = async () => {
     const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
     if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
@@ -708,16 +716,35 @@ export async function reviewTaskSubmission(
     if (notice) statements.push(db.insert(notifications).values(notice));
     if (verdict === "pass") {
       // 提出の申告に加え、この提出より前の AI チャット・相談などの記録も支援に数える (#38)。
-      const assisted =
-        (row.supportLog?.length ?? 0) > 0 ||
-        row.submissionMode === "consult" ||
-        (await hasRecordedSupport(db, { ...row, studentId: row.studentId, taskId: row.taskId }));
+      const assisted = await isAssistedSubmission(db, {
+        ...row,
+        studentId: row.studentId,
+        taskId: row.taskId,
+      });
       const basis =
         !assisted && row.taskKind === "assessment-b" && scope
           ? await retentionBasis(db, row.tenantId, row.studentId, scope)
           : null;
+      // 時間を空けた類題 (#39) の自力の合格は、出題より前に同じパターンで自力の証拠があるスキルを
+      // 「時間を空けて確認」にする (確認Bの定着と同じ考え方)。
+      const spaced =
+        !assisted && variantPattern
+          ? await variantRetentionSkills(db, {
+              tenantId: row.tenantId,
+              studentId: row.studentId,
+              taskId: row.taskId,
+              pattern: variantPattern,
+              submittedAt: row.submittedAt,
+            })
+          : null;
       for (const skillId of row.assessedSkills) {
-        const level = assisted ? "supported" : unassistedLevel(basis, row.submittedAt, skillId);
+        const level = assisted
+          ? "supported"
+          : spaced
+            ? spaced.has(skillId)
+              ? "retained"
+              : "independent"
+            : unassistedLevel(basis, row.submittedAt, skillId);
         statements.push(
           db.insert(skillEvidence).values({
             tenantId: row.tenantId,
@@ -805,6 +832,8 @@ async function retentionBasis(
         eq(tasks.kind, "assessment-a"),
         eq(tasks.pattern, scope.pattern),
         eq(tasks.active, true),
+        // 予備の類題 (#39) は出題した受講者にしか出ないので、確認Bの前提の確認Aに数えない。
+        isNull(tasks.variantOf),
       ),
     );
   // 対応するAがない教材ではBを定着の確認として扱わない。
@@ -884,6 +913,8 @@ async function recomputeRetained(
         eq(submissions.taskKind, "assessment-b"),
         eq(tasks.sectionId, scope.sectionId),
         eq(tasks.pattern, scope.pattern),
+        // 類題の確認Bの水準は出題の記録で決める (`variantRetentionSkills`)。ここで付け直さない。
+        isNull(tasks.variantOf),
         eq(skillEvidence.assisted, false),
       ),
     );

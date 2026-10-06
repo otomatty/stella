@@ -47,7 +47,8 @@ for (const task of tasks) {
     await solutionPasses(task, task.fixedStart, "固定した開始点");
   }
   console.log(
-    `課題: ${task.definition.id} — 解答例合格・private の配布なし${task.fixedStart ? "・固定した開始点あり" : ""}`,
+    `${task.variantOf ? `類題 (${task.variantOf} の予備)` : "課題"}: ${task.definition.id} — 解答例合格・private の配布なし${task.fixedStart ? "・固定した開始点あり" : ""}`,
   );
 }
-console.log(`新形式の課題: ${tasks.length} 件`);
+const variants = tasks.filter((task) => task.variantOf).length;
+console.log(`新形式の課題: ${tasks.length - variants} 件・予備の類題: ${variants} 件`);

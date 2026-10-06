@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { parsePaceSettings } from "@stella/shared/study/pace";
 import {
   learnerInstructors,
@@ -162,6 +162,7 @@ learningPaceRoute.get("/api/learning-pace/:userId/diagnostics", async (c) => {
           eq(stages.status, "published"),
           eq(stages.format, 2),
           eq(tasks.active, true),
+          isNull(tasks.variantOf),
         ),
       );
     const skills = [...new Set(rows.flatMap((r) => r.skills.assesses))].sort();
@@ -206,6 +207,7 @@ learningPaceRoute.put("/api/learning-pace/:userId/diagnostics", async (c) => {
           eq(stages.status, "published"),
           eq(stages.format, 2),
           eq(tasks.active, true),
+          isNull(tasks.variantOf),
         ),
       );
     if (!rows.some((r) => r.skills.assesses.includes(body.skill_id as string)))

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import {
   calculateLearningPace,
@@ -179,7 +179,8 @@ export async function loadLearningPace(
           taskProgress,
           and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, learner.id)),
         )
-        .where(and(inArray(sections.stageId, ids), eq(tasks.active, true)))
+        // 予備の類題 (#39) は講座の予定に入れない (出題した受講者に復習として出す)。
+        .where(and(inArray(sections.stageId, ids), eq(tasks.active, true), isNull(tasks.variantOf)))
         .orderBy(asc(tasks.order)),
     ]);
     for (const lesson of lessonRows) {

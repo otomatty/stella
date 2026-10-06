@@ -68,7 +68,8 @@ modules/<unit>/
       solution/         # starter を上書きした状態で手元のランナーに合格する解答例
       explanation.md
       review.md
-      variants/         # 未出題の予備。空の場合は .gitkeep を置く
+      variants/         # 予備の類題 (1 問 1 フォルダー)。空の場合は .gitkeep を置く
+        <variant>/      # 中身は課題と同じ形 (task.json・README.md・hints.md・starter/・tests/・private/)
 ```
 
 `unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定 (`min`・`maxMajor`・`majors`) です。Node.js は奇数版 (23 など) に対応しない道具が多いので、`"majors": [22, 24]` のように使える版を並べます。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
@@ -108,13 +109,43 @@ modules/<unit>/
 
 `bun run content:check` はスキーマ・台帳の参照・配布ファイルを検査し、解答例を一時フォルダーに組み立てて **拡張と同じ固定ランナー** で実行します。Node系の課題は starter に package.json・package-lock.json と固定版の道具を含めてください。runner ごとのひな形 (道具の版・lockfile・テストと lint・整形の設定・`task.json` に写す項目) は `templates/runners/<runner>/` にあり、使い方は同じフォルダーの README です。`private/`・リンクファイル・依存パッケージの生成物は配布できません。
 
-課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。ヒント・解答例 (`private/solution/`)・解説 (`private/explanation.md`) は、解放条件を満たした受講者が拡張の課題パネルで開いたときだけ `/api/tasks/help` が返し、開いたことを記録します (提出は「支援付き」になります。罰ではなく記録です)。`private/review.md` と予備の類題 (`private/variants/`) はどの条件でも受講者へ返しません。非公開の素材 (`private/` と `hints.md`) は合わせて配布一式と同じ大きさまでです (D1 の 1 行に収めるため)。
+課題は D1 の `tasks`、非公開の素材は `task_private` (最新) と素材の内容ハッシュごとの `task_private_versions` (追記だけ)、状態は `task_progress`、コーディング規則は `coding_rules` に投入します。解答例・`private/review.md` (観点とよくある違反)・規則・ルーブリックは AI の一次レビューの入力になり、AI は提出を受け付けた時点の素材の版を読みます。公開APIは一覧の必要項目と許可した bundle だけを返します。ヒント・解答例 (`private/solution/`)・解説 (`private/explanation.md`) は、解放条件を満たした受講者が拡張の課題パネルで開いたときだけ `/api/tasks/help` が返し、開いたことを記録します (提出は「支援付き」になります。罰ではなく記録です)。`private/review.md` はどの条件でも受講者へ返しません。予備の類題 (`private/variants/`) は親の課題の素材に入れず、類題ごとに別の課題として入り、出題した受講者にだけ配ります (下の「予備の類題」)。非公開の素材 (`private/` と `hints.md`) は合わせて配布一式と同じ大きさまでです (D1 の 1 行に収めるため)。
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<講座>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
 
 `fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・README・`.stella/task.json` は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点を置く課題は `task.json` に `"fixedStart": { "covers": ["<講座>/<単元>/<課題>"] }` を書き、開始点が動く実装を含む前の課題を示します。順序から推測しないので必須で、同じ講座でこの課題より前の課題だけを書けます (自分自身・重複は不可。開始点の無い課題には書けません)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを `covers` と一緒に記録します (その課題と `covers` の課題の、受け取ったあとの提出は「支援付き」になります。開始点を写せば前の課題も出せるためで、受け取る前の提出は変わりません)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
 
 WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きい講座は `course.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かない講座は1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
+
+### 予備の類題 (コードの復習)
+
+コードの復習は、同じ問題を解き直させず、同じ実装パターンの別の問題 (類題) を時間を空けて出します (07 §7.2・§7.3)。パターンは `patterns.json` に `{ id, title }` で登録し、単元の基礎課題 (値・条件・境界・組合せ・利用場面を変えた同じパターンの問題群、03 §2) の `task.json` に同じ `pattern` を書きます。台帳に無いパターンと台帳の ID の重複は `content:check` が落とします。
+
+類題は、親にする課題の `private/variants/<類題>/` に 1 問 1 フォルダーで置きます。リポジトリは公開ですが、アプリは出題した受講者にだけ配ります。
+
+```text
+tasks/q01-first-page/private/variants/
+  v01-profile-page/
+    task.json           # id は "<講座>/<単元>/v01-profile-page"。pattern は親と同じ
+    README.md           # 類題の課題文
+    hints.md            # ヒント (段の数は support.hintLevels とそろえる。0 段なら空)
+    starter/
+    tests/
+    private/
+      solution/         # starter に重ねて手元のランナーに合格する解答例
+      explanation.md
+      review.md
+```
+
+- `task.json` は課題と同じ項目を書きます。`id` は `<講座>/<単元>/<類題のフォルダー名>` で、単元の課題・ほかの類題と同じ名前は使えません (学習フォルダーの `<講座>/<単元>/<類題>/` に置かれるため)。`pattern` は親の課題と同じにします
+- `kind` で使い道が決まります。基礎・接続 (`basic` / `connection`) は**補習の小問題** (支援付きでしか解けなかったパターンに、翌日から 1 日 1 問・3 問出す)、自力・修正・確認A・確認B (`independent` / `debug` / `assessment-a` / `assessment-b`) は**時間を空けた類題と未見の問題** (約 3 日後・約 1 週間後・約 3 週間後、補習のあとの未見の問題) に使います。約 1 週間後は確認Bの代わりなので `assessment-b` を、未見の問題は `assessment-a` を先に選びます。統合 (`integration`) は類題にできません
+- ヒント・解答例・解説の解放の条件は、類題の `kind` の方針 (上の表) に従います。説明欄・修正記録の要否も課題と同じです
+- 固定した開始点 (`fixed-start/`)・`fixedStart`・入れ子の `private/variants/` は置けません。課題文に教材内の画像は使えません。参照元は親の課題文の参照元が課題文の末尾に付きます (`sources` は単元の `references.json` にある ID を書きます)
+- `private/variants/` の直下には類題のフォルダーと `.gitkeep` だけを置けます
+- `content:check` は類題も課題と同じく検査し、解答例を拡張と同じ固定ランナーで実行します。類題のパターンが親と違う・`kind` が使えない・必須のファイルが無い・ID が重複している類題は落とします
+- 類題は単元の内容指紋 (`references.json` の `contentHash`) に含まれます。類題を足す・直したら、課題を直したときと同じく `unitId` の版を上げ、参照元を確かめ直してから `contentHash` を更新します (`bun run --filter=@stella/content hash:unit -- <講座>/<単元>`)
+- seed は類題を課題 (`tasks`) として入れ、`tasks.variant_of` に親の課題 ID を書きます。課題文のレッスンは作らず、講座の課題一覧・学習ペース・修了の判定には数えません。教材から消した類題は、出題中でも取り下げて別の類題を出し直します
+- 在庫が尽きたパターンは、講師・管理者が `GET /api/variant-reviews/stock` で見られます (在庫の数と待っている受講者)。補習の小問題は 3 問ずつ消費されるので、多めに置いてください
 
 ### ログインなしで読める単元
 

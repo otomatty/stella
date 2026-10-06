@@ -567,13 +567,13 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     }
   });
 
-  it("課題を課題文のレッスンと結び、固定した開始点の無い課題は開始点を消す", () => {
+  it("課題を課題文のレッスンと結び (類題の印は付けない)、固定した開始点の無い課題は開始点を消す", () => {
     const lessonId = stableUuid("lesson:ses:dev-env-basics:task-m0-first-page-q01-first-page");
     expect(sql).toContain(`insert into lessons (id, section_id, title, type, "order"`);
     expect(sql).toContain(`select '${lessonId}', s.id,`);
     expect(sql).toMatch(
       new RegExp(
-        `insert into tasks \\([^)]*lesson_id\\) values \\('dev-env-basics/m0-first-page/q01-first-page',.*'${lessonId}'\\) on conflict`,
+        `insert into tasks \\([^)]*lesson_id, variant_of\\) values \\('dev-env-basics/m0-first-page/q01-first-page',.*'${lessonId}', null\\) on conflict`,
       ),
     );
     expect(sql).toContain(
