@@ -24,6 +24,7 @@ import { useAssignedScope } from "@/hooks/useAssignedScope";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 import { cn } from "@/lib/utils";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
+import { hasAiDraft } from "@/lib/ai-draft";
 
 interface InstructorDashboardProps {
   tenantId: Tenant["id"];
@@ -66,7 +67,7 @@ export const InstructorDashboard = ({
       (!scope.assignedOnly || (s.studentId != null && scope.assignedIds.has(s.studentId))),
   );
   const pendingCount = pending.length;
-  const aiReadyCount = pending.filter((s) => s.aiReady).length;
+  const aiReadyCount = pending.filter(hasAiDraft).length;
 
   // 担当の取得が済んでから引く (全員 → 担当の順に 2 度引かない)。
   const { overview } = useInstructorOverview(

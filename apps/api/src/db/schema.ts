@@ -321,6 +321,25 @@ export const taskPrivate = sqliteTable("task_private", {
 });
 
 /**
+ * 非公開の素材 (`private/` の解答例・観点など、task_private と同じ形の JSON) の版。追記だけで
+ * 書き換えない。課題の版 (content_hash) は非公開の素材を含まないので、素材の内容ハッシュ
+ * (`private_hash`) で別に版を持つ。提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (0048)。
+ * 受講者向けの API では返さない。
+ */
+export const taskPrivateVersions = sqliteTable(
+  "task_private_versions",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    privateHash: text("private_hash").notNull(),
+    files: text("files").notNull(),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.taskId, t.privateHash] }) }),
+);
+
+/**
  * 固定した開始点 (#31)。前の課題の動く実装を含むので通常の配布と分け、受講者が
  * 求めたときだけ返す。`content_hash` は seed 時の課題の版で、今の版と一致するときだけ配る。
  */
@@ -1314,6 +1333,13 @@ export const submissions = sqliteTable("submissions", {
   code: text("code").notNull(),
   taskId: text("task_id"),
   taskContentHash: text("task_content_hash"),
+  /** 提出を受け付けた時点の非公開の素材の版 (`task_private_versions`)。分からなければ null (0048)。 */
+  taskPrivateHash: text("task_private_hash"),
+  /**
+   * 提出を受け付けた時点のコーディング規則の版 (AI に渡す規則の本文のハッシュ)。今の版と違えば
+   * AI は判定せずに人に回す。0048 より前の提出 (規則の正本がまだ無かった) は null (0048)。
+   */
+  ruleSetHash: text("rule_set_hash"),
   taskKind: text("task_kind"),
   submissionMode: text("submission_mode"),
   localResult: text("local_result", { mode: "json" }).$type<
@@ -1338,6 +1364,10 @@ export const submissions = sqliteTable("submissions", {
   assessedSkills: json<string[]>("assessed_skills", []),
   reviewTaskContentHash: text("review_task_content_hash"),
   reviewSource: text("review_source", { enum: ["ai", "human"] }),
+  /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
+  aiReviewStatus: text("ai_review_status", {
+    enum: ["queued", "confirmed", "escalated", "superseded", "human"],
+  }),
   status: text("status", {
     enum: ["pending", "passed", "resubmit", "failed"],
   })
@@ -1389,6 +1419,122 @@ export const submissionReviews = sqliteTable(
   },
   (t) => ({ submissionIdx: index("submission_reviews_submission_idx").on(t.submissionId) }),
 );
+/**
+ * AI 一次レビューの待ち行列 (Issue #33)。提出直後の waitUntil と cron が、リースを取ってから処理する。
+ * `leased_at` は 60 秒あたりの呼び出し回数の上限の数え方にも使う (`lib/ai-review-queue.ts`)。
+ */
+export const aiReviewJobs = sqliteTable(
+  "ai_review_jobs",
+  {
+    submissionId: text("submission_id")
+      .primaryKey()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").notNull(),
+    state: text("state", { enum: ["queued", "done", "cancelled"] })
+      .notNull()
+      .default("queued"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: ts("next_attempt_at").notNull(),
+    leaseId: text("lease_id"),
+    leasedAt: ts("leased_at"),
+    leaseUntil: ts("lease_until"),
+    lastError: text("last_error"),
+    enqueuedAt: tsNow("enqueued_at"),
+    finishedAt: ts("finished_at"),
+  },
+  (t) => ({
+    dueIdx: index("ai_review_jobs_due_idx").on(t.state, t.nextAttemptAt),
+    leasedIdx: index("ai_review_jobs_leased_idx").on(t.leasedAt),
+  }),
+);
+
+/**
+ * AI 一次レビューの結果 (07 §6.7)。人の判定 (`submission_reviews`) と別に残す。
+ * 受講者に返してよいのは、AI で確定した提出の `learner_reply` だけ。
+ */
+export const aiReviews = sqliteTable(
+  "ai_reviews",
+  {
+    id: uuid(),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").notNull(),
+    taskId: text("task_id").notNull(),
+    taskContentHash: text("task_content_hash").notNull(),
+    taskKind: text("task_kind").notNull(),
+    outcome: text("outcome", { enum: ["confirmed", "escalated"] }).notNull(),
+    routeReasons: json<import("@stella/shared/review/ai-review").RouteReason[]>(
+      "route_reasons",
+      [],
+    ),
+    confidence: text("confidence", { enum: ["high", "medium", "low"] }),
+    reportedConfidence: text("reported_confidence", { enum: ["high", "medium", "low"] }),
+    proposedVerdict: text("proposed_verdict", { enum: ["pass", "resubmit"] }),
+    rubricResults: json<import("@stella/shared/review/ai-review").NormalizedRubricResult[]>(
+      "rubric_results",
+      [],
+    ),
+    findings: json<import("@stella/shared/review/ai-review").AiFinding[]>("findings", []),
+    /** AI が書いた返信そのもの (staff の下書き用)。 */
+    draftReply: text("draft_reply", { mode: "json" }).$type<
+      import("@stella/shared/review/ai-review").AiLearnerReply
+    >(),
+    /** 解答例との照合を通した、受講者に見せてよい返信と所見。 */
+    learnerReply: text("learner_reply", { mode: "json" }).$type<
+      import("@stella/shared/review/ai-review").LearnerAiFeedback
+    >(),
+    leakCheck: text("leak_check", { mode: "json" }).$type<
+      import("@stella/shared/review/solution-leak").SolutionLeakResult & { action: string }
+    >(),
+    appliedRules: json<{ id: string; required: boolean; contentHash: string | null }[]>(
+      "applied_rules",
+      [],
+    ),
+    ruleSetHash: text("rule_set_hash"),
+    failure: text("failure", {
+      enum: [
+        "unavailable",
+        "refusal",
+        "timeout",
+        "invalid-format",
+        "too-large",
+        "stale-material",
+        "error",
+      ],
+    }),
+    model: text("model"),
+    promptVersion: text("prompt_version").notNull(),
+    thresholdVersion: text("threshold_version").notNull(),
+    usage: text("usage", { mode: "json" }).$type<Record<string, number | null>>(),
+    disposition: text("disposition", { enum: ["applied", "superseded"] }),
+    appliedAt: ts("applied_at"),
+    createdAt: tsNow("created_at"),
+  },
+  (t) => ({
+    submissionIdx: index("ai_reviews_submission_idx").on(t.submissionId, t.createdAt),
+    tenantIdx: index("ai_reviews_tenant_idx").on(t.tenantId, t.createdAt),
+  }),
+);
+
+/** コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分)。seed が入れる。 */
+export const codingRules = sqliteTable(
+  "coding_rules",
+  {
+    id: text("id").primaryKey(),
+    /** `common` か講座の slug。 */
+    scope: text("scope").notNull(),
+    position: integer("position").notNull(),
+    title: text("title").notNull(),
+    statement: text("statement").notNull(),
+    appliesTo: text("applies_to").notNull(),
+    introducedIn: text("introduced_in").notNull(),
+    exception: text("exception"),
+    contentHash: text("content_hash").notNull(),
+  },
+  (t) => ({ scopeIdx: index("coding_rules_scope_idx").on(t.scope, t.position) }),
+);
+
 export const skills = sqliteTable("skills", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),

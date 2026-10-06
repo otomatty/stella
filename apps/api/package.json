@@ -16,6 +16,7 @@
     "db:seed:remote:content": "bun run scripts/seed-d1.ts --remote --content-only",
     "smoke": "bun run scripts/d1-smoke.ts",
     "smoke:core": "bun run scripts/core-loop-smoke.ts",
+    "ai-review:eval": "bun run scripts/ai-review-eval.ts",
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {

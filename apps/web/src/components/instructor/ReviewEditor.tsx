@@ -36,6 +36,7 @@ import type { Tenant } from "@/data/types";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
+import { AiReviewPanel } from "./AiReviewPanel";
 
 /**
  * 提出の「版」。 学習者が同じ提出を引き継ぎ直すと id は据え置きでコードが変わるため、
@@ -110,13 +111,8 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     draftRequestedRef.current = null;
     setDraftLoading(false);
     // 詰まって引き継がれた提出は、 まず「どこで落ちたか」から読ませる。
-    setTab(
-      submission.gradingSummary
-        ? "grade"
-        : submission.taskId && !submission.aiReady
-          ? "comment"
-          : "ai",
-    );
+    // 新形式の提出は AI の一次レビュー (人に回した理由・所見・返信案) から読ませる。
+    setTab(submission.gradingSummary ? "grade" : "ai");
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
@@ -463,6 +459,17 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                   採用・却下・編集を行い、講師の判断で最終確定してください。完全自動化はしません。
                 </div>
               </div>
+
+              {submission.taskId ? (
+                <AiReviewPanel
+                  status={taskDetail?.aiReviewStatus ?? submission.aiReviewStatus}
+                  review={taskDetail?.aiReview}
+                  onUseReply={(text) => {
+                    setNotes(text);
+                    setTab("comment");
+                  }}
+                />
+              ) : null}
 
               {draftLoading && suggestions.length === 0 ? (
                 <div className="text-ink-3 text-[12.5px] flex items-center gap-2">

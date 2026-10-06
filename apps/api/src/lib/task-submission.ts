@@ -1,6 +1,11 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
+import {
+  forcedHumanReasons,
+  isAssessmentKind,
+  type RouteReason,
+} from "@stella/shared/review/ai-review";
 import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
 import {
   parseTaskSubmission,
@@ -9,6 +14,8 @@ import {
 } from "@stella/shared/tasks/submission";
 import type { Db } from "../db/client.js";
 import {
+  aiReviewJobs,
+  aiReviews,
   lessonProgress,
   lessons,
   notifications,
@@ -18,6 +25,8 @@ import {
   submissionFiles,
   submissionReviews,
   submissions,
+  taskPrivate,
+  taskPrivateVersions,
   taskProgress,
   taskRevisions,
   tasks,
@@ -26,9 +35,15 @@ import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
+import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTasks } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { hasRecordedSupport } from "./task-support.js";
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw: unknown) {
   let input: TaskSubmissionInput;
@@ -41,18 +56,22 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .select({
       id: tasks.id,
       stageId: sections.stageId,
+      stageSlug: stages.slug,
       stageTitle: stages.title,
       sectionTitle: sections.title,
+      contentHash: tasks.contentHash,
+      privateFiles: taskPrivate.files,
     })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
+    .leftJoin(taskPrivate, eq(taskPrivate.taskId, tasks.id))
     .where(and(eq(tasks.id, input.taskId), eq(tasks.active, true)))
     .limit(1);
   if (!task || !(await canAccessTasks(db, caller, task.stageId, "write")))
     throw new ApiError("課題が見つかりません", 404);
   const [revision] = await db
-    .select()
+    .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
     .from(taskRevisions)
     .where(and(eq(taskRevisions.taskId, task.id), eq(taskRevisions.contentHash, input.contentHash)))
     .limit(1);
@@ -101,10 +120,38 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   }
   let committed = false;
   try {
-    const progressStatus = verified.check.matched ? "submitted" : "instructor-pending";
+    const now = new Date();
+    // 照合の食い違い・確認A・Bの支援・相談は、AI の結果を待たずに人のキューへ入れる (07 §6.3)。
+    // それでも AI の下書きは作るので、どちらも AI の待ち行列には積む。確認A・Bの支援は、提出の
+    // 申告に加えてサーバーの記録 (課題の AI チャット・相談、#38) も見る。
+    const forced = forcedHumanReasons({
+      kind: bundle.manifest.kind,
+      mode: input.mode,
+      machineCheck: verified.check,
+      support: input.support,
+      recordedSupport:
+        isAssessmentKind(bundle.manifest.kind) &&
+        (await hasRecordedSupport(db, {
+          tenantId: caller.tenantId,
+          studentId: caller.id,
+          taskId: task.id,
+          submittedAt: now,
+        })),
+    });
+    const progressStatus = forced.length === 0 ? "submitted" : "instructor-pending";
+    // 非公開の素材 (解答例・観点) の版を、課題の版と同じ時点で記録する。課題の版のハッシュは
+    // 非公開の素材を含まないので、素材の内容ハッシュで別に持つ (seed と同じ式)。今の task_private が
+    // この提出の版の素材だと言えるのは、提出の版が今の版と同じときだけ。違えば記録せず、AI は
+    // 判定しない (人に回る)。
+    const privateVersion =
+      task.privateFiles !== null && task.contentHash === input.contentHash
+        ? { hash: await sha256Hex(task.privateFiles), files: task.privateFiles }
+        : null;
+    // コーディング規則の版も受け付けた時点で記録する (規則は seed で上書きされるため)。
+    const ruleSetHash = (await loadCodingRuleSet(db, task.stageSlug)).hash;
     const result = await withResourceLock(
       db,
-      `task-submission:${caller.tenantId}:${caller.id}:${task.id}`,
+      taskSubmissionLockId(caller.tenantId, caller.id, task.id),
       async () => {
         const attempt = sql`(select coalesce(max(attempt), 0) + 1 from submissions where tenant_id = ${caller.tenantId} and student_id = ${caller.id} and task_id = ${task.id})`;
         const insert = db.insert(submissions).values({
@@ -128,8 +175,68 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           assignmentTitle: bundle.manifest.title,
           code: "",
           attempt,
-          submittedAt: new Date(),
+          submittedAt: now,
+          aiReviewStatus: forced.length === 0 ? "queued" : "escalated",
+          taskPrivateHash: privateVersion?.hash ?? null,
+          ruleSetHash,
         });
+        // 同じ課題を出し直したら、前の試行の AI レビューは新しい提出で置き換える (07 §6.3)。
+        // 置き換えるのは判定前の試行 (AI の確認待ちと、人に回して講師の確認を待つもの) だけで、
+        // AI か人が確定した試行は残す。講師が置き換え済みの試行を開いて確定しても、進捗は
+        // 「合格があれば合格、無ければ最新の試行」で付け直すので、新しい試行の状態は崩れない。
+        // 待ちを取り消すのも判定前の試行だけ。講師が先に確定した試行の AI は、一致率の評価のために
+        // 結果を記録するので取り消さない。
+        const earlier = db
+          .select({ id: submissions.id })
+          .from(submissions)
+          .where(
+            and(
+              eq(submissions.tenantId, caller.tenantId),
+              eq(submissions.studentId, caller.id),
+              eq(submissions.taskId, task.id),
+              ne(submissions.id, id),
+              isNull(submissions.verdict),
+            ),
+          );
+        const supersede = db
+          .update(submissions)
+          .set({ aiReviewStatus: "superseded" })
+          .where(
+            and(
+              eq(submissions.tenantId, caller.tenantId),
+              eq(submissions.studentId, caller.id),
+              eq(submissions.taskId, task.id),
+              ne(submissions.id, id),
+              isNull(submissions.verdict),
+              inArray(submissions.aiReviewStatus, ["queued", "escalated"]),
+            ),
+          );
+        const cancel = db
+          .update(aiReviewJobs)
+          .set({ state: "cancelled", finishedAt: now })
+          .where(
+            and(eq(aiReviewJobs.state, "queued"), inArray(aiReviewJobs.submissionId, earlier)),
+          );
+        const enqueue = db.insert(aiReviewJobs).values({
+          submissionId: id,
+          tenantId: caller.tenantId,
+          nextAttemptAt: now,
+          enqueuedAt: now,
+        });
+        // 受け付けた時点の非公開の素材を版として残す (seed と同じ版なら既存の行のまま)。
+        const keepPrivate = privateVersion
+          ? [
+              db
+                .insert(taskPrivateVersions)
+                .values({
+                  taskId: task.id,
+                  privateHash: privateVersion.hash,
+                  files: privateVersion.files,
+                  createdAt: now,
+                })
+                .onConflictDoNothing(),
+            ]
+          : [];
         const progress = db
           .insert(taskProgress)
           .values({
@@ -150,6 +257,10 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
             db.insert(submissionFiles).values({ submissionId: id, path, objectKey, sha256, bytes }),
           ),
           progress,
+          supersede,
+          cancel,
+          enqueue,
+          ...keepPrivate,
         ]);
         committed = true;
         const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
@@ -200,7 +311,188 @@ export async function readSubmissionFiles(db: Db, env: Env, submissionId: string
   );
 }
 
-/** AI の一次レビューからも同じ確定処理を利用できる。AI は機械照合の不一致を合格にしない。 */
+/**
+ * AI のレビュー結果を、もう当てはめられない提出 (人が先に確定した・新しい提出で置き換えた・
+ * 人に回す条件に当たる) に当てようとした。ロック待ちの 409 と区別するために分ける。
+ */
+export class AiReviewNotApplicable extends ApiError {
+  constructor(message = "この提出は人のレビューが必要です") {
+    super(message, 409);
+    this.name = "AiReviewNotApplicable";
+  }
+}
+
+/**
+ * AI が合格にしようとした提出が、当てる直前に人に回す条件に当たった (例: 確定までの間に
+ * 確認A・Bの支援の記録が届いた)。結果を捨てずに「人に回す」へ切り替えるために分ける。
+ */
+export class AiReviewNeedsHuman extends ApiError {
+  constructor(readonly reasons: RouteReason[]) {
+    super("この提出は人のレビューが必要です", 409);
+    this.name = "AiReviewNeedsHuman";
+  }
+}
+
+/** 確認A・Bで、提出より前にサーバーが記録した支援があるか (提出の申告とは別、#38)。 */
+export async function assessmentRecordedSupport(
+  db: Db,
+  row: Pick<
+    typeof submissions.$inferSelect,
+    "tenantId" | "studentId" | "taskId" | "taskKind" | "submittedAt"
+  >,
+) {
+  if (!isAssessmentKind(row.taskKind ?? "") || !row.studentId || !row.taskId) return false;
+  return hasRecordedSupport(db, {
+    tenantId: row.tenantId,
+    studentId: row.studentId,
+    taskId: row.taskId,
+    submittedAt: row.submittedAt,
+  });
+}
+
+/** 課題のロック (提出の保存・確定と共有)。確認A・Bの組のロックより先に取る。 */
+export function taskSubmissionLockId(tenantId: string, studentId: string, taskId: string) {
+  return `task-submission:${tenantId}:${studentId}:${taskId}`;
+}
+
+/**
+ * AI のレビュー結果をこの提出に当ててよいか。課題のロックの中で読んだ行で決める。
+ * 人が先に確定した提出・同じ課題の新しい提出がある試行には、遅れて届いた AI の結果を当てない
+ * (人の判定が勝つ)。人に回す条件に当たる提出は、AI が合格にしない。
+ */
+async function assertAiApplicable(
+  db: Db,
+  row: typeof submissions.$inferSelect,
+  outcome: "confirmed" | "escalated",
+) {
+  if (row.reviewedAt || row.verdict)
+    throw new AiReviewNotApplicable("この提出はすでに確定しています");
+  const allowed = outcome === "confirmed" ? ["queued"] : ["queued", "escalated"];
+  if (!row.aiReviewStatus || !allowed.includes(row.aiReviewStatus))
+    throw new AiReviewNotApplicable();
+  if (outcome === "confirmed") {
+    // 人に回す条件は、AI の結果を記録したあとに届いた支援の記録も含めて当てる直前に確かめ直す。
+    // 当たれば合格にせず、呼び出し側が「人に回す」に切り替える (確認待ちのまま残さない)。
+    const forced = forcedHumanReasons({
+      kind: row.taskKind,
+      mode: row.submissionMode,
+      machineCheck: row.machineCheck ?? null,
+      support: row.supportLog ?? null,
+      recordedSupport: await assessmentRecordedSupport(db, row),
+    });
+    if (forced.length > 0) throw new AiReviewNeedsHuman(forced);
+  }
+  const [newer] = await db
+    .select({ id: submissions.id })
+    .from(submissions)
+    .where(
+      and(
+        eq(submissions.tenantId, row.tenantId),
+        eq(submissions.studentId, row.studentId ?? ""),
+        eq(submissions.taskId, row.taskId ?? ""),
+        gt(submissions.attempt, row.attempt),
+      ),
+    )
+    .limit(1);
+  if (newer) throw new AiReviewNotApplicable("同じ課題の新しい提出があります");
+}
+
+/**
+ * 課題の進捗を、提出の記録から付け直す文。合格がある限り教材更新・再提出では取り消さない。
+ * 合格が無ければ最新試行の状態を使う。AI の確認待ちだけが「AI が確認中」(submitted) になる。
+ */
+function recomputeTaskProgress(
+  db: Db,
+  row: { tenantId: string; studentId: string; taskId: string },
+  now: Date,
+) {
+  return db
+    .insert(taskProgress)
+    .select(
+      db
+        .select({
+          userId: sql<string>`${row.studentId}`.as("user_id"),
+          taskId: sql<string>`${row.taskId}`.as("task_id"),
+          status: sql<
+            typeof taskProgress.$inferSelect.status
+          >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when ai_review_status = 'queued' or (ai_review_status is null and json_extract(machine_check, '$.matched') = 1) then 'submitted' else 'instructor-pending' end`.as(
+            "status",
+          ),
+          contentHash: sql<string>`task_content_hash`.as("content_hash"),
+          updatedAt: sql<Date>`${now.getTime()}`.as("updated_at"),
+          // 初回の合格日は DB のトリガー (0044_learning_pace) が入れる。
+          passedAt: sql<Date | null>`null`.as("passed_at"),
+        })
+        .from(submissions)
+        .where(
+          and(
+            eq(submissions.tenantId, row.tenantId),
+            eq(submissions.studentId, row.studentId),
+            eq(submissions.taskId, row.taskId),
+          ),
+        )
+        .orderBy(desc(sql`case when verdict = 'pass' then 1 else 0 end`), desc(submissions.attempt))
+        .limit(1),
+    )
+    .onConflictDoUpdate({
+      target: [taskProgress.userId, taskProgress.taskId],
+      set: {
+        contentHash: sql`excluded.content_hash`,
+        status: sql`excluded.status`,
+        updatedAt: now,
+      },
+    });
+}
+
+/**
+ * AI の一次レビューが人に回すと決めた提出を「講師の確認待ち」にする。
+ * 合格の確定 (`reviewTaskSubmission`) と同じ課題のロックの中で、当ててよいかを確かめてから書く。
+ * 当てられないときは結果を置き換え済みとして残し、`AiReviewNotApplicable` を投げる。
+ */
+export async function escalateTaskSubmission(
+  db: Db,
+  id: string,
+  aiReviewId: string,
+  waitMs = 5_000,
+) {
+  const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+  if (!initial?.taskId || !initial.studentId) throw new ApiError("課題の提出が見つかりません", 404);
+  const { taskId, studentId } = initial;
+  const locked = await withResourceLock(
+    db,
+    taskSubmissionLockId(initial.tenantId, studentId, taskId),
+    async () => {
+      const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
+      if (!row) throw new ApiError("課題の提出が見つかりません", 404);
+      const now = new Date();
+      try {
+        await assertAiApplicable(db, row, "escalated");
+      } catch (e) {
+        if (e instanceof AiReviewNotApplicable)
+          await db
+            .update(aiReviews)
+            .set({ disposition: "superseded", appliedAt: now })
+            .where(eq(aiReviews.id, aiReviewId));
+        throw e;
+      }
+      await db.batch([
+        db.update(submissions).set({ aiReviewStatus: "escalated" }).where(eq(submissions.id, id)),
+        db
+          .update(aiReviews)
+          .set({ disposition: "applied", appliedAt: now })
+          .where(eq(aiReviews.id, aiReviewId)),
+        recomputeTaskProgress(db, { tenantId: row.tenantId, studentId, taskId }, now),
+      ]);
+    },
+    { ttlMs: 120_000, waitMs },
+  );
+  if (!locked.ran) throw new ApiError("別の提出・レビューを保存中です", 409);
+}
+
+/**
+ * 人と AI の一次レビューが共有する確定処理。AI は人に回す条件に当たる提出を合格にせず、
+ * 人が先に確定した提出・新しい提出がある試行には結果を当てない (`aiReviewId` を置き換え済みにする)。
+ */
 export async function reviewTaskSubmission(
   db: Db,
   caller: Caller,
@@ -208,6 +500,7 @@ export async function reviewTaskSubmission(
   verdict: "pass" | "resubmit" | "fail",
   notes: string,
   source: "human" | "ai" = "human",
+  options: { aiReviewId?: string; waitMs?: number } = {},
 ) {
   const [initial] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
   if (!initial?.taskId || !initial.studentId || initial.tenantId !== caller.tenantId)
@@ -225,9 +518,20 @@ export async function reviewTaskSubmission(
   const review = async () => {
     const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
     if (!row?.taskId || !row.studentId) throw new ApiError("課題の提出が見つかりません", 404);
-    if (source === "ai" && (row.machineCheck?.matched !== true || row.submissionMode === "consult"))
-      throw new ApiError("この提出は人のレビューが必要です", 409);
     const now = new Date();
+    if (source === "ai") {
+      try {
+        if (verdict !== "pass") throw new AiReviewNotApplicable();
+        await assertAiApplicable(db, row, "confirmed");
+      } catch (e) {
+        if (e instanceof AiReviewNotApplicable && options.aiReviewId)
+          await db
+            .update(aiReviews)
+            .set({ disposition: "superseded", appliedAt: now })
+            .where(eq(aiReviews.id, options.aiReviewId));
+        throw e;
+      }
+    }
     const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
       db
         .update(submissions)
@@ -239,6 +543,13 @@ export async function reviewTaskSubmission(
           reviewSource: source,
           reviewedAt: now,
           reviewerId: source === "human" ? caller.id : null,
+          // AI の確認待ちのまま講師が確定したら「講師が先に確定」にする (「AI が確認中」を残さない)。
+          // AI の結果は後から届いても当てず、一致率の評価のために記録だけする。
+          ...(source === "ai"
+            ? { aiReviewStatus: "confirmed" as const }
+            : row.aiReviewStatus === "queued"
+              ? { aiReviewStatus: "human" as const }
+              : {}),
         })
         .where(eq(submissions.id, id)),
       db.insert(submissionReviews).values({
@@ -252,6 +563,13 @@ export async function reviewTaskSubmission(
       }),
       db.delete(skillEvidence).where(eq(skillEvidence.submissionId, id)),
     ];
+    if (source === "ai" && options.aiReviewId)
+      statements.push(
+        db
+          .update(aiReviews)
+          .set({ disposition: "applied", appliedAt: now })
+          .where(eq(aiReviews.id, options.aiReviewId)),
+      );
     // 通知は課題のロックの中で読んだ保存前の行から決め、判定と同じ batch で書く。
     const notice = reviewNotification(row, verdict);
     if (notice) statements.push(db.insert(notifications).values(notice));
@@ -280,47 +598,12 @@ export async function reviewTaskSubmission(
         );
       }
     }
-    // 合格がある限り教材更新・再提出では取り消さない。合格が無ければ最新試行の状態を使う。
     statements.push(
-      db
-        .insert(taskProgress)
-        .select(
-          db
-            .select({
-              userId: sql<string>`${row.studentId}`.as("user_id"),
-              taskId: sql<string>`${row.taskId}`.as("task_id"),
-              status: sql<
-                typeof taskProgress.$inferSelect.status
-              >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when json_extract(machine_check, '$.matched') = 1 then 'submitted' else 'instructor-pending' end`.as(
-                "status",
-              ),
-              contentHash: sql<string>`task_content_hash`.as("content_hash"),
-              updatedAt: sql<Date>`${now.getTime()}`.as("updated_at"),
-              // 初回の合格日は DB のトリガー (0044_learning_pace) が入れる。
-              passedAt: sql<Date | null>`null`.as("passed_at"),
-            })
-            .from(submissions)
-            .where(
-              and(
-                eq(submissions.tenantId, row.tenantId),
-                eq(submissions.studentId, row.studentId),
-                eq(submissions.taskId, row.taskId),
-              ),
-            )
-            .orderBy(
-              desc(sql`case when verdict = 'pass' then 1 else 0 end`),
-              desc(submissions.attempt),
-            )
-            .limit(1),
-        )
-        .onConflictDoUpdate({
-          target: [taskProgress.userId, taskProgress.taskId],
-          set: {
-            contentHash: sql`excluded.content_hash`,
-            status: sql`excluded.status`,
-            updatedAt: now,
-          },
-        }),
+      recomputeTaskProgress(
+        db,
+        { tenantId: row.tenantId, studentId: row.studentId, taskId: row.taskId },
+        now,
+      ),
     );
     await db.batch(statements);
     // 確認Aの判定が変わると、同じ組の確認Bの定着の前提も変わる。
@@ -331,19 +614,19 @@ export async function reviewTaskSubmission(
   };
   const locked = await withResourceLock(
     db,
-    `task-submission:${initial.tenantId}:${initial.studentId}:${initial.taskId}`,
+    taskSubmissionLockId(initial.tenantId, initial.studentId, initial.taskId),
     async () => {
       if (!scope) return review();
       const inner = await withResourceLock(
         db,
         `task-assessment:${initial.tenantId}:${initial.studentId}:${scope.sectionId}:${scope.pattern}`,
         review,
-        { ttlMs: 120_000 },
+        { ttlMs: 120_000, ...(options.waitMs ? { waitMs: options.waitMs } : {}) },
       );
       if (!inner.ran) throw new ApiError("別の提出・レビューを保存中です", 409);
       return inner.value;
     },
-    { ttlMs: 120_000 },
+    { ttlMs: 120_000, ...(options.waitMs ? { waitMs: options.waitMs } : {}) },
   );
   if (!locked.ran) throw new ApiError("別の提出・レビューを保存中です", 409);
   return locked.value;

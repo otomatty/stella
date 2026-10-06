@@ -550,8 +550,13 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
       const body = readFileSync(new URL(rel, taskDir));
       const carrying = statements.filter((line) => line.includes(body.toString("base64")));
       expect(carrying.length, rel).toBeGreaterThan(0);
+      // 非公開の素材は task_private と、その版 (task_private_versions、#33) にだけ入る。
       expect(
-        carrying.every((line) => line.startsWith("insert into task_private ")),
+        carrying.every(
+          (line) =>
+            line.startsWith("insert into task_private ") ||
+            line.startsWith("insert into task_private_versions "),
+        ),
         rel,
       ).toBe(true);
     }

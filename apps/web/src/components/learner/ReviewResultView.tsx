@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AI_REVIEW_STATUS_LABELS, FINDING_SEVERITY_LABELS } from "@stella/shared/review/ai-review";
 import type { Submission } from "@stella/shared/review/types";
 import { ChevronLeft } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +76,15 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
   }
 
   const meta = submission.verdict ? verdictMeta[submission.verdict] : null;
-  const suggestions = submission.aiSuggestions.filter((suggestion) => suggestion.adopted !== false);
+  // サーバーは講師が採用した指摘だけを返す。古い応答に備えて画面でも採用済みだけに絞る。
+  const suggestions = submission.aiSuggestions.filter((suggestion) => suggestion.adopted === true);
+  // 判定前は状態だけを出す。人に回した提出の AI の所見はサーバーが返さない (07 §6.3)。
+  const pendingLabel =
+    submission.aiReviewStatus && submission.aiReviewStatus !== "confirmed"
+      ? AI_REVIEW_STATUS_LABELS[submission.aiReviewStatus]
+      : "添削待ち";
+  const byAi = submission.reviewSource === "ai";
+  const feedback = submission.aiFeedback ?? null;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -98,24 +107,79 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
         </div>
         <div className="flex-1" />
         {meta ? (
-          <Badge variant={meta.variant}>{meta.label}</Badge>
+          <Badge variant={meta.variant}>
+            {byAi && submission.verdict === "pass" ? "AI で合格" : meta.label}
+          </Badge>
         ) : (
-          <Badge variant="info">添削待ち</Badge>
+          <Badge variant="info">{pendingLabel}</Badge>
         )}
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>講師からの総評</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-[13px] leading-relaxed text-ink-2 whitespace-pre-wrap">
-                {submission.reviewNotes || "総評はまだありません。"}
-              </p>
-            </CardContent>
-          </Card>
+          {feedback ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI のレビュー</CardTitle>
+              </CardHeader>
+              <CardContent className="text-[13px] leading-relaxed text-ink-2">
+                <p className="whitespace-pre-wrap">{feedback.message}</p>
+                {feedback.goodPoints.length > 0 ? (
+                  <>
+                    <h3 className="text-[12px] font-semibold mt-3 mb-1">良かった点</h3>
+                    <ul className="list-disc pl-5">
+                      {feedback.goodPoints.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+                {feedback.nextSteps.length > 0 ? (
+                  <>
+                    <h3 className="text-[12px] font-semibold mt-3 mb-1">次に試すこと</h3>
+                    <ul className="list-disc pl-5">
+                      {feedback.nextSteps.map((step) => (
+                        <li key={step}>{step}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+                {feedback.findings.map((finding) => (
+                  <div
+                    key={`${finding.file}:${finding.startLine}:${finding.comment}`}
+                    className="py-2 border-t border-border mt-2"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge>
+                        {finding.file} {finding.startLine}
+                        {finding.endLine !== finding.startLine ? `〜${finding.endLine}` : ""}行
+                      </Badge>
+                      <span className="text-[11.5px] font-semibold">
+                        {FINDING_SEVERITY_LABELS[finding.severity]}
+                      </span>
+                    </div>
+                    <p className="text-[12.5px]">{finding.comment}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>講師からの総評</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[13px] leading-relaxed text-ink-2 whitespace-pre-wrap">
+                  {submission.reviewNotes ||
+                    (submission.aiReviewStatus === "queued"
+                      ? "AI が確認しています。結果が出たら通知します。"
+                      : submission.aiReviewStatus === "escalated" && !meta
+                        ? "講師が確認しています。確認待ちの間も、次の課題へ進めます。"
+                        : "総評はまだありません。")}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

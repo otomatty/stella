@@ -98,6 +98,8 @@ npm --version
 
 ## コード例のルール
 
+課題のレビューで見るコーディング規則の正本は [coding-rules.md](coding-rules.md) と講座の `coding-rules.md` です。コード例もその規則に反しない書き方にします。下は教材の見せ方の約束です。
+
 - 変数名・題材は業務っぽい例を優先(user, price, order, task など)。foo/barは使わない
 - `console.log`で結果が確認できる形にする(Playgroundで完結させる)
 - セミコロンあり、インデント2スペース、文字列はダブルクォート
