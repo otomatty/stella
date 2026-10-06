@@ -103,11 +103,51 @@ export function parseD1Config(
   return { accountId, databaseId };
 }
 
+/** 応答の各文の `meta.rows_written` の集計。 */
+export interface RowsWritten {
+  /** 数えられた文の `meta.rows_written` の合計。 */
+  rowsWritten: number;
+  /** `meta.rows_written` を持っていた文の数。 */
+  counted: number;
+  /** `meta.rows_written` が無かった文の数。 */
+  missing: number;
+}
+
+/** seed のログの最後に出す 1 行。 */
+export function describeRowsWritten(w: RowsWritten): string {
+  if (w.counted === 0) return "D1 の書き込み: 応答に meta.rows_written が無く数えられなかった";
+  const skipped =
+    w.missing > 0 ? `。rows_written の無かった ${w.missing} 文は数えていない (下限)` : "";
+  return `D1 の書き込み: ${w.rowsWritten.toLocaleString("en-US")} 行 (meta.rows_written の合計${skipped})`;
+}
+
 export interface D1QueryResult {
   ok: boolean;
   /** 再送してよい失敗 (ネットワーク断・429・5xx) か。SQL エラーは false。 */
   retryable: boolean;
   error?: string;
+  /** 成功した応答だけが持つ。 */
+  written?: RowsWritten;
+}
+
+/**
+ * 応答の各文の `meta.rows_written` を足す。D1 は書き直した行 (と索引) を書き込み
+ * 行数に数え、無料枠は 1 日 10 万行で止まる。seed が何行書いたかをログに残すため。
+ */
+export function sumRowsWritten(
+  result: ReadonlyArray<{ meta?: { rows_written?: unknown } } | null>,
+): RowsWritten {
+  const sum: RowsWritten = { rowsWritten: 0, counted: 0, missing: 0 };
+  for (const r of result) {
+    const n = r?.meta?.rows_written;
+    if (typeof n === "number" && Number.isFinite(n)) {
+      sum.rowsWritten += n;
+      sum.counted++;
+    } else {
+      sum.missing++;
+    }
+  }
+  return sum;
 }
 
 /** 1 チャンクを `/query` に投げる。fetch は差し替え可能 (テスト用)。 */
@@ -141,7 +181,11 @@ export async function queryOnce(
   let body: {
     success?: boolean;
     errors?: Array<{ code?: number; message?: string }>;
-    result?: Array<{ success?: boolean; error?: string } | null>;
+    result?: Array<{
+      success?: boolean;
+      error?: string;
+      meta?: { rows_written?: unknown };
+    } | null>;
   };
   try {
     body = JSON.parse(text);
@@ -169,7 +213,7 @@ export async function queryOnce(
       error: failed.map((r) => r?.error ?? "query failed").join(" / "),
     };
   }
-  return { ok: true, retryable: false };
+  return { ok: true, retryable: false, written: sumRowsWritten(body.result ?? []) };
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -179,6 +223,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * 途中で落ちたら何チャンク目かと先頭の文を出して例外にする (「成功したことに
  * しない」)。seed は upsert + prune で冪等なので、復旧はジョブごとの再実行でよい。
+ *
+ * 返り値は全チャンクの `meta.rows_written` の合計 (D1 の書き込み行数)。
  */
 export async function executeChunks(
   opts: {
@@ -191,7 +237,8 @@ export async function executeChunks(
     retryDelayMs?: number;
   },
   chunks: string[],
-): Promise<void> {
+): Promise<RowsWritten> {
+  const total: RowsWritten = { rowsWritten: 0, counted: 0, missing: 0 };
   for (let i = 0; i < chunks.length; i++) {
     const sql = chunks[i];
     if (sql === undefined) continue;
@@ -207,6 +254,10 @@ export async function executeChunks(
         `D1 への適用が ${i + 1}/${chunks.length} チャンク目で失敗しました: ${last?.error}\n  先頭の文: ${head}`,
       );
     }
+    total.rowsWritten += last.written?.rowsWritten ?? 0;
+    total.counted += last.written?.counted ?? 0;
+    total.missing += last.written?.missing ?? 0;
     opts.onProgress?.(i + 1, chunks.length);
   }
+  return total;
 }

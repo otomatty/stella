@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   MAX_CHUNK_BYTES,
   chunkStatements,
+  describeRowsWritten,
   executeChunks,
   parseD1Config,
   splitSqlStatements,
@@ -166,5 +167,35 @@ describe("executeChunks", () => {
       /ECONNRESET/,
     );
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("各文の meta.rows_written を全チャンクぶん足して返す", async () => {
+    const replies = [
+      [
+        { success: true, meta: { rows_written: 3 } },
+        { success: true, meta: { rows_written: 0 } },
+      ],
+      [{ success: true, meta: { rows_written: 4 } }],
+    ];
+    let calls = 0;
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ success: true, result: replies[calls++] }), { status: 200 }),
+    ) as unknown as typeof fetch;
+    const written = await executeChunks({ ...base, fetchImpl }, ["a;\nb;\n", "c;\n"]);
+    expect(written).toEqual({ rowsWritten: 7, counted: 3, missing: 0 });
+    expect(describeRowsWritten(written)).toBe("D1 の書き込み: 7 行 (meta.rows_written の合計)");
+  });
+
+  it("rows_written の無い応答は 0 行と言わず、数えられなかったと出す", async () => {
+    const written = await executeChunks(
+      { ...base, fetchImpl: vi.fn(async () => okResponse()) as unknown as typeof fetch },
+      ["select 1;\n"],
+    );
+    expect(written).toEqual({ rowsWritten: 0, counted: 0, missing: 0 });
+    expect(describeRowsWritten(written)).toMatch(/数えられなかった/);
+    expect(describeRowsWritten({ rowsWritten: 12345, counted: 2, missing: 1 })).toBe(
+      "D1 の書き込み: 12,345 行 (meta.rows_written の合計。rows_written の無かった 1 文は数えていない (下限))",
+    );
   });
 });

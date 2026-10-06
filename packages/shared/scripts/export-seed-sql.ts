@@ -64,6 +64,49 @@ function nowExpr(): string {
 
 const tbl = (name: string) => (isSqlite ? name : `public.${name}`);
 
+/** `do update set` の 1 項目。文字列は `列 = excluded.列`、`[列, 式]` は固定の式。 */
+type SetEntry = string | readonly [column: string, value: string];
+
+/**
+ * upsert の `do update set ...` 句。**SET する列のどれかが既存の行と違うときだけ書く。**
+ *
+ * deploy は教材が変わった push のたびに seed を流す。`where` の無い `do update` は
+ * 内容が同じ行まで毎回書き直し、D1 はそれを (索引のぶんも) 書き込み行数に数える。
+ * 無料枠は 1 日 10 万行の書き込みで、全行を書き直す seed を 1 日に何度か流すと
+ * そこで止まる (2026-10-06 に本番のデプロイが止まった)。
+ *
+ * - `set` の項目はすべて既存の行と比べる。NULL を正しく比べるため `is not` を使う
+ *   (`<>` は片方が NULL だと NULL になり、NULL へ戻す変更を書かなくなる)。
+ * - `touch` (`updated_at = now`) は比べない。毎回変わる値を比べると毎回書くことになる。
+ *   内容の列が変わったときだけ一緒に進む。
+ * - `guard` は内容とは別の条件 (面談の質問の「人が直した行は上書きしない」)。内容の
+ *   比較と AND でつなぐ。
+ * - Postgres (legacy) は `is not` で値を比べられない (`is distinct from` が要り、json 型は
+ *   等号を持たない) ので、内容の比較を付けず従来どおり毎回書く。
+ */
+function doUpdate(
+  table: string,
+  set: readonly SetEntry[],
+  opts: { touch?: string; guard?: string } = {},
+): string {
+  const pairs = set.map((e) => (typeof e === "string" ? ([e, `excluded.${e}`] as const) : e));
+  const assignments = pairs.map(([column, value]) => `${column} = ${value}`);
+  if (opts.touch) assignments.push(`${opts.touch} = ${nowExpr()}`);
+  const conditions = [
+    ...(opts.guard ? [opts.guard] : []),
+    ...(isSqlite
+      ? [pairs.map(([column, value]) => `${table}.${column} is not ${value}`).join(" or ")]
+      : []),
+  ];
+  const where =
+    conditions.length === 0
+      ? ""
+      : conditions.length === 1
+        ? ` where ${conditions[0]}`
+        : ` where ${conditions.map((c) => `(${c})`).join(" and ")}`;
+  return `do update set ${assignments.join(", ")}${where}`;
+}
+
 /** 名前空間キーから安定した UUID 文字列を作る（再 seed で ID がずれないようにする）。 */
 function stableUuid(key: string): string {
   const h = createHash("sha1").update(key).digest();
@@ -106,7 +149,7 @@ if (!isSqlite) lines.push("begin;");
 
 for (const t of TENANTS) {
   lines.push(
-    `insert into ${isSqlite ? "" : "public."}tenants (id, name, subtitle, icon, active_count${isSqlite ? ", created_at, updated_at" : ""}) values ('${esc(t.id)}', '${esc(t.name)}', ${t.subtitle ? `'${esc(t.subtitle)}'` : "null"}, ${t.icon ? `'${esc(t.icon)}'` : "null"}, ${t.active}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set name = excluded.name, subtitle = excluded.subtitle, icon = excluded.icon, active_count = excluded.active_count;`,
+    `insert into ${isSqlite ? "" : "public."}tenants (id, name, subtitle, icon, active_count${isSqlite ? ", created_at, updated_at" : ""}) values ('${esc(t.id)}', '${esc(t.name)}', ${t.subtitle ? `'${esc(t.subtitle)}'` : "null"}, ${t.icon ? `'${esc(t.icon)}'` : "null"}, ${t.active}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) ${doUpdate("tenants", ["name", "subtitle", "icon", "active_count"])};`,
   );
 }
 
@@ -126,7 +169,7 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   const parent = stage.parent ? `'${esc(stage.parent)}'` : "null";
   const audience = stage.audience === "granted" ? "'granted'" : "'catalog'";
   lines.push(
-    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, icon_path, duration_hours, description, instructor_name, status, prerequisites, parent, can_do, theme, audience, format, environment${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.iconPath ? `'${esc(stage.iconPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${parent}, ${canDo}, ${theme}, ${audience}, ${stage.format ?? 1}, ${stage.format === 2 ? strLit(stage.environment ?? "") : "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) do update set title = excluded.title, category = excluded.category, color = excluded.color, thumbnail_path = excluded.thumbnail_path, icon_path = excluded.icon_path, duration_hours = excluded.duration_hours, description = excluded.description, instructor_name = excluded.instructor_name, status = excluded.status, prerequisites = excluded.prerequisites, parent = excluded.parent, can_do = excluded.can_do, theme = excluded.theme, audience = excluded.audience, format = excluded.format, environment = excluded.environment, updated_at = ${nowExpr()};`,
+    `insert into ${isSqlite ? "" : "public."}stages (id, tenant_id, slug, title, category, color, thumbnail_path, icon_path, duration_hours, description, instructor_name, status, prerequisites, parent, can_do, theme, audience, format, environment${isSqlite ? ", created_at, updated_at" : ""}) values ('${stageUuid}', '${esc(tenantId)}', '${slug}', '${esc(stage.title)}', ${stage.category ? `'${esc(stage.category)}'` : "null"}, ${stage.color ? `'${esc(stage.color)}'` : "null"}, ${stage.thumbnailPath ? `'${esc(stage.thumbnailPath)}'` : "null"}, ${stage.iconPath ? `'${esc(stage.iconPath)}'` : "null"}, ${stage.duration ?? "null"}, ${stage.description ? `'${esc(stage.description)}'` : "null"}, ${stage.enrolledBy ? `'${esc(stage.enrolledBy)}'` : "null"}, 'published', ${prerequisites}, ${parent}, ${canDo}, ${theme}, ${audience}, ${stage.format ?? 1}, ${stage.format === 2 ? strLit(stage.environment ?? "") : "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (tenant_id, slug) ${doUpdate("stages", ["title", "category", "color", "thumbnail_path", "icon_path", "duration_hours", "description", "instructor_name", "status", "prerequisites", "parent", "can_do", "theme", "audience", "format", "environment"], { touch: "updated_at" })};`,
   );
 
   // stage 行は slug で upsert し、セクション配下はステージ id がこの seed の安定
@@ -149,7 +192,7 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
         `select '${sectionUuid}', c.id, '${esc(section.title)}', ${i}${isSqlite ? `, ${nowExpr()}` : ""}`,
         `from ${tbl("stages")} c`,
         `where c.tenant_id = '${esc(tenantId)}' and c.slug = '${slug}' and c.id = '${stageUuid}'`,
-        `on conflict (id) do update set title = excluded.title, "order" = excluded."order";`,
+        `on conflict (id) ${doUpdate("sections", ["title", '"order"'])};`,
       ].join(" "),
     );
     for (let j = 0; j < section.lessons.length; j++) {
@@ -324,7 +367,7 @@ function emitLessonRevision(
 
 /**
  * レッスンの upsert。`public` (ログインなしで読める印。Issue #41) は教材が正本なので毎回
- * 書き直す — `unit.json` から `public` を外したら、次の seed で公開 API から消える。
+ * 教材の値に揃える (違えば書く) — `unit.json` から `public` を外したら、次の seed で公開 API から消える。
  * CMS で作ったレッスンは列の既定 (0) のまま公開されない。D1 専用の列なので legacy
  * Postgres には出さない。
  */
@@ -342,7 +385,24 @@ function emitLesson(
       `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${lesson.videoPath ? `'${esc(lesson.videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
-      `on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, type = excluded.type, "order" = excluded."order", duration_label = excluded.duration_label, video_path = excluded.video_path, pdf_path = excluded.pdf_path, markdown = excluded.markdown, assignment_id = excluded.assignment_id, total_pages = excluded.total_pages, total_sec = excluded.total_sec${isSqlite ? `, public = excluded.public, updated_at = ${nowExpr()}` : ""};`,
+      `on conflict (id) ${doUpdate(
+        "lessons",
+        [
+          "section_id",
+          "title",
+          "type",
+          '"order"',
+          "duration_label",
+          "video_path",
+          "pdf_path",
+          "markdown",
+          "assignment_id",
+          "total_pages",
+          "total_sec",
+          ...(isSqlite ? ["public"] : []),
+        ],
+        isSqlite ? { touch: "updated_at" } : {},
+      )};`,
     ].join(" "),
   );
 }
@@ -356,7 +416,7 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
   const settings = getStaticAnalysisSettings(a);
   const jsonCast = isSqlite ? "" : "::jsonb";
   lines.push(
-    `insert into ${isSqlite ? "" : "public."}assignments (id, tenant_id, stage, chapter_id, title, description, language, test_kind, starter_files, entry_file, entry_points, tests, sql_seed, lint_preset, static_analysis, mutation, demo_call${isSqlite ? ", created_at, updated_at" : ""}) values ('${esc(a.id)}', '${esc(tenantId)}', '${esc(a.stage)}', '${esc(a.chapterId)}', '${esc(a.title)}', ${strLit(a.description)}, '${getLanguage(a)}', '${a.testKind}', '${json(a.starterFiles)}'${jsonCast}, '${esc(getEntryFile(a))}', ${a.entryPoints ? `'${json(a.entryPoints)}'${jsonCast}` : "null"}, '${json(a.tests)}'${jsonCast}, ${a.sqlSeed ? strLit(a.sqlSeed) : "null"}, ${a.lintPreset ? `'${esc(a.lintPreset)}'` : "null"}, '${json({ eslint: { rules: settings.eslintRules }, ast: settings.ast })}'${jsonCast}, ${a.mutation ? `'${json(a.mutation)}'${jsonCast}` : "null"}, ${a.demoCall ? `'${esc(a.demoCall)}'` : "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set tenant_id = excluded.tenant_id, stage = excluded.stage, chapter_id = excluded.chapter_id, title = excluded.title, description = excluded.description, language = excluded.language, test_kind = excluded.test_kind, starter_files = excluded.starter_files, entry_file = excluded.entry_file, entry_points = excluded.entry_points, tests = excluded.tests, sql_seed = excluded.sql_seed, lint_preset = excluded.lint_preset, static_analysis = excluded.static_analysis, mutation = excluded.mutation, demo_call = excluded.demo_call;`,
+    `insert into ${isSqlite ? "" : "public."}assignments (id, tenant_id, stage, chapter_id, title, description, language, test_kind, starter_files, entry_file, entry_points, tests, sql_seed, lint_preset, static_analysis, mutation, demo_call${isSqlite ? ", created_at, updated_at" : ""}) values ('${esc(a.id)}', '${esc(tenantId)}', '${esc(a.stage)}', '${esc(a.chapterId)}', '${esc(a.title)}', ${strLit(a.description)}, '${getLanguage(a)}', '${a.testKind}', '${json(a.starterFiles)}'${jsonCast}, '${esc(getEntryFile(a))}', ${a.entryPoints ? `'${json(a.entryPoints)}'${jsonCast}` : "null"}, '${json(a.tests)}'${jsonCast}, ${a.sqlSeed ? strLit(a.sqlSeed) : "null"}, ${a.lintPreset ? `'${esc(a.lintPreset)}'` : "null"}, '${json({ eslint: { rules: settings.eslintRules }, ast: settings.ast })}'${jsonCast}, ${a.mutation ? `'${json(a.mutation)}'${jsonCast}` : "null"}, ${a.demoCall ? `'${esc(a.demoCall)}'` : "null"}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) ${doUpdate("assignments", ["tenant_id", "stage", "chapter_id", "title", "description", "language", "test_kind", "starter_files", "entry_file", "entry_points", "tests", "sql_seed", "lint_preset", "static_analysis", "mutation", "demo_call"])};`,
   );
 }
 
@@ -385,7 +445,7 @@ function emitQuiz(
       `select '${quizUuid}', l.id, ${quiz.passScore}, null, null, ${strLit(quiz.source ?? "practice")}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("lessons")} l`,
       `where l.id = '${id}'`,
-      `on conflict (id) do update set lesson_id = excluded.lesson_id, pass_score = excluded.pass_score, source = excluded.source, updated_at = ${nowExpr()};`,
+      `on conflict (id) ${doUpdate("quizzes", ["lesson_id", "pass_score", "source"], { touch: "updated_at" })};`,
     ].join(" "),
   );
   if (legacyQuizUuid !== quizUuid) {
@@ -431,7 +491,7 @@ function emitQuiz(
         `insert into ${tbl("quiz_questions")} (id, quiz_id, kind, prompt, explanation, points, "order", skills${isSqlite ? ", created_at, updated_at" : ""})`,
         `select '${qUuid}', '${quizUuid}', '${q.kind ?? "single"}', ${strLit(q.prompt)}, ${strLit(q.explanation)}, 1, ${i}, ${strLit(JSON.stringify(q.skills ?? []))}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}`,
         `where exists (select 1 from ${tbl("quizzes")} z where z.id = '${quizUuid}')`,
-        `on conflict (id) do update set quiz_id = excluded.quiz_id, kind = excluded.kind, skills = excluded.skills, prompt = excluded.prompt, explanation = excluded.explanation, points = excluded.points, "order" = excluded."order", updated_at = ${nowExpr()};`,
+        `on conflict (id) ${doUpdate("quiz_questions", ["quiz_id", "kind", "skills", "prompt", "explanation", "points", '"order"'], { touch: "updated_at" })};`,
       ].join(" "),
     );
     for (let j = 0; j < q.options.length; j++) {
@@ -443,7 +503,7 @@ function emitQuiz(
           `insert into ${tbl("quiz_options")} (id, question_id, label, is_correct, "order")`,
           `select '${oUuid}', '${qUuid}', ${strLit(o.label)}, ${o.isCorrect ? (isSqlite ? "1" : "true") : isSqlite ? "0" : "false"}, ${j}`,
           `where exists (select 1 from ${tbl("quiz_questions")} qq where qq.id = '${qUuid}')`,
-          `on conflict (id) do update set question_id = excluded.question_id, label = excluded.label, is_correct = excluded.is_correct, "order" = excluded."order";`,
+          `on conflict (id) ${doUpdate("quiz_options", ["question_id", "label", "is_correct", '"order"'])};`,
         ].join(" "),
       );
     }
@@ -489,7 +549,33 @@ function emitInterviewQuestions(tenantId: string) {
     const id = stableUuid(`interview-q:${tenantId}:${q.no}`);
     ids.push(id);
     lines.push(
-      `insert into ${tbl("interview_questions")} (id, tenant_id, no, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, null, null, null, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) do update set categories = excluded.categories, subcategory = excluded.subcategory, freq = excluded.freq, question = excluded.question, time = excluded.time, keywords = excluded.keywords, intent = excluded.intent, answer_template = excluded.answer_template, deep1 = null, deep2 = null, deep3 = null, ng = excluded.ng, criteria = excluded.criteria, is_reverse = excluded.is_reverse, updated_at = ${nowExpr()}, edited_at = null, edited_by = null, release_requested_at = null where interview_questions.edited_at is null or interview_questions.release_requested_at is not null;`,
+      `insert into ${tbl("interview_questions")} (id, tenant_id, no, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, null, null, null, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) ${doUpdate(
+        "interview_questions",
+        [
+          "categories",
+          "subcategory",
+          "freq",
+          "question",
+          "time",
+          "keywords",
+          "intent",
+          "answer_template",
+          ["deep1", "null"],
+          ["deep2", "null"],
+          ["deep3", "null"],
+          "ng",
+          "criteria",
+          "is_reverse",
+          ["edited_at", "null"],
+          ["edited_by", "null"],
+          ["release_requested_at", "null"],
+        ],
+        {
+          touch: "updated_at",
+          guard:
+            "interview_questions.edited_at is null or interview_questions.release_requested_at is not null",
+        },
+      )};`,
     );
   }
   lines.push(
@@ -550,7 +636,7 @@ function emitPdfMaterials() {
         "insert into lesson_materials (id, lesson_id, path, file_name, size_bytes, mime_type, source, created_by, created_at)",
         `select '${materialId}', l.id, '${esc(e.key)}', ${strLit(e.fileName)}, ${e.sizeBytes}, 'application/pdf', 'auto', null, ${nowExpr()}`,
         `from lessons l where l.id = '${lessonId}'`,
-        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source, archived_at = null;",
+        `on conflict (id) ${doUpdate("lesson_materials", ["path", "file_name", "size_bytes", "mime_type", "source", ["archived_at", "null"]])};`,
       ].join(" "),
     );
     lines.push(
@@ -576,7 +662,7 @@ const skillRegistry = JSON.parse(
 ) as { id: string; title: string }[];
 for (const skill of skillRegistry)
   lines.push(
-    `insert into skills (id, title) values (${strLit(skill.id)}, ${strLit(skill.title)}) on conflict (id) do update set title = excluded.title;`,
+    `insert into skills (id, title) values (${strLit(skill.id)}, ${strLit(skill.title)}) on conflict (id) ${doUpdate("skills", ["title"])};`,
   );
 
 // 新形式の単元・課題は assignments と別に持つ。private は公開 bundle に入れない。
@@ -584,14 +670,19 @@ for (const unit of content.units) {
   const id = sectionIdMap.get(`ses:${unit.courseId}:${unit.unitId}`);
   if (!id) throw new Error(`unit section missing: ${unit.unitId}`);
   lines.push(
-    `insert into content_units (section_id, planned_hours, skills, reuses, "references") values (${strLit(id)}, ${unit.config.plannedHours}, ${strLit(JSON.stringify(unit.config.skills))}, ${strLit(JSON.stringify(unit.config.reuses))}, ${strLit(JSON.stringify(unit.references))}) on conflict (section_id) do update set planned_hours = excluded.planned_hours, skills = excluded.skills, reuses = excluded.reuses, "references" = excluded."references";`,
+    `insert into content_units (section_id, planned_hours, skills, reuses, "references") values (${strLit(id)}, ${unit.config.plannedHours}, ${strLit(JSON.stringify(unit.config.skills))}, ${strLit(JSON.stringify(unit.config.reuses))}, ${strLit(JSON.stringify(unit.references))}) on conflict (section_id) ${doUpdate("content_units", ["planned_hours", "skills", "reuses", '"references"'])};`,
   );
 }
+// 教材から外れた課題だけを止める。以前は講座の課題を毎回全部 active = 0 にしてから
+// 下の upsert で 1 に戻していて、内容が同じでも全課題を 2 回ずつ書いていた。
 for (const course of content.courses.filter((c) => c.format === 2)) {
   const stageId = stageIdMap.get(`ses:${course.id}`);
   if (!stageId) throw new Error(`format 2 stage missing: ${course.id}`);
+  const current = content.tasks
+    .filter((t) => t.courseId === course.id)
+    .map((t) => strLit(t.definition.id));
   lines.push(
-    `update tasks set active = 0 where section_id in (select id from sections where stage_id = ${strLit(stageId)});`,
+    `update tasks set active = 0 where active <> 0 and section_id in (select id from sections where stage_id = ${strLit(stageId)})${current.length > 0 ? ` and id not in (${current.join(", ")})` : ""};`,
   );
 }
 for (const [order, task] of content.tasks.entries()) {
@@ -604,7 +695,7 @@ for (const [order, task] of content.tasks.entries()) {
     task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
   const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${lessonId}, ${variantOf}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id, variant_of = excluded.variant_of;`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "content_hash", "definition", "bundle", ["active", "1"], "lesson_id", "variant_of"])};`,
   );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
@@ -614,10 +705,10 @@ for (const [order, task] of content.tasks.entries()) {
   // 入れるたびに書き直す。前の版には「その版が今の版だった最後の素材」が残り、手元の版が古い
   // 受講者にその版のヒント・解答例・解説を出すのに使う (#36)。
   lines.push(
-    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) do update set private_hash = excluded.private_hash;`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
   );
   lines.push(
-    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) do update set files = excluded.files;`,
+    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) ${doUpdate("task_private", ["files"])};`,
   );
   lines.push(
     `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(privateHash)}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
@@ -625,7 +716,7 @@ for (const [order, task] of content.tasks.entries()) {
   // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
   lines.push(
     task.fixedStart
-      ? `insert into task_fixed_starts (task_id, content_hash, files) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(task.fixedStart))}) on conflict (task_id) do update set content_hash = excluded.content_hash, files = excluded.files;`
+      ? `insert into task_fixed_starts (task_id, content_hash, files) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(task.fixedStart))}) on conflict (task_id) ${doUpdate("task_fixed_starts", ["content_hash", "files"])};`
       : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
@@ -635,7 +726,7 @@ for (const [order, task] of content.tasks.entries()) {
 const codingRules = content.codingRules ?? [];
 for (const rule of codingRules)
   lines.push(
-    `insert into coding_rules (id, scope, position, title, statement, applies_to, introduced_in, exception, content_hash) values (${strLit(rule.id)}, ${strLit(rule.scope)}, ${rule.position}, ${strLit(rule.title)}, ${strLit(rule.statement)}, ${strLit(rule.appliesTo)}, ${strLit(rule.introducedIn)}, ${rule.exception ? strLit(rule.exception) : "null"}, ${strLit(rule.contentHash)}) on conflict (id) do update set scope = excluded.scope, position = excluded.position, title = excluded.title, statement = excluded.statement, applies_to = excluded.applies_to, introduced_in = excluded.introduced_in, exception = excluded.exception, content_hash = excluded.content_hash;`,
+    `insert into coding_rules (id, scope, position, title, statement, applies_to, introduced_in, exception, content_hash) values (${strLit(rule.id)}, ${strLit(rule.scope)}, ${rule.position}, ${strLit(rule.title)}, ${strLit(rule.statement)}, ${strLit(rule.appliesTo)}, ${strLit(rule.introducedIn)}, ${rule.exception ? strLit(rule.exception) : "null"}, ${strLit(rule.contentHash)}) on conflict (id) ${doUpdate("coding_rules", ["scope", "position", "title", "statement", "applies_to", "introduced_in", "exception", "content_hash"])};`,
   );
 lines.push(
   codingRules.length
@@ -717,8 +808,8 @@ if (!contentOnly) {
   ]) {
     lines.push(
       isSqlite
-        ? `insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('${p.id}', 'ses', '${p.role}', '${esc(p.name)}', '${p.initials}', '${p.email}', 0, ${nowExpr()}) on conflict (id) do update set role = excluded.role, display_name = excluded.display_name, initials = excluded.initials, email = excluded.email;`
-        : `insert into public.profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('${p.id}', 'ses', '${p.role}', '${esc(p.name)}', '${p.initials}', '${p.email}', false, ${nowExpr()}) on conflict (id) do update set role = excluded.role, display_name = excluded.display_name, initials = excluded.initials, email = excluded.email;`,
+        ? `insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('${p.id}', 'ses', '${p.role}', '${esc(p.name)}', '${p.initials}', '${p.email}', 0, ${nowExpr()}) on conflict (id) ${doUpdate("profiles", ["role", "display_name", "initials", "email"])};`
+        : `insert into public.profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('${p.id}', 'ses', '${p.role}', '${esc(p.name)}', '${p.initials}', '${p.email}', false, ${nowExpr()}) on conflict (id) ${doUpdate("profiles", ["role", "display_name", "initials", "email"])};`,
     );
   }
 
@@ -742,13 +833,13 @@ if (!contentOnly) {
         `select '${id}', 'ses', '${SEED_LEARNER}', c.id, '${SEED_LEARNER}', null, ${isSqlite ? "0" : "false"}, 'active', ${nowExpr()}, null`,
         `from ${tbl("stages")} c`,
         `where c.tenant_id = 'ses' and c.slug = '${esc(slug)}'`,
-        `on conflict (user_id, stage_id) do update set status = excluded.status, required = excluded.required, assigned_by = excluded.assigned_by, due_at = excluded.due_at;`,
+        `on conflict (user_id, stage_id) ${doUpdate("enrollments", ["status", "required", "assigned_by", "due_at"])};`,
       ].join(" "),
     );
   }
 
   lines.push(
-    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${entryLessonId}', 'S0-Ch00-01-print-hello', ${strLit(entryStage?.title ?? "開発環境とWebの入口")}, ${strLit(entryStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) do update set code = excluded.code, status = excluded.status, student_id = excluded.student_id;`,
+    `insert into ${tbl("submissions")} (id, tenant_id, student_id, lesson_id, assignment_id, stage_title, section_title, assignment_title, code, status, priority, attempt, ai_ready, ai_suggestions, rubric, review_notes, verdict, submitted_at, reviewed_at, reviewer_id) values ('${SEED_SUBMISSION}', 'ses', '${SEED_LEARNER}', '${entryLessonId}', 'S0-Ch00-01-print-hello', ${strLit(entryStage?.title ?? "開発環境とWebの入口")}, ${strLit(entryStage?.sections?.[0]?.title ?? "M0. オリエンテーション")}, ${strLit("console.log で文字を出す")}, ${strLit("console.log('hello');\n")}, 'pending', 'normal', 1, ${isSqlite ? "0" : "false"}, '[]', '[]', '', null, ${nowExpr()}, null, null) on conflict (id) ${doUpdate("submissions", ["code", "status", "student_id"])};`,
   );
 }
 
