@@ -5,6 +5,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type {
   ContentBlockParam,
+  Message,
+  MessageCreateParamsNonStreaming,
   MessageParam,
   StopReason,
   TextBlockParam,
@@ -118,28 +120,25 @@ export interface JsonSchemaCompletion {
 }
 
 /**
- * 構造化出力で JSON を返させる非ストリーミングの完了 (AI の一次レビュー用)。
- *
- * 再試行は呼び出し側の待ち行列が持つので、SDK の自動再試行は切る (待ち時間の上限を守るため)。
- * 拒否や打ち切り (`stopReason`) の扱いも呼び出し側が決める。
+ * 構造化出力の要求の本文。`completeJsonSchema` と、評価のための Batch への投入
+ * (`scripts/ai-review-replay.ts`) が同じ本文を送るよう、ここで 1 か所で組み立てる。
  */
-export async function completeJsonSchema(
-  args: JsonSchemaCompleteArgs,
-): Promise<JsonSchemaCompletion> {
-  const client = createClient(args.env);
-  const model = resolveAnthropicModel(args.env, args.model);
-  const timeoutSignal = AbortSignal.timeout(args.timeoutMs);
-  const signal = args.signal ? AbortSignal.any([args.signal, timeoutSignal]) : timeoutSignal;
-  const response = await client.messages.create(
-    {
-      model,
-      max_tokens: args.maxTokens,
-      system: args.system,
-      messages: args.messages,
-      output_config: { format: { type: "json_schema", schema: args.schema } },
-    },
-    { signal, maxRetries: 0, timeout: args.timeoutMs },
-  );
+export function jsonSchemaRequestParams(
+  args: Pick<JsonSchemaCompleteArgs, "system" | "messages" | "schema" | "maxTokens"> & {
+    model: string;
+  },
+): MessageCreateParamsNonStreaming {
+  return {
+    model: args.model,
+    max_tokens: args.maxTokens,
+    system: args.system,
+    messages: args.messages,
+    output_config: { format: { type: "json_schema", schema: args.schema } },
+  };
+}
+
+/** 応答から本文・止まった理由・使ったトークンを取り出す (Batch の結果も同じ形で読む)。 */
+export function readJsonSchemaCompletion(response: Message): JsonSchemaCompletion {
   const text = response.content
     .flatMap((block) => (block.type === "text" ? [block.text] : []))
     .join("");
@@ -154,4 +153,25 @@ export async function completeJsonSchema(
       cacheCreationInputTokens: response.usage.cache_creation_input_tokens ?? null,
     },
   };
+}
+
+/**
+ * 構造化出力で JSON を返させる非ストリーミングの完了 (AI の一次レビュー用)。
+ *
+ * 再試行は呼び出し側の待ち行列が持つので、SDK の自動再試行は切る (待ち時間の上限を守るため)。
+ * 拒否や打ち切り (`stopReason`) の扱いも呼び出し側が決める。
+ */
+export async function completeJsonSchema(
+  args: JsonSchemaCompleteArgs,
+): Promise<JsonSchemaCompletion> {
+  const client = createClient(args.env);
+  const model = resolveAnthropicModel(args.env, args.model);
+  const timeoutSignal = AbortSignal.timeout(args.timeoutMs);
+  const signal = args.signal ? AbortSignal.any([args.signal, timeoutSignal]) : timeoutSignal;
+  const response = await client.messages.create(jsonSchemaRequestParams({ ...args, model }), {
+    signal,
+    maxRetries: 0,
+    timeout: args.timeoutMs,
+  });
+  return readJsonSchemaCompletion(response);
 }
