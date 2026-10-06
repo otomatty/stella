@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { ExtensionContext } from "vscode";
@@ -164,11 +164,19 @@ const focusWindow = async () => {
 };
 
 describe("学習フォルダー", () => {
-  it("ドライブの直下とホームフォルダーそのものは使わない", () => {
-    expect(trainingRootProblem(path.parse(state.home).root, state.home)).toContain("直下");
-    expect(trainingRootProblem(state.home, state.home)).toContain("ホームフォルダー");
-    expect(trainingRootProblem("relative/web-training", state.home)).toContain("絶対パス");
-    expect(trainingRootProblem(training, state.home)).toBeUndefined();
+  it("ドライブの直下とホームフォルダーそのものは使わない", async () => {
+    expect(await trainingRootProblem(path.parse(state.home).root, state.home)).toContain("直下");
+    expect(await trainingRootProblem(state.home, state.home)).toContain("ホームフォルダー");
+    expect(await trainingRootProblem("relative/web-training", state.home)).toContain("絶対パス");
+    expect(await trainingRootProblem(training, state.home)).toBeUndefined();
+    // ホームを指すリンクも、ホームそのものとみなす。
+    const link = path.join(path.dirname(state.home), `${path.basename(state.home)}-link`);
+    await symlink(state.home, link);
+    try {
+      expect(await trainingRootProblem(link, state.home)).toContain("ホームフォルダー");
+    } finally {
+      await rm(link, { force: true });
+    }
   });
   it("初回はホームに web-training を作って覚える (ワークスペース設定には書かない)", async () => {
     state.memento.clear();
@@ -328,15 +336,57 @@ describe("課題を開く", () => {
     expect(await pendingFiles()).toEqual(["pending-task-open.json"]);
     expect(await takePendingTaskOpen(pendingDir, () => true)).toEqual(saved);
   });
-  it("学習フォルダーだけを開いているウィンドウかで判断する", () => {
-    expect(windowIsTrainingRoot([training], training)).toBe(true);
-    expect(windowIsTrainingRoot([state.home], training)).toBe(false);
-    expect(windowIsTrainingRoot([path.join(training, "course")], training)).toBe(false);
-    expect(windowIsTrainingRoot([training, state.home], training)).toBe(false);
-    expect(windowIsTrainingRoot([], training)).toBe(false);
-    // Windows・macOS では大文字と小文字の違い (ドライブ文字など) を同じ場所とみなす。
-    expect(samePath("/Users/a/Web-Training", "/users/a/web-training", "darwin")).toBe(true);
-    expect(samePath("/home/a/Web-Training", "/home/a/web-training", "linux")).toBe(false);
+  it("学習フォルダーだけを開いているウィンドウかで判断する", async () => {
+    expect(await windowIsTrainingRoot([training], training)).toBe(true);
+    expect(await windowIsTrainingRoot([state.home], training)).toBe(false);
+    expect(await windowIsTrainingRoot([path.join(training, "course")], training)).toBe(false);
+    expect(await windowIsTrainingRoot([training, state.home], training)).toBe(false);
+    expect(await windowIsTrainingRoot([], training)).toBe(false);
+  });
+  it("同じ場所かは、あればファイルシステムの実体で比べる", async () => {
+    // 大文字と小文字だけが違う別々のフォルダー (大文字小文字を区別するボリューム)。
+    // macOS として比べても、実体が違えば別の場所とみなす。
+    const upper = path.join(state.home, "Web-Training");
+    const lower = path.join(state.home, "web-training-case");
+    await mkdir(upper);
+    // 大文字小文字を区別しないボリューム (macOS の既定など) では作れないので、確かめない。
+    const caseSensitive = await mkdir(path.join(state.home, "web-Training")).then(
+      () => true,
+      () => false,
+    );
+    if (caseSensitive)
+      expect(await samePath(upper, path.join(state.home, "web-Training"), "darwin")).toBe(false);
+    // 表記が違っても同じ実体なら同じ場所 (大文字小文字を区別しないボリュームやリンク)。
+    await symlink(upper, lower);
+    expect(await samePath(upper, lower, "darwin")).toBe(true);
+    expect(await windowIsTrainingRoot([lower], upper)).toBe(true);
+    // どちらかが無ければ表記で比べ、大文字と小文字を区別しないのは Windows だけ。
+    const missing = path.join(state.home, "missing", "Web");
+    const missingLower = path.join(state.home, "missing", "web");
+    expect(await samePath(missing, missingLower, "win32")).toBe(true);
+    expect(await samePath(missing, missingLower, "darwin")).toBe(false);
+    expect(await samePath(missing, missingLower, "linux")).toBe(false);
+    expect(await samePath(missing, `${missing}${path.sep}`, "linux")).toBe(true);
+  });
+  it("課題文が消えた課題フォルダーを「今のフォルダーを開く」ときは、フォルダーを示す", async () => {
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    expect(state.showTextDocument).toHaveBeenCalledTimes(1);
+    await rm(path.join(taskRoot(), "README.md"));
+    state.showWarningMessage.mockResolvedValueOnce("今のフォルダーを開く");
+    await openDistributedTask(context, taskId);
+    expect(state.showWarningMessage.mock.calls[0]?.[1]).toMatchObject({
+      detail: expect.stringContaining("・README.md"),
+    });
+    expect(state.executeCommand).toHaveBeenCalledWith("revealInExplorer", {
+      scheme: "file",
+      fsPath: taskRoot(),
+    });
+    expect(state.showTextDocument).toHaveBeenCalledTimes(1);
+    expect(state.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining("README.md) が見つからない"),
+    );
+    expect(openedFolder()).toBeUndefined();
   });
 });
 

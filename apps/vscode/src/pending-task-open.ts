@@ -94,12 +94,12 @@ export async function savePendingTaskOpen(
  */
 export async function takePendingTaskOpen(
   dir: string,
-  accepts: (pending: PendingTaskOpen) => boolean,
+  accepts: (pending: PendingTaskOpen) => boolean | Promise<boolean>,
   now = Date.now(),
 ): Promise<PendingTaskOpen | undefined> {
   const file = path.join(dir, FILE);
   const seen = await readPendingFile(file, now);
-  if (seen && !accepts(seen)) return undefined;
+  if (seen && !(await accepts(seen))) return undefined;
   // 受け取る (または捨てる) ときは、まず自分だけの名前へ付け替える。付け替えに成功した
   // ウィンドウだけが中身を扱う。
   const claimed = path.join(dir, `${FILE}.${randomUUID()}.claimed`);
@@ -112,7 +112,7 @@ export async function takePendingTaskOpen(
   try {
     const taken = await readPendingFile(claimed, now);
     if (!taken) return undefined;
-    if (accepts(taken)) return taken;
+    if (await accepts(taken)) return taken;
     // 読んでから付け替えるまでに、別のウィンドウ向けの新しい控えが置かれていた。元へ戻す。
     // さらに新しい控えが置かれていれば、そちらを優先する (link は既存を上書きしない)。
     await link(claimed, file).catch(() => undefined);

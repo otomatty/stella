@@ -17,29 +17,47 @@ export const DEFAULT_TRAINING_FOLDER = "web-training";
 
 type Memento = Pick<vscode.Memento, "get" | "update">;
 
+async function identity(target: string) {
+  try {
+    const found = await stat(target, { bigint: true });
+    // ファイル番号を返さないファイルシステムでは、同じかどうかを判断できない。
+    return found.ino === 0n ? undefined : found;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * 同じ場所を指すパスか。Windows・macOS は大文字と小文字を区別しない (VS Code の fsPath は
- * Windows のドライブ文字を小文字にするので、表記の違いで別の場所と判断しないため)。
+ * 同じ場所を指すパスか。両方あれば実体 (デバイスとファイル番号) で比べる — 大文字と小文字を
+ * 区別しないボリューム (Windows・macOS の既定) も、区別するボリューム (macOS の
+ * 大文字小文字を区別する APFS など) も、リンクも、ファイルシステムどおりに扱える。
+ * どちらかが無ければ表記で比べ、Windows だけ大文字と小文字を区別しない (VS Code の fsPath は
+ * ドライブ文字を小文字にするため)。
  */
-export function samePath(
+export async function samePath(
   a: string,
   b: string,
   platform: NodeJS.Platform = process.platform,
-): boolean {
+): Promise<boolean> {
+  const [left, right] = await Promise.all([identity(a), identity(b)]);
+  if (left && right) return left.dev === right.dev && left.ino === right.ino;
   const normalize = (p: string) => {
     const resolved = path.resolve(p);
-    return platform === "win32" || platform === "darwin" ? resolved.toLowerCase() : resolved;
+    return platform === "win32" ? resolved.toLowerCase() : resolved;
   };
   return normalize(a) === normalize(b);
 }
 
 /** 学習フォルダーに使えない場所なら理由を返す。ドライブの直下とホームフォルダーそのものは避ける。 */
-export function trainingRootProblem(candidate: string, home = homedir()): string | undefined {
+export async function trainingRootProblem(
+  candidate: string,
+  home = homedir(),
+): Promise<string | undefined> {
   if (!path.isAbsolute(candidate)) return "学習フォルダーは絶対パスで指定してください";
   const resolved = path.resolve(candidate);
   if (path.parse(resolved).root === resolved)
     return "ドライブの直下は学習フォルダーにできません。中に学習用のフォルダーを作って選んでください";
-  if (samePath(resolved, home))
+  if (await samePath(resolved, home))
     return "ホームフォルダーそのものではなく、その中の学習用のフォルダー (例: web-training) を選んでください";
   return undefined;
 }
@@ -55,7 +73,7 @@ async function isDirectory(target: string): Promise<boolean> {
 /** 覚えている学習フォルダー。消えていたり使えない場所だったりすれば undefined。 */
 export async function rememberedTrainingRoot(state: Memento): Promise<string | undefined> {
   const value = state.get<unknown>(TRAINING_ROOT_KEY);
-  if (typeof value !== "string" || trainingRootProblem(value)) return undefined;
+  if (typeof value !== "string" || (await trainingRootProblem(value))) return undefined;
   return (await isDirectory(value)) ? path.resolve(value) : undefined;
 }
 
@@ -104,7 +122,7 @@ export async function resolveTrainingRoot(
     if (!picked?.[0]) return undefined;
     chosen = picked[0].fsPath;
   }
-  const problem = trainingRootProblem(chosen);
+  const problem = await trainingRootProblem(chosen);
   if (problem) {
     void vscode.window.showErrorMessage(problem);
     return undefined;

@@ -13,6 +13,7 @@
  * 開いていれば、読み込み直さずにそのまま課題文を開く。
  */
 
+import { lstat } from "node:fs/promises";
 import path from "node:path";
 import type { TaskBundle, TaskBundleResponse } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
@@ -53,16 +54,39 @@ function isInside(dir: string, target: string): boolean {
  * このウィンドウが学習フォルダーだけを開いているか。祖先 (ホームなど)・講座のフォルダー・
  * 学習フォルダーを含むマルチルートは違う — 学習フォルダーを唯一のフォルダーにするため。
  */
-export function windowIsTrainingRoot(folders: readonly string[], trainingRoot: string): boolean {
-  return folders.length === 1 && samePath(folders[0], trainingRoot);
+export async function windowIsTrainingRoot(
+  folders: readonly string[],
+  trainingRoot: string,
+): Promise<boolean> {
+  return folders.length === 1 && (await samePath(folders[0], trainingRoot));
 }
 
 function workspaceFolders(): string[] {
   return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
 }
 
+async function isPlainFile(file: string): Promise<boolean> {
+  try {
+    return (await lstat(file)).isFile();
+  } catch {
+    return false;
+  }
+}
+
 async function showTaskReadme(taskRoot: string): Promise<void> {
   const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
+  if (!(await isPlainFile(readme.fsPath))) {
+    // 課題文が消えた・壊れた課題フォルダー (「今のフォルダーを開く」から来る) は、
+    // 開けない README の代わりに課題フォルダーをエクスプローラーで示す。
+    await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(taskRoot)).then(
+      () => undefined,
+      () => undefined,
+    );
+    void vscode.window.showInformationMessage(
+      `課題文 (README.md) が見つからないため、課題フォルダーを表示しました: ${taskRoot}`,
+    );
+    return;
+  }
   await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(readme));
   // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開けている)。
   await vscode.commands.executeCommand("revealInExplorer", readme).then(
@@ -82,7 +106,7 @@ async function openTaskInWindow(
   taskRoot: string,
 ): Promise<void> {
   const folders = workspaceFolders();
-  if (windowIsTrainingRoot(folders, trainingRoot)) {
+  if (await windowIsTrainingRoot(folders, trainingRoot)) {
     await showTaskReadme(taskRoot);
     return;
   }
