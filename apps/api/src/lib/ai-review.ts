@@ -210,6 +210,7 @@ async function loadMaterial(
       debuggingRecord: row.debuggingRecord ?? null,
       localResult: row.localResult ?? null,
       support: row.supportLog ?? [],
+      ciRun: row.machineCheck?.ci ?? null,
     },
   };
   return {

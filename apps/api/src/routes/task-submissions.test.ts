@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import { contentHash } from "@stella/shared/tasks/submission";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
 import {
@@ -388,6 +389,148 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     expect((await db.select().from(submissions)).length).toBe(0);
     expect(objects.size).toBe(0);
   });
+  describe("CI と公開の課題 (07 §5.5)", () => {
+    const COMMIT = "0123456789abcdef0123456789abcdef01234567";
+    const WORKFLOW = ".github/workflows/deploy.yml";
+    const runJson = (overrides: Record<string, unknown> = {}) => ({
+      id: 123456,
+      head_sha: COMMIT,
+      path: WORKFLOW,
+      event: "push",
+      status: "completed",
+      conclusion: "success",
+      repository: { full_name: "yamada/web-deploy", private: false },
+      ...overrides,
+    });
+    let fetchMock: ReturnType<typeof vi.fn>;
+    beforeEach(async () => {
+      fixture = await submissionFixture({
+        runner: "ci-deploy",
+        static: undefined,
+        submit: { files: ["index.html", WORKFLOW] },
+        ci: { workflow: WORKFLOW },
+      });
+      // ワークフローも提出する (課題が指定したワークフローは提出か配布のファイルにする)。
+      const workflow = new TextEncoder().encode("name: Deploy\n");
+      fixture.input.files.push({
+        path: WORKFLOW,
+        content: Buffer.from(workflow).toString("base64"),
+      });
+      fixture.input.localResult.files.push({
+        path: WORKFLOW,
+        sha256: await contentHash(workflow),
+        bytes: workflow.length,
+      });
+      fixture.input.localResult.steps = [
+        {
+          id: "test",
+          label: "CI の実行と公開先",
+          status: "passed",
+          durationMs: 0,
+          summary: "控えた",
+        },
+        { id: "files", label: "ファイル", status: "passed", durationMs: 0, summary: "通過" },
+      ];
+      fixture.input.localResult.ci = {
+        runUrl: "https://github.com/yamada/web-deploy/actions/runs/123456",
+        deployUrl: "https://yamada.github.io/web-deploy/",
+        commit: COMMIT,
+      };
+      await db
+        .update(taskRevisions)
+        .set({ bundle: JSON.stringify(fixture.bundle) })
+        .where(eq(taskRevisions.taskId, fixture.input.taskId));
+    });
+    afterEach(() => vi.unstubAllGlobals());
+    function stubGithub(response: () => Response) {
+      fetchMock = vi.fn(async () => response());
+      vi.stubGlobal("fetch", fetchMock);
+    }
+    async function queue() {
+      const { app } = mountTestApp(env, submissionsRoute);
+      const response = await request(app, env, "/api/submissions", { token: instructorToken });
+      return (await json<{ rows: { id: string; route_reasons: string[] }[] }>(response)).rows;
+    }
+
+    it("成功した実行を GitHub で確かめ、照合の結果を提出と一緒に残して AI の確認へ回す", async () => {
+      stubGithub(() => Response.json(runJson()));
+      const row = await submit();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      // 受講者の入力から組み立て直した GitHub の API だけに問い合わせる (公開先は取りに行かない)。
+      expect(fetchMock.mock.calls[0]?.[0]).toBe(
+        "https://api.github.com/repos/yamada/web-deploy/actions/runs/123456",
+      );
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved?.machineCheck).toMatchObject({
+        matched: true,
+        ci: { status: "verified", problems: [], workflow: WORKFLOW, claim: { commit: COMMIT } },
+      });
+      expect(saved?.aiReviewStatus).toBe("queued");
+      expect((await db.select().from(taskProgress))[0]?.status).toBe("submitted");
+    });
+
+    it("失敗した実行は食い違いとして講師の確認待ちにし、CI の照合のキューに出す", async () => {
+      stubGithub(() => Response.json(runJson({ conclusion: "failure" })));
+      const row = await submit();
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved?.machineCheck?.ci).toMatchObject({
+        status: "mismatch",
+        problems: ["not-success"],
+      });
+      expect(saved?.aiReviewStatus).toBe("escalated");
+      expect((await db.select().from(taskProgress))[0]?.status).toBe("instructor-pending");
+      expect((await queue()).find((r) => r.id === row.id)?.route_reasons).toEqual(["ci-mismatch"]);
+      await expect(
+        reviewTaskSubmission(db, caller, row.id, "pass", "", "ai"),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    it("回数制限で照合できなければ、照合できなかったとして講師の確認待ちにする", async () => {
+      stubGithub(
+        () =>
+          new Response(JSON.stringify({ message: "API rate limit exceeded" }), {
+            status: 403,
+            headers: { "x-ratelimit-remaining": "0" },
+          }),
+      );
+      const row = await submit();
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved?.machineCheck?.ci).toMatchObject({
+        status: "unverifiable",
+        problems: ["rate-limited"],
+        run: null,
+      });
+      expect((await db.select().from(taskProgress))[0]?.status).toBe("instructor-pending");
+      expect((await queue()).find((r) => r.id === row.id)?.route_reasons).toEqual([
+        "ci-unverified",
+      ]);
+    });
+
+    it("実行の URL とコミットの申告が無い提出は GitHub に問い合わせず、機械の照合で人に回す", async () => {
+      stubGithub(() => Response.json(runJson()));
+      fixture.input.localResult.ci = undefined;
+      const row = await submit();
+      expect(fetchMock).not.toHaveBeenCalled();
+      const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+      expect(saved?.machineCheck?.reasons).toContain(
+        "CI の実行の URL と手元のコミットの記録がありません",
+      );
+      expect(saved?.machineCheck?.ci).toBeUndefined();
+      expect((await queue()).find((r) => r.id === row.id)?.route_reasons).toEqual([
+        "machine-check",
+      ]);
+    });
+
+    it("形の悪い実行の URL は受け付けない (問い合わせない)", async () => {
+      stubGithub(() => Response.json(runJson()));
+      (fixture.input.localResult.ci as { runUrl: string }).runUrl =
+        "https://github.com/yamada/web-deploy/actions/runs/123456?x=@169.254.169.254";
+      expect((await post()).status).toBe(400);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(await db.select().from(submissions)).toEqual([]);
+    });
+  });
+
   describe("確認Bの定着", () => {
     const DAY = 86_400_000;
     const hash = "c".repeat(64);

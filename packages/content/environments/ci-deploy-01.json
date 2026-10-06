@@ -1,0 +1,28 @@
+{
+  "id": "ci-deploy-01",
+  "version": "1",
+  "runner": "ci-deploy",
+  "template": "templates/runners/ci-deploy",
+  "os": ["windows", "macos", "linux"],
+  "requirements": {
+    "node": {
+      "min": "22.13.0",
+      "majors": [22, 24]
+    },
+    "git": {
+      "min": "2.40.0"
+    }
+  },
+  "libraries": {},
+  "ci": {
+    "runsOn": "ubuntu-latest",
+    "node": "22",
+    "actions": {
+      "actions/checkout": "v7.0.1",
+      "actions/setup-node": "v7.0.0",
+      "actions/configure-pages": "v6.0.0",
+      "actions/upload-pages-artifact": "v5.0.0",
+      "actions/deploy-pages": "v5.0.1"
+    }
+  }
+}

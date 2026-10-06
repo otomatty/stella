@@ -38,6 +38,7 @@ import {
   type TaskBoardItem,
   type TaskEscalationMetric,
 } from "@stella/shared/review/review-desk";
+import { ciCheckStatusFrom } from "@stella/shared/tasks/ci-run";
 import { addStudyDays, studyDateStartMs } from "@stella/shared/study/activity";
 import { TASK_KIND_LABELS, type TaskKind } from "@stella/shared/tasks/manifest";
 import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
@@ -75,6 +76,14 @@ const reviewer = alias(profiles, "reviewer");
 export const machineMatchedColumn = sql<
   number | null
 >`case when json_valid(${submissions.machineCheck}) then json_extract(${submissions.machineCheck}, '$.matched') end`;
+
+/**
+ * CI と公開の課題で、API が GitHub で実行を確かめた結果 (`machine_check.ci.status`、07 §5.5)。
+ * CI の課題でなければ NULL。壊れた JSON も NULL にする (上と同じ理由)。
+ */
+export const machineCiStatusColumn = sql<
+  string | null
+>`case when json_valid(${submissions.machineCheck}) then json_extract(${submissions.machineCheck}, '$.ci.status') end`;
 
 /** 呼び出した講師が担当する受講者だけに絞る条件 (#38 の `assigned=mine` と同じ)。 */
 function assignedTo(caller: Caller) {
@@ -478,10 +487,18 @@ export function submittedRouteReasons(input: {
   taskKind: string | null;
   submissionMode: string | null;
   machineMatched: number | null;
+  /** `machine_check.ci.status`。CI の課題でなければ null。 */
+  machineCiStatus?: string | null;
 }): RouteReason[] {
   const reasons: RouteReason[] = [];
   if (input.submissionMode === "consult") reasons.push("consult");
   else if (input.machineMatched !== 1) reasons.push("machine-check");
+  // CI の照合 (07 §5.5)。食い違いと照合できなかったものを分ける (`forcedHumanReasons` と同じ)。
+  const ci = ciCheckStatusFrom(
+    input.machineCiStatus == null ? null : { status: input.machineCiStatus },
+  );
+  if (ci === "mismatch") reasons.push("ci-mismatch");
+  else if (ci === "unverifiable") reasons.push("ci-unverified");
   if (reasons.length === 0 && isAssessmentKind(input.taskKind ?? ""))
     reasons.push("unallowed-support");
   return reasons;
@@ -542,6 +559,7 @@ export async function reviewMetrics(
       verdict: submissions.verdict,
       submissionMode: submissions.submissionMode,
       machineMatched: machineMatchedColumn,
+      machineCiStatus: machineCiStatusColumn,
       reasons: sql<
         string | null
       >`(select r.route_reasons from ai_reviews r where r.submission_id = "submissions"."id" and r.outcome = 'escalated' order by r.created_at desc limit 1)`,
@@ -722,6 +740,7 @@ export async function taskBoard(
       taskKind: submissions.taskKind,
       submissionMode: submissions.submissionMode,
       machineMatched: machineMatchedColumn,
+      machineCiStatus: machineCiStatusColumn,
       confidence: aiReviews.confidence,
       routeReasons: aiReviews.routeReasons,
       rubricResults: aiReviews.rubricResults,

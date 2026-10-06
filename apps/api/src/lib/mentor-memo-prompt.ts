@@ -12,7 +12,7 @@ import type {
 import type { MentorMemoMaterial } from "@stella/shared/mentoring/weekly-memo";
 
 /** 指示と入力の組み立てを変えたら上げる。メモごとに記録する。 */
-export const MENTOR_MEMO_PROMPT_VERSION = "2026-10-06.1";
+export const MENTOR_MEMO_PROMPT_VERSION = "2026-10-06.2";
 
 const INSTRUCTIONS = `あなたは STELLA (Web 開発の研修) で、担当講師を手伝うアシスタントです。受講者 1 人の 1 週間 (月曜〜日曜、日本時間) の記録から、担当講師が 5 分で読める育成メモを書きます。
 
@@ -27,7 +27,7 @@ const INSTRUCTIONS = `あなたは STELLA (Web 開発の研修) で、担当講�
 - activity: その週に学習の記録がある日数、視聴の分数、完了したレッスン、提出の数。
 - passedTasks / passedTaskCount: その週に初めて合格した課題。
 - skills: スキルの水準ごとの数 (supported = 支援付き、independent = 自力で確認、retained = 時間を空けて確認) と、その週に上がったスキル。
-- stumbles: その週に担当講師へ送ったつまずきの知らせ (local-failures = 同じ課題で手元の失敗が続く、idle = 学習が止まる、assessment-b = 確認Bに落ちる、review-escalations = 人に回る提出が続く)。
+- stumbles: その週に担当講師へ送ったつまずきの知らせ (local-failures = 同じ課題で手元の失敗が続く、idle = 学習が止まる、assessment-b = 確認Bに落ちる、review-escalations = 人に回る提出が続く、hints-exhausted = 合格前にヒントを最後の段まで開いた)。ヒントを開くのは支援の記録で、罰ではありません。行き詰まっているかもしれない合図として読みます。
 - failureStreaks: 今も続いている手元の失敗。
 - support: その週の支援 (hint = ヒント、solution = 解答の表示、fixed-start = 固定した開始点、instructor = 講師の実装支援、ai-answer = AI の解答生成、ai-chat = AI チャット、consult = 講師への相談)。
 - reviews: その週の AI の一次レビュー (aiConfirmed = AI で合格、aiEscalated = 講師の確認に回った) と回った理由、満たせなかった必須項目、講師の判定 (humanPass・humanResubmit)。

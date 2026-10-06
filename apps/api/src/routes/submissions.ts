@@ -58,6 +58,7 @@ import {
 import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
 import {
   brokenRecordsOf,
+  machineCiStatusColumn,
   machineMatchedColumn,
   staffCommentsOf,
   submissionChecksOf,
@@ -170,6 +171,7 @@ interface QueueColumns {
   aiConfidence: string | null;
   aiProposedVerdict: string | null;
   machineMatched: number | null;
+  machineCiStatus: string | null;
   assigneeId: string | null;
   assigneeName: string | null;
   stageId: string | null;
@@ -185,6 +187,7 @@ function toQueueFields(s: SubmissionSummary, q: QueueColumns) {
           taskKind: s.taskKind,
           submissionMode: s.submissionMode,
           machineMatched: q.machineMatched,
+          machineCiStatus: q.machineCiStatus,
         })
       : []);
   return {
@@ -255,6 +258,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
         aiConfidence: latestAi.confidence,
         aiProposedVerdict: latestAi.proposedVerdict,
         machineMatched: machineMatchedColumn,
+        machineCiStatus: machineCiStatusColumn,
         assigneeId: learnerInstructors.instructorId,
         assigneeName: assignee.displayName,
         stageId: sections.stageId,

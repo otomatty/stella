@@ -79,6 +79,15 @@ export interface Env {
    */
   SKILL_SHEETS_BUCKET?: R2Bucket;
 
+  /**
+   * CI と公開 (`ci-deploy`) の課題の提出で、GitHub Actions の実行を GitHub の公開 API で確かめる
+   * ときのトークン (任意、07 §5.5)。未設定でも動く (未認証は送信元の IP ごとに 1 時間 60 回まで。
+   * Workers の送信元は共有なので、当たると照合できずに講師の確認待ちになる)。設定するなら、
+   * 権限を持たない fine-grained の個人用アクセストークン (Public Repositories (read-only)) にする。
+   * `wrangler secret put GITHUB_API_TOKEN`。値はログにも提出の記録にも残さない。
+   */
+  GITHUB_API_TOKEN?: string;
+
   /** 招待メールのリンク先 (受諾後に開くアプリ URL)。 未設定なら ALLOWED_ORIGINS の先頭。 */
   INVITE_REDIRECT_URL?: string;
 

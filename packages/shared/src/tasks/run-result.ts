@@ -8,6 +8,7 @@
  * 環境の問題を、受講者の力不足として扱わないための区別である。
  */
 
+import type { CiRunClaim } from "./ci-run.js";
 import type { RunnerId } from "./runners.js";
 
 export type StepStatus = "passed" | "failed" | "error" | "skipped";
@@ -91,6 +92,11 @@ export interface RunResult {
   manifestSha256: string;
   /** 実行時の配布記録から控えた教材の内容ハッシュ。旧 runner の結果では省略。 */
   taskContentHash?: string;
+  /**
+   * CI と公開 (`ci-deploy`) の課題で受講者が入力した実行・公開先の URL と、手元のコミット。
+   * URL の形を確かめたときだけ持つ。コミットは読めたときだけ。ほかの runner では省略 (07 §5.5)。
+   */
+  ci?: CiRunClaim;
 }
 
 /**
@@ -111,10 +117,15 @@ export function decideOutcome(
 /**
  * 提出してよい結果か。全部の手順が通り、提出するファイルがあること。
  * 環境診断は提出ファイルを持たない (`submit.files: []` を許す唯一の runner) ので、通れば提出できる。
+ * CI と公開の課題は、実行の URL と手元のコミットを控えていること (API が GitHub で照合する)。
  */
-export function canSubmit(result: Pick<RunResult, "outcome" | "files" | "runner">): boolean {
+export function canSubmit(
+  result: Pick<RunResult, "outcome" | "files" | "runner"> & Pick<Partial<RunResult>, "ci">,
+): boolean {
   return (
-    result.outcome === "passed" && (result.files.length > 0 || result.runner === "env-diagnose")
+    result.outcome === "passed" &&
+    (result.files.length > 0 || result.runner === "env-diagnose") &&
+    (result.runner !== "ci-deploy" || Boolean(result.ci?.commit))
   );
 }
 

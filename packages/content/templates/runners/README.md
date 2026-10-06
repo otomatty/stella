@@ -13,8 +13,9 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 | `db/` | `db` | Vitest + PGlite (PostgreSQL) | `db-01` | sql-basics, auth-basics |
 | `e2e/` | `e2e` | Playwright + Vite | `e2e-01` | ui-integration-basics, nextjs-basics, deploy-ops-basics |
 | `next-app/` | `next-app` | Next.js (`next build`) + Playwright | `next-app-01` | nextjs-basics |
+| `ci-deploy/` | `ci-deploy` | GitHub Actions (`node --test`) + GitHub Pages | `ci-deploy-01` | deploy-ops-basics |
 
-`static-preview`・`env-diagnose` は Node.js の道具を使わないので、テンプレートは無い。`ci-deploy` は手元では実行しない (07 §5.5)。
+`static-preview`・`env-diagnose` は Node.js の道具を使わないので、テンプレートは無い。`ci-deploy` はテストを手元では動かさず、受講者の GitHub Actions が動かす (下の「CI と公開」、07 §5.5)。
 
 ## 中身
 
@@ -38,6 +39,16 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 - **API は Hono。** `app.request()` でポートを開かずにテストでき、ポートの衝突や Windows のファイアウォールの確認が起きない。Express の版は要るときに足す。
 - **DB は PGlite。** Docker を入れずに PostgreSQL を動かす (07 §5.2)。1 つで約 0.8GB のメモリを使い、作るのに数秒かかるので、空の DB を 1 回作って `clone()` で複製し、テストのファイルは 1 つずつ実行する。
 - **Storybook はブラウザーを使わずに確かめる。** 状態見本 (`*.stories.jsx`) を `composeStories` で読み込み、jsdom で表示して `play` の確認を通す。`npm run storybook` で受講者が画面でも見られる。
+
+## CI と公開 (`ci-deploy/`)
+
+受講者は自分の GitHub の公開リポジトリに push し、GitHub Actions の実行が成功したら、拡張に実行の URL と公開先の URL を入力して提出する。拡張は URL の形と、ファイルがコミット済みかだけを確かめる。提出を受けた API が GitHub の公開 API で、実行が成功で終わったこと・同じコミットの実行であること・課題のワークフローの実行であることを確かめる (07 §5.5)。
+
+- `task-fields.json` の `ci.workflow` (確かめるワークフローのパス) を課題の `task.json` に写す。`ci-deploy` の課題に必須で、`.github/workflows/` の下の `.yml`・`.yaml` にし、`submit.files` か `protected` に当たるようにする (`content:check` が止める)。
+- `starter/.github/workflows/deploy.yml` は、`main` への push でテスト (`npm test` = `node --test`) を実行し、通ったら `site/` を GitHub Pages に公開する。外部の action はコミットで固定し、版をコメントと環境台帳の `ci.actions` に残す。権限は既定で `contents: read`、公開の権限 (`pages: write`・`id-token: write`) は `deploy` のジョブだけに渡し、チェックアウトの認証情報は残さない (`persist-credentials: false`)。
+- 依存パッケージを持たない (Node.js のテストランナーだけを使う) ので、CI に lockfile と `npm ci` が要らない。依存を足す課題は、ほかのテンプレートと同じく版を固定し、lockfile を置き、ワークフローに `npm ci` を足す。
+- 受講者のリポジトリでは、課題フォルダーがリポジトリの一番上になる (Actions は一番上の `.github/workflows/` だけを読む)。課題文に、公開リポジトリにすること・Pages の公開元を「GitHub Actions」にすることを書く。
+- `bun run content:check` は、解答例を重ねた配布ファイルにワークフローがそろうことだけを確かめる (CI は GitHub で動く)。テンプレートのテストが通ることは `templates.test.ts` が `node --test` で確かめる。
 
 ## 道具の版を上げる
 

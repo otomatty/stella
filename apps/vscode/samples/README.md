@@ -25,6 +25,13 @@
 | `db/` | `db` | `src/todos.js` の `listOpenTodos` を `where done = false` で絞る |
 | `e2e/` | `e2e` | `src/main.js` で、追加したあとに入力欄を空に戻してフォーカスする |
 | `next-app/` | `next-app` | `app/layout.jsx` の `metadata` に `title: "ToDo"` を足す |
+| `ci-deploy/` | `ci-deploy` | `.github/workflows/deploy.yml` の `deploy` ジョブに `needs: test` を足し、テストが通ってから公開する (下記) |
+
+`ci-deploy/` はテストを手元で動かさない (GitHub Actions が動かす)。手元の確認は、実行の URL と公開先の URL を
+尋ねて形を確かめ、Git でコミット済みかを確かめるだけ。試すときは、見本を別の場所に写して `git init`・コミットし、
+「課題を確認する」で URL を入れる (`https://github.com/<owner>/<repo>/actions/runs/<番号>` と `https://…`)。
+コミット前は「コミットしていないファイル」、コミット後は「すべて通りました」になる。実際の GitHub への push と
+API の照合 (GitHub の公開 API) は手で確かめる (自分の公開リポジトリに push し、Pages を GitHub Actions から公開する設定にする)。
 
 - 最初の確認は `npm ci` をするので、ネットワークが要る。`e2e`・`next-app` はテスト用の Chromium もダウンロードする。2 回目からは「準備済み」で省略される。
 - 定義の正しさとテンプレートとの一致は `src/runner/samples.test.ts`・`templates.test.ts` が確かめる。依存パッケージを入れて動かす確認はネットワークが要るので、この手順で手で行う。
@@ -37,7 +44,9 @@
 Linux の CI と単体テストでは、Windows・macOS の分岐を OS を差し替えて確かめている。実機では次を確かめ、
 OS・Node.js・npm の版と、各見本の初回・2 回目の所要時間を Issue に記録する。
 
-**共通 (見本 9 つそれぞれ):** 直す前は「直すところがあります」、直すと「すべて通りました」になる。2 回目は「依存パッケージの準備」が「準備済み」になる。
+**共通 (Node.js の道具を使う見本 9 つそれぞれ):** 直す前は「直すところがあります」、直すと「すべて通りました」になる。2 回目は「依存パッケージの準備」が「準備済み」になる。
+
+**共通 (`ci-deploy`):** 自分の公開リポジトリに見本を push し (Pages の公開元を「GitHub Actions」にする)、Actions の実行の URL と公開先の URL を入れて確認・提出する。LMS の講師のレビュー画面で「GitHub の照合: 照合できました」になり、実行と公開先のリンクが開ける。失敗した実行・別のコミットの実行の URL では「提出と食い違います」で講師の確認待ちになる。
 
 **Windows**
 
@@ -49,6 +58,7 @@ OS・Node.js・npm の版と、各見本の初回・2 回目の所要時間を I
 - [ ] 長いパス: 課題フォルダーまで 200 文字を超える深さに `storybook`・`next-app` を置いて通る (`LongPathsEnabled` は既定のまま)。
 - [ ] 改行: 提出ファイルを CRLF で保存しても、整形と配布ファイルの照合で要修正にならない。
 - [ ] ファイアウォール: `api-test` の `npm start`、`e2e`・`next-app` の確認で、Windows Defender ファイアウォールの許可の確認が出ない。
+- [ ] `ci-deploy`: Git for Windows の `git.exe` が PATH から見つかる。コミット前は「コミットしていないファイル」、コミット後は通る。`core.autocrlf=true` (Git for Windows の既定) でも、コミット済みのファイルが「変更あり」にならない。Git の無い環境では「Git が見つかりません」になる。
 
 **macOS**
 
@@ -56,3 +66,4 @@ OS・Node.js・npm の版と、各見本の初回・2 回目の所要時間を I
 - [ ] Apple Silicon (あれば Intel も) で `npm ci` が通る (ネイティブ部品 `@rolldown/binding-darwin-*`・`@next/swc-darwin-*`)。
 - [ ] 中断・時間切れのあと、アクティビティモニタに `node`・`chrome-headless-shell` が残らない。
 - [ ] ダウンロードした Chromium が Gatekeeper に止められずに起動する。
+- [ ] `ci-deploy`: Xcode Command Line Tools の `/usr/bin/git` と Homebrew の git のどちらでも、コミット前は「コミットしていないファイル」、コミット後は通る。Dock から起動した VS Code でも Git が見つかる。

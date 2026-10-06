@@ -393,6 +393,13 @@
       "when": 1791331200009,
       "tag": "0057_task_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "6",
+      "when": 1791331200011,
+      "tag": "0059_task_help_opens_opened_idx",
+      "breakpoints": true
     }
   ]
 }

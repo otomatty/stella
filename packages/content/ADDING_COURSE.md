@@ -104,6 +104,7 @@ modules/<unit>/
   ````
 
 - `protected`・`checks`・`static` は拡張用manifestと同じ形です。`.stella/task.json` は生成時に環境要件を解決し、実行に必要な項目だけを取り出します。任意コマンドは定義できません。
+- CI と公開の課題 (`"runner": "ci-deploy"`) は、確かめる GitHub Actions のワークフローを `"ci": { "workflow": ".github/workflows/deploy.yml" }` と書きます (必須。ほかの runner には書けません)。パスは受講者のリポジトリの一番上からで、`.github/workflows/` の下の `.yml`・`.yaml` に限り、`submit.files` か `protected` に当たるようにします (提出してレビューで読むか、配布して改変を照合する)。受講者は自分の公開リポジトリに push し、Actions の実行が成功したら拡張に実行の URL と公開先の URL を入力して提出します。提出を受けた API が GitHub の公開 API で、実行が成功で終わったこと・手元と同じコミットの実行であること・このワークフローの実行であることを確かめ、確かめられない・食い違う提出は講師の確認待ちにします (07 §5.5)。課題文には、公開リポジトリにすること・課題フォルダーをリポジトリの一番上にすること・Pages などの公開の設定を書きます。ひな形は `templates/runners/ci-deploy/` です。`content:check` は CI を動かさず、解答例を重ねた配布ファイルにワークフローがそろうことだけを確かめます。
 
 知識問題は各設問の見出しを `### Q1. 設問文` とし、直後に `<!-- kind: single; skills: html-document -->` を書きます。種別は `single` / `multiple` / `boolean`、スキルはカンマ区切りです。選択肢と `<details>` の解答は旧クイズと同じ形で、複数選択の正解は `**A, C** — 解説` と書きます。正誤は `A. 正しい` / `B. 誤り` の2択です。新形式のSRSカードはこの知識問題だけから作り、設問のスキルIDを返します。
 

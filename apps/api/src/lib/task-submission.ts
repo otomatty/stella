@@ -35,6 +35,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ApiError, type Caller } from "./authz.js";
+import { checkCiRun } from "./ci-run-check.js";
 import { withResourceLock } from "./resource-lock.js";
 import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
@@ -102,6 +103,15 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   } catch (e) {
     throw new ApiError(e instanceof Error ? e.message : "提出が不正です", 400);
   }
+  // CI と公開の課題は、申告した GitHub Actions の実行を GitHub の公開 API で確かめ、結果を
+  // 機械の照合と一緒に残す (07 §5.5)。照合できない・食い違うときは人に回る (forcedHumanReasons)。
+  // 提出の時点で 1 回だけ問い合わせ、応答は 5 秒で打ち切る。GitHub が一時的に落ちていても
+  // 待ち行列でやり直さず、講師が実行と公開先のリンクを開いて確かめる (人のキューで必ず受け止める)。
+  if (bundle.manifest.runner === "ci-deploy" && input.localResult.ci)
+    verified.check.ci = await checkCiRun(
+      { claim: input.localResult.ci, workflow: bundle.manifest.ci?.workflow },
+      { token: env.GITHUB_API_TOKEN },
+    );
   const bucket = env.SUBMISSIONS_BUCKET;
   if (!bucket) throw new ApiError("提出ファイルの保存先が未設定です", 503);
   const id = crypto.randomUUID();
