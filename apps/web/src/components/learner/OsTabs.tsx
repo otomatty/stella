@@ -25,12 +25,13 @@ import { AppShellContext } from "@/components/shell/app-shell-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   detectBrowserOs,
-  getViewOs,
+  getViewOsState,
   type OsSource,
   resolvePreferredOs,
   setViewOs,
   subscribeViewOs,
   updateMyOsPreference,
+  viewOsFor,
 } from "@/lib/os-preference";
 import { cn } from "@/lib/utils";
 
@@ -44,14 +45,17 @@ export function OsTabs({
   const shell = useContext(AppShellContext);
   const detected = detectBrowserOs();
   const preferred = resolvePreferredOs(shell?.profile?.os_preference, detected);
-  const viewing = useSyncExternalStore(subscribeViewOs, getViewOs, getViewOs);
+  // タブで選んだ OS は、選んだ本人の画面でだけ使う (ログアウト後の別アカウントに持ち越さない)。
+  const owner = shell?.profile?.id ?? null;
+  const viewState = useSyncExternalStore(subscribeViewOs, getViewOsState, getViewOsState);
+  const viewing = viewOsFor(viewState, owner);
   const ordered = orderedOsBlocks(blocks);
   const active = pickOsBlock(ordered, viewing ?? preferred.os)?.os;
   if (!active) return null;
 
   return (
     <div className="my-5 rounded-md border border-border px-4 pb-1">
-      <Tabs value={active} onValueChange={(value) => isOsName(value) && setViewOs(value)}>
+      <Tabs value={active} onValueChange={(value) => isOsName(value) && setViewOs(owner, value)}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <TabsList aria-label="OS ごとの手順">
             {ordered.map((block) => (
@@ -64,6 +68,7 @@ export function OsTabs({
             os={preferred.os}
             source={preferred.source}
             detected={detected}
+            owner={owner}
             canSave={!!shell?.backendEnabled && !!shell.profile}
             onSaved={shell?.onProfileUpdated}
           />
@@ -83,12 +88,14 @@ function OsPreferenceNote({
   os,
   source,
   detected,
+  owner,
   canSave,
   onSaved,
 }: {
   os: OsName;
   source: OsSource;
   detected: OsName | null;
+  owner: string | null;
   canSave: boolean;
   onSaved?: () => Promise<void>;
 }) {
@@ -98,7 +105,7 @@ function OsPreferenceNote({
   const choose = async (next: OsName | null) => {
     setEditing(false);
     // 設定を変えたら、覗いていたタブより新しい既定を優先する。
-    setViewOs(canSave ? null : next);
+    setViewOs(owner, canSave ? null : next);
     if (!canSave) return;
     setSaving(true);
     try {

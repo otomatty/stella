@@ -79,6 +79,7 @@ npm --version
 - ブロックの中には見出し・リスト・コードブロック・画像を書ける。コードブロックの中の `:::` は記法として扱わない
 - WindowsはPowerShell、macOSはターミナル(06 §3)。1つのブロックに両方のOSのコマンドを混ぜない。PowerShellのnpmは `npm.cmd` と書く(実行ポリシーで `npm.ps1` が止まることがあるため)
 - OSごとの画像は `<名前>.windows.png` / `<名前>.macos.png` の対にしてトピックの `assets/` に置き、それぞれのOSのブロックの中で `![説明](t1-…/assets/<名前>.windows.png)` の形で参照する。ブロックの外やスライドでは使わない。課題文には教材内の画像を使えない(配布されないため)
+- 画像を差し替えるときは、ファイル名を変える(例: `install.v2.windows.png` と `install.v2.macos.png`)。教材の画像はファイル名で決まる固定のURLで配信するので、同じ名前で上書きすると、古い画像がブラウザーやCDNのキャッシュに残る
 - 配布PDFは、`course.json` に `"pdfByOs": true` を書いた講座(`dev-env-basics`)ではOSごとに別のPDFになる。それ以外は1つのPDFに「Windows の場合」「macOS の場合」の見出しで両方を並べる
 - VS Codeの拡張は画像を表示できない。画像だけに頼らず、操作は文でも書く
 

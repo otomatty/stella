@@ -52,17 +52,33 @@ export function detectBrowserOs(): OsName | null {
 }
 
 // --- タブで選んでいる OS (設定とは別。ページをまたいで同じタブを開く)
+//
+// 選んだ人 (プロフィール ID。未ログインのデモは null) と組で持ち、別の人の画面では使わない。
+// ログアウトの経路で消し忘れても、次にログインした人の設定を前の人の選択で上書きしない。
 
-let viewOs: OsName | null = null;
+export interface ViewOsState {
+  owner: string | null;
+  os: OsName;
+}
+
+let viewOs: ViewOsState | null = null;
 const listeners = new Set<() => void>();
 
-export function getViewOs(): OsName | null {
+/** `useSyncExternalStore` 用の状態そのもの。表示に使う OS は `viewOsFor` で取り出す。 */
+export function getViewOsState(): ViewOsState | null {
   return viewOs;
 }
 
-export function setViewOs(os: OsName | null): void {
-  if (viewOs === os) return;
-  viewOs = os;
+/** `owner` が選んだタブの OS。別の人が選んだもの・選んでいないときは null。 */
+export function viewOsFor(state: ViewOsState | null, owner: string | null): OsName | null {
+  return state && state.owner === owner ? state.os : null;
+}
+
+/** タブで選んだ OS を覚える。null で忘れる (設定どおりに戻す)。 */
+export function setViewOs(owner: string | null, os: OsName | null): void {
+  const next = os ? { owner, os } : null;
+  if (viewOs?.owner === next?.owner && viewOs?.os === next?.os) return;
+  viewOs = next;
   for (const listener of listeners) listener();
 }
 

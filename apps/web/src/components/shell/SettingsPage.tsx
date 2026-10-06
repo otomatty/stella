@@ -211,7 +211,7 @@ const OsPreferenceCard = ({
     setSaving(true);
     try {
       await updateMyOsPreference(next);
-      setViewOs(null);
+      setViewOs(profile.id, null);
       await onProfileUpdated();
       toast.success("教材の OS を保存しました");
     } catch (err) {

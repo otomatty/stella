@@ -601,7 +601,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 - **Web:** まとめ・課題文のテキストレッスンで、OSのタブにする。既定は、プロフィールの設定(`profiles.os_preference`、`POST /api/me`)、端末からの推定、Windowsの順に決める。タブの横に「あなたのOS: Windows(変更)」を出す。「変更」と設定画面の「教材のOS」から保存できる。タブの切り替えでは、設定を変えない。
 - **VS Code:** レッスンのドキュメントと課題文のパネル(`STELLA: 課題文を表示する`)で、`process.platform`のOSのタブを開いておく。WebViewはスクリプトを使わず、ラジオボタンとCSSで切り替える。生のHTMLは、今までどおり文字として出す。
 - **画像:** `<名前>.windows.png` / `<名前>.macos.png`の対で、トピックの`assets/`に置く。R2へは図解と同じ経路で上げる(SVGに加えてPNG・WebP・JPEG)。
-- **PDF:** `course.json`に`"pdfByOs": true`を書いた講座(`dev-env-basics`)では、OS別のブロックを含むまとめ・課題文をOSごとのPDFにする。資料タブには「… (Windows).pdf」「… (macOS).pdf」が並ぶ。それ以外は、1つのPDFに「Windows の場合」「macOS の場合」の見出しで両方を並べる。OSで分けない資料のR2キーと版履歴は変わらない。分け方を変えたレッスンでは、seedが使わなくなった資料の行を消す。
+- **PDF:** `course.json`に`"pdfByOs": true`を書いた講座(`dev-env-basics`)では、OS別のブロックを含むまとめ・課題文をOSごとのPDFにする。資料タブには「… (Windows).pdf」「… (macOS).pdf」が並ぶ。それ以外は、1つのPDFに「Windows の場合」「macOS の場合」の見出しで両方を並べる。OSで分けない資料のR2キーと版履歴は変わらない。分け方を変えたレッスンでは、作らなくなった資料に`archived_at`を付けて受講者の一覧から外す。行と版履歴は残すので、staffは旧版を取れる。
 - **検査:** `content:check`(`scripts/check-os-blocks.ts`)が、記法の誤り、片方のOSしか無い組、書けない場所(スライド・知識問題・ヒントなど)のブロック、対になっていない画像を落とす。
 - **環境診断:** OSごとに確認方法を変える必要はないと判断した。拡張はシェルを通さず、Windowsでも`npm.cmd`ではなく`npm-cli.js`をNode.jsで直接起動する(§5.5)。PowerShellの実行ポリシー(`npm.ps1`)は、拡張の診断に影響しない。影響を受けるのは受講者がターミナルで打つコマンドなので、教材のWindowsのブロックに`npm.cmd --version`と書く。道具の探し方(PATHの区切り、`PATHEXT`、npm本体の場所)は、既にOSごとに分けている。
 

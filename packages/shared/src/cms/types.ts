@@ -148,6 +148,11 @@ export interface LessonMaterialRow {
   source: "upload" | "auto";
   created_by: string | null;
   created_at: string;
+  /**
+   * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えた旧資料)。
+   * staff が `includeArchived=1` で取ったときだけ並ぶ。版履歴から旧版を取れる。
+   */
+  archived_at?: string | null;
 }
 
 /**

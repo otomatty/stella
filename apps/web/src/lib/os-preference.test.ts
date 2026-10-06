@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   detectOs,
-  getViewOs,
+  getViewOsState,
   resolvePreferredOs,
   setViewOs,
   subscribeViewOs,
+  viewOsFor,
 } from "./os-preference";
 
 const UA = {
@@ -54,13 +55,34 @@ describe("タブで選んだ OS", () => {
   it("変わったときだけ購読者に知らせる", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeViewOs(listener);
-    setViewOs("macos");
-    setViewOs("macos");
-    expect(getViewOs()).toBe("macos");
+    setViewOs("learner", "macos");
+    setViewOs("learner", "macos");
+    expect(viewOsFor(getViewOsState(), "learner")).toBe("macos");
     expect(listener).toHaveBeenCalledTimes(1);
     unsubscribe();
-    setViewOs(null);
+    setViewOs("learner", null);
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(getViewOs()).toBeNull();
+    expect(getViewOsState()).toBeNull();
+  });
+
+  it("選んだ本人の画面でだけ使い、ログアウト後の別アカウントには持ち越さない", () => {
+    setViewOs("learner", "macos");
+    const state = getViewOsState();
+    expect(viewOsFor(state, "learner")).toBe("macos");
+    // 同じ SPA で別の受講者がログインしても、前の人の選択では設定を上書きしない
+    expect(viewOsFor(state, "next-learner")).toBeNull();
+    expect(resolvePreferredOs("windows", "macos").os).toBe("windows");
+    // 未ログイン (デモ) の選択とログイン後も混ぜない
+    expect(viewOsFor(state, null)).toBeNull();
+    setViewOs(null, "windows");
+    expect(viewOsFor(getViewOsState(), "learner")).toBeNull();
+    expect(viewOsFor(getViewOsState(), null)).toBe("windows");
+    // 持ち主が変わったら同じ OS でも知らせる
+    const listener = vi.fn();
+    const unsubscribe = subscribeViewOs(listener);
+    setViewOs("learner", "windows");
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    setViewOs("learner", null);
   });
 });

@@ -429,6 +429,12 @@ export const lessonMaterials = sqliteTable(
       .default("upload"),
     createdBy: text("created_by"),
     createdAt: tsNow("created_at"),
+    /**
+     * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えたレッスンの旧資料)。
+     * 行と版履歴は残して staff が旧版を取れるようにし、受講者の一覧とダウンロードからは外す。
+     * 同じ資料をまた作るようになったら seed が null に戻す。
+     */
+    archivedAt: ts("archived_at"),
   },
   (t) => ({
     lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),

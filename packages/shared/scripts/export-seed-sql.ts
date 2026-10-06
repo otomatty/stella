@@ -515,8 +515,10 @@ interface PdfManifestEntry {
  * 保持は仕様)。
  *
  * OS ごとに分ける・分けないを切り替えたレッスンでは、マニフェストに無くなった auto の
- * 行 (と版履歴) を消す。残すと「まとめ.pdf」と「まとめ (Windows).pdf」が並び、古い方を
- * 受講者が開いてしまう。マニフェストに載らないレッスン (講座を絞ったローカル実行) は触らない。
+ * 行に `archived_at` を付ける。受講者の一覧とダウンロードからは外れる (「まとめ.pdf」と
+ * 「まとめ (Windows).pdf」が並んで古い方を開かないように) が、行と版履歴は残すので staff は
+ * 旧版を取れる。また作るようになった資料は upsert が `archived_at` を戻し、版履歴の続きに
+ * 積む。マニフェストに載らないレッスン (講座を絞ったローカル実行) は触らない。
  */
 function emitPdfMaterials() {
   const manifestPath = process.env.PDF_MANIFEST;
@@ -542,7 +544,7 @@ function emitPdfMaterials() {
         "insert into lesson_materials (id, lesson_id, path, file_name, size_bytes, mime_type, source, created_by, created_at)",
         `select '${materialId}', l.id, '${esc(e.key)}', ${strLit(e.fileName)}, ${e.sizeBytes}, 'application/pdf', 'auto', null, ${nowExpr()}`,
         `from lessons l where l.id = '${lessonId}'`,
-        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source;",
+        "on conflict (id) do update set path = excluded.path, file_name = excluded.file_name, size_bytes = excluded.size_bytes, mime_type = excluded.mime_type, source = excluded.source, archived_at = null;",
       ].join(" "),
     );
     lines.push(
@@ -556,7 +558,7 @@ function emitPdfMaterials() {
   }
   for (const [lessonId, materialIds] of current) {
     lines.push(
-      `delete from lesson_materials where lesson_id = '${lessonId}' and source = 'auto' and id not in (${materialIds.map((id) => `'${id}'`).join(", ")});`,
+      `update lesson_materials set archived_at = ${nowExpr()} where lesson_id = '${lessonId}' and source = 'auto' and archived_at is null and id not in (${materialIds.map((id) => `'${id}'`).join(", ")});`,
     );
   }
 }

@@ -559,21 +559,22 @@ describe("export-seed-sql (自動生成 PDF)", () => {
       rmdirSync(dir);
     }
   }
-  const entry = (os?: "windows" | "macos") => ({
+  const entry = (os?: "windows" | "macos", hash = `hash-${os ?? "both"}`) => ({
     tenantId: "ses",
     courseSlug: "dev-env-basics",
     lessonId: "doc-0-1",
     kind: "doc",
     ...(os ? { os } : {}),
-    hash: `hash-${os ?? "both"}`,
-    key: `lesson-pdf/ses/dev-env-basics/doc-0-1/hash-${os ?? "both"}.pdf`,
+    hash,
+    key: `lesson-pdf/ses/dev-env-basics/doc-0-1/${hash}.pdf`,
     fileName: os ? `0-1 まとめ (${os}).pdf` : "0-1 まとめ.pdf",
     sizeBytes: 10,
   });
 
-  it("OS ごとに分けた PDF は OS ごとの資料にし、分け方を変えたレッスンの古い資料を消す", () => {
+  it("OS ごとに分けた PDF は OS ごとの資料にし、分け方を変えても旧資料と版履歴を残して一覧から外す", () => {
     const root = fileURLToPath(new URL("../../..", import.meta.url));
     const combined = pdfSql([entry()]);
+    const combinedRevised = pdfSql([entry(undefined, "hash-both-2")]);
     const byOs = pdfSql([entry("windows"), entry("macos")]);
     const db = new DatabaseSync(":memory:");
     try {
@@ -583,33 +584,45 @@ describe("export-seed-sql (自動生成 PDF)", () => {
         db.exec(readFileSync(join(root, "apps/api/drizzle", file), "utf8"));
       db.exec("pragma foreign_keys = on");
       db.exec(exportSql(true));
-      const rows = () =>
-        db
-          .prepare(
-            "select m.id, m.file_name, (select count(*) from lesson_material_versions v where v.material_id = m.id) as versions from lesson_materials m where m.source = 'auto' order by m.file_name",
-          )
-          .all();
-      const base = stableUuid("lesson-material-pdf:ses:dev-env-basics:doc-0-1");
+      const id = (os?: string) =>
+        stableUuid(`lesson-material-pdf:ses:dev-env-basics:doc-0-1${os ? `:${os}` : ""}`);
+      /** 資料ごとの [配っているか, 版の数, 最新版のキー]。 */
+      const state = () =>
+        Object.fromEntries(
+          (
+            db
+              .prepare(
+                "select m.id, m.archived_at is null as listed, m.path, (select count(*) from lesson_material_versions v where v.material_id = m.id) as versions from lesson_materials m where m.source = 'auto'",
+              )
+              .all() as { id: string; listed: number; path: string; versions: number }[]
+          ).map((r) => [r.id, [r.listed === 1, r.versions, r.path.split("/").pop()]]),
+        );
       db.exec(combined);
-      expect(rows()).toEqual([{ id: base, file_name: "0-1 まとめ.pdf", versions: 1 }]);
+      expect(state()).toEqual({ [id()]: [true, 1, "hash-both.pdf"] });
+      // 分ける: 旧資料は行と版履歴を残し、一覧からだけ外す
       db.exec(byOs);
-      expect(rows()).toEqual([
-        {
-          id: stableUuid("lesson-material-pdf:ses:dev-env-basics:doc-0-1:macos"),
-          file_name: "0-1 まとめ (macos).pdf",
-          versions: 1,
-        },
-        {
-          id: stableUuid("lesson-material-pdf:ses:dev-env-basics:doc-0-1:windows"),
-          file_name: "0-1 まとめ (windows).pdf",
-          versions: 1,
-        },
-      ]);
+      expect(state()).toEqual({
+        [id()]: [false, 1, "hash-both.pdf"],
+        [id("windows")]: [true, 1, "hash-windows.pdf"],
+        [id("macos")]: [true, 1, "hash-macos.pdf"],
+      });
       // 同じマニフェストをもう一度流しても版は増えない
       db.exec(byOs);
-      expect(rows().map((r) => r.versions)).toEqual([1, 1]);
-      db.exec(combined);
-      expect(rows()).toEqual([{ id: base, file_name: "0-1 まとめ.pdf", versions: 1 }]);
+      expect(state()[id("windows")]).toEqual([true, 1, "hash-windows.pdf"]);
+      // まとめる: 前の資料に戻し、版履歴の続きに積む。OS ごとの資料は残して外す
+      db.exec(combinedRevised);
+      expect(state()).toEqual({
+        [id()]: [true, 2, "hash-both-2.pdf"],
+        [id("windows")]: [false, 1, "hash-windows.pdf"],
+        [id("macos")]: [false, 1, "hash-macos.pdf"],
+      });
+      // また分ける: 中身が同じなら版を増やさずに戻す
+      db.exec(byOs);
+      expect(state()).toEqual({
+        [id()]: [false, 2, "hash-both-2.pdf"],
+        [id("windows")]: [true, 1, "hash-windows.pdf"],
+        [id("macos")]: [true, 1, "hash-macos.pdf"],
+      });
     } finally {
       db.close();
     }
