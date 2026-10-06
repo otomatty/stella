@@ -28,6 +28,11 @@ describe("loadReadings", () => {
     });
   });
 
+  it("__proto__ も普通の表記として残す", () => {
+    writeFileSync(file, '{"__proto__":"アンダースコア プロト"}', "utf8");
+    expect(Object.keys(loadReadings(file))).toEqual(["__proto__"]);
+  });
+
   it("ファイルが無ければ空の辞書", () => {
     expect(loadReadings(join(dir, "missing.json"))).toEqual({});
   });

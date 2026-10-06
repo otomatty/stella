@@ -68,7 +68,6 @@ export function loadReadings(file: string): Readings {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error(`${shown}: 読み辞書は { "表記": "読み" } のオブジェクトにしてください`);
   }
-  const readings: Readings = {};
   for (const [key, value] of Object.entries(parsed)) {
     if (typeof value !== "string") {
       throw new Error(`${shown}: "${key}" の読みが文字列ではありません (${JSON.stringify(value)})`);
@@ -76,9 +75,9 @@ export function loadReadings(file: string): Readings {
     if (value.trim() === "") {
       throw new Error(`${shown}: "${key}" の読みが空です`);
     }
-    readings[key] = value;
   }
-  return readings;
+  // 検査だけして、パース結果をそのまま返す (`{}` へ写すと `__proto__` のキーが消える)。
+  return parsed as Readings;
 }
 
 export function loadGlobalReadings(): Readings {
