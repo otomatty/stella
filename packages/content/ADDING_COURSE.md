@@ -90,6 +90,8 @@ LMS は7状態と「VS Code で開く」を表示します。課題文のレッ�
 
 `fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・README・`.stella/task.json` は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを記録します (その課題の提出は「支援付き」になります)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
 
+WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きい講座は `course.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かない講座は1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
+
 ## A. 新しい講座を作る（既定）
 
 ### 1. slug を決める
@@ -223,7 +225,7 @@ bun run --filter=@stella/content materials -- courses/<slug>/modules
 
 ```bash
 bun run db:seed
-bun run --filter=@stella/content upload    # 図解・サムネイルをローカル R2 に入れる
+bun run --filter=@stella/content upload    # 図解・OS 別の画像・サムネイルをローカル R2 に入れる
 ```
 
 manifest が `courses/` を全部読むので、`course.json` を置いた講座は seed に載る。コードの COURSE_SLUG 固定は不要。ローカル seed は各講座に `seed-learner` を登録する。本番では受講者を LMS 上で割り当てる。

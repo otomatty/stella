@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { TASK_BUNDLE_LIMITS } from "../../shared/src/tasks/catalog.js";
 import { buildContentManifest } from "./manifest.js";
-import { collectPdfTargets } from "./material-pdf.js";
+import { collectPdfTargets, pdfFileName, pdfObjectKey, pdfSourceHash } from "./material-pdf.js";
 import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -253,5 +253,47 @@ describe("format 2 の教材", () => {
           t.source.includes("解答例と解説"),
       ),
     ).toBe(true);
+  });
+  it("OS 別のブロックを含むまとめは、pdfByOs の講座では OS ごとの PDF にする", () => {
+    const root = fixture();
+    const course = join(root, "courses/dev-env-basics");
+    const doc = join(course, "modules/m0-first-page/l1-save-and-preview/doc.md");
+    writeFileSync(
+      doc,
+      `${readFileSync(doc, "utf8")}\n:::os windows\nPowerShell で確認します。\n:::\n\n:::os macos\nターミナルで確認します。\n:::\n`,
+    );
+    const manifest = buildContentManifest(join(root, "courses"));
+    expect(manifest.pdfByOs).toEqual(["dev-env-basics"]);
+    const byOs = collectPdfTargets(manifest).filter((t) => t.lessonId === "doc-0-1");
+    expect(byOs.map((t) => t.os)).toEqual(["windows", "macos"]);
+    expect(byOs.map((t) => pdfFileName(t))).toEqual([
+      "0-1 まとめ (Windows).pdf",
+      "0-1 まとめ (macOS).pdf",
+    ]);
+    const [windows, macos] = byOs.map((t) => pdfObjectKey(t, pdfSourceHash(t)));
+    expect(windows).not.toBe(macos);
+    // OS 別のブロックが無い課題文は 1 つのまま
+    expect(
+      collectPdfTargets(manifest)
+        .filter((t) => t.kind === "task")
+        .map((t) => t.os),
+    ).toEqual([undefined]);
+
+    // pdfByOs を外した講座は、1 つの PDF に両方を並べる (キーは OS を持たない計算のまま)
+    const config = JSON.parse(readFileSync(join(course, "course.json"), "utf8"));
+    delete config.pdfByOs;
+    writeFileSync(join(course, "course.json"), JSON.stringify(config));
+    const combined = collectPdfTargets(buildContentManifest(join(root, "courses"))).filter(
+      (t) => t.lessonId === "doc-0-1",
+    );
+    expect(combined).toHaveLength(1);
+    expect(combined[0]?.os).toBeUndefined();
+    expect(pdfFileName(combined[0] ?? byOs[0])).toBe("0-1 まとめ.pdf");
+    expect(pdfSourceHash({ ...byOs[0], os: undefined })).toBe(
+      pdfSourceHash(combined[0] ?? byOs[0]),
+    );
+    config.pdfByOs = "yes";
+    writeFileSync(join(course, "course.json"), JSON.stringify(config));
+    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/pdfByOs/);
   });
 });

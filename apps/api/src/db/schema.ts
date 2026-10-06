@@ -118,6 +118,8 @@ export const profiles = sqliteTable(
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     weeklyHours: real("weekly_hours").notNull().default(35),
     learningStartDate: text("learning_start_date"),
+    /** 教材の OS 別ブロック (07 §11) で既定に開く OS。null は端末から推定する。 */
+    osPreference: text("os_preference", { enum: ["windows", "macos"] }),
     createdAt: tsNow("created_at"),
   },
   (t) => ({
@@ -464,6 +466,12 @@ export const lessonMaterials = sqliteTable(
       .default("upload"),
     createdBy: text("created_by"),
     createdAt: tsNow("created_at"),
+    /**
+     * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えたレッスンの旧資料)。
+     * 行と版履歴は残して staff が旧版を取れるようにし、受講者の一覧とダウンロードからは外す。
+     * 同じ資料をまた作るようになったら seed が null に戻す。
+     */
+    archivedAt: ts("archived_at"),
   },
   (t) => ({
     lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),

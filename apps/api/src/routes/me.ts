@@ -2,7 +2,7 @@
  * 認証済みユーザー自身のプロフィール API (旧 auth.ts の profiles 直アクセスの置き換え)。
  *
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
- *   POST /api/me  … 表示名・週の時間・開始日の自己更新 / 未招待は invite_required
+ *   POST /api/me  … 表示名・週の時間・開始日・教材の OS の自己更新 / 未招待は invite_required
  *
  * role / tenant / email は招待とログイン (JWT) が真実なので、
  * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
@@ -13,6 +13,7 @@
 
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
+import { parseOsPreference } from "@stella/shared/markdown/os-blocks";
 import { parsePaceSettings } from "@stella/shared/study/pace";
 
 import { getDb } from "../db/client.js";
@@ -38,6 +39,7 @@ const PROFILE_COLS = {
   created_at: profiles.createdAt,
   weekly_hours: profiles.weeklyHours,
   learning_start_date: profiles.learningStartDate,
+  os_preference: profiles.osPreference,
 } as const;
 
 meRoute.get("/api/me", async (c) => {
@@ -99,6 +101,13 @@ meRoute.post("/api/me", async (c) => {
         initials: displayName.slice(0, 2).toUpperCase(),
         nameSource: "user",
       });
+    }
+    if ("os_preference" in body) {
+      try {
+        update.osPreference = parseOsPreference(body.os_preference);
+      } catch (err) {
+        throw new ApiError(err instanceof Error ? err.message : "OS の設定が不正です", 400);
+      }
     }
     try {
       Object.assign(update, paceProfileUpdate(parsePaceSettings(body), userId));

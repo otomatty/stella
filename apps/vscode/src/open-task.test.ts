@@ -153,10 +153,13 @@ const pendingFiles = async () => {
     return [];
   }
 };
-const readmeOpened = (root: string) =>
+const readmeOpened = (root: string) => {
   expect(state.showTextDocument).toHaveBeenCalledWith({
     uri: { scheme: "file", fsPath: path.join(root, "README.md") },
   });
+  // OS 別のブロックをタブで読めるパネルも開く (#30)。
+  expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme");
+};
 /** 学習フォルダーを開いているウィンドウが前面に来る (VS Code が既存のウィンドウへ切り替えた)。 */
 const focusWindow = async () => {
   for (const listener of state.windowListeners) listener({ focused: true });

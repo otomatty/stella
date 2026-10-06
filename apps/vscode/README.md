@@ -58,12 +58,14 @@
 | `STELLA: 課題を確認する` | 課題の runner の手順を順に実行し、結果のパネルを開く。結果は `.stella/last-run.json` に残る |
 | `STELLA: 開発環境を診断する` | Node.js・npm・Git の版を確かめる。課題の `environment` があれば、その要件と照合する |
 | `STELLA: 実行ログを表示する` | 道具の出力（出力パネル「STELLA 実行ログ」）を開く |
+| `STELLA: 課題文を表示する` | 課題の `README.md` をパネルで読む。OS 別の手順（`:::os`）はタブになり、`process.platform` の OS のタブを開いておく。`web-training` の `README.md` を開いているときは、エディターの右上のボタンからも開ける。ファイルを読むだけなので、信頼していないフォルダーでも動く |
 
 - **実行するのは固定の手順だけ。** 課題が選べるのは `runner`（runnerId）と、lint・整形をするか（`checks`）だけで、起動するコマンドと引数は拡張の `src/runner/steps.ts` が決める。課題ファイルや画面の文字列をコマンドとして実行しない。シェルも通さない。
 - **信頼したフォルダーでだけ実行する。** Workspace Trust で信頼していないフォルダーでは、プロセスを起動する手順（npm・テスト・診断）を実行しない。HTML の確認（`static-preview`）は拡張の中でファイルを読むだけなので動く。
 - **道具は受講者の端末のもの。** Node.js・npm・Git は PATH から探す（拡張自身の実行環境は使わない）。Vitest・ESLint・Prettier・Playwright・Next.js は課題フォルダーの `node_modules` に入ったものを Node.js で直接起動する。依存パッケージは初回に `npm ci`（lockfile が無ければ `npm install`）で準備し、`package.json` と lockfile が変わるまで再実行しない。
 - **失敗を 2 種類に分ける。** 受講者のコードや置き場所の問題は「要修正」、Node.js が無い・npm の準備に失敗したなど環境の問題は「環境の問題」にする。環境の問題が出たら、残りの手順は省略する。
 - **保存していない変更**があれば、保存してから確かめるか尋ねる（確かめるのは保存した内容）。
+- **OS 別の手順はタブで出す。** レッスンのドキュメント（まとめ・課題文）と課題文のパネルは、`:::os windows` / `:::os macos` のブロックを OS のタブにする。WebView はスクリプトを動かさないので、ラジオボタンと CSS だけで切り替える。既定のタブは `process.platform`（`win32` → Windows、`darwin` → macOS、それ以外は Windows）。
 - 提出するファイル（`submit.files`）と配布したファイル（`protected`）の内容ハッシュを結果に添える。ハッシュは BOM を外し、CRLF を LF にそろえてから取る（Windows の改行変換で「改変」と誤判定しないため）。
 
 | runnerId | 手順 |

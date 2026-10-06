@@ -88,6 +88,11 @@ async function showTaskReadme(taskRoot: string): Promise<void> {
     return;
   }
   await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(readme));
+  // OS 別のブロックをタブで読めるよう、課題文のパネルも開く (いま開いた README から課題を探す)。
+  await vscode.commands.executeCommand("stella.showTaskReadme").then(
+    () => undefined,
+    () => undefined,
+  );
   // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開けている)。
   await vscode.commands.executeCommand("revealInExplorer", readme).then(
     () => undefined,

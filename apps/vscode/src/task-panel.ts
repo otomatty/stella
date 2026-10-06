@@ -2,6 +2,7 @@
  * 「課題を確認する」の結果パネル。スクリプトは動かさず、HTML だけを描く。
  * 合格時は提出、不合格時は講師への相談を案内する。
  * 出典の HTTP(S) リンクと、許可した再実行・ログ表示のコマンドだけを使う。
+ * 課題文 (README.md) を OS のタブ付きで開くパネルも、ここに置く。
  */
 
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
@@ -20,7 +21,13 @@ import {
   SOURCE_AUTHORSHIP_LABELS,
   SOURCE_REUSE_LABELS,
 } from "@stella/shared/tasks/source-reference";
-import { escapeHtml } from "./lesson-doc.js";
+import type { OsName } from "@stella/shared/markdown/os-blocks";
+import {
+  buildLessonDocHtml,
+  defaultOsForPlatform,
+  escapeHtml,
+  markdownToHtml,
+} from "./lesson-doc.js";
 
 const VIEW_TYPE = "stella.taskResult";
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -243,4 +250,48 @@ export function showTaskPanel(input: TaskPanelInput): void {
     currentPanel.reveal(vscode.ViewColumn.Beside, true);
   }
   currentPanel.webview.html = html;
+}
+
+// ---------------------------------------------------------------
+// 課題文 (README.md)
+// ---------------------------------------------------------------
+
+const README_VIEW_TYPE = "stella.taskReadme";
+let readmePanel: vscode.WebviewPanel | undefined;
+
+/**
+ * 課題文のパネルの HTML。描画はレッスンのドキュメントと同じで、生の HTML は文字のまま出す。
+ * OS 別のブロックは `os` (既定は `process.platform` の OS) のタブを開いておく (07 §11)。
+ */
+export function buildTaskReadmeHtml(input: {
+  title: string;
+  markdown: string;
+  os?: OsName;
+}): string {
+  return buildLessonDocHtml({
+    kind: "markdown",
+    title: input.title,
+    bodyHtml: markdownToHtml(input.markdown, { os: input.os ?? defaultOsForPlatform() }),
+  });
+}
+
+/** 課題文をパネルで開く。スクリプトもコマンドのリンクも許さない。 */
+export function showTaskReadme(input: { title: string; markdown: string }): void {
+  const html = buildTaskReadmeHtml(input);
+  const title = `課題文: ${input.title}`;
+  if (!readmePanel) {
+    readmePanel = vscode.window.createWebviewPanel(
+      README_VIEW_TYPE,
+      title,
+      vscode.ViewColumn.Active,
+      { enableScripts: false, localResourceRoots: [] },
+    );
+    readmePanel.onDidDispose(() => {
+      readmePanel = undefined;
+    });
+  } else {
+    readmePanel.title = title;
+    readmePanel.reveal(vscode.ViewColumn.Active);
+  }
+  readmePanel.webview.html = html;
 }

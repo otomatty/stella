@@ -15,6 +15,13 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Course } from "../../../apps/web/src/data/types.js";
+import {
+  hasOsBlocks,
+  OS_LABELS,
+  OS_NAMES,
+  type OsName,
+  selectOsMarkdown,
+} from "../../shared/src/markdown/os-blocks.js";
 import { assetPath, buildContentManifest, TENANT_ID } from "./manifest.js";
 import type { QuizSeed } from "./types.js";
 
@@ -50,6 +57,11 @@ export interface PdfTarget {
   source: string;
   /** 本文から参照される画像。ハッシュと描画の両方に使う。 */
   assets: PdfAsset[];
+  /**
+   * OS 別に分けた PDF (course.json の `pdfByOs`) が載せる OS。本文の OS 別のブロックは
+   * この OS のものだけを使う。未設定なら OS 別のブロックを両方とも見出し付きで並べる (07 §11)。
+   */
+  os?: OsName;
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -92,7 +104,7 @@ function referencedAssetKeys(source: string): string[] {
  * 参照先の画像ファイルが無ければ throw する — 壊れた参照のまま PDF を作らない。
  */
 export function collectPdfTargets(
-  manifest: { courses: Course[]; quizzes: QuizSeed[] } = buildContentManifest(),
+  manifest: { courses: Course[]; quizzes: QuizSeed[]; pdfByOs?: string[] } = buildContentManifest(),
 ): PdfTarget[] {
   const targets: PdfTarget[] = [];
   for (const course of manifest.courses) {
@@ -126,7 +138,7 @@ export function collectPdfTargets(
         } else {
           continue;
         }
-        targets.push({
+        const base = {
           tenantId: TENANT_ID,
           courseSlug: course.id,
           courseTitle: course.title,
@@ -134,8 +146,22 @@ export function collectPdfTargets(
           lessonTitle: lesson.title,
           kind,
           source,
-          assets: resolveAssets(source, lesson.id),
-        });
+        };
+        // OS 別の手順はまとめと課題文にだけ書ける。OS の差が大きい講座は OS ごとに作る。
+        if (
+          (kind === "doc" || kind === "task") &&
+          manifest.pdfByOs?.includes(course.id) &&
+          hasOsBlocks(source)
+        ) {
+          for (const os of OS_NAMES)
+            targets.push({
+              ...base,
+              os,
+              assets: resolveAssets(selectOsMarkdown(source, os), lesson.id),
+            });
+          continue;
+        }
+        targets.push({ ...base, assets: resolveAssets(source, lesson.id) });
       }
     }
   }
@@ -155,7 +181,7 @@ export function collectPdfTargets(
  * と同じ緩和クラス)。ソルトを変えると全キーが変わり全教材が新版になる。
  */
 export function pdfSourceHash(
-  target: Pick<PdfTarget, "kind" | "source" | "assets" | "courseTitle">,
+  target: Pick<PdfTarget, "kind" | "source" | "assets" | "courseTitle" | "os">,
 ): string {
   const salt = process.env.PDF_KEY_SALT ?? "";
   const hash = salt === "" ? createHash("sha256") : createHmac("sha256", salt);
@@ -164,6 +190,8 @@ export function pdfSourceHash(
       v: PDF_GENERATOR_VERSION,
       kind: target.kind,
       courseTitle: target.courseTitle,
+      // OS を分けない PDF のハッシュ (= 既存の R2 キー) は変えない。
+      ...(target.os ? { os: target.os } : {}),
     }),
   );
   hash.update(target.source);
@@ -184,12 +212,15 @@ export function pdfObjectKey(
   return `lesson-pdf/${target.tenantId}/${target.courseSlug}/${target.lessonId}/${hash}.pdf`;
 }
 
-/** 受講者に見えるダウンロードファイル名。 */
-export function pdfFileName(target: Pick<PdfTarget, "kind" | "lessonId" | "lessonTitle">): string {
+/** 受講者に見えるダウンロードファイル名。OS 別の PDF は「1-1 まとめ (Windows).pdf」。 */
+export function pdfFileName(
+  target: Pick<PdfTarget, "kind" | "lessonId" | "lessonTitle" | "os">,
+): string {
   // doc / quiz のタイトルは「1-1 まとめ」のように番号入り。slides はタイトルに
   // 番号が無いので lessonId (`1-1-2`) を前置して並び順を保つ。
-  const base =
+  const title =
     target.kind === "slides" ? `${target.lessonId} ${target.lessonTitle}` : target.lessonTitle;
+  const base = target.os ? `${title} (${OS_LABELS[target.os]})` : title;
   return `${base
     .replace(/[\\/:*?"<>|]/g, " ")
     .replace(/\s+/g, " ")

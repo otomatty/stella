@@ -4,6 +4,7 @@
  * - STELLA: 課題を確認する   … 開いているファイルの課題フォルダーで runner を実行する
  * - STELLA: 開発環境を診断する … Node.js・npm・Git の版を確かめる
  * - STELLA: 実行ログを表示する … 道具の出力をそのまま見る
+ * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読む (ファイルを読むだけ)
  *
  * 外部プロセスを起動するので、信頼したフォルダー (Workspace Trust) でだけ実行する。
  */
@@ -35,7 +36,7 @@ import {
   readSubmissionNotes,
   sendTaskSubmission,
 } from "./task-submission.js";
-import { showTaskPanel } from "./task-panel.js";
+import { showTaskPanel, showTaskReadme } from "./task-panel.js";
 
 let running = false;
 
@@ -332,6 +333,31 @@ async function submitTaskCommand(
   }
 }
 
+/** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
+const README_MAX_BYTES = 1024 * 1024;
+
+/** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */
+async function showTaskReadmeCommand(): Promise<void> {
+  const root = await locateTask();
+  if (!root) {
+    void vscode.window.showInformationMessage(
+      "課題フォルダーのファイルを開いてから実行してください (.stella/task.json がある課題フォルダー)",
+    );
+    return;
+  }
+  try {
+    const loaded = await loadTask(root);
+    const markdown = new TextDecoder().decode(
+      await readFileInRoot(root, "README.md", README_MAX_BYTES),
+    );
+    showTaskReadme({ title: loaded.ok ? loaded.manifest.title : path.basename(root), markdown });
+  } catch (e) {
+    void vscode.window.showErrorMessage(
+      `課題文を表示できませんでした: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+}
+
 export function registerTaskCommands(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("STELLA 実行ログ");
   context.subscriptions.push(
@@ -345,5 +371,6 @@ export function registerTaskCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.runTask", () => runTaskCommand(output)),
     vscode.commands.registerCommand("stella.diagnoseEnvironment", () => diagnoseCommand(output)),
     vscode.commands.registerCommand("stella.showRunLog", () => output.show(true)),
+    vscode.commands.registerCommand("stella.showTaskReadme", () => showTaskReadmeCommand()),
   );
 }

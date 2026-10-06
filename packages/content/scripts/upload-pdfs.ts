@@ -67,6 +67,8 @@ interface ManifestEntry {
   courseSlug: string;
   lessonId: string;
   kind: string;
+  /** OS ごとに分けた PDF の OS (course.json の `pdfByOs`)。seed が資料の行を分ける。 */
+  os?: string;
   hash: string;
   key: string;
   fileName: string;
