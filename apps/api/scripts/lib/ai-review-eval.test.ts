@@ -17,6 +17,7 @@ import {
   summarizeAgreement,
   toExample,
 } from "./ai-review-eval.js";
+import { subjectsOf } from "./ai-review-replay.js";
 
 function row(over: Partial<EvalSourceRow>): EvalSourceRow {
   return {
@@ -168,6 +169,58 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
       // 人が覆したら、事後確認の「確認済み」より人の判定を使う。
       expect(bySubmission.get("overturned")).toBe("resubmit");
       expect(bySubmission.has("unreviewed")).toBe(false);
+    } finally {
+      database.sqlite.close();
+    }
+  });
+
+  it("同じ時刻の AI の結果は記録した順に並べ、リプレイは後に記録した方を本番の記録にする", async () => {
+    const database = sqliteD1();
+    const db = getDb({ DB: database.binding } as unknown as Env);
+    try {
+      await db.batch([
+        db.insert(tenants).values({ id: "ses", name: "テスト" }),
+        db
+          .insert(profiles)
+          .values({ id: "teacher", tenantId: "ses", displayName: "講師", role: "instructor" }),
+        db.insert(submissions).values({
+          id: "same-time",
+          tenantId: "ses",
+          stageTitle: "講座",
+          assignmentTitle: "課題",
+          code: "",
+          taskId: "c/u/t",
+        }),
+      ]);
+      const at = new Date("2026-10-01T00:00:00Z");
+      const review = (id: string, outcome: "confirmed" | "escalated") => ({
+        id,
+        submissionId: "same-time",
+        tenantId: "ses",
+        taskId: "c/u/t",
+        taskContentHash: "a".repeat(64),
+        taskKind: "basic",
+        outcome,
+        proposedVerdict: "pass" as const,
+        promptVersion: "p1",
+        thresholdVersion: "t1",
+        createdAt: at,
+      });
+      // ID (UUID) の並びと記録した順を逆にしておく。後に記録したのは "a-later"。
+      await db.insert(aiReviews).values(review("z-earlier", "escalated"));
+      await db.insert(aiReviews).values(review("a-later", "confirmed"));
+      await db.insert(submissionReviews).values({
+        submissionId: "same-time",
+        source: "human",
+        reviewerId: "teacher",
+        verdict: "pass",
+        notes: "",
+        createdAt: at,
+      });
+      const rows = database.sqlite.prepare(EVAL_SOURCE_SQL).all() as unknown as EvalSourceRow[];
+      expect(rows.map((r) => r.ai_review_id)).toEqual(["z-earlier", "a-later"]);
+      const [subject] = subjectsOf(rows.map(toExample));
+      expect(subject?.production.outcome).toBe("confirmed");
     } finally {
       database.sqlite.close();
     }

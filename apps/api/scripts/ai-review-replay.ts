@@ -22,6 +22,8 @@
  * - 投入すると `apps/api/.ai-review-replay/<日時>/state.json` (gitignore 済み) に、回収に要る状態を
  *   残す。判定に使う提出の本文を含むので、比べ終えたら消してよい。回収した結果は同じ場所の
  *   `report.md` / `report.json` (提出 ID・課題・判定だけ) に書く。
+ * - Batch の投入が途中で止まったら、作れた分の状態を保存して 0 以外で終わる。重ねて投入せず、
+ *   まず `--collect` で回収する (未投入の要求は「未投入」として母数から外す)。
  * - 候補の指示は `src/lib/ai-review-prompt.ts` の登録簿 (`AI_REVIEW_PROMPTS`) に版を足して並べる。
  */
 
@@ -38,6 +40,7 @@ import {
   parseEvalJsonl,
   parseReplayArgs,
   type ReplayState,
+  ReplaySubmitIncomplete,
   replayPrepareCommand,
 } from "./lib/ai-review-replay.js";
 import { openReplayBindings } from "./lib/replay-bindings.js";
@@ -122,6 +125,10 @@ if (args.mode === "collect") {
         process.stderr.write(`\r素材を読んでいます: ${done}/${total}`);
       },
     });
+  } catch (e) {
+    // 投入が途中で止まった。案内 (重ねて投入せず --collect で回収する) はコマンドが出した。
+    if (!(e instanceof ReplaySubmitIncomplete)) throw e;
+    process.exitCode = 1;
   } finally {
     await bindings.dispose();
   }

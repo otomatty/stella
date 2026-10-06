@@ -51,6 +51,9 @@ export interface EvalExample {
  * 2 件あっても AI の結果 1 件につき 1 行になるよう、`row_number()` で提出ごとに 1 件に絞る
  * (時刻の最大で結合すると、同時刻の判定の数だけ同じ例が重なって数えられる)。
  * 人のレビューが無く、事後確認で確認済み・コメントにした AI の合格は、人の判定を合格とみなす。
+ * 行は AI の結果を記録した順に並べる。同じ時刻の結果があっても順が決まるよう、記録した順の
+ * 第 2 キー (`rowid`) を足す (`ai_reviews.id` は UUID で順序を持たない)。リプレイは、同じ提出の
+ * 後の行を本番の記録にする。
  */
 export const EVAL_SOURCE_SQL = `
 with human as (
@@ -70,7 +73,7 @@ left join human h on h.submission_id = r.submission_id and h.rn = 1
 left join checked c on c.submission_id = r.submission_id
   and r.outcome = 'confirmed' and r.disposition = 'applied'
 where h.verdict is not null or c.submission_id is not null
-order by r.created_at`.trim();
+order by r.created_at, r.rowid`.trim();
 
 export function toExample(row: EvalSourceRow): EvalExample {
   let reasons: string[] = [];

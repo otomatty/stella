@@ -285,6 +285,8 @@ async function prepareOne(
     judge: {
       kind: row.taskKind ?? "basic",
       material: judgeMaterialOf(loaded),
+      // 人に回す条件は今の記録で当てる。本番も AI の結果を当てる直前に、後から届いた支援の
+      // 記録を含めて確かめ直す (`assertAiApplicable`) ので、本番の最終的な扱いと同じになる。
       forced: await submissionForcedReasons(deps.db, row),
       lines: [...(built[0]?.prompt.lines ?? new Map<string, number>())],
     },
@@ -578,25 +580,58 @@ export interface ReplayState {
   /** 投入したときのしきい値の版 (判定は回収したときのコードで当てる)。 */
   thresholdVersion: string;
   candidates: ReplayCandidate[];
+  /** 作れた Batch の ID。投入が途中で止まっても、作れた分は必ず残す (回収できるように)。 */
   batchIds: string[];
+  submission: ReplaySubmission;
   items: { subject: ReplaySubject; judge: ReplayJudgeContext }[];
   skipped: { subject: ReplaySubject; failure: string; detail: string }[];
 }
 
-/** 要求を Batch に投入し、回収に要る状態を返す。 */
+/**
+ * 投入の進み具合。要求は提出の順・候補の順 (`replayRequestIndex`) に並べて先頭から Batch に
+ * 分けて作るので、投入できたのは先頭から `submittedRequests` 件。
+ */
+export interface ReplaySubmission {
+  complete: boolean;
+  submittedRequests: number;
+  totalRequests: number;
+  /** 投入が止まった理由 (Batch の作成の失敗)。 */
+  error: string | null;
+}
+
+/** 要求の並び (提出の順、その中で候補の順)。投入できたかは、この並びの位置で決まる。 */
+export function replayRequestIndex(candidate: number, item: number, candidates: number): number {
+  return item * candidates + candidate;
+}
+
+/**
+ * 要求を Batch に投入し、回収に要る状態を返す。Batch の作成が途中で失敗しても投げずに、
+ * 作れた Batch の ID と投入できた件数を状態に残して返す (呼び出し側が保存して回収させる)。
+ * 投げると作れた Batch の ID が失われ、回収できないうえに、流し直すと同じ要求を重ねて
+ * 投入してしまう (費用が二重になる)。
+ */
 export async function submitReplay(
   api: BatchApi,
   prepared: { items: PreparedReplayItem[]; skipped: SkippedReplayItem[] },
   candidates: ReplayCandidate[],
   meta: { createdAt: string; source: string },
+  limits?: { maxRequests: number; maxBytes: number },
 ): Promise<ReplayState> {
   const requests = prepared.items.flatMap((item, si) =>
     item.requests.map((params, ci) => ({ custom_id: replayCustomId(ci, si), params })),
   );
   const batchIds: string[] = [];
-  for (const chunk of chunkBatchRequests(requests)) {
-    const batch = await api.create({ requests: chunk });
-    batchIds.push(batch.id);
+  let submittedRequests = 0;
+  let error: string | null = null;
+  for (const chunk of chunkBatchRequests(requests, limits)) {
+    try {
+      const batch = await api.create({ requests: chunk });
+      batchIds.push(batch.id);
+      submittedRequests += chunk.length;
+    } catch (e) {
+      error = (e instanceof Error ? e.message : String(e)).slice(0, 500);
+      break;
+    }
   }
   return {
     version: REPLAY_STATE_VERSION,
@@ -605,16 +640,41 @@ export async function submitReplay(
     thresholdVersion: AI_REVIEW_THRESHOLD_VERSION,
     candidates,
     batchIds,
+    submission: {
+      complete: error === null,
+      submittedRequests,
+      totalRequests: requests.length,
+      error,
+    },
     items: prepared.items.map(({ subject, judge }) => ({ subject, judge })),
     skipped: prepared.skipped,
   };
+}
+
+/** Batch の投入が途中で止まった。作れた分は状態に保存してあり、回収できる。 */
+export class ReplaySubmitIncomplete extends Error {
+  constructor(
+    readonly state: ReplayState,
+    readonly place: string | null,
+  ) {
+    const { submittedRequests, totalRequests, error } = state.submission;
+    super(
+      [
+        `Batch の投入が途中で止まりました (投入 ${submittedRequests} / ${totalRequests} 件、未投入 ${totalRequests - submittedRequests} 件): ${error ?? "不明"}`,
+        place
+          ? `重ねて投入しないで、まず --collect ${place} で回収してください (未投入の要求は「未投入」として母数から外します)。`
+          : "Batch は 1 つも作れませんでした。API 側に作られていないか Batch の一覧を確かめてから、流し直してください。",
+      ].join("\n"),
+    );
+    this.name = "ReplaySubmitIncomplete";
+  }
 }
 
 /** 候補 1 つの、提出 1 件の結果。 */
 export interface ReplayOutcome {
   /** null は呼び出しの失敗 (候補の判定ではないので比べる母数から外す)。 */
   decision: ReplayDecision | null;
-  /** 呼び出しの失敗 (`errored:<種類>`・`expired`・`canceled`・`missing`)。 */
+  /** 呼び出しの失敗 (`errored:<種類>`・`expired`・`canceled`・`missing`・`not-submitted`)。 */
   callError: string | null;
   usage: TokenUsage | null;
 }
@@ -693,6 +753,8 @@ export async function collectReplay(api: BatchApi, state: ReplayState): Promise<
     for await (const entry of await api.results(id)) {
       if (parseCustomId(entry.custom_id)) results.set(entry.custom_id, entry.result);
     }
+  const submitted = (ci: number, si: number) =>
+    replayRequestIndex(ci, si, state.candidates.length) < state.submission.submittedRequests;
   const rows: ReplayRow[] = state.items.map(({ subject, judge }, si) => ({
     submissionId: subject.submissionId,
     taskId: subject.taskId,
@@ -700,7 +762,10 @@ export async function collectReplay(api: BatchApi, state: ReplayState): Promise<
     humanVerdict: subject.humanVerdict,
     production: subject.production,
     candidates: state.candidates.map((_, ci) =>
-      judgeBatchResult(judge, results.get(replayCustomId(ci, si))),
+      // 投入が途中で止まった状態では、投入していない要求は「未投入」として母数から外す。
+      submitted(ci, si)
+        ? judgeBatchResult(judge, results.get(replayCustomId(ci, si)))
+        : { decision: null, callError: "not-submitted", usage: null },
     ),
   }));
   return { status: "ended", report: buildReplayReport(state, rows) };
@@ -841,6 +906,8 @@ export interface ReplayReport {
   /** 判定に当てたしきい値の版 (回収したときのコード)。 */
   thresholdVersion: string;
   candidates: ReplayCandidate[];
+  /** 投入の進み具合 (途中で止まっていれば、未投入の要求は母数に入っていない)。 */
+  submission: ReplaySubmission;
   /** 当て直した提出の件数 (判定しない提出を除く)。 */
   submissions: number;
   skipped: { submissionId: string; taskId: string; failure: string; detail: string }[];
@@ -889,6 +956,7 @@ export function buildReplayReport(
     source: state.source,
     thresholdVersion: AI_REVIEW_THRESHOLD_VERSION,
     candidates: state.candidates,
+    submission: state.submission,
     submissions: rows.length,
     skipped: state.skipped.map((s) => ({
       submissionId: s.subject.submissionId,
@@ -922,6 +990,12 @@ export function formatReplayReport(report: ReplayReport): string {
     "",
     "比べる数字は、人がレビューした提出に候補を当て直した判定と人の判定の突き合わせ。",
     "危ない取りこぼし = AI で確定にしたうち人が再提出・不合格にしたもの。太字は §6.3 の見直しの境目を超えた値。",
+    ...(report.submission.complete
+      ? []
+      : [
+          "",
+          `**投入が途中で止まった結果です** (投入 ${report.submission.submittedRequests} / ${report.submission.totalRequests} 件)。未投入の要求は「呼び出しの失敗」に数え、母数から外しています。`,
+        ]),
     "",
     "| 候補 | モデル | 指示 | 件数 | 呼び出しの失敗 | 判定案 | 一致率 | AI で確定 | 危ない取りこぼし | AI 判定不能 | 練習・中を覆した | 人に回して合格 | 人に回す割合 3 割超の課題 | 入力 / キャッシュ読み / 出力トークン | 費用 (Batch) |",
     "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
@@ -955,7 +1029,8 @@ export function formatReplayReport(report: ReplayReport): string {
 
 /**
  * 見積もりを出し、`--run` のときだけ Batch に投入する。既定は dry-run で、API の操作
- * (`batchApi`) を作りもしない。投入したら回収に要る状態を保存して返す。
+ * (`batchApi`) を作りもしない。投入したら回収に要る状態を保存して返す。投入が途中で止まったら、
+ * 作れた分の状態を保存してから `ReplaySubmitIncomplete` を投げる (CLI は 0 以外で終わる)。
  */
 export async function replayPrepareCommand(
   args: Extract<ReplayArgs, { mode: "prepare" }>,
@@ -968,6 +1043,8 @@ export async function replayPrepareCommand(
     log: (text: string) => void;
     onProgress?: (done: number, total: number) => void;
     now?: () => Date;
+    /** 1 つの Batch に入れる上限 (既定は API の上限より小さい値。テストで小さくする)。 */
+    batchLimits?: { maxRequests: number; maxBytes: number };
   },
 ): Promise<ReplayState | null> {
   // 引数の読み取りでも止めているが、上限なしで API を呼ぶ経路をここでも作らない。
@@ -996,11 +1073,24 @@ export async function replayPrepareCommand(
     deps.log("\nAI に送る提出がありません。投入しません。");
     return null;
   }
-  const state = await submitReplay(deps.batchApi(), prepared, args.candidates, {
-    createdAt: (deps.now?.() ?? new Date()).toISOString(),
-    source: args.data ?? (args.remote ? "remote" : "local"),
-  });
-  const place = deps.saveState(state);
+  const state = await submitReplay(
+    deps.batchApi(),
+    prepared,
+    args.candidates,
+    {
+      createdAt: (deps.now?.() ?? new Date()).toISOString(),
+      source: args.data ?? (args.remote ? "remote" : "local"),
+    },
+    deps.batchLimits,
+  );
+  // 1 つも作れなかったときは回収するものが無いので、状態は保存しない (流し直してよい)。
+  const place = state.batchIds.length > 0 ? deps.saveState(state) : null;
+  if (!state.submission.complete) {
+    const incomplete = new ReplaySubmitIncomplete(state, place);
+    deps.log(`\n${incomplete.message}`);
+    if (place) deps.log(`作れた Batch: ${state.batchIds.join(", ")}`);
+    throw incomplete;
+  }
   deps.log(`\nBatch に投入しました: ${state.batchIds.join(", ")}`);
   deps.log(`回収: bun run --filter=@stella/api ai-review:replay -- --collect ${place}`);
   return state;

@@ -55,6 +55,7 @@ import {
   parseReplayArgs,
   prepareReplay,
   type ReplayState,
+  ReplaySubmitIncomplete,
   replayCustomId,
   replayPrepareCommand,
   subjectsOf,
@@ -628,5 +629,104 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     const saved2 = JSON.stringify(report);
     for (const secret of [STUDENT, STUDENT_NAME, STUDENT_EMAIL, "hello", "提出を確認しました"])
       expect(saved2).not.toContain(secret);
+  });
+
+  it("Batch の投入が途中で止まったら、作れた Batch を状態に残して止め、回収できる", async () => {
+    const first = await reviewed("resubmit");
+    const second = await reviewed("pass");
+    const created: string[][] = [];
+    const api: BatchApi = {
+      create: vi.fn(async (body: Parameters<BatchApi["create"]>[0]) => {
+        created.push(body.requests.map((r) => r.custom_id));
+        if (created.length === 2) throw new Error("overloaded");
+        return { id: `batch-${created.length}` };
+      }),
+      retrieve: vi.fn(async (id) => ({
+        id,
+        processing_status: "ended" as const,
+        request_counts: { processing: 0, succeeded: 2, errored: 0, canceled: 0, expired: 0 },
+      })),
+      results: vi.fn(async () =>
+        (async function* () {
+          yield { custom_id: replayCustomId(0, 0), result: succeeded(aiOutput()) };
+          yield { custom_id: replayCustomId(1, 0), result: succeeded(aiOutput()) };
+        })(),
+      ),
+    };
+    const run = parseReplayArgs(
+      ["--run", "--limit", "10", "--candidate", MODEL, "--candidate", "claude-haiku-4-5"],
+      MODEL,
+    );
+    if (run.mode !== "prepare") throw new Error("prepare ではない");
+    let saved: ReplayState | null = null;
+    const log = vi.fn();
+    const failure = await replayPrepareCommand(run, {
+      bindings: { db, env },
+      examples: examples([first, second]),
+      batchApi: () => api,
+      saveState: (state) => {
+        saved = JSON.parse(JSON.stringify(state)) as ReplayState;
+        return ".ai-review-replay/x";
+      },
+      log,
+      // 提出 1 件ぶん (候補 2 つ) ずつ Batch に分け、2 つ目の作成で失敗させる。
+      batchLimits: { maxRequests: 2, maxBytes: 100_000_000 },
+    }).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(ReplaySubmitIncomplete);
+    expect(created).toEqual([
+      [replayCustomId(0, 0), replayCustomId(1, 0)],
+      [replayCustomId(0, 1), replayCustomId(1, 1)],
+    ]);
+    if (!saved) throw new Error("作れた Batch の状態が保存されていない");
+    const state: ReplayState = saved;
+    expect(state.batchIds).toEqual(["batch-1"]);
+    expect(state.submission).toEqual({
+      complete: false,
+      submittedRequests: 2,
+      totalRequests: 4,
+      error: "overloaded",
+    });
+    const message = log.mock.calls.join("\n");
+    expect(message).toContain("投入 2 / 4 件、未投入 2 件");
+    expect(message).toContain(
+      "重ねて投入しないで、まず --collect .ai-review-replay/x で回収してください",
+    );
+
+    // 作れた Batch だけを回収し、未投入の要求は「未投入」として母数から外す。
+    const collected = await collectReplay(api, state);
+    if (collected.status !== "ended") throw new Error("回収できていない");
+    expect(api.retrieve).toHaveBeenCalledWith("batch-1");
+    expect(collected.report.rows.map((r) => r.candidates.map((c) => c.callError))).toEqual([
+      [null, null],
+      ["not-submitted", "not-submitted"],
+    ]);
+    expect(collected.report.summaries[1]).toMatchObject({
+      examples: 1,
+      callErrors: 1,
+      confirmed: 1,
+    });
+    expect(formatReplayReport(collected.report)).toContain("投入が途中で止まった結果です");
+  });
+
+  it("Batch を 1 つも作れなければ状態を残さず止める (流し直してよい)", async () => {
+    await reviewed("pass");
+    const run = parseReplayArgs(["--run", "--limit", "1"], MODEL);
+    if (run.mode !== "prepare") throw new Error("prepare ではない");
+    const saveState = vi.fn(() => "dir");
+    const failure = await replayPrepareCommand(run, {
+      bindings: { db, env },
+      examples: examples(),
+      batchApi: () => ({
+        ...fakeBatches({}).api,
+        create: async () => {
+          throw new Error("unauthorized");
+        },
+      }),
+      saveState,
+      log: () => undefined,
+    }).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(ReplaySubmitIncomplete);
+    expect(String(failure)).toContain("1 つも作れませんでした");
+    expect(saveState).not.toHaveBeenCalled();
   });
 });
