@@ -18,7 +18,11 @@ export async function loadCodingRuleSet(db: Db, courseSlug: string) {
     .select()
     .from(codingRules)
     .where(inArray(codingRules.scope, ["common", courseSlug]))
-    .orderBy(codingRules.position);
+    // 版のハッシュは並び順を含む本文から作る。seed の `position` は規則の文書 (= scope) の中の
+    // 0 始まりの連番で一意なので、第 2 キーの `id` は今の版のハッシュを変えない
+    // (`coding-rule-set.test.ts`)。position が重なった行 (手で直した D1 など) でも、読むたびに
+    // 並びが変わって提出時の `submissions.rule_set_hash` と食い違い、人に回り続けないようにする。
+    .orderBy(codingRules.position, codingRules.id);
   const toText = (r: typeof codingRules.$inferSelect): CodingRuleText => ({
     id: r.id,
     title: r.title,

@@ -48,6 +48,8 @@ export type SubmissionPatch = Pick<
    * サーバが 409 を返す — 見えていないコードに添削を確定させないため (Issue #9)。
    */
   expectedSubmittedAt?: number;
+  /** 「まだ誰も確定していない」ときだけ確定する (#34)。別の講師が先に確定していれば 409。 */
+  expectUndecided?: boolean;
 };
 
 interface SubmissionRow {
@@ -85,6 +87,15 @@ interface SubmissionRow {
   review_source?: Submission["reviewSource"];
   ai_feedback?: Submission["aiFeedback"];
   ai_review?: Submission["aiReview"];
+  route_reasons?: Submission["routeReasons"];
+  ai_confidence?: Submission["aiConfidence"];
+  ai_proposed_verdict?: Submission["aiProposedVerdict"];
+  assignee_id?: string | null;
+  assignee_name?: string | null;
+  stage_id?: string | null;
+  task_pattern?: string | null;
+  checks?: Submission["checks"];
+  staff_comments?: Submission["staffComments"];
 }
 
 function toneFromStudentId(studentId: string | null): ReviewAvatarTone {
@@ -140,6 +151,17 @@ function rowToSubmission(row: SubmissionRow): Submission {
     reviewSource: row.review_source ?? null,
     aiFeedback: row.ai_feedback ?? null,
     aiReview: row.ai_review ?? null,
+    // 一覧だけ・詳細だけが返す列は、返らなかったときに undefined のまま残す
+    // (ストアは保存の応答を前の行に重ねるので、null にすると一覧の列を消してしまう)。
+    routeReasons: row.route_reasons,
+    aiConfidence: row.ai_confidence,
+    aiProposedVerdict: row.ai_proposed_verdict,
+    assigneeId: row.assignee_id,
+    assigneeName: row.assignee_name,
+    stageId: row.stage_id,
+    taskPattern: row.task_pattern,
+    checks: row.checks,
+    staffComments: row.staff_comments,
   };
 }
 
@@ -194,6 +216,7 @@ export async function patchSubmission(id: string, patch: SubmissionPatch): Promi
         ...(patch.expectedSubmittedAt !== undefined
           ? { expectedSubmittedAt: new Date(patch.expectedSubmittedAt).toISOString() }
           : {}),
+        ...(patch.expectUndecided ? { expectUndecided: true } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
         ...(patch.attempt !== undefined ? { attempt: patch.attempt } : {}),

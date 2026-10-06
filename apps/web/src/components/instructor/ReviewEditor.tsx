@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import {
   ChevronLeft,
@@ -13,6 +20,7 @@ import {
   Info,
   Loader2,
   AlertTriangle,
+  CheckCheck,
 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SUPPORT_LABELS } from "@stella/shared/tasks/submission-support";
 import { formatGradingSummaryText } from "@stella/shared/review/grading-summary";
+import { FINDING_SEVERITY_LABELS, formatLearnerReply } from "@stella/shared/review/ai-review";
 import type {
   GradingSummary,
   ReviewSuggestion,
@@ -31,12 +40,19 @@ import type {
 import { useSubmission, useSubmissions } from "@/hooks/useSubmissions";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchReviewDraft } from "@/lib/review-draft-api";
-import { SubmissionConflictError, formatSubmittedAt } from "@/lib/submissions-store";
+import {
+  SubmissionConflictError,
+  formatSubmittedAt,
+  refreshSubmission,
+} from "@/lib/submissions-store";
+import { isAiPassed } from "@/lib/review-queue";
 import type { Tenant } from "@/data/types";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
 import { AiReviewPanel } from "./AiReviewPanel";
+import { CommentTemplatePicker } from "./CommentTemplatePicker";
+import { PostCheckPanel } from "./PostCheckPanel";
 
 /**
  * 提出の「版」。 学習者が同じ提出を引き継ぎ直すと id は据え置きでコードが変わるため、
@@ -60,18 +76,25 @@ interface ReviewEditorProps {
 
 export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorProps) => {
   const submission = useSubmission(tenantId, submissionId);
-  const [taskDetail, setTaskDetail] = useState<Submission | undefined>();
+  const [loadedDetail, setLoadedDetail] = useState<Submission | undefined>();
+  // 別の提出に切り替えた直後は、前の提出の詳細 (ファイル) を出さない。
+  const taskDetail = loadedDetail?.id === submission?.id ? loadedDetail : undefined;
   const [selectedFile, setSelectedFile] = useState("");
+  // 事後確認の操作のあとに取り直す (確認の記録・判定が変わる)。
+  const [detailVersion, setDetailVersion] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: detailVersion は取り直しの合図
   useEffect(() => {
-    setTaskDetail(undefined);
-    setSelectedFile("");
     if (!submission?.taskId) return;
     let current = true;
     void fetchSubmissionById(submission.id)
       .then((detail) => {
         if (current) {
-          setTaskDetail(detail);
-          setSelectedFile(detail.taskFiles?.[0]?.path ?? "");
+          setLoadedDetail(detail);
+          setSelectedFile((prev) =>
+            detail.taskFiles?.some((f) => f.path === prev)
+              ? prev
+              : (detail.taskFiles?.[0]?.path ?? ""),
+          );
         }
       })
       .catch(() => {
@@ -80,7 +103,12 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     return () => {
       current = false;
     };
-  }, [submission?.id, submission?.taskId]);
+  }, [submission?.id, submission?.taskId, detailVersion]);
+  const reloadAfterCheck = useCallback(async () => {
+    if (!submission) return;
+    await refreshSubmission(tenantId, submission.id);
+    setDetailVersion((v) => v + 1);
+  }, [submission, tenantId]);
   const { update, finalize } = useSubmissions(tenantId);
 
   const [tab, setTab] = useState("ai");
@@ -112,12 +140,23 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     setDraftLoading(false);
     // 詰まって引き継がれた提出は、 まず「どこで落ちたか」から読ませる。
     // 新形式の提出は AI の一次レビュー (人に回した理由・所見・返信案) から読ませる。
-    setTab(submission.gradingSummary ? "grade" : "ai");
+    // AI が合格にした提出は事後確認 (確認済み・コメント・覆す) から始める (#34)。
+    setTab(submission.gradingSummary ? "grade" : isAiPassed(submission) ? "check" : "ai");
     setSuggestions(submission.aiSuggestions.map((s) => ({ ...s })));
     setRubric(submission.rubric.map((r) => ({ ...r })));
     setNotes(submission.reviewNotes);
     setVerdict(submission.verdict);
   }, [submission]);
+
+  // 人に回した提出は、AI の返信案を総評の下書きにする (1 回の操作で確定できるように、#34)。
+  // 講師がもう書いていれば上書きしない。使うのは解答例との照合を通した返信 (`learnerReply`) で、
+  // AI の原文 (`draftReply`) は使わない (返信が解答例と重なって人に回った提出がある)。
+  const draftReply = taskDetail?.aiReview?.learnerReply;
+  const undecided = submission?.verdict === null;
+  useEffect(() => {
+    if (!undecided || !draftReply) return;
+    setNotes((prev) => (prev.trim() ? prev : formatLearnerReply(draftReply)));
+  }, [draftReply, undecided]);
 
   useEffect(() => {
     if (!submission || submission.aiReady || submission.taskId) return;
@@ -201,17 +240,27 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
 
   const commentedLines = new Set(suggestions.filter((s) => s.adopted === true).map((s) => s.line));
 
+  // まだ誰も確定していない提出は「確定しなかったときだけ確定」にする (別の講師が先に確定して
+  // いれば 409 でキューに戻す)。確定済みの提出の訂正は従来どおり上書きする。
+  const aiPassedNow = isAiPassed(submission);
+  const wasAiConfirmed = Boolean(submission.taskId) && submission.aiReviewStatus === "confirmed";
+  const proposal = taskDetail?.aiReview?.proposedVerdict ?? submission.aiProposedVerdict ?? null;
   const handleFinalize = async (v: ReviewVerdict) => {
     if (finalizing || (submission.taskId && !taskDetail)) return;
     setFinalizing(true);
     try {
       let saved: Awaited<ReturnType<typeof finalize>>;
       try {
-        saved = await finalize(submission.id, v, {
-          reviewNotes: notes,
-          aiSuggestions: suggestions,
-          rubric,
-        });
+        saved = await finalize(
+          submission.id,
+          v,
+          {
+            reviewNotes: notes,
+            aiSuggestions: suggestions,
+            rubric,
+          },
+          { expectUndecided: submission.verdict === null },
+        );
       } catch (err) {
         // 開いている間に学習者が引き継ぎ直した。 見えていないコードに確定させない。
         if (err instanceof SubmissionConflictError) {
@@ -295,23 +344,52 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
             AI下書き準備済
           </Badge>
         ) : null}
-        <Button
-          type="button"
-          onClick={() => handleFinalize("resubmit")}
-          disabled={finalizing || (!!submission.taskId && !taskDetail)}
-        >
-          <ThumbsDown size={13} />
-          再提出
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => handleFinalize("pass")}
-          disabled={finalizing || (!!submission.taskId && !taskDetail)}
-        >
-          <ThumbsUp size={13} />
-          合格として確定
-        </Button>
+        {aiPassedNow ? (
+          // AI が合格にした提出は、合否を付け直さず事後確認の 3 つの操作で扱う (#34)。
+          <>
+            <Badge variant="success">
+              <Sparkles size={10} />
+              AI で合格
+            </Badge>
+            <Button type="button" variant="primary" onClick={() => setTab("check")}>
+              <CheckCheck size={13} />
+              事後確認
+            </Button>
+          </>
+        ) : (
+          <>
+            {submission.verdict === null && proposal ? (
+              <Badge variant={proposal === "pass" ? "success" : "warning"}>
+                AI の判定案: {proposal === "pass" ? "合格" : "再提出"}
+              </Badge>
+            ) : null}
+            <Button
+              type="button"
+              variant={
+                submission.verdict === null && proposal === "resubmit" ? "primary" : "default"
+              }
+              onClick={() => handleFinalize("resubmit")}
+              disabled={finalizing || (!!submission.taskId && !taskDetail)}
+              title="総評 (所見を直した文) を添えて再提出にします"
+            >
+              <ThumbsDown size={13} />
+              {submission.verdict === null ? "再提出にする" : "再提出"}
+            </Button>
+            <Button
+              type="button"
+              variant={
+                submission.verdict === null && proposal === "resubmit" ? "default" : "primary"
+              }
+              onClick={() => handleFinalize("pass")}
+              disabled={finalizing || (!!submission.taskId && !taskDetail)}
+            >
+              <ThumbsUp size={13} />
+              {submission.verdict === null && proposal === "pass"
+                ? "判定案どおり合格"
+                : "合格として確定"}
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: "1fr 380px", minHeight: 0, flex: 1 }}>
@@ -428,6 +506,11 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                   自動採点
                 </TabTrigger>
               ) : null}
+              {wasAiConfirmed ? (
+                <TabTrigger value="check" icon={<CheckCheck />}>
+                  事後確認
+                </TabTrigger>
+              ) : null}
               <TabTrigger value="ai" icon={<Sparkles />} count={suggestions.length}>
                 AI 下書き
               </TabTrigger>
@@ -445,6 +528,22 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
               >
                 <GradeSummaryPanel summary={submission.gradingSummary} />
+              </TabsContent>
+            ) : null}
+
+            {wasAiConfirmed ? (
+              <TabsContent
+                value="check"
+                className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
+              >
+                <PostCheckPanel
+                  submissionId={submission.id}
+                  aiPassed={aiPassedNow}
+                  checks={taskDetail?.checks}
+                  stageId={submission.stageId}
+                  pattern={submission.taskPattern}
+                  onChanged={reloadAfterCheck}
+                />
               </TabsContent>
             ) : null}
 
@@ -466,6 +565,19 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                   review={taskDetail?.aiReview}
                   onUseReply={(text) => {
                     setNotes(text);
+                    setTab("comment");
+                  }}
+                  onUseFindings={(findings) => {
+                    // 所見を総評に入れて直し、再提出にする (07 §6.4 の 3)。
+                    const lines = findings.map(
+                      (f) =>
+                        `- ${f.file} ${f.startLine}${f.endLine !== f.startLine ? `〜${f.endLine}` : ""}行 (${FINDING_SEVERITY_LABELS[f.severity]}): ${f.comment}`,
+                    );
+                    setNotes((prev) =>
+                      [prev.trim(), ["直してほしいところ", ...lines].join("\n")]
+                        .filter(Boolean)
+                        .join("\n\n"),
+                    );
                     setTab("comment");
                   }}
                 />
@@ -578,6 +690,21 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
               value="comment"
               className="mt-0 p-5 overflow-y-auto flex-1 data-[state=inactive]:hidden"
             >
+              {!isBackendConfigured() ? null : aiPassedNow ? (
+                <p className="text-[12px] text-ink-3 mb-3">
+                  AI が合格にした提出の総評は AI
+                  の返信です。コメントを足す・覆すときは「事後確認」から行ってください。
+                </p>
+              ) : (
+                <CommentTemplatePicker
+                  stageId={submission.stageId}
+                  pattern={submission.taskPattern}
+                  currentText={notes}
+                  onInsert={(body) =>
+                    setNotes((prev) => (prev.trim() ? `${prev}\n\n${body}` : body))
+                  }
+                />
+              )}
               <Label>総評コメント（受講者に通知されます）</Label>
               <Textarea
                 className="min-h-[160px] mb-3"
@@ -616,7 +743,9 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                 variant="accent"
                 className="w-full mb-3"
                 onClick={() => verdict && handleFinalize(verdict)}
-                disabled={!verdict || finalizing || (!!submission.taskId && !taskDetail)}
+                disabled={
+                  !verdict || aiPassedNow || finalizing || (!!submission.taskId && !taskDetail)
+                }
               >
                 採点を確定
               </Button>

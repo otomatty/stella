@@ -18,6 +18,7 @@ import {
   type InsertSubmissionInput,
   type SubmissionPatch,
 } from "@/lib/submissions-api";
+import { needsHumanReview } from "@/lib/review-queue";
 
 /**
  * 添削を保存しようとしたら、 学習者がその提出を引き継ぎ直していた (Issue #9)。
@@ -244,13 +245,39 @@ export function getSubmission(tenantId: Tenant["id"], id: string): Submission | 
   return localTenantList(store, tenantId).find((s) => s.id === id);
 }
 
+/**
+ * 保存・詳細の応答を、一覧から読んだ行に重ねる。応答に無い列 (一覧だけが返すキューの列 =
+ * 人に回した理由・担当者など、#34) は前の値を残す。
+ */
+function mergeRow(before: Submission | undefined, row: Submission): Submission {
+  if (!before) return row;
+  const defined = Object.fromEntries(Object.entries(row).filter(([, v]) => v !== undefined));
+  return { ...before, ...defined } as Submission;
+}
+
 function replaceRemote(tenantId: Tenant["id"], id: string, row: Submission): void {
   const list = remoteList(tenantId);
   const idx = list.findIndex((s) => s.id === id);
   if (idx < 0) return;
   const next = [...list];
-  next[idx] = row;
+  next[idx] = mergeRow(list[idx], row);
   setRemoteList(tenantId, next);
+}
+
+/** 提出 1 件を取り直してキャッシュに重ねる (事後確認の操作のあとなど)。 */
+export async function refreshSubmission(
+  tenantId: Tenant["id"],
+  id: string,
+): Promise<Submission | undefined> {
+  if (!isRemotePersistence()) return getSubmission(tenantId, id);
+  try {
+    const row = await fetchSubmissionById(id);
+    replaceRemote(tenantId, id, row);
+    return remoteList(tenantId).find((s) => s.id === id);
+  } catch (err) {
+    console.error("[submissions-store] refresh failed", err);
+    return undefined;
+  }
 }
 
 /** 409 のときは講師のキャッシュを最新化してから知らせる (古いコードを表示し続けない)。 */
@@ -267,6 +294,7 @@ async function persistRemotePatch(
   id: string,
   patch: Partial<Submission>,
   rollback: Submission,
+  options: { expectUndecided?: boolean } = {},
 ): Promise<Submission | undefined> {
   const nextGen = (remotePatchGen.get(id) ?? 0) + 1;
   remotePatchGen.set(id, nextGen);
@@ -274,9 +302,10 @@ async function persistRemotePatch(
     ...toSubmissionPatch(patch),
     // 講師が読み込んだ版。 学習者が引き継ぎ直していればサーバが 409 を返す。
     expectedSubmittedAt: rollback.submittedAt,
+    ...(options.expectUndecided ? { expectUndecided: true } : {}),
   };
   try {
-    const saved = await patchSubmission(id, apiPatch);
+    const saved = mergeRow(rollback, await patchSubmission(id, apiPatch));
     if (remotePatchGen.get(id) !== nextGen) return saved;
     const list = remoteList(tenantId);
     const idx = list.findIndex((s) => s.id === id);
@@ -303,6 +332,7 @@ export async function updateSubmission(
   tenantId: Tenant["id"],
   id: string,
   patch: Partial<Submission>,
+  options: { expectUndecided?: boolean } = {},
 ): Promise<Submission | undefined> {
   if (isRemotePersistence()) {
     const list = remoteList(tenantId);
@@ -313,7 +343,7 @@ export async function updateSubmission(
     const updated = { ...before, ...patch };
     const next = list.map((s, i) => (i === idx ? updated : s));
     setRemoteList(tenantId, next);
-    return persistRemotePatch(tenantId, id, patch, before);
+    return persistRemotePatch(tenantId, id, patch, before, options);
   }
 
   const store = loadLocalStore();
@@ -417,6 +447,10 @@ export async function createSubmissionAsync(
   }
 }
 
+/**
+ * 判定を確定する。`expectUndecided` は「まだ誰も確定していない」ときだけ確定する 1 回の操作
+ * (#34)。別の講師が先に確定していれば `SubmissionConflictError` になる。
+ */
 export async function finalizeReview(
   tenantId: Tenant["id"],
   id: string,
@@ -426,26 +460,33 @@ export async function finalizeReview(
     aiSuggestions: Submission["aiSuggestions"];
     rubric: Submission["rubric"];
   },
+  options: { expectUndecided?: boolean } = {},
 ): Promise<Submission | undefined> {
   const status = verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
-  return updateSubmission(tenantId, id, {
-    ...patch,
-    verdict,
-    status,
-  });
+  return updateSubmission(
+    tenantId,
+    id,
+    {
+      ...patch,
+      verdict,
+      status,
+    },
+    options,
+  );
 }
 
 export function formatSubmittedAt(ms: number): string {
   return relativeSubmittedAt(ms);
 }
 
+/** 人のレビューを待っている件数 (AI が確認中・置き換えた提出は数えない、#34)。 */
 export function countPending(tenantId: Tenant["id"]): number {
   if (isRemotePersistence()) {
     ensureRemoteFetch(tenantId);
-    return remoteList(tenantId).filter((s) => s.status === "pending").length;
+    return remoteList(tenantId).filter(needsHumanReview).length;
   }
   const store = loadLocalStore();
-  return localTenantList(store, tenantId).filter((s) => s.status === "pending").length;
+  return localTenantList(store, tenantId).filter(needsHumanReview).length;
 }
 
 export function subscribeSubmissions(listener: () => void): () => void {

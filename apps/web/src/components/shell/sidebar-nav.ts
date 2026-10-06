@@ -83,7 +83,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   instructor: [
     { id: "dash", label: "ダッシュボード", icon: Home },
-    { id: "review-queue", label: "添削待ち", icon: Edit },
+    { id: "review-queue", label: "レビュー", icon: Edit },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "students", label: "担当受講者", icon: Users },
     { id: "discovery", label: "発見教材", icon: Sparkles },
@@ -97,6 +97,8 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "stages", label: "ステージ管理", icon: Book },
     { id: "assignments", label: "課題管理", icon: Code },
     { id: "discovery", label: "発見教材", icon: Sparkles },
+    // 人に回した提出・AI が合格にした提出の確認・見直しの数字 (#34)。管理者もレビューできる。
+    { id: "review-queue", label: "レビュー", icon: Edit },
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },

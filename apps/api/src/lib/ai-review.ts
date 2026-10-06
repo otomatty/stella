@@ -29,7 +29,7 @@ import {
   type ReviewRubricItem,
 } from "@stella/shared/review/ai-review";
 import { checkSolutionLeak } from "@stella/shared/review/solution-leak";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   aiReviews,
@@ -527,6 +527,68 @@ export async function applyAiReview(
         throw inner;
       }
     }
+    if (e instanceof ApiError && e.status === 409) return "busy";
+    throw e;
+  }
+}
+
+/**
+ * 想定外の失敗 (例外) が試行回数の上限まで続いた提出を、「AI が判定できなかった」として人に回す。
+ * 当てていない AI の結果が残っていれば置き換え済みにし、失敗の記録を足してから当てる。
+ * 提出の行は JSON の列を読まずに確かめる (壊れた列があっても記録までは進める)。
+ */
+export async function escalateUnreviewable(
+  db: Db,
+  submissionId: string,
+  detail: string,
+  opts: { lockWaitMs?: number } = {},
+): Promise<AiReviewApply> {
+  const [row] = await db
+    .select({
+      id: submissions.id,
+      tenantId: submissions.tenantId,
+      taskId: submissions.taskId,
+      taskContentHash: submissions.taskContentHash,
+      taskKind: submissions.taskKind,
+      aiReviewStatus: submissions.aiReviewStatus,
+      verdict: submissions.verdict,
+    })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+  if (
+    !row?.taskId ||
+    row.verdict ||
+    (row.aiReviewStatus !== "queued" && row.aiReviewStatus !== "escalated")
+  )
+    return "superseded";
+  const now = new Date();
+  await db
+    .update(aiReviews)
+    .set({ disposition: "superseded", appliedAt: now })
+    .where(and(eq(aiReviews.submissionId, row.id), isNull(aiReviews.disposition)));
+  const [inserted] = await db
+    .insert(aiReviews)
+    .values({
+      submissionId: row.id,
+      tenantId: row.tenantId,
+      taskId: row.taskId,
+      taskContentHash: row.taskContentHash ?? "",
+      taskKind: row.taskKind ?? "basic",
+      outcome: "escalated",
+      routeReasons: ["ai-unavailable"],
+      failure: "error",
+      promptVersion: AI_REVIEW_PROMPT_VERSION,
+      thresholdVersion: AI_REVIEW_THRESHOLD_VERSION,
+      createdAt: now,
+    })
+    .returning({ id: aiReviews.id });
+  if (!inserted) throw new Error(`AI レビューの失敗を記録できませんでした: ${detail}`);
+  try {
+    await escalateTaskSubmission(db, row.id, inserted.id, opts.lockWaitMs ?? 5_000);
+    return "applied";
+  } catch (e) {
+    if (e instanceof AiReviewNotApplicable) return "superseded";
     if (e instanceof ApiError && e.status === 409) return "busy";
     throw e;
   }

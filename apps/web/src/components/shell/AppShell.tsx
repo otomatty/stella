@@ -293,7 +293,7 @@ export function AppShell() {
             ? myCertificates.certificates.length
             : stages.filter((c) => c.completed).length,
         }
-      : effectiveRole === "instructor"
+      : effectiveRole === "instructor" || effectiveRole === "admin"
         ? {
             "review-queue": pendingReviewCount,
           }

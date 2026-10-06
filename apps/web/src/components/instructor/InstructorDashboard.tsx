@@ -25,6 +25,7 @@ import { formatSubmittedAt } from "@/lib/submissions-store";
 import { cn } from "@/lib/utils";
 import { AssignedScopeToggle } from "./AssignedScopeToggle";
 import { hasAiDraft } from "@/lib/ai-draft";
+import { needsHumanReview } from "@/lib/review-queue";
 
 interface InstructorDashboardProps {
   tenantId: Tenant["id"];
@@ -61,9 +62,10 @@ export const InstructorDashboard = ({
 }: InstructorDashboardProps) => {
   const { submissions } = useSubmissions(tenantId);
   const scope = useAssignedScope(currentUserId, backendEnabled);
+  // 人のレビューを待つ提出だけを数える (AI が確認中・置き換えた提出は除く。キューと同じ数え方)。
   const pending = submissions.filter(
     (s) =>
-      s.status === "pending" &&
+      needsHumanReview(s) &&
       (!scope.assignedOnly || (s.studentId != null && scope.assignedIds.has(s.studentId))),
   );
   const pendingCount = pending.length;
@@ -167,7 +169,7 @@ export const InstructorDashboard = ({
       <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 1fr" }}>
         <Card>
           <CardHeader>
-            <CardTitle>添削待ちキュー</CardTitle>
+            <CardTitle>人に回した提出</CardTitle>
             <CardActions>
               <Button size="sm" type="button" onClick={() => setPage("review-queue")}>
                 すべて見る ({pendingCount})
@@ -200,7 +202,8 @@ export const InstructorDashboard = ({
                     {r.stageTitle} · 提出 {formatSubmittedAt(r.submittedAt)}
                   </div>
                 </div>
-                {r.aiReady ? (
+                {/* 件数 (AI下書き準備済) と同じく、新形式の AI 一次レビューも数える。 */}
+                {hasAiDraft(r) ? (
                   <Badge variant="accent">
                     <Sparkles size={10} />
                     AI下書き

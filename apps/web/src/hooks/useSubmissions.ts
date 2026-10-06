@@ -11,6 +11,7 @@ import {
   subscribeSubmissions,
 } from "@/lib/submissions-store";
 import { hasAiDraft } from "@/lib/ai-draft";
+import { needsHumanReview } from "@/lib/review-queue";
 
 function getServerSnapshot(tenantId: Tenant["id"]) {
   return listSubmissions(tenantId);
@@ -37,7 +38,8 @@ export function useSubmissions(tenantId: Tenant["id"]) {
         aiSuggestions: Submission["aiSuggestions"];
         rubric: Submission["rubric"];
       },
-    ): Promise<Submission | undefined> => finalizeReview(tenantId, id, verdict, patch),
+      options: { expectUndecided?: boolean } = {},
+    ): Promise<Submission | undefined> => finalizeReview(tenantId, id, verdict, patch, options),
     [tenantId],
   );
 
@@ -48,8 +50,8 @@ export function useSubmissions(tenantId: Tenant["id"]) {
 
   const getById = useCallback((id: string) => getSubmission(tenantId, id), [tenantId]);
 
-  const pendingCount = submissions.filter((s) => s.status === "pending").length;
-  const aiReadyCount = submissions.filter((s) => s.status === "pending" && hasAiDraft(s)).length;
+  const pendingCount = submissions.filter(needsHumanReview).length;
+  const aiReadyCount = submissions.filter((s) => needsHumanReview(s) && hasAiDraft(s)).length;
 
   return {
     submissions,

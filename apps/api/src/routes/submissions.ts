@@ -11,12 +11,14 @@
  * `profiles: { display_name, initials }` をネストしてフロントのマッパーを無変更に保つ。
  */
 
+import type { RouteReason } from "@stella/shared/review/ai-review";
 import { nextSubmissionAttempt } from "@stella/shared/review/escalation";
 import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/grading-summary";
 import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 
 import {
   aiReviews,
@@ -54,6 +56,7 @@ import {
   syncReviewedLesson,
 } from "../lib/task-submission.js";
 import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
+import { staffCommentsOf, submissionChecksOf, submittedRouteReasons } from "../lib/review-desk.js";
 import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
@@ -152,6 +155,43 @@ function toRow(
   };
 }
 
+/**
+ * staff の一覧だけに足す、キューの分け方と並べ方に使う列 (#34)。人に回した理由・確信度・判定案は
+ * 最新の AI 一次レビューから、担当者は担当講師 (#38) から読む。
+ */
+interface QueueColumns {
+  routeReasons: RouteReason[] | null;
+  aiConfidence: string | null;
+  aiProposedVerdict: string | null;
+  machineMatched: number | null;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  stageId: string | null;
+  taskPattern: string | null;
+}
+
+function toQueueFields(s: SubmissionSummary, q: QueueColumns) {
+  // AI の記録がまだ無い人に回した提出は、提出の時点で分かる理由で分ける。
+  const reasons =
+    q.routeReasons ??
+    (s.aiReviewStatus === "escalated"
+      ? submittedRouteReasons({
+          taskKind: s.taskKind,
+          submissionMode: s.submissionMode,
+          machineMatched: q.machineMatched,
+        })
+      : []);
+  return {
+    route_reasons: reasons,
+    ai_confidence: q.aiConfidence,
+    ai_proposed_verdict: q.aiProposedVerdict,
+    assignee_id: q.assigneeId,
+    assignee_name: q.assigneeName,
+    stage_id: q.stageId,
+    task_pattern: q.taskPattern,
+  };
+}
+
 async function profileFor(
   db: Db,
   studentId: string | null,
@@ -183,10 +223,16 @@ async function aiReviewReadyOf(db: Db, id: string): Promise<boolean> {
   return Boolean(hit);
 }
 
+const assignee = alias(profiles, "assignee");
+/** 提出の最新の AI 一次レビュー (外側の submissions は表名付きで指す)。 */
+const latestAi = alias(aiReviews, "latest_ai");
+const isLatestAi = sql`${latestAi.id} = (select r.id from ai_reviews r where r.submission_id = "submissions"."id" order by r.created_at desc limit 1)`;
+
 /**
  * staff: テナント内の提出物一覧 (新着順)。
  * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
- * 省略時はこれまでどおりテナント全体。
+ * 省略時はこれまでどおりテナント全体。キューを理由で分け、待ち時間・担当者で並べるための列
+ * (人に回した理由・確信度・判定案・担当講師) も返す (#34)。
  */
 submissionsRoute.get("/api/submissions", async (c) => {
   try {
@@ -196,8 +242,24 @@ submissionsRoute.get("/api/submissions", async (c) => {
     if (assigned !== undefined && assigned !== "mine")
       throw new ApiError("assigned には mine だけを指定できます", 400);
     const rows = await db
-      .select({ ...summaryColumns, aiReviewReady: aiReviewReadyColumn })
+      .select({
+        ...summaryColumns,
+        aiReviewReady: aiReviewReadyColumn,
+        routeReasons: latestAi.routeReasons,
+        aiConfidence: latestAi.confidence,
+        aiProposedVerdict: latestAi.proposedVerdict,
+        machineMatched: sql<number | null>`json_extract(${submissions.machineCheck}, '$.matched')`,
+        assigneeId: learnerInstructors.instructorId,
+        assigneeName: assignee.displayName,
+        stageId: sections.stageId,
+        taskPattern: tasks.pattern,
+      })
       .from(submissions)
+      .leftJoin(latestAi, isLatestAi)
+      .leftJoin(learnerInstructors, eq(learnerInstructors.learnerId, submissions.studentId))
+      .leftJoin(assignee, eq(assignee.id, learnerInstructors.instructorId))
+      .leftJoin(tasks, eq(tasks.id, submissions.taskId))
+      .leftJoin(sections, eq(sections.id, tasks.sectionId))
       .where(
         and(
           eq(submissions.tenantId, caller.tenantId),
@@ -227,14 +289,15 @@ submissionsRoute.get("/api/submissions", async (c) => {
       }
     }
     return c.json({
-      rows: rows.map((r) =>
-        toSummaryRow(
+      rows: rows.map((r) => ({
+        ...toSummaryRow(
           r,
           r.studentId ? (profMap.get(r.studentId) ?? null) : null,
           true,
           r.aiReviewReady,
         ),
-      ),
+        ...toQueueFields(r, r),
+      })),
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -548,9 +611,13 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     const detail = toRow(row, await profileFor(db, row.studentId), isStaff, aiReview !== null);
     if (row.taskId) {
       const files = await readSubmissionFiles(db, c.env, row.id);
+      // staff には事後確認の記録を、受講者には講師が判定を変えずに足したコメントだけを返す (#34)。
       const ai = isStaff
-        ? { ai_review: aiReview }
-        : { ai_feedback: await learnerAiFeedback(db, row) };
+        ? { ai_review: aiReview, checks: await submissionChecksOf(db, row.id) }
+        : {
+            ai_feedback: await learnerAiFeedback(db, row),
+            staff_comments: await staffCommentsOf(db, row.id),
+          };
       return c.json({
         row: {
           ...detail,
@@ -603,6 +670,11 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
        * いれば 409 で弾く — 見えていないコードに添削を確定させないため (Issue #9)。
        */
       expectedSubmittedAt?: string;
+      /**
+       * 「まだ誰も確定していない」ときだけ確定する (#34 の 1 回の操作での確定)。別の講師が
+       * 先に確定していれば 409 にする (確定し直しにしない)。
+       */
+      expectUndecided?: boolean;
       status?: "pending" | "passed" | "resubmit" | "failed";
       priority?: "high" | "normal" | "low";
       attempt?: number;
@@ -622,9 +694,11 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
         !["pass", "resubmit", "fail"].includes(patch.verdict)) ||
       (patch.status !== undefined &&
         !["pending", "passed", "resubmit", "failed"].includes(patch.status)) ||
-      (patch.reviewNotes !== undefined && typeof patch.reviewNotes !== "string")
+      (patch.reviewNotes !== undefined && typeof patch.reviewNotes !== "string") ||
+      (patch.expectUndecided !== undefined && typeof patch.expectUndecided !== "boolean")
     )
       throw new ApiError("レビューの形式が不正です", 400);
+    const expectUndecided = patch.expectUndecided === true;
     const expected = parseExpectedSubmittedAt(patch.expectedSubmittedAt);
     if (expected && expected.getTime() !== before.submittedAt.getTime()) {
       throw submissionChanged();
@@ -666,7 +740,15 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     }
 
     if (before.taskId && verdict) {
-      await reviewTaskSubmission(db, caller, id, verdict, patch.reviewNotes ?? before.reviewNotes);
+      await reviewTaskSubmission(
+        db,
+        caller,
+        id,
+        verdict,
+        patch.reviewNotes ?? before.reviewNotes,
+        "human",
+        { requireUndecided: expectUndecided },
+      );
       // 確定判定は上のトランザクションで記録済み。下書き等の任意項目だけ更新する。
       for (const key of ["verdict", "status", "reviewNotes", "reviewedAt", "reviewerId"] as const)
         delete set[key];
@@ -681,15 +763,22 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
           : [];
         // 版チェックを UPDATE の述語に含める。 上の比較と この書き込みの間に学習者が
         // 引き継ぎ直しても、 講師が見ていないコードに添削を確定させない。
+        // 「まだ確定していない」ときだけの確定 (#34) も同じ述語で確かめる。
+        const undecidedOnly = expectUndecided && notifyVerdict !== null;
         const updated = await db
           .update(submissions)
           .set(set)
           .where(
-            expected
-              ? and(eq(submissions.id, id), eq(submissions.submittedAt, expected))
-              : eq(submissions.id, id),
+            and(
+              eq(submissions.id, id),
+              expected ? eq(submissions.submittedAt, expected) : undefined,
+              undecidedOnly ? isNull(submissions.verdict) : undefined,
+            ),
           )
           .returning();
+        if (!updated[0] && undecidedOnly && current?.verdict) {
+          throw new ApiError("別の講師が先に確定しました。提出を開き直してください", 409);
+        }
         if (expected && !updated[0]) {
           throw submissionChanged();
         }
