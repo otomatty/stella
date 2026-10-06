@@ -6,6 +6,7 @@ import {
   type TaskBundleResponse,
   type TaskSummary,
 } from "@stella/shared/tasks/catalog";
+import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
 import {
@@ -17,6 +18,7 @@ import {
   taskFixedStarts,
   taskFixedStartUses,
   taskPrivate,
+  taskProgress,
   taskRevisions,
   tasks,
   tenants,
@@ -29,6 +31,12 @@ import { submissionsRoute } from "./submissions.js";
 import { tasksRoute } from "./tasks.js";
 
 const PRIVATE_MARKER = "PRIVATE_SOLUTION_MARKER_31";
+/** 前の課題。後の課題 (fixture) の固定した開始点が、この課題の動く実装を含む。 */
+const EARLIER_ID = "dev-env-basics/u01/earlier";
+const DEFINITION = {
+  submit: { explanation: false, debuggingRecord: false },
+  skills: { assesses: ["html"] },
+};
 const encode = (text: string) => Buffer.from(text).toString("base64");
 
 describe("課題の配布 API (実 SQLite)", () => {
@@ -139,6 +147,50 @@ describe("課題の配布 API (実 SQLite)", () => {
       contentHash,
       files: JSON.stringify(fixedStartFiles),
     });
+  /** 後の課題 (fixture) の開始点が、前の課題の実装を含むと教材に書いた版にする。 */
+  const coverEarlierTask = () =>
+    db
+      .update(tasks)
+      .set({ definition: JSON.stringify({ ...DEFINITION, fixedStart: { covers: [EARLIER_ID] } }) })
+      .where(eq(tasks.id, fixture.input.taskId));
+  const addEarlierTask = async (kind: TaskKind = "basic") => {
+    const earlier = await submissionFixture({ id: EARLIER_ID, title: "前の課題", kind });
+    const definition = JSON.stringify(DEFINITION);
+    await db.batch([
+      db.insert(tasks).values({
+        id: EARLIER_ID,
+        sectionId: "unit",
+        title: "前の課題",
+        kind,
+        pattern: "page",
+        skills: { uses: [], assesses: ["html"] },
+        estimatedMinutes: 10,
+        order: 0,
+        contentHash: earlier.bundle.contentHash,
+        definition,
+        bundle: JSON.stringify(earlier.bundle),
+      }),
+      db.insert(taskRevisions).values({
+        taskId: EARLIER_ID,
+        contentHash: earlier.bundle.contentHash,
+        definition,
+        bundle: JSON.stringify(earlier.bundle),
+      }),
+    ]);
+    return earlier;
+  };
+  const submit = (input: { taskId: string }) =>
+    request(app(), env, "/api/submissions", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ ...input, support: [] }),
+    });
+  const submittedOf = (taskId: string) =>
+    db
+      .select()
+      .from(submissions)
+      .where(eq(submissions.taskId, taskId))
+      .orderBy(submissions.attempt);
   const decoded = (bundle: TaskBundle) =>
     Object.values(bundle.files)
       .map((value) => Buffer.from(value, "base64").toString())
@@ -245,17 +297,70 @@ describe("課題の配布 API (実 SQLite)", () => {
 
   it("開始点を受け取った受講者の提出は、手元の記録が無くても支援付きになる", async () => {
     await addFixedStart();
+    await coverEarlierTask();
     expect((await fixedStart()).status).toBe(200);
-    const response = await request(app(), env, "/api/submissions", {
-      method: "POST",
-      token,
-      body: JSON.stringify({ ...fixture.input, support: [] }),
-    });
+    const response = await submit(fixture.input);
     expect(response.status, await response.clone().text()).toBe(201);
     const [row] = await db.select().from(submissions);
     expect(row.supportLog).toEqual([
-      expect.objectContaining({ kind: "fixed-start", detail: expect.stringContaining("LMS") }),
+      expect.objectContaining({
+        kind: "fixed-start",
+        detail: "固定した開始点を受け取った記録 (LMS)",
+      }),
     ]);
+  });
+
+  it("開始点を受け取るとき、開始点が実装を含む前の課題もその時点の教材から記録する", async () => {
+    await addFixedStart();
+    await coverEarlierTask();
+    expect((await fixedStart()).status).toBe(200);
+    expect(await db.select().from(taskFixedStartUses)).toMatchObject([
+      { taskId: fixture.input.taskId, coveredTaskIds: [EARLIER_ID] },
+    ]);
+  });
+
+  it("後の課題の開始点を受け取ったあとの前の課題の提出は支援付きになり、前の提出は変えない", async () => {
+    const earlier = await addEarlierTask();
+    await addFixedStart();
+    await coverEarlierTask();
+    expect((await submit(earlier.input)).status).toBe(201);
+    expect((await fixedStart()).status).toBe(200);
+    const response = await submit(earlier.input);
+    expect(response.status, await response.clone().text()).toBe(201);
+    const [before, after] = await submittedOf(EARLIER_ID);
+    expect(before.supportLog).toEqual([]);
+    expect(after.supportLog).toEqual([
+      expect.objectContaining({
+        kind: "fixed-start",
+        detail: "後の課題「課題」の固定した開始点を受け取った記録 (LMS)",
+      }),
+    ]);
+  });
+
+  it("前の課題を含まない開始点 (含む課題を記録していない受け取り) では前の課題を変えない", async () => {
+    const earlier = await addEarlierTask();
+    await addFixedStart();
+    expect((await fixedStart()).status).toBe(200);
+    expect(await db.select().from(taskFixedStartUses)).toMatchObject([{ coveredTaskIds: null }]);
+    expect((await submit(earlier.input)).status).toBe(201);
+    const [row] = await submittedOf(EARLIER_ID);
+    expect(row.supportLog).toEqual([]);
+  });
+
+  it("前の課題が確認A・Bなら、後の課題の開始点を受け取ったあとの提出は AI で確定せず人に回す", async () => {
+    const earlier = await addEarlierTask("assessment-a");
+    await addFixedStart();
+    await coverEarlierTask();
+    expect((await fixedStart()).status).toBe(200);
+    const response = await submit(earlier.input);
+    expect(response.status, await response.clone().text()).toBe(201);
+    const [row] = await submittedOf(EARLIER_ID);
+    expect(row.aiReviewStatus).toBe("escalated");
+    const [progress] = await db
+      .select({ status: taskProgress.status })
+      .from(taskProgress)
+      .where(eq(taskProgress.taskId, EARLIER_ID));
+    expect(progress?.status).toBe("instructor-pending");
   });
 
   it("開始点を使っていない提出の支援記録は変えない", async () => {

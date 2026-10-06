@@ -248,6 +248,8 @@ function readFixedStart(
   try {
     stat = lstatSync(dir);
   } catch {
+    if (definition.fixedStart)
+      throw new Error(`fixedStart は fixed-start/ のある課題だけに書けます: ${definition.id}`);
     return undefined;
   }
   if (stat.isSymbolicLink() || !stat.isDirectory())
@@ -255,6 +257,12 @@ function readFixedStart(
   // 確認A・Bは公式ドキュメントの参照だけで解く (07 §8)。支援になる開始点は置かない。
   if (definition.kind.startsWith("assessment-"))
     throw new Error(`確認A・Bには固定した開始点を置けません: ${definition.id}`);
+  // 開始点は前の課題の動く実装を含む。どの課題の実装かを推測せず教材に書かせ、受け取った
+  // 受講者のそれらの課題の提出も支援付きにする (写して前の課題を出せるため)。
+  if (!definition.fixedStart)
+    throw new Error(
+      `fixed-start/ のある課題には fixedStart.covers (開始点が実装を含む前の課題) が必要です: ${definition.id}`,
+    );
   const fixedStart = assemble(collectFiles(dir));
   const tooLarge = bundleSizeProblem(fixedStart);
   if (tooLarge) throw new Error(`固定した開始点の${tooLarge}: ${definition.id}`);
@@ -280,4 +288,22 @@ function readFixedStart(
       );
   }
   return fixedStart;
+}
+
+/**
+ * 固定した開始点が実装を含む課題 (`fixedStart.covers`) は、同じ講座でこの課題より前の課題に限る。
+ * `tasks` は 1 つの講座の課題を講座の順 (単元 → 課題) に並べたもの。
+ */
+export function assertFixedStartCovers(tasks: TaskSeed[]): void {
+  const earlier = new Set<string>();
+  for (const task of tasks) {
+    for (const id of task.definition.fixedStart?.covers ?? [])
+      if (!earlier.has(id))
+        throw new Error(
+          tasks.some((t) => t.definition.id === id)
+            ? `fixedStart.covers: この課題より前の課題だけを書けます: ${id} (${task.definition.id})`
+            : `fixedStart.covers: 同じ講座の課題が見つかりません: ${id} (${task.definition.id})`,
+        );
+    earlier.add(task.definition.id);
+  }
 }

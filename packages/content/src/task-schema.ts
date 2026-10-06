@@ -43,6 +43,12 @@ export interface TaskDefinition {
   protected: string[];
   checks: TaskManifest["checks"];
   static?: TaskManifest["static"];
+  /**
+   * 固定した開始点 (`fixed-start/`) が動く実装を含む前の課題 (課題 ID)。開始点を受け取った
+   * 受講者は、これらの課題の以後の提出も支援付きになる。開始点のある課題だけが書き、無い課題は
+   * 持たない (定義を変えずに課題の内容ハッシュを保つため)。
+   */
+  fixedStart?: { covers: string[] };
 }
 
 function object(raw: unknown, at: string): Record<string, unknown> {
@@ -163,6 +169,27 @@ export function parseTaskDefinition(
     throw new Error("自力・統合・確認: 説明欄が必要です");
   if (parsed.manifest.kind === "debug" && !debuggingRecord)
     throw new Error("修正課題: 修正記録が必要です");
+  // 講座の中の順序 (前の課題か) は講座の課題をすべて読んでから確かめる (assertFixedStartCovers)。
+  const fixedStart =
+    value.fixedStart === undefined
+      ? undefined
+      : (() => {
+          const covers = stringList(
+            object(value.fixedStart, "fixedStart").covers,
+            "fixedStart.covers",
+          );
+          if (covers.length === 0)
+            throw new Error(
+              "fixedStart.covers: 開始点が実装を含む前の課題を 1 つ以上書いてください",
+            );
+          for (const id of covers) {
+            if (id.split("/").length !== 3)
+              throw new Error(`fixedStart.covers: <講座>/<単元>/<課題> が必要です: ${id}`);
+            if (id === parsed.manifest.id)
+              throw new Error("fixedStart.covers: この課題自身は書けません");
+          }
+          return { covers };
+        })();
   return {
     ...parsed.manifest,
     environment: text(value.environment, "environment"),
@@ -177,6 +204,7 @@ export function parseTaskDefinition(
     },
     sources: stringList(value.sources, "sources"),
     estimatedMinutes: positive(value.estimatedMinutes, "estimatedMinutes"),
+    ...(fixedStart ? { fixedStart } : {}),
   };
 }
 

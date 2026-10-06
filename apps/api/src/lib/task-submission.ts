@@ -96,7 +96,11 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   } catch (e) {
     throw new ApiError(e instanceof Error ? e.message : "提出が不正です", 400);
   }
-  const supportLog = await withRecordedFixedStart(db, caller.id, task.id, input.support);
+  const supportLog = await withRecordedFixedStart(
+    db,
+    { tenantId: caller.tenantId, userId: caller.id, taskId: task.id },
+    input.support,
+  );
   const bucket = env.SUBMISSIONS_BUCKET;
   if (!bucket) throw new ApiError("提出ファイルの保存先が未設定です", 503);
   const id = crypto.randomUUID();
@@ -123,12 +127,13 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     const now = new Date();
     // 照合の食い違い・確認A・Bの支援・相談は、AI の結果を待たずに人のキューへ入れる (07 §6.3)。
     // それでも AI の下書きは作るので、どちらも AI の待ち行列には積む。確認A・Bの支援は、提出の
-    // 申告に加えてサーバーの記録 (課題の AI チャット・相談、#38) も見る。
+    // 申告に加えてサーバーの記録 (課題の AI チャット・相談、#38) も見る。支援記録は LMS が足した
+    // 固定した開始点 (後の課題の開始点が、この課題の実装を含んでいた場合も) を含めたものを見る。
     const forced = forcedHumanReasons({
       kind: bundle.manifest.kind,
       mode: input.mode,
       machineCheck: verified.check,
-      support: input.support,
+      support: supportLog,
       recordedSupport:
         isAssessmentKind(bundle.manifest.kind) &&
         (await hasRecordedSupport(db, {

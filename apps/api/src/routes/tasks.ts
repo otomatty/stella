@@ -111,9 +111,22 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
 });
 
 /**
+ * 版の定義 (教材の task.json) から、固定した開始点が実装を含む前の課題を読む。開始点のある
+ * 版の定義と内容ハッシュは同じ seed で入るので、配る版 (`contentHash`) の定義を読めばよい。
+ */
+function fixedStartCovers(definition: string): string[] | null {
+  const parsed = JSON.parse(definition) as { fixedStart?: { covers?: unknown } };
+  const covers = parsed.fixedStart?.covers;
+  return Array.isArray(covers) && covers.length > 0 && covers.every((id) => typeof id === "string")
+    ? covers
+    : null;
+}
+
+/**
  * 固定した開始点を渡す (01 §4・07 §4.4)。前の実装が壊れていて先へ進めない受講者向けで、
  * 前の課題の動く実装を含みうるので、渡す前に利用を記録する。記録できなければ渡さない。
- * 記録は提出の支援記録に `fixed-start` を足す根拠になる (lib/task-fixed-start.ts)。
+ * 記録は提出の支援記録に `fixed-start` を足す根拠になる (lib/task-fixed-start.ts)。開始点が
+ * 実装を含む前の課題も受け取りの行に残し、それらの課題の以後の提出も支援付きにする。
  */
 tasksRoute.post("/api/tasks/fixed-start", async (c) => {
   try {
@@ -131,6 +144,7 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
         id: tasks.id,
         bundle: tasks.bundle,
         contentHash: tasks.contentHash,
+        definition: tasks.definition,
         stageId: sections.stageId,
         files: taskFixedStarts.files,
         fixedStartHash: taskFixedStarts.contentHash,
@@ -165,6 +179,7 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
         taskId: row.id,
         contentHash: row.contentHash,
         usedAt: new Date(),
+        coveredTaskIds: fixedStartCovers(row.definition),
       })
       .onConflictDoNothing();
     return c.json({ bundle });
