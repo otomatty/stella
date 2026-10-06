@@ -88,11 +88,12 @@ export function memoWeekOf(today: string): string {
 
 /**
  * 担当のいる受講者ごとに、前の週のメモを積む。担当は同じテナントの有効な講師だけ。
- * その週の終わりまでに受講を始めていた (受講中の登録がある) 受講者だけを積む。
+ * その週の終わりまでに受講を始めていた受講者だけを積む (受講中の登録か、その週以降に修了した登録がある)。
  * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<number> {
   const weekStart = memoWeekOf(toStudyDate(now));
+  const weekBegin = new Date(studyDateStartMs(weekStart));
   const weekEnd = new Date(studyDateStartMs(addStudyDays(weekStart, 7)));
   const instructor = alias(profiles, "instructor");
   const learners = await db
@@ -127,8 +128,12 @@ export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<numb
               and(
                 eq(enrollments.userId, profiles.id),
                 eq(enrollments.tenantId, profiles.tenantId),
-                eq(enrollments.status, "active"),
                 lt(enrollments.enrolledAt, weekEnd),
+                // 週の途中で修了した受講者も、その週の材料があるので積む (修了すると active でなくなる)。
+                or(
+                  eq(enrollments.status, "active"),
+                  and(eq(enrollments.status, "completed"), gte(enrollments.completedAt, weekBegin)),
+                ),
               ),
             ),
         ),

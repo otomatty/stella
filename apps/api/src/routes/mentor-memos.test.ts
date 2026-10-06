@@ -343,6 +343,20 @@ describe("週次の育成メモを積む (cron)", () => {
     expect(rows).toMatchObject([{ learnerId: "learner", weekStart: WEEK, state: "queued" }]);
   });
 
+  it("週の途中で修了した受講者にも積む。週より前に修了した受講者には積まない", async () => {
+    await db
+      .update(enrollments)
+      .set({ status: "completed", completedAt: new Date("2026-10-08T03:00:00Z") })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(1);
+    await db.delete(mentorMemos);
+    await db
+      .update(enrollments)
+      .set({ completedAt: new Date("2026-10-01T03:00:00Z") })
+      .where(eq(enrollments.userId, "learner"));
+    expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
+  });
+
   it("担当が無効・別テナントの講師なら積まない", async () => {
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
     expect(await enqueueWeeklyMemos(db, NOW)).toBe(0);
