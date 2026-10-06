@@ -61,7 +61,9 @@ CREATE INDEX ai_reviews_tenant_idx ON ai_reviews(tenant_id, created_at);
 -- 非公開の素材 (解答例・観点とよくある違反) を、素材そのものの版 (private_hash) ごとに残す。
 -- 課題の版 (content_hash) は非公開の素材を含まず、task_private は seed のたびに最新で上書きされる。
 -- 行は追記だけで書き換えない。提出は受け付けた時点の素材の版を task_private_hash に記録し、
--- AI のレビューはその版を読む。
+-- AI のレビューはその版を読む。導入前の提出は当時の素材が分からない (素材だけを直しても課題の版は
+-- 変わらないので、課題の版が今と同じでも今の素材だとは言えない) ため null のままにし、AI は判定
+-- せずに人に回す。
 CREATE TABLE task_private_versions (
   task_id text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   private_hash text NOT NULL,
@@ -121,21 +123,4 @@ WHERE status = 'submitted' AND EXISTS (
       SELECT max(m.attempt) FROM submissions m
       WHERE m.tenant_id = s.tenant_id AND m.student_id = s.student_id AND m.task_id = s.task_id
     )
-);
---> statement-breakpoint
--- 導入前の未判定の提出のうち、課題の版が今の版と同じものだけ、今の task_private を素材の版とみなす
--- (SQL では内容ハッシュを計算できないので、版の名前は migrated-<課題の版> にする)。
--- 版が違う提出は素材が分からないので空のままにし、AI は判定せずに人に回す。
-INSERT OR IGNORE INTO task_private_versions (task_id, private_hash, files, created_at)
-SELECT t.id, 'migrated-' || t.content_hash, p.files, unixepoch() * 1000
-FROM tasks t JOIN task_private p ON p.task_id = t.id
-WHERE EXISTS (
-  SELECT 1 FROM submissions s
-  WHERE s.task_id = t.id AND s.task_content_hash = t.content_hash AND s.verdict IS NULL
-);
---> statement-breakpoint
-UPDATE submissions SET task_private_hash = 'migrated-' || task_content_hash
-WHERE task_id IS NOT NULL AND verdict IS NULL AND EXISTS (
-  SELECT 1 FROM tasks t JOIN task_private p ON p.task_id = t.id
-  WHERE t.id = submissions.task_id AND t.content_hash = submissions.task_content_hash
 );

@@ -95,22 +95,12 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
     });
   });
 
-  it("課題の版が今の版と同じ未判定の提出にだけ、今の素材を版として記録する", () => {
+  it("導入前の提出には素材の版を記録しない (課題の版が今と同じでも、当時の素材だとは言えない)", () => {
     const rows = database.sqlite
       .prepare("select id, task_private_hash from submissions order by id")
       .all() as { id: string; task_private_hash: string | null }[];
-    expect(Object.fromEntries(rows.map((r) => [r.id, r.task_private_hash]))).toEqual({
-      decided: null,
-      latest: "migrated-h",
-      old: "migrated-h",
-      stale: null,
-      support: null,
-    });
-    expect(
-      database.sqlite
-        .prepare("select task_id, private_hash, files from task_private_versions")
-        .all(),
-    ).toEqual([{ task_id: "page", private_hash: "migrated-h", files: '{"review.md":"cGFnZQ=="}' }]);
+    expect(rows.every((r) => r.task_private_hash === null)).toBe(true);
+    expect(database.sqlite.prepare("select task_id from task_private_versions").all()).toEqual([]);
   });
 
   it("人に回したものも下書きのために待ち行列に積み、進捗を「講師の確認待ち」にそろえる", () => {
