@@ -11,6 +11,11 @@ export interface Env {
    * (`scripts/ai-review-eval.ts`) を見て切り替える。
    */
   AI_REVIEW_MODEL?: string;
+  /**
+   * 週次の育成メモ (#38) だけに使うモデル (未設定なら ANTHROPIC_MODEL)。構造化出力
+   * (`output_config.format`) に対応したモデルを選ぶ。API キーが無ければ機械的な要約になる。
+   */
+  MENTOR_MEMO_MODEL?: string;
   /** Cloudflare AI Gateway ID (例: stella-ai)。未設定なら Anthropic 直叩き。 */
   AI_GATEWAY_ID?: string;
   /**

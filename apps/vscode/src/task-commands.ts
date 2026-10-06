@@ -42,11 +42,11 @@ import { showTaskPanel, showTaskReadme } from "./task-panel.js";
 
 let running = false;
 
-function workspaceRoots(): string[] {
+export function workspaceRoots(): string[] {
   return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
 }
 
-function isInside(file: string, dir: string): boolean {
+export function isInside(file: string, dir: string): boolean {
   const rel = path.relative(dir, file);
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
@@ -56,7 +56,7 @@ function isInside(file: string, dir: string): boolean {
  * 探すのはワークスペースのフォルダーの中だけ。外のファイルを開いていても、その親を
  * たどらない — 信頼したのはワークスペースのフォルダーで、外の課題ではないため。
  */
-async function locateTask(): Promise<string | null> {
+export async function locateTask(): Promise<string | null> {
   const roots = workspaceRoots();
   const active = vscode.window.activeTextEditor?.document.uri;
   if (active?.scheme === "file") {

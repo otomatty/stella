@@ -11,6 +11,7 @@ import {
   FIXED_START_SUFFIX,
   type TaskBundle,
 } from "../../shared/src/tasks/catalog.js";
+import { parseTaskHints } from "../../shared/src/tasks/help.js";
 import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
   publicReferences,
@@ -183,7 +184,8 @@ export function readUnit(
     const readmeFile = Buffer.from(
       referencedMarkdown(readme, taskReferences, referenceMap, readmeId),
     ).toString("base64");
-    // ヒントの解放 UI は後続で実装する。ここでは README と実行に必要なファイルだけを配る。
+    // ヒント・解答例・解説は配布物に入れない。解放条件 (07 §8) を満たした受講者にだけ
+    // API (`/api/tasks/help`) が返す。ここでは README と実行に必要なファイルだけを配る。
     const manifestFile = Buffer.from(JSON.stringify(manifest, null, 2)).toString("base64");
     /** starter (または固定した開始点) に tests・README・task.json を足した配布一式。 */
     const assemble = (starter: Record<string, string>) => {
@@ -213,13 +215,19 @@ export function readUnit(
     const files = assemble(starter);
     const tooLarge = bundleSizeProblem(files);
     if (tooLarge) throw new Error(`${tooLarge}: ${definition.id}`);
+    const hints = readFileSync(join(taskDir, "hints.md"));
+    assertHintSteps(hints.toString("utf8"), definition);
     const privateFiles = {
       ...collectFiles(join(taskDir, "private/solution"), "solution"),
       ...collectFiles(join(taskDir, "private/variants"), "variants"),
       "explanation.md": readFileSync(join(taskDir, "private/explanation.md")).toString("base64"),
       "review.md": readFileSync(join(taskDir, "private/review.md")).toString("base64"),
-      "hints.md": readFileSync(join(taskDir, "hints.md")).toString("base64"),
+      "hints.md": hints.toString("base64"),
     };
+    // 非公開の素材は D1 の 1 行 (task_private) に入り、API が 1 回の要求で読む。配布一式と同じ上限。
+    const privateTooLarge = bundleSizeProblem(privateFiles);
+    if (privateTooLarge)
+      throw new Error(`非公開の素材 (private/・hints.md) の${privateTooLarge}: ${definition.id}`);
     const fixedStart = readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
     // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
     const contentHash = createHash("sha256")
@@ -237,6 +245,20 @@ export function readUnit(
     };
   });
   return { unit: { courseId, unitId, config, references }, tasks };
+}
+
+/**
+ * `hints.md` を段に分けられ、段の数が `support.hintLevels` と一致することを確かめる。
+ * 段は `## ヒント<番号> <題>` で始める (方針 → 手がかりのコード の順。解答例は最後の段として
+ * `private/solution/` から出すので hints.md には書かない)。ヒント 0 段の課題は本文の無い hints.md。
+ */
+export function assertHintSteps(markdown: string, definition: TaskDefinition): void {
+  const parsed = parseTaskHints(markdown);
+  if (!parsed.ok) throw new Error(`${parsed.errors.join("\n")} (${definition.id})`);
+  if (parsed.hints.length !== definition.support.hintLevels)
+    throw new Error(
+      `hints.md の段の数 (${parsed.hints.length}) が support.hintLevels (${definition.support.hintLevels}) と一致しません: ${definition.id}`,
+    );
 }
 
 /**

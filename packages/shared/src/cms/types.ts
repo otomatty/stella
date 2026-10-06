@@ -560,10 +560,14 @@ export type NotificationType =
   | "learning_pace_delayed"
   // つまずきの検知 (#38)。担当講師宛てで、payload に受講者・種類・課題を持つ。
   | "learner_stumble"
+  // 週次の育成メモから担当講師が送る一言 (#38)。受講者宛てで、本文は講師が書いた文だけ。
+  | "mentor_message"
   // ステージの自動クリア (修了証の自動発行)。講師の合格確定が引き金のとき、開いた
   // ままの受講者セッションにはレスポンス経由のクリアイベントが届かないため、
   // 永続する通知としても残す。
   | "stage_cleared"
+  // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。payload に submission_id。
+  | "review_comment"
   | "interview_date_set"
   | "interview_answer_template_generated"
   | "interview_answer_template_failed";

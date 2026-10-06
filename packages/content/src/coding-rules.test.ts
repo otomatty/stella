@@ -62,6 +62,14 @@ describe("コーディング規則の正本", () => {
       expect(r.statement.length).toBeGreaterThan(10);
     }
   });
+  it("position は規則の文書 (scope) の中で 0 始まりの連番 (= 一意) になる", () => {
+    // API は規則を (position, id) の順に並べて版のハッシュを作る。scope の中で position が
+    // 一意なら第 2 キーは並びを変えず、提出時に記録した版 (`rule_set_hash`) も変わらない。
+    const byScope = new Map<string, number[]>();
+    for (const r of readCodingRules(content))
+      byScope.set(r.scope, [...(byScope.get(r.scope) ?? []), r.position]);
+    for (const positions of byScope.values()) expect(positions).toEqual(positions.map((_, i) => i));
+  });
   it("本文を変えると内容ハッシュが変わり、説明の段落は規則に含めない", () => {
     const [a] = parseCodingRules(`前書き\n\n${rule("CR-A-01", "dev-env-basics")}`, "common", "x");
     const [b] = parseCodingRules(

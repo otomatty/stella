@@ -34,18 +34,27 @@ function errorMessage(data: unknown, fallback: string): string {
   return fallback;
 }
 
-type ApiInit = Omit<RequestInit, "body"> & { body?: unknown };
+type ApiInit = Omit<RequestInit, "body"> & {
+  body?: unknown;
+  /**
+   * 接続の世代 (`authSession()`)。渡すと、その世代のトークンでだけ送る。トークンを読んだあとで
+   * 世代が変わっていれば (接続の切り替えの途中)、送らずに `AuthSessionChanged` を投げる。
+   */
+  session?: number;
+};
 
 export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T> {
   const auth = requireAuthStore();
   const url = `${serverUrl()}${path.startsWith("/") ? path : `/${path}`}`;
-  const token = await auth.getToken();
+  const { body: rawBody, session, ...rest } = init;
+  // 世代を確かめたトークンを、await を挟まずに送る (世代とトークンを不可分に扱う)。
+  const token =
+    session === undefined ? await auth.getToken() : await auth.getTokenInSession(session);
   const headers = new Headers(init.headers);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const { body: rawBody, ...rest } = init;
   let body: BodyInit | undefined;
   if (typeof rawBody === "string") {
     body = rawBody;
@@ -58,7 +67,8 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
   const data: unknown = await res.json().catch(() => null);
 
   if (res.status === 401) {
-    await auth.clear();
+    // 前の世代のトークンが断られただけなら、切り替えたあとの接続を消さない。
+    if (session === undefined || session === auth.currentSession()) await auth.clear();
     throw new AuthExpiredError(errorMessage(data, "認証の有効期限が切れました"));
   }
 

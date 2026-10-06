@@ -36,6 +36,7 @@
     "./review/escalation": "./src/review/escalation.ts",
     "./review/ai-review": "./src/review/ai-review.ts",
     "./review/solution-leak": "./src/review/solution-leak.ts",
+    "./review/review-desk": "./src/review/review-desk.ts",
     "./discovery/types": "./src/discovery/types.ts",
     "./hall-of-fame/types": "./src/hall-of-fame/types.ts",
     "./discovery/prompt": "./src/discovery/prompt.ts",
@@ -59,6 +60,7 @@
     "./tasks/hash": "./src/tasks/hash.ts",
     "./tasks/local-report": "./src/tasks/local-report.ts",
     "./tasks/support-record": "./src/tasks/support-record.ts",
+    "./tasks/help": "./src/tasks/help.ts",
     "./search/types": "./src/search/types.ts",
     "./enrollment/access": "./src/enrollment/access.ts",
     "./enrollment/preset": "./src/enrollment/preset.ts",
@@ -81,7 +83,8 @@
     "./tasks/submission-support": "./src/tasks/submission-support.ts",
     "./testing/task-submission": "./src/testing/task-submission.ts",
     "./tasks/source-reference": "./src/tasks/source-reference.ts",
-    "./markdown/os-blocks": "./src/markdown/os-blocks.ts"
+    "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
+    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -59,6 +59,18 @@ describe("navForRole", () => {
     }
   });
 
+  it("レビュー (人に回した提出・AI の合格の確認) は講師と管理者に出す (#34)", () => {
+    expect(ids("instructor")).toContain("review-queue");
+    // 管理者は発見教材の直後 (課題管理 → 発見教材 の並びは崩さない)。
+    for (const profileRole of ["admin", "platform_admin"] as const) {
+      const admin = ids("admin", profileRole);
+      expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
+    }
+    for (const role of ["learner", "sales"] as const) {
+      expect(ids(role)).not.toContain("review-queue");
+    }
+  });
+
   it("専用教材は講師と管理者だけに出す", () => {
     expect(ids("instructor")).toContain("stage-grants");
     expect(ids("admin")).toContain("stage-grants");

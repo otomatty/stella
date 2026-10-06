@@ -4,8 +4,9 @@
  * 記録は 3 つの出どころを課題ごとに束ねる。
  * - 提出に添えた支援 (`submissions.support_log`): 受講者の申告と、拡張が `.stella/support.json` に残したもの。
  * - 提出とレビュー: 講師への相談 (相談として送った提出) と、人のレビュー (`submission_reviews`)。
- * - サーバーが記録する支援 (`task_support_events`): いまは AI チャット。ヒント・解答の表示 (#36) と
- *   固定した開始点 (#31) も、同じ表に種類を書けば足せる。列は text なので表は変えない。
+ * - サーバーが記録する支援: AI チャット (`task_support_events`) と、ヒント・解答例・解説を開いた
+ *   記録 (`task_help_opens`、#36。段と合格後かを持つので別の表)。固定した開始点の受け取り (#31) は
+ *   提出の支援記録に写して数える。
  */
 
 import type { TaskKind } from "./manifest.js";

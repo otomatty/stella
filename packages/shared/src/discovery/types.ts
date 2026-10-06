@@ -78,8 +78,11 @@ export type DiscoveryUnlockCondition = string;
 
 export const DISCOVERY_UNLOCK_STAGE_ACTIVE_OR_CLEARED = "stage_active_or_cleared";
 
-/** つまずきの出どころ。 */
-export type DiscoveryRequestOrigin = "quiz_fail" | "submission_resubmit";
+/**
+ * つまずきの出どころ。`review_common` は、講師が同じ課題の提出を並べて見て、共通のつまずきを
+ * 回したもの (#34)。列は text なので、種類を足してもマイグレーションは要らない。
+ */
+export type DiscoveryRequestOrigin = "quiz_fail" | "submission_resubmit" | "review_common";
 
 export interface DiscoveryOption {
   id: string;

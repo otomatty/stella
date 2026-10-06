@@ -603,17 +603,21 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${strLit(lessonId)}) on conflict (id) do update set section_id = excluded.section_id, title = excluded.title, kind = excluded.kind, pattern = excluded.pattern, skills = excluded.skills, estimated_minutes = excluded.estimated_minutes, "order" = excluded."order", content_hash = excluded.content_hash, definition = excluded.definition, bundle = excluded.bundle, active = 1, lesson_id = excluded.lesson_id;`,
   );
-  lines.push(
-    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}) on conflict (task_id, content_hash) do nothing;`,
-  );
-  lines.push(
-    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(JSON.stringify(task.privateFiles))}) on conflict (task_id) do update set files = excluded.files;`,
-  );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
+  const privateHash = createHash("sha256").update(privateJson).digest("hex");
+  // 配った版の定義と配布物は上書きしない。素材の版 (private_hash) だけは、この版を今の版として
+  // 入れるたびに書き直す。前の版には「その版が今の版だった最後の素材」が残り、手元の版が古い
+  // 受講者にその版のヒント・解答例・解説を出すのに使う (#36)。
   lines.push(
-    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(createHash("sha256").update(privateJson).digest("hex"))}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) do update set private_hash = excluded.private_hash;`,
+  );
+  lines.push(
+    `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) do update set files = excluded.files;`,
+  );
+  lines.push(
+    `insert into task_private_versions (task_id, private_hash, files, created_at) values (${strLit(d.id)}, ${strLit(privateHash)}, ${strLit(privateJson)}, ${nowExpr()}) on conflict (task_id, private_hash) do nothing;`,
   );
   // 固定した開始点は bundle と分けて持ち、教材から外したら消す (古い版を配らない)。
   lines.push(

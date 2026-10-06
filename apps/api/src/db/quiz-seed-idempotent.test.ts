@@ -385,6 +385,36 @@ describe("教材 seed の再実行", () => {
     for (const row of again) expect(row.files).toBe("kept");
   });
 
+  it("課題の版に、その版を配っていたときの素材の版を書き、前の版の配布物は上書きしない (#36)", () => {
+    const db = migratedDb();
+    applyScript(db, seedSql);
+    const rows = () =>
+      db
+        .prepare(
+          `select r.task_id, r.content_hash, r.private_hash, r.bundle, p.files as current
+           from task_revisions r join tasks t on t.id = r.task_id and t.content_hash = r.content_hash
+           join task_private p on p.task_id = r.task_id`,
+        )
+        .all() as {
+        task_id: string;
+        content_hash: string;
+        private_hash: string | null;
+        bundle: string;
+        current: string;
+      }[];
+    const seeded = rows();
+    expect(seeded.length).toBeGreaterThan(0);
+    for (const row of seeded)
+      expect(row.private_hash).toBe(createHash("sha256").update(row.current).digest("hex"));
+    // 素材だけが変わった後の seed: 素材の版は書き直し、配った版の配布物は残す。
+    db.exec("update task_revisions set private_hash = 'old', bundle = 'kept'");
+    applyScript(db, seedSql);
+    for (const row of rows()) {
+      expect(row.private_hash).toBe(createHash("sha256").update(row.current).digest("hex"));
+      expect(row.bundle).toBe("kept");
+    }
+  });
+
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();
     applyScript(db, seedSql);
