@@ -24,6 +24,7 @@ import {
   taskLocalRuns,
   taskProgress,
   taskFixedStartUses,
+  taskHelpOpens,
   taskSupportEvents,
   tasks,
   tenants,
@@ -39,6 +40,7 @@ import {
 } from "../lib/mentor-memo.js";
 import { notifyStumbles } from "../lib/stumble-alerts.js";
 import { MENTOR_MEMO_PROMPT_VERSION } from "../lib/mentor-memo-prompt.js";
+import { helpSupportEvents } from "../lib/task-help.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { mentorMemosRoute } from "./mentor-memos.js";
@@ -636,6 +638,58 @@ describe("週次の育成メモを書く (cron)", () => {
     });
     await runMentorMemoCron(env, db, () => NOW.getTime());
     expect((await memoRows())[0]?.material?.support).toEqual({ "fixed-start": 1 });
+  });
+
+  it("ヒント・解答例・解説を開いた記録は開いた週の支援に数え、提出に写った同じ記録とは重ねない", async () => {
+    const open = (item: "hint" | "solution", level: number, at: string, contentHash = HASH) => ({
+      tenantId: "ses",
+      userId: "learner",
+      taskId: "practice",
+      item,
+      level,
+      contentHash,
+      privateHash: "b".repeat(64),
+      afterPass: false,
+      openedAt: new Date(at),
+    });
+    const opens = [
+      // 前の週に開いた段は、この週には数えない。
+      open("hint", 1, "2026-09-30T00:00:00Z"),
+      open("hint", 2, "2026-10-06T00:00:00Z"),
+      // 版を変えて開き直した同じ段は重ねない (段ごとに最初の 1 回)。
+      open("hint", 2, "2026-10-07T00:00:00Z", "c".repeat(64)),
+      open("solution", 0, "2026-10-08T00:00:00Z"),
+    ];
+    await db.insert(taskHelpOpens).values(opens);
+    // 開いたあと、まだ提出していない。
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    expect((await memoRows())[0]?.material?.support).toEqual({ hint: 1, solution: 1 });
+
+    // 提出すると、開いた記録の写し (`withRecordedHelp`) が支援に載る。
+    await db.delete(mentorMemos);
+    await db.insert(submissions).values({
+      id: "with-help",
+      tenantId: "ses",
+      studentId: "learner",
+      taskId: "practice",
+      taskContentHash: HASH,
+      taskKind: "basic",
+      stageTitle: "開発環境",
+      assignmentTitle: "はじめてのページ",
+      code: "",
+      submissionMode: "submit",
+      submittedAt: new Date("2026-10-09T00:00:00Z"),
+      supportLog: helpSupportEvents(
+        opens.map((o) => ({
+          item: o.item,
+          level: o.level,
+          openedAt: o.openedAt,
+          afterPass: o.afterPass,
+        })),
+      ),
+    });
+    await runMentorMemoCron(env, db, () => NOW.getTime());
+    expect((await memoRows())[0]?.material?.support).toEqual({ hint: 1, solution: 1 });
   });
 
   it("週末に使った支援を週明けに提出しても、支援の時刻の週に数える (提出の数は提出の日時で数える)", async () => {

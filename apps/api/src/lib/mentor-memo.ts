@@ -30,6 +30,7 @@ import {
 import type { RouteReason } from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 import { studyWeekStart } from "@stella/shared/study/pace";
+import { helpSupportKind } from "@stella/shared/tasks/help";
 import { SUPPORT_KINDS } from "@stella/shared/tasks/submission-support";
 import {
   CONSULT_SUPPORT_DETAIL,
@@ -55,6 +56,7 @@ import {
   submissionReviews,
   submissions,
   taskFixedStartUses,
+  taskHelpOpens,
   taskLocalRuns,
   taskProgress,
   taskSupportEvents,
@@ -327,6 +329,7 @@ export async function collectMemoMaterial(
     streaks,
     recorded,
     fixedStarts,
+    helpOpens,
     aiResults,
     humanReviews,
   ] = await Promise.all([
@@ -351,6 +354,7 @@ export async function collectMemoMaterial(
       .select({
         at: submissions.submittedAt,
         mode: submissions.submissionMode,
+        taskId: submissions.taskId,
         supportLog: submissions.supportLog,
       })
       .from(submissions)
@@ -447,6 +451,24 @@ export async function collectMemoMaterial(
           lt(taskFixedStartUses.usedAt, to),
         ),
       ),
+    // ヒント・解答例・解説を開いた記録。開いた記録の正本はこの表で、提出の支援記録に載るのは
+    // その写し (`withRecordedHelp`)。段ごとに最初に開いた時刻で週に配るので、週より前の記録も読む。
+    db
+      .select({
+        taskId: taskHelpOpens.taskId,
+        item: taskHelpOpens.item,
+        level: taskHelpOpens.level,
+        openedAt: taskHelpOpens.openedAt,
+      })
+      .from(taskHelpOpens)
+      .where(
+        and(
+          eq(taskHelpOpens.userId, learner.id),
+          eq(taskHelpOpens.tenantId, tenant),
+          lt(taskHelpOpens.openedAt, to),
+        ),
+      )
+      .orderBy(asc(taskHelpOpens.openedAt)),
     // その週に提出へ当てた AI の結果 (受講者に見せたかどうかによらず、講師向けの集計に使う)。
     db
       .select({
@@ -527,6 +549,18 @@ export async function collectMemoMaterial(
   for (const e of recorded)
     if (SERVER_SUPPORT_KINDS.includes(e.kind)) add(e.kind as SupportRecordKind);
   if (fixedStarts.length > 0) support["fixed-start"] = fixedStarts.length;
+  // 開いた記録は段ごと (解答例・解説はそれぞれ) に最初の 1 回を、開いた時刻の週に数える
+  // (`loadTaskSupport` と同じ。版を変えて開き直した分は重ねない)。提出に写った同じ記録は数えない。
+  const helpCopies = new Set<string>();
+  const firstOpens = new Set<string>();
+  for (const o of helpOpens) {
+    const kind = helpSupportKind(o.item);
+    helpCopies.add(`${o.taskId}|${kind}|${o.openedAt.toISOString()}`);
+    const first = `${o.taskId}|${o.item}|${o.level}`;
+    if (firstOpens.has(first)) continue;
+    firstOpens.add(first);
+    if (o.openedAt >= from) add(kind);
+  }
   const seen = new Set<string>();
   for (const s of submitted) if (s.mode === "consult") add("consult");
   for (const s of sinceWeek) {
@@ -539,6 +573,7 @@ export async function collectMemoMaterial(
         continue;
       const at = new Date(e.at);
       if (Number.isNaN(at.getTime()) || at < from || at >= to) continue;
+      if (helpCopies.has(`${s.taskId}|${e.kind}|${at.toISOString()}`)) continue;
       const key = `${e.kind}|${at.toISOString()}`;
       if (seen.has(key)) continue;
       seen.add(key);
