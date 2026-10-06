@@ -56,7 +56,12 @@ import {
   syncReviewedLesson,
 } from "../lib/task-submission.js";
 import { latestAiReview, learnerAiFeedback } from "../lib/ai-review.js";
-import { staffCommentsOf, submissionChecksOf, submittedRouteReasons } from "../lib/review-desk.js";
+import {
+  machineMatchedColumn,
+  staffCommentsOf,
+  submissionChecksOf,
+  submittedRouteReasons,
+} from "../lib/review-desk.js";
 import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
@@ -248,7 +253,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
         routeReasons: latestAi.routeReasons,
         aiConfidence: latestAi.confidence,
         aiProposedVerdict: latestAi.proposedVerdict,
-        machineMatched: sql<number | null>`json_extract(${submissions.machineCheck}, '$.matched')`,
+        machineMatched: machineMatchedColumn,
         assigneeId: learnerInstructors.instructorId,
         assigneeName: assignee.displayName,
         stageId: sections.stageId,

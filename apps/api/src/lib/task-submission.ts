@@ -426,7 +426,7 @@ function recomputeTaskProgress(
           taskId: sql<string>`${row.taskId}`.as("task_id"),
           status: sql<
             typeof taskProgress.$inferSelect.status
-          >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when ai_review_status = 'queued' or (ai_review_status is null and json_extract(machine_check, '$.matched') = 1) then 'submitted' else 'instructor-pending' end`.as(
+          >`case when verdict = 'pass' then case when review_source = 'ai' then 'ai-passed' else 'passed' end when verdict is not null then 'resubmit' when ai_review_status = 'queued' or (ai_review_status is null and case when json_valid(machine_check) then json_extract(machine_check, '$.matched') end = 1) then 'submitted' else 'instructor-pending' end`.as(
             "status",
           ),
           contentHash: sql<string>`task_content_hash`.as("content_hash"),

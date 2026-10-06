@@ -511,7 +511,89 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     expect((await call("/api/review-desk/metrics", "learner")).status).toBe(403);
   });
 
+  it("課題ごとの人に回した割合は、AI の結果を当てた提出だけで数える (AI 前の相談は数えない)", async () => {
+    await aiPassed("learner", "high");
+    complete.mockResolvedValue(answer(aiOutput({ confidence: "high" })));
+    // 相談は提出の時点で人に回る (ai_review_status = escalated) が、AI はまだ処理していない。
+    await submit("learner2", "consult");
+    const taskRows = async () =>
+      (await json<ReviewMetrics>(await call("/api/review-desk/metrics", "boss"))).taskEscalation;
+    expect(await taskRows()).toEqual([
+      expect.objectContaining({ reviewed: 1, escalated: 0, rate: 0, exceeds: false }),
+    ]);
+    // AI が処理して下書きを当てたあとは、人に回した提出として数える。
+    expect(await runAi()).toEqual(["applied"]);
+    expect(await taskRows()).toEqual([
+      expect.objectContaining({ reviewed: 2, escalated: 1, rate: 0.5 }),
+    ]);
+  });
+
+  it("照合の記録が壊れた提出があっても、一覧・並べ見・数字を返し、その提出も一覧に出す", async () => {
+    complete.mockResolvedValue(answer(aiOutput({ confidence: "low" })));
+    const decided = await submit("learner");
+    await runAi();
+    await call(`/api/submissions/${decided}`, "teacher", {
+      method: "PATCH",
+      body: JSON.stringify({ verdict: "pass" }),
+    });
+    // AI の想定外の失敗が上限まで続いた行は、壊れたまま人に回る (giveUpJob)。
+    const broken = await submit("learner2", "consult");
+    database.sqlite.exec(
+      `update submissions set machine_check = '{broken' where id in ('${decided}', '${broken}')`,
+    );
+    const list = await call("/api/submissions", "teacher");
+    expect(list.status, await list.clone().text()).toBe(200);
+    const rows = (await json<{ rows: Record<string, unknown>[] }>(list)).rows;
+    expect(rows.find((r) => r.id === broken)).toMatchObject({
+      ai_review_status: "escalated",
+      route_reasons: ["consult"],
+    });
+    const board = await call(
+      `/api/review-desk/task-board?taskId=${encodeURIComponent(fixture.input.taskId)}`,
+      "teacher",
+    );
+    expect(board.status, await board.clone().text()).toBe(200);
+    expect((await json<TaskBoard>(board)).submissions).toHaveLength(2);
+    const metrics = await call("/api/review-desk/metrics", "teacher");
+    expect(metrics.status, await metrics.clone().text()).toBe(200);
+    expect((await json<ReviewMetrics>(metrics)).escalatedByKind).toEqual([
+      expect.objectContaining({ decided: 1, passedAsIs: 1 }),
+    ]);
+  });
+
   describe("同じ課題の提出を並べて見る", () => {
+    it("ルーブリックを改訂しても、前の版の項目の結果を題名つきで残す", async () => {
+      const unmet = aiOutput({ confidence: "high" });
+      unmet.rubric[1] = { ...unmet.rubric[1], result: "unmet" } as AiReviewOutput["rubric"][number];
+      complete.mockResolvedValue(answer(unmet));
+      await submit("learner");
+      await runAi();
+      // 課題の項目 heading を title-heading に改名した (seed で今の定義だけが変わる)。
+      const [task] = await db.select().from(tasks);
+      const definition = JSON.parse(task?.definition ?? "{}") as {
+        review: { rubric: { id: string; criterion: string; required: boolean }[] };
+      };
+      definition.review.rubric = [
+        { id: "title-heading", criterion: "題名の見出しが内容を表している", required: true },
+      ];
+      await db.update(tasks).set({ definition: JSON.stringify(definition) });
+      const response = await call(
+        `/api/review-desk/task-board?taskId=${encodeURIComponent(fixture.input.taskId)}`,
+        "teacher",
+      );
+      const loaded = await json<TaskBoard>(response);
+      expect(loaded.items).toEqual([
+        expect.objectContaining({ id: "CR-SCOPE-01", current: true, met: 1 }),
+        expect.objectContaining({ id: "title-heading", current: true, met: 0, unmet: 0 }),
+        expect.objectContaining({
+          id: "heading",
+          current: false,
+          criterion: "見出しが内容を表している",
+          unmet: 1,
+        }),
+      ]);
+    });
+
     it("受講者ごとの最新の提出と、項目ごとの「満たさない」を数え、発見教材に回せる", async () => {
       const unmet = aiOutput({ confidence: "high" });
       unmet.rubric[1] = { ...unmet.rubric[1], result: "unmet" } as AiReviewOutput["rubric"][number];

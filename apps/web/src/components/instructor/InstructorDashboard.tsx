@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import type { AvatarTone, Tenant } from "@/data/types";
 import type { InstructorStudentProgress } from "@stella/shared/cms/types";
-import { useSubmissions } from "@/hooks/useSubmissions";
+import { useRefreshSubmissionsOnOpen, useSubmissions } from "@/hooks/useSubmissions";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 import { useAssignedScope } from "@/hooks/useAssignedScope";
 import { formatSubmittedAt } from "@/lib/submissions-store";
@@ -61,6 +61,7 @@ export const InstructorDashboard = ({
   currentUserId = null,
 }: InstructorDashboardProps) => {
   const { submissions } = useSubmissions(tenantId);
+  useRefreshSubmissionsOnOpen(tenantId, backendEnabled);
   const scope = useAssignedScope(currentUserId, backendEnabled);
   // 人のレビューを待つ提出だけを数える (AI が確認中・置き換えた提出は除く。キューと同じ数え方)。
   const pending = submissions.filter(

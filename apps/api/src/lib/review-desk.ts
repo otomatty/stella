@@ -65,6 +65,16 @@ import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js
 const assignee = alias(profiles, "assignee");
 const reviewer = alias(profiles, "reviewer");
 
+/**
+ * 機械の照合が一致したか (`machine_check.matched`)。記録の JSON が壊れていれば NULL にする。
+ * `json_extract` は不正な JSON で文ごとエラーにするので、壊れた提出が 1 件あるだけで
+ * テナントの一覧・並べ見・数字がすべて 500 になってしまう (AI の想定外の失敗が上限まで続いた
+ * 壊れた行も、人のキューに入る)。CASE は条件を満たした枝だけを評価する。
+ */
+export const machineMatchedColumn = sql<
+  number | null
+>`case when json_valid(${submissions.machineCheck}) then json_extract(${submissions.machineCheck}, '$.matched') end`;
+
 /** 呼び出した講師が担当する受講者だけに絞る条件 (#38 の `assigned=mine` と同じ)。 */
 function assignedTo(caller: Caller) {
   return inArray(
@@ -510,7 +520,7 @@ export async function reviewMetrics(
       taskKind: submissions.taskKind,
       verdict: submissions.verdict,
       submissionMode: submissions.submissionMode,
-      machineMatched: sql<number | null>`json_extract(${submissions.machineCheck}, '$.matched')`,
+      machineMatched: machineMatchedColumn,
       reasons: sql<
         string | null
       >`(select r.route_reasons from ai_reviews r where r.submission_id = "submissions"."id" and r.outcome = 'escalated' order by r.created_at desc limit 1)`,
@@ -561,17 +571,25 @@ export async function reviewMetrics(
     ),
   );
 
-  // 3. 課題ごとの、人に回した割合 (AI が判定した提出のうち)。置き換えた試行と人が先に確定した
-  //    試行は数えない。
+  // 3. 課題ごとの、人に回した割合 (AI が判定した提出のうち)。AI の結果を提出に当てた提出
+  //    (`disposition = 'applied'`) だけを数え、人に回したかは当てた結果で決める。相談や照合の
+  //    食い違いは AI の処理の前から「人に回した」状態になるので、状態だけで数えると AI が判定して
+  //    いない提出まで入る (AI が処理して当てたあとは、人に回した提出に含める)。置き換えた試行と
+  //    人が先に確定した試行は数えない。
+  const appliedAi = alias(aiReviews, "applied_ai");
   const perTask = await db
     .select({
       taskId: tasks.id,
       taskTitle: tasks.title,
       stageTitle: stages.title,
       reviewed: sql<number>`count(*)`,
-      escalated: sql<number>`sum(case when ${submissions.aiReviewStatus} = 'escalated' then 1 else 0 end)`,
+      escalated: sql<number>`sum(case when ${appliedAi.outcome} = 'escalated' then 1 else 0 end)`,
     })
     .from(submissions)
+    .innerJoin(
+      appliedAi,
+      sql`${appliedAi.id} = (select r.id from ai_reviews r where r.submission_id = "submissions"."id" and r.disposition = 'applied' order by r.created_at desc limit 1)`,
+    )
     .innerJoin(tasks, eq(tasks.id, submissions.taskId))
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
@@ -682,7 +700,7 @@ export async function taskBoard(
       aiReviewStatus: submissions.aiReviewStatus,
       taskKind: submissions.taskKind,
       submissionMode: submissions.submissionMode,
-      machineMatched: sql<number | null>`json_extract(${submissions.machineCheck}, '$.matched')`,
+      machineMatched: machineMatchedColumn,
       confidence: aiReviews.confidence,
       routeReasons: aiReviews.routeReasons,
       rubricResults: aiReviews.rubricResults,
@@ -705,14 +723,28 @@ export async function taskBoard(
     .orderBy(desc(submissions.submittedAt))
     .limit(TASK_BOARD_LIMIT);
   const counts = new Map<string, TaskBoardItem>(
-    items.map((item) => [item.id, { ...item, met: 0, unmet: 0, undetermined: 0 }]),
+    items.map((item) => [item.id, { ...item, current: true, met: 0, unmet: 0, undetermined: 0 }]),
   );
   const boardSubmissions = rows.map((r) => {
     const rubric: Record<string, "met" | "unmet" | "undetermined"> = {};
     for (const result of r.rubricResults ?? []) {
       rubric[result.id] = result.result;
-      const count = counts.get(result.id);
-      if (count) count[result.result]++;
+      // ルーブリックを改訂して今の版に無い項目 (改名・削除) も、AI の結果に残る判定時の題名で
+      // 「前の版の項目」として数える (今の版の項目だけに足すと、過去の未達が集計から消える)。
+      let count = counts.get(result.id);
+      if (!count) {
+        count = {
+          id: result.id,
+          criterion: result.criterion,
+          required: result.required,
+          current: false,
+          met: 0,
+          unmet: 0,
+          undetermined: 0,
+        };
+        counts.set(result.id, count);
+      }
+      count[result.result]++;
     }
     return {
       submissionId: r.submissionId,
@@ -741,7 +773,8 @@ export async function taskBoard(
       stageTitle: task.stageTitle,
     },
     submissions: boardSubmissions,
-    items: [...counts.values()],
+    // 今の版の項目 (定義の順) を先に、前の版の項目をあとに並べる。
+    items: [...counts.values()].sort((a, b) => Number(b.current) - Number(a.current)),
   };
 }
 

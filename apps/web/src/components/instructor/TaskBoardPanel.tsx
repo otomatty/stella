@@ -173,6 +173,10 @@ export function TaskBoardPanel({
                           <div className="text-[11px] text-ink-3 font-mono">
                             {item.id} · {item.required ? "必須" : "任意"}
                           </div>
+                          {item.current ? null : (
+                            // ルーブリックの改訂で今の版から外れた項目 (題名は判定した時点のもの)。
+                            <Badge className="mt-0.5">前の版の項目</Badge>
+                          )}
                         </TableCell>
                         <TableCell>{item.met}</TableCell>
                         <TableCell>{item.unmet}</TableCell>
@@ -181,7 +185,14 @@ export function TaskBoardPanel({
                           <Button
                             size="sm"
                             type="button"
-                            disabled={item.unmet === 0 && item.undetermined === 0}
+                            disabled={
+                              !item.current || (item.unmet === 0 && item.undetermined === 0)
+                            }
+                            title={
+                              item.current
+                                ? undefined
+                                : "前の版の項目は発見教材に回せません (今の課題の項目で回してください)"
+                            }
                             onClick={() => void toDiscovery(item.id)}
                           >
                             <Compass size={11} />

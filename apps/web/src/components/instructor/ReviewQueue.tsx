@@ -25,7 +25,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { useSubmissions } from "@/hooks/useSubmissions";
+import { useRefreshSubmissionsOnOpen, useSubmissions } from "@/hooks/useSubmissions";
 import { useAssignedScope } from "@/hooks/useAssignedScope";
 import { hasAiDraft } from "@/lib/ai-draft";
 import {
@@ -68,6 +68,8 @@ export const ReviewQueue = ({
   backendEnabled = false,
 }: ReviewQueueProps) => {
   const { submissions } = useSubmissions(tenantId);
+  // 開いたときに取り直す (ほかの講師の確定・AI の結果を反映する)。
+  useRefreshSubmissionsOnOpen(tenantId, backendEnabled);
   const scope = useAssignedScope(currentUserId, backendEnabled);
   const [tab, setTab] = useState("queue");
   const [group, setGroup] = useState<GroupFilter>("all");

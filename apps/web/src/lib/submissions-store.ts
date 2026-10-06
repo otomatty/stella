@@ -19,6 +19,7 @@ import {
   type SubmissionPatch,
 } from "@/lib/submissions-api";
 import { needsHumanReview } from "@/lib/review-queue";
+import { isFetchFresh, mergeFetchedRows } from "@/lib/submissions-refresh";
 
 /**
  * 添削を保存しようとしたら、 学習者がその提出を引き継ぎ直していた (Issue #9)。
@@ -48,6 +49,17 @@ const remoteByTenant = new Map<string, Submission[]>();
 type RemoteFetchStatus = "idle" | "loading" | "success" | "error";
 const remoteFetchStatus = new Map<string, RemoteFetchStatus>();
 const remotePatchGen = new Map<string, number>();
+/** テナントごとの、最後に一覧を読み終えた時刻 (取り直しの間引きに使う、#34)。 */
+const remoteFetchedAt = new Map<string, number>();
+/** 取り直し中のテナント (同じテナントの取り直しを重ねない)。 */
+const remoteRefreshing = new Set<string>();
+/** 提出ごとの、講師が手元で最後に書いた時刻と保存中の提出 (取り直しで巻き戻さない)。 */
+const localWriteAt = new Map<string, number>();
+const patchesInFlight = new Set<string>();
+
+function markLocalWrite(id: string): void {
+  localWriteAt.set(id, Date.now());
+}
 
 function isRemotePersistence(): boolean {
   return isBackendConfigured();
@@ -82,12 +94,51 @@ function ensureRemoteFetch(tenantId: Tenant["id"]): void {
   void fetchSubmissionsForTenant(tenantId)
     .then((list) => {
       remoteFetchStatus.set(tenantId, "success");
+      remoteFetchedAt.set(tenantId, Date.now());
       setRemoteList(tenantId, list);
     })
     .catch((err) => {
       remoteFetchStatus.set(tenantId, "error");
       console.error("[submissions-store] remote fetch failed", err);
     });
+}
+
+/**
+ * staff の提出一覧を取り直す (#34)。ほかの講師の確定や AI の非同期の結果を画面に反映する。
+ * 初回の読み込み中・取り直し中は重ねず、`force` でなければ直前に読んだばかりのときも取りに
+ * 行かない。取り直しの間に講師が保存した・保存中の行は手元の行を残す。
+ */
+export async function refreshSubmissions(
+  tenantId: Tenant["id"],
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (!isRemotePersistence()) return;
+  if (remoteFetchStatus.get(tenantId) !== "success") {
+    // 初回がまだなら、初回の読み込みに任せる (失敗していたら読み直す)。
+    if (remoteFetchStatus.get(tenantId) === "error") remoteFetchStatus.set(tenantId, "idle");
+    ensureRemoteFetch(tenantId);
+    return;
+  }
+  if (remoteRefreshing.has(tenantId)) return;
+  if (!options.force && isFetchFresh(remoteFetchedAt.get(tenantId), Date.now())) return;
+  remoteRefreshing.add(tenantId);
+  const startedAt = Date.now();
+  try {
+    const list = await fetchSubmissionsForTenant(tenantId);
+    remoteFetchedAt.set(tenantId, Date.now());
+    setRemoteList(
+      tenantId,
+      mergeFetchedRows(
+        remoteList(tenantId),
+        list,
+        (id) => patchesInFlight.has(id) || (localWriteAt.get(id) ?? 0) >= startedAt,
+      ),
+    );
+  } catch (err) {
+    console.error("[submissions-store] remote refresh failed", err);
+  } finally {
+    remoteRefreshing.delete(tenantId);
+  }
 }
 
 function toInsertPayload(
@@ -259,6 +310,7 @@ function replaceRemote(tenantId: Tenant["id"], id: string, row: Submission): voi
   const list = remoteList(tenantId);
   const idx = list.findIndex((s) => s.id === id);
   if (idx < 0) return;
+  markLocalWrite(id);
   const next = [...list];
   next[idx] = mergeRow(list[idx], row);
   setRemoteList(tenantId, next);
@@ -298,6 +350,8 @@ async function persistRemotePatch(
 ): Promise<Submission | undefined> {
   const nextGen = (remotePatchGen.get(id) ?? 0) + 1;
   remotePatchGen.set(id, nextGen);
+  patchesInFlight.add(id);
+  markLocalWrite(id);
   const apiPatch: SubmissionPatch = {
     ...toSubmissionPatch(patch),
     // 講師が読み込んだ版。 学習者が引き継ぎ直していればサーバが 409 を返す。
@@ -325,6 +379,9 @@ async function persistRemotePatch(
       throw new SubmissionConflictError(err.message);
     }
     return undefined;
+  } finally {
+    if (remotePatchGen.get(id) === nextGen) patchesInFlight.delete(id);
+    markLocalWrite(id);
   }
 }
 
@@ -437,6 +494,7 @@ export async function createSubmissionAsync(
 
   try {
     const created = await insertSubmission(tenantId, toInsertPayload(base));
+    markLocalWrite(created.id);
     // 同一課題の未添削がある場合、 サーバは既存行を upsert して返す (Issue #9)。
     // 素直に先頭へ足すと同じ id が 2 つ並ぶので、 id で置き換える。
     setRemoteList(tenantId, [created, ...remoteList(tenantId).filter((s) => s.id !== created.id)]);

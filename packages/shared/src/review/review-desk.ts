@@ -300,6 +300,11 @@ export interface TaskBoardItem {
   id: string;
   criterion: string;
   required: boolean;
+  /**
+   * 今の課題の版の項目か。false は、ルーブリックの改訂で今の版から外れた (改名・削除した) 項目で、
+   * 題名は AI が判定した時点のもの。発見教材には回さない。
+   */
+  current: boolean;
   met: number;
   unmet: number;
   undetermined: number;
