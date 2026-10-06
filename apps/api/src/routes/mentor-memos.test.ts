@@ -860,6 +860,27 @@ describe("つまずきの知らせをメモの材料に載せる", () => {
       await keepActive();
       for (const [i, id] of ["e1", "e2", "e3"].entries()) await escalated(id, 10 - i);
     },
+    "hints-exhausted": async () => {
+      await keepActive();
+      await db
+        .update(tasks)
+        .set({
+          definition: JSON.stringify({ support: { hintLevels: 2, solutionUnlock: "after-hints" } }),
+        })
+        .where(eq(tasks.id, "practice"));
+      await db.insert(taskHelpOpens).values(
+        [1, 2].map((level) => ({
+          tenantId: "ses",
+          userId: "learner",
+          taskId: "practice",
+          item: "hint" as const,
+          level,
+          contentHash: HASH,
+          privateHash: HASH,
+          openedAt: new Date(IN_WEEK.getTime() - (3 - level) * 3_600_000),
+        })),
+      );
+    },
   };
 
   it.each(Object.keys(setups))("%s の知らせが材料に載る", async (signal) => {

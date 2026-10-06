@@ -1,22 +1,44 @@
 /**
  * つまずきの検知 (#38・07 §6.5)。既存の15分の cron で、担当講師に知らせる。
  *
- * 見る合図は次の 4 つ。ヒントを最後まで開く (#36) は後で足す。
+ * 見る合図は次の 5 つ。
  * - 同じ課題で手元の確認の失敗が続く (`task_local_runs`)
  * - 数日進まない (学習の記録が平日 3 日ない)
  * - 確認 B が再提出・不合格になる (同じ課題の後の試行で合格していれば除く)
  * - 人に回る提出が続く (AI の一次レビューが、受講者の取り組みを理由に続けて人に回した)
+ * - ヒントを最後まで開く (合格前に、今の版のヒントの最後の段まで開いた。`task_help_opens`)
  *
  * 知らせすぎないよう、通知 ID を出来事ごとに決めて同じ出来事を 2 度送らない。
- * 手元の失敗は、さらに受講者 1 人につき 1 日 1 通にまとめる。
+ * 手元の失敗とヒントを最後まで開いた課題は、さらに受講者 1 人につき 1 日 1 通にまとめる。
  * 送った出来事は ID を主キーで引いて先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
 
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, notExists, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { StumbleSignal } from "@stella/shared/mentoring/weekly-memo";
 import { ROUTE_REASON_LABELS, type RouteReason } from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateWeekday, toStudyDate } from "@stella/shared/study/activity";
+import {
+  effectiveHintLevels,
+  supportConfigOf,
+  TASK_HELP_POLICIES,
+  type TaskSupportConfig,
+} from "@stella/shared/tasks/help";
+import { TASK_KINDS, type TaskKind } from "@stella/shared/tasks/manifest";
 import type { Db } from "../db/client.js";
 import {
   aiReviews,
@@ -24,7 +46,9 @@ import {
   notifications,
   profiles,
   submissions,
+  taskHelpOpens,
   taskLocalRuns,
+  taskProgress,
   tasks,
 } from "../db/schema.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
@@ -62,6 +86,11 @@ export const LEARNER_ESCALATION_REASONS: readonly RouteReason[] = [
   "low-confidence",
   "task-condition",
 ];
+/**
+ * ヒントを最後まで開く: 最後の段に届いた時刻 (最後の段以上を合格前に初めて開いた時刻) の期間。
+ * 導入時に過去の記録をまとめて送らないため (確認 B・人に回る提出と同じ 3 日)。
+ */
+export const HINTS_EXHAUSTED_WINDOW_MS = 3 * 86_400_000;
 
 interface Pair {
   learnerId: string;
@@ -128,6 +157,7 @@ const SIGNAL_ID_SEGMENT: Record<StumbleSignal, string> = {
   idle: "idle",
   "assessment-b": "assessment-b",
   "review-escalations": "review-escalations",
+  "hints-exhausted": "hints-exhausted",
 };
 
 /**
@@ -585,6 +615,205 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
   }
 }
 
+/** 課題の定義の `support` (json_extract の結果) を読む。読めなければいちばん厳しい設定 (ヒント 0 段)。 */
+function supportOfJson(raw: string | null): TaskSupportConfig {
+  try {
+    return supportConfigOf({ support: raw === null ? undefined : JSON.parse(raw) });
+  } catch {
+    return supportConfigOf(undefined);
+  }
+}
+
+/** ヒントを最後まで開いた課題 1 つ。 */
+interface HintsExhausted {
+  taskId: string;
+  title: string;
+  /** 今の版のヒントの段の数 (= 最後の段)。 */
+  levels: number;
+  /** 最後の段の次が解答例 (`after-hints`) か。 */
+  solutionNext: boolean;
+  /** 最後の段に届いた時刻 (最後の段以上を合格前に初めて開いた時刻、ミリ秒)。 */
+  reachedAt: number;
+}
+
+/**
+ * ヒントを最後まで開く。合格前に、課題の今の版のヒントの最後の段 (`support.hintLevels` 段目) まで
+ * 開いたら知らせる。罰ではなく、行き詰まっているかもしれない合図として送る。
+ *
+ * - 段の進み具合は、解放の判定 (`taskHelpAccess`) と同じく版をまたいで引き継ぐ。前の版で 2 段目まで、
+ *   今の版で 3 段目を開いても最後まで開いたことになる。段の数は今の版の定義で数える (`hints.md` の
+ *   段の数とそろうことは `content:check` が確かめている)。
+ * - 最後の段に届いた時刻 = 最後の段以上を合格前に初めて開いた時刻 (版を問わない)。同じ段を新しい
+ *   版で開き直しても時刻は変わらないので、版が変わっただけでは知らせ直さない。
+ * - ヒントが 0 段の課題 (統合・確認A・B と、段を持たない課題) は見ない。解答例を開いたことは数えない
+ *   (`after-hints` の解答例は最後の段の後でしか開けず、自力・修正の解答例は挑戦の回数で開く。回数は
+ *   手元の失敗の合図が見る)。合格後に開いた段 (`after_pass`) は数えず、今は合格している課題も除く。
+ * - 最後の段に届いた時刻が `HINTS_EXHAUSTED_WINDOW_MS` の中の課題だけを知らせる (導入時に過去の
+ *   記録をまとめて送らないため)。
+ * - 手元の失敗と同じく、受講者 1 人につき 1 日 1 通にまとめる。同じ受講者・課題は、期間の中に
+ *   その講師へ送った知らせ (`task_ids`) に入っていれば送らない。今日すでに送っていれば、残りは翌日に回す。
+ */
+async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date, today: string) {
+  const windowStart = new Date(now.getTime() - HINTS_EXHAUSTED_WINDOW_MS);
+  // 直近に合格前のヒントを開いた受講者・課題 (開いた時刻の索引で引き、表を全部読まない)。
+  const recent = db
+    .selectDistinct({
+      tenantId: taskHelpOpens.tenantId,
+      userId: taskHelpOpens.userId,
+      taskId: taskHelpOpens.taskId,
+    })
+    .from(taskHelpOpens)
+    .where(
+      and(
+        gte(taskHelpOpens.openedAt, windowStart),
+        eq(taskHelpOpens.item, "hint"),
+        eq(taskHelpOpens.afterPass, false),
+      ),
+    )
+    .as("recent");
+  const opens = alias(taskHelpOpens, "opens");
+  // その受講者・課題の合格前のヒントを、期間の前の分も段ごとに引く (最後の段に届いた時刻を決めるため)。
+  const rows = await db
+    .select({
+      tenantId: recent.tenantId,
+      learnerId: recent.userId,
+      taskId: recent.taskId,
+      level: opens.level,
+      firstOpenedAt: sql<number>`min(${opens.openedAt})`,
+      title: tasks.title,
+      kind: tasks.kind,
+      support: sql<string | null>`json_extract(${tasks.definition}, '$.support')`,
+    })
+    .from(recent)
+    .innerJoin(
+      opens,
+      and(
+        eq(opens.tenantId, recent.tenantId),
+        eq(opens.userId, recent.userId),
+        eq(opens.taskId, recent.taskId),
+        eq(opens.item, "hint"),
+        eq(opens.afterPass, false),
+      ),
+    )
+    .innerJoin(tasks, eq(tasks.id, recent.taskId))
+    .where(
+      // 今は合格している課題は知らせない (合格は版が変わっても合格のまま。`task-help` と同じ)。
+      notExists(
+        db
+          .select({ one: sql`1` })
+          .from(taskProgress)
+          .where(
+            and(
+              eq(taskProgress.userId, recent.userId),
+              eq(taskProgress.taskId, recent.taskId),
+              inArray(taskProgress.status, ["passed", "ai-passed"]),
+            ),
+          ),
+      ),
+    )
+    .groupBy(recent.tenantId, recent.userId, recent.taskId, opens.level);
+
+  // 受講者・課題ごとに段をまとめる。担当のある受講者の、同じテナントの記録だけ。
+  const byTask = new Map<string, { pair: Pair; rows: typeof rows }>();
+  for (const row of rows) {
+    const pair = pairs.get(row.learnerId);
+    if (!pair || pair.tenantId !== row.tenantId) continue;
+    const key = `${row.learnerId}\n${row.taskId}`;
+    const entry = byTask.get(key) ?? { pair, rows: [] };
+    entry.rows.push(row);
+    byTask.set(key, entry);
+  }
+  const byLearner = new Map<string, { pair: Pair; list: HintsExhausted[] }>();
+  for (const { pair, rows: levels } of byTask.values()) {
+    const [head] = levels;
+    if (!head || !(TASK_KINDS as readonly string[]).includes(head.kind)) continue;
+    const kind = head.kind as TaskKind;
+    const support = supportOfJson(head.support);
+    const last = effectiveHintLevels(kind, support);
+    if (last < 1) continue;
+    const reachedAt = Math.min(
+      ...levels.filter((r) => r.level >= last).map((r) => Number(r.firstOpenedAt)),
+    );
+    if (!Number.isFinite(reachedAt) || reachedAt < windowStart.getTime()) continue;
+    const entry = byLearner.get(pair.learnerId) ?? { pair, list: [] };
+    entry.list.push({
+      taskId: head.taskId,
+      title: head.title,
+      levels: last,
+      solutionNext:
+        support.solutionUnlock === "after-hints" &&
+        TASK_HELP_POLICIES[kind].solutionUnlocks.includes("after-hints"),
+      reachedAt,
+    });
+    byLearner.set(pair.learnerId, entry);
+  }
+  if (byLearner.size === 0) return;
+
+  // 期間の中にこの講師へ送った知らせ。ID の末尾は送った日なので、期間の始まりの日より前は引かない
+  // (期間の中に届いた課題を知らせるのは、届いた日以降)。
+  const fromDate = toStudyDate(windowStart);
+  const notified = new Set<string>();
+  const sentIdSet = new Set<string>();
+  for (const part of chunk([...byLearner.values()], Math.floor((D1_MAX_BOUND_PARAMS - 10) / 2))) {
+    const sent = await db
+      .select({ id: notifications.id, payload: notifications.payload })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.type, "learner_stumble"),
+          or(
+            ...part.map(({ pair }) => {
+              const base = `${stumbleIdPrefix("hints-exhausted", pair.learnerId)}${pair.instructorId}`;
+              return and(
+                gte(notifications.id, `${base}:${fromDate}`),
+                lt(notifications.id, `${base};`),
+              );
+            }),
+          ),
+        ),
+      );
+    for (const row of sent) {
+      const learnerId = row.payload.learner_id;
+      const taskIds = row.payload.task_ids;
+      if (typeof learnerId !== "string" || !Array.isArray(taskIds)) continue;
+      for (const taskId of taskIds) notified.add(`${learnerId}\n${taskId}`);
+      sentIdSet.add(row.id);
+    }
+  }
+  for (const { pair, list } of byLearner.values()) {
+    const id = stumbleId("hints-exhausted", pair, today);
+    // 1 日 1 通まで。今日すでに送っていれば、残りの課題は翌日に回す (期間の中にあれば)。
+    if (sentIdSet.has(id)) continue;
+    const fresh = list
+      .filter((e) => !notified.has(`${pair.learnerId}\n${e.taskId}`))
+      .sort((a, b) => a.reachedAt - b.reachedAt);
+    const [first] = fresh;
+    if (!first) continue;
+    try {
+      const rest = fresh.length - 1;
+      await insertOnce(db, {
+        id,
+        userId: pair.instructorId,
+        tenantId: pair.tenantId,
+        type: "learner_stumble",
+        title: `${pair.learnerName}さんがヒントを最後まで開きました`,
+        body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,
+        payload: {
+          learner_id: pair.learnerId,
+          signal: "hints-exhausted",
+          task_ids: fresh.map((e) => e.taskId),
+        },
+      });
+    } catch (e) {
+      console.error(
+        "[cron] stumble notification failed",
+        { learnerId: pair.learnerId, signal: "hints-exhausted" },
+        e,
+      );
+    }
+  }
+}
+
 /** 15分の cron から呼ぶ。1 つの合図が失敗しても、ほかの合図は続ける。 */
 export async function notifyStumbles(db: Db, now = new Date()) {
   const list = await assignedPairs(db);
@@ -596,6 +825,7 @@ export async function notifyStumbles(db: Db, now = new Date()) {
     notifyIdle(db, list, today),
     notifyAssessmentB(db, pairs, now),
     notifyReviewEscalations(db, pairs, now),
+    notifyHintsExhausted(db, pairs, now, today),
   ]);
   for (const r of results)
     if (r.status === "rejected") console.error("[cron] stumble detection failed", r.reason);

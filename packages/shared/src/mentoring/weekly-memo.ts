@@ -24,6 +24,7 @@ export const STUMBLE_SIGNALS = [
   "idle",
   "assessment-b",
   "review-escalations",
+  "hints-exhausted",
 ] as const;
 export type StumbleSignal = (typeof STUMBLE_SIGNALS)[number];
 export const STUMBLE_SIGNAL_LABELS: Record<StumbleSignal, string> = {
@@ -31,6 +32,7 @@ export const STUMBLE_SIGNAL_LABELS: Record<StumbleSignal, string> = {
   idle: "学習が止まる",
   "assessment-b": "確認Bに落ちる",
   "review-escalations": "人に回る提出が続く",
+  "hints-exhausted": "ヒントを最後まで開く",
 };
 
 /** 講師に勧める対応。message = 一言の声掛け、pace = ペースの調整、watch = 様子見。 */

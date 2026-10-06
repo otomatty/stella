@@ -20,6 +20,7 @@ import {
   studyActivity,
   submissionReviews,
   submissions,
+  taskHelpOpens,
   taskLocalRuns,
   taskProgress,
   taskSupportEvents,
@@ -929,6 +930,155 @@ describe("つまずきの検知 (cron)", () => {
         await judged("escalated", ["rubric-unmet"], { at: new Date(old.getTime() + i * HOUR) });
       await notifyStumbles(db, now);
       expect(await escalationAlerts()).toEqual([]);
+    });
+  });
+
+  describe("ヒントを最後まで開く", () => {
+    const NEXT = "b".repeat(64);
+    const minutesAgo = (n: number) => new Date(now.getTime() - n * 60_000);
+    /** 課題の今の版の方針 (`support`)。 */
+    const support = (taskId: string, hintLevels: number, solutionUnlock = "after-hints") =>
+      db
+        .update(tasks)
+        .set({
+          definition: JSON.stringify({
+            skills: { assesses: ["html"] },
+            support: { hintLevels, solutionUnlock },
+          }),
+        })
+        .where(eq(tasks.id, taskId));
+    /** ヒントを 1 段開いた記録 (`POST /api/tasks/help/open` が残すもの)。 */
+    const open = (
+      taskId: string,
+      level: number,
+      at: Date,
+      opts: { afterPass?: boolean; contentHash?: string; tenantId?: string; userId?: string } = {},
+    ) =>
+      db.insert(taskHelpOpens).values({
+        tenantId: opts.tenantId ?? "ses",
+        userId: opts.userId ?? "learner",
+        taskId,
+        item: "hint",
+        level,
+        contentHash: opts.contentHash ?? HASH,
+        privateHash: HASH,
+        afterPass: opts.afterPass ?? false,
+        openedAt: at,
+      });
+    const hintAlerts = async () =>
+      (await stumbles()).filter((n) => n.payload.signal === "hints-exhausted");
+
+    beforeEach(async () => {
+      await keepActive();
+      await support("practice", 3);
+      await support("second", 2, "passed");
+    });
+
+    it("合格前に最後の段まで開くと担当講師に 1 度だけ知らせ、途中の段では知らせない", async () => {
+      await open("practice", 1, minutesAgo(120));
+      await open("practice", 2, minutesAgo(90));
+      await notifyStumbles(db, now);
+      expect(await hintAlerts()).toEqual([]);
+
+      await open("practice", 3, minutesAgo(30));
+      await notifyStumbles(db, now);
+      await notifyStumbles(db, now);
+      const sent = await hintAlerts();
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({
+        userId: "teacher",
+        tenantId: "ses",
+        title: "受講者さんがヒントを最後まで開きました",
+        payload: { learner_id: "learner", signal: "hints-exhausted", task_ids: ["practice"] },
+      });
+      expect(sent[0]?.body).toContain(
+        "「課題1」で、合格前にヒントを最後の段 (3段目) まで開きました",
+      );
+      expect(sent[0]?.body).toContain("次は解答例を開ける段です");
+      expect(sent[0]?.body).toContain("責めずに");
+      // 翌日も、期間の最後まで、同じ出来事を送り直さない。
+      await notifyStumbles(db, new Date(now.getTime() + 24 * HOUR));
+      await notifyStumbles(db, new Date(now.getTime() + 70 * HOUR));
+      expect(await hintAlerts()).toHaveLength(1);
+    });
+
+    it("合格後に開いた段と、今は合格している課題は知らせない", async () => {
+      await open("practice", 1, minutesAgo(60));
+      await open("practice", 2, minutesAgo(50));
+      await open("practice", 3, minutesAgo(40), { afterPass: true });
+      await open("second", 1, minutesAgo(60));
+      await open("second", 2, minutesAgo(50));
+      await db
+        .insert(taskProgress)
+        .values({ userId: "learner", taskId: "second", contentHash: HASH, status: "ai-passed" });
+      await notifyStumbles(db, now);
+      expect(await hintAlerts()).toEqual([]);
+    });
+
+    it("ヒントが 0 段の課題 (確認A・B・統合と、段を持たない課題) は知らせない", async () => {
+      // 確認 B は定義に段を書いても 0 段として扱う (種別の方針がヒントを持たない)。
+      await support("B", 2, "passed");
+      await open("B", 1, minutesAgo(60));
+      await open("B", 2, minutesAgo(50));
+      await support("practice", 0, "passed");
+      await open("practice", 1, minutesAgo(40));
+      await notifyStumbles(db, now);
+      expect(await hintAlerts()).toEqual([]);
+    });
+
+    it("最後の段に届いたのが期間より前なら、新しい版で開き直しても知らせない", async () => {
+      const old = new Date(now.getTime() - 4 * 24 * HOUR);
+      await open("practice", 1, old);
+      await open("practice", 2, old);
+      await open("practice", 3, old);
+      await open("practice", 3, minutesAgo(30), { contentHash: NEXT });
+      await notifyStumbles(db, now);
+      expect(await hintAlerts()).toEqual([]);
+    });
+
+    it("段の進み具合は版をまたいで数える", async () => {
+      const old = new Date(now.getTime() - 5 * 24 * HOUR);
+      await open("practice", 1, old);
+      await open("practice", 2, old);
+      await open("practice", 3, minutesAgo(30), { contentHash: NEXT });
+      await notifyStumbles(db, now);
+      expect((await hintAlerts()).map((n) => n.payload.task_ids)).toEqual([["practice"]]);
+    });
+
+    it("同じ日に最後まで開いた課題は 1 通にまとめ、送った後に届いた課題は翌日に回す", async () => {
+      await open("second", 1, minutesAgo(100));
+      await open("second", 2, minutesAgo(90));
+      for (const level of [1, 2, 3]) await open("practice", level, minutesAgo(80 - level));
+      await notifyStumbles(db, now);
+      let sent = await hintAlerts();
+      expect(sent.map((n) => n.payload.task_ids)).toEqual([["second", "practice"]]);
+      expect(sent[0]?.body).toContain("「課題2」");
+      expect(sent[0]?.body).toContain("(ほか1件の課題でも最後まで開いています)");
+      // 解答例を開く条件が「合格後」の課題は、解答例の案内を添えない。
+      expect(sent[0]?.body).not.toContain("解答例");
+
+      await db.delete(notifications);
+      await db.delete(taskHelpOpens);
+      for (const level of [1, 2, 3]) await open("practice", level, minutesAgo(10));
+      await notifyStumbles(db, now);
+      await open("second", 1, new Date(now.getTime() + HOUR));
+      await open("second", 2, new Date(now.getTime() + HOUR));
+      await notifyStumbles(db, new Date(now.getTime() + 2 * HOUR));
+      expect((await hintAlerts()).map((n) => n.payload.task_ids)).toEqual([["practice"]]);
+      const nextDay = new Date(now.getTime() + 24 * HOUR);
+      await notifyStumbles(db, nextDay);
+      await notifyStumbles(db, nextDay);
+      sent = await hintAlerts();
+      expect(sent.map((n) => n.payload.task_ids)).toEqual([["practice"], ["second"]]);
+    });
+
+    it("担当のない受講者と、別のテナントの記録は知らせない", async () => {
+      for (const level of [1, 2, 3])
+        await open("practice", level, minutesAgo(30), { userId: "peer" });
+      for (const level of [1, 2, 3])
+        await open("practice", level, minutesAgo(30), { tenantId: "other" });
+      await notifyStumbles(db, now);
+      expect(await hintAlerts()).toEqual([]);
     });
   });
 
