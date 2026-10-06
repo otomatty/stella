@@ -351,6 +351,37 @@ describe("教材 seed の再実行", () => {
     db.close();
   }, 30_000);
 
+  it("課題の版ごとに非公開の素材を残し、同じ版の素材だけを最新で上書きする", () => {
+    const db = migratedDb();
+    applyScript(db, seedSql);
+    const rows = () =>
+      db
+        .prepare(
+          `select r.task_id, r.content_hash, r.definition, r.private_files, p.files
+           from task_revisions r join task_private p on p.task_id = r.task_id`,
+        )
+        .all() as {
+        task_id: string;
+        content_hash: string;
+        definition: string;
+        private_files: string | null;
+        files: string;
+      }[];
+    const seeded = rows();
+    expect(seeded.length).toBeGreaterThan(0);
+    for (const row of seeded) {
+      expect(row.private_files).toBe(row.files);
+      expect(Object.keys(JSON.parse(row.private_files ?? "{}"))).toContain("review.md");
+    }
+    // 同じ版の素材の手直しは seed が上書きし、配布した版の定義は上書きしない。
+    db.exec("update task_revisions set private_files = '{}', definition = 'kept'");
+    applyScript(db, seedSql);
+    for (const row of rows()) {
+      expect(row.private_files).toBe(row.files);
+      expect(row.definition).toBe("kept");
+    }
+  });
+
   it("復習カードと解答ログを残し、設問数も変えない", () => {
     const db = migratedDb();
     applyScript(db, seedSql);

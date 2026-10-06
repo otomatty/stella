@@ -58,6 +58,17 @@ CREATE INDEX ai_reviews_submission_idx ON ai_reviews(submission_id, created_at);
 --> statement-breakpoint
 CREATE INDEX ai_reviews_tenant_idx ON ai_reviews(tenant_id, created_at);
 --> statement-breakpoint
+-- 非公開の素材 (解答例・観点とよくある違反) を課題の版ごとに残す。task_private は seed のたびに
+-- 最新で上書きされるので、AI のレビューは提出時の版 (content_hash) の素材をここから読む。
+-- 版のハッシュは非公開の素材を含まないので、同じ版の素材の手直しは seed が上書きする。
+ALTER TABLE task_revisions ADD COLUMN private_files text;
+--> statement-breakpoint
+-- 今の版にだけ、いまの task_private を写す。古い版の素材は分からないので空のまま (AI は判定しない)。
+UPDATE task_revisions SET private_files = (
+  SELECT p.files FROM task_private p JOIN tasks t ON t.id = p.task_id
+  WHERE p.task_id = task_revisions.task_id AND t.content_hash = task_revisions.content_hash
+);
+--> statement-breakpoint
 -- コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分) を seed で入れる。
 CREATE TABLE coding_rules (
   id text PRIMARY KEY NOT NULL,

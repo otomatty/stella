@@ -53,7 +53,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
   if (!task || !(await canAccessTasks(db, caller, task.stageId, "write")))
     throw new ApiError("課題が見つかりません", 404);
   const [revision] = await db
-    .select()
+    .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
     .from(taskRevisions)
     .where(and(eq(taskRevisions.taskId, task.id), eq(taskRevisions.contentHash, input.contentHash)))
     .limit(1);

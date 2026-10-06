@@ -111,7 +111,12 @@ async function loadMaterial(
   if (!row.taskId || !row.taskContentHash)
     return { failure: "error", detail: "課題の提出ではありません" };
   const [task] = await db
-    .select({ stageId: sections.stageId, slug: stages.slug, privateFiles: taskPrivate.files })
+    .select({
+      stageId: sections.stageId,
+      slug: stages.slug,
+      contentHash: tasks.contentHash,
+      privateFiles: taskPrivate.files,
+    })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
@@ -119,13 +124,27 @@ async function loadMaterial(
     .where(eq(tasks.id, row.taskId))
     .limit(1);
   const [revision] = await db
-    .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
+    .select({
+      definition: taskRevisions.definition,
+      bundle: taskRevisions.bundle,
+      privateFiles: taskRevisions.privateFiles,
+    })
     .from(taskRevisions)
     .where(
       and(eq(taskRevisions.taskId, row.taskId), eq(taskRevisions.contentHash, row.taskContentHash)),
     )
     .limit(1);
   if (!task || !revision) return { failure: "error", detail: "課題の版が見つかりません" };
+  // 解答例と観点は提出時の版のものを読む。版ごとの記録が無い (0048 より前の版) ときは、
+  // 今の版と同じ場合に限って task_private を使う。版が違えば別の解答例で判定・照合してしまうので、
+  // AI は呼ばずに人に回す。
+  const privateSource =
+    revision.privateFiles ?? (task.contentHash === row.taskContentHash ? task.privateFiles : null);
+  if (!privateSource)
+    return {
+      failure: "stale-material",
+      detail: `提出時の版 (${row.taskContentHash.slice(0, 12)}) の非公開の素材がありません`,
+    };
   const definition = JSON.parse(revision.definition) as TaskDefinitionReview;
   const ruleRefs = definition.review?.rules ?? [];
   const ruleRows = await db
@@ -156,9 +175,7 @@ async function loadMaterial(
     }),
     ...(definition.review?.rubric ?? []).map((item) => ({ ...item, rule: false })),
   ];
-  const privateFiles = task.privateFiles
-    ? (JSON.parse(task.privateFiles) as Record<string, string>)
-    : {};
+  const privateFiles = JSON.parse(privateSource) as Record<string, string>;
   const solution = Object.entries(privateFiles)
     .filter(([path]) => path.startsWith("solution/"))
     .map(([path, value]) => ({ path: path.slice("solution/".length), text: decodeBase64(value) }));

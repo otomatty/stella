@@ -304,6 +304,11 @@ export const taskRevisions = sqliteTable(
     contentHash: text("content_hash").notNull(),
     definition: text("definition").notNull(),
     bundle: text("bundle").notNull(),
+    /**
+     * その版の非公開の素材 (`private/` の解答例・観点など、task_private と同じ形の JSON)。
+     * 受講者向けの API では返さない。AI の一次レビューが提出時の版の素材を読む (0048)。
+     */
+    privateFiles: text("private_files"),
     createdAt: tsNow("created_at"),
   },
   (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
@@ -1354,7 +1359,15 @@ export const aiReviews = sqliteTable(
     ),
     ruleSetHash: text("rule_set_hash"),
     failure: text("failure", {
-      enum: ["unavailable", "refusal", "timeout", "invalid-format", "too-large", "error"],
+      enum: [
+        "unavailable",
+        "refusal",
+        "timeout",
+        "invalid-format",
+        "too-large",
+        "stale-material",
+        "error",
+      ],
     }),
     model: text("model"),
     promptVersion: text("prompt_version").notNull(),

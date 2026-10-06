@@ -70,6 +70,12 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       1,
       null,
     );
+    // 版ごとの非公開の素材は、今の版 (tasks.content_hash) にだけ task_private を写す。
+    database.sqlite.exec(`
+      insert into task_private (task_id, files) values ('page', '{"review.md":"cmV2aWV3"}');
+      insert into task_revisions (task_id, content_hash, definition, bundle, created_at)
+        values ('page', 'h', '{}', '{}', 0), ('page', 'old', '{}', '{}', 0);
+    `);
     for (const statement of SQL.split("--> statement-breakpoint")) database.sqlite.exec(statement);
   });
   afterEach(() => database.sqlite.close());
@@ -84,6 +90,16 @@ describe("0048: 導入前の未判定の提出を AI の一次レビューの流
       old: "superseded",
       support: "escalated",
     });
+  });
+
+  it("今の版にだけ非公開の素材を写し、古い版は空のままにする", () => {
+    const revisions = database.sqlite
+      .prepare("select content_hash, private_files from task_revisions order by content_hash")
+      .all();
+    expect(revisions).toEqual([
+      { content_hash: "h", private_files: '{"review.md":"cmV2aWV3"}' },
+      { content_hash: "old", private_files: null },
+    ]);
   });
 
   it("人に回したものも下書きのために待ち行列に積み、進捗を「講師の確認待ち」にそろえる", () => {
