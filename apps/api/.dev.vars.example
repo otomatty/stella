@@ -8,6 +8,7 @@ ANTHROPIC_MODEL=claude-sonnet-4-6
 # トークン (任意)。未設定でも動く (未認証は IP ごとに 1 時間 60 回)。権限なしの fine-grained トークン
 # (Public Repositories (read-only)) にする。本番は `wrangler secret put GITHUB_API_TOKEN`。
 # GITHUB_API_TOKEN=
+# wrangler.toml の [vars] は本番の Web だけを許可するので、ローカルの Web はここで足す (必須)。
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ISOLATE_MEMORY_LIMIT=32
 

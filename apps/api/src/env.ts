@@ -145,4 +145,10 @@ export interface Env {
    * wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
    */
   PUBLIC_CONTENT_RATE_LIMITER?: RateLimit;
+
+  /**
+   * VS Code の接続コードの交換 (`POST /api/auth/vscode-link/exchange`、認証前) の Rate Limiting
+   * バインディング。 wrangler.toml の `unsafe.bindings` で設定する。 未設定なら制限なしで動作する。
+   */
+  AUTH_LINK_RATE_LIMITER?: RateLimit;
 }

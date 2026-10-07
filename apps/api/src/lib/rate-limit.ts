@@ -63,3 +63,8 @@ export function enforcePublicContentRateLimit(
 ): Promise<Response | null> {
   return enforce(c, c.env.PUBLIC_CONTENT_RATE_LIMITER);
 }
+
+/** VS Code の接続コードの交換 (公開・認証前) 用のレート制限。 コードの総当たりを防ぐ。 */
+export function enforceAuthLinkRateLimit(c: Context<{ Bindings: Env }>): Promise<Response | null> {
+  return enforce(c, c.env.AUTH_LINK_RATE_LIMITER);
+}

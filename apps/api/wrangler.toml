@@ -9,7 +9,10 @@ account_id = "175c04a4465bcc9815b21176a852f0c0"
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 GOOGLE_CLIENT_ID = "998091191276-bfug8l2cm54llkhv078brdj3ovbtdfj8.apps.googleusercontent.com"
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.saedgewell.workers.dev"
+# 本番の Web だけを書く。CORS に加えて、ログイン後に JWT を渡す戻り先 (`return_to`) の許可にも
+# 使うため、localhost を入れると本番のトークンを利用者の PC の開発サーバーへ届けさせるリンクが作れる。
+# ローカルの許可は `.dev.vars` の ALLOWED_ORIGINS が上書きする (`.dev.vars.example` 参照)。
+ALLOWED_ORIGINS = "https://stella-web.saedgewell.workers.dev"
 INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
 # ログインなしで読める教材 (GET /api/public/*。Issue #41) のテナント。未ログインでは JWT から
 # テナントが決まらないので、教材を seed するテナント (ses) をここで決める。外すと公開 API は何も返さない。
@@ -46,6 +49,15 @@ name = "PUBLIC_CONTENT_RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1003"
 simple = { limit = 300, period = 60 }
+
+# VS Code の接続コードの交換 (POST /api/auth/vscode-link/exchange、認証前) のレート制限 —
+# 交換に通ったコードはそのまま JWT になるので、総当たりで有効なコードを探させない。拡張は
+# 「VS Code で開く」のたびに交換するので、同じ拠点 (同じ IP) の受講者が一斉に開いても詰まらない値にする。
+[[unsafe.bindings]]
+name = "AUTH_LINK_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1004"
+simple = { limit = 120, period = 60 }
 
 # Cloudflare D1 — LMS データ (旧 Neon Postgres)。
 [[d1_databases]]

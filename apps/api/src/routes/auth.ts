@@ -17,6 +17,7 @@ import { clientIp, recordAudit } from "../lib/audit.js";
 import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { errorResponse, ApiError, getCaller } from "../lib/authz.js";
+import { enforceAuthLinkRateLimit } from "../lib/rate-limit.js";
 import {
   createVscodeLinkCode,
   hashVscodeLinkCode,
@@ -230,6 +231,10 @@ authRoute.post("/api/auth/vscode-link", async (c) => {
 
 authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
   try {
+    // コードを引く前に止める (超過したリクエストで有効なコードを消費・確認させない)。
+    const limited = await enforceAuthLinkRateLimit(c);
+    if (limited) return limited;
+
     const jwtSecret = c.env.AUTH_JWT_SECRET;
     if (!jwtSecret) {
       throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
