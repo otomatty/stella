@@ -81,8 +81,10 @@ describe("deployment URLs", () => {
   it("allows the new Web origin but rejects retired production origins", () => {
     const allowed = TOML.match(/^ALLOWED_ORIGINS = "([^"]+)"/m)?.[1] ?? "";
     expect(isAllowedOrigin("https://stella-web.saedgewell.workers.dev", allowed)).toBe(true);
-    expect(isAllowedOrigin("http://127.0.0.1:5173", allowed)).toBe(true);
     for (const origin of [
+      // 本番は JWT の戻り先にも使うので、利用者の PC の開発サーバーを許さない (ローカルは .dev.vars)。
+      "http://127.0.0.1:5173",
+      "http://localhost:5173",
       "https://falcon-web.a-sugai.workers.dev",
       "https://stella-web.a-sugai.workers.dev",
       "https://falcon-web.pages.dev",
@@ -90,6 +92,15 @@ describe("deployment URLs", () => {
     ]) {
       expect(isAllowedOrigin(origin, allowed)).toBe(false);
     }
+  });
+  it("keeps the local Web origins in .dev.vars.example (wrangler dev overrides [vars] with it)", () => {
+    const example = readFileSync(
+      join(import.meta.dirname, "..", "..", ".dev.vars.example"),
+      "utf8",
+    );
+    const local = example.match(/^ALLOWED_ORIGINS=(.+)$/m)?.[1] ?? "";
+    expect(isAllowedOrigin("http://localhost:5173", local)).toBe(true);
+    expect(isAllowedOrigin("http://127.0.0.1:5173", local)).toBe(true);
   });
   it("uses the new API for Google's callback and the new Web for invite redirects", () => {
     expect(googleRedirectUri(`${server}/api/auth/google?return_to=ignored`)).toBe(

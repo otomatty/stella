@@ -69,9 +69,15 @@ wrangler secret put GOOGLE_CLIENT_SECRET   # Google OAuth シークレット (�
 含まれていること。 含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後の
 リダイレクト先がフォールバックになる (`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
 
-```dotenv
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://stella-web.saedgewell.workers.dev"
+```toml
+ALLOWED_ORIGINS = "https://stella-web.saedgewell.workers.dev"
 ```
+
+本番には localhost を入れない。この値は CORS だけでなくログイン後に JWT を渡す戻り先の許可にも
+使うので、localhost があると本番のトークンを利用者の PC の開発サーバーへ届けさせるリンクが作れる。
+ローカルの Web (`http://localhost:5173` など) は `apps/api/.dev.vars` の `ALLOWED_ORIGINS` で許可する
+(`.dev.vars` は `wrangler dev` で `[vars]` を上書きする)。ローカルで CORS エラーになるときは
+`.dev.vars` にこの行があるかを確かめる。
 
 Phase C の切替後は旧 Web / Pages オリジンを許可しない。
 全員の再ログインと VS Code の再接続が必要。手順は [インフラ移行](stella-infrastructure-migration.md) を参照。
