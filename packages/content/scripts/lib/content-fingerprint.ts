@@ -36,6 +36,9 @@ export const SEED_INPUT_PATHS = [
   "packages/content/patterns.json",
   "packages/content/environments",
   "packages/content/sources/registry.json",
+  // 宣言した生成依存 (playwright / remark など) の版。bun.lock は含めない
+  // (ワークスペースの無関係な依存の更新で seed を流さない)。
+  "packages/content/package.json",
   // seed / PDF / 画像アップロードの生成コード (値 import の先)。
   "packages/content/src/coding-rules.ts",
   "packages/content/src/index.ts",
@@ -115,13 +118,23 @@ export function fingerprintFrom(
   const lines = lsFilesOutput
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => l.length > 0)
+    .filter((l) => l.length > 0 && countsTowardFingerprint(l))
     .sort();
   const h = createHash("sha256");
   h.update(`paths:${[...paths].sort().join(",")}\n`);
   for (const [key, value] of Object.entries(extra).sort()) h.update(`${key}=${value}\n`);
   for (const line of lines) h.update(`${line}\n`);
   return h.digest("hex");
+}
+
+/**
+ * 旧演習ディレクトリは課題定義の置き場なのでまとめて見る。説明の README と
+ * テストは seed も PDF も読まないので、そこだけの変更ではパイプラインを流さない。
+ */
+function countsTowardFingerprint(lsFilesLine: string): boolean {
+  const path = lsFilesLine.split("\t").at(-1) ?? "";
+  if (!path.startsWith("packages/shared/src/problems/")) return true;
+  return !path.endsWith("/README.md") && !path.endsWith(".test.ts");
 }
 
 export function parseContentState(text: string): ContentState | null {

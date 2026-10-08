@@ -37,7 +37,9 @@ function covers(file: string): boolean {
   return SEED_INPUT_PATHS.some((p) => file === p || file.startsWith(`${p}/`));
 }
 
-const VALUE_SPEC = /\b(?:import|export)\s+([\s\S]*?)\s+from\s+["']([^"']+)["']/g;
+// `[^;]` で文をまたがない。副作用 import の次の `from` まで飲み込むと、
+// 型だけの import を値依存にしてしまう。
+const VALUE_SPEC = /\b(?:import|export)\s+([^;]*?)\s+from\s+["']([^"']+)["']/g;
 const SIDE_EFFECT_SPEC = /\bimport\s+["']([^"']+)["']/g;
 
 /** 型だけの import / export は実行時の SQL も PDF も変えない。 */
@@ -121,6 +123,15 @@ describe("SEED_INPUT_PATHS", () => {
     for (const file of READ_BY_PATH) expect(covers(file), file).toBe(true);
   });
 
+  it("副作用 import の次の型 import を値依存にしない", () => {
+    const text = [
+      'import "./setup.js";',
+      'import type { Config } from "./types.js";',
+      'import { build } from "./manifest.js";',
+    ].join("\n");
+    expect(valueSpecs(text)).toEqual(["./manifest.js", "./setup.js"]);
+  });
+
   it("API の実装や seed 以外のスクリプトでは走らない", () => {
     expect(covers("packages/shared/src/review/review-desk.ts")).toBe(false);
     expect(covers("packages/shared/src/tasks/local-report.ts")).toBe(false);
@@ -149,6 +160,22 @@ describe("fingerprintFrom", () => {
     const reordered = "100644 bbb 0\tpackages/content/b.md\n100644 aaa 0\tpackages/content/a.md\n";
     expect(fingerprintFrom(lines, SEED_INPUT_PATHS)).toBe(
       fingerprintFrom(reordered, SEED_INPUT_PATHS),
+    );
+  });
+
+  it("旧演習の README とテストだけでは指紋が変わらない", () => {
+    const problem = "100644 aaa 0\tpackages/shared/src/problems/01-variables/s1/01-const.ts\n";
+    const readme = `${problem}100644 bbb 0\tpackages/shared/src/problems/01-variables/README.md\n`;
+    const testFile = `${problem}100644 ccc 0\tpackages/shared/src/problems/problems.test.ts\n`;
+    const changed = problem.replace("aaa", "ddd");
+    expect(fingerprintFrom(readme, SEED_INPUT_PATHS)).toBe(
+      fingerprintFrom(problem, SEED_INPUT_PATHS),
+    );
+    expect(fingerprintFrom(testFile, SEED_INPUT_PATHS)).toBe(
+      fingerprintFrom(problem, SEED_INPUT_PATHS),
+    );
+    expect(fingerprintFrom(changed, SEED_INPUT_PATHS)).not.toBe(
+      fingerprintFrom(problem, SEED_INPUT_PATHS),
     );
   });
 

@@ -40,7 +40,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | 見ている範囲 | 理由 |
 |---|---|
 | `packages/content/courses` と規則・スキル・パターン・環境・参照元の台帳 | 教材の正本。seed SQL と PDF・図解の中身 |
-| 生成コードが値として import しているファイル (`SEED_INPUT_PATHS`) | `export-seed-sql.ts`、PDF / 画像の変換、旧演習 (`packages/shared/src/problems`)、面談の質問、seed の適用 (`seed-d1.ts`)。型だけの import は見ない。値 import を足したのに一覧に無いと `content-fingerprint.test.ts` が落とす |
+| 生成コードが値として import しているファイル (`SEED_INPUT_PATHS`) | `export-seed-sql.ts`、PDF / 画像の変換、旧演習の課題定義 (`packages/shared/src/problems`。README とテストは除く)、面談の質問、seed の適用 (`seed-d1.ts`)、`packages/content/package.json` の依存の版 (playwright / remark など)。型だけの import は見ない。`bun.lock` 全体は見ない。値 import を足したのに一覧に無いと `content-fingerprint.test.ts` が落とす |
 | `apps/api/drizzle` | migration。新しい列を seed が埋める形の変更があるので、スキーマが動いた push では教材が同じでも seed を流す |
 | 見ないもの | API の実装、レビュー画面、課題ランナーの実行時コード、`apps/api/scripts` の seed 以外、`wrangler.toml` の vars。ここをディレクトリごと広げると、教材が変わっていない push でもパイプラインが走る |
 | `PDF_KEY_SALT`（リポジトリ外） | PDF の R2 キーに入る塩。替えると全キーが変わるので、教材が同じでも PDF 生成と seed が要る。指紋には塩の要約だけを混ぜ、記録に塩そのものは出さない |
