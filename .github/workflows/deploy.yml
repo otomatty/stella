@@ -41,11 +41,13 @@ jobs:
         run: bun run deploy:prepare
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
-      # 判定は「seed に入るもの」の内容指紋 (packages/content・packages/shared・
-      # seed が読む apps/web の fixtures・seed / migration のコード) と、前回
-      # seed まで通ったときに R2 へ記録した指紋の比較。 コミット間の diff では
-      # なく内容そのものを見るので、 前回が seed の手前で落ちていた場合や Re-run /
-      # force push のあとでも「まだ入っていない教材を飛ばす」は起きない。
+      # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
+      # (content-fingerprint.ts の SEED_INPUT_PATHS。教材の正本・旧演習・
+      # migration と、生成コードの値 import) と、前回 seed まで通ったときに
+      # R2 へ記録した指紋の比較。型だけの変更や API の実装では流さない。
+      # コミット間の diff ではなく内容そのものを見るので、前回が seed の手前で
+      # 落ちていた場合や Re-run / force push のあとでも「まだ入っていない教材を
+      # 飛ばす」は起きない。
       # PDF_KEY_SALT は PDF の R2 キーに入るので、塩を替えた push は教材が同じでも
       # PDF と seed をやり直す必要がある。指紋にも混ぜる (記録に残るのは指紋だけ)。
       - name: Check whether course content changed
