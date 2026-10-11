@@ -52,9 +52,12 @@ export interface VariantParams {
   values: Record<string, VariantParamValue>;
 }
 
-/** `params.json` を確かめる。名前は類題のフォルダー名にするので、小文字・数字・`-` に限る。 */
+/**
+ * `params.json` を確かめる。名前は類題のフォルダー名にするので、小文字・数字・`-` に限る。
+ * 空の配列は許す (最後の類題を外したときに、台帳を見て書き出し済みの類題を消すため)。
+ */
 export function parseVariantParams(raw: unknown, label: string): VariantParams[] {
-  if (!Array.isArray(raw) || raw.length === 0)
+  if (!Array.isArray(raw))
     throw new Error(`${label}: params.json は類題 1 問ずつの配列にしてください`);
   const names = new Set<string>();
   return raw.map((entry, i) => {

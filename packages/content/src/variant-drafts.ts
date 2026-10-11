@@ -83,9 +83,11 @@ export interface TemplateKind {
 
 /** 課題のテンプレートの種別 (テンプレートの task.json の kind)。 */
 export function templateKindsOf(taskDir: string): TemplateKind[] {
-  return variantTemplatesOf(taskDir).map((template) => {
+  // 値の組が 1 つも無いテンプレートは種別もキーも分からないので、値だけを作らせない。
+  return variantTemplatesOf(taskDir).flatMap((template) => {
     const first = [...template.variants.values()][0];
-    return { name: template.dir.split(/[/\\]/).at(-1) ?? "", kind: kindOf(first?.["task.json"]) };
+    if (!first) return [];
+    return [{ name: template.dir.split(/[/\\]/).at(-1) ?? "", kind: kindOf(first["task.json"]) }];
   });
 }
 

@@ -83,7 +83,9 @@ describe("類題のテンプレートの展開", () => {
   });
 
   it("params.json の形の誤りを止める", () => {
-    expect(() => parseVariantParams([], "t")).toThrow(/配列/);
+    expect(() => parseVariantParams({}, "t")).toThrow(/配列/);
+    // 空の配列は許す (最後の類題を外すため)。
+    expect(parseVariantParams([], "t")).toEqual([]);
     expect(() => parseVariantParams([{ name: "V01", values: {} }], "t")).toThrow(/小文字/);
     expect(() =>
       parseVariantParams(
@@ -257,5 +259,12 @@ describe("テンプレートから類題を書き出す", () => {
       /手で書いた類題と同じ名前/,
     );
     expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
+    // 最後の類題を外して params.json を空にすると、書き出し済みの類題も消える。
+    writeFileSync(join(templateDir, "params.json"), "[]");
+    syncVariantTemplates(courses, { check: false });
+    expect(existsSync(join(variantsDir, "v01-profile"))).toBe(false);
+    expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([]);
+    expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
+    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
   });
 });

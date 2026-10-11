@@ -141,6 +141,8 @@ interface BatchState {
   taskId: string;
   groups: DraftGroup[];
   createdAt: string;
+  /** 受け取って書き出したまとまりの番号。受け取り直しで同じ下書きを二重に書き出さない。 */
+  collected?: number[];
 }
 
 async function report(
@@ -170,6 +172,11 @@ async function collect(batchId: string) {
   const state = JSON.parse(readFileSync(path, "utf8")) as BatchState;
   if (state.model !== MODEL)
     throw new Error(`Batch は ${state.model} で作りました。VARIANT_DRAFT_MODEL をそろえてください`);
+  const collected = new Set(state.collected ?? []);
+  if (state.groups.every((_group, i) => collected.has(i))) {
+    console.log(`Batch ${batchId} は受け取り済みです`);
+    return;
+  }
   const client = new Anthropic();
   const batch = await client.messages.batches.retrieve(batchId);
   if (batch.processing_status !== "ended") {
@@ -194,6 +201,10 @@ async function collect(batchId: string) {
   const model = sdkModel(client);
   const results = [];
   for (const [i, group] of state.groups.entries()) {
+    if (collected.has(i)) {
+      console.log(`\n${describe(group)}: 受け取り済みです`);
+      continue;
+    }
     const first = firsts.get(`g${i}`);
     if (first === undefined) {
       console.log(
@@ -209,6 +220,12 @@ async function collect(batchId: string) {
         log: (line) => console.log(line),
       }),
     });
+    // 書き出したらすぐ記録する (後のまとまりで止まっても、受け取り直しで同じ下書きを書かない)。
+    collected.add(i);
+    writeFileSync(
+      path,
+      `${JSON.stringify({ ...state, collected: [...collected].sort((a, b) => a - b) }, null, 2)}\n`,
+    );
   }
   await report(results);
 }
