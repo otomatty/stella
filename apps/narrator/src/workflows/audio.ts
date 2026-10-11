@@ -7,9 +7,11 @@ import { ttsProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, providerConfig, RETRY } from "../context";
 export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
-    const job = new JobContext(this.env, event.payload),
+    const job = new JobContext(this.env, event.payload, event.instanceId),
       p = job.p;
-    const temp = `${generationPrefix(p)}audio/tmp/${p.jobId}/`;
+    const claim = event.instanceId;
+    const temp = `${generationPrefix(p)}audio/tmp/${claim}/`;
+    const key = `${generationPrefix(p)}audio/${claim}.mp3`;
     const tts = ttsProvider(providerConfig(this.env));
     let input: { chapterId: string; revision: number; hash: string } | undefined;
     try {
@@ -26,10 +28,9 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         if (!chunks.length) throw new NonRetryableError("読み上げる文がありません");
         const hash = await speechHash(chapter.markdown);
         await job.guard();
-        await this.env.BUCKET.put(`${temp}chunks.json`, JSON.stringify(chunks));
-        await job.progress(0, chunks.length);
-        await this.env.DB.prepare(
-          `INSERT INTO library_audios (id, tenant_id, book_id, chapter_id, revision, status, source_speech_hash, tts_model, created_at) SELECT ?, ?, ?, ?, ?, 'generating', ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, chapter_id, revision) DO UPDATE SET status = 'generating'`,
+        input = { chapterId: chapter.id, revision: chapter.revision, hash };
+        const acquired = await this.env.DB.prepare(
+          `INSERT INTO library_audios (id, tenant_id, book_id, chapter_id, revision, status, source_speech_hash, tts_model, created_at, generation_job_id) SELECT ?, ?, ?, ?, ?, 'generating', ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, chapter_id, revision) DO UPDATE SET generation_job_id = excluded.generation_job_id, status = CASE WHEN library_audios.status = 'ready' THEN 'ready' ELSE 'generating' END WHERE library_audios.generation_job_id IS NULL OR library_audios.generation_job_id = excluded.generation_job_id`,
         )
           .bind(
             crypto.randomUUID(),
@@ -40,9 +41,13 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
             hash,
             tts.model,
             Date.now(),
+            claim,
             ...job.scope,
           )
           .run();
+        if (acquired.meta.changes !== 1) throw new NonRetryableError("この章の音声は生成中です");
+        await job.put(`${temp}chunks.json`, JSON.stringify(chunks));
+        await job.progress(0, chunks.length);
         return { chapterId: chapter.id, revision: chapter.revision, hash, count: chunks.length };
       });
       input = prepared;
@@ -58,12 +63,11 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
             await job.usage(tts.model, result.usage);
             const mp3 = pcmToMp3(result.pcm, result.sampleRate);
             await job.guard();
-            await this.env.BUCKET.put(`${temp}${n}.mp3`, mp3);
+            await job.put(`${temp}${n}.mp3`, mp3);
             await job.progress(n + 1, prepared.count);
             return { bytes: mp3.length, seconds: result.pcm.length / 2 / result.sampleRate };
           }),
         );
-      const key = `${generationPrefix(p)}audio/${p.jobId}.mp3`;
       await step.do("concat", RETRY, async () => {
         await job.guard();
         const { readable, writable } = new FixedLengthStream(
@@ -86,15 +90,16 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         // Await both sides even on failure; otherwise a rejected writer/put can remain unhandled.
         const results = await Promise.allSettled([
           writing,
-          this.env.BUCKET.put(key, readable, { httpMetadata: { contentType: "audio/mpeg" } }),
+          job.put(key, readable, { httpMetadata: { contentType: "audio/mpeg" } }),
         ]);
         for (const result of results) if (result.status === "rejected") throw result.reason;
       });
       await step.do("finish", async () => {
+        if ((await job.authorize()).status === "succeeded") return;
         await job.guard();
         // A changed revision/hash can never acquire an audio made for an older input.
         const result = await this.env.DB.prepare(
-          `UPDATE library_audios SET status = 'ready', r2_key = ?, duration_sec = ?, size_bytes = ?, source_speech_hash = ?, tts_model = ?, created_at = ? WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND EXISTS (SELECT 1 FROM library_chapters c WHERE c.tenant_id = library_audios.tenant_id AND c.book_id = library_audios.book_id AND c.id = library_audios.chapter_id AND c.revision = library_audios.revision AND c.speech_hash = ?) AND ${job.live}`,
+          `UPDATE library_audios SET status = 'ready', generation_job_id = NULL, r2_key = ?, duration_sec = ?, size_bytes = ?, source_speech_hash = ?, tts_model = ?, created_at = ? WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND generation_job_id = ? AND EXISTS (SELECT 1 FROM library_chapters c WHERE c.tenant_id = library_audios.tenant_id AND c.book_id = library_audios.book_id AND c.id = library_audios.chapter_id AND c.revision = library_audios.revision AND c.speech_hash = ?) AND ${job.live}`,
         )
           .bind(
             key,
@@ -107,11 +112,21 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
             p.bookId,
             prepared.chapterId,
             prepared.revision,
+            claim,
             prepared.hash,
             ...job.scope,
           )
           .run();
         if (result.meta.changes !== 1) {
+          const completed = await this.env.DB.prepare(
+            "SELECT id FROM library_audios WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND r2_key = ? AND status = 'ready'",
+          )
+            .bind(p.tenantId, p.bookId, prepared.chapterId, prepared.revision, key)
+            .first();
+          if (completed) {
+            await job.finish();
+            return;
+          }
           await this.env.BUCKET.delete(key);
           throw new NonRetryableError("本文の版が変わりました");
         }
@@ -122,19 +137,20 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         const failed = input;
         await step.do("fail-audio", async () => {
           await this.env.DB.prepare(
-            `UPDATE library_audios SET status = 'failed' WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND source_speech_hash = ? AND status = 'generating' AND ${job.live}`,
+            `UPDATE library_audios SET status = CASE WHEN status = 'ready' THEN 'ready' ELSE 'failed' END, generation_job_id = NULL WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND generation_job_id = ? AND ${job.live}`,
           )
-            .bind(
-              p.tenantId,
-              p.bookId,
-              failed.chapterId,
-              failed.revision,
-              failed.hash,
-              ...job.scope,
-            )
+            .bind(p.tenantId, p.bookId, failed.chapterId, failed.revision, claim, ...job.scope)
             .run();
         });
       }
+      await step.do("discard-audio", async () => {
+        const published = await this.env.DB.prepare(
+          "SELECT id FROM library_audios WHERE tenant_id = ? AND book_id = ? AND r2_key = ? AND status = 'ready'",
+        )
+          .bind(p.tenantId, p.bookId, key)
+          .first();
+        if (!published) await this.env.BUCKET.delete(key);
+      });
       await step.do("fail", () => job.fail());
     }
     await step.do("cleanup", async () => {

@@ -37,7 +37,16 @@ async function createBook(title = "Personal book"): Promise<string> {
   expect(response.status).toBe(201);
   return (await data<{ book: { id: string } }>(response)).book.id;
 }
-async function dispatch(p: NarratorJobRequest) {
+async function reserve(p: NarratorJobRequest) {
+  await db
+    .prepare(
+      "INSERT OR IGNORE INTO library_job_dispatches (tenant_id,book_id,job_id,instance_id,created_at) SELECT tenant_id,book_id,id,id || '-' || attempt,1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ?",
+    )
+    .bind(p.tenantId, p.bookId, p.jobId, p.generation)
+    .run();
+}
+async function dispatch(p: NarratorJobRequest, reserved = true) {
+  if (reserved) await reserve(p);
   const response = await mf.dispatchFetch("http://localhost/p0/dispatch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -47,7 +56,7 @@ async function dispatch(p: NarratorJobRequest) {
   return (await response.json()) as { instanceId: string };
 }
 async function waitJob(id: string): Promise<void> {
-  for (let n = 0; n < 200; n++) {
+  for (let n = 0; n < 600; n++) {
     const row = await db
       .prepare("SELECT status FROM library_jobs WHERE id = ?")
       .bind(id)
@@ -220,6 +229,95 @@ describe("JWT-authenticated personal library", () => {
   });
 });
 describe("internal processing foundation", () => {
+  it("requires the reserved attempt and collects a put that races deletion", async () => {
+    const id = await createBook("Deletion race");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'split','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await expect(dispatch(p, false)).rejects.toThrow();
+    await reserve(p);
+    await db
+      .prepare("UPDATE library_job_dispatches SET instance_id = ? WHERE job_id = ?")
+      .bind(`${p.jobId}-2`, p.jobId)
+      .run();
+    await expect(dispatch(p, false)).rejects.toThrow();
+    await db
+      .prepare("UPDATE library_job_dispatches SET instance_id = ? WHERE job_id = ?")
+      .bind(`${p.jobId}-1`, p.jobId)
+      .run();
+    const stale = await mf.dispatchFetch("http://localhost/p0/stale-attempt", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    expect(await stale.json()).toMatchObject({ status: "queued" });
+    const response = await mf.dispatchFetch("http://localhost/p0/put-race", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    expect(response.status).toBe(400);
+    expect(await bucket.get(`library/a/${id}/g1/late.bin`)).toBeNull();
+    expect(
+      await db
+        .prepare("SELECT prefix FROM library_r2_deletions WHERE book_id = ?")
+        .bind(id)
+        .first(),
+    ).not.toBeNull();
+  });
+  it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
+    const id = await createBook("Large book");
+    const pdf = await PDFDocument.create();
+    for (let n = 0; n < 100; n++) pdf.addPage([200, 300]);
+    const bytes = await pdf.save(),
+      key = `library/a/${id}/pdf/source.pdf`;
+    await bucket.put(key, bytes);
+    for (let n = 0; n < 10; n++)
+      await db
+        .prepare(
+          "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,page_count,created_at) VALUES (?,'a',?,?,'fixture.pdf',?,?,'completed',100,1)",
+        )
+        .bind(crypto.randomUUID(), id, n + 1, bytes.length, key)
+        .run();
+    await db
+      .prepare(
+        "WITH RECURSIVE pages(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM pages WHERE n<1000) INSERT INTO library_pages (tenant_id,book_id,page_no,ocr_status,ocr_markdown,ocr_figures) SELECT 'a',?,n,'succeeded','# Page ' || n || char(10) || 'Text.','[]' FROM pages",
+      )
+      .bind(id)
+      .run();
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'ocr','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await dispatch(p);
+    await waitJob(p.jobId);
+    expect(
+      await db.prepare("SELECT page_count,status FROM library_books WHERE id = ?").bind(id).first(),
+    ).toMatchObject({ page_count: 1000, status: "ready" });
+    expect(
+      await db
+        .prepare("SELECT count(*) AS count FROM library_chapters WHERE book_id = ?")
+        .bind(id)
+        .first(),
+    ).toMatchObject({ count: 1000 });
+    expect(
+      await db
+        .prepare("SELECT count(*) AS count FROM library_chapter_revisions WHERE book_id = ?")
+        .bind(id)
+        .first(),
+    ).toMatchObject({ count: 1000 });
+    expect(
+      await db
+        .prepare("SELECT first_page_no FROM library_book_pdfs WHERE book_id = ? AND position = 10")
+        .bind(id)
+        .first(),
+    ).toMatchObject({ first_page_no: 901 });
+  }, 120000);
   it("marks failed audio and can retry without duplicating the audio revision", async () => {
     const id = await createBook("TTS failure fixture");
     const chapter = crypto.randomUUID(),
@@ -240,6 +338,20 @@ describe("internal processing foundation", () => {
         .run();
       await dispatch({ tenantId: "a", bookId: id, jobId, generation: 1 });
       return jobId;
+    };
+    const waitFailed = async (jobId: string) => {
+      let status = "";
+      for (let n = 0; n < 400 && status !== "failed"; n++) {
+        status =
+          (
+            await db
+              .prepare("SELECT status FROM library_jobs WHERE id = ?")
+              .bind(jobId)
+              .first<{ status: string }>()
+          )?.status ?? "";
+        if (status !== "failed") await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      expect(status).toBe("failed");
     };
     await bucket.put("_fake/tts-fail.json", JSON.stringify({ remaining: 4 }));
     try {
@@ -269,10 +381,52 @@ describe("internal processing foundation", () => {
           .bind(id)
           .first(),
       ).toMatchObject({ count: 1 });
+      const ready = await db
+        .prepare(
+          "SELECT status,r2_key,source_speech_hash,tts_model,duration_sec,size_bytes FROM library_audios WHERE book_id = ?",
+        )
+        .bind(id)
+        .first();
+      await bucket.put("_fake/tts-fail.json", JSON.stringify({ remaining: 4 }));
+      const regeneration = await createJob();
+      let active: { generation_job_id: string | null } | null = null;
+      for (let n = 0; n < 100 && !active?.generation_job_id; n++) {
+        active = await db
+          .prepare("SELECT generation_job_id FROM library_audios WHERE book_id = ?")
+          .bind(id)
+          .first<{ generation_job_id: string | null }>();
+        if (!active?.generation_job_id) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      expect(active?.generation_job_id).toBe(`${regeneration}-1`);
+      const competing = await createJob();
+      await waitFailed(competing);
+      expect(
+        await db
+          .prepare(
+            "SELECT status,r2_key,source_speech_hash,tts_model,duration_sec,size_bytes FROM library_audios WHERE book_id = ?",
+          )
+          .bind(id)
+          .first(),
+      ).toEqual(ready);
+      await waitFailed(regeneration);
+      expect(
+        await db
+          .prepare(
+            "SELECT status,r2_key,source_speech_hash,tts_model,duration_sec,size_bytes FROM library_audios WHERE book_id = ?",
+          )
+          .bind(id)
+          .first(),
+      ).toEqual(ready);
+      expect(
+        await db
+          .prepare("SELECT generation_job_id FROM library_audios WHERE book_id = ?")
+          .bind(id)
+          .first(),
+      ).toMatchObject({ generation_job_id: null });
     } finally {
       await bucket.delete("_fake/tts-fail.json");
     }
-  }, 120000);
+  }, 240000);
 
   it("counts PDFs, resumes OCR, crops figures and splits chapters with the fake provider", async () => {
     const id = await createBook("OCR fixture");
@@ -472,6 +626,14 @@ describe("internal processing foundation", () => {
     expect(
       await db.prepare("SELECT id FROM library_jobs WHERE book_id = ?").bind(id).first(),
     ).toBeNull();
+    expect((await bucket.get(`library/a/${neighbor}/keep.mp3`))?.size).toBe(1);
+    await bucket.put(`library/a/${id}/g1/late.webp`, new Uint8Array([2]));
+    await db
+      .prepare("UPDATE library_r2_deletions SET not_before = 0 WHERE prefix = ?")
+      .bind(`library/a/${id}/`)
+      .run();
+    await mf.dispatchFetch("http://localhost/p0/cleanup", { method: "POST" });
+    expect(await bucket.get(`library/a/${id}/g1/late.webp`)).toBeNull();
     expect((await bucket.get(`library/a/${neighbor}/keep.mp3`))?.size).toBe(1);
   });
 });

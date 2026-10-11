@@ -55,7 +55,41 @@ describe("personal library additive migration", () => {
         "INSERT INTO library_shelf_entries (tenant_id,profile_id,book_id,reading_status,created_at,updated_at) VALUES ('a','owner','book','invalid',1,1)",
       ),
     ).toThrow(/CHECK/);
+    db.exec(
+      "INSERT INTO library_annotations (id,tenant_id,profile_id,book_id,chapter_id,revision,kind,body,created_at,updated_at) VALUES ('note','a','owner','book','chapter',1,'note','Keep my note',1,1)",
+    );
+    db.exec(
+      "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,start_page,end_page,updated_at) VALUES ('chapter2','a','book2',1,'Old chapter',1,1,1)",
+    );
+    db.exec(
+      "INSERT INTO library_annotations (id,tenant_id,profile_id,book_id,chapter_id,revision,kind,body,created_at,updated_at) VALUES ('note2','a','owner','book2','chapter2',1,'note','Keep after re-split',1,1)",
+    );
+    db.exec("DELETE FROM library_chapters WHERE id = 'chapter2'");
+    expect(db.prepare("SELECT * FROM library_annotations WHERE id = 'note2'").get()).toMatchObject({
+      book_id: "book2",
+      chapter_id: null,
+      chapter_title_snapshot: "Old chapter",
+      body: "Keep after re-split",
+    });
     db.exec("DELETE FROM library_books WHERE id = 'book'");
+    expect(db.prepare("SELECT * FROM library_annotations WHERE id = 'note'").get()).toMatchObject({
+      tenant_id: "a",
+      profile_id: "owner",
+      book_id: null,
+      chapter_id: null,
+      book_title_snapshot: "Book",
+      chapter_title_snapshot: "Chapter",
+      revision: 1,
+      body: "Keep my note",
+    });
+    db.exec("DELETE FROM library_books WHERE id = 'book2'");
+    expect(db.prepare("SELECT * FROM library_annotations WHERE id = 'note2'").get()).toMatchObject({
+      book_id: null,
+      chapter_id: null,
+      book_title_snapshot: "Book 2",
+      chapter_title_snapshot: "Old chapter",
+      body: "Keep after re-split",
+    });
     expect(db.prepare("SELECT count(*) AS count FROM library_chapters").get()).toMatchObject({
       count: 0,
     });

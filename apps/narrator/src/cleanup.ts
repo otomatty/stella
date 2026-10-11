@@ -1,7 +1,7 @@
 /** Tombstones outlive any in-flight provider step. Only an exact book prefix can be removed. */
 export async function cleanupDeletedBooks(env: Pick<NarratorEnv, "DB" | "BUCKET">): Promise<void> {
   const rows = await env.DB.prepare(
-    "SELECT * FROM library_r2_deletions WHERE not_before <= ? ORDER BY created_at LIMIT 20",
+    "SELECT * FROM library_r2_deletions WHERE not_before <= ? ORDER BY not_before, prefix LIMIT 20",
   )
     .bind(Date.now())
     .all<{ prefix: string; tenant_id: string; book_id: string }>();
@@ -22,7 +22,11 @@ export async function cleanupDeletedBooks(env: Pick<NarratorEnv, "DB" | "BUCKET"
       env.DB.prepare(
         "DELETE FROM library_books WHERE tenant_id = ? AND id = ? AND status = 'deleting'",
       ).bind(row.tenant_id, row.book_id),
-      env.DB.prepare("DELETE FROM library_r2_deletions WHERE prefix = ?").bind(row.prefix),
+      // Keep the prefix after the DB cascade: a paused Workflow may still complete a put.
+      env.DB.prepare("UPDATE library_r2_deletions SET not_before = ? WHERE prefix = ?").bind(
+        Date.now() + 24 * 60 * 60 * 1000,
+        row.prefix,
+      ),
     ]);
   }
 }

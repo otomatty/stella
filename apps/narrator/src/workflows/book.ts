@@ -3,7 +3,7 @@ import { NonRetryableError } from "cloudflare:workflows";
 import type { NarratorJobRequest } from "@stella/shared/library/types";
 import { loadPdf, extractFigures } from "@stella/book-core/pdf";
 import { parseOcrResponse, normalizeOcrPage, type FigureSpec } from "@stella/book-core/ocr";
-import { splitIntoChapters } from "@stella/book-core/chapters";
+import { splitIntoChapters, type ChapterDraft } from "@stella/book-core/chapters";
 import { speechHash } from "@stella/book-core/speech";
 import { ocrProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, bookPrefix, providerConfig, RETRY } from "../context";
@@ -15,9 +15,14 @@ interface Pdf {
   page_count: number;
   first_page_no: number;
 }
+interface PreparedChapter extends ChapterDraft {
+  id: string;
+  position: number;
+  hash: string;
+}
 export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
-    const job = new JobContext(this.env, event.payload),
+    const job = new JobContext(this.env, event.payload, event.instanceId),
       p = job.p;
     try {
       const kind = await step.do("start", async () => {
@@ -26,7 +31,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         await this.env.DB.prepare(
           `UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
         )
-          .bind(Date.now(), ...job.scope, ...job.scope)
+          .bind(Date.now(), ...job.bookScope, ...job.scope)
           .run();
         return row.type;
       });
@@ -79,28 +84,33 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             return plan;
           });
           if (next - 1 > 1000) throw new NonRetryableError("本は1000ページまでです");
-          for (const pdf of plans) {
-            await this.env.DB.prepare(
-              `UPDATE library_book_pdfs SET first_page_no = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
-            )
-              .bind(pdf.first_page_no, p.tenantId, p.bookId, pdf.id, ...job.scope)
-              .run();
-            await this.env.DB.batch(
-              Array.from({ length: pdf.page_count }, (_, i) =>
-                this.env.DB.prepare(
-                  `INSERT OR IGNORE INTO library_pages (tenant_id, book_id, page_no) SELECT ?, ?, ? WHERE ${job.live}`,
-                ).bind(p.tenantId, p.bookId, pdf.first_page_no + i, ...job.scope),
-              ),
-            );
-          }
           await this.env.DB.prepare(
             `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
           )
-            .bind(next - 1, ...job.scope, ...job.scope)
+            .bind(next - 1, ...job.bookScope, ...job.scope)
             .run();
           await job.progress(0, next - 1);
           return plans;
         });
+        for (const pdf of pdfs) {
+          await step.do(`number-${pdf.id}`, async () => {
+            await job.guard();
+            await this.env.DB.batch([
+              this.env.DB.prepare(
+                `UPDATE library_book_pdfs SET first_page_no = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
+              ).bind(pdf.first_page_no, p.tenantId, p.bookId, pdf.id, ...job.scope),
+              this.env.DB.prepare(
+                `WITH RECURSIVE pages(n) AS (SELECT ? UNION ALL SELECT n + 1 FROM pages WHERE n < ?) INSERT OR IGNORE INTO library_pages (tenant_id, book_id, page_no) SELECT ?, ?, n FROM pages WHERE ${job.live}`,
+              ).bind(
+                pdf.first_page_no,
+                pdf.first_page_no + pdf.page_count - 1,
+                p.tenantId,
+                p.bookId,
+                ...job.scope,
+              ),
+            ]);
+          });
+        }
         const ocr = ocrProvider(providerConfig(this.env));
         for (const pdf of pdfs) {
           const ranges = await step.do(`ranges-${pdf.id}`, async () => {
@@ -190,7 +200,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
               for (const figure of result.figures) {
                 const key = `${generationPrefix(p)}images/${figure.fileName}`;
                 await job.guard();
-                await this.env.BUCKET.put(key, figure.webp, {
+                await job.put(key, figure.webp, {
                   httpMetadata: { contentType: "image/webp" },
                 });
                 await this.env.DB.prepare(
@@ -212,7 +222,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
               }
               const key = `${generationPrefix(p)}pages/${page.page_no}.webp`;
               await job.guard();
-              await this.env.BUCKET.put(key, result.pageWebp, {
+              await job.put(key, result.pageWebp, {
                 httpMetadata: { contentType: "image/webp" },
               });
               await this.env.DB.prepare(
@@ -223,7 +233,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             });
         }
       }
-      await step.do("split", RETRY, async () => {
+      const chapterPlan = await step.do("split", RETRY, async () => {
         await job.guard();
         const book = await this.env.DB.prepare(
           "SELECT title FROM library_books WHERE tenant_id = ? AND id = ?",
@@ -236,7 +246,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         )
           .bind(p.tenantId, p.bookId)
           .first<{ count: number }>();
-        if (existing?.count) return; // Never erase personal records in a foundational re-split.
+        if (existing?.count) return { count: 0, key: "" }; // Preserve personal records on re-split.
         const rows = await this.env.DB.prepare(
           "SELECT page_no, ocr_markdown FROM library_pages WHERE tenant_id = ? AND book_id = ? ORDER BY page_no",
         )
@@ -247,7 +257,6 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
           book.title,
         );
         if (!chapters.length) throw new NonRetryableError("章がありません");
-        const now = Date.now();
         const prepared = await Promise.all(
           chapters.map(async (chapter, position) => ({
             ...chapter,
@@ -256,46 +265,64 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             hash: await speechHash(chapter.markdown),
           })),
         );
-        await this.env.DB.batch(
-          prepared.flatMap((chapter) => [
-            this.env.DB.prepare(
-              `INSERT INTO library_chapters (id, tenant_id, book_id, position, title, markdown, speech_hash, start_page, end_page, updated_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live}`,
-            ).bind(
-              chapter.id,
-              p.tenantId,
-              p.bookId,
-              chapter.position,
-              chapter.title,
-              chapter.markdown,
-              chapter.hash,
-              chapter.startPage,
-              chapter.endPage,
-              now,
-              ...job.scope,
-            ),
-            this.env.DB.prepare(
-              `INSERT INTO library_chapter_revisions (id, tenant_id, book_id, chapter_id, revision, markdown, speech_hash, created_at) SELECT ?, ?, ?, ?, 1, ?, ?, ? WHERE ${job.live}`,
-            ).bind(
-              crypto.randomUUID(),
-              p.tenantId,
-              p.bookId,
-              chapter.id,
-              chapter.markdown,
-              chapter.hash,
-              now,
-              ...job.scope,
-            ),
-          ]),
-        );
+        const key = `${generationPrefix(p)}chapters/tmp/${event.instanceId}.json`;
+        await job.put(key, JSON.stringify(prepared));
+        return { count: prepared.length, key };
       });
+      // Two statements per chapter; each step stays below the Free plan's 50-query cap.
+      for (let offset = 0; offset < chapterPlan.count; offset += 20) {
+        await step.do(`save-chapters-${offset}`, async () => {
+          await job.guard();
+          const object = await this.env.BUCKET.get(chapterPlan.key);
+          if (!object) throw new NonRetryableError("章の下書きがありません");
+          const prepared = await object.json<PreparedChapter[]>();
+          const now = Date.now();
+          await this.env.DB.batch(
+            prepared
+              .slice(offset, offset + 20)
+              .flatMap((chapter) => [
+                this.env.DB.prepare(
+                  `INSERT OR IGNORE INTO library_chapters (id, tenant_id, book_id, position, title, markdown, speech_hash, start_page, end_page, updated_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live}`,
+                ).bind(
+                  chapter.id,
+                  p.tenantId,
+                  p.bookId,
+                  chapter.position,
+                  chapter.title,
+                  chapter.markdown,
+                  chapter.hash,
+                  chapter.startPage,
+                  chapter.endPage,
+                  now,
+                  ...job.scope,
+                ),
+                this.env.DB.prepare(
+                  `INSERT OR IGNORE INTO library_chapter_revisions (id, tenant_id, book_id, chapter_id, revision, markdown, speech_hash, created_at) SELECT ?, ?, ?, ?, 1, ?, ?, ? WHERE ${job.live}`,
+                ).bind(
+                  crypto.randomUUID(),
+                  p.tenantId,
+                  p.bookId,
+                  chapter.id,
+                  chapter.markdown,
+                  chapter.hash,
+                  now,
+                  ...job.scope,
+                ),
+              ]),
+          );
+        });
+      }
+      if (chapterPlan.key)
+        await step.do("cleanup-chapters", () => this.env.BUCKET.delete(chapterPlan.key));
       await step.do("finish", async () => {
+        if ((await job.authorize()).status === "succeeded") return;
         await job.guard();
-        await job.finish();
         await this.env.DB.prepare(
           `UPDATE library_books SET status = 'ready', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
         )
-          .bind(Date.now(), ...job.scope, ...job.scope)
+          .bind(Date.now(), ...job.bookScope, ...job.scope)
           .run();
+        await job.finish();
       });
     } catch {
       await step.do("fail", async () => {
@@ -303,7 +330,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         await this.env.DB.prepare(
           `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
         )
-          .bind(Date.now(), ...job.scope, ...job.scope)
+          .bind(Date.now(), ...job.bookScope, ...job.scope)
           .run();
       });
     }

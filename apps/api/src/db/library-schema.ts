@@ -186,6 +186,7 @@ export const libraryAudios = sqliteTable(
     chapterId: text("chapter_id").notNull(),
     revision: integer("revision").notNull(),
     status: text("status").notNull().default("generating"),
+    generationJobId: text("generation_job_id"),
     r2Key: text("r2_key"),
     durationSec: real("duration_sec"),
     sizeBytes: integer("size_bytes"),
@@ -271,8 +272,10 @@ export const libraryAnnotations = sqliteTable(
     id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
     profileId: text("profile_id").notNull(),
-    bookId: text("book_id").notNull(),
-    chapterId: text("chapter_id").notNull(),
+    bookId: text("book_id"),
+    chapterId: text("chapter_id"),
+    bookTitleSnapshot: text("book_title_snapshot"),
+    chapterTitleSnapshot: text("chapter_title_snapshot"),
     revision: integer("revision").notNull(),
     kind: text("kind").notNull(),
     locator: text("locator"),
@@ -282,9 +285,13 @@ export const libraryAnnotations = sqliteTable(
   },
   (t) => [
     foreignKey({
+      columns: [t.tenantId, t.bookId],
+      foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
+    }),
+    foreignKey({
       columns: [t.tenantId, t.bookId, t.chapterId],
       foreignColumns: [libraryChapters.tenantId, libraryChapters.bookId, libraryChapters.id],
-    }).onDelete("cascade"),
+    }),
     foreignKey({
       columns: [t.tenantId, t.profileId],
       foreignColumns: [profiles.tenantId, profiles.id],

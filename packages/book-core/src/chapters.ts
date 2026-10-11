@@ -91,12 +91,28 @@ function splitBySize(body: string, maxBytes: number): string[] {
   const parts: string[] = [];
   let current = "";
   for (const para of body.split(/\n{2,}/)) {
-    const candidate = current ? `${current}\n\n${para}` : para;
-    if (current && byteLength(candidate) > maxBytes) {
-      parts.push(current);
-      current = para;
-    } else {
-      current = candidate;
+    const fragments: string[] = [];
+    let fragment = "",
+      bytes = 0;
+    for (const char of para) {
+      const size = byteLength(char);
+      if (bytes + size > maxBytes) {
+        fragments.push(fragment);
+        fragment = "";
+        bytes = 0;
+      }
+      fragment += char;
+      bytes += size;
+    }
+    if (fragment) fragments.push(fragment);
+    for (const part of fragments) {
+      const candidate = current ? `${current}\n\n${part}` : part;
+      if (current && byteLength(candidate) > maxBytes) {
+        parts.push(current);
+        current = part;
+      } else {
+        current = candidate;
+      }
     }
   }
   if (current) parts.push(current);
@@ -116,6 +132,7 @@ export function splitIntoChapters(
   bookTitle: string,
   maxBytes = MAX_CHAPTER_BYTES,
 ): ChapterDraft[] {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 8) throw new Error("章のサイズ上限が無効です");
   type Draft = { title: string | null; body: string; startPage: number; endPage: number };
   const drafts: Draft[] = [];
   const defs: { label: string; text: string; fallback: number }[] = [];
@@ -151,6 +168,8 @@ export function splitIntoChapters(
   }
 
   if (drafts.length === 0) {
+    if (byteLength(defs.map((d) => d.text).join("\n")) > maxBytes)
+      throw new Error("脚注が章のサイズ上限を超えています");
     return [
       {
         title: cleanTitle(bookTitle),
@@ -184,6 +203,8 @@ export function splitIntoChapters(
     expanded.map((e) => e.body),
     defs.map((d) => ({ ...d, fallback: firstPartOf(d.fallback) })),
   );
+  if (bodies.some((body) => byteLength(body) > maxBytes))
+    throw new Error("脚注を含む本文が章のサイズ上限を超えています");
   return expanded.map((e, i) => ({
     title: e.title,
     markdown: bodies[i],

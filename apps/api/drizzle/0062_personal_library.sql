@@ -117,6 +117,7 @@ CREATE TABLE library_audios (
   chapter_id TEXT NOT NULL,
   revision INTEGER NOT NULL,
   status TEXT NOT NULL DEFAULT 'generating',
+  generation_job_id TEXT,
   r2_key TEXT,
   duration_sec REAL,
   size_bytes INTEGER,
@@ -172,15 +173,18 @@ CREATE TABLE library_annotations (
   id TEXT PRIMARY KEY NOT NULL,
   tenant_id TEXT NOT NULL,
   profile_id TEXT NOT NULL,
-  book_id TEXT NOT NULL,
-  chapter_id TEXT NOT NULL,
+  book_id TEXT,
+  chapter_id TEXT,
+  book_title_snapshot TEXT,
+  chapter_title_snapshot TEXT,
   revision INTEGER NOT NULL,
   kind TEXT NOT NULL,
   locator TEXT,
   body TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (tenant_id, book_id, chapter_id) REFERENCES library_chapters (tenant_id, book_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (tenant_id, book_id) REFERENCES library_books (tenant_id, id),
+  FOREIGN KEY (tenant_id, book_id, chapter_id) REFERENCES library_chapters (tenant_id, book_id, id),
   FOREIGN KEY (tenant_id, profile_id) REFERENCES profiles (tenant_id, id) ON DELETE CASCADE,
   CHECK (kind IN ('note','bookmark'))
 );
@@ -188,6 +192,22 @@ CREATE TABLE library_annotations (
 CREATE INDEX library_annotations_idx_0 ON library_annotations (tenant_id, profile_id, book_id);
 --> statement-breakpoint
 CREATE INDEX library_annotations_idx_1 ON library_annotations (tenant_id, book_id, chapter_id);
+--> statement-breakpoint
+-- SET NULL on a composite FK would also erase tenant_id. Detach only the source IDs.
+CREATE TRIGGER library_annotations_detach_book BEFORE DELETE ON library_books BEGIN
+  UPDATE library_annotations SET
+    book_title_snapshot = coalesce(book_title_snapshot, OLD.title),
+    chapter_title_snapshot = coalesce(chapter_title_snapshot, (SELECT title FROM library_chapters c WHERE c.tenant_id = OLD.tenant_id AND c.book_id = OLD.id AND c.id = library_annotations.chapter_id)),
+    book_id = NULL, chapter_id = NULL
+  WHERE tenant_id = OLD.tenant_id AND book_id = OLD.id;
+END;
+--> statement-breakpoint
+CREATE TRIGGER library_annotations_detach_chapter BEFORE DELETE ON library_chapters BEGIN
+  UPDATE library_annotations SET
+    book_title_snapshot = coalesce(book_title_snapshot, (SELECT title FROM library_books b WHERE b.tenant_id = OLD.tenant_id AND b.id = OLD.book_id)),
+    chapter_title_snapshot = coalesce(chapter_title_snapshot, OLD.title), chapter_id = NULL
+  WHERE tenant_id = OLD.tenant_id AND book_id = OLD.book_id AND chapter_id = OLD.id;
+END;
 --> statement-breakpoint
 CREATE TABLE library_jobs (
   id TEXT PRIMARY KEY NOT NULL,

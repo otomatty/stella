@@ -6,6 +6,23 @@ import { chunkParagraphs, speechHash, toSpeechParagraphs } from "./speech";
 const pages = (...mds: string[]) => mds.map((markdown, i) => ({ pageNo: i + 1, markdown }));
 
 describe("章分割", () => {
+  it("bounds a single long paragraph at Unicode code point boundaries", () => {
+    const text = "あ😀".repeat(400);
+    const chapters = splitIntoChapters(pages(text), "Book", 1000);
+    expect(chapters.length).toBeGreaterThan(1);
+    expect(chapters.map((c) => c.markdown).join("")).toBe(text);
+    for (const chapter of chapters) {
+      expect(new TextEncoder().encode(chapter.markdown).length).toBeLessThanOrEqual(1000);
+      expect(chapter.markdown).not.toContain("\uFFFD");
+    }
+  });
+  it("refuses oversized footnotes including footnote-only input", () => {
+    const definition = `[^1]: ${"あ".repeat(400)}`;
+    expect(() => splitIntoChapters(pages(`本文[^1]\n\n${definition}`), "Book", 1000)).toThrow(
+      /上限/,
+    );
+    expect(() => splitIntoChapters(pages(definition), "Book", 1000)).toThrow(/上限/);
+  });
   it("AC-04-1 章の見出しごとに章ができ、見出しが章のタイトルになる", () => {
     const ch = splitIntoChapters(
       pages("# 第1章 はじめに\n\n本文1。", "# 第2章 つぎに\n\n本文2。"),
