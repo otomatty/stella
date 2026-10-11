@@ -472,7 +472,7 @@ export const taskHelpOpens = sqliteTable(
  * `step` は 1 から順。出す時期と目的は `@stella/shared/tasks/variants` の `nextVariantSlot` が決め、
  * 今日の類題の画面を開いたときに積む・出す (`lib/variant-reviews.ts`)。
  * 受講者・パターンの同じ段を 2 度積まない・同じ類題を 2 度出さない・出したまま合格していない類題は
- * 受講者ごとに 1 つ、を一意制約で守る。
+ * 受講者ごとに 1 つ (人が合格を覆して戻した出題は除く)、を一意制約で守る。
  */
 export const variantReviews = sqliteTable(
   "variant_reviews",
@@ -504,6 +504,11 @@ export const variantReviews = sqliteTable(
     passedAt: ts("passed_at"),
     /** 合格が支援付きだったか (`isAssistedSubmission`)。合格前は null。 */
     passedAssisted: integer("passed_assisted", { mode: "boolean" }),
+    /**
+     * 人が類題の合格を覆して「出した」に戻した日時 (0061)。戻した出題は、ほかの類題を出していても
+     * 開いたままにするので「出したまま合格していない類題は 1 つ」の一意制約から外す。
+     */
+    reopenedAt: ts("reopened_at"),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
@@ -512,7 +517,7 @@ export const variantReviews = sqliteTable(
     variantUq: uniqueIndex("variant_reviews_variant_uq").on(t.tenantId, t.userId, t.variantTaskId),
     openUq: uniqueIndex("variant_reviews_open_uq")
       .on(t.tenantId, t.userId)
-      .where(sql`status = 'issued'`),
+      .where(sql`status = 'issued' AND reopened_at IS NULL`),
     userIdx: index("variant_reviews_user_idx").on(t.userId),
     variantTaskIdx: index("variant_reviews_variant_task_idx").on(t.variantTaskId),
     tenantStatusIdx: index("variant_reviews_tenant_status_idx").on(t.tenantId, t.status),

@@ -43,7 +43,7 @@ import { canAccessTask } from "./task-access.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
-import { variantRetentionSkills } from "./variant-reviews.js";
+import { reopenVariantStatements, variantRetentionSkills } from "./variant-reviews.js";
 
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -630,6 +630,9 @@ export async function reviewTaskSubmission(
       throw new ApiError("この提出はもう AI の合格ではありません。提出を開き直してください", 409);
     // 人が AI の合格を合格以外にした = 事後確認で覆した。
     const overturned = source === "human" && aiPassed && verdict !== "pass";
+    // この提出の合格を取り消す (AI の合格を覆す・人の合格を訂正する)。人の訂正では初回の合格日を
+    // 残す (講師が自分の判定を直しただけで確認Bの予定をずらさない) が、類題はやり直させる。
+    const revoked = row.verdict === "pass" && verdict !== "pass";
     const confirmedReview = overturned ? await appliedAiReview(db, id, "confirmed") : null;
     // 人に回した提出の最初の判定。AI の判定案と食い違えば覆した記録を残す。
     const escalatedReview =
@@ -779,6 +782,15 @@ export async function reviewTaskSubmission(
     if (overturned)
       statements.push(
         resetPassedAt(db, { tenantId: row.tenantId, studentId: row.studentId, taskId: row.taskId }),
+      );
+    // 類題 (#39) の合格を人が合格以外にしたら、出題の記録を「出した」に戻す (やり直させる)。
+    if (variantPattern && revoked)
+      statements.push(
+        ...(await reopenVariantStatements(
+          db,
+          { tenantId: row.tenantId, studentId: row.studentId, taskId: row.taskId },
+          now,
+        )),
       );
     await db.batch(statements);
     // 確認Aの判定が変わると、同じ組の確認Bの定着の前提も変わる。

@@ -8,12 +8,15 @@
  *   開かない受講者の出題が溜まるだけなので採らない。同時に開いても、一意制約 (同じ段を 2 度積まない・
  *   同じ類題を 2 度出さない・出したまま合格していない類題は 1 つ) が二重の出題を止める。
  * - 1 日に出すのは 1 問。出した類題に合格するまで次を出さない。
+ * - 人が類題の合格を覆したら、出題の記録を「出した」に戻し、まだ出していない次の出題を取り消す
+ *   (`reopenVariantStatements`)。受講者がやり直して合格したら、合格の記録と次の出題を付け直す。
  * - 出題した類題は、配布・提出・AI の一次レビュー・ヘルプ・手元の実行記録の既存の流れで使う
  *   (`canAccessTask`)。出題より前は、どの API も類題を返さない。
  * - どの読み書きも受講者のテナントと本人で絞る。
  */
 
 import { and, asc, eq, inArray, lt, ne } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { toStudyDate } from "@stella/shared/study/activity";
 import type { TaskStatus } from "@stella/shared/tasks/catalog";
@@ -413,8 +416,11 @@ export async function loadTodayVariant(
   await issueDue(db, scope, rows, readable, today, now);
   rows = await rowsOf(db, scope);
   // 出したまま合格していない類題。無ければ、今日出したか今日合格した類題 (合格を画面で返す)。
+  // 開いた出題が 2 つあるのは、合格を覆して戻した出題があるときだけ。先に出した方 (戻した出題) を返す。
   const current =
-    rows.find((r) => r.status === "issued") ??
+    rows
+      .filter((r) => r.status === "issued")
+      .sort((a, b) => (a.issuedAt?.getTime() ?? 0) - (b.issuedAt?.getTime() ?? 0))[0] ??
     rows
       .filter(
         (r) =>
@@ -440,7 +446,63 @@ export async function loadTodayVariant(
     dueOn: current.dueOn,
     issuedAt: current.issuedAt.toISOString(),
     status,
+    reopened: current.status === "issued" && current.reopenedAt !== null,
   };
+}
+
+/**
+ * 人が類題の合格を覆したとき (#39): 出題の記録を「出した」に戻す文。合格・支援付きかの記録を消し、
+ * 戻したことを `reopened_at` に残す。受講者は同じ類題をやり直す (配布・提出の経路はそのまま)。
+ * 判定と同じ batch で書けるよう、文だけを返す (戻す記録が無ければ空)。
+ *
+ * - そのパターンの次の出題がまだ出ていない (積んだ・在庫切れ) なら取り消す。覆した合格の日付と
+ *   支援から積んだ出題なので、やり直して合格したあと今日の類題を開いた時点で積み直す。
+ * - 次の類題をもう出していれば、それは残す (受講者が取り組んでいる・合格した類題を消さない)。
+ *   同じパターンの別の問題なので、覆した類題と同じ確かめにもなる。
+ * - 同じ類題のほかの提出の合格が残っていても戻す。今日の類題を開いたときに、残った合格から
+ *   合格の日付と支援付きかを付け直す (`syncIssued` が今の版の最初の合格で判定する)。
+ * - 戻した出題が開いている間は、新しい類題を出さない (`issueDue`)。
+ *
+ * 出したまま (合格を記録に写す前) の出題は、進捗が合格でなくなればそのままでよいので何もしない。
+ */
+export async function reopenVariantStatements(
+  db: Db,
+  row: { tenantId: string; studentId: string; taskId: string },
+  now: Date,
+) {
+  const scope = { tenantId: row.tenantId, userId: row.studentId };
+  const rows = await rowsOf(db, scope);
+  const review = rows.find((r) => r.variantTaskId === row.taskId && r.status === "passed");
+  if (!review) return [];
+  const later = rows.filter((r) => r.pattern === review.pattern && r.step > review.step);
+  const pending = (r: ReviewRow) => r.status === "scheduled" || r.status === "out-of-stock";
+  const statements: BatchItem<"sqlite">[] = [
+    db
+      .update(variantReviews)
+      .set({
+        status: "issued",
+        passedAt: null,
+        passedAssisted: null,
+        reopenedAt: now,
+        updatedAt: now,
+      })
+      .where(and(ownRow(scope, review.id), eq(variantReviews.status, "passed"))),
+  ];
+  if (later.length > 0 && later.every(pending))
+    statements.push(
+      db.delete(variantReviews).where(
+        and(
+          eq(variantReviews.tenantId, scope.tenantId),
+          eq(variantReviews.userId, scope.userId),
+          inArray(
+            variantReviews.id,
+            later.map((r) => r.id),
+          ),
+          inArray(variantReviews.status, ["scheduled", "out-of-stock"]),
+        ),
+      ),
+    );
+  return statements;
 }
 
 /**
@@ -493,18 +555,36 @@ export async function variantRetentionSkills(
 /**
  * 講師・管理者向け: パターンごとの類題の在庫と、在庫切れで待っている受講者 (#39)。
  * テナントの講座の課題があるパターンと、在庫切れの出題があるパターンを並べ、待っている
- * 受講者のいるパターンを先にする。
+ * 受講者のいるパターンを先にする。出題の記録がある受講者ごとに、まだ出していない類題の数も
+ * 数え、いちばん少ない人の残りを返す (在庫が近く尽きるかを見るため)。
  */
 export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantStockSummary[]> {
-  const [taskRows, waiting] = await Promise.all([
+  const [taskRows, records, waiting] = await Promise.all([
     db
-      .select({ pattern: tasks.pattern, kind: tasks.kind, variantOf: tasks.variantOf })
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        order: tasks.order,
+        pattern: tasks.pattern,
+        kind: tasks.kind,
+        variantOf: tasks.variantOf,
+        stageTitle: stages.title,
+      })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
         and(eq(stages.tenantId, caller.tenantId), eq(stages.format, 2), eq(tasks.active, true)),
-      ),
+      )
+      .orderBy(asc(stages.title), asc(sections.order), asc(tasks.order)),
+    db
+      .select({
+        userId: variantReviews.userId,
+        pattern: variantReviews.pattern,
+        variantTaskId: variantReviews.variantTaskId,
+      })
+      .from(variantReviews)
+      .where(eq(variantReviews.tenantId, caller.tenantId)),
     db
       .select({
         userId: variantReviews.userId,
@@ -528,17 +608,61 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
   const summaryOf = (pattern: string) => {
     let s = summaries.get(pattern);
     if (!s) {
-      s = { pattern, stock: { remedial: 0, check: 0 }, waiting: [] };
+      s = {
+        pattern,
+        practiceTitles: [],
+        stageTitles: [],
+        stock: { remedial: 0, check: 0 },
+        learners: 0,
+        fewestUnseen: null,
+        waiting: [],
+      };
       summaries.set(pattern, s);
     }
     return s;
   };
+  // パターンごとの類題 (補習・確認用に分けた ID)。
+  const variantsByPattern = new Map<string, { remedial: string[]; check: string[] }>();
   for (const task of taskRows) {
     const s = summaryOf(task.pattern);
-    if (task.variantOf === null) continue;
+    if (!s.stageTitles.includes(task.stageTitle)) s.stageTitles.push(task.stageTitle);
+    if (task.variantOf === null) {
+      s.practiceTitles.push(task.title);
+      continue;
+    }
     const kind = task.kind as TaskKind;
-    if (REMEDIAL_VARIANT_KINDS.includes(kind)) s.stock.remedial += 1;
-    else if (CHECK_VARIANT_KINDS.includes(kind)) s.stock.check += 1;
+    const ids = variantsByPattern.get(task.pattern) ?? { remedial: [], check: [] };
+    variantsByPattern.set(task.pattern, ids);
+    if (REMEDIAL_VARIANT_KINDS.includes(kind)) ids.remedial.push(task.id);
+    else if (CHECK_VARIANT_KINDS.includes(kind)) ids.check.push(task.id);
+  }
+  for (const [pattern, ids] of variantsByPattern)
+    summaryOf(pattern).stock = { remedial: ids.remedial.length, check: ids.check.length };
+  // 受講者ごとに出した類題 (取り下げた出題も、出した類題は「見た」ものとして数える)。
+  const seenByPattern = new Map<string, Map<string, Set<string>>>();
+  for (const record of records) {
+    const byUser = seenByPattern.get(record.pattern) ?? new Map<string, Set<string>>();
+    seenByPattern.set(record.pattern, byUser);
+    const seen = byUser.get(record.userId) ?? new Set<string>();
+    byUser.set(record.userId, seen);
+    if (record.variantTaskId) seen.add(record.variantTaskId);
+  }
+  for (const [pattern, byUser] of seenByPattern) {
+    const s = summaryOf(pattern);
+    const ids = variantsByPattern.get(pattern) ?? { remedial: [], check: [] };
+    s.learners = byUser.size;
+    for (const seen of byUser.values()) {
+      const unseen = {
+        remedial: ids.remedial.filter((id) => !seen.has(id)).length,
+        check: ids.check.filter((id) => !seen.has(id)).length,
+      };
+      s.fewestUnseen = s.fewestUnseen
+        ? {
+            remedial: Math.min(s.fewestUnseen.remedial, unseen.remedial),
+            check: Math.min(s.fewestUnseen.check, unseen.check),
+          }
+        : unseen;
+    }
   }
   for (const { pattern, ...w } of waiting) summaryOf(pattern).waiting.push(w);
   return [...summaries.values()].sort(

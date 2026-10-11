@@ -284,12 +284,55 @@ export interface TodayVariantReview {
   issuedAt: string;
   /** 類題の課題の状態。 */
   status: TaskStatus;
+  /** 講師が合格を取り消して、やり直しに戻した類題か。 */
+  reopened: boolean;
 }
 
 /** `GET /api/variant-reviews/stock` のパターンごとの在庫と、在庫切れで待っている受講者。 */
 export interface VariantStockSummary {
   pattern: string;
+  /** そのパターンの練習の課題名 (教材の並び。講師がパターンを見分けるため)。 */
+  practiceTitles: string[];
+  /** そのパターンの課題がある講座名。 */
+  stageTitles: string[];
   /** 教材にある有効な類題の数 (補習の小問題・確認用)。 */
   stock: { remedial: number; check: number };
+  /** そのパターンで出題の記録がある受講者の数。 */
+  learners: number;
+  /**
+   * 出題の記録がある受講者のうち、まだ出していない類題がいちばん少ない人の残り (補習・確認用)。
+   * 受講者がいなければ null。
+   */
+  fewestUnseen: { remedial: number; check: number } | null;
   waiting: { userId: string; name: string; purpose: VariantPurpose; dueOn: string }[];
+}
+
+/** 在庫の見立て。`danger` は待っている受講者がいる、`warning` は近く足りなくなる。 */
+export interface VariantStockAlert {
+  level: "danger" | "warning" | "ok";
+  notes: string[];
+}
+
+/**
+ * 在庫の不足を講師に見せる見立て (#39)。在庫切れで待っている受講者がいれば `danger`。
+ * 確認用の類題が無い・補習が 3 問に足りない・未見の確認用の類題が 1 問以下の受講者がいれば `warning`。
+ */
+export function variantStockAlert(summary: VariantStockSummary): VariantStockAlert {
+  const notes: string[] = [];
+  if (summary.waiting.length > 0)
+    notes.push(`在庫切れで待っている受講者が ${summary.waiting.length} 人います`);
+  if (summary.stock.check === 0)
+    notes.push("時間を空けた類題 (確認用) がありません。自力で合格した受講者に出せません");
+  if (summary.stock.remedial < REMEDIAL_VARIANT_COUNT)
+    notes.push(
+      `補習の小問題が ${REMEDIAL_VARIANT_COUNT} 問に足りません。支援付きで合格した受講者が途中で止まります`,
+    );
+  if (summary.stock.check > 0 && summary.fewestUnseen && summary.fewestUnseen.check <= 1)
+    notes.push(
+      `まだ出していない確認用の類題が残り ${summary.fewestUnseen.check} 問の受講者がいます`,
+    );
+  return {
+    level: summary.waiting.length > 0 ? "danger" : notes.length > 0 ? "warning" : "ok",
+    notes,
+  };
 }

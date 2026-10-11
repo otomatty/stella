@@ -393,7 +393,12 @@ describe("類題の出題 (#39)", () => {
     expect((await json<{ patterns: VariantStockSummary[] }>(stock)).patterns).toEqual([
       {
         pattern: "page",
+        practiceTitles: [`課題 ${PARENT}`],
+        stageTitles: ["開発環境"],
         stock: { remedial: 2, check: 3 },
+        learners: 1,
+        // 補習の 2 問を出し終え、確認用の 3 問はまだ出していない。
+        fewestUnseen: { remedial: 0, check: 3 },
         waiting: [{ userId: "learner", name: "受講者", purpose: "remedial", dueOn: "2026-10-04" }],
       },
     ]);
@@ -704,5 +709,127 @@ describe("類題の出題 (#39)", () => {
     expect((await reviewsOf("learner")).map((r) => [r.purpose, r.status])).toEqual([
       ["day3", "passed"],
     ]);
+  });
+
+  /** 類題の提出を入れる (判定は `reviewTaskSubmission` で付ける)。 */
+  const submitVariant = (id: string, taskId: string, at: Date) =>
+    db.insert(submissions).values({
+      id,
+      tenantId: "ses",
+      studentId: "learner",
+      taskId,
+      taskContentHash: "a".repeat(64),
+      taskKind: "independent",
+      submissionMode: "submit",
+      supportLog: [],
+      assessedSkills: ["html"],
+      stageTitle: "開発環境",
+      assignmentTitle: "類題",
+      code: "",
+      submittedAt: at,
+    });
+  const pageRows = async () => (await reviewsOf("learner")).filter((r) => r.pattern === "page");
+
+  it("人が類題の合格を取り消したら出題を「出した」に戻し、まだ出していない次の出題を取り消す", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(noonOf("2026-10-04"));
+    const taskId = (await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04")))?.taskId;
+    expect(taskId).toBe(variantId("v-check-1"));
+    await submitVariant("variant-1", taskId ?? "", noonOf("2026-10-05"));
+    vi.setSystemTime(noonOf("2026-10-05"));
+    await reviewTaskSubmission(db, teacher, "variant-1", "pass", "ok");
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-05"));
+    expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([
+      ["day3", "passed"],
+      ["week1", "scheduled"],
+    ]);
+    // ほかのパターンの類題を出している (開いた出題は、ふだんは受講者ごとに 1 つ)。
+    await db.insert(variantReviews).values({
+      tenantId: "ses",
+      userId: "learner",
+      pattern: "other",
+      step: 1,
+      purpose: "day3",
+      anchorAt: noonOf("2026-10-01"),
+      dueOn: "2026-10-06",
+      status: "issued",
+      variantTaskId: variantId("v-r1"),
+      issuedAt: noonOf("2026-10-06"),
+    });
+
+    vi.setSystemTime(noonOf("2026-10-07"));
+    await reviewTaskSubmission(db, teacher, "variant-1", "resubmit", "境界を見直してください");
+    // 合格の記録を消して「出した」に戻し、覆した合格から積んだ 1 週間後の出題は取り消す。
+    const [reopened, ...rest] = await pageRows();
+    expect(rest).toEqual([]);
+    expect(reopened).toMatchObject({
+      purpose: "day3",
+      status: "issued",
+      variantTaskId: taskId,
+      passedAt: null,
+      passedAssisted: null,
+    });
+    expect(reopened.reopenedAt).not.toBeNull();
+    // 戻した出題は一意制約から外れるが、ほかの出題を 2 つ開くことは今までどおり DB が止める。
+    await expect(
+      db.insert(variantReviews).values({
+        tenantId: "ses",
+        userId: "learner",
+        pattern: "third",
+        step: 1,
+        purpose: "day3",
+        anchorAt: noonOf("2026-10-01"),
+        dueOn: "2026-10-06",
+        status: "issued",
+        variantTaskId: variantId("v-r2"),
+        issuedAt: noonOf("2026-10-07"),
+      }),
+    ).rejects.toThrow();
+    // 今日の類題は先に出した (戻した) 類題。やり直しを案内する。
+    expect(await loadTodayVariant(db, caller("learner"), noonOf("2026-10-07"))).toMatchObject({
+      taskId,
+      status: "resubmit",
+      reopened: true,
+    });
+    expect((await bundleOf(taskId ?? "")).status).toBe(200);
+
+    // やり直して合格したら、合格を写して次の出題を積み直す。人の訂正では初回の合格日 (10/5) を
+    // 残すので、1 週間後は起点の 7 日後 (10/8) と、合格日から間を空けた日 (10/5 + 4 日) の遅い方。
+    await submitVariant("variant-2", taskId ?? "", noonOf("2026-10-08"));
+    vi.setSystemTime(noonOf("2026-10-08"));
+    await reviewTaskSubmission(db, teacher, "variant-2", "pass", "ok");
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-09"));
+    const [passed, next] = await pageRows();
+    expect(passed).toMatchObject({ status: "passed", passedAt: noonOf("2026-10-05") });
+    expect(next).toMatchObject({ purpose: "week1", status: "scheduled", dueOn: "2026-10-09" });
+  });
+
+  it("合格を取り消しても、もう出した次の類題は残す", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(noonOf("2026-10-04"));
+    const taskId = (await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04")))?.taskId;
+    await submitVariant("variant-1", taskId ?? "", noonOf("2026-10-05"));
+    vi.setSystemTime(noonOf("2026-10-05"));
+    await reviewTaskSubmission(db, teacher, "variant-1", "pass", "ok");
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-05"));
+    vi.setSystemTime(noonOf("2026-10-09"));
+    expect(await loadTodayVariant(db, caller("learner"), noonOf("2026-10-09"))).toMatchObject({
+      taskId: variantId("v-b"),
+      purpose: "week1",
+    });
+    vi.setSystemTime(noonOf("2026-10-10"));
+    await reviewTaskSubmission(db, teacher, "variant-1", "fail", "写した解答でした");
+    expect((await pageRows()).map((r) => [r.purpose, r.status, r.reopenedAt !== null])).toEqual([
+      ["day3", "issued", true],
+      ["week1", "issued", false],
+    ]);
+    // 先に出した (戻した) 類題を今日の類題にし、どちらも解ける。
+    expect(await loadTodayVariant(db, caller("learner"), noonOf("2026-10-10"))).toMatchObject({
+      taskId,
+      reopened: true,
+    });
+    expect((await bundleOf(variantId("v-b"))).status).toBe(200);
   });
 });
