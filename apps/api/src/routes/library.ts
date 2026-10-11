@@ -11,6 +11,7 @@ import type {
   LibraryReadingStatus,
   LibraryShelfEntry,
 } from "@stella/shared/library/types";
+import { MAX_LIBRARY_BOOK_PDFS } from "@stella/shared/library/types";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, type Caller } from "../lib/authz.js";
 import {
@@ -102,6 +103,7 @@ libraryRoute.get("/api/library/capabilities", async (c) => {
         maxPdfPages: 100,
         maxBookBytes: 1024 * 1024 * 1024,
         maxBookPages: 1000,
+        maxBookPdfs: MAX_LIBRARY_BOOK_PDFS,
       },
     } satisfies LibraryCapabilities);
   } catch (error) {

@@ -40,6 +40,9 @@ export function bookPrefix(p: NarratorJobRequest): string {
 export function generationPrefix(p: NarratorJobRequest): string {
   return `${bookPrefix(p)}g${p.generation}/`;
 }
+export function bookOutputPrefix(p: NarratorJobRequest, instanceId: string): string {
+  return `${generationPrefix(p)}outputs/${instanceId}/`;
+}
 export class JobContext {
   constructor(
     readonly env: JobEnv,

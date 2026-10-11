@@ -86,19 +86,24 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
               }
               const result = await tts.synthesize(text);
               const reference = `${claim}:${n}:${crypto.randomUUID()}`;
-              await job.usage(tts.model, result.usage, reference);
               const mp3 = pcmToMp3(result.pcm, result.sampleRate);
               const seconds = result.pcm.length / 2 / result.sampleRate;
-              await job.put(partKey, mp3, {
-                customMetadata: {
-                  hash: prepared.hash,
-                  model: tts.model,
-                  reference,
-                  seconds: String(seconds),
-                  inputTokens: String(result.usage.inputTokens),
-                  outputTokens: String(result.usage.outputTokens),
-                },
-              });
+              try {
+                await job.put(partKey, mp3, {
+                  customMetadata: {
+                    hash: prepared.hash,
+                    model: tts.model,
+                    reference,
+                    seconds: String(seconds),
+                    inputTokens: String(result.usage.inputTokens),
+                    outputTokens: String(result.usage.outputTokens),
+                  },
+                });
+              } finally {
+                // Checkpoint before D1 writes; a usage/progress failure resumes
+                // the saved MP3. A failed put still records the paid call.
+                await job.usage(tts.model, result.usage, reference);
+              }
               await job.progress(n + 1, prepared.count);
               batch.push({ key: partKey, bytes: mp3.length, seconds });
             }

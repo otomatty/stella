@@ -4,13 +4,126 @@ import { libraryRoute } from "../../../api/src/routes/library.js";
 import type { Env } from "../../../api/src/env.js";
 import { mediaSpike } from "./media.js";
 import { cleanupDeletedBooks } from "../../src/cleanup.js";
-import { JobContext } from "../../src/context.js";
+import { JobContext, bookOutputPrefix } from "../../src/context.js";
+import { checkpointOcr } from "../../src/ocr-checkpoint.js";
+import { readChapterState } from "../../src/book-state.js";
+import type { OcrProvider } from "@stella/book-core/providers";
 import type { NarratorJobRequest } from "@stella/shared/library/types";
 import { releaseAudioClaim, type AudioTarget } from "../../src/audio-state.js";
 import { putWhileWriting } from "../../src/audio-stream.js";
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", libraryRoute);
 app.route("/p0/media", mediaSpike);
+app.post("/p0/chapter-state-race", async (c) => {
+  const p = await c.req.json<NarratorJobRequest>();
+  const winner = `library/${p.tenantId}/${p.bookId}/g1/chapters/winner.json`;
+  let reads = 0;
+  const raceDb = {
+    prepare(sql: string) {
+      return {
+        bind(...values: (string | number | null)[]) {
+          return {
+            async first() {
+              const state = await c.env.DB.prepare(sql)
+                .bind(...values)
+                .first();
+              reads++;
+              if (reads === 1)
+                await c.env.DB.batch([
+                  c.env.DB.prepare(
+                    "UPDATE library_books SET chapter_plan_key = ? WHERE id = ?",
+                  ).bind(winner, p.bookId),
+                  c.env.DB.prepare(
+                    "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,markdown,speech_hash,start_page,end_page,updated_at) VALUES (?,'a',?,1,'Partial','Text','hash',1,1,1)",
+                  ).bind(crypto.randomUUID(), p.bookId),
+                ]);
+              return state;
+            },
+          };
+        },
+      };
+    },
+  } as D1Database;
+  const before = await readChapterState(raceDb, p);
+  const after = await readChapterState(c.env.DB, p);
+  return c.json({ before, after, reads, winner });
+});
+app.post("/p0/ocr-checkpoint", async (c) => {
+  if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
+  const p = await c.req.json<NarratorJobRequest>();
+  const job = new JobContext(
+    {
+      ...c.env,
+      BUCKET: c.env.LIBRARY_BUCKET,
+      LIBRARY_PROCESSING_ENABLED: "1",
+      FAKE_PROVIDERS: "1",
+    },
+    p,
+    `${p.jobId}-1`,
+  );
+  let calls = 0;
+  const ocr: OcrProvider = {
+    model: "fake-ocr",
+    async upload() {
+      return { name: "file", uri: "file" };
+    },
+    async read() {
+      calls++;
+      return { text: '{"pages":[]}', usage: { inputTokens: 258, outputTokens: 500 } };
+    },
+    async remove() {},
+  };
+  const key = `library/${p.tenantId}/${p.bookId}/g1/ocr/${p.jobId}-1/range.json`;
+  const file = { name: "file", uri: "file" };
+  const result = await checkpointOcr(job, ocr, file, 1, 1, key);
+  await job.usage(ocr.model, result.usage, result.reference);
+  let writeFailed = false;
+  try {
+    await c.env.DB.prepare(
+      "INSERT INTO tenants (id,name,created_at,updated_at) VALUES ('a','duplicate',1,1)",
+    ).run();
+  } catch {
+    writeFailed = true;
+  }
+  const retry = await checkpointOcr(job, ocr, file, 1, 1, key);
+  await job.usage(ocr.model, retry.usage, retry.reference);
+  await job.progress(1, 1);
+  return c.json({ calls, writeFailed, sameReference: retry.reference === result.reference });
+});
+app.post("/p0/put-replacement", async (c) => {
+  const bucket = c.env.LIBRARY_BUCKET;
+  if (!bucket) return c.json({ error: "No bucket" }, 503);
+  const p = await c.req.json<NarratorJobRequest>();
+  const oldKey = `${bookOutputPrefix(p, `${p.jobId}-1`)}pages/1.webp`;
+  const newKey = `${bookOutputPrefix(p, `${p.jobId}-2`)}pages/1.webp`;
+  const raceBucket = {
+    async put(...args: Parameters<R2Bucket["put"]>) {
+      const result = await bucket.put(...args);
+      await c.env.DB.batch([
+        c.env.DB.prepare("UPDATE library_jobs SET attempt = 2 WHERE id = ?").bind(p.jobId),
+        c.env.DB.prepare("UPDATE library_job_dispatches SET instance_id = ? WHERE job_id = ?").bind(
+          `${p.jobId}-2`,
+          p.jobId,
+        ),
+      ]);
+      await bucket.put(newKey, "replacement");
+      return result;
+    },
+    delete: bucket.delete.bind(bucket),
+  } as R2Bucket;
+  const job = new JobContext(
+    { ...c.env, BUCKET: raceBucket, LIBRARY_PROCESSING_ENABLED: "1", FAKE_PROVIDERS: "1" },
+    p,
+    `${p.jobId}-1`,
+  );
+  let rejected = false;
+  try {
+    await job.put(oldKey, "old");
+  } catch {
+    rejected = true;
+  }
+  return c.json({ oldKey, newKey, rejected });
+});
 app.post("/p0/stream-race", async (c) => {
   if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
   const p = await c.req.json<NarratorJobRequest>();

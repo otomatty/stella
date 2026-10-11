@@ -241,6 +241,66 @@ describe("JWT-authenticated personal library", () => {
   });
 });
 describe("internal processing foundation", () => {
+  it("reads the winning chapter plan and persisted prefix from one snapshot", async () => {
+    const id = await createBook("Chapter plan race");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    const response = await mf.dispatchFetch("http://localhost/p0/chapter-state-race", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    const result = await data<{
+      before: { chapter_plan_key: string | null; chapter_count: number };
+      after: { chapter_plan_key: string; chapter_count: number };
+      reads: number;
+      winner: string;
+    }>(response);
+    expect(result.before).toMatchObject({ chapter_plan_key: null, chapter_count: 0 });
+    expect(result.after).toMatchObject({ chapter_plan_key: result.winner, chapter_count: 1 });
+    expect(result.reads).toBe(1);
+  });
+  it("preserves a replacement page when an obsolete put loses authority", async () => {
+    const id = await createBook("Replacement put");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'ocr','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await reserve(p);
+    const response = await mf.dispatchFetch("http://localhost/p0/put-replacement", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    const result = await data<{ oldKey: string; newKey: string; rejected: boolean }>(response);
+    expect(result.rejected).toBe(true);
+    expect(await bucket.get(result.oldKey)).toBeNull();
+    expect(await (await bucket.get(result.newKey))?.text()).toBe("replacement");
+  });
+  it("resumes a checkpointed OCR response after a downstream D1 failure", async () => {
+    const id = await createBook("OCR checkpoint");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'ocr','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await reserve(p);
+    const response = await mf.dispatchFetch("http://localhost/p0/ocr-checkpoint", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    expect(await response.json()).toEqual({ calls: 1, writeFailed: true, sameReference: true });
+    expect(
+      await db
+        .prepare(
+          "SELECT count(*) AS count,sum(quantity) AS quantity FROM library_job_usages WHERE job_id = ? AND unit = 'input_token'",
+        )
+        .bind(p.jobId)
+        .first(),
+    ).toMatchObject({ count: 1, quantity: 258 });
+  });
   it("requires the reserved attempt and collects a put that races deletion", async () => {
     const id = await createBook("Deletion race");
     const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
@@ -510,6 +570,59 @@ describe("internal processing foundation", () => {
     }
     expect((await bucket.list({ prefix })).objects).toHaveLength(0);
   }, 240000);
+  it("saves a dense figure page across batches and completes every illustrated page", async () => {
+    const id = await createBook("Illustrated book");
+    const pdf = await PDFDocument.create();
+    for (let n = 0; n < 7; n++) pdf.addPage([200, 300]);
+    const bytes = await pdf.save(),
+      key = `library/a/${id}/pdf/source.pdf`;
+    await bucket.put(key, bytes);
+    await db
+      .prepare(
+        "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,page_count,created_at) VALUES (?,'a',?,1,'illustrated.pdf',?,?,'completed',7,1)",
+      )
+      .bind(crypto.randomUUID(), id, bytes.length, key)
+      .run();
+    for (let n = 1; n <= 7; n++) {
+      const figures = Array.from({ length: n === 1 ? 12 : 1 }, (_, index) => ({
+        fileName: `p${n}-${index + 1}.webp`,
+        box: [100, 100, 200, 200],
+        caption: "Figure",
+      }));
+      await db
+        .prepare(
+          "INSERT INTO library_pages (tenant_id,book_id,page_no,ocr_status,ocr_markdown,ocr_figures) VALUES ('a',?,?,'succeeded',?,?)",
+        )
+        .bind(id, n, `# Page ${n}\n\nText.`, JSON.stringify(figures))
+        .run();
+    }
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'ocr','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await dispatch(p);
+    await waitJob(p.jobId);
+    expect(
+      await db
+        .prepare("SELECT count(*) AS count FROM library_figures WHERE book_id = ?")
+        .bind(id)
+        .first(),
+    ).toMatchObject({ count: 18 });
+    expect(
+      await db
+        .prepare(
+          "SELECT count(*) AS count FROM library_pages WHERE book_id = ? AND image_r2_key IS NOT NULL",
+        )
+        .bind(id)
+        .first(),
+    ).toMatchObject({ count: 7 });
+    expect(
+      await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
+    ).toMatchObject({ status: "ready" });
+  });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");
     const pdf = await PDFDocument.create();

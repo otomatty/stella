@@ -33,8 +33,15 @@ export interface LibraryCapabilities {
   upload: boolean;
   audio: boolean;
   sharing: boolean;
-  limits: { maxPdfBytes: number; maxPdfPages: number; maxBookBytes: number; maxBookPages: number };
+  limits: {
+    maxPdfBytes: number;
+    maxPdfPages: number;
+    maxBookBytes: number;
+    maxBookPages: number;
+    maxBookPdfs: number;
+  };
 }
+export const MAX_LIBRARY_BOOK_PDFS = 50;
 export interface LibraryShelfResponse {
   entries: LibraryShelfEntry[];
   total: number;

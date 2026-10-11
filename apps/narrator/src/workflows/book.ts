@@ -2,11 +2,21 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloud
 import { NonRetryableError } from "cloudflare:workflows";
 import type { NarratorJobRequest } from "@stella/shared/library/types";
 import { loadPdf, extractFigures } from "@stella/book-core/pdf";
-import { parseOcrResponse, normalizeOcrPage, type FigureSpec } from "@stella/book-core/ocr";
+import { parseOcrResponse, normalizeOcrPage } from "@stella/book-core/ocr";
 import { splitIntoChapters, type ChapterDraft } from "@stella/book-core/chapters";
 import { speechHash } from "@stella/book-core/speech";
 import { ocrProvider } from "@stella/book-core/providers";
-import { JobContext, generationPrefix, bookPrefix, providerConfig, RETRY } from "../context";
+import {
+  JobContext,
+  generationPrefix,
+  bookPrefix,
+  bookOutputPrefix,
+  providerConfig,
+  RETRY,
+} from "../context";
+import { figureBatches, type FigureTask, MAX_BOOK_PDFS, MAX_FIGURE_BATCHES } from "../book-figures";
+import { checkpointOcr } from "../ocr-checkpoint";
+import { readChapterState } from "../book-state";
 interface Pdf {
   id: string;
   r2_key: string;
@@ -20,6 +30,7 @@ interface PreparedChapter extends ChapterDraft {
   position: number;
   hash: string;
 }
+const MAX_BOOK_CHAPTERS = 1000;
 export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
     const job = new JobContext(this.env, event.payload, event.instanceId),
@@ -44,6 +55,8 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             .bind(p.tenantId, p.bookId)
             .all<{ id: string }>();
           if (!rows.results.length) throw new NonRetryableError("PDFがありません");
+          if (rows.results.length > MAX_BOOK_PDFS)
+            throw new NonRetryableError("PDFの数が上限を超えています");
           return rows.results.map((pdf) => pdf.id);
         });
         for (const id of ids)
@@ -112,6 +125,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
           });
         }
         const ocr = ocrProvider(providerConfig(this.env));
+        let figureStepCount = 0;
         for (const pdf of pdfs) {
           const ranges = await step.do(`ranges-${pdf.id}`, async () => {
             await job.guard();
@@ -142,8 +156,15 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             for (const [from, to] of ranges)
               await step.do(`ocr-${pdf.id}-${from}`, RETRY, async () => {
                 await job.guard();
-                const result = await ocr.read(file, from, to);
-                await job.usage(ocr.model, result.usage);
+                const result = await checkpointOcr(
+                  job,
+                  ocr,
+                  file,
+                  from,
+                  to,
+                  `${generationPrefix(p)}ocr/${event.instanceId}/${pdf.id}-${from}-${to}.json`,
+                );
+                await job.usage(ocr.model, result.usage, result.reference);
                 const pages = parseOcrResponse(result.text, from, to);
                 await this.env.DB.batch(
                   pages.map((raw) => {
@@ -171,9 +192,9 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
               });
             await step.do(`remove-${pdf.id}`, () => ocr.remove(file));
           }
-          const pages = await step.do(`figure-pages-${pdf.id}`, async () => {
+          const figurePlan = await step.do(`figure-pages-${pdf.id}`, async () => {
             await job.guard();
-            return (
+            const pages = (
               await this.env.DB.prepare(
                 "SELECT page_no, ocr_figures FROM library_pages WHERE tenant_id = ? AND book_id = ? AND page_no BETWEEN ? AND ? AND image_r2_key IS NULL AND ocr_figures <> '[]'",
               )
@@ -185,77 +206,89 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
                 )
                 .all<{ page_no: number; ocr_figures: string }>()
             ).results;
+            const batches = figureBatches(pages);
+            const key = `${generationPrefix(p)}figures/${event.instanceId}-${pdf.id}.json`;
+            await job.put(key, JSON.stringify(batches));
+            return { key, count: batches.length };
           });
-          for (const page of pages)
-            await step.do(`figures-${pdf.id}-${page.page_no}`, RETRY, async () => {
+          figureStepCount += figurePlan.count;
+          if (figureStepCount > MAX_FIGURE_BATCHES)
+            throw new NonRetryableError(
+              "図版処理の上限を超えています。書籍を分けて登録してください",
+            );
+          for (let batchNo = 0; batchNo < figurePlan.count; batchNo++)
+            await step.do(`figures-${pdf.id}-${batchNo}`, RETRY, async () => {
               await job.guard();
+              const plan = await this.env.BUCKET.get(figurePlan.key);
+              const tasks = (await plan?.json<FigureTask[][]>())?.[batchNo];
+              if (!tasks) throw new NonRetryableError("図版の計画がありません");
               const object = await this.env.BUCKET.get(pdf.r2_key);
               if (!object) throw new NonRetryableError("PDFがありません");
               const doc = await loadPdf(new Uint8Array(await object.arrayBuffer()));
-              const result = await extractFigures(
-                doc,
-                page.page_no - pdf.first_page_no,
-                JSON.parse(page.ocr_figures) as FigureSpec[],
-              );
-              for (const figure of result.figures) {
-                const key = `${generationPrefix(p)}images/${figure.fileName}`;
+              for (const task of tasks) {
+                const result = await extractFigures(
+                  doc,
+                  task.pageNo - pdf.first_page_no,
+                  task.figures,
+                );
+                for (const figure of result.figures) {
+                  const key = `${bookOutputPrefix(p, event.instanceId)}images/${figure.fileName}`;
+                  await job.guard();
+                  await job.put(key, figure.webp, {
+                    httpMetadata: { contentType: "image/webp" },
+                  });
+                  await this.env.DB.prepare(
+                    `INSERT INTO library_figures (id, tenant_id, book_id, file_name, page_no, caption, r2_key, width, height) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, file_name) DO UPDATE SET r2_key = excluded.r2_key, width = excluded.width, height = excluded.height, caption = excluded.caption`,
+                  )
+                    .bind(
+                      crypto.randomUUID(),
+                      p.tenantId,
+                      p.bookId,
+                      figure.fileName,
+                      task.pageNo,
+                      figure.caption,
+                      key,
+                      figure.width,
+                      figure.height,
+                      ...job.scope,
+                    )
+                    .run();
+                }
+                if (!task.complete) continue;
+                const key = `${bookOutputPrefix(p, event.instanceId)}pages/${task.pageNo}.webp`;
                 await job.guard();
-                await job.put(key, figure.webp, {
+                await job.put(key, result.pageWebp, {
                   httpMetadata: { contentType: "image/webp" },
                 });
                 await this.env.DB.prepare(
-                  `INSERT INTO library_figures (id, tenant_id, book_id, file_name, page_no, caption, r2_key, width, height) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, file_name) DO UPDATE SET r2_key = excluded.r2_key, width = excluded.width, height = excluded.height, caption = excluded.caption`,
+                  `UPDATE library_pages SET image_r2_key = ? WHERE tenant_id = ? AND book_id = ? AND page_no = ? AND ${job.live}`,
                 )
-                  .bind(
-                    crypto.randomUUID(),
-                    p.tenantId,
-                    p.bookId,
-                    figure.fileName,
-                    page.page_no,
-                    figure.caption,
-                    key,
-                    figure.width,
-                    figure.height,
-                    ...job.scope,
-                  )
+                  .bind(key, p.tenantId, p.bookId, task.pageNo, ...job.scope)
                   .run();
               }
-              const key = `${generationPrefix(p)}pages/${page.page_no}.webp`;
-              await job.guard();
-              await job.put(key, result.pageWebp, {
-                httpMetadata: { contentType: "image/webp" },
-              });
-              await this.env.DB.prepare(
-                `UPDATE library_pages SET image_r2_key = ? WHERE tenant_id = ? AND book_id = ? AND page_no = ? AND ${job.live}`,
-              )
-                .bind(key, p.tenantId, p.bookId, page.page_no, ...job.scope)
-                .run();
             });
         }
       }
       const chapterPlan = await step.do("split", RETRY, async () => {
         await job.guard();
-        const book = await this.env.DB.prepare(
-          "SELECT title, chapter_plan_key FROM library_books WHERE tenant_id = ? AND id = ?",
-        )
-          .bind(p.tenantId, p.bookId)
-          .first<{ title: string; chapter_plan_key: string | null }>();
+        const book = await readChapterState(this.env.DB, p);
         if (!book) throw new NonRetryableError("本がありません");
         const readPlan = async (key: string) => {
           if (!key.startsWith(`${generationPrefix(p)}chapters/`))
             throw new NonRetryableError("章の下書きが失効しています");
           const object = await this.env.BUCKET.get(key);
           if (!object) throw new NonRetryableError("章の下書きがありません");
-          return { count: (await object.json<PreparedChapter[]>()).length, key };
+          const count = (await object.json<PreparedChapter[]>()).length;
+          if (count > MAX_BOOK_CHAPTERS) throw new NonRetryableError("章の数が上限を超えています");
+          return { count, key };
         };
         if (book.chapter_plan_key?.startsWith(`${generationPrefix(p)}chapters/`))
           return readPlan(book.chapter_plan_key);
-        const existing = await this.env.DB.prepare(
-          "SELECT count(*) AS count FROM library_chapters WHERE tenant_id = ? AND book_id = ?",
-        )
-          .bind(p.tenantId, p.bookId)
-          .first<{ count: number }>();
-        if (existing?.count) return { count: 0, key: "" }; // Preserve personal records on re-split.
+        if (book.chapter_count) {
+          if (book.chapter_count > MAX_BOOK_CHAPTERS)
+            throw new NonRetryableError("章の数が上限を超えています");
+          return { count: 0, key: "" }; // Preserve personal records on re-split.
+        }
         const rows = await this.env.DB.prepare(
           "SELECT page_no, ocr_markdown FROM library_pages WHERE tenant_id = ? AND book_id = ? ORDER BY page_no",
         )
@@ -266,6 +299,8 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
           book.title,
         );
         if (!chapters.length) throw new NonRetryableError("章がありません");
+        if (chapters.length > MAX_BOOK_CHAPTERS)
+          throw new NonRetryableError("章の数が上限を超えています");
         const prepared = await Promise.all(
           chapters.map(async (chapter, position) => ({
             ...chapter,
