@@ -56,11 +56,23 @@ async function dispatch(p: NarratorJobRequest, reserved = true) {
   return (await response.json()) as { instanceId: string };
 }
 async function waitJob(id: string, polls = 600): Promise<void> {
+  let readFailures = 0;
   for (let n = 0; n < polls; n++) {
-    const row = await db
-      .prepare("SELECT status FROM library_jobs WHERE id = ?")
-      .bind(id)
-      .first<{ status: string }>();
+    let row: { status: string } | null;
+    try {
+      row = await db
+        .prepare("SELECT status FROM library_jobs WHERE id = ?")
+        .bind(id)
+        .first<{ status: string }>();
+      readFailures = 0;
+    } catch (error) {
+      // Miniflare's Node RPC bridge can reset a reused HTTP connection while
+      // a CPU-heavy step runs. Retry the read, never the processing operation.
+      if (!(error instanceof TypeError) || error.message !== "fetch failed" || ++readFailures >= 3)
+        throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      continue;
+    }
     if (row?.status === "succeeded") return;
     if (row?.status === "failed") throw new Error(`Job failed: ${id}`);
     await new Promise((resolve) => setTimeout(resolve, 100));
