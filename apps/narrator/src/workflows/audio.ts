@@ -8,6 +8,7 @@ import { JobContext, generationPrefix, providerConfig, RETRY } from "../context"
 import { releaseAudioClaim } from "../audio-state";
 import { concatenateAudio } from "../audio-concat";
 import { cachedAudio } from "../audio-cache";
+import { audioSettings, audioConfig } from "../audio-settings";
 import {
   audioBatchStarts,
   AUDIO_CHUNKS_PER_STEP,
@@ -22,10 +23,11 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
     const claim = event.instanceId;
     const temp = `${generationPrefix(p)}audio/tmp/${claim}/`;
     const key = `${generationPrefix(p)}audio/${claim}.mp3`;
-    const tts = ttsProvider(providerConfig(this.env));
+    const config = providerConfig(this.env);
     let input: { chapterId: string; revision: number; hash: string } | undefined;
     try {
       const prepared = await step.do("prepare", async () => {
+        const settings = audioSettings(config);
         const row = await job.guard();
         if (!row.chapter_id) throw new NonRetryableError("章がありません");
         const chapter = await this.env.DB.prepare(
@@ -50,7 +52,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
             chapter.id,
             chapter.revision,
             hash,
-            tts.model,
+            settings.model,
             Date.now(),
             claim,
             ...job.scope,
@@ -60,9 +62,16 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         if (acquired.meta.changes !== 1) throw new NonRetryableError("この章の音声は生成中です");
         await job.put(`${temp}chunks.json`, JSON.stringify(chunks));
         await job.progress(0, chunks.length);
-        return { chapterId: chapter.id, revision: chapter.revision, hash, count: chunks.length };
+        return {
+          chapterId: chapter.id,
+          revision: chapter.revision,
+          hash,
+          count: chunks.length,
+          settings,
+        };
       });
       input = prepared;
+      const tts = ttsProvider(audioConfig(config, prepared.settings));
       const parts: AudioPart[] = [];
       for (const start of audioBatchStarts(prepared.count))
         parts.push(
@@ -77,9 +86,14 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
               if (!text) throw new NonRetryableError("読み上げる文がありません");
               const partKey = `${temp}${n}.mp3`;
               const stored = await this.env.BUCKET.head(partKey);
-              const cached = cachedAudio(stored?.customMetadata, prepared.hash, tts.model);
+              const cached = cachedAudio(stored?.customMetadata, prepared.hash, prepared.settings);
               if (stored && cached) {
-                await job.usage(tts.model, cached.usage, cached.reference);
+                await job.usage(
+                  tts.model,
+                  cached.usage,
+                  cached.reference,
+                  prepared.settings.fake ? "fake" : "google",
+                );
                 await job.progress(n + 1, prepared.count);
                 batch.push({ key: partKey, bytes: stored.size, seconds: cached.seconds });
                 continue;
@@ -93,6 +107,9 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
                   customMetadata: {
                     hash: prepared.hash,
                     model: tts.model,
+                    voice: prepared.settings.voice,
+                    language: prepared.settings.language,
+                    provider: prepared.settings.fake ? "fake" : "google",
                     reference,
                     seconds: String(seconds),
                     inputTokens: String(result.usage.inputTokens),
@@ -102,7 +119,12 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
               } finally {
                 // Checkpoint before D1 writes; a usage/progress failure resumes
                 // the saved MP3. A failed put still records the paid call.
-                await job.usage(tts.model, result.usage, reference);
+                await job.usage(
+                  tts.model,
+                  result.usage,
+                  reference,
+                  prepared.settings.fake ? "fake" : "google",
+                );
               }
               await job.progress(n + 1, prepared.count);
               batch.push({ key: partKey, bytes: mp3.length, seconds });

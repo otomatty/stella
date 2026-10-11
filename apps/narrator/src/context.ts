@@ -117,7 +117,12 @@ export class JobContext {
       )
       .run();
   }
-  async usage(model: string, usage: Usage, reference?: string): Promise<void> {
+  async usage(
+    model: string,
+    usage: Usage,
+    reference?: string,
+    provider?: "fake" | "google",
+  ): Promise<void> {
     await this.env.DB.batch(
       (["input_token", "output_token"] as const).map((unit) =>
         this.env.DB.prepare(
@@ -127,7 +132,7 @@ export class JobContext {
           this.p.tenantId,
           this.p.bookId,
           this.p.jobId,
-          this.env.FAKE_PROVIDERS === "1" ? "fake" : "google",
+          provider ?? (this.env.FAKE_PROVIDERS === "1" ? "fake" : "google"),
           model,
           unit,
           unit === "input_token" ? usage.inputTokens : usage.outputTokens,

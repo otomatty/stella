@@ -4,6 +4,7 @@ export interface ProviderConfig {
   OCR_MODEL: string;
   TTS_MODEL: string;
   TTS_VOICE: string;
+  TTS_LANGUAGE?: string;
   FAKE_PROVIDERS?: string;
 }
 // 移植元の Gemini Interactions API アダプター。ローカルとCIは偽プロバイダを使う。
@@ -202,7 +203,9 @@ function geminiTts(env: ProviderConfig): TtsProvider {
           model: env.TTS_MODEL,
           input: [{ type: "user_input", content: [{ type: "text", text }] }],
           response_format: { type: "audio" },
-          generation_config: { speech_config: [{ voice: env.TTS_VOICE, language: "ja-JP" }] },
+          generation_config: {
+            speech_config: [{ voice: env.TTS_VOICE, language: env.TTS_LANGUAGE ?? "ja-JP" }],
+          },
         },
         "音声の生成",
       );
