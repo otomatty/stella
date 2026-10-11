@@ -5,6 +5,7 @@ import { chunkParagraphs, speechHash, toSpeechParagraphs } from "@stella/book-co
 import { pcmToMp3 } from "@stella/book-core/mp3";
 import { ttsProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, providerConfig, RETRY } from "../context";
+import { releaseAudioClaim } from "../audio-state";
 export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
     const job = new JobContext(this.env, event.payload, event.instanceId),
@@ -30,7 +31,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         await job.guard();
         input = { chapterId: chapter.id, revision: chapter.revision, hash };
         const acquired = await this.env.DB.prepare(
-          `INSERT INTO library_audios (id, tenant_id, book_id, chapter_id, revision, status, source_speech_hash, tts_model, created_at, generation_job_id) SELECT ?, ?, ?, ?, ?, 'generating', ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, chapter_id, revision) DO UPDATE SET generation_job_id = excluded.generation_job_id, status = CASE WHEN library_audios.status = 'ready' THEN 'ready' ELSE 'generating' END WHERE library_audios.generation_job_id IS NULL OR library_audios.generation_job_id = excluded.generation_job_id`,
+          `INSERT INTO library_audios (id, tenant_id, book_id, chapter_id, revision, status, source_speech_hash, tts_model, created_at, generation_job_id) SELECT ?, ?, ?, ?, ?, 'generating', ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, chapter_id, revision) DO UPDATE SET generation_job_id = excluded.generation_job_id, status = CASE WHEN library_audios.status = 'ready' THEN 'ready' ELSE 'generating' END WHERE library_audios.generation_job_id IS NULL OR library_audios.generation_job_id = excluded.generation_job_id OR NOT EXISTS (SELECT 1 FROM library_jobs j JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id AND d.instance_id = j.id || '-' || j.attempt WHERE j.tenant_id = library_audios.tenant_id AND j.book_id = library_audios.book_id AND j.generation = ? AND j.status IN ('queued','running') AND d.instance_id = library_audios.generation_job_id)`,
         )
           .bind(
             crypto.randomUUID(),
@@ -43,6 +44,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
             Date.now(),
             claim,
             ...job.scope,
+            p.generation,
           )
           .run();
         if (acquired.meta.changes !== 1) throw new NonRetryableError("この章の音声は生成中です");
@@ -136,11 +138,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
       if (input) {
         const failed = input;
         await step.do("fail-audio", async () => {
-          await this.env.DB.prepare(
-            `UPDATE library_audios SET status = CASE WHEN status = 'ready' THEN 'ready' ELSE 'failed' END, generation_job_id = NULL WHERE tenant_id = ? AND book_id = ? AND chapter_id = ? AND revision = ? AND generation_job_id = ? AND ${job.live}`,
-          )
-            .bind(p.tenantId, p.bookId, failed.chapterId, failed.revision, claim, ...job.scope)
-            .run();
+          await releaseAudioClaim(this.env.DB, { ...p, ...failed }, claim);
         });
       }
       await step.do("discard-audio", async () => {

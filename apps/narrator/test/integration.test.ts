@@ -317,6 +317,33 @@ describe("internal processing foundation", () => {
         .bind(id)
         .first(),
     ).toMatchObject({ first_page_no: 901 });
+    const original = await db
+      .prepare("SELECT id FROM library_chapters WHERE book_id = ? AND position = 1000")
+      .bind(id)
+      .first<{ id: string }>();
+    await db.prepare("DELETE FROM library_chapters WHERE id = ?").bind(original?.id).run();
+    await db.prepare("UPDATE library_books SET status = 'failed' WHERE id = ?").bind(id).run();
+    const retry = { ...p, jobId: crypto.randomUUID() };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'split','owner',1)",
+      )
+      .bind(retry.jobId, id)
+      .run();
+    await dispatch(retry);
+    await waitJob(retry.jobId);
+    expect(
+      await db
+        .prepare("SELECT id FROM library_chapters WHERE book_id = ? AND position = 1000")
+        .bind(id)
+        .first(),
+    ).toEqual(original);
+    expect(
+      await db
+        .prepare("SELECT count(*) AS count FROM library_chapter_revisions WHERE book_id = ?")
+        .bind(id)
+        .first(),
+    ).toMatchObject({ count: 1000 });
   }, 120000);
   it("marks failed audio and can retry without duplicating the audio revision", async () => {
     const id = await createBook("TTS failure fixture");
@@ -423,6 +450,67 @@ describe("internal processing foundation", () => {
           .bind(id)
           .first(),
       ).toMatchObject({ generation_job_id: null });
+      await bucket.delete("_fake/tts-fail.json");
+      const replacement = crypto.randomUUID();
+      await db
+        .prepare(
+          "INSERT INTO library_jobs (id,tenant_id,book_id,chapter_id,generation,type,attempt,created_by,created_at) VALUES (?,'a',?,?,1,'tts',2,'owner',1)",
+        )
+        .bind(replacement, id, chapter)
+        .run();
+      const replacementRequest = { tenantId: "a", bookId: id, jobId: replacement, generation: 1 };
+      await reserve(replacementRequest);
+      const staleClaim = `${replacement}-1`,
+        currentClaim = `${replacement}-2`;
+      const release = () =>
+        mf.dispatchFetch("http://localhost/p0/release-audio-claim", {
+          method: "POST",
+          body: JSON.stringify({
+            tenantId: "a",
+            bookId: id,
+            chapterId: chapter,
+            revision: 1,
+            claim: staleClaim,
+          }),
+        });
+      await db
+        .prepare("UPDATE library_audios SET generation_job_id = ? WHERE book_id = ?")
+        .bind(staleClaim, id)
+        .run();
+      await release();
+      expect(
+        await db
+          .prepare("SELECT generation_job_id,status FROM library_audios WHERE book_id = ?")
+          .bind(id)
+          .first(),
+      ).toMatchObject({ generation_job_id: null, status: "ready" });
+      await db
+        .prepare("UPDATE library_audios SET generation_job_id = ? WHERE book_id = ?")
+        .bind(currentClaim, id)
+        .run();
+      await release();
+      expect(
+        await db
+          .prepare("SELECT generation_job_id FROM library_audios WHERE book_id = ?")
+          .bind(id)
+          .first(),
+      ).toMatchObject({ generation_job_id: currentClaim });
+      await db
+        .prepare("UPDATE library_audios SET generation_job_id = ? WHERE book_id = ?")
+        .bind(staleClaim, id)
+        .run();
+      await dispatch(replacementRequest, false);
+      await waitJob(replacement);
+      expect(
+        await db
+          .prepare("SELECT status,r2_key,generation_job_id FROM library_audios WHERE book_id = ?")
+          .bind(id)
+          .first(),
+      ).toMatchObject({
+        status: "ready",
+        r2_key: `library/a/${id}/g1/audio/${currentClaim}.mp3`,
+        generation_job_id: null,
+      });
     } finally {
       await bucket.delete("_fake/tts-fail.json");
     }

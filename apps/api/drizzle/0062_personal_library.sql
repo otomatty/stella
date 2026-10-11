@@ -12,6 +12,7 @@ CREATE TABLE library_books (
   status TEXT NOT NULL DEFAULT 'draft',
   generation INTEGER NOT NULL DEFAULT 1,
   page_count INTEGER,
+  chapter_plan_key TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (tenant_id, owner_id) REFERENCES profiles (tenant_id, id) ON DELETE CASCADE,

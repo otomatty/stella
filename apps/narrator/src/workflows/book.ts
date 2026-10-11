@@ -236,11 +236,20 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
       const chapterPlan = await step.do("split", RETRY, async () => {
         await job.guard();
         const book = await this.env.DB.prepare(
-          "SELECT title FROM library_books WHERE tenant_id = ? AND id = ?",
+          "SELECT title, chapter_plan_key FROM library_books WHERE tenant_id = ? AND id = ?",
         )
           .bind(p.tenantId, p.bookId)
-          .first<{ title: string }>();
+          .first<{ title: string; chapter_plan_key: string | null }>();
         if (!book) throw new NonRetryableError("本がありません");
+        const readPlan = async (key: string) => {
+          if (!key.startsWith(`${generationPrefix(p)}chapters/`))
+            throw new NonRetryableError("章の下書きが失効しています");
+          const object = await this.env.BUCKET.get(key);
+          if (!object) throw new NonRetryableError("章の下書きがありません");
+          return { count: (await object.json<PreparedChapter[]>()).length, key };
+        };
+        if (book.chapter_plan_key?.startsWith(`${generationPrefix(p)}chapters/`))
+          return readPlan(book.chapter_plan_key);
         const existing = await this.env.DB.prepare(
           "SELECT count(*) AS count FROM library_chapters WHERE tenant_id = ? AND book_id = ?",
         )
@@ -265,9 +274,23 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             hash: await speechHash(chapter.markdown),
           })),
         );
-        const key = `${generationPrefix(p)}chapters/tmp/${event.instanceId}.json`;
+        const key = `${generationPrefix(p)}chapters/${event.instanceId}.json`;
         await job.put(key, JSON.stringify(prepared));
-        return { count: prepared.length, key };
+        const claimed = await this.env.DB.prepare(
+          `UPDATE library_books SET chapter_plan_key = ? WHERE tenant_id = ? AND id = ? AND chapter_plan_key IS ? AND ${job.live}`,
+        )
+          .bind(key, p.tenantId, p.bookId, book.chapter_plan_key, ...job.scope)
+          .run();
+        if (claimed.meta.changes === 1) return { count: prepared.length, key };
+        await this.env.BUCKET.delete(key);
+        const winner = await this.env.DB.prepare(
+          "SELECT chapter_plan_key FROM library_books WHERE tenant_id = ? AND id = ?",
+        )
+          .bind(p.tenantId, p.bookId)
+          .first<{ chapter_plan_key: string }>();
+        if (!winner?.chapter_plan_key)
+          throw new NonRetryableError("章の下書きを確保できませんでした");
+        return readPlan(winner.chapter_plan_key);
       });
       // Two statements per chapter; each step stays below the Free plan's 50-query cap.
       for (let offset = 0; offset < chapterPlan.count; offset += 20) {
@@ -312,8 +335,6 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
           );
         });
       }
-      if (chapterPlan.key)
-        await step.do("cleanup-chapters", () => this.env.BUCKET.delete(chapterPlan.key));
       await step.do("finish", async () => {
         if ((await job.authorize()).status === "succeeded") return;
         await job.guard();

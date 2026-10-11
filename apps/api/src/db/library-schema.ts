@@ -31,6 +31,7 @@ export const libraryBooks = sqliteTable(
     status: text("status").$type<LibraryBookStatus>().notNull().default("draft"),
     generation: integer("generation").notNull().default(1),
     pageCount: integer("page_count"),
+    chapterPlanKey: text("chapter_plan_key"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },

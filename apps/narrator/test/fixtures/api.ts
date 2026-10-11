@@ -6,9 +6,15 @@ import { mediaSpike } from "./media.js";
 import { cleanupDeletedBooks } from "../../src/cleanup.js";
 import { JobContext } from "../../src/context.js";
 import type { NarratorJobRequest } from "@stella/shared/library/types";
+import { releaseAudioClaim, type AudioTarget } from "../../src/audio-state.js";
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", libraryRoute);
 app.route("/p0/media", mediaSpike);
+app.post("/p0/release-audio-claim", async (c) => {
+  const { claim, ...target } = await c.req.json<AudioTarget & { claim: string }>();
+  await releaseAudioClaim(c.env.DB, target, claim);
+  return c.json({ ok: true });
+});
 app.post("/p0/stale-attempt", async (c) => {
   if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
   const p = await c.req.json<NarratorJobRequest>();
