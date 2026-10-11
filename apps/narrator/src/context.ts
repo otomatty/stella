@@ -109,7 +109,9 @@ export class JobContext {
     try {
       await this.guard();
     } catch (error) {
-      await this.env.BUCKET.delete(key);
+      // D1 unavailability does not prove authority was revoked. Keep the paid
+      // checkpoint so the Workflow can resume it after a retryable failure.
+      if (error instanceof NonRetryableError) await this.env.BUCKET.delete(key);
       throw error;
     }
   }

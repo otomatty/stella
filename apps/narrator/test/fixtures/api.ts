@@ -15,6 +15,66 @@ import { putWhileWriting } from "../../src/audio-stream.js";
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", libraryRoute);
 app.route("/p0/media", mediaSpike);
+app.post("/p0/transient-put", async (c) => {
+  if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
+  const p = await c.req.json<NarratorJobRequest>();
+  let reads = 0;
+  const raceDb = {
+    prepare(sql: string) {
+      return {
+        bind(...values: (string | number | null)[]) {
+          return {
+            async first() {
+              if (++reads === 2) throw new Error("Transient D1 failure");
+              return c.env.DB.prepare(sql)
+                .bind(...values)
+                .first();
+            },
+          };
+        },
+      };
+    },
+  } as D1Database;
+  const job = new JobContext(
+    {
+      ...c.env,
+      DB: raceDb,
+      BUCKET: c.env.LIBRARY_BUCKET,
+      LIBRARY_PROCESSING_ENABLED: "1",
+      FAKE_PROVIDERS: "1",
+    },
+    p,
+    `${p.jobId}-1`,
+  );
+  const key = `library/${p.tenantId}/${p.bookId}/g1/ocr/${p.jobId}-1/checkpoint.json`;
+  let calls = 0;
+  const ocr: OcrProvider = {
+    model: "fake-ocr",
+    async upload() {
+      return { name: "file", uri: "file" };
+    },
+    async read() {
+      calls++;
+      return {
+        text: '{"pages":[{"page":1,"markdown":"Text","figures":[]}]}',
+        usage: { inputTokens: 258, outputTokens: 500 },
+      };
+    },
+    async remove() {
+      return undefined;
+    },
+  };
+  let failed = false;
+  try {
+    await checkpointOcr(job, ocr, { name: "file", uri: "file" }, 1, 1, key);
+  } catch {
+    failed = true;
+  }
+  const retained = await c.env.LIBRARY_BUCKET.head(key);
+  await job.guard();
+  const result = await checkpointOcr(job, ocr, { name: "file", uri: "file" }, 1, 1, key);
+  return c.json({ failed, retained: Boolean(retained), calls, text: result.text });
+});
 app.get("/p0/tts-settings", (c) => {
   const language = Reflect.get(c.env, "TTS_LANGUAGE");
   if (!c.env.LIBRARY_BUCKET || typeof language !== "string")

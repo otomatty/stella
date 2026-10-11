@@ -243,6 +243,22 @@ describe("JWT-authenticated personal library", () => {
   });
 });
 describe("internal processing foundation", () => {
+  it("retains a paid checkpoint after a transient post-put guard failure", async () => {
+    const id = await createBook("Transient guard failure");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?,'a',?,1,'ocr','owner',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await reserve(p);
+    const response = await mf.dispatchFetch("http://localhost/p0/transient-put", {
+      method: "POST",
+      body: JSON.stringify(p),
+    });
+    expect(await response.json()).toMatchObject({ failed: true, retained: true, calls: 1 });
+  });
   it("forwards the configured Worker language into synthesis settings", async () => {
     const response = await mf.dispatchFetch("http://localhost/p0/tts-settings");
     expect(response.status).toBe(200);
