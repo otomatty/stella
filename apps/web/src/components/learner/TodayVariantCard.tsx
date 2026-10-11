@@ -46,7 +46,9 @@ export function TodayVariantCard({ enabled }: { enabled: boolean }) {
             </p>
             <h2 className="text-sm font-medium mt-1">{variant.title}</h2>
             <p className="text-xs text-ink-3 mt-1">
-              {TASK_KIND_LABELS[variant.kind]} · 前に解いた問題と同じ考え方で、別の問題を解きます
+              {variant.reopened
+                ? `${TASK_KIND_LABELS[variant.kind]} · 講師が合格を取り消しました。通知のフィードバックを読んで、もう一度提出してください`
+                : `${TASK_KIND_LABELS[variant.kind]} · 前に解いた問題と同じ考え方で、別の問題を解きます`}
             </p>
           </div>
           <Badge variant={passed ? "success" : "default"}>

@@ -9,7 +9,15 @@ import {
   type ReviewQueueSort,
 } from "@stella/shared/review/review-desk";
 import type { Submission } from "@stella/shared/review/types";
-import { BarChart, CheckCheck, ChevronRight, Edit, ListTree, Sparkles } from "@/lib/icons";
+import {
+  BarChart,
+  CheckCheck,
+  ChevronRight,
+  Edit,
+  ListTree,
+  RotateCcw,
+  Sparkles,
+} from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +49,7 @@ import { AssignedScopeToggle } from "./AssignedScopeToggle";
 import { AiPassedList } from "./AiPassedList";
 import { ReviewMetricsPanel } from "./ReviewMetricsPanel";
 import { TaskBoardPanel } from "./TaskBoardPanel";
+import { VariantStockPanel } from "./VariantStockPanel";
 
 interface ReviewQueueProps {
   tenantId: Tenant["id"];
@@ -59,6 +68,7 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
  *   操作で確定する。同じ課題の提出を並べて見て、共通のつまずきを全体への補足・発見教材に回す。
  * - AI が合格にした提出: いつでも確認できる (確認済み・コメント・覆す)。
  * - 見直しの数字: しきい値の月次見直しに使う割合。
+ * - 類題の在庫: コードの復習の類題が足りないパターンと、在庫切れで待っている受講者 (#39)。
  */
 export const ReviewQueue = ({
   tenantId,
@@ -140,6 +150,9 @@ export const ReviewQueue = ({
               </TabsTrigger>
               <TabsTrigger value="metrics" icon={<BarChart />}>
                 見直しの数字
+              </TabsTrigger>
+              <TabsTrigger value="variant-stock" icon={<RotateCcw />}>
+                類題の在庫
               </TabsTrigger>
             </>
           ) : null}
@@ -303,6 +316,9 @@ export const ReviewQueue = ({
             </TabsContent>
             <TabsContent value="metrics">
               <ReviewMetricsPanel />
+            </TabsContent>
+            <TabsContent value="variant-stock">
+              <VariantStockPanel />
             </TabsContent>
           </>
         ) : null}

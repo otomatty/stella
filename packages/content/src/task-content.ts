@@ -12,6 +12,7 @@ import {
   type TaskBundle,
 } from "../../shared/src/tasks/catalog.js";
 import { parseTaskHints } from "../../shared/src/tasks/help.js";
+import { RUNNERS } from "../../shared/src/tasks/runners.js";
 import { variantKindProblem } from "../../shared/src/tasks/variants.js";
 import { matchesPattern } from "../../shared/src/tasks/submission.js";
 import {
@@ -53,6 +54,12 @@ export interface TaskSeed {
    * 受講者が求めたときだけ API が返す。
    */
   fixedStart?: Record<string, string>;
+  /**
+   * 典型的な誤答 (任意。類題では必須。`private/mutants/<名前>/`、#39)。解答例に重ねると手元の
+   * 固定ランナーの検査で落ちるはずのファイル。`content:check` が落ちることを確かめる。seed は
+   * D1 に入れない (教材の検査だけに使う)。
+   */
+  mutants?: Record<string, Record<string, string>>;
   directory: string;
 }
 export interface UnitSeed {
@@ -330,6 +337,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   const fixedStart = parent
     ? undefined
     : readFixedStart(taskDir, definition, starter, files, privateFiles, assemble);
+  const mutants = readMutants(taskDir, definition, starter, privateFiles, parent !== undefined);
   // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
   const contentHash = createHash("sha256")
     .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
@@ -343,8 +351,85 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     bundle: { manifest, contentHash, files },
     privateFiles,
     ...(fixedStart ? { fixedStart } : {}),
+    ...(mutants ? { mutants } : {}),
     directory: taskDir,
   };
+}
+
+/**
+ * 誤答で落ちることを手元で確かめられる runner か。環境の診断は受講者のコードを見ず、CI と公開は
+ * 受講者の GitHub Actions で動くので、誤答を手元で確かめられない。
+ */
+export function mutantsCheckable(definition: TaskDefinition): boolean {
+  const runner = RUNNERS[definition.runner];
+  return runner.runsLocally && runner.plan !== "diagnose";
+}
+
+/**
+ * `private/mutants/` (任意。類題では必須) を読む。典型的な誤答を 1 つ 1 フォルダーで置き、中身は
+ * 解答例に重ねるファイル (受講者が書き換えるファイルだけ)。テスト・設定 (protected)・README・
+ * `.stella/` を変える誤答は、テストを壊すだけで誤答を確かめないので置けない。
+ * 類題は在庫に入れる前に「典型的な誤答がテストで落ちる」ことを確かめる (07 §7.2) ので、
+ * 手元で確かめられる runner の類題には 1 つ以上を求める。
+ */
+function readMutants(
+  taskDir: string,
+  definition: TaskDefinition,
+  starter: Record<string, string>,
+  privateFiles: Record<string, string>,
+  isVariant: boolean,
+): Record<string, Record<string, string>> | undefined {
+  const dir = join(taskDir, "private/mutants");
+  const required = isVariant && mutantsCheckable(definition);
+  const missing = () =>
+    new Error(
+      `類題には典型的な誤答 (private/mutants/<名前>/) が 1 つ以上必要です (解答例に重ねてテストで落ちることを確かめます): ${definition.id}`,
+    );
+  if (!existsSync(dir)) {
+    if (required) throw missing();
+    return undefined;
+  }
+  if (lstatSync(dir).isSymbolicLink() || !lstatSync(dir).isDirectory())
+    throw new Error(`private/mutants はディレクトリにしてください: ${definition.id}`);
+  if (!mutantsCheckable(definition))
+    throw new Error(
+      `runner ${definition.runner} の課題は誤答を手元で確かめられないので、private/mutants を置けません: ${definition.id}`,
+    );
+  const editable = new Set([
+    ...Object.keys(starter),
+    ...Object.keys(privateFiles)
+      .filter((key) => key.startsWith("solution/"))
+      .map((key) => key.slice("solution/".length)),
+  ]);
+  const mutants: Record<string, Record<string, string>> = {};
+  for (const name of sortNatural(readdirSync(dir))) {
+    if (name === ".gitkeep") continue;
+    const path = join(dir, name);
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink() || !stat.isDirectory())
+      throw new Error(
+        `private/mutants/ には誤答を 1 つ 1 フォルダーで置いてください: ${name} (${definition.id})`,
+      );
+    const files = collectFiles(path);
+    if (Object.keys(files).length === 0)
+      throw new Error(`誤答 ${name} にファイルがありません: ${definition.id}`);
+    for (const key of Object.keys(files)) {
+      if (matchesPattern(key, definition.protected))
+        throw new Error(
+          `誤答ではテスト・設定 (protected) を変えられません: ${name}/${key} (${definition.id})`,
+        );
+      if (!editable.has(key))
+        throw new Error(
+          `誤答に置けるのは starter・解答例にあるファイルだけです: ${name}/${key} (${definition.id})`,
+        );
+    }
+    mutants[name] = files;
+  }
+  if (Object.keys(mutants).length === 0) {
+    if (required) throw missing();
+    return undefined;
+  }
+  return mutants;
 }
 
 /**
