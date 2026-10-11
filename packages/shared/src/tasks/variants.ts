@@ -315,7 +315,8 @@ export interface VariantStockAlert {
 
 /**
  * 在庫の不足を講師に見せる見立て (#39)。在庫切れで待っている受講者がいれば `danger`。
- * 確認用の類題が無い・補習が 3 問に足りない・未見の確認用の類題が 1 問以下の受講者がいれば `warning`。
+ * 確認用の類題が無い・補習が 3 問に足りない・未見の補習が 3 問に足りない受講者がいる・未見の確認用の
+ * 類題が 1 問以下の受講者がいれば `warning`。
  */
 export function variantStockAlert(summary: VariantStockSummary): VariantStockAlert {
   const notes: string[] = [];
@@ -326,6 +327,15 @@ export function variantStockAlert(summary: VariantStockSummary): VariantStockAle
   if (summary.stock.remedial < REMEDIAL_VARIANT_COUNT)
     notes.push(
       `補習の小問題が ${REMEDIAL_VARIANT_COUNT} 問に足りません。支援付きで合格した受講者が途中で止まります`,
+    );
+  // 教材の在庫は足りていても、受講者が読めるステージの未見の補習が 3 問に足りない人がいる。
+  if (
+    summary.stock.remedial >= REMEDIAL_VARIANT_COUNT &&
+    summary.fewestUnseen &&
+    summary.fewestUnseen.remedial < REMEDIAL_VARIANT_COUNT
+  )
+    notes.push(
+      `まだ出していない補習の小問題が ${summary.fewestUnseen.remedial} 問の受講者がいます。支援付きで合格すると途中で止まります`,
     );
   if (summary.stock.check > 0 && summary.fewestUnseen && summary.fewestUnseen.check <= 1)
     notes.push(

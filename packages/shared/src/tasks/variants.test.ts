@@ -265,6 +265,10 @@ describe("在庫の見立て", () => {
     expect(variantStockAlert(summary({ stock: { remedial: 2, check: 3 } })).notes).toEqual([
       expect.stringContaining("補習の小問題が 3 問"),
     ]);
+    // 教材には 3 問あっても、受講者に出せる未見の補習が足りなければ知らせる。
+    expect(variantStockAlert(summary({ fewestUnseen: { remedial: 0, check: 2 } })).notes).toEqual([
+      expect.stringContaining("補習の小問題が 0 問の受講者"),
+    ]);
     const low = variantStockAlert(summary({ fewestUnseen: { remedial: 3, check: 1 } }));
     expect(low.level).toBe("warning");
     expect(low.notes).toEqual([expect.stringContaining("残り 1 問")]);
