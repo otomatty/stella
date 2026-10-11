@@ -7,6 +7,7 @@ import { ttsProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, providerConfig, RETRY } from "../context";
 import { releaseAudioClaim } from "../audio-state";
 import { putWhileWriting } from "../audio-stream";
+import { audioBatchStarts, AUDIO_CHUNKS_PER_STEP } from "../audio-batches";
 export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
     const job = new JobContext(this.env, event.payload, event.instanceId),
@@ -28,6 +29,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         if (!chapter) throw new NonRetryableError("章がありません");
         const chunks = chunkParagraphs(toSpeechParagraphs(chapter.markdown), 300);
         if (!chunks.length) throw new NonRetryableError("読み上げる文がありません");
+        audioBatchStarts(chunks.length); // Validate the persisted step budget before claiming audio.
         const hash = await speechHash(chapter.markdown);
         await job.guard();
         input = { chapterId: chapter.id, revision: chapter.revision, hash };
@@ -55,21 +57,26 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
       });
       input = prepared;
       const parts: { bytes: number; seconds: number }[] = [];
-      for (let n = 0; n < prepared.count; n++)
+      for (const start of audioBatchStarts(prepared.count))
         parts.push(
-          await step.do(`tts-${n}`, RETRY, async () => {
+          ...(await step.do(`tts-${start}`, RETRY, async () => {
             await job.guard();
             const object = await this.env.BUCKET.get(`${temp}chunks.json`);
-            const text = (await object?.json<string[]>())?.[n];
-            if (!text) throw new NonRetryableError("読み上げる文がありません");
-            const result = await tts.synthesize(text);
-            await job.usage(tts.model, result.usage);
-            const mp3 = pcmToMp3(result.pcm, result.sampleRate);
-            await job.guard();
-            await job.put(`${temp}${n}.mp3`, mp3);
-            await job.progress(n + 1, prepared.count);
-            return { bytes: mp3.length, seconds: result.pcm.length / 2 / result.sampleRate };
-          }),
+            const chunks = await object?.json<string[]>();
+            const batch = [];
+            for (let n = start; n < Math.min(prepared.count, start + AUDIO_CHUNKS_PER_STEP); n++) {
+              await job.guard();
+              const text = chunks?.[n];
+              if (!text) throw new NonRetryableError("読み上げる文がありません");
+              const result = await tts.synthesize(text);
+              await job.usage(tts.model, result.usage);
+              const mp3 = pcmToMp3(result.pcm, result.sampleRate);
+              await job.put(`${temp}${n}.mp3`, mp3);
+              await job.progress(n + 1, prepared.count);
+              batch.push({ bytes: mp3.length, seconds: result.pcm.length / 2 / result.sampleRate });
+            }
+            return batch;
+          })),
         );
       await step.do("concat", RETRY, async () => {
         await job.guard();

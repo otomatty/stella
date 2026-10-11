@@ -437,6 +437,48 @@ describe("internal processing foundation", () => {
       await db.prepare("DELETE FROM library_r2_deletions WHERE book_id LIKE 'retired-%'").run();
     }
   });
+  it("generates all audio chunks across more than two batched steps", async () => {
+    const id = await createBook("Batched audio");
+    const chapterId = crypto.randomUUID();
+    const markdown = "a".repeat(300 * 17);
+    const hash = await speechHash(markdown);
+    await db
+      .prepare(
+        "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,markdown,speech_hash,created_at,updated_at) VALUES (?,'a',?,1,'Audio',?,?,1,1)",
+      )
+      .bind(chapterId, id, markdown, hash)
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO library_chapter_revisions (id,tenant_id,book_id,chapter_id,revision,markdown,speech_hash,created_at) VALUES (?,'a',?,?,1,?,?,1)",
+      )
+      .bind(crypto.randomUUID(), id, chapterId, markdown, hash)
+      .run();
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,chapter_id,generation,type,created_by,created_at) VALUES (?,'a',?,?,1,'tts','owner',1)",
+      )
+      .bind(p.jobId, id, chapterId)
+      .run();
+    await dispatch(p);
+    await waitJob(p.jobId);
+    expect(
+      await db
+        .prepare("SELECT status,progress_current,progress_total FROM library_jobs WHERE id = ?")
+        .bind(p.jobId)
+        .first(),
+    ).toMatchObject({ status: "succeeded", progress_current: 17, progress_total: 17 });
+    const audio = await db
+      .prepare("SELECT status,r2_key,size_bytes FROM library_audios WHERE book_id = ?")
+      .bind(id)
+      .first<{ status: string; r2_key: string; size_bytes: number }>();
+    expect(audio?.status).toBe("ready");
+    expect((await bucket.get(audio?.r2_key ?? ""))?.size).toBe(audio?.size_bytes);
+    expect((await bucket.list({ prefix: `library/a/${id}/g1/audio/tmp/` })).objects).toHaveLength(
+      0,
+    );
+  });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");
     const pdf = await PDFDocument.create();
