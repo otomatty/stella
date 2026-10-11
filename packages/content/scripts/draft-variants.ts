@@ -200,6 +200,7 @@ async function collect(batchId: string) {
   const guide = draftGuide(contentRoot);
   const model = sdkModel(client);
   const results = [];
+  let unreceived = 0;
   for (const [i, group] of state.groups.entries()) {
     if (collected.has(i)) {
       console.log(`\n${describe(group)}: 受け取り済みです`);
@@ -207,6 +208,7 @@ async function collect(batchId: string) {
     }
     const first = firsts.get(`g${i}`);
     if (first === undefined) {
+      unreceived += 1;
       console.log(
         `\n${describe(group)}: Batch の結果を受け取れませんでした。--batch を付けずに作り直してください`,
       );
@@ -228,6 +230,7 @@ async function collect(batchId: string) {
     );
   }
   await report(results);
+  if (unreceived > 0) process.exitCode = 1;
 }
 
 async function main() {
