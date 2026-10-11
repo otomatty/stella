@@ -11,6 +11,7 @@
 
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { FIXED_START_SUFFIX } from "../../shared/src/tasks/catalog.js";
 import type { TaskKind } from "../../shared/src/tasks/manifest.js";
 import {
   CHECK_VARIANT_KINDS,
@@ -177,7 +178,9 @@ export function slugOf(raw: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 30)
     .replace(/-$/, "");
-  return slug || "variant";
+  if (!slug) return "variant";
+  // `-fixed-start` で終わる名前は固定した開始点のフォルダーと取り違えるので課題にできない。
+  return `v00-${slug}`.endsWith(FIXED_START_SUFFIX) ? `${slug}-variant` : slug;
 }
 
 /**

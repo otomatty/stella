@@ -105,6 +105,9 @@ describe("類題のテンプレートの展開", () => {
     // 空の配列は許す (最後の類題を外すため)。
     expect(parseVariantParams([], "t")).toEqual([]);
     expect(() => parseVariantParams([{ name: "V01", values: {} }], "t")).toThrow(/小文字/);
+    expect(() => parseVariantParams([{ name: "v01-fixed-start", values: {} }], "t")).toThrow(
+      /-fixed-start で終わらせられません/,
+    );
     // 名前だけを変えた同じ値の組は、同じ問題になるので止める。
     expect(() =>
       parseVariantParams(

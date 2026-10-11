@@ -35,6 +35,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { FIXED_START_SUFFIX } from "../../shared/src/tasks/catalog.js";
 import { sortNatural } from "./natural-order.mjs";
 
 /** 親の課題のフォルダーから見たテンプレートの置き場所。 */
@@ -70,6 +71,9 @@ export function parseVariantParams(raw: unknown, label: string): VariantParams[]
       throw new Error(`${where}に知らない項目があります: ${Object.keys(rest).join(", ")}`);
     if (typeof name !== "string" || !VARIANT_NAME.test(name))
       throw new Error(`${where}の name は小文字・数字・- にしてください: ${String(name)}`);
+    // 学習フォルダーで固定した開始点に使う名前なので、課題・類題の名前にはできない。
+    if (name.endsWith(FIXED_START_SUFFIX))
+      throw new Error(`${where}の name は ${FIXED_START_SUFFIX} で終わらせられません: ${name}`);
     if (names.has(name)) throw new Error(`${label}: params.json の name が重複しています: ${name}`);
     names.add(name);
     if (typeof values !== "object" || values === null || Array.isArray(values))

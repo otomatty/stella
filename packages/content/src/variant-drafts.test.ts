@@ -68,6 +68,10 @@ describe("類題の名前", () => {
   it("短い名前をフォルダー名に使える形にし、使っている番号の次から振る", () => {
     expect(slugOf("Profile Page!")).toBe("profile-page");
     expect(slugOf("じこしょうかい")).toBe("variant");
+    // 固定した開始点と取り違える名前にしない。
+    expect(slugOf("fixed-start")).toBe("fixed-start-variant");
+    expect(slugOf("Form fixed start")).toBe("form-fixed-start-variant");
+    expect(allocateVariantNames([], ["fixed-start"])).toEqual(["v01-fixed-start-variant"]);
     expect(allocateVariantNames(["v01-a", "v07-b", "q01-first-page"], ["x", "Y z"])).toEqual([
       "v08-x",
       "v09-y-z",
