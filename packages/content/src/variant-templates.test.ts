@@ -80,6 +80,15 @@ describe("類題のテンプレートの展開", () => {
         "テスト",
       ),
     ).toThrow(/ファイル名/);
+    // Object の組み込みの名前 (constructor など) も、values に無ければ止める。
+    expect(() =>
+      expandVariantTemplate(
+        { "README.md": Buffer.from("{{=constructor}}") },
+        [{ name: "v01", values: {} }],
+        "c/u",
+        "テスト",
+      ),
+    ).toThrow(/constructor.*values にありません/);
   });
 
   it("params.json の形の誤りを止める", () => {
@@ -87,6 +96,16 @@ describe("類題のテンプレートの展開", () => {
     // 空の配列は許す (最後の類題を外すため)。
     expect(parseVariantParams([], "t")).toEqual([]);
     expect(() => parseVariantParams([{ name: "V01", values: {} }], "t")).toThrow(/小文字/);
+    // 名前だけを変えた同じ値の組は、同じ問題になるので止める。
+    expect(() =>
+      parseVariantParams(
+        [
+          { name: "v01", values: { a: "x", b: 1 } },
+          { name: "v02", values: { b: 1, a: "x" } },
+        ],
+        "t",
+      ),
+    ).toThrow(/v02 は v01 と同じ値の組/);
     expect(() =>
       parseVariantParams(
         [

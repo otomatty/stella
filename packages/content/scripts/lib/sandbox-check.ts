@@ -221,6 +221,8 @@ function runContainer(args: string[], name: string): Promise<string> {
     child.stderr.on("data", append);
     const timer = setTimeout(() => {
       spawnSync("docker", ["rm", "-f", name]);
+      // コンテナーを消せなくても待ち続けないよう、docker のクライアントも止める。
+      child.kill("SIGKILL");
       output += `\n${SANDBOX_TIMEOUT_MS / 60_000} 分で打ち切りました`;
     }, SANDBOX_TIMEOUT_MS);
     child.on("close", () => {

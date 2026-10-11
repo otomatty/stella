@@ -60,6 +60,7 @@ export function parseVariantParams(raw: unknown, label: string): VariantParams[]
   if (!Array.isArray(raw))
     throw new Error(`${label}: params.json は類題 1 問ずつの配列にしてください`);
   const names = new Set<string>();
+  const tuples = new Map<string, string>();
   return raw.map((entry, i) => {
     const where = `${label}: params.json の ${i + 1} 件目`;
     if (typeof entry !== "object" || entry === null || Array.isArray(entry))
@@ -81,6 +82,12 @@ export function parseVariantParams(raw: unknown, label: string): VariantParams[]
       if (!["string", "number", "boolean"].includes(typeof value))
         throw new Error(`${where}の values.${key} は文字列・数・真偽値にしてください`);
     }
+    // 名前だけを変えて同じ値の組を書くと、同じ問題が在庫に二重に数えられる。
+    const tuple = JSON.stringify(Object.entries(values).sort(([a], [b]) => a.localeCompare(b)));
+    const other = tuples.get(tuple);
+    if (other !== undefined)
+      throw new Error(`${label}: params.json の ${name} は ${other} と同じ値の組です`);
+    tuples.set(tuple, name);
     return { name, values: values as Record<string, VariantParamValue> };
   });
 }
@@ -125,7 +132,7 @@ export function expandVariantTemplate(
       const json = path.endsWith(".json");
       files[path] = Buffer.from(
         text.replace(PLACEHOLDER, (_whole, key: string) => {
-          if (!(key in values))
+          if (!Object.hasOwn(values, key))
             throw new Error(
               `${label}: ${path} の {{=${key}}} が ${param.name} の values にありません`,
             );
