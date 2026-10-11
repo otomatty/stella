@@ -28,6 +28,11 @@ import {
 
 /** 1 回の実行で作る類題の上限 (費用の上限、#69 の決定)。 */
 export const MAX_DRAFTS_PER_RUN = 20;
+/**
+ * 丸ごと作る類題を 1 回の依頼で頼む数の上限。1 問あたり約 12,000 トークン出力するので、
+ * 応答の上限 (64,000) に収まるよう依頼を分ける。
+ */
+export const MAX_FULL_DRAFTS_PER_REQUEST = 4;
 /** 在庫の目標。補習は支援付きの受講者に 3 問ずつ、確認用は時間を空けた 3 回分。 */
 export const DRAFT_TARGET = { remedial: REMEDIAL_VARIANT_COUNT, check: 3 } as const;
 /** 種別を省いたときに作る種別。 */
@@ -133,10 +138,18 @@ export function planDrafts(
     throw new Error(
       `1 回の実行で作れるのは ${MAX_DRAFTS_PER_RUN} 問までです (指定は ${total} 問)。分けて実行してください`,
     );
-  return groups.map((group) => ({
-    ...group,
-    template: templates.find((t) => t.kind === group.kind)?.name ?? null,
-  }));
+  return groups.flatMap((group) => {
+    const template = templates.find((t) => t.kind === group.kind)?.name ?? null;
+    if (template) return [{ ...group, template }];
+    const split: DraftGroup[] = [];
+    for (let left = group.count; left > 0; left -= MAX_FULL_DRAFTS_PER_REQUEST)
+      split.push({
+        kind: group.kind,
+        count: Math.min(left, MAX_FULL_DRAFTS_PER_REQUEST),
+        template,
+      });
+    return split;
+  });
 }
 
 /** AI が付けた短い名前を、類題のフォルダー名に使える形にする。 */
@@ -220,6 +233,8 @@ export function draftVariantFiles(
     kind: TaskKind;
     /** 親の starter の設定ファイル (相対パス → 中身)。 */
     parentConfig: Record<string, Buffer>;
+    /** 典型的な誤答を手元で確かめられる runner か (`mutantsCheckable`)。違えば誤答を置けない。 */
+    mutants: boolean;
   },
 ): { files: Record<string, Buffer>; errors: string[] } {
   const errors: string[] = [];
@@ -239,6 +254,12 @@ export function draftVariantFiles(
       continue;
     }
     if (file.path.startsWith("starter/") && isConfigFile(file.path)) continue; // 親から写す
+    if (file.path.startsWith("private/mutants/") && !context.mutants) {
+      errors.push(
+        `${file.path} は置けません。この課題の runner は誤答を手元で確かめられないので private/mutants/ は書きません`,
+      );
+      continue;
+    }
     if (file.path in out) {
       errors.push(`同じパスのファイルが 2 つあります: ${file.path}`);
       continue;
@@ -246,7 +267,12 @@ export function draftVariantFiles(
     out[file.path] = Buffer.from(file.content);
   }
   for (const path of REQUIRED_DRAFT_PATHS) if (!(path in out)) errors.push(`${path} がありません`);
-  for (const prefix of ["starter/", "tests/", "private/solution/", "private/mutants/"])
+  for (const prefix of [
+    "starter/",
+    "tests/",
+    "private/solution/",
+    ...(context.mutants ? ["private/mutants/"] : []),
+  ])
     if (!Object.keys(out).some((path) => path.startsWith(prefix)))
       errors.push(`${prefix} にファイルがありません`);
   if (out["task.json"]) {

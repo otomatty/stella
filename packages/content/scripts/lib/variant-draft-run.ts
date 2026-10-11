@@ -25,6 +25,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import type { TaskKind } from "../../../shared/src/tasks/manifest.js";
 import { buildContentManifest } from "../../src/manifest.js";
+import { mutantsCheckable } from "../../src/task-content.js";
+import type { TaskDefinition } from "../../src/task-schema.js";
 import {
   allocateVariantNames,
   type DraftFile,
@@ -79,17 +81,17 @@ interface ParentTask {
   pattern: string;
   /** `<講座>/<単元>` */
   idPrefix: string;
+  /** 典型的な誤答を手元で確かめられる runner か。CI と公開・環境診断の類題は誤答を置けない。 */
+  mutants: boolean;
 }
 
 function parentOf(taskDir: string): ParentTask {
-  const task = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8")) as {
-    id: string;
-    pattern: string;
-  };
+  const task = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8")) as TaskDefinition;
   return {
     id: task.id,
     pattern: task.pattern,
     idPrefix: task.id.split("/").slice(0, -1).join("/"),
+    mutants: mutantsCheckable(task),
   };
 }
 
@@ -159,16 +161,18 @@ const KIND_USE: Record<string, string> = {
   "assessment-b": "1 週間後の確認 (確認B。ヒントと解答は出さない)",
 };
 
-function systemPrompt(guide: string, mode: "full" | "params"): DraftBlock[] {
+function systemPrompt(guide: string, mode: "full" | "params", mutants: boolean): DraftBlock[] {
   const common = [
     "あなたは、未経験エンジニア向けの研修教材の課題を書く講師の補助です。",
     "親の課題と同じ実装パターンの「類題」を作ります。類題は、値・条件・境界・組合せ・利用場面を変えた別の問題で、親の課題や既存の類題を言い換えただけの問題にはしません。受講者は親の課題を解いたあと、時間を空けて類題を解きます。",
     "出力は指定の JSON だけにします。slug は類題を表す短い英小文字とハイフンの名前 (例: profile-page) にします。",
   ];
   const full = [
-    "類題 1 問は次のファイルで書きます: task.json・README.md (課題文)・hints.md (ヒント。段の数は task.json の support.hintLevels とそろえ、0 段なら空文字)・starter/ (受講者に配る出発点)・tests/ (手元の検査)・private/solution/ (starter に重ねて検査に通る解答例)・private/explanation.md (解説)・private/review.md (レビューの観点とよくある違反)・private/mutants/<誤答の名前>/ (典型的な誤答。1 つ以上)。",
+    `類題 1 問は次のファイルで書きます: task.json・README.md (課題文)・hints.md (ヒント。段の数は task.json の support.hintLevels とそろえ、0 段なら空文字)・starter/ (受講者に配る出発点)・tests/ (手元の検査)・private/solution/ (starter に重ねて検査に通る解答例)・private/explanation.md (解説)・private/review.md (レビューの観点とよくある違反)${mutants ? "・private/mutants/<誤答の名前>/ (典型的な誤答。1 つ以上)" : ""}。`,
     "task.json は親の課題の task.json を元にし、title・skills・estimatedMinutes・review・support・static などを類題に合わせて直します。id・pattern・kind はこちらで決めた値に置き換えるので、何を書いても構いません。support は類題の kind で選べる値にします (書き方の決まりの表)。",
-    "典型的な誤答は、受講者がやりがちな誤りを解答例に重ねた形で書きます。starter か解答例にあるファイルだけを置き、テスト・設定は変えません。誤答はテストで必ず落ちるようにし、落ちない誤答があればテストを足します。",
+    mutants
+      ? "典型的な誤答は、受講者がやりがちな誤りを解答例に重ねた形で書きます。starter か解答例にあるファイルだけを置き、テスト・設定は変えません。誤答はテストで必ず落ちるようにし、落ちない誤答があればテストを足します。"
+      : "この課題の runner は誤答を手元で確かめられないので、private/mutants/ は書きません。",
     "package.json・lockfile・テストや lint・整形の設定ファイルは親の課題と同じものを自動で写すので、出力しません。課題文に教材内の画像は使いません。",
   ];
   const params = [
@@ -245,7 +249,11 @@ function requestText(group: DraftGroup): string {
 /** まとまり 1 つの最初の依頼。 */
 export function draftRequest(target: DraftTarget, group: DraftGroup, guide: string): DraftRequest {
   return {
-    system: systemPrompt(guide, group.template ? "params" : "full"),
+    system: systemPrompt(
+      guide,
+      group.template ? "params" : "full",
+      parentOf(target.taskDir).mutants,
+    ),
     messages: [
       {
         role: "user",
@@ -517,6 +525,7 @@ export async function runDraftGroup(
         pattern: parent.pattern,
         kind: group.kind as TaskKind,
         parentConfig,
+        mutants: parent.mutants,
       });
       files = built.files;
       errors = built.errors.length > 0 ? built.errors : await verifyFullDraft(target, name, files);

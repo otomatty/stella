@@ -5,6 +5,7 @@ import {
   draftVariantFiles,
   estimateDrafts,
   MAX_DRAFTS_PER_RUN,
+  MAX_FULL_DRAFTS_PER_REQUEST,
   planDrafts,
   slugOf,
 } from "./variant-drafts.js";
@@ -28,6 +29,18 @@ describe("何を何問作るか", () => {
       { kind: "basic", count: 3, template: null },
       { kind: "independent", count: 3, template: "heading" },
     ]);
+  });
+
+  it("丸ごと作る類題は、応答の上限に収まるよう依頼を分ける (テンプレートの値は分けない)", () => {
+    expect(MAX_FULL_DRAFTS_PER_REQUEST).toBe(4);
+    expect(planDrafts(empty, [], { kind: "debug", count: 10 })).toEqual([
+      { kind: "debug", count: 4, template: null },
+      { kind: "debug", count: 4, template: null },
+      { kind: "debug", count: 2, template: null },
+    ]);
+    expect(planDrafts(empty, [{ name: "t", kind: "debug" }], { kind: "debug", count: 10 })).toEqual(
+      [{ kind: "debug", count: 10, template: "t" }],
+    );
   });
 
   it("種別と数を指定できる。数だけ・類題にできない種別・上限を超える数は止める", () => {
@@ -65,6 +78,7 @@ describe("下書きのファイル", () => {
     pattern: "html-page",
     kind: "basic" as const,
     parentConfig: { "package.json": Buffer.from('{"name":"parent"}') },
+    mutants: true,
   };
   const complete = [
     { path: "task.json", content: '{"id":"wrong","kind":"debug","title":"t"}' },
@@ -92,6 +106,14 @@ describe("下書きのファイル", () => {
     });
     // 設定ファイルは AI が出しても親のものにする。
     expect(files["starter/package.json"]?.toString()).toBe('{"name":"parent"}');
+  });
+
+  it("誤答を手元で確かめられない runner では、誤答を求めず、置けば理由を返す", () => {
+    const without = complete.filter((f) => !f.path.startsWith("private/mutants/"));
+    expect(draftVariantFiles(without, { ...context, mutants: false }).errors).toEqual([]);
+    expect(draftVariantFiles(complete, { ...context, mutants: false }).errors).toEqual([
+      expect.stringContaining("private/mutants/m01/index.html は置けません"),
+    ]);
   });
 
   it("置けない場所・不正なパス・欠け・壊れた task.json を理由として返す", () => {
