@@ -277,4 +277,38 @@ describe("テンプレートから類題を書き出す", () => {
       /手で書いた類題と同じ名前/,
     );
   });
+
+  it("類題をテンプレートの間で移せる。2 つのテンプレートが同じ名前を作ると止める (variantTemplatesOf)", () => {
+    const root = fixture();
+    const courses = join(root, "courses");
+    const templates = join(root, PARENT, "private/variant-templates");
+    syncVariantTemplates(courses, { check: false });
+    // 名前の順で先に処理される a-heading へ v02 を移す。
+    cpSync(join(templates, "heading"), join(templates, "a-heading"), { recursive: true });
+    rmSync(join(templates, "a-heading/generated.json"));
+    writeFileSync(
+      join(templates, "a-heading/params.json"),
+      JSON.stringify([{ name: "v02-hobby", values: { heading: "趣味" } }]),
+    );
+    writeFileSync(
+      join(templates, "heading/params.json"),
+      JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
+    );
+    syncVariantTemplates(courses, { check: false });
+    expect(
+      readFileSync(join(root, PARENT, "private/variants/v02-hobby/README.md"), "utf8"),
+    ).toContain("趣味");
+    expect(JSON.parse(readFileSync(join(templates, "a-heading/generated.json"), "utf8"))).toEqual([
+      "v02-hobby",
+    ]);
+    expect(JSON.parse(readFileSync(join(templates, "heading/generated.json"), "utf8"))).toEqual([
+      "v01-profile",
+    ]);
+    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    writeFileSync(
+      join(templates, "a-heading/params.json"),
+      JSON.stringify([{ name: "v01-profile", values: { heading: "趣味" } }]),
+    );
+    expect(() => syncVariantTemplates(courses, { check: false })).toThrow(/テンプレートが 2 つ/);
+  });
 });

@@ -283,8 +283,9 @@ export interface VariantSyncResult {
  * 作り直した結果と一致するかだけを確かめる (食い違いを `changed` に返す)。
  *
  * - 書き出すときは、その名前の類題のフォルダーを丸ごと置き換える (テンプレートがその名前を持つ)。
- *   ただし台帳に無い名前のフォルダーが既にあれば、手で書いた類題なので上書きせずに止める。
- * - 台帳 (`generated.json`) にあって `params.json` から外した類題は、フォルダーごと消す。
+ *   ただし同じ課題のどの台帳にも無い名前のフォルダーが既にあれば、手で書いた類題なので上書きせずに止める。
+ *   台帳は課題の中のテンプレートをまとめて見るので、類題をテンプレートの間で移せる。
+ * - 台帳 (`generated.json`) にあって、どのテンプレートの `params.json` からも外した類題は、フォルダーごと消す。
  * - 台帳はテンプレートが作る類題の名前 (並べた順) にそろえる。`check` は台帳の食い違いも落とす。
  */
 export function syncVariantTemplates(
@@ -295,14 +296,17 @@ export function syncVariantTemplates(
   let total = 0;
   for (const taskDir of tasksWithTemplates(coursesRoot)) {
     if (options.filter && !options.filter(taskDir)) continue;
-    for (const template of variantTemplatesOf(taskDir)) {
-      const ledger = new Set(template.ledger ?? []);
+    const templates = variantTemplatesOf(taskDir);
+    const generated = new Set(templates.flatMap((template) => template.ledger ?? []));
+    // 同じ名前を 2 つのテンプレートが作ることは variantTemplatesOf が止めている。
+    const owned = new Set(templates.flatMap((template) => [...template.variants.keys()]));
+    for (const template of templates) {
       for (const [name, files] of template.variants) {
         total += 1;
         const target = join(taskDir, VARIANTS_DIR, name);
         const current = existsSync(target) ? readTree(target) : null;
         // 中身が同じでも、台帳に無い (手で書いた) 類題は取り込まない (外したときに消してしまう)。
-        if (current !== null && !ledger.has(name))
+        if (current !== null && !generated.has(name))
           throw new Error(
             `${template.label}: 類題 ${name} は手で書いた類題と同じ名前です。params.json の name を変えてください`,
           );
@@ -319,9 +323,9 @@ export function syncVariantTemplates(
           writeFileSync(join(target, path), data);
         }
       }
-      // params.json から外した類題 (台帳にだけある名前) を消す。
-      for (const name of ledger) {
-        if (template.variants.has(name)) continue;
+      // params.json から外した類題 (台帳にだけある名前) を消す。ほかのテンプレートへ移した類題は残す。
+      for (const name of template.ledger ?? []) {
+        if (owned.has(name)) continue;
         const target = join(taskDir, VARIANTS_DIR, name);
         if (!existsSync(target)) continue;
         changed.push(target);

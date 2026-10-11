@@ -16,7 +16,7 @@
  *   モデルは `VARIANT_DRAFT_MODEL` (未設定なら claude-opus-5-5)。
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
@@ -201,35 +201,41 @@ async function collect(batchId: string) {
   const model = sdkModel(client);
   const results = [];
   let unreceived = 0;
-  for (const [i, group] of state.groups.entries()) {
-    if (collected.has(i)) {
-      console.log(`\n${describe(group)}: 受け取り済みです`);
-      continue;
-    }
-    const first = firsts.get(`g${i}`);
-    if (first === undefined) {
-      unreceived += 1;
-      console.log(
-        `\n${describe(group)}: Batch の結果を受け取れませんでした。--batch を付けずに作り直してください`,
+  // 途中で止まっても、書き出し済みのまとまりの結果は報告する (受け取り直しでは飛ばすため)。
+  try {
+    for (const [i, group] of state.groups.entries()) {
+      if (collected.has(i)) {
+        console.log(`\n${describe(group)}: 受け取り済みです`);
+        continue;
+      }
+      const first = firsts.get(`g${i}`);
+      if (first === undefined) {
+        unreceived += 1;
+        console.log(
+          `\n${describe(group)}: Batch の結果を受け取れませんでした。--batch を付けずに作り直してください`,
+        );
+        continue;
+      }
+      results.push({
+        group,
+        outcome: await runDraftGroup(model, target, group, {
+          guide,
+          first,
+          log: (line) => console.log(line),
+        }),
+      });
+      // 書き出したらすぐ記録する (後のまとまりで止まっても、受け取り直しで同じ下書きを書かない)。
+      collected.add(i);
+      // 書きかけで止まって記録が壊れないよう、一時ファイルに書いてから置き換える。
+      writeFileSync(
+        `${path}.tmp`,
+        `${JSON.stringify({ ...state, collected: [...collected].sort((a, b) => a - b) }, null, 2)}\n`,
       );
-      continue;
+      renameSync(`${path}.tmp`, path);
     }
-    results.push({
-      group,
-      outcome: await runDraftGroup(model, target, group, {
-        guide,
-        first,
-        log: (line) => console.log(line),
-      }),
-    });
-    // 書き出したらすぐ記録する (後のまとまりで止まっても、受け取り直しで同じ下書きを書かない)。
-    collected.add(i);
-    writeFileSync(
-      path,
-      `${JSON.stringify({ ...state, collected: [...collected].sort((a, b) => a - b) }, null, 2)}\n`,
-    );
+  } finally {
+    await report(results);
   }
-  await report(results);
   if (unreceived > 0) process.exitCode = 1;
 }
 
