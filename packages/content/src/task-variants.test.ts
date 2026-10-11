@@ -156,6 +156,10 @@ describe("予備の類題", () => {
       ],
       [(dir: string) => unlinkSync(join(dir, "task.json")), /ENOENT|task\.json/],
       [(dir: string) => mkdirSync(join(dir, "private/variants")), /private\/variants を置けません/],
+      [
+        (dir: string) => mkdirSync(join(dir, "private/variant-templates")),
+        /private\/variant-templates を置けません/,
+      ],
       [(dir: string) => mkdirSync(join(dir, "fixed-start")), /fixed-start を置けません/],
     ] as const) {
       const root = fixture();

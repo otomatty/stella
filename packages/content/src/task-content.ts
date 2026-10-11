@@ -260,7 +260,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
     if (kindProblem) throw new Error(`${kindProblem}: ${definition.id}`);
     if (definition.fixedStart)
       throw new Error(`類題には fixedStart を書けません: ${definition.id}`);
-    for (const rel of ["private/variants", "fixed-start"])
+    for (const rel of ["private/variants", "private/variant-templates", "fixed-start"])
       if (existsSync(join(taskDir, rel)))
         throw new Error(`類題には ${rel} を置けません: ${definition.id}`);
   }
