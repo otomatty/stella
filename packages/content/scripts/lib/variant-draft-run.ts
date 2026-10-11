@@ -417,6 +417,24 @@ export async function runDraftGroup(
   const parent = parentOf(target.taskDir);
   const outcome: DraftOutcome = { written: [], failed: [], missing: 0 };
   const existing = variantStockOf(target.taskDir).names;
+  /** 直しを頼む。応答に下書きが無い・依頼が失敗したときは理由を返す (ほかの下書きは止めない)。 */
+  const repair = async (
+    key: "params" | "variants",
+    draft: unknown,
+    errors: string[],
+  ): Promise<{ draft: unknown } | { error: string }> => {
+    try {
+      const next = asArray<unknown>(
+        await model.complete(repairRequest(request, draft, errors)),
+        key,
+      )[0];
+      return next === undefined
+        ? { error: "直しの応答に下書きがありませんでした" }
+        : { draft: next };
+    } catch (err) {
+      return { error: `直しの依頼に失敗しました: ${err instanceof Error ? err.message : err}` };
+    }
+  };
 
   if (group.template) {
     const templateDir = join(target.taskDir, VARIANT_TEMPLATES_DIR, group.template);
@@ -435,10 +453,12 @@ export async function runDraftGroup(
       for (let attempt = 0; attempt <= MAX_REPAIRS; attempt++) {
         if (attempt > 0) {
           log(`  ${name}: 直しています (${attempt}/${MAX_REPAIRS})`);
-          draft = asArray<DraftParams>(
-            await model.complete(repairRequest(request, draft, errors)),
-            "params",
-          )[0];
+          const repaired = await repair("params", draft, errors);
+          if ("error" in repaired) {
+            errors = [...errors, repaired.error];
+            break;
+          }
+          draft = repaired.draft;
         }
         const built = draftTemplateParams(draft as DraftParams, name, [...current, ...accepted]);
         errors = built.params
@@ -483,7 +503,12 @@ export async function runDraftGroup(
     for (let attempt = 0; attempt <= MAX_REPAIRS; attempt++) {
       if (attempt > 0) {
         log(`  ${name}: 直しています (${attempt}/${MAX_REPAIRS})`);
-        draft = asArray(await model.complete(repairRequest(request, draft, errors)), "variants")[0];
+        const repaired = await repair("variants", draft, errors);
+        if ("error" in repaired) {
+          errors = [...errors, repaired.error];
+          break;
+        }
+        draft = repaired.draft;
       }
       const built = draftVariantFiles(asArray<DraftFile>(draft, "files"), {
         id: `${parent.idPrefix}/${name}`,

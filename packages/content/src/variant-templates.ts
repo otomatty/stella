@@ -301,6 +301,11 @@ export function syncVariantTemplates(
         total += 1;
         const target = join(taskDir, VARIANTS_DIR, name);
         const current = existsSync(target) ? readTree(target) : null;
+        // 中身が同じでも、台帳に無い (手で書いた) 類題は取り込まない (外したときに消してしまう)。
+        if (current !== null && !ledger.has(name))
+          throw new Error(
+            `${template.label}: 類題 ${name} は手で書いた類題と同じ名前です。params.json の name を変えてください`,
+          );
         const same =
           current !== null &&
           Object.keys(current).length === Object.keys(files).length &&
@@ -308,10 +313,6 @@ export function syncVariantTemplates(
         if (same) continue;
         changed.push(target);
         if (options.check) continue;
-        if (current !== null && !ledger.has(name))
-          throw new Error(
-            `${template.label}: 類題 ${name} は手で書いた類題と同じ名前です。params.json の name を変えてください`,
-          );
         rmSync(target, { recursive: true, force: true });
         for (const [path, data] of Object.entries(files)) {
           mkdirSync(dirname(join(target, path)), { recursive: true });

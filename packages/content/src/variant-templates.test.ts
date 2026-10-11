@@ -266,5 +266,15 @@ describe("テンプレートから類題を書き出す", () => {
     expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([]);
     expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
     expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    // 中身が書き出す結果と同じでも、台帳に無い類題は取り込まない (check でも止める)。
+    writeFileSync(
+      join(templateDir, "params.json"),
+      JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
+    );
+    syncVariantTemplates(courses, { check: false });
+    writeFileSync(join(templateDir, "generated.json"), "[]\n");
+    expect(() => syncVariantTemplates(courses, { check: true })).toThrow(
+      /手で書いた類題と同じ名前/,
+    );
   });
 });

@@ -147,6 +147,39 @@ describe("AI の下書きを検査して書き出す", () => {
     expect(existsSync(join(target.taskDir, "private/variants/v01-broken"))).toBe(false);
   });
 
+  it("直しの応答に下書きが無い・依頼が失敗したときは、その下書きだけを諦めて残りを書き出す", async () => {
+    const target = fixture();
+    const outputs: unknown[] = [
+      {
+        variants: [
+          variantDraft("empty", "空", "ちがう"),
+          variantDraft("thrown", "例外", "ちがう"),
+          variantDraft("hobby", "趣味"),
+        ],
+      },
+      { variants: [] },
+    ];
+    const model: DraftModel = {
+      countTokens: async () => 1000,
+      complete: async () => {
+        const next = outputs.shift();
+        if (next === undefined) throw new Error("時間切れ");
+        return next;
+      },
+    };
+    const outcome = await runDraftGroup(
+      model,
+      target,
+      { kind: "basic", count: 3, template: null },
+      { guide: "" },
+    );
+    expect(outcome.written).toEqual(["v03-hobby"]);
+    expect(outcome.failed.map((f) => [f.name, f.errors.at(-1)])).toEqual([
+      ["v01-empty", "直しの応答に下書きがありませんでした"],
+      ["v02-thrown", "直しの依頼に失敗しました: 時間切れ"],
+    ]);
+  });
+
   it("テンプレートがあれば値だけを作らせ、params.json に足して書き出す", async () => {
     const target = fixture();
     const dir = join(target.taskDir, "private/variant-templates/heading");

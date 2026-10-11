@@ -278,6 +278,8 @@ export function draftTemplateParams(
   name: string,
   existing: VariantParams[],
 ): { params: VariantParams | null; errors: string[] } {
+  if (!Array.isArray(draft?.values))
+    return { params: null, errors: ["values をキーと値の組の配列にしてください"] };
   const sample = existing[0]?.values ?? {};
   const keys = Object.keys(sample);
   const errors: string[] = [];
