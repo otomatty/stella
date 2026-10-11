@@ -226,7 +226,7 @@ describe("AI の下書きを検査して書き出す", () => {
 });
 
 describe("下書きを動かすときの環境変数", () => {
-  it("ツールの実行に要るものだけを残し、API キーなどの秘密を渡さない", () => {
+  it("ツールの実行に要るものだけを残し、API キーや認証情報付きのプロキシを渡さない", () => {
     expect(
       scrubbedEnv({
         PATH: "/usr/bin",
@@ -234,6 +234,9 @@ describe("下書きを動かすときの環境変数", () => {
         SystemRoot: "C:\\Windows",
         HOME: "/home/u",
         HTTPS_PROXY: "http://proxy",
+        HTTP_PROXY: "http://user:pass@proxy:8080",
+        http_proxy: "user:pass@proxy:8080",
+        NO_PROXY: "localhost",
         ANTHROPIC_API_KEY: "sk-ant-secret",
         GITHUB_TOKEN: "ghp_secret",
         AWS_SECRET_ACCESS_KEY: "secret",
@@ -244,6 +247,7 @@ describe("下書きを動かすときの環境変数", () => {
       SystemRoot: "C:\\Windows",
       HOME: "/home/u",
       HTTPS_PROXY: "http://proxy",
+      NO_PROXY: "localhost",
     });
   });
 });

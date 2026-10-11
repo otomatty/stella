@@ -29,7 +29,8 @@ export interface RunCheckOptions {
 /**
  * ツールの実行に要る環境変数 (実行ファイルの場所・ホーム・一時フォルダー・プロキシと証明書・
  * ロケール) だけを残す。API キーなどの秘密は渡さない。AI が書いた下書きのテストや解答例を、
- * 人が読む前に手元で動かすときに使う。
+ * 人が読む前に手元で動かすときに使う。認証情報 (`user:pass@`) を含むプロキシの値も渡さない
+ * (その環境では依存の取得が通らないので、認証の要らないプロキシで実行する)。
  */
 export function scrubbedEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const keep = new Set([
@@ -59,7 +60,24 @@ export function scrubbedEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD",
   ]);
   // Windows は名前の大文字小文字を区別しない (Path・SystemRoot など) ので、大文字で比べる。
-  return Object.fromEntries(Object.entries(base).filter(([name]) => keep.has(name.toUpperCase())));
+  return Object.fromEntries(
+    Object.entries(base).filter(
+      ([name, value]) =>
+        keep.has(name.toUpperCase()) &&
+        !(name.toUpperCase().endsWith("_PROXY") && hasCredentials(value)),
+    ),
+  );
+}
+
+/** URL に利用者名かパスワードが入っているか。URL として読めない値も渡さない側に倒す。 */
+function hasCredentials(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value.includes("://") ? value : `http://${value}`);
+    return url.username !== "" || url.password !== "";
+  } catch {
+    return value.includes("@");
+  }
 }
 
 /** 一式を一時フォルダーに書き出し、固定ランナーで実行する。 */
