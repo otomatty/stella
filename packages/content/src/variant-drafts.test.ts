@@ -139,6 +139,23 @@ describe("テンプレートの値", () => {
     });
   });
 
+  it("既存と同じ値の組は別の名前でも通さない", () => {
+    expect(
+      draftTemplateParams(
+        {
+          slug: "b",
+          values: [
+            { key: "heading", value: "見出し" },
+            { key: "count", value: "3" },
+            { key: "strict", value: "true" },
+          ],
+        },
+        "v02-b",
+        existing,
+      ),
+    ).toEqual({ params: null, errors: ["v01-a と同じ値の組です。別の問題になる値にしてください"] });
+  });
+
   it("足りないキー・知らないキー・型の合わない値を理由として返す", () => {
     const { params, errors } = draftTemplateParams(
       {

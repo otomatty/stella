@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildContentManifest } from "../../src/manifest.js";
 import { type DraftModel, type DraftRequest, runDraftGroup } from "./variant-draft-run.js";
+import { scrubbedEnv } from "./task-run-check.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const TASK = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
@@ -221,5 +222,28 @@ describe("AI の下書きを検査して書き出す", () => {
     expect(
       readFileSync(join(target.taskDir, "private/variants/v02-hobby/README.md"), "utf8"),
     ).toContain("趣味");
+  });
+});
+
+describe("下書きを動かすときの環境変数", () => {
+  it("ツールの実行に要るものだけを残し、API キーなどの秘密を渡さない", () => {
+    expect(
+      scrubbedEnv({
+        PATH: "/usr/bin",
+        Path: "C:\\bin",
+        SystemRoot: "C:\\Windows",
+        HOME: "/home/u",
+        HTTPS_PROXY: "http://proxy",
+        ANTHROPIC_API_KEY: "sk-ant-secret",
+        GITHUB_TOKEN: "ghp_secret",
+        AWS_SECRET_ACCESS_KEY: "secret",
+      }),
+    ).toEqual({
+      PATH: "/usr/bin",
+      Path: "C:\\bin",
+      SystemRoot: "C:\\Windows",
+      HOME: "/home/u",
+      HTTPS_PROXY: "http://proxy",
+    });
   });
 });

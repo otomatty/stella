@@ -304,6 +304,10 @@ export function draftTemplateParams(
       else values[key] = raw === "true";
     } else values[key] = raw;
   }
+  // 既存 (同じ応答で先に通った組を含む) と同じ値の組は、名前が違っても同じ問題になる。
+  const same = existing.find((p) => keys.every((key) => p.values[key] === values[key]));
+  if (errors.length === 0 && same)
+    errors.push(`${same.name} と同じ値の組です。別の問題になる値にしてください`);
   return { params: errors.length > 0 ? null : { name, values }, errors };
 }
 

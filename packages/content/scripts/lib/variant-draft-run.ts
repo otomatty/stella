@@ -44,7 +44,7 @@ import {
   VARIANT_TEMPLATES_DIR,
   type VariantParams,
 } from "../../src/variant-templates.js";
-import { mutantsFail, solutionPasses } from "./task-run-check.js";
+import { mutantsFail, scrubbedEnv, solutionPasses } from "./task-run-check.js";
 
 /** 依頼の 1 ブロック。`cache` を付けたブロックまでをプロンプトキャッシュに載せる。 */
 export interface DraftBlock {
@@ -314,8 +314,10 @@ async function checkVariants(root: string, ids: string[]): Promise<string[]> {
       continue;
     }
     try {
-      await solutionPasses(seed, seed.bundle.files, "配布ファイル");
-      await mutantsFail(seed);
+      // AI が書いたテストと解答例は人が読む前に動くので、API キーなどの環境変数を渡さない。
+      const env = scrubbedEnv(process.env);
+      await solutionPasses(seed, seed.bundle.files, "配布ファイル", { env });
+      await mutantsFail(seed, { env });
     } catch (err) {
       errors.push((err as Error).message);
     }
