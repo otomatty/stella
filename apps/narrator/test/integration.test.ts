@@ -254,6 +254,9 @@ describe("internal processing foundation", () => {
       body: JSON.stringify(p),
     });
     expect(await stale.json()).toMatchObject({ status: "queued" });
+    expect(
+      await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
+    ).toMatchObject({ status: "draft" });
     const response = await mf.dispatchFetch("http://localhost/p0/put-race", {
       method: "POST",
       body: JSON.stringify(p),
@@ -266,6 +269,48 @@ describe("internal processing foundation", () => {
         .bind(id)
         .first(),
     ).not.toBeNull();
+  });
+  it("marks a disabled owner's interrupted book failed while protecting deleted generations", async () => {
+    const id = await createBook("Interrupted book");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,status,created_at) VALUES (?,'a',?,1,'split','owner','running',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await reserve(p);
+    await db.prepare("UPDATE library_books SET status = 'processing' WHERE id = ?").bind(id).run();
+    await db.prepare("UPDATE profiles SET disabled = 1 WHERE id = 'owner'").run();
+    try {
+      const response = await mf.dispatchFetch("http://localhost/p0/fail-book", {
+        method: "POST",
+        body: JSON.stringify(p),
+      });
+      expect(response.status).toBe(200);
+      expect(
+        await db.prepare("SELECT status FROM library_jobs WHERE id = ?").bind(p.jobId).first(),
+      ).toMatchObject({ status: "failed" });
+      expect(
+        await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
+      ).toMatchObject({ status: "failed" });
+      await db
+        .prepare("UPDATE library_books SET status = 'deleting', generation = 2 WHERE id = ?")
+        .bind(id)
+        .run();
+      await mf.dispatchFetch("http://localhost/p0/fail-book", {
+        method: "POST",
+        body: JSON.stringify(p),
+      });
+      expect(
+        await db
+          .prepare("SELECT status,generation FROM library_books WHERE id = ?")
+          .bind(id)
+          .first(),
+      ).toMatchObject({ status: "deleting", generation: 2 });
+    } finally {
+      await db.prepare("UPDATE profiles SET disabled = 0 WHERE id = 'owner'").run();
+    }
   });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");

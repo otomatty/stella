@@ -29,6 +29,13 @@ export function sqliteD1(options: { beforeMigration?: string } = {}) {
     async all() {
       return { success: true, results: sqlite.prepare(this.sql).all(...this.params), meta: {} };
     }
+    async first<T>(columnName?: string): Promise<T | null> {
+      const row = sqlite.prepare(this.sql).get(...this.params);
+      if (!row) return null;
+      if (columnName !== undefined && !(columnName in row))
+        throw new Error(`Column not found: ${columnName}`);
+      return (columnName === undefined ? row : row[columnName]) as T;
+    }
     async run() {
       const meta = sqlite.prepare(this.sql).run(...this.params);
       return { success: true, results: [], meta };

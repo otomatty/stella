@@ -346,14 +346,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         await job.finish();
       });
     } catch {
-      await step.do("fail", async () => {
-        await job.fail();
-        await this.env.DB.prepare(
-          `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
-        )
-          .bind(Date.now(), ...job.bookScope, ...job.scope)
-          .run();
-      });
+      await step.do("fail", () => job.failBook());
     }
   }
 }

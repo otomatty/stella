@@ -47,8 +47,12 @@ export class JobContext {
     readonly instanceId?: string,
   ) {}
   /** Rechecked on every step and in the SQL write itself, including after provider I/O. */
-  readonly live =
-    `EXISTS (SELECT 1 FROM library_books b JOIN profiles owner ON owner.id = b.owner_id AND owner.tenant_id = b.tenant_id JOIN library_jobs j ON j.tenant_id = b.tenant_id AND j.book_id = b.id AND j.generation = b.generation JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id AND d.instance_id = j.id || '-' || j.attempt WHERE b.tenant_id = ? AND b.id = ? AND b.generation = ? AND b.status <> 'deleting' AND owner.disabled = 0 AND j.id = ? AND (? IS NULL OR d.instance_id = ?))`;
+  get live(): string {
+    return this.bookAuthority(true);
+  }
+  private bookAuthority(activeOwner: boolean): string {
+    return `EXISTS (SELECT 1 FROM library_books b JOIN profiles owner ON owner.id = b.owner_id AND owner.tenant_id = b.tenant_id JOIN library_jobs j ON j.tenant_id = b.tenant_id AND j.book_id = b.id AND j.generation = b.generation JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id AND d.instance_id = j.id || '-' || j.attempt WHERE b.tenant_id = ? AND b.id = ? AND b.generation = ? AND b.status <> 'deleting' AND ${activeOwner ? "owner.disabled = 0" : "j.status = 'failed'"} AND j.created_by = b.owner_id AND j.id = ? AND (? IS NULL OR d.instance_id = ?))`;
+  }
   get bookScope(): [string, string, number] {
     return [this.p.tenantId, this.p.bookId, this.p.generation];
   }
@@ -158,6 +162,15 @@ export class JobContext {
         this.instanceId ?? null,
         this.instanceId ?? null,
       )
+      .run();
+  }
+  async failBook(): Promise<void> {
+    await this.fail();
+    // Disabling an owner stops work, but must still leave a retryable failure state.
+    await this.env.DB.prepare(
+      `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${this.bookAuthority(false)}`,
+    )
+      .bind(Date.now(), ...this.bookScope, ...this.scope)
       .run();
   }
 }

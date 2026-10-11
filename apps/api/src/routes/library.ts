@@ -191,12 +191,13 @@ libraryRoute.patch("/api/library/books/:bookId", async (c) => {
     const row = await ownBook(c.env, caller, c.req.param("bookId"));
     const input = parseBookMetadata(await c.req.json<unknown>(), false);
     await c.env.DB.prepare(
-      "UPDATE library_books SET title = ?, author = ?, kind = ?, updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
+      "UPDATE library_books SET title = coalesce(?, title), author = CASE WHEN ? THEN ? ELSE author END, kind = coalesce(?, kind), updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
     )
       .bind(
-        input.title ?? row.title,
-        input.author === undefined ? row.author : input.author,
-        input.kind ?? row.kind,
+        input.title ?? null,
+        Number(input.author !== undefined),
+        input.author ?? null,
+        input.kind ?? null,
         Date.now(),
         row.id,
         caller.tenantId,

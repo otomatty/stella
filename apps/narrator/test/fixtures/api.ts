@@ -15,6 +15,27 @@ app.post("/p0/release-audio-claim", async (c) => {
   await releaseAudioClaim(c.env.DB, target, claim);
   return c.json({ ok: true });
 });
+app.post("/p0/fail-book", async (c) => {
+  if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
+  const p = await c.req.json<NarratorJobRequest>();
+  const job = new JobContext(
+    {
+      ...c.env,
+      BUCKET: c.env.LIBRARY_BUCKET,
+      LIBRARY_PROCESSING_ENABLED: "1",
+      FAKE_PROVIDERS: "1",
+    },
+    p,
+    `${p.jobId}-1`,
+  );
+  try {
+    await job.guard();
+    return c.json({ error: "Job remains active" }, 409);
+  } catch {
+    await job.failBook();
+    return c.json({ ok: true });
+  }
+});
 app.post("/p0/stale-attempt", async (c) => {
   if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
   const p = await c.req.json<NarratorJobRequest>();
@@ -38,7 +59,7 @@ app.post("/p0/stale-attempt", async (c) => {
   ]);
   await job.progress(1, 1);
   await job.finish();
-  await job.fail();
+  await job.failBook();
   return c.json(
     await c.env.DB.prepare("SELECT status FROM library_jobs WHERE id = ?").bind(p.jobId).first(),
   );
