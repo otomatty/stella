@@ -46,7 +46,7 @@ import {
   VARIANT_TEMPLATES_DIR,
   type VariantParams,
 } from "../../src/variant-templates.js";
-import { mutantsFail, scrubbedEnv, solutionPasses } from "./task-run-check.js";
+import { mutantsFail, type RunCheckOptions, solutionPasses } from "./task-run-check.js";
 
 /** 依頼の 1 ブロック。`cache` を付けたブロックまでをプロンプトキャッシュに載せる。 */
 export interface DraftBlock {
@@ -307,7 +307,11 @@ function scratchCopy(target: DraftTarget): { root: string; taskDir: string } {
 }
 
 /** 一時の複製で、類題 (ID) が教材として読め、解答例が通り、誤答が落ちるかを確かめる。 */
-async function checkVariants(root: string, ids: string[]): Promise<string[]> {
+async function checkVariants(
+  root: string,
+  ids: string[],
+  check: RunCheckOptions,
+): Promise<string[]> {
   let tasks: ReturnType<typeof buildContentManifest>["tasks"];
   try {
     tasks = buildContentManifest(join(root, "courses")).tasks;
@@ -322,10 +326,8 @@ async function checkVariants(root: string, ids: string[]): Promise<string[]> {
       continue;
     }
     try {
-      // AI が書いたテストと解答例は人が読む前に動くので、API キーなどの環境変数を渡さない。
-      const env = scrubbedEnv(process.env);
-      await solutionPasses(seed, seed.bundle.files, "配布ファイル", { env });
-      await mutantsFail(seed, { env });
+      await solutionPasses(seed, seed.bundle.files, "配布ファイル", check);
+      await mutantsFail(seed, check);
     } catch (err) {
       errors.push((err as Error).message);
     }
@@ -353,11 +355,16 @@ async function verifyFullDraft(
   target: DraftTarget,
   name: string,
   files: Record<string, Buffer>,
+  check: RunCheckOptions,
 ): Promise<string[]> {
   const scratch = scratchCopy(target);
   try {
     writeTree(join(scratch.taskDir, "private/variants", name), files);
-    return await checkVariants(scratch.root, [`${parentOf(target.taskDir).idPrefix}/${name}`]);
+    return await checkVariants(
+      scratch.root,
+      [`${parentOf(target.taskDir).idPrefix}/${name}`],
+      check,
+    );
   } finally {
     rmSync(scratch.root, { recursive: true, force: true });
   }
@@ -375,6 +382,7 @@ async function verifyParamsDraft(
   target: DraftTarget,
   template: string,
   params: VariantParams,
+  check: RunCheckOptions,
 ): Promise<string[]> {
   const scratch = scratchCopy(target);
   try {
@@ -389,9 +397,11 @@ async function verifyParamsDraft(
     } catch (err) {
       return [(err as Error).message];
     }
-    return await checkVariants(scratch.root, [
-      `${parentOf(target.taskDir).idPrefix}/${params.name}`,
-    ]);
+    return await checkVariants(
+      scratch.root,
+      [`${parentOf(target.taskDir).idPrefix}/${params.name}`],
+      check,
+    );
   } finally {
     rmSync(scratch.root, { recursive: true, force: true });
   }
@@ -419,7 +429,16 @@ export async function runDraftGroup(
   model: DraftModel,
   target: DraftTarget,
   group: DraftGroup,
-  options: { guide: string; first?: unknown; log?: (line: string) => void },
+  options: {
+    guide: string;
+    /**
+     * 下書きのテスト・解答例・誤答の動かし方。AI が書いたコードは人が読む前に動くので、CLI は
+     * コンテナーの中で動かす (`sandbox-check.ts` の `sandboxRunner`)。省略できない。
+     */
+    check: RunCheckOptions;
+    first?: unknown;
+    log?: (line: string) => void;
+  },
 ): Promise<DraftOutcome> {
   const log = options.log ?? (() => {});
   const request = draftRequest(target, group, options.guide);
@@ -472,7 +491,7 @@ export async function runDraftGroup(
         }
         const built = draftTemplateParams(draft as DraftParams, name, [...current, ...accepted]);
         errors = built.params
-          ? await verifyParamsDraft(target, group.template, built.params)
+          ? await verifyParamsDraft(target, group.template, built.params, options.check)
           : built.errors;
         if (built.params && errors.length === 0) {
           accepted.push(built.params);
@@ -528,7 +547,10 @@ export async function runDraftGroup(
         mutants: parent.mutants,
       });
       files = built.files;
-      errors = built.errors.length > 0 ? built.errors : await verifyFullDraft(target, name, files);
+      errors =
+        built.errors.length > 0
+          ? built.errors
+          : await verifyFullDraft(target, name, files, options.check);
       if (errors.length === 0) break;
     }
     if (errors.length > 0) {

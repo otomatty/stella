@@ -10,7 +10,8 @@
  * - 実行前に入力のトークン数を数えて概算の費用を出し、確かめてから作る (`--yes` で確認を省く)。
  *   1 回の実行で 20 問まで。
  * - 下書きは教材の一時の複製で検査し (教材の形・解答例が通る・誤答が落ちる)、落ちたら最大 2 回
- *   直させる。通った下書きだけを `private/variants/` (テンプレートの値は `params.json`) に書く。
+ *   直させる。テスト・解答例・誤答は人が読む前に動くので、ホストから切り離したコンテナーで動かす
+ *   (Docker が要る。`lib/sandbox-check.ts`)。通った下書きだけを `private/variants/` (テンプレートの値は `params.json`) に書く。
  *   git は操作しない。PR のレビューとマージが在庫に入れる承認。
  * - 認証は Anthropic SDK の既定 (`ANTHROPIC_API_KEY` か `ant auth login` のプロファイル)。
  *   モデルは `VARIANT_DRAFT_MODEL` (未設定なら claude-opus-5-5)。
@@ -40,6 +41,7 @@ import {
   draftRequest,
   runDraftGroup,
 } from "./lib/variant-draft-run.js";
+import { prepareSandbox, sandboxRunner } from "./lib/sandbox-check.js";
 
 const MODEL = process.env.VARIANT_DRAFT_MODEL ?? "claude-opus-5-5";
 /** 課題文・コード・テスト・誤答をまとめて書くので出力を長く取る (ストリーミングで受ける)。 */
@@ -204,6 +206,7 @@ async function collect(batchId: string) {
   const target = findTask(state.taskId);
   const guide = draftGuide(contentRoot);
   const model = sdkModel(client);
+  const check = { run: sandboxRunner(prepareSandbox((line) => console.log(line))) };
   const results = [];
   let unreceived = 0;
   // 途中で止まっても、書き出し済みのまとまりの結果は報告する (受け取り直しでは飛ばすため)。
@@ -225,6 +228,7 @@ async function collect(batchId: string) {
         group,
         outcome: await runDraftGroup(model, target, group, {
           guide,
+          check,
           first,
           log: (line) => console.log(line),
         }),
@@ -278,6 +282,8 @@ async function main() {
     }
     return;
   }
+  // 検査はコンテナーの中で動かすので、費用がかかる依頼の前に Docker を確かめる。
+  const sandbox = prepareSandbox((line) => console.log(line));
   const client = new Anthropic();
   const model = sdkModel(client);
   const batch = flags.has("--batch");
@@ -321,6 +327,7 @@ async function main() {
       group,
       outcome: await runDraftGroup(model, target, group, {
         guide,
+        check: { run: sandboxRunner(sandbox) },
         log: (line) => console.log(line),
       }),
     });

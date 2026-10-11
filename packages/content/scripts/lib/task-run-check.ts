@@ -9,6 +9,8 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import type { TaskManifest } from "../../../shared/src/tasks/manifest.js";
+import type { RunResult } from "../../../shared/src/tasks/run-result.js";
 import type { TaskSeed } from "../../src/task-content.js";
 import { runTask } from "../../../../apps/vscode/src/runner/run-task.js";
 
@@ -21,9 +23,13 @@ function withSolution(task: TaskSeed, distributed: Record<string, string>) {
   return files;
 }
 
-/** 実行のしかた。`env` を渡すと、子プロセスにはその環境変数だけを渡す。 */
+/**
+ * 実行のしかた。`run` を渡すと、一式 (相対パス → base64) の実行をそれに任せる (AI の下書きは
+ * コンテナーの中で動かす。`sandbox-check.ts`)。`env` を渡すと、手元の子プロセスにはその環境変数だけを渡す。
+ */
 export interface RunCheckOptions {
   env?: NodeJS.ProcessEnv;
+  run?: (manifest: TaskManifest, files: Record<string, string>) => Promise<RunResult>;
 }
 
 /**
@@ -85,7 +91,8 @@ async function runFiles(
   task: TaskSeed,
   files: Record<string, string>,
   options: RunCheckOptions = {},
-) {
+): Promise<RunResult> {
+  if (options.run) return options.run(task.bundle.manifest, files);
   const root = await mkdtemp(join(tmpdir(), "stella-solution-"));
   try {
     for (const [key, value] of Object.entries(files)) {

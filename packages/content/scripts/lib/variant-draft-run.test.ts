@@ -34,6 +34,9 @@ function fixture() {
   return { contentRoot: root, taskDir: join(root, TASK) };
 }
 
+/** テストの下書きはこちらで書いたものなので、コンテナーを使わず手元のランナーで確かめる。 */
+const LOCAL = { env: scrubbedEnv(process.env) };
+
 const parentTask = () =>
   JSON.parse(readFileSync(join(content, TASK, "task.json"), "utf8")) as Record<string, unknown>;
 const html = (heading: string) =>
@@ -103,7 +106,7 @@ describe("AI の下書きを検査して書き出す", () => {
       model,
       target,
       { kind: "basic", count: 2, template: null },
-      { guide: "書き方" },
+      { guide: "書き方", check: LOCAL },
     );
     expect(outcome).toEqual({ written: ["v01-profile", "v02-hobby"], failed: [], missing: 0 });
     // 直しの依頼は、最初の依頼に下書きと検査の結果を足したもの。
@@ -139,7 +142,7 @@ describe("AI の下書きを検査して書き出す", () => {
       model,
       target,
       { kind: "basic", count: 2, template: null },
-      { guide: "" },
+      { guide: "", check: LOCAL },
     );
     expect(outcome.written).toEqual([]);
     expect(outcome.missing).toBe(1);
@@ -172,7 +175,7 @@ describe("AI の下書きを検査して書き出す", () => {
       model,
       target,
       { kind: "basic", count: 3, template: null },
-      { guide: "" },
+      { guide: "", check: LOCAL },
     );
     expect(outcome.written).toEqual(["v03-hobby"]);
     expect(outcome.failed.map((f) => [f.name, f.errors.at(-1)])).toEqual([
@@ -205,7 +208,7 @@ describe("AI の下書きを検査して書き出す", () => {
       model,
       target,
       { kind: "basic", count: 1, template: "heading" },
-      { guide: "" },
+      { guide: "", check: LOCAL },
     );
     expect(outcome).toEqual({ written: ["v02-hobby"], failed: [], missing: 0 });
     expect(requests[1]?.messages[2]?.content[0]?.text).toContain(
