@@ -7,6 +7,8 @@ import {
   variantKindProblem,
   type VariantSlotRecord,
   type VariantStockItem,
+  type VariantStockSummary,
+  variantStockAlert,
 } from "./variants.js";
 
 /** 日本時間のその日の正午 (UNIX ミリ秒)。 */
@@ -224,5 +226,51 @@ describe("在庫から類題を選ぶ", () => {
     expect(variantKindProblem("integration")).toMatch(/kind/);
     expect(variantKindProblem("basic")).toBeUndefined();
     expect(variantKindProblem("assessment-b")).toBeUndefined();
+  });
+});
+
+describe("在庫の見立て", () => {
+  const summary = (patch: Partial<VariantStockSummary> = {}): VariantStockSummary => ({
+    pattern: "p",
+    practiceTitles: [],
+    stageTitles: [],
+    stock: { remedial: 3, check: 3 },
+    learners: 1,
+    fewestUnseen: { remedial: 3, check: 2 },
+    waiting: [],
+    ...patch,
+  });
+
+  it("足りていれば ok", () => {
+    expect(variantStockAlert(summary())).toEqual({ level: "ok", notes: [] });
+    // 受講者がまだいなければ、残りは見ない。
+    expect(variantStockAlert(summary({ learners: 0, fewestUnseen: null })).level).toBe("ok");
+  });
+
+  it("在庫切れで待っている受講者がいれば danger", () => {
+    const alert = variantStockAlert(
+      summary({
+        stock: { remedial: 3, check: 0 },
+        waiting: [{ userId: "u", name: "受講者", purpose: "day3", dueOn: "2026-10-04" }],
+      }),
+    );
+    expect(alert.level).toBe("danger");
+    expect(alert.notes[0]).toContain("1 人");
+  });
+
+  it("確認用が無い・補習が 3 問に足りない・未見が 1 問以下の受講者がいれば warning", () => {
+    expect(variantStockAlert(summary({ stock: { remedial: 3, check: 0 } })).notes).toEqual([
+      expect.stringContaining("確認用"),
+    ]);
+    expect(variantStockAlert(summary({ stock: { remedial: 2, check: 3 } })).notes).toEqual([
+      expect.stringContaining("補習の小問題が 3 問"),
+    ]);
+    // 教材には 3 問あっても、受講者に出せる未見の補習が足りなければ知らせる。
+    expect(variantStockAlert(summary({ fewestUnseen: { remedial: 0, check: 2 } })).notes).toEqual([
+      expect.stringContaining("補習の小問題が 0 問の受講者"),
+    ]);
+    const low = variantStockAlert(summary({ fewestUnseen: { remedial: 3, check: 1 } }));
+    expect(low.level).toBe("warning");
+    expect(low.notes).toEqual([expect.stringContaining("残り 1 問")]);
   });
 });

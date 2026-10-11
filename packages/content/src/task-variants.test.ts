@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
+import { mutantsFail } from "../scripts/lib/task-run-check.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 
@@ -58,6 +59,8 @@ function addVariant(
     "private/solution/index.html": html(heading),
     "private/explanation.md": `${MARKER} 解説\n`,
     "private/review.md": `${MARKER} 観点\n`,
+    // 典型的な誤答 (見出しを変え忘れる)。類題には 1 つ以上が要る。
+    "private/mutants/m01-unchanged/index.html": html("ここを変更します"),
   };
   for (const [rel, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
@@ -180,5 +183,51 @@ describe("予備の類題", () => {
     const root = fixture();
     writeFileSync(join(root, PARENT, "private/variants/README.md"), "メモ");
     expect(() => buildContentManifest(join(root, "courses"))).toThrow(/1 問 1 フォルダー/);
+  });
+
+  it("類題には典型的な誤答が要り、受講者が書き換えるファイルだけを置ける", () => {
+    const none = fixture();
+    rmSync(join(addVariant(none, "v01-none", "誤答なし"), "private/mutants"), { recursive: true });
+    expect(() => buildContentManifest(join(none, "courses"))).toThrow(/典型的な誤答/);
+    const empty = fixture();
+    const emptyDir = addVariant(empty, "v01-empty", "誤答が空");
+    rmSync(join(emptyDir, "private/mutants/m01-unchanged"), { recursive: true });
+    writeFileSync(join(emptyDir, "private/mutants/.gitkeep"), "");
+    expect(() => buildContentManifest(join(empty, "courses"))).toThrow(/典型的な誤答/);
+    for (const [rel, message] of [
+      ["tests/README.md", /protected/],
+      ["other.html", /starter・解答例にあるファイルだけ/],
+    ] as const) {
+      const root = fixture();
+      const dir = addVariant(root, "v01-bad", "誤答の誤り");
+      mkdirSync(dirname(join(dir, "private/mutants/m02", rel)), { recursive: true });
+      writeFileSync(join(dir, "private/mutants/m02", rel), "x");
+      expect(() => buildContentManifest(join(root, "courses"))).toThrow(message);
+    }
+    // 誤答は配布一式にも非公開の素材 (D1) にも入れない。
+    const root = fixture();
+    addVariant(root, "v01-ok", "誤答あり");
+    const variant = buildContentManifest(join(root, "courses")).tasks.find((t) => t.variantOf);
+    expect(Object.keys(variant?.mutants ?? {})).toEqual(["m01-unchanged"]);
+    expect(Object.keys(variant?.privateFiles ?? {}).some((k) => k.includes("mutants"))).toBe(false);
+    expect(Object.keys(variant?.bundle.files ?? {}).some((k) => k.includes("mutants"))).toBe(false);
+  });
+
+  it("誤答は解答例に重ねて手元の検査で落ちることを確かめ、通ってしまう誤答を落とす", async () => {
+    const root = fixture();
+    const dir = addVariant(root, "v01-check", "確かめる");
+    const load = () => buildContentManifest(join(root, "courses")).tasks.find((t) => t.variantOf);
+    const variant = load();
+    if (!variant) throw new Error("類題がありません");
+    expect(await mutantsFail(variant)).toBe(1);
+    // 解答例と同じ見出しの「誤答」はテストで落ちない (テストがその誤りを見逃している)。
+    cpSync(
+      join(dir, "private/solution/index.html"),
+      join(dir, "private/mutants/m02-same/index.html"),
+      { recursive: true },
+    );
+    const weak = load();
+    if (!weak) throw new Error("類題がありません");
+    await expect(mutantsFail(weak)).rejects.toThrow(/誤答 m02-same .*落ちません/);
   });
 });

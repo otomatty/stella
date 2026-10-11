@@ -14,6 +14,7 @@ import type {
   SubmissionCheckRecord,
   TaskBoard,
 } from "@stella/shared/review/review-desk";
+import type { VariantStockSummary } from "@stella/shared/tasks/variants";
 import { apiFetch } from "./api-client";
 
 export interface AiPassedQuery {
@@ -114,4 +115,13 @@ export async function updateTemplate(id: string, input: Partial<TemplateInput>) 
 
 export async function deleteTemplate(id: string) {
   await apiFetch(`/api/review-templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/** 類題の在庫と、在庫切れで待っている受講者 (#39)。 */
+export async function fetchVariantStock(signal?: AbortSignal) {
+  const { patterns } = await apiFetch<{ patterns: VariantStockSummary[] }>(
+    "/api/variant-reviews/stock",
+    signal ? { signal } : {},
+  );
+  return patterns;
 }

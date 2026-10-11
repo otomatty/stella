@@ -407,6 +407,13 @@
       "when": 1791331200012,
       "tag": "0060_variant_first_slot_recompute",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "6",
+      "when": 1791331200013,
+      "tag": "0061_variant_reopen",
+      "breakpoints": true
     }
   ]
 }
