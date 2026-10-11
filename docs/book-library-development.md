@@ -86,6 +86,8 @@ Windowsでは既存VS Code runnerのシンボリックリンク作成がEPERMで
 
 スマホの実機再生、画面ロック、長時間のチケット更新、本物のOCR・TTS品質・費用は未検証。P0の実機項目は残し、P2・P3の公開前に検証する。モバイル幅での本棚表示は実機再生とは区別する。
 
+Narratorの言語は`TTS_LANGUAGE`で指定する（既定`ja-JP`）。`TTS_VOICE`・`TTS_MODEL`とともに開始時に保存され、実行中の設定変更は次のジョブから適用する。ローカルは`.dev.vars`、本番は`wrangler.jsonc`のvarsで変更する。
+
 ## GitHub Actionsでの更新
 
 `ci.yml`の`verify`がrootのテスト・ビルドを通じてNarratorも検証する。既存`core-loop`の検証は維持する。通常のデプロイはGitHub Actionsのみ。

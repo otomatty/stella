@@ -112,6 +112,7 @@ beforeAll(async () => {
             AUTH_JWT_SECRET: secret,
             ALLOWED_ORIGINS: "http://localhost",
             ANTHROPIC_API_KEY: "",
+            TTS_LANGUAGE: "en-US",
           },
         },
         {
@@ -131,6 +132,7 @@ beforeAll(async () => {
             OCR_MODEL: "fake-ocr",
             TTS_MODEL: "fake-tts",
             TTS_VOICE: "Kore",
+            TTS_LANGUAGE: "en-US",
           },
         },
       ],
@@ -241,6 +243,11 @@ describe("JWT-authenticated personal library", () => {
   });
 });
 describe("internal processing foundation", () => {
+  it("forwards the configured Worker language into synthesis settings", async () => {
+    const response = await mf.dispatchFetch("http://localhost/p0/tts-settings");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ language: "en-US" });
+  });
   it("reads the winning chapter plan and persisted prefix from one snapshot", async () => {
     const id = await createBook("Chapter plan race");
     const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };

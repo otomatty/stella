@@ -12,13 +12,25 @@ export const RETRY = {
   retries: { limit: 3, delay: "10 seconds", backoff: "exponential" },
   timeout: "15 minutes",
 } as const;
-export function providerConfig(env: NarratorEnv): ProviderConfig {
+export function providerConfig(
+  env: Pick<
+    NarratorEnv,
+    | "BUCKET"
+    | "GEMINI_API_KEY"
+    | "OCR_MODEL"
+    | "TTS_MODEL"
+    | "TTS_VOICE"
+    | "TTS_LANGUAGE"
+    | "FAKE_PROVIDERS"
+  >,
+): ProviderConfig {
   return {
     BUCKET: env.BUCKET,
     GEMINI_API_KEY: env.GEMINI_API_KEY ?? "",
     OCR_MODEL: env.OCR_MODEL,
     TTS_MODEL: env.TTS_MODEL,
     TTS_VOICE: env.TTS_VOICE,
+    TTS_LANGUAGE: env.TTS_LANGUAGE,
     FAKE_PROVIDERS: env.FAKE_PROVIDERS,
   };
 }

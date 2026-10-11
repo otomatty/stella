@@ -3,3 +3,5 @@ LIBRARY_PROCESSING_ENABLED=0
 # For local tests only; never put FAKE_PROVIDERS in the deployed configuration.
 # FAKE_PROVIDERS=1
 # GEMINI_API_KEY=
+# The deployed default is Japanese. Override locally when testing another language.
+# TTS_LANGUAGE=en-US

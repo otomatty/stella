@@ -4,7 +4,8 @@ import { libraryRoute } from "../../../api/src/routes/library.js";
 import type { Env } from "../../../api/src/env.js";
 import { mediaSpike } from "./media.js";
 import { cleanupDeletedBooks } from "../../src/cleanup.js";
-import { JobContext, bookOutputPrefix } from "../../src/context.js";
+import { JobContext, bookOutputPrefix, providerConfig } from "../../src/context.js";
+import { audioSettings } from "../../src/audio-settings.js";
 import { checkpointOcr } from "../../src/ocr-checkpoint.js";
 import { readChapterState } from "../../src/book-state.js";
 import type { OcrProvider } from "@stella/book-core/providers";
@@ -14,6 +15,24 @@ import { putWhileWriting } from "../../src/audio-stream.js";
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", libraryRoute);
 app.route("/p0/media", mediaSpike);
+app.get("/p0/tts-settings", (c) => {
+  const language = Reflect.get(c.env, "TTS_LANGUAGE");
+  if (!c.env.LIBRARY_BUCKET || typeof language !== "string")
+    return c.json({ error: "Missing test binding" }, 503);
+  return c.json(
+    audioSettings(
+      providerConfig({
+        BUCKET: c.env.LIBRARY_BUCKET,
+        GEMINI_API_KEY: "",
+        OCR_MODEL: "fake-ocr",
+        TTS_MODEL: "fake-tts",
+        TTS_VOICE: "Kore",
+        TTS_LANGUAGE: language,
+        FAKE_PROVIDERS: "1",
+      }),
+    ),
+  );
+});
 app.post("/p0/chapter-state-race", async (c) => {
   const p = await c.req.json<NarratorJobRequest>();
   const winner = `library/${p.tenantId}/${p.bookId}/g1/chapters/winner.json`;

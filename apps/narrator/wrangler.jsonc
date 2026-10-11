@@ -46,7 +46,8 @@
     "LIBRARY_PROCESSING_ENABLED": "0",
     "OCR_MODEL": "gemini-3.8-flash",
     "TTS_MODEL": "gemini-3.8-flash-tts",
-    "TTS_VOICE": "Kore"
+    "TTS_VOICE": "Kore",
+    "TTS_LANGUAGE": "ja-JP"
   },
   "triggers": {
     "crons": ["0 * * * *"]
