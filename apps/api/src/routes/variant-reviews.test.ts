@@ -869,6 +869,36 @@ describe("類題の出題 (#39)", () => {
     expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([["day3", "issued"]]);
   });
 
+  it("今日の類題を開いた要求が読んだあとに合格が覆っても、覆した合格から次の出題を積まない", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    const taskId = (await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04")))?.taskId;
+    await recordPass("learner", taskId ?? "", noonOf("2026-10-05"), false);
+    // 次の出題を積む直前 (合格を記録に写して出題を決めたあと) に、講師が合格を覆して確定する。
+    let overturned = false;
+    const racing = new Proxy(db, {
+      get(target, prop, receiver) {
+        if (prop === "batch")
+          return async (statements: Parameters<typeof db.batch>[0]) => {
+            if (!overturned) {
+              overturned = true;
+              const [first, ...rest] = await reopenVariantStatements(
+                target,
+                { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+                noonOf("2026-10-05"),
+              );
+              if (first) await target.batch([first, ...rest]);
+            }
+            return target.batch(statements);
+          };
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    await loadTodayVariant(racing, caller("learner"), noonOf("2026-10-05"));
+    expect(overturned).toBe(true);
+    expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([["day3", "issued"]]);
+  });
+
   it("合格を取り消しても、もう出した次の類題は残す", async () => {
     await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
     vi.useFakeTimers({ toFake: ["Date"] });

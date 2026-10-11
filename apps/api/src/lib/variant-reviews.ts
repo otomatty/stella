@@ -209,11 +209,27 @@ function completionOf(
   };
 }
 
-async function insertSlot(db: Db, scope: Scope, pattern: string, slot: VariantSlot, now: Date) {
+/**
+ * 次の出題を積む。`after` は、この出題を決めた前の段 (その段と、決めたときの状態)。
+ * 人が前の段の合格を覆す (`reopenVariantStatements`) のと重なっても、覆した合格から決めた出題を
+ * 残さないよう、積むのと「前の段がまだその状態か」の確かめを 1 つの batch (D1 では 1 つの
+ * トランザクション) で行い、違えば積んだ行をその場で消す。書き込みは直列なので、覆すのが先なら
+ * ここで消え、積むのが先なら覆す側の条件付きの削除で消える。
+ */
+async function insertSlot(
+  db: Db,
+  scope: Scope,
+  pattern: string,
+  slot: VariantSlot,
+  now: Date,
+  after?: { step: number; status: ReviewRow["status"] },
+) {
+  const id = crypto.randomUUID();
   // 同じ受講者・パターンの同じ段は一意。同時に開いた別の要求が先に積んでいれば何もしない。
-  await db
+  const insert = db
     .insert(variantReviews)
     .values({
+      id,
       tenantId: scope.tenantId,
       userId: scope.userId,
       pattern,
@@ -226,6 +242,33 @@ async function insertSlot(db: Db, scope: Scope, pattern: string, slot: VariantSl
       updatedAt: now,
     })
     .onConflictDoNothing();
+  if (!after) {
+    await insert;
+    return;
+  }
+  const previous = alias(variantReviews, "previous_step");
+  await db.batch([
+    insert,
+    db.delete(variantReviews).where(
+      and(
+        ownRow(scope, id),
+        notExists(
+          db
+            .select({ id: previous.id })
+            .from(previous)
+            .where(
+              and(
+                eq(previous.tenantId, scope.tenantId),
+                eq(previous.userId, scope.userId),
+                eq(previous.pattern, pattern),
+                eq(previous.step, after.step),
+                eq(previous.status, after.status),
+              ),
+            ),
+        ),
+      ),
+    ),
+  ]);
 }
 
 /**
@@ -308,8 +351,10 @@ async function planNext(
       null,
       { hasRegularAssessmentB: regularB.has(pattern) },
     );
+    // 次の段は最後の段 (step の順) から決まる。積むときにその段がまだ同じ状態かを確かめる。
+    const last = records.reduce((a, b) => (b.step > a.step ? b : a));
     if (slot) {
-      await insertSlot(db, scope, pattern, slot, now);
+      await insertSlot(db, scope, pattern, slot, now, { step: last.step, status: last.status });
       planned = true;
     }
   }
