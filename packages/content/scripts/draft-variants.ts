@@ -157,8 +157,13 @@ async function report(
       console.log(`  ✗ ${f.name} (直しても検査に通らなかったので書き出していません)`);
       for (const e of f.errors) console.log(`      ${e.split("\n").join("\n      ")}`);
     }
-    if (outcome.missing > 0)
-      console.log(`  ! 頼んだ数より ${outcome.missing} 問少なく返ってきました`);
+    if (outcome.missing > 0) {
+      // Batch では受け取り済みとして記録するので、足りない分は作り直してもらう (失敗で終える)。
+      failed += outcome.missing;
+      console.log(
+        `  ! 頼んだ数より ${outcome.missing} 問少なく返ってきました。足りない分は --kind と --count で作り直してください`,
+      );
+    }
   }
   console.log(
     "\n書き出した類題は content:check を通して PR でレビューしてください (unitId の版と references.json の contentHash の更新も忘れずに)。",
