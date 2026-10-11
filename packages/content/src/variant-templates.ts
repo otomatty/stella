@@ -9,6 +9,7 @@
  *   heading/
  *     params.json       # [{ "name": "v01-profile", "values": { "heading": "自己紹介" } }, ...]
  *     template/         # 類題 1 問と同じ形 (task.json・README.md・hints.md・starter/・tests/・private/)
+ *     generated.json    # 書き出した類題の名前の台帳 (variants:generate が書く)
  * ```
  *
  * - テンプレートの文字のファイルに書いた `{{=キー}}` を、パラメータの値に置き換える。組み込みの
@@ -18,6 +19,8 @@
  * - 書き出し先は `private/variants/<名前>/`。生成した類題も手で書いた類題と同じく `content:check` が
  *   検査し (解答例が通る・典型的な誤答が落ちる)、PR のレビューとマージで在庫に入る (07 §7.3)。
  * - 生成した類題を手で直さない。`content:check` は、テンプレートから作り直した結果と食い違えば落とす。
+ * - `params.json` から外した類題は、台帳 (`generated.json`) を見て書き出しのときに消す。台帳に無い
+ *   類題 (手で書いた類題) は触らず、同じ名前を作ろうとしたら止める。
  *
  * 置き換えの記法は `{{=キー}}` にする。JSX の `style={{x}}` や Markdown の波かっこと取り違えないため。
  */
@@ -159,14 +162,41 @@ function readTree(root: string): Record<string, Buffer> {
   return files;
 }
 
-/** 課題 1 つの、テンプレートから作る類題 (名前 → 一式)。テンプレートが無ければ空。 */
-export function generatedVariantsOf(taskDir: string): Map<string, Record<string, Buffer>> {
+/** テンプレートで書き出した類題の名前の台帳 (テンプレートのフォルダーに置く)。 */
+export const GENERATED_LEDGER = "generated.json";
+
+/** 課題に置いたテンプレート 1 つ。 */
+export interface VariantTemplate {
+  /** テンプレートのフォルダー。 */
+  dir: string;
+  label: string;
+  /** 作る類題 (名前 → 一式)。 */
+  variants: Map<string, Record<string, Buffer>>;
+  /** 台帳 (`generated.json`) に残した、前に書き出した類題の名前。台帳が無ければ null。 */
+  ledger: string[] | null;
+}
+
+function readLedger(dir: string, label: string): string[] | null {
+  const path = join(dir, GENERATED_LEDGER);
+  if (!existsSync(path)) return null;
+  const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  if (
+    !Array.isArray(raw) ||
+    !raw.every((name) => typeof name === "string" && VARIANT_NAME.test(name))
+  )
+    throw new Error(`${label}: ${GENERATED_LEDGER} は類題の名前の配列にしてください`);
+  return raw as string[];
+}
+
+/** 課題 1 つのテンプレート (テンプレートの名前の順)。テンプレートが無ければ空。 */
+export function variantTemplatesOf(taskDir: string): VariantTemplate[] {
   const templatesRoot = join(taskDir, VARIANT_TEMPLATES_DIR);
-  const out = new Map<string, Record<string, Buffer>>();
-  if (!existsSync(templatesRoot)) return out;
+  if (!existsSync(templatesRoot)) return [];
   const parent = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8")) as { id?: unknown };
   if (typeof parent.id !== "string") throw new Error(`task.json に id がありません: ${taskDir}`);
   const idPrefix = parent.id.split("/").slice(0, -1).join("/");
+  const templates: VariantTemplate[] = [];
+  const names = new Set<string>();
   for (const name of sortNatural(readdirSync(templatesRoot))) {
     const dir = join(templatesRoot, name);
     if (name === ".gitkeep" && lstatSync(dir).isFile()) continue;
@@ -175,28 +205,42 @@ export function generatedVariantsOf(taskDir: string): Map<string, Record<string,
       throw new Error(
         `${VARIANT_TEMPLATES_DIR}/ にはテンプレートを 1 つ 1 フォルダーで置いてください: ${label}`,
       );
-    const extra = readdirSync(dir).filter((entry) => !["params.json", "template"].includes(entry));
+    const extra = readdirSync(dir).filter(
+      (entry) => !["params.json", "template", GENERATED_LEDGER].includes(entry),
+    );
     if (
       extra.length > 0 ||
       !existsSync(join(dir, "template")) ||
       !existsSync(join(dir, "params.json"))
     )
-      throw new Error(`${label}: params.json と template/ だけを置いてください`);
+      throw new Error(
+        `${label}: params.json と template/ (と台帳の ${GENERATED_LEDGER}) だけを置いてください`,
+      );
     const params = parseVariantParams(
       JSON.parse(readFileSync(join(dir, "params.json"), "utf8")),
       label,
     );
-    for (const [variant, files] of expandVariantTemplate(
+    const variants = expandVariantTemplate(
       readTree(join(dir, "template")),
       params,
       idPrefix,
       label,
-    )) {
-      if (out.has(variant))
+    );
+    for (const variant of variants.keys()) {
+      if (names.has(variant))
         throw new Error(`${parent.id}: 類題 ${variant} を作るテンプレートが 2 つあります`);
-      out.set(variant, files);
+      names.add(variant);
     }
+    templates.push({ dir, label, variants, ledger: readLedger(dir, label) });
   }
+  return templates;
+}
+
+/** 課題 1 つの、テンプレートから作る類題 (名前 → 一式)。テンプレートが無ければ空。 */
+export function generatedVariantsOf(taskDir: string): Map<string, Record<string, Buffer>> {
+  const out = new Map<string, Record<string, Buffer>>();
+  for (const template of variantTemplatesOf(taskDir))
+    for (const [name, files] of template.variants) out.set(name, files);
   return out;
 }
 
@@ -222,7 +266,10 @@ export function tasksWithTemplates(coursesRoot: string): string[] {
 }
 
 export interface VariantSyncResult {
-  /** 書き出した (check では食い違っていた) 類題の `<課題のフォルダー>/private/variants/<名前>`。 */
+  /**
+   * 書き出した (check では食い違っていた) もの。類題の `<課題のフォルダー>/private/variants/<名前>`、
+   * 台帳の `.../generated.json`、消した (check では残っている) 外した類題のフォルダー。
+   */
   changed: string[];
   /** テンプレートから作る類題の数。 */
   total: number;
@@ -231,7 +278,11 @@ export interface VariantSyncResult {
 /**
  * テンプレートから類題を書き出す。`check` では書かずに、書き出し済みの類題がテンプレートから
  * 作り直した結果と一致するかだけを確かめる (食い違いを `changed` に返す)。
- * 書き出すときは、その名前の類題のフォルダーを丸ごと置き換える (テンプレートがその名前を持つ)。
+ *
+ * - 書き出すときは、その名前の類題のフォルダーを丸ごと置き換える (テンプレートがその名前を持つ)。
+ *   ただし台帳に無い名前のフォルダーが既にあれば、手で書いた類題なので上書きせずに止める。
+ * - 台帳 (`generated.json`) にあって `params.json` から外した類題は、フォルダーごと消す。
+ * - 台帳はテンプレートが作る類題の名前 (並べた順) にそろえる。`check` は台帳の食い違いも落とす。
  */
 export function syncVariantTemplates(
   coursesRoot: string,
@@ -241,21 +292,42 @@ export function syncVariantTemplates(
   let total = 0;
   for (const taskDir of tasksWithTemplates(coursesRoot)) {
     if (options.filter && !options.filter(taskDir)) continue;
-    for (const [name, files] of generatedVariantsOf(taskDir)) {
-      total += 1;
-      const target = join(taskDir, VARIANTS_DIR, name);
-      const current = existsSync(target) ? readTree(target) : null;
-      const same =
-        current !== null &&
-        Object.keys(current).length === Object.keys(files).length &&
-        Object.entries(files).every(([path, data]) => current[path]?.equals(data) === true);
-      if (same) continue;
-      changed.push(target);
-      if (options.check) continue;
-      rmSync(target, { recursive: true, force: true });
-      for (const [path, data] of Object.entries(files)) {
-        mkdirSync(dirname(join(target, path)), { recursive: true });
-        writeFileSync(join(target, path), data);
+    for (const template of variantTemplatesOf(taskDir)) {
+      const ledger = new Set(template.ledger ?? []);
+      for (const [name, files] of template.variants) {
+        total += 1;
+        const target = join(taskDir, VARIANTS_DIR, name);
+        const current = existsSync(target) ? readTree(target) : null;
+        const same =
+          current !== null &&
+          Object.keys(current).length === Object.keys(files).length &&
+          Object.entries(files).every(([path, data]) => current[path]?.equals(data) === true);
+        if (same) continue;
+        changed.push(target);
+        if (options.check) continue;
+        if (current !== null && !ledger.has(name))
+          throw new Error(
+            `${template.label}: 類題 ${name} は手で書いた類題と同じ名前です。params.json の name を変えてください`,
+          );
+        rmSync(target, { recursive: true, force: true });
+        for (const [path, data] of Object.entries(files)) {
+          mkdirSync(dirname(join(target, path)), { recursive: true });
+          writeFileSync(join(target, path), data);
+        }
+      }
+      // params.json から外した類題 (台帳にだけある名前) を消す。
+      for (const name of ledger) {
+        if (template.variants.has(name)) continue;
+        const target = join(taskDir, VARIANTS_DIR, name);
+        if (!existsSync(target)) continue;
+        changed.push(target);
+        if (!options.check) rmSync(target, { recursive: true, force: true });
+      }
+      const names = [...template.variants.keys()];
+      if (JSON.stringify(template.ledger) !== JSON.stringify(names)) {
+        const path = join(template.dir, GENERATED_LEDGER);
+        changed.push(path);
+        if (!options.check) writeFileSync(path, `${JSON.stringify(names, null, 2)}\n`);
       }
     }
   }

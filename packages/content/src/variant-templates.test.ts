@@ -1,4 +1,12 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -162,10 +170,15 @@ describe("テンプレートから類題を書き出す", () => {
   it("書き出した類題を教材として読み、解答例が通り誤答が落ちる", async () => {
     const root = fixture();
     const courses = join(root, "courses");
-    expect(syncVariantTemplates(courses, { check: true }).changed).toHaveLength(2);
+    // 書き出す前は、類題 2 問と台帳がすべて食い違い。
+    expect(syncVariantTemplates(courses, { check: true }).changed).toHaveLength(3);
     const written = syncVariantTemplates(courses, { check: false });
     expect(written).toMatchObject({ total: 2 });
-    expect(written.changed).toHaveLength(2);
+    expect(written.changed.map((p) => p.split("/").at(-1))).toEqual([
+      "v01-profile",
+      "v02-hobby",
+      "generated.json",
+    ]);
     // 書き出したあとはテンプレートと一致する。
     expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
 
@@ -202,7 +215,47 @@ describe("テンプレートから類題を書き出す", () => {
     const root = fixture();
     writeFileSync(join(root, PARENT, "private/variant-templates/heading/notes.md"), "メモ");
     expect(() => syncVariantTemplates(join(root, "courses"), { check: true })).toThrow(
-      /params.json と template\/ だけ/,
+      /params.json と template\//,
     );
+  });
+
+  it("台帳を残し、params.json から外した類題を消し、手で書いた類題は上書きしない", () => {
+    const root = fixture();
+    const courses = join(root, "courses");
+    const templateDir = join(root, PARENT, "private/variant-templates/heading");
+    const variantsDir = join(root, PARENT, "private/variants");
+    syncVariantTemplates(courses, { check: false });
+    expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([
+      "v01-profile",
+      "v02-hobby",
+    ]);
+    // v02 を外すと、check は残っているフォルダーと台帳を食い違いとして見つけ、書き出しで消す。
+    writeFileSync(
+      join(templateDir, "params.json"),
+      JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
+    );
+    expect(
+      syncVariantTemplates(courses, { check: true }).changed.map((p) => p.split("/").at(-1)),
+    ).toEqual(["v02-hobby", "generated.json"]);
+    syncVariantTemplates(courses, { check: false });
+    expect(existsSync(join(variantsDir, "v02-hobby"))).toBe(false);
+    expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([
+      "v01-profile",
+    ]);
+    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    // 台帳に無い (手で書いた) 類題と同じ名前は上書きしない。
+    mkdirSync(join(variantsDir, "v03-hand"), { recursive: true });
+    writeFileSync(join(variantsDir, "v03-hand/README.md"), "# 手で書いた\n");
+    writeFileSync(
+      join(templateDir, "params.json"),
+      JSON.stringify([
+        { name: "v01-profile", values: { heading: "自己紹介" } },
+        { name: "v03-hand", values: { heading: "上書き" } },
+      ]),
+    );
+    expect(() => syncVariantTemplates(courses, { check: false })).toThrow(
+      /手で書いた類題と同じ名前/,
+    );
+    expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
   });
 });

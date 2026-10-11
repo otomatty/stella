@@ -33,7 +33,8 @@
     "check:links": "bun run scripts/check-source-links.ts",
     "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts",
     "hash:unit": "bun run scripts/unit-hash.ts",
-    "variants:generate": "bun run scripts/generate-variants.ts"
+    "variants:generate": "bun run scripts/generate-variants.ts",
+    "variants:draft": "bun run scripts/draft-variants.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

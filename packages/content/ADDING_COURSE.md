@@ -177,6 +177,27 @@ tasks/q01-first-page/private/variant-templates/
 - `bun run --filter=@stella/content variants:generate [<講座>/<単元>]` で `private/variants/<name>/` に書き出します (同じ名前のフォルダーは丸ごと置き換えます)。書き出した類題も手で書いた類題と同じく `content:check` が検査します (解答例が通る・典型的な誤答が落ちる)。テンプレートの `private/mutants/` に誤答を書けば、類題ごとに誤答も作られます
 - 書き出した類題は手で直さず、テンプレートかパラメータを直して作り直します。`content:check` (`variants:generate --check`) は、テンプレートから作り直した結果と食い違う類題を落とします。`params.json` から外した類題のフォルダーは自動では消さないので、手で消します
 - テンプレートと書き出した類題は、どちらも PR でレビューしてマージします (在庫に入れる承認は変わりません)。どちらも単元の内容指紋に含まれます
+- 書き出した類題の名前は、テンプレートの `generated.json` (台帳) に残ります。`params.json` から外した類題は、次の `variants:generate` が台帳を見てフォルダーごと消します。台帳に無い類題 (手で書いた類題) は触らず、同じ名前を作ろうとすると止まります。台帳は `variants:generate` が書くので手で直しません
+
+#### AI で類題の下書きを作る
+
+類題の下書きを AI (既定は Claude Opus 5.5) に作らせられます (#69)。手元で実行し、書き出した下書きは手で書いた類題と同じく PR でレビューします。
+
+```bash
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page             # 在庫の不足分
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --kind independent --count 2
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --dry-run   # 作るものと依頼だけを表示
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --batch     # Batch API (半額・非同期)
+bun run --filter=@stella/content variants:draft -- --collect <batch ID>                                    # Batch の結果を受け取る
+```
+
+- 認証は Anthropic SDK の既定 (`ANTHROPIC_API_KEY` か `ant auth login` のプロファイル) です。モデルは `VARIANT_DRAFT_MODEL` で変えられます
+- 種別と数を省くと、その課題の在庫 (手で書いた類題とテンプレートで作る類題) が補習 3 問・確認用 3 問に足りない分を作ります (補習は `basic`、確認用は `independent`)。1 回の実行で 20 問までです
+- 親の課題に同じ種別のテンプレートがあれば `params.json` に足す値だけを、無ければ類題 1 問を丸ごと作らせます。AI には親の課題一式 (解答例と `private/review.md` を含む)・既存の類題・テンプレート・パターンの題・この節と STYLE_GUIDE の文体の決まりを渡します
+- 実行前に入力のトークン数を数えて概算の費用 (直しなしと、すべて 2 回直した場合の最大) を出し、確かめてから作ります (`--yes` で確認を省きます)
+- 下書きは教材の一時の複製で検査します (教材の形・解答例が固定ランナーで通る・誤答がすべて落ちる)。落ちたら理由を返して最大 2 回直させ、それでも落ちた下書きは書き出さずに理由を表示します。`package.json`・lockfile・テストや lint の設定ファイルは親の課題と同じものを写します
+- `--batch` は最初の依頼だけを Batch API に送ります (多くは 1 時間以内、最長 24 時間)。受け取りは `--collect` で、受け取ったあとの検査と直しはその場で行います。送った記録は `packages/content/dist/variant-drafts/` に残ります
+- 書き出したあとは、ほかの類題と同じく単元の `unitId` の版を上げ、参照元を確かめ直してから `contentHash` を更新し、`content:check` を通して PR にします。AI の下書きは必ず人が読んでからマージします
 
 ### ログインなしで読める単元
 
