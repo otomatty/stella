@@ -253,7 +253,7 @@ describe("internal processing foundation", () => {
       method: "POST",
       body: JSON.stringify(p),
     });
-    expect(await stale.json()).toMatchObject({ status: "queued" });
+    expect(await stale.json()).toMatchObject({ status: "queued", completionRejected: true });
     expect(
       await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
     ).toMatchObject({ status: "draft" });
@@ -311,6 +311,75 @@ describe("internal processing foundation", () => {
     } finally {
       await db.prepare("UPDATE profiles SET disabled = 0 WHERE id = 'owner'").run();
     }
+  });
+  it("keeps a successful book ready when a sibling job starts later and fails", async () => {
+    const id = await createBook("Sibling completion");
+    const successful = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    const slower = { ...successful, jobId: crypto.randomUUID() };
+    for (const [p, type] of [
+      [successful, "split"],
+      [slower, "ocr"],
+    ] as const) {
+      await db
+        .prepare(
+          "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,status,created_at) VALUES (?,'a',?,1,?,'owner','running',1)",
+        )
+        .bind(p.jobId, id, type)
+        .run();
+      await reserve(p);
+    }
+    await db.prepare("UPDATE library_books SET status = 'processing' WHERE id = ?").bind(id).run();
+    const response = await mf.dispatchFetch("http://localhost/p0/finish", {
+      method: "POST",
+      body: JSON.stringify({ p: successful, book: true }),
+    });
+    expect(await response.json()).toEqual({ rejected: false });
+    await dispatch(slower);
+    await expect(waitJob(slower.jobId)).rejects.toThrow("Job failed");
+    expect(
+      await db
+        .prepare("SELECT status FROM library_jobs WHERE id = ?")
+        .bind(successful.jobId)
+        .first(),
+    ).toMatchObject({ status: "succeeded" });
+    expect(
+      await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
+    ).toMatchObject({ status: "ready" });
+  });
+  it("rejects job and book completion when authority changes after the final guard", async () => {
+    for (const book of [true, false])
+      for (const revoke of ["disabled", "superseded"] as const) {
+        const id = await createBook("Completion race");
+        const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+        await db
+          .prepare(
+            "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,status,created_at) VALUES (?,'a',?,1,'split','owner','running',1)",
+          )
+          .bind(p.jobId, id)
+          .run();
+        await reserve(p);
+        await db
+          .prepare("UPDATE library_books SET status = ? WHERE id = ?")
+          .bind(book ? "processing" : "ready", id)
+          .run();
+        try {
+          const response = await mf.dispatchFetch("http://localhost/p0/finish", {
+            method: "POST",
+            body: JSON.stringify({ p, revoke, book }),
+          });
+          expect(await response.json()).toEqual({ rejected: true });
+          expect(
+            await db.prepare("SELECT status FROM library_jobs WHERE id = ?").bind(p.jobId).first(),
+          ).toMatchObject({ status: revoke === "disabled" ? "failed" : "queued" });
+          expect(
+            await db.prepare("SELECT status FROM library_books WHERE id = ?").bind(id).first(),
+          ).toMatchObject({
+            status: book ? (revoke === "disabled" ? "failed" : "processing") : "ready",
+          });
+        } finally {
+          await db.prepare("UPDATE profiles SET disabled = 0 WHERE id = 'owner'").run();
+        }
+      }
   });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");

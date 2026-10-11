@@ -134,19 +134,32 @@ export class JobContext {
       ),
     );
   }
+  private completion(): D1PreparedStatement {
+    return this.env.DB.prepare(
+      `UPDATE library_jobs SET status = 'succeeded', finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND status IN ('queued','running','succeeded') AND ${this.live}`,
+    ).bind(
+      Date.now(),
+      this.p.tenantId,
+      this.p.bookId,
+      this.p.jobId,
+      this.p.generation,
+      ...this.scope,
+    );
+  }
   async finish(): Promise<void> {
-    await this.env.DB.prepare(
-      `UPDATE library_jobs SET status = 'succeeded', finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND ${this.live}`,
-    )
-      .bind(
-        Date.now(),
-        this.p.tenantId,
-        this.p.bookId,
-        this.p.jobId,
-        this.p.generation,
-        ...this.scope,
-      )
-      .run();
+    const result = await this.completion().run();
+    if (result.meta.changes !== 1) throw new NonRetryableError("ジョブの完了権限が失効しています");
+  }
+  async finishBook(): Promise<void> {
+    // D1 batch commits job success and book readiness in the same transaction.
+    const results = await this.env.DB.batch([
+      this.completion(),
+      this.env.DB.prepare(
+        `UPDATE library_books SET status = 'ready', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${this.live} AND EXISTS (SELECT 1 FROM library_jobs j WHERE j.id = ? AND j.tenant_id = library_books.tenant_id AND j.book_id = library_books.id AND j.generation = library_books.generation AND j.status = 'succeeded')`,
+      ).bind(Date.now(), ...this.bookScope, ...this.scope, this.p.jobId),
+    ]);
+    if (results.some((result) => result.meta.changes !== 1))
+      throw new NonRetryableError("書籍の完了権限が失効しています");
   }
   async fail(): Promise<void> {
     // Provider responses and book contents never enter client-visible errors or logs.
@@ -168,7 +181,7 @@ export class JobContext {
     await this.fail();
     // Disabling an owner stops work, but must still leave a retryable failure state.
     await this.env.DB.prepare(
-      `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${this.bookAuthority(false)}`,
+      `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND status <> 'ready' AND ${this.bookAuthority(false)}`,
     )
       .bind(Date.now(), ...this.bookScope, ...this.scope)
       .run();

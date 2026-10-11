@@ -36,6 +36,46 @@ app.post("/p0/fail-book", async (c) => {
     return c.json({ ok: true });
   }
 });
+app.post("/p0/finish", async (c) => {
+  if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
+  const { p, revoke, book } = await c.req.json<{
+    p: NarratorJobRequest;
+    revoke?: "disabled" | "superseded";
+    book: boolean;
+  }>();
+  const job = new JobContext(
+    {
+      ...c.env,
+      BUCKET: c.env.LIBRARY_BUCKET,
+      LIBRARY_PROCESSING_ENABLED: "1",
+      FAKE_PROVIDERS: "1",
+    },
+    p,
+    `${p.jobId}-1`,
+  );
+  await job.guard();
+  if (revoke === "disabled")
+    await c.env.DB.prepare("UPDATE profiles SET disabled = 1 WHERE id = 'owner'").run();
+  if (revoke === "superseded")
+    await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE library_jobs SET attempt = 2, status = 'queued' WHERE id = ?").bind(
+        p.jobId,
+      ),
+      c.env.DB.prepare("UPDATE library_job_dispatches SET instance_id = ? WHERE job_id = ?").bind(
+        `${p.jobId}-2`,
+        p.jobId,
+      ),
+    ]);
+  try {
+    if (book) await job.finishBook();
+    else await job.finish();
+    return c.json({ rejected: false });
+  } catch {
+    if (book) await job.failBook();
+    else await job.fail();
+    return c.json({ rejected: true });
+  }
+});
 app.post("/p0/stale-attempt", async (c) => {
   if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
   const p = await c.req.json<NarratorJobRequest>();
@@ -58,11 +98,17 @@ app.post("/p0/stale-attempt", async (c) => {
     ),
   ]);
   await job.progress(1, 1);
-  await job.finish();
+  let completionRejected = false;
+  try {
+    await job.finish();
+  } catch {
+    completionRejected = true;
+  }
   await job.failBook();
-  return c.json(
-    await c.env.DB.prepare("SELECT status FROM library_jobs WHERE id = ?").bind(p.jobId).first(),
-  );
+  const row = await c.env.DB.prepare("SELECT status FROM library_jobs WHERE id = ?")
+    .bind(p.jobId)
+    .first();
+  return c.json({ ...row, completionRejected });
 });
 app.post("/p0/put-race", async (c) => {
   const bucket = c.env.LIBRARY_BUCKET;

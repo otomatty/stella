@@ -29,7 +29,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         const row = await job.guard();
         await job.progress(0, 0);
         await this.env.DB.prepare(
-          `UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
+          `UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND status <> 'ready' AND ${job.live}`,
         )
           .bind(Date.now(), ...job.bookScope, ...job.scope)
           .run();
@@ -338,12 +338,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
       await step.do("finish", async () => {
         if ((await job.authorize()).status === "succeeded") return;
         await job.guard();
-        await this.env.DB.prepare(
-          `UPDATE library_books SET status = 'ready', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
-        )
-          .bind(Date.now(), ...job.bookScope, ...job.scope)
-          .run();
-        await job.finish();
+        await job.finishBook();
       });
     } catch {
       await step.do("fail", () => job.failBook());
