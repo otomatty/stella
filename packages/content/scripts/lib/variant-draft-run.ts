@@ -38,7 +38,7 @@ import {
   isConfigFile,
   MAX_REPAIRS,
   PARAMS_DRAFT_SCHEMA,
-  variantStockOf,
+  unitNamesOf,
 } from "../../src/variant-drafts.js";
 import {
   parseVariantParams,
@@ -46,7 +46,12 @@ import {
   VARIANT_TEMPLATES_DIR,
   type VariantParams,
 } from "../../src/variant-templates.js";
-import { mutantsFail, type RunCheckOptions, solutionPasses } from "./task-run-check.js";
+import {
+  CheckEnvironmentError,
+  mutantsFail,
+  type RunCheckOptions,
+  solutionPasses,
+} from "./task-run-check.js";
 
 /** 依頼の 1 ブロック。`cache` を付けたブロックまでをプロンプトキャッシュに載せる。 */
 export interface DraftBlock {
@@ -329,6 +334,8 @@ async function checkVariants(
       await solutionPasses(seed, seed.bundle.files, "配布ファイル", check);
       await mutantsFail(seed, check);
     } catch (err) {
+      // 環境の問題は下書きの誤りとして直させず、呼び出し元まで伝えて止める。
+      if (err instanceof CheckEnvironmentError) throw err;
       errors.push((err as Error).message);
     }
   }
@@ -445,7 +452,8 @@ export async function runDraftGroup(
   const output = options.first ?? (await model.complete(request));
   const parent = parentOf(target.taskDir);
   const outcome: DraftOutcome = { written: [], failed: [], missing: 0 };
-  const existing = variantStockOf(target.taskDir).names;
+  // 類題の ID は単元の中で一意なので、同じ単元のほかの課題と類題の名前も避けて振る。
+  const existing = unitNamesOf(target.taskDir);
   /** 直しを頼む。応答に下書きが無い・依頼が失敗したときは理由を返す (ほかの下書きは止めない)。 */
   const repair = async (
     key: "params" | "variants",

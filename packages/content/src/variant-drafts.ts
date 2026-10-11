@@ -10,7 +10,7 @@
  */
 
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { TaskKind } from "../../shared/src/tasks/manifest.js";
 import {
   CHECK_VARIANT_KINDS,
@@ -78,6 +78,22 @@ export function variantStockOf(taskDir: string): VariantStock {
     else if (CHECK_VARIANT_KINDS.includes(kind as TaskKind)) stock.check += 1;
   }
   return stock;
+}
+
+/**
+ * 同じ単元の課題と類題の名前 (ID の末尾)。類題の ID は単元の中で一意なので、新しい類題の名前は
+ * これらと重ならないように振る。
+ */
+export function unitNamesOf(taskDir: string): string[] {
+  const tasksDir = dirname(taskDir);
+  const names = new Set<string>();
+  for (const entry of readdirSync(tasksDir)) {
+    const dir = join(tasksDir, entry);
+    if (!lstatSync(dir).isDirectory()) continue;
+    names.add(entry);
+    for (const name of variantStockOf(dir).names) names.add(name);
+  }
+  return [...names];
 }
 
 /** テンプレートの名前と、それが作る類題の種別。 */

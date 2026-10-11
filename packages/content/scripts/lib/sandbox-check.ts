@@ -35,7 +35,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TaskManifest } from "../../../shared/src/tasks/manifest.js";
 import type { RunResult } from "../../../shared/src/tasks/run-result.js";
-import { scrubbedEnv } from "./task-run-check.js";
+import { CheckEnvironmentError, scrubbedEnv } from "./task-run-check.js";
 
 export const DEFAULT_SANDBOX_IMAGE = "mcr.microsoft.com/playwright:v1.63.0-noble";
 /** コンテナー 1 回 (依存の取得と検査) の上限。固定ランナーの手順ごとの上限より長くとる。 */
@@ -194,7 +194,22 @@ export function sandboxRunner(config: SandboxConfig) {
       if (deps.length > 0) {
         for (const [key, value] of deps)
           writeWorkFile(workDir, `task/${key}`, Buffer.from(value, "base64"));
-        await runContainer(dockerArgs(config, `stella-deps-${id}`, workDir), `stella-deps-${id}`);
+        const output = await runContainer(
+          dockerArgs(config, `stella-deps-${id}`, workDir),
+          `stella-deps-${id}`,
+        );
+        // 依存やブラウザーを用意できなければ、ネットワークなしの 2 段目では取り戻せない。
+        // 下書きの誤りではないので、直させずに止める。
+        const prepared = existsSync(resultPath)
+          ? (JSON.parse(readFileSync(resultPath, "utf8")) as RunResult)
+          : null;
+        const failed = prepared?.steps.find(
+          (step) => (step.id === "deps" || step.id === "browsers") && step.status === "error",
+        );
+        if (!prepared || failed)
+          throw new CheckEnvironmentError(
+            `検査の準備 (依存・ブラウザーの取得) に失敗しました: ${failed?.summary ?? output.slice(-2000)}`,
+          );
         rmSync(resultPath, { force: true });
       }
       // 2 段目: AI が書いたファイルを足し、ネットワークなしで検査する。
@@ -206,7 +221,9 @@ export function sandboxRunner(config: SandboxConfig) {
         name,
       );
       if (!existsSync(resultPath))
-        throw new Error(`コンテナーでの検査が結果を返しませんでした\n${output.slice(-2000)}`);
+        throw new CheckEnvironmentError(
+          `コンテナーでの検査が結果を返しませんでした\n${output.slice(-2000)}`,
+        );
       return JSON.parse(readFileSync(resultPath, "utf8")) as RunResult;
     } finally {
       rmSync(workDir, { recursive: true, force: true });

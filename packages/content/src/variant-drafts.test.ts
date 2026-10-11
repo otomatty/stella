@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   allocateVariantNames,
@@ -8,6 +11,7 @@ import {
   MAX_FULL_DRAFTS_PER_REQUEST,
   planDrafts,
   slugOf,
+  unitNamesOf,
 } from "./variant-drafts.js";
 
 const empty = { names: [], remedial: 0, check: 0 };
@@ -69,6 +73,26 @@ describe("類題の名前", () => {
       "v09-y-z",
     ]);
     expect(allocateVariantNames([], ["a", "a"])).toEqual(["v01-a", "v02-a"]);
+  });
+});
+
+describe("単元の中の名前", () => {
+  it("同じ単元のほかの課題と、その類題の名前も集める (類題の ID は単元の中で一意)", () => {
+    const root = mkdtempSync(join(tmpdir(), "stella-unit-names-"));
+    try {
+      const tasks = join(root, "tasks");
+      mkdirSync(join(tasks, "q01-a/private/variants/v01-x"), { recursive: true });
+      mkdirSync(join(tasks, "q02-b/private/variants/v02-y"), { recursive: true });
+      expect(unitNamesOf(join(tasks, "q01-a")).sort()).toEqual([
+        "q01-a",
+        "q02-b",
+        "v01-x",
+        "v02-y",
+      ]);
+      expect(allocateVariantNames(unitNamesOf(join(tasks, "q01-a")), ["z"])).toEqual(["v03-z"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

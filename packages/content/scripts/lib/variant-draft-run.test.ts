@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildContentManifest } from "../../src/manifest.js";
 import { type DraftModel, type DraftRequest, runDraftGroup } from "./variant-draft-run.js";
-import { scrubbedEnv } from "./task-run-check.js";
+import { CheckEnvironmentError, scrubbedEnv } from "./task-run-check.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const TASK = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
@@ -182,6 +182,26 @@ describe("AI の下書きを検査して書き出す", () => {
       ["v01-empty", "直しの応答に下書きがありませんでした"],
       ["v02-thrown", "直しの依頼に失敗しました: 時間切れ"],
     ]);
+  });
+
+  it("検査の環境の問題 (依存の取得の失敗など) は直させずに止める", async () => {
+    const target = fixture();
+    const { model, requests } = fakeModel([{ variants: [variantDraft("hobby", "趣味")] }]);
+    const check = {
+      run: async () => {
+        throw new CheckEnvironmentError("検査の準備に失敗しました");
+      },
+    };
+    await expect(
+      runDraftGroup(
+        model,
+        target,
+        { kind: "basic", count: 1, template: null },
+        { guide: "", check },
+      ),
+    ).rejects.toThrow(/検査の準備に失敗しました/);
+    // 直しの依頼はしない (費用をかけない)。
+    expect(requests).toHaveLength(1);
   });
 
   it("テンプレートがあれば値だけを作らせ、params.json に足して書き出す", async () => {

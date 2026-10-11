@@ -14,6 +14,12 @@ import type { RunResult } from "../../../shared/src/tasks/run-result.js";
 import type { TaskSeed } from "../../src/task-content.js";
 import { runTask } from "../../../../apps/vscode/src/runner/run-task.js";
 
+/**
+ * 課題ではなく検査の環境 (依存の取得・コンテナー) の問題で確かめられなかった。AI の下書きの検査では
+ * 下書きの誤りとして直させず、まとまりごと止める (直しの依頼に費用をかけない)。
+ */
+export class CheckEnvironmentError extends Error {}
+
 /** 配布ファイルに解答例を重ねた一式。 */
 function withSolution(task: TaskSeed, distributed: Record<string, string>) {
   const files = { ...distributed };
