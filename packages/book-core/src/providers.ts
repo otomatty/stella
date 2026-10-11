@@ -288,10 +288,20 @@ function fakeTts(env: ProviderConfig): TtsProvider {
     async synthesize(text) {
       const obj = await env.BUCKET.get("_fake/tts-fail.json");
       if (obj) {
-        const { remaining } = await obj.json<{ remaining: number }>();
+        const { remaining, after = 0 } = await obj.json<{ remaining: number; after?: number }>();
         if (remaining > 0) {
-          await env.BUCKET.put("_fake/tts-fail.json", JSON.stringify({ remaining: remaining - 1 }));
-          throw new ProviderError("provider_error", "偽物のTTSの失敗");
+          if (after > 0)
+            await env.BUCKET.put(
+              "_fake/tts-fail.json",
+              JSON.stringify({ remaining, after: after - 1 }),
+            );
+          else {
+            await env.BUCKET.put(
+              "_fake/tts-fail.json",
+              JSON.stringify({ remaining: remaining - 1 }),
+            );
+            throw new ProviderError("provider_error", "偽物のTTSの失敗");
+          }
         }
       }
       // Default: 0.05 seconds per character. The test-only marker keeps large

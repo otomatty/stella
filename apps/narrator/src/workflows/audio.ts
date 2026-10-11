@@ -6,8 +6,15 @@ import { pcmToMp3 } from "@stella/book-core/mp3";
 import { ttsProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, providerConfig, RETRY } from "../context";
 import { releaseAudioClaim } from "../audio-state";
-import { putWhileWriting } from "../audio-stream";
-import { audioBatchStarts, AUDIO_CHUNKS_PER_STEP } from "../audio-batches";
+import { concatenateAudio } from "../audio-concat";
+import { cachedAudio } from "../audio-cache";
+import {
+  audioBatchStarts,
+  AUDIO_CHUNKS_PER_STEP,
+  AUDIO_CONCAT_BATCH_SIZE,
+  audioConcatGroups,
+  type AudioPart,
+} from "../audio-batches";
 export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
     const job = new JobContext(this.env, event.payload, event.instanceId),
@@ -56,7 +63,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
         return { chapterId: chapter.id, revision: chapter.revision, hash, count: chunks.length };
       });
       input = prepared;
-      const parts: { bytes: number; seconds: number }[] = [];
+      const parts: AudioPart[] = [];
       for (const start of audioBatchStarts(prepared.count))
         parts.push(
           ...(await step.do(`tts-${start}`, RETRY, async () => {
@@ -68,40 +75,51 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
               await job.guard();
               const text = chunks?.[n];
               if (!text) throw new NonRetryableError("読み上げる文がありません");
+              const partKey = `${temp}${n}.mp3`;
+              const stored = await this.env.BUCKET.head(partKey);
+              const cached = cachedAudio(stored?.customMetadata, prepared.hash, tts.model);
+              if (stored && cached) {
+                await job.usage(tts.model, cached.usage, cached.reference);
+                await job.progress(n + 1, prepared.count);
+                batch.push({ key: partKey, bytes: stored.size, seconds: cached.seconds });
+                continue;
+              }
               const result = await tts.synthesize(text);
-              await job.usage(tts.model, result.usage);
+              const reference = `${claim}:${n}:${crypto.randomUUID()}`;
+              await job.usage(tts.model, result.usage, reference);
               const mp3 = pcmToMp3(result.pcm, result.sampleRate);
-              await job.put(`${temp}${n}.mp3`, mp3);
+              const seconds = result.pcm.length / 2 / result.sampleRate;
+              await job.put(partKey, mp3, {
+                customMetadata: {
+                  hash: prepared.hash,
+                  model: tts.model,
+                  reference,
+                  seconds: String(seconds),
+                  inputTokens: String(result.usage.inputTokens),
+                  outputTokens: String(result.usage.outputTokens),
+                },
+              });
               await job.progress(n + 1, prepared.count);
-              batch.push({ bytes: mp3.length, seconds: result.pcm.length / 2 / result.sampleRate });
+              batch.push({ key: partKey, bytes: mp3.length, seconds });
             }
             return batch;
           })),
         );
-      await step.do("concat", RETRY, async () => {
-        await job.guard();
-        const { readable, writable } = new FixedLengthStream(
-          parts.reduce((sum, part) => sum + part.bytes, 0),
-        );
-        const writer = writable.getWriter();
-        const writing = (async () => {
-          try {
-            for (let n = 0; n < parts.length; n++) {
-              const part = await this.env.BUCKET.get(`${temp}${n}.mp3`);
-              if (!part) throw new Error("音声の分割がありません");
-              await writer.write(new Uint8Array(await part.arrayBuffer()));
-            }
-            await writer.close();
-          } catch (error) {
-            await writer.abort(error);
-            throw error;
-          }
-        })();
-        // Await both sides even on failure; otherwise a rejected writer/put can remain unhandled.
-        await putWhileWriting(writing, readable, () =>
-          job.put(key, readable, { httpMetadata: { contentType: "audio/mpeg" } }),
-        );
-      });
+      let finalParts = parts;
+      if (parts.length > AUDIO_CONCAT_BATCH_SIZE) {
+        finalParts = [];
+        const groups = audioConcatGroups(parts);
+        for (let n = 0; n < groups.length; n++) {
+          const group = groups[n];
+          if (!group) throw new NonRetryableError("結合する音声がありません");
+          finalParts.push(
+            await step.do(`concat-${n}`, RETRY, () =>
+              concatenateAudio(job, group, `${temp}group-${n}.mp3`),
+            ),
+          );
+        }
+      }
+      await step.do("concat", RETRY, () => concatenateAudio(job, finalParts, key));
       await step.do("finish", async () => {
         if ((await job.authorize()).status === "succeeded") return;
         await job.guard();

@@ -55,8 +55,8 @@ async function dispatch(p: NarratorJobRequest, reserved = true) {
   if (!response.ok) throw new Error("Dispatch refused");
   return (await response.json()) as { instanceId: string };
 }
-async function waitJob(id: string): Promise<void> {
-  for (let n = 0; n < 600; n++) {
+async function waitJob(id: string, polls = 600): Promise<void> {
+  for (let n = 0; n < polls; n++) {
     const row = await db
       .prepare("SELECT status FROM library_jobs WHERE id = ?")
       .bind(id)
@@ -437,10 +437,10 @@ describe("internal processing foundation", () => {
       await db.prepare("DELETE FROM library_r2_deletions WHERE book_id LIKE 'retired-%'").run();
     }
   });
-  it("generates all audio chunks across more than two batched steps", async () => {
+  it("resumes completed chunks after a batch fails and concatenates bounded groups", async () => {
     const id = await createBook("Batched audio");
     const chapterId = crypto.randomUUID();
-    const markdown = "a".repeat(300 * 17);
+    const markdown = "a".repeat(300 * 201);
     const hash = await speechHash(markdown);
     await db
       .prepare(
@@ -462,18 +462,28 @@ describe("internal processing foundation", () => {
       .bind(p.jobId, id, chapterId)
       .run();
     await bucket.put("_fake/tts-fast.json", "{}");
+    await bucket.put("_fake/tts-fail.json", JSON.stringify({ remaining: 1, after: 2 }));
     try {
       await dispatch(p);
-      await waitJob(p.jobId);
+      await waitJob(p.jobId, 1800);
     } finally {
       await bucket.delete("_fake/tts-fast.json");
+      await bucket.delete("_fake/tts-fail.json");
     }
     expect(
       await db
         .prepare("SELECT status,progress_current,progress_total FROM library_jobs WHERE id = ?")
         .bind(p.jobId)
         .first(),
-    ).toMatchObject({ status: "succeeded", progress_current: 17, progress_total: 17 });
+    ).toMatchObject({ status: "succeeded", progress_current: 201, progress_total: 201 });
+    expect(
+      await db
+        .prepare(
+          "SELECT count(*) AS count,sum(quantity) AS quantity FROM library_job_usages WHERE job_id = ? AND unit = 'input_token'",
+        )
+        .bind(p.jobId)
+        .first(),
+    ).toMatchObject({ count: 201, quantity: 300 * 201 });
     const audio = await db
       .prepare("SELECT status,r2_key,size_bytes FROM library_audios WHERE book_id = ?")
       .bind(id)
@@ -487,7 +497,7 @@ describe("internal processing foundation", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     expect((await bucket.list({ prefix })).objects).toHaveLength(0);
-  });
+  }, 240000);
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");
     const pdf = await PDFDocument.create();

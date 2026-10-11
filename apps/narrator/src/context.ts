@@ -114,13 +114,13 @@ export class JobContext {
       )
       .run();
   }
-  async usage(model: string, usage: Usage): Promise<void> {
+  async usage(model: string, usage: Usage, reference?: string): Promise<void> {
     await this.env.DB.batch(
       (["input_token", "output_token"] as const).map((unit) =>
         this.env.DB.prepare(
-          `INSERT INTO library_job_usages (id, tenant_id, book_id, job_id, provider, model, unit, quantity, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${this.live}`,
+          `INSERT OR IGNORE INTO library_job_usages (id, tenant_id, book_id, job_id, provider, model, unit, quantity, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${this.live}`,
         ).bind(
-          crypto.randomUUID(),
+          reference ? `${reference}:${unit}` : crypto.randomUUID(),
           this.p.tenantId,
           this.p.bookId,
           this.p.jobId,
