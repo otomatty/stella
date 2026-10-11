@@ -656,7 +656,8 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
     const s = summaryOf(task.pattern);
     if (!s.stageTitles.includes(task.stageTitle)) s.stageTitles.push(task.stageTitle);
     if (task.variantOf === null) {
-      s.practiceTitles.push(task.title);
+      // 通常の確認Bは起点のあとに解く後日の確認なので、練習に数えない (`practiceOf` と同じ)。
+      if (task.kind !== "assessment-b") s.practiceTitles.push(task.title);
       continue;
     }
     if (task.published) publishedStageOf.set(task.id, task.stageId);

@@ -430,12 +430,15 @@ describe("類題の出題 (#39)", () => {
       bundle: JSON.stringify(fixture.bundle),
       variantOf: "other/u/parent",
     });
+    // 通常の確認Bは練習の課題名に出さない。
+    await addTask("dev-env-basics/u01/check-b", "assessment-b", 20, null);
     const [elsewhere] = (
       await json<{ patterns: VariantStockSummary[] }>(
         await get("/api/variant-reviews/stock", "teacher"),
       )
     ).patterns;
     expect(elsewhere).toMatchObject({
+      practiceTitles: [`課題 ${PARENT}`],
       stock: { remedial: 2, check: 4 },
       fewestUnseen: { remedial: 0, check: 3 },
     });
