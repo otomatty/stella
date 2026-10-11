@@ -56,6 +56,7 @@ describe("OCR checkpoint validation", () => {
     "malformed JSON",
     JSON.stringify({ pages: [{ page: 1, markdown: "Text", figures: [] }] }),
     JSON.stringify({ pages: [2, 1].map((page) => ({ page, markdown: "Text", figures: [] })) }),
+    JSON.stringify({ pages: [{ page: 1 }, { page: 2, markdown: "Text", figures: [] }] }),
   ])("retries an invalid provider response without checkpointing it: %s", async (first) => {
     const h = harness(first);
     await expect(h.resume()).rejects.toThrow();

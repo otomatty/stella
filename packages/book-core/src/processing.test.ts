@@ -149,6 +149,27 @@ describe("読み上げ用テキスト", () => {
 });
 
 describe("OCRの応答", () => {
+  it.each([
+    { page: 1 },
+    { page: 1, markdown: 123, figures: [] },
+    { page: 1, markdown: "Text" },
+    { page: 1, markdown: "Text", figures: {} },
+    { page: 1, markdown: "Text", figures: [null] },
+    { page: 1, markdown: "Text", figures: [{ id: 1, caption: "Figure", box: [1, 1, 10, 10] }] },
+    { page: 1, markdown: "Text", figures: [{ id: "1", box: [1, 1, 10, 10] }] },
+    { page: 1, markdown: "Text", figures: [{ id: "1", caption: "Figure", box: [10, 1, 1, 10] }] },
+    {
+      page: 1,
+      markdown: "Text",
+      figures: [1, 2].map(() => ({ id: "1", caption: "Figure", box: [1, 1, 10, 10] })),
+    },
+  ])("rejects incomplete or malformed required page fields: %j", (page) => {
+    expect(() => parseOcrResponse(JSON.stringify({ pages: [page] }), 1, 1)).toThrow(/形式/);
+  });
+  it("accepts a blank page with explicit empty text and figures", () => {
+    const page = { page: 1, markdown: "", figures: [] };
+    expect(parseOcrResponse(JSON.stringify({ pages: [page] }), 1, 1)).toEqual([page]);
+  });
   it("求めた範囲のページが揃っていなければ失敗にする(脱落の検出)", () => {
     expect(() =>
       parseOcrResponse(JSON.stringify({ pages: [{ page: 1 }, { page: 3 }] }), 1, 2),

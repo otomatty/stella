@@ -106,11 +106,24 @@ export function parseOcrResponse(text: string, from: number, to: number): RawOcr
   if (JSON.stringify(got) !== JSON.stringify(want)) {
     throw new OcrFormatError(`OCRの応答のページが合いません(求めた範囲 ${from}-${to})`);
   }
-  return pages.map((p) => ({
-    page: p.page,
-    markdown: typeof p.markdown === "string" ? p.markdown : "",
-    figures: Array.isArray(p.figures) ? p.figures : [],
-  }));
+  return pages.map((p) => {
+    if (typeof p.markdown !== "string" || !Array.isArray(p.figures))
+      throw new OcrFormatError("OCRのページ本文または図版一覧の形式が正しくありません");
+    const ids = new Set<string>();
+    for (const figure of p.figures) {
+      if (
+        !figure ||
+        typeof figure.id !== "string" ||
+        !figure.id.trim() ||
+        ids.has(figure.id) ||
+        typeof figure.caption !== "string" ||
+        !validBox(figure.box)
+      )
+        throw new OcrFormatError("OCRの図版の形式が正しくありません");
+      ids.add(figure.id);
+    }
+    return { page: p.page, markdown: p.markdown, figures: p.figures };
+  });
 }
 
 const validBox = (box: unknown): box is [number, number, number, number] =>
