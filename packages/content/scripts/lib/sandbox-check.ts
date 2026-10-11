@@ -10,8 +10,11 @@
  *   終わったら捨てる (`--rm`)。ルートを読み取り専用にすると Playwright がイメージのブラウザーを
  *   ロックできずに止まるので、コンテナーの中への書き込みは許す (ホストには残らない)。
  *   環境変数はロケールとプロキシ (認証情報なし) だけを渡す。
- * - `npm ci` のためにネットワークは使える (既定は bridge)。コンテナーの中に秘密は無い。
- *   要らなければ `VARIANT_DRAFT_SANDBOX_NETWORK=none` で切れる (依存の取得は失敗する)。
+ * - 2 段で動かす。1 段目は依存のファイル (`package.json`・lockfile・`.npmrc`、どれも親の課題のもので
+ *   AI は差し替えられない) だけを置いてネットワークありで依存とブラウザーを用意する。2 段目で AI が
+ *   書いたファイルを足し、**ネットワークなし** (`--network none`) で検査する (固定ランナーは用意済みの
+ *   依存を飛ばす)。AI が書いたコードはクラウドのメタデータ (`169.254.169.254`) や LAN に届かない。
+ *   1 段目のネットワークは `VARIANT_DRAFT_SANDBOX_NETWORK` (既定 bridge) で替えられる。
  * - イメージは Node・npm・Playwright のブラウザーを持つ `mcr.microsoft.com/playwright`
  *   (runner のテンプレートの Playwright と同じ版)。`VARIANT_DRAFT_SANDBOX_IMAGE` で替えられる。
  */
@@ -23,7 +26,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -42,6 +44,13 @@ const SANDBOX_TIMEOUT_MS = 20 * 60_000;
 const CONTAINER_USER = "1000:1000";
 const CONTAINER_CA = "/etc/stella/ca.crt";
 const CONTAINER_RUNNER = "/opt/stella/run-task.mjs";
+/** 1 段目 (ネットワークあり) に置く依存のファイル。下書きでは親の課題のものに限る (`draftVariantFiles`)。 */
+const DEPENDENCY_FILES = new Set([
+  "package.json",
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  ".npmrc",
+]);
 const LOOPBACK = /^(localhost|127\.\d+\.\d+\.\d+|\[?::1\]?)$/i;
 
 export interface SandboxConfig {
@@ -176,18 +185,26 @@ export function prepareSandbox(log: (line: string) => void = () => {}): SandboxC
 export function sandboxRunner(config: SandboxConfig) {
   return async (manifest: TaskManifest, files: Record<string, string>): Promise<RunResult> => {
     const workDir = mkdtempSync(join(tmpdir(), "stella-sandbox-"));
+    const resultPath = join(workDir, "result.json");
+    const id = randomBytes(6).toString("hex");
     try {
-      for (const [key, value] of Object.entries(files)) {
-        const path = join(workDir, "task", key);
-        mkdirSync(dirname(path), { recursive: true });
-        writeFileSync(path, Buffer.from(value, "base64"));
+      writeWorkFile(workDir, "job.json", Buffer.from(JSON.stringify({ manifest })));
+      // 1 段目: 依存のファイルだけで、ネットワークありで依存とブラウザーを用意する (結果は使わない)。
+      const deps = Object.entries(files).filter(([key]) => DEPENDENCY_FILES.has(key));
+      if (deps.length > 0) {
+        for (const [key, value] of deps)
+          writeWorkFile(workDir, `task/${key}`, Buffer.from(value, "base64"));
+        await runContainer(dockerArgs(config, `stella-deps-${id}`, workDir), `stella-deps-${id}`);
+        rmSync(resultPath, { force: true });
       }
-      writeFileSync(join(workDir, "job.json"), JSON.stringify({ manifest }));
-      // コンテナーの利用者 (root 以外) が書けるようにする。中身は検査する一式だけ。
-      chmodRecursive(workDir);
-      const name = `stella-variant-check-${randomBytes(6).toString("hex")}`;
-      const output = await runContainer(dockerArgs(config, name, workDir), name);
-      const resultPath = join(workDir, "result.json");
+      // 2 段目: AI が書いたファイルを足し、ネットワークなしで検査する。
+      for (const [key, value] of Object.entries(files))
+        writeWorkFile(workDir, `task/${key}`, Buffer.from(value, "base64"));
+      const name = `stella-check-${id}`;
+      const output = await runContainer(
+        dockerArgs({ ...config, network: "none" }, name, workDir),
+        name,
+      );
       if (!existsSync(resultPath))
         throw new Error(`コンテナーでの検査が結果を返しませんでした\n${output.slice(-2000)}`);
       return JSON.parse(readFileSync(resultPath, "utf8")) as RunResult;
@@ -197,17 +214,23 @@ export function sandboxRunner(config: SandboxConfig) {
   };
 }
 
-function chmodRecursive(path: string) {
-  chmodSync(path, 0o777);
-  const stack = [path];
-  while (stack.length > 0) {
-    const dir = stack.pop() as string;
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const child = join(dir, entry.name);
-      chmodSync(child, entry.isDirectory() ? 0o777 : 0o666);
-      if (entry.isDirectory()) stack.push(child);
+/**
+ * 作業フォルダーにファイルを書き、コンテナーの利用者 (root 以外) が書けるようにする。
+ * 作ったフォルダーとファイルだけを開ける (1 段目にコンテナーが作った node_modules には触れない)。
+ */
+function writeWorkFile(workDir: string, rel: string, data: Buffer) {
+  chmodSync(workDir, 0o777);
+  const path = join(workDir, rel);
+  let dir = workDir;
+  for (const part of rel.split("/").slice(0, -1)) {
+    dir = join(dir, part);
+    if (!existsSync(dir)) {
+      mkdirSync(dir);
+      chmodSync(dir, 0o777);
     }
   }
+  writeFileSync(path, data);
+  chmodSync(path, 0o666);
 }
 
 function runContainer(args: string[], name: string): Promise<string> {

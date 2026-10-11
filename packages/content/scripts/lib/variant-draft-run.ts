@@ -524,6 +524,9 @@ export async function runDraftGroup(
     drafts.map((d) => d.slug),
   );
   const parentConfig = parentConfigOf(target.taskDir);
+  // 通った下書きはまとまりの最後にまとめて書き出す。途中で止まったまとまりは何も書かないので、
+  // Batch の受け取り直しで同じ下書きを二重に書き出さない。
+  const ready: [string, Record<string, Buffer>][] = [];
   for (const [i, first] of drafts.entries()) {
     const name = names[i] as string;
     let draft: unknown = first;
@@ -557,6 +560,9 @@ export async function runDraftGroup(
       outcome.failed.push({ name, errors });
       continue;
     }
+    ready.push([name, files]);
+  }
+  for (const [name, files] of ready) {
     writeTree(join(target.taskDir, "private/variants", name), files);
     outcome.written.push(name);
   }

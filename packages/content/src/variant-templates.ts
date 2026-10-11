@@ -129,6 +129,12 @@ export function expandVariantTemplate(
         files[path] = data;
         continue;
       }
+      // {{=heading-name}} のような書き間違いは置き換わらずに残るので止める (値の中身は見ない)。
+      const malformed = text.replace(PLACEHOLDER, "").match(/\{\{=[^}\n]*\}?\}?/);
+      if (malformed)
+        throw new Error(
+          `${label}: ${path} の ${malformed[0]} はキーとして読めません (英字・数字・_ で書きます)`,
+        );
       const json = path.endsWith(".json");
       files[path] = Buffer.from(
         text.replace(PLACEHOLDER, (_whole, key: string) => {

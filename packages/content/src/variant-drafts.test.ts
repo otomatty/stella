@@ -116,6 +116,21 @@ describe("下書きのファイル", () => {
     ]);
   });
 
+  it("解答例・誤答で設定ファイルを差し替えさせない (依存の取得に使うため)", () => {
+    const { errors } = draftVariantFiles(
+      [
+        ...complete,
+        { path: "private/solution/package.json", content: "{}" },
+        { path: "private/mutants/m01/eslint.config.js", content: "" },
+      ],
+      context,
+    );
+    expect(errors).toEqual([
+      "private/solution/package.json は置けません。設定ファイルは親の課題のものを使います",
+      "private/mutants/m01/eslint.config.js は置けません。設定ファイルは親の課題のものを使います",
+    ]);
+  });
+
   it("置けない場所・不正なパス・欠け・壊れた task.json を理由として返す", () => {
     const { errors } = draftVariantFiles(
       [

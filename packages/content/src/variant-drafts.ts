@@ -254,6 +254,15 @@ export function draftVariantFiles(
       continue;
     }
     if (file.path.startsWith("starter/") && isConfigFile(file.path)) continue; // 親から写す
+    // 解答例・誤答で設定ファイルを差し替えると、検査で依存の取得 (ネットワークあり) に AI の
+    // package.json などが使われてしまう。設定は親のものだけにする。
+    if (
+      (file.path.startsWith("private/solution/") || file.path.startsWith("private/mutants/")) &&
+      isConfigFile(file.path)
+    ) {
+      errors.push(`${file.path} は置けません。設定ファイルは親の課題のものを使います`);
+      continue;
+    }
     if (file.path.startsWith("private/mutants/") && !context.mutants) {
       errors.push(
         `${file.path} は置けません。この課題の runner は誤答を手元で確かめられないので private/mutants/ は書きません`,

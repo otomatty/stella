@@ -89,6 +89,15 @@ describe("類題のテンプレートの展開", () => {
         "テスト",
       ),
     ).toThrow(/constructor.*values にありません/);
+    // キーとして読めない書き間違いは、置き換わらずに残るので止める。
+    expect(() =>
+      expandVariantTemplate(
+        { "README.md": Buffer.from("{{=heading-name}}") },
+        [{ name: "v01", values: {} }],
+        "c/u",
+        "テスト",
+      ),
+    ).toThrow(/\{\{=heading-name\}\} はキーとして読めません/);
   });
 
   it("params.json の形の誤りを止める", () => {
