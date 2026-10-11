@@ -13,7 +13,7 @@
     "materials": "node scripts/build.mjs",
     "thumbnails": "python3 scripts/build_thumbnails.py",
     "check": "node scripts/check_vocab.mjs",
-    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts && bun run scripts/check-tasks.ts && bun run scripts/check-references.ts && bun run scripts/check-os-blocks.ts",
+    "check:ci": "node scripts/build.mjs --check-only && bun run scripts/check-graph.ts && bun run scripts/check-narration.ts && bun run scripts/generate-variants.ts --check && bun run scripts/check-tasks.ts && bun run scripts/check-references.ts && bun run scripts/check-os-blocks.ts",
     "check:graph": "bun run scripts/check-graph.ts",
     "check:os": "bun run scripts/check-os-blocks.ts",
     "pdf": "bun run scripts/build-pdf.ts",
@@ -32,7 +32,9 @@
     "check:references": "bun run scripts/check-references.ts",
     "check:links": "bun run scripts/check-source-links.ts",
     "baseline:legacy": "bun run scripts/rebuild-legacy-baseline.ts",
-    "hash:unit": "bun run scripts/unit-hash.ts"
+    "hash:unit": "bun run scripts/unit-hash.ts",
+    "variants:generate": "bun run scripts/generate-variants.ts",
+    "variants:draft": "bun run scripts/draft-variants.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

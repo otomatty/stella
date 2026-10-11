@@ -153,6 +153,53 @@ tasks/q01-first-page/private/variants/
 - seed は類題を課題 (`tasks`) として入れ、`tasks.variant_of` に親の課題 ID を書きます。課題文のレッスンは作らず、講座の課題一覧・学習ペース・修了の判定には数えません。教材から消した類題は、出題中でも取り下げて別の類題を出し直します
 - 在庫が尽きた・尽きそうなパターンは、講師・管理者がレビュー画面の「類題の在庫」タブ (`GET /api/variant-reviews/stock`) で見られます (在庫の数・未見の残りがいちばん少ない受講者・待っている受講者)。補習の小問題は 3 問ずつ消費されるので、多めに置いてください
 
+#### テンプレートから類題を作る
+
+値・条件・境界・組合せ・利用場面だけを変える類題は、1 問ずつ手で書かず、テンプレートとパラメータから作れます (#69)。テンプレートは親の課題の `private/variant-templates/<テンプレート>/` に置きます。
+
+```text
+tasks/q01-first-page/private/variant-templates/
+  heading/
+    params.json         # 類題 1 問ずつの { "name", "values" } の配列
+    template/           # 類題 1 問と同じ形 (task.json・README.md・hints.md・starter/・tests/・private/)
+```
+
+```json
+[
+  { "name": "v01-profile", "values": { "heading": "自己紹介" } },
+  { "name": "v02-hobby", "values": { "heading": "好きなこと" } }
+]
+```
+
+- `template/` の文字のファイルに `{{=キー}}` を書くと、`values` の値に置き換わります。組み込みの `{{=id}}` (類題の ID `<講座>/<単元>/<name>`) と `{{=name}}` も使えます。`task.json` の `id` は `"{{=id}}"` にします
+- `.json` のファイルでは文字列の値を JSON の文字列の中身として書きます (`"` を逃がす)。数・真偽値はそのまま書くので、`"n": {{=count}}` のように引用符の外に置けます。ほかのファイルは値をそのまま埋めます。画像など文字でないファイルは置き換えずに写します
+- `values` に無いキーをテンプレートに書く・テンプレートで使わないキーを `values` に書く (書き間違い)・ファイル名に `{{=…}}` を書くと止まります。`name` は小文字・数字・`-` で、類題のフォルダー名と ID の末尾になります
+- `bun run --filter=@stella/content variants:generate [<講座>/<単元>]` で `private/variants/<name>/` に書き出します (同じ名前のフォルダーは丸ごと置き換えます)。書き出した類題も手で書いた類題と同じく `content:check` が検査します (解答例が通る・典型的な誤答が落ちる)。テンプレートの `private/mutants/` に誤答を書けば、類題ごとに誤答も作られます
+- 書き出した類題は手で直さず、テンプレートかパラメータを直して作り直します。`content:check` (`variants:generate --check`) は、テンプレートから作り直した結果と食い違う類題を落とします
+- テンプレートと書き出した類題は、どちらも PR でレビューしてマージします (在庫に入れる承認は変わりません)。どちらも単元の内容指紋に含まれます
+- 書き出した類題の名前は、テンプレートの `generated.json` (台帳) に残ります。`params.json` から外した類題は、次の `variants:generate` が台帳を見てフォルダーごと消します (最後の 1 問を外すときは `params.json` を空の配列 `[]` にします)。テンプレートをやめるときも、先に `params.json` を `[]` にして書き出してからテンプレートのフォルダーを消します (先に消すと台帳も消え、書き出した類題が手で書いた類題として残ります)。台帳に無い類題 (手で書いた類題) は触らず、同じ名前を作ろうとすると止まります。台帳は `variants:generate` が書くので手で直しません
+
+#### AI で類題の下書きを作る
+
+類題の下書きを AI (既定は Claude Opus 5.5) に作らせられます (#69)。手元で実行し、書き出した下書きは手で書いた類題と同じく PR でレビューします。
+
+```bash
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page             # 在庫の不足分
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --kind independent --count 2
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --dry-run   # 作るものと依頼だけを表示
+bun run --filter=@stella/content variants:draft -- dev-env-basics/m0-first-page/q01-first-page --batch     # Batch API (半額・非同期)
+bun run --filter=@stella/content variants:draft -- --collect <batch ID>                                    # Batch の結果を受け取る
+```
+
+- 認証は Anthropic SDK の既定 (`ANTHROPIC_API_KEY` か `ant auth login` のプロファイル) です。モデルは `VARIANT_DRAFT_MODEL` で変えられます
+- 種別と数を省くと、その課題の在庫 (手で書いた類題とテンプレートで作る類題) が補習 3 問・確認用 3 問に足りない分を作ります (補習は `basic`、確認用は `independent`)。1 回の実行で 20 問までです (丸ごと作る類題は応答の上限に収まるよう 4 問ずつの依頼に分けます)。CI と公開・環境診断の課題の類題は、誤答を手元で確かめられないので誤答を作らせません
+- 親の課題に同じ種別のテンプレートがあれば `params.json` に足す値だけを、無ければ類題 1 問を丸ごと作らせます。AI には親の課題一式 (解答例と `private/review.md` を含む)・既存の類題・テンプレート・パターンの題・この節と STYLE_GUIDE の文体の決まりを渡します
+- 実行前に入力のトークン数を数えて概算の費用 (直しなしと、すべて 2 回直した場合の最大) を出し、確かめてから作ります (`--yes` で確認を省きます)
+- 下書きは教材の一時の複製で検査します (教材の形・解答例が固定ランナーで通る・誤答がすべて落ちる)。落ちたら理由を返して最大 2 回直させ、それでも落ちた下書きは書き出さずに理由を表示します。`package.json`・lockfile・テストや lint の設定ファイルは親の課題と同じものを写します
+- 検査は AI が書いたテスト・解答例・誤答を人が読む前に動かすので、ホストから切り離した **Docker のコンテナー** で動かします (Docker が要ります。無ければ費用がかかる依頼の前に止まります)。コンテナーには検査する一式だけを置いた作業フォルダーを渡し、ホストのほかのファイル (`~/.ssh`・`.dev.vars` など) と API キーなどの環境変数は見せません。権限を落とし (`--cap-drop ALL`)、root 以外で動かし、終わったら捨てます。検査は 2 段で、1 段目は親の課題の `package.json`・lockfile・`.npmrc` だけを置いてネットワークありで依存とブラウザーを用意し、2 段目で AI が書いたファイルを足して **ネットワークなし** で動かします (AI が書いたコードはクラウドのメタデータや LAN に届きません。解答例・誤答で設定ファイルを差し替えることもできません)。イメージは `mcr.microsoft.com/playwright` (`VARIANT_DRAFT_SANDBOX_IMAGE`)、1 段目のネットワークは `VARIANT_DRAFT_SANDBOX_NETWORK` (既定 `bridge`) で替えられます。TLS を中継するプロキシの CA (`NODE_EXTRA_CA_CERTS`) は読み取り専用で渡し、ホストのループバックを指すプロキシと認証情報付きのプロキシは渡しません
+- `--batch` は最初の依頼だけを Batch API に送ります (多くは 1 時間以内、最長 24 時間)。受け取りは `--collect` で、受け取ったあとの検査と直しはその場で行います。送った記録は `packages/content/dist/variant-drafts/` に残り、書き出したまとまりもそこに記録するので、`--collect` をやり直しても同じ下書きを二重に書き出しません
+- 書き出したあとは、ほかの類題と同じく単元の `unitId` の版を上げ、参照元を確かめ直してから `contentHash` を更新し、`content:check` を通して PR にします。AI の下書きは必ず人が読んでからマージします
+
 ### ログインなしで読める単元
 
 VS Code を入れる前に読む単元 (`dev-env-basics` の U00〜U01) は、`unit.json` に `"public": true` を書くと、ログインなしの Web (`/start`) で読めるようになります。単元ごとに付け、レッスンごとには付けません (U00〜U01 は単元全体が導入前に読む内容のため)。
