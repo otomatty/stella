@@ -30,7 +30,7 @@ function harness(first = valid) {
         },
       },
     },
-    put,
+    putCheckpoint: put,
     usage: recordUsage,
   } as unknown as JobContext;
   const read = vi

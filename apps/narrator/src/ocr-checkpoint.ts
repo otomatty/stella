@@ -36,6 +36,6 @@ export async function checkpointOcr(
   }
   // Checkpoint the paid response before usage/page/progress writes. A retry of
   // any of those writes resumes this response without calling OCR again.
-  await job.put(key, JSON.stringify(checkpoint));
+  await job.putCheckpoint(key, JSON.stringify(checkpoint));
   return checkpoint;
 }

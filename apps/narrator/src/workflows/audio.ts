@@ -103,7 +103,7 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
               const mp3 = pcmToMp3(result.pcm, result.sampleRate);
               const seconds = result.pcm.length / 2 / result.sampleRate;
               try {
-                await job.put(partKey, mp3, {
+                await job.putCheckpoint(partKey, mp3, {
                   customMetadata: {
                     hash: prepared.hash,
                     model: tts.model,

@@ -257,7 +257,12 @@ describe("internal processing foundation", () => {
       method: "POST",
       body: JSON.stringify(p),
     });
-    expect(await response.json()).toMatchObject({ failed: true, retained: true, calls: 1 });
+    expect(await response.json()).toMatchObject({
+      failed: true,
+      retained: true,
+      calls: 1,
+      readsBeforePut: 0,
+    });
   });
   it("forwards the configured Worker language into synthesis settings", async () => {
     const response = await mf.dispatchFetch("http://localhost/p0/tts-settings");

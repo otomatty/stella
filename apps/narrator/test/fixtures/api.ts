@@ -18,14 +18,16 @@ app.route("/p0/media", mediaSpike);
 app.post("/p0/transient-put", async (c) => {
   if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
   const p = await c.req.json<NarratorJobRequest>();
-  let reads = 0;
+  let paid = false,
+    readsAfterPaid = 0,
+    readsBeforePut = -1;
   const raceDb = {
     prepare(sql: string) {
       return {
         bind(...values: (string | number | null)[]) {
           return {
             async first() {
-              if (++reads === 2) throw new Error("Transient D1 failure");
+              if (paid && ++readsAfterPaid === 1) throw new Error("Transient D1 failure");
               return c.env.DB.prepare(sql)
                 .bind(...values)
                 .first();
@@ -35,11 +37,20 @@ app.post("/p0/transient-put", async (c) => {
       };
     },
   } as D1Database;
+  const bucket = c.env.LIBRARY_BUCKET;
+  const raceBucket = {
+    get: bucket.get.bind(bucket),
+    async put(...args: Parameters<R2Bucket["put"]>) {
+      readsBeforePut = readsAfterPaid;
+      return bucket.put(...args);
+    },
+    delete: bucket.delete.bind(bucket),
+  } as R2Bucket;
   const job = new JobContext(
     {
       ...c.env,
       DB: raceDb,
-      BUCKET: c.env.LIBRARY_BUCKET,
+      BUCKET: raceBucket,
       LIBRARY_PROCESSING_ENABLED: "1",
       FAKE_PROVIDERS: "1",
     },
@@ -55,6 +66,7 @@ app.post("/p0/transient-put", async (c) => {
     },
     async read() {
       calls++;
+      paid = true;
       return {
         text: '{"pages":[{"page":1,"markdown":"Text","figures":[]}]}',
         usage: { inputTokens: 258, outputTokens: 500 },
@@ -65,6 +77,7 @@ app.post("/p0/transient-put", async (c) => {
     },
   };
   let failed = false;
+  await job.guard();
   try {
     await checkpointOcr(job, ocr, { name: "file", uri: "file" }, 1, 1, key);
   } catch {
@@ -73,7 +86,7 @@ app.post("/p0/transient-put", async (c) => {
   const retained = await c.env.LIBRARY_BUCKET.head(key);
   await job.guard();
   const result = await checkpointOcr(job, ocr, { name: "file", uri: "file" }, 1, 1, key);
-  return c.json({ failed, retained: Boolean(retained), calls, text: result.text });
+  return c.json({ failed, retained: Boolean(retained), calls, readsBeforePut, text: result.text });
 });
 app.get("/p0/tts-settings", (c) => {
   const language = Reflect.get(c.env, "TTS_LANGUAGE");

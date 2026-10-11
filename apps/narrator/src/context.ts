@@ -105,6 +105,30 @@ export class JobContext {
   ): Promise<void> {
     if (!key.startsWith(generationPrefix(this.p))) throw new NonRetryableError("保存先が無効です");
     await this.guard();
+    await this.writeObject(key, value, options);
+  }
+  /** The caller authorizes before the paid request. No D1 dependency may
+   * discard its completed response before it reaches private, attempt-owned R2. */
+  async putCheckpoint(
+    key: string,
+    value: ArrayBuffer | ArrayBufferView | string,
+    options?: R2PutOptions,
+  ): Promise<void> {
+    if (
+      !this.instanceId ||
+      ![
+        `${generationPrefix(this.p)}ocr/${this.instanceId}/`,
+        `${generationPrefix(this.p)}audio/tmp/${this.instanceId}/`,
+      ].some((prefix) => key.startsWith(prefix))
+    )
+      throw new NonRetryableError("チェックポイントの保存先が無効です");
+    await this.writeObject(key, value, options);
+  }
+  private async writeObject(
+    key: string,
+    value: ReadableStream | ArrayBuffer | ArrayBufferView | string,
+    options?: R2PutOptions,
+  ): Promise<void> {
     await this.env.BUCKET.put(key, value, options);
     try {
       await this.guard();
