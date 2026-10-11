@@ -69,9 +69,14 @@ app.post("/p0/ocr-checkpoint", async (c) => {
     },
     async read() {
       calls++;
-      return { text: '{"pages":[]}', usage: { inputTokens: 258, outputTokens: 500 } };
+      return {
+        text: '{"pages":[{"page":1,"markdown":"Text","figures":[]}]}',
+        usage: { inputTokens: 258, outputTokens: 500 },
+      };
     },
-    async remove() {},
+    async remove() {
+      return undefined;
+    },
   };
   const key = `library/${p.tenantId}/${p.bookId}/g1/ocr/${p.jobId}-1/range.json`;
   const file = { name: "file", uri: "file" };
