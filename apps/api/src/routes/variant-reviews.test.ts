@@ -914,6 +914,59 @@ describe("類題の出題 (#39)", () => {
     expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([["day3", "issued"]]);
   });
 
+  it("合格を記録に写すのと合格が覆るのが重なっても、覆した合格を写さない", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    const taskId = (await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04")))?.taskId;
+    await recordPass("learner", taskId ?? "", noonOf("2026-10-05"), false);
+    // 今日の類題を開いた要求が進捗 (合格) を読んだあと、記録に写す前に講師が合格を覆す
+    // (覆す側の batch は、出題の記録がまだ「出した」なので何も戻さない)。
+    let overturned = false;
+    const racing = new Proxy(db, {
+      get(target, prop, receiver) {
+        if (prop === "update")
+          return (table: Parameters<typeof db.update>[0]) => {
+            const builder = target.update(table);
+            if (table !== variantReviews || overturned) return builder;
+            overturned = true;
+            return {
+              set: (values: Parameters<typeof builder.set>[0]) => ({
+                where: (condition: Parameters<ReturnType<typeof builder.set>["where"]>[0]) => ({
+                  // biome-ignore lint/suspicious/noThenProperty: 書き込みの直前に割り込むための thenable
+                  then: async (resolve: (v: unknown) => void, reject: (e: unknown) => void) => {
+                    try {
+                      await target
+                        .update(taskProgress)
+                        .set({ status: "resubmit" })
+                        .where(
+                          and(
+                            eq(taskProgress.userId, "learner"),
+                            eq(taskProgress.taskId, taskId ?? ""),
+                          ),
+                        );
+                      const [first, ...rest] = await reopenVariantStatements(
+                        target,
+                        { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+                        noonOf("2026-10-05"),
+                      );
+                      if (first) await target.batch([first, ...rest]);
+                      resolve(await builder.set(values).where(condition));
+                    } catch (err) {
+                      reject(err);
+                    }
+                  },
+                }),
+              }),
+            };
+          };
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    await loadTodayVariant(racing, caller("learner"), noonOf("2026-10-05"));
+    expect(overturned).toBe(true);
+    expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([["day3", "issued"]]);
+  });
+
   it("合格を取り消しても、もう出した次の類題は残す", async () => {
     await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
     vi.useFakeTimers({ toFake: ["Date"] });

@@ -15,7 +15,7 @@
  * - どの読み書きも受講者のテナントと本人で絞る。
  */
 
-import { and, asc, eq, gt, inArray, lt, ne, notExists, notInArray } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, lt, ne, notExists, notInArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { BatchItem } from "drizzle-orm/batch";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
@@ -308,6 +308,8 @@ async function syncIssued(db: Db, scope: Scope, rows: ReviewRow[], now: Date) {
       changed = true;
     } else if (state.status && PASSED.includes(state.status) && state.passedAt) {
       const assisted = await firstPassAssisted(db, scope, state.id, state.progressHash);
+      // 読んでから書くまでに人が合格を覆していたら写さない (書くときの進捗がまだ同じ合格か確かめる)。
+      // 覆すのが後なら、覆す側が「合格」の記録を条件で戻す (`reopenVariantStatements`)。
       await db
         .update(variantReviews)
         .set({
@@ -316,7 +318,24 @@ async function syncIssued(db: Db, scope: Scope, rows: ReviewRow[], now: Date) {
           passedAssisted: assisted,
           updatedAt: now,
         })
-        .where(where);
+        .where(
+          and(
+            where,
+            exists(
+              db
+                .select({ userId: taskProgress.userId })
+                .from(taskProgress)
+                .where(
+                  and(
+                    eq(taskProgress.userId, scope.userId),
+                    eq(taskProgress.taskId, state.id),
+                    inArray(taskProgress.status, ["passed", "ai-passed"]),
+                    eq(taskProgress.passedAt, state.passedAt),
+                  ),
+                ),
+            ),
+          ),
+        );
       changed = true;
     }
   }
@@ -499,7 +518,7 @@ export async function loadTodayVariant(
 /**
  * 人が類題の合格を覆したとき (#39): 出題の記録を「出した」に戻す文。合格・支援付きかの記録を消し、
  * 戻したことを `reopened_at` に残す。受講者は同じ類題をやり直す (配布・提出の経路はそのまま)。
- * 判定と同じ batch で書けるよう、文だけを返す (戻す記録が無ければ空)。
+ * 判定と同じ batch で書けるよう、文だけを返す (戻す記録が無ければ、どの文も何も変えない)。
  *
  * - そのパターンの次の出題がまだ出ていない (積んだ・在庫切れ) なら取り消す。覆した合格の日付と
  *   支援から積んだ出題なので、やり直して合格したあと今日の類題を開いた時点で積み直す。
@@ -515,21 +534,54 @@ export async function reopenVariantStatements(
   db: Db,
   row: { tenantId: string; studentId: string; taskId: string },
   now: Date,
-) {
+): Promise<BatchItem<"sqlite">[]> {
   const scope = { tenantId: row.tenantId, userId: row.studentId };
-  const rows = await rowsOf(db, scope);
-  const review = rows.find((r) => r.variantTaskId === row.taskId && r.status === "passed");
-  if (!review) return [];
-  const pending = ["scheduled", "out-of-stock"] as const;
+  // 読んでから書く形にしない。今日の類題を開いた要求が同時に合格を写す・次の出題を積むので、
+  // batch を書く時点の記録に条件で当てる (合格を写すのが先なら戻し、後なら写す側が進捗を見て止まる)。
+  const revoked = alias(variantReviews, "revoked");
   const issuedLater = alias(variantReviews, "issued_later");
-  const laterOf = (table: typeof variantReviews | typeof issuedLater) =>
-    and(
-      eq(table.tenantId, scope.tenantId),
-      eq(table.userId, scope.userId),
-      eq(table.pattern, review.pattern),
-      gt(table.step, review.step),
+  const ownOf = (table: typeof variantReviews | typeof revoked | typeof issuedLater) =>
+    and(eq(table.tenantId, scope.tenantId), eq(table.userId, scope.userId));
+  /** 覆した類題の合格の記録より後の、同じパターンの段か。 */
+  const afterRevoked = (table: typeof variantReviews | typeof issuedLater) =>
+    exists(
+      db
+        .select({ id: revoked.id })
+        .from(revoked)
+        .where(
+          and(
+            ownOf(revoked),
+            eq(revoked.variantTaskId, row.taskId),
+            eq(revoked.status, "passed"),
+            eq(revoked.pattern, table.pattern),
+            lt(revoked.step, table.step),
+          ),
+        ),
     );
-  const statements: BatchItem<"sqlite">[] = [
+  const pending = ["scheduled", "out-of-stock"] as const;
+  return [
+    // まだ出していない後の段を消す。次の類題をもう出していれば (積んだ・在庫切れ以外の後の段が
+    // ある)、後の段は 1 つも消さない。合格を戻す前に消す (後の段は合格の記録を条件に探す)。
+    db.delete(variantReviews).where(
+      and(
+        ownOf(variantReviews),
+        inArray(variantReviews.status, [...pending]),
+        afterRevoked(variantReviews),
+        notExists(
+          db
+            .select({ id: issuedLater.id })
+            .from(issuedLater)
+            .where(
+              and(
+                ownOf(issuedLater),
+                eq(issuedLater.pattern, variantReviews.pattern),
+                notInArray(issuedLater.status, [...pending]),
+                afterRevoked(issuedLater),
+              ),
+            ),
+        ),
+      ),
+    ),
     db
       .update(variantReviews)
       .set({
@@ -539,23 +591,14 @@ export async function reopenVariantStatements(
         reopenedAt: now,
         updatedAt: now,
       })
-      .where(and(ownRow(scope, review.id), eq(variantReviews.status, "passed"))),
-    // 読んだあとに別の要求が積んだ出題も消えるよう、ID ではなく条件で消す。次の類題をもう
-    // 出していれば (積んだ・在庫切れ以外の後の段がある)、後の段は 1 つも消さない。
-    db.delete(variantReviews).where(
-      and(
-        laterOf(variantReviews),
-        inArray(variantReviews.status, [...pending]),
-        notExists(
-          db
-            .select({ id: issuedLater.id })
-            .from(issuedLater)
-            .where(and(laterOf(issuedLater), notInArray(issuedLater.status, [...pending]))),
+      .where(
+        and(
+          ownOf(variantReviews),
+          eq(variantReviews.variantTaskId, row.taskId),
+          eq(variantReviews.status, "passed"),
         ),
       ),
-    ),
   ];
-  return statements;
 }
 
 /**
