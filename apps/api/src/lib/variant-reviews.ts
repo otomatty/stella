@@ -610,7 +610,8 @@ export async function variantRetentionSkills(
  * テナントの講座の課題があるパターンと、在庫切れの出題があるパターンを並べ、待っている
  * 受講者のいるパターンを先にする。出題の記録がある受講者ごとに、まだ出していない類題の数も
  * 数え、いちばん少ない人の残りを返す (在庫が近く尽きるかを見るため)。未見の残りは、その受講者に
- * 出せる類題 (受講者が読めるステージのもの) だけで数える。
+ * 出せる類題 (受講者が読めるステージのもの) だけで数え、今は出題されない受講者 (そのパターンの
+ * 読める練習が無い) は受講者・未見の残り・待っている受講者に数えない。
  */
 export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantStockSummary[]> {
   const [taskRows, records, readable, waiting] = await Promise.all([
@@ -691,6 +692,10 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
   // 受講者に出せる類題は、受講者が読めるステージ (公開中で、受講中か修了) のものだけ
   // (`issueDue` が選ぶ在庫と同じ)。未見の残りもその範囲で数える。
   const publishedStageOf = new Map<string, string>();
+  // パターンの練習 (類題でも確認Bでもない、公開中のステージの課題) があるステージ。読める練習が
+  // 無い受講者には、`issueDue` は出題しない (教材から外れた・受講をやめた) ので、受講者の数・
+  // 未見の残り・待っている受講者に数えない (足しても出ない受講者で見立てを止めない)。
+  const practiceStagesOf = new Map<string, Set<string>>();
   const readableStages = new Map<string, Set<string>>();
   for (const e of readable) {
     const stagesOfUser = readableStages.get(e.userId) ?? new Set<string>();
@@ -702,7 +707,14 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
     if (!s.stageTitles.includes(task.stageTitle)) s.stageTitles.push(task.stageTitle);
     if (task.variantOf === null) {
       // 通常の確認Bは起点のあとに解く後日の確認なので、練習に数えない (`practiceOf` と同じ)。
-      if (task.kind !== "assessment-b") s.practiceTitles.push(task.title);
+      if (task.kind !== "assessment-b") {
+        s.practiceTitles.push(task.title);
+        if (task.published) {
+          const practiceStages = practiceStagesOf.get(task.pattern) ?? new Set<string>();
+          practiceStagesOf.set(task.pattern, practiceStages);
+          practiceStages.add(task.stageId);
+        }
+      }
       continue;
     }
     if (task.published) publishedStageOf.set(task.id, task.stageId);
@@ -714,9 +726,15 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
   }
   for (const [pattern, ids] of variantsByPattern)
     summaryOf(pattern).stock = { remedial: ids.remedial.length, check: ids.check.length };
+  const servable = (userId: string, pattern: string) => {
+    const stagesOfUser = readableStages.get(userId);
+    const practiceStages = practiceStagesOf.get(pattern);
+    return [...(practiceStages ?? [])].some((stageId) => stagesOfUser?.has(stageId) === true);
+  };
   // 受講者ごとに出した類題 (取り下げた出題も、出した類題は「見た」ものとして数える)。
   const seenByPattern = new Map<string, Map<string, Set<string>>>();
   for (const record of records) {
+    if (!servable(record.userId, record.pattern)) continue;
     const byUser = seenByPattern.get(record.pattern) ?? new Map<string, Set<string>>();
     seenByPattern.set(record.pattern, byUser);
     const seen = byUser.get(record.userId) ?? new Set<string>();
@@ -745,7 +763,8 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
         : unseen;
     }
   }
-  for (const { pattern, ...w } of waiting) summaryOf(pattern).waiting.push(w);
+  for (const { pattern, ...w } of waiting)
+    if (servable(w.userId, pattern)) summaryOf(pattern).waiting.push(w);
   return [...summaries.values()].sort(
     (a, b) =>
       Number(b.waiting.length > 0) - Number(a.waiting.length > 0) ||

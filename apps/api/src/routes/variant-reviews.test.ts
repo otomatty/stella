@@ -442,6 +442,21 @@ describe("類題の出題 (#39)", () => {
       stock: { remedial: 2, check: 4 },
       fewestUnseen: { remedial: 0, check: 3 },
     });
+    // 受講が切れた受講者には出題しないので、受講者・未見の残り・待っている受講者に数えない。
+    await db
+      .update(enrollments)
+      .set({ status: "expired" })
+      .where(and(eq(enrollments.userId, "learner"), eq(enrollments.stageId, "stage")));
+    const [dropped] = (
+      await json<{ patterns: VariantStockSummary[] }>(
+        await get("/api/variant-reviews/stock", "teacher"),
+      )
+    ).patterns;
+    expect(dropped).toMatchObject({ learners: 0, fewestUnseen: null, waiting: [] });
+    await db
+      .update(enrollments)
+      .set({ status: "active" })
+      .where(and(eq(enrollments.userId, "learner"), eq(enrollments.stageId, "stage")));
     // 受講者は在庫の一覧を読めない。
     expect((await get("/api/variant-reviews/stock")).status).toBe(403);
     // 在庫を足すと、次に開いたときに出す。
