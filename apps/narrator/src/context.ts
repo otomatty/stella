@@ -1,0 +1,122 @@
+import { NonRetryableError } from "cloudflare:workflows";
+import type { NarratorJobRequest } from "@stella/shared/library/types";
+import type { ProviderConfig, Usage } from "@stella/book-core/providers";
+export interface JobRow {
+  id: string;
+  type: "ocr" | "split" | "tts";
+  chapter_id: string | null;
+  attempt: number;
+  status: string;
+}
+export const RETRY = {
+  retries: { limit: 3, delay: "10 seconds", backoff: "exponential" },
+  timeout: "15 minutes",
+} as const;
+export function providerConfig(env: NarratorEnv): ProviderConfig {
+  return {
+    BUCKET: env.BUCKET,
+    GEMINI_API_KEY: env.GEMINI_API_KEY ?? "",
+    OCR_MODEL: env.OCR_MODEL,
+    TTS_MODEL: env.TTS_MODEL,
+    TTS_VOICE: env.TTS_VOICE,
+    FAKE_PROVIDERS: env.FAKE_PROVIDERS,
+  };
+}
+export function processingEnabled(env: NarratorEnv): boolean {
+  return (
+    env.LIBRARY_PROCESSING_ENABLED === "1" &&
+    (env.FAKE_PROVIDERS === "1" || Boolean(env.GEMINI_API_KEY))
+  );
+}
+export function bookPrefix(p: NarratorJobRequest): string {
+  return `library/${p.tenantId}/${p.bookId}/`;
+}
+export function generationPrefix(p: NarratorJobRequest): string {
+  return `${bookPrefix(p)}g${p.generation}/`;
+}
+export class JobContext {
+  constructor(
+    readonly env: NarratorEnv,
+    readonly p: NarratorJobRequest,
+  ) {}
+  /** Rechecked on every step and in the SQL write itself, including after provider I/O. */
+  readonly live =
+    `EXISTS (SELECT 1 FROM library_books b JOIN profiles owner ON owner.id = b.owner_id AND owner.tenant_id = b.tenant_id WHERE b.tenant_id = ? AND b.id = ? AND b.generation = ? AND b.status <> 'deleting' AND owner.disabled = 0)`;
+  get scope(): [string, string, number] {
+    return [this.p.tenantId, this.p.bookId, this.p.generation];
+  }
+  async authorize(): Promise<JobRow> {
+    if (!processingEnabled(this.env)) throw new NonRetryableError("書籍処理が無効です");
+    const row = await this.env.DB.prepare(
+      `SELECT j.* FROM library_jobs j JOIN profiles actor ON actor.id = j.created_by AND actor.tenant_id = j.tenant_id JOIN library_books b ON b.id = j.book_id AND b.tenant_id = j.tenant_id WHERE j.tenant_id = ? AND j.book_id = ? AND j.id = ? AND j.generation = ? AND j.created_by = b.owner_id AND actor.disabled = 0 AND ${this.live}`,
+    )
+      .bind(this.p.tenantId, this.p.bookId, this.p.jobId, this.p.generation, ...this.scope)
+      .first<JobRow>();
+    if (!row) throw new NonRetryableError("ジョブが失効しています");
+    return row;
+  }
+  async guard(): Promise<JobRow> {
+    const job = await this.authorize();
+    if (job.status !== "queued" && job.status !== "running")
+      throw new NonRetryableError("ジョブは終了しています");
+    return job;
+  }
+  async progress(current: number, total: number): Promise<void> {
+    await this.env.DB.prepare(
+      `UPDATE library_jobs SET status = 'running', started_at = coalesce(started_at, ?), progress_current = ?, progress_total = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND ${this.live}`,
+    )
+      .bind(
+        Date.now(),
+        current,
+        total,
+        this.p.tenantId,
+        this.p.bookId,
+        this.p.jobId,
+        this.p.generation,
+        ...this.scope,
+      )
+      .run();
+  }
+  async usage(model: string, usage: Usage): Promise<void> {
+    await this.env.DB.batch(
+      (["input_token", "output_token"] as const).map((unit) =>
+        this.env.DB.prepare(
+          `INSERT INTO library_job_usages (id, tenant_id, book_id, job_id, provider, model, unit, quantity, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${this.live}`,
+        ).bind(
+          crypto.randomUUID(),
+          this.p.tenantId,
+          this.p.bookId,
+          this.p.jobId,
+          this.env.FAKE_PROVIDERS === "1" ? "fake" : "google",
+          model,
+          unit,
+          unit === "input_token" ? usage.inputTokens : usage.outputTokens,
+          Date.now(),
+          ...this.scope,
+        ),
+      ),
+    );
+  }
+  async finish(): Promise<void> {
+    await this.env.DB.prepare(
+      `UPDATE library_jobs SET status = 'succeeded', finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND ${this.live}`,
+    )
+      .bind(
+        Date.now(),
+        this.p.tenantId,
+        this.p.bookId,
+        this.p.jobId,
+        this.p.generation,
+        ...this.scope,
+      )
+      .run();
+  }
+  async fail(): Promise<void> {
+    // Provider responses and book contents never enter client-visible errors or logs.
+    await this.env.DB.prepare(
+      `UPDATE library_jobs SET status = 'failed', error_code = 'processing_failed', error_message = '処理に失敗しました。再試行してください。', finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND status IN ('queued','running')`,
+    )
+      .bind(Date.now(), this.p.tenantId, this.p.bookId, this.p.jobId, this.p.generation)
+      .run();
+  }
+}

@@ -150,6 +150,7 @@ export const profiles = sqliteTable(
   },
   (t) => ({
     emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
+    tenantIdentity: uniqueIndex("profiles_tenant_id_uq").on(t.tenantId, t.id),
   }),
 );
 
@@ -2388,3 +2389,5 @@ export const APP_TABLES = [
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;
+
+export * from "./library-schema.js";

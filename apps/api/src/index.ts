@@ -28,6 +28,7 @@ import { hallOfFameRoute } from "./routes/hall-of-fame.js";
 import { healthzRoute } from "./routes/healthz.js";
 import { interviewPrepRoute } from "./routes/interview-prep.js";
 import { lessonProgressRoute } from "./routes/lesson-progress.js";
+import { libraryRoute } from "./routes/library.js";
 import { materialsRoute } from "./routes/materials.js";
 import { meRoute } from "./routes/me.js";
 import { learningPaceRoute } from "./routes/learning-pace.js";
@@ -111,6 +112,7 @@ app.route("/", supportRoute);
 app.route("/", publicContentRoute);
 app.route("/", cmsRoute);
 app.route("/", materialsRoute);
+app.route("/", libraryRoute);
 app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
 

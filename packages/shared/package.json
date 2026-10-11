@@ -86,7 +86,9 @@
     "./testing/task-submission": "./src/testing/task-submission.ts",
     "./tasks/source-reference": "./src/tasks/source-reference.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
-    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts"
+    "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
+    "./library/types": "./src/library/types.ts",
+    "./library/schemas": "./src/library/schemas.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

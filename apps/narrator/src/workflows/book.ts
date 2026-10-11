@@ -1,0 +1,311 @@
+import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
+import { NonRetryableError } from "cloudflare:workflows";
+import type { NarratorJobRequest } from "@stella/shared/library/types";
+import { loadPdf, extractFigures } from "@stella/book-core/pdf";
+import { parseOcrResponse, normalizeOcrPage, type FigureSpec } from "@stella/book-core/ocr";
+import { splitIntoChapters } from "@stella/book-core/chapters";
+import { speechHash } from "@stella/book-core/speech";
+import { ocrProvider } from "@stella/book-core/providers";
+import { JobContext, generationPrefix, bookPrefix, providerConfig, RETRY } from "../context";
+interface Pdf {
+  id: string;
+  r2_key: string;
+  size_bytes: number;
+  file_name: string;
+  page_count: number;
+  first_page_no: number;
+}
+export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
+  async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
+    const job = new JobContext(this.env, event.payload),
+      p = job.p;
+    try {
+      const kind = await step.do("start", async () => {
+        const row = await job.guard();
+        await job.progress(0, 0);
+        await this.env.DB.prepare(
+          `UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
+        )
+          .bind(Date.now(), ...job.scope, ...job.scope)
+          .run();
+        return row.type;
+      });
+      if (kind === "ocr") {
+        const ids = await step.do("list-pdfs", async () => {
+          await job.guard();
+          const rows = await this.env.DB.prepare(
+            "SELECT id FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND upload_status = 'completed' ORDER BY position",
+          )
+            .bind(p.tenantId, p.bookId)
+            .all<{ id: string }>();
+          if (!rows.results.length) throw new NonRetryableError("PDFがありません");
+          return rows.results.map((pdf) => pdf.id);
+        });
+        for (const id of ids)
+          await step.do(`count-${id}`, RETRY, async () => {
+            await job.guard();
+            const pdf = await this.env.DB.prepare(
+              "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
+            )
+              .bind(p.tenantId, p.bookId, id)
+              .first<Pdf>();
+            if (!pdf?.r2_key.startsWith(bookPrefix(p)))
+              throw new NonRetryableError("PDFが見つかりません");
+            if (pdf.page_count !== null) return;
+            const object = await this.env.BUCKET.get(pdf.r2_key);
+            if (!object || object.size > 50 * 1024 * 1024)
+              throw new NonRetryableError("PDFのサイズが無効です");
+            const count = (
+              await loadPdf(new Uint8Array(await object.arrayBuffer()))
+            ).getPageCount();
+            if (count < 1 || count > 100) throw new NonRetryableError("PDFは1〜100ページまでです");
+            await this.env.DB.prepare(
+              `UPDATE library_book_pdfs SET page_count = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
+            )
+              .bind(count, p.tenantId, p.bookId, id, ...job.scope)
+              .run();
+          });
+        const pdfs = await step.do("number-pages", async () => {
+          await job.guard();
+          const rows = await this.env.DB.prepare(
+            "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND upload_status = 'completed' ORDER BY position",
+          )
+            .bind(p.tenantId, p.bookId)
+            .all<Pdf>();
+          let next = 1;
+          const plans = rows.results.map((pdf) => {
+            const plan = { ...pdf, first_page_no: next };
+            next += pdf.page_count;
+            return plan;
+          });
+          if (next - 1 > 1000) throw new NonRetryableError("本は1000ページまでです");
+          for (const pdf of plans) {
+            await this.env.DB.prepare(
+              `UPDATE library_book_pdfs SET first_page_no = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
+            )
+              .bind(pdf.first_page_no, p.tenantId, p.bookId, pdf.id, ...job.scope)
+              .run();
+            await this.env.DB.batch(
+              Array.from({ length: pdf.page_count }, (_, i) =>
+                this.env.DB.prepare(
+                  `INSERT OR IGNORE INTO library_pages (tenant_id, book_id, page_no) SELECT ?, ?, ? WHERE ${job.live}`,
+                ).bind(p.tenantId, p.bookId, pdf.first_page_no + i, ...job.scope),
+              ),
+            );
+          }
+          await this.env.DB.prepare(
+            `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
+          )
+            .bind(next - 1, ...job.scope, ...job.scope)
+            .run();
+          await job.progress(0, next - 1);
+          return plans;
+        });
+        const ocr = ocrProvider(providerConfig(this.env));
+        for (const pdf of pdfs) {
+          const ranges = await step.do(`ranges-${pdf.id}`, async () => {
+            await job.guard();
+            const rows = await this.env.DB.prepare(
+              "SELECT page_no FROM library_pages WHERE tenant_id = ? AND book_id = ? AND ocr_status = 'succeeded'",
+            )
+              .bind(p.tenantId, p.bookId)
+              .all<{ page_no: number }>();
+            const done = new Set(rows.results.map((row) => row.page_no)),
+              ranges: [number, number][] = [];
+            for (let from = 1; from <= pdf.page_count; from += 20) {
+              const to = Math.min(from + 19, pdf.page_count);
+              if (
+                Array.from(
+                  { length: to - from + 1 },
+                  (_, i) => pdf.first_page_no + from + i - 1,
+                ).some((n) => !done.has(n))
+              )
+                ranges.push([from, to]);
+            }
+            return ranges;
+          });
+          if (ranges.length) {
+            const file = await step.do(`upload-${pdf.id}`, RETRY, async () => {
+              await job.guard();
+              return ocr.upload(pdf.r2_key, pdf.size_bytes, pdf.file_name);
+            });
+            for (const [from, to] of ranges)
+              await step.do(`ocr-${pdf.id}-${from}`, RETRY, async () => {
+                await job.guard();
+                const result = await ocr.read(file, from, to);
+                await job.usage(ocr.model, result.usage);
+                const pages = parseOcrResponse(result.text, from, to);
+                await this.env.DB.batch(
+                  pages.map((raw) => {
+                    const pageNo = pdf.first_page_no + raw.page - 1,
+                      page = normalizeOcrPage(pageNo, raw);
+                    return this.env.DB.prepare(
+                      `UPDATE library_pages SET ocr_status = 'succeeded', ocr_markdown = ?, ocr_figures = ? WHERE tenant_id = ? AND book_id = ? AND page_no = ? AND ${job.live}`,
+                    ).bind(
+                      page.markdown,
+                      JSON.stringify(page.figures),
+                      p.tenantId,
+                      p.bookId,
+                      pageNo,
+                      ...job.scope,
+                    );
+                  }),
+                );
+                const count = await this.env.DB.prepare(
+                  "SELECT count(*) AS count FROM library_pages WHERE tenant_id = ? AND book_id = ? AND ocr_status = 'succeeded'",
+                )
+                  .bind(p.tenantId, p.bookId)
+                  .first<{ count: number }>();
+                const total = pdfs.reduce((n, pdf) => n + pdf.page_count, 0);
+                await job.progress(count?.count ?? 0, total);
+              });
+            await step.do(`remove-${pdf.id}`, () => ocr.remove(file));
+          }
+          const pages = await step.do(`figure-pages-${pdf.id}`, async () => {
+            await job.guard();
+            return (
+              await this.env.DB.prepare(
+                "SELECT page_no, ocr_figures FROM library_pages WHERE tenant_id = ? AND book_id = ? AND page_no BETWEEN ? AND ? AND image_r2_key IS NULL AND ocr_figures <> '[]'",
+              )
+                .bind(
+                  p.tenantId,
+                  p.bookId,
+                  pdf.first_page_no,
+                  pdf.first_page_no + pdf.page_count - 1,
+                )
+                .all<{ page_no: number; ocr_figures: string }>()
+            ).results;
+          });
+          for (const page of pages)
+            await step.do(`figures-${pdf.id}-${page.page_no}`, RETRY, async () => {
+              await job.guard();
+              const object = await this.env.BUCKET.get(pdf.r2_key);
+              if (!object) throw new NonRetryableError("PDFがありません");
+              const doc = await loadPdf(new Uint8Array(await object.arrayBuffer()));
+              const result = await extractFigures(
+                doc,
+                page.page_no - pdf.first_page_no,
+                JSON.parse(page.ocr_figures) as FigureSpec[],
+              );
+              for (const figure of result.figures) {
+                const key = `${generationPrefix(p)}images/${figure.fileName}`;
+                await job.guard();
+                await this.env.BUCKET.put(key, figure.webp, {
+                  httpMetadata: { contentType: "image/webp" },
+                });
+                await this.env.DB.prepare(
+                  `INSERT INTO library_figures (id, tenant_id, book_id, file_name, page_no, caption, r2_key, width, height) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live} ON CONFLICT (tenant_id, book_id, file_name) DO UPDATE SET r2_key = excluded.r2_key, width = excluded.width, height = excluded.height, caption = excluded.caption`,
+                )
+                  .bind(
+                    crypto.randomUUID(),
+                    p.tenantId,
+                    p.bookId,
+                    figure.fileName,
+                    page.page_no,
+                    figure.caption,
+                    key,
+                    figure.width,
+                    figure.height,
+                    ...job.scope,
+                  )
+                  .run();
+              }
+              const key = `${generationPrefix(p)}pages/${page.page_no}.webp`;
+              await job.guard();
+              await this.env.BUCKET.put(key, result.pageWebp, {
+                httpMetadata: { contentType: "image/webp" },
+              });
+              await this.env.DB.prepare(
+                `UPDATE library_pages SET image_r2_key = ? WHERE tenant_id = ? AND book_id = ? AND page_no = ? AND ${job.live}`,
+              )
+                .bind(key, p.tenantId, p.bookId, page.page_no, ...job.scope)
+                .run();
+            });
+        }
+      }
+      await step.do("split", RETRY, async () => {
+        await job.guard();
+        const book = await this.env.DB.prepare(
+          "SELECT title FROM library_books WHERE tenant_id = ? AND id = ?",
+        )
+          .bind(p.tenantId, p.bookId)
+          .first<{ title: string }>();
+        if (!book) throw new NonRetryableError("本がありません");
+        const existing = await this.env.DB.prepare(
+          "SELECT count(*) AS count FROM library_chapters WHERE tenant_id = ? AND book_id = ?",
+        )
+          .bind(p.tenantId, p.bookId)
+          .first<{ count: number }>();
+        if (existing?.count) return; // Never erase personal records in a foundational re-split.
+        const rows = await this.env.DB.prepare(
+          "SELECT page_no, ocr_markdown FROM library_pages WHERE tenant_id = ? AND book_id = ? ORDER BY page_no",
+        )
+          .bind(p.tenantId, p.bookId)
+          .all<{ page_no: number; ocr_markdown: string | null }>();
+        const chapters = splitIntoChapters(
+          rows.results.map((row) => ({ pageNo: row.page_no, markdown: row.ocr_markdown ?? "" })),
+          book.title,
+        );
+        if (!chapters.length) throw new NonRetryableError("章がありません");
+        const now = Date.now();
+        const prepared = await Promise.all(
+          chapters.map(async (chapter, position) => ({
+            ...chapter,
+            id: crypto.randomUUID(),
+            position: position + 1,
+            hash: await speechHash(chapter.markdown),
+          })),
+        );
+        await this.env.DB.batch(
+          prepared.flatMap((chapter) => [
+            this.env.DB.prepare(
+              `INSERT INTO library_chapters (id, tenant_id, book_id, position, title, markdown, speech_hash, start_page, end_page, updated_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${job.live}`,
+            ).bind(
+              chapter.id,
+              p.tenantId,
+              p.bookId,
+              chapter.position,
+              chapter.title,
+              chapter.markdown,
+              chapter.hash,
+              chapter.startPage,
+              chapter.endPage,
+              now,
+              ...job.scope,
+            ),
+            this.env.DB.prepare(
+              `INSERT INTO library_chapter_revisions (id, tenant_id, book_id, chapter_id, revision, markdown, speech_hash, created_at) SELECT ?, ?, ?, ?, 1, ?, ?, ? WHERE ${job.live}`,
+            ).bind(
+              crypto.randomUUID(),
+              p.tenantId,
+              p.bookId,
+              chapter.id,
+              chapter.markdown,
+              chapter.hash,
+              now,
+              ...job.scope,
+            ),
+          ]),
+        );
+      });
+      await step.do("finish", async () => {
+        await job.guard();
+        await job.finish();
+        await this.env.DB.prepare(
+          `UPDATE library_books SET status = 'ready', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
+        )
+          .bind(Date.now(), ...job.scope, ...job.scope)
+          .run();
+      });
+    } catch {
+      await step.do("fail", async () => {
+        await job.fail();
+        await this.env.DB.prepare(
+          `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
+        )
+          .bind(Date.now(), ...job.scope, ...job.scope)
+          .run();
+      });
+    }
+  }
+}

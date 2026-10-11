@@ -1,0 +1,32 @@
+{
+  "name": "@stella/book-core",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./chapters": "./src/chapters.ts",
+    "./speech": "./src/speech.ts",
+    "./ocr": "./src/ocr.ts",
+    "./util": "./src/util.ts",
+    "./mp3": "./src/mp3.ts",
+    "./pdf": "./src/pdf.ts",
+    "./providers": "./src/providers.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@hyzyla/pdfium": "^2.1.13",
+    "@jsquash/webp": "^1.5.0",
+    "pdf-lib": "^1.17.1",
+    "mdast-util-from-markdown": "2.0.3",
+    "mdast-util-gfm": "^3.1.0",
+    "micromark-extension-gfm": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@cloudflare/workers-types": "^5.20261001.1",
+    "typescript": "^7.0.2"
+  }
+}

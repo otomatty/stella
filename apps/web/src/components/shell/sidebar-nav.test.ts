@@ -93,7 +93,7 @@ describe("navForRole", () => {
     }
   });
 
-  it("営業はダッシュボードと面談対策だけを出す", () => {
-    expect(ids("sales", "sales")).toEqual(["dash", "interview-prep"]);
+  it("営業にも本人の本棚を出す", () => {
+    expect(ids("sales", "sales")).toEqual(["dash", "interview-prep", "library"]);
   });
 });

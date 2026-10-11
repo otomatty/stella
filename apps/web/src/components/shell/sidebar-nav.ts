@@ -34,6 +34,7 @@ import type { ProfileRole } from "@stella/shared/cms/types";
 type LucideIcon = ComponentType<LucideProps>;
 
 export type NavId =
+  | "library"
   | "dash"
   | "stages"
   | "skill-tree"
@@ -79,6 +80,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "cert", label: "修了証", icon: Award },
+    { id: "library", label: "個人の本棚", icon: Book },
     HALL_OF_FAME_NAV,
   ],
   instructor: [
@@ -90,6 +92,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "stages", label: "ステージ", icon: Book },
+    { id: "library", label: "個人の本棚", icon: Book },
     HALL_OF_FAME_NAV,
   ],
   admin: [
@@ -106,12 +109,14 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
+    { id: "library", label: "個人の本棚", icon: Book },
     // 管理者の「殿堂」は運用画面 (推薦 / 公開)。 掲載そのものは運用画面から見に行ける。
     { id: "hall-of-fame-admin", label: "殿堂", icon: Star },
   ],
   sales: [
     { id: "dash", label: "ダッシュボード", icon: Home },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
+    { id: "library", label: "個人の本棚", icon: Book },
   ],
 };
 
