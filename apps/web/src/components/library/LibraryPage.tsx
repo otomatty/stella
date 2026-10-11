@@ -69,6 +69,7 @@ function LibraryShelf() {
   const [offset, setOffset] = useState(0);
   const [editor, setEditor] = useState<LibraryShelfEntry | "new" | null>(null);
   const [deleting, setDeleting] = useState<LibraryShelfEntry | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -114,14 +115,14 @@ function LibraryShelf() {
   async function deleteBook() {
     if (!deleting) return;
     setBusy(true);
-    setError(null);
+    setDeleteError(null);
     try {
       await apiFetch(`/api/library/books/${deleting.book.id}`, { method: "DELETE" });
       setDeleting(null);
       setOffset(0);
       refresh();
     } catch (error) {
-      setError(message(error));
+      setDeleteError(message(error));
     } finally {
       setBusy(false);
     }
@@ -266,7 +267,10 @@ function LibraryShelf() {
       <Dialog
         open={deleting !== null}
         onOpenChange={(open) => {
-          if (!open && !busy) setDeleting(null);
+          if (!open && !busy) {
+            setDeleting(null);
+            setDeleteError(null);
+          }
         }}
       >
         <DialogContent>
@@ -276,8 +280,19 @@ function LibraryShelf() {
               「{deleting?.book.title}」と、この本に紐付く自分の記録を削除します。
             </DialogDescription>
           </DialogHeader>
+          {deleteError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {deleteError}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-2">
-            <Button disabled={busy} onClick={() => setDeleting(null)}>
+            <Button
+              disabled={busy}
+              onClick={() => {
+                setDeleting(null);
+                setDeleteError(null);
+              }}
+            >
               キャンセル
             </Button>
             <Button variant="destructive" disabled={busy} onClick={() => void deleteBook()}>

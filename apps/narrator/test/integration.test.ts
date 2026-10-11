@@ -381,6 +381,62 @@ describe("internal processing foundation", () => {
         }
       }
   });
+  it("cancels an unconsumed audio stream when the put guard rejects", async () => {
+    const id = await createBook("Stream cancellation");
+    const p = { tenantId: "a", bookId: id, jobId: crypto.randomUUID(), generation: 1 };
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,status,created_at) VALUES (?,'a',?,1,'split','owner','running',1)",
+      )
+      .bind(p.jobId, id)
+      .run();
+    await reserve(p);
+    try {
+      const response = await mf.dispatchFetch("http://localhost/p0/stream-race", {
+        method: "POST",
+        body: JSON.stringify(p),
+        signal: AbortSignal.timeout(5000),
+      });
+      expect(await response.json()).toEqual({ rejected: true });
+      expect(
+        await db.prepare("SELECT status FROM library_jobs WHERE id = ?").bind(p.jobId).first(),
+      ).toMatchObject({ status: "failed" });
+      expect(await bucket.get(`library/a/${id}/g1/stream.mp3`)).toBeNull();
+    } finally {
+      await db.prepare("UPDATE profiles SET disabled = 0 WHERE id = 'owner'").run();
+    }
+  });
+  it("cleans new deletions ahead of historical tombstones and backs off rechecks", async () => {
+    const day = 24 * 60 * 60 * 1000,
+      now = Date.now();
+    await db
+      .prepare(
+        "WITH RECURSIVE rows(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM rows WHERE n<500) INSERT INTO library_r2_deletions (prefix,tenant_id,book_id,created_at,not_before) SELECT 'library/a/retired-' || n || '/', 'a', 'retired-' || n, ?, 0 FROM rows",
+      )
+      .bind(now - 31 * day)
+      .run();
+    const id = await createBook("Priority cleanup");
+    const key = `library/a/${id}/original.pdf`;
+    await bucket.put(key, new Uint8Array([1]));
+    await request(`books/${id}`, "owner", "DELETE");
+    await db
+      .prepare("UPDATE library_r2_deletions SET not_before = ? WHERE book_id = ?")
+      .bind(now - 1, id)
+      .run();
+    try {
+      await mf.dispatchFetch("http://localhost/p0/cleanup", { method: "POST" });
+      expect(await bucket.get(key)).toBeNull();
+      expect(
+        await db.prepare("SELECT id FROM library_books WHERE id = ?").bind(id).first(),
+      ).toBeNull();
+      const marker = await db
+        .prepare("SELECT not_before FROM library_r2_deletions WHERE book_id = 'retired-1'")
+        .first<{ not_before: number }>();
+      expect(marker?.not_before).toBeGreaterThan(now + 29 * day);
+    } finally {
+      await db.prepare("DELETE FROM library_r2_deletions WHERE book_id LIKE 'retired-%'").run();
+    }
+  });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");
     const pdf = await PDFDocument.create();

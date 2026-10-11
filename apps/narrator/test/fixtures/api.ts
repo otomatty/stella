@@ -7,9 +7,46 @@ import { cleanupDeletedBooks } from "../../src/cleanup.js";
 import { JobContext } from "../../src/context.js";
 import type { NarratorJobRequest } from "@stella/shared/library/types";
 import { releaseAudioClaim, type AudioTarget } from "../../src/audio-state.js";
+import { putWhileWriting } from "../../src/audio-stream.js";
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", libraryRoute);
 app.route("/p0/media", mediaSpike);
+app.post("/p0/stream-race", async (c) => {
+  if (!c.env.LIBRARY_BUCKET) return c.json({ error: "No bucket" }, 503);
+  const p = await c.req.json<NarratorJobRequest>();
+  const job = new JobContext(
+    {
+      ...c.env,
+      BUCKET: c.env.LIBRARY_BUCKET,
+      LIBRARY_PROCESSING_ENABLED: "1",
+      FAKE_PROVIDERS: "1",
+    },
+    p,
+    `${p.jobId}-1`,
+  );
+  await job.guard();
+  await c.env.DB.prepare("UPDATE profiles SET disabled = 1 WHERE id = 'owner'").run();
+  const { readable, writable } = new FixedLengthStream(3);
+  const writer = writable.getWriter();
+  const writing = (async () => {
+    try {
+      await writer.write(new Uint8Array([1, 2, 3]));
+      await writer.close();
+    } catch (error) {
+      await writer.abort(error);
+      throw error;
+    }
+  })();
+  try {
+    await putWhileWriting(writing, readable, () =>
+      job.put(`library/a/${p.bookId}/g1/stream.mp3`, readable),
+    );
+    return c.json({ rejected: false });
+  } catch {
+    await job.fail();
+    return c.json({ rejected: true });
+  }
+});
 app.post("/p0/release-audio-claim", async (c) => {
   const { claim, ...target } = await c.req.json<AudioTarget & { claim: string }>();
   await releaseAudioClaim(c.env.DB, target, claim);

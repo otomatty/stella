@@ -6,6 +6,7 @@ import { pcmToMp3 } from "@stella/book-core/mp3";
 import { ttsProvider } from "@stella/book-core/providers";
 import { JobContext, generationPrefix, providerConfig, RETRY } from "../context";
 import { releaseAudioClaim } from "../audio-state";
+import { putWhileWriting } from "../audio-stream";
 export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRequest> {
   async run(event: WorkflowEvent<NarratorJobRequest>, step: WorkflowStep): Promise<void> {
     const job = new JobContext(this.env, event.payload, event.instanceId),
@@ -90,11 +91,9 @@ export class AudioWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobRe
           }
         })();
         // Await both sides even on failure; otherwise a rejected writer/put can remain unhandled.
-        const results = await Promise.allSettled([
-          writing,
+        await putWhileWriting(writing, readable, () =>
           job.put(key, readable, { httpMetadata: { contentType: "audio/mpeg" } }),
-        ]);
-        for (const result of results) if (result.status === "rejected") throw result.reason;
+        );
       });
       await step.do("finish", async () => {
         if ((await job.authorize()).status === "succeeded") return;
