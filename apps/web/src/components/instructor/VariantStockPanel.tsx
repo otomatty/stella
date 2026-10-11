@@ -40,7 +40,8 @@ function LevelBadge({ level }: { level: VariantStockAlert["level"] }) {
 /**
  * コードの復習の類題の在庫 (#39、07 §7.3)。パターンごとに、教材にある類題の数・出題の記録がある
  * 受講者・まだ出していない類題がいちばん少ない人の残り・在庫切れで待っている受講者を出す。
- * 類題は教材リポジトリの `private/variants/` に人が書く (この画面からは足さない)。
+ * 類題は教材リポジトリの、親の課題の予備のフォルダーに人が書く (この画面からは足さない)。
+ * (Web のビルドは非公開の素材のパスを含むファイルを止めるので、ここにパスを書かない。)
  */
 export function VariantStockPanel() {
   const [patterns, setPatterns] = useState<VariantStockSummary[] | null>(null);
@@ -83,8 +84,8 @@ export function VariantStockPanel() {
           すべて ({rows.length})
         </Chip>
         <span className="text-[12px] text-ink-3 ml-2">
-          類題は教材リポジトリの課題の private/variants/
-          に書きます。足すと、在庫切れで待っている受講者には次に「今日の復習」を開いたときに出ます。
+          類題は教材リポジトリの、親の課題の予備のフォルダーに書きます (書き方は ADDING_COURSE.md
+          の「予備の類題」)。足すと、在庫切れで待っている受講者には次に「今日の復習」を開いたときに出ます。
         </span>
       </div>
       {error ? <p className="text-sm text-destructive mb-3">{error}</p> : null}

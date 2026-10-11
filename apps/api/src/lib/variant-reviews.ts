@@ -15,7 +15,8 @@
  * - どの読み書きも受講者のテナントと本人で絞る。
  */
 
-import { and, asc, eq, inArray, lt, ne } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lt, ne, notExists, notInArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import type { BatchItem } from "drizzle-orm/batch";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { toStudyDate } from "@stella/shared/study/activity";
@@ -474,8 +475,15 @@ export async function reopenVariantStatements(
   const rows = await rowsOf(db, scope);
   const review = rows.find((r) => r.variantTaskId === row.taskId && r.status === "passed");
   if (!review) return [];
-  const later = rows.filter((r) => r.pattern === review.pattern && r.step > review.step);
-  const pending = (r: ReviewRow) => r.status === "scheduled" || r.status === "out-of-stock";
+  const pending = ["scheduled", "out-of-stock"] as const;
+  const issuedLater = alias(variantReviews, "issued_later");
+  const laterOf = (table: typeof variantReviews | typeof issuedLater) =>
+    and(
+      eq(table.tenantId, scope.tenantId),
+      eq(table.userId, scope.userId),
+      eq(table.pattern, review.pattern),
+      gt(table.step, review.step),
+    );
   const statements: BatchItem<"sqlite">[] = [
     db
       .update(variantReviews)
@@ -487,21 +495,21 @@ export async function reopenVariantStatements(
         updatedAt: now,
       })
       .where(and(ownRow(scope, review.id), eq(variantReviews.status, "passed"))),
-  ];
-  if (later.length > 0 && later.every(pending))
-    statements.push(
-      db.delete(variantReviews).where(
-        and(
-          eq(variantReviews.tenantId, scope.tenantId),
-          eq(variantReviews.userId, scope.userId),
-          inArray(
-            variantReviews.id,
-            later.map((r) => r.id),
-          ),
-          inArray(variantReviews.status, ["scheduled", "out-of-stock"]),
+    // 読んだあとに別の要求が積んだ出題も消えるよう、ID ではなく条件で消す。次の類題をもう
+    // 出していれば (積んだ・在庫切れ以外の後の段がある)、後の段は 1 つも消さない。
+    db.delete(variantReviews).where(
+      and(
+        laterOf(variantReviews),
+        inArray(variantReviews.status, [...pending]),
+        notExists(
+          db
+            .select({ id: issuedLater.id })
+            .from(issuedLater)
+            .where(and(laterOf(issuedLater), notInArray(issuedLater.status, [...pending]))),
         ),
       ),
-    );
+    ),
+  ];
   return statements;
 }
 
@@ -556,10 +564,11 @@ export async function variantRetentionSkills(
  * 講師・管理者向け: パターンごとの類題の在庫と、在庫切れで待っている受講者 (#39)。
  * テナントの講座の課題があるパターンと、在庫切れの出題があるパターンを並べ、待っている
  * 受講者のいるパターンを先にする。出題の記録がある受講者ごとに、まだ出していない類題の数も
- * 数え、いちばん少ない人の残りを返す (在庫が近く尽きるかを見るため)。
+ * 数え、いちばん少ない人の残りを返す (在庫が近く尽きるかを見るため)。未見の残りは、その受講者に
+ * 出せる類題 (受講者が読めるステージのもの) だけで数える。
  */
 export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantStockSummary[]> {
-  const [taskRows, records, waiting] = await Promise.all([
+  const [taskRows, records, readable, waiting] = await Promise.all([
     db
       .select({
         id: tasks.id,
@@ -568,7 +577,9 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
         pattern: tasks.pattern,
         kind: tasks.kind,
         variantOf: tasks.variantOf,
+        stageId: stages.id,
         stageTitle: stages.title,
+        published: eq(stages.status, "published"),
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
@@ -585,6 +596,15 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
       })
       .from(variantReviews)
       .where(eq(variantReviews.tenantId, caller.tenantId)),
+    db
+      .select({ userId: enrollments.userId, stageId: enrollments.stageId })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.tenantId, caller.tenantId),
+          inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+        ),
+      ),
     db
       .select({
         userId: variantReviews.userId,
@@ -623,6 +643,15 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
   };
   // パターンごとの類題 (補習・確認用に分けた ID)。
   const variantsByPattern = new Map<string, { remedial: string[]; check: string[] }>();
+  // 受講者に出せる類題は、受講者が読めるステージ (公開中で、受講中か修了) のものだけ
+  // (`issueDue` が選ぶ在庫と同じ)。未見の残りもその範囲で数える。
+  const publishedStageOf = new Map<string, string>();
+  const readableStages = new Map<string, Set<string>>();
+  for (const e of readable) {
+    const stagesOfUser = readableStages.get(e.userId) ?? new Set<string>();
+    readableStages.set(e.userId, stagesOfUser);
+    stagesOfUser.add(e.stageId);
+  }
   for (const task of taskRows) {
     const s = summaryOf(task.pattern);
     if (!s.stageTitles.includes(task.stageTitle)) s.stageTitles.push(task.stageTitle);
@@ -630,6 +659,7 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
       s.practiceTitles.push(task.title);
       continue;
     }
+    if (task.published) publishedStageOf.set(task.id, task.stageId);
     const kind = task.kind as TaskKind;
     const ids = variantsByPattern.get(task.pattern) ?? { remedial: [], check: [] };
     variantsByPattern.set(task.pattern, ids);
@@ -651,10 +681,15 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
     const s = summaryOf(pattern);
     const ids = variantsByPattern.get(pattern) ?? { remedial: [], check: [] };
     s.learners = byUser.size;
-    for (const seen of byUser.values()) {
+    for (const [userId, seen] of byUser) {
+      const stagesOfUser = readableStages.get(userId);
+      const available = (id: string) => {
+        const stageId = publishedStageOf.get(id);
+        return stageId !== undefined && stagesOfUser?.has(stageId) === true && !seen.has(id);
+      };
       const unseen = {
-        remedial: ids.remedial.filter((id) => !seen.has(id)).length,
-        check: ids.check.filter((id) => !seen.has(id)).length,
+        remedial: ids.remedial.filter(available).length,
+        check: ids.check.filter(available).length,
       };
       s.fewestUnseen = s.fewestUnseen
         ? {

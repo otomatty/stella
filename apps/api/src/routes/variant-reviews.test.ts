@@ -29,7 +29,7 @@ import type { Caller } from "../lib/authz.js";
 import { loadLearningPace } from "../lib/learning-pace.js";
 import { taskCompletionCounts } from "../lib/task-completion.js";
 import { reviewTaskSubmission } from "../lib/task-submission.js";
-import { loadTodayVariant } from "../lib/variant-reviews.js";
+import { loadTodayVariant, reopenVariantStatements } from "../lib/variant-reviews.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { submissionsRoute } from "./submissions.js";
@@ -402,6 +402,43 @@ describe("類題の出題 (#39)", () => {
         waiting: [{ userId: "learner", name: "受講者", purpose: "remedial", dueOn: "2026-10-04" }],
       },
     ]);
+    // 受講者が読めないステージの同じパターンの類題は、在庫には数えるが未見の残りには数えない。
+    await db.batch([
+      db.insert(stages).values({
+        id: "stage2",
+        tenantId: "ses",
+        slug: "other-course",
+        title: "別の講座",
+        format: 2,
+        status: "published",
+        durationHours: 35,
+      }),
+      db.insert(sections).values({ id: "unit2", stageId: "stage2", title: "別の単元" }),
+    ]);
+    const fixture = await submissionFixture({ id: "other/u/v-elsewhere", kind: "independent" });
+    await db.insert(tasks).values({
+      id: "other/u/v-elsewhere",
+      sectionId: "unit2",
+      title: "別の講座の類題",
+      kind: "independent",
+      pattern: "page",
+      skills: { uses: [], assesses: ["html"] },
+      estimatedMinutes: 30,
+      order: 0,
+      contentHash: fixture.bundle.contentHash,
+      definition: DEFINITION,
+      bundle: JSON.stringify(fixture.bundle),
+      variantOf: "other/u/parent",
+    });
+    const [elsewhere] = (
+      await json<{ patterns: VariantStockSummary[] }>(
+        await get("/api/variant-reviews/stock", "teacher"),
+      )
+    ).patterns;
+    expect(elsewhere).toMatchObject({
+      stock: { remedial: 2, check: 4 },
+      fewestUnseen: { remedial: 0, check: 3 },
+    });
     // 受講者は在庫の一覧を読めない。
     expect((await get("/api/variant-reviews/stock")).status).toBe(403);
     // 在庫を足すと、次に開いたときに出す。
@@ -803,6 +840,30 @@ describe("類題の出題 (#39)", () => {
     const [passed, next] = await pageRows();
     expect(passed).toMatchObject({ status: "passed", passedAt: noonOf("2026-10-05") });
     expect(next).toMatchObject({ purpose: "week1", status: "scheduled", dueOn: "2026-10-09" });
+  });
+
+  it("合格を戻す判定は、読んだあとに別の要求が積んだ次の出題も取り消す", async () => {
+    await recordPass("learner", PARENT, noonOf("2026-10-01"), false);
+    const taskId = (await loadTodayVariant(db, caller("learner"), noonOf("2026-10-04")))?.taskId;
+    await recordPass("learner", taskId ?? "", noonOf("2026-10-05"), false);
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-05"));
+    // 次の出題を積む前の記録で、戻す文を作る。
+    await db.delete(variantReviews).where(eq(variantReviews.step, 2));
+    const statements = await reopenVariantStatements(
+      db,
+      { tenantId: "ses", studentId: "learner", taskId: taskId ?? "" },
+      noonOf("2026-10-06"),
+    );
+    // そのあとに、今日の類題を開いた別の要求が次の出題を積んだ。
+    await loadTodayVariant(db, caller("learner"), noonOf("2026-10-06"));
+    expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([
+      ["day3", "passed"],
+      ["week1", "scheduled"],
+    ]);
+    const [first, ...rest] = statements;
+    if (!first) throw new Error("戻す文がありません");
+    await db.batch([first, ...rest]);
+    expect((await pageRows()).map((r) => [r.purpose, r.status])).toEqual([["day3", "issued"]]);
   });
 
   it("合格を取り消しても、もう出した次の類題は残す", async () => {
