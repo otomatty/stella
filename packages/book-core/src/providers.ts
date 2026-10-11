@@ -294,8 +294,10 @@ function fakeTts(env: ProviderConfig): TtsProvider {
           throw new ProviderError("provider_error", "偽物のTTSの失敗");
         }
       }
-      // 1文字0.05秒の無音
-      const samples = Math.max(1, Math.floor(text.length * 0.05 * 24000));
+      // Default: 0.05 seconds per character. The test-only marker keeps large
+      // batching tests focused on orchestration instead of hours of silence.
+      const fast = await env.BUCKET.get("_fake/tts-fast.json");
+      const samples = fast ? 2400 : Math.max(1, Math.floor(text.length * 0.05 * 24000));
       return {
         pcm: new Uint8Array(samples * 2),
         sampleRate: 24000,

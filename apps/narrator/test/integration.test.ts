@@ -444,7 +444,7 @@ describe("internal processing foundation", () => {
     const hash = await speechHash(markdown);
     await db
       .prepare(
-        "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,markdown,speech_hash,created_at,updated_at) VALUES (?,'a',?,1,'Audio',?,?,1,1)",
+        "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,markdown,speech_hash,start_page,end_page,updated_at) VALUES (?,'a',?,1,'Audio',?,?,1,1,1)",
       )
       .bind(chapterId, id, markdown, hash)
       .run();
@@ -461,8 +461,13 @@ describe("internal processing foundation", () => {
       )
       .bind(p.jobId, id, chapterId)
       .run();
-    await dispatch(p);
-    await waitJob(p.jobId);
+    await bucket.put("_fake/tts-fast.json", "{}");
+    try {
+      await dispatch(p);
+      await waitJob(p.jobId);
+    } finally {
+      await bucket.delete("_fake/tts-fast.json");
+    }
     expect(
       await db
         .prepare("SELECT status,progress_current,progress_total FROM library_jobs WHERE id = ?")
@@ -475,9 +480,13 @@ describe("internal processing foundation", () => {
       .first<{ status: string; r2_key: string; size_bytes: number }>();
     expect(audio?.status).toBe("ready");
     expect((await bucket.get(audio?.r2_key ?? ""))?.size).toBe(audio?.size_bytes);
-    expect((await bucket.list({ prefix: `library/a/${id}/g1/audio/tmp/` })).objects).toHaveLength(
-      0,
-    );
+    const prefix = `library/a/${id}/g1/audio/tmp/`;
+    // Job success is persisted before the following Workflow cleanup step.
+    for (let n = 0; n < 100; n++) {
+      if (!(await bucket.list({ prefix })).objects.length) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    expect((await bucket.list({ prefix })).objects).toHaveLength(0);
   });
   it("numbers and saves a 1000-page book across bounded Workflow steps", async () => {
     const id = await createBook("Large book");
