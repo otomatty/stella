@@ -1,9 +1,9 @@
 /**
  * 「設定」— 全ロール共通のユーザー設定画面。
  *
- * ユーザー名 (profiles.display_name) の変更ができる。 ユーザー名は登録 (初回 Google ログイン)
- * 時に Google アカウントの氏名から自動で入るため、 ここは「上書きしたい人だけが使う」画面。
- * 一度保存すると name_source='user' になり、 以後の Google ログインでは上書きされない。
+ * ユーザー名 (profiles.display_name) の変更ができる。 招待時はメールアドレスの @ より前が入る
+ * (ログインは Clerk で、アプリは氏名を受け取らない) ので、 ここで本人が直す。
+ * 一度保存すると name_source='user' になる。
  *
  * メール / ロール / 所属テナントは招待とログインが真実なので読み取り専用で見せる。
  * テナント管理者にはテナント設定 (テストモード) も同じ画面に並べる。
@@ -149,9 +149,6 @@ const AccountCard = ({
               {tenantName}
               {profile ? ` ・ ${ROLE_LABELS[profile.role] ?? profile.role}` : ""}
             </div>
-            <div className="text-[11.5px] text-ink-4">
-              プロフィール画像は Google アカウントのものを使用します。
-            </div>
           </div>
         </div>
 
@@ -169,8 +166,8 @@ const AccountCard = ({
             }}
           />
           <p className="mt-1.5 text-[11.5px] text-ink-3 leading-relaxed">
-            登録時に Google アカウントの名前が自動で設定されます。 ここで変更すると、 以降の Google
-            ログインでは上書きされません。 ステージ内の投稿者名や修了証にも使われます。
+            招待時はメールアドレスの @ より前が設定されています。 ステージ内の投稿者名や修了証にも
+            使われるので、 必要に応じて変更してください。
           </p>
         </div>
 

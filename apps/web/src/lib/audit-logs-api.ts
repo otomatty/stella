@@ -72,7 +72,8 @@ export async function listAllAuditLogs(
 ): Promise<AuditLogRow[]> {
   const all: AuditLogRow[] = [];
   for (let offset = 0; ; offset += EXPORT_PAGE_SIZE) {
-    const qs = buildQuery(opts, EXPORT_PAGE_SIZE, offset);
+    // 書き出しの先頭ページだと伝える (持ち出しの検知 bulk_export の材料になる)。
+    const qs = `${buildQuery(opts, EXPORT_PAGE_SIZE, offset)}${offset === 0 ? "&export=1" : ""}`;
     const { rows } = await apiFetch<{ rows: AuditLogRow[] }>(`/api/audit-logs?${qs}`);
     const page = rows ?? [];
     all.push(...page);

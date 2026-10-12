@@ -38,8 +38,9 @@ export async function fetchReport(
   limit = REPORT_PREVIEW_LIMIT,
   offset = 0,
   signal?: AbortSignal,
+  options: { export?: boolean } = {},
 ): Promise<ReportResult> {
-  const qs = buildQuery(period, limit, offset);
+  const qs = `${buildQuery(period, limit, offset)}${options.export ? "&export=1" : ""}`;
   const { report } = await apiFetch<{ report: ReportResult }>(
     `/api/reports/${type}?${qs}`,
     signal ? { signal } : {},
@@ -57,7 +58,10 @@ export async function fetchAllReportRows(
 ): Promise<ReportRow[]> {
   const all: ReportRow[] = [];
   for (let offset = 0; ; offset += EXPORT_PAGE_SIZE) {
-    const report = await fetchReport(type, period, EXPORT_PAGE_SIZE, offset);
+    // CSV の書き出しの先頭ページだけを書き出しとして記録させる (プレビューは数えない)。
+    const report = await fetchReport(type, period, EXPORT_PAGE_SIZE, offset, undefined, {
+      export: offset === 0,
+    });
     all.push(...report.rows);
     if (report.rows.length < EXPORT_PAGE_SIZE || all.length >= report.total) break;
   }

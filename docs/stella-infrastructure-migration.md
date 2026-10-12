@@ -4,6 +4,13 @@
 この文書とコードのマージだけでは、Cloudflare 上のデータや secrets は移らない。
 以下の準備とメンテナンスを終えてから main にマージし、GitHub Actions でデプロイする。
 
+> **認証はその後 Clerk (講師・管理者用の入口は Cloudflare Access も) へ移った** ([`docs/clerk-auth.md`](clerk-auth.md))。
+> 下の手順にある Google OAuth・`AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`・JWT の失効は Phase C 当時の構成の記録。
+> いま同じ移行をするなら、secret の代わりに Clerk のアプリケーション (Secret `CLERK_SECRET_KEY`)、講師・管理者用の入口の
+> Access のアプリケーションと GitHub Variables (`VITE_CLERK_PUBLISHABLE_KEY` / `VITE_STAFF_ORIGIN` /
+> `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`) を用意し、`VITE_SERVER_URL` は Web のオリジンにする
+> (API の Worker は公開 URL を持たず、Web の Worker が `/api/*` を中継する)。
+
 ## 変更するもの
 
 | 対象 | 移行元 | 移行先 |
@@ -47,9 +54,10 @@ CORS から外すだけでは VS Code や直接の HTTP アクセスを止めら
 5. `stella-ai` を作成し、旧 Gateway の認証、プロバイダ鍵、Unified Billing、ログ・キャッシュ・レート制限設定を確認して移す。
    Gateway ID を変えるだけでは設定・過去ログは移らない。既存のランタイム用トークンが新 Gateway でも使えるか確認する。
    [Gateway authentication](https://developers.cloudflare.com/ai-gateway/configuration/authentication/)
-6. 新 API Worker に `AUTH_JWT_SECRET`、`GOOGLE_CLIENT_SECRET`、利用中の `ANTHROPIC_API_KEY`、
-   `AI_GATEWAY_CF_API_TOKEN`、`WORKERS_AI_API_TOKEN` を同じ名前で登録する。
-   署名鍵を維持しても issuer / audience の検証で旧 JWT は失効する。`DEV_MODE` は設定しない。
+6. 新 API Worker に利用中の `ANTHROPIC_API_KEY`、`AI_GATEWAY_CF_API_TOKEN`、`WORKERS_AI_API_TOKEN` と、
+   必要なら `CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL` を同じ名前で登録する。
+   (当時は `AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET` も登録した。いまの構成では使わない。)
+   `DEV_MODE` と `DEV_AUTH_JWT_SECRET` は設定しない。
 7. Google Cloud Console に新 Web の JavaScript origin と新 API の callback を追加する。
    callback は `https://stella-api.a-sugai.workers.dev/api/auth/google/callback`。
    ローカルの `http://127.0.0.1:8787/api/auth/google/callback` は維持する。
@@ -160,7 +168,8 @@ S3 ツールが metadata キーの大文字小文字を変えた場合も不一�
 
 再開後は旧 DB / R2 に単純に戻さない。新環境を停止して差分を保全し、移行後の進捗・提出・添付を含む
 データ復旧計画を決める。利用者には再停止と再ログインの要否を告知する。
-旧 JWT を復活させないため、旧環境へ復旧する際も `AUTH_JWT_SECRET` を新しい値に更新して全員を再認証する。
+当時は旧 JWT を復活させないため、旧環境へ復旧する際に `AUTH_JWT_SECRET` を新しい値に更新して全員を再認証した。
+いまの構成では、セッションの失効は Clerk (講師・管理者は Access も) で行う (`/admin/security` のセッション失効、または Clerk・Zero Trust の画面)。
 
 ## ローカル開発
 

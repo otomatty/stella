@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:narrator |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → web build → Clerk の secret を API へ → deploy:api → deploy:web (受講者用 + 講師・管理者用) →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:narrator |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -106,39 +106,48 @@ Settings → Secrets and variables → Actions で設定する。
 |------|------|
 | `CLOUDFLARE_API_TOKEN` | Wrangler デプロイ/マイグレーション認証。権限は Workers Scripts Edit / D1 Edit / Account 読み取り（最小権限） |
 | `CLOUDFLARE_ACCOUNT_ID` | 対象アカウント ID |
+| `CLERK_SECRET_KEY` | Clerk の Secret key (`sk_test_` / `sk_live_`。Publishable key と同じ環境)。`deploy:prepare` が形を確かめ、deploy が `wrangler secret put` で API の secret に入れる |
 
 **Variables（Repository variables）**
 
 | 名前 | 用途 |
 |------|------|
-| `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL |
+| `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL。API は Web の Worker が中継するので **Web のオリジン** (`https://stella-web.saedgewell.workers.dev`) |
 | `VITE_MATERIALS_BASE_URL` | Web ビルド時に焼き込む教材配信ベース URL |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk の Publishable key (`pk_test_` / `pk_live_`)。Web ビルド時に焼き込む |
+| `VITE_STAFF_ORIGIN` | 講師・管理者用の入口のオリジン (`https://stella-admin.saedgewell.workers.dev`)。Web ビルド時に焼き込み、`deploy:prepare` が API の `[vars]` の `STAFF_ORIGIN` にも書く |
+| `ACCESS_TEAM_DOMAIN` | 講師・管理者用の入口を守る Cloudflare Access のチームドメイン (`<team>.cloudflareaccess.com`)。`deploy:prepare` が API の `[vars]` に書く |
+| `ACCESS_AUD` | Access アプリケーションの AUD Tag (64 桁の 16 進。複数はカンマ区切り)。同上 |
+
+Clerk・Access の設定と任意の API secret (`CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL`) は
+[`docs/clerk-auth.md`](clerk-auth.md) を参照。
 
 ## Phase C の初回切替とデプロイ前処理
 
 初回のマージは [インフラ移行手順](stella-infrastructure-migration.md) に従い、
 メンテナンス告知・旧環境の書き込み停止・D1/R2 の復元・新 Worker の secrets 設定を済ませてから行う。
-この変更で既存 JWT は全失効する。通常運用の途中にマージしない。
+この変更で既存のセッションは全失効する。通常運用の途中にマージしない。
 
 `deploy:prepare` は最初のリモート処理として `stella-db` を Cloudflare API で検索し、
 checkout 内の `apps/api/wrangler.toml` の `database_id` を実 ID に置換する。
 教材指紋・seed・migration・API デプロイはすべてこの実 ID を使う。
 Git に記録したゼロ UUID はローカル開発専用。実 ID の自動作成・旧 DB へのフォールバックは行わない。
-DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と一致しない、
-教材 URL が未設定の場合は、教材アップロード前にジョブを停止する。
+あわせて Clerk の鍵 (`VITE_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`)・`VITE_STAFF_ORIGIN`・`ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` の形を確かめ、`STAFF_ORIGIN` と Access の値を API の `wrangler.toml` の `[vars]` に書く。
+DB が無い、アカウントが違う、`VITE_SERVER_URL` が Web のオリジン (`https://stella-web.saedgewell.workers.dev`) と一致しない、
+教材 URL が未設定、Clerk・Access の Variables / Secret が無い・形が違う場合は、教材アップロード前 (Cloudflare に何も書かないうち) にジョブを停止する。
 この処理は DB の復元完了や R2 コピーの内容までは保証しない。移行担当者が手順書で照合する。
 
-Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
+## Clerk への切り替え
 
-- **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
-- **Authorized redirect URIs**: `https://stella-api.saedgewell.workers.dev/api/auth/google/callback`
-
-Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
-Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。
+認証は Google OAuth + アプリ発行の JWT から Cloudflare Access へ、さらに Clerk (講師・管理者用の入口は Access も) へ移った。
+Google Cloud Console の OAuth クライアントはもう使わない (切り替えが済んだら削除する)。Clerk のアプリケーション・
+Variables / Secret を先に用意してからマージし、初回のデプロイで出来た `stella-admin` に Access を掛け、
+新しい版の VS Code 拡張を配る。順番と確認項目は [`docs/clerk-auth.md`](clerk-auth.md) の「切り替えの順番」に従う。
+Access のトークンや旧 JWT は受講者の入口では使えなくなるので、切り替えの時点で全員が Clerk でログインし直し、VS Code も接続し直す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列（教材の変更判定 → 画像 → PDF → migrate → api → seed → 指紋の記録 → web）で、api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列（教材の変更判定 → 画像 → PDF → migrate → api → web (受講者用 → 講師・管理者用) → seed → 指紋の記録 → narrator）で、api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
@@ -147,12 +156,12 @@ Google に登録する URI ではない。切替後は旧オリジンと旧 API 
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`
-  - Web: `bun run deploy:web`
+  - Web: `bun run deploy:web`（講師・管理者用の入口は続けて `bun run --filter=@stella/web deploy:admin`）
   - migrate: `bun run db:migrate:remote`
   - seed: `bun run db:seed:remote:content`
   - 教材画像: `bun run content:upload:remote`（サムネイルだけなら `content:upload:thumbnails:remote`）
   - 教材の指紋を消す: `bun run content:state:reset:remote`（次のデプロイが教材パイプラインをフルで流す）
-  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
+  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
 
 ## 検査の内訳（`verify` ジョブ）
 

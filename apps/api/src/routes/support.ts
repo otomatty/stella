@@ -11,15 +11,46 @@
  * 見えてしまうため。 閲覧は運用者が D1 を直接参照する。
  */
 
-import { Hono } from "hono";
+import { and, eq, sql } from "drizzle-orm";
+import { Hono, type Context } from "hono";
 
 import { getDb } from "../db/client.js";
-import { supportInquiries } from "../db/schema.js";
+import { profiles, supportInquiries } from "../db/schema.js";
 import { errorResponse, getCaller, ApiError } from "../lib/authz.js";
+import { clerkConfig, verifyClerkSession } from "../lib/clerk-auth.js";
 import { enforceSupportRateLimit } from "../lib/rate-limit.js";
 import type { Env } from "../env.js";
 
 export const supportRoute = new Hono<{ Bindings: Env }>();
+
+/**
+ * ログイン中の利用者の ID (任意・ベストエフォート。分からなければ null)。
+ * 問い合わせは未ログインでも送れるので、Clerk のセッショントークンがあれば検証してメールアドレスから
+ * 利用者を引く (問い合わせを利用者に結び付けるだけで、権限の判断には使わない)。
+ */
+async function supportUserId(c: Context<{ Bindings: Env }>): Promise<string | null> {
+  const token = (c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const clerk = clerkConfig(c.env);
+  if (clerk) {
+    try {
+      const { email } = await verifyClerkSession(clerk, token);
+      const [row] = await getDb(c.env)
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(and(eq(sql`lower(${profiles.email})`, email), eq(profiles.disabled, false)))
+        .limit(1);
+      return row?.id ?? null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return (await getCaller(c)).caller.id;
+  } catch {
+    return null;
+  }
+}
 
 const CATEGORIES = ["login", "account", "billing", "bug", "other"] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -63,15 +94,7 @@ supportRoute.post("/api/support", async (c) => {
     }
 
     // ログイン中なら user_id を記録する (任意・ベストエフォート)。
-    let userId: string | null = null;
-    if (c.req.header("Authorization")) {
-      try {
-        const { caller } = await getCaller(c);
-        userId = caller.id;
-      } catch {
-        userId = null;
-      }
-    }
+    const userId = await supportUserId(c);
 
     const db = getDb(c.env);
     const [row] = await db

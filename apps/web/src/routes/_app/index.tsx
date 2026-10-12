@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_app/")({
   validateSearch: (search: Record<string, unknown>): { cert?: string } =>
     typeof search.cert === "string" ? { cert: search.cert } : {},
   beforeLoad: ({ search }) => {
-    // 既発行の修了証URL /?cert=CODE の互換リダイレクト (Issue #26)
+    // 既発行の修了証URL /?cert=CODE の互換リダイレクト (Issue #26)。ログインの前に移す。
     if (search.cert) {
       throw redirect({ to: "/verify/$certCode", params: { certCode: search.cert } });
     }

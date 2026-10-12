@@ -159,7 +159,7 @@
           "type": "string",
           "default": "http://127.0.0.1:8787",
           "scope": "application",
-          "description": "STELLA の API のオリジン。ユーザー設定でだけ変えられる (開いたフォルダーの設定では変わらない)"
+          "description": "STELLA の API の宛先。ローカルは API (既定)、本番は受講者用の Web のオリジン。ユーザー設定でだけ変えられる (開いたフォルダーの設定では変わらない)"
         },
         "stella.webUrl": {
           "type": "string",

@@ -1102,7 +1102,7 @@ export async function mintInterviewPrepTestToken(userId: string): Promise<string
 
 export function createInterviewPrepTestEnv(overrides: Partial<Env> = {}): Env {
   return {
-    AUTH_JWT_SECRET: TEST_JWT_SECRET,
+    DEV_AUTH_JWT_SECRET: TEST_JWT_SECRET,
     ALLOWED_ORIGINS: "http://127.0.0.1:5173",
     DB: {} as D1Database,
     ...overrides,

@@ -33,7 +33,7 @@ beforeEach(() => {
   const bucket = {
     get: async (key: string) => ({ body: `pdf:${key}`, size: 4 + key.length }),
   } as unknown as R2Bucket;
-  env = { DB: db.binding, AUTH_JWT_SECRET: SECRET, MATERIALS_BUCKET: bucket } as Env;
+  env = { DB: db.binding, DEV_AUTH_JWT_SECRET: SECRET, MATERIALS_BUCKET: bucket } as Env;
   app = mountTestApp(env, materialsRoute).app;
 });
 afterEach(() => db.sqlite.close());

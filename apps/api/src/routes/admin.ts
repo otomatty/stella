@@ -27,7 +27,7 @@ import {
   type OrganizationRow,
 } from "@stella/shared/admin/types";
 import { Hono, type Context } from "hono";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import { authUsers, profiles, tenants } from "../db/schema.js";
 import {
@@ -41,6 +41,7 @@ import {
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import { revokeUserSessions, sessionRevokeConfigured } from "../lib/session-revoke.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
@@ -105,9 +106,14 @@ async function requireSameTenantTarget(
   db: Db,
   caller: Caller,
   targetId: string,
-): Promise<{ id: string; tenantId: string; role: string }> {
+): Promise<{ id: string; tenantId: string; role: string; email: string | null }> {
   const rows = await db
-    .select({ id: profiles.id, tenantId: profiles.tenantId, role: profiles.role })
+    .select({
+      id: profiles.id,
+      tenantId: profiles.tenantId,
+      role: profiles.role,
+      email: profiles.email,
+    })
     .from(profiles)
     .where(eq(profiles.id, targetId))
     .limit(1);
@@ -175,8 +181,9 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
     const existingRows = await db
       .select({ tenantId: profiles.tenantId, email: profiles.email })
       .from(profiles)
-      .where(inArray(profiles.email, emails));
-    const existingByEmail = new Map(existingRows.map((r) => [r.email, r]));
+      // 大文字小文字だけ違う既存の行も同じ人として扱う (ログインは小文字で照合する)。
+      .where(inArray(sql`lower(${profiles.email})`, emails));
+    const existingByEmail = new Map(existingRows.map((r) => [(r.email ?? "").toLowerCase(), r]));
 
     // 席数上限 (Issue #29): 新規招待が plan_seats を超える分はブロックする。
     const { planSeats, seatsUsed, testMode } = await getSeatUsage(db, caller.tenantId);
@@ -286,7 +293,7 @@ adminRoute.post("/api/admin/users/role", async (c) => {
       targetType: "user",
       targetId: userId,
       ip: clientIp(c),
-      metadata: { new_role: body.role },
+      metadata: { new_role: body.role, previous_role: target.role },
     });
     return c.json({ ok: true });
   } catch (err) {
@@ -311,14 +318,36 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
     rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
+    // 無効化したら Clerk (と講師・管理者は Access) のセッション・VS Code のキーも切る (アプリは次の
+    // リクエストで拒否するが、ログインを残さないため)。失敗しても無効化は通し、失敗したことを返す —
+    // 残ったセッションは有効化し直した時点で使えてしまうので、画面がセキュリティ画面での失効を促す。
+    let sessionsRevoked = false;
+    let revokeFailed = false;
+    if (body.disabled && target.email && sessionRevokeConfigured(c.env)) {
+      try {
+        const revoked = await revokeUserSessions(c.env, {
+          email: target.email,
+          role: target.role,
+        });
+        sessionsRevoked = revoked.clerk || revoked.access;
+      } catch (err) {
+        revokeFailed = true;
+        console.error("[admin] session revoke failed", err instanceof Error ? err.message : err);
+      }
+    }
     await recordAudit(db, caller, {
       action: body.disabled ? "user_disable" : "user_enable",
       targetType: "user",
       targetId: userId,
       ip: clientIp(c),
-      metadata: { disabled: body.disabled },
+      metadata: {
+        disabled: body.disabled,
+        ...(body.disabled
+          ? { sessions_revoked: sessionsRevoked, revoke_failed: revokeFailed }
+          : {}),
+      },
     });
-    return c.json({ ok: true });
+    return c.json({ ok: true, revoke_failed: revokeFailed });
   } catch (err) {
     return errorResponse(c, err);
   }

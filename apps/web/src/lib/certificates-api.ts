@@ -14,6 +14,7 @@ import type {
   IssuedCertificate,
 } from "@stella/shared/cms/types";
 import { apiFetch } from "@/lib/api-client";
+import { isClerkMode } from "@/lib/auth-client";
 import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 
 /**
@@ -76,8 +77,18 @@ export async function verifyCertificate(certCode: string): Promise<CertificateVe
   return verification ?? null;
 }
 
-/** 公開検証ページの共有 URL を組み立てる。 */
+/**
+ * 公開検証ページの共有 URL を組み立てる。受け取った人はログインせずに開ける。修了証の画面は
+ * 講師・管理者用の入口 (Cloudflare Access で守ったホスト名) で開くこともあるので、そこの URL を
+ * 外へ渡さないよう、受講者用の入口 (`VITE_SERVER_URL` と同じ Web のオリジン) で作る。
+ * ローカル開発 (開発用トークン) の `VITE_SERVER_URL` は API のオリジンなので使わず、いま開いている画面で作る。
+ */
 export function buildVerificationUrl(certCode: string): string {
-  if (typeof window === "undefined") return `?cert=${encodeURIComponent(certCode)}`;
-  return `${window.location.origin}/?cert=${encodeURIComponent(certCode)}`;
+  const path = `/verify/${encodeURIComponent(certCode)}`;
+  const publicOrigin = isClerkMode()
+    ? (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "")
+    : "";
+  if (/^https?:\/\//.test(publicOrigin)) return `${publicOrigin}${path}`;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
 }

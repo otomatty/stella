@@ -19,6 +19,25 @@ import {
 
 type SkillSheetApiModule = typeof import("./skill-sheet-api.js");
 
+/**
+ * ローカル開発の方式 (dev-token) で、端末に開発用トークンがある状態にする。
+ * 署名は API が確かめるので、ここでは読める JWT の形であればよい。
+ */
+function stubDevToken(sub: string): string {
+  vi.stubEnv("VITE_AUTH_MODE", "dev-token");
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const token = `header.${btoa(JSON.stringify({ sub, exp }))}.signature`;
+  const values = new Map([["stella_auth_token_v1", token]]);
+  vi.stubGlobal("window", {
+    localStorage: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    },
+  });
+  return token;
+}
+
 async function loadSkillSheetApi(): Promise<SkillSheetApiModule | null> {
   try {
     return await import("./skill-sheet-api.js");
@@ -60,9 +79,7 @@ describe("POST /api/skill-sheets/parse client (#233 acceptance 1, 5)", () => {
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    const token = stubDevToken("test-token");
 
     const result = await mod?.parseSkillSheet(createPdfFile());
     expect(result?.status).toBe("DRAFT");
@@ -77,7 +94,7 @@ describe("POST /api/skill-sheets/parse client (#233 acceptance 1, 5)", () => {
     expect(init.method).toBe("POST");
     expect(init.body).toBeInstanceOf(FormData);
     expect((init.body as FormData).get("file")).toBeInstanceOf(File);
-    expect(init.headers).toMatchObject({ Authorization: "Bearer test-token" });
+    expect(init.headers).toMatchObject({ Authorization: `Bearer ${token}` });
   });
 
   it("parseSkillSheet accepts xlsx uploads", async () => {
@@ -88,9 +105,7 @@ describe("POST /api/skill-sheets/parse client (#233 acceptance 1, 5)", () => {
       .fn()
       .mockResolvedValue(new Response(JSON.stringify(sampleParseDraft()), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     await mod?.parseSkillSheet(createXlsxFile());
 
@@ -110,9 +125,7 @@ describe("POST /api/skill-sheets/parse client (#233 acceptance 1, 5)", () => {
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     await expect(mod?.parseSkillSheet(createPdfFile())).rejects.toThrow(/解析|503|失敗/i);
   });
@@ -141,9 +154,7 @@ describe("PUT/POST /api/skill-sheets client (#233 acceptance 1, 2, 5, 6)", () =>
         new Response(JSON.stringify({ id: "sheet-1", rowCount: 1 }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     const saved = await mod?.saveSkillSheet("seed-learner", sheet);
     expect(saved?.id).toBe("sheet-1");
@@ -171,9 +182,7 @@ describe("PUT/POST /api/skill-sheets client (#233 acceptance 1, 2, 5, 6)", () =>
         new Response(JSON.stringify({ id: "sheet-2", rowCount: 1 }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     const draft = sampleParseDraft();
     await mod?.saveSkillSheet("seed-learner", { sections: draft.sections }, draft.r2Key);
@@ -194,9 +203,7 @@ describe("PUT/POST /api/skill-sheets client (#233 acceptance 1, 2, 5, 6)", () =>
         new Response(JSON.stringify({ id: "sheet-proxy", rowCount: 1 }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "sales-token",
-    }));
+    stubDevToken("sales-token");
 
     await mod?.saveSkillSheet("seed-learner", minimalSkillSheetV1());
 
@@ -216,9 +223,7 @@ describe("PUT/POST /api/skill-sheets client (#233 acceptance 1, 2, 5, 6)", () =>
         new Response(JSON.stringify({ id: "sheet-manual", rowCount: 1 }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     const empty = minimalSkillSheetV1();
     const saved = await mod?.saveSkillSheet("seed-learner", empty);
@@ -250,9 +255,7 @@ describe("GET /api/skill-sheets/:profileId client (#233 acceptance 4)", () => {
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    vi.doMock("./auth-client.js", () => ({
-      getAccessToken: () => "test-token",
-    }));
+    stubDevToken("test-token");
 
     const viewed = await mod?.fetchSkillSheet("seed-learner");
     expect(viewed?.sections.self_pr).toBe("保存済み");

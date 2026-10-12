@@ -36,7 +36,7 @@ beforeEach(() => {
   onDelete = undefined;
   env = {
     DB: db.binding,
-    AUTH_JWT_SECRET: SECRET,
+    DEV_AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: {
       delete: async (keys: string | string[]) => {
         if (r2Fails) throw new Error("R2 unavailable");

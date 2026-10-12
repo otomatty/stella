@@ -22,7 +22,7 @@
 
 章の下書きキーと保存件数は同じDB読み取りで取得し、他のジョブが保存した一部の章を完成扱いにしない。図版とページ画像は試行IDごとのキーへ保存し、失効した試行の後処理が新しい成果を消さない。OCR・TTSの有料要求は事前に認可し、返ってきた成果は次のD1検査より先に、試行専用の非公開R2キーへチェックポイントを置く。保存後に認可を再検査し、権限失効が確認された場合は回収する。一時的なD1障害では保持し、DB保存の再試行は同じ成果と利用量参照を使う。削除された書籍の接頭辞は清掃ジョブでも再走査する。
 
-認証は既存のSTELLA JWTと`getCaller`を使う。所有者・テナントはサーバーで決定し、入力の`ownerId`・`tenantId`・`role`・`visibility`は拒否する。管理者・講師・営業にも他人の私有書籍を読む権限は与えない。P1は本人の書籍に限定し、社内共有の認可はP6で追加する。
+認証は既存の`getCaller`を使う（本番はClerk、講師・管理者はCloudflare Accessも。ローカルとテストは開発用トークン。`docs/clerk-auth.md`）。所有者・テナントはサーバーで決定し、入力の`ownerId`・`tenantId`・`role`・`visibility`は拒否する。管理者・講師・営業にも他人の私有書籍を読む権限は与えない。P1は本人の書籍に限定し、社内共有の認可はP6で追加する。
 
 Webの`/library`は全ロールのサイドバーから開ける。書籍情報の登録・編集、読書状態・個人タグ・お気に入り、削除、ページ送り、空・通信失敗・未設定・無効の表示を実装した。本棚はD1に保存し、demoのlocalStorageには保存しない。
 
@@ -52,7 +52,7 @@ Webの`/library`は全ロールのサイドバーから開ける。書籍情報�
 
 Bunのlockfileに対応するバージョンを使い、`bun install --frozen-lockfile`を実行する。今回のWindows環境ではBun 1.3.8がlockfile読み取りで終了するため、検証は1.4.3で行った。
 
-`.example`から`apps/api/.dev.vars`、`apps/web/.env.local`、`apps/narrator/.dev.vars`を作る。既存ファイルを上書きしない。Webは`VITE_SERVER_URL=http://127.0.0.1:8787`、APIはローカル用`AUTH_JWT_SECRET`を設定する。
+`.example`から`apps/api/.dev.vars`、`apps/web/.env.local`、`apps/narrator/.dev.vars`を作る。既存ファイルを上書きしない。Webは`VITE_SERVER_URL=http://127.0.0.1:8787`、APIはローカル用`DEV_AUTH_JWT_SECRET`を設定する（`ACCESS_TEAM_DOMAIN`・`ACCESS_AUD`は空のまま）。ログインは`bun run --filter=@stella/api dev:token <profileId>`のトークンで行う。
 
 ```sh
 bun run db:migrate

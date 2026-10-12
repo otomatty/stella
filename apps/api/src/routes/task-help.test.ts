@@ -114,7 +114,7 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     database = sqliteD1();
     env = {
       DB: database.binding,
-      AUTH_JWT_SECRET: "test-secret",
+      DEV_AUTH_JWT_SECRET: "test-secret",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async () => undefined),
         delete: vi.fn(async () => undefined),

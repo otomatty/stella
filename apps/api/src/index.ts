@@ -11,6 +11,12 @@ import { runAiReviewSweep } from "./lib/ai-review-queue.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
+import { runSecurityScan } from "./lib/security-detect.js";
+import {
+  purgeExpiredVscodeLinks,
+  purgeOldSecurityEvents,
+  recordResponseOutcome,
+} from "./lib/security-events.js";
 import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./lib/skill-map-data.js";
 import { adminRoute } from "./routes/admin.js";
 import { authRoute } from "./routes/auth.js";
@@ -46,6 +52,7 @@ import { reportsRoute } from "./routes/reports.js";
 import { reviewDraftRoute } from "./routes/review-draft.js";
 import { reviewDeskRoute } from "./routes/review-desk.js";
 import { searchRoute } from "./routes/search.js";
+import { securityRoute } from "./routes/security.js";
 import { skillCheckRoute } from "./routes/skill-check.js";
 import { skillMapRoute } from "./routes/skill-map.js";
 import { stageQueueRoute } from "./routes/stage-queue.js";
@@ -70,6 +77,13 @@ app.use("/api/*", async (c, next) => {
     allowHeaders: ["Content-Type", "Authorization", DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER],
   });
   return corsMiddleware(c, next);
+});
+
+// 401 / 403 / 429 / 5xx の応答をセキュリティの出来事として残す (lib/security-events.ts)。
+// 応答のあとで waitUntil で書くので、応答は待たせない。
+app.use("/api/*", async (c, next) => {
+  await next();
+  recordResponseOutcome(c);
 });
 
 app.route("/", healthzRoute);
@@ -115,6 +129,7 @@ app.route("/", materialsRoute);
 app.route("/", libraryRoute);
 app.route("/", r2MaintenanceRoute);
 app.route("/", searchRoute);
+app.route("/", securityRoute);
 
 export default {
   fetch: app.fetch,
@@ -145,6 +160,24 @@ export default {
       runMentorMemoCron(env, getDb(env)).catch((e) => {
         console.error("[cron] mentor memo failed", e);
       }),
+    );
+    // セキュリティ監視: Access のログの取り込み → 検知ルール (画面の「今すぐ検査」とロックを共有) →
+    // 古い出来事の削除。
+    ctx.waitUntil(
+      (async () => {
+        const db = getDb(env);
+        try {
+          await runSecurityScan(env, db);
+        } catch (e) {
+          console.error("[cron] security scan failed", e);
+        }
+        try {
+          await purgeOldSecurityEvents(db);
+          await purgeExpiredVscodeLinks(db);
+        } catch (e) {
+          console.error("[cron] security event purge failed", e);
+        }
+      })(),
     );
     ctx.waitUntil(
       (async () => {

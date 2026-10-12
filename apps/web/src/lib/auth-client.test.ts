@@ -1,8 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const clerk = {
+  user: null as { id: string; email: string | null } | null,
+  token: null as string | null,
+  signOut: vi.fn(async () => undefined),
+};
+vi.mock("./clerk", () => ({
+  clerkCurrentUser: async () => clerk.user,
+  clerkSessionToken: async () => clerk.token,
+  clerkSignOut: () => clerk.signOut(),
+  onClerkUserChange: async () => () => undefined,
+}));
+
 import {
-  completeAuthFromCallbackHash,
+  ACCESS_RELOAD_GUARD_MS,
+  authHeaders,
   getAccessToken,
   getSession,
+  reloadForAccessLogin,
+  resolveAuthMode,
+  signInWithDevToken,
   signOut,
   subscribeToAuth,
 } from "./auth-client";
@@ -10,13 +27,31 @@ import {
 const storageHandlers: Array<(event: StorageEvent) => void> = [];
 
 const values = new Map<string, string>();
+const sessionValues = new Map<string, string>();
+const assign = vi.fn();
+const reload = vi.fn();
 const tokenFor = (id: string, exp = Math.floor(Date.now() / 1000) + 3600): string =>
   `header.${btoa(JSON.stringify({ sub: id, exp }))}.signature`;
 
 beforeEach(() => {
   values.clear();
+  sessionValues.clear();
+  assign.mockReset();
+  reload.mockReset();
   storageHandlers.length = 0;
+  vi.stubEnv("VITE_AUTH_MODE", "dev-token");
+  vi.stubEnv("VITE_SERVER_URL", "http://127.0.0.1:8787");
   vi.stubGlobal("window", {
+    location: { assign, reload },
+    sessionStorage: {
+      getItem: (key: string) => sessionValues.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        sessionValues.set(key, value);
+      },
+      removeItem: (key: string) => {
+        sessionValues.delete(key);
+      },
+    },
     addEventListener: (_type: string, handler: (event: StorageEvent) => void) => {
       storageHandlers.push(handler);
     },
@@ -32,13 +67,16 @@ beforeEach(() => {
     },
   });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe("auth across the STELLA rename", () => {
-  it("keeps a signed-in session saved under the old key", () => {
+  it("keeps a signed-in session saved under the old key", async () => {
     const token = tokenFor("learner");
     values.set("falcon_auth_token_v1", token);
-    expect(getSession()?.user.id).toBe("learner");
+    expect((await getSession())?.user.id).toBe("learner");
     expect(values.get("stella_auth_token_v1")).toBe(token);
     expect(values.get("falcon_auth_token_v1")).toBe(token);
   });
@@ -50,7 +88,7 @@ describe("auth across the STELLA rename", () => {
       throw new Error("busy");
     };
     await expect(signOut()).rejects.toThrow("busy");
-    expect(getSession()?.user.id).toBe("learner");
+    expect((await getSession())?.user.id).toBe("learner");
   });
 
   it("logs out when an old tab removes the same legacy token", () => {
@@ -104,7 +142,7 @@ describe("auth across the STELLA rename", () => {
     expect(values.size).toBe(0);
   });
 
-  it("keeps the new session when the old key cannot be deleted", () => {
+  it("keeps the new session when the old key cannot be deleted", async () => {
     const token = tokenFor("new-learner");
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
     const storage = window.localStorage as { removeItem: (key: string) => void };
@@ -112,11 +150,9 @@ describe("auth across the STELLA rename", () => {
       if (key === "falcon_auth_token_v1") throw new Error("busy");
       values.delete(key);
     };
-    expect(completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(token)}`)).toEqual({
-      ok: true,
-    });
+    expect(signInWithDevToken(token)).toEqual({ ok: true });
     expect(values.get("stella_auth_token_v1")).toBe(token);
-    expect(getSession()?.user.id).toBe("new-learner");
+    expect((await getSession())?.user.id).toBe("new-learner");
   });
 
   it("reports a failed login when the new key cannot be saved", () => {
@@ -124,19 +160,18 @@ describe("auth across the STELLA rename", () => {
     storage.setItem = () => {
       throw new Error("quota");
     };
-    expect(
-      completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(tokenFor("new-learner"))}`),
-    ).toEqual({ ok: false, error: "トークンを保存できませんでした" });
+    expect(signInWithDevToken(tokenFor("new-learner"))).toEqual({
+      ok: false,
+      error: "トークンを保存できませんでした",
+    });
     expect(getAccessToken()).toBeNull();
   });
 
-  it("stores callback tokens under the new key and discards an old session", () => {
+  it("stores pasted dev tokens under the new key and discards an old session", async () => {
     const token = tokenFor("new-learner");
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
-    expect(completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(token)}`)).toEqual({
-      ok: true,
-    });
-    expect(getSession()?.user.id).toBe("new-learner");
+    expect(signInWithDevToken(`  Bearer ${token}\n`)).toEqual({ ok: true });
+    expect((await getSession())?.user.id).toBe("new-learner");
     expect(values.has("falcon_auth_token_v1")).toBe(false);
   });
 
@@ -144,5 +179,107 @@ describe("auth across the STELLA rename", () => {
     values.set("falcon_auth_token_v1", tokenFor("learner", 1));
     expect(getAccessToken()).toBeNull();
     expect(values.size).toBe(0);
+  });
+});
+
+describe("dev-token login", () => {
+  it("rejects text that is not a JWT", () => {
+    expect(signInWithDevToken("hello")).toEqual({
+      ok: false,
+      error: "トークンを読めませんでした (JWT の形ではありません)",
+    });
+    expect(signInWithDevToken("   ")).toEqual({ ok: false, error: "トークンを貼り付けてください" });
+    expect(values.size).toBe(0);
+  });
+
+  it("rejects an expired token", () => {
+    expect(signInWithDevToken(tokenFor("learner", 1))).toMatchObject({ ok: false });
+    expect(values.size).toBe(0);
+  });
+
+  it("sends the stored token as a Bearer header", async () => {
+    const token = tokenFor("learner");
+    values.set("stella_auth_token_v1", token);
+    expect(await authHeaders()).toEqual({ Authorization: `Bearer ${token}` });
+  });
+});
+
+describe("auth mode", () => {
+  it("defaults to dev-token in the dev server and clerk in builds", () => {
+    expect(resolveAuthMode(undefined, true)).toBe("dev-token");
+    expect(resolveAuthMode(undefined, false)).toBe("clerk");
+    expect(resolveAuthMode("", false)).toBe("clerk");
+    expect(resolveAuthMode("clerk", true)).toBe("clerk");
+    expect(resolveAuthMode("dev-token", false)).toBe("dev-token");
+    // 旧方式 (Cloudflare Access・Google) の値は既定に倒す。
+    expect(resolveAuthMode("access", false)).toBe("clerk");
+    expect(resolveAuthMode("google", false)).toBe("clerk");
+  });
+});
+
+describe("Clerk mode", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_AUTH_MODE", "clerk");
+    clerk.user = null;
+    clerk.token = null;
+    clerk.signOut.mockClear();
+  });
+
+  it("returns a placeholder session from the Clerk user (the app user comes from /api/me)", async () => {
+    expect(await getSession()).toBeNull();
+    clerk.user = { id: "user_1", email: "learner@example.test" };
+    expect(await getSession()).toEqual({
+      accessToken: null,
+      user: { id: "user_1", email: "learner@example.test" },
+      expiresAt: null,
+    });
+  });
+
+  it("has no session when the backend is not configured (demo)", async () => {
+    vi.stubEnv("VITE_SERVER_URL", "");
+    clerk.user = { id: "user_1", email: null };
+    expect(await getSession()).toBeNull();
+  });
+
+  it("sends the Clerk session token, and never tokens left over from the old login", async () => {
+    values.set("stella_auth_token_v1", tokenFor("learner"));
+    values.set("falcon_auth_token_v1", tokenFor("old-learner"));
+    expect(getAccessToken()).toBeNull();
+    expect(await authHeaders()).toEqual({});
+    clerk.token = "clerk.session.jwt";
+    expect(await authHeaders()).toEqual({ Authorization: "Bearer clerk.session.jwt" });
+    await getSession();
+    expect(values.size).toBe(0);
+  });
+
+  it("does not accept pasted tokens", () => {
+    expect(signInWithDevToken(tokenFor("learner"))).toMatchObject({ ok: false });
+    expect(values.size).toBe(0);
+  });
+
+  it("logs out of Clerk", async () => {
+    values.set("stella_auth_token_v1", tokenFor("learner"));
+    await signOut();
+    expect(clerk.signOut).toHaveBeenCalledTimes(1);
+    expect(values.size).toBe(0);
+  });
+
+  it("reloads once for a new Access login, then stops within the guard window", () => {
+    const now = 1_000_000;
+    expect(reloadForAccessLogin(now)).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(reloadForAccessLogin(now + ACCESS_RELOAD_GUARD_MS - 1)).toBe(false);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(reloadForAccessLogin(now + ACCESS_RELOAD_GUARD_MS)).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not reload when it cannot remember the reload (no loop guard)", () => {
+    const storage = window.sessionStorage as { setItem: (key: string, value: string) => void };
+    storage.setItem = () => {
+      throw new Error("blocked");
+    };
+    expect(reloadForAccessLogin()).toBe(false);
+    expect(reload).not.toHaveBeenCalled();
   });
 });

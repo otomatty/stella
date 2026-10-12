@@ -92,7 +92,7 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     complete.mockReset();
     env = {
       DB: database.binding,
-      AUTH_JWT_SECRET: "test-secret",
+      DEV_AUTH_JWT_SECRET: "test-secret",
       ANTHROPIC_API_KEY: "test-key",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async (key: string, data: Uint8Array) => {

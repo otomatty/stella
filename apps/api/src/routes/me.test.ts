@@ -17,7 +17,7 @@ beforeEach(() => {
     INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 0, 'google', 1);
   `);
-  env = { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env;
+  env = { DB: db.binding, DEV_AUTH_JWT_SECRET: SECRET } as Env;
   app = mountTestApp(env, meRoute).app;
 });
 afterEach(() => db.sqlite.close());

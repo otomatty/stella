@@ -220,11 +220,15 @@ describe("教材 seed の再実行", () => {
     db.prepare(
       "insert into enrollments (id, tenant_id, user_id, stage_id, status, required, enrolled_at) values ('en-format2', 'ses', 'u-format2', ?, 'active', 0, 1)",
     ).run(stage.id);
-    const env = { DB: localD1(db), AUTH_JWT_SECRET: "test-format-2-secret" } as Env;
+    const env = { DB: localD1(db), DEV_AUTH_JWT_SECRET: "test-format-2-secret" } as Env;
     const { app } = mountTestApp(env, tasksRoute, quizRoute, srsRoute);
-    const token = await signAccessToken(env.AUTH_JWT_SECRET ?? "", "u-format2", "test@example.com");
+    const token = await signAccessToken(
+      env.DEV_AUTH_JWT_SECRET ?? "",
+      "u-format2",
+      "test@example.com",
+    );
     const otherToken = await signAccessToken(
-      env.AUTH_JWT_SECRET ?? "",
+      env.DEV_AUTH_JWT_SECRET ?? "",
       "u-unenrolled",
       "test@example.com",
     );

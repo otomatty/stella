@@ -27,8 +27,10 @@ export interface SupportInquiryInput {
 export async function submitSupportInquiry(
   input: SupportInquiryInput,
 ): Promise<{ ok: boolean; id: string | null }> {
+  // ログインできない障害 (Clerk を読み込めない) のときこそ使う画面なので、認証は取れたときだけ付ける。
   return apiFetch<{ ok: boolean; id: string | null }>("/api/support", {
     method: "POST",
     body: input,
+    optionalAuth: true,
   });
 }

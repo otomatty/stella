@@ -136,7 +136,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     complete.mockReset();
     env = {
       DB: database.binding,
-      AUTH_JWT_SECRET: "test-secret",
+      DEV_AUTH_JWT_SECRET: "test-secret",
       ANTHROPIC_API_KEY: "test-key",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async (key: string, data: Uint8Array) => {
@@ -994,7 +994,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
 describe("旧形式の提出も、確定前の下書きは受講者に返さない", () => {
   it("判定前は AI の指摘・総評を隠し、確定後は講師が採用した指摘だけを返す", async () => {
     const database = sqliteD1();
-    const env = { DB: database.binding, AUTH_JWT_SECRET: "test-secret" } as unknown as Env;
+    const env = { DB: database.binding, DEV_AUTH_JWT_SECRET: "test-secret" } as unknown as Env;
     const db = getDb(env);
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),

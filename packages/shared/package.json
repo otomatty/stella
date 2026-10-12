@@ -16,6 +16,7 @@
     "./admin/parse-invite-csv": "./src/admin/parse-invite-csv.ts",
     "./admin/reports": "./src/admin/reports.ts",
     "./admin/audit-actions": "./src/admin/audit-actions.ts",
+    "./security/types": "./src/security/types.ts",
     "./curriculum/chapters": "./src/curriculum/chapters.ts",
     "./curriculum/stages": "./src/curriculum/stages.ts",
     "./grading": "./src/grading/index.ts",

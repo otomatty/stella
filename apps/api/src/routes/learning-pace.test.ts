@@ -108,7 +108,7 @@ beforeEach(() => {
   sqlite = new DatabaseSync(":memory:");
   migrate(sqlite);
   seed(sqlite);
-  env = { DB: localD1(sqlite), AUTH_JWT_SECRET: "pace-test-secret" } as Env;
+  env = { DB: localD1(sqlite), DEV_AUTH_JWT_SECRET: "pace-test-secret" } as Env;
   app = mountTestApp(env, learningPaceRoute, meRoute).app;
 });
 afterEach(() => sqlite.close());

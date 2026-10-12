@@ -24,22 +24,32 @@ export type VscodeLinkRow = {
   userId: string;
   usedAt: Date | null;
   expiresAt: Date;
+  /** 発行した利用者の Clerk の利用者 ID (開発環境では null)。 */
+  clerkUserId?: string | null;
 };
 
+/**
+ * 接続コードを 1 回だけトークンに換える。期限切れ・使用済み・無効化済みの利用者・渡せる相手でない
+ * (`canIssue` が false) ときは、どれも同じ 401 にする (コードの状態を探らせない)。
+ * コードを使用済みにしてからトークンを作る — 同じコードの同時の交換で、キーを 2 つ作らないため。
+ */
 export async function redeemVscodeLink(args: {
   row: VscodeLinkRow | undefined;
   now: Date;
-  resolveEmail: (userId: string) => Promise<string | null>;
+  loadProfile: (
+    userId: string,
+  ) => Promise<{ email: string | null; disabled: boolean; role: string } | null>;
+  canIssue: (row: VscodeLinkRow, profile: { role: string }) => boolean;
   consume: (id: string) => Promise<boolean>;
-  signToken: (userId: string, email: string) => Promise<string>;
+  issueToken: (row: VscodeLinkRow, email: string) => Promise<string>;
 }): Promise<{ access_token: string; userId: string }> {
-  const { row, now, resolveEmail, consume, signToken } = args;
+  const { row, now, loadProfile, canIssue, consume, issueToken } = args;
   if (!row || row.usedAt != null || row.expiresAt <= now) {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
-  const email = await resolveEmail(row.userId);
-  if (!email) {
+  const profile = await loadProfile(row.userId);
+  if (!profile?.email || profile.disabled || !canIssue(row, profile)) {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
@@ -48,5 +58,12 @@ export async function redeemVscodeLink(args: {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
-  return { access_token: await signToken(row.userId, email), userId: row.userId };
+  const token = await issueToken(row, profile.email).catch(() => null);
+  if (!token) {
+    throw new ApiError(
+      "VS Code の接続に失敗しました。もう一度「VS Code で開く」からお試しください",
+      502,
+    );
+  }
+  return { access_token: token, userId: row.userId };
 }

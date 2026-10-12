@@ -570,7 +570,9 @@ export type NotificationType =
   | "review_comment"
   | "interview_date_set"
   | "interview_answer_template_generated"
-  | "interview_answer_template_failed";
+  | "interview_answer_template_failed"
+  // セキュリティ監視の検知 (重要度「高」「中」)。管理者宛てで、payload に alert_id と rule。
+  | "security_alert";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

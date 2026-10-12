@@ -23,6 +23,7 @@ import {
   MessageCircle,
   Play,
   Shield,
+  ShieldCheck,
   Sparkles,
   Star,
   Users,
@@ -49,6 +50,7 @@ export type NavId =
   | "orgs"
   | "report"
   | "audit"
+  | "security"
   | "assignments"
   | "discovery"
   | "hall-of-fame"
@@ -109,6 +111,8 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
+    // 不正アクセスの兆候の検知・サインイン履歴・アカウントの棚卸し。
+    { id: "security", label: "セキュリティ", icon: ShieldCheck },
     { id: "library", label: "個人の本棚", icon: Book },
     // 管理者の「殿堂」は運用画面 (推薦 / 公開)。 掲載そのものは運用画面から見に行ける。
     { id: "hall-of-fame-admin", label: "殿堂", icon: Star },
