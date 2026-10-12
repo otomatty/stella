@@ -32,6 +32,11 @@ service = "stella-api"
 # workers.dev に Access を有効にする (docs/clerk-auth.md)。bindings は env に引き継がれないので書き直す。
 [env.admin]
 name = "stella-admin"
+# Access が守るのは workers.dev のホスト名だけ。プレビュー URL は別のホスト名で Access を通らないのに、
+# この Worker は Access のヘッダを API へ渡す (TRUST_ACCESS_ASSERTION) ので、盗まれたトークンを
+# Access の方針・失効の確認なしに使い回せてしまう。プレビュー URL は作らない。
+workers_dev = true
+preview_urls = false
 
 [env.admin.vars]
 TRUST_ACCESS_ASSERTION = "1"

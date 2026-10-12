@@ -79,6 +79,8 @@ VS Code 拡張 ──(Authorization: Bearer <Clerk の API キー>)──▶ 受
    強制できる)。One-time PIN や個人の Google アカウントを許すと 2 段階認証を強制できない。
 3. 一度デプロイして `stella-admin` の Worker を作り、Workers の設定 (Domains & Routes → workers.dev) で
    **Access を有効にする** (`https://stella-admin.saedgewell.workers.dev`)。ホスト名全体を守る (Bypass は作らない)。
+   プレビュー URL は Access の外になるので、`apps/web/wrangler.toml` の `[env.admin]` で `preview_urls = false` にしてある
+   (ダッシュボードの Preview URLs も無効のままにする)。
 4. Access のアプリケーションの **Policy (Allow)**: 講師・管理者・営業のメールアドレス (または Access グループ) だけ。
    **Require で多要素認証** を付ける。Session duration は 24 時間以下。
    - 利用者数は講師・管理者・営業だけを数える (無料枠は 50 人。受講者は数えない)。
