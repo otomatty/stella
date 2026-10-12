@@ -70,11 +70,16 @@ const call = async (path: string, method = "GET", user = "owner") =>
     method,
   });
 const row = (sql: string) => db.sqlite.prepare(sql).get() as Record<string, unknown>;
+// The PDFs the owner sees (and confirms) right now.
+const pdfIds = () =>
+  (db.sqlite.prepare("SELECT id FROM library_book_pdfs").all() as { id: string }[]).map(
+    (r) => r.id,
+  );
 const startProcessing = async () => {
   const response = await request(app, env, "/api/library/books/book/process", {
     token: await signAccessToken(SECRET, "owner", "owner@example.test"),
     method: "POST",
-    body: JSON.stringify({ acknowledgedExternalProcessing: true }),
+    body: JSON.stringify({ acknowledgedExternalProcessing: true, pdfIds: pdfIds() }),
   });
   return { status: response.status, job: (await json<{ job?: LibraryJob }>(response)).job };
 };
@@ -95,6 +100,17 @@ describe("book processing jobs", () => {
 
   it("requires the owner to confirm sending the PDFs to the external OCR", async () => {
     expect((await call("/process", "POST")).status).toBe(400);
+    // Confirmed in a stale tab: another PDF was added since, so nothing starts.
+    db.sqlite.exec(`
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, created_at)
+        VALUES ('late','ses','book',2,'late.pdf',10,'library/ses/book/pdfs/late-1.pdf','completed',1);
+    `);
+    const stale = await request(app, env, "/api/library/books/book/process", {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "POST",
+      body: JSON.stringify({ acknowledgedExternalProcessing: true, pdfIds: ["pdf"] }),
+    });
+    expect(stale.status).toBe(409);
     expect(row("SELECT count(*) AS n FROM library_jobs")).toEqual({ n: 0 });
     expect(started).toEqual([]);
   });
@@ -323,6 +339,7 @@ describe("book processing jobs", () => {
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
     expect(deleted).toEqual(["library/ses/book/pdfs/pdf-1.pdf"]);
     expect(row("SELECT count(*) AS n FROM library_book_pdfs")).toEqual({ n: 0 });
-    expect((await startProcessing()).status).toBe(409);
+    // No PDFs left to confirm: nothing can start.
+    expect((await startProcessing()).status).toBe(400);
   });
 });

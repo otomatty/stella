@@ -985,6 +985,7 @@ describe("internal processing foundation", () => {
     expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
     const processed = await request(`books/${id}/process`, "owner", "POST", {
       acknowledgedExternalProcessing: true,
+      pdfIds: [pdfId],
     });
     expect(processed.status).toBe(202);
     const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
@@ -1008,6 +1009,7 @@ describe("internal processing foundation", () => {
       .run();
     try {
       const id = await createBook("Over budget");
+      const quotaPdf = crypto.randomUUID();
       const pdf = await PDFDocument.create();
       pdf.addPage([200, 300]);
       const bytes = await pdf.save(),
@@ -1017,11 +1019,12 @@ describe("internal processing foundation", () => {
         .prepare(
           "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,created_at) VALUES (?, 'a', ?, 1, 'quota.pdf', ?, ?, 'completed', 1)",
         )
-        .bind(crypto.randomUUID(), id, bytes.length, key)
+        .bind(quotaPdf, id, bytes.length, key)
         .run();
       await db.prepare("UPDATE library_books SET status = 'uploading' WHERE id = ?").bind(id).run();
       const processed = await request(`books/${id}/process`, "owner", "POST", {
         acknowledgedExternalProcessing: true,
+        pdfIds: [quotaPdf],
       });
       const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
       await expect(waitJob(jobId)).rejects.toThrow(/Job failed/);

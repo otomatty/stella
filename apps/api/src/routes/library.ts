@@ -190,13 +190,27 @@ async function dispatch(env: Env, tenantId: string, bookId: string, job: JobRow)
     // The jobs poll re-dispatches; nothing about the book is exposed here.
   }
 }
-/** Starting or retrying a run sends the PDFs to the external OCR provider; the owner confirms each time. */
-async function requireExternalAck(request: Request): Promise<void> {
+/**
+ * Starting or retrying a run sends the PDFs to the external OCR provider; the owner confirms
+ * each time. Returns the PDF ids the confirmation covered, when the client sent them.
+ */
+async function requireExternalAck(request: Request): Promise<string[] | null> {
   const body = (await request.json().catch(() => null)) as {
     acknowledgedExternalProcessing?: unknown;
+    pdfIds?: unknown;
   } | null;
   if (body?.acknowledgedExternalProcessing !== true)
     throw new ApiError("PDFを外部の読み取りサービスへ送ることの確認が必要です", 400);
+  const ids = body.pdfIds;
+  if (ids === undefined) return null;
+  if (
+    !Array.isArray(ids) ||
+    ids.length < 1 ||
+    ids.length > LIBRARY_LIMITS.maxBookPdfs ||
+    ids.some((id) => typeof id !== "string")
+  )
+    throw new ApiError("確認したPDFの指定が無効です", 400);
+  return [...new Set(ids as string[])];
 }
 async function requireProcessing(env: Env): Promise<void> {
   if (!(await processingAvailable(env))) throw new ApiError("書籍の処理は現在利用できません", 403);
@@ -549,7 +563,10 @@ libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
           : "この書籍は処理を始められる状態ではありません",
         409,
       );
-    await requireExternalAck(c.req.raw);
+    // The confirmation covers specific PDFs; the job starts only if they are exactly the
+    // book's PDFs at that moment (another tab may have added one).
+    const confirmed = await requireExternalAck(c.req.raw);
+    if (!confirmed) throw new ApiError("確認したPDFの指定が必要です", 400);
     await requireProcessing(c.env);
     const jobId = crypto.randomUUID(),
       now = Date.now();
@@ -561,8 +578,10 @@ libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
         WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status = 'uploading'
           AND EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id)
           AND NOT EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id AND upload_status <> 'completed')
-          AND NOT EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = b.tenant_id AND book_id = b.id AND status IN ('queued','running'))`,
-      ).bind(jobId, now, caller.tenantId, book.id, caller.id),
+          AND NOT EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = b.tenant_id AND book_id = b.id AND status IN ('queued','running'))
+          AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) = ?
+          AND NOT EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id AND id NOT IN (${confirmed.map(() => "?").join(",")}))`,
+      ).bind(jobId, now, caller.tenantId, book.id, caller.id, confirmed.length, ...confirmed),
       c.env.DB.prepare(
         "INSERT INTO library_job_dispatches (tenant_id, book_id, job_id, instance_id, created_at) SELECT tenant_id, book_id, id, id || '-' || attempt, ? FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ?",
       ).bind(now, caller.tenantId, book.id, jobId),
@@ -575,8 +594,13 @@ libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
     )
       .bind(caller.tenantId, book.id, jobId)
       .first<JobRow>();
-    // No row means a guard failed: no PDFs, an unfinished upload, or a job already running.
-    if (!job) throw new ApiError("送信が済んでいないPDFがあるか、処理がすでに進んでいます", 409);
+    // No row means a guard failed: no PDFs, an unfinished upload, a job already running, or
+    // PDFs that changed since the owner confirmed them.
+    if (!job)
+      throw new ApiError(
+        "PDFが確認したときから変わったか、送信が済んでいないPDFがあるか、処理がすでに進んでいます。画面を読み込み直してください",
+        409,
+      );
     await dispatch(c.env, caller.tenantId, book.id, job);
     return c.json({ job: jobView(job) }, 202);
   } catch (error) {

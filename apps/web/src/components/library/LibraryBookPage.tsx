@@ -265,7 +265,8 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                     void run(async () => {
                       await apiFetch(`/api/library/books/${book.id}/process`, {
                         method: "POST",
-                        body: { acknowledgedExternalProcessing: true },
+                        // The server starts only if these are still exactly the book's PDFs.
+                        body: { acknowledgedExternalProcessing: true, pdfIds: pdfSet.split(",") },
                       });
                       // Each accepted run used its confirmation; a retry asks again.
                       setAcknowledgedFor(null);
