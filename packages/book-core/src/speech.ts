@@ -81,7 +81,10 @@ export function chunkParagraphs(paragraphs: string[], maxChars: number): string[
         window.lastIndexOf("？"),
         window.lastIndexOf("、"),
       );
-      const at = cut > 0 ? cut + 1 : maxChars;
+      let at = cut > 0 ? cut + 1 : maxChars;
+      // Never cut a surrogate pair (emoji etc.) in half.
+      const code = rest.charCodeAt(at - 1);
+      if (cut <= 0 && code >= 0xd800 && code <= 0xdbff) at -= 1;
       units.push(rest.slice(0, at));
       rest = rest.slice(at);
     }

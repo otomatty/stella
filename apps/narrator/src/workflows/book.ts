@@ -102,6 +102,8 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             return plan;
           });
           if (next - 1 > 1000) throw new NonRetryableError("本は1000ページまでです");
+          if (rows.results.reduce((n, pdf) => n + pdf.size_bytes, 0) > 1024 * 1024 * 1024)
+            throw new NonRetryableError("本は合計1GBまでです");
           await this.env.DB.prepare(
             `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
           )
@@ -387,5 +389,18 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
     } catch {
       await step.do("fail", () => job.failBook());
     }
+    // OCR checkpoints and figure plans are per instance; pages and figures are already in D1/R2.
+    await step.do("cleanup", async () => {
+      for (const prefix of [
+        `${generationPrefix(p)}ocr/${event.instanceId}/`,
+        `${generationPrefix(p)}figures/${event.instanceId}-`,
+      ])
+        for (;;) {
+          const objects = await this.env.BUCKET.list({ prefix });
+          if (objects.objects.length)
+            await this.env.BUCKET.delete(objects.objects.map((object) => object.key));
+          if (!objects.truncated) break;
+        }
+    });
   }
 }

@@ -144,6 +144,13 @@ describe("読み上げ用テキスト", () => {
     const chunks = chunkParagraphs(paragraphs, 12);
     expect(chunks.every((c) => c.length <= 12)).toBe(true);
     expect(chunks[0]).toBe("一文目です。二文目です。");
+    const emoji = `${"a".repeat(299)}😀b`;
+    const split = chunkParagraphs([emoji], 300);
+    // No sentence break: the forced cut must not leave half of a surrogate pair.
+    expect(
+      split.every((c) => c.length <= 300 && !/[\uD800-\uDBFF]$|^[\uDC00-\uDFFF]/.test(c)),
+    ).toBe(true);
+    expect(split.join("")).toBe(emoji);
     expect(chunks.join("").replace(/\n/g, "")).toBe(paragraphs.join(""));
   });
 });

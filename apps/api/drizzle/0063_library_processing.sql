@@ -147,7 +147,6 @@ CREATE TABLE library_job_usages (
   quantity REAL NOT NULL,
   estimated_cost_usd REAL,
   created_at INTEGER NOT NULL,
-  FOREIGN KEY (tenant_id, book_id, job_id) REFERENCES library_jobs (tenant_id, book_id, id) ON DELETE CASCADE,
   CHECK (quantity >= 0)
 );
 --> statement-breakpoint
