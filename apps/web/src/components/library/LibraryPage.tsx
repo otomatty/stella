@@ -370,7 +370,10 @@ function BookForm({ entry, onSaved }: { entry: LibraryShelfEntry | null; onSaved
     }
   }
   return (
-    <form onSubmit={(event) => void submit(event)} className="flex flex-col gap-4 px-6 pb-6">
+    <form
+      onSubmit={(event) => void submit(event)}
+      className="flex min-h-0 flex-col gap-4 overflow-y-auto px-6 pb-6"
+    >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="library-title">タイトル</Label>
         <Input
