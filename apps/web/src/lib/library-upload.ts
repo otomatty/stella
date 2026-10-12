@@ -54,10 +54,11 @@ async function retrying(action: () => Promise<unknown>): Promise<void> {
   }
 }
 
-async function sendPart(bookId: string, name: string, part: Part): Promise<void> {
-  // The client-chosen id makes a retried registration return the same PDF, even when the
-  // first response was lost after the server saved it.
-  const id = crypto.randomUUID();
+/**
+ * Registers a part without its body. The client-chosen id makes a retried registration return
+ * the same PDF, even when the first response was lost after the server saved it.
+ */
+async function registerPart(bookId: string, id: string, name: string, part: Part): Promise<void> {
   await retrying(() =>
     apiFetch<{ pdf: LibraryPdf }>(`/api/library/books/${bookId}/pdfs`, {
       method: "POST",
@@ -69,6 +70,9 @@ async function sendPart(bookId: string, name: string, part: Part): Promise<void>
       },
     }),
   );
+}
+
+async function sendPart(bookId: string, id: string, part: Part): Promise<void> {
   await retrying(() =>
     apiFetchRaw(`/api/library/books/${bookId}/pdfs/${id}`, {
       method: "PUT",
@@ -130,16 +134,20 @@ export async function uploadBookPdfs(
     const over = overBookLimit({ pdfs, bytes, pages }, limits);
     if (over)
       throw new Error(`${file.name} を加えると1冊${over}を超えます。本を分けて登録してください`);
-    for (const [n, part] of parts.entries()) {
+    // Register every part before sending any: if anything fails, at least one part stays
+    // unsent, and a book with an unsent PDF cannot be processed as a truncated source.
+    const planned = parts.map((part, n) => ({
+      part,
+      id: crypto.randomUUID(),
+      name: parts.length > 1 ? partName(file.name, n, parts.length) : file.name,
+    }));
+    for (const { part, id, name } of planned) await registerPart(bookId, id, name, part);
+    for (const [n, { part, id }] of planned.entries()) {
       onProgress({
         label: `${file.name} を送信中 (${n + 1}/${parts.length})`,
         percent: base + share / 2 + (share * n) / parts.length / 2,
       });
-      await sendPart(
-        bookId,
-        parts.length > 1 ? partName(file.name, n, parts.length) : file.name,
-        part,
-      );
+      await sendPart(bookId, id, part);
     }
   }
   onProgress({ label: "送信が終わりました", percent: 100 });
