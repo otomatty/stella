@@ -301,6 +301,35 @@ describe("detectSecurityAlerts", () => {
     });
   });
 
+  it("日付が変わった直後の検査でも、新しい出来事の無い連続は別のアラートにしない", async () => {
+    // 日本時間 23:50〜23:55 に 403 が 20 回。
+    const beforeMidnight = new Date("2026-10-12T14:50:00.000Z");
+    for (let i = 0; i < 20; i++) {
+      await seedEvent({
+        kind: "authz.forbidden",
+        tenantId: "ses",
+        actorId: "learner",
+        createdAt: new Date(beforeMidnight.getTime() + i * 15_000),
+      });
+    }
+    await detectSecurityAlerts(getDb(env()), env(), new Date("2026-10-12T14:56:00.000Z"), vi.fn());
+    // 日本時間 0:05 の検査 (直近 1 時間の窓にはまだ同じ 20 回がある)。
+    const after = await detectSecurityAlerts(
+      getDb(env()),
+      env(),
+      new Date("2026-10-12T15:05:00.000Z"),
+      vi.fn(),
+    );
+    expect(after).toEqual([]);
+    expect(
+      (
+        db.sqlite
+          .prepare("select count(*) as n from security_alerts where rule = 'forbidden_burst'")
+          .get() as { n: number }
+      ).n,
+    ).toBe(1);
+  });
+
   it("前の検査で知らせ損ねたアラートは、次の検査で知らせ直す", async () => {
     db.sqlite.exec(`
       INSERT INTO security_alerts (id, tenant_id, rule, severity, status, title, detail, subject, dedupe_key, event_count, first_seen_at, last_seen_at, notified_at, created_at) VALUES
@@ -463,6 +492,31 @@ describe("Cloudflare Access との連携", () => {
       .prepare("select value from security_state where key = 'access_logs_cursor'")
       .get() as { value: string };
     expect(Number(cursor.value)).toBe(Date.parse(at) + 1);
+  });
+
+  it("同じ窓をページ番号で読み切る (同じ時刻の行が 1000 件を超えても取りこぼさない)", async () => {
+    const at = minutesAgo(30).toISOString();
+    const row = (i: number) => ({
+      ray_id: `p-${i}`,
+      user_email: "a@example.com",
+      allowed: false,
+      created_at: at,
+      app_domain: "stella.example.com",
+    });
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
+      const pageNo = Number(new URL(String(input)).searchParams.get("page"));
+      const result =
+        pageNo === 1 ? Array.from({ length: 1000 }, (_, i) => row(i)) : [row(1000), row(1001)];
+      return new Response(JSON.stringify({ success: true, result }));
+    });
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+      imported: 1002,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const cursor = db.sqlite
+      .prepare("select value from security_state where key = 'access_logs_cursor'")
+      .get() as { value: string };
+    expect(Number(cursor.value)).toBe(NOW.getTime());
   });
 
   it("STELLA のホスト名が分からなければ何も取り込まない", async () => {

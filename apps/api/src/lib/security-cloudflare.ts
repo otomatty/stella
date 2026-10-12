@@ -25,6 +25,8 @@ export const ACCESS_LOG_IMPORTED_AT = "access_logs_imported_at";
 /** 初回・長く止まっていたときにさかのぼる上限。 */
 const MAX_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const PAGE_LIMIT = 1000;
+/** 1 回の取り込みで読むページ数の上限 (cron 1 回の時間に収める)。 */
+const MAX_PAGES = 10;
 
 type CloudflareEnv = Pick<
   Env,
@@ -107,30 +109,47 @@ export async function importAccessLogs(
     Math.max(Number.isFinite(cursor) ? cursor : 0, now.getTime() - MAX_LOOKBACK_MS),
   );
 
-  const url = new URL(
-    `${API_BASE}/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID ?? "")}/access/logs/access_requests`,
-  );
-  url.searchParams.set("since", since.toISOString());
-  url.searchParams.set("until", now.toISOString());
-  url.searchParams.set("limit", String(PAGE_LIMIT));
-  url.searchParams.set("direction", "asc");
-  const res = await fetchImpl(url, {
-    headers: { Authorization: `Bearer ${env.CF_ACCESS_API_TOKEN}` },
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) throw new Error(`Access logs request failed: HTTP ${res.status}`);
-  const body = (await res.json().catch(() => null)) as {
-    success?: boolean;
-    result?: AccessRequestLog[];
-  } | null;
-  if (body?.success !== true || !Array.isArray(body.result)) {
-    throw new Error("Access logs response was not successful");
+  // since〜now の同じ窓をページ番号で読み切る (同じ時刻の行が多くても飛ばさない)。1 回の検査で読む
+  // ページ数は絞り、読み切れなければ読んだ最後の時刻から次の検査で続ける。
+  type Log = AccessRequestLog & { ray_id: string; created_at: string };
+  const page: Log[] = [];
+  const seen = new Set<string>();
+  let complete = false;
+  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    const url = new URL(
+      `${API_BASE}/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID ?? "")}/access/logs/access_requests`,
+    );
+    url.searchParams.set("since", since.toISOString());
+    url.searchParams.set("until", now.toISOString());
+    url.searchParams.set("limit", String(PAGE_LIMIT));
+    url.searchParams.set("per_page", String(PAGE_LIMIT));
+    url.searchParams.set("page", String(pageNo));
+    url.searchParams.set("direction", "asc");
+    const res = await fetchImpl(url, {
+      headers: { Authorization: `Bearer ${env.CF_ACCESS_API_TOKEN}` },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) throw new Error(`Access logs request failed: HTTP ${res.status}`);
+    const body = (await res.json().catch(() => null)) as {
+      success?: boolean;
+      result?: AccessRequestLog[];
+    } | null;
+    if (body?.success !== true || !Array.isArray(body.result)) {
+      throw new Error("Access logs response was not successful");
+    }
+    const rows = body.result.filter(
+      (l): l is Log => typeof l?.ray_id === "string" && typeof l.created_at === "string",
+    );
+    const fresh = rows.filter((l) => !seen.has(l.ray_id));
+    for (const l of fresh) seen.add(l.ray_id);
+    page.push(...fresh);
+    if (body.result.length < PAGE_LIMIT) {
+      complete = true;
+      break;
+    }
+    // ページ番号を受け付けず同じ行を返してきたら、それ以上は進めない。
+    if (fresh.length === 0) break;
   }
-
-  const page = body.result.filter(
-    (l): l is AccessRequestLog & { ray_id: string; created_at: string } =>
-      typeof l?.ray_id === "string" && typeof l.created_at === "string",
-  );
   // カーソルは別のアプリの行も含めたページで進める。取り込むのは STELLA のアプリの行だけ
   // (ホスト名が分からなければ何も取り込まない — 別のアプリの利用者の情報を混ぜないため)。
   const appHost = stellaAppHost(env);
@@ -172,11 +191,9 @@ export async function importAccessLogs(
     });
     if (inserted) imported++;
   }
-  // 1 回で取り切れなかった (上限まで返った) ときは、取り込んだ最後の時刻から続ける。ページが同じ時刻の
-  // 行だけで埋まっていたら 1 ms 先へ進める (同じページを取り続けて先へ進めなくなるのを防ぐ。
-  // その時刻の残りは取りこぼすが、同じ ms に 1000 件を超えるログはまず無い)。
-  const nextCursor =
-    page.length >= PAGE_LIMIT ? (latest > since.getTime() ? latest : latest + 1) : now.getTime();
+  // 窓を読み切れたら now から。読み切れなかったら (ページ数の上限・ページ番号を受け付けない) 読んだ
+  // 最後の時刻から続ける。読んだ行がすべて同じ時刻なら 1 ms 先へ進める (止まらないことを優先)。
+  const nextCursor = complete ? now.getTime() : latest > since.getTime() ? latest : latest + 1;
   await writeSecurityState(db, ACCESS_LOG_CURSOR, String(nextCursor));
   await writeSecurityState(db, ACCESS_LOG_IMPORTED_AT, String(now.getTime()));
   return { imported };

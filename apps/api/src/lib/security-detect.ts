@@ -296,7 +296,6 @@ async function burst(
 
 async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
-  const date = jstDate(until);
   const push = (
     rows: Awaited<ReturnType<typeof burst>>,
     rule: SecurityRule,
@@ -309,7 +308,9 @@ async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
         rule,
         severity,
         subject: r.key,
-        dedupeKey: `${rule}:${label}:${r.key}:${date}`,
+        // 日付は検査の時刻ではなく最後の出来事の日にする (日付が変わった直後の検査で、新しい出来事の
+        // 無い同じ連続を別のアラートにしない)。
+        dedupeKey: `${rule}:${label}:${r.key}:${jstDate(r.last)}`,
         count: r.count,
         countMode: "max",
         detail: { [label]: r.key, count_last_hour: r.count },
