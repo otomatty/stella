@@ -3,6 +3,7 @@
  */
 
 export interface Env {
+  LIBRARY_ENABLED?: string;
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
   /**

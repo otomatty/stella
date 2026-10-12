@@ -21,6 +21,7 @@ import { Route as AppDiscoveryRouteImport } from './routes/_app/discovery'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
 import { Route as AppInterviewPrepRouteImport } from './routes/_app/interview-prep'
+import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppOrgsRouteImport } from './routes/_app/orgs'
 import { Route as AppReportRouteImport } from './routes/_app/report'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
@@ -111,6 +112,11 @@ const AppGradebookRoute = AppGradebookRouteImport.update({
 const AppInterviewPrepRoute = AppInterviewPrepRouteImport.update({
   id: '/interview-prep',
   path: '/interview-prep',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryRoute = AppLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrgsRoute = AppOrgsRouteImport.update({
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
+  '/library': typeof AppLibraryRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
+  '/library': typeof AppLibraryRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
   '/_app/interview-prep': typeof AppInterviewPrepRoute
+  '/_app/library': typeof AppLibraryRoute
   '/_app/orgs': typeof AppOrgsRoute
   '/_app/report': typeof AppReportRoute
   '/_app/review': typeof AppReviewRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
+    | '/library'
     | '/orgs'
     | '/report'
     | '/review'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
+    | '/library'
     | '/orgs'
     | '/report'
     | '/review'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/_app/enrollments'
     | '/_app/gradebook'
     | '/_app/interview-prep'
+    | '/_app/library'
     | '/_app/orgs'
     | '/_app/report'
     | '/_app/review'
@@ -644,6 +656,13 @@ declare module '@tanstack/react-router' {
       path: '/interview-prep'
       fullPath: '/interview-prep'
       preLoaderRoute: typeof AppInterviewPrepRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/library': {
+      id: '/_app/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof AppLibraryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/orgs': {
@@ -909,6 +928,7 @@ interface AppRouteChildren {
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
   AppInterviewPrepRoute: typeof AppInterviewPrepRoute
+  AppLibraryRoute: typeof AppLibraryRoute
   AppOrgsRoute: typeof AppOrgsRoute
   AppReportRoute: typeof AppReportRoute
   AppReviewRoute: typeof AppReviewRoute
@@ -942,6 +962,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
   AppInterviewPrepRoute: AppInterviewPrepRoute,
+  AppLibraryRoute: AppLibraryRoute,
   AppOrgsRoute: AppOrgsRoute,
   AppReportRoute: AppReportRoute,
   AppReviewRoute: AppReviewRoute,
