@@ -456,7 +456,7 @@ ON の間に招待 (ユーザー登録) されたユーザーには、 直後に
 
 **通常のデプロイは GitHub Actions が自動実行する**（手動 `wrangler` ではない）。
 `pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
-`main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像 / PDF の R2 アップロード → D1 migrate(remote) → API デプロイ → D1 seed(remote) → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
+`main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像 / PDF の R2 アップロード → D1 migrate(remote) → Web ビルド → API デプロイ → Web デプロイ → D1 seed(remote) を直列実行する (API は Web の中継でしか受けないので、API と Web のデプロイは隙間なく並べる)。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
 GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
 Variables（`VITE_SERVER_URL` = Web のオリジン / `VITE_MATERIALS_BASE_URL` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`）の設定が必要。
 `deploy:prepare` がこれらを確かめ、無い・形が違えば Cloudflare に何も書かないうちにデプロイを止める。

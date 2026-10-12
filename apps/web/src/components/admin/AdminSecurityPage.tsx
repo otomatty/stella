@@ -629,6 +629,7 @@ function useSecurityEvents(query: SecurityEventQuery, version: number) {
         ...query,
         limit: PAGE_SIZE,
         before: last.created_at,
+        beforeId: last.id,
       });
       setRows((prev) => {
         const seen = new Set(prev.map((r) => r.id));

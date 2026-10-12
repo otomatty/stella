@@ -129,6 +129,36 @@ describe("アラート", () => {
   });
 });
 
+describe("POST /api/security/scan", () => {
+  const scan = async () =>
+    request(app, env, "/api/security/scan", { token: await token("admin"), method: "POST" });
+
+  it("検査を流し、直後の 2 回目は 429 にする", async () => {
+    const first = await scan();
+    expect(first.status).toBe(200);
+    expect(await json<{ new_alerts: number }>(first)).toMatchObject({ new_alerts: 0 });
+    expect((await scan()).status).toBe(429);
+  });
+
+  it("cron などの検査が実行中 (ロックあり) なら 409", async () => {
+    db.sqlite.exec(
+      `INSERT INTO security_state (key, value, updated_at) VALUES ('scan_lock', '${Date.now() + 60_000}', 1)`,
+    );
+    expect((await scan()).status).toBe(409);
+  });
+
+  it("期限の切れたロックは取り直せる", async () => {
+    db.sqlite.exec(
+      `INSERT INTO security_state (key, value, updated_at) VALUES ('scan_lock', '${Date.now() - 1}', 1)`,
+    );
+    expect((await scan()).status).toBe(200);
+    // 終わったらロックは外れている。
+    expect(
+      db.sqlite.prepare("select count(*) as n from security_state where key = 'scan_lock'").get(),
+    ).toEqual({ n: 0 });
+  });
+});
+
 describe("GET /api/security/events", () => {
   it("種類・検索で絞れ、別の組織の出来事は返さない", async () => {
     const all = (
@@ -149,6 +179,30 @@ describe("GET /api/security/events", () => {
     ).rows;
     expect(searched.map((r) => r.id)).toEqual(["e2"]);
     expect((await get("/api/security/events?kind=bogus")).status).toBe(400);
+  });
+});
+
+describe("イベントログの続きの読み込み", () => {
+  it("同じ時刻の行が多くても、時刻と ID で続きを取りこぼさない", async () => {
+    const at = now - 600_000;
+    const values = ["s1", "s2", "s3", "s4"]
+      .map((id) => `('${id}', 'ses', 'server_error', 'app', '{}', ${at})`)
+      .join(", ");
+    db.sqlite.exec(
+      `INSERT INTO security_events (id, tenant_id, kind, source, metadata, created_at) VALUES ${values}`,
+    );
+    const page = async (query: string) =>
+      (
+        await json<{ rows: Array<{ id: string; created_at: string }> }>(
+          await get(`/api/security/events?kind=server_error&limit=2${query}`),
+        )
+      ).rows;
+    const first = await page("");
+    expect(first.map((r) => r.id)).toEqual(["s4", "s3"]);
+    const last = first[1];
+    if (!last) throw new Error("no row");
+    const second = await page(`&before=${encodeURIComponent(last.created_at)}&beforeId=${last.id}`);
+    expect(second.map((r) => r.id)).toEqual(["s2", "s1"]);
   });
 });
 

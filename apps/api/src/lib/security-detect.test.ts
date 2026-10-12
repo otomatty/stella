@@ -278,6 +278,29 @@ describe("detectSecurityAlerts", () => {
     ).toBe(2);
   });
 
+  it("サーバーエラーの急増は最後のエラーの時刻で記録し、新しいエラーが無ければ解決済みを戻さない", async () => {
+    for (let i = 0; i < 20; i++) {
+      await seedEvent({ kind: "server_error", tenantId: "ses", createdAt: minutesAgo(40 - i) });
+    }
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    const row = db.sqlite.prepare("select last_seen_at from security_alerts").get() as {
+      last_seen_at: number;
+    };
+    expect(row.last_seen_at).toBe(minutesAgo(21).getTime());
+    db.sqlite.exec(
+      `UPDATE security_alerts SET status = 'resolved', status_changed_at = ${NOW.getTime()}`,
+    );
+    // 同じエラーがまだ直近 1 時間の窓にあるうちに検査しても、解決済みのまま (時の境目をまたいでも 1 件)。
+    const later = new Date(NOW.getTime() + 15 * 60_000);
+    expect(await detectSecurityAlerts(getDb(env()), env(), later, vi.fn())).toEqual([]);
+    expect(
+      db.sqlite.prepare("select count(*) as n, max(status) as s from security_alerts").get(),
+    ).toEqual({
+      n: 1,
+      s: "resolved",
+    });
+  });
+
   it("前の検査で知らせ損ねたアラートは、次の検査で知らせ直す", async () => {
     db.sqlite.exec(`
       INSERT INTO security_alerts (id, tenant_id, rule, severity, status, title, detail, subject, dedupe_key, event_count, first_seen_at, last_seen_at, notified_at, created_at) VALUES

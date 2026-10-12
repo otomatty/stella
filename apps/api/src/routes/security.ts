@@ -29,10 +29,9 @@ import { ApiError, errorResponse, getCaller, requireTenantAdmin } from "../lib/a
 import {
   ACCESS_LOG_IMPORTED_AT,
   cloudflareAccessApiConfigured,
-  importAccessLogs,
   revokeAccessSessions,
 } from "../lib/security-cloudflare.js";
-import { detectSecurityAlerts, LAST_SCAN_AT } from "../lib/security-detect.js";
+import { LAST_SCAN_AT, runSecurityScan } from "../lib/security-detect.js";
 import {
   deferSecurityEvent,
   readSecurityState,
@@ -43,6 +42,8 @@ import type { Env } from "../env.js";
 export const securityRoute = new Hono<{ Bindings: Env }>();
 
 const DAY = 86_400_000;
+/** 画面の「今すぐ検査」の最短の間隔 (連打で D1 の書き込み枠を使わない)。 */
+const MANUAL_SCAN_INTERVAL_MS = 60_000;
 const PRIVILEGED = new Set(["instructor", "admin", "platform_admin", "sales"]);
 
 function stateDate(raw: string | null): string | null {
@@ -256,7 +257,14 @@ securityRoute.get("/api/security/events", async (c) => {
     if (q.before) {
       const before = new Date(q.before);
       if (Number.isNaN(before.getTime())) throw new ApiError("before が不正です", 400);
-      conds.push(lt(securityEvents.createdAt, before));
+      // 同じ時刻 (ms) の行が多いときに取りこぼさないよう、時刻が同じなら ID で続きを決める。
+      const page = q.beforeId
+        ? or(
+            lt(securityEvents.createdAt, before),
+            and(eq(securityEvents.createdAt, before), lt(securityEvents.id, q.beforeId)),
+          )
+        : lt(securityEvents.createdAt, before);
+      if (page) conds.push(page);
     }
     const search = q.q?.trim().toLowerCase();
     if (search) {
@@ -289,7 +297,7 @@ securityRoute.get("/api/security/events", async (c) => {
       .from(securityEvents)
       .leftJoin(profiles, eq(profiles.id, securityEvents.actorId))
       .where(and(...conds))
-      .orderBy(desc(securityEvents.createdAt))
+      .orderBy(desc(securityEvents.createdAt), desc(securityEvents.id))
       .limit(limit);
     return c.json({ rows });
   } catch (err) {
@@ -417,20 +425,15 @@ securityRoute.post("/api/security/accounts/:id/revoke", async (c) => {
 securityRoute.post("/api/security/scan", async (c) => {
   try {
     const { caller, db } = await adminCtx(c);
-    let accessLogError = false;
-    try {
-      await importAccessLogs(c.env, db);
-    } catch (err) {
-      accessLogError = true;
-      console.error(
-        "[security] access log import failed",
-        err instanceof Error ? err.message : err,
-      );
+    const last = Number(await readSecurityState(db, LAST_SCAN_AT));
+    if (Number.isFinite(last) && Date.now() - last < MANUAL_SCAN_INTERVAL_MS) {
+      throw new ApiError("検査は 1 分に 1 回までです。少し待ってからお試しください", 429);
     }
-    const created = await detectSecurityAlerts(db, c.env);
+    const result = await runSecurityScan(c.env, db);
+    if (!result) throw new ApiError("別の検査が実行中です。少し待ってからお試しください", 409);
     return c.json({
-      new_alerts: created.filter((a) => a.tenantId === caller.tenantId).length,
-      access_log_error: accessLogError,
+      new_alerts: result.created.filter((a) => a.tenantId === caller.tenantId).length,
+      access_log_error: result.accessLogError,
     });
   } catch (err) {
     return errorResponse(c, err);

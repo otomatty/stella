@@ -27,6 +27,8 @@ export interface SecurityEventQuery {
   actorId?: string;
   /** これより古い出来事だけ (前のページの最後の created_at)。 */
   before?: string;
+  /** 前のページの最後の行の ID (同じ時刻の行を取りこぼさないため `before` と一緒に送る)。 */
+  beforeId?: string;
   limit?: number;
 }
 
@@ -64,12 +66,13 @@ export function securityEventsQuery(query: SecurityEventQuery): string {
   if (q) p.set("q", q);
   if (query.actorId) p.set("actorId", query.actorId);
   if (query.before) p.set("before", query.before);
+  if (query.before && query.beforeId) p.set("beforeId", query.beforeId);
   if (query.limit) p.set("limit", String(query.limit));
   const s = p.toString();
   return s ? `?${s}` : "";
 }
 
-/** 出来事 (新しい順)。続きは最後の行の created_at を `before` に渡して取る。 */
+/** 出来事 (新しい順)。続きは最後の行の created_at と id を `before` / `beforeId` に渡して取る。 */
 export async function listSecurityEvents(
   query: SecurityEventQuery = {},
 ): Promise<SecurityEventRow[]> {

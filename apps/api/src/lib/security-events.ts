@@ -413,3 +413,31 @@ export async function purgeExpiredVscodeLinks(db: Db, now = new Date()): Promise
     .delete(authVscodeLinks)
     .where(lt(authVscodeLinks.expiresAt, new Date(now.getTime() - 86_400_000)));
 }
+
+/**
+ * cron と画面の「今すぐ検査」が同時に検知を走らせないためのロック (security_state の 1 行)。
+ * 期限 (ms) を値に持ち、期限切れか無いときだけ取れる (条件付きの upsert で 1 回の書き込み)。
+ * 取れたら true。処理が落ちてもロックは期限で外れる。
+ */
+export async function acquireSecurityLock(
+  db: Db,
+  key: string,
+  ttlMs: number,
+  now = new Date(),
+): Promise<boolean> {
+  const until = String(now.getTime() + ttlMs);
+  const rows = await db
+    .insert(securityState)
+    .values({ key, value: until, updatedAt: now })
+    .onConflictDoUpdate({
+      target: securityState.key,
+      set: { value: until, updatedAt: now },
+      setWhere: sql`cast(${securityState.value} as integer) <= ${now.getTime()}`,
+    })
+    .returning({ key: securityState.key });
+  return rows.length > 0;
+}
+
+export async function releaseSecurityLock(db: Db, key: string): Promise<void> {
+  await db.delete(securityState).where(eq(securityState.key, key));
+}

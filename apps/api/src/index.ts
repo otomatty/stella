@@ -11,8 +11,7 @@ import { runAiReviewSweep } from "./lib/ai-review-queue.js";
 import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
-import { importAccessLogs } from "./lib/security-cloudflare.js";
-import { detectSecurityAlerts } from "./lib/security-detect.js";
+import { runSecurityScan } from "./lib/security-detect.js";
 import {
   purgeExpiredVscodeLinks,
   purgeOldSecurityEvents,
@@ -162,20 +161,15 @@ export default {
         console.error("[cron] mentor memo failed", e);
       }),
     );
-    // セキュリティ監視: Access のログの取り込み → 検知ルール → 古い出来事の削除。
-    // 取り込みに失敗しても (トークンの権限切れなど)、アプリの出来事での検知は続ける。
+    // セキュリティ監視: Access のログの取り込み → 検知ルール (画面の「今すぐ検査」とロックを共有) →
+    // 古い出来事の削除。
     ctx.waitUntil(
       (async () => {
         const db = getDb(env);
         try {
-          await importAccessLogs(env, db);
+          await runSecurityScan(env, db);
         } catch (e) {
-          console.error("[cron] access log import failed", e instanceof Error ? e.message : e);
-        }
-        try {
-          await detectSecurityAlerts(db, env);
-        } catch (e) {
-          console.error("[cron] security detection failed", e);
+          console.error("[cron] security scan failed", e);
         }
         try {
           await purgeOldSecurityEvents(db);

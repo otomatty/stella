@@ -27,7 +27,13 @@ import {
   securityEvents,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { readSecurityState, writeSecurityState } from "./security-events.js";
+import { importAccessLogs } from "./security-cloudflare.js";
+import {
+  acquireSecurityLock,
+  readSecurityState,
+  releaseSecurityLock,
+  writeSecurityState,
+} from "./security-events.js";
 
 const DETECT_CURSOR = "detect_cursor";
 export const LAST_SCAN_AT = "last_scan_at";
@@ -368,7 +374,11 @@ async function errorSpikeRule(db: Db, until: Date): Promise<AlertCandidate[]> {
   // 組織ごとに数える (別の組織だけで起きた急増を、その組織の管理者に見せる)。
   const countByTenant = async (from: Date, to: Date) => {
     const rows = await db
-      .select({ tenantId: securityEvents.tenantId, n: sql<number>`count(*)` })
+      .select({
+        tenantId: securityEvents.tenantId,
+        n: sql<number>`count(*)`,
+        last: sql<number>`max(${securityEvents.createdAt})`,
+      })
       .from(securityEvents)
       .where(
         and(
@@ -378,33 +388,35 @@ async function errorSpikeRule(db: Db, until: Date): Promise<AlertCandidate[]> {
         ),
       )
       .groupBy(securityEvents.tenantId);
-    return new Map(rows.map((r) => [r.tenantId, Number(r.n)]));
+    return new Map(rows.map((r) => [r.tenantId, { n: Number(r.n), last: Number(r.last) }]));
   };
   const lastHour = await countByTenant(
     new Date(until.getTime() - HOUR),
     new Date(until.getTime() + 1),
   );
-  if (![...lastHour.values()].some((n) => n >= THRESHOLDS.errorSpikeMin)) return [];
+  if (![...lastHour.values()].some((v) => v.n >= THRESHOLDS.errorSpikeMin)) return [];
   const week = await countByTenant(
     new Date(until.getTime() - 7 * DAY - HOUR),
     new Date(until.getTime() - HOUR),
   );
-  const hourKey = new Date(until.getTime() + 9 * HOUR).toISOString().slice(0, 13);
   const out: AlertCandidate[] = [];
-  for (const [tenantId, count] of lastHour) {
+  for (const [tenantId, { n: count, last }] of lastHour) {
     if (count < THRESHOLDS.errorSpikeMin) continue;
-    const hourlyAverage = (week.get(tenantId) ?? 0) / (7 * 24);
+    const hourlyAverage = (week.get(tenantId)?.n ?? 0) / (7 * 24);
     if (count < hourlyAverage * THRESHOLDS.errorSpikeRatio) continue;
+    // 時刻は検査の時刻ではなく最後のエラーの時刻にする。新しいエラーが無ければ、解決済みに
+    // したアラートを戻さず、時の境目をまたいでも同じ日のうちは 1 件にまとまる。
+    const at = new Date(last);
     out.push({
       tenantId,
       rule: "error_spike",
       severity: "medium",
       subject: null,
-      dedupeKey: `error_spike:${hourKey}`,
+      dedupeKey: `error_spike:${jstDate(at)}`,
       count,
       countMode: "max",
       detail: { count_last_hour: count, hourly_average_7d: Math.round(hourlyAverage * 10) / 10 },
-      at: until,
+      at,
     });
   }
   return out;
@@ -685,4 +697,38 @@ async function pendingNotifications(
   const byId = new Map(created.map((a) => [a.id, a]));
   for (const a of unsent) if (!byId.has(a.id)) byId.set(a.id, a);
   return [...byId.values()];
+}
+
+const SCAN_LOCK = "scan_lock";
+/** 検査 1 回の処理より十分長く (Access のログ取り込み 20 秒 + 検知)、落ちたときに長く止めない長さ。 */
+const SCAN_LOCK_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Access のログの取り込みと検知を 1 回流す (cron と画面の「今すぐ検査」が使う)。同時に走ると件数を
+ * 二重に数え通知を重複して送るので、ロックを取れたときだけ走らせる。取れなければ null。
+ */
+export async function runSecurityScan(
+  env: NotifyEnv &
+    Pick<Env, "SECURITY_TENANT_ID" | "PUBLIC_CONTENT_TENANT_ID"> &
+    Parameters<typeof importAccessLogs>[0],
+  db: Db,
+): Promise<{ created: SecurityAlertRecord[]; accessLogError: boolean } | null> {
+  if (!(await acquireSecurityLock(db, SCAN_LOCK, SCAN_LOCK_TTL_MS))) return null;
+  try {
+    let accessLogError = false;
+    try {
+      await importAccessLogs(env, db);
+    } catch (err) {
+      // 取り込みに失敗しても (トークンの権限切れなど)、アプリの出来事での検知は続ける。
+      accessLogError = true;
+      console.error(
+        "[security] access log import failed",
+        err instanceof Error ? err.message : err,
+      );
+    }
+    const created = await detectSecurityAlerts(db, env);
+    return { created, accessLogError };
+  } finally {
+    await releaseSecurityLock(db, SCAN_LOCK);
+  }
 }
