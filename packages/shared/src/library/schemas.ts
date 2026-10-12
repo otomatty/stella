@@ -1,6 +1,8 @@
 import {
+  LIBRARY_LIMITS,
   LIBRARY_READING_STATUSES,
   type CreateLibraryBook,
+  type CreateLibraryPdf,
   type UpdateLibraryBook,
   type UpdateLibraryShelf,
 } from "./types";
@@ -39,6 +41,20 @@ export function parseBookMetadata(input: unknown, create: boolean): UpdateLibrar
   if (!create && Object.keys(result).length === 0)
     throw new LibraryInputError("変更する項目が必要です");
   return result;
+}
+export function parseCreatePdf(input: unknown): CreateLibraryPdf {
+  const value = object(input, ["fileName", "sizeBytes"]);
+  const fileName = typeof value.fileName === "string" ? value.fileName.trim() : "";
+  if (!fileName || fileName.length > 200)
+    throw new LibraryInputError("ファイル名は1〜200文字で指定してください");
+  const size = value.sizeBytes;
+  if (
+    !Number.isSafeInteger(size) ||
+    (size as number) < 1 ||
+    (size as number) > LIBRARY_LIMITS.maxPdfBytes
+  )
+    throw new LibraryInputError("PDFは50MBまでです");
+  return { fileName, sizeBytes: size as number };
 }
 export function parseShelfUpdate(input: unknown): UpdateLibraryShelf {
   const value = object(input, ["readingStatus", "favorite", "tags"]);

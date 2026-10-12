@@ -955,10 +955,49 @@ describe("internal processing foundation", () => {
     ).toBe(usage?.count);
   });
 
+  it("streams an uploaded PDF into R2 where the book workflow can process it", async () => {
+    const id = await createBook("Uploaded");
+    const pdf = await PDFDocument.create();
+    for (let n = 0; n < 3; n++) pdf.addPage([200, 300]);
+    const bytes = await pdf.save();
+    const created = await request(`books/${id}/pdfs`, "owner", "POST", {
+      fileName: "uploaded.pdf",
+      sizeBytes: bytes.length,
+    });
+    expect(created.status).toBe(201);
+    const pdfId = (await data<{ pdf: { id: string } }>(created)).pdf.id;
+    const uploaded = await mf.dispatchFetch(
+      `http://localhost/api/library/books/${id}/pdfs/${pdfId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${tokens.get("owner")}`,
+          "Content-Type": "application/pdf",
+        },
+        body: bytes,
+      },
+    );
+    expect(uploaded.status).toBe(200);
+    const stored = await bucket.list({ prefix: `library/a/${id}/pdfs/${pdfId}-` });
+    expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
+    const jobId = crypto.randomUUID();
+    await db
+      .prepare(
+        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 1)",
+      )
+      .bind(jobId, id)
+      .run();
+    await dispatch({ tenantId: "a", bookId: id, jobId, generation: 1 });
+    await waitJob(jobId);
+    expect(
+      await db.prepare("SELECT status,page_count FROM library_books WHERE id = ?").bind(id).first(),
+    ).toMatchObject({ status: "ready", page_count: 3 });
+  });
+
   it("connects API to narrator and refuses public HTTP and stale/mismatched jobs", async () => {
     expect(
       await data<{ processingAvailable: boolean; upload: boolean }>(await request("capabilities")),
-    ).toMatchObject({ processingAvailable: true, upload: false });
+    ).toMatchObject({ processingAvailable: true, upload: true });
     const worker = await mf.getWorker("narrator");
     const publicResponse = await worker.fetch("https://narrator.test/jobs");
     expect(publicResponse.status).toBe(404);

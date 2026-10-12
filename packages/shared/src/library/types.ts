@@ -41,6 +41,25 @@ export interface LibraryCapabilities {
   };
 }
 export const MAX_LIBRARY_BOOK_PDFS = 50;
+export const LIBRARY_LIMITS: LibraryCapabilities["limits"] = {
+  maxPdfBytes: 50 * 1024 * 1024,
+  maxPdfPages: 100,
+  maxBookBytes: 1024 * 1024 * 1024,
+  maxBookPages: 1000,
+  maxBookPdfs: MAX_LIBRARY_BOOK_PDFS,
+};
+export interface LibraryPdf {
+  id: string;
+  position: number;
+  fileName: string;
+  sizeBytes: number;
+  uploadStatus: "uploading" | "completed";
+  pageCount: number | null;
+}
+export interface CreateLibraryPdf {
+  fileName: string;
+  sizeBytes: number;
+}
 export interface LibraryShelfResponse {
   entries: LibraryShelfEntry[];
   total: number;

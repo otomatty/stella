@@ -3,15 +3,17 @@ import { bodyLimit } from "hono/body-limit";
 import {
   LibraryInputError,
   parseBookMetadata,
+  parseCreatePdf,
   parseShelfUpdate,
 } from "@stella/shared/library/schemas";
 import type {
   LibraryBook,
   LibraryCapabilities,
+  LibraryPdf,
   LibraryReadingStatus,
   LibraryShelfEntry,
 } from "@stella/shared/library/types";
-import { MAX_LIBRARY_BOOK_PDFS } from "@stella/shared/library/types";
+import { LIBRARY_LIMITS } from "@stella/shared/library/types";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, type Caller } from "../lib/authz.js";
 import {
@@ -61,6 +63,39 @@ async function ownBook(env: Env, caller: Caller, id: string): Promise<BookRow> {
   if (!row) throw new ApiError("書籍が見つかりません", 404);
   return row;
 }
+interface PdfRow {
+  id: string;
+  position: number;
+  file_name: string;
+  size_bytes: number;
+  r2_key: string;
+  upload_status: LibraryPdf["uploadStatus"];
+  page_count: number | null;
+}
+function pdfView(row: PdfRow): LibraryPdf {
+  return {
+    id: row.id,
+    position: row.position,
+    fileName: row.file_name,
+    sizeBytes: row.size_bytes,
+    uploadStatus: row.upload_status,
+    pageCount: row.page_count,
+  };
+}
+async function processingAvailable(env: Env): Promise<boolean> {
+  if (!libraryEnabled(env.LIBRARY_ENABLED) || !env.NARRATOR) return false;
+  try {
+    return (await env.NARRATOR.capabilities()).configured;
+  } catch {
+    // Metadata remains usable when the processing Worker is unavailable.
+    return false;
+  }
+}
+// PDFs can be added or replaced only before processing starts.
+function requireUploadable(book: BookRow): void {
+  if (book.status !== "draft" && book.status !== "uploading")
+    throw new ApiError("処理を始めた書籍にはPDFを追加できません", 409);
+}
 function pageNumber(value: string | undefined, fallback: number, max: number): number {
   if (value === undefined) return fallback;
   if (!/^\d+$/.test(value) || Number(value) > max) throw new ApiError("ページ指定が無効です", 400);
@@ -72,37 +107,29 @@ function failure(c: Parameters<typeof errorResponse>[0], error: unknown): Respon
   return errorResponse(c, error);
 }
 export const libraryRoute = new Hono<{ Bindings: Env }>();
-libraryRoute.use(
-  "/api/library/*",
-  bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ error: "入力が大きすぎます" }, 400) }),
+const smallBody = bodyLimit({
+  maxSize: 16 * 1024,
+  onError: (c) => c.json({ error: "入力が大きすぎます" }, 400),
+});
+// PDF bodies stream to R2; their size is checked against the registered PDF instead.
+const PDF_BODY = /^\/api\/library\/books\/[^/]+\/pdfs\/[^/]+$/;
+libraryRoute.use("/api/library/*", (c, next) =>
+  c.req.method === "PUT" && PDF_BODY.test(c.req.path) ? next() : smallBody(c, next),
 );
 
 libraryRoute.get("/api/library/capabilities", async (c) => {
   try {
     await getCaller(c);
     const enabled = libraryEnabled(c.env.LIBRARY_ENABLED);
-    let processingAvailable = false;
-    if (enabled && c.env.NARRATOR) {
-      try {
-        processingAvailable = (await c.env.NARRATOR.capabilities()).configured;
-      } catch {
-        /* Metadata remains usable when the processing Worker is unavailable. */
-      }
-    }
+    const processing = await processingAvailable(c.env);
     return c.json({
       enabled,
       metadata: enabled,
-      processingAvailable,
-      upload: false,
+      processingAvailable: processing,
+      upload: processing && Boolean(c.env.LIBRARY_BUCKET),
       audio: false,
       sharing: false,
-      limits: {
-        maxPdfBytes: 50 * 1024 * 1024,
-        maxPdfPages: 100,
-        maxBookBytes: 1024 * 1024 * 1024,
-        maxBookPages: 1000,
-        maxBookPdfs: MAX_LIBRARY_BOOK_PDFS,
-      },
+      limits: LIBRARY_LIMITS,
     } satisfies LibraryCapabilities);
   } catch (error) {
     return failure(c, error);
@@ -205,6 +232,119 @@ libraryRoute.patch("/api/library/books/:bookId", async (c) => {
       )
       .run();
     return c.json({ book: bookView(await ownBook(c.env, caller, row.id)) });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.get("/api/library/books/:bookId/pdfs", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const rows = await c.env.DB.prepare(
+      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? ORDER BY position",
+    )
+      .bind(caller.tenantId, book.id)
+      .all<PdfRow>();
+    return c.json({ pdfs: rows.results.map(pdfView) });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    requireUploadable(book);
+    if (!c.env.LIBRARY_BUCKET || !(await processingAvailable(c.env)))
+      throw new ApiError("PDFの登録は現在利用できません", 403);
+    const input = parseCreatePdf(await c.req.json<unknown>());
+    const id = crypto.randomUUID(),
+      now = Date.now();
+    // Count, total size and position are decided in the INSERT so concurrent adds cannot exceed them.
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, created_at)
+        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?
+        FROM library_books b WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status IN ('draft','uploading')
+          AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) < ?
+          AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?`,
+      ).bind(
+        id,
+        input.fileName,
+        input.sizeBytes,
+        `library/${caller.tenantId}/${book.id}/pdfs/${id}.pdf`,
+        now,
+        caller.tenantId,
+        book.id,
+        caller.id,
+        LIBRARY_LIMITS.maxBookPdfs,
+        input.sizeBytes,
+        LIBRARY_LIMITS.maxBookBytes,
+      ),
+      c.env.DB.prepare(
+        "UPDATE library_books SET status = 'uploading', updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'draft' AND EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?)",
+      ).bind(now, caller.tenantId, book.id, caller.tenantId, book.id, id),
+    ]);
+    const row = await c.env.DB.prepare(
+      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
+    )
+      .bind(caller.tenantId, book.id, id)
+      .first<PdfRow>();
+    // No row means a guard in the INSERT (owner, status, count or total size) failed.
+    if (!row) throw new ApiError("PDFの数か合計サイズが上限を超えています", 409);
+    return c.json({ pdf: pdfView(row) }, 201);
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    const bucket = c.env.LIBRARY_BUCKET;
+    if (!bucket) throw new ApiError("PDFの登録は現在利用できません", 403);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    requireUploadable(book);
+    const pdf = await c.env.DB.prepare(
+      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
+    )
+      .bind(caller.tenantId, book.id, c.req.param("pdfId"))
+      .first<PdfRow>();
+    if (!pdf) throw new ApiError("PDFが見つかりません", 404);
+    const body = c.req.raw.body;
+    if (!body || Number(c.req.header("Content-Length")) !== pdf.size_bytes)
+      throw new ApiError("登録したサイズと送信したPDFのサイズが一致しません", 400);
+    // Each attempt writes its own key and the row switches to it only after validation, so a
+    // failed or concurrent upload never deletes a completed original.
+    const key = `library/${caller.tenantId}/${book.id}/pdfs/${pdf.id}-${crypto.randomUUID()}.pdf`;
+    const stored = await bucket.put(key, body, {
+      httpMetadata: { contentType: "application/pdf" },
+    });
+    const head = await bucket.get(key, { range: { offset: 0, length: 5 } });
+    const magic = head ? await head.text() : "";
+    if (stored?.size !== pdf.size_bytes || magic !== "%PDF-") {
+      await bucket.delete(key);
+      throw new ApiError("PDFファイルを送信してください", 400);
+    }
+    // A book deleted during the transfer keeps its tombstone; the narrator cron removes the object.
+    const switched = await c.env.DB.prepare(
+      "UPDATE library_book_pdfs SET r2_key = ?, upload_status = 'completed', page_count = NULL WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
+    )
+      .bind(key, caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
+      .run();
+    if (!switched.meta.changes) {
+      await bucket.delete(key);
+      throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
+    }
+    await bucket.delete(pdf.r2_key);
+    return c.json({
+      pdf: pdfView({ ...pdf, r2_key: key, upload_status: "completed", page_count: null }),
+    });
   } catch (error) {
     return failure(c, error);
   }

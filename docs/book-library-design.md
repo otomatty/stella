@@ -169,7 +169,7 @@ STELLAの`lesson_materials`はレッスンの配布資料、`discovery_materials
 ## 7 PDF登録から読み上げまで
 
 1. `POST /api/library/books`でタイトル、種別、PDF情報、音声準備の希望を保存する。所有者とテナントはサーバーで決め、自分の本棚にも追加する。
-2. 既存Web WorkerでPDFを確認・分割する。バイナリ送信は専用クライアントでBearer認証し、APIを通してR2のmultipart uploadへ送る。
+2. 既存Web WorkerでPDFを確認・分割する。分割した原本（50MB・100ページ以下）を1つずつBearer認証のPUTでAPIへ送り、APIがR2へ流し込む。Workersの要求サイズ上限に収まるため、R2のmultipart uploadは使わない。送り直しが多い場合に限り後から追加する。
 3. 受信したサイズ、PDF識別子、ページ数、合計上限をサーバーでも確認する。ページ数はクライアントの申告を信用しない。完了後にだけ処理を予約する。
 4. ジョブと起動待ちをD1の同じbatchで保存する。処理Workerには固定RPCで起動を依頼し、起動に失敗しても再送できるようにする。
 5. BookWorkflowが既存の手順でOCR、図版、章分割を進める。初期版は一冊の章分割が完了してから読む画面を開く。先頭の章だけを途中公開する改修は後続に分ける。
@@ -244,9 +244,8 @@ Webルートは`/library`、`/library/new`、`/library/books/$bookId`、`/librar
 | `GET /shelf`、`PUT /shelf/:bookId` | 本人の本棚と読書状態・個人タグ。利用者IDは要求で指定させない |
 | `DELETE /shelf/:bookId` | 本棚からアーカイブする。原本削除と区別する |
 | `POST /books`、`GET /books/:bookId`、`PATCH /books/:bookId` | 個人書籍の登録・参照・編集 |
-| `POST /books/:bookId/pdfs/:pdfId/upload` | 分割アップロードの開始・再開情報 |
-| `PUT /books/:bookId/pdfs/:pdfId/upload/parts/:partNo` | バイナリ部分送信 |
-| `POST /books/:bookId/pdfs/:pdfId/upload/complete` | サーバー側検証、受信確定 |
+| `GET /books/:bookId/pdfs`、`POST /books/:bookId/pdfs` | 原本の一覧と登録。順序・件数・合計サイズはサーバーで決める |
+| `PUT /books/:bookId/pdfs/:pdfId` | 原本1つ（50MB以下）をそのままR2へ送る。サイズとPDFの先頭を確かめ、失敗したらその原本だけを送り直す |
 | `POST /books/:bookId/process`、`GET /books/:bookId/jobs`、`POST /jobs/:jobId/retry` | 所有者の処理予約・状態・再実行。request IDで重複を抑える |
 | `GET /books/:bookId/chapters`、`GET /chapters/:chapterId` | 閲覧可能な章本文と本人の位置 |
 | `POST /books/:bookId/audio-jobs` | 所有者が選んだ章／全章の生成予約 |
