@@ -9,12 +9,12 @@
     "lint": "biome ci .",
     "format": "biome format --write .",
     "dev:api": "bun --filter=@stella/api dev",
-    "build": "bun run --filter=@stella/web build && bun run --cwd apps/vscode build",
+    "build": "bun run --filter=@stella/web build && bun run --cwd apps/vscode build && bun run --filter=@stella/narrator build",
     "preview": "bun --filter=@stella/web preview",
     "preview:build": "bun run --filter=@stella/web build && bun run --filter=@stella/web preview",
     "typecheck": "bun --filter '@stella/*' typecheck && bun run --cwd apps/vscode typecheck",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "vitest run && bun run test:narrator",
+    "test:coverage": "vitest run --coverage && bun run test:narrator",
     "content:check": "bun run --filter=@stella/content check:ci",
     "content:upload:remote": "bun run --filter=@stella/content upload:remote",
     "content:pdf:sync": "bun run --filter=@stella/content pdf:sync",
@@ -35,7 +35,10 @@
     "db:migrate:remote": "bun run --filter=@stella/api db:migrate:remote",
     "db:seed": "bun run --filter=@stella/api db:seed",
     "db:seed:remote": "bun run --filter=@stella/api db:seed:remote",
-    "db:seed:remote:content": "bun run --filter=@stella/api db:seed:remote:content"
+    "db:seed:remote:content": "bun run --filter=@stella/api db:seed:remote:content",
+    "dev:narrator": "bun --filter=@stella/narrator dev",
+    "test:narrator": "bun run --filter=@stella/narrator test",
+    "deploy:narrator": "bun run --filter=@stella/narrator deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

@@ -36,6 +36,14 @@ const READING: Record<LibraryReadingStatus, string> = {
   finished: "読了",
   archived: "保管",
 };
+const PROCESSING: Record<LibraryShelfEntry["book"]["status"], string> = {
+  draft: "書籍情報のみ",
+  uploading: "PDF送信中",
+  processing: "本文を準備中",
+  ready: "本文準備済み",
+  failed: "処理失敗",
+  deleting: "削除中",
+};
 function message(error: unknown): string {
   return error instanceof Error ? error.message : "本棚を取得できませんでした";
 }
@@ -139,7 +147,7 @@ function LibraryShelf() {
         </div>
         <Button
           variant="primary"
-          disabled={!capabilities?.enabled || busy}
+          disabled={!capabilities?.metadata || busy}
           onClick={() => setEditor("new")}
         >
           書籍情報を登録
@@ -183,7 +191,9 @@ function LibraryShelf() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-3">
-                <p className="text-xs text-muted-foreground">書籍情報のみ · 自分のみ</p>
+                <p className="text-xs text-muted-foreground">
+                  {PROCESSING[entry.book.status]} · 自分のみ
+                </p>
                 <div className="flex flex-wrap gap-1">
                   {entry.tags.map((tag) => (
                     <Badge key={tag} variant="default">

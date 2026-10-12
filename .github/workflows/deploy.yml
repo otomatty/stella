@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    name: assets → migrate → api → seed → web
+    name: assets → migrate → narrator → api → seed → web
     needs: verify
     runs-on: ubuntu-latest
     env:
@@ -107,6 +107,19 @@ jobs:
       # 「何もしない」判断は今どおり wrangler に任せる。
       - name: Apply D1 migrations (remote)
         run: bun run db:migrate:remote
+
+      # Fixed private bucket only; stop deployment if any public domain is enabled.
+      - name: Prepare private library storage
+        run: bun run apps/api/scripts/prepare-library-storage.ts
+
+      # Runs before the API, whose NARRATOR binding needs stella-narrator to exist. A failure stops
+      # the deploy only when no earlier version exists; otherwise that version keeps running and
+      # API/web still deploy.
+      - name: Deploy narrator (private service; processing disabled)
+        run: |
+          if bun run deploy:narrator; then exit 0; fi
+          (cd apps/narrator && bunx wrangler deployments list --name stella-narrator > /dev/null) || exit 1
+          echo "::warning::narrator deploy failed; the previous stella-narrator version keeps running"
 
       - name: Deploy API
         run: bun run deploy:api

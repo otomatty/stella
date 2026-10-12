@@ -11,6 +11,7 @@ import type {
   LibraryReadingStatus,
   LibraryShelfEntry,
 } from "@stella/shared/library/types";
+import { MAX_LIBRARY_BOOK_PDFS } from "@stella/shared/library/types";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, type Caller } from "../lib/authz.js";
 import {
@@ -26,6 +27,8 @@ interface BookRow {
   title: string;
   author: string | null;
   kind: LibraryBook["kind"];
+  status: LibraryBook["status"];
+  page_count: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -41,13 +44,15 @@ function bookView(row: BookRow): LibraryBook {
     title: row.title,
     author: row.author,
     kind: row.kind,
+    status: row.status,
+    pageCount: row.page_count,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 async function ownBook(env: Env, caller: Caller, id: string): Promise<BookRow> {
   const row = await env.DB.prepare(
-    "SELECT * FROM library_books WHERE id = ? AND tenant_id = ? AND owner_id = ?",
+    "SELECT * FROM library_books WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
   )
     .bind(id, caller.tenantId, caller.id)
     .first<BookRow>();
@@ -75,7 +80,30 @@ libraryRoute.use(
 libraryRoute.get("/api/library/capabilities", async (c) => {
   try {
     await getCaller(c);
-    return c.json({ enabled: libraryEnabled(c.env.LIBRARY_ENABLED) } satisfies LibraryCapabilities);
+    const enabled = libraryEnabled(c.env.LIBRARY_ENABLED);
+    let processingAvailable = false;
+    if (enabled && c.env.NARRATOR) {
+      try {
+        processingAvailable = (await c.env.NARRATOR.capabilities()).configured;
+      } catch {
+        /* Metadata remains usable when the processing Worker is unavailable. */
+      }
+    }
+    return c.json({
+      enabled,
+      metadata: enabled,
+      processingAvailable,
+      upload: false,
+      audio: false,
+      sharing: false,
+      limits: {
+        maxPdfBytes: 50 * 1024 * 1024,
+        maxPdfPages: 100,
+        maxBookBytes: 1024 * 1024 * 1024,
+        maxBookPages: 1000,
+        maxBookPdfs: MAX_LIBRARY_BOOK_PDFS,
+      },
+    } satisfies LibraryCapabilities);
   } catch (error) {
     return failure(c, error);
   }
@@ -88,7 +116,8 @@ libraryRoute.get("/api/library/mine", async (c) => {
     const limit = pageNumber(c.req.query("limit"), 30, 100);
     const offset = pageNumber(c.req.query("offset"), 0, 1_000_000);
     if (limit === 0) throw new ApiError("limitは1以上で指定してください", 400);
-    const where = "s.tenant_id = ? AND s.profile_id = ? AND b.owner_id = ?";
+    const where =
+      "s.tenant_id = ? AND s.profile_id = ? AND b.owner_id = ? AND b.status <> 'deleting'";
     const args = [caller.tenantId, caller.id, caller.id];
     const [rows, total] = await Promise.all([
       c.env.DB.prepare(
@@ -162,7 +191,7 @@ libraryRoute.patch("/api/library/books/:bookId", async (c) => {
     const row = await ownBook(c.env, caller, c.req.param("bookId"));
     const input = parseBookMetadata(await c.req.json<unknown>(), false);
     await c.env.DB.prepare(
-      "UPDATE library_books SET title = coalesce(?, title), author = CASE WHEN ? THEN ? ELSE author END, kind = coalesce(?, kind), updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ?",
+      "UPDATE library_books SET title = coalesce(?, title), author = CASE WHEN ? THEN ? ELSE author END, kind = coalesce(?, kind), updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
     )
       .bind(
         input.title ?? null,
@@ -190,7 +219,7 @@ libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
     const now = Date.now();
     // Null means keep the existing field; defaults apply only when adding to the shelf.
     await c.env.DB.prepare(`INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, reading_status, favorite, tags, created_at, updated_at)
-      SELECT ?, ?, id, coalesce(?,'unread'), coalesce(?,0), coalesce(?,'[]'), ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ?
+      SELECT ?, ?, id, coalesce(?,'unread'), coalesce(?,0), coalesce(?,'[]'), ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'
       ON CONFLICT (tenant_id, profile_id, book_id) DO UPDATE SET reading_status = coalesce(?, reading_status), favorite = coalesce(?, favorite), tags = coalesce(?, tags), updated_at = excluded.updated_at`)
       .bind(
         caller.tenantId,
@@ -235,13 +264,25 @@ libraryRoute.delete("/api/library/books/:bookId", async (c) => {
     const { caller } = await getCaller(c);
     requireLibraryEnabled(c.env.LIBRARY_ENABLED);
     const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    // Shelf entries cascade. P1 books have no R2 objects; P2 adds deferred cleanup.
-    await c.env.DB.prepare(
-      "DELETE FROM library_books WHERE id = ? AND tenant_id = ? AND owner_id = ?",
-    )
-      .bind(book.id, caller.tenantId, caller.id)
-      .run();
-    return c.json({ ok: true });
+    const now = Date.now();
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE library_books SET status = 'deleting', generation = generation + 1, updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
+      ).bind(now, book.id, caller.tenantId, caller.id),
+      c.env.DB.prepare(
+        "INSERT OR IGNORE INTO library_r2_deletions (prefix, tenant_id, book_id, created_at, not_before) VALUES (?, ?, ?, ?, ?)",
+      ).bind(
+        `library/${caller.tenantId}/${book.id}/`,
+        caller.tenantId,
+        book.id,
+        now,
+        now + 24 * 60 * 60 * 1000,
+      ),
+      c.env.DB.prepare(
+        "DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ?",
+      ).bind(caller.tenantId, book.id),
+    ]);
+    return c.json({ ok: true, status: "deleting" }, 202);
   } catch (error) {
     return failure(c, error);
   }

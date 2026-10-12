@@ -138,13 +138,18 @@ describe("private bookshelf access", () => {
     expect((await call(`shelf/${id}`, "owner", "DELETE")).status).toBe(200);
     expect((await call(`books/${id}`)).status).toBe(200);
     expect((await call(`shelf/${id}`, "owner", "PUT", { favorite: false })).status).toBe(200);
-    expect((await call(`books/${id}`, "owner", "DELETE")).status).toBe(200);
+    expect((await call(`books/${id}`, "owner", "DELETE")).status).toBe(202);
     expect((await call(`books/${id}`)).status).toBe(404);
     expect(
       db.sqlite
         .prepare("SELECT count(*) AS count FROM library_shelf_entries WHERE book_id = ?")
         .get(id),
     ).toEqual({ count: 0 });
+    expect(
+      db.sqlite
+        .prepare("SELECT count(*) AS count FROM library_r2_deletions WHERE book_id = ?")
+        .get(id),
+    ).toEqual({ count: 1 });
   });
   it("lets each staff role own a private shelf", async () => {
     for (const user of ["instructor", "admin", "platform-admin", "sales"]) {

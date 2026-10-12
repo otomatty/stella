@@ -2,8 +2,12 @@
  * Cloudflare Workers バインディング型。
  */
 
+import type { NarratorService } from "@stella/shared/library/types";
+
 export interface Env {
   LIBRARY_ENABLED?: string;
+  LIBRARY_BUCKET?: R2Bucket;
+  NARRATOR?: NarratorService;
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
   /**
