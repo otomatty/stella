@@ -262,12 +262,14 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                   variant="primary"
                   disabled={busy || !canProcess || !acknowledged}
                   onClick={() =>
-                    void run(() =>
-                      apiFetch(`/api/library/books/${book.id}/process`, {
+                    void run(async () => {
+                      await apiFetch(`/api/library/books/${book.id}/process`, {
                         method: "POST",
                         body: { acknowledgedExternalProcessing: true },
-                      }),
-                    )
+                      });
+                      // Each accepted run used its confirmation; a retry asks again.
+                      setAcknowledgedFor(null);
+                    })
                   }
                 >
                   本文の準備を始める
@@ -313,12 +315,13 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                     <Button
                       disabled={busy || !capabilities?.processingAvailable || !acknowledged}
                       onClick={() =>
-                        void run(() =>
-                          apiFetch(`/api/library/books/${book.id}/jobs/${job.id}/retry`, {
+                        void run(async () => {
+                          await apiFetch(`/api/library/books/${book.id}/jobs/${job.id}/retry`, {
                             method: "POST",
                             body: { acknowledgedExternalProcessing: true },
-                          }),
-                        )
+                          });
+                          setAcknowledgedFor(null);
+                        })
                       }
                     >
                       再実行
