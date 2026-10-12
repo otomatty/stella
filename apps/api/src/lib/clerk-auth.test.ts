@@ -79,7 +79,7 @@ describe("verifyClerkSession", () => {
 });
 
 describe("verifyVscodeApiKey", () => {
-  it("確かめた API キーは 1 分のあいだ Clerk に問い合わせ直さない", async () => {
+  it("確かめた API キーは 10 秒のあいだ Clerk に問い合わせ直さない", async () => {
     clerkApi.apiKeys.verify.mockResolvedValue({
       id: "ak_id",
       subject: "user_1",
@@ -94,9 +94,9 @@ describe("verifyVscodeApiKey", () => {
       userId: "user_1",
       apiKeyId: "ak_id",
     });
-    await verifyVscodeApiKey(config, "ak_secret", now + 30_000);
+    await verifyVscodeApiKey(config, "ak_secret", now + 5_000);
     expect(clerkApi.apiKeys.verify).toHaveBeenCalledTimes(1);
-    await verifyVscodeApiKey(config, "ak_secret", now + 61_000);
+    await verifyVscodeApiKey(config, "ak_secret", now + 11_000);
     expect(clerkApi.apiKeys.verify).toHaveBeenCalledTimes(2);
   });
 

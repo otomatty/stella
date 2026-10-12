@@ -172,8 +172,12 @@ function clerkClient(config: ClerkConfig) {
   return createClerkClient({ secretKey: config.secretKey });
 }
 
-/** 確かめた API キーを少しの間覚える (リクエストごとに Clerk へ問い合わせないため)。 */
-const API_KEY_CACHE_MS = 60_000;
+/**
+ * 確かめた API キーを少しの間覚える (拡張が続けて送るリクエストのたびに Clerk へ問い合わせないため)。
+ * 覚えるのはアイソレートごとなので、取り消しが別のアイソレートに届くまでこの時間だけ遅れる。短くしてある
+ * (無効化したアカウントは、これとは別に毎回の profiles の確認で止まる)。
+ */
+const API_KEY_CACHE_MS = 10_000;
 const apiKeyCache = new Map<string, { identity: ClerkApiKeyIdentity; at: number }>();
 
 async function sha256(value: string): Promise<string> {

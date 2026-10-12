@@ -127,8 +127,14 @@ function UsersAdminLive({
     setMenuId(null);
     setBusyId(p.id);
     try {
-      await setUserDisabled(p.id, !p.disabled);
+      const { revokeFailed } = await setUserDisabled(p.id, !p.disabled);
       toast.success(`${p.display_name} を${!p.disabled ? "無効化" : "有効化"}しました`);
+      if (revokeFailed) {
+        // 無効化の間は止まるが、残ったセッションは有効化し直すと使えてしまう。
+        toast.error(
+          "ログイン中のセッションの失効に失敗しました。セキュリティ画面の「アカウント棚卸し」から失効し直してください",
+        );
+      }
       await refetch();
     } catch (err) {
       toast.error(`状態変更失敗: ${err instanceof Error ? err.message : "unknown"}`);

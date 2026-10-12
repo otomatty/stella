@@ -319,8 +319,10 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
     // 無効化したら Clerk (と講師・管理者は Access) のセッション・VS Code のキーも切る (アプリは次の
-    // リクエストで拒否するが、ログインを残さないため)。失敗しても無効化は通す。
+    // リクエストで拒否するが、ログインを残さないため)。失敗しても無効化は通し、失敗したことを返す —
+    // 残ったセッションは有効化し直した時点で使えてしまうので、画面がセキュリティ画面での失効を促す。
     let sessionsRevoked = false;
+    let revokeFailed = false;
     if (body.disabled && target.email && sessionRevokeConfigured(c.env)) {
       try {
         const revoked = await revokeUserSessions(c.env, {
@@ -329,6 +331,7 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
         });
         sessionsRevoked = revoked.clerk || revoked.access;
       } catch (err) {
+        revokeFailed = true;
         console.error("[admin] session revoke failed", err instanceof Error ? err.message : err);
       }
     }
@@ -339,10 +342,12 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
       ip: clientIp(c),
       metadata: {
         disabled: body.disabled,
-        ...(body.disabled ? { sessions_revoked: sessionsRevoked } : {}),
+        ...(body.disabled
+          ? { sessions_revoked: sessionsRevoked, revoke_failed: revokeFailed }
+          : {}),
       },
     });
-    return c.json({ ok: true });
+    return c.json({ ok: true, revoke_failed: revokeFailed });
   } catch (err) {
     return errorResponse(c, err);
   }
