@@ -187,6 +187,33 @@ export function recordDisabled(
 }
 
 /**
+ * 利用停止中の組織 (tenants.active = 0) の利用者を拒否して記録する。platform_admin は除く
+ * (組織を戻す操作ができなくならないように)。`tenantActive` が null (組織の行が無い) なら通す。
+ */
+export function assertTenantActive(
+  c: Context<{ Bindings: Env }>,
+  profile: {
+    id: string;
+    tenantId: string;
+    role: string;
+    email: string | null;
+    tenantActive: boolean | null;
+  },
+): void {
+  if (profile.tenantActive !== false || profile.role === "platform_admin") return;
+  deferSecurityEvent(c, {
+    kind: "auth.tenant_inactive",
+    status: 403,
+    tenantId: profile.tenantId,
+    actorId: profile.id,
+    actorRole: profile.role,
+    email: profile.email,
+  });
+  markRequestRecorded(c);
+  throw new ApiError("所属する組織は利用停止中です", 403);
+}
+
+/**
  * 利用者を検証し、 profiles から caller のテナント / ロールを解決する。
  * 無効化済みアカウントと、利用停止中の組織 (tenants.active = 0。platform_admin を除く) は拒否する。
  */
@@ -222,18 +249,7 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
     recordDisabled(c, profile);
     throw new ApiError("このアカウントは無効化されています", 403);
   }
-  if (profile.tenantActive === false && profile.role !== "platform_admin") {
-    deferSecurityEvent(c, {
-      kind: "auth.tenant_inactive",
-      status: 403,
-      tenantId: profile.tenantId,
-      actorId: profile.id,
-      actorRole: profile.role,
-      email: profile.email,
-    });
-    markRequestRecorded(c);
-    throw new ApiError("所属する組織は利用停止中です", 403);
-  }
+  assertTenantActive(c, profile);
 
   const caller: Caller = {
     id: profile.id,

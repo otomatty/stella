@@ -15,7 +15,7 @@
  * アイソレートごとに 1 分あたりの記録数を絞る (超えた分は数だけ数えて 1 行にまとめる)。
  */
 
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Context } from "hono";
 
 import type { SecurityEventKind } from "@stella/shared/security/types";
@@ -267,7 +267,10 @@ const SEEN_REFRESH_MS = 60 * 60 * 1000;
 const SESSION_GAP_MS = 12 * 60 * 60 * 1000;
 const MAX_CACHED = 5_000;
 
-const seenCache = new Map<string, { issuedAt: number | null; at: number }>();
+/** キーは「利用者 + トークンの発行時刻」(複数の端末のセッションを別々に覚える)。値は最後に書いた時刻。 */
+const seenCache = new Map<string, number>();
+/** 同じ利用者の別の端末のセッションを、新しいサインインと取り違えないためにさかのぼる日数。 */
+const KNOWN_SESSION_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** テスト用。 */
 export function resetSessionCache(): void {
@@ -280,10 +283,11 @@ export function resetSessionCache(): void {
  */
 export function trackSession(c: AnyContext, actor: SecurityActor, issuedAt: number | null): void {
   const now = Date.now();
-  const cached = seenCache.get(actor.id);
-  if (cached && cached.issuedAt === issuedAt && now - cached.at < SEEN_REFRESH_MS) return;
+  const key = `${actor.id}:${issuedAt ?? ""}`;
+  const cached = seenCache.get(key);
+  if (cached !== undefined && now - cached < SEEN_REFRESH_MS) return;
   if (seenCache.size >= MAX_CACHED) seenCache.clear();
-  seenCache.set(actor.id, { issuedAt, at: now });
+  seenCache.set(key, now);
   const meta = requestMeta(c);
   deferTask(c, () => upsertSession(getDb(c.env), actor, issuedAt, meta, new Date(now)));
 }
@@ -303,11 +307,28 @@ export async function upsertSession(
       .where(eq(securitySessions.profileId, actor.id))
       .limit(1)
   )[0];
-  const isNew =
+  let isNew =
     !row ||
     (issuedAt != null
       ? row.lastIssuedAt !== issuedAt
       : !row.lastSeenAt || now.getTime() - row.lastSeenAt.getTime() > SESSION_GAP_MS);
+  // PC と携帯のように同じ利用者の端末が交互に使うと、最後の発行時刻だけでは毎回「新しい」に見える。
+  // 同じ発行時刻のサインインをもう記録していれば、既に知っているセッションとして扱う。
+  if (isNew && row && issuedAt != null) {
+    const known = await db
+      .select({ id: securityEvents.id })
+      .from(securityEvents)
+      .where(
+        and(
+          eq(securityEvents.actorId, actor.id),
+          eq(securityEvents.kind, "session.start"),
+          gte(securityEvents.createdAt, new Date(now.getTime() - KNOWN_SESSION_LOOKBACK_MS)),
+          sql`json_extract(${securityEvents.metadata}, '$.issued_at') = ${issuedAt}`,
+        ),
+      )
+      .limit(1);
+    if (known.length > 0) isNew = false;
+  }
 
   if (isNew) {
     await insertSecurityEvent(db, {

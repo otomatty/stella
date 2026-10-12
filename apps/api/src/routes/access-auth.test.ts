@@ -161,11 +161,25 @@ describe("Access のトークンでの認証", () => {
     ]);
   });
 
-  it("利用停止中の組織の利用者は拒否する", async () => {
+  it("利用停止中の組織の利用者は拒否する (/api/me の閲覧・更新も)", async () => {
     const assertion = await fixture.sign({ email: "closed@example.test" });
     const res = await call(accessEnv(), "/api/auth/vscode-link", { method: "POST", assertion });
     expect(res.status).toBe(403);
-    expect(events()).toEqual([expect.objectContaining({ kind: "auth.tenant_inactive" })]);
+    expect((await call(accessEnv(), "/api/me", { assertion })).status).toBe(403);
+    const update = await call(accessEnv(), "/api/me", {
+      method: "POST",
+      assertion,
+      body: JSON.stringify({ display_name: "書き換え" }),
+    });
+    expect(update.status).toBe(403);
+    expect(events().map((e) => e.kind)).toEqual([
+      "auth.tenant_inactive",
+      "auth.tenant_inactive",
+      "auth.tenant_inactive",
+    ]);
+    expect(
+      db.sqlite.prepare("select display_name from profiles where id = 'closed-user'").get(),
+    ).toEqual({ display_name: "停止組織" });
   });
 });
 

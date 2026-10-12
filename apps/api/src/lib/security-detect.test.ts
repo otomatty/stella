@@ -75,6 +75,25 @@ describe("サインインの検知 (upsertSession)", () => {
   });
 });
 
+describe("複数の端末のセッション", () => {
+  it("PC と携帯を交互に使っても、知っているセッションは新しいサインインにしない", async () => {
+    const d = getDb(env());
+    const actor = { id: "admin", tenantId: "ses", role: "admin", email: "admin@example.test" };
+    const meta = { ip: "203.0.113.1", country: "JP", userAgent: "UA" };
+    expect(await upsertSession(d, actor, 100, meta, minutesAgo(40))).toBe(true);
+    expect(await upsertSession(d, actor, 200, meta, minutesAgo(30))).toBe(true);
+    expect(await upsertSession(d, actor, 100, meta, minutesAgo(20))).toBe(false);
+    expect(await upsertSession(d, actor, 200, meta, minutesAgo(10))).toBe(false);
+    expect(
+      (
+        db.sqlite
+          .prepare("select count(*) as n from security_events where kind = 'session.start'")
+          .get() as { n: number }
+      ).n,
+    ).toBe(2);
+  });
+});
+
 describe("detectSecurityAlerts", () => {
   it("いつもと違う国からのサインインを出す (初めてのサインインでは出さない)", async () => {
     await seedEvent({
@@ -207,6 +226,20 @@ describe("detectSecurityAlerts", () => {
     expect(alerts().find((a) => a.rule === "uninvited_identity")?.event_count).toBe(2);
   });
 
+  it("サーバーエラーの急増は、起きた組織のアラートにする", async () => {
+    db.sqlite.exec(
+      `INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('other', 'Other', 0, 1, 0, 1, 1);`,
+    );
+    for (let i = 0; i < 20; i++) {
+      await seedEvent({ kind: "server_error", tenantId: "other", createdAt: minutesAgo(30 - i) });
+    }
+    await seedEvent({ kind: "server_error", tenantId: "ses", createdAt: minutesAgo(5) });
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(
+      db.sqlite.prepare("select tenant_id, rule, event_count from security_alerts").all(),
+    ).toEqual([{ tenant_id: "other", rule: "error_spike", event_count: 20 }]);
+  });
+
   it("管理者権限の付与と復帰を監査ログから拾う", async () => {
     db.sqlite.exec(`
       INSERT INTO audit_logs (id, tenant_id, actor_id, actor_name, actor_role, action, target_type, target_id, ip, metadata, created_at) VALUES
@@ -290,6 +323,16 @@ describe("Cloudflare Access との連携", () => {
           ip_address: "192.0.2.1",
           allowed: false,
           created_at: minutesAgo(5).toISOString(),
+          app_domain: "stella.example.com/api/me",
+        },
+        {
+          // 同じアカウントの別の Access アプリのログは取り込まない。
+          ray_id: "r3",
+          user_email: "someone@other.example",
+          ip_address: "192.0.2.3",
+          allowed: false,
+          created_at: minutesAgo(4).toISOString(),
+          app_domain: "other-app.example.com",
         },
       ],
     };
@@ -311,6 +354,46 @@ describe("Cloudflare Access との連携", () => {
       { kind: "access.login", email: "learner@example.test", country: "JP", tenant_id: "ses" },
       { kind: "access.denied", email: "attacker@example.com", country: null, tenant_id: "ses" },
     ]);
+  });
+
+  it("同じ時刻の行だけでページが埋まっても、次の取り込みで先へ進む", async () => {
+    const at = minutesAgo(30).toISOString();
+    const full = {
+      success: true,
+      result: Array.from({ length: 1000 }, (_, i) => ({
+        ray_id: `same-${i}`,
+        user_email: "a@example.com",
+        allowed: false,
+        created_at: at,
+        app_domain: "stella.example.com",
+      })),
+    };
+    db.sqlite.exec(
+      `INSERT INTO security_state (key, value, updated_at) VALUES ('access_logs_cursor', '${Date.parse(at)}', 1)`,
+    );
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(full)));
+    await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW);
+    const cursor = db.sqlite
+      .prepare("select value from security_state where key = 'access_logs_cursor'")
+      .get() as { value: string };
+    expect(Number(cursor.value)).toBe(Date.parse(at) + 1);
+  });
+
+  it("STELLA のホスト名が分からなければ何も取り込まない", async () => {
+    const reply = {
+      success: true,
+      result: [
+        {
+          ray_id: "x",
+          user_email: "a@example.com",
+          created_at: minutesAgo(1).toISOString(),
+          app_domain: "stella.example.com",
+        },
+      ],
+    };
+    const noHost = { ...cfEnv(), ALLOWED_ORIGINS: "", INVITE_REDIRECT_URL: undefined } as Env;
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
+    expect(await importAccessLogs(noHost, getDb(noHost), fetchImpl, NOW)).toEqual({ imported: 0 });
   });
 
   it("トークンが無ければ何もしない", async () => {

@@ -9,7 +9,7 @@
  * 1 件にまとめ、件数と最後に見た時刻だけを更新する。知らせるのは新しく出たときの 1 回だけ。
  */
 
-import { and, eq, gt, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
 
 import {
   SECURITY_RULES,
@@ -27,11 +27,7 @@ import {
   securityEvents,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
-import {
-  readSecurityState,
-  securityFallbackTenant,
-  writeSecurityState,
-} from "./security-events.js";
+import { readSecurityState, writeSecurityState } from "./security-events.js";
 
 const DETECT_CURSOR = "detect_cursor";
 export const LAST_SCAN_AT = "last_scan_at";
@@ -84,24 +80,49 @@ function titleOf(c: AlertCandidate): string {
 
 type EventRow = typeof securityEvents.$inferSelect;
 
-async function eventsSince(db: Db, kinds: string[], since: Date, until: Date): Promise<EventRow[]> {
-  return db
+/** 1 回の検査で 1 つの問い合わせから読む上限。 */
+const SCAN_LIMIT = 5000;
+
+/**
+ * 1 回の検査の読み取り範囲。上限まで読んだ問い合わせがあれば、読み切れた時刻を `readThrough`
+ * に縮める — 検査のカーソルをそこまでしか進めず、残りを次の検査で読む (読まずに飛ばさない)。
+ */
+interface Scan {
+  since: Date;
+  until: Date;
+  readThrough: Date;
+}
+
+function noteTruncation(scan: Scan, rows: readonly { createdAt: Date }[]): void {
+  if (rows.length < SCAN_LIMIT) return;
+  const last = rows[rows.length - 1];
+  if (!last) return;
+  // 最後の行と同じ時刻の行が上限の外に残っていてもよいよう、1 ms 手前までを読み切ったとする。
+  const through = new Date(last.createdAt.getTime() - 1);
+  if (through < scan.readThrough) scan.readThrough = through;
+}
+
+async function eventsSince(db: Db, kinds: string[], scan: Scan): Promise<EventRow[]> {
+  const rows = await db
     .select()
     .from(securityEvents)
     .where(
       and(
         inArray(securityEvents.kind, kinds),
-        gt(securityEvents.createdAt, since),
-        lt(securityEvents.createdAt, new Date(until.getTime() + 1)),
+        gt(securityEvents.createdAt, scan.since),
+        lt(securityEvents.createdAt, new Date(scan.until.getTime() + 1)),
       ),
     )
-    .limit(5000);
+    .orderBy(asc(securityEvents.createdAt))
+    .limit(SCAN_LIMIT);
+  noteTruncation(scan, rows);
+  return rows;
 }
 
 /** いつもと違う国からのサインイン・深夜帯の管理者のサインイン。 */
-async function sessionRules(db: Db, since: Date, until: Date): Promise<AlertCandidate[]> {
+async function sessionRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
-  const sessions = await eventsSince(db, ["session.start"], since, until);
+  const sessions = await eventsSince(db, ["session.start"], scan);
   for (const ev of sessions) {
     if (!ev.actorId) continue;
     const role = ev.actorRole ?? "";
@@ -166,13 +187,12 @@ async function sessionRules(db: Db, since: Date, until: Date): Promise<AlertCand
 }
 
 /** 出来事 1 件ごとに数えるルール (未招待・無効化済み・認証トークンなし)。 */
-async function perEventRules(db: Db, since: Date, until: Date): Promise<AlertCandidate[]> {
+async function perEventRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
   const rows = await eventsSince(
     db,
     ["auth.no_profile", "auth.disabled", "auth.invalid_token"],
-    since,
-    until,
+    scan,
   );
   for (const ev of rows) {
     const date = jstDate(ev.createdAt);
@@ -344,64 +364,67 @@ async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
 }
 
 /** 直近 1 時間のサーバーエラーが、過去 7 日の平均より大きく多い。 */
-async function errorSpikeRule(
-  db: Db,
-  env: Pick<Env, "SECURITY_TENANT_ID" | "PUBLIC_CONTENT_TENANT_ID">,
-  until: Date,
-): Promise<AlertCandidate[]> {
-  const count = async (from: Date, to: Date) =>
-    Number(
-      (
-        await db
-          .select({ n: sql<number>`count(*)` })
-          .from(securityEvents)
-          .where(
-            and(
-              eq(securityEvents.kind, "server_error"),
-              gt(securityEvents.createdAt, from),
-              lt(securityEvents.createdAt, to),
-            ),
-          )
-      )[0]?.n ?? 0,
-    );
-  const end = new Date(until.getTime() + 1);
-  const lastHour = await count(new Date(until.getTime() - HOUR), end);
-  if (lastHour < THRESHOLDS.errorSpikeMin) return [];
-  const week = await count(
+async function errorSpikeRule(db: Db, until: Date): Promise<AlertCandidate[]> {
+  // 組織ごとに数える (別の組織だけで起きた急増を、その組織の管理者に見せる)。
+  const countByTenant = async (from: Date, to: Date) => {
+    const rows = await db
+      .select({ tenantId: securityEvents.tenantId, n: sql<number>`count(*)` })
+      .from(securityEvents)
+      .where(
+        and(
+          eq(securityEvents.kind, "server_error"),
+          gt(securityEvents.createdAt, from),
+          lt(securityEvents.createdAt, to),
+        ),
+      )
+      .groupBy(securityEvents.tenantId);
+    return new Map(rows.map((r) => [r.tenantId, Number(r.n)]));
+  };
+  const lastHour = await countByTenant(
+    new Date(until.getTime() - HOUR),
+    new Date(until.getTime() + 1),
+  );
+  if (![...lastHour.values()].some((n) => n >= THRESHOLDS.errorSpikeMin)) return [];
+  const week = await countByTenant(
     new Date(until.getTime() - 7 * DAY - HOUR),
     new Date(until.getTime() - HOUR),
   );
-  const hourlyAverage = week / (7 * 24);
-  if (lastHour < hourlyAverage * THRESHOLDS.errorSpikeRatio) return [];
   const hourKey = new Date(until.getTime() + 9 * HOUR).toISOString().slice(0, 13);
-  return [
-    {
-      tenantId: securityFallbackTenant(env),
+  const out: AlertCandidate[] = [];
+  for (const [tenantId, count] of lastHour) {
+    if (count < THRESHOLDS.errorSpikeMin) continue;
+    const hourlyAverage = (week.get(tenantId) ?? 0) / (7 * 24);
+    if (count < hourlyAverage * THRESHOLDS.errorSpikeRatio) continue;
+    out.push({
+      tenantId,
       rule: "error_spike",
       severity: "medium",
       subject: null,
       dedupeKey: `error_spike:${hourKey}`,
-      count: lastHour,
+      count,
       countMode: "max",
-      detail: { count_last_hour: lastHour, hourly_average_7d: Math.round(hourlyAverage * 10) / 10 },
+      detail: { count_last_hour: count, hourly_average_7d: Math.round(hourlyAverage * 10) / 10 },
       at: until,
-    },
-  ];
+    });
+  }
+  return out;
 }
 
 /** 管理者権限の付与・無効化したアカウントの復帰 (監査ログから)。 */
-async function privilegeRules(db: Db, since: Date, until: Date): Promise<AlertCandidate[]> {
+async function privilegeRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const rows = await db
     .select()
     .from(auditLogs)
     .where(
       and(
         inArray(auditLogs.action, ["user_role_change", "user_enable"]),
-        gt(auditLogs.createdAt, since),
-        lt(auditLogs.createdAt, new Date(until.getTime() + 1)),
+        gt(auditLogs.createdAt, scan.since),
+        lt(auditLogs.createdAt, new Date(scan.until.getTime() + 1)),
       ),
     )
-    .limit(1000);
+    .orderBy(asc(auditLogs.createdAt))
+    .limit(SCAN_LIMIT);
+  noteTruncation(scan, rows);
   const out: AlertCandidate[] = [];
   for (const row of rows) {
     const newRole = typeof row.metadata?.new_role === "string" ? row.metadata.new_role : null;
@@ -605,16 +628,20 @@ export async function detectSecurityAlerts(
   const since = new Date(
     Math.max(Number.isFinite(cursorMs) ? cursorMs : now.getTime() - HOUR, now.getTime() - DAY),
   );
+  const scan: Scan = { since, until: now, readThrough: now };
   const candidates = [
-    ...(await sessionRules(db, since, now)),
-    ...(await perEventRules(db, since, now)),
-    ...(await privilegeRules(db, since, now)),
+    ...(await sessionRules(db, scan)),
+    ...(await perEventRules(db, scan)),
+    ...(await privilegeRules(db, scan)),
     ...(await burstRules(db, now)),
-    ...(await errorSpikeRule(db, env, now)),
+    ...(await errorSpikeRule(db, now)),
   ];
   const created = await saveAlerts(db, candidates);
   await notifyAlerts(db, env, created, fetchImpl);
-  await writeSecurityState(db, DETECT_CURSOR, String(now.getTime()));
+  // 上限まで読んだ問い合わせがあれば、読み切れたところまでしか進めない (残りは次の検査で読む。
+  // 他のルールが読んだ出来事を次の検査でもう一度数えることはあるが、アラートは日ごとにまとまる
+  // ので、増えるのは件数だけ)。
+  await writeSecurityState(db, DETECT_CURSOR, String(scan.readThrough.getTime()));
   await writeSecurityState(db, LAST_SCAN_AT, String(now.getTime()));
   return created;
 }

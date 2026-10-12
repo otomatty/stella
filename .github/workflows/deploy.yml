@@ -125,11 +125,26 @@ jobs:
           (cd apps/narrator && bunx wrangler deployments list --name stella-narrator > /dev/null) || exit 1
           echo "::warning::narrator deploy failed; the previous stella-narrator version keeps running"
 
+      # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
+      # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない
+      # verify 側の成果物は本番向けではないため。 ここで web だけ建て直す
+      # (vscode 拡張は web のデプロイに要らない)。
+      #
+      # ビルドは API のデプロイより前に済ませ、API と Web のデプロイを隙間なく並べる。
+      # API は Web の Worker の中継 (サービスバインディング) でしか受けないので
+      # (workers_dev = false)、API だけが新しく Web が古い時間は画面が API に届かない。
+      # その時間を数秒にし、seed (時間が読めず落ちることもある) を挟まない。
+      - name: Build Web (VITE_* baked in)
+        run: bun run --filter=@stella/web build
+
       - name: Deploy API
         run: bun run deploy:api
 
-      # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
-      # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
+      - name: Deploy Web
+        run: bun run --filter=@stella/web deploy
+
+      # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api /
+      # Web の後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
         if: steps.content.outputs.changed == 'true'
         run: bun run db:seed:remote:content
@@ -149,9 +164,3 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
-      # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
-      # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない
-      # verify 側の成果物は本番向けではないため。 ここで web だけ建て直す
-      # (vscode 拡張は web のデプロイに要らない)。
-      - name: Deploy Web (build with VITE_* then deploy)
-        run: bun run deploy:web

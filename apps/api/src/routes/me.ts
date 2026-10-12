@@ -20,6 +20,7 @@ import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
 import {
   ApiError,
+  assertTenantActive,
   errorResponse,
   profileMatch,
   recordDisabled,
@@ -61,6 +62,7 @@ meRoute.get("/api/me", async (c) => {
         tenant_name: tenants.name,
         tenant_subtitle: tenants.subtitle,
         tenant_icon: tenants.icon,
+        tenant_active: tenants.active,
       })
       .from(profiles)
       .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
@@ -75,11 +77,18 @@ meRoute.get("/api/me", async (c) => {
       recordDisabled(c, { id: row.id, tenantId: row.tenant_id, role: row.role, email: row.email });
       throw new ApiError("このアカウントは無効化されています", 403);
     }
+    assertTenantActive(c, {
+      id: row.id,
+      tenantId: row.tenant_id,
+      role: row.role,
+      email: row.email,
+      tenantActive: row.tenant_active,
+    });
     // 画面を開くと最初に呼ばれるので、ここでも新しいサインインを拾う。
     const actor = { id: row.id, tenantId: row.tenant_id, role: row.role, email: row.email };
     markRequestActor(c, actor);
     trackSession(c, actor, identity.issuedAt);
-    const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
+    const { tenant_name, tenant_subtitle, tenant_icon, tenant_active: _active, ...profile } = row;
     return c.json({
       profile,
       tenant:
@@ -108,8 +117,10 @@ meRoute.post("/api/me", async (c) => {
         role: profiles.role,
         email: profiles.email,
         disabled: profiles.disabled,
+        tenantActive: tenants.active,
       })
       .from(profiles)
+      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(profileMatch(identity))
       .limit(1);
     const me = existing[0];
@@ -121,6 +132,7 @@ meRoute.post("/api/me", async (c) => {
       recordDisabled(c, me);
       throw new ApiError("このアカウントは無効化されています", 403);
     }
+    assertTenantActive(c, me);
     const userId = me.id;
     const raw: unknown = await c.req.json().catch(() => null);
     if (typeof raw !== "object" || raw === null || Array.isArray(raw))

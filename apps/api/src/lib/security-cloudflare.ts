@@ -32,7 +32,31 @@ type CloudflareEnv = Pick<
   | "CLOUDFLARE_ACCOUNT_ID"
   | "SECURITY_TENANT_ID"
   | "PUBLIC_CONTENT_TENANT_ID"
+  | "ALLOWED_ORIGINS"
+  | "INVITE_REDIRECT_URL"
 >;
+
+/**
+ * STELLA の Web のホスト名 (Access アプリのドメイン)。Access のログはアカウント全体のものが返るので、
+ * これに当たる行だけを取り込む (同じアカウントの別の Access アプリの利用者の情報を STELLA に持ち込まない)。
+ */
+export function stellaAppHost(
+  env: Pick<Env, "ALLOWED_ORIGINS" | "INVITE_REDIRECT_URL">,
+): string | null {
+  const raw = env.INVITE_REDIRECT_URL || env.ALLOWED_ORIGINS?.split(",")[0];
+  if (!raw) return null;
+  try {
+    return new URL(raw.trim()).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/** ログの `app_domain` (`<ホスト名>` または `<ホスト名>/<パス>`) のホスト名。 */
+function appDomainHost(appDomain: string | undefined): string | null {
+  const host = appDomain?.trim().split("/")[0]?.toLowerCase();
+  return host || null;
+}
 
 export function cloudflareAccessApiConfigured(env: CloudflareEnv): boolean {
   return Boolean(env.CF_ACCESS_API_TOKEN && env.CLOUDFLARE_ACCOUNT_ID);
@@ -103,10 +127,14 @@ export async function importAccessLogs(
     throw new Error("Access logs response was not successful");
   }
 
-  const logs = body.result.filter(
+  const page = body.result.filter(
     (l): l is AccessRequestLog & { ray_id: string; created_at: string } =>
       typeof l?.ray_id === "string" && typeof l.created_at === "string",
   );
+  // カーソルは別のアプリの行も含めたページで進める。取り込むのは STELLA のアプリの行だけ
+  // (ホスト名が分からなければ何も取り込まない — 別のアプリの利用者の情報を混ぜないため)。
+  const appHost = stellaAppHost(env);
+  const logs = appHost ? page.filter((l) => appDomainHost(l.app_domain) === appHost) : [];
   const emails = [
     ...new Set(
       logs.map((l) => l.user_email?.trim().toLowerCase()).filter((e): e is string => Boolean(e)),
@@ -115,12 +143,16 @@ export async function importAccessLogs(
   const tenants = await tenantsByEmail(db, emails);
   const fallback = securityFallbackTenant(env);
 
-  let imported = 0;
   let latest = since.getTime();
+  for (const log of page) {
+    const t = new Date(log.created_at).getTime();
+    if (Number.isFinite(t)) latest = Math.max(latest, t);
+  }
+
+  let imported = 0;
   for (const log of logs) {
     const createdAt = new Date(log.created_at);
     if (Number.isNaN(createdAt.getTime())) continue;
-    latest = Math.max(latest, createdAt.getTime());
     const email = log.user_email?.trim().toLowerCase() || null;
     const country = log.country?.toUpperCase();
     const inserted = await insertSecurityEvent(db, {
@@ -140,8 +172,11 @@ export async function importAccessLogs(
     });
     if (inserted) imported++;
   }
-  // 1 回で取り切れなかった (上限まで返った) ときは、取り込んだ最後の時刻から続ける。
-  const nextCursor = logs.length >= PAGE_LIMIT ? latest : now.getTime();
+  // 1 回で取り切れなかった (上限まで返った) ときは、取り込んだ最後の時刻から続ける。ページが同じ時刻の
+  // 行だけで埋まっていたら 1 ms 先へ進める (同じページを取り続けて先へ進めなくなるのを防ぐ。
+  // その時刻の残りは取りこぼすが、同じ ms に 1000 件を超えるログはまず無い)。
+  const nextCursor =
+    page.length >= PAGE_LIMIT ? (latest > since.getTime() ? latest : latest + 1) : now.getTime();
   await writeSecurityState(db, ACCESS_LOG_CURSOR, String(nextCursor));
   await writeSecurityState(db, ACCESS_LOG_IMPORTED_AT, String(now.getTime()));
   return { imported };
