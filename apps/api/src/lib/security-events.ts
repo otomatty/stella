@@ -184,6 +184,36 @@ export async function insertSecurityEvent(db: Db, event: NewSecurityEvent): Prom
 }
 
 /**
+ * 出来事をまとめて書く (取り込み用。取り込み元の ID が同じものは二重に書かない)。`rowsPerInsert` 行の
+ * 文を `insertsPerBatch` 個ずつ batch で送る。書いた件数を返す。
+ */
+export async function insertSecurityEvents(
+  db: Db,
+  events: NewSecurityEvent[],
+  rowsPerInsert: number,
+  insertsPerBatch: number,
+): Promise<number> {
+  const statements = [];
+  for (let i = 0; i < events.length; i += rowsPerInsert) {
+    statements.push(
+      db
+        .insert(securityEvents)
+        .values(events.slice(i, i + rowsPerInsert).map(eventValues))
+        .onConflictDoNothing()
+        .returning({ id: securityEvents.id }),
+    );
+  }
+  let inserted = 0;
+  for (let i = 0; i < statements.length; i += insertsPerBatch) {
+    const [first, ...rest] = statements.slice(i, i + insertsPerBatch);
+    if (!first) continue;
+    const results = await db.batch([first, ...rest]);
+    for (const rows of results) inserted += rows.length;
+  }
+  return inserted;
+}
+
+/**
  * 応答を待たせずに処理を走らせる。ExecutionContext の無い呼び出し (route テストの
  * `app.request` など) では何もしない — 閉じたテスト用 DB に後から書きに行かないため。
  */

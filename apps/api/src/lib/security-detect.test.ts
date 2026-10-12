@@ -489,6 +489,14 @@ describe("detectSecurityAlerts", () => {
 
 describe("Cloudflare Access との連携", () => {
   const cfEnv = () => env({ CF_ACCESS_API_TOKEN: "cf-token", CLOUDFLARE_ACCOUNT_ID: "acct" });
+  const importCursor = () =>
+    JSON.parse(
+      (
+        db.sqlite
+          .prepare("select value from security_state where key = 'access_logs_cursor'")
+          .get() as { value: string }
+      ).value,
+    ) as unknown;
 
   it("Access のログを取り込み、同じ Ray ID は二重に入れない", async () => {
     const reply = {
@@ -596,10 +604,7 @@ describe("Cloudflare Access との連携", () => {
     );
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(full)));
     await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW);
-    const cursor = db.sqlite
-      .prepare("select value from security_state where key = 'access_logs_cursor'")
-      .get() as { value: string };
-    expect(Number(cursor.value)).toBe(Date.parse(at) + 1);
+    expect(importCursor()).toEqual({ since: Date.parse(at) + 1, until: null, page: 1 });
   });
 
   it("同じ窓をページ番号で読み切る (同じ時刻の行が 1000 件を超えても取りこぼさない)", async () => {
@@ -621,10 +626,43 @@ describe("Cloudflare Access との連携", () => {
       imported: 1002,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
-    const cursor = db.sqlite
-      .prepare("select value from security_state where key = 'access_logs_cursor'")
-      .get() as { value: string };
-    expect(Number(cursor.value)).toBe(NOW.getTime());
+    expect(importCursor()).toEqual({ since: NOW.getTime(), until: null, page: 1 });
+  });
+
+  it("1 回で読むページ数を超えた窓は、次の取り込みで続きのページから読む (同じ時刻でも飛ばさない)", async () => {
+    const at = minutesAgo(30).toISOString();
+    const total = 2500;
+    const pages: Array<{ since: string | null; until: string | null; page: number }> = [];
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
+      const params = new URL(String(input)).searchParams;
+      const pageNo = Number(params.get("page"));
+      pages.push({ since: params.get("since"), until: params.get("until"), page: pageNo });
+      const from = (pageNo - 1) * 1000;
+      const result = Array.from({ length: Math.max(0, Math.min(1000, total - from)) }, (_, i) => ({
+        ray_id: `w-${from + i}`,
+        user_email: "a@example.com",
+        allowed: false,
+        created_at: at,
+        app_domain: "stella.example.com",
+      }));
+      return new Response(JSON.stringify({ success: true, result }));
+    });
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+      imported: 2000,
+    });
+    const first = importCursor();
+    expect(first).toMatchObject({ until: NOW.getTime(), page: 3 });
+
+    const later = new Date(NOW.getTime() + 15 * 60_000);
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, later)).toEqual({
+      imported: 500,
+    });
+    // 続きは同じ窓の 3 ページ目から。
+    expect(pages[2]).toEqual({ ...pages[0], page: 3 });
+    expect(importCursor()).toEqual({ since: NOW.getTime(), until: null, page: 1 });
+    expect(
+      (db.sqlite.prepare("select count(*) as n from security_events").get() as { n: number }).n,
+    ).toBe(total);
   });
 
   it("STELLA のホスト名が分からなければ何も取り込まない", async () => {

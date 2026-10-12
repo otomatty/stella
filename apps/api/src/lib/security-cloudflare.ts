@@ -13,7 +13,8 @@ import type { Db } from "../db/client.js";
 import { profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
 import {
-  insertSecurityEvent,
+  insertSecurityEvents,
+  type NewSecurityEvent,
   readSecurityState,
   securityFallbackTenant,
   writeSecurityState,
@@ -25,8 +26,16 @@ export const ACCESS_LOG_IMPORTED_AT = "access_logs_imported_at";
 /** 初回・長く止まっていたときにさかのぼる上限。 */
 const MAX_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const PAGE_LIMIT = 1000;
-/** 1 回の取り込みで読むページ数の上限 (cron 1 回の時間に収める)。 */
-const MAX_PAGES = 10;
+/**
+ * 1 回の取り込みで読むページ数の上限。D1 の 1 回の呼び出しあたりの問い合わせ数の上限 (有料プランで
+ * 1000) に、cron の他の処理と合わせて収める (1 ページ = 1000 行 ≒ 200 文)。読み切れなかった窓は
+ * 次の取り込みで続きのページから読む。
+ */
+const PAGES_PER_RUN = 2;
+/** 1 文で入れる行数 (security_events は 16 列。D1 のバインドの上限 100 に収める)。 */
+const ROWS_PER_INSERT = 6;
+/** 1 回の batch に入れる文の数。 */
+const INSERTS_PER_BATCH = 25;
 
 type CloudflareEnv = Pick<
   Env,
@@ -93,6 +102,31 @@ async function tenantsByEmail(db: Db, emails: string[]): Promise<Map<string, str
 }
 
 /**
+ * 取り込みの続きの位置。読んでいる途中の窓 (`since`〜`until`) と次に読むページ番号。窓を読み切ったら
+ * `until` だけを残し、次の取り込みはそこから今までの新しい窓を読む。
+ */
+interface ImportWindow {
+  since: number;
+  until: number | null;
+  page: number;
+}
+
+function parseWindow(raw: string | null): ImportWindow | null {
+  if (!raw) return null;
+  // 以前の形式 (読み切った時刻の数字だけ)。
+  if (/^\d+$/.test(raw)) return { since: Number(raw), until: null, page: 1 };
+  try {
+    const v = JSON.parse(raw) as Partial<ImportWindow>;
+    if (typeof v.since !== "number" || !Number.isFinite(v.since)) return null;
+    const until = typeof v.until === "number" && Number.isFinite(v.until) ? v.until : null;
+    const page = typeof v.page === "number" && v.page >= 1 ? Math.floor(v.page) : 1;
+    return { since: v.since, until, page: until == null ? 1 : page };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 前回の続きから Access のログを取り込む。設定が無ければ null。
  * 取り込んだ行は `access.login` (許可) / `access.denied` (拒否) として security_events に入る。
  */
@@ -103,24 +137,27 @@ export async function importAccessLogs(
   now = new Date(),
 ): Promise<{ imported: number } | null> {
   if (!cloudflareAccessApiConfigured(env)) return null;
-  const cursorRaw = await readSecurityState(db, ACCESS_LOG_CURSOR);
-  const cursor = cursorRaw ? Number(cursorRaw) : Number.NaN;
+  const saved = parseWindow(await readSecurityState(db, ACCESS_LOG_CURSOR));
+  // 読んでいる途中の窓があればその続きのページから。無ければ、前回読み切った時刻から今までの窓を
+  // 1 ページ目から (初回・長く止まっていたあとは 1 日までさかのぼる)。
+  const resuming = saved?.until != null;
   const since = new Date(
-    Math.max(Number.isFinite(cursor) ? cursor : 0, now.getTime() - MAX_LOOKBACK_MS),
+    resuming && saved ? saved.since : Math.max(saved?.since ?? 0, now.getTime() - MAX_LOOKBACK_MS),
   );
+  const until = new Date(resuming && saved?.until != null ? saved.until : now.getTime());
+  const firstPage = resuming && saved ? saved.page : 1;
 
-  // since〜now の同じ窓をページ番号で読み切る (同じ時刻の行が多くても飛ばさない)。1 回の検査で読む
-  // ページ数は絞り、読み切れなければ読んだ最後の時刻から次の検査で続ける。
+  // 同じ窓をページ番号で読む (同じ時刻の行が多くても、ページで続きが決まるので飛ばさない)。
   type Log = AccessRequestLog & { ray_id: string; created_at: string };
   const page: Log[] = [];
   const seen = new Set<string>();
-  let complete = false;
-  for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+  let next: ImportWindow = { since: since.getTime(), until: until.getTime(), page: firstPage };
+  for (let pageNo = firstPage; pageNo < firstPage + PAGES_PER_RUN; pageNo++) {
     const url = new URL(
       `${API_BASE}/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID ?? "")}/access/logs/access_requests`,
     );
     url.searchParams.set("since", since.toISOString());
-    url.searchParams.set("until", now.toISOString());
+    url.searchParams.set("until", until.toISOString());
     url.searchParams.set("limit", String(PAGE_LIMIT));
     url.searchParams.set("per_page", String(PAGE_LIMIT));
     url.searchParams.set("page", String(pageNo));
@@ -144,14 +181,26 @@ export async function importAccessLogs(
     for (const l of fresh) seen.add(l.ray_id);
     page.push(...fresh);
     if (body.result.length < PAGE_LIMIT) {
-      complete = true;
+      // 窓を読み切った。次は until から今までの窓。
+      next = { since: until.getTime(), until: null, page: 1 };
       break;
     }
-    // ページ番号を受け付けず同じ行を返してきたら、それ以上は進めない。
-    if (fresh.length === 0) break;
+    if (pageNo > firstPage && fresh.length === 0) {
+      // ページ番号を受け付けず同じ行を返してきた。時刻で続ける (読んだ行がすべて同じ時刻なら
+      // 1 ms 先へ進める — 止まらないことを優先する)。
+      let latest = since.getTime();
+      for (const l of page) {
+        const t = new Date(l.created_at).getTime();
+        if (Number.isFinite(t)) latest = Math.max(latest, t);
+      }
+      next = { since: latest > since.getTime() ? latest : latest + 1, until: null, page: 1 };
+      break;
+    }
+    next = { since: since.getTime(), until: until.getTime(), page: pageNo + 1 };
   }
-  // カーソルは別のアプリの行も含めたページで進める。取り込むのは STELLA のアプリの行だけ
-  // (ホスト名が分からなければ何も取り込まない — 別のアプリの利用者の情報を混ぜないため)。
+
+  // 取り込むのは STELLA のアプリの行だけ (ホスト名が分からなければ何も取り込まない — 別のアプリの
+  // 利用者の情報を混ぜないため)。続きの位置は絞り込む前のページで決めている。
   const appHost = stellaAppHost(env);
   const logs = appHost ? page.filter((l) => appDomainHost(l.app_domain) === appHost) : [];
   const emails = [
@@ -162,19 +211,13 @@ export async function importAccessLogs(
   const tenants = await tenantsByEmail(db, emails);
   const fallback = securityFallbackTenant(env);
 
-  let latest = since.getTime();
-  for (const log of page) {
-    const t = new Date(log.created_at).getTime();
-    if (Number.isFinite(t)) latest = Math.max(latest, t);
-  }
-
-  let imported = 0;
+  const values: NewSecurityEvent[] = [];
   for (const log of logs) {
     const createdAt = new Date(log.created_at);
     if (Number.isNaN(createdAt.getTime())) continue;
     const email = log.user_email?.trim().toLowerCase() || null;
     const country = log.country?.toUpperCase();
-    const inserted = await insertSecurityEvent(db, {
+    values.push({
       kind: log.allowed === false ? "access.denied" : "access.login",
       tenantId: (email && tenants.get(email)) || fallback,
       source: "access",
@@ -189,18 +232,18 @@ export async function importAccessLogs(
       },
       createdAt,
     });
-    if (inserted) imported++;
   }
-  // 窓を読み切れたら now から。読み切れなかったら (ページ数の上限・ページ番号を受け付けない) 読んだ
-  // 最後の時刻から続ける。読んだ行がすべて同じ時刻なら 1 ms 先へ進める (止まらないことを優先)。
-  const nextCursor = complete ? now.getTime() : latest > since.getTime() ? latest : latest + 1;
-  await writeSecurityState(db, ACCESS_LOG_CURSOR, String(nextCursor));
+  // 1 行ずつ書くと 1 ページで 1000 回の問い合わせになり D1 の上限に当たるので、複数行の文を batch で送る。
+  const imported = await insertSecurityEvents(db, values, ROWS_PER_INSERT, INSERTS_PER_BATCH);
+  await writeSecurityState(db, ACCESS_LOG_CURSOR, JSON.stringify(next));
   await writeSecurityState(db, ACCESS_LOG_IMPORTED_AT, String(now.getTime()));
   return { imported };
 }
 
 /**
  * 利用者の Access のセッションを全部失効させる (次のリクエストで Access がログインし直させる)。
+ * 組織単位の API なので、同じアカウントの他の Access アプリのセッションも失効する (利用者 1 人を
+ * アプリ単位で失効させる API は無い。画面の確認と docs/cloudflare-access.md で知らせている)。
  * 設定が無ければ false。失敗は例外。
  */
 export async function revokeAccessSessions(

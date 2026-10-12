@@ -949,7 +949,7 @@ function AccountsPanel({
   const revoke = async (row: SecurityAccountRow) => {
     if (
       !window.confirm(
-        `${row.display_name} (${row.email ?? "メールなし"}) の Cloudflare Access のセッションを失効します。\n本人は次の操作でログインし直しになります。よろしいですか?`,
+        `${row.display_name} (${row.email ?? "メールなし"}) の Cloudflare Access のセッションを失効します。\n本人は次の操作でログインし直しになります。同じ Cloudflare アカウントの他の Access アプリにもログインし直しになります。よろしいですか?`,
       )
     ) {
       return;
