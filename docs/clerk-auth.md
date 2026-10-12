@@ -173,7 +173,7 @@ route テストとスモーク (`smoke:core`) も同じ開発用トークンで�
 | `access_denied_burst` | 高 | 1 時間に同じメールか IP で講師・管理者用の入口の Access の拒否 5 回以上 |
 | `uninvited_identity` | 中 | 未招待の利用者がログインした |
 | `disabled_account_access` | 高 | 無効化済みアカウントのアクセス |
-| `invalid_token` | 高 (理由なしの 401 が 1 時間 10 回以上は中) | トークンが無い・偽物 |
+| `invalid_token` | 中 (同じ IP から 1 時間 10 回以上) | トークンが無い・偽物。受講者用の入口は誰でも届くので、1 件では出さない |
 | `forbidden_burst` | 高 | 1 時間に同じ利用者か IP で 403 が 20 回以上 |
 | `rate_limit_burst` | 中 | 1 時間に同じ IP で 429 が 30 回以上 |
 | `error_spike` | 中 | 1 時間の 5xx が 20 件以上かつ過去 7 日平均の 3 倍以上 |

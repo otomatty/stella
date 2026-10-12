@@ -47,7 +47,7 @@ export const THRESHOLDS = {
   accessDenied: 5,
   forbidden: 20,
   rateLimited: 30,
-  invalidTokenOther: 10,
+  invalidToken: 10,
   errorSpikeMin: 20,
   errorSpikeRatio: 3,
   bulkExport: 5,
@@ -233,14 +233,10 @@ async function sessionRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   return out;
 }
 
-/** 出来事 1 件ごとに数えるルール (未招待・無効化済み・認証トークンなし)。 */
+/** 出来事 1 件ごとに数えるルール (未招待・無効化済み)。 */
 async function perEventRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
-  const rows = await eventsSince(
-    db,
-    ["auth.no_profile", "auth.disabled", "auth.invalid_token"],
-    scan,
-  );
+  const rows = await eventsSince(db, ["auth.no_profile", "auth.disabled"], scan);
   for (const ev of rows) {
     const date = jstDate(ev.createdAt);
     if (ev.kind === "auth.no_profile") {
@@ -256,7 +252,7 @@ async function perEventRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
         detail: { email: ev.email, ip: ev.ip, country: ev.country, path: ev.path },
         at: ev.createdAt,
       });
-    } else if (ev.kind === "auth.disabled") {
+    } else {
       const subject = ev.actorId ?? ev.email ?? "unknown";
       out.push({
         tenantId: ev.tenantId,
@@ -267,23 +263,6 @@ async function perEventRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
         count: 1,
         countMode: "add",
         detail: { actor_id: ev.actorId, email: ev.email, ip: ev.ip, country: ev.country },
-        at: ev.createdAt,
-      });
-    } else {
-      // Access のトークンが無い・検証に通らないリクエストは、Access を迂回する経路がある兆候なので
-      // 1 件でも出す。それ以外の 401 (接続コードの打ち間違いなど) は数がまとまったときだけ下で出す。
-      const reason = typeof ev.metadata?.reason === "string" ? ev.metadata.reason : null;
-      if (reason !== "missing" && reason !== "invalid") continue;
-      const subject = ev.ip ?? "unknown";
-      out.push({
-        tenantId: ev.tenantId,
-        rule: "invalid_token",
-        severity: "high",
-        subject,
-        dedupeKey: `invalid_token:${subject}:${date}`,
-        count: 1,
-        countMode: "add",
-        detail: { ip: ev.ip, country: ev.country, path: ev.path, reason, user_agent: ev.userAgent },
         at: ev.createdAt,
       });
     }
@@ -461,14 +440,7 @@ async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
     "ip",
   );
   push(
-    await burst(
-      db,
-      "auth.invalid_token",
-      "ip",
-      THRESHOLDS.invalidTokenOther,
-      until,
-      sql`coalesce(json_extract(${securityEvents.metadata}, '$.reason'), '') not in ('missing', 'invalid')`,
-    ),
+    await burst(db, "auth.invalid_token", "ip", THRESHOLDS.invalidToken, until),
     "invalid_token",
     "medium",
     "ip",

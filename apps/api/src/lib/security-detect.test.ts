@@ -200,20 +200,24 @@ describe("detectSecurityAlerts", () => {
       actorId: "gone",
       createdAt: minutesAgo(3),
     });
-    await seedEvent({
-      kind: "auth.invalid_token",
-      tenantId: "ses",
-      ip: "192.0.2.99",
-      metadata: { reason: "missing" },
-      createdAt: minutesAgo(2),
-    });
-    // 接続コードの打ち間違い (理由なしの 401) は 1 件では出さない。
+    // 受講者用の入口は誰でも届くので、ログアウトしたタブやボットの 401 は 1 件では出さない。
     await seedEvent({
       kind: "auth.invalid_token",
       tenantId: "ses",
       ip: "192.0.2.50",
+      metadata: { reason: "missing" },
       createdAt: minutesAgo(2),
     });
+    // 同じ IP から 1 時間に 10 回以上なら出す (理由は問わない)。
+    for (let i = 0; i < 10; i++) {
+      await seedEvent({
+        kind: "auth.invalid_token",
+        tenantId: "ses",
+        ip: "192.0.2.99",
+        metadata: { reason: i % 2 === 0 ? "invalid" : "missing" },
+        createdAt: minutesAgo(20 - i),
+      });
+    }
 
     const created = await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
     expect(created.map((a) => a.rule).sort()).toEqual([
@@ -419,7 +423,7 @@ describe("detectSecurityAlerts", () => {
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const body = String(fetchImpl.mock.calls[0]?.[1]?.body);
-    expect(body).toContain("未招待の利用者が Access を通過");
+    expect(body).toContain("未招待の利用者のアクセス");
     expect(body).toContain("https://stella.example.com/admin/security");
     expect(body).not.toContain("stranger@example.com");
     expect(body).not.toContain("192.0.2.7");
@@ -440,7 +444,7 @@ describe("detectSecurityAlerts", () => {
     const ok = vi.fn<typeof fetch>(async () => new Response("ok"));
     await detectSecurityAlerts(getDb(hook), hook, new Date(NOW.getTime() + 15 * 60_000), ok);
     expect(ok).toHaveBeenCalledTimes(1);
-    expect(String(ok.mock.calls[0]?.[1]?.body)).toContain("未招待の利用者が Access を通過");
+    expect(String(ok.mock.calls[0]?.[1]?.body)).toContain("未招待の利用者のアクセス");
     expect(alerts()).toEqual([expect.objectContaining({ notified_at: expect.any(Number) })]);
     // アプリ内の通知は送り直しても重ならない。
     expect(

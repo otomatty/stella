@@ -193,6 +193,41 @@ describe("authFetch in Clerk mode", () => {
   });
 });
 
+describe("optional authentication", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_AUTH_MODE", "clerk");
+  });
+
+  it("sends without a token when Clerk cannot load (support form during an outage)", async () => {
+    clerkTokens.mockRejectedValueOnce(new Error("Clerk failed to load"));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('{"ok":true,"id":null}', {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      apiFetch("/api/support", { method: "POST", body: {}, optionalAuth: true }),
+    ).resolves.toEqual({ ok: true, id: null });
+    expect(lastInit(fetchMock).headers.Authorization).toBeUndefined();
+  });
+
+  it("still attaches the token when it is available", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await authFetch("/api/support", { method: "POST" }, { optionalAuth: true });
+    expect(lastInit(fetchMock).headers.Authorization).toBe("Bearer cached.clerk.jwt");
+  });
+
+  it("does not hide Clerk failures for normal requests", async () => {
+    clerkTokens.mockRejectedValueOnce(new Error("Clerk failed to load"));
+    vi.stubGlobal("fetch", vi.fn());
+    await expect(authFetch("/api/me")).rejects.toThrow("Clerk failed to load");
+  });
+});
+
 describe("authFetch in dev-token mode", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_AUTH_MODE", "dev-token");

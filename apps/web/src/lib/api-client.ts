@@ -44,6 +44,11 @@ export interface ApiOptions {
   signal?: AbortSignal;
   /** true の場合、認証を付けず、セッション切れの扱いもしない (公開エンドポイント用)。 */
   anonymous?: boolean;
+  /**
+   * true の場合、認証は取れたときだけ付ける (ログインなしでも受け付けるエンドポイント用)。
+   * Clerk を読み込めない障害のときも、トークンなしで送る (問い合わせフォームなど)。
+   */
+  optionalAuth?: boolean;
 }
 
 export class ApiClientError extends Error {
@@ -98,15 +103,23 @@ function isReplayableBody(body: AuthFetchInit["body"]): boolean {
 export async function authFetch(
   path: string,
   init: AuthFetchInit = {},
-  { anonymous = false }: { anonymous?: boolean } = {},
+  { anonymous = false, optionalAuth = false }: { anonymous?: boolean; optionalAuth?: boolean } = {},
 ): Promise<Response> {
   const clerk = isClerkMode();
+  const headersFor = async (skipCache: boolean): Promise<Record<string, string>> => {
+    if (anonymous) return {};
+    if (!optionalAuth) return authHeaders({ skipCache });
+    return authHeaders({ skipCache }).catch((err: unknown) => {
+      console.warn("[api-client] sending without authentication", err);
+      return {};
+    });
+  };
   const send = async (skipCache: boolean) =>
     fetch(apiUrl(path), {
       ...init,
       headers: {
         ...(init.headers ?? {}),
-        ...(anonymous ? {} : await authHeaders({ skipCache })),
+        ...(await headersFor(skipCache)),
       },
       // 同じオリジンなので Cookie (講師・管理者用の入口では Access の CF_Authorization) は既定で
       // 送られる。明示しておき、Access のログインへのリダイレクトは追わずに受け取る (追うと別オリジンの
@@ -149,7 +162,7 @@ export async function readApiError(res: Response, fallback?: string): Promise<st
  * API を呼び、JSON を返す。非 2xx はサーバの `{ error }` を含む例外を投げる。
  */
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = "GET", body, signal, anonymous = false } = options;
+  const { method = "GET", body, signal, anonymous = false, optionalAuth = false } = options;
   const headers: Record<string, string> = {
     [DEV_MODE_HEADER]: devModeHeaderValue(isDevModeEnabled()),
   };
@@ -163,7 +176,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       ...(signal ? { signal } : {}),
     },
-    { anonymous },
+    { anonymous, optionalAuth },
   );
 
   if (!res.ok) throw new ApiClientError(await readApiError(res), res.status);

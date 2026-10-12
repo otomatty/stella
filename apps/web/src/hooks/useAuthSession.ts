@@ -113,7 +113,24 @@ export function useAuthSession(): UseAuthSessionResult {
     };
 
     void (async () => {
-      const initial = await getSession();
+      let initial: Session | null;
+      try {
+        initial = await getSession();
+      } catch (err) {
+        // Clerk を読み込めない (ネットワーク・Clerk の障害)。復元中のまま止めず、エラーを見せる。
+        console.error("[useAuthSession] session restore failed", err);
+        if (!cancelled) {
+          setSession(null);
+          setProfile(null);
+          setError(
+            err instanceof Error
+              ? `ログインの準備ができませんでした: ${err.message}`
+              : "ログインの準備ができませんでした",
+          );
+          setLoading(false);
+        }
+        return;
+      }
       if (!cancelled) await load(initial);
     })();
 
