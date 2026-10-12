@@ -9,6 +9,7 @@ import {
 import type {
   LibraryBook,
   LibraryCapabilities,
+  LibraryChapterSummary,
   LibraryJob,
   LibraryPdf,
   LibraryReadingStatus,
@@ -552,6 +553,30 @@ libraryRoute.post("/api/library/books/:bookId/jobs/:jobId/retry", async (c) => {
       throw new ApiError("この処理はすでに再実行されています", 409);
     await dispatch(c.env, caller.tenantId, book.id, retried);
     return c.json({ job: jobView(retried) }, 202);
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.get("/api/library/books/:bookId/chapters", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    // Titles and page ranges only; chapter text is the reader's job (P4).
+    const rows = await c.env.DB.prepare(
+      "SELECT id, position, title, start_page, end_page FROM library_chapters WHERE tenant_id = ? AND book_id = ? ORDER BY position",
+    )
+      .bind(caller.tenantId, book.id)
+      .all<{ id: string; position: number; title: string; start_page: number; end_page: number }>();
+    const chapters: LibraryChapterSummary[] = rows.results.map((row) => ({
+      id: row.id,
+      position: row.position,
+      title: row.title,
+      startPage: row.start_page,
+      endPage: row.end_page,
+    }));
+    return c.json({ chapters });
   } catch (error) {
     return failure(c, error);
   }

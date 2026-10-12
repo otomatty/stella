@@ -150,6 +150,20 @@ describe("book processing jobs", () => {
     });
   });
 
+  it("lists chapter titles and page ranges to the owner only", async () => {
+    db.sqlite.exec(`
+      INSERT INTO library_chapters (id, tenant_id, book_id, position, title, markdown, start_page, end_page, updated_at)
+      VALUES ('c2','ses','book',2,'Second','body two',4,9,1), ('c1','ses','book',1,'First','body one',1,3,1);
+    `);
+    expect((await call("/chapters", "GET", "other")).status).toBe(404);
+    const body = await json<{ chapters: unknown[] }>(await call("/chapters"));
+    expect(body.chapters).toEqual([
+      { id: "c1", position: 1, title: "First", startPage: 1, endPage: 3 },
+      { id: "c2", position: 2, title: "Second", startPage: 4, endPage: 9 },
+    ]);
+    expect(JSON.stringify(body)).not.toContain("body one");
+  });
+
   it("removes a PDF before processing", async () => {
     expect((await call("/pdfs/pdf", "DELETE", "other")).status).toBe(404);
     r2Fails = true;

@@ -67,6 +67,13 @@ export interface LibraryJob {
   createdAt: number;
   finishedAt: number | null;
 }
+export interface LibraryChapterSummary {
+  id: string;
+  position: number;
+  title: string;
+  startPage: number;
+  endPage: number;
+}
 export interface CreateLibraryPdf {
   fileName: string;
   sizeBytes: number;
