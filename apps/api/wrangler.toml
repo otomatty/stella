@@ -85,3 +85,13 @@ bucket_name = "stella-skill-sheets"
 [[r2_buckets]]
 binding = "SUBMISSIONS_BUCKET"
 bucket_name = "stella-submissions"
+
+# Personal library content: no public domain / r2.dev access.
+[[r2_buckets]]
+binding = "LIBRARY_BUCKET"
+bucket_name = "stella-library-private"
+
+[[services]]
+binding = "NARRATOR"
+service = "stella-narrator"
+entrypoint = "Narrator"

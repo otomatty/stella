@@ -47,6 +47,29 @@ describe("personal library additive migration", () => {
     expect(db.prepare("SELECT count(*) AS count FROM library_shelf_entries").get()).toEqual({
       count: 0,
     });
+    db.exec(
+      "INSERT INTO library_books (id,tenant_id,owner_id,title,created_at,updated_at) VALUES ('kept','a','owner','Kept',1,1)",
+    );
+    db.exec(sql("0063_library_processing.sql"));
+    expect(
+      db
+        .prepare("SELECT status, generation, page_count FROM library_books WHERE id = 'kept'")
+        .get(),
+    ).toEqual({ status: "draft", generation: 1, page_count: null });
+    expect(() => db.exec("UPDATE library_books SET status = 'bad' WHERE id = 'kept'")).toThrow(
+      /CHECK/,
+    );
+    db.exec(
+      "INSERT INTO library_chapters (id,tenant_id,book_id,position,title,start_page,end_page,updated_at) VALUES ('chapter','a','kept',1,'Chapter',1,1,1)",
+    );
+    db.exec(
+      "INSERT INTO library_books (id,tenant_id,owner_id,title,created_at,updated_at) VALUES ('book2','a','owner','Book 2',1,1)",
+    );
+    expect(() =>
+      db.exec(
+        "INSERT INTO library_audios (id,tenant_id,book_id,chapter_id,revision,source_speech_hash,tts_model,created_at) VALUES ('audio','a','book2','chapter',1,'hash','fake',1)",
+      ),
+    ).toThrow(/FOREIGN KEY/);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     db.close();
   });

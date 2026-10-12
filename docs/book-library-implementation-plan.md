@@ -1,7 +1,7 @@
 # STELLA 本棚とPDF読み上げの実装計画
 
 作成日 2026年10月11日  
-状態 P1の実装済み範囲と後続計画（12章）  
+状態 P1と処理基盤の実装済み範囲と後続計画（12章）  
 [統合設計](book-library-design.md)
 
 book-narratorの処理をSTELLAへ移植し、個人のPDFを登録してスマホで聴き、PCで関連演習に進む流れを完成させる。実装は登録から利用までを通す順で分割し、移植した処理の回帰テストとSTELLAの認可をそれぞれ確認する。既存book-narratorからは処理コードだけを移植する。ユーザーの指定により既存DB・R2・利用者・書籍データは移管せず、STELLAで新しく登録する。
@@ -168,6 +168,10 @@ Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプ
 
 ## 12 実装状況
 
-P1として、`library_books` と `library_shelf_entries` の加算スキーマ、本人の本棚API・画面、JWT・テナント・ロール・無効化利用者の認可テストを実装した。P1の書籍は原本・図版・音声を持たないため、削除は行の削除と本棚のカスケードだけで完結する。
+P1として、`library_books` と `library_shelf_entries` の加算スキーマ（0062）、本人の本棚API・画面、JWT・テナント・ロール・無効化利用者の認可テストを実装した。
 
-処理Worker（`apps/narrator`）、`packages/book-core`、PDF・章・音声・ジョブのテーブル、削除後のR2清掃、非公開R2の確認とデプロイ手順は、P2の入口（PDFアップロードAPI）と一緒に別PRで入れる。書籍の処理状態（`status`）、削除世代（`generation`）、ページ数はそのPRで `library_books` に列を追加する。公開範囲（`visibility`・`publication_status`）はP6で追加する。
+P2の土台として、処理Worker（`apps/narrator`）、`packages/book-core`、PDF・ページ・図版・章・音声・ジョブのテーブル（0063）、削除後のR2清掃、非公開R2の確認とデプロイ手順を追加した。`library_books` には0063で処理状態（`status`）、削除世代（`generation`）、ページ数、章計画の列を足す。OCR・図版・章分割・TTSは偽プロバイダで検証した。PDFアップロードAPIは未実装で、本番のAPIは処理Workerの `capabilities()` だけを呼ぶ。
+
+メモ・しおり・再開位置のテーブル（`library_annotations`・`library_reader_states`）はP4、公開範囲の列（`visibility`・`publication_status`）はP6で追加する。メディアチケット・Rangeの検証はテスト専用APIだけで、スマホ実機・長い音声・本物のプロバイダ品質は未検証である。
+
+[開発・検証・デプロイ手順](book-library-development.md)を参照。

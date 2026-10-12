@@ -3,10 +3,13 @@ import { ApiError } from "./authz.js";
 export interface LibraryAccessBook {
   tenant_id: string;
   owner_id: string;
+  status: string;
 }
 /** Private library ownership is independent of staff roles, email and developer mode. */
 export function canOwnLibraryBook(caller: Caller, book: LibraryAccessBook): boolean {
-  return caller.tenantId === book.tenant_id && caller.id === book.owner_id;
+  return (
+    caller.tenantId === book.tenant_id && caller.id === book.owner_id && book.status !== "deleting"
+  );
 }
 export function requireOwnLibraryBook(
   caller: Caller,
