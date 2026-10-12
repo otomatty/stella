@@ -257,7 +257,7 @@ function LibraryShelf() {
           if (!open) setEditor(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="w-[min(calc(100vw-2rem),560px)]">
           <DialogHeader>
             <DialogTitle>{editor === "new" ? "書籍情報を登録" : "書籍情報を編集"}</DialogTitle>
             <DialogDescription>この本と読書の記録は、自分だけが閲覧できます。</DialogDescription>
@@ -284,7 +284,7 @@ function LibraryShelf() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="w-[min(calc(100vw-2rem),460px)]">
           <DialogHeader>
             <DialogTitle>この本を削除しますか？</DialogTitle>
             <DialogDescription>
@@ -292,11 +292,11 @@ function LibraryShelf() {
             </DialogDescription>
           </DialogHeader>
           {deleteError ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="px-6 text-sm text-destructive">
               {deleteError}
             </p>
           ) : null}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 px-6 pb-6">
             <Button
               disabled={busy}
               onClick={() => {
@@ -370,7 +370,10 @@ function BookForm({ entry, onSaved }: { entry: LibraryShelfEntry | null; onSaved
     }
   }
   return (
-    <form onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
+    <form
+      onSubmit={(event) => void submit(event)}
+      className="flex min-h-0 flex-col gap-4 overflow-y-auto px-6 pb-6"
+    >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="library-title">タイトル</Label>
         <Input
@@ -434,7 +437,11 @@ function BookForm({ entry, onSaved }: { entry: LibraryShelfEntry | null; onSaved
           </div>
         </>
       ) : null}
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
       <div className="flex justify-end">
         <Button type="submit" variant="primary" disabled={busy || !title.trim()}>
           {busy ? "保存中…" : "保存"}
