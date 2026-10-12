@@ -24,6 +24,11 @@ import {
 const API_BASE = "https://api.cloudflare.com/client/v4";
 const ACCESS_LOG_CURSOR = "access_logs_cursor";
 export const ACCESS_LOG_IMPORTED_AT = "access_logs_imported_at";
+/**
+ * 取り込んだのにまだ検知で数え直していない Access のログの最も古い時刻 (ms)。取り込みの続きの位置を
+ * 進める前に控え、検知が保存し終えたら消す — 取り込みのあとで検知が失敗しても、次の検査で数え直せる。
+ */
+export const ACCESS_BACKFILL_FROM = "access_backfill_from";
 /** 初回・長く止まっていたときにさかのぼる上限。 */
 const MAX_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const PAGE_LIMIT = 1000;
@@ -246,6 +251,12 @@ export async function importAccessLogs(
   }
   // 1 行ずつ書くと 1 ページで 1000 回の問い合わせになり D1 の上限に当たるので、複数行の文を batch で送る。
   const imported = await insertSecurityEvents(db, values, ROWS_PER_INSERT, INSERTS_PER_BATCH);
+  if (oldest) {
+    const prevRaw = await readSecurityState(db, ACCESS_BACKFILL_FROM);
+    const prev = prevRaw ? Number(prevRaw) : Number.NaN;
+    const from = Number.isFinite(prev) ? Math.min(prev, oldest.getTime()) : oldest.getTime();
+    await writeSecurityState(db, ACCESS_BACKFILL_FROM, String(from));
+  }
   await writeSecurityState(db, ACCESS_LOG_CURSOR, JSON.stringify(next));
   await writeSecurityState(db, ACCESS_LOG_IMPORTED_AT, String(now.getTime()));
   return { imported, oldest };

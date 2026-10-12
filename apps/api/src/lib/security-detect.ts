@@ -27,7 +27,7 @@ import {
   securityEvents,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { importAccessLogs } from "./security-cloudflare.js";
+import { ACCESS_BACKFILL_FROM, importAccessLogs } from "./security-cloudflare.js";
 import {
   acquireSecurityLock,
   readSecurityState,
@@ -270,52 +270,132 @@ async function perEventRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   return out;
 }
 
-/** 直近 1 時間に `kind` を `group` ごとに数え、`threshold` 以上の組を返す。 */
-async function burst(
+/** 「1 時間に N 回」で数えるルール。 */
+interface BurstSpec {
+  kind: string;
+  /** 何ごとに数えるか (security_events の列)。 */
+  group: "actor" | "ip" | "email";
+  threshold: number;
+  rule: SecurityRule;
+  severity: SecuritySeverity;
+  /** アラートの対象の呼び名 (detail と重複判定のキーに使う)。 */
+  label: string;
+}
+
+const GROUP_COLUMN = { actor: "actor_id", ip: "ip", email: "email" } as const;
+
+const BURST_SPECS: readonly BurstSpec[] = [
+  {
+    kind: "access.denied",
+    group: "email",
+    threshold: THRESHOLDS.accessDenied,
+    rule: "access_denied_burst",
+    severity: "high",
+    label: "email",
+  },
+  {
+    kind: "access.denied",
+    group: "ip",
+    threshold: THRESHOLDS.accessDenied,
+    rule: "access_denied_burst",
+    severity: "high",
+    label: "ip",
+  },
+  {
+    kind: "authz.forbidden",
+    group: "actor",
+    threshold: THRESHOLDS.forbidden,
+    rule: "forbidden_burst",
+    severity: "high",
+    label: "actor_id",
+  },
+  {
+    kind: "authz.forbidden",
+    group: "ip",
+    threshold: THRESHOLDS.forbidden,
+    rule: "forbidden_burst",
+    severity: "high",
+    label: "ip",
+  },
+  {
+    kind: "rate_limited",
+    group: "ip",
+    threshold: THRESHOLDS.rateLimited,
+    rule: "rate_limit_burst",
+    severity: "medium",
+    label: "ip",
+  },
+  {
+    kind: "auth.invalid_token",
+    group: "ip",
+    threshold: THRESHOLDS.invalidToken,
+    rule: "invalid_token",
+    severity: "medium",
+    label: "ip",
+  },
+  {
+    kind: "data.export",
+    group: "actor",
+    threshold: THRESHOLDS.bulkExport,
+    rule: "bulk_export",
+    severity: "medium",
+    label: "actor_id",
+  },
+];
+
+/**
+ * `from` から `now` までの出来事それぞれについて、「その出来事の時刻までの 1 時間」(x > t - 1h かつ
+ * x <= t。時刻は ms の整数) の件数を数え、しきい値に届いたものをアラートの候補にする。窓の終わりを
+ * 出来事の時刻に合わせるので、検査と検査の間 (15 分) に始まって終わる連続も、遅れて取り込んだ行の
+ * 連続も取りこぼさない。数えるのは D1 の中 (窓関数で 1 回の並べ替え) で行い、返すのは (組織・対象・日)
+ * ごとのいちばん多い件数と最後の時刻だけ — 行を読み出さないので、出来事がどれだけ多くても途中で切れない。
+ * 窓の頭に入る出来事を数えるため、`from` の 1 時間前から読む。
+ */
+async function windowBursts(
   db: Db,
-  kind: string,
-  group: "actor" | "ip" | "email",
-  threshold: number,
-  until: Date,
-  extra?: ReturnType<typeof sql>,
-): Promise<Array<{ tenantId: string; key: string; count: number; last: Date }>> {
-  const column =
-    group === "actor"
-      ? securityEvents.actorId
-      : group === "ip"
-        ? securityEvents.ip
-        : securityEvents.email;
-  const rows = await db
-    .select({
-      tenantId: securityEvents.tenantId,
-      key: column,
-      count: sql<number>`count(*)`,
-      last: sql<number>`max(${securityEvents.createdAt})`,
-    })
-    .from(securityEvents)
-    .where(
-      and(
-        eq(securityEvents.kind, kind),
-        isNotNull(column),
-        gt(securityEvents.createdAt, new Date(until.getTime() - HOUR)),
-        lt(securityEvents.createdAt, new Date(until.getTime() + 1)),
-        ...(extra ? [extra] : []),
-      ),
+  spec: BurstSpec,
+  from: Date,
+  now: Date,
+): Promise<AlertCandidate[]> {
+  const col = sql.raw(GROUP_COLUMN[spec.group]);
+  const rows = await db.all<{
+    tenant_id: string;
+    window_key: string;
+    window_count: number;
+    window_at: number;
+  }>(sql`
+    select tenant_id, window_key, max(window_count) as window_count, max(window_at) as window_at
+    from (
+      select tenant_id, ${col} as window_key, created_at as window_at,
+        count(*) over (
+          partition by tenant_id, ${col}
+          order by created_at
+          range between ${HOUR - 1} preceding and current row
+        ) as window_count
+      from security_events
+      where kind = ${spec.kind}
+        and ${col} is not null
+        and created_at > ${from.getTime() - HOUR}
+        and created_at <= ${now.getTime()}
     )
-    .groupBy(securityEvents.tenantId, column)
-    .having(sql`count(*) >= ${threshold}`);
-  return rows
-    .filter((r): r is typeof r & { key: string } => typeof r.key === "string")
-    .map((r) => ({
-      tenantId: r.tenantId,
-      key: r.key,
-      count: Number(r.count),
-      last: new Date(Number(r.last)),
-    }));
+    where window_at >= ${from.getTime()} and window_count >= ${spec.threshold}
+    group by tenant_id, window_key, date((window_at + ${9 * HOUR}) / 1000, 'unixepoch')
+  `);
+  return burstCandidates(
+    rows.map((r) => ({
+      tenantId: r.tenant_id,
+      key: r.window_key,
+      count: Number(r.window_count),
+      last: new Date(Number(r.window_at)),
+    })),
+    spec.rule,
+    spec.severity,
+    spec.label,
+  );
 }
 
 function burstCandidates(
-  rows: Awaited<ReturnType<typeof burst>>,
+  rows: Array<{ tenantId: string; key: string; count: number; last: Date }>,
   rule: SecurityRule,
   severity: SecuritySeverity,
   label: string,
@@ -335,31 +415,16 @@ function burstCandidates(
   }));
 }
 
-/** Access の拒否の連続 (`until` までの 1 時間)。 */
-async function accessDeniedBursts(db: Db, until: Date): Promise<AlertCandidate[]> {
-  return [
-    ...burstCandidates(
-      await burst(db, "access.denied", "email", THRESHOLDS.accessDenied, until),
-      "access_denied_burst",
-      "high",
-      "email",
-    ),
-    ...burstCandidates(
-      await burst(db, "access.denied", "ip", THRESHOLDS.accessDenied, until),
-      "access_denied_burst",
-      "high",
-      "ip",
-    ),
-  ];
+/** 前回の検査より後の出来事それぞれで、全部の「1 時間に N 回」のルールを数える。 */
+async function burstRules(db: Db, from: Date, now: Date): Promise<AlertCandidate[]> {
+  const out: AlertCandidate[] = [];
+  for (const spec of BURST_SPECS) out.push(...(await windowBursts(db, spec, from, now)));
+  return out;
 }
 
 /**
- * 遅れて取り込んだ Access の拒否の連続。取り込みが止まっていた・溜まっていたあとに入った 1 時間より前の
- * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻からの拒否
- * それぞれについて「その拒否の時刻までの 1 時間」(通常のルールと同じ窓) の件数を数え直す。窓の終わりを
- * 拒否の時刻に合わせるので、1 時間の内に収まる連続は取りこぼさない。数えるのは D1 の中 (窓関数) で行い、
- * 返すのはしきい値を超えた (組織・対象・日) ごとのいちばん多い件数と最後の時刻だけ — 行を読み出さない
- * ので、拒否がどれだけ溜まっていても途中で切れない。
+ * 遅れて取り込んだ Access の拒否の連続。前回の検査より前の時刻の行は通常のルールの範囲に入らないので、
+ * 取り込んだ最も古い時刻から数え直す。
  */
 async function backfilledAccessDeniedBursts(
   db: Db,
@@ -367,90 +432,9 @@ async function backfilledAccessDeniedBursts(
   now: Date,
 ): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
-  for (const label of ["email", "ip"] as const) {
-    const col = sql.raw(label);
-    // 各拒否の「その時刻までの 1 時間」(x > t - 1h かつ x <= t。時刻は ms の整数) の件数を、窓関数で
-    // 1 回の並べ替えで数える。窓の頭に入る拒否を数えるため、1 時間前から読む。
-    const rows = await db.all<{
-      tenant_id: string;
-      window_key: string;
-      window_count: number;
-      window_at: number;
-    }>(sql`
-      select tenant_id, window_key, max(window_count) as window_count, max(window_at) as window_at
-      from (
-        select tenant_id, ${col} as window_key, created_at as window_at,
-          count(*) over (
-            partition by tenant_id, ${col}
-            order by created_at
-            range between ${HOUR - 1} preceding and current row
-          ) as window_count
-        from security_events
-        where kind = 'access.denied'
-          and ${col} is not null
-          and created_at > ${from.getTime() - HOUR}
-          and created_at <= ${now.getTime()}
-      )
-      where window_at >= ${from.getTime()} and window_count >= ${THRESHOLDS.accessDenied}
-      group by tenant_id, window_key, date((window_at + ${9 * HOUR}) / 1000, 'unixepoch')
-    `);
-    out.push(
-      ...burstCandidates(
-        rows.map((r) => ({
-          tenantId: r.tenant_id,
-          key: r.window_key,
-          count: Number(r.window_count),
-          last: new Date(Number(r.window_at)),
-        })),
-        "access_denied_burst",
-        "high",
-        label,
-      ),
-    );
+  for (const spec of BURST_SPECS.filter((b) => b.kind === "access.denied")) {
+    out.push(...(await windowBursts(db, spec, from, now)));
   }
-  return out;
-}
-
-async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
-  const out: AlertCandidate[] = [...(await accessDeniedBursts(db, until))];
-  const push = (
-    rows: Awaited<ReturnType<typeof burst>>,
-    rule: SecurityRule,
-    severity: SecuritySeverity,
-    label: string,
-  ) => {
-    out.push(...burstCandidates(rows, rule, severity, label));
-  };
-  push(
-    await burst(db, "authz.forbidden", "actor", THRESHOLDS.forbidden, until),
-    "forbidden_burst",
-    "high",
-    "actor_id",
-  );
-  push(
-    await burst(db, "authz.forbidden", "ip", THRESHOLDS.forbidden, until),
-    "forbidden_burst",
-    "high",
-    "ip",
-  );
-  push(
-    await burst(db, "rate_limited", "ip", THRESHOLDS.rateLimited, until),
-    "rate_limit_burst",
-    "medium",
-    "ip",
-  );
-  push(
-    await burst(db, "auth.invalid_token", "ip", THRESHOLDS.invalidToken, until),
-    "invalid_token",
-    "medium",
-    "ip",
-  );
-  push(
-    await burst(db, "data.export", "actor", THRESHOLDS.bulkExport, until),
-    "bulk_export",
-    "medium",
-    "actor_id",
-  );
   return out;
 }
 
@@ -806,16 +790,24 @@ export async function detectSecurityAlerts(
     ...(await sessionRules(db, scan)),
     ...(await perEventRules(db, scan)),
     ...(await privilegeRules(db, scan)),
-    ...(await burstRules(db, now)),
+    ...(await burstRules(db, since, now)),
     ...(await errorSpikeRule(db, now)),
   ];
-  // 1 時間より前の Access のログを取り込んだときは、その時刻から数え直す (さかのぼるのは 1 日まで)。
-  const importedFrom = options.accessImportedFrom;
-  if (importedFrom && importedFrom.getTime() < now.getTime() - HOUR) {
-    const from = new Date(Math.max(importedFrom.getTime(), now.getTime() - DAY));
+  // 前回の検査より前の時刻の Access のログを取り込んだときは、その時刻から数え直す (さかのぼるのは
+  // 1 日まで)。取り込んだ時刻は取り込みのときに控えてあり (検知が失敗しても次の検査で数え直せる)、
+  // 検知を保存し終えてから消す。
+  const storedRaw = await readSecurityState(db, ACCESS_BACKFILL_FROM);
+  const storedMs = storedRaw ? Number(storedRaw) : Number.NaN;
+  const importedMs = Math.min(
+    options.accessImportedFrom?.getTime() ?? Number.POSITIVE_INFINITY,
+    Number.isFinite(storedMs) ? storedMs : Number.POSITIVE_INFINITY,
+  );
+  if (Number.isFinite(importedMs) && importedMs < since.getTime()) {
+    const from = new Date(Math.max(importedMs, now.getTime() - DAY));
     candidates.push(...(await backfilledAccessDeniedBursts(db, from, now)));
   }
   const created = await saveAlerts(db, candidates);
+  if (storedRaw) await writeSecurityState(db, ACCESS_BACKFILL_FROM, "");
   // 上限まで読んだ問い合わせがあれば、読み切れたところまでしか進めない (残りは次の検査で読む。
   // 他のルールが読んだ出来事を次の検査でもう一度数えることはあるが、アラートは日ごとにまとまる
   // ので、増えるのは件数だけ)。アラートを保存したら通知より先に進める — 通知が失敗しても同じ

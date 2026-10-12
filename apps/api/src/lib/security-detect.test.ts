@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db/client.js";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
-import { importAccessLogs, revokeAccessSessions } from "./security-cloudflare.js";
+import {
+  ACCESS_BACKFILL_FROM,
+  importAccessLogs,
+  revokeAccessSessions,
+} from "./security-cloudflare.js";
 import { THRESHOLDS, detectSecurityAlerts, jstDate } from "./security-detect.js";
 import {
   acquireSecurityLock,
@@ -512,6 +516,51 @@ describe("detectSecurityAlerts", () => {
     ]);
   });
 
+  it("検査と検査の間で始まって終わる連続も、出来事の時刻までの 1 時間で数えて拾う", async () => {
+    // 検査の時刻までの 1 時間 (-60 分〜) には 4 件しか入らないが、最後の拒否 (-13 分) までの 1 時間には
+    // 5 件が入る並び。
+    for (const [i, m] of [72, 58, 43, 28, 13].entries()) {
+      await seedEvent({
+        kind: "access.denied",
+        tenantId: "ses",
+        source: "access",
+        externalId: `gap-${i}`,
+        email: "gap@example.com",
+        ip: "192.0.2.44",
+        createdAt: minutesAgo(m),
+      });
+    }
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(alerts().map((a) => [a.rule, a.subject, a.event_count])).toEqual([
+      ["access_denied_burst", "192.0.2.44", THRESHOLDS.accessDenied],
+      ["access_denied_burst", "gap@example.com", THRESHOLDS.accessDenied],
+    ]);
+  });
+
+  it("取り込んだあとで検知が失敗しても、控えた時刻から次の検査で数え直す", async () => {
+    for (let i = 0; i < THRESHOLDS.accessDenied; i++) {
+      await seedEvent({
+        kind: "access.denied",
+        tenantId: "ses",
+        source: "access",
+        externalId: `retry-${i}`,
+        email: "retry@example.com",
+        ip: "192.0.2.55",
+        createdAt: minutesAgo(180 - i * 8),
+      });
+    }
+    // 取り込みが控えた時刻 (検知が落ちて消されずに残っている)。
+    db.sqlite
+      .prepare("INSERT INTO security_state (key, value, updated_at) VALUES (?, ?, ?)")
+      .run(ACCESS_BACKFILL_FROM, String(minutesAgo(180).getTime()), NOW.getTime());
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(alerts().map((a) => a.subject)).toEqual(["192.0.2.55", "retry@example.com"]);
+    const left = db.sqlite
+      .prepare("select value from security_state where key = ?")
+      .get(ACCESS_BACKFILL_FROM) as { value: string };
+    expect(left.value).toBe("");
+  });
+
   it("サインインや候補が多い検査でも、D1 への問い合わせはまとめて送る (呼び出しあたりの上限に当たらない)", async () => {
     const insertEvent = db.sqlite.prepare(
       "INSERT INTO security_events (id, tenant_id, kind, source, actor_id, actor_role, email, country, metadata, created_at) VALUES (?, 'ses', ?, 'app', ?, ?, ?, ?, '{}', ?)",
@@ -694,9 +743,13 @@ describe("Cloudflare Access との連携", () => {
       ],
     };
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
-    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toMatchObject({
-      imported: 2,
-    });
+    const first = await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW);
+    expect(first).toMatchObject({ imported: 2 });
+    // 取り込んだ最も古い時刻を、検知が数え直し終えるまで控えておく。
+    const backfill = db.sqlite
+      .prepare("select value from security_state where key = ?")
+      .get(ACCESS_BACKFILL_FROM) as { value: string };
+    expect(Number(backfill.value)).toBe(first?.oldest?.getTime());
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
     expect(String(url)).toContain("/accounts/acct/access/logs/access_requests?since=");
     expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer cf-token");
