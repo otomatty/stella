@@ -316,24 +316,41 @@ function BookForm({ entry, onSaved }: { entry: LibraryShelfEntry | null; onSaved
     [error, setError] = useState<string | null>(null);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const nextTags = [
+      ...new Set(
+        tags
+          .split(/[,、]/)
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      ),
+    ];
+    // Same limits as parseShelfUpdate; checked before the book PATCH so a bad tag cannot half-save.
+    if (nextTags.length > 20 || nextTags.some((tag) => tag.length > 40)) {
+      setError("タグは40文字以内、20個までです");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(entry ? `/api/library/books/${entry.book.id}` : "/api/library/books", {
-        method: entry ? "PATCH" : "POST",
-        body: { title, author: author || null, kind },
-      });
-      if (entry)
-        await apiFetch(`/api/library/shelf/${entry.book.id}`, {
-          method: "PUT",
-          body: {
-            readingStatus,
-            tags: tags
-              .split(/[,、]/)
-              .map((tag) => tag.trim())
-              .filter(Boolean),
-          },
+      if (!entry) {
+        await apiFetch("/api/library/books", {
+          method: "POST",
+          body: { title, author: author || null, kind },
         });
+      } else {
+        // Send only edited fields so a stale tab does not overwrite another tab's save.
+        const book: Record<string, unknown> = {};
+        if (title !== entry.book.title) book.title = title;
+        if ((author || null) !== entry.book.author) book.author = author || null;
+        if (kind !== entry.book.kind) book.kind = kind;
+        const shelf: Record<string, unknown> = {};
+        if (readingStatus !== entry.readingStatus) shelf.readingStatus = readingStatus;
+        if (nextTags.join("\n") !== entry.tags.join("\n")) shelf.tags = nextTags;
+        if (Object.keys(book).length)
+          await apiFetch(`/api/library/books/${entry.book.id}`, { method: "PATCH", body: book });
+        if (Object.keys(shelf).length)
+          await apiFetch(`/api/library/shelf/${entry.book.id}`, { method: "PUT", body: shelf });
+      }
       onSaved();
     } catch (error) {
       setError(message(error));
