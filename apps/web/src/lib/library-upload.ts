@@ -170,8 +170,11 @@ export async function uploadBookPdfs(
         await sendPart(bookId, id, part);
       }
     } catch (error) {
-      if (registered[0])
-        await apiFetch(`/api/library/books/${bookId}/pdfs/${registered[0]}`, {
+      // The first part may have been saved even if its response was lost; deleting an id that
+      // was never saved is a harmless 404.
+      const first = registered[0] ?? planned[0]?.id;
+      if (first)
+        await apiFetch(`/api/library/books/${bookId}/pdfs/${first}`, {
           method: "DELETE",
         }).catch(() => undefined);
       throw error;
