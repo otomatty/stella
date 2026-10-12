@@ -23,7 +23,7 @@ import type {
   QuizWithQuestions,
   SectionRow,
 } from "@stella/shared/cms/types";
-import { apiFetch } from "./api-client";
+import { apiFetch, authFetch } from "./api-client";
 
 // ---------------------------------------------------------------
 // Stages
@@ -272,17 +272,10 @@ export interface UploadMaterialResult {
 }
 
 export async function uploadMaterial(file: File, path: string): Promise<UploadMaterialResult> {
-  const { getAccessToken } = await import("./auth-client");
-  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
-  const token = getAccessToken();
   const form = new FormData();
   form.append("path", path);
   form.append("file", file);
-  const res = await fetch(`${serverUrl}/api/materials/upload`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: form,
-  });
+  const res = await authFetch("/api/materials/upload", { method: "POST", body: form });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let message = `アップロードに失敗しました (${res.status})`;
@@ -335,17 +328,10 @@ export async function uploadLessonMaterial(
   file: File,
   lessonId: string,
 ): Promise<LessonMaterialRow> {
-  const { getAccessToken } = await import("./auth-client");
-  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
-  const token = getAccessToken();
   const form = new FormData();
   form.append("lessonId", lessonId);
   form.append("file", file);
-  const res = await fetch(`${serverUrl}/api/materials/upload`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: form,
-  });
+  const res = await authFetch("/api/materials/upload", { method: "POST", body: form });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let message = `アップロードに失敗しました (${res.status})`;
@@ -378,14 +364,9 @@ export async function listLessonMaterialVersions(
   return rows ?? [];
 }
 
-/** プロキシ経由 (要 Authorization) のダウンロード。 fetch → Blob → a[download] で保存させる。 */
+/** プロキシ経由 (要認証) のダウンロード。 fetch → Blob → a[download] で保存させる。 */
 async function downloadViaProxy(apiPath: string, fileName: string): Promise<void> {
-  const { getAccessToken } = await import("./auth-client");
-  const serverUrl = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
-  const token = getAccessToken();
-  const res = await fetch(`${serverUrl}${apiPath}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const res = await authFetch(apiPath);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let message = `ダウンロードに失敗しました (${res.status})`;

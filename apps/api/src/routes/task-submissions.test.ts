@@ -55,7 +55,7 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     objects = new Map();
     env = {
       DB: database.binding,
-      AUTH_JWT_SECRET: "test-secret",
+      DEV_AUTH_JWT_SECRET: "test-secret",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async (key: string, data: Uint8Array) => {
           objects.set(key, data);

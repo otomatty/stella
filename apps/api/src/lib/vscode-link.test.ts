@@ -46,6 +46,7 @@ function liveRow(overrides: Partial<VscodeLinkRow> = {}): VscodeLinkRow {
     userId: "user-1",
     usedAt: null,
     expiresAt: new Date("2026-08-14T12:10:00.000Z"),
+    accessToken: "access.jwt.token",
     ...overrides,
   };
 }
@@ -53,18 +54,33 @@ function liveRow(overrides: Partial<VscodeLinkRow> = {}): VscodeLinkRow {
 describe("redeemVscodeLink", () => {
   const now = new Date("2026-08-14T12:05:00.000Z");
 
-  it("does not consume when email is missing", async () => {
+  type Profile = { email: string | null; disabled: boolean } | null;
+  const cases: Array<[string, () => Promise<Profile>, () => Promise<string | null>]> = [
+    ["the profile is missing", async () => null, async () => "tok"],
+    ["the email is missing", async () => ({ email: null, disabled: false }), async () => "tok"],
+    [
+      "the account is disabled",
+      async () => ({ email: "a@example.com", disabled: true }),
+      async () => "tok",
+    ],
+    [
+      "no token can be issued",
+      async () => ({ email: "a@example.com", disabled: false }),
+      async () => null,
+    ],
+  ];
+  it.each(cases)("does not consume when %s", async (_label, loadProfile, issueToken) => {
     let consumed = false;
     await expect(
       redeemVscodeLink({
         row: liveRow(),
         now,
-        resolveEmail: async () => null,
+        loadProfile,
         consume: async () => {
           consumed = true;
           return true;
         },
-        signToken: async () => "tok",
+        issueToken,
       }),
     ).rejects.toMatchObject({
       name: "ApiError",
@@ -85,15 +101,15 @@ describe("redeemVscodeLink", () => {
       const err = await redeemVscodeLink({
         row,
         now,
-        resolveEmail: async () => {
+        loadProfile: async () => {
           resolved = true;
-          return "a@example.com";
+          return { email: "a@example.com", disabled: false };
         },
         consume: async () => {
           consumed = true;
           return true;
         },
-        signToken: async () => "tok",
+        issueToken: async () => "tok",
       }).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(ApiError);
       expect(err).toMatchObject({ status: 401, message: INVALID_VSCODE_LINK });
@@ -107,22 +123,22 @@ describe("redeemVscodeLink", () => {
     const result = await redeemVscodeLink({
       row: liveRow(),
       now,
-      resolveEmail: async (userId) => {
+      loadProfile: async (userId) => {
         expect(userId).toBe("user-1");
-        return "learner@example.com";
+        return { email: "learner@example.com", disabled: false };
       },
       consume: async (id) => {
         expect(id).toBe("link-1");
         usedAtWrites.push(now);
         return true;
       },
-      signToken: async (userId, email) => {
-        expect(userId).toBe("user-1");
+      issueToken: async (row, email) => {
+        expect(row.userId).toBe("user-1");
         expect(email).toBe("learner@example.com");
-        return "signed.jwt.token";
+        return row.accessToken ?? null;
       },
     });
     expect(usedAtWrites).toEqual([now]);
-    expect(result).toEqual({ access_token: "signed.jwt.token", userId: "user-1" });
+    expect(result).toEqual({ access_token: "access.jwt.token", userId: "user-1" });
   });
 });

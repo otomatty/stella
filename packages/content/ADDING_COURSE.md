@@ -28,7 +28,7 @@ packages/content/courses/<slug>/
 - 本文は `bun run db:seed`（本番は `db:seed:remote:content`）で D1 に入る
 - 図解 SVG とサムネイルは `main` への push で自動反映（デプロイが seed の前に R2 へ流す）
 - ローカルに入れるときだけ `bun run --filter=@stella/content upload` を手で叩く
-- 受講者が見るには講師 / 管理者が enrollment する。本番 seed は Google ログインした本人を自動登録しない
+- 受講者が見るには講師 / 管理者が enrollment する。本番 seed はログインした本人を自動登録しない
 - `practice.md` の確認クイズだけが LMS の quiz になる。ハンズオン本文は Assignment 化されていない
 
 | ファイル | LMS |

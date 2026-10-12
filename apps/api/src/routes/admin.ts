@@ -41,6 +41,7 @@ import {
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
+import { cloudflareAccessApiConfigured, revokeAccessSessions } from "../lib/security-cloudflare.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
@@ -105,9 +106,14 @@ async function requireSameTenantTarget(
   db: Db,
   caller: Caller,
   targetId: string,
-): Promise<{ id: string; tenantId: string; role: string }> {
+): Promise<{ id: string; tenantId: string; role: string; email: string | null }> {
   const rows = await db
-    .select({ id: profiles.id, tenantId: profiles.tenantId, role: profiles.role })
+    .select({
+      id: profiles.id,
+      tenantId: profiles.tenantId,
+      role: profiles.role,
+      email: profiles.email,
+    })
     .from(profiles)
     .where(eq(profiles.id, targetId))
     .limit(1);
@@ -286,7 +292,7 @@ adminRoute.post("/api/admin/users/role", async (c) => {
       targetType: "user",
       targetId: userId,
       ip: clientIp(c),
-      metadata: { new_role: body.role },
+      metadata: { new_role: body.role, previous_role: target.role },
     });
     return c.json({ ok: true });
   } catch (err) {
@@ -311,12 +317,28 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
     rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
+    // 無効化したら Access のセッションも切る (アプリは次のリクエストで拒否するが、Access 側の
+    // セッションを残すと、他の Access アプリや拡張のトークンで通り続けるため)。失敗しても無効化は通す。
+    let sessionsRevoked = false;
+    if (body.disabled && target.email && cloudflareAccessApiConfigured(c.env)) {
+      try {
+        sessionsRevoked = await revokeAccessSessions(c.env, target.email);
+      } catch (err) {
+        console.error(
+          "[admin] access session revoke failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
     await recordAudit(db, caller, {
       action: body.disabled ? "user_disable" : "user_enable",
       targetType: "user",
       targetId: userId,
       ip: clientIp(c),
-      metadata: { disabled: body.disabled },
+      metadata: {
+        disabled: body.disabled,
+        ...(body.disabled ? { sessions_revoked: sessionsRevoked } : {}),
+      },
     });
     return c.json({ ok: true });
   } catch (err) {

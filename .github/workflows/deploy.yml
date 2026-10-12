@@ -24,6 +24,10 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
       VITE_MATERIALS_BASE_URL: ${{ vars.VITE_MATERIALS_BASE_URL }}
+      # 認証は Cloudflare Access (docs/cloudflare-access.md)。deploy:prepare が API の [vars] に書き、
+      # 無ければ Cloudflare に何も書かないうちにデプロイを止める。
+      ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+      ACCESS_AUD: ${{ vars.ACCESS_AUD }}
     steps:
       - uses: actions/checkout@v7
 

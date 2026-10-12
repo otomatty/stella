@@ -256,7 +256,7 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     complete.mockReset();
     env = {
       DB: database.binding,
-      AUTH_JWT_SECRET: "test-secret",
+      DEV_AUTH_JWT_SECRET: "test-secret",
       ANTHROPIC_API_KEY: "test-key",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async (key: string, data: Uint8Array) => {

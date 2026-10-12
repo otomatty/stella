@@ -138,7 +138,7 @@ export function createSkillSheetTestEnv(overrides: Partial<Env> = {}): Env {
     ANTHROPIC_API_KEY: "test-key",
     ALLOWED_ORIGINS: "http://127.0.0.1:5173",
     DB: {} as D1Database,
-    AUTH_JWT_SECRET: TEST_JWT_SECRET,
+    DEV_AUTH_JWT_SECRET: TEST_JWT_SECRET,
     SKILL_SHEETS_BUCKET: createMockSkillSheetR2Bucket(),
     AI_RATE_LIMITER: createMockAiRateLimiter(),
     ...overrides,

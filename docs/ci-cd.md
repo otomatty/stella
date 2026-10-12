@@ -111,30 +111,36 @@ Settings → Secrets and variables → Actions で設定する。
 
 | 名前 | 用途 |
 |------|------|
-| `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL |
+| `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL。API は Web の Worker が中継するので **Web のオリジン** (`https://stella-web.saedgewell.workers.dev`) |
 | `VITE_MATERIALS_BASE_URL` | Web ビルド時に焼き込む教材配信ベース URL |
+| `ACCESS_TEAM_DOMAIN` | Cloudflare Access のチームドメイン (`<team>.cloudflareaccess.com`)。`deploy:prepare` が API の `[vars]` に書く |
+| `ACCESS_AUD` | Access アプリケーションの AUD Tag (64 桁の 16 進。複数はカンマ区切り)。同上 |
+
+Access の設定と任意の API secret (`CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL`) は
+[`docs/cloudflare-access.md`](cloudflare-access.md) を参照。
 
 ## Phase C の初回切替とデプロイ前処理
 
 初回のマージは [インフラ移行手順](stella-infrastructure-migration.md) に従い、
 メンテナンス告知・旧環境の書き込み停止・D1/R2 の復元・新 Worker の secrets 設定を済ませてから行う。
-この変更で既存 JWT は全失効する。通常運用の途中にマージしない。
+この変更で既存のセッションは全失効する。通常運用の途中にマージしない。
 
 `deploy:prepare` は最初のリモート処理として `stella-db` を Cloudflare API で検索し、
 checkout 内の `apps/api/wrangler.toml` の `database_id` を実 ID に置換する。
 教材指紋・seed・migration・API デプロイはすべてこの実 ID を使う。
 Git に記録したゼロ UUID はローカル開発専用。実 ID の自動作成・旧 DB へのフォールバックは行わない。
-DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と一致しない、
-教材 URL が未設定の場合は、教材アップロード前にジョブを停止する。
+あわせて `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` の形を確かめ、API の `wrangler.toml` の `[vars]` に書く。
+DB が無い、アカウントが違う、`VITE_SERVER_URL` が Web のオリジン (`https://stella-web.saedgewell.workers.dev`) と一致しない、
+教材 URL が未設定、Access の Variables が無い・形が違う場合は、教材アップロード前 (Cloudflare に何も書かないうち) にジョブを停止する。
 この処理は DB の復元完了や R2 コピーの内容までは保証しない。移行担当者が手順書で照合する。
 
-Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
+## Cloudflare Access への切り替え
 
-- **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
-- **Authorized redirect URIs**: `https://stella-api.saedgewell.workers.dev/api/auth/google/callback`
-
-Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
-Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。
+認証は Google OAuth + アプリ発行の JWT から Cloudflare Access へ移った。Google Cloud Console の OAuth クライアントは
+もう使わない (切り替えが済んだら削除する)。Access のアプリケーション・Bypass のパス・Variables を先に用意してから
+マージし、マージ後に新しい版の VS Code 拡張を配る。順番と確認項目は
+[`docs/cloudflare-access.md`](cloudflare-access.md) の「切り替えの順番」に従う。
+旧 JWT は API が受け付けなくなるので、切り替えの時点で全員が Access でログインし直し、VS Code も接続し直す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
@@ -152,7 +158,7 @@ Google に登録する URI ではない。切替後は旧オリジンと旧 API 
   - seed: `bun run db:seed:remote:content`
   - 教材画像: `bun run content:upload:remote`（サムネイルだけなら `content:upload:thumbnails:remote`）
   - 教材の指紋を消す: `bun run content:state:reset:remote`（次のデプロイが教材パイプラインをフルで流す）
-  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
+  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
 
 ## 検査の内訳（`verify` ジョブ）
 

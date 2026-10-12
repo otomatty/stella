@@ -173,7 +173,7 @@ async function handleLessonUri(
     return;
   }
 
-  // lesson URI が接続コードを連れてきたら、 先に JWT 交換まで済ませる。 これで Web の
+  // lesson URI が接続コードを連れてきたら、 先にトークンとの交換まで済ませる。 これで Web の
   // 「VS Code で開く」1 クリックが 接続 → レッスン表示 まで通る。
   const code = parseLinkCode(uri.query);
   if (code) {

@@ -2,9 +2,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAllowedOrigin } from "../../src/lib/cors.js";
-import { googleRedirectUri } from "../../src/lib/google-oauth.js";
 import { parseD1Config } from "./d1-remote.js";
-import { resolveDeployDatabase, validateDeployUrls, withDeployDatabase } from "./deploy-target.js";
+import {
+  resolveDeployDatabase,
+  validateAccessSettings,
+  validateDeployUrls,
+  withAccessVars,
+  withDeployDatabase,
+} from "./deploy-target.js";
 
 const TOML = readFileSync(join(import.meta.dirname, "..", "..", "wrangler.toml"), "utf8");
 const ID = "12345678-1234-1234-1234-123456789abc";
@@ -77,7 +82,8 @@ describe("deployment database", () => {
 });
 
 describe("deployment URLs", () => {
-  const server = "https://stella-api.saedgewell.workers.dev";
+  // API は Web の Worker が同じオリジンで中継する (Cloudflare Access が守るホスト)。
+  const server = "https://stella-web.saedgewell.workers.dev";
   it("allows the new Web origin but rejects retired production origins", () => {
     const allowed = TOML.match(/^ALLOWED_ORIGINS = "([^"]+)"/m)?.[1] ?? "";
     expect(isAllowedOrigin("https://stella-web.saedgewell.workers.dev", allowed)).toBe(true);
@@ -102,23 +108,64 @@ describe("deployment URLs", () => {
     expect(isAllowedOrigin("http://localhost:5173", local)).toBe(true);
     expect(isAllowedOrigin("http://127.0.0.1:5173", local)).toBe(true);
   });
-  it("uses the new API for Google's callback and the new Web for invite redirects", () => {
-    expect(googleRedirectUri(`${server}/api/auth/google?return_to=ignored`)).toBe(
-      `${server}/api/auth/google/callback`,
-    );
+  it("uses the new Web for invite redirects", () => {
     expect(TOML.match(/^INVITE_REDIRECT_URL = "([^"]+)"/m)?.[1]).toBe(
       "https://stella-web.saedgewell.workers.dev",
     );
   });
-  it("accepts the new API and a public materials origin", () => {
+  it("accepts the Web origin (same-origin API) and a public materials origin", () => {
     expect(() => validateDeployUrls(server, "https://materials.example.com")).not.toThrow();
   });
-  it.each([undefined, "", "https://old-api.example.com", `${server}/api`])(
-    "rejects an unset or incorrect API URL: %s",
-    (url) => expect(() => validateDeployUrls(url, "https://materials.example.com")).toThrow(),
+  it.each([
+    undefined,
+    "",
+    "https://old-api.example.com",
+    "https://stella-api.saedgewell.workers.dev",
+    `${server}/api`,
+  ])("rejects an unset or incorrect API URL: %s", (url) =>
+    expect(() => validateDeployUrls(url, "https://materials.example.com")).toThrow(),
   );
   it.each([undefined, "", "http://materials.example.com", "https://user:secret@example.com"])(
     "rejects an unset or non-public materials URL: %s",
     (url) => expect(() => validateDeployUrls(server, url)).toThrow(),
   );
+});
+
+describe("Cloudflare Access settings", () => {
+  const AUD = "a".repeat(64);
+
+  it("normalizes the team domain and accepts one or more AUD tags", () => {
+    expect(validateAccessSettings("https://Stella.cloudflareaccess.com/", AUD)).toEqual({
+      teamDomain: "stella.cloudflareaccess.com",
+      aud: AUD,
+    });
+    expect(
+      validateAccessSettings("stella.cloudflareaccess.com", `${AUD}, ${"b".repeat(64)}`).aud,
+    ).toBe(`${AUD},${"b".repeat(64)}`);
+  });
+
+  it.each([
+    [undefined, AUD],
+    ["", AUD],
+    ["evil.example.com", AUD],
+    ["stella.cloudflareaccess.com/path", AUD],
+    ["stella.cloudflareaccess.com", undefined],
+    ["stella.cloudflareaccess.com", "not-a-tag"],
+  ])("stops the deploy without valid settings: %s / %s", (domain, aud) => {
+    expect(() => validateAccessSettings(domain, aud)).toThrow();
+  });
+
+  it("writes the settings into [vars] only, replacing previous values", () => {
+    const settings = { teamDomain: "stella.cloudflareaccess.com", aud: AUD };
+    const patched = withAccessVars(TOML, settings);
+    const vars = patched.slice(patched.indexOf("[vars]"), patched.indexOf("[[unsafe.bindings]]"));
+    expect(vars).toContain('ACCESS_TEAM_DOMAIN = "stella.cloudflareaccess.com"');
+    expect(vars).toContain(`ACCESS_AUD = "${AUD}"`);
+    const again = withAccessVars(patched, { ...settings, aud: "c".repeat(64) });
+    expect(again.match(/^ACCESS_AUD = /gm)).toHaveLength(1);
+    expect(again).toContain(`ACCESS_AUD = "${"c".repeat(64)}"`);
+    expect(again.replace(/^ACCESS_(TEAM_DOMAIN|AUD) = .*\n/gm, "")).toBe(
+      TOML.replace(/^ACCESS_(TEAM_DOMAIN|AUD) = .*\n/gm, ""),
+    );
+  });
 });

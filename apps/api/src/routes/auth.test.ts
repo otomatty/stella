@@ -40,7 +40,7 @@ function fakeLimiter(allow: () => boolean): { limiter: RateLimit; keys: string[]
 function setup(limiter?: RateLimit) {
   const env = {
     DB: db.binding,
-    AUTH_JWT_SECRET: SECRET,
+    DEV_AUTH_JWT_SECRET: SECRET,
     ...(limiter ? { AUTH_LINK_RATE_LIMITER: limiter } : {}),
   } as Env;
   const { app } = mountTestApp(env, authRoute);

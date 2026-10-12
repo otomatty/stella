@@ -12,11 +12,19 @@
 2. この拡張を入れる（下記「ローカル VSIX」）
 3. Web のコードレッスン（新形式は課題文レッスンか「単元の課題」）で「VS Code で開く」を押す
 
-「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://stella.stella/lesson?stageId=...&lessonId=...&code=...` を開く。拡張はその URI で JWT 交換（未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
+「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://stella.stella/lesson?stageId=...&lessonId=...&code=...` を開く。拡張はその URI でトークンとの交換（`POST /api/auth/vscode-link/exchange`。未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
 
 未接続・期限切れのまま lesson URI が来た（コードが無い / 使用済み）場合、拡張は `stella.webUrl` のそのレッスンのページ（レッスン不明なら `/stages`）を開いて、同じボタンを押し直してもらう。`STELLA: Web で接続` コマンドも同じ動きをする。
 
-接続後、JWT は VS Code の SecretStorage（キー `stella.accessToken`）に保存される。設定やファイルにトークンを貼らない。
+接続後、トークンは VS Code の SecretStorage（キー `stella.accessToken`）に保存される。設定やファイルにトークンを貼らない。
+
+### 本番の認証（Cloudflare Access）
+
+本番の LMS は Cloudflare Access の後ろにあり、API には Web のホスト名（Access で守ったオリジン）を通して届く。交換で受け取るトークンは本番では受講者の **Access のアプリケーショントークン**、ローカル（Access なし）では開発用の JWT。
+
+- 拡張はトークンを `cf-access-token`（Access が検証する。`cloudflared access` と同じ方法）と `Authorization: Bearer`（ローカルの API が読む）の両方に載せて送る。本番の API は Access が付ける `Cf-Access-Jwt-Assertion` だけを信じる。
+- トークンの有効期限は **Access のセッションと同じ**（例: 24 時間）。切れると Access はログイン画面へのリダイレクトか HTML のブロック画面を返すので、拡張はリダイレクトを追わず（`redirect: "manual"`）、3xx・`opaqueredirect`・JSON でない 401/403 を接続切れとしてトークンを消し、Web のレッスンの「VS Code で開く」から接続し直すよう案内する。API 自身の JSON の 403（権限が無い）は接続切れにしない。
+- 交換の経路 `/api/auth/vscode-link/exchange` は接続コードだけで認証するので、Access の対象外（bypass）にしておく。交換がリダイレクトや HTML で返ったときは、その設定と `stella.serverUrl` を確かめるよう案内する。
 
 ## 詰まったときに講師へ引き継ぐ（Issue #9）
 
@@ -95,7 +103,7 @@
 
 | 設定 | 既定 | 用途 |
 |------|------|------|
-| `stella.serverUrl` | `http://127.0.0.1:8787` | API オリジン |
+| `stella.serverUrl` | `http://127.0.0.1:8787` | API の宛先。ローカルは API の Worker、本番は Cloudflare Access で守った Web のオリジン（例: `https://stella-web.<account>.workers.dev`） |
 | `stella.webUrl` | `http://127.0.0.1:5173` | Web オリジン（未接続時に開き直すレッスンページなど） |
 
 どちらも**ユーザー設定でだけ**変えられる（`scope: application`）。ワークスペース設定（`.vscode/settings.json`）の値は読まない。学習用のプロジェクトを開いただけで API の宛先が変わり、ログインのトークンが別のサーバーへ送られるのを防ぐため。

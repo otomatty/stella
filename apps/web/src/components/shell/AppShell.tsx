@@ -11,6 +11,7 @@ import { useStagesForTenant, useEnrolledStagesForTenant } from "@/data/stages-so
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
+import { isAccessMode } from "@/lib/auth-client";
 import { configureRemoteSync, deriveStageProgress } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import type { SearchResult } from "@stella/shared/search/types";
@@ -39,9 +40,6 @@ import { useAnnouncements } from "@/hooks/useAnnouncements";
  * fixtures フロー (バックエンド未設定) のときだけ分岐に使う。
  */
 type AuthStage = "login" | "tenant-select" | "app";
-
-/** ログイン完了後に戻す URL の保存先 (AuthCallback が読み取る)。 */
-export const POST_LOGIN_REDIRECT_KEY = "stella_post_login_redirect_v1";
 
 /**
  * 直近に開いていた受講位置。 ステージ本体は肥大 / 陳腐化するので ID だけを保存し、
@@ -117,6 +115,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   enrollments: "/admin/enrollments",
   assignments: "/admin/assignments",
   audit: "/admin/audit",
+  security: "/admin/security",
   orgs: "/admin/orgs",
   report: "/admin/report",
   settings: "/settings",
@@ -152,10 +151,6 @@ export function AppShell() {
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
-  // どのルートにも一致しなかった URL (`_app/$` の 404)。
-  const isUnknownRoute = useRouterState({
-    select: (s) => s.matches.some((m) => m.routeId === "/_app/$"),
-  });
   const page = pageKeyFromPath(pathname);
 
   const defaultTenant = TENANTS.find((t) => t.id === DEFAULTS.tenant) ?? TENANTS[0];
@@ -166,6 +161,7 @@ export function AppShell() {
     profile,
     loading: authLoading,
     inviteRequired,
+    error: authError,
     refreshProfile,
   } = useAuthSession();
 
@@ -341,6 +337,8 @@ export function AppShell() {
     try {
       if (backendEnabled) {
         await authSignOut();
+        // Cloudflare Access はログアウトのページへ移るので、ここから先は描画しない。
+        if (isAccessMode()) return;
       }
       setAuthStage("login");
       await navigate({ to: "/" });
@@ -485,15 +483,6 @@ export function AppShell() {
     void navigate({ to: "/stages" });
   };
 
-  // 未ログインで開いた保護 URL (共有リンク等) を控える。 Google OAuth は固定で
-  // /auth/callback に戻るため、 AuthCallback がこれを読んで元の URL へ復元する。
-  useEffect(() => {
-    // 404 の URL を復帰先に残すとログイン直後にまた 404 を踏むので除外する。
-    if (backendEnabled && !authLoading && !session && pathname !== "/" && !isUnknownRoute) {
-      sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, pathname + window.location.search);
-    }
-  }, [backendEnabled, authLoading, session, pathname, isUnknownRoute]);
-
   // レッスン以外に移動したら AI の文脈を general にリセット
   useEffect(() => {
     if (!pathname.includes("/lessons/")) {
@@ -559,16 +548,17 @@ export function AppShell() {
     if (authLoading) {
       return <PageSkeleton label="セッション復元中" />;
     }
-    if (!session) {
-      return <LoginScreen />;
-    }
+    // access は profile が取れるまで session が無いので、招待の判定を先に見る。
     if (inviteRequired) {
       return (
         <InviteRequiredScreen
-          email={session.user.email ?? ""}
+          email={session?.user.email ?? ""}
           onSignOut={() => void authSignOut()}
         />
       );
+    }
+    if (!session) {
+      return <LoginScreen error={authError} />;
     }
     // backendEnabled + session (+ profile or transient null): アプリへ進む (authStage 関係なし)
   } else {

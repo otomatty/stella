@@ -52,22 +52,47 @@ export interface Env {
   DEV_MODE?: string;
 
   // ---------------------------------------------------------------
-  // Cloudflare D1 + 自前認証 (Google OAuth / JWT)
+  // Cloudflare D1 + 認証 (Cloudflare Access。アプリは自前の認証を持たない)
   // ---------------------------------------------------------------
   /** D1 データベースバインディング (`wrangler.toml` の `[[d1_databases]]`)。 */
   DB: D1Database;
 
   /**
-   * JWT 署名用シークレット (HS256)。 機密。
-   * `wrangler secret put AUTH_JWT_SECRET` で設定する。
+   * Cloudflare Access のチームドメイン (例: `stella.cloudflareaccess.com`)。公開値。
+   * `ACCESS_AUD` と揃っていれば、API は `Cf-Access-Jwt-Assertion` を署名から検証して利用者を決める。
+   * 本番は deploy (`deploy:prepare`) が GitHub の Variables から入れ、無ければデプロイを止める。
    */
-  AUTH_JWT_SECRET?: string;
+  ACCESS_TEAM_DOMAIN?: string;
 
-  /** Google OAuth クライアント ID (公開可)。 */
-  GOOGLE_CLIENT_ID?: string;
+  /** Access アプリケーションの AUD タグ (カンマ区切りで複数可)。公開値。 */
+  ACCESS_AUD?: string;
 
-  /** Google OAuth クライアントシークレット。 `wrangler secret put GOOGLE_CLIENT_SECRET` */
-  GOOGLE_CLIENT_SECRET?: string;
+  /**
+   * **ローカル開発とテスト専用** の JWT 署名鍵 (HS256)。本番には設定しない。
+   * Access が未設定で、かつリクエスト先が localhost / 127.0.0.1 のときだけ、`Authorization: Bearer`
+   * の開発用トークンを受け付ける (seed の利用者で画面とスモークを動かすため)。
+   */
+  DEV_AUTH_JWT_SECRET?: string;
+
+  /**
+   * Cloudflare API トークン (任意・機密)。Access のログ (拒否を含むログイン記録) の取り込みと、
+   * 管理画面からの Access セッションの失効に使う。権限は「Access: Audit Logs Read」と
+   * 「Access: Organizations, Identity Providers, and Groups Write」。deploy 用のトークンとは分ける。
+   * `wrangler secret put CF_ACCESS_API_TOKEN`
+   */
+  CF_ACCESS_API_TOKEN?: string;
+
+  /**
+   * セキュリティアラートの送り先 (任意・機密)。Slack の Incoming Webhook など、`{"text": "..."}` を
+   * POST で受ける URL。`wrangler secret put SECURITY_ALERT_WEBHOOK_URL`
+   */
+  SECURITY_ALERT_WEBHOOK_URL?: string;
+
+  /**
+   * 組織 (テナント) の決まらない出来事 (未招待の利用者・Access の拒否・認証の無いリクエスト) を
+   * 見せるテナント。未設定なら `PUBLIC_CONTENT_TENANT_ID`。
+   */
+  SECURITY_TENANT_ID?: string;
 
   /**
    * Cloudflare R2 — 教材アップロード用バケット。

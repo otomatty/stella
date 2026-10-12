@@ -24,6 +24,7 @@ describe("navForRole", () => {
       expect(items).not.toContain("orgs");
       expect(items).not.toContain("users");
       expect(items).not.toContain("audit");
+      expect(items).not.toContain("security");
     }
   });
 
@@ -92,6 +93,14 @@ describe("navForRole", () => {
       expect(ids(role)).not.toContain("hall-of-fame-admin");
     }
   });
+
+  it.each(["admin", "platform_admin"] as const)(
+    "セキュリティは管理者 (%s) に、監査ログの直後に出す",
+    (profileRole) => {
+      const items = ids("admin", profileRole);
+      expect(items.indexOf("security")).toBe(items.indexOf("audit") + 1);
+    },
+  );
 
   it("営業にも本人の本棚を出す", () => {
     expect(ids("sales", "sales")).toEqual(["dash", "interview-prep", "library"]);

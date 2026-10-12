@@ -1,43 +1,38 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Google } from "@/lib/icons";
 import { Brand } from "@/components/common/Brand";
 import { LoginMilkyWay } from "@/components/shell/LoginMilkyWay";
 import { Button } from "@/components/ui/button";
 import { usePublicUnits } from "@/hooks/usePublicContent";
 import { isApiConfigured } from "@/lib/api-client";
 import { isBackendConfigured } from "@/lib/backend";
-import { signInWithGoogle } from "@/lib/auth";
+import { ACCESS_LOGOUT_PATH, isAccessMode, signInWithDevToken } from "@/lib/auth-client";
 
 interface LoginScreenProps {
   /** バックエンド未設定時の fixtures 用モックログイン。 */
   onMockLogin?: () => void;
+  /** access で profile を取れなかった理由。 */
+  error?: string | null;
 }
 
-export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
+/**
+ * ログイン画面。 ログインそのものは Cloudflare Access が受け持つので、 本番 (access) でここが
+ * 出るのは「Access は通ったのにアプリが利用者を確かめられなかった」ときだけ。 ローカル
+ * (dev-token) は開発用トークンを貼り付けるフォーム、 バックエンド未設定はデモの入口を出す。
+ */
+export const LoginScreen = ({ onMockLogin, error }: LoginScreenProps) => {
   // ログインなしで読める導入案内 (Issue #41)。公開の単元があるときだけ入口を出す
   // (本文がまだ無い間は、空の案内ページへ誘わない)。
   const { data: publicUnits } = usePublicUnits(isApiConfigured());
-  const handleGoogleLogin = () => {
-    if (!isBackendConfigured()) {
-      // fixtures デモ (バックエンド未設定) はモックログインへ。
-      if (onMockLogin) {
-        onMockLogin();
-        return;
-      }
-      // 本番想定でバックエンド未設定の場合は無反応にせず、 原因とサポート導線を示す。
-      toast.error(
-        "ログインを開始できませんでした。 サーバ設定が未完了の可能性があります。 問題が続く場合はサポートへお問い合わせください。",
-      );
-      return;
-    }
-    try {
-      signInWithGoogle();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "ログインに失敗しました";
-      toast.error(message);
-    }
-  };
+
+  const body = !isBackendConfigured() ? (
+    <DemoLogin onMockLogin={onMockLogin} />
+  ) : isAccessMode() ? (
+    <AccessRetry error={error ?? null} />
+  ) : (
+    <DevTokenLogin />
+  );
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] bg-background">
@@ -45,13 +40,7 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
         <div className="w-full max-w-[360px]">
           <Brand size="md" className="mb-10" />
 
-          <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
-          <p className="text-ink-3 text-[13.5px] mb-7">Google アカウントでログインしてください。</p>
-
-          <Button type="button" variant="primary" size="full" onClick={handleGoogleLogin}>
-            <Google width={16} height={16} />
-            Googleでログイン
-          </Button>
+          {body}
 
           {publicUnits.length > 0 ? (
             <p className="mt-5 text-[12.5px] leading-relaxed text-ink-3">
@@ -101,3 +90,118 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
     </div>
   );
 };
+
+/** バックエンド未設定 (fixtures デモ)。 */
+function DemoLogin({ onMockLogin }: { onMockLogin?: () => void }) {
+  const onClick = () => {
+    if (onMockLogin) {
+      onMockLogin();
+      return;
+    }
+    // 本番想定でバックエンド未設定の場合は無反応にせず、 原因とサポート導線を示す。
+    toast.error(
+      "ログインを開始できませんでした。 サーバ設定が未完了の可能性があります。 問題が続く場合はサポートへお問い合わせください。",
+    );
+  };
+  return (
+    <>
+      <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログイン</h1>
+      <p className="text-ink-3 text-[13.5px] mb-7">
+        バックエンド未設定のため、 デモのデータで開きます。
+      </p>
+      <Button type="button" variant="primary" size="full" onClick={onClick}>
+        デモを開く
+      </Button>
+    </>
+  );
+}
+
+/** access: Access は通ったが、 アプリが利用者を確かめられなかった。 */
+function AccessRetry({ error }: { error: string | null }) {
+  return (
+    <>
+      <h1 className="text-[24px] tracking-tight font-semibold mb-2">ログインを確認できません</h1>
+      <p className="text-ink-3 text-[13.5px] leading-relaxed mb-3">
+        Cloudflare Access のログインは済んでいますが、 STELLA
+        があなたのアカウントを確認できませんでした。 ページを読み込み直すか、
+        別のアカウントでログインし直してください。
+      </p>
+      {error ? (
+        <p className="mb-5 rounded-md border border-border bg-sunken px-3 py-2 text-[12px] text-ink-2 break-words">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="primary"
+          size="full"
+          onClick={() => window.location.reload()}
+        >
+          ログインし直す
+        </Button>
+        <Button asChild variant="outline" size="full">
+          <a href={ACCESS_LOGOUT_PATH}>ログアウトして別のアカウントを使う</a>
+        </Button>
+      </div>
+    </>
+  );
+}
+
+/** dev-token: ローカル開発用。 発行した開発用トークンを貼り付けて保存する。 */
+function DevTokenLogin() {
+  const [token, setToken] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = signInWithDevToken(token);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    setToken("");
+  };
+
+  return (
+    <form onSubmit={onSubmit}>
+      <h1 className="text-[24px] tracking-tight font-semibold mb-2">開発用ログイン</h1>
+      <p className="text-ink-3 text-[13px] leading-relaxed mb-4">
+        ローカル開発 (Cloudflare Access なし) 用の画面です。 開発用トークンを発行して貼り付けます。
+      </p>
+      <pre className="mb-4 overflow-x-auto rounded-md border border-border bg-sunken px-3 py-2 font-mono text-[11.5px] text-ink-2">
+        bun run --filter=@stella/api dev:token seed-learner
+      </pre>
+      <p className="text-ink-3 text-[12px] leading-relaxed mb-4">
+        profile ID は <code>seed-learner</code> / <code>seed-learner2</code> /{" "}
+        <code>seed-instructor</code> / <code>seed-admin</code> / <code>seed-sales</code> など。
+        トークンは API の <code>.dev.vars</code> の <code>DEV_AUTH_JWT_SECRET</code> で署名され、
+        localhost の API だけが受け付けます。
+      </p>
+      <label htmlFor="dev-token" className="mb-1 block text-[12px] font-medium text-ink-2">
+        開発用トークン
+      </label>
+      <textarea
+        id="dev-token"
+        value={token}
+        onChange={(e) => setToken(e.target.value)}
+        rows={4}
+        spellCheck={false}
+        autoComplete="off"
+        placeholder="eyJhbGciOiJIUzI1NiIs..."
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? "dev-token-error" : undefined}
+        className="mb-2 w-full resize-y rounded-md border border-input bg-card px-3 py-2 font-mono text-[11.5px] break-all"
+      />
+      {error ? (
+        <p id="dev-token-error" role="alert" className="mb-3 text-[12px] text-destructive">
+          {error}
+        </p>
+      ) : null}
+      <Button type="submit" variant="primary" size="full" disabled={!token.trim()}>
+        このトークンでログイン
+      </Button>
+    </form>
+  );
+}

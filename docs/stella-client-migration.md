@@ -13,7 +13,7 @@ sessionStorage のログイン後の戻り先も同じ規則で移す。
 書き込みに失敗した場合は旧値を残す。読み取りでは旧キーを消さない。消すと、開いたままの旧タブがログアウトになる。ログアウト時は認証の新旧キーを両方消す。
 
 この移行で読めるのは同じブラウザオリジンの保存値だけ。
-Phase C で URL が変わった利用者や、JWT の期限が切れた利用者は Google ログインし直す。
+Phase C で URL が変わった利用者や、ログインの期限が切れた利用者はログインし直す (当時は Google ログイン。いまは Cloudflare Access。[`docs/cloudflare-access.md`](cloudflare-access.md))。
 学習進捗や提出は D1 上のデータなので、キー変更では変わらない。
 更新後は開いたままの旧 Web タブを閉じる。
 
@@ -33,7 +33,7 @@ VS Code は別の拡張として扱うため、旧拡張への自動更新では
 旧 URI は旧拡張に届くため、新拡張への転送はできない。新 Web から開き直す。
 
 SecretStorage は拡張 ID ごとに分かれているので、別 ID の旧 JWT は読み出さない。
-新接続の JWT は `stella.accessToken` に保存する。
+新接続のトークンは `stella.accessToken` に保存する (いまは Access のトークン。旧版の拡張は Access を通れない)。
 同じ拡張スコープに旧キーが残っている場合だけ、新キーへ移す。
 
 演習フォルダーは `~/.stella/exercises/<assignmentId>` を使う。

@@ -8,9 +8,11 @@
  * R2 バインディングは Worker 側にしか無いため、 走査も削除も API に任せる。
  *
  * 認証:
- *   - 既定 (ローカル): `apps/api/.dev.vars` の `AUTH_JWT_SECRET` で
+ *   - 既定 (ローカル): `apps/api/.dev.vars` の `DEV_AUTH_JWT_SECRET` で
  *     `R2_ADMIN_ID` (既定 `seed-admin`) の JWT を発行する。
- *   - 本番など: `ADMIN_TOKEN` に admin の JWT を渡す。 `API_BASE_URL` で向き先を変える。
+ *   - 本番など: `API_BASE_URL` を Web のオリジン (Cloudflare Access が守るホスト) にし、`ADMIN_TOKEN` に
+ *     admin の Access のトークンを渡す (`cloudflared access login <Web の URL>` →
+ *     `cloudflared access token -app=<Web の URL>`)。`cf-access-token` ヘッダで送る。
  *
  * 走査も削除も呼び出し元テナント配下 (`tenant/<tenantId>/`) に閉じる。
  * 参照判定には配布資料だけでなくレッスンの動画 / スライドのパスも含まれる。
@@ -58,10 +60,10 @@ function readDevVar(key: string): string | undefined {
 
 async function resolveToken(): Promise<string> {
   if (process.env.ADMIN_TOKEN) return process.env.ADMIN_TOKEN;
-  const secret = readDevVar("AUTH_JWT_SECRET");
+  const secret = readDevVar("DEV_AUTH_JWT_SECRET");
   if (!secret) {
     throw new Error(
-      "ADMIN_TOKEN も AUTH_JWT_SECRET も見つかりません (apps/api/.dev.vars を確認してください)",
+      "ADMIN_TOKEN も DEV_AUTH_JWT_SECRET も見つかりません (apps/api/.dev.vars を確認してください)",
     );
   }
   return new SignJWT({ email: `${ADMIN_ID}@example.local` })
@@ -78,7 +80,9 @@ async function call(method: string, path: string, token: string, body?: unknown)
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
+      // 本番は Access が cf-access-token を確かめる。ローカルの API は Authorization を読む。
       Authorization: `Bearer ${token}`,
+      "cf-access-token": token,
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

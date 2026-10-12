@@ -1,16 +1,15 @@
 /**
- * 認証ラッパ (Cloudflare Workers Google OAuth / JWT)。
+ * 認証ラッパ。ログインそのものは Cloudflare Access (本番) か開発用トークン (ローカル) が担い、
+ * ここは「誰なのか」を `/api/me` から引く (方式の違いは `auth-client` を参照)。
  */
 
 import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
 
 import { apiFetch, ApiClientError } from "./api-client";
 import {
-  completeAuthFromCallbackHash,
-  getAccessToken,
   getSession as readSession,
   isAuthConfigured,
-  signInWithGoogle,
+  signInWithDevToken,
   signOut as clearSession,
   subscribeToAuth as onAuthChange,
   type Session,
@@ -20,7 +19,7 @@ export type { Session };
 /** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
 export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
 
-export { signInWithGoogle, completeAuthFromCallbackHash };
+export { signInWithDevToken };
 
 export async function signOut(): Promise<void> {
   await clearSession();
@@ -35,7 +34,7 @@ export function subscribeToAuth(callback: (session: Session | null) => void): ()
 }
 
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
-  if (!isAuthConfigured() || !getAccessToken()) return null;
+  if (!isAuthConfigured() || !readSession()) return null;
   try {
     const { profile, tenant } = await apiFetch<{
       profile: ProfileRow;
@@ -52,7 +51,7 @@ export async function fetchProfile(_userId?: string): Promise<Profile | null> {
 
 /**
  * 設定画面からのユーザー名変更。 更新できるのは表示名のみ (ロール / テナント / メールは
- * 招待とログインが真実)。 保存すると以後 Google の登録名では上書きされなくなる。
+ * 招待とログインが真実)。 保存すると以後ログイン時の登録名では上書きされなくなる。
  */
 export async function updateMyDisplayName(displayName: string): Promise<Profile> {
   const { profile } = await apiFetch<{ profile: Profile }>("/api/me", {
@@ -63,4 +62,4 @@ export async function updateMyDisplayName(displayName: string): Promise<Profile>
   return profile;
 }
 
-export { isAuthConfigured, getAccessToken };
+export { isAuthConfigured };

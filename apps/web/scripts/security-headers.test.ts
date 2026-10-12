@@ -98,6 +98,24 @@ describe("buildContentSecurityPolicy", () => {
   });
 });
 
+describe("buildContentSecurityPolicy (API を同じオリジンで中継する本番構成)", () => {
+  it("VITE_SERVER_URL が Web 自身のオリジンでも、自分と教材だけを許す", () => {
+    const d = directives(
+      buildContentSecurityPolicy({
+        serverUrl: "https://stella-web.saedgewell.workers.dev",
+        materialsBaseUrl: "https://pub-xxxx.r2.dev",
+        inlineScripts: [],
+      }),
+    );
+    expect(d.get("connect-src")).toEqual([
+      "'self'",
+      "https://stella-web.saedgewell.workers.dev",
+      "https://pub-xxxx.r2.dev",
+    ]);
+    expect(d.get("default-src")).toEqual(["'self'"]);
+  });
+});
+
 describe("securityHeaders (Vite build)", () => {
   const roots: string[] = [];
   afterEach(() => {

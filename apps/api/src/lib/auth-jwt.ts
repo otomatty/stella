@@ -1,5 +1,9 @@
 /**
- * Workers 自前 JWT (HS256) の発行 / 検証。
+ * **ローカル開発とテスト専用** の JWT (HS256) の発行 / 検証。
+ *
+ * 本番の認証は Cloudflare Access (lib/access-auth.ts) で、このトークンは受け付けない
+ * (authz.ts の `resolveIdentity` が、Access が未設定かつ localhost のときだけ読む)。
+ * seed の利用者で画面・スモーク・route テストを動かすために残している。
  */
 
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";

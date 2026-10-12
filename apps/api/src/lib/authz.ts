@@ -1,20 +1,31 @@
 /**
- * 認証 (Workers JWT 検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
+ * 認証 (Cloudflare Access のトークン検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
  *
- *   - `verifyToken` … Authorization: Bearer の JWT を HS256 で検証
- *   - `getCaller`   … JWT 検証 + profiles から caller の tenant / role を解決
- *   - `requireRole` … caller が指定ロールのいずれかであることを保証
+ *   - `resolveIdentity` … 誰のリクエストか。本番は Cloudflare Access が付けた
+ *                         `Cf-Access-Jwt-Assertion` を署名から検証してメールアドレスで決める。
+ *                         Access の無いローカル開発とテストだけ、開発用の Bearer トークンを読む
+ *   - `getCaller`       … 利用者 → profiles から caller の tenant / role を解決
+ *   - `requireRole`     … caller が指定ロールのいずれかであることを保証
+ *
+ * アプリはパスワードも OAuth も持たない。ログイン・多要素認証・セッションの失効は Access の仕事で、
+ * ここはトークンを確かめて招待済みの利用者に結び付けるだけ。
  */
 
-import { eq } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import type { Context } from "hono";
-import type { JWTPayload } from "jose";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
-import { profiles } from "../db/schema.js";
+import { profiles, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
+import { ACCESS_ASSERTION_HEADER, accessConfig, verifyAccessAssertion } from "./access-auth.js";
 import { verifyAccessToken } from "./auth-jwt.js";
+import {
+  deferSecurityEvent,
+  markRequestActor,
+  markRequestRecorded,
+  trackSession,
+} from "./security-events.js";
 
 export class ApiError extends Error {
   // 410 は「あった機能を廃止した」ぶんだけ (Phase 3b の割当 API)。404 だと呼び出し側が
@@ -46,36 +57,145 @@ export interface Caller {
   email: string | null;
 }
 
-/**
- * Authorization: Bearer の JWT を検証し、 ペイロードを返す。
- * `sub` がユーザー ID (= profiles.id)。
- */
-export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<JWTPayload> {
-  if (!c.env.AUTH_JWT_SECRET) {
-    throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-  }
-  const header = c.req.header("Authorization") ?? "";
-  const token = header.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new ApiError("Authorization ヘッダが必要です", 401);
+/** 検証済みの利用者。 */
+export type Identity =
+  | {
+      kind: "access";
+      /** 小文字のメールアドレス。profiles.email と突き合わせる。 */
+      email: string;
+      issuedAt: number | null;
+      expiresAt: number | null;
+      /** 検証したトークンそのもの (VS Code の接続で拡張へ渡す)。 */
+      token: string;
+    }
+  | {
+      kind: "dev";
+      /** 開発用トークンの sub (= profiles.id)。 */
+      profileId: string;
+      email: string | null;
+      issuedAt: number | null;
+      expiresAt: number | null;
+      token: string;
+    };
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/** ローカル開発 (wrangler dev) とテスト (`app.request`) のリクエストか。 */
+export function isLocalRequest(c: Context<{ Bindings: Env }>): boolean {
   try {
-    return await verifyAccessToken(c.env.AUTH_JWT_SECRET, token);
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    throw new ApiError("トークンが無効です", 401);
+    return LOCAL_HOSTS.has(new URL(c.req.url).hostname);
+  } catch {
+    return false;
   }
 }
 
 /**
- * JWT を検証し、 profiles から caller のテナント / ロールを解決する。
- * 無効化済みアカウントは未失効 JWT を持っていても拒否する。
+ * 誰のリクエストかを決める。
+ *
+ * - Access が設定済み (`ACCESS_TEAM_DOMAIN` + `ACCESS_AUD`) … `Cf-Access-Jwt-Assertion` だけを
+ *   読む。Authorization ヘッダは見ない (開発用トークンを本番で通さない)。
+ * - Access が未設定 … ローカル (localhost / 127.0.0.1) かつ `DEV_AUTH_JWT_SECRET` があるときだけ、
+ *   開発用の Bearer トークンを読む。それ以外は 503 (認証の無いまま動かさない)。
+ */
+export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Identity> {
+  const access = accessConfig(c.env);
+  if (access) {
+    const token = c.req.header(ACCESS_ASSERTION_HEADER)?.trim() ?? "";
+    if (!token) {
+      deferSecurityEvent(c, {
+        kind: "auth.invalid_token",
+        status: 401,
+        metadata: { reason: "missing" },
+      });
+      markRequestRecorded(c);
+      throw new ApiError("Cloudflare Access でのログインが必要です", 401);
+    }
+    try {
+      const identity = await verifyAccessAssertion(access, token);
+      return {
+        kind: "access",
+        email: identity.email,
+        issuedAt: identity.issuedAt,
+        expiresAt: identity.expiresAt,
+        token,
+      };
+    } catch {
+      deferSecurityEvent(c, {
+        kind: "auth.invalid_token",
+        status: 401,
+        metadata: { reason: "invalid" },
+      });
+      markRequestRecorded(c);
+      throw new ApiError("Cloudflare Access のトークンが無効です。ページを開き直してください", 401);
+    }
+  }
+
+  const devSecret = c.env.DEV_AUTH_JWT_SECRET;
+  if (devSecret && isLocalRequest(c)) {
+    const header = c.req.header("Authorization") ?? "";
+    const token = header.replace(/^Bearer\s+/i, "").trim();
+    if (!token) throw new ApiError("Authorization ヘッダが必要です", 401);
+    try {
+      const payload = await verifyAccessToken(devSecret, token);
+      return {
+        kind: "dev",
+        profileId: payload.sub as string,
+        email: typeof payload.email === "string" ? payload.email.toLowerCase() : null,
+        issuedAt: typeof payload.iat === "number" ? payload.iat : null,
+        expiresAt: typeof payload.exp === "number" ? payload.exp : null,
+        token,
+      };
+    } catch {
+      throw new ApiError("トークンが無効です", 401);
+    }
+  }
+
+  throw new ApiError("認証が未設定です (ACCESS_TEAM_DOMAIN / ACCESS_AUD)", 503);
+}
+
+/** 利用者に当たる profiles 行の条件 (Access はメールアドレス、開発用は profiles.id)。 */
+export function profileMatch(identity: Identity): SQL {
+  return identity.kind === "dev"
+    ? eq(profiles.id, identity.profileId)
+    : sql`lower(${profiles.email}) = ${identity.email}`;
+}
+
+/** 招待されていない利用者のアクセスを記録する (Access の許可が広すぎる兆候)。 */
+export function recordUninvited(c: Context<{ Bindings: Env }>, identity: Identity): void {
+  deferSecurityEvent(c, {
+    kind: "auth.no_profile",
+    status: 403,
+    email: identity.email,
+  });
+  markRequestRecorded(c);
+}
+
+/** 無効化済みのアカウントのアクセスを記録する。 */
+export function recordDisabled(
+  c: Context<{ Bindings: Env }>,
+  profile: { id: string; tenantId: string; role: string; email: string | null },
+): void {
+  deferSecurityEvent(c, {
+    kind: "auth.disabled",
+    status: 403,
+    tenantId: profile.tenantId,
+    actorId: profile.id,
+    actorRole: profile.role,
+    email: profile.email,
+  });
+  markRequestRecorded(c);
+}
+
+/**
+ * 利用者を検証し、 profiles から caller のテナント / ロールを解決する。
+ * 無効化済みアカウントと、利用停止中の組織 (tenants.active = 0。platform_admin を除く) は拒否する。
  */
 export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
   caller: Caller;
   db: Db;
+  identity: Identity;
 }> {
-  const payload = await verifyToken(c);
-  const userId = payload.sub as string;
+  const identity = await resolveIdentity(c);
   const db = getDb(c.env);
 
   const rows = await db
@@ -86,25 +206,51 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
       displayName: profiles.displayName,
       email: profiles.email,
       disabled: profiles.disabled,
+      tenantActive: tenants.active,
     })
     .from(profiles)
-    .where(eq(profiles.id, userId))
+    .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
+    .where(profileMatch(identity))
     .limit(1);
 
   const profile = rows[0];
-  if (!profile) throw new ApiError("プロフィールが見つかりません", 403);
-  if (profile.disabled) throw new ApiError("このアカウントは無効化されています", 403);
-
-  return {
-    db,
-    caller: {
-      id: profile.id,
+  if (!profile) {
+    recordUninvited(c, identity);
+    throw new ApiError("プロフィールが見つかりません", 403);
+  }
+  if (profile.disabled) {
+    recordDisabled(c, profile);
+    throw new ApiError("このアカウントは無効化されています", 403);
+  }
+  if (profile.tenantActive === false && profile.role !== "platform_admin") {
+    deferSecurityEvent(c, {
+      kind: "auth.tenant_inactive",
+      status: 403,
       tenantId: profile.tenantId,
-      role: profile.role as ProfileRole,
-      name: profile.displayName,
+      actorId: profile.id,
+      actorRole: profile.role,
       email: profile.email,
-    },
+    });
+    markRequestRecorded(c);
+    throw new ApiError("所属する組織は利用停止中です", 403);
+  }
+
+  const caller: Caller = {
+    id: profile.id,
+    tenantId: profile.tenantId,
+    role: profile.role as ProfileRole,
+    name: profile.displayName,
+    email: profile.email,
   };
+  const actor = {
+    id: caller.id,
+    tenantId: caller.tenantId,
+    role: caller.role,
+    email: caller.email,
+  };
+  markRequestActor(c, actor);
+  trackSession(c, actor, identity.issuedAt);
+  return { db, caller, identity };
 }
 
 /** caller が指定ロールのいずれかでなければ 403 を投げる。 */

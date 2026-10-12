@@ -12,7 +12,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { toast } from "sonner";
 
 import type { PublicLessonSummary, PublicUnit } from "@stella/shared/cms/types";
 import { Brand } from "@/components/common/Brand";
@@ -22,21 +21,31 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { usePublicLesson, usePublicUnits } from "@/hooks/usePublicContent";
-import { getSession, signInWithGoogle, subscribeToAuth } from "@/lib/auth-client";
-import { isBackendConfigured } from "@/lib/backend";
-import { ChevronLeft, ChevronRight, Clock, ExternalLink, Google, Home } from "@/lib/icons";
+import { getSession, isAccessMode, subscribeToAuth } from "@/lib/auth-client";
+import { ChevronLeft, ChevronRight, Clock, ExternalLink, Home, LogIn } from "@/lib/icons";
 
 /** VS Code の公式の入手先 (06 §3: 公式配布元を案内する)。手順そのものは公開の単元に書く。 */
 const VSCODE_DOWNLOAD_URL = "https://code.visualstudio.com/";
 
-/** ログイン済みか (端末に有効なトークンがあるか)。API は呼ばない。 */
-function useSignedIn(): boolean {
-  const [signedIn, setSignedIn] = useState(() => getSession() !== null);
-  useEffect(() => subscribeToAuth((session) => setSignedIn(session !== null)), []);
-  return signedIn;
+/**
+ * ログイン済みか。dev-token は端末にトークンがあるかで分かる。Cloudflare Access (access) は
+ * この案内ページが Access の外 (ログインなしで開ける) なので、画面からは分からない — null を返す。
+ * API は呼ばない。
+ */
+function useSignedIn(): boolean | null {
+  const access = isAccessMode();
+  const [signedIn, setSignedIn] = useState(() => !access && getSession() !== null);
+  useEffect(() => {
+    if (access) return;
+    return subscribeToAuth((session) => setSignedIn(session !== null));
+  }, [access]);
+  return access ? null : signedIn;
 }
 
-/** ログイン (未ログイン) かホームへ (ログイン済み)。 */
+/**
+ * ログイン (未ログイン) かホームへ (ログイン済み)。どちらもホーム (`/`) を開く — 未ログインなら
+ * Cloudflare Access のログイン (ローカルは開発用ログイン、デモはモックログイン) が出る。
+ */
 function SignInOrHome({ size = "default" }: { size?: "default" | "lg" }) {
   const signedIn = useSignedIn();
   if (signedIn)
@@ -48,22 +57,12 @@ function SignInOrHome({ size = "default" }: { size?: "default" | "lg" }) {
         </a>
       </Button>
     );
-  const signIn = () => {
-    // バックエンド未設定 (デモ) はログイン画面のモックログインへ回す。
-    if (!isBackendConfigured()) {
-      window.location.assign("/");
-      return;
-    }
-    try {
-      signInWithGoogle();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "ログインを開始できませんでした");
-    }
-  };
   return (
-    <Button type="button" variant="primary" size={size} onClick={signIn}>
-      <Google width={14} height={14} />
-      Googleでログイン
+    <Button asChild variant="primary" size={size}>
+      <a href="/">
+        <LogIn size={14} aria-hidden="true" />
+        {signedIn === null ? "ログイン / ホームへ" : "ログイン"}
+      </a>
     </Button>
   );
 }
@@ -90,12 +89,12 @@ function NextSteps() {
   return (
     <section className="mt-10 rounded-lg border border-border bg-card p-5">
       <h2 className="mb-2 text-[15px] font-semibold">
-        {signedIn ? "続きはアプリで進めます" : "ここから先はログインして進めます"}
+        {signedIn ? "続きはアプリで進めます" : "ここから先はアプリにログインして進めます"}
       </h2>
       <p className="mb-4 text-[12.5px] leading-relaxed text-ink-3">
         {signedIn
           ? "VS Code の準備ができたら、課題の「VS Code で開く」から VS Code の拡張を学習サイトにつなぎます。"
-          : "VS Code の準備ができたら、Google アカウントでログインします。ログインしたあと、課題の「VS Code で開く」から VS Code の拡張を学習サイトにつなぎます。"}
+          : "VS Code の準備ができたら、招待されたアカウントでログインします。ログインしたあと、課題の「VS Code で開く」から VS Code の拡張を学習サイトにつなぎます。"}
       </p>
       <SignInOrHome size="lg" />
     </section>
@@ -171,7 +170,7 @@ export function PublicStartPage() {
           </a>
           )。
         </li>
-        <li>2. Google アカウントでログインします。</li>
+        <li>2. 招待されたアカウントで学習サイトにログインします。</li>
         <li>3. 課題の「VS Code で開く」から、VS Code の拡張を学習サイトにつなぎます。</li>
       </ol>
 

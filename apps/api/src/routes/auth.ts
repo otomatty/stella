@@ -1,22 +1,26 @@
 /**
- * 認証 API — Google OAuth + JWT (Cloudflare Workers 自前)。
+ * 認証まわりの API。ログインそのものは Cloudflare Access が行い、アプリは自前の認証を持たない。
  *
- *   GET  /api/auth/google                 … Google 認可画面へリダイレクト
- *   GET  /api/auth/google/callback        … コールバック → JWT をフロントへ返す
- *   POST /api/auth/vscode-link            … ログイン済みユーザー向けワンタイム接続コード
- *   POST /api/auth/vscode-link/exchange   … 接続コードを JWT に交換 (Authorization 不要)
+ *   POST /api/auth/vscode-link            … ログイン済みの利用者に VS Code 用のワンタイム接続コードを出す
+ *   POST /api/auth/vscode-link/exchange   … 接続コードをトークンに交換する (Access の対象外にする経路)
+ *   GET  /api/auth/google, /callback      … 退役 (410)。ログインは Access へ移った
+ *
+ * VS Code の拡張は Web と同じ Access のトークンで API を呼ぶ (`cf-access-token` ヘッダ)。
+ * 接続コードを出すときに、そのリクエストに付いていた Access のトークンを預かり、交換で一度だけ渡す。
+ * トークンの期限は Access のセッションと同じで、切れたら拡張から接続し直す。
+ * Access の無いローカル開発では、交換時に開発用のトークンを作る。
  */
 
 import { Hono } from "hono";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
-import { authUsers, authVscodeLinks, profiles } from "../db/schema.js";
+import { authVscodeLinks, profiles } from "../db/schema.js";
+import { accessConfig } from "../lib/access-auth.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { errorResponse, ApiError, getCaller } from "../lib/authz.js";
+import { errorResponse, ApiError, getCaller, isLocalRequest } from "../lib/authz.js";
 import { enforceAuthLinkRateLimit } from "../lib/rate-limit.js";
 import {
   createVscodeLinkCode,
@@ -24,28 +28,15 @@ import {
   redeemVscodeLink,
   VSCODE_LINK_TTL_MS,
 } from "../lib/vscode-link.js";
-import {
-  buildGoogleAuthUrl,
-  createOAuthState,
-  exchangeGoogleCode,
-  googleRedirectUri,
-  parseOAuthState,
-  redirectWithAuthResult,
-  resolveOAuthReturnTo,
-  verifyGoogleIdToken,
-  type GoogleUserClaims,
-} from "../lib/google-oauth.js";
 import type { Env } from "../env.js";
 
 export const authRoute = new Hono<{ Bindings: Env }>();
 
-/**
- * ログイン成功を監査ログに記録する (Issue #64)。
- *
- * プロフィール未作成 (招待前のログイン) は記録しない — 所属テナントが未確定で
- * `audit_logs.tenant_id` を決められず、 そもそもアプリへは入れないため。
- */
-async function recordLogin(
+/** 拡張に渡すトークンの残りがこれより短ければ、接続コードを出さずに開き直しを促す。 */
+const MIN_ACCESS_TOKEN_REMAINING_MS = 10 * 60 * 1000;
+
+/** VS Code の接続を監査ログに残す (どの経路でログインしたかを見分けられるように)。 */
+async function recordVscodeLogin(
   c: Parameters<typeof clientIp>[0],
   db: Db,
   userId: string,
@@ -65,163 +56,48 @@ async function recordLogin(
   if (!profile) return;
   await recordAudit(
     db,
-    {
-      id: profile.id,
-      tenantId: profile.tenantId,
-      role: profile.role,
-      name: profile.displayName,
-    },
+    { id: profile.id, tenantId: profile.tenantId, role: profile.role, name: profile.displayName },
     {
       action: "login",
       targetType: "user",
       targetId: profile.id,
       ip: clientIp(c),
-      metadata: { provider: "google" },
+      metadata: { provider: "cloudflare-access", channel: "vscode-link" },
     },
   );
 }
 
-/**
- * Google の登録名とプロフィール画像をプロフィールへ反映する (ユーザー情報の自動取得)。
- *
- * 招待時の display_name はメールのローカル部なので、 本人が初めてログインした時点で
- * Google 側の氏名に置き換える。 設定画面で本人が変更した (name_source='user') 以降は
- * 上書きしない。 アバターは編集手段が無いので毎回最新化する (URL は失効し得るため)。
- * 同期に失敗してもログイン自体は成立させる。
- */
-async function syncGoogleProfile(db: Db, userId: string, claims: GoogleUserClaims): Promise<void> {
-  const displayName = claims.name?.trim();
-  const avatarUrl = claims.picture?.trim();
-  try {
-    if (avatarUrl) {
-      await db.update(profiles).set({ avatarUrl }).where(eq(profiles.id, userId));
-    }
-    if (displayName) {
-      await db
-        .update(profiles)
-        .set({
-          displayName,
-          initials: displayName.slice(0, 2).toUpperCase(),
-          nameSource: "google",
-        })
-        .where(and(eq(profiles.id, userId), ne(profiles.nameSource, "user")));
-    }
-  } catch (err) {
-    console.error("[auth] google profile sync failed", err);
-  }
-}
-
-async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | null> {
-  const profile = (
-    await db
-      .select({ email: profiles.email })
-      .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1)
-  )[0];
-  if (profile?.email) return profile.email;
-  const user = (
-    await db
-      .select({ email: authUsers.email })
-      .from(authUsers)
-      .where(eq(authUsers.id, userId))
-      .limit(1)
-  )[0];
-  return user?.email ?? null;
-}
-
-function requireGoogleOAuth(env: Env): {
-  jwtSecret: string;
-  googleClientId: string;
-  googleClientSecret: string;
-} {
-  const jwtSecret = env.AUTH_JWT_SECRET;
-  const googleClientId = env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
-  if (!jwtSecret) {
-    throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-  }
-  if (!googleClientId || !googleClientSecret) {
-    throw new ApiError("Google OAuth が未設定です (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)", 503);
-  }
-  return { jwtSecret, googleClientId, googleClientSecret };
-}
-
-authRoute.get("/api/auth/google", async (c) => {
-  try {
-    const { jwtSecret, googleClientId } = requireGoogleOAuth(c.env);
-    const returnTo = resolveOAuthReturnTo(c.env, c.req.query("return_to"));
-    const state = await createOAuthState(jwtSecret, returnTo);
-    const redirectUri = googleRedirectUri(c.req.url);
-    const url = buildGoogleAuthUrl(googleClientId, redirectUri, state);
-    return c.redirect(url, 302);
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-authRoute.get("/api/auth/google/callback", async (c) => {
-  const returnToFallback = resolveOAuthReturnTo(c.env, undefined);
-
-  try {
-    const { jwtSecret, googleClientId, googleClientSecret } = requireGoogleOAuth(c.env);
-
-    const oauthError = c.req.query("error");
-    if (oauthError) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: oauthError,
-        error_description:
-          c.req.query("error_description") ?? "Google ログインがキャンセルされました",
-      });
-    }
-
-    const code = c.req.query("code");
-    const state = c.req.query("state");
-    if (!code || !state) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: "invalid_request",
-        error_description: "認可コードまたは state が不足しています",
-      });
-    }
-
-    const parsedState = await parseOAuthState(jwtSecret, state);
-    if (!parsedState) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: "invalid_state",
-        error_description: "ログインセッションの有効期限が切れました。もう一度お試しください",
-      });
-    }
-
-    const redirectUri = googleRedirectUri(c.req.url);
-    const idToken = await exchangeGoogleCode(googleClientId, googleClientSecret, code, redirectUri);
-    const claims = await verifyGoogleIdToken(idToken, googleClientId);
-
-    const db = getDb(c.env);
-    const user = await findOrCreateUserByEmail(db, claims.email);
-    const accessToken = await signAccessToken(jwtSecret, user.id, user.email);
-    await syncGoogleProfile(db, user.id, claims);
-    await recordLogin(c, db, user.id);
-
-    return redirectWithAuthResult(parsedState.returnTo, { access_token: accessToken });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Google ログインに失敗しました";
-    console.error("[auth] google callback failed", err);
-    return redirectWithAuthResult(returnToFallback, {
-      error: "auth_failed",
-      error_description: message,
-    });
-  }
-});
+const retiredGoogleLogin = (c: Parameters<typeof errorResponse>[0]) =>
+  errorResponse(
+    c,
+    new ApiError("Google ログインは廃止しました。Cloudflare Access からログインしてください", 410),
+  );
+authRoute.get("/api/auth/google", retiredGoogleLogin);
+authRoute.get("/api/auth/google/callback", retiredGoogleLogin);
 
 authRoute.post("/api/auth/vscode-link", async (c) => {
   try {
-    const { caller, db } = await getCaller(c);
+    const { caller, db, identity } = await getCaller(c);
+    let accessToken: string | null = null;
+    if (identity.kind === "access") {
+      if (
+        identity.expiresAt != null &&
+        identity.expiresAt * 1000 - Date.now() < MIN_ACCESS_TOKEN_REMAINING_MS
+      ) {
+        throw new ApiError(
+          "ログインの有効期限が近づいています。ページを開き直してから、もう一度お試しください",
+          401,
+        );
+      }
+      accessToken = identity.token;
+    }
     const code = createVscodeLinkCode();
     const expiresAt = new Date(Date.now() + VSCODE_LINK_TTL_MS);
     await db.insert(authVscodeLinks).values({
       userId: caller.id,
       codeHash: await hashVscodeLinkCode(code),
       expiresAt,
+      accessToken,
     });
     return c.json({ code, expires_at: expiresAt.toISOString() });
   } catch (err) {
@@ -235,11 +111,6 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
     const limited = await enforceAuthLinkRateLimit(c);
     if (limited) return limited;
 
-    const jwtSecret = c.env.AUTH_JWT_SECRET;
-    if (!jwtSecret) {
-      throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-    }
-
     const body = (await c.req.json().catch(() => null)) as { code?: unknown } | null;
     const code = typeof body?.code === "string" ? body.code : "";
     const db = getDb(c.env);
@@ -252,23 +123,40 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
         .limit(1)
     )[0];
 
+    const devSecret = c.env.DEV_AUTH_JWT_SECRET;
+    const accessMode = accessConfig(c.env) !== null;
+    if (!accessMode && !(devSecret && isLocalRequest(c))) {
+      throw new ApiError("認証が未設定です (ACCESS_TEAM_DOMAIN / ACCESS_AUD)", 503);
+    }
+
     const exchanged = await redeemVscodeLink({
       row,
       now,
-      resolveEmail: (userId) => resolveVscodeLinkEmail(db, userId),
+      loadProfile: async (userId) =>
+        (
+          await db
+            .select({ email: profiles.email, disabled: profiles.disabled })
+            .from(profiles)
+            .where(eq(profiles.id, userId))
+            .limit(1)
+        )[0] ?? null,
       consume: async (id) => {
         const consumed = (
           await db
             .update(authVscodeLinks)
-            .set({ usedAt: now })
+            // 預かった Access のトークンは渡したら残さない。
+            .set({ usedAt: now, accessToken: null })
             .where(and(eq(authVscodeLinks.id, id), isNull(authVscodeLinks.usedAt)))
             .returning({ id: authVscodeLinks.id })
         )[0];
         return Boolean(consumed);
       },
-      signToken: (userId, email) => signAccessToken(jwtSecret, userId, email),
+      issueToken: async (link, email) => {
+        if (accessMode) return link.accessToken ?? null;
+        return devSecret ? signAccessToken(devSecret, link.userId, email) : null;
+      },
     });
-    await recordLogin(c, db, exchanged.userId);
+    await recordVscodeLogin(c, db, exchanged.userId);
     return c.json({ access_token: exchanged.access_token });
   } catch (err) {
     return errorResponse(c, err);

@@ -4,11 +4,11 @@
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
  *   POST /api/me  … 表示名・週の時間・開始日・教材の OS の自己更新 / 未招待は invite_required
  *
- * role / tenant / email は招待とログイン (JWT) が真実なので、
+ * role / tenant / email は招待と Cloudflare Access のログインが真実なので、
  * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
  *
- * getCaller は「プロフィール必須」だが、 ここは JWT 検証のみで profile 有無を判定するため
- * verifyToken (JWT 検証のみ) を直接使う。
+ * getCaller は「プロフィール必須」だが、 ここは利用者の検証だけをして profile の有無で
+ * invite_required を返すため、 resolveIdentity を直接使う。
  */
 
 import { Hono } from "hono";
@@ -18,9 +18,17 @@ import { parsePaceSettings } from "@stella/shared/study/pace";
 
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
-import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
+import {
+  ApiError,
+  errorResponse,
+  profileMatch,
+  recordDisabled,
+  recordUninvited,
+  resolveIdentity,
+} from "../lib/authz.js";
 import type { Env } from "../env.js";
 import { paceProfileUpdate } from "../lib/learning-pace.js";
+import { markRequestActor, trackSession } from "../lib/security-events.js";
 
 export const meRoute = new Hono<{ Bindings: Env }>();
 
@@ -44,7 +52,7 @@ const PROFILE_COLS = {
 
 meRoute.get("/api/me", async (c) => {
   try {
-    const payload = await verifyToken(c);
+    const identity = await resolveIdentity(c);
     const db = getDb(c.env);
     // テナント表示名は seed カタログではなく DB を真実とするため、 profile と一緒に返す。
     const rows = await db
@@ -56,13 +64,21 @@ meRoute.get("/api/me", async (c) => {
       })
       .from(profiles)
       .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
-      .where(eq(profiles.id, payload.sub as string))
+      .where(profileMatch(identity))
       .limit(1);
     const row = rows[0];
     if (!row) {
+      recordUninvited(c, identity);
       throw new ApiError("invite_required", 403);
     }
-    if (row.disabled) throw new ApiError("このアカウントは無効化されています", 403);
+    if (row.disabled) {
+      recordDisabled(c, { id: row.id, tenantId: row.tenant_id, role: row.role, email: row.email });
+      throw new ApiError("このアカウントは無効化されています", 403);
+    }
+    // 画面を開くと最初に呼ばれるので、ここでも新しいサインインを拾う。
+    const actor = { id: row.id, tenantId: row.tenant_id, role: row.role, email: row.email };
+    markRequestActor(c, actor);
+    trackSession(c, actor, identity.issuedAt);
     const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
     return c.json({
       profile,
@@ -83,9 +99,29 @@ meRoute.get("/api/me", async (c) => {
 
 meRoute.post("/api/me", async (c) => {
   try {
-    const payload = await verifyToken(c);
-    const userId = payload.sub as string;
+    const identity = await resolveIdentity(c);
     const db = getDb(c.env);
+    const existing = await db
+      .select({
+        id: profiles.id,
+        tenantId: profiles.tenantId,
+        role: profiles.role,
+        email: profiles.email,
+        disabled: profiles.disabled,
+      })
+      .from(profiles)
+      .where(profileMatch(identity))
+      .limit(1);
+    const me = existing[0];
+    if (!me) {
+      recordUninvited(c, identity);
+      throw new ApiError("invite_required", 403);
+    }
+    if (me.disabled) {
+      recordDisabled(c, me);
+      throw new ApiError("このアカウントは無効化されています", 403);
+    }
+    const userId = me.id;
     const raw: unknown = await c.req.json().catch(() => null);
     if (typeof raw !== "object" || raw === null || Array.isArray(raw))
       throw new ApiError("更新する設定を入力してください", 400);
@@ -116,17 +152,6 @@ meRoute.post("/api/me", async (c) => {
     }
     if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
 
-    const existing = await db
-      .select({ id: profiles.id, disabled: profiles.disabled })
-      .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1);
-    if (!existing[0]) {
-      throw new ApiError("invite_required", 403);
-    }
-    if (existing[0].disabled) throw new ApiError("このアカウントは無効化されています", 403);
-
-    // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
     await db.update(profiles).set(update).where(eq(profiles.id, userId));
 
     const rows = await db

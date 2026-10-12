@@ -1,10 +1,18 @@
 import type { AuthStore } from "./auth.js";
 import { stellaConfig } from "./config.js";
 
+/**
+ * 接続が切れたときの案内。本番の API は Cloudflare Access の後ろにあり、拡張が持つトークンは
+ * Access のセッションと同じだけ (例: 24 時間) しか使えない。切れたら Web のレッスンから
+ * 接続し直してもらう。
+ */
+export const RECONNECT_MESSAGE =
+  "LMS への接続の有効期限が切れました。Web のレッスンの「VS Code で開く」から接続し直してください";
+
 export class AuthExpiredError extends Error {
   readonly status = 401 as const;
 
-  constructor(message = "認証の有効期限が切れました") {
+  constructor(message = RECONNECT_MESSAGE) {
     super(message);
     this.name = "AuthExpiredError";
   }
@@ -43,6 +51,47 @@ type ApiInit = Omit<RequestInit, "body"> & {
   session?: number;
 };
 
+/**
+ * 拡張が持つトークンを載せたヘッダー。本番 (Cloudflare Access) は `cf-access-token` を検証し、
+ * Access の無いローカルの API は `Authorization: Bearer` を読む。本番の API は Access が付けた
+ * `Cf-Access-Jwt-Assertion` しか信じないので、両方に載せても困らない。
+ */
+export function setAuthHeaders(headers: Headers, token: string): void {
+  headers.set("Authorization", `Bearer ${token}`);
+  headers.set("cf-access-token", token);
+}
+
+function isJsonResponse(res: Response): boolean {
+  const type = res.headers.get("content-type") ?? "";
+  return /\bjson\b/i.test(type);
+}
+
+function isHtmlResponse(res: Response): boolean {
+  return /text\/html/i.test(res.headers.get("content-type") ?? "");
+}
+
+/**
+ * Access が API に届く前に止めた応答か。Access はトークンが切れる・無いと、ログイン画面への
+ * リダイレクト (`redirect: "manual"` では 3xx か `opaqueredirect` / status 0) か、自前の HTML の
+ * ブロック画面 (401/403) を返す。API 自身の 401/403 は JSON なので、こちらには入らない。
+ */
+export function isAccessRejection(res: Response): boolean {
+  if (res.type === "opaqueredirect" || res.status === 0) return true;
+  if (res.status >= 300 && res.status < 400) return true;
+  return (res.status === 401 || res.status === 403) && !isJsonResponse(res);
+}
+
+/** 本文を JSON として読む。HTML や空の本文では落とさずに null を返す。 */
+async function readJson(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => "");
+  if (text.trim() === "") return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T> {
   const auth = requireAuthStore();
   const url = `${serverUrl()}${path.startsWith("/") ? path : `/${path}`}`;
@@ -52,7 +101,7 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
     session === undefined ? await auth.getToken() : await auth.getTokenInSession(session);
   const headers = new Headers(init.headers);
   if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+    setAuthHeaders(headers, token);
   }
 
   let body: BodyInit | undefined;
@@ -63,17 +112,28 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
     body = JSON.stringify(rawBody);
   }
 
-  const res = await fetch(url, { ...rest, headers, body });
-  const data: unknown = await res.json().catch(() => null);
+  // Access のログイン画面へのリダイレクトを追わない (追うと HTML の 200 が返り、接続切れに見えない)。
+  const res = await fetch(url, { ...rest, headers, body, redirect: "manual" });
+  const accessRejected = isAccessRejection(res);
+  const data = accessRejected ? null : await readJson(res);
 
-  if (res.status === 401) {
+  if (accessRejected || res.status === 401) {
     // 前の世代のトークンが断られただけなら、切り替えたあとの接続を消さない。
     if (session === undefined || session === auth.currentSession()) await auth.clear();
-    throw new AuthExpiredError(errorMessage(data, "認証の有効期限が切れました"));
+    throw new AuthExpiredError(
+      accessRejected ? RECONNECT_MESSAGE : errorMessage(data, RECONNECT_MESSAGE),
+    );
   }
 
   if (!res.ok) {
     throw new Error(errorMessage(data, `API ${res.status}`));
+  }
+
+  if (data === null && isHtmlResponse(res)) {
+    // API ではなく Web の画面 (index.html) が返った。宛先の設定違い。
+    throw new Error(
+      "LMS の API から応答がありません。設定 stella.serverUrl が Web の URL (本番) か API の URL (ローカル) を指しているか確認してください",
+    );
   }
 
   return data as T;

@@ -1,28 +1,15 @@
 import type { ReviewDraftRequest, ReviewDraftResponse } from "@stella/shared/review/types";
 import { buildHeuristicReviewDraft } from "@stella/shared/review/heuristic-draft";
-import { getAccessToken } from "./auth-client";
-
-function serverUrl(): string {
-  const url = import.meta.env.VITE_SERVER_URL;
-  if (!url) return "";
-  return url.replace(/\/$/, "");
-}
+import { authFetch, isApiConfigured } from "./api-client";
 
 export async function fetchReviewDraft(req: ReviewDraftRequest): Promise<ReviewDraftResponse> {
-  const base = serverUrl();
-  if (!base) {
+  if (!isApiConfigured()) {
     return buildHeuristicReviewDraft(req.code);
   }
   try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    const token = getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${base}/api/review-draft`, {
+    const res = await authFetch("/api/review-draft", {
       method: "POST",
-      headers,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
     });
     if (!res.ok) {

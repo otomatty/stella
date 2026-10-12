@@ -64,6 +64,7 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
     tone: "text-destructive",
     label: "回答の型",
   },
+  security_alert: { icon: Bell, tone: "text-destructive", label: "セキュリティ" },
 };
 
 /** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */

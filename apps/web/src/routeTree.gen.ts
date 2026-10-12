@@ -42,6 +42,7 @@ import { Route as AppAdminEnrollmentsRouteImport } from './routes/_app/admin/enr
 import { Route as AppAdminHallOfFameRouteImport } from './routes/_app/admin/hall-of-fame'
 import { Route as AppAdminOrgsRouteImport } from './routes/_app/admin/orgs'
 import { Route as AppAdminReportRouteImport } from './routes/_app/admin/report'
+import { Route as AppAdminSecurityRouteImport } from './routes/_app/admin/security'
 import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
 import { Route as AppHallOfFameIndexRouteImport } from './routes/_app/hall-of-fame.index'
@@ -219,6 +220,11 @@ const AppAdminReportRoute = AppAdminReportRouteImport.update({
   path: '/report',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppAdminSecurityRoute = AppAdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -315,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
+  '/admin/security': typeof AppAdminSecurityRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
@@ -360,6 +367,7 @@ export interface FileRoutesByTo {
   '/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/admin/orgs': typeof AppAdminOrgsRoute
   '/admin/report': typeof AppAdminReportRoute
+  '/admin/security': typeof AppAdminSecurityRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/_app/admin/hall-of-fame': typeof AppAdminHallOfFameRoute
   '/_app/admin/orgs': typeof AppAdminOrgsRoute
   '/_app/admin/report': typeof AppAdminReportRoute
+  '/_app/admin/security': typeof AppAdminSecurityRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/_app/hall-of-fame/edit': typeof AppHallOfFameEditRoute
@@ -456,6 +465,7 @@ export interface FileRouteTypes {
     | '/admin/hall-of-fame'
     | '/admin/orgs'
     | '/admin/report'
+    | '/admin/security'
     | '/admin/users'
     | '/hall-of-fame/$entryId'
     | '/hall-of-fame/edit'
@@ -501,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin/hall-of-fame'
     | '/admin/orgs'
     | '/admin/report'
+    | '/admin/security'
     | '/admin/users'
     | '/hall-of-fame/$entryId'
     | '/hall-of-fame/edit'
@@ -548,6 +559,7 @@ export interface FileRouteTypes {
     | '/_app/admin/hall-of-fame'
     | '/_app/admin/orgs'
     | '/_app/admin/report'
+    | '/_app/admin/security'
     | '/_app/admin/users'
     | '/_app/hall-of-fame/$entryId'
     | '/_app/hall-of-fame/edit'
@@ -805,6 +817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminReportRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/security': {
+      id: '/_app/admin/security'
+      path: '/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AppAdminSecurityRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/users': {
       id: '/_app/admin/users'
       path: '/users'
@@ -899,6 +918,7 @@ interface AppAdminRouteChildren {
   AppAdminHallOfFameRoute: typeof AppAdminHallOfFameRoute
   AppAdminOrgsRoute: typeof AppAdminOrgsRoute
   AppAdminReportRoute: typeof AppAdminReportRoute
+  AppAdminSecurityRoute: typeof AppAdminSecurityRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
 }
@@ -910,6 +930,7 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminHallOfFameRoute: AppAdminHallOfFameRoute,
   AppAdminOrgsRoute: AppAdminOrgsRoute,
   AppAdminReportRoute: AppAdminReportRoute,
+  AppAdminSecurityRoute: AppAdminSecurityRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,
 }

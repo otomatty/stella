@@ -3,20 +3,29 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
+# API は Web の Worker (stella-web) がサービスバインディングで中継する経路だけで受ける。
+# Cloudflare Access が守るのは Web のホスト名なので、Access を通らない入口 (workers.dev・
+# プレビュー URL) は開けない。API はどの経路でも Access のトークンを署名から確かめる (lib/access-auth.ts)。
+workers_dev = false
+preview_urls = false
+
 # saedgewell@gmail.com's Account
 account_id = "175c04a4465bcc9815b21176a852f0c0"
 
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
-GOOGLE_CLIENT_ID = "998091191276-bfug8l2cm54llkhv078brdj3ovbtdfj8.apps.googleusercontent.com"
-# 本番の Web だけを書く。CORS に加えて、ログイン後に JWT を渡す戻り先 (`return_to`) の許可にも
-# 使うため、localhost を入れると本番のトークンを利用者の PC の開発サーバーへ届けさせるリンクが作れる。
+# 本番の Web だけを書く (本番の画面は同じオリジンで API を呼ぶので、CORS が要るのはローカル開発だけ)。
+# 招待メールのリンク先とアラート通知のリンクの既定にも使う。
 # ローカルの許可は `.dev.vars` の ALLOWED_ORIGINS が上書きする (`.dev.vars.example` 参照)。
 ALLOWED_ORIGINS = "https://stella-web.saedgewell.workers.dev"
 INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
 # ログインなしで読める教材 (GET /api/public/*。Issue #41) のテナント。未ログインでは JWT から
 # テナントが決まらないので、教材を seed するテナント (ses) をここで決める。外すと公開 API は何も返さない。
 PUBLIC_CONTENT_TENANT_ID = "ses"
+# 認証は Cloudflare Access (docs/cloudflare-access.md)。ACCESS_TEAM_DOMAIN と ACCESS_AUD は
+# デプロイ時に GitHub の Variables から入る (scripts/prepare-deploy.ts。無ければデプロイを止める)。
+# 任意の secret: CF_ACCESS_API_TOKEN (Access のログ取り込み・セッション失効)、
+# SECURITY_ALERT_WEBHOOK_URL (アラートの送り先)。
 
 # --- AI Gateway (Issue #204) ---
 # wrangler.toml の account_id は deploy 専用 — ランタイムには渡らない。同値を vars に明示する。
