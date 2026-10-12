@@ -460,7 +460,7 @@ async function privilegeRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
 
 export type SecurityAlertRecord = typeof securityAlerts.$inferSelect;
 
-/** 候補を保存する。新しく出たアラートを返す。 */
+/** 候補を保存する。新しく出たアラート (解決後に再発して未対応に戻したものを含む) を返す。 */
 export async function saveAlerts(
   db: Db,
   candidates: AlertCandidate[],
@@ -488,7 +488,11 @@ export async function saveAlerts(
         .limit(1)
     )[0];
     if (existing) {
-      await db
+      // 解決済みにしたあとで同じ出来事がまた起きたら、未対応に戻して知らせ直す (同じ日のうちに
+      // 再発しても、解決済みのまま一覧から消えて誰も気づかない、を防ぐ)。
+      const recurred =
+        existing.status === "resolved" && c.at > (existing.statusChangedAt ?? existing.lastSeenAt);
+      const updated = await db
         .update(securityAlerts)
         .set({
           eventCount:
@@ -497,8 +501,18 @@ export async function saveAlerts(
               : Math.max(existing.eventCount, c.count),
           lastSeenAt: c.at > existing.lastSeenAt ? c.at : existing.lastSeenAt,
           detail: { ...existing.detail, ...c.detail },
+          ...(recurred
+            ? {
+                status: "open" as const,
+                statusChangedBy: "自動 (解決後に再発)",
+                statusChangedAt: new Date(),
+                notifiedAt: null,
+              }
+            : {}),
         })
-        .where(eq(securityAlerts.id, existing.id));
+        .where(eq(securityAlerts.id, existing.id))
+        .returning();
+      if (recurred && updated[0]) created.push(updated[0]);
       continue;
     }
     const inserted = await db

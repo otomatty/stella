@@ -240,6 +240,39 @@ describe("detectSecurityAlerts", () => {
     ).toEqual([{ tenant_id: "other", rule: "error_spike", event_count: 20 }]);
   });
 
+  it("解決済みにしたあとで再発したら、未対応に戻して知らせ直す", async () => {
+    await seedEvent({
+      kind: "auth.no_profile",
+      tenantId: "ses",
+      email: "stranger@example.com",
+      createdAt: minutesAgo(30),
+    });
+    await detectSecurityAlerts(getDb(env()), env(), minutesAgo(29), vi.fn());
+    db.sqlite.exec(
+      `UPDATE security_alerts SET status = 'resolved', status_changed_at = ${minutesAgo(20).getTime()}`,
+    );
+    // 再発が無い検査では解決済みのまま。
+    await detectSecurityAlerts(getDb(env()), env(), minutesAgo(15), vi.fn());
+    expect(db.sqlite.prepare("select status from security_alerts").get()).toEqual({
+      status: "resolved",
+    });
+    await seedEvent({
+      kind: "auth.no_profile",
+      tenantId: "ses",
+      email: "stranger@example.com",
+      createdAt: minutesAgo(10),
+    });
+    const again = await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(again.map((a) => a.rule)).toEqual(["uninvited_identity"]);
+    expect(db.sqlite.prepare("select status, event_count from security_alerts").get()).toEqual({
+      status: "open",
+      event_count: 2,
+    });
+    expect(
+      (db.sqlite.prepare("select count(*) as n from notifications").get() as { n: number }).n,
+    ).toBe(2);
+  });
+
   it("管理者権限の付与と復帰を監査ログから拾う", async () => {
     db.sqlite.exec(`
       INSERT INTO audit_logs (id, tenant_id, actor_id, actor_name, actor_role, action, target_type, target_id, ip, metadata, created_at) VALUES
