@@ -6,6 +6,9 @@ export interface FigureTask {
   complete: boolean;
 }
 export const MAX_BOOK_PDFS = MAX_LIBRARY_BOOK_PDFS;
+// Workflow step budget (limit 1024): 6 fixed + 6 per PDF x 50 + OCR ranges <= 97
+// (1000 pages / 20 + one partial range per PDF) + chapter saves <= 50 + cleanup 1
+// = 454, leaving 570 steps; 500 figure batches keep the worst case at 954.
 export const MAX_FIGURE_BATCHES = 500;
 /** One guard plus four statements per figure/completed page stays below 50. */
 export function figureBatches(pages: { page_no: number; ocr_figures: string }[]): FigureTask[][] {
