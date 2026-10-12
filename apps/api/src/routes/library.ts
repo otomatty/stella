@@ -427,11 +427,14 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     if (!marked.meta.changes)
       throw new ApiError("PDFを削除できませんでした。もう一度お試しください", 409);
     await bucket.delete(pdf.r2_key);
-    await c.env.DB.prepare(
+    const removed = await c.env.DB.prepare(
       "DELETE FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ?",
     )
       .bind(caller.tenantId, book.id, pdf.id, pdf.r2_key)
       .run();
+    // A concurrent upload swapped in a new validated object; that replacement stands.
+    if (!removed.meta.changes)
+      throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
     return c.json({ ok: true });
   } catch (error) {
     return failure(c, error);

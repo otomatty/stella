@@ -993,6 +993,45 @@ describe("internal processing foundation", () => {
     ).toMatchObject({ status: "ready", page_count: 3 });
   });
 
+  it("starts a reservation whose RPC never ran from the scheduled handler", async () => {
+    const id = await createBook("Redispatched");
+    const pdf = await PDFDocument.create();
+    pdf.addPage([200, 300]);
+    const bytes = await pdf.save(),
+      key = `library/a/${id}/pdfs/cron.pdf`;
+    await bucket.put(key, bytes);
+    const jobId = crypto.randomUUID();
+    // The state POST /process leaves behind when its startJob call fails.
+    await db.batch([
+      db
+        .prepare(
+          "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,created_at) VALUES (?, 'a', ?, 1, 'cron.pdf', ?, ?, 'completed', 1)",
+        )
+        .bind(crypto.randomUUID(), id, bytes.length, key),
+      db.prepare("UPDATE library_books SET status = 'processing' WHERE id = ?").bind(id),
+      db
+        .prepare(
+          "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 1)",
+        )
+        .bind(jobId, id),
+      db
+        .prepare(
+          "INSERT INTO library_job_dispatches (tenant_id,book_id,job_id,instance_id,created_at) VALUES ('a', ?, ?, ?, 0)",
+        )
+        .bind(id, jobId, `${jobId}-1`),
+    ]);
+    await (await mf.getWorker("narrator")).scheduled({ cron: "0 * * * *" });
+    await waitJob(jobId);
+    expect(
+      await db
+        .prepare(
+          "SELECT dispatched_at IS NOT NULL AS dispatched FROM library_job_dispatches WHERE job_id = ?",
+        )
+        .bind(jobId)
+        .first(),
+    ).toEqual({ dispatched: 1 });
+  });
+
   it("connects API to narrator and refuses public HTTP and stale/mismatched jobs", async () => {
     expect(
       await data<{ processingAvailable: boolean; upload: boolean }>(await request("capabilities")),

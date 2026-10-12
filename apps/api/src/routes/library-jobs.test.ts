@@ -14,6 +14,7 @@ let started: NarratorJobRequest[];
 let rpcFails: boolean;
 let deleted: string[];
 let r2Fails: boolean;
+let onDelete: (() => void) | undefined;
 
 beforeEach(() => {
   db = sqliteD1();
@@ -30,12 +31,14 @@ beforeEach(() => {
   rpcFails = false;
   deleted = [];
   r2Fails = false;
+  onDelete = undefined;
   env = {
     DB: db.binding,
     AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: {
       delete: async (key: string) => {
         if (r2Fails) throw new Error("R2 unavailable");
+        onDelete?.();
         deleted.push(key);
       },
     },
@@ -132,6 +135,19 @@ describe("book processing jobs", () => {
     expect(row("SELECT status FROM library_books")).toEqual({ status: "processing" });
     expect(started.at(-1)).toMatchObject({ jobId: job?.id, generation: 1 });
     expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(409);
+  });
+
+  it("reports a conflict when an upload replaces the PDF while it is being deleted", async () => {
+    // A PUT commits its compare-and-swap between the R2 delete and the row delete.
+    onDelete = () =>
+      db.sqlite.exec(
+        "UPDATE library_book_pdfs SET r2_key = 'library/ses/book/pdfs/pdf-2.pdf', upload_status = 'completed'",
+      );
+    expect((await call("/pdfs/pdf", "DELETE")).status).toBe(409);
+    expect(row("SELECT r2_key, upload_status FROM library_book_pdfs")).toEqual({
+      r2_key: "library/ses/book/pdfs/pdf-2.pdf",
+      upload_status: "completed",
+    });
   });
 
   it("removes a PDF before processing", async () => {

@@ -43,7 +43,7 @@ Webの`/library`は全ロールのサイドバーから開ける。書籍情報�
 | `PUT /api/library/books/:bookId/pdfs/:pdfId` | 原本1つをR2へ送る（P2）。送信ごとに別キーへ書き、検証後に差し替える |
 | `DELETE /api/library/books/:bookId/pdfs/:pdfId` | 処理を始める前の原本を削除（P2） |
 | `POST /api/library/books/:bookId/process` | ジョブと起動予約を同じbatchで作り、書籍を`processing`にしてRPCで起動（P2）。RPCの失敗は予約を残す |
-| `GET /api/library/books/:bookId/jobs` | 処理状態（P2）。1分以上起動していない予約はここで再送する |
+| `GET /api/library/books/:bookId/jobs` | 処理状態（P2）。1分以上起動していない予約はここで再送する。開かれなくても narrator の毎時 cron が再送する |
 | `POST /api/library/books/:bookId/jobs/:jobId/retry` | 失敗したジョブを新しい試行として再実行（P2）。済んだOCR範囲は再利用する |
 
 棚から外した書籍の再発見・再追加画面は後続リーダーで追加する。メディア・本文・個人記録のAPIはP3・P4の作業であり、今回のテーブル作成だけでは公開しない。
