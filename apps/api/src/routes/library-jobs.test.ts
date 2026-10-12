@@ -138,7 +138,13 @@ describe("book processing jobs", () => {
     );
     expect((await startProcessing()).status).toBe(409);
     expect((await call(`/jobs/${job?.id}/retry`, "POST", "other")).status).toBe(404);
-    const retried = await call(`/jobs/${job?.id}/retry`, "POST");
+    // Retrying sends the remaining pages out again, so it needs the same confirmation.
+    expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(400);
+    const retried = await request(app, env, `/api/library/books/book/jobs/${job?.id}/retry`, {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "POST",
+      body: JSON.stringify({ acknowledgedExternalProcessing: true }),
+    });
     expect(retried.status).toBe(202);
     expect((await json<{ job: LibraryJob }>(retried)).job).toMatchObject({
       status: "queued",

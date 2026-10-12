@@ -190,6 +190,14 @@ async function dispatch(env: Env, tenantId: string, bookId: string, job: JobRow)
     // The jobs poll re-dispatches; nothing about the book is exposed here.
   }
 }
+/** Starting or retrying a run sends the PDFs to the external OCR provider; the owner confirms each time. */
+async function requireExternalAck(request: Request): Promise<void> {
+  const body = (await request.json().catch(() => null)) as {
+    acknowledgedExternalProcessing?: unknown;
+  } | null;
+  if (body?.acknowledgedExternalProcessing !== true)
+    throw new ApiError("PDFを外部の読み取りサービスへ送ることの確認が必要です", 400);
+}
 async function requireProcessing(env: Env): Promise<void> {
   if (!(await processingAvailable(env))) throw new ApiError("書籍の処理は現在利用できません", 403);
 }
@@ -541,12 +549,7 @@ libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
           : "この書籍は処理を始められる状態ではありません",
         409,
       );
-    // Starting sends the PDFs to the external OCR provider; the owner confirms that each time.
-    const body = (await c.req.json<unknown>().catch(() => null)) as {
-      acknowledgedExternalProcessing?: unknown;
-    } | null;
-    if (body?.acknowledgedExternalProcessing !== true)
-      throw new ApiError("PDFを外部の読み取りサービスへ送ることの確認が必要です", 400);
+    await requireExternalAck(c.req.raw);
     await requireProcessing(c.env);
     const jobId = crypto.randomUUID(),
       now = Date.now();
@@ -614,6 +617,7 @@ libraryRoute.post("/api/library/books/:bookId/jobs/:jobId/retry", async (c) => {
     const job = await bookJob(c.env, caller, book.id, c.req.param("jobId"));
     if (job.status !== "failed" || job.generation !== book.generation)
       throw new ApiError("再実行できるのは失敗した処理だけです", 409);
+    await requireExternalAck(c.req.raw);
     await requireProcessing(c.env);
     const now = Date.now();
     // A new attempt gets a new Workflow instance; results of the old one can no longer write.
