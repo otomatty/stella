@@ -955,7 +955,7 @@ describe("internal processing foundation", () => {
     ).toBe(usage?.count);
   });
 
-  it("streams an uploaded PDF into R2 where the book workflow can process it", async () => {
+  it("uploads a PDF and processes it through the public API only", async () => {
     const id = await createBook("Uploaded");
     const pdf = await PDFDocument.create();
     for (let n = 0; n < 3; n++) pdf.addPage([200, 300]);
@@ -980,15 +980,14 @@ describe("internal processing foundation", () => {
     expect(uploaded.status).toBe(200);
     const stored = await bucket.list({ prefix: `library/a/${id}/pdfs/${pdfId}-` });
     expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
-    const jobId = crypto.randomUUID();
-    await db
-      .prepare(
-        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 1)",
-      )
-      .bind(jobId, id)
-      .run();
-    await dispatch({ tenantId: "a", bookId: id, jobId, generation: 1 });
+    const processed = await request(`books/${id}/process`, "owner", "POST");
+    expect(processed.status).toBe(202);
+    const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
     await waitJob(jobId);
+    const jobs = await data<{ jobs: { id: string; status: string }[] }>(
+      await request(`books/${id}/jobs`),
+    );
+    expect(jobs.jobs).toMatchObject([{ id: jobId, status: "succeeded" }]);
     expect(
       await db.prepare("SELECT status,page_count FROM library_books WHERE id = ?").bind(id).first(),
     ).toMatchObject({ status: "ready", page_count: 3 });

@@ -56,6 +56,17 @@ export interface LibraryPdf {
   uploadStatus: "uploading" | "completed";
   pageCount: number | null;
 }
+export interface LibraryJob {
+  id: string;
+  type: "ocr" | "split" | "tts";
+  status: "queued" | "running" | "succeeded" | "failed";
+  attempt: number;
+  progressCurrent: number;
+  progressTotal: number | null;
+  errorMessage: string | null;
+  createdAt: number;
+  finishedAt: number | null;
+}
 export interface CreateLibraryPdf {
   fileName: string;
   sizeBytes: number;
