@@ -289,11 +289,8 @@ export const libraryJobUsages = sqliteTable(
     estimatedCostUsd: real("estimated_cost_usd"),
     createdAt: integer("created_at").notNull(),
   },
+  // No FK to jobs: usage and cost must stay traceable after the book and its jobs are deleted.
   (t) => [
-    foreignKey({
-      columns: [t.tenantId, t.bookId, t.jobId],
-      foreignColumns: [libraryJobs.tenantId, libraryJobs.bookId, libraryJobs.id],
-    }).onDelete("cascade"),
     check("library_job_usages_check_0", sql`quantity >= 0`),
     index("library_job_usages_idx_0").on(t.tenantId, t.bookId, t.jobId),
   ],

@@ -70,6 +70,18 @@ describe("personal library additive migration", () => {
         "INSERT INTO library_audios (id,tenant_id,book_id,chapter_id,revision,source_speech_hash,tts_model,created_at) VALUES ('audio','a','book2','chapter',1,'hash','fake',1)",
       ),
     ).toThrow(/FOREIGN KEY/);
+    db.exec(
+      "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES ('job','a','book2',1,'ocr','owner',1)",
+    );
+    db.exec(
+      "INSERT INTO library_job_usages (id,tenant_id,book_id,job_id,provider,model,unit,quantity,created_at) VALUES ('usage','a','book2','job','fake','m','input_token',10,1)",
+    );
+    db.exec("DELETE FROM library_books WHERE id = 'book2'");
+    // Usage outlives the deleted book and its jobs so cost stays traceable.
+    expect(db.prepare("SELECT count(*) AS jobs FROM library_jobs").get()).toEqual({ jobs: 0 });
+    expect(db.prepare("SELECT book_id FROM library_job_usages").all()).toEqual([
+      { book_id: "book2" },
+    ]);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     db.close();
   });
