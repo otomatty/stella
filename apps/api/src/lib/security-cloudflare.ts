@@ -1,8 +1,9 @@
 /**
  * Cloudflare API (Zero Trust / Access) との連携。どちらも任意で、`CF_ACCESS_API_TOKEN` が無ければ動かない。
  *
- *   - Access のログ (拒否を含むログイン記録) の取り込み … cron が 15 分ごとに `importAccessLogs`
- *   - Access のセッションの失効 … 管理画面とアカウントの無効化から `revokeAccessSessions`
+ *   - 講師・管理者用の入口の Access のログ (拒否を含むログイン記録) の取り込み … cron が 15 分ごとに
+ *     `importAccessLogs`
+ *   - Access のセッションの失効 … 管理画面とアカウントの無効化から `revokeAccessSessions` (講師・管理者)
  *
  * Cloudflare の応答本文やトークンはエラーにもログにも載せない。
  */
@@ -47,18 +48,16 @@ type CloudflareEnv = Pick<
   | "CLOUDFLARE_ACCOUNT_ID"
   | "SECURITY_TENANT_ID"
   | "PUBLIC_CONTENT_TENANT_ID"
-  | "ALLOWED_ORIGINS"
-  | "INVITE_REDIRECT_URL"
+  | "STAFF_ORIGIN"
 >;
 
 /**
- * STELLA の Web のホスト名 (Access アプリのドメイン)。Access のログはアカウント全体のものが返るので、
- * これに当たる行だけを取り込む (同じアカウントの別の Access アプリの利用者の情報を STELLA に持ち込まない)。
+ * STELLA の講師・管理者用の入口のホスト名 (Access アプリのドメイン)。Access のログはアカウント全体の
+ * ものが返るので、これに当たる行だけを取り込む (同じアカウントの別の Access アプリの利用者の情報を
+ * STELLA に持ち込まない)。
  */
-export function stellaAppHost(
-  env: Pick<Env, "ALLOWED_ORIGINS" | "INVITE_REDIRECT_URL">,
-): string | null {
-  const raw = env.INVITE_REDIRECT_URL || env.ALLOWED_ORIGINS?.split(",")[0];
+export function stellaAppHost(env: Pick<Env, "STAFF_ORIGIN">): string | null {
+  const raw = env.STAFF_ORIGIN;
   if (!raw) return null;
   try {
     return new URL(raw.trim()).hostname.toLowerCase();
@@ -255,7 +254,8 @@ export async function importAccessLogs(
 /**
  * 利用者の Access のセッションを全部失効させる (次のリクエストで Access がログインし直させる)。
  * 組織単位の API なので、同じアカウントの他の Access アプリのセッションも失効する (利用者 1 人を
- * アプリ単位で失効させる API は無い。画面の確認と docs/cloudflare-access.md で知らせている)。
+ * アプリ単位で失効させる API は無い。画面の確認と docs/clerk-auth.md で知らせている)。
+ * 講師・管理者用の入口を使うロールだけに使う (受講者は Clerk のセッションの取り消しで足りる)。
  * 設定が無ければ false。失敗は例外。
  */
 export async function revokeAccessSessions(

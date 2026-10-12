@@ -5,7 +5,9 @@ import { isAllowedOrigin } from "../../src/lib/cors.js";
 import { parseD1Config } from "./d1-remote.js";
 import {
   resolveDeployDatabase,
+  STAFF_ORIGIN,
   validateAccessSettings,
+  validateClerkSettings,
   validateDeployUrls,
   withAccessVars,
   withDeployDatabase,
@@ -155,17 +157,51 @@ describe("Cloudflare Access settings", () => {
     expect(() => validateAccessSettings(domain, aud)).toThrow();
   });
 
-  it("writes the settings into [vars] only, replacing previous values", () => {
-    const settings = { teamDomain: "stella.cloudflareaccess.com", aud: AUD };
+  it("writes the settings and the staff host into [vars] only, replacing previous values", () => {
+    const settings = {
+      teamDomain: "stella.cloudflareaccess.com",
+      aud: AUD,
+      staffOrigin: STAFF_ORIGIN,
+    };
     const patched = withAccessVars(TOML, settings);
     const vars = patched.slice(patched.indexOf("[vars]"), patched.indexOf("[[unsafe.bindings]]"));
     expect(vars).toContain('ACCESS_TEAM_DOMAIN = "stella.cloudflareaccess.com"');
     expect(vars).toContain(`ACCESS_AUD = "${AUD}"`);
+    expect(vars).toContain(`STAFF_ORIGIN = "${STAFF_ORIGIN}"`);
     const again = withAccessVars(patched, { ...settings, aud: "c".repeat(64) });
     expect(again.match(/^ACCESS_AUD = /gm)).toHaveLength(1);
     expect(again).toContain(`ACCESS_AUD = "${"c".repeat(64)}"`);
-    expect(again.replace(/^ACCESS_(TEAM_DOMAIN|AUD) = .*\n/gm, "")).toBe(
-      TOML.replace(/^ACCESS_(TEAM_DOMAIN|AUD) = .*\n/gm, ""),
+    const strip = (t: string) => t.replace(/^(ACCESS_(TEAM_DOMAIN|AUD)|STAFF_ORIGIN) = .*\n/gm, "");
+    expect(strip(again)).toBe(strip(TOML));
+  });
+});
+
+describe("Clerk and staff host settings", () => {
+  const key = `pk_test_${Buffer.from("stella.clerk.accounts.dev$").toString("base64")}`;
+
+  const secret = "sk_test_abc123";
+
+  it("accepts a publishable key, the fixed staff host and a matching secret key", () => {
+    expect(validateClerkSettings(key, `${STAFF_ORIGIN}/`, secret)).toEqual({
+      staffOrigin: STAFF_ORIGIN,
+    });
+  });
+
+  it.each([
+    [undefined, STAFF_ORIGIN, secret],
+    ["sk_test_secret", STAFF_ORIGIN, secret],
+    [key, undefined, secret],
+    [key, "https://stella-web.saedgewell.workers.dev", secret],
+    [key, STAFF_ORIGIN, undefined],
+    [key, STAFF_ORIGIN, "sk_live_abc123"],
+    [key, STAFF_ORIGIN, "pk_test_abc"],
+  ])("stops the deploy without valid settings: %s / %s / %s", (publishableKey, staffOrigin, sk) => {
+    expect(() => validateClerkSettings(publishableKey, staffOrigin, sk)).toThrow();
+  });
+
+  it("does not put the secret key into the error message", () => {
+    expect(() => validateClerkSettings(key, STAFF_ORIGIN, "sk_live_supersecret")).toThrow(
+      /^(?!.*supersecret)/,
     );
   });
 });

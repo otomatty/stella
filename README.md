@@ -27,7 +27,7 @@ stella/
 └── package.json              # Bun workspaces
 ```
 
-> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Cloudflare Access + R2 + Workers (Static Assets)**。
+> **アーキテクチャ (#cloudflare)**: **Cloudflare D1 + Clerk (ログイン) + Cloudflare Access (講師・管理者用の入口) + R2 + Workers (Static Assets)**。
 > フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
 > 本番の画面は API を同じオリジンの `/api/*` で呼び、 Web の Worker がサービスバインディングで API の Worker へ中継する。
 > 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
@@ -41,7 +41,8 @@ stella/
 - **Vite 5 + React 19 + TypeScript 7 (strict)** — フロント (`apps/web`) → Cloudflare Workers (Static Assets)
 - **Hono + Cloudflare Workers** — API (`apps/api`)。 認可をアプリ層に集約
 - **Cloudflare D1** — DB (Drizzle ORM / `drizzle-orm/d1`)
-- **Cloudflare Access** — ログイン・多要素認証・セッション。 API は `Cf-Access-Jwt-Assertion` を検証し、 招待済みの `profiles` にメールで結び付ける ([`docs/cloudflare-access.md`](docs/cloudflare-access.md))
+- **Clerk** — ログイン (Google + メールの確認コード)・セッション。 画面は自作 (`@clerk/clerk-js` の headless)。 API は Clerk のセッショントークンを検証し、 招待済みの `profiles` にメールで結び付ける ([`docs/clerk-auth.md`](docs/clerk-auth.md))
+- **Cloudflare Access** — 講師・管理者・営業が使う入口 (`stella-admin`) だけを守る。 API はこのロールに Access のトークン (`Cf-Access-Jwt-Assertion`) も求める
 - **Cloudflare R2** — 教材配信・アップロード (Workers R2 バインディング + 公開 URL)
 - **Tailwind CSS v4 + shadcn/ui** (`apps/web/src/components/ui/`)
 - **Radix UI** プリミティブ
@@ -52,7 +53,7 @@ stella/
 
 ## セットアップ（実データ開発・既定）
 
-日常の開発は **API + ローカル D1 + 開発用トークン** を既定とする (ローカルでは Cloudflare Access を使わない)。
+日常の開発は **API + ローカル D1 + 開発用トークン** を既定とする (ローカルでは Clerk も Cloudflare Access も使わない)。
 `VITE_SERVER_URL` 未設定のモック単体起動は [デモ専用](#デモ専用モック単体) を参照。
 
 ```bash
@@ -81,7 +82,7 @@ cp apps/api/.dev.vars.example apps/api/.dev.vars
    bun run smoke:d1        # テーブル確認
    ```
 
-   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` / `seed-learner2` / `seed-sales` はキューや一覧確認用の固定ユーザーです。ローカルでは `bun run --filter=@stella/api dev:token seed-admin` のように、この ID で開発用トークンを作ってログインします（下記「認証 (Cloudflare Access)」）。本番のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
+   seed に含まれる `seed-admin` / `seed-instructor` / `seed-learner` / `seed-learner2` / `seed-sales` はキューや一覧確認用の固定ユーザーです。ローカルでは `bun run --filter=@stella/api dev:token seed-admin` のように、この ID で開発用トークンを作ってログインします（下記「認証 (Clerk + 講師・管理者の Cloudflare Access)」）。本番のアカウントの招待・ロール昇格は下記「初回ログインとロール昇格」を参照してください。
 
    受講登録まわりは 2 人の受講者で見分けます。`seed-learner` は全ステージに登録済みで、その行は **自己開始の履歴** の形（`assigned_by = seed-learner` / `required = 0` / 期限なし）です — Phase 3b で管理者からの割り当ては廃止したので、登録が生まれる道は受講者自身の「始める」だけになりました。`seed-learner2` は **受講登録が 0 件** で、「まだ何も始めていない人」の画面（ホームのプレースメント案内、スキルマップの推奨、受講状況の空表示）を確認するための固定ユーザーです。`bun run db:seed` を 2 回流しても、この 2 人の登録件数は変わりません（`seed-learner` は全ステージ、`seed-learner2` は 0 件のまま）:
 
@@ -130,7 +131,7 @@ Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師
 2. 拡張を入れる（ローカルは `apps/vscode` で `bun run package` した VSIX。Marketplace は下記の手順のみ。このリポジトリからは公開しない）
 3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://stella.stella/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
 
-トークンは拡張の SecretStorage（`stella.accessToken`）に入る。本番では接続コードを `POST /api/auth/vscode-link/exchange` で交換して受け取る **Access のトークン** で、期限は Access のセッションと同じ（切れたら「VS Code で開く」からつなぎ直す）。設定にトークンを貼らない。本番の `stella.serverUrl` は Web のオリジン（API の workers.dev ではない）。Access より前の旧版の拡張は Access を通れない。
+トークンは拡張の SecretStorage（`stella.accessToken`）に入る。本番では接続コードを `POST /api/auth/vscode-link/exchange` で交換して受け取る **Clerk の API キー**（拡張専用・30 日。無効化や管理画面の失効で取り消される）で、切れたら「VS Code で開く」からつなぎ直す。設定にトークンを貼らない。本番の `stella.serverUrl` は受講者用の Web のオリジン（講師・管理者用の入口や API の workers.dev ではない）。講師・管理者のアカウントには VS Code のキーを出さない。
 
 **開発者**
 
@@ -142,32 +143,34 @@ Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師
 
 CI では出さない。publisher は `stella`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login stella` または `VSCE_PAT`）。
 
-### 認証 (Cloudflare Access)
+### 認証 (Clerk + 講師・管理者の Cloudflare Access)
 
-本番のログイン・多要素認証・セッションの期限と失効は **Cloudflare Access** が行い、アプリは自前の認証を持たない
-(旧 Google OAuth + アプリ発行の JWT は廃止。`/api/auth/google*` は 410)。
-API は Access が付ける `Cf-Access-Jwt-Assertion` を署名・発行者・AUD から検証し (`apps/api/src/lib/access-auth.ts`)、
-メールアドレスで招待済みの `profiles` に結び付ける。
-Cloudflare 側の設定・GitHub Variables (`ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`)・切り替えの順番・セキュリティ画面
-(`/admin/security`) は [`docs/cloudflare-access.md`](docs/cloudflare-access.md) を参照。
+本番のログイン・セッションの期限と失効は **Clerk** が行い、アプリは自前の認証を持たない
+(旧 Google OAuth + アプリ発行の JWT は廃止。`/api/auth/google*` は 410)。ログイン画面は自作で
+(Google + メールの確認コード。パスワードは使わない)、入力はブラウザから Clerk へ直接送られる。
+API は `Authorization: Bearer` の Clerk のセッショントークンを署名・`azp` (開いている入口のオリジン) から検証し
+(`apps/api/src/lib/clerk-auth.ts`)、メールアドレスで招待済みの `profiles` に結び付ける。
+講師・管理者・営業は Cloudflare Access で守った講師・管理者用の入口 (`stella-admin`、同じ画面の 2 つ目の Worker) から使い、
+API はこのロールに Access のトークンも求める (同じメールアドレス。無ければ `staff_host_required`)。
+Clerk・Access の設定・GitHub の Variables / Secret・切り替えの順番・セキュリティ画面
+(`/admin/security`) は [`docs/clerk-auth.md`](docs/clerk-auth.md) を参照。
 
-ローカルでは Access を使わない。`.dev.vars` の `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` を空にしておくと、API は
+ローカルでは Clerk も Access も使わない。`.dev.vars` の `CLERK_SECRET_KEY` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` を空にしておくと、API は
 localhost / 127.0.0.1 へのリクエストに限って `DEV_AUTH_JWT_SECRET` で署名した開発用トークンを受け付ける
 (`bun run --filter=@stella/api dev:token <profileId>`)。
 
 > **ログインできない場合**: 切り分け手順は
-> [`docs/access-login-troubleshooting.md`](docs/access-login-troubleshooting.md) を参照
-> (`/api/healthz` の `accessConfigured` / `devAuthConfigured` で設定状況を確認できる)。
+> [`docs/login-troubleshooting.md`](docs/login-troubleshooting.md) を参照
+> (`/api/healthz` の `clerkConfigured` / `accessConfigured` / `devAuthConfigured` で設定状況を確認できる)。
 > ユーザー向けにはサポートページ `/support` (FAQ + 問い合わせフォーム) を案内する。
 
 ### 初回ログインとロール昇格
 
 所属は**招待制のみ**。自由オンボーディング（任意テナント選択）は廃止済み。
-本番で入るには 2 つが要る: tenant `admin` が管理画面のユーザー招待でメールアドレスを登録していること
-（アプリ側）と、そのメールが Cloudflare Access のポリシーで許可されていること（Access 側）。
-Access は通ったが未招待のときは招待必要画面 (`invite_required`) になり、テナントには入れない
+本番で入るには tenant `admin` が管理画面のユーザー招待でメールアドレスを登録していることが要る。
+Clerk のサインアップは開いており、誰でも Clerk にはログインできるが、未招待のときは招待必要画面 (`invite_required`) になり、テナントには入れない
 （セキュリティ画面に `uninvited_identity` として出る）。招待メール送信はない。先に未招待で入ったあとで招待しても、
-開き直せば紐付く。
+開き直せば紐付く。講師・管理者・営業はさらに、講師・管理者用の入口の Cloudflare Access のポリシーで許可されていることが要る。
 
 #### 開発ブートストラップ（ローカル D1）
 
@@ -209,15 +212,16 @@ wrangler d1 execute stella-db --local --command \
 昇格後はブラウザをリロードしてロールを反映させる。
 認可は `/api/me` の `profiles.role` を参照するため、ロール変更だけの再ログインは不要。
 
-セッションの期限と失効は Access が持つ（アプリ側にトークンの denylist / refresh は無い）。管理者は `/admin/security` の
-「アカウント棚卸し」から Access のセッションを失効でき、ユーザーを無効化すると Access のセッションも失効する
-（どちらも API の secret `CF_ACCESS_API_TOKEN` が要る）。ローカルの開発用トークンの有効期限は 24 時間。
+セッションの期限と失効は Clerk が持つ（アプリ側にトークンの denylist / refresh は無い）。管理者は `/admin/security` の
+「アカウント棚卸し」からセッションを失効でき、ユーザーを無効化しても失効する。Clerk のセッションと VS Code のキーを取り消し、
+講師・管理者・営業は Access のセッションも失効する（Access の失効は API の secret `CF_ACCESS_API_TOKEN` が要る）。
+ローカルの開発用トークンの有効期限は 24 時間。
 
 ### 手動検証チェックリスト
 
 実データ経路が通っていることの確認（Tweaks パネルは使わない）:
 
-- [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`・`devAuthConfigured: true`（ローカルは `accessConfigured: false`）
+- [ ] `curl -s http://127.0.0.1:8787/api/healthz` が `ok: true`・`devAuthConfigured: true`（ローカルは `clerkConfigured: false`）
 - [ ] `dev:token` のトークンで `http://localhost:5173` にログインできる
 - [ ] Learner（UI 名; DB は `profiles.role='student'`）としてステージ一覧など D1（seed）由来のデータが見える
 - [ ] 上記コマンドで `instructor` に上げたあと、Tweaks なしで講師画面（添削キュー等）が D1 データを表示する
@@ -226,7 +230,7 @@ wrangler d1 execute stella-db --local --command \
 
 ### 認可・所属（#62）手動確認
 
-- [ ] 未招待のアカウント（本番は Access を通った未招待のメール）→ 招待必要画面（任意テナントに入れない）
+- [ ] 未招待のアカウント（本番は Clerk でログインした未招待のメール）→ 招待必要画面（任意テナントに入れない）
 - [ ] 招待後ログイン → 正しい tenant/role
 - [ ] tenant admin は組織マスタ不可 / platform_admin は可
 - [ ] 未認証で /api/chat・/api/review-draft が 401
@@ -254,7 +258,7 @@ bun run smoke:core   # ターミナル 2
 修了条件の充足 → 修了証の自動発行（受講者の手動発行は 403 / staff 再発行のべき等性・未認証での検証）→
 監査ログ記録の確認 → 後片付け。
 
-認証は Access を通さず、`apps/api/.dev.vars` の `DEV_AUTH_JWT_SECRET` で seed ユーザーの開発用トークンを
+認証は Clerk を通さず、`apps/api/.dev.vars` の `DEV_AUTH_JWT_SECRET` で seed ユーザーの開発用トークンを
 直接発行する（`SMOKE_BASE_URL` / `SMOKE_LEARNER_ID` などで上書き可）。
 作成したステージと受講登録は最後に削除するが、提出物に削除 API がないため
 `[smoke]` 付きの提出が 1 件残る（添削確定済みなのでキューには出ない）。
@@ -332,8 +336,9 @@ tenant admin 以上）の薄いラッパ。1 リクエストの走査件数に�
 （`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
 削除は監査ログ（`r2_orphan_cleanup`）に残る。
 
-本番に対して実行する場合は `API_BASE_URL` を Web のオリジン（Access が守るホスト）にし、admin の Access のトークンを
-`ADMIN_TOKEN` に渡す（`cloudflared access login <Web の URL>` → `cloudflared access token -app=<Web の URL>`）。
+本番に対して実行する場合は `API_BASE_URL` を講師・管理者用の入口のオリジンにし、admin の Clerk のセッショントークンを
+`ADMIN_TOKEN`（入口を開いたブラウザの開発者ツールで `/api/*` の Authorization の値。約 60 秒で切れる）、
+Access のトークンを `ACCESS_TOKEN`（`cloudflared access login <入口の URL>` → `cloudflared access token -app=<入口の URL>`）に渡す。
 未指定ならローカルの `.dev.vars` の `DEV_AUTH_JWT_SECRET` で `seed-admin` の開発用トークンを発行する。
 
 ### 講師添削 (Issue #8)
@@ -381,7 +386,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   基準達成者へ修了証を承認発行できます (講師承認ステージはこちらが唯一の発行経路)。
 - 受講者は **修了証** ページで発行済みの修了証を確認でき、 認定番号 (`cert_code`) と
   公開検証ページへのリンクを得られます (受講者による手動発行は廃止)。
-- 公開検証ページは **ログイン不要**で `/verify/<CODE>` から到達し、 真正性を確認できます (Cloudflare Access の Bypass。旧形式の `/?cert=<CODE>` はログイン済みの人だけがリダイレクトされる)。
+- 公開検証ページは **ログイン不要**で `/verify/<CODE>` から到達し、 真正性を確認できます (旧形式の `/?cert=<CODE>` もこのページへリダイレクトされる)。
   検証は匿名エンドポイント `GET /api/certificates/verify/:code` 経由で、 公開して良い情報のみ返します。
 - DB 永続化 (D1 設定時): `certificates` テーブル + 判定/発行/匿名検証 (`/api/certificates/*`)。
   デモ専用 (`VITE_SERVER_URL` 未設定) では修了証ページが静的デモ表示にフォールバックします。
@@ -425,7 +430,7 @@ ON の間に招待 (ユーザー登録) されたユーザーには、 直後に
   本文には「(テストデータ)」を含め、 通知 / 監査ログの payload には `test_data: true` が入ります。
 - 雛形と投入処理はどちらも `apps/api/src/lib/test-data.ts` にあります。
   現在の投入経路は招待 (`POST /api/admin/users/invite`) のみです。 セルフサインアップ
-  (Access を通っただけで profile を作る経路) はまだ無いため、 その経路が入る際に
+  (Clerk でログインしただけで profile を作る経路) はまだ無いため、 その経路が入る際に
   `insertTestDataForNewUser()` のフックを足します (Issue #76 の残タスク)。
 
 ### Anthropic (AIチャット用、 任意)
@@ -458,15 +463,15 @@ ON の間に招待 (ユーザー登録) されたユーザーには、 直後に
 `pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
 `main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像 / PDF の R2 アップロード → D1 migrate(remote) → Web ビルド → API デプロイ → Web デプロイ → D1 seed(remote) を直列実行する (API は Web の中継でしか受けないので、API と Web のデプロイは隙間なく並べる)。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
 GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
-Variables（`VITE_SERVER_URL` = Web のオリジン / `VITE_MATERIALS_BASE_URL` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`）の設定が必要。
+`CLERK_SECRET_KEY`、Variables（`VITE_SERVER_URL` = Web のオリジン / `VITE_MATERIALS_BASE_URL` / `VITE_CLERK_PUBLISHABLE_KEY` / `VITE_STAFF_ORIGIN` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`）の設定が必要。
 `deploy:prepare` がこれらを確かめ、無い・形が違えば Cloudflare に何も書かないうちにデプロイを止める。
 詳細（ワークフロー一覧・必須チェック設定・失敗時の再デプロイ）は
 [`docs/ci-cd.md`](docs/ci-cd.md) を参照。
 
 Phase C の初回切替は [インフラ移行手順](docs/stella-infrastructure-migration.md) に従う。
 全セッションが失効するため、告知とメンテナンス中の D1 / R2 移行を済ませてからマージする。
-Cloudflare Access への切り替えは [`docs/cloudflare-access.md`](docs/cloudflare-access.md) の「切り替えの順番」に従う（Cloudflare 側の設定と Variables を先に済ませ、マージ後に新しい版の VS Code 拡張を配る）。
-本番の入口は Web の `https://stella-web.saedgewell.workers.dev`（Access が守り、`/api/*` を API の Worker へ中継する）。API の Worker は `workers_dev = false` / `preview_urls = false` で、Access を通らない経路を持たない。
+Clerk への切り替えは [`docs/clerk-auth.md`](docs/clerk-auth.md) の「切り替えの順番」に従う（Clerk・Access の設定と Variables / Secret を先に済ませ、マージ後に講師・管理者用の入口に Access を掛け、新しい版の VS Code 拡張を配る）。
+本番の入口は受講者用の `https://stella-web.saedgewell.workers.dev` と、Access が守る講師・管理者用の `https://stella-admin.saedgewell.workers.dev`（どちらも `/api/*` を API の Worker へ中継する）。API の Worker は `workers_dev = false` / `preview_urls = false` で、Web の Worker を通らない経路を持たない。
 
 Deploy は教材処理の前に `bun run deploy:prepare` を実行し、`stella-db` の実 ID を取得する。
 Git 上のゼロ UUID はローカル専用で、本番デプロイには使わない。
@@ -477,8 +482,11 @@ Git 上のゼロ UUID はローカル専用で、本番デプロイには使わ�
 
 | 名前 | 種別 | 用途 |
 |---|---|---|
+| `CLERK_SECRET_KEY` | GitHub Secret → secret | Clerk の Secret key (必須。deploy が API の secret に入れる) |
+| `VITE_CLERK_PUBLISHABLE_KEY` | GitHub Variable | Clerk の Publishable key (必須。Web のビルドに焼き込む) |
+| `VITE_STAFF_ORIGIN` | GitHub Variable → var | 講師・管理者用の入口のオリジン (必須。API の `STAFF_ORIGIN` にも書く) |
 | `ACCESS_TEAM_DOMAIN` | GitHub Variable → var | Access のチームドメイン `<team>.cloudflareaccess.com` (必須。`deploy:prepare` が API の `[vars]` に書く) |
-| `ACCESS_AUD` | GitHub Variable → var | Access アプリケーションの AUD Tag (必須。複数はカンマ区切り) |
+| `ACCESS_AUD` | GitHub Variable → var | 講師・管理者用の入口の Access アプリケーションの AUD Tag (必須。複数はカンマ区切り) |
 | `CF_ACCESS_API_TOKEN` | Secret (任意) | Access のログの取り込みとセッション失効 (`/admin/security`) |
 | `SECURITY_ALERT_WEBHOOK_URL` | Secret (任意) | セキュリティアラートの送り先 Webhook |
 | `DEV_AUTH_JWT_SECRET` | `.dev.vars` のみ | ローカルの開発用トークンの署名鍵。本番には設定しない |
@@ -490,7 +498,7 @@ Git 上のゼロ UUID はローカル専用で、本番デプロイには使わ�
 ### バックエンド — 完全 Cloudflare
 
 - **D1** — LMS データ
-- **Workers** — API (認証は Cloudflare Access) + Web の静的配信と `/api/*` の中継
+- **Workers** — API (認証は Clerk、講師・管理者は Cloudflare Access も) + Web の静的配信と `/api/*` の中継 (受講者用と講師・管理者用の 2 つ)
 - **R2** — 教材ファイル
 - **Workers (Static Assets)** — フロント
 

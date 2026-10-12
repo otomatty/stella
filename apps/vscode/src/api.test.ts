@@ -1,6 +1,6 @@
 /**
- * API クライアントの認証ヘッダーと、Cloudflare Access に止められた応答の扱い。
- * 本番は Access が `cf-access-token` を検証し、ローカルの API は `Authorization` を読む。
+ * API クライアントの認証ヘッダーと、API に届く前に止められた応答 (ログイン画面へのリダイレクト・
+ * HTML のブロック画面) の扱い。トークン (本番は Clerk の API キー) は `Authorization` で送る。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -40,7 +40,7 @@ describe("apiRequest", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("トークンを Authorization と cf-access-token の両方に載せ、リダイレクトを追わない", async () => {
+  it("トークンを Authorization に載せ (Access のヘッダーは付けない)、リダイレクトを追わない", async () => {
     fakeAuth("TOKEN-1");
     fetchMock.mockResolvedValue(Response.json({ ok: true }));
     await expect(apiRequest("/api/me")).resolves.toEqual({ ok: true });
@@ -48,7 +48,7 @@ describe("apiRequest", () => {
     expect(url).toBe("http://127.0.0.1:8787/api/me");
     const headers = new Headers(init?.headers);
     expect(headers.get("Authorization")).toBe("Bearer TOKEN-1");
-    expect(headers.get("cf-access-token")).toBe("TOKEN-1");
+    expect(headers.has("cf-access-token")).toBe(false);
     expect(init?.redirect).toBe("manual");
   });
 
@@ -61,7 +61,7 @@ describe("apiRequest", () => {
     expect(headers.has("cf-access-token")).toBe(false);
   });
 
-  it("Access のログイン画面へのリダイレクト (3xx) は接続切れとして扱い、トークンを消す", async () => {
+  it("ログイン画面へのリダイレクト (3xx) は接続切れとして扱い、トークンを消す", async () => {
     const auth = fakeAuth();
     fetchMock.mockResolvedValue(
       new Response(null, {
@@ -83,7 +83,7 @@ describe("apiRequest", () => {
     expect(auth.clear).toHaveBeenCalledOnce();
   });
 
-  it("Access の HTML のブロック画面 (401/403) は本文を読み損ねずに接続切れとして扱う", async () => {
+  it("HTML のブロック画面 (401/403) は本文を読み損ねずに接続切れとして扱う", async () => {
     for (const status of [401, 403]) {
       const auth = fakeAuth();
       fetchMock.mockResolvedValue(html(status));

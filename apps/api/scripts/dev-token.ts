@@ -1,10 +1,10 @@
 /**
- * ローカル開発用のトークンを作って標準出力に出す (本番の認証は Cloudflare Access で、これは通らない)。
+ * ローカル開発用のトークンを作って標準出力に出す (本番の認証は Clerk で、これは通らない)。
  *
  *   bun run --filter=@stella/api dev:token seed-admin
  *
  * `apps/api/.dev.vars` の `DEV_AUTH_JWT_SECRET` で署名する。出たトークンは、画面 (`bun run dev`) の
- * ログイン画面に貼るか、ブラウザの localStorage `stella_auth_token_v1` に入れる。API は Access が
+ * ログイン画面に貼るか、ブラウザの localStorage `stella_auth_token_v1` に入れる。API は Clerk が
  * 未設定かつ localhost へのリクエストのときだけ受け付ける (lib/authz.ts の resolveIdentity)。
  */
 import { readFileSync } from "node:fs";

@@ -4,9 +4,14 @@ const DATABASE_NAME = "stella-db";
 const LOCAL_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
 /**
  * 画面が API を呼ぶ先。API は Web の Worker がサービスバインディングで中継する (同じオリジン) ので、
- * Web のオリジンそのもの。Cloudflare Access が守るのもこのホスト名。
+ * 受講者用の Web のオリジンそのもの (ログインは Clerk)。
  */
 const APP_ORIGIN = "https://stella-web.saedgewell.workers.dev";
+/**
+ * 講師・管理者用の入口。同じ画面を別の Worker (`stella-admin`) で配り、Cloudflare Access で守る。
+ * API は講師・管理者・営業のリクエストを、ここを通った (Access の検証済みの) ものだけ受ける。
+ */
+export const STAFF_ORIGIN = "https://stella-admin.saedgewell.workers.dev";
 
 export function validateDeployUrls(
   serverUrl: string | undefined,
@@ -80,8 +85,35 @@ export function withDeployDatabase(toml: string, databaseId: string): string {
 }
 
 /**
- * Cloudflare Access の設定 (GitHub の Variables `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`)。
- * 無いまま API をデプロイすると全員が 503 になるので、Cloudflare に何も書かない段階で止める。
+ * Clerk と講師・管理者用の入口の設定 (GitHub の Variables `VITE_CLERK_PUBLISHABLE_KEY` /
+ * `VITE_STAFF_ORIGIN` と Secret `CLERK_SECRET_KEY`)。無いまま build・デプロイすると誰もログインできない
+ * ので、Cloudflare に何も書かない段階で止める。
+ */
+export function validateClerkSettings(
+  publishableKey: string | undefined,
+  staffOrigin: string | undefined,
+  secretKey: string | undefined,
+): { staffOrigin: string } {
+  if (!/^pk_(test|live)_[A-Za-z0-9+/=_-]+$/.test(publishableKey?.trim() ?? "")) {
+    throw new Error(
+      "VITE_CLERK_PUBLISHABLE_KEY must be a Clerk publishable key (pk_test_ / pk_live_)",
+    );
+  }
+  // 値は出さない。公開鍵と同じ環境 (test / live) のシークレットキーか、形だけを確かめる。
+  const env = publishableKey?.trim().startsWith("pk_live_") ? "live" : "test";
+  if (!new RegExp(`^sk_${env}_[A-Za-z0-9]+$`).test(secretKey?.trim() ?? "")) {
+    throw new Error(`CLERK_SECRET_KEY must be set as a repo Secret (sk_${env}_…)`);
+  }
+  if (staffOrigin?.trim().replace(/\/+$/, "") !== STAFF_ORIGIN) {
+    throw new Error(`VITE_STAFF_ORIGIN must be ${STAFF_ORIGIN}`);
+  }
+  return { staffOrigin: STAFF_ORIGIN };
+}
+
+/**
+ * 講師・管理者用の入口を守る Cloudflare Access の設定 (GitHub の Variables `ACCESS_TEAM_DOMAIN` /
+ * `ACCESS_AUD`)。無いまま API をデプロイすると講師・管理者のアカウントが Clerk だけで操作できて
+ * しまうので、Cloudflare に何も書かない段階で止める。
  */
 export function validateAccessSettings(
   teamDomain: string | undefined,
@@ -105,10 +137,13 @@ export function validateAccessSettings(
   return { teamDomain: domain.toLowerCase(), aud: audiences.join(",") };
 }
 
-/** API の wrangler.toml の [vars] に Access の設定を書く (この checkout の設定だけを変える)。 */
+/**
+ * API の wrangler.toml の [vars] に Access の設定と講師・管理者用の入口を書く (この checkout の設定だけを
+ * 変える)。Clerk のシークレットキー (`CLERK_SECRET_KEY`) は wrangler secret で入れる。
+ */
 export function withAccessVars(
   toml: string,
-  settings: { teamDomain: string; aud: string },
+  settings: { teamDomain: string; aud: string; staffOrigin: string },
 ): string {
   const varsMatch = toml.match(/^\[vars\]\s*$/m);
   if (!varsMatch || varsMatch.index === undefined) throw new Error("wrangler.toml has no [vars]");
@@ -120,6 +155,7 @@ export function withAccessVars(
   for (const [key, value] of [
     ["ACCESS_TEAM_DOMAIN", settings.teamDomain],
     ["ACCESS_AUD", settings.aud],
+    ["STAFF_ORIGIN", settings.staffOrigin],
   ] as const) {
     const line = `${key} = "${value}"`;
     const pattern = new RegExp(`^${key}\\s*=.*$`, "m");

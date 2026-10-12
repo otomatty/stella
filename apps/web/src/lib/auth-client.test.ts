@@ -1,6 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const clerk = {
+  user: null as { id: string; email: string | null } | null,
+  token: null as string | null,
+  signOut: vi.fn(async () => undefined),
+};
+vi.mock("./clerk", () => ({
+  clerkCurrentUser: async () => clerk.user,
+  clerkSessionToken: async () => clerk.token,
+  clerkSignOut: () => clerk.signOut(),
+  onClerkUserChange: async () => () => undefined,
+}));
+
 import {
-  ACCESS_LOGOUT_PATH,
   ACCESS_RELOAD_GUARD_MS,
   authHeaders,
   getAccessToken,
@@ -61,10 +73,10 @@ afterEach(() => {
 });
 
 describe("auth across the STELLA rename", () => {
-  it("keeps a signed-in session saved under the old key", () => {
+  it("keeps a signed-in session saved under the old key", async () => {
     const token = tokenFor("learner");
     values.set("falcon_auth_token_v1", token);
-    expect(getSession()?.user.id).toBe("learner");
+    expect((await getSession())?.user.id).toBe("learner");
     expect(values.get("stella_auth_token_v1")).toBe(token);
     expect(values.get("falcon_auth_token_v1")).toBe(token);
   });
@@ -76,7 +88,7 @@ describe("auth across the STELLA rename", () => {
       throw new Error("busy");
     };
     await expect(signOut()).rejects.toThrow("busy");
-    expect(getSession()?.user.id).toBe("learner");
+    expect((await getSession())?.user.id).toBe("learner");
   });
 
   it("logs out when an old tab removes the same legacy token", () => {
@@ -130,7 +142,7 @@ describe("auth across the STELLA rename", () => {
     expect(values.size).toBe(0);
   });
 
-  it("keeps the new session when the old key cannot be deleted", () => {
+  it("keeps the new session when the old key cannot be deleted", async () => {
     const token = tokenFor("new-learner");
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
     const storage = window.localStorage as { removeItem: (key: string) => void };
@@ -140,7 +152,7 @@ describe("auth across the STELLA rename", () => {
     };
     expect(signInWithDevToken(token)).toEqual({ ok: true });
     expect(values.get("stella_auth_token_v1")).toBe(token);
-    expect(getSession()?.user.id).toBe("new-learner");
+    expect((await getSession())?.user.id).toBe("new-learner");
   });
 
   it("reports a failed login when the new key cannot be saved", () => {
@@ -155,11 +167,11 @@ describe("auth across the STELLA rename", () => {
     expect(getAccessToken()).toBeNull();
   });
 
-  it("stores pasted dev tokens under the new key and discards an old session", () => {
+  it("stores pasted dev tokens under the new key and discards an old session", async () => {
     const token = tokenFor("new-learner");
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
     expect(signInWithDevToken(`  Bearer ${token}\n`)).toEqual({ ok: true });
-    expect(getSession()?.user.id).toBe("new-learner");
+    expect((await getSession())?.user.id).toBe("new-learner");
     expect(values.has("falcon_auth_token_v1")).toBe(false);
   });
 
@@ -185,46 +197,58 @@ describe("dev-token login", () => {
     expect(values.size).toBe(0);
   });
 
-  it("sends the stored token as a Bearer header", () => {
+  it("sends the stored token as a Bearer header", async () => {
     const token = tokenFor("learner");
     values.set("stella_auth_token_v1", token);
-    expect(authHeaders()).toEqual({ Authorization: `Bearer ${token}` });
+    expect(await authHeaders()).toEqual({ Authorization: `Bearer ${token}` });
   });
 });
 
 describe("auth mode", () => {
-  it("defaults to dev-token in the dev server and access in builds", () => {
+  it("defaults to dev-token in the dev server and clerk in builds", () => {
     expect(resolveAuthMode(undefined, true)).toBe("dev-token");
-    expect(resolveAuthMode(undefined, false)).toBe("access");
-    expect(resolveAuthMode("", false)).toBe("access");
-    expect(resolveAuthMode("access", true)).toBe("access");
+    expect(resolveAuthMode(undefined, false)).toBe("clerk");
+    expect(resolveAuthMode("", false)).toBe("clerk");
+    expect(resolveAuthMode("clerk", true)).toBe("clerk");
     expect(resolveAuthMode("dev-token", false)).toBe("dev-token");
-    expect(resolveAuthMode("google", false)).toBe("access");
+    // 旧方式 (Cloudflare Access・Google) の値は既定に倒す。
+    expect(resolveAuthMode("access", false)).toBe("clerk");
+    expect(resolveAuthMode("google", false)).toBe("clerk");
   });
 });
 
-describe("Cloudflare Access mode", () => {
+describe("Clerk mode", () => {
   beforeEach(() => {
-    vi.stubEnv("VITE_AUTH_MODE", "access");
+    vi.stubEnv("VITE_AUTH_MODE", "clerk");
+    clerk.user = null;
+    clerk.token = null;
+    clerk.signOut.mockClear();
   });
 
-  it("returns a placeholder session without any stored token", () => {
-    const session = getSession();
-    expect(session).not.toBeNull();
-    expect(session?.accessToken).toBeNull();
+  it("returns a placeholder session from the Clerk user (the app user comes from /api/me)", async () => {
+    expect(await getSession()).toBeNull();
+    clerk.user = { id: "user_1", email: "learner@example.test" };
+    expect(await getSession()).toEqual({
+      accessToken: null,
+      user: { id: "user_1", email: "learner@example.test" },
+      expiresAt: null,
+    });
   });
 
-  it("has no session when the backend is not configured (demo)", () => {
+  it("has no session when the backend is not configured (demo)", async () => {
     vi.stubEnv("VITE_SERVER_URL", "");
-    expect(getSession()).toBeNull();
+    clerk.user = { id: "user_1", email: null };
+    expect(await getSession()).toBeNull();
   });
 
-  it("removes tokens left over from the old login and never sends them", () => {
+  it("sends the Clerk session token, and never tokens left over from the old login", async () => {
     values.set("stella_auth_token_v1", tokenFor("learner"));
     values.set("falcon_auth_token_v1", tokenFor("old-learner"));
     expect(getAccessToken()).toBeNull();
-    expect(authHeaders()).toEqual({});
-    getSession();
+    expect(await authHeaders()).toEqual({});
+    clerk.token = "clerk.session.jwt";
+    expect(await authHeaders()).toEqual({ Authorization: "Bearer clerk.session.jwt" });
+    await getSession();
     expect(values.size).toBe(0);
   });
 
@@ -233,10 +257,10 @@ describe("Cloudflare Access mode", () => {
     expect(values.size).toBe(0);
   });
 
-  it("logs out through Cloudflare Access", async () => {
+  it("logs out of Clerk", async () => {
     values.set("stella_auth_token_v1", tokenFor("learner"));
     await signOut();
-    expect(assign).toHaveBeenCalledWith(ACCESS_LOGOUT_PATH);
+    expect(clerk.signOut).toHaveBeenCalledTimes(1);
     expect(values.size).toBe(0);
   });
 

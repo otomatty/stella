@@ -15,7 +15,7 @@
  * アイソレートごとに 1 分あたりの記録数を絞る (超えた分は数だけ数えて 1 行にまとめる)。
  */
 
-import { and, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Context } from "hono";
 
 import type { SecurityEventKind } from "@stella/shared/security/types";
@@ -308,25 +308,25 @@ export function resetSessionCache(): void {
 }
 
 /**
- * 利用者のリクエストごとに呼ぶ。Access のトークンの発行時刻が前と違えば、新しいサインイン
+ * 利用者のリクエストごとに呼ぶ。セッションの印 (Clerk のセッション ID など) が前と違えば、新しいサインイン
  * (`session.start`) を残す。同じセッションのあいだは 1 時間に 1 回だけ最終利用時刻を書く。
  */
-export function trackSession(c: AnyContext, actor: SecurityActor, issuedAt: number | null): void {
+export function trackSession(c: AnyContext, actor: SecurityActor, sessionKey: string | null): void {
   const now = Date.now();
-  const key = `${actor.id}:${issuedAt ?? ""}`;
+  const key = `${actor.id}:${sessionKey ?? ""}`;
   const cached = seenCache.get(key);
   if (cached !== undefined && now - cached < SEEN_REFRESH_MS) return;
   if (seenCache.size >= MAX_CACHED) seenCache.clear();
   seenCache.set(key, now);
   const meta = requestMeta(c);
-  deferTask(c, () => upsertSession(getDb(c.env), actor, issuedAt, meta, new Date(now)));
+  deferTask(c, () => upsertSession(getDb(c.env), actor, sessionKey, meta, new Date(now)));
 }
 
 /** `trackSession` の本体 (テストから直接呼べるよう分けてある)。新しいサインインなら true。 */
 export async function upsertSession(
   db: Db,
   actor: SecurityActor,
-  issuedAt: number | null,
+  sessionKey: string | null,
   meta: Pick<RequestMeta, "ip" | "country" | "userAgent">,
   now: Date,
 ): Promise<boolean> {
@@ -339,12 +339,12 @@ export async function upsertSession(
   )[0];
   let isNew =
     !row ||
-    (issuedAt != null
-      ? row.lastIssuedAt !== issuedAt
+    (sessionKey != null
+      ? row.lastSessionKey !== sessionKey
       : !row.lastSeenAt || now.getTime() - row.lastSeenAt.getTime() > SESSION_GAP_MS);
-  // PC と携帯のように同じ利用者の端末が交互に使うと、最後の発行時刻だけでは毎回「新しい」に見える。
-  // 同じ発行時刻のサインインをもう記録していれば、既に知っているセッションとして扱う。
-  if (isNew && row && issuedAt != null) {
+  // PC と携帯のように同じ利用者の端末が交互に使うと、最後のセッションだけでは毎回「新しい」に見える。
+  // 同じセッションのサインインをもう記録していれば、既に知っているセッションとして扱う。
+  if (isNew && row && sessionKey != null) {
     const known = await db
       .select({ id: securityEvents.id })
       .from(securityEvents)
@@ -353,7 +353,7 @@ export async function upsertSession(
           eq(securityEvents.actorId, actor.id),
           eq(securityEvents.kind, "session.start"),
           gte(securityEvents.createdAt, new Date(now.getTime() - KNOWN_SESSION_LOOKBACK_MS)),
-          sql`json_extract(${securityEvents.metadata}, '$.issued_at') = ${issuedAt}`,
+          sql`json_extract(${securityEvents.metadata}, '$.session_key') = ${sessionKey}`,
         ),
       )
       .limit(1);
@@ -371,7 +371,7 @@ export async function upsertSession(
       country: meta.country,
       userAgent: meta.userAgent,
       metadata: {
-        ...(issuedAt != null ? { issued_at: issuedAt } : {}),
+        ...(sessionKey != null ? { session_key: sessionKey } : {}),
         ...(row?.lastIp ? { previous_ip: row.lastIp } : {}),
         ...(row?.lastCountry ? { previous_country: row.lastCountry } : {}),
       },
@@ -381,7 +381,7 @@ export async function upsertSession(
 
   const values = {
     tenantId: actor.tenantId,
-    lastIssuedAt: issuedAt,
+    lastSessionKey: sessionKey,
     lastSeenAt: now,
     ...(isNew
       ? {
@@ -429,16 +429,8 @@ export async function purgeOldSecurityEvents(db: Db, now = new Date()): Promise<
     );
 }
 
-/**
- * 交換されなかった VS Code の接続コードに預けた Access のトークンを消す。拡張が入っていない・
- * 受け渡しに失敗したときは交換されないので、コードの期限 (5 分) が過ぎたら D1 に残さない。
- * 期限から 1 日たった行 (コードのハッシュ) も消す。
- */
+/** 期限 (5 分) から 1 日たった VS Code の接続コード (コードのハッシュ) を消す。 */
 export async function purgeExpiredVscodeLinks(db: Db, now = new Date()): Promise<void> {
-  await db
-    .update(authVscodeLinks)
-    .set({ accessToken: null })
-    .where(and(lt(authVscodeLinks.expiresAt, now), isNotNull(authVscodeLinks.accessToken)));
   await db
     .delete(authVscodeLinks)
     .where(lt(authVscodeLinks.expiresAt, new Date(now.getTime() - 86_400_000)));

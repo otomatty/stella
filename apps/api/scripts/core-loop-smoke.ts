@@ -199,7 +199,7 @@ async function main(): Promise<void> {
     assert(health.ok === true, `healthz が ok:true でない: ${JSON.stringify(health)}`);
     assert(
       health.devAuthConfigured === true,
-      "DEV_AUTH_JWT_SECRET が API 側で未設定か、Access が設定されている (devAuthConfigured:false)",
+      "DEV_AUTH_JWT_SECRET が API 側で未設定か、Clerk が設定されている (devAuthConfigured:false)",
     );
   });
 

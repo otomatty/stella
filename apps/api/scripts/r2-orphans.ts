@@ -10,9 +10,12 @@
  * 認証:
  *   - 既定 (ローカル): `apps/api/.dev.vars` の `DEV_AUTH_JWT_SECRET` で
  *     `R2_ADMIN_ID` (既定 `seed-admin`) の JWT を発行する。
- *   - 本番など: `API_BASE_URL` を Web のオリジン (Cloudflare Access が守るホスト) にし、`ADMIN_TOKEN` に
- *     admin の Access のトークンを渡す (`cloudflared access login <Web の URL>` →
- *     `cloudflared access token -app=<Web の URL>`)。`cf-access-token` ヘッダで送る。
+ *   - 本番など: 管理者の操作は講師・管理者用の入口 (Cloudflare Access で守ったホスト) だけが受ける。
+ *     `API_BASE_URL` をその入口のオリジンにし、2 つのトークンを渡す。
+ *       - `ADMIN_TOKEN` … 管理者の Clerk のセッショントークン (入口の画面を開いたブラウザの開発者ツールで、
+ *         `/api/*` のリクエストの Authorization の値。約 60 秒で切れるので、取ってすぐ流す)
+ *       - `ACCESS_TOKEN` … 入口の Access のトークン (`cloudflared access login <入口の URL>` →
+ *         `cloudflared access token -app=<入口の URL>`)。`cf-access-token` ヘッダで送る
  *
  * 走査も削除も呼び出し元テナント配下 (`tenant/<tenantId>/`) に閉じる。
  * 参照判定には配布資料だけでなくレッスンの動画 / スライドのパスも含まれる。
@@ -77,12 +80,14 @@ async function resolveToken(): Promise<string> {
 }
 
 async function call(method: string, path: string, token: string, body?: unknown): Promise<any> {
+  const accessToken = process.env.ACCESS_TOKEN;
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
-      // 本番は Access が cf-access-token を確かめる。ローカルの API は Authorization を読む。
-      Authorization: `Bearer ${token}`,
-      "cf-access-token": token,
+      // API は Authorization (Clerk のセッショントークン / ローカルは開発用トークン) を読む。
+      // 本番の講師・管理者用の入口は、Access が cf-access-token を確かめて API に検証済みのヘッダを付ける。
+      Authorization: `Bearer ${token.replace(/^Bearer\s+/i, "")}`,
+      ...(accessToken ? { "cf-access-token": accessToken } : {}),
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

@@ -1,36 +1,40 @@
 /**
  * 認証クライアント。アプリはパスワードも OAuth も持たず、ログインは 2 つの方式のどちらかで行う。
  *
- *   - `access` (本番の既定) … Cloudflare Access が Web のホスト名を守り、ログイン・多要素認証・
- *     セッションの失効を受け持つ。ブラウザは Access の Cookie (`CF_Authorization`) を同じオリジンの
- *     `/api/*` へ自動で送り、Access が `Cf-Access-Jwt-Assertion` を付けて API に渡す。画面は
- *     トークンを一切持たない (localStorage に置かない = XSS で読まれるものが無い)。誰なのかは
- *     `/api/me` の応答で知る。
- *   - `dev-token` (`vite dev` の既定) … Access の無いローカル開発用。手で発行した開発用の JWT
+ *   - `clerk` (本番の既定) … Clerk がログイン (Google・メールの確認コード)・セッションの更新と失効を
+ *     受け持つ。画面は Clerk のセッショントークン (約 60 秒で切れ、SDK が更新する) を `/api/*` へ
+ *     `Authorization: Bearer` で送る。誰なのか (アプリの profiles) は `/api/me` の応答で知る。
+ *     講師・管理者は Cloudflare Access で守った講師・管理者用の入口 (`VITE_STAFF_ORIGIN`) から使う。
+ *   - `dev-token` (`vite dev` の既定) … Clerk の無いローカル開発用。手で発行した開発用の JWT
  *     (`bun run --filter=@stella/api dev:token <profileId>`) を localStorage に置き、Bearer で送る。
  *     API はローカル (localhost / 127.0.0.1) のリクエストでだけこれを受け付ける。
  *
- * 方式は `VITE_AUTH_MODE` (`access` | `dev-token`) で選ぶ。未指定なら dev サーバーは `dev-token`、
- * build した成果物は `access`。
+ * 方式は `VITE_AUTH_MODE` (`clerk` | `dev-token`) で選ぶ。未指定なら dev サーバーは `dev-token`、
+ * build した成果物は `clerk`。
  */
 
 import { readStellaStorage, removeStellaStorage } from "./brand-storage";
+import {
+  clerkCurrentUser,
+  clerkSessionToken,
+  clerkSignOut,
+  onClerkUserChange,
+  type ClerkUserSummary,
+} from "./clerk";
 
 const TOKEN_KEY = "stella_auth_token_v1";
 const LEGACY_TOKEN_KEY = "falcon_auth_token_v1";
-/** Access への再ログインのために読み込み直した時刻 (読み込み直しの繰り返しを止める)。 */
+/** 講師・管理者用の入口の Access のログインのために読み込み直した時刻 (読み込み直しの繰り返しを止める)。 */
 const ACCESS_RELOAD_KEY = "stella_access_reload_at_v1";
-/** この間隔の中で 2 度目の読み込み直しはしない (Access を通っても 401 が続く設定ミスで回り続けないため)。 */
+/** この間隔の中で 2 度目の読み込み直しはしない (Access を通っても止められ続ける設定ミスで回り続けないため)。 */
 export const ACCESS_RELOAD_GUARD_MS = 30_000;
-/** Cloudflare Access のログアウト (Access が Web のホスト名で受ける)。 */
-export const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
 
-export type AuthMode = "access" | "dev-token";
+export type AuthMode = "clerk" | "dev-token";
 
 /** `VITE_AUTH_MODE` の値と dev サーバーかどうかから方式を決める (未知の値は既定に倒す)。 */
 export function resolveAuthMode(raw: unknown, isDev: boolean): AuthMode {
-  if (raw === "access" || raw === "dev-token") return raw;
-  return isDev ? "dev-token" : "access";
+  if (raw === "clerk" || raw === "dev-token") return raw;
+  return isDev ? "dev-token" : "clerk";
 }
 
 /** いまの方式。テストで `vi.stubEnv` が効くよう、呼ぶたびに読む。 */
@@ -38,8 +42,20 @@ export function authMode(): AuthMode {
   return resolveAuthMode(import.meta.env.VITE_AUTH_MODE, Boolean(import.meta.env.DEV));
 }
 
-export function isAccessMode(): boolean {
-  return authMode() === "access";
+/** Clerk でログインする方式か (画面はアプリの利用者 ID を `/api/me` で知る)。 */
+export function isClerkMode(): boolean {
+  return authMode() === "clerk";
+}
+
+/** 講師・管理者用の入口 (Cloudflare Access で守ったオリジン)。未設定なら空。 */
+export function staffOrigin(): string {
+  return (import.meta.env.VITE_STAFF_ORIGIN ?? "").trim().replace(/\/+$/, "");
+}
+
+/** いま講師・管理者用の入口で開いているか。 */
+export function isStaffHost(): boolean {
+  const origin = staffOrigin();
+  return Boolean(origin) && typeof window !== "undefined" && window.location.origin === origin;
 }
 
 function serverUrl(): string {
@@ -52,22 +68,11 @@ export interface SessionUser {
 }
 
 export interface Session {
-  /** 開発用トークン (dev-token のときだけ)。access では常に null。 */
+  /** 開発用トークン (dev-token のときだけ)。clerk では常に null。 */
   accessToken: string | null;
   user: SessionUser;
   expiresAt: number | null;
 }
-
-/**
- * access の仮のセッション。Access を通ってこの画面が開けている = ログイン済みなので、
- * 「セッションあり」として `/api/me` を呼ぶ。利用者の ID は `/api/me` の応答で置き換える。
- */
-export const ACCESS_SESSION_USER_ID = "cloudflare-access";
-const ACCESS_SESSION: Session = {
-  accessToken: null,
-  user: { id: ACCESS_SESSION_USER_ID },
-  expiresAt: null,
-};
 
 export function isAuthConfigured(): boolean {
   return Boolean(serverUrl());
@@ -97,6 +102,16 @@ function sessionFromToken(token: string): Session | null {
     accessToken: token,
     user: { id: sub, ...(email ? { email } : {}) },
     expiresAt: exp != null ? exp * 1000 : null,
+  };
+}
+
+/** clerk: Clerk の利用者からの仮のセッション (アプリの利用者 ID は `/api/me` の応答で置き換える)。 */
+function sessionFromClerkUser(user: ClerkUserSummary | null): Session | null {
+  if (!user) return null;
+  return {
+    accessToken: null,
+    user: { id: user.id, ...(user.email ? { email: user.email } : {}) },
+    expiresAt: null,
   };
 }
 
@@ -131,8 +146,8 @@ function storeToken(token: string | null): boolean {
 }
 
 /**
- * access では以前の方式 (Google ログイン) の JWT を端末に残さない。消せなくても続ける
- * (access では読まないので、残っても API には送られない)。
+ * clerk では以前の方式 (Google ログイン・開発用) の JWT を端末に残さない。消せなくても続ける
+ * (clerk では読まないので、残っても API には送られない)。
  */
 export function purgeStoredTokens(): void {
   if (typeof window === "undefined") return;
@@ -150,8 +165,8 @@ export function purgeStoredTokens(): void {
  * (API が確かめる) ので、読めて期限内かだけを見る。
  */
 export function signInWithDevToken(raw: string): { ok: true } | { ok: false; error: string } {
-  if (isAccessMode()) {
-    return { ok: false, error: "Cloudflare Access でログインする設定のため、トークンは使えません" };
+  if (isClerkMode()) {
+    return { ok: false, error: "Clerk でログインする設定のため、トークンは使えません" };
   }
   const token = raw.trim().replace(/^Bearer\s+/i, "");
   if (!token) return { ok: false, error: "トークンを貼り付けてください" };
@@ -166,22 +181,20 @@ export function signInWithDevToken(raw: string): { ok: true } | { ok: false; err
   return { ok: true };
 }
 
-/**
- * ログアウト。access は Access のログアウトへ移る (Access のセッションを終えないと、
- * 次に開いたときにそのまま入れてしまう)。dev-token は端末のトークンを消す。
- */
+/** ログアウト。clerk は Clerk のセッションを終える。dev-token は端末のトークンを消す。 */
 export async function signOut(): Promise<void> {
-  if (isAccessMode()) {
+  if (isClerkMode()) {
     purgeStoredTokens();
-    if (typeof window !== "undefined") window.location.assign(ACCESS_LOGOUT_PATH);
+    await clerkSignOut();
+    emit(null);
     return;
   }
   storeToken(null);
 }
 
-/** dev-token の開発用トークン。access では常に null (トークンを持たない)。 */
+/** dev-token の開発用トークン。clerk では常に null (Clerk のトークンは `authHeaders` が取る)。 */
 export function getAccessToken(): string | null {
-  if (isAccessMode()) return null;
+  if (isClerkMode()) return null;
   const token = readToken();
   if (!token) return null;
   if (!sessionFromToken(token)) {
@@ -191,16 +204,22 @@ export function getAccessToken(): string | null {
   return token;
 }
 
-/** API へ付ける認証ヘッダ。access では空 (Access の Cookie をブラウザが送る)。 */
-export function authHeaders(): Record<string, string> {
-  const token = getAccessToken();
+/**
+ * API へ付ける認証ヘッダ。clerk は Clerk のセッショントークン (切れていれば SDK が更新したもの)、
+ * dev-token は開発用トークン。ログインしていなければ空。
+ */
+export async function authHeaders(
+  options: { skipCache?: boolean } = {},
+): Promise<Record<string, string>> {
+  const token = isClerkMode() ? await clerkSessionToken(options) : getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export function getSession(): Session | null {
-  if (isAccessMode()) {
+export async function getSession(): Promise<Session | null> {
+  if (isClerkMode()) {
     purgeStoredTokens();
-    return isAuthConfigured() ? ACCESS_SESSION : null;
+    if (!isAuthConfigured()) return null;
+    return sessionFromClerkUser(await clerkCurrentUser());
   }
   const token = readToken();
   if (!token) return null;
@@ -213,9 +232,9 @@ export function getSession(): Session | null {
 }
 
 /**
- * access: Access のセッションが切れた (API がリダイレクト・401 を返した) ときに、1 度だけ
- * ページを読み込み直して Access のログインへ回す。直前 (`ACCESS_RELOAD_GUARD_MS` 以内) にも
- * 読み込み直していたら何もせず false を返す — Access を通っても 401 が続く設定のときに
+ * 講師・管理者用の入口で Access のセッションが切れた (API がリダイレクト・Access の HTML を返した)
+ * ときに、1 度だけページを読み込み直して Access のログインへ回す。直前 (`ACCESS_RELOAD_GUARD_MS`
+ * 以内) にも読み込み直していたら何もせず false を返す — Access を通っても止められ続ける設定のときに
  * 読み込み直しを繰り返さないため (呼び出し側がエラーを出す)。
  */
 export function reloadForAccessLogin(now: number = Date.now()): boolean {
@@ -239,10 +258,25 @@ export function reloadForAccessLogin(now: number = Date.now()): boolean {
 
 export function subscribeToAuth(callback: Listener): () => void {
   listeners.add(callback);
-  // access のログイン状態は Access の Cookie が持つ。端末の保存領域は見ない。
-  if (isAccessMode() || typeof window === "undefined") {
+  if (typeof window === "undefined") {
     return () => {
       listeners.delete(callback);
+    };
+  }
+  if (isClerkMode()) {
+    // ログイン状態は Clerk が持つ (別のタブでのログイン・ログアウトも Clerk が伝える)。
+    let unsubscribe: (() => void) | null = null;
+    let closed = false;
+    void onClerkUserChange((user) => callback(sessionFromClerkUser(user)))
+      .then((off) => {
+        if (closed) off();
+        else unsubscribe = off;
+      })
+      .catch(() => undefined);
+    return () => {
+      closed = true;
+      listeners.delete(callback);
+      unsubscribe?.();
     };
   }
   const onStorage = (e: StorageEvent) => {

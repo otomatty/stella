@@ -1,8 +1,9 @@
 # Worker + Static Assets (SPA)。Deploy with `wrangler deploy` (not Pages)。
 #
-# 本番は Cloudflare Access がこのホスト名を守る。画面は API を同じオリジンの `/api/*` で呼び、
-# Worker (worker/index.ts) がサービスバインディングで API の Worker へ中継する
-# (Access の Cookie と `Cf-Access-Jwt-Assertion` をそのまま API に届けるため)。
+# 受講者用の入口 (`stella-web`)。ログインは Clerk で、画面は API を同じオリジンの `/api/*` で呼び、
+# Worker (worker/index.ts) がサービスバインディングで API の Worker へ中継する。
+# 同じ成果物を講師・管理者用の入口 (`stella-admin`、下の [env.admin]) としても配り、そちらは
+# Cloudflare Access で守る (Access の `Cf-Access-Jwt-Assertion` をそのまま API に届ける)。
 name = "stella-web"
 main = "worker/index.ts"
 compatibility_date = "2024-12-01"
@@ -18,7 +19,29 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
+# 受講者用の入口は Access の後ろに無いので、利用者が付けた Access のヘッダを API に渡さない。
+[vars]
+TRUST_ACCESS_ASSERTION = "0"
+
 # API の Worker (apps/api の `stella-api`) へのサービスバインディング。
 [[services]]
+binding = "API"
+service = "stella-api"
+
+# 講師・管理者用の入口 (`wrangler deploy --env admin`)。Cloudflare のダッシュボードでこの Worker の
+# workers.dev に Access を有効にする (docs/clerk-auth.md)。bindings は env に引き継がれないので書き直す。
+[env.admin]
+name = "stella-admin"
+
+[env.admin.vars]
+TRUST_ACCESS_ASSERTION = "1"
+
+[env.admin.assets]
+directory = "dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[env.admin.services]]
 binding = "API"
 service = "stella-api"

@@ -27,10 +27,10 @@
 | `discovery_review` | `PATCH /api/cms/discovery/materials/:id` | `discovery_material/<id>` | `stage_id`, `from`, `to`, `generator`, (本文編集で外れたときのみ) `reason: content_edited` |
 
 - 記録は共通ヘルパ `apps/api/src/lib/audit.ts` の `recordAudit()` が D1 へ INSERT する。
-- 実行者 (actor) は Cloudflare Access のトークン (ローカルは開発用トークン) から `getCaller()` で確定する。
+- 実行者 (actor) は Clerk のトークン (ローカルは開発用トークン) から `getCaller()` で確定する。
   VS Code の接続 (`login`) のみ、 拡張がまだトークンを持たないため接続コードの持ち主の `profiles` 行から actor を組み立てる。
-- Web のログインそのものは Cloudflare Access が行うので `audit_logs` には残らない。 新しいセッションの開始は
-  `security_events` の `session.start` (180 日) に残る ([`docs/cloudflare-access.md`](cloudflare-access.md) §5)。
+- Web のログインそのものは Clerk が行うので `audit_logs` には残らない。 新しいセッションの開始は
+  `security_events` の `session.start` (180 日) に残る ([`docs/clerk-auth.md`](clerk-auth.md) §5)。
   旧 Google OAuth の時代の `login` 行 (`provider: google`) は過去ログとして残る。
 - action の一覧とラベルは `@stella/shared/admin/audit-actions` の `AuditAction` 型が唯一の定義。
   `recordAudit()` がこの型を受け取るため、 **未定義の action を記録することはできない**

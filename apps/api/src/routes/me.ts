@@ -4,7 +4,7 @@
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
  *   POST /api/me  … 表示名・週の時間・開始日・教材の OS の自己更新 / 未招待は invite_required
  *
- * role / tenant / email は招待と Cloudflare Access のログインが真実なので、
+ * role / tenant / email は招待と Clerk のログインが真実なので、
  * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
  *
  * getCaller は「プロフィール必須」だが、 ここは利用者の検証だけをして profile の有無で
@@ -20,6 +20,7 @@ import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
 import {
   ApiError,
+  assertStaffAccess,
   assertTenantActive,
   errorResponse,
   profileMatch,
@@ -84,10 +85,12 @@ meRoute.get("/api/me", async (c) => {
       email: row.email,
       tenantActive: row.tenant_active,
     });
-    // 画面を開くと最初に呼ばれるので、ここでも新しいサインインを拾う。
     const actor = { id: row.id, tenantId: row.tenant_id, role: row.role, email: row.email };
+    // 講師・管理者が受講者用の入口から開いたら staff_host_required (画面が講師・管理者用の入口へ案内する)。
+    await assertStaffAccess(c, actor, identity);
+    // 画面を開くと最初に呼ばれるので、ここでも新しいサインインを拾う。
     markRequestActor(c, actor);
-    trackSession(c, actor, identity.issuedAt);
+    trackSession(c, actor, identity.sessionKey);
     const { tenant_name, tenant_subtitle, tenant_icon, tenant_active: _active, ...profile } = row;
     return c.json({
       profile,
@@ -133,6 +136,7 @@ meRoute.post("/api/me", async (c) => {
       throw new ApiError("このアカウントは無効化されています", 403);
     }
     assertTenantActive(c, me);
+    await assertStaffAccess(c, me, identity);
     // 以降の 5xx をこの利用者の組織の出来事として記録する。
     markRequestActor(c, { id: me.id, tenantId: me.tenantId, role: me.role, email: me.email });
     const userId = me.id;

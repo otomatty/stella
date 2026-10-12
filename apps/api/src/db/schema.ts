@@ -92,10 +92,10 @@ export const authVscodeLinks = sqliteTable("auth_vscode_links", {
   expiresAt: ts("expires_at").notNull(),
   usedAt: ts("used_at"),
   /**
-   * 発行したときの Cloudflare Access のトークン (拡張がそのまま `cf-access-token` で送る)。
-   * 交換で渡したら消す。開発環境 (Access なし) では null で、交換時に開発用のトークンを作る。
+   * 接続コードを出した利用者の Clerk の利用者 ID。交換のときに、この利用者の API キーを作って拡張へ渡す。
+   * 開発環境 (Clerk なし) では null で、交換時に開発用のトークンを作る。
    */
-  accessToken: text("access_token"),
+  clerkUserId: text("clerk_user_id"),
   createdAt: tsNow("created_at"),
 });
 
@@ -2398,8 +2398,8 @@ export const securitySessions = sqliteTable("security_sessions", {
     .primaryKey()
     .references(() => profiles.id, { onDelete: "cascade" }),
   tenantId: text("tenant_id").notNull(),
-  /** Access のトークンの iat (秒)。 */
-  lastIssuedAt: integer("last_issued_at"),
+  /** 最後に見たセッションの印 (Clerk は `clerk:<セッション ID>`、VS Code は `api_key:<キー ID>`)。 */
+  lastSessionKey: text("last_session_key"),
   lastSessionAt: ts("last_session_at"),
   lastSeenAt: ts("last_seen_at"),
   lastIp: text("last_ip"),

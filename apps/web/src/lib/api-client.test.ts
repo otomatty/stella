@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Clerk のトークンは呼ぶたびに変わる (取り直しを確かめる)。
+const clerkTokens = vi.fn(async (options?: { skipCache?: boolean }) =>
+  options?.skipCache ? "fresh.clerk.jwt" : "cached.clerk.jwt",
+);
+vi.mock("./clerk", () => ({
+  clerkCurrentUser: async () => null,
+  clerkSessionToken: (options?: { skipCache?: boolean }) => clerkTokens(options),
+  clerkSignOut: async () => undefined,
+  onClerkUserChange: async () => () => undefined,
+}));
+
 import {
   AccessSessionLostError,
   ApiClientError,
@@ -53,12 +64,24 @@ function lastInit(fetchMock: ReturnType<typeof vi.fn>): RequestInit & {
   return call[1];
 }
 
-describe("authFetch in Cloudflare Access mode", () => {
-  beforeEach(() => {
-    vi.stubEnv("VITE_AUTH_MODE", "access");
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+const html = (status: number) =>
+  new Response("<!doctype html><title>Forbidden</title>", {
+    status,
+    headers: { "Content-Type": "text/html" },
   });
 
-  it("calls the same-origin API with cookies and without an Authorization header", async () => {
+describe("authFetch in Clerk mode", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_AUTH_MODE", "clerk");
+    clerkTokens.mockClear();
+  });
+
+  it("sends the Clerk session token to the same-origin API, never a stored dev token", async () => {
     values.set("stella_auth_token_v1", token);
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
@@ -67,51 +90,88 @@ describe("authFetch in Cloudflare Access mode", () => {
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://stella.example.com/api/me");
     const init = lastInit(fetchMock);
-    expect(init.headers).toEqual({ "X-Test": "1" });
+    expect(init.headers).toEqual({ "X-Test": "1", Authorization: "Bearer cached.clerk.jwt" });
     expect(init.credentials).toBe("same-origin");
     expect(init.redirect).toBe("manual");
   });
 
-  it("reloads once when the Access session has expired (401)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 401 })));
+  it("calls the staff host's own origin when opened from the staff host", async () => {
+    vi.stubEnv("VITE_STAFF_ORIGIN", "https://stella-admin.example.com");
+    vi.stubGlobal("window", {
+      location: { reload, assign: vi.fn(), origin: "https://stella-admin.example.com" },
+      localStorage: memoryStorage(values),
+      sessionStorage: memoryStorage(sessionValues),
+    });
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await authFetch("/api/me");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://stella-admin.example.com/api/me");
+  });
+
+  it("retries once with a fresh token when the API rejects the token (JSON 401)", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(401, { error: "ログインの有効期限が切れました" }))
+      .mockResolvedValueOnce(json(200, { ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiFetch("/api/me")).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(lastInit(fetchMock).headers.Authorization).toBe("Bearer fresh.clerk.jwt");
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a second 401 as an error without reloading", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json(401, { error: "ログインが必要です" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(apiFetch("/api/me")).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("reloads once when Access stops the staff host (redirect or HTML), then stops", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(html(403)));
 
     await expect(apiFetch("/api/me")).rejects.toMatchObject({ status: 401, reloading: true });
     expect(reload).toHaveBeenCalledTimes(1);
 
-    // 読み込み直した直後にまた 401 なら、繰り返さずにエラーにする。
+    // 読み込み直した直後にまた止められたら、繰り返さずにエラーにする。
     const second = apiFetch("/api/me");
     await expect(second).rejects.toBeInstanceOf(AccessSessionLostError);
     await expect(second).rejects.toBeInstanceOf(ApiClientError);
     await expect(second).rejects.toMatchObject({ reloading: false });
-    await expect(second).rejects.toThrow("Cloudflare Access のログインを確認できませんでした");
+    await expect(second).rejects.toThrow("講師・管理者用の入口");
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it("treats a redirect to the Access login as an expired session", () => {
+  it("treats a redirect or non-JSON 401/403 as stopped by Access, not the API's JSON errors", () => {
     expect(isAccessSessionLost({ type: "opaqueredirect", status: 0 })).toBe(true);
-    expect(isAccessSessionLost({ type: "basic", status: 401 })).toBe(true);
-    // API の 403 (JSON) は権限の不足。Access の方針から外れたときの 403 (HTML) はセッション切れとして扱う。
-    expect(
-      isAccessSessionLost({
-        type: "basic",
-        status: 403,
-        headers: new Headers({ "content-type": "application/json; charset=UTF-8" }),
-      }),
-    ).toBe(false);
-    expect(
-      isAccessSessionLost({
-        type: "basic",
-        status: 403,
-        headers: new Headers({ "content-type": "text/html" }),
-      }),
-    ).toBe(true);
+    for (const status of [401, 403]) {
+      expect(
+        isAccessSessionLost({
+          type: "basic",
+          status,
+          headers: new Headers({ "content-type": "application/json; charset=UTF-8" }),
+        }),
+      ).toBe(false);
+      expect(
+        isAccessSessionLost({
+          type: "basic",
+          status,
+          headers: new Headers({ "content-type": "text/html" }),
+        }),
+      ).toBe(true);
+    }
     expect(isAccessSessionLost({ type: "basic", status: 200 })).toBe(false);
   });
 
-  it("leaves public calls alone (no reload on 401)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 401 })));
+  it("leaves public calls alone (no token, no retry, no reload)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(html(401));
+    vi.stubGlobal("fetch", fetchMock);
     const res = await authFetch("/api/public/units", {}, { anonymous: true });
     expect(res.status).toBe(401);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(lastInit(fetchMock).headers).toEqual({});
     expect(reload).not.toHaveBeenCalled();
   });
 

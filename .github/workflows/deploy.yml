@@ -24,8 +24,10 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
       VITE_MATERIALS_BASE_URL: ${{ vars.VITE_MATERIALS_BASE_URL }}
-      # 認証は Cloudflare Access (docs/cloudflare-access.md)。deploy:prepare が API の [vars] に書き、
-      # 無ければ Cloudflare に何も書かないうちにデプロイを止める。
+      # 認証は Clerk、講師・管理者用の入口は Cloudflare Access (docs/clerk-auth.md)。deploy:prepare が
+      # 確かめて API の [vars] に書き、無ければ Cloudflare に何も書かないうちにデプロイを止める。
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_STAFF_ORIGIN: ${{ vars.VITE_STAFF_ORIGIN }}
       ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
       ACCESS_AUD: ${{ vars.ACCESS_AUD }}
     steps:
@@ -43,6 +45,8 @@ jobs:
       # 教材の指紋・seed・migration・API は全てこの設定を読む。未準備なら書き込み前に停止。
       - name: Resolve deployment database and validate URLs
         run: bun run deploy:prepare
+        env:
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
       # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
@@ -137,11 +141,23 @@ jobs:
       - name: Build Web (VITE_* baked in)
         run: bun run --filter=@stella/web build
 
+      # Clerk のシークレットキーは repo Secrets から API の secret に入れる (deploy:prepare が形を確かめた)。
+      # 無いと API がログインを確かめられず全員 503 になるので、API のデプロイの前に揃える。
+      - name: Sync Clerk secret key to the API
+        working-directory: apps/api
+        run: printf '%s' "$CLERK_SECRET_KEY" | bunx wrangler secret put CLERK_SECRET_KEY
+        env:
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+
       - name: Deploy API
         run: bun run deploy:api
 
       - name: Deploy Web
         run: bun run --filter=@stella/web deploy
+
+      # 同じ成果物を講師・管理者用の入口 (stella-admin、Access で守る) としても配る。
+      - name: Deploy Web (staff host)
+        run: bun run --filter=@stella/web deploy:admin
 
       # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api /
       # Web の後でも成立する。PDF sync が出した PDF_MANIFEST を読む。

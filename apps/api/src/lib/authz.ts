@@ -1,14 +1,16 @@
 /**
- * 認証 (Cloudflare Access のトークン検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
+ * 認証 (Clerk のトークン検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
  *
- *   - `resolveIdentity` … 誰のリクエストか。本番は Cloudflare Access が付けた
- *                         `Cf-Access-Jwt-Assertion` を署名から検証してメールアドレスで決める。
- *                         Access の無いローカル開発とテストだけ、開発用の Bearer トークンを読む
- *   - `getCaller`       … 利用者 → profiles から caller の tenant / role を解決
- *   - `requireRole`     … caller が指定ロールのいずれかであることを保証
+ *   - `resolveIdentity`   … 誰のリクエストか。本番は Clerk のセッショントークン (画面) か、
+ *                           アプリが発行した Clerk の API キー (VS Code) を検証してメールアドレスで決める。
+ *                           Clerk の無いローカル開発とテストだけ、開発用の Bearer トークンを読む
+ *   - `getCaller`         … 利用者 → profiles から caller の tenant / role を解決
+ *   - `assertStaffAccess` … 講師・管理者・営業は、Cloudflare Access で守った講師・管理者用の入口を
+ *                           通ったリクエスト (`Cf-Access-Jwt-Assertion` が同じメールアドレス) に限る
+ *   - `requireRole`       … caller が指定ロールのいずれかであることを保証
  *
- * アプリはパスワードも OAuth も持たない。ログイン・多要素認証・セッションの失効は Access の仕事で、
- * ここはトークンを確かめて招待済みの利用者に結び付けるだけ。
+ * アプリはパスワードも OAuth も持たない。ログイン・確認コード・セッションの失効は Clerk の、
+ * 講師・管理者の多要素認証は Access の仕事で、ここはトークンを確かめて招待済みの利用者に結び付けるだけ。
  */
 
 import { eq, sql, type SQL } from "drizzle-orm";
@@ -20,6 +22,12 @@ import { profiles, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ACCESS_ASSERTION_HEADER, accessConfig, verifyAccessAssertion } from "./access-auth.js";
 import { verifyAccessToken } from "./auth-jwt.js";
+import {
+  clerkConfig,
+  isClerkApiKey,
+  verifyClerkSession,
+  verifyVscodeApiKey,
+} from "./clerk-auth.js";
 import {
   deferSecurityEvent,
   markRequestActor,
@@ -57,25 +65,30 @@ export interface Caller {
   email: string | null;
 }
 
-/** 検証済みの利用者。 */
+/** 検証済みの利用者。`sessionKey` が変わったら新しいサインインとして記録する。 */
 export type Identity =
   | {
-      kind: "access";
+      /** 画面 (Clerk のセッショントークン)。 */
+      kind: "clerk";
       /** 小文字のメールアドレス。profiles.email と突き合わせる。 */
       email: string;
-      issuedAt: number | null;
-      expiresAt: number | null;
-      /** 検証したトークンそのもの (VS Code の接続で拡張へ渡す)。 */
-      token: string;
+      clerkUserId: string;
+      sessionKey: string;
+    }
+  | {
+      /** VS Code の拡張 (アプリが発行した Clerk の API キー)。 */
+      kind: "clerk_api_key";
+      email: string;
+      clerkUserId: string;
+      apiKeyId: string;
+      sessionKey: string;
     }
   | {
       kind: "dev";
       /** 開発用トークンの sub (= profiles.id)。 */
       profileId: string;
       email: string | null;
-      issuedAt: number | null;
-      expiresAt: number | null;
-      token: string;
+      sessionKey: string | null;
     };
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
@@ -89,18 +102,23 @@ export function isLocalRequest(c: Context<{ Bindings: Env }>): boolean {
   }
 }
 
+function bearerToken(c: Context<{ Bindings: Env }>): string {
+  return (c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+}
+
 /**
  * 誰のリクエストかを決める。
  *
- * - Access が設定済み (`ACCESS_TEAM_DOMAIN` + `ACCESS_AUD`) … `Cf-Access-Jwt-Assertion` だけを
- *   読む。Authorization ヘッダは見ない (開発用トークンを本番で通さない)。
- * - Access が未設定 … ローカル (localhost / 127.0.0.1) かつ `DEV_AUTH_JWT_SECRET` があるときだけ、
+ * - Clerk が設定済み (`CLERK_SECRET_KEY`) … `Authorization: Bearer` の Clerk のセッショントークン
+ *   (画面) か、アプリが発行した Clerk の API キー (VS Code) だけを受け付ける (開発用トークンを
+ *   本番で通さない)。
+ * - Clerk が未設定 … ローカル (localhost / 127.0.0.1) かつ `DEV_AUTH_JWT_SECRET` があるときだけ、
  *   開発用の Bearer トークンを読む。それ以外は 503 (認証の無いまま動かさない)。
  */
 export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Identity> {
-  const access = accessConfig(c.env);
-  if (access) {
-    const token = c.req.header(ACCESS_ASSERTION_HEADER)?.trim() ?? "";
+  const clerk = clerkConfig(c.env);
+  if (clerk) {
+    const token = bearerToken(c);
     if (!token) {
       deferSecurityEvent(c, {
         kind: "auth.invalid_token",
@@ -108,16 +126,25 @@ export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Id
         metadata: { reason: "missing" },
       });
       markRequestRecorded(c);
-      throw new ApiError("Cloudflare Access でのログインが必要です", 401);
+      throw new ApiError("ログインが必要です", 401);
     }
     try {
-      const identity = await verifyAccessAssertion(access, token);
+      if (isClerkApiKey(token)) {
+        const key = await verifyVscodeApiKey(clerk, token);
+        return {
+          kind: "clerk_api_key",
+          email: key.email,
+          clerkUserId: key.userId,
+          apiKeyId: key.apiKeyId,
+          sessionKey: `api_key:${key.apiKeyId}`,
+        };
+      }
+      const session = await verifyClerkSession(clerk, token);
       return {
-        kind: "access",
-        email: identity.email,
-        issuedAt: identity.issuedAt,
-        expiresAt: identity.expiresAt,
-        token,
+        kind: "clerk",
+        email: session.email,
+        clerkUserId: session.userId,
+        sessionKey: `clerk:${session.sessionId}`,
       };
     } catch {
       deferSecurityEvent(c, {
@@ -126,14 +153,13 @@ export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Id
         metadata: { reason: "invalid" },
       });
       markRequestRecorded(c);
-      throw new ApiError("Cloudflare Access のトークンが無効です。ページを開き直してください", 401);
+      throw new ApiError("ログインの有効期限が切れました。ログインし直してください", 401);
     }
   }
 
   const devSecret = c.env.DEV_AUTH_JWT_SECRET;
   if (devSecret && isLocalRequest(c)) {
-    const header = c.req.header("Authorization") ?? "";
-    const token = header.replace(/^Bearer\s+/i, "").trim();
+    const token = bearerToken(c);
     if (!token) throw new ApiError("Authorization ヘッダが必要です", 401);
     try {
       const payload = await verifyAccessToken(devSecret, token);
@@ -141,26 +167,74 @@ export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Id
         kind: "dev",
         profileId: payload.sub as string,
         email: typeof payload.email === "string" ? payload.email.toLowerCase() : null,
-        issuedAt: typeof payload.iat === "number" ? payload.iat : null,
-        expiresAt: typeof payload.exp === "number" ? payload.exp : null,
-        token,
+        sessionKey: typeof payload.iat === "number" ? `dev:${payload.iat}` : null,
       };
     } catch {
       throw new ApiError("トークンが無効です", 401);
     }
   }
 
-  throw new ApiError("認証が未設定です (ACCESS_TEAM_DOMAIN / ACCESS_AUD)", 503);
+  throw new ApiError("認証が未設定です (CLERK_SECRET_KEY)", 503);
 }
 
-/** 利用者に当たる profiles 行の条件 (Access はメールアドレス、開発用は profiles.id)。 */
+/** 講師・管理者用の入口 (Cloudflare Access で守ったホスト名) を通らなければならないロール。 */
+export const STAFF_HOST_ROLES: ReadonlySet<string> = new Set([
+  "instructor",
+  "admin",
+  "platform_admin",
+  "sales",
+]);
+
+/** 講師・管理者用の入口を通っていないときの 403 の本文 (画面が案内を出す)。 */
+export const STAFF_HOST_REQUIRED = "staff_host_required";
+
+/**
+ * 講師・管理者・営業のリクエストは、Cloudflare Access で守った講師・管理者用の入口を通ったもの
+ * (`Cf-Access-Jwt-Assertion` を署名から検証し、Clerk の利用者と同じメールアドレス) に限る。
+ * Access の多要素認証を重ねるため (Clerk のアカウントだけを奪っても、講師・管理者の操作はできない)。
+ * VS Code の API キーでは講師・管理者のアカウントを使わせない。Access の無いローカル開発は通す。
+ */
+export async function assertStaffAccess(
+  c: Context<{ Bindings: Env }>,
+  profile: { id: string; tenantId: string; role: string; email: string | null },
+  identity: Identity,
+): Promise<void> {
+  if (!STAFF_HOST_ROLES.has(profile.role) || identity.kind === "dev") return;
+  const reject = (reason: string, message: string): never => {
+    deferSecurityEvent(c, {
+      kind: "auth.staff_host_required",
+      status: 403,
+      tenantId: profile.tenantId,
+      actorId: profile.id,
+      actorRole: profile.role,
+      email: profile.email,
+      metadata: { reason },
+    });
+    markRequestRecorded(c);
+    throw new ApiError(message, 403);
+  };
+  if (identity.kind === "clerk_api_key") {
+    reject("api_key", "講師・管理者のアカウントは VS Code の接続では使えません");
+  }
+  const access = accessConfig(c.env);
+  if (!access) return;
+  const assertion = c.req.header(ACCESS_ASSERTION_HEADER)?.trim();
+  if (!assertion) reject("missing", STAFF_HOST_REQUIRED);
+  const verified = await verifyAccessAssertion(access, assertion ?? "").catch(() => null);
+  if (!verified) reject("invalid", STAFF_HOST_REQUIRED);
+  if (verified?.email !== (profile.email ?? "").toLowerCase()) {
+    reject("email_mismatch", STAFF_HOST_REQUIRED);
+  }
+}
+
+/** 利用者に当たる profiles 行の条件 (Clerk はメールアドレス、開発用は profiles.id)。 */
 export function profileMatch(identity: Identity): SQL {
   return identity.kind === "dev"
     ? eq(profiles.id, identity.profileId)
     : sql`lower(${profiles.email}) = ${identity.email}`;
 }
 
-/** 招待されていない利用者のアクセスを記録する (Access の許可が広すぎる兆候)。 */
+/** 招待されていない利用者のアクセスを記録する (Clerk に登録しただけの人・招待漏れ)。 */
 export function recordUninvited(c: Context<{ Bindings: Env }>, identity: Identity): void {
   deferSecurityEvent(c, {
     kind: "auth.no_profile",
@@ -250,6 +324,7 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
     throw new ApiError("このアカウントは無効化されています", 403);
   }
   assertTenantActive(c, profile);
+  await assertStaffAccess(c, profile, identity);
 
   const caller: Caller = {
     id: profile.id,
@@ -265,7 +340,7 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
     email: caller.email,
   };
   markRequestActor(c, actor);
-  trackSession(c, actor, identity.issuedAt);
+  trackSession(c, actor, identity.sessionKey);
   return { db, caller, identity };
 }
 

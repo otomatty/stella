@@ -40,7 +40,7 @@ describe("exchangeVscodeLink", () => {
     const opaque = { type: "opaqueredirect", status: 0, ok: false } as Response;
     const fetchFn = vi.fn(async () => opaque);
     await expect(exchangeVscodeLink("https://stella.example", "ABCD2345", fetchFn)).rejects.toThrow(
-      /bypass/,
+      /講師・管理者用の入口/,
     );
   });
 

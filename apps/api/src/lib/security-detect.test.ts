@@ -31,6 +31,8 @@ const env = (extra: Partial<Env> = {}) =>
     DB: db.binding,
     PUBLIC_CONTENT_TENANT_ID: "ses",
     ALLOWED_ORIGINS: "https://stella.example.com",
+    // 講師・管理者用の入口 (Access で守るホスト名)。Access のログはこのホスト名の行だけ取り込む。
+    STAFF_ORIGIN: "https://stella.example.com",
     ...extra,
   }) as Env;
 
@@ -55,7 +57,7 @@ async function seedEvent(event: Parameters<typeof insertSecurityEvent>[1]) {
 }
 
 describe("サインインの検知 (upsertSession)", () => {
-  it("Access のトークンの発行時刻が変わったときだけ新しいサインインにする", async () => {
+  it("Clerk のセッションが変わったときだけ新しいサインインにする (トークンの更新では変えない)", async () => {
     const d = getDb(env());
     const actor = {
       id: "learner",
@@ -64,11 +66,19 @@ describe("サインインの検知 (upsertSession)", () => {
       email: "learner@example.test",
     };
     const meta = { ip: "203.0.113.1", country: "JP", userAgent: "UA" };
-    expect(await upsertSession(d, actor, 100, meta, minutesAgo(30))).toBe(true);
-    expect(await upsertSession(d, actor, 100, { ...meta, ip: "203.0.113.2" }, minutesAgo(10))).toBe(
-      false,
+    expect(await upsertSession(d, actor, "clerk:sess_100", meta, minutesAgo(30))).toBe(true);
+    expect(
+      await upsertSession(
+        d,
+        actor,
+        "clerk:sess_100",
+        { ...meta, ip: "203.0.113.2" },
+        minutesAgo(10),
+      ),
+    ).toBe(false);
+    expect(await upsertSession(d, actor, "clerk:sess_200", { ...meta, country: "US" }, NOW)).toBe(
+      true,
     );
-    expect(await upsertSession(d, actor, 200, { ...meta, country: "US" }, NOW)).toBe(true);
     const rows = db.sqlite
       .prepare(
         "select metadata from security_events where kind = 'session.start' order by created_at",
@@ -87,10 +97,10 @@ describe("複数の端末のセッション", () => {
     const d = getDb(env());
     const actor = { id: "admin", tenantId: "ses", role: "admin", email: "admin@example.test" };
     const meta = { ip: "203.0.113.1", country: "JP", userAgent: "UA" };
-    expect(await upsertSession(d, actor, 100, meta, minutesAgo(40))).toBe(true);
-    expect(await upsertSession(d, actor, 200, meta, minutesAgo(30))).toBe(true);
-    expect(await upsertSession(d, actor, 100, meta, minutesAgo(20))).toBe(false);
-    expect(await upsertSession(d, actor, 200, meta, minutesAgo(10))).toBe(false);
+    expect(await upsertSession(d, actor, "clerk:sess_100", meta, minutesAgo(40))).toBe(true);
+    expect(await upsertSession(d, actor, "clerk:sess_200", meta, minutesAgo(30))).toBe(true);
+    expect(await upsertSession(d, actor, "clerk:sess_100", meta, minutesAgo(20))).toBe(false);
+    expect(await upsertSession(d, actor, "clerk:sess_200", meta, minutesAgo(10))).toBe(false);
     expect(
       (
         db.sqlite
@@ -847,7 +857,7 @@ describe("Cloudflare Access との連携", () => {
         },
       ],
     };
-    const noHost = { ...cfEnv(), ALLOWED_ORIGINS: "", INVITE_REDIRECT_URL: undefined } as Env;
+    const noHost = { ...cfEnv(), STAFF_ORIGIN: undefined } as Env;
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
     expect(await importAccessLogs(noHost, getDb(noHost), fetchImpl, NOW)).toMatchObject({
       imported: 0,
@@ -880,19 +890,17 @@ describe("Cloudflare Access との連携", () => {
 });
 
 describe("purgeExpiredVscodeLinks", () => {
-  it("期限の過ぎた接続コードから Access のトークンを消し、1 日たった行は消す", async () => {
+  it("期限から 1 日たった接続コードを消す", async () => {
     db.sqlite.exec(`
-      INSERT INTO auth_vscode_links (id, user_id, code_hash, expires_at, used_at, access_token, created_at) VALUES
-        ('live', 'learner', 'h1', ${NOW.getTime() + 60_000}, null, 'tok-live', 1),
-        ('expired', 'learner', 'h2', ${NOW.getTime() - 60_000}, null, 'tok-expired', 1),
-        ('old', 'learner', 'h3', ${NOW.getTime() - 2 * 86_400_000}, null, 'tok-old', 1);
+      INSERT INTO auth_vscode_links (id, user_id, code_hash, expires_at, used_at, clerk_user_id, created_at) VALUES
+        ('live', 'learner', 'h1', ${NOW.getTime() + 60_000}, null, 'user_1', 1),
+        ('expired', 'learner', 'h2', ${NOW.getTime() - 60_000}, null, 'user_1', 1),
+        ('old', 'learner', 'h3', ${NOW.getTime() - 2 * 86_400_000}, null, 'user_1', 1);
     `);
     await purgeExpiredVscodeLinks(getDb(env()), NOW);
-    expect(
-      db.sqlite.prepare("select id, access_token from auth_vscode_links order by id").all(),
-    ).toEqual([
-      { id: "expired", access_token: null },
-      { id: "live", access_token: "tok-live" },
+    expect(db.sqlite.prepare("select id from auth_vscode_links order by id").all()).toEqual([
+      { id: "expired" },
+      { id: "live" },
     ]);
   });
 });

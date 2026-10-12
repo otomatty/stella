@@ -11,7 +11,6 @@ import { useStagesForTenant, useEnrolledStagesForTenant } from "@/data/stages-so
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isBackendConfigured } from "@/lib/backend";
 import { signOut as authSignOut } from "@/lib/auth";
-import { isAccessMode } from "@/lib/auth-client";
 import { configureRemoteSync, deriveStageProgress } from "@/lib/lesson-progress";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import type { SearchResult } from "@stella/shared/search/types";
@@ -21,6 +20,7 @@ import { Topbar } from "@/components/shell/Topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { LoginScreen } from "@/components/shell/LoginScreen";
 import { InviteRequiredScreen } from "@/components/shell/InviteRequiredScreen";
+import { StaffHostRequiredScreen } from "@/components/shell/StaffHostRequiredScreen";
 import { resolveUiRole } from "@/lib/ui-role";
 import { AppShellContext, type AppShellValue } from "@/components/shell/app-shell-context";
 
@@ -161,6 +161,7 @@ export function AppShell() {
     profile,
     loading: authLoading,
     inviteRequired,
+    staffHostRequired,
     error: authError,
     refreshProfile,
   } = useAuthSession();
@@ -337,8 +338,6 @@ export function AppShell() {
     try {
       if (backendEnabled) {
         await authSignOut();
-        // Cloudflare Access はログアウトのページへ移るので、ここから先は描画しない。
-        if (isAccessMode()) return;
       }
       setAuthStage("login");
       await navigate({ to: "/" });
@@ -548,7 +547,10 @@ export function AppShell() {
     if (authLoading) {
       return <PageSkeleton label="セッション復元中" />;
     }
-    // access は profile が取れるまで session が無いので、招待の判定を先に見る。
+    // clerk は profile が取れるまで session が無いので、招待・入口の判定を先に見る。
+    if (staffHostRequired) {
+      return <StaffHostRequiredScreen onSignOut={() => void authSignOut()} />;
+    }
     if (inviteRequired) {
       return (
         <InviteRequiredScreen

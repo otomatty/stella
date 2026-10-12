@@ -1,12 +1,12 @@
 /**
  * `/admin/security` — セキュリティ監視 (管理者のみ)。
  *
- * 不正アクセスの兆候 (いつもと違う国からのサインイン・Access でのログイン拒否の連続・権限外の
- * 操作の連続・休眠アカウント…) をすぐ見つけて手を打つための画面。出来事は API と Cloudflare Access
- * のログから集め、検知ルールがアラートにする (ルールの説明と最初にやることは
- * `@stella/shared/security/types` の `SECURITY_RULES` が唯一の定義)。
+ * 不正アクセスの兆候 (いつもと違う国からのサインイン・講師・管理者用の入口での Access の拒否の連続・
+ * 権限外の操作の連続・休眠アカウント…) をすぐ見つけて手を打つための画面。出来事は API と、講師・
+ * 管理者用の入口の Cloudflare Access のログから集め、検知ルールがアラートにする (ルールの説明と最初に
+ * やることは `@stella/shared/security/types` の `SECURITY_RULES` が唯一の定義)。
  *
- *   - 上段 … 設定の不足 (Access の検証・ログの取り込み・外部通知)、件数、直近 7 日の推移
+ *   - 上段 … 設定の不足 (Clerk・Access の検証・ログの取り込み・外部通知)、件数、直近 7 日の推移
  *   - タブ … アラート / サインイン履歴 / イベントログ / アカウント棚卸し
  *
  * 時刻はすべて日本時間で出す (管理者がどこから見ても同じ時刻で話せるように)。
@@ -156,7 +156,7 @@ function SecurityLive() {
       const result = await runSecurityScan();
       if (result.access_log_error) {
         toast.warning(
-          "Cloudflare Access のログを取り込めませんでした。検知はアプリの記録だけで行いました",
+          "講師・管理者用の入口の Access のログを取り込めませんでした。検知はアプリの記録だけで行いました",
         );
       }
       if (result.new_alerts > 0) toast.error(`新しいアラートが ${result.new_alerts} 件あります`);
@@ -241,28 +241,44 @@ function SecurityLive() {
 // 設定の不足
 // ---------------------------------------------------------------
 
+function ConfigAlert({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      role="alert"
+      className="flex gap-2 rounded-md border border-destructive bg-danger-soft px-3 py-2.5 text-[12.5px] leading-relaxed text-destructive"
+    >
+      <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <div>
+        <div className="font-semibold">{title}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function ConfigBanner({ config }: { config: SecurityConfigStatus }) {
   return (
     <div className="mb-5 space-y-2">
+      {!config.clerk_configured ? (
+        <ConfigAlert title="API が Clerk のログインを確かめていません">
+          API に <code>CLERK_SECRET_KEY</code>{" "}
+          が設定されていないため、ログインを確かめていません。ローカル開発以外でこの表示が出たら、
+          すぐに設定してください。
+        </ConfigAlert>
+      ) : null}
       {!config.access_enforced ? (
-        <div
-          role="alert"
-          className="flex gap-2 rounded-md border border-destructive bg-danger-soft px-3 py-2.5 text-[12.5px] leading-relaxed text-destructive"
-        >
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-          <div>
-            <div className="font-semibold">API が Cloudflare Access を確かめていません</div>
-            API に <code>ACCESS_TEAM_DOMAIN</code> と <code>ACCESS_AUD</code>{" "}
-            が設定されていないため、ログインを Access
-            で確かめていません。ローカル開発以外でこの表示が出たら、 すぐに設定してください。
-          </div>
-        </div>
+        <ConfigAlert title="講師・管理者の操作に Cloudflare Access を求めていません">
+          API に <code>ACCESS_TEAM_DOMAIN</code> と <code>ACCESS_AUD</code>{" "}
+          が設定されていないため、講師・管理者のアカウントが Clerk
+          だけで操作できます。ローカル開発以外で この表示が出たら、 すぐに設定してください。
+        </ConfigAlert>
       ) : null}
       {!config.access_logs_import ? (
         <InfoNote>
-          Access でのログイン拒否 (総当たり・なりすましの試行) を取り込んでいません。API に{" "}
-          <code>CF_ACCESS_API_TOKEN</code> を設定すると、拒否の記録の取り込みと、この画面からの
-          Access セッションの失効ができるようになります。
+          講師・管理者用の入口での Access の拒否 (総当たり・なりすましの試行)
+          を取り込んでいません。API に <code>CF_ACCESS_API_TOKEN</code>{" "}
+          を設定すると、拒否の記録の取り込みと、講師・管理者の Access
+          のセッションの失効ができるようになります。
         </InfoNote>
       ) : null}
       {!config.webhook ? (
@@ -949,7 +965,7 @@ function AccountsPanel({
   const revoke = async (row: SecurityAccountRow) => {
     if (
       !window.confirm(
-        `${row.display_name} (${row.email ?? "メールなし"}) の Cloudflare Access のセッションを失効します。\n本人は次の操作でログインし直しになります。同じ Cloudflare アカウントの他の Access アプリにもログインし直しになります。よろしいですか?`,
+        `${row.display_name} (${row.email ?? "メールなし"}) のログイン (Clerk のセッションと VS Code の接続) を失効します。\n本人は次の操作でログインし直しになります。講師・管理者は Cloudflare Access のセッションも失効し、同じ Cloudflare アカウントの他の Access アプリにもログインし直しになります。よろしいですか?`,
       )
     ) {
       return;
@@ -1042,7 +1058,7 @@ function AccountsPanel({
                       enabled={sessionRevoke && Boolean(row.email)}
                       reason={
                         !sessionRevoke
-                          ? "失効には API の CF_ACCESS_API_TOKEN の設定が必要です"
+                          ? "失効には API の CLERK_SECRET_KEY の設定が必要です"
                           : "メールアドレスの無いアカウントです"
                       }
                       busy={revoking === row.id}
@@ -1072,7 +1088,7 @@ function RevokeButton({
 }) {
   const button = (
     <Button size="sm" variant="outline" disabled={!enabled || busy} onClick={onClick}>
-      {busy ? "失効中…" : "Access セッションを失効"}
+      {busy ? "失効中…" : "セッションを失効"}
     </Button>
   );
   if (enabled) return button;

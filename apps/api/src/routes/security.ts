@@ -26,12 +26,13 @@ import { profiles, securityAlerts, securityEvents, securitySessions } from "../d
 import { accessConfig } from "../lib/access-auth.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { ApiError, errorResponse, getCaller, requireTenantAdmin } from "../lib/authz.js";
+import { clerkConfig } from "../lib/clerk-auth.js";
 import {
   ACCESS_LOG_IMPORTED_AT,
   cloudflareAccessApiConfigured,
-  revokeAccessSessions,
 } from "../lib/security-cloudflare.js";
 import { LAST_SCAN_AT, runSecurityScan } from "../lib/security-detect.js";
+import { revokeUserSessions, sessionRevokeConfigured } from "../lib/session-revoke.js";
 import {
   deferSecurityEvent,
   readSecurityState,
@@ -131,9 +132,10 @@ securityRoute.get("/api/security/overview", async (c) => {
 
     const overview: SecurityOverview = {
       config: {
+        clerk_configured: clerkConfig(c.env) !== null,
         access_enforced: accessConfig(c.env) !== null,
         access_logs_import: cloudflareAccessApiConfigured(c.env),
-        session_revoke: cloudflareAccessApiConfigured(c.env),
+        session_revoke: sessionRevokeConfigured(c.env),
         webhook: Boolean(c.env.SECURITY_ALERT_WEBHOOK_URL?.trim()),
         last_scan_at: stateDate(await readSecurityState(db, LAST_SCAN_AT)),
         last_access_log_import_at: stateDate(await readSecurityState(db, ACCESS_LOG_IMPORTED_AT)),
@@ -374,9 +376,9 @@ securityRoute.get("/api/security/accounts", async (c) => {
 securityRoute.post("/api/security/accounts/:id/revoke", async (c) => {
   try {
     const { caller, db } = await adminCtx(c);
-    if (!cloudflareAccessApiConfigured(c.env)) {
+    if (!sessionRevokeConfigured(c.env)) {
       throw new ApiError(
-        "Access のセッションを失効するには CF_ACCESS_API_TOKEN の設定が必要です",
+        "セッションを失効するには CLERK_SECRET_KEY (または CF_ACCESS_API_TOKEN) の設定が必要です",
         503,
       );
     }
@@ -397,10 +399,11 @@ securityRoute.post("/api/security/accounts/:id/revoke", async (c) => {
       throw new ApiError("プラットフォーム管理者のセッションは失効できません", 403);
     }
     if (!target.email) throw new ApiError("メールアドレスの無いユーザーです", 400);
+    let revoked: { clerk: boolean; access: boolean };
     try {
-      await revokeAccessSessions(c.env, target.email);
+      revoked = await revokeUserSessions(c.env, { email: target.email, role: target.role });
     } catch {
-      throw new ApiError("Cloudflare Access でのセッションの失効に失敗しました", 502);
+      throw new ApiError("セッションの失効に失敗しました", 502);
     }
     deferSecurityEvent(c, {
       kind: "session.revoke",
@@ -408,7 +411,7 @@ securityRoute.post("/api/security/accounts/:id/revoke", async (c) => {
       actorId: target.id,
       actorRole: target.role,
       email: target.email,
-      metadata: { revoked_by: caller.id },
+      metadata: { revoked_by: caller.id, clerk: revoked.clerk, access: revoked.access },
     });
     await recordAudit(db, caller, {
       action: "security_session_revoke",

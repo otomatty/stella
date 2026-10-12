@@ -1,16 +1,16 @@
 /**
- * 交換が Cloudflare Access に止められたときの案内。交換の経路は接続コードだけで認証するので、
- * Access の対象から外して (bypass) おく必要がある。拡張の `stella.serverUrl` は本番では
- * Access で守った Web の URL を指す。
+ * 交換が API に届く前に止められた (ログイン画面へのリダイレクト・HTML が返った) ときの案内。
+ * 拡張の `stella.serverUrl` が、Cloudflare Access で守った講師・管理者用の入口を指していると起きる。
+ * 本番は受講者用の Web の URL を指す。
  */
 export const EXCHANGE_BLOCKED_MESSAGE =
-  "接続コードの交換がサーバーの Cloudflare Access に止められました。Access の設定で /api/auth/vscode-link/exchange を対象外 (bypass) にし、設定 stella.serverUrl が LMS の Web の URL を指しているか確認してください";
+  "接続コードの交換がサーバーの手前で止められました。設定 stella.serverUrl が受講者用の LMS の Web の URL (講師・管理者用の入口ではない) を指しているか確認してください";
 
 function isHtml(res: Response): boolean {
   return /text\/html/i.test(res.headers.get("content-type") ?? "");
 }
 
-/** Access のログイン画面へのリダイレクト (`redirect: "manual"` では 3xx か opaqueredirect / status 0)。 */
+/** ログイン画面へのリダイレクト (`redirect: "manual"` では 3xx か opaqueredirect / status 0)。 */
 function isRedirect(res: Response): boolean {
   return (
     res.type === "opaqueredirect" || res.status === 0 || (res.status >= 300 && res.status < 400)
@@ -28,8 +28,8 @@ async function readJson(res: Response): Promise<unknown> {
 }
 
 /**
- * 接続コードをトークンに交換する。本番ではトークンは Access のアプリケーショントークン
- * (Access のセッションと同じだけ使える)、ローカルでは開発用の JWT。
+ * 接続コードをトークンに交換する。本番ではトークンは Clerk の API キー (30 日で切れる)、
+ * ローカルでは開発用の JWT。
  */
 export async function exchangeVscodeLink(
   serverUrl: string,

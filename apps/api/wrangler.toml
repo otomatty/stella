@@ -3,9 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
-# API は Web の Worker (stella-web) がサービスバインディングで中継する経路だけで受ける。
-# Cloudflare Access が守るのは Web のホスト名なので、Access を通らない入口 (workers.dev・
-# プレビュー URL) は開けない。API はどの経路でも Access のトークンを署名から確かめる (lib/access-auth.ts)。
+# API は Web の Worker (受講者用 stella-web と講師・管理者用 stella-admin) がサービスバインディングで
+# 中継する経路だけで受ける。講師・管理者の Access のトークンは stella-admin の経路だけが渡すので、
+# Web の Worker を通らない入口 (workers.dev・プレビュー URL) は開けない。API はどの経路でも
+# Clerk のトークン (lib/clerk-auth.ts) と、講師・管理者には Access のトークン (lib/access-auth.ts) を署名から確かめる。
 workers_dev = false
 preview_urls = false
 
@@ -22,8 +23,9 @@ INVITE_REDIRECT_URL = "https://stella-web.saedgewell.workers.dev"
 # ログインなしで読める教材 (GET /api/public/*。Issue #41) のテナント。未ログインでは JWT から
 # テナントが決まらないので、教材を seed するテナント (ses) をここで決める。外すと公開 API は何も返さない。
 PUBLIC_CONTENT_TENANT_ID = "ses"
-# 認証は Cloudflare Access (docs/cloudflare-access.md)。ACCESS_TEAM_DOMAIN と ACCESS_AUD は
-# デプロイ時に GitHub の Variables から入る (scripts/prepare-deploy.ts。無ければデプロイを止める)。
+# 認証は Clerk + 講師・管理者用の入口の Cloudflare Access (docs/clerk-auth.md)。STAFF_ORIGIN・
+# ACCESS_TEAM_DOMAIN・ACCESS_AUD はデプロイ時に GitHub の Variables から入り (scripts/prepare-deploy.ts。
+# 無ければデプロイを止める)、secret の CLERK_SECRET_KEY は deploy が GitHub の Secret から入れる。
 # 任意の secret: CF_ACCESS_API_TOKEN (Access のログ取り込み・セッション失効)、
 # SECURITY_ALERT_WEBHOOK_URL (アラートの送り先)。
 

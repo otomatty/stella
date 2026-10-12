@@ -4,22 +4,29 @@
  * フロントは DB を直接叩かず、すべてこのクライアント経由で API を呼ぶ。認証の載せ方は
  * `auth-client` の方式で変わる:
  *
- *   - access … 同じオリジンの `/api/*` へ Cookie ごと送る (Authorization は付けない)。Web の
- *     Worker が API へ中継し、Access が `Cf-Access-Jwt-Assertion` を付ける。Access のセッションが
- *     切れていると Access のログインへのリダイレクトか 401 が返るので、1 度だけページを読み込み
- *     直して Access にログインし直させる (`reloadForAccessLogin`)。
+ *   - clerk … Clerk のセッショントークンを Authorization: Bearer に載せて、同じオリジンの `/api/*`
+ *     へ送る (Web の Worker が API へ中継する)。トークンが切れていたら (API の 401) 1 度だけ取り直して
+ *     送り直す。講師・管理者用の入口は Cloudflare Access の後ろにあり、Access のセッションが切れると
+ *     ログインへのリダイレクトか Access の HTML が返るので、1 度だけページを読み込み直して Access に
+ *     ログインし直させる (`reloadForAccessLogin`)。
  *   - dev-token … 開発用 JWT を Authorization: Bearer に載せる (ローカル開発だけ)。
  *
  * JSON 以外 (アップロード・ダウンロード・SSE) で生の Response が要るところも `authFetch` を通す —
- * 認証の載せ方と、Access のセッション切れの扱いを 1 か所に揃えるため。
+ * 認証の載せ方と、セッション切れの扱いを 1 か所に揃えるため。
  */
 
-import { authHeaders, isAccessMode, reloadForAccessLogin } from "./auth-client";
+import { authHeaders, isClerkMode, isStaffHost, reloadForAccessLogin } from "./auth-client";
 import { DEV_MODE_HEADER, devModeHeaderValue, isDevModeEnabled } from "./dev-mode";
 
-/** API のオリジン (末尾スラッシュなし)。`VITE_SERVER_URL` で指定。本番は Web 自身のオリジン。 */
+/**
+ * API のオリジン (末尾スラッシュなし)。`VITE_SERVER_URL` で指定。本番は受講者用の Web のオリジン。
+ * 講師・管理者用の入口で開いているときは、その入口自身のオリジンを使う — 同じ成果物を 2 つの入口で
+ * 配るため。Access が付けるヘッダは、講師・管理者用の入口を通ったリクエストにしか付かない。
+ */
 function serverUrl(): string {
-  return (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
+  const configured = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
+  if (configured && isStaffHost()) return window.location.origin;
+  return configured;
 }
 
 export function isApiConfigured(): boolean {
@@ -48,7 +55,7 @@ export class ApiClientError extends Error {
   }
 }
 
-/** access で Access のセッションが切れていた。`reloading` ならページを読み込み直している最中。 */
+/** 講師・管理者用の入口で Access のセッションが切れていた。`reloading` ならページを読み込み直している最中。 */
 export class AccessSessionLostError extends ApiClientError {
   reloading: boolean;
   constructor(message: string, reloading: boolean) {
@@ -64,50 +71,61 @@ export type AuthFetchInit = Omit<RequestInit, "headers" | "credentials" | "redir
 };
 
 /**
- * Access のセッションが切れた応答か。`redirect: "manual"` で Access のログインへの
- * リダイレクトを受けると opaqueredirect (status 0) になる。Access を通ったのに API が
- * トークンを受け付けなかったときは 401。Access の方針から外れたときは、Access が JSON でない
- * 403 (Forbidden の HTML) を返す (API の 403 は JSON なので分けられる)。
+ * API に届く前に Cloudflare Access に止められた応答か (講師・管理者用の入口で Access のセッションが
+ * 切れた)。`redirect: "manual"` で Access のログインへのリダイレクトを受けると opaqueredirect
+ * (status 0) になる。Access の方針から外れたときは、Access が JSON でない 401/403 (HTML) を返す
+ * (API 自身の 401/403 は JSON なので分けられる)。
  */
 export function isAccessSessionLost(
   res: Pick<Response, "type" | "status"> & { headers?: Pick<Headers, "get"> },
 ): boolean {
-  if (res.type === "opaqueredirect" || res.status === 0 || res.status === 401) return true;
-  if (res.status !== 403) return false;
+  if (res.type === "opaqueredirect" || res.status === 0) return true;
+  if (res.status !== 401 && res.status !== 403) return false;
   const contentType = res.headers?.get("content-type") ?? "";
   return !/\bjson\b/i.test(contentType);
 }
 
+/** 送り直せる本文か (読み切ってしまうストリームは送り直せない)。 */
+function isReplayableBody(body: AuthFetchInit["body"]): boolean {
+  return !(typeof ReadableStream !== "undefined" && body instanceof ReadableStream);
+}
+
 /**
  * 認証付きで API を呼び、生の Response を返す (エラー応答もそのまま返す)。
- * access で Access のセッションが切れていたら、ページを読み込み直して `AccessSessionLostError` (401) を投げる。
+ * clerk で講師・管理者用の入口の Access のセッションが切れていたら、ページを読み込み直して
+ * `AccessSessionLostError` (401) を投げる。
  */
 export async function authFetch(
   path: string,
   init: AuthFetchInit = {},
   { anonymous = false }: { anonymous?: boolean } = {},
 ): Promise<Response> {
-  const access = isAccessMode();
-  const headers: Record<string, string> = {
-    ...(init.headers ?? {}),
-    ...(anonymous ? {} : authHeaders()),
-  };
-  const res = await fetch(apiUrl(path), {
-    ...init,
-    headers,
-    // access は同じオリジンなので Cookie (CF_Authorization) は既定で送られる。明示しておき、
-    // Access のログインへのリダイレクトは追わずに受け取る (追うと別オリジンの HTML を読みに行って
-    // CORS で失敗し、原因の分からないネットワークエラーになる)。
-    ...(access ? { credentials: "same-origin" as const, redirect: "manual" as const } : {}),
-  });
-  if (access && !anonymous && isAccessSessionLost(res)) {
+  const clerk = isClerkMode();
+  const send = async (skipCache: boolean) =>
+    fetch(apiUrl(path), {
+      ...init,
+      headers: {
+        ...(init.headers ?? {}),
+        ...(anonymous ? {} : await authHeaders({ skipCache })),
+      },
+      // 同じオリジンなので Cookie (講師・管理者用の入口では Access の CF_Authorization) は既定で
+      // 送られる。明示しておき、Access のログインへのリダイレクトは追わずに受け取る (追うと別オリジンの
+      // HTML を読みに行って CORS で失敗し、原因の分からないネットワークエラーになる)。
+      ...(clerk ? { credentials: "same-origin" as const, redirect: "manual" as const } : {}),
+    });
+  let res = await send(false);
+  if (clerk && !anonymous && isAccessSessionLost(res)) {
     const reloading = reloadForAccessLogin();
     throw new AccessSessionLostError(
       reloading
         ? "ログインの有効期限が切れたため、ページを読み込み直しています"
-        : "Cloudflare Access のログインを確認できませんでした。ページを読み込み直してください",
+        : "講師・管理者用の入口 (Cloudflare Access) のログインを確認できませんでした。ページを読み込み直してください",
       reloading,
     );
+  }
+  // Clerk のトークンが API に届くまでに切れた (端末の時計のずれ・タブの休止明け)。取り直して 1 度だけ送り直す。
+  if (clerk && !anonymous && res.status === 401 && isReplayableBody(init.body)) {
+    res = await send(true);
   }
   return res;
 }

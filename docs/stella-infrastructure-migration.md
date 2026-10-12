@@ -4,10 +4,11 @@
 この文書とコードのマージだけでは、Cloudflare 上のデータや secrets は移らない。
 以下の準備とメンテナンスを終えてから main にマージし、GitHub Actions でデプロイする。
 
-> **認証はその後 Cloudflare Access へ移った** ([`docs/cloudflare-access.md`](cloudflare-access.md))。
+> **認証はその後 Clerk (講師・管理者用の入口は Cloudflare Access も) へ移った** ([`docs/clerk-auth.md`](clerk-auth.md))。
 > 下の手順にある Google OAuth・`AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`・JWT の失効は Phase C 当時の構成の記録。
-> いま同じ移行をするなら、secret の代わりに Access のアプリケーションと GitHub Variables
-> (`ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`) を用意し、`VITE_SERVER_URL` は Web のオリジンにする
+> いま同じ移行をするなら、secret の代わりに Clerk のアプリケーション (Secret `CLERK_SECRET_KEY`)、講師・管理者用の入口の
+> Access のアプリケーションと GitHub Variables (`VITE_CLERK_PUBLISHABLE_KEY` / `VITE_STAFF_ORIGIN` /
+> `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`) を用意し、`VITE_SERVER_URL` は Web のオリジンにする
 > (API の Worker は公開 URL を持たず、Web の Worker が `/api/*` を中継する)。
 
 ## 変更するもの
@@ -55,7 +56,7 @@ CORS から外すだけでは VS Code や直接の HTTP アクセスを止めら
    [Gateway authentication](https://developers.cloudflare.com/ai-gateway/configuration/authentication/)
 6. 新 API Worker に利用中の `ANTHROPIC_API_KEY`、`AI_GATEWAY_CF_API_TOKEN`、`WORKERS_AI_API_TOKEN` と、
    必要なら `CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL` を同じ名前で登録する。
-   (当時は `AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET` も登録した。Access の構成では使わない。)
+   (当時は `AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET` も登録した。いまの構成では使わない。)
    `DEV_MODE` と `DEV_AUTH_JWT_SECRET` は設定しない。
 7. Google Cloud Console に新 Web の JavaScript origin と新 API の callback を追加する。
    callback は `https://stella-api.a-sugai.workers.dev/api/auth/google/callback`。
@@ -168,7 +169,7 @@ S3 ツールが metadata キーの大文字小文字を変えた場合も不一�
 再開後は旧 DB / R2 に単純に戻さない。新環境を停止して差分を保全し、移行後の進捗・提出・添付を含む
 データ復旧計画を決める。利用者には再停止と再ログインの要否を告知する。
 当時は旧 JWT を復活させないため、旧環境へ復旧する際に `AUTH_JWT_SECRET` を新しい値に更新して全員を再認証した。
-Access の構成では、セッションの失効は Access 側で行う (`/admin/security` のセッション失効、または Zero Trust の画面)。
+いまの構成では、セッションの失効は Clerk (講師・管理者は Access も) で行う (`/admin/security` のセッション失効、または Clerk・Zero Trust の画面)。
 
 ## ローカル開発
 

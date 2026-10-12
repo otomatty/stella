@@ -24,33 +24,32 @@ export type VscodeLinkRow = {
   userId: string;
   usedAt: Date | null;
   expiresAt: Date;
-  /** 発行時に預かった Access のトークン (開発環境では null)。 */
-  accessToken?: string | null;
+  /** 発行した利用者の Clerk の利用者 ID (開発環境では null)。 */
+  clerkUserId?: string | null;
 };
 
 /**
- * 接続コードを 1 回だけトークンに換える。期限切れ・使用済み・無効化済みの利用者・渡すトークンが
- * 無い (Access のトークンを預かっていない) ときは、どれも同じ 401 にする (コードの状態を探らせない)。
+ * 接続コードを 1 回だけトークンに換える。期限切れ・使用済み・無効化済みの利用者・渡せる相手でない
+ * (`canIssue` が false) ときは、どれも同じ 401 にする (コードの状態を探らせない)。
+ * コードを使用済みにしてからトークンを作る — 同じコードの同時の交換で、キーを 2 つ作らないため。
  */
 export async function redeemVscodeLink(args: {
   row: VscodeLinkRow | undefined;
   now: Date;
-  loadProfile: (userId: string) => Promise<{ email: string | null; disabled: boolean } | null>;
+  loadProfile: (
+    userId: string,
+  ) => Promise<{ email: string | null; disabled: boolean; role: string } | null>;
+  canIssue: (row: VscodeLinkRow, profile: { role: string }) => boolean;
   consume: (id: string) => Promise<boolean>;
-  issueToken: (row: VscodeLinkRow, email: string) => Promise<string | null>;
+  issueToken: (row: VscodeLinkRow, email: string) => Promise<string>;
 }): Promise<{ access_token: string; userId: string }> {
-  const { row, now, loadProfile, consume, issueToken } = args;
+  const { row, now, loadProfile, canIssue, consume, issueToken } = args;
   if (!row || row.usedAt != null || row.expiresAt <= now) {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
   const profile = await loadProfile(row.userId);
-  if (!profile?.email || profile.disabled) {
-    throw new ApiError(INVALID_VSCODE_LINK, 401);
-  }
-
-  const token = await issueToken(row, profile.email);
-  if (!token) {
+  if (!profile?.email || profile.disabled || !canIssue(row, profile)) {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
@@ -59,5 +58,12 @@ export async function redeemVscodeLink(args: {
     throw new ApiError(INVALID_VSCODE_LINK, 401);
   }
 
+  const token = await issueToken(row, profile.email).catch(() => null);
+  if (!token) {
+    throw new ApiError(
+      "VS Code の接続に失敗しました。もう一度「VS Code で開く」からお試しください",
+      502,
+    );
+  }
   return { access_token: token, userId: row.userId };
 }

@@ -21,30 +21,37 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { usePublicLesson, usePublicUnits } from "@/hooks/usePublicContent";
-import { getSession, isAccessMode, subscribeToAuth } from "@/lib/auth-client";
+import { getSession, subscribeToAuth } from "@/lib/auth-client";
 import { ChevronLeft, ChevronRight, Clock, ExternalLink, Home, LogIn } from "@/lib/icons";
 
 /** VS Code の公式の入手先 (06 §3: 公式配布元を案内する)。手順そのものは公開の単元に書く。 */
 const VSCODE_DOWNLOAD_URL = "https://code.visualstudio.com/";
 
 /**
- * ログイン済みか。dev-token は端末にトークンがあるかで分かる。Cloudflare Access (access) は
- * この案内ページが Access の外 (ログインなしで開ける) なので、画面からは分からない — null を返す。
+ * ログイン済みか。dev-token は端末のトークン、clerk は Clerk のセッションで分かる (分かるまでは null)。
  * API は呼ばない。
  */
 function useSignedIn(): boolean | null {
-  const access = isAccessMode();
-  const [signedIn, setSignedIn] = useState(() => !access && getSession() !== null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {
-    if (access) return;
-    return subscribeToAuth((session) => setSignedIn(session !== null));
-  }, [access]);
-  return access ? null : signedIn;
+    let active = true;
+    void getSession()
+      .then((session) => {
+        if (active) setSignedIn(session !== null);
+      })
+      .catch(() => undefined);
+    const unsubscribe = subscribeToAuth((session) => setSignedIn(session !== null));
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+  return signedIn;
 }
 
 /**
  * ログイン (未ログイン) かホームへ (ログイン済み)。どちらもホーム (`/`) を開く — 未ログインなら
- * Cloudflare Access のログイン (ローカルは開発用ログイン、デモはモックログイン) が出る。
+ * ログイン画面 (ローカルは開発用ログイン、デモはモックログイン) が出る。
  */
 function SignInOrHome({ size = "default" }: { size?: "default" | "lg" }) {
   const signedIn = useSignedIn();

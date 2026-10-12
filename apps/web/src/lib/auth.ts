@@ -1,11 +1,11 @@
 /**
- * 認証ラッパ。ログインそのものは Cloudflare Access (本番) か開発用トークン (ローカル) が担い、
+ * 認証ラッパ。ログインそのものは Clerk (本番) か開発用トークン (ローカル) が担い、
  * ここは「誰なのか」を `/api/me` から引く (方式の違いは `auth-client` を参照)。
  */
 
 import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
 
-import { apiFetch, ApiClientError } from "./api-client";
+import { apiFetch } from "./api-client";
 import {
   getSession as readSession,
   isAuthConfigured,
@@ -34,19 +34,13 @@ export function subscribeToAuth(callback: (session: Session | null) => void): ()
 }
 
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
-  if (!isAuthConfigured() || !readSession()) return null;
-  try {
-    const { profile, tenant } = await apiFetch<{
-      profile: ProfileRow;
-      tenant?: ProfileTenantInfo | null;
-    }>("/api/me");
-    return profile ? { ...profile, tenant: tenant ?? null } : profile;
-  } catch (err) {
-    if (err instanceof ApiClientError && err.status === 403 && err.message === "invite_required") {
-      throw err; // 上位で inviteRequired に
-    }
-    throw err;
-  }
+  if (!isAuthConfigured() || !(await readSession())) return null;
+  // invite_required / staff_host_required の 403 は上位 (useAuthSession) が画面を分ける。
+  const { profile, tenant } = await apiFetch<{
+    profile: ProfileRow;
+    tenant?: ProfileTenantInfo | null;
+  }>("/api/me");
+  return profile ? { ...profile, tenant: tenant ?? null } : profile;
 }
 
 /**

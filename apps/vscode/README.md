@@ -18,13 +18,14 @@
 
 接続後、トークンは VS Code の SecretStorage（キー `stella.accessToken`）に保存される。設定やファイルにトークンを貼らない。
 
-### 本番の認証（Cloudflare Access）
+### 本番の認証（Clerk の API キー）
 
-本番の LMS は Cloudflare Access の後ろにあり、API には Web のホスト名（Access で守ったオリジン）を通して届く。交換で受け取るトークンは本番では受講者の **Access のアプリケーショントークン**、ローカル（Access なし）では開発用の JWT。
+本番の LMS のログインは Clerk が受け持ち、API には受講者用の Web のホスト名を通して届く（Web の Worker が `/api/*` を API へ中継する）。画面の Clerk のセッショントークンは約 60 秒で切れて画面の SDK が更新し続けるものなので、拡張には渡さない。代わりに交換のとき、API がその受講者の **Clerk の API キー**（アプリのスコープ `stella:vscode` 付き・30 日で期限切れ・取り消し可）を作って一度だけ返す。ローカル（Clerk なし）では開発用の JWT。
 
-- 拡張はトークンを `cf-access-token`（Access が検証する。`cloudflared access` と同じ方法）と `Authorization: Bearer`（ローカルの API が読む）の両方に載せて送る。本番の API は Access が付ける `Cf-Access-Jwt-Assertion` だけを信じる。
-- トークンの有効期限は **Access のセッションと同じ**（例: 24 時間）。切れると Access はログイン画面へのリダイレクトか HTML のブロック画面を返すので、拡張はリダイレクトを追わず（`redirect: "manual"`）、3xx・`opaqueredirect`・JSON でない 401/403 を接続切れとしてトークンを消し、Web のレッスンの「VS Code で開く」から接続し直すよう案内する。API 自身の JSON の 403（権限が無い）は接続切れにしない。
-- 交換の経路 `/api/auth/vscode-link/exchange` は接続コードだけで認証するので、Access の対象外（bypass）にしておく。交換がリダイレクトや HTML で返ったときは、その設定と `stella.serverUrl` を確かめるよう案内する。
+- 拡張はトークンを `Authorization: Bearer` で送る。API はアプリが発行したキー（スコープとクレームを持つもの）だけを受け付ける。
+- キーは 30 日で切れ、アカウントの無効化・管理画面の「セッションを失効」でも取り消される。切れると API は JSON の 401 を返すので、拡張はトークンを消し、Web のレッスンの「VS Code で開く」から接続し直すよう案内する。API 自身の JSON の 403（権限が無い）は接続切れにしない。
+- 講師・管理者・営業のアカウントには接続コードを出さない（講師・管理者は Cloudflare Access で守った入口からだけ使う）。
+- `stella.serverUrl` が講師・管理者用の入口（Access で守ったホスト名）を指していると、交換が Access に止められる（リダイレクトや HTML が返る）。そのときは受講者用の Web の URL を指すよう案内する。
 
 ## 詰まったときに講師へ引き継ぐ（Issue #9）
 
@@ -103,7 +104,7 @@
 
 | 設定 | 既定 | 用途 |
 |------|------|------|
-| `stella.serverUrl` | `http://127.0.0.1:8787` | API の宛先。ローカルは API の Worker、本番は Cloudflare Access で守った Web のオリジン（例: `https://stella-web.<account>.workers.dev`） |
+| `stella.serverUrl` | `http://127.0.0.1:8787` | API の宛先。ローカルは API の Worker、本番は受講者用の Web のオリジン（例: `https://stella-web.<account>.workers.dev`。講師・管理者用の入口ではない） |
 | `stella.webUrl` | `http://127.0.0.1:5173` | Web オリジン（未接続時に開き直すレッスンページなど） |
 
 どちらも**ユーザー設定でだけ**変えられる（`scope: application`）。ワークスペース設定（`.vscode/settings.json`）の値は読まない。学習用のプロジェクトを開いただけで API の宛先が変わり、ログインのトークンが別のサーバーへ送られるのを防ぐため。

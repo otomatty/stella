@@ -2,9 +2,8 @@ import type { AuthStore } from "./auth.js";
 import { stellaConfig } from "./config.js";
 
 /**
- * 接続が切れたときの案内。本番の API は Cloudflare Access の後ろにあり、拡張が持つトークンは
- * Access のセッションと同じだけ (例: 24 時間) しか使えない。切れたら Web のレッスンから
- * 接続し直してもらう。
+ * 接続が切れたときの案内。拡張が持つキー (Clerk の API キー) は 30 日で切れ、アカウントの無効化や
+ * 管理画面の失効でも取り消される。切れたら Web のレッスンから接続し直してもらう。
  */
 export const RECONNECT_MESSAGE =
   "LMS への接続の有効期限が切れました。Web のレッスンの「VS Code で開く」から接続し直してください";
@@ -52,13 +51,11 @@ type ApiInit = Omit<RequestInit, "body"> & {
 };
 
 /**
- * 拡張が持つトークンを載せたヘッダー。本番 (Cloudflare Access) は `cf-access-token` を検証し、
- * Access の無いローカルの API は `Authorization: Bearer` を読む。本番の API は Access が付けた
- * `Cf-Access-Jwt-Assertion` しか信じないので、両方に載せても困らない。
+ * 拡張が持つトークンを載せたヘッダー。本番は接続のときに受け取った Clerk の API キーを、
+ * Clerk の無いローカルの API は開発用のトークンを、どちらも `Authorization: Bearer` で送る。
  */
 export function setAuthHeaders(headers: Headers, token: string): void {
   headers.set("Authorization", `Bearer ${token}`);
-  headers.set("cf-access-token", token);
 }
 
 function isJsonResponse(res: Response): boolean {
@@ -71,9 +68,10 @@ function isHtmlResponse(res: Response): boolean {
 }
 
 /**
- * Access が API に届く前に止めた応答か。Access はトークンが切れる・無いと、ログイン画面への
- * リダイレクト (`redirect: "manual"` では 3xx か `opaqueredirect` / status 0) か、自前の HTML の
- * ブロック画面 (401/403) を返す。API 自身の 401/403 は JSON なので、こちらには入らない。
+ * API に届く前に止められた応答か (宛先が講師・管理者用の入口で Cloudflare Access に止められた、
+ * 途中の proxy のログイン画面など)。ログイン画面へのリダイレクト (`redirect: "manual"` では 3xx か
+ * `opaqueredirect` / status 0) か、HTML のブロック画面 (401/403) を返す。API 自身の 401/403 は JSON
+ * なので、こちらには入らない。
  */
 export function isAccessRejection(res: Response): boolean {
   if (res.type === "opaqueredirect" || res.status === 0) return true;
@@ -112,7 +110,7 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
     body = JSON.stringify(rawBody);
   }
 
-  // Access のログイン画面へのリダイレクトを追わない (追うと HTML の 200 が返り、接続切れに見えない)。
+  // ログイン画面へのリダイレクトを追わない (追うと HTML の 200 が返り、接続切れに見えない)。
   const res = await fetch(url, { ...rest, headers, body, redirect: "manual" });
   const accessRejected = isAccessRejection(res);
   const data = accessRejected ? null : await readJson(res);

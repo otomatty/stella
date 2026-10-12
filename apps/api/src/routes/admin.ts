@@ -41,7 +41,7 @@ import {
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { cloudflareAccessApiConfigured, revokeAccessSessions } from "../lib/security-cloudflare.js";
+import { revokeUserSessions, sessionRevokeConfigured } from "../lib/session-revoke.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
@@ -317,17 +317,18 @@ adminRoute.post("/api/admin/users/disable", async (c) => {
     rejectPlatformAdminTargetUnlessCallerIsPlatformAdmin(caller, target.role);
 
     await db.update(profiles).set({ disabled: body.disabled }).where(eq(profiles.id, userId));
-    // 無効化したら Access のセッションも切る (アプリは次のリクエストで拒否するが、Access 側の
-    // セッションを残すと、他の Access アプリや拡張のトークンで通り続けるため)。失敗しても無効化は通す。
+    // 無効化したら Clerk (と講師・管理者は Access) のセッション・VS Code のキーも切る (アプリは次の
+    // リクエストで拒否するが、ログインを残さないため)。失敗しても無効化は通す。
     let sessionsRevoked = false;
-    if (body.disabled && target.email && cloudflareAccessApiConfigured(c.env)) {
+    if (body.disabled && target.email && sessionRevokeConfigured(c.env)) {
       try {
-        sessionsRevoked = await revokeAccessSessions(c.env, target.email);
+        const revoked = await revokeUserSessions(c.env, {
+          email: target.email,
+          role: target.role,
+        });
+        sessionsRevoked = revoked.clerk || revoked.access;
       } catch (err) {
-        console.error(
-          "[admin] access session revoke failed",
-          err instanceof Error ? err.message : err,
-        );
+        console.error("[admin] session revoke failed", err instanceof Error ? err.message : err);
       }
     }
     await recordAudit(db, caller, {

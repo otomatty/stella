@@ -27,9 +27,9 @@ beforeEach(() => {
       ('teacher', 'ses', 'instructor', '講師', 'teacher@example.test', 0, 'invite', ${now - 400 * DAY}),
       ('learner', 'ses', 'student', '受講者', 'learner@example.test', 0, 'invite', ${now - 400 * DAY}),
       ('outsider', 'other', 'student', '別組織', 'outsider@example.test', 0, 'invite', 1);
-    INSERT INTO security_sessions (profile_id, tenant_id, last_issued_at, last_session_at, last_seen_at, last_ip, last_country) VALUES
-      ('admin', 'ses', 1, ${now - DAY}, ${now - DAY}, '203.0.113.1', 'JP'),
-      ('teacher', 'ses', 1, ${now - 200 * DAY}, ${now - 200 * DAY}, '203.0.113.2', 'JP');
+    INSERT INTO security_sessions (profile_id, tenant_id, last_session_key, last_session_at, last_seen_at, last_ip, last_country) VALUES
+      ('admin', 'ses', 'k1', ${now - DAY}, ${now - DAY}, '203.0.113.1', 'JP'),
+      ('teacher', 'ses', 'k2', ${now - 200 * DAY}, ${now - 200 * DAY}, '203.0.113.2', 'JP');
     INSERT INTO security_events (id, tenant_id, kind, source, actor_id, email, ip, country, metadata, created_at) VALUES
       ('e1', 'ses', 'session.start', 'app', 'admin', 'admin@example.test', '203.0.113.1', 'JP', '{}', ${now - 3_600_000}),
       ('e2', 'ses', 'access.denied', 'access', null, 'attacker@example.com', '192.0.2.1', 'US', '{}', ${now - 1_800_000}),
@@ -84,6 +84,7 @@ describe("GET /api/security/overview", () => {
       dormant_privileged: 1,
     });
     expect(body.config).toMatchObject({
+      clerk_configured: false,
       access_enforced: false,
       session_revoke: false,
       webhook: false,
@@ -218,13 +219,13 @@ describe("アカウントの棚卸し", () => {
     expect(rows.find((r) => r.id === "admin")).toMatchObject({ dormant: false, sessions_30d: 1 });
   });
 
-  it("Access のセッションの失効は、設定が無ければ 503、あれば Cloudflare に送って記録する", async () => {
+  it("セッションの失効は、設定が無ければ 503。講師・管理者は Access のセッションも切って記録する", async () => {
     const revoke = async (id: string) =>
       request(app, env, `/api/security/accounts/${id}/revoke`, {
         token: await token("admin"),
         method: "POST",
       });
-    expect((await revoke("learner")).status).toBe(503);
+    expect((await revoke("teacher")).status).toBe(503);
 
     env = { ...env, CF_ACCESS_API_TOKEN: "cf", CLOUDFLARE_ACCOUNT_ID: "acct" } as Env;
     app = mountTestApp(env, securityRoute).app;
@@ -232,11 +233,15 @@ describe("アカウントの棚卸し", () => {
       async () => new Response(JSON.stringify({ success: true })),
     );
     vi.stubGlobal("fetch", fetchMock);
-    expect((await revoke("learner")).status).toBe(200);
+    expect((await revoke("teacher")).status).toBe(200);
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
-      email: "learner@example.test",
+      email: "teacher@example.test",
     });
+    // 受講者は Access を使わないので、Access には送らない (Clerk の失効は lib/session-revoke.test.ts)。
+    expect((await revoke("learner")).status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(db.sqlite.prepare("select action, target_id from audit_logs").all()).toEqual([
+      { action: "security_session_revoke", target_id: "teacher" },
       { action: "security_session_revoke", target_id: "learner" },
     ]);
     expect((await revoke("outsider")).status).toBe(404);

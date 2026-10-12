@@ -1,14 +1,14 @@
 /**
- * 認証まわりの API。ログインそのものは Cloudflare Access が行い、アプリは自前の認証を持たない。
+ * 認証まわりの API。ログインそのものは Clerk が行い、アプリは自前の認証を持たない。
  *
- *   POST /api/auth/vscode-link            … ログイン済みの利用者に VS Code 用のワンタイム接続コードを出す
- *   POST /api/auth/vscode-link/exchange   … 接続コードをトークンに交換する (Access の対象外にする経路)
- *   GET  /api/auth/google, /callback      … 退役 (410)。ログインは Access へ移った
+ *   POST /api/auth/vscode-link            … ログイン済みの受講者に VS Code 用のワンタイム接続コードを出す
+ *   POST /api/auth/vscode-link/exchange   … 接続コードを VS Code 用のキーに交換する (ログインなしで呼ぶ経路)
+ *   GET  /api/auth/google, /callback      … 退役 (410)。ログインは Clerk へ移った
  *
- * VS Code の拡張は Web と同じ Access のトークンで API を呼ぶ (`cf-access-token` ヘッダ)。
- * 接続コードを出すときに、そのリクエストに付いていた Access のトークンを預かり、交換で一度だけ渡す。
- * トークンの期限は Access のセッションと同じで、切れたら拡張から接続し直す。
- * Access の無いローカル開発では、交換時に開発用のトークンを作る。
+ * VS Code の拡張は Clerk の画面の SDK を持たない (セッショントークンは約 60 秒で切れる) ので、交換のときに
+ * その利用者の Clerk の API キー (30 日で期限切れ・取り消し可・アプリのスコープ付き) を作って一度だけ渡す。
+ * 講師・管理者・営業のアカウントには出さない (講師・管理者は Access で守った入口からだけ使う)。
+ * Clerk の無いローカル開発では、交換時に開発用のトークンを作る。
  */
 
 import { Hono } from "hono";
@@ -17,10 +17,16 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
 import { authVscodeLinks, profiles } from "../db/schema.js";
-import { accessConfig } from "../lib/access-auth.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { errorResponse, ApiError, getCaller, isLocalRequest } from "../lib/authz.js";
+import {
+  errorResponse,
+  ApiError,
+  getCaller,
+  isLocalRequest,
+  STAFF_HOST_ROLES,
+} from "../lib/authz.js";
+import { clerkConfig, createVscodeApiKey } from "../lib/clerk-auth.js";
 import { enforceAuthLinkRateLimit } from "../lib/rate-limit.js";
 import {
   createVscodeLinkCode,
@@ -32,8 +38,7 @@ import type { Env } from "../env.js";
 
 export const authRoute = new Hono<{ Bindings: Env }>();
 
-/** 拡張に渡すトークンの残りがこれより短ければ、接続コードを出さずに開き直しを促す。 */
-const MIN_ACCESS_TOKEN_REMAINING_MS = 10 * 60 * 1000;
+const STAFF_VSCODE_ERROR = "講師・管理者のアカウントは VS Code の接続では使えません";
 
 /** VS Code の接続を監査ログに残す (どの経路でログインしたかを見分けられるように)。 */
 async function recordVscodeLogin(
@@ -62,7 +67,7 @@ async function recordVscodeLogin(
       targetType: "user",
       targetId: profile.id,
       ip: clientIp(c),
-      metadata: { provider: "cloudflare-access", channel: "vscode-link" },
+      metadata: { provider: "clerk", channel: "vscode-link" },
     },
   );
 }
@@ -70,7 +75,10 @@ async function recordVscodeLogin(
 const retiredGoogleLogin = (c: Parameters<typeof errorResponse>[0]) =>
   errorResponse(
     c,
-    new ApiError("Google ログインは廃止しました。Cloudflare Access からログインしてください", 410),
+    new ApiError(
+      "Google ログインの旧経路は廃止しました。ログイン画面からログインしてください",
+      410,
+    ),
   );
 authRoute.get("/api/auth/google", retiredGoogleLogin);
 authRoute.get("/api/auth/google/callback", retiredGoogleLogin);
@@ -78,18 +86,8 @@ authRoute.get("/api/auth/google/callback", retiredGoogleLogin);
 authRoute.post("/api/auth/vscode-link", async (c) => {
   try {
     const { caller, db, identity } = await getCaller(c);
-    let accessToken: string | null = null;
-    if (identity.kind === "access") {
-      if (
-        identity.expiresAt != null &&
-        identity.expiresAt * 1000 - Date.now() < MIN_ACCESS_TOKEN_REMAINING_MS
-      ) {
-        throw new ApiError(
-          "ログインの有効期限が近づいています。ページを開き直してから、もう一度お試しください",
-          401,
-        );
-      }
-      accessToken = identity.token;
+    if (identity.kind !== "dev" && STAFF_HOST_ROLES.has(caller.role)) {
+      throw new ApiError(STAFF_VSCODE_ERROR, 403);
     }
     const code = createVscodeLinkCode();
     const expiresAt = new Date(Date.now() + VSCODE_LINK_TTL_MS);
@@ -97,7 +95,7 @@ authRoute.post("/api/auth/vscode-link", async (c) => {
       userId: caller.id,
       codeHash: await hashVscodeLinkCode(code),
       expiresAt,
-      accessToken,
+      clerkUserId: identity.kind === "dev" ? null : identity.clerkUserId,
     });
     return c.json({ code, expires_at: expiresAt.toISOString() });
   } catch (err) {
@@ -124,9 +122,9 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
     )[0];
 
     const devSecret = c.env.DEV_AUTH_JWT_SECRET;
-    const accessMode = accessConfig(c.env) !== null;
-    if (!accessMode && !(devSecret && isLocalRequest(c))) {
-      throw new ApiError("認証が未設定です (ACCESS_TEAM_DOMAIN / ACCESS_AUD)", 503);
+    const clerk = clerkConfig(c.env);
+    if (!clerk && !(devSecret && isLocalRequest(c))) {
+      throw new ApiError("認証が未設定です (CLERK_SECRET_KEY)", 503);
     }
 
     const exchanged = await redeemVscodeLink({
@@ -135,25 +133,34 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
       loadProfile: async (userId) =>
         (
           await db
-            .select({ email: profiles.email, disabled: profiles.disabled })
+            .select({ email: profiles.email, disabled: profiles.disabled, role: profiles.role })
             .from(profiles)
             .where(eq(profiles.id, userId))
             .limit(1)
         )[0] ?? null,
+      // Clerk では、Clerk の利用者が分かっていて講師・管理者でないときだけ渡す。
+      canIssue: (link, profile) =>
+        !clerk || (Boolean(link.clerkUserId) && !STAFF_HOST_ROLES.has(profile.role)),
       consume: async (id) => {
         const consumed = (
           await db
             .update(authVscodeLinks)
-            // 預かった Access のトークンは渡したら残さない。
-            .set({ usedAt: now, accessToken: null })
+            .set({ usedAt: now })
             .where(and(eq(authVscodeLinks.id, id), isNull(authVscodeLinks.usedAt)))
             .returning({ id: authVscodeLinks.id })
         )[0];
         return Boolean(consumed);
       },
       issueToken: async (link, email) => {
-        if (accessMode) return link.accessToken ?? null;
-        return devSecret ? signAccessToken(devSecret, link.userId, email) : null;
+        if (clerk) {
+          return createVscodeApiKey(clerk, {
+            clerkUserId: link.clerkUserId ?? "",
+            email,
+            profileId: link.userId,
+          });
+        }
+        if (!devSecret) throw new Error("開発用の鍵がありません");
+        return signAccessToken(devSecret, link.userId, email);
       },
     });
     await recordVscodeLogin(c, db, exchanged.userId);

@@ -13,11 +13,12 @@ export const SECURITY_EVENT_LABELS = {
   "auth.disabled": "無効化済みアカウントからのアクセス",
   "auth.tenant_inactive": "利用停止中の組織からのアクセス",
   "auth.invalid_token": "認証トークンなし・不正なトークン",
+  "auth.staff_host_required": "講師・管理者用の入口 (Access) を通らない講師・管理者のアクセス",
   "authz.forbidden": "権限外の操作 (403)",
   rate_limited: "レート制限の超過 (429)",
   server_error: "サーバーエラー (5xx)",
   "data.export": "データの一括出力",
-  "session.revoke": "Access セッションの失効",
+  "session.revoke": "セッションの失効 (Clerk・Access)",
 } as const;
 
 export type SecurityEventKind = keyof typeof SECURITY_EVENT_LABELS;
@@ -162,11 +163,13 @@ export interface SecurityAccountRow {
 }
 
 export interface SecurityConfigStatus {
-  /** API が Cloudflare Access のトークンを検証している (本番は必ず true)。 */
+  /** API が Clerk のトークンを検証している (本番は必ず true)。 */
+  clerk_configured: boolean;
+  /** 講師・管理者の操作に Cloudflare Access (講師・管理者用の入口) を求めている (本番は必ず true)。 */
   access_enforced: boolean;
-  /** Access のログ (拒否を含むログイン記録) を取り込める (CF_ACCESS_API_TOKEN)。 */
+  /** 講師・管理者用の入口の Access のログ (拒否を含むログイン記録) を取り込める (CF_ACCESS_API_TOKEN)。 */
   access_logs_import: boolean;
-  /** Access のセッションを画面から失効できる (CF_ACCESS_API_TOKEN)。 */
+  /** セッションを画面から失効できる (CLERK_SECRET_KEY、講師・管理者の Access は CF_ACCESS_API_TOKEN)。 */
   session_revoke: boolean;
   /** アラートを外部 (Slack など) へ送る (SECURITY_ALERT_WEBHOOK_URL)。 */
   webhook: boolean;
