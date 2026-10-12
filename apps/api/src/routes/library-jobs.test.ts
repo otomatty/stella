@@ -14,6 +14,7 @@ let started: NarratorJobRequest[];
 let rpcFails: boolean;
 let deleted: string[];
 let r2Fails: boolean;
+let stored: Set<string>;
 let onDelete: (() => void) | undefined;
 
 beforeEach(() => {
@@ -30,17 +31,25 @@ beforeEach(() => {
   started = [];
   rpcFails = false;
   deleted = [];
+  stored = new Set();
   r2Fails = false;
   onDelete = undefined;
   env = {
     DB: db.binding,
     DEV_AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: {
-      delete: async (key: string) => {
+      delete: async (keys: string | string[]) => {
         if (r2Fails) throw new Error("R2 unavailable");
         onDelete?.();
-        deleted.push(key);
+        for (const key of [keys].flat()) {
+          deleted.push(key);
+          stored.delete(key);
+        }
       },
+      list: async ({ prefix }: { prefix: string }) => ({
+        objects: [...stored].filter((key) => key.startsWith(prefix)).map((key) => ({ key })),
+        truncated: false,
+      }),
     },
     NARRATOR: {
       capabilities: async () => ({ configured: true, provider: "fake" }),
@@ -148,6 +157,91 @@ describe("book processing jobs", () => {
       r2_key: "library/ses/book/pdfs/pdf-2.pdf",
       upload_status: "completed",
     });
+  });
+
+  it("treats a repeated registration with the same client id as the same PDF", async () => {
+    const id = "0b9f1a3c-6d2e-4f5a-8b7c-9d0e1f2a3b4c";
+    const register = async (pdfId: string) =>
+      request(app, env, "/api/library/books/book/pdfs", {
+        token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+        method: "POST",
+        body: JSON.stringify({ id: pdfId, fileName: "b.pdf", sizeBytes: 20 }),
+      });
+    expect((await register(id)).status).toBe(201);
+    const again = await register(id.toUpperCase());
+    expect(again.status).toBe(200);
+    expect((await json<{ pdf: { id: string; position: number } }>(again)).pdf).toMatchObject({
+      id,
+      position: 2,
+    });
+    expect(row("SELECT count(*) AS n FROM library_book_pdfs")).toEqual({ n: 2 });
+    expect((await register("not-a-uuid")).status).toBe(400);
+    db.sqlite.exec(
+      "INSERT INTO library_books (id, tenant_id, owner_id, title, created_at, updated_at) VALUES ('book2','ses','owner','Other',1,1)",
+    );
+    const elsewhere = await request(app, env, "/api/library/books/book2/pdfs", {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "POST",
+      body: JSON.stringify({ id, fileName: "b.pdf", sizeBytes: 20 }),
+    });
+    expect(elsewhere.status).toBe(409);
+  });
+
+  it("reopens a failed book when its PDFs change, under a new generation", async () => {
+    const { job } = await startProcessing();
+    db.sqlite.exec(`
+      UPDATE library_jobs SET status = 'failed';
+      UPDATE library_books SET status = 'failed', page_count = 1100;
+      UPDATE library_book_pdfs SET page_count = 60;
+      INSERT INTO library_pages (tenant_id, book_id, page_no, ocr_status) VALUES ('ses','book',1,'succeeded');
+      INSERT INTO library_chapters (id, tenant_id, book_id, position, title, start_page, end_page, updated_at)
+        VALUES ('c1','ses','book',1,'Old',1,1,1);
+    `);
+    for (const key of [
+      "library/ses/book/g1/outputs/run/pages/1.webp",
+      "library/ses/book/g1/chapters/run.json",
+      "library/ses/book/pdfs/keep.pdf",
+    ])
+      stored.add(key);
+    // Nothing to delete: the failed book and its partial results stay as they are.
+    expect((await call("/pdfs/missing", "DELETE")).status).toBe(404);
+    expect(row("SELECT status, generation FROM library_books")).toEqual({
+      status: "failed",
+      generation: 1,
+    });
+    expect(row("SELECT count(*) AS n FROM library_pages")).toEqual({ n: 1 });
+    expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
+    // The retired generation's objects go; the originals stay.
+    expect([...stored]).toEqual(["library/ses/book/pdfs/keep.pdf"]);
+    expect(row("SELECT status, generation, page_count FROM library_books")).toEqual({
+      status: "uploading",
+      generation: 2,
+      page_count: null,
+    });
+    expect(row("SELECT count(*) AS n FROM library_pages")).toEqual({ n: 0 });
+    expect(row("SELECT count(*) AS n FROM library_chapters")).toEqual({ n: 0 });
+    // The old run's job can no longer be retried; a new run starts on generation 2.
+    expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(409);
+    db.sqlite.exec(`
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, page_count, created_at)
+        VALUES ('pdf2','ses','book',2,'b.pdf',10,'library/ses/book/pdfs/pdf2-1.pdf','completed',60,1);
+    `);
+    expect((await startProcessing()).status).toBe(202);
+    expect(started.at(-1)).toMatchObject({ generation: 2 });
+  });
+
+  it("lists chapter titles and page ranges to the owner only", async () => {
+    db.sqlite.exec(`
+      INSERT INTO library_chapters (id, tenant_id, book_id, position, title, markdown, start_page, end_page, updated_at)
+      VALUES ('c2','ses','book',2,'Second','body two',4,9,1), ('c1','ses','book',1,'First','body one',1,3,1);
+    `);
+    expect((await call("/chapters", "GET", "other")).status).toBe(404);
+    const body = await json<{ chapters: unknown[] }>(await call("/chapters"));
+    expect(body.chapters).toEqual([
+      { id: "c1", position: 1, title: "First", startPage: 1, endPage: 3 },
+      { id: "c2", position: 2, title: "Second", startPage: 4, endPage: 9 },
+    ]);
+    expect(JSON.stringify(body)).not.toContain("body one");
   });
 
   it("removes a PDF before processing", async () => {

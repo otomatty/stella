@@ -74,7 +74,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
               .first<Pdf>();
             if (!pdf?.r2_key.startsWith(bookPrefix(p)))
               throw new NonRetryableError("PDFが見つかりません");
-            if (pdf.page_count !== null) return;
+            // Always recount: a stored page_count may be the browser's declaration.
             const object = await this.env.BUCKET.get(pdf.r2_key);
             if (!object || object.size > 50 * 1024 * 1024)
               throw new NonRetryableError("PDFのサイズが無効です");
