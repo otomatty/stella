@@ -58,7 +58,13 @@ async function retrying(action: () => Promise<unknown>): Promise<void> {
  * Registers a part without its body. The client-chosen id makes a retried registration return
  * the same PDF, even when the first response was lost after the server saved it.
  */
-async function registerPart(bookId: string, id: string, name: string, part: Part): Promise<void> {
+async function registerPart(
+  bookId: string,
+  id: string,
+  name: string,
+  part: Part,
+  original: { group: string; fileName?: string },
+): Promise<void> {
   await retrying(() =>
     apiFetch<{ pdf: LibraryPdf }>(`/api/library/books/${bookId}/pdfs`, {
       method: "POST",
@@ -67,6 +73,8 @@ async function registerPart(bookId: string, id: string, name: string, part: Part
         fileName: fileName(name),
         sizeBytes: part.bytes.byteLength,
         pageCount: part.pageCount,
+        group: original.group,
+        ...(original.fileName ? { sourceFileName: fileName(original.fileName) } : {}),
       },
     }),
   );
@@ -141,13 +149,35 @@ export async function uploadBookPdfs(
       id: crypto.randomUUID(),
       name: parts.length > 1 ? partName(file.name, n, parts.length) : file.name,
     }));
-    for (const { part, id, name } of planned) await registerPart(bookId, id, name, part);
-    for (const [n, { part, id }] of planned.entries()) {
-      onProgress({
-        label: `${file.name} を送信中 (${n + 1}/${parts.length})`,
-        percent: base + share / 2 + (share * n) / parts.length / 2,
-      });
-      await sendPart(bookId, id, part);
+    // One group per original: the API deletes its parts together, so an original is never
+    // kept partly. On failure the group is rolled back here (best effort; the owner can also
+    // delete any one part, which removes the rest).
+    const original = {
+      group: crypto.randomUUID(),
+      ...(parts.length > 1 ? { fileName: file.name } : {}),
+    };
+    const registered: string[] = [];
+    try {
+      for (const { part, id, name } of planned) {
+        await registerPart(bookId, id, name, part, original);
+        registered.push(id);
+      }
+      for (const [n, { part, id }] of planned.entries()) {
+        onProgress({
+          label: `${file.name} を送信中 (${n + 1}/${parts.length})`,
+          percent: base + share / 2 + (share * n) / parts.length / 2,
+        });
+        await sendPart(bookId, id, part);
+      }
+    } catch (error) {
+      // The first part may have been saved even if its response was lost; deleting an id that
+      // was never saved is a harmless 404.
+      const first = registered[0] ?? planned[0]?.id;
+      if (first)
+        await apiFetch(`/api/library/books/${bookId}/pdfs/${first}`, {
+          method: "DELETE",
+        }).catch(() => undefined);
+      throw error;
     }
   }
   onProgress({ label: "送信が終わりました", percent: 100 });

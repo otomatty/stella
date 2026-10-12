@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { signAccessToken } from "../../api/src/lib/auth-jwt.js";
 import { speechHash } from "@stella/book-core/speech";
 import type { NarratorJobRequest, LibraryShelfResponse } from "@stella/shared/library/types";
+import { DEFAULT_OCR_PAGES_PER_USER_MONTH, quotaMonth } from "../src/quota";
 const base = resolve(import.meta.dirname, "..");
 const secret = "library-integration-test-secret";
 let mf: Miniflare;
@@ -993,6 +994,57 @@ describe("internal processing foundation", () => {
     expect(
       await db.prepare("SELECT status,page_count FROM library_books WHERE id = ?").bind(id).first(),
     ).toMatchObject({ status: "ready", page_count: 3 });
+  });
+
+  it("refuses OCR past the owner's monthly budget and shows why", async () => {
+    // The owner has already used this month's pages.
+    await db
+      .prepare(
+        "INSERT INTO library_ocr_reservations (instance_id,tenant_id,owner_id,book_id,month,pages,created_at) VALUES ('quota-full','a','owner','none',?,?,1)",
+      )
+      .bind(quotaMonth(), DEFAULT_OCR_PAGES_PER_USER_MONTH)
+      .run();
+    try {
+      const id = await createBook("Over budget");
+      const pdf = await PDFDocument.create();
+      pdf.addPage([200, 300]);
+      const bytes = await pdf.save(),
+        key = `library/a/${id}/pdfs/quota.pdf`;
+      await bucket.put(key, bytes);
+      await db
+        .prepare(
+          "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,created_at) VALUES (?, 'a', ?, 1, 'quota.pdf', ?, ?, 'completed', 1)",
+        )
+        .bind(crypto.randomUUID(), id, bytes.length, key)
+        .run();
+      await db.prepare("UPDATE library_books SET status = 'uploading' WHERE id = ?").bind(id).run();
+      const processed = await request(`books/${id}/process`, "owner", "POST");
+      const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
+      await expect(waitJob(jobId)).rejects.toThrow(/Job failed/);
+      expect(
+        await db
+          .prepare(
+            "SELECT j.error_code, j.error_message, b.status FROM library_jobs j JOIN library_books b ON b.id = j.book_id WHERE j.id = ?",
+          )
+          .bind(jobId)
+          .first(),
+      ).toMatchObject({
+        error_code: "rejected",
+        error_message: expect.stringContaining(`${DEFAULT_OCR_PAGES_PER_USER_MONTH}ページ`),
+        status: "failed",
+      });
+      // Refused before any paid call: no OCR usage was recorded for the book.
+      expect(
+        await db
+          .prepare("SELECT count(*) AS n FROM library_job_usages WHERE book_id = ?")
+          .bind(id)
+          .first(),
+      ).toEqual({ n: 0 });
+    } finally {
+      await db
+        .prepare("DELETE FROM library_ocr_reservations WHERE instance_id = 'quota-full'")
+        .run();
+    }
   });
 
   it("starts a reservation whose RPC never ran from the scheduled handler", async () => {

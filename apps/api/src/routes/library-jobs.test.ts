@@ -146,17 +146,44 @@ describe("book processing jobs", () => {
     expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(409);
   });
 
-  it("reports a conflict when an upload replaces the PDF while it is being deleted", async () => {
-    // A PUT commits its compare-and-swap between the R2 delete and the row delete.
-    onDelete = () =>
-      db.sqlite.exec(
-        "UPDATE library_book_pdfs SET r2_key = 'library/ses/book/pdfs/pdf-2.pdf', upload_status = 'completed'",
+  it("deletes a whole split original even when a part is re-sent during the delete", async () => {
+    db.sqlite.exec(`
+      UPDATE library_book_pdfs SET part_group = 'g-1';
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, part_group, created_at)
+        VALUES ('pdf2','ses','book',2,'b_02.pdf',10,'library/ses/book/pdfs/pdf2-1.pdf','completed','g-1',1);
+    `);
+    // The PUT of part 2 started before the delete and now tries its compare-and-swap.
+    let swapped = -1;
+    onDelete = () => {
+      swapped = Number(
+        db.sqlite
+          .prepare(
+            "UPDATE library_book_pdfs SET r2_key = 'library/ses/book/pdfs/pdf2-2.pdf', upload_status = 'completed' WHERE id = 'pdf2' AND r2_key = 'library/ses/book/pdfs/pdf2-1.pdf'",
+          )
+          .run().changes,
       );
-    expect((await call("/pdfs/pdf", "DELETE")).status).toBe(409);
-    expect(row("SELECT r2_key, upload_status FROM library_book_pdfs")).toEqual({
-      r2_key: "library/ses/book/pdfs/pdf-2.pdf",
-      upload_status: "completed",
+    };
+    expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
+    expect(swapped).toBe(0); // the delete's mark already changed the key
+    expect(row("SELECT count(*) AS n FROM library_book_pdfs")).toEqual({ n: 0 });
+    expect(deleted.sort()).toEqual([
+      "library/ses/book/pdfs/pdf-1.pdf",
+      "library/ses/book/pdfs/pdf2-1.pdf",
+    ]);
+  });
+
+  it("refuses to send a PDF that is being deleted", async () => {
+    db.sqlite.exec(
+      "UPDATE library_book_pdfs SET upload_status = 'uploading', r2_key = r2_key || '#deleting'",
+    );
+    const sent = await request(app, env, "/api/library/books/book/pdfs/pdf", {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "PUT",
+      headers: { "Content-Length": "10", "Content-Type": "application/pdf" },
+      body: new Uint8Array(10),
     });
+    expect(sent.status).toBe(404);
+    expect((await startProcessing()).status).toBe(409);
   });
 
   it("treats a repeated registration with the same client id as the same PDF", async () => {
@@ -228,6 +255,29 @@ describe("book processing jobs", () => {
     `);
     expect((await startProcessing()).status).toBe(202);
     expect(started.at(-1)).toMatchObject({ generation: 2 });
+  });
+
+  it("deletes every part split from the same original together", async () => {
+    db.sqlite.exec(`
+      UPDATE library_book_pdfs SET part_group = 'g-1', source_file_name = 'book.pdf';
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, part_group, source_file_name, created_at)
+        VALUES ('pdf2','ses','book',2,'book_02.pdf',10,'library/ses/book/pdfs/pdf2-1.pdf','completed','g-1','book.pdf',1),
+               ('other','ses','book',3,'notes.pdf',10,'library/ses/book/pdfs/other-1.pdf','completed',NULL,NULL,1);
+    `);
+    const listed = await json<{ pdfs: { id: string; sourceFileName: string | null }[] }>(
+      await call("/pdfs"),
+    );
+    expect(listed.pdfs.map((pdf) => [pdf.id, pdf.sourceFileName])).toEqual([
+      ["pdf", "book.pdf"],
+      ["pdf2", "book.pdf"],
+      ["other", null],
+    ]);
+    expect((await call("/pdfs/pdf2", "DELETE")).status).toBe(200);
+    expect(deleted.sort()).toEqual([
+      "library/ses/book/pdfs/pdf-1.pdf",
+      "library/ses/book/pdfs/pdf2-1.pdf",
+    ]);
+    expect(db.sqlite.prepare("SELECT id FROM library_book_pdfs").all()).toEqual([{ id: "other" }]);
   });
 
   it("lists chapter titles and page ranges to the owner only", async () => {

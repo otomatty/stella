@@ -43,7 +43,20 @@ export function parseBookMetadata(input: unknown, create: boolean): UpdateLibrar
   return result;
 }
 export function parseCreatePdf(input: unknown): CreateLibraryPdf {
-  const value = object(input, ["id", "fileName", "sizeBytes", "pageCount"]);
+  const value = object(input, [
+    "id",
+    "fileName",
+    "sizeBytes",
+    "pageCount",
+    "group",
+    "sourceFileName",
+  ]);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (value.group !== undefined && (typeof value.group !== "string" || !uuid.test(value.group)))
+    throw new LibraryInputError("PDFのまとまりのIDが無効です");
+  const source = typeof value.sourceFileName === "string" ? value.sourceFileName.trim() : "";
+  if (value.sourceFileName !== undefined && (!source || source.length > 200))
+    throw new LibraryInputError("元のファイル名は1〜200文字で指定してください");
   if (
     value.pageCount !== undefined &&
     (!Number.isSafeInteger(value.pageCount) ||
@@ -51,11 +64,7 @@ export function parseCreatePdf(input: unknown): CreateLibraryPdf {
       (value.pageCount as number) > LIBRARY_LIMITS.maxPdfPages)
   )
     throw new LibraryInputError("ページ数が無効です");
-  if (
-    value.id !== undefined &&
-    (typeof value.id !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.id))
-  )
+  if (value.id !== undefined && (typeof value.id !== "string" || !uuid.test(value.id)))
     throw new LibraryInputError("PDFのIDが無効です");
   const fileName = typeof value.fileName === "string" ? value.fileName.trim() : "";
   if (!fileName || fileName.length > 200)
@@ -72,6 +81,8 @@ export function parseCreatePdf(input: unknown): CreateLibraryPdf {
     fileName,
     sizeBytes: size as number,
     ...(value.pageCount === undefined ? {} : { pageCount: value.pageCount as number }),
+    ...(value.group === undefined ? {} : { group: (value.group as string).toLowerCase() }),
+    ...(value.sourceFileName === undefined ? {} : { sourceFileName: source }),
   };
 }
 export function parseShelfUpdate(input: unknown): UpdateLibraryShelf {

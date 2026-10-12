@@ -2325,7 +2325,7 @@ export const auditLogs = sqliteTable("audit_logs", {
 });
 
 // ---------------------------------------------------------------
-// セキュリティ監視 (migration 0064)
+// セキュリティ監視 (migration 0066)
 // ---------------------------------------------------------------
 
 /**
@@ -2499,6 +2499,7 @@ export const APP_TABLES = [
   "library_job_usages",
   "library_job_dispatches",
   "library_r2_deletions",
+  "library_ocr_reservations",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;
