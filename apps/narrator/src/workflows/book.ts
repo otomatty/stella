@@ -1,6 +1,6 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { NonRetryableError } from "cloudflare:workflows";
-import type { NarratorJobRequest } from "@stella/shared/library/types";
+import { LIBRARY_LIMITS, type NarratorJobRequest } from "@stella/shared/library/types";
 import { loadPdf, extractFigures } from "@stella/book-core/pdf";
 import { parseOcrResponse, normalizeOcrPage } from "@stella/book-core/ocr";
 import { splitIntoChapters, type ChapterDraft } from "@stella/book-core/chapters";
@@ -102,7 +102,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             return plan;
           });
           if (next - 1 > 1000) throw new NonRetryableError("本は1000ページまでです");
-          if (rows.results.reduce((n, pdf) => n + pdf.size_bytes, 0) > 1024 * 1024 * 1024)
+          if (rows.results.reduce((n, pdf) => n + pdf.size_bytes, 0) > LIBRARY_LIMITS.maxBookBytes)
             throw new NonRetryableError("本は合計1GBまでです");
           await this.env.DB.prepare(
             `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
