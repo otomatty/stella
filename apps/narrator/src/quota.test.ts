@@ -27,12 +27,24 @@ describe("monthly OCR page budget", () => {
     expect(await reserve("i1", "ba", 60)).toBeNull();
     expect(await reserve("i1", "ba", 60)).toBeNull(); // a retried step finds its own row
     expect(await reserve("i2", "ba", 40)).toBeNull();
-    expect(await reserve("i3", "ba", 1)).toMatch(/100ページ/);
+    expect(userMessage(await reserve("i3", "ba", 1))).toMatch(/100ページ/);
     expect(used()).toEqual([{ owner_id: "a", pages: 100 }]);
+  });
+  it("needs no budget when nothing is left to read, even past a lowered limit", async () => {
+    expect(await reserve("i1", "ba", 100)).toBeNull();
+    expect(
+      await reserveOcrPages(
+        db.binding,
+        { instanceId: "i2", tenantId: "t", bookId: "ba", pages: 0, month: "2026-10" },
+        { perUser: 50, perTenant: 50 },
+      ),
+    ).toBeNull();
   });
   it("refuses past the tenant limit and starts again next month", async () => {
     expect(await reserve("i1", "ba", 100)).toBeNull();
-    expect(await reserve("i2", "bb", 60)).toMatch(/組織の今月の読み取りの上限（150ページ）/);
+    expect(userMessage(await reserve("i2", "bb", 60))).toMatch(
+      /組織の今月の読み取りの上限（150ページ）/,
+    );
     expect(await reserve("i3", "bb", 50)).toBeNull();
     expect(await reserve("i4", "bb", 60, "2026-11")).toBeNull();
   });
@@ -42,9 +54,12 @@ describe("monthly OCR page budget", () => {
     expect(ocrLimits({ LIBRARY_OCR_PAGES_PER_USER_MONTH: "x" }).perUser).toBe(2000);
     // 2026-10-31 15:00 UTC is already November in Japan.
     expect(quotaMonth(Date.UTC(2026, 9, 31, 15))).toBe("2026-11");
-    expect(userMessage(new Error(`Workflow failed: ${userFacing("本は合計1GBまでです")}`))).toBe(
+    expect(userMessage(new Error(`Workflow failed: ${userFacing("book_bytes")}`))).toBe(
       "本は合計1GBまでです",
     );
     expect(userMessage(new Error("provider said: secret text"))).toBeNull();
+    // Free text after the marker, or an unknown code, never becomes the owner's message.
+    expect(userMessage(new Error("LIBRARY_USER: page 3 says: secret text"))).toBeNull();
+    expect(userMessage(new Error("LIBRARY_USER:toString:1"))).toBeNull();
   });
 });

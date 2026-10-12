@@ -98,6 +98,8 @@ async function processingAvailable(env: Env): Promise<boolean> {
   }
 }
 // PDFs can be added or replaced only before processing starts.
+/** Suffix on the R2 key of a PDF row that is being deleted (see the PDF DELETE route). */
+const DELETING = "#deleting";
 function requireUploadable(book: BookRow): void {
   if (book.status !== "draft" && book.status !== "uploading")
     throw new ApiError("処理を始めた書籍にはPDFを追加できません", 409);
@@ -442,7 +444,7 @@ libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     )
       .bind(caller.tenantId, book.id, c.req.param("pdfId"))
       .first<PdfRow>();
-    if (!pdf) throw new ApiError("PDFが見つかりません", 404);
+    if (!pdf || pdf.r2_key.endsWith(DELETING)) throw new ApiError("PDFが見つかりません", 404);
     const body = c.req.raw.body;
     if (!body || Number(c.req.header("Content-Length")) !== pdf.size_bytes)
       throw new ApiError("登録したサイズと送信したPDFのサイズが一致しません", 400);
@@ -495,30 +497,32 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     const book = await reopenFailed(c.env, caller, found);
     requireUploadable(book);
     // The parts split from one original go together: leaving some would process a truncated
-    // original. Mark them unfinished first so processing cannot start on them, and a failed R2
-    // delete leaves rows the owner can delete again instead of unreferenced objects.
+    // original. One UPDATE marks the whole group as being deleted by suffixing its keys, so a
+    // PUT that is still in flight can no longer confirm (its compare-and-swap on the key fails)
+    // and processing cannot start (the rows are unfinished). A failed R2 delete leaves marked
+    // rows the owner can delete again.
     const sameOriginal =
       "tenant_id = ? AND book_id = ? AND (id = ? OR (part_group IS NOT NULL AND part_group = ?))";
     const scope = [caller.tenantId, book.id, pdf.id, pdf.part_group];
-    const parts = await c.env.DB.prepare(`SELECT * FROM library_book_pdfs WHERE ${sameOriginal}`)
-      .bind(...scope)
-      .all<PdfRow>();
     const marked = await c.env.DB.prepare(
-      `UPDATE library_book_pdfs SET upload_status = 'uploading' WHERE ${sameOriginal} AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))`,
+      `UPDATE library_book_pdfs SET upload_status = 'uploading', r2_key = CASE WHEN r2_key LIKE '%${DELETING}' THEN r2_key ELSE r2_key || '${DELETING}' END WHERE ${sameOriginal} AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))`,
     )
       .bind(...scope, caller.tenantId, book.id)
       .run();
     if (!marked.meta.changes)
       throw new ApiError("PDFを削除できませんでした。もう一度お試しください", 409);
-    await bucket.delete(parts.results.map((part) => part.r2_key));
-    const removed = await c.env.DB.prepare(
-      `DELETE FROM library_book_pdfs WHERE ${sameOriginal} AND upload_status = 'uploading'`,
+    // Read the keys after marking: a replacement that committed before the mark is included.
+    const parts = await c.env.DB.prepare(
+      `SELECT r2_key FROM library_book_pdfs WHERE ${sameOriginal}`,
+    )
+      .bind(...scope)
+      .all<{ r2_key: string }>();
+    await bucket.delete(parts.results.map((part) => part.r2_key.slice(0, -DELETING.length)));
+    await c.env.DB.prepare(
+      `DELETE FROM library_book_pdfs WHERE ${sameOriginal} AND r2_key LIKE '%${DELETING}'`,
     )
       .bind(...scope)
       .run();
-    // A concurrent upload swapped in a new validated object; that replacement stands.
-    if (removed.meta.changes < parts.results.length)
-      throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
     return c.json({ ok: true });
   } catch (error) {
     return failure(c, error);
