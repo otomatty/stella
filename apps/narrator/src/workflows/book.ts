@@ -62,7 +62,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             .all<{ id: string }>();
           if (!rows.results.length) throw new NonRetryableError("PDFがありません");
           if (rows.results.length > MAX_BOOK_PDFS)
-            throw new NonRetryableError(userFacing("PDFの数が上限を超えています"));
+            throw new NonRetryableError(userFacing("pdf_count"));
           return rows.results.map((pdf) => pdf.id);
         });
         for (const id of ids)
@@ -82,8 +82,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             const count = (
               await loadPdf(new Uint8Array(await object.arrayBuffer()))
             ).getPageCount();
-            if (count < 1 || count > 100)
-              throw new NonRetryableError(userFacing("PDFは1〜100ページまでです"));
+            if (count < 1 || count > 100) throw new NonRetryableError(userFacing("pdf_pages"));
             await this.env.DB.prepare(
               `UPDATE library_book_pdfs SET page_count = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
             )
@@ -103,9 +102,9 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             next += pdf.page_count;
             return plan;
           });
-          if (next - 1 > 1000) throw new NonRetryableError(userFacing("本は1000ページまでです"));
+          if (next - 1 > 1000) throw new NonRetryableError(userFacing("book_pages"));
           if (rows.results.reduce((n, pdf) => n + pdf.size_bytes, 0) > LIBRARY_LIMITS.maxBookBytes)
-            throw new NonRetryableError(userFacing("本は合計1GBまでです"));
+            throw new NonRetryableError(userFacing("book_bytes"));
           await this.env.DB.prepare(
             `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
           )
@@ -154,7 +153,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             },
             ocrLimits(this.env),
           );
-          if (refused) throw new NonRetryableError(userFacing(refused));
+          if (refused) throw new NonRetryableError(refused);
         });
         const ocr = ocrProvider({
           ...providerConfig(this.env),
