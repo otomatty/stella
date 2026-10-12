@@ -13,6 +13,7 @@ let app: ReturnType<typeof mountTestApp>["app"];
 let started: NarratorJobRequest[];
 let rpcFails: boolean;
 let deleted: string[];
+let r2Fails: boolean;
 
 beforeEach(() => {
   db = sqliteD1();
@@ -28,11 +29,13 @@ beforeEach(() => {
   started = [];
   rpcFails = false;
   deleted = [];
+  r2Fails = false;
   env = {
     DB: db.binding,
     AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: {
       delete: async (key: string) => {
+        if (r2Fails) throw new Error("R2 unavailable");
         deleted.push(key);
       },
     },
@@ -109,7 +112,7 @@ describe("book processing jobs", () => {
     const { job } = await startProcessing();
     expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(409);
     db.sqlite.exec(
-      "UPDATE library_jobs SET status = 'failed', error_message = 'x'; UPDATE library_books SET status = 'failed'; UPDATE library_job_dispatches SET dispatched_at = 1",
+      "UPDATE library_jobs SET status = 'failed', error_message = 'x', progress_current = 4, progress_total = 9; UPDATE library_books SET status = 'failed'; UPDATE library_job_dispatches SET dispatched_at = 1",
     );
     expect((await startProcessing()).status).toBe(409);
     expect((await call(`/jobs/${job?.id}/retry`, "POST", "other")).status).toBe(404);
@@ -119,6 +122,8 @@ describe("book processing jobs", () => {
       status: "queued",
       attempt: 2,
       errorMessage: null,
+      progressCurrent: 0,
+      progressTotal: null,
     });
     expect(row("SELECT instance_id, dispatched_at FROM library_job_dispatches")).toEqual({
       instance_id: `${job?.id}-2`,
@@ -131,6 +136,14 @@ describe("book processing jobs", () => {
 
   it("removes a PDF before processing", async () => {
     expect((await call("/pdfs/pdf", "DELETE", "other")).status).toBe(404);
+    r2Fails = true;
+    expect((await call("/pdfs/pdf", "DELETE")).status).toBe(500);
+    // The row survives the failed R2 delete, unfinished so processing cannot start on it.
+    expect(row("SELECT upload_status FROM library_book_pdfs")).toEqual({
+      upload_status: "uploading",
+    });
+    expect((await startProcessing()).status).toBe(409);
+    r2Fails = false;
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
     expect(deleted).toEqual(["library/ses/book/pdfs/pdf-1.pdf"]);
     expect(row("SELECT count(*) AS n FROM library_book_pdfs")).toEqual({ n: 0 });

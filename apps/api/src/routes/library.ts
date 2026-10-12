@@ -415,14 +415,23 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
       .bind(caller.tenantId, book.id, c.req.param("pdfId"))
       .first<PdfRow>();
     if (!pdf) throw new ApiError("PDFが見つかりません", 404);
-    const removed = await c.env.DB.prepare(
-      "DELETE FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
+    const bucket = c.env.LIBRARY_BUCKET;
+    if (!bucket) throw new ApiError("PDFの削除は現在利用できません", 403);
+    // Mark it unfinished first: processing cannot start on it, and a failed R2 delete
+    // leaves a row the owner can delete again instead of an unreferenced object.
+    const marked = await c.env.DB.prepare(
+      "UPDATE library_book_pdfs SET upload_status = 'uploading' WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
     )
       .bind(caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
       .run();
-    if (!removed.meta.changes)
+    if (!marked.meta.changes)
       throw new ApiError("PDFを削除できませんでした。もう一度お試しください", 409);
-    await c.env.LIBRARY_BUCKET?.delete(pdf.r2_key);
+    await bucket.delete(pdf.r2_key);
+    await c.env.DB.prepare(
+      "DELETE FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ?",
+    )
+      .bind(caller.tenantId, book.id, pdf.id, pdf.r2_key)
+      .run();
     return c.json({ ok: true });
   } catch (error) {
     return failure(c, error);
@@ -513,7 +522,7 @@ libraryRoute.post("/api/library/books/:bookId/jobs/:jobId/retry", async (c) => {
     // A new attempt gets a new Workflow instance; results of the old one can no longer write.
     await c.env.DB.batch([
       c.env.DB.prepare(
-        `UPDATE library_jobs SET attempt = attempt + 1, status = 'queued', progress_current = 0, error_code = NULL, error_message = NULL, started_at = NULL, finished_at = NULL
+        `UPDATE library_jobs SET attempt = attempt + 1, status = 'queued', progress_current = 0, progress_total = NULL, error_code = NULL, error_message = NULL, started_at = NULL, finished_at = NULL
         WHERE tenant_id = ? AND book_id = ? AND id = ? AND attempt = ? AND status = 'failed'
           AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND generation = library_jobs.generation AND status <> 'deleting')
           AND NOT EXISTS (SELECT 1 FROM library_jobs other WHERE other.tenant_id = library_jobs.tenant_id AND other.book_id = library_jobs.book_id AND other.status IN ('queued','running'))`,
