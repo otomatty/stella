@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    name: assets → migrate → narrator → api → seed → web
+    name: assets → migrate → api → seed → web → narrator
     needs: verify
     runs-on: ubuntu-latest
     env:
@@ -112,15 +112,6 @@ jobs:
       - name: Prepare private library storage
         run: bun run apps/api/scripts/prepare-library-storage.ts
 
-      # Runs before the API, whose NARRATOR binding needs stella-narrator to exist. A failure stops
-      # the deploy only when no earlier version exists; otherwise that version keeps running and
-      # API/web still deploy.
-      - name: Deploy narrator (private service)
-        run: |
-          if bun run deploy:narrator; then exit 0; fi
-          (cd apps/narrator && bunx wrangler deployments list --name stella-narrator > /dev/null) || exit 1
-          echo "::warning::narrator deploy failed; the previous stella-narrator version keeps running"
-
       - name: Deploy API
         run: bun run deploy:api
 
@@ -151,3 +142,12 @@ jobs:
       # (vscode 拡張は web のデプロイに要らない)。
       - name: Deploy Web (build with VITE_* then deploy)
         run: bun run deploy:web
+
+      # Last, and never tolerated: narrator carries the processing switch, so a failed deploy
+      # (including one that turns processing off) must fail the run instead of leaving the
+      # previous version running. API and web are already out, so they are never blocked, and
+      # the API's checks (e.g. the external-processing confirmation) ship before narrator's
+      # settings. The API's NARRATOR binding needs stella-narrator to exist: on a brand-new
+      # account, run `bun run deploy:narrator` once before the first deploy.
+      - name: Deploy narrator (private service)
+        run: bun run deploy:narrator

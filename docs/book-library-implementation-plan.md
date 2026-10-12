@@ -147,7 +147,7 @@ rootの`build`は現在WebとVS Codeを明示しているため、処理Worker�
 
 追加するコマンドは`test:narrator`、`smoke:library`、処理Workerのビルド・ローカル起動とし、rootの既存コマンドから実行漏れがないようにする。P0・P1の処理検証は `test:narrator` で実Worker・D1・R2・JWTを組み合わせて実行する。`smoke:library` はP2以降に追加する。
 
-Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプロイはGitHub Actionsで、加算DB migration、処理Worker、STELLA API、Webの順に更新する。既存の教材画像・PDF同期・seedの変更判定を維持し、書籍アップロードをGit教材の配信経路へ混ぜない。
+Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプロイはGitHub Actionsで、加算DB migration、STELLA API、Web、処理Workerの順に更新する。処理Workerは処理の切り替え（`LIBRARY_PROCESSING_ENABLED`）を持つので最後に置き、APIの検査（外部送信の確認など）が先に出るようにする。処理Workerのデプロイが失敗したら実行全体を失敗にし、前の版の設定のまま動き続けていることを見逃さない。既存の教材画像・PDF同期・seedの変更判定を維持し、書籍アップロードをGit教材の配信経路へ混ぜない。
 
 処理用プロバイダの秘密値は処理Workerへ置く。偽プロバイダで通常CIを動かし、本物のOCR・TTSの確認は承認済みのサンプルによるstaging検証で行う。APIや処理Workerのbinding未設定時は書籍機能だけを利用不可にし、通常のSTELLA APIとログインを継続できるようにする。
 
