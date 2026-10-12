@@ -27,11 +27,15 @@ export const ACCESS_LOG_IMPORTED_AT = "access_logs_imported_at";
 const MAX_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const PAGE_LIMIT = 1000;
 /**
- * 1 回の取り込みで読むページ数の上限。D1 の 1 回の呼び出しあたりの問い合わせ数の上限 (有料プランで
- * 1000) に、cron の他の処理と合わせて収める (1 ページ = 1000 行 ≒ 200 文)。読み切れなかった窓は
- * 次の取り込みで続きのページから読む。
+ * 1 回の取り込みで書く STELLA の行の目安。2 ページ目より後は、これだけ集まったら次のページを読まない
+ * (2 ページは必ず読む。書くのは多くて約 2,000 行 ≒ 340 文)。D1 の 1 回の呼び出しあたりの問い合わせ数の上限 (有料プランで 1000) に、
+ * cron の他の処理と合わせて収める。数えるのは STELLA の行だけ — 同じアカウントの別のアプリの行は
+ * 書かないので、それが多くても STELLA の取り込みは遅れない。読み切れなかった窓は次の取り込みで
+ * 続きのページから読む。
  */
-const PAGES_PER_RUN = 2;
+const STELLA_ROWS_PER_RUN = 1000;
+/** 1 回の取り込みで読むページ数の上限 (Cloudflare API の呼び出しと時間を cron 1 回に収める)。 */
+const MAX_PAGES_PER_RUN = 10;
 /** 1 文で入れる行数 (security_events は 16 列。D1 のバインドの上限 100 に収める)。 */
 const ROWS_PER_INSERT = 6;
 /** 1 回の batch に入れる文の数。 */
@@ -135,8 +139,13 @@ export async function importAccessLogs(
   db: Db,
   fetchImpl: typeof fetch = fetch,
   now = new Date(),
-): Promise<{ imported: number } | null> {
+): Promise<{ imported: number; oldest: Date | null } | null> {
   if (!cloudflareAccessApiConfigured(env)) return null;
+  // 取り込むのは STELLA のアプリの行だけ。ホスト名が分からなければ何も読まない (別のアプリの利用者の
+  // 情報を混ぜないため)。
+  const appHost = stellaAppHost(env);
+  if (!appHost) return { imported: 0, oldest: null };
+  const isStella = (l: AccessRequestLog) => appDomainHost(l.app_domain) === appHost;
   const saved = parseWindow(await readSecurityState(db, ACCESS_LOG_CURSOR));
   // 読んでいる途中の窓があればその続きのページから。無ければ、前回読み切った時刻から今までの窓を
   // 1 ページ目から (初回・長く止まっていたあとは 1 日までさかのぼる)。
@@ -151,8 +160,9 @@ export async function importAccessLogs(
   type Log = AccessRequestLog & { ray_id: string; created_at: string };
   const page: Log[] = [];
   const seen = new Set<string>();
+  let stellaRows = 0;
   let next: ImportWindow = { since: since.getTime(), until: until.getTime(), page: firstPage };
-  for (let pageNo = firstPage; pageNo < firstPage + PAGES_PER_RUN; pageNo++) {
+  for (let pageNo = firstPage; pageNo < firstPage + MAX_PAGES_PER_RUN; pageNo++) {
     const url = new URL(
       `${API_BASE}/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID ?? "")}/access/logs/access_requests`,
     );
@@ -180,6 +190,7 @@ export async function importAccessLogs(
     const fresh = rows.filter((l) => !seen.has(l.ray_id));
     for (const l of fresh) seen.add(l.ray_id);
     page.push(...fresh);
+    stellaRows += fresh.filter(isStella).length;
     if (body.result.length < PAGE_LIMIT) {
       // 窓を読み切った。次は until から今までの窓。
       next = { since: until.getTime(), until: null, page: 1 };
@@ -197,12 +208,11 @@ export async function importAccessLogs(
       break;
     }
     next = { since: since.getTime(), until: until.getTime(), page: pageNo + 1 };
+    if (pageNo > firstPage && stellaRows >= STELLA_ROWS_PER_RUN) break;
   }
 
-  // 取り込むのは STELLA のアプリの行だけ (ホスト名が分からなければ何も取り込まない — 別のアプリの
-  // 利用者の情報を混ぜないため)。続きの位置は絞り込む前のページで決めている。
-  const appHost = stellaAppHost(env);
-  const logs = appHost ? page.filter((l) => appDomainHost(l.app_domain) === appHost) : [];
+  // 続きの位置は絞り込む前のページで決めている。
+  const logs = page.filter(isStella);
   const emails = [
     ...new Set(
       logs.map((l) => l.user_email?.trim().toLowerCase()).filter((e): e is string => Boolean(e)),
@@ -212,9 +222,11 @@ export async function importAccessLogs(
   const fallback = securityFallbackTenant(env);
 
   const values: NewSecurityEvent[] = [];
+  let oldest: Date | null = null;
   for (const log of logs) {
     const createdAt = new Date(log.created_at);
     if (Number.isNaN(createdAt.getTime())) continue;
+    if (!oldest || createdAt < oldest) oldest = createdAt;
     const email = log.user_email?.trim().toLowerCase() || null;
     const country = log.country?.toUpperCase();
     values.push({
@@ -237,7 +249,7 @@ export async function importAccessLogs(
   const imported = await insertSecurityEvents(db, values, ROWS_PER_INSERT, INSERTS_PER_BATCH);
   await writeSecurityState(db, ACCESS_LOG_CURSOR, JSON.stringify(next));
   await writeSecurityState(db, ACCESS_LOG_IMPORTED_AT, String(now.getTime()));
-  return { imported };
+  return { imported, oldest };
 }
 
 /**

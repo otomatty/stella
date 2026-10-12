@@ -4,7 +4,7 @@ import { getDb } from "../db/client.js";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { importAccessLogs, revokeAccessSessions } from "./security-cloudflare.js";
-import { detectSecurityAlerts, jstDate } from "./security-detect.js";
+import { THRESHOLDS, detectSecurityAlerts, jstDate } from "./security-detect.js";
 import {
   insertSecurityEvent,
   purgeExpiredVscodeLinks,
@@ -463,6 +463,30 @@ describe("detectSecurityAlerts", () => {
     expect(cursor()).toBe(NOW.getTime());
   });
 
+  it("遅れて取り込んだ Access の拒否の連続も、その時刻の 1 時間で数えて検知する", async () => {
+    for (let i = 0; i < THRESHOLDS.accessDenied; i++) {
+      await seedEvent({
+        kind: "access.denied",
+        tenantId: "ses",
+        source: "access",
+        externalId: `late-${i}`,
+        email: "brute@example.com",
+        ip: "192.0.2.9",
+        createdAt: minutesAgo(180 - i),
+      });
+    }
+    // 取り込んだ時刻が分からなければ、検査の時刻までの 1 時間には入らない。
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(alerts()).toEqual([]);
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn(), {
+      accessImportedFrom: minutesAgo(180),
+    });
+    expect(alerts().map((a) => [a.rule, a.subject, a.event_count])).toEqual([
+      ["access_denied_burst", "192.0.2.9", THRESHOLDS.accessDenied],
+      ["access_denied_burst", "brute@example.com", THRESHOLDS.accessDenied],
+    ]);
+  });
+
   it("重要度「低」(深夜帯の管理者サインイン) は画面にだけ出して通知しない", async () => {
     const lateNight = new Date("2026-10-11T17:30:00.000Z"); // 日本時間 2:30
     await seedEvent({
@@ -531,7 +555,7 @@ describe("Cloudflare Access との連携", () => {
       ],
     };
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
-    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toMatchObject({
       imported: 2,
     });
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
@@ -539,7 +563,7 @@ describe("Cloudflare Access との連携", () => {
     expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer cf-token");
     expect(
       await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, new Date(NOW.getTime() + 1000)),
-    ).toEqual({ imported: 0 });
+    ).toMatchObject({ imported: 0 });
     expect(
       db.sqlite
         .prepare("select kind, email, country, tenant_id from security_events order by created_at")
@@ -622,7 +646,7 @@ describe("Cloudflare Access との連携", () => {
         pageNo === 1 ? Array.from({ length: 1000 }, (_, i) => row(i)) : [row(1000), row(1001)];
       return new Response(JSON.stringify({ success: true, result }));
     });
-    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toMatchObject({
       imported: 1002,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(2);
@@ -647,14 +671,14 @@ describe("Cloudflare Access との連携", () => {
       }));
       return new Response(JSON.stringify({ success: true, result }));
     });
-    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toMatchObject({
       imported: 2000,
     });
     const first = importCursor();
     expect(first).toMatchObject({ until: NOW.getTime(), page: 3 });
 
     const later = new Date(NOW.getTime() + 15 * 60_000);
-    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, later)).toEqual({
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, later)).toMatchObject({
       imported: 500,
     });
     // 続きは同じ窓の 3 ページ目から。
@@ -663,6 +687,35 @@ describe("Cloudflare Access との連携", () => {
     expect(
       (db.sqlite.prepare("select count(*) as n from security_events").get() as { n: number }).n,
     ).toBe(total);
+  });
+
+  it("別のアプリの行は 1 回に書く量に数えず、STELLA の行が出てくるまでページを読み進める", async () => {
+    const at = minutesAgo(30).toISOString();
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
+      const pageNo = Number(new URL(String(input)).searchParams.get("page"));
+      const result =
+        pageNo <= 3
+          ? Array.from({ length: 1000 }, (_, i) => ({
+              ray_id: `other-${pageNo}-${i}`,
+              user_email: "x@other.example",
+              created_at: at,
+              app_domain: "other-app.example.com",
+            }))
+          : Array.from({ length: 10 }, (_, i) => ({
+              ray_id: `mine-${i}`,
+              user_email: "a@example.com",
+              allowed: false,
+              created_at: at,
+              app_domain: "stella.example.com",
+            }));
+      return new Response(JSON.stringify({ success: true, result }));
+    });
+    expect(await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW)).toEqual({
+      imported: 10,
+      oldest: new Date(at),
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(importCursor()).toEqual({ since: NOW.getTime(), until: null, page: 1 });
   });
 
   it("STELLA のホスト名が分からなければ何も取り込まない", async () => {
@@ -679,7 +732,9 @@ describe("Cloudflare Access との連携", () => {
     };
     const noHost = { ...cfEnv(), ALLOWED_ORIGINS: "", INVITE_REDIRECT_URL: undefined } as Env;
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
-    expect(await importAccessLogs(noHost, getDb(noHost), fetchImpl, NOW)).toEqual({ imported: 0 });
+    expect(await importAccessLogs(noHost, getDb(noHost), fetchImpl, NOW)).toMatchObject({
+      imported: 0,
+    });
   });
 
   it("トークンが無ければ何もしない", async () => {

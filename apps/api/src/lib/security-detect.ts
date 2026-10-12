@@ -297,42 +297,75 @@ async function burst(
     }));
 }
 
-async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
+function burstCandidates(
+  rows: Awaited<ReturnType<typeof burst>>,
+  rule: SecurityRule,
+  severity: SecuritySeverity,
+  label: string,
+): AlertCandidate[] {
+  return rows.map((r) => ({
+    tenantId: r.tenantId,
+    rule,
+    severity,
+    subject: r.key,
+    // 日付は検査の時刻ではなく最後の出来事の日にする (日付が変わった直後の検査で、新しい出来事の
+    // 無い同じ連続を別のアラートにしない)。
+    dedupeKey: `${rule}:${label}:${r.key}:${jstDate(r.last)}`,
+    count: r.count,
+    countMode: "max" as const,
+    detail: { [label]: r.key, count_last_hour: r.count },
+    at: r.last,
+  }));
+}
+
+/** Access の拒否の連続 (`until` までの 1 時間)。 */
+async function accessDeniedBursts(db: Db, until: Date): Promise<AlertCandidate[]> {
+  return [
+    ...burstCandidates(
+      await burst(db, "access.denied", "email", THRESHOLDS.accessDenied, until),
+      "access_denied_burst",
+      "high",
+      "email",
+    ),
+    ...burstCandidates(
+      await burst(db, "access.denied", "ip", THRESHOLDS.accessDenied, until),
+      "access_denied_burst",
+      "high",
+      "ip",
+    ),
+  ];
+}
+
+/** 遅れて取り込んだ Access のログを数え直す区切り。連続の窓 (1 時間) の半分。 */
+const BACKFILL_STEP_MS = 30 * 60 * 1000;
+
+/**
+ * 遅れて取り込んだ Access の拒否の連続。取り込みが止まっていた・溜まっていたあとに入った 1 時間より前の
+ * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻から 30 分
+ * おきの「その時刻までの 1 時間」で数え直す (30 分の内に収まる連続は必ず拾う)。
+ */
+async function backfilledAccessDeniedBursts(
+  db: Db,
+  from: Date,
+  now: Date,
+): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
+  for (let t = from.getTime() + BACKFILL_STEP_MS; t < now.getTime(); t += BACKFILL_STEP_MS) {
+    out.push(...(await accessDeniedBursts(db, new Date(t))));
+  }
+  return out;
+}
+
+async function burstRules(db: Db, until: Date): Promise<AlertCandidate[]> {
+  const out: AlertCandidate[] = [...(await accessDeniedBursts(db, until))];
   const push = (
     rows: Awaited<ReturnType<typeof burst>>,
     rule: SecurityRule,
     severity: SecuritySeverity,
     label: string,
   ) => {
-    for (const r of rows) {
-      out.push({
-        tenantId: r.tenantId,
-        rule,
-        severity,
-        subject: r.key,
-        // 日付は検査の時刻ではなく最後の出来事の日にする (日付が変わった直後の検査で、新しい出来事の
-        // 無い同じ連続を別のアラートにしない)。
-        dedupeKey: `${rule}:${label}:${r.key}:${jstDate(r.last)}`,
-        count: r.count,
-        countMode: "max",
-        detail: { [label]: r.key, count_last_hour: r.count },
-        at: r.last,
-      });
-    }
+    out.push(...burstCandidates(rows, rule, severity, label));
   };
-  push(
-    await burst(db, "access.denied", "email", THRESHOLDS.accessDenied, until),
-    "access_denied_burst",
-    "high",
-    "email",
-  );
-  push(
-    await burst(db, "access.denied", "ip", THRESHOLDS.accessDenied, until),
-    "access_denied_burst",
-    "high",
-    "ip",
-  );
   push(
     await burst(db, "authz.forbidden", "actor", THRESHOLDS.forbidden, until),
     "forbidden_burst",
@@ -663,6 +696,10 @@ export async function detectSecurityAlerts(
   env: NotifyEnv & Pick<Env, "SECURITY_TENANT_ID" | "PUBLIC_CONTENT_TENANT_ID">,
   now = new Date(),
   fetchImpl: typeof fetch = fetch,
+  options: {
+    /** 今回の取り込みで入れた Access のログの最も古い時刻 (遅れて入った分の連続を数え直す)。 */
+    accessImportedFrom?: Date | null;
+  } = {},
 ): Promise<SecurityAlertRecord[]> {
   const cursorRaw = await readSecurityState(db, DETECT_CURSOR);
   const cursorMs = cursorRaw ? Number(cursorRaw) : Number.NaN;
@@ -678,6 +715,12 @@ export async function detectSecurityAlerts(
     ...(await burstRules(db, now)),
     ...(await errorSpikeRule(db, now)),
   ];
+  // 1 時間より前の Access のログを取り込んだときは、その時刻から数え直す (さかのぼるのは 1 日まで)。
+  const importedFrom = options.accessImportedFrom;
+  if (importedFrom && importedFrom.getTime() < now.getTime() - HOUR) {
+    const from = new Date(Math.max(importedFrom.getTime(), now.getTime() - DAY));
+    candidates.push(...(await backfilledAccessDeniedBursts(db, from, now)));
+  }
   const created = await saveAlerts(db, candidates);
   // 上限まで読んだ問い合わせがあれば、読み切れたところまでしか進めない (残りは次の検査で読む。
   // 他のルールが読んだ出来事を次の検査でもう一度数えることはあるが、アラートは日ごとにまとまる
@@ -732,8 +775,9 @@ export async function runSecurityScan(
   if (!(await acquireSecurityLock(db, SCAN_LOCK, SCAN_LOCK_TTL_MS))) return null;
   try {
     let accessLogError = false;
+    let accessImportedFrom: Date | null = null;
     try {
-      await importAccessLogs(env, db);
+      accessImportedFrom = (await importAccessLogs(env, db))?.oldest ?? null;
     } catch (err) {
       // 取り込みに失敗しても (トークンの権限切れなど)、アプリの出来事での検知は続ける。
       accessLogError = true;
@@ -742,7 +786,7 @@ export async function runSecurityScan(
         err instanceof Error ? err.message : err,
       );
     }
-    const created = await detectSecurityAlerts(db, env);
+    const created = await detectSecurityAlerts(db, env, new Date(), fetch, { accessImportedFrom });
     return { created, accessLogError };
   } finally {
     await releaseSecurityLock(db, SCAN_LOCK);
