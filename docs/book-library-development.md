@@ -65,7 +65,7 @@ bun run dev:narrator
 bun run dev
 ```
 
-本棚のメタ情報は処理Worker未起動・プロバイダ未設定でも利用できる。APIの`LIBRARY_ENABLED=0`で本棚を無効化する。本番のNarratorは`LIBRARY_PROCESSING_ENABLED=1`で、secret `GEMINI_API_KEY`があるときだけ処理できる（止めるときはフラグを`0`に戻す）。capabilitiesの`audio`・`sharing`はP3以降まで常にfalse。
+本棚のメタ情報は処理Worker未起動・プロバイダ未設定でも利用できる。APIの`LIBRARY_ENABLED=0`で本棚を無効化する。Narratorの`LIBRARY_PROCESSING_ENABLED=0`は本番の既定。capabilitiesの`upload`・`audio`・`sharing`はP1では常にfalse。
 
 偽プロバイダはNarratorのローカル設定で`LIBRARY_PROCESSING_ENABLED=1`・`FAKE_PROVIDERS=1`とする。APIとNarratorの`wrangler dev`は同じ`apps/api/.wrangler/state`のSQLiteを共有するため、Workflowが書き込んでいる間はAPI側が`D1_ERROR: Failed to get session commit token`で一時的に500を返すことがある（ローカルだけの現象。再読み込みで戻る）。公開APIからジョブを作る入口はP2で追加するため、P0の処理は下記の統合テストで検証する。実際の書籍は外部APIへ送らない。
 
