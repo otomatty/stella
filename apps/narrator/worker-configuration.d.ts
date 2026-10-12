@@ -8,6 +8,8 @@ interface __BaseEnv_NarratorEnv {
 	TTS_VOICE: string;
 	TTS_LANGUAGE: string;
 	LIBRARY_PROCESSING_ENABLED: string;
+	LIBRARY_OCR_PAGES_PER_USER_MONTH: string;
+	LIBRARY_OCR_PAGES_PER_TENANT_MONTH: string;
 	BOOK_WORKFLOW: Workflow<Parameters<import("./src/index").BookWorkflow['run']>[0]['payload']>;
 	AUDIO_WORKFLOW: Workflow<Parameters<import("./src/index").AudioWorkflow['run']>[0]['payload']>;
 }

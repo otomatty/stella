@@ -2398,6 +2398,7 @@ export const APP_TABLES = [
   "library_job_usages",
   "library_job_dispatches",
   "library_r2_deletions",
+  "library_ocr_reservations",
 ] as const;
 
 export const TABLE_COUNT = APP_TABLES.length;
