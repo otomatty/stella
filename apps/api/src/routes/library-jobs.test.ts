@@ -70,8 +70,17 @@ const call = async (path: string, method = "GET", user = "owner") =>
     method,
   });
 const row = (sql: string) => db.sqlite.prepare(sql).get() as Record<string, unknown>;
+// The PDFs the owner sees (and confirms) right now.
+const pdfIds = () =>
+  (db.sqlite.prepare("SELECT id FROM library_book_pdfs").all() as { id: string }[]).map(
+    (r) => r.id,
+  );
 const startProcessing = async () => {
-  const response = await call("/process", "POST");
+  const response = await request(app, env, "/api/library/books/book/process", {
+    token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+    method: "POST",
+    body: JSON.stringify({ acknowledgedExternalProcessing: true, pdfIds: pdfIds() }),
+  });
   return { status: response.status, job: (await json<{ job?: LibraryJob }>(response)).job };
 };
 
@@ -87,6 +96,23 @@ describe("book processing jobs", () => {
     expect(row("SELECT status FROM library_books")).toEqual({ status: "processing" });
     expect((await startProcessing()).status).toBe(409);
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(409);
+  });
+
+  it("requires the owner to confirm sending the PDFs to the external OCR", async () => {
+    expect((await call("/process", "POST")).status).toBe(400);
+    // Confirmed in a stale tab: another PDF was added since, so nothing starts.
+    db.sqlite.exec(`
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, created_at)
+        VALUES ('late','ses','book',2,'late.pdf',10,'library/ses/book/pdfs/late-1.pdf','completed',1);
+    `);
+    const stale = await request(app, env, "/api/library/books/book/process", {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "POST",
+      body: JSON.stringify({ acknowledgedExternalProcessing: true, pdfIds: ["pdf"] }),
+    });
+    expect(stale.status).toBe(409);
+    expect(row("SELECT count(*) AS n FROM library_jobs")).toEqual({ n: 0 });
+    expect(started).toEqual([]);
   });
 
   it("refuses unfinished uploads, other users and disabled processing", async () => {
@@ -128,7 +154,13 @@ describe("book processing jobs", () => {
     );
     expect((await startProcessing()).status).toBe(409);
     expect((await call(`/jobs/${job?.id}/retry`, "POST", "other")).status).toBe(404);
-    const retried = await call(`/jobs/${job?.id}/retry`, "POST");
+    // Retrying sends the remaining pages out again, so it needs the same confirmation.
+    expect((await call(`/jobs/${job?.id}/retry`, "POST")).status).toBe(400);
+    const retried = await request(app, env, `/api/library/books/book/jobs/${job?.id}/retry`, {
+      token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+      method: "POST",
+      body: JSON.stringify({ acknowledgedExternalProcessing: true }),
+    });
     expect(retried.status).toBe(202);
     expect((await json<{ job: LibraryJob }>(retried)).job).toMatchObject({
       status: "queued",
@@ -307,6 +339,7 @@ describe("book processing jobs", () => {
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
     expect(deleted).toEqual(["library/ses/book/pdfs/pdf-1.pdf"]);
     expect(row("SELECT count(*) AS n FROM library_book_pdfs")).toEqual({ n: 0 });
-    expect((await startProcessing()).status).toBe(409);
+    // No PDFs left to confirm: nothing can start.
+    expect((await startProcessing()).status).toBe(400);
   });
 });

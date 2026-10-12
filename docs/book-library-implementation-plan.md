@@ -147,7 +147,7 @@ rootの`build`は現在WebとVS Codeを明示しているため、処理Worker�
 
 追加するコマンドは`test:narrator`、`smoke:library`、処理Workerのビルド・ローカル起動とし、rootの既存コマンドから実行漏れがないようにする。P0・P1の処理検証は `test:narrator` で実Worker・D1・R2・JWTを組み合わせて実行する。`smoke:library` はP2以降に追加する。
 
-Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプロイはGitHub Actionsで、加算DB migration、処理Worker、STELLA API、Webの順に更新する。既存の教材画像・PDF同期・seedの変更判定を維持し、書籍アップロードをGit教材の配信経路へ混ぜない。
+Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプロイはGitHub Actionsで、加算DB migration、STELLA API、Web、処理Workerの順に更新する。処理Workerは処理の切り替え（`LIBRARY_PROCESSING_ENABLED`）を持つので最後に置き、APIの検査（外部送信の確認など）が先に出るようにする。処理Workerのデプロイが失敗したら実行全体を失敗にし、前の版の設定のまま動き続けていることを見逃さない。既存の教材画像・PDF同期・seedの変更判定を維持し、書籍アップロードをGit教材の配信経路へ混ぜない。
 
 処理用プロバイダの秘密値は処理Workerへ置く。偽プロバイダで通常CIを動かし、本物のOCR・TTSの確認は承認済みのサンプルによるstaging検証で行う。APIや処理Workerのbinding未設定時は書籍機能だけを利用不可にし、通常のSTELLA APIとログインを継続できるようにする。
 
@@ -170,7 +170,7 @@ Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプ
 
 P1として、`library_books` と `library_shelf_entries` の加算スキーマ（0062）、本人の本棚API・画面、JWT・テナント・ロール・無効化利用者の認可テストを実装した。
 
-P2の土台として、処理Worker（`apps/narrator`）、`packages/book-core`、PDF・ページ・図版・章・音声・ジョブのテーブル（0063）、削除後のR2清掃、非公開R2の確認とデプロイ手順を追加した。`library_books` には0063で処理状態（`status`）、削除世代（`generation`）、ページ数、章計画の列を足す。OCR・図版・章分割・TTSは偽プロバイダで検証した。P2では、原本の登録・送信・削除（P2-a）と、処理の予約・起動・状態・再実行（P2-b）のAPIを追加した。書籍の画面 `/library/$bookId`（P2-c）で、PDFの確認・自動分割・送信、処理の開始と状態の表示、再実行、章の一覧（題名とページ範囲）まで使える。図版・元PDFの参照はP3、章本文を読む画面はP4。OCRの前に、利用者とテナントの月間ページ上限（既定2000・20000ページ、JSTの暦月）に対して読み取るページを予約し、超えたら理由を示して処理を止める（`library_ocr_reservations`、migration 0065）。本番の処理Workerは `LIBRARY_PROCESSING_ENABLED=0` のままで、有効にするにはnarratorのsecret `GEMINI_API_KEY` を設定する。
+P2の土台として、処理Worker（`apps/narrator`）、`packages/book-core`、PDF・ページ・図版・章・音声・ジョブのテーブル（0063）、削除後のR2清掃、非公開R2の確認とデプロイ手順を追加した。`library_books` には0063で処理状態（`status`）、削除世代（`generation`）、ページ数、章計画の列を足す。OCR・図版・章分割・TTSは偽プロバイダで検証した。P2では、原本の登録・送信・削除（P2-a）と、処理の予約・起動・状態・再実行（P2-b）のAPIを追加した。書籍の画面 `/library/$bookId`（P2-c）で、PDFの確認・自動分割・送信、処理の開始と状態の表示、再実行、章の一覧（題名とページ範囲）まで使える。図版・元PDFの参照はP3、章本文を読む画面はP4。OCRの前に、利用者とテナントの月間ページ上限（既定2000・20000ページ、JSTの暦月）に対して読み取るページを予約し、超えたら理由を示して処理を止める（`library_ocr_reservations`、migration 0065）。本番の処理Workerは `LIBRARY_PROCESSING_ENABLED=1` とし、narratorのsecret `GEMINI_API_KEY` を設定した時点から処理できる。止めるときはフラグを`0`に戻す（登録済みの書籍と記録は残る）。
 
 メモ・しおり・再開位置のテーブル（`library_annotations`・`library_reader_states`）はP4、公開範囲の列（`visibility`・`publication_status`）はP6で追加する。メディアチケット・Rangeの検証はテスト専用APIだけで、スマホ実機・長い音声・本物のプロバイダ品質は未検証である。
 
