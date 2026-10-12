@@ -14,6 +14,7 @@ let started: NarratorJobRequest[];
 let rpcFails: boolean;
 let deleted: string[];
 let r2Fails: boolean;
+let stored: Set<string>;
 let onDelete: (() => void) | undefined;
 
 beforeEach(() => {
@@ -30,17 +31,25 @@ beforeEach(() => {
   started = [];
   rpcFails = false;
   deleted = [];
+  stored = new Set();
   r2Fails = false;
   onDelete = undefined;
   env = {
     DB: db.binding,
     AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: {
-      delete: async (key: string) => {
+      delete: async (keys: string | string[]) => {
         if (r2Fails) throw new Error("R2 unavailable");
         onDelete?.();
-        deleted.push(key);
+        for (const key of [keys].flat()) {
+          deleted.push(key);
+          stored.delete(key);
+        }
       },
+      list: async ({ prefix }: { prefix: string }) => ({
+        objects: [...stored].filter((key) => key.startsWith(prefix)).map((key) => ({ key })),
+        truncated: false,
+      }),
     },
     NARRATOR: {
       capabilities: async () => ({ configured: true, provider: "fake" }),
@@ -188,7 +197,22 @@ describe("book processing jobs", () => {
       INSERT INTO library_chapters (id, tenant_id, book_id, position, title, start_page, end_page, updated_at)
         VALUES ('c1','ses','book',1,'Old',1,1,1);
     `);
+    for (const key of [
+      "library/ses/book/g1/outputs/run/pages/1.webp",
+      "library/ses/book/g1/chapters/run.json",
+      "library/ses/book/pdfs/keep.pdf",
+    ])
+      stored.add(key);
+    // Nothing to delete: the failed book and its partial results stay as they are.
+    expect((await call("/pdfs/missing", "DELETE")).status).toBe(404);
+    expect(row("SELECT status, generation FROM library_books")).toEqual({
+      status: "failed",
+      generation: 1,
+    });
+    expect(row("SELECT count(*) AS n FROM library_pages")).toEqual({ n: 1 });
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(200);
+    // The retired generation's objects go; the originals stay.
+    expect([...stored]).toEqual(["library/ses/book/pdfs/keep.pdf"]);
     expect(row("SELECT status, generation, page_count FROM library_books")).toEqual({
       status: "uploading",
       generation: 2,

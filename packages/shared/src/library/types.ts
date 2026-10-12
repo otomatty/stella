@@ -79,6 +79,8 @@ export interface CreateLibraryPdf {
   id?: string;
   fileName: string;
   sizeBytes: number;
+  /** Pages the browser counted while splitting. Shown and summed for the book limit; the narrator recounts. */
+  pageCount?: number;
 }
 export interface LibraryShelfResponse {
   entries: LibraryShelfEntry[];

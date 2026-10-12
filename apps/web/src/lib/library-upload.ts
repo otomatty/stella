@@ -61,7 +61,12 @@ async function sendPart(bookId: string, name: string, part: Part): Promise<void>
   await retrying(() =>
     apiFetch<{ pdf: LibraryPdf }>(`/api/library/books/${bookId}/pdfs`, {
       method: "POST",
-      body: { id, fileName: fileName(name), sizeBytes: part.bytes.byteLength },
+      body: {
+        id,
+        fileName: fileName(name),
+        sizeBytes: part.bytes.byteLength,
+        pageCount: part.pageCount,
+      },
     }),
   );
   await retrying(() =>

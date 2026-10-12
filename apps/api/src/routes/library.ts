@@ -128,7 +128,23 @@ async function reopenFailed(env: Env, caller: Caller, book: BookRow): Promise<Bo
     reopened("library_figures"),
     reopened("library_pages"),
   ]);
-  return ownBook(env, caller, book.id);
+  const current = await ownBook(env, caller, book.id);
+  // The failed run is over, so nothing writes under its generation any more. Best effort:
+  // whatever a failed delete leaves is removed with the whole book prefix on book deletion.
+  if (current.generation === next && env.LIBRARY_BUCKET) {
+    const prefix = `library/${caller.tenantId}/${book.id}/g${book.generation}/`;
+    try {
+      for (;;) {
+        const listed = await env.LIBRARY_BUCKET.list({ prefix });
+        if (listed.objects.length)
+          await env.LIBRARY_BUCKET.delete(listed.objects.map((object) => object.key));
+        if (!listed.truncated) break;
+      }
+    } catch {
+      // Leave it for book deletion rather than failing the edit that already committed.
+    }
+  }
+  return current;
 }
 interface JobRow {
   id: string;
@@ -357,13 +373,25 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
     // A retried registration (same client id) returns the PDF it already created.
     const retried = input.id ? await existing() : null;
     if (retried) return c.json({ pdf: pdfView(retried) }, 200);
+    // Checked before reopening so a rejected add leaves a failed book untouched.
+    const totals = await c.env.DB.prepare(
+      "SELECT count(*) AS n, coalesce(sum(size_bytes), 0) AS bytes FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ?",
+    )
+      .bind(caller.tenantId, found.id)
+      .first<{ n: number; bytes: number }>();
+    if (
+      (totals?.n ?? 0) >= LIBRARY_LIMITS.maxBookPdfs ||
+      (totals?.bytes ?? 0) + input.sizeBytes > LIBRARY_LIMITS.maxBookBytes
+    )
+      throw new ApiError("PDFの数か合計サイズが上限を超えています", 409);
+    if (found.status !== "failed") requireUploadable(found);
     const book = await reopenFailed(c.env, caller, found);
     requireUploadable(book);
     // Count, total size and position are decided in the INSERT so concurrent adds cannot exceed them.
     await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, created_at)
-        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?
+        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, page_count, r2_key, created_at)
+        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?, ?
         FROM library_books b WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status IN ('draft','uploading')
           AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) < ?
           AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?
@@ -372,6 +400,7 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
         id,
         input.fileName,
         input.sizeBytes,
+        input.pageCount ?? null,
         `library/${caller.tenantId}/${book.id}/pdfs/${id}.pdf`,
         now,
         caller.tenantId,
@@ -426,7 +455,7 @@ libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     }
     // A book deleted during the transfer keeps its tombstone; the narrator cron removes the object.
     const switched = await c.env.DB.prepare(
-      "UPDATE library_book_pdfs SET r2_key = ?, upload_status = 'completed', page_count = NULL WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
+      "UPDATE library_book_pdfs SET r2_key = ?, upload_status = 'completed' WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
     )
       .bind(key, caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
       .run();
@@ -436,7 +465,7 @@ libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     }
     await bucket.delete(pdf.r2_key);
     return c.json({
-      pdf: pdfView({ ...pdf, r2_key: key, upload_status: "completed", page_count: null }),
+      pdf: pdfView({ ...pdf, r2_key: key, upload_status: "completed" }),
     });
   } catch (error) {
     return failure(c, error);
@@ -447,20 +476,19 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
   try {
     const { caller } = await getCaller(c);
     requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await reopenFailed(
-      c.env,
-      caller,
-      await ownBook(c.env, caller, c.req.param("bookId")),
-    );
-    requireUploadable(book);
+    const found = await ownBook(c.env, caller, c.req.param("bookId"));
+    const bucket = c.env.LIBRARY_BUCKET;
+    if (!bucket) throw new ApiError("PDFの削除は現在利用できません", 403);
     const pdf = await c.env.DB.prepare(
       "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
     )
-      .bind(caller.tenantId, book.id, c.req.param("pdfId"))
+      .bind(caller.tenantId, found.id, c.req.param("pdfId"))
       .first<PdfRow>();
     if (!pdf) throw new ApiError("PDFが見つかりません", 404);
-    const bucket = c.env.LIBRARY_BUCKET;
-    if (!bucket) throw new ApiError("PDFの削除は現在利用できません", 403);
+    // Reopen a failed book only once the edit is known to be possible.
+    if (found.status !== "failed") requireUploadable(found);
+    const book = await reopenFailed(c.env, caller, found);
+    requireUploadable(book);
     // Mark it unfinished first: processing cannot start on it, and a failed R2 delete
     // leaves a row the owner can delete again instead of an unreferenced object.
     const marked = await c.env.DB.prepare(
