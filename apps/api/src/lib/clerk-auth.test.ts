@@ -103,6 +103,24 @@ describe("revokeClerkUser", () => {
     ]);
   });
 
+  it("100 件を超えるキーも最後のページまで読んで取り消す", async () => {
+    clerkApi.users.getUserList.mockResolvedValue({ data: [{ id: "user_1" }] });
+    clerkApi.sessions.getSessionList.mockResolvedValue({ data: [] });
+    const key = (i: number) => ({ id: `ak_${i}`, revoked: false, scopes: [VSCODE_API_KEY_SCOPE] });
+    clerkApi.apiKeys.list.mockImplementation(async ({ offset }: { offset: number }) => ({
+      data: Array.from({ length: Math.max(0, Math.min(100, 150 - offset)) }, (_, i) =>
+        key(offset + i),
+      ),
+    }));
+    expect(await revokeClerkUser(config, "learner@example.test")).toBe(true);
+    expect(clerkApi.apiKeys.list.mock.calls.map(([p]) => p.offset)).toEqual([0, 100]);
+    expect(clerkApi.apiKeys.revoke).toHaveBeenCalledTimes(150);
+    expect(clerkApi.apiKeys.revoke).toHaveBeenLastCalledWith({
+      apiKeyId: "ak_149",
+      revocationReason: "stella-revoke",
+    });
+  });
+
   it("Clerk に居ない利用者なら false", async () => {
     clerkApi.users.getUserList.mockResolvedValue({ data: [] });
     expect(await revokeClerkUser(config, "none@example.test")).toBe(false);

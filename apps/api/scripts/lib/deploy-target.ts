@@ -112,8 +112,8 @@ export function validateClerkSettings(
 
 /**
  * 講師・管理者用の入口を守る Cloudflare Access の設定 (GitHub の Variables `ACCESS_TEAM_DOMAIN` /
- * `ACCESS_AUD`)。無いまま API をデプロイすると講師・管理者のアカウントが Clerk だけで操作できて
- * しまうので、Cloudflare に何も書かない段階で止める。
+ * `ACCESS_AUD`)。無いまま API をデプロイすると講師・管理者・営業が誰も操作できなくなる (API は
+ * Access の設定が無ければ、このロールを Clerk だけでは通さない) ので、Cloudflare に何も書かない段階で止める。
  */
 export function validateAccessSettings(
   teamDomain: string | undefined,

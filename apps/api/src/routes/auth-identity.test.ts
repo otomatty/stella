@@ -277,6 +277,18 @@ describe("講師・管理者は Access で守った入口から", () => {
     const env = clerkEnv({ ACCESS_TEAM_DOMAIN: undefined, ACCESS_AUD: undefined });
     expect((await call(env, "/api/me", { bearer: await teacherToken() })).status).toBe(200);
   });
+
+  it("本番のホストで Access の設定が無ければ、講師を Clerk だけでは通さない", async () => {
+    const env = clerkEnv({ ACCESS_TEAM_DOMAIN: undefined, ACCESS_AUD: undefined });
+    const host = "https://stella-web.saedgewell.workers.dev";
+    const res = await call(env, "/api/me", { bearer: await teacherToken(), host });
+    expect(res.status).toBe(503);
+    expect(JSON.parse(events().at(-1)?.metadata ?? "{}")).toEqual({
+      reason: "access_unconfigured",
+    });
+    const learner = await call(env, "/api/me", { bearer: await clerk.sign(), host });
+    expect(learner.status).toBe(200);
+  });
 });
 
 describe("開発用トークン (Clerk なし)", () => {

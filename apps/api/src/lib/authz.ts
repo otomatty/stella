@@ -192,7 +192,9 @@ export const STAFF_HOST_REQUIRED = "staff_host_required";
  * 講師・管理者・営業のリクエストは、Cloudflare Access で守った講師・管理者用の入口を通ったもの
  * (`Cf-Access-Jwt-Assertion` を署名から検証し、Clerk の利用者と同じメールアドレス) に限る。
  * Access の多要素認証を重ねるため (Clerk のアカウントだけを奪っても、講師・管理者の操作はできない)。
- * VS Code の API キーでは講師・管理者のアカウントを使わせない。Access の無いローカル開発は通す。
+ * VS Code の API キーでは講師・管理者のアカウントを使わせない。Access の設定が無いときに通すのは
+ * ローカル開発 (localhost) だけで、それ以外は設定の誤りとして止める (Clerk だけで講師・管理者の操作を
+ * させない。設定を戻したときなどに、受講者用の入口から講師・管理者として操作できてしまうため)。
  */
 export async function assertStaffAccess(
   c: Context<{ Bindings: Env }>,
@@ -200,10 +202,10 @@ export async function assertStaffAccess(
   identity: Identity,
 ): Promise<void> {
   if (!STAFF_HOST_ROLES.has(profile.role) || identity.kind === "dev") return;
-  const reject = (reason: string, message: string): never => {
+  const reject = (reason: string, message: string, status: 403 | 503 = 403): never => {
     deferSecurityEvent(c, {
       kind: "auth.staff_host_required",
-      status: 403,
+      status,
       tenantId: profile.tenantId,
       actorId: profile.id,
       actorRole: profile.role,
@@ -211,13 +213,20 @@ export async function assertStaffAccess(
       metadata: { reason },
     });
     markRequestRecorded(c);
-    throw new ApiError(message, 403);
+    throw new ApiError(message, status);
   };
   if (identity.kind === "clerk_api_key") {
     reject("api_key", "講師・管理者のアカウントは VS Code の接続では使えません");
   }
   const access = accessConfig(c.env);
-  if (!access) return;
+  if (!access) {
+    if (isLocalRequest(c)) return;
+    return reject(
+      "access_unconfigured",
+      "講師・管理者用の入口の設定 (ACCESS_TEAM_DOMAIN / ACCESS_AUD) がありません。管理者に連絡してください",
+      503,
+    );
+  }
   const assertion = c.req.header(ACCESS_ASSERTION_HEADER)?.trim();
   if (!assertion) reject("missing", STAFF_HOST_REQUIRED);
   const verified = await verifyAccessAssertion(access, assertion ?? "").catch(() => null);

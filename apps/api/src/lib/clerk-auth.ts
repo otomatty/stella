@@ -200,6 +200,23 @@ export async function createVscodeApiKey(
   return key.secret;
 }
 
+const LIST_PAGE_SIZE = 100;
+
+/**
+ * 一覧を最後のページまで読む。取り消す前に全部を集める (取り消しながら offset を進めると、
+ * 有効なものだけを返す一覧が詰まって読み飛ばすため)。
+ */
+async function listAllPages<T>(
+  fetchPage: (page: { limit: number; offset: number }) => Promise<{ data: T[] }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let offset = 0; ; offset += LIST_PAGE_SIZE) {
+    const { data } = await fetchPage({ limit: LIST_PAGE_SIZE, offset });
+    all.push(...data);
+    if (data.length < LIST_PAGE_SIZE) return all;
+  }
+}
+
 /**
  * 利用者の Clerk のセッションと VS Code の API キーを全部取り消す (無効化・管理画面の失効)。
  * 利用者が Clerk に居なければ false。失敗は例外。
@@ -209,14 +226,13 @@ export async function revokeClerkUser(config: ClerkConfig, email: string): Promi
   const users = await client.users.getUserList({ emailAddress: [email.toLowerCase()], limit: 10 });
   if (users.data.length === 0) return false;
   for (const user of users.data) {
-    const sessions = await client.sessions.getSessionList({
-      userId: user.id,
-      status: "active",
-      limit: 100,
-    });
-    for (const session of sessions.data) await client.sessions.revokeSession(session.id);
-    const keys = await client.apiKeys.list({ subject: user.id, limit: 100 });
-    for (const key of keys.data) {
+    const sessions = await listAllPages((page) =>
+      client.sessions.getSessionList({ userId: user.id, status: "active", ...page }),
+    );
+    for (const session of sessions) await client.sessions.revokeSession(session.id);
+    // 接続のたびにキーを作るので、1 ページ (100 件) に収まるとは限らない。
+    const keys = await listAllPages((page) => client.apiKeys.list({ subject: user.id, ...page }));
+    for (const key of keys) {
       if (!key.revoked && key.scopes.includes(VSCODE_API_KEY_SCOPE)) {
         await client.apiKeys.revoke({ apiKeyId: key.id, revocationReason: "stella-revoke" });
       }

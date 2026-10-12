@@ -25,7 +25,8 @@ curl -s https://stella-web.saedgewell.workers.dev/api/healthz | jq
 - `clerkConfigured: false` (本番) … API に `CLERK_SECRET_KEY` が入っていない。全員が 503 になる。
   GitHub の Secret `CLERK_SECRET_KEY` を確かめて再デプロイする (deploy が API の secret に入れる)。
 - `accessConfigured: false` (本番) … API の `[vars]` に `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` が入っていない。
-  講師・管理者のアカウントが Clerk だけで操作できてしまう。GitHub の Variables を確かめて再デプロイする。
+  講師・管理者・営業は 503「講師・管理者用の入口の設定がありません」で止まる (Clerk だけでは通さない)。
+  GitHub の Variables を確かめて再デプロイする。
 
 ## 1. チェックリスト
 
