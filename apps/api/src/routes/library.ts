@@ -99,6 +99,37 @@ function requireUploadable(book: BookRow): void {
   if (book.status !== "draft" && book.status !== "uploading")
     throw new ApiError("処理を始めた書籍にはPDFを追加できません", 409);
 }
+/**
+ * Editing the PDFs of a failed book reopens it under a new generation: the failed job can no
+ * longer be retried or write, and results keyed by the old page numbers are cleared.
+ */
+async function reopenFailed(env: Env, caller: Caller, book: BookRow): Promise<BookRow> {
+  if (book.status !== "failed") return book;
+  const now = Date.now(),
+    next = book.generation + 1;
+  const reopened = (table: string) =>
+    env.DB.prepare(
+      `DELETE FROM ${table} WHERE tenant_id = ? AND book_id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND generation = ? AND status = 'uploading')`,
+    ).bind(caller.tenantId, book.id, caller.tenantId, book.id, next);
+  await env.DB.batch([
+    env.DB.prepare(
+      "UPDATE library_books SET status = 'uploading', generation = ?, page_count = NULL, chapter_plan_key = NULL, updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND generation = ? AND status = 'failed' AND NOT EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND status IN ('queued','running'))",
+    ).bind(
+      next,
+      now,
+      caller.tenantId,
+      book.id,
+      caller.id,
+      book.generation,
+      caller.tenantId,
+      book.id,
+    ),
+    reopened("library_chapters"),
+    reopened("library_figures"),
+    reopened("library_pages"),
+  ]);
+  return ownBook(env, caller, book.id);
+}
 interface JobRow {
   id: string;
   type: LibraryJob["type"];
@@ -311,13 +342,23 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
   try {
     const { caller } = await getCaller(c);
     requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    requireUploadable(book);
+    const found = await ownBook(c.env, caller, c.req.param("bookId"));
     if (!c.env.LIBRARY_BUCKET || !(await processingAvailable(c.env)))
       throw new ApiError("PDFの登録は現在利用できません", 403);
     const input = parseCreatePdf(await c.req.json<unknown>());
-    const id = crypto.randomUUID(),
+    const id = input.id ?? crypto.randomUUID(),
       now = Date.now();
+    const existing = () =>
+      c.env.DB.prepare(
+        "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
+      )
+        .bind(caller.tenantId, found.id, id)
+        .first<PdfRow>();
+    // A retried registration (same client id) returns the PDF it already created.
+    const retried = input.id ? await existing() : null;
+    if (retried) return c.json({ pdf: pdfView(retried) }, 200);
+    const book = await reopenFailed(c.env, caller, found);
+    requireUploadable(book);
     // Count, total size and position are decided in the INSERT so concurrent adds cannot exceed them.
     await c.env.DB.batch([
       c.env.DB.prepare(
@@ -325,7 +366,8 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
         SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?
         FROM library_books b WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status IN ('draft','uploading')
           AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) < ?
-          AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?`,
+          AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?
+        ON CONFLICT (id) DO NOTHING`,
       ).bind(
         id,
         input.fileName,
@@ -343,12 +385,9 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
         "UPDATE library_books SET status = 'uploading', updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'draft' AND EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?)",
       ).bind(now, caller.tenantId, book.id, caller.tenantId, book.id, id),
     ]);
-    const row = await c.env.DB.prepare(
-      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
-    )
-      .bind(caller.tenantId, book.id, id)
-      .first<PdfRow>();
-    // No row means a guard in the INSERT (owner, status, count or total size) failed.
+    const row = await existing();
+    // No row means a guard in the INSERT (owner, status, count or total size) failed,
+    // or the client id already belongs to another book.
     if (!row) throw new ApiError("PDFの数か合計サイズが上限を超えています", 409);
     return c.json({ pdf: pdfView(row) }, 201);
   } catch (error) {
@@ -408,7 +447,11 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
   try {
     const { caller } = await getCaller(c);
     requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const book = await reopenFailed(
+      c.env,
+      caller,
+      await ownBook(c.env, caller, c.req.param("bookId")),
+    );
     requireUploadable(book);
     const pdf = await c.env.DB.prepare(
       "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",

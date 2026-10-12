@@ -40,19 +40,11 @@ function splitPdf(file: File, limits: Limits, onProgress: (done: number, total: 
 // The API accepts file names up to 200 characters.
 const fileName = (name: string) => (name.length <= 200 ? name : `${name.slice(0, 196)}.pdf`);
 
-async function sendPart(bookId: string, name: string, part: Part): Promise<void> {
-  const { pdf } = await apiFetch<{ pdf: LibraryPdf }>(`/api/library/books/${bookId}/pdfs`, {
-    method: "POST",
-    body: { fileName: fileName(name), sizeBytes: part.bytes.byteLength },
-  });
-  // Network failures and 5xx are retried; 4xx (bad PDF, limits) are final.
+/** Network failures and 5xx are retried; 4xx (bad PDF, limits) are final. */
+async function retrying(action: () => Promise<unknown>): Promise<void> {
   for (let attempt = 1; ; attempt++) {
     try {
-      await apiFetchRaw(`/api/library/books/${bookId}/pdfs/${pdf.id}`, {
-        method: "PUT",
-        body: new Blob([part.bytes], { type: "application/pdf" }),
-        contentType: "application/pdf",
-      });
+      await action();
       return;
     } catch (error) {
       const permanent = error instanceof ApiClientError && error.status < 500;
@@ -62,6 +54,25 @@ async function sendPart(bookId: string, name: string, part: Part): Promise<void>
   }
 }
 
+async function sendPart(bookId: string, name: string, part: Part): Promise<void> {
+  // The client-chosen id makes a retried registration return the same PDF, even when the
+  // first response was lost after the server saved it.
+  const id = crypto.randomUUID();
+  await retrying(() =>
+    apiFetch<{ pdf: LibraryPdf }>(`/api/library/books/${bookId}/pdfs`, {
+      method: "POST",
+      body: { id, fileName: fileName(name), sizeBytes: part.bytes.byteLength },
+    }),
+  );
+  await retrying(() =>
+    apiFetchRaw(`/api/library/books/${bookId}/pdfs/${id}`, {
+      method: "PUT",
+      body: new Blob([part.bytes], { type: "application/pdf" }),
+      contentType: "application/pdf",
+    }),
+  );
+}
+
 export interface UploadProgress {
   /** Human-readable step, e.g. "book.pdf を分割中 (40/120ページ)". */
   label: string;
@@ -69,13 +80,18 @@ export interface UploadProgress {
   percent: number;
 }
 
-/** Splits each file in the chosen order and uploads the parts in that order. */
+/**
+ * Splits each file in the chosen order and uploads the parts in that order. `knownPages` is the
+ * page total of the book's PDFs so far; a file that would pass the book limit is not sent.
+ */
 export async function uploadBookPdfs(
   bookId: string,
   files: File[],
   limits: Limits,
+  knownPages: number,
   onProgress: (progress: UploadProgress) => void,
 ): Promise<void> {
+  let pages = knownPages;
   for (const [index, file] of files.entries()) {
     const base = (index / files.length) * 100,
       share = 100 / files.length;
@@ -86,6 +102,11 @@ export async function uploadBookPdfs(
         percent: base + (share * done) / total / 2,
       }),
     );
+    pages += parts.reduce((sum, part) => sum + part.pageCount, 0);
+    if (pages > limits.maxBookPages)
+      throw new Error(
+        `${file.name} を加えると1冊${limits.maxBookPages}ページを超えます。本を分けて登録してください`,
+      );
     for (const [n, part] of parts.entries()) {
       onProgress({
         label: `${file.name} を送信中 (${n + 1}/${parts.length})`,

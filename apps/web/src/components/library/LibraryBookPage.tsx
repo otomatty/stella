@@ -68,7 +68,11 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
     const tick = () => {
       timer = setTimeout(
         async () => {
-          await load().catch((err) => setError(message(err)));
+          // A later successful poll clears an earlier poll's network error.
+          await load().then(
+            () => setError(null),
+            (err) => setError(message(err)),
+          );
           if (!stopped) tick();
         },
         document.visibilityState === "hidden" ? HIDDEN_POLL_MS : POLL_MS,
@@ -99,7 +103,17 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
     return (
       <div className="mx-auto w-full max-w-4xl p-4 md:p-6">
         {error ? (
-          <p role="alert">{error}</p>
+          <div role="alert" className="flex flex-wrap items-center gap-3">
+            <p>{error}</p>
+            <Button
+              onClick={() => {
+                setError(null);
+                load().catch((err) => setError(message(err)));
+              }}
+            >
+              再読み込み
+            </Button>
+          </div>
         ) : (
           <div role="status" aria-label="書籍を読み込み中">
             <Skeleton className="h-32 w-full" />
@@ -109,20 +123,27 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
     );
 
   const { book, jobs, pdfs, chapters } = state;
-  const editable = book.status === "draft" || book.status === "uploading";
+  // A failed book is editable: changing its PDFs reopens it for a fresh run.
+  const editable =
+    book.status === "draft" || book.status === "uploading" || book.status === "failed";
   const canUpload = Boolean(capabilities?.upload) && editable;
   const canProcess =
     canUpload &&
     book.status === "uploading" &&
     pdfs.length > 0 &&
     pdfs.every((pdf) => pdf.uploadStatus === "completed");
-  const job = jobs[0];
+  // After a failed book is reopened, its old job belongs to an earlier run.
+  const job =
+    book.status === "processing" || book.status === "ready" || book.status === "failed"
+      ? jobs[0]
+      : undefined;
+  const knownPages = pdfs.reduce((sum, pdf) => sum + (pdf.pageCount ?? 0), 0);
 
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files ?? [])];
     event.target.value = "";
     if (!files.length || !capabilities) return;
-    void run(() => uploadBookPdfs(book.id, files, capabilities.limits, setUpload));
+    void run(() => uploadBookPdfs(book.id, files, capabilities.limits, knownPages, setUpload));
   }
 
   return (
@@ -252,6 +273,9 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                 <>
                   <span className="text-destructive">
                     {job.errorMessage ?? "処理に失敗しました。"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    PDFを追加・削除すると、組み直した本としてもう一度準備できます。
                   </span>
                   <div>
                     <Button

@@ -75,6 +75,8 @@ export interface LibraryChapterSummary {
   endPage: number;
 }
 export interface CreateLibraryPdf {
+  /** Client-chosen UUID so a retried registration returns the same PDF instead of a duplicate. */
+  id?: string;
   fileName: string;
   sizeBytes: number;
 }
