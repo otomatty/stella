@@ -48,11 +48,20 @@ async function dispatchJob(
 }
 // A reservation whose RPC never confirmed is re-sent after this long.
 const REDISPATCH_AFTER_MS = 60_000;
+// Its own cron trigger, so cleanup cannot spend this invocation's 50-query D1 budget.
+// One select plus two queries per job (authorize, dispatched_at) stays at 41.
+const REDISPATCH_CRON = "30 * * * *";
 /** Starts reservations left behind by a failed RPC, without waiting for the owner to poll. */
 async function redispatchPending(env: NarratorEnv): Promise<void> {
   if (!processingEnabled(env)) return;
   const pending = await env.DB.prepare(
-    "SELECT j.tenant_id, j.book_id, j.id, j.generation FROM library_jobs j JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id WHERE j.status = 'queued' AND d.dispatched_at IS NULL AND d.created_at < ? ORDER BY d.created_at LIMIT 20",
+    // Only reservations JobContext.authorize would accept, so revoked ones cannot block the queue.
+    `SELECT j.tenant_id, j.book_id, j.id, j.generation FROM library_jobs j
+    JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id AND d.instance_id = j.id || '-' || j.attempt
+    JOIN library_books b ON b.tenant_id = j.tenant_id AND b.id = j.book_id AND b.generation = j.generation AND b.owner_id = j.created_by AND b.status <> 'deleting'
+    JOIN profiles owner ON owner.id = b.owner_id AND owner.tenant_id = b.tenant_id AND owner.disabled = 0
+    WHERE j.status = 'queued' AND d.dispatched_at IS NULL AND d.created_at < ?
+    ORDER BY d.created_at LIMIT 20`,
   )
     .bind(Date.now() - REDISPATCH_AFTER_MS)
     .all<{ tenant_id: string; book_id: string; id: string; generation: number }>();
@@ -99,8 +108,8 @@ export default {
   fetch(): Response {
     return new Response("Not found", { status: 404 });
   },
-  async scheduled(_controller: ScheduledController, env: NarratorEnv): Promise<void> {
-    await cleanupDeletedBooks(env);
-    await redispatchPending(env);
+  async scheduled(controller: ScheduledController, env: NarratorEnv): Promise<void> {
+    if (controller.cron === REDISPATCH_CRON) await redispatchPending(env);
+    else await cleanupDeletedBooks(env);
   },
 } satisfies ExportedHandler<NarratorEnv>;

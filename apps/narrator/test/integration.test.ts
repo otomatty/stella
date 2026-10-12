@@ -1020,7 +1020,24 @@ describe("internal processing foundation", () => {
         )
         .bind(id, jobId, `${jobId}-1`),
     ]);
-    await (await mf.getWorker("narrator")).scheduled({ cron: "0 * * * *" });
+    // Twenty older reservations on a book being deleted can never start; they must not fill the scan.
+    const doomed = await createBook("Being deleted");
+    await db.batch([
+      db.prepare("UPDATE library_books SET status = 'deleting' WHERE id = ?").bind(doomed),
+      ...Array.from({ length: 20 }, () => crypto.randomUUID()).flatMap((stale) => [
+        db
+          .prepare(
+            "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 0)",
+          )
+          .bind(stale, doomed),
+        db
+          .prepare(
+            "INSERT INTO library_job_dispatches (tenant_id,book_id,job_id,instance_id,created_at) VALUES ('a', ?, ?, ?, -1)",
+          )
+          .bind(doomed, stale, `${stale}-1`),
+      ]),
+    ]);
+    await (await mf.getWorker("narrator")).scheduled({ cron: "30 * * * *" });
     await waitJob(jobId);
     expect(
       await db

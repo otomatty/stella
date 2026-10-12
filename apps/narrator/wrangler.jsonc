@@ -50,6 +50,6 @@
     "TTS_LANGUAGE": "ja-JP"
   },
   "triggers": {
-    "crons": ["0 * * * *"]
+    "crons": ["0 * * * *", "30 * * * *"]
   }
 }
