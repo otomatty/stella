@@ -77,6 +77,13 @@ const pdfBytes = (size = 20 * 1024) => {
   bytes.set(new TextEncoder().encode("%PDF-1.7\n"));
   return bytes;
 };
+// The key the row points at (each upload attempt writes its own key).
+const storedKey = () =>
+  (
+    db.sqlite.prepare("SELECT r2_key FROM library_book_pdfs WHERE position = 1").get() as {
+      r2_key: string;
+    }
+  ).r2_key;
 const bookStatus = () =>
   (
     db.sqlite.prepare("SELECT status FROM library_books WHERE id = 'book'").get() as {
@@ -96,7 +103,8 @@ describe("PDF upload", () => {
 
     const uploaded = await upload(pdf.id, bytes);
     expect(uploaded.status).toBe(200);
-    expect(objects.get(`library/ses/book/pdfs/${pdf.id}.pdf`)).toEqual(bytes);
+    expect(objects.get(storedKey())).toEqual(bytes);
+    expect(storedKey().startsWith(`library/ses/book/pdfs/${pdf.id}-`)).toBe(true);
     const listed = await request(app, env, "/api/library/books/book/pdfs", {
       token: await token("owner"),
     });
@@ -113,6 +121,23 @@ describe("PDF upload", () => {
     expect(objects.size).toBe(0);
     expect((await upload(pdf.id, pdfBytes(), "owner", 10)).status).toBe(400);
     expect((await upload(pdf.id, pdfBytes(1024))).status).toBe(400);
+  });
+
+  it("keeps a completed PDF when a replacement fails, and swaps it when one succeeds", async () => {
+    const original = pdfBytes();
+    const { pdf } = await json<{ pdf: LibraryPdf }>(await register(original.length));
+    expect((await upload(pdf.id, original)).status).toBe(200);
+    const first = storedKey();
+    expect((await upload(pdf.id, new Uint8Array(original.length).fill(65))).status).toBe(400);
+    expect([...objects.keys()]).toEqual([first]);
+    expect(objects.get(first)).toEqual(original);
+
+    const replacement = pdfBytes();
+    replacement[original.length - 1] = 7;
+    expect((await upload(pdf.id, replacement)).status).toBe(200);
+    expect(objects.size).toBe(1);
+    expect(storedKey()).not.toBe(first);
+    expect(objects.get(storedKey())).toEqual(replacement);
   });
 
   it("keeps other users, closed books and limits out", async () => {

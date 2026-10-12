@@ -319,22 +319,32 @@ libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     const body = c.req.raw.body;
     if (!body || Number(c.req.header("Content-Length")) !== pdf.size_bytes)
       throw new ApiError("登録したサイズと送信したPDFのサイズが一致しません", 400);
-    const stored = await bucket.put(pdf.r2_key, body, {
+    // Each attempt writes its own key and the row switches to it only after validation, so a
+    // failed or concurrent upload never deletes a completed original.
+    const key = `library/${caller.tenantId}/${book.id}/pdfs/${pdf.id}-${crypto.randomUUID()}.pdf`;
+    const stored = await bucket.put(key, body, {
       httpMetadata: { contentType: "application/pdf" },
     });
-    const head = await bucket.get(pdf.r2_key, { range: { offset: 0, length: 5 } });
+    const head = await bucket.get(key, { range: { offset: 0, length: 5 } });
     const magic = head ? await head.text() : "";
     if (stored?.size !== pdf.size_bytes || magic !== "%PDF-") {
-      await bucket.delete(pdf.r2_key);
+      await bucket.delete(key);
       throw new ApiError("PDFファイルを送信してください", 400);
     }
     // A book deleted during the transfer keeps its tombstone; the narrator cron removes the object.
-    await c.env.DB.prepare(
-      "UPDATE library_book_pdfs SET upload_status = 'completed', page_count = NULL WHERE tenant_id = ? AND book_id = ? AND id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
+    const switched = await c.env.DB.prepare(
+      "UPDATE library_book_pdfs SET r2_key = ?, upload_status = 'completed', page_count = NULL WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
     )
-      .bind(caller.tenantId, book.id, pdf.id, caller.tenantId, book.id)
+      .bind(key, caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
       .run();
-    return c.json({ pdf: pdfView({ ...pdf, upload_status: "completed", page_count: null }) });
+    if (!switched.meta.changes) {
+      await bucket.delete(key);
+      throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
+    }
+    await bucket.delete(pdf.r2_key);
+    return c.json({
+      pdf: pdfView({ ...pdf, r2_key: key, upload_status: "completed", page_count: null }),
+    });
   } catch (error) {
     return failure(c, error);
   }

@@ -978,7 +978,8 @@ describe("internal processing foundation", () => {
       },
     );
     expect(uploaded.status).toBe(200);
-    expect((await bucket.head(`library/a/${id}/pdfs/${pdfId}.pdf`))?.size).toBe(bytes.length);
+    const stored = await bucket.list({ prefix: `library/a/${id}/pdfs/${pdfId}-` });
+    expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
     const jobId = crypto.randomUUID();
     await db
       .prepare(
