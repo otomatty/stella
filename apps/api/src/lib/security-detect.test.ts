@@ -373,12 +373,20 @@ describe("detectSecurityAlerts", () => {
       INSERT INTO audit_logs (id, tenant_id, actor_id, actor_name, actor_role, action, target_type, target_id, ip, metadata, created_at) VALUES
         ('a1', 'ses', 'admin', '管理者', 'admin', 'user_role_change', 'user', 'learner', null, '{"new_role":"admin","previous_role":"student"}', ${minutesAgo(5).getTime()}),
         ('a2', 'ses', 'admin', '管理者', 'admin', 'user_role_change', 'user', 'learner', null, '{"new_role":"instructor"}', ${minutesAgo(4).getTime()}),
-        ('a3', 'ses', 'admin', '管理者', 'admin', 'user_enable', 'user', 'learner', null, '{}', ${minutesAgo(3).getTime()});
+        ('a3', 'ses', 'admin', '管理者', 'admin', 'user_enable', 'user', 'learner', null, '{}', ${minutesAgo(3).getTime()}),
+        ('a4', 'ses', 'admin', '管理者', 'admin', 'user_invite', 'user', 'new-admin', null, '{"email":"new@example.test","role":"admin"}', ${minutesAgo(2).getTime()}),
+        ('a5', 'ses', 'admin', '管理者', 'admin', 'user_invite', 'user', 'new-learner', null, '{"email":"l@example.test","role":"student"}', ${minutesAgo(1).getTime()});
     `);
     await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
-    expect(alerts().map((a) => [a.rule, a.severity])).toEqual([
-      ["privilege_grant", "high"],
-      ["privilege_grant", "medium"],
+    // 生徒としての招待は拾わない。
+    expect(
+      alerts()
+        .map((a) => `${a.rule}:${a.severity}:${a.subject}`)
+        .sort(),
+    ).toEqual([
+      "privilege_grant:high:learner",
+      "privilege_grant:high:new-admin",
+      "privilege_grant:medium:learner",
     ]);
   });
 

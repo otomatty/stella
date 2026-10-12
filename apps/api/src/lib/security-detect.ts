@@ -426,14 +426,14 @@ async function errorSpikeRule(db: Db, until: Date): Promise<AlertCandidate[]> {
   return out;
 }
 
-/** 管理者権限の付与・無効化したアカウントの復帰 (監査ログから)。 */
+/** 管理者権限の付与 (ロールの変更・管理者としての招待)・無効化したアカウントの復帰 (監査ログから)。 */
 async function privilegeRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const rows = await db
     .select()
     .from(auditLogs)
     .where(
       and(
-        inArray(auditLogs.action, ["user_role_change", "user_enable"]),
+        inArray(auditLogs.action, ["user_role_change", "user_invite", "user_enable"]),
         gt(auditLogs.createdAt, scan.since),
         lt(auditLogs.createdAt, new Date(scan.until.getTime() + 1)),
       ),
@@ -443,10 +443,11 @@ async function privilegeRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   noteTruncation(scan, rows);
   const out: AlertCandidate[] = [];
   for (const row of rows) {
-    const newRole = typeof row.metadata?.new_role === "string" ? row.metadata.new_role : null;
-    const isGrant =
-      row.action === "user_role_change" && newRole != null && ADMIN_ROLES.has(newRole);
-    if (row.action === "user_role_change" && !isGrant) continue;
+    // 招待は付けたロールを `role` に、ロールの変更は新しいロールを `new_role` に残す。
+    const roleKey = row.action === "user_invite" ? "role" : "new_role";
+    const newRole = typeof row.metadata?.[roleKey] === "string" ? row.metadata[roleKey] : null;
+    const isGrant = row.action !== "user_enable" && newRole != null && ADMIN_ROLES.has(newRole);
+    if (row.action !== "user_enable" && !isGrant) continue;
     out.push({
       tenantId: row.tenantId,
       rule: "privilege_grant",
