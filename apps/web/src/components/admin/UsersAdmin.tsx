@@ -29,7 +29,12 @@ import {
 import type { ProfileRole } from "@stella/shared/cms/types";
 import { ASSIGNABLE_PROFILE_ROLES, type AssignableProfileRole } from "@stella/shared/admin/types";
 import { useProfiles } from "@/hooks/useProfiles";
-import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-users-api";
+import {
+  setUserRole,
+  setUserDisabled,
+  type AccessRequestRow,
+  type AdminProfileRow,
+} from "@/lib/admin-users-api";
 
 import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
 import { InviteDialog } from "./users-admin/InviteDialog";
@@ -79,10 +84,12 @@ function UsersAdminLive({
   currentUserId: string | null;
   currentUserRole: ProfileRole | null;
 }) {
-  const { profiles, loading, error, refetch } = useProfiles(tenantId);
+  const { profiles, requests, loading, error, refetch } = useProfiles(tenantId);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<ProfileRole | "all">("all");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteKey, setInviteKey] = useState(0);
   const [csvOpen, setCsvOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -107,6 +114,12 @@ function UsersAdminLive({
       return p.display_name.toLowerCase().includes(q) || (p.email ?? "").toLowerCase().includes(q);
     });
   }, [profiles, query, roleFilter]);
+
+  const openInvite = (email = "") => {
+    setInviteEmail(email);
+    setInviteKey((n) => n + 1);
+    setInviteOpen(true);
+  };
 
   const onChangeRole = async (p: AdminProfileRow, role: AssignableProfileRole) => {
     setMenuId(null);
@@ -154,7 +167,7 @@ function UsersAdminLive({
               <Upload size={14} />
               CSV一括招待
             </Button>
-            <Button variant="accent" onClick={() => setInviteOpen(true)}>
+            <Button variant="accent" onClick={() => openInvite()}>
               <Plus size={14} />
               ユーザーを招待
             </Button>
@@ -166,6 +179,35 @@ function UsersAdminLive({
         <div className="mb-4 rounded-md border border-destructive bg-danger-soft px-3 py-2 text-[12.5px] text-destructive">
           {error}
         </div>
+      ) : null}
+
+      {requests.length > 0 ? (
+        <Card className="mb-4 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-[13px] font-semibold">アクセス申請</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">
+              ログインしたが、まだ登録されていないアカウントです。
+            </p>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>メール</TableHead>
+                <TableHead>申請日</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((request) => (
+                <AccessRequestRowView
+                  key={request.id}
+                  request={request}
+                  onInvite={() => openInvite(request.email)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       ) : null}
 
       <Card className="overflow-hidden">
@@ -295,9 +337,11 @@ function UsersAdminLive({
       </Card>
 
       <InviteDialog
+        key={inviteKey}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         tenantName={tenantName}
+        initialEmail={inviteEmail}
         onInvited={refetch}
       />
       <CsvInviteDialog
@@ -321,6 +365,30 @@ function canManageUserRow(
     return false;
   }
   return true;
+}
+
+function AccessRequestRowView({
+  request,
+  onInvite,
+}: {
+  request: AccessRequestRow;
+  onInvite: () => void;
+}) {
+  return (
+    <TableRow>
+      <TableCell>{request.email}</TableCell>
+      <TableCell className="text-ink-3 text-[11.5px]">
+        {new Date(request.created_at).toLocaleDateString("ja-JP")}
+      </TableCell>
+      <TableCell>
+        <div className="flex justify-end">
+          <Button type="button" size="sm" variant="accent" onClick={onInvite}>
+            招待
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 function FilterChip({

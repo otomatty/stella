@@ -71,7 +71,7 @@ meRoute.get("/api/me", async (c) => {
       .limit(1);
     const row = rows[0];
     if (!row) {
-      recordUninvited(c, identity);
+      await recordUninvited(c, db, identity);
       throw new ApiError("invite_required", 403);
     }
     if (row.disabled) {
@@ -128,7 +128,7 @@ meRoute.post("/api/me", async (c) => {
       .limit(1);
     const me = existing[0];
     if (!me) {
-      recordUninvited(c, identity);
+      await recordUninvited(c, db, identity);
       throw new ApiError("invite_required", 403);
     }
     if (me.disabled) {

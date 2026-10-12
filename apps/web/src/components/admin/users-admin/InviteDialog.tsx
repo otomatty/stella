@@ -34,11 +34,18 @@ interface InviteDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   tenantName: string;
+  initialEmail?: string;
   onInvited: () => Promise<void> | void;
 }
 
-export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: InviteDialogProps) {
-  const [email, setEmail] = useState("");
+export function InviteDialog({
+  open,
+  onOpenChange,
+  tenantName,
+  initialEmail = "",
+  onInvited,
+}: InviteDialogProps) {
+  const [email, setEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<AssignableProfileRole>("student");
   const [submitting, setSubmitting] = useState(false);
@@ -95,7 +102,7 @@ export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: Invi
             ユーザーを招待
           </DialogTitle>
           <DialogDescription>
-            {tenantName} に招待メールを送ります。 受諾後、 指定したロールでログインできます。
+            {tenantName} に登録します。登録後、指定したロールでログインできます。
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4 px-6 py-2">
