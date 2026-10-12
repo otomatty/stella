@@ -438,44 +438,56 @@ async function backfilledAccessDeniedBursts(
   return out;
 }
 
-/** 直近 1 時間のサーバーエラーが、過去 7 日の平均より大きく多い。 */
-async function errorSpikeRule(db: Db, until: Date): Promise<AlertCandidate[]> {
-  // 組織ごとに数える (別の組織だけで起きた急増を、その組織の管理者に見せる)。
-  const countByTenant = async (from: Date, to: Date) => {
-    const rows = await db
-      .select({
-        tenantId: securityEvents.tenantId,
-        n: sql<number>`count(*)`,
-        last: sql<number>`max(${securityEvents.createdAt})`,
-      })
+/**
+ * 1 時間のサーバーエラーが、過去 7 日の平均より大きく多い。ほかの「1 時間に N 回」のルールと同じく、
+ * 前回の検査より後のエラーそれぞれについて「そのエラーまでの 1 時間」で数える (検査と検査の間に
+ * 収まる急増も拾う)。組織ごとにいちばん多かった窓を、その窓より前の 7 日の 1 時間あたりの平均と比べる。
+ */
+async function errorSpikeRule(db: Db, from: Date, now: Date): Promise<AlertCandidate[]> {
+  const windows = await db.all<{ tenant_id: string; window_count: number; window_at: number }>(sql`
+    select tenant_id, window_count, window_at
+    from (
+      select tenant_id, created_at as window_at,
+        count(*) over (
+          partition by tenant_id
+          order by created_at
+          range between ${HOUR - 1} preceding and current row
+        ) as window_count
+      from security_events
+      where kind = 'server_error'
+        and created_at > ${from.getTime() - HOUR}
+        and created_at <= ${now.getTime()}
+    )
+    where window_at >= ${from.getTime()} and window_count >= ${THRESHOLDS.errorSpikeMin}
+  `);
+  // 組織ごとに、件数がいちばん多い窓 (同じ件数なら新しいほう)。
+  const peak = new Map<string, { count: number; at: number }>();
+  for (const w of windows) {
+    const count = Number(w.window_count);
+    const at = Number(w.window_at);
+    const prev = peak.get(w.tenant_id);
+    if (!prev || count > prev.count || (count === prev.count && at > prev.at)) {
+      peak.set(w.tenant_id, { count, at });
+    }
+  }
+  const out: AlertCandidate[] = [];
+  for (const [tenantId, { count, at: atMs }] of peak) {
+    const [week] = await db
+      .select({ n: sql<number>`count(*)` })
       .from(securityEvents)
       .where(
         and(
+          eq(securityEvents.tenantId, tenantId),
           eq(securityEvents.kind, "server_error"),
-          gt(securityEvents.createdAt, from),
-          lt(securityEvents.createdAt, to),
+          gt(securityEvents.createdAt, new Date(atMs - 7 * DAY - HOUR)),
+          lt(securityEvents.createdAt, new Date(atMs - HOUR + 1)),
         ),
-      )
-      .groupBy(securityEvents.tenantId);
-    return new Map(rows.map((r) => [r.tenantId, { n: Number(r.n), last: Number(r.last) }]));
-  };
-  const lastHour = await countByTenant(
-    new Date(until.getTime() - HOUR),
-    new Date(until.getTime() + 1),
-  );
-  if (![...lastHour.values()].some((v) => v.n >= THRESHOLDS.errorSpikeMin)) return [];
-  const week = await countByTenant(
-    new Date(until.getTime() - 7 * DAY - HOUR),
-    new Date(until.getTime() - HOUR),
-  );
-  const out: AlertCandidate[] = [];
-  for (const [tenantId, { n: count, last }] of lastHour) {
-    if (count < THRESHOLDS.errorSpikeMin) continue;
-    const hourlyAverage = (week.get(tenantId)?.n ?? 0) / (7 * 24);
+      );
+    const hourlyAverage = Number(week?.n ?? 0) / (7 * 24);
     if (count < hourlyAverage * THRESHOLDS.errorSpikeRatio) continue;
-    // 時刻は検査の時刻ではなく最後のエラーの時刻にする。新しいエラーが無ければ、解決済みに
+    // 時刻は検査の時刻ではなくその窓の最後のエラーの時刻にする。新しいエラーが無ければ、解決済みに
     // したアラートを戻さず、時の境目をまたいでも同じ日のうちは 1 件にまとまる。
-    const at = new Date(last);
+    const at = new Date(atMs);
     out.push({
       tenantId,
       rule: "error_spike",
@@ -791,7 +803,7 @@ export async function detectSecurityAlerts(
     ...(await perEventRules(db, scan)),
     ...(await privilegeRules(db, scan)),
     ...(await burstRules(db, since, now)),
-    ...(await errorSpikeRule(db, now)),
+    ...(await errorSpikeRule(db, since, now)),
   ];
   // 前回の検査より前の時刻の Access のログを取り込んだときは、その時刻から数え直す (さかのぼるのは
   // 1 日まで)。取り込んだ時刻は取り込みのときに控えてあり (検知が失敗しても次の検査で数え直せる)、

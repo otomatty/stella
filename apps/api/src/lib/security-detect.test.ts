@@ -265,6 +265,18 @@ describe("detectSecurityAlerts", () => {
     ).toEqual([{ tenant_id: "other", rule: "error_spike", event_count: 20 }]);
   });
 
+  it("検査と検査の間に収まるサーバーエラーの急増も、最後のエラーまでの 1 時間で数えて拾う", async () => {
+    // 検査の時刻までの 1 時間には 19 件しか入らないが、最後のエラー (-1 分) までの 1 時間には 20 件。
+    await seedEvent({ kind: "server_error", tenantId: "ses", createdAt: minutesAgo(60.5) });
+    for (let i = 0; i < 19; i++) {
+      await seedEvent({ kind: "server_error", tenantId: "ses", createdAt: minutesAgo(58 - i * 3) });
+    }
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(
+      db.sqlite.prepare("select tenant_id, rule, event_count from security_alerts").all(),
+    ).toEqual([{ tenant_id: "ses", rule: "error_spike", event_count: 20 }]);
+  });
+
   it("解決済みにしたあとで再発したら、未対応に戻して知らせ直す", async () => {
     await seedEvent({
       kind: "auth.no_profile",

@@ -118,9 +118,10 @@ reportsRoute.get("/api/reports/:type", async (c) => {
       offset,
     );
 
-    // 受講者・成績・監査の明細をまとめて引く操作。持ち出しの検知 (bulk_export) の材料にする
-    // (ページ送りで何度も数えないよう、先頭ページだけ)。
-    if (offset === 0) {
+    // 受講者・成績・監査の明細をまとめて引く操作。持ち出しの検知 (bulk_export) の材料にする。
+    // 数えるのは CSV の書き出し (`export=1`) の先頭ページだけ — 画面のプレビューや絞り込みの切り替え、
+    // ページ送りでは数えない。
+    if (q.export === "1" && offset === 0) {
       deferSecurityEvent(c, {
         kind: "data.export",
         tenantId: caller.tenantId,
