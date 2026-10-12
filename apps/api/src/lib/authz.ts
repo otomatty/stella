@@ -209,6 +209,14 @@ export async function assertStaffAccess(
   identity: Identity,
 ): Promise<void> {
   if (!STAFF_HOST_ROLES.has(profile.role) || identity.kind === "dev") return;
+  // 利用者はもう分かっているので、ここで止めても (Access の公開鍵を取れない 503 など) 応答の記録が
+  // 正しい組織に付くよう、先に印を付ける。
+  markRequestActor(c, {
+    id: profile.id,
+    tenantId: profile.tenantId,
+    role: profile.role,
+    email: profile.email,
+  });
   const reject = (reason: string, message: string, status: 403 | 503 = 403): never => {
     deferSecurityEvent(c, {
       kind: "auth.staff_host_required",
