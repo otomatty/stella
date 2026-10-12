@@ -374,75 +374,60 @@ async function accessDeniedBursts(db: Db, until: Date): Promise<AlertCandidate[]
   ];
 }
 
-/** 遅れて取り込んだ Access の拒否を数え直すときに読む行の上限。 */
-const BACKFILL_LIMIT = 10_000;
-
 /**
  * 遅れて取り込んだ Access の拒否の連続。取り込みが止まっていた・溜まっていたあとに入った 1 時間より前の
- * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻の 1 時間前
- * からの拒否を読み、メール・IP ごとに「各拒否の時刻までの 1 時間」(通常のルールと同じ窓) で数え直す。
- * 窓の終わりを拒否の時刻に合わせるので、1 時間の内に収まる連続は取りこぼさない。
+ * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻からの拒否
+ * それぞれについて「その拒否の時刻までの 1 時間」(通常のルールと同じ窓) の件数を数え直す。窓の終わりを
+ * 拒否の時刻に合わせるので、1 時間の内に収まる連続は取りこぼさない。数えるのは D1 の中 (窓関数) で行い、
+ * 返すのはしきい値を超えた (組織・対象・日) ごとのいちばん多い件数と最後の時刻だけ — 行を読み出さない
+ * ので、拒否がどれだけ溜まっていても途中で切れない。
  */
 async function backfilledAccessDeniedBursts(
   db: Db,
   from: Date,
   now: Date,
 ): Promise<AlertCandidate[]> {
-  const rows = await db
-    .select({
-      tenantId: securityEvents.tenantId,
-      email: securityEvents.email,
-      ip: securityEvents.ip,
-      createdAt: securityEvents.createdAt,
-    })
-    .from(securityEvents)
-    .where(
-      and(
-        eq(securityEvents.kind, "access.denied"),
-        gt(securityEvents.createdAt, new Date(from.getTime() - HOUR)),
-        lt(securityEvents.createdAt, new Date(now.getTime() + 1)),
-      ),
-    )
-    .orderBy(asc(securityEvents.createdAt))
-    .limit(BACKFILL_LIMIT);
-
   const out: AlertCandidate[] = [];
   for (const label of ["email", "ip"] as const) {
-    // 組織と対象ごとの拒否の時刻 (古い順)。
-    const groups = new Map<string, { tenantId: string; key: string; times: number[] }>();
-    for (const r of rows) {
-      const key = r[label];
-      if (!key) continue;
-      const id = `${r.tenantId}\u0000${key}`;
-      const g = groups.get(id) ?? { tenantId: r.tenantId, key, times: [] };
-      g.times.push(r.createdAt.getTime());
-      groups.set(id, g);
-    }
-    for (const g of groups.values()) {
-      // 日 (アラートのまとまり) ごとに、いちばん多い窓の件数と最後の時刻。
-      const byDate = new Map<string, { count: number; last: Date }>();
-      let i = 0;
-      for (let j = 0; j < g.times.length; j++) {
-        const t = g.times[j] ?? 0;
-        while ((g.times[i] ?? t) <= t - HOUR) i++;
-        const count = j - i + 1;
-        if (count < THRESHOLDS.accessDenied) continue;
-        const last = new Date(t);
-        const date = jstDate(last);
-        const prev = byDate.get(date);
-        byDate.set(date, { count: Math.max(prev?.count ?? 0, count), last });
-      }
-      for (const { count, last } of byDate.values()) {
-        out.push(
-          ...burstCandidates(
-            [{ tenantId: g.tenantId, key: g.key, count, last }],
-            "access_denied_burst",
-            "high",
-            label,
-          ),
-        );
-      }
-    }
+    const col = sql.raw(label);
+    // 各拒否の「その時刻までの 1 時間」(x > t - 1h かつ x <= t。時刻は ms の整数) の件数を、窓関数で
+    // 1 回の並べ替えで数える。窓の頭に入る拒否を数えるため、1 時間前から読む。
+    const rows = await db.all<{
+      tenant_id: string;
+      window_key: string;
+      window_count: number;
+      window_at: number;
+    }>(sql`
+      select tenant_id, window_key, max(window_count) as window_count, max(window_at) as window_at
+      from (
+        select tenant_id, ${col} as window_key, created_at as window_at,
+          count(*) over (
+            partition by tenant_id, ${col}
+            order by created_at
+            range between ${HOUR - 1} preceding and current row
+          ) as window_count
+        from security_events
+        where kind = 'access.denied'
+          and ${col} is not null
+          and created_at > ${from.getTime() - HOUR}
+          and created_at <= ${now.getTime()}
+      )
+      where window_at >= ${from.getTime()} and window_count >= ${THRESHOLDS.accessDenied}
+      group by tenant_id, window_key, date((window_at + ${9 * HOUR}) / 1000, 'unixepoch')
+    `);
+    out.push(
+      ...burstCandidates(
+        rows.map((r) => ({
+          tenantId: r.tenant_id,
+          key: r.window_key,
+          count: Number(r.window_count),
+          last: new Date(Number(r.window_at)),
+        })),
+        "access_denied_burst",
+        "high",
+        label,
+      ),
+    );
   }
   return out;
 }

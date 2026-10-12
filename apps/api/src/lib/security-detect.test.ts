@@ -569,6 +569,41 @@ describe("detectSecurityAlerts", () => {
     expect(statements).toBeLessThan(250);
   });
 
+  it("遅れて取り込んだ拒否がどれだけ多くても、後ろのほうの連続を数え直す", async () => {
+    // 先頭に 1 件ずつの拒否 (しきい値に届かない) が 10,500 件あり、その後ろに 5 件の連続がある。
+    const insert = db.sqlite.prepare(
+      "INSERT INTO security_events (id, tenant_id, kind, source, external_id, email, ip, metadata, created_at) VALUES (?, 'ses', 'access.denied', 'access', ?, ?, ?, '{}', ?)",
+    );
+    const start = minutesAgo(180).getTime();
+    db.sqlite.exec("begin");
+    for (let i = 0; i < 10_500; i++) {
+      insert.run(
+        `noise-${i}`,
+        `noise-${i}`,
+        `n${i}@example.com`,
+        `198.18.${i >> 8}.${i & 255}`,
+        start + i,
+      );
+    }
+    for (let i = 0; i < THRESHOLDS.accessDenied; i++) {
+      insert.run(
+        `burst-${i}`,
+        `burst-${i}`,
+        "late@example.com",
+        "192.0.2.77",
+        minutesAgo(120 - i).getTime(),
+      );
+    }
+    db.sqlite.exec("commit");
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn(), {
+      accessImportedFrom: new Date(start),
+    });
+    expect(alerts().map((a) => [a.rule, a.subject])).toEqual([
+      ["access_denied_burst", "192.0.2.77"],
+      ["access_denied_burst", "late@example.com"],
+    ]);
+  });
+
   it("重要度「低」(深夜帯の管理者サインイン) は画面にだけ出して通知しない", async () => {
     const lateNight = new Date("2026-10-11T17:30:00.000Z"); // 日本時間 2:30
     await seedEvent({
