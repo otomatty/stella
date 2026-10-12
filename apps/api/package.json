@@ -23,7 +23,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
     "@stella/shared": "workspace:*",
-    "drizzle-orm": "^0.45.3",
+    "drizzle-orm": "^0.45.4",
     "hono": "^4.13.12",
     "jose": "^6.2.12",
     "exceljs": "^4.4.0"
