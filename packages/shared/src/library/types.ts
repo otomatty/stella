@@ -55,6 +55,8 @@ export interface LibraryPdf {
   sizeBytes: number;
   uploadStatus: "uploading" | "completed";
   pageCount: number | null;
+  /** Name of the original file the browser split this part from. */
+  sourceFileName: string | null;
 }
 export interface LibraryJob {
   id: string;
@@ -81,6 +83,9 @@ export interface CreateLibraryPdf {
   sizeBytes: number;
   /** Pages the browser counted while splitting. Shown and summed for the book limit; the narrator recounts. */
   pageCount?: number;
+  /** Shared by the parts of one original so that deleting one part deletes them all. */
+  group?: string;
+  sourceFileName?: string;
 }
 export interface LibraryShelfResponse {
   entries: LibraryShelfEntry[];

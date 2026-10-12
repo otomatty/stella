@@ -174,7 +174,7 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
           <div>
             <CardTitle>PDF</CardTitle>
             <CardDescription>
-              選んだ順に1冊の本としてつなぎます。1つ50MB・100ページを超えるPDFは自動で分けて送ります。
+              選んだ順に1冊の本としてつなぎます。1つ50MB・100ページを超えるPDFは自動で分けて送り、分けた部分はどれか1つを削除するとまとめて消えます。
             </CardDescription>
           </div>
         </CardHeader>
@@ -186,6 +186,9 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                   <li key={pdf.id} className="flex flex-wrap items-center gap-2">
                     <span className="min-w-0 flex-1 break-all">
                       {pdf.position}. {pdf.fileName}
+                      {pdf.sourceFileName ? (
+                        <span className="text-muted-foreground">（元: {pdf.sourceFileName}）</span>
+                      ) : null}
                     </span>
                     <span className="text-muted-foreground">
                       {fileSize(pdf.sizeBytes)}
