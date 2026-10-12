@@ -104,7 +104,10 @@ function noteTruncation(scan: Scan, rows: readonly { createdAt: Date }[]): void 
   const last = rows[rows.length - 1];
   if (!last) return;
   // 最後の行と同じ時刻の行が上限の外に残っていてもよいよう、1 ms 手前までを読み切ったとする。
-  const through = new Date(last.createdAt.getTime() - 1);
+  // ただし上限の行がすべて since の直後の同じ時刻なら、それでは次の検査が同じ行を読み直して先へ
+  // 進めなくなる。そのときはその時刻まで読み切ったとする (止まらないことを優先し、その時刻の
+  // 上限の外の行は読まない)。
+  const through = new Date(Math.max(last.createdAt.getTime() - 1, scan.since.getTime() + 1));
   if (through < scan.readThrough) scan.readThrough = through;
 }
 
@@ -624,6 +627,7 @@ export async function notifyAlerts(
       ...lines,
       ...(link ? [`確認: ${link}`] : []),
     ].join("\n");
+    let delivered = false;
     try {
       const res = await fetchImpl(webhook, {
         method: "POST",
@@ -631,10 +635,14 @@ export async function notifyAlerts(
         body: JSON.stringify({ text }),
         signal: AbortSignal.timeout(10_000),
       });
+      delivered = res.ok;
       if (!res.ok) console.error("[security] alert webhook failed", res.status);
     } catch (err) {
       console.error("[security] alert webhook failed", err instanceof Error ? err.name : "error");
     }
+    // 届かなければ知らせ済みにしない — 次の検査で送り直す (アプリ内の通知は ID が決まっているので、
+    // 送り直しても重ならない)。
+    if (!delivered) return;
   }
 
   const ids = targets.map((a) => a.id);

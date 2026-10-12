@@ -405,6 +405,56 @@ describe("detectSecurityAlerts", () => {
     expect(body).not.toContain("192.0.2.7");
   });
 
+  it("Webhook に届かなければ知らせ済みにせず、次の検査で送り直す", async () => {
+    await seedEvent({
+      kind: "auth.no_profile",
+      tenantId: "ses",
+      email: "stranger@example.com",
+      createdAt: minutesAgo(1),
+    });
+    const hook = env({ SECURITY_ALERT_WEBHOOK_URL: "https://hooks.example.com/x" });
+    const failing = vi.fn<typeof fetch>(async () => new Response("down", { status: 503 }));
+    await detectSecurityAlerts(getDb(hook), hook, NOW, failing);
+    expect(alerts()).toEqual([expect.objectContaining({ notified_at: null })]);
+
+    const ok = vi.fn<typeof fetch>(async () => new Response("ok"));
+    await detectSecurityAlerts(getDb(hook), hook, new Date(NOW.getTime() + 15 * 60_000), ok);
+    expect(ok).toHaveBeenCalledTimes(1);
+    expect(String(ok.mock.calls[0]?.[1]?.body)).toContain("未招待の利用者が Access を通過");
+    expect(alerts()).toEqual([expect.objectContaining({ notified_at: expect.any(Number) })]);
+    // アプリ内の通知は送り直しても重ならない。
+    expect(
+      (db.sqlite.prepare("select count(*) as n from notifications").get() as { n: number }).n,
+    ).toBe(1);
+  });
+
+  it("上限の行がすべて同じ時刻でも、検査のカーソルは先へ進む", async () => {
+    const start = minutesAgo(30).getTime();
+    db.sqlite.exec(
+      `INSERT INTO security_state (key, value, updated_at) VALUES ('detect_cursor', '${start}', 1)`,
+    );
+    const insert = db.sqlite.prepare(
+      "INSERT INTO security_events (id, tenant_id, kind, source, email, metadata, created_at) VALUES (?, 'ses', 'auth.no_profile', 'app', 'flood@example.com', '{}', ?)",
+    );
+    for (let i = 0; i < 5000; i++) insert.run(`flood-${i}`, start + 1);
+    insert.run("later", minutesAgo(1).getTime());
+    insert.run("later-2", minutesAgo(1).getTime());
+    const cursor = () =>
+      Number(
+        (
+          db.sqlite
+            .prepare("select value from security_state where key = 'detect_cursor'")
+            .get() as {
+            value: string;
+          }
+        ).value,
+      );
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(cursor()).toBe(start + 1);
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(cursor()).toBe(NOW.getTime());
+  });
+
   it("重要度「低」(深夜帯の管理者サインイン) は画面にだけ出して通知しない", async () => {
     const lateNight = new Date("2026-10-11T17:30:00.000Z"); // 日本時間 2:30
     await seedEvent({
