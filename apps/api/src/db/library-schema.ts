@@ -64,6 +64,8 @@ export const libraryBookPdfs = sqliteTable(
     r2Key: text("r2_key").notNull(),
     uploadStatus: text("upload_status").notNull().default("uploading"),
     uploadId: text("upload_id"),
+    /** Parts split from one original share this id and are deleted together. */
+    partGroup: text("part_group"),
     pageCount: integer("page_count"),
     firstPageNo: integer("first_page_no"),
     createdAt: integer("created_at").notNull(),

@@ -230,6 +230,29 @@ describe("book processing jobs", () => {
     expect(started.at(-1)).toMatchObject({ generation: 2 });
   });
 
+  it("deletes every part split from the same original together", async () => {
+    db.sqlite.exec(`
+      UPDATE library_book_pdfs SET part_group = 'g-1', source_file_name = 'book.pdf';
+      INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, r2_key, upload_status, part_group, source_file_name, created_at)
+        VALUES ('pdf2','ses','book',2,'book_02.pdf',10,'library/ses/book/pdfs/pdf2-1.pdf','completed','g-1','book.pdf',1),
+               ('other','ses','book',3,'notes.pdf',10,'library/ses/book/pdfs/other-1.pdf','completed',NULL,NULL,1);
+    `);
+    const listed = await json<{ pdfs: { id: string; sourceFileName: string | null }[] }>(
+      await call("/pdfs"),
+    );
+    expect(listed.pdfs.map((pdf) => [pdf.id, pdf.sourceFileName])).toEqual([
+      ["pdf", "book.pdf"],
+      ["pdf2", "book.pdf"],
+      ["other", null],
+    ]);
+    expect((await call("/pdfs/pdf2", "DELETE")).status).toBe(200);
+    expect(deleted.sort()).toEqual([
+      "library/ses/book/pdfs/pdf-1.pdf",
+      "library/ses/book/pdfs/pdf2-1.pdf",
+    ]);
+    expect(db.sqlite.prepare("SELECT id FROM library_book_pdfs").all()).toEqual([{ id: "other" }]);
+  });
+
   it("lists chapter titles and page ranges to the owner only", async () => {
     db.sqlite.exec(`
       INSERT INTO library_chapters (id, tenant_id, book_id, position, title, markdown, start_page, end_page, updated_at)

@@ -74,6 +74,8 @@ interface PdfRow {
   r2_key: string;
   upload_status: LibraryPdf["uploadStatus"];
   page_count: number | null;
+  source_file_name: string | null;
+  part_group: string | null;
 }
 function pdfView(row: PdfRow): LibraryPdf {
   return {
@@ -83,6 +85,7 @@ function pdfView(row: PdfRow): LibraryPdf {
     sizeBytes: row.size_bytes,
     uploadStatus: row.upload_status,
     pageCount: row.page_count,
+    sourceFileName: row.source_file_name,
   };
 }
 async function processingAvailable(env: Env): Promise<boolean> {
@@ -390,8 +393,8 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
     // Count, total size and position are decided in the INSERT so concurrent adds cannot exceed them.
     await c.env.DB.batch([
       c.env.DB.prepare(
-        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, page_count, r2_key, created_at)
-        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?, ?
+        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, page_count, source_file_name, part_group, r2_key, created_at)
+        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?, ?, ?, ?
         FROM library_books b WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status IN ('draft','uploading')
           AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) < ?
           AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?
@@ -401,6 +404,8 @@ libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
         input.fileName,
         input.sizeBytes,
         input.pageCount ?? null,
+        input.sourceFileName ?? null,
+        input.group ?? null,
         `library/${caller.tenantId}/${book.id}/pdfs/${id}.pdf`,
         now,
         caller.tenantId,
@@ -489,23 +494,30 @@ libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
     if (found.status !== "failed") requireUploadable(found);
     const book = await reopenFailed(c.env, caller, found);
     requireUploadable(book);
-    // Mark it unfinished first: processing cannot start on it, and a failed R2 delete
-    // leaves a row the owner can delete again instead of an unreferenced object.
+    // The parts split from one original go together: leaving some would process a truncated
+    // original. Mark them unfinished first so processing cannot start on them, and a failed R2
+    // delete leaves rows the owner can delete again instead of unreferenced objects.
+    const sameOriginal =
+      "tenant_id = ? AND book_id = ? AND (id = ? OR (part_group IS NOT NULL AND part_group = ?))";
+    const scope = [caller.tenantId, book.id, pdf.id, pdf.part_group];
+    const parts = await c.env.DB.prepare(`SELECT * FROM library_book_pdfs WHERE ${sameOriginal}`)
+      .bind(...scope)
+      .all<PdfRow>();
     const marked = await c.env.DB.prepare(
-      "UPDATE library_book_pdfs SET upload_status = 'uploading' WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
+      `UPDATE library_book_pdfs SET upload_status = 'uploading' WHERE ${sameOriginal} AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))`,
     )
-      .bind(caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
+      .bind(...scope, caller.tenantId, book.id)
       .run();
     if (!marked.meta.changes)
       throw new ApiError("PDFを削除できませんでした。もう一度お試しください", 409);
-    await bucket.delete(pdf.r2_key);
+    await bucket.delete(parts.results.map((part) => part.r2_key));
     const removed = await c.env.DB.prepare(
-      "DELETE FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ?",
+      `DELETE FROM library_book_pdfs WHERE ${sameOriginal} AND upload_status = 'uploading'`,
     )
-      .bind(caller.tenantId, book.id, pdf.id, pdf.r2_key)
+      .bind(...scope)
       .run();
     // A concurrent upload swapped in a new validated object; that replacement stands.
-    if (!removed.meta.changes)
+    if (removed.meta.changes < parts.results.length)
       throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
     return c.json({ ok: true });
   } catch (error) {
