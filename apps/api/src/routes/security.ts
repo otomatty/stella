@@ -175,6 +175,21 @@ securityRoute.get("/api/security/alerts", async (c) => {
     if (status === "active") conds.push(inArray(securityAlerts.status, ["open", "acknowledged"]));
     else if (isSecurityAlertStatus(status)) conds.push(eq(securityAlerts.status, status));
     else if (status !== "all") throw new ApiError("status が不正です", 400);
+    const limit = Math.min(Math.max(Number(c.req.query("limit")) || 100, 1), 200);
+    // 続きは最後の行の last_seen_at と id で取る (時刻が同じ行は ID で続きを決める)。
+    const beforeRaw = c.req.query("before");
+    if (beforeRaw) {
+      const before = new Date(beforeRaw);
+      if (Number.isNaN(before.getTime())) throw new ApiError("before が不正です", 400);
+      const beforeId = c.req.query("beforeId");
+      const page = beforeId
+        ? or(
+            lt(securityAlerts.lastSeenAt, before),
+            and(eq(securityAlerts.lastSeenAt, before), lt(securityAlerts.id, beforeId)),
+          )
+        : lt(securityAlerts.lastSeenAt, before);
+      if (page) conds.push(page);
+    }
     const rows = await db
       .select({
         id: securityAlerts.id,
@@ -194,8 +209,8 @@ securityRoute.get("/api/security/alerts", async (c) => {
       })
       .from(securityAlerts)
       .where(and(...conds))
-      .orderBy(desc(securityAlerts.lastSeenAt))
-      .limit(200);
+      .orderBy(desc(securityAlerts.lastSeenAt), desc(securityAlerts.id))
+      .limit(limit);
     return c.json({ rows });
   } catch (err) {
     return errorResponse(c, err);

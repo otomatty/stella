@@ -417,20 +417,24 @@ const ALERT_FILTERS: { value: SecurityAlertFilter; label: string }[] = [
   { value: "all", label: "すべて" },
 ];
 
+const ALERT_PAGE_SIZE = 100;
+
 function AlertsPanel({ version, onChanged }: { version: number; onChanged: () => void }) {
   const [filter, setFilter] = useState<SecurityAlertFilter>("active");
   const [rows, setRows] = useState<SecurityAlertRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: version は取り直しの合図
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listSecurityAlerts(filter)
+    listSecurityAlerts(filter, { limit: ALERT_PAGE_SIZE })
       .then((r) => {
         if (cancelled) return;
         setRows(r);
+        setHasMore(r.length >= ALERT_PAGE_SIZE);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -443,6 +447,29 @@ function AlertsPanel({ version, onChanged }: { version: number; onChanged: () =>
       cancelled = true;
     };
   }, [filter, version]);
+
+  // 古いアラートも開いて対応できるよう、最後の行より前を続けて読む。
+  const loadMore = async () => {
+    const last = rows?.at(-1);
+    if (!last) return;
+    setLoading(true);
+    try {
+      const more = await listSecurityAlerts(filter, {
+        limit: ALERT_PAGE_SIZE,
+        before: last.last_seen_at,
+        beforeId: last.id,
+      });
+      setRows((prev) => {
+        const seen = new Set((prev ?? []).map((r) => r.id));
+        return [...(prev ?? []), ...more.filter((r) => !seen.has(r.id))];
+      });
+      setHasMore(more.length >= ALERT_PAGE_SIZE);
+    } catch (err) {
+      toast.error(`読み込みに失敗しました: ${errorMessage(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -459,7 +486,11 @@ function AlertsPanel({ version, onChanged }: { version: number; onChanged: () =>
             {f.label}
           </Button>
         ))}
-        {rows ? <span className="ml-auto text-[12.5px] text-ink-3">{rows.length} 件</span> : null}
+        {rows ? (
+          <span className="ml-auto text-[12.5px] text-ink-3">
+            {rows.length} 件{hasMore ? " (続きあり)" : ""}
+          </span>
+        ) : null}
       </fieldset>
       {error ? <ErrorBox message={error} /> : null}
       {rows === null && loading ? (
@@ -479,6 +510,13 @@ function AlertsPanel({ version, onChanged }: { version: number; onChanged: () =>
           ))}
         </div>
       )}
+      {hasMore ? (
+        <div className="mt-3 flex justify-center">
+          <Button variant="outline" onClick={() => void loadMore()} disabled={loading}>
+            {loading ? "読み込み中…" : "さらに読み込む"}
+          </Button>
+        </div>
+      ) : null}
     </>
   );
 }

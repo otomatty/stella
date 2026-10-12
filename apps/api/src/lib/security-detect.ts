@@ -668,11 +668,15 @@ export async function saveAlerts(
 
 type NotifyEnv = Pick<
   Env,
-  "SECURITY_ALERT_WEBHOOK_URL" | "INVITE_REDIRECT_URL" | "ALLOWED_ORIGINS"
+  "SECURITY_ALERT_WEBHOOK_URL" | "INVITE_REDIRECT_URL" | "ALLOWED_ORIGINS" | "STAFF_ORIGIN"
 >;
 
+/**
+ * 通知に載せるセキュリティ画面の入口。管理者は講師・管理者用の入口からしか操作できないので、
+ * それがあればそちら (受講者用の入口を開くと「講師・管理者用の入口から開いてください」になる)。
+ */
 function appBaseUrl(env: NotifyEnv): string | null {
-  const raw = env.INVITE_REDIRECT_URL || env.ALLOWED_ORIGINS?.split(",")[0];
+  const raw = env.STAFF_ORIGIN || env.INVITE_REDIRECT_URL || env.ALLOWED_ORIGINS?.split(",")[0];
   if (!raw) return null;
   try {
     return new URL(raw.trim()).origin;

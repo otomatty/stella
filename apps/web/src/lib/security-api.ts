@@ -41,12 +41,18 @@ export function fetchSecurityOverview(): Promise<SecurityOverview> {
   return apiFetch<SecurityOverview>("/api/security/overview");
 }
 
+/** アラート (最後に起きた順)。続きは最後の行の last_seen_at と id を `before` / `beforeId` に渡して取る。 */
 export async function listSecurityAlerts(
   status: SecurityAlertFilter = "active",
+  page: { limit?: number; before?: string; beforeId?: string } = {},
 ): Promise<SecurityAlertRow[]> {
-  const { rows } = await apiFetch<{ rows: SecurityAlertRow[] }>(
-    `/api/security/alerts?status=${encodeURIComponent(status)}`,
-  );
+  const p = new URLSearchParams({ status });
+  if (page.limit) p.set("limit", String(page.limit));
+  if (page.before) {
+    p.set("before", page.before);
+    if (page.beforeId) p.set("beforeId", page.beforeId);
+  }
+  const { rows } = await apiFetch<{ rows: SecurityAlertRow[] }>(`/api/security/alerts?${p}`);
   return rows ?? [];
 }
 

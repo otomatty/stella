@@ -105,6 +105,24 @@ describe("アラート", () => {
     expect(all.map((r) => r.id).sort()).toEqual(["al1", "al2"]);
   });
 
+  it("古いアラートも続きとして読める (最後の行の last_seen_at と id から)", async () => {
+    type Row = { id: string; last_seen_at: string };
+    const first = (
+      await json<{ rows: Row[] }>(await get("/api/security/alerts?status=all&limit=1"))
+    ).rows;
+    expect(first.map((r) => r.id)).toEqual(["al1"]);
+    const last = first[0] as Row;
+    const next = (
+      await json<{ rows: Row[] }>(
+        await get(
+          `/api/security/alerts?status=all&limit=1&before=${encodeURIComponent(last.last_seen_at)}&beforeId=${last.id}`,
+        ),
+      )
+    ).rows;
+    expect(next.map((r) => r.id)).toEqual(["al2"]);
+    expect((await get("/api/security/alerts?before=not-a-date")).status).toBe(400);
+  });
+
   it("状態とメモを変え、監査ログに残す。別の組織のアラートは 404", async () => {
     const patch = async (id: string, body: unknown) =>
       request(app, env, `/api/security/alerts/${id}`, {

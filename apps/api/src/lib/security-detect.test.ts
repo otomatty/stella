@@ -417,14 +417,20 @@ describe("detectSecurityAlerts", () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response("ok"));
     await detectSecurityAlerts(
       getDb(env()),
-      env({ SECURITY_ALERT_WEBHOOK_URL: "https://hooks.example.com/x" }),
+      env({
+        SECURITY_ALERT_WEBHOOK_URL: "https://hooks.example.com/x",
+        INVITE_REDIRECT_URL: "https://learner.example.com",
+        STAFF_ORIGIN: "https://staff.example.com",
+      }),
       NOW,
       fetchImpl,
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const body = String(fetchImpl.mock.calls[0]?.[1]?.body);
     expect(body).toContain("未招待の利用者のアクセス");
-    expect(body).toContain("https://stella.example.com/admin/security");
+    // 管理者は講師・管理者用の入口からしか操作できないので、受講者用の入口には案内しない。
+    expect(body).toContain("https://staff.example.com/admin/security");
+    expect(body).not.toContain("learner.example.com");
     expect(body).not.toContain("stranger@example.com");
     expect(body).not.toContain("192.0.2.7");
   });
