@@ -40,6 +40,8 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [upload, setUpload] = useState<UploadProgress | null>(null);
+  // The confirmation covers the PDF set it was given for; adding or deleting a PDF clears it.
+  const [acknowledgedFor, setAcknowledgedFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const base = `/api/library/books/${bookId}`;
@@ -133,6 +135,23 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
     pdfs.length > 0 &&
     pdfs.every((pdf) => pdf.uploadStatus === "completed");
   // After a failed book is reopened, its old job belongs to an earlier run.
+  const pdfSet = pdfs.map((pdf) => pdf.id).join(",");
+  const acknowledged = acknowledgedFor === pdfSet;
+  const consent = (
+    <label className="flex items-start gap-2 text-sm">
+      <input
+        type="checkbox"
+        className="mt-1"
+        checked={acknowledged}
+        disabled={busy}
+        onChange={(event) => setAcknowledgedFor(event.target.checked ? pdfSet : null)}
+      />
+      <span>
+        本文の準備では、PDFを外部の読み取りサービス（Google の Gemini
+        API）へ送って文字を読み取ります。送ってよいPDFであることを確認しました。
+      </span>
+    </label>
+  );
   const job =
     book.status === "processing" || book.status === "ready" || book.status === "failed"
       ? jobs[0]
@@ -223,6 +242,7 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                 <Progress value={upload.percent} aria-label="PDFの送信" />
               </div>
             ) : null}
+            {canProcess ? consent : null}
             {canUpload ? (
               <div className="flex flex-wrap gap-2">
                 <label className="cursor-pointer">
@@ -240,11 +260,17 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                 </label>
                 <Button
                   variant="primary"
-                  disabled={busy || !canProcess}
+                  disabled={busy || !canProcess || !acknowledged}
                   onClick={() =>
-                    void run(() =>
-                      apiFetch(`/api/library/books/${book.id}/process`, { method: "POST" }),
-                    )
+                    void run(async () => {
+                      await apiFetch(`/api/library/books/${book.id}/process`, {
+                        method: "POST",
+                        // The server starts only if these are still exactly the book's PDFs.
+                        body: { acknowledgedExternalProcessing: true, pdfIds: pdfSet.split(",") },
+                      });
+                      // Each accepted run used its confirmation; a retry asks again.
+                      setAcknowledgedFor(null);
+                    })
                   }
                 >
                   本文の準備を始める
@@ -285,15 +311,18 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                   <span className="text-muted-foreground">
                     PDFを追加・削除すると、組み直した本としてもう一度準備できます。
                   </span>
+                  {consent}
                   <div>
                     <Button
-                      disabled={busy || !capabilities?.processingAvailable}
+                      disabled={busy || !capabilities?.processingAvailable || !acknowledged}
                       onClick={() =>
-                        void run(() =>
-                          apiFetch(`/api/library/books/${book.id}/jobs/${job.id}/retry`, {
+                        void run(async () => {
+                          await apiFetch(`/api/library/books/${book.id}/jobs/${job.id}/retry`, {
                             method: "POST",
-                          }),
-                        )
+                            body: { acknowledgedExternalProcessing: true },
+                          });
+                          setAcknowledgedFor(null);
+                        })
                       }
                     >
                       再実行
