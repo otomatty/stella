@@ -85,18 +85,35 @@ export interface UploadProgress {
   percent: number;
 }
 
+/** What the book already holds, so each file is checked against every book limit before sending. */
+export interface BookTotals {
+  pdfs: number;
+  bytes: number;
+  pages: number;
+}
+
+/** The first book limit the totals pass, worded for the message, or null when all fit. */
+export function overBookLimit(totals: BookTotals, limits: Limits): string | null {
+  if (totals.pdfs > limits.maxBookPdfs) return `PDF${limits.maxBookPdfs}個`;
+  if (totals.bytes > limits.maxBookBytes)
+    return `${Math.round(limits.maxBookBytes / 1024 / 1024 / 1024)}GB`;
+  if (totals.pages > limits.maxBookPages) return `${limits.maxBookPages}ページ`;
+  return null;
+}
+
 /**
- * Splits each file in the chosen order and uploads the parts in that order. `knownPages` is the
- * page total of the book's PDFs so far; a file that would pass the book limit is not sent.
+ * Splits each file in the chosen order and uploads the parts in that order. A file whose parts
+ * would pass any book limit (PDF count, bytes, pages) is rejected before any of its parts is sent,
+ * so a file is never left half uploaded.
  */
 export async function uploadBookPdfs(
   bookId: string,
   files: File[],
   limits: Limits,
-  knownPages: number,
+  known: BookTotals,
   onProgress: (progress: UploadProgress) => void,
 ): Promise<void> {
-  let pages = knownPages;
+  let { pdfs, bytes, pages } = known;
   for (const [index, file] of files.entries()) {
     const base = (index / files.length) * 100,
       share = 100 / files.length;
@@ -107,11 +124,12 @@ export async function uploadBookPdfs(
         percent: base + (share * done) / total / 2,
       }),
     );
+    pdfs += parts.length;
+    bytes += parts.reduce((sum, part) => sum + part.bytes.byteLength, 0);
     pages += parts.reduce((sum, part) => sum + part.pageCount, 0);
-    if (pages > limits.maxBookPages)
-      throw new Error(
-        `${file.name} を加えると1冊${limits.maxBookPages}ページを超えます。本を分けて登録してください`,
-      );
+    const over = overBookLimit({ pdfs, bytes, pages }, limits);
+    if (over)
+      throw new Error(`${file.name} を加えると1冊${over}を超えます。本を分けて登録してください`);
     for (const [n, part] of parts.entries()) {
       onProgress({
         label: `${file.name} を送信中 (${n + 1}/${parts.length})`,

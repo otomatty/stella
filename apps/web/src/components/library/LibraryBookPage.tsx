@@ -137,13 +137,17 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
     book.status === "processing" || book.status === "ready" || book.status === "failed"
       ? jobs[0]
       : undefined;
-  const knownPages = pdfs.reduce((sum, pdf) => sum + (pdf.pageCount ?? 0), 0);
+  const known = {
+    pdfs: pdfs.length,
+    bytes: pdfs.reduce((sum, pdf) => sum + pdf.sizeBytes, 0),
+    pages: pdfs.reduce((sum, pdf) => sum + (pdf.pageCount ?? 0), 0),
+  };
 
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files ?? [])];
     event.target.value = "";
     if (!files.length || !capabilities) return;
-    void run(() => uploadBookPdfs(book.id, files, capabilities.limits, knownPages, setUpload));
+    void run(() => uploadBookPdfs(book.id, files, capabilities.limits, known, setUpload));
   }
 
   return (
@@ -188,7 +192,8 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                       {pdf.pageCount ? ` · ${pdf.pageCount}ページ` : ""}
                       {pdf.uploadStatus === "completed" ? "" : " · 送信できていません"}
                     </span>
-                    {canUpload ? (
+                    {/* Deleting needs only storage, so it stays available while processing is off. */}
+                    {editable ? (
                       <Button
                         variant="ghost"
                         disabled={busy}
