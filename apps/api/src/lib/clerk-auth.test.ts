@@ -5,9 +5,11 @@ const clerkApi = {
   sessions: { getSessionList: vi.fn(), revokeSession: vi.fn() },
   apiKeys: { list: vi.fn(), revoke: vi.fn(), verify: vi.fn() },
 };
+const verifyTokenMock = vi.fn();
 vi.mock("@clerk/backend", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@clerk/backend")>()),
   createClerkClient: () => clerkApi,
+  verifyToken: (...args: unknown[]) => verifyTokenMock(...args),
 }));
 
 const {
@@ -17,6 +19,7 @@ const {
   isClerkApiKey,
   resetClerkApiKeyCache,
   revokeClerkUser,
+  verifyClerkSession,
   verifyVscodeApiKey,
   VSCODE_API_KEY_SCOPE,
 } = await import("./clerk-auth.js");
@@ -51,6 +54,27 @@ describe("clerkConfig", () => {
   it("API キーは接頭辞で見分ける", () => {
     expect(isClerkApiKey("ak_123")).toBe(true);
     expect(isClerkApiKey("eyJhbGciOi.x.y")).toBe(false);
+  });
+});
+
+describe("verifyClerkSession", () => {
+  it.each([
+    [
+      "例外で",
+      () => Promise.reject(Object.assign(new Error("x"), { reason: "jwk-remote-failed-to-load" })),
+    ],
+    [
+      "結果の errors で",
+      () => Promise.resolve({ errors: [{ reason: "jwk-remote-failed-to-load" }] }),
+    ],
+  ])("Clerk の公開鍵を取れなかったと%s返されたら、障害として扱う", async (_label, impl) => {
+    verifyTokenMock.mockImplementation(impl);
+    await expect(verifyClerkSession(config, "token")).rejects.toBeInstanceOf(ClerkUnavailableError);
+  });
+
+  it("期限切れなどの拒否はトークンの誤りとして扱う", async () => {
+    verifyTokenMock.mockResolvedValue({ errors: [{ reason: "token-expired" }] });
+    await expect(verifyClerkSession(config, "token")).rejects.toBeInstanceOf(ClerkTokenError);
   });
 });
 

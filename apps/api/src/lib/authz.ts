@@ -20,7 +20,12 @@ import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { ACCESS_ASSERTION_HEADER, accessConfig, verifyAccessAssertion } from "./access-auth.js";
+import {
+  ACCESS_ASSERTION_HEADER,
+  AccessUnavailableError,
+  accessConfig,
+  verifyAccessAssertion,
+} from "./access-auth.js";
 import { verifyAccessToken } from "./auth-jwt.js";
 import {
   clerkConfig,
@@ -231,7 +236,11 @@ export async function assertStaffAccess(
   }
   const assertion = c.req.header(ACCESS_ASSERTION_HEADER)?.trim();
   if (!assertion) reject("missing", STAFF_HOST_REQUIRED);
-  const verified = await verifyAccessAssertion(access, assertion ?? "").catch(() => null);
+  const verified = await verifyAccessAssertion(access, assertion ?? "").catch((err: unknown) => {
+    // 公開鍵を取れなかっただけなら、入口を間違えたとは言わず、迂回の試みとしても記録しない。
+    if (err instanceof AccessUnavailableError) throw new ApiError(err.message, 503);
+    return null;
+  });
   if (!verified) reject("invalid", STAFF_HOST_REQUIRED);
   if (verified?.email !== (profile.email ?? "").toLowerCase()) {
     reject("email_mismatch", STAFF_HOST_REQUIRED);

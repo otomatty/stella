@@ -15,7 +15,13 @@
  * トークンにはメールが無いので受け付けない (人のアカウント以外で API を使わせない)。
  */
 
-import { createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from "jose";
+import {
+  createRemoteJWKSet,
+  errors as joseErrors,
+  jwtVerify,
+  type JWTPayload,
+  type JWTVerifyGetKey,
+} from "jose";
 
 import type { Env } from "../env.js";
 
@@ -78,6 +84,26 @@ export class AccessAssertionError extends Error {
   }
 }
 
+/**
+ * Access の公開鍵 (certs) を取れなかった (ネットワーク・時間切れ・200 以外の応答)。トークンが偽物とは
+ * 限らないので、拒否 (403) にせず 503 にする。
+ */
+export class AccessUnavailableError extends Error {
+  constructor(
+    message = "講師・管理者用の入口の確認 (Cloudflare Access) に失敗しました。しばらくしてからやり直してください",
+  ) {
+    super(message);
+    this.name = "AccessUnavailableError";
+  }
+}
+
+/** 公開鍵を取りに行けなかった失敗か。署名・発行者・AUD・期限・鍵の不一致は jose の個別のエラーになる。 */
+function isKeyFetchFailure(err: unknown): boolean {
+  if (!(err instanceof joseErrors.JOSEError)) return true; // fetch の TypeError など
+  // 時間切れと、certs が 200 を返さなかったとき (jose は汎用のエラーにする)。
+  return err.code === "ERR_JWKS_TIMEOUT" || err.code === "ERR_JOSE_GENERIC";
+}
+
 /** 検証済みのペイロードから利用者を取り出す (テストのため検証と分けてある)。 */
 export function identityFromAccessPayload(payload: JWTPayload): AccessIdentity {
   const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
@@ -110,7 +136,8 @@ export async function verifyAccessAssertion(
       audience: config.audiences,
       algorithms: ["RS256"],
     }));
-  } catch {
+  } catch (err) {
+    if (isKeyFetchFailure(err)) throw new AccessUnavailableError();
     throw new AccessAssertionError("Access のトークンを検証できませんでした");
   }
   return identityFromAccessPayload(payload);

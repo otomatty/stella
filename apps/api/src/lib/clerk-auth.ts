@@ -128,6 +128,18 @@ export async function verifyClerkSession(
     return null;
   });
   // 型は `{ data } | { errors }` だが、版によってはクレームそのものを返し、失敗は例外にする。両方を受ける。
+  const returnedErrors =
+    result && typeof result === "object" && "errors" in result
+      ? (result as { errors?: unknown }).errors
+      : null;
+  if (
+    Array.isArray(returnedErrors) &&
+    returnedErrors.some(
+      (e) => (e as { reason?: unknown } | null)?.reason === "jwk-remote-failed-to-load",
+    )
+  ) {
+    throw new ClerkUnavailableError();
+  }
   const unwrapped =
     result && typeof result === "object" && ("data" in result || "errors" in result)
       ? (result as { data?: unknown }).data

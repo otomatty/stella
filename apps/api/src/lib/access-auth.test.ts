@@ -1,6 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { accessConfig, identityFromAccessPayload, verifyAccessAssertion } from "./access-auth.js";
+import { errors as joseErrors } from "jose";
+import {
+  AccessAssertionError,
+  AccessUnavailableError,
+  accessConfig,
+  identityFromAccessPayload,
+  verifyAccessAssertion,
+} from "./access-auth.js";
 import {
   setupAccessFixture,
   TEST_ACCESS_AUD,
@@ -70,6 +77,29 @@ describe("verifyAccessAssertion", () => {
     for (const token of cases) {
       await expect(verifyAccessAssertion(config(), token)).rejects.toThrow(/検証できませんでした/);
     }
+  });
+
+  it("公開鍵を取れなかったときは、トークンの拒否ではなく取得の失敗として返す", async () => {
+    const token = await fixture.sign({ email: "a@example.com" });
+    const failures = [
+      new TypeError("fetch failed"),
+      new joseErrors.JWKSTimeout(),
+      new joseErrors.JOSEError("Expected 200 OK from the JSON Web Key Set HTTP response"),
+    ];
+    for (const failure of failures) {
+      const jwks = async () => {
+        throw failure;
+      };
+      await expect(verifyAccessAssertion(config(), token, jwks)).rejects.toBeInstanceOf(
+        AccessUnavailableError,
+      );
+    }
+    const noKey = async () => {
+      throw new joseErrors.JWKSNoMatchingKey();
+    };
+    await expect(verifyAccessAssertion(config(), token, noKey)).rejects.toBeInstanceOf(
+      AccessAssertionError,
+    );
   });
 
   it("メールアドレスの無いトークン (サービストークン) は受け付けない", async () => {
