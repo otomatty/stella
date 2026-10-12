@@ -960,9 +960,11 @@ describe("internal processing foundation", () => {
     const pdf = await PDFDocument.create();
     for (let n = 0; n < 3; n++) pdf.addPage([200, 300]);
     const bytes = await pdf.save();
+    // A wrong browser-declared page count must not survive: the workflow recounts (3 pages).
     const created = await request(`books/${id}/pdfs`, "owner", "POST", {
       fileName: "uploaded.pdf",
       sizeBytes: bytes.length,
+      pageCount: 99,
     });
     expect(created.status).toBe(201);
     const pdfId = (await data<{ pdf: { id: string } }>(created)).pdf.id;

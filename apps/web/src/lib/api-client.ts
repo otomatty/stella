@@ -81,7 +81,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 export async function apiFetchRaw(
   path: string,
   options: {
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "PUT";
     body?: BodyInit;
     contentType?: string;
     signal?: AbortSignal;

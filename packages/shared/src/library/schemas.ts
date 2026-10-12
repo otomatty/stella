@@ -43,7 +43,20 @@ export function parseBookMetadata(input: unknown, create: boolean): UpdateLibrar
   return result;
 }
 export function parseCreatePdf(input: unknown): CreateLibraryPdf {
-  const value = object(input, ["fileName", "sizeBytes"]);
+  const value = object(input, ["id", "fileName", "sizeBytes", "pageCount"]);
+  if (
+    value.pageCount !== undefined &&
+    (!Number.isSafeInteger(value.pageCount) ||
+      (value.pageCount as number) < 1 ||
+      (value.pageCount as number) > LIBRARY_LIMITS.maxPdfPages)
+  )
+    throw new LibraryInputError("ページ数が無効です");
+  if (
+    value.id !== undefined &&
+    (typeof value.id !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.id))
+  )
+    throw new LibraryInputError("PDFのIDが無効です");
   const fileName = typeof value.fileName === "string" ? value.fileName.trim() : "";
   if (!fileName || fileName.length > 200)
     throw new LibraryInputError("ファイル名は1〜200文字で指定してください");
@@ -54,7 +67,12 @@ export function parseCreatePdf(input: unknown): CreateLibraryPdf {
     (size as number) > LIBRARY_LIMITS.maxPdfBytes
   )
     throw new LibraryInputError("PDFは50MBまでです");
-  return { fileName, sizeBytes: size as number };
+  return {
+    ...(value.id === undefined ? {} : { id: (value.id as string).toLowerCase() }),
+    fileName,
+    sizeBytes: size as number,
+    ...(value.pageCount === undefined ? {} : { pageCount: value.pageCount as number }),
+  };
 }
 export function parseShelfUpdate(input: unknown): UpdateLibraryShelf {
   const value = object(input, ["readingStatus", "favorite", "tags"]);

@@ -67,9 +67,20 @@ export interface LibraryJob {
   createdAt: number;
   finishedAt: number | null;
 }
+export interface LibraryChapterSummary {
+  id: string;
+  position: number;
+  title: string;
+  startPage: number;
+  endPage: number;
+}
 export interface CreateLibraryPdf {
+  /** Client-chosen UUID so a retried registration returns the same PDF instead of a duplicate. */
+  id?: string;
   fileName: string;
   sizeBytes: number;
+  /** Pages the browser counted while splitting. Shown and summed for the book limit; the narrator recounts. */
+  pageCount?: number;
 }
 export interface LibraryShelfResponse {
   entries: LibraryShelfEntry[];

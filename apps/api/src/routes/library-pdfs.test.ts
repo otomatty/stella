@@ -58,11 +58,11 @@ beforeEach(() => {
 afterEach(() => db.sqlite.close());
 
 const token = (user: string) => signAccessToken(SECRET, user, `${user}@example.test`);
-const register = async (sizeBytes: number, user = "owner") =>
+const register = async (sizeBytes: number, user = "owner", extra: object = {}) =>
   request(app, env, "/api/library/books/book/pdfs", {
     token: await token(user),
     method: "POST",
-    body: JSON.stringify({ fileName: "part-1.pdf", sizeBytes }),
+    body: JSON.stringify({ fileName: "part-1.pdf", sizeBytes, ...extra }),
   });
 const upload = async (pdfId: string, bytes: Uint8Array, user = "owner", length = bytes.length) =>
   request(app, env, `/api/library/books/book/pdfs/${pdfId}`, {
@@ -94,10 +94,17 @@ const bookStatus = () =>
 describe("PDF upload", () => {
   it("registers PDFs in order, stores the body in R2 and lists them", async () => {
     const bytes = pdfBytes();
-    const created = await register(bytes.length);
+    const created = await register(bytes.length, "owner", { pageCount: 12 });
     expect(created.status).toBe(201);
     const { pdf } = await json<{ pdf: LibraryPdf }>(created);
-    expect(pdf).toMatchObject({ position: 1, uploadStatus: "uploading", sizeBytes: bytes.length });
+    // The browser's page count is kept for the book-wide check; the narrator recounts.
+    expect(pdf).toMatchObject({
+      position: 1,
+      uploadStatus: "uploading",
+      sizeBytes: bytes.length,
+      pageCount: 12,
+    });
+    expect((await register(10, "owner", { pageCount: 101 })).status).toBe(400);
     expect(bookStatus()).toBe("uploading");
     expect((await json<{ pdf: LibraryPdf }>(await register(10))).pdf.position).toBe(2);
 
@@ -108,9 +115,11 @@ describe("PDF upload", () => {
     const listed = await request(app, env, "/api/library/books/book/pdfs", {
       token: await token("owner"),
     });
-    expect((await json<{ pdfs: LibraryPdf[] }>(listed)).pdfs.map((p) => p.uploadStatus)).toEqual([
-      "completed",
-      "uploading",
+    expect(
+      (await json<{ pdfs: LibraryPdf[] }>(listed)).pdfs.map((p) => [p.uploadStatus, p.pageCount]),
+    ).toEqual([
+      ["completed", 12],
+      ["uploading", null],
     ]);
   });
 

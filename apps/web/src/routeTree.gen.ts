@@ -21,7 +21,6 @@ import { Route as AppDiscoveryRouteImport } from './routes/_app/discovery'
 import { Route as AppEnrollmentsRouteImport } from './routes/_app/enrollments'
 import { Route as AppGradebookRouteImport } from './routes/_app/gradebook'
 import { Route as AppInterviewPrepRouteImport } from './routes/_app/interview-prep'
-import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppOrgsRouteImport } from './routes/_app/orgs'
 import { Route as AppReportRouteImport } from './routes/_app/report'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
@@ -47,6 +46,8 @@ import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index
 import { Route as AppHallOfFameIndexRouteImport } from './routes/_app/hall-of-fame.index'
 import { Route as AppHallOfFameEntryIdRouteImport } from './routes/_app/hall-of-fame.$entryId'
 import { Route as AppHallOfFameEditRouteImport } from './routes/_app/hall-of-fame.edit'
+import { Route as AppLibraryIndexRouteImport } from './routes/_app/library.index'
+import { Route as AppLibraryBookIdRouteImport } from './routes/_app/library.$bookId'
 import { Route as AppReviewsSubmissionIdRouteImport } from './routes/_app/reviews.$submissionId'
 import { Route as AppStagesIndexRouteImport } from './routes/_app/stages.index'
 import { Route as AppSubmissionsSubmissionIdRouteImport } from './routes/_app/submissions.$submissionId'
@@ -112,11 +113,6 @@ const AppGradebookRoute = AppGradebookRouteImport.update({
 const AppInterviewPrepRoute = AppInterviewPrepRouteImport.update({
   id: '/interview-prep',
   path: '/interview-prep',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppLibraryRoute = AppLibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrgsRoute = AppOrgsRouteImport.update({
@@ -244,6 +240,16 @@ const AppHallOfFameEditRoute = AppHallOfFameEditRouteImport.update({
   path: '/hall-of-fame/edit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLibraryIndexRoute = AppLibraryIndexRouteImport.update({
+  id: '/library/',
+  path: '/library/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryBookIdRoute = AppLibraryBookIdRouteImport.update({
+  id: '/library/$bookId',
+  path: '/library/$bookId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReviewsSubmissionIdRoute = AppReviewsSubmissionIdRouteImport.update({
   id: '/reviews/$submissionId',
   path: '/reviews/$submissionId',
@@ -295,7 +301,6 @@ export interface FileRoutesByFullPath {
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
-  '/library': typeof AppLibraryRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -318,11 +323,13 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AppAdminUsersRoute
   '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
+  '/library/$bookId': typeof AppLibraryBookIdRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin/': typeof AppAdminIndexRoute
   '/courses/': typeof AppCoursesIndexRoute
   '/hall-of-fame/': typeof AppHallOfFameIndexRoute
+  '/library/': typeof AppLibraryIndexRoute
   '/stages/': typeof AppStagesIndexRoute
   '/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId/': typeof AppStagesStageIdIndexRoute
@@ -339,7 +346,6 @@ export interface FileRoutesByTo {
   '/enrollments': typeof AppEnrollmentsRoute
   '/gradebook': typeof AppGradebookRoute
   '/interview-prep': typeof AppInterviewPrepRoute
-  '/library': typeof AppLibraryRoute
   '/orgs': typeof AppOrgsRoute
   '/report': typeof AppReportRoute
   '/review': typeof AppReviewRoute
@@ -363,11 +369,13 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AppAdminUsersRoute
   '/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/hall-of-fame/edit': typeof AppHallOfFameEditRoute
+  '/library/$bookId': typeof AppLibraryBookIdRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin': typeof AppAdminIndexRoute
   '/courses': typeof AppCoursesIndexRoute
   '/hall-of-fame': typeof AppHallOfFameIndexRoute
+  '/library': typeof AppLibraryIndexRoute
   '/stages': typeof AppStagesIndexRoute
   '/courses/$courseId': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId': typeof AppStagesStageIdIndexRoute
@@ -387,7 +395,6 @@ export interface FileRoutesById {
   '/_app/enrollments': typeof AppEnrollmentsRoute
   '/_app/gradebook': typeof AppGradebookRoute
   '/_app/interview-prep': typeof AppInterviewPrepRoute
-  '/_app/library': typeof AppLibraryRoute
   '/_app/orgs': typeof AppOrgsRoute
   '/_app/report': typeof AppReportRoute
   '/_app/review': typeof AppReviewRoute
@@ -411,11 +418,13 @@ export interface FileRoutesById {
   '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/hall-of-fame/$entryId': typeof AppHallOfFameEntryIdRoute
   '/_app/hall-of-fame/edit': typeof AppHallOfFameEditRoute
+  '/_app/library/$bookId': typeof AppLibraryBookIdRoute
   '/_app/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/_app/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
   '/_app/hall-of-fame/': typeof AppHallOfFameIndexRoute
+  '/_app/library/': typeof AppLibraryIndexRoute
   '/_app/stages/': typeof AppStagesIndexRoute
   '/_app/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/_app/stages/$stageId/': typeof AppStagesStageIdIndexRoute
@@ -436,7 +445,6 @@ export interface FileRouteTypes {
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
-    | '/library'
     | '/orgs'
     | '/report'
     | '/review'
@@ -459,11 +467,13 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/hall-of-fame/$entryId'
     | '/hall-of-fame/edit'
+    | '/library/$bookId'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin/'
     | '/courses/'
     | '/hall-of-fame/'
+    | '/library/'
     | '/stages/'
     | '/courses/$courseId/'
     | '/stages/$stageId/'
@@ -480,7 +490,6 @@ export interface FileRouteTypes {
     | '/enrollments'
     | '/gradebook'
     | '/interview-prep'
-    | '/library'
     | '/orgs'
     | '/report'
     | '/review'
@@ -504,11 +513,13 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/hall-of-fame/$entryId'
     | '/hall-of-fame/edit'
+    | '/library/$bookId'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin'
     | '/courses'
     | '/hall-of-fame'
+    | '/library'
     | '/stages'
     | '/courses/$courseId'
     | '/stages/$stageId'
@@ -527,7 +538,6 @@ export interface FileRouteTypes {
     | '/_app/enrollments'
     | '/_app/gradebook'
     | '/_app/interview-prep'
-    | '/_app/library'
     | '/_app/orgs'
     | '/_app/report'
     | '/_app/review'
@@ -551,11 +561,13 @@ export interface FileRouteTypes {
     | '/_app/admin/users'
     | '/_app/hall-of-fame/$entryId'
     | '/_app/hall-of-fame/edit'
+    | '/_app/library/$bookId'
     | '/_app/reviews/$submissionId'
     | '/_app/submissions/$submissionId'
     | '/_app/admin/'
     | '/_app/courses/'
     | '/_app/hall-of-fame/'
+    | '/_app/library/'
     | '/_app/stages/'
     | '/_app/courses/$courseId/'
     | '/_app/stages/$stageId/'
@@ -656,13 +668,6 @@ declare module '@tanstack/react-router' {
       path: '/interview-prep'
       fullPath: '/interview-prep'
       preLoaderRoute: typeof AppInterviewPrepRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/library': {
-      id: '/_app/library'
-      path: '/library'
-      fullPath: '/library'
-      preLoaderRoute: typeof AppLibraryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/orgs': {
@@ -840,6 +845,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHallOfFameEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/library/': {
+      id: '/_app/library/'
+      path: '/library'
+      fullPath: '/library/'
+      preLoaderRoute: typeof AppLibraryIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/library/$bookId': {
+      id: '/_app/library/$bookId'
+      path: '/library/$bookId'
+      fullPath: '/library/$bookId'
+      preLoaderRoute: typeof AppLibraryBookIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reviews/$submissionId': {
       id: '/_app/reviews/$submissionId'
       path: '/reviews/$submissionId'
@@ -928,7 +947,6 @@ interface AppRouteChildren {
   AppEnrollmentsRoute: typeof AppEnrollmentsRoute
   AppGradebookRoute: typeof AppGradebookRoute
   AppInterviewPrepRoute: typeof AppInterviewPrepRoute
-  AppLibraryRoute: typeof AppLibraryRoute
   AppOrgsRoute: typeof AppOrgsRoute
   AppReportRoute: typeof AppReportRoute
   AppReviewRoute: typeof AppReviewRoute
@@ -941,10 +959,12 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppHallOfFameEntryIdRoute: typeof AppHallOfFameEntryIdRoute
   AppHallOfFameEditRoute: typeof AppHallOfFameEditRoute
+  AppLibraryBookIdRoute: typeof AppLibraryBookIdRoute
   AppReviewsSubmissionIdRoute: typeof AppReviewsSubmissionIdRoute
   AppSubmissionsSubmissionIdRoute: typeof AppSubmissionsSubmissionIdRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
   AppHallOfFameIndexRoute: typeof AppHallOfFameIndexRoute
+  AppLibraryIndexRoute: typeof AppLibraryIndexRoute
   AppStagesIndexRoute: typeof AppStagesIndexRoute
   AppCoursesCourseIdIndexRoute: typeof AppCoursesCourseIdIndexRoute
   AppStagesStageIdIndexRoute: typeof AppStagesStageIdIndexRoute
@@ -962,7 +982,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppEnrollmentsRoute: AppEnrollmentsRoute,
   AppGradebookRoute: AppGradebookRoute,
   AppInterviewPrepRoute: AppInterviewPrepRoute,
-  AppLibraryRoute: AppLibraryRoute,
   AppOrgsRoute: AppOrgsRoute,
   AppReportRoute: AppReportRoute,
   AppReviewRoute: AppReviewRoute,
@@ -975,10 +994,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppHallOfFameEntryIdRoute: AppHallOfFameEntryIdRoute,
   AppHallOfFameEditRoute: AppHallOfFameEditRoute,
+  AppLibraryBookIdRoute: AppLibraryBookIdRoute,
   AppReviewsSubmissionIdRoute: AppReviewsSubmissionIdRoute,
   AppSubmissionsSubmissionIdRoute: AppSubmissionsSubmissionIdRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
   AppHallOfFameIndexRoute: AppHallOfFameIndexRoute,
+  AppLibraryIndexRoute: AppLibraryIndexRoute,
   AppStagesIndexRoute: AppStagesIndexRoute,
   AppCoursesCourseIdIndexRoute: AppCoursesCourseIdIndexRoute,
   AppStagesStageIdIndexRoute: AppStagesStageIdIndexRoute,

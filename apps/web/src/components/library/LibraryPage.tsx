@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "@tanstack/react-router";
 import type {
   LibraryCapabilities,
   LibraryShelfEntry,
@@ -36,7 +37,7 @@ const READING: Record<LibraryReadingStatus, string> = {
   finished: "読了",
   archived: "保管",
 };
-const PROCESSING: Record<LibraryShelfEntry["book"]["status"], string> = {
+export const PROCESSING: Record<LibraryShelfEntry["book"]["status"], string> = {
   draft: "書籍情報のみ",
   uploading: "PDF送信中",
   processing: "本文を準備中",
@@ -154,7 +155,9 @@ function LibraryShelf() {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        PDFの登録と読み上げは準備中です。今はタイトルや著者を登録して、本棚を整理できます。
+        {capabilities?.upload
+          ? "本のタイトルを開くと、PDFを登録して本文を準備できます。読み上げは準備中です。"
+          : "PDFの登録と読み上げは準備中です。今はタイトルや著者を登録して、本棚を整理できます。"}
       </p>
       {error ? (
         <div role="alert" className="flex flex-wrap items-center gap-3">
@@ -184,7 +187,15 @@ function LibraryShelf() {
           <Card key={entry.book.id}>
             <CardHeader>
               <div className="min-w-0 flex-1">
-                <CardTitle className="break-words">{entry.book.title}</CardTitle>
+                <CardTitle className="break-words">
+                  <Link
+                    to="/library/$bookId"
+                    params={{ bookId: entry.book.id }}
+                    className="hover:underline"
+                  >
+                    {entry.book.title}
+                  </Link>
+                </CardTitle>
                 <CardDescription>{entry.book.author || "著者未登録"}</CardDescription>
               </div>
               <Badge>{READING[entry.readingStatus]}</Badge>
