@@ -593,8 +593,11 @@ export async function notifyAlerts(
         ),
       );
     if (admins.length === 0) continue;
+    // 通知の ID は「アラート・知らせる回・管理者」で決める。途中で失敗して次の検査で送り直しても、
+    // 入れ終えた分は重ねない (知らせる回 = 未対応に戻した時刻。最初は作った時刻)。
     const values = list.flatMap((a) =>
       admins.map((admin) => ({
+        id: `security-alert:${a.id}:${(a.statusChangedAt ?? a.createdAt).getTime()}:${admin.id}`,
         userId: admin.id,
         tenantId,
         type: "security_alert" as const,
@@ -604,7 +607,10 @@ export async function notifyAlerts(
       })),
     );
     for (let i = 0; i < values.length; i += 10) {
-      await db.insert(notifications).values(values.slice(i, i + 10));
+      await db
+        .insert(notifications)
+        .values(values.slice(i, i + 10))
+        .onConflictDoNothing({ target: notifications.id });
     }
   }
 

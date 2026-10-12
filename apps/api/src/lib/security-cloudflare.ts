@@ -7,7 +7,7 @@
  * Cloudflare の応答本文やトークンはエラーにもログにも載せない。
  */
 
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
 import { profiles } from "../db/schema.js";
@@ -86,7 +86,7 @@ async function tenantsByEmail(db: Db, emails: string[]): Promise<Map<string, str
     const rows = await db
       .select({ email: profiles.email, tenantId: profiles.tenantId })
       .from(profiles)
-      .where(sql`lower(${profiles.email}) in ${part}`);
+      .where(inArray(sql`lower(${profiles.email})`, part));
     for (const row of rows) if (row.email) map.set(row.email.toLowerCase(), row.tenantId);
   }
   return map;

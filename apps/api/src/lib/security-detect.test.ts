@@ -330,6 +330,19 @@ describe("detectSecurityAlerts", () => {
     ).toBe(1);
   });
 
+  it("通知を途中まで入れたあとの送り直しでも、同じ管理者に重ねて知らせない", async () => {
+    db.sqlite.exec(`
+      INSERT INTO security_alerts (id, tenant_id, rule, severity, status, title, detail, subject, dedupe_key, event_count, first_seen_at, last_seen_at, notified_at, created_at) VALUES
+        ('half', 'ses', 'disabled_account_access', 'high', 'open', '無効化済み', '{}', 'gone', 'k-half', 1, ${minutesAgo(20).getTime()}, ${minutesAgo(20).getTime()}, null, ${minutesAgo(20).getTime()});
+      INSERT INTO notifications (id, user_id, tenant_id, type, title, body, payload, read, created_at) VALUES
+        ('security-alert:half:${minutesAgo(20).getTime()}:admin', 'admin', 'ses', 'security_alert', 't', 'b', '{}', 0, 1);
+    `);
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(
+      (db.sqlite.prepare("select count(*) as n from notifications").get() as { n: number }).n,
+    ).toBe(1);
+  });
+
   it("前の検査で知らせ損ねたアラートは、次の検査で知らせ直す", async () => {
     db.sqlite.exec(`
       INSERT INTO security_alerts (id, tenant_id, rule, severity, status, title, detail, subject, dedupe_key, event_count, first_seen_at, last_seen_at, notified_at, created_at) VALUES
@@ -468,6 +481,43 @@ describe("Cloudflare Access との連携", () => {
     ).toEqual([
       { kind: "access.login", email: "learner@example.test", country: "JP", tenant_id: "ses" },
       { kind: "access.denied", email: "attacker@example.com", country: null, tenant_id: "ses" },
+    ]);
+  });
+
+  it("取り込んだログはメールアドレスの持ち主の組織に入れる (既定の組織に寄せない)", async () => {
+    db.sqlite.exec(`
+      INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('other', 'Other', 0, 1, 0, 1, 1);
+      INSERT INTO profiles (id, tenant_id, role, display_name, email, disabled, name_source, created_at) VALUES
+        ('o1', 'other', 'student', 'O1', 'o1@other.example', 0, 'invite', 1);
+    `);
+    const reply = {
+      success: true,
+      result: [
+        {
+          ray_id: "t1",
+          user_email: "O1@other.example",
+          allowed: false,
+          created_at: minutesAgo(3).toISOString(),
+          app_domain: "stella.example.com",
+        },
+        {
+          ray_id: "t2",
+          user_email: "nobody@example.com",
+          allowed: false,
+          created_at: minutesAgo(2).toISOString(),
+          app_domain: "stella.example.com",
+        },
+      ],
+    };
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(reply)));
+    await importAccessLogs(cfEnv(), getDb(cfEnv()), fetchImpl, NOW);
+    expect(
+      db.sqlite
+        .prepare("select external_id, tenant_id from security_events order by external_id")
+        .all(),
+    ).toEqual([
+      { external_id: "t1", tenant_id: "other" },
+      { external_id: "t2", tenant_id: "ses" },
     ]);
   });
 
