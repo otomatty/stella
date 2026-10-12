@@ -71,7 +71,11 @@ const call = async (path: string, method = "GET", user = "owner") =>
   });
 const row = (sql: string) => db.sqlite.prepare(sql).get() as Record<string, unknown>;
 const startProcessing = async () => {
-  const response = await call("/process", "POST");
+  const response = await request(app, env, "/api/library/books/book/process", {
+    token: await signAccessToken(SECRET, "owner", "owner@example.test"),
+    method: "POST",
+    body: JSON.stringify({ acknowledgedExternalProcessing: true }),
+  });
   return { status: response.status, job: (await json<{ job?: LibraryJob }>(response)).job };
 };
 
@@ -87,6 +91,12 @@ describe("book processing jobs", () => {
     expect(row("SELECT status FROM library_books")).toEqual({ status: "processing" });
     expect((await startProcessing()).status).toBe(409);
     expect((await call("/pdfs/pdf", "DELETE")).status).toBe(409);
+  });
+
+  it("requires the owner to confirm sending the PDFs to the external OCR", async () => {
+    expect((await call("/process", "POST")).status).toBe(400);
+    expect(row("SELECT count(*) AS n FROM library_jobs")).toEqual({ n: 0 });
+    expect(started).toEqual([]);
   });
 
   it("refuses unfinished uploads, other users and disabled processing", async () => {

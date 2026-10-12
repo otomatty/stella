@@ -541,6 +541,12 @@ libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
           : "この書籍は処理を始められる状態ではありません",
         409,
       );
+    // Starting sends the PDFs to the external OCR provider; the owner confirms that each time.
+    const body = (await c.req.json<unknown>().catch(() => null)) as {
+      acknowledgedExternalProcessing?: unknown;
+    } | null;
+    if (body?.acknowledgedExternalProcessing !== true)
+      throw new ApiError("PDFを外部の読み取りサービスへ送ることの確認が必要です", 400);
     await requireProcessing(c.env);
     const jobId = crypto.randomUUID(),
       now = Date.now();

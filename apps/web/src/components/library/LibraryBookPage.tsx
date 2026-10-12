@@ -40,6 +40,7 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [upload, setUpload] = useState<UploadProgress | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const load = useCallback(async () => {
     const base = `/api/library/books/${bookId}`;
@@ -223,6 +224,21 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                 <Progress value={upload.percent} aria-label="PDFの送信" />
               </div>
             ) : null}
+            {canProcess ? (
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={acknowledged}
+                  disabled={busy}
+                  onChange={(event) => setAcknowledged(event.target.checked)}
+                />
+                <span>
+                  本文の準備では、PDFを外部の読み取りサービス（Google の Gemini
+                  API）へ送って文字を読み取ります。送ってよいPDFであることを確認しました。
+                </span>
+              </label>
+            ) : null}
             {canUpload ? (
               <div className="flex flex-wrap gap-2">
                 <label className="cursor-pointer">
@@ -240,10 +256,13 @@ export function LibraryBookPage({ bookId }: { bookId: string }) {
                 </label>
                 <Button
                   variant="primary"
-                  disabled={busy || !canProcess}
+                  disabled={busy || !canProcess || !acknowledged}
                   onClick={() =>
                     void run(() =>
-                      apiFetch(`/api/library/books/${book.id}/process`, { method: "POST" }),
+                      apiFetch(`/api/library/books/${book.id}/process`, {
+                        method: "POST",
+                        body: { acknowledgedExternalProcessing: true },
+                      }),
                     )
                   }
                 >

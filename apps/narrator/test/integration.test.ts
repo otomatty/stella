@@ -983,7 +983,9 @@ describe("internal processing foundation", () => {
     expect(uploaded.status).toBe(200);
     const stored = await bucket.list({ prefix: `library/a/${id}/pdfs/${pdfId}-` });
     expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
-    const processed = await request(`books/${id}/process`, "owner", "POST");
+    const processed = await request(`books/${id}/process`, "owner", "POST", {
+      acknowledgedExternalProcessing: true,
+    });
     expect(processed.status).toBe(202);
     const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
     await waitJob(jobId);
@@ -1018,7 +1020,9 @@ describe("internal processing foundation", () => {
         .bind(crypto.randomUUID(), id, bytes.length, key)
         .run();
       await db.prepare("UPDATE library_books SET status = 'uploading' WHERE id = ?").bind(id).run();
-      const processed = await request(`books/${id}/process`, "owner", "POST");
+      const processed = await request(`books/${id}/process`, "owner", "POST", {
+        acknowledgedExternalProcessing: true,
+      });
       const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
       await expect(waitJob(jobId)).rejects.toThrow(/Job failed/);
       expect(
