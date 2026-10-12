@@ -902,7 +902,8 @@ export async function runSecurityScan(
     Parameters<typeof importAccessLogs>[0],
   db: Db,
 ): Promise<{ created: SecurityAlertRecord[]; accessLogError: boolean } | null> {
-  if (!(await acquireSecurityLock(db, SCAN_LOCK, SCAN_LOCK_TTL_MS))) return null;
+  const lock = await acquireSecurityLock(db, SCAN_LOCK, SCAN_LOCK_TTL_MS);
+  if (!lock) return null;
   try {
     let accessLogError = false;
     let accessImportedFrom: Date | null = null;
@@ -919,6 +920,6 @@ export async function runSecurityScan(
     const created = await detectSecurityAlerts(db, env, new Date(), fetch, { accessImportedFrom });
     return { created, accessLogError };
   } finally {
-    await releaseSecurityLock(db, SCAN_LOCK);
+    await releaseSecurityLock(db, SCAN_LOCK, lock);
   }
 }

@@ -76,8 +76,13 @@ export async function verifyCertificate(certCode: string): Promise<CertificateVe
   return verification ?? null;
 }
 
-/** 公開検証ページの共有 URL を組み立てる。 */
+/**
+ * 公開検証ページの共有 URL を組み立てる。`/verify/<コード>` は Cloudflare Access の Bypass にしてあるので、
+ * 受け取った人はログインせずに開ける (旧形式の `/?cert=` は `/` が Access に守られていて開けない。
+ * Access はクエリ文字列でパスを分けられない)。
+ */
 export function buildVerificationUrl(certCode: string): string {
-  if (typeof window === "undefined") return `?cert=${encodeURIComponent(certCode)}`;
-  return `${window.location.origin}/?cert=${encodeURIComponent(certCode)}`;
+  const path = `/verify/${encodeURIComponent(certCode)}`;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
 }

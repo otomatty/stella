@@ -1,7 +1,8 @@
 /**
  * 公開検証ページ (Issue #26)。 ログイン不要で cert_code から修了証の真正性を確認する。
  *
- * `/?cert=<CODE>` で到達する。 App.tsx が認証分岐より前にこのコンポーネントへ振り分ける。
+ * `/verify/<CODE>` (Cloudflare Access の Bypass) で到達する。旧形式の `/?cert=<CODE>` は `/` が Access に
+ * 守られているので、ログイン済みの人だけがここへリダイレクトされる。
  * 検証は verify_certificate RPC (security definer, anon 実行可) を呼ぶだけで、
  * certificates テーブルそのものは匿名公開しない (公開して良い情報だけ返る)。
  */

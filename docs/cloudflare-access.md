@@ -56,6 +56,10 @@ VS Code 拡張 ──(cf-access-token: <Access のトークン>)──▶ 同じ
    - API: `/api/public/*`, `/api/support`, `/api/certificates/verify/*`, `/api/healthz`,
      `/api/auth/vscode-link/exchange` (拡張はまだトークンを持っていない。総当たりはレート制限で止める)
    - `/assets/*` を開けると画面の JavaScript は誰でも取れるが、中に秘密は無い (旧構成でも公開だった)。
+   - 修了証の検証 URL は `/verify/<コード>` (画面の「検証 URL」・QR コード)。Access はクエリ文字列でパスを
+     分けられないので、**切り替え前に共有した旧形式の `/?cert=<コード>` は、受け取った人がログインを求められて
+     開けなくなる** (ログイン済みの人は `/verify/<コード>` へリダイレクトされる)。外部に渡した修了証は、
+     修了証の画面から新しい URL (または印刷し直した QR コード) を渡し直す。
 6. **GitHub の Variables** に設定する (Settings → Secrets and variables → Actions → Variables)。
    - `ACCESS_TEAM_DOMAIN` = `<team>.cloudflareaccess.com`
    - `ACCESS_AUD` = 控えた AUD Tag (複数のアプリで守るならカンマ区切り)

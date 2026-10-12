@@ -454,7 +454,7 @@ export async function acquireSecurityLock(
   key: string,
   ttlMs: number,
   now = new Date(),
-): Promise<boolean> {
+): Promise<string | null> {
   const until = String(now.getTime() + ttlMs);
   const rows = await db
     .insert(securityState)
@@ -465,9 +465,16 @@ export async function acquireSecurityLock(
       setWhere: sql`cast(${securityState.value} as integer) <= ${now.getTime()}`,
     })
     .returning({ key: securityState.key });
-  return rows.length > 0;
+  // 取れたら期限を返す (外すときに自分のロックかを確かめる印にする)。
+  return rows.length > 0 ? until : null;
 }
 
-export async function releaseSecurityLock(db: Db, key: string): Promise<void> {
-  await db.delete(securityState).where(eq(securityState.key, key));
+/**
+ * ロックを外す。`owner` は取ったときの印 — 期限が切れて別の処理が取り直したロックは外さない
+ * (外すと、その処理が走っている間に 3 つ目が走れてしまう)。
+ */
+export async function releaseSecurityLock(db: Db, key: string, owner: string): Promise<void> {
+  await db
+    .delete(securityState)
+    .where(and(eq(securityState.key, key), eq(securityState.value, owner)));
 }

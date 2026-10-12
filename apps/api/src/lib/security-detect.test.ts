@@ -6,9 +6,11 @@ import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { importAccessLogs, revokeAccessSessions } from "./security-cloudflare.js";
 import { THRESHOLDS, detectSecurityAlerts, jstDate } from "./security-detect.js";
 import {
+  acquireSecurityLock,
   insertSecurityEvent,
   purgeExpiredVscodeLinks,
   purgeOldSecurityEvents,
+  releaseSecurityLock,
   upsertSession,
 } from "./security-events.js";
 
@@ -857,6 +859,36 @@ describe("purgeExpiredVscodeLinks", () => {
       { id: "expired", access_token: null },
       { id: "live", access_token: "tok-live" },
     ]);
+  });
+});
+
+describe("検査のロック", () => {
+  it("期限が切れて別の処理が取り直したロックは、前の処理が外さない", async () => {
+    const d = getDb(env());
+    const first = await acquireSecurityLock(d, "scan_lock", 60_000, NOW);
+    expect(first).not.toBeNull();
+    // 期限内は取れない。
+    expect(
+      await acquireSecurityLock(d, "scan_lock", 60_000, new Date(NOW.getTime() + 1000)),
+    ).toBeNull();
+    // 期限が切れたら別の処理が取り直せる。
+    const second = await acquireSecurityLock(
+      d,
+      "scan_lock",
+      60_000,
+      new Date(NOW.getTime() + 61_000),
+    );
+    expect(second).not.toBeNull();
+    // 前の処理が終わって外そうとしても、今のロックは残る。
+    await releaseSecurityLock(d, "scan_lock", first ?? "");
+    expect(
+      await acquireSecurityLock(d, "scan_lock", 60_000, new Date(NOW.getTime() + 62_000)),
+    ).toBeNull();
+    // 今の持ち主は外せる。
+    await releaseSecurityLock(d, "scan_lock", second ?? "");
+    expect(
+      await acquireSecurityLock(d, "scan_lock", 60_000, new Date(NOW.getTime() + 63_000)),
+    ).not.toBeNull();
   });
 });
 

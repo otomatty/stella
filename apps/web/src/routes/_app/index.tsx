@@ -9,7 +9,8 @@ export const Route = createFileRoute("/_app/")({
   validateSearch: (search: Record<string, unknown>): { cert?: string } =>
     typeof search.cert === "string" ? { cert: search.cert } : {},
   beforeLoad: ({ search }) => {
-    // 既発行の修了証URL /?cert=CODE の互換リダイレクト (Issue #26)
+    // 既発行の修了証URL /?cert=CODE の互換リダイレクト (Issue #26)。本番は `/` が Access に守られて
+    // いるので、ここに来るのはログイン済みの人だけ (受け取った外部の人は /verify/CODE を使う)。
     if (search.cert) {
       throw redirect({ to: "/verify/$certCode", params: { certCode: search.cert } });
     }
