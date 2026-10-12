@@ -175,23 +175,58 @@ export async function verifyEmailCode(flow: EmailCodeFlow, code: string): Promis
   await clerk.setActive({ session: signUp.createdSessionId });
 }
 
-/** Google でのログインへ移る (戻り先は `/auth/callback`)。 */
+/** Google から戻ったあとに開くページ (ログイン前に開こうとしていた URL) を控える場所。 */
+const RETURN_TO_KEY = "stella_auth_return_to_v1";
+
+/** 同じオリジンのパスだけを戻り先にする (`//evil.example` のような別オリジンへは戻さない)。 */
+export function safeReturnPath(value: string | null | undefined): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+    return "/";
+  }
+  if (value.startsWith(CLERK_CALLBACK_PATH)) return "/";
+  return value;
+}
+
+/** Google でのログインへ移る (戻り先は `/auth/callback`。そのあとログイン前に開いていたページへ戻す)。 */
 export async function signInWithGoogle(): Promise<void> {
   const clerk = await loadClerk();
   const client = clerk.client;
   if (!client) throw new Error("ログインの準備ができていません。ページを読み込み直してください");
+  const { pathname, search, hash } = window.location;
+  const returnTo = safeReturnPath(`${pathname}${search}${hash}`);
+  try {
+    window.sessionStorage.setItem(RETURN_TO_KEY, returnTo);
+  } catch {
+    // 控えられなければトップへ戻るだけ。
+  }
   await client.signIn.authenticateWithRedirect({
     strategy: "oauth_google",
     redirectUrl: `${window.location.origin}${CLERK_CALLBACK_PATH}`,
-    redirectUrlComplete: `${window.location.origin}/`,
+    redirectUrlComplete: `${window.location.origin}${returnTo}`,
   });
 }
 
-/** Google から戻ったところで、サインイン (初めてならサインアップ) を仕上げる。 */
+function takeReturnPath(): string {
+  try {
+    const saved = window.sessionStorage.getItem(RETURN_TO_KEY);
+    window.sessionStorage.removeItem(RETURN_TO_KEY);
+    return safeReturnPath(saved);
+  } catch {
+    return "/";
+  }
+}
+
+/** Google から戻ったところで、サインイン (初めてならサインアップ) を仕上げ、元のページへ戻す。 */
 export async function completeOAuthRedirect(): Promise<void> {
   const clerk = await loadClerk();
+  const returnTo = takeReturnPath();
   await clerk.handleRedirectCallback(
-    { signInFallbackRedirectUrl: "/", signUpFallbackRedirectUrl: "/" },
+    {
+      signInForceRedirectUrl: returnTo,
+      signUpForceRedirectUrl: returnTo,
+      signInFallbackRedirectUrl: returnTo,
+      signUpFallbackRedirectUrl: returnTo,
+    },
     async (to) => {
       window.location.replace(to);
     },

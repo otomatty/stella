@@ -428,6 +428,8 @@ describe("detectSecurityAlerts", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const body = String(fetchImpl.mock.calls[0]?.[1]?.body);
     expect(body).toContain("未招待の利用者のアクセス");
+    // Webhook は全組織で共通なので、どの組織のアラートかを書く。
+    expect(body).toContain("[組織 ses]");
     // 管理者は講師・管理者用の入口からしか操作できないので、受講者用の入口には案内しない。
     expect(body).toContain("https://staff.example.com/admin/security");
     expect(body).not.toContain("learner.example.com");

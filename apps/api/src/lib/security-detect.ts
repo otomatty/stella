@@ -744,8 +744,11 @@ export async function notifyAlerts(
 
   const webhook = env.SECURITY_ALERT_WEBHOOK_URL?.trim();
   if (webhook) {
+    // Webhook は全組織で 1 つなので、どの組織のアラートかを行ごとに書く (画面は組織ごとに分かれる)。
+    // 組織 ID は個人の情報ではない。
     const lines = targets.map(
-      (a) => `・重要度「${SECURITY_SEVERITY_LABELS[a.severity]}」${a.title} (${a.eventCount} 件)`,
+      (a) =>
+        `・[組織 ${a.tenantId}] 重要度「${SECURITY_SEVERITY_LABELS[a.severity]}」${a.title} (${a.eventCount} 件)`,
     );
     const text = [
       `[STELLA セキュリティ] 新しいアラートが ${targets.length} 件あります`,
