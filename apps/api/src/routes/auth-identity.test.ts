@@ -373,6 +373,13 @@ describe("VS Code の接続 (Clerk の API キー)", () => {
     expect((await call(clerkEnv(), "/api/me", { bearer: "ak_other" })).status).toBe(401);
   });
 
+  it("Clerk の障害のときは 503 にして、キーを消させず、認証エラーとしても記録しない", async () => {
+    clerkApi.apiKeys.verify.mockRejectedValue(Object.assign(new Error("down"), { status: 502 }));
+    const res = await call(clerkEnv(), "/api/me", { bearer: "ak_secret_value" });
+    expect(res.status).toBe(503);
+    expect(events().filter((e) => e.kind === "auth.invalid_token")).toEqual([]);
+  });
+
   it("講師・管理者には接続コードを出さず、講師のアカウントの API キーも通さない", async () => {
     const bearer = await clerk.sign({ email: "teacher@example.test", azp: TEST_STAFF_ORIGIN });
     const issued = await call(clerkEnv(), "/api/auth/vscode-link", {

@@ -24,6 +24,7 @@ import { ACCESS_ASSERTION_HEADER, accessConfig, verifyAccessAssertion } from "./
 import { verifyAccessToken } from "./auth-jwt.js";
 import {
   clerkConfig,
+  ClerkUnavailableError,
   isClerkApiKey,
   verifyClerkSession,
   verifyVscodeApiKey,
@@ -146,7 +147,8 @@ export async function resolveIdentity(c: Context<{ Bindings: Env }>): Promise<Id
         clerkUserId: session.userId,
         sessionKey: `clerk:${session.sessionId}`,
       };
-    } catch {
+    } catch (err) {
+      if (err instanceof ClerkUnavailableError) throw new ApiError(err.message, 503);
       deferSecurityEvent(c, {
         kind: "auth.invalid_token",
         status: 401,

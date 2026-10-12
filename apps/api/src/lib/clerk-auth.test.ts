@@ -11,6 +11,8 @@ vi.mock("@clerk/backend", async (importOriginal) => ({
 }));
 
 const {
+  ClerkTokenError,
+  ClerkUnavailableError,
   clerkConfig,
   isClerkApiKey,
   resetClerkApiKeyCache,
@@ -74,9 +76,22 @@ describe("verifyVscodeApiKey", () => {
     expect(clerkApi.apiKeys.verify).toHaveBeenCalledTimes(2);
   });
 
-  it("Clerk が拒否したキーは通さない", async () => {
-    clerkApi.apiKeys.verify.mockRejectedValue(new Error("revoked"));
-    await expect(verifyVscodeApiKey(config, "ak_bad")).rejects.toThrow("VS Code の接続が無効です");
+  it("Clerk が拒否したキー (4xx) は通さない", async () => {
+    clerkApi.apiKeys.verify.mockRejectedValue(
+      Object.assign(new Error("not found"), { status: 404 }),
+    );
+    await expect(verifyVscodeApiKey(config, "ak_bad")).rejects.toBeInstanceOf(ClerkTokenError);
+  });
+
+  it.each([
+    ["Clerk の障害 (5xx)", Object.assign(new Error("down"), { status: 503 })],
+    ["回数制限 (429)", Object.assign(new Error("slow down"), { status: 429 })],
+    ["ネットワークの失敗", new TypeError("fetch failed")],
+  ])("%s はキーが無効とは答えない", async (_label, err) => {
+    clerkApi.apiKeys.verify.mockRejectedValue(err);
+    await expect(verifyVscodeApiKey(config, "ak_any")).rejects.toBeInstanceOf(
+      ClerkUnavailableError,
+    );
   });
 });
 

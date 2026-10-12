@@ -155,6 +155,8 @@ export const profiles = sqliteTable(
   },
   (t) => ({
     emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
+    // ログインは小文字にしたメールアドレスで照合するので、大文字小文字だけ違う行も作らせない。
+    emailLowerUnique: uniqueIndex("profiles_email_lower_uq").on(sql`lower(${t.email})`),
     tenantIdentity: uniqueIndex("profiles_tenant_id_uq").on(t.tenantId, t.id),
   }),
 );

@@ -163,6 +163,7 @@ export function AppShell() {
     inviteRequired,
     staffHostRequired,
     error: authError,
+    identityEmail,
     refreshProfile,
   } = useAuthSession();
 
@@ -554,7 +555,7 @@ export function AppShell() {
     if (inviteRequired) {
       return (
         <InviteRequiredScreen
-          email={session?.user.email ?? ""}
+          email={session?.user.email ?? identityEmail ?? ""}
           onSignOut={() => void authSignOut()}
         />
       );

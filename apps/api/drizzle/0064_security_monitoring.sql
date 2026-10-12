@@ -74,3 +74,8 @@ CREATE TABLE security_state (
 --> statement-breakpoint
 -- VS Code の接続コードに、発行した利用者の Clerk の利用者 ID を控える (交換で Clerk の API キーを作る相手)。
 ALTER TABLE auth_vscode_links ADD COLUMN clerk_user_id TEXT;
+--> statement-breakpoint
+-- ログインはメールアドレスを小文字にして profiles と照合する (authz.profileMatch)。大文字小文字だけ違う
+-- 行が 2 つあると、どちらの利用者として通すかが決まらないので、小文字で一意にする。既に重複があれば
+-- この索引の作成で止まる (docs/clerk-auth.md「切り替えの順番」の確認で先に見つけて直す)。
+CREATE UNIQUE INDEX profiles_email_lower_uq ON profiles (lower(email));

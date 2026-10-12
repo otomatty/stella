@@ -27,6 +27,11 @@ interface UseAuthSessionResult {
   staffHostRequired: boolean;
   /** profile を取れなかった理由 (clerk でログイン画面に出す)。 */
   error: string | null;
+  /**
+   * ログインしている (Clerk の) メールアドレス。招待必要画面などで、profile が無くても
+   * どのアカウントでログインしているかを見せるため。
+   */
+  identityEmail: string | null;
   refreshProfile: () => Promise<void>;
 }
 
@@ -56,6 +61,7 @@ export function useAuthSession(): UseAuthSessionResult {
   const [inviteRequired, setInviteRequired] = useState(false);
   const [staffHostRequired, setStaffHostRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [identityEmail, setIdentityEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthConfigured()) {
@@ -74,9 +80,13 @@ export function useAuthSession(): UseAuthSessionResult {
         setProfile(null);
         setInviteRequired(false);
         setStaffHostRequired(false);
+        setIdentityEmail(null);
+        // ログアウトしたら前のアカウントのエラーは消す (別のアカウントでログインし直せるように)。
+        setError(null);
         setLoading(false);
         return;
       }
+      setIdentityEmail(next.user.email ?? null);
       try {
         const p = await fetchProfile(next.user.id);
         if (!cancelled) {
@@ -168,5 +178,14 @@ export function useAuthSession(): UseAuthSessionResult {
     }
   };
 
-  return { session, profile, loading, inviteRequired, staffHostRequired, error, refreshProfile };
+  return {
+    session,
+    profile,
+    loading,
+    inviteRequired,
+    staffHostRequired,
+    error,
+    identityEmail,
+    refreshProfile,
+  };
 }

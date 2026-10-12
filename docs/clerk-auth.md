@@ -111,6 +111,10 @@ deploy の `deploy:prepare` がこれらを確かめ (秘密の値は出さな�
 ## 3. 切り替えの順番
 
 1. 2-1〜2-4 を済ませる (この時点では本番はまだ旧構成で動いている)。2-2 の 3 は初回のデプロイのあとで行う。
+   あわせて、大文字小文字だけ違うメールアドレスの profiles が無いことを確かめる。あると migration 0064 の
+   索引 `profiles_email_lower_uq` の作成でデプロイが止まる (API を出す前に止まるので、本番は旧構成のまま):
+   `bunx wrangler d1 execute stella-db --remote --command "select lower(email), count(*) from profiles group by lower(email) having count(*) > 1"`
+   が 0 行なら良い。行が出たら、どちらを残すかを決めて片方を直してからマージする。
 2. この変更を `main` にマージ → deploy が API・受講者用の入口・講師・管理者用の入口を出す。
 3. `stella-admin` の workers.dev に Access を有効にする (2-2 の 3)。**有効にするまで、講師・管理者は操作できない**
    (API が Access のトークンを求めるため。受講者は影響を受けない)。

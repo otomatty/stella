@@ -27,7 +27,7 @@ import {
   type OrganizationRow,
 } from "@stella/shared/admin/types";
 import { Hono, type Context } from "hono";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import { authUsers, profiles, tenants } from "../db/schema.js";
 import {
@@ -181,8 +181,9 @@ adminRoute.post("/api/admin/users/invite", async (c) => {
     const existingRows = await db
       .select({ tenantId: profiles.tenantId, email: profiles.email })
       .from(profiles)
-      .where(inArray(profiles.email, emails));
-    const existingByEmail = new Map(existingRows.map((r) => [r.email, r]));
+      // 大文字小文字だけ違う既存の行も同じ人として扱う (ログインは小文字で照合する)。
+      .where(inArray(sql`lower(${profiles.email})`, emails));
+    const existingByEmail = new Map(existingRows.map((r) => [(r.email ?? "").toLowerCase(), r]));
 
     // 席数上限 (Issue #29): 新規招待が plan_seats を超える分はブロックする。
     const { planSeats, seatsUsed, testMode } = await getSeatUsage(db, caller.tenantId);

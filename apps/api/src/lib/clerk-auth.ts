@@ -52,6 +52,23 @@ export class ClerkTokenError extends Error {
   }
 }
 
+/**
+ * Clerk に確かめられなかった (ネットワーク・Clerk の障害・回数制限)。トークンが無効とは限らないので、
+ * 401 (拡張はキーを消す) にせず 503 にする。
+ */
+export class ClerkUnavailableError extends Error {
+  constructor(message = "Clerk に接続できませんでした。しばらくしてからやり直してください") {
+    super(message);
+    this.name = "ClerkUnavailableError";
+  }
+}
+
+/** Clerk がトークンを拒否した (4xx。回数制限の 429 を除く) か。それ以外の失敗は障害として扱う。 */
+function isClerkRejection(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null)?.status;
+  return typeof status === "number" && status >= 400 && status < 500 && status !== 429;
+}
+
 function origins(raw: string | undefined): string[] {
   return (raw ?? "")
     .split(",")
@@ -103,7 +120,13 @@ export async function verifyClerkSession(
   const result: unknown = await verifyToken(token, {
     ...(config.jwtKey ? { jwtKey: config.jwtKey } : { secretKey: config.secretKey }),
     authorizedParties: config.authorizedParties,
-  }).catch(() => null);
+  }).catch((err: unknown) => {
+    // 公開鍵 (JWKS) を Clerk から取れなかったときだけ障害。それ以外 (期限切れ・署名・azp) は拒否。
+    if ((err as { reason?: unknown } | null)?.reason === "jwk-remote-failed-to-load") {
+      throw new ClerkUnavailableError();
+    }
+    return null;
+  });
   // 型は `{ data } | { errors }` だが、版によってはクレームそのものを返し、失敗は例外にする。両方を受ける。
   const unwrapped =
     result && typeof result === "object" && ("data" in result || "errors" in result)
@@ -165,7 +188,11 @@ export async function verifyVscodeApiKey(
   if (cached && now - cached.at < API_KEY_CACHE_MS) return cached.identity;
   const key = await clerkClient(config)
     .apiKeys.verify(secret)
-    .catch(() => null);
+    .catch((err: unknown) => {
+      // 障害・回数制限でキーを無効と答えると、拡張がキーを消して全員が接続し直すことになる。
+      if (!isClerkRejection(err)) throw new ClerkUnavailableError();
+      return null;
+    });
   const claims = (key?.claims ?? {}) as Record<string, unknown>;
   const email = typeof claims.email === "string" ? claims.email.trim().toLowerCase() : "";
   if (
