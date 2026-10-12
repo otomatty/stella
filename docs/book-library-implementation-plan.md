@@ -170,7 +170,7 @@ Cloudflareの資源とCIの接続先はstagingとproductionで分ける。デプ
 
 P1として、`library_books` と `library_shelf_entries` の加算スキーマ（0062）、本人の本棚API・画面、JWT・テナント・ロール・無効化利用者の認可テストを実装した。
 
-P2の土台として、処理Worker（`apps/narrator`）、`packages/book-core`、PDF・ページ・図版・章・音声・ジョブのテーブル（0063）、削除後のR2清掃、非公開R2の確認とデプロイ手順を追加した。`library_books` には0063で処理状態（`status`）、削除世代（`generation`）、ページ数、章計画の列を足す。OCR・図版・章分割・TTSは偽プロバイダで検証した。PDFアップロードAPIは未実装で、本番のAPIは処理Workerの `capabilities()` だけを呼ぶ。
+P2の土台として、処理Worker（`apps/narrator`）、`packages/book-core`、PDF・ページ・図版・章・音声・ジョブのテーブル（0063）、削除後のR2清掃、非公開R2の確認とデプロイ手順を追加した。`library_books` には0063で処理状態（`status`）、削除世代（`generation`）、ページ数、章計画の列を足す。OCR・図版・章分割・TTSは偽プロバイダで検証した。P2では、原本の登録・送信・削除（P2-a）と、処理の予約・起動・状態・再実行（P2-b）のAPIを追加した。登録画面と処理状態の表示（P2-c）は未実装。本番の処理Workerは `LIBRARY_PROCESSING_ENABLED=0` のままで、利用量の上限と外部送信の承認が揃うまで有効にしない。
 
 メモ・しおり・再開位置のテーブル（`library_annotations`・`library_reader_states`）はP4、公開範囲の列（`visibility`・`publication_status`）はP6で追加する。メディアチケット・Rangeの検証はテスト専用APIだけで、スマホ実機・長い音声・本物のプロバイダ品質は未検証である。
 
