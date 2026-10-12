@@ -472,7 +472,8 @@ describe("detectSecurityAlerts", () => {
         externalId: `late-${i}`,
         email: "brute@example.com",
         ip: "192.0.2.9",
-        createdAt: minutesAgo(180 - i),
+        // 8 分おき (32 分にわたる連続。30 分おきに区切って数えると取りこぼす並び)。
+        createdAt: minutesAgo(180 - i * 8),
       });
     }
     // 取り込んだ時刻が分からなければ、検査の時刻までの 1 時間には入らない。

@@ -133,6 +133,8 @@ meRoute.post("/api/me", async (c) => {
       throw new ApiError("このアカウントは無効化されています", 403);
     }
     assertTenantActive(c, me);
+    // 以降の 5xx をこの利用者の組織の出来事として記録する。
+    markRequestActor(c, { id: me.id, tenantId: me.tenantId, role: me.role, email: me.email });
     const userId = me.id;
     const raw: unknown = await c.req.json().catch(() => null);
     if (typeof raw !== "object" || raw === null || Array.isArray(raw))

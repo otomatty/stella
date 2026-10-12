@@ -336,22 +336,75 @@ async function accessDeniedBursts(db: Db, until: Date): Promise<AlertCandidate[]
   ];
 }
 
-/** 遅れて取り込んだ Access のログを数え直す区切り。連続の窓 (1 時間) の半分。 */
-const BACKFILL_STEP_MS = 30 * 60 * 1000;
+/** 遅れて取り込んだ Access の拒否を数え直すときに読む行の上限。 */
+const BACKFILL_LIMIT = 10_000;
 
 /**
  * 遅れて取り込んだ Access の拒否の連続。取り込みが止まっていた・溜まっていたあとに入った 1 時間より前の
- * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻から 30 分
- * おきの「その時刻までの 1 時間」で数え直す (30 分の内に収まる連続は必ず拾う)。
+ * 行は、検査の時刻までの 1 時間を数える通常のルールに入らないので、取り込んだ最も古い時刻の 1 時間前
+ * からの拒否を読み、メール・IP ごとに「各拒否の時刻までの 1 時間」(通常のルールと同じ窓) で数え直す。
+ * 窓の終わりを拒否の時刻に合わせるので、1 時間の内に収まる連続は取りこぼさない。
  */
 async function backfilledAccessDeniedBursts(
   db: Db,
   from: Date,
   now: Date,
 ): Promise<AlertCandidate[]> {
+  const rows = await db
+    .select({
+      tenantId: securityEvents.tenantId,
+      email: securityEvents.email,
+      ip: securityEvents.ip,
+      createdAt: securityEvents.createdAt,
+    })
+    .from(securityEvents)
+    .where(
+      and(
+        eq(securityEvents.kind, "access.denied"),
+        gt(securityEvents.createdAt, new Date(from.getTime() - HOUR)),
+        lt(securityEvents.createdAt, new Date(now.getTime() + 1)),
+      ),
+    )
+    .orderBy(asc(securityEvents.createdAt))
+    .limit(BACKFILL_LIMIT);
+
   const out: AlertCandidate[] = [];
-  for (let t = from.getTime() + BACKFILL_STEP_MS; t < now.getTime(); t += BACKFILL_STEP_MS) {
-    out.push(...(await accessDeniedBursts(db, new Date(t))));
+  for (const label of ["email", "ip"] as const) {
+    // 組織と対象ごとの拒否の時刻 (古い順)。
+    const groups = new Map<string, { tenantId: string; key: string; times: number[] }>();
+    for (const r of rows) {
+      const key = r[label];
+      if (!key) continue;
+      const id = `${r.tenantId}\u0000${key}`;
+      const g = groups.get(id) ?? { tenantId: r.tenantId, key, times: [] };
+      g.times.push(r.createdAt.getTime());
+      groups.set(id, g);
+    }
+    for (const g of groups.values()) {
+      // 日 (アラートのまとまり) ごとに、いちばん多い窓の件数と最後の時刻。
+      const byDate = new Map<string, { count: number; last: Date }>();
+      let i = 0;
+      for (let j = 0; j < g.times.length; j++) {
+        const t = g.times[j] ?? 0;
+        while ((g.times[i] ?? t) <= t - HOUR) i++;
+        const count = j - i + 1;
+        if (count < THRESHOLDS.accessDenied) continue;
+        const last = new Date(t);
+        const date = jstDate(last);
+        const prev = byDate.get(date);
+        byDate.set(date, { count: Math.max(prev?.count ?? 0, count), last });
+      }
+      for (const { count, last } of byDate.values()) {
+        out.push(
+          ...burstCandidates(
+            [{ tenantId: g.tenantId, key: g.key, count, last }],
+            "access_denied_burst",
+            "high",
+            label,
+          ),
+        );
+      }
+    }
   }
   return out;
 }
