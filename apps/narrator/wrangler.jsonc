@@ -43,7 +43,7 @@
     }
   ],
   "vars": {
-    "LIBRARY_PROCESSING_ENABLED": "0",
+    "LIBRARY_PROCESSING_ENABLED": "1",
     "LIBRARY_OCR_PAGES_PER_USER_MONTH": "2000",
     "LIBRARY_OCR_PAGES_PER_TENANT_MONTH": "20000",
     "OCR_MODEL": "gemini-3.8-flash",
