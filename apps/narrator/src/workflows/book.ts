@@ -36,7 +36,8 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
     const job = new JobContext(this.env, event.payload, event.instanceId),
       p = job.p;
     try {
-      const kind = await step.do("start", async () => {
+      // OCR settings are persisted with the step so a resumed run cannot mix models in one book.
+      const start = await step.do("start", async () => {
         const row = await job.guard();
         await job.progress(0, 0);
         await this.env.DB.prepare(
@@ -44,9 +45,13 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         )
           .bind(Date.now(), ...job.bookScope, ...job.scope)
           .run();
-        return row.type;
+        return {
+          kind: row.type,
+          ocrModel: this.env.OCR_MODEL,
+          fake: this.env.FAKE_PROVIDERS === "1",
+        };
       });
-      if (kind === "ocr") {
+      if (start.kind === "ocr") {
         const ids = await step.do("list-pdfs", async () => {
           await job.guard();
           const rows = await this.env.DB.prepare(
@@ -124,7 +129,11 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             ]);
           });
         }
-        const ocr = ocrProvider(providerConfig(this.env));
+        const ocr = ocrProvider({
+          ...providerConfig(this.env),
+          OCR_MODEL: start.ocrModel,
+          FAKE_PROVIDERS: start.fake ? "1" : "0",
+        });
         let figureStepCount = 0;
         for (const pdf of pdfs) {
           const ranges = await step.do(`ranges-${pdf.id}`, async () => {
