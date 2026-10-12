@@ -128,29 +128,64 @@ async function eventsSince(db: Db, kinds: string[], scan: Scan): Promise<EventRo
   return rows;
 }
 
+/** いつもと違う国かを比べるサインインの履歴の長さ。 */
+const LOCATION_HISTORY_MS = 30 * DAY;
+/** サインインの履歴を引くときに 1 回で渡す利用者の数 (D1 のバインドの上限 100 の内側)。 */
+const HISTORY_ACTORS_PER_QUERY = 90;
+
 /** いつもと違う国からのサインイン・深夜帯の管理者のサインイン。 */
 async function sessionRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
   const out: AlertCandidate[] = [];
   const sessions = await eventsSince(db, ["session.start"], scan);
+
+  // 比べる履歴 (各サインインの前 30 日の国) を、サインインごとではなく利用者ごとにまとめて引く
+  // (サインインが多い検査で D1 の 1 回の呼び出しあたりの問い合わせ数の上限に当たらないように)。
+  // 検査の範囲より前は「国ごとの最後のサインインの時刻」を引き、範囲の中は読んだ行を順に見ていく。
+  const actorIds = [
+    ...new Set(sessions.filter((ev) => ev.actorId && ev.country).map((ev) => ev.actorId ?? "")),
+  ];
+  const before = new Map<string, Map<string, number>>();
+  for (let i = 0; i < actorIds.length; i += HISTORY_ACTORS_PER_QUERY) {
+    const rows = await db
+      .select({
+        actorId: securityEvents.actorId,
+        country: securityEvents.country,
+        last: sql<number>`max(${securityEvents.createdAt})`,
+      })
+      .from(securityEvents)
+      .where(
+        and(
+          eq(securityEvents.kind, "session.start"),
+          inArray(securityEvents.actorId, actorIds.slice(i, i + HISTORY_ACTORS_PER_QUERY)),
+          isNotNull(securityEvents.country),
+          gte(securityEvents.createdAt, new Date(scan.since.getTime() - LOCATION_HISTORY_MS)),
+          lt(securityEvents.createdAt, new Date(scan.since.getTime() + 1)),
+        ),
+      )
+      .groupBy(securityEvents.actorId, securityEvents.country);
+    for (const r of rows) {
+      if (!r.actorId || !r.country) continue;
+      const m = before.get(r.actorId) ?? new Map<string, number>();
+      m.set(r.country, Number(r.last));
+      before.set(r.actorId, m);
+    }
+  }
+  /** 検査の範囲の中で、いま見ているサインインより前にあった国 (利用者ごと)。 */
+  const seenInScan = new Map<string, Map<string, number>>();
+
   for (const ev of sessions) {
     if (!ev.actorId) continue;
     const role = ev.actorRole ?? "";
     if (ev.country) {
-      const history = await db
-        .select({ country: securityEvents.country })
-        .from(securityEvents)
-        .where(
-          and(
-            eq(securityEvents.kind, "session.start"),
-            eq(securityEvents.actorId, ev.actorId),
-            isNotNull(securityEvents.country),
-            gte(securityEvents.createdAt, new Date(ev.createdAt.getTime() - 30 * DAY)),
-            lt(securityEvents.createdAt, ev.createdAt),
-          ),
-        )
-        .limit(500);
+      const from = ev.createdAt.getTime() - LOCATION_HISTORY_MS;
+      const known = new Set<string>();
+      for (const source of [before.get(ev.actorId), seenInScan.get(ev.actorId)]) {
+        for (const [country, last] of source ?? []) {
+          if (last >= from && last < ev.createdAt.getTime()) known.add(country);
+        }
+      }
       // 初めてのサインイン (比べる履歴が無い) は「いつもと違う」とは言えないので出さない。
-      if (history.length > 0 && !history.some((h) => h.country === ev.country)) {
+      if (known.size > 0 && !known.has(ev.country)) {
         out.push({
           tenantId: ev.tenantId,
           rule: "new_location",
@@ -165,11 +200,14 @@ async function sessionRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
             email: ev.email,
             country: ev.country,
             ip: ev.ip,
-            usual_countries: [...new Set(history.map((h) => h.country))],
+            usual_countries: [...known],
           },
           at: ev.createdAt,
         });
       }
+      const seen = seenInScan.get(ev.actorId) ?? new Map<string, number>();
+      seen.set(ev.country, ev.createdAt.getTime());
+      seenInScan.set(ev.actorId, seen);
     }
     const hour = jstHour(ev.createdAt);
     if (ADMIN_ROLES.has(role) && hour < 5) {
@@ -563,6 +601,13 @@ async function privilegeRules(db: Db, scan: Scan): Promise<AlertCandidate[]> {
 
 export type SecurityAlertRecord = typeof securityAlerts.$inferSelect;
 
+/** 既にあるアラートを引くときに 1 回で渡すキーの数 (D1 のバインドの上限 100 の内側)。 */
+const SAVE_KEYS_PER_QUERY = 90;
+/** 新しいアラートを 1 文で入れる行数 (security_alerts は 18 列。D1 のバインドの上限 100 の内側)。 */
+const SAVE_ROWS_PER_INSERT = 5;
+/** アラートの書き込みを 1 回の batch で送る文の数。 */
+const SAVE_WRITES_PER_BATCH = 25;
+
 /** 候補を保存する。新しく出たアラート (解決後に再発して未対応に戻したものを含む) を返す。 */
 export async function saveAlerts(
   db: Db,
@@ -580,24 +625,39 @@ export async function saveAlerts(
       if (c.at > prev.at) prev.at = c.at;
     }
   }
-  for (const c of merged.values()) {
-    const existing = (
-      await db
-        .select()
-        .from(securityAlerts)
-        .where(
-          and(eq(securityAlerts.tenantId, c.tenantId), eq(securityAlerts.dedupeKey, c.dedupeKey)),
-        )
-        .limit(1)
-    )[0];
+  if (merged.size === 0) return created;
+
+  // 既にあるアラートはまとめて引く (候補ごとに引くと、候補が多い検査で D1 の 1 回の呼び出しあたりの
+  // 問い合わせ数の上限に当たる)。
+  const keys = [...new Set([...merged.values()].map((c) => c.dedupeKey))];
+  const existingByKey = new Map<string, SecurityAlertRecord>();
+  for (let i = 0; i < keys.length; i += SAVE_KEYS_PER_QUERY) {
+    const rows = await db
+      .select()
+      .from(securityAlerts)
+      .where(inArray(securityAlerts.dedupeKey, keys.slice(i, i + SAVE_KEYS_PER_QUERY)));
+    for (const row of rows) existingByKey.set(`${row.tenantId}\u0000${row.dedupeKey}`, row);
+  }
+
+  // 書き込みも batch でまとめて送る。`report` は返った行を新しいアラートとして返すか。
+  const writes: Array<{
+    statement: ReturnType<typeof alertUpdate> | ReturnType<typeof alertInsert>;
+    report: boolean;
+  }> = [];
+  const alertUpdate = (id: string, set: Partial<typeof securityAlerts.$inferInsert>) =>
+    db.update(securityAlerts).set(set).where(eq(securityAlerts.id, id)).returning();
+  const alertInsert = (values: Array<typeof securityAlerts.$inferInsert>) =>
+    db.insert(securityAlerts).values(values).onConflictDoNothing().returning();
+  const inserts: Array<typeof securityAlerts.$inferInsert> = [];
+  for (const [key, c] of merged) {
+    const existing = existingByKey.get(key);
     if (existing) {
       // 解決済みにしたあとで同じ出来事がまた起きたら、未対応に戻して知らせ直す (同じ日のうちに
       // 再発しても、解決済みのまま一覧から消えて誰も気づかない、を防ぐ)。
       const recurred =
         existing.status === "resolved" && c.at > (existing.statusChangedAt ?? existing.lastSeenAt);
-      const updated = await db
-        .update(securityAlerts)
-        .set({
+      writes.push({
+        statement: alertUpdate(existing.id, {
           eventCount:
             c.countMode === "add"
               ? existing.eventCount + c.count
@@ -612,29 +672,39 @@ export async function saveAlerts(
                 notifiedAt: null,
               }
             : {}),
-        })
-        .where(eq(securityAlerts.id, existing.id))
-        .returning();
-      if (recurred && updated[0]) created.push(updated[0]);
+        }),
+        report: recurred,
+      });
       continue;
     }
-    const inserted = await db
-      .insert(securityAlerts)
-      .values({
-        tenantId: c.tenantId,
-        rule: c.rule,
-        severity: c.severity,
-        title: titleOf(c),
-        detail: c.detail,
-        subject: c.subject,
-        dedupeKey: c.dedupeKey,
-        eventCount: c.count,
-        firstSeenAt: c.at,
-        lastSeenAt: c.at,
-      })
-      .onConflictDoNothing()
-      .returning();
-    if (inserted[0]) created.push(inserted[0]);
+    inserts.push({
+      tenantId: c.tenantId,
+      rule: c.rule,
+      severity: c.severity,
+      title: titleOf(c),
+      detail: c.detail,
+      subject: c.subject,
+      dedupeKey: c.dedupeKey,
+      eventCount: c.count,
+      firstSeenAt: c.at,
+      lastSeenAt: c.at,
+    });
+  }
+  // 新しいアラートは複数行の文にまとめる (入れた行がすべて新しいアラート)。
+  for (let i = 0; i < inserts.length; i += SAVE_ROWS_PER_INSERT) {
+    writes.push({
+      statement: alertInsert(inserts.slice(i, i + SAVE_ROWS_PER_INSERT)),
+      report: true,
+    });
+  }
+  for (let i = 0; i < writes.length; i += SAVE_WRITES_PER_BATCH) {
+    const chunk = writes.slice(i, i + SAVE_WRITES_PER_BATCH);
+    const [first, ...rest] = chunk.map((w) => w.statement);
+    if (!first) continue;
+    const results = await db.batch([first, ...rest]);
+    results.forEach((rows, j) => {
+      if (chunk[j]?.report) created.push(...rows);
+    });
   }
   return created;
 }
@@ -696,11 +766,18 @@ export async function notifyAlerts(
         payload: { alert_id: a.id, rule: a.rule, severity: a.severity },
       })),
     );
+    const statements = [];
     for (let i = 0; i < values.length; i += 10) {
-      await db
-        .insert(notifications)
-        .values(values.slice(i, i + 10))
-        .onConflictDoNothing({ target: notifications.id });
+      statements.push(
+        db
+          .insert(notifications)
+          .values(values.slice(i, i + 10))
+          .onConflictDoNothing({ target: notifications.id }),
+      );
+    }
+    for (let i = 0; i < statements.length; i += SAVE_WRITES_PER_BATCH) {
+      const [first, ...rest] = statements.slice(i, i + SAVE_WRITES_PER_BATCH);
+      if (first) await db.batch([first, ...rest]);
     }
   }
 

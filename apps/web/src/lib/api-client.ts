@@ -66,10 +66,16 @@ export type AuthFetchInit = Omit<RequestInit, "headers" | "credentials" | "redir
 /**
  * Access のセッションが切れた応答か。`redirect: "manual"` で Access のログインへの
  * リダイレクトを受けると opaqueredirect (status 0) になる。Access を通ったのに API が
- * トークンを受け付けなかったときは 401。
+ * トークンを受け付けなかったときは 401。Access の方針から外れたときは、Access が JSON でない
+ * 403 (Forbidden の HTML) を返す (API の 403 は JSON なので分けられる)。
  */
-export function isAccessSessionLost(res: Pick<Response, "type" | "status">): boolean {
-  return res.type === "opaqueredirect" || res.status === 0 || res.status === 401;
+export function isAccessSessionLost(
+  res: Pick<Response, "type" | "status"> & { headers?: Pick<Headers, "get"> },
+): boolean {
+  if (res.type === "opaqueredirect" || res.status === 0 || res.status === 401) return true;
+  if (res.status !== 403) return false;
+  const contentType = res.headers?.get("content-type") ?? "";
+  return !/\bjson\b/i.test(contentType);
 }
 
 /**

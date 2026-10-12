@@ -488,6 +488,85 @@ describe("detectSecurityAlerts", () => {
     ]);
   });
 
+  it("サインインや候補が多い検査でも、D1 への問い合わせはまとめて送る (呼び出しあたりの上限に当たらない)", async () => {
+    const insertEvent = db.sqlite.prepare(
+      "INSERT INTO security_events (id, tenant_id, kind, source, actor_id, actor_role, email, country, metadata, created_at) VALUES (?, 'ses', ?, 'app', ?, ?, ?, ?, '{}', ?)",
+    );
+    const insertProfile = db.sqlite.prepare(
+      "INSERT INTO profiles (id, tenant_id, role, display_name, email, disabled, name_source, created_at) VALUES (?, 'ses', 'student', ?, ?, 0, 'invite', 1)",
+    );
+    for (let i = 0; i < 300; i++) {
+      const id = `u${i}`;
+      insertProfile.run(id, id, `${id}@example.test`);
+      insertEvent.run(
+        `prev-${i}`,
+        "session.start",
+        id,
+        "student",
+        null,
+        "JP",
+        NOW.getTime() - 2 * 86_400_000,
+      );
+      // 半分はいつもと違う国から。
+      insertEvent.run(
+        `now-${i}`,
+        "session.start",
+        id,
+        "student",
+        null,
+        i % 2 ? "JP" : "US",
+        minutesAgo(10).getTime(),
+      );
+      insertEvent.run(
+        `stranger-${i}`,
+        "auth.no_profile",
+        null,
+        null,
+        `s${i}@example.com`,
+        null,
+        minutesAgo(5).getTime(),
+      );
+    }
+    // 往復の回数 (batch は 1 回) と、送った文の数を数える。
+    let trips = 0;
+    let statements = 0;
+    let inBatch = false;
+    const counting = {
+      prepare: (query: string) => {
+        statements++;
+        const stmt = db.binding.prepare(query);
+        const wrap = (s: D1PreparedStatement): D1PreparedStatement =>
+          new Proxy(s, {
+            get(target, prop, receiver) {
+              if (prop === "bind") return (...args: unknown[]) => wrap(target.bind(...args));
+              if (!inBatch && ["all", "run", "first", "raw"].includes(String(prop))) trips++;
+              return Reflect.get(target, prop, receiver);
+            },
+          });
+        return wrap(stmt);
+      },
+      batch: async (list: D1PreparedStatement[]) => {
+        trips++;
+        inBatch = true;
+        try {
+          return await db.binding.batch(list);
+        } finally {
+          inBatch = false;
+        }
+      },
+    } as unknown as D1Database;
+    const counted = env({ DB: counting });
+    const created = await detectSecurityAlerts(getDb(counted), counted, NOW, vi.fn());
+    expect(created.filter((a) => a.rule === "new_location")).toHaveLength(150);
+    expect(created.filter((a) => a.rule === "uninvited_identity")).toHaveLength(300);
+    expect(
+      (db.sqlite.prepare("select count(*) as n from notifications").get() as { n: number }).n,
+    ).toBe(450);
+    // 1 件ずつ送っていたころは、この検査で 1,266 回の往復になっていた。
+    expect(trips).toBeLessThan(60);
+    expect(statements).toBeLessThan(250);
+  });
+
   it("重要度「低」(深夜帯の管理者サインイン) は画面にだけ出して通知しない", async () => {
     const lateNight = new Date("2026-10-11T17:30:00.000Z"); // 日本時間 2:30
     await seedEvent({

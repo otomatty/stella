@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 
 import { authRoute } from "./auth.js";
 import { meRoute } from "./me.js";
+import { supportRoute } from "./support.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { resetSecurityEventThrottle, resetSessionCache } from "../lib/security-events.js";
 import type { Env } from "../env.js";
@@ -71,7 +72,7 @@ async function call(
   path: string,
   init: RequestInit & { assertion?: string; bearer?: string; host?: string } = {},
 ) {
-  const { app } = mountTestApp(env, meRoute, authRoute);
+  const { app } = mountTestApp(env, meRoute, authRoute, supportRoute);
   const headers = new Headers(init.headers);
   if (init.assertion) headers.set("Cf-Access-Jwt-Assertion", init.assertion);
   if (init.bearer) headers.set("Authorization", `Bearer ${init.bearer}`);
@@ -232,5 +233,39 @@ describe("VS Code の接続 (Access)", () => {
 
   it("Google ログインの経路は 410 (廃止)", async () => {
     expect((await call(accessEnv(), "/api/auth/google")).status).toBe(410);
+  });
+});
+
+describe("問い合わせ (Access の Bypass の経路)", () => {
+  const send = (init: RequestInit & { assertion?: string } = {}) =>
+    call(accessEnv(), "/api/support", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "受講者",
+        email: "learner@example.test",
+        message: "困っています",
+      }),
+      ...init,
+    });
+  const userIds = () =>
+    (
+      db.sqlite.prepare("select user_id from support_inquiries").all() as Array<{
+        user_id: string | null;
+      }>
+    ).map((r) => r.user_id);
+
+  it("ログイン中のブラウザの Access の Cookie から利用者を結び付ける", async () => {
+    const token = await fixture.sign({ email: "learner@example.test" });
+    expect((await send({ headers: { Cookie: `CF_Authorization=${token}` } })).status).toBe(201);
+    expect(userIds()).toEqual(["learner"]);
+  });
+
+  it("Cookie が無い・検証できない・無効化済みなら結び付けずに受け付ける", async () => {
+    const forged = await fixture.signForged({ email: "learner@example.test" });
+    const disabled = await fixture.sign({ email: "gone@example.test" });
+    expect((await send()).status).toBe(201);
+    expect((await send({ headers: { Cookie: `CF_Authorization=${forged}` } })).status).toBe(201);
+    expect((await send({ headers: { Cookie: `CF_Authorization=${disabled}` } })).status).toBe(201);
+    expect(userIds()).toEqual([null, null, null]);
   });
 });

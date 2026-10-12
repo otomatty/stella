@@ -90,7 +90,21 @@ describe("authFetch in Cloudflare Access mode", () => {
   it("treats a redirect to the Access login as an expired session", () => {
     expect(isAccessSessionLost({ type: "opaqueredirect", status: 0 })).toBe(true);
     expect(isAccessSessionLost({ type: "basic", status: 401 })).toBe(true);
-    expect(isAccessSessionLost({ type: "basic", status: 403 })).toBe(false);
+    // API の 403 (JSON) は権限の不足。Access の方針から外れたときの 403 (HTML) はセッション切れとして扱う。
+    expect(
+      isAccessSessionLost({
+        type: "basic",
+        status: 403,
+        headers: new Headers({ "content-type": "application/json; charset=UTF-8" }),
+      }),
+    ).toBe(false);
+    expect(
+      isAccessSessionLost({
+        type: "basic",
+        status: 403,
+        headers: new Headers({ "content-type": "text/html" }),
+      }),
+    ).toBe(true);
     expect(isAccessSessionLost({ type: "basic", status: 200 })).toBe(false);
   });
 
@@ -104,11 +118,12 @@ describe("authFetch in Cloudflare Access mode", () => {
   it("surfaces other errors without reloading", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ error: "invite_required" }), { status: 403 }),
-        ),
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: "invite_required" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
     );
     await expect(apiFetch("/api/me")).rejects.toMatchObject({
       status: 403,
