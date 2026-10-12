@@ -207,12 +207,15 @@ export class JobContext {
     if (results.some((result) => result.meta.changes !== 1))
       throw new NonRetryableError("書籍の完了権限が失効しています");
   }
-  async fail(): Promise<void> {
+  /** `reason` is an owner-facing text from `userFacing`; anything else stays generic. */
+  async fail(reason?: string | null): Promise<void> {
     // Provider responses and book contents never enter client-visible errors or logs.
     await this.env.DB.prepare(
-      `UPDATE library_jobs SET status = 'failed', error_code = 'processing_failed', error_message = '処理に失敗しました。再試行してください。', finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND status IN ('queued','running') AND (? IS NULL OR EXISTS (SELECT 1 FROM library_job_dispatches d WHERE d.tenant_id = library_jobs.tenant_id AND d.book_id = library_jobs.book_id AND d.job_id = library_jobs.id AND d.instance_id = ?))`,
+      `UPDATE library_jobs SET status = 'failed', error_code = ?, error_message = ?, finished_at = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND generation = ? AND status IN ('queued','running') AND (? IS NULL OR EXISTS (SELECT 1 FROM library_job_dispatches d WHERE d.tenant_id = library_jobs.tenant_id AND d.book_id = library_jobs.book_id AND d.job_id = library_jobs.id AND d.instance_id = ?))`,
     )
       .bind(
+        reason ? "rejected" : "processing_failed",
+        reason ?? "処理に失敗しました。再試行してください。",
         Date.now(),
         this.p.tenantId,
         this.p.bookId,
@@ -223,8 +226,8 @@ export class JobContext {
       )
       .run();
   }
-  async failBook(): Promise<void> {
-    await this.fail();
+  async failBook(reason?: string | null): Promise<void> {
+    await this.fail(reason);
     // Disabling an owner stops work, but must still leave a retryable failure state.
     await this.env.DB.prepare(
       `UPDATE library_books SET status = 'failed', updated_at = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND status <> 'ready' AND ${this.bookAuthority(false)}`,

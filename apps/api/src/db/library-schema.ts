@@ -329,3 +329,21 @@ export const libraryR2Deletions = sqliteTable(
   },
   (t) => [index("library_r2_deletions_idx_0").on(t.notBefore)],
 );
+
+/** Monthly OCR page budget: one reservation per Workflow instance (no FK; kept after deletion). */
+export const libraryOcrReservations = sqliteTable(
+  "library_ocr_reservations",
+  {
+    instanceId: text("instance_id").primaryKey().notNull(),
+    tenantId: text("tenant_id").notNull(),
+    ownerId: text("owner_id").notNull(),
+    bookId: text("book_id").notNull(),
+    month: text("month").notNull(),
+    pages: integer("pages").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    check("library_ocr_reservations_check_0", sql`pages >= 0`),
+    index("library_ocr_reservations_idx_0").on(t.tenantId, t.month, t.ownerId),
+  ],
+);

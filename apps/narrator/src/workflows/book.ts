@@ -16,6 +16,7 @@ import {
 } from "../context";
 import { figureBatches, type FigureTask, MAX_BOOK_PDFS, MAX_FIGURE_BATCHES } from "../book-figures";
 import { checkpointOcr } from "../ocr-checkpoint";
+import { ocrLimits, quotaMonth, reserveOcrPages, userFacing, userMessage } from "../quota";
 import { readChapterState } from "../book-state";
 interface Pdf {
   id: string;
@@ -61,7 +62,7 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             .all<{ id: string }>();
           if (!rows.results.length) throw new NonRetryableError("PDFがありません");
           if (rows.results.length > MAX_BOOK_PDFS)
-            throw new NonRetryableError("PDFの数が上限を超えています");
+            throw new NonRetryableError(userFacing("PDFの数が上限を超えています"));
           return rows.results.map((pdf) => pdf.id);
         });
         for (const id of ids)
@@ -81,7 +82,8 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             const count = (
               await loadPdf(new Uint8Array(await object.arrayBuffer()))
             ).getPageCount();
-            if (count < 1 || count > 100) throw new NonRetryableError("PDFは1〜100ページまでです");
+            if (count < 1 || count > 100)
+              throw new NonRetryableError(userFacing("PDFは1〜100ページまでです"));
             await this.env.DB.prepare(
               `UPDATE library_book_pdfs SET page_count = ? WHERE tenant_id = ? AND book_id = ? AND id = ? AND ${job.live}`,
             )
@@ -101,9 +103,9 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             next += pdf.page_count;
             return plan;
           });
-          if (next - 1 > 1000) throw new NonRetryableError("本は1000ページまでです");
+          if (next - 1 > 1000) throw new NonRetryableError(userFacing("本は1000ページまでです"));
           if (rows.results.reduce((n, pdf) => n + pdf.size_bytes, 0) > LIBRARY_LIMITS.maxBookBytes)
-            throw new NonRetryableError("本は合計1GBまでです");
+            throw new NonRetryableError(userFacing("本は合計1GBまでです"));
           await this.env.DB.prepare(
             `UPDATE library_books SET page_count = ? WHERE tenant_id = ? AND id = ? AND generation = ? AND ${job.live}`,
           )
@@ -131,6 +133,29 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
             ]);
           });
         }
+        // Reserve the pages still to be read (a retry skips pages already read) before any
+        // paid OCR call. Reservations of failed runs are not refunded: the budget errs on the
+        // side of spending less.
+        await step.do("reserve-ocr", async () => {
+          await job.guard();
+          const remaining = await this.env.DB.prepare(
+            "SELECT count(*) AS n FROM library_pages WHERE tenant_id = ? AND book_id = ? AND ocr_status <> 'succeeded'",
+          )
+            .bind(p.tenantId, p.bookId)
+            .first<{ n: number }>();
+          const refused = await reserveOcrPages(
+            this.env.DB,
+            {
+              instanceId: event.instanceId,
+              tenantId: p.tenantId,
+              bookId: p.bookId,
+              pages: remaining?.n ?? 0,
+              month: quotaMonth(),
+            },
+            ocrLimits(this.env),
+          );
+          if (refused) throw new NonRetryableError(userFacing(refused));
+        });
         const ocr = ocrProvider({
           ...providerConfig(this.env),
           OCR_MODEL: start.ocrModel,
@@ -386,8 +411,9 @@ export class BookWorkflow extends WorkflowEntrypoint<NarratorEnv, NarratorJobReq
         await job.guard();
         await job.finishBook();
       });
-    } catch {
-      await step.do("fail", () => job.failBook());
+    } catch (error) {
+      const reason = userMessage(error);
+      await step.do("fail", () => job.failBook(reason));
     }
     // OCR checkpoints and figure plans are per instance; pages and figures are already in D1/R2.
     await step.do("cleanup", async () => {
