@@ -13,7 +13,11 @@ import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { importAccessLogs } from "./lib/security-cloudflare.js";
 import { detectSecurityAlerts } from "./lib/security-detect.js";
-import { purgeOldSecurityEvents, recordResponseOutcome } from "./lib/security-events.js";
+import {
+  purgeExpiredVscodeLinks,
+  purgeOldSecurityEvents,
+  recordResponseOutcome,
+} from "./lib/security-events.js";
 import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./lib/skill-map-data.js";
 import { adminRoute } from "./routes/admin.js";
 import { authRoute } from "./routes/auth.js";
@@ -175,6 +179,7 @@ export default {
         }
         try {
           await purgeOldSecurityEvents(db);
+          await purgeExpiredVscodeLinks(db);
         } catch (e) {
           console.error("[cron] security event purge failed", e);
         }

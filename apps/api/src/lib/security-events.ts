@@ -15,13 +15,13 @@
  * アイソレートごとに 1 分あたりの記録数を絞る (超えた分は数だけ数えて 1 行にまとめる)。
  */
 
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import type { Context } from "hono";
 
 import type { SecurityEventKind } from "@stella/shared/security/types";
 
 import { getDb, type Db } from "../db/client.js";
-import { securityEvents, securitySessions, securityState } from "../db/schema.js";
+import { authVscodeLinks, securityEvents, securitySessions, securityState } from "../db/schema.js";
 import type { Env } from "../env.js";
 
 /** 出来事を残す日数 (IPA の「3 か月さかのぼる」を満たし、要らない記録を持ち続けない)。 */
@@ -397,4 +397,19 @@ export async function purgeOldSecurityEvents(db: Db, now = new Date()): Promise<
         sql`${securityEvents.id} in (select id from security_events where created_at < ${cutoff.getTime()} limit 2000)`,
       ),
     );
+}
+
+/**
+ * 交換されなかった VS Code の接続コードに預けた Access のトークンを消す。拡張が入っていない・
+ * 受け渡しに失敗したときは交換されないので、コードの期限 (5 分) が過ぎたら D1 に残さない。
+ * 期限から 1 日たった行 (コードのハッシュ) も消す。
+ */
+export async function purgeExpiredVscodeLinks(db: Db, now = new Date()): Promise<void> {
+  await db
+    .update(authVscodeLinks)
+    .set({ accessToken: null })
+    .where(and(lt(authVscodeLinks.expiresAt, now), isNotNull(authVscodeLinks.accessToken)));
+  await db
+    .delete(authVscodeLinks)
+    .where(lt(authVscodeLinks.expiresAt, new Date(now.getTime() - 86_400_000)));
 }

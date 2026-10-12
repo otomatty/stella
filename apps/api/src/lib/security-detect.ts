@@ -9,7 +9,7 @@
  * 1 件にまとめ、件数と最後に見た時刻だけを更新する。知らせるのは新しく出たときの 1 回だけ。
  */
 
-import { and, asc, eq, gt, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 
 import {
   SECURITY_RULES,
@@ -651,11 +651,38 @@ export async function detectSecurityAlerts(
     ...(await errorSpikeRule(db, now)),
   ];
   const created = await saveAlerts(db, candidates);
-  await notifyAlerts(db, env, created, fetchImpl);
   // 上限まで読んだ問い合わせがあれば、読み切れたところまでしか進めない (残りは次の検査で読む。
   // 他のルールが読んだ出来事を次の検査でもう一度数えることはあるが、アラートは日ごとにまとまる
-  // ので、増えるのは件数だけ)。
+  // ので、増えるのは件数だけ)。アラートを保存したら通知より先に進める — 通知が失敗しても同じ
+  // 出来事を数え直さない (知らせ損ねたアラートは下で拾い直す)。
   await writeSecurityState(db, DETECT_CURSOR, String(scan.readThrough.getTime()));
   await writeSecurityState(db, LAST_SCAN_AT, String(now.getTime()));
+  await notifyAlerts(db, env, await pendingNotifications(db, created, now), fetchImpl);
   return created;
+}
+
+/**
+ * 知らせるアラート。今回出たものに加え、前の検査で保存したが通知の途中で失敗した (Worker が
+ * 止まった・D1 のエラー) ものを拾い直す (直近 1 日の未対応の「高」「中」で、まだ知らせていないもの)。
+ */
+async function pendingNotifications(
+  db: Db,
+  created: SecurityAlertRecord[],
+  now: Date,
+): Promise<SecurityAlertRecord[]> {
+  const unsent = await db
+    .select()
+    .from(securityAlerts)
+    .where(
+      and(
+        isNull(securityAlerts.notifiedAt),
+        eq(securityAlerts.status, "open"),
+        inArray(securityAlerts.severity, ["high", "medium"]),
+        gte(securityAlerts.lastSeenAt, new Date(now.getTime() - DAY)),
+      ),
+    )
+    .limit(200);
+  const byId = new Map(created.map((a) => [a.id, a]));
+  for (const a of unsent) if (!byId.has(a.id)) byId.set(a.id, a);
+  return [...byId.values()];
 }

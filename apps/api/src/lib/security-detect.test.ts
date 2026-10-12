@@ -5,7 +5,12 @@ import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { importAccessLogs, revokeAccessSessions } from "./security-cloudflare.js";
 import { detectSecurityAlerts, jstDate } from "./security-detect.js";
-import { insertSecurityEvent, purgeOldSecurityEvents, upsertSession } from "./security-events.js";
+import {
+  insertSecurityEvent,
+  purgeExpiredVscodeLinks,
+  purgeOldSecurityEvents,
+  upsertSession,
+} from "./security-events.js";
 
 let db: ReturnType<typeof sqliteD1>;
 beforeEach(() => {
@@ -273,6 +278,31 @@ describe("detectSecurityAlerts", () => {
     ).toBe(2);
   });
 
+  it("前の検査で知らせ損ねたアラートは、次の検査で知らせ直す", async () => {
+    db.sqlite.exec(`
+      INSERT INTO security_alerts (id, tenant_id, rule, severity, status, title, detail, subject, dedupe_key, event_count, first_seen_at, last_seen_at, notified_at, created_at) VALUES
+        ('unsent', 'ses', 'disabled_account_access', 'high', 'open', '無効化済み', '{}', 'gone', 'k-unsent', 1, ${minutesAgo(20).getTime()}, ${minutesAgo(20).getTime()}, null, ${minutesAgo(20).getTime()}),
+        ('low', 'ses', 'off_hours_admin', 'low', 'open', '深夜', '{}', 'admin', 'k-low', 1, ${minutesAgo(20).getTime()}, ${minutesAgo(20).getTime()}, null, ${minutesAgo(20).getTime()}),
+        ('done', 'ses', 'disabled_account_access', 'high', 'resolved', '解決済み', '{}', 'x', 'k-done', 1, ${minutesAgo(20).getTime()}, ${minutesAgo(20).getTime()}, null, ${minutesAgo(20).getTime()});
+    `);
+    await detectSecurityAlerts(getDb(env()), env(), NOW, vi.fn());
+    expect(
+      db.sqlite
+        .prepare("select json_extract(payload, '$.alert_id') as id from notifications")
+        .all(),
+    ).toEqual([{ id: "unsent" }]);
+    expect(
+      db.sqlite
+        .prepare("select notified_at is not null as sent from security_alerts where id = 'unsent'")
+        .get(),
+    ).toEqual({ sent: 1 });
+    // 知らせたら、次の検査では送らない。
+    await detectSecurityAlerts(getDb(env()), env(), new Date(NOW.getTime() + 15 * 60_000), vi.fn());
+    expect(
+      (db.sqlite.prepare("select count(*) as n from notifications").get() as { n: number }).n,
+    ).toBe(1);
+  });
+
   it("管理者権限の付与と復帰を監査ログから拾う", async () => {
     db.sqlite.exec(`
       INSERT INTO audit_logs (id, tenant_id, actor_id, actor_name, actor_role, action, target_type, target_id, ip, metadata, created_at) VALUES
@@ -451,6 +481,24 @@ describe("Cloudflare Access との連携", () => {
     await expect(revokeAccessSessions(cfEnv(), "learner@example.test", ng)).rejects.toThrow(
       /HTTP 403/,
     );
+  });
+});
+
+describe("purgeExpiredVscodeLinks", () => {
+  it("期限の過ぎた接続コードから Access のトークンを消し、1 日たった行は消す", async () => {
+    db.sqlite.exec(`
+      INSERT INTO auth_vscode_links (id, user_id, code_hash, expires_at, used_at, access_token, created_at) VALUES
+        ('live', 'learner', 'h1', ${NOW.getTime() + 60_000}, null, 'tok-live', 1),
+        ('expired', 'learner', 'h2', ${NOW.getTime() - 60_000}, null, 'tok-expired', 1),
+        ('old', 'learner', 'h3', ${NOW.getTime() - 2 * 86_400_000}, null, 'tok-old', 1);
+    `);
+    await purgeExpiredVscodeLinks(getDb(env()), NOW);
+    expect(
+      db.sqlite.prepare("select id, access_token from auth_vscode_links order by id").all(),
+    ).toEqual([
+      { id: "expired", access_token: null },
+      { id: "live", access_token: "tok-live" },
+    ]);
   });
 });
 
