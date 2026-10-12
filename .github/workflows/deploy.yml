@@ -115,7 +115,7 @@ jobs:
       # Runs before the API, whose NARRATOR binding needs stella-narrator to exist. A failure stops
       # the deploy only when no earlier version exists; otherwise that version keeps running and
       # API/web still deploy.
-      - name: Deploy narrator (private service; processing disabled)
+      - name: Deploy narrator (private service)
         run: |
           if bun run deploy:narrator; then exit 0; fi
           (cd apps/narrator && bunx wrangler deployments list --name stella-narrator > /dev/null) || exit 1
