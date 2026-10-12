@@ -955,7 +955,7 @@ describe("internal processing foundation", () => {
     ).toBe(usage?.count);
   });
 
-  it("streams an uploaded PDF into R2 where the book workflow can process it", async () => {
+  it("uploads a PDF and processes it through the public API only", async () => {
     const id = await createBook("Uploaded");
     const pdf = await PDFDocument.create();
     for (let n = 0; n < 3; n++) pdf.addPage([200, 300]);
@@ -980,18 +980,73 @@ describe("internal processing foundation", () => {
     expect(uploaded.status).toBe(200);
     const stored = await bucket.list({ prefix: `library/a/${id}/pdfs/${pdfId}-` });
     expect(stored.objects.map((object) => object.size)).toEqual([bytes.length]);
-    const jobId = crypto.randomUUID();
-    await db
-      .prepare(
-        "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 1)",
-      )
-      .bind(jobId, id)
-      .run();
-    await dispatch({ tenantId: "a", bookId: id, jobId, generation: 1 });
+    const processed = await request(`books/${id}/process`, "owner", "POST");
+    expect(processed.status).toBe(202);
+    const jobId = (await data<{ job: { id: string } }>(processed)).job.id;
     await waitJob(jobId);
+    const jobs = await data<{ jobs: { id: string; status: string }[] }>(
+      await request(`books/${id}/jobs`),
+    );
+    expect(jobs.jobs).toMatchObject([{ id: jobId, status: "succeeded" }]);
     expect(
       await db.prepare("SELECT status,page_count FROM library_books WHERE id = ?").bind(id).first(),
     ).toMatchObject({ status: "ready", page_count: 3 });
+  });
+
+  it("starts a reservation whose RPC never ran from the scheduled handler", async () => {
+    const id = await createBook("Redispatched");
+    const pdf = await PDFDocument.create();
+    pdf.addPage([200, 300]);
+    const bytes = await pdf.save(),
+      key = `library/a/${id}/pdfs/cron.pdf`;
+    await bucket.put(key, bytes);
+    const jobId = crypto.randomUUID();
+    // The state POST /process leaves behind when its startJob call fails.
+    await db.batch([
+      db
+        .prepare(
+          "INSERT INTO library_book_pdfs (id,tenant_id,book_id,position,file_name,size_bytes,r2_key,upload_status,created_at) VALUES (?, 'a', ?, 1, 'cron.pdf', ?, ?, 'completed', 1)",
+        )
+        .bind(crypto.randomUUID(), id, bytes.length, key),
+      db.prepare("UPDATE library_books SET status = 'processing' WHERE id = ?").bind(id),
+      db
+        .prepare(
+          "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 1)",
+        )
+        .bind(jobId, id),
+      db
+        .prepare(
+          "INSERT INTO library_job_dispatches (tenant_id,book_id,job_id,instance_id,created_at) VALUES ('a', ?, ?, ?, 0)",
+        )
+        .bind(id, jobId, `${jobId}-1`),
+    ]);
+    // Twenty older reservations on a book being deleted can never start; they must not fill the scan.
+    const doomed = await createBook("Being deleted");
+    await db.batch([
+      db.prepare("UPDATE library_books SET status = 'deleting' WHERE id = ?").bind(doomed),
+      ...Array.from({ length: 20 }, () => crypto.randomUUID()).flatMap((stale) => [
+        db
+          .prepare(
+            "INSERT INTO library_jobs (id,tenant_id,book_id,generation,type,created_by,created_at) VALUES (?, 'a', ?, 1, 'ocr', 'owner', 0)",
+          )
+          .bind(stale, doomed),
+        db
+          .prepare(
+            "INSERT INTO library_job_dispatches (tenant_id,book_id,job_id,instance_id,created_at) VALUES ('a', ?, ?, ?, -1)",
+          )
+          .bind(doomed, stale, `${stale}-1`),
+      ]),
+    ]);
+    await (await mf.getWorker("narrator")).scheduled({ cron: "30 * * * *" });
+    await waitJob(jobId);
+    expect(
+      await db
+        .prepare(
+          "SELECT dispatched_at IS NOT NULL AS dispatched FROM library_job_dispatches WHERE job_id = ?",
+        )
+        .bind(jobId)
+        .first(),
+    ).toEqual({ dispatched: 1 });
   });
 
   it("connects API to narrator and refuses public HTTP and stale/mismatched jobs", async () => {
