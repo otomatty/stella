@@ -7,6 +7,7 @@ export async function libraryRuntimeStatus(env: Env) {
   const unavailable = {
     libraryEnabled: enabled,
     narratorAvailable: false,
+    narratorGeminiConfigured: false,
     processingAvailable: false,
   };
   if (!env.NARRATOR) return unavailable;
@@ -22,6 +23,8 @@ export async function libraryRuntimeStatus(env: Env) {
     return {
       libraryEnabled: enabled,
       narratorAvailable: true,
+      // Separate from availability: local fake providers must never satisfy production health.
+      narratorGeminiConfigured: capabilities.provider === "gemini",
       processingAvailable:
         enabled && Boolean(env.LIBRARY_BUCKET) && capabilities.configured === true,
     };

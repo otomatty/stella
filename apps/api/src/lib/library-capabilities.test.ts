@@ -33,6 +33,7 @@ describe("library processing availability", () => {
     expect(await libraryRuntimeStatus(env)).toEqual({
       libraryEnabled: false,
       narratorAvailable: true,
+      narratorGeminiConfigured: true,
       processingAvailable: false,
     });
     expect(capabilities).toHaveBeenCalledTimes(1);

@@ -38,6 +38,7 @@
     "accessConfigured": true,
     "libraryEnabled": true,
     "narratorAvailable": true,
+    "narratorGeminiConfigured": true,
     "processingAvailable": true,
     "aiReviewConfigured": true,
     "devAuthConfigured": false,

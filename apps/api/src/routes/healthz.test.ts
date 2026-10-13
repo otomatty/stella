@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { deployment } from "../../scripts/lib/deployment-config.js";
+import { healthMismatches } from "../../scripts/lib/deployment-health.js";
 import type { Env } from "../env.js";
 import { mountTestApp, request } from "../testing/route-harness.js";
 import { healthzRoute } from "./healthz.js";
@@ -38,6 +40,7 @@ describe("configuration health", () => {
       accessConfigured: true,
       libraryEnabled: true,
       narratorAvailable: true,
+      narratorGeminiConfigured: true,
       processingAvailable: true,
       aiReviewConfigured: true,
       devAuthConfigured: false,
@@ -46,6 +49,38 @@ describe("configuration health", () => {
     expect(JSON.stringify(body)).not.toContain("private-");
     expect(JSON.stringify(body)).not.toContain(env.ACCESS_AUD);
     expect(env.NARRATOR?.capabilities).toHaveBeenCalledTimes(1);
+    expect(env.NARRATOR?.startJob).not.toHaveBeenCalled();
+  });
+
+  it("rejects a configured fake narrator from production health while retaining local processing", async () => {
+    const env = configured();
+    vi.mocked(env.NARRATOR?.capabilities ?? vi.fn()).mockResolvedValue({
+      configured: true,
+      provider: "fake",
+    });
+    const body = await (await health(env)).json();
+    expect(body).toMatchObject({
+      narratorAvailable: true,
+      narratorGeminiConfigured: false,
+      processingAvailable: true,
+    });
+    expect(healthMismatches(body, deployment.health)).toEqual([
+      "narratorGeminiConfigured: expected true, got false",
+    ]);
+    expect(env.NARRATOR?.startJob).not.toHaveBeenCalled();
+  });
+
+  it("reports an unconfigured provider without starting any work", async () => {
+    const env = configured();
+    vi.mocked(env.NARRATOR?.capabilities ?? vi.fn()).mockResolvedValue({
+      configured: false,
+      provider: "unconfigured",
+    });
+    expect(await (await health(env)).json()).toMatchObject({
+      narratorAvailable: true,
+      narratorGeminiConfigured: false,
+      processingAvailable: false,
+    });
     expect(env.NARRATOR?.startJob).not.toHaveBeenCalled();
   });
 
@@ -81,6 +116,7 @@ describe("configuration health", () => {
     });
     expect(await (await health(env)).json()).toMatchObject({
       narratorAvailable: true,
+      narratorGeminiConfigured: true,
       processingAvailable: false,
     });
   });
@@ -93,7 +129,11 @@ describe("configuration health", () => {
     const response = await health(env);
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toMatchObject({ narratorAvailable: false, processingAvailable: false });
+    expect(body).toMatchObject({
+      narratorAvailable: false,
+      narratorGeminiConfigured: false,
+      processingAvailable: false,
+    });
     expect(JSON.stringify(body)).not.toContain("private-value");
   });
 
@@ -110,6 +150,7 @@ describe("configuration health", () => {
     await vi.advanceTimersByTimeAsync(3_000);
     expect(await (await pending).json()).toMatchObject({
       narratorAvailable: false,
+      narratorGeminiConfigured: false,
       processingAvailable: false,
     });
     expect(vi.getTimerCount()).toBe(0);

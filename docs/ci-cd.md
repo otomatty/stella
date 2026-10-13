@@ -177,9 +177,13 @@ API / narrator の D1 は binding 名・DB 名・ID を共有する。R2 は正�
 設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
 ヘルスチェックは設定の有無だけを返し、キー・設定値・書籍の内容は返さない。AI / OCR / TTS も呼び出さない。
 `processingAvailable` は本棚画面と同じ判定で、narrator の応答待ちは3秒で打ち切る。
+本番は `narratorGeminiConfigured: true` も必須にする。これは narrator が返す provider が Gemini であることの真偽値で、
+キーや provider 名そのものは返さない。`FAKE_PROVIDERS=1` が混入して処理可能になっていても、この項目が `false` なので
+デプロイを失敗にする。fake providers はローカルのテストだけに使う。
 
 本棚の機能を意図して無効にする PR では、フラグと `health` の期待値を同じ PR で変更する。
 接続障害を「処理無効」と取り違えないよう、処理を止めても `narratorAvailable` は `true` を維持する。
+Gemini の設定も維持するため、`narratorGeminiConfigured` の期待値は `true` のままにする。
 
 ## 設定検査が失敗したときの復旧
 
