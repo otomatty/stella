@@ -1,6 +1,7 @@
 /** Run before any remote content, migration or deployment step. No Cloudflare writes. */
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { checkDeploymentConfig, requireDeploymentInputs } from "./lib/deployment-config.js";
 import { withNarratorDatabase } from "./lib/narrator-config.js";
 import {
   resolveDeployDatabase,
@@ -12,6 +13,8 @@ import {
 } from "./lib/deploy-target.js";
 
 const configPath = join(import.meta.dirname, "..", "wrangler.toml");
+requireDeploymentInputs(process.env);
+checkDeploymentConfig(resolve(import.meta.dirname, "../../.."), process.env.CLOUDFLARE_ACCOUNT_ID);
 validateDeployUrls(process.env.VITE_SERVER_URL, process.env.VITE_MATERIALS_BASE_URL);
 const clerk = validateClerkSettings(
   process.env.VITE_CLERK_PUBLISHABLE_KEY,

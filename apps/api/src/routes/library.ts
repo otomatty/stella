@@ -18,6 +18,7 @@ import type {
 import { LIBRARY_LIMITS } from "@stella/shared/library/types";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, type Caller } from "../lib/authz.js";
+import { processingAvailable } from "../lib/library-capabilities.js";
 import {
   libraryEnabled,
   requireLibraryEnabled,
@@ -87,15 +88,6 @@ function pdfView(row: PdfRow): LibraryPdf {
     pageCount: row.page_count,
     sourceFileName: row.source_file_name,
   };
-}
-async function processingAvailable(env: Env): Promise<boolean> {
-  if (!libraryEnabled(env.LIBRARY_ENABLED) || !env.NARRATOR) return false;
-  try {
-    return (await env.NARRATOR.capabilities()).configured;
-  } catch {
-    // Metadata remains usable when the processing Worker is unavailable.
-    return false;
-  }
 }
 // PDFs can be added or replaced only before processing starts.
 /** Suffix on the R2 key of a PDF row that is being deleted (see the PDF DELETE route). */

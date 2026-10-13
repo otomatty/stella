@@ -47,6 +47,7 @@ jobs:
         run: bun run deploy:prepare
         env:
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
       # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
@@ -140,6 +141,12 @@ jobs:
         env:
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
 
+      - name: Sync AI review secret key to the API
+        working-directory: apps/api
+        run: printf '%s' "$ANTHROPIC_API_KEY" | bunx wrangler secret put ANTHROPIC_API_KEY
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
       - name: Deploy API
         run: bun run deploy:api
 
@@ -179,3 +186,7 @@ jobs:
       # account, run `bun run deploy:narrator` once before the first deploy.
       - name: Deploy narrator (private service)
         run: bun run deploy:narrator
+
+      # Web の中継と narrator の最新版が揃った直後に、秘密値を含まない状態だけを照合する。
+      - name: Verify production configuration
+        run: bun run deploy:health:check
