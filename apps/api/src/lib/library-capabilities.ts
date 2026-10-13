@@ -32,6 +32,8 @@ export async function libraryRuntimeStatus(env: Env) {
   }
 }
 
+/** Library routes need no RPC when processing is already disabled by local configuration. */
 export async function processingAvailable(env: Env): Promise<boolean> {
+  if (!libraryEnabled(env.LIBRARY_ENABLED) || !env.LIBRARY_BUCKET) return false;
   return (await libraryRuntimeStatus(env)).processingAvailable;
 }

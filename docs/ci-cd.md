@@ -6,8 +6,8 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
-| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → web build → Clerk の secret を API へ → deploy:api → deploy:web (受講者用 + 講師・管理者用) →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:narrator |
+| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → web build → `CLERK_SECRET_KEY` の同期 → `ANTHROPIC_API_KEY` の同期 → deploy:api → deploy:web (受講者用 + 講師・管理者用) →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:narrator → deploy:health:check |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -20,7 +20,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | `scope` | 走るもの | 使う場所 |
 |---------|----------|---------|
 | `full`（既定） | verify の全ステップ + core-loop | `pull_request`、`deploy.yml` |
-| `code` | typecheck + test のみ | `release-vscode.yml`（`.vsix` を出す前の最小確認） |
+| `code` | deploy:config:check + typecheck + test | `release-vscode.yml`（`.vsix` を出す前の最小確認） |
 
 **E2E（`core-loop`）は `deploy.yml` の経路にも入っている。** PR で通っていても、
 マージ後の main の組み合わせで一度も E2E を通さずにデプロイする、という穴を塞ぐため。
@@ -81,7 +81,7 @@ GitHub リポジトリの Settings → Branches → Branch protection rule（`ma
 
 | チェック名 | 内容 |
 |-----------|------|
-| `verify` | typecheck / test / lint / content:check / 図解 lint / build |
+| `verify` | deploy:config:check / typecheck / test / lint / content:check / 図解 lint / build |
 | `core-loop` | コア学習ループの E2E スモーク |
 
 `core-loop` を入れ忘れると **E2E が赤のままマージできてしまう**。2 つとも必須にすること。
@@ -145,7 +145,7 @@ Access のトークンや旧 JWT は受講者の入口では使えなくなる�
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列（教材の変更判定 → 画像 → PDF → migrate → api → web (受講者用 → 講師・管理者用) → seed → 指紋の記録 → narrator）で、api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → Web build → `CLERK_SECRET_KEY` の同期 → `ANTHROPIC_API_KEY` の同期 → api → web (受講者用 → 講師・管理者用) → seed → 指紋の記録 → narrator → deploy:health:check の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
