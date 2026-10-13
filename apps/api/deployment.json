@@ -1,0 +1,46 @@
+{
+  "accountId": "175c04a4465bcc9815b21176a852f0c0",
+  "healthOrigin": "https://stella-web.saedgewell.workers.dev",
+  "github": {
+    "variables": [
+      "VITE_SERVER_URL",
+      "VITE_MATERIALS_BASE_URL",
+      "VITE_CLERK_PUBLISHABLE_KEY",
+      "VITE_STAFF_ORIGIN",
+      "ACCESS_TEAM_DOMAIN",
+      "ACCESS_AUD"
+    ],
+    "secrets": [
+      "CLOUDFLARE_API_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLERK_SECRET_KEY",
+      "ANTHROPIC_API_KEY",
+      "PDF_KEY_SALT"
+    ],
+    "optionalSecrets": ["PDF_KEY_SALT"]
+  },
+  "workerSecrets": {
+    "api": ["CLERK_SECRET_KEY", "ANTHROPIC_API_KEY"],
+    "narrator": ["GEMINI_API_KEY"]
+  },
+  "resources": {
+    "database": { "binding": "DB", "name": "stella-db" },
+    "libraryBucket": {
+      "apiBinding": "LIBRARY_BUCKET",
+      "narratorBinding": "BUCKET",
+      "name": "stella-library-private"
+    },
+    "narrator": { "binding": "NARRATOR", "service": "stella-narrator", "entrypoint": "Narrator" }
+  },
+  "health": {
+    "ok": true,
+    "clerkConfigured": true,
+    "accessConfigured": true,
+    "libraryEnabled": true,
+    "narratorAvailable": true,
+    "processingAvailable": true,
+    "aiReviewConfigured": true,
+    "devAuthConfigured": false,
+    "devModeAvailable": false
+  }
+}

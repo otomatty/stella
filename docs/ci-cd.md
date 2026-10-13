@@ -100,27 +100,25 @@ GitHub リポジトリの Settings → Branches → Branch protection rule（`ma
 
 Settings → Secrets and variables → Actions で設定する。
 
-**Secrets（Repository secrets）**
+設定名の一覧と本番で期待する状態の正本は [`apps/api/deployment.json`](../apps/api/deployment.json)。
+`github.variables` を Repository variables、`github.secrets` を Repository secrets に登録する。
+`github.optionalSecrets` だけは省略できる。値や API キーはこのファイルに書かない。
 
-| 名前 | 用途 |
-|------|------|
-| `CLOUDFLARE_API_TOKEN` | Wrangler デプロイ/マイグレーション認証。権限は Workers Scripts Edit / D1 Edit / Account 読み取り（最小権限） |
-| `CLOUDFLARE_ACCOUNT_ID` | 対象アカウント ID |
-| `CLERK_SECRET_KEY` | Clerk の Secret key (`sk_test_` / `sk_live_`。Publishable key と同じ環境)。`deploy:prepare` が形を確かめ、deploy が `wrangler secret put` で API の secret に入れる |
+`CLOUDFLARE_ACCOUNT_ID` は正本の `accountId` と同じアカウントにする。
+`CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit が必要。
+`VITE_SERVER_URL` は API を中継する Web のオリジンで、正本の `healthOrigin` と揃える。
+教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。
 
-**Variables（Repository variables）**
-
-| 名前 | 用途 |
-|------|------|
-| `VITE_SERVER_URL` | Web ビルド時に焼き込む API のベース URL。API は Web の Worker が中継するので **Web のオリジン** (`https://stella-web.saedgewell.workers.dev`) |
-| `VITE_MATERIALS_BASE_URL` | Web ビルド時に焼き込む教材配信ベース URL |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk の Publishable key (`pk_test_` / `pk_live_`)。Web ビルド時に焼き込む |
-| `VITE_STAFF_ORIGIN` | 講師・管理者用の入口のオリジン (`https://stella-admin.saedgewell.workers.dev`)。Web ビルド時に焼き込み、`deploy:prepare` が API の `[vars]` の `STAFF_ORIGIN` にも書く |
-| `ACCESS_TEAM_DOMAIN` | 講師・管理者用の入口を守る Cloudflare Access のチームドメイン (`<team>.cloudflareaccess.com`)。`deploy:prepare` が API の `[vars]` に書く |
-| `ACCESS_AUD` | Access アプリケーションの AUD Tag (64 桁の 16 進。複数はカンマ区切り)。同上 |
-
-Clerk・Access の設定と任意の API secret (`CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL`) は
+Clerk・Access の値の形と用途、任意の API secret (`CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL`) は
 [`docs/clerk-auth.md`](clerk-auth.md) を参照。
+`CLERK_SECRET_KEY` と `ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。
+AI 一次レビューは本番で必須なので、`ANTHROPIC_API_KEY` の未登録・空白はリモート処理前に失敗する。
+Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
+ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
+
+`workerSecrets` は機能に必要な Worker 側の Secret 名を記す。
+narrator の `GEMINI_API_KEY` は Cloudflare の `stella-narrator` の Settings → Variables and Secrets で Secret として設定する。
+GitHub の設定には同期しない。手元から設定する場合は `apps/narrator` で `bunx wrangler secret put GEMINI_API_KEY` を使う。
 
 ## Phase C の初回切替とデプロイ前処理
 
@@ -151,7 +149,7 @@ Access のトークンや旧 JWT は受講者の入口では使えなくなる�
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
-- **seed 失敗**: 教材 seed SQL を修正して再 push（migrate は済んでいる。api/web は動かない）。
+- **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api/web のデプロイは済んでいる。narrator とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
@@ -161,12 +159,60 @@ Access のトークンや旧 JWT は受講者の入口では使えなくなる�
   - seed: `bun run db:seed:remote:content`
   - 教材画像: `bun run content:upload:remote`（サムネイルだけなら `content:upload:thumbnails:remote`）
   - 教材の指紋を消す: `bun run content:state:reset:remote`（次のデプロイが教材パイプラインをフルで流す）
-  （復旧時のみ。`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `VITE_*` / `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
+  （復旧時のみ。`deployment.json` の必須入力を用意し、最初に `bun run deploy:prepare` が必要。通常は GitHub Actions を使う）
+
+## PR とデプロイ直後の設定検査
+
+CI の `verify` は `bun run deploy:config:check` で、`deploy.yml` が読む Variables / Secrets の名前を正本と照合する。
+追加・削除・綴り違い・動的な名前指定は失敗する。PR では GitHub / Cloudflare の設定値を取得しないので fork でも走る。
+GitHub 上で設定が削除されたことまではこの検査で分からない。実際の未登録は `deploy:prepare` がリモート処理前に止める。
+すべての `wrangler.*` のアカウントと環境ごとの上書き、API のランタイム用アカウントを `accountId` と照合し、
+デプロイではさらに `CLOUDFLARE_ACCOUNT_ID` と照合する。
+API / narrator の D1 は binding 名・DB 名・ID を共有する。R2 は正本に記した `LIBRARY_BUCKET` / `BUCKET` という
+別名の binding で同じ非公開バケットを指す。narrator の service / entrypoint も検査する。
+
+最後の narrator デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` を取り、
+正本の `health` の真偽値と照合する。Clerk・Access・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
+開発用認証と開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
+設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
+ヘルスチェックは設定の有無だけを返し、キー・設定値・書籍の内容は返さない。AI / OCR / TTS も呼び出さない。
+`processingAvailable` は本棚画面と同じ判定で、narrator の応答待ちは3秒で打ち切る。
+
+本棚の機能を意図して無効にする PR では、フラグと `health` の期待値を同じ PR で変更する。
+接続障害を「処理無効」と取り違えないよう、処理を止めても `narratorAvailable` は `true` を維持する。
+
+## 設定検査が失敗したときの復旧
+
+Actions のエラーに出る設定名と真偽値を確認し、GitHub の未登録設定・Worker の Secret・フラグを直して Re-run する。
+ヘルスチェック失敗はデプロイ済みの Worker を自動で戻さない。seed や D1 migration もすでに適用済みの場合がある。
+
+直前のコードと設定へ戻す場合は Cloudflare の各 Worker の Deployments で正常だった Version ID を確認し、
+復旧担当者が対象を明示して実行する。通常のリリースは引き続き GitHub Actions を使う。
+
+```bash
+# リポジトリのルートで実行。ID は対象 Worker の正常だった版に置き換える。
+bunx wrangler rollback <api-version-id> --config apps/api/wrangler.toml
+bunx wrangler rollback <web-version-id> --config apps/web/wrangler.toml
+bunx wrangler rollback <admin-version-id> --config apps/web/wrangler.toml --env admin
+bunx wrangler rollback <narrator-version-id> --config apps/narrator/wrangler.jsonc
+```
+
+API と Web の中継契約が変わった場合は、API・受講者用 Web・講師用 Web を対応する版へ揃える。
+ロールバックは D1/R2 のデータを復元しない。削除済みの binding の参照先や Secret の変更によっては戻せないので、
+データの復旧は [インフラ移行手順](stella-infrastructure-migration.md) と
+[Cloudflare のロールバック仕様](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) を確認する。
+
+書籍の外部処理だけを止めるなら `apps/narrator/wrangler.jsonc` の `LIBRARY_PROCESSING_ENABLED` を `"0"` にし、
+正本の `health.processingAvailable` を `false` にして push する。本棚自体を閉じる場合は API の `[vars]` に
+`LIBRARY_ENABLED = "0"` を加え、`health.libraryEnabled` と `health.processingAvailable` を `false` にする。
+その PR も CI と本番のヘルスチェックを通す。処理の停止では `GEMINI_API_KEY` を削除しない。
+緊急に Cloudflare 側でフラグを変更した場合も、次の deploy で戻らないよう Git 側と期待値に同じ変更を入れる。
 
 ## 検査の内訳（`verify` ジョブ）
 
 | 検査 | コマンド | 見ているもの |
 |------|---------|-------------|
+| 設定 | `bun run deploy:config:check` | デプロイの設定名、全 Wrangler のアカウント、API / narrator の共有 binding |
 | 型 | `bun run typecheck` | 6 ワークスペースの `tsc --noEmit`。strict + `noUnusedLocals` / `noUnusedParameters` など。**テストと scripts も対象**（`exclude` を持つ tsconfig は無い） |
 | テスト | `bun run test:coverage` | Vitest 127 ファイル / 1534 件（`packages/**` と `apps/**/src`・`apps/**/scripts` の `*.test.ts`）。カバレッジは**閾値なし**で数字をジョブサマリに出すだけ |
 | lint | `bun run lint` | `biome ci .`（lint + フォーマットの両方）。`noExplicitAny` / `noNonNullAssertion` / `noConsole` / a11y などを error |
