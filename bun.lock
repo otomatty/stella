@@ -136,7 +136,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@breezystack/lamejs": "^1.2.7",
-        "@hyzyla/pdfium": "^2.1.13",
+        "@hyzyla/pdfium": "^3.0.0",
         "@jsquash/webp": "^1.5.0",
         "mdast-util-from-markdown": "2.1.0",
         "mdast-util-gfm": "^3.1.0",
@@ -407,7 +407,7 @@
 
     "@fontsource/noto-sans-jp": ["@fontsource/noto-sans-jp@5.3.0", "", {}, "sha512-OZbBzZ8LrFRs2RFT2Cc0HUV2C2ZeSfyEXhDJWR0EZuZaraJfRubpvrFmUnCljuBDEkw8Vn6CE/+nf9dj9b+0lg=="],
 
-    "@hyzyla/pdfium": ["@hyzyla/pdfium@2.1.13", "", {}, "sha512-4J+xMFJW6V+jktxor6Lsk/2YdPCpeY+Ga69J98uyNQwYESkAsUDxz8BeFU0ZbZJIJ+fK3J6bm61gmwWnUzVU1g=="],
+    "@hyzyla/pdfium": ["@hyzyla/pdfium@3.0.0", "", {}, "sha512-Hw7/Pc/y2f8ZYVNXxAvDiLAV0qJT4+e5HMwbMghra/s2RKXuuWYdR/8ohoD4YwQfTL5UzSNlTtP1LJHip7LiEQ=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
