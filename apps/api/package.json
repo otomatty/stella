@@ -23,12 +23,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
-    "@clerk/backend": "3.20.1",
+    "@clerk/backend": "3.26.1",
     "@stella/shared": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "exceljs": "^4.4.0",
     "hono": "^4.13.12",
-    "jose": "^6.2.12"
+    "jose": "^6.2.13"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261001.1",
