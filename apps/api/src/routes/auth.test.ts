@@ -148,6 +148,8 @@ describe("Google ログインと接続コードの守り", () => {
       headers: { Cookie: "stella_oauth_nonce=someone-else" },
     });
     expect(authError(other)).toBe("invalid_state");
+    // 使い終わった nonce は、結果によらず消す。
+    expect(other.headers.get("Set-Cookie")).toMatch(/^stella_oauth_nonce=;.*Max-Age=0/);
   });
 
   it("トークンを渡す先は /auth/callback ちょうどに限る", async () => {
@@ -184,4 +186,13 @@ describe("Google ログインと接続コードの守り", () => {
     );
     expect(issued.status).toBe(403);
   });
+});
+
+it("プロフィールにメールが無い利用者は、ログインのメールで接続できる", async () => {
+  db.sqlite.exec("UPDATE profiles SET email = NULL WHERE id = 'learner'");
+  const { issueCode, exchange } = setup();
+  const res = await exchange(await issueCode());
+  expect(res.status).toBe(200);
+  const { access_token } = await json<{ access_token: string }>(res);
+  expect((await verifyAccessToken(SECRET, access_token)).email).toBe("learner@example.test");
 });

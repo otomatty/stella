@@ -220,5 +220,5 @@ export async function verifyGoogleIdToken(
 export function redirectWithAuthResult(returnTo: string, params: Record<string, string>): Response {
   const url = new URL(returnTo);
   url.hash = new URLSearchParams(params).toString();
-  return Response.redirect(url.toString(), 302);
+  return new Response(null, { status: 302, headers: { Location: url.toString() } });
 }

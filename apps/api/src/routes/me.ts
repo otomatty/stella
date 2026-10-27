@@ -119,14 +119,16 @@ meRoute.post("/api/me", async (c) => {
     if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
 
     const existing = await db
-      .select({ id: profiles.id, disabled: profiles.disabled })
+      .select({ id: profiles.id, disabled: profiles.disabled, tenantActive: tenants.active })
       .from(profiles)
+      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, userId))
       .limit(1);
     if (!existing[0]) {
       throw new ApiError("invite_required", 403);
     }
     if (existing[0].disabled) throw new ApiError("このアカウントは無効化されています", 403);
+    assertTenantActive(existing[0].tenantActive);
 
     // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
     await db.update(profiles).set(update).where(eq(profiles.id, userId));

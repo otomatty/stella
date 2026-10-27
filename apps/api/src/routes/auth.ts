@@ -13,7 +13,7 @@ import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
-import { authVscodeLinks, profiles, tenants } from "../db/schema.js";
+import { authUsers, authVscodeLinks, profiles, tenants } from "../db/schema.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
@@ -33,7 +33,7 @@ import {
   OAUTH_NONCE_COOKIE,
   OAUTH_NONCE_TTL_SEC,
   parseOAuthState,
-  redirectWithAuthResult,
+  redirectWithAuthResult as authResultRedirect,
   resolveOAuthReturnTo,
   verifyGoogleIdToken,
   type GoogleUserClaims,
@@ -125,7 +125,16 @@ async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | 
       .limit(1)
   )[0];
   if (!profile || profile.disabled || profile.tenantActive === false) return null;
-  return profile.email;
+  if (profile.email) return profile.email;
+  // Older profiles have no email; the login's email is in auth_users.
+  const user = (
+    await db
+      .select({ email: authUsers.email })
+      .from(authUsers)
+      .where(eq(authUsers.id, userId))
+      .limit(1)
+  )[0];
+  return user?.email ?? null;
 }
 
 function requireGoogleOAuth(env: Env): {
@@ -167,6 +176,15 @@ authRoute.get("/api/auth/google", async (c) => {
 
 authRoute.get("/api/auth/google/callback", async (c) => {
   const returnToFallback = resolveOAuthReturnTo(c.env, undefined);
+  // The nonce is single-use: every outcome of the callback clears it.
+  const redirectWithAuthResult = (returnTo: string, params: Record<string, string>) => {
+    const response = authResultRedirect(returnTo, params);
+    response.headers.append(
+      "Set-Cookie",
+      `${OAUTH_NONCE_COOKIE}=; Path=/api/auth/google/callback; Max-Age=0; HttpOnly; SameSite=Lax`,
+    );
+    return response;
+  };
 
   try {
     const { jwtSecret, googleClientId, googleClientSecret } = requireGoogleOAuth(c.env);
