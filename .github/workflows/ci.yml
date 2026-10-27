@@ -115,7 +115,7 @@ jobs:
 
       # wrangler dev はローカルモード (miniflare + ローカル D1) で動くため
       # Cloudflare の認証情報は不要。 OAuth も通さず JWT を直接発行する。
-      # DEV_AUTH_JWT_SECRET は example に入っている開発用の値をそのまま使う
+      # AUTH_JWT_SECRET は example に入っている開発用の値をそのまま使う
       # (API と スモークの双方がこの 1 ファイルから読むため値が一致する)。
       - name: Prepare .dev.vars
         run: cp apps/api/.dev.vars.example apps/api/.dev.vars

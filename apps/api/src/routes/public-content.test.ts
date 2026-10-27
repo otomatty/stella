@@ -195,7 +195,7 @@ describe("GET /api/public/lessons/:id", () => {
       `INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES ('coach-admin', 'coach', 'admin', '管理者', 0, 'google', 1);`,
     );
     const secret = "public-content-test-secret";
-    const env = envOf({ DEV_AUTH_JWT_SECRET: secret });
+    const env = envOf({ AUTH_JWT_SECRET: secret });
     const token = await signAccessToken(secret, "coach-admin", "admin@example.test");
     const res = await get("/api/public/lessons/m0-doc", env, { token });
     expect(res.status).toBe(404);

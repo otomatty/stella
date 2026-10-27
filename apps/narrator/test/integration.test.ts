@@ -110,7 +110,7 @@ beforeAll(async () => {
           r2Buckets: { LIBRARY_BUCKET: "library-test" },
           serviceBindings: { NARRATOR: { name: "narrator", entrypoint: "Narrator" } },
           bindings: {
-            DEV_AUTH_JWT_SECRET: secret,
+            AUTH_JWT_SECRET: secret,
             ALLOWED_ORIGINS: "http://localhost",
             ANTHROPIC_API_KEY: "",
             TTS_LANGUAGE: "en-US",

@@ -16,19 +16,17 @@
     "db:seed:remote:content": "bun run scripts/seed-d1.ts --remote --content-only",
     "smoke": "bun run scripts/d1-smoke.ts",
     "smoke:core": "bun run scripts/core-loop-smoke.ts",
-    "dev:token": "bun run scripts/dev-token.ts",
     "ai-review:eval": "bun run scripts/ai-review-eval.ts",
     "ai-review:replay": "bun run scripts/ai-review-replay.ts",
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
-    "@clerk/backend": "3.20.1",
     "@stella/shared": "workspace:*",
     "drizzle-orm": "^0.45.4",
-    "exceljs": "^4.4.0",
     "hono": "^4.13.12",
-    "jose": "^6.2.12"
+    "jose": "^6.2.12",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261001.1",

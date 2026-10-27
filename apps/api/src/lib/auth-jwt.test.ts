@@ -3,7 +3,7 @@ import { SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
 import type { Env } from "../env.js";
 import { signAccessToken, verifyAccessToken } from "./auth-jwt.js";
-import { errorResponse, resolveIdentity } from "./authz.js";
+import { errorResponse, verifyToken } from "./authz.js";
 
 const SECRET = "phase-c-test-secret-at-least-32-characters";
 
@@ -18,7 +18,7 @@ async function tokenWithClaims(issuer: string, audience: string) {
     .sign(new TextEncoder().encode(SECRET));
 }
 
-describe("開発用トークン (ローカル・テスト専用)", () => {
+describe("Stella access tokens", () => {
   it("issues and verifies the new claims with the existing user identity and lifetime", async () => {
     const token = await signAccessToken(SECRET, "learner", "learner@example.com");
     const payload = await verifyAccessToken(SECRET, token);
@@ -40,7 +40,7 @@ describe("開発用トークン (ローカル・テスト専用)", () => {
     const app = new Hono<{ Bindings: Env }>();
     app.get("/protected", async (c) => {
       try {
-        await resolveIdentity(c);
+        await verifyToken(c);
         return c.json({ ok: true });
       } catch (error) {
         return errorResponse(c, error);
@@ -53,7 +53,7 @@ describe("開発用トークン (ローカル・テスト専用)", () => {
     const response = await app.request(
       "/protected",
       { headers: { Authorization: `Bearer ${token}` } },
-      { DEV_AUTH_JWT_SECRET: SECRET },
+      { AUTH_JWT_SECRET: SECRET },
     );
     expect(response.status).toBe(401);
   });

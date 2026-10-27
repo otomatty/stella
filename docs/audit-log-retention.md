@@ -9,7 +9,7 @@
 
 | action | 記録経路 | 対象 (target) | metadata |
 |--------|----------|----------------|----------|
-| `login` | `POST /api/auth/vscode-link/exchange` (VS Code 拡張の接続) | `user/<userId>` | `provider: cloudflare-access`, `channel: vscode-link` |
+| `login` | `GET /api/auth/google/callback` | `user/<userId>` | `provider` |
 | `user_invite` | `POST /api/admin/users/invite` | `user/<userId>` | `email`, `role`, `test_data` |
 | `user_role_change` | `POST /api/admin/users/role` | `user/<userId>` | `new_role` |
 | `user_disable` / `user_enable` | `POST /api/admin/users/disable` | `user/<userId>` | `disabled` |
@@ -27,11 +27,8 @@
 | `discovery_review` | `PATCH /api/cms/discovery/materials/:id` | `discovery_material/<id>` | `stage_id`, `from`, `to`, `generator`, (本文編集で外れたときのみ) `reason: content_edited` |
 
 - 記録は共通ヘルパ `apps/api/src/lib/audit.ts` の `recordAudit()` が D1 へ INSERT する。
-- 実行者 (actor) は Clerk のトークン (ローカルは開発用トークン) から `getCaller()` で確定する。
-  VS Code の接続 (`login`) のみ、 拡張がまだトークンを持たないため接続コードの持ち主の `profiles` 行から actor を組み立てる。
-- Web のログインそのものは Clerk が行うので `audit_logs` には残らない。 新しいセッションの開始は
-  `security_events` の `session.start` (180 日) に残る ([`docs/clerk-auth.md`](clerk-auth.md) §5)。
-  旧 Google OAuth の時代の `login` 行 (`provider: google`) は過去ログとして残る。
+- 実行者 (actor) は Bearer JWT から `getCaller()` で確定する。 ログインのみ、 JWT 発行前のため
+  `profiles` 行から actor を組み立てる。
 - action の一覧とラベルは `@stella/shared/admin/audit-actions` の `AuditAction` 型が唯一の定義。
   `recordAudit()` がこの型を受け取るため、 **未定義の action を記録することはできない**
   （記録側とラベル側のズレを型で防ぐ / Issue #64）。
@@ -52,8 +49,8 @@
   設問) を変えるとサーバが承認を外して `draft` に落とすため、 その場合は
   `discovery_material_edit` (`approval_revoked: true`) と `discovery_review`
   (`to: draft`, `reason: content_edited`) の 2 行が並ぶ。
-- 招待前 (プロフィール未作成) のアクセスは `audit_logs` に記録しない。 所属テナントが未確定で
-  `tenant_id` を決められず、 そもそもアプリへ入れないため。 代わりに `security_events` の `auth.no_profile` に残る。
+- 招待前 (プロフィール未作成) の Google ログインは記録しない。 所属テナントが未確定で
+  `tenant_id` を決められず、 そもそもアプリへ入れないため。
 
 > **best-effort である**: `recordAudit()` の失敗は `console.error` に留め、 主操作は成功させる。
 > 主操作と監査記録の原子性 (片方だけ成功する状態の解消) は #39 で扱う別課題。

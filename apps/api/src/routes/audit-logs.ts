@@ -10,7 +10,6 @@ import { and, desc, eq, gte, lte } from "drizzle-orm";
 
 import { auditLogs } from "../db/schema.js";
 import { errorResponse, getCaller, requireRole } from "../lib/authz.js";
-import { deferSecurityEvent } from "../lib/security-events.js";
 import type { Env } from "../env.js";
 
 export const auditLogsRoute = new Hono<{ Bindings: Env }>();
@@ -55,18 +54,6 @@ auditLogsRoute.get("/api/audit-logs", async (c) => {
       .orderBy(desc(auditLogs.createdAt))
       .limit(limit)
       .offset(offset);
-    // 画面の CSV 書き出し (`export=1` の先頭ページ) は持ち出しの検知 (bulk_export) の材料にする。
-    // レポートの書き出しと同じく、ページ送りで何度も数えない。
-    if (q.export === "1" && offset === 0) {
-      deferSecurityEvent(c, {
-        kind: "data.export",
-        tenantId: caller.tenantId,
-        actorId: caller.id,
-        actorRole: caller.role,
-        email: caller.email,
-        metadata: { report: "audit_logs", rows: rows.length },
-      });
-    }
     return c.json({ rows });
   } catch (err) {
     return errorResponse(c, err);

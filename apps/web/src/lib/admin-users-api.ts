@@ -33,14 +33,9 @@ export async function setUserRole(userId: string, role: ProfileRole): Promise<vo
   });
 }
 
-/** 無効化・有効化する。`revokeFailed` は無効化でセッションの失効に失敗したとき true。 */
-export async function setUserDisabled(
-  userId: string,
-  disabled: boolean,
-): Promise<{ revokeFailed: boolean }> {
-  const res = await apiFetch<{ ok: boolean; revoke_failed?: boolean }>("/api/admin/users/disable", {
+export async function setUserDisabled(userId: string, disabled: boolean): Promise<void> {
+  await apiFetch("/api/admin/users/disable", {
     method: "POST",
     body: { userId, disabled },
   });
-  return { revokeFailed: res?.revoke_failed === true };
 }

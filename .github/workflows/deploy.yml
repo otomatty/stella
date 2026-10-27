@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    name: assets → migrate → api → web → seed → narrator
+    name: assets → migrate → api → seed → web → narrator
     needs: verify
     runs-on: ubuntu-latest
     env:
@@ -24,12 +24,6 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
       VITE_MATERIALS_BASE_URL: ${{ vars.VITE_MATERIALS_BASE_URL }}
-      # 認証は Clerk、講師・管理者用の入口は Cloudflare Access (docs/clerk-auth.md)。deploy:prepare が
-      # 確かめて API の [vars] に書き、無ければ Cloudflare に何も書かないうちにデプロイを止める。
-      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-      VITE_STAFF_ORIGIN: ${{ vars.VITE_STAFF_ORIGIN }}
-      ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
-      ACCESS_AUD: ${{ vars.ACCESS_AUD }}
     steps:
       - uses: actions/checkout@v7
 
@@ -46,7 +40,6 @@ jobs:
       - name: Resolve deployment database and validate URLs
         run: bun run deploy:prepare
         env:
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
@@ -121,26 +114,6 @@ jobs:
       - name: Prepare private library storage
         run: bun run apps/api/scripts/prepare-library-storage.ts
 
-      # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
-      # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない
-      # verify 側の成果物は本番向けではないため。 ここで web だけ建て直す
-      # (vscode 拡張は web のデプロイに要らない)。
-      #
-      # ビルドは API のデプロイより前に済ませ、API と Web のデプロイを隙間なく並べる。
-      # API は Web の Worker の中継 (サービスバインディング) でしか受けないので
-      # (workers_dev = false)、API だけが新しく Web が古い時間は画面が API に届かない。
-      # その時間を数秒にし、seed (時間が読めず落ちることもある) を挟まない。
-      - name: Build Web (VITE_* baked in)
-        run: bun run --filter=@stella/web build
-
-      # Clerk のシークレットキーは repo Secrets から API の secret に入れる (deploy:prepare が形を確かめた)。
-      # 無いと API がログインを確かめられず全員 503 になるので、API のデプロイの前に揃える。
-      - name: Sync Clerk secret key to the API
-        working-directory: apps/api
-        run: printf '%s' "$CLERK_SECRET_KEY" | bunx wrangler secret put CLERK_SECRET_KEY
-        env:
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-
       - name: Sync AI review secret key to the API
         working-directory: apps/api
         run: printf '%s' "$ANTHROPIC_API_KEY" | bunx wrangler secret put ANTHROPIC_API_KEY
@@ -150,15 +123,8 @@ jobs:
       - name: Deploy API
         run: bun run deploy:api
 
-      - name: Deploy Web
-        run: bun run --filter=@stella/web deploy
-
-      # 同じ成果物を講師・管理者用の入口 (stella-admin、Access で守る) としても配る。
-      - name: Deploy Web (staff host)
-        run: bun run --filter=@stella/web deploy:admin
-
-      # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api /
-      # Web の後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
+      # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
+      # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
         if: steps.content.outputs.changed == 'true'
         run: bun run db:seed:remote:content
@@ -178,9 +144,16 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
+      # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
+      # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない
+      # verify 側の成果物は本番向けではないため。 ここで web だけ建て直す
+      # (vscode 拡張は web のデプロイに要らない)。
+      - name: Deploy Web (build with VITE_* then deploy)
+        run: bun run deploy:web
+
       # Last, and never tolerated: narrator carries the processing switch, so a failed deploy
       # (including one that turns processing off) must fail the run instead of leaving the
-      # previous version running. API and both web hosts are already out, so they are never blocked, and
+      # previous version running. API and web are already out, so they are never blocked, and
       # the API's checks (e.g. the external-processing confirmation) ship before narrator's
       # settings. The API's NARRATOR binding needs stella-narrator to exist: on a brand-new
       # account, run `bun run deploy:narrator` once before the first deploy.

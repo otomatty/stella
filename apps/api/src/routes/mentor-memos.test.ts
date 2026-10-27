@@ -84,7 +84,7 @@ const answer = (output: unknown, stopReason: "end_turn" | "refusal" = "end_turn"
 
 beforeEach(async () => {
   database = sqliteD1();
-  env = { DB: database.binding, DEV_AUTH_JWT_SECRET: SECRET } as Env;
+  env = { DB: database.binding, AUTH_JWT_SECRET: SECRET } as Env;
   db = getDb(env);
   app = mountTestApp(env, mentorMemosRoute).app;
   complete.mockReset();
