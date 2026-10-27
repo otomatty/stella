@@ -18,7 +18,7 @@ import { parsePaceSettings } from "@stella/shared/study/pace";
 
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
-import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
+import { ApiError, assertTenantActive, errorResponse, verifyToken } from "../lib/authz.js";
 import type { Env } from "../env.js";
 import { paceProfileUpdate } from "../lib/learning-pace.js";
 
@@ -53,6 +53,7 @@ meRoute.get("/api/me", async (c) => {
         tenant_name: tenants.name,
         tenant_subtitle: tenants.subtitle,
         tenant_icon: tenants.icon,
+        tenant_active: tenants.active,
       })
       .from(profiles)
       .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
@@ -63,7 +64,8 @@ meRoute.get("/api/me", async (c) => {
       throw new ApiError("invite_required", 403);
     }
     if (row.disabled) throw new ApiError("このアカウントは無効化されています", 403);
-    const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
+    assertTenantActive(row.tenant_active);
+    const { tenant_name, tenant_subtitle, tenant_icon, tenant_active: _active, ...profile } = row;
     return c.json({
       profile,
       tenant:
@@ -117,14 +119,16 @@ meRoute.post("/api/me", async (c) => {
     if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
 
     const existing = await db
-      .select({ id: profiles.id, disabled: profiles.disabled })
+      .select({ id: profiles.id, disabled: profiles.disabled, tenantActive: tenants.active })
       .from(profiles)
+      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, userId))
       .limit(1);
     if (!existing[0]) {
       throw new ApiError("invite_required", 403);
     }
     if (existing[0].disabled) throw new ApiError("このアカウントは無効化されています", 403);
+    assertTenantActive(existing[0].tenantActive);
 
     // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
     await db.update(profiles).set(update).where(eq(profiles.id, userId));

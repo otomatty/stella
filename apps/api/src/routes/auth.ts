@@ -8,11 +8,12 @@
  */
 
 import { Hono } from "hono";
+import { getCookie, setCookie } from "hono/cookie";
 import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
-import { authUsers, authVscodeLinks, profiles } from "../db/schema.js";
+import { authUsers, authVscodeLinks, profiles, tenants } from "../db/schema.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { findOrCreateUserByEmail } from "../lib/auth-users.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
@@ -29,8 +30,10 @@ import {
   createOAuthState,
   exchangeGoogleCode,
   googleRedirectUri,
+  OAUTH_NONCE_COOKIE,
+  OAUTH_NONCE_TTL_SEC,
   parseOAuthState,
-  redirectWithAuthResult,
+  redirectWithAuthResult as authResultRedirect,
   resolveOAuthReturnTo,
   verifyGoogleIdToken,
   type GoogleUserClaims,
@@ -111,15 +114,19 @@ async function syncGoogleProfile(db: Db, userId: string, claims: GoogleUserClaim
   }
 }
 
+/** The email to sign a VS Code token for: only an enabled profile in an active organization. */
 async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | null> {
   const profile = (
     await db
-      .select({ email: profiles.email })
+      .select({ email: profiles.email, disabled: profiles.disabled, tenantActive: tenants.active })
       .from(profiles)
+      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, userId))
       .limit(1)
   )[0];
-  if (profile?.email) return profile.email;
+  if (!profile || profile.disabled || profile.tenantActive === false) return null;
+  if (profile.email) return profile.email;
+  // Older profiles have no email; the login's email is in auth_users.
   const user = (
     await db
       .select({ email: authUsers.email })
@@ -151,7 +158,14 @@ authRoute.get("/api/auth/google", async (c) => {
   try {
     const { jwtSecret, googleClientId } = requireGoogleOAuth(c.env);
     const returnTo = resolveOAuthReturnTo(c.env, c.req.query("return_to"));
-    const state = await createOAuthState(jwtSecret, returnTo);
+    const { state, nonce } = await createOAuthState(jwtSecret, returnTo);
+    setCookie(c, OAUTH_NONCE_COOKIE, nonce, {
+      httpOnly: true,
+      secure: new URL(c.req.url).protocol === "https:",
+      sameSite: "Lax",
+      path: "/api/auth/google/callback",
+      maxAge: OAUTH_NONCE_TTL_SEC,
+    });
     const redirectUri = googleRedirectUri(c.req.url);
     const url = buildGoogleAuthUrl(googleClientId, redirectUri, state);
     return c.redirect(url, 302);
@@ -162,6 +176,15 @@ authRoute.get("/api/auth/google", async (c) => {
 
 authRoute.get("/api/auth/google/callback", async (c) => {
   const returnToFallback = resolveOAuthReturnTo(c.env, undefined);
+  // The nonce is single-use: every outcome of the callback clears it.
+  const redirectWithAuthResult = (returnTo: string, params: Record<string, string>) => {
+    const response = authResultRedirect(returnTo, params);
+    response.headers.append(
+      "Set-Cookie",
+      `${OAUTH_NONCE_COOKIE}=; Path=/api/auth/google/callback; Max-Age=0; HttpOnly; SameSite=Lax`,
+    );
+    return response;
+  };
 
   try {
     const { jwtSecret, googleClientId, googleClientSecret } = requireGoogleOAuth(c.env);
@@ -185,7 +208,8 @@ authRoute.get("/api/auth/google/callback", async (c) => {
     }
 
     const parsedState = await parseOAuthState(jwtSecret, state);
-    if (!parsedState) {
+    // Only the browser that started this login may finish it (see OAUTH_NONCE_COOKIE).
+    if (!parsedState || getCookie(c, OAUTH_NONCE_COOKIE) !== parsedState.nonce) {
       return redirectWithAuthResult(returnToFallback, {
         error: "invalid_state",
         error_description: "ログインセッションの有効期限が切れました。もう一度お試しください",
