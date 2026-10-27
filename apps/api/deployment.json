@@ -2,29 +2,18 @@
   "accountId": "175c04a4465bcc9815b21176a852f0c0",
   "healthOrigin": "https://stella-api.saedgewell.workers.dev",
   "github": {
-    "variables": [
-      "VITE_SERVER_URL",
-      "VITE_MATERIALS_BASE_URL"
-    ],
+    "variables": ["VITE_SERVER_URL", "VITE_MATERIALS_BASE_URL"],
     "secrets": [
       "CLOUDFLARE_API_TOKEN",
       "CLOUDFLARE_ACCOUNT_ID",
       "ANTHROPIC_API_KEY",
       "PDF_KEY_SALT"
     ],
-    "optionalSecrets": [
-      "PDF_KEY_SALT"
-    ]
+    "optionalSecrets": ["PDF_KEY_SALT"]
   },
   "workerSecrets": {
-    "api": [
-      "AUTH_JWT_SECRET",
-      "GOOGLE_CLIENT_SECRET",
-      "ANTHROPIC_API_KEY"
-    ],
-    "narrator": [
-      "GEMINI_API_KEY"
-    ]
+    "api": ["AUTH_JWT_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY"],
+    "narrator": ["GEMINI_API_KEY"]
   },
   "resources": {
     "database": {
