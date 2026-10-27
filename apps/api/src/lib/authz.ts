@@ -27,7 +27,6 @@ import {
   verifyAccessAssertion,
 } from "./access-auth.js";
 import { verifyAccessToken } from "./auth-jwt.js";
-import { findOrCreateUserByEmail } from "./auth-users.js";
 import {
   clerkConfig,
   ClerkUnavailableError,
@@ -263,17 +262,8 @@ export function profileMatch(identity: Identity): SQL {
     : sql`lower(${profiles.email}) = ${identity.email}`;
 }
 
-/**
- * 招待されていない利用者のアクセスを記録する (Clerk に登録しただけの人・招待漏れ)。
- * メールアドレスがあれば auth_users に残し、ユーザー管理のアクセス申請に出す。
- */
-export async function recordUninvited(
-  c: Context<{ Bindings: Env }>,
-  db: Db,
-  identity: Identity,
-): Promise<void> {
-  const email = identity.email?.trim();
-  if (email) await findOrCreateUserByEmail(db, email);
+/** 招待されていない利用者のアクセスを記録する (Clerk に登録しただけの人・招待漏れ)。 */
+export function recordUninvited(c: Context<{ Bindings: Env }>, identity: Identity): void {
   deferSecurityEvent(c, {
     kind: "auth.no_profile",
     status: 403,
@@ -354,7 +344,7 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
 
   const profile = rows[0];
   if (!profile) {
-    await recordUninvited(c, db, identity);
+    recordUninvited(c, identity);
     throw new ApiError("プロフィールが見つかりません", 403);
   }
   if (profile.disabled) {

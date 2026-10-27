@@ -3,7 +3,7 @@
  *
  * 呼び出し元は admin であることを必須とし、 操作対象を同テナントに限定する。
  *
- *   GET  /api/admin/users          一覧 (同テナント) と、未登録ログインのアクセス申請
+ *   GET  /api/admin/users          一覧 (同テナント)
  *   POST /api/admin/users/invite   招待 (Google ログイン / 組織の席数上限を強制)
  *   POST /api/admin/users/role     ロール変更
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
@@ -27,7 +27,7 @@ import {
   type OrganizationRow,
 } from "@stella/shared/admin/types";
 import { Hono, type Context } from "hono";
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import { authUsers, profiles, tenants } from "../db/schema.js";
 import {
@@ -145,18 +145,6 @@ adminRoute.get("/api/admin/users", async (c) => {
       .from(profiles)
       .where(eq(profiles.tenantId, caller.tenantId))
       .orderBy(asc(profiles.createdAt));
-    // ponytail: 申請はテナントを持たない (ログイン時点では所属が無い)。
-    // どのテナントの管理者にも同じ一覧が出る。ログインでテナントを名指しできるようになったら caller.tenantId で絞る。
-    const requests = await db
-      .select({
-        id: authUsers.id,
-        email: authUsers.email,
-        created_at: authUsers.createdAt,
-      })
-      .from(authUsers)
-      .leftJoin(profiles, sql`lower(${profiles.email}) = lower(${authUsers.email})`)
-      .where(isNull(profiles.id))
-      .orderBy(asc(authUsers.createdAt));
     return c.json({
       rows: rows.map((r) => ({
         id: r.id,
@@ -168,7 +156,6 @@ adminRoute.get("/api/admin/users", async (c) => {
         disabled: r.disabled,
         created_at: r.createdAt,
       })),
-      requests,
     });
   } catch (err) {
     return errorResponse(c, err);

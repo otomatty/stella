@@ -19,17 +19,9 @@ export async function findOrCreateUserByEmail(
     return { id: existing.id, email: existing.email };
   }
 
-  // 同じメールの未招待ログインが重なると、両方が「行なし」と読んで挿入する。
-  // 一意制約で落ちると invite_required が 500 になるので、競合した側は先にできた行を読む。
-  await db
-    .insert(authUsers)
-    .values({ id: crypto.randomUUID(), email: normalized })
-    .onConflictDoNothing({ target: authUsers.email });
-  const row = (
-    await db.select().from(authUsers).where(eq(authUsers.email, normalized)).limit(1)
-  )[0];
-  if (!row) throw new Error("auth_users の作成に失敗しました");
-  return { id: row.id, email: row.email };
+  const id = crypto.randomUUID();
+  await db.insert(authUsers).values({ id, email: normalized });
+  return { id, email: normalized };
 }
 
 /** 招待時: プロフィール ID と同じ auth_users 行を作成する (Google ログイン待ち)。 */

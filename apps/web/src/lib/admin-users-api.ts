@@ -11,28 +11,12 @@ import { apiFetch } from "./api-client";
 
 export type AdminProfileRow = ProfileRow & { disabled: boolean };
 
-/** ログイン済みで、まだプロフィールの無いアカウント。 */
-export type AccessRequestRow = {
-  id: string;
-  email: string;
-  created_at: string;
-};
-
-export async function listProfiles(_tenantId: string): Promise<{
-  profiles: AdminProfileRow[];
-  requests: AccessRequestRow[];
-}> {
-  const { rows, requests } = await apiFetch<{
-    rows: ProfileRow[];
-    requests?: AccessRequestRow[];
-  }>("/api/admin/users");
-  return {
-    profiles: (rows ?? []).map((row) => ({
-      ...row,
-      disabled: row.disabled ?? false,
-    })),
-    requests: requests ?? [],
-  };
+export async function listProfiles(_tenantId: string): Promise<AdminProfileRow[]> {
+  const { rows } = await apiFetch<{ rows: ProfileRow[] }>("/api/admin/users");
+  return (rows ?? []).map((row) => ({
+    ...row,
+    disabled: row.disabled ?? false,
+  }));
 }
 
 export async function inviteUsers(invites: InviteUserInput[]): Promise<InviteUsersResponse> {
