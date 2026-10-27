@@ -18,7 +18,7 @@ import { parsePaceSettings } from "@stella/shared/study/pace";
 
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
-import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
+import { ApiError, assertTenantActive, errorResponse, verifyToken } from "../lib/authz.js";
 import type { Env } from "../env.js";
 import { paceProfileUpdate } from "../lib/learning-pace.js";
 
@@ -53,6 +53,7 @@ meRoute.get("/api/me", async (c) => {
         tenant_name: tenants.name,
         tenant_subtitle: tenants.subtitle,
         tenant_icon: tenants.icon,
+        tenant_active: tenants.active,
       })
       .from(profiles)
       .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
@@ -63,7 +64,8 @@ meRoute.get("/api/me", async (c) => {
       throw new ApiError("invite_required", 403);
     }
     if (row.disabled) throw new ApiError("このアカウントは無効化されています", 403);
-    const { tenant_name, tenant_subtitle, tenant_icon, ...profile } = row;
+    assertTenantActive(row.tenant_active);
+    const { tenant_name, tenant_subtitle, tenant_icon, tenant_active: _active, ...profile } = row;
     return c.json({
       profile,
       tenant:

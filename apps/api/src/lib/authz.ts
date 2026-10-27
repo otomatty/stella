@@ -12,7 +12,7 @@ import type { JWTPayload } from "jose";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
-import { profiles } from "../db/schema.js";
+import { profiles, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { verifyAccessToken } from "./auth-jwt.js";
 
@@ -86,14 +86,17 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
       displayName: profiles.displayName,
       email: profiles.email,
       disabled: profiles.disabled,
+      tenantActive: tenants.active,
     })
     .from(profiles)
+    .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
     .where(eq(profiles.id, userId))
     .limit(1);
 
   const profile = rows[0];
   if (!profile) throw new ApiError("プロフィールが見つかりません", 403);
   if (profile.disabled) throw new ApiError("このアカウントは無効化されています", 403);
+  assertTenantActive(profile.tenantActive);
 
   return {
     db,
@@ -105,6 +108,11 @@ export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
       email: profile.email,
     },
   };
+}
+
+/** A suspended organization (`tenants.active = 0`) cannot use the API, even with a valid JWT. */
+export function assertTenantActive(active: boolean | null): void {
+  if (active === false) throw new ApiError("この組織は利用を停止しています", 403);
 }
 
 /** caller が指定ロールのいずれかでなければ 403 を投げる。 */

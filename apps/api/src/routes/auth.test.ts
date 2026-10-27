@@ -109,3 +109,79 @@ describe("POST /api/auth/vscode-link/exchange のレート制限", () => {
     expect((await exchange(await issueCode())).status).toBe(200);
   });
 });
+
+describe("Google ログインと接続コードの守り", () => {
+  function googleEnv(): Env {
+    return {
+      DB: db.binding,
+      AUTH_JWT_SECRET: SECRET,
+      GOOGLE_CLIENT_ID: "client-id",
+      GOOGLE_CLIENT_SECRET: "client-secret",
+      ALLOWED_ORIGINS: "https://web.example.test",
+      INVITE_REDIRECT_URL: "https://web.example.test",
+    } as Env;
+  }
+  const authError = (res: Response) =>
+    new URLSearchParams(new URL(res.headers.get("Location") ?? "").hash.slice(1)).get("error");
+
+  it("ログインを始めたブラウザの Cookie が無いコールバックは受け付けない", async () => {
+    const env = googleEnv();
+    const { app } = mountTestApp(env, authRoute);
+    const start = await request(
+      app,
+      env,
+      "/api/auth/google?return_to=https://web.example.test/auth/callback-evil",
+    );
+    expect(start.status).toBe(302);
+    const google = new URL(start.headers.get("Location") ?? "");
+    const state = google.searchParams.get("state") ?? "";
+    const cookie = start.headers.get("Set-Cookie") ?? "";
+    expect(cookie).toMatch(/^stella_oauth_nonce=[^;]+;/);
+    expect(cookie).toMatch(/HttpOnly/);
+    expect(cookie).toMatch(/Path=\/api\/auth\/google\/callback/);
+
+    // 別の人に送られたコールバック (Cookie が無い・違う) は、コードを交換する前に止める。
+    const callback = `/api/auth/google/callback?code=attacker-code&state=${encodeURIComponent(state)}`;
+    const stolen = await request(app, env, callback);
+    expect(authError(stolen)).toBe("invalid_state");
+    const other = await request(app, env, callback, {
+      headers: { Cookie: "stella_oauth_nonce=someone-else" },
+    });
+    expect(authError(other)).toBe("invalid_state");
+  });
+
+  it("トークンを渡す先は /auth/callback ちょうどに限る", async () => {
+    const { resolveOAuthReturnTo } = await import("../lib/google-oauth.js");
+    const env = googleEnv();
+    const fallback = "https://web.example.test/auth/callback";
+    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback")).toBe(fallback);
+    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback?x=1")).toBe(fallback);
+    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback-evil")).toBe(fallback);
+    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback/x")).toBe(fallback);
+    expect(resolveOAuthReturnTo(env, "https://evil.example.test/auth/callback")).toBe(fallback);
+  });
+
+  it("無効化した利用者と停止中の組織には、接続コードを交換させない", async () => {
+    const { issueCode, exchange } = setup();
+    const disabledCode = await issueCode();
+    db.sqlite.exec("UPDATE profiles SET disabled = 1 WHERE id = 'learner'");
+    expect((await exchange(disabledCode)).status).toBe(401);
+
+    db.sqlite.exec("UPDATE profiles SET disabled = 0 WHERE id = 'learner'");
+    const suspendedCode = await issueCode();
+    db.sqlite.exec("UPDATE tenants SET active = 0 WHERE id = 'ses'");
+    expect((await exchange(suspendedCode)).status).toBe(401);
+    // 停止中は API 自体も使えない (コードの発行も止まる)。
+    const { app } = mountTestApp({ DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env, authRoute);
+    const issued = await request(
+      app,
+      { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env,
+      "/api/auth/vscode-link",
+      {
+        method: "POST",
+        token: await signAccessToken(SECRET, "learner", "learner@example.test"),
+      },
+    );
+    expect(issued.status).toBe(403);
+  });
+});

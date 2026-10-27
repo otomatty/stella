@@ -11,6 +11,13 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
 const STATE_TTL_SEC = 600;
+/**
+ * The state's nonce, also kept in a cookie by the browser that started the login. The callback
+ * accepts the state only from that browser, so a callback URL made by someone else cannot sign
+ * this browser in to their account (login CSRF).
+ */
+export const OAUTH_NONCE_COOKIE = "stella_oauth_nonce";
+export const OAUTH_NONCE_TTL_SEC = STATE_TTL_SEC;
 
 interface OAuthStatePayload {
   returnTo: string;
@@ -76,8 +83,9 @@ export function resolveOAuthReturnTo(env: Env, returnToParam: string | undefined
     const url = new URL(candidate);
     if (url.protocol !== "http:" && url.protocol !== "https:") return fallback;
     if (!isAllowedOrigin(url.origin, env.ALLOWED_ORIGINS)) return fallback;
-    if (!url.pathname.startsWith("/auth/callback")) return fallback;
-    return url.toString();
+    // Exactly the callback page: the token goes into the URL hash, so no other page may get it.
+    if (url.pathname !== "/auth/callback") return fallback;
+    return `${url.origin}/auth/callback`;
   } catch {
     return fallback;
   }
@@ -91,7 +99,10 @@ export function googleRedirectUri(requestUrl: string): string {
   return url.toString();
 }
 
-export async function createOAuthState(secret: string, returnTo: string): Promise<string> {
+export async function createOAuthState(
+  secret: string,
+  returnTo: string,
+): Promise<{ state: string; nonce: string }> {
   const payload: OAuthStatePayload = {
     returnTo,
     nonce: crypto.randomUUID(),
@@ -99,7 +110,7 @@ export async function createOAuthState(secret: string, returnTo: string): Promis
   };
   const payloadB64 = toBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
   const sigB64 = await signState(secret, payloadB64);
-  return `${payloadB64}.${sigB64}`;
+  return { state: `${payloadB64}.${sigB64}`, nonce: payload.nonce };
 }
 
 export async function parseOAuthState(

@@ -79,3 +79,12 @@ describe("教材の OS 設定 (os_preference)", () => {
     ).toThrow();
   });
 });
+
+describe("停止中の組織", () => {
+  it("有効な JWT でもプロフィールを返さない", async () => {
+    db.sqlite.exec("UPDATE tenants SET active = 0 WHERE id = 'ses'");
+    const res = await request(app, env, "/api/me", { token: await token() });
+    expect(res.status).toBe(403);
+    expect(await res.text()).not.toContain("受講者");
+  });
+});
