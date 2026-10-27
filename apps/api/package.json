@@ -25,7 +25,7 @@
     "@stella/shared": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.12",
-    "jose": "^6.2.12",
+    "jose": "^6.2.13",
     "exceljs": "^4.4.0"
   },
   "devDependencies": {
