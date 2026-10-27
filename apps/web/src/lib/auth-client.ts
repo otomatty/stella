@@ -40,6 +40,13 @@ export function isAuthConfigured(): boolean {
 type Listener = (session: Session | null) => void;
 const listeners = new Set<Listener>();
 let current: Session | null = null;
+/** Whether `current` came from the session cookie (sign-out must then end it on the server). */
+let fromCookie = false;
+
+// The cookie is shared by every tab, but a tab only learns of a change when told: a tab that
+// signs in or out says so here, and the others read the session again.
+const tabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("stella-auth");
+if (tabs) tabs.onmessage = () => void loadSession();
 
 function setSession(session: Session | null): Session | null {
   current = session;
@@ -84,6 +91,7 @@ function readDevToken(): string | null {
 /** Reads who is signed in (the dev token, else the session cookie) and tells subscribers. */
 export async function loadSession(): Promise<Session | null> {
   const token = readDevToken();
+  fromCookie = false;
   if (token) return setSession(devSession(token));
   if (!serverUrl) return setSession(null);
   try {
@@ -94,6 +102,7 @@ export async function loadSession(): Promise<Session | null> {
     const id = data?.user?.id;
     if (typeof id !== "string") return setSession(null);
     const email = data?.user?.email;
+    fromCookie = true;
     return setSession({ user: { id, ...(typeof email === "string" ? { email } : {}) } });
   } catch {
     return setSession(null);
@@ -127,22 +136,32 @@ export async function completeLogin(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const error = new URLSearchParams(search).get("error");
   if (error) return { ok: false, error: `ログインできませんでした (${error})` };
-  return (await loadSession())
-    ? { ok: true }
-    : { ok: false, error: "ログインできませんでした。もう一度お試しください" };
+  if (!(await loadSession()))
+    return { ok: false, error: "ログインできませんでした。もう一度お試しください" };
+  tabs?.postMessage("changed");
+  return { ok: true };
 }
 
+/**
+ * Ends the session on the server first: the HttpOnly cookie cannot be removed here, so showing
+ * the user as signed out while the server session lives would come back on reload. Throws when
+ * the server did not confirm (the caller tells the user).
+ */
 export async function signOut(): Promise<void> {
-  if (typeof window !== "undefined") removeStellaStorage(window.localStorage, TOKEN_KEY);
-  // Deletes the session on the server, so the cookie stops working everywhere at once.
-  if (serverUrl)
-    await fetch(`${serverUrl}/api/auth/sign-out`, {
+  if (fromCookie && serverUrl) {
+    const res = await fetch(`${serverUrl}/api/auth/sign-out`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: "{}",
-    }).catch(() => undefined);
+    }).catch(() => null);
+    if (!res?.ok)
+      throw new Error("ログアウトできませんでした。通信を確かめてもう一度お試しください");
+  }
+  if (typeof window !== "undefined") removeStellaStorage(window.localStorage, TOKEN_KEY);
+  fromCookie = false;
   setSession(null);
+  tabs?.postMessage("changed");
 }
 
 /** The dev token for `Authorization: Bearer` (local development only; production uses the cookie). */

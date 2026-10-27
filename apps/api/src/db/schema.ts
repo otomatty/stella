@@ -123,7 +123,10 @@ export const authAccounts = sqliteTable(
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
-  (t) => [index("auth_accounts_user_idx").on(t.userId)],
+  (t) => [
+    index("auth_accounts_user_idx").on(t.userId),
+    uniqueIndex("auth_accounts_provider_account_unique").on(t.providerId, t.accountId),
+  ],
 );
 
 /** Better Auth: short-lived values such as the OAuth state. */

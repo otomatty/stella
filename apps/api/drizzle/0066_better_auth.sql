@@ -43,6 +43,9 @@ CREATE TABLE auth_accounts (
 --> statement-breakpoint
 CREATE INDEX auth_accounts_user_idx ON auth_accounts (user_id);
 --> statement-breakpoint
+-- One row per Google account, even if two callbacks for it race.
+CREATE UNIQUE INDEX auth_accounts_provider_account_unique ON auth_accounts (provider_id, account_id);
+--> statement-breakpoint
 CREATE TABLE auth_verifications (
   id TEXT PRIMARY KEY NOT NULL,
   identifier TEXT NOT NULL,

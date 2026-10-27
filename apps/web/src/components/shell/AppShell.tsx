@@ -566,7 +566,11 @@ export function AppShell() {
       return (
         <InviteRequiredScreen
           email={session.user.email ?? ""}
-          onSignOut={() => void authSignOut()}
+          onSignOut={() =>
+            void authSignOut().catch((err: unknown) =>
+              toast.error(err instanceof Error ? err.message : "ログアウトに失敗しました"),
+            )
+          }
         />
       );
     }

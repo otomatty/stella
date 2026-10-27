@@ -1,95 +1,65 @@
 # Google ログイン トラブルシューティング
 
-「Google でログインができない」場合の切り分け手順。 本アプリのログインは
-**Cloudflare Workers 上の自前 Google OAuth + JWT** で構成されている
-([`docs/cloudflare-stack.md`](cloudflare-stack.md) 参照)。
+「Google でログインができない」場合の切り分け手順。本アプリのログインは **Better Auth** (Google、
+セッションは D1) で、画面と API は同じオリジンで動く (Issue #117。設定は `apps/api/src/lib/better-auth.ts`)。
 
 ```text
-[Web (Workers Static Assets)] --VITE_SERVER_URL--> [API (Workers) /api/auth/google]
-   --> Google 同意画面 --> /api/auth/google/callback
-   --> JWT 発行 --> Web /auth/callback#access_token=... --> ログイン完了
+[Web の Worker (stella-web)] /api/* をサービスバインディングで API (stella-api) へ中継
+  画面 → POST /api/auth/sign-in/social → Google の同意画面
+       → /api/auth/callback/google (Better Auth がセッションを作り、HttpOnly の Cookie を付ける)
+       → 画面の /auth/callback → GET /api/auth/get-session → ログイン完了
 ```
 
-失敗の多くは **設定 / デプロイ起因**。 次の順にチェックする。
+失敗の多くは **設定 / デプロイ起因**。次の順にチェックする。
 
 ## 0. 構成チェック (まずここから)
 
-API の疎通エンドポイントで認証まわりの設定状況を確認する (秘密値は出力されない)。
+受講者用の Web のオリジンで疎通エンドポイントを見る (Web の Worker を通るので中継も確かめられる。秘密値は出ない)。
 
 ```bash
-curl -s https://<api-host>/api/healthz | jq
-# 期待:
-# {
-#   "ok": true,
-#   "googleOAuthConfigured": true,   # GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET が設定済み
-#   "jwtConfigured": true            # AUTH_JWT_SECRET が設定済み
-# }
+curl -s https://stella-web.saedgewell.workers.dev/api/healthz | jq
+# 期待: "ok": true, "authConfigured": true
 ```
 
-`googleOAuthConfigured` / `jwtConfigured` が `false` の場合は **手順 3 / 4** の Secrets が未設定。
+`authConfigured` が `false` なら、API に `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` / `GOOGLE_CLIENT_ID` /
+`GOOGLE_CLIENT_SECRET` のどれかが無い (手順 2・3)。応答が HTML (画面) なら、Web の Worker が `/api/*` を
+中継していない (`apps/web/wrangler.toml` の `main` と `run_worker_first = ["/api/*"]`)。
 
-## 1. フロントの `VITE_SERVER_URL` (Workers Static Assets)
+## 1. フロントの `VITE_SERVER_URL`
 
-- ビルド時に焼き込まれる `VITE_SERVER_URL` が **API (Workers) のオリジン** と一致しているか。
-  - 例: `https://stella-api.saedgewell.workers.dev`
-  - 本番ビルドは GitHub Actions（`deploy.yml`）が実行し、値は Actions の Repository Variables
-    `VITE_SERVER_URL` から供給される（詳細は [`docs/ci-cd.md`](ci-cd.md)）。
-- 未設定だとログインボタンを押しても遷移先が無く **無反応** になる
-  (本アプリは原因を示すトーストを出すよう改善済み)。
-- 変更後は **再ビルド / 再デプロイ** が必要 (`VITE_*` はビルド時に埋め込まれる)。
-  GitHub Actions Variables を更新しただけでは反映されず、`main` への push（再デプロイ）が必要。
+- ビルド時に焼き込まれる `VITE_SERVER_URL` が **受講者用の Web のオリジン** (`https://stella-web.saedgewell.workers.dev`) か。
+  API のオリジンにすると Cookie が別オリジンになりログインが続かない。
+- 値は GitHub Actions の Repository Variables `VITE_SERVER_URL` (`deploy:prepare` が確かめる。[`docs/ci-cd.md`](ci-cd.md))。
+  変えたら `main` への push (再デプロイ) が要る。
 
-## 2. Google Console の認可済みリダイレクト URI (完全一致)
+## 2. Google Console の承認済みのリダイレクト URI (完全一致)
 
-[Google Cloud Console](https://console.cloud.google.com/) → 対象 OAuth 2.0 クライアント →
-**承認済みのリダイレクト URI** に、 Worker のコールバック URL を **完全一致** で登録する。
+[Google Cloud Console](https://console.cloud.google.com/) → 対象の OAuth 2.0 クライアント →
+**承認済みのリダイレクト URI** に `${BETTER_AUTH_URL}/api/auth/callback/google` を **完全一致** で登録する。
 
-- 本番: `https://<api-host>/api/auth/google/callback`
-- ローカル: `http://127.0.0.1:8787/api/auth/google/callback`
+- 本番: `https://stella-web.saedgewell.workers.dev/api/auth/callback/google`
 
-不一致だと Google が `redirect_uri_mismatch` を返す。 末尾スラッシュ・http/https・ホスト名の
-差異に注意 (コールバック URL はリクエスト URL から導出される: `lib/google-oauth.ts` の
-`googleRedirectUri`)。
+不一致だと Google が `redirect_uri_mismatch` を返す。`BETTER_AUTH_URL` は `apps/api/wrangler.toml` の `[vars]`。
 
-## 3. Worker Secrets
+## 3. Worker の secret
 
-```bash
-cd apps/api
-wrangler secret put AUTH_JWT_SECRET        # JWT 署名 (必須)
-wrangler secret put GOOGLE_CLIENT_SECRET   # Google OAuth シークレット (必須)
-```
+- `BETTER_AUTH_SECRET` … GitHub の Secret から deploy が入れる (`openssl rand -base64 32`。変えると全員のセッションが切れる)
+- `GOOGLE_CLIENT_SECRET` … `cd apps/api && bunx wrangler secret put GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CLIENT_ID` は `wrangler.toml` の `[vars]`
 
-`GOOGLE_CLIENT_ID` は `wrangler.toml` の `[vars]` に公開設定済み (Secret でも可)。
-未設定だと API が 503 を返し、 コールバックが `#error=...` を付けてフロントへ戻る
-(改善済みの `/auth/callback` がエラー内容を表示する)。
+## 4. `/auth/callback` に戻ったが失敗と出る
 
-## 4. `ALLOWED_ORIGINS` に Web オリジンが含まれているか
+画面に出る `(...)` の中は Better Auth のエラーコード。
 
-`apps/api/wrangler.toml` の `[vars].ALLOWED_ORIGINS` に、 本番の Workers Static Assets オリジンが
-含まれていること。 含まれないと `return_to`(`/auth/callback`)が握り潰され、 ログイン後の
-リダイレクト先がフォールバックになる (`lib/google-oauth.ts` の `resolveOAuthReturnTo`)。
+- `account_not_linked` … 同じメールの既存の利用者に Google をつなげなかった (`account.accountLinking` の設定)
+- `state_mismatch` / `please_restart_the_process` … ログインを始めたブラウザと戻ったブラウザが違う、または 10 分以上たった。もう一度ログインする
+- エラーなしで「ログインできませんでした」… `get-session` がセッションを返していない。Cookie がブロックされていないか、
+  `VITE_SERVER_URL` が Web のオリジンか (手順 1) を確かめる
 
-```toml
-ALLOWED_ORIGINS = "https://stella-web.saedgewell.workers.dev"
-```
-
-本番には localhost を入れない。この値は CORS だけでなくログイン後に JWT を渡す戻り先の許可にも
-使うので、localhost があると本番のトークンを利用者の PC の開発サーバーへ届けさせるリンクが作れる。
-ローカルの Web (`http://localhost:5173` など) は `apps/api/.dev.vars` の `ALLOWED_ORIGINS` で許可する
-(`.dev.vars` は `wrangler dev` で `[vars]` を上書きする)。ローカルで CORS エラーになるときは
-`.dev.vars` にこの行があるかを確かめる。
-
-Phase C の切替後は旧 Web / Pages オリジンを許可しない。
-全員の再ログインと VS Code の再接続が必要。手順は [インフラ移行](stella-infrastructure-migration.md) を参照。
-
-## 5. SPA リダイレクト (`/auth/callback`)
-
-`apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"` により、
-`/auth/callback` や `/support` の直アクセスが `index.html` に解決されること。 これが無いと
-Workers が 404 を返す。
+ログインできたのに招待必要画面になるのは、そのメールが招待されていない (ユーザー管理で招待する)。
 
 ## それでも解決しない場合
 
-- ブラウザの Cookie / ポップアップブロック / 拡張機能を無効化して再試行。
-- 端末の時刻ずれ (ID トークン検証に影響) を自動設定で補正。
+- ブラウザの Cookie / 拡張機能を無効化して再試行。
+- 端末の時刻ずれを自動設定で補正。
 - ユーザー向けには `/support` ページ (FAQ + 問い合わせフォーム) を案内する。
