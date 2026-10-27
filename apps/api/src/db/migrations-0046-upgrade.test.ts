@@ -36,7 +36,7 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
   beforeEach(async () => {
     // 直前のスキーマに実データを入れ、その後で移行SQLを適用する。
     database = sqliteD1({ beforeMigration: TAG });
-    env = { DB: database.binding, DEV_AUTH_JWT_SECRET: "test-secret" } as Env;
+    env = { DB: database.binding, AUTH_JWT_SECRET: "test-secret" } as Env;
     db = getDb(env);
     await db.insert(tenants).values([
       { id: "ses", name: "テスト" },

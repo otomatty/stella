@@ -43,10 +43,10 @@ env:
   it("rejects a renamed Variable and a removed Secret reference", () => {
     expect(() =>
       validateDeploymentConfig(
-        workflow.replaceAll("vars.ACCESS_AUD", "vars.ACCESS_AUD_TYPO"),
+        workflow.replaceAll("vars.VITE_MATERIALS_BASE_URL", "vars.VITE_MATERIALS_BASE_URL_TYPO"),
         configs(),
       ),
-    ).toThrow(/ACCESS_AUD.*ACCESS_AUD_TYPO/);
+    ).toThrow(/VITE_MATERIALS_BASE_URL.*VITE_MATERIALS_BASE_URL_TYPO/);
     expect(() =>
       validateDeploymentConfig(
         workflow.replaceAll("secrets.ANTHROPIC_API_KEY", "'unused'"),

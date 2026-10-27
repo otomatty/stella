@@ -52,73 +52,22 @@ export interface Env {
   DEV_MODE?: string;
 
   // ---------------------------------------------------------------
-  // Cloudflare D1 + 認証 (Cloudflare Access。アプリは自前の認証を持たない)
+  // Cloudflare D1 + 自前認証 (Google OAuth / JWT)
   // ---------------------------------------------------------------
   /** D1 データベースバインディング (`wrangler.toml` の `[[d1_databases]]`)。 */
   DB: D1Database;
 
   /**
-   * Clerk のシークレットキー (機密。`sk_test_…` / `sk_live_…`)。設定されていれば、API は Clerk の
-   * セッショントークン (Authorization: Bearer) を検証して利用者を決め、VS Code の接続に Clerk の
-   * API キーを発行する。`wrangler secret put CLERK_SECRET_KEY`
+   * JWT 署名用シークレット (HS256)。 機密。
+   * `wrangler secret put AUTH_JWT_SECRET` で設定する。
    */
-  CLERK_SECRET_KEY?: string;
+  AUTH_JWT_SECRET?: string;
 
-  /**
-   * Clerk の JWT 公開鍵 (PEM、任意)。設定すればセッショントークンを通信なしで検証する
-   * (未設定なら Clerk の JWKS をシークレットキーで取りに行く)。公開値。
-   */
-  CLERK_JWT_KEY?: string;
+  /** Google OAuth クライアント ID (公開可)。 */
+  GOOGLE_CLIENT_ID?: string;
 
-  /**
-   * セッショントークンの発行元として認める画面のオリジン (カンマ区切り、任意)。トークンの `azp` と
-   * 照らす。未設定なら `ALLOWED_ORIGINS` と `STAFF_ORIGIN`。
-   */
-  CLERK_AUTHORIZED_PARTIES?: string;
-
-  /**
-   * 講師・管理者用の画面のオリジン (例 `https://stella-admin.<account>.workers.dev`)。Cloudflare Access
-   * で守る。講師・管理者・営業の操作は、このオリジンを通った (Access の検証済みの) リクエストでだけ受ける。
-   */
-  STAFF_ORIGIN?: string;
-
-  /**
-   * 講師・管理者用のホスト名を守る Cloudflare Access のチームドメイン (例: `stella.cloudflareaccess.com`)。
-   * 公開値。`ACCESS_AUD` と揃っていれば、講師・管理者・営業のリクエストに `Cf-Access-Jwt-Assertion`
-   * (署名・発行者・AUD を検証し、Clerk の利用者と同じメールアドレス) を求める。
-   * 本番は deploy (`deploy:prepare`) が GitHub の Variables から入れ、無ければデプロイを止める。
-   */
-  ACCESS_TEAM_DOMAIN?: string;
-
-  /** 講師・管理者用の Access アプリケーションの AUD タグ (カンマ区切りで複数可)。公開値。 */
-  ACCESS_AUD?: string;
-
-  /**
-   * **ローカル開発とテスト専用** の JWT 署名鍵 (HS256)。本番には設定しない。
-   * Clerk が未設定で、かつリクエスト先が localhost / 127.0.0.1 のときだけ、`Authorization: Bearer`
-   * の開発用トークンを受け付ける (seed の利用者で画面とスモークを動かすため)。
-   */
-  DEV_AUTH_JWT_SECRET?: string;
-
-  /**
-   * Cloudflare API トークン (任意・機密)。講師・管理者用ホスト名の Access のログ (拒否を含むログイン記録)
-   * の取り込みと、管理画面からの Access セッションの失効に使う。権限は「Access: Audit Logs Read」と
-   * 「Access: Organizations, Identity Providers, and Groups Write」。deploy 用のトークンとは分ける。
-   * `wrangler secret put CF_ACCESS_API_TOKEN`
-   */
-  CF_ACCESS_API_TOKEN?: string;
-
-  /**
-   * セキュリティアラートの送り先 (任意・機密)。Slack の Incoming Webhook など、`{"text": "..."}` を
-   * POST で受ける URL。`wrangler secret put SECURITY_ALERT_WEBHOOK_URL`
-   */
-  SECURITY_ALERT_WEBHOOK_URL?: string;
-
-  /**
-   * 組織 (テナント) の決まらない出来事 (未招待の利用者・Access の拒否・認証の無いリクエスト) を
-   * 見せるテナント。未設定なら `PUBLIC_CONTENT_TENANT_ID`。
-   */
-  SECURITY_TENANT_ID?: string;
+  /** Google OAuth クライアントシークレット。 `wrangler secret put GOOGLE_CLIENT_SECRET` */
+  GOOGLE_CLIENT_SECRET?: string;
 
   /**
    * Cloudflare R2 — 教材アップロード用バケット。

@@ -78,9 +78,6 @@ const LABELS = {
   // スキルシート (#203)
   skill_sheet_upload: "スキルシートのアップロード",
   skill_sheet_update: "スキルシートの更新",
-  // セキュリティ監視
-  security_alert_update: "セキュリティアラートの対応",
-  security_session_revoke: "Access セッションの失効",
 } as const;
 
 /**

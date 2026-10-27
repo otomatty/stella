@@ -5,7 +5,10 @@
  * このファイルは AI チャットの SSE クライアントだけを担当する。
  */
 import type { ChatRequest, ChatStreamEvent } from "@stella/shared/ai/types";
-import { authFetch } from "@/lib/api-client";
+import { getAccessToken } from "@/lib/auth-client";
+
+/** Cloudflare Workers API のオリジン (末尾スラッシュなし)。 `VITE_SERVER_URL` で指定。 */
+const SERVER_URL = (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
 
 /**
  * サーバの POST /api/chat に messages を投げ、SSE で流れてくる
@@ -19,11 +22,17 @@ export async function* streamChat(
   body: ChatRequest,
   options: { signal?: AbortSignal } = {},
 ): AsyncGenerator<ChatStreamEvent, void, unknown> {
-  const res = await authFetch("/api/chat", {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${SERVER_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
-    ...(options.signal ? { signal: options.signal } : {}),
+    signal: options.signal,
   });
 
   if (!res.ok) {

@@ -18,7 +18,7 @@
  * (`PATCH /api/enrollments/:id` の期限設定 / 解除)。 まとめて消してしまう変更を
  * 素通しさせないため。
  *
- * 認証は OAuth を通さず、 `DEV_AUTH_JWT_SECRET` で seed プロフィール用の JWT を直接発行する
+ * 認証は OAuth を通さず、 `AUTH_JWT_SECRET` で seed プロフィール用の JWT を直接発行する
  * (README「ローカルログイン」と同じ方法)。 そのため `login` の監査記録だけは対象外。
  *
  * 前提: `bun run db:migrate && bun run db:seed` 済みで、 API が起動していること。
@@ -155,11 +155,9 @@ async function step(title: string, fn: () => Promise<void>): Promise<void> {
 // --- 本体 -----------------------------------------------------------
 
 async function main(): Promise<void> {
-  const secret = readDevVar("DEV_AUTH_JWT_SECRET");
+  const secret = readDevVar("AUTH_JWT_SECRET");
   if (!secret) {
-    console.error(
-      "✗ DEV_AUTH_JWT_SECRET が未設定です (env か apps/api/.dev.vars に設定してください)",
-    );
+    console.error("✗ AUTH_JWT_SECRET が未設定です (env か apps/api/.dev.vars に設定してください)");
     process.exit(1);
   }
 
@@ -194,12 +192,12 @@ async function main(): Promise<void> {
 
   console.log(`コア学習ループ スモーク → ${BASE}\n`);
 
-  await step("API が応答し開発用トークンを受け付ける", async () => {
+  await step("API が応答し JWT が設定済み", async () => {
     const health = await ok("GET", "/api/healthz");
     assert(health.ok === true, `healthz が ok:true でない: ${JSON.stringify(health)}`);
     assert(
-      health.devAuthConfigured === true,
-      "DEV_AUTH_JWT_SECRET が API 側で未設定か、Clerk が設定されている (devAuthConfigured:false)",
+      health.jwtConfigured === true,
+      "AUTH_JWT_SECRET が API 側で未設定 (jwtConfigured:false)",
     );
   });
 

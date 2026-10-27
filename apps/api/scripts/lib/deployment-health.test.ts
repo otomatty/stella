@@ -6,8 +6,8 @@ describe("production configuration verification", () => {
   it("requires every expected field to be an exact boolean, including intentional disabled features", () => {
     expect(healthMismatches(deployment.health, deployment.health)).toEqual([]);
     expect(
-      healthMismatches({ ...deployment.health, devAuthConfigured: true }, deployment.health),
-    ).toEqual(["devAuthConfigured: expected false, got true"]);
+      healthMismatches({ ...deployment.health, devModeAvailable: true }, deployment.health),
+    ).toEqual(["devModeAvailable: expected false, got true"]);
     expect(
       healthMismatches(
         { ...deployment.health, aiReviewConfigured: "secret-value" },

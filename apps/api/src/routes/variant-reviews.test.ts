@@ -165,7 +165,7 @@ describe("類題の出題 (#39)", () => {
     database = sqliteD1();
     env = {
       DB: database.binding,
-      DEV_AUTH_JWT_SECRET: "test-secret",
+      AUTH_JWT_SECRET: "test-secret",
       SUBMISSIONS_BUCKET: {
         put: vi.fn(async () => undefined),
         delete: vi.fn(async () => undefined),

@@ -17,23 +17,14 @@ ISOLATE_MEMORY_LIMIT=32
 # 解放条件はそのまま (見えるだけで locked の星は開かない)。
 # DEV_MODE=1
 
-# --- 認証 (本番は Clerk、講師・管理者用の入口は Cloudflare Access。docs/clerk-auth.md) ---
-# ローカルでは Clerk を使わない。CLERK_SECRET_KEY を空のままにすると、localhost への
-# リクエストに限って、この鍵で署名した開発用トークン (Authorization: Bearer) を受け付ける。
-# トークンは `bun run --filter=@stella/api dev:token seed-admin` で作れる。本番には設定しない。
-DEV_AUTH_JWT_SECRET=dev-only-change-me-in-production
-# Clerk の開発環境で試すときだけ (入れると開発用トークンは通らなくなる)。
-# CLERK_SECRET_KEY=sk_test_...
-# CLERK_JWT_KEY=
-# 講師・管理者用の入口の Access (入れると講師・管理者の操作に Access のトークンを求める)。
-# STAFF_ORIGIN=
-# ACCESS_TEAM_DOMAIN=
-# ACCESS_AUD=
+# --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
+# JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
+AUTH_JWT_SECRET=dev-only-change-me-in-production
 
-# セキュリティ監視 (任意)。講師・管理者用の入口の Access のログの取り込みと Access のセッションの失効 /
-# アラートの送り先。
-# CF_ACCESS_API_TOKEN=
-# SECURITY_ALERT_WEBHOOK_URL=
+# Google OAuth (Cloud Console → 認可済みリダイレクト URI に
+#   http://127.0.0.1:8787/api/auth/google/callback を追加)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # 教材アップロード (Cloudflare R2) は wrangler.toml の [[r2_buckets]] でバインド。
 # 公開読み取り URL は Dashboard で r2.dev / カスタムドメインを有効化し、

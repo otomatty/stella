@@ -66,7 +66,7 @@ const post = async (path: string, body: unknown, as: string) =>
 
 beforeEach(async () => {
   database = sqliteD1();
-  env = { DB: database.binding, DEV_AUTH_JWT_SECRET: SECRET, ANTHROPIC_API_KEY: "sk-test" } as Env;
+  env = { DB: database.binding, AUTH_JWT_SECRET: SECRET, ANTHROPIC_API_KEY: "sk-test" } as Env;
   db = getDb(env);
   app = mountTestApp(
     env,

@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { build } from "vite";
 import {
   buildContentSecurityPolicy,
-  clerkFrontendApiOrigin,
   inlineScriptsOf,
   originOf,
   securityHeaders,
@@ -96,61 +95,6 @@ describe("buildContentSecurityPolicy", () => {
       }),
     );
     expect(same.get("connect-src")).toEqual(["'self'", "https://example.test"]);
-  });
-});
-
-describe("buildContentSecurityPolicy (API を同じオリジンで中継する本番構成)", () => {
-  it("VITE_SERVER_URL が Web 自身のオリジンでも、自分と教材だけを許す", () => {
-    const d = directives(
-      buildContentSecurityPolicy({
-        serverUrl: "https://stella-web.saedgewell.workers.dev",
-        materialsBaseUrl: "https://pub-xxxx.r2.dev",
-        inlineScripts: [],
-      }),
-    );
-    expect(d.get("connect-src")).toEqual([
-      "'self'",
-      "https://stella-web.saedgewell.workers.dev",
-      "https://pub-xxxx.r2.dev",
-    ]);
-    expect(d.get("default-src")).toEqual(["'self'"]);
-  });
-});
-
-describe("Clerk", () => {
-  const key = `pk_test_${Buffer.from("stella-test.clerk.accounts.dev$").toString("base64")}`;
-
-  it("公開鍵から Frontend API のオリジンを読む。読めない鍵は null", () => {
-    expect(clerkFrontendApiOrigin(key)).toBe("https://stella-test.clerk.accounts.dev");
-    expect(clerkFrontendApiOrigin("pk_live_bm90IGEgaG9zdA==")).toBeNull();
-    expect(clerkFrontendApiOrigin("sk_test_secret")).toBeNull();
-    expect(clerkFrontendApiOrigin(undefined)).toBeNull();
-  });
-
-  it("Clerk の Frontend API・画像・ボット対策だけを足す (SDK の script は外から読まない)", () => {
-    const d = directives(
-      buildContentSecurityPolicy({
-        serverUrl: "https://stella.example.com",
-        clerkPublishableKey: key,
-        inlineScripts: [],
-      }),
-    );
-    expect(d.get("connect-src")).toContain("https://stella-test.clerk.accounts.dev");
-    expect(d.get("script-src")).not.toContain("https://stella-test.clerk.accounts.dev");
-    expect(d.get("script-src")).toContain("https://challenges.cloudflare.com");
-    expect(d.get("frame-src")).toEqual(["https://challenges.cloudflare.com"]);
-    expect(d.get("img-src")).toContain("https://img.clerk.com");
-    expect(d.get("worker-src")).toEqual(["'self'", "blob:"]);
-  });
-
-  it("公開鍵が無ければ (ローカルの dev-token) Clerk の宛先を足さない", () => {
-    const csp = buildContentSecurityPolicy({
-      serverUrl: "http://127.0.0.1:8787",
-      inlineScripts: [],
-    });
-    expect(csp).not.toContain("clerk");
-    expect(csp).not.toContain("challenges.cloudflare.com");
-    expect(directives(csp).has("frame-src")).toBe(false);
   });
 });
 

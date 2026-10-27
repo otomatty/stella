@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → web build → `CLERK_SECRET_KEY` の同期 → `ANTHROPIC_API_KEY` の同期 → deploy:api → deploy:web (受講者用 + 講師・管理者用) →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:narrator → deploy:health:check |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:narrator → deploy:health:check |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -106,12 +106,11 @@ Settings → Secrets and variables → Actions で設定する。
 
 `CLOUDFLARE_ACCOUNT_ID` は正本の `accountId` と同じアカウントにする。
 `CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit が必要。
-`VITE_SERVER_URL` は API を中継する Web のオリジンで、正本の `healthOrigin` と揃える。
+`VITE_SERVER_URL` は API のオリジン (`https://stella-api.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
 教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。
 
-Clerk・Access の値の形と用途、任意の API secret (`CF_ACCESS_API_TOKEN` / `SECURITY_ALERT_WEBHOOK_URL`) は
-[`docs/clerk-auth.md`](clerk-auth.md) を参照。
-`CLERK_SECRET_KEY` と `ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。
+`ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。
+ログイン (Google OAuth) の `GOOGLE_CLIENT_SECRET` / `AUTH_JWT_SECRET` は `stella-api` の Secret に直接入れる (GitHub には置かない)。
 AI 一次レビューは本番で必須なので、`ANTHROPIC_API_KEY` の未登録・空白はリモート処理前に失敗する。
 Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
@@ -124,28 +123,27 @@ GitHub の設定には同期しない。手元から設定する場合は `apps/
 
 初回のマージは [インフラ移行手順](stella-infrastructure-migration.md) に従い、
 メンテナンス告知・旧環境の書き込み停止・D1/R2 の復元・新 Worker の secrets 設定を済ませてから行う。
-この変更で既存のセッションは全失効する。通常運用の途中にマージしない。
+この変更で既存 JWT は全失効する。通常運用の途中にマージしない。
 
 `deploy:prepare` は最初のリモート処理として `stella-db` を Cloudflare API で検索し、
 checkout 内の `apps/api/wrangler.toml` の `database_id` を実 ID に置換する。
 教材指紋・seed・migration・API デプロイはすべてこの実 ID を使う。
 Git に記録したゼロ UUID はローカル開発専用。実 ID の自動作成・旧 DB へのフォールバックは行わない。
-あわせて Clerk の鍵 (`VITE_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`)・`VITE_STAFF_ORIGIN`・`ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` の形を確かめ、`STAFF_ORIGIN` と Access の値を API の `wrangler.toml` の `[vars]` に書く。
-DB が無い、アカウントが違う、`VITE_SERVER_URL` が Web のオリジン (`https://stella-web.saedgewell.workers.dev`) と一致しない、
-教材 URL が未設定、Clerk・Access の Variables / Secret が無い・形が違う場合は、教材アップロード前 (Cloudflare に何も書かないうち) にジョブを停止する。
+DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と一致しない、
+教材 URL が未設定の場合は、教材アップロード前にジョブを停止する。
 この処理は DB の復元完了や R2 コピーの内容までは保証しない。移行担当者が手順書で照合する。
 
-## Clerk への切り替え
+Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
 
-認証は Google OAuth + アプリ発行の JWT から Cloudflare Access へ、さらに Clerk (講師・管理者用の入口は Access も) へ移った。
-Google Cloud Console の OAuth クライアントはもう使わない (切り替えが済んだら削除する)。Clerk のアプリケーション・
-Variables / Secret を先に用意してからマージし、初回のデプロイで出来た `stella-admin` に Access を掛け、
-新しい版の VS Code 拡張を配る。順番と確認項目は [`docs/clerk-auth.md`](clerk-auth.md) の「切り替えの順番」に従う。
-Access のトークンや旧 JWT は受講者の入口では使えなくなるので、切り替えの時点で全員が Clerk でログインし直し、VS Code も接続し直す。
+- **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
+- **Authorized redirect URIs**: `https://stella-api.saedgewell.workers.dev/api/auth/google/callback`
+
+Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
+Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → Web build → `CLERK_SECRET_KEY` の同期 → `ANTHROPIC_API_KEY` の同期 → api → web (受講者用 → 講師・管理者用) → seed → 指紋の記録 → narrator → deploy:health:check の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → seed → 指紋の記録 → web → narrator → deploy:health:check の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
@@ -154,7 +152,7 @@ Access のトークンや旧 JWT は受講者の入口では使えなくなる�
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`
-  - Web: `bun run deploy:web`（講師・管理者用の入口は続けて `bun run --filter=@stella/web deploy:admin`）
+  - Web: `bun run deploy:web`
   - migrate: `bun run db:migrate:remote`
   - seed: `bun run db:seed:remote:content`
   - 教材画像: `bun run content:upload:remote`（サムネイルだけなら `content:upload:thumbnails:remote`）
@@ -171,9 +169,9 @@ GitHub 上で設定が削除されたことまではこの検査で分からな�
 API / narrator の D1 は binding 名・DB 名・ID を共有する。R2 は正本に記した `LIBRARY_BUCKET` / `BUCKET` という
 別名の binding で同じ非公開バケットを指す。narrator の service / entrypoint も検査する。
 
-最後の narrator デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` を取り、
-正本の `health` の真偽値と照合する。Clerk・Access・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
-開発用認証と開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
+最後の narrator デプロイ直後に `bun run deploy:health:check` がAPI の `/api/healthz` を取り、
+正本の `health` の真偽値と照合する。Google OAuth・JWT の設定・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
+開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
 設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
 ヘルスチェックは設定の有無だけを返し、キー・設定値・書籍の内容は返さない。AI / OCR / TTS も呼び出さない。
 `processingAvailable` は本棚画面と同じ判定で、narrator の応答待ちは3秒で打ち切る。
@@ -197,11 +195,9 @@ Actions のエラーに出る設定名と真偽値を確認し、GitHub の未�
 # リポジトリのルートで実行。ID は対象 Worker の正常だった版に置き換える。
 bunx wrangler rollback <api-version-id> --config apps/api/wrangler.toml
 bunx wrangler rollback <web-version-id> --config apps/web/wrangler.toml
-bunx wrangler rollback <admin-version-id> --config apps/web/wrangler.toml --env admin
 bunx wrangler rollback <narrator-version-id> --config apps/narrator/wrangler.jsonc
 ```
 
-API と Web の中継契約が変わった場合は、API・受講者用 Web・講師用 Web を対応する版へ揃える。
 ロールバックは D1/R2 のデータを復元しない。削除済みの binding の参照先や Secret の変更によっては戻せないので、
 データの復旧は [インフラ移行手順](stella-infrastructure-migration.md) と
 [Cloudflare のロールバック仕様](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) を確認する。
