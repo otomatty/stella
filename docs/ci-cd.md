@@ -106,11 +106,13 @@ Settings → Secrets and variables → Actions で設定する。
 
 `CLOUDFLARE_ACCOUNT_ID` は正本の `accountId` と同じアカウントにする。
 `CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit が必要。
-`VITE_SERVER_URL` は API のオリジン (`https://stella-api.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
+`VITE_SERVER_URL` は受講者用の Web のオリジン (`https://stella-web.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
+Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、画面と API は同じオリジンになる (ログインの Cookie のため)。
 教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。
 
+`BETTER_AUTH_SECRET` (ログインの署名鍵。`openssl rand -base64 32` で作る。変えると全員のセッションが切れる) と
 `ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。
-ログイン (Google OAuth) の `GOOGLE_CLIENT_SECRET` / `AUTH_JWT_SECRET` は `stella-api` の Secret に直接入れる (GitHub には置かない)。
+Google のクライアント (`GOOGLE_CLIENT_ID` は `wrangler.toml`、`GOOGLE_CLIENT_SECRET` は `stella-api` の Secret) は GitHub に置かない。
 AI 一次レビューは本番で必須なので、`ANTHROPIC_API_KEY` の未登録・空白はリモート処理前に失敗する。
 Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
@@ -129,17 +131,17 @@ GitHub の設定には同期しない。手元から設定する場合は `apps/
 checkout 内の `apps/api/wrangler.toml` の `database_id` を実 ID に置換する。
 教材指紋・seed・migration・API デプロイはすべてこの実 ID を使う。
 Git に記録したゼロ UUID はローカル開発専用。実 ID の自動作成・旧 DB へのフォールバックは行わない。
-DB が無い、アカウントが違う、`VITE_SERVER_URL` が新 API URL と一致しない、
+DB が無い、アカウントが違う、`VITE_SERVER_URL` が受講者用の Web のオリジンと一致しない、
 教材 URL が未設定の場合は、教材アップロード前にジョブを停止する。
 この処理は DB の復元完了や R2 コピーの内容までは保証しない。移行担当者が手順書で照合する。
 
-Google Cloud Console の OAuth 2.0 クライアントには次を登録する。
+Google Cloud Console の OAuth 2.0 クライアントには次を登録する (ログインは Better Auth。Issue #117)。
 
 - **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
-- **Authorized redirect URIs**: `https://stella-api.saedgewell.workers.dev/api/auth/google/callback`
+- **Authorized redirect URIs**: `https://stella-web.saedgewell.workers.dev/api/auth/callback/google`
 
-Google のコールバック先は API。Web の `/auth/callback` は API が JWT を返す宛先であり、
-Google に登録する URI ではない。切替後は旧オリジンと旧 API callback を削除する。
+Google が戻るのは Web のオリジンの `/api/auth/callback/google` (Web の Worker が API へ中継する)。
+Better Auth がセッションを作って Web の `/auth/callback` へ戻す。旧 URI (`https://stella-api.saedgewell.workers.dev/api/auth/google/callback`) は切り替えを確かめてから消す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
@@ -169,8 +171,8 @@ GitHub 上で設定が削除されたことまではこの検査で分からな�
 API / narrator の D1 は binding 名・DB 名・ID を共有する。R2 は正本に記した `LIBRARY_BUCKET` / `BUCKET` という
 別名の binding で同じ非公開バケットを指す。narrator の service / entrypoint も検査する。
 
-最後の narrator デプロイ直後に `bun run deploy:health:check` がAPI の `/api/healthz` を取り、
-正本の `health` の真偽値と照合する。Google OAuth・JWT の設定・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
+最後の narrator デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` (Web の Worker 経由で API) を取り、
+正本の `health` の真偽値と照合する。ログイン (Better Auth と Google)・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
 開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
 設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
 ヘルスチェックは設定の有無だけを返し、キー・設定値・書籍の内容は返さない。AI / OCR / TTS も呼び出さない。

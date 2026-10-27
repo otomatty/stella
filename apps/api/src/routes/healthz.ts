@@ -4,6 +4,7 @@
 
 import { Hono } from "hono";
 
+import { authConfigured } from "../lib/better-auth.js";
 import { libraryRuntimeStatus } from "../lib/library-capabilities.js";
 import { isDevMode } from "../lib/skill-map-data.js";
 import type { Env } from "../env.js";
@@ -19,9 +20,8 @@ healthzRoute.get("/api/healthz", async (c) => {
     runner: "anthropic-proxy",
     memoryLimitMb,
     // 認証まわりの構成チェック (秘密値は出さず、 設定済みか否かの真偽のみ)。
-    // Google ログイン不具合の切り分けに使う (docs/google-login-troubleshooting.md)。
-    googleOAuthConfigured: Boolean(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET),
-    jwtConfigured: Boolean(c.env.AUTH_JWT_SECRET),
+    // Better Auth と Google のクライアントが揃っているか (ログインの切り分けに使う)。
+    authConfigured: authConfigured(c.env),
     /** 開発者モード FAB を出していいか。本番には `DEV_MODE` を設定しない。 */
     devModeAvailable: isDevMode(c.env),
     /** AI 一次レビューに必要な鍵と、Gateway 使用時のアカウント設定があるか。 */

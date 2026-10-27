@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { XCircle } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { completeAuthFromCallbackHash } from "@/lib/auth";
+import { completeLogin } from "@/lib/auth";
 import { readStellaStorage, removeStellaStorage } from "@/lib/brand-storage";
 import { POST_LOGIN_REDIRECT_KEY } from "@/components/shell/AppShell";
 
@@ -11,19 +11,20 @@ export function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const result = completeAuthFromCallbackHash(window.location.hash);
-    if (result.ok) {
-      // ログイン前に開いていた保護 URL (共有リンク等) へ復元する。
-      // 相対パスのみ許可 ('//' はプロトコル相対 URL になるため除外)。
-      const saved = readStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
-      removeStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
-      const dest = saved?.startsWith("/") && !saved.startsWith("//") ? saved : "/";
-      window.location.replace(dest);
-      return;
-    }
-    // 失敗時は即バウンスせず、 原因を提示して再ログイン / サポート導線を出す。
-    setError(result.error);
-    toast.error(result.error);
+    void completeLogin(window.location.search).then((result) => {
+      if (result.ok) {
+        // ログイン前に開いていた保護 URL (共有リンク等) へ復元する。
+        // 相対パスのみ許可 ('//' はプロトコル相対 URL になるため除外)。
+        const saved = readStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
+        removeStellaStorage(sessionStorage, POST_LOGIN_REDIRECT_KEY);
+        const dest = saved?.startsWith("/") && !saved.startsWith("//") ? saved : "/";
+        window.location.replace(dest);
+        return;
+      }
+      // 失敗時は即バウンスせず、 原因を提示して再ログイン / サポート導線を出す。
+      setError(result.error);
+      toast.error(result.error);
+    });
   }, []);
 
   if (error) {

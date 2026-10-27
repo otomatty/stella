@@ -2,14 +2,18 @@ import { parseD1Config } from "./d1-remote.js";
 
 const DATABASE_NAME = "stella-db";
 const LOCAL_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
-const API_ORIGIN = "https://stella-api.saedgewell.workers.dev";
+/**
+ * Where the screens call the API: the learner web origin itself. Its Worker passes `/api/*` to
+ * the API Worker, so the Better Auth session cookie is first-party (apps/web/worker).
+ */
+const APP_ORIGIN = "https://stella-web.saedgewell.workers.dev";
 
 export function validateDeployUrls(
   serverUrl: string | undefined,
   materialsUrl: string | undefined,
 ) {
-  if (serverUrl !== API_ORIGIN) {
-    throw new Error(`VITE_SERVER_URL must be ${API_ORIGIN}`);
+  if (serverUrl !== APP_ORIGIN) {
+    throw new Error(`VITE_SERVER_URL must be ${APP_ORIGIN}`);
   }
   if (!materialsUrl) throw new Error("VITE_MATERIALS_BASE_URL is required");
   const url = new URL(materialsUrl);

@@ -31,12 +31,10 @@ export const LoginScreen = ({ onMockLogin }: LoginScreenProps) => {
       );
       return;
     }
-    try {
-      signInWithGoogle();
-    } catch (err) {
+    signInWithGoogle().catch((err: unknown) => {
       const message = err instanceof Error ? err.message : "ログインに失敗しました";
       toast.error(message);
-    }
+    });
   };
 
   return (

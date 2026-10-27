@@ -110,59 +110,109 @@ describe("POST /api/auth/vscode-link/exchange のレート制限", () => {
   });
 });
 
-describe("Google ログインと接続コードの守り", () => {
-  function googleEnv(): Env {
+describe("Better Auth (本番の経路)", () => {
+  const WEB = "https://web.example.test";
+  function prodEnv(): Env {
     return {
       DB: db.binding,
       AUTH_JWT_SECRET: SECRET,
+      BETTER_AUTH_SECRET: "better-auth-test-secret-with-enough-length",
+      BETTER_AUTH_URL: WEB,
       GOOGLE_CLIENT_ID: "client-id",
       GOOGLE_CLIENT_SECRET: "client-secret",
-      ALLOWED_ORIGINS: "https://web.example.test",
-      INVITE_REDIRECT_URL: "https://web.example.test",
+      ALLOWED_ORIGINS: WEB,
     } as Env;
   }
-  const authError = (res: Response) =>
-    new URLSearchParams(new URL(res.headers.get("Location") ?? "").hash.slice(1)).get("error");
 
-  it("ログインを始めたブラウザの Cookie が無いコールバックは受け付けない", async () => {
-    const env = googleEnv();
+  it("VS Code の接続コードはセッションになり、Bearer で使え、消せばすぐ使えなくなる", async () => {
+    const env = prodEnv();
     const { app } = mountTestApp(env, authRoute);
-    const start = await request(
-      app,
-      env,
-      "/api/auth/google?return_to=https://web.example.test/auth/callback-evil",
-    );
-    expect(start.status).toBe(302);
-    const google = new URL(start.headers.get("Location") ?? "");
-    const state = google.searchParams.get("state") ?? "";
-    const cookie = start.headers.get("Set-Cookie") ?? "";
-    expect(cookie).toMatch(/^stella_oauth_nonce=[^;]+;/);
-    expect(cookie).toMatch(/HttpOnly/);
-    expect(cookie).toMatch(/Path=\/api\/auth\/google\/callback/);
-
-    // 別の人に送られたコールバック (Cookie が無い・違う) は、コードを交換する前に止める。
-    const callback = `/api/auth/google/callback?code=attacker-code&state=${encodeURIComponent(state)}`;
-    const stolen = await request(app, env, callback);
-    expect(authError(stolen)).toBe("invalid_state");
-    const other = await request(app, env, callback, {
-      headers: { Cookie: "stella_oauth_nonce=someone-else" },
+    const devToken = await signAccessToken(SECRET, "learner", "learner@example.test");
+    const issued = await request(app, env, "/api/auth/vscode-link", {
+      method: "POST",
+      token: devToken,
     });
-    expect(authError(other)).toBe("invalid_state");
-    // 使い終わった nonce は、結果によらず消す。
-    expect(other.headers.get("Set-Cookie")).toMatch(/^stella_oauth_nonce=;.*Max-Age=0/);
+    const { code } = await json<{ code: string }>(issued);
+    const exchanged = await request(app, env, "/api/auth/vscode-link/exchange", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+    expect(exchanged.status).toBe(200);
+    const { access_token } = await json<{ access_token: string }>(exchanged);
+    expect(access_token.split(".")).toHaveLength(1); // a session token, not a JWT
+    expect(
+      db.sqlite.prepare("select user_id from auth_sessions where token = ?").get(access_token),
+    ).toEqual({ user_id: "learner" });
+
+    // The extension calls the production host with the token.
+    const use = () =>
+      request(app, env, `${WEB}/api/auth/vscode-link`, { method: "POST", token: access_token });
+    expect((await use()).status).toBe(200);
+    db.sqlite.exec("DELETE FROM auth_sessions");
+    expect((await use()).status).toBe(401);
   });
 
-  it("トークンを渡す先は /auth/callback ちょうどに限る", async () => {
-    const { resolveOAuthReturnTo } = await import("../lib/google-oauth.js");
-    const env = googleEnv();
-    const fallback = "https://web.example.test/auth/callback";
-    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback")).toBe(fallback);
-    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback?x=1")).toBe(fallback);
-    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback-evil")).toBe(fallback);
-    expect(resolveOAuthReturnTo(env, "https://web.example.test/auth/callback/x")).toBe(fallback);
-    expect(resolveOAuthReturnTo(env, "https://evil.example.test/auth/callback")).toBe(fallback);
+  it("ログインの行 (auth_users) の無いプロフィールの接続コードは 500 にせず無効にする", async () => {
+    db.sqlite.exec(`
+      INSERT INTO profiles (id, tenant_id, role, display_name, email, disabled, name_source, created_at) VALUES
+        ('seed-only', 'ses', 'student', 'seed', 'seed@example.test', 0, 'google', 1);
+    `);
+    const env = prodEnv();
+    const { app } = mountTestApp(env, authRoute);
+    const issued = await request(app, env, "/api/auth/vscode-link", {
+      method: "POST",
+      token: await signAccessToken(SECRET, "seed-only", "seed@example.test"),
+    });
+    const { code } = await json<{ code: string }>(issued);
+    const exchanged = await request(app, env, "/api/auth/vscode-link/exchange", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+    expect(exchanged.status).toBe(401);
   });
 
+  it("本番のホストでは開発用トークンを受け付けない", async () => {
+    const env = prodEnv();
+    const { app } = mountTestApp(env, authRoute);
+    const res = await request(app, env, `${WEB}/api/auth/vscode-link`, {
+      method: "POST",
+      token: await signAccessToken(SECRET, "learner", "learner@example.test"),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("Google ログインは Better Auth が始め、旧 Google ログインの入口は 410", async () => {
+    const env = prodEnv();
+    const { app } = mountTestApp(env, authRoute);
+    const start = await request(app, env, `${WEB}/api/auth/sign-in/social`, {
+      method: "POST",
+      headers: { Origin: WEB },
+      body: JSON.stringify({ provider: "google", callbackURL: `${WEB}/auth/callback` }),
+    });
+    expect(start.status).toBe(200);
+    const { url } = await json<{ url: string }>(start);
+    const google = new URL(url);
+    expect(google.hostname).toBe("accounts.google.com");
+    expect(google.searchParams.get("redirect_uri")).toBe(`${WEB}/api/auth/callback/google`);
+    expect(google.searchParams.get("state")).toBeTruthy();
+
+    expect((await request(app, env, `${WEB}/api/auth/google`)).status).toBe(410);
+    expect((await request(app, env, `${WEB}/api/auth/google/callback?code=x`)).status).toBe(410);
+  });
+
+  it("ほかのサイトへの戻り先ではログインを始めない", async () => {
+    const env = prodEnv();
+    const { app } = mountTestApp(env, authRoute);
+    const res = await request(app, env, `${WEB}/api/auth/sign-in/social`, {
+      method: "POST",
+      headers: { Origin: WEB },
+      body: JSON.stringify({ provider: "google", callbackURL: "https://evil.example.test/" }),
+    });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("接続コードの守り", () => {
   it("無効化した利用者と停止中の組織には、接続コードを交換させない", async () => {
     const { issueCode, exchange } = setup();
     const disabledCode = await issueCode();
