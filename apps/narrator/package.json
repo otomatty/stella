@@ -18,12 +18,12 @@
   "devDependencies": {
     "typescript": "^7.0.2",
     "@types/node": "^26.6.5",
-    "wrangler": "4.149.0",
+    "wrangler": "4.152.0",
     "miniflare": "5.20261006.1-alpha",
     "vitest": "5.0.3",
     "esbuild": "^0.28.1",
     "hono": "^4.13.12",
     "pdf-lib": "^1.17.1",
-    "@cloudflare/workers-types": "5.20261011.1"
+    "@cloudflare/workers-types": "5.20261026.1"
   }
 }
