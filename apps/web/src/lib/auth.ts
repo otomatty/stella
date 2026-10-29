@@ -1,15 +1,17 @@
 /**
- * 認証ラッパ。ログインそのものは Clerk (本番) か開発用トークン (ローカル) が担い、
- * ここは「誰なのか」を `/api/me` から引く (方式の違いは `auth-client` を参照)。
+ * 認証ラッパ (Better Auth の Google ログイン、Issue #117)。
  */
 
 import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
 
-import { apiFetch } from "./api-client";
+import { apiFetch, ApiClientError } from "./api-client";
 import {
-  getSession as readSession,
+  completeLogin,
+  getAccessToken,
+  getSession as cachedSession,
   isAuthConfigured,
-  signInWithDevToken,
+  loadSession,
+  signInWithGoogle,
   signOut as clearSession,
   subscribeToAuth as onAuthChange,
   type Session,
@@ -19,14 +21,15 @@ export type { Session };
 /** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
 export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
 
-export { signInWithDevToken };
+export { signInWithGoogle, completeLogin };
 
 export async function signOut(): Promise<void> {
   await clearSession();
 }
 
+/** Reads the session from the server (the cookie is HttpOnly, so the page cannot see it). */
 export async function getSession(): Promise<Session | null> {
-  return readSession();
+  return loadSession();
 }
 
 export function subscribeToAuth(callback: (session: Session | null) => void): () => void {
@@ -34,18 +37,24 @@ export function subscribeToAuth(callback: (session: Session | null) => void): ()
 }
 
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
-  if (!isAuthConfigured() || !(await readSession())) return null;
-  // invite_required / staff_host_required の 403 は上位 (useAuthSession) が画面を分ける。
-  const { profile, tenant } = await apiFetch<{
-    profile: ProfileRow;
-    tenant?: ProfileTenantInfo | null;
-  }>("/api/me");
-  return profile ? { ...profile, tenant: tenant ?? null } : profile;
+  if (!isAuthConfigured() || !cachedSession()) return null;
+  try {
+    const { profile, tenant } = await apiFetch<{
+      profile: ProfileRow;
+      tenant?: ProfileTenantInfo | null;
+    }>("/api/me");
+    return profile ? { ...profile, tenant: tenant ?? null } : profile;
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 403 && err.message === "invite_required") {
+      throw err; // 上位で inviteRequired に
+    }
+    throw err;
+  }
 }
 
 /**
  * 設定画面からのユーザー名変更。 更新できるのは表示名のみ (ロール / テナント / メールは
- * 招待とログインが真実)。 保存すると以後ログイン時の登録名では上書きされなくなる。
+ * 招待とログインが真実)。 保存すると以後 Google の登録名では上書きされなくなる。
  */
 export async function updateMyDisplayName(displayName: string): Promise<Profile> {
   const { profile } = await apiFetch<{ profile: Profile }>("/api/me", {
@@ -56,4 +65,4 @@ export async function updateMyDisplayName(displayName: string): Promise<Profile>
   return profile;
 }
 
-export { isAuthConfigured };
+export { isAuthConfigured, getAccessToken };

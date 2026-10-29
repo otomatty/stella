@@ -9,9 +9,10 @@ afterEach(() => vi.useRealTimers());
 
 function configured(overrides: Partial<Env> = {}): Env {
   return {
-    CLERK_SECRET_KEY: "sk_live_private-value",
-    ACCESS_TEAM_DOMAIN: "test.cloudflareaccess.com",
-    ACCESS_AUD: "a".repeat(64),
+    GOOGLE_CLIENT_ID: "client-id",
+    GOOGLE_CLIENT_SECRET: "private-google-value",
+    BETTER_AUTH_SECRET: "private-better-auth-value",
+    BETTER_AUTH_URL: "https://web.example.test",
     ANTHROPIC_API_KEY: "private-anthropic-value",
     ALLOWED_ORIGINS: "https://example.test",
     LIBRARY_BUCKET: {} as R2Bucket,
@@ -36,18 +37,15 @@ describe("configuration health", () => {
     const body = await response.json();
     expect(body).toMatchObject({
       ok: true,
-      clerkConfigured: true,
-      accessConfigured: true,
+      authConfigured: true,
       libraryEnabled: true,
       narratorAvailable: true,
       narratorGeminiConfigured: true,
       processingAvailable: true,
       aiReviewConfigured: true,
-      devAuthConfigured: false,
       devModeAvailable: false,
     });
     expect(JSON.stringify(body)).not.toContain("private-");
-    expect(JSON.stringify(body)).not.toContain(env.ACCESS_AUD);
     expect(env.NARRATOR?.capabilities).toHaveBeenCalledTimes(1);
     expect(env.NARRATOR?.startJob).not.toHaveBeenCalled();
   });

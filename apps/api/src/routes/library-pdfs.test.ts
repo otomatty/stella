@@ -46,7 +46,7 @@ beforeEach(() => {
   objects = new Map();
   env = {
     DB: db.binding,
-    DEV_AUTH_JWT_SECRET: SECRET,
+    AUTH_JWT_SECRET: SECRET,
     LIBRARY_BUCKET: memoryBucket(objects),
     NARRATOR: {
       capabilities: async () => ({ configured: true, provider: "fake" }),

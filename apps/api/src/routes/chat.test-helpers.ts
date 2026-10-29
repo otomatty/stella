@@ -30,7 +30,7 @@ export function createChatTestEnv(overrides: Partial<Env> = {}): Env {
     ANTHROPIC_MODEL: "claude-sonnet-4-6",
     ALLOWED_ORIGINS: "http://localhost:5173",
     DB: {} as D1Database,
-    DEV_AUTH_JWT_SECRET: CHAT_TEST_JWT_SECRET,
+    AUTH_JWT_SECRET: CHAT_TEST_JWT_SECRET,
     ...overrides,
   } as Env;
 }

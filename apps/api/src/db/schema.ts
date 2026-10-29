@@ -69,13 +69,79 @@ const safeJson = <T>(name: string) =>
 // 認証 (Workers 自前 Google OAuth / JWT)
 // ---------------------------------------------------------------
 
+/**
+ * Login identities. Better Auth's `user` model is this table (lib/better-auth.ts), so an existing
+ * id (= profiles.id) stays the same when the user signs in with Google again.
+ */
 export const authUsers = sqliteTable("auth_users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
+  name: text("name").notNull().default(""),
+  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  image: text("image"),
   createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
+
+/** Better Auth sessions: the web's cookie and the VS Code extension's bearer token. */
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: ts("expires_at").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [index("auth_sessions_user_idx").on(t.userId)],
+);
+
+/** Better Auth: the Google account linked to a login identity. */
+export const authAccounts = sqliteTable(
+  "auth_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: ts("access_token_expires_at"),
+    refreshTokenExpiresAt: ts("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [
+    index("auth_accounts_user_idx").on(t.userId),
+    uniqueIndex("auth_accounts_provider_account_unique").on(t.providerId, t.accountId),
+  ],
+);
+
+/** Better Auth: short-lived values such as the OAuth state. */
+export const authVerifications = sqliteTable(
+  "auth_verifications",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [index("auth_verifications_identifier_idx").on(t.identifier)],
+);
 
 export const authOtpCodes = sqliteTable("auth_otp_codes", {
   email: text("email").primaryKey(),
@@ -91,11 +157,6 @@ export const authVscodeLinks = sqliteTable("auth_vscode_links", {
   codeHash: text("code_hash").notNull().unique(),
   expiresAt: ts("expires_at").notNull(),
   usedAt: ts("used_at"),
-  /**
-   * 接続コードを出した利用者の Clerk の利用者 ID。交換のときに、この利用者の API キーを作って拡張へ渡す。
-   * 開発環境 (Clerk なし) では null で、交換時に開発用のトークンを作る。
-   */
-  clerkUserId: text("clerk_user_id"),
   createdAt: tsNow("created_at"),
 });
 
@@ -155,8 +216,6 @@ export const profiles = sqliteTable(
   },
   (t) => ({
     emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
-    // ログインは小文字にしたメールアドレスで照合するので、大文字小文字だけ違う行も作らせない。
-    emailLowerUnique: uniqueIndex("profiles_email_lower_uq").on(sql`lower(${t.email})`),
     tenantIdentity: uniqueIndex("profiles_tenant_id_uq").on(t.tenantId, t.id),
   }),
 );
@@ -1535,8 +1594,6 @@ export const notifications = sqliteTable("notifications", {
       "interview_date_set",
       "interview_answer_template_generated",
       "interview_answer_template_failed",
-      // セキュリティ監視の検知 (重要度「高」「中」)。管理者宛て。text 列なのでマイグレーション不要。
-      "security_alert",
     ],
   }).notNull(),
   title: text("title").notNull().default(""),
@@ -2322,98 +2379,6 @@ export const auditLogs = sqliteTable("audit_logs", {
   ip: text("ip"),
   metadata: json<Record<string, unknown>>("metadata", {}),
   createdAt: tsNow("created_at"),
-});
-
-// ---------------------------------------------------------------
-// セキュリティ監視 (migration 0066)
-// ---------------------------------------------------------------
-
-/**
- * 認証・認可・エラー・Access のログイン記録などの出来事。検知ルール (lib/security-detect.ts) の材料で、
- * 管理者のセキュリティ画面に出す。180 日で消す (lib/security-events.ts)。
- */
-export const securityEvents = sqliteTable(
-  "security_events",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id").notNull(),
-    kind: text("kind").notNull(),
-    /** `app` = この API が記録 / `access` = Cloudflare Access のログから取り込んだ。 */
-    source: text("source", { enum: ["app", "access"] })
-      .notNull()
-      .default("app"),
-    /** 取り込み元の ID (Access の Ray ID)。二重に取り込まないための印。 */
-    externalId: text("external_id"),
-    actorId: text("actor_id"),
-    actorRole: text("actor_role"),
-    email: text("email"),
-    ip: text("ip"),
-    country: text("country"),
-    userAgent: text("user_agent"),
-    method: text("method"),
-    path: text("path"),
-    status: integer("status"),
-    metadata: json<Record<string, unknown>>("metadata", {}),
-    createdAt: tsNow("created_at"),
-  },
-  (t) => ({
-    tenantTime: index("security_events_tenant_time_idx").on(t.tenantId, t.createdAt),
-    kindTime: index("security_events_kind_time_idx").on(t.kind, t.createdAt),
-    actorTime: index("security_events_actor_time_idx").on(t.actorId, t.createdAt),
-    external: uniqueIndex("security_events_external_uq").on(t.source, t.externalId),
-  }),
-);
-
-/** 検知ルールが出したアラート。`dedupe_key` (ルール・対象・時間の区切り) で 1 件にまとめる。 */
-export const securityAlerts = sqliteTable(
-  "security_alerts",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id").notNull(),
-    rule: text("rule").notNull(),
-    severity: text("severity", { enum: ["high", "medium", "low"] }).notNull(),
-    status: text("status", { enum: ["open", "acknowledged", "resolved"] })
-      .notNull()
-      .default("open"),
-    title: text("title").notNull(),
-    detail: json<Record<string, unknown>>("detail", {}),
-    subject: text("subject"),
-    dedupeKey: text("dedupe_key").notNull(),
-    eventCount: integer("event_count").notNull().default(1),
-    firstSeenAt: ts("first_seen_at").notNull(),
-    lastSeenAt: ts("last_seen_at").notNull(),
-    notifiedAt: ts("notified_at"),
-    statusChangedBy: text("status_changed_by"),
-    statusChangedAt: ts("status_changed_at"),
-    note: text("note"),
-    createdAt: tsNow("created_at"),
-  },
-  (t) => ({
-    dedupe: uniqueIndex("security_alerts_dedupe_uq").on(t.tenantId, t.dedupeKey),
-    tenantStatus: index("security_alerts_tenant_status_idx").on(t.tenantId, t.status, t.lastSeenAt),
-  }),
-);
-
-/** 利用者ごとの直近のセッション。Access のトークンの発行時刻が変わったら新しいサインインとみなす。 */
-export const securitySessions = sqliteTable("security_sessions", {
-  profileId: text("profile_id")
-    .primaryKey()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  tenantId: text("tenant_id").notNull(),
-  /** 最後に見たセッションの印 (Clerk は `clerk:<セッション ID>`、VS Code は `api_key:<キー ID>`)。 */
-  lastSessionKey: text("last_session_key"),
-  lastSessionAt: ts("last_session_at"),
-  lastSeenAt: ts("last_seen_at"),
-  lastIp: text("last_ip"),
-  lastCountry: text("last_country"),
-  lastUserAgent: text("last_user_agent"),
-});
-
-/** cron の進み具合などの小さな状態 (key-value)。 */
-export const securityState = sqliteTable("security_state", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(),
-  updatedAt: tsNow("updated_at"),
 });
 
 // ---------------------------------------------------------------

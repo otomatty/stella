@@ -1,66 +1,28 @@
 /**
- * 認証クライアント。アプリはパスワードも OAuth も持たず、ログインは 2 つの方式のどちらかで行う。
+ * ログインのクライアント (Better Auth、Issue #117)。
  *
- *   - `clerk` (本番の既定) … Clerk がログイン (Google・メールの確認コード)・セッションの更新と失効を
- *     受け持つ。画面は Clerk のセッショントークン (約 60 秒で切れ、SDK が更新する) を `/api/*` へ
- *     `Authorization: Bearer` で送る。誰なのか (アプリの profiles) は `/api/me` の応答で知る。
- *     講師・管理者は Cloudflare Access で守った講師・管理者用の入口 (`VITE_STAFF_ORIGIN`) から使う。
- *   - `dev-token` (`vite dev` の既定) … Clerk の無いローカル開発用。手で発行した開発用の JWT
- *     (`bun run --filter=@stella/api dev:token <profileId>`) を localStorage に置き、Bearer で送る。
- *     API はローカル (localhost / 127.0.0.1) のリクエストでだけこれを受け付ける。
- *
- * 方式は `VITE_AUTH_MODE` (`clerk` | `dev-token`) で選ぶ。未指定なら dev サーバーは `dev-token`、
- * build した成果物は `clerk`。
+ *   - 本番: 画面と API は同じオリジン (Web の Worker が `/api/*` を中継)。セッションは HttpOnly の
+ *     Cookie で、画面はトークンを持たない。状態は `GET /api/auth/get-session` で読む
+ *   - ローカル開発: API (`127.0.0.1:8787`) へ開発用トークン (localStorage) を Bearer で送る
+ *     (AGENTS.md「Local login without Google OAuth」)。API が localhost のときだけ使う
  */
 
 import { readStellaStorage, removeStellaStorage } from "./brand-storage";
-import {
-  clerkCurrentUser,
-  clerkSessionToken,
-  clerkSignOut,
-  onClerkUserChange,
-  type ClerkUserSummary,
-} from "./clerk";
 
 const TOKEN_KEY = "stella_auth_token_v1";
 const LEGACY_TOKEN_KEY = "falcon_auth_token_v1";
-/** 講師・管理者用の入口の Access のログインのために読み込み直した時刻 (読み込み直しの繰り返しを止める)。 */
-const ACCESS_RELOAD_KEY = "stella_access_reload_at_v1";
-/** この間隔の中で 2 度目の読み込み直しはしない (Access を通っても止められ続ける設定ミスで回り続けないため)。 */
-export const ACCESS_RELOAD_GUARD_MS = 30_000;
 
-export type AuthMode = "clerk" | "dev-token";
-
-/** `VITE_AUTH_MODE` の値と dev サーバーかどうかから方式を決める (未知の値は既定に倒す)。 */
-export function resolveAuthMode(raw: unknown, isDev: boolean): AuthMode {
-  if (raw === "clerk" || raw === "dev-token") return raw;
-  return isDev ? "dev-token" : "clerk";
-}
-
-/** いまの方式。テストで `vi.stubEnv` が効くよう、呼ぶたびに読む。 */
-export function authMode(): AuthMode {
-  return resolveAuthMode(import.meta.env.VITE_AUTH_MODE, Boolean(import.meta.env.DEV));
-}
-
-/** Clerk でログインする方式か (画面はアプリの利用者 ID を `/api/me` で知る)。 */
-export function isClerkMode(): boolean {
-  return authMode() === "clerk";
-}
-
-/** 講師・管理者用の入口 (Cloudflare Access で守ったオリジン)。未設定なら空。 */
-export function staffOrigin(): string {
-  return (import.meta.env.VITE_STAFF_ORIGIN ?? "").trim().replace(/\/+$/, "");
-}
-
-/** いま講師・管理者用の入口で開いているか。 */
-export function isStaffHost(): boolean {
-  const origin = staffOrigin();
-  return Boolean(origin) && typeof window !== "undefined" && window.location.origin === origin;
-}
-
-function serverUrl(): string {
-  return (import.meta.env.VITE_SERVER_URL ?? "").replace(/\/+$/, "");
-}
+const serverUrl = (import.meta.env.VITE_SERVER_URL as string | undefined)?.replace(/\/$/, "");
+/** The API runs on this PC, so a self-signed dev token may be used (production never is). */
+const localApi = (() => {
+  try {
+    return (
+      Boolean(serverUrl) && ["localhost", "127.0.0.1"].includes(new URL(serverUrl ?? "").hostname)
+    );
+  } catch {
+    return false;
+  }
+})();
 
 export interface SessionUser {
   id: string;
@@ -68,14 +30,28 @@ export interface SessionUser {
 }
 
 export interface Session {
-  /** 開発用トークン (dev-token のときだけ)。clerk では常に null。 */
-  accessToken: string | null;
   user: SessionUser;
-  expiresAt: number | null;
 }
 
 export function isAuthConfigured(): boolean {
-  return Boolean(serverUrl());
+  return Boolean(serverUrl);
+}
+
+type Listener = (session: Session | null) => void;
+const listeners = new Set<Listener>();
+let current: Session | null = null;
+/** Whether `current` came from the session cookie (sign-out must then end it on the server). */
+let fromCookie = false;
+
+// The cookie is shared by every tab, but a tab only learns of a change when told: a tab that
+// signs in or out says so here, and the others read the session again.
+const tabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("stella-auth");
+if (tabs) tabs.onmessage = () => void loadSession();
+
+function setSession(session: Session | null): Session | null {
+  current = session;
+  for (const l of listeners) l(session);
+  return session;
 }
 
 function decodeJwt(token: string): Record<string, unknown> | null {
@@ -84,222 +60,124 @@ function decodeJwt(token: string): Record<string, unknown> | null {
     if (!part) return null;
     let base64 = part.replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
-    const json = atob(base64);
-    return JSON.parse(json) as Record<string, unknown>;
+    return JSON.parse(atob(base64)) as Record<string, unknown>;
   } catch {
     return null;
   }
 }
 
-function sessionFromToken(token: string): Session | null {
+/** The dev token's session, or null (also when expired). */
+function devSession(token: string): Session | null {
   const payload = decodeJwt(token);
   const sub = payload?.["sub"];
-  if (typeof sub !== "string" || !sub) return null;
-  const exp = typeof payload?.["exp"] === "number" ? (payload["exp"] as number) : null;
-  if (exp != null && exp * 1000 < Date.now()) return null;
-  const email = typeof payload?.["email"] === "string" ? (payload["email"] as string) : undefined;
-  return {
-    accessToken: token,
-    user: { id: sub, ...(email ? { email } : {}) },
-    expiresAt: exp != null ? exp * 1000 : null,
-  };
+  if (typeof sub !== "string") return null;
+  const exp = payload?.["exp"];
+  if (typeof exp === "number" && exp * 1000 < Date.now()) return null;
+  const email = payload?.["email"];
+  return { user: { id: sub, ...(typeof email === "string" ? { email } : {}) } };
 }
 
-/** clerk: Clerk の利用者からの仮のセッション (アプリの利用者 ID は `/api/me` の応答で置き換える)。 */
-function sessionFromClerkUser(user: ClerkUserSummary | null): Session | null {
-  if (!user) return null;
-  return {
-    accessToken: null,
-    user: { id: user.id, ...(user.email ? { email: user.email } : {}) },
-    expiresAt: null,
-  };
-}
-
-type Listener = (session: Session | null) => void;
-const listeners = new Set<Listener>();
-
-function emit(session: Session | null): void {
-  for (const l of listeners) l(session);
-}
-
-function readToken(): string | null {
+function readDevToken(): string | null {
   if (typeof window === "undefined") return null;
-  return readStellaStorage(window.localStorage, TOKEN_KEY);
-}
-
-function storeToken(token: string | null): boolean {
-  if (typeof window === "undefined") return true;
-  if (token) {
-    try {
-      window.localStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      return false;
-    }
-    try {
-      window.localStorage.removeItem(LEGACY_TOKEN_KEY);
-    } catch {
-      // 新キーは保存済み。旧キーが残っても次の読み取りは新キーを使う。
-    }
-  } else removeStellaStorage(window.localStorage, TOKEN_KEY);
-  emit(token ? sessionFromToken(token) : null);
-  return true;
-}
-
-/**
- * clerk では以前の方式 (Google ログイン・開発用) の JWT を端末に残さない。消せなくても続ける
- * (clerk では読まないので、残っても API には送られない)。
- */
-export function purgeStoredTokens(): void {
-  if (typeof window === "undefined") return;
-  for (const key of [TOKEN_KEY, LEGACY_TOKEN_KEY]) {
-    try {
-      window.localStorage.removeItem(key);
-    } catch {
-      // 読まない値なので、消せないままでも害は無い。
-    }
-  }
-}
-
-/**
- * dev-token: 貼り付けた開発用トークンを確かめて保存する。署名はここでは確かめられない
- * (API が確かめる) ので、読めて期限内かだけを見る。
- */
-export function signInWithDevToken(raw: string): { ok: true } | { ok: false; error: string } {
-  if (isClerkMode()) {
-    return { ok: false, error: "Clerk でログインする設定のため、トークンは使えません" };
-  }
-  const token = raw.trim().replace(/^Bearer\s+/i, "");
-  if (!token) return { ok: false, error: "トークンを貼り付けてください" };
-  const payload = decodeJwt(token);
-  if (!payload || typeof payload["sub"] !== "string" || !payload["sub"]) {
-    return { ok: false, error: "トークンを読めませんでした (JWT の形ではありません)" };
-  }
-  if (!sessionFromToken(token)) {
-    return { ok: false, error: "トークンの有効期限が切れています。発行し直してください" };
-  }
-  if (!storeToken(token)) return { ok: false, error: "トークンを保存できませんでした" };
-  return { ok: true };
-}
-
-/** ログアウト。clerk は Clerk のセッションを終える。dev-token は端末のトークンを消す。 */
-export async function signOut(): Promise<void> {
-  if (isClerkMode()) {
-    purgeStoredTokens();
-    await clerkSignOut();
-    emit(null);
-    return;
-  }
-  storeToken(null);
-}
-
-/** dev-token の開発用トークン。clerk では常に null (Clerk のトークンは `authHeaders` が取る)。 */
-export function getAccessToken(): string | null {
-  if (isClerkMode()) return null;
-  const token = readToken();
-  if (!token) return null;
-  if (!sessionFromToken(token)) {
-    storeToken(null);
+  const token = readStellaStorage(window.localStorage, TOKEN_KEY);
+  if (token && (!localApi || !devSession(token))) {
+    // A token from the old login (or an expired one) is never sent to production.
+    removeStellaStorage(window.localStorage, TOKEN_KEY);
     return null;
   }
   return token;
 }
 
-/**
- * API へ付ける認証ヘッダ。clerk は Clerk のセッショントークン (切れていれば SDK が更新したもの)、
- * dev-token は開発用トークン。ログインしていなければ空。
- */
-export async function authHeaders(
-  options: { skipCache?: boolean } = {},
-): Promise<Record<string, string>> {
-  const token = isClerkMode() ? await clerkSessionToken(options) : getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+/** Reads who is signed in (the dev token, else the session cookie) and tells subscribers. */
+export async function loadSession(): Promise<Session | null> {
+  const token = readDevToken();
+  fromCookie = false;
+  if (token) return setSession(devSession(token));
+  if (!serverUrl) return setSession(null);
+  try {
+    const res = await fetch(`${serverUrl}/api/auth/get-session`, { credentials: "include" });
+    const data = res.ok
+      ? ((await res.json()) as { user?: { id?: unknown; email?: unknown } } | null)
+      : null;
+    const id = data?.user?.id;
+    if (typeof id !== "string") return setSession(null);
+    const email = data?.user?.email;
+    fromCookie = true;
+    return setSession({ user: { id, ...(typeof email === "string" ? { email } : {}) } });
+  } catch {
+    return setSession(null);
+  }
 }
 
-export async function getSession(): Promise<Session | null> {
-  if (isClerkMode()) {
-    purgeStoredTokens();
-    if (!isAuthConfigured()) return null;
-    return sessionFromClerkUser(await clerkCurrentUser());
-  }
-  const token = readToken();
-  if (!token) return null;
-  const session = sessionFromToken(token);
-  if (!session) {
-    storeToken(null);
-    return null;
-  }
-  return session;
+/** The last session read by `loadSession` (null until it has run). */
+export function getSession(): Session | null {
+  return current;
+}
+
+/** Google のログイン画面へ移る。戻り先は `/auth/callback` (元のページは AppShell が控える)。 */
+export async function signInWithGoogle(): Promise<void> {
+  if (!serverUrl) throw new Error("VITE_SERVER_URL が未設定のため Google ログインできません");
+  const callbackURL = `${window.location.origin}/auth/callback`;
+  const res = await fetch(`${serverUrl}/api/auth/sign-in/social`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "google", callbackURL, errorCallbackURL: callbackURL }),
+  });
+  const data = (await res.json().catch(() => null)) as { url?: unknown } | null;
+  if (!res.ok || typeof data?.url !== "string")
+    throw new Error("ログインを開始できませんでした。時間をおいてもう一度お試しください");
+  window.location.assign(data.url);
+}
+
+/** `/auth/callback` で、Google から戻った結果を確かめる (失敗なら `?error=` が付いている)。 */
+export async function completeLogin(
+  search: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const error = new URLSearchParams(search).get("error");
+  if (error) return { ok: false, error: `ログインできませんでした (${error})` };
+  if (!(await loadSession()))
+    return { ok: false, error: "ログインできませんでした。もう一度お試しください" };
+  tabs?.postMessage("changed");
+  return { ok: true };
 }
 
 /**
- * 講師・管理者用の入口で Access のセッションが切れた (API がリダイレクト・Access の HTML を返した)
- * ときに、1 度だけページを読み込み直して Access のログインへ回す。直前 (`ACCESS_RELOAD_GUARD_MS`
- * 以内) にも読み込み直していたら何もせず false を返す — Access を通っても止められ続ける設定のときに
- * 読み込み直しを繰り返さないため (呼び出し側がエラーを出す)。
+ * Ends the session on the server first: the HttpOnly cookie cannot be removed here, so showing
+ * the user as signed out while the server session lives would come back on reload. Throws when
+ * the server did not confirm (the caller tells the user).
  */
-export function reloadForAccessLogin(now: number = Date.now()): boolean {
-  if (typeof window === "undefined") return false;
-  let last = Number.NaN;
-  try {
-    last = Number(window.sessionStorage.getItem(ACCESS_RELOAD_KEY));
-  } catch {
-    // 読めなければ初回として扱う。
+export async function signOut(): Promise<void> {
+  if (fromCookie && serverUrl) {
+    const res = await fetch(`${serverUrl}/api/auth/sign-out`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    }).catch(() => null);
+    if (!res?.ok)
+      throw new Error("ログアウトできませんでした。通信を確かめてもう一度お試しください");
   }
-  if (Number.isFinite(last) && last > 0 && now - last < ACCESS_RELOAD_GUARD_MS) return false;
-  try {
-    window.sessionStorage.setItem(ACCESS_RELOAD_KEY, String(now));
-  } catch {
-    // 印を残せないと繰り返しを止められないので、読み込み直さない。
-    return false;
-  }
-  window.location.reload();
-  return true;
+  if (typeof window !== "undefined") removeStellaStorage(window.localStorage, TOKEN_KEY);
+  fromCookie = false;
+  setSession(null);
+  tabs?.postMessage("changed");
+}
+
+/** The dev token for `Authorization: Bearer` (local development only; production uses the cookie). */
+export function getAccessToken(): string | null {
+  return readDevToken();
 }
 
 export function subscribeToAuth(callback: Listener): () => void {
   listeners.add(callback);
-  if (typeof window === "undefined") {
-    return () => {
-      listeners.delete(callback);
-    };
-  }
-  if (isClerkMode()) {
-    // ログイン状態は Clerk が持つ (別のタブでのログイン・ログアウトも Clerk が伝える)。
-    let unsubscribe: (() => void) | null = null;
-    let closed = false;
-    void onClerkUserChange((user) => callback(sessionFromClerkUser(user)))
-      .then((off) => {
-        if (closed) off();
-        else unsubscribe = off;
-      })
-      .catch(() => undefined);
-    return () => {
-      closed = true;
-      listeners.delete(callback);
-      unsubscribe?.();
-    };
-  }
+  // Another tab changed the dev token.
   const onStorage = (e: StorageEvent) => {
-    if (e.key === TOKEN_KEY) {
-      callback(e.newValue ? sessionFromToken(e.newValue) : null);
-      return;
-    }
-    // 旧タブのログアウトは旧キーだけ消す。今のトークンと同じときだけ追随する。
-    if (e.key !== LEGACY_TOKEN_KEY || e.oldValue !== readToken()) return;
-    if (!e.newValue) {
-      storeToken(null);
-      return;
-    }
-    try {
-      window.localStorage.setItem(TOKEN_KEY, e.newValue);
-    } catch {
-      return;
-    }
-    emit(sessionFromToken(e.newValue));
+    if (e.key === TOKEN_KEY || e.key === LEGACY_TOKEN_KEY) void loadSession();
   };
-  window.addEventListener("storage", onStorage);
+  if (typeof window !== "undefined") window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(callback);
-    window.removeEventListener("storage", onStorage);
+    if (typeof window !== "undefined") window.removeEventListener("storage", onStorage);
   };
 }

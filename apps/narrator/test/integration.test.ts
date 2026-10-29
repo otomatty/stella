@@ -88,7 +88,8 @@ beforeAll(async () => {
     platform: "neutral",
     format: "esm",
     conditions: ["workerd", "worker", "browser"],
-    external: ["cloudflare:*"],
+    // node:* comes from nodejs_compat at runtime (the API's auth library imports node:crypto).
+    external: ["cloudflare:*", "node:*"],
     target: "es2022",
   });
   const modules: V4ModuleDefinition[] = [
@@ -110,7 +111,7 @@ beforeAll(async () => {
           r2Buckets: { LIBRARY_BUCKET: "library-test" },
           serviceBindings: { NARRATOR: { name: "narrator", entrypoint: "Narrator" } },
           bindings: {
-            DEV_AUTH_JWT_SECRET: secret,
+            AUTH_JWT_SECRET: secret,
             ALLOWED_ORIGINS: "http://localhost",
             ANTHROPIC_API_KEY: "",
             TTS_LANGUAGE: "en-US",
