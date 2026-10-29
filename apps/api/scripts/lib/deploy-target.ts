@@ -6,7 +6,7 @@ const LOCAL_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
  * Where the screens call the API: the learner web origin itself. Its Worker passes `/api/*` to
  * the API Worker, so the Better Auth session cookie is first-party (apps/web/worker).
  */
-const APP_ORIGIN = "https://stella-web.saedgewell.workers.dev";
+const APP_ORIGIN = "https://stella.saedgewell.workers.dev";
 
 export function validateDeployUrls(
   serverUrl: string | undefined,

@@ -22,7 +22,7 @@ Neon Postgres + Neon Auth から **Cloudflare ネイティブ構成**へ移行�
 - **DB 層**: Drizzle ORM + D1 バインディング (`drizzle-orm/d1`)
 - **認証**: Google OAuth (`/api/auth/google`) + JWT (`AUTH_JWT_SECRET`)
 - **認可**: Hono アプリ層 (旧 RLS 相当)
-- **フロント**: Cloudflare Workers Static Assets (`stella-web`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
+- **フロント**: Cloudflare Workers Static Assets (`stella`、`apps/web/wrangler.toml` の `[assets] directory = "dist"`、SPA fallback は `not_found_handling = "single-page-application"`)。旧 Cloudflare Pages からの移行後。
 - **デプロイ運用**: 手動 `wrangler` ではなく GitHub Actions（`.github/workflows/deploy.yml`）。`main` マージで D1 migrate（remote）→ D1 seed（remote）→ api → web を自動実行。詳細は [`docs/ci-cd.md`](ci-cd.md) を参照。
 
 ## ローカル開発
@@ -50,7 +50,8 @@ bun run dev       # :5173
 |---------|------|----------|
 | D1 `stella-db` | 新規作成。`deploy:prepare` が名前から実 ID を解決 | Git 上のゼロ UUID はローカル専用 |
 | Worker `stella-api` | GitHub Actions またはローカル `wrangler deploy` | https://stella-api.saedgewell.workers.dev |
-| Worker `stella-web` (Static Assets) | 同上 | https://stella-web.saedgewell.workers.dev |
+| Worker `stella` (Static Assets) | 同上 | https://stella.saedgewell.workers.dev |
+| Worker `stella-web` | 旧 URL。`wrangler.legacy.toml` が新しいオリジンへ 308 | https://stella-web.saedgewell.workers.dev |
 | Secret `AUTH_JWT_SECRET` など | Worker に登録 | `wrangler secret put` |
 | R2 `stella-materials-public` | 公開 URL を `VITE_MATERIALS_BASE_URL` に登録 | `https://pub-cc7cf3c40111439d989be39f89a6eb84.r2.dev` |
 | R2 `stella-skill-sheets` | 原本用。非公開を維持 | |

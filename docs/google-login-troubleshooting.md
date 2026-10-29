@@ -4,7 +4,7 @@
 セッションは D1) で、画面と API は同じオリジンで動く (Issue #117。設定は `apps/api/src/lib/better-auth.ts`)。
 
 ```text
-[Web の Worker (stella-web)] /api/* をサービスバインディングで API (stella-api) へ中継
+[Web の Worker (stella)] /api/* をサービスバインディングで API (stella-api) へ中継
   画面 → POST /api/auth/sign-in/social → Google の同意画面
        → /api/auth/callback/google (Better Auth がセッションを作り、HttpOnly の Cookie を付ける)
        → 画面の /auth/callback → GET /api/auth/get-session → ログイン完了
@@ -17,7 +17,7 @@
 受講者用の Web のオリジンで疎通エンドポイントを見る (Web の Worker を通るので中継も確かめられる。秘密値は出ない)。
 
 ```bash
-curl -s https://stella-web.saedgewell.workers.dev/api/healthz | jq
+curl -s https://stella.saedgewell.workers.dev/api/healthz | jq
 # 期待: "ok": true, "authConfigured": true
 ```
 
@@ -27,7 +27,7 @@ curl -s https://stella-web.saedgewell.workers.dev/api/healthz | jq
 
 ## 1. フロントの `VITE_SERVER_URL`
 
-- ビルド時に焼き込まれる `VITE_SERVER_URL` が **受講者用の Web のオリジン** (`https://stella-web.saedgewell.workers.dev`) か。
+- ビルド時に焼き込まれる `VITE_SERVER_URL` が **受講者用の Web のオリジン** (`https://stella.saedgewell.workers.dev`) か。
   API のオリジンにすると Cookie が別オリジンになりログインが続かない。
 - 値は GitHub Actions の Repository Variables `VITE_SERVER_URL` (`deploy:prepare` が確かめる。[`docs/ci-cd.md`](ci-cd.md))。
   変えたら `main` への push (再デプロイ) が要る。
@@ -37,7 +37,7 @@ curl -s https://stella-web.saedgewell.workers.dev/api/healthz | jq
 [Google Cloud Console](https://console.cloud.google.com/) → 対象の OAuth 2.0 クライアント →
 **承認済みのリダイレクト URI** に `${BETTER_AUTH_URL}/api/auth/callback/google` を **完全一致** で登録する。
 
-- 本番: `https://stella-web.saedgewell.workers.dev/api/auth/callback/google`
+- 本番: `https://stella.saedgewell.workers.dev/api/auth/callback/google`
 
 不一致だと Google が `redirect_uri_mismatch` を返す。`BETTER_AUTH_URL` は `apps/api/wrangler.toml` の `[vars]`。
 

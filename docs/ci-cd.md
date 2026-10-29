@@ -106,8 +106,8 @@ Settings → Secrets and variables → Actions で設定する。
 
 `CLOUDFLARE_ACCOUNT_ID` は正本の `accountId` と同じアカウントにする。
 `CLOUDFLARE_API_TOKEN` には Workers Scripts Edit / D1 Edit / Account 読み取り / Workers R2 Storage Edit が必要。
-`VITE_SERVER_URL` は受講者用の Web のオリジン (`https://stella-web.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
-Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、画面と API は同じオリジンになる (ログインの Cookie のため)。
+`VITE_SERVER_URL` は受講者用の Web のオリジン (`https://stella.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
+Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、画面と API は同じオリジンになる (ログインの Cookie のため)。旧ホスト `stella-web` は同じ `deploy:web` で新しいオリジンへ 308 する (`apps/web/wrangler.legacy.toml`)。
 教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。
 
 `BETTER_AUTH_SECRET` (ログインの署名鍵。`openssl rand -base64 32` で作る。変えると全員のセッションが切れる) と
@@ -137,11 +137,11 @@ DB が無い、アカウントが違う、`VITE_SERVER_URL` が受講者用の W
 
 Google Cloud Console の OAuth 2.0 クライアントには次を登録する (ログインは Better Auth。Issue #117)。
 
-- **Authorized JavaScript origins**: `https://stella-web.saedgewell.workers.dev`
-- **Authorized redirect URIs**: `https://stella-web.saedgewell.workers.dev/api/auth/callback/google`
+- **Authorized JavaScript origins**: `https://stella.saedgewell.workers.dev`
+- **Authorized redirect URIs**: `https://stella.saedgewell.workers.dev/api/auth/callback/google`
 
 Google が戻るのは Web のオリジンの `/api/auth/callback/google` (Web の Worker が API へ中継する)。
-Better Auth がセッションを作って Web の `/auth/callback` へ戻す。旧 URI (`https://stella-api.saedgewell.workers.dev/api/auth/google/callback`) は切り替えを確かめてから消す。
+Better Auth がセッションを作って Web の `/auth/callback` へ戻す。前の画面オリジン (`https://stella-web.saedgewell.workers.dev` とその `/api/auth/callback/google`) と、旧 URI (`https://stella-api.saedgewell.workers.dev/api/auth/google/callback`) は、新しいオリジンでログインできるのを確かめてから消す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 

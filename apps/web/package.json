@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "deploy": "bunx wrangler deploy",
+    "deploy": "bunx wrangler deploy && bunx wrangler deploy --config wrangler.legacy.toml",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

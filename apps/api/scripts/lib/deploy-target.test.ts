@@ -76,10 +76,10 @@ describe("deployment database", () => {
 });
 
 describe("deployment URLs", () => {
-  const server = "https://stella-web.saedgewell.workers.dev";
+  const server = "https://stella.saedgewell.workers.dev";
   it("allows the new Web origin but rejects retired production origins", () => {
     const allowed = TOML.match(/^ALLOWED_ORIGINS = "([^"]+)"/m)?.[1] ?? "";
-    expect(isAllowedOrigin("https://stella-web.saedgewell.workers.dev", allowed)).toBe(true);
+    expect(isAllowedOrigin("https://stella.saedgewell.workers.dev", allowed)).toBe(true);
     for (const origin of [
       // 本番は JWT の戻り先にも使うので、利用者の PC の開発サーバーを許さない (ローカルは .dev.vars)。
       "http://127.0.0.1:5173",
@@ -105,7 +105,7 @@ describe("deployment URLs", () => {
     // Google's redirect URI is `${BETTER_AUTH_URL}/api/auth/callback/google`.
     expect(TOML.match(/^BETTER_AUTH_URL = "([^"]+)"/m)?.[1]).toBe(server);
     expect(TOML.match(/^INVITE_REDIRECT_URL = "([^"]+)"/m)?.[1]).toBe(
-      "https://stella-web.saedgewell.workers.dev",
+      "https://stella.saedgewell.workers.dev",
     );
   });
   it("accepts the Web origin and a public materials origin", () => {
