@@ -51,6 +51,7 @@ bun run dev       # :5173
 | D1 `stella-db` | 新規作成。`deploy:prepare` が名前から実 ID を解決 | Git 上のゼロ UUID はローカル専用 |
 | Worker `stella-api` | GitHub Actions またはローカル `wrangler deploy` | https://stella-api.saedgewell.workers.dev |
 | Worker `stella` (Static Assets) | 同上 | https://stella.saedgewell.workers.dev |
+| Worker `stella-web` | 旧 URL。`wrangler.legacy.toml` が新しいオリジンへ 308 | https://stella-web.saedgewell.workers.dev |
 | Secret `AUTH_JWT_SECRET` など | Worker に登録 | `wrangler secret put` |
 | R2 `stella-materials-public` | 公開 URL を `VITE_MATERIALS_BASE_URL` に登録 | `https://pub-cc7cf3c40111439d989be39f89a6eb84.r2.dev` |
 | R2 `stella-skill-sheets` | 原本用。非公開を維持 | |

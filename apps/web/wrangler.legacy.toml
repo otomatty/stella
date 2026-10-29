@@ -1,0 +1,6 @@
+# 旧 URL。画面は出さず、今の受講者用オリジンへ恒久転送する。
+# `bun run deploy` は wrangler.toml（name = "stella"）のあとでこれを出す。
+name = "stella-web"
+main = "worker/legacy-redirect.ts"
+compatibility_date = "2024-12-01"
+account_id = "175c04a4465bcc9815b21176a852f0c0"

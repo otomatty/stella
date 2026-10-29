@@ -140,20 +140,17 @@ JWT は拡張の SecretStorage（`stella.accessToken`）に入る。設定にト
 
 CI では出さない。publisher は `stella`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login stella` または `VSCE_PAT`）。
 
-### 認証 (Google OAuth)
+### 認証 (Google)
 
-1. [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0 クライアント ID を作成。
-2. **認可済みリダイレクト URI** に以下を追加:
-   - `http://127.0.0.1:8787/api/auth/google/callback` (ローカル)
-   - `https://stella-api.saedgewell.workers.dev/api/auth/google/callback` (本番)
-3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
-   本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
-4. Web は `https://stella.saedgewell.workers.dev/auth/callback` で JWT を受け取る
+1. [Google Cloud Console](https://console.cloud.google.com/) の OAuth 2.0 クライアントに、承認済みのリダイレクト URI を追加する。
+   - 本番: `https://stella.saedgewell.workers.dev/api/auth/callback/google`
+2. 本番の API に `BETTER_AUTH_URL`（`apps/api/wrangler.toml`）、`BETTER_AUTH_SECRET`、`GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET` を置く。ローカルは Google ログインを使わず、開発用トークンを使う。
+3. Better Auth は `/api/auth/callback/google` で HttpOnly Cookie のセッションを作り、画面の `/auth/callback` に戻す
    (SPA fallback は `apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
 > [`docs/google-login-troubleshooting.md`](docs/google-login-troubleshooting.md) を参照
-> (`/api/healthz` の `googleOAuthConfigured` / `jwtConfigured` で設定状況を確認できる)。
+> (`/api/healthz` の `authConfigured`)。
 > ユーザー向けにはサポートページ `/support` (FAQ + 問い合わせフォーム) を案内する。
 
 ### 初回ログインとロール昇格
