@@ -43,9 +43,9 @@
     "deploy:narrator": "bun run --filter=@stella/narrator deploy"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
-    "@vitest/coverage-v8": "5.0.3",
-    "vitest": "5.0.3"
+    "@biomejs/biome": "2.6.3",
+    "@vitest/coverage-v8": "5.0.5",
+    "vitest": "5.0.5"
   },
   "overrides": {
     "vite": "8.2.2",
