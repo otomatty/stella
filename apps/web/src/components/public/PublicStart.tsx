@@ -22,17 +22,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { usePublicLesson, usePublicUnits } from "@/hooks/usePublicContent";
-import { getSession, signInWithGoogle, subscribeToAuth } from "@/lib/auth-client";
+import { getSession, loadSession, signInWithGoogle, subscribeToAuth } from "@/lib/auth-client";
 import { isBackendConfigured } from "@/lib/backend";
 import { ChevronLeft, ChevronRight, Clock, ExternalLink, Google, Home } from "@/lib/icons";
 
 /** VS Code の公式の入手先 (06 §3: 公式配布元を案内する)。手順そのものは公開の単元に書く。 */
 const VSCODE_DOWNLOAD_URL = "https://code.visualstudio.com/";
 
-/** ログイン済みか (端末に有効なトークンがあるか)。API は呼ばない。 */
+/** ログイン済みか (セッションを 1 回読む。進捗などの API は呼ばない)。 */
 function useSignedIn(): boolean {
   const [signedIn, setSignedIn] = useState(() => getSession() !== null);
-  useEffect(() => subscribeToAuth((session) => setSignedIn(session !== null)), []);
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((session) => setSignedIn(session !== null));
+    void loadSession();
+    return unsubscribe;
+  }, []);
   return signedIn;
 }
 
@@ -54,11 +58,9 @@ function SignInOrHome({ size = "default" }: { size?: "default" | "lg" }) {
       window.location.assign("/");
       return;
     }
-    try {
-      signInWithGoogle();
-    } catch (err) {
+    signInWithGoogle().catch((err: unknown) => {
       toast.error(err instanceof Error ? err.message : "ログインを開始できませんでした");
-    }
+    });
   };
   return (
     <Button type="button" variant="primary" size={size} onClick={signIn}>

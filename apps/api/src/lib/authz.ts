@@ -1,20 +1,20 @@
 /**
- * 認証 (Workers JWT 検証) と認可 (テナント / ロール) のアプリ層ヘルパ。
+ * 認証 (Better Auth のセッション) と認可 (テナント / ロール) のアプリ層ヘルパ。
  *
- *   - `verifyToken` … Authorization: Bearer の JWT を HS256 で検証
- *   - `getCaller`   … JWT 検証 + profiles から caller の tenant / role を解決
+ *   - `verifyToken` … セッション (Cookie / VS Code の Bearer) から利用者を決める
+ *   - `getCaller`   … 利用者 + profiles から caller の tenant / role を解決
  *   - `requireRole` … caller が指定ロールのいずれかであることを保証
  */
 
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
-import type { JWTPayload } from "jose";
 
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
 import { profiles, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { verifyAccessToken } from "./auth-jwt.js";
+import { getAuth } from "./better-auth.js";
 
 export class ApiError extends Error {
   // 410 は「あった機能を廃止した」ぶんだけ (Phase 3b の割当 API)。404 だと呼び出し側が
@@ -46,24 +46,39 @@ export interface Caller {
   email: string | null;
 }
 
-/**
- * Authorization: Bearer の JWT を検証し、 ペイロードを返す。
- * `sub` がユーザー ID (= profiles.id)。
- */
-export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<JWTPayload> {
-  if (!c.env.AUTH_JWT_SECRET) {
-    throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-  }
-  const header = c.req.header("Authorization") ?? "";
-  const token = header.replace(/^Bearer\s+/i, "").trim();
-  if (!token) throw new ApiError("Authorization ヘッダが必要です", 401);
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-  try {
-    return await verifyAccessToken(c.env.AUTH_JWT_SECRET, token);
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    throw new ApiError("トークンが無効です", 401);
+/**
+ * Who is calling. `sub` is the user id (= profiles.id).
+ *
+ *   1. The Better Auth session cookie (the web, through its own origin).
+ *   2. `Authorization: Bearer <session token>` (the VS Code extension; see the link exchange).
+ *   3. Local development and tests only: a self-signed HS256 token (`AUTH_JWT_SECRET`), accepted
+ *      just for requests to localhost, so no production request can use it.
+ */
+export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<{ sub: string }> {
+  const auth = getAuth(c.env);
+  if (auth) {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (session) return { sub: session.user.id };
   }
+  const token = (c.req.header("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) {
+    if (!auth && !c.env.AUTH_JWT_SECRET) throw new ApiError("認証が未設定です", 503);
+    throw new ApiError("ログインが必要です", 401);
+  }
+  if (c.env.AUTH_JWT_SECRET && LOCAL_HOSTS.has(new URL(c.req.url).hostname)) {
+    try {
+      return { sub: (await verifyAccessToken(c.env.AUTH_JWT_SECRET, token)).sub as string };
+    } catch {
+      // Not a dev token; it may still be a session token below.
+    }
+  }
+  if (auth) {
+    const found = await (await auth.$context).internalAdapter.findSession(token);
+    if (found && found.session.expiresAt.getTime() > Date.now()) return { sub: found.user.id };
+  }
+  throw new ApiError("トークンが無効です", 401);
 }
 
 /**

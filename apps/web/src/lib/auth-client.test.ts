@@ -1,148 +1,142 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  completeAuthFromCallbackHash,
-  getAccessToken,
-  getSession,
-  signOut,
-  subscribeToAuth,
-} from "./auth-client";
-
-const storageHandlers: Array<(event: StorageEvent) => void> = [];
 
 const values = new Map<string, string>();
 const tokenFor = (id: string, exp = Math.floor(Date.now() / 1000) + 3600): string =>
   `header.${btoa(JSON.stringify({ sub: id, exp }))}.signature`;
 
+/** The client as built for `serverUrl` (the module reads VITE_SERVER_URL once). */
+async function client(serverUrl: string) {
+  vi.stubEnv("VITE_SERVER_URL", serverUrl);
+  vi.resetModules();
+  return import("./auth-client");
+}
+
+let fetchMock: ReturnType<typeof vi.fn>;
+/** Messages this tab sent to the other tabs. */
+let broadcast: unknown[];
 beforeEach(() => {
-  values.clear();
-  storageHandlers.length = 0;
-  vi.stubGlobal("window", {
-    addEventListener: (_type: string, handler: (event: StorageEvent) => void) => {
-      storageHandlers.push(handler);
+  broadcast = [];
+  vi.stubGlobal(
+    "BroadcastChannel",
+    class {
+      onmessage: (() => void) | null = null;
+      postMessage(message: unknown) {
+        broadcast.push(message);
+      }
     },
+  );
+  values.clear();
+  vi.stubGlobal("window", {
+    location: { origin: "https://web.example.test", assign: vi.fn() },
+    addEventListener: () => undefined,
     removeEventListener: () => undefined,
     localStorage: {
       getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => {
-        values.set(key, value);
-      },
-      removeItem: (key: string) => {
-        values.delete(key);
-      },
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
     },
   });
+  fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
-describe("auth across the STELLA rename", () => {
-  it("keeps a signed-in session saved under the old key", () => {
-    const token = tokenFor("learner");
-    values.set("falcon_auth_token_v1", token);
-    expect(getSession()?.user.id).toBe("learner");
-    expect(values.get("stella_auth_token_v1")).toBe(token);
-    expect(values.get("falcon_auth_token_v1")).toBe(token);
-  });
+describe("production (same-origin cookie session)", () => {
+  const server = "https://web.example.test";
 
-  it("keeps the session when logout cannot delete the token", async () => {
-    values.set("stella_auth_token_v1", tokenFor("learner"));
-    const storage = window.localStorage as { removeItem: (key: string) => void };
-    storage.removeItem = () => {
-      throw new Error("busy");
-    };
-    await expect(signOut()).rejects.toThrow("busy");
-    expect(getSession()?.user.id).toBe("learner");
-  });
-
-  it("logs out when an old tab removes the same legacy token", () => {
-    const token = tokenFor("learner");
-    values.set("stella_auth_token_v1", token);
-    values.set("falcon_auth_token_v1", token);
-    const stop = subscribeToAuth(() => undefined);
-    values.delete("falcon_auth_token_v1");
-    storageHandlers[0]?.({
-      key: "falcon_auth_token_v1",
-      oldValue: token,
-      newValue: null,
-    } as StorageEvent);
-    expect(getAccessToken()).toBeNull();
-    stop();
-  });
-
-  it("keeps a newer login when a different legacy token is removed", () => {
-    const current = tokenFor("learner");
-    values.set("stella_auth_token_v1", current);
-    const stop = subscribeToAuth(() => undefined);
-    storageHandlers[0]?.({
-      key: "falcon_auth_token_v1",
-      oldValue: tokenFor("old-learner"),
-      newValue: null,
-    } as StorageEvent);
-    expect(getAccessToken()).toBe(current);
-    stop();
-  });
-
-  it("follows a legacy token change for the same session", () => {
-    const current = tokenFor("learner");
-    const next = tokenFor("next-learner");
-    values.set("stella_auth_token_v1", current);
-    const stop = subscribeToAuth(() => undefined);
-    storageHandlers[0]?.({
-      key: "falcon_auth_token_v1",
-      oldValue: current,
-      newValue: next,
-    } as StorageEvent);
-    expect(getAccessToken()).toBe(next);
-    expect(values.get("falcon_auth_token_v1")).toBeUndefined();
-    stop();
-  });
-
-  it("clears both keys on logout so an old session cannot return", async () => {
-    values.set("falcon_auth_token_v1", tokenFor("old-learner"));
-    values.set("stella_auth_token_v1", tokenFor("learner"));
-    await signOut();
-    expect(getAccessToken()).toBeNull();
-    expect(values.size).toBe(0);
-  });
-
-  it("keeps the new session when the old key cannot be deleted", () => {
-    const token = tokenFor("new-learner");
-    values.set("falcon_auth_token_v1", tokenFor("old-learner"));
-    const storage = window.localStorage as { removeItem: (key: string) => void };
-    storage.removeItem = (key: string) => {
-      if (key === "falcon_auth_token_v1") throw new Error("busy");
-      values.delete(key);
-    };
-    expect(completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(token)}`)).toEqual({
-      ok: true,
+  it("reads the session from the server and never sends a stored token", async () => {
+    // A token left by the old login (Google OAuth + JWT) is dropped, not sent.
+    values.set("stella_auth_token_v1", tokenFor("old-login"));
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ user: { id: "learner", email: "l@example.test" } })),
+    );
+    const auth = await client(server);
+    expect(auth.getAccessToken()).toBeNull();
+    expect(values.has("stella_auth_token_v1")).toBe(false);
+    expect((await auth.loadSession())?.user).toEqual({ id: "learner", email: "l@example.test" });
+    expect(fetchMock).toHaveBeenCalledWith(`${server}/api/auth/get-session`, {
+      credentials: "include",
     });
-    expect(values.get("stella_auth_token_v1")).toBe(token);
-    expect(getSession()?.user.id).toBe("new-learner");
+    expect(auth.getSession()?.user.id).toBe("learner");
   });
 
-  it("reports a failed login when the new key cannot be saved", () => {
-    const storage = window.localStorage as { setItem: (key: string, value: string) => void };
-    storage.setItem = () => {
-      throw new Error("quota");
-    };
-    expect(
-      completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(tokenFor("new-learner"))}`),
-    ).toEqual({ ok: false, error: "トークンを保存できませんでした" });
-    expect(getAccessToken()).toBeNull();
+  it("is signed out when the server has no session", async () => {
+    fetchMock.mockResolvedValue(new Response("null"));
+    const auth = await client(server);
+    expect(await auth.loadSession()).toBeNull();
   });
 
-  it("stores callback tokens under the new key and discards an old session", () => {
-    const token = tokenFor("new-learner");
-    values.set("falcon_auth_token_v1", tokenFor("old-learner"));
-    expect(completeAuthFromCallbackHash(`#access_token=${encodeURIComponent(token)}`)).toEqual({
-      ok: true,
+  it("starts Google login through the API and returns to /auth/callback", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ url: "https://accounts.google.com/o/oauth2/x" })),
+    );
+    const auth = await client(server);
+    await auth.signInWithGoogle();
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${server}/api/auth/sign-in/social`);
+    expect(JSON.parse(String(init.body))).toEqual({
+      provider: "google",
+      callbackURL: "https://web.example.test/auth/callback",
+      errorCallbackURL: "https://web.example.test/auth/callback",
     });
-    expect(getSession()?.user.id).toBe("new-learner");
-    expect(values.has("falcon_auth_token_v1")).toBe(false);
+    expect(window.location.assign).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/x");
   });
 
-  it("removes an expired legacy session instead of restoring it", () => {
-    values.set("falcon_auth_token_v1", tokenFor("learner", 1));
-    expect(getAccessToken()).toBeNull();
-    expect(values.size).toBe(0);
+  it("signs out on the server, then tells subscribers and the other tabs", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ user: { id: "learner" } })));
+    const auth = await client(server);
+    await auth.loadSession();
+    fetchMock.mockResolvedValueOnce(new Response("{}"));
+    const seen: unknown[] = [];
+    auth.subscribeToAuth((s) => seen.push(s));
+    await auth.signOut();
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(`${server}/api/auth/sign-out`);
+    expect(seen).toEqual([null]);
+    expect(broadcast).toEqual(["changed"]);
+  });
+
+  it("keeps the session when the server did not end it (the cookie still works)", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ user: { id: "learner" } })));
+    const auth = await client(server);
+    await auth.loadSession();
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 500 }));
+    await expect(auth.signOut()).rejects.toThrow("ログアウトできませんでした");
+    fetchMock.mockRejectedValueOnce(new TypeError("offline"));
+    await expect(auth.signOut()).rejects.toThrow("ログアウトできませんでした");
+    expect(auth.getSession()?.user.id).toBe("learner");
+    expect(broadcast).toEqual([]);
+  });
+
+  it("reports the error Better Auth put on the callback URL", async () => {
+    const auth = await client(server);
+    expect(await auth.completeLogin("?error=account_not_linked")).toEqual({
+      ok: false,
+      error: "ログインできませんでした (account_not_linked)",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("local development (dev token)", () => {
+  it("uses a valid dev token against a local API without calling the server", async () => {
+    values.set("stella_auth_token_v1", tokenFor("seed-admin"));
+    const auth = await client("http://127.0.0.1:8787");
+    expect((await auth.loadSession())?.user.id).toBe("seed-admin");
+    expect(auth.getAccessToken()).toBe(values.get("stella_auth_token_v1"));
+    // Signing out of a dev token needs no server call (Better Auth is off locally).
+    await auth.signOut();
+    expect(auth.getAccessToken()).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("drops an expired dev token", async () => {
+    values.set("stella_auth_token_v1", tokenFor("seed-admin", 1));
+    fetchMock.mockResolvedValue(new Response("null"));
+    const auth = await client("http://127.0.0.1:8787");
+    expect(auth.getAccessToken()).toBeNull();
+    expect(values.has("stella_auth_token_v1")).toBe(false);
   });
 });

@@ -192,13 +192,11 @@ async function main(): Promise<void> {
 
   console.log(`コア学習ループ スモーク → ${BASE}\n`);
 
-  await step("API が応答し JWT が設定済み", async () => {
+  // 以降の手順は開発用トークン (AUTH_JWT_SECRET、localhost だけで有効) で認証する。
+  // 未設定なら次の手順が 401/503 で落ちる。
+  await step("API が応答する", async () => {
     const health = await ok("GET", "/api/healthz");
     assert(health.ok === true, `healthz が ok:true でない: ${JSON.stringify(health)}`);
-    assert(
-      health.jwtConfigured === true,
-      "AUTH_JWT_SECRET が API 側で未設定 (jwtConfigured:false)",
-    );
   });
 
   await step("未認証リクエストは 401", async () => {

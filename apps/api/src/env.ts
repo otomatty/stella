@@ -58,8 +58,16 @@ export interface Env {
   DB: D1Database;
 
   /**
-   * JWT 署名用シークレット (HS256)。 機密。
-   * `wrangler secret put AUTH_JWT_SECRET` で設定する。
+   * Better Auth の署名鍵 (Cookie・OAuth の state)。機密。deploy が GitHub の Secret から入れる。
+   * 変えると全員のセッションが切れる。
+   */
+  BETTER_AUTH_SECRET?: string;
+  /** Better Auth の基点 = 受講者用の Web のオリジン (API は Web の `/api/*` の中継で受ける)。 */
+  BETTER_AUTH_URL?: string;
+
+  /**
+   * ローカル開発とテスト用のトークン (HS256) の署名鍵。localhost へのリクエストでしか
+   * 受け付けない (authz.ts の verifyToken)。本番には置かない。
    */
   AUTH_JWT_SECRET?: string;
 

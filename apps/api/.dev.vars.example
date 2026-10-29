@@ -17,12 +17,15 @@ ISOLATE_MEMORY_LIMIT=32
 # 解放条件はそのまま (見えるだけで locked の星は開かない)。
 # DEV_MODE=1
 
-# --- Cloudflare スタック (D1 + Google OAuth / JWT) ---
-# JWT 署名用シークレット (本番は `wrangler secret put AUTH_JWT_SECRET`)。
+# --- ログイン ---
+# 開発用トークン (HS256) の署名鍵。localhost へのリクエストでだけ受け付ける (本番には置かない)。
 AUTH_JWT_SECRET=dev-only-change-me-in-production
 
-# Google OAuth (Cloud Console → 認可済みリダイレクト URI に
-#   http://127.0.0.1:8787/api/auth/google/callback を追加)
+# Better Auth (本番の Google ログイン)。ローカルでは空のままにして開発用トークンを使う。
+# 試すときは 4 つとも入れ、Google のリダイレクト URI に ${BETTER_AUTH_URL}/api/auth/callback/google を足す
+# (画面と API が同じオリジンである必要がある。本番は Web の Worker が /api/* を中継する)。
+# BETTER_AUTH_SECRET=
+# BETTER_AUTH_URL=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 

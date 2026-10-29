@@ -69,13 +69,79 @@ const safeJson = <T>(name: string) =>
 // 認証 (Workers 自前 Google OAuth / JWT)
 // ---------------------------------------------------------------
 
+/**
+ * Login identities. Better Auth's `user` model is this table (lib/better-auth.ts), so an existing
+ * id (= profiles.id) stays the same when the user signs in with Google again.
+ */
 export const authUsers = sqliteTable("auth_users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
+  name: text("name").notNull().default(""),
+  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  image: text("image"),
   createdAt: tsNow("created_at"),
+  updatedAt: tsNowUpd("updated_at"),
 });
+
+/** Better Auth sessions: the web's cookie and the VS Code extension's bearer token. */
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: ts("expires_at").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [index("auth_sessions_user_idx").on(t.userId)],
+);
+
+/** Better Auth: the Google account linked to a login identity. */
+export const authAccounts = sqliteTable(
+  "auth_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: ts("access_token_expires_at"),
+    refreshTokenExpiresAt: ts("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [
+    index("auth_accounts_user_idx").on(t.userId),
+    uniqueIndex("auth_accounts_provider_account_unique").on(t.providerId, t.accountId),
+  ],
+);
+
+/** Better Auth: short-lived values such as the OAuth state. */
+export const authVerifications = sqliteTable(
+  "auth_verifications",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => [index("auth_verifications_identifier_idx").on(t.identifier)],
+);
 
 export const authOtpCodes = sqliteTable("auth_otp_codes", {
   email: text("email").primaryKey(),

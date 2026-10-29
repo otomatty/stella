@@ -11,7 +11,8 @@ function configured(overrides: Partial<Env> = {}): Env {
   return {
     GOOGLE_CLIENT_ID: "client-id",
     GOOGLE_CLIENT_SECRET: "private-google-value",
-    AUTH_JWT_SECRET: "private-jwt-value",
+    BETTER_AUTH_SECRET: "private-better-auth-value",
+    BETTER_AUTH_URL: "https://web.example.test",
     ANTHROPIC_API_KEY: "private-anthropic-value",
     ALLOWED_ORIGINS: "https://example.test",
     LIBRARY_BUCKET: {} as R2Bucket,
@@ -36,8 +37,7 @@ describe("configuration health", () => {
     const body = await response.json();
     expect(body).toMatchObject({
       ok: true,
-      googleOAuthConfigured: true,
-      jwtConfigured: true,
+      authConfigured: true,
       libraryEnabled: true,
       narratorAvailable: true,
       narratorGeminiConfigured: true,

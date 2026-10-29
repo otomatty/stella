@@ -1,15 +1,16 @@
 /**
- * 認証ラッパ (Cloudflare Workers Google OAuth / JWT)。
+ * 認証ラッパ (Better Auth の Google ログイン、Issue #117)。
  */
 
 import type { ProfileRow, ProfileTenantInfo } from "@stella/shared/cms/types";
 
 import { apiFetch, ApiClientError } from "./api-client";
 import {
-  completeAuthFromCallbackHash,
+  completeLogin,
   getAccessToken,
-  getSession as readSession,
+  getSession as cachedSession,
   isAuthConfigured,
+  loadSession,
   signInWithGoogle,
   signOut as clearSession,
   subscribeToAuth as onAuthChange,
@@ -20,14 +21,15 @@ export type { Session };
 /** /api/me の profile + 所属テナントの表示情報 (取得できた場合のみ)。 */
 export type Profile = ProfileRow & { tenant?: ProfileTenantInfo | null };
 
-export { signInWithGoogle, completeAuthFromCallbackHash };
+export { signInWithGoogle, completeLogin };
 
 export async function signOut(): Promise<void> {
   await clearSession();
 }
 
+/** Reads the session from the server (the cookie is HttpOnly, so the page cannot see it). */
 export async function getSession(): Promise<Session | null> {
-  return readSession();
+  return loadSession();
 }
 
 export function subscribeToAuth(callback: (session: Session | null) => void): () => void {
@@ -35,7 +37,7 @@ export function subscribeToAuth(callback: (session: Session | null) => void): ()
 }
 
 export async function fetchProfile(_userId?: string): Promise<Profile | null> {
-  if (!isAuthConfigured() || !getAccessToken()) return null;
+  if (!isAuthConfigured() || !cachedSession()) return null;
   try {
     const { profile, tenant } = await apiFetch<{
       profile: ProfileRow;

@@ -88,7 +88,8 @@ beforeAll(async () => {
     platform: "neutral",
     format: "esm",
     conditions: ["workerd", "worker", "browser"],
-    external: ["cloudflare:*"],
+    // node:* comes from nodejs_compat at runtime (the API's auth library imports node:crypto).
+    external: ["cloudflare:*", "node:*"],
     target: "es2022",
   });
   const modules: V4ModuleDefinition[] = [

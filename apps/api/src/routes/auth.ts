@@ -1,23 +1,22 @@
 /**
- * 認証 API — Google OAuth + JWT (Cloudflare Workers 自前)。
+ * 認証 API (Issue #117)。
  *
- *   GET  /api/auth/google                 … Google 認可画面へリダイレクト
- *   GET  /api/auth/google/callback        … コールバック → JWT をフロントへ返す
+ *   /api/auth/*                           … Better Auth (Google ログイン・セッション・ログアウト)
  *   POST /api/auth/vscode-link            … ログイン済みユーザー向けワンタイム接続コード
- *   POST /api/auth/vscode-link/exchange   … 接続コードを JWT に交換 (Authorization 不要)
+ *   POST /api/auth/vscode-link/exchange   … 接続コードを VS Code 用のセッションに交換 (認証不要)
+ *   GET  /api/auth/google*                … 410 (旧 Google OAuth + JWT。Better Auth に置き換えた)
  */
 
 import { Hono } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import type { Db } from "../db/client.js";
 import { authUsers, authVscodeLinks, profiles, tenants } from "../db/schema.js";
-import { clientIp, recordAudit } from "../lib/audit.js";
-import { findOrCreateUserByEmail } from "../lib/auth-users.js";
+import { clientIp } from "../lib/audit.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { errorResponse, ApiError, getCaller } from "../lib/authz.js";
+import { getAuth, recordLogin } from "../lib/better-auth.js";
 import { enforceAuthLinkRateLimit } from "../lib/rate-limit.js";
 import {
   createVscodeLinkCode,
@@ -25,217 +24,48 @@ import {
   redeemVscodeLink,
   VSCODE_LINK_TTL_MS,
 } from "../lib/vscode-link.js";
-import {
-  buildGoogleAuthUrl,
-  createOAuthState,
-  exchangeGoogleCode,
-  googleRedirectUri,
-  OAUTH_NONCE_COOKIE,
-  OAUTH_NONCE_TTL_SEC,
-  parseOAuthState,
-  redirectWithAuthResult as authResultRedirect,
-  resolveOAuthReturnTo,
-  verifyGoogleIdToken,
-  type GoogleUserClaims,
-} from "../lib/google-oauth.js";
 import type { Env } from "../env.js";
 
 export const authRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * ログイン成功を監査ログに記録する (Issue #64)。
- *
- * プロフィール未作成 (招待前のログイン) は記録しない — 所属テナントが未確定で
- * `audit_logs.tenant_id` を決められず、 そもそもアプリへは入れないため。
+ * The email to give a VS Code token for: only an enabled profile in an active organization.
+ * A Better Auth session (`needsLogin`) belongs to an auth_users row, which every web login has;
+ * without one the code is just invalid.
  */
-async function recordLogin(
-  c: Parameters<typeof clientIp>[0],
+async function resolveVscodeLinkEmail(
   db: Db,
   userId: string,
-): Promise<void> {
-  const profile = (
+  needsLogin: boolean,
+): Promise<string | null> {
+  const row = (
     await db
       .select({
-        id: profiles.id,
-        tenantId: profiles.tenantId,
-        role: profiles.role,
-        displayName: profiles.displayName,
+        email: profiles.email,
+        disabled: profiles.disabled,
+        tenantActive: tenants.active,
+        loginEmail: authUsers.email,
       })
       .from(profiles)
-      .where(eq(profiles.id, userId))
-      .limit(1)
-  )[0];
-  if (!profile) return;
-  await recordAudit(
-    db,
-    {
-      id: profile.id,
-      tenantId: profile.tenantId,
-      role: profile.role,
-      name: profile.displayName,
-    },
-    {
-      action: "login",
-      targetType: "user",
-      targetId: profile.id,
-      ip: clientIp(c),
-      metadata: { provider: "google" },
-    },
-  );
-}
-
-/**
- * Google の登録名とプロフィール画像をプロフィールへ反映する (ユーザー情報の自動取得)。
- *
- * 招待時の display_name はメールのローカル部なので、 本人が初めてログインした時点で
- * Google 側の氏名に置き換える。 設定画面で本人が変更した (name_source='user') 以降は
- * 上書きしない。 アバターは編集手段が無いので毎回最新化する (URL は失効し得るため)。
- * 同期に失敗してもログイン自体は成立させる。
- */
-async function syncGoogleProfile(db: Db, userId: string, claims: GoogleUserClaims): Promise<void> {
-  const displayName = claims.name?.trim();
-  const avatarUrl = claims.picture?.trim();
-  try {
-    if (avatarUrl) {
-      await db.update(profiles).set({ avatarUrl }).where(eq(profiles.id, userId));
-    }
-    if (displayName) {
-      await db
-        .update(profiles)
-        .set({
-          displayName,
-          initials: displayName.slice(0, 2).toUpperCase(),
-          nameSource: "google",
-        })
-        .where(and(eq(profiles.id, userId), ne(profiles.nameSource, "user")));
-    }
-  } catch (err) {
-    console.error("[auth] google profile sync failed", err);
-  }
-}
-
-/** The email to sign a VS Code token for: only an enabled profile in an active organization. */
-async function resolveVscodeLinkEmail(db: Db, userId: string): Promise<string | null> {
-  const profile = (
-    await db
-      .select({ email: profiles.email, disabled: profiles.disabled, tenantActive: tenants.active })
-      .from(profiles)
       .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
+      .leftJoin(authUsers, eq(authUsers.id, profiles.id))
       .where(eq(profiles.id, userId))
       .limit(1)
   )[0];
-  if (!profile || profile.disabled || profile.tenantActive === false) return null;
-  if (profile.email) return profile.email;
+  if (!row || row.disabled || row.tenantActive === false) return null;
+  if (needsLogin && !row.loginEmail) return null;
   // Older profiles have no email; the login's email is in auth_users.
-  const user = (
-    await db
-      .select({ email: authUsers.email })
-      .from(authUsers)
-      .where(eq(authUsers.id, userId))
-      .limit(1)
-  )[0];
-  return user?.email ?? null;
+  return row.email ?? row.loginEmail ?? null;
 }
 
-function requireGoogleOAuth(env: Env): {
-  jwtSecret: string;
-  googleClientId: string;
-  googleClientSecret: string;
-} {
-  const jwtSecret = env.AUTH_JWT_SECRET;
-  const googleClientId = env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
-  if (!jwtSecret) {
-    throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-  }
-  if (!googleClientId || !googleClientSecret) {
-    throw new ApiError("Google OAuth が未設定です (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)", 503);
-  }
-  return { jwtSecret, googleClientId, googleClientSecret };
-}
-
-authRoute.get("/api/auth/google", async (c) => {
-  try {
-    const { jwtSecret, googleClientId } = requireGoogleOAuth(c.env);
-    const returnTo = resolveOAuthReturnTo(c.env, c.req.query("return_to"));
-    const { state, nonce } = await createOAuthState(jwtSecret, returnTo);
-    setCookie(c, OAUTH_NONCE_COOKIE, nonce, {
-      httpOnly: true,
-      secure: new URL(c.req.url).protocol === "https:",
-      sameSite: "Lax",
-      path: "/api/auth/google/callback",
-      maxAge: OAUTH_NONCE_TTL_SEC,
-    });
-    const redirectUri = googleRedirectUri(c.req.url);
-    const url = buildGoogleAuthUrl(googleClientId, redirectUri, state);
-    return c.redirect(url, 302);
-  } catch (err) {
-    return errorResponse(c, err);
-  }
-});
-
-authRoute.get("/api/auth/google/callback", async (c) => {
-  const returnToFallback = resolveOAuthReturnTo(c.env, undefined);
-  // The nonce is single-use: every outcome of the callback clears it.
-  const redirectWithAuthResult = (returnTo: string, params: Record<string, string>) => {
-    const response = authResultRedirect(returnTo, params);
-    response.headers.append(
-      "Set-Cookie",
-      `${OAUTH_NONCE_COOKIE}=; Path=/api/auth/google/callback; Max-Age=0; HttpOnly; SameSite=Lax`,
-    );
-    return response;
-  };
-
-  try {
-    const { jwtSecret, googleClientId, googleClientSecret } = requireGoogleOAuth(c.env);
-
-    const oauthError = c.req.query("error");
-    if (oauthError) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: oauthError,
-        error_description:
-          c.req.query("error_description") ?? "Google ログインがキャンセルされました",
-      });
-    }
-
-    const code = c.req.query("code");
-    const state = c.req.query("state");
-    if (!code || !state) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: "invalid_request",
-        error_description: "認可コードまたは state が不足しています",
-      });
-    }
-
-    const parsedState = await parseOAuthState(jwtSecret, state);
-    // Only the browser that started this login may finish it (see OAUTH_NONCE_COOKIE).
-    if (!parsedState || getCookie(c, OAUTH_NONCE_COOKIE) !== parsedState.nonce) {
-      return redirectWithAuthResult(returnToFallback, {
-        error: "invalid_state",
-        error_description: "ログインセッションの有効期限が切れました。もう一度お試しください",
-      });
-    }
-
-    const redirectUri = googleRedirectUri(c.req.url);
-    const idToken = await exchangeGoogleCode(googleClientId, googleClientSecret, code, redirectUri);
-    const claims = await verifyGoogleIdToken(idToken, googleClientId);
-
-    const db = getDb(c.env);
-    const user = await findOrCreateUserByEmail(db, claims.email);
-    const accessToken = await signAccessToken(jwtSecret, user.id, user.email);
-    await syncGoogleProfile(db, user.id, claims);
-    await recordLogin(c, db, user.id);
-
-    return redirectWithAuthResult(parsedState.returnTo, { access_token: accessToken });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Google ログインに失敗しました";
-    console.error("[auth] google callback failed", err);
-    return redirectWithAuthResult(returnToFallback, {
-      error: "auth_failed",
-      error_description: message,
-    });
-  }
-});
+// The old login. A page still open from before the switch gets a clear answer instead of a
+// Better Auth 404.
+authRoute.get("/api/auth/google/*", (c) =>
+  c.json({ error: "ログインの方式が変わりました。画面を読み込み直してください" }, 410),
+);
+authRoute.get("/api/auth/google", (c) =>
+  c.json({ error: "ログインの方式が変わりました。画面を読み込み直してください" }, 410),
+);
 
 authRoute.post("/api/auth/vscode-link", async (c) => {
   try {
@@ -259,10 +89,9 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
     const limited = await enforceAuthLinkRateLimit(c);
     if (limited) return limited;
 
-    const jwtSecret = c.env.AUTH_JWT_SECRET;
-    if (!jwtSecret) {
-      throw new ApiError("認証が未設定です (AUTH_JWT_SECRET)", 503);
-    }
+    const auth = getAuth(c.env);
+    const devSecret = c.env.AUTH_JWT_SECRET;
+    if (!auth && !devSecret) throw new ApiError("認証が未設定です", 503);
 
     const body = (await c.req.json().catch(() => null)) as { code?: unknown } | null;
     const code = typeof body?.code === "string" ? body.code : "";
@@ -279,7 +108,7 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
     const exchanged = await redeemVscodeLink({
       row,
       now,
-      resolveEmail: (userId) => resolveVscodeLinkEmail(db, userId),
+      resolveEmail: (userId) => resolveVscodeLinkEmail(db, userId, Boolean(auth)),
       consume: async (id) => {
         const consumed = (
           await db
@@ -290,11 +119,24 @@ authRoute.post("/api/auth/vscode-link/exchange", async (c) => {
         )[0];
         return Boolean(consumed);
       },
-      signToken: (userId, email) => signAccessToken(jwtSecret, userId, email),
+      // A Better Auth session, so the web's sign-out list and disabling the user revoke it.
+      // Without Better Auth (local dev, tests) a dev token, which only localhost accepts.
+      signToken: async (userId, email) =>
+        auth
+          ? (await (await auth.$context).internalAdapter.createSession(userId)).token
+          : signAccessToken(devSecret as string, userId, email),
     });
-    await recordLogin(c, db, exchanged.userId);
+    await recordLogin(db, exchanged.userId, clientIp(c), "vscode");
     return c.json({ access_token: exchanged.access_token });
   } catch (err) {
     return errorResponse(c, err);
   }
+});
+
+// Everything else under /api/auth is Better Auth (registered last, so the routes above win).
+authRoute.on(["GET", "POST"], "/api/auth/*", async (c): Promise<Response> => {
+  const auth = getAuth(c.env);
+  if (!auth)
+    return new Response(JSON.stringify({ error: "ログインが未設定です" }), { status: 503 });
+  return auth.handler(c.req.raw);
 });

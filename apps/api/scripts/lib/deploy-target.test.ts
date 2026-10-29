@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAllowedOrigin } from "../../src/lib/cors.js";
-import { googleRedirectUri } from "../../src/lib/google-oauth.js";
 import { parseD1Config } from "./d1-remote.js";
 import { resolveDeployDatabase, validateDeployUrls, withDeployDatabase } from "./deploy-target.js";
 
@@ -77,7 +76,7 @@ describe("deployment database", () => {
 });
 
 describe("deployment URLs", () => {
-  const server = "https://stella-api.saedgewell.workers.dev";
+  const server = "https://stella-web.saedgewell.workers.dev";
   it("allows the new Web origin but rejects retired production origins", () => {
     const allowed = TOML.match(/^ALLOWED_ORIGINS = "([^"]+)"/m)?.[1] ?? "";
     expect(isAllowedOrigin("https://stella-web.saedgewell.workers.dev", allowed)).toBe(true);
@@ -102,20 +101,24 @@ describe("deployment URLs", () => {
     expect(isAllowedOrigin("http://localhost:5173", local)).toBe(true);
     expect(isAllowedOrigin("http://127.0.0.1:5173", local)).toBe(true);
   });
-  it("uses the new API for Google's callback and the new Web for invite redirects", () => {
-    expect(googleRedirectUri(`${server}/api/auth/google?return_to=ignored`)).toBe(
-      `${server}/api/auth/google/callback`,
-    );
+  it("serves login (Better Auth) and invite redirects from the Web origin", () => {
+    // Google's redirect URI is `${BETTER_AUTH_URL}/api/auth/callback/google`.
+    expect(TOML.match(/^BETTER_AUTH_URL = "([^"]+)"/m)?.[1]).toBe(server);
     expect(TOML.match(/^INVITE_REDIRECT_URL = "([^"]+)"/m)?.[1]).toBe(
       "https://stella-web.saedgewell.workers.dev",
     );
   });
-  it("accepts the new API and a public materials origin", () => {
+  it("accepts the Web origin and a public materials origin", () => {
     expect(() => validateDeployUrls(server, "https://materials.example.com")).not.toThrow();
   });
-  it.each([undefined, "", "https://old-api.example.com", `${server}/api`])(
-    "rejects an unset or incorrect API URL: %s",
-    (url) => expect(() => validateDeployUrls(url, "https://materials.example.com")).toThrow(),
+  it.each([
+    undefined,
+    "",
+    "https://stella-api.saedgewell.workers.dev",
+    "https://old-api.example.com",
+    `${server}/api`,
+  ])("rejects an unset or incorrect API URL: %s", (url) =>
+    expect(() => validateDeployUrls(url, "https://materials.example.com")).toThrow(),
   );
   it.each([undefined, "", "http://materials.example.com", "https://user:secret@example.com"])(
     "rejects an unset or non-public materials URL: %s",

@@ -1,8 +1,8 @@
 /**
  * 認証セッションと profiles 行を一括で扱う React Hook。
  *
- * - 初回: `getSession()` でセッション復元 → profile を取得
- * - 変化: `subscribeToAuth` のイベントで session を更新し、 関連する profile を再取得
+ * - 初回・変化とも: `subscribeToAuth` の通知で session を受け取り、 profile を取得
+ *   (初回は `getSession()` がサーバーからセッションを読み、 購読者へ通知する)
  *
  * バックエンド未設定時は `loading: false, session: null, profile: null` を返し、
  * 上位コンポーネントが fixtures フローへフォールバックできるようにする。
@@ -73,14 +73,12 @@ export function useAuthSession(): UseAuthSessionResult {
       }
     };
 
-    void (async () => {
-      const initial = await getSession();
-      if (!cancelled) await load(initial);
-    })();
-
+    // getSession tells every subscriber (this one included), so the first load and later
+    // changes (another tab, sign-out) go through one path and /api/me is read once.
     const unsub = subscribeToAuth((next) => {
       if (!cancelled) void load(next);
     });
+    void getSession();
 
     return () => {
       cancelled = true;

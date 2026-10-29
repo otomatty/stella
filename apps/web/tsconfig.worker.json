@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Workers の実行環境 (Request / Response / fetch)。バインディングの型は worker/index.ts に持つ。
+    "lib": ["ES2023", "WebWorker"],
+    "moduleDetection": "force",
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["worker"]
+}
