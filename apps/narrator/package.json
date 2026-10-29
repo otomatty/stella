@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "wrangler": "4.149.0",
     "miniflare": "5.20261006.1-alpha",
     "vitest": "5.0.3",
