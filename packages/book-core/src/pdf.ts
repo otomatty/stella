@@ -32,12 +32,10 @@ let pdfium: Promise<PDFiumLibrary> | undefined;
 function library() {
   // Workersは実行時にWebAssemblyをコンパイルできないため、取り込み済みのモジュールから作る
   pdfium ??= PDFiumLibrary.init({
-    instantiateWasm(imports: WebAssembly.Imports, done: (instance: WebAssembly.Instance) => void) {
-      const instance = new WebAssembly.Instance(pdfiumWasm, imports);
-      done(instance);
-      return instance.exports;
+    instantiateWasm(imports, done) {
+      done(new WebAssembly.Instance(pdfiumWasm, imports));
     },
-  } as never);
+  });
   return pdfium;
 }
 let webpReady: Promise<unknown> | undefined;
@@ -58,18 +56,13 @@ export async function renderPage(doc: PDFDocument, pageIndex: number): Promise<R
   try {
     const page = document.getPage(0);
     const { originalWidth } = page.getOriginalSize();
+    // PDFium 3 は RGBA で返す ("BGRA" は RGBA の別名になったので、並べ替えると赤と青が入れ替わる)
     const image = await page.render({
       scale: RENDER_WIDTH / originalWidth,
       render: "bitmap",
-      colorSpace: "BGRA",
+      colorSpace: "RGBA",
     });
-    const data = image.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const b = data[i];
-      data[i] = data[i + 2];
-      data[i + 2] = b;
-    }
-    return { data, width: image.width, height: image.height };
+    return { data: image.data, width: image.width, height: image.height };
   } finally {
     document.destroy();
   }
