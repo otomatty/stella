@@ -2,7 +2,7 @@
 #
 # 画面は API を同じオリジンの `/api/*` で呼び、Worker (worker/index.ts) がサービスバインディングで
 # API の Worker へ中継する (ログインのセッションを同じオリジンの Cookie で持つため。Issue #117)。
-name = "stella-web"
+name = "stella"
 main = "worker/index.ts"
 compatibility_date = "2024-12-01"
 

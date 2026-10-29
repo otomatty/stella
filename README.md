@@ -31,7 +31,7 @@ stella/
 > フロントは DB を直接叩かず、 全アクセスが Hono API (`apps/api`) を経由し、 認可はアプリ層に集約されている。
 > 詳細は [`docs/cloudflare-stack.md`](docs/cloudflare-stack.md) を参照。
 >
-> **デプロイ**: 旧 Cloudflare Pages から Workers Static Assets (`stella-web`) へ移行済み。
+> **デプロイ**: 旧 Cloudflare Pages から Workers Static Assets (`stella`) へ移行済み。
 > デプロイは GitHub Actions（PR は `ci.yml` で検証ゲート、`main` は `deploy.yml` が自動デプロイ）。
 > 詳細は [`docs/ci-cd.md`](docs/ci-cd.md) を参照。
 
@@ -148,7 +148,7 @@ CI では出さない。publisher は `stella`。手元: `cd apps/vscode && bunx
    - `https://stella-api.saedgewell.workers.dev/api/auth/google/callback` (本番)
 3. `apps/api/.dev.vars` に `AUTH_JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` を設定。
    本番は `wrangler secret put AUTH_JWT_SECRET` / `GOOGLE_CLIENT_SECRET`。
-4. Web は `https://stella-web.saedgewell.workers.dev/auth/callback` で JWT を受け取る
+4. Web は `https://stella.saedgewell.workers.dev/auth/callback` で JWT を受け取る
    (SPA fallback は `apps/web/wrangler.toml` の `[assets] not_found_handling = "single-page-application"`)。
 
 > **ログインできない場合**: 切り分け手順は
@@ -457,7 +457,7 @@ Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要�
 
 Phase C の初回切替は [インフラ移行手順](docs/stella-infrastructure-migration.md) に従う。
 全セッションが失効するため、告知とメンテナンス中の D1 / R2 移行を済ませてからマージする。
-本番 API は `https://stella-api.saedgewell.workers.dev`、Web は `https://stella-web.saedgewell.workers.dev`。
+本番 API は `https://stella-api.saedgewell.workers.dev`、Web は `https://stella.saedgewell.workers.dev`。
 
 Deploy は教材処理の前に `bun run deploy:prepare` を実行し、`stella-db` の実 ID を取得する。
 Git 上のゼロ UUID はローカル専用で、本番デプロイには使わない。

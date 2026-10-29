@@ -1,6 +1,6 @@
 {
   "accountId": "175c04a4465bcc9815b21176a852f0c0",
-  "healthOrigin": "https://stella-web.saedgewell.workers.dev",
+  "healthOrigin": "https://stella.saedgewell.workers.dev",
   "github": {
     "variables": ["VITE_SERVER_URL", "VITE_MATERIALS_BASE_URL"],
     "secrets": [
