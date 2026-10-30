@@ -1,10 +1,17 @@
 /**
  * 受講者のホーム — **スキルツリーが主役** の 1 画面。
  *
- * 左 (スマホでは上) のガイドが「次にやること」を 1 つだけ大きく言い、右の盤面が
- * 「それがツリーのどこか」を見せる。ステージ一覧と別ページのスキルツリーはここへ
- * 集約した — 受講中の星は盤面の上で開き (「続きから」「レッスン一覧」)、まだ始めて
- * いない星もその場で始められる。
+ * 盤面 (スキルツリー) が画面いっぱいに広がり、その上に浮かぶガイドのカードが
+ * 「次にやること」を 1 つだけ大きく言う。盤面は「それがツリーのどこか」を見せる。
+ * ステージ一覧と別ページのスキルツリーはここへ集約した — 受講中の星は盤面の上で開き
+ * (「続きから」「レッスン一覧」)、まだ始めていない星もその場で始められる。
+ *
+ * ## ガイドは浮かぶカード
+ *
+ * PC では左上、スマホ・タブレットでは下端に浮かぶ (右下の AI ボタンには掛けない)。
+ * 畳むと「次にやること」の 1 行と主ボタンだけになり、盤面を広く見られる。既定は PC で
+ * 開き、スマホ・タブレットでは畳む。PC で開いている間は、カードの陰を盤面の
+ * 「見えている範囲」から外す (`insetLeft`) — 寄せた星がカードの下に隠れないように。
  *
  * ## 前の版から変えたこと
  *
@@ -37,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Stage } from "@/data/types";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
 import { useSrsToday } from "@/hooks/useSrsToday";
@@ -49,6 +57,7 @@ import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
   GuideSection,
   LaterSteps,
+  NextStepBar,
   NextStepCard,
   type GuideActiveStage,
   type GuideHandlers,
@@ -65,6 +74,9 @@ import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progres
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
+
+/** PC で開いたガイドのカードが覆う幅 (左の余白 16px + 幅 360px + 右の余白 16px)。 */
+const GUIDE_INSET_PX = 392;
 
 interface LearnerHomeProps {
   setPage: (page: string) => void;
@@ -297,7 +309,10 @@ export const LearnerHome = ({
   const showInTree = (stageId: string) => {
     if (!treeRef.current?.focusStage(stageId)) {
       toast("この星はまだツリーに見えていません");
+      return;
     }
+    // スマホ・タブレットでは開いたカードが盤面の下半分を覆うので、畳んで星を見せる。
+    if (!isDesktop) setExpandedPref(false);
   };
 
   const handlers: GuideHandlers = {
@@ -368,164 +383,19 @@ export const LearnerHome = ({
     stageQueue.error ? `次にやるリストの更新に失敗しました: ${stageQueue.error}` : null,
   ].filter((e): e is string => e !== null);
 
-  /** スマホでは「次にやること」だけを先に見せ、残りは開いたときだけ (ツリーを潰さない)。 */
-  const [moreOpen, setMoreOpen] = useState(false);
+  /**
+   * ガイドのカードを開いているか。既定は PC (lg 以上) で開き、スマホ・タブレットでは
+   * 畳む (下端に浮くカードが盤面を覆わないように)。押したあとは選んだ方を保つ。
+   */
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [expandedPref, setExpandedPref] = useState<boolean | null>(null);
+  const expanded = expandedPref ?? isDesktop;
   const loadingMap = backendEnabled && skillMap.map === null && !skillMap.error;
 
   return (
-    <div className="flex h-[calc(100dvh-var(--shell-header-height))] flex-col lg:flex-row">
-      <aside
-        aria-label="次にやること"
-        className="relative z-10 flex max-h-[60dvh] shrink-0 flex-col overflow-y-auto border-b border-border bg-card lg:max-h-none lg:w-[380px] lg:border-b-0 lg:border-r"
-      >
-        <div className="flex flex-col gap-4 p-4 lg:p-5">
-          <header className="flex flex-col gap-3">
-            <h1 className="hidden text-[15px] font-semibold tracking-tight sm:block">
-              おかえりなさい、{studentName}さん
-            </h1>
-            {backendEnabled ? (
-              <HomeHud
-                profile={skillMap.profile}
-                focusBonus={skillMap.map?.focus_bonus ?? null}
-                cleared={
-                  skillMap.map
-                    ? {
-                        count: skillMap.map.cleared_count,
-                        // 分母は配信対象の総数 (視界が広がるたびに増えないように)。
-                        total: skillMap.map.stage_count ?? nodes.length,
-                      }
-                    : null
-                }
-                loading={skillMap.loading}
-              />
-            ) : null}
-          </header>
-
-          {errors.map((message) => (
-            <p key={message} className="text-[12px] text-destructive">
-              {message}
-            </p>
-          ))}
-
-          {focusLost ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-warning-soft px-3 py-2">
-              <span className="text-[11.5px] text-ink-2">
-                進行中のステージが見つかりません。別のステージを選び直してください。
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  void skillMap
-                    .setActiveStage(null)
-                    .catch((err: unknown) =>
-                      toast.error(
-                        err instanceof Error ? err.message : "ステージの切り替えに失敗しました",
-                      ),
-                    )
-                }
-              >
-                フォーカスを外す
-              </Button>
-            </div>
-          ) : null}
-
-          <UnlockNotice
-            openStageIds={openStageIds}
-            titleOf={(id) => nodeById.get(id)?.title ?? stageById(id)?.title}
-            ready={Boolean(skillMap.map)}
-            // 自分で切り替えた現在地は「新しく開いた星」ではない。
-            activeStageId={serverActiveStageId}
-            discoveries={discoveries}
-            // 記憶は利用者ごと (共有端末で前の人の「見た」を引き継がない)。
-            userId={currentUserId}
-          />
-
-          <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
-
-          <div className={cn("flex-col gap-5", moreOpen ? "flex" : "hidden", "lg:flex")}>
-            <LaterSteps steps={later} {...stepContext} />
-
-            {discoveries.length > 0 ? (
-              <GuideSection title="発見教材" meta={`${discoveries.length} 件`}>
-                <ul className="flex flex-col gap-1.5">
-                  {discoveries.map((d) => (
-                    <li key={d.id}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenDiscoveryId(d.id)}
-                        title={d.description}
-                        className="flex w-full items-start gap-2 rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-left hover:border-brand"
-                      >
-                        <Sparkles size={12} className="mt-0.5 shrink-0 text-brand" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[12.5px] font-medium leading-snug">
-                            {d.title}
-                          </span>
-                          <span className="mt-0.5 block text-[10.5px] text-ink-3">
-                            {nodeById.get(d.stage_id)?.title ?? "ステージ"} の脇で発見 ·{" "}
-                            {d.question_count} 問{d.passed ? " · 合格済み" : ""}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </GuideSection>
-            ) : null}
-
-            {stageQueue.queue.length > 0 ? (
-              <StageQueuePanel
-                queue={stageQueue.queue}
-                stageById={stageById}
-                onReorder={(ids) => void stageQueue.reorder(ids).catch(() => undefined)}
-                onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
-                onStart={requestStart}
-              />
-            ) : null}
-
-            {hofInvited ? (
-              <div className="overflow-hidden rounded-lg border border-border">
-                <HallOfFameInviteRow kind={hofInvited} />
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => setPage("records")}
-              className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left hover:bg-sunken"
-            >
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-ink-2">
-                <TrendingUp size={13} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12.5px] font-medium">学習の記録</span>
-                <span className="block text-[11px] text-ink-3">
-                  学習のペース・学習時間・提出と添削・お知らせ
-                </span>
-              </span>
-              <ChevronRight size={14} className="text-ink-4" />
-            </button>
-          </div>
-
-          <Button
-            size="sm"
-            variant="ghost"
-            className="self-center lg:hidden"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen((open) => !open)}
-          >
-            {moreOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            {moreOpen
-              ? "閉じる"
-              : later.length > 0
-                ? `そのあと ${later.length} 件 ほか`
-                : "もっと見る"}
-          </Button>
-        </div>
-      </aside>
-
-      <div className="relative min-h-0 flex-1">
+    <div className="relative h-[calc(100dvh-var(--shell-header-height))] overflow-hidden">
+      {/* 盤面は画面いっぱい。ガイドはこの上に浮かぶ。 */}
+      <div className="absolute inset-0">
         {!backendEnabled ? (
           <BoardMessage>
             スキルツリーは実データ（API）に接続しているときだけ表示します。
@@ -565,11 +435,181 @@ export const LearnerHome = ({
             initialFocusStageId={serverActiveStageId ?? highlightStageIds[0] ?? null}
             highlightStageIds={highlightStageIds}
             handleRef={treeRef}
+            // PC で開いたカードの陰は「見えている範囲」から外す。
+            insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
             // 全面なので角丸と枠は要らない。
             className="h-full w-full rounded-none border-0"
           />
         )}
       </div>
+
+      <aside
+        aria-label="次にやること"
+        className={cn(
+          "absolute z-20 flex flex-col overflow-hidden rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-md",
+          // スマホ: 下端。右下の AI / 開発者モードのボタンに掛からないよう右を空ける。
+          "bottom-3 left-3 right-[5.5rem]",
+          // タブレット: 下端の左に、幅を決めて浮かべる。
+          "sm:right-auto sm:w-[380px]",
+          // PC: 左上。
+          "lg:bottom-auto lg:left-4 lg:top-4 lg:w-[360px]",
+          expanded ? "max-h-[70%] lg:max-h-[calc(100%-2rem)]" : "",
+        )}
+      >
+        {expanded ? (
+          <>
+            <header className="flex shrink-0 flex-col gap-3 px-4 pt-4">
+              <div className="flex items-start gap-2">
+                <h1 className="min-w-0 flex-1 text-[15px] font-semibold tracking-tight">
+                  おかえりなさい、{studentName}さん
+                </h1>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="-mr-1.5 -mt-1 shrink-0"
+                  aria-label="次にやることを畳む"
+                  aria-expanded
+                  onClick={() => setExpandedPref(false)}
+                >
+                  {/* 下に浮くとき (スマホ・タブレット) は下へ、左上に浮くとき (PC) は上へ畳む。 */}
+                  <ChevronDown size={14} className="lg:hidden" />
+                  <ChevronUp size={14} className="hidden lg:block" />
+                </Button>
+              </div>
+              {backendEnabled ? (
+                <HomeHud
+                  profile={skillMap.profile}
+                  focusBonus={skillMap.map?.focus_bonus ?? null}
+                  cleared={
+                    skillMap.map
+                      ? {
+                          count: skillMap.map.cleared_count,
+                          // 分母は配信対象の総数 (視界が広がるたびに増えないように)。
+                          total: skillMap.map.stage_count ?? nodes.length,
+                        }
+                      : null
+                  }
+                  loading={skillMap.loading}
+                />
+              ) : null}
+            </header>
+
+            <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4 pt-4">
+              {errors.map((message) => (
+                <p key={message} className="text-[12px] text-destructive">
+                  {message}
+                </p>
+              ))}
+
+              {focusLost ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-warning-soft px-3 py-2">
+                  <span className="text-[11.5px] text-ink-2">
+                    進行中のステージが見つかりません。別のステージを選び直してください。
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void skillMap
+                        .setActiveStage(null)
+                        .catch((err: unknown) =>
+                          toast.error(
+                            err instanceof Error ? err.message : "ステージの切り替えに失敗しました",
+                          ),
+                        )
+                    }
+                  >
+                    フォーカスを外す
+                  </Button>
+                </div>
+              ) : null}
+
+              <UnlockNotice
+                openStageIds={openStageIds}
+                titleOf={(id) => nodeById.get(id)?.title ?? stageById(id)?.title}
+                ready={Boolean(skillMap.map)}
+                // 自分で切り替えた現在地は「新しく開いた星」ではない。
+                activeStageId={serverActiveStageId}
+                discoveries={discoveries}
+                // 記憶は利用者ごと (共有端末で前の人の「見た」を引き継がない)。
+                userId={currentUserId}
+              />
+
+              <NextStepCard guide={guide} loading={loadingMap} {...stepContext} />
+
+              <LaterSteps steps={later} {...stepContext} />
+
+              {discoveries.length > 0 ? (
+                <GuideSection title="発見教材" meta={`${discoveries.length} 件`}>
+                  <ul className="flex flex-col gap-1.5">
+                    {discoveries.map((d) => (
+                      <li key={d.id}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenDiscoveryId(d.id)}
+                          title={d.description}
+                          className="flex w-full items-start gap-2 rounded-lg border border-brand/40 bg-brand-soft px-3 py-2 text-left hover:border-brand"
+                        >
+                          <Sparkles size={12} className="mt-0.5 shrink-0 text-brand" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[12.5px] font-medium leading-snug">
+                              {d.title}
+                            </span>
+                            <span className="mt-0.5 block text-[10.5px] text-ink-3">
+                              {nodeById.get(d.stage_id)?.title ?? "ステージ"} の脇で発見 ·{" "}
+                              {d.question_count} 問{d.passed ? " · 合格済み" : ""}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </GuideSection>
+              ) : null}
+
+              {stageQueue.queue.length > 0 ? (
+                <StageQueuePanel
+                  queue={stageQueue.queue}
+                  stageById={stageById}
+                  onReorder={(ids) => void stageQueue.reorder(ids).catch(() => undefined)}
+                  onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
+                  onStart={requestStart}
+                />
+              ) : null}
+
+              {hofInvited ? (
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <HallOfFameInviteRow kind={hofInvited} />
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setPage("records")}
+                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left hover:bg-sunken"
+              >
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-ink-2">
+                  <TrendingUp size={13} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-medium">学習の記録</span>
+                  <span className="block text-[11px] text-ink-3">
+                    学習のペース・学習時間・提出と添削・お知らせ
+                  </span>
+                </span>
+                <ChevronRight size={14} className="text-ink-4" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <NextStepBar
+            guide={guide}
+            loading={loadingMap}
+            onExpand={() => setExpandedPref(true)}
+            {...stepContext}
+          />
+        )}
+      </aside>
 
       <SkillCheckDialog
         stageId={checkStageId}

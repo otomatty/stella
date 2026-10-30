@@ -47,6 +47,9 @@
  * 言い、盤面は「それがどこか」を見せる。開いた直後は **現在地の星へ寄せ**
  * (`initialFocusStageId`)、ガイドが勧めている星には「おすすめ」の輪を付ける
  * (`highlightStageIds`)。ガイドの「ツリーで見る」は `handleRef.focusStage` で星へ寄る。
+ * ガイドは盤面の上に浮かぶカードなので、その陰 (`insetLeft`) は見えている範囲から外す —
+ * 寄せる中心・画面端の矢印・ルート名の置き場所は、カードの右側だけで決める。島チップは
+ * カードと重ならない右上 (ズームボタンの左) に置く。
  *
  * ## 解放の演出は差分で 1 回だけ
  *
@@ -119,6 +122,8 @@ interface SkillTreeProps {
   highlightStageIds?: string[];
   /** 操作ハンドルの受け口 (`SkillTreeCanvas` と同じ受け渡し)。 */
   handleRef?: RefObject<SkillTreeHandle | null>;
+  /** 左端から浮いたカード (ホームのガイド) に覆われている幅 (px)。 */
+  insetLeft?: number;
   className?: string;
 }
 
@@ -271,6 +276,7 @@ export const SkillTree = ({
   initialFocusStageId = null,
   highlightStageIds = [],
   handleRef,
+  insetLeft = 0,
   className,
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
@@ -385,9 +391,25 @@ export const SkillTree = ({
     ],
     [layout, visibleIslands],
   );
+  /**
+   * 見えている範囲 = 浮いたカードの右側。画面端の矢印とルート名はこの範囲で計算し、
+   * 置くときに `insetLeft` ぶん右へ戻す (カードの陰に矢印や名前を置かない)。
+   */
+  const visibleView = useMemo((): ViewState | null => {
+    if (!view) return null;
+    const inset = Math.max(0, Math.min(insetLeft, view.width - 240));
+    return { ...view, x: view.x - inset, width: view.width - inset };
+  }, [view, insetLeft]);
+  const viewInset = view && visibleView ? view.width - visibleView.width : 0;
   const markers = useMemo(
-    () => (view && !showsAllLabels(view.scale) ? offscreenMarkers(jumpTargets, view) : []),
-    [jumpTargets, view],
+    () =>
+      visibleView && !showsAllLabels(visibleView.scale)
+        ? offscreenMarkers(jumpTargets, visibleView).map((m) => ({
+            ...m,
+            left: m.left + viewInset,
+          }))
+        : [],
+    [jumpTargets, visibleView, viewInset],
   );
   /**
    * ルート名は盤面外周の固定点ではなく、いま見えている星のそばへ出す
@@ -395,7 +417,7 @@ export const SkillTree = ({
    * 島チップ / ズームボタンは障害物として避け、オーバーレイに載せるので倍率で縮小しない。
    */
   const sectorLabels = useMemo(() => {
-    if (!view || !showsAllLabels(view.scale)) return [];
+    if (!visibleView || !showsAllLabels(visibleView.scale)) return [];
     const mainland = new Set(layout.sectors.map((s) => s.key));
     const stars = layout.nodes
       .filter((n) => mainland.has(n.sector) && drawsStar(n))
@@ -405,12 +427,14 @@ export const SkillTree = ({
         y: n.y,
         radius: n.ring === 0 ? 22 : 16,
       }));
-    const chipsH = visibleIslands.length > 0 ? 44 : 0;
-    return sectorLabelsInView(stars, view, [
-      { left: 8, top: 8, width: Math.min(420, Math.max(0, view.width - 72)), height: chipsH },
-      { left: Math.max(0, view.width - 52), top: 8, width: 44, height: 120 },
-    ]);
-  }, [layout, view, drawsStar, visibleIslands]);
+    // 右上: ズームボタン (縦 3 つ) と、その左の島チップ。
+    const chipsW = visibleIslands.length > 0 ? Math.min(460, visibleView.width - 72) : 0;
+    const chipsH = visibleIslands.length > 0 ? 56 : 0;
+    return sectorLabelsInView(stars, visibleView, [
+      { left: Math.max(0, visibleView.width - 52 - chipsW), top: 8, width: chipsW, height: chipsH },
+      { left: Math.max(0, visibleView.width - 52), top: 8, width: 44, height: 120 },
+    ]).map((label) => ({ ...label, left: label.left + viewInset }));
+  }, [layout, visibleView, viewInset, drawsStar, visibleIslands]);
   const jumpTo = useCallback((x: number, y: number) => {
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
@@ -470,7 +494,7 @@ export const SkillTree = ({
 
   const chips =
     visibleIslands.length > 0 ? (
-      <nav className="flex flex-wrap gap-1" aria-label="島へ移動">
+      <nav className="flex flex-wrap justify-end gap-1" aria-label="島へ移動">
         {jumpTargets.map((target) => {
           const accent = routeAccentOf(target.key);
           return (
@@ -501,6 +525,7 @@ export const SkillTree = ({
       handleRef={canvasRef}
       onScaleChange={handleScaleChange}
       onViewChange={setView}
+      insetLeft={insetLeft}
       className={className}
       overlay={
         <>
@@ -521,9 +546,13 @@ export const SkillTree = ({
               </div>
             );
           })}
-          {/* 左上: 島チップ。右上のズームボタン (Canvas 側) と被らない幅に収める。 */}
+          {/* 右上: 島チップ。ズームボタン (Canvas 側) の左に並べ、左に浮くガイドの
+              カードとは重ならない幅に収める。 */}
           {chips ? (
-            <div className="absolute left-3 top-3 flex max-w-[calc(100%-4rem)] flex-col items-start gap-2">
+            <div
+              className="absolute right-12 top-3 flex justify-end"
+              style={{ maxWidth: `calc(100% - ${viewInset + 64}px)` }}
+            >
               {chips}
             </div>
           ) : null}
