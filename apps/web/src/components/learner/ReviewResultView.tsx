@@ -12,6 +12,11 @@ import { isBackendConfigured } from "@/lib/backend";
 interface ReviewResultViewProps {
   submissionId: string;
   setPage: (page: string) => void;
+  /**
+   * 戻り先。受講者は提出の一覧がある「学習の記録」、それ以外は各自のホーム。
+   * 受講者以外に学習の記録 (受講者専用) を指すと、戻った先が 403 になる。
+   */
+  back?: { page: string; label: string };
   /** 一覧から渡せる場合は初回表示を早くする。 */
   initial?: Submission | null;
 }
@@ -22,7 +27,12 @@ const verdictMeta = {
   fail: { label: "不合格", variant: "danger" },
 } as const;
 
-export function ReviewResultView({ submissionId, setPage, initial = null }: ReviewResultViewProps) {
+export function ReviewResultView({
+  submissionId,
+  setPage,
+  back = { page: "dash", label: "ホームに戻る" },
+  initial = null,
+}: ReviewResultViewProps) {
   const [submission, setSubmission] = useState<Submission | null>(initial);
   const [loading, setLoading] = useState(!initial && isBackendConfigured());
   const [error, setError] = useState<string | null>(null);
@@ -67,9 +77,9 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
         <button
           type="button"
           className="text-[12.5px] text-brand underline underline-offset-2"
-          onClick={() => setPage("dash")}
+          onClick={() => setPage(back.page)}
         >
-          ダッシュボードに戻る
+          {back.label}
         </button>
       </div>
     );
@@ -90,11 +100,11 @@ export function ReviewResultView({ submissionId, setPage, initial = null }: Revi
     <div className="max-w-5xl mx-auto">
       <button
         type="button"
-        onClick={() => setPage("dash")}
+        onClick={() => setPage(back.page)}
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
-        ダッシュボードに戻る
+        {back.label}
       </button>
 
       <div className="flex items-start gap-3 mb-6">

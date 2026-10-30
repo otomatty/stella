@@ -34,7 +34,7 @@ const STORAGE_KEY_PREFIX = "stella_seen_unlocked_stages_v1";
 const DISCOVERY_STORAGE_KEY_PREFIX = "stella_seen_discoveries_v1";
 
 /**
- * 記憶のキー。**利用者ごとに分ける** (`PlacementWizard` の「あとで選ぶ」と同じ流儀)。
+ * 記憶のキー。**利用者ごとに分ける**。
  *
  * 共有端末で別の受講者がログインすると、前の人が見た星と教材が「見たこと」になり、
  * 本当は初めて見る解放通知が黙って消える。利用者が分からないときだけ共有キーに
@@ -94,7 +94,7 @@ interface UnlockNoticeProps {
    *
    * 評価器はアクティブな星を前提未充足でも `active` にする (locked に落とさない) ので、
    * 自分でフォーカスを切り替えるとその星が「開いた星」に入り、自分の操作が
-   * 「スキルマップが広がりました」として返ってくる。記録 (localStorage) には残すので、
+   * 「スキルツリーが広がりました」として返ってくる。記録 (localStorage) には残すので、
    * あとで本当に前提を満たして開いたときに二重で出ることはない。
    */
   activeStageId?: string | null;
@@ -161,7 +161,7 @@ export const UnlockNotice = ({
 
   // 星と教材のどちらが増えたかで見出しを変える (両方なら星を主にする — 道が伸びる方が
   // 大きな出来事なので)。
-  const heading = newIds.length > 0 ? "スキルマップが広がりました" : "新しい教材が解放されました";
+  const heading = newIds.length > 0 ? "スキルツリーが広がりました" : "新しい教材が解放されました";
 
   return (
     <div
@@ -185,8 +185,8 @@ export const UnlockNotice = ({
         {newDiscoveries.length > 0 ? (
           <div className="text-[11.5px] text-ink-2 mt-0.5">
             {discoveryNames.length > 0
-              ? `✦ ${discoveryNames.join(" · ")} がスキルマップの脇に出ました。`
-              : `✦ ${newDiscoveries.length} つの教材がスキルマップの脇に出ました。`}
+              ? `✦ ${discoveryNames.join(" · ")} が「発見教材」に出ました。`
+              : `✦ ${newDiscoveries.length} つの教材が「発見教材」に出ました。`}
           </div>
         ) : null}
       </div>

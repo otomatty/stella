@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { HELP_TOPICS, findHelpTopic } from "./helpContent";
 
 describe("findHelpTopic", () => {
-  it("ルート / はダッシュボードのヘルプにマッチする", () => {
+  it("ルート / は受講者のホーム (スキルツリー) のヘルプにマッチする", () => {
     expect(findHelpTopic("/")?.route).toBe("/");
   });
 
   it("静的ルートは末尾スラッシュの有無に関わらずマッチする", () => {
-    expect(findHelpTopic("/stages")?.route).toBe("/stages");
-    expect(findHelpTopic("/stages/")?.route).toBe("/stages");
+    expect(findHelpTopic("/records")?.route).toBe("/records");
+    expect(findHelpTopic("/records/")?.route).toBe("/records");
   });
 
   it("動的セグメントは任意の 1 セグメントにマッチする", () => {
@@ -25,6 +25,8 @@ describe("findHelpTopic", () => {
 
   it("定義の無い画面 (講師・管理者など) は null を返す", () => {
     expect(findHelpTopic("/admin/users")).toBeNull();
+    // 受講者のステージ一覧はホームへ集約した (staff のステージ管理にはヘルプが無い)。
+    expect(findHelpTopic("/stages")).toBeNull();
     expect(findHelpTopic("/review-queue")).toBeNull();
   });
 

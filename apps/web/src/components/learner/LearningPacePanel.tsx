@@ -14,11 +14,12 @@ const date = (value: string | null) => value?.replaceAll("-", "/") ?? "開始後
 export function LearningPacePanel({
   userId,
   onSaved,
-  revision = 0,
+  className = "mb-5",
 }: {
   userId?: string;
   onSaved?: () => Promise<void>;
-  revision?: number;
+  /** 外側の余白。並べる側が gap で間を取るときは空にする。 */
+  className?: string;
 }) {
   const [pace, setPace] = useState<LearningPace | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,6 @@ export function LearningPacePanel({
   const [startDate, setStartDate] = useState("");
   const requestId = useRef(0);
   const inputsInitialized = useRef(false);
-  const previousRevision = useRef(revision);
   const lifetime = useRef<AbortController | null>(null);
   const refresh = useCallback(
     async (signal?: AbortSignal, syncInputs = true) => {
@@ -65,11 +65,6 @@ export function LearningPacePanel({
       unsubscribe?.();
     };
   }, [refresh, userId]);
-  useEffect(() => {
-    if (previousRevision.current === revision) return;
-    previousRevision.current = revision;
-    void refresh(lifetime.current?.signal, false);
-  }, [revision, refresh]);
   const save = async () => {
     setSaving(true);
     try {
@@ -86,7 +81,7 @@ export function LearningPacePanel({
     }
   };
   return (
-    <Card className="mb-5">
+    <Card className={className}>
       <CardHeader>
         <CardTitle>学習のペース</CardTitle>
       </CardHeader>

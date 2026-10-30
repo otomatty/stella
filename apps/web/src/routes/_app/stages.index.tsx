@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { RoleGuard } from "@/components/shell/RoleGuard";
-import { StageList } from "@/components/learner/StageList";
 import { InstructorGeneric } from "@/components/instructor/InstructorGeneric";
 import { AdminStagesPage } from "@/components/admin/AdminStagesPage";
 
@@ -41,13 +40,7 @@ function StagesPageBody() {
       />
     );
   }
-  return (
-    <StageList
-      setPage={s.setPage}
-      stages={s.stages}
-      setCurrentStage={s.setCurrentStage}
-      currentUserId={s.currentUserId}
-      backendEnabled={s.backendEnabled}
-    />
-  );
+  // 受講者のステージ一覧はホームのスキルツリーへ集約した (受講中の星から「続きから」・
+  // 「レッスン一覧」を開ける)。旧 URL はホームへ送る。
+  return <Navigate to="/" replace />;
 }

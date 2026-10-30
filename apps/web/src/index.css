@@ -1168,10 +1168,40 @@
   }
 }
 
+/* ホームのガイドが勧めている星 (「おすすめ」)。 星の状態色はそのままに、 外側の
+   破線の輪と札だけで「次はここ」を示す。 輪はゆっくり回り、 reduced-motion で止まる。 */
+.tree-next-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1.5px dashed var(--brand);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: tree-next-spin 12s linear infinite;
+}
+@keyframes tree-next-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tree-next-badge {
+  background: var(--bg-raised);
+  color: var(--brand-ink);
+  border: 1px solid var(--brand);
+  animation: none;
+}
+
+.dark .tree-next-badge {
+  background: rgba(20, 12, 28, 0.9);
+  color: #fff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tree-appear,
   .tree-unlock-pop,
-  .tree-new-badge {
+  .tree-new-badge,
+  .tree-next-ring {
     animation: none;
   }
   /* 輪は「animation で初めて見える」作りなので、 止めるなら消す。 */

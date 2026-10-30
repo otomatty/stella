@@ -25,6 +25,7 @@ import {
   Shield,
   Sparkles,
   Star,
+  TrendingUp,
   Users,
   UserPlus,
 } from "@/lib/icons";
@@ -37,7 +38,7 @@ export type NavId =
   | "library"
   | "dash"
   | "stages"
-  | "skill-tree"
+  | "records"
   | "lesson"
   | "cert"
   | "interview-prep"
@@ -66,18 +67,19 @@ export interface NavItem {
 /**
  * 殿堂 (Phase 5)。 **一覧の最後に置く**。
  *
- * 毎日の学習動線 (ダッシュボード → ステージ → レッスン) の途中に挟むと、 他人の
+ * 毎日の学習動線 (スキルツリー → レッスン) の途中に挟むと、 他人の
  * 物語が「今日やること」の並びに混ざる。 いつでも行けるが、 急かさない位置に置く。
  * 営業には出さない (受講者の物語を売り物の資料として扱わせない — 読めはする)。
  */
 const HALL_OF_FAME_NAV: NavItem = { id: "hall-of-fame", label: "殿堂", icon: Star };
 
 const NAV: Record<Role, NavItem[]> = {
+  // 受講者のホームはスキルツリー (「次にやること」付き)。ステージ一覧と別ページの
+  // スキルツリーはホームへ集約したので、先頭の 1 つで学習の入口が決まる。
   learner: [
-    { id: "dash", label: "ダッシュボード", icon: Home },
-    { id: "stages", label: "ステージ一覧", icon: Book },
-    { id: "skill-tree", label: "スキルツリー", icon: Compass },
+    { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
+    { id: "records", label: "学習の記録", icon: TrendingUp },
     { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "cert", label: "修了証", icon: Award },
     { id: "library", label: "個人の本棚", icon: Book },

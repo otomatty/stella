@@ -9,7 +9,7 @@
  * `dev_mode_available` が偽だと出ないので、受講者に戻す手段も無かった。
  *
  * これは 2 段の防御の外側。**ぼかしを外してよいかの本線はサーバの応答**
- * (`skill_map.dev_mode`) で、この値はそれと AND を取る (`SkillTreePage`)。
+ * (`skill_map.dev_mode`) で、この値はそれと AND を取る (`LearnerHome`)。
  */
 
 import { readStellaStorage } from "./brand-storage";

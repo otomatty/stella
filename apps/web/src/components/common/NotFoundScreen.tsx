@@ -8,7 +8,17 @@
 
 import { useContext } from "react";
 import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { Award, Book, Compass, Edit, HelpCircle, Home, MessageCircle, Users } from "@/lib/icons";
+import {
+  Award,
+  Book,
+  Compass,
+  Edit,
+  HelpCircle,
+  Home,
+  MessageCircle,
+  TrendingUp,
+  Users,
+} from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusScreen, type StatusScreenLink } from "@/components/common/StatusScreen";
 import { AppShellContext } from "@/components/shell/app-shell-context";
@@ -46,13 +56,13 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
       ];
     case "learner":
       return [
-        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
         {
-          label: "ステージ一覧",
-          description: "受講中のステージを開く",
-          icon: Book,
-          onSelect: () => setPage("stages"),
+          label: "スキルツリー",
+          description: "次にやることと、受講中のステージ",
+          icon: Compass,
+          onSelect: () => setPage("dash"),
         },
+        { label: "学習の記録", icon: TrendingUp, onSelect: () => setPage("records") },
         { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
       ];
     default: {
@@ -89,7 +99,7 @@ export const NotFoundScreen = () => {
               前のページに戻る
             </Button>
             <Button variant="primary" onClick={() => shell.setPage("dash")}>
-              ダッシュボードへ
+              ホームへ
             </Button>
           </>
         }

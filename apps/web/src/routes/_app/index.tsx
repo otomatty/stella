@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAppShell } from "@/components/shell/app-shell-context";
-import { LearnerDashboard } from "@/components/learner/LearnerDashboard";
+import { LearnerHome } from "@/components/learner/LearnerHome";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { SalesDashboard } from "@/components/sales/SalesDashboard";
@@ -36,12 +36,12 @@ function DashboardPage() {
   if (s.role === "sales") {
     return <SalesDashboard setPage={s.setPage} />;
   }
+  // 受講者のホームはスキルツリー + 「次にやること」(ステージ一覧と旧スキルツリー画面を集約)。
   return (
-    <LearnerDashboard
+    <LearnerHome
       setPage={s.setPage}
       onOpenLesson={s.onOpenLesson}
       stages={s.stages}
-      announcementsHook={s.announcementsHook}
       stagesError={s.stagesError}
       refetchStages={s.refetchStages}
       onOpenSubmission={s.onOpenSubmission}

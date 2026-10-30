@@ -41,6 +41,13 @@
  * (24 星ぶんの Dialog を積まない)。スマホは 1 タップで寄せながら開く — 詳細に名前が
  * 出るので、デスクトップの「まず寄る」1 手目が要らない。
  *
+ * ## ホームの盤面 (ガイドとつながる)
+ *
+ * この盤面は受講者のホームそのもの (`LearnerHome`)。横のガイドが「次にやること」を
+ * 言い、盤面は「それがどこか」を見せる。開いた直後は **現在地の星へ寄せ**
+ * (`initialFocusStageId`)、ガイドが勧めている星には「おすすめ」の輪を付ける
+ * (`highlightStageIds`)。ガイドの「ツリーで見る」は `handleRef.focusStage` で星へ寄る。
+ *
  * ## 解放の演出は差分で 1 回だけ
  *
  * 「前回見たときは閉じていた星が開いた」「無かった星が現れた (教材の公開)」を
@@ -50,7 +57,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +72,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { isApiConfigured } from "@/lib/api-client";
-import { ArrowUp, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
+import { ArrowUp, Book, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
 import { getSkillMapIcons, type SkillMapStageNode } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +85,12 @@ import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
 import { describeStar, hasStarActions, type StarDetail } from "./star-detail";
 
+/** 親 (ホームのガイド) から盤面を操作するためのハンドル。 */
+export interface SkillTreeHandle {
+  /** その星へ寄せて名前を出す。盤面に描いていない星なら false。 */
+  focusStage: (stageId: string) => boolean;
+}
+
 interface SkillTreeProps {
   nodes: SkillMapStageNode[];
   /** 演出のスナップショットを本人ごとに分けるためのキー。 */
@@ -85,19 +98,27 @@ interface SkillTreeProps {
   activeStageId: string | null;
   /** 既に「次にやるリスト」に積んである星。 */
   queuedStageIds: string[];
+  /** 「続きから」(進行中の星のレッスンを開く)。 */
+  onResumeStage: (stageId: string) => void;
   /** 「ここから始める」(いま進める星に切り替える)。 */
   onStartStage: (stageId: string) => void;
   /** 「キューに追加」。 */
   onQueueStage: (stageId: string) => void;
   /** 腕試しを開く。 */
   onSkillCheck: (stageId: string) => void;
+  /** 「レッスン一覧」(ステージ詳細を開く)。 */
+  onOpenStage: (stageId: string) => void;
   /** 開発者モード: 段を素通しし、幽霊ノードも星として描く。 */
   revealDev?: boolean;
   /**
-   * 盤面の左上に浮かべる HUD (見出し・修了数・レベル)。島チップはこの下に並ぶ。
-   * 盤面の外に置くと全面表示のときに Card 分の帯が要るので、盤面の中に載せる。
+   * 開いた直後に寄せる星 (現在地)。null なら入口の星座を見せる。
+   * 最初に描けたときに 1 回だけ寄る — 再取得のたびに視点を奪わない。
    */
-  hud?: ReactNode;
+  initialFocusStageId?: string | null;
+  /** ガイドが勧めている星。「おすすめ」の輪を付ける。 */
+  highlightStageIds?: string[];
+  /** 操作ハンドルの受け口 (`SkillTreeCanvas` と同じ受け渡し)。 */
+  handleRef?: RefObject<SkillTreeHandle | null>;
   className?: string;
 }
 
@@ -241,11 +262,15 @@ export const SkillTree = ({
   currentUserId,
   activeStageId,
   queuedStageIds,
+  onResumeStage,
   onStartStage,
   onQueueStage,
   onSkillCheck,
+  onOpenStage,
   revealDev = false,
-  hud,
+  initialFocusStageId = null,
+  highlightStageIds = [],
+  handleRef,
   className,
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
@@ -367,7 +392,7 @@ export const SkillTree = ({
   /**
    * ルート名は盤面外周の固定点ではなく、いま見えている星のそばへ出す
    * (`sectorLabelsInView`)。島の星は島タイトルが担うので本土の扇だけ渡す。
-   * HUD / ズームボタンは障害物として避け、オーバーレイに載せるので倍率で縮小しない。
+   * 島チップ / ズームボタンは障害物として避け、オーバーレイに載せるので倍率で縮小しない。
    */
   const sectorLabels = useMemo(() => {
     if (!view || !showsAllLabels(view.scale)) return [];
@@ -380,9 +405,9 @@ export const SkillTree = ({
         y: n.y,
         radius: n.ring === 0 ? 22 : 16,
       }));
-    const hudH = visibleIslands.length > 0 ? 100 : 56;
+    const chipsH = visibleIslands.length > 0 ? 44 : 0;
     return sectorLabelsInView(stars, view, [
-      { left: 8, top: 8, width: Math.min(420, Math.max(0, view.width - 72)), height: hudH },
+      { left: 8, top: 8, width: Math.min(420, Math.max(0, view.width - 72)), height: chipsH },
       { left: Math.max(0, view.width - 52), top: 8, width: 44, height: 120 },
     ]);
   }, [layout, view, drawsStar, visibleIslands]);
@@ -398,6 +423,42 @@ export const SkillTree = ({
     }
     return sectors;
   }, [layout]);
+
+  /**
+   * 星 (ステージ id) へ寄せる。複製された星は最初に描いた器へ寄る。
+   *
+   * 寄せる倍率は「名前が出る」所まで — ガイドから飛んだ先で、どの星を指したのかが
+   * 読めないと寄った意味が無い。
+   */
+  const focusStage = useCallback(
+    (stageId: string, scale = FOCUS_SCALE): boolean => {
+      const placed = layout.nodes.find((n) => n.node.id === stageId && drawsStar(n));
+      if (!placed) return false;
+      canvasRef.current?.focusOn(placed.x, placed.y, scale);
+      setFocusedId(placed.instanceId);
+      return true;
+    },
+    [layout, drawsStar],
+  );
+  useEffect(() => {
+    if (!handleRef) return;
+    handleRef.current = { focusStage: (stageId) => focusStage(stageId) };
+    return () => {
+      handleRef.current = null;
+    };
+  }, [handleRef, focusStage]);
+
+  /**
+   * 開いた直後は現在地の星へ寄せる (倍率は初期視点のまま)。
+   *
+   * 1 回だけ — 星を始めたあとの取り直しや、FAB での段の切り替えのたびに視点が
+   * 現在地へ引き戻されると、眺めている最中の場所を失う。
+   */
+  const initialFocusDone = useRef(false);
+  useEffect(() => {
+    if (initialFocusDone.current || !initialFocusStageId) return;
+    if (focusStage(initialFocusStageId, 1)) initialFocusDone.current = true;
+  }, [initialFocusStageId, focusStage]);
 
   if (nodes.length === 0) {
     return (
@@ -460,10 +521,9 @@ export const SkillTree = ({
               </div>
             );
           })}
-          {/* 左上: HUD + 島チップ。右上のズームボタン (Canvas 側) と被らない幅に収める。 */}
-          {hud || chips ? (
+          {/* 左上: 島チップ。右上のズームボタン (Canvas 側) と被らない幅に収める。 */}
+          {chips ? (
             <div className="absolute left-3 top-3 flex max-w-[calc(100%-4rem)] flex-col items-start gap-2">
-              {hud}
               {chips}
             </div>
           ) : null}
@@ -499,9 +559,11 @@ export const SkillTree = ({
               revealDev={revealDev}
               anchorRef={sheetAnchorRef}
               onClose={() => setSheetId(null)}
+              onResumeStage={onResumeStage}
               onStartStage={onStartStage}
               onQueueStage={onQueueStage}
               onSkillCheck={onSkillCheck}
+              onOpenStage={onOpenStage}
             />
           ) : null}
         </>
@@ -630,6 +692,7 @@ export const SkillTree = ({
           placed={placed}
           isActive={placed.node.id === activeStageId}
           queued={queuedStageIds.includes(placed.node.id)}
+          highlighted={highlightStageIds.includes(placed.node.id)}
           showLabel={
             showsAllLabels(scale) || (placed.instanceId === focusedId && showsFocusLabel(scale))
           }
@@ -644,9 +707,11 @@ export const SkillTree = ({
           sheetMode={isMobile}
           sheetOpen={sheetId === placed.instanceId}
           onOpenSheet={(anchor) => openSheet(placed, anchor)}
+          onResumeStage={onResumeStage}
           onStartStage={onStartStage}
           onQueueStage={onQueueStage}
           onSkillCheck={onSkillCheck}
+          onOpenStage={onOpenStage}
           revealDev={revealDev}
         />
       ))}
@@ -658,6 +723,8 @@ interface StarNodeProps {
   placed: RadialNode;
   isActive: boolean;
   queued: boolean;
+  /** ガイドが勧めている星 (「おすすめ」の輪)。 */
+  highlighted: boolean;
   /** 名前を星の下に出すか。全体表示では出さない。 */
   showLabel: boolean;
   /** 差分で検出した演出 (「解放」/「出現」)。undefined なら演出なし。 */
@@ -680,9 +747,11 @@ interface StarNodeProps {
   sheetOpen: boolean;
   /** シートを開く。閉じたあとフォーカスを戻せるよう、押した星そのものを渡す。 */
   onOpenSheet: (anchor: HTMLButtonElement) => void;
+  onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
+  onOpenStage: (stageId: string) => void;
   revealDev: boolean;
 }
 
@@ -690,6 +759,7 @@ const StarNode = ({
   placed,
   isActive,
   queued,
+  highlighted,
   showLabel,
   celebration,
   celebrationIndex,
@@ -698,9 +768,11 @@ const StarNode = ({
   sheetMode,
   sheetOpen,
   onOpenSheet,
+  onResumeStage,
   onStartStage,
   onQueueStage,
   onSkillCheck,
+  onOpenStage,
   revealDev,
 }: StarNodeProps) => {
   const [open, setOpen] = useState(false);
@@ -740,7 +812,7 @@ const StarNode = ({
   const star = (
     <button
       type="button"
-      aria-label={`${spokenLabel}（${detail.stateText}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      aria-label={`${spokenLabel}（${detail.stateText}${highlighted ? "・おすすめ" : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
       // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
       //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
@@ -776,6 +848,8 @@ const StarNode = ({
             <span className="tree-burst tree-burst-late" />
           </>
         ) : null}
+        {/* ガイドが勧めている星。状態の色を変えず、外側の輪だけで「ここ」と示す。 */}
+        {highlighted ? <span className="tree-next-ring" /> : null}
         <span
           className={cn(
             "tree-star grid place-items-center rounded-full border transition-colors",
@@ -830,6 +904,10 @@ const StarNode = ({
           <span className="tree-new-badge" aria-hidden="true">
             {celebration === "unlocked" ? "解放!" : "NEW"}
           </span>
+        ) : highlighted ? (
+          <span className="tree-new-badge tree-next-badge" aria-hidden="true">
+            おすすめ
+          </span>
         ) : null}
       </span>
     </button>
@@ -875,9 +953,11 @@ const StarNode = ({
               stageId={node.id}
               size="sm"
               onAct={act}
+              onResumeStage={onResumeStage}
               onStartStage={onStartStage}
               onQueueStage={onQueueStage}
               onSkillCheck={onSkillCheck}
+              onOpenStage={onOpenStage}
             />
           </div>
         ) : null}
@@ -898,9 +978,11 @@ interface StarSheetProps {
   /** 閉じたときにフォーカスを戻す星。 */
   anchorRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
+  onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
+  onOpenStage: (stageId: string) => void;
 }
 
 /**
@@ -917,9 +999,11 @@ const StarSheet = ({
   revealDev,
   anchorRef,
   onClose,
+  onResumeStage,
   onStartStage,
   onQueueStage,
   onSkillCheck,
+  onOpenStage,
 }: StarSheetProps) => {
   const lastRef = useRef<RadialNode | null>(null);
   /**
@@ -1015,9 +1099,11 @@ const StarSheet = ({
               stageId={node.id}
               size="full"
               onAct={act}
+              onResumeStage={onResumeStage}
               onStartStage={onStartStage}
               onQueueStage={onQueueStage}
               onSkillCheck={handOffToSkillCheck}
+              onOpenStage={onOpenStage}
             />
           </DrawerFooter>
         ) : null}
@@ -1071,24 +1157,46 @@ interface StarActionsProps {
   size: "sm" | "full";
   /** 器を閉じてから実行する。 */
   onAct: (run: () => void) => void;
+  onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
+  onOpenStage: (stageId: string) => void;
 }
 
-/** 詳細のボタン列。並びは器を跨いで同じで、器が外側の箱だけを決める。 */
+/**
+ * 詳細のボタン列。並びは器を跨いで同じで、器が外側の箱だけを決める。
+ *
+ * 先頭がその星の主な一手 (続きから / ここから始める / 飛び級) で、強調はそこだけ。
+ */
 const StarActions = ({
   detail,
   stageId,
   size,
   onAct,
+  onResumeStage,
   onStartStage,
   onQueueStage,
   onSkillCheck,
+  onOpenStage,
 }: StarActionsProps) => {
-  const { skillCheck, start, queue, clearedNote } = detail.actions;
+  const { skillCheck, resume, start, queue, openStage, clearedNote } = detail.actions;
   return (
     <>
+      {resume ? (
+        <Button size={size} variant="accent" onClick={() => onAct(() => onResumeStage(stageId))}>
+          <Play size={12} />
+          続きから
+        </Button>
+      ) : null}
+
+      {start ? (
+        <Button size={size} variant="accent" onClick={() => onAct(() => onStartStage(stageId))}>
+          <Play size={12} />
+          ここから始める
+        </Button>
+      ) : null}
+
       {skillCheck === "challenge" ? (
         <Button size={size} variant="accent" onClick={() => onAct(() => onSkillCheck(stageId))}>
           <Sparkles size={12} />
@@ -1100,9 +1208,10 @@ const StarActions = ({
         </Button>
       ) : null}
 
-      {start ? (
-        <Button size={size} onClick={() => onAct(() => onStartStage(stageId))}>
-          ここから始める
+      {openStage ? (
+        <Button size={size} variant="outline" onClick={() => onAct(() => onOpenStage(stageId))}>
+          <Book size={12} />
+          レッスン一覧
         </Button>
       ) : null}
 

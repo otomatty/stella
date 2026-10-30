@@ -49,7 +49,8 @@ export function StageClearDialog({ onCleared }: { onCleared?: () => void }) {
   const close = () => setCleared([]);
   const goSkillTree = () => {
     close();
-    void navigate({ to: "/skill-tree" });
+    // ホームがスキルツリー。次に開いた星と「次にやること」が並ぶ。
+    void navigate({ to: "/" });
   };
 
   return (

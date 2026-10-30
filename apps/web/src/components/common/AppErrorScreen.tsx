@@ -30,7 +30,7 @@ export const AppErrorScreen = ({ error, reset }: ErrorComponentProps) => {
 
   const links: StatusScreenLink[] = [
     shell
-      ? { label: "ダッシュボードへ", icon: Home, onSelect: () => shell.setPage("dash") }
+      ? { label: "ホームへ", icon: Home, onSelect: () => shell.setPage("dash") }
       : { label: "トップへ戻る", icon: Home, onSelect: () => void router.navigate({ to: "/" }) },
     {
       label: "サポート窓口",
