@@ -11,6 +11,7 @@ import { DEFAULT_OS, type OsName } from "@stella/shared/markdown/os-blocks";
 
 import { apiFetch } from "./api-client";
 import type { Profile } from "./auth";
+import { isHandheld } from "./device";
 
 export interface NavigatorLike {
   userAgent?: string;
@@ -28,10 +29,9 @@ export function detectOs(nav: NavigatorLike | undefined): OsName | null {
     return null;
   }
   const ua = nav.userAgent ?? "";
-  if (/iPhone|iPad|iPod|Android/i.test(ua)) return null;
+  if (isHandheld({ userAgent: ua, maxTouchPoints: nav.maxTouchPoints })) return null;
   if (/Windows/i.test(ua)) return "windows";
-  // iPad の Safari はデスクトップ版の UA (Macintosh) を名乗るので、タッチ点の数で除く。
-  if (/Macintosh|Mac OS X/i.test(ua)) return (nav.maxTouchPoints ?? 0) > 1 ? null : "macos";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "macos";
   return null;
 }
 

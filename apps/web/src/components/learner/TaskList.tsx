@@ -4,7 +4,9 @@ import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import type { TaskSupportRecord } from "@stella/shared/tasks/support-record";
 import { apiFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
+import { PcHandoffButton } from "./PcHandoffButton";
 import { TaskSupportSummary } from "./TaskSupportSummary";
 
 export function TaskList({
@@ -15,6 +17,7 @@ export function TaskList({
   /** 課題の文脈で AI チャットを開く。相談は支援の記録に残る (#38)。 */
   onAskAi?: (task: { id: string; title: string }) => void;
 }) {
+  const handheld = useIsHandheld();
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
   const [support, setSupport] = useState<Map<string, TaskSupportRecord>>(new Map());
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,16 @@ export function TaskList({
         <h2 className="font-semibold text-sm">単元の課題</h2>
         <Button onClick={() => void load()}>状態を更新</Button>
       </div>
+      {/* スマートフォン・タブレットでは行ごとに同じ案内を並べず、ここで 1 回だけ出す。 */}
+      {handheld && tasks.length > 0 ? (
+        <div className="px-4 py-3 border-b border-border bg-sunken flex flex-wrap items-center gap-3">
+          <p className="flex-1 min-w-48 text-[13px] text-ink-2">
+            課題はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code
+            で開く」を押してください。
+          </p>
+          <PcHandoffButton />
+        </div>
+      ) : null}
       {error ? (
         <p role="alert" className="p-4 text-sm text-danger">
           {error}
@@ -107,7 +120,7 @@ export function TaskList({
                     AI に相談
                   </Button>
                 ) : null}
-                <OpenInVscodeButton taskId={task.id} />
+                {handheld ? null : <OpenInVscodeButton taskId={task.id} />}
               </div>
               {record ? <TaskSupportSummary record={record} /> : null}
             </div>

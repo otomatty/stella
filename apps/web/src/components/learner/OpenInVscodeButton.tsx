@@ -2,7 +2,9 @@ import { useState } from "react";
 import { buildVscodeLessonUri, buildVscodeTaskUri } from "@stella/shared/vscode/uris";
 import { Code, Loader2 } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { apiFetch } from "@/lib/api-client";
+import { PcHandoffButton } from "./PcHandoffButton";
 
 /**
  * 接続専用ページは持たない。 押した時にワンタイム接続コードを発行し、 レッスンの
@@ -21,11 +23,18 @@ async function issueLinkCode(): Promise<string | undefined> {
   }
 }
 
-/** 接続コード付きの URI で、指定されたレッスンまたはタスクを VS Code に開く。 */
+/**
+ * 接続コード付きの URI で、指定されたレッスンまたはタスクを VS Code に開く。
+ *
+ * スマートフォン・タブレットでは VS Code を開けないので、接続コードを発行せず、
+ * ページのリンクをパソコンへ送るボタン (`PcHandoffButton`) に替える。
+ */
 export function OpenInVscodeButton(
   props: { stageId: string; lessonId: string } | { taskId: string },
 ) {
+  const handheld = useIsHandheld();
   const [opening, setOpening] = useState(false);
+  if (handheld) return <PcHandoffButton />;
 
   const handleOpen = async () => {
     setOpening(true);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { TaskSummary } from "@stella/shared/tasks/catalog";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { apiFetch } from "@/lib/api-client";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 
@@ -10,6 +11,7 @@ import { OpenInVscodeButton } from "./OpenInVscodeButton";
  * 接続 → 課題の準備 → 課題文の表示まで進む。課題文でないレッスンでは何も出さない。
  */
 export function TaskLessonHandoff({ stageId, lessonId }: { stageId: string; lessonId: string }) {
+  const handheld = useIsHandheld();
   const [taskId, setTaskId] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -30,8 +32,9 @@ export function TaskLessonHandoff({ stageId, lessonId }: { stageId: string; less
   return (
     <div className="mb-5 rounded-lg border border-border p-4 flex flex-wrap items-center gap-3">
       <p className="flex-1 min-w-48 text-[13px] text-ink-2">
-        この課題はパソコンの VS Code
-        で進めます。ボタンを押すと、学習フォルダーに課題を準備して開きます。準備先に自分のファイルがあるときは上書きしません。
+        {handheld
+          ? "この課題はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code で開く」を押してください。"
+          : "この課題はパソコンの VS Code で進めます。ボタンを押すと、学習フォルダーに課題を準備して開きます。準備先に自分のファイルがあるときは上書きしません。"}
       </p>
       <OpenInVscodeButton taskId={taskId} />
     </div>
