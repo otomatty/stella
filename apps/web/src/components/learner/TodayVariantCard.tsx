@@ -13,12 +13,14 @@ import { TASK_KIND_LABELS } from "@stella/shared/tasks/manifest";
 import { type TodayVariantReview, VARIANT_PURPOSE_LABELS } from "@stella/shared/tasks/variants";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { getTodayVariant } from "@/lib/srs-api";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
 
 const PASSED: readonly TaskStatus[] = ["passed", "ai-passed"];
 
 export function TodayVariantCard({ enabled }: { enabled: boolean }) {
+  const handheld = useIsHandheld();
   const [variant, setVariant] = useState<TodayVariantReview | null>(null);
   useEffect(() => {
     if (!enabled) return;
@@ -50,6 +52,11 @@ export function TodayVariantCard({ enabled }: { enabled: boolean }) {
                 ? `${TASK_KIND_LABELS[variant.kind]} · 講師が合格を取り消しました。通知のフィードバックを読んで、もう一度提出してください`
                 : `${TASK_KIND_LABELS[variant.kind]} · 前に解いた問題と同じ考え方で、別の問題を解きます`}
             </p>
+            {handheld && !passed ? (
+              <p className="text-xs text-ink-3 mt-1">
+                この類題はパソコンの VS Code で解きます。パソコンでこのページを開いてください。
+              </p>
+            ) : null}
           </div>
           <Badge variant={passed ? "success" : "default"}>
             {TASK_STATUS_LABELS[variant.status]}

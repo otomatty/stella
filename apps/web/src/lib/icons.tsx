@@ -70,6 +70,8 @@ export {
   SlidersHorizontal as Sliders,
   Star,
   Link as LinkIcon,
+  Share2 as Share,
+  Copy,
   Presentation,
   ZoomIn,
   ZoomOut,
