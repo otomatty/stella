@@ -877,17 +877,18 @@
   color: rgba(230, 232, 245, 0.45);
 }
 
-/* 盤面の上に浮かべる HUD (見出し・修了数・レベル) と、盤面上の文言の色。 */
-.tree-hud {
-  border-color: var(--line);
-  background: rgb(255 255 255 / 0.86);
+/* いま取り組む星の下に常に出す詳細の札 (SkillTree の StarSpotlight)。 */
+.tree-callout {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background: rgb(255 255 255 / 0.94);
   color: var(--ink);
+  backdrop-filter: blur(6px);
 }
 
-.dark .tree-hud {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(12, 14, 24, 0.72);
-  color: rgba(235, 238, 255, 0.88);
+.dark .tree-callout {
+  border-color: rgba(124, 109, 240, 0.45);
+  background: rgba(12, 14, 24, 0.88);
+  color: rgba(235, 238, 255, 0.92);
 }
 
 .tree-zoom-btn {

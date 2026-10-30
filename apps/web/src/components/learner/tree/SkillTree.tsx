@@ -47,6 +47,8 @@
  * 言い、盤面は「それがどこか」を見せる。開いた直後は **現在地の星へ寄せ**
  * (`initialFocusStageId`)、ガイドが勧めている星には「おすすめ」の輪を付ける
  * (`highlightStageIds`)。ガイドの「ツリーで見る」は `handleRef.focusStage` で星へ寄る。
+ * いま取り組む星 (現在地、無ければ先頭のおすすめ) には、押さなくても読める詳細の札を
+ * 星の下に常に出す (`spotlight`)。ほかのおすすめの星は名前だけを常に出す。
  * ガイドは盤面の上に浮かぶカードなので、その陰 (`insetLeft`) は見えている範囲から外す —
  * 寄せる中心・画面端の矢印・ルート名の置き場所は、カードの右側だけで決める。島チップは
  * カードと重ならない右上 (ズームボタンの左) に置く。
@@ -73,6 +75,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { isApiConfigured } from "@/lib/api-client";
 import { ArrowUp, Book, Check, Lock, Play, Plus, Sparkles, Star, X } from "@/lib/icons";
@@ -86,7 +89,25 @@ import { offscreenMarkers, type ViewState } from "./offscreen";
 import { layoutRadialSkillTree, type RadialNode } from "./radial-layout";
 import { sectorLabelsInView } from "./sector-label";
 import { SkillTreeCanvas, type SkillTreeCanvasHandle } from "./SkillTreeCanvas";
-import { describeStar, hasStarActions, type StarDetail } from "./star-detail";
+import { describeStar, hasStarActions, labelOf, type StarDetail } from "./star-detail";
+
+/**
+ * いま取り組む星に常に出す詳細の札 (押さなくても読める)。中身は呼び出し側が決める —
+ * 盤面は受講中のレッスンを知らないので、「次のレッスン」や進捗はホームが渡す。
+ */
+export interface TreeSpotlight {
+  stageId: string;
+  /** 見出しの上の札 (「いま進めている」「おすすめ」など)。 */
+  eyebrow: string;
+  /** 本文 (次のレッスン / 到達説明)。 */
+  detail?: string;
+  /** 進捗 (0-100)。進行中の星だけ。 */
+  progress?: number;
+  /** 主ボタン (強調)。`icon` は始める・続ける (play) か、一覧を開く (book) か。 */
+  action?: { label: string; icon: "play" | "book"; onClick: () => void; disabled?: boolean };
+  /** 控えのボタン。 */
+  secondary?: { label: string; onClick: () => void };
+}
 
 /** 親 (ホームのガイド) から盤面を操作するためのハンドル。 */
 export interface SkillTreeHandle {
@@ -118,8 +139,10 @@ interface SkillTreeProps {
    * 最初に描けたときに 1 回だけ寄る — 再取得のたびに視点を奪わない。
    */
   initialFocusStageId?: string | null;
-  /** ガイドが勧めている星。「おすすめ」の輪を付ける。 */
+  /** ガイドが勧めている星。「おすすめ」の輪を付け、名前を常に出す。 */
   highlightStageIds?: string[];
+  /** いま取り組む星の詳細の札。null なら出さない。 */
+  spotlight?: TreeSpotlight | null;
   /** 操作ハンドルの受け口 (`SkillTreeCanvas` と同じ受け渡し)。 */
   handleRef?: RefObject<SkillTreeHandle | null>;
   /** 左端から浮いたカード (ホームのガイド) に覆われている幅 (px)。 */
@@ -275,6 +298,7 @@ export const SkillTree = ({
   revealDev = false,
   initialFocusStageId = null,
   highlightStageIds = [],
+  spotlight = null,
   handleRef,
   insetLeft = 0,
   className,
@@ -439,6 +463,15 @@ export const SkillTree = ({
     canvasRef.current?.focusOn(x, y, 1);
     setFocusedId(null);
   }, []);
+  /** 詳細の札を付ける星 (複製された星は最初に描いた器)。描いていない星なら出さない。 */
+  const spotlightStageId = spotlight?.stageId ?? null;
+  const spotlightPlaced = useMemo(
+    () =>
+      spotlightStageId
+        ? (layout.nodes.find((n) => n.node.id === spotlightStageId && drawsStar(n)) ?? null)
+        : null,
+    [layout, spotlightStageId, drawsStar],
+  );
   /** 線をルート色で塗るための、星 id → 扇キーの引き当て。 */
   const sectorOfId = useMemo(() => {
     const sectors = new Map<string, string>();
@@ -723,7 +756,11 @@ export const SkillTree = ({
           queued={queuedStageIds.includes(placed.node.id)}
           highlighted={highlightStageIds.includes(placed.node.id)}
           showLabel={
-            showsAllLabels(scale) || (placed.instanceId === focusedId && showsFocusLabel(scale))
+            // 札を付けた星は札が名前を持つ。おすすめの星は寄らなくても名前を出す。
+            placed.instanceId !== spotlightPlaced?.instanceId &&
+            (showsAllLabels(scale) ||
+              highlightStageIds.includes(placed.node.id) ||
+              (placed.instanceId === focusedId && showsFocusLabel(scale)))
           }
           celebration={celebrations.get(placed.node.id)}
           celebrationIndex={celebrationOrder.get(placed.node.id) ?? 0}
@@ -744,7 +781,82 @@ export const SkillTree = ({
           revealDev={revealDev}
         />
       ))}
+
+      {spotlight && spotlightPlaced ? (
+        <StarSpotlight placed={spotlightPlaced} spotlight={spotlight} scale={scale} />
+      ) : null}
     </SkillTreeCanvas>
+  );
+};
+
+/**
+ * いま取り組む星の詳細の札。星の真下に常に出る (ポップオーバーのように押して開く器ではない)。
+ *
+ * 盤面と一緒に動くよう transform の中に置き、島タイトルと同じく倍率の逆数で縮めて
+ * 画面上の大きさを保つ (全体表示でも読める)。ボタンは `button` なので、押しても
+ * 盤面のドラッグは始まらない。
+ */
+const StarSpotlight = ({
+  placed,
+  spotlight,
+  scale,
+}: {
+  placed: RadialNode;
+  spotlight: TreeSpotlight;
+  scale: number;
+}) => {
+  const radius = placed.ring === 0 ? 22 : 16;
+  const title = labelOf(placed.node);
+  // フォーカス追従 (SkillTreeCanvas の onFocusCapture) 用の盤面座標。
+  const treeAt = { "data-tree-x": placed.x, "data-tree-y": placed.y };
+  return (
+    <section
+      aria-label={`${spotlight.eyebrow}: ${title}`}
+      className="tree-callout absolute z-20 w-[236px] rounded-xl border p-3 shadow-lg"
+      style={{
+        left: placed.x,
+        // おすすめの輪 (外へ 6px) の下から。
+        top: placed.y + radius + 10,
+        transform: `translate(-50%, 0) scale(${Math.min(8, 1 / Math.max(0.05, scale))})`,
+        transformOrigin: "50% 0",
+      }}
+    >
+      <div className="text-[10.5px] font-semibold tracking-wide text-brand-ink">
+        {spotlight.eyebrow}
+      </div>
+      <div className="mt-0.5 text-[13px] font-semibold leading-snug">{title}</div>
+      {spotlight.progress != null ? (
+        <div className="mt-2 flex items-center gap-2">
+          <Progress value={spotlight.progress} tone="brand" className="flex-1" />
+          <span className="text-[10.5px] tabular-nums text-ink-3">{spotlight.progress}%</span>
+        </div>
+      ) : null}
+      {spotlight.detail ? (
+        <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{spotlight.detail}</p>
+      ) : null}
+      {spotlight.action || spotlight.secondary ? (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {spotlight.action ? (
+            <Button
+              size="sm"
+              variant="accent"
+              disabled={spotlight.action.disabled}
+              onClick={spotlight.action.onClick}
+              {...treeAt}
+            >
+              {spotlight.action.icon === "book" ? <Book size={12} /> : <Play size={12} />}
+              {spotlight.action.label}
+            </Button>
+          ) : null}
+          {spotlight.secondary ? (
+            <Button size="sm" variant="ghost" onClick={spotlight.secondary.onClick} {...treeAt}>
+              <Book size={12} />
+              {spotlight.secondary.label}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   );
 };
 

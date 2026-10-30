@@ -65,7 +65,11 @@ import {
 import { StageQueuePanel } from "@/components/learner/home/StageQueuePanel";
 import { UnlockNotice } from "@/components/learner/home/UnlockNotice";
 import { SkillCheckDialog } from "@/components/learner/tree/SkillCheckDialog";
-import { SkillTree, type SkillTreeHandle } from "@/components/learner/tree/SkillTree";
+import {
+  SkillTree,
+  type SkillTreeHandle,
+  type TreeSpotlight,
+} from "@/components/learner/tree/SkillTree";
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import { buildHomeGuide, suggestedStageIds } from "@/lib/home-guide";
@@ -344,6 +348,60 @@ export const LearnerHome = ({
     startingId,
   };
 
+  /**
+   * ツリーでいま取り組む星に常に出す詳細の札 (押さなくても読める)。
+   *
+   * 進行中の星があればそれ (次のレッスン・進捗・「続きから」)。無ければガイドが勧める
+   * 先頭の星 (到達説明・「ここから始める」)。ガイドの主ボタンと同じ行き先を指す。
+   */
+  const chooseStep = guide.steps.find((step) => step.kind === "choose");
+  const suggestedId = chooseStep?.kind === "choose" ? chooseStep.stageIds[0] : undefined;
+  const suggestedNode = suggestedId ? nodeById.get(suggestedId) : undefined;
+  const spotlight: TreeSpotlight | null =
+    activeStage && !activeStage.completed
+      ? {
+          stageId: activeStage.id,
+          eyebrow: "いま進めている",
+          progress: activeStage.progress,
+          ...(nextLesson
+            ? {
+                detail: `次は「${nextLesson.lesson.title}」`,
+                action: {
+                  label: "続きから",
+                  icon: "play" as const,
+                  onClick: () => onOpenLesson(activeStage, nextLesson.lesson.id),
+                },
+                secondary: { label: "レッスン一覧", onClick: () => openStage(activeStage.id) },
+              }
+            : {
+                detail:
+                  activeStage.lessonsCount === 0
+                    ? "教材の準備中です。"
+                    : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
+                action: {
+                  label: "レッスン一覧",
+                  icon: "book" as const,
+                  onClick: () => openStage(activeStage.id),
+                },
+              }),
+        }
+      : suggestedId && suggestedNode
+        ? {
+            stageId: suggestedId,
+            eyebrow:
+              chooseStep?.kind === "choose" && chooseStep.welcome
+                ? "はじめの一歩 · おすすめ"
+                : "次はここ · おすすめ",
+            ...(suggestedNode.can_do ? { detail: `身につくと ${suggestedNode.can_do}。` } : {}),
+            action: {
+              label: startingId === suggestedId ? "開始中…" : "ここから始める",
+              icon: "play" as const,
+              onClick: () => requestStart(suggestedId),
+              disabled: startingId !== null,
+            },
+          }
+        : null;
+
   // ----- 腕試し・発見教材 -----
 
   /** 腕試しを開いている星 (null なら閉じている)。 */
@@ -434,6 +492,7 @@ export const LearnerHome = ({
             // 開いた直後は現在地へ寄せる。現在地が無ければ、勧めている先頭の星へ。
             initialFocusStageId={serverActiveStageId ?? highlightStageIds[0] ?? null}
             highlightStageIds={highlightStageIds}
+            spotlight={spotlight}
             handleRef={treeRef}
             // PC で開いたカードの陰は「見えている範囲」から外す。
             insetLeft={isDesktop && expanded ? GUIDE_INSET_PX : 0}
