@@ -73,7 +73,14 @@ import {
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import { buildHomeGuide, suggestedStageIds } from "@/lib/home-guide";
-import { ChevronDown, ChevronRight, ChevronUp, Sparkles, TrendingUp } from "@/lib/icons";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Sparkles,
+  TrendingUp,
+} from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
@@ -114,7 +121,8 @@ export const LearnerHome = ({
 }: LearnerHomeProps) => {
   const navigate = useNavigate();
   const progressMap = useLessonProgressMap();
-  const { submissions } = useMySubmissions(true);
+  // 取得に失敗すると一覧は空になる (= 「見直す」が黙って消える) ので、失敗も受け取って出す。
+  const { submissions, error: submissionsError } = useMySubmissions(true);
   // 「今日の復習」(SRS) の残り問題数。カードが無い/今日ぶんゼロならプランに出さない。
   const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
   const skillMap = useSkillMap(currentUserId, backendEnabled);
@@ -435,6 +443,7 @@ export const LearnerHome = ({
   const errors = [
     stagesError ? `ステージの取得に失敗しました: ${stagesError}` : null,
     reviewError ? `今日の復習の取得に失敗しました: ${reviewError}` : null,
+    submissionsError ? `提出履歴の取得に失敗しました: ${submissionsError}` : null,
     skillMap.error && nodes.length > 0
       ? `スキルツリーの更新に失敗しました: ${skillMap.error}`
       : null,
@@ -661,12 +670,27 @@ export const LearnerHome = ({
             </div>
           </>
         ) : (
-          <NextStepBar
-            guide={guide}
-            loading={loadingMap}
-            onExpand={() => setExpandedPref(true)}
-            {...stepContext}
-          />
+          <>
+            {/* 畳んでいても取得の失敗は見えるようにする (中身は開いたカードに出す)。 */}
+            {errors.length > 0 ? (
+              <div role="alert" className="border-b border-border bg-warning-soft">
+                <button
+                  type="button"
+                  onClick={() => setExpandedPref(true)}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-[11.5px] text-ink-2"
+                >
+                  <AlertTriangle size={12} className="shrink-0 text-warning" />
+                  読み込めなかった情報があります。開いて確認してください。
+                </button>
+              </div>
+            ) : null}
+            <NextStepBar
+              guide={guide}
+              loading={loadingMap}
+              onExpand={() => setExpandedPref(true)}
+              {...stepContext}
+            />
+          </>
         )}
       </aside>
 
