@@ -87,8 +87,10 @@ describe("describeStar のボタン", () => {
   it("霧の星には何も出さない", () => {
     expect(describe1({ visibility: "fog", enrolled: true }).actions).toEqual({
       skillCheck: "none",
+      resume: false,
       start: false,
       queue: false,
+      openStage: false,
       clearedNote: false,
     });
   });
@@ -97,8 +99,10 @@ describe("describeStar のボタン", () => {
     for (const visibility of ["edge", "hidden"] as const) {
       expect(describe1({ visibility, enrolled: true }).actions).toEqual({
         skillCheck: "none",
+        resume: false,
         start: false,
         queue: false,
+        openStage: false,
         clearedNote: false,
       });
     }
@@ -107,33 +111,44 @@ describe("describeStar のボタン", () => {
   it("ロック星は飛び級の腕試しだけ", () => {
     expect(describe1({ state: "locked", enrolled: true }).actions).toEqual({
       skillCheck: "challenge",
+      resume: false,
       start: false,
       queue: false,
+      openStage: false,
       clearedNote: false,
     });
   });
 
-  it("解放済みは腕試し + 着手。キューは受講登録がある星だけ", () => {
+  it("解放済みは腕試し + 着手。キューとレッスン一覧は受講登録がある星だけ", () => {
     expect(describe1({ enrolled: true }).actions).toEqual({
       skillCheck: "try",
+      resume: false,
       start: true,
       queue: true,
+      openStage: true,
       clearedNote: false,
     });
     expect(describe1({ enrolled: false }).actions.queue).toBe(false);
+    expect(describe1({ enrolled: false }).actions.openStage).toBe(false);
     expect(describe1({ enrolled: true }, { queued: true }).actions.queue).toBe(false);
   });
 
-  it("進行中・修了済みには着手の導線を出さない", () => {
+  it("進行中の星は着手の代わりに「続きから」を出す", () => {
     const active = describe1({ enrolled: true }, { isActive: true }).actions;
+    expect(active.resume).toBe(true);
     expect(active.start).toBe(false);
     expect(active.queue).toBe(false);
+    expect(active.openStage).toBe(true);
+  });
 
+  it("修了済みには着手の導線を出さず、読み返しのレッスン一覧だけ残す", () => {
     const cleared = describe1({ state: "cleared", enrolled: true }).actions;
     expect(cleared).toEqual({
       skillCheck: "try",
+      resume: false,
       start: false,
       queue: false,
+      openStage: true,
       clearedNote: true,
     });
   });

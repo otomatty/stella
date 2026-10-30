@@ -20,6 +20,13 @@
  * こちらでパンして視界に入れる (`onFocusCapture`)。overflow はブラウザに
  * スクロールさせない (`overflow-hidden` + transform) — スクロールと transform の
  * 二重管理になると座標が合わなくなる。
+ *
+ * ## 浮いた要素の下を「見えている範囲」から外す (`insetLeft`)
+ *
+ * ホームではガイドのカードが盤面の左上に浮かぶ。寄せる・全体表示・ボタンの拡縮の中心を
+ * 箱の中心のままにすると、星がカードの陰に入る。左から `insetLeft` を除いた範囲を
+ * 「見えている範囲」として、その中心へ寄せる。カードを畳む / 開くと幅が変わるので、
+ * 見ていた点が見えている範囲の中心に留まるよう、差の半分だけ盤面を動かす。
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -104,6 +111,8 @@ interface SkillTreeCanvasProps {
   onScaleChange?: (scale: number) => void;
   /** 見え方 (平行移動 / 倍率 / 箱の大きさ) が変わるたび。画面端の矢印の計算用。 */
   onViewChange?: (view: ViewState) => void;
+  /** 左端から浮いた要素に覆われている幅 (px)。寄せる中心をその右へずらす。 */
+  insetLeft?: number;
 }
 
 /** パン開始を無視する要素 (星や操作ボタンの上ではドラッグを始めない)。 */
@@ -143,8 +152,21 @@ export const SkillTreeCanvas = ({
   className,
   onScaleChange,
   onViewChange,
+  insetLeft = 0,
 }: SkillTreeCanvasProps) => {
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 覆われている幅。コールバックからは ref で読む — 依存に入れると、カードの開閉の
+   * たびに初期視点 (`homeView`) が組み直されて、見ていた場所を失う。
+   * 狭い箱では盤面を潰さないよう、少なくとも 240px は見えている範囲に残す。
+   */
+  const insetRef = useRef(insetLeft);
+  const insetOf = useCallback(
+    (vw: number) => Math.max(0, Math.min(insetRef.current, vw - 240)),
+    [],
+  );
+  /** 見えている範囲の中心 (x)。 */
+  const centerXOf = useCallback((vw: number) => (vw + insetOf(vw)) / 2, [insetOf]);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   /**
    * ドラッグ / ピンチ中の指の位置。state にすると 1 移動ごとに再レンダーが 2 回
@@ -184,20 +206,21 @@ export const SkillTreeCanvas = ({
       const viewport = viewportRef.current;
       if (!viewport) return t;
       const EDGE_SLACK = 120;
-      // offset = 盤面の原点が画面のどこにあるか。視界の中心が指す盤面上の点は
-      // (span / 2 - offset) / scale なので、それが [min, max] に収まる offset に丸める。
-      const clampAxis = (span: number, min: number, max: number, offset: number) =>
+      // offset = 盤面の原点が画面のどこにあるか。視界の中心 (center) が指す盤面上の点は
+      // (center - offset) / scale なので、それが [min, max] に収まる offset に丸める。
+      // 横の中心は見えている範囲の中心 — 浮いた要素の陰を「視界」に数えない。
+      const clampAxis = (center: number, min: number, max: number, offset: number) =>
         Math.min(
-          span / 2 - (min - EDGE_SLACK) * t.scale,
-          Math.max(span / 2 - (max + EDGE_SLACK) * t.scale, offset),
+          center - (min - EDGE_SLACK) * t.scale,
+          Math.max(center - (max + EDGE_SLACK) * t.scale, offset),
         );
       return {
         ...t,
-        x: clampAxis(viewport.clientWidth, contentBounds.minX, contentBounds.maxX, t.x),
-        y: clampAxis(viewport.clientHeight, contentBounds.minY, contentBounds.maxY, t.y),
+        x: clampAxis(centerXOf(viewport.clientWidth), contentBounds.minX, contentBounds.maxX, t.x),
+        y: clampAxis(viewport.clientHeight / 2, contentBounds.minY, contentBounds.maxY, t.y),
       };
     },
-    [contentBounds],
+    [contentBounds, centerXOf],
   );
 
   /**
@@ -211,10 +234,14 @@ export const SkillTreeCanvas = ({
         MAX_SCALE,
         Math.max(
           ABSOLUTE_MIN_SCALE,
-          Math.min((vw - FIT_PAD * 2) / worldWidth, (vh - FIT_PAD * 2) / worldHeight, 1),
+          Math.min(
+            (vw - insetOf(vw) - FIT_PAD * 2) / worldWidth,
+            (vh - FIT_PAD * 2) / worldHeight,
+            1,
+          ),
         ),
       ),
-    [worldWidth, worldHeight],
+    [worldWidth, worldHeight, insetOf],
   );
 
   /**
@@ -244,11 +271,11 @@ export const SkillTreeCanvas = ({
     // 全体表示に戻したら「見ている場所」も無い状態に戻す (下の resize の扱いを参照)。
     touched.current = false;
     setTransform({
-      x: (vw - worldWidth * scale) / 2,
+      x: centerXOf(vw) - (worldWidth * scale) / 2,
       y: (vh - worldHeight * scale) / 2,
       scale,
     });
-  }, [worldWidth, worldHeight, fitScaleOf, updateZoomFloor]);
+  }, [worldWidth, worldHeight, fitScaleOf, updateZoomFloor, centerXOf]);
 
   /**
    * 中心の星座を 1× で見せる初期視点。全体表示 (`fitView`) は右上のボタンに残す。
@@ -270,11 +297,11 @@ export const SkillTreeCanvas = ({
     setTransform(
       constrain({
         scale,
-        x: vw / 2 - cx * scale,
+        x: centerXOf(vw) - cx * scale,
         y: vh / 2 - cy * scale,
       }),
     );
-  }, [worldWidth, worldHeight, constrain, updateZoomFloor]);
+  }, [worldWidth, worldHeight, constrain, updateZoomFloor, centerXOf]);
 
   // 初回と盤面サイズの変化時は中心の星座から始める。
   // (星の増減 = 教材の公開でしか起きないので、閲覧中に不意に動く心配はない。)
@@ -332,7 +359,7 @@ export const SkillTreeCanvas = ({
   const zoomByButton = (factor: number) => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, factor);
+    zoomAt(centerXOf(viewport.clientWidth), viewport.clientHeight / 2, factor);
   };
 
   /**
@@ -449,7 +476,8 @@ export const SkillTreeCanvas = ({
         const margin = 72;
         const vw = viewport.clientWidth;
         const vh = viewport.clientHeight;
-        if (vx >= margin && vx <= vw - margin && vy >= margin && vy <= vh - margin) return prev;
+        const left = insetOf(vw) + margin;
+        if (vx >= left && vx <= vw - margin && vy >= margin && vy <= vh - margin) return prev;
         setAnimated(true);
         // フォーカス追従で動かした先も「見ている場所」。箱が変わっても保つ。
         touched.current = true;
@@ -457,10 +485,14 @@ export const SkillTreeCanvas = ({
         // ここも `constrain` を通す — 通さないと可動域の外へ出られてしまい、
         // 次のホイール / ドラッグで引き戻されてフォーカス中の星が画面外へ消える。
         // (星の座標は必ず可動域の中なので、この丸めで中央寄せが崩れることはない。)
-        return constrain({ ...prev, x: vw / 2 - x * prev.scale, y: vh / 2 - y * prev.scale });
+        return constrain({
+          ...prev,
+          x: centerXOf(vw) - x * prev.scale,
+          y: vh / 2 - y * prev.scale,
+        });
       });
     },
-    [constrain],
+    [constrain, insetOf, centerXOf],
   );
 
   const focusOn = useCallback(
@@ -473,13 +505,28 @@ export const SkillTreeCanvas = ({
         const scale = clampScale(Math.max(prev.scale, targetScale), zoomFloor.current);
         return constrain({
           scale,
-          x: viewport.clientWidth / 2 - x * scale,
+          x: centerXOf(viewport.clientWidth) - x * scale,
           y: viewport.clientHeight / 2 - y * scale,
         });
       });
     },
-    [constrain],
+    [constrain, centerXOf],
   );
+
+  /**
+   * 覆われている幅が変わったら (ガイドを畳んだ / 開いた)、見えている範囲の中心が
+   * 指していた盤面上の点をそのまま新しい中心へ運ぶ (= 差の半分だけ横へ動かす)。
+   */
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const before = viewport ? insetOf(viewport.clientWidth) : insetRef.current;
+    insetRef.current = insetLeft;
+    if (!viewport) return;
+    const after = insetOf(viewport.clientWidth);
+    if (after === before) return;
+    setAnimated(true);
+    setTransform((prev) => constrain({ ...prev, x: prev.x + (after - before) / 2 }));
+  }, [insetLeft, insetOf, constrain]);
 
   useEffect(() => {
     onScaleChange?.(transform.scale);
@@ -568,7 +615,11 @@ export const SkillTreeCanvas = ({
         </Button>
       </div>
 
-      <div className="tree-hint pointer-events-none absolute bottom-2 left-3 text-[10.5px]">
+      {/* 操作の案内。スマホ・タブレットではガイドのカードが下端に浮くので出さない。 */}
+      <div
+        className="tree-hint pointer-events-none absolute bottom-2 hidden text-[10.5px] lg:block"
+        style={{ left: insetLeft + 12 }}
+      >
         ドラッグで移動 · ホイール / ピンチで拡大縮小
       </div>
     </div>

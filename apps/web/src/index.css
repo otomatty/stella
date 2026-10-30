@@ -877,17 +877,18 @@
   color: rgba(230, 232, 245, 0.45);
 }
 
-/* 盤面の上に浮かべる HUD (見出し・修了数・レベル) と、盤面上の文言の色。 */
-.tree-hud {
-  border-color: var(--line);
-  background: rgb(255 255 255 / 0.86);
+/* いま取り組む星の下に常に出す詳細の札 (SkillTree の StarSpotlight)。 */
+.tree-callout {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background: rgb(255 255 255 / 0.94);
   color: var(--ink);
+  backdrop-filter: blur(6px);
 }
 
-.dark .tree-hud {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(12, 14, 24, 0.72);
-  color: rgba(235, 238, 255, 0.88);
+.dark .tree-callout {
+  border-color: rgba(124, 109, 240, 0.45);
+  background: rgba(12, 14, 24, 0.88);
+  color: rgba(235, 238, 255, 0.92);
 }
 
 .tree-zoom-btn {
@@ -1168,10 +1169,40 @@
   }
 }
 
+/* ホームのガイドが勧めている星 (「おすすめ」)。 星の状態色はそのままに、 外側の
+   破線の輪と札だけで「次はここ」を示す。 輪はゆっくり回り、 reduced-motion で止まる。 */
+.tree-next-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1.5px dashed var(--brand);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: tree-next-spin 12s linear infinite;
+}
+@keyframes tree-next-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tree-next-badge {
+  background: var(--bg-raised);
+  color: var(--brand-ink);
+  border: 1px solid var(--brand);
+  animation: none;
+}
+
+.dark .tree-next-badge {
+  background: rgba(20, 12, 28, 0.9);
+  color: #fff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tree-appear,
   .tree-unlock-pop,
-  .tree-new-badge {
+  .tree-new-badge,
+  .tree-next-ring {
     animation: none;
   }
   /* 輪は「animation で初めて見える」作りなので、 止めるなら消す。 */

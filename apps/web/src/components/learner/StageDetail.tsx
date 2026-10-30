@@ -112,11 +112,11 @@ export const StageDetail = ({
     <>
       <button
         type="button"
-        onClick={() => setPage("stages")}
+        onClick={() => setPage("dash")}
         className="flex items-center gap-1 mb-4 text-ink-3 text-[12.5px] hover:text-foreground"
       >
         <ChevronLeft size={14} />
-        <span>ステージ一覧に戻る</span>
+        <span>スキルツリーに戻る</span>
       </button>
 
       <div className="grid gap-6 items-start grid-cols-1 lg:grid-cols-[1fr_320px]">

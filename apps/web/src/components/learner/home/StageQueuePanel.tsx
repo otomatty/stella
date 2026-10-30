@@ -2,6 +2,7 @@
  * 「次にやるリスト」— アクティブでないステージを自分で並べる待ち行列 (Phase 2)。
  *
  * 学習の正本ではなく本人のメモ。並べ替え (@dnd-kit) と削除、先頭から着手する導線だけ。
+ * ホームのガイドの 1 区画として出す (積むのはツリーの星の「キューに追加」)。
  * 並びの保存はサーバ (`PUT /api/stage-queue/mine/order`) が持つので、ここは
  * 楽観的に並べ替えてから送る (体感を優先し、失敗時は Hook 側が取り直す)。
  */
@@ -26,9 +27,10 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { GripVertical, Play, Trash } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import type { Stage } from "@/data/types";
 import { cn } from "@/lib/utils";
+
+import { GuideSection } from "./NextStep";
 
 interface StageQueuePanelProps {
   /** 並び順どおりのステージ id。 */
@@ -38,7 +40,6 @@ interface StageQueuePanelProps {
   onRemove: (stageId: string) => void;
   /** この 1 つに切り替える (確認ダイアログは呼び出し側が出す)。 */
   onStart: (stageId: string) => void;
-  className?: string;
 }
 
 export const StageQueuePanel = ({
@@ -47,7 +48,6 @@ export const StageQueuePanel = ({
   onReorder,
   onRemove,
   onStart,
-  className,
 }: StageQueuePanelProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -64,21 +64,15 @@ export const StageQueuePanel = ({
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>次にやるリスト</CardTitle>
-        <CardActions>
-          <span className="text-[11.5px] text-ink-3">{queue.length} 件</span>
-        </CardActions>
-      </CardHeader>
+    <GuideSection title="次にやるリスト" meta={`${queue.length} 件`}>
       {queue.length === 0 ? (
-        <div className="px-4 py-4 text-[12.5px] text-ink-3">
-          まだありません。ステージ一覧の「キューに追加」で、次にやるステージを積んでおけます。
-        </div>
+        <p className="text-[12px] text-ink-3">
+          まだありません。ツリーの星の「キューに追加」で、次にやるステージを積んでおけます。
+        </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={queue} strategy={verticalListSortingStrategy}>
-            <ul>
+            <ul className="overflow-hidden rounded-lg border border-border">
               {queue.map((stageId, i) => (
                 <QueueRow
                   key={stageId}
@@ -95,7 +89,7 @@ export const StageQueuePanel = ({
           </SortableContext>
         </DndContext>
       )}
-    </Card>
+    </GuideSection>
   );
 };
 
@@ -119,7 +113,7 @@ const QueueRow = ({ stageId, index, title, category, last, onRemove, onStart }: 
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "flex items-center gap-3 px-4 py-2.5 bg-card",
+        "flex items-center gap-2.5 px-3 py-2 bg-card",
         last ? "" : "border-b border-border",
         isDragging ? "relative z-10 shadow-sm" : "",
       )}
@@ -135,8 +129,8 @@ const QueueRow = ({ stageId, index, title, category, last, onRemove, onStart }: 
       </button>
       <span className="text-[11.5px] text-ink-3 tabular-nums w-4">{index + 1}</span>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-medium leading-snug truncate">{title}</div>
-        {category ? <div className="text-[11.5px] text-ink-3">{category}</div> : null}
+        <div className="text-[12.5px] font-medium leading-snug truncate">{title}</div>
+        {category ? <div className="text-[11px] text-ink-3">{category}</div> : null}
       </div>
       <Button size="sm" variant="default" onClick={() => onStart(stageId)}>
         <Play size={12} />

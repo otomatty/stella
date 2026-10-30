@@ -32,17 +32,31 @@ export type StarDetailBody =
 export interface StarDetailActions {
   /** 腕試し。`challenge` = ロック星の飛び級 (強調)、`try` = 解放済みの力試し。 */
   skillCheck: "none" | "challenge" | "try";
+  /** 「続きから」(進行中の星のレッスンを開く)。 */
+  resume: boolean;
   /** 「ここから始める」。 */
   start: boolean;
   /** 「キューに追加」。 */
   queue: boolean;
+  /**
+   * 「レッスン一覧」(ステージ詳細を開く)。受講登録のある星だけ — 詳細は受講中の一覧から
+   * 引くので、登録の無い星では開けない。ステージ一覧をツリーへ集約した代わりの入口。
+   */
+  openStage: boolean;
   /** 「このスキルは修了済み」の但し書き。 */
   clearedNote: boolean;
 }
 
 /** ボタンが 1 つでも出るか (出ないなら器は箱ごと描かない)。 */
 export function hasStarActions(actions: StarDetailActions): boolean {
-  return actions.skillCheck !== "none" || actions.start || actions.queue || actions.clearedNote;
+  return (
+    actions.skillCheck !== "none" ||
+    actions.resume ||
+    actions.start ||
+    actions.queue ||
+    actions.openStage ||
+    actions.clearedNote
+  );
 }
 
 export interface StarDetail {
@@ -102,15 +116,26 @@ export function describeStar({ node, isActive, queued, revealDev }: StarDetailIn
   const actions: StarDetailActions = beyond
     ? // 霧より先の星には導線を出さない。開始も腕試しもフォーカスもサーバが断るので、
       // ボタンを出すと「押せるのに必ず失敗する」になる。飛び級の入口は 1 歩先まで。
-      { skillCheck: "none", start: false, queue: false, clearedNote: false }
+      {
+        skillCheck: "none",
+        resume: false,
+        start: false,
+        queue: false,
+        openStage: false,
+        clearedNote: false,
+      }
     : {
         skillCheck: locked ? "challenge" : "try",
+        // 進行中の星は「始める」の代わりに「続きから」(開始は済んでいる)。
+        resume: isActive && !cleared,
         // 修了した星に着手の導線は出さない (サーバも切り替えを 400 で断る)。
         // 解放済みなら **割り当ての有無によらず** 始められる (Phase 3b) —
         // 受講登録は「ここから始める」を押した時点で自分で作る。
         start: !locked && !cleared && !isActive,
         // キューだけは受講登録のある星に限る (キュー API が登録を要求するため)。
         queue: !locked && !cleared && !isActive && !queued && node.enrolled === true,
+        // 修了した星も読み返せるように出す。ロック星は開いてもレッスンが閉じている。
+        openStage: !locked && node.enrolled === true,
         clearedNote: cleared,
       };
 

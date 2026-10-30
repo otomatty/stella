@@ -96,7 +96,8 @@ function loadSaved(): PersistedState | null {
 const PATH_BY_PAGE: Record<string, string> = {
   dash: "/",
   stages: "/stages",
-  "skill-tree": "/skill-tree",
+  // 受講者の学習の記録 (ホームから移した提出履歴・学習時間・ペース・お知らせ)。
+  records: "/records",
   cert: "/certificates",
   "interview-prep": "/interview-prep",
   "review-queue": "/review-queue",
@@ -282,7 +283,7 @@ export function AppShell() {
   // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
-  // LearnerDashboard への props 渡し用（二重 fetch 回避）。
+  // 学習の記録 (LearnerRecords) への props 渡し用（二重 fetch 回避）。
   const announcements = useAnnouncements(effectiveTenant.id, effectiveRole === "learner");
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
   // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
@@ -380,9 +381,8 @@ export function AppShell() {
       if (key === "stage-detail") {
         // 戻る/進むで古いステージに戻った直後は ref が別ステージを指しうるため URL を優先する。
         const stageId = stageIdFromPath(pathname) ?? selectedStageRef.current?.id;
-        void navigate(
-          stageId ? { to: "/stages/$stageId", params: { stageId } } : { to: "/stages" },
-        );
+        // 決まらなければホーム (スキルツリー) へ。受講者のステージ一覧はツリーへ集約した。
+        void navigate(stageId ? { to: "/stages/$stageId", params: { stageId } } : { to: "/" });
         return;
       }
       if (key === "lesson") {
@@ -400,7 +400,7 @@ export function AppShell() {
             params: { stageId: target.id, lessonId },
           });
         } else {
-          void navigate({ to: "/stages" });
+          void navigate({ to: "/" });
         }
         return;
       }
@@ -590,8 +590,9 @@ export function AppShell() {
     }
   }
 
-  // スキルツリーは盤面そのものをコンテンツ領域にする (Card も余白も持たない)。
-  const isFlush = page === "lesson" || page === "review" || page === "skill-tree";
+  // 受講者のホームはスキルツリーの盤面そのものをコンテンツ領域にする (Card も余白も持たない)。
+  const isFlush =
+    page === "lesson" || page === "review" || (page === "dash" && effectiveRole === "learner");
 
   const shellValue: AppShellValue = {
     role: effectiveRole,
@@ -748,8 +749,8 @@ export function StageNotFoundNotice({ setPage }: { setPage: (p: string) => void 
     <NotFoundNotice
       title="ステージが見つかりません"
       description="このステージは削除されたか、 現在の受講対象に含まれていません。"
-      backLabel="ステージ一覧に戻る"
-      onBack={() => setPage("stages")}
+      backLabel="スキルツリーに戻る"
+      onBack={() => setPage("dash")}
     />
   );
 }
@@ -779,7 +780,7 @@ export function EmptyStagesNotice({ setPage }: { setPage: (p: string) => void })
         className="text-[12.5px] text-brand underline underline-offset-2"
         onClick={() => setPage("dash")}
       >
-        ダッシュボードに戻る
+        スキルツリーに戻る
       </button>
     </div>
   );

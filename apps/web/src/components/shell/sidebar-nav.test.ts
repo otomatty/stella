@@ -38,12 +38,20 @@ describe("navForRole", () => {
     },
   );
 
-  it("スキルツリーは受講者だけに、ステージ一覧の直後に出す", () => {
-    const items = ids("learner");
-    expect(items.indexOf("skill-tree")).toBe(items.indexOf("stages") + 1);
-    // staff には出さない (自分の星を持たないので、見ても空のツリーになる)。
+  it("受講者の先頭はホーム = スキルツリー。ステージ一覧はツリーへ集約したので出さない", () => {
+    expect(navForRole("learner")[0]).toMatchObject({ id: "dash", label: "スキルツリー" });
+    expect(ids("learner")).not.toContain("stages");
+    // staff のホームは各自のダッシュボードのまま (自分の星を持たない)。
     for (const role of ["instructor", "admin", "sales"] as const) {
-      expect(ids(role)).not.toContain("skill-tree");
+      expect(navForRole(role)[0]?.label).not.toBe("スキルツリー");
+    }
+  });
+
+  it("学習の記録は受講者だけに、現在のレッスンの直後に出す", () => {
+    const items = ids("learner");
+    expect(items.indexOf("records")).toBe(items.indexOf("lesson") + 1);
+    for (const role of ["instructor", "admin", "sales"] as const) {
+      expect(ids(role)).not.toContain("records");
     }
   });
 

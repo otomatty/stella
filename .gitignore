@@ -36,6 +36,9 @@ graphify-out/
 # Vite が vite.config.ts 読み込み時に作る一時ファイル
 vite.config.ts.timestamp-*.mjs
 
+# TanStack Router のプラグインが routeTree.gen.ts を書き出す途中の一時ファイル
+.tanstack/
+
 # カバレッジレポート (bun run test:coverage)
 coverage/
 

@@ -57,7 +57,7 @@ export const AccessDeniedScreen = ({ allow }: { allow: Role[] }) => {
             variant="primary"
             onClick={() => (shell ? shell.setPage("dash") : void router.navigate({ to: "/" }))}
           >
-            ダッシュボードへ
+            ホームへ
           </Button>
         </>
       }

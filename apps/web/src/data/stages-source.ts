@@ -4,7 +4,7 @@
  * - バックエンド設定済み: DB から読む。失敗時は空配列 + error（fixtures に戻さない）。
  * - バックエンド未設定: 既存 fixtures（デモ専用）。
  *
- * 受講者 UI (`StageList` / `StageDetail` / `LessonPlayer`) は `Stage[]` 型を
+ * 受講者 UI (`LearnerHome` / `StageDetail` / `LessonPlayer`) は `Stage[]` 型を
  * そのまま受け取り続けるため、 マッパー (`mapStageToUi`) で正規化する。
  */
 
@@ -130,7 +130,7 @@ export function useStagesForTenant(tenantId: Tenant["id"], enabled = true): UseS
 }
 
 /**
- * 受講者ダッシュボード / ステージ一覧用の「自分に割り当てられたステージ」ソース (Issue #20)。
+ * 受講者のホーム / ステージ詳細用の「自分に割り当てられたステージ」ソース (Issue #20)。
  *
  * `useStagesForTenant` (テナントの published ステージ一覧 = 公開ステージを「探す」) とは分離し、
  * enrollment ベースで自分が受講登録されたステージのみを返す。 各ステージには enrollment 由来の
