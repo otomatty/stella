@@ -35,7 +35,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l1-exam-overview/t1-developer-cert/slides.md・l1-exam-overview/t2-who-can-take/slides.md・l1-exam-overview/t3-proctored-exam/slides.md・l1-exam-overview/doc.md・l1-exam-overview/knowledge.md・l2-official-sources/t1-exam-guide/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -52,7 +55,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l1-exam-overview/t2-who-can-take/slides.md・l1-exam-overview/doc.md・l1-exam-overview/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -69,7 +75,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t2-platform-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -86,7 +95,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t2-platform-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -103,7 +115,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -120,7 +135,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -137,7 +155,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -154,7 +175,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -171,7 +195,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -188,7 +215,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -205,7 +235,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -222,7 +255,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -239,7 +275,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -256,7 +295,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -273,7 +315,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -290,7 +335,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -307,7 +355,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -324,7 +375,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -341,7 +395,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -358,7 +415,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -375,7 +435,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -392,7 +455,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t3-code-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -409,7 +475,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -426,7 +495,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -443,7 +515,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -460,7 +535,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -477,7 +555,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -494,7 +575,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -511,7 +595,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -528,7 +615,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -545,7 +635,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     }
   ]

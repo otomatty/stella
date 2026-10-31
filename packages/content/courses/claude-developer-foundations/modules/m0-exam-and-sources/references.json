@@ -10,7 +10,7 @@
       "usedFor": "4つの資格の対象と、Developer: Foundations が Claude API・ツール使用・エージェント開発を扱うことの説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-exam-overview/t2-who-can-take/slides.md",
@@ -18,7 +18,7 @@
       "usedFor": "試験が Claude Partner Network の加盟組織の人に開かれ、加盟は無料で組織が受験者を登録すること、認定が個人に属することの説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-exam-overview/t3-proctored-exam/slides.md",
@@ -26,7 +26,7 @@
       "usedFor": "試験が Pearson により監督つきで行われ、開始前に本人確認があり、合格者に Credly のデジタルバッジが届くことの説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-exam-overview/doc.md",
@@ -34,7 +34,7 @@
       "usedFor": "レッスン0-1の3トピック(資格の対象・受験できる人・監督つきの試験)を読み物にまとめた説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-exam-overview/knowledge.md",
@@ -42,7 +42,7 @@
       "usedFor": "資格の対象・受験資格・本人確認・認定の帰属を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/t1-exam-guide/slides.md",
@@ -50,7 +50,7 @@
       "usedFor": "資格ごとの準備の講座が Partner Academy にあることの説明。試験ガイドの置き場所・配点の有無・改訂の予定は講師が Partner Academy で確かめる",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/t2-platform-docs/slides.md",
@@ -58,7 +58,7 @@
       "usedFor": "Claude Developer Platform のドキュメントで機能の一覧と Messages API の基本を確かめる読み方の説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/t3-code-docs/slides.md",
@@ -66,7 +66,7 @@
       "usedFor": "Agent SDK が Claude Code と同じ道具とループを使えるようにしたもので、仕様が Claude Code のドキュメントにあることの説明",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/t4-no-leaked-questions/slides.md",
@@ -74,7 +74,7 @@
       "usedFor": "教材独自の学習方針。本番の問題を写したとされる問題集を使わない理由と、代わりに使う資料",
       "authorship": "original",
       "reuse": "original",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/doc.md",
@@ -113,7 +113,7 @@
       "usedFor": "レッスン0-2の4トピックの読み物と、公式の情報源マップ(各ページが扱う範囲の要約)",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-official-sources/knowledge.md",
@@ -126,7 +126,7 @@
       "usedFor": "試験ガイドと公式ドキュメントの使い分け、学習に使う資料を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-study-plan/README.md",
@@ -134,7 +134,7 @@
       "usedFor": "教材独自の課題。試験の範囲ごとの配点に合わせて学習時間を配る関数の受入条件",
       "authorship": "original-exercise",
       "reuse": "original",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
