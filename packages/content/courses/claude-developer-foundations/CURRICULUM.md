@@ -34,7 +34,7 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 - 到達目標: 下の「到達目標」
 - スコープ外: 上の「対象外」
 - 評価方法: 知識問題あり(各レッスン、合格点 80) / コード演習あり(各単元、`node-test-01`。下の「手を動かす課題」) / 模擬試験 = 知識問題(M9)
-- 規模: 11 単元 / 29 レッスン / 78 トピック(M9・M10 の演習レッスンを除く)
+- 規模: 11 単元 / 30 レッスン / 91 トピック / 知識問題 213 問(M9 の模擬試験 53 問と M10 のドリル 24 問を含む) / 課題 18 問
 - 出典: 公式ドキュメント(Claude Developer Platform・Claude Code)と Anthropic の記事。下の「公式の情報源」
 - 参照元の台帳: `sources/registry.json`
 - 使用箇所と表示: 単元の `references.json`、各トピック・まとめ・知識問題の `sourceRefs`
@@ -97,27 +97,30 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M8 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。表の資料はすべて `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M9 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+「読む節」はページの見出しの表記です。M9 の模擬試験と M10 のドリル(10-3)は、問題の解説で M1〜M8 の資料を使います
+(表の「使う単元」には書きません)。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
 | Messages API | [Using the Messages API](https://platform.claude.com/docs/en/build-with-claude/working-with-messages) | Basic request and response / Multiple conversational turns | M0・M1 |
-| | [Stop reasons and fallback](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) | Stop reason values / Best practices for handling stop reasons | M0・M1 |
-| | [Claude API errors](https://platform.claude.com/docs/en/api/errors) | HTTP errors / SDK error types / Request ID | M0・M2 |
+| | [Stop reasons and fallback](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) | Stop reason values / Best practices for handling stop reasons | M0・M1・M10 |
+| | [Stop reasons and fallback](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons)(一覧とエラーの節) | Quick reference / Stop reasons versus errors | M10 |
+| | [Claude API errors](https://platform.claude.com/docs/en/api/errors) | HTTP errors / SDK error types / Request ID | M0・M2・M10 |
 | | [Rate limits](https://platform.claude.com/docs/en/api/rate-limits) | About rate limits / Response headers | M2 |
-| | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming) | Streaming with SDKs / Event types | M0・M2 |
-| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) | How the Message Batches API works / Pricing | M0・M2・M3 |
+| | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming) | Streaming with SDKs / Event types | M0・M2・M10 |
+| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) | How the Message Batches API works / Pricing | M0・M2・M3・M10 |
 | | [Using the Messages API](https://platform.claude.com/docs/en/build-with-claude/working-with-messages)(system の節) | System role in messages | M1 |
 | | [Messages(API リファレンス)](https://platform.claude.com/docs/en/api/messages) | Create a Message | M1 |
-| | [TypeScript SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript) | Usage / Retries | M1 |
+| | [TypeScript SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript) | Usage / Retries | M1・M10 |
 | | [Get your Claude API key](https://platform.claude.com/docs/en/get-api-key) | Use your API key | M1 |
 | | [Model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions) | Model ID format / Dateless IDs are pinned snapshots | M1 |
 | | [Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) | What a refusal looks like | M1 |
 | | [Claude API errors](https://platform.claude.com/docs/en/api/errors)(Long requests の節) | Long requests | M2 |
 | | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming)(差分と finalMessage の節) | Content block delta types / Get the final message without handling events | M2 |
 | | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing)(使い方の節) | Prepare and create your batch / Retrieving batch results | M2 |
+| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing)(キャッシュとの組み合わせの節) | What can be batched / Using prompt caching with Message Batches | M10 |
 | | [Files API](https://platform.claude.com/docs/en/build-with-claude/files) | How the Files API works / How to use the Files API | M2 |
 | | [Vision](https://platform.claude.com/docs/en/build-with-claude/vision) | Send images to Claude | M2 |
 | | [PDF support](https://platform.claude.com/docs/en/build-with-claude/pdf-support) | Process PDFs with Claude | M2 |
@@ -125,12 +128,13 @@ M9 以降だけで使うものは、単元を書くときに登録します。�
 | モデルと費用 | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) | Establish key criteria / Combine models | M0・M3 |
 | | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model)(始め方と比べ方の節) | Choose the best model to start with / Decide whether to upgrade or change models | M3 |
 | | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Start here / Combine models | M3・M6 |
-| | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | How prompt caching works / Pricing | M0・M3 |
+| | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | How prompt caching works / Pricing | M0・M3・M10 |
 | | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)(区切りと usage の節) | Explicit cache breakpoints / Caching strategies and considerations | M3 |
 | | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) | How effort works / Recommended effort levels | M0・M3 |
 | | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)(書き方と考える過程の節) | Set the effort level / Effort with thinking | M3 |
 | | [Token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) | How to count message tokens / Pricing and rate limits | M3 |
 | | [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) | How thinking works / Configuring thinking / Thinking and effort | M3 |
+| | [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking)(ツール使用の節) | Thinking with tool use / Preserving thinking blocks | M10 |
 | | [Reducing latency](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency) | How to measure latency / How to reduce latency | M3 |
 | プロンプトとコンテキスト | [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) | General principles / Output and formatting | M0・M4 |
 | | [Context windows](https://platform.claude.com/docs/en/build-with-claude/context-windows) | How the context window works / Manage context with compaction | M0・M4 |
@@ -138,21 +142,22 @@ M9 以降だけで使うものは、単元を書くときに登録します。�
 | | [Compaction overview](https://platform.claude.com/docs/en/build-with-claude/compaction) | Choose how to compact | M4 |
 | | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) | Why use structured outputs / How it works | M0・M4 |
 | | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)(スキーマの書き方と注意の節) | Using a raw JSON schema / Important considerations | M4 |
+| | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)(一緒に使う節) | Using both features together / Feature compatibility | M10 |
 | | [Effective context engineering for AI agents](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) | The anatomy of effective context / Context retrieval and agentic search | M0・M4 |
 | ツールと MCP | [Tool use with Claude](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview) | How tool use works / Choose a tool | M0・M5 |
 | | [Tool use with Claude](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)(ツールを使う場面の節) | When Claude uses tools | M5 |
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) | Specifying client tools | M0・M5 |
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools)(説明と tool_choice の節) | Best practices for tool definitions / Forcing tool use | M5 |
-| | [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) | Why strict tool use matters for agents / How it works | M5 |
-| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5・M7 |
-| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)(エラーの節) | Handling errors with is_error | M5 |
-| | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) | Key features / Limitations | M0・M5 |
+| | [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) | Why strict tool use matters for agents / How it works | M5・M10 |
+| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5・M7・M10 |
+| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)(エラーの節) | Handling errors with is_error | M5・M10 |
+| | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) | Key features / Limitations | M0・M5・M10 |
 | | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)(書き方の節) | MCP server configuration / MCP toolset configuration / Response content types | M5 |
 | | [Writing effective tools for agents — with agents](https://www.anthropic.com/research/writing-tools-for-agents) | Principles for writing effective tools | M0・M5 |
-| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5・M7 |
+| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5・M7・M10 |
 | | MCP の仕様(modelcontextprotocol.io) | — | 使わない。**執筆環境から届かないため未確認**。M5 の MCP の説明は、上の Anthropic・Claude Code の資料の範囲で書いた |
-| エージェント | [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | When (and when not) to use agents / Building blocks, workflows, and agents | M0・M6 |
-| | [Building effective agents](https://www.anthropic.com/research/building-effective-agents)(定義・組み合わせ・まとめの節) | What are agents? / Combining and customizing these patterns / Summary | M6 |
+| エージェント | [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | When (and when not) to use agents / Building blocks, workflows, and agents | M0・M6・M10 |
+| | [Building effective agents](https://www.anthropic.com/research/building-effective-agents)(定義・組み合わせ・まとめの節) | What are agents? / Combining and customizing these patterns / Summary | M6・M10 |
 | | [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview) | Compare the Agent SDK to other Claude tools / Capabilities | M0・M6 |
 | | [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop) | The loop at a glance / Tool execution | M0・M6 |
 | | [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop)(止める条件と結果の節) | Turns and budget / Handle the result | M6 |
@@ -204,12 +209,12 @@ M9 以降だけで使うものは、単元を書くときに登録します。�
 | M7 `m7-safety` | 安全性とセキュリティ | 3h | Security and Safety |
 | M8 `m8-claude-code-and-evals` | Claude Code の設定と評価・デバッグ | 2h | Claude Code / Eval, Testing, and Debugging |
 | M9 `m9-mock-exam` | 模擬試験(自作 53 問) | 3h | 全体 |
-| M10 `m10-final-review` | 直前対策(紛らわしい機能の切り分け・ドメイン別ドリル・受験の手続き) | 3h | 全体 |
+| M10 `m10-final-review` | 直前対策(紛らわしい機能の切り分け・範囲別のドリル・受験の準備と当日・確認A) | 3h | 全体 |
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M9 は本文と課題(M9 は模擬試験)を書いてあります。** M10 は、講師がこの一覧と公式の情報源の対応を確認してから
-本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
+ID の 1 桁目が単元です(M10 は 2 桁)。**M0〜M10 の本文と課題を書いてあります(M9 は模擬試験、M10 は直前対策と確認A)。**
+takeaway は公式ドキュメントの見出しの範囲で確かめてから確定しました。試験ガイドが改訂されたら、上の「改訂への備え」の順に見直します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
 
@@ -376,7 +381,7 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 (Troubleshooting tool use)を takeaway に入れました。フックは、CLAUDE.md が指示として読まれるだけで必ず守られる設定ではない
 こと(CLAUDE.md vs auto memory)と対にして書きました。
 
-### M9 模擬試験 / M10 直前対策
+### M9 模擬試験
 
 - M9(**本文・模擬試験あり**): `m9-mock-exam/l1-mock-exam` に、受け方のトピック 9-1-1「模擬試験で弱点を見つける」
   (takeaway「模擬試験は時間を計って通しで解き、間違えた問題の単元に戻って直します。」、introduces: 模擬試験, 誤答分析 /
@@ -387,8 +392,30 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
   各問の解説に範囲・戻るトピック ID・公式ドキュメントのページを付け、誤答分析に使う。まとめには範囲ごとの問題数を載せ、配点の %
   は載せない。53 問は第三者の解説による本番の問題数で、公式の数字ではないことをまとめに書いた。
   **本番に合わせるのは問題数と時間だけ**で、時間は受講者が自分で計る。本番は日本語でも受験できるので、設問・解説とも日本語で書く
-- M10: 紛らわしい機能の切り分け(バッチとストリーミング、キャッシュとバッチ、構造化出力と strict、
-  MCP コネクターと Agent SDK の MCP、ワークフローとエージェント)・範囲別のドリル・受験の手続きと当日
+
+### M10 直前対策(本文・課題あり)
+
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 10-1-1 | `l1-api-distinctions/t1-stream-or-batch` | 待つ人がいるかで選ぶ | 人が応答を待つならストリーミング、急がない大量の処理ならバッチで送ります。 | — | ストリーミング, Message Batches API, バッチの料金, バッチの結果 |
+| 10-1-2 | `l1-api-distinctions/t2-cache-and-batch` | 割引を重ねる | キャッシュとバッチの割引は重ねられますが、バッチの中のキャッシュは当たるとは限りません。 | — | プロンプトキャッシュ, cache_control, Message Batches API, バッチの料金 |
+| 10-1-3 | `l1-api-distinctions/t3-format-or-strict` | スキーマをかける場所 | 応答の形は構造化出力で、ツールの入力の形は strict で決め、両方を同じリクエストで使えます。 | — | 構造化出力, output_config, strict, tool_use, JSON スキーマ |
+| 10-1-4 | `l1-api-distinctions/t4-stop-reason-or-error` | エラーではない止まり方 | stop_reason は成功した応答が止まった理由で、HTTP のエラーとは分けて扱います。 | — | stop_reason, HTTP ステータス, refusal, 途中で切れた応答, 送り直し |
+| 10-2-1 | `l2-agent-distinctions/t1-connector-or-sdk` | MCP をつなぐ場所 | 公開された MCP サーバーは MCP コネクターで API から使い、手元で動く stdio のサーバーは Agent SDK でつなぎます。 | — | MCP サーバー, MCP コネクター, mcp_servers, Agent SDK, mcpServers |
+| 10-2-2 | `l2-agent-distinctions/t2-workflow-or-agent` | 手順を前もって書けるか | 手順を前もって書ける仕事はワークフローで、柔軟な判断が要る仕事はエージェントで作ります。 | — | ワークフロー, エージェント, プロンプトの連鎖, ルーティング |
+| 10-3-1 | `l3-domain-drills/t1-drill-weak-domains` | 弱い範囲を繰り返す | 模擬試験で間違えた範囲のドリルを解き、外した問題は戻るトピックの公式ページで確かめます。 | ドリル | 模擬試験, 誤答分析, 出題範囲, 公式ドキュメント |
+| 10-4-1 | `l4-exam-day/t1-read-the-scenario` | 場面の条件を読む | 本番の問題は実際の仕事を映すように作られているので、場面の条件を拾ってから選択肢を比べます。 | 場面の条件 | 認定試験, 出題範囲 |
+
+書く前の一覧から、公式ドキュメントに合わせて次を変えました。切り分けは、API の機能(10-1)とエージェントの作り(10-2)の
+2 レッスンに分け、Stop reasons and fallback の Stop reasons versus errors に合わせて「stop_reason とエラー」(10-1-4)を足しました。
+確認A で stop_reason の分岐とエラーの扱いを分けて書くためです。比べる 2 つの機能はどちらも導入済みなので、切り分けのトピックは
+新しい語を導入しません(タイトルに「と」を入れず、選ぶ条件を題にしました)。「キャッシュとバッチ」は、Batch processing の
+Using prompt caching with Message Batches に合わせ、バッチの中ではキャッシュが当たるとは限らないことまでを takeaway に入れました。
+「構造化出力と strict」は、Structured outputs の Using both features together に合わせ、同じリクエストで両方を使えることを入れました。
+ドリルは範囲ごとに 3 問(計 24 問)で、配点の小さい範囲も埋められるよう数をそろえました(本番の配分に近いのは M9)。
+受験の手続き(受験資格・監督と本人確認・デジタルバッジ)は M0 で扱ったので、10-4 はトピックを場面の読み方の 1 つにし、
+まとめに申し込みの前と当日に確かめることの一覧(M0 への戻り先つき)を置きました。公式の発表で試験の作り方として書かれているのは
+「専門家が作り、実際の仕事を映す内容にした」ことまでなので、問題の形式(場面の問題か)は本文に断定して書いていません。
 
 ## 手を動かす課題
 
@@ -420,13 +447,16 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 | M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す(**実装済み**) | 基礎 | ツールで取った内容を出どころと一緒に JSON にして tool_result に入れ(タグで包まない)、アプリの指示は tool_result のあとの text ブロックで渡す |
 | M7 | `q02-least-privilege` 要るツールだけを許可する(**実装済み**) | 自力 | 作業の種類から allowedTools を最小にし(Bash は npm test だけ、MCP は名前で 1 つずつ)、dontAsk と、Bash の要らない作業では disallowedTools の Bash でほかを断る(説明欄あり) |
 | M8 | `q01-eval-compare` 評価のセットで比べる(**実装済み**) | 自力 | 評価のケースをすべて回してコードで採点し合格率を出す(生成の失敗は不合格として残す)。同じセットの前後を比べ、合格率の差と、悪化したケース・直ったケースを返す(説明欄あり) |
-| M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
+| M10 | `q01-support-assistant` 問い合わせに答えるアシスタント(**実装済み**) | 確認A | strict を付けたツールと構造化出力を毎回のリクエストに入れ、送り直しは `create` の第 2 引数の `maxRetries` で SDK に任せる。tool_use なら thinking ブロックを含む content をそのまま返してツールを実行し(知らないツール・例外は is_error)、stop_reason ごとに答え・拒否・切れた応答・扱いを決めていない値を返す。maxTurns で止め、429・500 以上は重ねて送り直さずに返し、それ以外のエラーは投げる(ヒント 0 段・解答例は合格後。説明欄あり) |
 
-M1〜M8 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定・評価のケースの形をした値や、偽の送信・分類・段・生成の関数を扱う関数なので、クライアントは使いません。M10 の確認Aは、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M8 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定・評価のケースの形をした値や、偽の送信・分類・段・生成の関数を扱う関数なので、クライアントは使いません。M10 の確認Aだけが `client.messages.create(本文, 設定)` の形のクライアントを受け取り、テストは SDK が送り直したあとの結果を返す偽のクライアント(`tests/fake-client.js`)を渡します。
+
+確認Aの「送り直し」は、書く前の一覧では自分で送り直す処理を想定していましたが、M1(1-2-1)と M2(2-1-2)で「送り直しは SDK に任せ、足りるかを先に考える」と教えたので、リクエストごとに `maxRetries` を渡し、SDK が送り直したあとのエラーをアプリで重ねて送り直さない形にしました。ツール使用で thinking ブロックを返すこと(Thinking の Preserving thinking blocks)も、Claude 5 のモデルが考える過程を既定で使うため(3-3-2)、仕様に入れました。
 
 ## 決めていないこと(講師と相談)
 
-- M1 以降を書き始める時期(試験ガイドで takeaway 一覧と範囲の対応を確かめてから)
+- 講座の説明の「【準備中】」「単元を順に公開しています」を外す時期(M0〜M10 はそろった。講師が試験ガイドで範囲の対応を確かめてから)
+- 2026-11-17 に出るとされる新しい試験ガイドへの追従(上の「改訂への備え」)
 
 ## クレジット(原典)
 

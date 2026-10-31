@@ -1420,6 +1420,74 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M8(Claude Code の設定と評価・デバッグ)の l2-evals/t2-compare-evals/slides.md・l2-evals/doc.md・l2-evals/knowledge.md・tasks/q01-eval-compare/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-batch-caching-20261031",
+      "title": "Batch processing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "What can be batched / Using prompt caching with Message Batches",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-combined-20261031",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Using both features together / Feature compatibility",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-stop-vs-errors-20261031",
+      "title": "Stop reasons and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+      "section": "Quick reference / Stop reasons versus errors",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-thinking-tools-20261031",
+      "title": "Thinking",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+      "section": "Thinking with tool use / Preserving thinking blocks",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

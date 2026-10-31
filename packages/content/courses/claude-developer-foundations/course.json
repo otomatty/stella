@@ -21,6 +21,7 @@
     "m6-agents": "M6. ワークフローとエージェント",
     "m7-safety": "M7. 安全性とセキュリティ",
     "m8-claude-code-and-evals": "M8. Claude Code の設定と評価・デバッグ",
-    "m9-mock-exam": "M9. 模擬試験"
+    "m9-mock-exam": "M9. 模擬試験",
+    "m10-final-review": "M10. 直前対策"
   }
 }

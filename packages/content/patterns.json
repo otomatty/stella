@@ -70,5 +70,9 @@
   {
     "id": "eval-compare",
     "title": "同じ評価のセットで、変更の前後を比べる"
+  },
+  {
+    "id": "tool-loop-structured-reply",
+    "title": "ツールを使いながら、決まった形の答えを返すアシスタントを組み立てる"
   }
 ]
