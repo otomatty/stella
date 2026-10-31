@@ -775,7 +775,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l2-streaming/t1-show-as-it-arrives/slides.md・l2-streaming/doc.md・l2-streaming/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -792,7 +795,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l1-errors/t2-backoff/slides.md・l1-errors/t4-rate-limit-headers/slides.md・l1-errors/doc.md・l1-errors/knowledge.md・tasks/q01-retry-transient/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -809,7 +815,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l2-streaming/t2-delta-events/slides.md・l2-streaming/t3-final-message/slides.md・l2-streaming/doc.md・l2-streaming/knowledge.md・tasks/q02-collect-stream/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -826,7 +835,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l3-batches/t1-batch-when/slides.md・l3-batches/t3-batch-results/slides.md・l3-batches/doc.md・l3-batches/knowledge.md・tasks/q03-batch-requests/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -843,7 +855,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t1-files-api/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -860,7 +875,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t2-images-and-pdf/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -877,7 +895,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t2-images-and-pdf/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     }
   ]
