@@ -14,7 +14,7 @@
       "usedFor": "人が待つ応答はストリーミング、急がない大量の処理はバッチで送ること、結果の届き方・料金・向く場面の比較、バッチのリクエストに stream: true を書けないこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-api-distinctions/t2-cache-and-batch/slides.md",
@@ -25,7 +25,7 @@
       "usedFor": "キャッシュとバッチの割引が重なること、バッチの中のキャッシュは当たるとは限らないこと、同じ cache_control のブロックと 1 時間のキャッシュで当たりやすくすること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-api-distinctions/t3-format-or-strict/slides.md",
@@ -36,7 +36,7 @@
       "usedFor": "構造化出力が答えの本文の形を、strict がツールの入力の形を決めること、書く場所の違い、同じリクエストで両方を使えること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-api-distinctions/t4-stop-reason-or-error/slides.md",
@@ -44,7 +44,7 @@
       "usedFor": "stop_reason は成功した応答の値で HTTP のエラーと別に扱うこと、届くもの・例・扱いの違い、refusal と max_tokens のよくある取り違え",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-api-distinctions/doc.md",
@@ -61,7 +61,7 @@
       "usedFor": "レッスン10-1(API の機能を見分ける)の読み物。ストリーミングとバッチ、キャッシュとバッチ(当たる割合の目安)、構造化出力と strict(引用と組み合わせられないこと)、stop_reason とエラーの比較",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-api-distinctions/knowledge.md",
@@ -78,7 +78,7 @@
       "usedFor": "教材独自の知識問題 8 問の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-agent-distinctions/t1-connector-or-sdk/slides.md",
@@ -86,7 +86,7 @@
       "usedFor": "公開された MCP サーバーは MCP コネクター、手元の stdio のサーバーは Agent SDK でつなぐこと、書く場所・つなげるサーバー・ツールの許可の比較、MCP コネクターの制限",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-agent-distinctions/t2-workflow-or-agent/slides.md",
@@ -97,7 +97,7 @@
       "usedFor": "手順を前もって書けるかでワークフローとエージェントを選ぶこと、仕事の形ごとの選び方、エージェントが速さと費用を性能と引き換えにすること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-agent-distinctions/doc.md",
@@ -110,7 +110,7 @@
       "usedFor": "レッスン10-2(エージェントの作りを見分ける)の読み物。MCP コネクターと Agent SDK の MCP の比較と制限、ワークフローの形とエージェントの選び方の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-agent-distinctions/knowledge.md",
@@ -123,7 +123,7 @@
       "usedFor": "教材独自の知識問題 4 問の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-domain-drills/t1-drill-weak-domains/slides.md",
@@ -131,7 +131,7 @@
       "usedFor": "模擬試験で間違えた範囲のドリルを解き、外した問題を戻るトピックと公式ドキュメントで確かめる進め方。試験が実際の仕事を映すように作られていることを背景にする",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-domain-drills/doc.md",
@@ -139,7 +139,7 @@
       "usedFor": "レッスン10-3(範囲別のドリル)の読み物。範囲ごとの問題の並びと戻る単元、ドリルの進め方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-domain-drills/knowledge.md",
@@ -171,7 +171,7 @@
       "usedFor": "教材独自のドリル 24 問(範囲ごとに 3 問)の正答と解説。各問で戻る単元のトピックと公式の資料を示す",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l4-exam-day/t1-read-the-scenario/slides.md",
@@ -179,7 +179,7 @@
       "usedFor": "資格が実際の仕事を映すように作られていることを背景に、問題文から場面の条件を拾って選択肢を比べる読み方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l4-exam-day/doc.md",
@@ -187,7 +187,7 @@
       "usedFor": "レッスン10-4(受験の準備と当日)の読み物。場面の条件の言葉と選び方の表、申し込みの前と当日に確かめること(受験資格・試験ガイド・準備の講座・監督と本人確認・デジタルバッジ)",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l4-exam-day/knowledge.md",
@@ -195,7 +195,7 @@
       "usedFor": "教材独自の知識問題 4 問の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-support-assistant/README.md",
@@ -213,7 +213,7 @@
       "usedFor": "確認A の課題文。strict のツールと構造化出力を同じリクエストで使い、thinking ブロックを含む content を返すツール使用のループ、stop_reason ごとの扱い、SDK に任せる送り直しと一時的なエラーの返し方を、偽のクライアントで確かめる",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }

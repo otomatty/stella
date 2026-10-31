@@ -1435,7 +1435,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t1-stream-or-batch/slides.md・l1-api-distinctions/t2-cache-and-batch/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -1452,7 +1455,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t3-format-or-strict/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md・tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -1469,7 +1475,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t4-stop-reason-or-error/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md・tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -1486,7 +1495,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     }
   ]
