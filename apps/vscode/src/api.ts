@@ -1,5 +1,5 @@
 import type { AuthStore } from "./auth.js";
-import { stellaConfig } from "./config.js";
+import { stellaUrl } from "./config.js";
 
 export class AuthExpiredError extends Error {
   readonly status = 401 as const;
@@ -24,7 +24,7 @@ function requireAuthStore(): AuthStore {
 }
 
 function serverUrl(): string {
-  return stellaConfig("serverUrl", "http://127.0.0.1:8787");
+  return stellaUrl("serverUrl");
 }
 
 function errorMessage(data: unknown, fallback: string): string {

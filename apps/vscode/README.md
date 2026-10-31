@@ -9,8 +9,14 @@
 ## 学習者の流れ
 
 1. Web にログインする
-2. この拡張を入れる（下記「ローカル VSIX」）
-3. Web のコードレッスン（新形式は課題文レッスンか「単元の課題」）で「VS Code で開く」を押す
+2. Web のコードレッスン（新形式は課題文レッスン・「単元の課題」、レッスンを終えた星の「課題に取り組む」）で「VS Code で開く」を押す
+3. 拡張が入っていなければ、VS Code がディープリンクを受けたときに Marketplace からのインストールを尋ねる（**拡張を Marketplace に公開してから**。下記「Marketplace 公開」）。入れるとそのまま接続 → 課題文の表示まで進む。受講者に VSIX を配らない
+
+**接続先の既定値。** `stella.serverUrl` / `stella.webUrl` は、入れた拡張（`ExtensionMode.Production`）では本番の `https://stella.saedgewell.workers.dev`（Web の Worker が `/api/*` を API へ中継するので API も同じオリジン）、F5 の Extension Development Host とテストでは `http://127.0.0.1:8787` / `http://127.0.0.1:5173`（`src/config.ts` の `setUrlDefaultsForMode`）。ユーザー設定で明示した値はどちらでも優先する。受講者に URL を設定させない。
+
+**学習フォルダーの初回。** Web から課題を開いた初回は尋ねずに `~/web-training` を作って覚え、通知で場所と変え方（`STELLA: 学習フォルダーを選ぶ`）を出す。覚えた場所が消えていたときは、ホームへ黙って分けずに尋ね直す。
+
+Web のボタンは押してから数秒たってもブラウザーから離れなければ（VS Code が無い）、VS Code の入手を案内する（`apps/web/src/lib/vscode-launch.ts`）。
 
 「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://stella.stella/lesson?stageId=...&lessonId=...&code=...` を開く。拡張はその URI で JWT 交換（未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
 
@@ -111,27 +117,32 @@ bun run dev
 
 `apps/vscode` を VS Code で開いて F5 する。コミット済みの `.vscode/launch.json` が `extensionHost` を `--extensionDevelopmentPath` = `apps/vscode` で起動する。モノレポルートを開いている場合、F5 はその設定が無いと Extension Development Host にならない。同じ `extensionHost` 構成を `--extensionDevelopmentPath` が `apps/vscode` を指すようにしてから F5 する。
 
-## ローカル VSIX
+## ローカル VSIX（開発者の動作確認用）
 
-手元では VSIX を入れる。
+開発者が手元で入れて確かめるときだけ VSIX を使う。受講者には配らない。
 
 ```bash
 cd apps/vscode
 bun run package
 ```
 
-`package` は `vsce package --no-dependencies` を回し、`stella-<version>.vsix` を作る。コマンドパレットの **Extensions: Install from VSIX...** で選ぶ。
+`package` は `vsce package --no-dependencies --readme-path MARKETPLACE.md` を回し、`stella-<version>.vsix` を作る。コマンドパレットの **Extensions: Install from VSIX...** で選ぶ。入れた拡張は本番へつなぐので、ローカルの API で確かめるときはユーザー設定で `stella.serverUrl` / `stella.webUrl` を localhost にする。
 
 ## Marketplace 公開（手順のみ）
 
-VSIX は main への push 時に GitHub Actions でビルドして GitHub Releases に添付する。Marketplace への公開は別の作業。publisher は `stella`（拡張 ID `stella.stella`）。手元で出すとき:
+受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://stella.stella/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `stella`（拡張 ID `stella.stella`）。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。
+
+Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
+
+公開は人が行う（CI からは公開しない）。publisher `stella` を Marketplace に作り（使えない名前なら publisher を変え、`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID` を合わせる）、Azure DevOps の PAT（Marketplace の Manage）で:
 
 ```bash
 cd apps/vscode
-bunx @vscode/vsce publish --no-dependencies
+bun run build
+bunx @vscode/vsce publish --no-dependencies --readme-path MARKETPLACE.md
 ```
 
-事前に Visual Studio Marketplace の PAT を `vsce login stella` するか `VSCE_PAT` で渡す。このリポジトリから公開しない（手順の記載のみ）。Marketplace の掲載 URL はまだ無い。
+同じ版は公開し直せないので、公開のたびに `package.json` の `version` を上げる。VSIX は main への push 時に GitHub Actions でビルドして GitHub Releases にも添付する（控え。受講者への配布経路ではない）。
 
 ### ヒント・解答例・解説とレビューの結果 (Issue #36)
 

@@ -72,6 +72,8 @@ beforeEach(() => {
       },
     },
     globalState: { get: () => undefined, update: async () => undefined },
+    // vscode.ExtensionMode.Test — 既定の接続先はローカル (http://127.0.0.1:8787 / :5173)。
+    extensionMode: 3,
   } as unknown as ExtensionContext);
 });
 

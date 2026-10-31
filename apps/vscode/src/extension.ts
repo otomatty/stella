@@ -3,7 +3,7 @@ import { exchangeVscodeLink } from "@stella/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
 import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore, disposeAuthEvents, onDidChangeAuth } from "./auth.js";
-import { stellaConfig } from "./config.js";
+import { setUrlDefaultsForMode, stellaUrl } from "./config.js";
 import { findNextLesson, resolveLessonForExercise } from "./catalog-progress.js";
 import {
   findCachedLesson,
@@ -137,7 +137,7 @@ async function showExerciseForLesson(
  * (分かる場合) の Web ページへ送り返して、 同じボタンを押してもらう。
  */
 async function openWebForConnect(target?: PendingLesson): Promise<void> {
-  const web = stellaConfig("webUrl", "http://127.0.0.1:5173");
+  const web = stellaUrl("webUrl");
   const path = target ? `/stages/${target.stageId}/lessons/${target.lessonId}` : "/stages";
   void vscode.window.showInformationMessage(
     `${DISPLAY_NAME} に接続していません。 Web の課題一覧またはコードレッスンで「VS Code で開く」を押してください`,
@@ -204,11 +204,7 @@ async function handleLessonUri(
 /** 成功したら undefined。 失敗の見せ方は呼び出し側の状況で変わるので、 ここでは通知しない。 */
 async function exchangeLinkCode(code: string, auth: AuthStore): Promise<Error | undefined> {
   try {
-    const token = await exchangeVscodeLink(
-      stellaConfig("serverUrl", "http://127.0.0.1:8787"),
-      code,
-      fetch,
-    );
+    const token = await exchangeVscodeLink(stellaUrl("serverUrl"), code, fetch);
     await auth.setToken(token);
     return undefined;
   } catch (err) {
@@ -293,6 +289,8 @@ async function handleExtensionUri(
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+  // 入れた拡張は本番へ、F5 の開発ホストとテストはローカルへつなぐ (ユーザー設定が優先)。
+  setUrlDefaultsForMode(context.extensionMode);
   const auth = new AuthStore(context.secrets);
   initApi(auth);
   // 別のウィンドウでの接続・切断も、このウィンドウの接続の切り替えとして扱う (#36)。
@@ -330,7 +328,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand(
       "stella.openInWeb",
       async (stageId?: string, lessonId?: string) => {
-        const web = stellaConfig("webUrl", "http://127.0.0.1:5173");
+        const web = stellaUrl("webUrl");
         const path =
           typeof stageId === "string" && typeof lessonId === "string"
             ? `/stages/${stageId}/lessons/${lessonId}`

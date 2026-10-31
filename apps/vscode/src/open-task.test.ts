@@ -206,6 +206,24 @@ describe("学習フォルダー", () => {
     );
     expect(state.memento.get(TRAINING_ROOT_KEY)).toBe(existing);
   });
+  it("Web から課題を開く初回は、尋ねずにホームに web-training を作って覚える", async () => {
+    state.memento.clear();
+    await rm(training, { recursive: true });
+    expect(await resolveTrainingRoot(memento, { auto: true })).toBe(training);
+    expect(state.memento.get(TRAINING_ROOT_KEY)).toBe(training);
+    expect(state.showQuickPick).not.toHaveBeenCalled();
+    expect(state.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining("学習フォルダーを選ぶ"),
+    );
+  });
+  it("覚えた学習フォルダーが消えていたら、auto でもホームへ分けずに尋ね直す", async () => {
+    const elsewhere = path.join(state.home, "external-drive", "study");
+    state.memento.set(TRAINING_ROOT_KEY, elsewhere);
+    state.showQuickPick.mockResolvedValue(undefined);
+    expect(await resolveTrainingRoot(memento, { auto: true })).toBeUndefined();
+    expect(state.showQuickPick).toHaveBeenCalled();
+    expect(state.memento.get(TRAINING_ROOT_KEY)).toBe(elsewhere);
+  });
   it("消えた学習フォルダーは使わずに尋ね直す", async () => {
     await rm(training, { recursive: true });
     state.showQuickPick.mockResolvedValue(undefined);
@@ -215,6 +233,18 @@ describe("学習フォルダー", () => {
 });
 
 describe("課題を開く", () => {
+  it("初めてでも学習フォルダーを尋ねずに準備して開く (Web のボタンから課題文まで止めない)", async () => {
+    state.memento.clear();
+    await rm(training, { recursive: true });
+    await openDistributedTask(context, taskId);
+    expect(state.showQuickPick).not.toHaveBeenCalled();
+    expect(await readFile(path.join(taskRoot(), "README.md"), "utf8")).toBe("課題文");
+    expect(openedFolder()).toEqual([
+      "vscode.openFolder",
+      { scheme: "file", fsPath: training },
+      { forceReuseWindow: true },
+    ]);
+  });
   it("空のウィンドウでは学習フォルダーだけを開き、読み込み直したあと課題文を開く", async () => {
     await openDistributedTask(context, taskId);
     expect(await readFile(path.join(taskRoot(), "README.md"), "utf8")).toBe("課題文");

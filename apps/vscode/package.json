@@ -2,14 +2,14 @@
   "name": "stella",
   "displayName": "STELLA",
   "publisher": "stella",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/otomatty/stella.git",
     "directory": "apps/vscode"
   },
-  "description": "STELLA — VS Code extension for stage lessons and exercises",
+  "description": "STELLA の課題を VS Code で受け取り、手元で確かめて提出する拡張機能",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -157,15 +157,15 @@
       "properties": {
         "stella.serverUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:8787",
+          "default": "https://stella.saedgewell.workers.dev",
           "scope": "application",
-          "description": "STELLA の API のオリジン。ユーザー設定でだけ変えられる (開いたフォルダーの設定では変わらない)"
+          "description": "STELLA の API のオリジン。ユーザー設定でだけ変えられる (開いたフォルダーの設定では変わらない)。未設定なら本番、F5 の開発ホストでは http://127.0.0.1:8787"
         },
         "stella.webUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:5173",
+          "default": "https://stella.saedgewell.workers.dev",
           "scope": "application",
-          "description": "STELLA の Web のオリジン。ユーザー設定でだけ変えられる"
+          "description": "STELLA の Web のオリジン。ユーザー設定でだけ変えられる。未設定なら本番、F5 の開発ホストでは http://127.0.0.1:5173"
         }
       }
     }
@@ -173,7 +173,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "typecheck": "tsc --noEmit",
-    "package": "bun run build && bunx @vscode/vsce package --no-dependencies"
+    "package": "bun run build && bunx @vscode/vsce package --no-dependencies --readme-path MARKETPLACE.md"
   },
   "dependencies": {
     "@stella/code-runner": "workspace:*",

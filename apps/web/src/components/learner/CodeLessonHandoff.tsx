@@ -35,7 +35,8 @@ export function CodeLessonHandoff({
       {handheld ? null : (
         <p className="text-[13px] text-ink-3 mt-4">
           拡張 {DISPLAY_NAME} を入れた VS Code で演習を進めます。ボタンを押すと VS Code
-          が起動し、未接続なら接続も同時に済ませてこのレッスンを開きます。拡張をまだ入れていない場合は先にインストールしてください。
+          が起動し、未接続なら接続も同時に済ませてこのレッスンを開きます。拡張機能が入っていなければ、VS
+          Code がインストールを尋ねます。
         </p>
       )}
     </div>
