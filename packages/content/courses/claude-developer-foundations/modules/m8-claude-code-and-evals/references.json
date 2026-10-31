@@ -10,7 +10,7 @@
       "usedFor": "毎回読み込まれる CLAUDE.md に約束を短く具体的に書くこと、確かめられる書き方と 200 行の目安、自動メモリーとの違い、指示として読まれるだけであること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-claude-code/t2-hooks/slides.md",
@@ -18,7 +18,7 @@
       "usedFor": "必ず実行したい処理を CLAUDE.md ではなくフックで決めること、PreToolUse と PostToolUse、終了コード 2 で止めて理由を伝えること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-claude-code/t3-settings/slides.md",
@@ -26,7 +26,7 @@
       "usedFor": "チームの設定をプロジェクトの .claude/settings.json に置くこと、4 つの置き場所と強く効く順、一覧の項目が足し合わされること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-claude-code/doc.md",
@@ -38,7 +38,7 @@
       "usedFor": "レッスン8-1の3トピック(CLAUDE.md・フック・設定ファイル)の読み物と、記憶の違い・置き場所・イベント・設定の範囲の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-claude-code/knowledge.md",
@@ -50,7 +50,7 @@
       "usedFor": "CLAUDE.md の置き場所と書き方、フックで止めること、終了コード、設定の強く効く順を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-evals/t1-success-criteria/slides.md",
@@ -58,7 +58,7 @@
       "usedFor": "作る前に具体的で測れる成功の基準を決めること、よい基準の 4 つの条件、安全性を数で表す例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-evals/t2-compare-evals/slides.md",
@@ -66,7 +66,7 @@
       "usedFor": "同じ評価のセットで変更の前後を比べること、コード・LLM・人による採点の違い、質より量",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-evals/t3-tool-misuse/slides.md",
@@ -74,7 +74,7 @@
       "usedFor": "ツールの誤用を説明・スキーマ・strict から直すこと、症状ごとの直し方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-evals/doc.md",
@@ -86,7 +86,7 @@
       "usedFor": "レッスン8-2の3トピック(成功の基準・同じ評価で比べる・ツールの誤用)の読み物と、基準の条件・採点の方法・症状と直し方の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-evals/knowledge.md",
@@ -98,7 +98,7 @@
       "usedFor": "成功の基準の書き方、評価のセットの作り方、採点の方法、前後の比べ方、ツールの誤用の直し方を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-eval-compare/README.md",
@@ -106,7 +106,7 @@
       "usedFor": "教材独自の課題。評価のケースをすべて回してコードで採点し合格率を出し、同じセットの前後を比べて悪化したケースと直ったケースを返す関数の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
