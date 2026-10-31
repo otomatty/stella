@@ -134,13 +134,25 @@ bun run package
 
 Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
 
-公開は人が行う（CI からは公開しない）。publisher `stella` を Marketplace に作り（使えない名前なら publisher を変え、`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID` を合わせる）、Azure DevOps の PAT（Marketplace の Manage）で:
+公開は人が行う（CI からは公開しない）。認証は **Microsoft Entra ID**（`vsce --azure-credential`）で行い、Azure DevOps の Personal Access Token（PAT）は使わない — vsce が使うグローバルな PAT は 2026-12-01 に Azure DevOps から廃止される。長く使う秘密をどこにも置かずに済む。
+
+**初回だけ:**
+
+1. [Marketplace の管理画面](https://marketplace.visualstudio.com/manage) に、公開に使う Microsoft Entra ID のアカウントでサインインし、publisher `stella` を作る。publisher ID はあとから変えられない。使えない名前なら別の ID にし、`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID` を合わせる（Web の「VS Code で開く」のリンク先が変わる）。
+2. 公開する人を publisher の **Members** に足す（Contributor 以上）。publisher を作ったアカウントは最初から Owner。人が替わったらここで足し外しする（秘密の受け渡しは要らない）。
+3. 公開する端末に [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) を入れる。vsce は 2.26.1 以降（`bunx @vscode/vsce` は最新を使う）。
+
+**公開のたび:**
 
 ```bash
+az login                      # publisher のメンバーの Entra ID アカウントで
 cd apps/vscode
+bunx @vscode/vsce verify-pat stella --azure-credential   # 公開できる権限があるかだけを確かめる
 bun run build
-bunx @vscode/vsce publish --no-dependencies --readme-path MARKETPLACE.md
+bunx @vscode/vsce publish --no-dependencies --readme-path MARKETPLACE.md --azure-credential
 ```
+
+`--azure-credential` は Azure の既定の資格情報（`az login` のサインインなど）で Marketplace に認証する。`verify-pat` が通らないときは、サインインしたアカウントが publisher の Members にいるか、`az login` が想定のテナントに入っているかを確かめる（`az account show`）。
 
 同じ版は公開し直せないので、公開のたびに `package.json` の `version` を上げる。VSIX は main への push 時に GitHub Actions でビルドして GitHub Releases にも添付する（控え。受講者への配布経路ではない）。
 
