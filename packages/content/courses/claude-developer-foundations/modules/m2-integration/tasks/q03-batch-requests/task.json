@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m2-integration/q03-batch-requests",
+  "title": "バッチのリクエストを組み立てる",
+  "kind": "basic",
+  "pattern": "batch-request-mapping",
+  "skills": {
+    "uses": ["claude-messages-request"],
+    "assesses": ["claude-batches"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/batch.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "stable-custom-id",
+        "criterion": "custom_id を並び順ではなく問い合わせの ID から作り、重なりと使えない文字を送る前に止めている",
+        "required": true
+      },
+      {
+        "id": "match-by-custom-id",
+        "criterion": "結果を並び順に頼らず custom_id で引き、succeeded 以外を失敗として理由を返している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

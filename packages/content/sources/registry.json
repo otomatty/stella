@@ -20,6 +20,1486 @@
         "reviewedAt": "2026-10-05",
         "scope": "HTML の構造・見出しと、保存後のブラウザー表示を扱う見本単元。解説・知識問題・課題の対応と教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-four-certs-20261031",
+      "title": "Four role-based certifications for the people who put Claude to work for customers",
+      "publisher": "Anthropic",
+      "url": "https://claude.com/resources/articles/four-role-based-claude-certifications",
+      "section": "The four credentials / How the exams work / How to find an exam or learn more about the Claude Partner Network",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-23"
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l1-exam-overview/t1-developer-cert/slides.md・l1-exam-overview/t2-who-can-take/slides.md・l1-exam-overview/t3-proctored-exam/slides.md・l1-exam-overview/doc.md・l1-exam-overview/knowledge.md・l2-official-sources/t1-exam-guide/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-anthropic-services-track-20261031",
+      "title": "Introducing the Services Track and Partner Hub of the Claude Partner Network",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/news/services-track-partner-hub",
+      "section": "About the Services Track",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-06-03"
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l1-exam-overview/t2-who-can-take/slides.md・l1-exam-overview/doc.md・l1-exam-overview/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-features-20261031",
+      "title": "Features overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/overview",
+      "section": "Platform features / Messages API features",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t2-platform-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-messages-20261031",
+      "title": "Using the Messages API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages",
+      "section": "Basic request and response / Multiple conversational turns",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t2-platform-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-stop-reasons-20261031",
+      "title": "Stop reasons and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+      "section": "Stop reason values / Best practices for handling stop reasons",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-errors-20261031",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "HTTP errors / SDK error types / Request ID",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-streaming-20261031",
+      "title": "Streaming messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "section": "Streaming with SDKs / Event types",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-20261031",
+      "title": "Batch processing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "How the Message Batches API works / Pricing",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-choosing-model-20261031",
+      "title": "Choosing the right model",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model",
+      "section": "Establish key criteria / Combine models",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-prompt-caching-20261031",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "How prompt caching works / Pricing",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-effort-20261031",
+      "title": "Effort",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/effort",
+      "section": "How effort works / Recommended effort levels",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-prompting-20261031",
+      "title": "Prompting best practices",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "section": "General principles / Output and formatting",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-context-windows-20261031",
+      "title": "Context windows",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+      "section": "How the context window works / Manage context with compaction",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-outputs-20261031",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Why use structured outputs / How it works",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-anthropic-context-engineering-20261031",
+      "title": "Effective context engineering for AI agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/effective-context-engineering-for-ai-agents",
+      "section": "The anatomy of effective context / Context retrieval and agentic search",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2025-09-29"
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-use-20261031",
+      "title": "Tool use with Claude",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+      "section": "How tool use works / Choose a tool",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-define-tools-20261031",
+      "title": "Define tools",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+      "section": "Specifying client tools",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-handle-tool-calls-20261031",
+      "title": "Handle tool calls",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+      "section": "Handling results from client tools / Handling results from server tools",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-mcp-connector-20261031",
+      "title": "MCP connector",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+      "section": "Key features / Limitations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-anthropic-writing-tools-20261031",
+      "title": "Writing effective tools for agents — with agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/writing-tools-for-agents",
+      "section": "Principles for writing effective tools",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2025-09-11"
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-anthropic-effective-agents-20261031",
+      "title": "Building effective agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "section": "When (and when not) to use agents / Building blocks, workflows, and agents",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2024-12-19"
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-agent-sdk-overview-20261031",
+      "title": "Agent SDK overview",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/overview",
+      "section": "Compare the Agent SDK to other Claude tools / Capabilities",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/t3-code-docs/slides.md・l2-official-sources/doc.md・l2-official-sources/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-agent-loop-20261031",
+      "title": "How the agent loop works",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+      "section": "The loop at a glance / Tool execution",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-subagents-20261031",
+      "title": "Subagents in the SDK",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/subagents",
+      "section": "Benefits of using subagents / What subagents inherit",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-jailbreaks-20261031",
+      "title": "Mitigate jailbreaks and prompt injections",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks",
+      "section": "Jailbreaks and direct prompt injection / Indirect prompt injection",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-hallucinations-20261031",
+      "title": "Reduce hallucinations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+      "section": "Basic hallucination minimization strategies",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-permissions-20261031",
+      "title": "Configure permissions (Agent SDK)",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/permissions",
+      "section": "How permissions are evaluated / Permission modes",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-memory-20261031",
+      "title": "How Claude remembers your project",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/memory",
+      "section": "CLAUDE.md vs auto memory / CLAUDE.md files",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-hooks-guide-20261031",
+      "title": "Automate actions with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "section": "What you can automate / How hooks work",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-evals-20261031",
+      "title": "Define success criteria and build evaluations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+      "section": "Define your success criteria / Build evaluations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-troubleshooting-20261031",
+      "title": "Troubleshooting tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use",
+      "section": "Claude calls the wrong tool / Claude invents tool parameters",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-messages-system-20261031",
+      "title": "Using the Messages API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages",
+      "section": "System role in messages",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l1-request-response/t2-system/slides.md・l1-request-response/doc.md・l1-request-response/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-api-messages-create-20261031",
+      "title": "Messages (API reference)",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/messages",
+      "section": "Create a Message",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l1-request-response/t2-system/slides.md・l1-request-response/t3-max-tokens/slides.md・l1-request-response/t4-content-blocks/slides.md・l1-request-response/doc.md・l1-request-response/knowledge.md・tasks/q01-build-messages/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-ts-sdk-20261031",
+      "title": "TypeScript SDK",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript",
+      "section": "Usage / Retries",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t1-official-sdk/slides.md・l2-sdk/t2-api-key/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-api-key-20261031",
+      "title": "Get your Claude API key",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/get-api-key",
+      "section": "Use your API key",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t2-api-key/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-ids-20261031",
+      "title": "Model IDs and versioning",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+      "section": "Model ID format / Dateless IDs are pinned snapshots",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t3-model-id/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-refusals-20261031",
+      "title": "Refusals and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback",
+      "section": "What a refusal looks like",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l3-stop-reasons/t3-refusal/slides.md・l3-stop-reasons/doc.md・l3-stop-reasons/knowledge.md・tasks/q02-route-stop-reason/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-errors-long-requests-20261031",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Long requests",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l2-streaming/t1-show-as-it-arrives/slides.md・l2-streaming/doc.md・l2-streaming/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-rate-limits-20261031",
+      "title": "Rate limits",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/rate-limits",
+      "section": "About rate limits / Response headers",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l1-errors/t2-backoff/slides.md・l1-errors/t4-rate-limit-headers/slides.md・l1-errors/doc.md・l1-errors/knowledge.md・tasks/q01-retry-transient/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-streaming-deltas-20261031",
+      "title": "Streaming messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "section": "Content block delta types / Get the final message without handling events",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l2-streaming/t2-delta-events/slides.md・l2-streaming/t3-final-message/slides.md・l2-streaming/doc.md・l2-streaming/knowledge.md・tasks/q02-collect-stream/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-usage-20261031",
+      "title": "Batch processing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "Prepare and create your batch / Retrieving batch results",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l3-batches/t1-batch-when/slides.md・l3-batches/t3-batch-results/slides.md・l3-batches/doc.md・l3-batches/knowledge.md・tasks/q03-batch-requests/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-files-20261031",
+      "title": "Files API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/files",
+      "section": "How the Files API works / How to use the Files API",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t1-files-api/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-vision-20261031",
+      "title": "Vision",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+      "section": "Send images to Claude",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t2-images-and-pdf/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-pdf-20261031",
+      "title": "PDF support",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/pdf-support",
+      "section": "Process PDFs with Claude",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t2-images-and-pdf/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-choosing-start-20261031",
+      "title": "Choosing the right model",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model",
+      "section": "Choose the best model to start with / Decide whether to upgrade or change models",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l1-choose-model/t1-criteria/slides.md・l1-choose-model/t2-evaluate/slides.md・l1-choose-model/doc.md・l1-choose-model/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cost-intelligence-20261031",
+      "title": "Optimizing for cost and intelligence",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence",
+      "section": "Start here / Combine models",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l1-choose-model/t4-combine/slides.md・l1-choose-model/doc.md・l1-choose-model/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-effort-set-20261031",
+      "title": "Effort",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/effort",
+      "section": "Set the effort level / Effort with thinking",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l1-choose-model/t3-effort/slides.md・l1-choose-model/doc.md・l1-choose-model/knowledge.md・l3-tokens-and-speed/t2-thinking-limit/slides.md・l3-tokens-and-speed/doc.md・l3-tokens-and-speed/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-caching-structure-20261031",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Explicit cache breakpoints / Caching strategies and considerations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l2-prompt-caching/t2-stable-first/slides.md・l2-prompt-caching/t3-check-usage/slides.md・l2-prompt-caching/doc.md・l2-prompt-caching/knowledge.md・tasks/q01-cache-friendly-prompt/README.md・tasks/q02-estimate-cost/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-token-counting-20261031",
+      "title": "Token counting",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+      "section": "How to count message tokens / Pricing and rate limits",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l3-tokens-and-speed/t1-count-tokens/slides.md・l3-tokens-and-speed/doc.md・l3-tokens-and-speed/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-thinking-20261031",
+      "title": "Thinking",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+      "section": "How thinking works / Configuring thinking / Thinking and effort",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l3-tokens-and-speed/t2-thinking-limit/slides.md・l3-tokens-and-speed/doc.md・l3-tokens-and-speed/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-latency-20261031",
+      "title": "Reducing latency",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency",
+      "section": "How to measure latency / How to reduce latency",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l3-tokens-and-speed/t3-latency/slides.md・l3-tokens-and-speed/doc.md・l3-tokens-and-speed/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-considerations-20261031",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Using a raw JSON schema / Important considerations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M4(プロンプトとコンテキストの設計)の l2-output-format/t1-structured-outputs/slides.md・l2-output-format/t2-check-before-parse/slides.md・l2-output-format/doc.md・l2-output-format/knowledge.md・tasks/q02-extraction-schema/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-context-overflow-20261031",
+      "title": "Context windows",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+      "section": "Context window sizes by model / Context window overflow behavior",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M4(プロンプトとコンテキストの設計)の l3-context/t1-context-window/slides.md・l3-context/doc.md・l3-context/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-compaction-20261031",
+      "title": "Compaction overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/compaction",
+      "section": "Choose how to compact",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M4(プロンプトとコンテキストの設計)の l3-context/t3-compaction/slides.md・l3-context/doc.md・l3-context/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-use-when-20261031",
+      "title": "Tool use with Claude",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+      "section": "When Claude uses tools",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l2-tool-design/t2-tool-choice/slides.md・l2-tool-design/doc.md・l2-tool-design/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-errors-20261031",
+      "title": "Handle tool calls",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+      "section": "Handling errors with is_error",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l1-tool-loop/t3-return-errors/slides.md・l1-tool-loop/t4-server-tools/slides.md・l1-tool-loop/doc.md・l1-tool-loop/knowledge.md・tasks/q01-tool-loop/README.md・tasks/q02-fix-tool-error/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-choice-20261031",
+      "title": "Define tools",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+      "section": "Best practices for tool definitions / Forcing tool use",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l2-tool-design/t1-description/slides.md・l2-tool-design/t2-tool-choice/slides.md・l2-tool-design/t4-fewer-tools/slides.md・l2-tool-design/doc.md・l2-tool-design/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-strict-tool-use-20261031",
+      "title": "Strict tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use",
+      "section": "Why strict tool use matters for agents / How it works",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l2-tool-design/t3-strict/slides.md・l2-tool-design/doc.md・l2-tool-design/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-mcp-connector-usage-20261031",
+      "title": "MCP connector",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+      "section": "MCP server configuration / MCP toolset configuration / Response content types",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l3-mcp/t2-mcp-connector/slides.md・l3-mcp/doc.md・l3-mcp/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-mcp-20261031",
+      "title": "Connect to external tools with MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/mcp",
+      "section": "Add an MCP server / Allow MCP tools / Transport types",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l3-mcp/t1-what-is-mcp/slides.md・l3-mcp/t3-sdk-mcp/slides.md・l3-mcp/doc.md・l3-mcp/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-anthropic-effective-agents-defs-20261031",
+      "title": "Building effective agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "section": "What are agents? / Combining and customizing these patterns / Summary",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M6(ワークフローとエージェント)の l1-agentic-systems/t1-who-decides/slides.md・l1-agentic-systems/t2-start-simple/slides.md・l1-agentic-systems/doc.md・l1-agentic-systems/knowledge.md・l2-workflows/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-agent-loop-control-20261031",
+      "title": "How the agent loop works",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+      "section": "Turns and budget / Handle the result",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M6(ワークフローとエージェント)の l3-agent-sdk/t1-agent-loop/slides.md・l3-agent-sdk/t3-sessions/slides.md・l3-agent-sdk/doc.md・l3-agent-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-subagents-create-20261031",
+      "title": "Subagents in the SDK",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/subagents",
+      "section": "Create subagents / Invoke subagents",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M6(ワークフローとエージェント)の l3-agent-sdk/t2-subagents/slides.md・l3-agent-sdk/doc.md・l3-agent-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-sessions-20261031",
+      "title": "Work with sessions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/sessions",
+      "section": "Choose an approach / Use session options with query() / Resume across hosts",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M6(ワークフローとエージェント)の l3-agent-sdk/t3-sessions/slides.md・l3-agent-sdk/doc.md・l3-agent-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-permission-rules-20261031",
+      "title": "Configure permissions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/permissions",
+      "section": "Allow and deny rules",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M7(安全性とセキュリティ)の l1-prompt-injection/t3-least-privilege/slides.md・l1-prompt-injection/doc.md・l1-prompt-injection/knowledge.md・tasks/q02-least-privilege/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-hallucination-advanced-20261031",
+      "title": "Reduce hallucinations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+      "section": "Advanced techniques",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M7(安全性とセキュリティ)の l2-reliable-answers/t1-allow-unknown/slides.md・l2-reliable-answers/doc.md・l2-reliable-answers/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-secure-deployment-20261031",
+      "title": "Securely deploying AI agents",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/secure-deployment",
+      "section": "Threat model / Security principles / Credential management",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M7(安全性とセキュリティ)の l2-reliable-answers/t3-hide-secrets/slides.md・l2-reliable-answers/doc.md・l2-reliable-answers/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-permission-rules-20261031",
+      "title": "Configure permissions (Claude Code)",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/permissions",
+      "section": "Permission rule syntax / Tool-specific permission rules",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M7(安全性とセキュリティ)の tasks/q02-least-privilege/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-code-settings-20261031",
+      "title": "Settings files and precedence",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/settings",
+      "section": "Settings files and who they affect / Settings precedence",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M8(Claude Code の設定と評価・デバッグ)の l1-claude-code/t3-settings/slides.md・l1-claude-code/doc.md・l1-claude-code/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-eval-grading-20261031",
+      "title": "Define success criteria and build evaluations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+      "section": "Grade your evaluations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M8(Claude Code の設定と評価・デバッグ)の l2-evals/t2-compare-evals/slides.md・l2-evals/doc.md・l2-evals/knowledge.md・tasks/q01-eval-compare/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-caching-20261031",
+      "title": "Batch processing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "What can be batched / Using prompt caching with Message Batches",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t1-stream-or-batch/slides.md・l1-api-distinctions/t2-cache-and-batch/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-combined-20261031",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Using both features together / Feature compatibility",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t3-format-or-strict/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md・tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-stop-vs-errors-20261031",
+      "title": "Stop reasons and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+      "section": "Quick reference / Stop reasons versus errors",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の l1-api-distinctions/t4-stop-reason-or-error/slides.md・l1-api-distinctions/doc.md・l1-api-distinctions/knowledge.md・tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-thinking-tools-20261031",
+      "title": "Thinking",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+      "section": "Thinking with tool use / Preserving thinking blocks",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M10(直前対策)の tasks/q01-support-assistant/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
+      }
     }
   ]
 }

@@ -1,0 +1,8 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["claude-messages-request", "claude-model-selection", "claude-tool-use"],
+    "assesses": ["claude-agentic-choice", "claude-workflows", "claude-agent-sdk"]
+  },
+  "reuses": []
+}

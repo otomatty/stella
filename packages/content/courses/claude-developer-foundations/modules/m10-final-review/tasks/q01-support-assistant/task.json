@@ -1,0 +1,70 @@
+{
+  "id": "claude-developer-foundations/m10-final-review/q01-support-assistant",
+  "title": "問い合わせに答えるアシスタント",
+  "kind": "assessment-a",
+  "pattern": "tool-loop-structured-reply",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-stop-reason", "claude-tool-design", "claude-sdk-setup"],
+    "assesses": ["claude-tool-use", "claude-structured-output", "claude-api-errors"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/assistant.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "schema-placement",
+        "criterion": "ツールの入力の形を strict を付けた input_schema で、最後の答えの形を output_config.format の JSON スキーマで決め、毎回のリクエストに両方を入れている",
+        "required": true
+      },
+      {
+        "id": "tool-loop",
+        "criterion": "tool_use のときに応答の content を thinking ブロックも含めてそのまま assistant の発言に足し、すべての tool_result を tool_use_id で結んで 1 つの user の発言で返し、知らないツールと例外を is_error の結果にしている",
+        "required": true
+      },
+      {
+        "id": "stop-reason-vs-error",
+        "criterion": "stop_reason の値ごとの分岐と、create が投げたエラーの扱いを分け、切れた応答を JSON として読まず、429・500 以上のエラーをアプリで重ねて送り直さずに返している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 0,
+    "solutionUnlock": "passed"
+  },
+  "sources": [
+    "SRC-claude-docs-handle-tool-calls-20261031",
+    "SRC-claude-docs-tool-errors-20261031",
+    "SRC-claude-docs-strict-tool-use-20261031",
+    "SRC-claude-docs-structured-combined-20261031",
+    "SRC-claude-docs-stop-reasons-20261031",
+    "SRC-claude-docs-stop-vs-errors-20261031",
+    "SRC-claude-docs-thinking-tools-20261031",
+    "SRC-claude-docs-ts-sdk-20261031",
+    "SRC-claude-docs-errors-20261031"
+  ],
+  "estimatedMinutes": 90,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

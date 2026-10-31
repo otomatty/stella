@@ -1,0 +1,55 @@
+{
+  "id": "claude-developer-foundations/m1-messages-api/q02-route-stop-reason",
+  "title": "止まった理由で処理を分ける",
+  "kind": "independent",
+  "pattern": "stop-reason-routing",
+  "skills": {
+    "uses": ["claude-messages-request"],
+    "assesses": ["claude-stop-reason"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/reply.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "branch-by-stop-reason",
+        "criterion": "stop_reason の値で処理を分け、表にない値をほかの値の扱いに混ぜていない",
+        "required": true
+      },
+      {
+        "id": "no-explanation-parsing",
+        "criterion": "拒否の explanation を表示用の値として返し、その文の中身で処理を分けていない",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-claude-docs-stop-reasons-20261031", "SRC-claude-docs-refusals-20261031"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

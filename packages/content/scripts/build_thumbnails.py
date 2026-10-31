@@ -252,78 +252,6 @@ def motif_test_design(c: str) -> str:
     {marks}"""
 
 
-def motif_ai_fluency(c: str) -> str:
-    """4つの局面を回す。 任せる→伝える→見極める→責任を持つ、の循環。今いる 1 マスだけ塗る。"""
-    boxes = [
-        # x, y, 塗るか
-        (60, 76, True),
-        (312, 76, False),
-        (312, 336, False),
-        (60, 336, False),
-    ]
-    out = []
-    for x, y, filled in boxes:
-        fill = c if filled else PAPER
-        stroke = c if filled else RULE_SOLID
-        bar = PAPER if filled else RULE
-        out.append(f"""
-    <rect x="{x}" y="{y}" width="176" height="136" rx="16" fill="{fill}" stroke="{stroke}" stroke-width="2.5"/>
-    <rect x="{x + 36}" y="{y + 56}" width="104" height="12" rx="6" fill="{bar}" opacity="{0.9 if filled else 1}"/>
-    <rect x="{x + 36}" y="{y + 80}" width="68" height="12" rx="6" fill="{bar}" opacity="{0.9 if filled else 1}"/>""")
-    arrows = f"""
-    <path d="M 248 144 L 300 144" stroke="{INK}" stroke-width="4" fill="none"/>
-    <path d="M 292 134 L 306 144 L 292 154 Z" fill="{INK}"/>
-    <path d="M 400 224 L 400 324" stroke="{INK}" stroke-width="4" fill="none"/>
-    <path d="M 390 316 L 400 330 L 410 316 Z" fill="{INK}"/>
-    <path d="M 300 404 L 248 404" stroke="{INK}" stroke-width="4" fill="none"/>
-    <path d="M 256 394 L 242 404 L 256 414 Z" fill="{INK}"/>
-    <path d="M 148 324 L 148 224" stroke="{c}" stroke-width="4" fill="none"/>
-    <path d="M 138 232 L 148 218 L 158 232 Z" fill="{c}"/>"""
-    return "".join(out) + arrows
-
-
-def motif_claude_chat(c: str) -> str:
-    """チャットの往復。 依頼の吹き出しと返答の吹き出しが交互に並ぶ。"""
-    return f"""
-    <rect x="200" y="72" width="320" height="112" rx="20" fill="{c}"/>
-    <path d="M 500 184 L 516 208 L 468 184 Z" fill="{c}"/>
-    <rect x="232" y="104" width="200" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
-    <rect x="232" y="132" width="144" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>
-    <rect x="28" y="232" width="356" height="136" rx="20" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
-    <path d="M 48 366 L 32 392 L 80 366 Z" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
-    <rect x="60" y="264" width="248" height="12" rx="6" fill="{RULE}"/>
-    <rect x="60" y="292" width="292" height="12" rx="6" fill="{RULE}"/>
-    <rect x="60" y="320" width="180" height="12" rx="6" fill="{RULE}"/>
-    <rect x="240" y="416" width="280" height="96" rx="20" fill="{PAPER}" stroke="{c}" stroke-width="2.5"/>
-    <rect x="272" y="444" width="168" height="12" rx="6" fill="{c}" opacity="0.55"/>
-    <rect x="272" y="472" width="120" height="12" rx="6" fill="{c}" opacity="0.55"/>"""
-
-
-def motif_claude_cowork(c: str) -> str:
-    """任せて途中を見る。 ワークスペースのフォルダから、タスクの手順が進んでいく。"""
-    folder = f"""
-    <path d="M 44 84 L 156 84 L 184 116 L 304 116 L 304 236 L 44 236 Z" fill="{PAPER}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="76" y="148" width="164" height="12" rx="6" fill="{RULE}"/>
-    <rect x="76" y="176" width="112" height="12" rx="6" fill="{RULE}"/>
-    <path d="M 174 236 L 174 272" stroke="{c}" stroke-width="4" fill="none"/>
-    <path d="M 158 264 L 174 284 L 190 264 Z" fill="{c}"/>"""
-    rows = []
-    for i, y in enumerate((292, 372, 452)):
-        running = i == 2
-        rows.append(f'<rect x="120" y="{y}" width="384" height="64" rx="12" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
-        if running:
-            rows.append(f'<circle cx="156" cy="{y + 32}" r="20" fill="{PAPER}" stroke="{c}" stroke-width="4"/>')
-            rows.append(f'<circle cx="156" cy="{y + 32}" r="7" fill="{c}"/>')
-        else:
-            rows.append(f'<circle cx="156" cy="{y + 32}" r="20" fill="{c}"/>')
-            rows.append(
-                f'<path d="M 146 {y + 32} l 8 10 l 16 -20" stroke="{PAPER}" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
-            )
-        rows.append(f'<rect x="196" y="{y + 20}" width="{204 if i == 0 else 156}" height="12" rx="6" fill="{RULE}"/>')
-        rows.append(f'<rect x="196" y="{y + 44}" width="{120 if i == 0 else 96}" height="10" rx="5" fill="{RULE}"/>')
-    return folder + "".join(rows)
-
-
 def motif_claude_code(c: str) -> str:
     """4つの段を順に通す。 Explore → Plan → Code → Commit の階段で、いまの段だけ塗る。"""
     boxes = [
@@ -358,40 +286,6 @@ def motif_claude_code(c: str) -> str:
             cy = y + 170
             out.append(f'<path d="M {sx} {sy} L {sx} {cy} L {x + 96} {cy}" stroke="{color}" stroke-width="4" fill="none"/>')
             out.append(f'<path d="M {x + 96} {cy - 10} L {x + 112} {cy} L {x + 96} {cy + 10} Z" fill="{color}"/>')
-    return "".join(out)
-
-
-def motif_claude_code_skills(c: str) -> str:
-    """使い分けの判断。 1枚の指示の紙を、4つの入れ物のどれに置くかを選ぶ。"""
-    out = []
-    # 上: 指示の紙 (小さなノート)。
-    nx, ny = 190, 36
-    out.append(f'<rect x="{nx}" y="{ny}" width="168" height="104" rx="14" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>')
-    out.append(f'<rect x="{nx + 28}" y="{ny + 28}" width="112" height="12" rx="6" fill="{RULE}"/>')
-    out.append(f'<rect x="{nx + 28}" y="{ny + 52}" width="80" height="12" rx="6" fill="{RULE}"/>')
-    out.append(f'<rect x="{nx + 28}" y="{ny + 76}" width="96" height="12" rx="6" fill="{RULE}"/>')
-    # 下: 2×2 の入れ物。 右上 (選ばれた 1 つ) だけ講座色で塗る。
-    boxes = [
-        (44, 252, False),
-        (304, 252, True),
-        (44, 408, False),
-        (304, 408, False),
-    ]
-    for x, y, chosen in boxes:
-        if chosen:
-            out.append(f'<rect x="{x}" y="{y}" width="200" height="120" rx="16" fill="{c}" stroke="{c}" stroke-width="2.5"/>')
-            out.append(f'<rect x="{x + 36}" y="{y + 44}" width="128" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
-            out.append(f'<rect x="{x + 36}" y="{y + 68}" width="88" height="12" rx="6" fill="{PAPER}" opacity="0.9"/>')
-        else:
-            out.append(f'<rect x="{x}" y="{y}" width="200" height="120" rx="16" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>')
-            out.append(f'<rect x="{x + 36}" y="{y + 44}" width="128" height="12" rx="6" fill="{RULE}"/>')
-            out.append(f'<rect x="{x + 36}" y="{y + 68}" width="88" height="12" rx="6" fill="{RULE}"/>')
-    # 紙から選ばれた入れ物への L 字矢印。 選ばれた 1 本だけ講座色、他は薄く。
-    sx, sy = nx + 84, ny + 104
-    out.append(f'<path d="M {sx} {sy} L {sx} 200 L 144 200 L 144 236" stroke="{RULE_SOLID}" stroke-width="4" fill="none"/>')
-    out.append(f'<path d="M 134 236 L 144 252 L 154 236 Z" fill="{RULE_SOLID}"/>')
-    out.append(f'<path d="M {sx} {sy} L {sx} 200 L 404 200 L 404 236" stroke="{c}" stroke-width="4" fill="none"/>')
-    out.append(f'<path d="M 394 236 L 404 252 L 414 236 Z" fill="{c}"/>')
     return "".join(out)
 
 
@@ -523,6 +417,28 @@ def motif_javascript(c: str) -> str:
     return "".join(out)
 
 
+def motif_claude_developer(c: str) -> str:
+    """アプリと Claude の往復に、アプリが実行するツールが挟まる。 講座の軸 (API・ツール使用・エージェントのループ) を 1 枚にする。"""
+    return f"""
+    <rect x="72" y="120" width="168" height="200" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>
+    <rect x="104" y="160" width="104" height="12" rx="6" fill="{RULE}"/>
+    <rect x="104" y="192" width="72" height="12" rx="6" fill="{RULE}"/>
+    <rect x="120" y="224" width="88" height="12" rx="6" fill="{RULE}"/>
+    <rect x="104" y="256" width="56" height="12" rx="6" fill="{RULE}"/>
+    <rect x="308" y="120" width="168" height="200" rx="20" fill="{c}"/>
+    <rect x="340" y="176" width="104" height="12" rx="6" fill="{PAPER}"/>
+    <rect x="340" y="208" width="72" height="12" rx="6" fill="{PAPER}"/>
+    <rect x="340" y="240" width="88" height="12" rx="6" fill="{PAPER}"/>
+    <path d="M 252 176 L 288 176" stroke="{INK}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 286 164 L 302 176 L 286 188 Z" fill="{INK}"/>
+    <path d="M 296 264 L 260 264" stroke="{c}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 262 252 L 246 264 L 262 276 Z" fill="{c}"/>
+    <rect x="200" y="392" width="148" height="72" rx="14" fill="{PAPER}" stroke="{RULE_SOLID}" stroke-width="2.5"/>
+    <rect x="228" y="414" width="92" height="10" rx="5" fill="{RULE}"/>
+    <rect x="228" y="434" width="60" height="10" rx="5" fill="{RULE}"/>
+    <path d="M 156 332 L 156 428 L 188 428" stroke="{RULE_SOLID}" stroke-width="3" fill="none" stroke-dasharray="8 8"/>
+    <path d="M 392 332 L 392 428 L 360 428" stroke="{RULE_SOLID}" stroke-width="3" fill="none" stroke-dasharray="8 8"/>"""
+
 
 def motif_aws_clf(c: str) -> str:
     """リージョン > AZ の入れ子へ、オンプレミスから移行する。 講座の軸 (グローバル基盤と用途選択) を 1 枚にする。"""
@@ -592,7 +508,6 @@ def motif_salesforce(c: str) -> str:
     <circle cx="274" cy="222" r="7" fill="{c}"/>
     {card(34, 306, 170, 126, False)}
     {card(344, 306, 170, 126, False)}"""
-
 
 
 def motif_cli(c: str) -> str:
@@ -823,47 +738,17 @@ SPECS = {
         "subtitle": "基本情報技術者試験",
         "motif": motif_fe_kamoku_b,
     },
+    "claude-developer-foundations": {
+        "title": "Claude",
+        "title_size": 152,
+        "subtitle": "Certified Developer 対策",
+        "motif": motif_claude_developer,
+    },
     "aws-clf-c02-basics": {
         "title": "AWS",
         "title_size": 168,
         "subtitle": "Cloud Practitioner 入門",
         "motif": motif_aws_clf,
-    },
-    "ai-fluency-basics": {
-        "title": "AI駆動開発",
-        "title_size": 116,
-        "subtitle": "の考え方",
-        "motif": motif_ai_fluency,
-    },
-    "claude-chat-basics": {
-        "title": "Claude",
-        "title_size": 152,
-        "subtitle": "チャット入門",
-        "motif": motif_claude_chat,
-    },
-    "claude-cowork-basics": {
-        "title": "Cowork",
-        "title_size": 152,
-        "subtitle": "入門",
-        "motif": motif_claude_cowork,
-    },
-    "claude-code-basics": {
-        "title": "Claude Code",
-        "title_size": 108,
-        "subtitle": "入門",
-        "motif": motif_claude_code,
-    },
-    "claude-code-skills": {
-        "title": "Skills",
-        "title_size": 152,
-        "subtitle": "とサブエージェント",
-        "motif": motif_claude_code_skills,
-    },
-    "claude-code-team": {
-        "title": "検証・hooks・MCP",
-        "title_size": 84,
-        "subtitle": "チームでの仕組み化",
-        "motif": motif_claude_code_team,
     },
 }
 

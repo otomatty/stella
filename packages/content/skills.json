@@ -6,5 +6,105 @@
   {
     "id": "preview-changes",
     "title": "変更をブラウザーで確認する"
+  },
+  {
+    "id": "claude-cert-exam-plan",
+    "title": "Claude の認定試験の受け方と範囲を確かめる"
+  },
+  {
+    "id": "claude-official-sources",
+    "title": "Claude の仕様を公式の情報源で確かめる"
+  },
+  {
+    "id": "claude-messages-request",
+    "title": "Messages API のリクエストと応答の形を扱う"
+  },
+  {
+    "id": "claude-sdk-setup",
+    "title": "SDK・API キー・モデル ID を正しく使う"
+  },
+  {
+    "id": "claude-stop-reason",
+    "title": "止まった理由で応答の扱いを分ける"
+  },
+  {
+    "id": "claude-api-errors",
+    "title": "API のエラーを見分けて送り直す"
+  },
+  {
+    "id": "claude-streaming",
+    "title": "ストリーミングの応答を扱う"
+  },
+  {
+    "id": "claude-batches",
+    "title": "Message Batches API で大量の処理を流す"
+  },
+  {
+    "id": "claude-files-and-media",
+    "title": "ファイル・画像・PDF を渡す"
+  },
+  {
+    "id": "claude-model-selection",
+    "title": "モデルと effort を、性能・速度・費用で選ぶ"
+  },
+  {
+    "id": "claude-prompt-caching",
+    "title": "プロンプトキャッシュが効く形にプロンプトを組む"
+  },
+  {
+    "id": "claude-token-cost",
+    "title": "トークン数から費用を見積もる"
+  },
+  {
+    "id": "claude-prompt-design",
+    "title": "指示・例・資料を区切って、具体的なプロンプトを書く"
+  },
+  {
+    "id": "claude-structured-output",
+    "title": "構造化出力で決まった形の JSON を受け取る"
+  },
+  {
+    "id": "claude-context-management",
+    "title": "コンテキストウィンドウに効く情報だけを収める"
+  },
+  {
+    "id": "claude-tool-use",
+    "title": "ツールの呼び出しを受けて実行し、結果と失敗を返す"
+  },
+  {
+    "id": "claude-tool-design",
+    "title": "ツールの説明・使う場面・入力の決まりを設計する"
+  },
+  {
+    "id": "claude-mcp",
+    "title": "MCP でツールやデータをつなぐ"
+  },
+  {
+    "id": "claude-agentic-choice",
+    "title": "ワークフローとエージェントを選び分ける"
+  },
+  {
+    "id": "claude-workflows",
+    "title": "ワークフローの形を選んで組み立てる"
+  },
+  {
+    "id": "claude-agent-sdk",
+    "title": "Agent SDK でエージェントを動かす"
+  },
+  {
+    "id": "claude-safety",
+    "title": "プロンプトインジェクションと権限から、アプリとエージェントを守る"
+  },
+  {
+    "id": "claude-grounding",
+    "title": "根拠のある答えにして、ハルシネーションを減らす"
+  },
+  {
+    "id": "claude-code-config",
+    "title": "Claude Code に約束・フック・設定を持たせる"
+  },
+  {
+    "id": "claude-evals",
+    "title": "成功の基準と評価のセットで変更を比べ、つまずきを直す"
   }
 ]

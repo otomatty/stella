@@ -1,0 +1,181 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-foundations/m1-messages-api@2",
+  "contentHash": "134c4956d40e656ed72423cae19e53480bc9c1b5e8d225a84f33cd1c03f3896e",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-request-response/t1-send-history/slides.md",
+      "sourceRefs": ["SRC-claude-docs-messages-20261031"],
+      "usedFor": "Messages API がステートレスで、続けてやり取りするときはそれまでの会話を messages に入れて毎回送ること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-request-response/t2-system/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-messages-system-20261031",
+        "SRC-claude-api-messages-create-20261031"
+      ],
+      "usedFor": "役割や前提を一番上の階層の system に置き、最初から効かせる指示は system に書くこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-request-response/t3-max-tokens/slides.md",
+      "sourceRefs": [
+        "SRC-claude-api-messages-create-20261031",
+        "SRC-claude-docs-stop-reasons-20261031"
+      ],
+      "usedFor": "max_tokens が出力の上限で、上限に届くと stop_reason が max_tokens で止まり、上限より早く終わることもあること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-request-response/t4-content-blocks/slides.md",
+      "sourceRefs": [
+        "SRC-claude-api-messages-create-20261031",
+        "SRC-claude-docs-messages-20261031"
+      ],
+      "usedFor": "応答の content が type で形の決まるブロックの配列で、テキストを type で選んでつなぐこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-request-response/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-messages-20261031",
+        "SRC-claude-docs-messages-system-20261031",
+        "SRC-claude-api-messages-create-20261031",
+        "SRC-claude-docs-stop-reasons-20261031"
+      ],
+      "usedFor": "レッスン1-1の4トピック(会話の履歴・system・max_tokens・コンテンツブロック)の読み物",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-request-response/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-messages-20261031",
+        "SRC-claude-docs-messages-system-20261031",
+        "SRC-claude-api-messages-create-20261031"
+      ],
+      "usedFor": "会話の履歴・system・max_tokens・content の読み方を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-sdk/t1-official-sdk/slides.md",
+      "sourceRefs": ["SRC-claude-docs-ts-sdk-20261031"],
+      "usedFor": "TypeScript の SDK の使い方と、既定で 2 回まで自動で送り直すエラーの種類",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-sdk/t2-api-key/slides.md",
+      "sourceRefs": ["SRC-claude-docs-api-key-20261031", "SRC-claude-docs-ts-sdk-20261031"],
+      "usedFor": "API キーを環境変数 ANTHROPIC_API_KEY に入れ、SDK が自動で読むこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-sdk/t3-model-id/slides.md",
+      "sourceRefs": ["SRC-claude-docs-model-ids-20261031"],
+      "usedFor": "4.6 世代以降のモデル ID が固定のスナップショットを指し、新しい版が別の ID で出ること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-sdk/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-ts-sdk-20261031",
+        "SRC-claude-docs-api-key-20261031",
+        "SRC-claude-docs-model-ids-20261031"
+      ],
+      "usedFor": "レッスン1-2の3トピック(SDK・API キー・モデル ID)の読み物",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-sdk/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-ts-sdk-20261031",
+        "SRC-claude-docs-api-key-20261031",
+        "SRC-claude-docs-model-ids-20261031"
+      ],
+      "usedFor": "SDK の送り直し・API キーの渡し方・モデル ID の版を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-stop-reasons/t1-branch-by-stop-reason/slides.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031"],
+      "usedFor": "stop_reason の主な値と、値ごとに処理を分けること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-stop-reasons/t2-max-tokens-stop/slides.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031"],
+      "usedFor": "max_tokens で止まった応答が途中で切れていて、上限を上げるか続きを書かせること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-stop-reasons/t3-refusal/slides.md",
+      "sourceRefs": ["SRC-claude-docs-refusals-20261031", "SRC-claude-docs-stop-reasons-20261031"],
+      "usedFor": "拒否が HTTP 200 の応答で stop_reason が refusal になり、stop_details に理由が入ること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-stop-reasons/doc.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031", "SRC-claude-docs-refusals-20261031"],
+      "usedFor": "レッスン1-3の3トピックの読み物と、stop_reason の値・すること の表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-stop-reasons/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031", "SRC-claude-docs-refusals-20261031"],
+      "usedFor": "stop_reason の値の意味、途中で切れた応答と拒否の扱いを問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q01-build-messages/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-messages-20261031",
+        "SRC-claude-api-messages-create-20261031"
+      ],
+      "usedFor": "教材独自の課題。会話の履歴と新しい発言から Messages API のリクエストを組み立て、応答のテキストのブロックをつなぐ関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q02-route-stop-reason/README.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031", "SRC-claude-docs-refusals-20261031"],
+      "usedFor": "教材独自の課題。応答の stop_reason の値ごとに、答え・途中で切れた応答・ツールの呼び出し・拒否・扱いを決めていない値を返す関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}

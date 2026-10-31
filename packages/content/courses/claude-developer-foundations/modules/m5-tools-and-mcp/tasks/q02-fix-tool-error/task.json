@@ -1,0 +1,55 @@
+{
+  "id": "claude-developer-foundations/m5-tools-and-mcp/q02-fix-tool-error",
+  "title": "ツールの失敗で止まるのを直す",
+  "kind": "debug",
+  "pattern": "error-as-result",
+  "skills": {
+    "uses": ["claude-tool-use"],
+    "assesses": ["claude-tool-use"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/tool-results.js"],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-DEBUG-01", "required": false }
+    ],
+    "rubric": [
+      {
+        "id": "failure-as-result",
+        "criterion": "ツールの例外と知らないツールを、何が起きたかの文と is_error: true を持つ tool_result にして返し、同じ応答のほかの呼び出しの結果も返している",
+        "required": true
+      },
+      {
+        "id": "scoped-fix",
+        "criterion": "差分が失敗の扱いに収まり、修正記録の原因・直したこと・再発の確認が差分と対応している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-claude-docs-handle-tool-calls-20261031", "SRC-claude-docs-tool-errors-20261031"],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -589,6 +589,10 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
   });
 });
 
+// 実際の教材から seed の SQL を何度も作って SQLite に流すので、教材が増えるほど時間がかかる。
+// 既定の 5 秒では、教材を足しただけで落ちる (export-seed-sql-writes.test.ts と同じ上限にする)。
+const SEED_TIMEOUT = 60_000;
+
 describe("export-seed-sql (自動生成 PDF)", () => {
   /** PDF_MANIFEST を渡したときの資料の SQL だけを取り出す。 */
   function pdfSql(entries: object[]): string {
@@ -617,62 +621,66 @@ describe("export-seed-sql (自動生成 PDF)", () => {
     sizeBytes: 10,
   });
 
-  it("OS ごとに分けた PDF は OS ごとの資料にし、分け方を変えても旧資料と版履歴を残して一覧から外す", () => {
-    const root = fileURLToPath(new URL("../../..", import.meta.url));
-    const combined = pdfSql([entry()]);
-    const combinedRevised = pdfSql([entry(undefined, "hash-both-2")]);
-    const byOs = pdfSql([entry("windows"), entry("macos")]);
-    const db = new DatabaseSync(":memory:");
-    try {
-      for (const file of readdirSync(join(root, "apps/api/drizzle"))
-        .filter((f) => f.endsWith(".sql"))
-        .sort())
-        db.exec(readFileSync(join(root, "apps/api/drizzle", file), "utf8"));
-      db.exec("pragma foreign_keys = on");
-      db.exec(exportSql(true));
-      const id = (os?: string) =>
-        stableUuid(`lesson-material-pdf:ses:dev-env-basics:doc-0-1${os ? `:${os}` : ""}`);
-      /** 資料ごとの [配っているか, 版の数, 最新版のキー]。 */
-      const state = () =>
-        Object.fromEntries(
-          (
-            db
-              .prepare(
-                "select m.id, m.archived_at is null as listed, m.path, (select count(*) from lesson_material_versions v where v.material_id = m.id) as versions from lesson_materials m where m.source = 'auto'",
-              )
-              .all() as { id: string; listed: number; path: string; versions: number }[]
-          ).map((r) => [r.id, [r.listed === 1, r.versions, r.path.split("/").pop()]]),
-        );
-      db.exec(combined);
-      expect(state()).toEqual({ [id()]: [true, 1, "hash-both.pdf"] });
-      // 分ける: 旧資料は行と版履歴を残し、一覧からだけ外す
-      db.exec(byOs);
-      expect(state()).toEqual({
-        [id()]: [false, 1, "hash-both.pdf"],
-        [id("windows")]: [true, 1, "hash-windows.pdf"],
-        [id("macos")]: [true, 1, "hash-macos.pdf"],
-      });
-      // 同じマニフェストをもう一度流しても版は増えない
-      db.exec(byOs);
-      expect(state()[id("windows")]).toEqual([true, 1, "hash-windows.pdf"]);
-      // まとめる: 前の資料に戻し、版履歴の続きに積む。OS ごとの資料は残して外す
-      db.exec(combinedRevised);
-      expect(state()).toEqual({
-        [id()]: [true, 2, "hash-both-2.pdf"],
-        [id("windows")]: [false, 1, "hash-windows.pdf"],
-        [id("macos")]: [false, 1, "hash-macos.pdf"],
-      });
-      // また分ける: 中身が同じなら版を増やさずに戻す
-      db.exec(byOs);
-      expect(state()).toEqual({
-        [id()]: [false, 2, "hash-both-2.pdf"],
-        [id("windows")]: [true, 1, "hash-windows.pdf"],
-        [id("macos")]: [true, 1, "hash-macos.pdf"],
-      });
-    } finally {
-      db.close();
-    }
-  });
+  it(
+    "OS ごとに分けた PDF は OS ごとの資料にし、分け方を変えても旧資料と版履歴を残して一覧から外す",
+    () => {
+      const root = fileURLToPath(new URL("../../..", import.meta.url));
+      const combined = pdfSql([entry()]);
+      const combinedRevised = pdfSql([entry(undefined, "hash-both-2")]);
+      const byOs = pdfSql([entry("windows"), entry("macos")]);
+      const db = new DatabaseSync(":memory:");
+      try {
+        for (const file of readdirSync(join(root, "apps/api/drizzle"))
+          .filter((f) => f.endsWith(".sql"))
+          .sort())
+          db.exec(readFileSync(join(root, "apps/api/drizzle", file), "utf8"));
+        db.exec("pragma foreign_keys = on");
+        db.exec(exportSql(true));
+        const id = (os?: string) =>
+          stableUuid(`lesson-material-pdf:ses:dev-env-basics:doc-0-1${os ? `:${os}` : ""}`);
+        /** 資料ごとの [配っているか, 版の数, 最新版のキー]。 */
+        const state = () =>
+          Object.fromEntries(
+            (
+              db
+                .prepare(
+                  "select m.id, m.archived_at is null as listed, m.path, (select count(*) from lesson_material_versions v where v.material_id = m.id) as versions from lesson_materials m where m.source = 'auto'",
+                )
+                .all() as { id: string; listed: number; path: string; versions: number }[]
+            ).map((r) => [r.id, [r.listed === 1, r.versions, r.path.split("/").pop()]]),
+          );
+        db.exec(combined);
+        expect(state()).toEqual({ [id()]: [true, 1, "hash-both.pdf"] });
+        // 分ける: 旧資料は行と版履歴を残し、一覧からだけ外す
+        db.exec(byOs);
+        expect(state()).toEqual({
+          [id()]: [false, 1, "hash-both.pdf"],
+          [id("windows")]: [true, 1, "hash-windows.pdf"],
+          [id("macos")]: [true, 1, "hash-macos.pdf"],
+        });
+        // 同じマニフェストをもう一度流しても版は増えない
+        db.exec(byOs);
+        expect(state()[id("windows")]).toEqual([true, 1, "hash-windows.pdf"]);
+        // まとめる: 前の資料に戻し、版履歴の続きに積む。OS ごとの資料は残して外す
+        db.exec(combinedRevised);
+        expect(state()).toEqual({
+          [id()]: [true, 2, "hash-both-2.pdf"],
+          [id("windows")]: [false, 1, "hash-windows.pdf"],
+          [id("macos")]: [false, 1, "hash-macos.pdf"],
+        });
+        // また分ける: 中身が同じなら版を増やさずに戻す
+        db.exec(byOs);
+        expect(state()).toEqual({
+          [id()]: [false, 2, "hash-both-2.pdf"],
+          [id("windows")]: [true, 1, "hash-windows.pdf"],
+          [id("macos")]: [true, 1, "hash-macos.pdf"],
+        });
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
 });
 
 // quiz は教材ステージにだけ紐づける。fixtures 側に同じ lesson.id が現れても

@@ -1,0 +1,59 @@
+{
+  "id": "claude-developer-foundations/m5-tools-and-mcp/q01-tool-loop",
+  "title": "ツール使用のループを回す",
+  "kind": "independent",
+  "pattern": "tool-use-loop",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-stop-reason"],
+    "assesses": ["claude-tool-use"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/tool-loop.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "round-trip",
+        "criterion": "応答の content を assistant の発言として足し、すべての tool_use に tool_use_id で結んだ tool_result を 1 つの user の発言で返している",
+        "required": true
+      },
+      {
+        "id": "bounded-loop",
+        "criterion": "stop_reason が tool_use の間だけ繰り返し、maxTurns で止まり、知らないツールを is_error の結果で返している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-docs-tool-use-20261031",
+    "SRC-claude-docs-handle-tool-calls-20261031",
+    "SRC-claude-docs-tool-errors-20261031"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

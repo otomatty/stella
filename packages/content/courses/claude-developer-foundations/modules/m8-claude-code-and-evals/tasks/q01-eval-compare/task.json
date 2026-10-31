@@ -1,0 +1,55 @@
+{
+  "id": "claude-developer-foundations/m8-claude-code-and-evals/q01-eval-compare",
+  "title": "評価のセットで比べる",
+  "kind": "independent",
+  "pattern": "eval-compare",
+  "skills": {
+    "uses": ["claude-model-selection"],
+    "assesses": ["claude-evals"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/eval.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "run-all-cases",
+        "criterion": "評価のケースを順にすべて回し、生成が失敗したケースも不合格として理由を残して、合格の数と合格率を出している",
+        "required": true
+      },
+      {
+        "id": "same-set-compare",
+        "criterion": "前と後のケースの ID が同じときだけ比べ、合格率の差に加えて、前は通って後で落ちたケースと、その逆のケースを返している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-claude-docs-evals-20261031", "SRC-claude-docs-eval-grading-20261031"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

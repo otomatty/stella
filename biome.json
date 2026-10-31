@@ -21,6 +21,8 @@
       "!**/packages/content/design-system",
       "!packages/content/templates/runners",
       "!**/packages/content/templates/runners",
+      "!packages/content/courses/**/tasks",
+      "!**/packages/content/courses/**/tasks",
       "!apps/vscode/samples",
       "!**/apps/vscode/samples",
       "!**/apps/web/src/routeTree.gen.ts",

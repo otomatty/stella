@@ -1,0 +1,202 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-foundations/m3-models-and-cost@2",
+  "contentHash": "cd4b2eb312547369ac7d9a7d5fd076d0b1f09ad92f6d5d13ed66291ab8bbddfd",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-choose-model/t1-criteria/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-choosing-model-20261031",
+        "SRC-claude-docs-choosing-start-20261031"
+      ],
+      "usedFor": "性能・速度・費用・effort の 4 つの観点と、速度・費用から始める方法(Haiku 5.5)と性能から始める方法(Opus 5.5)",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-choose-model/t2-evaluate/slides.md",
+      "sourceRefs": ["SRC-claude-docs-choosing-start-20261031"],
+      "usedFor": "自分の用途の評価のセットを作ることを最も大切な手順とし、実際のプロンプトとデータで正しさ・質・例外的な入力の扱いと費用を比べること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-choose-model/t3-effort/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-choosing-model-20261031",
+        "SRC-claude-docs-effort-20261031",
+        "SRC-claude-docs-effort-set-20261031"
+      ],
+      "usedFor": "output_config.effort の書き方、5 つの値、モデルごとの既定(多くは high、Opus 5.5・Haiku 5.5 は medium)、すべての出力のトークンに効くこと、モデルを替えるより effort の調整がよい手段になることが多いこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-choose-model/t4-combine/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-choosing-model-20261031",
+        "SRC-claude-docs-cost-intelligence-20261031"
+      ],
+      "usedFor": "アドバイザーとオーケストレーターの 2 つの形と、1 つのモデルの effort を調整してから組み合わせを考える順番",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-choose-model/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-choosing-model-20261031",
+        "SRC-claude-docs-choosing-start-20261031",
+        "SRC-claude-docs-effort-20261031",
+        "SRC-claude-docs-effort-set-20261031",
+        "SRC-claude-docs-cost-intelligence-20261031"
+      ],
+      "usedFor": "レッスン3-1の4トピック(選ぶ観点・評価で比べる・effort・モデルの組み合わせ)の読み物と、effort の値・組み合わせの形の表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l1-choose-model/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-choosing-model-20261031",
+        "SRC-claude-docs-choosing-start-20261031",
+        "SRC-claude-docs-effort-20261031",
+        "SRC-claude-docs-effort-set-20261031",
+        "SRC-claude-docs-cost-intelligence-20261031"
+      ],
+      "usedFor": "最初に試すモデルの選び方、評価のセット、effort の調整と性質、オーケストレーターを問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-prompt-caching/t1-reuse-prefix/slides.md",
+      "sourceRefs": ["SRC-claude-docs-prompt-caching-20261031"],
+      "usedFor": "毎回同じ前半を使い回す仕組み、cache_control、5 分の期限と使うたびの延長、書き込み 1.25 倍・読み込み 0.1 倍の倍率",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-prompt-caching/t2-stable-first/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031"
+      ],
+      "usedFor": "tools・system・messages の順の前半の一致で決まること、毎回同じ部分の最後に区切りを置くこと、毎回変わるブロックに区切りを置くと毎回書き込みになること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-prompt-caching/t3-check-usage/slides.md",
+      "sourceRefs": ["SRC-claude-docs-caching-structure-20261031"],
+      "usedFor": "usage の 3 つの入力の値、入力の合計が 3 つの和であること、どちらも 0 ならキャッシュされていないこと、モデルごとの最低の長さ",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-prompt-caching/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031",
+        "SRC-claude-docs-batch-20261031"
+      ],
+      "usedFor": "レッスン3-2の3トピック(使い回す前半・並べ方・usage の読み方)の読み物と、料金の倍率・並べ方・usage の値の表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-prompt-caching/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031"
+      ],
+      "usedFor": "キャッシュが得になる場面、料金の倍率、区切りの位置、使えなくなる変更、usage の読み方を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-tokens-and-speed/t1-count-tokens/slides.md",
+      "sourceRefs": ["SRC-claude-docs-token-counting-20261031"],
+      "usedFor": "トークン数を数える API(countTokens)の入力と返る値、無料であること、見積もりであること、モデルごとに数え直すこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-tokens-and-speed/t2-thinking-limit/slides.md",
+      "sourceRefs": ["SRC-claude-docs-thinking-20261031", "SRC-claude-docs-effort-set-20261031"],
+      "usedFor": "考える過程が既定で使われ thinking ブロックが答えより前に並ぶこと、考えた分も出力として課金され max_tokens に数えること、effort は目安で max_tokens は厳密な上限であること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-tokens-and-speed/t3-latency/slides.md",
+      "sourceRefs": ["SRC-claude-docs-latency-20261031"],
+      "usedFor": "遅延と最初のトークンまでの時間、速いモデルと低い effort・短いプロンプトと出力・ストリーミングの 3 つの見直し",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-tokens-and-speed/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-token-counting-20261031",
+        "SRC-claude-docs-thinking-20261031",
+        "SRC-claude-docs-effort-set-20261031",
+        "SRC-claude-docs-effort-20261031",
+        "SRC-claude-docs-latency-20261031"
+      ],
+      "usedFor": "レッスン3-3の3トピック(トークン数を数える・考える過程と上限・応答を速くする)の読み物と、effort と max_tokens の使い分け・見直すところの表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-tokens-and-speed/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-token-counting-20261031",
+        "SRC-claude-docs-thinking-20261031",
+        "SRC-claude-docs-effort-set-20261031",
+        "SRC-claude-docs-latency-20261031"
+      ],
+      "usedFor": "トークン数を数える API の性質、モデルごとの数え直し、考える過程と max_tokens、待つ感じを小さくする方法を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q01-cache-friendly-prompt/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031"
+      ],
+      "usedFor": "教材独自の課題。毎回同じ指示と資料を前に、時刻と質問を後ろに置き、毎回同じ部分の最後に cache_control を付けたリクエストを作り、usage からキャッシュの効き方を読む関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q02-estimate-cost/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031",
+        "SRC-claude-docs-batch-20261031"
+      ],
+      "usedFor": "教材独自の課題。usage の内訳と単価から費用を求め、キャッシュの有無とバッチの割引で費用を比べる関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "approved"
+    }
+  ]
+}

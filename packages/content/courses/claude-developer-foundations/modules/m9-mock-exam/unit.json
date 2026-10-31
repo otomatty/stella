@@ -1,0 +1,32 @@
+{
+  "plannedHours": 3,
+  "skills": {
+    "uses": [
+      "claude-messages-request",
+      "claude-sdk-setup",
+      "claude-stop-reason",
+      "claude-api-errors",
+      "claude-streaming",
+      "claude-batches",
+      "claude-files-and-media",
+      "claude-model-selection",
+      "claude-prompt-caching",
+      "claude-token-cost",
+      "claude-prompt-design",
+      "claude-structured-output",
+      "claude-context-management",
+      "claude-tool-use",
+      "claude-tool-design",
+      "claude-mcp",
+      "claude-agentic-choice",
+      "claude-workflows",
+      "claude-agent-sdk",
+      "claude-safety",
+      "claude-grounding",
+      "claude-code-config",
+      "claude-evals"
+    ],
+    "assesses": ["claude-cert-exam-plan"]
+  },
+  "reuses": []
+}

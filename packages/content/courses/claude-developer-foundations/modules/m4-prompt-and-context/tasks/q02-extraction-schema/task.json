@@ -1,0 +1,58 @@
+{
+  "id": "claude-developer-foundations/m4-prompt-and-context/q02-extraction-schema",
+  "title": "抽出のスキーマを書く",
+  "kind": "independent",
+  "pattern": "schema-guarded-parse",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-stop-reason"],
+    "assesses": ["claude-structured-output"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/inquiry.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "schema-unknowns",
+        "criterion": "すべての項目を必須にし、書かれていない値を null か \"unknown\" で表し、additionalProperties: false を書いて、構造化出力で使えない制限を入れていない",
+        "required": true
+      },
+      {
+        "id": "read-safely",
+        "criterion": "stop_reason を確かめてから JSON として読み、読めない JSON を理由つきで返し、plan の大文字と小文字をそろえている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-docs-structured-outputs-20261031",
+    "SRC-claude-docs-structured-considerations-20261031"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

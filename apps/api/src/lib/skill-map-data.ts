@@ -144,6 +144,7 @@ export function shouldRevealDevMap(
  *
  * 画面が全部入れ替わったら、この引数ごと落としてよい (移行用の足場)。
  * `tiers=3` は DevOps 島を島として描ける画面 (旧 bundle は本土の扇に混ぜてしまう)。
+ * `tiers=4` は Anthropic認定資格の島も島として描ける画面。
  */
 export const SKILL_MAP_TIERS_PARAM = "tiers";
 

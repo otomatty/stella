@@ -1,0 +1,8 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["claude-official-sources"],
+    "assesses": ["claude-messages-request", "claude-sdk-setup", "claude-stop-reason"]
+  },
+  "reuses": []
+}

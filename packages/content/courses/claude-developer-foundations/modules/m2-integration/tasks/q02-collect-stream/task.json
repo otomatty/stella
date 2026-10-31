@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m2-integration/q02-collect-stream",
+  "title": "ストリームから本文を組み立てる",
+  "kind": "basic",
+  "pattern": "stream-accumulate",
+  "skills": {
+    "uses": ["claude-stop-reason"],
+    "assesses": ["claude-streaming"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/stream.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "text-delta-only",
+        "criterion": "本文に、delta.type が text_delta の差分だけをつないでいる",
+        "required": true
+      },
+      {
+        "id": "stop-reason-from-message-delta",
+        "criterion": "止まった理由を message_delta の delta.stop_reason から読んでいる",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-claude-docs-streaming-20261031", "SRC-claude-docs-streaming-deltas-20261031"],
+  "estimatedMinutes": 40,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

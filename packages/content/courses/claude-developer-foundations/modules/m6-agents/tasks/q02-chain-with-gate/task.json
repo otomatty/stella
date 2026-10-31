@@ -1,0 +1,55 @@
+{
+  "id": "claude-developer-foundations/m6-agents/q02-chain-with-gate",
+  "title": "段に分けてつなぐ",
+  "kind": "independent",
+  "pattern": "gated-chain",
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-workflows"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/chain.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "gate-stops",
+        "criterion": "段の出力をゲートで確かめ、条件を満たさないか例外が起きたら、次の段を呼ばずにどの段で何が理由で止まったかを返している",
+        "required": true
+      },
+      {
+        "id": "bounded-retry",
+        "criterion": "retries の回数までだけ、ゲートの理由を feedback にしてその段をやり直し、通った段の出力だけを次の段の入力にしている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-anthropic-effective-agents-20261031"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "id": "claude-developer-foundations/m6-agents/q01-router",
+  "title": "入力で振り分ける",
+  "kind": "independent",
+  "pattern": "classify-and-route",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-model-selection"],
+    "assesses": ["claude-workflows"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/router.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "normalize-label",
+        "criterion": "分類の結果の前後の空白・大文字と小文字・末尾の句読点をそろえてから、決めた種類のどれかと完全に一致するときだけ受け付けている",
+        "required": true
+      },
+      {
+        "id": "route-with-fallback",
+        "criterion": "種類ごとのモデル・指示・上限でリクエストを作り、当てはまらない分類は fallback の行き先へ回して fellBack で示している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": ["SRC-anthropic-effective-agents-20261031"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

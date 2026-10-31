@@ -860,8 +860,6 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "javascript-data-basics",
     ]);
     expect(courses.find((c) => c.id === "dom-basics")?.parent).toBe("javascript-data-basics");
-    expect(courses.find((c) => c.id === "claude-code-basics")?.parent).toBe("claude-chat-basics");
-    expect(courses.find((c) => c.id === "claude-code-team")?.parent).toBe("claude-code-skills");
     expect(courses.find((c) => c.id === "dev-env-basics")?.parent).toBeUndefined();
   });
 
@@ -906,8 +904,14 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "cicd-basics",
       "linux-ops-basics",
       "observability-basics",
+      "ai-fluency-basics",
+      "claude-chat-basics",
+      "claude-code-basics",
+      "claude-code-skills",
+      "claude-code-team",
+      "claude-cowork-basics",
     ];
-    expect(courses).toHaveLength(35);
+    expect(courses).toHaveLength(30);
     for (const slug of placeholders) {
       const course = courses.find((c) => c.id === slug);
       expect(course, slug).toBeDefined();

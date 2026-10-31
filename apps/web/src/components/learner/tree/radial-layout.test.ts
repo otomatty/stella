@@ -224,13 +224,13 @@ describe("layoutRadialSkillTree", () => {
       node({ id: "root", title: "ITのきほん", category: "基礎", state: "unlocked" }),
       // it-basics 直下 (本土): フロントエンド 1 (html-css) /
       // バックエンド 2 (sql / cli)。Git は appearances で両ルートへ複製する。
-      // 島: AWS資格 1 / 情報処理資格 1 / AI駆動開発 1 / DevOps 1。
+      // 島: AWS資格 1 / 情報処理資格 1 / Anthropic認定資格 1 / DevOps 1。
       ...of("基礎", 1, "base"),
       ...of("フロントエンド", 1, "fe"),
       ...of("バックエンド", 2, "be"),
       ...of("AWS資格", 1, "aws"),
       ...of("情報処理資格", 1, "cert"),
-      ...of("AI駆動開発", 1, "ai"),
+      ...of("Anthropic認定資格", 1, "ai"),
       ...of("DevOps", 1, "ops"),
     ]);
     expect(closestPair(layout)).toBeGreaterThanOrEqual(STAR_CORE);
@@ -277,12 +277,12 @@ describe("layoutRadialSkillTree", () => {
       ["aws-clf-c02-basics", "AWS資格", ["it-basics"]],
       ["fe-kamoku-a", "情報処理資格", ["it-basics"]],
       ["fe-kamoku-b", "情報処理資格", ["fe-kamoku-a"]],
-      ["ai-fluency-basics", "AI駆動開発", ["it-basics"]],
-      ["claude-chat-basics", "AI駆動開発", ["ai-fluency-basics"]],
-      ["claude-cowork-basics", "AI駆動開発", ["claude-chat-basics"]],
-      ["claude-code-basics", "AI駆動開発", ["claude-chat-basics", "ai-fluency-basics"]],
-      ["claude-code-skills", "AI駆動開発", ["claude-code-basics"]],
-      ["claude-code-team", "AI駆動開発", ["claude-code-basics", "claude-code-skills"]],
+      ["ai-fluency-basics", "Anthropic認定資格", ["it-basics"]],
+      ["claude-chat-basics", "Anthropic認定資格", ["ai-fluency-basics"]],
+      ["claude-cowork-basics", "Anthropic認定資格", ["claude-chat-basics"]],
+      ["claude-code-basics", "Anthropic認定資格", ["claude-chat-basics", "ai-fluency-basics"]],
+      ["claude-code-skills", "Anthropic認定資格", ["claude-code-basics"]],
+      ["claude-code-team", "Anthropic認定資格", ["claude-code-basics", "claude-code-skills"]],
       ["devops-basics", "DevOps", ["python-basics"]],
       ["linux-ops-basics", "DevOps", ["devops-basics"]],
       ["networking-ops-basics", "DevOps", ["linux-ops-basics"]],
@@ -325,7 +325,7 @@ describe("layoutRadialSkillTree", () => {
         // 木の外から来るので長くてよい。ここでは「主線の最短」ではなく「どの星も
         // 何かの前提から 1 歩以内」を見る。
         // 島は円全体に角度を配る (fillCircle) ので、同じ親の兄弟が根の反対側へ回る
-        // ことがある — AI駆動開発の claude-chat-basics 直下 (cowork / code) が実際に
+        // ことがある — 旧 AI駆動開発の島の形 (claude-chat-basics 直下の cowork / code) が実際に
         // そうなる (1.7〜2.6 歩)。本番の course.json どおりの姿なので、ここでは
         // 例外として見逃し、島の詰め方は別途扱う。
         if (KNOWN_ISLAND_SPREAD.has(to.node.id)) continue;
@@ -457,35 +457,35 @@ describe("layoutRadialSkillTree", () => {
         node({
           id: "ai",
           title: "AI駆動開発の考え方",
-          category: "AI駆動開発",
+          category: "Anthropic認定資格",
           parent_id: "root",
         }),
         node({
           id: "chat",
           title: "Claude チャット入門",
-          category: "AI駆動開発",
+          category: "Anthropic認定資格",
           parent_id: "ai",
         }),
         node({
           id: "cowork",
           title: "Cowork 入門",
-          category: "AI駆動開発",
+          category: "Anthropic認定資格",
           parent_id: "chat",
         }),
         node({
           id: "code",
           title: "Claude Code 入門",
-          category: "AI駆動開発",
+          category: "Anthropic認定資格",
           parent_id: "chat",
         }),
         node({
           id: "skills",
           title: "Skills とサブエージェント",
-          category: "AI駆動開発",
+          category: "Anthropic認定資格",
           parent_id: "code",
         }),
       ]);
-      const island = layout.islands.find((i) => i.key === "AI駆動開発");
+      const island = layout.islands.find((i) => i.key === "Anthropic認定資格");
       if (!island) throw new Error("島がない");
       const posOf = (id: string) => {
         const p = layout.nodes.find((n) => n.node.id === id);

@@ -13,7 +13,7 @@
  * 伏せるのはサーバ側 (`loadSkillMapSource`) — 画面で隠すだけだと DevTools で
  * 全部読めてしまい、条件が演出でしかなくなる。
  *
- * 表示条件は島ごとに変えられる。資格 / AI は 開発環境とWebの入口、DevOps はバックエンドの
+ * 表示条件は島ごとに変えられる。資格は 開発環境とWebの入口、DevOps はバックエンドの
  * Python 入門、という具合に、本土のどこまで進んだ人にその島を見せるかを書く。
  *
  * 表示条件は前提 (`prerequisites`) とは別の軸:
@@ -45,7 +45,7 @@ export interface SkillMapIsland {
 export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "AWS資格", requires: ["dev-env-basics"] },
   { category: "情報処理資格", requires: ["dev-env-basics"] },
-  { category: "AI駆動開発", requires: ["dev-env-basics"] },
+  { category: "Anthropic認定資格", requires: ["dev-env-basics"] },
   { category: "DevOps", requires: ["python-basics"] },
   { category: "Salesforce案件", requires: ["dev-env-basics"] },
 ];
@@ -58,14 +58,15 @@ export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
 /**
  * 島カテゴリ → それを**島として描ける**画面の `tiers` 下限。
  *
- * 載っていない島 (資格 / AI) は最初からあるので常に配る。載っている島は、申告が
- * 下限未満の画面には**存在ごと落とす**。旧 bundle の `SKILL_MAP_ISLAND_CATEGORIES`
- * に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が引かれてしまう
- * (DevOps の親は `python-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * 載っていない島 (AWS資格・情報処理資格・Salesforce案件) は最初からあるので常に配る。
+ * 載っている島は、申告が下限未満の画面には**存在ごと落とす**。旧 bundle の
+ * `SKILL_MAP_ISLAND_CATEGORIES` に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が
+ * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
  * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
  */
 export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
   DevOps: 3,
+  Anthropic認定資格: 4,
 };
 
 /**

@@ -1,0 +1,27 @@
+{
+  "format": 2,
+  "title": "Claude Certified Developer 対策",
+  "category": "Anthropic認定資格",
+  "color": "amber",
+  "description": "Claude Certified Developer: Foundations の対策講座です。Claude API・ツール使用・エージェントの作り方を、公式ドキュメントで確かめ、手元の課題で動かしながら、場面ごとに選べるようになることを目指します。",
+  "header": "Claude Developer資格対策",
+  "tenantId": "ses",
+  "prerequisites": ["dev-env-basics"],
+  "plannedHours": 40,
+  "environment": "node-test-01",
+  "canDo": "Claude API・ツール・エージェントの作り方を、公式ドキュメントで確かめて選べる",
+  "theme": "資格で示すAI開発力",
+  "modules": {
+    "m0-exam-and-sources": "M0. 試験の全体像と公式の情報源",
+    "m1-messages-api": "M1. Messages API の基本",
+    "m2-integration": "M2. アプリに組み込む",
+    "m3-models-and-cost": "M3. モデルの選択と費用・速度の調整",
+    "m4-prompt-and-context": "M4. プロンプトとコンテキストの設計",
+    "m5-tools-and-mcp": "M5. ツール使用と MCP",
+    "m6-agents": "M6. ワークフローとエージェント",
+    "m7-safety": "M7. 安全性とセキュリティ",
+    "m8-claude-code-and-evals": "M8. Claude Code の設定と評価・デバッグ",
+    "m9-mock-exam": "M9. 模擬試験",
+    "m10-final-review": "M10. 直前対策"
+  }
+}

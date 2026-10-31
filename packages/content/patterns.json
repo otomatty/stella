@@ -2,5 +2,77 @@
   {
     "id": "html-page",
     "title": "文書の構造を作り、表示を確認する"
+  },
+  {
+    "id": "weighted-allocation",
+    "title": "重みに比例して配分する"
+  },
+  {
+    "id": "message-history",
+    "title": "会話の履歴からリクエストを組み立てる"
+  },
+  {
+    "id": "stop-reason-routing",
+    "title": "応答の止まった理由で処理を分ける"
+  },
+  {
+    "id": "transient-retry",
+    "title": "一時的な失敗だけを間隔を広げて送り直す"
+  },
+  {
+    "id": "stream-accumulate",
+    "title": "イベントの列から結果を組み立てる"
+  },
+  {
+    "id": "batch-request-mapping",
+    "title": "一覧から ID 付きのリクエストを作り、結果を ID で突き合わせる"
+  },
+  {
+    "id": "cache-friendly-ordering",
+    "title": "変わらない部分を前に、変わる部分を後ろに並べて区切りを置く"
+  },
+  {
+    "id": "token-cost-estimate",
+    "title": "使った量の内訳ごとに単価をかけて費用を見積もる"
+  },
+  {
+    "id": "tagged-prompt-assembly",
+    "title": "資料・例・指示をタグで包み、決まった順に組み立てる"
+  },
+  {
+    "id": "schema-guarded-parse",
+    "title": "止まった理由を確かめてから、スキーマどおりの値として読む"
+  },
+  {
+    "id": "tool-use-loop",
+    "title": "呼び出しを受けて実行し、結果を返して、終わるまで繰り返す"
+  },
+  {
+    "id": "error-as-result",
+    "title": "失敗を例外で止めず、結果として返す"
+  },
+  {
+    "id": "classify-and-route",
+    "title": "入力を分類して、決めた先に振り分ける"
+  },
+  {
+    "id": "gated-chain",
+    "title": "段ごとに結果を確かめてから次へ進める"
+  },
+  {
+    "id": "untrusted-as-data",
+    "title": "外から来た内容を、出どころと一緒にデータとして包む"
+  },
+  {
+    "id": "least-privilege-config",
+    "title": "作業に要るものだけを許可し、ほかを断る設定を作る"
+  },
+  {
+    "id": "eval-compare",
+    "title": "同じ評価のセットで、変更の前後を比べる"
+  },
+  {
+    "id": "tool-loop-structured-reply",
+    "title": "ツールを使いながら、決まった形の答えを返すアシスタントを組み立てる"
   }
 ]

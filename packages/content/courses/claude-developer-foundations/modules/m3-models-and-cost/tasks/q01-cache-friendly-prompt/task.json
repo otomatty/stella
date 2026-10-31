@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m3-models-and-cost/q01-cache-friendly-prompt",
+  "title": "キャッシュが効く順に並べる",
+  "kind": "basic",
+  "pattern": "cache-friendly-ordering",
+  "skills": {
+    "uses": ["claude-messages-request"],
+    "assesses": ["claude-prompt-caching"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/cache.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "stable-prefix",
+        "criterion": "毎回同じ指示と資料を system に置き、時刻と質問を messages の後ろに回して、cache_control を毎回同じ部分の最後のブロックにだけ付けている",
+        "required": true
+      },
+      {
+        "id": "read-usage",
+        "criterion": "usage の 3 つの入力の値を足して入力の合計を出し、読み込み・書き込み・キャッシュなしを値から見分けている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-claude-docs-prompt-caching-20261031", "SRC-claude-docs-caching-structure-20261031"],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

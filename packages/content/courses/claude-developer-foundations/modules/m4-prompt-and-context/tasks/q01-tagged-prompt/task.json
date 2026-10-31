@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m4-prompt-and-context/q01-tagged-prompt",
+  "title": "指示と資料を分ける",
+  "kind": "basic",
+  "pattern": "tagged-prompt-assembly",
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-prompt-design"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/prompt.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "tagged-order",
+        "criterion": "資料・例・指示・質問をそれぞれのタグで包み、資料を先頭に、質問を最後に並べている",
+        "required": true
+      },
+      {
+        "id": "read-tag",
+        "criterion": "応答からタグの中身だけを取り出し、タグがないときは null を返している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-claude-docs-prompting-20261031"],
+  "estimatedMinutes": 45,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

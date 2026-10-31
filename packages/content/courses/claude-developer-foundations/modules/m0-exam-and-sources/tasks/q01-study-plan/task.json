@@ -1,0 +1,47 @@
+{
+  "id": "claude-developer-foundations/m0-exam-and-sources/q01-study-plan",
+  "title": "配点に合わせて学習時間を配る",
+  "kind": "basic",
+  "pattern": "weighted-allocation",
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-cert-exam-plan"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/study-plan.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "ratio",
+        "criterion": "各範囲の時間を、配点の合計に対するその範囲の配点の割合から計算している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": [],
+  "estimatedMinutes": 30,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
