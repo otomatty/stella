@@ -509,7 +509,7 @@ describe("受験できるロール (SKILL_CHECK_ROLES)", () => {
     expect(res.status).toBe(200);
   });
 
-  it.each(["instructor", "sales"] as const)("%s は出題も採点も 403", async (role) => {
+  it.each(["instructor"] as const)("%s は出題も採点も 403", async (role) => {
     caller = { ...BASE_CALLER, id: `seed-${role}`, role };
     expect((await get("/api/skill-check/id-d")).status).toBe(403);
     const res = await post("/api/skill-check/id-d", { answers: [] });

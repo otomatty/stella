@@ -8,17 +8,7 @@
 
 import { useContext } from "react";
 import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import {
-  Award,
-  Book,
-  Compass,
-  Edit,
-  HelpCircle,
-  Home,
-  MessageCircle,
-  TrendingUp,
-  Users,
-} from "@/lib/icons";
+import { Award, Book, Compass, Edit, HelpCircle, Home, TrendingUp, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusScreen, type StatusScreenLink } from "@/components/common/StatusScreen";
 import { AppShellContext } from "@/components/shell/app-shell-context";
@@ -43,16 +33,6 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
         { label: "KPIダッシュボード", icon: Home, onSelect: () => setPage("dash") },
         { label: "ステージ管理", icon: Book, onSelect: () => setPage("stages") },
         { label: "ユーザー管理", icon: Users, onSelect: () => setPage("users") },
-      ];
-    case "sales":
-      return [
-        { label: "ダッシュボード", icon: Home, onSelect: () => setPage("dash") },
-        {
-          label: "面談対策",
-          description: "案件種別の割当と準備状況",
-          icon: MessageCircle,
-          onSelect: () => setPage("interview-prep"),
-        },
       ];
     case "learner":
       return [

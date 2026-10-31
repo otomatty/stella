@@ -2,9 +2,9 @@
  * 素朴な排他ロック (Issue #237)。
  *
  * R2 にも D1 にも比較交換 (compare-and-swap) が無いので、 「読んでから書く」形では
- * 読み直しと書き込みの間に必ず隙間が残る。 面談対策の質問編集では、 本文 (D1) と
- * 読み上げ音声 (R2) を食い違わせないために、 その 2 つをこのロックの中でまとめて
- * 行い、 同じ質問への同時操作を直列化する。
+ * 読み直しと書き込みの間に必ず隙間が残る。 食い違わせたくない複数の書き込み
+ * (例: レッスン本文の更新とリビジョンの記録) をこのロックの中でまとめて行い、
+ * 同じ対象への同時操作を直列化する。
  *
  * 実装は `insert ... on conflict do nothing` が「無ければ入れる」を不可分に行える
  * ことだけに頼っている。 期限切れは誰でも取り直せるので、 ロックを持ったまま
@@ -92,11 +92,6 @@ export async function withResourceLock<T>(
       console.error(`[resource-lock] failed to release ${id}`, e);
     }
   }
-}
-
-/** 面談対策の質問 1 件 (本文 + 読み上げ音声) のロック ID。 */
-export function interviewQuestionLockId(tenantId: string, no: number): string {
-  return `interview-question:${tenantId}:${no}`;
 }
 
 /**

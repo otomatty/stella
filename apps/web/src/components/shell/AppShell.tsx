@@ -99,7 +99,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   // 受講者の学習の記録 (ホームから移した提出履歴・学習時間・ペース・お知らせ)。
   records: "/records",
   cert: "/certificates",
-  "interview-prep": "/interview-prep",
   "review-queue": "/review-queue",
   // デイリー復習 (SRS)。 未登録だと fallback でキーが "review" (添削詳細 = flush) に
   // 衝突し、 共通パディングが外れてしまう。
@@ -259,10 +258,7 @@ export function AppShell() {
   // 従来どおりテナントのステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
   // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
-  const browseStages = useStagesForTenant(
-    effectiveTenant.id,
-    effectiveRole !== "learner" && effectiveRole !== "sales",
-  );
+  const browseStages = useStagesForTenant(effectiveTenant.id, effectiveRole !== "learner");
   const enrolledStages = useEnrolledStagesForTenant(
     effectiveTenant.id,
     session?.user.id ?? null,

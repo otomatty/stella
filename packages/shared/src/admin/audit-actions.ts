@@ -49,12 +49,6 @@ const LABELS = {
   test_mode_disable: "テストモード無効化",
   // ストレージ保守 (#64)
   r2_orphan_cleanup: "教材ストレージの孤児削除",
-  // 面談対策
-  interview_prep_assign: "面談対策の割当",
-  interview_tts_generate: "面談対策 質問音声の生成",
-  interview_question_edit: "面談対策 想定質問の編集",
-  answer_template_generated: "回答の型の AI 生成",
-  answer_template_edited: "回答の型の編集",
   // 発見教材 (Phase 4)
   //
   // 生成・編集・レビューを分けて残す。 「AI が作ったものを誰が公開したか」 は後から
@@ -75,9 +69,6 @@ const LABELS = {
   hof_submit: "殿堂への掲載申請",
   hof_publish: "殿堂の公開",
   hof_close: "殿堂の非公開化",
-  // スキルシート (#203)
-  skill_sheet_upload: "スキルシートのアップロード",
-  skill_sheet_update: "スキルシートの更新",
 } as const;
 
 /**
@@ -85,7 +76,8 @@ const LABELS = {
  *
  * course → stage のリネーム (Phase 0) 以前に記録された行は action コードが `course_*`
  * のままで、 書き換えはしない。 ラベルだけ残しておかないと監査画面で生の
- * `course_publish` が並ぶ。 Phase 3b で退役した **割当** の action も同じ扱い。
+ * `course_publish` が並ぶ。 Phase 3b で退役した **割当** の action と、 廃止した
+ * 面談対策・スキルシートの action も同じ扱い。
  * `LABELS` と分けてあるのは、 記録側 (`recordAudit()`) が `AuditAction` で縛られている
  * 以上、 旧 action を再び記録できるようにしないため — 絞り込みの選択肢は
  * `AUDIT_ACTION_FILTER_LABELS` が両方を混ぜて作るので、 定義が 2 か所に割れることもない。
@@ -100,6 +92,14 @@ const DEPRECATED_LABELS: Record<string, string> = {
   enrollment_bulk_create: "受講登録の一括割当 (旧)",
   enrollment_bulk_delete: "受講登録の一括解除 (旧)",
   enrollment_preset_apply: "割当プリセットの適用 (旧)",
+  // 廃止した面談対策 (想定質問・音声・個別回答の型) とスキルシート。
+  interview_prep_assign: "面談対策の割当 (旧)",
+  interview_tts_generate: "面談対策 質問音声の生成 (旧)",
+  interview_question_edit: "面談対策 想定質問の編集 (旧)",
+  answer_template_generated: "回答の型の AI 生成 (旧)",
+  answer_template_edited: "回答の型の編集 (旧)",
+  skill_sheet_upload: "スキルシートのアップロード (旧)",
+  skill_sheet_update: "スキルシートの更新 (旧)",
 };
 
 /** 記録しうる監査アクション。 記録側・表示側の双方がこの型を共有する。 */

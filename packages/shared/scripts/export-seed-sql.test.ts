@@ -356,21 +356,15 @@ describe("export-seed-sql (sqlite)", () => {
 
   it("既定では検証用 seed ユーザーを含む", () => {
     expect(sql).toContain("seed-admin");
-    expect(sql).toContain("seed-sales");
     expect(sql).toContain("seed-submission-pending-1");
   });
 
-  // 旧 category 列は contract リリース (#141) で drop 済み。 seed が書き戻すと
-  // マイグレーション適用後の D1 で INSERT が落ちるため、 復活していないことを縛る。
-  // (stages.category は別物なので interview_questions の文だけを見る。 1 文 = 1 行)
-  it("面談対策の insert は categories のみで旧 category 列を書かない", () => {
-    const inserts = sql.match(/^insert into interview_questions .*$/gm) ?? [];
-    expect(inserts.length).toBeGreaterThan(0);
-    for (const line of inserts) {
-      expect(line).toContain("insert into interview_questions (id, tenant_id, no, categories,");
-      expect(line).toContain("set categories = excluded.categories");
-      expect(line).not.toMatch(/\bcategory\b/);
-    }
+  // 面談対策と営業ロールは廃止した。テーブルはマイグレーション 0067 で落としたので、
+  // seed が書き戻すと適用後の D1 で INSERT が落ちる。
+  it("廃止した面談対策の質問と営業の seed ユーザーを書かない", () => {
+    expect(sql).not.toMatch(/interview_questions/);
+    expect(sql).not.toContain("seed-sales");
+    expect(sql).not.toContain("'sales'");
   });
 
   it("既存 DB の退役講座と子レコードを削除し、再利用する講座の登録・修了証と CMS 講座を保持する", () => {

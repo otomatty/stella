@@ -21,7 +21,6 @@ import {
 import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
 import { EMPTY_HOF_CHAPTERS } from "@stella/shared/hall-of-fame/types";
 import type { HallOfFameChapters, HallOfFamePathStage } from "@stella/shared/hall-of-fame/types";
-import type { SkillSheetV1 } from "@stella/shared/skill-sheet/types";
 
 const uuid = () =>
   text("id")
@@ -190,7 +189,7 @@ export const profiles = sqliteTable(
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
     role: text("role", {
-      enum: ["student", "instructor", "admin", "platform_admin", "sales"],
+      enum: ["student", "instructor", "admin", "platform_admin"],
     })
       .notNull()
       .default("student"),
@@ -1591,9 +1590,6 @@ export const notifications = sqliteTable("notifications", {
       "stage_cleared",
       // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。受講者宛て。
       "review_comment",
-      "interview_date_set",
-      "interview_answer_template_generated",
-      "interview_answer_template_failed",
     ],
   }).notNull(),
   title: text("title").notNull().default(""),
@@ -2037,73 +2033,19 @@ export const hallOfFameEntries = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// 面談対策 (Interview Prep)
+// 排他ロック / 専用ステージの割当
 // ---------------------------------------------------------------
-
-/**
- * 面談対策の想定質問バンク。 正本はリポジトリの
- * `packages/shared/src/interview/questions.json` で、 seed が upsert/prune する
- * (教材ステージと同じ運用 — CMS 編集 UI は無い)。
- */
-export const interviewQuestions = sqliteTable(
-  "interview_questions",
-  {
-    id: text("id").primaryKey(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    no: integer("no").notNull(),
-    categories: json<string[]>("categories", []),
-    subcategory: text("subcategory").notNull(),
-    freq: text("freq", { enum: ["A", "B", "C"] }).notNull(),
-    question: text("question").notNull(),
-    time: text("time"),
-    keywords: text("keywords"),
-    intent: text("intent"),
-    answerTemplate: text("answer_template"),
-    /**
-     * 深掘り①〜③ — **廃止済み** (一問一答化)。 誰も読み書きせず、 seed は常に null を
-     * 書く。 列を落とすのは次の deploy で行う: deploy は migrate → deploy:api → seed の
-     * 順なので、 読まなくなるのと同じ deploy で drop すると、 旧 Worker がまだ動いている
-     * 間に消えた列を select する窓ができる (2 段階の列削除)。
-     */
-    deep1: text("deep1"),
-    deep2: text("deep2"),
-    deep3: text("deep3"),
-    ng: text("ng"),
-    criteria: text("criteria"),
-    isReverse: integer("is_reverse", { mode: "boolean" }).notNull().default(false),
-    /**
-     * 人が編集した時刻 (Issue #237)。 null なら questions.json のまま。
-     * seed の upsert はこの列が入っている行を上書きしない — 入れておかないと
-     * main への push ごとに走る seed で現場の修正が消える。
-     */
-    editedAt: ts("edited_at"),
-    editedBy: text("edited_by"),
-    /**
-     * 「正本の管理に戻す」の予約 (Issue #237)。 押した時点では本文はまだ編集後のまま
-     * なので `edited_at` は落とさない (落とすと音声側が「編集前の読み上げを使ってよい」
-     * と誤解する)。 次の seed が本文を正本へ書き戻すときに、 両方まとめて落ちる。
-     */
-    releaseRequestedAt: ts("release_requested_at"),
-    createdAt: tsNow("created_at"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantNoUnique: uniqueIndex("interview_questions_tenant_no_uq").on(t.tenantId, t.no),
-  }),
-);
 
 /**
  * 汎用の排他ロック (Issue #237)。
  *
  * D1 の `insert ... on conflict do nothing` が「無ければ入れる」を不可分に行えることを
- * 使った素朴なミューテックス。 面談対策では「質問の本文更新 + 読み上げ音声の更新」を
- * 1 つのロックの中で行い、 同じ質問への同時操作で音声と本文が食い違わないようにする。
+ * 使った素朴なミューテックス。 食い違わせたくない複数の書き込み (例: レッスン本文の
+ * 更新とリビジョンの記録) を 1 つのロックの中で行い、 同じ対象への同時操作を直列化する。
  * `expires_at` を過ぎたロックは取り直せる (保持中に Worker が落ちても詰まらない)。
  */
 export const resourceLocks = sqliteTable("resource_locks", {
-  /** ロック対象の識別子 (例: `interview-audio:<tenant>:<no>`)。 */
+  /** ロック対象の識別子 (例: `lesson-markdown:<lessonId>`)。 */
   id: text("id").primaryKey(),
   /** 取得者を表す使い捨てトークン。 自分が取ったロックだけを解放するために持つ。 */
   holder: text("holder").notNull(),
@@ -2130,236 +2072,6 @@ export const stageGrants = sqliteTable(
   (t) => ({
     stageProfileUnique: uniqueIndex("stage_grants_stage_profile_uq").on(t.stageId, t.profileId),
     profileIdx: index("stage_grants_profile_idx").on(t.profileId),
-  }),
-);
-
-/** 受講者ごとの面談対策カテゴリ割当。 共通カテゴリは割当に含めず常時表示。 */
-export const interviewPrepAssignments = sqliteTable(
-  "interview_prep_assignments",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    categories: json<string[]>("categories", []),
-    /** 面談予定日 (参考情報。 LMS の正本ではない) — YYYY-MM-DD */
-    interviewDate: text("interview_date"),
-    interviewNote: text("interview_note"),
-    assignedBy: text("assigned_by"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantProfileUnique: uniqueIndex("interview_prep_assignments_tenant_profile_uq").on(
-      t.tenantId,
-      t.profileId,
-    ),
-  }),
-);
-
-/** 受講者×質問ごとの個別「回答の型」(Issue #206)。 */
-export const interviewPersonalTemplates = sqliteTable(
-  "interview_personal_templates",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    questionNo: integer("question_no").notNull(),
-    content: text("content"),
-    draftContent: text("draft_content"),
-    generatedFrom: text("generated_from"),
-    source: text("source", { enum: ["ai", "manual"] })
-      .notNull()
-      .default("ai"),
-    updatedBy: text("updated_by"),
-    createdAt: tsNow("created_at"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantProfileQuestionUnique: uniqueIndex("interview_personal_templates_tenant_profile_q_uq").on(
-      t.tenantId,
-      t.profileId,
-      t.questionNo,
-    ),
-  }),
-);
-
-/**
- * 面談対策 — 質問ごとの学習ステータス (準備ホームの準備率の元データ)。
- * 表示ステータスは 4 段階 (未着手/型を読んだ/回答作成済み/練習OK) だが、 行が持つのは
- * read / confident のみ: 「回答作成済み」は個別回答の型の有無から導出し、 未着手は行なし。
- */
-export const interviewProgress = sqliteTable(
-  "interview_progress",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    questionNo: integer("question_no").notNull(),
-    status: text("status", { enum: ["read", "confident"] })
-      .notNull()
-      .default("read"),
-    practicedCount: integer("practiced_count").notNull().default(0),
-    lastPracticedAt: ts("last_practiced_at"),
-    /**
-     * SM-2 系列 (Issue #235)。 デイリー復習の review_cards と同じ列構成で、
-     * 更新も同じ `sm2Next` を通す。 未練習は due が null (= 「今日の練習セット」の
-     * fresh バケット) で、 自己評価のたびに ease / interval / due が進む。
-     */
-    srsEase: real("srs_ease").notNull().default(2.5),
-    srsIntervalDays: integer("srs_interval_days").notNull().default(0),
-    srsReps: integer("srs_reps").notNull().default(0),
-    /** 次回出題日 (`YYYY-MM-DD`)。 未練習は null。 */
-    srsDueDate: text("srs_due_date"),
-    /** 最後の自己評価。 「もう一度」= again を次のセットで最優先に再登場させる。 */
-    lastResult: text("last_result", { enum: ["again", "good"] }),
-    createdAt: tsNow("created_at"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantProfileQuestionUnique: uniqueIndex("interview_progress_tenant_profile_q_uq").on(
-      t.tenantId,
-      t.profileId,
-      t.questionNo,
-    ),
-  }),
-);
-
-/**
- * 面談対策 — 改善点メモ (Issue #234)。 振り返りで受講者が書き、 質問に紐付いて溜まる。
- * 未解決分は次回その質問に答える直前に再表示され、 克服したら resolved_at で消し込む。
- * 定型チップも自由入力も同じ 1 行として保存する。
- */
-export const interviewFixNotes = sqliteTable(
-  "interview_fix_notes",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    questionNo: integer("question_no").notNull(),
-    text: text("text").notNull(),
-    createdAt: tsNow("created_at"),
-    resolvedAt: ts("resolved_at"),
-  },
-  (t) => ({
-    tenantProfileQuestionIdx: index("interview_fix_notes_tenant_profile_q_idx").on(
-      t.tenantId,
-      t.profileId,
-      t.questionNo,
-    ),
-  }),
-);
-
-/**
- * 面談対策 — 「今日の練習セット」(Issue #235)。
- *
- * 出題は作成時に確定させて行に残す。 毎回 SM-2 で引き直すと、 1 問答えるたびに
- * 残りの並びが変わって「今日はここまでやった」が残らないため。 中断・再開は
- * completed_nos の差分で表現し、 終了サマリ (準備率の伸び) のために作成時点の
- * 準備率を started_percent に控える。
- */
-export const interviewPracticeSets = sqliteTable(
-  "interview_practice_sets",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    /** 作成した学習日 (アプリ基準 TZ の `YYYY-MM-DD`)。 */
-    date: text("date").notNull(),
-    /** 出題する質問番号 (優先度順)。 */
-    questionNos: json<number[]>("question_nos", []),
-    /** 自己評価を付けた質問番号。 */
-    completedNos: json<number[]>("completed_nos", []),
-    /** 「できた」を付けた質問番号 (終了サマリの n/10)。 */
-    confidentNos: json<number[]>("confident_nos", []),
-    /** 作成時点の準備率 (%)。 終了サマリの「伸び」の基準。 */
-    startedPercent: integer("started_percent").notNull().default(0),
-    status: text("status", { enum: ["active", "done"] })
-      .notNull()
-      .default("active"),
-    /**
-     * 楽観ロックの版数。 消化記録は JSON 配列の読み → 追記 → 書き戻しなので、
-     * 自己評価が同時に 2 件走ると後着が先着の 1 問を消してしまう。 更新は
-     * 「読んだときの版数と一致する行だけ」に限定して、 外れたら読み直す。
-     */
-    version: integer("version").notNull().default(0),
-    createdAt: tsNow("created_at"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantProfileStatusIdx: index("interview_practice_sets_tenant_profile_status_idx").on(
-      t.tenantId,
-      t.profileId,
-      t.status,
-    ),
-    /**
-     * 進行中のセットは受講者ごとに 1 つだけ (部分ユニーク)。 「途中のセットを再開」の
-     * 取得が 1 行に定まり、 二重タップや StrictMode の二重取得でセットが増えない。
-     */
-    activeUnique: uniqueIndex("interview_practice_sets_active_uq")
-      .on(t.tenantId, t.profileId)
-      .where(sql`status = 'active'`),
-  }),
-);
-
-/** Anthropic Message Batch による個別回答の型生成ジョブ (Issue #206)。 */
-export const generationJobs = sqliteTable("generation_jobs", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  profileId: text("profile_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  batchId: text("batch_id").notNull(),
-  status: text("status", { enum: ["pending", "done", "failed"] })
-    .notNull()
-    .default("pending"),
-  requested: integer("requested").notNull().default(0),
-  succeeded: integer("succeeded").notNull().default(0),
-  createdAt: tsNow("created_at"),
-  updatedAt: tsNowUpd("updated_at"),
-});
-
-/** 受講者ごとのスキルシート (Issue #203)。 1 人 1 行。 */
-export const skillSheets = sqliteTable(
-  "skill_sheets",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    profileId: text("profile_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    r2Key: text("r2_key"),
-    sheet: json<SkillSheetV1>("sheet", {
-      sections: { basic: {}, skills: [], projects: [], certifications: [], self_pr: "" },
-    }),
-    updatedBy: text("updated_by"),
-    createdAt: tsNow("created_at"),
-    updatedAt: tsNowUpd("updated_at"),
-  },
-  (t) => ({
-    tenantProfileUnique: uniqueIndex("skill_sheets_tenant_profile_uq").on(t.tenantId, t.profileId),
   }),
 );
 
@@ -2447,11 +2159,6 @@ export const APP_TABLES = [
   "hall_of_fame_entries",
   "audit_logs",
   "support_inquiries",
-  "interview_questions",
-  "interview_prep_assignments",
-  "interview_personal_templates",
-  "generation_jobs",
-  "skill_sheets",
   "library_books",
   "library_shelf_entries",
   "library_book_pdfs",

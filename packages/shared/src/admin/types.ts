@@ -14,10 +14,9 @@ export const PROFILE_ROLES: readonly ProfileRole[] = [
   "instructor",
   "admin",
   "platform_admin",
-  "sales",
 ];
 
-export const ASSIGNABLE_PROFILE_ROLES = ["student", "instructor", "admin", "sales"] as const;
+export const ASSIGNABLE_PROFILE_ROLES = ["student", "instructor", "admin"] as const;
 export type AssignableProfileRole = (typeof ASSIGNABLE_PROFILE_ROLES)[number];
 
 /** 招待 1 件分の入力。 tenant は呼び出し元 (admin) の所属から server 側で決まる。 */
@@ -204,38 +203,12 @@ export function isValidEmail(value: string): boolean {
 
 export function isProfileRole(value: unknown): value is ProfileRole {
   return (
-    value === "student" ||
-    value === "instructor" ||
-    value === "admin" ||
-    value === "platform_admin" ||
-    value === "sales"
+    value === "student" || value === "instructor" || value === "admin" || value === "platform_admin"
   );
 }
 
 export function isAssignableProfileRole(value: unknown): value is AssignableProfileRole {
-  return value === "student" || value === "instructor" || value === "admin" || value === "sales";
-}
-
-/** 面談対策の割当・準備状況の閲覧 (instructor / admin / platform_admin / sales)。 */
-export function canManageInterviewPrep(role: ProfileRole): boolean {
-  return role === "instructor" || role === "admin" || role === "platform_admin" || role === "sales";
-}
-
-/**
- * 面談対策を「受ける」側になれるロール (受講者 / 管理者)。
- *
- * 管理者は運用の当事者として自分でも面談対策を通しておきたい (質問の重さや
- * 読み上げの出来を受講者と同じ画面で確かめる) ため、 割当・練習の対象に含める。
- * 講師・営業は対象外 — 一覧に載ると受講者の準備状況を追う目的から外れるため。
- * API 側の双子は `apps/api/src/lib/authz.ts`。
- */
-export function canPracticeInterviewPrep(role: ProfileRole): boolean {
-  return role === "student" || role === "admin" || role === "platform_admin";
-}
-
-/** 面談予定日・メモの write (sales / admin / platform_admin)。 instructor は categories のみ。 */
-export function canWriteInterviewSchedule(role: ProfileRole): boolean {
-  return role === "sales" || role === "admin" || role === "platform_admin";
+  return value === "student" || value === "instructor" || value === "admin";
 }
 
 type ValidateResult =

@@ -17,7 +17,6 @@ import {
   Loader2,
   X,
   Send,
-  CalendarClock,
   MessageCircle,
   Sparkles,
 } from "@/lib/icons";
@@ -53,17 +52,6 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   learner_stumble: { icon: Bell, tone: "text-warning", label: "つまずき" },
   mentor_message: { icon: Send, tone: "text-brand", label: "担当講師から" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージクリア" },
-  interview_date_set: { icon: CalendarClock, tone: "text-brand", label: "面談予定" },
-  interview_answer_template_generated: {
-    icon: Sparkles,
-    tone: "text-brand",
-    label: "回答の型",
-  },
-  interview_answer_template_failed: {
-    icon: Sparkles,
-    tone: "text-destructive",
-    label: "回答の型",
-  },
 };
 
 /** 相対時刻 (例: 3分前 / 2時間前 / 4日前)。 1週間以上は日付表記。 */

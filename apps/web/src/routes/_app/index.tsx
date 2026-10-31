@@ -3,7 +3,6 @@ import { useAppShell } from "@/components/shell/app-shell-context";
 import { LearnerHome } from "@/components/learner/LearnerHome";
 import { InstructorDashboard } from "@/components/instructor/InstructorDashboard";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { SalesDashboard } from "@/components/sales/SalesDashboard";
 
 export const Route = createFileRoute("/_app/")({
   validateSearch: (search: Record<string, unknown>): { cert?: string } =>
@@ -32,9 +31,6 @@ function DashboardPage() {
   }
   if (s.role === "admin") {
     return <AdminDashboard tenantId={s.tenantId} backendEnabled={s.backendEnabled} />;
-  }
-  if (s.role === "sales") {
-    return <SalesDashboard setPage={s.setPage} />;
   }
   // 受講者のホームはスキルツリー + 「次にやること」(ステージ一覧と旧スキルツリー画面を集約)。
   return (

@@ -6,7 +6,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Db } from "../db/client.js";
-import { interviewQuestionLockId, withResourceLock } from "./resource-lock.js";
+import { withResourceLock } from "./resource-lock.js";
 
 /**
  * `insert ... on conflict do nothing` の性質だけを持つ最小の D1 代役。
@@ -106,13 +106,5 @@ describe("withResourceLock", () => {
     ).rejects.toThrow("boom");
 
     expect(db.rows.has("lock-a")).toBe(false);
-  });
-});
-
-describe("interviewQuestionLockId", () => {
-  it("テナントと質問番号でロックを分ける (別テナント・別問は待たせない)", () => {
-    expect(interviewQuestionLockId("ses", 101)).toBe("interview-question:ses:101");
-    expect(interviewQuestionLockId("ses", 101)).not.toBe(interviewQuestionLockId("ses", 102));
-    expect(interviewQuestionLockId("ses", 101)).not.toBe(interviewQuestionLockId("other", 101));
   });
 });

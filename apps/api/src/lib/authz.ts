@@ -36,7 +36,7 @@ export function requireReturning<T>(rows: readonly T[], what: string): T {
   return row;
 }
 
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin" | "sales";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export interface Caller {
   id: string;
@@ -141,18 +141,7 @@ export function isStaffRole(role: ProfileRole): boolean {
   return role === "instructor" || role === "admin" || role === "platform_admin";
 }
 
-/** 面談対策の割当・準備状況の閲覧。 staff 機能 (CMS 等) とは別枠 — sales を含む。 */
-export function canManageInterviewPrep(role: ProfileRole): boolean {
-  return isStaffRole(role) || role === "sales";
-}
-
-export function requireCanManageInterviewPrep(caller: Caller): void {
-  if (!canManageInterviewPrep(caller.role)) {
-    throw new ApiError("権限がありません", 403);
-  }
-}
-
-/** 専用ステージ (`audience = granted`) の割当。講師・管理者のみ (営業は対象外)。 */
+/** 専用ステージ (`audience = granted`) の割当。講師・管理者のみ。 */
 export function requireCanManageStageGrants(caller: Caller): void {
   if (!isStaffRole(caller.role)) {
     throw new ApiError("権限がありません", 403);
@@ -160,30 +149,12 @@ export function requireCanManageStageGrants(caller: Caller): void {
 }
 
 /**
- * 面談対策を「受ける」側になれるロール (受講者 / 管理者)。 管理者は受講者と同じ
- * 練習 (割当・今日の練習セット・進捗・改善点メモ) ができる。 講師・営業は対象外。
- * UI 側の双子は `@stella/shared/admin/types` の同名関数。
- */
-export const INTERVIEW_PREP_PRACTICE_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
-
-export function canPracticeInterviewPrep(role: ProfileRole): boolean {
-  return INTERVIEW_PREP_PRACTICE_ROLES.includes(role);
-}
-
-/** 面談対策の練習系 API (自分の進捗を書く操作) の入口ガード。 */
-export function requireCanPracticeInterviewPrep(caller: Caller): void {
-  if (!canPracticeInterviewPrep(caller.role)) {
-    throw new ApiError("権限がありません", 403);
-  }
-}
-
-/**
  * 腕試し (SkillCheck / 飛び級) を **受ける** 側になれるロール (Phase 3a)。
  *
- * `INTERVIEW_PREP_PRACTICE_ROLES` と同じ流儀・同じ顔ぶれ。管理者は運用の当事者として
- * 受講者と同じ腕試しを試せる必要がある (出題や合格ラインの手触りを確かめる場が他に
- * 無い) 一方、講師・営業は対象外 — 飛び級は「自分の星を開ける」操作で、他人の学習を
- * 見る側のロールが自分の `stage_unlocks` を作っても意味が無く、受験履歴だけが増える。
+ * 管理者は運用の当事者として受講者と同じ腕試しを試せる必要がある (出題や合格ラインの
+ * 手触りを確かめる場が他に無い) 一方、講師は対象外 — 飛び級は「自分の星を開ける」
+ * 操作で、他人の学習を見る側のロールが自分の `stage_unlocks` を作っても意味が無く、
+ * 受験履歴だけが増える。
  */
 export const SKILL_CHECK_ROLES: ProfileRole[] = ["student", "admin", "platform_admin"];
 
@@ -202,31 +173,11 @@ export function requireCanTakeSkillCheck(caller: Caller): void {
  * ステージの自己開始 (`POST /api/stages/:id/start`) の入口ガード (Phase 3b)。
  *
  * 顔ぶれは腕試しと同じ (`SKILL_CHECK_ROLES`) — 飛び級で開いた星の自己登録と自己開始は
- * 同じ「自分の学習を自分で始める」操作なので、片方だけ講師・営業に開けると
+ * 同じ「自分の学習を自分で始める」操作なので、片方だけ講師に開けると
  * 「受けられないのに始められる」がねじれる。
  */
 export function requireCanStartStage(caller: Caller): void {
   if (!canTakeSkillCheck(caller.role)) {
-    throw new ApiError("権限がありません", 403);
-  }
-}
-
-/** 面談予定日・メモの write。 instructor は categories のみ。 */
-export function canWriteInterviewSchedule(role: ProfileRole): boolean {
-  return role === "sales" || role === "admin" || role === "platform_admin";
-}
-
-/**
- * 想定質問そのものの編集 (Issue #237)。 面談に同席して質問の実際の言い回しを
- * 知っているのは営業なので、 admin と同じく編集できる。 instructor は割当と
- * モニタリングのみで、 全受講者に効く質問バンクは触らせない。
- */
-export function canEditInterviewQuestions(role: ProfileRole): boolean {
-  return role === "sales" || role === "admin" || role === "platform_admin";
-}
-
-export function requireCanEditInterviewQuestions(caller: Caller): void {
-  if (!canEditInterviewQuestions(caller.role)) {
     throw new ApiError("権限がありません", 403);
   }
 }

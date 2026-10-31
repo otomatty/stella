@@ -37,7 +37,6 @@ const BASE = (process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:8787").replace(/\/
 const LEARNER_ID = process.env.SMOKE_LEARNER_ID ?? "seed-learner";
 const INSTRUCTOR_ID = process.env.SMOKE_INSTRUCTOR_ID ?? "seed-instructor";
 const ADMIN_ID = process.env.SMOKE_ADMIN_ID ?? "seed-admin";
-const SALES_ID = process.env.SMOKE_SALES_ID ?? "seed-sales";
 
 /** VS Code の「講師に引き継ぐ」 が添える採点失敗サマリの最小形 (Issue #9)。 */
 const SMOKE_GRADING_SUMMARY = {
@@ -164,7 +163,6 @@ async function main(): Promise<void> {
   const admin = await mintToken(secret, ADMIN_ID);
   const instructor = await mintToken(secret, INSTRUCTOR_ID);
   const learner = await mintToken(secret, LEARNER_ID);
-  const sales = await mintToken(secret, SALES_ID);
 
   // 再実行しても衝突しないよう slug に実行時刻を混ぜる。
   const stamp = Date.now().toString(36);
@@ -204,89 +202,22 @@ async function main(): Promise<void> {
     assert(r.status === 401, `401 を期待したが ${r.status}`);
   });
 
-  await step("営業は CMS API にアクセスできない (403)", async () => {
+  await step("受講者は CMS API にアクセスできない (403)", async () => {
     const r = await call("POST", "/api/cms/stages", {
-      token: sales,
-      body: { slug: `smoke-sales-deny-${stamp}`, title: "[smoke] sales deny", status: "draft" },
+      token: learner,
+      body: { slug: `smoke-learner-deny-${stamp}`, title: "[smoke] learner deny", status: "draft" },
     });
     assert(r.status === 403, `403 を期待したが ${r.status}`);
   });
 
-  await step("営業は監査ログを閲覧できない (403)", async () => {
-    const r = await call("GET", "/api/audit-logs?limit=10", { token: sales });
+  await step("受講者は監査ログを閲覧できない (403)", async () => {
+    const r = await call("GET", "/api/audit-logs?limit=10", { token: learner });
     assert(r.status === 403, `403 を期待したが ${r.status}`);
   });
 
-  await step("営業は受講登録 API を使えない (403)", async () => {
-    const r = await call("GET", "/api/enrollments", { token: sales });
+  await step("受講者は受講登録 API を使えない (403)", async () => {
+    const r = await call("GET", "/api/enrollments", { token: learner });
     assert(r.status === 403, `403 を期待したが ${r.status}`);
-  });
-
-  await step("営業は面談対策の割当一覧を取得できる", async () => {
-    const res = await ok("GET", "/api/interview-prep/assignments", { token: sales });
-    assert(Array.isArray(res.rows), "rows が配列でない");
-  });
-
-  await step("営業は面談対策の割当を更新できる", async () => {
-    await ok("PUT", `/api/interview-prep/assignments/${LEARNER_ID}`, {
-      token: sales,
-      body: { categories: ["JS/React"] },
-    });
-    const listed = await ok("GET", "/api/interview-prep/assignments", { token: sales });
-    const row = listed.rows.find((r: { profile_id: string }) => r.profile_id === LEARNER_ID);
-    assert(row?.categories?.includes("JS/React"), "割当が保存されていない");
-  });
-
-  await step("営業は面談対策の質問を全件閲覧できる", async () => {
-    const res = await ok("GET", "/api/interview-prep/questions", { token: sales });
-    assert(res.rows.length > 0, "質問が 0 件");
-    assert(res.assignedCategories?.length > 0, "assignedCategories が空");
-  });
-
-  await step("面談対策の割当は営業・講師を拒否する", async () => {
-    for (const [label, profileId] of [
-      ["営業", SALES_ID],
-      ["講師", INSTRUCTOR_ID],
-    ] as const) {
-      const r = await call("PUT", `/api/interview-prep/assignments/${profileId}`, {
-        token: admin,
-        body: { categories: ["SQL"] },
-      });
-      assert(r.status === 400, `${label} への割当は 400 を期待したが ${r.status}`);
-      assert(
-        r.body?.error === "面談対策の割当は受講者と管理者のみ対象です",
-        `${label}: エラーメッセージが想定と異なる: ${JSON.stringify(r.body)}`,
-      );
-    }
-  });
-
-  await step("管理者は受講者と同じく面談対策の対象にできる", async () => {
-    await ok("PUT", `/api/interview-prep/assignments/${ADMIN_ID}`, {
-      token: admin,
-      body: { categories: ["SQL"] },
-    });
-
-    const listed = await ok("GET", "/api/interview-prep/assignments", { token: admin });
-    const row = listed.rows.find((r: { profile_id: string }) => r.profile_id === ADMIN_ID);
-    assert(row?.categories?.includes("SQL"), "管理者の割当が保存されていない");
-    assert(row?.role === "admin", `対象者の行に role が付かない: ${JSON.stringify(row)}`);
-
-    // 管理者も自分の練習を記録できる (受講者と同じ経路)。
-    const questions = await ok("GET", `/api/interview-prep/questions?profileId=${ADMIN_ID}`, {
-      token: admin,
-    });
-    const first = questions.rows?.[0]?.no as number | undefined;
-    assert(typeof first === "number", "割当ぶんの質問が返らない");
-    await ok("PUT", `/api/interview-prep/progress/${first}`, {
-      token: admin,
-      body: { event: "read" },
-    });
-
-    // 後片付け: 割当を空へ戻す (モニタリング一覧に常時並ばせない)。
-    await ok("PUT", `/api/interview-prep/assignments/${ADMIN_ID}`, {
-      token: admin,
-      body: { categories: [] },
-    });
   });
 
   await step("受講者が設定画面からユーザー名を変更できる", async () => {
@@ -441,14 +372,9 @@ async function main(): Promise<void> {
     );
   });
 
-  await step("学習を見る側のロール (講師 / 営業) は自己開始できない (403)", async () => {
-    for (const [label, token] of [
-      ["講師", instructor],
-      ["営業", sales],
-    ] as const) {
-      const r = await call("POST", `/api/stages/${stageId}/start`, { token });
-      assert(r.status === 403, `${label}: 403 を期待したが ${r.status}`);
-    }
+  await step("学習を見る側のロール (講師) は自己開始できない (403)", async () => {
+    const r = await call("POST", `/api/stages/${stageId}/start`, { token: instructor });
+    assert(r.status === 403, `講師: 403 を期待したが ${r.status}`);
   });
 
   await step("退役した割当 API は 410 を返す (Phase 3b)", async () => {

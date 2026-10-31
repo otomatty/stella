@@ -707,7 +707,7 @@ cmsRoute.post("/api/cms/lessons", async (c) => {
     if (input.id) {
       // 既存レッスンは「本文更新 → リビジョン記録」をレッスン単位で直列化する。
       // 別々に走ると、同時保存の入れ違いで「本文は B なのに最新リビジョンは A」に
-      // なりうるため (D1 に比較交換が無いのは interview-prep と同じ事情)。
+      // なりうるため (D1 に比較交換が無い)。
       const locked = await withResourceLock(db, `lesson-markdown:${input.id}`, save);
       if (!locked.ran) {
         throw new ApiError(

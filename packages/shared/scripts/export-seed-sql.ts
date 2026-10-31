@@ -28,7 +28,6 @@ import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js"
 
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
-import { INTERVIEW_QUESTIONS } from "../src/interview/questions.js";
 import { lessonIdRemapStatements } from "./lesson-id-remap.js";
 
 const dialect = process.env.DIALECT === "sqlite" ? "sqlite" : "postgres";
@@ -557,65 +556,6 @@ function emitQuiz(
   );
 }
 
-/**
- * 面談対策の想定質問バンク (upsert + prune)。 questions.json が正本。
- *
- * ただし **admin / 営業が画面から直した行は上書きしない** (Issue #237)。 deploy は
- * main への push ごとに seed を流すため、 素の upsert だと現場の修正がその都度
- * questions.json の文面へ巻き戻ってしまう。 `edited_at` が入っている行は人の手が
- * 入った行なので、 do update の WHERE で弾く。 questions.json 側で直したいときは
- * 画面の「正本の管理に戻す」で解除を予約してから seed する。 解除はその場では
- * 本文を戻さない (API は questions.json を持たない) ので、 予約 → この seed が
- * 本文を書き戻すのと同時に編集印も落とす、 という順で辻褄を合わせている。
- *
- * `deep1`〜`deep3` は深掘り廃止 (一問一答化) に伴い常に null を書く。 列そのものは
- * まだ落とさない —— deploy は migrate → deploy:api → seed の順なので、 同じ deploy で
- * 列を落とすと旧 Worker が消えた列を select する窓ができる。 この deploy で誰も
- * 読まなくなってから、 次の deploy で drop column する (2 段階の列削除)。
- */
-function emitInterviewQuestions(tenantId: string) {
-  const ids: string[] = [];
-  const bool = (v: boolean) => (isSqlite ? (v ? "1" : "0") : v ? "true" : "false");
-  const opt = (v: string | null) => (v ? strLit(v) : "null");
-  for (const q of INTERVIEW_QUESTIONS) {
-    const cats = strLit(JSON.stringify(q.categories));
-    const id = stableUuid(`interview-q:${tenantId}:${q.no}`);
-    ids.push(id);
-    lines.push(
-      `insert into ${tbl("interview_questions")} (id, tenant_id, no, categories, subcategory, freq, question, time, keywords, intent, answer_template, deep1, deep2, deep3, ng, criteria, is_reverse${isSqlite ? ", created_at, updated_at" : ""}) values ('${id}', '${esc(tenantId)}', ${q.no}, ${cats}, ${strLit(q.subcategory)}, '${q.freq}', ${strLit(q.question)}, ${opt(q.time)}, ${opt(q.keywords)}, ${opt(q.intent)}, ${opt(q.answer_template)}, null, null, null, ${opt(q.ng)}, ${opt(q.criteria)}, ${bool(q.is_reverse)}${isSqlite ? `, ${nowExpr()}, ${nowExpr()}` : ""}) on conflict (id) ${doUpdate(
-        "interview_questions",
-        [
-          "categories",
-          "subcategory",
-          "freq",
-          "question",
-          "time",
-          "keywords",
-          "intent",
-          "answer_template",
-          ["deep1", "null"],
-          ["deep2", "null"],
-          ["deep3", "null"],
-          "ng",
-          "criteria",
-          "is_reverse",
-          ["edited_at", "null"],
-          ["edited_by", "null"],
-          ["release_requested_at", "null"],
-        ],
-        {
-          touch: "updated_at",
-          guard:
-            "interview_questions.edited_at is null or interview_questions.release_requested_at is not null",
-        },
-      )};`,
-    );
-  }
-  lines.push(
-    `delete from ${tbl("interview_questions")} where tenant_id = '${esc(tenantId)}' and id not in (${sqlIn(ids)});`,
-  );
-}
-
 /** upload-pdfs.ts が出すマニフェスト 1 行ぶん。教材側の語彙なので `courseSlug`。 */
 interface PdfManifestEntry {
   tenantId: string;
@@ -809,8 +749,6 @@ lines.push(
 emitRetiredStages();
 emitPdfMaterials();
 
-emitInterviewQuestions("ses");
-
 lines.push(
   `delete from ${tbl("lesson_progress")} where lesson_id not in (select id from ${tbl("lessons")});`,
 );
@@ -830,7 +768,6 @@ if (!contentOnly) {
    * 書き戻し、 検証のたびに手順が増える。 専用の profile を 1 人置く方が安い。
    */
   const SEED_LEARNER2 = "seed-learner2";
-  const SEED_SALES = "seed-sales";
   const SEED_SUBMISSION = "seed-submission-pending-1";
   const entryStage = content.courses.find((c) => c.id === "dev-env-basics");
   const firstLesson = entryStage?.sections?.[0]?.lessons?.[0];
@@ -869,13 +806,6 @@ if (!contentOnly) {
       name: "Seed Learner 2",
       initials: "S2",
       email: "seed-learner2@example.local",
-    },
-    {
-      id: SEED_SALES,
-      role: "sales",
-      name: "Seed Sales",
-      initials: "SS",
-      email: "seed-sales@example.local",
     },
   ]) {
     lines.push(

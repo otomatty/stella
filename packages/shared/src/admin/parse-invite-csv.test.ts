@@ -18,7 +18,7 @@ describe("parseInviteCsv", () => {
     ]);
   });
 
-  it("営業ロール (sales / 営業) を解決する", () => {
+  it("廃止した営業ロール (sales / 営業) は受け付けない", () => {
     const csv = [
       "email,display_name,role",
       "sales-en@example.com,Seed Sales EN,sales",
@@ -27,11 +27,8 @@ describe("parseInviteCsv", () => {
 
     const { rows, errors } = parseInviteCsv(csv);
 
-    expect(errors).toEqual([]);
-    expect(rows).toEqual([
-      { email: "sales-en@example.com", displayName: "Seed Sales EN", role: "sales" },
-      { email: "sales-ja@example.com", displayName: "Seed Sales JA", role: "sales" },
-    ]);
+    expect(rows).toEqual([]);
+    expect(errors).toHaveLength(2);
   });
 
   it("不正メールと重複を errors に集約する", () => {

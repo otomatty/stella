@@ -27,22 +27,11 @@ describe("navForRole", () => {
     }
   });
 
-  // 組織マスタの挿入位置 (ユーザー管理の直後 = 面談対策より後ろ) がずれても
-  // 面談対策が成績台帳の隣に残ることを、 admin の両 profileRole で見る。
-  it.each(["admin", "platform_admin"] as const)(
-    "面談対策は admin (%s) にも出す (質問音声タブは admin 専用のため導線が必要)",
-    (profileRole) => {
-      const items = ids("admin", profileRole);
-      expect(items).toContain("interview-prep");
-      expect(items.indexOf("interview-prep")).toBe(items.indexOf("gradebook") + 1);
-    },
-  );
-
   it("受講者の先頭はホーム = スキルツリー。ステージ一覧はツリーへ集約したので出さない", () => {
     expect(navForRole("learner")[0]).toMatchObject({ id: "dash", label: "スキルツリー" });
     expect(ids("learner")).not.toContain("stages");
     // staff のホームは各自のダッシュボードのまま (自分の星を持たない)。
-    for (const role of ["instructor", "admin", "sales"] as const) {
+    for (const role of ["instructor", "admin"] as const) {
       expect(navForRole(role)[0]?.label).not.toBe("スキルツリー");
     }
   });
@@ -50,7 +39,7 @@ describe("navForRole", () => {
   it("学習の記録は受講者だけに、現在のレッスンの直後に出す", () => {
     const items = ids("learner");
     expect(items.indexOf("records")).toBe(items.indexOf("lesson") + 1);
-    for (const role of ["instructor", "admin", "sales"] as const) {
+    for (const role of ["instructor", "admin"] as const) {
       expect(ids(role)).not.toContain("records");
     }
   });
@@ -61,10 +50,8 @@ describe("navForRole", () => {
     expect(admin.indexOf("discovery")).toBe(admin.indexOf("assignments") + 1);
     // 下書きを読んで承認するのは講師の仕事なので、講師にも導線を出す (API も staff)。
     expect(ids("instructor")).toContain("discovery");
-    // 受講者・営業には出さない (レビュー前の下書きを開ける導線を作らない)。
-    for (const role of ["learner", "sales"] as const) {
-      expect(ids(role)).not.toContain("discovery");
-    }
+    // 受講者には出さない (レビュー前の下書きを開ける導線を作らない)。
+    expect(ids("learner")).not.toContain("discovery");
   });
 
   it("レビュー (人に回した提出・AI の合格の確認) は講師と管理者に出す (#34)", () => {
@@ -74,17 +61,13 @@ describe("navForRole", () => {
       const admin = ids("admin", profileRole);
       expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
     }
-    for (const role of ["learner", "sales"] as const) {
-      expect(ids(role)).not.toContain("review-queue");
-    }
+    expect(ids("learner")).not.toContain("review-queue");
   });
 
   it("専用教材は講師と管理者だけに出す", () => {
     expect(ids("instructor")).toContain("stage-grants");
     expect(ids("admin")).toContain("stage-grants");
-    for (const role of ["learner", "sales"] as const) {
-      expect(ids(role)).not.toContain("stage-grants");
-    }
+    expect(ids("learner")).not.toContain("stage-grants");
   });
 
   it("殿堂は受講者と staff の一覧の最後に出す (Phase 5)", () => {
@@ -101,7 +84,9 @@ describe("navForRole", () => {
     }
   });
 
-  it("営業にも本人の本棚を出す", () => {
-    expect(ids("sales", "sales")).toEqual(["dash", "interview-prep", "library"]);
+  it("面談対策 (廃止) はどのロールにも出さない", () => {
+    for (const role of ["learner", "instructor", "admin"] as const) {
+      expect(ids(role) as string[]).not.toContain("interview-prep");
+    }
   });
 });

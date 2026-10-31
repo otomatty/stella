@@ -8,7 +8,6 @@ import { cors } from "hono/cors";
 import type { Env } from "./env.js";
 import { getDb } from "./db/client.js";
 import { runAiReviewSweep } from "./lib/ai-review-queue.js";
-import { runPersonalTemplateGenerationCron } from "./lib/interview-answer-template-db.js";
 import { runSubmissionOrphanCleanup } from "./lib/submission-orphan-cleanup.js";
 import { resolveCorsOrigin } from "./lib/cors.js";
 import { DEV_MODE_HEADER, LEGACY_DEV_MODE_HEADER } from "./lib/skill-map-data.js";
@@ -26,7 +25,6 @@ import { discoveryRoute } from "./routes/discovery.js";
 import { cmsHallOfFameRoute } from "./routes/cms-hall-of-fame.js";
 import { hallOfFameRoute } from "./routes/hall-of-fame.js";
 import { healthzRoute } from "./routes/healthz.js";
-import { interviewPrepRoute } from "./routes/interview-prep.js";
 import { lessonProgressRoute } from "./routes/lesson-progress.js";
 import { libraryRoute } from "./routes/library.js";
 import { materialsRoute } from "./routes/materials.js";
@@ -51,7 +49,6 @@ import { skillMapRoute } from "./routes/skill-map.js";
 import { stageQueueRoute } from "./routes/stage-queue.js";
 import { stageStartRoute } from "./routes/stage-start.js";
 import { stageGrantsRoute } from "./routes/stage-grants.js";
-import { skillSheetRoute } from "./routes/skill-sheet.js";
 import { srsRoute } from "./routes/srs.js";
 import { variantReviewsRoute } from "./routes/variant-reviews.js";
 import { studyActivityRoute } from "./routes/study-activity.js";
@@ -86,7 +83,6 @@ app.route("/", learningPaceRoute);
 app.route("/", mentorMemosRoute);
 app.route("/", enrollmentsRoute);
 app.route("/", enrollmentPresetsRoute);
-app.route("/", interviewPrepRoute);
 app.route("/", skillMapRoute);
 app.route("/", skillCheckRoute);
 app.route("/", discoveryRoute);
@@ -96,7 +92,6 @@ app.route("/", cmsHallOfFameRoute);
 app.route("/", stageQueueRoute);
 app.route("/", stageStartRoute);
 app.route("/", stageGrantsRoute);
-app.route("/", skillSheetRoute);
 app.route("/", auditLogsRoute);
 app.route("/", notificationsRoute);
 app.route("/", quizRoute);
@@ -145,16 +140,6 @@ export default {
       runMentorMemoCron(env, getDb(env)).catch((e) => {
         console.error("[cron] mentor memo failed", e);
       }),
-    );
-    ctx.waitUntil(
-      (async () => {
-        try {
-          const db = getDb(env);
-          await runPersonalTemplateGenerationCron(env, db);
-        } catch (e) {
-          console.error("[cron] answer template generation poll failed", e);
-        }
-      })(),
     );
   },
 };

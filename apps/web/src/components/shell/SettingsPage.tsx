@@ -70,7 +70,7 @@ export const SettingsPage = ({
       {backendEnabled && profile ? (
         <OsPreferenceCard profile={profile} onProfileUpdated={onProfileUpdated} />
       ) : null}
-      {backendEnabled && profile && role !== "sales" && role !== "instructor" ? (
+      {backendEnabled && profile && role !== "instructor" ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
       {backendEnabled && role === "admin" ? <LearningPaceManager admin /> : null}
