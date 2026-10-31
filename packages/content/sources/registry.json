@@ -1220,6 +1220,74 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M5(ツール使用と MCP)の l3-mcp/t1-what-is-mcp/slides.md・l3-mcp/t3-sdk-mcp/slides.md・l3-mcp/doc.md・l3-mcp/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-anthropic-effective-agents-defs-20261031",
+      "title": "Building effective agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/building-effective-agents",
+      "section": "What are agents? / Combining and customizing these patterns / Summary",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-agent-loop-control-20261031",
+      "title": "How the agent loop works",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/agent-loop",
+      "section": "Turns and budget / Handle the result",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-subagents-create-20261031",
+      "title": "Subagents in the SDK",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/subagents",
+      "section": "Create subagents / Invoke subagents",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-sessions-20261031",
+      "title": "Work with sessions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/sessions",
+      "section": "Choose an approach / Use session options with query() / Resume across hosts",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

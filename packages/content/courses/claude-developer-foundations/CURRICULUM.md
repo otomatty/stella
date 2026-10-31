@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M5 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M6 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M6 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M7 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -124,7 +124,7 @@ M6 以降だけで使うものは、単元を書くときに登録します。�
 | | [Features overview](https://platform.claude.com/docs/en/build-with-claude/overview) | Platform features / Messages API features | M0 |
 | モデルと費用 | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) | Establish key criteria / Combine models | M0・M3 |
 | | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model)(始め方と比べ方の節) | Choose the best model to start with / Decide whether to upgrade or change models | M3 |
-| | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Start here / Combine models | M3 |
+| | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Start here / Combine models | M3・M6 |
 | | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | How prompt caching works / Pricing | M0・M3 |
 | | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)(区切りと usage の節) | Explicit cache breakpoints / Caching strategies and considerations | M3 |
 | | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) | How effort works / Recommended effort levels | M0・M3 |
@@ -152,9 +152,13 @@ M6 以降だけで使うものは、単元を書くときに登録します。�
 | | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5 |
 | | MCP の仕様(modelcontextprotocol.io) | — | 使わない。**執筆環境から届かないため未確認**。M5 の MCP の説明は、上の Anthropic・Claude Code の資料の範囲で書いた |
 | エージェント | [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | When (and when not) to use agents / Building blocks, workflows, and agents | M0・M6 |
+| | [Building effective agents](https://www.anthropic.com/research/building-effective-agents)(定義・組み合わせ・まとめの節) | What are agents? / Combining and customizing these patterns / Summary | M6 |
 | | [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview) | Compare the Agent SDK to other Claude tools / Capabilities | M0・M6 |
 | | [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop) | The loop at a glance / Tool execution | M0・M6 |
+| | [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop)(止める条件と結果の節) | Turns and budget / Handle the result | M6 |
 | | [Subagents in the SDK](https://code.claude.com/docs/en/agent-sdk/subagents) | Benefits of using subagents / What subagents inherit | M0・M6 |
+| | [Subagents in the SDK](https://code.claude.com/docs/en/agent-sdk/subagents)(作り方と呼び方の節) | Create subagents / Invoke subagents | M6 |
+| | [Work with sessions](https://code.claude.com/docs/en/agent-sdk/sessions) | Choose an approach / Use session options with query() / Resume across hosts | M6 |
 | 安全性 | [Mitigate jailbreaks and prompt injections](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks) | Jailbreaks and direct prompt injection / Indirect prompt injection | M0・M7 |
 | | [Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations) | Basic hallucination minimization strategies | M0・M7 |
 | | [Configure permissions(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/permissions) | How permissions are evaluated / Permission modes | M0・M7 |
@@ -199,7 +203,7 @@ M6 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M5 は本文と課題を書いてあります。** M6 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M6 は本文と課題を書いてあります。** M7 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -311,20 +315,26 @@ Claude Opus 5.5・Claude Sonnet 5.5・Claude Fable 5.1 で `any`・`tool` が 40
 (Allow MCP tools)を入れました。MCP の仕様のサイトは執筆環境から届かないため、MCP の説明は Anthropic と Claude Code の
 ドキュメントに書かれた範囲にとどめました。
 
-### M6 ワークフローとエージェント
+### M6 ワークフローとエージェント(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 6-1-1 | 手順を決めるのは誰か | 手順をコードで決める仕組みがワークフローで、手順を Claude に任せる仕組みがエージェントです。 |
-| 6-1-2 | 単純な作りから始める | まず単純な作りで試し、効果が確かめられたときだけ複雑にします。 |
-| 6-2-1 | 段に分けてつなぐ | 大きな処理は、確かめやすい段に分けて順につなぎます。 |
-| 6-2-2 | 入力で振り分ける | 入力の種類で、扱う指示やモデルを振り分けます。 |
-| 6-2-3 | 並べて同時に処理する | 互いに独立した部分は、並べて同時に処理します。 |
-| 6-2-4 | 指揮役が仕事を配る | 分け方が事前に決まらない仕事は、指揮役が分けて配ります。 |
-| 6-2-5 | 評価役に直させる | 評価の基準がはっきりした仕事は、評価役の指摘で直させます。 |
-| 6-3-1 | エージェントのループ | Agent SDK は、ツールの実行と結果の受け渡しを繰り返すループを持っています。 |
-| 6-3-2 | サブエージェントに渡す | サブエージェントは自分の会話で動くので、要る情報を渡して呼びます。 |
-| 6-3-3 | 作業を再開する | 続きの作業は、セッションを引き継いで再開します。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 6-1-1 | `l1-agentic-systems/t1-who-decides` | 手順を決めるのは誰か | 手順をコードで決める仕組みがワークフローで、手順を Claude に任せる仕組みがエージェントです。 | ワークフロー | エージェント, ツール |
+| 6-1-2 | `l1-agentic-systems/t2-start-simple` | 単純な作りから始める | まず単純な作りで試し、効果が確かめられたときだけ複雑にします。 | フレームワーク | ワークフロー, 評価 |
+| 6-2-1 | `l2-workflows/t1-chaining` | 段に分けてつなぐ | 大きな処理は、確かめやすい段に分けて順につなぎ、段の間で結果を確かめます。 | プロンプトの連鎖, ゲート | ワークフロー |
+| 6-2-2 | `l2-workflows/t2-routing` | 入力で振り分ける | 入力の種類で、扱う指示やモデルを振り分けます。 | ルーティング | ワークフロー, モデルの選択 |
+| 6-2-3 | `l2-workflows/t3-parallel` | 並べて同時に処理する | 互いに独立した部分は、並べて同時に処理します。 | 並列化, 分割, 投票 | ワークフロー |
+| 6-2-4 | `l2-workflows/t4-orchestrator` | 指揮役が仕事を配る | 分け方が前もって決まらない仕事は、指揮役が分けて配ります。 | 作業役 | オーケストレーター, 並列化 |
+| 6-2-5 | `l2-workflows/t5-evaluator` | 評価役に直させる | 評価の基準がはっきりした仕事は、評価役の指摘で直させます。 | 評価役, 生成役 | ワークフロー, 評価 |
+| 6-3-1 | `l3-agent-sdk/t1-agent-loop` | エージェントのループ | Agent SDK は、ツールの実行と結果の受け渡しを繰り返すループを持っています。 | query, ResultMessage | Agent SDK, ツール使用のループ |
+| 6-3-2 | `l3-agent-sdk/t2-subagents` | サブエージェントに渡す | サブエージェントは自分の会話で動くので、要る情報をプロンプトに書いて渡します。 | サブエージェント | query, コンテキスト |
+| 6-3-3 | `l3-agent-sdk/t3-sessions` | 作業を再開する | 続きの作業は、セッションの ID を控えておき、resume で再開します。 | セッション, resume | query, ResultMessage |
+
+書く前の一覧から、公式ドキュメントに合わせて次を変えました。「段に分けてつなぐ」には、段の間のゲート(Building effective agents の
+Prompt chaining)を takeaway に入れました。「サブエージェントに渡す」は、親から渡るのが呼び出すときのプロンプトだけ(What subagents
+inherit)なので、「プロンプトに書いて渡す」と具体にしました。「作業を再開する」は、ResultMessage の session_id を控えて resume に
+渡す(Work with sessions)と具体にしました。オーケストレーターは M3 で導入した語を使い、6-2-4 では作業役を足しました。
+Building effective agents は 2024 年 12 月の記事で、冒頭に道具の状況が変わった注記があるため、本文では形と考え方だけを扱いました。
 
 ### M7 安全性とセキュリティ
 
@@ -381,14 +391,14 @@ Claude Opus 5.5・Claude Sonnet 5.5・Claude Fable 5.1 で `any`・`tool` が 40
 | M4 | `q02-extraction-schema` 抽出のスキーマを書く(**実装済み**) | 自力 | すべて必須で、書かれていない値を null と "unknown" で表す JSON スキーマ(使えない制限なし)を書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む。テストは代表の出力が合う・合わないを確かめる(説明欄あり) |
 | M5 | `q01-tool-loop` ツール使用のループを回す(**実装済み**) | 自力 | 偽の送信の関数で、tool_use を実行して tool_use_id で結んだ tool_result を 1 つの user の発言で返し、end_turn か maxTurns まで繰り返す。知らないツールは is_error で返す(説明欄あり) |
 | M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す(**実装済み**) | 修正 | 障害の報告とログから、ツールの例外と知らないツールで止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり。CR-DEBUG-01 は導入が javascript-basics でこの講座の前提にないため任意にし、同じ観点をルーブリックに書いた) |
-| M6 | `q01-router` 入力で振り分ける | 自力 | 分類の結果に応じて、扱う関数とモデルを選ぶ |
-| M6 | `q02-chain-with-gate` 段に分けてつなぐ | 自力 | 段ごとの結果を確かめ、条件を満たさなければ次の段へ進まない |
+| M6 | `q01-router` 入力で振り分ける(**実装済み**) | 自力 | 分類の結果の空白・大文字と小文字・末尾の句読点をそろえ、種類ごとのモデル・指示・上限で答えさせる。当てはまらない分類は fallback に回し fellBack で示す(説明欄あり) |
+| M6 | `q02-chain-with-gate` 段に分けてつなぐ(**実装済み**) | 自力 | 段の出力をゲートで確かめ、条件を満たさないか例外なら次の段へ進まずに止まった段と理由を返す。retries の回数まで、ゲートの理由を feedback にしてやり直す(説明欄あり) |
 | M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す | 基礎 | ツールで取った文章をタグで包み、指示として扱わないことを指示に書く |
 | M7 | `q02-least-privilege` 要るツールだけを許可する | 自力 | 作業の種類から、許可するツールの一覧を最小にして返す |
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1〜M5 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信の関数を扱う関数なので、クライアントは使いません。M6 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M6 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信・分類・段の関数を扱う関数なので、クライアントは使いません。M7 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

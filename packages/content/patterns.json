@@ -50,5 +50,13 @@
   {
     "id": "error-as-result",
     "title": "失敗を例外で止めず、結果として返す"
+  },
+  {
+    "id": "classify-and-route",
+    "title": "入力を分類して、決めた先に振り分ける"
+  },
+  {
+    "id": "gated-chain",
+    "title": "段ごとに結果を確かめてから次へ進める"
   }
 ]

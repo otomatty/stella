@@ -78,5 +78,17 @@
   {
     "id": "claude-mcp",
     "title": "MCP でツールやデータをつなぐ"
+  },
+  {
+    "id": "claude-agentic-choice",
+    "title": "ワークフローとエージェントを選び分ける"
+  },
+  {
+    "id": "claude-workflows",
+    "title": "ワークフローの形を選んで組み立てる"
+  },
+  {
+    "id": "claude-agent-sdk",
+    "title": "Agent SDK でエージェントを動かす"
   }
 ]
