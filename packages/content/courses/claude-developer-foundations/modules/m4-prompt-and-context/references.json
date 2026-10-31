@@ -10,7 +10,7 @@
       "usedFor": "出力の形と条件を具体的に書き、理由を添えると広げて当てはめること、事情を知らない同僚に見せて確かめること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-prompting/t2-examples/slides.md",
@@ -18,7 +18,7 @@
       "usedFor": "few-shot の例を、実際の用途に近く種類の違う 3〜5 個にし、タグで包んで指示と区別すること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-prompting/t3-xml-tags/slides.md",
@@ -29,7 +29,7 @@
       "usedFor": "指示・資料・例を XML のタグで包んで区切ること、タグの名前をそろえ入れ子にすること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-prompting/t4-long-documents/slides.md",
@@ -37,7 +37,7 @@
       "usedFor": "長い資料を先頭に置き質問を最後に書くと答えの質が上がること、document・source のタグと、引用させてから答えさせる方法",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-prompting/doc.md",
@@ -48,7 +48,7 @@
       "usedFor": "レッスン4-1の4トピック(具体的な指示・例・XML のタグ・長い資料の並べ方)の読み物と、指示の対比・資料の包み方の例",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-prompting/knowledge.md",
@@ -59,7 +59,7 @@
       "usedFor": "理由を添えた指示、例の選び方、タグでの区切り、長い資料の並べ方と引用を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-output-format/t1-structured-outputs/slides.md",
@@ -70,7 +70,7 @@
       "usedFor": "構造化出力で output_config.format に JSON スキーマを渡すこと、JSON が text ブロックで返ること、additionalProperties: false と使えない制限",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-output-format/t2-check-before-parse/slides.md",
@@ -78,7 +78,7 @@
       "usedFor": "refusal と max_tokens で止まった応答はスキーマどおりとは限らないので、stop_reason を確かめてから読むこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-output-format/t3-say-what-to-do/slides.md",
@@ -86,7 +86,7 @@
       "usedFor": "出力の書き方は禁止ではなくしてほしい形で指示すること、タグで包ませること、プロンプトの書き方を出力に似せること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-output-format/doc.md",
@@ -98,7 +98,7 @@
       "usedFor": "レッスン4-2の3トピック(構造化出力・読む前の確認・出力の書き方)の読み物と、使えるスキーマの表・stop_reason の扱いの表・prefill の扱い",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-output-format/knowledge.md",
@@ -110,7 +110,7 @@
       "usedFor": "スキーマを渡す場所、使えない制限、読む前の確認、prefill、出力の書き方の指示を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-context/t1-context-window/slides.md",
@@ -121,7 +121,7 @@
       "usedFor": "コンテキストウィンドウに数えるもの(system・messages・ツールの定義・出力、キャッシュした前半)と、超えたときの 400 エラーと model_context_window_exceeded",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-context/t2-high-signal/slides.md",
@@ -132,7 +132,7 @@
       "usedFor": "トークンが増えるほど思い出す力が落ちること(context rot)、効く情報をできるだけ少なく入れること、代表的な例と要るときに取りに行かせる方法",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-context/t3-compaction/slides.md",
@@ -144,7 +144,7 @@
       "usedFor": "圧縮で古いやり取りをサーバー側の要約に置き換えること、自分で頼む方法としきい値で始める方法、コンテキストの編集",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-context/doc.md",
@@ -157,7 +157,7 @@
       "usedFor": "レッスン4-3の3トピック(枠に収める・効く情報だけを入れる・長い会話を縮める)の読み物と、超え方・中身ごとの考え方・圧縮の始め方の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-context/knowledge.md",
@@ -170,7 +170,7 @@
       "usedFor": "枠に数えるもの、超えたときの動き、入れすぎの問題、要るときに読ませる方法、長い会話の保ち方を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-tagged-prompt/README.md",
@@ -178,7 +178,7 @@
       "usedFor": "教材独自の課題。資料・例・指示・質問を XML のタグで包み、資料を先頭・質問を最後に並べたプロンプトを作り、応答からタグの中身を取り出す関数の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q02-extraction-schema/README.md",
@@ -189,7 +189,7 @@
       "usedFor": "教材独自の課題。書かれていない値を null と unknown で表す抽出の JSON スキーマを書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む関数の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
