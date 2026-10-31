@@ -13,7 +13,7 @@
       "usedFor": "手順をコードで決めるワークフローと、手順を Claude が決めるエージェントの違い、エージェントがツールの結果を見ながらループで進むこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-agentic-systems/t2-start-simple/slides.md",
@@ -24,7 +24,7 @@
       "usedFor": "最も単純な作りから始め効果が確かめられたときだけ複雑にすること、速さと費用を払って性能を上げること、フレームワークがプロンプトと応答を見えにくくすること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-agentic-systems/doc.md",
@@ -35,7 +35,7 @@
       "usedFor": "レッスン6-1の2トピック(手順を決めるもの・単純な作りから始める)の読み物と、ワークフローとエージェントの表・3 つの原則・記事の時期の注記",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-agentic-systems/knowledge.md",
@@ -46,7 +46,7 @@
       "usedFor": "ワークフローとエージェントの違い、エージェントが向く仕事、最初に試すもの、エージェントの注意を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/t1-chaining/slides.md",
@@ -54,7 +54,7 @@
       "usedFor": "プロンプトの連鎖で段の出力を次の段の入力にし、段の間のゲートで確かめること、正確さと時間の引き換え",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/t2-routing/slides.md",
@@ -62,7 +62,7 @@
       "usedFor": "ルーティングで入力を分類し種類ごとの指示・ツール・モデルへ回すこと、簡単な質問を小さいモデルへ回す例、分類を正確にできることが条件であること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/t3-parallel/slides.md",
@@ -70,7 +70,7 @@
       "usedFor": "並列化の分割と投票、見る点ごとに呼び出しを分けると注意を向けられること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/t4-orchestrator/slides.md",
@@ -81,7 +81,7 @@
       "usedFor": "指揮役が入力に応じて仕事を分けて作業役に配り結果をまとめること、並列化との違い、作業役に安いモデルを使うこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/t5-evaluator/slides.md",
@@ -89,7 +89,7 @@
       "usedFor": "生成役が作り評価役が指摘して直す繰り返し、向くかどうかの 2 つの目安",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/doc.md",
@@ -101,7 +101,7 @@
       "usedFor": "レッスン6-2の5トピック(連鎖・ルーティング・並列化・指揮役と作業役・評価役と生成役)の読み物と、形を組み合わせる考え方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-workflows/knowledge.md",
@@ -112,7 +112,7 @@
       "usedFor": "ワークフローの 5 つの形の見分け方と、評価役と生成役が向く目安を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-agent-sdk/t1-agent-loop/slides.md",
@@ -124,7 +124,7 @@
       "usedFor": "Agent SDK がツールの実行と結果の受け渡しのループを持つこと、query と ResultMessage、maxTurns・maxBudgetUsd と止まったときの subtype",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-agent-sdk/t2-subagents/slides.md",
@@ -135,7 +135,7 @@
       "usedFor": "サブエージェントが自分の会話で動き親から渡るのは呼び出すときのプロンプトだけであること、agents の定義と Agent のツール、任せる利点",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-agent-sdk/t3-sessions/slides.md",
@@ -146,7 +146,7 @@
       "usedFor": "セッションの ID を ResultMessage から控え resume で再開すること、continue・resume・fork の違い、セッションのファイルがマシンに保存されること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-agent-sdk/doc.md",
@@ -161,7 +161,7 @@
       "usedFor": "レッスン6-3の3トピック(ループ・サブエージェント・セッション)の読み物と、止める条件・任せる利点・受け継ぐもの・戻り方の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-agent-sdk/knowledge.md",
@@ -176,7 +176,7 @@
       "usedFor": "Agent SDK と Client SDK の違い、結果の確かめ方、費用の上限、サブエージェントが受け取るもの、セッションの再開を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-router/README.md",
@@ -184,7 +184,7 @@
       "usedFor": "教材独自の課題。分類の結果をそろえて種類ごとのモデル・指示で答えさせ、当てはまらない分類を決めた行き先へ回すルーティングの受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q02-chain-with-gate/README.md",
@@ -192,7 +192,7 @@
       "usedFor": "教材独自の課題。段の出力をゲートで確かめ、条件を満たさなければ次の段へ進まず、回数を決めてやり直すプロンプトの連鎖の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
