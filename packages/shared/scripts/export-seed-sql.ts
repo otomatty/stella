@@ -264,6 +264,13 @@ const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
   { tenantId: "ses", slug: "cicd-basics" },
   { tenantId: "ses", slug: "linux-ops-basics" },
   { tenantId: "ses", slug: "observability-basics" },
+  // AI駆動開発の島 (2026-10)。Anthropic認定資格の島に置き換え、教材は作り直す。
+  { tenantId: "ses", slug: "ai-fluency-basics" },
+  { tenantId: "ses", slug: "claude-chat-basics" },
+  { tenantId: "ses", slug: "claude-code-basics" },
+  { tenantId: "ses", slug: "claude-code-skills" },
+  { tenantId: "ses", slug: "claude-code-team" },
+  { tenantId: "ses", slug: "claude-cowork-basics" },
   { tenantId: "ses", slug: "web-fundamentals" },
   { tenantId: "ses", slug: "ciso-basic" },
   { tenantId: "ses", slug: "react-intro" },

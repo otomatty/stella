@@ -7,10 +7,13 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 「場面を読んで、公式ドキュメントで確かめた作り方を選べる」状態を目指します。
 
 - Web(LMS): スライド視聴・まとめ・知識問題(合格点 80)。format 2 の講座で、知識問題は SRS の復習カードにもなる
-- 手を動かす部分: 後続の単元で、VS Code 拡張の課題(`node-test-01`、Vitest)を検討する。
-  **API キーと有料の API 呼び出しは完走条件にしない**(テストは SDK の応答を差し替えて確かめる)
-- 前提講座: **検証・hooks・MCP(`claude-code-team`)**。Claude Code の基本・CLAUDE.md・Skills・サブエージェント・hooks・MCP を
-  先に済ませ、この講座は API で作る側に集中する(`course.json` の `prerequisites` に対応)
+- 手を動かす部分: 各単元に VS Code 拡張の課題(`node-test-01`、Vitest)を置く(下の「手を動かす課題」)。
+  Claude API の応答はテストの中で偽のクライアントに差し替えるので、**API キーと有料の API 呼び出しは完走条件にしない**
+- 置き場所: スキルツリーの **Anthropic認定資格** の島(表示条件は `dev-env-basics` のクリア)。
+  旧 AI駆動開発の島(AI駆動開発の考え方・Claude チャット入門・Claude Code 入門・Skills とサブエージェント・
+  検証・hooks・MCP・Cowork 入門の 6 講座)は 2026-10 に退役させ、この講座を一から作り直す
+- 前提講座: **開発環境とWebの入口(`dev-env-basics`)**。Node.js と VS Code の拡張で課題を確かめられる状態から始める
+  (`course.json` の `prerequisites` に対応)。Claude Code も、試験の範囲のぶんはこの講座で扱う(M8)
 - 推奨(解放条件にはしない): JavaScript / TypeScript で関数と非同期の HTTP 通信が読めること
   (`javascript-basics`・`http-async-basics` の範囲)。試験の受験者像は Python か TypeScript が読み書きできる人とされる(要確認、下記)
 - 問題はすべて自作です。公式のサンプル問題・非公式の問題集・本番の問題を写したとされる教材の転載はしません
@@ -24,13 +27,13 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 ## 教材要件シート
 
 - 講座名 / slug: Claude Certified Developer 対策 / `claude-developer-foundations`
-- 新講座 or 既存講座への追加: 新講座(AI駆動開発の島、`claude-code-team` の続き)
-- 対象者(受講直前の状態): Claude Code をチームの開発に組み込めて、次は Claude API でアプリやエージェントを作る/
+- 新講座 or 既存講座への追加: 新講座(Anthropic認定資格の島。前提は `dev-env-basics`)
+- 対象者(受講直前の状態): 開発環境を整え、VS Code の拡張で課題を確かめられる。次は Claude API でアプリやエージェントを作る/
   Developer: Foundations を受験する予定の社内エンジニア。所属組織が Claude Partner Network に加盟していること(受験資格)
-- 前提講座 / 前提知識: `claude-code-team`(解放条件)。JavaScript / TypeScript の読解は推奨
+- 前提講座 / 前提知識: `dev-env-basics`(解放条件)。JavaScript / TypeScript の読解は推奨
 - 到達目標: 下の「到達目標」
 - スコープ外: 上の「対象外」
-- 評価方法: 知識問題あり(各レッスン、合格点 80) / コード演習 = 後続単元で検討(`node-test-01`) / 模擬試験 = 知識問題(M9)
+- 評価方法: 知識問題あり(各レッスン、合格点 80) / コード演習あり(各単元、`node-test-01`。下の「手を動かす課題」) / 模擬試験 = 知識問題(M9)
 - 規模: 11 単元 / 29 レッスン / 78 トピック(M9・M10 の演習レッスンを除く)
 - 出典: 公式ドキュメント(Claude Developer Platform・Claude Code)と Anthropic の記事。下の「公式の情報源」
 - 参照元の台帳: `sources/registry.json`
@@ -41,6 +44,14 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 
 **公式の試験ガイドは、Anthropic Partner Academy(ログインが必要)にあり、執筆環境から取得できていません。**
 下の表の「確度」が ◎ 以外の項目は、受講開始時に試験ガイドと Partner Academy・Pearson のページで確かめてください。
+講師が確かめるページ(ログインが必要なものを含む):
+
+- 4 資格の一覧と、各資格の試験ガイド・準備講座・申し込み: https://anthropic-partners.skilljar.com/page/partner-certifications
+- 試験の準備講座: https://anthropic-partners.skilljar.com/page/claude-certification-exam-prep-courses
+- 受験資格: https://anthropic-partners.skilljar.com/page/certification-eligibility
+- よくある質問: https://anthropic-partners.skilljar.com/page/faq-certifications
+- Pearson の Anthropic のページ(出題の改訂の案内): https://www.pearsonvue.com/us/en/anthropic.html
+
 執筆環境からは `anthropic-partners.skilljar.com`・`www.pearsonvue.com`・`modelcontextprotocol.io`・
 `www.credly.com` に届かず、Pearson と Credly の記述は Web 検索の要約経由です。
 
@@ -53,7 +64,7 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 | 組織の人数 | 認定は個人に属する。有効な認定を持ち、直近 90 日に Claude を使った人を数える | ◎ | anthropic.com の Services Track(2026-06-03) |
 | 形式 | 53 問・120 分・合格 720 / 1000(尺度点) | △ | 第三者の解説・受験記 |
 | 受験料 | 125 USD | △ | 同上 |
-| 言語 | 英語のみ | ○ | 日本語の受験記(2026-10 受験) |
+| 言語 | 日本語でも受験できる | ○ | 講師の確認(2026-10-31)。それ以前の受験記には英語のみとある |
 | 有効期間 | 12 か月 | △ | 第三者の解説 |
 | 受験者像 | 開発の実務 1〜5 年、LLM の実務 6 か月以上、Python か TypeScript(推奨で必須ではない) | △ | 試験ガイドを引用した第三者の解説 |
 | 組織の人数への算入 | Developer は算入される(Associate は算入されない) | △ | 第三者の解説 |
@@ -78,7 +89,7 @@ Claude API でアプリを作るエンジニア向けの試験で、範囲は Cl
 | Prompt and Context Engineering | 11.0% | M4 |
 | Tools and MCPs | 10.6% | M5 |
 | Security and Safety | 8.1% | M7 |
-| Claude Code | 3.1% | M8(前提講座 `claude-code-team` の復習) |
+| Claude Code | 3.1% | M8 |
 | Eval, Testing, and Debugging | 2.6% | M8 |
 
 配点は講師が試験ガイドで確かめるまで、受講者向けの本文(スライド・まとめ・知識問題)に数字を書きません。
@@ -292,15 +303,48 @@ ID の 1 桁目が単元です。**M0 だけ本文を書いてあります。** 
 
 - M9: 自作 53 問を 1 レッスンの知識問題として持つ(配分は試験ガイドの配点に合わせ、講師の確認後に確定)。
   各問の解説に対応する単元のトピック ID と公式ドキュメントのページを付け、誤答分析に使う。
-  **本番に合わせるのは問題数と時間だけ**で、時間は受講者が自分で計る。設問を英語にするかは講師と決める(下記)
+  **本番に合わせるのは問題数と時間だけ**で、時間は受講者が自分で計る。本番は日本語でも受験できるので、設問・解説とも日本語で書く
 - M10: 紛らわしい機能の切り分け(バッチとストリーミング、キャッシュとバッチ、構造化出力と strict、
   MCP コネクターと Agent SDK の MCP、ワークフローとエージェント)・範囲別のドリル・受験の手続きと当日
 
+## 手を動かす課題
+
+各単元に、VS Code 拡張の「STELLA: 課題を確認する」で確かめる課題を置きます(runner は `node-test`、環境は `node-test-01`)。
+ひな形は `templates/runners/node-test/` で、テスト(Vitest)・ESLint・Prettier を拡張と同じ固定の手順で動かします。
+
+- **API キーなしで解ける形にする。** 受講者の関数は Claude のクライアントを引数で受け取り、テストは Messages API の応答の形
+  (content のブロック・stop_reason・usage など)を返す偽のクライアントを渡す。偽のクライアントは `tests/` に置き、`protected` にする
+- 応答の形は公式ドキュメント(Using the Messages API・Handle tool calls・Streaming messages など)の例に合わせ、課題文に出典を付ける
+- 本物の API で試すのは任意の発展とし、課題文の末尾に書くだけにする(費用がかかるため完走条件にしない)
+- 種別ごとのヒント・解答例の出し方は ADDING_COURSE.md の表に従う。基礎はヒント 2 段、自力はヒント 2 段 + 挑戦 5 回で解答例
+
+| 単元 | 課題 | 種別 | 作るもの(テストが確かめること) |
+| --- | --- | --- | --- |
+| M0 | `q01-study-plan` 配点に合わせて学習時間を配る(**実装済み**) | 基礎 | 配点の合計に対する割合で時間を配り、0.5 時間単位に丸める |
+| M1 | `q01-build-messages` 会話の履歴を組み立てる | 基礎 | これまでのやり取りと新しい発言から、system と messages の配列を作る(役割の順・system を messages に混ぜない) |
+| M1 | `q02-route-stop-reason` 止まった理由で処理を分ける | 自力 | stop_reason ごとに、本文・途中で切れた印・ツールの呼び出し・拒否を返す |
+| M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す | 自力 | 429・529 だけを、間隔を広げながら上限の回数まで送り直す(待ち時間の関数は引数で受け取る) |
+| M2 | `q02-collect-stream` ストリームから本文を組み立てる | 基礎 | イベントの列から本文の差分をつなぎ、最後の stop_reason を返す |
+| M2 | `q03-batch-requests` バッチのリクエストを組み立てる | 基礎 | 問い合わせの一覧から、custom_id の重ならない requests の配列を作る |
+| M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる | 基礎 | 変わらない資料を前に、変わる質問を後ろに置き、資料の終わりに cache_control を付ける |
+| M3 | `q02-estimate-cost` 費用を見積もる | 自力 | トークン数と単価(引数)から、通常・バッチ・キャッシュを使った場合の費用を比べる |
+| M4 | `q01-tagged-prompt` 指示と資料を分ける | 基礎 | 資料を XML のタグで包み、指示と混ざらないプロンプトを作る |
+| M4 | `q02-extraction-schema` 抽出のスキーマを書く | 自力 | 必須の項目・分からないときの値(null や "unknown")を含む JSON スキーマを書き、代表の出力で確かめる |
+| M5 | `q01-tool-loop` ツール使用のループを回す | 自力 | tool_use を受けてツールを実行し、tool_result を返して、end_turn まで繰り返す |
+| M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す | 修正 | 例外でループが止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり) |
+| M6 | `q01-router` 入力で振り分ける | 自力 | 分類の結果に応じて、扱う関数とモデルを選ぶ |
+| M6 | `q02-chain-with-gate` 段に分けてつなぐ | 自力 | 段ごとの結果を確かめ、条件を満たさなければ次の段へ進まない |
+| M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す | 基礎 | ツールで取った文章をタグで包み、指示として扱わないことを指示に書く |
+| M7 | `q02-least-privilege` 要るツールだけを許可する | 自力 | 作業の種類から、許可するツールの一覧を最小にして返す |
+| M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
+| M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
+
+M1 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+
 ## 決めていないこと(講師と相談)
 
-- M9 の設問の言語(本番は英語のみ。日本語の解説を付けた英語の設問にするか)
-- 手を動かす課題の範囲(`node-test-01` で SDK の応答を差し替えて、ツール使用のループ・送り直しを書かせるか)
-- サムネイルとスキルツリーのアイコン(`scripts/build_thumbnails.py` の `SPECS` に足して生成する)
+- M1 以降を書き始める時期(試験ガイドで takeaway 一覧と範囲の対応を確かめてから)
+- M9 の 53 問の範囲ごとの配分(試験ガイドの配点を確かめてから)
 
 ## クレジット(原典)
 

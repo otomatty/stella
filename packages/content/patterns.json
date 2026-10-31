@@ -2,5 +2,9 @@
   {
     "id": "html-page",
     "title": "文書の構造を作り、表示を確認する"
+  },
+  {
+    "id": "weighted-allocation",
+    "title": "重みに比例して配分する"
   }
 ]

@@ -103,4 +103,4 @@ Messages API・ツール使用・プロンプトは Claude Developer Platform、
 
 - [Four role-based certifications for the people who put Claude to work for customers](https://claude.com/resources/articles/four-role-based-claude-certifications) — 準備の講座の置き場所と、試験の受け方(英語)
 
-知識問題で、このレッスンの内容を確かめます。
+知識問題で、このレッスンの内容を確かめます。単元の課題「配点に合わせて学習時間を配る」は、課題一覧の「VS Code で開く」から取り組みます。

@@ -35,7 +35,7 @@ describe("filterIslandStages", () => {
     stage("aws-clf-c02-basics", "AWS資格"),
     stage("fe-kamoku-a", "情報処理資格"),
     stage("fe-kamoku-b", "情報処理資格"),
-    stage("ai-fluency-basics", "AI駆動開発"),
+    stage("claude-developer-foundations", "Anthropic認定資格"),
     stage("salesforce-dev-basics", "Salesforce案件"),
   ];
 
@@ -86,8 +86,19 @@ describe("dropIslandsUnknownToClient", () => {
   const devops = stage("devops-basics", "DevOps");
   const aws = stage("aws-clf-c02-basics", "AWS資格");
 
+  const anthropic = stage("claude-developer-foundations", "Anthropic認定資格");
+
   it("tiers=3 以上なら DevOps を残す", () => {
     expect(slugsOf(dropIslandsUnknownToClient([python, devops, aws], "3"))).toEqual(
+      slugsOf([python, devops, aws]),
+    );
+  });
+
+  it("Anthropic認定資格は tiers=4 以上の画面にだけ残す", () => {
+    expect(slugsOf(dropIslandsUnknownToClient([python, devops, aws, anthropic], "4"))).toEqual(
+      slugsOf([python, devops, aws, anthropic]),
+    );
+    expect(slugsOf(dropIslandsUnknownToClient([python, devops, aws, anthropic], "3"))).toEqual(
       slugsOf([python, devops, aws]),
     );
   });
@@ -101,8 +112,9 @@ describe("dropIslandsUnknownToClient", () => {
     );
   });
 
-  it("下限を書いた島だけが対象 (資格 / AI は常に残る)", () => {
+  it("下限を書いた島だけが対象 (最初からある資格の島は常に残る)", () => {
     expect(SKILL_MAP_ISLAND_MIN_TIERS.DevOps).toBe(3);
+    expect(SKILL_MAP_ISLAND_MIN_TIERS["Anthropic認定資格"]).toBe(4);
     expect(SKILL_MAP_ISLAND_MIN_TIERS["AWS資格"]).toBeUndefined();
   });
 });

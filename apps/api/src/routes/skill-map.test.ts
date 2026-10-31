@@ -81,10 +81,10 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
 const app = new Hono<{ Bindings: Env }>().route("/", skillMapRoute);
 const env = {} as Env;
 
-/** 既定は「4 段 + DevOps 島を描ける画面」= 現行の web が付けるクエリ引数つき。 */
+/** 既定は「4 段 + DevOps・Anthropic認定資格の島を描ける画面」= 現行の web が付けるクエリ引数つき。 */
 const get = (path: string, auth = true) =>
   app.request(
-    `${path}${path.includes("?") ? "&" : "?"}tiers=3`,
+    `${path}${path.includes("?") ? "&" : "?"}tiers=4`,
     auth ? { headers: { Authorization: "Bearer test" } } : {},
     env,
   );
@@ -96,6 +96,10 @@ const getLegacy = (path: string) =>
 /** `tiers=2` までを知る画面 (DevOps 島を島として描けない)。 */
 const getTiers2 = (path: string) =>
   app.request(`${path}?tiers=2`, { headers: { Authorization: "Bearer test" } }, env);
+
+/** `tiers=3` までを知る画面 (Anthropic認定資格の島を島として描けない)。 */
+const getTiers3 = (path: string) =>
+  app.request(`${path}?tiers=3`, { headers: { Authorization: "Bearer test" } }, env);
 
 /**
  * 一本道 a → b → c → d → e → f。a はクリア済みなので、視界の起点は a (cleared) と
@@ -204,6 +208,40 @@ describe("GET /api/skill-map/mine", () => {
     expect(await idsOf(await getTiers2("/api/skill-map/mine"))).toEqual(["id-python-basics"]);
     expect(await idsOf(await get("/api/skill-map/mine"))).toEqual(
       ["id-devops-basics", "id-python-basics"].sort(),
+    );
+  });
+
+  it("Anthropic認定資格の島は島として描ける画面にだけ配る", async () => {
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        {
+          id: "id-dev-env-basics",
+          slug: "dev-env-basics",
+          title: "dev-env-basics",
+          category: "基礎",
+          prerequisites: [],
+          theme: "開発を始める力",
+        },
+        {
+          id: "id-claude-developer-foundations",
+          slug: "claude-developer-foundations",
+          title: "claude-developer-foundations",
+          category: "Anthropic認定資格",
+          prerequisites: ["dev-env-basics"],
+          theme: "資格で示すAI開発力",
+        },
+      ],
+      clearedStageIds: new Set(["id-dev-env-basics"]),
+      activeStageId: undefined,
+    });
+    const idsOf = async (res: Response) => {
+      const body = (await res.json()) as { skill_map: { stages: StagePayload[] } };
+      return body.skill_map.stages.map((row) => row.id).sort();
+    };
+    expect(await idsOf(await getTiers3("/api/skill-map/mine"))).toEqual(["id-dev-env-basics"]);
+    expect(await idsOf(await getLegacy("/api/skill-map/mine"))).toEqual(["id-dev-env-basics"]);
+    expect(await idsOf(await get("/api/skill-map/mine"))).toEqual(
+      ["id-claude-developer-foundations", "id-dev-env-basics"].sort(),
     );
   });
 

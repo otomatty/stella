@@ -143,13 +143,13 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 ## 現在の状態
 
-教材は `courses/<slug>/modules/` が正本です。新18講座・残す17講座・あとから足した1講座の計36講座があります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、講座全体の予定は35時間です。ほかの新17講座は M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つ講座も全体は準備中です。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、AI駆動開発の島で `claude-code-team` の続き）は format 2 で、M0（試験の全体像と公式の情報源）だけを持つ準備中の講座です。準備中は計24講座です。
+教材は `courses/<slug>/modules/` が正本です。新18講座・残す11講座・あとから足した1講座の計30講座があります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、講座全体の予定は35時間です。ほかの新17講座は M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つ講座も全体は準備中です。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源、課題1問）だけを持つ準備中の講座です。準備中は計24講座です。
 
 唯一の前提なし講座は `dev-env-basics` です。この講座には前提を追加しないでください。新18講座の slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
-AWS資格・情報処理資格・AI駆動開発・Salesforce案件は `dev-env-basics` クリアで現れる島です。DevOps は `python-basics` クリアで現れます。表示条件は `@stella/shared/skill-map/islands` に定義します。Salesforce は `audience: granted` の専用星で、割り当てられた受講者だけに出ます。Git の独立講座は退役し、Git の練習は新講座へ分散します。複製を扱う機能は維持していますが、現行カタログに複製する講座はありません。
+AWS資格・情報処理資格・Anthropic認定資格・Salesforce案件は `dev-env-basics` クリアで現れる島です。DevOps は `python-basics` クリアで現れます。表示条件は `@stella/shared/skill-map/islands` に定義します。Salesforce は `audience: granted` の専用星で、割り当てられた受講者だけに出ます。Git の独立講座は退役し、Git の練習は新講座へ分散します。複製を扱う機能は維持していますが、現行カタログに複製する講座はありません。
 
-退役した19講座の教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
+退役した19講座と、2026-10 に退役した AI駆動開発の島の6講座の教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
 新18講座のサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、#20 の PoC を再開します。
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "claude-developer-foundations/m0-exam-and-sources@1",
-  "contentHash": "2300e0c14677101e28f97923fcde0f2bd908ded1636a76bcf8cc8bce25cf711a",
+  "contentHash": "f48ac5b897f30f5686c4e92479f703e5975c35f4403f05c31ecd3112b37f6be3",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -126,6 +126,14 @@
       "usedFor": "試験ガイドと公式ドキュメントの使い分け、学習に使う資料を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-study-plan/README.md",
+      "sourceRefs": [],
+      "usedFor": "教材独自の課題。試験の範囲ごとの配点に合わせて学習時間を配る関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "original",
       "reviewStatus": "draft"
     }
   ]

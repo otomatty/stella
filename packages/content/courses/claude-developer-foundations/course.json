@@ -1,16 +1,16 @@
 {
   "format": 2,
   "title": "Claude Certified Developer 対策",
-  "category": "AI駆動開発",
+  "category": "Anthropic認定資格",
   "color": "amber",
-  "description": "【準備中】Claude Certified Developer: Foundations の対策講座です。Claude API・ツール使用・エージェントの作り方を、公式ドキュメントで確かめながら場面ごとに選べるようになることを目指します。いまは試験の全体像と公式の情報源の単元だけを公開しています。",
+  "description": "【準備中】Claude Certified Developer: Foundations の対策講座です。Claude API・ツール使用・エージェントの作り方を、公式ドキュメントで確かめ、手元の課題で動かしながら、場面ごとに選べるようになることを目指します。いまは試験の全体像と公式の情報源の単元だけを公開しています。",
   "header": "Claude Developer資格対策",
   "tenantId": "ses",
-  "prerequisites": ["claude-code-team"],
+  "prerequisites": ["dev-env-basics"],
   "plannedHours": 40,
   "environment": "node-test-01",
   "canDo": "Claude API・ツール・エージェントの作り方を、公式ドキュメントで確かめて選べる",
-  "theme": "AI と働く力",
+  "theme": "資格で示すAI開発力",
   "modules": {
     "m0-exam-and-sources": "M0. 試験の全体像と公式の情報源"
   }

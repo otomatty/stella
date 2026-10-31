@@ -164,7 +164,7 @@ describe("seed の書き込み行数", () => {
     () => {
       const db = migratedDb();
       try {
-        expect(total(apply(db, sql))).toBeGreaterThan(5000);
+        expect(total(apply(db, sql))).toBeGreaterThan(4000);
         expect(apply(db, sql)).toEqual({});
       } finally {
         db.close();
@@ -263,6 +263,7 @@ describe("seed の書き込み行数", () => {
         expect(total(writes)).toBe(1);
         expect(Object.keys(writes)[0]).toMatch(/^update tasks set active = 0 /);
         expect(db.prepare("select id, active from tasks order by id").all()).toEqual([
+          { id: "claude-developer-foundations/m0-exam-and-sources/q01-study-plan", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);
