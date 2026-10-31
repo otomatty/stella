@@ -6,5 +6,13 @@
   {
     "id": "preview-changes",
     "title": "変更をブラウザーで確認する"
+  },
+  {
+    "id": "claude-cert-exam-plan",
+    "title": "Claude の認定試験の受け方と範囲を確かめる"
+  },
+  {
+    "id": "claude-official-sources",
+    "title": "Claude の仕様を公式の情報源で確かめる"
   }
 ]

@@ -907,7 +907,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       "linux-ops-basics",
       "observability-basics",
     ];
-    expect(courses).toHaveLength(35);
+    expect(courses).toHaveLength(36);
     for (const slug of placeholders) {
       const course = courses.find((c) => c.id === slug);
       expect(course, slug).toBeDefined();
