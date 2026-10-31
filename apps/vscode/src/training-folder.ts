@@ -78,17 +78,46 @@ export async function rememberedTrainingRoot(state: Memento): Promise<string | u
 }
 
 /**
+ * まだ一度も学習フォルダーを決めていなければ、尋ねずにホームの web-training を作って覚える
+ * (Web の「VS Code で開く」から課題文の表示までを止めない)。作れなければ undefined (尋ねる)。
+ * 覚えた場所が消えたときは使わない — 外付けのドライブなど、別の場所で続けていた学習を
+ * 黙ってホームへ分けないため (呼び出し側が尋ね直す)。
+ */
+async function createDefaultTrainingRoot(state: Memento): Promise<string | undefined> {
+  if (state.get<unknown>(TRAINING_ROOT_KEY) !== undefined) return undefined;
+  const fallback = path.join(homedir(), DEFAULT_TRAINING_FOLDER);
+  if (await trainingRootProblem(fallback)) return undefined;
+  try {
+    await mkdir(fallback, { recursive: true });
+  } catch {
+    return undefined;
+  }
+  if (!(await isDirectory(fallback))) return undefined;
+  const resolved = path.resolve(fallback);
+  await state.update(TRAINING_ROOT_KEY, resolved);
+  void vscode.window.showInformationMessage(
+    `課題は学習フォルダー ${resolved} に準備します。場所は「STELLA: 学習フォルダーを選ぶ」で変えられます`,
+  );
+  return resolved;
+}
+
+/**
  * 学習フォルダーを決める。覚えた場所があればそれを使い、無ければ (または ask なら)
  * 「ホームに web-training を作る」か「既存のフォルダーを選ぶ」かを尋ねて覚える。
+ * auto なら、初めてのときは尋ねずにホームの web-training を使う (Web から課題を開く経路)。
  * 取り消したら undefined。
  */
 export async function resolveTrainingRoot(
   state: Memento,
-  options: { ask?: boolean } = {},
+  options: { ask?: boolean; auto?: boolean } = {},
 ): Promise<string | undefined> {
   if (!options.ask) {
     const remembered = await rememberedTrainingRoot(state);
     if (remembered) return remembered;
+    if (options.auto) {
+      const created = await createDefaultTrainingRoot(state);
+      if (created) return created;
+    }
   }
   const fallback = path.join(homedir(), DEFAULT_TRAINING_FOLDER);
   const create = {

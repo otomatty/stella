@@ -27,6 +27,7 @@ import { clientIp, recordAudit } from "../lib/audit.js";
 import { MAX_USER_IDS } from "../lib/enrollment-bulk.js";
 import { ENROLLMENT_SELECT } from "../lib/enrollment-write.js";
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
+import { taskCountsForUser } from "../lib/task-completion.js";
 import type { Env } from "../env.js";
 
 export const enrollmentsRoute = new Hono<{ Bindings: Env }>();
@@ -65,10 +66,23 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
       .from(enrollments)
       .where(eq(enrollments.userId, caller.id))
       .orderBy(asc(enrollments.enrolledAt));
+    // 新形式の課題の数と合格の数。画面の進捗はレッスンの完了にこれを足して数える
+    // (レッスンを終えても課題が合格していなければ 100% にしない — 修了の判定と同じ数え方)。
+    const taskCounts = await taskCountsForUser(
+      db,
+      caller.id,
+      rows.map((row) => row.stage_id),
+    );
     // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に削除
     // 旧拡張は受講中ステージを `course_id` で読む。 これが無いと空カタログになり、
     // `/api/cms/courses/:id` のエイリアスまで届かない。 このエンドポイントに限定。
-    return c.json({ rows: rows.map((row) => ({ ...row, course_id: row.stage_id })) });
+    // 応答の形は `MyEnrollmentRow` (@stella/shared/cms/types)。日時は JSON で文字列になる。
+    const mine = rows.map((row) => ({
+      ...row,
+      tasks_total: taskCounts.get(row.stage_id)?.total ?? 0,
+      tasks_passed: taskCounts.get(row.stage_id)?.passed ?? 0,
+    }));
+    return c.json({ rows: mine.map((row) => ({ ...row, course_id: row.stage_id })) });
   } catch (err) {
     return errorResponse(c, err);
   }

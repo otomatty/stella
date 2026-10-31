@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GuideStep, HomeGuide } from "@/lib/home-guide";
+import type { StageWrapup } from "@/lib/stage-wrapup";
 import {
   Book,
   Check,
@@ -40,6 +41,8 @@ export interface GuideActiveStage {
   title: string;
   progress: number;
   lessonsCount: number;
+  /** レッスンを終えたあとに残っている課題 (無い・未取得なら null)。 */
+  wrapup?: StageWrapup | null;
 }
 
 export interface GuideHandlers {
@@ -48,6 +51,8 @@ export interface GuideHandlers {
   onOpenMiss: () => void;
   /** 進行中のステージの詳細 (レッスン一覧) を開く。 */
   onOpenActiveStage: () => void;
+  /** 仕上げで残っている課題に取り組む (パソコンは VS Code で開く)。 */
+  onOpenPendingTask: () => void;
   /** 勧めた星を始める (乗り換えの確認は呼び出し側が出す)。 */
   onStartStage: (stageId: string) => void;
   /** 横のツリーをその星へ寄せる。 */
@@ -80,18 +85,35 @@ function planAction(kind: TodayPlanItemKind, ctx: GuideHandlers): () => void {
   return ctx.onOpenMiss;
 }
 
-/** 仕上げの文面。レッスンを持たない星 (準備中) と、レッスンを終えた星を言い分ける。 */
-function wrapupCopy(stage: GuideActiveStage | null): { title: string; reason: string } {
+/**
+ * 仕上げの文面。レッスンを持たない星 (準備中) と、レッスンを終えた星を言い分ける。
+ * 課題が残っていれば名指しし、受講者の番なら主ボタンを「課題を開く」にする
+ * (レッスンの 100% はクリアではない — 課題のレビューの合格も要る)。
+ */
+function wrapupCopy(stage: GuideActiveStage | null): {
+  title: string;
+  reason: string;
+  openTask: boolean;
+} {
   const title = stage?.title ?? "進行中のステージ";
   if (stage && stage.lessonsCount === 0) {
     return {
       title: `${title} は教材の準備中です`,
       reason: "公開されるまで、ほかのスキルを進められます。",
+      openTask: false,
+    };
+  }
+  if (stage?.wrapup) {
+    return {
+      title: `${title} の仕上げ`,
+      reason: `レッスンはすべて終わりました。${stage.wrapup.detail}`,
+      openTask: stage.wrapup.learnerTurn,
     };
   }
   return {
     title: `${title} の仕上げ`,
     reason: "レッスンはすべて終わりました。課題の提出とレビューの結果を確かめましょう。",
+    openTask: false,
   };
 }
 
@@ -128,11 +150,14 @@ function summarizeStep(
     };
   }
   if (step.kind === "wrapup") {
+    const copy = wrapupCopy(ctx.activeStage);
     return {
-      icon: Book,
+      icon: copy.openTask ? Play : Book,
       eyebrow: "次にやること",
-      title: wrapupCopy(ctx.activeStage).title,
-      action: { label: "レッスン一覧", onClick: ctx.onOpenActiveStage },
+      title: copy.title,
+      action: copy.openTask
+        ? { label: "課題に取り組む", onClick: ctx.onOpenPendingTask }
+        : { label: "レッスン一覧", onClick: ctx.onOpenActiveStage },
     };
   }
   const first = step.stageIds[0];
@@ -315,10 +340,28 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
       <HeroFrame eyebrow="次にやること">
         <h2 className="text-[17px] font-semibold leading-snug tracking-tight">{copy.title}</h2>
         <p className="mt-1 text-[12px] leading-relaxed text-ink-3">{copy.reason}</p>
-        <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenActiveStage}>
-          <Book size={14} />
-          レッスン一覧を開く
-        </Button>
+        {copy.openTask ? (
+          <>
+            <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenPendingTask}>
+              <Play size={14} />
+              課題に取り組む
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="mt-1.5 self-center"
+              onClick={ctx.onOpenActiveStage}
+            >
+              <Book size={12} />
+              レッスン一覧
+            </Button>
+          </>
+        ) : (
+          <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenActiveStage}>
+            <Book size={14} />
+            レッスン一覧を開く
+          </Button>
+        )}
       </HeroFrame>
     );
   }

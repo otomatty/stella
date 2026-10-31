@@ -552,11 +552,20 @@ export function resumeLessonId(stage: Stage | undefined, map: LessonProgressMap)
  * 進捗マップからステージの進捗率 (%) を導出して返す。
  * DB 由来ステージは `mapStageToUi` が progress=0 で返すため、 レッスン完了数から計算する。
  * レッスンを持たないステージはそのまま返す。
+ *
+ * 新形式の課題 (`tasksCount`) も 1 件ずつ数え、合格 (`tasksPassed`) で済みにする。
+ * レッスンを終えても課題が合格していなければ 100% にしない — 修了 (= 星のクリア) は
+ * 課題のレビューの合格まで要るので、100% のまま星が開かないように見せない。
+ * 端数は切り捨て、未修了のステージは 99% で止める (丸めで 100% に届かせない)。
  */
 export function deriveStageProgress(stage: Stage, map: LessonProgressMap): Stage {
   const lessons = stage.sections?.flatMap((s) => s.lessons) ?? [];
   if (lessons.length === 0) return stage;
-  const done = lessons.filter((l) => resolveLessonStatus(l, map) === "done").length;
-  const pct = stage.completed ? 100 : Math.round((done / lessons.length) * 100);
+  if (stage.completed) return { ...stage, progress: 100 };
+  const tasks = Math.max(stage.tasksCount ?? 0, 0);
+  const passedTasks = Math.min(Math.max(stage.tasksPassed ?? 0, 0), tasks);
+  const done = lessons.filter((l) => resolveLessonStatus(l, map) === "done").length + passedTasks;
+  const total = lessons.length + tasks;
+  const pct = done >= total ? 100 : Math.min(Math.floor((done / total) * 100), 99);
   return { ...stage, progress: pct };
 }

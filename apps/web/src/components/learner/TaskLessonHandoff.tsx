@@ -34,7 +34,7 @@ export function TaskLessonHandoff({ stageId, lessonId }: { stageId: string; less
       <p className="flex-1 min-w-48 text-[13px] text-ink-2">
         {handheld
           ? "この課題はパソコンの VS Code で進めます。パソコンでこのページを開き、「VS Code で開く」を押してください。"
-          : "この課題はパソコンの VS Code で進めます。ボタンを押すと、学習フォルダーに課題を準備して開きます。準備先に自分のファイルがあるときは上書きしません。"}
+          : "この課題はパソコンの VS Code で進めます。ボタンを押すと VS Code が起動し、学習フォルダーに課題を準備して課題文を開きます。拡張機能が入っていなければ、VS Code がインストールを尋ねます。準備先に自分のファイルがあるときは上書きしません。"}
       </p>
       <OpenInVscodeButton taskId={taskId} />
     </div>

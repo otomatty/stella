@@ -209,7 +209,8 @@ async function prepareAndOpen(
   bundle: TaskBundle,
   variant: TaskVariant,
 ): Promise<void> {
-  const trainingRoot = await resolveTrainingRoot(store.state);
+  // 初めてなら尋ねずにホームの web-training を使い、課題文の表示まで止めない。
+  const trainingRoot = await resolveTrainingRoot(store.state, { auto: true });
   if (!trainingRoot) return;
   let taskRoot: string;
   try {

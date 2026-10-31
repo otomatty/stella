@@ -72,7 +72,7 @@ seed は `packages/content/courses/<slug>/` を正本として各講座を D1 �
 バージョンは手動採番（自動 bump はしない）。同じバージョンのまま再度マージした場合は既存 Release の `.vsix` と本文を上書きする（本文の commit がビルド元。タグは初回リリース時のコミットを指したままなので、タグと実体を一致させたいならバージョンを上げる）。
 トリガは `main` への push のみ（`workflow_dispatch` は付けない。任意の ref から未マージのコードでリリースを作れてしまうため）。やり直しは Actions の Re-run で行う。
 `.vsix` を出す前に `ci.yml` を `scope: code`（typecheck / test）で呼んで通す（`deploy.yml` の検証ゲートは同じ push で並走するだけで、このジョブを止められないため）。
-Marketplace への publish はしない（`.vsix` を落として「Extensions: Install from VSIX...」でインストールする配布形態）。
+受講者への配布は Visual Studio Marketplace に寄せる（Web の「VS Code で開く」で VS Code がインストールを尋ねる。受講者に `.vsix` を配らない）。Marketplace への公開は人が行い、このワークフローからは publish しない（手順は `apps/vscode/README.md` の「Marketplace 公開」）。Release の `.vsix` は控え。
 
 ## 必須ステータスチェック設定
 

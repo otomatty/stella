@@ -47,7 +47,9 @@ import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
+import { useStageWrapup } from "@/hooks/useStageWrapup";
 import {
   HallOfFameInviteRow,
   useHallOfFameInvite,
@@ -85,6 +87,7 @@ import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progres
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
+import { openInVscode } from "@/lib/vscode-launch";
 
 /** PC で開いたガイドのカードが覆う幅 (左の余白 16px + 幅 360px + 右の余白 16px)。 */
 const GUIDE_INSET_PX = 392;
@@ -176,6 +179,21 @@ export const LearnerHome = ({
     () => findNextLesson(activeStage, progressMap),
     [activeStage, progressMap],
   );
+  /**
+   * レッスンを終えた新形式の星で、まだ合格していない課題。修了には課題のレビューの合格も
+   * 要るので、レッスンの進捗が 100% でも星はクリアにならない — 何が残っているかを札と
+   * ガイドに出す (出さないと「終えたのに次の星が開かない」に見える)。
+   */
+  const wrapupStageId =
+    backendEnabled &&
+    activeStage &&
+    !activeStage.completed &&
+    !nextLesson &&
+    activeStage.format === 2 &&
+    activeStage.lessonsCount > 0
+      ? activeStage.id
+      : null;
+  const wrapup = useStageWrapup(wrapupStageId);
 
   // 直近のつまずき: 添削で「再提出」「不合格」になった一番新しい提出。
   const recentMiss = submissions.find((s) => s.verdict === "resubmit" || s.verdict === "fail");
@@ -318,6 +336,24 @@ export const LearnerHome = ({
     else openStage(stageId);
   };
 
+  /**
+   * 残っている課題に取り組む。パソコンではそのまま VS Code で開く (拡張が課題を準備して
+   * 課題文を出す。拡張が無ければ VS Code がインストールを尋ねる)。スマートフォン・
+   * タブレットでは VS Code を開けないので、課題文のレッスン (リンクをパソコンへ送るボタンが
+   * ある) へ。課題文のレッスンを持たない課題は、課題の一覧があるステージ詳細へ。
+   */
+  const handheld = useIsHandheld();
+  const openPendingTask = () => {
+    if (!activeStage || !wrapup) return;
+    if (!handheld) {
+      void openInVscode({ taskId: wrapup.task.id });
+      return;
+    }
+    const lessonId = wrapup.task.lessonId;
+    if (lessonId) onOpenLesson(activeStage, lessonId);
+    else openStage(activeStage.id);
+  };
+
   const showInTree = (stageId: string) => {
     if (!treeRef.current?.focusStage(stageId)) {
       toast("この星はまだツリーに見えていません");
@@ -338,6 +374,7 @@ export const LearnerHome = ({
     onOpenActiveStage: () => {
       if (activeStage) openStage(activeStage.id);
     },
+    onOpenPendingTask: openPendingTask,
     onStartStage: requestStart,
     onShowInTree: showInTree,
   };
@@ -347,6 +384,7 @@ export const LearnerHome = ({
         title: activeStage.title,
         progress: activeStage.progress,
         lessonsCount: activeStage.lessonsCount,
+        wrapup,
       }
     : null;
   const stepContext = {
@@ -381,17 +419,42 @@ export const LearnerHome = ({
                 },
                 secondary: { label: "レッスン一覧", onClick: () => openStage(activeStage.id) },
               }
-            : {
-                detail:
-                  activeStage.lessonsCount === 0
-                    ? "教材の準備中です。"
-                    : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
-                action: {
-                  label: "レッスン一覧",
-                  icon: "book" as const,
-                  onClick: () => openStage(activeStage.id),
-                },
-              }),
+            : wrapup
+              ? {
+                  // 課題が残っている (レッスンの 100% はクリアではない)。受講者の番なら
+                  // 課題を開くボタンを主に、レビュー待ちなら一覧だけ。
+                  detail: wrapup.detail,
+                  ...(wrapup.learnerTurn
+                    ? {
+                        action: {
+                          label: "課題に取り組む",
+                          icon: "play" as const,
+                          onClick: openPendingTask,
+                        },
+                        secondary: {
+                          label: "レッスン一覧",
+                          onClick: () => openStage(activeStage.id),
+                        },
+                      }
+                    : {
+                        action: {
+                          label: "レッスン一覧",
+                          icon: "book" as const,
+                          onClick: () => openStage(activeStage.id),
+                        },
+                      }),
+                }
+              : {
+                  detail:
+                    activeStage.lessonsCount === 0
+                      ? "教材の準備中です。"
+                      : "レッスンはすべて終わりました。課題とレビューの結果を確かめましょう。",
+                  action: {
+                    label: "レッスン一覧",
+                    icon: "book" as const,
+                    onClick: () => openStage(activeStage.id),
+                  },
+                }),
         }
       : suggestedId && suggestedNode
         ? {

@@ -89,6 +89,13 @@ export interface Stage {
   iconPath?: string;
   duration?: number;
   lessonsCount: number;
+  /**
+   * 新形式の課題の数と、受講者が合格した数 (`GET /api/enrollments/mine` 由来。受講中のステージだけ)。
+   * 進捗はレッスンの完了にこれを足して数える — レッスンを終えても課題が合格していなければ
+   * 100% にしない (修了の判定と同じ数え方。`deriveStageProgress`)。
+   */
+  tasksCount?: number;
+  tasksPassed?: number;
   progress: number;
   enrolledBy?: string;
   dueAt?: string | null;
