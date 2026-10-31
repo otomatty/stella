@@ -1100,6 +1100,108 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M4(プロンプトとコンテキストの設計)の l3-context/t3-compaction/slides.md・l3-context/doc.md・l3-context/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-tool-use-when-20261031",
+      "title": "Tool use with Claude",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+      "section": "When Claude uses tools",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-errors-20261031",
+      "title": "Handle tool calls",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+      "section": "Handling errors with is_error",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-choice-20261031",
+      "title": "Define tools",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+      "section": "Best practices for tool definitions / Forcing tool use",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-strict-tool-use-20261031",
+      "title": "Strict tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use",
+      "section": "Why strict tool use matters for agents / How it works",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-mcp-connector-usage-20261031",
+      "title": "MCP connector",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+      "section": "MCP server configuration / MCP toolset configuration / Response content types",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-mcp-20261031",
+      "title": "Connect to external tools with MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/mcp",
+      "section": "Add an MCP server / Allow MCP tools / Transport types",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

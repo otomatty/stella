@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M4 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M5 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M5 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M6 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -140,13 +140,17 @@ M5 以降だけで使うものは、単元を書くときに登録します。�
 | | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)(スキーマの書き方と注意の節) | Using a raw JSON schema / Important considerations | M4 |
 | | [Effective context engineering for AI agents](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) | The anatomy of effective context / Context retrieval and agentic search | M0・M4 |
 | ツールと MCP | [Tool use with Claude](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview) | How tool use works / Choose a tool | M0・M5 |
+| | [Tool use with Claude](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)(ツールを使う場面の節) | When Claude uses tools | M5 |
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) | Specifying client tools | M0・M5 |
+| | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools)(説明と tool_choice の節) | Best practices for tool definitions / Forcing tool use | M5 |
 | | [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) | Why strict tool use matters for agents / How it works | M5 |
 | | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5 |
+| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)(エラーの節) | Handling errors with is_error | M5 |
 | | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) | Key features / Limitations | M0・M5 |
+| | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)(書き方の節) | MCP server configuration / MCP toolset configuration / Response content types | M5 |
 | | [Writing effective tools for agents — with agents](https://www.anthropic.com/research/writing-tools-for-agents) | Principles for writing effective tools | M0・M5 |
-| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Transport types | M5 |
-| | MCP の仕様(modelcontextprotocol.io) | — | M5。**執筆環境から届かないため未確認** |
+| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5 |
+| | MCP の仕様(modelcontextprotocol.io) | — | 使わない。**執筆環境から届かないため未確認**。M5 の MCP の説明は、上の Anthropic・Claude Code の資料の範囲で書いた |
 | エージェント | [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | When (and when not) to use agents / Building blocks, workflows, and agents | M0・M6 |
 | | [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview) | Compare the Agent SDK to other Claude tools / Capabilities | M0・M6 |
 | | [How the agent loop works](https://code.claude.com/docs/en/agent-sdk/agent-loop) | The loop at a glance / Tool execution | M0・M6 |
@@ -195,7 +199,7 @@ M5 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M4 は本文と課題を書いてあります。** M5 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M5 は本文と課題を書いてあります。** M6 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -284,21 +288,28 @@ Long context prompting)を足しました。「ツールの入力を守らせる
 限らないこと(Important considerations の Invalid outputs)と、出力の書き方の指示(Output and formatting の
 Control the format of responses)を足しました。prefill が Claude 4.6 以降で使えないことは、4-2-1 のまとめに書きました。
 
-### M5 ツール使用と MCP
+### M5 ツール使用と MCP(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 5-1-1 | ツールを実行するのはアプリ | 自分で定義したツールは、Claude が呼び出しを求め、アプリが実行します。 |
-| 5-1-2 | 結果を返す | ツールの結果は tool_result にして、次のリクエストで返します。 |
-| 5-1-3 | 失敗を返す | ツールが失敗したら、is_error を付けて結果を返します。 |
-| 5-1-4 | Anthropic 側で動くツール | サーバーツールは、Anthropic の側で実行されます。 |
-| 5-2-1 | 説明に書くこと | ツールの説明には、いつ使い、何を返すかを書きます。 |
-| 5-2-2 | ツールを使わせる | ツールを必ず使わせたいときは、tool_choice で指定します。 |
-| 5-2-3 | ツールの入力を守らせる | ツールの入力をスキーマどおりにさせるには、strict を指定します。(M4 から移した) |
-| 5-2-4 | ツールは少数にまとめる | 似たツールを並べず、目的ごとに少数のツールにまとめます。 |
-| 5-3-1 | 共通の約束でつなぐ | MCP は、ツールやデータを Claude につなぐための共通の約束です。 |
-| 5-3-2 | API から MCP を使う | MCP コネクターを使うと、Messages API からリモートの MCP サーバーを使えます。 |
-| 5-3-3 | SDK から MCP を使う | Agent SDK では、MCP サーバーを設定に足してツールを使えるようにします。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 5-1-1 | `l1-tool-loop/t1-app-runs-tools` | ツールを実行するのはアプリ | 自分で定義したツールは、Claude が呼び出しを求め、アプリが実行します。 | ツール, tools, input_schema, tool_use | ツール使用, stop_reason, リクエスト, JSON スキーマ |
+| 5-1-2 | `l1-tool-loop/t2-return-results` | 結果を返す | ツールの結果は tool_result にして、次のリクエストの user の発言で返します。 | tool_result, tool_use_id, ツール使用のループ | tool_use, 会話の履歴, end_turn |
+| 5-1-3 | `l1-tool-loop/t3-return-errors` | 失敗を返す | ツールが失敗したら、is_error を付けた結果で、何が起きたかを返します。 | is_error | tool_result, ツール使用のループ |
+| 5-1-4 | `l1-tool-loop/t4-server-tools` | Anthropic 側で動くツール | サーバーツールは Anthropic の側で実行され、アプリが結果を返す処理は要りません。 | サーバーツール, クライアントツール | ツール, tool_result |
+| 5-2-1 | `l2-tool-design/t1-description` | 説明に書くこと | ツールの説明には、何をし、いつ使い、何を返すかを詳しく書きます。 | ツールの説明 | ツール, input_schema |
+| 5-2-2 | `l2-tool-design/t2-tool-choice` | ツールを使う場面を決める | ツールを使うかどうかは、tool_choice と system の指示で調整します。 | tool_choice | ツール, system |
+| 5-2-3 | `l2-tool-design/t3-strict` | ツールの入力を守らせる | ツールの入力をスキーマどおりにさせるには、strict: true を指定します。 | strict | input_schema, tool_use, JSON スキーマ |
+| 5-2-4 | `l2-tool-design/t4-fewer-tools` | ツールは少数にまとめる | 似たツールを並べず、目的ごとに少数のツールにまとめます。 | ツールの名前空間 | ツール, ツールの説明, コンテキスト |
+| 5-3-1 | `l3-mcp/t1-what-is-mcp` | 共通の約束でつなぐ | MCP は、ツールやデータを AI のアプリにつなぐための、公開された共通の規格です。 | MCP, MCP サーバー | ツール |
+| 5-3-2 | `l3-mcp/t2-mcp-connector` | API から MCP を使う | MCP コネクターを使うと、Messages API からリモートの MCP サーバーのツールを使えます。 | MCP コネクター, mcp_servers, mcp_toolset | MCP サーバー, Messages API, tools |
+| 5-3-3 | `l3-mcp/t3-sdk-mcp` | SDK から MCP を使う | Agent SDK では、MCP サーバーを設定に足し、使うツールを allowedTools で許可します。 | mcpServers, allowedTools | Agent SDK, MCP サーバー |
+
+書く前の一覧から、公式ドキュメントに合わせて次を変えました。「ツールを使わせる」(tool_choice で必ず使わせる)は、
+Claude Opus 5.5・Claude Sonnet 5.5・Claude Fable 5.1 で `any`・`tool` が 400 エラーになる(Define tools の Forcing tool use)ため、
+「ツールを使う場面を決める」(tool_choice と system の指示で調整する)に書き直しました。「Anthropic 側で動くツール」には、
+結果を返す処理が要らないことまでを takeaway に入れました。「SDK から MCP を使う」には、MCP のツールは許可するまで使えないこと
+(Allow MCP tools)を入れました。MCP の仕様のサイトは執筆環境から届かないため、MCP の説明は Anthropic と Claude Code の
+ドキュメントに書かれた範囲にとどめました。
 
 ### M6 ワークフローとエージェント
 
@@ -368,8 +379,8 @@ Control the format of responses)を足しました。prefill が Claude 4.6 以�
 | M3 | `q02-estimate-cost` 費用を見積もる(**実装済み**) | 自力 | usage の内訳と単価(引数、100 万トークンあたり)から費用を求め、キャッシュの有無(1 回目は書き込み・最低の長さ)とバッチの割引で比べる(説明欄あり) |
 | M4 | `q01-tagged-prompt` 指示と資料を分ける(**実装済み**) | 基礎 | 資料・例・指示・質問を XML のタグで包み、資料を先頭・質問を最後に並べたプロンプトを作る。応答からタグの中身を取り出し、なければ null を返す |
 | M4 | `q02-extraction-schema` 抽出のスキーマを書く(**実装済み**) | 自力 | すべて必須で、書かれていない値を null と "unknown" で表す JSON スキーマ(使えない制限なし)を書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む。テストは代表の出力が合う・合わないを確かめる(説明欄あり) |
-| M5 | `q01-tool-loop` ツール使用のループを回す | 自力 | tool_use を受けてツールを実行し、tool_result を返して、end_turn まで繰り返す |
-| M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す | 修正 | 例外でループが止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり) |
+| M5 | `q01-tool-loop` ツール使用のループを回す(**実装済み**) | 自力 | 偽の送信の関数で、tool_use を実行して tool_use_id で結んだ tool_result を 1 つの user の発言で返し、end_turn か maxTurns まで繰り返す。知らないツールは is_error で返す(説明欄あり) |
+| M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す(**実装済み**) | 修正 | 障害の報告とログから、ツールの例外と知らないツールで止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり。CR-DEBUG-01 は導入が javascript-basics でこの講座の前提にないため任意にし、同じ観点をルーブリックに書いた) |
 | M6 | `q01-router` 入力で振り分ける | 自力 | 分類の結果に応じて、扱う関数とモデルを選ぶ |
 | M6 | `q02-chain-with-gate` 段に分けてつなぐ | 自力 | 段ごとの結果を確かめ、条件を満たさなければ次の段へ進まない |
 | M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す | 基礎 | ツールで取った文章をタグで包み、指示として扱わないことを指示に書く |
@@ -377,7 +388,7 @@ Control the format of responses)を足しました。prefill が Claude 4.6 以�
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1〜M4 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信の関数を扱う関数なので、クライアントは使いません。M5 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M5 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信の関数を扱う関数なので、クライアントは使いません。M6 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

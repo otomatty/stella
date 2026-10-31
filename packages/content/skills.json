@@ -66,5 +66,17 @@
   {
     "id": "claude-context-management",
     "title": "コンテキストウィンドウに効く情報だけを収める"
+  },
+  {
+    "id": "claude-tool-use",
+    "title": "ツールの呼び出しを受けて実行し、結果と失敗を返す"
+  },
+  {
+    "id": "claude-tool-design",
+    "title": "ツールの説明・使う場面・入力の決まりを設計する"
+  },
+  {
+    "id": "claude-mcp",
+    "title": "MCP でツールやデータをつなぐ"
   }
 ]

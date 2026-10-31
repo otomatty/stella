@@ -42,5 +42,13 @@
   {
     "id": "schema-guarded-parse",
     "title": "止まった理由を確かめてから、スキーマどおりの値として読む"
+  },
+  {
+    "id": "tool-use-loop",
+    "title": "呼び出しを受けて実行し、結果を返して、終わるまで繰り返す"
+  },
+  {
+    "id": "error-as-result",
+    "title": "失敗を例外で止めず、結果として返す"
   }
 ]

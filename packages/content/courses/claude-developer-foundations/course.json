@@ -16,6 +16,7 @@
     "m1-messages-api": "M1. Messages API の基本",
     "m2-integration": "M2. アプリに組み込む",
     "m3-models-and-cost": "M3. モデルの選択と費用・速度の調整",
-    "m4-prompt-and-context": "M4. プロンプトとコンテキストの設計"
+    "m4-prompt-and-context": "M4. プロンプトとコンテキストの設計",
+    "m5-tools-and-mcp": "M5. ツール使用と MCP"
   }
 }

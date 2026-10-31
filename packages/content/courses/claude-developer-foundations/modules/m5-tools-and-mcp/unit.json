@@ -1,0 +1,8 @@
+{
+  "plannedHours": 4,
+  "skills": {
+    "uses": ["claude-messages-request", "claude-stop-reason", "claude-structured-output"],
+    "assesses": ["claude-tool-use", "claude-tool-design", "claude-mcp"]
+  },
+  "reuses": []
+}

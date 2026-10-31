@@ -380,6 +380,8 @@ describe("seed の書き込み行数", () => {
             id: "claude-developer-foundations/m4-prompt-and-context/q02-extraction-schema",
             active: 1,
           },
+          { id: "claude-developer-foundations/m5-tools-and-mcp/q01-tool-loop", active: 1 },
+          { id: "claude-developer-foundations/m5-tools-and-mcp/q02-fix-tool-error", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);
