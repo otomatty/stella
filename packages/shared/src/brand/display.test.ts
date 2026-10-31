@@ -117,7 +117,8 @@ describe("display brand (Phase A–D)", () => {
       displayName: string;
       contributes: { viewsContainers: { activitybar: { title: string }[] } };
     };
-    expect(vscodePkg.displayName).toBe(DISPLAY_NAME);
+    // Marketplace の表示名 "STELLA" は使用中（公開名 Stella）。一覧に出る名前だけ分ける。
+    expect(vscodePkg.displayName).toBe("STELLA 研修");
     expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.title).toBe(DISPLAY_NAME);
   });
 });

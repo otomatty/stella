@@ -130,7 +130,7 @@ bun run package
 
 ## Marketplace 公開（手順のみ）
 
-受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://saedgewell.stella-lms/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `saedgewell`、拡張名は `stella-lms`（拡張 ID `saedgewell.stella-lms`、表示名は STELLA）。publisher `stella` は別の公開者（公開名 Stella。ID は大文字小文字を区別しない）が使っていて、拡張名 `stella` も Marketplace に既にある。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。VSIX で入れた旧 ID `stella.stella` は別の拡張なので、この版には更新されない。Marketplace から入れ直す。
+受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://saedgewell.stella-lms/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `saedgewell`、拡張名は `stella-lms`（拡張 ID `saedgewell.stella-lms`、Marketplace の表示名は `STELLA 研修`）。publisher `stella`、拡張名 `stella`、表示名 `STELLA` はいずれも Marketplace で使用中。アクティビティバーのタイトルは `STELLA` のまま。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。VSIX で入れた旧 ID `stella.stella` は別の拡張なので、この版には更新されない。Marketplace から入れ直す。
 
 Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
 
