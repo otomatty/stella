@@ -58,5 +58,13 @@
   {
     "id": "gated-chain",
     "title": "段ごとに結果を確かめてから次へ進める"
+  },
+  {
+    "id": "untrusted-as-data",
+    "title": "外から来た内容を、出どころと一緒にデータとして包む"
+  },
+  {
+    "id": "least-privilege-config",
+    "title": "作業に要るものだけを許可し、ほかを断る設定を作る"
   }
 ]

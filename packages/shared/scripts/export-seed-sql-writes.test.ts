@@ -384,6 +384,8 @@ describe("seed の書き込み行数", () => {
           { id: "claude-developer-foundations/m5-tools-and-mcp/q02-fix-tool-error", active: 1 },
           { id: "claude-developer-foundations/m6-agents/q01-router", active: 1 },
           { id: "claude-developer-foundations/m6-agents/q02-chain-with-gate", active: 1 },
+          { id: "claude-developer-foundations/m7-safety/q01-wrap-untrusted", active: 1 },
+          { id: "claude-developer-foundations/m7-safety/q02-least-privilege", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);

@@ -90,5 +90,13 @@
   {
     "id": "claude-agent-sdk",
     "title": "Agent SDK でエージェントを動かす"
+  },
+  {
+    "id": "claude-safety",
+    "title": "プロンプトインジェクションと権限から、アプリとエージェントを守る"
+  },
+  {
+    "id": "claude-grounding",
+    "title": "根拠のある答えにして、ハルシネーションを減らす"
   }
 ]

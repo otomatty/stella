@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-foundations/m7-safety@1",
+  "contentHash": "310cef491c7bbbfe54025b3a8c3ee2de2f533b34ea4264909a83eebff44a30ff",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-prompt-injection/t1-untrusted-as-data/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-jailbreaks-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031"
+      ],
+      "usedFor": "間接のプロンプトインジェクション、外の文章を tool_result の中だけに入れること、JSON にして包むこと、system に方針を書き自分の指示を tool_result に書かないこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-prompt-injection/t2-screen-inputs/slides.md",
+      "sourceRefs": ["SRC-claude-docs-jailbreaks-20261031"],
+      "usedFor": "ジェイルブレイク、小さいモデルと構造化出力で入力をふるい分けること、ふるい分けの refusal を問題ありとして扱うこと、ツールの出力のふるい分けと繰り返す利用者への対応",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-prompt-injection/t3-least-privilege/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-sdk-permission-rules-20261031",
+        "SRC-claude-docs-jailbreaks-20261031"
+      ],
+      "usedFor": "最小権限、allowedTools が書いたツールを確認なしにするだけでほかを消さないこと、dontAsk・disallowedTools・bypassPermissions の働き",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-prompt-injection/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-jailbreaks-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-sdk-permission-rules-20261031"
+      ],
+      "usedFor": "レッスン7-1の3トピック(データとして渡す・ふるい分け・権限を絞る)の読み物と、攻撃の種類・権限の確かめ方の順・設定の働きの表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-prompt-injection/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-jailbreaks-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-sdk-permission-rules-20261031"
+      ],
+      "usedFor": "外の文章の渡し方、指示の置き場所、ふるい分けの refusal の扱い、allowedTools の働き、最小権限を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-reliable-answers/t1-allow-unknown/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-hallucination-advanced-20261031"
+      ],
+      "usedFor": "ハルシネーション、分からないと答えてよいと許すこと、渡した資料の情報だけを使わせること、なくなりはしないので人が確かめること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-reliable-answers/t2-quote-first/slides.md",
+      "sourceRefs": ["SRC-claude-docs-hallucinations-20261031"],
+      "usedFor": "長い資料では先に一字一句の引用を抜き出させて答えさせること、主張ごとの根拠の引用と見つからない主張の取り下げ",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-reliable-answers/t3-hide-secrets/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-sdk-secure-deployment-20261031",
+        "SRC-claude-docs-jailbreaks-20261031"
+      ],
+      "usedFor": "秘密をエージェントに渡さず外側のプロキシで付け足すこと、プロキシの利点、要らない秘密を渡さないこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-reliable-answers/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-hallucination-advanced-20261031",
+        "SRC-claude-code-sdk-secure-deployment-20261031",
+        "SRC-claude-docs-jailbreaks-20261031"
+      ],
+      "usedFor": "レッスン7-2の3トピック(分からないと言わせる・引用から答えさせる・秘密を見せない)の読み物と、確かめる方法の表・多層防御",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-reliable-answers/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-hallucination-advanced-20261031",
+        "SRC-claude-code-sdk-secure-deployment-20261031",
+        "SRC-claude-docs-jailbreaks-20261031"
+      ],
+      "usedFor": "ハルシネーションを減らす指示と方法、なくならないこと、エージェントの鍵の扱いを問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-wrap-untrusted/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-jailbreaks-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031"
+      ],
+      "usedFor": "教材独自の課題。外の内容を出どころと一緒に JSON にして tool_result に入れ、自分の指示を tool_result のあとの text ブロックで渡す関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-least-privilege/README.md",
+      "sourceRefs": [
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-sdk-permission-rules-20261031",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-sdk-mcp-20261031"
+      ],
+      "usedFor": "教材独自の課題。作業の種類から allowedTools を最小にし、Bash を決まったコマンドに絞り、MCP のツールを名前で許可し、dontAsk と disallowedTools でほかを断る設定の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

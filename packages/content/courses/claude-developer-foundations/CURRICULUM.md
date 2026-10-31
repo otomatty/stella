@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M6 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M7 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M7 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M8 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -144,12 +144,12 @@ M7 以降だけで使うものは、単元を書くときに登録します。�
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) | Specifying client tools | M0・M5 |
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools)(説明と tool_choice の節) | Best practices for tool definitions / Forcing tool use | M5 |
 | | [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) | Why strict tool use matters for agents / How it works | M5 |
-| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5 |
+| | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5・M7 |
 | | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)(エラーの節) | Handling errors with is_error | M5 |
 | | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) | Key features / Limitations | M0・M5 |
 | | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector)(書き方の節) | MCP server configuration / MCP toolset configuration / Response content types | M5 |
 | | [Writing effective tools for agents — with agents](https://www.anthropic.com/research/writing-tools-for-agents) | Principles for writing effective tools | M0・M5 |
-| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5 |
+| | [Connect to external tools with MCP(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/mcp) | Add an MCP server / Allow MCP tools / Transport types | M5・M7 |
 | | MCP の仕様(modelcontextprotocol.io) | — | 使わない。**執筆環境から届かないため未確認**。M5 の MCP の説明は、上の Anthropic・Claude Code の資料の範囲で書いた |
 | エージェント | [Building effective agents](https://www.anthropic.com/research/building-effective-agents) | When (and when not) to use agents / Building blocks, workflows, and agents | M0・M6 |
 | | [Building effective agents](https://www.anthropic.com/research/building-effective-agents)(定義・組み合わせ・まとめの節) | What are agents? / Combining and customizing these patterns / Summary | M6 |
@@ -161,7 +161,11 @@ M7 以降だけで使うものは、単元を書くときに登録します。�
 | | [Work with sessions](https://code.claude.com/docs/en/agent-sdk/sessions) | Choose an approach / Use session options with query() / Resume across hosts | M6 |
 | 安全性 | [Mitigate jailbreaks and prompt injections](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks) | Jailbreaks and direct prompt injection / Indirect prompt injection | M0・M7 |
 | | [Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations) | Basic hallucination minimization strategies | M0・M7 |
+| | [Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations)(進んだ方法の節) | Advanced techniques | M7 |
 | | [Configure permissions(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/permissions) | How permissions are evaluated / Permission modes | M0・M7 |
+| | [Configure permissions(Agent SDK)](https://code.claude.com/docs/en/agent-sdk/permissions)(許可と禁止の節) | Allow and deny rules | M7 |
+| | [Configure permissions(Claude Code)](https://code.claude.com/docs/en/permissions) | Permission rule syntax / Tool-specific permission rules | M7 |
+| | [Securely deploying AI agents](https://code.claude.com/docs/en/agent-sdk/secure-deployment) | Threat model / Security principles / Credential management | M7 |
 | Claude Code | [How Claude remembers your project](https://code.claude.com/docs/en/memory) | CLAUDE.md vs auto memory / CLAUDE.md files | M0・M8 |
 | | [Automate actions with hooks](https://code.claude.com/docs/en/hooks-guide) | What you can automate / How hooks work | M0・M8 |
 | | [Settings files and precedence](https://code.claude.com/docs/en/settings) | Settings files and who they affect / Settings precedence | M8 |
@@ -203,7 +207,7 @@ M7 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M6 は本文と課題を書いてあります。** M7 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M7 は本文と課題を書いてあります。** M8 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -336,16 +340,23 @@ inherit)なので、「プロンプトに書いて渡す」と具体にしまし
 渡す(Work with sessions)と具体にしました。オーケストレーターは M3 で導入した語を使い、6-2-4 では作業役を足しました。
 Building effective agents は 2024 年 12 月の記事で、冒頭に道具の状況が変わった注記があるため、本文では形と考え方だけを扱いました。
 
-### M7 安全性とセキュリティ
+### M7 安全性とセキュリティ(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 7-1-1 | 外の文章は指示ではない | ツールで取った外の文章は、指示ではなくデータとして扱います。 |
-| 7-1-2 | 危ない入力をふるい分ける | 危ない入力は、本処理の前にふるい分けます。 |
-| 7-1-3 | 権限を絞る | エージェントが使えるツールは、許可の設定で作業に要るものに絞ります。 |
-| 7-2-1 | 分からないと言わせる | 分からないときは分からないと答えてよい、と指示に書きます。 |
-| 7-2-2 | 引用から答えさせる | 長い資料の事実は、先に引用を抜き出させてから答えさせます。 |
-| 7-2-3 | 秘密を残さない | API キーや個人情報を、プロンプトとログに残しません。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 7-1-1 | `l1-prompt-injection/t1-untrusted-as-data` | 外の文章は指示ではない | ツールで取った外の文章は、tool_result の中にデータとして入れて渡します。 | プロンプトインジェクション, 信頼できない内容 | tool_result, system |
+| 7-1-2 | `l1-prompt-injection/t2-screen-inputs` | 危ない入力をふるい分ける | 危ない入力は、本処理の前に小さいモデルでふるい分けます。 | ふるい分け, ジェイルブレイク | 構造化出力, refusal, プロンプトインジェクション |
+| 7-1-3 | `l1-prompt-injection/t3-least-privilege` | 権限を絞る | エージェントが使えるツールと権限は、作業に要るものだけに絞ります。 | 最小権限, permissionMode, disallowedTools | allowedTools, Agent SDK, プロンプトインジェクション |
+| 7-2-1 | `l2-reliable-answers/t1-allow-unknown` | 分からないと言わせる | 分からないときは分からないと答えてよい、と指示に書きます。 | ハルシネーション | 指示 |
+| 7-2-2 | `l2-reliable-answers/t2-quote-first` | 引用から答えさせる | 長い資料の事実は、先に引用を抜き出させてから答えさせます。 | 根拠の引用 | 長い資料, ハルシネーション |
+| 7-2-3 | `l2-reliable-answers/t3-hide-secrets` | 秘密を見せない | API キーなどの秘密はエージェントに渡さず、外側のプロキシで付け足します。 | プロキシ | API キー, エージェント, 最小権限 |
+
+書く前の一覧から、公式ドキュメントに合わせて次を変えました。「外の文章は指示ではない」は、Mitigate jailbreaks and prompt
+injections の Indirect prompt injection に合わせ、外の文章を tool_result の中に入れる(JSON にして包む)と具体にしました。タグで包む
+だけでは、本文でタグを閉じて抜け出せるためです。「危ない入力をふるい分ける」には小さいモデルを使うことを入れました。「権限を絞る」は
+ツールだけでなく権限のモードも絞る(allowedTools はほかのツールを消さない)と書きました。「秘密を残さない」は、プロンプトとログの扱いに
+ついての公式の節が見つからなかったため、Securely deploying AI agents の Credential management に合わせて「秘密を見せない」
+(外側のプロキシで付け足す)にしました。
 
 ### M8 Claude Code の設定と評価・デバッグ
 
@@ -393,12 +404,12 @@ Building effective agents は 2024 年 12 月の記事で、冒頭に道具の�
 | M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す(**実装済み**) | 修正 | 障害の報告とログから、ツールの例外と知らないツールで止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり。CR-DEBUG-01 は導入が javascript-basics でこの講座の前提にないため任意にし、同じ観点をルーブリックに書いた) |
 | M6 | `q01-router` 入力で振り分ける(**実装済み**) | 自力 | 分類の結果の空白・大文字と小文字・末尾の句読点をそろえ、種類ごとのモデル・指示・上限で答えさせる。当てはまらない分類は fallback に回し fellBack で示す(説明欄あり) |
 | M6 | `q02-chain-with-gate` 段に分けてつなぐ(**実装済み**) | 自力 | 段の出力をゲートで確かめ、条件を満たさないか例外なら次の段へ進まずに止まった段と理由を返す。retries の回数まで、ゲートの理由を feedback にしてやり直す(説明欄あり) |
-| M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す | 基礎 | ツールで取った文章をタグで包み、指示として扱わないことを指示に書く |
-| M7 | `q02-least-privilege` 要るツールだけを許可する | 自力 | 作業の種類から、許可するツールの一覧を最小にして返す |
+| M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す(**実装済み**) | 基礎 | ツールで取った内容を出どころと一緒に JSON にして tool_result に入れ(タグで包まない)、アプリの指示は tool_result のあとの text ブロックで渡す |
+| M7 | `q02-least-privilege` 要るツールだけを許可する(**実装済み**) | 自力 | 作業の種類から allowedTools を最小にし(Bash は npm test だけ、MCP は名前で 1 つずつ)、dontAsk と、Bash の要らない作業では disallowedTools の Bash でほかを断る(説明欄あり) |
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1〜M6 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信・分類・段の関数を扱う関数なので、クライアントは使いません。M7 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M7 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定の形をした値や、偽の送信・分類・段の関数を扱う関数なので、クライアントは使いません。M8 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

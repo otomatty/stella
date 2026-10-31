@@ -1,0 +1,60 @@
+{
+  "id": "claude-developer-foundations/m7-safety/q02-least-privilege",
+  "title": "要るツールだけを許可する",
+  "kind": "independent",
+  "pattern": "least-privilege-config",
+  "skills": {
+    "uses": ["claude-mcp", "claude-agent-sdk"],
+    "assesses": ["claude-safety"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/permissions.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "minimal-allow",
+        "criterion": "作業の種類に要るツールだけを重ねずに allowedTools に並べ、Bash は決まったコマンドだけに絞り、MCP のツールを名前で 1 つずつ書いている",
+        "required": true
+      },
+      {
+        "id": "deny-the-rest",
+        "criterion": "permissionMode を dontAsk にし、Bash の要らない作業では disallowedTools で Bash を消し、知らない作業と * の許可をエラーにしている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-code-sdk-permissions-20261031",
+    "SRC-claude-code-sdk-permission-rules-20261031",
+    "SRC-claude-code-permission-rules-20261031",
+    "SRC-claude-code-sdk-mcp-20261031"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
