@@ -162,7 +162,6 @@ beforeAll(async () => {
     ["instructor", "instructor", "a", 0],
     ["admin", "admin", "a", 0],
     ["platform-admin", "platform_admin", "a", 0],
-    ["sales", "sales", "a", 0],
     ["disabled", "student", "a", 1],
   ] as const) {
     await db
@@ -194,7 +193,7 @@ describe("JWT-authenticated personal library", () => {
       (await request("books", "owner", "POST", { title: "wrong", visibility: "company" })).status,
     ).toBe(400);
     const id = await createBook();
-    for (const user of ["other", "outsider", "instructor", "admin", "platform-admin", "sales"]) {
+    for (const user of ["other", "outsider", "instructor", "admin", "platform-admin"]) {
       expect((await request(`books/${id}`, user)).status).toBe(404);
       expect((await request(`books/${id}`, user, "PATCH", { title: "stolen" })).status).toBe(404);
       expect((await request(`shelf/${id}`, user, "PUT", { favorite: true })).status).toBe(404);
@@ -238,7 +237,7 @@ describe("JWT-authenticated personal library", () => {
     ).toBe(1);
   });
   it("allows each staff role to own a private shelf without granting private reads", async () => {
-    for (const user of ["instructor", "admin", "platform-admin", "sales"]) {
+    for (const user of ["instructor", "admin", "platform-admin"]) {
       expect((await request("books", user, "POST", { title: `${user}'s book` })).status).toBe(201);
       expect((await data<LibraryShelfResponse>(await request("mine", user))).total).toBe(1);
     }

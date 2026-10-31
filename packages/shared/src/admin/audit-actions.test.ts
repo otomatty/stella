@@ -55,4 +55,20 @@ describe("audit-actions", () => {
       expect(auditActionLabel(action)).toContain("(旧)");
     }
   });
+
+  it("廃止した面談対策・スキルシートの action は記録できないが、過去ログの絞り込みには残る", () => {
+    for (const action of [
+      "interview_prep_assign",
+      "interview_tts_generate",
+      "interview_question_edit",
+      "answer_template_generated",
+      "answer_template_edited",
+      "skill_sheet_upload",
+      "skill_sheet_update",
+    ]) {
+      expect(Object.keys(AUDIT_ACTION_LABELS)).not.toContain(action);
+      expect(AUDIT_ACTION_FILTER_LABELS[action]).toBeTruthy();
+      expect(auditActionLabel(action)).toContain("(旧)");
+    }
+  });
 });

@@ -66,7 +66,7 @@ import type { Env } from "../env.js";
 
 export const cmsHallOfFameRoute = new Hono<{ Bindings: Env }>();
 
-/** 推薦できるのは受講者だけ (講師・営業・管理者は殿堂の対象ではない)。 */
+/** 推薦できるのは受講者だけ (講師・管理者は殿堂の対象ではない)。 */
 const NOMINABLE_ROLE = "student";
 
 /**

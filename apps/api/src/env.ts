@@ -29,7 +29,7 @@ export interface Env {
    */
   CLOUDFLARE_ACCOUNT_ID?: string;
   /**
-   * AI Gateway / Workers AI REST 専用の最小権限 API トークン。
+   * AI Gateway REST 専用の最小権限 API トークン。
    * GitHub Actions の deploy 用 CLOUDFLARE_API_TOKEN とは別物 — `wrangler secret put AI_GATEWAY_CF_API_TOKEN`。
    */
   AI_GATEWAY_CF_API_TOKEN?: string;
@@ -87,12 +87,6 @@ export interface Env {
   SUBMISSIONS_BUCKET?: R2Bucket;
 
   /**
-   * Cloudflare R2 — スキルシート原本 (PDF/xlsx) アップロード用。
-   * `wrangler.toml` の `[[r2_buckets]]` で `SKILL_SHEETS_BUCKET` としてバインドする。
-   */
-  SKILL_SHEETS_BUCKET?: R2Bucket;
-
-  /**
    * CI と公開 (`ci-deploy`) の課題の提出で、GitHub Actions の実行を GitHub の公開 API で確かめる
    * ときのトークン (任意、07 §5.5)。未設定でも動く (未認証は送信元の IP ごとに 1 時間 60 回まで。
    * Workers の送信元は共有なので、当たると照合できずに講師の確認待ちになる)。設定するなら、
@@ -103,36 +97,6 @@ export interface Env {
 
   /** 招待メールのリンク先 (受諾後に開くアプリ URL)。 未設定なら ALLOWED_ORIGINS の先頭。 */
   INVITE_REDIRECT_URL?: string;
-
-  /**
-   * Workers AI (REST) — 面談対策の回答文字起こし (Whisper)。 読み上げは既定で
-   * AI Gateway 経由の Grok TTS を使うため、 このトークンは直叩きフォールバック用。
-   * `[ai]` バインディングではなく REST を使う理由は `lib/workers-ai.ts` 参照。
-   * アカウント ID は上の CLOUDFLARE_ACCOUNT_ID を共用。 トークンは
-   * `wrangler secret put WORKERS_AI_API_TOKEN` (ローカルは `.dev.vars`)。
-   * どちらか未設定なら音声エンドポイントだけ 503 を返す。
-   */
-  WORKERS_AI_API_TOKEN?: string;
-
-  /**
-   * 質問読み上げモデル。 既定は `grok-tts` (AI Gateway Unified Billing → xai/grok-tts)。
-   *
-   * Workers AI 側の TTS は日本語で使えるものが無い (MeloTTS は CJK が破綻、
-   * Deepgram Aura は英語 / スペイン語専用) ため、 日本語 20 言語対応の Grok TTS を
-   * 既定にしている。 差し替える場合は入力スキーマも `buildTtsInput()` の分岐に従う。
-   */
-  INTERVIEW_TTS_MODEL?: string;
-
-  /**
-   * 読み上げの声。 Grok TTS は eve / ara / rex / sal / leo (既定 eve)。
-   * OpenAI TTS なら alloy 等、 Deepgram Aura なら speaker 名。
-   */
-  INTERVIEW_TTS_VOICE?: string;
-
-  /**
-   * 読み上げモデルへ渡す言語コード。 既定 "ja" (Grok TTS は BCP-47。 "auto" で自動判定)。
-   */
-  INTERVIEW_TTS_LANG?: string;
 
   /**
    * AI エンドポイント (chat / review-draft) の Rate Limiting バインディング。

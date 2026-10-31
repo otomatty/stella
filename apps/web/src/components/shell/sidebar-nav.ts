@@ -20,7 +20,6 @@ import {
   FileText,
   GraduationCap,
   Home,
-  MessageCircle,
   Play,
   Shield,
   Sparkles,
@@ -41,7 +40,6 @@ export type NavId =
   | "records"
   | "lesson"
   | "cert"
-  | "interview-prep"
   | "review-queue"
   | "gradebook"
   | "students"
@@ -69,7 +67,6 @@ export interface NavItem {
  *
  * 毎日の学習動線 (スキルツリー → レッスン) の途中に挟むと、 他人の
  * 物語が「今日やること」の並びに混ざる。 いつでも行けるが、 急かさない位置に置く。
- * 営業には出さない (受講者の物語を売り物の資料として扱わせない — 読めはする)。
  */
 const HALL_OF_FAME_NAV: NavItem = { id: "hall-of-fame", label: "殿堂", icon: Star };
 
@@ -80,7 +77,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "records", label: "学習の記録", icon: TrendingUp },
-    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "cert", label: "修了証", icon: Award },
     { id: "library", label: "個人の本棚", icon: Book },
     HALL_OF_FAME_NAV,
@@ -92,7 +88,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "students", label: "担当受講者", icon: Users },
     { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
-    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "stages", label: "ステージ", icon: Book },
     { id: "library", label: "個人の本棚", icon: Book },
     HALL_OF_FAME_NAV,
@@ -107,18 +102,12 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
-    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
     { id: "library", label: "個人の本棚", icon: Book },
     // 管理者の「殿堂」は運用画面 (推薦 / 公開)。 掲載そのものは運用画面から見に行ける。
     { id: "hall-of-fame-admin", label: "殿堂", icon: Star },
-  ],
-  sales: [
-    { id: "dash", label: "ダッシュボード", icon: Home },
-    { id: "interview-prep", label: "面談対策", icon: MessageCircle },
-    { id: "library", label: "個人の本棚", icon: Book },
   ],
 };
 

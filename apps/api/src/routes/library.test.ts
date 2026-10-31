@@ -23,7 +23,6 @@ beforeEach(() => {
       ('instructor','ses','instructor','Instructor',0,1),
       ('admin','ses','admin','Admin',0,1),
       ('platform-admin','ses','platform_admin','Platform admin',0,1),
-      ('sales','ses','sales','Sales',0,1),
       ('disabled','ses','student','Disabled',1,1);
     INSERT INTO library_books (id, tenant_id, owner_id, title, author, kind, created_at, updated_at)
       VALUES ('book','ses','owner','Old title','Old author','in_house',1,1);
@@ -110,7 +109,7 @@ describe("private bookshelf access", () => {
     const created = await call("books", "owner", "POST", { title: "Personal book" });
     expect(created.status).toBe(201);
     const id = (await json<{ book: { id: string } }>(created)).book.id;
-    for (const user of ["other", "outsider", "instructor", "admin", "platform-admin", "sales"]) {
+    for (const user of ["other", "outsider", "instructor", "admin", "platform-admin"]) {
       expect((await call(`books/${id}`, user)).status).toBe(404);
       expect((await call(`books/${id}`, user, "PATCH", { title: "stolen" })).status).toBe(404);
       expect((await call(`shelf/${id}`, user, "PUT", { favorite: true })).status).toBe(404);
@@ -152,7 +151,7 @@ describe("private bookshelf access", () => {
     ).toEqual({ count: 1 });
   });
   it("lets each staff role own a private shelf", async () => {
-    for (const user of ["instructor", "admin", "platform-admin", "sales"]) {
+    for (const user of ["instructor", "admin", "platform-admin"]) {
       expect((await call("books", user, "POST", { title: `${user}'s book` })).status).toBe(201);
       expect((await json<LibraryShelfResponse>(await call("mine", user))).total).toBe(1);
     }

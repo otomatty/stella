@@ -68,10 +68,3 @@ export function resolveAnthropicClientConfig(env: AnthropicClientEnv): {
   }
   return config;
 }
-
-/** Guard against the legacy Workers AI URL shape forbidden by Issue #204. */
-export function assertGatewayRequestUrlNotWorkersAiPath(url: string): void {
-  if (url.includes("/workers-ai/") || url.includes("/ai/run/@cf/")) {
-    throw new Error("Forbidden workers-ai direct URL shape");
-  }
-}

@@ -26,7 +26,7 @@ import type { OsName } from "../markdown/os-blocks.js";
 // ---------------------------------------------------------------
 
 export type StageStatus = "draft" | "published" | "archived";
-export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin" | "sales";
+export type ProfileRole = "student" | "instructor" | "admin" | "platform_admin";
 
 export type StageColor = "indigo" | "green" | "amber" | "slate";
 
@@ -567,10 +567,7 @@ export type NotificationType =
   // 永続する通知としても残す。
   | "stage_cleared"
   // AI が合格にした提出に、講師が判定を変えずにコメントを足した (#34)。payload に submission_id。
-  | "review_comment"
-  | "interview_date_set"
-  | "interview_answer_template_generated"
-  | "interview_answer_template_failed";
+  | "review_comment";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

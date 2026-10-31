@@ -6,7 +6,7 @@
  *   - 断り方が状態ごとに正しい (cleared はそのまま / locked は前提名 / fog は汎用文言)
  *   - 霧の 400 が「存在しない星」「フォーカス切り替え」と **同じ文言** (存在を漏らさない)
  *   - 二重に始めても登録が増えない (冪等)
- *   - 学習を見る側のロール (講師 / 営業) は 403
+ *   - 学習を見る側のロール (講師) は 403
  *
  * D1 は `lib/skill-map-data.js` / `lib/enrollment-write.js` を差し替えて、インメモリの
  * 道と登録集合で代用する (skill-map.test.ts / stage-queue.test.ts と同じ流儀)。
@@ -263,12 +263,10 @@ describe("POST /api/stages/:id/start", () => {
     expect(await errorOf(started)).toBe(await errorOf(focus));
   });
 
-  it("学習を見る側のロール (講師 / 営業) は 403", async () => {
-    for (const role of ["instructor", "sales"] as const) {
-      caller = { ...BASE_CALLER, role };
-      const res = await start("stage-a");
-      expect(res.status, role).toBe(403);
-    }
+  it("学習を見る側のロール (講師) は 403", async () => {
+    caller = { ...BASE_CALLER, role: "instructor" };
+    const res = await start("stage-a");
+    expect(res.status).toBe(403);
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 

@@ -9,7 +9,6 @@ import {
   buildUnifiedBillingChatCompletionsUrl,
   resolveAnthropicClientConfig,
   resolveUnifiedBillingGrokModel,
-  assertGatewayRequestUrlNotWorkersAiPath,
   MissingGatewayConfigError,
 } from "./ai-gateway.js";
 
@@ -77,21 +76,5 @@ describe("resolveAnthropicClientConfig", () => {
         AI_GATEWAY_ID: GATEWAY_ID,
       }),
     ).toThrow(MissingGatewayConfigError);
-  });
-});
-
-describe("assertGatewayRequestUrlNotWorkersAiPath", () => {
-  it("rejects the Issue-forbidden workers-ai URL shape", () => {
-    expect(() =>
-      assertGatewayRequestUrlNotWorkersAiPath(
-        `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/ai/run/@cf/openai/whisper`,
-      ),
-    ).toThrow(/workers-ai|forbidden/i);
-
-    expect(() =>
-      assertGatewayRequestUrlNotWorkersAiPath(
-        `https://gateway.ai.cloudflare.com/v1/${ACCOUNT_ID}/${GATEWAY_ID}/anthropic`,
-      ),
-    ).not.toThrow();
   });
 });

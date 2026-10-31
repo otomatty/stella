@@ -307,49 +307,6 @@ describe("seed の書き込み行数", () => {
   );
 
   it(
-    "面談の質問は、人が直した行を上書きせず、解除を予約した行だけを内容が同じでも書き戻す",
-    () => {
-      const db = migratedDb();
-      try {
-        apply(db, sql);
-        const { id } = db
-          .prepare("select id from interview_questions order by no limit 1")
-          .get() as {
-          id: string;
-        };
-        const row = () =>
-          db
-            .prepare(
-              "select question, edited_at, release_requested_at from interview_questions where id = ?",
-            )
-            .get(id) as {
-            question: string;
-            edited_at: number | null;
-            release_requested_at: number | null;
-          };
-        const original = row().question;
-        db.prepare(
-          "update interview_questions set question = '手で直した', edited_at = 1 where id = ?",
-        ).run(id);
-        expect(apply(db, sql)).toEqual({});
-        expect(row().question).toBe("手で直した");
-        db.prepare("update interview_questions set release_requested_at = 2 where id = ?").run(id);
-        expect(apply(db, sql)).toEqual({ [`interview_questions:${id}`]: 1 });
-        expect(row()).toEqual({ question: original, edited_at: null, release_requested_at: null });
-        // 本文は正本のまま、印だけ残っている行も印を落とす。
-        db.prepare(
-          "update interview_questions set edited_at = 3, release_requested_at = 4 where id = ?",
-        ).run(id);
-        expect(apply(db, sql)).toEqual({ [`interview_questions:${id}`]: 1 });
-        expect(apply(db, sql)).toEqual({});
-      } finally {
-        db.close();
-      }
-    },
-    SEED_TIMEOUT,
-  );
-
-  it(
     "教材から外れた課題だけを止め、残っている課題は書き直さない",
     () => {
       const db = migratedDb();

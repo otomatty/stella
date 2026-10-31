@@ -171,11 +171,6 @@ describe("GET /api/cms/stages (カタログの秘匿)", () => {
     expect(res.status).toBe(403);
   });
 
-  it("営業にも返さない (staff 機能)", async () => {
-    asRole("sales", "seed-sales");
-    expect((await request("/api/cms/stages")).status).toBe(403);
-  });
-
   it("staff には全ステージを返す (draft も含む)", async () => {
     state.stages.push(stageFixture({ id: "stage-draft", status: "draft" }));
     asRole("instructor");

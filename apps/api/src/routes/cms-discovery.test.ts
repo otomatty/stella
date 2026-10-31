@@ -193,7 +193,7 @@ beforeEach(() => {
 });
 
 describe("認可", () => {
-  it.each(["student", "sales"] as const)("%s は一覧も生成も 403", async (role) => {
+  it.each(["student"] as const)("%s は一覧も生成も 403", async (role) => {
     caller = { ...BASE_CALLER, role };
     expect((await request("/api/cms/discovery")).status).toBe(403);
     expect((await post("/api/cms/discovery/requests/req-1/generate")).status).toBe(403);

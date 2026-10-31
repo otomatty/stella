@@ -329,17 +329,14 @@ describe("推薦 (admin だけ / 受講者だけ)", () => {
     ).toBe(404);
   });
 
-  it.each(["instructor", "sales", "student"] as const)(
-    "%s は運営 API に触れない (403)",
-    async (role) => {
-      caller = { ...LEARNER, id: `seed-${role}`, role };
-      expect((await get("/api/cms/hall-of-fame")).status).toBe(403);
-      expect(
-        (await send("POST", "/api/cms/hall-of-fame/nominate", { userId: "seed-learner" })).status,
-      ).toBe(403);
-      expect(insertNomination).not.toHaveBeenCalled();
-    },
-  );
+  it.each(["instructor", "student"] as const)("%s は運営 API に触れない (403)", async (role) => {
+    caller = { ...LEARNER, id: `seed-${role}`, role };
+    expect((await get("/api/cms/hall-of-fame")).status).toBe(403);
+    expect(
+      (await send("POST", "/api/cms/hall-of-fame/nominate", { userId: "seed-learner" })).status,
+    ).toBe(403);
+    expect(insertNomination).not.toHaveBeenCalled();
+  });
 
   it("推薦の候補には、まだ招待していない受講者だけが並ぶ", async () => {
     caller = { ...ADMIN };

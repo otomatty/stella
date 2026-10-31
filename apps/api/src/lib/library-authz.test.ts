@@ -3,7 +3,7 @@ import { canOwnLibraryBook } from "./library-authz.js";
 import type { Caller } from "./authz.js";
 const privateBook = { tenant_id: "a", owner_id: "owner", status: "ready" };
 describe("private bookshelf permissions", () => {
-  it.each(["student", "instructor", "admin", "platform_admin", "sales"] as const)(
+  it.each(["student", "instructor", "admin", "platform_admin"] as const)(
     "%s can manage only their own books",
     (role) => {
       const caller: Caller = { id: "owner", tenantId: "a", role, name: "Owner", email: null };

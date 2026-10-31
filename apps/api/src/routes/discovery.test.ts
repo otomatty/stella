@@ -435,7 +435,7 @@ describe("受験できるロール (腕試しと同じ顔ぶれ)", () => {
     ).toBe(200);
   });
 
-  it.each(["instructor", "sales"] as const)("%s は出題も採点も 403", async (role) => {
+  it.each(["instructor"] as const)("%s は出題も採点も 403", async (role) => {
     caller = { ...BASE_CALLER, id: `seed-${role}`, role };
     expect((await get("/api/discovery/m-active")).status).toBe(403);
     expect((await post("/api/discovery/m-active", { answers: [] })).status).toBe(403);
