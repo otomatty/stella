@@ -189,6 +189,11 @@ describe("seed の書き込み行数", () => {
           )
           .join("\n");
         apply(db, stopped);
+        // 配布一式がそろうまで、新しい課題は受講者に出さない (開くと JSON が読めないため)。
+        expect(db.prepare("select active, bundle from tasks where id = ?").get(id)).toEqual({
+          active: 0,
+          bundle: "",
+        });
         apply(db, sql);
         const row = bundleOf(db);
         expect(Buffer.byteLength(row.bundle)).toBeGreaterThan(80_000);
@@ -199,6 +204,7 @@ describe("seed の書き込み行数", () => {
         };
         expect(bundle.contentHash).toBe(row.hash);
         expect(Object.keys(bundle.files)).toContain("package-lock.json");
+        expect(db.prepare("select active from tasks where id = ?").get(id)).toEqual({ active: 1 });
         expect(apply(db, sql)).toEqual({});
       } finally {
         db.close();

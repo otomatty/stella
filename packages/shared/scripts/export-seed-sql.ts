@@ -728,11 +728,12 @@ for (const [order, task] of content.tasks.entries()) {
     task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
   const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
   // 配布一式 (bundle) は Node の課題だと D1 の 1 文に収まらないので、課題の行・版の記録・
-  // 差し替えの 3 段で書く。1) 課題の行は配布一式と版 (content_hash) 以外を書き、新しい課題は
-  // 空の配布一式で入れる。
+  // 差し替えの 3 段で書く。1) 課題の行は配布一式・版 (content_hash)・公開 (active) 以外を書く。
+  // 新しい課題は空の配布一式・止めた状態で入れ、3) まで流れてから公開する (途中で止まった seed
+  // が、開けない課題を受講者に見せない)。
   const contentHash = strLit(task.bundle.contentHash);
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${strLit(JSON.stringify(d))}, '', 1, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "definition", ["active", "1"], "lesson_id", "variant_of"])};`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${strLit(JSON.stringify(d))}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "definition", "lesson_id", "variant_of"])};`,
   );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
@@ -759,11 +760,11 @@ for (const [order, task] of content.tasks.entries()) {
     );
     bundleBytes += Buffer.byteLength(part);
   }
-  // 3) そろった版の記録から、課題の行の版と配布一式を 1 文で差し替える。配る一式と、提出を
-  // 照合する版の記録が同じ内容になる (内容ハッシュは定義と配布ファイルを覆う)。
+  // 3) そろった版の記録から、課題の行の版と配布一式を 1 文で差し替えて公開する。配る一式と、
+  // 提出を照合する版の記録が同じ内容になる (内容ハッシュは定義と配布ファイルを覆う)。
   const revisionBundle = `(select bundle from task_revisions where ${revision})`;
   lines.push(
-    `update tasks set content_hash = ${contentHash}, bundle = ${revisionBundle} where id = ${strLit(d.id)} and (content_hash is not ${contentHash} or bundle is not ${revisionBundle});`,
+    `update tasks set content_hash = ${contentHash}, bundle = ${revisionBundle}, active = 1 where id = ${strLit(d.id)} and (content_hash is not ${contentHash} or bundle is not ${revisionBundle} or active is not 1);`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) ${doUpdate("task_private", ["files"])};`,
