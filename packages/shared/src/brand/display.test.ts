@@ -56,7 +56,7 @@ describe("display brand (Phase A–D)", () => {
       publisher: string;
       contributes: { viewsContainers: { activitybar: { id: string }[] } };
     };
-    expect(vscodePkg.name).toBe("stella");
+    expect(vscodePkg.name).toBe("stella-lms");
     expect(VSCODE_EXT_ID).toBe(`${vscodePkg.publisher}.${vscodePkg.name}`);
     expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.id).toBe("stella");
   });
@@ -117,7 +117,8 @@ describe("display brand (Phase A–D)", () => {
       displayName: string;
       contributes: { viewsContainers: { activitybar: { title: string }[] } };
     };
-    expect(vscodePkg.displayName).toBe(DISPLAY_NAME);
+    // Marketplace の表示名 "STELLA" は使用中（公開名 Stella）。一覧に出る名前だけ分ける。
+    expect(vscodePkg.displayName).toBe("STELLA 研修");
     expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.title).toBe(DISPLAY_NAME);
   });
 });

@@ -1,7 +1,7 @@
 # STELLA クライアント識別子の移行
 
 Phase D では Web の保存キーと VS Code 拡張の識別子を STELLA に統一する。
-新拡張の ID は `stella.stella`、バージョンは `0.3.0`。
+新拡張の ID は `saedgewell.stella-lms`、バージョンは `0.4.0`。
 コードの正本は [otomatty/stella](https://github.com/otomatty/stella)。
 
 ## Web の保存データ
@@ -19,17 +19,18 @@ Phase C で URL が変わった利用者や、JWT の期限が切れた利用者
 
 ## VS Code の切替
 
-拡張 ID は `falcon.informal` から `stella.stella` へ変わる。
+拡張 ID は `falcon.informal` から `saedgewell.stella-lms` へ変わる。
 VS Code は別の拡張として扱うため、旧拡張への自動更新では切り替わらない。
 
-1. 配布された `stella-0.3.0.vsix` を「Extensions: Install from VSIX...」でインストールする。
+1. 配布された `stella-lms-0.4.0.vsix` を「Extensions: Install from VSIX...」でインストールする。
 2. 旧拡張を無効にして、VS Code を再読み込みする。
 3. 必要なら `stella.serverUrl` / `stella.webUrl` を設定する。
    旧 `falcon.serverUrl` / `falcon.webUrl` は読み取り互換で引き継ぐ。
    新名の設定を明示した場合はそちらを優先する。
 4. 新 Web のコードレッスンから「VS Code で開く」を押して接続し直す。
+5. 学習フォルダーをホームの `web-training` 以外にしていた場合は、`STELLA: 学習フォルダーを選ぶ` で同じフォルダーを選び直す。場所は拡張 ID ごとの globalState にあり、新しい拡張からは読めない。既定のままなら、初めて課題を開いたときに同じ `~/web-training` を使う。
 
-新 Web は `vscode://stella.stella/lesson?...&code=...` を発行する。
+新 Web は `vscode://saedgewell.stella-lms/lesson?...&code=...` を発行する。
 旧 URI は旧拡張に届くため、新拡張への転送はできない。新 Web から開き直す。
 
 SecretStorage は拡張 ID ごとに分かれているので、別 ID の旧 JWT は読み出さない。
@@ -45,7 +46,7 @@ SecretStorage は拡張 ID ごとに分かれているので、別 ID の旧 JWT
 ## 配布と公開
 
 GitHub Actions の Release VS Code Extension が VSIX を作る。
-Marketplace への公開は別の作業で、`stella` publisher の登録・権限確認が必要。
+Marketplace の一覧は publisher `saedgewell` の `saedgewell.stella-lms`（表示名 `STELLA 研修`）。
 この変更で Marketplace への公開や本番デプロイを実行しない。
 
 切替時には利用者へ、新 VSIX のインストール・旧拡張の無効化・Web からの再接続を案内する。

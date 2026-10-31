@@ -1,7 +1,7 @@
 {
-  "name": "stella",
-  "displayName": "STELLA",
-  "publisher": "stella",
+  "name": "stella-lms",
+  "displayName": "STELLA 研修",
+  "publisher": "saedgewell",
   "version": "0.4.0",
   "private": true,
   "repository": {

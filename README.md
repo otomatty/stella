@@ -5,7 +5,7 @@
 SES未経験エンジニア向け **TypeScript 入門** を配信する LMS。教材の正本は `packages/content`。
 
 - 教材を見る (PDFスライド / 動画) / クイズ — Web
-- コード演習する (VS Code 拡張 `stella.stella`) — P2
+- コード演習する (VS Code 拡張 `saedgewell.stella-lms`) — P2
 - 採点される / AIに質問する — P2
 
 ## モノレポ構成
@@ -18,7 +18,7 @@ stella/
 │   │   └── vite-plugins/     # copy-sqljs-wasm
 │   ├── api/                  # @stella/api — Hono API → Cloudflare Workers
 │   │   └── src/              # /api/chat, /api/healthz
-│   └── vscode/               # stella (`stella.stella`) — 学習者のコード演習用 VS Code 拡張
+│   └── vscode/               # stella (`saedgewell.stella-lms`) — 学習者のコード演習用 VS Code 拡張
 ├── packages/
 │   ├── shared/               # @stella/shared — 課題型・カリキュラム・採点ロジック
 │   └── code-runner/          # @stella/code-runner — JS/SQL ランナー (QuickJS WASM / sql.js)
@@ -46,7 +46,7 @@ stella/
 - **Radix UI** プリミティブ
 - **Bun** (パッケージマネージャ / Workspaces)
 - **採点エンジン**: QuickJS WASM (in Web Worker) / sql.js (SQLite in browser)
-- **VS Code 拡張** (`stella.stella` / `apps/vscode`) — 学習者のコード演習
+- **VS Code 拡張** (`saedgewell.stella-lms` / `apps/vscode`) — 学習者のコード演習
 - **AI**: Anthropic Claude (`/api/chat` 経由、Cloudflare Workers でプロキシ)
 
 ## セットアップ（実データ開発・既定）
@@ -119,14 +119,14 @@ bun run --filter=@stella/shared typecheck
 
 ### コード演習（VS Code 拡張）
 
-学習者のコード演習はブラウザではなく VS Code 拡張 `stella.stella`（`apps/vscode`）で行う。
+学習者のコード演習はブラウザではなく VS Code 拡張 `saedgewell.stella-lms`（`apps/vscode`）で行う。
 Web はログイン・動画・ドキュメント・クイズ・CMS 用。講師の課題プレビュー（`AssignmentEditor`）だけ Web に残る。
 
 **学習者**
 
 1. Web にログインする
 2. 拡張を入れる（ローカルは `apps/vscode` で `bun run package` した VSIX。Marketplace は下記の手順のみ。このリポジトリからは公開しない）
-3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://stella.stella/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
+3. コードレッスンの「VS Code で開く」を押す。ワンタイム接続コードを載せた `vscode://saedgewell.stella-lms/lesson?...&code=...` が開き、未接続でもその 1 クリックで接続とレッスン表示まで進む（接続専用ページは無い）
 
 JWT は拡張の SecretStorage（`stella.accessToken`）に入る。設定にトークンを貼らない。
 
@@ -138,7 +138,7 @@ JWT は拡張の SecretStorage（`stella.accessToken`）に入る。設定にト
 
 **Marketplace（手順のみ・公開しない）**
 
-CI では出さない。publisher は `stella`。手元: `cd apps/vscode && bunx @vscode/vsce publish --no-dependencies`（`vsce login stella` または `VSCE_PAT`）。
+CI では出さない。publisher は `saedgewell`（`stella` は Marketplace 上の別 publisher が使用中）。手順は [`apps/vscode/README.md`](apps/vscode/README.md) の「Marketplace 公開」。認証は Microsoft Entra ID（`az login` のあと `vsce publish --azure-credential`）。PAT は使わない。
 
 ### 認証 (Google)
 

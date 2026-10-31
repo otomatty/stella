@@ -1,4 +1,8 @@
-export const VSCODE_EXT_ID = "stella.stella";
+/**
+ * Marketplace では publisher `stella` も拡張名 `stella` も使用中。
+ * publisher は `saedgewell`、拡張名は `stella-lms`。
+ */
+export const VSCODE_EXT_ID = "saedgewell.stella-lms";
 
 export function buildVscodeTaskUri(taskId: string, code?: string): string {
   const q = new URLSearchParams({ taskId });
