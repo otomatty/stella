@@ -14,7 +14,7 @@
       "usedFor": "自分で定義したツールは Claude が呼び出しを求めアプリが実行すること、tools の name・description・input_schema、stop_reason の tool_use と tool_use ブロック",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-tool-loop/t2-return-results/slides.md",
@@ -25,7 +25,7 @@
       "usedFor": "tool_result を tool_use_id で結び、次の user の発言で返すこと、置く位置と並べ方、複数の呼び出しの結果をまとめること、end_turn まで繰り返すこととツールランナー",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-tool-loop/t3-return-errors/slides.md",
@@ -33,7 +33,7 @@
       "usedFor": "ツールの失敗を is_error 付きの tool_result で返すこと、何が起き次に何をすればよいかを書くこと、正しくない呼び出しを返すと呼び直されること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-tool-loop/t4-server-tools/slides.md",
@@ -45,7 +45,7 @@
       "usedFor": "クライアントツールとサーバーツールの違い、Anthropic が形を決めたクライアントツール、サーバーツールのエラーを返す必要がないこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-tool-loop/doc.md",
@@ -58,7 +58,7 @@
       "usedFor": "レッスン5-1の4トピック(アプリが実行する・結果を返す・失敗を返す・サーバーツール)の読み物と、定義の項目・結果の項目・ツールの種類の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-tool-loop/knowledge.md",
@@ -71,7 +71,7 @@
       "usedFor": "ツールを実行する主体、tool_use_id、結果の返し方、失敗の扱い、サーバーツールを問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/t1-description/slides.md",
@@ -79,7 +79,7 @@
       "usedFor": "ツールの説明を性能に最も効くものとし、何をし・いつ使い・何を返すかと入力の意味・注意を 3〜4 文以上で書くこと、input_examples",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/t2-tool-choice/slides.md",
@@ -90,7 +90,7 @@
       "usedFor": "tool_choice の auto・any・tool・none と、最新のモデルで any・tool が 400 エラーになること、system の指示でツールを使う場面を調整すること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/t3-strict/slides.md",
@@ -101,7 +101,7 @@
       "usedFor": "strict: true で tool_use の input が input_schema どおりになること、スキーマの決まりが構造化出力と同じこと、構造化出力との違い",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/t4-fewer-tools/slides.md",
@@ -112,7 +112,7 @@
       "usedFor": "似たツールを目的ごとに少数へまとめること、サービス名の名前空間、次の判断に要る値だけを返すこと",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/doc.md",
@@ -126,7 +126,7 @@
       "usedFor": "レッスン5-2の4トピック(説明・使う場面・strict・少数にまとめる)の読み物と、説明の対比・tool_choice の値・まとめ方の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l2-tool-design/knowledge.md",
@@ -140,7 +140,7 @@
       "usedFor": "ツールの説明、ツールを使わせる調整、strict、構造化出力との違い、ツールのまとめ方を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-mcp/t1-what-is-mcp/slides.md",
@@ -148,7 +148,7 @@
       "usedFor": "MCP がツールやデータを AI のアプリにつなぐ公開の共通規格であること、MCP サーバーの動かし方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-mcp/t2-mcp-connector/slides.md",
@@ -159,7 +159,7 @@
       "usedFor": "MCP コネクターで Messages API からリモートの MCP サーバーを使うこと、mcp_servers と mcp_toolset、ツールの呼び出しだけ・公開された HTTP だけという制限",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-mcp/t3-sdk-mcp/slides.md",
@@ -167,7 +167,7 @@
       "usedFor": "Agent SDK で mcpServers か .mcp.json にサーバーを書き、mcp__サーバー名__ツール名 を allowedTools で許可すること、stdio と HTTP・SSE のつなぎ方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-mcp/doc.md",
@@ -179,7 +179,7 @@
       "usedFor": "レッスン5-3の3トピック(MCP・MCP コネクター・Agent SDK の MCP)の読み物と、書く場所・つなぎ方の表、許可の範囲の注意",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l3-mcp/knowledge.md",
@@ -191,7 +191,7 @@
       "usedFor": "MCP の説明、MCP コネクターに書くもの、つなげるサーバー、MCP のツールの名前と許可を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q01-tool-loop/README.md",
@@ -203,7 +203,7 @@
       "usedFor": "教材独自の課題。偽の送信の関数で、tool_use を実行して tool_result を返し、end_turn か上限まで繰り返すツール使用のループの受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "tasks/q02-fix-tool-error/README.md",
@@ -214,7 +214,7 @@
       "usedFor": "教材独自の修正課題。ツールの例外と知らないツールで止まる不具合を、is_error 付きの tool_result を返す形に直す受入条件と修正記録の項目",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
