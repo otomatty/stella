@@ -8,7 +8,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { buildContentManifest } from "@stella/content";
 
-import { splitSqlStatements } from "../../../apps/api/scripts/lib/d1-remote.js";
+import {
+  chunkStatements,
+  MAX_CHUNK_BYTES,
+  splitSqlStatements,
+} from "../../../apps/api/scripts/lib/d1-remote.js";
 
 /**
  * seed を流し直したときに D1 へ書く行数。
@@ -158,6 +162,50 @@ describe("seed の書き込み行数", () => {
     });
     // fixtures / problems を丸ごと in-process で読み込むので既定の 5s では足りない。
   }, 120_000);
+
+  it("どの文も D1 の 1 文の上限に収まる (Node の課題は lockfile を配るので配布一式が大きい)", () => {
+    const statements = splitSqlStatements(sql);
+    expect(() => chunkStatements(statements, MAX_CHUNK_BYTES)).not.toThrow();
+  });
+
+  it(
+    "大きな配布一式も断片から組み立て、途中で止まった seed は次の seed が続きから埋める",
+    () => {
+      const id = "claude-developer-foundations/m0-exam-and-sources/q01-study-plan";
+      const bundleOf = (db: DatabaseSync) =>
+        db
+          .prepare(
+            "select t.bundle as bundle, t.content_hash as hash, r.bundle as revision from tasks t join task_revisions r on r.task_id = t.id and r.content_hash = t.content_hash where t.id = ?",
+          )
+          .get(id) as { bundle: string; hash: string; revision: string };
+      const db = migratedDb();
+      try {
+        // 版の記録の先頭の断片を書いたところで止まった seed (続きの断片と差し替えが流れていない)。
+        const stopped = splitSqlStatements(sql)
+          .filter(
+            (s) =>
+              !s.startsWith("update task_revisions set bundle = bundle ||") &&
+              !s.startsWith("update tasks set content_hash"),
+          )
+          .join("\n");
+        apply(db, stopped);
+        apply(db, sql);
+        const row = bundleOf(db);
+        expect(Buffer.byteLength(row.bundle)).toBeGreaterThan(80_000);
+        expect(row.bundle).toBe(row.revision);
+        const bundle = JSON.parse(row.bundle) as {
+          contentHash: string;
+          files: Record<string, string>;
+        };
+        expect(bundle.contentHash).toBe(row.hash);
+        expect(Object.keys(bundle.files)).toContain("package-lock.json");
+        expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
 
   it(
     "同じ seed を 2 回流すと、2 回目は 1 行も書かない",

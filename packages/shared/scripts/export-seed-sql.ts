@@ -54,6 +54,32 @@ function strLit(s: string): string {
   return isSqlite ? sqStr(s) : dollar(s);
 }
 
+/**
+ * D1 の 1 文は 100KB まで (apps/api/scripts/lib/d1-remote.ts の MAX_CHUNK_BYTES)。Node の課題は
+ * lockfile を配るので配布一式がそれに近い。大きな文字列はこの大きさ以下の断片に分けて書く。
+ * 断片の `'` は 2 倍になるので、上限の半分より小さくしてある。
+ */
+const LITERAL_PART_BYTES = 40_000;
+
+/** 文字の途中で切らずに、UTF-8 で `maxBytes` 以下の断片に分ける。 */
+function splitUtf8(s: string, maxBytes: number): string[] {
+  const parts: string[] = [];
+  let part = "";
+  let size = 0;
+  for (const ch of s) {
+    const bytes = Buffer.byteLength(ch);
+    if (size + bytes > maxBytes && part !== "") {
+      parts.push(part);
+      part = "";
+      size = 0;
+    }
+    part += ch;
+    size += bytes;
+  }
+  parts.push(part);
+  return parts;
+}
+
 function json(v: unknown): string {
   return esc(JSON.stringify(v));
 }
@@ -701,8 +727,12 @@ for (const [order, task] of content.tasks.entries()) {
   const lessonId =
     task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
   const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
+  // 配布一式 (bundle) は Node の課題だと D1 の 1 文に収まらないので、課題の行・版の記録・
+  // 差し替えの 3 段で書く。1) 課題の行は配布一式と版 (content_hash) 以外を書き、新しい課題は
+  // 空の配布一式で入れる。
+  const contentHash = strLit(task.bundle.contentHash);
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, 1, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "content_hash", "definition", "bundle", ["active", "1"], "lesson_id", "variant_of"])};`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${strLit(JSON.stringify(d))}, '', 1, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "definition", ["active", "1"], "lesson_id", "variant_of"])};`,
   );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
@@ -711,8 +741,29 @@ for (const [order, task] of content.tasks.entries()) {
   // 配った版の定義と配布物は上書きしない。素材の版 (private_hash) だけは、この版を今の版として
   // 入れるたびに書き直す。前の版には「その版が今の版だった最後の素材」が残り、手元の版が古い
   // 受講者にその版のヒント・解答例・解説を出すのに使う (#36)。
+  // 2) 版の記録は配布一式を断片に分け、前から順に足す。足すのは記録が途中までのとき
+  // (書いた長さが断片の手前と同じとき) だけなので、流し直しても二重に足さず、途中で止まった
+  // seed は次の seed が続きから埋める。
+  const [bundleHead = "", ...bundleRest] = splitUtf8(
+    JSON.stringify(task.bundle),
+    LITERAL_PART_BYTES,
+  );
+  const revision = `task_id = ${strLit(d.id)} and content_hash = ${contentHash}`;
   lines.push(
-    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${strLit(task.bundle.contentHash)}, ${strLit(JSON.stringify(d))}, ${strLit(JSON.stringify(task.bundle))}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${contentHash}, ${strLit(JSON.stringify(d))}, ${strLit(bundleHead)}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
+  );
+  let bundleBytes = Buffer.byteLength(bundleHead);
+  for (const part of bundleRest) {
+    lines.push(
+      `update task_revisions set bundle = bundle || ${strLit(part)} where ${revision} and length(cast(bundle as blob)) = ${bundleBytes};`,
+    );
+    bundleBytes += Buffer.byteLength(part);
+  }
+  // 3) そろった版の記録から、課題の行の版と配布一式を 1 文で差し替える。配る一式と、提出を
+  // 照合する版の記録が同じ内容になる (内容ハッシュは定義と配布ファイルを覆う)。
+  const revisionBundle = `(select bundle from task_revisions where ${revision})`;
+  lines.push(
+    `update tasks set content_hash = ${contentHash}, bundle = ${revisionBundle} where id = ${strLit(d.id)} and (content_hash is not ${contentHash} or bundle is not ${revisionBundle});`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) ${doUpdate("task_private", ["files"])};`,
