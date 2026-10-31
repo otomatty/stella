@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m3-models-and-cost@1",
-  "contentHash": "3c2b89d731a9eac136707de074f3bc166d471884cd2b4cf93a02cffc3a8f4081",
+  "unitId": "claude-developer-foundations/m3-models-and-cost@2",
+  "contentHash": "cd4b2eb312547369ac7d9a7d5fd076d0b1f09ad92f6d5d13ed66291ab8bbddfd",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
