@@ -900,6 +900,125 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M2(アプリに組み込む)の l4-files-and-media/t2-images-and-pdf/slides.md・l4-files-and-media/doc.md・l4-files-and-media/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-choosing-start-20261031",
+      "title": "Choosing the right model",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model",
+      "section": "Choose the best model to start with / Decide whether to upgrade or change models",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cost-intelligence-20261031",
+      "title": "Optimizing for cost and intelligence",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence",
+      "section": "Start here / Combine models",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-effort-set-20261031",
+      "title": "Effort",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/effort",
+      "section": "Set the effort level / Effort with thinking",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-caching-structure-20261031",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Explicit cache breakpoints / Caching strategies and considerations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-token-counting-20261031",
+      "title": "Token counting",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+      "section": "How to count message tokens / Pricing and rate limits",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-thinking-20261031",
+      "title": "Thinking",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+      "section": "How thinking works / Configuring thinking / Thinking and effort",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-latency-20261031",
+      "title": "Reducing latency",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency",
+      "section": "How to measure latency / How to reduce latency",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

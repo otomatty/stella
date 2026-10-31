@@ -42,5 +42,17 @@
   {
     "id": "claude-files-and-media",
     "title": "ファイル・画像・PDF を渡す"
+  },
+  {
+    "id": "claude-model-selection",
+    "title": "モデルと effort を、性能・速度・費用で選ぶ"
+  },
+  {
+    "id": "claude-prompt-caching",
+    "title": "プロンプトキャッシュが効く形にプロンプトを組む"
+  },
+  {
+    "id": "claude-token-cost",
+    "title": "トークン数から費用を見積もる"
   }
 ]

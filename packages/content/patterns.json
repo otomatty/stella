@@ -26,5 +26,13 @@
   {
     "id": "batch-request-mapping",
     "title": "一覧から ID 付きのリクエストを作り、結果を ID で突き合わせる"
+  },
+  {
+    "id": "cache-friendly-ordering",
+    "title": "変わらない部分を前に、変わる部分を後ろに並べて区切りを置く"
+  },
+  {
+    "id": "token-cost-estimate",
+    "title": "使った量の内訳ごとに単価をかけて費用を見積もる"
   }
 ]

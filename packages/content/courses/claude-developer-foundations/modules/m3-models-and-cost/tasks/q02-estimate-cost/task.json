@@ -1,0 +1,59 @@
+{
+  "id": "claude-developer-foundations/m3-models-and-cost/q02-estimate-cost",
+  "title": "費用を見積もる",
+  "kind": "independent",
+  "pattern": "token-cost-estimate",
+  "skills": {
+    "uses": ["claude-prompt-caching", "claude-batches"],
+    "assesses": ["claude-token-cost"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/cost.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "usage-to-price",
+        "criterion": "usage の入力の 3 つの値と出力を、それぞれの単価で 100 万トークンあたりから計算し、バッチのときは合計を半額にしている",
+        "required": true
+      },
+      {
+        "id": "cache-plan",
+        "criterion": "キャッシュを使う場合を、1 回目の書き込みと 2 回目からの読み込みで見積もり、最低の長さに届かない前半はキャッシュしない場合と同じにしている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-docs-prompt-caching-20261031",
+    "SRC-claude-docs-caching-structure-20261031",
+    "SRC-claude-docs-batch-20261031"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

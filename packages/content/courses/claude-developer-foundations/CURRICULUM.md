@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M2 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M3 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M3 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M4 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -108,7 +108,7 @@ M3 以降だけで使うものは、単元を書くときに登録します。�
 | | [Claude API errors](https://platform.claude.com/docs/en/api/errors) | HTTP errors / SDK error types / Request ID | M0・M2 |
 | | [Rate limits](https://platform.claude.com/docs/en/api/rate-limits) | About rate limits / Response headers | M2 |
 | | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming) | Streaming with SDKs / Event types | M0・M2 |
-| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) | How the Message Batches API works / Pricing | M0・M2 |
+| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) | How the Message Batches API works / Pricing | M0・M2・M3 |
 | | [Using the Messages API](https://platform.claude.com/docs/en/build-with-claude/working-with-messages)(system の節) | System role in messages | M1 |
 | | [Messages(API リファレンス)](https://platform.claude.com/docs/en/api/messages) | Create a Message | M1 |
 | | [TypeScript SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript) | Usage / Retries | M1 |
@@ -123,9 +123,15 @@ M3 以降だけで使うものは、単元を書くときに登録します。�
 | | [PDF support](https://platform.claude.com/docs/en/build-with-claude/pdf-support) | Process PDFs with Claude | M2 |
 | | [Features overview](https://platform.claude.com/docs/en/build-with-claude/overview) | Platform features / Messages API features | M0 |
 | モデルと費用 | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) | Establish key criteria / Combine models | M0・M3 |
-| | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Cut spend without losing quality / Combine models | M3 |
+| | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model)(始め方と比べ方の節) | Choose the best model to start with / Decide whether to upgrade or change models | M3 |
+| | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Start here / Combine models | M3 |
 | | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | How prompt caching works / Pricing | M0・M3 |
+| | [Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)(区切りと usage の節) | Explicit cache breakpoints / Caching strategies and considerations | M3 |
 | | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort) | How effort works / Recommended effort levels | M0・M3 |
+| | [Effort](https://platform.claude.com/docs/en/build-with-claude/effort)(書き方と考える過程の節) | Set the effort level / Effort with thinking | M3 |
+| | [Token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) | How to count message tokens / Pricing and rate limits | M3 |
+| | [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) | How thinking works / Configuring thinking / Thinking and effort | M3 |
+| | [Reducing latency](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency) | How to measure latency / How to reduce latency | M3 |
 | プロンプトとコンテキスト | [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) | General principles / Output and formatting | M0・M4 |
 | | [Context windows](https://platform.claude.com/docs/en/build-with-claude/context-windows) | How the context window works / Manage context with compaction | M0・M4 |
 | | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) | Why use structured outputs / How it works | M0・M4 |
@@ -185,7 +191,7 @@ M3 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M2 は本文と課題を書いてあります。** M3 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあります。** M4 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -232,19 +238,26 @@ ID の 1 桁目が単元です。**M0〜M2 は本文と課題を書いてあり�
 | 2-4-1 | `l4-files-and-media/t1-files-api` | 何度も使うファイル | 何度も使うファイルは、Files API に上げて ID で指します。 | Files API, file_id | コンテンツブロック, リクエスト |
 | 2-4-2 | `l4-files-and-media/t2-images-and-pdf` | 画像と PDF を渡す | 画像と PDF は、content のブロックとして渡します。 | image ブロック, document ブロック | content, file_id |
 
-### M3 モデルの選択と費用・速度の調整
+### M3 モデルの選択と費用・速度の調整(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 3-1-1 | 選ぶ基準を先に決める | モデルは、性能・速度・費用の優先順位を決めてから選びます。 |
-| 3-1-2 | 自分の課題で比べる | 候補のモデルは、自分の課題の評価で比べます。 |
-| 3-1-3 | モデルを使い分ける | 難しい判断と単純な処理で、モデルを使い分けます。 |
-| 3-2-1 | 同じ前半を使い回す | 毎回同じ前半のプロンプトは、プロンプトキャッシュで使い回します。 |
-| 3-2-2 | 変わる部分は後ろに置く | キャッシュは前から順に一致した部分に効くので、変わる部分はプロンプトの後ろに置きます。 |
-| 3-2-3 | 送る前に量を数える | 入力のトークン数は、送る前に数えて確かめます。 |
-| 3-3-1 | かける量を決める | effort で、応答にかけるトークンの量を調整します。 |
-| 3-3-2 | 考えさせる | 難しい推論には、考える過程を使わせます。 |
-| 3-3-3 | 速さが要るとき | 応答の速さが要るときは、小さいモデルと短い出力を選びます。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 3-1-1 | `l1-choose-model/t1-criteria` | 選ぶ基準を先に決める | モデルは、性能・速度・費用のどれを優先するかを決めてから選びます。 | モデルの選択, 性能, 速度, 費用 | モデル ID |
+| 3-1-2 | `l1-choose-model/t2-evaluate` | 自分の課題で比べる | 候補のモデルは、自分の課題で作った評価のセットで比べます。 | 評価, 評価のセット | モデルの選択, 性能, 費用 |
+| 3-1-3 | `l1-choose-model/t3-effort` | かける量を決める | effort で、1 つのモデルが応答にかけるトークンの量を調整します。 | effort, output_config | モデルの選択, トークン, 評価 |
+| 3-1-4 | `l1-choose-model/t4-combine` | モデルを組み合わせる | モデルの組み合わせは、1 つのモデルの effort を調整しても足りないときに考えます。 | モデルの組み合わせ, アドバイザー, オーケストレーター | effort, 評価, 費用 |
+| 3-2-1 | `l2-prompt-caching/t1-reuse-prefix` | 同じ前半を使い回す | 毎回同じ前半のプロンプトは、プロンプトキャッシュで使い回します。 | プロンプトキャッシュ, cache_control, キャッシュの書き込み, キャッシュの読み込み | リクエスト, system, トークン, 費用 |
+| 3-2-2 | `l2-prompt-caching/t2-stable-first` | 変わる部分は後ろに置く | キャッシュは前から一致した部分に効くので、変わる部分は後ろに置きます。 | キャッシュの区切り | プロンプトキャッシュ, cache_control, messages |
+| 3-2-3 | `l2-prompt-caching/t3-check-usage` | キャッシュの効きを確かめる | キャッシュが効いたかは、応答の usage の値で確かめます。 | usage, cache_read_input_tokens, cache_creation_input_tokens, input_tokens | プロンプトキャッシュ, 応答, キャッシュの区切り |
+| 3-3-1 | `l3-tokens-and-speed/t1-count-tokens` | 送る前に量を数える | 入力のトークン数は、送る前にトークン数を数える API で確かめます。 | トークン数を数える API, countTokens | トークン, リクエスト, SDK, 費用 |
+| 3-3-2 | `l3-tokens-and-speed/t2-thinking-limit` | 考える過程も出力に数える | 考える過程のトークンも出力に数えるので、出力の上限は max_tokens で決めます。 | 考える過程, thinking ブロック | effort, max_tokens, コンテンツブロック, 途中で切れた応答 |
+| 3-3-3 | `l3-tokens-and-speed/t3-latency` | 応答を速くする | 応答を速くするには、モデル・トークンの量・ストリーミングの 3 つを見直します。 | 遅延, 最初のトークンまでの時間 | 速度, ストリーミング, effort, max_tokens |
+
+書く前の一覧(9 トピック)から、公式ドキュメントに合わせて次を変えました。effort をモデル選びのレッスンへ移し、
+組み合わせは「1 つのモデルの effort を調整してから考える」順番として書きました(Optimizing for cost and intelligence の Combine models)。
+キャッシュの効きを usage で確かめるトピックを足しました。「考えさせる」は、Claude 5 以降は考える過程が既定で使われるため、
+考えた分が max_tokens に数えることと effort・max_tokens の使い分けに書き直しました。「速さが要るとき」は、
+公式の 3 つの見直し(モデル・トークンの量・ストリーミング)を 1 つの takeaway にしました。
 
 ### M4 プロンプトとコンテキストの設計
 
@@ -338,8 +351,8 @@ ID の 1 桁目が単元です。**M0〜M2 は本文と課題を書いてあり�
 | M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す(**実装済み**) | 自力 | 429・500・529 だけを、retry-after か倍になる間隔で、上限の回数まで送り直す(待ち時間の関数は引数で受け取る。説明欄あり) |
 | M2 | `q02-collect-stream` ストリームから本文を組み立てる(**実装済み**) | 基礎 | イベントの列から text_delta の差分だけをつなぎ、message_delta の stop_reason を返す(知らないイベントは読み飛ばす) |
 | M2 | `q03-batch-requests` バッチのリクエストを組み立てる(**実装済み**) | 基礎 | 問い合わせの一覧から custom_id の重ならないリクエストの束を作り、結果を custom_id で引く |
-| M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる | 基礎 | 変わらない資料を前に、変わる質問を後ろに置き、資料の終わりに cache_control を付ける |
-| M3 | `q02-estimate-cost` 費用を見積もる | 自力 | トークン数と単価(引数)から、通常・バッチ・キャッシュを使った場合の費用を比べる |
+| M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる(**実装済み**) | 基礎 | 変わらない指示と資料を system に、変わる時刻と質問を messages に置き、毎回同じ部分の最後のブロックにだけ cache_control を付ける。usage の 3 つの値から入力の合計と、読み込み・書き込み・キャッシュなしを返す |
+| M3 | `q02-estimate-cost` 費用を見積もる(**実装済み**) | 自力 | usage の内訳と単価(引数、100 万トークンあたり)から費用を求め、キャッシュの有無(1 回目は書き込み・最低の長さ)とバッチの割引で比べる(説明欄あり) |
 | M4 | `q01-tagged-prompt` 指示と資料を分ける | 基礎 | 資料を XML のタグで包み、指示と混ざらないプロンプトを作る |
 | M4 | `q02-extraction-schema` 抽出のスキーマを書く | 自力 | 必須の項目・分からないときの値(null や "unknown")を含む JSON スキーマを書き、代表の出力で確かめる |
 | M5 | `q01-tool-loop` ツール使用のループを回す | 自力 | tool_use を受けてツールを実行し、tool_result を返して、end_turn まで繰り返す |
@@ -351,7 +364,7 @@ ID の 1 桁目が単元です。**M0〜M2 は本文と課題を書いてあり�
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1・M2 の課題は、応答・イベント・結果の形をした値や、偽の送信の関数を受け取る関数なので、クライアントは使いません。M3 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M3 の課題は、応答・イベント・結果・usage の形をした値や、偽の送信の関数を受け取る関数なので、クライアントは使いません。M4 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

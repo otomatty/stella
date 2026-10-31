@@ -14,6 +14,7 @@
   "modules": {
     "m0-exam-and-sources": "M0. 試験の全体像と公式の情報源",
     "m1-messages-api": "M1. Messages API の基本",
-    "m2-integration": "M2. アプリに組み込む"
+    "m2-integration": "M2. アプリに組み込む",
+    "m3-models-and-cost": "M3. モデルの選択と費用・速度の調整"
   }
 }

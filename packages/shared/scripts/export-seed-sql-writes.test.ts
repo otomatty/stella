@@ -370,6 +370,11 @@ describe("seed の書き込み行数", () => {
           { id: "claude-developer-foundations/m2-integration/q01-retry-transient", active: 1 },
           { id: "claude-developer-foundations/m2-integration/q02-collect-stream", active: 1 },
           { id: "claude-developer-foundations/m2-integration/q03-batch-requests", active: 1 },
+          {
+            id: "claude-developer-foundations/m3-models-and-cost/q01-cache-friendly-prompt",
+            active: 1,
+          },
+          { id: "claude-developer-foundations/m3-models-and-cost/q02-estimate-cost", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);
