@@ -66,5 +66,9 @@
   {
     "id": "least-privilege-config",
     "title": "作業に要るものだけを許可し、ほかを断る設定を作る"
+  },
+  {
+    "id": "eval-compare",
+    "title": "同じ評価のセットで、変更の前後を比べる"
   }
 ]

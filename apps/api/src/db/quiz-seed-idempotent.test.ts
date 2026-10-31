@@ -355,7 +355,7 @@ describe("教材 seed の再実行", () => {
     expect(
       db.prepare("select status from task_progress where task_id = ?").get(taskId)?.status,
     ).toBe("passed");
-    expect(countOf(db, "tasks")).toBe(17);
+    expect(countOf(db, "tasks")).toBe(18);
     expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
     db.close();
   }, 30_000);

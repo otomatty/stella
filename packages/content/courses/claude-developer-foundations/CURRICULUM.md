@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M7 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M8 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M8 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M9 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -170,6 +170,7 @@ M8 以降だけで使うものは、単元を書くときに登録します。�
 | | [Automate actions with hooks](https://code.claude.com/docs/en/hooks-guide) | What you can automate / How hooks work | M0・M8 |
 | | [Settings files and precedence](https://code.claude.com/docs/en/settings) | Settings files and who they affect / Settings precedence | M8 |
 | 評価とデバッグ | [Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests) | Define your success criteria / Build evaluations | M0・M8 |
+| | [Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests)(採点の節) | Grade your evaluations | M8 |
 | | [Troubleshooting tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use) | Claude calls the wrong tool / Claude invents tool parameters | M0・M8 |
 | 試験の制度 | [Four role-based certifications …](https://claude.com/resources/articles/four-role-based-claude-certifications)(2026-07-23) | The four credentials / How the exams work / How to find an exam or learn more about the Claude Partner Network | M0・M10 |
 | | [Introducing the Services Track and Partner Hub …](https://www.anthropic.com/news/services-track-partner-hub)(2026-06-03) | About the Services Track | M0 |
@@ -207,7 +208,7 @@ M8 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M7 は本文と課題を書いてあります。** M8 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M8 は本文と課題を書いてあります。** M9 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -358,16 +359,22 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 ついての公式の節が見つからなかったため、Securely deploying AI agents の Credential management に合わせて「秘密を見せない」
 (外側のプロキシで付け足す)にしました。
 
-### M8 Claude Code の設定と評価・デバッグ
+### M8 Claude Code の設定と評価・デバッグ(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 8-1-1 | 毎回効かせる約束 | 毎回効かせたいプロジェクトの約束は、CLAUDE.md に書きます。 |
-| 8-1-2 | 必ず実行する処理 | 必ず実行したい処理は、指示ではなく hook で決めます。 |
-| 8-1-3 | 共有する設定の置き場所 | チームで共有する設定は、プロジェクトの設定ファイルに置きます。 |
-| 8-2-1 | 成功の基準を先に決める | 作る前に、測れる成功の基準を決めます。 |
-| 8-2-2 | 同じ評価で比べる | プロンプトを変えたら、同じ評価のセットで前と比べます。 |
-| 8-2-3 | ツールの誤用を直す | ツールの誤用は、説明とスキーマから直します。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 8-1-1 | `l1-claude-code/t1-claude-md` | 毎回効かせる約束 | 毎回効かせたいプロジェクトの約束は、CLAUDE.md に短く具体的に書きます。 | CLAUDE.md, 自動メモリー | Claude Code, 指示 |
+| 8-1-2 | `l1-claude-code/t2-hooks` | 必ず実行する処理 | 必ず実行したい処理は、CLAUDE.md の指示ではなくフックで決めます。 | フック, PreToolUse, PostToolUse | CLAUDE.md |
+| 8-1-3 | `l1-claude-code/t3-settings` | 共有する設定の置き場所 | チームで共有する設定は、プロジェクトの .claude/settings.json に置いてリポジトリに入れます。 | 設定ファイル, 管理された設定 | フック |
+| 8-2-1 | `l2-evals/t1-success-criteria` | 成功の基準を先に決める | 作る前に、具体的で測れる成功の基準を決めます。 | 成功の基準 | 評価 |
+| 8-2-2 | `l2-evals/t2-compare-evals` | 同じ評価で比べる | プロンプトを変えたら、同じ評価のセットを自動で採点して前と比べます。 | 採点, LLM による採点 | 評価のセット, 成功の基準 |
+| 8-2-3 | `l2-evals/t3-tool-misuse` | ツールの誤用を直す | ツールの誤用は、ツールの説明・スキーマ・strict から直します。 | ツールの誤用 | ツールの説明, strict, input_schema |
+
+書く前の一覧から、公式ドキュメントに合わせて次を具体にしました。CLAUDE.md は「短く具体的に」(How Claude remembers your project
+の Write effective instructions)、設定は置き場所を `.claude/settings.json` と名指し(Settings files and precedence)、評価は
+「自動で採点して」(Define success criteria and build evaluations の Grade your evaluations)、ツールの誤用は strict まで
+(Troubleshooting tool use)を takeaway に入れました。フックは、CLAUDE.md が指示として読まれるだけで必ず守られる設定ではない
+こと(CLAUDE.md vs auto memory)と対にして書きました。
 
 ### M9 模擬試験 / M10 直前対策
 
@@ -406,10 +413,10 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 | M6 | `q02-chain-with-gate` 段に分けてつなぐ(**実装済み**) | 自力 | 段の出力をゲートで確かめ、条件を満たさないか例外なら次の段へ進まずに止まった段と理由を返す。retries の回数まで、ゲートの理由を feedback にしてやり直す(説明欄あり) |
 | M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す(**実装済み**) | 基礎 | ツールで取った内容を出どころと一緒に JSON にして tool_result に入れ(タグで包まない)、アプリの指示は tool_result のあとの text ブロックで渡す |
 | M7 | `q02-least-privilege` 要るツールだけを許可する(**実装済み**) | 自力 | 作業の種類から allowedTools を最小にし(Bash は npm test だけ、MCP は名前で 1 つずつ)、dontAsk と、Bash の要らない作業では disallowedTools の Bash でほかを断る(説明欄あり) |
-| M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
+| M8 | `q01-eval-compare` 評価のセットで比べる(**実装済み**) | 自力 | 評価のケースをすべて回してコードで採点し合格率を出す(生成の失敗は不合格として残す)。同じセットの前後を比べ、合格率の差と、悪化したケース・直ったケースを返す(説明欄あり) |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1〜M7 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定の形をした値や、偽の送信・分類・段の関数を扱う関数なので、クライアントは使いません。M8 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M8 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定・評価のケースの形をした値や、偽の送信・分類・段・生成の関数を扱う関数なので、クライアントは使いません。M10 の確認Aは、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

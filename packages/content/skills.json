@@ -98,5 +98,13 @@
   {
     "id": "claude-grounding",
     "title": "根拠のある答えにして、ハルシネーションを減らす"
+  },
+  {
+    "id": "claude-code-config",
+    "title": "Claude Code に約束・フック・設定を持たせる"
+  },
+  {
+    "id": "claude-evals",
+    "title": "成功の基準と評価のセットで変更を比べ、つまずきを直す"
   }
 ]

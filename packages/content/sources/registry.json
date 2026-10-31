@@ -1380,6 +1380,40 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M7(安全性とセキュリティ)の tasks/q02-least-privilege/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-code-settings-20261031",
+      "title": "Settings files and precedence",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/settings",
+      "section": "Settings files and who they affect / Settings precedence",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-eval-grading-20261031",
+      "title": "Define success criteria and build evaluations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+      "section": "Grade your evaluations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
