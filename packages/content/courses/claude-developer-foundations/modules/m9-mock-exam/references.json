@@ -10,7 +10,7 @@
       "usedFor": "本番が監督つきで行われることを背景に、模擬試験を時間を計って通しで解き、間違えた問題の単元に戻る使い方。問題数・時間・合格の基準は試験ガイドで確かめること",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-mock-exam/doc.md",
@@ -18,7 +18,7 @@
       "usedFor": "レッスン9-1(模擬試験)の読み物。本番の受け方(監督・本人確認)、解き方、範囲ごとの問題数と戻る単元の表",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     },
     {
       "contentId": "l1-mock-exam/knowledge.md",
@@ -87,7 +87,7 @@
       "usedFor": "教材独自の模擬試験 53 問(範囲ごとの問題数は配点の比)の正答と解説。各問で戻る単元のトピックと公式の資料を示す",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "draft"
+      "reviewStatus": "approved"
     }
   ]
 }
