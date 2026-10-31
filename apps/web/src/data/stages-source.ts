@@ -24,6 +24,9 @@ function fixturesFor(_tenantId: Tenant["id"]): Stage[] {
 
 type DataSource = "db" | "fixtures" | "error";
 
+/** 課題の合格数の取り直しの最短間隔 (focus と visibilitychange が続けて来ても 1 回にする)。 */
+const TASK_COUNTS_MIN_INTERVAL_MS = 10_000;
+
 interface UseStagesResult {
   stages: Stage[];
   loading: boolean;
@@ -248,8 +251,10 @@ export function useEnrolledStagesForTenant(
   );
 
   /** 版番号を採ってから読み出し、 進行中として登録する (追い越された側の相乗り先)。 */
+  const latestLoadId = useRef<number | null>(null);
   const load = useCallback((): Promise<Stage[]> => {
     const reqId = requestRef.current.begin();
+    latestLoadId.current = reqId;
     const promise = fetchStages(reqId);
     requestRef.current.track(reqId, promise);
     return promise;
@@ -259,5 +264,66 @@ export function useEnrolledStagesForTenant(
     void load();
   }, [load]);
 
+  /**
+   * 課題の数と合格の数だけを取り直す (ウィンドウに戻ったとき)。課題は VS Code から提出し、
+   * 合格は非同期のレビューで決まるので、課題の一部に合格しただけ (星はまだクリアしない) でも
+   * 進捗 (`tasksPassed`) を新しくする。ステージの詳細は取り直さず、受講登録の 1 回だけで済ませる。
+   * 取り直しのあいだに一覧の読み出しが始まったら、結果は捨てる (そちらが新しい数を持つ)。
+   */
+  const lastCountsAt = useRef(0);
+  const refreshTaskCounts = useCallback(async () => {
+    if (!enabled || !userId || !isBackendConfigured()) return;
+    const loadId = latestLoadId.current;
+    if (loadId === null) return;
+    const now = Date.now();
+    if (now - lastCountsAt.current < TASK_COUNTS_MIN_INTERVAL_MS) return;
+    lastCountsAt.current = now;
+    let rows: Awaited<ReturnType<typeof listEnrollmentsForUser>>;
+    try {
+      rows = await listEnrollmentsForUser(userId);
+    } catch {
+      // 補助の取り直し。失敗したら前の数のまま (次に戻ったときに取り直す)。
+      return;
+    }
+    if (!requestRef.current.isCurrent(loadId)) return;
+    setStages((prev) => applyTaskCounts(prev, rows));
+  }, [enabled, userId]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshTaskCounts();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refreshTaskCounts();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refreshTaskCounts]);
+
   return { stages, loading, error, source, refetch: load };
+}
+
+/**
+ * 受講登録の課題の数・合格の数を、読み込み済みのステージに当てる。変わらなければ同じ配列を返す
+ * (再描画を起こさない)。受講登録の無いステージ・古い API (数を返さない) はそのまま。
+ */
+export function applyTaskCounts(
+  stages: Stage[],
+  rows: readonly { stage_id: string; tasks_total?: number; tasks_passed?: number }[],
+): Stage[] {
+  const byStage = new Map(rows.map((row) => [row.stage_id, row]));
+  let changed = false;
+  const next = stages.map((stage) => {
+    const row = byStage.get(stage.id);
+    if (!row || row.tasks_total === undefined || row.tasks_passed === undefined) return stage;
+    if (stage.tasksCount === row.tasks_total && stage.tasksPassed === row.tasks_passed)
+      return stage;
+    changed = true;
+    return { ...stage, tasksCount: row.tasks_total, tasksPassed: row.tasks_passed };
+  });
+  return changed ? next : stages;
 }

@@ -21,7 +21,7 @@ export function TaskList({
    * 課題の一覧を読み終えたとき (取り直しのたび。失敗は空の一覧)。ステージ詳細が
    * 「課題に取り組む」と修了条件の表示に使う — 同じ一覧を二度取りに行かない。
    */
-  onLoaded?: (tasks: TaskSummary[]) => void;
+  onLoaded?: (tasks: TaskSummary[], stageId: string) => void;
 }) {
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
@@ -61,13 +61,13 @@ export function TaskList({
         setTasks(data.tasks);
         setError(null);
         setLoaded(true);
-        onLoadedRef.current?.(data.tasks);
+        onLoadedRef.current?.(data.tasks, stageId);
       }
     } catch (err) {
       if (!signal.aborted) {
         setError(err instanceof Error ? err.message : "課題を取得できませんでした");
         setLoaded(true);
-        onLoadedRef.current?.([]);
+        onLoadedRef.current?.([], stageId);
       }
     }
   }, [stageId]);

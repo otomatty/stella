@@ -113,8 +113,16 @@ export const StageDetail = ({
    * 新形式の課題の一覧 (`TaskList` が読んだもの。旧形式・未取得は null)。レッスンを終えても
    * 課題が合格していなければクリアにならないので、受講者の番の課題があれば主ボタンを
    * 「続きから」ではなく「課題に取り組む」にする。
+   *
+   * 読んだステージと一緒に持ち、いま開いているステージのものだけを使う。ステージ詳細から
+   * 別のステージへ移ると、このコンポーネントは作り直されずに残るため — 前のステージの課題で
+   * 「課題に取り組む」を出さない (旧形式のステージでは一覧を読み直さないので、なおさら)。
    */
-  const [tasks, setTasks] = useState<TaskSummary[] | null>(null);
+  const [loadedTasks, setLoadedTasks] = useState<{
+    stageId: string;
+    tasks: TaskSummary[];
+  } | null>(null);
+  const tasks = loadedTasks?.stageId === stage.id ? loadedTasks.tasks : null;
   const wrapup = useMemo(() => (tasks ? stageWrapupOf(tasks) : null), [tasks]);
   const lessonsLeft = findNextLesson(stage, progressMap) !== null;
   const handheld = useIsHandheld();
@@ -145,7 +153,9 @@ export const StageDetail = ({
    * 修了条件ごとの達成状況 (サーバーの判定と同じ数)。新形式は課題の一覧を読み直すたび
    * (ウィンドウに戻ったとき・「状態を更新」) に取り直す。取れなければ条件だけを出す。
    */
-  const [completion, setCompletion] = useState<StageCompletion | null>(null);
+  const [loadedCompletion, setCompletion] = useState<StageCompletion | null>(null);
+  // 前に開いていたステージの判定は出さない (上の課題の一覧と同じ理由)。
+  const completion = loadedCompletion?.stage_id === stage.id ? loadedCompletion : null;
   const completionRequest = useRef(0);
   const loadCompletion = useCallback(() => {
     if (!isBackendConfigured()) return;
@@ -166,8 +176,8 @@ export const StageDetail = ({
     };
   }, [stage.format, loadCompletion]);
   const handleTasksLoaded = useCallback(
-    (loaded: TaskSummary[]) => {
-      setTasks(loaded);
+    (loaded: TaskSummary[], loadedStageId: string) => {
+      setLoadedTasks({ stageId: loadedStageId, tasks: loaded });
       loadCompletion();
     },
     [loadCompletion],
@@ -362,10 +372,10 @@ export const StageDetail = ({
               <CardContent className="text-[12.5px] flex flex-col gap-2.5">
                 {criteriaRows.map((row) => {
                   // 満たした条件だけに緑のチェックを付ける。判定を読めていないあいだは
-                  // どちらとも言わない (条件の一覧として出す)。
+                  // どちらとも言わない (条件の一覧として出す)。受講登録の修了とは分けて、
+                  // 数だけで決める — 管理者が手で修了にしたステージでも、未達の条件は未達と出す。
                   const known = row.done !== undefined && row.total !== undefined;
-                  const met =
-                    stage.completed === true || (known && (row.done ?? 0) >= (row.total ?? 0));
+                  const met = known && (row.done ?? 0) >= (row.total ?? 0);
                   return (
                     <div key={row.key} className="flex items-center gap-2">
                       {met ? (
