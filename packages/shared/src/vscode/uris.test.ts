@@ -3,7 +3,9 @@ import { buildVscodeLessonUri, buildVscodeLinkUri } from "./uris.js";
 
 describe("vscode uris", () => {
   it("builds a link uri", () => {
-    expect(buildVscodeLinkUri("ABCD2345")).toBe("vscode://saedgewell.stella-lms/link?code=ABCD2345");
+    expect(buildVscodeLinkUri("ABCD2345")).toBe(
+      "vscode://saedgewell.stella-lms/link?code=ABCD2345",
+    );
   });
 
   // TODO(stage-rename-compat): 旧拡張(<=0.1.0)互換。 拡張更新の浸透後に courseId を落とす
