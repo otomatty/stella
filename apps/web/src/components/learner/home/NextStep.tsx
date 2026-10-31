@@ -51,7 +51,7 @@ export interface GuideHandlers {
   onOpenMiss: () => void;
   /** 進行中のステージの詳細 (レッスン一覧) を開く。 */
   onOpenActiveStage: () => void;
-  /** 仕上げで残っている課題 (課題文のレッスン) を開く。 */
+  /** 仕上げで残っている課題に取り組む (パソコンは VS Code で開く)。 */
   onOpenPendingTask: () => void;
   /** 勧めた星を始める (乗り換えの確認は呼び出し側が出す)。 */
   onStartStage: (stageId: string) => void;
@@ -156,7 +156,7 @@ function summarizeStep(
       eyebrow: "次にやること",
       title: copy.title,
       action: copy.openTask
-        ? { label: "課題を開く", onClick: ctx.onOpenPendingTask }
+        ? { label: "課題に取り組む", onClick: ctx.onOpenPendingTask }
         : { label: "レッスン一覧", onClick: ctx.onOpenActiveStage },
     };
   }
@@ -344,7 +344,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <>
             <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenPendingTask}>
               <Play size={14} />
-              課題を開く
+              課題に取り組む
             </Button>
             <Button
               size="sm"

@@ -47,6 +47,7 @@ import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
 import {
@@ -86,6 +87,7 @@ import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progres
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
+import { openInVscode } from "@/lib/vscode-launch";
 
 /** PC で開いたガイドのカードが覆う幅 (左の余白 16px + 幅 360px + 右の余白 16px)。 */
 const GUIDE_INSET_PX = 392;
@@ -335,12 +337,19 @@ export const LearnerHome = ({
   };
 
   /**
-   * 残っている課題を開く。課題文のレッスンに「VS Code で開く」(スマホではリンクを送る)
-   * があるのでそこへ。課題文のレッスンを持たない課題は、課題の一覧があるステージ詳細へ。
+   * 残っている課題に取り組む。パソコンではそのまま VS Code で開く (拡張が課題を準備して
+   * 課題文を出す。拡張が無ければ VS Code がインストールを尋ねる)。スマートフォン・
+   * タブレットでは VS Code を開けないので、課題文のレッスン (リンクをパソコンへ送るボタンが
+   * ある) へ。課題文のレッスンを持たない課題は、課題の一覧があるステージ詳細へ。
    */
+  const handheld = useIsHandheld();
   const openPendingTask = () => {
-    if (!activeStage) return;
-    const lessonId = wrapup?.task.lessonId;
+    if (!activeStage || !wrapup) return;
+    if (!handheld) {
+      void openInVscode({ taskId: wrapup.task.id });
+      return;
+    }
+    const lessonId = wrapup.task.lessonId;
     if (lessonId) onOpenLesson(activeStage, lessonId);
     else openStage(activeStage.id);
   };
@@ -418,7 +427,7 @@ export const LearnerHome = ({
                   ...(wrapup.learnerTurn
                     ? {
                         action: {
-                          label: "課題を開く",
+                          label: "課題に取り組む",
                           icon: "play" as const,
                           onClick: openPendingTask,
                         },

@@ -17,13 +17,14 @@ import type {
   EnrollmentRow,
   EnrollmentStatus,
   EnrollmentSummaryRow,
+  MyEnrollmentRow,
 } from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 import { todayDateKey } from "./date-keys";
 
 /** 受講者本人の enrollment 一覧 (登録日昇順)。 userId はサーバが caller から解決する。 */
-export async function listEnrollmentsForUser(_userId: string): Promise<EnrollmentRow[]> {
-  const { rows } = await apiFetch<{ rows: EnrollmentRow[] }>("/api/enrollments/mine");
+export async function listEnrollmentsForUser(_userId: string): Promise<MyEnrollmentRow[]> {
+  const { rows } = await apiFetch<{ rows: MyEnrollmentRow[] }>("/api/enrollments/mine");
   return rows ?? [];
 }
 

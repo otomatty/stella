@@ -316,6 +316,15 @@ export interface EnrollmentRow {
 }
 
 /**
+ * 受講者本人の受講登録 (`GET /api/enrollments/mine`)。新形式の課題の数と合格の数を添える。
+ * 合格は `passed` / `ai-passed` だけ (修了の判定と同じ)。課題の無いステージは 0 / 0。
+ */
+export interface MyEnrollmentRow extends EnrollmentRow {
+  tasks_total: number;
+  tasks_passed: number;
+}
+
+/**
  * 受講者ごとの受講登録サマリ (Issue #20 / 受講登録画面の一覧バッジ用)。
  *
  * 受講登録画面は受講者を軸に選ぶため、 一覧には「何件割り当てられているか」だけあればよい。

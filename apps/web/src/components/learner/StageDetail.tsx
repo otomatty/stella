@@ -16,10 +16,14 @@ import {
   Terminal,
   Book,
   Presentation,
+  Code,
+  Loader2,
 } from "@/lib/icons";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
+import type { StageCompletion } from "@stella/shared/cms/types";
+import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { StageThumb } from "@/components/common/StageThumb";
 import { StageMaterialsDialog } from "@/components/learner/StageMaterialsDialog";
 import { TaskList } from "./TaskList";
@@ -28,10 +32,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { Stage, Lesson, LessonStatus, LessonType } from "@/data/types";
+import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useLessonProgressMap } from "@/hooks/useLessonProgress";
 import { useMySubmissions } from "@/hooks/useMySubmissions";
-import { resolveLessonStatus, resumeLessonId } from "@/lib/lesson-progress";
+import { isBackendConfigured } from "@/lib/backend";
+import { fetchMyStageCompletion } from "@/lib/certificates-api";
+import { findNextLesson, resolveLessonStatus, resumeLessonId } from "@/lib/lesson-progress";
+import { stageWrapupOf } from "@/lib/stage-wrapup";
 import { cn } from "@/lib/utils";
+import { openInVscode } from "@/lib/vscode-launch";
 
 type LucideIcon = ComponentType<LucideProps>;
 
@@ -99,6 +108,98 @@ export const StageDetail = ({
   );
   // 「続きから」 の再開位置 (最初の未完了レッスン)。 レッスンが無いステージでは null。
   const resumeId = resumeLessonId(stage, progressMap);
+
+  /**
+   * 新形式の課題の一覧 (`TaskList` が読んだもの。旧形式・未取得は null)。レッスンを終えても
+   * 課題が合格していなければクリアにならないので、受講者の番の課題があれば主ボタンを
+   * 「続きから」ではなく「課題に取り組む」にする。
+   */
+  const [tasks, setTasks] = useState<TaskSummary[] | null>(null);
+  const wrapup = useMemo(() => (tasks ? stageWrapupOf(tasks) : null), [tasks]);
+  const lessonsLeft = findNextLesson(stage, progressMap) !== null;
+  const handheld = useIsHandheld();
+  const taskTurn =
+    !stage.completed &&
+    !lessonsLeft &&
+    wrapup?.learnerTurn &&
+    // スマートフォン・タブレットは課題文のレッスン (リンクをパソコンへ送るボタン) へ送る。
+    (!handheld || wrapup.task.lessonId)
+      ? wrapup
+      : null;
+  const [launching, setLaunching] = useState(false);
+  const startTask = async () => {
+    if (!taskTurn) return;
+    if (handheld) {
+      if (taskTurn.task.lessonId) onOpenLesson(taskTurn.task.lessonId);
+      return;
+    }
+    setLaunching(true);
+    try {
+      await openInVscode({ taskId: taskTurn.task.id });
+    } finally {
+      setLaunching(false);
+    }
+  };
+
+  /**
+   * 修了条件ごとの達成状況 (サーバーの判定と同じ数)。新形式は課題の一覧を読み直すたび
+   * (ウィンドウに戻ったとき・「状態を更新」) に取り直す。取れなければ条件だけを出す。
+   */
+  const [completion, setCompletion] = useState<StageCompletion | null>(null);
+  const completionRequest = useRef(0);
+  const loadCompletion = useCallback(() => {
+    if (!isBackendConfigured()) return;
+    const request = ++completionRequest.current;
+    fetchMyStageCompletion(stage.id)
+      .then((value) => {
+        if (request === completionRequest.current) setCompletion(value);
+      })
+      .catch(() => {
+        if (request === completionRequest.current) setCompletion(null);
+      });
+  }, [stage.id]);
+  // 新形式は課題の一覧が届いたとき (下の handleTasksLoaded) に読む。旧形式はここで 1 回。
+  useEffect(() => {
+    if (stage.format !== 2) loadCompletion();
+    return () => {
+      completionRequest.current += 1;
+    };
+  }, [stage.format, loadCompletion]);
+  const handleTasksLoaded = useCallback(
+    (loaded: TaskSummary[]) => {
+      setTasks(loaded);
+      loadCompletion();
+    },
+    [loadCompletion],
+  );
+  const criteriaRows = stage.criteria
+    ? [
+        stage.criteria.requireAllLessons
+          ? {
+              key: "lessons",
+              label: "全レッスンの完了",
+              done: completion?.completed_lessons,
+              total: completion?.total_lessons,
+            }
+          : null,
+        stage.criteria.requireQuizPass
+          ? {
+              key: "quizzes",
+              label: "全小テストの合格",
+              done: completion?.passed_quizzes,
+              total: completion?.total_quizzes,
+            }
+          : null,
+        stage.criteria.requireAssignmentPass
+          ? {
+              key: "assignments",
+              label: "全課題「合格」判定",
+              done: completion?.passed_assignments,
+              total: completion?.total_assignments,
+            }
+          : null,
+      ].filter((row) => row !== null)
+    : [];
   const reviewedForLesson = (lesson: Lesson) =>
     submissions.find((submission) => {
       if (submission.status === "pending" || submission.stageTitle !== stage.title) return false;
@@ -153,7 +254,9 @@ export const StageDetail = ({
             </p>
           ) : null}
 
-          {stage.format === 2 ? <TaskList stageId={stage.id} onAskAi={onAskAiAboutTask} /> : null}
+          {stage.format === 2 ? (
+            <TaskList stageId={stage.id} onAskAi={onAskAiAboutTask} onLoaded={handleTasksLoaded} />
+          ) : null}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>シラバス</CardTitle>
@@ -219,15 +322,30 @@ export const StageDetail = ({
                 <span className="text-sm text-ink-3 font-normal">%</span>
               </div>
               <Progress value={stage.progress} tone="brand" className="mt-2 mb-4" />
-              <Button
-                variant="accent"
-                size="full"
-                disabled={!resumeId}
-                onClick={() => resumeId && onOpenLesson(resumeId)}
-              >
-                <Play size={14} />
-                {stage.progress === 0 ? "受講を開始" : "続きから"}
-              </Button>
+              {taskTurn ? (
+                <Button
+                  variant="accent"
+                  size="full"
+                  disabled={launching}
+                  onClick={() => void startTask()}
+                >
+                  {launching ? <Loader2 size={14} className="animate-spin" /> : <Code size={14} />}
+                  課題に取り組む
+                </Button>
+              ) : (
+                <Button
+                  variant="accent"
+                  size="full"
+                  disabled={!resumeId}
+                  onClick={() => resumeId && onOpenLesson(resumeId)}
+                >
+                  <Play size={14} />
+                  {stage.progress === 0 ? "受講を開始" : "続きから"}
+                </Button>
+              )}
+              {wrapup && !lessonsLeft && !stage.completed ? (
+                <p className="mt-2 text-[11.5px] leading-relaxed text-ink-3">{wrapup.detail}</p>
+              ) : null}
               {/* 旧スタブを実装 (Issue #77): ステージ内の配布資料をまとめて一覧・DL する。 */}
               <Button size="full" className="mt-2" onClick={() => setMaterialsOpen(true)}>
                 <Download size={13} />
@@ -236,30 +354,39 @@ export const StageDetail = ({
             </CardContent>
           </Card>
 
-          {stage.criteria ? (
+          {criteriaRows.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>修了条件</CardTitle>
               </CardHeader>
-              <CardContent className="text-[12.5px]">
-                {stage.criteria.requireAllLessons ? (
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <CheckCircle size={14} className="text-success" />
-                    <span>全レッスンの完了</span>
-                  </div>
-                ) : null}
-                {stage.criteria.requireQuizPass ? (
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <CheckCircle size={14} className="text-success" />
-                    <span>全小テストの合格</span>
-                  </div>
-                ) : null}
-                {stage.criteria.requireAssignmentPass ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={14} className="text-success" />
-                    <span>全課題「合格」判定</span>
-                  </div>
-                ) : null}
+              <CardContent className="text-[12.5px] flex flex-col gap-2.5">
+                {criteriaRows.map((row) => {
+                  // 満たした条件だけに緑のチェックを付ける。判定を読めていないあいだは
+                  // どちらとも言わない (条件の一覧として出す)。
+                  const known = row.done !== undefined && row.total !== undefined;
+                  const met =
+                    stage.completed === true || (known && (row.done ?? 0) >= (row.total ?? 0));
+                  return (
+                    <div key={row.key} className="flex items-center gap-2">
+                      {met ? (
+                        <CheckCircle size={14} className="text-success shrink-0" />
+                      ) : (
+                        <Circle
+                          size={14}
+                          className={cn("shrink-0", known ? "text-ink-3" : "text-ink-4")}
+                        />
+                      )}
+                      <span className={cn(known && !met ? "text-foreground" : undefined)}>
+                        {row.label}
+                      </span>
+                      {known ? (
+                        <span className="ml-auto tabular-nums text-[11.5px] text-ink-3">
+                          {row.total === 0 ? "対象なし" : `${row.done} / ${row.total}`}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           ) : null}

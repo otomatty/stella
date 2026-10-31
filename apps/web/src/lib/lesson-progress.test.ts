@@ -177,4 +177,23 @@ describe("resolveLessonStatus / deriveStageProgress", () => {
   it("完了数から進捗率を出す", () => {
     expect(deriveStageProgress(stage, { a: done() }).progress).toBe(25);
   });
+
+  it("課題もレッスンと同じ 1 件として数え、合格していなければ 100% にしない", () => {
+    const all = { a: done(), b: done(), c: done(), d: done() };
+    const withTask = { ...stage, tasksCount: 1, tasksPassed: 0 };
+    expect(deriveStageProgress(withTask, all).progress).toBe(80);
+    expect(deriveStageProgress({ ...withTask, tasksPassed: 1 }, all).progress).toBe(100);
+    expect(deriveStageProgress({ ...withTask, tasksCount: 0 }, all).progress).toBe(100);
+  });
+
+  it("未修了は丸めで 100% に届かせず、修了したステージは 100%", () => {
+    const many: Stage = {
+      ...stage,
+      tasksCount: 200,
+      tasksPassed: 199,
+    };
+    const all = { a: done(), b: done(), c: done(), d: done() };
+    expect(deriveStageProgress(many, all).progress).toBe(99);
+    expect(deriveStageProgress({ ...many, completed: true }, {}).progress).toBe(100);
+  });
 });

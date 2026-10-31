@@ -224,6 +224,9 @@ export function useEnrolledStagesForTenant(
             dueAt: e.due_at,
             required: e.required,
             completed,
+            // 古い API (課題の数を返さない) では課題を数えない (レッスンだけの進捗に戻る)。
+            tasksCount: e.tasks_total ?? 0,
+            tasksPassed: e.tasks_passed ?? 0,
           } as unknown as Stage);
         }
         setStages(merged);
