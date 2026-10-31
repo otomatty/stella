@@ -1,0 +1,52 @@
+{
+  "id": "claude-developer-foundations/m1-messages-api/q01-build-messages",
+  "title": "会話の履歴を組み立てる",
+  "kind": "basic",
+  "pattern": "message-history",
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-messages-request"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/conversation.js"],
+    "explanation": false,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [{ "id": "CR-SCOPE-01", "required": true }],
+    "rubric": [
+      {
+        "id": "history-not-mutated",
+        "criterion": "新しい発言を足すとき、渡された履歴の配列を push などで書き換えず、新しい配列を作っている",
+        "required": true
+      },
+      {
+        "id": "text-blocks",
+        "criterion": "本文を、type が text のブロックだけから作っている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "after-hints"
+  },
+  "sources": ["SRC-claude-docs-messages-20261031", "SRC-claude-api-messages-create-20261031"],
+  "estimatedMinutes": 40,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

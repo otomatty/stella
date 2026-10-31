@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0 があるものは `sources/registry.json` に登録済み(講師の承認待ち)で、
+本文の根拠にする公式の資料です。「使う単元」に M0・M1 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M1 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M2 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -109,6 +109,12 @@ M1 以降だけで使うものは、単元を書くときに登録します。�
 | | [Rate limits](https://platform.claude.com/docs/en/api/rate-limits) | About rate limits / Response headers | M2 |
 | | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming) | Streaming with SDKs / Event types | M0・M2 |
 | | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) | How the Message Batches API works / Pricing | M0・M2 |
+| | [Using the Messages API](https://platform.claude.com/docs/en/build-with-claude/working-with-messages)(system の節) | System role in messages | M1 |
+| | [Messages(API リファレンス)](https://platform.claude.com/docs/en/api/messages) | Create a Message | M1 |
+| | [TypeScript SDK](https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript) | Usage / Retries | M1 |
+| | [Get your Claude API key](https://platform.claude.com/docs/en/get-api-key) | Use your API key | M1 |
+| | [Model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions) | Model ID format / Dateless IDs are pinned snapshots | M1 |
+| | [Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) | What a refusal looks like | M1 |
 | | [Features overview](https://platform.claude.com/docs/en/build-with-claude/overview) | Platform features / Messages API features | M0 |
 | モデルと費用 | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) | Establish key criteria / Combine models | M0・M3 |
 | | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Cut spend without losing quality / Combine models | M3 |
@@ -173,10 +179,10 @@ M1 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0 だけ本文を書いてあります。** M1 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0 と M1 は本文と課題を書いてあります。** M2 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
-### M0 試験の全体像と公式の情報源(本文あり)
+### M0 試験の全体像と公式の情報源(本文・課題あり)
 
 | ID | ディレクトリ | タイトル | takeaway | introduces | requires |
 | --- | --- | --- | --- | --- | --- |
@@ -188,20 +194,20 @@ ID の 1 桁目が単元です。**M0 だけ本文を書いてあります。** 
 | 0-2-3 | `l2-official-sources/t3-code-docs` | Agent SDK の仕様は Claude Code のドキュメントにある | Agent SDK の仕様は、Claude Code のドキュメントで確かめます。 | Agent SDK, Claude Code | 公式ドキュメント, エージェント |
 | 0-2-4 | `l2-official-sources/t4-no-leaked-questions` | 本番の問題を写した教材は使わない | 本番の問題を写したとされる問題集は、学習に使いません。 | 非公式の問題集 | 試験ガイド |
 
-### M1 Messages API の基本
+### M1 Messages API の基本(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 1-1-1 | 会話は毎回まとめて送る | Messages API は会話を覚えないので、それまでの発言を messages の配列で毎回送ります。 |
-| 1-1-2 | 前提は system に書く | 役割や前提は system に書き、会話の発言と分けます。 |
-| 1-1-3 | 出力の上限を決める | max_tokens は出力の上限で、届くと応答はそこで止まります。 |
-| 1-1-4 | 応答はブロックの配列 | 応答の content は、種類の付いたブロックの配列です。 |
-| 1-2-1 | SDK で呼ぶ | API は公式の SDK から呼び、認証と送り直しを SDK に任せます。 |
-| 1-2-2 | API キーをコードに書かない | API キーはコードに書かず、環境変数から読みます。 |
-| 1-2-3 | モデルを ID で指す | モデルは、版の決まった ID で指定します。 |
-| 1-3-1 | 止まった理由で分ける | 応答の処理は、stop_reason の値ごとに分けます。 |
-| 1-3-2 | 上限で切れた応答 | stop_reason が max_tokens の応答は、途中で切れています。 |
-| 1-3-3 | 拒否された応答 | stop_reason が refusal の応答は、拒否として扱います。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 1-1-1 | `l1-request-response/t1-send-history` | 会話は毎回まとめて送る | Messages API は会話を覚えないので、それまでのやり取りを messages の配列で毎回送ります。 | リクエスト, 応答, messages, role, 会話の履歴 | Messages API |
+| 1-1-2 | `l1-request-response/t2-system` | 前提は system に書く | 最初から効かせる役割や前提は、messages ではなく system に書きます。 | system | messages, リクエスト |
+| 1-1-3 | `l1-request-response/t3-max-tokens` | 出力の上限を決める | max_tokens は出力の上限で、届くと応答はそこで止まります。 | max_tokens, トークン | リクエスト, 応答 |
+| 1-1-4 | `l1-request-response/t4-content-blocks` | 応答はブロックの配列 | 応答の content は、type で形の決まるブロックの配列です。 | content, コンテンツブロック, type | 応答 |
+| 1-2-1 | `l2-sdk/t1-official-sdk` | SDK で呼ぶ | API は公式の SDK から呼び、一時的なエラーの送り直しを SDK に任せます。 | SDK, 送り直し | Claude API, リクエスト |
+| 1-2-2 | `l2-sdk/t2-api-key` | API キーをコードに書かない | API キーはコードに書かず、環境変数 ANTHROPIC_API_KEY から SDK に読ませます。 | API キー, 環境変数, ANTHROPIC_API_KEY | SDK |
+| 1-2-3 | `l2-sdk/t3-model-id` | モデルを ID で指す | モデル ID は決まったスナップショットを指し、新しい版は別の ID で出ます。 | モデル ID, スナップショット | リクエスト |
+| 1-3-1 | `l3-stop-reasons/t1-branch-by-stop-reason` | 止まった理由で分ける | 応答の処理は、stop_reason の値ごとに分けます。 | stop_reason, end_turn | 応答 |
+| 1-3-2 | `l3-stop-reasons/t2-max-tokens-stop` | 上限で切れた応答 | stop_reason が max_tokens の応答は、途中で切れています。 | 途中で切れた応答 | stop_reason, max_tokens |
+| 1-3-3 | `l3-stop-reasons/t3-refusal` | 拒否された応答 | stop_reason が refusal の応答は、エラーではなく拒否として扱います。 | refusal, 拒否 | stop_reason |
 
 ### M2 アプリに組み込む
 
@@ -321,8 +327,8 @@ ID の 1 桁目が単元です。**M0 だけ本文を書いてあります。** 
 | 単元 | 課題 | 種別 | 作るもの(テストが確かめること) |
 | --- | --- | --- | --- |
 | M0 | `q01-study-plan` 配点に合わせて学習時間を配る(**実装済み**) | 基礎 | 配点の合計に対する割合で時間を配り、0.5 時間単位に丸める |
-| M1 | `q01-build-messages` 会話の履歴を組み立てる | 基礎 | これまでのやり取りと新しい発言から、system と messages の配列を作る(役割の順・system を messages に混ぜない) |
-| M1 | `q02-route-stop-reason` 止まった理由で処理を分ける | 自力 | stop_reason ごとに、本文・途中で切れた印・ツールの呼び出し・拒否を返す |
+| M1 | `q01-build-messages` 会話の履歴を組み立てる(**実装済み**) | 基礎 | これまでのやり取りと新しい発言から、system と messages を持つリクエストを作り(履歴の配列は書き換えない)、応答のテキストのブロックをつなぐ |
+| M1 | `q02-route-stop-reason` 止まった理由で処理を分ける(**実装済み**) | 自力 | stop_reason ごとに、答え・途中で切れた応答・ツールの呼び出し・拒否(表示用の説明)を返し、表にない値は扱いを決めていない値として返す(説明欄あり) |
 | M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す | 自力 | 429・529 だけを、間隔を広げながら上限の回数まで送り直す(待ち時間の関数は引数で受け取る) |
 | M2 | `q02-collect-stream` ストリームから本文を組み立てる | 基礎 | イベントの列から本文の差分をつなぎ、最後の stop_reason を返す |
 | M2 | `q03-batch-requests` バッチのリクエストを組み立てる | 基礎 | 問い合わせの一覧から、custom_id の重ならない requests の配列を作る |
@@ -339,7 +345,7 @@ ID の 1 桁目が単元です。**M0 だけ本文を書いてあります。** 
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1 の課題は応答の形をした値を受け取る関数なので、クライアントは使いません。M2 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

@@ -318,6 +318,8 @@ describe("seed の書き込み行数", () => {
         expect(Object.keys(writes)[0]).toMatch(/^update tasks set active = 0 /);
         expect(db.prepare("select id, active from tasks order by id").all()).toEqual([
           { id: "claude-developer-foundations/m0-exam-and-sources/q01-study-plan", active: 1 },
+          { id: "claude-developer-foundations/m1-messages-api/q01-build-messages", active: 1 },
+          { id: "claude-developer-foundations/m1-messages-api/q02-route-stop-reason", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);

@@ -640,6 +640,108 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M0(試験の全体像と公式の情報源)の l2-official-sources/doc.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-messages-system-20261031",
+      "title": "Using the Messages API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages",
+      "section": "System role in messages",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-api-messages-create-20261031",
+      "title": "Messages (API reference)",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/messages",
+      "section": "Create a Message",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-ts-sdk-20261031",
+      "title": "TypeScript SDK",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript",
+      "section": "Usage / Retries",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-api-key-20261031",
+      "title": "Get your Claude API key",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/get-api-key",
+      "section": "Use your API key",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-ids-20261031",
+      "title": "Model IDs and versioning",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+      "section": "Model ID format / Dateless IDs are pinned snapshots",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-refusals-20261031",
+      "title": "Refusals and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback",
+      "section": "What a refusal looks like",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

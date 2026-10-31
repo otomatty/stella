@@ -6,5 +6,13 @@
   {
     "id": "weighted-allocation",
     "title": "重みに比例して配分する"
+  },
+  {
+    "id": "message-history",
+    "title": "会話の履歴からリクエストを組み立てる"
+  },
+  {
+    "id": "stop-reason-routing",
+    "title": "応答の止まった理由で処理を分ける"
   }
 ]

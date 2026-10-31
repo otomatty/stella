@@ -14,5 +14,17 @@
   {
     "id": "claude-official-sources",
     "title": "Claude の仕様を公式の情報源で確かめる"
+  },
+  {
+    "id": "claude-messages-request",
+    "title": "Messages API のリクエストと応答の形を扱う"
+  },
+  {
+    "id": "claude-sdk-setup",
+    "title": "SDK・API キー・モデル ID を正しく使う"
+  },
+  {
+    "id": "claude-stop-reason",
+    "title": "止まった理由で応答の扱いを分ける"
   }
 ]
