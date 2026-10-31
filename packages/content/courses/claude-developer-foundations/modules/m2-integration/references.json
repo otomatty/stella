@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "2.1",
+  "unitId": "claude-developer-foundations/m2-integration@1",
+  "contentHash": "e3b7d50a68465891d042ac6132de75d0c787a6173ae974c16009ca77cb92afe3",
+  "environmentRef": "node-test-01@1",
+  "uses": [
+    {
+      "contentId": "l1-errors/t1-retryable-errors/slides.md",
+      "sourceRefs": ["SRC-claude-docs-errors-20261031"],
+      "usedFor": "429・529 が時間を置いて送り直すと通ることがあるエラーで、400・401 と利用額の上限に届いた 429 は送り直しても通らないこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-errors/t2-backoff/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-rate-limits-20261031",
+        "SRC-claude-docs-ts-sdk-20261031"
+      ],
+      "usedFor": "間隔を倍にする送り直し、retry-after に従うこと、SDK が既定で 2 回まで送り直すこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-errors/t3-request-id/slides.md",
+      "sourceRefs": ["SRC-claude-docs-errors-20261031"],
+      "usedFor": "request-id ヘッダーと SDK の _request_id、問い合わせに request ID を添えること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-errors/t4-rate-limit-headers/slides.md",
+      "sourceRefs": ["SRC-claude-docs-rate-limits-20261031"],
+      "usedFor": "レート制限の決まり方と、残りを示すレスポンスヘッダー",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-errors/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-rate-limits-20261031",
+        "SRC-claude-docs-ts-sdk-20261031"
+      ],
+      "usedFor": "レッスン2-1の4トピック(送り直せるエラー・間隔・request ID・レート制限のヘッダー)の読み物",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-errors/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-rate-limits-20261031",
+        "SRC-claude-docs-ts-sdk-20261031"
+      ],
+      "usedFor": "送り直せるエラー・retry-after・利用額の上限の 429・request ID・レート制限のヘッダーを問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/t1-show-as-it-arrives/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-errors-long-requests-20261031"
+      ],
+      "usedFor": "SDK の stream で届いた文字を表示すること、max_tokens の大きいリクエストでストリーミングかバッチを使うこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/t2-delta-events/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-streaming-deltas-20261031"
+      ],
+      "usedFor": "イベントの流れと text_delta の差分、知らないイベントを読み飛ばすこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/t3-final-message/slides.md",
+      "sourceRefs": ["SRC-claude-docs-streaming-deltas-20261031"],
+      "usedFor": "SDK の finalMessage で messages.create と同じ形の応答を受け取ること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-errors-long-requests-20261031",
+        "SRC-claude-docs-streaming-deltas-20261031"
+      ],
+      "usedFor": "レッスン2-2の3トピック(ストリーミングの使いどころ・差分のイベント・まとめた応答)の読み物",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-errors-long-requests-20261031",
+        "SRC-claude-docs-streaming-deltas-20261031"
+      ],
+      "usedFor": "ストリーミングの使いどころ・イベントの種類・finalMessage を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-batches/t1-batch-when/slides.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+      "usedFor": "Message Batches API に向く処理と、custom_id と params を持つリクエストの束",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-batches/t2-batch-price/slides.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031"],
+      "usedFor": "Message Batches API の料金が通常の 50% であること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-batches/t3-batch-results/slides.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+      "usedFor": "結果を受け取れる時期、結果の 4 つの種類、custom_id で結ぶこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-batches/doc.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+      "usedFor": "レッスン2-3の3トピック(向く処理・料金・結果の受け取り方)の読み物と、結果の種類の表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-batches/knowledge.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+      "usedFor": "バッチに向く処理・料金・結果の順と種類・受け取れる時期を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-files-and-media/t1-files-api/slides.md",
+      "sourceRefs": ["SRC-claude-docs-files-20261031"],
+      "usedFor": "Files API にファイルを上げて file_id で指すこと、file_id を利用者から受け取らないこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-files-and-media/t2-images-and-pdf/slides.md",
+      "sourceRefs": ["SRC-claude-docs-vision-20261031", "SRC-claude-docs-pdf-20261031"],
+      "usedFor": "画像を image ブロック、PDF を document ブロックで渡すことと、source の 3 つの渡し方",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-files-and-media/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-files-20261031",
+        "SRC-claude-docs-vision-20261031",
+        "SRC-claude-docs-pdf-20261031"
+      ],
+      "usedFor": "レッスン2-4の2トピック(Files API・画像と PDF)の読み物と、source の渡し方の表",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-files-and-media/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-files-20261031",
+        "SRC-claude-docs-vision-20261031",
+        "SRC-claude-docs-pdf-20261031"
+      ],
+      "usedFor": "Files API の使いどころと注意、document ブロック、source の渡し方を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q01-retry-transient/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-rate-limits-20261031",
+        "SRC-claude-docs-ts-sdk-20261031"
+      ],
+      "usedFor": "教材独自の課題。429・500・529 だけを、retry-after か倍になる間隔で、上限の回数まで送り直す関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q02-collect-stream/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-streaming-deltas-20261031"
+      ],
+      "usedFor": "教材独自の課題。ストリーミングのイベントの列から、text_delta の本文と message_delta の止まった理由を組み立てる関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-batch-requests/README.md",
+      "sourceRefs": ["SRC-claude-docs-batch-20261031", "SRC-claude-docs-batch-usage-20261031"],
+      "usedFor": "教材独自の課題。問い合わせの一覧から custom_id 付きのバッチのリクエストを作り、結果を custom_id で引く関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    }
+  ]
+}

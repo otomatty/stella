@@ -760,6 +760,125 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l3-stop-reasons/t3-refusal/slides.md・l3-stop-reasons/doc.md・l3-stop-reasons/knowledge.md・tasks/q02-route-stop-reason/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-errors-long-requests-20261031",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Long requests",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-rate-limits-20261031",
+      "title": "Rate limits",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/rate-limits",
+      "section": "About rate limits / Response headers",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-streaming-deltas-20261031",
+      "title": "Streaming messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "section": "Content block delta types / Get the final message without handling events",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-usage-20261031",
+      "title": "Batch processing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "Prepare and create your batch / Retrieving batch results",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-files-20261031",
+      "title": "Files API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/files",
+      "section": "How the Files API works / How to use the Files API",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-vision-20261031",
+      "title": "Vision",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+      "section": "Send images to Claude",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-pdf-20261031",
+      "title": "PDF support",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/pdf-support",
+      "section": "Process PDFs with Claude",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

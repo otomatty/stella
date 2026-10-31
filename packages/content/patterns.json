@@ -14,5 +14,17 @@
   {
     "id": "stop-reason-routing",
     "title": "応答の止まった理由で処理を分ける"
+  },
+  {
+    "id": "transient-retry",
+    "title": "一時的な失敗だけを間隔を広げて送り直す"
+  },
+  {
+    "id": "stream-accumulate",
+    "title": "イベントの列から結果を組み立てる"
+  },
+  {
+    "id": "batch-request-mapping",
+    "title": "一覧から ID 付きのリクエストを作り、結果を ID で突き合わせる"
   }
 ]

@@ -1,0 +1,13 @@
+{
+  "plannedHours": 5,
+  "skills": {
+    "uses": ["claude-messages-request", "claude-stop-reason"],
+    "assesses": [
+      "claude-api-errors",
+      "claude-streaming",
+      "claude-batches",
+      "claude-files-and-media"
+    ]
+  },
+  "reuses": []
+}

@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0・M1 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M2 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M2 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M3 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -115,6 +115,12 @@ M2 以降だけで使うものは、単元を書くときに登録します。�
 | | [Get your Claude API key](https://platform.claude.com/docs/en/get-api-key) | Use your API key | M1 |
 | | [Model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions) | Model ID format / Dateless IDs are pinned snapshots | M1 |
 | | [Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback) | What a refusal looks like | M1 |
+| | [Claude API errors](https://platform.claude.com/docs/en/api/errors)(Long requests の節) | Long requests | M2 |
+| | [Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming)(差分と finalMessage の節) | Content block delta types / Get the final message without handling events | M2 |
+| | [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing)(使い方の節) | Prepare and create your batch / Retrieving batch results | M2 |
+| | [Files API](https://platform.claude.com/docs/en/build-with-claude/files) | How the Files API works / How to use the Files API | M2 |
+| | [Vision](https://platform.claude.com/docs/en/build-with-claude/vision) | Send images to Claude | M2 |
+| | [PDF support](https://platform.claude.com/docs/en/build-with-claude/pdf-support) | Process PDFs with Claude | M2 |
 | | [Features overview](https://platform.claude.com/docs/en/build-with-claude/overview) | Platform features / Messages API features | M0 |
 | モデルと費用 | [Choosing the right model](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model) | Establish key criteria / Combine models | M0・M3 |
 | | [Optimizing for cost and intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | Cut spend without losing quality / Combine models | M3 |
@@ -179,7 +185,7 @@ M2 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0 と M1 は本文と課題を書いてあります。** M2 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M2 は本文と課題を書いてあります。** M3 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -209,22 +215,22 @@ ID の 1 桁目が単元です。**M0 と M1 は本文と課題を書いてあ�
 | 1-3-2 | `l3-stop-reasons/t2-max-tokens-stop` | 上限で切れた応答 | stop_reason が max_tokens の応答は、途中で切れています。 | 途中で切れた応答 | stop_reason, max_tokens |
 | 1-3-3 | `l3-stop-reasons/t3-refusal` | 拒否された応答 | stop_reason が refusal の応答は、エラーではなく拒否として扱います。 | refusal, 拒否 | stop_reason |
 
-### M2 アプリに組み込む
+### M2 アプリに組み込む(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 2-1-1 | 送り直せるエラー | 429 と 529 は、時間を置いて送り直すと通ることがあるエラーです。 |
-| 2-1-2 | 送り直しの間隔 | 送り直しは、間隔を広げながら回数の上限を決めて行います。 |
-| 2-1-3 | request ID を控える | 調査と問い合わせのために、応答の request ID を記録します。 |
-| 2-1-4 | 制限の残りを見る | 応答のヘッダーで、レート制限の残りを確かめます。 |
-| 2-2-1 | 届いた順に表示する | 長い応答は、ストリーミングで届いた順に表示します。 |
-| 2-2-2 | 差分のイベント | ストリーミングでは、本文が差分のイベントとして順に届きます。 |
-| 2-2-3 | まとめた応答を受け取る | イベントを1つずつ扱わなくても、SDK で最後にまとめた応答を受け取れます。 |
-| 2-3-1 | 急がない大量の処理 | 急がない大量の処理は、Message Batches API にまとめて送ります。 |
-| 2-3-2 | バッチの料金 | Message Batches API の料金は、通常の半額です。 |
-| 2-3-3 | バッチの結果を受け取る | バッチの結果は、すべて終わるか 24 時間たつと受け取れます。 |
-| 2-4-1 | 何度も使うファイル | 何度も使うファイルは、Files API に上げて ID で指します。 |
-| 2-4-2 | 画像と PDF を渡す | 画像と PDF は、content のブロックとして渡します。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 2-1-1 | `l1-errors/t1-retryable-errors` | 送り直せるエラー | 429 と 529 は、時間を置いて送り直すと通ることがあるエラーです。 | HTTP ステータス, 429, 529 | 送り直し, リクエスト |
+| 2-1-2 | `l1-errors/t2-backoff` | 送り直しの間隔 | 送り直しは、間隔を広げながら回数の上限を決めて行います。 | 指数バックオフ, retry-after | 429, 529, SDK |
+| 2-1-3 | `l1-errors/t3-request-id` | request ID を控える | 調査と問い合わせのために、応答の request ID を記録します。 | request ID | 応答, SDK |
+| 2-1-4 | `l1-errors/t4-rate-limit-headers` | 制限の残りを見る | 応答のヘッダーで、レート制限の残りを確かめます。 | レート制限, レスポンスヘッダー | 429, 応答 |
+| 2-2-1 | `l2-streaming/t1-show-as-it-arrives` | 届いた順に表示する | 長い応答は、ストリーミングで届いた順に表示します。 | ストリーミング | 応答, max_tokens, SDK |
+| 2-2-2 | `l2-streaming/t2-delta-events` | 差分のイベント | ストリーミングでは、本文が差分のイベントとして順に届きます。 | イベント, text_delta, message_delta | ストリーミング, stop_reason, コンテンツブロック |
+| 2-2-3 | `l2-streaming/t3-final-message` | まとめた応答を受け取る | イベントを1つずつ扱わなくても、SDK で最後にまとめた応答を受け取れます。 | finalMessage | イベント, SDK |
+| 2-3-1 | `l3-batches/t1-batch-when` | 急がない大量の処理 | 急がない大量の処理は、Message Batches API にまとめて送ります。 | Message Batches API, バッチ, custom_id | リクエスト, Messages API |
+| 2-3-2 | `l3-batches/t2-batch-price` | バッチの料金 | Message Batches API の料金は、通常の半額です。 | バッチの料金 | Message Batches API |
+| 2-3-3 | `l3-batches/t3-batch-results` | バッチの結果を受け取る | バッチの結果は、すべて終わるか 24 時間たつと受け取れます。 | バッチの結果 | バッチ, custom_id |
+| 2-4-1 | `l4-files-and-media/t1-files-api` | 何度も使うファイル | 何度も使うファイルは、Files API に上げて ID で指します。 | Files API, file_id | コンテンツブロック, リクエスト |
+| 2-4-2 | `l4-files-and-media/t2-images-and-pdf` | 画像と PDF を渡す | 画像と PDF は、content のブロックとして渡します。 | image ブロック, document ブロック | content, file_id |
 
 ### M3 モデルの選択と費用・速度の調整
 
@@ -329,9 +335,9 @@ ID の 1 桁目が単元です。**M0 と M1 は本文と課題を書いてあ�
 | M0 | `q01-study-plan` 配点に合わせて学習時間を配る(**実装済み**) | 基礎 | 配点の合計に対する割合で時間を配り、0.5 時間単位に丸める |
 | M1 | `q01-build-messages` 会話の履歴を組み立てる(**実装済み**) | 基礎 | これまでのやり取りと新しい発言から、system と messages を持つリクエストを作り(履歴の配列は書き換えない)、応答のテキストのブロックをつなぐ |
 | M1 | `q02-route-stop-reason` 止まった理由で処理を分ける(**実装済み**) | 自力 | stop_reason ごとに、答え・途中で切れた応答・ツールの呼び出し・拒否(表示用の説明)を返し、表にない値は扱いを決めていない値として返す(説明欄あり) |
-| M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す | 自力 | 429・529 だけを、間隔を広げながら上限の回数まで送り直す(待ち時間の関数は引数で受け取る) |
-| M2 | `q02-collect-stream` ストリームから本文を組み立てる | 基礎 | イベントの列から本文の差分をつなぎ、最後の stop_reason を返す |
-| M2 | `q03-batch-requests` バッチのリクエストを組み立てる | 基礎 | 問い合わせの一覧から、custom_id の重ならない requests の配列を作る |
+| M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す(**実装済み**) | 自力 | 429・500・529 だけを、retry-after か倍になる間隔で、上限の回数まで送り直す(待ち時間の関数は引数で受け取る。説明欄あり) |
+| M2 | `q02-collect-stream` ストリームから本文を組み立てる(**実装済み**) | 基礎 | イベントの列から text_delta の差分だけをつなぎ、message_delta の stop_reason を返す(知らないイベントは読み飛ばす) |
+| M2 | `q03-batch-requests` バッチのリクエストを組み立てる(**実装済み**) | 基礎 | 問い合わせの一覧から custom_id の重ならないリクエストの束を作り、結果を custom_id で引く |
 | M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる | 基礎 | 変わらない資料を前に、変わる質問を後ろに置き、資料の終わりに cache_control を付ける |
 | M3 | `q02-estimate-cost` 費用を見積もる | 自力 | トークン数と単価(引数)から、通常・バッチ・キャッシュを使った場合の費用を比べる |
 | M4 | `q01-tagged-prompt` 指示と資料を分ける | 基礎 | 資料を XML のタグで包み、指示と混ざらないプロンプトを作る |
@@ -345,7 +351,7 @@ ID の 1 桁目が単元です。**M0 と M1 は本文と課題を書いてあ�
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1 の課題は応答の形をした値を受け取る関数なので、クライアントは使いません。M2 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1・M2 の課題は、応答・イベント・結果の形をした値や、偽の送信の関数を受け取る関数なので、クライアントは使いません。M3 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

@@ -320,6 +320,9 @@ describe("seed の書き込み行数", () => {
           { id: "claude-developer-foundations/m0-exam-and-sources/q01-study-plan", active: 1 },
           { id: "claude-developer-foundations/m1-messages-api/q01-build-messages", active: 1 },
           { id: "claude-developer-foundations/m1-messages-api/q02-route-stop-reason", active: 1 },
+          { id: "claude-developer-foundations/m2-integration/q01-retry-transient", active: 1 },
+          { id: "claude-developer-foundations/m2-integration/q02-collect-stream", active: 1 },
+          { id: "claude-developer-foundations/m2-integration/q03-batch-requests", active: 1 },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);

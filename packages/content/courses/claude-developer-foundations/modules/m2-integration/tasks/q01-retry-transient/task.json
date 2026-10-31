@@ -1,0 +1,59 @@
+{
+  "id": "claude-developer-foundations/m2-integration/q01-retry-transient",
+  "title": "送り直せるエラーだけを送り直す",
+  "kind": "independent",
+  "pattern": "transient-retry",
+  "skills": {
+    "uses": [],
+    "assesses": ["claude-api-errors"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/retry.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "retryable-only",
+        "criterion": "HTTP ステータスが 429・500・529 のエラーだけを送り直し、ほかのエラーは待たずにそのまま投げている",
+        "required": true
+      },
+      {
+        "id": "bounded-backoff",
+        "criterion": "送り直しの回数が maxRetries で止まり、待つ時間が retry-after か、送り直しのたびに倍になる値で決まっている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-docs-errors-20261031",
+    "SRC-claude-docs-rate-limits-20261031",
+    "SRC-claude-docs-ts-sdk-20261031"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}
