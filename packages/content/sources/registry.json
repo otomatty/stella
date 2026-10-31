@@ -655,7 +655,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l1-request-response/t2-system/slides.md・l1-request-response/doc.md・l1-request-response/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -672,7 +675,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l1-request-response/t2-system/slides.md・l1-request-response/t3-max-tokens/slides.md・l1-request-response/t4-content-blocks/slides.md・l1-request-response/doc.md・l1-request-response/knowledge.md・tasks/q01-build-messages/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -689,7 +695,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t1-official-sdk/slides.md・l2-sdk/t2-api-key/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -706,7 +715,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t2-api-key/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -723,7 +735,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l2-sdk/t3-model-id/slides.md・l2-sdk/doc.md・l2-sdk/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     },
     {
@@ -740,7 +755,10 @@
       },
       "checkedAt": "2026-10-31",
       "review": {
-        "status": "draft"
+        "status": "approved",
+        "reviewer": "otomatty",
+        "reviewedAt": "2026-10-31",
+        "scope": "Claude Certified Developer 対策 M1(Messages API の基本)の l3-stop-reasons/t3-refusal/slides.md・l3-stop-reasons/doc.md・l3-stop-reasons/knowledge.md・tasks/q02-route-stop-reason/README.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
     }
   ]
