@@ -54,5 +54,17 @@
   {
     "id": "claude-token-cost",
     "title": "トークン数から費用を見積もる"
+  },
+  {
+    "id": "claude-prompt-design",
+    "title": "指示・例・資料を区切って、具体的なプロンプトを書く"
+  },
+  {
+    "id": "claude-structured-output",
+    "title": "構造化出力で決まった形の JSON を受け取る"
+  },
+  {
+    "id": "claude-context-management",
+    "title": "コンテキストウィンドウに効く情報だけを収める"
   }
 ]

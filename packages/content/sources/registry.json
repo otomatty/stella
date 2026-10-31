@@ -1040,6 +1040,57 @@
         "reviewedAt": "2026-10-31",
         "scope": "Claude Certified Developer 対策 M3(モデルの選択と費用・速度の調整)の l3-tokens-and-speed/t3-latency/slides.md・l3-tokens-and-speed/doc.md・l3-tokens-and-speed/knowledge.md で使う範囲。読む節と解説・知識問題・課題の対応、教材独自制作を確認。チャットで講師承認。"
       }
+    },
+    {
+      "id": "SRC-claude-docs-structured-considerations-20261031",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Using a raw JSON schema / Important considerations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-context-overflow-20261031",
+      "title": "Context windows",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+      "section": "Context window sizes by model / Context window overflow behavior",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-compaction-20261031",
+      "title": "Compaction overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/compaction",
+      "section": "Choose how to compact",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-10-31",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

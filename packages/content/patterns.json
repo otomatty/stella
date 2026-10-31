@@ -34,5 +34,13 @@
   {
     "id": "token-cost-estimate",
     "title": "使った量の内訳ごとに単価をかけて費用を見積もる"
+  },
+  {
+    "id": "tagged-prompt-assembly",
+    "title": "資料・例・指示をタグで包み、決まった順に組み立てる"
+  },
+  {
+    "id": "schema-guarded-parse",
+    "title": "止まった理由を確かめてから、スキーマどおりの値として読む"
   }
 ]

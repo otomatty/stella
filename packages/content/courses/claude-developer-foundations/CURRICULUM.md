@@ -97,9 +97,9 @@ M0 は「試験ガイドの配点で時間を配る」ことだけを教え、�
 
 ## 公式の情報源(確認日 2026-10-31)
 
-本文の根拠にする公式の資料です。「使う単元」に M0〜M3 があるものは `sources/registry.json` に登録済みで、
+本文の根拠にする公式の資料です。「使う単元」に M0〜M4 があるものは `sources/registry.json` に登録済みで、
 2026-10-31 に HTTP 200 と「読む節」の見出しがページにあることを、週次のリンク確認と同じ照合で確かめました。
-M4 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
+M5 以降だけで使うものは、単元を書くときに登録します。「読む節」はページの見出しの表記です。
 
 | 区分 | 資料 | 読む節 | 使う単元 |
 | --- | --- | --- | --- |
@@ -134,10 +134,14 @@ M4 以降だけで使うものは、単元を書くときに登録します。�
 | | [Reducing latency](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-latency) | How to measure latency / How to reduce latency | M3 |
 | プロンプトとコンテキスト | [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) | General principles / Output and formatting | M0・M4 |
 | | [Context windows](https://platform.claude.com/docs/en/build-with-claude/context-windows) | How the context window works / Manage context with compaction | M0・M4 |
+| | [Context windows](https://platform.claude.com/docs/en/build-with-claude/context-windows)(大きさと超えたときの節) | Context window sizes by model / Context window overflow behavior | M4 |
+| | [Compaction overview](https://platform.claude.com/docs/en/build-with-claude/compaction) | Choose how to compact | M4 |
 | | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) | Why use structured outputs / How it works | M0・M4 |
+| | [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)(スキーマの書き方と注意の節) | Using a raw JSON schema / Important considerations | M4 |
 | | [Effective context engineering for AI agents](https://www.anthropic.com/research/effective-context-engineering-for-ai-agents) | The anatomy of effective context / Context retrieval and agentic search | M0・M4 |
 | ツールと MCP | [Tool use with Claude](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview) | How tool use works / Choose a tool | M0・M5 |
 | | [Define tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) | Specifying client tools | M0・M5 |
+| | [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) | Why strict tool use matters for agents / How it works | M5 |
 | | [Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) | Handling results from client tools / Handling results from server tools | M0・M5 |
 | | [MCP connector](https://platform.claude.com/docs/en/agents-and-tools/mcp-connector) | Key features / Limitations | M0・M5 |
 | | [Writing effective tools for agents — with agents](https://www.anthropic.com/research/writing-tools-for-agents) | Principles for writing effective tools | M0・M5 |
@@ -158,7 +162,7 @@ M4 以降だけで使うものは、単元を書くときに登録します。�
 | 試験の制度 | [Four role-based certifications …](https://claude.com/resources/articles/four-role-based-claude-certifications)(2026-07-23) | The four credentials / How the exams work / How to find an exam or learn more about the Claude Partner Network | M0・M10 |
 | | [Introducing the Services Track and Partner Hub …](https://www.anthropic.com/news/services-track-partner-hub)(2026-06-03) | About the Services Track | M0 |
 
-- ドキュメントは更新型です。モデル名・料金・上限の数字は本文に持ち込まず、ページの見出しの範囲で考え方を書きます
+- ドキュメントは更新型です。本文は、ページの見出しの範囲で考え方を中心に書きます。モデル名・料金・上限の数字は、確認日(2026-10-31)の公式ドキュメントで確かめた値だけを書き(M2 以降)、課題では単価や上限を引数で受け取って教材に固定しません。数字を書いたページは、確認日を更新するときに見直します
 - 準備の講座(Partner Academy)・試験ガイド・サンプル問題は受講者が自分のアカウントで開きます。教材に写しません
 - 使わないもの: 本番の問題を写したとする教材(★の多い GitHub の学習ガイドにも、問題を「実際の試験の資料から」と書いたものがある)、
   有料の「問題集」サイト。受験記・第三者の解説は、出題の傾向をつかむ参考にとどめ、本文の根拠にしない
@@ -191,7 +195,7 @@ M4 以降だけで使うものは、単元を書くときに登録します。�
 
 ## takeaway 一覧
 
-ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあります。** M4 以降は、講師がこの一覧と公式の情報源の対応を確認してから
+ID の 1 桁目が単元です。**M0〜M4 は本文と課題を書いてあります。** M5 以降は、講師がこの一覧と公式の情報源の対応を確認してから
 本文を書きます(THEME_TO_COURSE.md の STEP 4)。takeaway は公式ドキュメントの見出しの範囲で確かめてから確定します。
 
 ### M0 試験の全体像と公式の情報源(本文・課題あり)
@@ -259,18 +263,26 @@ ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあり�
 考えた分が max_tokens に数えることと effort・max_tokens の使い分けに書き直しました。「速さが要るとき」は、
 公式の 3 つの見直し(モデル・トークンの量・ストリーミング)を 1 つの takeaway にしました。
 
-### M4 プロンプトとコンテキストの設計
+### M4 プロンプトとコンテキストの設計(本文・課題あり)
 
-| ID | タイトル | takeaway |
-| --- | --- | --- |
-| 4-1-1 | 具体的に頼む | やってほしいことは、背景を添えて具体的に書きます。 |
-| 4-1-2 | 例で形を伝える | 期待する出力の形は、例を示して伝えます。 |
-| 4-1-3 | タグで区切る | 指示と資料は、XML のタグで区切ります。 |
-| 4-2-1 | 決まった形の JSON | 決まった形の JSON が要るときは、構造化出力でスキーマを渡します。 |
-| 4-2-2 | ツールの入力を守らせる | ツールの入力をスキーマどおりにさせるには、strict を指定します。 |
-| 4-3-1 | 枠に収める | 入力と出力は、合わせてコンテキストウィンドウに収めます。 |
-| 4-3-2 | 効く情報だけを入れる | コンテキストには、判断に効く情報だけを入れます。 |
-| 4-3-3 | 長い会話を縮める | 長い会話は、圧縮して続きを枠に収めます。 |
+| ID | ディレクトリ | タイトル | takeaway | introduces | requires |
+| --- | --- | --- | --- | --- | --- |
+| 4-1-1 | `l1-prompting/t1-be-specific` | 具体的に頼む | やってほしいことは、理由を添えて具体的に書きます。 | プロンプト, 指示 | system, messages |
+| 4-1-2 | `l1-prompting/t2-examples` | 例で形を伝える | 期待する出力の形は、実際の用途に近く種類の違う例を 3〜5 個示します。 | 例, few-shot | プロンプト, 指示 |
+| 4-1-3 | `l1-prompting/t3-xml-tags` | タグで区切る | 指示・資料・例は、それぞれ XML のタグで包んで区切ります。 | XML タグ | 指示, 例 |
+| 4-1-4 | `l1-prompting/t4-long-documents` | 長い資料は先に置く | 長い資料はプロンプトの先頭に置き、質問は最後に書きます。 | 長い資料 | XML タグ, 指示 |
+| 4-2-1 | `l2-output-format/t1-structured-outputs` | 決まった形の JSON | 決まった形の JSON が要るときは、構造化出力でスキーマを渡します。 | 構造化出力, JSON スキーマ | output_config, コンテンツブロック, 指示 |
+| 4-2-2 | `l2-output-format/t2-check-before-parse` | 止まった理由を先に見る | 構造化出力の応答は、stop_reason を確かめてから JSON として読みます。 | スキーマに合わない出力 | 構造化出力, stop_reason, refusal, 途中で切れた応答 |
+| 4-2-3 | `l2-output-format/t3-say-what-to-do` | してほしい形で頼む | 出力の書き方は、禁止ではなく、してほしい形で指示します。 | 出力の書き方 | 指示, XML タグ |
+| 4-3-1 | `l3-context/t1-context-window` | 枠に収める | 入力と出力は、合わせてコンテキストウィンドウに収めます。 | コンテキストウィンドウ, model_context_window_exceeded | system, messages, max_tokens, stop_reason |
+| 4-3-2 | `l3-context/t2-high-signal` | 効く情報だけを入れる | コンテキストには、結果に効く情報だけを、できるだけ少なく入れます。 | コンテキスト, コンテキストの劣化 | コンテキストウィンドウ, トークン |
+| 4-3-3 | `l3-context/t3-compaction` | 長い会話を縮める | 長い会話は、圧縮で古いやり取りを要約に置き換えて続けます。 | 圧縮, コンテキストの編集 | コンテキストウィンドウ, 会話の履歴, コンテキストの劣化 |
+
+書く前の一覧(8 トピック)から、公式ドキュメントに合わせて次を変えました。長い資料の並べ方(Prompting best practices の
+Long context prompting)を足しました。「ツールの入力を守らせる(strict)」は、ツールの定義(`input_schema`・`tool_use`)を
+習う前だと読めないので、M5 へ移しました。その代わりに、構造化出力でも `refusal`・`max_tokens` の応答はスキーマどおりとは
+限らないこと(Important considerations の Invalid outputs)と、出力の書き方の指示(Output and formatting の
+Control the format of responses)を足しました。prefill が Claude 4.6 以降で使えないことは、4-2-1 のまとめに書きました。
 
 ### M5 ツール使用と MCP
 
@@ -282,7 +294,8 @@ ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあり�
 | 5-1-4 | Anthropic 側で動くツール | サーバーツールは、Anthropic の側で実行されます。 |
 | 5-2-1 | 説明に書くこと | ツールの説明には、いつ使い、何を返すかを書きます。 |
 | 5-2-2 | ツールを使わせる | ツールを必ず使わせたいときは、tool_choice で指定します。 |
-| 5-2-3 | ツールは少数にまとめる | 似たツールを並べず、目的ごとに少数のツールにまとめます。 |
+| 5-2-3 | ツールの入力を守らせる | ツールの入力をスキーマどおりにさせるには、strict を指定します。(M4 から移した) |
+| 5-2-4 | ツールは少数にまとめる | 似たツールを並べず、目的ごとに少数のツールにまとめます。 |
 | 5-3-1 | 共通の約束でつなぐ | MCP は、ツールやデータを Claude につなぐための共通の約束です。 |
 | 5-3-2 | API から MCP を使う | MCP コネクターを使うと、Messages API からリモートの MCP サーバーを使えます。 |
 | 5-3-3 | SDK から MCP を使う | Agent SDK では、MCP サーバーを設定に足してツールを使えるようにします。 |
@@ -353,8 +366,8 @@ ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあり�
 | M2 | `q03-batch-requests` バッチのリクエストを組み立てる(**実装済み**) | 基礎 | 問い合わせの一覧から custom_id の重ならないリクエストの束を作り、結果を custom_id で引く |
 | M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる(**実装済み**) | 基礎 | 変わらない指示と資料を system に、変わる時刻と質問を messages に置き、毎回同じ部分の最後のブロックにだけ cache_control を付ける。usage の 3 つの値から入力の合計と、読み込み・書き込み・キャッシュなしを返す |
 | M3 | `q02-estimate-cost` 費用を見積もる(**実装済み**) | 自力 | usage の内訳と単価(引数、100 万トークンあたり)から費用を求め、キャッシュの有無(1 回目は書き込み・最低の長さ)とバッチの割引で比べる(説明欄あり) |
-| M4 | `q01-tagged-prompt` 指示と資料を分ける | 基礎 | 資料を XML のタグで包み、指示と混ざらないプロンプトを作る |
-| M4 | `q02-extraction-schema` 抽出のスキーマを書く | 自力 | 必須の項目・分からないときの値(null や "unknown")を含む JSON スキーマを書き、代表の出力で確かめる |
+| M4 | `q01-tagged-prompt` 指示と資料を分ける(**実装済み**) | 基礎 | 資料・例・指示・質問を XML のタグで包み、資料を先頭・質問を最後に並べたプロンプトを作る。応答からタグの中身を取り出し、なければ null を返す |
+| M4 | `q02-extraction-schema` 抽出のスキーマを書く(**実装済み**) | 自力 | すべて必須で、書かれていない値を null と "unknown" で表す JSON スキーマ(使えない制限なし)を書き、構造化出力のリクエストを作り、stop_reason を確かめてから応答を読む。テストは代表の出力が合う・合わないを確かめる(説明欄あり) |
 | M5 | `q01-tool-loop` ツール使用のループを回す | 自力 | tool_use を受けてツールを実行し、tool_result を返して、end_turn まで繰り返す |
 | M5 | `q02-fix-tool-error` ツールの失敗で止まるのを直す | 修正 | 例外でループが止まる不具合を、is_error を付けた結果を返す形に直す(修正記録あり) |
 | M6 | `q01-router` 入力で振り分ける | 自力 | 分類の結果に応じて、扱う関数とモデルを選ぶ |
@@ -364,7 +377,7 @@ ID の 1 桁目が単元です。**M0〜M3 は本文と課題を書いてあり�
 | M8 | `q01-eval-compare` 評価のセットで比べる | 自力 | 評価のケースを回して合格率を出し、変更前と変更後を比べる |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント | 確認A | ツール使用・送り直し・構造化出力を組み合わせ、偽のクライアントで最後まで動かす(説明欄あり) |
 
-M1〜M3 の課題は、応答・イベント・結果・usage の形をした値や、偽の送信の関数を受け取る関数なので、クライアントは使いません。M4 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
+M1〜M4 の課題は、リクエスト・応答・イベント・結果・usage の形をした値や、偽の送信の関数を扱う関数なので、クライアントは使いません。M5 以降の課題は、単元の本文と一緒に実装します(課題文の出典は単元の `references.json` に記録する)。
 
 ## 決めていないこと(講師と相談)
 

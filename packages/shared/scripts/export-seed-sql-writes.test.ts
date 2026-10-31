@@ -375,6 +375,11 @@ describe("seed の書き込み行数", () => {
             active: 1,
           },
           { id: "claude-developer-foundations/m3-models-and-cost/q02-estimate-cost", active: 1 },
+          { id: "claude-developer-foundations/m4-prompt-and-context/q01-tagged-prompt", active: 1 },
+          {
+            id: "claude-developer-foundations/m4-prompt-and-context/q02-extraction-schema",
+            active: 1,
+          },
           { id: taskId, active: 1 },
           { id: "retired-task", active: 0 },
         ]);
