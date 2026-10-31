@@ -20,6 +20,7 @@
     "m5-tools-and-mcp": "M5. ツール使用と MCP",
     "m6-agents": "M6. ワークフローとエージェント",
     "m7-safety": "M7. 安全性とセキュリティ",
-    "m8-claude-code-and-evals": "M8. Claude Code の設定と評価・デバッグ"
+    "m8-claude-code-and-evals": "M8. Claude Code の設定と評価・デバッグ",
+    "m9-mock-exam": "M9. 模擬試験"
   }
 }
