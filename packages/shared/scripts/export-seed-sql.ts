@@ -728,12 +728,14 @@ for (const [order, task] of content.tasks.entries()) {
     task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
   const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
   // 配布一式 (bundle) は Node の課題だと D1 の 1 文に収まらないので、課題の行・版の記録・
-  // 差し替えの 3 段で書く。1) 課題の行は配布一式・版 (content_hash)・公開 (active) 以外を書く。
-  // 新しい課題は空の配布一式・止めた状態で入れ、3) まで流れてから公開する (途中で止まった seed
-  // が、開けない課題を受講者に見せない)。
+  // 差し替えの 3 段で書く。1) 課題の行は置き場所 (単元・順・レッスン・類題の親) だけを書く。
+  // 版に結びつく項目 (定義とそこから決まる列・版・配布一式・公開) は 3) で 1 文で入れる。途中で
+  // 止まった seed が、新しい定義と古い配布一式の混ざった課題を残さないためで、ヒント・解答例の
+  // 出し方は版と定義の組で決まる (#36)。新しい課題は空の配布一式・止めた状態で入れ、3) で公開する。
   const contentHash = strLit(task.bundle.contentHash);
+  const definition = strLit(JSON.stringify(d));
   lines.push(
-    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${strLit(JSON.stringify(d))}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", "title", "kind", "pattern", "skills", "estimated_minutes", '"order"', "definition", "lesson_id", "variant_of"])};`,
+    `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${definition}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", '"order"', "lesson_id", "variant_of"])};`,
   );
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
@@ -751,7 +753,7 @@ for (const [order, task] of content.tasks.entries()) {
   );
   const revision = `task_id = ${strLit(d.id)} and content_hash = ${contentHash}`;
   lines.push(
-    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${contentHash}, ${strLit(JSON.stringify(d))}, ${strLit(bundleHead)}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${contentHash}, ${definition}, ${strLit(bundleHead)}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
   );
   let bundleBytes = Buffer.byteLength(bundleHead);
   for (const part of bundleRest) {
@@ -760,11 +762,22 @@ for (const [order, task] of content.tasks.entries()) {
     );
     bundleBytes += Buffer.byteLength(part);
   }
-  // 3) そろった版の記録から、課題の行の版と配布一式を 1 文で差し替えて公開する。配る一式と、
+  // 3) そろった版の記録から、課題の行の定義・版・配布一式を 1 文で差し替えて公開する。配る一式と、
   // 提出を照合する版の記録が同じ内容になる (内容ハッシュは定義と配布ファイルを覆う)。
   const revisionBundle = `(select bundle from task_revisions where ${revision})`;
+  const versioned: [string, string][] = [
+    ["title", strLit(d.title)],
+    ["kind", strLit(d.kind)],
+    ["pattern", strLit(d.pattern)],
+    ["skills", strLit(JSON.stringify(d.skills))],
+    ["estimated_minutes", String(d.estimatedMinutes)],
+    ["definition", definition],
+    ["content_hash", contentHash],
+    ["bundle", revisionBundle],
+    ["active", "1"],
+  ];
   lines.push(
-    `update tasks set content_hash = ${contentHash}, bundle = ${revisionBundle}, active = 1 where id = ${strLit(d.id)} and (content_hash is not ${contentHash} or bundle is not ${revisionBundle} or active is not 1);`,
+    `update tasks set ${versioned.map(([column, value]) => `${column} = ${value}`).join(", ")} where id = ${strLit(d.id)} and (${versioned.map(([column, value]) => `${column} is not ${value}`).join(" or ")});`,
   );
   lines.push(
     `insert into task_private (task_id, files) values (${strLit(d.id)}, ${strLit(privateJson)}) on conflict (task_id) ${doUpdate("task_private", ["files"])};`,

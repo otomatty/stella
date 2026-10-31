@@ -144,6 +144,8 @@ const total = (writes: Record<string, number>) =>
 describe("seed の書き込み行数", () => {
   let sql = "";
   let changed = "";
+  let revised = "";
+  const revisedTask = "claude-developer-foundations/m0-exam-and-sources/q01-study-plan";
   const lessonId = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
   const optionId = stableUuid(`quiz-o:ses:${COURSE}:${QUIZ_LESSON}:0:0`);
 
@@ -159,6 +161,17 @@ describe("seed の書き込み行数", () => {
       if (!lesson || !option) throw new Error("変える教材が見つかりません");
       lesson.title = `${lesson.title} (改)`;
       option.label = `${option.label} (改)`;
+    });
+    // 課題を新しい版にする: 定義 (題名とヒント・解答例の出し方) と版のハッシュを変える。
+    revised = await exportSql((manifest) => {
+      const task = manifest.tasks.find((t) => t.definition.id === revisedTask);
+      if (!task) throw new Error("変える課題が見つかりません");
+      task.definition = {
+        ...task.definition,
+        title: `${task.definition.title} (改)`,
+        support: { hintLevels: 2, solutionUnlock: "passed" },
+      };
+      task.bundle = { ...task.bundle, contentHash: "f".repeat(64) };
     });
     // fixtures / problems を丸ごと in-process で読み込むので既定の 5s では足りない。
   }, 120_000);
@@ -185,7 +198,7 @@ describe("seed の書き込み行数", () => {
           .filter(
             (s) =>
               !s.startsWith("update task_revisions set bundle = bundle ||") &&
-              !s.startsWith("update tasks set content_hash"),
+              !s.startsWith("update tasks set title"),
           )
           .join("\n");
         apply(db, stopped);
@@ -206,6 +219,40 @@ describe("seed の書き込み行数", () => {
         expect(Object.keys(bundle.files)).toContain("package-lock.json");
         expect(db.prepare("select active from tasks where id = ?").get(id)).toEqual({ active: 1 });
         expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
+    "既存の課題の定義は、版と配布一式を差し替える文で一緒に入れる (途中で止まった seed が混ぜない)",
+    () => {
+      const rowOf = (db: DatabaseSync) =>
+        db
+          .prepare("select title, content_hash, definition from tasks where id = ?")
+          .get(revisedTask) as { title: string; content_hash: string; definition: string };
+      const db = migratedDb();
+      try {
+        apply(db, sql);
+        const before = rowOf(db);
+        // 新しい版の記録を書いたところで止まった seed (差し替えの文が流れていない)。
+        apply(
+          db,
+          splitSqlStatements(revised)
+            .filter((s) => !s.startsWith("update tasks set title"))
+            .join("\n"),
+        );
+        expect(rowOf(db)).toEqual(before);
+        apply(db, revised);
+        const after = rowOf(db);
+        expect(after.title).toBe(`${before.title} (改)`);
+        expect(after.content_hash).toBe("f".repeat(64));
+        expect(JSON.parse(after.definition).support).toEqual({
+          hintLevels: 2,
+          solutionUnlock: "passed",
+        });
       } finally {
         db.close();
       }
