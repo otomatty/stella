@@ -2,7 +2,7 @@
 
 旧拡張を使っていた方は [クライアント移行ガイド](https://github.com/otomatty/stella/blob/main/docs/stella-client-migration.md) に従い、新 VSIX のインストールと Web からの再接続を行ってください。
 
-拡張 ID: `stella.stella`（publisher `stella`、name `stella`）。パッケージは `apps/vscode`。
+拡張 ID: `saedgewell.stella-lms`（publisher `saedgewell`、name `stella-lms`）。パッケージは `apps/vscode`。
 
 学習者のコード演習用。Web LMS はログイン・動画・ドキュメント・クイズ・CMS 用で、演習の編集と採点はこの拡張で行う。
 
@@ -18,7 +18,7 @@
 
 Web のボタンは押してから数秒たってもブラウザーから離れなければ（VS Code が無い）、VS Code の入手を案内する（`apps/web/src/lib/vscode-launch.ts`）。
 
-「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://stella.stella/lesson?stageId=...&lessonId=...&code=...` を開く。拡張はその URI で JWT 交換（未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
+「VS Code で開く」は `POST /api/auth/vscode-link` でワンタイムコードを発行し、`vscode://saedgewell.stella-lms/lesson?stageId=...&lessonId=...&code=...` を開く。拡張はその URI で JWT 交換（未接続時のみ通知）→ レッスン表示までを行うので、接続専用の Web ページは持たない。
 
 未接続・期限切れのまま lesson URI が来た（コードが無い / 使用済み）場合、拡張は `stella.webUrl` のそのレッスンのページ（レッスン不明なら `/stages`）を開いて、同じボタンを押し直してもらう。`STELLA: Web で接続` コマンドも同じ動きをする。
 
@@ -37,7 +37,7 @@ Web のボタンは押してから数秒たってもブラウザーから離れ�
 
 ## 新形式の課題を受け取る（学習フォルダー、Issue #31）
 
-新形式の課題は、Web の課題文レッスンかステージの「単元の課題」で「VS Code で開く」を押して受け取る。ボタンはワンタイムの接続コードを載せた `vscode://stella.stella/task?taskId=<講座>/<単元>/<課題>&code=...` を開くので、未接続でも 1 クリックで接続 → 課題の準備 → 課題文の表示まで進む。
+新形式の課題は、Web の課題文レッスンかステージの「単元の課題」で「VS Code で開く」を押して受け取る。ボタンはワンタイムの接続コードを載せた `vscode://saedgewell.stella-lms/task?taskId=<講座>/<単元>/<課題>&code=...` を開くので、未接続でも 1 クリックで接続 → 課題の準備 → 課題文の表示まで進む。
 
 - **学習フォルダーは 1 つ。** 初回に「ホームフォルダーに `web-training` を作る」か「既存のフォルダーを選ぶ」かを尋ね、選んだ場所を拡張の globalState に覚える（変えるときは `STELLA: 学習フォルダーを選ぶ`）。ワークスペース設定には置かない — 開いたフォルダーの設定で書き出し先を変えさせないため。ドライブの直下とホームフォルダーそのものは選べない。
 - **置き場所は `<学習フォルダー>/<講座slug>/<単元>/<課題>/`。** 中身は `GET /api/tasks/bundle` が返す README.md・starter の中身（課題フォルダー直下）・`tests/`・`.stella/task.json` と、拡張が書く `.stella/distribution.json`。配布の API は `private/`・ヒント・解答を返さない（解放条件を満たしたものだけを課題パネルで開く。後述）。
@@ -126,11 +126,11 @@ cd apps/vscode
 bun run package
 ```
 
-`package` は `vsce package --no-dependencies --readme-path MARKETPLACE.md` を回し、`stella-<version>.vsix` を作る。コマンドパレットの **Extensions: Install from VSIX...** で選ぶ。入れた拡張は本番へつなぐので、ローカルの API で確かめるときはユーザー設定で `stella.serverUrl` / `stella.webUrl` を localhost にする。
+`package` は `vsce package --no-dependencies --readme-path MARKETPLACE.md` を回し、`stella-lms-<version>.vsix` を作る。コマンドパレットの **Extensions: Install from VSIX...** で選ぶ。入れた拡張は本番へつなぐので、ローカルの API で確かめるときはユーザー設定で `stella.serverUrl` / `stella.webUrl` を localhost にする。
 
 ## Marketplace 公開（手順のみ）
 
-受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://stella.stella/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `stella`（拡張 ID `stella.stella`）。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。
+受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://saedgewell.stella-lms/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `saedgewell`、拡張名は `stella-lms`（拡張 ID `saedgewell.stella-lms`、表示名は STELLA）。publisher `stella` は別の公開者（公開名 Stella。ID は大文字小文字を区別しない）が使っていて、拡張名 `stella` も Marketplace に既にある。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。VSIX で入れた旧 ID `stella.stella` は別の拡張なので、この版には更新されない。Marketplace から入れ直す。
 
 Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
 
@@ -138,7 +138,7 @@ Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.
 
 **初回だけ:**
 
-1. [Marketplace の管理画面](https://marketplace.visualstudio.com/manage) に、公開に使う Microsoft Entra ID のアカウントでサインインし、publisher `stella` を作る。publisher ID はあとから変えられない。使えない名前なら別の ID にし、`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID` を合わせる（Web の「VS Code で開く」のリンク先が変わる）。
+1. [Marketplace の管理画面](https://marketplace.visualstudio.com/manage) に、公開に使う Microsoft Entra ID のアカウントでサインインし、publisher ID `saedgewell`、表示名 `STELLA` を作る。ID はあとから変えられない。`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID`（`saedgewell.stella-lms`）を合わせる。
 2. 公開する人を publisher の **Members** に足す（Contributor 以上）。publisher を作ったアカウントは最初から Owner。人が替わったらここで足し外しする（秘密の受け渡しは要らない）。
 3. 公開する端末に [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) を入れる。vsce は 2.26.1 以降（`bunx @vscode/vsce` は最新を使う）。
 
@@ -147,7 +147,7 @@ Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.
 ```bash
 az login                      # publisher のメンバーの Entra ID アカウントで
 cd apps/vscode
-bunx @vscode/vsce verify-pat stella --azure-credential   # 公開できる権限があるかだけを確かめる
+bunx @vscode/vsce verify-pat saedgewell --azure-credential   # 公開できる権限があるかだけを確かめる
 bun run build
 bunx @vscode/vsce publish --no-dependencies --readme-path MARKETPLACE.md --azure-credential
 ```

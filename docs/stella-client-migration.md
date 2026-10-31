@@ -1,7 +1,7 @@
 # STELLA クライアント識別子の移行
 
 Phase D では Web の保存キーと VS Code 拡張の識別子を STELLA に統一する。
-新拡張の ID は `stella.stella`、バージョンは `0.3.0`。
+新拡張の ID は `saedgewell.stella-lms`、バージョンは `0.3.0`。
 コードの正本は [otomatty/stella](https://github.com/otomatty/stella)。
 
 ## Web の保存データ
@@ -19,7 +19,7 @@ Phase C で URL が変わった利用者や、JWT の期限が切れた利用者
 
 ## VS Code の切替
 
-拡張 ID は `falcon.informal` から `stella.stella` へ変わる。
+拡張 ID は `falcon.informal` から `saedgewell.stella-lms` へ変わる。
 VS Code は別の拡張として扱うため、旧拡張への自動更新では切り替わらない。
 
 1. 配布された `stella-0.3.0.vsix` を「Extensions: Install from VSIX...」でインストールする。
@@ -29,7 +29,7 @@ VS Code は別の拡張として扱うため、旧拡張への自動更新では
    新名の設定を明示した場合はそちらを優先する。
 4. 新 Web のコードレッスンから「VS Code で開く」を押して接続し直す。
 
-新 Web は `vscode://stella.stella/lesson?...&code=...` を発行する。
+新 Web は `vscode://saedgewell.stella-lms/lesson?...&code=...` を発行する。
 旧 URI は旧拡張に届くため、新拡張への転送はできない。新 Web から開き直す。
 
 SecretStorage は拡張 ID ごとに分かれているので、別 ID の旧 JWT は読み出さない。

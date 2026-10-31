@@ -56,7 +56,7 @@ describe("display brand (Phase A–D)", () => {
       publisher: string;
       contributes: { viewsContainers: { activitybar: { id: string }[] } };
     };
-    expect(vscodePkg.name).toBe("stella");
+    expect(vscodePkg.name).toBe("stella-lms");
     expect(VSCODE_EXT_ID).toBe(`${vscodePkg.publisher}.${vscodePkg.name}`);
     expect(vscodePkg.contributes.viewsContainers.activitybar[0]?.id).toBe("stella");
   });

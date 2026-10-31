@@ -7,7 +7,7 @@
  * 拡張ならそのまま動く。
  *
  * 拡張機能が入っていなければ、VS Code がディープリンクを受けたときに Marketplace からの
- * インストールを尋ねる (拡張 `stella.stella` を Marketplace で配る前提。手動の VSIX は使わない)。
+ * インストールを尋ねる (拡張 `saedgewell.stella-lms` を Marketplace で配る前提。手動の VSIX は使わない)。
  * VS Code そのものが無いとブラウザーは何もしないので、押してから数秒たってもブラウザーから
  * 離れなければ、VS Code の入手を案内する。
  */
