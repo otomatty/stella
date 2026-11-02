@@ -291,6 +291,8 @@ describe("課題文のパネル・ステータスバー・エディターの右�
         { reveal: false },
       ),
     );
+    // 描き直しはステータスバーの課題を変えない (確認の間に別の課題へ移っているかもしれない)。
+    expect(vscodeMock.setCurrentTask).not.toHaveBeenCalled();
   });
 
   it("エディターの右上のボタンはファイルの URI を渡す", async () => {

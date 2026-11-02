@@ -440,15 +440,20 @@ const README_MAX_BYTES = 1024 * 1024;
 /**
  * 課題文 (README.md) のパネルを描く。課題の定義を読めれば、先頭に「進め方」(編集する
  * ファイル・確認・提出のリンクと、前回の確認の結果から決めた「いまここ」) を置く。
+ * `reveal: false` (確認のあとの描き直し) は中身を新しくするだけで、ステータスバーの課題は
+ * 変えない — 確認の間に受講者が別の課題のファイルへ移っていれば、そちらが今の課題のため。
  */
 async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}): Promise<void> {
+  const shown = (title: string) => {
+    if (options.reveal !== false) setCurrentTask({ root, title });
+  };
   const loaded = await loadTask(root);
   const markdown = new TextDecoder().decode(
     await readFileInRoot(root, "README.md", README_MAX_BYTES),
   );
   if (!loaded.ok) {
     showTaskReadme({ title: path.basename(root), markdown, root }, options);
-    setCurrentTask({ root, title: path.basename(root) });
+    shown(path.basename(root));
     return;
   }
   const { manifest } = loaded;
@@ -465,7 +470,7 @@ async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}
     },
     options,
   );
-  setCurrentTask({ root, title: manifest.title });
+  shown(manifest.title);
 }
 
 /** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */
