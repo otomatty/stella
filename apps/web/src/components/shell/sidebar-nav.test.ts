@@ -70,23 +70,11 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("stage-grants");
   });
 
-  it("殿堂は受講者と staff の一覧の最後に出す (Phase 5)", () => {
-    // 毎日の学習動線に割り込ませない = 常に最後尾。
-    for (const role of ["learner", "instructor"] as const) {
-      expect(ids(role).at(-1)).toBe("hall-of-fame");
-    }
-    // 管理者のナビだけは運用画面 (推薦 / 公開) を指す。
-    expect(ids("admin").at(-1)).toBe("hall-of-fame-admin");
-    expect(ids("admin", "platform_admin").at(-1)).toBe("hall-of-fame-admin");
-    // 受講者・講師には運用画面の導線を出さない。
-    for (const role of ["learner", "instructor"] as const) {
-      expect(ids(role)).not.toContain("hall-of-fame-admin");
-    }
-  });
-
-  it("面談対策 (廃止) はどのロールにも出さない", () => {
+  it("面談対策・殿堂 (廃止) はどのロールにも出さない", () => {
     for (const role of ["learner", "instructor", "admin"] as const) {
-      expect(ids(role) as string[]).not.toContain("interview-prep");
+      for (const retired of ["interview-prep", "hall-of-fame", "hall-of-fame-admin"]) {
+        expect(ids(role, "platform_admin") as string[]).not.toContain(retired);
+      }
     }
   });
 });

@@ -109,9 +109,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   discovery: "/discovery",
   library: "/library",
   "stage-grants": "/stage-grants",
-  // 殿堂は全ロールが読める公開ページ。 管理者のナビだけは運用画面 (`/admin/*`) を指す。
-  "hall-of-fame": "/hall-of-fame",
-  "hall-of-fame-admin": "/admin/hall-of-fame",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   enrollments: "/admin/enrollments",
@@ -127,8 +124,6 @@ function pageKeyFromPath(path: string): string {
   if (path.startsWith("/stages/")) {
     return path.includes("/lessons/") ? "lesson" : "stage-detail";
   }
-  // 殿堂は詳細 (`/hall-of-fame/<id>`) と記入 (`/hall-of-fame/edit`) でもナビを点ける。
-  if (path.startsWith("/hall-of-fame")) return "hall-of-fame";
   if (path.startsWith("/reviews/")) return "review";
   if (path.startsWith("/submissions/")) return "submission-result";
   const hit = Object.entries(PATH_BY_PAGE).find(([, p]) => p === path);

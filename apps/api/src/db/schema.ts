@@ -19,8 +19,6 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { DiscoveryQuestion } from "@stella/shared/discovery/types";
-import { EMPTY_HOF_CHAPTERS } from "@stella/shared/hall-of-fame/types";
-import type { HallOfFameChapters, HallOfFamePathStage } from "@stella/shared/hall-of-fame/types";
 
 const uuid = () =>
   text("id")
@@ -1978,61 +1976,6 @@ export const certificates = sqliteTable(
 );
 
 // ---------------------------------------------------------------
-// 殿堂 (Hall of Fame / Phase 5)
-// ---------------------------------------------------------------
-
-/**
- * 殿堂に載る 1 人ぶんのストーリー (Phase 5)。
- *
- * **1 人 1 行**。推薦 → 記入 → 公開 → 辞退 / 取り下げまでを同じ行の `status` で表す。
- * 履歴テーブルに分けないのは、殿堂に要るのは「今この人が載っているか」だけで、
- * 辞退や取り下げの経緯を掘り返せる形にしておくこと自体が本人への圧力になるため
- * (辞退は監査ログにも残さない — `@stella/shared/admin/audit-actions` の注記を参照)。
- *
- * **序列の数値は持たない。** XP・レベル・クリア数はこの表に無く、公開応答にも出ない。
- * 載るのは名前・ジョブ (名乗り)・引用・歩んだ道・4 章の本文だけ。
- */
-export const hallOfFameEntries = sqliteTable(
-  "hall_of_fame_entries",
-  {
-    id: uuid(),
-    tenantId: text("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    /** 掲載される本人。プロフィールを消せば殿堂の行も消える (実名を残さない)。 */
-    userId: text("user_id")
-      .notNull()
-      .references(() => profiles.id, { onDelete: "cascade" }),
-    status: text("status", {
-      enum: ["nominated", "submitted", "published", "declined", "withdrawn"],
-    })
-      .notNull()
-      .default("nominated"),
-    /** 本人が名乗るジョブ (自由記述)。**表示専用** — 分類にも推薦にも使わない。 */
-    jobTitle: text("job_title").notNull().default(""),
-    quote: text("quote").notNull().default(""),
-    chapters: json<HallOfFameChapters>("chapters", EMPTY_HOF_CHAPTERS),
-    /**
-     * **公開した時点の**クリア済みステージの写し。参照ではなく写しにするのは、
-     * あとから教材が改名・非公開になっても、公開したときの「歩んだ道」がそのまま
-     * 残るようにするため (掲載は本人が同意した時点の姿で固定する)。
-     */
-    pathSnapshot: json<HallOfFamePathStage[]>("path_snapshot", []),
-    nominatedBy: text("nominated_by"),
-    nominatedAt: tsNow("nominated_at"),
-    submittedAt: ts("submitted_at"),
-    publishedBy: text("published_by"),
-    publishedAt: ts("published_at"),
-    /** 辞退 / 取り下げ / 非公開化で降りた時刻。 */
-    closedAt: ts("closed_at"),
-  },
-  (t) => ({
-    userUnique: uniqueIndex("hall_of_fame_user_uq").on(t.tenantId, t.userId),
-    statusIdx: index("hall_of_fame_status_idx").on(t.tenantId, t.status, t.publishedAt),
-  }),
-);
-
-// ---------------------------------------------------------------
 // 排他ロック / 専用ステージの割当
 // ---------------------------------------------------------------
 
@@ -2156,7 +2099,6 @@ export const APP_TABLES = [
   "notifications",
   "submissions",
   "certificates",
-  "hall_of_fame_entries",
   "audit_logs",
   "support_inquiries",
   "library_books",

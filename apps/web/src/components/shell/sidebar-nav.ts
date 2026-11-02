@@ -23,7 +23,6 @@ import {
   Play,
   Shield,
   Sparkles,
-  Star,
   TrendingUp,
   Users,
   UserPlus,
@@ -50,8 +49,6 @@ export type NavId =
   | "audit"
   | "assignments"
   | "discovery"
-  | "hall-of-fame"
-  | "hall-of-fame-admin"
   | "stage-grants"
   | "settings"
   | "__logout";
@@ -62,14 +59,6 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-/**
- * 殿堂 (Phase 5)。 **一覧の最後に置く**。
- *
- * 毎日の学習動線 (スキルツリー → レッスン) の途中に挟むと、 他人の
- * 物語が「今日やること」の並びに混ざる。 いつでも行けるが、 急かさない位置に置く。
- */
-const HALL_OF_FAME_NAV: NavItem = { id: "hall-of-fame", label: "殿堂", icon: Star };
-
 const NAV: Record<Role, NavItem[]> = {
   // 受講者のホームはスキルツリー (「次にやること」付き)。ステージ一覧と別ページの
   // スキルツリーはホームへ集約したので、先頭の 1 つで学習の入口が決まる。
@@ -79,7 +68,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "records", label: "学習の記録", icon: TrendingUp },
     { id: "cert", label: "修了証", icon: Award },
     { id: "library", label: "個人の本棚", icon: Book },
-    HALL_OF_FAME_NAV,
   ],
   instructor: [
     { id: "dash", label: "ダッシュボード", icon: Home },
@@ -90,7 +78,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "stages", label: "ステージ", icon: Book },
     { id: "library", label: "個人の本棚", icon: Book },
-    HALL_OF_FAME_NAV,
   ],
   admin: [
     { id: "dash", label: "KPIダッシュボード", icon: BarChart },
@@ -106,8 +93,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
     { id: "library", label: "個人の本棚", icon: Book },
-    // 管理者の「殿堂」は運用画面 (推薦 / 公開)。 掲載そのものは運用画面から見に行ける。
-    { id: "hall-of-fame-admin", label: "殿堂", icon: Star },
   ],
 };
 

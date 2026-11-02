@@ -38,7 +38,6 @@
     "./review/solution-leak": "./src/review/solution-leak.ts",
     "./review/review-desk": "./src/review/review-desk.ts",
     "./discovery/types": "./src/discovery/types.ts",
-    "./hall-of-fame/types": "./src/hall-of-fame/types.ts",
     "./discovery/prompt": "./src/discovery/prompt.ts",
     "./skill-map/evaluate": "./src/skill-map/evaluate.ts",
     "./skill-map/islands": "./src/skill-map/islands.ts",
