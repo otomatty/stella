@@ -2,6 +2,7 @@
  * Issue #204 — Cloudflare AI Gateway URL construction (TDD; module not implemented yet).
  */
 
+import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -66,6 +67,7 @@ describe("resolveAnthropicClientConfig", () => {
     ).toEqual({
       apiKey: "sk-test",
       baseURL: `https://gateway.ai.cloudflare.com/v1/${ACCOUNT_ID}/${GATEWAY_ID}/anthropic`,
+      defaultHeaders: { "X-Api-Key": "sk-test", Authorization: null },
     });
   });
 
@@ -76,5 +78,61 @@ describe("resolveAnthropicClientConfig", () => {
         AI_GATEWAY_ID: GATEWAY_ID,
       }),
     ).toThrow(MissingGatewayConfigError);
+  });
+});
+
+/** 実際の SDK に設定を渡し、送られるヘッダーを確かめる (SDK 1.x で認証ヘッダーの既定が変わったため)。 */
+async function sentHeaders(env: Parameters<typeof resolveAnthropicClientConfig>[0]) {
+  const requests: Request[] = [];
+  const client = new Anthropic({
+    ...resolveAnthropicClientConfig(env),
+    maxRetries: 0,
+    fetch: async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push(new Request(input, init));
+      return new Response(
+        JSON.stringify({
+          id: "msg_test",
+          type: "message",
+          role: "assistant",
+          model: "claude-sonnet-4-6",
+          content: [{ type: "text", text: "ok" }],
+          stop_reason: "end_turn",
+          stop_sequence: null,
+          usage: { input_tokens: 1, output_tokens: 1 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    },
+  });
+  await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 16,
+    messages: [{ role: "user", content: "hi" }],
+  });
+  expect(requests).toHaveLength(1);
+  const [request] = requests;
+  if (!request) throw new Error("request was not sent");
+  return { url: request.url, headers: request.headers };
+}
+
+describe("Anthropic SDK の認証ヘッダー", () => {
+  it("ゲートウェイ経由では x-api-key だけでキーを送る", async () => {
+    const { url, headers } = await sentHeaders({
+      ANTHROPIC_API_KEY: "sk-test",
+      CLOUDFLARE_ACCOUNT_ID: ACCOUNT_ID,
+      AI_GATEWAY_ID: GATEWAY_ID,
+    });
+    expect(url).toBe(
+      `https://gateway.ai.cloudflare.com/v1/${ACCOUNT_ID}/${GATEWAY_ID}/anthropic/v1/messages`,
+    );
+    expect(headers.get("x-api-key")).toBe("sk-test");
+    expect(headers.has("authorization")).toBe(false);
+  });
+
+  it("直接呼ぶときは SDK の既定 (Authorization: Bearer) で送る", async () => {
+    const { url, headers } = await sentHeaders({ ANTHROPIC_API_KEY: "sk-test" });
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    expect(headers.get("authorization")).toBe("Bearer sk-test");
+    expect(headers.has("x-api-key")).toBe(false);
   });
 });
