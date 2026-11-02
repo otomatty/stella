@@ -81,14 +81,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@babel/parser": "^8.0.7",
-    "@babel/traverse": "^8.0.7",
+    "@babel/parser": "^8.0.10",
+    "@babel/traverse": "^8.0.10",
     "@babel/types": "^8.0.4",
     "@stella/content": "workspace:*",
     "picomatch": "^4"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "@types/picomatch": "^4"
   }

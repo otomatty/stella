@@ -51,13 +51,16 @@ export function resolveUnifiedBillingGrokModel(model: string): string {
   return model;
 }
 
-export function resolveAnthropicClientConfig(env: AnthropicClientEnv): {
+export interface AnthropicClientConfig {
   apiKey: string;
   baseURL?: string;
-} {
+  defaultHeaders?: Record<string, string | null>;
+}
+
+export function resolveAnthropicClientConfig(env: AnthropicClientEnv): AnthropicClientConfig {
   assertAiGatewayRuntimeConfig(env);
 
-  const config: { apiKey: string; baseURL?: string } = {
+  const config: AnthropicClientConfig = {
     apiKey: env.ANTHROPIC_API_KEY,
   };
   if (env.AI_GATEWAY_ID) {
@@ -65,6 +68,10 @@ export function resolveAnthropicClientConfig(env: AnthropicClientEnv): {
       CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string,
       AI_GATEWAY_ID: env.AI_GATEWAY_ID,
     });
+    // SDK 1.x は API キーを `Authorization: Bearer` で送る (0.x までは `x-api-key`)。
+    // ゲートウェイ経由の呼び出しは、確かめてある従来の `x-api-key` のまま送る。
+    // `Authorization: null` で SDK が足す Bearer を外す (同じキーを 2 か所に載せない)。
+    config.defaultHeaders = { "X-Api-Key": env.ANTHROPIC_API_KEY, Authorization: null };
   }
   return config;
 }
