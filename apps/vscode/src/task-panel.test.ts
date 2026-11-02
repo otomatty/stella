@@ -137,6 +137,14 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain("command:stella.consultTask");
   });
 
+  it("もう一度確認するリンクは課題フォルダーを渡す (パネルからはファイルを探せないため)", () => {
+    const root = "/home/me/web-training/course/unit/q01";
+    const html = buildTaskPanelHtml({ kind: "result", manifest, result: result(), root });
+    expect(html).toContain(
+      `href="command:stella.runTask?${encodeURIComponent(JSON.stringify([root]))}">もう一度確認する`,
+    );
+  });
+
   it("環境の問題は講師への相談を案内する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",
@@ -240,5 +248,41 @@ describe("課題文のパネル", () => {
     expect(html).not.toMatch(/<script/i);
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("<title>&lt;課題&gt;</title>");
+  });
+
+  describe("進め方つき", () => {
+    const root = "/home/me/web-training/dev-env-basics/m0-first-page/q01-first-page";
+    const staticManifest: TaskManifest = {
+      ...manifest,
+      title: "最初のページを作る",
+      runner: "static-preview",
+      submit: { files: ["index.html"] },
+    };
+    const html = buildTaskReadmeHtml({
+      title: staticManifest.title,
+      markdown: `${markdown}\n\n[実行](command:stella.runTask) [MDN](https://developer.mozilla.org/)`,
+      os: "windows",
+      guide: { root, manifest: staticManifest, edit: { files: ["index.html"], missing: [] } },
+    });
+
+    it("見出しの下に進め方を置き、課題文の同じ見出しは重ねない", () => {
+      expect(html.match(/最初のページを作る<\/h1>/g)).toHaveLength(1);
+      expect(html).toContain('<p class="meta">基礎 ・ HTML の確認</p>');
+      expect(html.indexOf("進め方")).toBeLessThan(html.indexOf('<h2 class="readme-title">課題文'));
+      expect(html.indexOf('<h2 class="readme-title">課題文')).toBeLessThan(
+        html.indexOf("エクスプローラーで"),
+      );
+      expect(html).toContain("<code>index.html</code>");
+    });
+
+    it("コマンドのリンクは進め方にだけ出し、課題文の中のコマンドはリンクにしない", () => {
+      const readme = html.slice(html.indexOf('<h2 class="readme-title">'));
+      expect(readme).not.toContain("command:");
+      expect(readme).toContain('<a href="https://developer.mozilla.org/">MDN</a>');
+      expect(html.slice(0, html.indexOf('<h2 class="readme-title">'))).toContain(
+        "command:stella.runTask",
+      );
+      expect(html).not.toMatch(/<script/i);
+    });
   });
 });

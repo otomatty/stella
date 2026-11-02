@@ -87,7 +87,8 @@
       },
       {
         "command": "stella.runTask",
-        "title": "STELLA: 課題を確認する"
+        "title": "STELLA: 課題を確認する",
+        "icon": "$(beaker)"
       },
       {
         "command": "stella.diagnoseEnvironment",
@@ -116,7 +117,7 @@
       {
         "command": "stella.showTaskReadme",
         "title": "STELLA: 課題文を表示する",
-        "icon": "$(preview)"
+        "icon": "$(book)"
       },
       {
         "command": "stella.showTaskHelp",
@@ -126,9 +127,14 @@
     "menus": {
       "editor/title": [
         {
+          "command": "stella.runTask",
+          "when": "stella.inTask && resourceScheme == file",
+          "group": "navigation@1"
+        },
+        {
           "command": "stella.showTaskReadme",
-          "when": "resourceFilename == README.md && resourcePath =~ /web-training/",
-          "group": "navigation"
+          "when": "stella.inTask && resourceScheme == file",
+          "group": "navigation@2"
         }
       ]
     },

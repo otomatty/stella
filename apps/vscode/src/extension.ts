@@ -44,6 +44,7 @@ import { initGraderHost } from "./grader-host.js";
 import { openLessonDoc } from "./lesson-doc.js";
 import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskHelp } from "./task-help.js";
+import { registerTaskStatus } from "./task-status.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
 import {
   openLessonNode,
@@ -245,6 +246,26 @@ async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean>
   return true;
 }
 
+/**
+ * 新形式の課題を準備して開く (Web の「VS Code で開く」と同じ。接続コードは使わない)。
+ * サイドバーの課題文レッスンから来る。未接続・期限切れなら Web へ送り、接続し直してもらう。
+ */
+async function openTaskFromTree(context: vscode.ExtensionContext, taskId: unknown): Promise<void> {
+  if (typeof taskId !== "string" || !taskId) {
+    void vscode.window.showInformationMessage("課題をサイドバーから選んでください");
+    return;
+  }
+  try {
+    await openDistributedTask(context, taskId);
+  } catch (err) {
+    if (err instanceof AuthExpiredError) {
+      await openWebForConnect();
+      return;
+    }
+    void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+  }
+}
+
 async function handleExtensionUri(
   uri: vscode.Uri,
   auth: AuthStore,
@@ -300,6 +321,8 @@ export function activate(context: vscode.ExtensionContext): void {
   registerTaskCommands(context);
   // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。
   registerTaskHelp(context);
+  // 開いている課題の「課題を確認する」「課題文」をステータスバーとエディターの右上に出す。
+  registerTaskStatus(context);
   // 学習フォルダーを開いて読み込み直したウィンドウでは、ここで控えた課題文を開く。
   registerTaskOpening(context);
 
@@ -325,6 +348,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.refresh", () => {
       refreshLessonTree();
     }),
+    vscode.commands.registerCommand("stella.openTask", (taskId?: unknown) =>
+      openTaskFromTree(context, taskId),
+    ),
     vscode.commands.registerCommand(
       "stella.openInWeb",
       async (stageId?: string, lessonId?: string) => {

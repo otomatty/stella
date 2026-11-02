@@ -11,6 +11,10 @@
  * どちらでも課題文を開けるよう、開く課題を控え (pending-task-open.ts)、学習フォルダーの
  * ウィンドウが起動したとき・前面に来たときに受け取る。このウィンドウが学習フォルダーだけを
  * 開いていれば、読み込み直さずにそのまま課題文を開く。
+ *
+ * 課題を開いた画面は 2 列: 左に編集するファイル (`submit.files` に当たるファイル)、右に
+ * 課題文のパネル (先頭に「進め方」)。課題文の README.md はテキストとしては開かない
+ * (同じ課題文がタブに 2 つ並ぶと、どれを読めばよいか分からなくなるため)。
  */
 
 import { lstat } from "node:fs/promises";
@@ -21,6 +25,7 @@ import { apiRequest } from "./api.js";
 import { savePendingTaskOpen, takePendingTaskOpen } from "./pending-task-open.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
+import { OPEN_FILES_LIMIT, resolveEditFiles } from "./task-guide.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -73,7 +78,19 @@ async function isPlainFile(file: string): Promise<boolean> {
   }
 }
 
-async function showTaskReadme(taskRoot: string): Promise<void> {
+/** 課題フォルダーで最初に開くファイル (課題フォルダーからの相対パス)。定義を読めなければ無し。 */
+async function filesToOpen(taskRoot: string): Promise<string[]> {
+  const loaded = await loadTask(taskRoot);
+  if (!loaded.ok) return [];
+  const { files } = await resolveEditFiles(taskRoot, loaded.manifest);
+  return files.slice(0, OPEN_FILES_LIMIT);
+}
+
+/**
+ * 課題を開いた画面にする: 左の列に編集するファイル、右の列に課題文のパネル (進め方つき)。
+ * フォーカスは最初のファイルに置き、すぐに書き始められるようにする。
+ */
+async function showTaskWorkspace(taskRoot: string): Promise<void> {
   const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
   if (!(await isPlainFile(readme.fsPath))) {
     // 課題文が消えた・壊れた課題フォルダー (「今のフォルダーを開く」から来る) は、
@@ -87,14 +104,30 @@ async function showTaskReadme(taskRoot: string): Promise<void> {
     );
     return;
   }
-  await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(readme));
-  // OS 別のブロックをタブで読めるよう、課題文のパネルも開く (いま開いた README から課題を探す)。
-  await vscode.commands.executeCommand("stella.showTaskReadme").then(
+  const files = (await filesToOpen(taskRoot)).map((rel) =>
+    vscode.Uri.file(path.join(taskRoot, ...rel.split("/"))),
+  );
+  // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開ける)。
+  // エクスプローラーへフォーカスが移ることがあるので、ファイルを開くより前に行う。
+  await vscode.commands.executeCommand("revealInExplorer", files[0] ?? readme).then(
     () => undefined,
     () => undefined,
   );
-  // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開けている)。
-  await vscode.commands.executeCommand("revealInExplorer", readme).then(
+  for (const file of files) {
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file), {
+      viewColumn: vscode.ViewColumn.One,
+      preview: false,
+    });
+  }
+  // 複数のファイルを開いたら、最初のファイルを前に戻す。
+  const first = files[0];
+  if (first && files.length > 1)
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(first), {
+      viewColumn: vscode.ViewColumn.One,
+      preview: false,
+    });
+  // 課題文 (進め方つき) は右の列に出し、フォーカスはファイルに残す (ファイルが無ければこの列に)。
+  await vscode.commands.executeCommand("stella.showTaskReadme", taskRoot).then(
     () => undefined,
     () => undefined,
   );
@@ -112,7 +145,7 @@ async function openTaskInWindow(
 ): Promise<void> {
   const folders = workspaceFolders();
   if (await windowIsTrainingRoot(folders, trainingRoot)) {
-    await showTaskReadme(taskRoot);
+    await showTaskWorkspace(taskRoot);
     return;
   }
   let forceNewWindow = false;
@@ -151,7 +184,7 @@ export async function resumePendingTaskOpen(pendingDir: string): Promise<void> {
   const pending = await takePendingTaskOpen(pendingDir, (p) =>
     windowIsTrainingRoot(folders, p.trainingRoot),
   );
-  if (pending) await showTaskReadme(pending.taskRoot);
+  if (pending) await showTaskWorkspace(pending.taskRoot);
 }
 
 const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {

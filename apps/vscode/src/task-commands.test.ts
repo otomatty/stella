@@ -11,6 +11,8 @@ const state = vi.hoisted(() => ({
   warningChoice: undefined as string | undefined,
   /** 入力欄に順に返す値 (undefined は取り消し)。 */
   inputs: [] as (string | undefined)[],
+  /** 課題文のパネルが出している課題フォルダー (taskReadmeRoot)。 */
+  readmeRoot: undefined as string | undefined,
   dirtyDocs: [] as {
     isDirty: boolean;
     uri: { scheme: string; fsPath: string };
@@ -24,11 +26,17 @@ const vscodeMock = vi.hoisted(() => ({
   showErrorMessage: vi.fn(),
   executeCommand: vi.fn(),
   showTaskPanel: vi.fn(),
+  showTaskReadme: vi.fn(),
+  setCurrentTask: vi.fn(),
+  showTextDocument: vi.fn(),
   showInputBox: vi.fn(),
 }));
 
 vi.mock("vscode", () => ({
+  Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }) },
+  ViewColumn: { One: 1, Two: 2 },
   window: {
+    showTextDocument: vscodeMock.showTextDocument,
     get activeTextEditor() {
       return state.activeFile
         ? { document: { uri: { scheme: "file", fsPath: state.activeFile } } }
@@ -67,6 +75,7 @@ vi.mock("vscode", () => ({
     get textDocuments() {
       return state.dirtyDocs;
     },
+    openTextDocument: async (uri: { fsPath: string }) => ({ uri }),
   },
   commands: {
     registerCommand: (id: string, handler: () => Promise<void> | void) => {
@@ -78,15 +87,23 @@ vi.mock("vscode", () => ({
   ProgressLocation: { Notification: 15 },
 }));
 
-vi.mock("./task-panel.js", () => ({ showTaskPanel: vscodeMock.showTaskPanel }));
+vi.mock("./task-panel.js", () => ({
+  showTaskPanel: vscodeMock.showTaskPanel,
+  showTaskReadme: vscodeMock.showTaskReadme,
+  taskReadmeRoot: () => state.readmeRoot,
+}));
+vi.mock("./task-status.js", () => ({ setCurrentTask: vscodeMock.setCurrentTask }));
 
 const { registerTaskCommands } = await import("./task-commands.js");
 
 async function makeTask(
   manifest: Record<string, unknown>,
   files: Record<string, string>,
+  parent?: string,
 ): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "stella-cmd-"));
+  const root = parent
+    ? path.join(parent, "course", "unit", "q05")
+    : await mkdtemp(path.join(tmpdir(), "stella-cmd-"));
   await mkdir(path.join(root, ".stella"), { recursive: true });
   await writeFile(path.join(root, ".stella", "task.json"), JSON.stringify(manifest));
   for (const [rel, content] of Object.entries(files)) {
@@ -117,11 +134,14 @@ beforeEach(() => {
   state.warningChoice = undefined;
   state.inputs = [];
   state.dirtyDocs = [];
+  state.readmeRoot = undefined;
   registerTaskCommands({ subscriptions: [] } as never);
 });
 
-async function run(command: string): Promise<void> {
-  await state.handlers.get(command)?.();
+async function run(command: string, ...args: unknown[]): Promise<void> {
+  await (state.handlers.get(command) as ((...a: unknown[]) => Promise<void>) | undefined)?.(
+    ...args,
+  );
 }
 
 describe("stella.runTask", () => {
@@ -219,6 +239,103 @@ describe("stella.runTask", () => {
     expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "invalid", root }),
     );
+  });
+});
+
+describe("課題文のパネル・ステータスバー・エディターの右上から", () => {
+  /** 学習フォルダー (ワークスペース) の中の課題。 */
+  async function trainingTask(): Promise<{ workspace: string; root: string }> {
+    const workspace = await mkdtemp(path.join(tmpdir(), "stella-ws-"));
+    const root = await makeTask(
+      { ...staticTask, protected: ["tests/**"] },
+      {
+        "index.html": "<h1>今日の学習予定</h1>",
+        "README.md": "# 見出しを変える\n\n本文",
+        "tests/README.md": "テスト",
+      },
+      workspace,
+    );
+    state.folders = [workspace];
+    return { workspace, root };
+  }
+
+  it("課題フォルダーを受け取り、編集するファイルと前回の結果を進め方に渡す", async () => {
+    const { root } = await trainingTask();
+    await run("stella.showTaskReadme", root);
+    expect(vscodeMock.showTaskReadme).toHaveBeenCalledWith(
+      {
+        title: "見出しを変える",
+        markdown: "# 見出しを変える\n\n本文",
+        root,
+        guide: {
+          root,
+          manifest: expect.objectContaining({ id: staticTask.id }),
+          edit: { files: ["index.html"], missing: [] },
+        },
+      },
+      {},
+    );
+    expect(vscodeMock.setCurrentTask).toHaveBeenCalledWith({ root, title: "見出しを変える" });
+  });
+
+  it("開いているファイルが無くても、受け取った課題フォルダーで確認し、開いている課題文を描き直す", async () => {
+    const { root } = await trainingTask();
+    state.readmeRoot = root;
+    await run("stella.runTask", root);
+    expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "result", root }),
+    );
+    await vi.waitFor(() =>
+      expect(vscodeMock.showTaskReadme).toHaveBeenCalledWith(
+        expect.objectContaining({ guide: expect.objectContaining({ lastOutcome: "passed" }) }),
+        { reveal: false },
+      ),
+    );
+  });
+
+  it("エディターの右上のボタンはファイルの URI を渡す", async () => {
+    const { root } = await trainingTask();
+    await run("stella.runTask", { scheme: "file", fsPath: path.join(root, "index.html") });
+    expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "result", root }),
+    );
+    // 課題文のパネルを開いていなければ描かない。
+    expect(vscodeMock.showTaskReadme).not.toHaveBeenCalled();
+  });
+
+  it("課題フォルダーでない場所・ワークスペースの外は受け取らない", async () => {
+    const { workspace } = await trainingTask();
+    const outside = await makeTask(staticTask, { "README.md": "x" });
+    for (const requested of [path.join(workspace, "course"), outside]) {
+      await run("stella.showTaskReadme", requested);
+      await run("stella.runTask", requested);
+    }
+    expect(vscodeMock.showTaskReadme).not.toHaveBeenCalled();
+    expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining(".stella/task.json がある課題フォルダー"),
+    );
+  });
+
+  it("進め方のリンクは、編集するファイルだけを左の列で開く", async () => {
+    const { root, workspace } = await trainingTask();
+    await run("stella.openTaskFile", root, "index.html");
+    expect(vscodeMock.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(root, "index.html") } },
+      { viewColumn: 1, preview: false },
+    );
+    // 配布したテスト・課題の外・課題フォルダーでない場所は開かない。
+    for (const [requested, rel] of [
+      [root, "tests/README.md"],
+      [root, "../q04/index.html"],
+      [root, ".stella/task.json"],
+      [workspace, "course/unit/q05/index.html"],
+      [root, 1],
+    ] as const) {
+      await run("stella.openTaskFile", requested, rel);
+    }
+    expect(vscodeMock.showTextDocument).toHaveBeenCalledTimes(1);
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledTimes(5);
   });
 });
 
