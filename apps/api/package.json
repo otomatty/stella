@@ -21,7 +21,7 @@
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.132.1",
+    "@anthropic-ai/sdk": "^1.3.0",
     "@stella/shared": "workspace:*",
     "better-auth": "1.7.14",
     "drizzle-orm": "^0.45.4",
