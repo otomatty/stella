@@ -188,7 +188,7 @@
     "picomatch": "^4"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/picomatch": "^4",
     "@types/vscode": "1.96.0",
     "esbuild": "^0.28.2",
