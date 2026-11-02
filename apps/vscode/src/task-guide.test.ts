@@ -11,6 +11,7 @@ vi.mock("vscode", () => ({
 
 import {
   buildTaskGuideHtml,
+  opensAsText,
   readLastOutcome,
   resolveEditFiles,
   stripLeadingTitle,
@@ -202,6 +203,17 @@ describe("buildTaskGuideHtml", () => {
     );
     expect(html).toContain(">レビューの結果</a>");
     expect(html).not.toContain("ヒント・解答");
+  });
+});
+
+describe("opensAsText", () => {
+  it("画像・フォント・アーカイブは自動では開かない (SVG と CSV はテキスト)", () => {
+    expect(["index.html", "src/a.ts", "logo.svg", "data.csv", "README"].every(opensAsText)).toBe(
+      true,
+    );
+    expect(["logo.PNG", "photo.jpeg", "font.woff2", "a.zip", "app.wasm"].some(opensAsText)).toBe(
+      false,
+    );
   });
 });
 

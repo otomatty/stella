@@ -114,18 +114,26 @@ interface ListItem {
   text: string;
 }
 
-/** 字下げの深さで入れ子にした箇条書き。深い項目は直前の浅い項目の下に置く。 */
+/**
+ * 字下げの深さで入れ子にした箇条書き。深い項目は直前の浅い項目の下に置く。同じ深さで
+ * 種類 (番号の有無) が変わったら、そこで別のリストに分ける (子のリストなら同じ項目の下に続ける)。
+ */
 function renderList(items: readonly ListItem[], from: number): { html: string; next: number } {
   const first = items[from];
+  const base = first?.indent ?? 0;
   const lis: string[] = [];
   let k = from;
   while (k < items.length) {
     const item = items[k];
-    if (!item || (k > from && item.indent < (first?.indent ?? 0))) break;
+    if (
+      !item ||
+      (k > from &&
+        (item.indent < base || (item.indent === base && item.ordered !== first?.ordered)))
+    )
+      break;
     let inner = renderInline(item.text);
     k += 1;
-    const child = items[k];
-    if (child && child.indent > item.indent) {
+    for (let child = items[k]; child && child.indent > item.indent; child = items[k]) {
       const nested = renderList(items, k);
       inner += nested.html;
       k = nested.next;

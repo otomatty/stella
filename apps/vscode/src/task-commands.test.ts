@@ -322,10 +322,16 @@ describe("課題文のパネル・ステータスバー・エディターの右�
   it("進め方のリンクは、編集するファイルだけを左の列で開く", async () => {
     const { root, workspace } = await trainingTask();
     await run("stella.openTaskFile", root, "index.html");
-    expect(vscodeMock.showTextDocument).toHaveBeenCalledWith(
-      { uri: { scheme: "file", fsPath: path.join(root, "index.html") } },
-      { viewColumn: 1, preview: false },
-    );
+    const opens = () =>
+      vscodeMock.executeCommand.mock.calls.filter((call) => call[0] === "vscode.open");
+    // 画像などテキストでないファイルも開けるよう vscode.open で開く。
+    expect(opens()).toEqual([
+      [
+        "vscode.open",
+        { scheme: "file", fsPath: path.join(root, "index.html") },
+        { viewColumn: 1, preview: false },
+      ],
+    ]);
     // 配布したテスト・課題の外・課題フォルダーでない場所は開かない。
     for (const [requested, rel] of [
       [root, "tests/README.md"],
@@ -336,7 +342,7 @@ describe("課題文のパネル・ステータスバー・エディターの右�
     ] as const) {
       await run("stella.openTaskFile", requested, rel);
     }
-    expect(vscodeMock.showTextDocument).toHaveBeenCalledTimes(1);
+    expect(opens()).toHaveLength(1);
     expect(vscodeMock.showErrorMessage).toHaveBeenCalledTimes(5);
   });
 });

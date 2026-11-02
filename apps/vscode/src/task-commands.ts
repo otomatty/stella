@@ -37,7 +37,7 @@ import {
   SUPPORT_LABELS,
   type DebuggingRecord,
 } from "@stella/shared/tasks/submission";
-import { readFileInRoot, writeStateFile } from "./runner/files.js";
+import { readFileInRoot, resolveFileInRoot, writeStateFile } from "./runner/files.js";
 import type { CiRunInput } from "./runner/steps.js";
 import {
   readDistribution,
@@ -493,7 +493,8 @@ async function showTaskReadmeCommand(requested?: unknown): Promise<void> {
 
 /**
  * 課題文の「進め方」から、編集するファイルを左の列で開く。開けるのは、その課題の
- * 提出するファイル (`submit.files`) に当たり、配布したテスト・設定ではないファイルだけ。
+ * 提出するファイル (`submit.files`) に当たり、配布したテスト・設定ではない、課題フォルダーの
+ * 中の通常のファイルだけ。
  */
 async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<void> {
   const root = typeof requested === "string" ? await requestedTaskRoot(requested) : null;
@@ -503,10 +504,10 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
   const { files } = await resolveEditFiles(root, loaded.manifest);
   if (!files.includes(rel)) throw new Error(`${rel} は、この課題で編集するファイルではありません`);
-  const document = await vscode.workspace.openTextDocument(
-    vscode.Uri.file(path.join(root, ...rel.split("/"))),
-  );
-  await vscode.window.showTextDocument(document, {
+  // 一覧を作ってから開くまでの間にリンクへ差し替えられていないか、開く直前にも確かめる
+  // (課題フォルダーの中の通常のファイルだけ)。画像などはテキストでなくても開けるよう vscode.open。
+  const file = await resolveFileInRoot(root, rel);
+  await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(file), {
     viewColumn: vscode.ViewColumn.One,
     preview: false,
   });

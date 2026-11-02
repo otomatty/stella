@@ -71,6 +71,13 @@ describe("markdownToHtml", () => {
     expect(html).toContain("bad");
   });
 
+  it("keeps numbered sub-steps that follow bullet sub-items under the same item", () => {
+    const html = markdownToHtml("- 手順\n  - 補足\n  1. 最初に保存\n  2. 次に確認\n- 次");
+    expect(html).toBe(
+      "<ul><li>手順<ul><li>補足</li></ul><ol><li>最初に保存</li><li>次に確認</li></ol></li><li>次</li></ul>",
+    );
+  });
+
   it("splits a bullet list and a numbered list that follow each other", () => {
     const html = markdownToHtml("- a\n1. b");
     expect(html).toContain("<ul><li>a</li></ul>");

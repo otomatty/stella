@@ -25,7 +25,8 @@ import { apiRequest } from "./api.js";
 import { savePendingTaskOpen, takePendingTaskOpen } from "./pending-task-open.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
-import { OPEN_FILES_LIMIT, resolveEditFiles } from "./task-guide.js";
+import { resolveFileInRoot } from "./runner/files.js";
+import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -78,12 +79,32 @@ async function isPlainFile(file: string): Promise<boolean> {
   }
 }
 
-/** 課題フォルダーで最初に開くファイル (課題フォルダーからの相対パス)。定義を読めなければ無し。 */
+/**
+ * 課題フォルダーで最初に開くファイル (課題フォルダーからの相対パス)。画像などテキストで
+ * 開けないファイルは除く (課題文のリンクからは開ける)。定義を読めなければ無し。
+ */
 async function filesToOpen(taskRoot: string): Promise<string[]> {
   const loaded = await loadTask(taskRoot);
   if (!loaded.ok) return [];
   const { files } = await resolveEditFiles(taskRoot, loaded.manifest);
-  return files.slice(0, OPEN_FILES_LIMIT);
+  return files.filter(opensAsText).slice(0, OPEN_FILES_LIMIT);
+}
+
+/**
+ * 課題フォルダーの中の通常のファイルを左の列に開く。開けなければ (消えた・リンクに
+ * 差し替えられた・テキストでない) undefined を返し、課題文の表示は止めない。
+ */
+async function openInLeftColumn(taskRoot: string, rel: string): Promise<vscode.Uri | undefined> {
+  try {
+    const file = vscode.Uri.file(await resolveFileInRoot(taskRoot, rel));
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file), {
+      viewColumn: vscode.ViewColumn.One,
+      preview: false,
+    });
+    return file;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -104,28 +125,24 @@ async function showTaskWorkspace(taskRoot: string): Promise<void> {
     );
     return;
   }
-  const files = (await filesToOpen(taskRoot)).map((rel) =>
-    vscode.Uri.file(path.join(taskRoot, ...rel.split("/"))),
-  );
+  const rels = await filesToOpen(taskRoot);
+  const firstRel = rels[0];
   // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開ける)。
   // エクスプローラーへフォーカスが移ることがあるので、ファイルを開くより前に行う。
-  await vscode.commands.executeCommand("revealInExplorer", files[0] ?? readme).then(
-    () => undefined,
-    () => undefined,
-  );
-  for (const file of files) {
-    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file), {
-      viewColumn: vscode.ViewColumn.One,
-      preview: false,
-    });
-  }
+  await vscode.commands
+    .executeCommand(
+      "revealInExplorer",
+      firstRel ? vscode.Uri.file(path.join(taskRoot, ...firstRel.split("/"))) : readme,
+    )
+    .then(
+      () => undefined,
+      () => undefined,
+    );
+  const opened: string[] = [];
+  for (const rel of rels) if (await openInLeftColumn(taskRoot, rel)) opened.push(rel);
   // 複数のファイルを開いたら、最初のファイルを前に戻す。
-  const first = files[0];
-  if (first && files.length > 1)
-    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(first), {
-      viewColumn: vscode.ViewColumn.One,
-      preview: false,
-    });
+  const first = opened[0];
+  if (first && opened.length > 1) await openInLeftColumn(taskRoot, first);
   // 課題文 (進め方つき) は右の列に出し、フォーカスはファイルに残す (ファイルが無ければこの列に)。
   await vscode.commands.executeCommand("stella.showTaskReadme", taskRoot).then(
     () => undefined,

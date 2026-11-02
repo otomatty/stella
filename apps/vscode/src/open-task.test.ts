@@ -21,6 +21,8 @@ const state = vi.hoisted(() => ({
   showWarningMessage: vi.fn(),
   showErrorMessage: vi.fn(),
   log: [] as string[],
+  /** テキストとして開けない (openTextDocument が失敗する) ファイル。 */
+  unopenable: new Set<string>(),
 }));
 
 vi.mock("node:os", async (importOriginal) => {
@@ -58,7 +60,10 @@ vi.mock("vscode", () => ({
       return state.folders.map((fsPath) => ({ uri: { fsPath } }));
     },
     workspaceFile: undefined,
-    openTextDocument: async (uri: { fsPath: string }) => ({ uri }),
+    openTextDocument: async (uri: { fsPath: string }) => {
+      if (state.unopenable.has(uri.fsPath)) throw new Error("File seems to be binary");
+      return { uri };
+    },
   },
   commands: {
     executeCommand: state.executeCommand,
@@ -128,6 +133,7 @@ beforeEach(async () => {
   state.log = [];
   state.folders = [];
   state.activeFile = undefined;
+  state.unopenable.clear();
   state.home = await mkdtemp(path.join(tmpdir(), "stella-home-"));
   training = path.join(state.home, "web-training");
   await mkdir(training);
@@ -505,6 +511,31 @@ describe("課題を開いた画面", () => {
       "revealInExplorer",
       { scheme: "file", fsPath: path.join(taskRoot(), "src", "a.js") },
     ]);
+  });
+
+  it("画像は自動では開かず、開けないファイルがあっても課題文は開く", async () => {
+    const files = ["assets/logo.png", "index.js", "notes.js"];
+    const withImage: TaskBundle = {
+      ...bundle,
+      manifest: { ...manifest, submit: { files } },
+      files: {
+        ...bundle.files,
+        "assets/logo.png": Buffer.from([0x89, 0x50, 0x4e, 0x47, 0]).toString("base64"),
+        "notes.js": Buffer.from("notes").toString("base64"),
+        ".stella/task.json": Buffer.from(
+          JSON.stringify({ ...manifest, submit: { files } }),
+        ).toString("base64"),
+      },
+    };
+    state.apiRequest.mockResolvedValue({ bundle: withImage, fixedStart: false });
+    state.folders = [training];
+    state.unopenable.add(path.join(taskRoot(), "index.js"));
+    await openDistributedTask(context, taskId);
+    const opened = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    expect(opened).toEqual([path.join(taskRoot(), "notes.js")]);
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 
   it("課題の定義を読めなければ、課題文のパネルだけを開く", async () => {

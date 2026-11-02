@@ -34,6 +34,15 @@ export const OPEN_FILES_LIMIT = 3;
 /** 課題文に並べる編集するファイルの数。 */
 const LISTED_FILES_LIMIT = 10;
 
+/** 画像・フォント・音声・動画・アーカイブなど、テキストのエディターでは開けないファイル。 */
+const BINARY_EXTENSIONS =
+  /\.(png|jpe?g|gif|webp|avif|ico|bmp|tiff?|pdf|woff2?|ttf|otf|eot|zip|gz|tgz|mp3|mp4|wav|ogg|webm|mov|wasm|sqlite3?|db)$/i;
+
+/** テキストのエディターで開けそうなファイルか (課題を開いたときに自動で開くのはこれだけ)。 */
+export function opensAsText(rel: string): boolean {
+  return !BINARY_EXTENSIONS.test(rel);
+}
+
 export interface EditFiles {
   /** 編集するファイル (課題フォルダーからの `/` 区切りの相対パス)。 */
   files: string[];
