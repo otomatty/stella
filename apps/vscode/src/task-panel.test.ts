@@ -1,7 +1,8 @@
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunResult } from "@stella/shared/tasks/run-result";
 import { describe, expect, it, vi } from "vitest";
-import { buildTaskPanelHtml, buildTaskReadmeHtml } from "./task-panel.js";
+import * as vscode from "vscode";
+import { buildTaskPanelHtml, buildTaskReadmeHtml, showTaskReadme } from "./task-panel.js";
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
@@ -137,6 +138,14 @@ describe("buildTaskPanelHtml", () => {
     expect(html).not.toContain("command:stella.consultTask");
   });
 
+  it("もう一度確認するリンクは課題フォルダーを渡す (パネルからはファイルを探せないため)", () => {
+    const root = "/home/me/web-training/course/unit/q01";
+    const html = buildTaskPanelHtml({ kind: "result", manifest, result: result(), root });
+    expect(html).toContain(
+      `href="command:stella.runTask?${encodeURIComponent(JSON.stringify([root]))}">もう一度確認する`,
+    );
+  });
+
   it("環境の問題は講師への相談を案内する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",
@@ -240,5 +249,66 @@ describe("課題文のパネル", () => {
     expect(html).not.toMatch(/<script/i);
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("<title>&lt;課題&gt;</title>");
+  });
+
+  it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
+    showTaskReadme({ title: "最初のページ", markdown, root: "/x" }, { reveal: false });
+    expect(vscode.window.createWebviewPanel).not.toHaveBeenCalled();
+  });
+
+  it("確認のあとの描き直しは、別の課題に切り替えたパネルを上書きしない", () => {
+    const panel = {
+      title: "",
+      webview: { html: "" },
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+    };
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    showTaskReadme({ title: "課題B", markdown: "B の本文", root: "/b" });
+    expect(panel.webview.html).toContain("B の本文");
+    // 課題 A の確認のあとの描き直しが、読み込みを待つ間に B へ切り替わったパネルに届く。
+    showTaskReadme({ title: "課題A", markdown: "A の本文", root: "/a" }, { reveal: false });
+    expect(panel.webview.html).toContain("B の本文");
+    expect(panel.webview.html).not.toContain("A の本文");
+    // 同じ課題の描き直しは届く。
+    showTaskReadme({ title: "課題B", markdown: "B の新しい本文", root: "/b" }, { reveal: false });
+    expect(panel.webview.html).toContain("B の新しい本文");
+    expect(panel.reveal).not.toHaveBeenCalled();
+  });
+
+  describe("進め方つき", () => {
+    const root = "/home/me/web-training/dev-env-basics/m0-first-page/q01-first-page";
+    const staticManifest: TaskManifest = {
+      ...manifest,
+      title: "最初のページを作る",
+      runner: "static-preview",
+      submit: { files: ["index.html"] },
+    };
+    const html = buildTaskReadmeHtml({
+      title: staticManifest.title,
+      markdown: `${markdown}\n\n[実行](command:stella.runTask) [MDN](https://developer.mozilla.org/)`,
+      os: "windows",
+      guide: { root, manifest: staticManifest, edit: { files: ["index.html"], missing: [] } },
+    });
+
+    it("見出しの下に進め方を置き、課題文の同じ見出しは重ねない", () => {
+      expect(html.match(/最初のページを作る<\/h1>/g)).toHaveLength(1);
+      expect(html).toContain('<p class="meta">基礎 ・ HTML の確認</p>');
+      expect(html.indexOf("進め方")).toBeLessThan(html.indexOf('<h2 class="readme-title">課題文'));
+      expect(html.indexOf('<h2 class="readme-title">課題文')).toBeLessThan(
+        html.indexOf("エクスプローラーで"),
+      );
+      expect(html).toContain("<code>index.html</code>");
+    });
+
+    it("コマンドのリンクは進め方にだけ出し、課題文の中のコマンドはリンクにしない", () => {
+      const readme = html.slice(html.indexOf('<h2 class="readme-title">'));
+      expect(readme).not.toContain("command:");
+      expect(readme).toContain('<a href="https://developer.mozilla.org/">MDN</a>');
+      expect(html.slice(0, html.indexOf('<h2 class="readme-title">'))).toContain(
+        "command:stella.runTask",
+      );
+      expect(html).not.toMatch(/<script/i);
+    });
   });
 });

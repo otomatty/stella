@@ -4,7 +4,12 @@
  * - STELLA: 課題を確認する   … 開いているファイルの課題フォルダーで runner を実行する
  * - STELLA: 開発環境を診断する … Node.js・npm・Git の版を確かめる
  * - STELLA: 実行ログを表示する … 道具の出力をそのまま見る
- * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読む (ファイルを読むだけ)
+ * - STELLA: 課題文を表示する   … README.md を OS のタブ付きで読む (ファイルを読むだけ)。
+ *                               先頭に「進め方」と、編集するファイルを開くリンクを出す
+ *
+ * 課題文のパネル・ステータスバー・エディターの右上のボタンからは、課題フォルダー (または
+ * そのファイル) を引数で受け取る。受け取った場所は、ワークスペースの中の課題フォルダーか
+ * 改めて確かめてから使う (`requestedTaskRoot`)。
  *
  * 外部プロセスを起動するので、信頼したフォルダー (Workspace Trust) でだけ実行する。
  */
@@ -32,7 +37,7 @@ import {
   SUPPORT_LABELS,
   type DebuggingRecord,
 } from "@stella/shared/tasks/submission";
-import { readFileInRoot, writeStateFile } from "./runner/files.js";
+import { readFileInRoot, resolveFileInRoot, writeStateFile } from "./runner/files.js";
 import type { CiRunInput } from "./runner/steps.js";
 import {
   readDistribution,
@@ -40,7 +45,9 @@ import {
   readSubmissionNotes,
   sendTaskSubmission,
 } from "./task-submission.js";
-import { showTaskPanel, showTaskReadme } from "./task-panel.js";
+import { readLastOutcome, resolveEditFiles } from "./task-guide.js";
+import { showTaskPanel, showTaskReadme, taskReadmeRoot } from "./task-panel.js";
+import { setCurrentTask } from "./task-status.js";
 
 let running = false;
 
@@ -73,6 +80,36 @@ export async function locateTask(): Promise<string | null> {
     if (found) return found;
   }
   return null;
+}
+
+/** ワークスペースの中のファイル (またはフォルダー) から、課題フォルダーを探す。外なら null。 */
+export async function taskRootOf(fsPath: string): Promise<string | null> {
+  const owner = workspaceRoots().find((root) => isInside(fsPath, root));
+  return owner ? findTaskRoot(fsPath, [owner]) : null;
+}
+
+function isFileUri(value: unknown): value is { scheme: "file"; fsPath: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { scheme?: unknown }).scheme === "file" &&
+    typeof (value as { fsPath?: unknown }).fsPath === "string"
+  );
+}
+
+/**
+ * コマンドの引数から課題フォルダーを決める。引数が無ければ開いているファイルから探す。
+ * 課題文のパネルとステータスバーは課題フォルダーのパス、エディターの右上のボタンは
+ * 開いているファイルの URI を渡す。どちらも、ワークスペースの中の課題フォルダーに当たる
+ * ときだけ使う (課題フォルダーそのものを渡されたら、上の課題へは登らない)。
+ */
+export async function requestedTaskRoot(requested: unknown): Promise<string | null> {
+  if (typeof requested === "string") {
+    const root = path.resolve(requested);
+    return (await taskRootOf(root)) === root ? root : null;
+  }
+  if (isFileUri(requested)) return taskRootOf(requested.fsPath);
+  return locateTask();
 }
 
 async function requireTrust(): Promise<boolean> {
@@ -203,8 +240,8 @@ async function askCiRun(root: string, manifest: TaskManifest): Promise<CiRunInpu
   return { runUrl: runUrl.trim(), deployUrl: deployUrl.trim() };
 }
 
-async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
-  const root = await locateTask();
+async function runTaskCommand(output: vscode.OutputChannel, requested?: unknown): Promise<void> {
+  const root = await requestedTaskRoot(requested);
   if (!root) {
     void vscode.window.showInformationMessage(
       "課題フォルダーのファイルを開いてから実行してください (.stella/task.json がある課題フォルダー)",
@@ -251,6 +288,9 @@ async function runTaskCommand(output: vscode.OutputChannel): Promise<void> {
     }
     showTaskPanel({ kind: "result", manifest, result, root });
     notify(result.outcome, output);
+    // 課題文のパネルを開いていれば、「いまここ」を新しい結果で描き直す (前面には出さない)。
+    if (result.outcome !== "cancelled" && taskReadmeRoot() === root)
+      void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
     // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
     // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
     // (旧 API は local-result の本文を見ずに合格として扱うため)。
@@ -397,9 +437,45 @@ async function submitTaskCommand(
 /** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
 const README_MAX_BYTES = 1024 * 1024;
 
+/**
+ * 課題文 (README.md) のパネルを描く。課題の定義を読めれば、先頭に「進め方」(編集する
+ * ファイル・確認・提出のリンクと、前回の確認の結果から決めた「いまここ」) を置く。
+ * `reveal: false` (確認のあとの描き直し) は中身を新しくするだけで、ステータスバーの課題は
+ * 変えない — 確認の間に受講者が別の課題のファイルへ移っていれば、そちらが今の課題のため。
+ */
+async function renderTaskReadme(root: string, options: { reveal?: boolean } = {}): Promise<void> {
+  const shown = (title: string) => {
+    if (options.reveal !== false) setCurrentTask({ root, title });
+  };
+  const loaded = await loadTask(root);
+  const markdown = new TextDecoder().decode(
+    await readFileInRoot(root, "README.md", README_MAX_BYTES),
+  );
+  if (!loaded.ok) {
+    showTaskReadme({ title: path.basename(root), markdown, root }, options);
+    shown(path.basename(root));
+    return;
+  }
+  const { manifest } = loaded;
+  const [edit, lastOutcome] = await Promise.all([
+    resolveEditFiles(root, manifest),
+    readLastOutcome(root, manifest.id),
+  ]);
+  showTaskReadme(
+    {
+      title: manifest.title,
+      markdown,
+      root,
+      guide: { root, manifest, edit, ...(lastOutcome ? { lastOutcome } : {}) },
+    },
+    options,
+  );
+  shown(manifest.title);
+}
+
 /** 課題文 (README.md) を OS のタブ付きで表示する。ファイルを読むだけなので信頼は問わない。 */
-async function showTaskReadmeCommand(): Promise<void> {
-  const root = await locateTask();
+async function showTaskReadmeCommand(requested?: unknown): Promise<void> {
+  const root = await requestedTaskRoot(requested);
   if (!root) {
     void vscode.window.showInformationMessage(
       "課題フォルダーのファイルを開いてから実行してください (.stella/task.json がある課題フォルダー)",
@@ -407,16 +483,34 @@ async function showTaskReadmeCommand(): Promise<void> {
     return;
   }
   try {
-    const loaded = await loadTask(root);
-    const markdown = new TextDecoder().decode(
-      await readFileInRoot(root, "README.md", README_MAX_BYTES),
-    );
-    showTaskReadme({ title: loaded.ok ? loaded.manifest.title : path.basename(root), markdown });
+    await renderTaskReadme(root);
   } catch (e) {
     void vscode.window.showErrorMessage(
       `課題文を表示できませんでした: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
+}
+
+/**
+ * 課題文の「進め方」から、編集するファイルを左の列で開く。開けるのは、その課題の
+ * 提出するファイル (`submit.files`) に当たり、配布したテスト・設定ではない、課題フォルダーの
+ * 中の通常のファイルだけ。
+ */
+async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<void> {
+  const root = typeof requested === "string" ? await requestedTaskRoot(requested) : null;
+  if (!root) throw new Error("ワークスペース内の課題フォルダーを開いてください");
+  if (typeof rel !== "string") throw new Error("開くファイルが指定されていません");
+  const loaded = await loadTask(root);
+  if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+  const { files } = await resolveEditFiles(root, loaded.manifest);
+  if (!files.includes(rel)) throw new Error(`${rel} は、この課題で編集するファイルではありません`);
+  // 一覧を作ってから開くまでの間にリンクへ差し替えられていないか、開く直前にも確かめる
+  // (課題フォルダーの中の通常のファイルだけ)。画像などはテキストでなくても開けるよう vscode.open。
+  const file = await resolveFileInRoot(root, rel);
+  await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(file), {
+    viewColumn: vscode.ViewColumn.One,
+    preview: false,
+  });
 }
 
 export function registerTaskCommands(context: vscode.ExtensionContext): void {
@@ -429,9 +523,18 @@ export function registerTaskCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("stella.consultTask", (root?: string) =>
       submitTaskCommand("consult", root),
     ),
-    vscode.commands.registerCommand("stella.runTask", () => runTaskCommand(output)),
+    vscode.commands.registerCommand("stella.runTask", (root?: unknown) =>
+      runTaskCommand(output, root),
+    ),
     vscode.commands.registerCommand("stella.diagnoseEnvironment", () => diagnoseCommand(output)),
     vscode.commands.registerCommand("stella.showRunLog", () => output.show(true)),
-    vscode.commands.registerCommand("stella.showTaskReadme", () => showTaskReadmeCommand()),
+    vscode.commands.registerCommand("stella.showTaskReadme", (root?: unknown) =>
+      showTaskReadmeCommand(root),
+    ),
+    vscode.commands.registerCommand("stella.openTaskFile", (root: unknown, rel: unknown) =>
+      openTaskFileCommand(root, rel).catch((e: unknown) => {
+        void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
+      }),
+    ),
   );
 }

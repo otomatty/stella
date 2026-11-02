@@ -6,6 +6,7 @@ import type {
   LessonType,
   SectionRow,
 } from "@stella/shared/cms/types";
+import type { TaskStatus, TaskSummary } from "@stella/shared/tasks/catalog";
 import { AuthExpiredError, apiRequest } from "./api.js";
 import {
   isCatalogLessonComplete,
@@ -23,6 +24,11 @@ export interface CatalogLesson {
   markdown?: string;
   pdfPath?: string;
   assignmentId?: string;
+  /**
+   * 新形式の課題の課題文レッスンなら、その課題 (`tasks.lesson_id`)。ツリーから開くと
+   * 課題フォルダーを準備し、編集するファイルと課題文 (進め方つき) を並べる。
+   */
+  task?: { id: string; status: TaskStatus };
 }
 
 export interface CatalogSection {
@@ -105,9 +111,13 @@ function enrolledStageIds(enrollments: EnrollmentRow[]): string[] {
     .map((enrollment) => enrollment.stage_id);
 }
 
-function toCatalogStage(
+/** 課題文レッスン (`lessonId`) → 課題。 */
+type TasksByLesson = ReadonlyMap<string, { id: string; status: TaskStatus }>;
+
+export function toCatalogStage(
   detail: StageWithChildren,
   completedIds: ReadonlySet<string>,
+  tasksByLesson: TasksByLesson = new Map(),
 ): CatalogStage | null {
   if (detail.stage.status !== "published") {
     return null;
@@ -116,7 +126,7 @@ function toCatalogStage(
     .slice()
     .sort((a, b) => a.section.order - b.section.order)
     .map(({ section, lessons }) =>
-      toCatalogSection(detail.stage.id, section, lessons, completedIds),
+      toCatalogSection(detail.stage.id, section, lessons, completedIds, tasksByLesson),
     );
   return {
     id: detail.stage.id,
@@ -130,6 +140,7 @@ function toCatalogSection(
   section: SectionRow,
   lessons: LessonRow[],
   completedIds: ReadonlySet<string>,
+  tasksByLesson: TasksByLesson,
 ): CatalogSection {
   return {
     id: section.id,
@@ -137,16 +148,20 @@ function toCatalogSection(
     lessons: lessons
       .slice()
       .sort((a, b) => a.order - b.order)
-      .map((lesson) => ({
-        id: lesson.id,
-        stageId,
-        title: lesson.title,
-        type: lesson.type,
-        completed: completedIds.has(lesson.id),
-        ...(lesson.markdown ? { markdown: lesson.markdown } : {}),
-        ...(lesson.pdf_path ? { pdfPath: lesson.pdf_path } : {}),
-        ...(lesson.assignment_id ? { assignmentId: lesson.assignment_id } : {}),
-      })),
+      .map((lesson) => {
+        const task = tasksByLesson.get(lesson.id);
+        return {
+          id: lesson.id,
+          stageId,
+          title: lesson.title,
+          type: lesson.type,
+          completed: completedIds.has(lesson.id),
+          ...(lesson.markdown ? { markdown: lesson.markdown } : {}),
+          ...(lesson.pdf_path ? { pdfPath: lesson.pdf_path } : {}),
+          ...(lesson.assignment_id ? { assignmentId: lesson.assignment_id } : {}),
+          ...(task ? { task } : {}),
+        };
+      }),
   };
 }
 
@@ -174,7 +189,26 @@ async function fetchStageDetail(stageId: string): Promise<StageWithChildren | nu
   }
 }
 
-/** Fetch enrollments / progress in parallel, then each stage detail. */
+/**
+ * 新形式のステージ (format 2) の課題と、その課題文レッスン。読めなければ空 (ツリーは
+ * 課題文をドキュメントとして出すだけで、課題は Web の「VS Code で開く」から開ける)。
+ */
+async function fetchTasksByLesson(detail: StageWithChildren | null): Promise<TasksByLesson> {
+  const map = new Map<string, { id: string; status: TaskStatus }>();
+  if (detail?.stage.format !== 2 || detail.stage.status !== "published") return map;
+  try {
+    const { tasks } = await apiRequest<{ tasks: TaskSummary[] }>(
+      `/api/tasks/for-stage/${encodeURIComponent(detail.stage.id)}`,
+    );
+    for (const task of tasks ?? [])
+      if (task.lessonId) map.set(task.lessonId, { id: task.id, status: task.status });
+  } catch (err) {
+    if (err instanceof AuthExpiredError) throw err;
+  }
+  return map;
+}
+
+/** Fetch enrollments / progress in parallel, then each stage detail (and its tasks). */
 export async function loadCatalog(): Promise<CatalogStage[]> {
   const [enrollments, progress] = await Promise.all([
     apiRequest<RowsResponse<EnrollmentRow>>("/api/enrollments/mine"),
@@ -187,11 +221,12 @@ export async function loadCatalog(): Promise<CatalogStage[]> {
   const stageIds = enrolledStageIds(enrollments.rows ?? []);
   const details = await Promise.all(stageIds.map(fetchStageDetail));
   requireLoadedStageDetails(stageIds, details);
+  const tasks = await Promise.all(details.map(fetchTasksByLesson));
 
   const catalog: CatalogStage[] = [];
-  for (const detail of details) {
+  for (const [index, detail] of details.entries()) {
     if (!detail) continue;
-    const stage = toCatalogStage(detail, completedIds);
+    const stage = toCatalogStage(detail, completedIds, tasks[index]);
     if (stage) catalog.push(stage);
   }
   cachedCatalog = catalog;

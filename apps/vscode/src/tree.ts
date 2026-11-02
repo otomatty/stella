@@ -1,4 +1,5 @@
 import type { LessonType } from "@stella/shared/cms/types";
+import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { AuthExpiredError } from "./api.js";
 import type { AuthStore } from "./auth.js";
@@ -11,7 +12,7 @@ import {
   type CatalogSection,
 } from "./catalog.js";
 
-export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web";
+export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web" | "lesson-task";
 
 export interface StageNode {
   kind: "stage";
@@ -38,6 +39,8 @@ export interface LessonNode {
   markdown?: string;
   pdfPath?: string;
   assignmentId?: string;
+  /** 新形式の課題の課題文レッスンなら、その課題。開くと課題フォルダーを準備して並べる。 */
+  task?: { id: string; status: TaskStatus };
 }
 
 export interface PlaceholderNode {
@@ -90,12 +93,18 @@ export function toLessonNode(lesson: CatalogLesson): LessonNode {
     stageId: lesson.stageId,
     title: lesson.title,
     lessonType: lesson.type,
-    contextValue: contextValueFor(lesson.type),
+    contextValue: lesson.task ? "lesson-task" : contextValueFor(lesson.type),
     completed: lesson.completed,
     ...(lesson.markdown ? { markdown: lesson.markdown } : {}),
     ...(lesson.pdfPath ? { pdfPath: lesson.pdfPath } : {}),
     ...(lesson.assignmentId ? { assignmentId: lesson.assignmentId } : {}),
+    ...(lesson.task ? { task: lesson.task } : {}),
   };
+}
+
+/** 課題が合格で済んだか (レッスンの完了ではなく、課題のレビューの合格で決める)。 */
+function taskDone(status: TaskStatus): boolean {
+  return status === "passed" || status === "ai-passed";
 }
 
 function toSectionNode(section: CatalogSection): SectionNode {
@@ -136,6 +145,12 @@ export function lessonCommand(node: LessonNode): vscode.Command {
         title: "演習を開く",
         arguments: [node],
       };
+    case "lesson-task":
+      return {
+        command: "stella.openTask",
+        title: "課題に取り組む",
+        arguments: [node.task?.id],
+      };
     default: {
       const _exhaustive: never = node.contextValue;
       return _exhaustive;
@@ -174,8 +189,15 @@ export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.None);
         item.id = `lesson:${element.stageId}:${element.id}`;
         item.contextValue = element.contextValue;
-        item.iconPath = new vscode.ThemeIcon(element.completed ? "pass" : "circle-outline");
         item.command = lessonCommand(element);
+        if (element.task) {
+          // 課題文レッスンは課題として出す: 状態 (未着手・合格など) を添え、開くと課題に取り組む。
+          item.iconPath = new vscode.ThemeIcon(taskDone(element.task.status) ? "pass" : "edit");
+          item.description = TASK_STATUS_LABELS[element.task.status];
+          item.tooltip = "課題に取り組む — 編集するファイルと課題文 (進め方) を並べて開きます";
+          return item;
+        }
+        item.iconPath = new vscode.ThemeIcon(element.completed ? "pass" : "circle-outline");
         return item;
       }
       case "placeholder": {

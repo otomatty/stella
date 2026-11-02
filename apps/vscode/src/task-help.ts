@@ -38,7 +38,7 @@ import { AuthSessionChanged, authSession, onDidChangeAuthSession } from "./auth.
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
 import { loadTask } from "./runner/run-task.js";
 import { isInside, locateTask, workspaceRoots } from "./task-commands.js";
-import { referencesHtml } from "./task-panel.js";
+import { referencesHtml, sideColumn } from "./task-panel.js";
 import { readDistribution } from "./task-submission.js";
 
 /** 受講者向けの提出の詳細 (`GET /api/submissions/:id`) のうち、パネルに出す部分。 */
@@ -386,26 +386,21 @@ let helpPanel: vscode.WebviewPanel | undefined;
 
 function showHelpPanel(html: string, title: string): void {
   if (!helpPanel) {
-    helpPanel = vscode.window.createWebviewPanel(
-      "stella.taskHelp",
-      title,
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: false,
-        localResourceRoots: [],
-        enableCommandUris: [
-          "stella.showTaskHelp",
-          "stella.openTaskHelpItem",
-          "stella.compareTaskSolution",
-        ],
-      },
-    );
+    helpPanel = vscode.window.createWebviewPanel("stella.taskHelp", title, sideColumn(), {
+      enableScripts: false,
+      localResourceRoots: [],
+      enableCommandUris: [
+        "stella.showTaskHelp",
+        "stella.openTaskHelpItem",
+        "stella.compareTaskSolution",
+      ],
+    });
     helpPanel.onDidDispose(() => {
       helpPanel = undefined;
     });
   } else {
     helpPanel.title = title;
-    helpPanel.reveal(vscode.ViewColumn.Beside, true);
+    helpPanel.reveal(sideColumn(), true);
   }
   helpPanel.webview.html = html;
 }

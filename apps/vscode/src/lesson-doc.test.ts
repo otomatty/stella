@@ -41,6 +41,49 @@ describe("markdownToHtml", () => {
     expect(html).toContain('href="https://example.com"');
   });
 
+  it("nests indented list items (教材の参照元は 2 段の箇条書き)", () => {
+    const src = [
+      "## 参照元",
+      "",
+      "- [HTML: 見出し](<https://developer.mozilla.org/ja/docs/Web/HTML>) — MDN / 見出し",
+      "  - 確認すること: 見出しを書く",
+      "  - 教材独自の課題 / 確認日: 2026-10-05",
+      "- [二つ目](https://example.com/two)",
+      "",
+      "1. first",
+      "   continued line",
+      "2. second",
+    ].join("\n");
+    const html = markdownToHtml(src);
+    expect(html).toContain(
+      '<ul><li><a href="https://developer.mozilla.org/ja/docs/Web/HTML">HTML: 見出し</a> — MDN / 見出し<ul><li>確認すること: 見出しを書く</li><li>教材独自の課題 / 確認日: 2026-10-05</li></ul></li><li><a href="https://example.com/two">二つ目</a></li></ul>',
+    );
+    expect(html).toContain("<ol><li>first continued line</li><li>second</li></ol>");
+    expect(html).not.toContain("<p>- 確認すること");
+  });
+
+  it("reads <url> link targets with parentheses but still rejects unsafe schemes", () => {
+    const html = markdownToHtml(
+      "[wiki](<https://example.com/a_(b)>) and [bad](<javascript:alert(1)>)",
+    );
+    expect(html).toContain('<a href="https://example.com/a_(b)">wiki</a>');
+    expect(html).not.toContain("javascript:");
+    expect(html).toContain("bad");
+  });
+
+  it("keeps numbered sub-steps that follow bullet sub-items under the same item", () => {
+    const html = markdownToHtml("- 手順\n  - 補足\n  1. 最初に保存\n  2. 次に確認\n- 次");
+    expect(html).toBe(
+      "<ul><li>手順<ul><li>補足</li></ul><ol><li>最初に保存</li><li>次に確認</li></ol></li><li>次</li></ul>",
+    );
+  });
+
+  it("splits a bullet list and a numbered list that follow each other", () => {
+    const html = markdownToHtml("- a\n1. b");
+    expect(html).toContain("<ul><li>a</li></ul>");
+    expect(html).toContain("<ol><li>b</li></ol>");
+  });
+
   it("does not turn javascript: links into hrefs", () => {
     const html = markdownToHtml("[x](javascript:alert(1))");
     expect(html).not.toContain("javascript:");

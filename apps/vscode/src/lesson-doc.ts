@@ -48,8 +48,13 @@ function safeHref(escapedHref: string): string | undefined {
   return undefined;
 }
 
+/**
+ * 行内の書式。リンク先は `[文字](https://…)` と、括弧を含む URL を囲む `[文字](<https://…>)`
+ * (教材の参照元はこちらで書く) の両方を読む。本文は escapeHtml 済みなので `<` は `&lt;` で来る。
+ */
 function renderInline(text: string): string {
-  const token = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
+  const token =
+    /`([^`]+)`|\[([^\]]+)\]\((?:&lt;((?:(?!&gt;).)+)&gt;|([^)]+))\)|\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
   const parts: string[] = [];
   let last = 0;
   for (const match of text.matchAll(token)) {
@@ -57,15 +62,16 @@ function renderInline(text: string): string {
     if (index > last) {
       parts.push(text.slice(last, index));
     }
+    const target = match[3] ?? match[4];
     if (match[1] !== undefined) {
       parts.push(`<code>${match[1]}</code>`);
-    } else if (match[2] !== undefined && match[3] !== undefined) {
-      const href = safeHref(match[3]);
+    } else if (match[2] !== undefined && target !== undefined) {
+      const href = safeHref(target);
       parts.push(href ? `<a href="${href}">${match[2]}</a>` : match[2]);
-    } else if (match[4] !== undefined) {
-      parts.push(`<strong>${match[4]}</strong>`);
     } else if (match[5] !== undefined) {
-      parts.push(`<em>${match[5]}</em>`);
+      parts.push(`<strong>${match[5]}</strong>`);
+    } else if (match[6] !== undefined) {
+      parts.push(`<em>${match[6]}</em>`);
     }
     last = index + match[0].length;
   }
@@ -97,6 +103,45 @@ function isTableRow(line: string): boolean {
 function isTableSeparator(line: string): boolean {
   if (!isTableRow(line)) return false;
   return splitTableRow(line).every((cell) => /^:?-+:?$/.test(cell));
+}
+
+/** 箇条書きの項目。字下げした項目は入れ子にする (教材の参照元は 2 段で書く)。 */
+const LIST_ITEM = /^( *)([-*+]|\d+\.) (.*)$/;
+
+interface ListItem {
+  indent: number;
+  ordered: boolean;
+  text: string;
+}
+
+/**
+ * 字下げの深さで入れ子にした箇条書き。深い項目は直前の浅い項目の下に置く。同じ深さで
+ * 種類 (番号の有無) が変わったら、そこで別のリストに分ける (子のリストなら同じ項目の下に続ける)。
+ */
+function renderList(items: readonly ListItem[], from: number): { html: string; next: number } {
+  const first = items[from];
+  const base = first?.indent ?? 0;
+  const lis: string[] = [];
+  let k = from;
+  while (k < items.length) {
+    const item = items[k];
+    if (
+      !item ||
+      (k > from &&
+        (item.indent < base || (item.indent === base && item.ordered !== first?.ordered)))
+    )
+      break;
+    let inner = renderInline(item.text);
+    k += 1;
+    for (let child = items[k]; child && child.indent > item.indent; child = items[k]) {
+      const nested = renderList(items, k);
+      inner += nested.html;
+      k = nested.next;
+    }
+    lis.push(`<li>${inner}</li>`);
+  }
+  const tag = first?.ordered ? "ol" : "ul";
+  return { html: `<${tag}>${lis.join("")}</${tag}>`, next: k };
 }
 
 function isBlockStart(line: string): boolean {
@@ -182,23 +227,30 @@ function renderBlocks(markdown: string): string {
       continue;
     }
 
-    if (/^[-*+] /.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^[-*+] /.test(lines[i] ?? "")) {
-        items.push(`<li>${renderInline((lines[i] ?? "").slice(2))}</li>`);
+    if (/^([-*+]|\d+\.) /.test(line)) {
+      const items: ListItem[] = [];
+      while (i < lines.length) {
+        const current = lines[i] ?? "";
+        const match = LIST_ITEM.exec(current);
+        if (match) {
+          const item = {
+            indent: match[1]?.length ?? 0,
+            ordered: /^\d/.test(match[2] ?? ""),
+            text: match[3] ?? "",
+          };
+          // 字下げの無い項目で種類 (番号の有無) が変わったら、別の箇条書きにする。
+          if (item.indent === 0 && items.length > 0 && item.ordered !== items[0]?.ordered) break;
+          items.push(item);
+        } else if (items.length > 0 && /^ {2,}\S/.test(current)) {
+          // 字下げした続きの行は、直前の項目の文に足す。
+          const prev = items[items.length - 1];
+          if (prev) prev.text += ` ${current.trim()}`;
+        } else {
+          break;
+        }
         i += 1;
       }
-      out.push(`<ul>${items.join("")}</ul>`);
-      continue;
-    }
-
-    if (/^\d+\. /.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+\. /.test(lines[i] ?? "")) {
-        items.push(`<li>${renderInline((lines[i] ?? "").replace(/^\d+\. /, ""))}</li>`);
-        i += 1;
-      }
-      out.push(`<ol>${items.join("")}</ol>`);
+      out.push(renderList(items, 0).html);
       continue;
     }
 

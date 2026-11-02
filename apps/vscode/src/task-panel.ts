@@ -2,7 +2,10 @@
  * 「課題を確認する」の結果パネル。スクリプトは動かさず、HTML だけを描く。
  * 合格時は提出、不合格時は講師への相談を案内する。
  * 出典の HTTP(S) リンクと、許可した再実行・ログ表示のコマンドだけを使う。
- * 課題文 (README.md) を OS のタブ付きで開くパネルも、ここに置く。
+ * 課題文 (README.md) を OS のタブ付きで開くパネル (先頭に「進め方」) も、ここに置く。
+ *
+ * 課題のパネル (課題文・確認の結果・ヒント) は、左の列でファイルを開いていれば右の列 (2 列目) に
+ * まとめる (`sideColumn`)。パネルから操作するたびに列が増えないようにするため。
  */
 
 import { type CiRunClaim, safeHttpsHref } from "@stella/shared/tasks/ci-run";
@@ -24,12 +27,30 @@ import {
   SOURCE_REUSE_LABELS,
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
+import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./lesson-doc.js";
 import {
-  buildLessonDocHtml,
-  defaultOsForPlatform,
-  escapeHtml,
-  markdownToHtml,
-} from "./lesson-doc.js";
+  buildTaskGuideHtml,
+  GUIDE_COMMANDS,
+  GUIDE_CSS,
+  guideMetaText,
+  stripLeadingTitle,
+  type TaskGuideInput,
+} from "./task-guide.js";
+
+/** 左の列 (1 列目) でテキストのファイルを開いているか。 */
+function hasLeftEditor(): boolean {
+  return (vscode.window.visibleTextEditors ?? []).some(
+    (editor) => editor.viewColumn === vscode.ViewColumn.One,
+  );
+}
+
+/**
+ * 課題のパネルを出す列。左の列でファイルを開いていれば右の列 (2 列目) にそろえる —
+ * パネルのリンクから開くたびに「隣」へ 3 列目・4 列目を作らないため。
+ */
+export function sideColumn(): vscode.ViewColumn {
+  return hasLeftEditor() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside;
+}
 
 const VIEW_TYPE = "stella.taskResult";
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -166,7 +187,7 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
     ciClaimHtml(result.ci, manifest.ci?.workflow),
     footer,
     !input.standalone && result.outcome !== "cancelled" ? `<p class="links">${action}</p>` : "",
-    `<p class="links"><a href="command:${retryCommand}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
+    `<p class="links"><a href="command:${retryCommand}${input.standalone ? "" : commandArgs}">もう一度確認する</a> ・ <a href="command:stella.showRunLog">実行ログを表示</a>${input.standalone ? "" : ` ・ <a href="command:stella.showTaskHelp${commandArgs}">${TASK_HELP_POLICIES[manifest.kind].hints ? "ヒント・解答・レビューの結果" : "レビューの結果"}</a>`}</p>`,
     `<p class="hint">${escapeHtml(result.platform)}${versions ? ` ・ ${escapeHtml(versions)}` : ""} ・ ${seconds(result.durationMs)}</p>`,
   ].join("\n");
   return { title: manifest.title, body };
@@ -254,7 +275,7 @@ export function showTaskPanel(input: TaskPanelInput): void {
   const html = buildTaskPanelHtml(input);
   const title = input.kind === "result" ? `確認: ${input.manifest.title}` : "課題の定義";
   if (!currentPanel) {
-    currentPanel = vscode.window.createWebviewPanel(VIEW_TYPE, title, vscode.ViewColumn.Beside, {
+    currentPanel = vscode.window.createWebviewPanel(VIEW_TYPE, title, sideColumn(), {
       enableScripts: false,
       localResourceRoots: [],
       enableCommandUris: [
@@ -271,7 +292,7 @@ export function showTaskPanel(input: TaskPanelInput): void {
     });
   } else {
     currentPanel.title = title;
-    currentPanel.reveal(vscode.ViewColumn.Beside, true);
+    currentPanel.reveal(sideColumn(), true);
   }
   currentPanel.webview.html = html;
 }
@@ -282,40 +303,121 @@ export function showTaskPanel(input: TaskPanelInput): void {
 
 const README_VIEW_TYPE = "stella.taskReadme";
 let readmePanel: vscode.WebviewPanel | undefined;
+/** 課題文のパネルが出している課題フォルダー (確認のあとに「いまここ」を描き直すため)。 */
+let readmeRoot: string | undefined;
+
+export interface TaskReadmeInput {
+  title: string;
+  markdown: string;
+  os?: OsName;
+  /** 課題の定義を読めたときの「進め方」。読めなければ課題文だけを出す。 */
+  guide?: Omit<TaskGuideInput, "os">;
+}
 
 /**
  * 課題文のパネルの HTML。描画はレッスンのドキュメントと同じで、生の HTML は文字のまま出す。
  * OS 別のブロックは `os` (既定は `process.platform` の OS) のタブを開いておく (07 §11)。
+ * 課題の定義を読めたときは、見出しの下に「進め方」を置き、課題文の先頭の同じ見出しは外す。
+ * 課題文の中のリンクは HTTP(S) と mailto だけで、コマンドのリンクは「進め方」にしか出ない。
  */
-export function buildTaskReadmeHtml(input: {
-  title: string;
-  markdown: string;
-  os?: OsName;
-}): string {
-  return buildLessonDocHtml({
-    kind: "markdown",
-    title: input.title,
-    bodyHtml: markdownToHtml(input.markdown, { os: input.os ?? defaultOsForPlatform() }),
-  });
+export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
+  const os = input.os ?? defaultOsForPlatform();
+  const guide = input.guide;
+  const body = guide
+    ? [
+        `<h1>${escapeHtml(input.title)}</h1>`,
+        `<p class="meta">${escapeHtml(guideMetaText(guide.manifest))}</p>`,
+        buildTaskGuideHtml({ ...guide, os }),
+        `<h2 class="readme-title">課題文</h2>`,
+        markdownToHtml(stripLeadingTitle(input.markdown, input.title), { os }),
+      ].join("\n")
+    : markdownToHtml(input.markdown, { os });
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
+  <title>${escapeHtml(input.title)}</title>
+  <style>
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      background: var(--vscode-editor-background);
+      line-height: 1.6;
+      padding: 1.25rem 1.5rem 2rem;
+      max-width: 52rem;
+    }
+    h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.3; }
+    h1 { font-size: 1.4em; margin-bottom: 0.25rem; }
+    pre {
+      overflow: auto;
+      padding: 0.75rem 1rem;
+      background: var(--vscode-textCodeBlock-background);
+      border-radius: 4px;
+    }
+    code { font-family: var(--vscode-editor-font-family); font-size: 0.9em; }
+    a { color: var(--vscode-textLink-foreground); }
+    ul, ol { padding-left: 1.4rem; }
+    blockquote {
+      margin: 0.75rem 0;
+      padding: 0.15rem 0 0.15rem 0.9rem;
+      border-left: 3px solid var(--vscode-textBlockQuote-border);
+    }
+    table { border-collapse: collapse; margin: 0.75rem 0; }
+    th, td {
+      border: 1px solid var(--vscode-panel-border);
+      padding: 0.35rem 0.6rem;
+      text-align: left;
+    }${OS_TABS_CSS}${GUIDE_CSS}
+  </style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
 }
 
-/** 課題文をパネルで開く。スクリプトもコマンドのリンクも許さない。 */
-export function showTaskReadme(input: { title: string; markdown: string }): void {
+/** いま課題文のパネルが出している課題フォルダー。閉じていれば undefined。 */
+export function taskReadmeRoot(): string | undefined {
+  return readmePanel ? readmeRoot : undefined;
+}
+
+/**
+ * 課題文のパネルを開く (描き直す)。スクリプトは動かさず、コマンドのリンクは「進め方」の
+ * 固定のコマンドだけを許す。左の列でファイルを開いていれば右の列に出し、フォーカスは
+ * ファイルに残す (`reveal: false` なら前面に出さずに描き直すだけ)。
+ */
+export function showTaskReadme(
+  input: TaskReadmeInput & { root?: string },
+  options: { reveal?: boolean } = {},
+): void {
+  // 確認のあとの描き直しは、同じ課題を出しているパネルだけを新しくする。読み込みを待つ間に
+  // 受講者がパネルを閉じた・別の課題の課題文に切り替えたなら、作り直しも上書きもしない
+  // (確かめるのは書き込む直前のここ。呼び出し元の確認は読み込みより前なので間に合わない)。
+  if (options.reveal === false && (!readmePanel || readmeRoot !== input.root)) return;
   const html = buildTaskReadmeHtml(input);
-  const title = `課題文: ${input.title}`;
+  const title = `課題: ${input.title}`;
+  const beside = hasLeftEditor();
   if (!readmePanel) {
     readmePanel = vscode.window.createWebviewPanel(
       README_VIEW_TYPE,
       title,
-      vscode.ViewColumn.Active,
-      { enableScripts: false, localResourceRoots: [] },
+      {
+        viewColumn: beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active,
+        preserveFocus: beside,
+      },
+      { enableScripts: false, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
     );
     readmePanel.onDidDispose(() => {
       readmePanel = undefined;
+      readmeRoot = undefined;
     });
   } else {
     readmePanel.title = title;
-    readmePanel.reveal(vscode.ViewColumn.Active);
+    if (options.reveal !== false)
+      readmePanel.reveal(beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active, beside);
   }
+  readmeRoot = input.root;
   readmePanel.webview.html = html;
 }

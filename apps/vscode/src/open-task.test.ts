@@ -21,6 +21,8 @@ const state = vi.hoisted(() => ({
   showWarningMessage: vi.fn(),
   showErrorMessage: vi.fn(),
   log: [] as string[],
+  /** テキストとして開けない (openTextDocument が失敗する) ファイル。 */
+  unopenable: new Set<string>(),
 }));
 
 vi.mock("node:os", async (importOriginal) => {
@@ -30,6 +32,7 @@ vi.mock("node:os", async (importOriginal) => {
 vi.mock("./api.js", () => ({ apiRequest: state.apiRequest }));
 vi.mock("vscode", () => ({
   Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }) },
+  ViewColumn: { One: 1, Two: 2 },
   window: {
     get activeTextEditor() {
       return state.activeFile
@@ -57,7 +60,10 @@ vi.mock("vscode", () => ({
       return state.folders.map((fsPath) => ({ uri: { fsPath } }));
     },
     workspaceFile: undefined,
-    openTextDocument: async (uri: { fsPath: string }) => ({ uri }),
+    openTextDocument: async (uri: { fsPath: string }) => {
+      if (state.unopenable.has(uri.fsPath)) throw new Error("File seems to be binary");
+      return { uri };
+    },
   },
   commands: {
     executeCommand: state.executeCommand,
@@ -89,22 +95,24 @@ import {
 } from "./training-folder.js";
 
 const taskId = "course/unit/q1";
+const manifest: TaskBundle["manifest"] = {
+  schemaVersion: 1,
+  id: taskId,
+  title: "課題",
+  kind: "basic",
+  runner: "node-test",
+  submit: { files: ["index.js"] },
+  protected: ["tests/**"],
+  checks: { lint: false, format: false },
+};
 const bundle: TaskBundle = {
-  manifest: {
-    schemaVersion: 1,
-    id: taskId,
-    title: "課題",
-    kind: "basic",
-    runner: "node-test",
-    submit: { files: ["index.js"] },
-    protected: [],
-    checks: { lint: false, format: false },
-  },
+  manifest,
   contentHash: "a".repeat(64),
   files: {
     "index.js": Buffer.from("starter").toString("base64"),
+    "tests/index.test.js": Buffer.from("test").toString("base64"),
     "README.md": Buffer.from("課題文").toString("base64"),
-    ".stella/task.json": Buffer.from("{}").toString("base64"),
+    ".stella/task.json": Buffer.from(JSON.stringify(manifest)).toString("base64"),
   },
 };
 const memento = {
@@ -125,6 +133,7 @@ beforeEach(async () => {
   state.log = [];
   state.folders = [];
   state.activeFile = undefined;
+  state.unopenable.clear();
   state.home = await mkdtemp(path.join(tmpdir(), "stella-home-"));
   training = path.join(state.home, "web-training");
   await mkdir(training);
@@ -153,12 +162,18 @@ const pendingFiles = async () => {
     return [];
   }
 };
+/** 課題を開いた画面: 左に編集するファイル、右に課題文のパネル (進め方つき)。 */
 const readmeOpened = (root: string) => {
-  expect(state.showTextDocument).toHaveBeenCalledWith({
-    uri: { scheme: "file", fsPath: path.join(root, "README.md") },
-  });
-  // OS 別のブロックをタブで読めるパネルも開く (#30)。
-  expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme");
+  expect(state.showTextDocument).toHaveBeenCalledWith(
+    { uri: { scheme: "file", fsPath: path.join(root, "index.js") } },
+    { viewColumn: 1, preview: false },
+  );
+  // 課題文は OS のタブ付きのパネルで読む (#30)。README.md はテキストとしては開かない。
+  expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", root);
+  expect(state.showTextDocument).not.toHaveBeenCalledWith(
+    { uri: { scheme: "file", fsPath: path.join(root, "README.md") } },
+    expect.anything(),
+  );
 };
 /** 学習フォルダーを開いているウィンドウが前面に来る (VS Code が既存のウィンドウへ切り替えた)。 */
 const focusWindow = async () => {
@@ -461,6 +476,83 @@ describe("学習フォルダーを唯一のフォルダーにする", () => {
   });
 });
 
+describe("課題を開いた画面", () => {
+  it("編集するファイルを左に並べ (最初のファイルを前に)、テストと課題文はテキストで開かない", async () => {
+    const many: TaskBundle = {
+      ...bundle,
+      manifest: { ...manifest, submit: { files: ["src/**/*.js"] } },
+      files: {
+        ...Object.fromEntries(
+          ["a", "b", "c", "d"].map((name) => [
+            `src/${name}.js`,
+            Buffer.from(name).toString("base64"),
+          ]),
+        ),
+        "tests/index.test.js": bundle.files["tests/index.test.js"] ?? "",
+        "README.md": bundle.files["README.md"] ?? "",
+        ".stella/task.json": Buffer.from(
+          JSON.stringify({ ...manifest, submit: { files: ["src/**/*.js"] } }),
+        ).toString("base64"),
+      },
+    };
+    state.apiRequest.mockResolvedValue({ bundle: many, fixedStart: false });
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    const opened = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    // 最初の 3 件を開き、最後に最初のファイルを前に戻す。
+    expect(opened).toEqual(
+      ["a", "b", "c", "a"].map((name) => path.join(taskRoot(), "src", `${name}.js`)),
+    );
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+    // エクスプローラーで示すのは、最初に開くファイル。ファイルを開くより前に行う。
+    expect(state.executeCommand.mock.calls[0]).toEqual([
+      "revealInExplorer",
+      { scheme: "file", fsPath: path.join(taskRoot(), "src", "a.js") },
+    ]);
+  });
+
+  it("画像は自動では開かず、開けないファイルがあっても課題文は開く", async () => {
+    const files = ["assets/logo.png", "index.js", "notes.js"];
+    const withImage: TaskBundle = {
+      ...bundle,
+      manifest: { ...manifest, submit: { files } },
+      files: {
+        ...bundle.files,
+        "assets/logo.png": Buffer.from([0x89, 0x50, 0x4e, 0x47, 0]).toString("base64"),
+        "notes.js": Buffer.from("notes").toString("base64"),
+        ".stella/task.json": Buffer.from(
+          JSON.stringify({ ...manifest, submit: { files } }),
+        ).toString("base64"),
+      },
+    };
+    state.apiRequest.mockResolvedValue({ bundle: withImage, fixedStart: false });
+    state.folders = [training];
+    state.unopenable.add(path.join(taskRoot(), "index.js"));
+    await openDistributedTask(context, taskId);
+    const opened = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    expect(opened).toEqual([path.join(taskRoot(), "notes.js")]);
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+
+  it("課題の定義を読めなければ、課題文のパネルだけを開く", async () => {
+    state.apiRequest.mockResolvedValue({
+      bundle: {
+        ...bundle,
+        files: { ...bundle.files, ".stella/task.json": Buffer.from("{}").toString("base64") },
+      },
+      fixedStart: false,
+    });
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    expect(state.showTextDocument).not.toHaveBeenCalled();
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+});
+
 describe("固定した開始点から始める", () => {
   const fixedBundle: TaskBundle = {
     ...bundle,
@@ -495,9 +587,7 @@ describe("固定した開始点から始める", () => {
       expect.objectContaining({ kind: "fixed-start" }),
     ]);
     expect(await readFile(path.join(taskRoot(), "index.js"), "utf8")).toBe("broken learner code");
-    expect(state.showTextDocument).toHaveBeenCalledWith({
-      uri: { scheme: "file", fsPath: path.join(fixed, "README.md") },
-    });
+    readmeOpened(fixed);
   });
   it("取り消したら LMS に記録を求めない", async () => {
     state.apiRequest.mockResolvedValueOnce({ bundle, fixedStart: true });
