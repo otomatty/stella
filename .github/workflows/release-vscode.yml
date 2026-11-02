@@ -1,6 +1,7 @@
 name: Release VS Code Extension
 
-# apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付する。
+# apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付し、
+# その版が Marketplace に無ければ Trusted Publishing（vsce --oidc）で公開する。
 on:
   push:
     branches: [main]
@@ -28,6 +29,11 @@ jobs:
     name: package .vsix → GitHub Release
     needs: verify
     runs-on: ubuntu-latest
+    # contents は Release の作成。id-token は Marketplace の Trusted Publishing（OIDC）。
+    # ジョブに permissions を書くとワークフロー側の contents: write は引き継がれない。
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v7
 
@@ -46,7 +52,7 @@ jobs:
         working-directory: apps/vscode
         run: |
           bun run build
-          bunx @vscode/vsce package --no-dependencies --allow-missing-repository
+          bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
       - name: Read version
         id: meta
@@ -76,3 +82,10 @@ jobs:
               --title "VS Code 拡張 $TAG" \
               --notes "$NOTES"
           fi
+
+      # 同じ版は Marketplace が拒否する。--skip-duplicate は既掲載なら成功で戻る。
+      # 公開できるのは、publisher saedgewell の Trusted Publishing に
+      # otomatty / stella / release-vscode.yml（environment なし）が登録されているとき。
+      - name: Publish to Marketplace
+        working-directory: apps/vscode
+        run: bunx @vscode/vsce publish --oidc --packagePath "stella-lms-${{ steps.meta.outputs.version }}.vsix" --skip-duplicate
