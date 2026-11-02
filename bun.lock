@@ -53,7 +53,7 @@
     },
     "apps/vscode": {
       "name": "stella-lms",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "dependencies": {
         "@stella/code-runner": "workspace:*",
         "@stella/shared": "workspace:*",
