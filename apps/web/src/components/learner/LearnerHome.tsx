@@ -50,10 +50,6 @@ import { useSkillMap, useStageQueue } from "@/hooks/useSkillMap";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
-import {
-  HallOfFameInviteRow,
-  useHallOfFameInvite,
-} from "@/components/hall-of-fame/HallOfFameInvite";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
 import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
@@ -130,8 +126,6 @@ export const LearnerHome = ({
   const { review, error: reviewError } = useSrsToday(currentUserId, backendEnabled);
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const stageQueue = useStageQueue(currentUserId, backendEnabled);
-  // 殿堂への招待 (Phase 5)。届いていない人には何も出ない。
-  const hofInvited = useHallOfFameInvite(backendEnabled);
   const treeRef = useRef<SkillTreeHandle | null>(null);
 
   /**
@@ -706,12 +700,6 @@ export const LearnerHome = ({
                   onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
                   onStart={requestStart}
                 />
-              ) : null}
-
-              {hofInvited ? (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <HallOfFameInviteRow kind={hofInvited} />
-                </div>
               ) : null}
 
               <button

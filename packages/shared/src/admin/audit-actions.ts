@@ -58,17 +58,6 @@ const LABELS = {
   discovery_generate: "発見教材の下書き生成",
   discovery_material_edit: "発見教材の内容編集",
   discovery_review: "発見教材のレビュー",
-  // 殿堂 (Phase 5)
-  //
-  // **本人の辞退 (decline) と取り下げ (withdraw) は記録しない。** 監査は運営の操作
-  // (誰を選び、誰が公開したか) を追うためのもので、辞退の記録はそこに要らない。
-  // 「断ると記録が残る」と分かっている招待は、断りにくい招待になる — 不利益が無い
-  // という約束を仕組みの側で守るために、辞退の痕跡は残さない。
-  // 掲載の申請 (hof_submit) は本人の操作だが、**公開への同意そのもの**なので残す。
-  hof_nominate: "殿堂への推薦",
-  hof_submit: "殿堂への掲載申請",
-  hof_publish: "殿堂の公開",
-  hof_close: "殿堂の非公開化",
 } as const;
 
 /**
@@ -77,7 +66,7 @@ const LABELS = {
  * course → stage のリネーム (Phase 0) 以前に記録された行は action コードが `course_*`
  * のままで、 書き換えはしない。 ラベルだけ残しておかないと監査画面で生の
  * `course_publish` が並ぶ。 Phase 3b で退役した **割当** の action と、 廃止した
- * 面談対策・スキルシートの action も同じ扱い。
+ * 面談対策・スキルシート・殿堂の action も同じ扱い。
  * `LABELS` と分けてあるのは、 記録側 (`recordAudit()`) が `AuditAction` で縛られている
  * 以上、 旧 action を再び記録できるようにしないため — 絞り込みの選択肢は
  * `AUDIT_ACTION_FILTER_LABELS` が両方を混ぜて作るので、 定義が 2 か所に割れることもない。
@@ -100,6 +89,11 @@ const DEPRECATED_LABELS: Record<string, string> = {
   answer_template_edited: "回答の型の編集 (旧)",
   skill_sheet_upload: "スキルシートのアップロード (旧)",
   skill_sheet_update: "スキルシートの更新 (旧)",
+  // 廃止した殿堂 (Phase 5)。辞退・取り下げはもともと記録していない。
+  hof_nominate: "殿堂への推薦 (旧)",
+  hof_submit: "殿堂への掲載申請 (旧)",
+  hof_publish: "殿堂の公開 (旧)",
+  hof_close: "殿堂の非公開化 (旧)",
 };
 
 /** 記録しうる監査アクション。 記録側・表示側の双方がこの型を共有する。 */
