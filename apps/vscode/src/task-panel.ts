@@ -392,6 +392,8 @@ export function showTaskReadme(
   input: TaskReadmeInput & { root?: string },
   options: { reveal?: boolean } = {},
 ): void {
+  // 確認のあとの描き直しは、開いているパネルだけを新しくする (受講者が閉じたパネルを作り直さない)。
+  if (options.reveal === false && !readmePanel) return;
   const html = buildTaskReadmeHtml(input);
   const title = `課題: ${input.title}`;
   const beside = hasLeftEditor();

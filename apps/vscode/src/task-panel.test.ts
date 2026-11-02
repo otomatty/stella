@@ -1,7 +1,8 @@
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunResult } from "@stella/shared/tasks/run-result";
 import { describe, expect, it, vi } from "vitest";
-import { buildTaskPanelHtml, buildTaskReadmeHtml } from "./task-panel.js";
+import * as vscode from "vscode";
+import { buildTaskPanelHtml, buildTaskReadmeHtml, showTaskReadme } from "./task-panel.js";
 
 vi.mock("vscode", () => ({
   window: { createWebviewPanel: vi.fn() },
@@ -248,6 +249,11 @@ describe("課題文のパネル", () => {
     expect(html).not.toMatch(/<script/i);
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("<title>&lt;課題&gt;</title>");
+  });
+
+  it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
+    showTaskReadme({ title: "最初のページ", markdown, root: "/x" }, { reveal: false });
+    expect(vscode.window.createWebviewPanel).not.toHaveBeenCalled();
   });
 
   describe("進め方つき", () => {
