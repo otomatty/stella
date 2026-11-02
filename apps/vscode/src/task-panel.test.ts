@@ -256,6 +256,26 @@ describe("課題文のパネル", () => {
     expect(vscode.window.createWebviewPanel).not.toHaveBeenCalled();
   });
 
+  it("確認のあとの描き直しは、別の課題に切り替えたパネルを上書きしない", () => {
+    const panel = {
+      title: "",
+      webview: { html: "" },
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+    };
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    showTaskReadme({ title: "課題B", markdown: "B の本文", root: "/b" });
+    expect(panel.webview.html).toContain("B の本文");
+    // 課題 A の確認のあとの描き直しが、読み込みを待つ間に B へ切り替わったパネルに届く。
+    showTaskReadme({ title: "課題A", markdown: "A の本文", root: "/a" }, { reveal: false });
+    expect(panel.webview.html).toContain("B の本文");
+    expect(panel.webview.html).not.toContain("A の本文");
+    // 同じ課題の描き直しは届く。
+    showTaskReadme({ title: "課題B", markdown: "B の新しい本文", root: "/b" }, { reveal: false });
+    expect(panel.webview.html).toContain("B の新しい本文");
+    expect(panel.reveal).not.toHaveBeenCalled();
+  });
+
   describe("進め方つき", () => {
     const root = "/home/me/web-training/dev-env-basics/m0-first-page/q01-first-page";
     const staticManifest: TaskManifest = {
