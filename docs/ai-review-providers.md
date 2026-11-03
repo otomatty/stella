@@ -39,6 +39,17 @@ API 固有のフィールドはアダプターが付ける。共通の入力は�
 
 `OPENAI_API_KEY` は OpenAI を選んだ場合に必要で、既存の Anthropic 設定のデプロイでは任意。`ANTHROPIC_API_KEY` は引き続き既存のチャット・旧形式の下書き・育成メモにも使うため、デプロイの必須キーとして残す。一次レビュー以外の接続先はこの設定では変わらない。
 
+### 本番の設定とキーの更新
+
+2026-11-03 の切り替え設定は `openai` / `gpt-6.1-sol`。Saedgewell 組織の STELLA プロジェクトで、Responses API の Write 権限に限定した `stella-ai-review` キーを使う。現在のキーは **2026-12-03 に期限切れ**になるため、それまでに更新する。
+
+1. API Platform の STELLA プロジェクトで、同じ権限の新しいキーを発行する。
+2. GitHub `otomatty/stella` の Settings → Secrets and variables → Actions で `OPENAI_API_KEY` を更新する。CLI なら `gh secret set OPENAI_API_KEY --repo otomatty/stella` を使い、対話入力する。キーをコマンドの引数に書かない。
+3. `main` の最新の成功した Deploy ワークフローを再実行する。Secret の更新だけでは稼働中の Worker へ反映されない。
+4. デプロイと接続を確認してから、旧キーを失効させる。
+
+切り替え前に、本番と同じ入力の組み立て・Structured Outputs・判定処理を使い、合成した HTML 課題 2 件を実 API で確認した。ルーブリックを満たす提出は `met`、満たさない提出は `unmet` になり、根拠の行番号の検証も通った。通常料金でキャッシュ割引を除いた費用は合計 $0.013256。これは接続と処理の確認であり、人が添削した実際の提出に対する一致率は、下記の比較で別途確認する。
+
 ## クレジットと失敗時の扱い
 
 ChatGPT のサブスクリプションによる API クレジットは、対象の OpenAI API 組織へ請求する通常の API キーで使う。STELLA が ChatGPT のログイン情報を受け取ったり、特典の残高・付与周期を管理したりする仕組みは設けない。特典の有無にかかわらず同じ API を使い、請求と支出上限は OpenAI 側で管理する。利用資格・継続条件・期限は [OpenAI の公式案内](https://developers.openai.com/api/docs/guides/chatgpt-api-credits) を確認する。

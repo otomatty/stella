@@ -9,8 +9,8 @@ account_id = "175c04a4465bcc9815b21176a852f0c0"
 [vars]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 # 一次レビューの接続先。OpenAI では AI_REVIEW_MODEL も明示し、OPENAI_API_KEY を Secret に置く。
-# AI_REVIEW_PROVIDER = "openai"
-# AI_REVIEW_MODEL = "<評価して選んだモデル ID>"
+AI_REVIEW_PROVIDER = "openai"
+AI_REVIEW_MODEL = "gpt-6.1-sol"
 GOOGLE_CLIENT_ID = "998091191276-bfug8l2cm54llkhv078brdj3ovbtdfj8.apps.googleusercontent.com"
 # 本番の Web だけを書く (CORS と招待・通知のリンク先の既定)。本番の画面は同じオリジンで API を呼ぶので
 # CORS が要るのはローカルだけ。localhost は `.dev.vars` の ALLOWED_ORIGINS に書く (`.dev.vars.example` 参照)。
