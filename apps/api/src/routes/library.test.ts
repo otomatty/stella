@@ -663,6 +663,37 @@ describe("deleting and cleanup", () => {
     ).toEqual({ status: "importing", pending_revision: 1, pending_signature: "replaced" });
   });
 
+  it("keeps an import that was resumed or uploaded to recently, even if it started long ago", async () => {
+    const day = 24 * 60 * 60 * 1000;
+    const started = await json<LibraryImportResponse>(await startImport());
+    const ageImport = () =>
+      db.sqlite
+        .prepare("UPDATE library_books SET pending_active_at = ? WHERE id = ?")
+        .run(Date.now() - 6.9 * day, started.bookId);
+    const status = () =>
+      db.sqlite
+        .prepare("SELECT status, pending_revision FROM library_books WHERE id = ?")
+        .get(started.bookId);
+    // 6.9 日前に始めて、いま同じ zip を開き直した (続きから送る)。
+    ageImport();
+    expect((await startImport()).status).toBe(200);
+    await runLibraryPurge(env, Date.now() + 0.2 * day);
+    expect(status()).toEqual({ status: "importing", pending_revision: 1 });
+    // 6.9 日前に始めて、いまファイルを 1 つ送った。
+    ageImport();
+    const cover = started.files.find((slot) => slot.path === "cover.webp");
+    await put(
+      `/api/library/books/${started.bookId}/files/${cover?.fileId}`,
+      bookFiles()["cover.webp"] ?? new Uint8Array(),
+    );
+    await runLibraryPurge(env, Date.now() + 0.2 * day);
+    expect(status()).toEqual({ status: "importing", pending_revision: 1 });
+    // 動きが無いまま 7 日を過ぎたら捨てる。
+    ageImport();
+    await runLibraryPurge(env, Date.now() + 0.2 * day);
+    expect(status()).toEqual({ status: "deleting", pending_revision: null });
+  });
+
   it("leaves unexpected prefixes alone and drops stale imports", async () => {
     storage.objects.set("library/ses/x/keep", new Uint8Array([1]));
     db.sqlite.exec("INSERT INTO library_r2_purges (prefix, created_at) VALUES ('library/ses', 0)");

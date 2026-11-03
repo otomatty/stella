@@ -67,7 +67,7 @@ interface BookRow {
   pending_manifest: string | null;
   pending_signature: string | null;
   pending_thumb_file_id: string | null;
-  pending_started_at: number | null;
+  pending_active_at: number | null;
   chapter_count: number;
   has_audio: number;
   has_video: number;
@@ -475,7 +475,15 @@ libraryRoute.post("/api/library/imports", async (c) => {
       partSize: null,
     };
 
-    if (!resuming) {
+    if (resuming)
+      // 続きから送る: 動きがあったことを記録する (7 日動かない取り込みだけを片付けるため)。
+      await db
+        .prepare(
+          "UPDATE library_books SET pending_active_at = ?, updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_signature = ?",
+        )
+        .bind(now, now, caller.tenantId, bookId, caller.id, signature)
+        .run();
+    else {
       const statements: D1PreparedStatement[] = [];
       const pendingColumns = [
         JSON.stringify(manifest),
@@ -489,7 +497,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
           db
             .prepare(
               `INSERT INTO library_books (id, tenant_id, owner_id, package_id, title, authors, language, description, status, current_revision,
-                pending_revision, pending_manifest, pending_signature, pending_thumb_file_id, pending_started_at, pending_bytes,
+                pending_revision, pending_manifest, pending_signature, pending_thumb_file_id, pending_active_at, pending_bytes,
                 chapter_count, has_audio, has_video, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'importing', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             )
@@ -530,7 +538,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
           db
             .prepare(
               `UPDATE library_books SET pending_revision = ?, pending_manifest = ?, pending_signature = ?, pending_thumb_file_id = ?,
-                pending_started_at = ?, pending_bytes = ?, updated_at = ?
+                pending_active_at = ?, pending_bytes = ?, updated_at = ?
               WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'`,
             )
             .bind(revision, ...pendingColumns, now, caller.tenantId, bookId, caller.id),
@@ -594,6 +602,15 @@ libraryRoute.post("/api/library/imports", async (c) => {
   }
 });
 
+/** 取り込み中の版に動きがあったことを記録する (7 日動かない取り込みだけを cron が片付ける)。 */
+async function touchPendingImport(env: Env, caller: Caller, bookId: string, now: number) {
+  await env.DB.prepare(
+    "UPDATE library_books SET pending_active_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision IS NOT NULL",
+  )
+    .bind(now, caller.tenantId, bookId, caller.id)
+    .run();
+}
+
 /** 送り終えたファイルを「送信済み」にする。消された・本が削除中なら R2 の分も消して 409。 */
 async function markUploaded(env: Env, bucket: R2Bucket, caller: Caller, file: FileRow) {
   const now = Date.now();
@@ -602,6 +619,7 @@ async function markUploaded(env: Env, bucket: R2Bucket, caller: Caller, file: Fi
   )
     .bind(now, caller.tenantId, file.id, caller.tenantId, file.book_id)
     .run();
+  await touchPendingImport(env, caller, file.book_id, now);
   const after = await env.DB.prepare(
     "SELECT f.status FROM library_files f JOIN library_books b ON b.tenant_id = f.tenant_id AND b.id = f.book_id WHERE f.tenant_id = ? AND f.id = ? AND b.status <> 'deleting'",
   )
@@ -673,6 +691,7 @@ libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart", async (c
     )
       .bind(upload.uploadId, Date.now(), caller.tenantId, file.id)
       .run();
+    await touchPendingImport(c.env, caller, file.book_id, Date.now());
     return c.json({
       uploaded: false,
       uploadId: upload.uploadId,
@@ -784,7 +803,7 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
           `UPDATE library_books SET current_revision = pending_revision, status = 'ready', cover_thumb_file_id = pending_thumb_file_id,
             total_bytes = pending_bytes, title = ?, authors = ?, language = ?, description = ?, chapter_count = ?, has_audio = ?, has_video = ?,
             pending_revision = NULL, pending_manifest = NULL, pending_signature = NULL, pending_thumb_file_id = NULL,
-            pending_started_at = NULL, pending_bytes = 0, updated_at = ?
+            pending_active_at = NULL, pending_bytes = 0, updated_at = ?
           WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision = ? AND status <> 'deleting'
             -- 読んだときと同じ取り込みであること (別のタブが同じ版の番号で置き換えていたら切り替えない)。
             AND pending_signature = ?

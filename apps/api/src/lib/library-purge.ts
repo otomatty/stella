@@ -3,7 +3,7 @@ import { discardPendingStatements, parsePurgePrefix } from "./library-store.js";
 
 /** 積んでからこれだけ待って消す (送信中のファイルを途中で消さない)。 */
 export const PURGE_DELAY_MS = 10 * 60 * 1000;
-/** 取り込みが止まったまま、これだけ経った版は捨てる。 */
+/** 取り込みに動き (開始・再開・ファイルの送信) が無いまま、これだけ経った版は捨てる。 */
 export const STALE_IMPORT_MS = 7 * 24 * 60 * 60 * 1000;
 /** 1 回の cron で使う R2 の呼び出し (list・delete) の上限。ほかの cron と呼び出しの枠を分け合う。 */
 const R2_BUDGET = 20;
@@ -18,7 +18,7 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
   if (!bucket) return;
 
   const stale = await env.DB.prepare(
-    "SELECT tenant_id, id, pending_revision, pending_signature FROM library_books WHERE pending_revision IS NOT NULL AND pending_started_at < ? ORDER BY pending_started_at LIMIT 2",
+    "SELECT tenant_id, id, pending_revision, pending_signature FROM library_books WHERE pending_revision IS NOT NULL AND pending_active_at < ? ORDER BY pending_active_at LIMIT 2",
   )
     .bind(now - STALE_IMPORT_MS)
     .all<{
@@ -36,6 +36,7 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
         book.pending_revision,
         book.pending_signature,
         now,
+        now - STALE_IMPORT_MS,
       ),
     );
 

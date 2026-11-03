@@ -61,7 +61,8 @@ CREATE TABLE library_books (
   pending_manifest TEXT,
   pending_signature TEXT,
   pending_thumb_file_id TEXT,
-  pending_started_at INTEGER,
+  -- 取り込み中の版に最後に動きがあった時刻 (開始・再開・ファイルの送信)。7 日動かなければ捨てる。
+  pending_active_at INTEGER,
   chapter_count INTEGER NOT NULL DEFAULT 0,
   has_audio INTEGER NOT NULL DEFAULT 0,
   has_video INTEGER NOT NULL DEFAULT 0,

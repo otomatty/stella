@@ -33,7 +33,7 @@ export const libraryBooks = sqliteTable(
     pendingManifest: text("pending_manifest"),
     pendingSignature: text("pending_signature"),
     pendingThumbFileId: text("pending_thumb_file_id"),
-    pendingStartedAt: integer("pending_started_at"),
+    pendingActiveAt: integer("pending_active_at"),
     chapterCount: integer("chapter_count").notNull().default(0),
     hasAudio: integer("has_audio").notNull().default(0),
     hasVideo: integer("has_video").notNull().default(0),
