@@ -40,6 +40,14 @@ function row(over: Partial<EvalSourceRow>): EvalSourceRow {
 }
 
 describe("人の判定との一致率", () => {
+  it("モデル名が同じでも接続先と、接続先の記録がない過去の結果を混ぜない", () => {
+    const results = summarizeAgreement(
+      [row({ provider: "openai" }), row({ provider: "anthropic" }), row({})].map(toExample),
+    );
+    expect(results).toHaveLength(3);
+    expect(results.map((result) => result.provider ?? null)).toEqual(["openai", "anthropic", null]);
+    expect(formatAgreementTable(results)).toContain("接続先");
+  });
   it("モデル・指示・しきい値の版ごとにまとめ、見直しの目安を出す", () => {
     const examples = [
       row({}),

@@ -17,6 +17,7 @@
     "smoke": "bun run scripts/d1-smoke.ts",
     "smoke:core": "bun run scripts/core-loop-smoke.ts",
     "ai-review:eval": "bun run scripts/ai-review-eval.ts",
+    "ai-review:compare": "bun run scripts/ai-review-compare.ts",
     "ai-review:replay": "bun run scripts/ai-review-replay.ts",
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
@@ -26,7 +27,8 @@
     "better-auth": "1.7.14",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.14",
-    "jose": "^6.2.14"
+    "jose": "^6.2.14",
+    "openai": "^7.47.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261030.1",

@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 
 import { authConfigured } from "../lib/better-auth.js";
+import { aiReviewConfigured } from "../lib/ai-review-provider.js";
 import { libraryRuntimeStatus } from "../lib/library-capabilities.js";
 import { isDevMode } from "../lib/skill-map-data.js";
 import type { Env } from "../env.js";
@@ -25,9 +26,7 @@ healthzRoute.get("/api/healthz", async (c) => {
     /** 開発者モード FAB を出していいか。本番には `DEV_MODE` を設定しない。 */
     devModeAvailable: isDevMode(c.env),
     /** AI 一次レビューに必要な鍵と、Gateway 使用時のアカウント設定があるか。 */
-    aiReviewConfigured:
-      Boolean(c.env.ANTHROPIC_API_KEY?.trim()) &&
-      (!c.env.AI_GATEWAY_ID || Boolean(c.env.CLOUDFLARE_ACCOUNT_ID?.trim())),
+    aiReviewConfigured: aiReviewConfigured(c.env),
     ...(await libraryRuntimeStatus(c.env)),
   });
 });

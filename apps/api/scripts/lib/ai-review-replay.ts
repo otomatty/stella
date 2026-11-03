@@ -38,7 +38,6 @@ import { submissions } from "../../src/db/schema.js";
 import type { Env } from "../../src/env.js";
 import {
   type AiReviewJudgeMaterial,
-  aiReviewRequest,
   interpretAiCompletion,
   judgeAiReview,
   judgeMaterialOf,
@@ -57,6 +56,11 @@ import {
   jsonSchemaRequestParams,
   readJsonSchemaCompletion,
 } from "../../src/lib/anthropic-complete.js";
+import {
+  anthropicReviewPrompt,
+  normalizeAnthropicCompletion,
+} from "../../src/lib/ai-review-anthropic.js";
+import { reviewCompletionRequest } from "../../src/lib/ai-review-completion.js";
 import type { EvalExample } from "./ai-review-eval.js";
 
 // ---------------------------------------------------------------
@@ -275,7 +279,13 @@ async function prepareOne(
   if ("failure" in loaded) return { subject, failure: loaded.failure, detail: loaded.detail };
   const built = candidates.map((candidate) => {
     const prompt = buildAiReviewPrompt(loaded.material, candidate.promptVersion);
-    return { prompt, params: jsonSchemaRequestParams(aiReviewRequest(prompt, candidate.model)) };
+    return {
+      prompt,
+      params: jsonSchemaRequestParams({
+        ...reviewCompletionRequest(prompt, candidate.model),
+        ...anthropicReviewPrompt(prompt),
+      }),
+    };
   });
   const large = built.find((b) => b.prompt.variableChars > MAX_REVIEW_INPUT_CHARS);
   if (large)
@@ -700,7 +710,7 @@ export function judgeBatchResult(
     return { decision: null, callError: kind, usage: null };
   }
   const completion = readJsonSchemaCompletion(result.message);
-  const call = interpretAiCompletion(completion);
+  const call = interpretAiCompletion(normalizeAnthropicCompletion(completion));
   const output = call.ok ? call.output : null;
   const { decision } = judgeAiReview({
     kind: judge.kind,

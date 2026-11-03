@@ -22,6 +22,7 @@ export interface EvalSourceRow {
   confidence: string | null;
   proposed_verdict: "pass" | "resubmit" | null;
   failure: string | null;
+  provider?: "anthropic" | "openai" | null;
   model: string | null;
   prompt_version: string;
   threshold_version: string;
@@ -35,6 +36,7 @@ export interface EvalExample {
   taskId: string;
   taskKind: string;
   taskContentHash: string;
+  provider?: "anthropic" | "openai" | null;
   model: string | null;
   promptVersion: string;
   thresholdVersion: string;
@@ -66,7 +68,7 @@ checked as (
   select distinct submission_id from submission_checks where result in ('confirmed', 'commented')
 )
 select r.id as ai_review_id, r.submission_id, r.task_id, r.task_kind, r.task_content_hash,
-  r.outcome, r.route_reasons, r.confidence, r.proposed_verdict, r.failure, r.model,
+  r.outcome, r.route_reasons, r.confidence, r.proposed_verdict, r.failure, r.provider, r.model,
   r.prompt_version, r.threshold_version, coalesce(h.verdict, 'pass') as human_verdict
 from ai_reviews r
 left join human h on h.submission_id = r.submission_id and h.rn = 1
@@ -89,6 +91,7 @@ export function toExample(row: EvalSourceRow): EvalExample {
     taskId: row.task_id,
     taskKind: row.task_kind,
     taskContentHash: row.task_content_hash,
+    ...(row.provider !== undefined ? { provider: row.provider } : {}),
     model: row.model,
     promptVersion: row.prompt_version,
     thresholdVersion: row.threshold_version,
@@ -102,6 +105,7 @@ export function toExample(row: EvalSourceRow): EvalExample {
 }
 
 export interface AgreementSummary {
+  provider?: "anthropic" | "openai";
   model: string;
   promptVersion: string;
   thresholdVersion: string;
@@ -126,12 +130,22 @@ const rate = (hit: number, total: number) => (total === 0 ? null : hit / total);
 export function summarizeAgreement(examples: EvalExample[]): AgreementSummary[] {
   const groups = new Map<string, EvalExample[]>();
   for (const e of examples) {
-    const key = JSON.stringify([e.model ?? "(なし)", e.promptVersion, e.thresholdVersion]);
+    const key = JSON.stringify([
+      e.model ?? "(なし)",
+      e.promptVersion,
+      e.thresholdVersion,
+      e.provider ?? null,
+    ]);
     groups.set(key, [...(groups.get(key) ?? []), e]);
   }
   return [...groups.entries()]
     .map(([key, rows]) => {
-      const [model, promptVersion, thresholdVersion] = JSON.parse(key) as [string, string, string];
+      const [model, promptVersion, thresholdVersion, provider] = JSON.parse(key) as [
+        string,
+        string,
+        string,
+        "anthropic" | "openai" | null,
+      ];
       const judged = rows.filter((r) => r.proposedVerdict !== null);
       const agreed = judged.filter(
         (r) => (r.proposedVerdict === "pass") === (r.humanVerdict === "pass"),
@@ -142,6 +156,7 @@ export function summarizeAgreement(examples: EvalExample[]): AgreementSummary[] 
       );
       const escalated = rows.filter((r) => r.outcome === "escalated");
       return {
+        ...(provider ? { provider } : {}),
         model,
         promptVersion,
         thresholdVersion,
@@ -171,14 +186,14 @@ const percent = (v: number | null) => (v === null ? "-" : `${(v * 100).toFixed(1
 /** 端末に出す表 (Markdown)。 */
 export function formatAgreementTable(rows: AgreementSummary[]): string {
   const header = [
-    "| モデル | 指示 | しきい値 | 件数 | 判定案 | 一致率 | AI確定を覆した | 練習・中を覆した | 人に回して合格 | 判定不能 |",
-    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| 接続先 | モデル | 指示 | しきい値 | 件数 | 判定案 | 一致率 | AI確定を覆した | 練習・中を覆した | 人に回して合格 | 判定不能 |",
+    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
   ];
   return [
     ...header,
     ...rows.map(
       (r) =>
-        `| ${r.model} | ${r.promptVersion} | ${r.thresholdVersion} | ${r.examples} | ${r.judged} | ${percent(r.agreement)} | ${percent(r.confirmedOverturned)} | ${percent(r.practiceMediumOverturned)} | ${percent(r.escalatedHumanPassed)} | ${r.failures} |`,
+        `| ${r.provider ?? "(記録なし)"} | ${r.model} | ${r.promptVersion} | ${r.thresholdVersion} | ${r.examples} | ${r.judged} | ${percent(r.agreement)} | ${percent(r.confirmedOverturned)} | ${percent(r.practiceMediumOverturned)} | ${percent(r.escalatedHumanPassed)} | ${r.failures} |`,
     ),
   ].join("\n");
 }

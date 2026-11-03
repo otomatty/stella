@@ -1776,6 +1776,7 @@ export const aiReviews = sqliteTable(
       [],
     ),
     ruleSetHash: text("rule_set_hash"),
+    provider: text("provider", { enum: ["anthropic", "openai"] }),
     failure: text("failure", {
       enum: [
         "unavailable",

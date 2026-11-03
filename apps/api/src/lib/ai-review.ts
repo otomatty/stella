@@ -11,333 +11,47 @@
  * 待ち行列と呼び出し回数の上限は `ai-review-queue.ts`。
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import {
-  AI_REVIEW_OUTPUT_SCHEMA,
   AI_REVIEW_THRESHOLD_VERSION,
-  type AiFailure,
-  type AiFinding,
-  type AiLearnerReply,
-  type AiReviewOutput,
-  decideRouting,
   formatLearnerReply,
   forcedHumanReasons,
-  isEvidenceKind,
-  type LearnerAiFeedback,
-  type LineCounts,
-  parseAiReviewOutput,
   ROUTE_REASONS,
   type RouteReason,
-  type ReviewRubricItem,
-  type RoutingDecision,
+  type LearnerAiFeedback,
 } from "@stella/shared/review/ai-review";
-import { checkSolutionLeak, type SolutionLeakResult } from "@stella/shared/review/solution-leak";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import {
-  aiReviews,
-  sections,
-  stages,
-  submissions,
-  taskPrivateVersions,
-  taskRevisions,
-  tasks,
-} from "../db/schema.js";
+import { aiReviews, sections, submissions, tasks } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { MissingGatewayConfigError } from "./ai-gateway.js";
+import { type AiCallResult, callAiReview } from "./ai-review-completion.js";
+import { judgeAiReview, judgeMaterialOf } from "./ai-review-judgement.js";
+import { loadMaterial } from "./ai-review-material.js";
 import {
   AI_REVIEW_PROMPT_VERSION,
   type BuiltReviewPrompt,
   buildAiReviewPrompt,
   MAX_REVIEW_INPUT_CHARS,
-  type ReviewMaterial,
 } from "./ai-review-prompt.js";
-import {
-  completeJsonSchema,
-  type JsonSchemaCompletion,
-  resolveAnthropicModel,
-} from "./anthropic-complete.js";
-import { MissingApiKeyError } from "./anthropic.js";
+import type { AiReviewProvider } from "./ai-review-provider.js";
 import { ApiError, type Caller } from "./authz.js";
-import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { autoCompleteStagesIfMet } from "./stage-auto-complete.js";
 import {
   AiReviewNeedsHuman,
   AiReviewNotApplicable,
   assessmentRecordedSupport,
   escalateTaskSubmission,
-  readSubmissionFiles,
   reviewTaskSubmission,
 } from "./task-submission.js";
-
-/** AI の応答の上限。判定 JSON は数千トークンに収まる。打ち切られたら形式の誤りとして人に回す。 */
-const MAX_OUTPUT_TOKENS = 16_000;
-
-/** 練習で返信が解答例と重なったときに、受講者へ代わりに返す文。 */
-const SAFE_REPLY: AiLearnerReply = {
-  message: "提出を確認しました。気になる点があれば、講師への相談から質問してください。",
-  goodPoints: [],
-  nextSteps: [],
-};
+export { type AiCallResult, interpretAiCompletion } from "./ai-review-completion.js";
+export {
+  type AiReviewJudgeMaterial,
+  type AiReviewJudgement,
+  judgeAiReview,
+  judgeMaterialOf,
+} from "./ai-review-judgement.js";
+export { type LoadedMaterial, loadMaterial } from "./ai-review-material.js";
 
 type SubmissionRow = typeof submissions.$inferSelect;
-
-export interface LoadedMaterial {
-  material: ReviewMaterial;
-  stageId: string;
-  /** 受講者がすでに持っている本文 (提出と配布物)。返信の照合で除く。 */
-  known: string[];
-  appliedRules: { id: string; required: boolean; contentHash: string | null }[];
-  ruleSetHash: string;
-  escalateWhen: string[];
-}
-
-function decodeBase64(value: string): string {
-  return new TextDecoder().decode(Uint8Array.from(atob(value), (c) => c.charCodeAt(0)));
-}
-
-interface TaskDefinitionReview {
-  kind?: string;
-  title?: string;
-  review?: {
-    rules?: { id: string; required: boolean }[];
-    rubric?: { id: string; criterion: string; required: boolean }[];
-    escalateWhen?: string[];
-  };
-}
-
-/**
- * 提出時の課題の版・規則・解答例・提出ファイルを集める。足りなければ失敗の理由を返す。
- * 候補のモデル・指示の当て直し (`scripts/ai-review-replay.ts`) も同じ関数で集める。
- */
-export async function loadMaterial(
-  db: Db,
-  env: Env,
-  row: SubmissionRow,
-): Promise<LoadedMaterial | { failure: AiFailure; detail: string }> {
-  if (!row.taskId || !row.taskContentHash)
-    return { failure: "error", detail: "課題の提出ではありません" };
-  const [task] = await db
-    .select({ stageId: sections.stageId, slug: stages.slug })
-    .from(tasks)
-    .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .innerJoin(stages, eq(stages.id, sections.stageId))
-    .where(eq(tasks.id, row.taskId))
-    .limit(1);
-  const [revision] = await db
-    .select({ definition: taskRevisions.definition, bundle: taskRevisions.bundle })
-    .from(taskRevisions)
-    .where(
-      and(eq(taskRevisions.taskId, row.taskId), eq(taskRevisions.contentHash, row.taskContentHash)),
-    )
-    .limit(1);
-  if (!task || !revision) return { failure: "error", detail: "課題の版が見つかりません" };
-  // 解答例と観点は、提出を受け付けた時点の素材の版を読む。版が記録されていない提出
-  // (今の版と違う課題の版への提出、0048 より前で素材が分からない提出) と、版の行が無い提出は、
-  // 別の解答例で判定・照合しないよう AI を呼ばずに人に回す。
-  const [privateVersion] = row.taskPrivateHash
-    ? await db
-        .select({ files: taskPrivateVersions.files })
-        .from(taskPrivateVersions)
-        .where(
-          and(
-            eq(taskPrivateVersions.taskId, row.taskId),
-            eq(taskPrivateVersions.privateHash, row.taskPrivateHash),
-          ),
-        )
-        .limit(1)
-    : [];
-  if (!privateVersion)
-    return {
-      failure: "stale-material",
-      detail: row.taskPrivateHash
-        ? `非公開の素材の版 (${row.taskPrivateHash.slice(0, 20)}) がありません`
-        : "提出時の非公開の素材の版が記録されていません",
-    };
-  const definition = JSON.parse(revision.definition) as TaskDefinitionReview;
-  const ruleRefs = definition.review?.rules ?? [];
-  const ruleSet = await loadCodingRuleSet(db, task.slug);
-  const ruleRows = ruleSet.rows;
-  // 提出のあとに規則が変わっていたら、受け付けた時点に無かった規則で判定しないよう人に回す。
-  // 版が null の提出は 0048 より前のもの (規則の正本がまだ無かった) なので、今の規則で見る。
-  if (row.ruleSetHash !== null && row.ruleSetHash !== ruleSet.hash)
-    return {
-      failure: "stale-material",
-      detail: `提出のあとにコーディング規則が変わりました (${row.ruleSetHash.slice(0, 12)} → ${ruleSet.hash.slice(0, 12)})`,
-    };
-  // 提出の版が参照する規則が正本から消えていたら、本文なしでは判定できないので AI を呼ばずに
-  // 人に回す (AI が本文の無い項目に「満たす」と答えても確定させない)。
-  const missingRules = ruleRefs.filter((ref) => !ruleRows.some((r) => r.id === ref.id));
-  if (missingRules.length > 0)
-    return {
-      failure: "stale-material",
-      detail: `規則の本文が見つかりません: ${missingRules.map((ref) => ref.id).join(", ")}`,
-    };
-  const { commonRules, courseRules } = ruleSet;
-  const rubric: ReviewRubricItem[] = [
-    ...ruleRefs.flatMap((ref) => {
-      const rule = ruleRows.find((r) => r.id === ref.id);
-      return rule
-        ? [{ id: ref.id, criterion: rule.statement, required: ref.required, rule: true }]
-        : [];
-    }),
-    ...(definition.review?.rubric ?? []).map((item) => ({ ...item, rule: false })),
-  ];
-  const privateFiles = JSON.parse(privateVersion.files) as Record<string, string>;
-  const solution = Object.entries(privateFiles)
-    .filter(([path]) => path.startsWith("solution/"))
-    .map(([path, value]) => ({ path: path.slice("solution/".length), text: decodeBase64(value) }));
-  const snapshot = row.taskSnapshot;
-  // 配布物 (starter・テスト・課題文) は受講者がすでに持っているので、返信の照合から除く。
-  const bundle = JSON.parse(revision.bundle) as { files?: Record<string, string> };
-  const bundleTexts = Object.values(bundle.files ?? {}).map(decodeBase64);
-  let files: Awaited<ReturnType<typeof readSubmissionFiles>>;
-  try {
-    files = await readSubmissionFiles(db, env, row.id);
-  } catch (e) {
-    return {
-      failure: "error",
-      detail: e instanceof Error ? e.message : "提出ファイルを読めません",
-    };
-  }
-  const submissionFiles = files.map((f) => ({
-    path: f.path,
-    bytes: f.bytes,
-    text: f.text.includes("\u0000") || f.text.includes("�") ? null : f.text,
-  }));
-  const material: ReviewMaterial = {
-    kind: row.taskKind ?? definition.kind ?? "basic",
-    taskTitle: row.assignmentTitle,
-    courseSlug: task.slug,
-    taskText: snapshot?.files["README.md"] ? decodeBase64(snapshot.files["README.md"]) : "",
-    rubric,
-    commonRules,
-    courseRules,
-    solution,
-    reviewGuide: privateFiles["review.md"] ? decodeBase64(privateFiles["review.md"]) : "",
-    submission: {
-      files: submissionFiles,
-      explanation: row.explanation ?? "",
-      debuggingRecord: row.debuggingRecord ?? null,
-      localResult: row.localResult ?? null,
-      support: row.supportLog ?? [],
-      ciRun: row.machineCheck?.ci ?? null,
-    },
-  };
-  return {
-    material,
-    stageId: task.stageId,
-    known: [
-      ...submissionFiles.flatMap((f) => (f.text === null ? [] : [f.text])),
-      ...bundleTexts,
-      row.explanation ?? "",
-    ],
-    appliedRules: ruleRefs.map((ref) => ({
-      id: ref.id,
-      required: ref.required,
-      contentHash: ruleRows.find((r) => r.id === ref.id)?.contentHash ?? null,
-    })),
-    ruleSetHash: ruleSet.hash,
-    escalateWhen: definition.review?.escalateWhen ?? [],
-  };
-}
-
-export type AiCallResult =
-  | {
-      ok: true;
-      output: AiReviewOutput;
-      model: string;
-      usage: Record<string, number | null>;
-    }
-  | { ok: false; failure: AiFailure; retryable: boolean; detail: string; model: string | null };
-
-/**
- * AI に送る要求 (モデル・入力・構造化出力の形・出力の上限)。本番の呼び出しと、候補の当て直し
- * (Batch) が同じ要求を送るよう、ここで組み立てる。
- */
-export function aiReviewRequest(prompt: BuiltReviewPrompt, model: string) {
-  return {
-    model,
-    system: prompt.system,
-    messages: prompt.messages,
-    schema: AI_REVIEW_OUTPUT_SCHEMA as unknown as Record<string, unknown>,
-    maxTokens: MAX_OUTPUT_TOKENS,
-  };
-}
-
-/** 応答を読む。拒否・打ち切り・形の誤りは「AI が判定できなかった」(やり直さない) にする。 */
-export function interpretAiCompletion(completion: JsonSchemaCompletion): AiCallResult {
-  if (completion.stopReason === "refusal")
-    return {
-      ok: false,
-      failure: "refusal",
-      retryable: false,
-      detail: "refusal",
-      model: completion.model,
-    };
-  const output =
-    completion.stopReason === "max_tokens" ? null : parseAiReviewOutput(completion.text);
-  if (!output)
-    return {
-      ok: false,
-      failure: "invalid-format",
-      retryable: false,
-      detail: `stop_reason=${completion.stopReason ?? "null"}`,
-      model: completion.model,
-    };
-  return { ok: true, output, model: completion.model, usage: completion.usage };
-}
-
-/** AI を 1 回呼ぶ。失敗は理由と、待ち行列でやり直す価値があるかに分ける。 */
-async function callAi(
-  env: Env,
-  prompt: BuiltReviewPrompt,
-  timeoutMs: number,
-): Promise<AiCallResult> {
-  const model = resolveAnthropicModel(env, env.AI_REVIEW_MODEL);
-  try {
-    const completion = await completeJsonSchema({
-      env,
-      ...aiReviewRequest(prompt, model),
-      timeoutMs,
-    });
-    return interpretAiCompletion(completion);
-  } catch (e) {
-    if (e instanceof MissingApiKeyError || e instanceof MissingGatewayConfigError)
-      return {
-        ok: false,
-        failure: "unavailable",
-        retryable: false,
-        detail: e.message,
-        model: null,
-      };
-    if (
-      e instanceof Anthropic.APIConnectionTimeoutError ||
-      e instanceof Anthropic.APIUserAbortError ||
-      (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError"))
-    )
-      return { ok: false, failure: "timeout", retryable: true, detail: "timeout", model };
-    if (e instanceof Anthropic.APIConnectionError)
-      return { ok: false, failure: "error", retryable: true, detail: e.message, model };
-    if (e instanceof Anthropic.APIError) {
-      const status = e.status ?? 0;
-      return {
-        ok: false,
-        failure: "error",
-        retryable: status === 429 || status >= 500,
-        detail: `${status} ${e.message}`.slice(0, 500),
-        model,
-      };
-    }
-    return {
-      ok: false,
-      failure: "error",
-      retryable: false,
-      detail: e instanceof Error ? e.message.slice(0, 500) : "unknown",
-      model,
-    };
-  }
-}
 
 /** AI の判定によらず人に回す条件のうち、提出の行とサーバーの記録で分かるもの。 */
 export async function submissionForcedReasons(db: Db, row: SubmissionRow): Promise<RouteReason[]> {
@@ -348,100 +62,6 @@ export async function submissionForcedReasons(db: Db, row: SubmissionRow): Promi
     support: row.supportLog ?? null,
     recordedSupport: await assessmentRecordedSupport(db, row),
   });
-}
-
-/** 判定と解答例の照合に使う教材の部分 (候補の当て直しでは手元のファイルに控える)。 */
-export interface AiReviewJudgeMaterial {
-  rubric: ReviewRubricItem[];
-  escalateWhen: string[];
-  /** 解答例のファイルの本文。 */
-  solution: string[];
-  /** 受講者がすでに持っている本文 (提出と配布物)。照合で除く。 */
-  known: string[];
-}
-
-export function judgeMaterialOf(loaded: LoadedMaterial): AiReviewJudgeMaterial {
-  return {
-    rubric: loaded.material.rubric,
-    escalateWhen: loaded.escalateWhen,
-    solution: loaded.material.solution.map((f) => f.text),
-    known: loaded.known,
-  };
-}
-
-export interface AiReviewJudgement {
-  decision: RoutingDecision;
-  leak: SolutionLeakResult | null;
-  /** `ai_reviews.leak_check` に残す形。 */
-  leakCheck: (SolutionLeakResult & { action: "none" | "escalate" | "sanitize" }) | null;
-  /** 受講者に見せる返信と所見 (AI が判定できなかったときは null)。 */
-  learnerReply: LearnerAiFeedback | null;
-}
-
-/**
- * AI の結果に、解答例の照合としきい値をコードで当てる (07 §6.3)。本番の `runAiReview` と、
- * 候補の当て直し (`scripts/ai-review-replay.ts`) が同じ関数で判定する。
- */
-export function judgeAiReview(input: {
-  kind: string;
-  /** 教材を読めなかったときは null。 */
-  material: AiReviewJudgeMaterial | null;
-  forced: RouteReason[];
-  /** AI が判定できなかったときは null。 */
-  output: AiReviewOutput | null;
-  lines: LineCounts;
-}): AiReviewJudgement {
-  const { kind, material, output } = input;
-  // 受講者に見せうる文 (返信と所見のコメント) を解答例と照合する。
-  const strict = isEvidenceKind(kind);
-  const visible: string[] = output
-    ? [
-        output.learnerReply.message,
-        ...output.learnerReply.goodPoints,
-        ...output.learnerReply.nextSteps,
-        ...output.findings.map((f) => f.comment),
-      ]
-    : [];
-  const leak =
-    output && material
-      ? checkSolutionLeak({
-          texts: visible,
-          solution: material.solution,
-          known: material.known,
-          strict,
-        })
-      : null;
-  const leaked = (leak?.hits.length ?? 0) > 0;
-  const decision = decideRouting({
-    kind,
-    rubric: material?.rubric ?? [],
-    escalateWhen: material?.escalateWhen ?? [],
-    forced: input.forced,
-    output,
-    lines: input.lines,
-    // 確認A・B (と統合) は返信が重なったら人に回す。練習は返信だけを差し替えて確定してよい。
-    leakEscalates: leaked && strict,
-  });
-  let learnerReply: LearnerAiFeedback | null = null;
-  if (output) {
-    const replyCount =
-      1 + output.learnerReply.goodPoints.length + output.learnerReply.nextSteps.length;
-    const replyLeaked = (leak?.hits ?? []).some((i) => i < replyCount);
-    // 受講者に見せる所見は、箇所が提出に実在し (根拠と同じ `lines` で確かめる)、解答例とも
-    // 重ならないものだけ。AI の原文 (`findings`) は評価と講師の確認のためにそのまま記録する。
-    const findings: AiFinding[] = output.findings.filter(
-      (_, i) => decision.findingsValid[i] === true && !(leak?.hits ?? []).includes(replyCount + i),
-    );
-    learnerReply = { ...(replyLeaked ? SAFE_REPLY : output.learnerReply), findings };
-  }
-  return {
-    decision,
-    leak,
-    leakCheck: leak
-      ? { ...leak, action: !leaked ? "none" : strict ? "escalate" : "sanitize" }
-      : null,
-    learnerReply,
-  };
 }
 
 export type AiReviewRun =
@@ -466,7 +86,8 @@ export async function runAiReview(
   }));
   const kind = row.taskKind ?? "basic";
   const forced = await submissionForcedReasons(db, row);
-  let call: AiCallResult;
+  let call: AiCallResult & { provider?: AiReviewProvider | null };
+  let provider: AiReviewProvider | null = null;
   let prompt: BuiltReviewPrompt | null = null;
   if ("failure" in loaded) {
     call = {
@@ -487,15 +108,8 @@ export async function runAiReview(
             detail: `${prompt.variableChars} chars`,
             model: null,
           }
-        : env.ANTHROPIC_API_KEY
-          ? await callAi(env, prompt, opts.timeoutMs)
-          : {
-              ok: false,
-              failure: "unavailable",
-              retryable: false,
-              detail: "ANTHROPIC_API_KEY が未設定です",
-              model: null,
-            };
+        : await callAiReview(env, prompt, opts.timeoutMs);
+    provider = call.provider ?? null;
   }
   if (!call.ok && call.retryable && !opts.finalAttempt)
     return { status: "retry", detail: `${call.failure}: ${call.detail}` };
@@ -529,6 +143,7 @@ export async function runAiReview(
       appliedRules: "failure" in loaded ? [] : loaded.appliedRules,
       ruleSetHash: "failure" in loaded ? null : loaded.ruleSetHash,
       failure: call.ok ? null : call.failure,
+      provider,
       model: call.model,
       promptVersion: AI_REVIEW_PROMPT_VERSION,
       thresholdVersion: AI_REVIEW_THRESHOLD_VERSION,

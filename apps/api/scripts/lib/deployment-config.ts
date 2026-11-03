@@ -4,6 +4,10 @@ import { parse as parseJsonc, type ParseError } from "jsonc-parser";
 import { parse as parseToml } from "smol-toml";
 import { parse as parseYaml } from "yaml";
 import deployment from "../../deployment.json";
+import {
+  requireReviewCredentials,
+  resolveReviewProvider,
+} from "../../src/lib/ai-review-provider.js";
 
 export { deployment };
 
@@ -91,6 +95,7 @@ export function validateDeploymentConfig(
   const api = configs["apps/api/wrangler.toml"];
   const narrator = configs["apps/narrator/wrangler.jsonc"];
   if (!api || !narrator) throw new Error("API and narrator Wrangler configurations are required");
+  resolveReviewProvider(reviewDeploymentEnv(api));
   const { database, libraryBucket, narrator: service } = deployment.resources;
   function single<T extends { binding: string }>(entries: T[] | undefined, binding: string): T {
     const matches = entries?.filter((entry) => entry.binding === binding) ?? [];
@@ -123,6 +128,32 @@ export function validateDeploymentConfig(
     throw new Error("API NARRATOR binding must use the deployment narrator service and entrypoint");
 }
 
+function reviewDeploymentEnv(
+  config: WranglerConfig,
+  secrets: Record<string, string | undefined> = {},
+) {
+  const value = (key: string) =>
+    typeof config.vars?.[key] === "string" ? config.vars[key] : undefined;
+  return {
+    AI_REVIEW_PROVIDER: value("AI_REVIEW_PROVIDER"),
+    AI_REVIEW_MODEL: value("AI_REVIEW_MODEL"),
+    ANTHROPIC_MODEL: value("ANTHROPIC_MODEL"),
+    AI_GATEWAY_ID: value("AI_GATEWAY_ID"),
+    CLOUDFLARE_ACCOUNT_ID: value("CLOUDFLARE_ACCOUNT_ID"),
+    ANTHROPIC_API_KEY: secrets.ANTHROPIC_API_KEY ?? "",
+    OPENAI_API_KEY: secrets.OPENAI_API_KEY,
+  };
+}
+
+/** リモートへ書く前に、選んだ一次レビューに必要なキーも検査する。 */
+export function validateReviewDeployment(
+  config: WranglerConfig,
+  secrets: Record<string, string | undefined>,
+) {
+  const env = reviewDeploymentEnv(config, secrets);
+  requireReviewCredentials(env, resolveReviewProvider(env).provider);
+}
+
 /** PR checks never read credentials or fetch GitHub/Cloudflare settings. */
 export function checkDeploymentConfig(root: string, accountId?: string): void {
   const ignored = new Set([
@@ -132,6 +163,8 @@ export function checkDeploymentConfig(root: string, accountId?: string): void {
     "dist",
     "coverage",
     "graphify-out",
+    ".claude",
+    ".worktrees",
   ]);
   const configs: Record<string, WranglerConfig> = {};
   function scan(directory: string): void {

@@ -91,6 +91,10 @@ if (args.mode === "collect") {
     console.log(`\n結果: ${join(dir, "report.md")} / report.json`);
   }
 } else {
+  if (process.env.AI_REVIEW_PROVIDER === "openai")
+    throw new Error(
+      "Batch リプレイは Anthropic 専用です。OpenAI の比較には ai-review:compare を使ってください",
+    );
   // 投入するときは、D1 と R2 を読む前に API キーを確かめる (読み終えてから止まらない)。
   const api = args.run ? batchApi() : null;
   const bindings = await openReplayBindings({ remote: args.remote, apiDir });

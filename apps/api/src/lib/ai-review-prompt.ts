@@ -4,14 +4,10 @@
  * キャッシュが効くよう、変わりにくい部分ほど先に置く。
  *   1 レビューの指示 → 2 プログラム共通の規則 → 3 講座の追加規則 → 4 課題文 → 5 ルーブリック
  *   → 6 解答例 → 7 よくある違反 → 8 提出ごとの内容 (ファイル・結果・説明)
- * 区切り (`cache_control`) は共通の規則・講座の規則・よくある違反の後ろの 3 か所。共通の規則までは
+ * キャッシュの区切り は共通の規則・講座の規則・よくある違反の後ろの 3 か所。共通の規則までは
  * 全課題で、講座の規則までは同じ講座で、よくある違反までは同じ課題の提出が続く間、キャッシュから読む。
  */
 
-import type {
-  MessageParam,
-  TextBlockParam,
-} from "@anthropic-ai/sdk/resources/messages/messages.js";
 import {
   KIND_REVIEW_FOCUS,
   PSEUDO_FILES,
@@ -270,9 +266,16 @@ function ciRunText(check: CiRunCheck): string {
   ].join("\n");
 }
 
+/** API 固有の形式を持たないテキスト。キャッシュ位置はアダプターで解釈する。 */
+export interface ReviewTextBlock {
+  type: "text";
+  text: string;
+  cacheBoundary?: true;
+}
+
 export interface BuiltReviewPrompt {
-  system: TextBlockParam[];
-  messages: MessageParam[];
+  system: ReviewTextBlock[];
+  messages: { role: "user"; content: ReviewTextBlock[] }[];
   /** 根拠に使えるファイルと記録の行数。AI が返した根拠の検証に使う。 */
   lines: Map<string, number>;
   /** 提出ごとに変わる部分の文字数。上限 (`MAX_REVIEW_INPUT_CHARS`) の判定に使う。 */
@@ -285,11 +288,10 @@ export function buildAiReviewPrompt(
   version: AiReviewPromptVersion = AI_REVIEW_PROMPT_VERSION,
 ): BuiltReviewPrompt {
   const rules = renderRuleBlocks(material);
-  const cache = { type: "ephemeral" as const };
-  const system: TextBlockParam[] = [
+  const system: ReviewTextBlock[] = [
     { type: "text", text: AI_REVIEW_PROMPTS[version].instructions },
-    { type: "text", text: rules.common, cache_control: cache },
-    { type: "text", text: rules.course, cache_control: cache },
+    { type: "text", text: rules.common, cacheBoundary: true },
+    { type: "text", text: rules.course, cacheBoundary: true },
   ];
   const kindLabel = TASK_KIND_LABELS[material.kind as TaskKind] ?? material.kind;
   const focus = KIND_REVIEW_FOCUS[material.kind as TaskKind] ?? "";
@@ -350,14 +352,14 @@ export function buildAiReviewPrompt(
     solutionBlock.length +
     guideBlock.length +
     submissionBlock.length;
-  const messages: MessageParam[] = [
+  const messages: BuiltReviewPrompt["messages"] = [
     {
       role: "user",
       content: [
         { type: "text", text: taskBlock },
         { type: "text", text: rubricBlock },
         { type: "text", text: solutionBlock },
-        { type: "text", text: guideBlock, cache_control: cache },
+        { type: "text", text: guideBlock, cacheBoundary: true },
         { type: "text", text: submissionBlock },
       ],
     },

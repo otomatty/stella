@@ -26,6 +26,7 @@ apps/api/.dev.vars
 
 # AI 一次レビューのリプレイ (ai-review:replay) の状態と結果。受講者の提出の本文を含む
 apps/api/.ai-review-replay/
+apps/api/.ai-review-compare/
 
 # Git worktrees (local)
 .worktrees

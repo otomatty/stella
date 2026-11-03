@@ -8,12 +8,13 @@
       "CLOUDFLARE_ACCOUNT_ID",
       "BETTER_AUTH_SECRET",
       "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY",
       "PDF_KEY_SALT"
     ],
-    "optionalSecrets": ["PDF_KEY_SALT"]
+    "optionalSecrets": ["PDF_KEY_SALT", "OPENAI_API_KEY"]
   },
   "workerSecrets": {
-    "api": ["BETTER_AUTH_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY"],
+    "api": ["BETTER_AUTH_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
     "narrator": ["GEMINI_API_KEY"]
   },
   "resources": {

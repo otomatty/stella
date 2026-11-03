@@ -87,7 +87,7 @@ const evidenceSchema = {
   additionalProperties: false,
 } as const;
 
-/** 構造化出力 (`output_config.format`) に渡す JSON スキーマ。 */
+/** 両プロバイダーの構造化出力に渡す JSON スキーマ。 */
 export const AI_REVIEW_OUTPUT_SCHEMA = {
   type: "object",
   properties: {
@@ -543,6 +543,8 @@ export interface AiReviewRecord {
   appliedRules: { id: string; required: boolean; contentHash: string | null }[];
   ruleSetHash: string | null;
   failure: AiFailure | null;
+  /** 古い API と記録には無い。モデル名からの推測はしない。 */
+  provider?: "anthropic" | "openai" | null;
   model: string | null;
   promptVersion: string;
   thresholdVersion: string;

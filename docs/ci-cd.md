@@ -113,7 +113,8 @@ Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、
 `BETTER_AUTH_SECRET` (ログインの署名鍵。`openssl rand -base64 32` で作る。変えると全員のセッションが切れる) と
 `ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。
 Google のクライアント (`GOOGLE_CLIENT_ID` は `wrangler.toml`、`GOOGLE_CLIENT_SECRET` は `stella-api` の Secret) は GitHub に置かない。
-AI 一次レビューは本番で必須なので、`ANTHROPIC_API_KEY` の未登録・空白はリモート処理前に失敗する。
+`ANTHROPIC_API_KEY` は既存のチャット・下書き・育成メモにも使うため、未登録・空白はリモート処理前に失敗する。
+`OPENAI_API_KEY` は任意の Repository secret として同期する。一次レビューに `AI_REVIEW_PROVIDER = "openai"` を選んだ場合は `AI_REVIEW_MODEL` とこのキーもリモート処理前に検査する。設定は `apps/api/wrangler.toml`、比較と切り替えは [AI 一次レビューのプロバイダー](ai-review-providers.md) を参照。
 Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
 

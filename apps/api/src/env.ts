@@ -10,9 +10,12 @@ export interface Env {
   NARRATOR?: NarratorService;
   ANTHROPIC_API_KEY: string;
   ANTHROPIC_MODEL?: string;
+  OPENAI_API_KEY?: string;
+  /** 提出の一次レビューの接続先。未設定は anthropic。 */
+  AI_REVIEW_PROVIDER?: string;
   /**
-   * 提出の AI 一次レビューだけに使うモデル (未設定なら ANTHROPIC_MODEL)。構造化出力
-   * (`output_config.format`) に対応したモデルを選ぶ。人の判定との一致率
+   * 提出の AI 一次レビューだけに使うモデル。OpenAI では必須、Anthropic では
+   * 未設定なら ANTHROPIC_MODEL。構造化出力に対応したモデルを選ぶ。人の判定との一致率
    * (`scripts/ai-review-eval.ts`) を見て切り替える。
    */
   AI_REVIEW_MODEL?: string;

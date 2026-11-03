@@ -20,6 +20,7 @@
         "drizzle-orm": "^0.45.4",
         "hono": "^4.13.14",
         "jose": "^6.2.14",
+        "openai": "^7.47.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20261030.1",
@@ -102,8 +103,8 @@
         "clsx": "^2.1.1",
         "eslint-linter-browserify": "^10.13.0",
         "highlight.js": "^11.12.0",
-        "lucide-react": "^1.65.0",
         "lowlight": "^3.3.0",
+        "lucide-react": "^1.65.0",
         "pdf-lib": "^1.17.1",
         "pdfjs-dist": "6.4.299",
         "react": "^19.3.1",
@@ -1121,6 +1122,8 @@
     "node-releases": ["node-releases@2.0.53", "", {}, "sha512-D9UOmYG3UH1V+ENW56t5QXBwJw1YEY18ruVeus89Rw+SyIgjPkCO84bRzO3uNIYosJbNwiabWVn48o3uJLjxFQ=="],
 
     "obug": ["obug@3.0.0", "", {}, "sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw=="],
+
+    "openai": ["openai@7.47.0", "", { "peerDependencies": { "@aws-sdk/credential-provider-node": ">=3.972.0 <4", "@smithy/hash-node": ">=4.3.0 <5", "@smithy/signature-v4": ">=5.4.0 <6", "google-auth-library": ">=9.15.1 <12", "undici": ">=5 <9", "ws": "^8.21.0", "zod": "^3.25 || ^4.0" }, "optionalPeers": ["@aws-sdk/credential-provider-node", "@smithy/hash-node", "@smithy/signature-v4", "google-auth-library", "undici", "ws", "zod"] }, "sha512-BYa2RYgocAv9WjPUJmNu8fICuA1fFhkTBEpiR3sC5L1K6v8Hnhc8pcnQEhu8l/+W1XKA+JUaBa7HpT+AK1s77w=="],
 
     "pako": ["pako@1.0.11", "", {}, "sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw=="],
 

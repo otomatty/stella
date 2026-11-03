@@ -6,6 +6,7 @@ import {
   deployment,
   parseWrangler,
   requireDeploymentInputs,
+  validateReviewDeployment,
   validateDeploymentConfig,
   workflowSettingNames,
   type WranglerConfig,
@@ -126,6 +127,7 @@ env:
       ]),
     );
     delete env.PDF_KEY_SALT;
+    delete env.OPENAI_API_KEY;
     expect(() => requireDeploymentInputs(env)).not.toThrow();
     env.ANTHROPIC_API_KEY = " ";
     expect(() => requireDeploymentInputs(env)).toThrow(/ANTHROPIC_API_KEY/);
@@ -134,5 +136,19 @@ env:
     } catch (error) {
       expect(String(error)).not.toContain("test-value");
     }
+  });
+
+  it("OpenAI を選ぶデプロイではモデルと OpenAI の鍵をリモート処理前に検査する", () => {
+    const config = { vars: { AI_REVIEW_PROVIDER: "openai", AI_REVIEW_MODEL: "selected-model" } };
+    expect(() => validateReviewDeployment(config, { ANTHROPIC_API_KEY: "test-key" })).toThrow(
+      /OPENAI_API_KEY/,
+    );
+    expect(() => validateReviewDeployment(config, { OPENAI_API_KEY: "test-key" })).not.toThrow();
+    expect(() =>
+      validateReviewDeployment(
+        { vars: { AI_REVIEW_PROVIDER: "openai" } },
+        { OPENAI_API_KEY: "test-key" },
+      ),
+    ).toThrow(/AI_REVIEW_MODEL/);
   });
 });

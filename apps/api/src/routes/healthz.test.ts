@@ -92,6 +92,24 @@ describe("configuration health", () => {
     }
   });
 
+  it("reports the selected OpenAI provider and model as configured without an Anthropic key", async () => {
+    const openai = {
+      AI_REVIEW_PROVIDER: "openai",
+      AI_REVIEW_MODEL: "selected-model",
+      OPENAI_API_KEY: "private-openai-value",
+      ANTHROPIC_API_KEY: "",
+    };
+    expect(await (await health(configured(openai))).json()).toMatchObject({
+      aiReviewConfigured: true,
+    });
+    expect(
+      await (await health(configured({ ...openai, AI_REVIEW_MODEL: "" }))).json(),
+    ).toMatchObject({ aiReviewConfigured: false });
+    expect(JSON.stringify(await (await health(configured(openai))).json())).not.toContain(
+      "private-",
+    );
+  });
+
   it.each([
     { LIBRARY_ENABLED: "0" },
     { LIBRARY_ENABLED: "false" },

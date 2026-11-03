@@ -42,6 +42,7 @@ jobs:
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
       # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
@@ -127,6 +128,15 @@ jobs:
         run: printf '%s' "$ANTHROPIC_API_KEY" | bunx wrangler secret put ANTHROPIC_API_KEY
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Sync optional OpenAI key to the API
+        working-directory: apps/api
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            printf '%s' "$OPENAI_API_KEY" | bunx wrangler secret put OPENAI_API_KEY
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Deploy API
         run: bun run deploy:api

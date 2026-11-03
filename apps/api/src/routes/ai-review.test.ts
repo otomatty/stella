@@ -35,6 +35,8 @@ import {
   processAiReviewQueue,
 } from "../lib/ai-review-queue.js";
 import { completeJsonSchema } from "../lib/anthropic-complete.js";
+import { completeOpenAiReview } from "../lib/ai-review-openai.js";
+import { ReviewProviderError } from "../lib/ai-review-provider.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
@@ -45,6 +47,8 @@ vi.mock("../lib/anthropic-complete.js", async (importOriginal) => {
   return { ...actual, completeJsonSchema: vi.fn() };
 });
 const complete = vi.mocked(completeJsonSchema);
+vi.mock("../lib/ai-review-openai.js", () => ({ completeOpenAiReview: vi.fn() }));
+const openAiComplete = vi.mocked(completeOpenAiReview);
 
 const SOLUTION =
   '<!doctype html><html><head><title>課題</title></head><body><main><h1 class="page-title">はじめてのページ</h1><p class="lead">保存して表示を確かめます</p></main></body></html>\n';
@@ -134,6 +138,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     database = sqliteD1();
     objects = new Map();
     complete.mockReset();
+    openAiComplete.mockReset();
     env = {
       DB: database.binding,
       AUTH_JWT_SECRET: "test-secret",
@@ -237,6 +242,69 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
   const progress = async () => (await db.select().from(taskProgress))[0]?.status;
   const reviews = () => db.select().from(aiReviews);
 
+  it("Anthropic の鍵がなくても OpenAI で同じ判定を通し、接続先とモデルを記録する", async () => {
+    env.AI_REVIEW_PROVIDER = "openai";
+    env.AI_REVIEW_MODEL = "selected-openai-model";
+    env.OPENAI_API_KEY = "test-openai-key";
+    env.ANTHROPIC_API_KEY = "";
+    openAiComplete.mockResolvedValue({
+      text: JSON.stringify(aiOutput()),
+      status: "completed",
+      model: "openai-snapshot",
+      usage: { inputTokens: 10, outputTokens: 5 },
+    });
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    expect(await progress()).toBe("ai-passed");
+    expect((await reviews())[0]).toMatchObject({
+      provider: "openai",
+      model: "openai-snapshot",
+      outcome: "confirmed",
+    });
+    expect((await detail(row.id, instructorToken)).ai_review).toMatchObject({ provider: "openai" });
+    expect((await detail(row.id, token)).ai_feedback).toMatchObject({
+      message: "提出を確認しました。",
+    });
+    expect(complete).not.toHaveBeenCalled();
+  });
+
+  it("OpenAI の残高不足は再試行も別プロバイダーへの切り替えもせず、講師へ回す", async () => {
+    env.AI_REVIEW_PROVIDER = "openai";
+    env.AI_REVIEW_MODEL = "selected-openai-model";
+    env.OPENAI_API_KEY = "test-openai-key";
+    openAiComplete.mockRejectedValue(new ReviewProviderError("openai HTTP 429 quota exhausted"));
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    expect((await reviews())[0]).toMatchObject({
+      provider: "openai",
+      outcome: "escalated",
+      failure: "error",
+    });
+    expect((await db.select().from(aiReviewJobs))[0]).toMatchObject({ state: "done", attempts: 1 });
+    expect((await detail(row.id, token)).ai_feedback).toBeNull();
+    expect(await progress()).not.toBe("ai-passed");
+    expect(complete).not.toHaveBeenCalled();
+  });
+
+  it("OpenAI でも解答例を漏らす返信は練習用の定型文に差し替える", async () => {
+    env.AI_REVIEW_PROVIDER = "openai";
+    env.AI_REVIEW_MODEL = "selected-openai-model";
+    env.OPENAI_API_KEY = "test-openai-key";
+    openAiComplete.mockResolvedValue({
+      text: JSON.stringify(
+        aiOutput({ learnerReply: { message: LEAKY, goodPoints: [], nextSteps: [] } }),
+      ),
+      status: "completed",
+      model: "openai-snapshot",
+      usage: {},
+    });
+    const row = await submit();
+    await run();
+    const review = (await reviews())[0];
+    expect(review).toMatchObject({ provider: "openai", leakCheck: { action: "sanitize" } });
+    expect(JSON.stringify((await detail(row.id, token)).ai_feedback)).not.toContain(LEAKY);
+  });
+
   it("提出をキューに積み、受講者には「AI が確認中」とだけ出す", async () => {
     const row = await submit();
     expect(row.ai_review_status).toBe("queued");
@@ -291,7 +359,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     const staffView = await detail(row.id, instructorToken);
     expect(staffView.ai_review).toMatchObject({
       outcome: "confirmed",
-      findings: expect.any(Array),
+      findings: expect.arrayContaining([expect.objectContaining({ file: "index.html" })]),
     });
   });
 
