@@ -82,7 +82,7 @@ beforeEach(() => {
 describe("学習サイドバーと拡張の接続", () => {
   it("表示中のカタログの ID から、信頼できる教材と既存コマンドを引く", async () => {
     const { view, send } = harness();
-    await vi.waitFor(() => expect(view.webview.html).toContain("この単元の教材"));
+    await vi.waitFor(() => expect(view.webview.html).toContain('data-select="stage"'));
     send({ action: "open", id: "doc", command: "untrusted.command", markdown: "差し替え" });
     await vi.waitFor(() =>
       expect(mocks.execute).toHaveBeenCalledWith(
@@ -95,7 +95,7 @@ describe("学習サイドバーと拡張の接続", () => {
 
   it("未知の ID、任意のコマンド、古い表示からのメッセージを実行しない", async () => {
     const { provider, view, send } = harness();
-    await vi.waitFor(() => expect(view.webview.html).toContain("この単元の教材"));
+    await vi.waitFor(() => expect(view.webview.html).toContain('data-select="stage"'));
     send({ action: "open", id: "missing" });
     send({ action: "arbitrary.command" });
     send({ action: "home", token: "old-token" });

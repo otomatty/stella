@@ -168,6 +168,20 @@ export interface LearningSidebarAssets {
   scriptUri: string;
 }
 
+function loadingContent(): string {
+  // 行の高さは通常表示と共通にし、文字の形だけを細いプレースホルダーに置き換える。
+  const line = (size: string) =>
+    `<span class="loading-line loading-${size}"><span class="skeleton"></span></span>`;
+  const lessons = Array.from(
+    { length: 4 },
+    (_, index) =>
+      `<li class="lesson loading-lesson${index === 3 ? " loading-active" : ""}"><div class="lesson-link"><span class="step-number skeleton"></span><span class="lesson-copy"><span class="lesson-title">${line("title")}</span><span class="lesson-meta">${line("kind")}${line("status")}${index === 2 ? line("web") : ""}${index === 3 ? `<span class="current-label">${line("current")}</span>` : ""}</span></span></div></li>`,
+  ).join("");
+  const selector = (unit: boolean) =>
+    `<div class="loading-select">${unit ? line("number") : ""}${line(unit ? "unit" : "stage")}<span class="loading-chevron"></span></div>`;
+  return `<p class="sr-only" role="status">学習の状況を読み込んでいます…</p><div class="loading-layout" aria-hidden="true"><div class="field-label">ステージ</div>${selector(false)}<div class="field-label unit-label">単元</div>${selector(true)}<div class="progress-caption"><span>この単元の進み具合</span>${line("count")}</div><div class="skeleton loading-progress"></div><section class="next-step loading-next-step"><div class="eyebrow">${line("eyebrow")}</div><h2>${line("heading")}</h2><div class="hint">${line("description")}${line("description-short")}</div><div class="primary loading-button">${line("button")}</div></section><section><div class="list-heading"><h2>この単元の教材</h2>${line("total")}</div><ol class="lessons">${lessons}</ol></section></div>`;
+}
+
 export function renderLearningSidebar(
   state: LearningSidebarState,
   assets: LearningSidebarAssets,
@@ -175,7 +189,7 @@ export function renderLearningSidebar(
   let content: string;
   switch (state.kind) {
     case "loading":
-      content = '<p class="empty" role="status">学習の状況を読み込んでいます…</p>';
+      content = loadingContent();
       break;
     case "disconnected":
       content =
@@ -192,5 +206,9 @@ export function renderLearningSidebar(
   const location =
     state.kind === "catalog" ? resolveLearningLocation(state.catalog, state.selection) : undefined;
   const scope = escapeHtml(JSON.stringify([location?.stage?.id, location?.section?.id]));
-  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${nonce}';"><title>STELLA 学習ガイド</title><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"></head><body data-message-token="${nonce}" data-scope="${scope}"><main>${content}</main><footer><button type="button" id="open-map" class="text-button" data-action="home">Web の学習マップ ↗</button><button type="button" id="reload" class="text-button" data-action="refresh">再読み込み</button></footer><script nonce="${nonce}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
+  const footer =
+    state.kind === "loading"
+      ? '<footer class="loading-footer" aria-hidden="true"><span class="text-button"><span class="loading-line loading-map"><span class="skeleton"></span></span></span><span class="text-button"><span class="loading-line loading-reload"><span class="skeleton"></span></span></span></footer>'
+      : '<footer><button type="button" id="open-map" class="text-button" data-action="home">Web の学習マップ ↗</button><button type="button" id="reload" class="text-button" data-action="refresh">再読み込み</button></footer>';
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${nonce}';"><title>STELLA 学習ガイド</title><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"></head><body data-message-token="${nonce}" data-scope="${scope}"><main aria-busy="${state.kind === "loading"}">${content}</main>${footer}<script nonce="${nonce}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
 }
