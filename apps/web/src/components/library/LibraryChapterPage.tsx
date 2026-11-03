@@ -44,7 +44,13 @@ const SAVE_EVERY_MS = 15_000;
 const SEEK_SAVE_DELAY_MS = 1_000;
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
-type Saver = (body: { audioSec?: number; videoSec?: number; completed?: boolean }) => void;
+type Saver = (
+  body: { audioSec?: number; videoSec?: number; completed?: boolean },
+  /** その変更を決めた端末の時刻 (省略 = 今)。送り直しでは元の時刻を渡す。 */
+  clientUpdatedAt?: number,
+) => Promise<void>;
+/** 位置 (秒) を、それを決めた端末の時刻 (省略 = 今) で保存する。 */
+type PositionSave = (seconds: number, clientUpdatedAt?: number) => Promise<void>;
 
 interface ColumnBox {
   left: number;
@@ -82,13 +88,11 @@ function useColumnBox() {
   return { ref, box };
 }
 
-/** 位置の保存。端末の時刻を付け、古い送信でサーバーの位置を巻き戻さない。失敗は次の保存に任せる。 */
+/** 章の状態の保存。端末の時刻を付け、古い送信でサーバーの値を巻き戻さない。失敗は呼び出し元に返す。 */
 function useChapterSaver(bookId: string, chapterId: string): Saver {
   return useCallback(
-    (body) => {
-      void saveChapterState(bookId, chapterId, { ...body, clientUpdatedAt: Date.now() }).catch(
-        () => undefined,
-      );
+    async (body, clientUpdatedAt = Date.now()) => {
+      await saveChapterState(bookId, chapterId, { ...body, clientUpdatedAt });
     },
     [bookId, chapterId],
   );
@@ -171,7 +175,7 @@ function ChapterView({
   const column = useColumnBox();
   const markCompleted = () => {
     setCompleted(true);
-    save({ completed: true });
+    void save({ completed: true }).catch(() => undefined);
   };
 
   return (
@@ -200,7 +204,7 @@ function ChapterView({
           path={bookContentPath(book.id, chapter.videoPath)}
           savedSec={chapter.state.videoSec}
           onPlay={() => audioRef.current?.pause()}
-          onSave={(videoSec) => save({ videoSec })}
+          onSave={(videoSec, at) => save({ videoSec }, at)}
         />
       ) : null}
 
@@ -251,7 +255,7 @@ function ChapterView({
           coverUrl={book.coverUrl}
           box={column.box}
           onPlay={() => videoRef.current?.pause()}
-          onSave={(audioSec) => save({ audioSec })}
+          onSave={(audioSec, at) => save({ audioSec }, at)}
           onEnded={markCompleted}
         />
       ) : null}
@@ -327,14 +331,16 @@ function BookImage({
 function usePositionSaving(
   element: () => HTMLMediaElement | null,
   savedSec: number,
-  onSave: (seconds: number) => void,
+  onSave: PositionSave,
 ) {
   const last = useRef(0);
   // 親が描き直すたびに onSave は新しい関数になる。購読を張り直すと後始末の保存が連発するので、
   // 最新の関数は ref で持ち、購読は要素ごとに 1 回だけにする。
   const save = useRef(onSave);
   save.current = onSave;
+  // サーバーにある (または送っている途中の) 位置。送れなかったら戻し、次の保存の機会に送り直す。
   const sent = useRef(savedSec);
+  const failed = useRef<{ seconds: number; at: number } | null>(null);
   useEffect(() => {
     const media = element();
     if (!media) return;
@@ -342,13 +348,22 @@ function usePositionSaving(
     const saveNow = () => {
       clearTimeout(seekTimer);
       seekTimer = undefined;
+      last.current = Date.now();
       // この画面で位置が動いたときだけ送る。止めたまま触っていない画面を隠しただけで送ると、
       // その間に別の端末で進めた位置を古い位置で上書きしてしまう。
-      if (media.currentTime > 0 && Math.abs(media.currentTime - sent.current) >= 0.1) {
-        save.current(media.currentTime);
-        sent.current = media.currentTime;
-      }
-      last.current = Date.now();
+      const seconds = media.currentTime;
+      if (seconds <= 0 || Math.abs(seconds - sent.current) < 0.1) return;
+      // 送れなかった位置のままなら、その位置を決めた時刻で送り直す (今の時刻にしない)。
+      const retry = failed.current;
+      const at = retry && Math.abs(retry.seconds - seconds) < 0.1 ? retry.at : Date.now();
+      const previous = sent.current;
+      sent.current = seconds;
+      failed.current = null;
+      save.current(seconds, at).catch(() => {
+        if (sent.current !== seconds) return; // そのあと別の位置を送った
+        sent.current = previous;
+        failed.current = { seconds, at };
+      });
     };
     const onTime = () => {
       if (!media.paused && Date.now() - last.current >= SAVE_EVERY_MS) saveNow();
@@ -387,7 +402,7 @@ function VideoPanel({
   path: string;
   savedSec: number;
   onPlay: () => void;
-  onSave: (seconds: number) => void;
+  onSave: PositionSave;
 }) {
   const media = useLibraryMediaUrl(path);
   const element = useCallback(() => ref.current, [ref]);
@@ -417,7 +432,7 @@ function VideoPanel({
             const video = event.currentTarget;
             video.currentTime = resumePosition(savedSec, video.duration);
           }}
-          onEnded={(event) => onSave(event.currentTarget.duration)}
+          onEnded={(event) => void onSave(event.currentTarget.duration).catch(() => undefined)}
         />
       )}
     </section>
@@ -446,7 +461,7 @@ function AudioBar({
   authors: string[];
   coverUrl: string | null;
   onPlay: () => void;
-  onSave: (seconds: number) => void;
+  onSave: PositionSave;
   onEnded: () => void;
 }) {
   const media = useLibraryMediaUrl(path);
