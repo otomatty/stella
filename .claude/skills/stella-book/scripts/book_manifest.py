@@ -35,7 +35,10 @@ def save(path, manifest):
 
 
 def report(manifest):
-    errors = [e for e in check_manifest(manifest) if not e.startswith("chapters: 章を 1 つ以上")]
+    errors = check_manifest(manifest)
+    if isinstance(manifest, dict) and manifest.get("chapters") == []:
+        # init の直後 (章をまだ足していない) だけは、章が無いことをエラーにしない。
+        errors = [e for e in errors if not e.startswith("chapters: 章を 1 つ以上")]
     if not isinstance(manifest, dict):
         print(json.dumps({"errors": errors}, ensure_ascii=False, indent=2))
         return 1

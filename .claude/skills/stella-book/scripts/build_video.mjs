@@ -65,7 +65,7 @@ const AUDIO_FILE = /^(mock-)?[0-9a-f]{16}\.wav$/;
         throw new Error(
           `${scene.id} ${index + 1} 行目: 話者 ${JSON.stringify(line.speaker)} が speakers にありません`,
         );
-      for (const n of line.show === undefined ? [] : [line.show].flat())
+      for (const n of line.show == null ? [] : [line.show].flat())
         if (!Number.isInteger(n) || n < 0)
           throw new Error(
             `${scene.id} ${index + 1} 行目: show ${JSON.stringify(n)} は 0 始まりの整数にしてください`,
@@ -124,7 +124,7 @@ const scenes = storyboard.scenes.map((scene, sceneIndex) => {
       seconds: round(seconds),
       file: timing?.file,
       speakerIndex: speakerNames.indexOf(line.speaker),
-      show: line.show === undefined ? [] : [line.show].flat(),
+      show: line.show == null ? [] : [line.show].flat(),
     };
     t += seconds + (next ? (next.speaker === line.speaker ? GAP_SAME : GAP_SWITCH) : 0);
     return item;
