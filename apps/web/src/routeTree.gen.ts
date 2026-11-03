@@ -48,6 +48,7 @@ import { Route as AppReviewsSubmissionIdRouteImport } from './routes/_app/review
 import { Route as AppStagesIndexRouteImport } from './routes/_app/stages.index'
 import { Route as AppSubmissionsSubmissionIdRouteImport } from './routes/_app/submissions.$submissionId'
 import { Route as AppCoursesCourseIdIndexRouteImport } from './routes/_app/courses.$courseId.index'
+import { Route as AppLibraryBookIdChapterIdRouteImport } from './routes/_app/library.$bookId_.$chapterId'
 import { Route as AppStagesStageIdIndexRouteImport } from './routes/_app/stages.$stageId.index'
 import { Route as AppCoursesCourseIdLessonsLessonIdRouteImport } from './routes/_app/courses.$courseId.lessons.$lessonId'
 import { Route as AppStagesStageIdLessonsLessonIdRouteImport } from './routes/_app/stages.$stageId.lessons.$lessonId'
@@ -247,6 +248,12 @@ const AppCoursesCourseIdIndexRoute = AppCoursesCourseIdIndexRouteImport.update({
   path: '/courses/$courseId/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLibraryBookIdChapterIdRoute =
+  AppLibraryBookIdChapterIdRouteImport.update({
+    id: '/library/$bookId_/$chapterId',
+    path: '/library/$bookId/$chapterId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppStagesStageIdIndexRoute = AppStagesStageIdIndexRouteImport.update({
   id: '/stages/$stageId/',
   path: '/stages/$stageId/',
@@ -303,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/courses/': typeof AppCoursesIndexRoute
   '/library/': typeof AppLibraryIndexRoute
   '/stages/': typeof AppStagesIndexRoute
+  '/library/$bookId/$chapterId': typeof AppLibraryBookIdChapterIdRoute
   '/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -345,6 +353,7 @@ export interface FileRoutesByTo {
   '/courses': typeof AppCoursesIndexRoute
   '/library': typeof AppLibraryIndexRoute
   '/stages': typeof AppStagesIndexRoute
+  '/library/$bookId/$chapterId': typeof AppLibraryBookIdChapterIdRoute
   '/courses/$courseId': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -390,6 +399,7 @@ export interface FileRoutesById {
   '/_app/courses/': typeof AppCoursesIndexRoute
   '/_app/library/': typeof AppLibraryIndexRoute
   '/_app/stages/': typeof AppStagesIndexRoute
+  '/_app/library/$bookId_/$chapterId': typeof AppLibraryBookIdChapterIdRoute
   '/_app/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/_app/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/_app/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/courses/'
     | '/library/'
     | '/stages/'
+    | '/library/$bookId/$chapterId'
     | '/courses/$courseId/'
     | '/stages/$stageId/'
     | '/courses/$courseId/lessons/$lessonId'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/library'
     | '/stages'
+    | '/library/$bookId/$chapterId'
     | '/courses/$courseId'
     | '/stages/$stageId'
     | '/courses/$courseId/lessons/$lessonId'
@@ -521,6 +533,7 @@ export interface FileRouteTypes {
     | '/_app/courses/'
     | '/_app/library/'
     | '/_app/stages/'
+    | '/_app/library/$bookId_/$chapterId'
     | '/_app/courses/$courseId/'
     | '/_app/stages/$stageId/'
     | '/_app/courses/$courseId/lessons/$lessonId'
@@ -811,6 +824,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoursesCourseIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/library/$bookId_/$chapterId': {
+      id: '/_app/library/$bookId_/$chapterId'
+      path: '/library/$bookId/$chapterId'
+      fullPath: '/library/$bookId/$chapterId'
+      preLoaderRoute: typeof AppLibraryBookIdChapterIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/stages/$stageId/': {
       id: '/_app/stages/$stageId/'
       path: '/stages/$stageId'
@@ -885,6 +905,7 @@ interface AppRouteChildren {
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
   AppLibraryIndexRoute: typeof AppLibraryIndexRoute
   AppStagesIndexRoute: typeof AppStagesIndexRoute
+  AppLibraryBookIdChapterIdRoute: typeof AppLibraryBookIdChapterIdRoute
   AppCoursesCourseIdIndexRoute: typeof AppCoursesCourseIdIndexRoute
   AppStagesStageIdIndexRoute: typeof AppStagesStageIdIndexRoute
   AppCoursesCourseIdLessonsLessonIdRoute: typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -917,6 +938,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCoursesIndexRoute: AppCoursesIndexRoute,
   AppLibraryIndexRoute: AppLibraryIndexRoute,
   AppStagesIndexRoute: AppStagesIndexRoute,
+  AppLibraryBookIdChapterIdRoute: AppLibraryBookIdChapterIdRoute,
   AppCoursesCourseIdIndexRoute: AppCoursesCourseIdIndexRoute,
   AppStagesStageIdIndexRoute: AppStagesStageIdIndexRoute,
   AppCoursesCourseIdLessonsLessonIdRoute:

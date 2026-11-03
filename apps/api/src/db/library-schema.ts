@@ -4,18 +4,17 @@ import {
   foreignKey,
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import type {
-  LibraryBookKind,
-  LibraryBookStatus,
-  LibraryReadingStatus,
-} from "@stella/shared/library/types";
+import type { BookFileKind } from "@stella/shared/library/book-package";
+import type { LibraryBookStatus, LibraryReadingStatus } from "@stella/shared/library/types";
 import { profiles } from "./schema.js";
-// Millisecond timestamps match the narrator pipeline; tenant-qualified foreign keys reject cross-tenant children.
+// 本棚 (migration 0070)。時刻はミリ秒。テナントを含む複合外部キーでテナントを跨がせない。
+// 正本は drizzle/0070_library_book_packages.sql。ここは型と一覧のための写し。
 
 export const libraryBooks = sqliteTable(
   "library_books",
@@ -23,13 +22,24 @@ export const libraryBooks = sqliteTable(
     id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
     ownerId: text("owner_id").notNull(),
+    packageId: text("package_id").notNull(),
     title: text("title").notNull(),
-    author: text("author"),
-    kind: text("kind").$type<LibraryBookKind>().notNull().default("commercial"),
-    status: text("status").$type<LibraryBookStatus>().notNull().default("draft"),
-    generation: integer("generation").notNull().default(1),
-    pageCount: integer("page_count"),
-    chapterPlanKey: text("chapter_plan_key"),
+    authors: text("authors").notNull().default("[]"),
+    language: text("language").notNull().default("ja"),
+    description: text("description"),
+    status: text("status").$type<LibraryBookStatus>().notNull().default("importing"),
+    currentRevision: integer("current_revision").notNull().default(0),
+    pendingRevision: integer("pending_revision"),
+    pendingManifest: text("pending_manifest"),
+    pendingSignature: text("pending_signature"),
+    pendingThumbFileId: text("pending_thumb_file_id"),
+    pendingActiveAt: integer("pending_active_at"),
+    chapterCount: integer("chapter_count").notNull().default(0),
+    hasAudio: integer("has_audio").notNull().default(0),
+    hasVideo: integer("has_video").notNull().default(0),
+    totalBytes: integer("total_bytes").notNull().default(0),
+    pendingBytes: integer("pending_bytes").notNull().default(0),
+    coverThumbFileId: text("cover_thumb_file_id"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
@@ -39,108 +49,27 @@ export const libraryBooks = sqliteTable(
       foreignColumns: [profiles.tenantId, profiles.id],
     }).onDelete("cascade"),
     uniqueIndex("library_books_uq_0").on(t.tenantId, t.id),
+    uniqueIndex("library_books_uq_1").on(t.tenantId, t.ownerId, t.packageId),
     check("library_books_check_0", sql`length(trim(title)) BETWEEN 1 AND 200`),
-    check("library_books_check_1", sql`kind IN ('commercial','in_house')`),
-    check(
-      "library_books_check_4",
-      sql`status IN ('draft','uploading','processing','ready','failed','deleting')`,
-    ),
-    check("library_books_check_5", sql`generation >= 1`),
-    check("library_books_check_6", sql`page_count IS NULL OR page_count >= 0`),
+    check("library_books_check_1", sql`status IN ('importing','ready','deleting')`),
     index("library_books_idx_0").on(t.tenantId, t.ownerId, t.updatedAt),
   ],
 );
 
-export const libraryBookPdfs = sqliteTable(
-  "library_book_pdfs",
+export const libraryFiles = sqliteTable(
+  "library_files",
   {
     id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
     bookId: text("book_id").notNull(),
-    position: integer("position").notNull(),
-    fileName: text("file_name").notNull(),
-    sourceFileName: text("source_file_name"),
-    sizeBytes: integer("size_bytes").notNull(),
+    contentKey: text("content_key").notNull(),
+    kind: text("kind").$type<BookFileKind>().notNull(),
+    contentType: text("content_type").notNull(),
+    size: integer("size").notNull(),
     r2Key: text("r2_key").notNull(),
-    uploadStatus: text("upload_status").notNull().default("uploading"),
-    uploadId: text("upload_id"),
-    /** Parts split from one original share this id and are deleted together. */
-    partGroup: text("part_group"),
-    pageCount: integer("page_count"),
-    firstPageNo: integer("first_page_no"),
+    status: text("status").$type<"pending" | "uploaded">().notNull().default("pending"),
+    multipartUploadId: text("multipart_upload_id"),
     createdAt: integer("created_at").notNull(),
-  },
-  (t) => [
-    foreignKey({
-      columns: [t.tenantId, t.bookId],
-      foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
-    }).onDelete("cascade"),
-    uniqueIndex("library_book_pdfs_uq_0").on(t.tenantId, t.bookId, t.position),
-    check("library_book_pdfs_check_0", sql`position >= 1`),
-    check("library_book_pdfs_check_1", sql`size_bytes > 0`),
-    check("library_book_pdfs_check_2", sql`upload_status IN ('uploading','completed')`),
-  ],
-);
-
-export const libraryPages = sqliteTable(
-  "library_pages",
-  {
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    pageNo: integer("page_no").notNull(),
-    imageR2Key: text("image_r2_key"),
-    ocrStatus: text("ocr_status").notNull().default("pending"),
-    ocrMarkdown: text("ocr_markdown"),
-    ocrFigures: text("ocr_figures"),
-  },
-  (t) => [
-    foreignKey({
-      columns: [t.tenantId, t.bookId],
-      foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
-    }).onDelete("cascade"),
-    uniqueIndex("library_pages_uq_0").on(t.tenantId, t.bookId, t.pageNo),
-    check("library_pages_check_0", sql`page_no >= 1`),
-    check("library_pages_check_1", sql`ocr_status IN ('pending','succeeded','failed')`),
-  ],
-);
-
-export const libraryFigures = sqliteTable(
-  "library_figures",
-  {
-    id: text("id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    fileName: text("file_name").notNull(),
-    pageNo: integer("page_no").notNull(),
-    caption: text("caption"),
-    r2Key: text("r2_key").notNull(),
-    width: integer("width").notNull(),
-    height: integer("height").notNull(),
-  },
-  (t) => [
-    foreignKey({
-      columns: [t.tenantId, t.bookId, t.pageNo],
-      foreignColumns: [libraryPages.tenantId, libraryPages.bookId, libraryPages.pageNo],
-    }).onDelete("cascade"),
-    uniqueIndex("library_figures_uq_0").on(t.tenantId, t.bookId, t.fileName),
-    check("library_figures_check_0", sql`width > 0 AND height > 0`),
-  ],
-);
-
-export const libraryChapters = sqliteTable(
-  "library_chapters",
-  {
-    id: text("id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    position: integer("position").notNull(),
-    title: text("title").notNull(),
-    markdown: text("markdown").notNull().default(""),
-    speechHash: text("speech_hash").notNull().default(""),
-    revision: integer("revision").notNull().default(1),
-    startPage: integer("start_page").notNull(),
-    endPage: integer("end_page").notNull(),
-    edited: integer("edited").notNull().default(0),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [
@@ -148,58 +77,54 @@ export const libraryChapters = sqliteTable(
       columns: [t.tenantId, t.bookId],
       foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
     }).onDelete("cascade"),
-    uniqueIndex("library_chapters_uq_0").on(t.tenantId, t.bookId, t.id),
-    uniqueIndex("library_chapters_uq_1").on(t.tenantId, t.bookId, t.position),
-    check("library_chapters_check_0", sql`revision >= 1`),
-    check("library_chapters_check_1", sql`start_page >= 1 AND end_page >= start_page`),
+    uniqueIndex("library_files_uq_0").on(t.tenantId, t.id),
+    uniqueIndex("library_files_uq_1").on(t.tenantId, t.bookId, t.contentKey),
+    uniqueIndex("library_files_uq_2").on(t.r2Key),
   ],
 );
 
-export const libraryChapterRevisions = sqliteTable(
-  "library_chapter_revisions",
+export const libraryRevisionFiles = sqliteTable(
+  "library_revision_files",
   {
-    id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
     bookId: text("book_id").notNull(),
-    chapterId: text("chapter_id").notNull(),
     revision: integer("revision").notNull(),
-    markdown: text("markdown").notNull(),
-    speechHash: text("speech_hash").notNull(),
-    createdAt: integer("created_at").notNull(),
+    path: text("path").notNull(),
+    fileId: text("file_id").notNull(),
   },
   (t) => [
+    primaryKey({ columns: [t.tenantId, t.bookId, t.revision, t.path] }),
     foreignKey({
-      columns: [t.tenantId, t.bookId, t.chapterId],
-      foreignColumns: [libraryChapters.tenantId, libraryChapters.bookId, libraryChapters.id],
+      columns: [t.tenantId, t.bookId],
+      foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
     }).onDelete("cascade"),
-    uniqueIndex("library_chapter_revisions_uq_0").on(t.tenantId, t.bookId, t.chapterId, t.revision),
+    foreignKey({
+      columns: [t.tenantId, t.fileId],
+      foreignColumns: [libraryFiles.tenantId, libraryFiles.id],
+    }).onDelete("cascade"),
+    index("library_revision_files_idx_0").on(t.tenantId, t.fileId),
   ],
 );
 
-export const libraryAudios = sqliteTable(
-  "library_audios",
+export const libraryChapters = sqliteTable(
+  "library_chapters",
   {
-    id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
     bookId: text("book_id").notNull(),
-    chapterId: text("chapter_id").notNull(),
     revision: integer("revision").notNull(),
-    status: text("status").notNull().default("generating"),
-    generationJobId: text("generation_job_id"),
-    r2Key: text("r2_key"),
-    durationSec: real("duration_sec"),
-    sizeBytes: integer("size_bytes"),
-    sourceSpeechHash: text("source_speech_hash").notNull(),
-    ttsModel: text("tts_model").notNull(),
-    createdAt: integer("created_at").notNull(),
+    chapterId: text("chapter_id").notNull(),
+    position: integer("position").notNull(),
+    title: text("title").notNull(),
+    textPath: text("text_path").notNull(),
+    audioPath: text("audio_path"),
+    videoPath: text("video_path"),
   },
   (t) => [
+    primaryKey({ columns: [t.tenantId, t.bookId, t.revision, t.chapterId] }),
     foreignKey({
-      columns: [t.tenantId, t.bookId, t.chapterId],
-      foreignColumns: [libraryChapters.tenantId, libraryChapters.bookId, libraryChapters.id],
+      columns: [t.tenantId, t.bookId],
+      foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
     }).onDelete("cascade"),
-    uniqueIndex("library_audios_uq_0").on(t.tenantId, t.bookId, t.chapterId, t.revision),
-    check("library_audios_check_0", sql`status IN ('generating','ready','failed')`),
   ],
 );
 
@@ -212,10 +137,14 @@ export const libraryShelfEntries = sqliteTable(
     readingStatus: text("reading_status").$type<LibraryReadingStatus>().notNull().default("unread"),
     favorite: integer("favorite").notNull().default(0),
     tags: text("tags").notNull().default("[]"),
+    lastChapterId: text("last_chapter_id"),
+    lastChapterClientAt: integer("last_chapter_client_at"),
+    lastOpenedAt: integer("last_opened_at"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [
+    primaryKey({ columns: [t.tenantId, t.profileId, t.bookId] }),
     foreignKey({
       columns: [t.tenantId, t.bookId],
       foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
@@ -224,126 +153,40 @@ export const libraryShelfEntries = sqliteTable(
       columns: [t.tenantId, t.profileId],
       foreignColumns: [profiles.tenantId, profiles.id],
     }).onDelete("cascade"),
-    uniqueIndex("library_shelf_entries_uq_0").on(t.tenantId, t.profileId, t.bookId),
-    check(
-      "library_shelf_entries_check_0",
-      sql`reading_status IN ('unread','reading','finished','archived')`,
-    ),
-    check("library_shelf_entries_check_1", sql`favorite IN (0,1)`),
-    check("library_shelf_entries_check_2", sql`json_valid(tags) AND json_type(tags) = 'array'`),
     index("library_shelf_entries_idx_0").on(t.tenantId, t.profileId, t.updatedAt),
-    index("library_shelf_entries_idx_1").on(t.tenantId, t.bookId),
   ],
 );
 
-export const libraryJobs = sqliteTable(
-  "library_jobs",
+export const libraryReaderStates = sqliteTable(
+  "library_reader_states",
   {
-    id: text("id").primaryKey().notNull(),
     tenantId: text("tenant_id").notNull(),
+    profileId: text("profile_id").notNull(),
     bookId: text("book_id").notNull(),
-    chapterId: text("chapter_id"),
-    generation: integer("generation").notNull(),
-    type: text("type").notNull(),
-    status: text("status").notNull().default("queued"),
-    progressCurrent: integer("progress_current").notNull().default(0),
-    progressTotal: integer("progress_total"),
-    attempt: integer("attempt").notNull().default(1),
-    errorCode: text("error_code"),
-    errorMessage: text("error_message"),
-    createdBy: text("created_by").notNull(),
-    createdAt: integer("created_at").notNull(),
-    startedAt: integer("started_at"),
-    finishedAt: integer("finished_at"),
+    chapterId: text("chapter_id").notNull(),
+    audioSec: real("audio_sec").notNull().default(0),
+    videoSec: real("video_sec").notNull().default(0),
+    completed: integer("completed").notNull().default(0),
+    audioClientAt: integer("audio_client_at").notNull().default(0),
+    videoClientAt: integer("video_client_at").notNull().default(0),
+    completedClientAt: integer("completed_client_at").notNull().default(0),
+    updatedAt: integer("updated_at").notNull(),
   },
   (t) => [
+    primaryKey({ columns: [t.tenantId, t.profileId, t.bookId, t.chapterId] }),
     foreignKey({
       columns: [t.tenantId, t.bookId],
       foreignColumns: [libraryBooks.tenantId, libraryBooks.id],
     }).onDelete("cascade"),
     foreignKey({
-      columns: [t.tenantId, t.createdBy],
+      columns: [t.tenantId, t.profileId],
       foreignColumns: [profiles.tenantId, profiles.id],
     }).onDelete("cascade"),
-    foreignKey({
-      columns: [t.tenantId, t.bookId, t.chapterId],
-      foreignColumns: [libraryChapters.tenantId, libraryChapters.bookId, libraryChapters.id],
-    }).onDelete("cascade"),
-    uniqueIndex("library_jobs_uq_0").on(t.tenantId, t.bookId, t.id),
-    check("library_jobs_check_0", sql`type IN ('ocr','split','tts')`),
-    check("library_jobs_check_1", sql`status IN ('queued','running','succeeded','failed')`),
-    check("library_jobs_check_2", sql`generation >= 1 AND attempt >= 1`),
-    index("library_jobs_idx_0").on(t.tenantId, t.bookId, t.status),
   ],
 );
 
-export const libraryJobUsages = sqliteTable(
-  "library_job_usages",
-  {
-    id: text("id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    jobId: text("job_id").notNull(),
-    provider: text("provider").notNull(),
-    model: text("model").notNull(),
-    unit: text("unit").notNull(),
-    quantity: real("quantity").notNull(),
-    estimatedCostUsd: real("estimated_cost_usd"),
-    createdAt: integer("created_at").notNull(),
-  },
-  // No FK to jobs: usage and cost must stay traceable after the book and its jobs are deleted.
-  (t) => [
-    check("library_job_usages_check_0", sql`quantity >= 0`),
-    index("library_job_usages_idx_0").on(t.tenantId, t.bookId, t.jobId),
-  ],
-);
-
-export const libraryJobDispatches = sqliteTable(
-  "library_job_dispatches",
-  {
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    jobId: text("job_id").notNull(),
-    instanceId: text("instance_id").notNull(),
-    createdAt: integer("created_at").notNull(),
-    dispatchedAt: integer("dispatched_at"),
-  },
-  (t) => [
-    foreignKey({
-      columns: [t.tenantId, t.bookId, t.jobId],
-      foreignColumns: [libraryJobs.tenantId, libraryJobs.bookId, libraryJobs.id],
-    }).onDelete("cascade"),
-    uniqueIndex("library_job_dispatches_uq_0").on(t.tenantId, t.bookId, t.jobId),
-    uniqueIndex("library_job_dispatches_uq_1").on(t.instanceId),
-  ],
-);
-
-export const libraryR2Deletions = sqliteTable(
-  "library_r2_deletions",
-  {
-    prefix: text("prefix").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
-    bookId: text("book_id").notNull(),
-    createdAt: integer("created_at").notNull(),
-    notBefore: integer("not_before").notNull(),
-  },
-  (t) => [index("library_r2_deletions_idx_0").on(t.notBefore)],
-);
-
-/** Monthly OCR page budget: one reservation per Workflow instance (no FK; kept after deletion). */
-export const libraryOcrReservations = sqliteTable(
-  "library_ocr_reservations",
-  {
-    instanceId: text("instance_id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
-    ownerId: text("owner_id").notNull(),
-    bookId: text("book_id").notNull(),
-    month: text("month").notNull(),
-    pages: integer("pages").notNull(),
-    createdAt: integer("created_at").notNull(),
-  },
-  (t) => [
-    check("library_ocr_reservations_check_0", sql`pages >= 0`),
-    index("library_ocr_reservations_idx_0").on(t.tenantId, t.month, t.ownerId),
-  ],
-);
+/** R2 から消す接頭辞 (本 1 冊 `library/<t>/<b>/` か、ファイル 1 つ `library/<t>/<b>/files/<id>`)。 */
+export const libraryR2Purges = sqliteTable("library_r2_purges", {
+  prefix: text("prefix").primaryKey().notNull(),
+  createdAt: integer("created_at").notNull(),
+});

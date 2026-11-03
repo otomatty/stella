@@ -7,7 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:narrator → deploy:health:check |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api → narrator の退役 (PDF 処理の Worker を消す。無ければ何もしない) →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -119,8 +119,8 @@ Cloudflare にだけキーが入っていても、次の deploy に備えて Git
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
 
 `workerSecrets` は機能に必要な Worker 側の Secret 名を記す。
-narrator の `GEMINI_API_KEY` は Cloudflare の `stella-narrator` の Settings → Variables and Secrets で Secret として設定する。
-GitHub の設定には同期しない。手元から設定する場合は `apps/narrator` で `bunx wrangler secret put GEMINI_API_KEY` を使う。
+本棚の PDF 処理 (narrator の OCR・読み上げ生成) は 2026-11 に退役した。`stella-narrator` と、その Secret `GEMINI_API_KEY` は
+`deploy.yml` の退役の step が API のデプロイ後に消す (Worker がもう無ければ何もしない)。
 
 ## Phase C の初回切替とデプロイ前処理
 
@@ -146,11 +146,11 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → seed → 指紋の記録 → web → narrator → deploy:health:check の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → api → narrator の退役 → seed → 指紋の記録 → web → deploy:health:check の順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
-- **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api/web のデプロイは済んでいる。narrator とヘルスチェックは動かない）。
+- **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api のデプロイは済んでいる。web とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
 - **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。
 - **手動再デプロイ**: ローカルから
@@ -169,22 +169,16 @@ CI の `verify` は `bun run deploy:config:check` で、`deploy.yml` が読む V
 GitHub 上で設定が削除されたことまではこの検査で分からない。実際の未登録は `deploy:prepare` がリモート処理前に止める。
 すべての `wrangler.*` のアカウントと環境ごとの上書き、API のランタイム用アカウントを `accountId` と照合し、
 デプロイではさらに `CLOUDFLARE_ACCOUNT_ID` と照合する。
-API / narrator の D1 は binding 名・DB 名・ID を共有する。R2 は正本に記した `LIBRARY_BUCKET` / `BUCKET` という
-別名の binding で同じ非公開バケットを指す。narrator の service / entrypoint も検査する。
+API の D1 は正本の binding 名・DB 名を使い、ID を持つこと、本棚の R2 は `LIBRARY_BUCKET` で非公開バケットを指すことを検査する。
+退役した narrator の設定 (`apps/narrator/wrangler.jsonc`) や API の `NARRATOR` binding が残っていれば失敗する。
 
-最後の narrator デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` (Web の Worker 経由で API) を取り、
-正本の `health` の真偽値と照合する。ログイン (Better Auth と Google)・本棚・narrator の疎通・書籍処理・AI 一次レビューは有効、
+最後の web デプロイ直後に `bun run deploy:health:check` が受講者用 Web の `/api/healthz` (Web の Worker 経由で API) を取り、
+正本の `health` の真偽値と照合する。ログイン (Better Auth と Google)・本棚 (フラグと非公開 R2)・AI 一次レビューは有効、
 開発者モードは無効が本番の期待値。欠けた項目や文字列の `"true"` も失敗する。
 設定の反映待ちは最大8回、リクエストは1回5秒、間隔は2秒。最後まで食い違えば Actions を失敗にする。
-ヘルスチェックは設定の有無だけを返し、キー・設定値・書籍の内容は返さない。AI / OCR / TTS も呼び出さない。
-`processingAvailable` は本棚画面と同じ判定で、narrator の応答待ちは3秒で打ち切る。
-本番は `narratorGeminiConfigured: true` も必須にする。これは narrator が返す provider が Gemini であることの真偽値で、
-キーや provider 名そのものは返さない。`FAKE_PROVIDERS=1` が混入して処理可能になっていても、この項目が `false` なので
-デプロイを失敗にする。fake providers はローカルのテストだけに使う。
+ヘルスチェックは設定の有無だけを返し、キー・設定値・本の内容は返さない。AI も呼び出さない。
 
 本棚の機能を意図して無効にする PR では、フラグと `health` の期待値を同じ PR で変更する。
-接続障害を「処理無効」と取り違えないよう、処理を止めても `narratorAvailable` は `true` を維持する。
-Gemini の設定も維持するため、`narratorGeminiConfigured` の期待値は `true` のままにする。
 
 ## 設定検査が失敗したときの復旧
 
@@ -198,24 +192,21 @@ Actions のエラーに出る設定名と真偽値を確認し、GitHub の未�
 # リポジトリのルートで実行。ID は対象 Worker の正常だった版に置き換える。
 bunx wrangler rollback <api-version-id> --config apps/api/wrangler.toml
 bunx wrangler rollback <web-version-id> --config apps/web/wrangler.toml
-bunx wrangler rollback <narrator-version-id> --config apps/narrator/wrangler.jsonc
 ```
 
 ロールバックは D1/R2 のデータを復元しない。削除済みの binding の参照先や Secret の変更によっては戻せないので、
 データの復旧は [インフラ移行手順](stella-infrastructure-migration.md) と
 [Cloudflare のロールバック仕様](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) を確認する。
 
-書籍の外部処理だけを止めるなら `apps/narrator/wrangler.jsonc` の `LIBRARY_PROCESSING_ENABLED` を `"0"` にし、
-正本の `health.processingAvailable` を `false` にして push する。本棚自体を閉じる場合は API の `[vars]` に
-`LIBRARY_ENABLED = "0"` を加え、`health.libraryEnabled` と `health.processingAvailable` を `false` にする。
-その PR も CI と本番のヘルスチェックを通す。処理の停止では `GEMINI_API_KEY` を削除しない。
+本棚を閉じる場合は API の `[vars]` に `LIBRARY_ENABLED = "0"` を加え、`health.libraryEnabled` を `false` にする。
+その PR も CI と本番のヘルスチェックを通す。保管済みの本と記録は残る。
 緊急に Cloudflare 側でフラグを変更した場合も、次の deploy で戻らないよう Git 側と期待値に同じ変更を入れる。
 
 ## 検査の内訳（`verify` ジョブ）
 
 | 検査 | コマンド | 見ているもの |
 |------|---------|-------------|
-| 設定 | `bun run deploy:config:check` | デプロイの設定名、全 Wrangler のアカウント、API / narrator の共有 binding |
+| 設定 | `bun run deploy:config:check` | デプロイの設定名、全 Wrangler のアカウント、API の D1 と本棚の R2 の binding |
 | 型 | `bun run typecheck` | 6 ワークスペースの `tsc --noEmit`。strict + `noUnusedLocals` / `noUnusedParameters` など。**テストと scripts も対象**（`exclude` を持つ tsconfig は無い） |
 | テスト | `bun run test:coverage` | Vitest 127 ファイル / 1534 件（`packages/**` と `apps/**/src`・`apps/**/scripts` の `*.test.ts`）。カバレッジは**閾値なし**で数字をジョブサマリに出すだけ |
 | lint | `bun run lint` | `biome ci .`（lint + フォーマットの両方）。`noExplicitAny` / `noNonNullAssertion` / `noConsole` / a11y などを error |

@@ -1,366 +1,357 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from "react";
-import { Link } from "@tanstack/react-router";
-import type {
-  LibraryBook,
-  LibraryCapabilities,
-  LibraryChapterSummary,
-  LibraryJob,
-  LibraryPdf,
-} from "@stella/shared/library/types";
-import { apiFetch } from "@/lib/api-client";
-import { uploadBookPdfs, type UploadProgress } from "@/lib/library-upload";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import type { LibraryBookDetail, LibraryReadingStatus } from "@stella/shared/library/types";
+import { formatBytes } from "@stella/shared/library/book-package";
+import { deleteBook, getBook, updateShelf } from "@/lib/library-api";
+import { Book, Check, ChevronLeft, Headphones, Star, Upload, Video } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PROCESSING } from "./LibraryPage";
+import { StatusScreen } from "@/components/common/StatusScreen";
+import { BookCover } from "./BookCover";
+import { ImportDialog } from "./ImportDialog";
 
-interface BookState {
-  book: LibraryBook;
-  jobs: LibraryJob[];
-  pdfs: LibraryPdf[];
-  chapters: LibraryChapterSummary[];
-}
-// Poll only while work is in flight; a hidden tab polls less often.
-const POLL_MS = 3000,
-  HIDDEN_POLL_MS = 15000;
+const READING: Record<LibraryReadingStatus, string> = {
+  unread: "未読",
+  reading: "読書中",
+  finished: "読了",
+  archived: "保管",
+};
 
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : "書籍を取得できませんでした";
+function message(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
-const fileSize = (bytes: number) =>
-  bytes < 1024 * 1024
-    ? `${Math.max(1, Math.round(bytes / 1024))}KB`
-    : `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 
 export function LibraryBookPage({ bookId }: { bookId: string }) {
-  const [state, setState] = useState<BookState | null>(null);
-  const [capabilities, setCapabilities] = useState<LibraryCapabilities | null>(null);
+  const [detail, setDetail] = useState<LibraryBookDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [file, setFile] = useState<File | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [upload, setUpload] = useState<UploadProgress | null>(null);
-  // The confirmation covers the PDF set it was given for; adding or deleting a PDF clears it.
-  const [acknowledgedFor, setAcknowledgedFor] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const base = `/api/library/books/${bookId}`;
-    const [caps, { book, jobs }, { pdfs }] = await Promise.all([
-      apiFetch<LibraryCapabilities>("/api/library/capabilities"),
-      apiFetch<{ book: LibraryBook; jobs: LibraryJob[] }>(`${base}/jobs`),
-      apiFetch<{ pdfs: LibraryPdf[] }>(`${base}/pdfs`),
-    ]);
-    const chapters =
-      book.status === "ready"
-        ? (await apiFetch<{ chapters: LibraryChapterSummary[] }>(`${base}/chapters`)).chapters
-        : [];
-    setCapabilities(caps);
-    setState({ book, jobs, pdfs, chapters });
-  }, [bookId]);
+  const input = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    load().catch((err) => setError(message(err)));
-  }, [load]);
+    const controller = new AbortController();
+    void version;
+    setError(null);
+    getBook(bookId, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setDetail(result);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        if (err instanceof Error && "status" in err && err.status === 404) setNotFound(true);
+        else setError(message(err, "本を取得できませんでした"));
+      });
+    return () => controller.abort();
+  }, [bookId, version]);
 
-  const processing = state?.book.status === "processing";
-  useEffect(() => {
-    if (!processing) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let stopped = false;
-    const tick = () => {
-      timer = setTimeout(
-        async () => {
-          // A later successful poll clears an earlier poll's network error.
-          await load().then(
-            () => setError(null),
-            (err) => setError(message(err)),
-          );
-          if (!stopped) tick();
-        },
-        document.visibilityState === "hidden" ? HIDDEN_POLL_MS : POLL_MS,
-      );
-    };
-    tick();
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
-  }, [processing, load]);
+  if (notFound)
+    return (
+      <StatusScreen
+        code="404"
+        icon={Book}
+        title="本が見つかりません"
+        description="削除されたか、別の人の本です。"
+        actions={
+          <Button asChild>
+            <Link to="/library">本棚へ戻る</Link>
+          </Button>
+        }
+      />
+    );
 
-  async function run(action: () => Promise<unknown>) {
+  async function change(body: Parameters<typeof updateShelf>[1]) {
     setBusy(true);
     setError(null);
     try {
-      await action();
+      const { entry } = await updateShelf(bookId, body);
+      setDetail((current) => (current ? { ...current, entry } : current));
     } catch (err) {
-      setError(message(err));
+      setError(message(err, "保存できませんでした"));
     } finally {
       setBusy(false);
-      setUpload(null);
-      await load().catch((err) => setError(message(err)));
     }
   }
 
-  if (!state)
-    return (
-      <div className="mx-auto w-full max-w-4xl p-4 md:p-6">
-        {error ? (
-          <div role="alert" className="flex flex-wrap items-center gap-3">
-            <p>{error}</p>
-            <Button
-              onClick={() => {
-                setError(null);
-                load().catch((err) => setError(message(err)));
-              }}
-            >
-              再読み込み
-            </Button>
-          </div>
-        ) : (
-          <div role="status" aria-label="書籍を読み込み中">
-            <Skeleton className="h-32 w-full" />
-          </div>
-        )}
-      </div>
-    );
-
-  const { book, jobs, pdfs, chapters } = state;
-  // A failed book is editable: changing its PDFs reopens it for a fresh run.
-  const editable =
-    book.status === "draft" || book.status === "uploading" || book.status === "failed";
-  const canUpload = Boolean(capabilities?.upload) && editable;
-  const canProcess =
-    canUpload &&
-    book.status === "uploading" &&
-    pdfs.length > 0 &&
-    pdfs.every((pdf) => pdf.uploadStatus === "completed");
-  // After a failed book is reopened, its old job belongs to an earlier run.
-  const pdfSet = pdfs.map((pdf) => pdf.id).join(",");
-  const acknowledged = acknowledgedFor === pdfSet;
-  const consent = (
-    <label className="flex items-start gap-2 text-sm">
-      <input
-        type="checkbox"
-        className="mt-1"
-        checked={acknowledged}
-        disabled={busy}
-        onChange={(event) => setAcknowledgedFor(event.target.checked ? pdfSet : null)}
-      />
-      <span>
-        本文の準備では、PDFを外部の読み取りサービス（Google の Gemini
-        API）へ送って文字を読み取ります。送ってよいPDFであることを確認しました。
-      </span>
-    </label>
-  );
-  const job =
-    book.status === "processing" || book.status === "ready" || book.status === "failed"
-      ? jobs[0]
-      : undefined;
-  const known = {
-    pdfs: pdfs.length,
-    bytes: pdfs.reduce((sum, pdf) => sum + pdf.sizeBytes, 0),
-    pages: pdfs.reduce((sum, pdf) => sum + (pdf.pageCount ?? 0), 0),
-  };
-
-  function choose(event: ChangeEvent<HTMLInputElement>) {
-    const files = [...(event.target.files ?? [])];
-    event.target.value = "";
-    if (!files.length || !capabilities) return;
-    void run(() => uploadBookPdfs(book.id, files, capabilities.limits, known, setUpload));
+  async function remove() {
+    setBusy(true);
+    try {
+      await deleteBook(bookId);
+      await navigate({ to: "/library" });
+    } catch (err) {
+      setError(message(err, "削除できませんでした"));
+      setBusy(false);
+    }
   }
+
+  const entry = detail?.entry;
+  const book = entry?.book;
+  const resume =
+    detail?.chapters.find((chapter) => chapter.id === entry?.lastChapterId) ?? detail?.chapters[0];
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
-      <div className="flex flex-col gap-1">
-        <Link to="/library" className="text-sm text-muted-foreground hover:underline">
-          ← 本棚に戻る
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="break-words text-xl font-semibold">{book.title}</h1>
-          <Badge>{PROCESSING[book.status]}</Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">{book.author || "著者未登録"}</p>
-      </div>
-
+      <Link
+        to="/library"
+        className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        本棚
+      </Link>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>PDF</CardTitle>
-            <CardDescription>
-              選んだ順に1冊の本としてつなぎます。1つ50MB・100ページを超えるPDFは自動で分けて送り、分けた部分はどれか1つを削除するとまとめて消えます。
-            </CardDescription>
+      {!detail || !entry || !book ? (
+        !error ? (
+          <div role="status" aria-label="本を読み込み中" className="flex gap-5">
+            <Skeleton className="aspect-[2/3] w-32" />
+            <Skeleton className="h-24 flex-1" />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3">
-            {pdfs.length ? (
-              <ol className="flex flex-col gap-2 text-sm">
-                {pdfs.map((pdf) => (
-                  <li key={pdf.id} className="flex flex-wrap items-center gap-2">
-                    <span className="min-w-0 flex-1 break-all">
-                      {pdf.position}. {pdf.fileName}
-                      {pdf.sourceFileName ? (
-                        <span className="text-muted-foreground">（元: {pdf.sourceFileName}）</span>
+        ) : null
+      ) : (
+        <>
+          <div className="flex flex-col gap-5 sm:flex-row">
+            <div className="w-36 shrink-0 self-center sm:self-start">
+              <BookCover title={book.title} coverUrl={book.coverUrl} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              <div>
+                <h1 className="text-xl font-semibold [overflow-wrap:anywhere]">{book.title}</h1>
+                {book.authors.length ? (
+                  <p className="mt-1 text-sm text-muted-foreground">{book.authors.join("、")}</p>
+                ) : null}
+              </div>
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>{book.chapterCount} 章</span>
+                {book.hasAudio ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
+                    音声
+                  </span>
+                ) : null}
+                {book.hasVideo ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Video className="h-3.5 w-3.5" aria-hidden="true" />
+                    動画
+                  </span>
+                ) : null}
+                <span>{formatBytes(book.totalBytes)}</span>
+                <span>
+                  {entry.progress.completedChapters} / {entry.progress.totalChapters} 章済み
+                </span>
+              </p>
+              {book.description ? (
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{book.description}</p>
+              ) : null}
+              {book.revision === 0 ? (
+                <p className="rounded-md border border-border-2 bg-sunken p-3 text-sm">
+                  取り込みが途中で止まっています。同じ zip
+                  をもう一度開くと、送り終えたファイルを飛ばして続きから送ります。
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {resume && book.revision > 0 ? (
+                  <Button variant="primary" asChild>
+                    <Link
+                      to="/library/$bookId/$chapterId"
+                      params={{ bookId: book.id, chapterId: resume.id }}
+                    >
+                      <Book className="h-4 w-4" aria-hidden="true" />
+                      {entry.lastChapterId ? "続きから" : "読みはじめる"}
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button
+                  disabled={busy}
+                  aria-pressed={entry.favorite}
+                  onClick={() => void change({ favorite: !entry.favorite })}
+                >
+                  <Star
+                    className={entry.favorite ? "h-4 w-4 fill-current text-amber-500" : "h-4 w-4"}
+                    aria-hidden="true"
+                  />
+                  {entry.favorite ? "お気に入り解除" : "お気に入り"}
+                </Button>
+                <Button disabled={busy} onClick={() => input.current?.click()}>
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {book.revision === 0 ? "zip を開き直す" : "更新版を読み込む"}
+                </Button>
+                <input
+                  ref={input}
+                  type="file"
+                  accept=".zip,application/zip"
+                  className="hidden"
+                  aria-label="本の zip を選ぶ"
+                  onChange={(event) => {
+                    const chosen = event.target.files?.[0];
+                    if (chosen) setFile(chosen);
+                    event.target.value = "";
+                  }}
+                />
+                <Button variant="ghost" disabled={busy} onClick={() => setConfirmDelete(true)}>
+                  削除
+                </Button>
+              </div>
+              <PersonalFields
+                key={`${entry.readingStatus}:${entry.tags.join("\n")}`}
+                status={entry.readingStatus}
+                tags={entry.tags}
+                busy={busy}
+                onSave={(body) => void change(body)}
+              />
+            </div>
+          </div>
+
+          {detail.chapters.length ? (
+            <section aria-labelledby="chapters-heading" className="flex flex-col gap-2">
+              <h2 id="chapters-heading" className="text-base font-semibold">
+                章
+              </h2>
+              <ol className="divide-y divide-border rounded-xl border border-border bg-card">
+                {detail.chapters.map((chapter) => (
+                  <li key={chapter.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                    <span className="w-6 shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {chapter.position}
+                    </span>
+                    <Link
+                      to="/library/$bookId/$chapterId"
+                      params={{ bookId: book.id, chapterId: chapter.id }}
+                      className="min-w-0 flex-1 text-sm font-medium hover:underline [overflow-wrap:anywhere]"
+                    >
+                      {chapter.title}
+                    </Link>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      {chapter.audioPath ? (
+                        <Headphones className="h-4 w-4" aria-label="音声あり" />
+                      ) : null}
+                      {chapter.videoPath ? (
+                        <Video className="h-4 w-4" aria-label="動画あり" />
+                      ) : null}
+                      {chapter.state.completed ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-success">
+                          <Check className="h-4 w-4" aria-hidden="true" />
+                          済み
+                        </span>
                       ) : null}
                     </span>
-                    <span className="text-muted-foreground">
-                      {fileSize(pdf.sizeBytes)}
-                      {pdf.pageCount ? ` · ${pdf.pageCount}ページ` : ""}
-                      {pdf.uploadStatus === "completed" ? "" : " · 送信できていません"}
-                    </span>
-                    {/* Deleting needs only storage, so it stays available while processing is off. */}
-                    {editable ? (
-                      <Button
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() =>
-                          void run(() =>
-                            apiFetch(`/api/library/books/${book.id}/pdfs/${pdf.id}`, {
-                              method: "DELETE",
-                            }),
-                          )
-                        }
-                      >
-                        削除
-                      </Button>
-                    ) : null}
                   </li>
                 ))}
               </ol>
-            ) : (
-              <p className="text-sm text-muted-foreground">まだPDFがありません。</p>
-            )}
-            {upload ? (
-              <div role="status" className="flex flex-col gap-1 text-sm">
-                <span>{upload.label}</span>
-                <Progress value={upload.percent} aria-label="PDFの送信" />
-              </div>
-            ) : null}
-            {canProcess ? consent : null}
-            {canUpload ? (
-              <div className="flex flex-wrap gap-2">
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    multiple
-                    className="sr-only"
-                    disabled={busy}
-                    onChange={choose}
-                  />
-                  <span className="inline-flex items-center rounded-full border border-border px-4 py-2 text-sm">
-                    PDFを追加
-                  </span>
-                </label>
-                <Button
-                  variant="primary"
-                  disabled={busy || !canProcess || !acknowledged}
-                  onClick={() =>
-                    void run(async () => {
-                      await apiFetch(`/api/library/books/${book.id}/process`, {
-                        method: "POST",
-                        // The server starts only if these are still exactly the book's PDFs.
-                        body: { acknowledgedExternalProcessing: true, pdfIds: pdfSet.split(",") },
-                      });
-                      // Each accepted run used its confirmation; a retry asks again.
-                      setAcknowledgedFor(null);
-                    })
-                  }
-                >
-                  本文の準備を始める
-                </Button>
-              </div>
-            ) : editable ? (
-              <p className="text-sm text-muted-foreground">PDFの登録は準備中です。</p>
-            ) : null}
+            </section>
+          ) : null}
+        </>
+      )}
+
+      <ImportDialog
+        file={file}
+        expectedPackageId={book?.packageId}
+        onClose={() => setFile(null)}
+        onImported={() => setVersion((v) => v + 1)}
+      />
+
+      <Dialog open={confirmDelete} onOpenChange={(open) => !busy && setConfirmDelete(open)}>
+        <DialogContent className="w-[min(calc(100vw-2rem),460px)]">
+          <DialogHeader>
+            <DialogTitle>この本を削除しますか？</DialogTitle>
+            <DialogDescription>
+              「{book?.title}」の本文・音声・動画と、読書の記録を削除します。元に戻せません。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 px-6 pb-6">
+            <Button disabled={busy} onClick={() => setConfirmDelete(false)}>
+              キャンセル
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void remove()}>
+              削除する
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {job ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>本文の準備</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div role="status" className="flex flex-col gap-2 text-sm">
-              {job.status === "queued" || job.status === "running" ? (
-                <>
-                  <span>
-                    {job.progressTotal
-                      ? `OCR ${job.progressCurrent}/${job.progressTotal}ページ`
-                      : "開始を待っています"}
-                    。ページを閉じても処理は続きます。
-                  </span>
-                  <Progress
-                    value={job.progressTotal ? (job.progressCurrent / job.progressTotal) * 100 : 0}
-                    aria-label="本文の準備"
-                  />
-                </>
-              ) : job.status === "failed" ? (
-                <>
-                  <span className="text-destructive">
-                    {job.errorMessage ?? "処理に失敗しました。"}
-                  </span>
-                  <span className="text-muted-foreground">
-                    PDFを追加・削除すると、組み直した本としてもう一度準備できます。
-                  </span>
-                  {consent}
-                  <div>
-                    <Button
-                      disabled={busy || !capabilities?.processingAvailable || !acknowledged}
-                      onClick={() =>
-                        void run(async () => {
-                          await apiFetch(`/api/library/books/${book.id}/jobs/${job.id}/retry`, {
-                            method: "POST",
-                            body: { acknowledgedExternalProcessing: true },
-                          });
-                          setAcknowledgedFor(null);
-                        })
-                      }
-                    >
-                      再実行
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <span>本文の準備が終わりました。</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {chapters.length ? (
-        <Card>
-          <CardHeader>
-            <div>
-              <CardTitle>章</CardTitle>
-              <CardDescription>本文を読む画面は準備中です。</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ol className="flex flex-col gap-1 text-sm">
-              {chapters.map((chapter) => (
-                <li key={chapter.id} className="flex gap-2">
-                  <span className="min-w-0 flex-1 break-words">
-                    {chapter.position}. {chapter.title}
-                  </span>
-                  <span className="text-muted-foreground">
-                    p.{chapter.startPage}–{chapter.endPage}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function PersonalFields({
+  status,
+  tags,
+  busy,
+  onSave,
+}: {
+  status: LibraryReadingStatus;
+  tags: string[];
+  busy: boolean;
+  onSave: (body: { readingStatus?: LibraryReadingStatus; tags?: string[] }) => void;
+}) {
+  const [text, setText] = useState(tags.join(", "));
+  const [error, setError] = useState<string | null>(null);
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const next = [
+      ...new Set(
+        text
+          .split(/[,、]/)
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (next.length > 20 || next.some((tag) => tag.length > 40)) {
+      setError("タグは40文字以内、20個までです");
+      return;
+    }
+    setError(null);
+    onSave({ tags: next });
+  }
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="library-status">読書状態</Label>
+        <select
+          id="library-status"
+          className="h-8 rounded-md border border-border-2 bg-background px-2 text-sm"
+          value={status}
+          disabled={busy}
+          onChange={(event) =>
+            onSave({ readingStatus: event.target.value as LibraryReadingStatus })
+          }
+        >
+          {Object.entries(READING).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+        <Label htmlFor="library-tags">タグ（カンマ区切り）</Label>
+        <Input
+          id="library-tags"
+          value={text}
+          disabled={busy}
+          onChange={(event) => setText(event.target.value)}
+        />
+      </div>
+      <Button type="submit" disabled={busy || text === tags.join(", ")}>
+        タグを保存
+      </Button>
+      {error ? (
+        <p role="alert" className="w-full text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </form>
   );
 }

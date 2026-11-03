@@ -27,6 +27,7 @@ healthzRoute.get("/api/healthz", async (c) => {
     devModeAvailable: isDevMode(c.env),
     /** AI 一次レビューに必要な鍵と、Gateway 使用時のアカウント設定があるか。 */
     aiReviewConfigured: aiReviewConfigured(c.env),
-    ...(await libraryRuntimeStatus(c.env)),
+    /** 本棚が使えるか (フラグと非公開 R2 の束ね)。 */
+    ...libraryRuntimeStatus(c.env),
   });
 });

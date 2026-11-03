@@ -86,12 +86,8 @@ bucket_name = "stella-materials-public"
 binding = "SUBMISSIONS_BUCKET"
 bucket_name = "stella-submissions"
 
-# Personal library content: no public domain / r2.dev access.
+# 本棚の本 (本人だけが読む)。公開ドメイン・r2.dev は付けない。
 [[r2_buckets]]
 binding = "LIBRARY_BUCKET"
 bucket_name = "stella-library-private"
 
-[[services]]
-binding = "NARRATOR"
-service = "stella-narrator"
-entrypoint = "Narrator"

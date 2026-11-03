@@ -14,8 +14,7 @@
     "optionalSecrets": ["PDF_KEY_SALT", "OPENAI_API_KEY"]
   },
   "workerSecrets": {
-    "api": ["BETTER_AUTH_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
-    "narrator": ["GEMINI_API_KEY"]
+    "api": ["BETTER_AUTH_SECRET", "GOOGLE_CLIENT_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
   },
   "resources": {
     "database": {
@@ -24,22 +23,13 @@
     },
     "libraryBucket": {
       "apiBinding": "LIBRARY_BUCKET",
-      "narratorBinding": "BUCKET",
       "name": "stella-library-private"
-    },
-    "narrator": {
-      "binding": "NARRATOR",
-      "service": "stella-narrator",
-      "entrypoint": "Narrator"
     }
   },
   "health": {
     "ok": true,
     "authConfigured": true,
     "libraryEnabled": true,
-    "narratorAvailable": true,
-    "narratorGeminiConfigured": true,
-    "processingAvailable": true,
     "aiReviewConfigured": true,
     "devModeAvailable": false
   }

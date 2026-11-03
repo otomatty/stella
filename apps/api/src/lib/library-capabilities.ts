@@ -1,42 +1,15 @@
 import type { Env } from "../env.js";
 import { libraryEnabled } from "./library-authz.js";
 
-/** No provider calls or book data reads. Bound the service check even during an outage. */
-export async function libraryRuntimeStatus(env: Env) {
-  const enabled = libraryEnabled(env.LIBRARY_ENABLED);
-  const unavailable = {
-    libraryEnabled: enabled,
-    narratorAvailable: false,
-    narratorGeminiConfigured: false,
-    processingAvailable: false,
-  };
-  if (!env.NARRATOR) return unavailable;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const capabilities = await Promise.race([
-      env.NARRATOR.capabilities(),
-      new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), 3_000);
-      }),
-    ]);
-    if (!capabilities) return unavailable;
-    return {
-      libraryEnabled: enabled,
-      narratorAvailable: true,
-      // Separate from availability: local fake providers must never satisfy production health.
-      narratorGeminiConfigured: capabilities.provider === "gemini",
-      processingAvailable:
-        enabled && Boolean(env.LIBRARY_BUCKET) && capabilities.configured === true,
-    };
-  } catch {
-    return unavailable;
-  } finally {
-    clearTimeout(timer);
-  }
+/**
+ * 本棚が使えるか。本は利用者が作った zip をそのまま保管するだけなので、外部の処理
+ * (OCR・読み上げ) に問い合わせることはない。フラグが有効で、非公開の R2 が束ねられていること。
+ */
+export function libraryAvailable(env: Env): boolean {
+  return libraryEnabled(env.LIBRARY_ENABLED) && Boolean(env.LIBRARY_BUCKET);
 }
 
-/** Library routes need no RPC when processing is already disabled by local configuration. */
-export async function processingAvailable(env: Env): Promise<boolean> {
-  if (!libraryEnabled(env.LIBRARY_ENABLED) || !env.LIBRARY_BUCKET) return false;
-  return (await libraryRuntimeStatus(env)).processingAvailable;
+/** /api/healthz 用。秘密値も本の中身も読まない。 */
+export function libraryRuntimeStatus(env: Env) {
+  return { libraryEnabled: libraryAvailable(env) };
 }

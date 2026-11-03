@@ -78,6 +78,8 @@ export {
   Maximize2,
   Minimize2,
   RotateCcw,
+  RotateCw,
+  Headphones,
   History,
   RefreshCw,
   Volume2,

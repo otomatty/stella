@@ -64,7 +64,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
-    { id: "library", label: "個人の本棚", icon: Book },
+    { id: "library", label: "本棚", icon: Book },
   ],
   instructor: [
     { id: "dash", label: "ダッシュボード", icon: Home },
@@ -74,7 +74,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "stage-grants", label: "専用教材", icon: UserPlus },
     { id: "stages", label: "ステージ", icon: Book },
-    { id: "library", label: "個人の本棚", icon: Book },
+    { id: "library", label: "本棚", icon: Book },
   ],
   admin: [
     { id: "dash", label: "KPIダッシュボード", icon: BarChart },
@@ -89,7 +89,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
-    { id: "library", label: "個人の本棚", icon: Book },
+    { id: "library", label: "本棚", icon: Book },
   ],
 };
 
