@@ -2,9 +2,14 @@
  * スキル `.claude/skills/stella-book` の梱包スクリプト (pack_book.py) が、取り込みの規則の正本
  * (parseBookManifest・planPackageFiles) と同じ判定をすることを確かめる。規則を変えたのにスキルを
  * 直し忘れると、スキルが作った zip が本棚の取り込みで止まるため。
+ *
+ * あわせて、動画の組み立て (build_video.mjs) と絵コンテの検査 (check_storyboard.py) が、HTML や
+ * スクリプトに入る値 (場面の id・show・音声のファイル名) の形の崩れた絵コンテを止めることを確かめる。
+ * 生成した HTML は動画の書き出しでブラウザが開くので、絵コンテから任意のスクリプトを差し込ませない。
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -19,9 +24,10 @@ import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { parseBookManifest, planPackageFiles } from "./book-package";
 
-const PACK_BOOK = fileURLToPath(
-  new URL("../../../../.claude/skills/stella-book/scripts/pack_book.py", import.meta.url),
+const SCRIPTS = fileURLToPath(
+  new URL("../../../../.claude/skills/stella-book/scripts/", import.meta.url),
 );
+const PACK_BOOK = join(SCRIPTS, "pack_book.py");
 const root = mkdtempSync(join(tmpdir(), "stella-book-skill-"));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
@@ -304,5 +310,131 @@ describe("stella-book スキルの梱包スクリプト", () => {
     expect(packer(linkedCover, "--check").errors).toEqual([
       "cover: cover.jpg はシンボリックリンク (かその中) です。実際のファイルを置いてください",
     ]);
+  });
+});
+
+type Storyboard = Record<string, unknown> & {
+  scenes: (Record<string, unknown> & { lines: Record<string, unknown>[] })[];
+};
+
+function baseStoryboard(): Storyboard {
+  return {
+    format: "stella-storyboard",
+    version: 1,
+    book: "試験の本",
+    chapter: { id: "ch01", label: "1章", title: "はじめに" },
+    speakers: { 先輩: { voice: "Charon" }, 後輩: { voice: "Aoede" } },
+    scenes: [
+      {
+        id: "intro",
+        section: "イントロ",
+        board: { type: "summary", title: "この章の要点", items: ["要点の一つ目"] },
+        lines: [
+          { speaker: "後輩", text: "今日はこの章を読みます。" },
+          { speaker: "先輩", text: "要点は一つだけです。", show: 0 },
+        ],
+      },
+    ],
+  };
+}
+
+const INJECTED_ID = 'x"></section><script>alert(1)</script>';
+const storyboardCases: [string, string, (sb: Storyboard) => void][] = [
+  [
+    "場面の id に HTML を差し込む",
+    "場面の id",
+    (sb) => Object.assign(sb.scenes[0] ?? {}, { id: INJECTED_ID }),
+  ],
+  [
+    "場面の id でセレクターを閉じる",
+    "場面の id",
+    (sb) => Object.assign(sb.scenes[0] ?? {}, { id: "a'],script,[x='" }),
+  ],
+  ["場面の id が無い", "場面の id", (sb) => delete sb.scenes[0]?.id],
+  ["場面の id の重複", "場面の id", (sb) => sb.scenes.push(structuredClone(sb.scenes[0]) as never)],
+  [
+    "show に文字列を差し込む",
+    "show",
+    (sb) => Object.assign(sb.scenes[0]?.lines[1] ?? {}, { show: '0\'] .ring"), alert(1), q("' }),
+  ],
+  ["show が true", "show", (sb) => Object.assign(sb.scenes[0]?.lines[1] ?? {}, { show: true })],
+  [
+    "話者が speakers にない",
+    "話者",
+    (sb) => Object.assign(sb.scenes[0]?.lines[0] ?? {}, { speaker: "第三者" }),
+  ],
+];
+
+function writeStoryboard(storyboard: Storyboard): string {
+  const dir = join(root, `storyboard-${++count}`);
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "storyboard.json");
+  writeFileSync(path, JSON.stringify(storyboard));
+  return path;
+}
+
+function buildVideo(storyboardPath: string, ...args: string[]) {
+  const out = join(dirname(storyboardPath), "video");
+  const result = spawnSync(
+    process.execPath,
+    [join(SCRIPTS, "build_video.mjs"), "--storyboard", storyboardPath, "--out", out, ...args],
+    { encoding: "utf8" },
+  );
+  return { status: result.status, stderr: result.stderr, wroteOutput: existsSync(out) };
+}
+
+function checkStoryboard(storyboardPath: string) {
+  const result = spawnSync(
+    "python3",
+    ["-I", join(SCRIPTS, "check_storyboard.py"), storyboardPath],
+    {
+      encoding: "utf8",
+    },
+  );
+  return {
+    status: result.status,
+    errors: (JSON.parse(result.stdout) as { errors: string[] }).errors,
+  };
+}
+
+describe("stella-book スキルの動画の組み立て", () => {
+  it("見本の絵コンテは検査を通る", () => {
+    expect(checkStoryboard(writeStoryboard(baseStoryboard()))).toEqual({ status: 0, errors: [] });
+  });
+
+  it.each(storyboardCases)(
+    "%s絵コンテは、検査でも組み立てでも止まり、何も書き出さない",
+    (_name, keyword, change) => {
+      const storyboard = baseStoryboard();
+      change(storyboard);
+      const path = writeStoryboard(storyboard);
+      const check = checkStoryboard(path);
+      expect(check.status).toBe(1);
+      expect(check.errors.length).toBeGreaterThan(0);
+      const build = buildVideo(path, "--layout-only");
+      expect(build.status).not.toBe(0);
+      expect(build.stderr).toContain(keyword);
+      expect(build.wroteOutput).toBe(false);
+    },
+  );
+
+  it("timings.json の音声のファイル名が synth_lines.py の形でなければ、組み立てで止まる", () => {
+    const path = writeStoryboard(baseStoryboard());
+    const audio = join(dirname(path), "audio");
+    mkdirSync(audio);
+    writeFileSync(
+      join(audio, "timings.json"),
+      JSON.stringify({
+        mock: false,
+        lines: [
+          { scene: "intro", index: 0, file: '../../x.wav" onerror="alert(1)', seconds: 1 },
+          { scene: "intro", index: 1, file: "0123456789abcdef.wav", seconds: 1 },
+        ],
+      }),
+    );
+    const build = buildVideo(path, "--audio", audio);
+    expect(build.status).not.toBe(0);
+    expect(build.stderr).toContain("timings.json");
+    expect(build.wroteOutput).toBe(false);
   });
 });
