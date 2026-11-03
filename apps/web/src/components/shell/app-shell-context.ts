@@ -3,7 +3,6 @@ import type { Stage, Role, Tenant } from "@/data/types";
 import type { ChatContext } from "@stella/shared/ai/types";
 import type { ProfileRole } from "@stella/shared/cms/types";
 import type { Profile } from "@/lib/auth";
-import type { UseAnnouncementsResult } from "@/hooks/useAnnouncements";
 
 /**
  * AppShell (認証済みレイアウト) が配下ルートへ渡す値。
@@ -28,7 +27,6 @@ export interface AppShellValue {
   onOpenReview: (id: string) => void;
   studentName: string;
   studentInitials: string;
-  announcementsHook: UseAnnouncementsResult;
   stagesError: string | null;
   /**
    * 受講中ステージの一覧を取り直す (Phase 3b)。

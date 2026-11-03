@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
 import { CodeLessonHandoff } from "./CodeLessonHandoff";
 import { TaskLessonHandoff } from "./TaskLessonHandoff";
+import { SubmissionHistory } from "./SubmissionHistory";
 import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
 import { QuizPlayer } from "./QuizPlayer";
 import type { Tenant } from "@/data/types";
@@ -80,6 +81,7 @@ interface LessonPlayerProps {
   onOpenAIBot?: () => void;
   /** レッスンの文脈を AIChatBot に伝えるための setter。 */
   setAIContext?: (ctx: ChatContext) => void;
+  onOpenSubmission: (submissionId: string) => void;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -93,6 +95,7 @@ export const LessonPlayer = ({
   initialLesson = null,
   onActiveLessonChange,
   setAIContext,
+  onOpenSubmission,
 }: LessonPlayerProps) => {
   const sections: Section[] = stage.sections ?? [];
   const allLessons = useMemo(() => sections.flatMap((s) => s.lessons), [sections]);
@@ -525,6 +528,7 @@ export const LessonPlayer = ({
             isQuiz ? "pb-36 sm:pb-24" : "pb-24",
           )}
         >
+          <SubmissionHistory onOpenSubmission={onOpenSubmission} />
           {showCompleteCallout ? (
             <LessonCompleteCallout
               neighbors={neighbors}

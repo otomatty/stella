@@ -13,8 +13,7 @@ function SubmissionResultPage() {
     <ReviewResultView
       submissionId={submissionId}
       setPage={s.setPage}
-      // 受講者の提出一覧はホームから「学習の記録」へ移した。
-      {...(s.role === "learner" ? { back: { page: "records", label: "学習の記録に戻る" } } : {})}
+      {...(s.role === "learner" ? { back: { page: "lesson", label: "現在のレッスンに戻る" } } : {})}
     />
   );
 }

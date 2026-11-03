@@ -13,8 +13,8 @@ interface ReviewResultViewProps {
   submissionId: string;
   setPage: (page: string) => void;
   /**
-   * 戻り先。受講者は提出の一覧がある「学習の記録」、それ以外は各自のホーム。
-   * 受講者以外に学習の記録 (受講者専用) を指すと、戻った先が 403 になる。
+   * 戻り先。受講者は現在のレッスン、それ以外は各自のホーム。
+   * 受講者以外にレッスン (受講者専用) を指すと、戻った先が 403 になる。
    */
   back?: { page: string; label: string };
   /** 一覧から渡せる場合は初回表示を早くする。 */

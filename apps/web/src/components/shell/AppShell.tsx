@@ -32,7 +32,6 @@ import { PageSkeleton } from "@/components/ui/skeleton";
 import { usePendingReviewCount, useSubmissionsAutoRefresh } from "@/hooks/useSubmissions";
 import { useMyCertificates } from "@/hooks/useMyCertificates";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useAnnouncements } from "@/hooks/useAnnouncements";
 
 /**
  * シェルの表示フェーズ (受講者向けの学習単位である `Stage` とは別物)。
@@ -96,8 +95,6 @@ function loadSaved(): PersistedState | null {
 const PATH_BY_PAGE: Record<string, string> = {
   dash: "/",
   stages: "/stages",
-  // 受講者の学習の記録 (ホームから移した提出履歴・学習時間・ペース・お知らせ)。
-  records: "/records",
   cert: "/certificates",
   "review-queue": "/review-queue",
   // デイリー復習 (SRS)。 未登録だと fallback でキーが "review" (添削詳細 = flush) に
@@ -274,8 +271,6 @@ export function AppShell() {
   // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
-  // 学習の記録 (LearnerRecords) への props 渡し用（二重 fetch 回避）。
-  const announcements = useAnnouncements(effectiveTenant.id, effectiveRole === "learner");
   const pendingReviewCount = usePendingReviewCount(effectiveTenant.id);
   // 人の件数・AI の状態はほかの講師や AI の非同期の結果で変わるので、staff のあいだは取り直す (#34)。
   useSubmissionsAutoRefresh(
@@ -601,7 +596,6 @@ export function AppShell() {
     onOpenReview,
     studentName: effectiveUser.name,
     studentInitials: effectiveUser.initials,
-    announcementsHook: announcements,
     stagesError: stageError,
     refetchStages,
     onOpenSubmission: openSubmissionResult,

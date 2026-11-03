@@ -37,6 +37,7 @@ function LessonPage() {
           // URL パラメータ (id) の変化だけで再適用される。
           initialLesson={{ id: lessonId, seq: 0 }}
           onActiveLessonChange={s.onActiveLessonChange}
+          onOpenSubmission={s.onOpenSubmission}
         />
       ) : s.stages.length === 0 ? (
         <EmptyStagesNotice setPage={s.setPage} />
