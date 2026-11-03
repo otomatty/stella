@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
-from pack_book import check_manifest  # noqa: E402
+from pack_book import check_manifest, json_bytes  # noqa: E402
 
 
 def load(book_dir):
@@ -31,7 +31,7 @@ def load(book_dir):
 
 
 def save(path, manifest):
-    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_bytes(json_bytes(manifest))
 
 
 def report(manifest):
@@ -54,6 +54,7 @@ def report(manifest):
 
 
 def main():
+    sys.stdout.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     init = sub.add_parser("init")

@@ -143,6 +143,24 @@ const cases: [string, (m: Manifest, f: Record<string, string>) => void][] = [
   ],
   ["章が無い", (m) => Object.assign(m, { chapters: [] })],
   ["version が true", (m) => Object.assign(m, { version: true })],
+  // 文字数は JavaScript の length (UTF-16 の単位) で数える。絵文字 1 個は 2。
+  ["題名が絵文字 100 個 (200 単位)", (m) => Object.assign(m, { title: "😀".repeat(100) })],
+  ["題名が絵文字 101 個 (202 単位)", (m) => Object.assign(m, { title: "😀".repeat(101) })],
+  ["著者名が絵文字 51 個 (102 単位)", (m) => Object.assign(m, { authors: ["😀".repeat(51)] })],
+  ["説明が絵文字 1001 個 (2002 単位)", (m) => Object.assign(m, { description: "😀".repeat(1001) })],
+  [
+    "章の題名が絵文字 101 個",
+    (m) => Object.assign(m.chapters[0] ?? {}, { title: "😀".repeat(101) }),
+  ],
+  ["題名に対になっていないサロゲート", (m) => Object.assign(m, { title: "\ud800題名" })],
+  // 前後の空白は String.prototype.trim と同じ範囲で外す。
+  ["題名が U+FEFF だけ", (m) => Object.assign(m, { title: "\ufeff" })],
+  ["題名が U+001F だけ", (m) => Object.assign(m, { title: "\u001f" })],
+  ["題名が U+3000 だけ", (m) => Object.assign(m, { title: "\u3000" })],
+  // Python の $ は末尾の改行の前にも当たる。
+  ["本の id の末尾に改行", (m) => Object.assign(m, { id: `${m.id}\n` })],
+  ["言語の末尾に改行", (m) => Object.assign(m, { language: "ja\n" })],
+  ["章の id の末尾に改行", (m) => Object.assign(m.chapters[0] ?? {}, { id: "ch01\n" })],
   ...pathCase("パスがちょうど 200 文字", `chapters/${"a".repeat(188)}.md`),
   ...pathCase("パスが 201 文字", `chapters/${"a".repeat(189)}.md`),
   // JavaScript の length は UTF-16 の単位。Python の len (コードポイント) では 109 文字になる。

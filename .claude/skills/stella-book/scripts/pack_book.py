@@ -39,9 +39,13 @@ EXTENSIONS = {
 LABEL = {"cover": "表紙", "text": "本文", "audio": "音声", "video": "動画", "image": "画像"}
 EXPECTED = {"cover": ".webp / .jpg / .jpeg / .png", "text": ".md", "audio": ".m4a / .mp3",
             "video": ".mp4", "image": ".png / .jpg / .jpeg / .webp / .gif"}
-UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
-CHAPTER_ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
-LANGUAGE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
+# 末尾は \Z (Python の $ は最後の改行の前にも当たるが、JavaScript の $ は当たらない)。
+UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z", re.I)
+CHAPTER_ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}\Z")
+LANGUAGE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*\Z")
+# JavaScript の String.prototype.trim が外す空白。Python の strip() とは範囲が違う
+# (strip() は \x1c〜\x1f と \x85 を外し、U+FEFF を外さない)。
+JS_SPACE = "\t\n\v\f\r \u00a0\u1680" + "".join(map(chr, range(0x2000, 0x200B))) + "\u2028\u2029\u202f\u205f\u3000\ufeff"
 TOP_KEYS = {"format", "version", "id", "title", "authors", "language", "description", "cover", "chapters"}
 CHAPTER_KEYS = {"id", "title", "text", "audio", "video"}
 # コードブロック (``` か ~~~ の囲み)・インラインコード・HTML コメントを、文書の先頭から順に切り出す。
@@ -64,10 +68,15 @@ def allowed(path, kind):
     return kind in EXTENSIONS.get(extension(path), ())
 
 
+def js_length(text):
+    """JavaScript の length と同じく UTF-16 の単位で数える (絵文字などは 2)。"""
+    return len(text.encode("utf-16-le", "surrogatepass")) // 2
+
+
 def safe_path(path):
     """isSafePackagePath と同じ。/ 区切り・先頭の / なし・\\ なし・空や . や .. の部分なし・
     制御文字 (DEL を含む) なし・200 文字以内 (JavaScript と同じく UTF-16 の単位で数える)。"""
-    if not isinstance(path, str) or not path or len(path.encode("utf-16-le")) // 2 > 200:
+    if not isinstance(path, str) or not path or js_length(path) > 200:
         return False
     if "\\" in path or path.startswith("/") or any(ord(c) < 32 or ord(c) == 127 for c in path):
         return False
@@ -75,10 +84,11 @@ def safe_path(path):
 
 
 def text_field(value, low, high):
+    """parseBookManifest の trimmed と同じ (前後の空白を外し、UTF-16 の単位で数える)。"""
     if not isinstance(value, str):
         return None
-    value = value.strip()
-    return value if low <= len(value) <= high else None
+    value = value.strip(JS_SPACE)
+    return value if low <= js_length(value) <= high else None
 
 
 def check_manifest(manifest):
@@ -106,7 +116,8 @@ def check_manifest(manifest):
     if not (isinstance(language, str) and len(language) <= 35 and LANGUAGE.match(language)):
         errors.append('language: "ja" や "en-US" の形で指定してください')
     description = manifest.get("description")
-    if description is not None and (not isinstance(description, str) or len(description.strip()) > 2000):
+    if description is not None and (not isinstance(description, str)
+                                    or js_length(description.strip(JS_SPACE)) > 2000):
         errors.append("description: 2000 文字以内の文字列にしてください")
 
     def file_field(value, field, kind):
@@ -245,7 +256,13 @@ def clean_markdown(text, chapter_title):
     return cleaned, comments, tags, heading
 
 
+def json_bytes(value):
+    """UTF-8 の JSON。対になっていないサロゲートは \\udXXX のまま書く (JSON としては同じ文字)。"""
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8", "backslashreplace")
+
+
 def main():
+    sys.stdout.reconfigure(errors="backslashreplace")  # 結果の JSON にサロゲートがあっても落ちない
     parser = argparse.ArgumentParser()
     parser.add_argument("book_dir")
     parser.add_argument("-o", "--output")
@@ -299,8 +316,7 @@ def main():
 
     out = Path(args.output)
     with zipfile.ZipFile(out, "w") as archive:
-        archive.writestr("book.json", json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-                         compress_type=zipfile.ZIP_DEFLATED)
+        archive.writestr("book.json", json_bytes(manifest), compress_type=zipfile.ZIP_DEFLATED)
         for path, kind in files.items():
             if path in texts:
                 archive.writestr(path, texts[path], compress_type=zipfile.ZIP_DEFLATED)
