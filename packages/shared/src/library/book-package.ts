@@ -109,7 +109,9 @@ export function extensionOf(path: string): string {
 /** 種類として受け付ける拡張子なら Content-Type を返す。 */
 export function contentTypeFor(path: string, kind: BookFileKind): string | null {
   if (kind === "thumbnail") return "image/jpeg";
-  const info = EXTENSIONS[extensionOf(path)];
+  const extension = extensionOf(path);
+  // 表に無い拡張子 (constructor・__proto__ など継承したキーを含む) は受け付けない。
+  const info = Object.hasOwn(EXTENSIONS, extension) ? EXTENSIONS[extension] : undefined;
   return info?.kinds.includes(kind) ? info.contentType : null;
 }
 

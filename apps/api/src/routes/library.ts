@@ -842,7 +842,14 @@ libraryRoute.delete("/api/library/books/:bookId/imports/:revision", async (c) =>
       .bind(caller.tenantId, book.id)
       .all<{ r2_key: string; multipart_upload_id: string }>();
     await c.env.DB.batch(
-      discardPendingStatements(c.env.DB, caller.tenantId, book.id, revision, Date.now()),
+      discardPendingStatements(
+        c.env.DB,
+        caller.tenantId,
+        book.id,
+        revision,
+        book.pending_signature,
+        Date.now(),
+      ),
     );
     for (const upload of uploads.results)
       await bucket

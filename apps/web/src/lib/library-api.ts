@@ -158,12 +158,15 @@ async function sendMultipart(
     const partNumber = parts.length + 1;
     const body = new Blob([buffer.subarray(0, filled)]);
     const part = await withRetry(async () => {
-      const res = await apiFetchRaw(`${base}/multipart/parts/${partNumber}?uploadId=${uploadId}`, {
-        method: "PUT",
-        body,
-        contentType: "application/octet-stream",
-        signal,
-      });
+      const res = await apiFetchRaw(
+        `${base}/multipart/parts/${partNumber}?uploadId=${encodeURIComponent(uploadId)}`,
+        {
+          method: "PUT",
+          body,
+          contentType: "application/octet-stream",
+          signal,
+        },
+      );
       return (await res.json()) as { partNumber: number; etag: string };
     }, signal);
     parts.push(part);

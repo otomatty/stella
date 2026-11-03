@@ -127,7 +127,9 @@ function Shelf() {
         event.dataTransfer.dropEffect = "copy";
       }}
       onDragLeave={(event) => {
-        if (event.currentTarget === event.target) setDragging(false);
+        // 中の表紙などの上から外へ出たときも消す (行き先が本棚の外なら消す)。
+        const next = event.relatedTarget as Node | null;
+        if (!next || !event.currentTarget.contains(next)) setDragging(false);
       }}
       onDrop={onDrop}
     >

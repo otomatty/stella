@@ -62,41 +62,43 @@ export function discardPendingStatements(
   tenantId: string,
   bookId: string,
   expectRevision: number,
+  expectSignature: string | null,
   now: number,
 ): D1PreparedStatement[] {
-  const still =
-    "EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND pending_revision = ?)";
+  // 版の番号は置き換えで使い直すので、読んだときの取り込み (署名) と同じときだけ捨てる。
+  const match = "pending_revision = ? AND pending_signature IS ?";
+  const still = `EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND ${match})`;
   return [
     db
       .prepare(
         `DELETE FROM library_revision_files WHERE tenant_id = ? AND book_id = ? AND revision = ? AND ${still}`,
       )
-      .bind(tenantId, bookId, expectRevision, tenantId, bookId, expectRevision),
+      .bind(tenantId, bookId, expectRevision, tenantId, bookId, expectRevision, expectSignature),
     db
       .prepare(
         `DELETE FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ? AND ${still}`,
       )
-      .bind(tenantId, bookId, expectRevision, tenantId, bookId, expectRevision),
+      .bind(tenantId, bookId, expectRevision, tenantId, bookId, expectRevision, expectSignature),
     // 最初の版の取り消しは本ごと消す (読める版が無い本を棚に残さない)。
     db
       .prepare(
-        "INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) SELECT ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND pending_revision = ? AND current_revision = 0",
+        `INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) SELECT ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND ${match} AND current_revision = 0`,
       )
-      .bind(bookPrefix(tenantId, bookId), now, tenantId, bookId, expectRevision),
+      .bind(bookPrefix(tenantId, bookId), now, tenantId, bookId, expectRevision, expectSignature),
     db
       .prepare(
-        "DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND pending_revision = ? AND current_revision = 0)",
+        `DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND ${match} AND current_revision = 0)`,
       )
-      .bind(tenantId, bookId, tenantId, bookId, expectRevision),
+      .bind(tenantId, bookId, tenantId, bookId, expectRevision, expectSignature),
     db
       .prepare(
         `UPDATE library_books SET
           status = CASE WHEN current_revision = 0 THEN 'deleting' ELSE status END,
           pending_revision = NULL, pending_manifest = NULL, pending_signature = NULL,
           pending_thumb_file_id = NULL, pending_started_at = NULL, pending_bytes = 0, updated_at = ?
-        WHERE tenant_id = ? AND id = ? AND pending_revision = ?`,
+        WHERE tenant_id = ? AND id = ? AND ${match}`,
       )
-      .bind(now, tenantId, bookId, expectRevision),
+      .bind(now, tenantId, bookId, expectRevision, expectSignature),
     ...orphanFileStatements(db, tenantId, bookId, now),
   ];
 }

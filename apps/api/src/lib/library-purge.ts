@@ -18,13 +18,25 @@ export async function runLibraryPurge(env: Env, now = Date.now()): Promise<void>
   if (!bucket) return;
 
   const stale = await env.DB.prepare(
-    "SELECT tenant_id, id, pending_revision FROM library_books WHERE pending_revision IS NOT NULL AND pending_started_at < ? ORDER BY pending_started_at LIMIT 2",
+    "SELECT tenant_id, id, pending_revision, pending_signature FROM library_books WHERE pending_revision IS NOT NULL AND pending_started_at < ? ORDER BY pending_started_at LIMIT 2",
   )
     .bind(now - STALE_IMPORT_MS)
-    .all<{ tenant_id: string; id: string; pending_revision: number }>();
+    .all<{
+      tenant_id: string;
+      id: string;
+      pending_revision: number;
+      pending_signature: string | null;
+    }>();
   for (const book of stale.results)
     await env.DB.batch(
-      discardPendingStatements(env.DB, book.tenant_id, book.id, book.pending_revision, now),
+      discardPendingStatements(
+        env.DB,
+        book.tenant_id,
+        book.id,
+        book.pending_revision,
+        book.pending_signature,
+        now,
+      ),
     );
 
   const rows = await env.DB.prepare(

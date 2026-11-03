@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BOOK_PACKAGE_LIMITS,
   contentKeyOf,
+  contentTypeFor,
   isSafePackagePath,
   parseBookManifest,
   planPackageFiles,
@@ -277,6 +278,15 @@ describe("resolveMarkdownImage", () => {
 });
 
 describe("small helpers", () => {
+  it("treats inherited object keys as unknown extensions instead of throwing", () => {
+    expect(contentTypeFor("chapters/a.constructor", "text")).toBeNull();
+    expect(contentTypeFor("images/a.__proto__", "image")).toBeNull();
+    expect(errorsOf(manifest({ cover: "cover.constructor" }))).toEqual([
+      "cover: 表紙に使えない形式です (.webp / .jpg / .jpeg / .png)",
+    ]);
+    expect(resolveMarkdownImage("chapters/01.md", "../images/a.__proto__")).toBeNull();
+  });
+
   it("builds content keys and checks paths", () => {
     expect(contentKeyOf(0xdeadbeef, 12)).toBe("deadbeef-12");
     expect(contentKeyOf(-1, 1)).toBe("ffffffff-1");

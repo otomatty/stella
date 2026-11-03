@@ -605,6 +605,64 @@ describe("deleting and cleanup", () => {
     expect((await json<LibraryShelfResponse>(await call("/api/library/mine"))).total).toBe(0);
   });
 
+  it("does not discard an import that another tab replaced after the cancel was read", async () => {
+    const started = await json<LibraryImportResponse>(await startImport());
+    // 古い画面の取り消し: 読んだ時点の署名と違うので、置き換えた取り込みは残る。
+    const realPrepare = db.binding.prepare.bind(db.binding);
+    let swapped = false;
+    env.DB = new Proxy(db.binding, {
+      get(target, property, receiver) {
+        if (property === "prepare")
+          return (sql: string) => {
+            if (!swapped && sql.startsWith("SELECT * FROM library_books")) {
+              swapped = true;
+              db.sqlite
+                .prepare("UPDATE library_books SET pending_signature = 'stale' WHERE id = ?")
+                .run(started.bookId);
+              const statement = realPrepare(sql);
+              return new Proxy(statement, {
+                get(t, p, r) {
+                  if (p === "bind")
+                    return (...args: unknown[]) => {
+                      const bound = t.bind(...args);
+                      return new Proxy(bound, {
+                        get(bt, bp, br) {
+                          if (bp === "first")
+                            return async () => {
+                              const row = await bt.first();
+                              db.sqlite
+                                .prepare(
+                                  "UPDATE library_books SET pending_signature = 'replaced' WHERE id = ?",
+                                )
+                                .run(started.bookId);
+                              return row;
+                            };
+                          return Reflect.get(bt, bp, br);
+                        },
+                      });
+                    };
+                  return Reflect.get(t, p, r);
+                },
+              });
+            }
+            return realPrepare(sql);
+          };
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const res = await call(`/api/library/books/${started.bookId}/imports/${started.revision}`, {
+      method: "DELETE",
+    });
+    expect(res.status).toBe(200);
+    expect(
+      db.sqlite
+        .prepare(
+          "SELECT status, pending_revision, pending_signature FROM library_books WHERE id = ?",
+        )
+        .get(started.bookId),
+    ).toEqual({ status: "importing", pending_revision: 1, pending_signature: "replaced" });
+  });
+
   it("leaves unexpected prefixes alone and drops stale imports", async () => {
     storage.objects.set("library/ses/x/keep", new Uint8Array([1]));
     db.sqlite.exec("INSERT INTO library_r2_purges (prefix, created_at) VALUES ('library/ses', 0)");
