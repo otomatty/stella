@@ -5,7 +5,7 @@
 
 - 1 行 = 1 リクエスト (話者の声 1 つ + style)。字幕と図解をセリフに合わせるため、行ごとに長さを測る。
 - 結果は <out>/<hash>.wav (24kHz・mono) と <out>/timings.json (行ごとのファイルと秒数)。
-- 同じ内容 (モデル・声・style・本文) の行はキャッシュを使う。失敗した行は再実行で続きから作る。
+- 同じ内容 (モデル・声・style・本文) の行は 1 回だけ作り、同じファイルを使う。失敗した行は再実行で続きから作る。
 - API キーは --key-file、環境変数 GEMINI_API_KEY、md-audiobook と同じ ~/.config/md-audiobook/gemini_key の順に探す。
   キーの値は表示・ログ出力しない。
 - --mock は API を呼ばず、推定の長さの小さな音で流れだけを確かめる (動画の組み立て・書き出しの試験用)。
@@ -192,7 +192,11 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     for line in lines:
         line["file"] = f"{'mock-' if args.mock else ''}{line_hash(model, line)}.wav"
-    todo = [line for line in lines if not (out / line["file"]).exists()]
+    # 同じ内容の行は同じファイルになるので、作るのは 1 回だけ (同時に同じファイルへ書かない)。
+    users = {}
+    for line in lines:
+        users.setdefault(line["file"], []).append(line)
+    todo = [same[0] for file, same in users.items() if not (out / file).exists()]
     plan = {"lines": len(lines), "to_synthesize": len(todo), "model": model,
             "estimated_minutes": round(sum(estimate(line["text"]) for line in lines) / 60, 1)}
     if args.dry_run:
@@ -224,8 +228,9 @@ def main():
                 future.result()
                 log(f"[{done}/{len(todo)}] {line['scene']} {line['index'] + 1} 完了")
             except Exception as error:  # noqa: BLE001 — 失敗は一覧にして再実行で続ける
-                failed.append(f"{line['scene']} {line['index'] + 1}: {error}")
-                log(f"  失敗 {line['scene']} {line['index'] + 1}: {error}")
+                where = "・".join(f"{same['scene']} {same['index'] + 1}" for same in users[line["file"]])
+                failed.append(f"{where}: {error}")
+                log(f"  失敗 {where}: {error}")
 
     timings = []
     for line in lines:

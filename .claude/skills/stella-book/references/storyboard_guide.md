@@ -96,7 +96,8 @@ md-audiobook の `references/dialogue_guide.md` と同じ。特に次を守る�
 }
 ```
 
-- `chapter.id` は book.json の章の id と同じにする。`scenes[].id` は英数字で場面ごとに違う値。
+- `chapter.id` は book.json の章の id と同じにする。`scenes[].id` は英数字・`-`・`_` の 64 文字以内で、場面ごとに違う値
+  (動画の HTML の id にそのまま使うので、ほかの文字は `check_storyboard.py` と `build_video.mjs` が止める)。
 - 行の `style` は省略できる (話者の既定を使う)。気持ちが変わる行だけに付ける。
 
 ## 6. 見本 (1 場面)

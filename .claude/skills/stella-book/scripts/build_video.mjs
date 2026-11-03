@@ -46,6 +46,34 @@ const nodeModules = resolve(
   args["node-modules"] ?? process.env.STELLA_BOOK_NODE_MODULES ?? join(here, "node_modules"),
 );
 
+// 場面の id・show の番号・音声のファイル名は、HTML の id・セレクター・スクリプトにそのまま入る。
+// エスケープに頼らず形を限る (check_storyboard.py と同じ規則)。
+const SCENE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+const AUDIO_FILE = /^(mock-)?[0-9a-f]{16}\.wav$/;
+{
+  const speakers = Object.keys(storyboard.speakers ?? {});
+  if (speakers.length !== 2) throw new Error("speakers はちょうど 2 人にしてください");
+  const ids = new Set();
+  for (const scene of storyboard.scenes) {
+    if (typeof scene.id !== "string" || !SCENE_ID.test(scene.id) || ids.has(scene.id))
+      throw new Error(
+        `場面の id ${JSON.stringify(scene.id)} が使えません (英数字・-・_ の 64 文字以内で重複なし)。check_storyboard.py で確かめてください`,
+      );
+    ids.add(scene.id);
+    for (const [index, line] of scene.lines.entries()) {
+      if (!speakers.includes(line.speaker))
+        throw new Error(
+          `${scene.id} ${index + 1} 行目: 話者 ${JSON.stringify(line.speaker)} が speakers にありません`,
+        );
+      for (const n of line.show === undefined ? [] : [line.show].flat())
+        if (!Number.isInteger(n) || n < 0)
+          throw new Error(
+            `${scene.id} ${index + 1} 行目: show ${JSON.stringify(n)} は 0 始まりの整数にしてください`,
+          );
+    }
+  }
+}
+
 // ---------------------------------------------------------------- 時間
 const LEAD = 0.9; // 場面の始まりから最初のセリフまで (ボードの見出しが出る)
 const TAIL = 1.1; // 最後のセリフから次の場面まで
@@ -66,6 +94,15 @@ if (!layoutOnly) {
     throw new Error(
       "timings.json は試験用の音 (--mock) です。本番の動画には synth_lines.py を --mock なしで実行してください",
     );
+  for (const line of timings.lines)
+    if (
+      typeof line.file !== "string" ||
+      !AUDIO_FILE.test(line.file) ||
+      !Number.isFinite(line.seconds)
+    )
+      throw new Error(
+        `timings.json の行 ${JSON.stringify(line.file)} が synth_lines.py の形ではありません`,
+      );
   durations = new Map(timings.lines.map((line) => [`${line.scene}/${line.index}`, line]));
 }
 

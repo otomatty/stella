@@ -4,7 +4,15 @@
  * 直し忘れると、スキルが作った zip が本棚の取り込みで止まるため。
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -134,7 +142,26 @@ const cases: [string, (m: Manifest, f: Record<string, string>) => void][] = [
     (_, f) => Object.assign(f, { "fig.png": "png", ".DS_Store": "x" }),
   ],
   ["章が無い", (m) => Object.assign(m, { chapters: [] })],
+  ["version が true", (m) => Object.assign(m, { version: true })],
+  ...pathCase("パスがちょうど 200 文字", `chapters/${"a".repeat(188)}.md`),
+  ...pathCase("パスが 201 文字", `chapters/${"a".repeat(189)}.md`),
+  // JavaScript の length は UTF-16 の単位。Python の len (コードポイント) では 109 文字になる。
+  ...pathCase("絵文字を含む 205 単位のパス", `chapters/${"😀".repeat(48)}/${"😀".repeat(48)}.md`),
+  ...pathCase("パスに DEL (0x7f)", "chapters/0\u007f1.md"),
 ];
+
+function pathCase(name: string, path: string): typeof cases {
+  return [
+    [
+      name,
+      (m, f) => {
+        Object.assign(m.chapters[0] ?? {}, { text: path });
+        f[path] = "本文です。\n";
+        delete f["chapters/01.md"];
+      },
+    ],
+  ];
+}
 
 describe("stella-book スキルの梱包スクリプト", () => {
   it.each(cases)("%s で取り込みの規則と同じ判定をする", (_name, change) => {
@@ -186,5 +213,78 @@ describe("stella-book スキルの梱包スクリプト", () => {
     expect(listing["book.json"]?.[0]).toBe(DEFLATED);
     expect(listing["video/01.mp4"]?.[0]).toBe(STORED);
     expect(listing["cover.jpg"]?.[0]).toBe(STORED);
+  });
+
+  it("コードブロックとインラインコードの中の HTML コメントは本文として残す", () => {
+    const manifest = baseManifest();
+    const chapter = [
+      "<!-- p.1 -->",
+      "`<!-- inline -->` の書き方。",
+      "",
+      "```html",
+      "<!-- fenced -->",
+      "```",
+      "",
+      "~~~",
+      "<!-- tilde -->",
+      "~~~",
+      "",
+      "<!-- `ticks` inside a comment -->末尾",
+      "",
+    ].join("\n");
+    const dir = makeBook(manifest, { ...baseFiles(), "chapters/01.md": chapter });
+    const zip = join(root, "code.zip");
+    const report = packer(dir, "-o", zip);
+    expect(report.warnings).toEqual(["chapters/01.md: HTML コメント 2 個を外しました"]);
+    const text = execFileSync(
+      "python3",
+      [
+        "-I",
+        "-c",
+        "import sys,zipfile; print(zipfile.ZipFile(sys.argv[1]).read('chapters/01.md').decode())",
+        zip,
+      ],
+      { encoding: "utf8" },
+    );
+    expect(text).toBe(
+      "`<!-- inline -->` の書き方。\n\n```html\n<!-- fenced -->\n```\n\n~~~\n<!-- tilde -->\n~~~\n\n末尾\n\n",
+    );
+  });
+
+  it("HTML コメントと見出しを外すと空になる章は、検査でも梱包でも止める", () => {
+    const manifest = baseManifest();
+    const dir = makeBook(manifest, {
+      ...baseFiles(),
+      "chapters/01.md": "# 1章 はじめに\n\n<!-- p.1 -->\n<!-- p.2 -->\n",
+    });
+    // 取り込みの規則 (ファイルが空でないか) は通るが、梱包すると空の本文になる。
+    expect(shared(manifest, dir)).toBe(true);
+    for (const args of [["--check"], ["-o", join(root, "empty.zip")]]) {
+      const report = packer(dir, ...args);
+      expect(report.ok).toBe(false);
+      expect(report.errors).toEqual([
+        "chapters/01.md: HTML コメントと章の題名の見出しを外すと本文が空になります",
+      ]);
+    }
+  });
+
+  it("シンボリックリンクはたどらない (本の外のファイルを入れない)", () => {
+    const outside = join(root, "outside-secret.png");
+    writeFileSync(outside, "secret");
+    const manifest = baseManifest();
+    const dir = makeBook(manifest, baseFiles());
+    mkdirSync(join(dir, "images"), { recursive: true });
+    symlinkSync(outside, join(dir, "images", "secret.png"));
+    symlinkSync(root, join(dir, "images", "linked-dir"));
+    const report = packer(dir, "--check");
+    expect(report.ok).toBe(true);
+    expect(report.ignored).toEqual(["images/linked-dir", "images/secret.png"]);
+    expect(report.files).toBe(3); // book.json・表紙・本文
+
+    const linkedCover = makeBook(baseManifest(), { "chapters/01.md": "本文です。\n" });
+    symlinkSync(outside, join(linkedCover, "cover.jpg"));
+    expect(packer(linkedCover, "--check").errors).toEqual([
+      "cover: cover.jpg はシンボリックリンク (かその中) です。実際のファイルを置いてください",
+    ]);
   });
 });

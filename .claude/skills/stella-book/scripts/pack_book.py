@@ -13,11 +13,13 @@
 
 検査の規則は STELLA の @stella/shared/library/book-package (parseBookManifest・planPackageFiles)
 と同じ。食い違うと取り込みの画面で止まるので、規則を変えるときは両方を直す。
-本文の HTML コメント (文字起こしのページ印 <!-- p.N --> など) は、本棚では文字のまま表示されるので外す。
+本文の HTML コメント (文字起こしのページ印 <!-- p.N --> など) は、本棚では文字のまま表示されるので外す
+(コードブロックとインラインコードの中は本文なので残す)。シンボリックリンクは入れない。
 音声・動画・画像は無圧縮 (もう圧縮されている)、文字は deflate で入れる。標準ライブラリだけで動く。
 """
 import argparse
 import json
+import os
 import re
 import sys
 import zipfile
@@ -42,6 +44,13 @@ CHAPTER_ID = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 LANGUAGE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$")
 TOP_KEYS = {"format", "version", "id", "title", "authors", "language", "description", "cover", "chapters"}
 CHAPTER_KEYS = {"id", "title", "text", "audio", "video"}
+# コードブロック (``` か ~~~ の囲み)・インラインコード・HTML コメントを、文書の先頭から順に切り出す。
+# コメントの中のバッククォートはコードとみなさず、コードの中の <!-- --> はコメントとみなさない。
+# 囲みは閉じなければ文書の終わりまで。``` の情報文字列にバッククォートがあればインラインコード。
+FENCE_BACKTICK = r"^[ ]{0,3}(?P<bf>`{3,})[^`\n]*(?=\n|\Z).*?(?:\n[ ]{0,3}(?P=bf)`*[ \t]*(?=\n|\Z)|\Z)"
+FENCE_TILDE = r"^[ ]{0,3}(?P<tf>~{3,})[^\n]*.*?(?:\n[ ]{0,3}(?P=tf)~*[ \t]*(?=\n|\Z)|\Z)"
+INLINE = r"(?<!`)(?P<ticks>`+)(?!`)(?:(?!\n[ \t]*\n).)+?(?<!`)(?P=ticks)(?!`)"
+TOKENS = re.compile(rf"(?P<code>{FENCE_BACKTICK}|{FENCE_TILDE}|{INLINE})|(?P<comment><!--.*?-->)", re.M | re.S)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 RAW_HTML = re.compile(r"</?[A-Za-z][A-Za-z0-9-]*(\s[^<>]*)?/?>")
 
@@ -56,10 +65,11 @@ def allowed(path, kind):
 
 
 def safe_path(path):
-    """zip の中の相対パスとして安全か (/ 区切り・先頭の / なし・\\ なし・空や . や .. の部分なし)。"""
-    if not isinstance(path, str) or not path or len(path) > 400 or "\\" in path or path.startswith("/"):
+    """isSafePackagePath と同じ。/ 区切り・先頭の / なし・\\ なし・空や . や .. の部分なし・
+    制御文字 (DEL を含む) なし・200 文字以内 (JavaScript と同じく UTF-16 の単位で数える)。"""
+    if not isinstance(path, str) or not path or len(path.encode("utf-16-le")) // 2 > 200:
         return False
-    if any(ord(c) < 32 for c in path):
+    if "\\" in path or path.startswith("/") or any(ord(c) < 32 or ord(c) == 127 for c in path):
         return False
     return all(part not in ("", ".", "..") for part in path.split("/"))
 
@@ -79,7 +89,8 @@ def check_manifest(manifest):
     errors += [f"{key}: 知らない項目です" for key in manifest if key not in TOP_KEYS]
     if manifest.get("format") != "stella-book":
         errors.append('format: "stella-book" を指定してください')
-    if manifest.get("version") != 1:
+    version = manifest.get("version")
+    if isinstance(version, bool) or version != 1:  # true は 1 と等しいが、JSON の数ではない
         errors.append("version: 1 を指定してください")
     if not (isinstance(manifest.get("id"), str) and UUID.match(manifest["id"])):
         errors.append("id: UUID を指定してください")
@@ -137,17 +148,28 @@ def check_manifest(manifest):
 
 
 def plan_files(manifest, book_dir):
-    """planPackageFiles と同じ規則で、zip に入れるファイルを選ぶ。(files, ignored, errors)。"""
-    entries = {}
-    for path in sorted(book_dir.rglob("*")):
-        if path.is_file():
-            entries[path.relative_to(book_dir).as_posix()] = path.stat().st_size
+    """planPackageFiles と同じ規則で、zip に入れるファイルを選ぶ。(files, ignored, errors)。
+    シンボリックリンクはたどらない (本の外のファイルを zip に入れないため)。"""
+    entries, links = {}, set()
+    for current, dirs, names in os.walk(book_dir):
+        base = Path(current)
+        for name in dirs + names:
+            full = base / name
+            relative = full.relative_to(book_dir).as_posix()
+            if full.is_symlink():
+                links.add(relative)
+            elif name in names and full.is_file():
+                entries[relative] = full.stat().st_size
+    entries = dict(sorted(entries.items()))
     files, errors = {}, []
 
     def want(path, kind, field):
         if path in files:
             if files[path] != kind:
                 errors.append(f"{field}: {path} は別の種類として使われています")
+            return
+        if path in links or any(path.startswith(f"{link}/") for link in links):
+            errors.append(f"{field}: {path} はシンボリックリンク (かその中) です。実際のファイルを置いてください")
             return
         if path not in entries:
             errors.append(f"{field}: {path} がありません")
@@ -178,6 +200,7 @@ def plan_files(manifest, book_dir):
                 errors.append(f"{path}: 画像は 10MB までです")
             continue
         ignored.append(path)
+    ignored += sorted(links)
     total = sum(entries[p] for p in files)
     if len(files) > LIMITS["files"]:
         errors.append(f"ファイルは 1 冊 {LIMITS['files']} 個までです")
@@ -190,21 +213,35 @@ def same_title(a, b):
     return re.sub(r"\s+", "", a) == re.sub(r"\s+", "", b)
 
 
+def split_code(text):
+    """[(コードか, 部分)] に分ける。コードでない部分には HTML コメントがそのまま残る。"""
+    parts, last = [], 0
+    for match in TOKENS.finditer(text):
+        if match.group("code") is not None:
+            parts += [(False, text[last:match.start()]), (True, match.group(0))]
+            last = match.end()
+    return parts + [(False, text[last:])]
+
+
 def clean_markdown(text, chapter_title):
-    """HTML コメントと、章の題名と同じ先頭の見出しを外す。残った生の HTML タグの数も返す
-    (本棚では文字のまま表示される。章の題名は本棚の画面が見出しとして出す)。"""
-    cleaned, comments = COMMENT.subn("", text)
-    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).lstrip("\n")
-    first = re.match(r"#\s+(.+?)\s*(\n|$)", cleaned)
+    """コードの外の HTML コメントと、章の題名と同じ先頭の見出しを外す。コードの外に残った
+    生の HTML タグの数も返す (本棚では文字のまま表示される。章の題名は本棚の画面が見出しとして出す)。"""
+    comments = 0
+    pieces = []
+    for is_code, part in split_code(text):
+        if not is_code:
+            part, removed = COMMENT.subn("", part)
+            comments += removed
+            part = re.sub(r"\n{3,}", "\n\n", part)
+        pieces.append(part)
+    cleaned = "".join(pieces).lstrip("\n")
+    first = re.match(r"#[ \t]+(.+?)[ \t]*(?:\n|$)", cleaned)
     heading = bool(first and same_title(first.group(1), chapter_title))
     if heading:
         cleaned = cleaned[first.end():].lstrip("\n")
-    in_code, tags = False, 0
-    for line in cleaned.splitlines():
-        if line.lstrip().startswith("```"):
-            in_code = not in_code
-        elif not in_code:
-            tags += len(RAW_HTML.findall(re.sub(r"`[^`]*`", "", line)))
+    tags = sum(len(RAW_HTML.findall(line))
+               for is_code, part in split_code(cleaned) if not is_code
+               for line in part.splitlines())
     return cleaned, comments, tags, heading
 
 
@@ -216,6 +253,8 @@ def main():
     args = parser.parse_args()
     book_dir = Path(args.book_dir)
     manifest_path = book_dir / "book.json"
+    if manifest_path.is_symlink():
+        sys.exit(f"{manifest_path} がシンボリックリンクです。実際のファイルを置いてください")
     if not manifest_path.exists():
         sys.exit(f"{manifest_path} がありません")
     if manifest_path.stat().st_size > LIMITS["manifest"]:
@@ -224,18 +263,16 @@ def main():
     errors = check_manifest(manifest)
     files, ignored, plan_errors = ({}, [], []) if errors else plan_files(manifest, book_dir)
     errors += plan_errors
-    report = {"ok": not errors, "errors": errors, "ignored": ignored}
-    if errors:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-        return 1
-
     texts = {}
     warnings = []
-    titles = {c["text"]: c["title"] for c in manifest["chapters"]}
+    titles = {c["text"]: c["title"] for c in manifest["chapters"]} if not errors else {}
     for path, kind in files.items():
         if kind == "text":
             cleaned, comments, tags, heading = clean_markdown(
                 (book_dir / path).read_text(encoding="utf-8"), titles.get(path, ""))
+            if not cleaned.strip():
+                errors.append(f"{path}: HTML コメントと章の題名の見出しを外すと本文が空になります")
+                continue
             texts[path] = cleaned.encode("utf-8")
             if heading:
                 warnings.append(f"{path}: 章の題名と同じ先頭の見出しを外しました")
@@ -243,6 +280,10 @@ def main():
                 warnings.append(f"{path}: HTML コメント {comments} 個を外しました")
             if tags:
                 warnings.append(f"{path}: 生の HTML タグが {tags} 個あります (本棚では文字のまま表示されます)")
+    report = {"ok": not errors, "errors": errors, "ignored": ignored}
+    if errors:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 1
     report.update({
         "warnings": warnings,
         "title": manifest["title"],

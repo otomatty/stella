@@ -36,12 +36,18 @@ def save(path, manifest):
 
 def report(manifest):
     errors = [e for e in check_manifest(manifest) if not e.startswith("chapters: 章を 1 つ以上")]
-    chapters = manifest.get("chapters", [])
+    if not isinstance(manifest, dict):
+        print(json.dumps({"errors": errors}, ensure_ascii=False, indent=2))
+        return 1
+    chapters = manifest.get("chapters")
+    chapters = chapters if isinstance(chapters, list) else []
     print(json.dumps({
         "id": manifest.get("id"),
         "title": manifest.get("title"),
         "cover": manifest.get("cover"),
-        "chapters": [{k: c.get(k) for k in ("id", "title", "text", "audio", "video")} for c in chapters],
+        # 形の崩れた章 (オブジェクトでないもの) もそのまま見せる。エラーは errors に出る。
+        "chapters": [{k: c.get(k) for k in ("id", "title", "text", "audio", "video")} if isinstance(c, dict) else c
+                     for c in chapters],
         "errors": errors,
     }, ensure_ascii=False, indent=2))
     return 1 if errors else 0
@@ -93,8 +99,10 @@ def main():
 
     if args.command == "chapter":
         path, manifest = load(args.book_dir)
-        chapters = manifest.setdefault("chapters", [])
-        current = next((c for c in chapters if c.get("id") == args.id), None)
+        if not isinstance(manifest, dict) or not isinstance(manifest.setdefault("chapters", []), list):
+            sys.exit("book.json の形が崩れています (chapters は配列)。show で確かめて直してください")
+        chapters = manifest["chapters"]
+        current = next((c for c in chapters if isinstance(c, dict) and c.get("id") == args.id), None)
         entry = current if current is not None else {"id": args.id}
         entry["title"] = args.title
         entry["text"] = args.text
