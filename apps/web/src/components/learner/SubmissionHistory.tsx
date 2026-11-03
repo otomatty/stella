@@ -7,7 +7,7 @@ import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { ChevronRight } from "@/lib/icons";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 
-/** 添削を見直して学習に戻れるよう、提出履歴はレッスン内で開く。 */
+/** 提出履歴はレッスン内とホームから開く。受講登録がなくても過去の添削を確認できる。 */
 export function SubmissionHistory({
   onOpenSubmission,
 }: {

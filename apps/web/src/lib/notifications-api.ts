@@ -8,6 +8,17 @@
 import type { AnnouncementRow, NotificationRow } from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 
+/** 通知の有無によらず、現在の所属・受講登録で読めるお知らせを取得する。 */
+export async function listAnnouncements(
+  offset: number,
+  signal?: AbortSignal,
+): Promise<{
+  rows: AnnouncementRow[];
+  nextOffset: number | null;
+}> {
+  return apiFetch(`/api/announcements?limit=20&offset=${offset}`, { signal });
+}
+
 export interface CreateAnnouncementInput {
   tenantId: string;
   /** ステージ単位のお知らせにする場合の対象ステージ (省略 / null でテナント全体)。 */

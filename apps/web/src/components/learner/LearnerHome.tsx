@@ -49,6 +49,7 @@ import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
+import { SubmissionHistory } from "@/components/learner/SubmissionHistory";
 import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
   GuideSection,
@@ -691,6 +692,10 @@ export const LearnerHome = ({
                   onRemove={(id) => void stageQueue.remove(id).catch(() => undefined)}
                   onStart={requestStart}
                 />
+              ) : null}
+
+              {submissions.length > 0 ? (
+                <SubmissionHistory onOpenSubmission={onOpenSubmission} />
               ) : null}
             </div>
           </>
