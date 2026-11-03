@@ -460,6 +460,12 @@ describe("library import", () => {
       (await put(`${base}/multipart/parts/1?uploadId=wrong`, encoder.encode("01234567"))).status,
     ).toBe(409);
     await importBook(files);
+    // 完了の応答が失われて送り直されても、送信済みなら成功を返す (取り込みを止めない)。
+    const again = await call(`${base}/multipart/complete`, {
+      method: "POST",
+      body: JSON.stringify({ uploadId: "already-cleared", parts: [] }),
+    });
+    expect(again.status).toBe(200);
     const audioBody = await call(`/api/library/books/${started.bookId}/content/audio/01.m4a`);
     expect(await audioBody.text()).toBe("0123456789abcdefghijklmnop");
   });

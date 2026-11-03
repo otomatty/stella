@@ -737,6 +737,8 @@ libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart/complete",
     const { caller } = await getCaller(c);
     const bucket = requireLibrary(c.env);
     const { file } = await bookFile(c.env, caller, c.req.param("bookId"), c.req.param("fileId"));
+    // 完了の応答が届かずに送り直された 2 回目: もう送信済みなら成功として返す (ID は消えている)。
+    if (file.status === "uploaded") return c.json({ uploaded: true });
     const body = (await c.req.json<unknown>()) as { uploadId?: unknown; parts?: unknown };
     const uploadId = requireUploadId(file, body?.uploadId);
     const expectedParts = Math.ceil(file.size / BOOK_PACKAGE_LIMITS.multipartPartBytes);
