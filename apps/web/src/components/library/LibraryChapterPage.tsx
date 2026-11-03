@@ -172,10 +172,17 @@ function ChapterView({
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [completed, setCompleted] = useState(chapter.state.completed);
+  const [completeFailed, setCompleteFailed] = useState(false);
   const column = useColumnBox();
   const markCompleted = () => {
+    if (completed) return;
     setCompleted(true);
-    void save({ completed: true }).catch(() => undefined);
+    setCompleteFailed(false);
+    // 保存できなかったら済みの表示を戻し、もう一度押せるようにする (サーバーは済みにしていない)。
+    save({ completed: true }).catch(() => {
+      setCompleted(false);
+      setCompleteFailed(true);
+    });
   };
 
   return (
@@ -243,6 +250,11 @@ function ChapterView({
           <span />
         )}
       </div>
+      {completeFailed ? (
+        <p role="alert" className="-mt-2 text-sm text-destructive">
+          「読み終えた」を保存できませんでした。通信を確かめて、もう一度押してください。
+        </p>
+      ) : null}
 
       {chapter.audioPath ? (
         <AudioBar
