@@ -506,11 +506,10 @@ describe("課題を開いた画面", () => {
       ["a", "b", "c", "a"].map((name) => path.join(taskRoot(), "src", `${name}.js`)),
     );
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
-    // エクスプローラーで示すのは、最初に開くファイル。ファイルを開くより前に行う。
-    expect(state.executeCommand.mock.calls[0]).toEqual([
-      "revealInExplorer",
-      { scheme: "file", fsPath: path.join(taskRoot(), "src", "a.js") },
-    ]);
+    // 学習ガイドを課題の単元へ寄せ、エクスプローラーへ切り替えずに編集を始める。
+    expect(state.executeCommand.mock.calls[0]).toEqual(["stella.revealTask", taskId]);
+    expect(state.executeCommand.mock.calls[1]).toEqual(["stella.lessons.focus"]);
+    expect(state.executeCommand).not.toHaveBeenCalledWith("revealInExplorer", expect.anything());
   });
 
   it("画像は自動では開かず、開けないファイルがあっても課題文は開く", async () => {

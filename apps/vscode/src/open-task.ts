@@ -126,18 +126,13 @@ async function showTaskWorkspace(taskRoot: string): Promise<void> {
     return;
   }
   const rels = await filesToOpen(taskRoot);
-  const firstRel = rels[0];
-  // エクスプローラーでも課題フォルダーの場所が分かるようにする (失敗しても課題は開ける)。
-  // エクスプローラーへフォーカスが移ることがあるので、ファイルを開くより前に行う。
-  await vscode.commands
-    .executeCommand(
-      "revealInExplorer",
-      firstRel ? vscode.Uri.file(path.join(taskRoot, ...firstRel.split("/"))) : readme,
-    )
-    .then(
-      () => undefined,
-      () => undefined,
-    );
+  const receipt = await readDistribution(taskRoot).catch(() => undefined);
+  if (receipt) await vscode.commands.executeCommand("stella.revealTask", receipt.taskId);
+  // 教材の現在地を学習ガイドで示す。ファイルを開く前に行い、編集へのフォーカスは残す。
+  await vscode.commands.executeCommand("stella.lessons.focus").then(
+    () => undefined,
+    () => undefined,
+  );
   const opened: string[] = [];
   for (const rel of rels) if (await openInLeftColumn(taskRoot, rel)) opened.push(rel);
   // 複数のファイルを開いたら、最初のファイルを前に戻す。

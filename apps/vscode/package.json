@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "repository": {
     "type": "git",
@@ -36,7 +36,9 @@
       "stella": [
         {
           "id": "stella.lessons",
-          "name": "カリキュラム"
+          "name": "学習ガイド",
+          "type": "webview",
+          "icon": "media/icon.svg"
         }
       ]
     },

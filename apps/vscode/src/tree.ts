@@ -1,32 +1,19 @@
+import { randomBytes } from "node:crypto";
 import type { LessonType } from "@stella/shared/cms/types";
-import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
+import type { TaskStatus } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { AuthExpiredError } from "./api.js";
 import type { AuthStore } from "./auth.js";
-import { onDidChangeAuth } from "./auth.js";
+import { onDidChangeAuth, onDidChangeAuthSession } from "./auth.js";
+import { clearCatalog, loadCatalog, type CatalogStage, type CatalogLesson } from "./catalog.js";
 import {
-  clearCatalog,
-  loadCatalog,
-  type CatalogStage,
-  type CatalogLesson,
-  type CatalogSection,
-} from "./catalog.js";
+  renderLearningSidebar,
+  resolveLearningLocation,
+  type LearningSelection,
+  type LearningSidebarState,
+} from "./learning-sidebar.js";
 
 export type LessonContextValue = "lesson-code" | "lesson-doc" | "lesson-web" | "lesson-task";
-
-export interface StageNode {
-  kind: "stage";
-  id: string;
-  title: string;
-  sections: SectionNode[];
-}
-
-export interface SectionNode {
-  kind: "section";
-  id: string;
-  title: string;
-  lessons: LessonNode[];
-}
 
 export interface LessonNode {
   kind: "lesson";
@@ -41,31 +28,6 @@ export interface LessonNode {
   assignmentId?: string;
   /** 新形式の課題の課題文レッスンなら、その課題。開くと課題フォルダーを準備して並べる。 */
   task?: { id: string; status: TaskStatus };
-}
-
-export interface PlaceholderNode {
-  kind: "placeholder";
-  id: string;
-  title: string;
-  command?: string;
-}
-
-export type TreeNode = StageNode | SectionNode | LessonNode | PlaceholderNode;
-
-const CONNECT_NODE: PlaceholderNode = {
-  kind: "placeholder",
-  id: "stella.connect",
-  title: "Web で接続",
-  command: "stella.connect",
-};
-
-export function catalogErrorPlaceholder(message: string): PlaceholderNode {
-  return {
-    kind: "placeholder",
-    id: "stella.catalog-error",
-    title: message,
-    command: "stella.refresh",
-  };
 }
 
 function contextValueFor(type: LessonType): LessonContextValue {
@@ -102,29 +64,6 @@ export function toLessonNode(lesson: CatalogLesson): LessonNode {
   };
 }
 
-/** 課題が合格で済んだか (レッスンの完了ではなく、課題のレビューの合格で決める)。 */
-function taskDone(status: TaskStatus): boolean {
-  return status === "passed" || status === "ai-passed";
-}
-
-function toSectionNode(section: CatalogSection): SectionNode {
-  return {
-    kind: "section",
-    id: section.id,
-    title: section.title,
-    lessons: section.lessons.map(toLessonNode),
-  };
-}
-
-function toStageNode(stage: CatalogStage): StageNode {
-  return {
-    kind: "stage",
-    id: stage.id,
-    title: stage.title,
-    sections: stage.sections.map(toSectionNode),
-  };
-}
-
 export function lessonCommand(node: LessonNode): vscode.Command {
   switch (node.contextValue) {
     case "lesson-web":
@@ -158,131 +97,187 @@ export function lessonCommand(node: LessonNode): vscode.Command {
   }
 }
 
-export class LessonTreeProvider implements vscode.TreeDataProvider<TreeNode> {
-  private readonly didChange = new vscode.EventEmitter<TreeNode | undefined>();
-  readonly onDidChangeTreeData = this.didChange.event;
+export class LearningSidebarProvider implements vscode.WebviewViewProvider, vscode.Disposable {
+  private view: vscode.WebviewView | undefined;
+  private catalog: CatalogStage[] = [];
+  private selection: LearningSelection = {};
+  private state: LearningSidebarState = { kind: "loading" };
   private loadGeneration = 0;
+  private messageToken = "";
 
-  constructor(private readonly auth: AuthStore) {}
+  constructor(
+    private readonly auth: AuthStore,
+    private readonly extensionUri: vscode.Uri,
+  ) {}
 
-  refresh(): void {
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
+    view.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")],
+    };
+    const messages = view.webview.onDidReceiveMessage((message: unknown) => {
+      void this.receive(message).catch((err: unknown) => {
+        void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+      });
+    });
+    const visibility = view.onDidChangeVisibility(() => {
+      if (view.visible) void this.refresh();
+    });
+    const disposed = view.onDidDispose(() => {
+      messages.dispose();
+      visibility.dispose();
+      disposed.dispose();
+      if (this.view === view) {
+        this.view = undefined;
+        this.loadGeneration += 1;
+      }
+    });
+    void this.refresh();
+  }
+
+  reset(): void {
     this.loadGeneration += 1;
-    this.didChange.fire(undefined);
+    this.catalog = [];
+    this.selection = {};
+    this.state = { kind: "loading" };
+    this.render();
   }
 
-  getTreeItem(element: TreeNode): vscode.TreeItem {
-    switch (element.kind) {
-      case "stage": {
-        const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.Collapsed);
-        item.id = `stage:${element.id}`;
-        item.contextValue = "stage";
-        item.iconPath = new vscode.ThemeIcon("book");
-        return item;
-      }
-      case "section": {
-        const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.Collapsed);
-        item.id = `section:${element.id}`;
-        item.contextValue = "section";
-        return item;
-      }
-      case "lesson": {
-        const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.None);
-        item.id = `lesson:${element.stageId}:${element.id}`;
-        item.contextValue = element.contextValue;
-        item.command = lessonCommand(element);
-        if (element.task) {
-          // 課題文レッスンは課題として出す: 状態 (未着手・合格など) を添え、開くと課題に取り組む。
-          item.iconPath = new vscode.ThemeIcon(taskDone(element.task.status) ? "pass" : "edit");
-          item.description = TASK_STATUS_LABELS[element.task.status];
-          item.tooltip = "課題に取り組む — 編集するファイルと課題文 (進め方) を並べて開きます";
-          return item;
-        }
-        item.iconPath = new vscode.ThemeIcon(element.completed ? "pass" : "circle-outline");
-        return item;
-      }
-      case "placeholder": {
-        const item = new vscode.TreeItem(element.title, vscode.TreeItemCollapsibleState.None);
-        item.id = element.id;
-        item.contextValue = "placeholder";
-        if (element.command) {
-          item.command = { command: element.command, title: element.title };
-        }
-        return item;
-      }
-      default: {
-        const _exhaustive: never = element;
-        return _exhaustive;
-      }
-    }
+  reveal(selection: LearningSelection): void {
+    this.selection = selection;
+    this.render();
   }
 
-  async getChildren(element?: TreeNode): Promise<TreeNode[]> {
-    if (!element) {
-      return this.rootNodes();
-    }
-    switch (element.kind) {
-      case "stage":
-        return element.sections;
-      case "section":
-        return element.lessons;
-      case "lesson":
-      case "placeholder":
-        return [];
-      default: {
-        const _exhaustive: never = element;
-        return _exhaustive;
-      }
-    }
-  }
-
-  private async rootNodes(): Promise<TreeNode[]> {
-    const generation = this.loadGeneration;
-    const token = await this.auth.getToken();
-    if (!token) {
-      return [CONNECT_NODE];
-    }
+  async refresh(): Promise<void> {
+    const generation = ++this.loadGeneration;
+    if (!this.view?.visible) return;
+    this.state = { kind: "loading" };
+    this.render();
     try {
-      const stages = await loadCatalog();
-      if (generation !== this.loadGeneration) {
-        return this.rootNodes();
+      const token = await this.auth.getToken();
+      if (generation !== this.loadGeneration) return;
+      if (!token) {
+        this.catalog = [];
+        this.state = { kind: "disconnected" };
+      } else {
+        const catalog = await loadCatalog();
+        if (generation !== this.loadGeneration) return;
+        this.catalog = catalog;
+        this.state = { kind: "catalog", catalog, selection: this.selection };
       }
-      return stages.map(toStageNode);
     } catch (err) {
-      if (generation !== this.loadGeneration) {
-        return this.rootNodes();
-      }
-      if (err instanceof AuthExpiredError) {
-        return [CONNECT_NODE];
-      }
-      const message = err instanceof Error ? err.message : String(err);
-      return [catalogErrorPlaceholder(message)];
+      if (generation !== this.loadGeneration) return;
+      this.catalog = [];
+      this.state =
+        err instanceof AuthExpiredError
+          ? { kind: "disconnected" }
+          : { kind: "error", message: err instanceof Error ? err.message : String(err) };
     }
+    this.render();
+  }
+
+  private render(): void {
+    if (!this.view) return;
+    this.messageToken = randomBytes(18).toString("hex");
+    const webview = this.view.webview;
+    const resource = (name: string) =>
+      webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", name)).toString();
+    if (this.state.kind === "catalog") this.state.selection = this.selection;
+    webview.html = renderLearningSidebar(this.state, {
+      nonce: this.messageToken,
+      cspSource: webview.cspSource,
+      styleUri: resource("learning-sidebar.css"),
+      scriptUri: resource("learning-sidebar.js"),
+    });
+  }
+
+  private async receive(raw: unknown): Promise<void> {
+    if (
+      !raw ||
+      typeof raw !== "object" ||
+      !("token" in raw) ||
+      raw.token !== this.messageToken ||
+      !("action" in raw)
+    )
+      return;
+    // Webview からコマンド名・URL・教材の本文を受け取らない。
+    const id = "id" in raw && typeof raw.id === "string" ? raw.id : undefined;
+    if (raw.action === "refresh") return this.refresh();
+    if (raw.action === "connect") {
+      await vscode.commands.executeCommand("stella.connect");
+      return;
+    }
+    if (raw.action === "home") {
+      await vscode.commands.executeCommand("stella.openInWeb");
+      return;
+    }
+    if (this.state.kind !== "catalog" || !id) return;
+    const { stage } = resolveLearningLocation(this.catalog, this.selection);
+    if (raw.action === "stage" && this.catalog.some((item) => item.id === id)) {
+      this.reveal({ stageId: id });
+    } else if (raw.action === "section" && stage?.sections.some((item) => item.id === id)) {
+      this.reveal({ stageId: stage.id, sectionId: id });
+    } else if (raw.action === "open" || raw.action === "review") {
+      const lesson = stage?.sections.flatMap((item) => item.lessons).find((item) => item.id === id);
+      if (!lesson) return;
+      this.reveal({ stageId: lesson.stageId, lessonId: lesson.id });
+      const cmd =
+        raw.action === "review"
+          ? { command: "stella.openInWeb", arguments: [lesson.stageId, lesson.id] }
+          : lessonCommand(toLessonNode(lesson));
+      await vscode.commands.executeCommand(cmd.command, ...(cmd.arguments ?? []));
+    }
+  }
+
+  dispose(): void {
+    this.loadGeneration += 1;
+    this.messageToken = "";
+    this.view = undefined;
+    this.catalog = [];
   }
 }
 
-let registeredProvider: LessonTreeProvider | undefined;
+let registeredProvider: LearningSidebarProvider | undefined;
 
-export function refreshLessonTree(): void {
-  registeredProvider?.refresh();
+export function refreshLearningSidebar(): void {
+  void registeredProvider?.refresh();
 }
 
 export function openLessonNode(node: LessonNode): void {
+  registeredProvider?.reveal({ stageId: node.stageId, lessonId: node.id });
   const cmd = lessonCommand(node);
   void vscode.commands.executeCommand(cmd.command, ...(cmd.arguments ?? []));
 }
 
-export function registerLessonTree(
+export function registerLearningSidebar(
   context: vscode.ExtensionContext,
   auth: AuthStore,
-): LessonTreeProvider {
-  const provider = new LessonTreeProvider(auth);
+): LearningSidebarProvider {
+  const provider = new LearningSidebarProvider(auth, context.extensionUri);
   registeredProvider = provider;
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("stella.lessons", provider),
+    provider,
+    vscode.window.registerWebviewViewProvider("stella.lessons", provider),
+    vscode.commands.registerCommand("stella.revealTask", (taskId: unknown) => {
+      if (typeof taskId === "string") provider.reveal({ taskId });
+    }),
+    onDidChangeAuthSession(() => {
+      clearCatalog();
+      provider.reset();
+    }),
     onDidChangeAuth(() => {
       clearCatalog();
-      provider.refresh();
+      void provider.refresh();
     }),
+    vscode.window.onDidChangeWindowState((state) => {
+      if (state.focused) refreshLearningSidebar();
+    }),
+    {
+      dispose: () => {
+        registeredProvider = undefined;
+      },
+    },
   );
   return provider;
 }

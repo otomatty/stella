@@ -48,8 +48,8 @@ import { registerTaskStatus } from "./task-status.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
 import {
   openLessonNode,
-  refreshLessonTree,
-  registerLessonTree,
+  refreshLearningSidebar,
+  registerLearningSidebar,
   toLessonNode,
   type LessonNode,
 } from "./tree.js";
@@ -250,7 +250,10 @@ async function handleLinkUri(uri: vscode.Uri, auth: AuthStore): Promise<boolean>
  * 新形式の課題を準備して開く (Web の「VS Code で開く」と同じ。接続コードは使わない)。
  * サイドバーの課題文レッスンから来る。未接続・期限切れなら Web へ送り、接続し直してもらう。
  */
-async function openTaskFromTree(context: vscode.ExtensionContext, taskId: unknown): Promise<void> {
+async function openTaskFromSidebar(
+  context: vscode.ExtensionContext,
+  taskId: unknown,
+): Promise<void> {
   if (typeof taskId !== "string" || !taskId) {
     void vscode.window.showInformationMessage("課題をサイドバーから選んでください");
     return;
@@ -317,7 +320,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // 別のウィンドウでの接続・切断も、このウィンドウの接続の切り替えとして扱う (#36)。
   context.subscriptions.push(auth.watchExternalChanges());
   const grader = initGraderHost(context.extensionUri);
-  registerLessonTree(context, auth);
+  registerLearningSidebar(context, auth);
   registerTaskCommands(context);
   // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。
   registerTaskHelp(context);
@@ -346,10 +349,10 @@ export function activate(context: vscode.ExtensionContext): void {
       await auth.clear();
     }),
     vscode.commands.registerCommand("stella.refresh", () => {
-      refreshLessonTree();
+      refreshLearningSidebar();
     }),
     vscode.commands.registerCommand("stella.openTask", (taskId?: unknown) =>
-      openTaskFromTree(context, taskId),
+      openTaskFromSidebar(context, taskId),
     ),
     vscode.commands.registerCommand(
       "stella.openInWeb",
