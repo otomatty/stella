@@ -14,6 +14,8 @@
 | `apps/web/src/lib/book-package/read-package.ts` | ブラウザで zip を読む (zip.js) |
 | `apps/web/src/lib/library-api.ts`・`library-media.ts`・`library-shelf.ts` | API の呼び出しと送信、配信の URL、棚の並べ方 |
 | `apps/web/src/components/library/*` | 本棚・本・章の画面と取り込みのダイアログ |
+| `.claude/skills/stella-book/` | zip を作る Claude のスキル (本のフォルダー・解説動画・梱包)。梱包の検査は `book-package.ts` と同じ規則 |
+| `packages/shared/src/library/stella-book-skill.test.ts` | スキルの梱包 (`pack_book.py`) と正本の規則の判定が一致するかの検査 |
 
 ## ローカルで動かす
 
@@ -27,6 +29,10 @@ bun run dev       # :5173。apps/web/.env.local に VITE_SERVER_URL=http://127.0
 ログインは開発用トークン (AGENTS.md の Local login)。API が別オリジンなので、画面は表紙・画像・音声・動画を fetch して blob URL で表示する (本番は同じオリジンの URL をそのまま使う)。本棚を閉じるには API の `.dev.vars` に `LIBRARY_ENABLED=0`。
 
 ## 見本の zip を作る
+
+本物と同じ形の zip は、スキル `stella-book` の手順で作る (`book_manifest.py` で book.json、`pack_book.py` で検査と梱包)。
+動画の書き出しまで試すなら、スキルの手順 4 を `synth_lines.py --mock` (API を呼ばない試験用の音) と
+`build_video.mjs --allow-mock` で通す。手で最小の zip を作るなら次のとおり。
 
 ```sh
 mkdir -p book/chapters book/audio book/video book/images && cd book
@@ -45,7 +51,7 @@ zip -9 -r ../book.zip book.json chapters
 ```sh
 bun run typecheck
 bun run lint
-bun run test      # 形式の規則・API (実 SQLite + R2 の代わり)・移行・棚の並べ方
+bun run test      # 形式の規則・API (実 SQLite + R2 の代わり)・移行・棚の並べ方・スキルの梱包 (python3 を使う)
 bun run build
 ```
 
@@ -55,4 +61,4 @@ API のテスト (`apps/api/src/routes/library.test.ts`) は、取り込み → 
 
 ## デプロイ
 
-追加の手順は無い。`main` への push で migration 0070 が旧テーブルを落とし、API のデプロイ後に `deploy.yml` の退役の step が本番の `stella-narrator` Worker (と secret `GEMINI_API_KEY`) を消す。非公開 R2 `stella-library-private` は引き続き使う。
+追加の手順は無い。非公開 R2 `stella-library-private` を使う。PDF の処理の退役は 2026-11-03 のデプロイで済んだ (`deploy.yml` の退役の step が Web のデプロイ後に Workflows を消し、`stella-narrator` Worker が無いことを確かめた)。この step は消してよい。
