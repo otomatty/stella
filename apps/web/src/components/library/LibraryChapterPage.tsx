@@ -40,6 +40,8 @@ const highlightOptions = {
 } satisfies RehypeHighlightOptions;
 
 const SAVE_EVERY_MS = 15_000;
+/** 止めたまま位置を動かしてから保存するまでの待ち (つまみを動かしている間は送らない)。 */
+const SEEK_SAVE_DELAY_MS = 1_000;
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 type Saver = (body: { audioSec?: number; videoSec?: number; completed?: boolean }) => void;
@@ -318,9 +320,13 @@ function BookImage({
   );
 }
 
-/** 定期・一時停止・離脱のたびに位置を保存する。 */
+/**
+ * 定期・一時停止・止めたままの位置の移動・離脱のたびに位置を保存する。
+ * `savedSec` はサーバーにある位置 (開いた直後の続きからの移動では送らない)。
+ */
 function usePositionSaving(
   element: () => HTMLMediaElement | null,
+  savedSec: number,
   onSave: (seconds: number) => void,
 ) {
   const last = useRef(0);
@@ -328,27 +334,42 @@ function usePositionSaving(
   // 最新の関数は ref で持ち、購読は要素ごとに 1 回だけにする。
   const save = useRef(onSave);
   save.current = onSave;
+  const sent = useRef(savedSec);
   useEffect(() => {
     const media = element();
     if (!media) return;
+    let seekTimer: ReturnType<typeof setTimeout> | undefined;
     const saveNow = () => {
-      if (media.currentTime > 0) save.current(media.currentTime);
+      clearTimeout(seekTimer);
+      seekTimer = undefined;
+      if (media.currentTime > 0) {
+        save.current(media.currentTime);
+        sent.current = media.currentTime;
+      }
       last.current = Date.now();
     };
     const onTime = () => {
       if (!media.paused && Date.now() - last.current >= SAVE_EVERY_MS) saveNow();
+    };
+    // 止めたまま位置を動かしたとき (再生中は定期の保存が拾う)。つまみを動かす間は送らず、止まってから 1 回。
+    const onSeeked = () => {
+      if (!media.paused || Math.abs(media.currentTime - sent.current) < 1) return;
+      clearTimeout(seekTimer);
+      seekTimer = setTimeout(saveNow, SEEK_SAVE_DELAY_MS);
     };
     const onHidden = () => {
       if (document.visibilityState === "hidden") saveNow();
     };
     media.addEventListener("timeupdate", onTime);
     media.addEventListener("pause", saveNow);
+    media.addEventListener("seeked", onSeeked);
     document.addEventListener("visibilitychange", onHidden);
     return () => {
       media.removeEventListener("timeupdate", onTime);
       media.removeEventListener("pause", saveNow);
+      media.removeEventListener("seeked", onSeeked);
       document.removeEventListener("visibilitychange", onHidden);
-      if (!media.paused) saveNow();
+      if (!media.paused || seekTimer !== undefined) saveNow();
     };
   }, [element]);
 }
@@ -368,7 +389,7 @@ function VideoPanel({
 }) {
   const media = useLibraryMediaUrl(path);
   const element = useCallback(() => ref.current, [ref]);
-  usePositionSaving(element, onSave);
+  usePositionSaving(element, savedSec, onSave);
   return (
     <section aria-label="解説動画" className="flex flex-col gap-2">
       <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold">
@@ -432,7 +453,7 @@ function AudioBar({
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const element = useCallback(() => ref.current, [ref]);
-  usePositionSaving(element, onSave);
+  usePositionSaving(element, savedSec, onSave);
 
   const audio = () => ref.current;
   const seek = (seconds: number) => {
