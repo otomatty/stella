@@ -29,11 +29,8 @@ jobs:
     name: package .vsix → GitHub Release
     needs: verify
     runs-on: ubuntu-latest
-    # contents は Release の作成。id-token は Marketplace の Trusted Publishing（OIDC）。
-    # ジョブに permissions を書くとワークフロー側の contents: write は引き継がれない。
-    permissions:
-      contents: write
-      id-token: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -83,9 +80,30 @@ jobs:
               --notes "$NOTES"
           fi
 
+  # 公開だけが OIDC トークンを要求できる。bun install や build と同じジョブに置くと、
+  # それらの処理からも Trusted Publishing のトークンを取れてしまう。
+  publish:
+    name: publish to Marketplace
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Release に付いた VSIX だけを取る。リポジトリのビルドは走らせない。
       # 同じ版は Marketplace が拒否する。--skip-duplicate は既掲載なら成功で戻る。
       # 公開できるのは、publisher saedgewell の Trusted Publishing に
       # otomatty / stella / release-vscode.yml（environment なし）が登録されているとき。
+      - name: Download the release VSIX
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "vscode-v${{ needs.release.outputs.version }}" --pattern "stella-lms-*.vsix" --dir vsix
+
       - name: Publish to Marketplace
-        working-directory: apps/vscode
-        run: bunx @vscode/vsce publish --oidc --packagePath "stella-lms-${{ steps.meta.outputs.version }}.vsix" --skip-duplicate
+        working-directory: vsix
+        run: bunx @vscode/vsce publish --oidc --packagePath "stella-lms-${{ needs.release.outputs.version }}.vsix" --skip-duplicate
