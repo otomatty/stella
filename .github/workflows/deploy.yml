@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    name: assets → migrate → api → seed → web → narrator
+    name: assets → migrate → api → seed → web
     needs: verify
     runs-on: ubuntu-latest
     env:
@@ -141,6 +141,29 @@ jobs:
       - name: Deploy API
         run: bun run deploy:api
 
+      # PDF 処理の退役 (2026-11)。本棚は利用者が作った zip を取り込む形に変わり、
+      # OCR・読み上げを作る Worker は要らなくなった。API は NARRATOR を束ねなくなったので、
+      # API のデプロイ後に Worker を (その secret GEMINI_API_KEY ごと) 消す。設定ファイルを
+      # 読ませないよう空のフォルダーから名前で指定する。Worker がもう無ければ成功として進む。
+      # 本番の stella-narrator と GEMINI_API_KEY が無くなったら、この step は消してよい。
+      - name: Retire narrator Worker (PDF processing)
+        run: |
+          dir="$RUNNER_TEMP/retire-narrator"
+          mkdir -p "$dir"
+          cd "$dir"
+          set +e
+          out=$("$GITHUB_WORKSPACE/apps/api/node_modules/.bin/wrangler" delete stella-narrator --force 2>&1)
+          status=$?
+          set -e
+          printf '%s\n' "$out"
+          if [ "$status" -ne 0 ]; then
+            if printf '%s' "$out" | grep -qE '10007|does not exist|not found'; then
+              echo "stella-narrator is already gone."
+            else
+              exit "$status"
+            fi
+          fi
+
       # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
       # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
@@ -169,15 +192,6 @@ jobs:
       - name: Deploy Web (build with VITE_* then deploy)
         run: bun run deploy:web
 
-      # Last, and never tolerated: narrator carries the processing switch, so a failed deploy
-      # (including one that turns processing off) must fail the run instead of leaving the
-      # previous version running. API and web are already out, so they are never blocked, and
-      # the API's checks (e.g. the external-processing confirmation) ship before narrator's
-      # settings. The API's NARRATOR binding needs stella-narrator to exist: on a brand-new
-      # account, run `bun run deploy:narrator` once before the first deploy.
-      - name: Deploy narrator (private service)
-        run: bun run deploy:narrator
-
-      # Web の中継と narrator の最新版が揃った直後に、秘密値を含まない状態だけを照合する。
+      # Web の中継が最新版になった直後に、秘密値を含まない状態だけを照合する。
       - name: Verify production configuration
         run: bun run deploy:health:check

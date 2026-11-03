@@ -91,7 +91,7 @@ export function buildContentSecurityPolicy(input: CspInput): string {
     ["font-src", "'self'", "data:", GOOGLE_FONTS_FILES],
     // blob: はスキルツリーの講座アイコン (API から取った SVG を blob URL で mask-image に渡す)。
     ["img-src", "'self'", "data:", "blob:", ...remote, GOOGLE_AVATAR_HOSTS],
-    // blob: は面談対策の読み上げ・録音の再生。 教材の動画は R2 から直接読む。
+    // blob: は本棚の音声・動画 (API が別オリジンのローカル開発だけ)。 教材の動画は R2 から直接読む。
     ["media-src", "'self'", "blob:", ...remote],
     // fetch / XHR / WebSocket / sendBeacon の宛先。 画面遷移 (location・window.open) は縛れない。
     ["connect-src", "'self'", ...remote],

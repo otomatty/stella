@@ -46,4 +46,3 @@ coverage/
 # Packaged VS Code extensions
 *.vsix
 
-apps/narrator/.dev.vars

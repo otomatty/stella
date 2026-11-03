@@ -40,7 +40,7 @@ describe("production configuration verification", () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(new Response("provider-secret", { status: 503 }))
-      .mockResolvedValueOnce(Response.json({ ...deployment.health, processingAvailable: false }))
+      .mockResolvedValueOnce(Response.json({ ...deployment.health, libraryEnabled: false }))
       .mockResolvedValueOnce(Response.json(deployment.health));
     const pause = vi.fn(async () => undefined);
     await verifyDeploymentHealth(deployment.healthOrigin, fetchImpl, pause);

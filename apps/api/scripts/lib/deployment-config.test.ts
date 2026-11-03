@@ -14,7 +14,7 @@ import {
 
 const root = resolve(import.meta.dirname, "../../../..");
 const workflow = readFileSync(resolve(root, ".github/workflows/deploy.yml"), "utf8");
-const paths = ["apps/api/wrangler.toml", "apps/web/wrangler.toml", "apps/narrator/wrangler.jsonc"];
+const paths = ["apps/api/wrangler.toml", "apps/web/wrangler.toml"];
 const configs = () =>
   Object.fromEntries(
     paths.map((path) => [path, parseWrangler(readFileSync(resolve(root, path), "utf8"), path)]),
@@ -79,37 +79,38 @@ env:
     );
   });
 
-  const narrator = (all: Record<string, WranglerConfig>) => all["apps/narrator/wrangler.jsonc"];
-  it.each(["binding", "database_name", "database_id"] as const)(
-    "rejects a mismatched D1 %s",
-    (field) => {
-      const all = configs();
-      const db = narrator(all).d1_databases?.[0];
-      if (!db) throw new Error("missing fixture DB");
-      db[field] = "wrong";
-      expect(() => validateDeploymentConfig(workflow, all)).toThrow(/binding|database/);
-    },
-  );
-
-  it.each(["binding", "bucket_name"] as const)("rejects a mismatched R2 %s", (field) => {
+  const api = (all: Record<string, WranglerConfig>) => all["apps/api/wrangler.toml"];
+  it.each(["database_name", "database_id"] as const)("rejects a mismatched D1 %s", (field) => {
     const all = configs();
-    const bucket = narrator(all).r2_buckets?.[0];
-    if (!bucket) throw new Error("missing fixture bucket");
-    bucket[field] = "wrong";
-    expect(() => validateDeploymentConfig(workflow, all)).toThrow(/binding|bucket/);
+    const db = api(all).d1_databases?.find((entry) => entry.binding === "DB");
+    if (!db) throw new Error("missing fixture DB");
+    db[field] = field === "database_id" ? "" : "wrong";
+    expect(() => validateDeploymentConfig(workflow, all)).toThrow(/database/);
   });
 
-  it("rejects duplicate shared bindings and a different narrator entrypoint", () => {
+  it("rejects a library bucket binding that points at another bucket", () => {
     const all = configs();
-    const db = narrator(all).d1_databases?.[0];
+    const bucket = api(all).r2_buckets?.find((entry) => entry.binding === "LIBRARY_BUCKET");
+    if (!bucket) throw new Error("missing fixture bucket");
+    bucket.bucket_name = "wrong";
+    expect(() => validateDeploymentConfig(workflow, all)).toThrow(/bucket/);
+  });
+
+  it("rejects duplicate DB bindings and anything left of the retired narrator", () => {
+    const all = configs();
+    const db = api(all).d1_databases?.find((entry) => entry.binding === "DB");
     if (!db) throw new Error("missing fixture DB");
-    narrator(all).d1_databases?.push(db);
+    api(all).d1_databases?.push({ ...db });
     expect(() => validateDeploymentConfig(workflow, all)).toThrow(/exactly one DB/);
-    const services = configs();
-    const service = services[paths[0]].services?.[0];
-    if (!service) throw new Error("missing fixture service");
-    service.entrypoint = "Wrong";
-    expect(() => validateDeploymentConfig(workflow, services)).toThrow(/entrypoint/);
+    const bound = configs();
+    api(bound).services = [
+      ...(api(bound).services ?? []),
+      { binding: "NARRATOR", service: "stella-narrator", entrypoint: "Narrator" },
+    ];
+    expect(() => validateDeploymentConfig(workflow, bound)).toThrow(/NARRATOR/);
+    const leftover = configs();
+    leftover["apps/narrator/wrangler.jsonc"] = { account_id: deployment.accountId };
+    expect(() => validateDeploymentConfig(workflow, leftover)).toThrow(/narrator was retired/);
   });
 
   it("parses JSONC comments and trailing commas and rejects malformed config", () => {

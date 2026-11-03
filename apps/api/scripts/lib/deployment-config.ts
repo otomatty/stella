@@ -93,39 +93,26 @@ export function validateDeploymentConfig(
   for (const [path, config] of Object.entries(configs)) checkAccount(config, path);
 
   const api = configs["apps/api/wrangler.toml"];
-  const narrator = configs["apps/narrator/wrangler.jsonc"];
-  if (!api || !narrator) throw new Error("API and narrator Wrangler configurations are required");
+  if (!api) throw new Error("API Wrangler configuration is required");
+  // The PDF processing Worker (narrator) was retired in 2026-11; no other Worker may bind
+  // the library bucket or call a processing service any more.
+  if (configs["apps/narrator/wrangler.jsonc"])
+    throw new Error("apps/narrator was retired; remove its Wrangler configuration");
   resolveReviewProvider(reviewDeploymentEnv(api));
-  const { database, libraryBucket, narrator: service } = deployment.resources;
+  const { database, libraryBucket } = deployment.resources;
   function single<T extends { binding: string }>(entries: T[] | undefined, binding: string): T {
     const matches = entries?.filter((entry) => entry.binding === binding) ?? [];
     if (matches.length !== 1) throw new Error(`Expected exactly one ${binding} binding`);
     return matches[0];
   }
   const apiDb = single(api.d1_databases, database.binding);
-  const narratorDb = single(narrator.d1_databases, database.binding);
-  if (
-    apiDb.database_name !== database.name ||
-    narratorDb.database_name !== database.name ||
-    !apiDb.database_id ||
-    apiDb.database_id !== narratorDb.database_id
-  )
-    throw new Error(
-      "API and narrator DB bindings must use the same deployment database name and ID",
-    );
+  if (apiDb.database_name !== database.name || !apiDb.database_id)
+    throw new Error("API DB binding must use the deployment database name and an ID");
   const apiBucket = single(api.r2_buckets, libraryBucket.apiBinding);
-  const narratorBucket = single(narrator.r2_buckets, libraryBucket.narratorBinding);
-  if (
-    apiBucket.bucket_name !== libraryBucket.name ||
-    narratorBucket.bucket_name !== libraryBucket.name
-  )
-    throw new Error("API and narrator library R2 bindings must use the deployment bucket name");
-  const narratorService = single(api.services, service.binding);
-  if (
-    narratorService.service !== service.service ||
-    narratorService.entrypoint !== service.entrypoint
-  )
-    throw new Error("API NARRATOR binding must use the deployment narrator service and entrypoint");
+  if (apiBucket.bucket_name !== libraryBucket.name)
+    throw new Error("API library R2 binding must use the deployment bucket name");
+  if (api.services?.some((entry) => entry.binding === "NARRATOR"))
+    throw new Error("API must not bind the retired NARRATOR service");
 }
 
 function reviewDeploymentEnv(

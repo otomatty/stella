@@ -1,255 +1,296 @@
-import { Hono } from "hono";
+/**
+ * 本棚 (`/api/library/*`)。利用者が作った `stella-book` 形式の zip を、ブラウザが 1 ファイル
+ * ずつ送り、ここで非公開 R2 に保管して本人にだけ配信する。zip はサーバーで展開しない。
+ *
+ * - 本は本人だけのもの (講師・管理者も他人の本は 404)。共有の仕組みは持たない。
+ * - 取り込みは版 (revision) 単位。中身が同じファイルは版をまたいで使い回す。
+ * - 配信は同じオリジンの Cookie で `<img>/<audio>/<video>` から直接読める。利用者が上げた
+ *   ファイルは HTML として解釈されないよう、許可した Content-Type・nosniff・CSP sandbox で返す。
+ */
+import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import {
+  BOOK_PACKAGE_LIMITS,
+  contentKeyOf,
+  formatBytes,
+  isSafePackagePath,
+  parseBookManifest,
+  planPackageFiles,
+  thumbnailContentKey,
+  type BookFileKind,
+  type BookManifest,
+} from "@stella/shared/library/book-package";
+import {
   LibraryInputError,
-  parseBookMetadata,
-  parseCreatePdf,
+  parseChapterState,
+  parseCreateImport,
   parseShelfUpdate,
 } from "@stella/shared/library/schemas";
-import type {
-  LibraryBook,
-  LibraryCapabilities,
-  LibraryChapterSummary,
-  LibraryJob,
-  LibraryPdf,
-  LibraryReadingStatus,
-  LibraryShelfEntry,
+import {
+  LIBRARY_SHELF_FILTERS,
+  type LibraryBook,
+  type LibraryBookDetail,
+  type LibraryCapabilities,
+  type LibraryChapter,
+  type LibraryImportResponse,
+  type LibraryImportSlot,
+  type LibraryReadingStatus,
+  type LibraryShelfEntry,
+  type LibraryShelfFilter,
+  type LibraryShelfResponse,
 } from "@stella/shared/library/types";
-import { LIBRARY_LIMITS } from "@stella/shared/library/types";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller, type Caller } from "../lib/authz.js";
-import { processingAvailable } from "../lib/library-capabilities.js";
+import { requireOwnLibraryBook } from "../lib/library-authz.js";
+import { libraryAvailable } from "../lib/library-capabilities.js";
 import {
-  libraryEnabled,
-  requireLibraryEnabled,
-  requireOwnLibraryBook,
-} from "../lib/library-authz.js";
+  bookPrefix,
+  discardPendingStatements,
+  fileR2Key,
+  orphanFileStatements,
+} from "../lib/library-store.js";
+
+type LibraryContext = Context<{ Bindings: Env }>;
 
 interface BookRow {
   id: string;
   tenant_id: string;
   owner_id: string;
+  package_id: string;
   title: string;
-  author: string | null;
-  kind: LibraryBook["kind"];
+  authors: string;
+  language: string;
+  description: string | null;
   status: LibraryBook["status"];
-  generation: number;
-  page_count: number | null;
+  current_revision: number;
+  pending_revision: number | null;
+  pending_manifest: string | null;
+  pending_signature: string | null;
+  pending_thumb_file_id: string | null;
+  pending_started_at: number | null;
+  chapter_count: number;
+  has_audio: number;
+  has_video: number;
+  total_bytes: number;
+  pending_bytes: number;
+  cover_thumb_file_id: string | null;
   created_at: number;
   updated_at: number;
 }
+
 interface ShelfRow extends BookRow {
   reading_status: LibraryReadingStatus;
   favorite: number;
   tags: string;
+  last_chapter_id: string | null;
   shelf_updated_at: number;
+  completed_count: number;
 }
+
+interface FileRow {
+  id: string;
+  book_id: string;
+  content_key: string;
+  kind: BookFileKind;
+  content_type: string;
+  size: number;
+  r2_key: string;
+  status: "pending" | "uploaded";
+  multipart_upload_id: string | null;
+}
+
 function bookView(row: BookRow): LibraryBook {
   return {
     id: row.id,
+    packageId: row.package_id,
     title: row.title,
-    author: row.author,
-    kind: row.kind,
+    authors: JSON.parse(row.authors) as string[],
+    language: row.language,
+    description: row.description,
+    revision: row.current_revision,
     status: row.status,
-    pageCount: row.page_count,
+    chapterCount: row.chapter_count,
+    hasAudio: row.has_audio === 1,
+    hasVideo: row.has_video === 1,
+    totalBytes: row.total_bytes,
+    coverUrl:
+      row.cover_thumb_file_id && row.current_revision > 0
+        ? `/api/library/books/${row.id}/cover?v=${row.current_revision}`
+        : null,
+    pendingRevision: row.pending_revision,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
+
+function entryView(row: ShelfRow): LibraryShelfEntry {
+  return {
+    book: bookView(row),
+    readingStatus: row.reading_status,
+    favorite: row.favorite === 1,
+    tags: JSON.parse(row.tags) as string[],
+    lastChapterId: row.last_chapter_id,
+    progress: { completedChapters: row.completed_count, totalChapters: row.chapter_count },
+    updatedAt: row.shelf_updated_at,
+  };
+}
+
+function requireLibrary(env: Env): R2Bucket {
+  if (!libraryAvailable(env) || !env.LIBRARY_BUCKET)
+    throw new ApiError("本棚は現在利用できません", 403);
+  return env.LIBRARY_BUCKET;
+}
+
 async function ownBook(env: Env, caller: Caller, id: string): Promise<BookRow> {
   const row = await env.DB.prepare(
-    "SELECT * FROM library_books WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
+    "SELECT * FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'",
   )
-    .bind(id, caller.tenantId, caller.id)
+    .bind(caller.tenantId, id, caller.id)
     .first<BookRow>();
   requireOwnLibraryBook(caller, row);
-  // The query returns BookRow; the assertion only establishes the non-null value.
-  if (!row) throw new ApiError("書籍が見つかりません", 404);
+  if (!row) throw new ApiError("本が見つかりません", 404);
   return row;
 }
-interface PdfRow {
-  id: string;
-  position: number;
-  file_name: string;
-  size_bytes: number;
-  r2_key: string;
-  upload_status: LibraryPdf["uploadStatus"];
-  page_count: number | null;
-  source_file_name: string | null;
-  part_group: string | null;
-}
-function pdfView(row: PdfRow): LibraryPdf {
-  return {
-    id: row.id,
-    position: row.position,
-    fileName: row.file_name,
-    sizeBytes: row.size_bytes,
-    uploadStatus: row.upload_status,
-    pageCount: row.page_count,
-    sourceFileName: row.source_file_name,
-  };
-}
-// PDFs can be added or replaced only before processing starts.
-/** Suffix on the R2 key of a PDF row that is being deleted (see the PDF DELETE route). */
-const DELETING = "#deleting";
-function requireUploadable(book: BookRow): void {
-  if (book.status !== "draft" && book.status !== "uploading")
-    throw new ApiError("処理を始めた書籍にはPDFを追加できません", 409);
-}
-/**
- * Editing the PDFs of a failed book reopens it under a new generation: the failed job can no
- * longer be retried or write, and results keyed by the old page numbers are cleared.
- */
-async function reopenFailed(env: Env, caller: Caller, book: BookRow): Promise<BookRow> {
-  if (book.status !== "failed") return book;
-  const now = Date.now(),
-    next = book.generation + 1;
-  const reopened = (table: string) =>
-    env.DB.prepare(
-      `DELETE FROM ${table} WHERE tenant_id = ? AND book_id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND generation = ? AND status = 'uploading')`,
-    ).bind(caller.tenantId, book.id, caller.tenantId, book.id, next);
-  await env.DB.batch([
-    env.DB.prepare(
-      "UPDATE library_books SET status = 'uploading', generation = ?, page_count = NULL, chapter_plan_key = NULL, updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND generation = ? AND status = 'failed' AND NOT EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND status IN ('queued','running'))",
-    ).bind(
-      next,
-      now,
-      caller.tenantId,
-      book.id,
-      caller.id,
-      book.generation,
-      caller.tenantId,
-      book.id,
-    ),
-    reopened("library_chapters"),
-    reopened("library_figures"),
-    reopened("library_pages"),
-  ]);
-  const current = await ownBook(env, caller, book.id);
-  // The failed run is over, so nothing writes under its generation any more. Best effort:
-  // whatever a failed delete leaves is removed with the whole book prefix on book deletion.
-  if (current.generation === next && env.LIBRARY_BUCKET) {
-    const prefix = `library/${caller.tenantId}/${book.id}/g${book.generation}/`;
-    try {
-      for (;;) {
-        const listed = await env.LIBRARY_BUCKET.list({ prefix });
-        if (listed.objects.length)
-          await env.LIBRARY_BUCKET.delete(listed.objects.map((object) => object.key));
-        if (!listed.truncated) break;
-      }
-    } catch {
-      // Leave it for book deletion rather than failing the edit that already committed.
-    }
-  }
-  return current;
-}
-interface JobRow {
-  id: string;
-  type: LibraryJob["type"];
-  status: LibraryJob["status"];
-  attempt: number;
-  progress_current: number;
-  progress_total: number | null;
-  error_message: string | null;
-  created_at: number;
-  finished_at: number | null;
-  generation: number;
-  dispatched_at: number | null;
-  dispatch_created_at: number | null;
-}
-function jobView(row: JobRow): LibraryJob {
-  return {
-    id: row.id,
-    type: row.type,
-    status: row.status,
-    attempt: row.attempt,
-    progressCurrent: row.progress_current,
-    progressTotal: row.progress_total,
-    errorMessage: row.error_message,
-    createdAt: row.created_at,
-    finishedAt: row.finished_at,
-  };
-}
-const JOB_SELECT =
-  "SELECT j.*, d.dispatched_at, d.created_at AS dispatch_created_at FROM library_jobs j LEFT JOIN library_job_dispatches d ON d.tenant_id = j.tenant_id AND d.book_id = j.book_id AND d.job_id = j.id";
-// A reservation whose RPC never confirmed is sent again after this long.
-const REDISPATCH_AFTER_MS = 60_000;
-/** startJob is idempotent per attempt; a failure leaves the reservation for the next poll. */
-async function dispatch(env: Env, tenantId: string, bookId: string, job: JobRow): Promise<void> {
-  try {
-    await env.NARRATOR?.startJob({ tenantId, bookId, jobId: job.id, generation: job.generation });
-  } catch {
-    // The jobs poll re-dispatches; nothing about the book is exposed here.
-  }
-}
-/**
- * Starting or retrying a run sends the PDFs to the external OCR provider; the owner confirms
- * each time. Returns the PDF ids the confirmation covered, when the client sent them.
- */
-async function requireExternalAck(request: Request): Promise<string[] | null> {
-  const body = (await request.json().catch(() => null)) as {
-    acknowledgedExternalProcessing?: unknown;
-    pdfIds?: unknown;
-  } | null;
-  if (body?.acknowledgedExternalProcessing !== true)
-    throw new ApiError("PDFを外部の読み取りサービスへ送ることの確認が必要です", 400);
-  const ids = body.pdfIds;
-  if (ids === undefined) return null;
-  if (
-    !Array.isArray(ids) ||
-    ids.length < 1 ||
-    ids.length > LIBRARY_LIMITS.maxBookPdfs ||
-    ids.some((id) => typeof id !== "string")
+
+async function bookFile(env: Env, caller: Caller, bookId: string, fileId: string) {
+  const book = await ownBook(env, caller, bookId);
+  const file = await env.DB.prepare(
+    "SELECT * FROM library_files WHERE tenant_id = ? AND book_id = ? AND id = ?",
   )
-    throw new ApiError("確認したPDFの指定が無効です", 400);
-  return [...new Set(ids as string[])];
+    .bind(caller.tenantId, book.id, fileId)
+    .first<FileRow>();
+  if (!file) throw new ApiError("ファイルが見つかりません", 404);
+  return { book, file };
 }
-async function requireProcessing(env: Env): Promise<void> {
-  if (!(await processingAvailable(env))) throw new ApiError("書籍の処理は現在利用できません", 403);
-}
-async function bookJob(env: Env, caller: Caller, bookId: string, jobId: string): Promise<JobRow> {
+
+const SHELF_SELECT = `SELECT b.*, s.reading_status, s.favorite, s.tags, s.last_chapter_id, s.updated_at AS shelf_updated_at,
+  (SELECT count(*) FROM library_reader_states r JOIN library_chapters ch
+     ON ch.tenant_id = r.tenant_id AND ch.book_id = r.book_id AND ch.chapter_id = r.chapter_id AND ch.revision = b.current_revision
+   WHERE r.tenant_id = s.tenant_id AND r.profile_id = s.profile_id AND r.book_id = b.id AND r.completed = 1) AS completed_count
+  FROM library_shelf_entries s JOIN library_books b ON b.tenant_id = s.tenant_id AND b.id = s.book_id`;
+
+async function shelfEntry(env: Env, caller: Caller, bookId: string): Promise<LibraryShelfEntry> {
   const row = await env.DB.prepare(
-    `${JOB_SELECT} WHERE j.tenant_id = ? AND j.book_id = ? AND j.id = ?`,
+    `${SHELF_SELECT} WHERE s.tenant_id = ? AND s.profile_id = ? AND b.id = ? AND b.owner_id = ? AND b.status <> 'deleting'`,
   )
-    .bind(caller.tenantId, bookId, jobId)
-    .first<JobRow>();
-  if (!row) throw new ApiError("ジョブが見つかりません", 404);
-  return row;
+    .bind(caller.tenantId, caller.id, bookId, caller.id)
+    .first<ShelfRow>();
+  if (!row) throw new ApiError("本が見つかりません", 404);
+  return entryView(row);
 }
+
 function pageNumber(value: string | undefined, fallback: number, max: number): number {
   if (value === undefined) return fallback;
   if (!/^\d+$/.test(value) || Number(value) > max) throw new ApiError("ページ指定が無効です", 400);
   return Number(value);
 }
-function failure(c: Parameters<typeof errorResponse>[0], error: unknown): Response {
+
+function failure(c: LibraryContext, error: unknown): Response {
   if (error instanceof LibraryInputError || error instanceof SyntaxError)
     return c.json({ error: error instanceof SyntaxError ? "JSONが無効です" : error.message }, 400);
   return errorResponse(c, error);
 }
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function uploadMode(size: number): Pick<LibraryImportSlot, "mode" | "partSize"> {
+  return size > BOOK_PACKAGE_LIMITS.singleUploadMaxBytes
+    ? { mode: "multipart", partSize: BOOK_PACKAGE_LIMITS.multipartPartBytes }
+    : { mode: "single", partSize: null };
+}
+
+/** 同じ中身でも種類 (Content-Type) が違えば別のファイルにする。 */
+function fileContentKey(crc32: number, size: number, contentType: string): string {
+  return `${contentKeyOf(crc32, size)}|${contentType}`;
+}
+
+// ---- 配信 ----
+
+/** `bytes=a-b` / `bytes=a-` / `bytes=-n` の 1 範囲だけ。それ以外の書き方は無視して全体を返す。 */
+export function parseRange(
+  header: string | undefined,
+  size: number,
+): { start: number; end: number } | "unsatisfiable" | null {
+  if (!header) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!match) return null;
+  const [, from = "", to = ""] = match;
+  if (!from && !to) return null;
+  if (!from) {
+    const suffix = Number(to);
+    if (suffix === 0) return "unsatisfiable";
+    return { start: Math.max(0, size - suffix), end: size - 1 };
+  }
+  const start = Number(from);
+  if (start >= size) return "unsatisfiable";
+  const end = to ? Math.min(Number(to), size - 1) : size - 1;
+  if (end < start) return null;
+  return { start, end };
+}
+
+async function serveFile(
+  c: LibraryContext,
+  bucket: R2Bucket,
+  file: Pick<FileRow, "id" | "r2_key" | "size" | "content_type">,
+  cacheControl: string,
+): Promise<Response> {
+  const headers = new Headers({
+    "Content-Type": file.content_type,
+    "Accept-Ranges": "bytes",
+    "Cache-Control": cacheControl,
+    ETag: `"${file.id}"`,
+    // 利用者が上げたファイルを、同じオリジンの文書として動かさない。
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "sandbox; default-src 'none'",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Referrer-Policy": "no-referrer",
+  });
+  const range = parseRange(c.req.header("Range"), file.size);
+  if (range === "unsatisfiable") {
+    headers.set("Content-Range", `bytes */${file.size}`);
+    return new Response(null, { status: 416, headers });
+  }
+  const status = range ? 206 : 200;
+  if (range) {
+    headers.set("Content-Range", `bytes ${range.start}-${range.end}/${file.size}`);
+    headers.set("Content-Length", String(range.end - range.start + 1));
+  } else headers.set("Content-Length", String(file.size));
+  if (c.req.raw.method === "HEAD") return new Response(null, { status, headers });
+  const object = await bucket.get(
+    file.r2_key,
+    range ? { range: { offset: range.start, length: range.end - range.start + 1 } } : undefined,
+  );
+  if (!object) throw new ApiError("ファイルが見つかりません", 404);
+  return new Response(object.body, { status, headers });
+}
+
 export const libraryRoute = new Hono<{ Bindings: Env }>();
+
 const smallBody = bodyLimit({
   maxSize: 16 * 1024,
   onError: (c) => c.json({ error: "入力が大きすぎます" }, 400),
 });
-// PDF bodies stream to R2; their size is checked against the registered PDF instead.
-const PDF_BODY = /^\/api\/library\/books\/[^/]+\/pdfs\/[^/]+$/;
-libraryRoute.use("/api/library/*", (c, next) =>
-  c.req.method === "PUT" && PDF_BODY.test(c.req.path) ? next() : smallBody(c, next),
-);
+const importBody = bodyLimit({
+  maxSize: 2 * 1024 * 1024,
+  onError: (c) => c.json({ error: "book.json とファイルの一覧が大きすぎます" }, 400),
+});
+// ファイルの本文は R2 へそのまま流し、大きさは登録したファイルの大きさと照らす。
+const FILE_BODY = /^\/api\/library\/books\/[^/]+\/files\/[^/]+(\/multipart\/parts\/\d+)?$/;
+libraryRoute.use("/api/library/*", (c, next) => {
+  if (c.req.method === "PUT" && FILE_BODY.test(c.req.path)) return next();
+  if (c.req.method === "POST" && c.req.path === "/api/library/imports") return importBody(c, next);
+  return smallBody(c, next);
+});
 
 libraryRoute.get("/api/library/capabilities", async (c) => {
   try {
     await getCaller(c);
-    const enabled = libraryEnabled(c.env.LIBRARY_ENABLED);
-    const processing = await processingAvailable(c.env);
     return c.json({
-      enabled,
-      metadata: enabled,
-      processingAvailable: processing,
-      upload: processing && Boolean(c.env.LIBRARY_BUCKET),
-      audio: false,
-      sharing: false,
-      limits: LIBRARY_LIMITS,
+      enabled: libraryAvailable(c.env),
+      limits: BOOK_PACKAGE_LIMITS,
     } satisfies LibraryCapabilities);
   } catch (error) {
     return failure(c, error);
@@ -259,16 +300,25 @@ libraryRoute.get("/api/library/capabilities", async (c) => {
 libraryRoute.get("/api/library/mine", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const limit = pageNumber(c.req.query("limit"), 30, 100);
+    requireLibrary(c.env);
+    const limit = pageNumber(c.req.query("limit"), 60, 200);
     const offset = pageNumber(c.req.query("offset"), 0, 1_000_000);
     if (limit === 0) throw new ApiError("limitは1以上で指定してください", 400);
-    const where =
-      "s.tenant_id = ? AND s.profile_id = ? AND b.owner_id = ? AND b.status <> 'deleting'";
+    const filter = (c.req.query("filter") ?? "all") as LibraryShelfFilter;
+    if (!LIBRARY_SHELF_FILTERS.includes(filter)) throw new ApiError("絞り込みが無効です", 400);
+    const conditions = [
+      "s.tenant_id = ?",
+      "s.profile_id = ?",
+      "b.owner_id = ?",
+      "b.status <> 'deleting'",
+    ];
+    if (filter === "favorite") conditions.push("s.favorite = 1");
+    else if (filter !== "all") conditions.push(`s.reading_status = '${filter}'`);
+    const where = conditions.join(" AND ");
     const args = [caller.tenantId, caller.id, caller.id];
     const [rows, total] = await Promise.all([
       c.env.DB.prepare(
-        `SELECT b.*, s.reading_status, s.favorite, s.tags, s.updated_at AS shelf_updated_at FROM library_shelf_entries s JOIN library_books b ON b.tenant_id = s.tenant_id AND b.id = s.book_id WHERE ${where} ORDER BY s.updated_at DESC, b.id LIMIT ? OFFSET ?`,
+        `${SHELF_SELECT} WHERE ${where} ORDER BY coalesce(s.last_opened_at, b.created_at) DESC, b.id LIMIT ? OFFSET ?`,
       )
         .bind(...args, limit, offset)
         .all<ShelfRow>(),
@@ -278,44 +328,517 @@ libraryRoute.get("/api/library/mine", async (c) => {
         .bind(...args)
         .first<{ count: number }>(),
     ]);
-    const entries: LibraryShelfEntry[] = rows.results.map((r) => ({
-      book: bookView(r),
-      readingStatus: r.reading_status,
-      favorite: r.favorite === 1,
-      tags: JSON.parse(r.tags) as string[],
-      updatedAt: r.shelf_updated_at,
-    }));
-    return c.json({ entries, total: total?.count ?? 0, limit, offset });
+    return c.json({
+      entries: rows.results.map(entryView),
+      total: total?.count ?? 0,
+      limit,
+      offset,
+    } satisfies LibraryShelfResponse);
   } catch (error) {
     return failure(c, error);
   }
 });
 
-libraryRoute.post("/api/library/books", async (c) => {
+libraryRoute.post("/api/library/imports", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const input = parseBookMetadata(await c.req.json<unknown>(), true);
-    const id = crypto.randomUUID(),
-      now = Date.now();
-    await c.env.DB.batch([
-      c.env.DB.prepare(
-        "INSERT INTO library_books (id, tenant_id, owner_id, title, author, kind, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ).bind(
+    requireLibrary(c.env);
+    const input = parseCreateImport(await c.req.json<unknown>());
+    const parsed = parseBookManifest(input.manifest);
+    if (!parsed.ok)
+      return c.json(
+        {
+          error: `book.json に問題があります: ${parsed.errors.slice(0, 5).join(" / ")}`,
+          details: parsed.errors,
+        },
+        400,
+      );
+    const manifest: BookManifest = parsed.value;
+    const plan = planPackageFiles(manifest, input.files);
+    if (!plan.ok)
+      return c.json(
+        {
+          error: `zip の中身に問題があります: ${plan.errors.slice(0, 5).join(" / ")}`,
+          details: plan.errors,
+        },
+        400,
+      );
+    const { files, totalBytes } = plan.value;
+    const db = c.env.DB;
+    const now = Date.now();
+
+    const existing = await db
+      .prepare(
+        "SELECT * FROM library_books WHERE tenant_id = ? AND owner_id = ? AND package_id = ?",
+      )
+      .bind(caller.tenantId, caller.id, manifest.id)
+      .first<BookRow>();
+    if (existing?.status === "deleting")
+      throw new ApiError("この本は削除の片付け中です。しばらくしてからもう一度開いてください", 409);
+    const used = await db
+      .prepare(
+        "SELECT coalesce(sum(max(total_bytes, pending_bytes)), 0) AS used FROM library_books WHERE tenant_id = ? AND owner_id = ? AND status <> 'deleting' AND id <> ?",
+      )
+      .bind(caller.tenantId, caller.id, existing?.id ?? "")
+      .first<{ used: number }>();
+    if ((used?.used ?? 0) + totalBytes > BOOK_PACKAGE_LIMITS.maxOwnerBytes)
+      throw new ApiError(
+        `本棚の容量 (${formatBytes(BOOK_PACKAGE_LIMITS.maxOwnerBytes)}) を超えます。読まない本を削除してください`,
+        400,
+      );
+
+    const thumbKey = thumbnailContentKey(input.thumbnail.sha256);
+    const signature = await sha256Hex(
+      JSON.stringify({
+        manifest,
+        files: files.map((file) => [
+          file.path,
+          fileContentKey(file.crc32, file.size, file.contentType),
+        ]),
+        thumbKey,
+      }),
+    );
+
+    const bookId = existing?.id ?? crypto.randomUUID();
+    const resuming = Boolean(
+      existing?.pending_revision && existing.pending_signature === signature,
+    );
+    const revision = existing
+      ? resuming && existing.pending_revision
+        ? existing.pending_revision
+        : existing.current_revision + 1
+      : 1;
+
+    const known = existing
+      ? (
+          await db
+            .prepare("SELECT * FROM library_files WHERE tenant_id = ? AND book_id = ?")
+            .bind(caller.tenantId, bookId)
+            .all<FileRow>()
+        ).results
+      : [];
+    const byKey = new Map(known.map((file) => [file.content_key, file]));
+    const fresh: {
+      id: string;
+      key: string;
+      kind: BookFileKind;
+      type: string;
+      size: number;
+      r2: string;
+    }[] = [];
+    const fileFor = (key: string, kind: BookFileKind, type: string, size: number) => {
+      const found = byKey.get(key);
+      if (found) return found;
+      const id = crypto.randomUUID();
+      const row: FileRow = {
         id,
-        caller.tenantId,
-        caller.id,
-        input.title,
-        input.author ?? null,
-        input.kind ?? "commercial",
+        book_id: bookId,
+        content_key: key,
+        kind,
+        content_type: type,
+        size,
+        r2_key: fileR2Key(caller.tenantId, bookId, id),
+        status: "pending",
+        multipart_upload_id: null,
+      };
+      byKey.set(key, row);
+      fresh.push({ id, key, kind, type, size, r2: row.r2_key });
+      return row;
+    };
+    const slots: LibraryImportSlot[] = files.map((file) => {
+      const row = fileFor(
+        fileContentKey(file.crc32, file.size, file.contentType),
+        file.kind,
+        file.contentType,
+        file.size,
+      );
+      return {
+        path: file.path,
+        fileId: row.id,
+        kind: file.kind,
+        size: file.size,
+        uploaded: row.status === "uploaded",
+        ...uploadMode(file.size),
+      };
+    });
+    const thumb = fileFor(thumbKey, "thumbnail", "image/jpeg", input.thumbnail.size);
+    const thumbnail: LibraryImportSlot = {
+      path: "",
+      fileId: thumb.id,
+      kind: "thumbnail",
+      size: thumb.size,
+      uploaded: thumb.status === "uploaded",
+      mode: "single",
+      partSize: null,
+    };
+
+    if (!resuming) {
+      const statements: D1PreparedStatement[] = [];
+      const pendingColumns = [
+        JSON.stringify(manifest),
+        signature,
+        thumb.id,
         now,
-        now,
-      ),
-      c.env.DB.prepare(
-        "INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-      ).bind(caller.tenantId, caller.id, id, now, now),
+        totalBytes,
+      ] as const;
+      if (!existing) {
+        statements.push(
+          db
+            .prepare(
+              `INSERT INTO library_books (id, tenant_id, owner_id, package_id, title, authors, language, description, status, current_revision,
+                pending_revision, pending_manifest, pending_signature, pending_thumb_file_id, pending_started_at, pending_bytes,
+                chapter_count, has_audio, has_video, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'importing', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .bind(
+              bookId,
+              caller.tenantId,
+              caller.id,
+              manifest.id,
+              manifest.title,
+              JSON.stringify(manifest.authors),
+              manifest.language,
+              manifest.description,
+              revision,
+              ...pendingColumns,
+              manifest.chapters.length,
+              Number(manifest.chapters.some((chapter) => chapter.audio)),
+              Number(manifest.chapters.some((chapter) => chapter.video)),
+              now,
+              now,
+            ),
+        );
+      } else {
+        // 取り込み中だった別の版は、この新しい版で置き換える (同じ版の番号を使い直す)。
+        if (existing.pending_revision)
+          statements.push(
+            db
+              .prepare(
+                "DELETE FROM library_revision_files WHERE tenant_id = ? AND book_id = ? AND revision = ?",
+              )
+              .bind(caller.tenantId, bookId, existing.pending_revision),
+            db
+              .prepare(
+                "DELETE FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ?",
+              )
+              .bind(caller.tenantId, bookId, existing.pending_revision),
+          );
+        statements.push(
+          db
+            .prepare(
+              `UPDATE library_books SET pending_revision = ?, pending_manifest = ?, pending_signature = ?, pending_thumb_file_id = ?,
+                pending_started_at = ?, pending_bytes = ?, updated_at = ?
+              WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'`,
+            )
+            .bind(revision, ...pendingColumns, now, caller.tenantId, bookId, caller.id),
+        );
+      }
+      statements.push(
+        db
+          .prepare(
+            "INSERT OR IGNORE INTO library_shelf_entries (tenant_id, profile_id, book_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+          )
+          .bind(caller.tenantId, caller.id, bookId, now, now),
+        // 行が多くても 1 文で済むよう、JSON の配列を 1 つの値として渡す (D1 の 1 文 100 変数の制限)。
+        db
+          .prepare(
+            `INSERT INTO library_files (id, tenant_id, book_id, content_key, kind, content_type, size, r2_key, status, created_at, updated_at)
+            SELECT json_extract(value, '$.id'), ?, ?, json_extract(value, '$.key'), json_extract(value, '$.kind'),
+              json_extract(value, '$.type'), json_extract(value, '$.size'), json_extract(value, '$.r2'), 'pending', ?, ?
+            FROM json_each(?)`,
+          )
+          .bind(caller.tenantId, bookId, now, now, JSON.stringify(fresh)),
+        db
+          .prepare(
+            `INSERT INTO library_revision_files (tenant_id, book_id, revision, path, file_id)
+            SELECT ?, ?, ?, json_extract(value, '$.path'), json_extract(value, '$.fileId') FROM json_each(?)`,
+          )
+          .bind(
+            caller.tenantId,
+            bookId,
+            revision,
+            JSON.stringify(slots.map(({ path, fileId }) => ({ path, fileId }))),
+          ),
+        db
+          .prepare(
+            `INSERT INTO library_chapters (tenant_id, book_id, revision, chapter_id, position, title, text_path, audio_path, video_path)
+            SELECT ?, ?, ?, json_extract(value, '$.id'), CAST(key AS INTEGER) + 1, json_extract(value, '$.title'),
+              json_extract(value, '$.text'), json_extract(value, '$.audio'), json_extract(value, '$.video')
+            FROM json_each(?)`,
+          )
+          .bind(caller.tenantId, bookId, revision, JSON.stringify(manifest.chapters)),
+        // 置き換えた版だけが使っていたファイルを片付ける。
+        ...orphanFileStatements(db, caller.tenantId, bookId, now),
+      );
+      await db.batch(statements);
+      const saved = await ownBook(c.env, caller, bookId);
+      if (saved.pending_revision !== revision || saved.pending_signature !== signature)
+        throw new ApiError("別の画面で取り込みが始まりました。もう一度開いてください", 409);
+    }
+
+    return c.json(
+      {
+        bookId,
+        revision,
+        update: Boolean(existing && existing.current_revision > 0),
+        files: slots,
+        thumbnail,
+      } satisfies LibraryImportResponse,
+      resuming ? 200 : 201,
+    );
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+/** 送り終えたファイルを「送信済み」にする。消された・本が削除中なら R2 の分も消して 409。 */
+async function markUploaded(env: Env, bucket: R2Bucket, caller: Caller, file: FileRow) {
+  const now = Date.now();
+  await env.DB.prepare(
+    "UPDATE library_files SET status = 'uploaded', multipart_upload_id = NULL, updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status <> 'deleting')",
+  )
+    .bind(now, caller.tenantId, file.id, caller.tenantId, file.book_id)
+    .run();
+  const after = await env.DB.prepare(
+    "SELECT f.status FROM library_files f JOIN library_books b ON b.tenant_id = f.tenant_id AND b.id = f.book_id WHERE f.tenant_id = ? AND f.id = ? AND b.status <> 'deleting'",
+  )
+    .bind(caller.tenantId, file.id)
+    .first<{ status: string }>();
+  if (after?.status !== "uploaded") {
+    await bucket.delete(file.r2_key);
+    throw new ApiError("取り込みが取り消されました。もう一度開いてください", 409);
+  }
+}
+
+function contentLength(c: LibraryContext): number {
+  const value = c.req.header("Content-Length");
+  if (!value || !/^\d+$/.test(value)) throw new ApiError("Content-Length が必要です", 400);
+  return Number(value);
+}
+
+libraryRoute.put("/api/library/books/:bookId/files/:fileId", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const { file } = await bookFile(c.env, caller, c.req.param("bookId"), c.req.param("fileId"));
+    if (file.status === "uploaded") return c.json({ uploaded: true });
+    if (file.size > BOOK_PACKAGE_LIMITS.singleUploadMaxBytes)
+      throw new ApiError("大きいファイルは分割して送ってください", 400);
+    if (contentLength(c) !== file.size)
+      throw new ApiError("ファイルの大きさが取り込みの時と違います", 400);
+    const body = c.req.raw.body;
+    if (!body) throw new ApiError("ファイルの中身がありません", 400);
+    let stored: R2Object | null;
+    try {
+      stored = await bucket.put(file.r2_key, body, {
+        httpMetadata: { contentType: file.content_type },
+        ...(file.kind === "thumbnail" ? { sha256: file.content_key.slice("thumb-".length) } : {}),
+      });
+    } catch {
+      throw new ApiError("ファイルを保存できませんでした。もう一度送ってください", 400);
+    }
+    if (!stored || stored.size !== file.size) {
+      await bucket.delete(file.r2_key);
+      throw new ApiError("ファイルの大きさが取り込みの時と違います", 400);
+    }
+    await markUploaded(c.env, bucket, caller, file);
+    return c.json({ uploaded: true });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const { file } = await bookFile(c.env, caller, c.req.param("bookId"), c.req.param("fileId"));
+    if (file.status === "uploaded") return c.json({ uploaded: true, uploadId: null });
+    if (file.size <= BOOK_PACKAGE_LIMITS.singleUploadMaxBytes)
+      throw new ApiError("このファイルは 1 回で送ってください", 400);
+    // 前の分割送信は R2 から部分の一覧を取れないので、やり直す (古い方は R2 が期限で捨てる)。
+    if (file.multipart_upload_id)
+      await bucket
+        .resumeMultipartUpload(file.r2_key, file.multipart_upload_id)
+        .abort()
+        .catch(() => undefined);
+    const upload = await bucket.createMultipartUpload(file.r2_key, {
+      httpMetadata: { contentType: file.content_type },
+    });
+    await c.env.DB.prepare(
+      "UPDATE library_files SET multipart_upload_id = ?, updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'pending'",
+    )
+      .bind(upload.uploadId, Date.now(), caller.tenantId, file.id)
+      .run();
+    return c.json({
+      uploaded: false,
+      uploadId: upload.uploadId,
+      partSize: BOOK_PACKAGE_LIMITS.multipartPartBytes,
+    });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+function requireUploadId(file: FileRow, given: unknown): string {
+  if (typeof given !== "string" || !given || given !== file.multipart_upload_id)
+    throw new ApiError("分割送信が見つかりません。最初から送り直してください", 409);
+  return given;
+}
+
+libraryRoute.put("/api/library/books/:bookId/files/:fileId/multipart/parts/:part", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const { file } = await bookFile(c.env, caller, c.req.param("bookId"), c.req.param("fileId"));
+    const uploadId = requireUploadId(file, c.req.query("uploadId"));
+    const part = Number(c.req.param("part"));
+    const partSize = BOOK_PACKAGE_LIMITS.multipartPartBytes;
+    const parts = Math.ceil(file.size / partSize);
+    if (!Number.isInteger(part) || part < 1 || part > parts)
+      throw new ApiError("部分の番号が無効です", 400);
+    const expected = part < parts ? partSize : file.size - partSize * (parts - 1);
+    if (contentLength(c) !== expected) throw new ApiError("部分の大きさが違います", 400);
+    const body = c.req.raw.body;
+    if (!body) throw new ApiError("部分の中身がありません", 400);
+    const uploaded = await bucket
+      .resumeMultipartUpload(file.r2_key, uploadId)
+      .uploadPart(part, body);
+    return c.json({ partNumber: uploaded.partNumber, etag: uploaded.etag });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart/complete", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const { file } = await bookFile(c.env, caller, c.req.param("bookId"), c.req.param("fileId"));
+    const body = (await c.req.json<unknown>()) as { uploadId?: unknown; parts?: unknown };
+    const uploadId = requireUploadId(file, body?.uploadId);
+    const expectedParts = Math.ceil(file.size / BOOK_PACKAGE_LIMITS.multipartPartBytes);
+    const parts = body?.parts;
+    if (
+      !Array.isArray(parts) ||
+      parts.length !== expectedParts ||
+      parts.some(
+        (part, index) =>
+          !part ||
+          typeof part !== "object" ||
+          (part as { partNumber?: unknown }).partNumber !== index + 1 ||
+          typeof (part as { etag?: unknown }).etag !== "string",
+      )
+    )
+      throw new ApiError("送った部分の一覧が足りません", 400);
+    const object = await bucket
+      .resumeMultipartUpload(file.r2_key, uploadId)
+      .complete(parts as R2UploadedPart[]);
+    if (object.size !== file.size) {
+      await bucket.delete(file.r2_key);
+      await c.env.DB.prepare(
+        "UPDATE library_files SET multipart_upload_id = NULL, updated_at = ? WHERE tenant_id = ? AND id = ?",
+      )
+        .bind(Date.now(), caller.tenantId, file.id)
+        .run();
+      throw new ApiError("ファイルの大きさが取り込みの時と違います", 400);
+    }
+    await markUploaded(c.env, bucket, caller, file);
+    return c.json({ uploaded: true });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibrary(c.env);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const revision = Number(c.req.param("revision"));
+    if (book.current_revision === revision && book.pending_revision !== revision)
+      return c.json({ book: bookView(book) }); // 2 回目 (別のタブ・再送) は済んだものとして返す。
+    if (book.pending_revision !== revision || !book.pending_manifest)
+      throw new ApiError("取り込み中の版が見つかりません。もう一度開いてください", 409);
+    const db = c.env.DB;
+    const missing = await db
+      .prepare(
+        `SELECT count(*) AS count FROM library_files f WHERE f.tenant_id = ? AND f.book_id = ? AND f.status <> 'uploaded'
+          AND (f.id = ? OR EXISTS (SELECT 1 FROM library_revision_files rf WHERE rf.tenant_id = f.tenant_id AND rf.book_id = f.book_id AND rf.revision = ? AND rf.file_id = f.id))`,
+      )
+      .bind(caller.tenantId, book.id, book.pending_thumb_file_id ?? "", revision)
+      .first<{ count: number }>();
+    if (missing?.count)
+      throw new ApiError(`まだ送っていないファイルが ${missing.count} 個あります`, 409);
+    const manifest = JSON.parse(book.pending_manifest) as BookManifest;
+    const now = Date.now();
+    const sameBook = "tenant_id = ? AND book_id = ?";
+    const switched =
+      "EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND current_revision = ?)";
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE library_books SET current_revision = pending_revision, status = 'ready', cover_thumb_file_id = pending_thumb_file_id,
+            total_bytes = pending_bytes, title = ?, authors = ?, language = ?, description = ?, chapter_count = ?, has_audio = ?, has_video = ?,
+            pending_revision = NULL, pending_manifest = NULL, pending_signature = NULL, pending_thumb_file_id = NULL,
+            pending_started_at = NULL, pending_bytes = 0, updated_at = ?
+          WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision = ? AND status <> 'deleting'`,
+        )
+        .bind(
+          manifest.title,
+          JSON.stringify(manifest.authors),
+          manifest.language,
+          manifest.description,
+          manifest.chapters.length,
+          Number(manifest.chapters.some((chapter) => chapter.audio)),
+          Number(manifest.chapters.some((chapter) => chapter.video)),
+          now,
+          caller.tenantId,
+          book.id,
+          caller.id,
+          revision,
+        ),
+      // 前の版の行は要らない。前の版だけが使っていたファイルは片付ける。
+      db
+        .prepare(
+          `DELETE FROM library_revision_files WHERE ${sameBook} AND revision < ? AND ${switched}`,
+        )
+        .bind(caller.tenantId, book.id, revision, caller.tenantId, book.id, revision),
+      db
+        .prepare(`DELETE FROM library_chapters WHERE ${sameBook} AND revision < ? AND ${switched}`)
+        .bind(caller.tenantId, book.id, revision, caller.tenantId, book.id, revision),
+      ...orphanFileStatements(db, caller.tenantId, book.id, now),
     ]);
-    return c.json({ book: bookView(await ownBook(c.env, caller, id)) }, 201);
+    const done = await ownBook(c.env, caller, book.id);
+    if (done.current_revision !== revision)
+      throw new ApiError("取り込みを終えられませんでした。もう一度開いてください", 409);
+    return c.json({ book: bookView(done) });
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.delete("/api/library/books/:bookId/imports/:revision", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const revision = Number(c.req.param("revision"));
+    if (book.pending_revision !== revision) return c.json({ ok: true });
+    const uploads = await c.env.DB.prepare(
+      "SELECT r2_key, multipart_upload_id FROM library_files WHERE tenant_id = ? AND book_id = ? AND status = 'pending' AND multipart_upload_id IS NOT NULL",
+    )
+      .bind(caller.tenantId, book.id)
+      .all<{ r2_key: string; multipart_upload_id: string }>();
+    await c.env.DB.batch(
+      discardPendingStatements(c.env.DB, caller.tenantId, book.id, revision, Date.now()),
+    );
+    for (const upload of uploads.results)
+      await bucket
+        .resumeMultipartUpload(upload.r2_key, upload.multipart_upload_id)
+        .abort()
+        .catch(() => undefined);
+    return c.json({ ok: true });
   } catch (error) {
     return failure(c, error);
   }
@@ -324,372 +847,175 @@ libraryRoute.post("/api/library/books", async (c) => {
 libraryRoute.get("/api/library/books/:bookId", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    return c.json({ book: bookView(await ownBook(c.env, caller, c.req.param("bookId"))) });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.patch("/api/library/books/:bookId", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const row = await ownBook(c.env, caller, c.req.param("bookId"));
-    const input = parseBookMetadata(await c.req.json<unknown>(), false);
-    await c.env.DB.prepare(
-      "UPDATE library_books SET title = coalesce(?, title), author = CASE WHEN ? THEN ? ELSE author END, kind = coalesce(?, kind), updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
-    )
-      .bind(
-        input.title ?? null,
-        Number(input.author !== undefined),
-        input.author ?? null,
-        input.kind ?? null,
-        Date.now(),
-        row.id,
-        caller.tenantId,
-        caller.id,
-      )
-      .run();
-    return c.json({ book: bookView(await ownBook(c.env, caller, row.id)) });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.get("/api/library/books/:bookId/pdfs", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    requireLibrary(c.env);
     const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const entry = await shelfEntry(c.env, caller, book.id);
     const rows = await c.env.DB.prepare(
-      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? ORDER BY position",
+      `SELECT ch.chapter_id, ch.position, ch.title, ch.text_path, ch.audio_path, ch.video_path,
+        r.audio_sec, r.video_sec, r.completed, r.updated_at AS state_updated_at
+      FROM library_chapters ch
+      LEFT JOIN library_reader_states r ON r.tenant_id = ch.tenant_id AND r.book_id = ch.book_id AND r.chapter_id = ch.chapter_id AND r.profile_id = ?
+      WHERE ch.tenant_id = ? AND ch.book_id = ? AND ch.revision = ? ORDER BY ch.position`,
     )
-      .bind(caller.tenantId, book.id)
-      .all<PdfRow>();
-    return c.json({ pdfs: rows.results.map(pdfView) });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.post("/api/library/books/:bookId/pdfs", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const found = await ownBook(c.env, caller, c.req.param("bookId"));
-    if (!c.env.LIBRARY_BUCKET || !(await processingAvailable(c.env)))
-      throw new ApiError("PDFの登録は現在利用できません", 403);
-    const input = parseCreatePdf(await c.req.json<unknown>());
-    const id = input.id ?? crypto.randomUUID(),
-      now = Date.now();
-    const existing = () =>
-      c.env.DB.prepare(
-        "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
-      )
-        .bind(caller.tenantId, found.id, id)
-        .first<PdfRow>();
-    // A retried registration (same client id) returns the PDF it already created.
-    const retried = input.id ? await existing() : null;
-    if (retried) return c.json({ pdf: pdfView(retried) }, 200);
-    // Checked before reopening so a rejected add leaves a failed book untouched.
-    const totals = await c.env.DB.prepare(
-      "SELECT count(*) AS n, coalesce(sum(size_bytes), 0) AS bytes FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ?",
-    )
-      .bind(caller.tenantId, found.id)
-      .first<{ n: number; bytes: number }>();
-    if (
-      (totals?.n ?? 0) >= LIBRARY_LIMITS.maxBookPdfs ||
-      (totals?.bytes ?? 0) + input.sizeBytes > LIBRARY_LIMITS.maxBookBytes
-    )
-      throw new ApiError("PDFの数か合計サイズが上限を超えています", 409);
-    if (found.status !== "failed") requireUploadable(found);
-    const book = await reopenFailed(c.env, caller, found);
-    requireUploadable(book);
-    // Count, total size and position are decided in the INSERT so concurrent adds cannot exceed them.
-    await c.env.DB.batch([
-      c.env.DB.prepare(
-        `INSERT INTO library_book_pdfs (id, tenant_id, book_id, position, file_name, size_bytes, page_count, source_file_name, part_group, r2_key, created_at)
-        SELECT ?, b.tenant_id, b.id, (SELECT coalesce(max(position), 0) + 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id), ?, ?, ?, ?, ?, ?, ?
-        FROM library_books b WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status IN ('draft','uploading')
-          AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) < ?
-          AND (SELECT coalesce(sum(size_bytes), 0) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) + ? <= ?
-        ON CONFLICT (id) DO NOTHING`,
-      ).bind(
-        id,
-        input.fileName,
-        input.sizeBytes,
-        input.pageCount ?? null,
-        input.sourceFileName ?? null,
-        input.group ?? null,
-        `library/${caller.tenantId}/${book.id}/pdfs/${id}.pdf`,
-        now,
-        caller.tenantId,
-        book.id,
-        caller.id,
-        LIBRARY_LIMITS.maxBookPdfs,
-        input.sizeBytes,
-        LIBRARY_LIMITS.maxBookBytes,
-      ),
-      c.env.DB.prepare(
-        "UPDATE library_books SET status = 'uploading', updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'draft' AND EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?)",
-      ).bind(now, caller.tenantId, book.id, caller.tenantId, book.id, id),
-    ]);
-    const row = await existing();
-    // No row means a guard in the INSERT (owner, status, count or total size) failed,
-    // or the client id already belongs to another book.
-    if (!row) throw new ApiError("PDFの数か合計サイズが上限を超えています", 409);
-    return c.json({ pdf: pdfView(row) }, 201);
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.put("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const bucket = c.env.LIBRARY_BUCKET;
-    if (!bucket) throw new ApiError("PDFの登録は現在利用できません", 403);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    requireUploadable(book);
-    const pdf = await c.env.DB.prepare(
-      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
-    )
-      .bind(caller.tenantId, book.id, c.req.param("pdfId"))
-      .first<PdfRow>();
-    if (!pdf || pdf.r2_key.endsWith(DELETING)) throw new ApiError("PDFが見つかりません", 404);
-    const body = c.req.raw.body;
-    if (!body || Number(c.req.header("Content-Length")) !== pdf.size_bytes)
-      throw new ApiError("登録したサイズと送信したPDFのサイズが一致しません", 400);
-    // Each attempt writes its own key and the row switches to it only after validation, so a
-    // failed or concurrent upload never deletes a completed original.
-    const key = `library/${caller.tenantId}/${book.id}/pdfs/${pdf.id}-${crypto.randomUUID()}.pdf`;
-    const stored = await bucket.put(key, body, {
-      httpMetadata: { contentType: "application/pdf" },
-    });
-    const head = await bucket.get(key, { range: { offset: 0, length: 5 } });
-    const magic = head ? await head.text() : "";
-    if (stored?.size !== pdf.size_bytes || magic !== "%PDF-") {
-      await bucket.delete(key);
-      throw new ApiError("PDFファイルを送信してください", 400);
-    }
-    // A book deleted during the transfer keeps its tombstone; the narrator cron removes the object.
-    const switched = await c.env.DB.prepare(
-      "UPDATE library_book_pdfs SET r2_key = ?, upload_status = 'completed' WHERE tenant_id = ? AND book_id = ? AND id = ? AND r2_key = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))",
-    )
-      .bind(key, caller.tenantId, book.id, pdf.id, pdf.r2_key, caller.tenantId, book.id)
-      .run();
-    if (!switched.meta.changes) {
-      await bucket.delete(key);
-      throw new ApiError("このPDFは別の送信で更新されました。もう一度お試しください", 409);
-    }
-    await bucket.delete(pdf.r2_key);
-    return c.json({
-      pdf: pdfView({ ...pdf, r2_key: key, upload_status: "completed" }),
-    });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.delete("/api/library/books/:bookId/pdfs/:pdfId", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const found = await ownBook(c.env, caller, c.req.param("bookId"));
-    const bucket = c.env.LIBRARY_BUCKET;
-    if (!bucket) throw new ApiError("PDFの削除は現在利用できません", 403);
-    const pdf = await c.env.DB.prepare(
-      "SELECT * FROM library_book_pdfs WHERE tenant_id = ? AND book_id = ? AND id = ?",
-    )
-      .bind(caller.tenantId, found.id, c.req.param("pdfId"))
-      .first<PdfRow>();
-    if (!pdf) throw new ApiError("PDFが見つかりません", 404);
-    // Reopen a failed book only once the edit is known to be possible.
-    if (found.status !== "failed") requireUploadable(found);
-    const book = await reopenFailed(c.env, caller, found);
-    requireUploadable(book);
-    // The parts split from one original go together: leaving some would process a truncated
-    // original. One UPDATE marks the whole group as being deleted by suffixing its keys, so a
-    // PUT that is still in flight can no longer confirm (its compare-and-swap on the key fails)
-    // and processing cannot start (the rows are unfinished). A failed R2 delete leaves marked
-    // rows the owner can delete again.
-    const sameOriginal =
-      "tenant_id = ? AND book_id = ? AND (id = ? OR (part_group IS NOT NULL AND part_group = ?))";
-    const scope = [caller.tenantId, book.id, pdf.id, pdf.part_group];
-    const marked = await c.env.DB.prepare(
-      `UPDATE library_book_pdfs SET upload_status = 'uploading', r2_key = CASE WHEN r2_key LIKE '%${DELETING}' THEN r2_key ELSE r2_key || '${DELETING}' END WHERE ${sameOriginal} AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status IN ('draft','uploading'))`,
-    )
-      .bind(...scope, caller.tenantId, book.id)
-      .run();
-    if (!marked.meta.changes)
-      throw new ApiError("PDFを削除できませんでした。もう一度お試しください", 409);
-    // Read the keys after marking: a replacement that committed before the mark is included.
-    const parts = await c.env.DB.prepare(
-      `SELECT r2_key FROM library_book_pdfs WHERE ${sameOriginal}`,
-    )
-      .bind(...scope)
-      .all<{ r2_key: string }>();
-    await bucket.delete(parts.results.map((part) => part.r2_key.slice(0, -DELETING.length)));
-    await c.env.DB.prepare(
-      `DELETE FROM library_book_pdfs WHERE ${sameOriginal} AND r2_key LIKE '%${DELETING}'`,
-    )
-      .bind(...scope)
-      .run();
-    return c.json({ ok: true });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.post("/api/library/books/:bookId/process", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    if (book.status !== "uploading")
-      throw new ApiError(
-        book.status === "failed"
-          ? "失敗した処理は再実行してください"
-          : "この書籍は処理を始められる状態ではありません",
-        409,
-      );
-    // The confirmation covers specific PDFs; the job starts only if they are exactly the
-    // book's PDFs at that moment (another tab may have added one).
-    const confirmed = await requireExternalAck(c.req.raw);
-    if (!confirmed) throw new ApiError("確認したPDFの指定が必要です", 400);
-    await requireProcessing(c.env);
-    const jobId = crypto.randomUUID(),
-      now = Date.now();
-    // One batch: the job exists only with its reservation, and the book freezes its PDFs.
-    await c.env.DB.batch([
-      c.env.DB.prepare(
-        `INSERT INTO library_jobs (id, tenant_id, book_id, generation, type, created_by, created_at)
-        SELECT ?, b.tenant_id, b.id, b.generation, 'ocr', b.owner_id, ? FROM library_books b
-        WHERE b.tenant_id = ? AND b.id = ? AND b.owner_id = ? AND b.status = 'uploading'
-          AND EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id)
-          AND NOT EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id AND upload_status <> 'completed')
-          AND NOT EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = b.tenant_id AND book_id = b.id AND status IN ('queued','running'))
-          AND (SELECT count(*) FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id) = ?
-          AND NOT EXISTS (SELECT 1 FROM library_book_pdfs WHERE tenant_id = b.tenant_id AND book_id = b.id AND id NOT IN (${confirmed.map(() => "?").join(",")}))`,
-      ).bind(jobId, now, caller.tenantId, book.id, caller.id, confirmed.length, ...confirmed),
-      c.env.DB.prepare(
-        "INSERT INTO library_job_dispatches (tenant_id, book_id, job_id, instance_id, created_at) SELECT tenant_id, book_id, id, id || '-' || attempt, ? FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ?",
-      ).bind(now, caller.tenantId, book.id, jobId),
-      c.env.DB.prepare(
-        "UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'uploading' AND EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ?)",
-      ).bind(now, caller.tenantId, book.id, caller.tenantId, book.id, jobId),
-    ]);
-    const job = await c.env.DB.prepare(
-      `${JOB_SELECT} WHERE j.tenant_id = ? AND j.book_id = ? AND j.id = ?`,
-    )
-      .bind(caller.tenantId, book.id, jobId)
-      .first<JobRow>();
-    // No row means a guard failed: no PDFs, an unfinished upload, a job already running, or
-    // PDFs that changed since the owner confirmed them.
-    if (!job)
-      throw new ApiError(
-        "PDFが確認したときから変わったか、送信が済んでいないPDFがあるか、処理がすでに進んでいます。画面を読み込み直してください",
-        409,
-      );
-    await dispatch(c.env, caller.tenantId, book.id, job);
-    return c.json({ job: jobView(job) }, 202);
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.get("/api/library/books/:bookId/jobs", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    const rows = await c.env.DB.prepare(
-      `${JOB_SELECT} WHERE j.tenant_id = ? AND j.book_id = ? ORDER BY j.created_at DESC LIMIT 20`,
-    )
-      .bind(caller.tenantId, book.id)
-      .all<JobRow>();
-    const stale = rows.results.filter(
-      (job) =>
-        job.status === "queued" &&
-        job.generation === book.generation &&
-        job.dispatched_at === null &&
-        (job.dispatch_created_at ?? 0) < Date.now() - REDISPATCH_AFTER_MS,
-    );
-    if (stale.length && (await processingAvailable(c.env)))
-      for (const job of stale) await dispatch(c.env, caller.tenantId, book.id, job);
-    return c.json({ book: bookView(book), jobs: rows.results.map(jobView) });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.post("/api/library/books/:bookId/jobs/:jobId/retry", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    const job = await bookJob(c.env, caller, book.id, c.req.param("jobId"));
-    if (job.status !== "failed" || job.generation !== book.generation)
-      throw new ApiError("再実行できるのは失敗した処理だけです", 409);
-    await requireExternalAck(c.req.raw);
-    await requireProcessing(c.env);
-    const now = Date.now();
-    // A new attempt gets a new Workflow instance; results of the old one can no longer write.
-    await c.env.DB.batch([
-      c.env.DB.prepare(
-        `UPDATE library_jobs SET attempt = attempt + 1, status = 'queued', progress_current = 0, progress_total = NULL, error_code = NULL, error_message = NULL, started_at = NULL, finished_at = NULL
-        WHERE tenant_id = ? AND book_id = ? AND id = ? AND attempt = ? AND status = 'failed'
-          AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND generation = library_jobs.generation AND status <> 'deleting')
-          AND NOT EXISTS (SELECT 1 FROM library_jobs other WHERE other.tenant_id = library_jobs.tenant_id AND other.book_id = library_jobs.book_id AND other.status IN ('queued','running'))`,
-      ).bind(caller.tenantId, book.id, job.id, job.attempt, caller.tenantId, book.id, caller.id),
-      c.env.DB.prepare(
-        "UPDATE library_job_dispatches SET instance_id = ?, created_at = ?, dispatched_at = NULL WHERE tenant_id = ? AND book_id = ? AND job_id = ? AND EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ? AND attempt = ? AND status = 'queued')",
-      ).bind(
-        `${job.id}-${job.attempt + 1}`,
-        now,
-        caller.tenantId,
-        book.id,
-        job.id,
-        caller.tenantId,
-        book.id,
-        job.id,
-        job.attempt + 1,
-      ),
-      c.env.DB.prepare(
-        "UPDATE library_books SET status = 'processing', updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'failed' AND EXISTS (SELECT 1 FROM library_jobs WHERE tenant_id = ? AND book_id = ? AND id = ? AND attempt = ? AND status = 'queued')",
-      ).bind(now, caller.tenantId, book.id, caller.tenantId, book.id, job.id, job.attempt + 1),
-    ]);
-    const retried = await bookJob(c.env, caller, book.id, job.id);
-    if (retried.status !== "queued" || retried.attempt !== job.attempt + 1)
-      throw new ApiError("この処理はすでに再実行されています", 409);
-    await dispatch(c.env, caller.tenantId, book.id, retried);
-    return c.json({ job: jobView(retried) }, 202);
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.get("/api/library/books/:bookId/chapters", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    // Titles and page ranges only; chapter text is the reader's job (P4).
-    const rows = await c.env.DB.prepare(
-      "SELECT id, position, title, start_page, end_page FROM library_chapters WHERE tenant_id = ? AND book_id = ? ORDER BY position",
-    )
-      .bind(caller.tenantId, book.id)
-      .all<{ id: string; position: number; title: string; start_page: number; end_page: number }>();
-    const chapters: LibraryChapterSummary[] = rows.results.map((row) => ({
-      id: row.id,
+      .bind(caller.id, caller.tenantId, book.id, book.current_revision)
+      .all<{
+        chapter_id: string;
+        position: number;
+        title: string;
+        text_path: string;
+        audio_path: string | null;
+        video_path: string | null;
+        audio_sec: number | null;
+        video_sec: number | null;
+        completed: number | null;
+        state_updated_at: number | null;
+      }>();
+    const chapters: LibraryChapter[] = rows.results.map((row) => ({
+      id: row.chapter_id,
       position: row.position,
       title: row.title,
-      startPage: row.start_page,
-      endPage: row.end_page,
+      textPath: row.text_path,
+      audioPath: row.audio_path,
+      videoPath: row.video_path,
+      state: {
+        audioSec: row.audio_sec ?? 0,
+        videoSec: row.video_sec ?? 0,
+        completed: row.completed === 1,
+        updatedAt: row.state_updated_at,
+      },
     }));
-    return c.json({ chapters });
+    return c.json({ entry, chapters } satisfies LibraryBookDetail);
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.get("/api/library/books/:bookId/cover", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    if (!book.cover_thumb_file_id) throw new ApiError("表紙がありません", 404);
+    const { file } = await bookFile(c.env, caller, book.id, book.cover_thumb_file_id);
+    if (file.status !== "uploaded") throw new ApiError("表紙がありません", 404);
+    // URL に版が入るので、版が変われば別の URL になる。
+    return await serveFile(c, bucket, file, "private, max-age=31536000, immutable");
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.get("/api/library/books/:bookId/content/*", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    const bucket = requireLibrary(c.env);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const prefix = `/api/library/books/${encodeURIComponent(book.id)}/content/`;
+    const pathname = new URL(c.req.url).pathname;
+    if (!pathname.startsWith(prefix)) throw new ApiError("ファイルが見つかりません", 404);
+    let path: string;
+    try {
+      path = pathname.slice(prefix.length).split("/").map(decodeURIComponent).join("/");
+    } catch {
+      throw new ApiError("ファイルが見つかりません", 404);
+    }
+    if (!isSafePackagePath(path)) throw new ApiError("ファイルが見つかりません", 404);
+    const file = await c.env.DB.prepare(
+      `SELECT f.* FROM library_revision_files rf JOIN library_files f ON f.tenant_id = rf.tenant_id AND f.id = rf.file_id
+      WHERE rf.tenant_id = ? AND rf.book_id = ? AND rf.revision = ? AND rf.path = ? AND f.status = 'uploaded'`,
+    )
+      .bind(caller.tenantId, book.id, book.current_revision, path)
+      .first<FileRow>();
+    if (!file) throw new ApiError("ファイルが見つかりません", 404);
+    return await serveFile(c, bucket, file, "private, no-store");
+  } catch (error) {
+    return failure(c, error);
+  }
+});
+
+libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (c) => {
+  try {
+    const { caller } = await getCaller(c);
+    requireLibrary(c.env);
+    const book = await ownBook(c.env, caller, c.req.param("bookId"));
+    const chapterId = c.req.param("chapterId");
+    const input = parseChapterState(await c.req.json<unknown>());
+    const chapter = await c.env.DB.prepare(
+      "SELECT 1 AS found FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ? AND chapter_id = ?",
+    )
+      .bind(caller.tenantId, book.id, book.current_revision, chapterId)
+      .first<{ found: number }>();
+    if (!chapter) throw new ApiError("章が見つかりません", 404);
+    const now = Date.now();
+    const audio = input.audioSec ?? null;
+    const video = input.videoSec ?? null;
+    const completed = input.completed === undefined ? null : Number(input.completed);
+    const db = c.env.DB;
+    // 端末の時刻が保存済みより古い送信 (再送・別の端末の遅れた送信) は位置を巻き戻さない。
+    const newer = "excluded.client_updated_at >= library_reader_states.client_updated_at";
+    const allDone = `NOT EXISTS (SELECT 1 FROM library_chapters ch WHERE ch.tenant_id = ? AND ch.book_id = ? AND ch.revision = ?
+      AND NOT EXISTS (SELECT 1 FROM library_reader_states r WHERE r.tenant_id = ch.tenant_id AND r.profile_id = ? AND r.book_id = ch.book_id
+        AND r.chapter_id = ch.chapter_id AND r.completed = 1))`;
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO library_reader_states (tenant_id, profile_id, book_id, chapter_id, audio_sec, video_sec, completed, client_updated_at, updated_at)
+          VALUES (?, ?, ?, ?, coalesce(?, 0), coalesce(?, 0), coalesce(?, 0), ?, ?)
+          ON CONFLICT (tenant_id, profile_id, book_id, chapter_id) DO UPDATE SET
+            audio_sec = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.audio_sec ELSE library_reader_states.audio_sec END,
+            video_sec = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.video_sec ELSE library_reader_states.video_sec END,
+            completed = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.completed ELSE library_reader_states.completed END,
+            client_updated_at = max(library_reader_states.client_updated_at, excluded.client_updated_at),
+            updated_at = excluded.updated_at`,
+        )
+        .bind(
+          caller.tenantId,
+          caller.id,
+          book.id,
+          chapterId,
+          audio,
+          video,
+          completed,
+          input.clientUpdatedAt,
+          now,
+          audio,
+          video,
+          completed,
+        ),
+      db
+        .prepare(
+          `UPDATE library_shelf_entries SET
+            reading_status = CASE WHEN ${allDone} THEN 'finished' WHEN reading_status = 'unread' THEN 'reading' ELSE reading_status END,
+            last_chapter_id = ?, last_opened_at = ?, updated_at = ?
+          WHERE tenant_id = ? AND profile_id = ? AND book_id = ?`,
+        )
+        .bind(
+          caller.tenantId,
+          book.id,
+          book.current_revision,
+          caller.id,
+          chapterId,
+          now,
+          now,
+          caller.tenantId,
+          caller.id,
+          book.id,
+        ),
+    ]);
+    const state = await db
+      .prepare(
+        "SELECT audio_sec, video_sec, completed, updated_at FROM library_reader_states WHERE tenant_id = ? AND profile_id = ? AND book_id = ? AND chapter_id = ?",
+      )
+      .bind(caller.tenantId, caller.id, book.id, chapterId)
+      .first<{ audio_sec: number; video_sec: number; completed: number; updated_at: number }>();
+    return c.json({
+      state: {
+        audioSec: state?.audio_sec ?? 0,
+        videoSec: state?.video_sec ?? 0,
+        completed: state?.completed === 1,
+        updatedAt: state?.updated_at ?? null,
+      },
+    });
   } catch (error) {
     return failure(c, error);
   }
@@ -698,47 +1024,44 @@ libraryRoute.get("/api/library/books/:bookId/chapters", async (c) => {
 libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    requireLibrary(c.env);
     const book = await ownBook(c.env, caller, c.req.param("bookId"));
     const input = parseShelfUpdate(await c.req.json<unknown>());
     const now = Date.now();
-    // Null means keep the existing field; defaults apply only when adding to the shelf.
-    await c.env.DB.prepare(`INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, reading_status, favorite, tags, created_at, updated_at)
-      SELECT ?, ?, id, coalesce(?,'unread'), coalesce(?,0), coalesce(?,'[]'), ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'
-      ON CONFLICT (tenant_id, profile_id, book_id) DO UPDATE SET reading_status = coalesce(?, reading_status), favorite = coalesce(?, favorite), tags = coalesce(?, tags), updated_at = excluded.updated_at`)
+    const status = input.readingStatus ?? null;
+    const favorite = input.favorite === undefined ? null : Number(input.favorite);
+    const tags = input.tags === undefined ? null : JSON.stringify(input.tags);
+    const chapter = input.lastChapterId ?? null;
+    // null はそのまま。本棚から外れていた本は、ここで戻す。
+    await c.env.DB.prepare(
+      `INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, reading_status, favorite, tags, last_chapter_id, last_opened_at, created_at, updated_at)
+      VALUES (?, ?, ?, coalesce(?, 'unread'), coalesce(?, 0), coalesce(?, '[]'), ?, CASE WHEN ? IS NULL THEN NULL ELSE ? END, ?, ?)
+      ON CONFLICT (tenant_id, profile_id, book_id) DO UPDATE SET
+        reading_status = coalesce(?, reading_status), favorite = coalesce(?, favorite), tags = coalesce(?, tags),
+        last_chapter_id = coalesce(?, last_chapter_id),
+        last_opened_at = CASE WHEN ? IS NULL THEN last_opened_at ELSE excluded.updated_at END,
+        updated_at = excluded.updated_at`,
+    )
       .bind(
         caller.tenantId,
         caller.id,
-        input.readingStatus ?? null,
-        input.favorite === undefined ? null : Number(input.favorite),
-        input.tags === undefined ? null : JSON.stringify(input.tags),
-        now,
-        now,
-        caller.tenantId,
         book.id,
-        caller.id,
-        input.readingStatus ?? null,
-        input.favorite === undefined ? null : Number(input.favorite),
-        input.tags === undefined ? null : JSON.stringify(input.tags),
+        status,
+        favorite,
+        tags,
+        chapter,
+        chapter,
+        now,
+        now,
+        now,
+        status,
+        favorite,
+        tags,
+        chapter,
+        chapter,
       )
       .run();
-    return c.json({ ok: true });
-  } catch (error) {
-    return failure(c, error);
-  }
-});
-
-libraryRoute.delete("/api/library/shelf/:bookId", async (c) => {
-  try {
-    const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
-    const book = await ownBook(c.env, caller, c.req.param("bookId"));
-    await c.env.DB.prepare(
-      "DELETE FROM library_shelf_entries WHERE tenant_id = ? AND profile_id = ? AND book_id = ?",
-    )
-      .bind(caller.tenantId, caller.id, book.id)
-      .run();
-    return c.json({ ok: true });
+    return c.json({ entry: await shelfEntry(c.env, caller, book.id) });
   } catch (error) {
     return failure(c, error);
   }
@@ -747,22 +1070,17 @@ libraryRoute.delete("/api/library/shelf/:bookId", async (c) => {
 libraryRoute.delete("/api/library/books/:bookId", async (c) => {
   try {
     const { caller } = await getCaller(c);
-    requireLibraryEnabled(c.env.LIBRARY_ENABLED);
+    requireLibrary(c.env);
     const book = await ownBook(c.env, caller, c.req.param("bookId"));
     const now = Date.now();
+    // まず読めなくする (以後は 404)。R2 と行は cron が片付ける。
     await c.env.DB.batch([
       c.env.DB.prepare(
-        "UPDATE library_books SET status = 'deleting', generation = generation + 1, updated_at = ? WHERE id = ? AND tenant_id = ? AND owner_id = ? AND status <> 'deleting'",
-      ).bind(now, book.id, caller.tenantId, caller.id),
+        "UPDATE library_books SET status = 'deleting', updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'",
+      ).bind(now, caller.tenantId, book.id, caller.id),
       c.env.DB.prepare(
-        "INSERT OR IGNORE INTO library_r2_deletions (prefix, tenant_id, book_id, created_at, not_before) VALUES (?, ?, ?, ?, ?)",
-      ).bind(
-        `library/${caller.tenantId}/${book.id}/`,
-        caller.tenantId,
-        book.id,
-        now,
-        now + 24 * 60 * 60 * 1000,
-      ),
+        "INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) VALUES (?, ?)",
+      ).bind(bookPrefix(caller.tenantId, book.id), now),
       c.env.DB.prepare(
         "DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ?",
       ).bind(caller.tenantId, book.id),
