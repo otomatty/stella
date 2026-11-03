@@ -16,6 +16,11 @@ export function initApi(store: AuthStore): void {
   authStore = store;
 }
 
+/** 複数の API 呼び出しを、フォームを開いたときの接続にそろえる。 */
+export function apiSession(): number | undefined {
+  return authStore?.currentSession();
+}
+
 function requireAuthStore(): AuthStore {
   if (!authStore) {
     throw new Error("AuthStore is not initialized");

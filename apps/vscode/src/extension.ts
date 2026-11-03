@@ -1,7 +1,7 @@
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import { exchangeVscodeLink } from "@stella/shared/vscode/auth-exchange";
 import * as vscode from "vscode";
-import { AuthExpiredError, initApi } from "./api.js";
+import { AuthExpiredError, apiSession, initApi } from "./api.js";
 import { AuthStore, disposeAuthEvents, onDidChangeAuth } from "./auth.js";
 import { setUrlDefaultsForMode, stellaUrl } from "./config.js";
 import { findNextLesson, resolveLessonForExercise } from "./catalog-progress.js";
@@ -46,6 +46,8 @@ import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskHelp } from "./task-help.js";
 import { registerTaskStatus } from "./task-status.js";
 import { openDistributedTask, registerTaskOpening } from "./open-task.js";
+import { showSubmissionForm } from "./submission-form.js";
+import type { SubmissionDraft } from "./submission-form-view.js";
 import {
   openLessonNode,
   refreshLearningSidebar,
@@ -406,26 +408,29 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showInformationMessage("先に課題の採点を通してください");
         return;
       }
-      const explanation = await vscode.window.showInputBox({
-        title: "提出の説明",
-        prompt: "実装した内容と、動作を確認した方法を説明してください",
-        ignoreFocusOut: true,
-        validateInput: (value) =>
-          !value.trim()
-            ? "説明を入力してください"
-            : value.length > 20_000
-              ? "説明が長すぎます"
-              : null,
-      });
-      if (explanation === undefined) return;
-      try {
-        const attempt = await submitPassedExercise(target, explanation);
-        void vscode.window.showInformationMessage(
-          `提出しました (${attempt} 回目)。レビューされると Web に通知が届きます`,
-        );
-      } catch (err) {
-        void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
-      }
+      const draftKey = `stella.submissionDraft.${target}`;
+      const session = apiSession();
+      const lesson = resolveLessonForExercise(target, getActiveExercise(), getCachedCatalog());
+      showSubmissionForm(
+        {
+          key: target,
+          title: lesson?.title || "演習の振り返り",
+          mode: "submit",
+          initial: context.workspaceState.get<SubmissionDraft>(draftKey),
+        },
+        {
+          save: async (draft) => {
+            await context.workspaceState.update(draftKey, draft);
+          },
+          submit: async (draft) => {
+            const attempt = await submitPassedExercise(target, draft.explanation, session);
+            await context.workspaceState.update(draftKey, undefined);
+            void vscode.window.showInformationMessage(
+              `提出しました (${attempt} 回目)。レビューされると Web に通知が届きます`,
+            );
+          },
+        },
+      );
     }),
     vscode.commands.registerCommand(
       "stella.escalateToInstructor",

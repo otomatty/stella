@@ -8,7 +8,7 @@ import {
   type SupportEvent,
   type TaskSubmissionInput,
 } from "@stella/shared/tasks/submission";
-import { apiRequest } from "./api.js";
+import { apiRequest, apiSession } from "./api.js";
 import {
   hashFiles,
   LIMITS,
@@ -141,17 +141,20 @@ export async function sendTaskSubmission(
   root: string,
   mode: "submit" | "consult",
   notes: SubmissionNotes,
+  session = apiSession(),
 ): Promise<{ id: string; attempt: number }> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
   const response = await apiRequest<{ bundle: unknown }>(
     `/api/tasks/bundle?taskId=${encodeURIComponent(loaded.manifest.id)}`,
+    { session },
   );
   const bundle = parsePublicTaskBundle(response.bundle);
   const body = await prepareTaskSubmission(root, mode, notes, bundle);
   const result = await apiRequest<{ row: { id: string; attempt: number } }>("/api/submissions", {
     method: "POST",
     body,
+    session,
   });
   return result.row;
 }

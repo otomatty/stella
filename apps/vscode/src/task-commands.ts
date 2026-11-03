@@ -23,7 +23,7 @@ import { canSubmit, type RunOutcome } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
-import { apiRequest } from "./api.js";
+import { apiRequest, apiSession } from "./api.js";
 import {
   findTaskRoot,
   type LoadedTask,
@@ -31,12 +31,7 @@ import {
   runTask,
   saveRunResult,
 } from "./runner/run-task.js";
-import {
-  isRunResult,
-  SUPPORT_KINDS,
-  SUPPORT_LABELS,
-  type DebuggingRecord,
-} from "@stella/shared/tasks/submission";
+import { isRunResult, type SupportEvent } from "@stella/shared/tasks/submission";
 import { readFileInRoot, resolveFileInRoot, writeStateFile } from "./runner/files.js";
 import type { CiRunInput } from "./runner/steps.js";
 import {
@@ -48,6 +43,8 @@ import {
 import { readLastOutcome, resolveEditFiles } from "./task-guide.js";
 import { showTaskPanel, showTaskReadme, taskReadmeRoot } from "./task-panel.js";
 import { setCurrentTask } from "./task-status.js";
+import { registerSubmissionForms, showSubmissionForm } from "./submission-form.js";
+import type { SubmissionDraft } from "./submission-form-view.js";
 
 let running = false;
 
@@ -363,69 +360,59 @@ async function submitTaskCommand(
     if (mode === "consult" && canSubmit(result))
       throw new Error("手元の確認が通っています。「提出」を使ってください");
     const saved = await readSubmissionNotes(root);
-    const explanation = await vscode.window.showInputBox({
-      title: mode === "consult" ? "講師に相談" : "課題の提出",
-      prompt: mode === "consult" ? "困っていること・試したこと" : "実装した内容と判断の理由",
-      value: saved?.explanation ?? "",
-      ignoreFocusOut: true,
-    });
-    if (explanation === undefined) return;
-    let debuggingRecord: DebuggingRecord | undefined;
-    if (loaded.manifest.kind === "debug") {
-      debuggingRecord = { reproduction: "", expected: "", cause: "", fix: "", regression: "" };
-      const labels = {
-        reproduction: "再現手順",
-        expected: "期待した結果と実際の結果",
-        cause: "原因",
-        fix: "変更した箇所と修正",
-        regression: "回帰確認",
-      };
-      for (const key of Object.keys(labels) as (keyof DebuggingRecord)[]) {
-        const value = await vscode.window.showInputBox({
-          title: "修正課題の記録",
-          prompt: labels[key],
-          value: saved?.debuggingRecord?.[key] ?? "",
-          ignoreFocusOut: true,
-          validateInput: (v) =>
-            mode === "submit" && !v.trim() ? "記録を入力してください" : undefined,
-        });
-        if (value === undefined) return;
-        debuggingRecord[key] = value;
+    const session = apiSession();
+    const notesFor = async (draft: SubmissionDraft) => {
+      const support: SupportEvent[] = [...(saved?.support ?? [])];
+      for (const event of await readRecordedSupport(root)) {
+        if (
+          !support.some(
+            (item) =>
+              item.kind === event.kind && item.at === event.at && item.detail === event.detail,
+          )
+        )
+          support.push(event);
       }
-    }
-    const recorded = await readRecordedSupport(root);
-    const choices = await vscode.window.showQuickPick(
-      SUPPORT_KINDS.map((kind) => ({
-        label: SUPPORT_LABELS[kind],
-        supportKind: kind,
-        picked: saved?.support.some((e) => e.kind === kind) ?? false,
-      })),
+      return { ...draft, support };
+    };
+    const save = async (draft: SubmissionDraft) => {
+      const notes = await notesFor(draft);
+      await writeStateFile(root, "submission-notes.json", `${JSON.stringify(notes, null, 2)}\n`);
+    };
+    showSubmissionForm(
       {
-        title: "この課題で使った支援を選んでください（参照資料だけなら選択不要）",
-        canPickMany: true,
-        ignoreFocusOut: true,
+        key: root,
+        title: loaded.manifest.title,
+        mode,
+        debug: loaded.manifest.kind === "debug",
+        initial: saved,
       },
-    );
-    if (choices === undefined) return;
-    const support = [...recorded];
-    for (const choice of choices)
-      if (!support.some((e) => e.kind === choice.supportKind))
-        support.push({
-          kind: choice.supportKind,
-          at: new Date().toISOString(),
-          detail: "受講者の申告",
-        });
-    if (mode === "consult")
-      support.push({
-        kind: "instructor",
-        at: new Date().toISOString(),
-        detail: CONSULT_SUPPORT_DETAIL,
-      });
-    const notes = { explanation, ...(debuggingRecord ? { debuggingRecord } : {}), support };
-    await writeStateFile(root, "submission-notes.json", `${JSON.stringify(notes, null, 2)}\n`);
-    const row = await sendTaskSubmission(root, mode, notes);
-    void vscode.window.showInformationMessage(
-      `${mode === "consult" ? "講師に相談を送りました" : "課題を提出しました"} (${row.attempt} 回目)。レビューの結果は Web で確認できます`,
+      {
+        save,
+        submit: async (draft) => {
+          if (!workspaceRoots().some((owner) => isInside(root, owner)))
+            throw new Error("ワークスペース内の課題フォルダーを開いてください");
+          if (
+            vscode.workspace.textDocuments.some(
+              (document) =>
+                document.isDirty &&
+                document.uri.scheme === "file" &&
+                isInside(document.uri.fsPath, root),
+            )
+          )
+            throw new Error("保存していない変更があります。保存してもう一度確認してください");
+          const notes = await notesFor(draft);
+          if (mode === "consult")
+            notes.support.push({
+              kind: "instructor",
+              at: new Date().toISOString(),
+              detail: CONSULT_SUPPORT_DETAIL,
+            });
+          const row = await sendTaskSubmission(root, mode, notes, session);
+          void vscode.window.showInformationMessage(
+            `${mode === "consult" ? "講師に相談を送りました" : "課題を提出しました"} (${row.attempt} 回目)。レビューの結果は Web で確認できます`,
+          );
+        },
+      },
     );
   } catch (e) {
     void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
@@ -514,6 +501,7 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
 }
 
 export function registerTaskCommands(context: vscode.ExtensionContext): void {
+  registerSubmissionForms(context);
   const output = vscode.window.createOutputChannel("STELLA 実行ログ");
   context.subscriptions.push(
     output,

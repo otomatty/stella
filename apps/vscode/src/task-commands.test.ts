@@ -30,6 +30,7 @@ const vscodeMock = vi.hoisted(() => ({
   setCurrentTask: vi.fn(),
   showTextDocument: vi.fn(),
   showInputBox: vi.fn(),
+  showSubmissionForm: vi.fn(),
 }));
 
 vi.mock("vscode", () => ({
@@ -93,6 +94,10 @@ vi.mock("./task-panel.js", () => ({
   taskReadmeRoot: () => state.readmeRoot,
 }));
 vi.mock("./task-status.js", () => ({ setCurrentTask: vscodeMock.setCurrentTask }));
+vi.mock("./submission-form.js", () => ({
+  registerSubmissionForms: vi.fn(),
+  showSubmissionForm: vscodeMock.showSubmissionForm,
+}));
 
 const { registerTaskCommands } = await import("./task-commands.js");
 
@@ -143,6 +148,37 @@ async function run(command: string, ...args: unknown[]): Promise<void> {
     ...args,
   );
 }
+
+describe("提出の振り返り画面", () => {
+  it("提出に入力欄を重ねず、下書きと自動記録した支援を保存する", async () => {
+    const root = await makeTask(staticTask, { "index.html": "<h1>今日の学習予定</h1>" });
+    state.folders = [root];
+    state.activeFile = path.join(root, "index.html");
+    await run("stella.runTask");
+    const support = [{ kind: "fixed-start", at: "2026-11-03T00:00:00.000Z" }];
+    await writeFile(path.join(root, ".stella", "support.json"), JSON.stringify(support));
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showInputBox).not.toHaveBeenCalled();
+    expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "見出しを変える", mode: "submit" }),
+      expect.anything(),
+    );
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      save: (draft: { explanation: string }) => Promise<void>;
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    await actions.save({ explanation: "見出しを変え、表示を確認しました。" });
+    const saved = JSON.parse(
+      await readFile(path.join(root, ".stella", "submission-notes.json"), "utf8"),
+    );
+    expect(saved.support).toEqual(support);
+    expect(saved.explanation).toBe("見出しを変え、表示を確認しました。");
+    state.dirtyDocs = [
+      { isDirty: true, uri: { scheme: "file", fsPath: state.activeFile }, save: async () => true },
+    ];
+    await expect(actions.submit({ explanation: "振り返り" })).rejects.toThrow("保存していない変更");
+  });
+});
 
 describe("stella.runTask", () => {
   it("課題フォルダーが無ければ案内だけ出す", async () => {

@@ -10,7 +10,7 @@ import {
 } from "./task-submission.js";
 import { apiRequest } from "./api.js";
 
-vi.mock("./api.js", () => ({ apiRequest: vi.fn() }));
+vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => 7 }));
 describe("確認した課題の提出", () => {
   let root: string;
   let fixture: Awaited<ReturnType<typeof submissionFixture>>;
@@ -111,6 +111,7 @@ describe("確認した課題の提出", () => {
       "/api/submissions",
       {
         method: "POST",
+        session: 7,
         body: expect.objectContaining({
           taskId: fixture.input.taskId,
           explanation: notes.explanation,
@@ -118,5 +119,6 @@ describe("確認した課題の提出", () => {
         }),
       },
     ]);
+    expect(vi.mocked(apiRequest).mock.calls[0]?.[1]).toEqual({ session: 7 });
   });
 });

@@ -1216,7 +1216,8 @@
  * `@layer` の外に置いて素の CSS 同士で勝負させる。
  * スライド (.sf-slide) は pptx と同じ白キャンバスのままなので対象にしない。
  */
-.dark :is(.prose-lms, .prose) {
+.dark :is(.prose-lms, .prose),
+.code-viewer-bg {
   & .hljs {
     color: #c9d1d9;
     background: none;

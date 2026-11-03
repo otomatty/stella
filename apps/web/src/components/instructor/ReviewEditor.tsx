@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useMemo,
   type ComponentProps,
   type ReactNode,
 } from "react";
@@ -50,6 +51,7 @@ import type { Tenant } from "@/data/types";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
+import { highlightSubmission } from "@/lib/submission-highlight";
 import { AiReviewPanel } from "./AiReviewPanel";
 import { CiRunPanel } from "./CiRunPanel";
 import { CommentTemplatePicker } from "./CommentTemplatePicker";
@@ -228,6 +230,18 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     })();
   }, [submission, update]);
 
+  const sourceCode = submission?.taskId
+    ? (taskDetail?.taskFiles?.find((file) => file.path === selectedFile)?.text ?? "")
+    : (submission?.codeLines.join("\n") ?? "");
+  const fallbackLanguage = submission?.taskId
+    ? undefined
+    : (submission?.gradingSummary?.language ?? "javascript");
+  const sourceFilename = submission?.taskId ? selectedFile : "";
+  const codeLines = useMemo(
+    () => highlightSubmission(sourceCode, sourceFilename, fallbackLanguage),
+    [sourceCode, sourceFilename, fallbackLanguage],
+  );
+
   if (!submissionId || !submission) {
     return (
       <div className="p-7 text-center text-ink-3">
@@ -307,9 +321,6 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
     }
   };
 
-  const codeLines = submission.taskId
-    ? (taskDetail?.taskFiles?.find((f) => f.path === selectedFile)?.text ?? "").split("\n")
-    : submission.codeLines;
   // 提出時の課題・実行結果・記録は一覧に載らないので、詳細 (taskDetail) から読む。
   const taskText = taskDetail?.taskSnapshot?.files["README.md"];
   const taskDescription = taskText
@@ -516,7 +527,14 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
                   >
                     {lineNum}
                   </div>
-                  <div className="flex-1 whitespace-pre">{syntax(line)}</div>
+                  <code className="flex-1 whitespace-pre">
+                    {line.map((segment, index) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: トークンの位置が同一性
+                      <span key={index} className={segment.className || undefined}>
+                        {segment.text}
+                      </span>
+                    ))}
+                  </code>
                   {isCommented ? (
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 code-comment-indicator text-[10px] px-1.5 py-[1px] rounded-lg font-semibold">
                       レビュー
@@ -886,40 +904,3 @@ const SummarySection = ({ title, children }: { title: string; children: ReactNod
 const TabTrigger = (props: ComponentProps<typeof TabsTrigger>) => (
   <TabsTrigger {...props} className="flex-1 justify-center py-2.5 text-xs" />
 );
-
-function syntax(line: string): ReactNode {
-  type Part = { t: string; cls: string | null };
-  const patterns: Array<[RegExp, string]> = [
-    [/\/\/[^\n]*/g, "tok-com"],
-    [/"[^"]*"/g, "tok-str"],
-    [/\b(const|let|var|function|if|else|for|return|new|class|this|of)\b/g, "tok-kw"],
-    [/\b(true|false|null|undefined)\b/g, "tok-num"],
-    [/\b\d+\b/g, "tok-num"],
-  ];
-  let parts: Part[] = [{ t: line, cls: null }];
-  for (const [re, cls] of patterns) {
-    parts = parts.flatMap<Part>((p) => {
-      if (p.cls) return [p];
-      const out: Part[] = [];
-      let last = 0;
-      p.t.replace(re, (m, i: number) => {
-        if (i > last) out.push({ t: p.t.slice(last, i), cls: null });
-        out.push({ t: m, cls });
-        last = i + m.length;
-        return m;
-      });
-      if (last < p.t.length) out.push({ t: p.t.slice(last), cls: null });
-      return out.length ? out : [p];
-    });
-  }
-  return parts.map((p, i) =>
-    p.cls ? (
-      // biome-ignore lint/suspicious/noArrayIndexKey: ハイライト分割は位置が同一性
-      <span key={i} className={p.cls}>
-        {p.t}
-      </span>
-    ) : (
-      p.t
-    ),
-  );
-}

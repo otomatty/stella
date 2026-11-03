@@ -57,6 +57,7 @@ export function canSubmitExercise(assignmentId: string | undefined): boolean {
 export async function submitPassedExercise(
   assignmentId: string,
   explanation: string,
+  session?: number,
 ): Promise<number> {
   if (!canSubmitExercise(assignmentId) || !lastAttempt) {
     throw new Error("確認が通った課題がありません。先に採点を実行してください");
@@ -76,6 +77,7 @@ export async function submitPassedExercise(
   const res = await apiRequest<SubmissionResponse>("/api/submissions", {
     method: "POST",
     body: { ...body, priority: "normal", explanation: explanation.trim() },
+    ...(session === undefined ? {} : { session }),
   });
   return res.row.attempt;
 }
