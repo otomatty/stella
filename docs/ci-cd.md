@@ -8,7 +8,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify` ジョブ（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）と `core-loop` ジョブ（E2E スモーク）の 2 本 |
 | `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 非公開 R2 の確認 → `ANTHROPIC_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:narrator → deploy:health:check |
-| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 |
+| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` をビルドして GitHub Releases（タグ `vscode-v<version>`）に添付 → 未掲載の版だけ Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
 `uses: ./.github/workflows/ci.yml` で呼ぶ。3 つのワークフローに同じ手順を書き写すと、
@@ -72,7 +72,7 @@ seed は `packages/content/courses/<slug>/` を正本として各講座を D1 �
 バージョンは手動採番（自動 bump はしない）。同じバージョンのまま再度マージした場合は既存 Release の `.vsix` と本文を上書きする（本文の commit がビルド元。タグは初回リリース時のコミットを指したままなので、タグと実体を一致させたいならバージョンを上げる）。
 トリガは `main` への push のみ（`workflow_dispatch` は付けない。任意の ref から未マージのコードでリリースを作れてしまうため）。やり直しは Actions の Re-run で行う。
 `.vsix` を出す前に `ci.yml` を `scope: code`（typecheck / test）で呼んで通す（`deploy.yml` の検証ゲートは同じ push で並走するだけで、このジョブを止められないため）。
-受講者への配布は Visual Studio Marketplace に寄せる（Web の「VS Code で開く」で VS Code がインストールを尋ねる。受講者に `.vsix` を配らない）。Marketplace への公開は人が行い、このワークフローからは publish しない（手順は `apps/vscode/README.md` の「Marketplace 公開」）。Release の `.vsix` は控え。
+受講者への配布は Visual Studio Marketplace に寄せる（Web の「VS Code で開く」で VS Code がインストールを尋ねる。受講者に `.vsix` を配らない）。Marketplace への公開もこのワークフローが行う。Release に付けた `.vsix` を `vsce publish --oidc --packagePath` で出し、同じ版は `--skip-duplicate` で飛ばす。認証は GitHub Actions の OIDC で、PAT は置かない。初回だけ、publisher `saedgewell` の Trusted Publishing に owner `otomatty`、repository `stella`、workflow `release-vscode.yml`、environment なしを登録する（手順は `apps/vscode/README.md` の「Marketplace 公開」）。Release の `.vsix` は控え。
 
 ## 必須ステータスチェック設定
 

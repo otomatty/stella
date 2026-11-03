@@ -1,6 +1,7 @@
 name: Release VS Code Extension
 
-# apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付する。
+# apps/vscode が main に入ったら .vsix をビルドして GitHub Releases に添付し、
+# その版が Marketplace に無ければ Trusted Publishing（vsce --oidc）で公開する。
 on:
   push:
     branches: [main]
@@ -28,6 +29,8 @@ jobs:
     name: package .vsix → GitHub Release
     needs: verify
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -46,7 +49,7 @@ jobs:
         working-directory: apps/vscode
         run: |
           bun run build
-          bunx @vscode/vsce package --no-dependencies --allow-missing-repository
+          bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
       - name: Read version
         id: meta
@@ -76,3 +79,35 @@ jobs:
               --title "VS Code 拡張 $TAG" \
               --notes "$NOTES"
           fi
+
+  # 公開だけが OIDC トークンを要求できる。bun install や build と同じジョブに置くと、
+  # それらの処理からも Trusted Publishing のトークンを取れてしまう。
+  publish:
+    name: publish to Marketplace
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Release に付いた VSIX だけを取る。リポジトリのビルドは走らせない。
+      # 同じ版は Marketplace が拒否する。--skip-duplicate は既掲載なら成功で戻る。
+      # 公開できるのは、publisher saedgewell の Trusted Publishing に
+      # otomatty / stella / release-vscode.yml（environment なし）が登録されているとき。
+      - name: Download the release VSIX
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: gh release download "vscode-v${VERSION}" --pattern "stella-lms-*.vsix" --dir vsix
+
+      - name: Publish to Marketplace
+        working-directory: vsix
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: bunx @vscode/vsce@4.1.0 publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate

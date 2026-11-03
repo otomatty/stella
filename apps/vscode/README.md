@@ -131,21 +131,21 @@ bun run package
 
 `package` は `vsce package --no-dependencies --readme-path MARKETPLACE.md` を回し、`stella-lms-<version>.vsix` を作る。コマンドパレットの **Extensions: Install from VSIX...** で選ぶ。入れた拡張は本番へつなぐので、ローカルの API で確かめるときはユーザー設定で `stella.serverUrl` / `stella.webUrl` を localhost にする。
 
-## Marketplace 公開（手順のみ）
+## Marketplace 公開
 
 受講者への配布は Visual Studio Marketplace に寄せる。VS Code は、入っていない拡張のディープリンク（`vscode://saedgewell.stella-lms/...`）を受けると Marketplace からのインストールを尋ねる — Marketplace に無い拡張では何も起きない。publisher は `saedgewell`、拡張名は `stella-lms`（拡張 ID `saedgewell.stella-lms`、Marketplace の表示名は `STELLA 研修`）。publisher `stella`、拡張名 `stella`、表示名 `STELLA` はいずれも Marketplace で使用中。アクティビティバーのタイトルは `STELLA` のまま。Marketplace の拡張は誰でも入れられる公開物になる（接続できるのは STELLA のアカウントがある人だけ）。VSIX で入れた旧 ID `stella.stella` は別の拡張なので、この版には更新されない。Marketplace から入れ直す。
 
 Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
 
-公開は人が行う（CI からは公開しない）。認証は **Microsoft Entra ID**（`vsce --azure-credential`）で行い、Azure DevOps の Personal Access Token（PAT）は使わない — vsce が使うグローバルな PAT は 2026-12-01 に Azure DevOps から廃止される。長く使う秘密をどこにも置かずに済む。
+公開は GitHub Actions が行う。`apps/vscode` の変更が main に入ると、`release-vscode.yml` が検証のあと VSIX を GitHub Release に添付し、その版が Marketplace に無ければ `vsce publish --oidc --packagePath` で公開する。認証は OpenID Connect の Trusted Publishing で、PAT はリポジトリに置かない。vsce が使うグローバルな PAT は 2026-12-01 に Azure DevOps から廃止される。同じ版は `--skip-duplicate` で飛ばし、Release の VSIX だけを上書きする。新しい版を出すときは `package.json` の `version` を上げる。
 
 **初回だけ:**
 
 1. [Marketplace の管理画面](https://marketplace.visualstudio.com/manage) に、公開に使う Microsoft Entra ID のアカウントでサインインし、publisher ID `saedgewell`、表示名 `STELLA` を作る。ID はあとから変えられない。`package.json` の `publisher` と `@stella/shared/vscode/uris` の `VSCODE_EXT_ID`（`saedgewell.stella-lms`）を合わせる。
 2. 公開する人を publisher の **Members** に足す（Contributor 以上）。publisher を作ったアカウントは最初から Owner。人が替わったらここで足し外しする（秘密の受け渡しは要らない）。
-3. 公開する端末に [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) を入れる。vsce は 2.26.1 以降（`bunx @vscode/vsce` は最新を使う）。
+3. 同じ管理画面で publisher `saedgewell` の **Trusted Publishing** を1件作る。Repository owner は `otomatty`、Repository は `stella`、Workflow は `release-vscode.yml`、Environment は空にする。ワークフローは GitHub の environment を使わない。
 
-**公開のたび:**
+**ワークフローが使えないとき**は、公開する人の端末から出す。vsce は 2.26.1 以降（`bunx @vscode/vsce` は最新を使う）。
 
 ```bash
 az login                      # publisher のメンバーの Entra ID アカウントで
@@ -157,7 +157,7 @@ bunx @vscode/vsce publish --no-dependencies --readme-path MARKETPLACE.md --azure
 
 `--azure-credential` は Azure の既定の資格情報（`az login` のサインインなど）で Marketplace に認証する。`verify-pat` が通らないときは、サインインしたアカウントが publisher の Members にいるか、`az login` が想定のテナントに入っているかを確かめる（`az account show`）。
 
-同じ版は公開し直せないので、公開のたびに `package.json` の `version` を上げる。VSIX は main への push 時に GitHub Actions でビルドして GitHub Releases にも添付する（控え。受講者への配布経路ではない）。
+VSIX は GitHub Releases にも添付する（控え。受講者への配布経路ではない）。
 
 ### ヒント・解答例・解説とレビューの結果 (Issue #36)
 
