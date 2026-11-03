@@ -321,8 +321,8 @@ function BookImage({
 }
 
 /**
- * 定期・一時停止・止めたままの位置の移動・離脱のたびに位置を保存する。
- * `savedSec` はサーバーにある位置 (開いた直後の続きからの移動では送らない)。
+ * 定期・一時停止・止めたままの位置の移動・離脱のたびに、この画面で動いた位置を保存する。
+ * `savedSec` はサーバーにある位置 (開いた直後の続きからの移動や、動いていない位置は送らない)。
  */
 function usePositionSaving(
   element: () => HTMLMediaElement | null,
@@ -342,7 +342,9 @@ function usePositionSaving(
     const saveNow = () => {
       clearTimeout(seekTimer);
       seekTimer = undefined;
-      if (media.currentTime > 0) {
+      // この画面で位置が動いたときだけ送る。止めたまま触っていない画面を隠しただけで送ると、
+      // その間に別の端末で進めた位置を古い位置で上書きしてしまう。
+      if (media.currentTime > 0 && Math.abs(media.currentTime - sent.current) >= 0.1) {
         save.current(media.currentTime);
         sent.current = media.currentTime;
       }
@@ -369,7 +371,7 @@ function usePositionSaving(
       media.removeEventListener("pause", saveNow);
       media.removeEventListener("seeked", onSeeked);
       document.removeEventListener("visibilitychange", onHidden);
-      if (!media.paused || seekTimer !== undefined) saveNow();
+      saveNow();
     };
   }, [element]);
 }

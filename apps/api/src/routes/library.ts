@@ -990,21 +990,26 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
     const video = input.videoSec ?? null;
     const completed = input.completed === undefined ? null : Number(input.completed);
     const db = c.env.DB;
-    // 端末の時刻が保存済みより古い送信 (再送・別の端末の遅れた送信) は位置を巻き戻さない。
-    const newer = "excluded.client_updated_at >= library_reader_states.client_updated_at";
+    // 項目ごとに、端末の時刻が保存済みより古い送信 (再送・別の端末の遅れた送信) では巻き戻さない。
+    // 送らなかった項目の時刻は 0 で入れるので、ほかの項目の時刻を進めない。
+    const field = (column: string, clock: string) =>
+      `${column} = CASE WHEN excluded.${clock} > 0 AND excluded.${clock} >= library_reader_states.${clock}
+        THEN excluded.${column} ELSE library_reader_states.${column} END,
+      ${clock} = max(library_reader_states.${clock}, excluded.${clock})`;
+    const at = (value: unknown) => (value === null ? 0 : input.clientUpdatedAt);
     const allDone = `NOT EXISTS (SELECT 1 FROM library_chapters ch WHERE ch.tenant_id = ? AND ch.book_id = ? AND ch.revision = ?
       AND NOT EXISTS (SELECT 1 FROM library_reader_states r WHERE r.tenant_id = ch.tenant_id AND r.profile_id = ? AND r.book_id = ch.book_id
         AND r.chapter_id = ch.chapter_id AND r.completed = 1))`;
     await db.batch([
       db
         .prepare(
-          `INSERT INTO library_reader_states (tenant_id, profile_id, book_id, chapter_id, audio_sec, video_sec, completed, client_updated_at, updated_at)
-          VALUES (?, ?, ?, ?, coalesce(?, 0), coalesce(?, 0), coalesce(?, 0), ?, ?)
+          `INSERT INTO library_reader_states (tenant_id, profile_id, book_id, chapter_id, audio_sec, video_sec, completed,
+            audio_client_at, video_client_at, completed_client_at, updated_at)
+          VALUES (?, ?, ?, ?, coalesce(?, 0), coalesce(?, 0), coalesce(?, 0), ?, ?, ?, ?)
           ON CONFLICT (tenant_id, profile_id, book_id, chapter_id) DO UPDATE SET
-            audio_sec = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.audio_sec ELSE library_reader_states.audio_sec END,
-            video_sec = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.video_sec ELSE library_reader_states.video_sec END,
-            completed = CASE WHEN ${newer} AND ? IS NOT NULL THEN excluded.completed ELSE library_reader_states.completed END,
-            client_updated_at = max(library_reader_states.client_updated_at, excluded.client_updated_at),
+            ${field("audio_sec", "audio_client_at")},
+            ${field("video_sec", "video_client_at")},
+            ${field("completed", "completed_client_at")},
             updated_at = excluded.updated_at`,
         )
         .bind(
@@ -1015,11 +1020,10 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
           audio,
           video,
           completed,
-          input.clientUpdatedAt,
+          at(audio),
+          at(video),
+          at(completed),
           now,
-          audio,
-          video,
-          completed,
         ),
       db
         .prepare(

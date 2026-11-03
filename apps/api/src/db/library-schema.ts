@@ -167,7 +167,9 @@ export const libraryReaderStates = sqliteTable(
     audioSec: real("audio_sec").notNull().default(0),
     videoSec: real("video_sec").notNull().default(0),
     completed: integer("completed").notNull().default(0),
-    clientUpdatedAt: integer("client_updated_at").notNull(),
+    audioClientAt: integer("audio_client_at").notNull().default(0),
+    videoClientAt: integer("video_client_at").notNull().default(0),
+    completedClientAt: integer("completed_client_at").notNull().default(0),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [

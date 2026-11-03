@@ -99,7 +99,7 @@ describe("library migration to book packages (0070)", () => {
       "INSERT INTO library_shelf_entries (tenant_id,profile_id,book_id,created_at,updated_at) VALUES ('a','owner','book',1,1)",
     );
     db.exec(
-      "INSERT INTO library_reader_states (tenant_id,profile_id,book_id,chapter_id,client_updated_at,updated_at) VALUES ('a','owner','book','ch01',1,1)",
+      "INSERT INTO library_reader_states (tenant_id,profile_id,book_id,chapter_id,updated_at) VALUES ('a','owner','book','ch01',1)",
     );
     expect(() =>
       db.exec("INSERT INTO library_r2_purges (prefix,created_at) VALUES ('other/a/',1)"),

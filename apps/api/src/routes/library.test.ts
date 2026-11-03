@@ -533,6 +533,28 @@ describe("reading positions", () => {
     expect((await save("nope", { completed: true, clientUpdatedAt: 1 })).status).toBe(404);
   });
 
+  it("keeps a delayed update to one field when a newer update to another field arrived first", async () => {
+    const { plan } = await importBook();
+    const save = (body: unknown) =>
+      call(`/api/library/books/${plan.bookId}/chapters/ch01/state`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+    // 「読み終えた」(1000) より後の音声の保存 (2000) が先に届く。
+    await save({ audioSec: 40, clientUpdatedAt: 2000 });
+    await save({ completed: true, clientUpdatedAt: 1000 });
+    // 動画も音声とは別に数える。
+    await save({ videoSec: 7, clientUpdatedAt: 1500 });
+    // それぞれの項目の古い送信は、その項目だけを戻さない。
+    await save({ audioSec: 3, completed: false, clientUpdatedAt: 1200 });
+    const detail = await json<LibraryBookDetail>(await call(`/api/library/books/${plan.bookId}`));
+    expect(detail.chapters[0]?.state).toMatchObject({
+      audioSec: 40,
+      videoSec: 7,
+      completed: false,
+    });
+  });
+
   it("does not move the resume chapter back on a delayed send from another device", async () => {
     const { plan } = await importBook();
     const open = (chapter: string, at: number) =>

@@ -88,7 +88,7 @@ zip はサーバーで展開しない（Workers のメモリ 128MB・要求本�
 | `library_revision_files` | 版ごとの「zip の中のパス → ファイル」 |
 | `library_chapters` | 版ごとの章 (id・順番・題・本文/音声/動画のパス) |
 | `library_shelf_entries` | 本人の読書状態・お気に入り・タグ・最後に開いた章 |
-| `library_reader_states` | 本人×章の音声・動画の位置と済みの印。端末の時刻 (`client_updated_at`) より古い送信は巻き戻さない |
+| `library_reader_states` | 本人×章の音声・動画の位置と済みの印。項目ごとの端末の時刻 (`audio_client_at`・`video_client_at`・`completed_client_at`) より古い送信は、その項目だけを巻き戻さない |
 | `library_r2_purges` | R2 から消す接頭辞 (本 1 冊かファイル 1 つ) |
 
 親子は `(tenant_id, id)` の複合外部キーでテナントを跨がない。多くの行は JSON の配列を 1 つの値として渡して 1 文で書く（D1 の 1 文 100 変数の制限）。

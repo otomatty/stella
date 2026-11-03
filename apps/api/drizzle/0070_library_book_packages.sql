@@ -173,7 +173,11 @@ CREATE TABLE library_reader_states (
   audio_sec REAL NOT NULL DEFAULT 0,
   video_sec REAL NOT NULL DEFAULT 0,
   completed INTEGER NOT NULL DEFAULT 0,
-  client_updated_at INTEGER NOT NULL,
+  -- 項目ごとに、最後に決めた端末の時刻 (0 = まだ送られていない)。古い送信はその項目だけを巻き戻さない
+  -- (位置の保存が先に届いても、遅れて届いた「読み終えた」は捨てない)。
+  audio_client_at INTEGER NOT NULL DEFAULT 0,
+  video_client_at INTEGER NOT NULL DEFAULT 0,
+  completed_client_at INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (tenant_id, profile_id, book_id, chapter_id),
   FOREIGN KEY (tenant_id, book_id) REFERENCES library_books (tenant_id, id) ON DELETE CASCADE,
