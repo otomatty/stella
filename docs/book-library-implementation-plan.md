@@ -1,7 +1,7 @@
 # STELLA 本棚の実装計画
 
 作成日 2026年10月11日 / 改訂 2026年11月3日  
-状態 R1〜R4 実装済み、R5 (zip を作るスキル) は試作から  
+状態 R1〜R4 実装済み、R5 (zip を作るスキル) は初版 (`.claude/skills/stella-book`)。本物の音声での 1 章の試作と確認が残り (#148)  
 [設計](book-library-design.md) / [開発・検証の手順](book-library-development.md)
 
 2026年11月の見直しで、本棚は「PDF を STELLA が処理する」形から「利用者が作った zip を STELLA が保管・配信する」形に変えた。
@@ -14,7 +14,7 @@
 | R2 | zip の取り込み (ブラウザで読む・続きから・更新・multipart)、表紙のサムネイル、棚の見た目 | 済み |
 | R3 | 読む・聴く・観る画面、音声・動画の位置と済みの印の保存 | 済み |
 | R4 | PDF 処理の退役 (narrator・book-core・PDF の API とテーブル・secret・deploy の step) | 済み (本番の Worker は次のデプロイで消える) |
-| R5 | zip を作る Claude のスキル `stella-book` (本文・朗読・対話の解説動画・梱包) | 動画の試作から |
+| R5 | zip を作る Claude のスキル `stella-book` (本文・朗読・対話の解説動画・梱包) | 初版。本物の音声での試作と確認が残り (#148) |
 
 ## 2 R5 zip を作るスキル
 
@@ -30,6 +30,20 @@
 - 実写風の AI 映像は使わない。本の図版は切り貼りせず描き直す。
 
 梱包では book.json を形式どおりに書き、`planPackageFiles` と同じ規則 (パス・拡張子・上限) を満たすことを確かめてから zip にする。音声・動画は無圧縮で入れる。
+
+### スキルの初版 (2026-11-03)
+
+- 置き場は `.claude/skills/stella-book/`。このリポジトリで Claude Code を開くとプロジェクトのスキルとして読み込まれる。
+  claude.ai で使うときは、同じフォルダーをスキルとしてプロフィールに保存する。
+- `SKILL.md` (手順)・`references/storyboard_guide.md` (絵コンテの書き方)・`scripts/`。
+  - `book_manifest.py`・`make_cover.mjs`・`check_storyboard.py`・`synth_lines.py`
+  - `build_video.mjs` と `video.css`・`snapshot_times.py`・`pack_book.py`
+  - `package.json` (HyperFrames 0.9.7・GSAP 3.13.0・Noto Sans JP 5.2.8 に固定)
+- 梱包の検査 (`pack_book.py`) は Python で `parseBookManifest`・`planPackageFiles` と同じ規則を持つ。
+  ずれは `packages/shared/src/library/stella-book-skill.test.ts` が検査するので、形式の規則を変えたらスキルも直す。
+- 本文の HTML コメント (文字起こしのページ印) と、章の題名と同じ先頭の見出しは梱包で外す (本棚では文字のまま出る・題名が重なるため)。
+- 試験用の音 (`synth_lines.py --mock`) で 1 章 (11 分) を通し、8 分ほどで H.264・AAC・faststart の MP4 (約 38MB) になり、
+  本棚に取り込んで途中から再生できることを確かめた。本物の音声での試作は Gemini の API キーが要る (#148)。
 
 ## 3 残りと確かめていないこと
 

@@ -112,7 +112,8 @@
       "includes": [
         "**/apps/api/scripts/**",
         "**/packages/content/scripts/**",
-        "**/packages/shared/scripts/**"
+        "**/packages/shared/scripts/**",
+        "**/.claude/skills/*/scripts/**"
       ],
       "linter": {
         "rules": {

@@ -1,0 +1,10 @@
+{
+  "name": "stella-book-video",
+  "private": true,
+  "description": "stella-book の解説動画を組み立てる道具 (HyperFrames・GSAP・Noto Sans JP)。版を固定する。",
+  "dependencies": {
+    "@fontsource/noto-sans-jp": "5.2.8",
+    "gsap": "3.13.0",
+    "hyperframes": "0.9.7"
+  }
+}
