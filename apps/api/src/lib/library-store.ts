@@ -53,9 +53,21 @@ export function orphanFileStatements(
   ];
 }
 
+/** discardPendingStatements の中で本の行を書き換える文の位置。 */
+const DISCARD_BOOK_UPDATE = 4;
+
+/**
+ * discardPendingStatements の batch の結果から、取り込みを本当に捨てたかを返す
+ * (署名・動きの時刻が合わず何もしなかったときは false)。
+ */
+export function discardedPending(results: D1Result[]): boolean {
+  return (results[DISCARD_BOOK_UPDATE]?.results?.length ?? 0) > 0;
+}
+
 /**
  * 取り込み中の版を捨てる。最初の版 (まだ読める版が無い) なら本ごと削除に回す。
  * `expectRevision` が今の取り込み中の版と違えば何もしない (別のタブが先に進めた)。
+ * 捨てたかは `discardedPending` で batch の結果から確かめる。
  */
 export function discardPendingStatements(
   db: D1Database,
@@ -126,7 +138,7 @@ export function discardPendingStatements(
           status = CASE WHEN current_revision = 0 THEN 'deleting' ELSE status END,
           pending_revision = NULL, pending_manifest = NULL, pending_signature = NULL,
           pending_thumb_file_id = NULL, pending_active_at = NULL, pending_bytes = 0, updated_at = ?
-        WHERE tenant_id = ? AND id = ? AND ${match}`,
+        WHERE tenant_id = ? AND id = ? AND ${match} RETURNING id`,
       )
       .bind(now, tenantId, bookId, expectRevision, expectSignature, inactiveBefore),
     ...orphanFileStatements(db, tenantId, bookId, now),

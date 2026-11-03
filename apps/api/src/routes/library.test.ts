@@ -94,7 +94,7 @@ function memoryBucket() {
       };
     },
   };
-  return { bucket: bucket as unknown as R2Bucket, objects };
+  return { bucket: bucket as unknown as R2Bucket, objects, uploads };
 }
 
 function crc32(data: Uint8Array): number {
@@ -689,6 +689,53 @@ describe("deleting and cleanup", () => {
         )
         .get(started.bookId),
     ).toEqual({ status: "importing", pending_revision: 1, pending_signature: "replaced" });
+  });
+
+  it("aborts the cancelled import's part uploads, but not those of an import that replaced it", async () => {
+    const files = bookFiles({ "audio/01.m4a": "0123456789abcdefghijklmnop" }); // 26 bytes > 16
+    const begin = async () => {
+      const started = await json<LibraryImportResponse>(await startImport(files));
+      const audio = started.files.find((slot) => slot.kind === "audio");
+      const { uploadId } = await json<{ uploadId: string }>(
+        await call(`/api/library/books/${started.bookId}/files/${audio?.fileId}/multipart`, {
+          method: "POST",
+        }),
+      );
+      return { started, uploadId };
+    };
+    const cancel = (started: LibraryImportResponse) =>
+      call(`/api/library/books/${started.bookId}/imports/${started.revision}`, {
+        method: "DELETE",
+      });
+
+    // 取り消しを読んだあと、捨てる直前に別のタブが置き換えた: 置き換えた側の分割送信は残す。
+    const first = await begin();
+    const realBatch = db.binding.batch.bind(db.binding);
+    let replaced = false;
+    env.DB = new Proxy(db.binding, {
+      get(target, property, receiver) {
+        if (property === "batch")
+          return async (statements: D1PreparedStatement[]) => {
+            if (!replaced) {
+              replaced = true;
+              db.sqlite
+                .prepare("UPDATE library_books SET pending_signature = 'other-tab' WHERE id = ?")
+                .run(first.started.bookId);
+            }
+            return realBatch(statements);
+          };
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    expect((await cancel(first.started)).status).toBe(200);
+    expect(storage.uploads.has(first.uploadId)).toBe(true);
+    env.DB = db.binding;
+
+    // ふつうの取り消しは分割送信も止める。
+    db.sqlite.exec("DELETE FROM library_books");
+    const second = await begin();
+    expect((await cancel(second.started)).status).toBe(200);
+    expect(storage.uploads.has(second.uploadId)).toBe(false);
   });
 
   it("keeps an import that was resumed or uploaded to recently, even if it started long ago", async () => {

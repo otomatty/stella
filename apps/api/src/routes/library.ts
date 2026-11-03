@@ -46,6 +46,7 @@ import { libraryAvailable } from "../lib/library-capabilities.js";
 import {
   bookPrefix,
   discardPendingStatements,
+  discardedPending,
   fileR2Key,
   orphanFileStatements,
 } from "../lib/library-store.js";
@@ -862,7 +863,7 @@ libraryRoute.delete("/api/library/books/:bookId/imports/:revision", async (c) =>
     )
       .bind(caller.tenantId, book.id)
       .all<{ r2_key: string; multipart_upload_id: string }>();
-    await c.env.DB.batch(
+    const results = await c.env.DB.batch(
       discardPendingStatements(
         c.env.DB,
         caller.tenantId,
@@ -872,6 +873,9 @@ libraryRoute.delete("/api/library/books/:bookId/imports/:revision", async (c) =>
         Date.now(),
       ),
     );
+    // 別のタブが置き換えていて捨てなかったときは、分割送信を止めない (置き換えた取り込みが
+    // 同じファイルの行と分割送信を使い続けていることがある)。
+    if (!discardedPending(results)) return c.json({ ok: true });
     for (const upload of uploads.results)
       await bucket
         .resumeMultipartUpload(upload.r2_key, upload.multipart_upload_id)
