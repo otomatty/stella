@@ -104,6 +104,8 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
   private state: LearningSidebarState = { kind: "loading" };
   private loadGeneration = 0;
   private messageToken = "";
+  private documentToken = "";
+  private webviewReady = false;
 
   constructor(
     private readonly auth: AuthStore,
@@ -112,11 +114,14 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
+    this.documentToken = "";
+    this.webviewReady = false;
     view.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, "media")],
     };
     const messages = view.webview.onDidReceiveMessage((message: unknown) => {
+      if (this.view !== view) return;
       void this.receive(message).catch((err: unknown) => {
         void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
       });
@@ -179,28 +184,36 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
 
   private render(): void {
     if (!this.view) return;
+    const initial = !this.documentToken;
+    if (!initial && !this.webviewReady) return;
     this.messageToken = randomBytes(18).toString("hex");
     const webview = this.view.webview;
     const resource = (name: string) =>
       webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", name)).toString();
     if (this.state.kind === "catalog") this.state.selection = this.selection;
-    webview.html = renderLearningSidebar(this.state, {
+    const html = renderLearningSidebar(this.state, {
       nonce: this.messageToken,
       cspSource: webview.cspSource,
       styleUri: resource("learning-sidebar.css"),
       scriptUri: resource("learning-sidebar.js"),
     });
+    if (initial) {
+      this.documentToken = this.messageToken;
+      webview.html = html;
+    } else {
+      // ライブリージョンを維持し、読み込み開始を既存文書内の変更として通知する。
+      void webview.postMessage({ type: "render", html });
+    }
   }
 
   private async receive(raw: unknown): Promise<void> {
-    if (
-      !raw ||
-      typeof raw !== "object" ||
-      !("token" in raw) ||
-      raw.token !== this.messageToken ||
-      !("action" in raw)
-    )
+    if (!raw || typeof raw !== "object" || !("token" in raw) || !("action" in raw)) return;
+    if (raw.action === "ready" && raw.token === this.documentToken) {
+      this.webviewReady = true;
+      this.render();
       return;
+    }
+    if (raw.token !== this.messageToken) return;
     // Webview からコマンド名・URL・教材の本文を受け取らない。
     const id = "id" in raw && typeof raw.id === "string" ? raw.id : undefined;
     if (raw.action === "refresh") return this.refresh();
@@ -233,6 +246,8 @@ export class LearningSidebarProvider implements vscode.WebviewViewProvider, vsco
   dispose(): void {
     this.loadGeneration += 1;
     this.messageToken = "";
+    this.documentToken = "";
+    this.webviewReady = false;
     this.view = undefined;
     this.catalog = [];
   }
