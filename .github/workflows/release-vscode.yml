@@ -110,4 +110,4 @@ jobs:
         working-directory: vsix
         env:
           VERSION: ${{ needs.release.outputs.version }}
-        run: bunx @vscode/vsce publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate
+        run: bunx @vscode/vsce@4.1.0 publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate
