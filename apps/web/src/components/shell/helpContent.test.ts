@@ -7,8 +7,8 @@ describe("findHelpTopic", () => {
   });
 
   it("静的ルートは末尾スラッシュの有無に関わらずマッチする", () => {
-    expect(findHelpTopic("/records")?.route).toBe("/records");
-    expect(findHelpTopic("/records/")?.route).toBe("/records");
+    expect(findHelpTopic("/certificates")?.route).toBe("/certificates");
+    expect(findHelpTopic("/certificates/")?.route).toBe("/certificates");
   });
 
   it("動的セグメントは任意の 1 セグメントにマッチする", () => {
@@ -28,6 +28,7 @@ describe("findHelpTopic", () => {
     // 受講者のステージ一覧はホームへ集約した (staff のステージ管理にはヘルプが無い)。
     expect(findHelpTopic("/stages")).toBeNull();
     expect(findHelpTopic("/review-queue")).toBeNull();
+    expect(findHelpTopic("/records")).toBeNull();
   });
 
   it("全トピックが具体的なパスから到達できる", () => {

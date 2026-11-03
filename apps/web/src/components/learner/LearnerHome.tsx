@@ -15,9 +15,7 @@
  *
  * ## 前の版から変えたこと
  *
- * - ホームは縦に長いダッシュボード (HUD・今日のプラン・縦一本のスキルマップ・
- *   次にやるリスト・KPI・提出履歴・学習時間・お知らせ・期限・AI) だった。今日の行動に
- *   直結しない記録は「学習の記録」(`/records`) へ移し、ここは今日の一手だけを残す
+ * - ホームは今日の一手だけを残す。提出と添削はレッスン画面、お知らせは通知から確認する
  * - 縦一本の「スキルマップ」(StagePath) はやめた。同じ星を 2 つの描き方で見せると、
  *   どちらが本物の現在地か迷う。現在地はツリーの脈打つ星と、ガイドの「次にやること」
  * - 「続きから」は 1 か所 (ガイドの主ボタン) に絞った。ツリーの現在地の星にも出るが、
@@ -51,6 +49,7 @@ import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
+import { SubmissionHistory } from "@/components/learner/SubmissionHistory";
 import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
   GuideSection,
@@ -71,14 +70,7 @@ import {
 import { startDestination } from "@/components/learner/tree/start-destination";
 import { isDevModeEnabled, revealsDevMap, subscribeDevMode } from "@/lib/dev-mode";
 import { buildHomeGuide, suggestedStageIds } from "@/lib/home-guide";
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Sparkles,
-  TrendingUp,
-} from "@/lib/icons";
+import { AlertTriangle, ChevronDown, ChevronUp, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import type { SkillCheckResult } from "@/lib/skill-check-api";
 import { buildTodayPlan } from "@/lib/today-plan";
@@ -702,22 +694,9 @@ export const LearnerHome = ({
                 />
               ) : null}
 
-              <button
-                type="button"
-                onClick={() => setPage("records")}
-                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left hover:bg-sunken"
-              >
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-ink-2">
-                  <TrendingUp size={13} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[12.5px] font-medium">学習の記録</span>
-                  <span className="block text-[11px] text-ink-3">
-                    学習のペース・学習時間・提出と添削・お知らせ
-                  </span>
-                </span>
-                <ChevronRight size={14} className="text-ink-4" />
-              </button>
+              {submissions.length > 0 ? (
+                <SubmissionHistory onOpenSubmission={onOpenSubmission} />
+              ) : null}
             </div>
           </>
         ) : (

@@ -8,24 +8,15 @@
 import type { AnnouncementRow, NotificationRow } from "@stella/shared/cms/types";
 import { apiFetch } from "./api-client";
 
-export interface ListAnnouncementsOpts {
-  tenantId: string;
-  /** ステージ単位のお知らせに絞る (未指定時はテナント全体 + 全ステージ)。 */
-  stageId?: string;
-  /** 取得件数の上限 (既定 20)。 */
-  limit?: number;
-}
-
-/** 公開順 (published_at 降順) でお知らせを取得する。 */
-export async function listAnnouncements(opts: ListAnnouncementsOpts): Promise<AnnouncementRow[]> {
-  const p = new URLSearchParams();
-  if (opts.stageId) p.set("stageId", opts.stageId);
-  if (opts.limit) p.set("limit", String(opts.limit));
-  const qs = p.toString();
-  const { rows } = await apiFetch<{ rows: AnnouncementRow[] }>(
-    `/api/announcements${qs ? `?${qs}` : ""}`,
-  );
-  return rows ?? [];
+/** 通知の有無によらず、現在の所属・受講登録で読めるお知らせを取得する。 */
+export async function listAnnouncements(
+  offset: number,
+  signal?: AbortSignal,
+): Promise<{
+  rows: AnnouncementRow[];
+  nextOffset: number | null;
+}> {
+  return apiFetch(`/api/announcements?limit=20&offset=${offset}`, { signal });
 }
 
 export interface CreateAnnouncementInput {

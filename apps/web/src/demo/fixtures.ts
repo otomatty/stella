@@ -5,7 +5,6 @@
 
 import type {
   AISuggestion,
-  Announcement,
   CompletionByStage,
   ReviewItem,
   RubricCriterion,
@@ -20,30 +19,6 @@ export const CURRENT_USER: User = {
   email: "tanaka@example.com",
   initials: "TS",
 };
-
-export const ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 1,
-    title: "第3期 課題提出期限を5/31まで延長します",
-    date: "4月17日",
-    by: "事務局",
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "堀江メンターによるライブQ&A (4/22 19:00) 開催予定",
-    date: "4月15日",
-    by: "運営",
-    unread: true,
-  },
-  {
-    id: 3,
-    title: "【重要】TypeScript 入門 教材の更新",
-    date: "4月12日",
-    by: "ステージ作成",
-    unread: false,
-  },
-];
 
 export const REVIEW_QUEUE: ReviewItem[] = [
   {

@@ -23,6 +23,8 @@ import {
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnnouncementFeed } from "./AnnouncementFeed";
 import { createAnnouncement } from "@/lib/notifications-api";
 import { cn } from "@/lib/utils";
 import type { NotificationRow, NotificationType } from "@stella/shared/cms/types";
@@ -121,7 +123,7 @@ export const NotificationCenter = ({
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full mt-2 w-[380px] max-h-[70vh] flex flex-col bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
+        <div className="fixed inset-x-4 top-[var(--shell-header-height)] mt-2 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-[380px] max-h-[70vh] flex flex-col bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
             <div className="text-[13px] font-semibold">通知</div>
             {unreadCount > 0 ? (
@@ -156,66 +158,77 @@ export const NotificationCenter = ({
             />
           ) : null}
 
-          <div className="overflow-y-auto">
-            {loading ? (
-              <SkeletonRows rows={3} className="px-4 py-4" />
-            ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
-                <Bell size={22} className="text-ink-4" />
-                <div className="text-[12.5px] text-ink-3">通知はありません</div>
-              </div>
-            ) : (
-              notifications.map((n) => {
-                const meta = TYPE_META[n.type] ?? TYPE_META.announcement;
-                const Icon = meta.icon;
-                return (
-                  <button
-                    type="button"
-                    key={n.id}
-                    onClick={() => {
-                      if (!n.read) onMarkRead(n.id);
-                      if (
-                        (n.type === "review_completed" || n.type === "review_comment") &&
-                        onOpenSubmission
-                      ) {
-                        const submissionId = n.payload?.submission_id;
-                        if (typeof submissionId === "string" && submissionId.length > 0) {
-                          onOpenSubmission(submissionId);
-                          setOpen(false);
+          <Tabs defaultValue="notifications" className="min-h-0 flex flex-col">
+            <TabsList className="shrink-0 px-2" aria-label="通知とお知らせ">
+              <TabsTrigger value="notifications">通知</TabsTrigger>
+              <TabsTrigger value="announcements">お知らせ</TabsTrigger>
+            </TabsList>
+            <TabsContent value="notifications" className="mt-0 overflow-y-auto">
+              {loading ? (
+                <SkeletonRows rows={3} className="px-4 py-4" />
+              ) : notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-1.5 py-10 text-center">
+                  <Bell size={22} className="text-ink-4" />
+                  <div className="text-[12.5px] text-ink-3">通知はありません</div>
+                </div>
+              ) : (
+                notifications.map((n) => {
+                  const meta = TYPE_META[n.type] ?? TYPE_META.announcement;
+                  const Icon = meta.icon;
+                  return (
+                    <button
+                      type="button"
+                      key={n.id}
+                      onClick={() => {
+                        if (!n.read) onMarkRead(n.id);
+                        if (
+                          (n.type === "review_completed" || n.type === "review_comment") &&
+                          onOpenSubmission
+                        ) {
+                          const submissionId = n.payload?.submission_id;
+                          if (typeof submissionId === "string" && submissionId.length > 0) {
+                            onOpenSubmission(submissionId);
+                            setOpen(false);
+                          }
                         }
-                      }
-                    }}
-                    className={cn(
-                      "w-full text-left flex gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken transition-colors",
-                      !n.read && "bg-brand-soft/40",
-                    )}
-                  >
-                    <div className={cn("shrink-0 mt-0.5", meta.tone)}>
-                      <Icon size={16} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-[12.5px] leading-snug truncate">
-                          {n.title}
+                      }}
+                      className={cn(
+                        "w-full text-left flex gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-sunken transition-colors",
+                        !n.read && "bg-brand-soft/40",
+                      )}
+                    >
+                      <div className={cn("shrink-0 mt-0.5", meta.tone)}>
+                        <Icon size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-[12.5px] leading-snug truncate">
+                            {n.title}
+                          </div>
+                          {!n.read ? (
+                            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-brand" />
+                          ) : null}
                         </div>
-                        {!n.read ? (
-                          <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-brand" />
+                        {n.body ? (
+                          <div className="text-[11.5px] text-ink-3 mt-0.5 line-clamp-2">
+                            {n.body}
+                          </div>
                         ) : null}
+                        <div className="text-[10.5px] text-ink-4 mt-1 flex items-center gap-1.5">
+                          <span>{meta.label}</span>
+                          <span>·</span>
+                          <span>{relativeTime(n.created_at)}</span>
+                        </div>
                       </div>
-                      {n.body ? (
-                        <div className="text-[11.5px] text-ink-3 mt-0.5 line-clamp-2">{n.body}</div>
-                      ) : null}
-                      <div className="text-[10.5px] text-ink-4 mt-1 flex items-center gap-1.5">
-                        <span>{meta.label}</span>
-                        <span>·</span>
-                        <span>{relativeTime(n.created_at)}</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
+                    </button>
+                  );
+                })
+              )}
+            </TabsContent>
+            <TabsContent value="announcements" className="mt-0 overflow-y-auto">
+              <AnnouncementFeed key={tenantId} />
+            </TabsContent>
+          </Tabs>
         </div>
       ) : null}
     </div>

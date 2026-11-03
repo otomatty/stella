@@ -65,6 +65,10 @@ notificationsRoute.get("/api/announcements", async (c) => {
     const { caller, db } = await getCaller(c);
     const stageId = c.req.query("stageId");
     const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+    const offset = Number(c.req.query("offset") ?? 0);
+    if (!Number.isInteger(limit) || limit < 1 || !Number.isSafeInteger(offset) || offset < 0) {
+      throw new ApiError("limit / offset は有効な整数で指定してください", 400);
+    }
     const isStaff = isStaffRole(caller.role);
 
     const conds = [eq(announcements.tenantId, caller.tenantId)];
@@ -83,9 +87,13 @@ notificationsRoute.get("/api/announcements", async (c) => {
       .select(A_COLS)
       .from(announcements)
       .where(and(...conds))
-      .orderBy(desc(announcements.publishedAt))
-      .limit(limit);
-    return c.json({ rows });
+      .orderBy(desc(announcements.publishedAt), desc(announcements.id))
+      .limit(limit + 1)
+      .offset(offset);
+    return c.json({
+      rows: rows.slice(0, limit),
+      nextOffset: rows.length > limit ? offset + limit : null,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

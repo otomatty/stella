@@ -144,14 +144,6 @@ export interface Stage {
  */
 export type Course = Stage;
 
-export interface Announcement {
-  id: number;
-  title: string;
-  date: string;
-  by: string;
-  unread: boolean;
-}
-
 export interface ReviewItem {
   id: string;
   student: string;

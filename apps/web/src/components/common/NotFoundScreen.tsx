@@ -8,7 +8,7 @@
 
 import { useContext } from "react";
 import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { Award, Book, Compass, Edit, HelpCircle, Home, TrendingUp, Users } from "@/lib/icons";
+import { Award, Book, Compass, Edit, HelpCircle, Home, Play, Users } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { StatusScreen, type StatusScreenLink } from "@/components/common/StatusScreen";
 import { AppShellContext } from "@/components/shell/app-shell-context";
@@ -42,7 +42,7 @@ export function linksForRole(role: Role, setPage: (page: string) => void): Statu
           icon: Compass,
           onSelect: () => setPage("dash"),
         },
-        { label: "学習の記録", icon: TrendingUp, onSelect: () => setPage("records") },
+        { label: "現在のレッスン", icon: Play, onSelect: () => setPage("lesson") },
         { label: "修了証", icon: Award, onSelect: () => setPage("cert") },
       ];
     default: {

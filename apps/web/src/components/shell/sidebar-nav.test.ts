@@ -36,14 +36,6 @@ describe("navForRole", () => {
     }
   });
 
-  it("学習の記録は受講者だけに、現在のレッスンの直後に出す", () => {
-    const items = ids("learner");
-    expect(items.indexOf("records")).toBe(items.indexOf("lesson") + 1);
-    for (const role of ["instructor", "admin"] as const) {
-      expect(ids(role)).not.toContain("records");
-    }
-  });
-
   it("発見教材は staff (講師 / 管理者) に出す (Phase 4)", () => {
     // 管理者は課題管理の直後。
     const admin = ids("admin");
@@ -70,9 +62,9 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("stage-grants");
   });
 
-  it("面談対策・殿堂 (廃止) はどのロールにも出さない", () => {
+  it("廃止した画面はどのロールにも出さない", () => {
     for (const role of ["learner", "instructor", "admin"] as const) {
-      for (const retired of ["interview-prep", "hall-of-fame", "hall-of-fame-admin"]) {
+      for (const retired of ["records", "interview-prep", "hall-of-fame", "hall-of-fame-admin"]) {
         expect(ids(role, "platform_admin") as string[]).not.toContain(retired);
       }
     }

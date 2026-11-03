@@ -23,7 +23,6 @@ import {
   Play,
   Shield,
   Sparkles,
-  TrendingUp,
   Users,
   UserPlus,
 } from "@/lib/icons";
@@ -36,7 +35,6 @@ export type NavId =
   | "library"
   | "dash"
   | "stages"
-  | "records"
   | "lesson"
   | "cert"
   | "review-queue"
@@ -65,7 +63,6 @@ const NAV: Record<Role, NavItem[]> = {
   learner: [
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
-    { id: "records", label: "学習の記録", icon: TrendingUp },
     { id: "cert", label: "修了証", icon: Award },
     { id: "library", label: "個人の本棚", icon: Book },
   ],
