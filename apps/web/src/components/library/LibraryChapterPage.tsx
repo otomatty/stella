@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -43,6 +43,42 @@ const SAVE_EVERY_MS = 15_000;
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 type Saver = (body: { audioSec?: number; videoSec?: number; completed?: boolean }) => void;
+
+interface ColumnBox {
+  left: number;
+  width: number;
+}
+
+/**
+ * 本文の列の画面上の位置と幅。固定した朗読のバーをこれに合わせる (サイドバーの開閉・
+ * 画面幅の変化で列が動くので、列と親の大きさを見張る)。
+ */
+function useColumnBox() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<ColumnBox | null>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const update = () => {
+      const rect = element.getBoundingClientRect();
+      setBox((current) =>
+        current && current.left === rect.left && current.width === rect.width
+          ? current
+          : { left: rect.left, width: rect.width },
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    if (element.parentElement) observer.observe(element.parentElement);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+  return { ref, box };
+}
 
 /** 位置の保存。端末の時刻を付け、古い送信でサーバーの位置を巻き戻さない。失敗は次の保存に任せる。 */
 function useChapterSaver(bookId: string, chapterId: string): Saver {
@@ -128,13 +164,17 @@ function ChapterView({
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [completed, setCompleted] = useState(chapter.state.completed);
+  const column = useColumnBox();
   const markCompleted = () => {
     setCompleted(true);
     save({ completed: true });
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 pb-32 md:p-6 md:pb-32">
+    <div
+      ref={column.ref}
+      className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 pb-32 md:p-6 md:pb-32"
+    >
       <nav className="flex items-center justify-between gap-3 text-sm" aria-label="章の移動">
         <Link
           to="/library/$bookId"
@@ -205,6 +245,7 @@ function ChapterView({
           bookTitle={book.title}
           authors={book.authors}
           coverUrl={book.coverUrl}
+          box={column.box}
           onPlay={() => videoRef.current?.pause()}
           onSave={(audioSec) => save({ audioSec })}
           onEnded={markCompleted}
@@ -362,11 +403,13 @@ function AudioBar({
   bookTitle,
   authors,
   coverUrl,
+  box,
   onPlay,
   onSave,
   onEnded,
 }: {
   ref: React.RefObject<HTMLAudioElement | null>;
+  box: ColumnBox | null;
   path: string;
   savedSec: number;
   title: string;
@@ -409,8 +452,12 @@ function AudioBar({
   }, [playing, title, bookTitle, authors, coverUrl]);
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-1.5 px-4 py-2.5">
+    // 画面の下に固定し、本文の列と同じ位置・幅に置く (サイドバーに重ならない)。右下の AI ボタンを避ける。
+    <div
+      className="fixed bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85"
+      style={box ? { left: box.left, width: box.width } : { left: 0, right: 0 }}
+    >
+      <div className="flex w-full flex-col gap-1.5 py-2.5 pl-4 pr-20 sm:pr-4 md:px-6">
         {/* 朗読はこの画面の本文そのものなので、本文が字幕の代わりになる。 */}
         {/* biome-ignore lint/a11y/useMediaCaption: 本文 (同じ画面) が朗読の書き起こし */}
         <audio

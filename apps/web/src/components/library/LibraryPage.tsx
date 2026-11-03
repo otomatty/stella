@@ -188,7 +188,7 @@ function Shelf() {
           <EmptyShelf filtered={filter !== "all"} onPick={() => input.current?.click()} />
         ) : null}
         {shelf && shelf.entries.length > 0 ? (
-          <div className="flex flex-col gap-8 rounded-xl bg-sunken/60 px-3 pb-4 pt-5 sm:px-5">
+          <div className="flex flex-col gap-9 rounded-2xl border border-border bg-card px-3 pb-5 pt-6 shadow-sm sm:px-6">
             {shelfRows(shelf.entries, columns).map((row) => (
               <div key={row[0]?.book.id}>
                 <ul
@@ -202,7 +202,7 @@ function Shelf() {
                 {/* 棚板 */}
                 <div
                   aria-hidden="true"
-                  className="mt-0 h-2.5 rounded-[3px] border-t border-border-strong bg-border-2 shadow-[0_8px_12px_-8px_rgba(0,0,0,0.45)]"
+                  className="-mx-1.5 h-3 rounded-[4px] border-t border-border-strong bg-gradient-to-b from-border-2 to-border-strong shadow-[0_12px_14px_-10px_rgba(0,0,0,0.45)] sm:-mx-3"
                 />
               </div>
             ))}
