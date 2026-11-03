@@ -203,11 +203,8 @@ async function put(path: string, data: Uint8Array, as = "owner") {
   });
 }
 
-/** 取り込みを始めて、送るべきファイルを全部送り、完了させる。 */
-async function importBook(files = bookFiles(), book: unknown = manifest) {
-  const started = await startImport(files, book);
-  expect([200, 201]).toContain(started.status);
-  const plan = await json<LibraryImportResponse>(started);
+/** 送るべきファイルを全部送る (1 回か分割か)。 */
+async function sendFiles(plan: LibraryImportResponse, files: Record<string, Uint8Array>) {
   const sent = new Set<string>();
   for (const slot of [...plan.files, plan.thumbnail]) {
     if (slot.uploaded || sent.has(slot.fileId)) continue;
@@ -236,6 +233,15 @@ async function importBook(files = bookFiles(), book: unknown = manifest) {
       expect(done.status).toBe(200);
     }
   }
+  return sent;
+}
+
+/** 取り込みを始めて、送るべきファイルを全部送り、完了させる。 */
+async function importBook(files = bookFiles(), book: unknown = manifest) {
+  const started = await startImport(files, book);
+  expect([200, 201]).toContain(started.status);
+  const plan = await json<LibraryImportResponse>(started);
+  const sent = await sendFiles(plan, files);
   const completed = await call(
     `/api/library/books/${plan.bookId}/imports/${plan.revision}/complete`,
     { method: "POST" },
@@ -274,6 +280,8 @@ describe("library import", () => {
     expect(text.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(text.headers.get("Content-Security-Policy")).toBe("sandbox; default-src 'none'");
     expect(text.headers.get("Cache-Control")).toBe("private, no-store");
+    // 直接開いても文書として表示させない (画面は fetch で読むので影響しない)。
+    expect(text.headers.get("Content-Disposition")).toBe("attachment");
 
     const cover = await call(`/api/library/books/${plan.bookId}/cover?v=1`);
     expect(cover.status).toBe(200);
@@ -287,6 +295,7 @@ describe("library import", () => {
     const path = `/api/library/books/${plan.bookId}/content/audio/01.m4a`;
     const partial = await call(path, { headers: { Range: "bytes=2-5" } });
     expect(partial.status).toBe(206);
+    expect(partial.headers.get("Content-Disposition")).toBeNull();
     expect(partial.headers.get("Content-Range")).toBe("bytes 2-5/22");
     expect(await partial.text()).toBe("dio-");
     const suffix = await call(path, { headers: { Range: "bytes=-4" } });
@@ -397,6 +406,42 @@ describe("library import", () => {
     ).toEqual([{ revision: 2 }]);
   });
 
+  it("does not publish an import that another tab replaced while it was finishing", async () => {
+    const files = bookFiles();
+    const started = await json<LibraryImportResponse>(await startImport(files));
+    await sendFiles(started, files);
+    // 完了の確かめを読んだあと、切り替える直前に別のタブが同じ版の番号で置き換えた。
+    const realBatch = db.binding.batch.bind(db.binding);
+    let replaced = false;
+    env.DB = new Proxy(db.binding, {
+      get(target, property, receiver) {
+        if (property === "batch")
+          return async (statements: D1PreparedStatement[]) => {
+            if (!replaced) {
+              replaced = true;
+              db.sqlite
+                .prepare("UPDATE library_books SET pending_signature = 'other-tab' WHERE id = ?")
+                .run(started.bookId);
+            }
+            return realBatch(statements);
+          };
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const res = await call(
+      `/api/library/books/${started.bookId}/imports/${started.revision}/complete`,
+      {
+        method: "POST",
+      },
+    );
+    expect(res.status).toBe(409);
+    expect(
+      db.sqlite
+        .prepare("SELECT current_revision, pending_revision FROM library_books WHERE id = ?")
+        .get(started.bookId),
+    ).toEqual({ current_revision: 0, pending_revision: 1 });
+  });
+
   it("sends large files in parts and checks every part's size", async () => {
     const files = bookFiles({ "audio/01.m4a": "0123456789abcdefghijklmnop" }); // 26 bytes > 16
     const started = await json<LibraryImportResponse>(await startImport(files));
@@ -480,6 +525,31 @@ describe("reading positions", () => {
     });
     expect(detail.chapters[0]?.state).toMatchObject({ audioSec: 30, completed: true });
     expect((await save("nope", { completed: true, clientUpdatedAt: 1 })).status).toBe(404);
+  });
+
+  it("does not move the resume chapter back on a delayed send from another device", async () => {
+    const { plan } = await importBook();
+    const open = (chapter: string, at: number) =>
+      call(`/api/library/shelf/${plan.bookId}`, {
+        method: "PUT",
+        body: JSON.stringify({ lastChapterId: chapter, clientUpdatedAt: at }),
+      });
+    expect((await open("ch02", 5000)).status).toBe(200);
+    // 前の端末で ch01 を聴いていたときの、遅れて届いた位置の保存。
+    await call(`/api/library/books/${plan.bookId}/chapters/ch01/state`, {
+      method: "PUT",
+      body: JSON.stringify({ audioSec: 12, clientUpdatedAt: 4000 }),
+    });
+    await open("ch01", 3000);
+    let detail = await json<LibraryBookDetail>(await call(`/api/library/books/${plan.bookId}`));
+    expect(detail.entry.lastChapterId).toBe("ch02");
+    expect(detail.chapters[0]?.state.audioSec).toBe(12);
+    await call(`/api/library/books/${plan.bookId}/chapters/ch01/state`, {
+      method: "PUT",
+      body: JSON.stringify({ audioSec: 20, clientUpdatedAt: 6000 }),
+    });
+    detail = await json<LibraryBookDetail>(await call(`/api/library/books/${plan.bookId}`));
+    expect(detail.entry.lastChapterId).toBe("ch01");
   });
 
   it("updates personal shelf fields and filters by them", async () => {

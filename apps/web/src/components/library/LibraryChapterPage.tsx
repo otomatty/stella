@@ -109,7 +109,9 @@ export function LibraryChapterPage({ bookId, chapterId }: { bookId: string; chap
   }, [bookId]);
   // 開いた章を「続きから」の行き先にする。
   useEffect(() => {
-    void updateShelf(bookId, { lastChapterId: chapterId }).catch(() => undefined);
+    void updateShelf(bookId, { lastChapterId: chapterId, clientUpdatedAt: Date.now() }).catch(
+      () => undefined,
+    );
   }, [bookId, chapterId]);
 
   const index = detail?.chapters.findIndex((chapter) => chapter.id === chapterId) ?? -1;
@@ -322,11 +324,15 @@ function usePositionSaving(
   onSave: (seconds: number) => void,
 ) {
   const last = useRef(0);
+  // 親が描き直すたびに onSave は新しい関数になる。購読を張り直すと後始末の保存が連発するので、
+  // 最新の関数は ref で持ち、購読は要素ごとに 1 回だけにする。
+  const save = useRef(onSave);
+  save.current = onSave;
   useEffect(() => {
     const media = element();
     if (!media) return;
     const saveNow = () => {
-      if (media.currentTime > 0) onSave(media.currentTime);
+      if (media.currentTime > 0) save.current(media.currentTime);
       last.current = Date.now();
     };
     const onTime = () => {
@@ -344,7 +350,7 @@ function usePositionSaving(
       document.removeEventListener("visibilitychange", onHidden);
       if (!media.paused) saveNow();
     };
-  }, [element, onSave]);
+  }, [element]);
 }
 
 function VideoPanel({

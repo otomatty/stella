@@ -21,8 +21,31 @@ import type { OpenedBookPackage } from "./book-package/read-package";
 export const getLibraryCapabilities = (signal?: AbortSignal) =>
   apiFetch<LibraryCapabilities>("/api/library/capabilities", { signal });
 
-export const getShelf = (filter: LibraryShelfFilter, signal?: AbortSignal) =>
-  apiFetch<LibraryShelfResponse>(`/api/library/mine?filter=${filter}&limit=200`, { signal });
+/** API が 1 回に返す冊数の上限。 */
+const SHELF_PAGE = 200;
+
+/**
+ * 本棚の本を全部取る。冊数の上限は無い (容量だけ) ので、API の 1 回ぶん (200 冊) で
+ * 打ち切らず、`total` に届くまで続きを取る。
+ */
+export async function getShelf(
+  filter: LibraryShelfFilter,
+  signal?: AbortSignal,
+): Promise<LibraryShelfResponse> {
+  const entries: LibraryShelfEntry[] = [];
+  let total = 0;
+  // 1 万冊 (50 回) で止める: 並びが取得中に変わり続けても終わるように。
+  for (let page = 0; page < 50; page++) {
+    const response = await apiFetch<LibraryShelfResponse>(
+      `/api/library/mine?filter=${filter}&limit=${SHELF_PAGE}&offset=${page * SHELF_PAGE}`,
+      { signal },
+    );
+    entries.push(...response.entries);
+    total = response.total;
+    if (response.entries.length < SHELF_PAGE || entries.length >= total) break;
+  }
+  return { entries, total, limit: entries.length, offset: 0 };
+}
 
 export const getBook = (bookId: string, signal?: AbortSignal) =>
   apiFetch<LibraryBookDetail>(`/api/library/books/${encodeURIComponent(bookId)}`, { signal });

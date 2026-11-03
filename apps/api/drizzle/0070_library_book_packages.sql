@@ -148,6 +148,8 @@ CREATE TABLE library_shelf_entries (
   favorite INTEGER NOT NULL DEFAULT 0,
   tags TEXT NOT NULL DEFAULT '[]',
   last_chapter_id TEXT,
+  -- 「続きから」の章を決めた端末の時刻。これより古い送信では章を戻さない。
+  last_chapter_client_at INTEGER,
   last_opened_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,

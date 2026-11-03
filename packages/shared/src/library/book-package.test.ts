@@ -288,11 +288,18 @@ describe("small helpers", () => {
 
 describe("request schemas", () => {
   it("parses shelf updates including the last chapter", () => {
-    expect(parseShelfUpdate({ lastChapterId: "ch01", tags: [" a ", "a"] })).toEqual({
+    expect(
+      parseShelfUpdate({ lastChapterId: "ch01", clientUpdatedAt: 9, tags: [" a ", "a"] }),
+    ).toEqual({
       lastChapterId: "ch01",
+      clientUpdatedAt: 9,
       tags: ["a"],
     });
     expect(() => parseShelfUpdate({ lastChapterId: "../x" })).toThrow(LibraryInputError);
+    expect(() => parseShelfUpdate({ lastChapterId: "ch01" })).toThrow(/端末の時刻/);
+    expect(() => parseShelfUpdate({ favorite: true, clientUpdatedAt: 9 })).toThrow(
+      /章の指定と一緒/,
+    );
     expect(() => parseShelfUpdate({})).toThrow(/変更する項目/);
   });
 

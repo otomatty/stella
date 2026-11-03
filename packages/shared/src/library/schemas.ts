@@ -20,7 +20,13 @@ function object(input: unknown, allowed: readonly string[]): Record<string, unkn
 const CHAPTER_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 export function parseShelfUpdate(input: unknown): UpdateLibraryShelf {
-  const value = object(input, ["readingStatus", "favorite", "tags", "lastChapterId"]);
+  const value = object(input, [
+    "readingStatus",
+    "favorite",
+    "tags",
+    "lastChapterId",
+    "clientUpdatedAt",
+  ]);
   const result: UpdateLibraryShelf = {};
   if ("readingStatus" in value) {
     if (!LIBRARY_READING_STATUSES.some((status) => status === value.readingStatus))
@@ -45,6 +51,11 @@ export function parseShelfUpdate(input: unknown): UpdateLibraryShelf {
     if (typeof value.lastChapterId !== "string" || !CHAPTER_ID.test(value.lastChapterId))
       throw new LibraryInputError("章の指定が無効です");
     result.lastChapterId = value.lastChapterId;
+    if (!Number.isSafeInteger(value.clientUpdatedAt) || (value.clientUpdatedAt as number) <= 0)
+      throw new LibraryInputError("端末の時刻が必要です");
+    result.clientUpdatedAt = value.clientUpdatedAt as number;
+  } else if ("clientUpdatedAt" in value) {
+    throw new LibraryInputError("端末の時刻は章の指定と一緒に送ってください");
   }
   if (!Object.keys(result).length) throw new LibraryInputError("変更する項目が必要です");
   return result;

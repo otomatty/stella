@@ -248,6 +248,9 @@ async function serveFile(
     "Cross-Origin-Resource-Policy": "same-origin",
     "Referrer-Policy": "no-referrer",
   });
+  // 本文 (Markdown) を URL で直接開いても、ブラウザに文書として描かせない (画面は fetch で読む)。
+  // 画像・音声・動画は <img>/<audio>/<video> で使うので inline のまま。
+  if (file.content_type.startsWith("text/")) headers.set("Content-Disposition", "attachment");
   const range = parseRange(c.req.header("Range"), file.size);
   if (range === "unsatisfiable") {
     headers.set("Content-Range", `bytes */${file.size}`);
@@ -782,7 +785,14 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
             total_bytes = pending_bytes, title = ?, authors = ?, language = ?, description = ?, chapter_count = ?, has_audio = ?, has_video = ?,
             pending_revision = NULL, pending_manifest = NULL, pending_signature = NULL, pending_thumb_file_id = NULL,
             pending_started_at = NULL, pending_bytes = 0, updated_at = ?
-          WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision = ? AND status <> 'deleting'`,
+          WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision = ? AND status <> 'deleting'
+            -- 読んだときと同じ取り込みであること (別のタブが同じ版の番号で置き換えていたら切り替えない)。
+            AND pending_signature = ?
+            -- 送り終えたかの確かめも同じ文で (確かめてから切り替えるまでの間に置き換わっても漏れない)。
+            AND NOT EXISTS (SELECT 1 FROM library_files f WHERE f.tenant_id = library_books.tenant_id AND f.book_id = library_books.id
+              AND f.status <> 'uploaded' AND (f.id = library_books.pending_thumb_file_id OR EXISTS (
+                SELECT 1 FROM library_revision_files rf WHERE rf.tenant_id = f.tenant_id AND rf.book_id = f.book_id
+                  AND rf.revision = library_books.pending_revision AND rf.file_id = f.id)))`,
         )
         .bind(
           manifest.title,
@@ -797,6 +807,7 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
           book.id,
           caller.id,
           revision,
+          book.pending_signature,
         ),
       // 前の版の行は要らない。前の版だけが使っていたファイルは片付ける。
       db
@@ -986,7 +997,11 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
         .prepare(
           `UPDATE library_shelf_entries SET
             reading_status = CASE WHEN ${allDone} THEN 'finished' WHEN reading_status = 'unread' THEN 'reading' ELSE reading_status END,
-            last_chapter_id = ?, last_opened_at = ?, updated_at = ?
+            -- 「続きから」の章は、端末の時刻がより新しい送信でだけ動かす (別の端末の遅れた送信で戻さない)。
+            last_chapter_id = CASE WHEN ? >= coalesce(last_chapter_client_at, 0) THEN ? ELSE last_chapter_id END,
+            last_opened_at = CASE WHEN ? >= coalesce(last_chapter_client_at, 0) THEN ? ELSE last_opened_at END,
+            last_chapter_client_at = max(coalesce(last_chapter_client_at, 0), ?),
+            updated_at = ?
           WHERE tenant_id = ? AND profile_id = ? AND book_id = ?`,
         )
         .bind(
@@ -994,8 +1009,11 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
           book.id,
           book.current_revision,
           caller.id,
+          input.clientUpdatedAt,
           chapterId,
+          input.clientUpdatedAt,
           now,
+          input.clientUpdatedAt,
           now,
           caller.tenantId,
           caller.id,
@@ -1032,14 +1050,22 @@ libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
     const favorite = input.favorite === undefined ? null : Number(input.favorite);
     const tags = input.tags === undefined ? null : JSON.stringify(input.tags);
     const chapter = input.lastChapterId ?? null;
+    const chapterAt = input.clientUpdatedAt ?? null;
+    // 「続きから」の章は、端末の時刻がより新しい指定でだけ動かす (別の端末の遅れた送信で戻さない)。
+    const newer =
+      "excluded.last_chapter_id IS NOT NULL AND excluded.last_chapter_client_at >= coalesce(library_shelf_entries.last_chapter_client_at, 0)";
     // null はそのまま。本棚から外れていた本は、ここで戻す。
     await c.env.DB.prepare(
-      `INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, reading_status, favorite, tags, last_chapter_id, last_opened_at, created_at, updated_at)
-      VALUES (?, ?, ?, coalesce(?, 'unread'), coalesce(?, 0), coalesce(?, '[]'), ?, CASE WHEN ? IS NULL THEN NULL ELSE ? END, ?, ?)
+      `INSERT INTO library_shelf_entries (tenant_id, profile_id, book_id, reading_status, favorite, tags,
+        last_chapter_id, last_chapter_client_at, last_opened_at, created_at, updated_at)
+      VALUES (?, ?, ?, coalesce(?, 'unread'), coalesce(?, 0), coalesce(?, '[]'), ?, ?, CASE WHEN ? IS NULL THEN NULL ELSE ? END, ?, ?)
       ON CONFLICT (tenant_id, profile_id, book_id) DO UPDATE SET
-        reading_status = coalesce(?, reading_status), favorite = coalesce(?, favorite), tags = coalesce(?, tags),
-        last_chapter_id = coalesce(?, last_chapter_id),
-        last_opened_at = CASE WHEN ? IS NULL THEN last_opened_at ELSE excluded.updated_at END,
+        reading_status = coalesce(?, library_shelf_entries.reading_status),
+        favorite = coalesce(?, library_shelf_entries.favorite),
+        tags = coalesce(?, library_shelf_entries.tags),
+        last_chapter_id = CASE WHEN ${newer} THEN excluded.last_chapter_id ELSE library_shelf_entries.last_chapter_id END,
+        last_opened_at = CASE WHEN ${newer} THEN excluded.last_opened_at ELSE library_shelf_entries.last_opened_at END,
+        last_chapter_client_at = CASE WHEN ${newer} THEN excluded.last_chapter_client_at ELSE library_shelf_entries.last_chapter_client_at END,
         updated_at = excluded.updated_at`,
     )
       .bind(
@@ -1050,6 +1076,7 @@ libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
         favorite,
         tags,
         chapter,
+        chapterAt,
         chapter,
         now,
         now,
@@ -1057,8 +1084,6 @@ libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
         status,
         favorite,
         tags,
-        chapter,
-        chapter,
       )
       .run();
     return c.json({ entry: await shelfEntry(c.env, caller, book.id) });

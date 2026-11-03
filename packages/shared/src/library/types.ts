@@ -109,6 +109,8 @@ export interface UpdateLibraryShelf {
   favorite?: boolean;
   tags?: string[];
   lastChapterId?: string;
+  /** lastChapterId を決めた端末の時刻 (ミリ秒)。lastChapterId と一緒に必須。古い送信では章を戻さない。 */
+  clientUpdatedAt?: number;
 }
 
 export interface UpdateLibraryChapterState {

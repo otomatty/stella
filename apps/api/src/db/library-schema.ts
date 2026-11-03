@@ -138,6 +138,7 @@ export const libraryShelfEntries = sqliteTable(
     favorite: integer("favorite").notNull().default(0),
     tags: text("tags").notNull().default("[]"),
     lastChapterId: text("last_chapter_id"),
+    lastChapterClientAt: integer("last_chapter_client_at"),
     lastOpenedAt: integer("last_opened_at"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
