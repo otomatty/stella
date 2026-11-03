@@ -168,6 +168,7 @@ export interface LearningSidebarAssets {
   scriptUri: string;
 }
 
+/** 通常の学習ガイドと同じ行高・余白を確保する、操作不能なプレースホルダー。 */
 function loadingContent(): string {
   // 行の高さは通常表示と共通にし、文字の形だけを細いプレースホルダーに置き換える。
   const line = (size: string) =>
@@ -179,9 +180,10 @@ function loadingContent(): string {
   ).join("");
   const selector = (unit: boolean) =>
     `<div class="loading-select">${unit ? line("number") : ""}${line(unit ? "unit" : "stage")}<span class="loading-chevron"></span></div>`;
-  return `<p class="sr-only" role="status">学習の状況を読み込んでいます…</p><div class="loading-layout" aria-hidden="true"><div class="field-label">ステージ</div>${selector(false)}<div class="field-label unit-label">単元</div>${selector(true)}<div class="progress-caption"><span>この単元の進み具合</span>${line("count")}</div><div class="skeleton loading-progress"></div><section class="next-step loading-next-step"><div class="eyebrow">${line("eyebrow")}</div><h2>${line("heading")}</h2><div class="hint">${line("description")}${line("description-short")}</div><div class="primary loading-button">${line("button")}</div></section><section><div class="list-heading"><h2>この単元の教材</h2>${line("total")}</div><ol class="lessons">${lessons}</ol></section></div>`;
+  return `<div class="loading-layout" aria-hidden="true"><div class="field-label">ステージ</div>${selector(false)}<div class="field-label unit-label">単元</div>${selector(true)}<div class="progress-caption"><span>この単元の進み具合</span>${line("count")}</div><div class="skeleton loading-progress"></div><section class="next-step loading-next-step"><div class="eyebrow">${line("eyebrow")}</div><h2>${line("heading")}</h2><div class="hint">${line("description")}${line("description-short")}</div><div class="primary loading-button">${line("button")}</div></section><section><div class="list-heading"><h2>この単元の教材</h2>${line("total")}</div><ol class="lessons">${lessons}</ol></section></div>`;
 }
 
+/** 初期文書と差分更新の元になるHTMLを生成する。ライブリージョンはmainの外で保持する。 */
 export function renderLearningSidebar(
   state: LearningSidebarState,
   assets: LearningSidebarAssets,
@@ -210,5 +212,5 @@ export function renderLearningSidebar(
     state.kind === "loading"
       ? '<footer class="loading-footer" aria-hidden="true"><span class="text-button"><span class="loading-line loading-map"><span class="skeleton"></span></span></span><span class="text-button"><span class="loading-line loading-reload"><span class="skeleton"></span></span></span></footer>'
       : '<footer><button type="button" id="open-map" class="text-button" data-action="home">Web の学習マップ ↗</button><button type="button" id="reload" class="text-button" data-action="refresh">再読み込み</button></footer>';
-  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${nonce}';"><title>STELLA 学習ガイド</title><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"></head><body data-message-token="${nonce}" data-scope="${scope}"><main aria-busy="${state.kind === "loading"}">${content}</main>${footer}<script nonce="${nonce}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${nonce}';"><title>STELLA 学習ガイド</title><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"></head><body data-message-token="${nonce}" data-scope="${scope}"><p id="loading-status" class="sr-only" role="status" aria-atomic="true"></p><main data-state="${state.kind}" aria-busy="${state.kind === "loading"}">${content}</main>${footer}<script nonce="${nonce}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
 }
