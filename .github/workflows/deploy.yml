@@ -141,29 +141,6 @@ jobs:
       - name: Deploy API
         run: bun run deploy:api
 
-      # PDF 処理の退役 (2026-11)。本棚は利用者が作った zip を取り込む形に変わり、
-      # OCR・読み上げを作る Worker は要らなくなった。API は NARRATOR を束ねなくなったので、
-      # API のデプロイ後に Worker を (その secret GEMINI_API_KEY ごと) 消す。設定ファイルを
-      # 読ませないよう空のフォルダーから名前で指定する。Worker がもう無ければ成功として進む。
-      # 本番の stella-narrator と GEMINI_API_KEY が無くなったら、この step は消してよい。
-      - name: Retire narrator Worker (PDF processing)
-        run: |
-          dir="$RUNNER_TEMP/retire-narrator"
-          mkdir -p "$dir"
-          cd "$dir"
-          set +e
-          out=$("$GITHUB_WORKSPACE/apps/api/node_modules/.bin/wrangler" delete stella-narrator --force 2>&1)
-          status=$?
-          set -e
-          printf '%s\n' "$out"
-          if [ "$status" -ne 0 ]; then
-            if printf '%s' "$out" | grep -qE '10007|does not exist|not found'; then
-              echo "stella-narrator is already gone."
-            else
-              exit "$status"
-            fi
-          fi
-
       # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
       # 後でも成立する。PDF sync が出した PDF_MANIFEST を読む。
       - name: Seed D1 content (remote)
@@ -195,3 +172,35 @@ jobs:
       # Web の中継が最新版になった直後に、秘密値を含まない状態だけを照合する。
       - name: Verify production configuration
         run: bun run deploy:health:check
+
+      # PDF 処理の退役 (2026-11)。本棚は利用者が作った zip を取り込む形に変わり、
+      # OCR・読み上げを作る Worker は要らなくなった。API はもう NARRATOR を束ねていない。
+      # Worker (その secret GEMINI_API_KEY・cron ごと) と、それが定義した Workflows を消す。
+      # wrangler delete は Workers Sites の KV も確かめに行き、KV の権限が無いトークンでは
+      # 認証エラーで止まるので、Cloudflare の API を直接呼ぶ。もう無ければ (404) 成功とする。
+      # Web のデプロイと本番の確認の後に置き、ここが失敗してもアプリのデプロイは止めない。
+      # 本番の stella-narrator と Workflows が無くなったら、この step は消してよい。
+      - name: Retire narrator Worker (PDF processing)
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}"
+          call() {
+            curl -sS -o "$RUNNER_TEMP/retire.json" -w '%{http_code}' -X DELETE "$1" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          }
+          for workflow in stella-library-book stella-library-audio; do
+            status=$(call "$api/workflows/$workflow")
+            case "$status" in
+              200) echo "Deleted workflow $workflow." ;;
+              404) echo "Workflow $workflow is already gone." ;;
+              *) echo "::warning::Could not delete workflow $workflow (HTTP $status): $(cat "$RUNNER_TEMP/retire.json")" ;;
+            esac
+          done
+          status=$(call "$api/workers/scripts/stella-narrator?force=true")
+          case "$status" in
+            200) echo "Deleted stella-narrator." ;;
+            404) echo "stella-narrator is already gone." ;;
+            *)
+              echo "::error::Could not delete stella-narrator (HTTP $status): $(cat "$RUNNER_TEMP/retire.json")"
+              exit 1
+              ;;
+          esac
