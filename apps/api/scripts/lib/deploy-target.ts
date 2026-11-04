@@ -8,6 +8,14 @@ const LOCAL_DATABASE_ID = "00000000-0000-0000-0000-000000000000";
  */
 const APP_ORIGIN = "https://stella.saedgewell.workers.dev";
 
+export function validateMaterialsUrl(materialsUrl: string | undefined): void {
+  if (!materialsUrl) throw new Error("VITE_MATERIALS_BASE_URL is required");
+  const url = new URL(materialsUrl);
+  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+    throw new Error("VITE_MATERIALS_BASE_URL must be a public HTTPS URL without credentials");
+  }
+}
+
 export function validateDeployUrls(
   serverUrl: string | undefined,
   materialsUrl: string | undefined,
@@ -15,11 +23,7 @@ export function validateDeployUrls(
   if (serverUrl !== APP_ORIGIN) {
     throw new Error(`VITE_SERVER_URL must be ${APP_ORIGIN}`);
   }
-  if (!materialsUrl) throw new Error("VITE_MATERIALS_BASE_URL is required");
-  const url = new URL(materialsUrl);
-  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
-    throw new Error("VITE_MATERIALS_BASE_URL must be a public HTTPS URL without credentials");
-  }
+  validateMaterialsUrl(materialsUrl);
 }
 
 /** 検索は読み取りだけ。未作成の DB を自動作成して空のまま切り替えない。 */

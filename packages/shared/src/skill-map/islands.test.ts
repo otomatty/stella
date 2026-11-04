@@ -128,6 +128,16 @@ describe("dropIslandsUnknownToClient", () => {
     expect(SKILL_MAP_ISLAND_MIN_TIERS.DevOps).toBe(3);
     expect(SKILL_MAP_ISLAND_MIN_TIERS["Anthropic認定資格"]).toBe(4);
     expect(SKILL_MAP_ISLAND_MIN_TIERS.Python).toBe(5);
+    expect(SKILL_MAP_ISLAND_MIN_TIERS["C#"]).toBe(6);
     expect(SKILL_MAP_ISLAND_MIN_TIERS["AWS資格"]).toBeUndefined();
+  });
+
+  it("C# は tiers=6 以上の画面にだけ残す", () => {
+    const csharp = stage("csharp-basics", "C#");
+    const py = stage("python-basics", "Python");
+    expect(slugsOf(dropIslandsUnknownToClient([csharp, py, aws], "6"))).toEqual(
+      slugsOf([csharp, py, aws]),
+    );
+    expect(slugsOf(dropIslandsUnknownToClient([csharp, py, aws], "5"))).toEqual(slugsOf([py, aws]));
   });
 });

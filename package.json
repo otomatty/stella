@@ -24,7 +24,9 @@
     "content:state:check:remote": "bun run --filter=@stella/content state:check:remote",
     "content:state:save:remote": "bun run --filter=@stella/content state:save:remote",
     "content:state:reset:remote": "bun run --filter=@stella/content state:reset:remote",
+    "content:extra:overlay": "bun run --filter=@stella/content extra:overlay",
     "deploy:prepare": "bun run apps/api/scripts/prepare-deploy.ts",
+    "deploy:prepare:content": "bun run apps/api/scripts/prepare-deploy.ts --content-only",
     "deploy:config:check": "bun run apps/api/scripts/check-deployment-config.ts",
     "deploy:health:check": "bun run apps/api/scripts/check-deployment-health.ts",
     "deploy:api": "bun run --filter=@stella/api deploy",
@@ -37,7 +39,8 @@
     "db:migrate:remote": "bun run --filter=@stella/api db:migrate:remote",
     "db:seed": "bun run --filter=@stella/api db:seed",
     "db:seed:remote": "bun run --filter=@stella/api db:seed:remote",
-    "db:seed:remote:content": "bun run --filter=@stella/api db:seed:remote:content"
+    "db:seed:remote:content": "bun run --filter=@stella/api db:seed:remote:content",
+    "skills:install": "node scripts/install-skill.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
