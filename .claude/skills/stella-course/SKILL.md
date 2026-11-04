@@ -30,7 +30,7 @@ Extra 講座 (`audience: granted`。講師が割り当てた受講者にだけ�
 評価は format 2 では課題 (`tasks/`) と知識問題 (`knowledge.md`) です。`THEME_TO_COURSE.md` の「コード演習は javascript / typescript / sql だけ」は、旧形式の QuickJS 演習の話です。format 2 の実行は runner ごとに固定の手順で、テンプレートは `templates/runners/` にあります。
 
 - **Basic**。公開リポジトリのカタログに載る講座。`audience` は書かないか `catalog`。slug、前提、線の親、カテゴリの正本は `docs/curriculum/07-stella-adoption-redesign.md` の §3.1 と §3.4。前提の無い根は `dev-env-basics` だけです。ここへ前提を足さないでください。
-- **Extra**。`course.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA の講座の slug。新しい島が要るときは `references/extra-repo.md`。
+- **Extra**。`course.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA の講座の slug。外部リポジトリの `name` は `packages/content/extra-repositories.json` に登録した名前で、講座の slug は `<name>-` で始めます。退役した slug は使えません。新しい島が要るときは `references/extra-repo.md`。
 
 slug、講座名、ファイル名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
 

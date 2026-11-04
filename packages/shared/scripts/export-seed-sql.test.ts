@@ -575,6 +575,53 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     );
   });
 
+  it("checkout の範囲のコーディング規則だけを入れ替える", () => {
+    const statements = sql
+      .split("\n")
+      .filter(
+        (line) =>
+          line.startsWith("insert into coding_rules ") ||
+          line.startsWith("delete from coding_rules "),
+      );
+    const prune = statements.find((line) => line.startsWith("delete from coding_rules "));
+    expect(prune).toMatch(/^delete from coding_rules where scope in \('common',/);
+    expect(prune).toContain("'dev-env-basics'");
+    expect(prune).toContain("'python-basics'");
+    expect(prune).toContain(" and id not in (");
+    expect(sql).not.toMatch(/^delete from coding_rules;$/m);
+    expect(sql).not.toMatch(/^delete from coding_rules where id not in /m);
+
+    const db = new DatabaseSync(":memory:");
+    db.exec(`create table coding_rules (
+      id text primary key not null,
+      scope text not null,
+      position integer not null,
+      title text not null,
+      statement text not null,
+      applies_to text not null,
+      introduced_in text not null,
+      exception text,
+      content_hash text not null
+    )`);
+    const insert = db.prepare(
+      `insert into coding_rules (id, scope, position, title, statement, applies_to, introduced_in, content_hash)
+       values (?, ?, 0, 't', 's', 'a', 'dev-env-basics', 'h')`,
+    );
+    insert.run("EXT-OLD-01", "not-in-this-checkout");
+    insert.run("CR-NOT-IN-SOURCE-99", "common");
+    insert.run("PY-NOT-IN-SOURCE-99", "python-basics");
+    for (const line of statements) db.exec(line);
+    const ids = (
+      db.prepare("select id from coding_rules").all() as {
+        id: string;
+      }[]
+    ).map((row) => row.id);
+    expect(ids).toContain("EXT-OLD-01");
+    expect(ids).not.toContain("CR-NOT-IN-SOURCE-99");
+    expect(ids).not.toContain("PY-NOT-IN-SOURCE-99");
+    expect(ids).toContain("DEV-HTML-01");
+  });
+
   it("デモ講座の削除は本番 seed でも出す", () => {
     expect(sql).toContain(
       `delete from stages where id = '${stableUuid("course:ses:web-fundamentals")}'`,
@@ -684,6 +731,8 @@ vi.mock("@stella/content", async () => {
 
   return {
     // @stella/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
+    // この差し替えは講座の中身だけを見る。規則を消す範囲は checkout を読まない。
+    listCodingRuleScopes: () => ["common"],
     buildContentManifest: () => ({
       tasks: [],
       units: [],

@@ -15,9 +15,9 @@
   scripts/stella.mjs         # このリポジトリ側の入口。stella 本体には無い
 ```
 
-`stella-extra.json` の `schemaVersion` は 1 です。`name` と `courses` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。`courses` は空にできず、slug は重複できません。`courses` に書いた slug ごとに `courses/<slug>/course.json` が要ります。書いていないフォルダーが `courses/` にあると止まります。
+`stella-extra.json` の `schemaVersion` は 1 です。`name` は英小文字と数字だけで、ハイフンは付けません。先頭は英小文字か数字です。使える名前は stella の `packages/content/extra-repositories.json` に登録したものだけです。`courses` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。各 slug は `<name>-` で始めます。`courses` は空にできず、slug は重複できません。`courses` に書いた slug ごとに `courses/<slug>/course.json` が要ります。書いていないフォルダーが `courses/` にあると止まります。
 
-各講座の `audience` は `granted` です。`category` は `.stella/packages/shared/src/skill-map/islands.ts` の島のどれかです。`prerequisites` は実在する stella の講座の slug です。stella の講座と同じ slug は使えません。
+各講座の `audience` は `granted` です。`category` は `.stella/packages/shared/src/skill-map/islands.ts` の島のどれかです。`prerequisites` は実在する stella の講座の slug です。stella の講座と同じ slug は使えません。stella で退役した slug (`packages/shared/src/curriculum/retired-stages.ts`) も使えません。seed が同じ ID のステージを消します。
 
 台帳は stella の同じファイルの後ろに足します。`id` が stella の台帳と重なると止まります。環境台帳も同じ名前が stella にあると止まります。リポジトリの一番上に `coding-rules.md` は置けません。講座の規則は `courses/<slug>/coding-rules.md` です。シンボリックリンクはたどらずに止まります。
 

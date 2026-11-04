@@ -4,11 +4,11 @@
 
 ## テンプレートの形
 
-`templates/runners/dotnet-test/` を scaffold で課題へ写します。受講者が編集するのは `src/Answers.cs` です。次は配布した設定で、`protected` に入っています。
+`templates/runners/dotnet-test/` を scaffold で課題へ写します。受講者のコードは `src/` の下に置きます。`src/` の `.cs` はすべてコンパイルされ、すべて提出されます (`submit.files` は `src/**/*.cs`)。`src/` の外の `.cs` はコンパイルされません。次は配布した設定で、`protected` に入っています。
 
 | ファイル | 役割 |
 | --- | --- |
-| `Task.csproj` | `net10.0`。xUnit。lockfile で復元する |
+| `Task.csproj` | `net10.0`。xUnit。lockfile で復元する。暗黙のコンパイル対象は止めて (`EnableDefaultCompileItems` が false)、`src/**/*.cs` と `tests/**/*.cs` だけをコンパイルする |
 | `packages.lock.json` | 依存の固定。受講者に更新させない |
 | `Directory.Build.props` | ビルド出力を `.stella/dotnet/` にする。これがあると、学習フォルダーの親の props は読み込まれない |
 | `Directory.Build.targets` | 中身は空。親の targets を読み込まない |
@@ -23,7 +23,7 @@
 
 ## 受講者のコード
 
-トップレベルのステートメントは、テストと同じプロジェクトでは使えません。受講者のコードは、クラスの static メソッドにします。テンプレートは `public static class Answers` です。
+トップレベルのステートメントは、テストと同じプロジェクトでは使えません。受講者のコードは、クラスの static メソッドにします。テンプレートは `public static class Answers` です。`src/` に `.cs` を足すと、それもコンパイルされ、提出に含まれます。
 
 既存の教材がトップレベルで `Console.WriteLine` まで書いているときは、課題文に、同じ処理を `Answers` のメソッドへ移す書き方を示します。プログラムの入口を自分で書く課題にはしません。
 
@@ -63,6 +63,6 @@ public void Q02_CountUp()
 
 ## 解答例と検査
 
-`private/solution/src/Answers.cs` に、テストが通る実装を置きます。starter の `Answers.cs` は、受講者が埋める前の形にします。テンプレートの `Answers.cs` は最初から通る見本なので、課題にするときに穴を空けます。
+`private/solution/src/` に、テストが通る実装を置きます。`src/` の `.cs` が解答例です。starter の `src/` は、受講者が埋める前の形にします。テンプレートの `src/Answers.cs` は最初から通る見本なので、課題にするときに穴を空けます。
 
 `content:check` は解答例を本物の `dotnet test` で実行します。類題の誤答は、解答例に重ねて実行し、不合格になることまで見ます。手元に .NET SDK 10 が無いと、この検査は環境の不足で止まります。テストの期待値を緩めて通さないでください。

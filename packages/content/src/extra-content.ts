@@ -19,7 +19,10 @@ import {
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
+import { RETIRED_STAGES } from "../../shared/src/curriculum/retired-stages.js";
 import { SKILL_MAP_ISLAND_CATEGORIES } from "../../shared/src/skill-map/islands.js";
+import { TENANT_ID } from "./manifest.js";
+import { EXTRA_REPOSITORY_NAME, readExtraRepositories } from "./extra-repositories.js";
 
 export const EXTRA_MANIFEST_FILE = "stella-extra.json";
 export const EXTRA_WORKSPACE_MARKER = ".stella-extra-workspace";
@@ -65,9 +68,9 @@ export function readExtraManifest(extraRoot: string): ExtraManifest {
   if (row.schemaVersion !== 1) {
     throw new Error(`${EXTRA_MANIFEST_FILE} の schemaVersion は 1 にしてください。`);
   }
-  if (typeof row.name !== "string" || !SLUG_PATTERN.test(row.name)) {
+  if (typeof row.name !== "string" || !EXTRA_REPOSITORY_NAME.test(row.name)) {
     throw new Error(
-      `${EXTRA_MANIFEST_FILE} の name は英小文字・数字・ハイフン (先頭は英小文字か数字) にしてください。`,
+      `${EXTRA_MANIFEST_FILE} の name は英小文字と数字だけにしてください (先頭は英小文字か数字。ハイフンは付けません)。`,
     );
   }
   if (!Array.isArray(row.courses) || row.courses.length === 0) {
@@ -98,6 +101,12 @@ export function overlayExtraContent(input: {
   }
   assertNoRootCodingRules(extraRoot);
   const manifest = readExtraManifest(extraRoot);
+  const registered = new Set(readExtraRepositories(contentRoot).map((row) => row.name));
+  if (!registered.has(manifest.name)) {
+    throw new Error(
+      `${EXTRA_MANIFEST_FILE} の name「${manifest.name}」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してから講座を足してください (外部リポジトリどうしで slug が重ならないようにするため)`,
+    );
+  }
   const courses = planCourses(contentRoot, extraRoot, manifest);
   const skills = planArrayLedger(contentRoot, extraRoot, "skills.json");
   const patterns = planArrayLedger(contentRoot, extraRoot, "patterns.json");
@@ -125,6 +134,46 @@ export function overlayExtraContent(input: {
   };
   writeJson(join(contentRoot, EXTRA_OVERLAY_RECORD), result);
   return result;
+}
+
+/** stella 本体の講座が、登録した外部リポジトリの名前で始まっていたら止める。 */
+export function checkExtraRepositoryNames(contentRoot: string, repoRoot: string): void {
+  const names = readExtraRepositories(contentRoot).map((row) => row.name);
+  const excluded = overlaidCourseSlugs(contentRoot, repoRoot);
+  const coursesDir = join(contentRoot, "courses");
+  if (!existsSync(coursesDir)) return;
+  const hits: string[] = [];
+  for (const slug of readdirSync(coursesDir).sort((a, b) => a.localeCompare(b))) {
+    const path = join(coursesDir, slug);
+    if (!lstatSync(path).isDirectory() || excluded.has(slug)) continue;
+    const name = names.find((candidate) => slug.startsWith(`${candidate}-`));
+    if (name) hits.push(`${slug} (${name}-)`);
+  }
+  if (hits.length > 0) {
+    throw new Error(
+      `stella の講座が、登録した外部リポジトリの名前で始まっています (${hits.join("、")})。packages/content/extra-repositories.json の名前は外部の講座の slug の頭に使います。stella 本体の講座には使わないでください。`,
+    );
+  }
+}
+
+function overlaidCourseSlugs(contentRoot: string, repoRoot: string): Set<string> {
+  if (!existsSync(join(repoRoot, EXTRA_WORKSPACE_MARKER))) return new Set();
+  const path = join(contentRoot, EXTRA_OVERLAY_RECORD);
+  if (!existsSync(path)) return new Set();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  } catch {
+    throw new Error(`${EXTRA_OVERLAY_RECORD} の JSON が読めません。`);
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(`${EXTRA_OVERLAY_RECORD} はオブジェクトにしてください。`);
+  }
+  const courses = (raw as { courses?: unknown }).courses;
+  if (!Array.isArray(courses) || courses.some((slug) => typeof slug !== "string")) {
+    throw new Error(`${EXTRA_OVERLAY_RECORD} の courses は slug の配列にしてください。`);
+  }
+  return new Set(courses);
 }
 
 function planCourses(contentRoot: string, extraRoot: string, manifest: ExtraManifest): string[] {
@@ -159,12 +208,12 @@ function planCourses(contentRoot: string, extraRoot: string, manifest: ExtraMani
         `courses/${slug}/course.json がありません。stella-extra.json の courses に書いた講座のフォルダーを courses/ に置いてください。`,
       );
     }
-    assertCourse(contentRoot, extraRoot, slug);
+    assertCourse(contentRoot, extraRoot, slug, manifest.name);
   }
   return manifest.courses;
 }
 
-function assertCourse(contentRoot: string, extraRoot: string, slug: string): void {
+function assertCourse(contentRoot: string, extraRoot: string, slug: string, name: string): void {
   const courseDir = join(extraRoot, "courses", slug);
   const configPath = join(courseDir, "course.json");
   if (!lstatOrNull(configPath)) {
@@ -180,6 +229,19 @@ function assertCourse(contentRoot: string, extraRoot: string, slug: string): voi
   if (config.audience !== "granted") {
     throw new Error(
       `courses/${slug}/course.json の audience は "granted" にしてください。Extra 講座だけを外部リポジトリに置けます。`,
+    );
+  }
+  const tenantRaw = config.tenantId;
+  const tenantId =
+    typeof tenantRaw === "string" && tenantRaw.trim() !== "" ? tenantRaw.trim() : TENANT_ID;
+  if (RETIRED_STAGES.some((row) => row.tenantId === tenantId && row.slug === slug)) {
+    throw new Error(
+      `courses/${slug} は stella で退役した講座の slug です。seed が同じ ID のステージを消すので、別の slug にしてください`,
+    );
+  }
+  if (!slug.startsWith(`${name}-`)) {
+    throw new Error(
+      `courses/${slug} の slug は「${name}-」で始めてください。stella に登録した外部リポジトリの名前を頭に付け、講座の slug が重ならないようにします。`,
     );
   }
   if (typeof config.category !== "string" || !SKILL_MAP_ISLAND_CATEGORIES.has(config.category)) {

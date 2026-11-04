@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   assertExtraWorkspace,
+  checkExtraRepositoryNames,
   EXTRA_OVERLAY_RECORD,
   overlayExtraContent,
   type OverlayResult,
@@ -46,6 +47,11 @@ function contentRoot(): string {
     '{\n  "schemaVersion": "2.1",\n  "sources": [{ "id": "SRC-a", "title": "A" }]\n}\n',
   );
   write(root, "environments/node-test-01.json", '{"id":"node-test-01"}\n');
+  write(
+    root,
+    "extra-repositories.json",
+    `${JSON.stringify({ schemaVersion: 1, repositories: [{ name: "csharp", note: "C#" }] }, null, 2)}\n`,
+  );
   return root;
 }
 
@@ -62,7 +68,7 @@ function extraRoot(patch?: {
   const root = tempDir();
   const manifest = patch?.manifest ?? {
     schemaVersion: 1,
-    name: "acme",
+    name: "csharp",
     courses: ["csharp-basics"],
   };
   write(root, "stella-extra.json", `${JSON.stringify(manifest, null, 2)}\n`);
@@ -155,15 +161,69 @@ describe("overlayExtraContent", () => {
   });
 
   it("slug が stella の講座と重なると止まる", () => {
+    const content = contentRoot();
+    write(content, "courses/csharp-basics/course.json", '{"title":"既存"}\n');
+    expect(() => overlay(content, extraRoot())).toThrow(/重な/);
+  });
+
+  it("台帳に無い name は止まる", () => {
     const extra = extraRoot({
-      manifest: { schemaVersion: 1, name: "acme", courses: ["dev-env-basics"] },
+      manifest: { schemaVersion: 1, name: "acme", courses: ["acme-basics"] },
     });
     write(
       extra,
-      "courses/dev-env-basics/course.json",
-      '{"title":"入口","audience":"granted","category":"C#"}\n',
+      "courses/acme-basics/course.json",
+      '{"title":"Acme","audience":"granted","category":"C#"}\n',
     );
-    expect(() => overlay(contentRoot(), extra)).toThrow(/重な/);
+    expect(() => overlay(contentRoot(), extra)).toThrow(
+      "stella-extra.json の name「acme」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してから講座を足してください (外部リポジトリどうしで slug が重ならないようにするため)",
+    );
+  });
+
+  it("slug が登録した名前で始まらないと止まる", () => {
+    const extra = extraRoot({
+      manifest: { schemaVersion: 1, name: "csharp", courses: ["basics"] },
+    });
+    write(
+      extra,
+      "courses/basics/course.json",
+      '{"title":"基礎","audience":"granted","category":"C#"}\n',
+    );
+    expect(() => overlay(contentRoot(), extra)).toThrow(/「csharp-」で始めてください/);
+  });
+
+  it("退役した slug は止まる", () => {
+    const retired = extraRoot({
+      manifest: { schemaVersion: 1, name: "csharp", courses: ["git-basics"] },
+    });
+    write(
+      retired,
+      "courses/git-basics/course.json",
+      '{"title":"Git","audience":"granted","category":"C#"}\n',
+    );
+    expect(() => overlay(contentRoot(), retired)).toThrow(
+      "courses/git-basics は stella で退役した講座の slug です。seed が同じ ID のステージを消すので、別の slug にしてください",
+    );
+
+    const coach = extraRoot({
+      manifest: { schemaVersion: 1, name: "csharp", courses: ["safety-1"] },
+    });
+    write(
+      coach,
+      "courses/safety-1/course.json",
+      '{"title":"安全","audience":"granted","category":"C#","tenantId":"coach"}\n',
+    );
+    expect(() => overlay(contentRoot(), coach)).toThrow(/退役した講座の slug/);
+
+    const otherTenant = extraRoot({
+      manifest: { schemaVersion: 1, name: "csharp", courses: ["git-basics"] },
+    });
+    write(
+      otherTenant,
+      "courses/git-basics/course.json",
+      '{"title":"Git","audience":"granted","category":"C#","tenantId":"other"}\n',
+    );
+    expect(() => overlay(contentRoot(), otherTenant)).toThrow(/「csharp-」で始めてください/);
   });
 
   it("courses に書いていないフォルダーがあると止まる", () => {
@@ -212,5 +272,24 @@ describe("assertExtraWorkspace", () => {
     expect(() => assertExtraWorkspace(root)).toThrow(/scripts\/stella\.mjs/);
     writeFileSync(join(root, ".stella-extra-workspace"), "");
     expect(() => assertExtraWorkspace(root)).not.toThrow();
+  });
+});
+
+describe("checkExtraRepositoryNames", () => {
+  it("stella の講座が登録した名前で始まると止まる", () => {
+    const content = contentRoot();
+    write(content, "courses/csharp-taken/course.json", "{}\n");
+    expect(() => checkExtraRepositoryNames(content, tempDir())).toThrow(/csharp-taken/);
+  });
+
+  it("写しに重ねた講座は外す", () => {
+    const content = contentRoot();
+    write(content, "courses/csharp-sample/course.json", "{}\n");
+    const repo = tempDir();
+    writeFileSync(join(repo, ".stella-extra-workspace"), "");
+    write(content, ".extra-overlay.json", '{"courses":["csharp-sample"]}\n');
+    expect(() => checkExtraRepositoryNames(content, repo)).not.toThrow();
+    write(content, "courses/csharp-other/course.json", "{}\n");
+    expect(() => checkExtraRepositoryNames(content, repo)).toThrow(/csharp-other/);
   });
 });

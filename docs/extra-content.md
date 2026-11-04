@@ -14,7 +14,9 @@ stella 側の受け口は `packages/content/src/extra-content.ts` です。外�
 
 デプロイ済みのコミットを使うのは、stella の講座の行を D1 で動かさないためです。seed は変わった行だけを書きます。写しの stella 側が本番と同じなら、書き込まれるのは Extra 講座の分だけです。
 
-stella の通常のデプロイは、これまでどおり stella の講座だけを入れます。seed が消すのは `RETIRED_STAGES` に書いた講座だけなので、外部リポジトリから入った講座は stella のデプロイでは消えません。
+stella の通常のデプロイは、これまでどおり stella の講座だけを入れます。seed が消すのは `RETIRED_STAGES` に書いた講座だけなので、外部リポジトリから入った講座は stella のデプロイでは消えません。講座ごとのコーディング規則 (`courses/<slug>/coding-rules.md`) も消えません。seed は、その checkout の範囲 (共通の規則と、その checkout の `courses/` にある講座) の規則だけを入れ替えます。
+
+`content:check` は講座のコードを実行します。解答例、誤答、テストを runner が動かします。`npm ci` や `dotnet test` などです。このとき環境変数に Cloudflare の鍵や `GITHUB_TOKEN` があると、講座のコードから読めます。`content:check` は秘密を持たないジョブで流します。pull request の検査がそれです。本番に入れるジョブは、`content:check` を秘密を外した環境で流すか、検査のジョブの結果を待ってから入れるだけにします。外部リポジトリのひな型の `scripts/stella.mjs` は、`content:check` を秘密の環境変数を外した環境で起動します。講座のコードを書けるのは、そのリポジトリに書き込める人だけにします。外部からの pull request のコードは、秘密のあるジョブで動かしません。
 
 重ねる処理は作業用の写しで 1 回だけです。`packages/content/.extra-overlay.json` が既にある写しでは止まります。やり直すときは写しを作り直します。
 
@@ -30,11 +32,11 @@ stella の通常のデプロイは、これまでどおり stella の講座だ�
   environments/<id>.json     # 任意。足す環境台帳だけ
 ```
 
-`stella-extra.json` の `schemaVersion` は 1 です。`name` と `courses` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。`courses` は空にできず、slug は重複できません。
+`stella-extra.json` の `schemaVersion` は 1 です。`name` は英小文字と数字だけで、ハイフンは付けません。先頭は英小文字か数字です。使える名前は stella の `packages/content/extra-repositories.json` に登録したものだけです。登録が無い名前では止まります。`courses` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。各 slug は、その `name` に `-` を足した形で始めます (`csharp` なら `csharp-`)。`courses` は空にできず、slug は重複できません。
 
 `courses` に書いた slug ごとに `courses/<slug>/course.json` が要ります。`courses/` の下に、`courses` へ書いていないフォルダーがあると止まります。書き忘れに気づくためです。
 
-各講座の `audience` は `granted` です。`category` は `packages/shared/src/skill-map/islands.ts` の島のカテゴリのどれかです。stella の講座と slug が同じときは止まります。
+各講座の `audience` は `granted` です。`category` は `packages/shared/src/skill-map/islands.ts` の島のカテゴリのどれかです。stella の講座と slug が同じときは止まります。stella で退役した slug も使えません。一覧は `packages/shared/src/curriculum/retired-stages.ts` の `RETIRED_STAGES` です。seed が同じ ID のステージを消すので、別の slug にします。`course.json` の `tenantId` を書かないときは `ses` です。
 
 台帳は stella の同じファイルの後ろに足します。`skills.json` と `patterns.json` は配列、`sources/registry.json` は `sources` 配列です。`id` が stella の台帳と重なると止まります。`environments/<id>.json` は写します。同じ名前が stella にあると止まります。
 
@@ -63,6 +65,8 @@ stella の通常のデプロイは、これまでどおり stella の講座だ�
 | `VITE_MATERIALS_BASE_URL` | 教材の公開 HTTPS URL。本番の stella と同じ値にする。ユーザー名、パスワード、クエリ、フラグメントは付けない |
 
 `db:seed:remote:content` には、PDF sync が書いたマニフェストのパスを `PDF_MANIFEST` で渡します。既定の出力は `packages/content/dist/pdf-manifest.json` です。秘密ではありません。未設定の seed は PDF の行を書きません。
+
+`content:check` は講座のコードを実行するので、上の秘密がある環境では流しません。解答例、誤答、テストを runner が動かします。`npm ci` や `dotnet test` などです。秘密が環境変数にあると、講座のコードから読めます。`content:check` は秘密を持たないジョブ (pull request の検査) で流します。本番に入れるジョブは、`content:check` を秘密を外した環境で流すか、検査のジョブの結果を待ってから入れるだけにします。外部リポジトリのひな型の `scripts/stella.mjs` は、`content:check` を秘密の環境変数を外した環境で起動します。講座のコードを書けるのは、そのリポジトリに書き込める人だけにします。外部からの pull request のコードは、秘密のあるジョブで動かしません。
 
 ## 受講者に出す
 
