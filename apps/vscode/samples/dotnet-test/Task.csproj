@@ -7,7 +7,14 @@
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- 暗黙の取り込みを止める。コンパイルする受講者のコード = 提出するファイル (src/**/*.cs)。テスト (tests/**/*.cs) は配布したままコンパイルする。 -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <Compile Include="tests/**/*.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

@@ -6,7 +6,7 @@
   "runner": "dotnet-test",
   "submit": {
     "files": [
-      "src/Answers.cs"
+      "src/**/*.cs"
     ]
   },
   "protected": [

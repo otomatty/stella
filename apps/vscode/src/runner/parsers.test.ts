@@ -8,6 +8,7 @@ import {
   parsePrettierList,
   parseTrxReport,
   parseVitestReport,
+  redactLocalPaths,
   relativePath,
   relativize,
 } from "./parsers.js";
@@ -269,6 +270,54 @@ describe("relativePath", () => {
   });
 });
 
+describe("redactLocalPaths", () => {
+  const root = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01";
+  const home = "C:\\Users\\山田 太郎";
+
+  it("Windows では大文字小文字と区切りを無視して課題フォルダーとホームを消す", () => {
+    const text = [
+      "c:/Users/山田 太郎/web-training/csharp/u02/q01/src/Answers.cs",
+      `${root}\\Task.csproj`,
+      root,
+      `${home}\\.nuget\\packages\\xunit`,
+      "C:\\Program Files\\dotnet\\sdk\\Task.dll",
+      "そのまま残す",
+    ].join("\n");
+    expect(redactLocalPaths(text, { root, home, platform: "win32" })).toBe(
+      [
+        "src/Answers.cs",
+        "Task.csproj",
+        ".",
+        "~\\.nuget\\packages\\xunit",
+        "C:\\Program Files\\dotnet\\sdk\\Task.dll",
+        "そのまま残す",
+      ].join("\n"),
+    );
+  });
+
+  it("正規表現の特殊文字は文字どおりに扱う", () => {
+    expect(
+      redactLocalPaths("C:\\work\\a+b\\src\\A.cs and C:\\work\\ab\\src\\A.cs", {
+        root: "C:\\work\\a+b",
+        home: "",
+        platform: "win32",
+      }),
+    ).toBe("src\\A.cs and C:\\work\\ab\\src\\A.cs");
+  });
+
+  it("POSIX では大文字小文字を区別する", () => {
+    const text = "/work/Task/src/A.cs /work/task/src/A.cs /home/Learner /home/learner/.nuget";
+    expect(
+      redactLocalPaths(text, { root: "/work/task", home: "/home/learner", platform: "linux" }),
+    ).toBe("/work/Task/src/A.cs src/A.cs /home/Learner ~/.nuget");
+  });
+
+  it("空の root と home は何もしない", () => {
+    const text = "C:\\Users\\山田 太郎\\a.cs";
+    expect(redactLocalPaths(text, { root: "", home: "", platform: "win32" })).toBe(text);
+  });
+});
+
 describe("parseTrxReport", () => {
   const symbolMessage = [
     "Assert.Equal() Failure: Strings differ",
@@ -304,6 +353,23 @@ describe("parseTrxReport", () => {
 
   it("UnitTestResult が無ければ空配列", () => {
     expect(parseTrxReport("<TestRun><Results></Results></TestRun>")).toEqual([]);
+  });
+
+  it("失敗メッセージとテスト名の課題フォルダーを相対パスにする", () => {
+    const root = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01";
+    const home = "C:\\Users\\山田 太郎";
+    const xml = `<TestRun><Results>
+      <UnitTestResult testName="${root}\\src\\Answers.cs" outcome="Failed">
+        <Output><ErrorInfo><Message>see ${root}\\src\\Answers.cs and ${home}\\.nuget\\x</Message></ErrorInfo></Output>
+      </UnitTestResult>
+    </Results></TestRun>`;
+    expect(parseTrxReport(xml, { root, home, platform: "win32" })).toEqual([
+      {
+        name: "src\\Answers.cs",
+        status: "failed",
+        message: "see src\\Answers.cs and ~\\.nuget\\x",
+      },
+    ]);
   });
 
   it("自己終了の要素と NotExecuted を読む", () => {

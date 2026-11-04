@@ -316,13 +316,75 @@ function trxStatus(outcome: string): TestCaseResult["status"] {
   return "failed";
 }
 
+const PATH_CONTINUES = /[A-Za-z0-9._~+-]/;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** 空、または区切りだけなら null。区切りは `\` と `/` のどちらでも当てる。 */
+function pathRegExp(abs: string, platform: NodeJS.Platform): RegExp | null {
+  const trimmed = abs.replace(/[\\/]+$/, "");
+  if (trimmed.length === 0) return null;
+  const parts = trimmed.split(/[\\/]+/).filter((part) => part.length > 0);
+  if (parts.length === 0) return null;
+  const body = parts.map(escapeRegExp).join("[\\\\/]+");
+  const pattern = /^[\\/]/.test(trimmed) ? `[\\\\/]+${body}` : body;
+  const flags = platform === "win32" ? "gi" : "g";
+  // 後ろがパスの続き (task と task2) なら当てない。日本語や空白は区切りにする。
+  return new RegExp(`${pattern}(?:([\\\\/]+)|(?![A-Za-z0-9._~+-]))`, flags);
+}
+
+function replaceAbs(
+  text: string,
+  abs: string,
+  platform: NodeJS.Platform,
+  mode: "root" | "home",
+): string {
+  const re = pathRegExp(abs, platform);
+  if (!re) return text;
+  let out = "";
+  let last = 0;
+  for (const match of text.matchAll(re)) {
+    const index = match.index;
+    if (index === undefined) continue;
+    const found = match[0];
+    const sep = match[1];
+    const next = text[index + found.length];
+    const continues = sep !== undefined && next !== undefined && PATH_CONTINUES.test(next);
+    out += text.slice(last, index);
+    if (continues && sep) out += mode === "root" ? "" : `~${sep}`;
+    else out += mode === "root" ? "." : "~";
+    last = index + found.length;
+  }
+  return out + text.slice(last);
+}
+
+/**
+ * 提出に残る文字列から、課題フォルダーとホームの絶対パスを外す。
+ * 課題フォルダーの中は相対パス、課題フォルダーそのものは `.`、ホームは `~`。
+ * Windows は大文字小文字を区別せず、`\` と `/` のどちらも当てる。空の root・home は何もしない。
+ */
+export function redactLocalPaths(
+  text: string,
+  options: { root: string; home: string; platform: NodeJS.Platform },
+): string {
+  const { root, home, platform } = options;
+  return replaceAbs(replaceAbs(text, root, platform, "root"), home, platform, "home");
+}
+
 /**
  * `dotnet test` の TRX (VSTest の XML)。`<TestRun` が無ければ null。
  * テストが 1 件も無ければ空配列 (0 件は呼び出し側が環境の問題にする)。
  * 失敗メッセージは `<Message>` だけを使い、StackTrace と xUnit の RunInfo は読まない。
+ * 第 2 引数があるときは、テスト名と失敗メッセージの絶対パスを外す。
  */
-export function parseTrxReport(xml: string): TestCaseResult[] | null {
+export function parseTrxReport(
+  xml: string,
+  redact?: { root: string; home: string; platform: NodeJS.Platform },
+): TestCaseResult[] | null {
   if (!xml.includes("<TestRun")) return null;
+  const clean = (value: string) => (redact ? redactLocalPaths(value, redact) : value);
   const tests: TestCaseResult[] = [];
   for (const match of xml.matchAll(UNIT_TEST_RESULT)) {
     const attrs = xmlAttrs(match[1] ?? "");
@@ -335,12 +397,12 @@ export function parseTrxReport(xml: string): TestCaseResult[] | null {
     if (status === "failed" && body) {
       const found = MESSAGE_ELEMENT.exec(body);
       if (found?.[1]) {
-        const text = decodeXml(found[1]).replace(/\r\n/g, "\n").trim().slice(0, 2000);
+        const text = clean(decodeXml(found[1]).replace(/\r\n/g, "\n").trim()).slice(0, 2000);
         if (text) message = text;
       }
     }
     tests.push({
-      name: decodeXml(testName),
+      name: clean(decodeXml(testName)),
       status,
       ...(message ? { message } : {}),
     });
