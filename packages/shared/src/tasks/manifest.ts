@@ -266,16 +266,13 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
         "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
       );
     }
-    // tests/ の下に当たりうる提出パターンは拒む。ファイル名 1 件の照合では tests/ConsoleOutput.cs や **/*.cs が抜ける。
-    const testProbes = ["tests/__stella__.cs", "tests/__stella__/__stella__.cs"];
-    if (
-      submitFiles.some((pattern) => {
-        if (pattern === "tests" || pattern.startsWith("tests/")) return true;
-        const match = picomatch(pattern, { dot: true });
-        return testProbes.some((probe) => match(probe));
-      })
-    ) {
-      errors.push("tests/ は配布したテストなので submit.files に入れられません");
+    // コンパイルするのは src/**/*.cs と tests/**/*.cs だけ。受講者のコードは src/ に置く。
+    // 有限個の仮のファイル名では **/ConsoleOutput.cs のように tests/ へ当たるパターンを取りこぼすので、
+    // どのパターンも src/ で始まることだけを求める (tests/ には当たりえない)。
+    if (submitFiles.some((pattern) => !pattern.startsWith("src/"))) {
+      errors.push(
+        "runner が dotnet-test の課題では submit.files を src/ の下のパターンにしてください (受講者のコードは src/ に置き、tests/ は配布したテストのため)",
+      );
     }
   }
 

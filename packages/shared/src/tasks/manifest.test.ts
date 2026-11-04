@@ -294,15 +294,23 @@ describe("parseTaskManifest (C# の課題)", () => {
     expect(parseTaskManifest(dotnet()).ok).toBe(true);
   });
 
-  it("submit.files に tests/ の下を入れられない", () => {
-    const message = "tests/ は配布したテストなので submit.files に入れられません";
-    for (const pattern of ["tests/ConsoleOutput.cs", "**/*.cs", "tests/**"]) {
-      const result = parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs", pattern] } }));
+  it("submit.files は src/ の下のパターンだけ", () => {
+    const message =
+      "runner が dotnet-test の課題では submit.files を src/ の下のパターンにしてください (受講者のコードは src/ に置き、tests/ は配布したテストのため)";
+    for (const pattern of [
+      "**/ConsoleOutput.cs",
+      "**/*.cs",
+      "tests/ConsoleOutput.cs",
+      "Answers.cs",
+    ]) {
+      const result = parseTaskManifest(dotnet({ submit: { files: [pattern] } }));
       expect(result.ok, pattern).toBe(false);
       if (result.ok) return;
       expect(result.errors, pattern).toContain(message);
     }
-    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
+    for (const pattern of ["src/**/*.cs", "src/Answers.cs"]) {
+      expect(parseTaskManifest(dotnet({ submit: { files: [pattern] } })).ok, pattern).toBe(true);
+    }
   });
 });
 
