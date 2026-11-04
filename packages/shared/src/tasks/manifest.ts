@@ -268,10 +268,17 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     }
     // コンパイルするのは src/**/*.cs と tests/**/*.cs だけ。受講者のコードは src/ に置く。
     // 有限個の仮のファイル名では **/ConsoleOutput.cs のように tests/ へ当たるパターンを取りこぼすので、
-    // どのパターンも src/ で始まることだけを求める (tests/ には当たりえない)。
+    // どのパターンも src/ で始まることを求める (tests/ には当たりえない)。
     if (submitFiles.some((pattern) => !pattern.startsWith("src/"))) {
       errors.push(
         "runner が dotnet-test の課題では submit.files を src/ の下のパターンにしてください (受講者のコードは src/ に置き、tests/ は配布したテストのため)",
+      );
+    }
+    // src/Answers.cs だけだと、分けた src/Helper.cs がビルドに入るのに提出の照合から外れる。
+    // 当たり判定ではなく src/**/*.cs という文字列を必須にする。
+    if (!submitFiles.includes("src/**/*.cs")) {
+      errors.push(
+        "runner が dotnet-test の課題では submit.files に src/**/*.cs を入れてください (コンパイルする src/ の .cs をすべて提出するため)",
       );
     }
   }

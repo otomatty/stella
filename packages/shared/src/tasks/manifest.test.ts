@@ -308,9 +308,17 @@ describe("parseTaskManifest (C# の課題)", () => {
       if (result.ok) return;
       expect(result.errors, pattern).toContain(message);
     }
-    for (const pattern of ["src/**/*.cs", "src/Answers.cs"]) {
-      expect(parseTaskManifest(dotnet({ submit: { files: [pattern] } })).ok, pattern).toBe(true);
-    }
+    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
+  });
+
+  it("submit.files に src/**/*.cs という文字列が要る", () => {
+    const message =
+      "runner が dotnet-test の課題では submit.files に src/**/*.cs を入れてください (コンパイルする src/ の .cs をすべて提出するため)";
+    const result = parseTaskManifest(dotnet({ submit: { files: ["src/Answers.cs"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
   });
 });
 
