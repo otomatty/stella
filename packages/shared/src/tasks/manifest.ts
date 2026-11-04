@@ -259,14 +259,22 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
         errors.push(`${file} は配布したファイルなので submit.files に入れられません`);
       }
     }
-    // 設定ファイルだけでは tests/ を覆えない。配布したテストの改変を提出で照合する。
-    const distributedTest = "tests/AnswersTests.cs";
-    if (!protectedPatterns.some((pattern) => picomatch(pattern, { dot: true })(distributedTest))) {
+    // 設定ファイルだけでは tests/ を覆えない。当たり判定ではなく tests/** という文字列を必須にする
+    // (tests/AnswersTests.cs だけ、tests/*.cs では配布したテスト全体を照合できない)。
+    if (!protectedPatterns.includes("tests/**")) {
       errors.push(
         "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
       );
     }
-    if (submitFiles.some((pattern) => picomatch(pattern, { dot: true })(distributedTest))) {
+    // tests/ の下に当たりうる提出パターンは拒む。ファイル名 1 件の照合では tests/ConsoleOutput.cs や **/*.cs が抜ける。
+    const testProbes = ["tests/__stella__.cs", "tests/__stella__/__stella__.cs"];
+    if (
+      submitFiles.some((pattern) => {
+        if (pattern === "tests" || pattern.startsWith("tests/")) return true;
+        const match = picomatch(pattern, { dot: true });
+        return testProbes.some((probe) => match(probe));
+      })
+    ) {
       errors.push("tests/ は配布したテストなので submit.files に入れられません");
     }
   }

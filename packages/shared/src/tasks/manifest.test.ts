@@ -271,30 +271,38 @@ describe("parseTaskManifest (C# の課題)", () => {
     );
   });
 
-  it("protected に tests/** が要る", () => {
-    const result = parseTaskManifest(
-      dotnet({
-        protected: [
-          "Task.csproj",
-          "packages.lock.json",
-          "Directory.Build.props",
-          "Directory.Build.targets",
-          "NuGet.config",
-        ],
-      }),
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.errors).toContain(
-      "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
-    );
+  it("protected に tests/** という文字列が要る", () => {
+    const message =
+      "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)";
+    for (const testsPattern of [undefined, "tests/AnswersTests.cs", "tests/*.cs"] as const) {
+      const result = parseTaskManifest(
+        dotnet({
+          protected: [
+            "Task.csproj",
+            "packages.lock.json",
+            "Directory.Build.props",
+            "Directory.Build.targets",
+            "NuGet.config",
+            ...(testsPattern === undefined ? [] : [testsPattern]),
+          ],
+        }),
+      );
+      expect(result.ok, String(testsPattern)).toBe(false);
+      if (result.ok) return;
+      expect(result.errors, String(testsPattern)).toContain(message);
+    }
+    expect(parseTaskManifest(dotnet()).ok).toBe(true);
   });
 
-  it("submit.files に tests/** を入れられない", () => {
-    const result = parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs", "tests/**"] } }));
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.errors).toContain("tests/ は配布したテストなので submit.files に入れられません");
+  it("submit.files に tests/ の下を入れられない", () => {
+    const message = "tests/ は配布したテストなので submit.files に入れられません";
+    for (const pattern of ["tests/ConsoleOutput.cs", "**/*.cs", "tests/**"]) {
+      const result = parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs", pattern] } }));
+      expect(result.ok, pattern).toBe(false);
+      if (result.ok) return;
+      expect(result.errors, pattern).toContain(message);
+    }
+    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
   });
 });
 
