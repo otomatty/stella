@@ -1,5 +1,5 @@
 /**
- * 受講者の端末にある道具 (Node.js・npm・Git) と、課題フォルダーに入った
+ * 受講者の端末にある道具 (Node.js・npm・Git・.NET SDK) と、課題フォルダーに入った
  * パッケージの実行ファイルを探す。
  *
  * 拡張そのものは VS Code 同梱の実行環境で動くので、`process.execPath` は受講者が
@@ -113,6 +113,24 @@ export async function resolveNpm(
   }
   const npm = await findExecutable("npm", env, platform, exists);
   return npm ? { file: npm, prefixArgs: [] } : null;
+}
+
+/**
+ * .NET SDK の `dotnet` を探す。PATH を先に見、無ければ `DOTNET_ROOT` (絶対パスだけ) の中を見る。
+ * 相対パスの `DOTNET_ROOT` は、課題フォルダーに置かれた同名の実行ファイルを拾わないように使わない。
+ */
+export async function resolveDotnet(
+  env: NodeJS.ProcessEnv,
+  platform: NodeJS.Platform,
+  exists: FileExists = isFile,
+): Promise<string | null> {
+  const found = await findExecutable("dotnet", env, platform, exists);
+  if (found) return found;
+  const root = readEnv(env, "DOTNET_ROOT");
+  const p = pathModule(platform);
+  if (!root || !p.isAbsolute(root)) return null;
+  const candidate = p.join(root, platform === "win32" ? "dotnet.exe" : "dotnet");
+  return (await exists(candidate)) ? candidate : null;
 }
 
 /**

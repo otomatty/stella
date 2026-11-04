@@ -89,6 +89,23 @@ describe("describeRequirement", () => {
   });
 });
 
+describe(".NET SDK の版", () => {
+  const requirement = { min: "10.0.100", majors: [10] };
+
+  it("10 系の 10.0.100 以上を通す", () => {
+    expect(validateEnvironmentRequirement({ dotnet: requirement }, "environment")).toEqual([]);
+    expect(checkToolVersion("10.0.400", requirement)).toEqual({ ok: true, version: [10, 0, 400] });
+    expect(checkToolVersion("9.0.100", requirement)).toMatchObject({
+      ok: false,
+      reason: "too-old",
+    });
+    expect(checkToolVersion("11.0.100", requirement)).toMatchObject({
+      ok: false,
+      reason: "too-new",
+    });
+  });
+});
+
 describe("validateEnvironmentRequirement", () => {
   it("majors は重複の無い整数の配列に限る", () => {
     expect(validateEnvironmentRequirement({ node: { majors: [22, 24] } }, "env")).toEqual([]);

@@ -252,22 +252,7 @@ export async function verifyTaskSubmission(
   );
   if (input.localResult.manifestSha256 !== (await contentHash(manifestBytes)))
     reasons.push("実行した課題設定が配布した設定と一致しません");
-  const plan = RUNNERS[manifest.runner].plan;
-  const required =
-    plan === "static"
-      ? ["static"]
-      : plan === "diagnose"
-        ? ["diagnose"]
-        : plan === "ci"
-          ? ["test"]
-          : [
-              "deps",
-              ...(manifest.checks.lint ? ["lint"] : []),
-              ...(manifest.checks.format ? ["format"] : []),
-              ...(plan === "vitest"
-                ? ["test"]
-                : ["browsers", "e2e", ...(plan === "next" ? ["build"] : [])]),
-            ];
+  const required = requiredSteps(manifest);
   if (
     required.some(
       (id) =>
@@ -288,4 +273,19 @@ export async function verifyTaskSubmission(
   if (manifest.runner === "ci-deploy" && !input.localResult.ci?.commit)
     reasons.push("CI の実行の URL と手元のコミットの記録がありません");
   return { check: { matched: reasons.length === 0, reasons }, files };
+}
+
+/** 提出に必要な手順。deps は準備の再利用 (skipped) を、呼び出し側が今までどおり許す。 */
+function requiredSteps(manifest: TaskBundle["manifest"]): string[] {
+  const plan = RUNNERS[manifest.runner].plan;
+  if (plan === "static") return ["static"];
+  if (plan === "diagnose") return ["diagnose"];
+  if (plan === "ci") return ["test"];
+  if (plan === "dotnet") return ["deps", "build", "test"];
+  return [
+    "deps",
+    ...(manifest.checks.lint ? ["lint"] : []),
+    ...(manifest.checks.format ? ["format"] : []),
+    ...(plan === "vitest" ? ["test"] : ["browsers", "e2e", ...(plan === "next" ? ["build"] : [])]),
+  ];
 }

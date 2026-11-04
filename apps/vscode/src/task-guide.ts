@@ -166,11 +166,12 @@ function checkStep(input: TaskGuideInput): string {
   const plan = RUNNERS[manifest.runner].plan;
   const what: Record<RunnerPlanKind, string> = {
     static: "HTML の文書の形と、課題文の条件 (見出しなど) を確かめます。",
-    diagnose: "Node.js・npm・Git の版を確かめます。",
+    diagnose: "Node.js・npm・Git のバージョンを確かめます。",
     vitest: "テストを手元で実行します。",
     playwright: "ブラウザーでの操作テストを手元で実行します。",
     next: "ビルドとブラウザーでの操作テストを手元で実行します。",
     ci: "GitHub Actions の実行の URL と公開先の URL を入力すると、手元のコミットと照らし合わせます。",
+    dotnet: "C# のコードをビルドし、テストを手元で実行します。",
   };
   const checks = [manifest.checks.lint ? "lint" : "", manifest.checks.format ? "整形" : ""].filter(
     Boolean,
@@ -181,6 +182,10 @@ function checkStep(input: TaskGuideInput): string {
   if (RUNNERS[manifest.runner].requiresNode)
     extra.push(
       "初回は必要なパッケージを入れる (npm ci) ので数分かかります。VS Code にフォルダーを信頼するか尋ねられたら、信頼すると実行できます。",
+    );
+  if (plan === "dotnet")
+    extra.push(
+      "初回はテストの道具を NuGet から入れる (dotnet restore) ので 1 分ほどかかります。VS Code にフォルダーを信頼するか尋ねられたら、信頼すると実行できます。",
     );
   return [
     `<p>${link("stella.runTask", [root], "課題を確認する", "button")} を押します。${what[plan]}${extra.join("")}</p>`,

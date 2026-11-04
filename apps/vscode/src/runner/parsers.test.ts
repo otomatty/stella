@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   cleanMessage,
   parseEslintReport,
+  parseMsbuildDiagnostics,
   parsePlaywrightReport,
   parsePrettierList,
+  parseTrxReport,
   parseVitestReport,
+  redactLocalPaths,
   relativePath,
   relativize,
 } from "./parsers.js";
@@ -15,6 +18,10 @@ const ROOT = "/work/task";
 
 function fixture(name: string): unknown {
   return JSON.parse(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), "utf8"));
+}
+
+function textFixture(name: string): string {
+  return readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), "utf8");
 }
 
 describe("parseVitestReport", () => {
@@ -260,5 +267,167 @@ describe("relativePath", () => {
 
   it("行数を絞る", () => {
     expect(cleanMessage("1\n2\n3\n4", ROOT, 2)).toBe("1\n2");
+  });
+});
+
+describe("redactLocalPaths", () => {
+  const root = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01";
+  const home = "C:\\Users\\山田 太郎";
+
+  it("Windows では大文字小文字と区切りを無視して課題フォルダーとホームを消す", () => {
+    const text = [
+      "c:/Users/山田 太郎/web-training/csharp/u02/q01/src/Answers.cs",
+      `${root}\\Task.csproj`,
+      root,
+      `${home}\\.nuget\\packages\\xunit`,
+      "C:\\Program Files\\dotnet\\sdk\\Task.dll",
+      "そのまま残す",
+    ].join("\n");
+    expect(redactLocalPaths(text, { root, home, platform: "win32" })).toBe(
+      [
+        "src/Answers.cs",
+        "Task.csproj",
+        ".",
+        "~\\.nuget\\packages\\xunit",
+        "C:\\Program Files\\dotnet\\sdk\\Task.dll",
+        "そのまま残す",
+      ].join("\n"),
+    );
+  });
+
+  it("正規表現の特殊文字は文字どおりに扱う", () => {
+    expect(
+      redactLocalPaths("C:\\work\\a+b\\src\\A.cs and C:\\work\\ab\\src\\A.cs", {
+        root: "C:\\work\\a+b",
+        home: "",
+        platform: "win32",
+      }),
+    ).toBe("src\\A.cs and C:\\work\\ab\\src\\A.cs");
+  });
+
+  it("POSIX では大文字小文字を区別する", () => {
+    const text = "/work/Task/src/A.cs /work/task/src/A.cs /home/Learner /home/learner/.nuget";
+    expect(
+      redactLocalPaths(text, { root: "/work/task", home: "/home/learner", platform: "linux" }),
+    ).toBe("/work/Task/src/A.cs src/A.cs /home/Learner ~/.nuget");
+  });
+
+  it("空の root と home は何もしない", () => {
+    const text = "C:\\Users\\山田 太郎\\a.cs";
+    expect(redactLocalPaths(text, { root: "", home: "", platform: "win32" })).toBe(text);
+  });
+});
+
+describe("parseTrxReport", () => {
+  const symbolMessage = [
+    "Assert.Equal() Failure: Strings differ",
+    "           ↓ (pos 0)",
+    'Expected: "[a&b]"',
+    'Actual:   "<a&b>"',
+    "           ↑ (pos 0)",
+  ].join("\n");
+
+  it("失敗と成功を読み、文字参照と改行を戻す", () => {
+    const tests = parseTrxReport(textFixture("dotnet-test.trx"));
+    expect(tests?.map((test) => [test.name, test.status, test.file])).toEqual([
+      ['記号 <a> & "b" を囲む', "failed", undefined],
+      ["Q11 1 から N の合計(n: 1, expected: 1)", "failed", undefined],
+      ["Q11 1 から N の合計(n: 4, expected: 10)", "failed", undefined],
+      ["Q01 1 から N", "passed", undefined],
+    ]);
+    expect(tests?.[0]?.message).toBe(symbolMessage);
+    expect(tests?.[1]?.message).toBe(
+      "Assert.Equal() Failure: Values differ\nExpected: 1\nActual:   0",
+    );
+    expect(tests?.[2]?.message).toBe(
+      "Assert.Equal() Failure: Values differ\nExpected: 10\nActual:   6",
+    );
+    expect(tests?.[3]?.message).toBeUndefined();
+    expect(tests?.[0]?.message).not.toContain("\r");
+    expect(tests?.[0]?.message).not.toContain("AnswersTests.cs");
+  });
+
+  it("TestRun が無ければ null", () => {
+    expect(parseTrxReport('<UnitTestResult testName="a" outcome="Passed" />')).toBeNull();
+  });
+
+  it("UnitTestResult が無ければ空配列", () => {
+    expect(parseTrxReport("<TestRun><Results></Results></TestRun>")).toEqual([]);
+  });
+
+  it("失敗メッセージとテスト名の課題フォルダーを相対パスにする", () => {
+    const root = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\q01";
+    const home = "C:\\Users\\山田 太郎";
+    const xml = `<TestRun><Results>
+      <UnitTestResult testName="${root}\\src\\Answers.cs" outcome="Failed">
+        <Output><ErrorInfo><Message>see ${root}\\src\\Answers.cs and ${home}\\.nuget\\x</Message></ErrorInfo></Output>
+      </UnitTestResult>
+    </Results></TestRun>`;
+    expect(parseTrxReport(xml, { root, home, platform: "win32" })).toEqual([
+      {
+        name: "src\\Answers.cs",
+        status: "failed",
+        message: "see src\\Answers.cs and ~\\.nuget\\x",
+      },
+    ]);
+  });
+
+  it("自己終了の要素と NotExecuted を読む", () => {
+    const xml = `<TestRun><Results>
+      <UnitTestResult testName="done" outcome="Passed" />
+      <UnitTestResult outcome="NotExecuted" testName="later" />
+    </Results></TestRun>`;
+    expect(parseTrxReport(xml)).toEqual([
+      { name: "done", status: "passed" },
+      { name: "later", status: "skipped" },
+    ]);
+  });
+});
+
+describe("parseMsbuildDiagnostics", () => {
+  const root = "C:\\Users\\山田 太郎\\web-training\\csharp\\u02\\t01";
+  const compile = `${root}\\src\\Answers.cs(5,22): error CS1002: ; が必要です [${root}\\Task.csproj]`;
+
+  it("課題フォルダーの中は相対パスにし、外・警告・NU1004・重複は読まない", () => {
+    const output = [
+      compile,
+      compile,
+      `${root}\\src\\Answers.cs(5,22): warning CS0219: 未使用です [${root}\\Task.csproj]`,
+      `${root}\\Task.csproj : error NU1004: パッケージ参照が lock ファイルと一致しません`,
+      "C:\\Users\\山田 太郎\\other\\Foo.cs(1,1): error CS1002: ; が必要です",
+    ].join("\n");
+    expect(parseMsbuildDiagnostics(output, root, "win32")).toEqual([
+      {
+        file: "src/Answers.cs",
+        line: 5,
+        column: 22,
+        ruleId: "CS1002",
+        message: "; が必要です",
+        severity: "error",
+      },
+      {
+        file: "Foo.cs",
+        line: 1,
+        column: 1,
+        ruleId: "CS1002",
+        message: "; が必要です",
+        severity: "error",
+      },
+    ]);
+  });
+
+  it("POSIX のパスを相対パスにする", () => {
+    const posixRoot = "/work/task";
+    const output = `${posixRoot}/src/Answers.cs(3,1): error CS0103: 名前が存在しません [${posixRoot}/Task.csproj]`;
+    expect(parseMsbuildDiagnostics(output, posixRoot, "linux")).toEqual([
+      {
+        file: "src/Answers.cs",
+        line: 3,
+        column: 1,
+        ruleId: "CS0103",
+        message: "名前が存在しません",
+        severity: "error",
+      },
+    ]);
   });
 });

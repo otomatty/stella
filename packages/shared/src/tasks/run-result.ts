@@ -9,6 +9,7 @@
  */
 
 import type { CiRunClaim } from "./ci-run.js";
+import type { EnvironmentTool } from "./environment.js";
 import type { RunnerId } from "./runners.js";
 
 export type StepStatus = "passed" | "failed" | "error" | "skipped";
@@ -82,7 +83,7 @@ export interface RunResult {
   /** `process.platform` の値 (win32 / darwin / linux)。 */
   platform: string;
   /** 実行に使った道具の版 (コマンドの出力そのまま)。 */
-  toolVersions: Partial<Record<"node" | "npm" | "git", string>>;
+  toolVersions: Partial<Record<EnvironmentTool, string>>;
   steps: RunStepResult[];
   /** 提出するファイル (submit.files に当たったもの)。 */
   files: HashedFile[];

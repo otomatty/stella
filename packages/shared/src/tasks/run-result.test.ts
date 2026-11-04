@@ -45,8 +45,8 @@ describe("RUNNERS", () => {
     expect(isRunnerId("sh")).toBe(false);
   });
 
-  it("Node.js が要らないのは HTML の確認・環境診断・CI だけ", () => {
+  it("Node.js が要らないのは HTML の確認・環境診断・CI・C# のテストだけ", () => {
     const withoutNode = RUNNER_IDS.filter((id) => !RUNNERS[id].requiresNode);
-    expect(withoutNode).toEqual(["static-preview", "env-diagnose", "ci-deploy"]);
+    expect(withoutNode).toEqual(["static-preview", "env-diagnose", "ci-deploy", "dotnet-test"]);
   });
 });

@@ -1,8 +1,10 @@
 /**
- * 道具の JSON 出力 (Vitest・ESLint・Playwright) を、実行結果の形に読み替える。
+ * 道具の出力 (Vitest・ESLint・Playwright の JSON、.NET の TRX と MSBuild) を、
+ * 実行結果の形に読み替える。依存パッケージは足さず、正規表現で読む。
  * 形は各道具の実際の出力から取ったフィクスチャ (`__fixtures__/`) で確かめている。
  */
 
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { LintFinding, StepStatus, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { stripAnsi } from "./process.js";
@@ -269,4 +271,196 @@ export function parsePrettierList(stdout: string): string[] {
     .split("\n")
     .map((line) => line.trim().replace(/^\.\//, ""))
     .filter((line) => line.length > 0 && !line.startsWith("["));
+}
+
+const XML_ENTITY = /&(#x[0-9a-fA-F]+|#\d+|lt|gt|amp|quot|apos);/g;
+
+/** TRX の文字参照を戻す。`&amp;lt;` は `&lt;` のまま (1 回だけ戻す)。 */
+function decodeXml(text: string): string {
+  return text.replace(XML_ENTITY, (all, body: string) => {
+    if (body === "lt") return "<";
+    if (body === "gt") return ">";
+    if (body === "amp") return "&";
+    if (body === "quot") return '"';
+    if (body === "apos") return "'";
+    const code = body.startsWith("#x")
+      ? Number.parseInt(body.slice(2), 16)
+      : Number.parseInt(body.slice(1), 10);
+    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return all;
+    try {
+      return String.fromCodePoint(code);
+    } catch {
+      return all;
+    }
+  });
+}
+
+const UNIT_TEST_RESULT = /<UnitTestResult\b([^>]*?)(?:\/>|>([\s\S]*?)<\/UnitTestResult>)/g;
+const XML_ATTR = /([\w:.-]+)\s*=\s*"([^"]*)"/g;
+const MESSAGE_ELEMENT = /<Message\b[^>]*>([\s\S]*?)<\/Message>/;
+
+function xmlAttrs(raw: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  for (const match of raw.matchAll(XML_ATTR)) {
+    const name = match[1];
+    if (name) attrs[name] = match[2] ?? "";
+  }
+  return attrs;
+}
+
+function trxStatus(outcome: string): TestCaseResult["status"] {
+  if (outcome === "Passed") return "passed";
+  if (outcome === "NotExecuted" || outcome === "Inconclusive" || outcome === "Pending") {
+    return "skipped";
+  }
+  return "failed";
+}
+
+const PATH_CONTINUES = /[A-Za-z0-9._~+-]/;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** 空、または区切りだけなら null。区切りは `\` と `/` のどちらでも当てる。 */
+function pathRegExp(abs: string, platform: NodeJS.Platform): RegExp | null {
+  const trimmed = abs.replace(/[\\/]+$/, "");
+  if (trimmed.length === 0) return null;
+  const parts = trimmed.split(/[\\/]+/).filter((part) => part.length > 0);
+  if (parts.length === 0) return null;
+  const body = parts.map(escapeRegExp).join("[\\\\/]+");
+  const pattern = /^[\\/]/.test(trimmed) ? `[\\\\/]+${body}` : body;
+  const flags = platform === "win32" ? "gi" : "g";
+  // 後ろがパスの続き (task と task2) なら当てない。日本語や空白は区切りにする。
+  return new RegExp(`${pattern}(?:([\\\\/]+)|(?![A-Za-z0-9._~+-]))`, flags);
+}
+
+function replaceAbs(
+  text: string,
+  abs: string,
+  platform: NodeJS.Platform,
+  mode: "root" | "home",
+): string {
+  const re = pathRegExp(abs, platform);
+  if (!re) return text;
+  let out = "";
+  let last = 0;
+  for (const match of text.matchAll(re)) {
+    const index = match.index;
+    if (index === undefined) continue;
+    const found = match[0];
+    const sep = match[1];
+    const next = text[index + found.length];
+    const continues = sep !== undefined && next !== undefined && PATH_CONTINUES.test(next);
+    out += text.slice(last, index);
+    if (continues && sep) out += mode === "root" ? "" : `~${sep}`;
+    else out += mode === "root" ? "." : "~";
+    last = index + found.length;
+  }
+  return out + text.slice(last);
+}
+
+/**
+ * 提出に残る文字列から、課題フォルダーとホームの絶対パスを外す。
+ * 課題フォルダーの中は相対パス、課題フォルダーそのものは `.`、ホームは `~`。
+ * Windows は大文字小文字を区別せず、`\` と `/` のどちらも当てる。空の root・home は何もしない。
+ */
+export function redactLocalPaths(
+  text: string,
+  options: { root: string; home: string; platform: NodeJS.Platform },
+): string {
+  const { root, home, platform } = options;
+  return replaceAbs(replaceAbs(text, root, platform, "root"), home, platform, "home");
+}
+
+/**
+ * `dotnet test` の TRX (VSTest の XML)。`<TestRun` が無ければ null。
+ * テストが 1 件も無ければ空配列 (0 件は呼び出し側が環境の問題にする)。
+ * 失敗メッセージは `<Message>` だけを使い、StackTrace と xUnit の RunInfo は読まない。
+ * 第 2 引数があるときは、テスト名と失敗メッセージの絶対パスを外す。
+ */
+export function parseTrxReport(
+  xml: string,
+  redact?: { root: string; home: string; platform: NodeJS.Platform },
+): TestCaseResult[] | null {
+  if (!xml.includes("<TestRun")) return null;
+  const clean = (value: string) => (redact ? redactLocalPaths(value, redact) : value);
+  const tests: TestCaseResult[] = [];
+  for (const match of xml.matchAll(UNIT_TEST_RESULT)) {
+    const attrs = xmlAttrs(match[1] ?? "");
+    const testName = attrs.testName;
+    const outcome = attrs.outcome;
+    if (!testName || !outcome) continue;
+    const status = trxStatus(outcome);
+    const body = match[2];
+    let message: string | undefined;
+    if (status === "failed" && body) {
+      const found = MESSAGE_ELEMENT.exec(body);
+      if (found?.[1]) {
+        const text = clean(decodeXml(found[1]).replace(/\r\n/g, "\n").trim()).slice(0, 2000);
+        if (text) message = text;
+      }
+    }
+    tests.push({
+      name: clean(decodeXml(testName)),
+      status,
+      ...(message ? { message } : {}),
+    });
+  }
+  return tests;
+}
+
+const MSBUILD_ERROR =
+  /^\s*(.+?)\((\d+),(\d+)(?:,\d+,\d+)?\)\s*:\s*error\s+([A-Z]{2,}\d+)\s*:\s*(.*?)(?:\s+\[[^\]]*\])?\s*$/;
+
+/**
+ * MSBuild の `error` 行 (warning は読まない)。課題フォルダーの中は相対パスにし、
+ * 外のファイルはファイル名だけにする。結果は提出で LMS に送られるので、
+ * 受講者のユーザー名を含む絶対パスを残さない。
+ */
+export function parseMsbuildDiagnostics(
+  output: string,
+  root: string,
+  platform: NodeJS.Platform,
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const seen = new Set<string>();
+  for (const line of output.split(/\r?\n/)) {
+    const match = MSBUILD_ERROR.exec(line);
+    if (!match) continue;
+    const file = msbuildFile(match[1] ?? "", root, platform);
+    const finding: LintFinding = {
+      file,
+      line: Number(match[2]),
+      column: Number(match[3]),
+      ruleId: match[4] ?? "",
+      message: (match[5] ?? "").trim(),
+      severity: "error",
+    };
+    const key = [finding.file, finding.line, finding.column, finding.ruleId, finding.message].join(
+      "\0",
+    );
+    if (seen.has(key)) continue;
+    seen.add(key);
+    findings.push(finding);
+  }
+  return findings;
+}
+
+function msbuildFile(file: string, root: string, platform: NodeJS.Platform): string {
+  const p = platform === "win32" ? path.win32 : path.posix;
+  const normalized = p.normalize(file);
+  if (!p.isAbsolute(normalized)) {
+    const rel = normalized.split(/[/\\]/).join("/");
+    return rel.startsWith("../") || rel === ".." ? p.basename(normalized) : rel;
+  }
+  const base = p.normalize(root).replace(/[\\/]+$/, "");
+  const fold = (value: string) => (platform === "win32" ? value.toLowerCase() : value);
+  const prefix = `${fold(base)}${p.sep}`;
+  if (!fold(normalized).startsWith(prefix)) return p.basename(normalized);
+  return normalized
+    .slice(base.length)
+    .replace(/^[/\\]+/, "")
+    .split(/[/\\]/)
+    .join("/");
 }

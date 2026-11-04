@@ -1,19 +1,31 @@
 /**
- * 課題が求める開発環境 (Node.js・npm・Git の版) と、見つかった版との照合。
+ * 課題が求める開発環境 (Node.js・npm・Git・.NET SDK の版) と、見つかった版との照合。
  *
  * 環境の定義は教材側 (`packages/content/environments/<id>.json`) が正本で、
  * 課題の `.stella/task.json` に写して配る。照合は「何か数字が出たら合格」にせず、
  * 定義した版と比べる (docs/curriculum/06 §5)。
+ * `dotnet --version` の出力は `10.0.400` の形で、`parseVersion` でそのまま読める。
  */
 
-export const ENVIRONMENT_TOOLS = ["node", "npm", "git"] as const;
+export const ENVIRONMENT_TOOLS = ["node", "npm", "git", "dotnet"] as const;
 export type EnvironmentTool = (typeof ENVIRONMENT_TOOLS)[number];
 
 export const ENVIRONMENT_TOOL_LABELS: Readonly<Record<EnvironmentTool, string>> = {
   node: "Node.js",
   npm: "npm",
   git: "Git",
+  dotnet: ".NET SDK",
 };
+
+/**
+ * 要件が 1 つも無い診断 (課題の外からの診断) で調べる道具。
+ * dotnet を足すと、C# を使わない受講者の診断が落ちる。
+ */
+export const DEFAULT_DIAGNOSE_TOOLS = [
+  "node",
+  "npm",
+  "git",
+] as const satisfies readonly EnvironmentTool[];
 
 export interface ToolRequirement {
   /** これ以上の版を求める (例 "22.12.0")。 */
@@ -33,13 +45,14 @@ export interface EnvironmentRequirement {
   node?: ToolRequirement;
   npm?: ToolRequirement;
   git?: ToolRequirement;
+  dotnet?: ToolRequirement;
 }
 
 export type Version = readonly [number, number, number];
 
 /**
  * コマンドの出力から最初の版番号を取り出す。
- * 例: "v22.22.0" / "10.9.4" / "git version 2.45.1.windows.1"。
+ * 例: "v22.22.0" / "10.9.4" / "git version 2.45.1.windows.1" / "10.0.400" (`dotnet --version`)。
  */
 export function parseVersion(text: string): Version | null {
   const match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(text);
@@ -128,7 +141,7 @@ export function validateEnvironmentRequirement(raw: unknown, at: string): string
     }
     const { min, maxMajor, majors } = req as Record<string, unknown>;
     if (min !== undefined && (typeof min !== "string" || parseVersion(min) === null)) {
-      errors.push(`${at}.${tool}.min は "22.12.0" のような版番号で書いてください`);
+      errors.push(`${at}.${tool}.min は "22.12.0" のようなバージョン番号で書いてください`);
     }
     if (maxMajor !== undefined && (typeof maxMajor !== "number" || !Number.isInteger(maxMajor))) {
       errors.push(`${at}.${tool}.maxMajor は整数で書いてください`);

@@ -11,6 +11,7 @@
 
 import picomatch from "picomatch";
 import { isCiWorkflowPath } from "./ci-run.js";
+import { DOTNET_PROTECTED_FILES } from "./dotnet.js";
 import { type EnvironmentRequirement, validateEnvironmentRequirement } from "./environment.js";
 import { parsePublicSourceReferences, type PublicSourceReference } from "./source-reference.js";
 import { isRunnerId, RUNNER_IDS, type RunnerId } from "./runners.js";
@@ -241,6 +242,45 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
 
   if (raw.environment !== undefined) {
     errors.push(...validateEnvironmentRequirement(raw.environment, "environment"));
+  }
+
+  if (raw.runner === "dotnet-test") {
+    // ESLint・Prettier は C# を検査しない。lint・整形の有無で手順を増やさない。
+    if (checks.lint || checks.format) {
+      errors.push(
+        "runner が dotnet-test の課題では checks.lint・checks.format を使えません (ESLint・Prettier は C# を検査しません)",
+      );
+    }
+    for (const file of DOTNET_PROTECTED_FILES) {
+      if (!protectedPatterns.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`runner が dotnet-test の課題では protected に ${file} を入れてください`);
+      }
+      if (submitFiles.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`${file} は配布したファイルなので submit.files に入れられません`);
+      }
+    }
+    // 設定ファイルだけでは tests/ を覆えない。当たり判定ではなく tests/** という文字列を必須にする
+    // (tests/AnswersTests.cs だけ、tests/*.cs では配布したテスト全体を照合できない)。
+    if (!protectedPatterns.includes("tests/**")) {
+      errors.push(
+        "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
+      );
+    }
+    // コンパイルするのは src/**/*.cs と tests/**/*.cs だけ。受講者のコードは src/ に置く。
+    // 有限個の仮のファイル名では **/ConsoleOutput.cs のように tests/ へ当たるパターンを取りこぼすので、
+    // どのパターンも src/ で始まることを求める (tests/ には当たりえない)。
+    if (submitFiles.some((pattern) => !pattern.startsWith("src/"))) {
+      errors.push(
+        "runner が dotnet-test の課題では submit.files を src/ の下のパターンにしてください (受講者のコードは src/ に置き、tests/ は配布したテストのため)",
+      );
+    }
+    // src/Answers.cs だけだと、分けた src/Helper.cs がビルドに入るのに提出の照合から外れる。
+    // 当たり判定ではなく src/**/*.cs という文字列を必須にする。
+    if (!submitFiles.includes("src/**/*.cs")) {
+      errors.push(
+        "runner が dotnet-test の課題では submit.files に src/**/*.cs を入れてください (コンパイルする src/ の .cs をすべて提出するため)",
+      );
+    }
   }
 
   let staticChecks: StaticCheck[] | undefined;

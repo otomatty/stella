@@ -9,6 +9,9 @@ import {
   ciStep,
   depsStep,
   diagnoseStep,
+  dotnetBuildStep,
+  dotnetRestoreStep,
+  dotnetTestStep,
   formatStep,
   lintStep,
   nextBuildStep,
@@ -35,5 +38,7 @@ export function buildPlan(manifest: TaskManifest): StepDefinition[] {
       return [depsStep, browsersStep, ...checks, nextBuildStep, playwrightStep];
     case "ci":
       return [ciStep];
+    case "dotnet":
+      return [dotnetRestoreStep, dotnetBuildStep, dotnetTestStep];
   }
 }
