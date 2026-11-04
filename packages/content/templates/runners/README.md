@@ -1,6 +1,6 @@
 # runner ごとの課題テンプレート
 
-Node.js の道具を使う課題 (`task.json` の `runner`) を作るときのひな形。VS Code 拡張が runner ごとに実行する固定の手順 (`apps/vscode/src/runner/steps.ts`) に合わせて、`package.json`・`package-lock.json`・テストと lint・整形の設定をそろえてある。
+Node.js の道具を使う課題と、C# の課題 (`task.json` の `runner`) を作るときのひな形。VS Code 拡張が runner ごとに実行する固定の手順 (`apps/vscode/src/runner/steps.ts`) に合わせて、Node.js の課題は `package.json`・`package-lock.json`・テストと lint・整形の設定を、C# の課題は .NET SDK のプロジェクトと lockfile をそろえてある。
 
 | フォルダー | runner | 主な道具 | 環境台帳 | 使う講座 (07 §5.2) |
 | --- | --- | --- | --- | --- |
@@ -14,6 +14,7 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 | `e2e/` | `e2e` | Playwright + Vite | `e2e-01` | ui-integration-basics, nextjs-basics, deploy-ops-basics |
 | `next-app/` | `next-app` | Next.js (`next build`) + Playwright | `next-app-01` | nextjs-basics |
 | `ci-deploy/` | `ci-deploy` | GitHub Actions (`node --test`) + GitHub Pages | `ci-deploy-01` | deploy-ops-basics |
+| `dotnet-test/` | `dotnet-test` | .NET SDK 10 + xUnit | `dotnet-test-01` | C# の講座 (準備中) |
 
 `static-preview`・`env-diagnose` は Node.js の道具を使わないので、テンプレートは無い。`ci-deploy` はテストを手元では動かさず、受講者の GitHub Actions が動かす (下の「CI と公開」、07 §5.5)。
 
@@ -61,5 +62,17 @@ Node.js の道具を使う課題 (`task.json` の `runner`) を作るときの�
 2. 環境台帳に新しい ID (例 `node-test-02`) を作り、`libraries` を新しい版にする。新しい道具が求める Node.js の版 (`engines`) に合わせて `requirements.node` も見直す。古い台帳は残す (過去の課題の記録が参照する)。`task-fields.json` の `environment` を新しい ID にする。
 3. `apps/vscode/samples/<runner>/` の見本も同じファイルに更新し、`bun run test` でテンプレートの検査 (`apps/vscode/src/runner/templates.test.ts`・`samples.test.ts`) を通す。
 4. 見本を Extension Development Host で開き、「課題を確認する」で最後まで通ることを確かめる (`apps/vscode/samples/README.md`)。
+
+## C# (`dotnet-test/`)
+
+C# の課題は .NET SDK 10 と xUnit で確かめる。拡張の手順は `dotnet restore --locked-mode` → `dotnet build` → `dotnet test` (結果は TRX)。
+
+- **.NET SDK は 10 系だけ。** テストの実行に .NET 10 の runtime が要る。環境台帳の `requirements.dotnet` は `{ "min": "10.0.100", "majors": [10] }`。.NET 11 の SDK だけでは `net10.0` のテストを動かせない。
+- **bin/obj は `.stella/dotnet/` に出す。** 課題フォルダーを歩く処理は `.stella` に入らないので、ビルドの出力が提出の照合と VS Code のエクスプローラーに混ざらない。`bin` や `obj` を歩く対象から外すと、JavaScript の課題の `bin/` まで提出から消える。
+- **Directory.Build.props・Directory.Build.targets・NuGet.config を課題のルートに置く。** props は出力先を `.stella/dotnet/` にし、このファイルがあると親フォルダー (学習フォルダー) の Directory.Build.props は読み込まれない。targets は中身が空で、親の targets を読み込まない。NuGet.config は取得元を nuget.org (`https://api.nuget.org/v3/index.json`) だけにする。
+- **受講者のコードはクラスのメソッドとして書く。** トップレベルのステートメントは、テストと同じプロジェクトでは使えない。
+- **Console の出力は `ConsoleOutput.Capture` で確かめる。** `Console.SetOut` で差し替え、`\r\n` を `\n` にそろえる。出力を差し替えるテストが混ざらないよう、`tests/TestSettings.cs` で並列実行を止める。
+- **lockfile を作り直すとき (バージョンを上げるとき):** `starter/` を一時フォルダーに写し、そこで `Task.csproj` のバージョンを書き換えて `dotnet restore Task.csproj --force-evaluate` を実行し、できた `Task.csproj` と `packages.lock.json` を `starter/` に戻す。環境台帳の ID を上げる (例 `dotnet-test-02`)。古い台帳は残す。`task-fields.json` の `environment` を新しい ID にする。見本 (`apps/vscode/samples/dotnet-test/`) の同じファイルも更新する。
+- **lint・整形は使えない。** ESLint・Prettier は C# を検査しない。`checks.lint` と `checks.format` は `false`。
 
 テンプレートと見本は受講者向けの道具の設定 (ESLint・Prettier) に従うので、リポジトリの Biome の対象から外してある。

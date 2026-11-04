@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readdir, readFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { DOTNET_OUTPUT_DIR, DOTNET_PROTECTED_FILES } from "@stella/shared/tasks/dotnet";
 import {
   checkToolVersion,
   formatVersion,
@@ -12,10 +13,12 @@ import {
   validateEnvironmentRequirement,
 } from "@stella/shared/tasks/environment";
 import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/manifest";
+import { canSubmit } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { describe, expect, it } from "vitest";
 import {
   CI_TEMPLATE_RUNNER,
+  DOTNET_TEMPLATE_RUNNER,
   readEnvironmentFile,
   readJson,
   readTaskFields,
@@ -28,7 +31,9 @@ import {
 } from "../testing/templates.js";
 import { satisfiesRange } from "../testing/semver-range.js";
 import { matchPatterns } from "./files.js";
+import { loadTask, runTask } from "./run-task.js";
 import { requiredPackages } from "./steps.js";
+import { resolveDotnet } from "./toolchain.js";
 
 /**
  * 教材の runner ごとの課題テンプレート (`packages/content/templates/runners/<runner>/`) が、
@@ -333,4 +338,156 @@ describe("CI と公開のテンプレート (ci-deploy)", () => {
     expect(env.requirements).toHaveProperty("git.min");
     expect(env.requirements).toHaveProperty("node.min");
   });
+});
+
+interface NuGetLockEntry {
+  type?: string;
+  requested?: string;
+  resolved?: string;
+  contentHash?: string;
+}
+
+const dotnetCommand = await resolveDotnet(process.env, process.platform);
+/** 手元に SDK が無いときだけ飛ばす。CI で見つからないときは実行して落とす。 */
+const runLiveDotnet = dotnetCommand !== null || Boolean(process.env.CI);
+
+describe("C# のテンプレート (dotnet-test)", () => {
+  const runner = DOTNET_TEMPLATE_RUNNER;
+
+  it("task-fields.json の runner が dotnet-test で、課題の定義として通る", async () => {
+    const fields = await readTaskFields(runner);
+    expect(fields.runner).toBe("dotnet-test");
+    const parsed = parseTaskManifest(await templateManifest(runner));
+    expect(parsed.ok ? [] : parsed.errors).toEqual([]);
+  });
+
+  it("提出・配布のパターンがテンプレートのファイルに当たり、提出ファイルは配布と重ならない", async () => {
+    const fields = await readTaskFields(runner);
+    const files = await templateFiles(runner);
+    expect(matchPatterns(files, fields.submit.files).unmatched).toEqual([]);
+    expect(matchPatterns(files, fields.protected).unmatched).toEqual([]);
+    expect(fields.protected).toEqual(
+      expect.arrayContaining([...DOTNET_PROTECTED_FILES, "tests/**"]),
+    );
+    const prot = matchPatterns(files, fields.protected).files;
+    const submit = matchPatterns(files, fields.submit.files).files;
+    expect(submit.filter((file) => prot.includes(file))).toEqual([]);
+  });
+
+  it("ファイル名は印字できる ASCII だけで、生成物や作業フォルダーを含まない", async () => {
+    for (const file of await templateFiles(runner)) {
+      expect(isSafeRelativePattern(file), file).toBe(true);
+      expect(/^[\x20-\x7e]+$/.test(file), file).toBe(true);
+      expect(
+        file
+          .split("/")
+          .some((segment) =>
+            ["bin", "obj", ".stella", "private", "node_modules"].includes(segment),
+          ),
+        file,
+      ).toBe(false);
+    }
+  });
+
+  it("PackageReference は固定の版で、環境台帳の libraries と TargetFramework に合う", async () => {
+    const csproj = await readFile(templateFile(runner, "Task.csproj"), "utf8");
+    const refs = [
+      ...csproj.matchAll(/<PackageReference\s+Include="([^"]+)"\s+Version="([^"]+)"\s*\/>/g),
+    ];
+    for (const match of refs) expect(match[2], match[1]).toMatch(/^\d+\.\d+\.\d+$/);
+    const env = await readEnvironmentFile((await readTaskFields(runner)).environment);
+    expect(Object.fromEntries(refs.map((match) => [match[1], match[2]]))).toEqual(env.libraries);
+    const framework = /<TargetFramework>\s*net(\d+)\.0\s*<\/TargetFramework>/.exec(csproj);
+    const major = Number(framework?.[1]);
+    expect((env.requirements.dotnet as ToolRequirement).majors).toContain(major);
+    expect(csproj).toContain("<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>");
+  });
+
+  it("packages.lock.json は Task.csproj の直接参照を固定し、各項目に contentHash がある", async () => {
+    const env = await readEnvironmentFile((await readTaskFields(runner)).environment);
+    const lock = await readJson<{
+      version: number;
+      dependencies: Record<string, Record<string, NuGetLockEntry>>;
+    }>(templateFile(runner, "packages.lock.json"));
+    expect(lock.version).toBe(1);
+    const graph = lock.dependencies["net10.0"];
+    expect(graph).toBeDefined();
+    if (!graph) return;
+    const direct = Object.fromEntries(
+      Object.entries(graph).flatMap(([name, entry]) =>
+        entry.type === "Direct" ? [[name, entry.resolved]] : [],
+      ),
+    );
+    expect(direct).toEqual(env.libraries);
+    for (const [name, entry] of Object.entries(graph)) {
+      if (entry.type === "Direct") {
+        expect(entry.requested, name).toBe(`[${env.libraries[name]}, )`);
+        expect(entry.resolved, name).toBe(env.libraries[name]);
+      }
+      expect(entry.contentHash, name).toEqual(expect.any(String));
+      expect(entry.contentHash?.length, name).toBeGreaterThan(0);
+    }
+  });
+
+  it("出力先は .stella/dotnet で、NuGet の取得元は nuget.org だけ", async () => {
+    const props = await readFile(templateFile(runner, "Directory.Build.props"), "utf8");
+    expect(props).toContain(`<BaseOutputPath>$(MSBuildThisFileDirectory)${DOTNET_OUTPUT_DIR}/bin/`);
+    expect(props).toContain(
+      `<BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)${DOTNET_OUTPUT_DIR}/obj/`,
+    );
+    const targets = await readFile(templateFile(runner, "Directory.Build.targets"), "utf8");
+    expect(targets).toContain("<Project");
+    const nuget = await readFile(templateFile(runner, "NuGet.config"), "utf8");
+    expect(nuget).toContain("<clear />");
+    expect([...nuget.matchAll(/value="([^"]+)"/g)].map((match) => match[1])).toEqual([
+      "https://api.nuget.org/v3/index.json",
+    ]);
+  });
+
+  it.runIf(runLiveDotnet)(
+    "テンプレートを本物の dotnet で通し、2 回目は依存パッケージの準備を省略する",
+    async () => {
+      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      const dir = await mkdtemp(path.join(tmpdir(), "stella-dotnet-template-"));
+      try {
+        await cp(path.join(TEMPLATES_DIR, runner, "starter"), dir, { recursive: true });
+        await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
+          recursive: true,
+        });
+        await mkdir(path.join(dir, ".stella"), { recursive: true });
+        await writeFile(
+          path.join(dir, ".stella", "task.json"),
+          `${JSON.stringify(await templateManifest(runner), null, 2)}\n`,
+        );
+        const loaded = await loadTask(dir);
+        if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+        const run = () =>
+          runTask({
+            root: loaded.root,
+            manifest: loaded.manifest,
+            manifestSha256: loaded.manifestSha256,
+          });
+        const first = await run();
+        expect(first.outcome).toBe("passed");
+        expect(
+          first.steps
+            .filter((step) => step.id === "deps" || step.id === "build" || step.id === "test")
+            .map((step) => [step.id, step.status]),
+        ).toEqual([
+          ["deps", "passed"],
+          ["build", "passed"],
+          ["test", "passed"],
+        ]);
+        const tests = first.steps.find((step) => step.id === "test")?.tests ?? [];
+        expect(tests.length).toBeGreaterThanOrEqual(4);
+        expect(tests.every((test) => test.status === "passed")).toBe(true);
+        expect(canSubmit(first)).toBe(true);
+        const second = await run();
+        expect(second.steps.find((step) => step.id === "deps")?.status).toBe("skipped");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+    300_000,
+  );
 });

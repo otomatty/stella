@@ -2,7 +2,13 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { findExecutable, readEnv, resolveNpm, resolvePackageBin } from "./toolchain.js";
+import {
+  findExecutable,
+  readEnv,
+  resolveDotnet,
+  resolveNpm,
+  resolvePackageBin,
+} from "./toolchain.js";
 
 function fakeFs(files: string[]) {
   const set = new Set(files);
@@ -225,6 +231,40 @@ describe("resolveNpm", () => {
       async (f) => f,
     );
     expect(cmdOnly).toBeNull();
+  });
+});
+
+describe("resolveDotnet", () => {
+  it("PATH の dotnet を返す", async () => {
+    const found = await resolveDotnet(
+      { PATH: "/usr/bin:/opt/dotnet" },
+      "linux",
+      fakeFs(["/opt/dotnet/dotnet"]),
+    );
+    expect(found).toBe("/opt/dotnet/dotnet");
+  });
+
+  it("PATH に無く DOTNET_ROOT にあれば返す", async () => {
+    expect(
+      await resolveDotnet(
+        { DOTNET_ROOT: "/usr/share/dotnet" },
+        "linux",
+        fakeFs(["/usr/share/dotnet/dotnet"]),
+      ),
+    ).toBe("/usr/share/dotnet/dotnet");
+    expect(
+      await resolveDotnet(
+        { DOTNET_ROOT: "C:\\Program Files\\dotnet" },
+        "win32",
+        fakeFs(["C:\\Program Files\\dotnet\\dotnet.exe"]),
+      ),
+    ).toBe("C:\\Program Files\\dotnet\\dotnet.exe");
+  });
+
+  it("相対パスの DOTNET_ROOT は使わない", async () => {
+    expect(
+      await resolveDotnet({ DOTNET_ROOT: "sdk" }, "linux", fakeFs(["sdk/dotnet", "/sdk/dotnet"])),
+    ).toBeNull();
   });
 });
 

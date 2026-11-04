@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -7,6 +7,7 @@ import { canSubmit } from "@stella/shared/tasks/run-result";
 import { describe, expect, it } from "vitest";
 import {
   CI_TEMPLATE_RUNNER,
+  DOTNET_TEMPLATE_RUNNER,
   readEnvironmentFile,
   readTaskFields,
   SAMPLES_DIR,
@@ -16,6 +17,7 @@ import {
 } from "../testing/templates.js";
 import { listFiles, matchPatterns } from "./files.js";
 import { loadTask, runTask } from "./run-task.js";
+import { resolveDotnet } from "./toolchain.js";
 
 /** `apps/vscode/samples/` の見本が、定義として正しく、意図どおりの結果になること。 */
 function sample(name: string): string {
@@ -200,4 +202,186 @@ describe("samples", () => {
       expect(JSON.stringify(result)).not.toContain(root);
     });
   });
+});
+
+const dotnetCommand = await resolveDotnet(process.env, process.platform);
+/** 手元に SDK が無いときだけ飛ばす。CI で見つからないときは実行して落とす。 */
+const runLiveDotnet = dotnetCommand !== null || Boolean(process.env.CI);
+
+describe("dotnet-test (テンプレートから作った見本)", () => {
+  const runner = DOTNET_TEMPLATE_RUNNER;
+
+  async function place(root: string): Promise<void> {
+    await mkdir(path.dirname(root), { recursive: true });
+    await cp(sample(runner), root, { recursive: true });
+  }
+
+  async function runAt(root: string) {
+    const loaded = await loadTask(root);
+    if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+    return runTask({
+      root: loaded.root,
+      manifest: loaded.manifest,
+      manifestSha256: loaded.manifestSha256,
+    });
+  }
+
+  it("定義が正しく、テンプレートの項目と環境台帳に合う", async () => {
+    const loaded = await loadTask(sample(runner));
+    if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+    const fields = await readTaskFields(runner);
+    expect(loaded.manifest).toMatchObject({
+      runner,
+      submit: fields.submit,
+      protected: fields.protected,
+      checks: fields.checks,
+    });
+    const env = await readEnvironmentFile(fields.environment);
+    expect(loaded.manifest.environment).toEqual({
+      ...env.requirements,
+      id: `${env.id}@${env.version}`,
+    });
+  });
+
+  it("提出ファイルのほかはテンプレートと同じで、提出ファイルは直す前の状態になっている", async () => {
+    const files = await listFiles(sample(runner));
+    expect(files).toEqual(await templateFiles(runner));
+    const fields = await readTaskFields(runner);
+    const submit = matchPatterns(files, fields.submit.files).files;
+    const changed: string[] = [];
+    for (const file of files) {
+      const actual = await readFile(path.join(sample(runner), ...file.split("/")));
+      if (actual.equals(await readFile(templateFile(runner, file)))) continue;
+      expect(submit, `${file} はテンプレートと同じにしてください`).toContain(file);
+      changed.push(file);
+    }
+    expect(changed).toEqual(["src/Answers.cs"]);
+  });
+
+  it.runIf(runLiveDotnet)(
+    "直す前はテストが失敗し、テンプレートの答えを重ねると通って提出できる",
+    async () => {
+      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      const base = await mkdtemp(path.join(tmpdir(), "stella-dotnet-sample-"));
+      const root = path.join(base, "task");
+      try {
+        await place(root);
+        const before = await runAt(root);
+        expect(before.outcome).toBe("failed");
+        expect(before.steps.find((step) => step.id === "build")?.status).toBe("passed");
+        const testStep = before.steps.find((step) => step.id === "test");
+        expect(testStep?.status).toBe("failed");
+        const cases = testStep?.tests ?? [];
+        const sum = cases.find((item) => item.name.includes("n: 4"));
+        expect(sum?.status).toBe("failed");
+        expect(sum?.message).toContain("Expected");
+        expect(sum?.message).toContain("Actual");
+        const shown = cases.find((item) => item.name.includes("1 行ずつ"));
+        expect(shown?.status).toBe("failed");
+        expect(shown?.message).toContain("Expected");
+        expect(shown?.message).toContain("Actual");
+
+        await writeFile(
+          path.join(root, "src", "Answers.cs"),
+          await readFile(templateFile(runner, "src/Answers.cs")),
+        );
+        const fixed = await runAt(root);
+        expect(fixed.outcome).toBe("passed");
+        expect(canSubmit(fixed)).toBe(true);
+      } finally {
+        await rm(base, { recursive: true, force: true });
+      }
+    },
+    300_000,
+  );
+
+  it.runIf(runLiveDotnet)(
+    "コンパイルエラーはビルドの指摘になり、テストは省略する",
+    async () => {
+      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      const base = await mkdtemp(path.join(tmpdir(), "stella-dotnet-build-"));
+      const root = path.join(base, "task");
+      try {
+        await place(root);
+        const source = await readFile(path.join(root, "src", "Answers.cs"), "utf8");
+        expect(source).toContain("int total = 0;");
+        await writeFile(
+          path.join(root, "src", "Answers.cs"),
+          source.replace("int total = 0;", "int total = 0"),
+        );
+        const result = await runAt(root);
+        expect(result.outcome).toBe("failed");
+        const build = result.steps.find((step) => step.id === "build");
+        expect(build?.status).toBe("failed");
+        expect(
+          build?.lint?.some(
+            (finding) => finding.file === "src/Answers.cs" && finding.ruleId?.startsWith("CS"),
+          ),
+        ).toBe(true);
+        const testStep = result.steps.find((step) => step.id === "test");
+        expect(testStep?.status).toBe("skipped");
+        expect(testStep?.summary).toBe("「ビルド (C#)」が通らなかったため省略しました");
+      } finally {
+        await rm(base, { recursive: true, force: true });
+      }
+    },
+    300_000,
+  );
+
+  it.runIf(runLiveDotnet)(
+    "自分自身を呼び続ける Sum はスタックオーバーフローで要修正になる",
+    async () => {
+      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      const base = await mkdtemp(path.join(tmpdir(), "stella-dotnet-stack-"));
+      const root = path.join(base, "task");
+      try {
+        await place(root);
+        const source = await readFile(path.join(root, "src", "Answers.cs"), "utf8");
+        const method = `    public static int Sum(int n)
+    {
+        int total = 0;
+        for (int i = 1; i < n; i++)
+        {
+            total += i;
+        }
+        return total;
+    }`;
+        expect(source).toContain(method);
+        await writeFile(
+          path.join(root, "src", "Answers.cs"),
+          source.replace(method, "    public static int Sum(int n) => n + Sum(n - 1);"),
+        );
+        const result = await runAt(root);
+        expect(result.outcome).toBe("failed");
+        const testStep = result.steps.find((step) => step.id === "test");
+        expect(testStep?.status).toBe("failed");
+        expect(testStep?.summary).toContain("スタックオーバーフロー");
+      } finally {
+        await rm(base, { recursive: true, force: true });
+      }
+    },
+    300_000,
+  );
+
+  it.runIf(runLiveDotnet)(
+    "日本語と空白を含むパスでも、テンプレートの答えで通る",
+    async () => {
+      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      const base = await mkdtemp(path.join(tmpdir(), "stella-dotnet-path-"));
+      const root = path.join(base, "山田 太郎", "web-training", "課題 1");
+      try {
+        await place(root);
+        await writeFile(
+          path.join(root, "src", "Answers.cs"),
+          await readFile(templateFile(runner, "src/Answers.cs")),
+        );
+        const result = await runAt(root);
+        expect(result.outcome).toBe("passed");
+        expect(canSubmit(result)).toBe(true);
+      } finally {
+        await rm(base, { recursive: true, force: true });
+      }
+    },
+    300_000,
+  );
 });

@@ -35,8 +35,8 @@ import {
 } from "./files.js";
 import { buildPlan } from "./plans.js";
 import { childEnv, type ProcessOutcome, type ProcessSpec, runProcess } from "./process.js";
-import { type CiRunInput, TIMEOUTS, type StepContext } from "./steps.js";
-import { findExecutable, type NpmInvocation, resolveNpm } from "./toolchain.js";
+import { type CiRunInput, type StepContext, type StepDefinition, TIMEOUTS } from "./steps.js";
+import { findExecutable, type NpmInvocation, resolveDotnet, resolveNpm } from "./toolchain.js";
 
 export type LoadedTask =
   | { ok: true; root: string; manifest: TaskManifest; manifestSha256: string }
@@ -117,7 +117,7 @@ export interface RunTaskOptions {
   platform?: NodeJS.Platform;
   env?: NodeJS.ProcessEnv;
   /** 道具の場所を差し替える (テスト用)。 */
-  toolchain?: { node: string | null; npm: NpmInvocation | null };
+  toolchain?: { node: string | null; npm: NpmInvocation | null; dotnet?: string | null };
   now?: () => Date;
   /** CI と公開の課題で、受講者が入力した実行・公開先の URL (07 §5.5)。 */
   ci?: CiRunInput;
@@ -204,6 +204,18 @@ async function collectFiles(
   return { step, files, protected: protectedFiles };
 }
 
+/** 前提のうち、要修正 (failed) で終わった手順。無ければこの手順は実行してよい。 */
+export function unmetNeed(
+  step: StepDefinition,
+  done: readonly RunStepResult[],
+): RunStepResult | undefined {
+  for (const id of step.needs ?? []) {
+    const prior = done.find((item) => item.id === id && item.status === "failed");
+    if (prior) return prior;
+  }
+  return undefined;
+}
+
 export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   const { root, manifest } = options;
   const platform = options.platform ?? process.platform;
@@ -212,11 +224,17 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   const startedAt = (options.now ?? (() => new Date()))();
   const runner = RUNNERS[manifest.runner];
 
-  const toolchain =
-    options.toolchain ??
-    (runner.requiresNode || runner.plan === "diagnose"
-      ? await resolveToolchain(env, platform)
-      : { node: null, npm: null });
+  const toolchain = options.toolchain
+    ? {
+        node: options.toolchain.node,
+        npm: options.toolchain.npm,
+        dotnet: options.toolchain.dotnet ?? null,
+      }
+    : runner.plan === "dotnet"
+      ? { node: null, npm: null, dotnet: await resolveDotnet(env, platform) }
+      : runner.requiresNode || runner.plan === "diagnose"
+        ? { ...(await resolveToolchain(env, platform)), dotnet: null }
+        : { node: null, npm: null, dotnet: null };
 
   const exec = (
     spec: Omit<ProcessSpec, "env"> & { env?: NodeJS.ProcessEnv },
@@ -253,6 +271,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     env,
     node: toolchain.node,
     npm: toolchain.npm,
+    dotnet: toolchain.dotnet,
     submitFiles,
     toolVersions,
     ...(options.ci ? { ci: options.ci } : {}),
@@ -272,6 +291,20 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
         summary: stopReason,
         durationMs: 0,
       });
+      continue;
+    }
+    const blocked = unmetNeed(step, steps);
+    if (blocked) {
+      const summary = `「${blocked.label}」が通らなかったため省略しました`;
+      log(`\n▶ ${step.label}\n`);
+      steps.push({
+        id: step.id,
+        label: step.label,
+        status: "skipped",
+        summary,
+        durationMs: 0,
+      });
+      log(`  → ${summary}\n`);
       continue;
     }
     log(`\n▶ ${step.label}\n`);
@@ -329,6 +362,7 @@ support.json
 deps.json
 browsers.json
 tmp/
+dotnet/
 `;
 
 /**

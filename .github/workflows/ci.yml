@@ -45,6 +45,13 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      # C# の課題 (dotnet-test) のテンプレートと見本を、本物の .NET SDK で動かして確かめる
+      # (templates.test.ts・samples.test.ts。CI で dotnet が見つからないとテストが落ちる)。
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
       # カバレッジは閾値を持たない (落とすためではなく、 手薄な場所を見えるように
       # するため)。 数字はジョブのサマリに出す。
       - name: Test

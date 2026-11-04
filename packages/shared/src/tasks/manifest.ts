@@ -11,6 +11,7 @@
 
 import picomatch from "picomatch";
 import { isCiWorkflowPath } from "./ci-run.js";
+import { DOTNET_PROTECTED_FILES } from "./dotnet.js";
 import { type EnvironmentRequirement, validateEnvironmentRequirement } from "./environment.js";
 import { parsePublicSourceReferences, type PublicSourceReference } from "./source-reference.js";
 import { isRunnerId, RUNNER_IDS, type RunnerId } from "./runners.js";
@@ -241,6 +242,23 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
 
   if (raw.environment !== undefined) {
     errors.push(...validateEnvironmentRequirement(raw.environment, "environment"));
+  }
+
+  if (raw.runner === "dotnet-test") {
+    // ESLint・Prettier は C# を検査しない。lint・整形の有無で手順を増やさない。
+    if (checks.lint || checks.format) {
+      errors.push(
+        "runner が dotnet-test の課題では checks.lint・checks.format を使えません (ESLint・Prettier は C# を検査しません)",
+      );
+    }
+    for (const file of DOTNET_PROTECTED_FILES) {
+      if (!protectedPatterns.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`runner が dotnet-test の課題では protected に ${file} を入れてください`);
+      }
+      if (submitFiles.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`${file} は配布したファイルなので submit.files に入れられません`);
+      }
+    }
   }
 
   let staticChecks: StaticCheck[] | undefined;

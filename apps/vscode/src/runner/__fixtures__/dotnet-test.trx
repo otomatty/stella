@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="517f4aec-ea36-4fe2-9655-f9874eb14503" name="learner@PC 2026-11-04 16:00:00" runUser="PC\learner" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-04T15:57:53.2867208+09:00" queuing="2026-11-04T15:57:53.2867213+09:00" start="2026-11-04T15:57:51.8823588+09:00" finish="2026-11-04T15:57:53.2977958+09:00" />
+  <TestSettings name="default" id="a7e30100-ec19-46f4-ae51-15ced270a36e">
+    <Deployment runDeploymentRoot="learner_PC_2026-11-04_16_00_00" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="034f0007-9329-4119-9141-b6f4d3d4016c" testId="e4d41df8-6192-2ee9-e8e8-119c0b51427c" testName="記号 &lt;a&gt; &amp; &quot;b&quot; を囲む" computerName="PC" duration="00:00:00.0022244" startTime="2026-11-04T15:57:53.1061870+09:00" endTime="2026-11-04T15:57:53.1062545+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="034f0007-9329-4119-9141-b6f4d3d4016c">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Strings differ&#xD;
+           ↓ (pos 0)&#xD;
+Expected: "[a&amp;b]"&#xD;
+Actual:   "&lt;a&amp;b&gt;"&#xD;
+           ↑ (pos 0)</Message>
+          <StackTrace>   at TagTests.Tag() in C:\work\task\tests\AnswersTests.cs:line 24&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="617bdfef-6db9-461d-ad0d-ee5b19d839d5" testId="ad82af9e-7c7c-d2c1-e745-1a926811cd10" testName="Q11 1 から N の合計(n: 1, expected: 1)" computerName="PC" duration="00:00:00.0113636" startTime="2026-11-04T15:57:53.0420156+09:00" endTime="2026-11-04T15:57:53.0774229+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="617bdfef-6db9-461d-ad0d-ee5b19d839d5">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: 1&#xD;
+Actual:   0</Message>
+          <StackTrace>   at AnswersTests.Sum(Int32 n, Int32 expected) in C:\work\task\tests\AnswersTests.cs:line 8&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d665f960-688c-47f2-962b-aae9cde6c8e2" testId="88e062a7-cfe9-7930-a87b-763789d57e48" testName="Q11 1 から N の合計(n: 4, expected: 10)" computerName="PC" duration="00:00:00.0006160" startTime="2026-11-04T15:57:53.1004672+09:00" endTime="2026-11-04T15:57:53.1006148+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d665f960-688c-47f2-962b-aae9cde6c8e2">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: 10&#xD;
+Actual:   6</Message>
+          <StackTrace>   at AnswersTests.Sum(Int32 n, Int32 expected) in C:\work\task\tests\AnswersTests.cs:line 8&#xD;
+   at InvokeStub_AnswersTests.Sum(Object, Span`1)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a656c072-01b1-4356-a886-5282b47baad0" testId="0cf1988e-b661-a4e2-dd8e-4ee0eb052f96" testName="Q01 1 から N" computerName="PC" duration="00:00:00.0050202" startTime="2026-11-04T15:57:53.1030491+09:00" endTime="2026-11-04T15:57:53.1034512+09:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a656c072-01b1-4356-a886-5282b47baad0" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Q01 1 から N" storage="C:\work\task\.stella\dotnet\bin\debug\net10.0\task.dll" id="0cf1988e-b661-a4e2-dd8e-4ee0eb052f96">
+      <Execution id="a656c072-01b1-4356-a886-5282b47baad0" />
+      <TestMethod codeBase="C:\work\task\.stella\dotnet\bin\Debug\net10.0\Task.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AnswersTests" name="CountUp" />
+    </UnitTest>
+    <UnitTest name="Q11 1 から N の合計(n: 1, expected: 1)" storage="C:\work\task\.stella\dotnet\bin\debug\net10.0\task.dll" id="ad82af9e-7c7c-d2c1-e745-1a926811cd10">
+      <Execution id="617bdfef-6db9-461d-ad0d-ee5b19d839d5" />
+      <TestMethod codeBase="C:\work\task\.stella\dotnet\bin\Debug\net10.0\Task.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AnswersTests" name="Sum" />
+    </UnitTest>
+    <UnitTest name="Q11 1 から N の合計(n: 4, expected: 10)" storage="C:\work\task\.stella\dotnet\bin\debug\net10.0\task.dll" id="88e062a7-cfe9-7930-a87b-763789d57e48">
+      <Execution id="d665f960-688c-47f2-962b-aae9cde6c8e2" />
+      <TestMethod codeBase="C:\work\task\.stella\dotnet\bin\Debug\net10.0\Task.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AnswersTests" name="Sum" />
+    </UnitTest>
+    <UnitTest name="記号 &lt;a&gt; &amp; &quot;b&quot; を囲む" storage="C:\work\task\.stella\dotnet\bin\debug\net10.0\task.dll" id="e4d41df8-6192-2ee9-e8e8-119c0b51427c">
+      <Execution id="034f0007-9329-4119-9141-b6f4d3d4016c" />
+      <TestMethod codeBase="C:\work\task\.stella\dotnet\bin\Debug\net10.0\Task.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="TagTests" name="Tag" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e4d41df8-6192-2ee9-e8e8-119c0b51427c" executionId="034f0007-9329-4119-9141-b6f4d3d4016c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ad82af9e-7c7c-d2c1-e745-1a926811cd10" executionId="617bdfef-6db9-461d-ad0d-ee5b19d839d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="88e062a7-cfe9-7930-a87b-763789d57e48" executionId="d665f960-688c-47f2-962b-aae9cde6c8e2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0cf1988e-b661-a4e2-dd8e-4ee0eb052f96" executionId="a656c072-01b1-4356-a886-5282b47baad0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="一覧に存在しない結果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="読み込まれたすべての結果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="4" executed="4" passed="1" failed="3" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.11)&#xD;
+[xUnit.net 00:00:00.15]   Discovering: Task&#xD;
+[xUnit.net 00:00:00.24]   Discovered:  Task&#xD;
+[xUnit.net 00:00:00.27]   Starting:    Task&#xD;
+[xUnit.net 00:00:00.36]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:00.36]       Expected: 1&#xD;
+[xUnit.net 00:00:00.36]       Actual:   0&#xD;
+[xUnit.net 00:00:00.36]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.36]         C:\work\task\tests\AnswersTests.cs(8,0): at AnswersTests.Sum(Int32 n, Int32 expected)&#xD;
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:00:00.36]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.38]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:00.38]       Expected: 10&#xD;
+[xUnit.net 00:00:00.38]       Actual:   6&#xD;
+[xUnit.net 00:00:00.38]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.38]         C:\work\task\tests\AnswersTests.cs(8,0): at AnswersTests.Sum(Int32 n, Int32 expected)&#xD;
+[xUnit.net 00:00:00.38]            at InvokeStub_AnswersTests.Sum(Object, Span`1)&#xD;
+[xUnit.net 00:00:00.38]            at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)&#xD;
+[xUnit.net 00:00:00.38]       Assert.Equal() Failure: Strings differ&#xD;
+[xUnit.net 00:00:00.38]                  ↓ (pos 0)&#xD;
+[xUnit.net 00:00:00.38]       Expected: "[a&amp;b]"&#xD;
+[xUnit.net 00:00:00.38]       Actual:   "&lt;a&amp;b&gt;"&#xD;
+[xUnit.net 00:00:00.38]                  ↑ (pos 0)&#xD;
+[xUnit.net 00:00:00.38]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.38]         C:\work\task\tests\AnswersTests.cs(24,0): at TagTests.Tag()&#xD;
+[xUnit.net 00:00:00.38]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:00:00.38]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.38]   Finished:    Task&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="PC" outcome="Error" timestamp="2026-11-04T15:57:53.0829950+09:00">
+        <Text>[xUnit.net 00:00:00.36]     Q11 1 から N の合計(n: 1, expected: 1) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="PC" outcome="Error" timestamp="2026-11-04T15:57:53.1011955+09:00">
+        <Text>[xUnit.net 00:00:00.38]     Q11 1 から N の合計(n: 4, expected: 10) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="PC" outcome="Error" timestamp="2026-11-04T15:57:53.1065517+09:00">
+        <Text>[xUnit.net 00:00:00.38]     記号 &lt;a&gt; &amp; "b" を囲む [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

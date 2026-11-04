@@ -8,6 +8,7 @@
  * サーバーではコードを実行しない。動くかどうかは受講者が手元の結果で確かめ、
  * 提出後の AI・人のレビューはコーディング規則などを見る
  * (docs/curriculum/07-stella-adoption-redesign.md §5・§6)。
+ * C# の課題は .NET SDK と xUnit で確かめる。
  */
 
 export const RUNNER_IDS = [
@@ -23,6 +24,7 @@ export const RUNNER_IDS = [
   "e2e",
   "next-app",
   "ci-deploy",
+  "dotnet-test",
 ] as const;
 
 export type RunnerId = (typeof RUNNER_IDS)[number];
@@ -32,7 +34,14 @@ export type RunnerId = (typeof RUNNER_IDS)[number];
  * 手順はこちらで共有する。たとえば dom-test と react-test はどちらも Vitest の手順で、
  * jsdom や Testing Library の違いは課題の配布ファイル (vitest の設定) が持つ。
  */
-export type RunnerPlanKind = "static" | "diagnose" | "vitest" | "playwright" | "next" | "ci";
+export type RunnerPlanKind =
+  | "static"
+  | "diagnose"
+  | "vitest"
+  | "playwright"
+  | "next"
+  | "ci"
+  | "dotnet";
 
 export interface RunnerSpec {
   id: RunnerId;
@@ -132,6 +141,13 @@ export const RUNNERS: Readonly<Record<RunnerId, RunnerSpec>> = {
     plan: "ci",
     requiresNode: false,
     runsLocally: false,
+  },
+  "dotnet-test": {
+    id: "dotnet-test",
+    label: "C# のテスト",
+    plan: "dotnet",
+    requiresNode: false,
+    runsLocally: true,
   },
 };
 

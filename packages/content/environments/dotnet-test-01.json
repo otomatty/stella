@@ -1,0 +1,18 @@
+{
+  "id": "dotnet-test-01",
+  "version": "1",
+  "runner": "dotnet-test",
+  "template": "templates/runners/dotnet-test",
+  "os": ["windows", "macos", "linux"],
+  "requirements": {
+    "dotnet": {
+      "min": "10.0.100",
+      "majors": [10]
+    }
+  },
+  "libraries": {
+    "Microsoft.NET.Test.Sdk": "17.14.1",
+    "xunit": "2.9.3",
+    "xunit.runner.visualstudio": "3.1.4"
+  }
+}

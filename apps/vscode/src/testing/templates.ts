@@ -32,8 +32,18 @@ export const TEMPLATE_RUNNERS = [
  */
 export const CI_TEMPLATE_RUNNER = "ci-deploy" as const satisfies RunnerId;
 
+/**
+ * C# のテンプレート。Node.js の道具 (npm の lockfile・ESLint・Prettier) を使わないので
+ * `TEMPLATE_RUNNERS` には入れず、フォルダーの一覧だけに入れる。検査は別に書く。
+ */
+export const DOTNET_TEMPLATE_RUNNER = "dotnet-test" as const satisfies RunnerId;
+
 /** `packages/content/templates/runners/` のフォルダー。 */
-export const TEMPLATE_DIRS = [...TEMPLATE_RUNNERS, CI_TEMPLATE_RUNNER] as const;
+export const TEMPLATE_DIRS = [
+  ...TEMPLATE_RUNNERS,
+  CI_TEMPLATE_RUNNER,
+  DOTNET_TEMPLATE_RUNNER,
+] as const;
 
 /** テンプレートの task-fields.json。課題の task.json に写す runner まわりの項目。 */
 export interface TaskFields {

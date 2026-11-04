@@ -216,6 +216,10 @@ export function runProcess(
 /**
  * 子プロセスに渡す環境変数。対話や色付き出力を止める。
  * 課題の道具 (Next.js・Storybook) が受講者の端末から利用状況を送らないようにもする。
+ *
+ * .NET の CLI は、初回の案内・利用状況の送信・常駐プロセス (MSBuild のノード再利用) を
+ * 出さない。常駐が stdout を持ったまま残ると、実行の終了を待てずに時間切れになる。
+ * `DOTNET_CLI_UI_LANGUAGE` は設定しない。コンパイラーのメッセージを受講者の OS の言語で出すため。
  */
 export function childEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return {
@@ -228,6 +232,10 @@ export function childEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     npm_config_audit: "false",
     NEXT_TELEMETRY_DISABLED: "1",
     STORYBOOK_DISABLE_TELEMETRY: "1",
+    DOTNET_CLI_TELEMETRY_OPTOUT: "1",
+    DOTNET_NOLOGO: "1",
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1",
+    MSBUILDDISABLENODEREUSE: "1",
   };
 }
 

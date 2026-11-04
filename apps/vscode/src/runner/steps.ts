@@ -7,12 +7,20 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import {
+  DOTNET_ASSETS_FILE,
+  DOTNET_LOCK_FILE,
+  DOTNET_PROJECT_FILE,
+  DOTNET_PROTECTED_FILES,
+} from "@stella/shared/tasks/dotnet";
+import {
   checkToolVersion,
+  DEFAULT_DIAGNOSE_TOOLS,
   describeRequirement,
   ENVIRONMENT_TOOL_LABELS,
   ENVIRONMENT_TOOLS,
   type EnvironmentTool,
   formatVersion,
+  type ToolRequirement,
 } from "@stella/shared/tasks/environment";
 import {
   type CiRunClaim,
@@ -31,13 +39,20 @@ import { RUNNERS } from "@stella/shared/tasks/runners";
 import { asCliPath, LIMITS, listFiles, matchPatterns, writeStateFile } from "./files.js";
 import {
   parseEslintReport,
+  parseMsbuildDiagnostics,
   parsePlaywrightReport,
   parsePrettierList,
+  parseTrxReport,
   parseVitestReport,
 } from "./parsers.js";
 import type { ProcessOutcome, ProcessSpec } from "./process.js";
 import { tailLines } from "./process.js";
-import { findExecutable, type NpmInvocation, resolvePackageBin } from "./toolchain.js";
+import {
+  findExecutable,
+  type NpmInvocation,
+  resolveDotnet,
+  resolvePackageBin,
+} from "./toolchain.js";
 import { runStaticChecks } from "./static-checks.js";
 
 export type StepOutcome = Omit<RunStepResult, "id" | "label" | "durationMs">;
@@ -50,6 +65,7 @@ export interface StepContext {
   env: NodeJS.ProcessEnv;
   node: string | null;
   npm: NpmInvocation | null;
+  dotnet: string | null;
   /** submit.files に当たったファイル (課題フォルダーからの相対パス)。 */
   submitFiles: readonly string[];
   /** 道具の版を書き込む (環境診断が使う)。 */
@@ -70,6 +86,11 @@ export interface CiRunInput {
 export interface StepDefinition {
   id: RunStepId;
   label: string;
+  /**
+   * この手順の前提になる手順。前提が要修正 (failed) で終わったら、この手順は実行せずに省略する
+   * (C# のテストは、ビルドが通らないと古い dll か何も無いものを動かしてしまう)。
+   */
+  needs?: RunStepId[];
   run: (ctx: StepContext) => Promise<StepOutcome>;
 }
 
@@ -496,6 +517,11 @@ async function toolVersionOutput(ctx: StepContext, tool: EnvironmentTool): Promi
   } else if (tool === "git") {
     const git = await findExecutable("git", ctx.env, ctx.platform);
     if (git) spec = { file: git, args: ["--version"], cwd: ctx.root, timeoutMs: TIMEOUTS.version };
+  } else if (tool === "dotnet") {
+    const dotnet = ctx.dotnet ?? (await resolveDotnet(ctx.env, ctx.platform));
+    if (dotnet) {
+      spec = { file: dotnet, args: ["--version"], cwd: ctx.root, timeoutMs: TIMEOUTS.version };
+    }
   }
   if (!spec) return null;
   const out = await ctx.exec(spec);
@@ -504,10 +530,10 @@ async function toolVersionOutput(ctx: StepContext, tool: EnvironmentTool): Promi
 }
 
 const VERSION_PROBLEM: Readonly<Record<"too-old" | "too-new" | "unsupported", string>> = {
-  "too-old": "版が古いです",
-  "too-new": "版が新しすぎます",
+  "too-old": "バージョンが古いです",
+  "too-new": "バージョンが新しすぎます",
   // Node.js 23 のように、範囲の中でも道具が対応していない版。
-  unsupported: "この版は使えません",
+  unsupported: "このバージョンは使えません",
 };
 
 export const diagnoseStep: StepDefinition = {
@@ -517,9 +543,10 @@ export const diagnoseStep: StepDefinition = {
     const environment = ctx.manifest.environment;
     // 課題が要件を書いた道具だけを調べる。dev-env-basics では Node.js・npm を入れる単元
     // (06 U04) のあとに Git を入れる単元 (U05) が来るので、U04 の診断で Git が無いことを
-    // 不合格にしない。要件が 1 つも無いとき (課題の外からの診断) は 3 つとも調べる。
+    // 不合格にしない。要件が 1 つも無いとき (課題の外からの診断) は Node.js・npm・Git だけ。
+    // dotnet を足すと、C# を使わない受講者の診断が落ちる。
     const listed = ENVIRONMENT_TOOLS.filter((tool) => environment?.[tool] !== undefined);
-    const tools = listed.length > 0 ? listed : [...ENVIRONMENT_TOOLS];
+    const tools = listed.length > 0 ? listed : [...DEFAULT_DIAGNOSE_TOOLS];
     const tests: TestCaseResult[] = [];
     for (const tool of tools) {
       const requirement = environment?.[tool];
@@ -534,7 +561,7 @@ export const diagnoseStep: StepDefinition = {
           check.reason === "missing"
             ? "見つかりません。教材の手順で入れてから、VS Code を再起動してください"
             : check.reason === "unparsable"
-              ? "版を読み取れませんでした"
+              ? "バージョンを読み取れませんでした"
               : `${VERSION_PROBLEM[check.reason]} (${found})。${need} が必要です`;
       }
       tests.push({
@@ -552,6 +579,241 @@ export const diagnoseStep: StepDefinition = {
           : `${tests.length} 個中 ${tests.length - passed} 個の道具を確認してください`,
       tests,
     };
+  },
+};
+
+const DOTNET_MISSING =
+  ".NET SDK が見つかりません。教材の手順で .NET SDK を入れてから、VS Code を再起動してください";
+const TRX_MAX_BYTES = 10 * 1024 * 1024;
+const COMPILE_FINDINGS = 50;
+
+/** 配布した .NET の設定と SDK の版が同じなら、NuGet の準備をやり直さない。 */
+async function dotnetFingerprint(root: string, version: string): Promise<string> {
+  const hash = createHash("sha256");
+  for (const name of DOTNET_PROTECTED_FILES) {
+    const file = path.join(root, name);
+    hash.update((await exists(file)) ? await readFile(file) : "");
+    hash.update("\0");
+  }
+  hash.update(version);
+  return hash.digest("hex");
+}
+
+function dotnetVersionProblem(
+  output: string,
+  requirement: ToolRequirement | undefined,
+): string | null {
+  if (!requirement) return null;
+  const check = checkToolVersion(output, requirement);
+  if (check.ok) return null;
+  if (check.reason === "unparsable" || check.reason === "missing") {
+    return ".NET SDK のバージョンを読み取れませんでした";
+  }
+  const found = check.version ? formatVersion(check.version) : "";
+  const need = describeRequirement(requirement);
+  return `.NET SDK の${VERSION_PROBLEM[check.reason]} (${found})。${need} が必要です`;
+}
+
+export const dotnetRestoreStep: StepDefinition = {
+  id: "deps",
+  label: "依存パッケージの準備 (NuGet)",
+  async run(ctx) {
+    const dotnet = ctx.dotnet;
+    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+    const versionOut = await ctx.exec({
+      file: dotnet,
+      args: ["--version"],
+      cwd: ctx.root,
+      timeoutMs: TIMEOUTS.version,
+    });
+    if (versionOut.aborted) return { status: "error", summary: "中断しました" };
+    const version = versionOut.stdout.trim();
+    if (versionOut.spawnError || versionOut.exitCode !== 0 || version.length === 0) {
+      return errorOutcome(".NET SDK を起動できませんでした", versionOut);
+    }
+    ctx.toolVersions.dotnet = version;
+    const versionProblem = dotnetVersionProblem(version, ctx.manifest.environment?.dotnet);
+    if (versionProblem) return { status: "error", summary: versionProblem };
+    if (!(await exists(path.join(ctx.root, DOTNET_PROJECT_FILE)))) {
+      return {
+        status: "error",
+        summary: "Task.csproj がありません。課題の配布ファイルが足りません",
+      };
+    }
+    if (!(await exists(path.join(ctx.root, DOTNET_LOCK_FILE)))) {
+      return {
+        status: "error",
+        summary: "packages.lock.json がありません。課題の配布ファイルが足りません",
+      };
+    }
+    const fingerprint = await dotnetFingerprint(ctx.root, version);
+    const marker = stateFile(ctx.root, "deps.json");
+    const previous = (await readJson(marker)) as { fingerprint?: string } | undefined;
+    if (
+      previous?.fingerprint === fingerprint &&
+      (await exists(path.join(ctx.root, DOTNET_ASSETS_FILE)))
+    ) {
+      return { status: "skipped", summary: "準備済みです" };
+    }
+    // 失敗した restore の印が残ると、壊れた project.assets.json のまま build に進む。
+    await rm(marker, { force: true });
+    const out = await ctx.exec({
+      file: dotnet,
+      args: [
+        "restore",
+        DOTNET_PROJECT_FILE,
+        "--locked-mode",
+        "--nologo",
+        "--disable-build-servers",
+        "-nodeReuse:false",
+      ],
+      cwd: ctx.root,
+      timeoutMs: TIMEOUTS.deps,
+    });
+    const stopped = interrupted(out, "依存パッケージの準備", "error");
+    if (stopped) return stopped;
+    if (out.exitCode !== 0) {
+      const log = `${out.stdout}\n${out.stderr}`;
+      return errorOutcome(
+        log.includes("NU1004")
+          ? "packages.lock.json と Task.csproj の内容が食い違っています。配布したファイルを書き換えていないか確認してください"
+          : "依存パッケージ (NuGet) を準備できませんでした。ネットワークの接続を確認してください",
+        out,
+      );
+    }
+    await writeStateFile(ctx.root, "deps.json", `${JSON.stringify({ fingerprint }, null, 2)}\n`);
+    return { status: "passed", summary: "依存パッケージを準備しました" };
+  },
+};
+
+export const dotnetBuildStep: StepDefinition = {
+  id: "build",
+  label: "ビルド (C#)",
+  async run(ctx) {
+    const dotnet = ctx.dotnet;
+    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+    const out = await ctx.exec({
+      file: dotnet,
+      args: [
+        "build",
+        DOTNET_PROJECT_FILE,
+        "--no-restore",
+        "--nologo",
+        "--disable-build-servers",
+        "-nodeReuse:false",
+        "-p:UseSharedCompilation=false",
+        "-consoleLoggerParameters:NoSummary",
+      ],
+      cwd: ctx.root,
+      timeoutMs: TIMEOUTS.build,
+    });
+    const stopped = interrupted(out, "ビルド", "error");
+    if (stopped) return stopped;
+    if (out.exitCode === 0) return { status: "passed", summary: "ビルドできました" };
+    const log = `${out.stdout}\n${out.stderr}`;
+    const compileErrors = parseMsbuildDiagnostics(log, ctx.root, ctx.platform).filter((finding) =>
+      /^CS\d+$/.test(finding.ruleId ?? ""),
+    );
+    if (compileErrors.length > 0) {
+      return {
+        status: "failed",
+        summary: `コンパイルエラーが ${compileErrors.length} 件あります。エラーの行を直して保存してください`,
+        lint: compileErrors.slice(0, COMPILE_FINDINGS),
+      };
+    }
+    if (/error NU\d{4}/.test(log)) {
+      await rm(stateFile(ctx.root, "deps.json"), { force: true });
+      return errorOutcome(
+        "依存パッケージの準備が終わっていません。もう一度「課題を確認する」を実行してください",
+        out,
+      );
+    }
+    return errorOutcome("ビルドを実行できませんでした", out);
+  },
+};
+
+/**
+ * `dotnet test` の終了コードと TRX から手順の結果を決める。
+ * `tests` が null のときは、TRX が無い、または読めない。
+ */
+export function dotnetTestOutcome(
+  out: ProcessOutcome,
+  tests: TestCaseResult[] | null,
+): StepOutcome {
+  const output = `${out.stdout}\n${out.stderr}`;
+  const readTests = tests && tests.length > 0 ? { tests } : {};
+  // 終了コード 0 で通ったテストの名前や出力に、たまたまこの文字がある場合は合格のままにする。
+  if (out.exitCode !== 0 && /stack overflow/i.test(output)) {
+    return {
+      status: "failed",
+      summary:
+        "テストの実行中にスタックオーバーフローで止まりました。メソッドが自分自身を呼び続けていないか (終わりの条件があるか) 確認してください",
+      logTail: tailLines(output, 20),
+      ...readTests,
+    };
+  }
+  if (tests === null) return errorOutcome("テストの結果を読めませんでした", out);
+  if (out.exitCode !== 0 && !tests.some((test) => test.status === "failed")) {
+    return {
+      status: "failed",
+      summary: "テストの実行が途中で止まりました。出力の最後を確認してください",
+      logTail: tailLines(output, 20),
+      ...readTests,
+    };
+  }
+  if (out.exitCode === 0 && tests.length === 0) {
+    return { status: "error", summary: "テストが見つかりませんでした" };
+  }
+  const passed = tests.filter((test) => test.status === "passed").length;
+  if (out.exitCode === 0 && tests.length > 0 && passed === tests.length) {
+    return { status: "passed", summary: `${tests.length} 件すべて通りました`, tests };
+  }
+  const counted = tests.filter((test) => test.status !== "skipped").length;
+  return {
+    status: "failed",
+    summary: `${counted} 件中 ${passed} 件が通りました`,
+    tests,
+  };
+}
+
+export const dotnetTestStep: StepDefinition = {
+  id: "test",
+  label: "テスト (xUnit)",
+  needs: ["build"],
+  async run(ctx) {
+    const dotnet = ctx.dotnet;
+    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+    const resultsDir = path.resolve(stateFile(ctx.root, "tmp", "dotnet-test"));
+    await rm(resultsDir, { recursive: true, force: true });
+    await mkdir(resultsDir, { recursive: true });
+    const out = await ctx.exec({
+      file: dotnet,
+      args: [
+        "test",
+        DOTNET_PROJECT_FILE,
+        "--no-build",
+        "--no-restore",
+        "--nologo",
+        "--disable-build-servers",
+        "--logger",
+        "trx;LogFileName=results.trx",
+        "--results-directory",
+        resultsDir,
+      ],
+      cwd: ctx.root,
+      timeoutMs: TIMEOUTS.test,
+    });
+    const stopped = interrupted(out, "テスト", "failed");
+    if (stopped) return stopped;
+    const trxPath = path.join(resultsDir, "results.trx");
+    let tests: TestCaseResult[] | null = null;
+    try {
+      const info = await stat(trxPath);
+      if (info.size <= TRX_MAX_BYTES) tests = parseTrxReport(await readFile(trxPath, "utf8"));
+    } catch {
+      tests = null;
+    }
+    return dotnetTestOutcome(out, tests);
   },
 };
 

@@ -148,6 +148,23 @@ describe("提出の機械照合", () => {
   });
 });
 
+describe("C# の課題の提出", () => {
+  it("deps・build・test が通れば照合に通り、build が無いと不足になる", async () => {
+    const { input, bundle } = await submissionFixture({
+      runner: "dotnet-test",
+      checks: { lint: false, format: false },
+    });
+    input.localResult.steps = [step("deps"), step("build"), step("test"), step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+    input.localResult.steps = [step("deps", "skipped"), step("build"), step("test"), step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+    input.localResult.steps = [step("deps"), step("test"), step("files")];
+    expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+      "必要な確認の結果が不足しています",
+    );
+  });
+});
+
 describe("CI と公開の課題の提出 (07 §5.5)", () => {
   const claim = {
     runUrl: "https://github.com/yamada/web-deploy/actions/runs/123",

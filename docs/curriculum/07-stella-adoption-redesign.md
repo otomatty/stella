@@ -295,6 +295,7 @@ packages/content/
 | `db` | sql-basics, auth-basics | PostgreSQL(PGlite。決定、下記) |
 | `next-app` | nextjs-basics | `next build`と、`next start`で開いた画面のPlaywright |
 | `ci-deploy` | deploy-ops-basics | GitHub Actions・公開先。CIの結果を提出に添える(§5.5、実装済み) |
+| `dotnet-test` | C# の講座 (準備中) | .NET SDK 10・xUnit。手元でビルドとテストを動かす |
 | `quickjs`(旧) | fe-kamoku-b、CMSのプレビュー | 今のまま |
 
 runnerごとの課題テンプレート(`package.json`・lockfile・テストとlint・整形の設定)は`packages/content/templates/runners/<runnerId>/`に置き、道具の版は`packages/content/environments/<runnerId>-01.json`に記録した(§5.5)。Node.jsは22.13以上の22系と24系に限る。道具の多くが奇数版(23)に対応しないため、環境の要件に使える版の一覧(`majors`)を足し、環境診断は23を「この版は使えません」とする。
@@ -337,7 +338,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **拡張のコマンド:** `STELLA: 課題を確認する`、`STELLA: 開発環境を診断する`、`STELLA: 実行ログを表示する`。結果はパネルと`.stella/last-run.json`に残る。
 - **安全面:** Workspace Trustで信頼したフォルダーでだけプロセスを起動する。`stella.serverUrl`・`stella.webUrl`はユーザー設定だけを読む。
 - **確認:** Vitest・ESLint・Prettier・Playwrightの実際の出力で読み取りを確かめた。見本の課題は`apps/vscode/samples/`。
-- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。
+- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
   - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。

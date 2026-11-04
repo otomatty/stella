@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { canSubmit } from "@stella/shared/tasks/run-result";
+import { canSubmit, type RunStepResult } from "@stella/shared/tasks/run-result";
 import { contentHash, verifyTaskSubmission } from "@stella/shared/tasks/submission";
 import { describe, expect, it } from "vitest";
-import { findTaskRoot, loadTask, runTask, saveRunResult } from "./run-task.js";
-import { parsePorcelainZ } from "./steps.js";
+import { findTaskRoot, loadTask, runTask, saveRunResult, unmetNeed } from "./run-task.js";
+import { parsePorcelainZ, type StepDefinition } from "./steps.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -445,7 +445,7 @@ describe("runTask (環境の診断)", () => {
     const node = result.steps[0]?.tests?.[0];
     expect(node?.status).toBe("failed");
     expect(node?.message).toBe(
-      `この版は使えません (${process.versions.node})。${major - 1}.0.0 以上、${major - 1}・${major + 1} 系 が必要です`,
+      `このバージョンは使えません (${process.versions.node})。${major - 1}.0.0 以上、${major - 1}・${major + 1} 系 が必要です`,
     );
     expect(result.outcome).toBe("failed");
   });
@@ -746,5 +746,66 @@ describe("findTaskRoot / loadTask / saveRunResult", () => {
     expect(await readFile(path.join(root, ".stella", ".gitignore"), "utf8")).toContain(
       "last-run.json",
     );
+  });
+});
+
+describe("runTask (C# の手順)", () => {
+  it(".NET SDK が無いと準備で止まり、あとの手順を省く", async () => {
+    const root = await makeTask({ "src/Answers.cs": "class A {}" });
+    const task = manifest({
+      runner: "dotnet-test",
+      submit: { files: ["src/Answers.cs"] },
+      protected: ["tests/**"],
+      checks: { lint: false, format: false },
+    });
+    const result = await runTask({
+      root,
+      manifest: task,
+      manifestSha256: "a".repeat(64),
+      toolchain: { node: null, npm: null, dotnet: null },
+    });
+    const steps = result.steps.filter((step) => step.id !== "files");
+    expect(steps.map((step) => [step.id, step.status])).toEqual([
+      ["deps", "error"],
+      ["build", "skipped"],
+      ["test", "skipped"],
+    ]);
+    expect(steps[0]?.summary).toBe(
+      ".NET SDK が見つかりません。教材の手順で .NET SDK を入れてから、VS Code を再起動してください",
+    );
+    expect(steps[1]?.summary).toBe("前の手順が環境の問題で止まったため省略しました");
+    expect(steps[2]?.summary).toBe("前の手順が環境の問題で止まったため省略しました");
+    expect(result.outcome).toBe("error");
+  });
+});
+
+function stepDefinition(needs?: StepDefinition["needs"]): StepDefinition {
+  return {
+    id: "test",
+    label: "テスト (xUnit)",
+    ...(needs ? { needs } : {}),
+    run: async () => ({ status: "passed", summary: "ok" }),
+  };
+}
+
+function doneStep(status: RunStepResult["status"]): RunStepResult {
+  return { id: "build", label: "ビルド (C#)", status, summary: status, durationMs: 0 };
+}
+
+describe("unmetNeed", () => {
+  it("前提が failed ならその手順を返す", () => {
+    const failed = doneStep("failed");
+    expect(unmetNeed(stepDefinition(["build"]), [failed])).toBe(failed);
+  });
+
+  it("前提が passed・skipped・まだ無いなら返さない", () => {
+    const step = stepDefinition(["build"]);
+    expect(unmetNeed(step, [doneStep("passed")])).toBeUndefined();
+    expect(unmetNeed(step, [doneStep("skipped")])).toBeUndefined();
+    expect(unmetNeed(step, [])).toBeUndefined();
+  });
+
+  it("needs の無い手順は返さない", () => {
+    expect(unmetNeed(stepDefinition(), [doneStep("failed")])).toBeUndefined();
   });
 });

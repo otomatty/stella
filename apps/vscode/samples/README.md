@@ -11,8 +11,8 @@
 ## runner ごとのテンプレートから作った見本
 
 教材のテンプレート (`packages/content/templates/runners/<runner>/`) をそのまま並べ、提出ファイルだけを「直す前」にしたもの。
-どれも lint・整形も確かめる設定で、最初の確認は「直すところがあります」になる。下の「直し方」のとおりに直す
-(テンプレートの同じファイルが直した後の形) と、すべて通る。
+`dotnet-test` 以外は lint・整形も確かめる設定で、最初の確認は「直すところがあります」になる。下の「直し方」のとおりに直す
+(テンプレートの同じファイルが直した後の形) と、すべて通る。`dotnet-test` は lint・整形を使わない。
 
 | フォルダー | runner | 直し方 |
 | --- | --- | --- |
@@ -26,6 +26,7 @@
 | `e2e/` | `e2e` | `src/main.js` で、追加したあとに入力欄を空に戻してフォーカスする |
 | `next-app/` | `next-app` | `app/layout.jsx` の `metadata` に `title: "ToDo"` を足す |
 | `ci-deploy/` | `ci-deploy` | `.github/workflows/deploy.yml` の `deploy` ジョブに `needs: test` を足し、テストが通ってから公開する (下記) |
+| `dotnet-test/` | `dotnet-test` | `src/Answers.cs` の `Sum` を n まで足し、`CountUp` で 1 から n を表示する |
 
 `ci-deploy/` はテストを手元で動かさない (GitHub Actions が動かす)。手元の確認は、実行の URL と公開先の URL を
 尋ねて形を確かめ、Git でコミット済みかを確かめるだけ。試すときは、見本を別の場所に写して `git init`・コミットし、
@@ -34,6 +35,7 @@
 API の照合 (GitHub の公開 API) は手で確かめる (自分の公開リポジトリに push し、Pages を GitHub Actions から公開する設定にする)。
 
 - 最初の確認は `npm ci` をするので、ネットワークが要る。`e2e`・`next-app` はテスト用の Chromium もダウンロードする。2 回目からは「準備済み」で省略される。
+- `dotnet-test` は .NET SDK 10 が要る。最初の確認は NuGet からパッケージを取るので、ネットワークが要る。2 回目からは「準備済み」で省略される。
 - 定義の正しさとテンプレートとの一致は `src/runner/samples.test.ts`・`templates.test.ts` が確かめる。依存パッケージを入れて動かす確認はネットワークが要るので、この手順で手で行う。
 
 本番の課題は教材リポジトリ (`packages/content`) が正本になり、拡張が受講者の学習フォルダーへ配る予定。

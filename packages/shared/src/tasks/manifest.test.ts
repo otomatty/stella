@@ -140,8 +140,8 @@ describe("parseTaskManifest", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors).toEqual([
-      "environment.python は使えません (使えるのは node / npm / git)",
-      'environment.node.min は "22.12.0" のような版番号で書いてください',
+      "environment.python は使えません (使えるのは node / npm / git / dotnet)",
+      'environment.node.min は "22.12.0" のようなバージョン番号で書いてください',
     ]);
   });
 });
@@ -207,6 +207,68 @@ describe("parseTaskManifest (CI と公開の課題)", () => {
     expect(
       parseTaskManifest(ci({ submit: { files: ["site/**"] }, protected: [".github/**"] })).ok,
     ).toBe(true);
+  });
+});
+
+describe("parseTaskManifest (C# の課題)", () => {
+  const dotnet = (overrides: Record<string, unknown> = {}) =>
+    base({
+      id: "csharp-basics/u02/t01",
+      title: "合計を求める",
+      runner: "dotnet-test",
+      submit: { files: ["src/**/*.cs"] },
+      protected: [
+        "Task.csproj",
+        "packages.lock.json",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "NuGet.config",
+        "tests/**",
+      ],
+      ...overrides,
+    });
+
+  it("dotnet-test の定義を通す", () => {
+    expect(parseTaskManifest(dotnet()).ok).toBe(true);
+  });
+
+  it("checks.lint は使えない", () => {
+    const result = parseTaskManifest(dotnet({ checks: { lint: true } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "runner が dotnet-test の課題では checks.lint・checks.format を使えません (ESLint・Prettier は C# を検査しません)",
+    );
+  });
+
+  it("protected に Task.csproj が要る", () => {
+    const result = parseTaskManifest(
+      dotnet({
+        protected: [
+          "packages.lock.json",
+          "Directory.Build.props",
+          "Directory.Build.targets",
+          "NuGet.config",
+          "tests/**",
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "runner が dotnet-test の課題では protected に Task.csproj を入れてください",
+    );
+  });
+
+  it("submit.files に packages.lock.json を入れられない", () => {
+    const result = parseTaskManifest(
+      dotnet({ submit: { files: ["src/**/*.cs", "packages.lock.json"] } }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "packages.lock.json は配布したファイルなので submit.files に入れられません",
+    );
   });
 });
 

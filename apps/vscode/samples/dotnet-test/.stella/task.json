@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "csharp-basics/samples/dotnet-test",
+  "title": "合計と表示のメソッドを直す",
+  "kind": "basic",
+  "runner": "dotnet-test",
+  "submit": {
+    "files": [
+      "src/Answers.cs"
+    ]
+  },
+  "protected": [
+    "Task.csproj",
+    "packages.lock.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "NuGet.config",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": false,
+    "format": false
+  },
+  "environment": {
+    "id": "dotnet-test-01@1",
+    "dotnet": {
+      "min": "10.0.100",
+      "majors": [
+        10
+      ]
+    }
+  }
+}
