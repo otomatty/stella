@@ -17,13 +17,20 @@
  * - 何も始めていない人には、提案が **最初の一手** (先頭) になる
  * - 提案はサーバの推奨順 (`next_stage_ids`) のうち、名前が見えていて今すぐ始められる
  *   星だけ。秘匿の判断はサーバの応答 (`visibility` / `state`) をそのまま使う
+ * - **次の星は 1 つだけを大きく出す。** ほかの候補は畳んで、Basic と Option に分けて出す。
+ *   Option は講師・管理者が割り当てた講座だけ
  */
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlan, TodayPlanItem } from "@/lib/today-plan";
 
-/** 一度に勧める星の数。多いと「選べない」ので、推奨順の上位だけに絞る。 */
-export const GUIDE_MAX_SUGGESTIONS = 3;
+/**
+ * 勧める星の上限。
+ *
+ * 先頭の 1 つだけを「次にやること」として大きく出す。残りは「ほかにも始められる講座」に
+ * 畳むので、候補はその範囲で残す。並びは推奨順のまま (先頭が「次にやること」)。
+ */
+export const GUIDE_MAX_SUGGESTIONS = 6;
 
 export type GuideStep =
   /** 今日のプランの 1 項目 (復習 / 続きのレッスン / つまずきの見直し)。 */

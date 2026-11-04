@@ -17,7 +17,7 @@ export function isCatalogAudience(audience: string | null | undefined): boolean 
   return audience !== "granted";
 }
 
-function parentSlugFromRow(row: AudienceStageRow): string | undefined {
+export function parentSlugFromRow(row: AudienceStageRow): string | undefined {
   const explicit = row.parent?.trim();
   if (explicit) return explicit;
   if (!row.prerequisites) return undefined;

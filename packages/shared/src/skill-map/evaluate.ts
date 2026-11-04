@@ -114,6 +114,12 @@ export interface SkillMapStage {
    */
   iconPath?: string;
   category: string;
+  /**
+   * カタログの出し方。未指定と `catalog` は Basic。`granted` は Option
+   * (講師・管理者が割り当てた受講者にだけ出る講座)。
+   * 推奨順では Basic を Option より先にする。
+   */
+  audience?: "catalog" | "granted";
   /** 「次の一歩」の並び順のヒント (小さいほど先)。未指定は最後尾。 */
   order?: number;
 }
@@ -388,6 +394,7 @@ export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
 /**
  * 「次の一歩」の推奨順。
  *
+ * Basic (`catalog`。未指定も同じ) を Option (`granted`) より先に出す。その中では、
  * いま進めている / クリア済みのカテゴリを続ける方が迷いにくいので、同じカテゴリを先に
  * 出す。同点は `order` → 前提の数 (浅い星から) → slug の順で、常に同じ並びになるようにする。
  */
@@ -398,11 +405,14 @@ function recommendNext(stages: SkillMapStage[], states: Map<string, SkillMapStat
     if (state === "active" || state === "cleared") ongoing.add(stage.category);
   }
   const rank = (stage: SkillMapStage) => (ongoing.has(stage.category) ? 0 : 1);
+  /** Basic が 0、Option が 1。未指定は Basic。 */
+  const audienceRank = (stage: SkillMapStage) => (stage.audience === "granted" ? 1 : 0);
 
   return stages
     .filter((s) => states.get(s.id) === "unlocked")
     .sort(
       (a, b) =>
+        audienceRank(a) - audienceRank(b) ||
         rank(a) - rank(b) ||
         (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
         a.prerequisites.length - b.prerequisites.length ||

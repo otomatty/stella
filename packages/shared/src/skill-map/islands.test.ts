@@ -50,9 +50,11 @@ describe("filterIslandStages", () => {
   });
 
   it("DevOps 島は Python 入門をクリアするまで存在ごと落ちる", () => {
-    const python = stage("python-basics", "バックエンド");
+    const python = stage("python-basics", "Python");
     const devops = stage("devops-basics", "DevOps");
     const rows = [...mainland, python, devops, ...islands];
+    // Python も島。開発環境とWebの入口をクリアするまで存在ごと落ちる。
+    expect(slugsOf(filterIslandStages(rows, new Set()))).toEqual(slugsOf(mainland));
     const afterIt = filterIslandStages(rows, new Set(["id-dev-env-basics"]));
     expect(slugsOf(afterIt)).toEqual(slugsOf([...mainland, python, ...islands]));
     const afterPython = filterIslandStages(
@@ -112,9 +114,20 @@ describe("dropIslandsUnknownToClient", () => {
     );
   });
 
+  it("Python は tiers=5 以上の画面にだけ残す", () => {
+    const py = stage("python-basics", "Python");
+    expect(slugsOf(dropIslandsUnknownToClient([py, devops, aws], "5"))).toEqual(
+      slugsOf([py, devops, aws]),
+    );
+    expect(slugsOf(dropIslandsUnknownToClient([py, devops, aws], "4"))).toEqual(
+      slugsOf([devops, aws]),
+    );
+  });
+
   it("下限を書いた島だけが対象 (最初からある資格の島は常に残る)", () => {
     expect(SKILL_MAP_ISLAND_MIN_TIERS.DevOps).toBe(3);
     expect(SKILL_MAP_ISLAND_MIN_TIERS["Anthropic認定資格"]).toBe(4);
+    expect(SKILL_MAP_ISLAND_MIN_TIERS.Python).toBe(5);
     expect(SKILL_MAP_ISLAND_MIN_TIERS["AWS資格"]).toBeUndefined();
   });
 });

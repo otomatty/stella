@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -40,6 +40,16 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
     void load();
   }, [load]);
 
+  const orderedStages = useMemo(
+    () =>
+      [...stages].sort((a, b) => {
+        const byCategory = (a.category ?? "").localeCompare(b.category ?? "", "ja");
+        if (byCategory !== 0) return byCategory;
+        return a.title.localeCompare(b.title, "ja");
+      }),
+    [stages],
+  );
+
   const toggleLearner = (stageId: string, profileId: string) => {
     setDrafts((prev) => {
       const current = prev[stageId] ?? [];
@@ -69,12 +79,12 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   return (
     <>
       <PageHeader
-        title="専用教材"
-        sub="Git 正本で audience: granted とした講座を、選んだ受講者のスキルツリーにだけ出します。教材本文はリポジトリで編集し、ここでは割当だけ行います"
+        title="Option 講座"
+        sub="Basic 以外の講座 (資格・Python・DevOps・案件) を、受講者ごとに割り当てます。割り当てた受講者のスキルツリーにだけ表示されます。前の講座も Option のときは、それも一緒に割り当てます。"
       />
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
-          デモモードでは専用教材の割当を編集できません。
+          デモモードでは Option 講座の割当を編集できません。
         </Card>
       ) : loading ? (
         <Card className="p-6">
@@ -91,14 +101,14 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
         </Card>
       ) : (
         <div className="flex flex-col gap-4">
-          {stages.map((stage) => (
+          {orderedStages.map((stage) => (
             <Card key={stage.id} className="p-4 sm:p-5">
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-[15px] font-semibold text-ink">{stage.title}</h2>
                   <p className="text-[12px] text-ink-4">
+                    {stage.category ? `${stage.category} · ` : ""}
                     {stage.slug}
-                    {stage.category ? ` · ${stage.category}` : ""}
                   </p>
                 </div>
                 <Button

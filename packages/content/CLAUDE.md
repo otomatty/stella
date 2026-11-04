@@ -147,7 +147,7 @@ python packages/content/scripts/diagram_export.py packages/content/courses/<slug
 
 唯一の前提なし講座は `dev-env-basics` です。この講座には前提を追加しないでください。新18講座の slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
-AWS資格・情報処理資格・Anthropic認定資格・Salesforce案件は `dev-env-basics` クリアで現れる島です。DevOps は `python-basics` クリアで現れます。表示条件は `@stella/shared/skill-map/islands` に定義します。Salesforce は `audience: granted` の専用星で、割り当てられた受講者だけに出ます。Git の独立講座は退役し、Git の練習は新講座へ分散します。複製を扱う機能は維持していますが、現行カタログに複製する講座はありません。
+Basic = 新18講座、それ以外は Option (`audience: granted`)。講師・管理者が「Option 講座」画面で割り当てた受講者にだけ出ます。Python は独立した島です。AWS資格・情報処理資格・Anthropic認定資格・Salesforce案件・Python は `dev-env-basics` クリアで現れる島で、DevOps は `python-basics` クリアで現れます。いずれも割り当てが必要です。表示条件は `@stella/shared/skill-map/islands` に定義します。Git の独立講座は退役し、Git の練習は新講座へ分散します。複製を扱う機能は維持していますが、現行カタログに複製する講座はありません。
 
 退役した19講座と、2026-10 に退役した AI駆動開発の島の6講座の教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 

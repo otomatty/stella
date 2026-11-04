@@ -230,11 +230,12 @@ export const LearnerHome = ({
   ]);
   /** 先頭 (「次にやること」) は `NextStepCard` が `guide` から引く。ここは残りだけ。 */
   const later = guide.steps.slice(1);
-  /** ガイドが勧めている星 (ツリーに「おすすめ」の輪を付ける)。 */
-  const highlightStageIds = useMemo(
-    () => guide.steps.find((s) => s.kind === "choose")?.stageIds ?? [],
-    [guide],
-  );
+  /** ガイドが勧める先頭の 1 星 (ツリーの「おすすめ」の輪はこれだけ)。 */
+  const highlightStageIds = useMemo(() => {
+    const choose = guide.steps.find((step) => step.kind === "choose");
+    const first = choose?.kind === "choose" ? choose.stageIds[0] : undefined;
+    return first ? [first] : [];
+  }, [guide]);
 
   // ----- 星を始める / 開く -----
 

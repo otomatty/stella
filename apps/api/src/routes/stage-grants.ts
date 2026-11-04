@@ -5,6 +5,8 @@
  *   PUT /api/stage-grants/:stageId … `{ profile_ids: string[] }` で grant を置換
  *
  * 割り当てはマップ掲載のみ。 enrollment は `POST /api/stages/:id/start` (自己開始) のまま。
+ * 新たに割り当てた受講者には、線の親をたどった granted の祖先にも同じ割当を足す
+ * (外したとき、および既にある割当は触らない)。catalog に着いたら止める。
  */
 
 import { Hono } from "hono";
@@ -13,8 +15,53 @@ import { and, eq, inArray } from "drizzle-orm";
 import { profiles, stageGrants, stages } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller, requireCanManageStageGrants } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
-import { loadGrantedStagesForTenant } from "../lib/stage-audience.js";
+import { loadGrantedStagesForTenant, parentSlugFromRow } from "../lib/stage-audience.js";
+import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
+
+interface GrantStageNode {
+  id: string;
+  slug: string;
+  audience: string | null;
+  parent: string | null;
+  prerequisites: string | null;
+}
+
+/** 線の親をたどり、同テナントの published な granted 祖先を集める。catalog で止める。 */
+async function loadGrantedAncestors(
+  db: Db,
+  tenantId: string,
+  start: GrantStageNode,
+): Promise<GrantStageNode[]> {
+  const visited = new Set<string>([start.slug]);
+  const found: GrantStageNode[] = [];
+  let parentSlug = parentSlugFromRow(start);
+  while (parentSlug && !visited.has(parentSlug)) {
+    visited.add(parentSlug);
+    const rows = await db
+      .select({
+        id: stages.id,
+        slug: stages.slug,
+        audience: stages.audience,
+        parent: stages.parent,
+        prerequisites: stages.prerequisites,
+      })
+      .from(stages)
+      .where(
+        and(
+          eq(stages.tenantId, tenantId),
+          eq(stages.slug, parentSlug),
+          eq(stages.status, "published"),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    if (row?.audience !== "granted") break;
+    found.push(row);
+    parentSlug = parentSlugFromRow(row);
+  }
+  return found;
+}
 
 export const stageGrantsRoute = new Hono<{ Bindings: Env }>();
 
@@ -109,7 +156,14 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     ];
 
     const stageRows = await db
-      .select({ id: stages.id, audience: stages.audience, tenantId: stages.tenantId })
+      .select({
+        id: stages.id,
+        slug: stages.slug,
+        audience: stages.audience,
+        tenantId: stages.tenantId,
+        parent: stages.parent,
+        prerequisites: stages.prerequisites,
+      })
       .from(stages)
       .where(eq(stages.id, stageId))
       .limit(1);
@@ -118,15 +172,16 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       throw new ApiError("ステージが見つかりません", 404);
     }
     if (stage.audience !== "granted") {
-      throw new ApiError("このステージは専用教材 (audience=granted) ではありません", 400);
+      throw new ApiError("このステージは Option 講座 (audience=granted) ではありません", 400);
     }
 
+    const existingGrantIds = new Set<string>();
     if (profileIds.length > 0) {
       const existingGrantRows = await db
         .select({ profileId: stageGrants.profileId })
         .from(stageGrants)
         .where(eq(stageGrants.stageId, stageId));
-      const existingGrantIds = new Set(existingGrantRows.map((row) => row.profileId));
+      for (const row of existingGrantRows) existingGrantIds.add(row.profileId);
 
       const profileRows = await db
         .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
@@ -144,22 +199,72 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       }
     }
 
+    const newlyAdded = profileIds.filter((id) => !existingGrantIds.has(id));
+    const ancestorInserts: { stageId: string; profileId: string }[] = [];
+    if (newlyAdded.length > 0) {
+      const ancestors = await loadGrantedAncestors(db, caller.tenantId, stage);
+      if (ancestors.length > 0) {
+        const existingAncestorRows = await db
+          .select({ stageId: stageGrants.stageId, profileId: stageGrants.profileId })
+          .from(stageGrants)
+          .where(
+            and(
+              eq(stageGrants.tenantId, caller.tenantId),
+              inArray(
+                stageGrants.stageId,
+                ancestors.map((row) => row.id),
+              ),
+              inArray(stageGrants.profileId, newlyAdded),
+            ),
+          );
+        const already = new Set(
+          existingAncestorRows.map((row) => `${row.stageId}\0${row.profileId}`),
+        );
+        for (const ancestor of ancestors) {
+          for (const profileId of newlyAdded) {
+            if (already.has(`${ancestor.id}\0${profileId}`)) continue;
+            ancestorInserts.push({ stageId: ancestor.id, profileId });
+          }
+        }
+      }
+    }
+
     const deleteOp = db.delete(stageGrants).where(eq(stageGrants.stageId, stageId));
-    const insertOps = profileIds.map((profileId) =>
+    const insertRows = [
+      ...profileIds.map((profileId) => ({ stageId, profileId })),
+      ...ancestorInserts,
+    ];
+    const insertOps = insertRows.map((row) =>
       db.insert(stageGrants).values({
         tenantId: caller.tenantId,
-        stageId,
-        profileId,
+        stageId: row.stageId,
+        profileId: row.profileId,
         grantedBy: caller.id,
       }),
     );
     await db.batch([deleteOp, ...insertOps]);
 
+    const ancestorGrants = new Map<string, string[]>();
+    for (const row of ancestorInserts) {
+      const list = ancestorGrants.get(row.stageId) ?? [];
+      list.push(row.profileId);
+      ancestorGrants.set(row.stageId, list);
+    }
     await recordAudit(db, caller, {
       action: "stage_grants_replace",
       targetType: "stage",
       targetId: stageId,
-      metadata: { profile_ids: profileIds },
+      metadata: {
+        profile_ids: profileIds,
+        ...(ancestorGrants.size > 0
+          ? {
+              ancestor_grants: [...ancestorGrants.entries()].map(([ancestorStageId, ids]) => ({
+                stage_id: ancestorStageId,
+                profile_ids: ids,
+              })),
+            }
+          : {}),
+      },
       ip: clientIp(c),
     });
 

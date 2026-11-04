@@ -301,6 +301,17 @@ describe("evaluateSkillMap — 次の一歩", () => {
     const r = evaluateSkillMap({ stages, clearedStageIds: new Set() });
     expect(r.nextStageIds).toEqual([id("early"), id("late"), id("aaa"), id("zzz")]);
   });
+
+  it("granted の星は、カテゴリや slug に関係なく catalog の星より後ろ", () => {
+    // カテゴリ優先も slug 順も Option を先頭にしようとする。Basic が先。
+    const stages = [
+      stage("aaa-option", [], { audience: "granted", category: "進行中" }),
+      stage("zzz-basic", [], { category: "別カテゴリ" }),
+      stage("done", [], { category: "進行中" }),
+    ];
+    const r = evaluateSkillMap({ stages, clearedStageIds: new Set([id("done")]) });
+    expect(r.nextStageIds).toEqual([id("zzz-basic"), id("aaa-option")]);
+  });
 });
 
 describe("evaluateSkillMap — 状態の優先順位 (取りこぼしやすい組み合わせ)", () => {

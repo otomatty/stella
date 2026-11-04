@@ -768,7 +768,7 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
     });
   });
 
-  it("granted は catalog の親を 1 つ以上必須", () => {
+  it("granted は前提を 1 つ以上必須", () => {
     withCourses({ "x-basics": { audience: "granted" } }, (root) => {
       expect(() => buildContentManifest(root)).toThrow(/granted.*prerequisites/);
     });
@@ -787,7 +787,7 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
     );
   });
 
-  it("granted どうしの親子は落ちる", () => {
+  it("granted → granted → catalog の鎖は通る", () => {
     withCourses(
       {
         "a-basics": {},
@@ -795,7 +795,30 @@ describe("buildContentManifest — スキルツリーのフィールド", () => 
         "c-basics": { audience: "granted", prerequisites: ["b-basics"] },
       },
       (root) => {
-        expect(() => buildContentManifest(root)).toThrow(/catalog の親だけ/);
+        const { courses } = buildContentManifest(root);
+        expect(courses.find((c) => c.id === "b-basics")?.audience).toBe("granted");
+        expect(courses.find((c) => c.id === "c-basics")?.audience).toBe("granted");
+        expect(courses.find((c) => c.id === "c-basics")?.prerequisites).toEqual(["b-basics"]);
+      },
+    );
+  });
+
+  it("catalog に着かない granted の鎖は落ちる", () => {
+    withCourses(
+      {
+        "a-basics": { audience: "granted", prerequisites: ["b-basics"] },
+        "b-basics": { audience: "granted", prerequisites: ["a-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/catalog 講座に着く必要があります/);
+      },
+    );
+    withCourses(
+      {
+        "a-basics": { audience: "granted", prerequisites: ["missing-basics"] },
+      },
+      (root) => {
+        expect(() => buildContentManifest(root)).toThrow(/存在しない講座|catalog 講座に着く/);
       },
     );
   });
@@ -968,14 +991,10 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
       ].sort(),
     );
     expect(byCategory("バックエンド")).toEqual(
-      [
-        "node-api-basics",
-        "sql-basics",
-        "auth-basics",
-        "python-basics",
-        "python-testing-ci-basics",
-        "test-design-basics",
-      ].sort(),
+      ["node-api-basics", "sql-basics", "auth-basics"].sort(),
+    );
+    expect(byCategory("Python")).toEqual(
+      ["python-basics", "python-testing-ci-basics", "test-design-basics"].sort(),
     );
     expect(byCategory("フルスタック")).toEqual(
       [
@@ -1111,7 +1130,6 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     // 島は「目的別の入り口」なので、案件トラックはこちらが本来の置き場所。
     expect(course?.category).toBe("Salesforce案件");
     expect(SKILL_MAP_ISLAND_CATEGORIES.has("Salesforce案件")).toBe(true);
-    // 親は catalog の公開講座 (granted は入口の星にできない)。
     expect(course?.prerequisites).toEqual(["sql-basics"]);
     // catalog 講座の前提に専用星を書くと、割り当てのない受講者が永久ロックされる。
     for (const other of courses) {
@@ -1129,6 +1147,57 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     ]);
     expect(courses.find((c) => c.id === "fe-kamoku-a")?.prerequisites).toEqual(["dev-env-basics"]);
     expect(courses.find((c) => c.id === "fe-kamoku-b")?.prerequisites).toEqual(["fe-kamoku-a"]);
+  });
+
+  it("Basic 以外は Option (audience: granted)。Python 3 講座は Python の島", () => {
+    const granted = [
+      "aws-clf-c02-basics",
+      "fe-kamoku-a",
+      "fe-kamoku-b",
+      "claude-developer-foundations",
+      "python-basics",
+      "python-testing-ci-basics",
+      "test-design-basics",
+      "devops-basics",
+      "networking-ops-basics",
+      "terraform-basics",
+      "kubernetes-basics",
+      "salesforce-dev-basics",
+    ];
+    expect(
+      courses
+        .filter((c) => c.audience === "granted")
+        .map((c) => c.id)
+        .sort(),
+    ).toEqual(granted.sort());
+    const basic = new Set([
+      "dev-env-basics",
+      "html-css-basics",
+      "javascript-basics",
+      "javascript-data-basics",
+      "dom-basics",
+      "ui-components-basics",
+      "http-async-basics",
+      "react-basics",
+      "react-ui-basics",
+      "ui-integration-basics",
+      "node-api-basics",
+      "sql-basics",
+      "auth-basics",
+      "nextjs-basics",
+      "design-quality-basics",
+      "deploy-ops-basics",
+      "code-reading-basics",
+      "fullstack-capstone",
+    ]);
+    for (const course of courses) {
+      if (basic.has(course.id)) expect(course.audience, course.id).toBeUndefined();
+    }
+    for (const slug of ["python-basics", "python-testing-ci-basics", "test-design-basics"]) {
+      const course = courses.find((c) => c.id === slug);
+      expect(course?.category, slug).toBe("Python");
+      expect(course?.theme, slug).toBe("Python とテストの力");
+    }
   });
 
   it("dev-env-basics だけが前提なしの入口になる", () => {

@@ -27,6 +27,8 @@ export interface SkillMapStageNode {
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
+  /** Option (講師・管理者が割り当てた講座)。Basic の星には付かない。 */
+  audience?: "granted";
   /**
    * 講座アイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
    * サーバが slug と同じ秘匿ルールで伏せる)。実体は
@@ -180,12 +182,13 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
  * カテゴリを本土の扇に混ぜて Python から橋を引いてしまうため。
  * `4` = さらに Anthropic認定資格を島として描ける (未知のままだと、開発環境とWebの
  * 入口から橋を引いてしまう)。
+ * `5` = さらに Python を島として描ける (未知のままだと、本土の親から橋を引いてしまう)。
  *
  * **ヘッダではなくクエリ引数**にしてある。独自ヘッダはサーバの CORS 許可リストに
  * 無いとプリフライトで弾かれ、API をロールバックした瞬間に全ての API 呼び出しが
  * 落ちる。クエリ引数なら CORS の対象外で、知らないサーバは黙って無視する。
  */
-const SKILL_MAP_TIERS = "4";
+const SKILL_MAP_TIERS = "5";
 
 export async function getSkillMap(): Promise<SkillMapMine> {
   const { skill_map, cleared_stages } = await apiFetch<{

@@ -18,7 +18,7 @@
  *     「何が要るか」(`lock_reasons`) だけ、という設計をここで確定させる
  *   - `fog` の星 (2 歩先) は **タイトル・カテゴリ・テーマ・前提線まで** (画面はタイトルを
  *     ぼかして「予告」として見せる。前提線はリング = 深さの計算に要る)。slug・
- *     到達説明・**解放条件**・受講登録は返さない — URL を組める / 中身が分かる /
+ *     到達説明・**解放条件**・受講登録・Option の印は返さない — URL を組める / 中身が分かる /
  *     個人の割当が読める情報は霧の向こうに出さない。テーマを持たないステージ
  *     (CMS で作った直後など) のテーマは `？？？` で埋める
  *   - `edge` の星 (3 歩先) は **線を引くためのトポロジだけ** (id・扇・親)。名前も
@@ -277,6 +277,11 @@ export interface SkillMapStagePayload {
    * **霧の星にも `edge` の星にも付ける。**
    */
   appearance_parent_ids?: Record<string, string>;
+  /**
+   * Option (講師・管理者が割り当てた講座)。Basic (`catalog`) の星には付けない。
+   * 名前を出す段 (`full`) と開発者表示にだけ載せる。霧・edge には出さない。
+   */
+  audience?: "granted";
 }
 
 skillMapRoute.get("/api/skill-map/mine", async (c) => {
@@ -285,8 +290,8 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     const revealDev = wantsDevReveal(c);
     // 段を増やしたこと / 新しい島を知らない画面には配らない (`SKILL_MAP_TIERS_PARAM`)。
     // 開発者表示は自分の画面でしか使わないので、幽霊ノードは常に素通し。
-    // DevOps 島は旧 layout が本土の扇に混ぜて橋を引くので、申告が無いと落とす
-    // (FAB オンの古いタブでも同じ — レイアウト側がカテゴリを知らない)。
+    // DevOps / Anthropic認定資格 / Python の島は、旧 layout が本土の扇に混ぜて橋を引くので、
+    // その島を知らない申告では落とす (FAB オンの古いタブでも同じ — レイアウト側がカテゴリを知らない)。
     const declaredTiers = c.req.query(SKILL_MAP_TIERS_PARAM);
     const ghostStars = revealDev || acceptsGhostStars(declaredTiers);
     // 修了条件を満たしたまま未クリアの星をここで埋める (修了証の自動発行)。イベントを
@@ -404,6 +409,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
               ? { lock_reasons: maskedLockReasons(source, result, stage.id, true) }
               : {}),
             ...(state !== "locked" && stage.canDo ? { can_do: stage.canDo } : {}),
+            ...(stage.audience === "granted" ? { audience: stage.audience } : {}),
           },
         ];
       }
@@ -416,7 +422,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
       }
 
       // 2 歩先 (霧): 名前とカテゴリと前提の線まで (画面は名前をぼかして「予告」)。
-      // slug・到達説明・解放条件・受講登録・アイコンはここで止める。
+      // slug・到達説明・解放条件・受講登録・アイコン・Option の印はここで止める。
       if (visibility === "fog") {
         return [
           {
@@ -445,6 +451,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
             ? { lock_reasons: maskedLockReasons(source, result, stage.id) }
             : {}),
           ...(state !== "locked" && stage.canDo ? { can_do: stage.canDo } : {}),
+          ...(stage.audience === "granted" ? { audience: stage.audience } : {}),
         },
       ];
     });
