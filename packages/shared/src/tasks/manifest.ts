@@ -259,6 +259,16 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
         errors.push(`${file} は配布したファイルなので submit.files に入れられません`);
       }
     }
+    // 設定ファイルだけでは tests/ を覆えない。配布したテストの改変を提出で照合する。
+    const distributedTest = "tests/AnswersTests.cs";
+    if (!protectedPatterns.some((pattern) => picomatch(pattern, { dot: true })(distributedTest))) {
+      errors.push(
+        "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
+      );
+    }
+    if (submitFiles.some((pattern) => picomatch(pattern, { dot: true })(distributedTest))) {
+      errors.push("tests/ は配布したテストなので submit.files に入れられません");
+    }
   }
 
   let staticChecks: StaticCheck[] | undefined;

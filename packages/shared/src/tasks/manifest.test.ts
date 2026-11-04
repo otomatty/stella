@@ -270,6 +270,32 @@ describe("parseTaskManifest (C# の課題)", () => {
       "packages.lock.json は配布したファイルなので submit.files に入れられません",
     );
   });
+
+  it("protected に tests/** が要る", () => {
+    const result = parseTaskManifest(
+      dotnet({
+        protected: [
+          "Task.csproj",
+          "packages.lock.json",
+          "Directory.Build.props",
+          "Directory.Build.targets",
+          "NuGet.config",
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
+    );
+  });
+
+  it("submit.files に tests/** を入れられない", () => {
+    const result = parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs", "tests/**"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain("tests/ は配布したテストなので submit.files に入れられません");
+  });
 });
 
 describe("isSafeRelativePattern", () => {
