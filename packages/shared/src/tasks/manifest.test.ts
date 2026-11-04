@@ -270,6 +270,56 @@ describe("parseTaskManifest (C# の課題)", () => {
       "packages.lock.json は配布したファイルなので submit.files に入れられません",
     );
   });
+
+  it("protected に tests/** という文字列が要る", () => {
+    const message =
+      "runner が dotnet-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)";
+    for (const testsPattern of [undefined, "tests/AnswersTests.cs", "tests/*.cs"] as const) {
+      const result = parseTaskManifest(
+        dotnet({
+          protected: [
+            "Task.csproj",
+            "packages.lock.json",
+            "Directory.Build.props",
+            "Directory.Build.targets",
+            "NuGet.config",
+            ...(testsPattern === undefined ? [] : [testsPattern]),
+          ],
+        }),
+      );
+      expect(result.ok, String(testsPattern)).toBe(false);
+      if (result.ok) return;
+      expect(result.errors, String(testsPattern)).toContain(message);
+    }
+    expect(parseTaskManifest(dotnet()).ok).toBe(true);
+  });
+
+  it("submit.files は src/ の下のパターンだけ", () => {
+    const message =
+      "runner が dotnet-test の課題では submit.files を src/ の下のパターンにしてください (受講者のコードは src/ に置き、tests/ は配布したテストのため)";
+    for (const pattern of [
+      "**/ConsoleOutput.cs",
+      "**/*.cs",
+      "tests/ConsoleOutput.cs",
+      "Answers.cs",
+    ]) {
+      const result = parseTaskManifest(dotnet({ submit: { files: [pattern] } }));
+      expect(result.ok, pattern).toBe(false);
+      if (result.ok) return;
+      expect(result.errors, pattern).toContain(message);
+    }
+    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
+  });
+
+  it("submit.files に src/**/*.cs という文字列が要る", () => {
+    const message =
+      "runner が dotnet-test の課題では submit.files に src/**/*.cs を入れてください (コンパイルする src/ の .cs をすべて提出するため)";
+    const result = parseTaskManifest(dotnet({ submit: { files: ["src/Answers.cs"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+    expect(parseTaskManifest(dotnet({ submit: { files: ["src/**/*.cs"] } })).ok).toBe(true);
+  });
 });
 
 describe("isSafeRelativePattern", () => {
