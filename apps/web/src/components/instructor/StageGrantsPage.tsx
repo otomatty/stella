@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,7 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const savingRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!backendEnabled) return;
@@ -63,6 +64,8 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   };
 
   const save = async (stage: StageGrantStageRow) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSavingId(stage.id);
     try {
       const profileIds = drafts[stage.id] ?? [];
@@ -81,6 +84,7 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
+      savingRef.current = false;
       setSavingId(null);
     }
   };
@@ -123,7 +127,7 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
                 <Button
                   size="sm"
                   variant="primary"
-                  disabled={savingId === stage.id}
+                  disabled={savingId !== null}
                   onClick={() => void save(stage)}
                 >
                   {savingId === stage.id ? "保存中…" : "保存"}
