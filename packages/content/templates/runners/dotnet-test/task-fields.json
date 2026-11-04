@@ -3,7 +3,7 @@
   "environment": "dotnet-test-01",
   "submit": {
     "files": [
-      "src/Answers.cs"
+      "src/**/*.cs"
     ]
   },
   "protected": [

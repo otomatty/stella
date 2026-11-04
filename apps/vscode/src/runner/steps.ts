@@ -5,6 +5,7 @@
 
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {
   DOTNET_ASSETS_FILE,
@@ -44,6 +45,7 @@ import {
   parsePrettierList,
   parseTrxReport,
   parseVitestReport,
+  redactLocalPaths,
 } from "./parsers.js";
 import type { ProcessOutcome, ProcessSpec } from "./process.js";
 import { tailLines } from "./process.js";
@@ -141,6 +143,32 @@ async function exists(file: string): Promise<boolean> {
 function errorOutcome(summary: string, out?: ProcessOutcome): StepOutcome {
   const log = out ? tailLines(`${out.stdout}\n${out.stderr}`) : "";
   return { status: "error", summary, ...(log ? { logTail: log } : {}) };
+}
+
+type LocalPaths = { root: string; home: string; platform: NodeJS.Platform };
+
+/** 手順の結果に、課題フォルダーとホームの絶対パスを残さない。 */
+function redactStepOutcome(outcome: StepOutcome, paths: LocalPaths): StepOutcome {
+  const clean = (text: string) => redactLocalPaths(text, paths);
+  return {
+    ...outcome,
+    summary: clean(outcome.summary),
+    ...(outcome.logTail !== undefined ? { logTail: clean(outcome.logTail) } : {}),
+    ...(outcome.tests
+      ? {
+          tests: outcome.tests.map((test) =>
+            test.message === undefined ? test : { ...test, message: clean(test.message) },
+          ),
+        }
+      : {}),
+    ...(outcome.lint
+      ? { lint: outcome.lint.map((finding) => ({ ...finding, message: clean(finding.message) })) }
+      : {}),
+  };
+}
+
+function localPaths(ctx: StepContext): LocalPaths {
+  return { root: ctx.root, home: os.homedir(), platform: ctx.platform };
 }
 
 /** 時間切れ・中断・起動の失敗を手順の結果にする。どれでもなければ null。 */
@@ -618,80 +646,135 @@ export const dotnetRestoreStep: StepDefinition = {
   id: "deps",
   label: "依存パッケージの準備 (NuGet)",
   async run(ctx) {
-    const dotnet = ctx.dotnet;
-    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
-    const versionOut = await ctx.exec({
-      file: dotnet,
-      args: ["--version"],
-      cwd: ctx.root,
-      timeoutMs: TIMEOUTS.version,
-    });
-    if (versionOut.aborted) return { status: "error", summary: "中断しました" };
-    const version = versionOut.stdout.trim();
-    if (versionOut.spawnError || versionOut.exitCode !== 0 || version.length === 0) {
-      return errorOutcome(".NET SDK を起動できませんでした", versionOut);
-    }
-    ctx.toolVersions.dotnet = version;
-    const versionProblem = dotnetVersionProblem(version, ctx.manifest.environment?.dotnet);
-    if (versionProblem) return { status: "error", summary: versionProblem };
-    if (!(await exists(path.join(ctx.root, DOTNET_PROJECT_FILE)))) {
-      return {
-        status: "error",
-        summary: "Task.csproj がありません。課題の配布ファイルが足りません",
-      };
-    }
-    if (!(await exists(path.join(ctx.root, DOTNET_LOCK_FILE)))) {
-      return {
-        status: "error",
-        summary: "packages.lock.json がありません。課題の配布ファイルが足りません",
-      };
-    }
-    const fingerprint = await dotnetFingerprint(ctx.root, version);
-    const marker = stateFile(ctx.root, "deps.json");
-    const previous = (await readJson(marker)) as { fingerprint?: string } | undefined;
-    if (
-      previous?.fingerprint === fingerprint &&
-      (await exists(path.join(ctx.root, DOTNET_ASSETS_FILE)))
-    ) {
-      return { status: "skipped", summary: "準備済みです" };
-    }
-    // 失敗した restore の印が残ると、壊れた project.assets.json のまま build に進む。
-    await rm(marker, { force: true });
-    const out = await ctx.exec({
-      file: dotnet,
-      args: [
-        "restore",
-        DOTNET_PROJECT_FILE,
-        "--locked-mode",
-        "--nologo",
-        "--disable-build-servers",
-        "-nodeReuse:false",
-      ],
-      cwd: ctx.root,
-      timeoutMs: TIMEOUTS.deps,
-    });
-    const stopped = interrupted(out, "依存パッケージの準備", "error");
-    if (stopped) return stopped;
-    if (out.exitCode !== 0) {
-      const log = `${out.stdout}\n${out.stderr}`;
-      return errorOutcome(
-        log.includes("NU1004")
-          ? "packages.lock.json と Task.csproj の内容が食い違っています。配布したファイルを書き換えていないか確認してください"
-          : "依存パッケージ (NuGet) を準備できませんでした。ネットワークの接続を確認してください",
-        out,
-      );
-    }
-    await writeStateFile(ctx.root, "deps.json", `${JSON.stringify({ fingerprint }, null, 2)}\n`);
-    return { status: "passed", summary: "依存パッケージを準備しました" };
+    return redactStepOutcome(await runDotnetRestore(ctx), localPaths(ctx));
   },
 };
+
+async function runDotnetRestore(ctx: StepContext): Promise<StepOutcome> {
+  const dotnet = ctx.dotnet;
+  if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+  const versionOut = await ctx.exec({
+    file: dotnet,
+    args: ["--version"],
+    cwd: ctx.root,
+    timeoutMs: TIMEOUTS.version,
+  });
+  if (versionOut.aborted) return { status: "error", summary: "中断しました" };
+  const version = versionOut.stdout.trim();
+  if (versionOut.spawnError || versionOut.exitCode !== 0 || version.length === 0) {
+    return errorOutcome(".NET SDK を起動できませんでした", versionOut);
+  }
+  ctx.toolVersions.dotnet = version;
+  const versionProblem = dotnetVersionProblem(version, ctx.manifest.environment?.dotnet);
+  if (versionProblem) return { status: "error", summary: versionProblem };
+  if (!(await exists(path.join(ctx.root, DOTNET_PROJECT_FILE)))) {
+    return {
+      status: "error",
+      summary: "Task.csproj がありません。課題の配布ファイルが足りません",
+    };
+  }
+  if (!(await exists(path.join(ctx.root, DOTNET_LOCK_FILE)))) {
+    return {
+      status: "error",
+      summary: "packages.lock.json がありません。課題の配布ファイルが足りません",
+    };
+  }
+  const fingerprint = await dotnetFingerprint(ctx.root, version);
+  const marker = stateFile(ctx.root, "deps.json");
+  const previous = (await readJson(marker)) as { fingerprint?: string } | undefined;
+  if (
+    previous?.fingerprint === fingerprint &&
+    (await exists(path.join(ctx.root, DOTNET_ASSETS_FILE)))
+  ) {
+    return { status: "skipped", summary: "準備済みです" };
+  }
+  // 失敗した restore の印が残ると、壊れた project.assets.json のまま build に進む。
+  await rm(marker, { force: true });
+  const out = await ctx.exec({
+    file: dotnet,
+    args: [
+      "restore",
+      DOTNET_PROJECT_FILE,
+      "--locked-mode",
+      "--nologo",
+      "--disable-build-servers",
+      "-nodeReuse:false",
+    ],
+    cwd: ctx.root,
+    timeoutMs: TIMEOUTS.deps,
+  });
+  const stopped = interrupted(out, "依存パッケージの準備", "error");
+  if (stopped) return stopped;
+  if (out.exitCode !== 0) {
+    const log = `${out.stdout}\n${out.stderr}`;
+    return errorOutcome(
+      log.includes("NU1004")
+        ? "packages.lock.json と Task.csproj の内容が食い違っています。配布したファイルを書き換えていないか確認してください"
+        : "依存パッケージ (NuGet) を準備できませんでした。ネットワークの接続を確認してください",
+      out,
+    );
+  }
+  await writeStateFile(ctx.root, "deps.json", `${JSON.stringify({ fingerprint }, null, 2)}\n`);
+  return { status: "passed", summary: "依存パッケージを準備しました" };
+}
+
+const NUGET_CACHE_ERROR = /error (?:NU\d{4}|NETSDK1004|NETSDK1064)/;
+const NUGET_CACHE_SUMMARY =
+  "依存パッケージの準備が終わっていないか、NuGet のキャッシュから消えています。もう一度「課題を確認する」を実行してください";
+
+/**
+ * `dotnet build` の終了コードと出力から手順の結果を決める。
+ * `resetDeps` なら、次の確認で NuGet の準備をやり直す (`.stella/deps.json` を消す)。
+ */
+export function dotnetBuildOutcome(
+  out: ProcessOutcome,
+  root: string,
+  platform: NodeJS.Platform,
+  home: string,
+): { outcome: StepOutcome; resetDeps: boolean } {
+  const paths = { root, home, platform };
+  const log = `${out.stdout}\n${out.stderr}`;
+  if (out.exitCode === 0) {
+    return {
+      outcome: redactStepOutcome({ status: "passed", summary: "ビルドできました" }, paths),
+      resetDeps: false,
+    };
+  }
+  const compileErrors = parseMsbuildDiagnostics(log, root, platform).filter((finding) =>
+    /^CS\d+$/.test(finding.ruleId ?? ""),
+  );
+  if (compileErrors.length > 0) {
+    return {
+      outcome: redactStepOutcome(
+        {
+          status: "failed",
+          summary: `コンパイルエラーが ${compileErrors.length} 件あります。エラーの行を直して保存してください`,
+          lint: compileErrors.slice(0, COMPILE_FINDINGS),
+        },
+        paths,
+      ),
+      resetDeps: false,
+    };
+  }
+  if (NUGET_CACHE_ERROR.test(log)) {
+    return {
+      outcome: redactStepOutcome(errorOutcome(NUGET_CACHE_SUMMARY, out), paths),
+      resetDeps: true,
+    };
+  }
+  return {
+    outcome: redactStepOutcome(errorOutcome("ビルドを実行できませんでした", out), paths),
+    resetDeps: false,
+  };
+}
 
 export const dotnetBuildStep: StepDefinition = {
   id: "build",
   label: "ビルド (C#)",
   async run(ctx) {
+    const paths = localPaths(ctx);
     const dotnet = ctx.dotnet;
-    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+    if (!dotnet) return redactStepOutcome({ status: "error", summary: DOTNET_MISSING }, paths);
     const out = await ctx.exec({
       file: dotnet,
       args: [
@@ -708,72 +791,66 @@ export const dotnetBuildStep: StepDefinition = {
       timeoutMs: TIMEOUTS.build,
     });
     const stopped = interrupted(out, "ビルド", "error");
-    if (stopped) return stopped;
-    if (out.exitCode === 0) return { status: "passed", summary: "ビルドできました" };
-    const log = `${out.stdout}\n${out.stderr}`;
-    const compileErrors = parseMsbuildDiagnostics(log, ctx.root, ctx.platform).filter((finding) =>
-      /^CS\d+$/.test(finding.ruleId ?? ""),
-    );
-    if (compileErrors.length > 0) {
-      return {
-        status: "failed",
-        summary: `コンパイルエラーが ${compileErrors.length} 件あります。エラーの行を直して保存してください`,
-        lint: compileErrors.slice(0, COMPILE_FINDINGS),
-      };
-    }
-    if (/error NU\d{4}/.test(log)) {
-      await rm(stateFile(ctx.root, "deps.json"), { force: true });
-      return errorOutcome(
-        "依存パッケージの準備が終わっていません。もう一度「課題を確認する」を実行してください",
-        out,
-      );
-    }
-    return errorOutcome("ビルドを実行できませんでした", out);
+    if (stopped) return redactStepOutcome(stopped, paths);
+    const decided = dotnetBuildOutcome(out, ctx.root, ctx.platform, paths.home);
+    if (decided.resetDeps) await rm(stateFile(ctx.root, "deps.json"), { force: true });
+    return decided.outcome;
   },
 };
+
+/** テストのホストが落ちた行だけ。テスト名に "Stack overflow" とあっても当てない。 */
+function isHostStackOverflow(output: string): boolean {
+  return output.split(/\r?\n/).some((line) => {
+    const trimmed = line.trim();
+    return /^stack overflow\.?$/i.test(trimmed) || /:\s*stack overflow\.?\s*$/i.test(trimmed);
+  });
+}
 
 /**
  * `dotnet test` の終了コードと TRX から手順の結果を決める。
  * `tests` が null のときは、TRX が無い、または読めない。
+ * `redact` があるときは、要約・ログ・失敗メッセージの絶対パスを外す。
  */
 export function dotnetTestOutcome(
   out: ProcessOutcome,
   tests: TestCaseResult[] | null,
+  redact?: LocalPaths,
 ): StepOutcome {
+  const finish = (outcome: StepOutcome) => (redact ? redactStepOutcome(outcome, redact) : outcome);
   const output = `${out.stdout}\n${out.stderr}`;
   const readTests = tests && tests.length > 0 ? { tests } : {};
   // 終了コード 0 で通ったテストの名前や出力に、たまたまこの文字がある場合は合格のままにする。
-  if (out.exitCode !== 0 && /stack overflow/i.test(output)) {
-    return {
+  if (out.exitCode !== 0 && isHostStackOverflow(output)) {
+    return finish({
       status: "failed",
       summary:
         "テストの実行中にスタックオーバーフローで止まりました。メソッドが自分自身を呼び続けていないか (終わりの条件があるか) 確認してください",
       logTail: tailLines(output, 20),
       ...readTests,
-    };
+    });
   }
-  if (tests === null) return errorOutcome("テストの結果を読めませんでした", out);
+  if (tests === null) return finish(errorOutcome("テストの結果を読めませんでした", out));
   if (out.exitCode !== 0 && !tests.some((test) => test.status === "failed")) {
-    return {
+    return finish({
       status: "failed",
       summary: "テストの実行が途中で止まりました。出力の最後を確認してください",
       logTail: tailLines(output, 20),
       ...readTests,
-    };
+    });
   }
   if (out.exitCode === 0 && tests.length === 0) {
-    return { status: "error", summary: "テストが見つかりませんでした" };
+    return finish({ status: "error", summary: "テストが見つかりませんでした" });
   }
   const passed = tests.filter((test) => test.status === "passed").length;
   if (out.exitCode === 0 && tests.length > 0 && passed === tests.length) {
-    return { status: "passed", summary: `${tests.length} 件すべて通りました`, tests };
+    return finish({ status: "passed", summary: `${tests.length} 件すべて通りました`, tests });
   }
   const counted = tests.filter((test) => test.status !== "skipped").length;
-  return {
+  return finish({
     status: "failed",
     summary: `${counted} 件中 ${passed} 件が通りました`,
     tests,
-  };
+  });
 }
 
 export const dotnetTestStep: StepDefinition = {
@@ -781,8 +858,9 @@ export const dotnetTestStep: StepDefinition = {
   label: "テスト (xUnit)",
   needs: ["build"],
   async run(ctx) {
+    const paths = localPaths(ctx);
     const dotnet = ctx.dotnet;
-    if (!dotnet) return { status: "error", summary: DOTNET_MISSING };
+    if (!dotnet) return redactStepOutcome({ status: "error", summary: DOTNET_MISSING }, paths);
     const resultsDir = path.resolve(stateFile(ctx.root, "tmp", "dotnet-test"));
     await rm(resultsDir, { recursive: true, force: true });
     await mkdir(resultsDir, { recursive: true });
@@ -804,16 +882,18 @@ export const dotnetTestStep: StepDefinition = {
       timeoutMs: TIMEOUTS.test,
     });
     const stopped = interrupted(out, "テスト", "failed");
-    if (stopped) return stopped;
+    if (stopped) return redactStepOutcome(stopped, paths);
     const trxPath = path.join(resultsDir, "results.trx");
     let tests: TestCaseResult[] | null = null;
     try {
       const info = await stat(trxPath);
-      if (info.size <= TRX_MAX_BYTES) tests = parseTrxReport(await readFile(trxPath, "utf8"));
+      if (info.size <= TRX_MAX_BYTES) {
+        tests = parseTrxReport(await readFile(trxPath, "utf8"), paths);
+      }
     } catch {
       tests = null;
     }
-    return dotnetTestOutcome(out, tests);
+    return dotnetTestOutcome(out, tests, paths);
   },
 };
 

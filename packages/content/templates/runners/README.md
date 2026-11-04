@@ -71,6 +71,7 @@ C# の課題は .NET SDK 10 と xUnit で確かめる。拡張の手順は `dotn
 - **bin/obj は `.stella/dotnet/` に出す。** 課題フォルダーを歩く処理は `.stella` に入らないので、ビルドの出力が提出の照合と VS Code のエクスプローラーに混ざらない。`bin` や `obj` を歩く対象から外すと、JavaScript の課題の `bin/` まで提出から消える。
 - **Directory.Build.props・Directory.Build.targets・NuGet.config を課題のルートに置く。** props は出力先を `.stella/dotnet/` にし、このファイルがあると親フォルダー (学習フォルダー) の Directory.Build.props は読み込まれない。targets は中身が空で、親の targets を読み込まない。NuGet.config は取得元を nuget.org (`https://api.nuget.org/v3/index.json`) だけにする。
 - **受講者のコードはクラスのメソッドとして書く。** トップレベルのステートメントは、テストと同じプロジェクトでは使えない。
+- コンパイルするのは `src/` と `tests/` の `.cs` だけで、`src/` の `.cs` はすべて提出する。
 - **Console の出力は `ConsoleOutput.Capture` で確かめる。** `Console.SetOut` で差し替え、`\r\n` を `\n` にそろえる。出力を差し替えるテストが混ざらないよう、`tests/TestSettings.cs` で並列実行を止める。
 - **lockfile を作り直すとき (バージョンを上げるとき):** `starter/` を一時フォルダーに写し、そこで `Task.csproj` のバージョンを書き換えて `dotnet restore Task.csproj --force-evaluate` を実行し、できた `Task.csproj` と `packages.lock.json` を `starter/` に戻す。環境台帳の ID を上げる (例 `dotnet-test-02`)。古い台帳は残す。`task-fields.json` の `environment` を新しい ID にする。見本 (`apps/vscode/samples/dotnet-test/`) の同じファイルも更新する。
 - **lint・整形は使えない。** ESLint・Prettier は C# を検査しない。`checks.lint` と `checks.format` は `false`。

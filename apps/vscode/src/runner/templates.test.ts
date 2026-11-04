@@ -16,6 +16,8 @@ import { isSafeRelativePattern, parseTaskManifest } from "@stella/shared/tasks/m
 import { canSubmit } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import { describe, expect, it } from "vitest";
+import { liveDotnet } from "../testing/dotnet.js";
+import { satisfiesRange } from "../testing/semver-range.js";
 import {
   CI_TEMPLATE_RUNNER,
   DOTNET_TEMPLATE_RUNNER,
@@ -29,11 +31,9 @@ import {
   templateFiles,
   templateManifest,
 } from "../testing/templates.js";
-import { satisfiesRange } from "../testing/semver-range.js";
 import { matchPatterns } from "./files.js";
 import { loadTask, runTask } from "./run-task.js";
 import { requiredPackages } from "./steps.js";
-import { resolveDotnet } from "./toolchain.js";
 
 /**
  * 教材の runner ごとの課題テンプレート (`packages/content/templates/runners/<runner>/`) が、
@@ -347,9 +347,7 @@ interface NuGetLockEntry {
   contentHash?: string;
 }
 
-const dotnetCommand = await resolveDotnet(process.env, process.platform);
-/** 手元に SDK が無いときだけ飛ばす。CI で見つからないときは実行して落とす。 */
-const runLiveDotnet = dotnetCommand !== null || Boolean(process.env.CI);
+const live = await liveDotnet();
 
 describe("C# のテンプレート (dotnet-test)", () => {
   const runner = DOTNET_TEMPLATE_RUNNER;
@@ -401,6 +399,12 @@ describe("C# のテンプレート (dotnet-test)", () => {
     const major = Number(framework?.[1]);
     expect((env.requirements.dotnet as ToolRequirement).majors).toContain(major);
     expect(csproj).toContain("<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>");
+    expect(csproj).toContain("<EnableDefaultCompileItems>false</EnableDefaultCompileItems>");
+    const compile = [...csproj.matchAll(/<Compile\s+Include="([^"]+)"\s*\/>/g)].map(
+      (match) => match[1],
+    );
+    expect(compile).toEqual(["src/**/*.cs", "tests/**/*.cs"]);
+    expect((await readTaskFields(runner)).submit.files).toEqual(["src/**/*.cs"]);
   });
 
   it("packages.lock.json は Task.csproj の直接参照を固定し、各項目に contentHash がある", async () => {
@@ -444,10 +448,10 @@ describe("C# のテンプレート (dotnet-test)", () => {
     ]);
   });
 
-  it.runIf(runLiveDotnet)(
+  it.runIf(live.run)(
     "テンプレートを本物の dotnet で通し、2 回目は依存パッケージの準備を省略する",
     async () => {
-      if (dotnetCommand === null) throw new Error("CI で .NET SDK が見つかりません");
+      if (live.command === null) throw new Error(live.reason);
       const dir = await mkdtemp(path.join(tmpdir(), "stella-dotnet-template-"));
       try {
         await cp(path.join(TEMPLATES_DIR, runner, "starter"), dir, { recursive: true });
