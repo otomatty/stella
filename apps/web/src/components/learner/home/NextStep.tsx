@@ -7,7 +7,7 @@
  *
  * 星を勧める手順 (`choose`) も同じで、先頭の 1 講座だけを大きく出す。主ボタンは
  * 「ここから始める」1 つ。ほかの候補はカードの下の「ほかにも始められる講座」に畳み、
- * Basic と Option に分けて出す (始めるのはツリーの星から)。「ツリーで見る」は後ろの
+ * Basic と Extra に分けて出す (始めるのはツリーの星から)。「ツリーで見る」は後ろの
  * 盤面をその星へ寄せる — ガイドが「何を」、ツリーが「どこか」を受け持つ。
  *
  * ガイドは盤面に浮かぶカードで、畳むと「次にやること」だけの 1 行 (`NextStepBar`) になる。
@@ -378,7 +378,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
     <div className="flex flex-col gap-2">
       <HeroFrame
         eyebrow={step.welcome ? "はじめの一歩" : "次にやること"}
-        meta={node?.audience === "granted" ? "Option" : "Basic"}
+        meta={node?.audience === "granted" ? "Extra" : "Basic"}
       >
         {parentCleared ? (
           <p className="mb-1.5 flex items-center gap-1 text-[12px] text-ink-2">
@@ -466,7 +466,7 @@ function otherCoursesPreview(titles: string[]): string {
 }
 
 /**
- * 先頭以外の候補。初期状態は閉じる。Basic と Option に分け、行からは始めない
+ * 先頭以外の候補。初期状態は閉じる。Basic と Extra に分け、行からは始めない
  * (始めるのはツリーの星の吹き出しから)。
  */
 const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext }) => {
@@ -476,7 +476,7 @@ const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext 
   const titles = stageIds.map((id) => ctx.nodeOf(id)?.title ?? "このスキル");
   const preview = otherCoursesPreview(titles);
   const basic = stageIds.filter((id) => ctx.nodeOf(id)?.audience !== "granted");
-  const option = stageIds.filter((id) => ctx.nodeOf(id)?.audience === "granted");
+  const extra = stageIds.filter((id) => ctx.nodeOf(id)?.audience === "granted");
 
   return (
     <div>
@@ -506,9 +506,9 @@ const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext 
           <div className="mt-1.5 flex flex-col gap-3">
             <CourseGroup label="Basic" stageIds={basic} ctx={ctx} />
             <CourseGroup
-              label="Option"
+              label="Extra"
               note="講師・管理者があなたに追加した講座です。"
-              stageIds={option}
+              stageIds={extra}
               ctx={ctx}
             />
           </div>

@@ -1149,7 +1149,7 @@ describe("buildContentManifest — 実データのスキルツリー", () => {
     expect(courses.find((c) => c.id === "fe-kamoku-b")?.prerequisites).toEqual(["fe-kamoku-a"]);
   });
 
-  it("Basic 以外は Option (audience: granted)。Python 3 講座は Python の島", () => {
+  it("Basic 以外は Extra (audience: granted)。Python 3 講座は Python の島", () => {
     const granted = [
       "aws-clf-c02-basics",
       "fe-kamoku-a",

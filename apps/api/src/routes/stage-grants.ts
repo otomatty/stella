@@ -172,7 +172,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       throw new ApiError("ステージが見つかりません", 404);
     }
     if (stage.audience !== "granted") {
-      throw new ApiError("このステージは Option 講座 (audience=granted) ではありません", 400);
+      throw new ApiError("このステージは Extra 講座 (audience=granted) ではありません", 400);
     }
 
     const existingGrantIds = new Set<string>();

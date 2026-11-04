@@ -56,14 +56,14 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("review-queue");
   });
 
-  it("Option 講座は講師と管理者だけに出す", () => {
+  it("Extra 講座は講師と管理者だけに出す", () => {
     expect(ids("instructor")).toContain("stage-grants");
     expect(ids("admin")).toContain("stage-grants");
     expect(navForRole("instructor").find((item) => item.id === "stage-grants")?.label).toBe(
-      "Option 講座",
+      "Extra 講座",
     );
     expect(navForRole("admin").find((item) => item.id === "stage-grants")?.label).toBe(
-      "Option 講座",
+      "Extra 講座",
     );
     expect(ids("learner")).not.toContain("stage-grants");
   });

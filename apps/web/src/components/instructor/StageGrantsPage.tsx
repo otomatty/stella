@@ -79,12 +79,12 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   return (
     <>
       <PageHeader
-        title="Option 講座"
-        sub="Basic 以外の講座 (資格・Python・DevOps・案件) を、受講者ごとに割り当てます。割り当てた受講者のスキルツリーにだけ表示されます。前の講座も Option のときは、それも一緒に割り当てます。"
+        title="Extra 講座"
+        sub="Basic 以外の講座 (資格・Python・DevOps・案件) を、受講者ごとに割り当てます。割り当てた受講者のスキルツリーにだけ表示されます。前の講座も Extra のときは、それも一緒に割り当てます。"
       />
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
-          デモモードでは Option 講座の割当を編集できません。
+          デモモードでは Extra 講座の割当を編集できません。
         </Card>
       ) : loading ? (
         <Card className="p-6">

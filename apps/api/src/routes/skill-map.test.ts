@@ -373,7 +373,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(stages.get("id-b")?.can_do).toBe("b ができる");
   });
 
-  it("Option の印は名前を出す段と開発者表示の granted にだけ載せる", async () => {
+  it("Extra の印は名前を出す段と開発者表示の granted にだけ載せる", async () => {
     const base = lineSource();
     const granted = new Set(["b", "d", "e", "f"]);
     vi.mocked(loadSkillMapSource).mockResolvedValue({
@@ -384,7 +384,7 @@ describe("GET /api/skill-map/mine", () => {
     });
 
     const stages = await fetchStages();
-    // full の Option だけ印が付く。catalog と、霧・edge の Option には付かない。
+    // full の Extra だけ印が付く。catalog と、霧・edge の Extra には付かない。
     expect(stages.get("id-b")?.audience).toBe("granted");
     expect(stages.get("id-a")?.audience).toBeUndefined();
     expect(stages.get("id-c")?.audience).toBeUndefined();

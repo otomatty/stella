@@ -27,7 +27,7 @@ export interface SkillMapStageNode {
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
-  /** Option (講師・管理者が割り当てた講座)。Basic の星には付かない。 */
+  /** Extra (講師・管理者が割り当てた講座)。Basic の星には付かない。 */
   audience?: "granted";
   /**
    * 講座アイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
