@@ -7,8 +7,9 @@
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
  * 割り当てはマップ掲載のみ。 enrollment は `POST /api/stages/:id/start` (自己開始) のまま。
- * 新たに割り当てた受講者には、線の親をたどった granted の祖先にも同じ割当を足す
- * (外したとき、および既にある割当は触らない)。catalog に着いたら止める。
+ * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) の講座にも同じ割当を足す
+ * (外したとき、および既にある割当は触らない)。catalog に着いたらそこから先はたどらない。
+ * 自動で足す側の insert だけ、同時保存で祖先が重複しても一意制約で失敗しない。
  */
 
 import { Hono } from "hono";
@@ -29,17 +30,60 @@ interface GrantStageNode {
   prerequisites: string | null;
 }
 
-/** 線の親をたどり、同テナントの published な granted 祖先を集める。catalog で止める。 */
-async function loadGrantedAncestors(
+/** 配列でなければ空。文字列以外と空文字は捨てる。壊れた JSON も空。 */
+function prerequisiteSlugsFromRow(row: { prerequisites: string | null }): string[] {
+  if (!row.prerequisites) return [];
+  try {
+    const parsed: unknown = JSON.parse(row.prerequisites);
+    if (!Array.isArray(parsed)) return [];
+    const slugs: string[] = [];
+    for (const value of parsed) {
+      if (typeof value !== "string") continue;
+      const slug = value.trim();
+      if (slug !== "") slugs.push(slug);
+    }
+    return slugs;
+  } catch {
+    return [];
+  }
+}
+
+/** 線の親を先に、続けて prerequisites の slug。重複は除く。 */
+function neighborSlugs(row: GrantStageNode): string[] {
+  const slugs: string[] = [];
+  const seen = new Set<string>();
+  const parent = parentSlugFromRow(row);
+  if (parent) {
+    slugs.push(parent);
+    seen.add(parent);
+  }
+  for (const slug of prerequisiteSlugsFromRow(row)) {
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    slugs.push(slug);
+  }
+  return slugs;
+}
+
+/**
+ * 線の親と prerequisites をたどり、同テナントの published な granted の前提講座を集める。
+ * catalog に着いたらそこから先はたどらない。起点は含めない。訪問済みで循環と重複を止める。
+ */
+async function loadGrantedPrerequisites(
   db: Db,
   tenantId: string,
   start: GrantStageNode,
 ): Promise<GrantStageNode[]> {
-  const visited = new Set<string>([start.slug]);
+  const visited = new Set<string>();
+  if (start.slug) visited.add(start.slug);
   const found: GrantStageNode[] = [];
-  let parentSlug = parentSlugFromRow(start);
-  while (parentSlug && !visited.has(parentSlug)) {
-    visited.add(parentSlug);
+  const queue = neighborSlugs(start);
+  let head = 0;
+  while (head < queue.length) {
+    const slug = queue[head];
+    head += 1;
+    if (!slug || visited.has(slug)) continue;
+    visited.add(slug);
     const rows = await db
       .select({
         id: stages.id,
@@ -50,17 +94,15 @@ async function loadGrantedAncestors(
       })
       .from(stages)
       .where(
-        and(
-          eq(stages.tenantId, tenantId),
-          eq(stages.slug, parentSlug),
-          eq(stages.status, "published"),
-        ),
+        and(eq(stages.tenantId, tenantId), eq(stages.slug, slug), eq(stages.status, "published")),
       )
       .limit(1);
     const row = rows[0];
-    if (row?.audience !== "granted") break;
+    if (row?.audience !== "granted") continue;
     found.push(row);
-    parentSlug = parentSlugFromRow(row);
+    for (const next of neighborSlugs(row)) {
+      if (!visited.has(next)) queue.push(next);
+    }
   }
   return found;
 }
@@ -204,7 +246,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const newlyAdded = profileIds.filter((id) => !existingGrantIds.has(id));
     const ancestorInserts: { stageId: string; profileId: string }[] = [];
     if (newlyAdded.length > 0) {
-      const ancestors = await loadGrantedAncestors(db, caller.tenantId, stage);
+      const ancestors = await loadGrantedPrerequisites(db, caller.tenantId, stage);
       if (ancestors.length > 0) {
         const existingAncestorRows = await db
           .select({ stageId: stageGrants.stageId, profileId: stageGrants.profileId })
@@ -232,19 +274,19 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     }
 
     const deleteOp = db.delete(stageGrants).where(eq(stageGrants.stageId, stageId));
-    const insertRows = [
-      ...profileIds.map((profileId) => ({ stageId, profileId })),
-      ...ancestorInserts,
-    ];
-    const insertOps = insertRows.map((row) =>
-      db.insert(stageGrants).values({
-        tenantId: caller.tenantId,
-        stageId: row.stageId,
-        profileId: row.profileId,
-        grantedBy: caller.id,
-      }),
+    const valuesFor = (row: { stageId: string; profileId: string }) => ({
+      tenantId: caller.tenantId,
+      stageId: row.stageId,
+      profileId: row.profileId,
+      grantedBy: caller.id,
+    });
+    const stageInserts = profileIds.map((profileId) =>
+      db.insert(stageGrants).values(valuesFor({ stageId, profileId })),
     );
-    await db.batch([deleteOp, ...insertOps]);
+    const ancestorOps = ancestorInserts.map((row) =>
+      db.insert(stageGrants).values(valuesFor(row)).onConflictDoNothing(),
+    );
+    await db.batch([deleteOp, ...stageInserts, ...ancestorOps]);
 
     const ancestorGrants = new Map<string, string[]>();
     for (const row of ancestorInserts) {
