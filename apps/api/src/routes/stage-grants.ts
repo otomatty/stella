@@ -2,7 +2,9 @@
  * 専用ステージ (`audience = granted`) の受講者割当 API。
  *
  *   GET /api/stage-grants … granted ステージ一覧 + 割当先 + 受講者ピッカー用一覧
- *   PUT /api/stage-grants/:stageId … `{ profile_ids: string[] }` で grant を置換
+ *   PUT /api/stage-grants/:stageId … `{ profile_ids: string[] }` で grant を置換。
+ *     応答は `{ stage_id, profile_ids, ancestor_grants }`。ancestor_grants は
+ *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
  * 割り当てはマップ掲載のみ。 enrollment は `POST /api/stages/:id/start` (自己開始) のまま。
  * 新たに割り当てた受講者には、線の親をたどった granted の祖先にも同じ割当を足す
@@ -250,25 +252,26 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       list.push(row.profileId);
       ancestorGrants.set(row.stageId, list);
     }
+    const ancestorGrantList = [...ancestorGrants.entries()].map(([ancestorStageId, ids]) => ({
+      stage_id: ancestorStageId,
+      profile_ids: ids,
+    }));
     await recordAudit(db, caller, {
       action: "stage_grants_replace",
       targetType: "stage",
       targetId: stageId,
       metadata: {
         profile_ids: profileIds,
-        ...(ancestorGrants.size > 0
-          ? {
-              ancestor_grants: [...ancestorGrants.entries()].map(([ancestorStageId, ids]) => ({
-                stage_id: ancestorStageId,
-                profile_ids: ids,
-              })),
-            }
-          : {}),
+        ...(ancestorGrantList.length > 0 ? { ancestor_grants: ancestorGrantList } : {}),
       },
       ip: clientIp(c),
     });
 
-    return c.json({ stage_id: stageId, profile_ids: profileIds });
+    return c.json({
+      stage_id: stageId,
+      profile_ids: profileIds,
+      ancestor_grants: ancestorGrantList,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -311,6 +311,21 @@ describe("PUT /api/stage-grants/:stageId", () => {
       body: JSON.stringify({ profile_ids: ["seed-learner"] }),
     });
     expect(res.status).toBe(200);
+    const ancestorGrants = [
+      { stage_id: "stage-mid", profile_ids: ["seed-learner"] },
+      { stage_id: "stage-devops", profile_ids: ["seed-learner"] },
+      { stage_id: "stage-python", profile_ids: ["seed-learner"] },
+    ];
+    const body = await json<{
+      stage_id: string;
+      profile_ids: string[];
+      ancestor_grants: { stage_id: string; profile_ids: string[] }[];
+    }>(res);
+    expect(body).toEqual({
+      stage_id: "stage-child",
+      profile_ids: ["seed-learner"],
+      ancestor_grants: ancestorGrants,
+    });
     expect(inserted().map((row) => row.stageId)).toEqual([
       "stage-child",
       "stage-mid",
@@ -325,12 +340,34 @@ describe("PUT /api/stage-grants/:stageId", () => {
         action: "stage_grants_replace",
         metadata: expect.objectContaining({
           profile_ids: ["seed-learner"],
-          ancestor_grants: [
-            { stage_id: "stage-mid", profile_ids: ["seed-learner"] },
-            { stage_id: "stage-devops", profile_ids: ["seed-learner"] },
-            { stage_id: "stage-python", profile_ids: ["seed-learner"] },
-          ],
+          ancestor_grants: ancestorGrants,
         }),
+      }),
+    );
+  });
+
+  it("祖先を足さないときは ancestor_grants が空配列", async () => {
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({ profile_ids: ["seed-learner"] }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stage_id: string;
+      profile_ids: string[];
+      ancestor_grants: { stage_id: string; profile_ids: string[] }[];
+    }>(res);
+    expect(body).toEqual({
+      stage_id: "stage-granted-1",
+      profile_ids: ["seed-learner"],
+      ancestor_grants: [],
+    });
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: { profile_ids: ["seed-learner"] },
       }),
     );
   });

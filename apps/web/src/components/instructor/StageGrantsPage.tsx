@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Chip } from "@/components/ui/chip";
 import {
+  applySavedStageGrants,
+  formatSavedStageGrantsMessage,
   listStageGrants,
   saveStageGrants,
   type StageGrantLearnerRow,
@@ -64,11 +66,18 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
     setSavingId(stage.id);
     try {
       const profileIds = drafts[stage.id] ?? [];
-      await saveStageGrants(stage.id, profileIds);
-      setStages((rows) =>
-        rows.map((row) => (row.id === stage.id ? { ...row, profile_ids: profileIds } : row)),
+      const saved = await saveStageGrants(stage.id, profileIds);
+      const ancestorGrants = saved.ancestor_grants;
+      setStages(
+        (rows) =>
+          applySavedStageGrants(rows, drafts, stage.id, saved.profile_ids, ancestorGrants).stages,
       );
-      toast.success(`「${stage.title}」の割当を保存しました`);
+      setDrafts(
+        (current) =>
+          applySavedStageGrants(stages, current, stage.id, saved.profile_ids, ancestorGrants)
+            .drafts,
+      );
+      toast.success(formatSavedStageGrantsMessage(stage.title, stages, ancestorGrants));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
