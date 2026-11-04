@@ -45,8 +45,12 @@ describe("suggestedStageIds", () => {
   });
 
   it(`勧めるのは ${GUIDE_MAX_SUGGESTIONS} つまで (重複は 1 つに数える)`, () => {
-    const nodes = ["a", "b", "c", "d", "e"].map((id) => node(id));
-    expect(suggestedStageIds(nodes, ["a", "a", "b", "c", "d", "e"], null)).toEqual(["a", "b", "c"]);
+    const ids = Array.from({ length: GUIDE_MAX_SUGGESTIONS + 1 }, (_, i) => `s${i}`);
+    const nodes = ids.map((id) => node(id));
+    // 先頭を重ねても 1 つに数え、上限の次は落とす。
+    expect(suggestedStageIds(nodes, ["s0", ...ids], null)).toEqual(
+      ids.slice(0, GUIDE_MAX_SUGGESTIONS),
+    );
   });
 });
 

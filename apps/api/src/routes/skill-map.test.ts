@@ -81,10 +81,10 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
 const app = new Hono<{ Bindings: Env }>().route("/", skillMapRoute);
 const env = {} as Env;
 
-/** 既定は「4 段 + DevOps・Anthropic認定資格の島を描ける画面」= 現行の web が付けるクエリ引数つき。 */
+/** 既定は現行 web の `tiers=5` (幽霊ノード + DevOps・Anthropic認定資格・Python の島)。 */
 const get = (path: string, auth = true) =>
   app.request(
-    `${path}${path.includes("?") ? "&" : "?"}tiers=4`,
+    `${path}${path.includes("?") ? "&" : "?"}tiers=5`,
     auth ? { headers: { Authorization: "Bearer test" } } : {},
     env,
   );
@@ -100,6 +100,10 @@ const getTiers2 = (path: string) =>
 /** `tiers=3` までを知る画面 (Anthropic認定資格の島を島として描けない)。 */
 const getTiers3 = (path: string) =>
   app.request(`${path}?tiers=3`, { headers: { Authorization: "Bearer test" } }, env);
+
+/** `tiers=4` までを知る画面 (Python の島を島として描けない)。 */
+const getTiers4 = (path: string) =>
+  app.request(`${path}?tiers=4`, { headers: { Authorization: "Bearer test" } }, env);
 
 /**
  * 一本道 a → b → c → d → e → f。a はクリア済みなので、視界の起点は a (cleared) と
@@ -245,6 +249,40 @@ describe("GET /api/skill-map/mine", () => {
     );
   });
 
+  it("Python の島は島として描ける画面にだけ配る", async () => {
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      stages: [
+        {
+          id: "id-node-api-basics",
+          slug: "node-api-basics",
+          title: "node-api-basics",
+          category: "バックエンド",
+          prerequisites: [],
+          theme: "サーバーとデータの基盤",
+        },
+        {
+          id: "id-python-basics",
+          slug: "python-basics",
+          title: "python-basics",
+          category: "Python",
+          prerequisites: ["node-api-basics"],
+          theme: "Python とテストの力",
+        },
+      ],
+      clearedStageIds: new Set(["id-node-api-basics"]),
+      activeStageId: undefined,
+    });
+    const idsOf = async (res: Response) => {
+      const body = (await res.json()) as { skill_map: { stages: StagePayload[] } };
+      return body.skill_map.stages.map((row) => row.id).sort();
+    };
+    expect(await idsOf(await getTiers4("/api/skill-map/mine"))).toEqual(["id-node-api-basics"]);
+    expect(await idsOf(await getLegacy("/api/skill-map/mine"))).toEqual(["id-node-api-basics"]);
+    expect(await idsOf(await get("/api/skill-map/mine"))).toEqual(
+      ["id-node-api-basics", "id-python-basics"].sort(),
+    );
+  });
+
   it("旧画面の修了数は配った星だけ数える (落とした島のクリアを混ぜない)", async () => {
     const stage = (slug: string, category: string, prerequisites: string[]) => ({
       id: `id-${slug}`,
@@ -333,6 +371,34 @@ describe("GET /api/skill-map/mine", () => {
     const stages = await fetchStages();
     expect(stages.get("id-a")?.can_do).toBe("a ができる");
     expect(stages.get("id-b")?.can_do).toBe("b ができる");
+  });
+
+  it("Extra の印は名前を出す段と開発者表示の granted にだけ載せる", async () => {
+    const base = lineSource();
+    const granted = new Set(["b", "d", "e", "f"]);
+    vi.mocked(loadSkillMapSource).mockResolvedValue({
+      ...base,
+      stages: base.stages.map((stage) =>
+        granted.has(stage.slug) ? { ...stage, audience: "granted" as const } : stage,
+      ),
+    });
+
+    const stages = await fetchStages();
+    // full の Extra だけ印が付く。catalog と、霧・edge の Extra には付かない。
+    expect(stages.get("id-b")?.audience).toBe("granted");
+    expect(stages.get("id-a")?.audience).toBeUndefined();
+    expect(stages.get("id-c")?.audience).toBeUndefined();
+    expect(Object.keys(stages.get("id-d") ?? {})).not.toContain("audience");
+    expect(Object.keys(stages.get("id-e") ?? {})).not.toContain("audience");
+
+    vi.mocked(wantsDevReveal).mockReturnValue(true);
+    const revealed = await fetchStages();
+    expect(revealed.get("id-b")?.audience).toBe("granted");
+    expect(revealed.get("id-d")?.audience).toBe("granted");
+    expect(revealed.get("id-e")?.audience).toBe("granted");
+    expect(revealed.get("id-f")?.audience).toBe("granted");
+    expect(revealed.get("id-a")?.audience).toBeUndefined();
+    expect(revealed.get("id-c")?.audience).toBeUndefined();
   });
 
   it("2 歩先 (霧) は名前・カテゴリ・前提線まで (slug・到達説明・解放条件は返さない)", async () => {

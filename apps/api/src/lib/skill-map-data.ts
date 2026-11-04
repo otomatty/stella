@@ -145,6 +145,7 @@ export function shouldRevealDevMap(
  * 画面が全部入れ替わったら、この引数ごと落としてよい (移行用の足場)。
  * `tiers=3` は DevOps 島を島として描ける画面 (旧 bundle は本土の扇に混ぜてしまう)。
  * `tiers=4` は Anthropic認定資格の島も島として描ける画面。
+ * `tiers=5` は Python の島も島として描ける画面。
  */
 export const SKILL_MAP_TIERS_PARAM = "tiers";
 
@@ -223,7 +224,7 @@ export async function loadSkillMapSource(
   const enrolledStageIds = await loadEnrolledStageIds(db, caller);
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
 
-  // 島 (資格 / AI / DevOps) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
+  // 島 (資格 / Python / DevOps / 案件) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
   // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
   // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
   // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。
@@ -242,6 +243,7 @@ export async function loadSkillMapSource(
     ...(row.canDo ? { canDo: row.canDo } : {}),
     ...(row.theme ? { theme: row.theme } : {}),
     ...(row.iconPath ? { iconPath: row.iconPath } : {}),
+    ...(row.audience === "granted" ? { audience: "granted" as const } : {}),
   }));
 
   const active = await resolveActiveStage(

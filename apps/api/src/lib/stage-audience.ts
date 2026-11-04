@@ -17,7 +17,7 @@ export function isCatalogAudience(audience: string | null | undefined): boolean 
   return audience !== "granted";
 }
 
-function parentSlugFromRow(row: AudienceStageRow): string | undefined {
+export function parentSlugFromRow(row: AudienceStageRow): string | undefined {
   const explicit = row.parent?.trim();
   if (explicit) return explicit;
   if (!row.prerequisites) return undefined;
@@ -103,15 +103,22 @@ export function filterStagesByAudience<T extends AudienceStageRow>(
 }
 
 /**
- * 親 slug がカタログに無い granted 星を落とす (島フィルタ後の孤児)。
+ * 親 slug が残った行に無い granted 星を落とす (島フィルタ後の孤児)。
+ * granted どうしの多段の鎖では、直接の親が同じ処理で落ちた子も残さない。
+ * 落とすものが無くなるまで繰り返す。catalog は常に残す。
  */
 export function dropOrphanGrantedStages<T extends AudienceStageRow>(rows: T[]): T[] {
-  const slugSet = new Set(rows.map((r) => r.slug));
-  return rows.filter((row) => {
-    if (isCatalogAudience(row.audience)) return true;
-    const parent = parentSlugFromRow(row);
-    return parent !== undefined && slugSet.has(parent);
-  });
+  let current = rows;
+  for (;;) {
+    const slugSet = new Set(current.map((row) => row.slug));
+    const next = current.filter((row) => {
+      if (isCatalogAudience(row.audience)) return true;
+      const parent = parentSlugFromRow(row);
+      return parent !== undefined && slugSet.has(parent);
+    });
+    if (next.length === current.length) return next;
+    current = next;
+  }
 }
 
 /** staff 一覧用: テナントの granted ステージ。 */

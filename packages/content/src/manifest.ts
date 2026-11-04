@@ -339,7 +339,7 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     const listed = (raw.prerequisites ?? []).map((p) => p.trim());
     if (listed.length === 0) {
       throw new Error(
-        `courses/${slug}/course.json の audience が granted のときは catalog の親 (prerequisites) を 1 つ以上書いてください。`,
+        `courses/${slug}/course.json の audience が granted のときは prerequisites を 1 つ以上書いてください。`,
       );
     }
     if (raw.appearances != null) {
@@ -700,13 +700,12 @@ function buildOneCourse(
 }
 
 /**
- * 前提講座 (`prerequisites`) のグラフを検査する。
+ * 前提講座 (`prerequisites`) に書いた slug が実在するか。
  *
- * 前提はスキルツリーの **ハードロック** なので、綴り違いや循環をそのまま D1 へ流すと
- * 「誰も開けない講座」が黙って生まれる。実行時 (評価器) は安全側に倒して locked のまま
- * にするだけなので、気付ける場所はここしかない。
+ * 前提はスキルツリーの **ハードロック** なので、綴り違いをそのまま D1 へ流すと
+ * 「誰も開けない講座」が黙って生まれる。循環は `assertPrerequisiteCycles`。
  */
-function assertPrerequisiteGraph(courses: Course[]): void {
+function assertPrerequisiteTargets(courses: Course[]): void {
   const bySlug = new Map(courses.map((c) => [c.id, c]));
   for (const course of courses) {
     for (const prereq of course.prerequisites ?? []) {
@@ -717,8 +716,11 @@ function assertPrerequisiteGraph(courses: Course[]): void {
       }
     }
   }
+}
 
-  // 深さ優先で後退辺 (= 循環) を探す。講座数は 2 桁なので素朴な再帰で足りる。
+/** 深さ優先で後退辺 (= 循環) を探す。講座数は 2 桁なので素朴な再帰で足りる。 */
+function assertPrerequisiteCycles(courses: Course[]): void {
+  const bySlug = new Map(courses.map((c) => [c.id, c]));
   const visiting = new Set<string>();
   const done = new Set<string>();
   const path: string[] = [];
@@ -738,9 +740,23 @@ function assertPrerequisiteGraph(courses: Course[]): void {
   for (const course of courses) walk(course.id);
 }
 
+/** 線の親。明示の `parent`、無ければ `prerequisites` の先頭。 */
+function lineParentSlug(course: Course): string | undefined {
+  const explicit = course.parent?.trim();
+  if (explicit) return explicit;
+  const first = course.prerequisites?.find((p) => p.trim() !== "");
+  return first?.trim();
+}
+
 /**
- * `audience: granted` のグラフ制約。 catalog が granted を前提にすると他受講者が
- * 永久ロックされる / ロック理由から名前が漏れるため、ビルドで落とす。
+ * `audience: granted` のグラフ制約。
+ *
+ * catalog が granted を prerequisites / parent に持つと、他の受講者が永久ロックされ、
+ * ロック理由から名前が漏れる。これは禁止のまま。
+ *
+ * granted が granted を親にすることは許す。代わりに、線の親を順にたどって catalog 講座に
+ * 着くことを検査する。granted だけで閉じている、または未知の slug に当たる鎖は落とす。
+ * 循環で止まらないよう訪問済みで打ち切る (循環そのものは `assertPrerequisiteCycles`)。
  */
 function assertGrantedAudienceGraph(courses: Course[]): void {
   const bySlug = new Map(courses.map((c) => [c.id, c]));
@@ -748,29 +764,40 @@ function assertGrantedAudienceGraph(courses: Course[]): void {
   if (grantedSlugs.size === 0) return;
 
   for (const course of courses) {
-    if (course.audience !== "granted") {
-      for (const prereq of course.prerequisites ?? []) {
-        if (grantedSlugs.has(prereq)) {
-          throw new Error(
-            `courses/${course.id}/course.json の prerequisites に granted 講座を書けません: ${prereq}`,
-          );
-        }
-      }
-      if (course.parent != null && grantedSlugs.has(course.parent)) {
-        throw new Error(
-          `courses/${course.id}/course.json の parent に granted 講座を書けません: ${course.parent}`,
-        );
-      }
-      continue;
-    }
-
+    if (course.audience === "granted") continue;
     for (const prereq of course.prerequisites ?? []) {
-      const parent = bySlug.get(prereq);
-      if (parent?.audience === "granted") {
+      if (grantedSlugs.has(prereq)) {
         throw new Error(
-          `courses/${course.id}/course.json の granted 講座は catalog の親だけを prerequisites に書けます: ${prereq}`,
+          `courses/${course.id}/course.json の prerequisites に granted 講座を書けません: ${prereq}`,
         );
       }
+    }
+    if (course.parent != null && grantedSlugs.has(course.parent)) {
+      throw new Error(
+        `courses/${course.id}/course.json の parent に granted 講座を書けません: ${course.parent}`,
+      );
+    }
+  }
+
+  for (const course of courses) {
+    if (course.audience !== "granted") continue;
+    const visited = new Set<string>();
+    let slug: string | undefined = course.id;
+    let reachedCatalog = false;
+    while (slug && !visited.has(slug)) {
+      visited.add(slug);
+      const node = bySlug.get(slug);
+      if (!node) break;
+      if (node.audience !== "granted") {
+        reachedCatalog = true;
+        break;
+      }
+      slug = lineParentSlug(node);
+    }
+    if (!reachedCatalog) {
+      throw new Error(
+        `courses/${course.id}/course.json の granted 講座は、線の親をたどると catalog 講座に着く必要があります。`,
+      );
     }
   }
 }
@@ -803,8 +830,10 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
     units.push(...built.units);
   }
 
-  assertPrerequisiteGraph(courses);
+  assertPrerequisiteTargets(courses);
+  // 閉じた granted 鎖は、循環より先に「catalog に着かない」として落とす。
   assertGrantedAudienceGraph(courses);
+  assertPrerequisiteCycles(courses);
 
   // 課題が指すコーディング規則の存在・範囲・導入済みかを確かめる (07 §6.4.1)。
   // 前提は準備中の講座 (modules が無い) を経由しうるので、全講座の course.json から引く。

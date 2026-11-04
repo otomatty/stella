@@ -6,6 +6,7 @@
   "description": "Claude Certified Developer: Foundations の対策講座です。Claude API・ツール使用・エージェントの作り方を、公式ドキュメントで確かめ、手元の課題で動かしながら、場面ごとに選べるようになることを目指します。",
   "header": "Claude Developer資格対策",
   "tenantId": "ses",
+  "audience": "granted",
   "prerequisites": ["dev-env-basics"],
   "plannedHours": 40,
   "environment": "node-test-01",

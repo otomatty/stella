@@ -81,7 +81,7 @@ describe("ログインなしで読める単元", () => {
 
   it("専用星 (audience: granted) の講座には付けられない", () => {
     const { root, course } = publicUnitFixture();
-    // granted は catalog の親が要る。親になる講座を足し、この講座をその子にする。
+    // granted は前提が要る。親になる講座を足し、この講座をその子にする。
     const parent = join(root, "courses/parent-course");
     mkdirSync(join(parent, "modules"), { recursive: true });
     writeFileSync(join(parent, "course.json"), JSON.stringify({ title: "親の講座" }));

@@ -2,19 +2,21 @@
  * ホームのガイドの「次にやること」と「そのあと」(手順の並びは `@/lib/home-guide`)。
  *
  * 先頭の 1 つだけを大きなカードにして、押すべきボタンを 1 つに絞る (`NextStepCard`)。
- * 前の版のホームは「今日のプラン」「スキルマップの続きから」「次にやるリストの始める」が
- * 同じ強さで並び、どれが本筋かを受講者が選ばなければならなかった。強調 (accent) は
- * このカードの主ボタンにしか使わない。残りの手順は小さな行で続ける (`LaterSteps`)。
+ * 強調 (accent) は、このカードの主ボタンにしか使わない。残りの手順は小さな行で続ける
+ * (`LaterSteps`)。
  *
- * 星を勧める手順 (`choose`) は、名前の横の「ツリーで見る」で後ろの盤面をその星へ寄せる —
- * ガイドが「何を」、ツリーが「どこか」を受け持つ。
+ * 星を勧める手順 (`choose`) も同じで、先頭の 1 講座だけを大きく出す。主ボタンは
+ * 「ここから始める」1 つ。ほかの候補はカードの下の「ほかにも始められる講座」に畳み、
+ * Basic と Extra に分けて出す (始めるのはツリーの星から)。「ツリーで見る」は後ろの
+ * 盤面をその星へ寄せる — ガイドが「何を」、ツリーが「どこか」を受け持つ。
  *
  * ガイドは盤面に浮かぶカードで、畳むと「次にやること」だけの 1 行 (`NextStepBar`) になる。
  * 畳んでも主ボタンは残す — 盤面を広く見ている間も、次の一手は 1 押しで始められる。
  */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +26,7 @@ import {
   Book,
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Clock,
   Compass,
@@ -33,7 +36,6 @@ import {
 } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlanItemKind } from "@/lib/today-plan";
-import { cn } from "@/lib/utils";
 
 /** 進行中のステージ (レッスンの続き・仕上げの文面に使う)。 */
 export interface GuideActiveStage {
@@ -164,7 +166,7 @@ function summarizeStep(
   const title = (first && ctx.nodeOf(first)?.title) ?? "おすすめのスキル";
   return {
     icon: Sparkles,
-    eyebrow: step.welcome ? "はじめの一歩 · おすすめ" : "次にやること · おすすめ",
+    eyebrow: step.welcome ? "はじめの一歩" : "次にやること",
     title,
     ...(first
       ? {
@@ -366,23 +368,72 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
     );
   }
 
+  const id = step.stageIds[0];
+  const node = id ? ctx.nodeOf(id) : undefined;
+  const title = node?.title ?? "このスキル";
+  const parent = node?.parent_id ? ctx.nodeOf(node.parent_id) : undefined;
+  const parentCleared = parent?.state === "cleared" && parent.title ? parent : undefined;
+
   return (
-    <HeroFrame eyebrow={step.welcome ? "はじめの一歩" : "次にやること"}>
-      <h2 className="text-[17px] font-semibold leading-snug tracking-tight">
-        {step.welcome ? "スキルツリーへようこそ" : "次のスキルを選びましょう"}
-      </h2>
-      <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-        {step.welcome
-          ? "ひとつ終えると、ツリーが少しずつ見えてきます。まずはどこから始めるか選びましょう。"
-          : "ツリーで「おすすめ」の輪が付いた星が、いま始められるスキルです。"}
-      </p>
-      <SuggestionList stageIds={step.stageIds} ctx={ctx} emphasize className="mt-3" />
-      {step.welcome ? (
-        <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
-          すでに知っている内容は、ツリーの星から「腕試し」に合格すると先のスキルから始められます。
-        </p>
-      ) : null}
-    </HeroFrame>
+    <div className="flex flex-col gap-2">
+      <HeroFrame
+        eyebrow={step.welcome ? "はじめの一歩" : "次にやること"}
+        meta={node?.audience === "granted" ? "Extra" : "Basic"}
+      >
+        {parentCleared ? (
+          <p className="mb-1.5 flex items-center gap-1 text-[12px] text-ink-2">
+            <Check size={13} className="shrink-0 text-success" />
+            <span className="min-w-0">「{parentCleared.title}」の次の講座です</span>
+          </p>
+        ) : null}
+        <h2 className="text-[17px] font-semibold leading-snug tracking-tight">{title}</h2>
+        {node?.category ? (
+          <div className="mt-1.5">
+            <Badge>{node.category}</Badge>
+          </div>
+        ) : null}
+        {step.welcome ? (
+          <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+            ひとつ終えると、ツリーが少しずつ見えてきます。まずはここから始めましょう。
+          </p>
+        ) : null}
+        {node?.can_do ? (
+          <p className="mt-3 text-[12px] leading-relaxed">
+            <span className="block text-[11px] text-ink-3">身につくと</span>
+            <strong className="text-foreground">{node.can_do}</strong>
+          </p>
+        ) : null}
+        {id ? (
+          <Button
+            size="full"
+            variant="accent"
+            className="mt-4"
+            disabled={ctx.startingId !== null}
+            onClick={() => ctx.onStartStage(id)}
+          >
+            <Play size={14} />
+            {ctx.startingId === id ? "開始中…" : "ここから始める"}
+          </Button>
+        ) : null}
+        {id ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="mt-1.5 self-center"
+            onClick={() => ctx.onShowInTree(id)}
+          >
+            <Compass size={12} />
+            ツリーで見る
+          </Button>
+        ) : null}
+        {step.welcome ? (
+          <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
+            すでに知っている内容は、ツリーの星から「腕試し」に合格すると先のスキルから始められます。
+          </p>
+        ) : null}
+      </HeroFrame>
+      <OtherCourses stageIds={step.stageIds.slice(1)} ctx={ctx} />
+    </div>
   );
 };
 
@@ -408,68 +459,121 @@ const HeroFrame = ({
   </section>
 );
 
-/** 勧める星の並び。名前を押すとツリーがその星へ寄る。 */
-const SuggestionList = ({
+/** 閉じているときの候補名。3 件以上は先頭 2 件に「など」を付ける。 */
+function otherCoursesPreview(titles: string[]): string {
+  if (titles.length <= 2) return titles.join("・");
+  return `${titles.slice(0, 2).join("・")}など`;
+}
+
+/**
+ * 先頭以外の候補。初期状態は閉じる。Basic と Extra に分け、行からは始めない
+ * (始めるのはツリーの星の吹き出しから)。
+ */
+const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext }) => {
+  const [open, setOpen] = useState(false);
+  if (stageIds.length === 0) return null;
+
+  const titles = stageIds.map((id) => ctx.nodeOf(id)?.title ?? "このスキル");
+  const preview = otherCoursesPreview(titles);
+  const basic = stageIds.filter((id) => ctx.nodeOf(id)?.audience !== "granted");
+  const extra = stageIds.filter((id) => ctx.nodeOf(id)?.audience === "granted");
+
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-2 rounded-lg py-1 text-left"
+      >
+        {open ? (
+          <ChevronDown size={14} className="shrink-0 text-ink-3" />
+        ) : (
+          <ChevronRight size={14} className="shrink-0 text-ink-3" />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-[12.5px] font-semibold text-ink-2">
+            ほかにも始められる講座
+          </span>
+          {!open && preview ? (
+            <span className="block truncate text-[11px] text-ink-3">{preview}</span>
+          ) : null}
+        </span>
+        <Badge className="shrink-0 tabular-nums">{stageIds.length}</Badge>
+      </button>
+      {open ? (
+        <>
+          <div className="mt-1.5 flex flex-col gap-3">
+            <CourseGroup label="Basic" stageIds={basic} ctx={ctx} />
+            <CourseGroup
+              label="Extra"
+              note="講師・管理者があなたに追加した講座です。"
+              stageIds={extra}
+              ctx={ctx}
+            />
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-3">
+            星を押すと、ツリーの吹き出しから始められます。
+          </p>
+        </>
+      ) : null}
+    </div>
+  );
+};
+
+const CourseGroup = ({
+  label,
+  note,
   stageIds,
   ctx,
-  emphasize = false,
-  className,
 }: {
+  label: string;
+  note?: string;
   stageIds: string[];
   ctx: StepContext;
-  /** ヒーローの中では先頭の「始める」だけを強調する。 */
-  emphasize?: boolean;
-  className?: string;
-}) => (
-  <ul className={cn("flex flex-col gap-2", className)}>
-    {stageIds.map((id, i) => {
-      const node = ctx.nodeOf(id);
-      const title = node?.title ?? "このスキル";
-      return (
-        <li key={id} className="rounded-lg border border-border bg-card px-3 py-2.5">
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={() => ctx.onShowInTree(id)}
-                className="text-left text-[13px] font-semibold leading-snug hover:underline"
-              >
-                {title}
-              </button>
-              {node?.category ? (
-                <div className="text-[11px] text-ink-3">{node.category}</div>
-              ) : null}
-            </div>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              aria-label={`${title} をツリーで見る`}
-              title="ツリーで見る"
-              onClick={() => ctx.onShowInTree(id)}
-            >
-              <Compass size={13} />
-            </Button>
-          </div>
-          {node?.can_do ? (
-            <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">
-              身につくと <strong className="text-foreground">{node.can_do}</strong>。
-            </p>
-          ) : null}
-          <Button
-            size="sm"
-            variant={emphasize && i === 0 ? "accent" : "default"}
-            className="mt-2 w-full"
-            disabled={ctx.startingId !== null}
-            onClick={() => ctx.onStartStage(id)}
-          >
-            <Play size={12} />
-            {ctx.startingId === id ? "開始中…" : "ここから始める"}
-          </Button>
-        </li>
-      );
-    })}
-  </ul>
-);
+}) => {
+  if (stageIds.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-ink-3">{label}</p>
+      {note ? <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3">{note}</p> : null}
+      <ul className="mt-1.5 flex flex-col gap-1.5">
+        {stageIds.map((id) => (
+          <OtherCourseRow key={id} id={id} ctx={ctx} />
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+/** 候補の 1 行。講座名とコンパスはツリーへ寄るだけで、ここでは始めない。 */
+const OtherCourseRow = ({ id, ctx }: { id: string; ctx: StepContext }) => {
+  const node = ctx.nodeOf(id);
+  const title = node?.title ?? "このスキル";
+  return (
+    <li className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => ctx.onShowInTree(id)}
+          className="text-left text-[13px] font-semibold leading-snug hover:underline"
+        >
+          {title}
+        </button>
+        {node?.category ? <div className="text-[11px] text-ink-3">{node.category}</div> : null}
+      </div>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        aria-label={`${title} をツリーで見る`}
+        title="ツリーで見る"
+        onClick={() => ctx.onShowInTree(id)}
+      >
+        <Compass size={13} />
+      </Button>
+    </li>
+  );
+};
 
 interface LaterStepsProps extends StepContext {
   steps: GuideStep[];
@@ -497,10 +601,24 @@ function stepKey(step: GuideStep): string {
 
 const LaterStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
   if (step.kind === "choose") {
+    const first = step.stageIds[0];
+    const title = (first ? ctx.nodeOf(first)?.title : undefined) ?? "次に始めるスキル";
     return (
-      <div>
-        <div className="mb-1.5 text-[12px] font-medium text-ink-2">次に始めるスキル</div>
-        <SuggestionList stageIds={step.stageIds} ctx={ctx} />
+      <div className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-2">
+        <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border-strong text-ink-3">
+          <Sparkles size={12} />
+        </span>
+        <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug">{title}</span>
+        {first ? (
+          <Button
+            size="sm"
+            variant="default"
+            className="shrink-0"
+            onClick={() => ctx.onShowInTree(first)}
+          >
+            ツリーで見る
+          </Button>
+        ) : null}
       </div>
     );
   }

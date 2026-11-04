@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Chip } from "@/components/ui/chip";
 import {
+  applySavedStageGrants,
+  formatSavedStageGrantsMessage,
   listStageGrants,
   saveStageGrants,
   type StageGrantLearnerRow,
@@ -19,6 +21,7 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const savingRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!backendEnabled) return;
@@ -40,6 +43,16 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
     void load();
   }, [load]);
 
+  const orderedStages = useMemo(
+    () =>
+      [...stages].sort((a, b) => {
+        const byCategory = (a.category ?? "").localeCompare(b.category ?? "", "ja");
+        if (byCategory !== 0) return byCategory;
+        return a.title.localeCompare(b.title, "ja");
+      }),
+    [stages],
+  );
+
   const toggleLearner = (stageId: string, profileId: string) => {
     setDrafts((prev) => {
       const current = prev[stageId] ?? [];
@@ -51,17 +64,27 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   };
 
   const save = async (stage: StageGrantStageRow) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSavingId(stage.id);
     try {
       const profileIds = drafts[stage.id] ?? [];
-      await saveStageGrants(stage.id, profileIds);
-      setStages((rows) =>
-        rows.map((row) => (row.id === stage.id ? { ...row, profile_ids: profileIds } : row)),
+      const saved = await saveStageGrants(stage.id, profileIds);
+      const ancestorGrants = saved.ancestor_grants;
+      setStages(
+        (rows) =>
+          applySavedStageGrants(rows, drafts, stage.id, saved.profile_ids, ancestorGrants).stages,
       );
-      toast.success(`「${stage.title}」の割当を保存しました`);
+      setDrafts(
+        (current) =>
+          applySavedStageGrants(stages, current, stage.id, saved.profile_ids, ancestorGrants)
+            .drafts,
+      );
+      toast.success(formatSavedStageGrantsMessage(stage.title, stages, ancestorGrants));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "保存に失敗しました");
     } finally {
+      savingRef.current = false;
       setSavingId(null);
     }
   };
@@ -69,12 +92,12 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
   return (
     <>
       <PageHeader
-        title="専用教材"
-        sub="Git 正本で audience: granted とした講座を、選んだ受講者のスキルツリーにだけ出します。教材本文はリポジトリで編集し、ここでは割当だけ行います"
+        title="Extra 講座"
+        sub="Basic 以外の講座 (資格・Python・DevOps・案件) を、受講者ごとに割り当てます。割り当てた受講者のスキルツリーにだけ表示されます。前の講座も Extra のときは、それも一緒に割り当てます。"
       />
       {!backendEnabled ? (
         <Card className="p-12 text-center text-sm text-ink-3">
-          デモモードでは専用教材の割当を編集できません。
+          デモモードでは Extra 講座の割当を編集できません。
         </Card>
       ) : loading ? (
         <Card className="p-6">
@@ -91,20 +114,20 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
         </Card>
       ) : (
         <div className="flex flex-col gap-4">
-          {stages.map((stage) => (
+          {orderedStages.map((stage) => (
             <Card key={stage.id} className="p-4 sm:p-5">
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-[15px] font-semibold text-ink">{stage.title}</h2>
                   <p className="text-[12px] text-ink-4">
+                    {stage.category ? `${stage.category} · ` : ""}
                     {stage.slug}
-                    {stage.category ? ` · ${stage.category}` : ""}
                   </p>
                 </div>
                 <Button
                   size="sm"
                   variant="primary"
-                  disabled={savingId === stage.id}
+                  disabled={savingId !== null}
                   onClick={() => void save(stage)}
                 >
                   {savingId === stage.id ? "保存中…" : "保存"}

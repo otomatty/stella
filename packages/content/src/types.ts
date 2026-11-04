@@ -96,7 +96,8 @@ export interface CourseConfig {
   /**
    * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (省略時の既定)。
    * `granted` = スタッフが `stage_grants` で割り当てた受講者だけカタログに載る。
-   * 専用講座は catalog の親を 1 つ以上持ち、入口にはしない (manifest が検査)。
+   * Extra 講座。前提を 1 つ以上持ち、線の親をたどると catalog 講座に着く
+   * (manifest が検査)。catalog 講座が granted を前提にすることはできない。
    */
   audience?: CourseAudience;
   /**

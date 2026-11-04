@@ -536,6 +536,16 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(unitContentHash(unit)).toBe(before);
   });
+  it("スキルツリーの掲載 (audience・category・theme) の変更では指紋を変えない", () => {
+    const { root, unit } = fixture();
+    const before = unitContentHash(unit);
+    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      row.audience = "granted";
+      row.category = "Python";
+      row.theme = "別のテーマ";
+    });
+    expect(unitContentHash(unit)).toBe(before);
+  });
   it("配布 PDF を OS ごとに分けるか (pdfByOs) の切り替えでは指紋を変えない", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);

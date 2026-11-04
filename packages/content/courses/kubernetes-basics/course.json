@@ -5,6 +5,7 @@
   "description": "【準備中】コンテナをクラスタで動かす Kubernetes 入門。",
   "header": "Kubernetes入門",
   "tenantId": "ses",
+  "audience": "granted",
   "prerequisites": ["devops-basics", "networking-ops-basics", "deploy-ops-basics"],
   "parent": "networking-ops-basics",
   "canDo": "Pod と Service でコンテナをクラスタに載せ、状態を kubectl で確認できる",

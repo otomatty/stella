@@ -1,20 +1,23 @@
 /**
- * スキルツリーの「島」— 本土 (開発環境とWebの入口〜フロントエンド / バックエンド) から
- * 離れた場所に浮かぶ独立の星団。資格・AI・特定ベンダーの案件トラックのように
- * 「目的別の入り口」になるまとまりを、本土の扇ではなく別の島として描く。
+ * スキルツリーの「島」— 本土 (Basic = 新カリキュラムの 18 講座。開発環境とWebの入口〜
+ * フロントエンド / バックエンド / フルスタック) から離れた場所に浮かぶ独立の星団。
+ * 資格・Python・DevOps・特定ベンダーの案件トラックのように「目的別の入り口」になる
+ * まとまりを、本土の扇ではなく別の島として描く。
  *
- * 島の中身が `audience: granted` の講座だけなら、割り当てられていない受講者には
- * 星が 1 つも残らないので島ごと現れない (`Salesforce案件` がこの形)。
+ * Basic 以外の講座は `audience: granted` (Extra)。講師・管理者が「Extra 講座」画面で
+ * 割り当てた受講者にだけスキルツリーに出る。島の中身がそれだけのとき、割り当てのない
+ * 受講者には星が 1 つも残らないので島ごと現れない。
  *
  * ## 島は「表示条件を満たした人」にだけ配信する
  *
  * 島のステージは、`requires` のステージを**全てクリア**した受講者にだけ返す。
  * 満たしていない間は霧ですらなく、**存在ごと応答から落とす** (盤面にも出ない)。
  * 伏せるのはサーバ側 (`loadSkillMapSource`) — 画面で隠すだけだと DevTools で
- * 全部読めてしまい、条件が演出でしかなくなる。
+ * 全部読めてしまい、条件が演出でしかなくなる。割り当て (`audience: granted`) とは別の軸で、
+ * 両方を満たした受講者にだけ島の星が残る。
  *
- * 表示条件は島ごとに変えられる。資格は 開発環境とWebの入口、DevOps はバックエンドの
- * Python 入門、という具合に、本土のどこまで進んだ人にその島を見せるかを書く。
+ * 表示条件は島ごとに変えられる。資格・Python・案件は 開発環境とWebの入口、DevOps は
+ * Python 入門、という具合に、どこまで進んだ人にその島を見せるかを書く。
  *
  * 表示条件は前提 (`prerequisites`) とは別の軸:
  *   - 前提 = その星を「開ける」条件 (ハードロック。lock_reasons に出る)
@@ -46,6 +49,7 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "AWS資格", requires: ["dev-env-basics"] },
   { category: "情報処理資格", requires: ["dev-env-basics"] },
   { category: "Anthropic認定資格", requires: ["dev-env-basics"] },
+  { category: "Python", requires: ["dev-env-basics"] },
   { category: "DevOps", requires: ["python-basics"] },
   { category: "Salesforce案件", requires: ["dev-env-basics"] },
 ];
@@ -61,12 +65,14 @@ export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
  * 載っていない島 (AWS資格・情報処理資格・Salesforce案件) は最初からあるので常に配る。
  * 載っている島は、申告が下限未満の画面には**存在ごと落とす**。旧 bundle の
  * `SKILL_MAP_ISLAND_CATEGORIES` に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が
- * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`、
+ * Python の親は `node-api-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
  * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
  */
 export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
   DevOps: 3,
   Anthropic認定資格: 4,
+  Python: 5,
 };
 
 /**
