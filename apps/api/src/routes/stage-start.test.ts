@@ -226,6 +226,19 @@ describe("POST /api/stages/:id/start", () => {
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 
+  it("入口を開けた星は前提を終えていなくても始められる", async () => {
+    // staff の stage_unlocks は loadUnlockedStageIds が via で絞らずこの集合に載せる。
+    vi.mocked(loadSkillMapSource).mockImplementation(async () => ({
+      ...pathSource(),
+      unlockedStageIds: new Set(["stage-b"]),
+    }));
+    const res = await start("stage-b");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { state: string; created: boolean };
+    expect(body).toMatchObject({ state: "unlocked", created: true });
+    expect(startSelfEnrollment).toHaveBeenCalledWith({}, caller, "stage-b");
+  });
+
   it("前提が視界の外にあるロック星では、前提名をテーマ名に伏せる", async () => {
     // stage-b2 は 1 歩先 (full) で解放条件が出るが、その前提 stage-deep は視界の外。
     const res = await start("stage-b2");
