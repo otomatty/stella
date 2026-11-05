@@ -89,7 +89,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
-    { id: "library", label: "本棚", icon: Book },
+    // 本棚は本人だけの棚なので、管理者は受講者画面に切り替えて使う (管理画面のナビには出さない)。
   ],
 };
 
