@@ -1,5 +1,5 @@
 /**
- * 外部リポジトリの Extra 講座を、stella の作業用の写しの `packages/content` に重ねる。
+ * 外部リポジトリの Extra ステージを、stella の作業用の写しの `packages/content` に重ねる。
  *
  * 公開リポジトリの作業フォルダーでは動かさない。入口は
  * `scripts/extra-content.ts` で、リポジトリのルートに `.stella-extra-workspace` が
@@ -14,6 +14,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   writeFileSync,
   type Dirent,
   type Stats,
@@ -34,23 +35,29 @@ const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 export interface ExtraManifest {
   schemaVersion: 1;
   name: string;
-  courses: string[];
+  stages: string[];
 }
 
 export interface OverlayResult {
-  courses: string[];
+  stages: string[];
   skills: string[];
   patterns: string[];
   sources: string[];
   environments: string[];
 }
 
+/** 外部リポジトリの置き方。新しい形は stages/ と stage.json。旧い courses/ と course.json も受ける。 */
+interface ExtraLayout {
+  folder: "stages" | "courses";
+  configFile: "stage.json" | "course.json";
+}
+
 const WORKSPACE_REQUIRED =
-  "この stella は Extra 講座の作業用の写しではありません。外部リポジトリの scripts/stella.mjs が作る写し (.stella/) で実行してください (公開リポジトリの stella に Extra 講座を混ぜないため)";
+  "この stella は Extra ステージの作業用の写しではありません。外部リポジトリの scripts/stella.mjs が作る写し (.stella/) で実行してください (公開リポジトリの stella に Extra ステージを混ぜないため)";
 
 const ALREADY_OVERLAID = "すでに重ねてあります。作業用の写しを作り直してください。";
 
-const CODING_RULES_AT_ROOT = "コーディング規則は courses/<slug>/coding-rules.md に書いてください。";
+const CODING_RULES_AT_ROOT = "コーディング規則は stages/<slug>/coding-rules.md に書いてください。";
 
 /** 作業用の写しでなければ止める。CLI が overlay の前に呼ぶ。 */
 export function assertExtraWorkspace(repoRoot: string): void {
@@ -74,22 +81,8 @@ export function readExtraManifest(extraRoot: string): ExtraManifest {
       `${EXTRA_MANIFEST_FILE} の name は英小文字と数字だけにしてください (先頭は英小文字か数字。ハイフンは付けません)。`,
     );
   }
-  if (!Array.isArray(row.courses) || row.courses.length === 0) {
-    throw new Error(`${EXTRA_MANIFEST_FILE} の courses に講座の slug を 1 つ以上書いてください。`);
-  }
-  const courses: string[] = [];
-  for (const slug of row.courses) {
-    if (typeof slug !== "string" || !SLUG_PATTERN.test(slug)) {
-      throw new Error(
-        `${EXTRA_MANIFEST_FILE} の courses の slug が不正です (${String(slug)})。英小文字・数字・ハイフン (先頭は英小文字か数字) にしてください。`,
-      );
-    }
-    if (courses.includes(slug)) {
-      throw new Error(`${EXTRA_MANIFEST_FILE} の courses に slug「${slug}」が重複しています。`);
-    }
-    courses.push(slug);
-  }
-  return { schemaVersion: 1, name: row.name, courses };
+  const stages = readSlugList(row, EXTRA_MANIFEST_FILE);
+  return { schemaVersion: 1, name: row.name, stages };
 }
 
 export function overlayExtraContent(input: {
@@ -105,17 +98,22 @@ export function overlayExtraContent(input: {
   const registered = new Set(readExtraRepositories(contentRoot).map((row) => row.name));
   if (!registered.has(manifest.name)) {
     throw new Error(
-      `${EXTRA_MANIFEST_FILE} の name「${manifest.name}」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してから講座を足してください (外部リポジトリどうしで slug が重ならないようにするため)`,
+      `${EXTRA_MANIFEST_FILE} の name「${manifest.name}」は stella の packages/content/extra-repositories.json にありません。stella に名前を登録してからステージを足してください (外部リポジトリどうしで slug が重ならないようにするため)`,
     );
   }
-  const courses = planCourses(contentRoot, extraRoot, manifest);
+  const layout = detectLayout(extraRoot);
+  const stages = planStages(contentRoot, extraRoot, manifest, layout);
   const skills = planArrayLedger(contentRoot, extraRoot, "skills.json");
   const patterns = planArrayLedger(contentRoot, extraRoot, "patterns.json");
   const sources = planSourceLedger(contentRoot, extraRoot);
   const environments = planEnvironments(contentRoot, extraRoot);
 
-  for (const slug of courses) {
-    copyTree(extraRoot, join(extraRoot, "courses", slug), join(contentRoot, "courses", slug));
+  for (const slug of stages) {
+    const dest = join(contentRoot, "stages", slug);
+    copyTree(extraRoot, join(extraRoot, layout.folder, slug), dest);
+    if (layout.configFile === "course.json") {
+      renameSync(join(dest, "course.json"), join(dest, "stage.json"));
+    }
   }
   if (skills) writeJson(join(contentRoot, "skills.json"), skills.merged);
   if (patterns) writeJson(join(contentRoot, "patterns.json"), patterns.merged);
@@ -127,7 +125,7 @@ export function overlayExtraContent(input: {
   }
 
   const result: OverlayResult = {
-    courses,
+    stages,
     skills: skills?.added ?? [],
     patterns: patterns?.added ?? [],
     sources: sources?.added ?? [],
@@ -137,27 +135,27 @@ export function overlayExtraContent(input: {
   return result;
 }
 
-/** stella 本体の講座が、登録した外部リポジトリの名前で始まっていたら止める。 */
+/** stella 本体のステージが、登録した外部リポジトリの名前で始まっていたら止める。 */
 export function checkExtraRepositoryNames(contentRoot: string, repoRoot: string): void {
   const names = readExtraRepositories(contentRoot).map((row) => row.name);
-  const excluded = overlaidCourseSlugs(contentRoot, repoRoot);
-  const coursesDir = join(contentRoot, "courses");
-  if (!existsSync(coursesDir)) return;
+  const excluded = overlaidStageSlugs(contentRoot, repoRoot);
+  const stagesDir = join(contentRoot, "stages");
+  if (!existsSync(stagesDir)) return;
   const hits: string[] = [];
-  for (const slug of readdirSync(coursesDir).sort((a, b) => a.localeCompare(b))) {
-    const path = join(coursesDir, slug);
+  for (const slug of readdirSync(stagesDir).sort((a, b) => a.localeCompare(b))) {
+    const path = join(stagesDir, slug);
     if (!lstatSync(path).isDirectory() || excluded.has(slug)) continue;
     const name = names.find((candidate) => slug.startsWith(`${candidate}-`));
     if (name) hits.push(`${slug} (${name}-)`);
   }
   if (hits.length > 0) {
     throw new Error(
-      `stella の講座が、登録した外部リポジトリの名前で始まっています (${hits.join("、")})。packages/content/extra-repositories.json の名前は外部の講座の slug の頭に使います。stella 本体の講座には使わないでください。`,
+      `stella のステージが、登録した外部リポジトリの名前で始まっています (${hits.join("、")})。packages/content/extra-repositories.json の名前は外部のステージの slug の頭に使います。stella 本体のステージには使わないでください。`,
     );
   }
 }
 
-function overlaidCourseSlugs(contentRoot: string, repoRoot: string): Set<string> {
+function overlaidStageSlugs(contentRoot: string, repoRoot: string): Set<string> {
   if (!existsSync(join(repoRoot, EXTRA_WORKSPACE_MARKER))) return new Set();
   const path = join(contentRoot, EXTRA_OVERLAY_RECORD);
   if (!existsSync(path)) return new Set();
@@ -170,66 +168,132 @@ function overlaidCourseSlugs(contentRoot: string, repoRoot: string): Set<string>
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error(`${EXTRA_OVERLAY_RECORD} はオブジェクトにしてください。`);
   }
-  const courses = (raw as { courses?: unknown }).courses;
-  if (!Array.isArray(courses) || courses.some((slug) => typeof slug !== "string")) {
-    throw new Error(`${EXTRA_OVERLAY_RECORD} の courses は slug の配列にしてください。`);
-  }
-  return new Set(courses);
+  return new Set(
+    readSlugList(raw as Record<string, unknown>, EXTRA_OVERLAY_RECORD, { allowEmpty: true }),
+  );
 }
 
-function planCourses(contentRoot: string, extraRoot: string, manifest: ExtraManifest): string[] {
-  const coursesDir = join(extraRoot, "courses");
-  const dirStat = lstatOrNull(coursesDir);
-  if (!dirStat) {
+/**
+ * `stella-extra.json` と `.extra-overlay.json` の slug 配列。
+ * 新しいキーは `stages`。旧い `courses` も受け付ける。両方あると止まる。
+ */
+function readSlugList(
+  row: Record<string, unknown>,
+  fileLabel: string,
+  options?: { allowEmpty?: boolean },
+): string[] {
+  const hasStages = Object.hasOwn(row, "stages");
+  const hasCourses = Object.hasOwn(row, "courses");
+  if (hasStages && hasCourses) {
     throw new Error(
-      "courses/ がありません。stella-extra.json の courses に書いた講座のフォルダーを置いてください。",
+      `${fileLabel} に stages と courses の両方は書けません。stages に揃えてください。`,
     );
   }
-  if (dirStat.isSymbolicLink()) throw symlinkError(extraRoot, coursesDir);
-  if (!dirStat.isDirectory()) throw new Error("courses はフォルダーにしてください。");
+  if (!hasStages && !hasCourses) {
+    throw new Error(`${fileLabel} の stages にステージの slug を 1 つ以上書いてください。`);
+  }
+  const listed = hasStages ? row.stages : row.courses;
+  if (!Array.isArray(listed) || (!options?.allowEmpty && listed.length === 0)) {
+    throw new Error(`${fileLabel} の stages にステージの slug を 1 つ以上書いてください。`);
+  }
+  const stages: string[] = [];
+  for (const slug of listed) {
+    if (typeof slug !== "string" || !SLUG_PATTERN.test(slug)) {
+      throw new Error(
+        `${fileLabel} の stages の slug が不正です (${String(slug)})。英小文字・数字・ハイフン (先頭は英小文字か数字) にしてください。`,
+      );
+    }
+    if (stages.includes(slug)) {
+      throw new Error(`${fileLabel} の stages に slug「${slug}」が重複しています。`);
+    }
+    stages.push(slug);
+  }
+  return stages;
+}
 
-  const listed = new Set(manifest.courses);
-  const entries = readdirSync(coursesDir, { withFileTypes: true }).sort((a, b) =>
+function detectLayout(extraRoot: string): ExtraLayout {
+  const stagesDir = join(extraRoot, "stages");
+  const coursesDir = join(extraRoot, "courses");
+  const stagesStat = lstatOrNull(stagesDir);
+  const coursesStat = lstatOrNull(coursesDir);
+  if (stagesStat?.isSymbolicLink()) throw symlinkError(extraRoot, stagesDir);
+  if (coursesStat?.isSymbolicLink()) throw symlinkError(extraRoot, coursesDir);
+  if (stagesStat && coursesStat) {
+    throw new Error(
+      "stages/ と courses/ が両方あります。stages/<slug>/stage.json に揃えてください。",
+    );
+  }
+  if (stagesStat) {
+    if (!stagesStat.isDirectory()) throw new Error("stages はフォルダーにしてください。");
+    return { folder: "stages", configFile: "stage.json" };
+  }
+  if (coursesStat) {
+    if (!coursesStat.isDirectory()) throw new Error("courses はフォルダーにしてください。");
+    return { folder: "courses", configFile: "course.json" };
+  }
+  throw new Error(
+    "stages/ がありません。stella-extra.json の stages に書いたステージのフォルダーを置いてください。",
+  );
+}
+
+function planStages(
+  contentRoot: string,
+  extraRoot: string,
+  manifest: ExtraManifest,
+  layout: ExtraLayout,
+): string[] {
+  const stagesDir = join(extraRoot, layout.folder);
+  const listed = new Set(manifest.stages);
+  const entries = readdirSync(stagesDir, { withFileTypes: true }).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   for (const entry of entries) {
-    const path = join(coursesDir, entry.name);
+    const path = join(stagesDir, entry.name);
     if (entry.isSymbolicLink()) throw symlinkError(extraRoot, path);
     if (!listed.has(entry.name)) {
       throw new Error(
-        `courses/${entry.name} は stella-extra.json の courses にありません。書くか、フォルダーを除いてください。`,
+        `${layout.folder}/${entry.name} は stella-extra.json の stages にありません。書くか、フォルダーを除いてください。`,
       );
     }
-    if (!entry.isDirectory()) throw new Error(`courses/${entry.name} はフォルダーにしてください。`);
+    if (!entry.isDirectory()) {
+      throw new Error(`${layout.folder}/${entry.name} はフォルダーにしてください。`);
+    }
   }
   const names = new Set(entries.map((entry) => entry.name));
-  for (const slug of manifest.courses) {
+  for (const slug of manifest.stages) {
     if (!names.has(slug)) {
       throw new Error(
-        `courses/${slug}/course.json がありません。stella-extra.json の courses に書いた講座のフォルダーを courses/ に置いてください。`,
+        `stages/${slug}/stage.json がありません。stella-extra.json の stages に書いたステージのフォルダーを stages/ に置いてください。`,
       );
     }
-    assertCourse(contentRoot, extraRoot, slug, manifest.name);
+    assertStage(contentRoot, extraRoot, slug, manifest.name, layout);
   }
-  return manifest.courses;
+  return manifest.stages;
 }
 
-function assertCourse(contentRoot: string, extraRoot: string, slug: string, name: string): void {
-  const courseDir = join(extraRoot, "courses", slug);
-  const configPath = join(courseDir, "course.json");
+function assertStage(
+  contentRoot: string,
+  extraRoot: string,
+  slug: string,
+  name: string,
+  layout: ExtraLayout,
+): void {
+  const stageDir = join(extraRoot, layout.folder, slug);
+  const configPath = join(stageDir, layout.configFile);
+  const label = `stages/${slug}/stage.json`;
   if (!lstatOrNull(configPath)) {
     throw new Error(
-      `courses/${slug}/course.json がありません。stella-extra.json の courses に書いた講座のフォルダーを courses/ に置いてください。`,
+      `${label} がありません。stella-extra.json の stages に書いたステージのフォルダーを stages/ に置いてください。`,
     );
   }
-  const raw = readJsonFile(extraRoot, configPath, `courses/${slug}/course.json`);
+  const raw = readJsonFile(extraRoot, configPath, label);
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error(`courses/${slug}/course.json はオブジェクトにしてください。`);
+    throw new Error(`${label} はオブジェクトにしてください。`);
   }
   const config = raw as Record<string, unknown>;
   if (config.audience !== "granted") {
     throw new Error(
-      `courses/${slug}/course.json の audience は "granted" にしてください。Extra 講座だけを外部リポジトリに置けます。`,
+      `${label} の audience は "granted" にしてください。Extra ステージだけを外部リポジトリに置けます。`,
     );
   }
   const tenantRaw = config.tenantId;
@@ -237,26 +301,26 @@ function assertCourse(contentRoot: string, extraRoot: string, slug: string, name
     typeof tenantRaw === "string" && tenantRaw.trim() !== "" ? tenantRaw.trim() : TENANT_ID;
   if (RETIRED_STAGES.some((row) => row.tenantId === tenantId && row.slug === slug)) {
     throw new Error(
-      `courses/${slug} は stella で退役した講座の slug です。seed が同じ ID のステージを消すので、別の slug にしてください`,
+      `stages/${slug} は stella で退役したステージの slug です。seed が同じ ID のステージを消すので、別の slug にしてください`,
     );
   }
   if (!slug.startsWith(`${name}-`)) {
     throw new Error(
-      `courses/${slug} の slug は「${name}-」で始めてください。stella に登録した外部リポジトリの名前を頭に付け、講座の slug が重ならないようにします。`,
+      `stages/${slug} の slug は「${name}-」で始めてください。stella に登録した外部リポジトリの名前を頭に付け、ステージの slug が重ならないようにします。`,
     );
   }
   if (typeof config.category !== "string" || !SKILL_MAP_ISLAND_CATEGORIES.has(config.category)) {
     const categories = [...SKILL_MAP_ISLAND_CATEGORIES].join("、");
     throw new Error(
-      `courses/${slug}/course.json の category は島のカテゴリ (${categories}) のどれかにしてください。新しい島は stella の packages/shared/src/skill-map/islands.ts に足します。`,
+      `${label} の category は島のカテゴリ (${categories}) のどれかにしてください。新しい島は stella の packages/shared/src/skill-map/islands.ts に足します。`,
     );
   }
-  if (lstatOrNull(join(contentRoot, "courses", slug))) {
+  if (lstatOrNull(join(contentRoot, "stages", slug))) {
     throw new Error(
-      `courses/${slug} は stella の講座と slug が重なります。別の slug にしてください。`,
+      `stages/${slug} は stella のステージと slug が重なります。別の slug にしてください。`,
     );
   }
-  walkFilesOnly(extraRoot, courseDir);
+  walkFilesOnly(extraRoot, stageDir);
 }
 
 interface ArrayLedgerPlan {

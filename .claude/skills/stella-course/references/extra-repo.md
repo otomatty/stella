@@ -6,8 +6,8 @@
 
 ```text
 <外部リポジトリ>/
-  stella-extra.json          # { schemaVersion: 1, name, courses }
-  courses/<slug>/...         # format 2。本体の courses/<slug>/ と同じ木
+  stella-extra.json          # { schemaVersion: 1, name, stages }
+  stages/<slug>/stage.json   # format 2。本体の stages/<slug>/ と同じ木
   skills.json                # 任意。足すスキルだけ
   patterns.json              # 任意。足すパターンだけ
   sources/registry.json      # 任意。足す参照元だけ (sources 配列)
@@ -15,11 +15,11 @@
   scripts/stella.mjs         # このリポジトリ側の入口。stella 本体には無い
 ```
 
-`stella-extra.json` の `schemaVersion` は 1 です。`name` は英小文字と数字だけで、ハイフンは付けません。先頭は英小文字か数字です。使える名前は stella の `packages/content/extra-repositories.json` に登録したものだけです。`courses` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。各 slug は `<name>-` で始めます。`courses` は空にできず、slug は重複できません。`courses` に書いた slug ごとに `courses/<slug>/course.json` が要ります。書いていないフォルダーが `courses/` にあると止まります。
+`stella-extra.json` の `schemaVersion` は 1 です。`name` は英小文字と数字だけで、ハイフンは付けません。先頭は英小文字か数字です。使える名前は stella の `packages/content/extra-repositories.json` に登録したものだけです。`stages` の slug は英小文字・数字・ハイフンで、先頭は英小文字か数字です。各 slug は `<name>-` で始めます。`stages` は空にできず、slug は重複できません。`stages` に書いた slug ごとに `stages/<slug>/stage.json` が要ります。書いていないフォルダーが `stages/` にあると止まります。旧い形 (`courses` キーと `courses/<slug>/course.json`) も overlay は受け付けます。`stages` と `courses` を両方書くと止まります。
 
 各講座の `audience` は `granted` です。`category` は `.stella/packages/shared/src/skill-map/islands.ts` の島のどれかです。`prerequisites` は、overlay したあとの写しにある講座の slug です。同じリポジトリの別の Extra 講座も書けますが、線の親 (`parent`) をたどると stella の catalog の講座に着く必要があります。stella の講座と同じ slug は使えません。stella で退役した slug (`packages/shared/src/curriculum/retired-stages.ts`) も使えません。seed が同じ ID のステージを消します。
 
-台帳は stella の同じファイルの後ろに足します。`id` が stella の台帳と重なると止まります。環境台帳も同じ名前が stella にあると止まります。リポジトリの一番上に `coding-rules.md` は置けません。講座の規則は `courses/<slug>/coding-rules.md` です。シンボリックリンクはたどらずに止まります。
+台帳は stella の同じファイルの後ろに足します。`id` が stella の台帳と重なると止まります。環境台帳も同じ名前が stella にあると止まります。リポジトリの一番上に `coding-rules.md` は置けません。講座の規則は `stages/<slug>/coding-rules.md` です。シンボリックリンクはたどらずに止まります。
 
 slug と講座名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
 
@@ -34,7 +34,7 @@ slug と講座名に受講者の名前を入れないでください。R2 のキ
 | `node scripts/stella.mjs check` | 重ねた写しで `content:check` を流す |
 | `node scripts/stella.mjs skill` | 写しの `.claude/skills/stella-course/` を、この環境で使うスキルの場所へ取り込む |
 
-写しが無いときは `setup` を先に実行します。文書とテンプレートは `.stella/` から読み、編集するのは外部リポジトリの `courses/` と足す台帳です。`.stella/` の中を直しても、次の `setup` で消えます。
+写しが無いときは `setup` を先に実行します。文書とテンプレートは `.stella/` から読み、編集するのは外部リポジトリの `stages/` と足す台帳です。`.stella/` の中を直しても、次の `setup` で消えます。
 
 重ねる処理の実体は、写しの中の `bun run packages/content/scripts/extra-content.ts overlay --from <外部リポジトリ>` です。マーカーの無い stella ではファイルを書かずに終了コード 1 で止まります。`packages/content/.extra-overlay.json` が既にある写しでも止まります。やり直すときは写しを作り直します。
 

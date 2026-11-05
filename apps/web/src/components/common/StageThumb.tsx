@@ -16,7 +16,7 @@ interface StageThumbProps {
   label?: string;
   /**
    * サムネイル画像の R2 パス (`stages.thumbnail_path`)。 正本は教材リポジトリの
-   * `packages/content/courses/<slug>/thumbnail.*`。 未設定・ストレージ未設定・
+   * `packages/content/stages/<slug>/thumbnail.*`。 未設定・ストレージ未設定・
    * 読み込み失敗のいずれでも color のストライプ表示にフォールバックする。
    */
   thumbnailPath?: string | null;

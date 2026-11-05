@@ -239,12 +239,12 @@ export const stages = sqliteTable(
     color: text("color", { enum: ["indigo", "green", "amber", "slate"] }),
     /**
      * 一覧カードのサムネイル画像の R2 キー。教材リポジトリ (`packages/content`) の
-     * `courses/<slug>/thumbnail.*` を seed が書き込む。null ならストライプ表示。
+     * `stages/<slug>/thumbnail.*` を seed が書き込む。null ならストライプ表示。
      */
     thumbnailPath: text("thumbnail_path"),
     /**
      * スキルツリーの星に出す講座アイコンの R2 キー。教材リポジトリの
-     * `courses/<slug>/icon.svg` (単色シルエット) を seed が書き込む。null なら
+     * `stages/<slug>/icon.svg` (単色シルエット) を seed が書き込む。null なら
      * 星は状態グリフ (★/▶/🔒/✨) のまま。
      */
     iconPath: text("icon_path"),
@@ -254,7 +254,7 @@ export const stages = sqliteTable(
      * 前提ステージの **slug** の JSON 配列文字列 (`["html-css-basics"]`)。null / 空配列は
      * 前提なし。すべてクリアするまでこのステージは開けない (スキルツリーのハードロック)。
      *
-     * UUID ではなく slug を入れる: 正本は教材リポジトリ (`courses/<slug>/course.json`) で、
+     * UUID ではなく slug を入れる: 正本は教材リポジトリ (`stages/<slug>/stage.json`) で、
      * そちらは stage UUID を知らない。評価器 (`@stella/shared/skill-map`) も slug で解く。
      * `json()` ヘルパを使わないのは、既存行に既定値を入れずに null のまま足したいため。
      */

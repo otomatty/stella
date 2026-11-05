@@ -6,13 +6,13 @@
 
 社内の**未経験エンジニア向け研修教材**です。動画講義(ショート動画)とLMS掲載用のドキュメントの2本立てです。
 
-この教材は `stella` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `courses/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_COURSE.md](ADDING_COURSE.md)）。
+この教材は `stella` の LMS に配信されます。`packages/content` がその正本で、スライド・ドキュメント・演習はここで書き、LMS へは seed で投入します。講座は `stages/<slug>/` 単位で、**新しい講座を足すのが既定の手順**です（[ADDING_STAGE.md](ADDING_STAGE.md)）。
 
 原典は [サバイバルTypeScript](https://typescriptbook.jp/)(CC BY-SA 4.0)ですが、**未経験者向けに順序・粒度を再設計した独自教材**であり、原典の翻訳や写しではありません。
 
 ## 新カリキュラムの形式
 
-新カリキュラムは `course.json` の `format: 2` を使います。**単元＝モジュール**、レッスンの下のトピックは従来どおりです。単元直下に `unit.json`・`references.json`・`tasks/`、レッスン直下に `knowledge.md` を置きます。予定時間・環境・スキル・パターンの台帳と書き方は [ADDING_COURSE.md の format 2](ADDING_COURSE.md#新カリキュラムの-format-2)、見本は `courses/dev-env-basics/` にあります。
+新カリキュラムは `stage.json` の `format: 2` を使います。**単元＝モジュール**、レッスンの下のトピックは従来どおりです。単元直下に `unit.json`・`references.json`・`tasks/`、レッスン直下に `knowledge.md` を置きます。予定時間・環境・スキル・パターンの台帳と書き方は [ADDING_STAGE.md の format 2](ADDING_STAGE.md#新カリキュラムの-format-2)、見本は `stages/dev-env-basics/` にあります。
 
 WindowsとmacOSで手順が違う説明は、`doc.md` と課題文の `README.md` にだけ OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）で書きます。スライドと動画は OS に依存しない説明にします。書き方は [STYLE_GUIDE.md](STYLE_GUIDE.md#os別の手順osのルール) にあります。
 
@@ -34,11 +34,11 @@ format 2 では `practice.md` を配信しません。実装課題は課題デ�
 
 ## ディレクトリ構成
 
-講座は `courses/<slug>/` が単位。新しい講座を足すのが既定の手順で、詳細は [ADDING_COURSE.md](ADDING_COURSE.md)。
+講座は `stages/<slug>/` が単位。新しい講座を足すのが既定の手順で、詳細は [ADDING_STAGE.md](ADDING_STAGE.md)。
 
 ```
-packages/content/courses/<slug>/
-├── course.json     # タイトル・説明・セクション名
+packages/content/stages/<slug>/
+├── stage.json     # タイトル・説明・セクション名
 └── modules/<モジュールID>/<レッスンID>/
     ├── <トピックID>/
     │   ├── slides.md   # 動画1本ぶんのスライド(必須)
@@ -49,7 +49,7 @@ packages/content/templates/     # 新規作成用の雛形
 packages/content/STYLE_GUIDE.md # 執筆ルール(文体・コード例・図解・構成)
 ```
 
-例: `packages/content/courses/salesforce-dev-basics/modules/m0-orientation/l1-platform/t1-what-is-salesforce/slides.md`
+例: `packages/content/stages/salesforce-dev-basics/modules/m0-orientation/l1-platform/t1-what-is-salesforce/slides.md`
 
 ## 語彙台帳 — 前後関係は検査で守る
 
@@ -77,7 +77,7 @@ header: "TypeScript入門"
 
 ```bash
 bun run --filter=@stella/content materials        # 全トピックを pptx 化
-bun run --filter=@stella/content materials -- courses/salesforce-dev-basics/modules/m0-orientation/l1-platform   # 一部だけ
+bun run --filter=@stella/content materials -- stages/salesforce-dev-basics/modules/m0-orientation/l1-platform   # 一部だけ
 bun run --filter=@stella/content check:ci         # 語彙台帳・画像リンク・スライド枚数の検査（CI と同じ）
 ```
 
@@ -137,13 +137,13 @@ bun run --filter=@stella/content materials
 図解を追加・修正した場合は、そのトピックだけを検査できます。`<rect>` / `<circle>` / `<ellipse>` で描いた枠からのはみ出しはビルドが自動で検出しますが、`<path>` で描いた枠(外接矩形が意味を持たない任意形状)は対象外です。`<path>` を使う複雑な図は、生成された `.diagram.png` を目視で確認してください。
 
 ```bash
-python .claude/skills/diagram-design/lint-skin.py packages/content/courses/<slug>/modules/<path>
-python packages/content/scripts/diagram_export.py packages/content/courses/<slug>/modules/<path>
+python .claude/skills/diagram-design/lint-skin.py packages/content/stages/<slug>/modules/<path>
+python packages/content/scripts/diagram_export.py packages/content/stages/<slug>/modules/<path>
 ```
 
 ## 現在の状態
 
-教材は `courses/<slug>/modules/` が正本です。新18講座・残す11講座・あとから足した1講座の計30講座があります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、講座全体の予定は35時間です。ほかの新17講座は M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つ講座も全体は準備中です。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えた講座です（説明から【準備中】を外した）。準備中は計23講座です。
+教材は `stages/<slug>/modules/` が正本です。新18講座・残す11講座・あとから足した1講座の計30講座があります。`dev-env-basics` は #28 の format 2 の見本単元（3時間）を持ち、講座全体の予定は35時間です。ほかの新17講座は M0 の準備中案内だけを持ち、教材本体は #41 で作成します。見本を持つ講座も全体は準備中です。残す講座のうち Python・DevOps・ネットワーク運用・Kubernetes・Terraform も準備中です。あとから足した `claude-developer-foundations`（Claude Certified Developer 対策、Anthropic認定資格の島）は format 2 で、M0（試験の全体像と公式の情報源）・M1（Messages API の基本）・M2（アプリに組み込む）・M3（モデルの選択と費用・速度の調整）・M4（プロンプトとコンテキストの設計）・M5（ツール使用と MCP）・M6（ワークフローとエージェント）・M7（安全性とセキュリティ）・M8（Claude Code の設定と評価・デバッグ）・M9（模擬試験 53 問）・M10（直前対策）と課題18問（M10 の確認A を含む）を持ち、全単元を書き終えた講座です（説明から【準備中】を外した）。準備中は計23講座です。
 
 唯一の前提なし講座は `dev-env-basics` です。この講座には前提を追加しないでください。新18講座の slug・前提・線の親・カテゴリは `docs/curriculum/07-stella-adoption-redesign.md` §3.1・§3.4 が正本です。本土のカテゴリは基礎・フロントエンド・バックエンド・フルスタックです。解放は全前提の AND、線と枝数は `parent` 1 本で決まります。どの星からも枝は最大2本です。
 
@@ -153,12 +153,12 @@ Basic = 新18講座、それ以外は Extra (`audience: granted`)。講師・管
 
 新18講座のサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、#41 で dev-env-basics の解説を執筆したあとに新しい台本を作り、#20 の PoC を再開します。
 
-残す教材の本文は維持します。新規講座と教材の追加手順は [ADDING_COURSE.md](ADDING_COURSE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
+残す教材の本文は維持します。新規講座と教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 
 ## 作業の進め方
 
 レッスン単位で作業し、モジュールごとにコミットしてください。全体に一括で及ぶ変更は、スクリプトで処理してから全ビルド検証を行ってください。
 
-トピック / レッスン / 新しい講座の足し方は **[ADDING_COURSE.md](ADDING_COURSE.md)** を先に読む。
+トピック / レッスン / 新しい講座の足し方は **[ADDING_STAGE.md](ADDING_STAGE.md)** を先に読む。
 
-外部で見つけたテーマを教材にするか迷うとき、および講座の要件（到達目標・スコープ・規模・評価方法）を決めるときは **[THEME_TO_COURSE.md](THEME_TO_COURSE.md)** を使う。カリキュラム（takeaway 一覧）が固まる前に本文を書き始めない。
+外部で見つけたテーマを教材にするか迷うとき、および講座の要件（到達目標・スコープ・規模・評価方法）を決めるときは **[THEME_TO_STAGE.md](THEME_TO_STAGE.md)** を使う。カリキュラム（takeaway 一覧）が固まる前に本文を書き始めない。

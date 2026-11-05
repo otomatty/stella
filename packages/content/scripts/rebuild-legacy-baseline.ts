@@ -4,7 +4,7 @@
  *
  *   bun run --filter=@stella/content baseline:legacy
  *
- * 教材 (`packages/content/courses`)・環境定義 (`packages/content/environments`)・旧演習の課題定義
+ * 教材 (`packages/content/stages`)・環境定義 (`packages/content/environments`)・旧演習の課題定義
  * (`packages/shared/src`) を `baseCommit` から一時ディレクトリへ取り出し、いまの指紋の計算で読む。
  * 課題定義・環境定義もその時点の版を引くので、導入後に同じ ID のまま直した単元は改訂済みとして残る。
  */
@@ -40,7 +40,7 @@ try {
       `--output=${archive}`,
       recorded.baseCommit,
       "--",
-      "packages/content/courses",
+      "packages/content/stages",
       "packages/content/environments",
       "packages/shared/src",
     ],

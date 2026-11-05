@@ -53,7 +53,7 @@ function normalizedJson(value: unknown): unknown {
   return value;
 }
 
-/** course.json の `exercises` の 1 レッスンぶん (`{ id, title }[]`) から課題 ID を取り出す。 */
+/** stage.json の `exercises` の 1 レッスンぶん (`{ id, title }[]`) から課題 ID を取り出す。 */
 function exerciseIds(refs: unknown): string[] {
   if (!Array.isArray(refs)) return [];
   return refs.flatMap((ref) => {
@@ -97,7 +97,7 @@ export const resolveSharedAssignment: AssignmentResolver = sharedAssignmentResol
 
 /**
  * 課題定義 (`tasks/<課題>/task.json`)。`sources` は front-matter の sourceRefs と同じ参照元の
- * 対応なので外し、キー順・空白は course.json と同じく正規化する。読めない JSON は課題の検査が
+ * 対応なので外し、キー順・空白は stage.json と同じく正規化する。読めない JSON は課題の検査が
  * 報告するので、ここではそのままの内容で指紋に含める。`environment` は環境定義を引くために返す。
  */
 function taskDefinitionContent(path: string): { content: string | Buffer; environment?: unknown } {
@@ -143,7 +143,7 @@ const UNHASHED_NAME =
  * 単元の内容指紋。受講者が見るもの・採点と配布が使うものを全部含め、除くのは次だけにする。
  * - 参照元の対応の記録: 単元直下の references.json、公開教材の front-matter の sourceRefs、
  *   課題の task.json の sources (付け替えだけでは改訂にならない)
- * - course.json の経路・予定時間 (前提・parent・扇への配置・plannedHours)、スキルツリーの
+ * - stage.json の経路・予定時間 (前提・parent・扇への配置・plannedHours)、スキルツリーの
  *   掲載 (audience・category・theme。誰に出すか・どの島か・霧のテーマ名で、本文は変わらない)、
  *   配布 PDF を OS ごとに分けるか (pdfByOs)
  * - .gitignore 済みの生成物と OS の管理ファイル (`UNHASHED_NAME`)
@@ -151,8 +151,8 @@ const UNHASHED_NAME =
  * 単元ディレクトリの通常のファイルは拡張子を問わず相対パスの順に含め、参照元の記録を外す
  * 公開教材の Markdown と task.json 以外はバイト列のまま読む (課題のスターター・テスト・解答の
  * .tsx・.sql・拡張子の無いファイルも)。シンボリックリンク (配布でも止める) と通常のファイル以外は
- * 黙って飛ばさずエラーにする。ほかに course.json の教材に関わる項目、講座と課題が指す環境定義、
- * 旧演習は course.json の ID・題名から引いた課題定義 (`resolveAssignment`) を含める。
+ * 黙って飛ばさずエラーにする。ほかに stage.json の教材に関わる項目、ステージと課題が指す環境定義、
+ * 旧演習は stage.json の ID・題名から引いた課題定義 (`resolveAssignment`) を含める。
  */
 export function unitContentHash(
   directory: string,
@@ -202,15 +202,15 @@ export function unitContentHash(
     }
   }
   walk(directory, "");
-  const courseDirectory = dirname(dirname(directory));
+  const stageDirectory = dirname(dirname(directory));
   const config = object(
-    JSON.parse(readFileSync(join(courseDirectory, "course.json"), "utf8")),
-    "course.json",
+    JSON.parse(readFileSync(join(stageDirectory, "stage.json"), "utf8")),
+    "stage.json",
   );
   const moduleId = basename(directory);
-  const modules = config.modules === undefined ? {} : object(config.modules, "course.modules");
+  const modules = config.modules === undefined ? {} : object(config.modules, "stage.modules");
   const exercises =
-    config.exercises === undefined ? {} : object(config.exercises, "course.exercises");
+    config.exercises === undefined ? {} : object(config.exercises, "stage.exercises");
   const unitExercises = Object.entries(exercises).filter(([key]) => lessonKeys.has(key));
   const courseContent: Record<string, unknown> = {
     ...config,
@@ -232,10 +232,12 @@ export function unitContentHash(
     "theme",
   ])
     delete courseContent[key];
+  // 指紋の区切りは保存済みの contentHash と同じ `course.json` のままにする
+  // (ファイル名は stage.json。区切りを変えると、確認済みの単元が全部不一致になる)。
   hash.update(`course.json\0${JSON.stringify(normalizedJson(courseContent))}`);
   // 環境の無い単元 (旧形式) は従来どおりの指紋のまま。
   if (typeof config.environment === "string") environments.add(config.environment);
-  const root = dirname(dirname(courseDirectory));
+  const root = dirname(dirname(stageDirectory));
   for (const id of [...environments].sort()) {
     const content = environmentContent(root, id);
     hash.update(`environment\0${id}\0${Buffer.byteLength(content)}\0`).update(content);
@@ -257,15 +259,15 @@ export function listSourceUnits(
   root: string,
 ): { unitId: string; directory: string; format: number; environment?: string }[] {
   const units: { unitId: string; directory: string; format: number; environment?: string }[] = [];
-  for (const slug of readdirSync(join(root, "courses")).sort()) {
-    const course = join(root, "courses", slug);
-    if (!existsSync(join(course, "course.json")) || !existsSync(join(course, "modules"))) continue;
+  for (const slug of readdirSync(join(root, "stages")).sort()) {
+    const stage = join(root, "stages", slug);
+    if (!existsSync(join(stage, "stage.json")) || !existsSync(join(stage, "modules"))) continue;
     const config = object(
-      JSON.parse(readFileSync(join(course, "course.json"), "utf8")),
-      "course.json",
+      JSON.parse(readFileSync(join(stage, "stage.json"), "utf8")),
+      "stage.json",
     );
-    for (const unit of readdirSync(join(course, "modules")).sort()) {
-      const directory = join(course, "modules", unit);
+    for (const unit of readdirSync(join(stage, "modules")).sort()) {
+      const directory = join(stage, "modules", unit);
       if (!lstatSync(directory).isDirectory()) continue;
       units.push({
         unitId: `${slug}/${unit}`,
@@ -407,7 +409,7 @@ function checkUnit(
       if (env.id !== refs.environmentRef)
         problems.push(`環境の版が一致しません: ${refs.environmentRef}`);
       if (environment && environment !== envParts[1])
-        problems.push("講座・課題と参照元の環境が一致しません");
+        problems.push("ステージ・課題と参照元の環境が一致しません");
     } catch (error) {
       problems.push(`環境の定義がありません: ${String(error)}`);
     }

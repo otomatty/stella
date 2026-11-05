@@ -1,7 +1,7 @@
 /**
  * 教材動画の台本 (narration.json) の検査。`check:ci` から呼ばれる。
  *
- *   bun run --filter=@stella/content narration:check [courses/<slug> ...]
+ *   bun run --filter=@stella/content narration:check [stages/<slug> ...]
  *
  * 台本の無いトピックは対象外 (段階導入。設計書の ① 台本 → 検証)。
  * エラーがあれば exit 1、警告は表示だけ。
@@ -20,7 +20,7 @@ const topics = collectNarrationTopics(selectors).filter(
 let errors = 0;
 let warnings = 0;
 for (const topic of topics) {
-  const label = `${topic.courseSlug}/${topic.id}`;
+  const label = `${topic.stageSlug}/${topic.id}`;
   if (topic.parseError !== undefined) {
     console.log(`✗ ${label}: ${topic.parseError} (${relative(contentRoot, topic.narrationFile)})`);
     errors++;

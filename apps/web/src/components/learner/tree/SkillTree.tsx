@@ -154,7 +154,7 @@ interface SkillTreeProps {
  * ルート (本土のカテゴリ) と島ごとのメイン色 — roadmap.sh を参考にした構成の色分け。
  *
  * 扇 / 島のキーは原則カテゴリ (霧の星にも入る)。カテゴリを持たない星はテーマ名に
- * 落ちるので、両方を載せる (`packages/content` の course.json の category /
+ * 落ちるので、両方を載せる (`packages/content` の stage.json の category /
  * theme と対で保つ)。値は `rgb(r g b / a)` に埋め込む RGB 三つ組。ここに無い扇
  * (基礎) は従来の星色のまま — ルートや島が増えたらここに 1 行足す。
  */

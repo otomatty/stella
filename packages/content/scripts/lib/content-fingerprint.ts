@@ -20,7 +20,7 @@ import { createHash } from "node:crypto";
  * 広く取るほど API だけの push でも Playwright と seed が走る。2026-10-06 は
  * その seed が D1 の 1 日の書き込み枠を使い切った。見るのは次だけにする。
  *
- * - 生成結果に入るファイル (講座・規則・スキル・環境・旧演習・migration)
+ * - 生成結果に入るファイル (ステージ・規則・スキル・環境・旧演習・migration)
  * - 生成コードが **値として** import しているファイル (型だけの import は SQL も
  *   PDF も変わらないので見ない)
  * - 生成コードが readFileSync で読むファイル (import に出ない)
@@ -30,7 +30,7 @@ import { createHash } from "node:crypto";
  */
 export const SEED_INPUT_PATHS = [
   // 教材の正本と、生成コードがパスで読む台帳。
-  "packages/content/courses",
+  "packages/content/stages",
   "packages/content/coding-rules.md",
   "packages/content/skills.json",
   "packages/content/patterns.json",

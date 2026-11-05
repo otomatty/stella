@@ -232,12 +232,12 @@ if __name__ == "__main__":
         if paths:
             run(paths)
         else:
-            courses = ROOT / "courses"
+            stages = ROOT / "stages"
             defaults = sorted(
                 p / "modules"
-                for p in courses.iterdir()
+                for p in stages.iterdir()
                 if p.is_dir() and (p / "modules").is_dir()
-            ) if courses.is_dir() else []
+            ) if stages.is_dir() else []
             if not defaults:
-                raise SystemExit("courses/<slug>/modules が見つかりません。")
+                raise SystemExit("stages/<slug>/modules が見つかりません。")
             run(defaults)

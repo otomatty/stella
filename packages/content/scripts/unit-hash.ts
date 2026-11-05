@@ -4,7 +4,7 @@
  *
  *   bun run --filter=@stella/content hash:unit -- dev-env-basics/m0-first-page
  *
- * 引数は `<slug>/<module>` (版の `@…` は無視) か講座の slug。省略すると全単元。ファイルは
+ * 引数は `<slug>/<module>` (版の `@…` は無視) かステージの slug。省略すると全単元。ファイルは
  * 書き換えない。版を上げて参照元を確認し直したことは、人が references.json に残す。
  */
 import { dirname, join } from "node:path";

@@ -13,7 +13,7 @@ import { buildContentManifest } from "./manifest.js";
  */
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sample = join(content, "courses/dev-env-basics");
+const sample = join(content, "stages/dev-env-basics");
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -24,15 +24,15 @@ function readJson(file: string): Record<string, unknown> {
 }
 
 /** dev-env-basics を写し、`m0-first-page` を課題の無い公開の単元にした教材の根。 */
-function publicUnitFixture(): { root: string; unit: string; course: string } {
+function publicUnitFixture(): { root: string; unit: string; stage: string } {
   const root = mkdtempSync(join(tmpdir(), "stella-public-unit-"));
   roots.push(root);
-  mkdirSync(join(root, "courses"));
-  const course = join(root, "courses/dev-env-basics");
-  cpSync(sample, course, { recursive: true });
+  mkdirSync(join(root, "stages"));
+  const stage = join(root, "stages/dev-env-basics");
+  cpSync(sample, stage, { recursive: true });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
-  const unit = join(course, "modules/m0-first-page");
+  const unit = join(stage, "modules/m0-first-page");
   rmSync(join(unit, "tasks"), { recursive: true });
   const refs = readJson(join(unit, "references.json"));
   refs.uses = (refs.uses as { contentId: string }[]).filter(
@@ -41,7 +41,7 @@ function publicUnitFixture(): { root: string; unit: string; course: string } {
   writeFileSync(join(unit, "references.json"), JSON.stringify(refs, null, 2));
   const config = readJson(join(unit, "unit.json"));
   writeFileSync(join(unit, "unit.json"), JSON.stringify({ ...config, public: true }, null, 2));
-  return { root, unit, course };
+  return { root, unit, stage };
 }
 
 function editJson(file: string, edit: (value: Record<string, unknown>) => void): void {
@@ -53,10 +53,10 @@ function editJson(file: string, edit: (value: Record<string, unknown>) => void):
 describe("ログインなしで読める単元", () => {
   it("スライドとまとめに印を付け、知識問題と課題には付けない", () => {
     const { root } = publicUnitFixture();
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.units[0].config.public).toBe(true);
     expect(manifest.tasks).toEqual([]);
-    const lessons = manifest.courses[0].sections?.[0]?.lessons ?? [];
+    const lessons = manifest.stages[0].sections?.[0]?.lessons ?? [];
     expect(lessons.map((l) => [l.id, l.type, l.public === true])).toEqual([
       ["0-1-1", "slides", true],
       ["doc-0-1", "text", true],
@@ -67,8 +67,8 @@ describe("ログインなしで読める単元", () => {
   });
 
   it("印の無い単元のレッスンには public を持たせない", () => {
-    const manifest = buildContentManifest(join(content, "courses"));
-    const lessons = manifest.courses.flatMap((c) => (c.sections ?? []).flatMap((s) => s.lessons));
+    const manifest = buildContentManifest(join(content, "stages"));
+    const lessons = manifest.stages.flatMap((c) => (c.sections ?? []).flatMap((s) => s.lessons));
     expect(lessons.length).toBeGreaterThan(0);
     expect(lessons.some((l) => "public" in l)).toBe(false);
   });
@@ -76,31 +76,31 @@ describe("ログインなしで読める単元", () => {
   it("課題 (tasks/) のある単元には付けられない", () => {
     const { root, unit } = publicUnitFixture();
     cpSync(join(sample, "modules/m0-first-page/tasks"), join(unit, "tasks"), { recursive: true });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow("課題 (tasks/) を置けません");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow("課題 (tasks/) を置けません");
   });
 
-  it("専用星 (audience: granted) の講座には付けられない", () => {
-    const { root, course } = publicUnitFixture();
-    // granted は前提が要る。親になる講座を足し、この講座をその子にする。
-    const parent = join(root, "courses/parent-course");
+  it("専用星 (audience: granted) のステージには付けられない", () => {
+    const { root, stage } = publicUnitFixture();
+    // granted は前提が要る。親になるステージを足し、このステージをその子にする。
+    const parent = join(root, "stages/parent-stage");
     mkdirSync(join(parent, "modules"), { recursive: true });
-    writeFileSync(join(parent, "course.json"), JSON.stringify({ title: "親の講座" }));
-    editJson(join(course, "course.json"), (c) => {
+    writeFileSync(join(parent, "stage.json"), JSON.stringify({ title: "親のステージ" }));
+    editJson(join(stage, "stage.json"), (c) => {
       c.audience = "granted";
-      c.prerequisites = ["parent-course"];
+      c.prerequisites = ["parent-stage"];
     });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(
-      "audience が granted の講座には",
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
+      "audience が granted のステージには",
     );
   });
 
-  it("前提のある講座には付けられない (霧やロックの向こうの本文を漏らさない)", () => {
-    const { root, course } = publicUnitFixture();
-    editJson(join(course, "course.json"), (c) => {
+  it("前提のあるステージには付けられない (霧やロックの向こうの本文を漏らさない)", () => {
+    const { root, stage } = publicUnitFixture();
+    editJson(join(stage, "stage.json"), (c) => {
       c.prerequisites = ["python-basics"];
     });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(
-      "前提のない講座 (スキルツリーの入口) にだけ置けます",
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
+      "前提のないステージ (スキルツリーの入口) にだけ置けます",
     );
   });
 
@@ -109,7 +109,7 @@ describe("ログインなしで読める単元", () => {
     editJson(join(unit, "unit.json"), (u) => {
       u.public = "yes";
     });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow("public: true / false");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow("public: true / false");
   });
 
   it("public: false は印の無い単元と同じ (課題を置ける)", () => {
@@ -118,9 +118,9 @@ describe("ログインなしで読める単元", () => {
     editJson(join(unit, "unit.json"), (u) => {
       u.public = false;
     });
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.tasks).toHaveLength(1);
-    const lessons = manifest.courses[0].sections?.[0]?.lessons ?? [];
+    const lessons = manifest.stages[0].sections?.[0]?.lessons ?? [];
     expect(lessons.some((l) => l.public)).toBe(false);
   });
 });

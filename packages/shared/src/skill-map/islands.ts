@@ -32,7 +32,7 @@
  * ## 設定の変え方
  *
  * 島を足す / 条件を変えるのはこの配列を編集するだけ。`category` は
- * `packages/content` の course.json の category (= D1 `stages.category`) と
+ * `packages/content` の stage.json の category (= D1 `stages.category`) と
  * 対で保つ。`requires` は同テナントのステージ slug。**未知の slug は「決して
  * 満たされない条件」になり、島は誰にも出ない** — 開きすぎより閉じすぎに倒す
  * (`parsePrerequisites` の番兵と同じ判断)。

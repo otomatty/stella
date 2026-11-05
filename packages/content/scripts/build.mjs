@@ -6,8 +6,8 @@
  *
  * --check-only を渡すと Python を起動せず、Node だけで走る検査で打ち切る(CI 用)。
  *
- * 対象パスを省略すると courses/<slug>/modules 配下の全レッスンをビルドする。
- * 全体ビルド時は check_thumbnails.mjs(講座サムネイルの寸法・容量の検査)も走る。
+ * 対象パスを省略すると stages/<slug>/modules 配下の全レッスンをビルドする。
+ * 全体ビルド時は check_thumbnails.mjs(ステージサムネイルの寸法・容量の検査)も走る。
  *
  * 4段構成: check_vocab.mjs(語彙台帳の検査)→ lint-skin.py(図解トークンの検査)→
  *           diagram_export.py(図解のSVG/PNG生成とはみ出し検査)→ build_pptx.py(python-pptxで再構築)
@@ -24,7 +24,7 @@ import {
 import { join, resolve, dirname, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { listCourseModuleRoots } from "./course-roots.mjs";
+import { listStageModuleRoots } from "./stage-roots.mjs";
 import { compareNatural } from "../src/natural-order.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -72,7 +72,7 @@ function checkDocImages(roots) {
 }
 
 const searchRoots =
-  targets.length > 0 ? targets.map((t) => resolve(ROOT, t)) : listCourseModuleRoots();
+  targets.length > 0 ? targets.map((t) => resolve(ROOT, t)) : listStageModuleRoots();
 
 for (const root of searchRoots) {
   if (!existsSync(root)) {
@@ -122,14 +122,14 @@ const vocab = spawnSync(
   "node",
   [
     join(ROOT, "scripts", "check_vocab.mjs"),
-    // 対象未指定なら check_vocab 側で講座ごとに検査する（混ぜると語彙が干渉する）。
+    // 対象未指定なら check_vocab 側でステージごとに検査する（混ぜると語彙が干渉する）。
     ...(targets.length > 0 ? searchRoots : []),
   ],
   { encoding: "utf8", stdio: "inherit" },
 );
 if (vocab.status !== 0) process.exit(vocab.status ?? 1);
 
-// 講座サムネイルは講座単位 (modules の外) なので、対象を絞らない全体ビルドでだけ検査する。
+// ステージサムネイルはステージ単位 (modules の外) なので、対象を絞らない全体ビルドでだけ検査する。
 if (targets.length === 0) {
   const thumbs = spawnSync("node", [join(ROOT, "scripts", "check_thumbnails.mjs")], {
     encoding: "utf8",
@@ -197,10 +197,10 @@ if (skipped > 0) console.log(`pptx: ${skipped} 件スキップ(最新)`);
  * 収録・アップロード用のファイル名を決める。
  * トピック形式は front-matter の id を先頭に付ける(例: 1-1-2-const-and-let.pptx)。
  * ファイル名を自然順に並べると収録順になり、スライド・doc.md の見出しとIDが一致する。
- * id を持たない旧形式は、衝突しないよう courses 配下の相対パスを連結する。
+ * id を持たない旧形式は、衝突しないよう stages 配下の相対パスを連結する。
  */
-function courseSlugFromSlide(slidePath) {
-  const rel = relative(join(ROOT, "courses"), slidePath);
+function stageSlugFromSlide(slidePath) {
+  const rel = relative(join(ROOT, "stages"), slidePath);
   if (!rel || rel.startsWith("..")) return null;
   return rel.split(/[\\/]/)[0];
 }
@@ -208,12 +208,12 @@ function courseSlugFromSlide(slidePath) {
 function distName(slidePath) {
   const dir = dirname(slidePath);
   const id = /^id:\s*(\S+)\s*$/m.exec(readFileSync(slidePath, "utf8").split("\n---")[0])?.[1];
-  const slug = courseSlugFromSlide(slidePath);
+  const slug = stageSlugFromSlide(slidePath);
   if (id) {
     const topic = `${id}-${basename(dir).replace(/^t\d+-/, "")}`;
     return slug ? `${slug}-${topic}` : topic;
   }
-  return relative(join(ROOT, "courses"), dir).split(/[\\/]/).join("_");
+  return relative(join(ROOT, "stages"), dir).split(/[\\/]/).join("_");
 }
 
 // Google Slides等へ一括アップロードしやすいよう、名前を付けて1フォルダに集める

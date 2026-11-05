@@ -237,7 +237,7 @@ describe("layoutRadialSkillTree", () => {
   });
 
   /**
-   * 本番の前提グラフそのもの (`packages/content/courses/<slug>/course.json`)。
+   * 本番の前提グラフそのもの (`packages/content/stages/<slug>/stage.json`)。
    * 「外周ほど星がまばらになる」の回帰の見張り役: 同心円は半径が深さに比例して
    * 伸びるので、角度を扇の幅で割ると深い星ほど離れていく。星座のように、深さに
    * 関係なく「親のすぐ先」に置けているかを距離で見る。
@@ -326,7 +326,7 @@ describe("layoutRadialSkillTree", () => {
         // 何かの前提から 1 歩以内」を見る。
         // 島は円全体に角度を配る (fillCircle) ので、同じ親の兄弟が根の反対側へ回る
         // ことがある — 旧 AI駆動開発の島の形 (claude-chat-basics 直下の cowork / code) が実際に
-        // そうなる (1.7〜2.6 歩)。本番の course.json どおりの姿なので、ここでは
+        // そうなる (1.7〜2.6 歩)。本番の stage.json どおりの姿なので、ここでは
         // 例外として見逃し、島の詰め方は別途扱う。
         if (KNOWN_ISLAND_SPREAD.has(to.node.id)) continue;
         const hops = layout.edges

@@ -1,8 +1,8 @@
 /**
  * 教材動画の台本 (narration.json) を Claude で下書きする (設計書の ① 台本)。
  *
- *   bun run --filter=@stella/content narrate -- courses/it-basics            # 台本が無い / 古いトピックだけ
- *   bun run --filter=@stella/content narrate -- courses/it-basics --batch    # Message Batches (費用半額・非同期)
+ *   bun run --filter=@stella/content narrate -- stages/it-basics            # 台本が無い / 古いトピックだけ
+ *   bun run --filter=@stella/content narrate -- stages/it-basics --batch    # Message Batches (費用半額・非同期)
  *   bun run --filter=@stella/content narrate -- <path> --force               # 台本があっても作り直す
  *   bun run --filter=@stella/content narrate -- <path> --accept              # LLM を呼ばず slidesHash だけ承認し直す
  *   bun run --filter=@stella/content narrate -- <path> --dry-run             # 送るプロンプトを表示するだけ
@@ -100,7 +100,7 @@ function userPrompt(topic: NarrationTopic): string {
     ].join("\n"),
   );
   return [
-    `講座: ${topic.courseTitle}`,
+    `ステージ: ${topic.courseTitle}`,
     `トピック: ${topic.id} ${topic.title}`,
     `takeaway: ${topic.takeaway}`,
     `このトピックで導入する語: ${topic.introduces.join("、") || "(なし)"}`,
@@ -188,7 +188,7 @@ async function draftInteractive(
     const narration = toNarration(topic, output);
     issues = validateTopic(topic, narration);
     if (!issues.some((i) => i.level === "error")) return narration;
-    console.warn(`  ${topic.courseSlug}/${topic.id}: 検証エラー (試行 ${attempt}/${MAX_ATTEMPTS})`);
+    console.warn(`  ${topic.stageSlug}/${topic.id}: 検証エラー (試行 ${attempt}/${MAX_ATTEMPTS})`);
     if (first && attempt === 1) {
       // バッチの結果は会話履歴を持たないので、出力を assistant として積み直す。
       messages.push({ role: "assistant", content: JSON.stringify(first) });
@@ -274,7 +274,7 @@ async function main(): Promise<void> {
 
   const failed: string[] = [];
   for (const [i, topic] of needs.entries()) {
-    const label = `${topic.courseSlug}/${topic.id}`;
+    const label = `${topic.stageSlug}/${topic.id}`;
     try {
       const narration = await draftInteractive(client, topic, firsts.get(`t${i}`));
       writeFileSync(topic.narrationFile, stringifyNarration(narration));

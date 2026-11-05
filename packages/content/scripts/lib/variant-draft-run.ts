@@ -84,7 +84,7 @@ export interface DraftTarget {
 interface ParentTask {
   id: string;
   pattern: string;
-  /** `<講座>/<単元>` */
+  /** `<ステージ>/<単元>` */
   idPrefix: string;
   /** 典型的な誤答を手元で確かめられる runner か。CI と公開・環境診断の類題は誤答を置けない。 */
   mutants: boolean;
@@ -143,7 +143,7 @@ function sectionOf(markdown: string, start: string, end?: string): string {
 
 /** 書き方の決まり (ADDING_COURSE の課題と類題の節・STYLE_GUIDE の文体とコード例)。 */
 export function draftGuide(contentRoot: string): string {
-  const adding = readFileSync(join(contentRoot, "ADDING_COURSE.md"), "utf8");
+  const adding = readFileSync(join(contentRoot, "ADDING_STAGE.md"), "utf8");
   const style = readFileSync(join(contentRoot, "STYLE_GUIDE.md"), "utf8");
   return [
     sectionOf(adding, "## 新カリキュラムの format 2", "### ログインなしで読める単元"),
@@ -292,7 +292,7 @@ function repairRequest(first: DraftRequest, draft: unknown, errors: string[]): D
 }
 
 /**
- * 教材の一時の複製 (台帳・パターン・環境・参照元と講座)。講座は前提がほかの講座を指すので
+ * 教材の一時の複製 (台帳・パターン・環境・参照元とステージ)。ステージは前提がほかのステージを指すので
  * 全部を写す (教材は全体で 10MB 程度)。生成物 (`dist`) は写さない。
  */
 function scratchCopy(target: DraftTarget): { root: string; taskDir: string } {
@@ -303,12 +303,12 @@ function scratchCopy(target: DraftTarget): { root: string; taskDir: string } {
     "coding-rules.md",
     "environments",
     "sources",
-    "courses",
+    "stages",
   ])
     if (existsSync(join(target.contentRoot, name)))
       cpSync(join(target.contentRoot, name), join(root, name), { recursive: true });
-  const rel = relative(join(target.contentRoot, "courses"), target.taskDir).split("\\").join("/");
-  return { root, taskDir: join(root, "courses", rel) };
+  const rel = relative(join(target.contentRoot, "stages"), target.taskDir).split("\\").join("/");
+  return { root, taskDir: join(root, "stages", rel) };
 }
 
 /** 一時の複製で、類題 (ID) が教材として読め、解答例が通り、誤答が落ちるかを確かめる。 */
@@ -319,7 +319,7 @@ async function checkVariants(
 ): Promise<string[]> {
   let tasks: ReturnType<typeof buildContentManifest>["tasks"];
   try {
-    tasks = buildContentManifest(join(root, "courses")).tasks;
+    tasks = buildContentManifest(join(root, "stages")).tasks;
   } catch (err) {
     return [`教材の検査に落ちました: ${(err as Error).message}`];
   }
@@ -397,7 +397,7 @@ async function verifyParamsDraft(
     const existing = readParams(dir, template);
     writeFileSync(join(dir, "params.json"), `${JSON.stringify([...existing, params], null, 2)}\n`);
     try {
-      syncVariantTemplates(join(scratch.root, "courses"), {
+      syncVariantTemplates(join(scratch.root, "stages"), {
         check: false,
         filter: (dir) => dir === scratch.taskDir,
       });
@@ -513,7 +513,7 @@ export async function runDraftGroup(
         join(templateDir, "params.json"),
         `${JSON.stringify([...current, ...accepted], null, 2)}\n`,
       );
-      syncVariantTemplates(join(target.contentRoot, "courses"), {
+      syncVariantTemplates(join(target.contentRoot, "stages"), {
         check: false,
         filter: (dir) => dir === target.taskDir,
       });

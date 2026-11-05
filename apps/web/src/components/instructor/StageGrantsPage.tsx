@@ -152,8 +152,8 @@ export function StageGrantsPage({ backendEnabled }: { backendEnabled: boolean })
         </Card>
       ) : stages.length === 0 ? (
         <Card className="p-12 text-center text-sm text-ink-3">
-          audience: granted の講座がまだありません。 packages/content の course.json に audience
-          と親 (prerequisites) を書いて seed してください。
+          audience: granted の講座がまだありません。 packages/content の stage.json に audience と親
+          (prerequisites) を書いて seed してください。
         </Card>
       ) : (
         <div className="flex flex-col gap-4">

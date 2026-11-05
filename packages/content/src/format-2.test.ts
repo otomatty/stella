@@ -10,7 +10,7 @@ import { collectPdfTargets, pdfFileName, pdfObjectKey, pdfSourceHash } from "./m
 import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sample = join(content, "courses/dev-env-basics");
+const sample = join(content, "stages/dev-env-basics");
 const taskFile = join(sample, "modules/m0-first-page/tasks/q01-first-page/task.json");
 const roots: string[] = [];
 afterEach(() => {
@@ -19,16 +19,16 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-format-2-"));
   roots.push(root);
-  mkdirSync(join(root, "courses"));
-  cpSync(sample, join(root, "courses/dev-env-basics"), { recursive: true });
+  mkdirSync(join(root, "stages"));
+  cpSync(sample, join(root, "stages/dev-env-basics"), { recursive: true });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
   return root;
 }
 describe("format 2 の教材", () => {
   it("単元と課題を読み込み、runtime に執筆用の情報と解答を混ぜない", () => {
-    const manifest = buildContentManifest(join(fixture(), "courses"));
-    expect(manifest.courses[0]).toMatchObject({
+    const manifest = buildContentManifest(join(fixture(), "stages"));
+    expect(manifest.stages[0]).toMatchObject({
       format: 2,
       title: "開発環境とWebの入口",
       duration: 35,
@@ -56,7 +56,7 @@ describe("format 2 の教材", () => {
   });
   it("非公開領域の本文は、公開用と似た名前でも bundle・レッスン・PDF に混ぜない", () => {
     const root = fixture();
-    const taskDir = join(root, "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page");
+    const taskDir = join(root, "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page");
     const marker = "PRIVATE_CONTENT_MARKER_28";
     for (const rel of [
       "private/solution/README.md",
@@ -69,7 +69,7 @@ describe("format 2 の教材", () => {
       join(taskDir, "hints.md"),
       `## ヒント1 方針\n${marker}\n\n## ヒント2\n${marker}\n`,
     );
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     const task = manifest.tasks[0];
     expect(
       Object.values(task.privateFiles).some((v) => Buffer.from(v, "base64").toString() === marker),
@@ -78,7 +78,7 @@ describe("format 2 の教材", () => {
       .map((v) => Buffer.from(v, "base64").toString())
       .join("\n");
     expect(publicText).not.toContain(marker);
-    expect(JSON.stringify(manifest.courses)).not.toContain(marker);
+    expect(JSON.stringify(manifest.stages)).not.toContain(marker);
     expect(collectPdfTargets(manifest).some((target) => target.source.includes(marker))).toBe(
       false,
     );
@@ -89,33 +89,33 @@ describe("format 2 の教材", () => {
       const root = fixture();
       const file = join(
         root,
-        "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter",
+        "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter",
         rel,
       );
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, "starter must not replace authored files");
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow("配布ファイルが衝突");
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow("配布ファイルが衝突");
     },
   );
   it("starter の .stella 内にはファイルを置けない", () => {
     const root = fixture();
     const dir = join(
       root,
-      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/.stella",
+      "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/.stella",
     );
     mkdirSync(dir);
     writeFileSync(join(dir, "task.json"), "{}");
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(".stella を置けません");
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(".stella を置けません");
   });
   it("衝突しない starter/tests のファイルは課題側の tests と一緒に配布する", () => {
     const root = fixture();
     const dir = join(
       root,
-      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/tests",
+      "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/starter/tests",
     );
     mkdirSync(dir);
     writeFileSync(join(dir, "learner-notes.txt"), "learner notes");
-    const files = buildContentManifest(join(root, "courses")).tasks[0].bundle.files;
+    const files = buildContentManifest(join(root, "stages")).tasks[0].bundle.files;
     expect(Buffer.from(files["tests/learner-notes.txt"], "base64").toString()).toBe(
       "learner notes",
     );
@@ -125,7 +125,7 @@ describe("format 2 の教材", () => {
     const root = fixture();
     const path = join(
       root,
-      "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/task.json",
+      "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/task.json",
     );
     const original = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
     for (const patch of [
@@ -136,7 +136,7 @@ describe("format 2 の教材", () => {
       { id: "dev-env-basics/m0-first-page/other" },
     ]) {
       writeFileSync(path, JSON.stringify({ ...original, ...patch }));
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow();
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow();
     }
   });
   it("CI と公開の課題は、確かめるワークフローを必須にし、配布の定義に写す (07 §5.5)", () => {
@@ -220,9 +220,9 @@ describe("format 2 の教材", () => {
   });
   describe("hints.md の段", () => {
     const hintsFile = (root: string) =>
-      join(root, "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/hints.md");
+      join(root, "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/hints.md");
     it("見本の hints.md を段に分け、private の素材として持つ", () => {
-      const task = buildContentManifest(join(fixture(), "courses")).tasks[0];
+      const task = buildContentManifest(join(fixture(), "stages")).tasks[0];
       expect(task.definition.support.hintLevels).toBe(2);
       expect(Buffer.from(task.privateFiles["hints.md"], "base64").toString()).toContain(
         "## ヒント2 手がかりのコード",
@@ -235,30 +235,30 @@ describe("format 2 の教材", () => {
     ])("%s hints.md は検査で落とす", (_label, markdown, message) => {
       const root = fixture();
       writeFileSync(hintsFile(root), markdown);
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow(message);
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow(message);
     });
     it("非公開の素材が D1 の 1 行に収まらなければ落とす", () => {
       const root = fixture();
       writeFileSync(
         join(
           root,
-          "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/private/solution/big.txt",
+          "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/private/solution/big.txt",
         ),
         "x".repeat(TASK_BUNDLE_LIMITS.fileBytes + 1),
       );
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow("非公開の素材");
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow("非公開の素材");
     });
   });
   it("課題ごとに課題文のレッスンを作り、seed が課題と結ぶキーを持つ", () => {
-    const manifest = buildContentManifest(join(fixture(), "courses"));
-    const lessons = (manifest.courses[0]?.sections ?? []).flatMap((section) => section.lessons);
+    const manifest = buildContentManifest(join(fixture(), "stages"));
+    const lessons = (manifest.stages[0]?.sections ?? []).flatMap((section) => section.lessons);
     const task = manifest.tasks[0];
     expect(task?.lessonId).toBe("task-m0-first-page-q01-first-page");
     expect(lessons.find((lesson) => lesson.id === task?.lessonId)?.type).toBe("text");
   });
   describe("固定した開始点 (fixed-start/)", () => {
     // 開始点は前の課題の実装を含む。見本の q01 を写した後の課題 q02 に置き、q01 を含むものとする。
-    const unitRel = "courses/dev-env-basics/modules/m0-first-page/tasks";
+    const unitRel = "stages/dev-env-basics/modules/m0-first-page/tasks";
     const earlierId = "dev-env-basics/m0-first-page/q01-first-page";
     const taskId = "dev-env-basics/m0-first-page/q02-next-page";
     const taskRel = `${unitRel}/q02-next-page`;
@@ -283,7 +283,7 @@ describe("format 2 の教材", () => {
       }
       return root;
     }
-    const build = (root: string) => buildContentManifest(join(root, "courses"));
+    const build = (root: string) => buildContentManifest(join(root, "stages"));
     const taskOf = (root: string) => build(root).tasks.find((t) => t.definition.id === taskId);
     it("bundle に混ぜず、tests・README・task.json は通常の配布と同じにする", () => {
       const plain = taskOf(withNextTask());
@@ -325,7 +325,7 @@ describe("format 2 の教材", () => {
         [[], "1 つ以上"],
         [[earlierId, earlierId], "重複"],
         [[taskId], "この課題自身"],
-        [["dev-env-basics/q01-first-page"], "<講座>/<単元>/<課題>"],
+        [["dev-env-basics/q01-first-page"], "<ステージ>/<単元>/<課題>"],
         [["dev-env-basics/m0-first-page/q09-missing"], "見つかりません"],
         [["python-basics/m0-first-page/q01-first-page"], "見つかりません"],
       ] as const)
@@ -394,28 +394,28 @@ describe("format 2 の教材", () => {
   });
   it("新形式PDFは公開解説と課題文だけで、旧形式は解答編を維持する", () => {
     const targets = collectPdfTargets();
-    const fresh = targets.filter((t) => t.courseSlug === "dev-env-basics");
+    const fresh = targets.filter((t) => t.stageSlug === "dev-env-basics");
     expect(fresh.map((t) => t.kind)).toEqual(["doc", "task"]);
     expect(fresh.find((t) => t.kind === "task")?.source).toContain("単元の参照元");
     expect(fresh.some((t) => /<details>|解答例/.test(t.source))).toBe(false);
     expect(
       targets.some(
         (t) =>
-          t.courseSlug === "salesforce-dev-basics" &&
+          t.stageSlug === "salesforce-dev-basics" &&
           t.kind === "practice" &&
           t.source.includes("解答例と解説"),
       ),
     ).toBe(true);
   });
-  it("OS 別のブロックを含むまとめは、pdfByOs の講座では OS ごとの PDF にする", () => {
+  it("OS 別のブロックを含むまとめは、pdfByOs のステージでは OS ごとの PDF にする", () => {
     const root = fixture();
-    const course = join(root, "courses/dev-env-basics");
-    const doc = join(course, "modules/m0-first-page/l1-save-and-preview/doc.md");
+    const stage = join(root, "stages/dev-env-basics");
+    const doc = join(stage, "modules/m0-first-page/l1-save-and-preview/doc.md");
     writeFileSync(
       doc,
       `${readFileSync(doc, "utf8")}\n:::os windows\nPowerShell で確認します。\n:::\n\n:::os macos\nターミナルで確認します。\n:::\n`,
     );
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     expect(manifest.pdfByOs).toEqual(["dev-env-basics"]);
     const byOs = collectPdfTargets(manifest).filter((t) => t.lessonId === "doc-0-1");
     expect(byOs.map((t) => t.os)).toEqual(["windows", "macos"]);
@@ -432,11 +432,11 @@ describe("format 2 の教材", () => {
         .map((t) => t.os),
     ).toEqual([undefined]);
 
-    // pdfByOs を外した講座は、1 つの PDF に両方を並べる (キーは OS を持たない計算のまま)
-    const config = JSON.parse(readFileSync(join(course, "course.json"), "utf8"));
+    // pdfByOs を外したステージは、1 つの PDF に両方を並べる (キーは OS を持たない計算のまま)
+    const config = JSON.parse(readFileSync(join(stage, "stage.json"), "utf8"));
     delete config.pdfByOs;
-    writeFileSync(join(course, "course.json"), JSON.stringify(config));
-    const combined = collectPdfTargets(buildContentManifest(join(root, "courses"))).filter(
+    writeFileSync(join(stage, "stage.json"), JSON.stringify(config));
+    const combined = collectPdfTargets(buildContentManifest(join(root, "stages"))).filter(
       (t) => t.lessonId === "doc-0-1",
     );
     expect(combined).toHaveLength(1);
@@ -446,7 +446,7 @@ describe("format 2 の教材", () => {
       pdfSourceHash(combined[0] ?? byOs[0]),
     );
     config.pdfByOs = "yes";
-    writeFileSync(join(course, "course.json"), JSON.stringify(config));
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/pdfByOs/);
+    writeFileSync(join(stage, "stage.json"), JSON.stringify(config));
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/pdfByOs/);
   });
 });

@@ -13,7 +13,7 @@
 import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCourseModuleRoots } from "./course-roots.mjs";
+import { listStageModuleRoots } from "./stage-roots.mjs";
 import { compareNatural } from "../src/natural-order.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -111,9 +111,9 @@ const targets = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 if (targets.length > 0) {
   if (!checkRoots(targets.map((t) => resolve(ROOT, t)))) process.exit(1);
 } else {
-  const roots = listCourseModuleRoots();
+  const roots = listStageModuleRoots();
   if (roots.length === 0) {
-    console.error("courses/<slug>/modules が見つかりません。");
+    console.error("stages/<slug>/modules が見つかりません。");
     process.exit(1);
   }
   let ok = true;

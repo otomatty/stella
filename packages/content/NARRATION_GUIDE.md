@@ -61,7 +61,7 @@ STYLE_GUIDE のスライドの流れに合わせます。
 
 ## 読み
 
-- 英単語・略語・読み違えやすい用語は、まず**読み辞書** (`narration/readings.json`、講座ごとの `courses/<slug>/narration-readings.json`) に足します。辞書は全台本に効き、TTS を替えても使えます
+- 英単語・略語・読み違えやすい用語は、まず**読み辞書** (`narration/readings.json`、講座ごとの `stages/<slug>/narration-readings.json`) に足します。辞書は全台本に効き、TTS を替えても使えます
 - 辞書で表せない一回きりの読みだけ `speech` に書きます
 - 数字の読みが自然でないとき (「0.1」を「れいてんいち」と読ませたい等) は `speech` で直します
 
@@ -69,7 +69,7 @@ STYLE_GUIDE のスライドの流れに合わせます。
 
 ```bash
 bun run --filter=@stella/content narration:check            # 台本のある全トピック
-bun run --filter=@stella/content narration:check -- courses/it-basics
+bun run --filter=@stella/content narration:check -- stages/it-basics
 ```
 
 | 検査 | 失敗の扱い |

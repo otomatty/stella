@@ -2,8 +2,8 @@
  * runner のテンプレートから課題フォルダーの下書きを置く。
  * 既存の課題フォルダーは上書きしない。外部プロセスは起動しない。
  *
- * node <このファイル> task --content <packages/content> --courses <courses> \
- *   --course <slug> --unit <単元> --task <課題> --runner <runner> --kind <kind> --title <題>
+ * node <このファイル> task --content <packages/content> --stages <stages> \
+ *   --stage <slug> --unit <単元> --task <課題> --runner <runner> --kind <kind> --title <題>
  * node <このファイル> help
  */
 
@@ -30,13 +30,13 @@ const KINDS = [
 
 const HELP = `使い方:
   node scripts/scaffold.mjs task \\
-    --content <packages/content のパス> --courses <courses のパス> \\
-    --course <slug> --unit <単元フォルダー> --task <課題フォルダー> \\
+    --content <packages/content のパス> --stages <stages のパス> \\
+    --stage <slug> --unit <単元フォルダー> --task <課題フォルダー> \\
     --runner <runner> --kind <kind> --title <題>
   node scripts/scaffold.mjs help
 
-STELLA 本体の --content は packages/content、--courses は packages/content/courses。
-外部リポジトリでは --content .stella/packages/content、--courses courses。
+STELLA 本体の --content は packages/content、--stages は packages/content/stages。
+外部リポジトリでは --content .stella/packages/content、--stages stages。旧い courses/ のリポジトリでは --stages courses。
 templates/runners/<runner>/ の starter と tests を課題へ写し、task.json の下書きを書く。
 既存の課題フォルダーがあるときは何も書かずに止まる。
 `;
@@ -130,8 +130,8 @@ function unitSource(referencesFile) {
   return undefined;
 }
 
-function provisional(content, courses, course, unit, taskName) {
-  const tasksDir = join(courses, course, "modules", unit, "tasks");
+function provisional(content, stages, stage, unit, taskName) {
+  const tasksDir = join(stages, stage, "modules", unit, "tasks");
   const sibling = siblingDraft(tasksDir, taskName);
   if (sibling) return sibling;
   const pattern = firstId(join(content, "patterns.json"));
@@ -141,7 +141,7 @@ function provisional(content, courses, course, unit, taskName) {
       "仮の pattern と skills を取れません。同じ単元に課題を置くか、content の patterns.json と skills.json を読める状態にしてください。",
     );
   }
-  const source = unitSource(join(courses, course, "modules", unit, "references.json"));
+  const source = unitSource(join(stages, stage, "modules", unit, "references.json"));
   return {
     pattern,
     skills: { uses: [skill], assesses: [skill] },
@@ -212,11 +212,11 @@ function main() {
   }
   if (command !== "task") fail(`不明なコマンドです: ${command}\n${HELP}`);
   const args = parseArgs(rest);
-  for (const key of ["content", "courses", "course", "unit", "task", "runner", "kind", "title"]) {
+  for (const key of ["content", "stages", "stage", "unit", "task", "runner", "kind", "title"]) {
     if (!args[key] || !String(args[key]).trim()) fail(`--${key} が必要です\n${HELP}`);
   }
-  const { content, courses, course, unit, task, runner, kind, title } = args;
-  segment(course, "--course");
+  const { content, stages, stage, unit, task, runner, kind, title } = args;
+  segment(stage, "--stage");
   segment(unit, "--unit");
   segment(task, "--task");
   segment(runner, "--runner");
@@ -234,14 +234,14 @@ function main() {
   const fields = readFields(templateDir, runner);
   assertNoSymlink(templateDir);
 
-  const taskDir = join(courses, course, "modules", unit, "tasks", task);
+  const taskDir = join(stages, stage, "modules", unit, "tasks", task);
   if (existsSync(taskDir)) fail(`課題フォルダーが既にあります。上書きしません: ${taskDir}`);
 
-  const picked = provisional(content, courses, course, unit, task);
+  const picked = provisional(content, stages, stage, unit, task);
   const support = supportFor(kind);
   const explanation = ["independent", "integration", "assessment-a", "assessment-b"].includes(kind);
   const definition = {
-    id: `${course}/${unit}/${task}`,
+    id: `${stage}/${unit}/${task}`,
     title: title.trim(),
     kind,
     pattern: picked.pattern,

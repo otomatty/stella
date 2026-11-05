@@ -83,7 +83,7 @@ export interface Stage {
   thumbnailPath?: string;
   /**
    * スキルツリーの星に出す講座アイコンの R2 パス (`stages.icon_path` 由来)。
-   * 正本は `packages/content/courses/<slug>/icon.svg` (単色シルエット)。
+   * 正本は `packages/content/stages/<slug>/icon.svg` (単色シルエット)。
    * 未設定なら星は状態グリフ (★/▶/🔒/✨) のまま。
    */
   iconPath?: string;
@@ -133,16 +133,6 @@ export interface Stage {
     requireAssignmentPass: boolean;
   };
 }
-
-/**
- * 教材リポジトリ (`packages/content`) 向けの別名。
- *
- * 教材側は 「講座 = course」 の語彙のまま (`courses/<slug>/course.json`) で、 course →
- * stage の写像は seed exporter (`packages/shared/scripts/export-seed-sql.ts`) が担う。
- * `packages/content/src/manifest.ts` / `material-pdf.ts` はこの型名で参照するので、
- * 境界としてここに残す。 アプリ側の新規コードは `Stage` を使うこと。
- */
-export type Course = Stage;
 
 export interface ReviewItem {
   id: string;

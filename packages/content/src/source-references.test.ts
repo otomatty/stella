@@ -48,8 +48,8 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-sources-"));
   roots.push(root);
-  mkdirSync(join(root, "courses"));
-  cpSync(join(content, "courses/dev-env-basics"), join(root, "courses/dev-env-basics"), {
+  mkdirSync(join(root, "stages"));
+  cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
     recursive: true,
   });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
@@ -63,7 +63,7 @@ function fixture() {
     scope: "test fixture",
   };
   writeFileSync(join(root, "sources/registry.json"), JSON.stringify(registry));
-  const unit = join(root, "courses/dev-env-basics/modules/m0-first-page");
+  const unit = join(root, "stages/dev-env-basics/modules/m0-first-page");
   const refs = JSON.parse(readFileSync(join(unit, "references.json"), "utf8"));
   for (const use of refs.uses) use.reviewStatus = "approved";
   writeFileSync(join(unit, "references.json"), JSON.stringify(refs));
@@ -134,7 +134,7 @@ describe("参照元の公開ゲートと表示", () => {
       [
         "単元名",
         (_unit, root) =>
-          patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+          patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
             (row.modules as Record<string, string>)["m0-first-page"] = "変更した単元名";
           }),
       ],
@@ -219,7 +219,7 @@ describe("参照元の公開ゲートと表示", () => {
       writeFileSync(starterMd, "---\nsourceRefs: [b]\n---\n本文\n");
       expect(unitContentHash(unit)).not.toBe(afterNested);
     });
-    describe("講座と課題が指す環境定義を同じ ID のままでも指紋に含める", () => {
+    describe("ステージと課題が指す環境定義を同じ ID のままでも指紋に含める", () => {
       it.each<[string, (env: Record<string, unknown>) => void]>([
         ["要件", (env) => (env.requirements = { node: { min: "22.12.0" } })],
         ["対象ブラウザー", (env) => (env.browser = "Chromium 140 以降")],
@@ -254,7 +254,7 @@ describe("参照元の公開ゲートと表示", () => {
         reReview(unit, "2");
         expect(checkSourceReferences(root)).toEqual([]);
       });
-      it("講座と違う環境を指す課題はその環境定義も含め、キー順だけの違いでは変えない", () => {
+      it("ステージと違う環境を指す課題はその環境定義も含め、キー順だけの違いでは変えない", () => {
         const { root, unit } = fixture();
         const other = join(root, "environments/node-22.json");
         writeFileSync(other, JSON.stringify({ id: "node-22", version: "1", requirements: {} }));
@@ -288,8 +288,8 @@ describe("参照元の公開ゲートと表示", () => {
       for (const line of [
         ".DS_Store",
         "node_modules",
-        "packages/content/courses/**/slides.pptx",
-        "packages/content/courses/**/*.diagram.png",
+        "packages/content/stages/**/slides.pptx",
+        "packages/content/stages/**/*.diagram.png",
         "packages/content/**/__pycache__/",
       ])
         expect(ignored).toContain(line);
@@ -302,14 +302,14 @@ describe("参照元の公開ゲートと表示", () => {
     it.each([undefined, "", "abc", "A".repeat(64), `${"0".repeat(63)}g`])(
       "確認した内容の指紋 contentHash (%s) が無い・不正な references.json を拒否する",
       (contentHash) => {
-        const file = join(content, "courses/dev-env-basics/modules/m0-first-page/references.json");
+        const file = join(content, "stages/dev-env-basics/modules/m0-first-page/references.json");
         const row = { ...JSON.parse(readFileSync(file, "utf8")), contentHash };
         expect(() => parseUnitReferences(row)).toThrow("contentHash");
       },
     );
     it("旧単元の references.json も版と内容を結び付け、改訂した単元ではエラーにする", () => {
       const { root, unit } = fixture();
-      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
         delete row.format;
       });
       reReview(unit, "1");
@@ -357,7 +357,7 @@ describe("参照元の公開ゲートと表示", () => {
   });
   it("旧形式は未改訂の不足を警告、新規・本文改訂をエラーにする", () => {
     const { root, unit } = fixture();
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       delete row.format;
     });
     rmSync(join(unit, "references.json"));
@@ -366,7 +366,7 @@ describe("参照元の公開ゲートと表示", () => {
     const doc = join(unit, "l1-save-and-preview/doc.md");
     writeFileSync(doc, readFileSync(doc, "utf8") + "\n新しい説明を加える。\n");
     expect(checkSourceReferences(root, baseline).some((d) => d.severity === "error")).toBe(true);
-    cpSync(unit, join(root, "courses/dev-env-basics/modules/m1-new"), { recursive: true });
+    cpSync(unit, join(root, "stages/dev-env-basics/modules/m1-new"), { recursive: true });
     expect(
       checkSourceReferences(root, baseline).some(
         (d) => d.unitId.endsWith("/m1-new") && d.severity === "error",
@@ -387,12 +387,12 @@ describe("参照元の公開ゲートと表示", () => {
   });
   it("基準に無い旧単元は例外を記録しても必須のまま", () => {
     const { root, unit } = fixture();
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       delete row.format;
     });
     rmSync(join(unit, "references.json"));
     const baseline = createLegacyBaseline(root, "test-base");
-    const added = join(root, "courses/dev-env-basics/modules/m1-new");
+    const added = join(root, "stages/dev-env-basics/modules/m1-new");
     cpSync(unit, added, { recursive: true });
     baseline.exemptions.push({
       unitId: "dev-env-basics/m1-new",
@@ -417,7 +417,7 @@ describe("参照元の公開ゲートと表示", () => {
   describe("旧単元の例外は実在する確認日の記録だけを認める", () => {
     function revisedWithExemption(reviewedAt: string) {
       const { root, unit } = fixture();
-      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
         delete row.format;
       });
       rmSync(join(unit, "references.json"));
@@ -455,7 +455,7 @@ describe("参照元の公開ゲートと表示", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);
     writeFileSync(join(unit, "references.json"), "{}");
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       row.parent = "another";
       row.prerequisites = ["another"];
       row.appearances = ["new-island"];
@@ -524,14 +524,14 @@ describe("参照元の公開ゲートと表示", () => {
     expect(body).not.toContain("sourceRefs");
     expect(body).toContain("# 本文");
   });
-  it("講座の予定時間 (plannedHours) の追加・変更では指紋を変えない", () => {
+  it("ステージの予定時間 (plannedHours) の追加・変更では指紋を変えない", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       row.plannedHours = 123;
     });
     expect(unitContentHash(unit)).toBe(before);
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       delete row.plannedHours;
     });
     expect(unitContentHash(unit)).toBe(before);
@@ -539,7 +539,7 @@ describe("参照元の公開ゲートと表示", () => {
   it("スキルツリーの掲載 (audience・category・theme) の変更では指紋を変えない", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);
-    patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+    patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
       row.audience = "granted";
       row.category = "Python";
       row.theme = "別のテーマ";
@@ -550,7 +550,7 @@ describe("参照元の公開ゲートと表示", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);
     for (const value of [false, true, undefined]) {
-      patch(join(root, "courses/dev-env-basics/course.json"), (row) => {
+      patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
         if (value === undefined) delete row.pdfByOs;
         else row.pdfByOs = value;
       });
@@ -561,13 +561,13 @@ describe("参照元の公開ゲートと表示", () => {
     "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
     (field) => {
       const { root } = fixture();
-      const course = join(root, "courses/fe-kamoku-b");
-      cpSync(join(content, "courses/fe-kamoku-b"), course, { recursive: true });
+      const stage = join(root, "stages/fe-kamoku-b");
+      cpSync(join(content, "stages/fe-kamoku-b"), stage, { recursive: true });
       const baseline = createLegacyBaseline(root, "test-base");
       expect(checkSourceReferences(root, baseline).every((d) => d.severity === "warning")).toBe(
         true,
       );
-      patch(join(course, "course.json"), (row) => {
+      patch(join(stage, "stage.json"), (row) => {
         const exercises = row.exercises as Record<string, Record<string, string>[]>;
         exercises["1-1"][0][field] = `changed-${field}`;
       });
@@ -575,12 +575,12 @@ describe("参照元の公開ゲートと表示", () => {
       expect(new Set(errors.map((d) => d.unitId))).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
     },
   );
-  it("講座の到達目標の変更は全単元、単元名の変更は該当単元を改訂済みとして扱う", () => {
+  it("ステージの到達目標の変更は全単元、単元名の変更は該当単元を改訂済みとして扱う", () => {
     const { root } = fixture();
-    const course = join(root, "courses/fe-kamoku-b");
-    cpSync(join(content, "courses/fe-kamoku-b"), course, { recursive: true });
+    const stage = join(root, "stages/fe-kamoku-b");
+    cpSync(join(content, "stages/fe-kamoku-b"), stage, { recursive: true });
     const baseline = createLegacyBaseline(root, "test-base");
-    patch(join(course, "course.json"), (row) => {
+    patch(join(stage, "stage.json"), (row) => {
       (row.modules as Record<string, string>)["m1-pseudo"] = "変更した単元名";
     });
     const errors = () =>
@@ -590,7 +590,7 @@ describe("参照元の公開ゲートと表示", () => {
           .map((d) => d.unitId),
       );
     expect(errors()).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
-    patch(join(course, "course.json"), (row) => {
+    patch(join(stage, "stage.json"), (row) => {
       row.canDo = "変更した到達目標";
     });
     expect(errors()).toEqual(new Set(Object.keys(baseline.units)));
@@ -614,7 +614,7 @@ describe("参照元の公開ゲートと表示", () => {
       ["採点設定", (d) => (d.staticAnalysis = { eslint: { rules: { eqeqeq: "off" } }, ast: {} })],
     ])("同じ ID のまま %s を変えると該当単元だけを必須にする", (_label, change) => {
       const { root } = fixture();
-      cpSync(join(content, "courses/fe-kamoku-b"), join(root, "courses/fe-kamoku-b"), {
+      cpSync(join(content, "stages/fe-kamoku-b"), join(root, "stages/fe-kamoku-b"), {
         recursive: true,
       });
       const baseline = createLegacyBaseline(root, "test-base");
@@ -627,7 +627,7 @@ describe("参照元の公開ゲートと表示", () => {
       expect(new Set(errors.map((d) => d.unitId))).toEqual(new Set(["fe-kamoku-b/m1-pseudo"]));
     });
     it("seed と同じく Lint プリセットを合成した採点設定で比べ、既定値の明示だけでは変えない", () => {
-      const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
+      const unit = join(content, "stages/fe-kamoku-b/modules/m1-pseudo");
       const shared = { findAssignment, getEntryFile, getLanguage, getStaticAnalysisSettings };
       const before = unitContentHash(unit, sharedAssignmentResolver(shared));
       expect(before).not.toBe(unitContentHash(unit, () => null));
@@ -659,24 +659,24 @@ describe("参照元の公開ゲートと表示", () => {
       expect(unitContentHash(unit, presetChanged)).not.toBe(before);
     });
     it("課題定義のキー順では指紋を変えず、演習の無い単元は課題定義を読まない", () => {
-      const unit = join(content, "courses/fe-kamoku-b/modules/m1-pseudo");
+      const unit = join(content, "stages/fe-kamoku-b/modules/m1-pseudo");
       const reversed: AssignmentResolver = (id) => {
         const definition = resolveSharedAssignment(id) as Record<string, unknown>;
         return Object.fromEntries(Object.entries(definition).reverse());
       };
       expect(unitContentHash(unit, reversed)).toBe(unitContentHash(unit));
       const resolved: string[] = [];
-      unitContentHash(join(content, "courses/fe-kamoku-b/modules/m4-security"), (id) => {
+      unitContentHash(join(content, "stages/fe-kamoku-b/modules/m4-security"), (id) => {
         resolved.push(id);
         return null;
       });
       expect(resolved).toEqual([]);
     });
   });
-  it("course.json のキー順と空白だけを変えても未改訂の判定は維持する", () => {
+  it("stage.json のキー順と空白だけを変えても未改訂の判定は維持する", () => {
     const { root, unit } = fixture();
     const before = unitContentHash(unit);
-    const file = join(root, "courses/dev-env-basics/course.json");
+    const file = join(root, "stages/dev-env-basics/stage.json");
     const config = JSON.parse(readFileSync(file, "utf8"));
     writeFileSync(
       file,
@@ -686,7 +686,7 @@ describe("参照元の公開ゲートと表示", () => {
   });
   it("本文・単元末尾・IDEの配布manifest・PDFから同じ出典を読める", () => {
     const { root } = fixture();
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     const publicTask = manifest.tasks[0].bundle;
     expect(publicTask.manifest.references?.[0]).toMatchObject({
       publisher: "MDN Web Docs contributors",
@@ -694,7 +694,7 @@ describe("参照元の公開ゲートと表示", () => {
       authorship: "original-exercise",
     });
     expect(JSON.stringify(publicTask)).not.toContain("fixture-reviewer");
-    const lessons = manifest.courses[0].sections?.flatMap((s) => s.lessons) ?? [];
+    const lessons = manifest.stages[0].sections?.flatMap((s) => s.lessons) ?? [];
     const doc = lessons.find((l) => l.id.startsWith("doc-"));
     expect(doc?.markdown).toContain("確認すること:");
     expect(doc?.markdown).not.toContain("sourceRefs:");
@@ -817,7 +817,7 @@ describe("参照元の公開ゲートと表示", () => {
     mkdirSync(join(task, "assets"));
     writeFileSync(join(task, "assets/flow.svg"), "<svg/>");
     append(join(task, "README.md"), "\n![保存と表示の流れ](assets/flow.svg#step)\n");
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(
       "課題の README に教材内の画像は使えません (配布されません): tasks/q01-first-page/assets/flow.svg",
     );
   });
@@ -850,8 +850,8 @@ describe("参照元の公開ゲートと表示", () => {
     // 図と本文を足したので、版を上げて確認し直した内容として記録する。
     reReview(unit, "2");
     expect(checkSourceReferences(root)).toEqual([]);
-    const manifest = buildContentManifest(join(root, "courses"));
-    const markdown = manifest.courses[0].sections?.[0].lessons.find((l) =>
+    const manifest = buildContentManifest(join(root, "stages"));
+    const markdown = manifest.stages[0].sections?.[0].lessons.find((l) =>
       l.id.startsWith("doc-"),
     )?.markdown;
     const attribution = [
@@ -898,8 +898,8 @@ describe("参照元の公開ゲートと表示", () => {
       });
     });
     expect(checkSourceReferences(root)).toEqual([]);
-    const manifest = buildContentManifest(join(root, "courses"));
-    const lessons = manifest.courses[0].sections?.flatMap((s) => s.lessons) ?? [];
+    const manifest = buildContentManifest(join(root, "stages"));
+    const lessons = manifest.stages[0].sections?.flatMap((s) => s.lessons) ?? [];
     const markdown = lessons.find((l) => l.type === "slides")?.markdown ?? "";
     expect(markdown).toContain("> 教材独自に作成: 教材独自のスライド構成");
     expect(markdown).not.toContain("## 参照元");

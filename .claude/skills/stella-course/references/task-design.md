@@ -1,6 +1,6 @@
 # 課題の設計
 
-形式の正本は `packages/content/src/task-schema.ts` (`parseTaskDefinition`)、読み込みは `src/task-content.ts`、書き方の一覧は `ADDING_COURSE.md` の「新カリキュラムの format 2」。種別ごとのヒントと解答の解放は `packages/shared/src/tasks/help.ts` の `TASK_HELP_POLICIES`。ここは、どの種別を選ぶか、既存の問題集をどこで切るか、下書きに何を埋めるかです。
+形式の正本は `packages/content/src/task-schema.ts` (`parseTaskDefinition`)、読み込みは `src/task-content.ts`、書き方の一覧は `ADDING_STAGE.md` の「新カリキュラムの format 2」。種別ごとのヒントと解答の解放は `packages/shared/src/tasks/help.ts` の `TASK_HELP_POLICIES`。ここは、どの種別を選ぶか、既存の問題集をどこで切るか、下書きに何を埋めるかです。
 
 パスは STELLA 本体の形です。外部リポジトリでは文書の先頭に `.stella/` を付けます。
 
@@ -32,7 +32,7 @@
 
 問題集の「Q01〜Q10 は同じ書き方」なら 1 課題です。書き方 (別のパターン、別の部品、別の runner) が変わるところで分けます。★ (最初に確認する問題) は、その課題の最初に置きます。
 
-確認問題は 1 問 1 課題です。A、B、予備の C を 1 つの課題にまとめないでください。予備は親の課題の `private/variants/<類題>/` に置き、未出題のまま配らないでください。類題の形、`kind` の使い分け、`private/mutants/` が必須なことは `ADDING_COURSE.md` の「予備の類題」です。
+確認問題は 1 問 1 課題です。A、B、予備の C を 1 つの課題にまとめないでください。予備は親の課題の `private/variants/<類題>/` に置き、未出題のまま配らないでください。類題の形、`kind` の使い分け、`private/mutants/` が必須なことは `ADDING_STAGE.md` の「予備の類題」です。
 
 講師用の解答は `private/solution/` に置きます。講師の追加ケースは、次のどちらかです。
 
@@ -59,7 +59,7 @@ tasks/<task>/
   private/mutants/       # 任意。類題では必須
 ```
 
-`fixed-start/` と `fixedStart.covers` は、前の課題の実装が壊れて先へ進めない受講者へ配るときだけです。確認 A・B には置けません。条件は `ADDING_COURSE.md` の fixed-start の節です。
+`fixed-start/` と `fixedStart.covers` は、前の課題の実装が壊れて先へ進めない受講者へ配るときだけです。確認 A・B には置けません。条件は `ADDING_STAGE.md` の fixed-start の節です。
 
 ### task.json の項目
 

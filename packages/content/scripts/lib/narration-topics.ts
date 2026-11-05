@@ -2,7 +2,7 @@
  * 台本 (narration.json) の対象トピックを列挙する。台本の下書き (narrate.ts)・検査
  * (check-narration.ts)・動画生成 (build-video.ts) が共用する。
  *
- * トピックの並びは講座ごとのパスの自然順 (= 学習順。check_vocab.mjs・manifest と同じ)。
+ * トピックの並びはステージごとのパスの自然順 (= 学習順。check_vocab.mjs・manifest と同じ)。
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -23,10 +23,10 @@ import { parseSlides } from "../../src/parse-slides.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const contentRoot = resolve(here, "..", "..");
-export const coursesRoot = join(contentRoot, "courses");
+export const stagesRoot = join(contentRoot, "stages");
 
 export interface NarrationTopic {
-  courseSlug: string;
+  stageSlug: string;
   courseTitle: string;
   id: string;
   title: string;
@@ -42,7 +42,7 @@ export interface NarrationTopic {
   docSection: string;
   nextTopicTitle?: string;
   readings: Readings;
-  /** 講座内でこのトピックより前に導入された語 (introduces の累積)。 */
+  /** ステージ内でこのトピックより前に導入された語 (introduces の累積)。 */
   priorVocabulary: string[];
 }
 
@@ -101,7 +101,7 @@ function topicDirsOf(dir: string): string[] {
 }
 
 /**
- * `courses/it-basics`・講座 slug (`it-basics`)・トピックやレッスンのディレクトリの
+ * `stages/it-basics`・ステージ slug (`it-basics`)・トピックやレッスンのディレクトリの
  * どれでも受け取る。空なら全トピック。
  */
 export function matchesSelectors(topicDir: string, selectors: string[]): boolean {
@@ -111,7 +111,7 @@ export function matchesSelectors(topicDir: string, selectors: string[]): boolean
       ? existsSync(resolve(s))
         ? resolve(s)
         : resolve(contentRoot, s)
-      : join(coursesRoot, s);
+      : join(stagesRoot, s);
     return topicDir === abs || topicDir.startsWith(`${abs}/`);
   });
 }
@@ -119,17 +119,17 @@ export function matchesSelectors(topicDir: string, selectors: string[]): boolean
 export function collectNarrationTopics(selectors: string[] = []): NarrationTopic[] {
   const globalReadings = loadGlobalReadings();
   const topics: NarrationTopic[] = [];
-  for (const courseSlug of sortNatural(readdirSync(coursesRoot))) {
-    const courseDir = join(coursesRoot, courseSlug);
-    if (!existsSync(join(courseDir, "course.json"))) continue;
-    const course = readJson<{ title: string }>(join(courseDir, "course.json"), {
-      title: courseSlug,
+  for (const stageSlug of sortNatural(readdirSync(stagesRoot))) {
+    const stageDir = join(stagesRoot, stageSlug);
+    if (!existsSync(join(stageDir, "stage.json"))) continue;
+    const stage = readJson<{ title: string }>(join(stageDir, "stage.json"), {
+      title: stageSlug,
     });
     const readings = mergeReadings(
       globalReadings,
-      loadReadings(join(courseDir, "narration-readings.json")),
+      loadReadings(join(stageDir, "narration-readings.json")),
     );
-    const dirs = topicDirsOf(join(courseDir, "modules"));
+    const dirs = topicDirsOf(join(stageDir, "modules"));
     const vocabulary: string[] = [];
     dirs.forEach((topicDir, i) => {
       const slidesSource = readFileSync(join(topicDir, "slides.md"), "utf8");
@@ -150,8 +150,8 @@ export function collectNarrationTopics(selectors: string[] = []): NarrationTopic
       const docFile = join(dirname(topicDir), "doc.md");
       const next = dirs[i + 1];
       topics.push({
-        courseSlug,
-        courseTitle: course.title,
+        stageSlug,
+        courseTitle: stage.title,
         id: fm.id,
         title: fm.title,
         takeaway: fm.takeaway,

@@ -1,6 +1,6 @@
 # プログラム共通のコーディング規則
 
-講座をまたいで使う規則の正本です。AIの一次レビューと講師のレビューは、この文書と講座ごとの追加規則(`courses/<slug>/coding-rules.md`)を同じ本文で読みます([07 §6.4.1](../../docs/curriculum/07-stella-adoption-redesign.md))。
+講座をまたいで使う規則の正本です。AIの一次レビューと講師のレビューは、この文書と講座ごとの追加規則(`stages/<slug>/coding-rules.md`)を同じ本文で読みます([07 §6.4.1](../../docs/curriculum/07-stella-adoption-redesign.md))。
 
 - 課題は `task.json` の `review.rules` で、適用する規則のIDと必須・任意を指定します。
 - 規則は「コードを見て当否を決められる文」で書きます。「読みやすさを1〜5で採点」のような尺度にはしません。

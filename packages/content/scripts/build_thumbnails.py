@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""講座サムネイル (courses/<slug>/thumbnail.webp) を生成する。
+"""ステージサムネイル (stages/<slug>/thumbnail.webp) を生成する。
 
     python scripts/build_thumbnails.py [slug...]
 
-一覧カードのサムネイルは全講座 (SPECS に登録した講座) で 1 つのシリーズに見える必要があるため、画像を
+一覧カードのサムネイルは全ステージ (SPECS に登録したステージ) で 1 つのシリーズに見える必要があるため、画像を
 手で描かずここで組み立てる。文言・色・モチーフだけを SPECS に書き、レイアウトは
-全講座で共有する。
+全ステージで共有する。
 
 3 段構成:
-  1. SPECS + courses/<slug>/course.json から 1600x900 の HTML を組む
+  1. SPECS + stages/<slug>/stage.json から 1600x900 の HTML を組む
   2. chromium (playwright) で開いて PNG を撮る
-  3. Pillow で WebP (courses/<slug>/thumbnail.webp) に変換する
+  3. Pillow で WebP (stages/<slug>/thumbnail.webp) に変換する
 
 書体は Google Fonts から **使う文字だけ**を切り出して data URI で埋め込む。描画時に
 ネットワークへ出ないので、同じ入力からは同じ画像が出る (取得時のみ通信する)。
@@ -35,7 +35,7 @@ from playwright.sync_api import sync_playwright
 
 SCRIPT = Path(__file__).resolve()
 ROOT = SCRIPT.parent.parent
-COURSES = ROOT / "courses"
+STAGES = ROOT / "stages"
 
 WIDTH, HEIGHT = 1600, 900
 WEBP_QUALITY = 88
@@ -49,8 +49,8 @@ PAPER = "#FFFFFF"
 OK = "#16A34A"
 NG = "#E5342B"
 
-# course.json の color と対になる講座色。 強色は 1 枚につき 1 系統だけ使う。
-COURSE_COLORS = {
+# stage.json の color と対になるステージ色。 強色は 1 枚につき 1 系統だけ使う。
+STAGE_COLORS = {
     "indigo": {"strong": "#4F46E5", "tint": "rgba(79, 70, 229, 0.07)"},
     "green": {"strong": "#16A34A", "tint": "rgba(22, 163, 74, 0.07)"},
     "amber": {"strong": "#D97706", "tint": "rgba(217, 119, 6, 0.08)"},
@@ -280,7 +280,7 @@ def motif_claude_code(c: str) -> str:
                 out.append(f'<rect x="{x + 32}" y="{y + 36}" width="104" height="12" rx="6" fill="{RULE}"/>')
                 out.append(f'<rect x="{x + 32}" y="{y + 60}" width="68" height="12" rx="6" fill="{RULE}"/>')
         if i < len(boxes) - 1:
-            # 次の箱へ落ちる L 字の矢印。 いまの段へ入る矢印だけ講座色にする。
+            # 次の箱へ落ちる L 字の矢印。 いまの段へ入る矢印だけステージ色にする。
             color = c if boxes[i + 1][2] == "current" else INK
             sx, sy = x + 84, y + 100
             cy = y + 170
@@ -310,7 +310,7 @@ def motif_claude_code_team(c: str) -> str:
             f'<path d="M {x + 31} {y + 48} l 7 9 l 14 -18" stroke="{PAPER}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
         )
         out.append(f'<rect x="{x + 72}" y="{y + 42}" width="52" height="12" rx="6" fill="{RULE}"/>')
-    # 検査を通った変更がチームへ届く矢印。 ここだけ講座色。
+    # 検査を通った変更がチームへ届く矢印。 ここだけステージ色。
     out.append(f'<path d="M 274 328 L 274 396" stroke="{c}" stroke-width="4" fill="none"/>')
     out.append(f'<path d="M 264 396 L 274 412 L 284 396 Z" fill="{c}"/>')
     # 下: チームのリポジトリ。 配られた仕組みが全員に効く。
@@ -392,7 +392,7 @@ def motif_page_composition(c: str) -> str:
 
 
 def motif_javascript(c: str) -> str:
-    """click で一覧に 1 行増える。 イベント → DOM 更新という講座の終端を 1 枚にする。"""
+    """click で一覧に 1 行増える。 イベント → DOM 更新というステージの終端を 1 枚にする。"""
     out = [
         # click イベントの発生源になるボタンとカーソル
         f'<rect x="150" y="52" width="248" height="84" rx="14" fill="{c}"/>',
@@ -405,7 +405,7 @@ def motif_javascript(c: str) -> str:
         f'<line x1="274" y1="164" x2="274" y2="216" stroke="{RULE_SOLID}" stroke-width="6" stroke-linecap="round"/>',
         f'<polygon points="274,244 258,218 290,218" fill="{RULE_SOLID}"/>',
     ]
-    # 一覧。 最後の行が追加されたばかり (講座色で強調)。
+    # 一覧。 最後の行が追加されたばかり (ステージ色で強調)。
     for y, added in ((272, False), (360, False), (448, True)):
         if added:
             out.append(f'<rect x="54" y="{y}" width="440" height="72" rx="12" fill="{c}" opacity="0.14"/>')
@@ -418,7 +418,7 @@ def motif_javascript(c: str) -> str:
 
 
 def motif_claude_developer(c: str) -> str:
-    """アプリと Claude の往復に、アプリが実行するツールが挟まる。 講座の軸 (API・ツール使用・エージェントのループ) を 1 枚にする。"""
+    """アプリと Claude の往復に、アプリが実行するツールが挟まる。 ステージの軸 (API・ツール使用・エージェントのループ) を 1 枚にする。"""
     return f"""
     <rect x="72" y="120" width="168" height="200" rx="20" fill="{PAPER}" stroke="{INK}" stroke-width="3"/>
     <rect x="104" y="160" width="104" height="12" rx="6" fill="{RULE}"/>
@@ -441,7 +441,7 @@ def motif_claude_developer(c: str) -> str:
 
 
 def motif_aws_clf(c: str) -> str:
-    """リージョン > AZ の入れ子へ、オンプレミスから移行する。 講座の軸 (グローバル基盤と用途選択) を 1 枚にする。"""
+    """リージョン > AZ の入れ子へ、オンプレミスから移行する。 ステージの軸 (グローバル基盤と用途選択) を 1 枚にする。"""
     azs = []
     for i, x in enumerate((150, 330)):
         filled = i == 0
@@ -465,7 +465,7 @@ def motif_aws_clf(c: str) -> str:
 
 
 def motif_it_basics(c: str) -> str:
-    """中心の星から同心円状に外の星が開く。 スキルツリーの入口 (最初の講座) であることを 1 枚にする。"""
+    """中心の星から同心円状に外の星が開く。 スキルツリーの入口 (最初のステージ) であることを 1 枚にする。"""
     lines = []
     nodes = []
     for i, (x, y) in enumerate(((133, 133), (415, 133), (274, 474))):
@@ -488,7 +488,7 @@ def motif_it_basics(c: str) -> str:
     {"".join(nodes)}"""
 
 
-# 講座ごとに変えるのは文言とモチーフだけ。 色と eyebrow は course.json から取る。
+# ステージごとに変えるのは文言とモチーフだけ。 色と eyebrow は stage.json から取る。
 def motif_salesforce(c: str) -> str:
     """親オブジェクトのレコードに、子のレコードがぶら下がるリレーション。"""
 
@@ -783,7 +783,7 @@ def font_face_css(text: str) -> str:
 
 
 def page_html(spec: dict, config: dict, fonts: str) -> str:
-    color = COURSE_COLORS[config.get("color", "indigo")]
+    color = STAGE_COLORS[config.get("color", "indigo")]
     strong, tint = color["strong"], color["tint"]
     motif = spec["motif"](strong)
     panel = PANEL
@@ -827,9 +827,9 @@ OVERFLOW_JS = """
 def build(slugs: list[str]) -> None:
     targets = []
     for slug in slugs:
-        config_file = COURSES / slug / "course.json"
+        config_file = STAGES / slug / "stage.json"
         if not config_file.exists():
-            raise SystemExit(f"{slug}: course.json がありません")
+            raise SystemExit(f"{slug}: stage.json がありません")
         targets.append((slug, SPECS[slug], json.loads(config_file.read_text("utf-8"))))
 
     text = ASCII + "".join(
@@ -852,9 +852,9 @@ def build(slugs: list[str]) -> None:
                     )
             png = page.screenshot(type="png")
             if spec.get("icon"):
-                icon = COURSES / slug / "icon.svg"
+                icon = STAGES / slug / "icon.svg"
                 icon.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="{spec["icon"]}"/></svg>\n', encoding="utf-8")
-            out = COURSES / slug / "thumbnail.webp"
+            out = STAGES / slug / "thumbnail.webp"
             Image.open(BytesIO(png)).convert("RGB").save(out, "WEBP", quality=WEBP_QUALITY, method=6)
             print(f"{out.relative_to(ROOT)}  {out.stat().st_size // 1024}KB")
         browser.close()
@@ -870,5 +870,5 @@ if __name__ == "__main__":
     requested = sys.argv[1:] or list(SPECS)
     unknown = [slug for slug in requested if slug not in SPECS]
     if unknown:
-        raise SystemExit(f"SPECS にない講座です: {', '.join(unknown)}")
+        raise SystemExit(f"SPECS にないステージです: {', '.join(unknown)}")
     build(requested)

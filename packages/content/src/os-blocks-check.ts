@@ -23,7 +23,7 @@ import {
 import { markdownImageDestinations } from "./source-references.js";
 
 export interface OsBlockDiagnostic {
-  /** courses/ からの相対パス。 */
+  /** stages/ からの相対パス。 */
   file: string;
   line: number;
   message: string;
@@ -145,16 +145,16 @@ export function checkOsAgnosticSource(file: string, source: string): OsBlockDiag
 }
 
 /**
- * 全講座の教材を検査する。`coursesRoot` は `packages/content/courses`。
+ * 全ステージの教材を検査する。`stagesRoot` は `packages/content/stages`。
  * `private/` も対象にする (解説・ヒントに書いても OS のタブにならない)。
  */
-export function checkOsBlocks(coursesRoot: string): OsBlockDiagnostic[] {
+export function checkOsBlocks(stagesRoot: string): OsBlockDiagnostic[] {
   const diagnostics: OsBlockDiagnostic[] = [];
-  for (const slug of readdirSync(coursesRoot).sort()) {
-    const modulesRoot = join(coursesRoot, slug, "modules");
+  for (const slug of readdirSync(stagesRoot).sort()) {
+    const modulesRoot = join(stagesRoot, slug, "modules");
     if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
     walk(modulesRoot, (full) => {
-      const file = relative(coursesRoot, full).split("\\").join("/");
+      const file = relative(stagesRoot, full).split("\\").join("/");
       const fromModules = relative(modulesRoot, full).split("\\").join("/");
       const name = basename(full);
       if (/\.md$/i.test(name)) {

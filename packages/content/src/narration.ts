@@ -159,7 +159,7 @@ export function speechOf(cue: NarrationCue, readings: Readings): string {
   return applyReadings(cue.speech ?? cue.text, readings).trim();
 }
 
-/** 講座共通の辞書に講座ごとの辞書を重ねる (講座側が勝つ)。 */
+/** ステージ共通の辞書にステージごとの辞書を重ねる (ステージ側が勝つ)。 */
 export function mergeReadings(...layers: (Readings | undefined)[]): Readings {
   return Object.assign({}, ...layers.filter(Boolean));
 }

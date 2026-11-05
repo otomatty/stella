@@ -22,7 +22,7 @@ const GENERATORS = [
  * どれかをやめるときは SEED_INPUT_PATHS からも外す。
  */
 const READ_BY_PATH = [
-  "packages/content/courses",
+  "packages/content/stages",
   "packages/content/coding-rules.md",
   "packages/content/skills.json",
   "packages/content/patterns.json",

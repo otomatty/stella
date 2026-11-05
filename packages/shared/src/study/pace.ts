@@ -3,7 +3,7 @@ import type { TaskStatus } from "../tasks/catalog.js";
 import { addStudyDays, studyDateStartMs, studyDateWeekday } from "./activity.js";
 
 export const DEFAULT_WEEKLY_HOURS = 35;
-/** 新設計 §3.1 の標準プログラム。時間の正本は各course.json。補習・資格は別枠。 */
+/** 新設計 §3.1 の標準プログラム。時間の正本は各stage.json。補習・資格は別枠。 */
 export const LEARNING_PROGRAM_SLUGS = [
   "dev-env-basics",
   "html-css-basics",

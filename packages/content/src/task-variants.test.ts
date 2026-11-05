@@ -18,8 +18,8 @@ import { collectPdfTargets } from "./material-pdf.js";
 
 /** 予備の類題 (#39) の書き方と検査。見本の課題に類題を足した一時の教材で確かめる。 */
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const sample = join(content, "courses/dev-env-basics");
-const PARENT = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const sample = join(content, "stages/dev-env-basics");
+const PARENT = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
 const MARKER = "VARIANT_PRIVATE_MARKER_39";
 const roots: string[] = [];
 afterEach(() => {
@@ -29,8 +29,8 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-variants-"));
   roots.push(root);
-  mkdirSync(join(root, "courses"));
-  cpSync(sample, join(root, "courses/dev-env-basics"), { recursive: true });
+  mkdirSync(join(root, "stages"));
+  cpSync(sample, join(root, "stages/dev-env-basics"), { recursive: true });
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
   return root;
@@ -96,7 +96,7 @@ describe("予備の類題", () => {
     const root = fixture();
     addVariant(root, "v01-profile", "自己紹介", CHECK);
     addVariant(root, "v02-hobby", "好きなこと");
-    const manifest = buildContentManifest(join(root, "courses"));
+    const manifest = buildContentManifest(join(root, "stages"));
     const parent = manifest.tasks.find((t) => t.definition.id.endsWith("/q01-first-page"));
     const variants = manifest.tasks.filter((t) => t.variantOf);
     expect(
@@ -119,7 +119,7 @@ describe("予備の類題", () => {
       expect(bundle.manifest.references).toEqual(parent?.bundle.manifest.references);
     }
     // 類題は課題文のレッスンを作らない (Web の課題一覧・資料・PDF に出ない)。
-    const lessons = JSON.stringify(manifest.courses);
+    const lessons = JSON.stringify(manifest.stages);
     expect(lessons).not.toContain("v01-profile");
     expect(lessons).not.toContain("自己紹介");
     expect(collectPdfTargets(manifest).some((target) => target.source.includes("自己紹介"))).toBe(
@@ -130,21 +130,21 @@ describe("予備の類題", () => {
   it("類題のパターンが親と違えば落とす", () => {
     const root = fixture();
     addVariant(root, "v01-other", "別", { pattern: "unknown-pattern" });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/未知のパターン/);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/未知のパターン/);
     const patterns = JSON.parse(readFileSync(join(root, "patterns.json"), "utf8")) as unknown[];
     writeFileSync(
       join(root, "patterns.json"),
       JSON.stringify([...patterns, { id: "other-pattern", title: "別のパターン" }]),
     );
     addVariant(root, "v01-other", "別", { pattern: "other-pattern" });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/親の課題.*と違います/);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/親の課題.*と違います/);
   });
 
   it("パターンの台帳の重複を落とす", () => {
     const root = fixture();
     const patterns = JSON.parse(readFileSync(join(root, "patterns.json"), "utf8")) as unknown[];
     writeFileSync(join(root, "patterns.json"), JSON.stringify([...patterns, ...patterns]));
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/重複/);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/重複/);
   });
 
   it("類題の形の誤り (tests・解答例・task.json の欠け、統合、入れ子の予備、開始点) を落とす", () => {
@@ -164,40 +164,40 @@ describe("予備の類題", () => {
     ] as const) {
       const root = fixture();
       mutate(addVariant(root, "v01-broken", "壊れた類題"));
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow(message);
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow(message);
     }
     const root = fixture();
     addVariant(root, "v01-integration", "統合", {
       kind: "integration",
       submit: { files: ["index.html"], explanation: true, debuggingRecord: false },
     });
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/類題の kind/);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/類題の kind/);
   });
 
   it("類題の ID の重複 (課題と同じ名前・ID とフォルダーの不一致) を落とす", () => {
     const same = fixture();
     addVariant(same, "q01-first-page", "同じ名前");
-    expect(() => buildContentManifest(join(same, "courses"))).toThrow(/ID が重複/);
+    expect(() => buildContentManifest(join(same, "stages"))).toThrow(/ID が重複/);
     const mismatch = fixture();
     addVariant(mismatch, "v01-a", "ずれ", { id: "dev-env-basics/m0-first-page/v01-b" });
-    expect(() => buildContentManifest(join(mismatch, "courses"))).toThrow(/一致しません/);
+    expect(() => buildContentManifest(join(mismatch, "stages"))).toThrow(/一致しません/);
   });
 
   it("予備のフォルダーには類題のフォルダーと .gitkeep だけを置ける", () => {
     const root = fixture();
     writeFileSync(join(root, PARENT, "private/variants/README.md"), "メモ");
-    expect(() => buildContentManifest(join(root, "courses"))).toThrow(/1 問 1 フォルダー/);
+    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/1 問 1 フォルダー/);
   });
 
   it("類題には典型的な誤答が要り、受講者が書き換えるファイルだけを置ける", () => {
     const none = fixture();
     rmSync(join(addVariant(none, "v01-none", "誤答なし"), "private/mutants"), { recursive: true });
-    expect(() => buildContentManifest(join(none, "courses"))).toThrow(/典型的な誤答/);
+    expect(() => buildContentManifest(join(none, "stages"))).toThrow(/典型的な誤答/);
     const empty = fixture();
     const emptyDir = addVariant(empty, "v01-empty", "誤答が空");
     rmSync(join(emptyDir, "private/mutants/m01-unchanged"), { recursive: true });
     writeFileSync(join(emptyDir, "private/mutants/.gitkeep"), "");
-    expect(() => buildContentManifest(join(empty, "courses"))).toThrow(/典型的な誤答/);
+    expect(() => buildContentManifest(join(empty, "stages"))).toThrow(/典型的な誤答/);
     for (const [rel, message] of [
       ["tests/README.md", /protected/],
       ["other.html", /starter・解答例にあるファイルだけ/],
@@ -206,12 +206,12 @@ describe("予備の類題", () => {
       const dir = addVariant(root, "v01-bad", "誤答の誤り");
       mkdirSync(dirname(join(dir, "private/mutants/m02", rel)), { recursive: true });
       writeFileSync(join(dir, "private/mutants/m02", rel), "x");
-      expect(() => buildContentManifest(join(root, "courses"))).toThrow(message);
+      expect(() => buildContentManifest(join(root, "stages"))).toThrow(message);
     }
     // 誤答は配布一式にも非公開の素材 (D1) にも入れない。
     const root = fixture();
     addVariant(root, "v01-ok", "誤答あり");
-    const variant = buildContentManifest(join(root, "courses")).tasks.find((t) => t.variantOf);
+    const variant = buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
     expect(Object.keys(variant?.mutants ?? {})).toEqual(["m01-unchanged"]);
     expect(Object.keys(variant?.privateFiles ?? {}).some((k) => k.includes("mutants"))).toBe(false);
     expect(Object.keys(variant?.bundle.files ?? {}).some((k) => k.includes("mutants"))).toBe(false);
@@ -220,7 +220,7 @@ describe("予備の類題", () => {
   it("誤答は解答例に重ねて手元の検査で落ちることを確かめ、通ってしまう誤答を落とす", async () => {
     const root = fixture();
     const dir = addVariant(root, "v01-check", "確かめる");
-    const load = () => buildContentManifest(join(root, "courses")).tasks.find((t) => t.variantOf);
+    const load = () => buildContentManifest(join(root, "stages")).tasks.find((t) => t.variantOf);
     const variant = load();
     if (!variant) throw new Error("類題がありません");
     expect(await mutantsFail(variant)).toBe(1);

@@ -64,12 +64,12 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("'salesforce-dev-basics'");
   });
 
-  it("デモ講座は seed せず、安定 UUID だけ削除する", () => {
+  it("デモステージは seed せず、安定 UUID だけ削除する", () => {
     const webFundamentals = stableUuid("course:ses:web-fundamentals");
     const reactIntro = stableUuid("course:ses:react-intro");
     expect(sql).not.toContain("Web開発基礎");
     // "Git / GitHub" は git-basics の practice.md 本文 (lesson_revisions のスナップ
-    // ショット) に正当に現れるので、旧デモ講座の検査はステージ insert に限定する。
+    // ショット) に正当に現れるので、旧デモステージの検査はステージ insert に限定する。
     expect(sql).not.toMatch(/insert into stages[^\n]*Git \/ GitHub/);
     expect(sql).not.toContain("React入門");
     expect(sql).toContain(`delete from stages where id = '${webFundamentals}'`);
@@ -79,7 +79,7 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).not.toContain(`delete from sections where stage_id = '${webFundamentals}');`);
   });
 
-  it("退役した19講座の安定 UUID を削除し、引き継ぐ6講座は削除しない", () => {
+  it("退役した19ステージの安定 UUID を削除し、引き継ぐ6ステージは削除しない", () => {
     const retired = [
       "it-basics",
       "modern-css-basics",
@@ -175,14 +175,14 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("thumbnail_path = excluded.thumbnail_path");
   });
 
-  // スキルツリーの講座アイコンは stages.icon_path が正本。列が upsert から落ちると、
+  // スキルツリーのステージアイコンは stages.icon_path が正本。列が upsert から落ちると、
   // アイコンを差し替えても D1 が古いキー (= 消えない旧 R2 オブジェクト) を指したままになる。
   it("stages の upsert は icon_path を含む", () => {
     expect(sql).toMatch(/insert into stages \([^)]*\bicon_path\b[^)]*\)/);
     expect(sql).toContain("icon_path = excluded.icon_path");
   });
 
-  // スキルツリーの 3 列 (Phase 1)。教材 (course.json) が正本なので、列が upsert から
+  // スキルツリーの 3 列 (Phase 1)。教材 (stage.json) が正本なので、列が upsert から
   // 落ちると「前提を足したのに誰も開けない / 外したのにロックが残る」が黙って起きる。
   it("stages の upsert は prerequisites / can_do / theme / audience を含む", () => {
     expect(sql).toMatch(
@@ -194,17 +194,17 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).toContain("audience = excluded.audience");
   });
 
-  it("前提つきの講座は slug の JSON 配列で入る", () => {
-    // dom-basics は複数の講座 を前提にしている (course.json)。
+  it("前提つきのステージは slug の JSON 配列で入る", () => {
+    // dom-basics は複数のステージ を前提にしている (stage.json)。
     const line = (sql.match(/^insert into stages .*'dom-basics'.*$/m) ?? [])[0];
     expect(line).toBeDefined();
     expect(line).toContain(`'["html-css-basics","javascript-basics","javascript-data-basics"]'`);
   });
 
-  it("前提を書いていない講座は空配列ではなく null に畳む (ロックを残さない)", () => {
-    // 教材が正本。course.json から前提を外したら D1 も null に戻る必要がある
+  it("前提を書いていないステージは空配列ではなく null に畳む (ロックを残さない)", () => {
+    // 教材が正本。stage.json から前提を外したら D1 も null に戻る必要がある
     // ('[]' が残ると、読み直す側が「壊れた行」と区別できない)。
-    // dev-env-basics はスキルツリーの入口 (唯一の前提なし講座)。
+    // dev-env-basics はスキルツリーの入口 (唯一の前提なしステージ)。
     // slug 列で拾う (parent 列に 'dev-env-basics' を持つ子の行と取り違えないため)。
     const line = (sql.match(/^insert into stages .*'ses', 'dev-env-basics',.*$/m) ?? [])[0];
     expect(line).toBeDefined();
@@ -367,7 +367,7 @@ describe("export-seed-sql (sqlite)", () => {
     expect(sql).not.toContain("'sales'");
   });
 
-  it("既存 DB の退役講座と子レコードを削除し、再利用する講座の登録・修了証と CMS 講座を保持する", () => {
+  it("既存 DB の退役ステージと子レコードを削除し、再利用するステージの登録・修了証と CMS ステージを保持する", () => {
     const root = fileURLToPath(new URL("../../..", import.meta.url));
     const stageId = (slug: string) => stableUuid(`course:ses:${slug}`);
     const db = new DatabaseSync(":memory:");
@@ -430,7 +430,7 @@ describe("export-seed-sql (sqlite)", () => {
         );
       }
       db.prepare(`insert into announcements (id, tenant_id, stage_id, title, created_at, published_at)
-      values ('old-announcement', 'ses', ?, '旧講座のお知らせ', 1, 1)`).run(retired);
+      values ('old-announcement', 'ses', ?, '旧ステージのお知らせ', 1, 1)`).run(retired);
       db.exec(`insert into stages (id, tenant_id, slug, title, status, created_at, updated_at)
       values ('cms-stage', 'ses', 'web-fundamentals', 'CMS 教材', 'published', 1, 1);
       insert into sections (id, stage_id, title, "order", created_at)
@@ -531,7 +531,7 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
 
   it("課題の private/ とヒントは task_private にだけ入り、配布 bundle・レッスンに出ない", () => {
     const taskDir = new URL(
-      "../../content/courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/",
+      "../../content/stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page/",
       import.meta.url,
     );
     const statements = sql.split("\n");
@@ -622,7 +622,7 @@ describe("export-seed-sql (sqlite, CONTENT_ONLY)", () => {
     expect(ids).toContain("DEV-HTML-01");
   });
 
-  it("デモ講座の削除は本番 seed でも出す", () => {
+  it("デモステージの削除は本番 seed でも出す", () => {
     expect(sql).toContain(
       `delete from stages where id = '${stableUuid("course:ses:web-fundamentals")}'`,
     );
@@ -652,7 +652,7 @@ describe("export-seed-sql (自動生成 PDF)", () => {
   }
   const entry = (os?: "windows" | "macos", hash = `hash-${os ?? "both"}`) => ({
     tenantId: "ses",
-    courseSlug: "dev-env-basics",
+    stageSlug: "dev-env-basics",
     lessonId: "doc-0-1",
     kind: "doc",
     ...(os ? { os } : {}),
@@ -730,13 +730,12 @@ vi.mock("@stella/content", async () => {
   const collidingLessonId = "l1";
 
   return {
-    // @stella/content は「講座 = course」の語彙のまま (境界は export-seed-sql.ts)。
-    // この差し替えは講座の中身だけを見る。規則を消す範囲は checkout を読まない。
+    // この差し替えはステージの中身だけを見る。規則を消す範囲は checkout を読まない。
     listCodingRuleScopes: () => ["common"],
     buildContentManifest: () => ({
       tasks: [],
       units: [],
-      courses: [
+      stages: [
         {
           id: "salesforce-dev-basics",
           title: "教材ステージ（テスト用）",
@@ -751,7 +750,7 @@ vi.mock("@stella/content", async () => {
       ],
       quizzes: [
         {
-          courseId: "salesforce-dev-basics",
+          stageId: "salesforce-dev-basics",
           lessonId: collidingLessonId,
           passScore: 80,
           questions: [

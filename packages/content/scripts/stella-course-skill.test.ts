@@ -56,14 +56,14 @@ afterEach(() => {
 });
 
 describe("scaffold.mjs", () => {
-  function taskArgs(courses: string, runner: string, task: string, kind = "basic"): string[] {
+  function taskArgs(stages: string, runner: string, task: string, kind = "basic"): string[] {
     return [
       "task",
       "--content",
       content,
-      "--courses",
-      courses,
-      "--course",
+      "--stages",
+      stages,
+      "--stage",
       "demo",
       "--unit",
       "m0",
@@ -85,10 +85,10 @@ describe("scaffold.mjs", () => {
   });
 
   it("node-test と dotnet-test の形を作り、既存のフォルダーは上書きしない", () => {
-    const courses = tempDir();
-    const node = run(scaffold, taskArgs(courses, "node-test", "q01-greet"));
+    const stages = tempDir();
+    const node = run(scaffold, taskArgs(stages, "node-test", "q01-greet"));
     expect(node.status, node.stderr).toBe(0);
-    const nodeDir = join(courses, "demo", "modules", "m0", "tasks", "q01-greet");
+    const nodeDir = join(stages, "demo", "modules", "m0", "tasks", "q01-greet");
     const nodeTask = JSON.parse(readFileSync(join(nodeDir, "task.json"), "utf8")) as {
       id: string;
       runner: string;
@@ -117,14 +117,14 @@ describe("scaffold.mjs", () => {
     expect(readFileSync(join(nodeDir, "private", "variants", ".gitkeep"), "utf8")).toBe("");
 
     writeFileSync(join(nodeDir, "starter", "src", "greet.js"), "export const kept = true;\n");
-    const again = run(scaffold, taskArgs(courses, "node-test", "q01-greet"));
+    const again = run(scaffold, taskArgs(stages, "node-test", "q01-greet"));
     expect(again.status).not.toBe(0);
     expect(again.stderr).toContain("上書きしません");
     expect(readFileSync(join(nodeDir, "starter", "src", "greet.js"), "utf8")).toContain("kept");
 
-    const dotnet = run(scaffold, taskArgs(courses, "dotnet-test", "q02-sum", "debug"));
+    const dotnet = run(scaffold, taskArgs(stages, "dotnet-test", "q02-sum", "debug"));
     expect(dotnet.status, dotnet.stderr).toBe(0);
-    const dotnetDir = join(courses, "demo", "modules", "m0", "tasks", "q02-sum");
+    const dotnetDir = join(stages, "demo", "modules", "m0", "tasks", "q02-sum");
     const dotnetTask = JSON.parse(readFileSync(join(dotnetDir, "task.json"), "utf8")) as {
       runner: string;
       checks: { lint: boolean; format: boolean };
@@ -147,20 +147,17 @@ describe("scaffold.mjs", () => {
   });
 
   it("同じ単元の既存の課題から pattern と skills を写す", () => {
-    const courses = tempDir();
-    const first = run(scaffold, taskArgs(courses, "node-test", "q01-greet"));
+    const stages = tempDir();
+    const first = run(scaffold, taskArgs(stages, "node-test", "q01-greet"));
     expect(first.status, first.stderr).toBe(0);
-    const sibling = join(courses, "demo", "modules", "m0", "tasks", "q01-greet", "task.json");
+    const sibling = join(stages, "demo", "modules", "m0", "tasks", "q01-greet", "task.json");
     const raw = JSON.parse(readFileSync(sibling, "utf8")) as { pattern: string };
     raw.pattern = "from-sibling";
     writeFileSync(sibling, JSON.stringify(raw));
-    const second = run(scaffold, taskArgs(courses, "node-test", "q02-next", "assessment-a"));
+    const second = run(scaffold, taskArgs(stages, "node-test", "q02-next", "assessment-a"));
     expect(second.status, second.stderr).toBe(0);
     const task = JSON.parse(
-      readFileSync(
-        join(courses, "demo", "modules", "m0", "tasks", "q02-next", "task.json"),
-        "utf8",
-      ),
+      readFileSync(join(stages, "demo", "modules", "m0", "tasks", "q02-next", "task.json"), "utf8"),
     ) as {
       pattern: string;
       support: { hintLevels: number; solutionUnlock: string };
@@ -171,7 +168,7 @@ describe("scaffold.mjs", () => {
     expect(task.submit.explanation).toBe(true);
     expect(
       readFileSync(
-        join(courses, "demo", "modules", "m0", "tasks", "q02-next", "hints.md"),
+        join(stages, "demo", "modules", "m0", "tasks", "q02-next", "hints.md"),
         "utf8",
       ).trim(),
     ).toMatch(/^<!--/);

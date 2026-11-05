@@ -19,10 +19,10 @@ export interface QuizQuestionSeed {
   options: QuizOptionSeed[];
 }
 
-export type CourseColor = "indigo" | "green" | "amber" | "slate";
+export type StageColor = "indigo" | "green" | "amber" | "slate";
 
 /** スキルツリーのカタログ掲載範囲。省略 = catalog (全受講者)。 */
-export type CourseAudience = "catalog" | "granted";
+export type StageAudience = "catalog" | "granted";
 
 /** レッスンに紐づくコード演習。id は `@stella/shared` の Assignment.id。 */
 export interface ExerciseRef {
@@ -30,16 +30,16 @@ export interface ExerciseRef {
   title: string;
 }
 
-/** courses/<slug>/course.json。slug はディレクトリ名。 */
-export interface CourseConfig {
+/** stages/<slug>/stage.json。slug はディレクトリ名。 */
+export interface StageConfig {
   format?: 1 | 2;
   plannedHours?: number;
   environment?: string;
   title: string;
   category?: string;
-  color?: CourseColor;
+  color?: StageColor;
   /**
-   * 一覧カードのサムネイル画像。講座ディレクトリからの相対パス。
+   * 一覧カードのサムネイル画像。ステージディレクトリからの相対パス。
    * 省略時は `thumbnail.webp` / `.png` / `.jpg` を順に探す（無ければ color のストライプ表示）。
    */
   thumbnail?: string;
@@ -50,8 +50,8 @@ export interface CourseConfig {
   /** レッスンキー ("1-1" 形式) → VS Code 拡張で解くコード演習 */
   exercises?: Record<string, ExerciseRef[]>;
   /**
-   * 前提講座の slug 配列。ここに挙げた講座を **すべてクリアするまで開けない**
-   * (スキルツリーのハードロック)。書けるのは `CURRICULUM.md` に「前提講座」として
+   * 前提ステージの slug 配列。ここに挙げたステージを **すべてクリアするまで開けない**
+   * (スキルツリーのハードロック)。書けるのは `CURRICULUM.md` に「前提ステージ」として
    * 散文で明記されているものだけ。推奨・任意の受講順はここに書かない
    * (書いた瞬間ゲートになり、受講者が入れなくなる)。
    *
@@ -59,7 +59,7 @@ export interface CourseConfig {
    * 1 つの星から出る枝は **最大 2 本** (AND 合流は枝に数えないが、親側の線には
    * なる)。3 本以上になるなら直列化する。島への橋は線を引かないので数えない。
    *
-   * 見た目の複製 (`appearances`) がある講座は、扇ごとの前提を
+   * 見た目の複製 (`appearances`) があるステージは、扇ごとの前提を
    * `appearancePrerequisites` に書く。そのときはこの配列は組の **和集合**
    * (グラフ検査・seed 用) で、開く条件は組どうしの OR になる。
    */
@@ -68,7 +68,7 @@ export interface CourseConfig {
    * スキルツリーで線を引く親 (slug)。`prerequisites` のうちの 1 つ。線・配置・視界は
    * この 1 本で決まり、解放条件は `prerequisites` 全部 (AND) のまま。
    * 前提が 2 つ以上なら必須、1 つなら省略可 (その 1 つが親)、0 なら書けない。
-   * `appearances` を持つ講座は扇ごとの親を `appearancePrerequisites` に書くので、これは書けない。
+   * `appearances` を持つステージは扇ごとの親を `appearancePrerequisites` に書くので、これは書けない。
    */
   parent?: string;
   /**
@@ -77,12 +77,12 @@ export interface CourseConfig {
    */
   canDo?: string;
   /**
-   * 霧の中の星に見せるテーマ名。まだ視界に入っていない講座は、タイトルの代わりに
-   * これだけが見える。カテゴリ単位でそろえる (講座ごとに凝った名前を付けない)。
+   * 霧の中の星に見せるテーマ名。まだ視界に入っていないステージは、タイトルの代わりに
+   * これだけが見える。カテゴリ単位でそろえる (ステージごとに凝った名前を付けない)。
    */
   theme?: string;
   /**
-   * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 講座のまま
+   * スキルツリー上で同じステージを複数の扇に置くときの扇名。実体は 1 ステージのまま
    * (クリアは共有)。未設定なら `category` の扇に 1 つ。実行時の正本は
    * `@stella/shared/skill-map/appearances` で、ここはドキュメント兼検査用。
    */
@@ -96,13 +96,13 @@ export interface CourseConfig {
   /**
    * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (省略時の既定)。
    * `granted` = スタッフが `stage_grants` で割り当てた受講者だけカタログに載る。
-   * Extra 講座。前提を 1 つ以上持ち、線の親をたどると catalog 講座に着く
-   * (manifest が検査)。catalog 講座が granted を前提にすることはできない。
+   * Extra ステージ。前提を 1 つ以上持ち、線の親をたどると catalog ステージに着く
+   * (manifest が検査)。catalog ステージが granted を前提にすることはできない。
    */
-  audience?: CourseAudience;
+  audience?: StageAudience;
   /**
    * OS 別のブロック (`:::os`) を含むまとめ・課題文の配布 PDF を、Windows 版と macOS 版に
-   * 分けて作る (07 §11)。OS の差が大きい講座 (`dev-env-basics`) に付ける。省略時は 1 つの
+   * 分けて作る (07 §11)。OS の差が大きいステージ (`dev-env-basics`) に付ける。省略時は 1 つの
    * PDF に両方の OS の手順を見出し付きで並べる。
    */
   pdfByOs?: boolean;
@@ -110,8 +110,8 @@ export interface CourseConfig {
 
 export interface QuizSeed {
   source?: "practice" | "knowledge";
-  /** 所属講座。lessonId は講座内でのみ一意なので、seed 照合に両方使う。 */
-  courseId: string;
+  /** 所属ステージ。lessonId はステージ内でのみ一意なので、seed 照合に両方使う。 */
+  stageId: string;
   /** 紐づく lesson の安定キー（manifest が振る Lesson.id と一致させる） */
   lessonId: string;
   passScore: number;

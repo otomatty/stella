@@ -4,14 +4,12 @@
  *   DIALECT=sqlite bun run packages/shared/scripts/export-seed-sql.ts   # D1
  *   bun run packages/shared/scripts/export-seed-sql.ts                  # Postgres (legacy)
  *
- * 教材ステージは upsert + prune（GitHub が正本）。退役教材と旧デモ講座
+ * 教材ステージは upsert + prune（GitHub が正本）。退役教材と旧デモステージ
  * (it-basics / web-fundamentals 等) は安定 UUID で削除する。CMS で作った別 ID の
  * ステージのレッスンツリーは触らない。
  *
- * ここが course → stage の語彙の境界。教材リポジトリ (`packages/content`) は
- * 「講座 = course」のまま (`courses/<slug>/course.json`、`QuizSeed.courseId`、
- * PDF マニフェストの `courseSlug`) で、DB 側の表・列名は stage。したがって
- * manifest から読む側は course 語彙、SQL を書く側は stage 語彙で書く。
+ * 教材リポジトリも DB もステージの語彙 (`stages/<slug>/stage.json`、
+ * `QuizSeed.stageId`、PDF マニフェストの `stageSlug`)。
  * `stableUuid` の名前空間キー (`course:...`) だけは **改名しない** —
  * 変えると既存 D1 のステージ UUID が総入れ替えになり、受講登録・進捗・
  * 修了証の参照がまとめて切れるため。
@@ -167,7 +165,7 @@ const stageIdMap = new Map<string, string>();
 const sectionIdMap = new Map<string, string>();
 const emittedAssignments = new Set<string>();
 
-/** 教材ファイル（packages/content/courses/<slug>/modules）から組み立てたステージと確認クイズ。 */
+/** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
 
 const lines: string[] = ["-- seed from fixtures (generated)"];
@@ -184,8 +182,8 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
   // 名前空間キーは `course:` のまま (既存 D1 の UUID を維持するため — 冒頭の注記)。
   const stageUuid = stableUuid(`course:${tenantId}:${stage.id}`);
   stageIdMap.set(`${tenantId}:${stage.id}`, stageUuid);
-  // スキルツリー用の 3 列 (Phase 1)。教材が正本なので、書いていない講座は null に戻す
-  // (course.json から前提を外したら D1 のロックも外れる)。前提は **slug** の JSON 配列。
+  // スキルツリー用の 3 列 (Phase 1)。教材が正本なので、書いていないステージは null に戻す
+  // (stage.json から前提を外したら D1 のロックも外れる)。前提は **slug** の JSON 配列。
   const prerequisites =
     stage.prerequisites && stage.prerequisites.length > 0
       ? `'${json(stage.prerequisites)}'`
@@ -237,9 +235,8 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
       // 確認クイズは教材ステージのレッスンにだけ紐づく。fixtures 側に同じ lesson.id が
       // 現れても quiz を生やさないよう、教材ステージかどうかで絞る（quizUuid は
       // stage / section を含まないため、絞らないと行が衝突する）。
-      // content 側は course 語彙のまま (`courses` / `courseId`)。
-      const quizSeed = content.courses.includes(stage)
-        ? content.quizzes.find((q) => q.courseId === stage.id && q.lessonId === lesson.id)
+      const quizSeed = content.stages.includes(stage)
+        ? content.quizzes.find((q) => q.stageId === stage.id && q.lessonId === lesson.id)
         : undefined;
       if (quizSeed) emitQuiz(tenantId, stage.id, quizSeed);
       // quiz の公開本文は参照元だけ。設問・解答を含む正本は非公開の履歴に積む。
@@ -418,7 +415,7 @@ function emitAssignment(tenantId: Tenant["id"], assignmentId: string) {
 
 /**
  * quiz / quiz_questions / quiz_options を emit する。
- * quiz UUID は stage + lesson.id（section 非依存）。講座を増やしても衝突しない。
+ * quiz UUID は stage + lesson.id（section 非依存）。ステージを増やしても衝突しない。
  * 設問・選択肢の UUID は並び順で安定しているので upsert し、教材から消えた行だけ
  * prune する。毎回 delete → insert すると quiz_questions の delete が
  * quiz_options と review_cards へ cascade し、索引が無い子表を全走査したうえで
@@ -520,12 +517,12 @@ function emitQuiz(
   );
 }
 
-/** upload-pdfs.ts が出すマニフェスト 1 行ぶん。教材側の語彙なので `courseSlug`。 */
+/** upload-pdfs.ts が出すマニフェスト 1 行ぶん。 */
 interface PdfManifestEntry {
   tenantId: string;
-  courseSlug: string;
+  stageSlug: string;
   lessonId: string;
-  /** OS ごとに分けた PDF (course.json の `pdfByOs`) の OS。分けない PDF には無い。 */
+  /** OS ごとに分けた PDF (stage.json の `pdfByOs`) の OS。分けない PDF には無い。 */
   os?: string;
   hash: string;
   key: string;
@@ -547,7 +544,7 @@ interface PdfManifestEntry {
  * 行に `archived_at` を付ける。受講者の一覧とダウンロードからは外れる (「まとめ.pdf」と
  * 「まとめ (Windows).pdf」が並んで古い方を開かないように) が、行と版履歴は残すので staff は
  * 旧版を取れる。また作るようになった資料は upsert が `archived_at` を戻し、版履歴の続きに
- * 積む。マニフェストに載らないレッスン (講座を絞ったローカル実行) は触らない。
+ * 積む。マニフェストに載らないレッスン (ステージを絞ったローカル実行) は触らない。
  */
 function emitPdfMaterials() {
   const manifestPath = process.env.PDF_MANIFEST;
@@ -562,10 +559,10 @@ function emitPdfMaterials() {
     if (e.os !== undefined && e.os !== "windows" && e.os !== "macos") {
       throw new Error(`pdf manifest: 未知の OS です: ${e.os} (${e.key})`);
     }
-    const lessonId = lessonUuid(e.tenantId, e.courseSlug, e.lessonId);
+    const lessonId = lessonUuid(e.tenantId, e.stageSlug, e.lessonId);
     // OS を分けない PDF の ID は従来のまま (既存の行と版履歴を引き継ぐ)。
     const materialId = stableUuid(
-      `lesson-material-pdf:${e.tenantId}:${e.courseSlug}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
+      `lesson-material-pdf:${e.tenantId}:${e.stageSlug}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
     );
     current.set(lessonId, [...(current.get(lessonId) ?? []), materialId]);
     lines.push(
@@ -592,7 +589,7 @@ function emitPdfMaterials() {
   }
 }
 
-for (const c of content.courses) emitStage("ses", c);
+for (const c of content.stages) emitStage("ses", c);
 
 const skillRegistry = JSON.parse(
   readFileSync(new URL("../../content/skills.json", import.meta.url), "utf8"),
@@ -604,19 +601,19 @@ for (const skill of skillRegistry)
 
 // 新形式の単元・課題は assignments と別に持つ。private は公開 bundle に入れない。
 for (const unit of content.units) {
-  const id = sectionIdMap.get(`ses:${unit.courseId}:${unit.unitId}`);
+  const id = sectionIdMap.get(`ses:${unit.stageId}:${unit.unitId}`);
   if (!id) throw new Error(`unit section missing: ${unit.unitId}`);
   lines.push(
     `insert into content_units (section_id, planned_hours, skills, reuses, "references") values (${strLit(id)}, ${unit.config.plannedHours}, ${strLit(JSON.stringify(unit.config.skills))}, ${strLit(JSON.stringify(unit.config.reuses))}, ${strLit(JSON.stringify(unit.references))}) on conflict (section_id) ${doUpdate("content_units", ["planned_hours", "skills", "reuses", '"references"'])};`,
   );
 }
-// 教材から外れた課題だけを止める。以前は講座の課題を毎回全部 active = 0 にしてから
+// 教材から外れた課題だけを止める。以前はステージの課題を毎回全部 active = 0 にしてから
 // 下の upsert で 1 に戻していて、内容が同じでも全課題を 2 回ずつ書いていた。
-for (const course of content.courses.filter((c) => c.format === 2)) {
-  const stageId = stageIdMap.get(`ses:${course.id}`);
-  if (!stageId) throw new Error(`format 2 stage missing: ${course.id}`);
+for (const stage of content.stages.filter((c) => c.format === 2)) {
+  const stageId = stageIdMap.get(`ses:${stage.id}`);
+  if (!stageId) throw new Error(`format 2 stage missing: ${stage.id}`);
   const current = content.tasks
-    .filter((t) => t.courseId === course.id)
+    .filter((t) => t.stageId === stage.id)
     .map((t) => strLit(t.definition.id));
   lines.push(
     `update tasks set active = 0 where active <> 0 and section_id in (select id from sections where stage_id = ${strLit(stageId)})${current.length > 0 ? ` and id not in (${current.join(", ")})` : ""};`,
@@ -624,12 +621,12 @@ for (const course of content.courses.filter((c) => c.format === 2)) {
 }
 for (const [order, task] of content.tasks.entries()) {
   const d = task.definition;
-  const sectionId = sectionIdMap.get(`ses:${task.courseId}:${task.unitId}`);
+  const sectionId = sectionIdMap.get(`ses:${task.stageId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
   // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
   // 予備の類題 (#39) はレッスンを持たず、親の課題 ID (variant_of) を持つ。出題した受講者にだけ配る。
   const lessonId =
-    task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.courseId, task.lessonId));
+    task.lessonId === null ? "null" : strLit(lessonUuid("ses", task.stageId, task.lessonId));
   const variantOf = task.variantOf ? strLit(task.variantOf) : "null";
   // 配布一式 (bundle) は Node の課題だと D1 の 1 文に収まらないので、課題の行・版の記録・
   // 差し替えの 3 段で書く。1) 課題の行は置き場所 (単元・順・レッスン・類題の親) だけを書く。
@@ -697,11 +694,11 @@ for (const [order, task] of content.tasks.entries()) {
   );
 }
 
-// コーディング規則の正本 (packages/content/coding-rules.md と講座の courses/<slug>/coding-rules.md)。
+// コーディング規則の正本 (packages/content/coding-rules.md とステージの stages/<slug>/coding-rules.md)。
 // AI の一次レビューと人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す
 // (レビュー結果は内容ハッシュで残る)。
-// 消すのはこの checkout の範囲だけ (共通と、packages/content/courses/ にある講座。modules が
-// 無くても含める)。外部リポジトリの講座は、この checkout にフォルダーが無い。範囲を絞らないと、
+// 消すのはこの checkout の範囲だけ (共通と、packages/content/stages/ にあるステージ。modules が
+// 無くても含める)。外部リポジトリのステージは、この checkout にフォルダーが無い。範囲を絞らないと、
 // 本体の次の seed が外部の CI で入れた規則を消し、外部の課題のレビューが規則の欠けた素材になる。
 const codingRules = content.codingRules ?? [];
 const codingRuleScopes = listCodingRuleScopes();
@@ -739,7 +736,7 @@ if (!contentOnly) {
    */
   const SEED_LEARNER2 = "seed-learner2";
   const SEED_SUBMISSION = "seed-submission-pending-1";
-  const entryStage = content.courses.find((c) => c.id === "dev-env-basics");
+  const entryStage = content.stages.find((c) => c.id === "dev-env-basics");
   const firstLesson = entryStage?.sections?.[0]?.lessons?.[0];
   const entryLessonId =
     entryStage && firstLesson
@@ -797,7 +794,7 @@ if (!contentOnly) {
   // 既存行にも当て直す (`do update`) — 割当時代に seed が入れた行が残っている DB を
   // 流し直したときに、 新しい形へ収束させるため。 2 度流しても同じ 1 行のまま。
   for (const [id, slug] of [
-    ...content.courses.map((c) => [`seed-enrollment-learner-${c.id}`, c.id] as const),
+    ...content.stages.map((c) => [`seed-enrollment-learner-${c.id}`, c.id] as const),
   ] as const) {
     lines.push(
       [

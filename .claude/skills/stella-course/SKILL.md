@@ -8,29 +8,29 @@ description: "STELLA の講座・課題・知識問題を作るスキル。forma
 講座、単元、課題、知識問題を作る、直す、既存の研修教材から移すときの手順です。
 形式の細かい規則は STELLA の文書が正本です。ここに規則の文を写して二重に持たないでください。このスキルは作業の順、判断、どの文書のどこを読むか、よくある誤りを持ちます。
 
-見本の講座は `courses/dev-env-basics/` (format 2) です。課題の定義は `src/task-schema.ts` と `src/task-content.ts`、導入手順は `ADDING_COURSE.md` の「新カリキュラムの format 2」です。
+見本の講座は `stages/dev-env-basics/` (format 2) です。課題の定義は `src/task-schema.ts` と `src/task-content.ts`、導入手順は `ADDING_STAGE.md` の「新カリキュラムの format 2」です。
 
 ## 0. どこで動いているか
 
 最初にどちらのリポジトリかを決め、以降のパスの先頭をそれに合わせます。
 
-- **STELLA 本体**。`packages/content/courses/` がある。文書は `packages/content/...`、講座は `packages/content/courses/<slug>/`、検査は `bun run content:check`。
-- **外部リポジトリ**。`stella-extra.json` がある。STELLA の写しは `.stella/`。文書は `.stella/packages/content/...`、講座はリポジトリ直下の `courses/<slug>/`。写しが無ければ、先に `node scripts/stella.mjs setup`。検査は `node scripts/stella.mjs check`。外部での作業は `references/extra-repo.md`。
+- **STELLA 本体**。`packages/content/stages/` がある。文書は `packages/content/...`、講座は `packages/content/stages/<slug>/`、検査は `bun run content:check`。
+- **外部リポジトリ**。`stella-extra.json` がある。STELLA の写しは `.stella/`。文書は `.stella/packages/content/...`、講座はリポジトリ直下の `stages/<slug>/`。写しが無ければ、先に `node scripts/stella.mjs setup`。検査は `node scripts/stella.mjs check`。外部での作業は `references/extra-repo.md`。
 
-以下、本体のパスで書きます。外部では文書の先頭に `.stella/` を付け、講座の置き場所だけ `courses/` に読み替えます。
+以下、本体のパスで書きます。外部では文書の先頭に `.stella/` を付け、講座の置き場所だけ `stages/` に読み替えます。
 
 Extra 講座 (`audience: granted`。講師が割り当てた受講者にだけ出る) のうち、公開リポジトリに置きたくないものは外部の非公開リポジトリに置きます。公開リポジトリの STELLA 本体には置きません。
 
-`.stella/` の中は写しです。そこを編集して直したことにしないでください。直すのは外部リポジトリの `courses/` と、足す台帳です。
+`.stella/` の中は写しです。そこを編集して直したことにしないでください。直すのは外部リポジトリの `stages/` と、足す台帳です。
 
 ## 1. 講座の要件を決める
 
-本文の前に `THEME_TO_COURSE.md` で要件を埋めます。到達目標は観測できる動詞で書きます (書ける、直せる、選べる、説明できる)。規模はトピック数で見ます。カリキュラム (takeaway の一覧) が固まる前にスライドを書き始めないでください。
+本文の前に `THEME_TO_STAGE.md` で要件を埋めます。到達目標は観測できる動詞で書きます (書ける、直せる、選べる、説明できる)。規模はトピック数で見ます。カリキュラム (takeaway の一覧) が固まる前にスライドを書き始めないでください。
 
-評価は format 2 では課題 (`tasks/`) と知識問題 (`knowledge.md`) です。`THEME_TO_COURSE.md` の「コード演習は javascript / typescript / sql だけ」は、旧形式の QuickJS 演習の話です。format 2 の実行は runner ごとに固定の手順で、テンプレートは `templates/runners/` にあります。
+評価は format 2 では課題 (`tasks/`) と知識問題 (`knowledge.md`) です。`THEME_TO_STAGE.md` の「コード演習は javascript / typescript / sql だけ」は、旧形式の QuickJS 演習の話です。format 2 の実行は runner ごとに固定の手順で、テンプレートは `templates/runners/` にあります。
 
 - **Basic**。公開リポジトリのカタログに載る講座。`audience` は書かないか `catalog`。slug、前提、線の親、カテゴリの正本は `docs/curriculum/07-stella-adoption-redesign.md` の §3.1 と §3.4。前提の無い根は `dev-env-basics` だけです。ここへ前提を足さないでください。
-- **Extra**。`course.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA の講座の slug。外部リポジトリの `name` は `packages/content/extra-repositories.json` に登録した名前で、講座の slug は `<name>-` で始めます。退役した slug は使えません。新しい島が要るときは `references/extra-repo.md`。
+- **Extra**。`stage.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA の講座の slug。外部リポジトリの `name` は `packages/content/extra-repositories.json` に登録した名前で、講座の slug は `<name>-` で始めます。退役した slug は使えません。新しい島が要るときは `references/extra-repo.md`。
 
 slug、講座名、ファイル名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
 
@@ -44,7 +44,7 @@ slug、講座名、ファイル名に受講者の名前を入れないでくだ�
 
 ## 3. 単元を作る
 
-`ADDING_COURSE.md` の format 2 の木に合わせます。
+`ADDING_STAGE.md` の format 2 の木に合わせます。
 
 ```text
 modules/<unit>/
@@ -71,12 +71,12 @@ runner を選び、テンプレートから始めます。`static-preview` と `
 SKILL=.claude/skills/stella-course   # ユーザー全体に入れたものなら ~/.claude/skills/stella-course
 node "$SKILL/scripts/scaffold.mjs" task \
   --content packages/content \
-  --courses packages/content/courses \
-  --course <slug> --unit <単元フォルダー> --task <課題フォルダー> \
+  --stages packages/content/stages \
+  --stage <slug> --unit <単元フォルダー> --task <課題フォルダー> \
   --runner <runner> --kind <kind> --title "<題>"
 ```
 
-外部では `--content .stella/packages/content`、`--courses courses`。`SKILL` は、`node scripts/stella.mjs skill` で取り込んだあとなら `.claude/skills/stella-course` のままで動きます。取り込む前なら `SKILL=.stella/.claude/skills/stella-course` にします。
+外部では `--content .stella/packages/content`、`--stages stages`。旧い `courses/` も overlay は受け付けます。`SKILL` は、`node scripts/stella.mjs skill` で取り込んだあとなら `.claude/skills/stella-course` のままで動きます。取り込む前なら `SKILL=.stella/.claude/skills/stella-course` にします。
 
 scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題へ写し、`task-fields.json` から `task.json` の下書きを書きます。`pattern`、`skills`、`sources` は、同じ単元の既存の課題があればその値、無ければ台帳の先頭です。課題の内容に合わせて直します。`README.md`、`hints.md`、`private/solution/` (テンプレートの、テストが通る実装)、`private/explanation.md`、`private/review.md`、`private/variants/.gitkeep` も置きます。既存の課題フォルダーがあるときは何も書きません。
 
@@ -93,7 +93,7 @@ scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題
 ## 5. 知識問題とまとめ
 
 - 公開する解説は `doc.md`。解答の解説をここに混在させないでください。解答の解説は `private/explanation.md`。
-- 知識問題はレッスンの `knowledge.md`。設問の見出しは `### Q1. 設問文`、直後に `<!-- kind: single; skills: <スキルID> -->`。種別は `single` / `multiple` / `boolean`。選択肢と `<details>` の解答は `ADDING_COURSE.md` の見本に合わせます。正誤は `A. 正しい` / `B. 誤り` の 2 択、複数選択の正解は `**A, C** — 解説`。
+- 知識問題はレッスンの `knowledge.md`。設問の見出しは `### Q1. 設問文`、直後に `<!-- kind: single; skills: <スキルID> -->`。種別は `single` / `multiple` / `boolean`。選択肢と `<details>` の解答は `ADDING_STAGE.md` の見本に合わせます。正誤は `A. 正しい` / `B. 誤り` の 2 択、複数選択の正解は `**A, C** — 解説`。
 - format 2 では `practice.md` を配信しません。実装は課題、知識は `knowledge.md` に分けます。
 - Windows と macOS で手順が違う説明は、`doc.md` と課題文の `README.md` だけに `:::os` で書きます。スライド、動画、知識問題、ヒントは OS に依存しない文にします。記法は `STYLE_GUIDE.md` の「OS別の手順」。
 - 図解は `.claude/skills/diagram-design/` の手順で作ります。人に見せたくない内容は図に入れないでください。図解とサムネイルは公開の R2 に置かれ、slug とファイル名から URL を組み立てられます。

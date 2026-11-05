@@ -62,7 +62,7 @@ const pdfDir = mkdtempSync(join(tmpdir(), "stella-seed-writes-"));
 const pdfManifest = join(pdfDir, "pdf-manifest.json");
 const pdfEntry = (lessonId: string, os?: "windows" | "macos") => ({
   tenantId: "ses",
-  courseSlug: COURSE,
+  stageSlug: COURSE,
   lessonId,
   ...(os ? { os } : {}),
   hash: `hash-${lessonId}-${os ?? "both"}`,
@@ -153,10 +153,10 @@ describe("seed の書き込み行数", () => {
     sql = await exportSql();
     // 教材を 2 か所だけ変える: スライドのレッスンの題名と、確認クイズの選択肢 1 つの文面。
     changed = await exportSql((manifest) => {
-      const course = manifest.courses.find((c) => c.id === COURSE);
-      const lesson = course?.sections?.flatMap((s) => s.lessons).find((l) => l.id === LESSON);
+      const stage = manifest.stages.find((c) => c.id === COURSE);
+      const lesson = stage?.sections?.flatMap((s) => s.lessons).find((l) => l.id === LESSON);
       const option = manifest.quizzes.find(
-        (q) => q.courseId === COURSE && q.lessonId === QUIZ_LESSON,
+        (q) => q.stageId === COURSE && q.lessonId === QUIZ_LESSON,
       )?.questions[0]?.options[0];
       if (!lesson || !option) throw new Error("変える教材が見つかりません");
       lesson.title = `${lesson.title} (改)`;

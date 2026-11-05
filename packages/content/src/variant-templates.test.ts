@@ -20,7 +20,7 @@ import {
 } from "./variant-templates.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PARENT = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const PARENT = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -144,8 +144,8 @@ describe("テンプレートから類題を書き出す", () => {
   function fixture() {
     const root = mkdtempSync(join(tmpdir(), "stella-variant-templates-"));
     roots.push(root);
-    mkdirSync(join(root, "courses"));
-    cpSync(join(content, "courses/dev-env-basics"), join(root, "courses/dev-env-basics"), {
+    mkdirSync(join(root, "stages"));
+    cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
       recursive: true,
     });
     for (const name of ["skills.json", "patterns.json", "environments", "sources"])
@@ -202,10 +202,10 @@ describe("テンプレートから類題を書き出す", () => {
 
   it("書き出した類題を教材として読み、解答例が通り誤答が落ちる", async () => {
     const root = fixture();
-    const courses = join(root, "courses");
+    const stages = join(root, "stages");
     // 書き出す前は、類題 2 問と台帳がすべて食い違い。
-    expect(syncVariantTemplates(courses, { check: true }).changed).toHaveLength(3);
-    const written = syncVariantTemplates(courses, { check: false });
+    expect(syncVariantTemplates(stages, { check: true }).changed).toHaveLength(3);
+    const written = syncVariantTemplates(stages, { check: false });
     expect(written).toMatchObject({ total: 2 });
     expect(written.changed.map((p) => p.split("/").at(-1))).toEqual([
       "v01-profile",
@@ -213,9 +213,9 @@ describe("テンプレートから類題を書き出す", () => {
       "generated.json",
     ]);
     // 書き出したあとはテンプレートと一致する。
-    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
 
-    const variants = buildContentManifest(courses).tasks.filter((t) => t.variantOf);
+    const variants = buildContentManifest(stages).tasks.filter((t) => t.variantOf);
     expect(variants.map((v) => [v.definition.id, v.definition.title])).toEqual([
       ["dev-env-basics/m0-first-page/v01-profile", "見出しを「自己紹介」にする"],
       ["dev-env-basics/m0-first-page/v02-hobby", "見出しを「好きなこと」にする"],
@@ -228,36 +228,36 @@ describe("テンプレートから類題を書き出す", () => {
 
   it("書き出した類題を手で直すと check が食い違いを見つけ、作り直すと戻る", () => {
     const root = fixture();
-    const courses = join(root, "courses");
-    syncVariantTemplates(courses, { check: false });
+    const stages = join(root, "stages");
+    syncVariantTemplates(stages, { check: false });
     const readme = join(root, PARENT, "private/variants/v01-profile/README.md");
     writeFileSync(readme, "# 手で直した\n");
-    const drift = syncVariantTemplates(courses, { check: true }).changed;
+    const drift = syncVariantTemplates(stages, { check: true }).changed;
     expect(drift.map((path) => path.split("/").at(-1))).toEqual(["v01-profile"]);
     // 余分なファイルも食い違いとして見つける。
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     writeFileSync(join(root, PARENT, "private/variants/v02-hobby/extra.txt"), "x");
     expect(
-      syncVariantTemplates(courses, { check: true }).changed.map((p) => p.split("/").at(-1)),
+      syncVariantTemplates(stages, { check: true }).changed.map((p) => p.split("/").at(-1)),
     ).toEqual(["v02-hobby"]);
-    syncVariantTemplates(courses, { check: false });
-    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    syncVariantTemplates(stages, { check: false });
+    expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
   });
 
   it("テンプレートの置き場所の形の誤りを止める", () => {
     const root = fixture();
     writeFileSync(join(root, PARENT, "private/variant-templates/heading/notes.md"), "メモ");
-    expect(() => syncVariantTemplates(join(root, "courses"), { check: true })).toThrow(
+    expect(() => syncVariantTemplates(join(root, "stages"), { check: true })).toThrow(
       /params.json と template\//,
     );
   });
 
   it("台帳を残し、params.json から外した類題を消し、手で書いた類題は上書きしない", () => {
     const root = fixture();
-    const courses = join(root, "courses");
+    const stages = join(root, "stages");
     const templateDir = join(root, PARENT, "private/variant-templates/heading");
     const variantsDir = join(root, PARENT, "private/variants");
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([
       "v01-profile",
       "v02-hobby",
@@ -268,14 +268,14 @@ describe("テンプレートから類題を書き出す", () => {
       JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
     );
     expect(
-      syncVariantTemplates(courses, { check: true }).changed.map((p) => p.split("/").at(-1)),
+      syncVariantTemplates(stages, { check: true }).changed.map((p) => p.split("/").at(-1)),
     ).toEqual(["v02-hobby", "generated.json"]);
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     expect(existsSync(join(variantsDir, "v02-hobby"))).toBe(false);
     expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([
       "v01-profile",
     ]);
-    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
     // 台帳に無い (手で書いた) 類題と同じ名前は上書きしない。
     mkdirSync(join(variantsDir, "v03-hand"), { recursive: true });
     writeFileSync(join(variantsDir, "v03-hand/README.md"), "# 手で書いた\n");
@@ -286,34 +286,32 @@ describe("テンプレートから類題を書き出す", () => {
         { name: "v03-hand", values: { heading: "上書き" } },
       ]),
     );
-    expect(() => syncVariantTemplates(courses, { check: false })).toThrow(
+    expect(() => syncVariantTemplates(stages, { check: false })).toThrow(
       /手で書いた類題と同じ名前/,
     );
     expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
     // 最後の類題を外して params.json を空にすると、書き出し済みの類題も消える。
     writeFileSync(join(templateDir, "params.json"), "[]");
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     expect(existsSync(join(variantsDir, "v01-profile"))).toBe(false);
     expect(JSON.parse(readFileSync(join(templateDir, "generated.json"), "utf8"))).toEqual([]);
     expect(readFileSync(join(variantsDir, "v03-hand/README.md"), "utf8")).toBe("# 手で書いた\n");
-    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
     // 中身が書き出す結果と同じでも、台帳に無い類題は取り込まない (check でも止める)。
     writeFileSync(
       join(templateDir, "params.json"),
       JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
     );
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     writeFileSync(join(templateDir, "generated.json"), "[]\n");
-    expect(() => syncVariantTemplates(courses, { check: true })).toThrow(
-      /手で書いた類題と同じ名前/,
-    );
+    expect(() => syncVariantTemplates(stages, { check: true })).toThrow(/手で書いた類題と同じ名前/);
   });
 
   it("類題をテンプレートの間で移せる。2 つのテンプレートが同じ名前を作ると止める (variantTemplatesOf)", () => {
     const root = fixture();
-    const courses = join(root, "courses");
+    const stages = join(root, "stages");
     const templates = join(root, PARENT, "private/variant-templates");
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     // 名前の順で先に処理される a-heading へ v02 を移す。
     cpSync(join(templates, "heading"), join(templates, "a-heading"), { recursive: true });
     rmSync(join(templates, "a-heading/generated.json"));
@@ -325,7 +323,7 @@ describe("テンプレートから類題を書き出す", () => {
       join(templates, "heading/params.json"),
       JSON.stringify([{ name: "v01-profile", values: { heading: "自己紹介" } }]),
     );
-    syncVariantTemplates(courses, { check: false });
+    syncVariantTemplates(stages, { check: false });
     expect(
       readFileSync(join(root, PARENT, "private/variants/v02-hobby/README.md"), "utf8"),
     ).toContain("趣味");
@@ -335,11 +333,11 @@ describe("テンプレートから類題を書き出す", () => {
     expect(JSON.parse(readFileSync(join(templates, "heading/generated.json"), "utf8"))).toEqual([
       "v01-profile",
     ]);
-    expect(syncVariantTemplates(courses, { check: true }).changed).toEqual([]);
+    expect(syncVariantTemplates(stages, { check: true }).changed).toEqual([]);
     writeFileSync(
       join(templates, "a-heading/params.json"),
       JSON.stringify([{ name: "v01-profile", values: { heading: "趣味" } }]),
     );
-    expect(() => syncVariantTemplates(courses, { check: false })).toThrow(/テンプレートが 2 つ/);
+    expect(() => syncVariantTemplates(stages, { check: false })).toThrow(/テンプレートが 2 つ/);
   });
 });

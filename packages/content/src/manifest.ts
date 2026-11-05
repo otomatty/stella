@@ -1,10 +1,10 @@
 /**
- * packages/content/courses/<slug>/modules/** を走査して、LMS の Course /
+ * packages/content/stages/<slug>/modules/** を走査して、LMS の Stage /
  * Section / Lesson と quiz seed を組み立てる。ファイルが正本で、D1 はここから
- * 毎回作り直される。講座を足すときは courses/<slug>/ を増やす。
+ * 毎回作り直される。ステージを足すときは stages/<slug>/ を増やす。
  *
  * 対応:
- *   courses/<slug>/course.json   → Course
+ *   stages/<slug>/stage.json   → Stage
  *   モジュール (m0..)            → Section
  *   トピック   (t1..)            → Lesson (type: "slides")
  *   レッスンの doc.md            → Lesson (type: "text")
@@ -16,7 +16,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Course, Lesson, Section } from "../../../apps/web/src/data/types.js";
+import type { Stage, Lesson, Section } from "../../../apps/web/src/data/types.js";
 import {
   publicReferences,
   referenceContentIds,
@@ -42,21 +42,22 @@ import {
 import { parseSlides } from "./parse-slides.js";
 import { splitSlides } from "./split-slides.js";
 import { assertTaskRules, type CodingRule, readCodingRules } from "./coding-rules.js";
-import type { CourseColor, CourseConfig, QuizSeed } from "./types.js";
+import type { StageColor, StageConfig, QuizSeed } from "./types.js";
 
-/** 既存コード互換。新講座のテナントは course.json の tenantId。 */
+/** 既存コード互換。新ステージのテナントは stage.json の tenantId。 */
 export const TENANT_ID = "ses";
-/** 既存コード互換。いま入っている講座の slug。 */
-export const COURSE_SLUG = "dev-env-basics";
+/** 既存コード互換。いま入っているステージの slug。 */
+export const ENTRY_STAGE_SLUG = "dev-env-basics";
 
-const COURSE_COLORS = new Set<CourseColor>(["indigo", "green", "amber", "slate"]);
+const STAGE_COLORS = new Set<StageColor>(["indigo", "green", "amber", "slate"]);
 
-export function assetPath(courseSlug: string, topicDir: string, fileName: string): string {
-  return `tenant/${TENANT_ID}/courses/${courseSlug}/assets/${topicDir}/${fileName}`;
+export function assetPath(stageSlug: string, topicDir: string, fileName: string): string {
+  // R2 に保存済みの接頭辞なので `courses` のまま
+  return `tenant/${TENANT_ID}/courses/${stageSlug}/assets/${topicDir}/${fileName}`;
 }
 
 /**
- * course.json の thumbnail 省略時に探すファイル名（この順に採用する）。
+ * stage.json の thumbnail 省略時に探すファイル名（この順に採用する）。
  *
  * scripts/check_thumbnails.mjs の CANDIDATES と同じ並びに保つこと。検査だけが知っている
  * 拡張子があると、CI は通るのに manifest が拾わず、無言でストライプ表示のままになる。
@@ -75,8 +76,8 @@ const THUMBNAIL_CONTENT_TYPES: Record<string, string> = {
   ".jpeg": "image/jpeg",
 };
 
-/** 講座サムネイル 1 件。R2 のキーが D1 `courses.thumbnail_path` にそのまま入る。 */
-export interface CourseThumbnail {
+/** ステージサムネイル 1 件。R2 のキーが D1 `stages.thumbnail_path` にそのまま入る。 */
+export interface StageThumbnail {
   slug: string;
   tenantId: string;
   /** リポジトリ内の実ファイル（絶対パス） */
@@ -87,37 +88,37 @@ export interface CourseThumbnail {
 }
 
 /**
- * 講座ディレクトリ直下のサムネイルを解決する。
+ * ステージディレクトリ直下のサムネイルを解決する。
  *
  * キーに内容ハッシュを混ぜるのは、公開 R2 の URL が固定だと差し替えが CDN /
  * ブラウザキャッシュに阻まれて反映されないため。古いキーのオブジェクトは
  * `bun run r2:orphans` の棚卸しに出る（参照は最新の 1 件だけ）。
  *
  * テナントは assetPath() と同じ TENANT_ID を使う。seed (export-seed-sql.ts) が
- * 教材コースを `emitCourse("ses", ...)` で固定して入れるので、キーだけ course.json の
+ * 教材コースを `emitStage("ses", ...)` で固定して入れるので、キーだけ stage.json の
  * tenantId に従うと「ses のコース行が別テナントのプレフィクスを指す」状態になり、
  * その別テナントの r2:orphans が配信中のサムネイルを孤児として消せてしまう。
  */
 function resolveThumbnail(
-  courseDir: string,
+  stageDir: string,
   slug: string,
-  config: CourseConfig & { tenantId: string },
-): CourseThumbnail | undefined {
+  config: StageConfig & { tenantId: string },
+): StageThumbnail | undefined {
   const explicit = config.thumbnail?.trim();
   if (explicit && (explicit.includes("..") || explicit.startsWith("/"))) {
     throw new Error(
-      `courses/${slug}/course.json の thumbnail は講座ディレクトリ内の相対パスにしてください: ${explicit}`,
+      `stages/${slug}/stage.json の thumbnail はステージディレクトリ内の相対パスにしてください: ${explicit}`,
     );
   }
   const candidates = explicit ? [explicit] : [...THUMBNAIL_CANDIDATES];
   for (const rel of candidates) {
-    const file = join(courseDir, rel);
+    const file = join(stageDir, rel);
     if (!existsSync(file)) continue;
     const ext = extname(file).toLowerCase();
     const contentType = THUMBNAIL_CONTENT_TYPES[ext];
     if (!contentType) {
       throw new Error(
-        `courses/${slug} のサムネイルは ${Object.keys(THUMBNAIL_CONTENT_TYPES).join(" / ")} のみ対応しています: ${rel}`,
+        `stages/${slug} のサムネイルは ${Object.keys(THUMBNAIL_CONTENT_TYPES).join(" / ")} のみ対応しています: ${rel}`,
       );
     }
     const hash = createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 8);
@@ -125,33 +126,35 @@ function resolveThumbnail(
       slug,
       tenantId: TENANT_ID,
       sourceFile: file,
+      // R2 に保存済みの接頭辞なので `courses` のまま
       key: `tenant/${TENANT_ID}/courses/${slug}/thumbnail-${hash}${ext}`,
       contentType,
     };
   }
   if (explicit) {
     throw new Error(
-      `courses/${slug}/course.json の thumbnail が指すファイルがありません: ${explicit}`,
+      `stages/${slug}/stage.json の thumbnail が指すファイルがありません: ${explicit}`,
     );
   }
   return undefined;
 }
 
 /**
- * スキルツリーの星に出す講座アイコン (`courses/<slug>/icon.svg`)。
+ * スキルツリーの星に出すステージアイコン (`stages/<slug>/icon.svg`)。
  *
  * 単色シルエットの SVG で、色は持たず画面側が CSS mask + currentColor で塗る
  * (ダーク / ライトどちらのテーマでも星の文字色に追従する)。キーはサムネイルと
  * 同じく内容ハッシュ入りで、D1 `stages.icon_path` と R2 のキー計算を一致させる。
  */
-function resolveIcon(courseDir: string, slug: string): CourseThumbnail | undefined {
-  const file = join(courseDir, "icon.svg");
+function resolveIcon(stageDir: string, slug: string): StageThumbnail | undefined {
+  const file = join(stageDir, "icon.svg");
   if (!existsSync(file)) return undefined;
   const hash = createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 8);
   return {
     slug,
     tenantId: TENANT_ID,
     sourceFile: file,
+    // R2 に保存済みの接頭辞なので `courses` のまま
     key: `tenant/${TENANT_ID}/courses/${slug}/icon-${hash}.svg`,
     contentType: "image/svg+xml",
   };
@@ -165,80 +168,78 @@ function dirsIn(path: string): string[] {
   return sortNatural(readdirSync(path).filter((e) => statSync(join(path, e)).isDirectory()));
 }
 
-function defaultCoursesRoot(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), "..", "courses");
+function defaultStagesRoot(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..", "stages");
 }
 
-function readCourseConfig(courseDir: string, slug: string): CourseConfig & { tenantId: string } {
-  const file = join(courseDir, "course.json");
+function readStageConfig(stageDir: string, slug: string): StageConfig & { tenantId: string } {
+  const file = join(stageDir, "stage.json");
   if (!existsSync(file)) {
     throw new Error(
-      `courses/${slug}/course.json がありません。templates/course.json をコピーしてください。`,
+      `stages/${slug}/stage.json がありません。templates/stage.json をコピーしてください。`,
     );
   }
-  const raw = JSON.parse(readFileSync(file, "utf8")) as CourseConfig;
+  const raw = JSON.parse(readFileSync(file, "utf8")) as StageConfig;
   if (raw.format !== undefined && raw.format !== 1 && raw.format !== 2)
-    throw new Error(`courses/${slug}: format は 1 / 2 にしてください`);
+    throw new Error(`stages/${slug}: format は 1 / 2 にしてください`);
   if (raw.format === 2 || raw.plannedHours !== undefined) {
     if (
       typeof raw.plannedHours !== "number" ||
       !Number.isFinite(raw.plannedHours) ||
       raw.plannedHours <= 0
     )
-      throw new Error(`courses/${slug}: plannedHours は正の数にしてください`);
+      throw new Error(`stages/${slug}: plannedHours は正の数にしてください`);
   }
   if (raw.format === 2) {
-    readEnvironment(dirname(dirname(courseDir)), raw.environment);
+    readEnvironment(dirname(dirname(stageDir)), raw.environment);
     if (Object.keys(raw.exercises ?? {}).length)
-      throw new Error(`courses/${slug}: format 2 は exercises ではなく tasks を使います`);
+      throw new Error(`stages/${slug}: format 2 は exercises ではなく tasks を使います`);
   }
   if (raw.pdfByOs !== undefined && typeof raw.pdfByOs !== "boolean")
-    throw new Error(`courses/${slug}/course.json の pdfByOs は true / false にしてください`);
+    throw new Error(`stages/${slug}/stage.json の pdfByOs は true / false にしてください`);
   if (typeof raw.title !== "string" || raw.title.trim() === "") {
-    throw new Error(`courses/${slug}/course.json の title が空です。`);
+    throw new Error(`stages/${slug}/stage.json の title が空です。`);
   }
-  if (raw.color != null && !COURSE_COLORS.has(raw.color)) {
-    throw new Error(`courses/${slug}/course.json の color が不正です: ${raw.color}`);
+  if (raw.color != null && !STAGE_COLORS.has(raw.color)) {
+    throw new Error(`stages/${slug}/stage.json の color が不正です: ${raw.color}`);
   }
   if (raw.prerequisites != null) {
     if (!Array.isArray(raw.prerequisites) || raw.prerequisites.some((p) => typeof p !== "string")) {
-      throw new Error(
-        `courses/${slug}/course.json の prerequisites は slug の配列にしてください。`,
-      );
+      throw new Error(`stages/${slug}/stage.json の prerequisites は slug の配列にしてください。`);
     }
     const trimmed = raw.prerequisites.map((p) => p.trim());
     if (trimmed.some((p) => p === "")) {
-      throw new Error(`courses/${slug}/course.json の prerequisites に空の slug があります。`);
+      throw new Error(`stages/${slug}/stage.json の prerequisites に空の slug があります。`);
     }
     if (trimmed.includes(slug)) {
-      throw new Error(`courses/${slug}/course.json の prerequisites が自分自身を指しています。`);
+      throw new Error(`stages/${slug}/stage.json の prerequisites が自分自身を指しています。`);
     }
     if (new Set(trimmed).size !== trimmed.length) {
-      throw new Error(`courses/${slug}/course.json の prerequisites に重複があります。`);
+      throw new Error(`stages/${slug}/stage.json の prerequisites に重複があります。`);
     }
   }
   if (raw.appearances != null) {
     if (!Array.isArray(raw.appearances) || raw.appearances.some((s) => typeof s !== "string")) {
       throw new Error(
-        `courses/${slug}/course.json の appearances は扇名 (文字列) の配列にしてください。`,
+        `stages/${slug}/stage.json の appearances は扇名 (文字列) の配列にしてください。`,
       );
     }
     const trimmed = raw.appearances.map((s) => s.trim());
     if (trimmed.some((s) => s === "")) {
-      throw new Error(`courses/${slug}/course.json の appearances に空の扇名があります。`);
+      throw new Error(`stages/${slug}/stage.json の appearances に空の扇名があります。`);
     }
     if (new Set(trimmed).size !== trimmed.length) {
-      throw new Error(`courses/${slug}/course.json の appearances に重複があります。`);
+      throw new Error(`stages/${slug}/stage.json の appearances に重複があります。`);
     }
     if (trimmed.length < 2) {
       throw new Error(
-        `courses/${slug}/course.json の appearances は 2 つ以上の扇にしてください (1 つなら category で足ります)。`,
+        `stages/${slug}/stage.json の appearances は 2 つ以上の扇にしてください (1 つなら category で足ります)。`,
       );
     }
     // 扇ごとの親が無いと、複製は線の元も鍵も持てない (実行時は複製そのものを作らない)。
     if (raw.appearancePrerequisites == null) {
       throw new Error(
-        `courses/${slug}/course.json の appearances には appearancePrerequisites が必要です (全扇ぶんの親を書きます)。`,
+        `stages/${slug}/stage.json の appearances には appearancePrerequisites が必要です (全扇ぶんの親を書きます)。`,
       );
     }
   }
@@ -246,19 +247,19 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     const sectors = (raw.appearances ?? []).map((s) => s.trim());
     if (sectors.length === 0) {
       throw new Error(
-        `courses/${slug}/course.json の appearancePrerequisites には appearances が必要です。`,
+        `stages/${slug}/stage.json の appearancePrerequisites には appearances が必要です。`,
       );
     }
     const groups = raw.appearancePrerequisites;
     if (typeof groups !== "object" || Array.isArray(groups)) {
       throw new Error(
-        `courses/${slug}/course.json の appearancePrerequisites は扇名 → slug 配列にしてください。`,
+        `stages/${slug}/stage.json の appearancePrerequisites は扇名 → slug 配列にしてください。`,
       );
     }
     const keys = Object.keys(groups);
     if ([...keys].sort().join("\0") !== [...sectors].sort().join("\0")) {
       throw new Error(
-        `courses/${slug}/course.json の appearancePrerequisites のキーは appearances と同じ扇にしてください。`,
+        `stages/${slug}/stage.json の appearancePrerequisites のキーは appearances と同じ扇にしてください。`,
       );
     }
     const union: string[] = [];
@@ -266,28 +267,28 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
       const slugs = groups[sector];
       if (!Array.isArray(slugs) || slugs.some((p) => typeof p !== "string")) {
         throw new Error(
-          `courses/${slug}/course.json の appearancePrerequisites.${sector} は slug の配列にしてください。`,
+          `stages/${slug}/stage.json の appearancePrerequisites.${sector} は slug の配列にしてください。`,
         );
       }
       const trimmedSlugs = slugs.map((p) => p.trim());
       if (trimmedSlugs.some((p) => p === "")) {
         throw new Error(
-          `courses/${slug}/course.json の appearancePrerequisites.${sector} に空の slug があります。`,
+          `stages/${slug}/stage.json の appearancePrerequisites.${sector} に空の slug があります。`,
         );
       }
       if (trimmedSlugs.includes(slug)) {
         throw new Error(
-          `courses/${slug}/course.json の appearancePrerequisites.${sector} が自分自身を指しています。`,
+          `stages/${slug}/stage.json の appearancePrerequisites.${sector} が自分自身を指しています。`,
         );
       }
       if (new Set(trimmedSlugs).size !== trimmedSlugs.length) {
         throw new Error(
-          `courses/${slug}/course.json の appearancePrerequisites.${sector} に重複があります。`,
+          `stages/${slug}/stage.json の appearancePrerequisites.${sector} に重複があります。`,
         );
       }
       if (trimmedSlugs.length !== 1) {
         throw new Error(
-          `courses/${slug}/course.json の appearancePrerequisites.${sector} は slug をちょうど 1 つにしてください (その扇の親 = 線の元)。`,
+          `stages/${slug}/stage.json の appearancePrerequisites.${sector} は slug をちょうど 1 つにしてください (その扇の親 = 線の元)。`,
         );
       }
       for (const prereq of trimmedSlugs) {
@@ -297,7 +298,7 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     const listed = (raw.prerequisites ?? []).map((p) => p.trim());
     if (listed.join("\0") !== union.join("\0")) {
       throw new Error(
-        `courses/${slug}/course.json の prerequisites は appearancePrerequisites の和集合にしてください。`,
+        `stages/${slug}/stage.json の prerequisites は appearancePrerequisites の和集合にしてください。`,
       );
     }
   }
@@ -305,46 +306,46 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
     const listed = (raw.prerequisites ?? []).map((p) => p.trim());
     if (raw.parent != null) {
       if (typeof raw.parent !== "string" || raw.parent.trim() === "") {
-        throw new Error(`courses/${slug}/course.json の parent は slug (文字列) にしてください。`);
+        throw new Error(`stages/${slug}/stage.json の parent は slug (文字列) にしてください。`);
       }
       if (raw.appearances != null) {
         throw new Error(
-          `courses/${slug}/course.json の parent は appearances と併用できません (扇ごとの親は appearancePrerequisites に書きます)。`,
+          `stages/${slug}/stage.json の parent は appearances と併用できません (扇ごとの親は appearancePrerequisites に書きます)。`,
         );
       }
       if (!listed.includes(raw.parent.trim())) {
         throw new Error(
-          `courses/${slug}/course.json の parent は prerequisites に含めてください: ${raw.parent}`,
+          `stages/${slug}/stage.json の parent は prerequisites に含めてください: ${raw.parent}`,
         );
       }
     } else if (listed.length >= 2 && raw.appearances == null) {
       throw new Error(
-        `courses/${slug}/course.json の prerequisites が 2 つ以上なので、線を引く 1 つを parent に指定してください。`,
+        `stages/${slug}/stage.json の prerequisites が 2 つ以上なので、線を引く 1 つを parent に指定してください。`,
       );
     }
   }
   for (const field of ["canDo", "theme"] as const) {
     const value = raw[field];
     if (value != null && (typeof value !== "string" || value.trim() === "")) {
-      throw new Error(`courses/${slug}/course.json の ${field} は空でない文字列にしてください。`);
+      throw new Error(`stages/${slug}/stage.json の ${field} は空でない文字列にしてください。`);
     }
   }
   const audience = raw.audience ?? "catalog";
   if (audience !== "catalog" && audience !== "granted") {
     throw new Error(
-      `courses/${slug}/course.json の audience は "catalog" または "granted" にしてください: ${String(raw.audience)}`,
+      `stages/${slug}/stage.json の audience は "catalog" または "granted" にしてください: ${String(raw.audience)}`,
     );
   }
   if (audience === "granted") {
     const listed = (raw.prerequisites ?? []).map((p) => p.trim());
     if (listed.length === 0) {
       throw new Error(
-        `courses/${slug}/course.json の audience が granted のときは prerequisites を 1 つ以上書いてください。`,
+        `stages/${slug}/stage.json の audience が granted のときは prerequisites を 1 つ以上書いてください。`,
       );
     }
     if (raw.appearances != null) {
       throw new Error(
-        `courses/${slug}/course.json の audience が granted のときは appearances を書けません。`,
+        `stages/${slug}/stage.json の audience が granted のときは appearances を書けません。`,
       );
     }
   }
@@ -353,7 +354,7 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
   // コース行と R2 キーのテナントがずれる (どちらも黙って壊れる) ので先に落とす。
   if (tenantId !== TENANT_ID) {
     throw new Error(
-      `courses/${slug}/course.json の tenantId は "${TENANT_ID}" のみ対応しています: ${tenantId}`,
+      `stages/${slug}/stage.json の tenantId は "${TENANT_ID}" のみ対応しています: ${tenantId}`,
     );
   }
   return { ...raw, tenantId };
@@ -366,13 +367,13 @@ function readCourseConfig(courseDir: string, slug: string): CourseConfig & { ten
  * slides.md はトピックディレクトリから見た `assets/x.svg` 形式で書かれている。
  * 前者は自分でトピックを名乗るので `topicDir` を渡さず、後者は呼び出し側が渡す。
  */
-function rewriteImagePaths(courseSlug: string, markdown: string, topicDir?: string): string {
+function rewriteImagePaths(stageSlug: string, markdown: string, topicDir?: string): string {
   return markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (whole, alt: string, src: string) => {
     if (/^https?:/.test(src)) return whole;
     const withTopic = /^(t[^/]+)\/assets\/(.+)$/.exec(src);
-    if (withTopic) return `![${alt}](${assetPath(courseSlug, withTopic[1], withTopic[2])})`;
+    if (withTopic) return `![${alt}](${assetPath(stageSlug, withTopic[1], withTopic[2])})`;
     const bare = /^(?:\.\/)?assets\/(.+)$/.exec(src);
-    if (bare && topicDir) return `![${alt}](${assetPath(courseSlug, topicDir, bare[1])})`;
+    if (bare && topicDir) return `![${alt}](${assetPath(stageSlug, topicDir, bare[1])})`;
     return whole;
   });
 }
@@ -412,38 +413,38 @@ function lessonKey(topicIds: string[]): string {
 }
 
 /**
- * ログインなしで読める単元 (`unit.json` の `public`) を置ける講座か。
+ * ログインなしで読める単元 (`unit.json` の `public`) を置けるステージか。
  *
- * 公開するのは VS Code を入れる前に読む入口の単元だけ。前提のある講座はスキルツリーで
- * 霧やロックの向こうにあり、本文を未ログインで読めると、伏せている講座の中身が漏れる。
- * 専用星 (`audience: granted`) は割り当てた受講者にしか見せない講座なので置けない。
+ * 公開するのは VS Code を入れる前に読む入口の単元だけ。前提のあるステージはスキルツリーで
+ * 霧やロックの向こうにあり、本文を未ログインで読めると、伏せているステージの中身が漏れる。
+ * 専用星 (`audience: granted`) は割り当てた受講者にしか見せないステージなので置けない。
  */
-function assertPublicUnitCourse(
+function assertPublicUnitStage(
   slug: string,
   unitId: string,
-  config: CourseConfig & { tenantId: string },
+  config: StageConfig & { tenantId: string },
 ): void {
   if (config.audience === "granted")
     throw new Error(
-      `courses/${slug}/modules/${unitId}: audience が granted の講座には、ログインなしで読める単元 (unit.json の public) を置けません`,
+      `stages/${slug}/modules/${unitId}: audience が granted のステージには、ログインなしで読める単元 (unit.json の public) を置けません`,
     );
   if ((config.prerequisites ?? []).length > 0 || (config.appearances ?? []).length > 0)
     throw new Error(
-      `courses/${slug}/modules/${unitId}: ログインなしで読める単元 (unit.json の public) は、前提のない講座 (スキルツリーの入口) にだけ置けます`,
+      `stages/${slug}/modules/${unitId}: ログインなしで読める単元 (unit.json の public) は、前提のないステージ (スキルツリーの入口) にだけ置けます`,
     );
 }
 
-function buildOneCourse(
+function buildOneStage(
   slug: string,
-  courseDir: string,
+  stageDir: string,
   modulesRoot: string,
-  config: CourseConfig & { tenantId: string },
-): { course: Course; quizzes: QuizSeed[]; tasks: TaskSeed[]; units: UnitSeed[] } {
+  config: StageConfig & { tenantId: string },
+): { stage: Stage; quizzes: QuizSeed[]; tasks: TaskSeed[]; units: UnitSeed[] } {
   const sections: Section[] = [];
   const quizzes: QuizSeed[] = [];
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
-  const contentRoot = dirname(dirname(courseDir));
+  const contentRoot = dirname(dirname(stageDir));
   const skillIds =
     config.format === 2 ? registryIds(contentRoot, "skills.json") : new Set<string>();
   const moduleTitles = config.modules ?? {};
@@ -478,7 +479,7 @@ function buildOneCourse(
       units.push(loaded.unit);
       tasks.push(...loaded.tasks);
       publicUnit = loaded.unit.config.public === true;
-      if (publicUnit) assertPublicUnitCourse(slug, moduleDir, config);
+      if (publicUnit) assertPublicUnitStage(slug, moduleDir, config);
     }
 
     for (const lessonDir of dirsIn(modulePath)) {
@@ -583,7 +584,7 @@ function buildOneCourse(
             : {}),
         });
         quizzes.push({
-          courseId: slug,
+          stageId: slug,
           lessonId: quizLessonId,
           passScore: 80,
           questions,
@@ -595,7 +596,7 @@ function buildOneCourse(
         });
       }
 
-      // コード演習は VS Code 拡張で解く。course.json の exercises が正本で、
+      // コード演習は VS Code 拡張で解く。stage.json の exercises が正本で、
       // assignment 本体は seed が @stella/shared から引く。
       // レッスン id は assignment id から作る。配列の並び位置を使うと、演習の
       // 挿入・入れ替えで既存 id が別課題を指し、lesson_progress が付け替わる。
@@ -642,7 +643,7 @@ function buildOneCourse(
     });
   }
 
-  // 固定した開始点が実装を含むのは講座の課題だけ (類題は出題した受講者にしか配らない)。
+  // 固定した開始点が実装を含むのはステージの課題だけ (類題は出題した受講者にしか配らない)。
   assertFixedStartCovers(tasks.filter((t) => !t.variantOf));
 
   // タイポしたキーの演習が黙って消えないように、未使用キーはビルドで落とす。
@@ -651,16 +652,16 @@ function buildOneCourse(
   );
   if (unusedExerciseKeys.length > 0) {
     throw new Error(
-      `courses/${slug}/course.json の exercises に、対応するレッスンが無いキーがあります: ${unusedExerciseKeys.join(", ")}`,
+      `stages/${slug}/stage.json の exercises に、対応するレッスンが無いキーがあります: ${unusedExerciseKeys.join(", ")}`,
     );
   }
 
   const lessonsCount = sections.reduce((n, s) => n + s.lessons.length, 0);
-  const thumbnail = resolveThumbnail(courseDir, slug, config);
-  const icon = resolveIcon(courseDir, slug);
+  const thumbnail = resolveThumbnail(stageDir, slug, config);
+  const icon = resolveIcon(stageDir, slug);
   // 線を引く親。省略時は前提が 1 つならそれ (下流が「無い」を解釈しなくて済む)。
   // ただし appearances 持ちは補完しない — 扇ごとの親は appearancePrerequisites が持つので、
-  // 全扇が同じ前提を指して和集合が 1 件になっても、この講座に parent は付かない。
+  // 全扇が同じ前提を指して和集合が 1 件になっても、このステージに parent は付かない。
   const prerequisiteSlugs = (config.prerequisites ?? []).map((p) => p.trim());
   const hasAppearances = (config.appearances?.length ?? 0) > 0;
   const parent =
@@ -668,7 +669,7 @@ function buildOneCourse(
     (prerequisiteSlugs.length === 1 && !hasAppearances ? prerequisiteSlugs[0] : undefined);
 
   return {
-    course: {
+    stage: {
       id: slug,
       ...(config.format === 2 ? { format: 2 as const, environment: config.environment } : {}),
       ...(config.plannedHours === undefined ? {} : { duration: config.plannedHours }),
@@ -700,27 +701,27 @@ function buildOneCourse(
 }
 
 /**
- * 前提講座 (`prerequisites`) に書いた slug が実在するか。
+ * 前提ステージ (`prerequisites`) に書いた slug が実在するか。
  *
  * 前提はスキルツリーの **ハードロック** なので、綴り違いをそのまま D1 へ流すと
- * 「誰も開けない講座」が黙って生まれる。循環は `assertPrerequisiteCycles`。
+ * 「誰も開けないステージ」が黙って生まれる。循環は `assertPrerequisiteCycles`。
  */
-function assertPrerequisiteTargets(courses: Course[]): void {
-  const bySlug = new Map(courses.map((c) => [c.id, c]));
-  for (const course of courses) {
-    for (const prereq of course.prerequisites ?? []) {
+function assertPrerequisiteTargets(stages: Stage[]): void {
+  const bySlug = new Map(stages.map((c) => [c.id, c]));
+  for (const stage of stages) {
+    for (const prereq of stage.prerequisites ?? []) {
       if (!bySlug.has(prereq)) {
         throw new Error(
-          `courses/${course.id}/course.json の prerequisites に存在しない講座があります: ${prereq}`,
+          `stages/${stage.id}/stage.json の prerequisites に存在しないステージがあります: ${prereq}`,
         );
       }
     }
   }
 }
 
-/** 深さ優先で後退辺 (= 循環) を探す。講座数は 2 桁なので素朴な再帰で足りる。 */
-function assertPrerequisiteCycles(courses: Course[]): void {
-  const bySlug = new Map(courses.map((c) => [c.id, c]));
+/** 深さ優先で後退辺 (= 循環) を探す。ステージ数は 2 桁なので素朴な再帰で足りる。 */
+function assertPrerequisiteCycles(stages: Stage[]): void {
+  const bySlug = new Map(stages.map((c) => [c.id, c]));
   const visiting = new Set<string>();
   const done = new Set<string>();
   const path: string[] = [];
@@ -728,7 +729,7 @@ function assertPrerequisiteCycles(courses: Course[]): void {
     if (done.has(slug)) return;
     if (visiting.has(slug)) {
       const cycle = [...path.slice(path.indexOf(slug)), slug];
-      throw new Error(`course.json の prerequisites が循環しています: ${cycle.join(" → ")}`);
+      throw new Error(`stage.json の prerequisites が循環しています: ${cycle.join(" → ")}`);
     }
     visiting.add(slug);
     path.push(slug);
@@ -737,14 +738,14 @@ function assertPrerequisiteCycles(courses: Course[]): void {
     visiting.delete(slug);
     done.add(slug);
   };
-  for (const course of courses) walk(course.id);
+  for (const stage of stages) walk(stage.id);
 }
 
 /** 線の親。明示の `parent`、無ければ `prerequisites` の先頭。 */
-function lineParentSlug(course: Course): string | undefined {
-  const explicit = course.parent?.trim();
+function lineParentSlug(stage: Stage): string | undefined {
+  const explicit = stage.parent?.trim();
   if (explicit) return explicit;
-  const first = course.prerequisites?.find((p) => p.trim() !== "");
+  const first = stage.prerequisites?.find((p) => p.trim() !== "");
   return first?.trim();
 }
 
@@ -754,35 +755,35 @@ function lineParentSlug(course: Course): string | undefined {
  * catalog が granted を prerequisites / parent に持つと、他の受講者が永久ロックされ、
  * ロック理由から名前が漏れる。これは禁止のまま。
  *
- * granted が granted を親にすることは許す。代わりに、線の親を順にたどって catalog 講座に
+ * granted が granted を親にすることは許す。代わりに、線の親を順にたどって catalog ステージに
  * 着くことを検査する。granted だけで閉じている、または未知の slug に当たる鎖は落とす。
  * 循環で止まらないよう訪問済みで打ち切る (循環そのものは `assertPrerequisiteCycles`)。
  */
-function assertGrantedAudienceGraph(courses: Course[]): void {
-  const bySlug = new Map(courses.map((c) => [c.id, c]));
-  const grantedSlugs = new Set(courses.filter((c) => c.audience === "granted").map((c) => c.id));
+function assertGrantedAudienceGraph(stages: Stage[]): void {
+  const bySlug = new Map(stages.map((c) => [c.id, c]));
+  const grantedSlugs = new Set(stages.filter((c) => c.audience === "granted").map((c) => c.id));
   if (grantedSlugs.size === 0) return;
 
-  for (const course of courses) {
-    if (course.audience === "granted") continue;
-    for (const prereq of course.prerequisites ?? []) {
+  for (const stage of stages) {
+    if (stage.audience === "granted") continue;
+    for (const prereq of stage.prerequisites ?? []) {
       if (grantedSlugs.has(prereq)) {
         throw new Error(
-          `courses/${course.id}/course.json の prerequisites に granted 講座を書けません: ${prereq}`,
+          `stages/${stage.id}/stage.json の prerequisites に granted ステージを書けません: ${prereq}`,
         );
       }
     }
-    if (course.parent != null && grantedSlugs.has(course.parent)) {
+    if (stage.parent != null && grantedSlugs.has(stage.parent)) {
       throw new Error(
-        `courses/${course.id}/course.json の parent に granted 講座を書けません: ${course.parent}`,
+        `stages/${stage.id}/stage.json の parent に granted ステージを書けません: ${stage.parent}`,
       );
     }
   }
 
-  for (const course of courses) {
-    if (course.audience !== "granted") continue;
+  for (const stage of stages) {
+    if (stage.audience !== "granted") continue;
     const visited = new Set<string>();
-    let slug: string | undefined = course.id;
+    let slug: string | undefined = stage.id;
     let reachedCatalog = false;
     while (slug && !visited.has(slug)) {
       visited.add(slug);
@@ -796,52 +797,52 @@ function assertGrantedAudienceGraph(courses: Course[]): void {
     }
     if (!reachedCatalog) {
       throw new Error(
-        `courses/${course.id}/course.json の granted 講座は、線の親をたどると catalog 講座に着く必要があります。`,
+        `stages/${stage.id}/stage.json の granted ステージは、線の親をたどると catalog ステージに着く必要があります。`,
       );
     }
   }
 }
 
-export function buildContentManifest(coursesRoot: string = defaultCoursesRoot()): {
-  courses: Course[];
+export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): {
+  stages: Stage[];
   quizzes: QuizSeed[];
   tasks: TaskSeed[];
   units: UnitSeed[];
   codingRules: CodingRule[];
-  /** 配布 PDF を OS ごとに分ける講座の slug (course.json の `pdfByOs`)。 */
+  /** 配布 PDF を OS ごとに分けるステージの slug (stage.json の `pdfByOs`)。 */
   pdfByOs: string[];
 } {
-  const courses: Course[] = [];
+  const stages: Stage[] = [];
   const quizzes: QuizSeed[] = [];
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
   const pdfByOs: string[] = [];
 
-  for (const slug of dirsIn(coursesRoot)) {
-    const courseDir = join(coursesRoot, slug);
-    const modulesRoot = join(courseDir, "modules");
+  for (const slug of dirsIn(stagesRoot)) {
+    const stageDir = join(stagesRoot, slug);
+    const modulesRoot = join(stageDir, "modules");
     if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
-    const config = readCourseConfig(courseDir, slug);
-    const built = buildOneCourse(slug, courseDir, modulesRoot, config);
+    const config = readStageConfig(stageDir, slug);
+    const built = buildOneStage(slug, stageDir, modulesRoot, config);
     if (config.pdfByOs) pdfByOs.push(slug);
-    courses.push(built.course);
+    stages.push(built.stage);
     quizzes.push(...built.quizzes);
     tasks.push(...built.tasks);
     units.push(...built.units);
   }
 
-  assertPrerequisiteTargets(courses);
+  assertPrerequisiteTargets(stages);
   // 閉じた granted 鎖は、循環より先に「catalog に着かない」として落とす。
-  assertGrantedAudienceGraph(courses);
-  assertPrerequisiteCycles(courses);
+  assertGrantedAudienceGraph(stages);
+  assertPrerequisiteCycles(stages);
 
   // 課題が指すコーディング規則の存在・範囲・導入済みかを確かめる (07 §6.4.1)。
-  // 前提は準備中の講座 (modules が無い) を経由しうるので、全講座の course.json から引く。
-  const codingRules = readCodingRules(dirname(coursesRoot));
+  // 前提は準備中のステージ (modules が無い) を経由しうるので、全ステージの stage.json から引く。
+  const codingRules = readCodingRules(dirname(stagesRoot));
   const prerequisites = new Map<string, string[]>();
   const prerequisitesOf = (slug: string): string[] => {
     if (!prerequisites.has(slug)) {
-      const file = join(coursesRoot, slug, "course.json");
+      const file = join(stagesRoot, slug, "stage.json");
       const raw = existsSync(file)
         ? (JSON.parse(readFileSync(file, "utf8")) as { prerequisites?: unknown })
         : {};
@@ -858,7 +859,7 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
     assertTaskRules(
       {
         id: task.definition.id,
-        courseId: task.courseId,
+        stageId: task.stageId,
         unitId: task.unitId,
         rules: task.definition.review.rules ?? [],
       },
@@ -866,40 +867,38 @@ export function buildContentManifest(coursesRoot: string = defaultCoursesRoot())
       prerequisitesOf,
     );
 
-  return { courses, quizzes, tasks, units, pdfByOs, codingRules };
+  return { stages, quizzes, tasks, units, pdfByOs, codingRules };
 }
 
 /**
- * 全講座のサムネイルを列挙する。R2 へ流す `upload-materials.ts` が使う。
+ * 全ステージのサムネイルを列挙する。R2 へ流す `upload-materials.ts` が使う。
  *
- * キーは buildContentManifest() が D1 に入れる `courses.thumbnail_path` と同じ
+ * キーは buildContentManifest() が D1 に入れる `stages.thumbnail_path` と同じ
  * 計算なので、seed とアップロードが同じコミットから走る限り必ず一致する。
  */
-export function collectCourseThumbnails(
-  coursesRoot: string = defaultCoursesRoot(),
-): CourseThumbnail[] {
-  const thumbnails: CourseThumbnail[] = [];
-  for (const slug of dirsIn(coursesRoot)) {
-    const courseDir = join(coursesRoot, slug);
-    if (!existsSync(join(courseDir, "modules"))) continue;
-    const thumbnail = resolveThumbnail(courseDir, slug, readCourseConfig(courseDir, slug));
+export function collectStageThumbnails(stagesRoot: string = defaultStagesRoot()): StageThumbnail[] {
+  const thumbnails: StageThumbnail[] = [];
+  for (const slug of dirsIn(stagesRoot)) {
+    const stageDir = join(stagesRoot, slug);
+    if (!existsSync(join(stageDir, "modules"))) continue;
+    const thumbnail = resolveThumbnail(stageDir, slug, readStageConfig(stageDir, slug));
     if (thumbnail) thumbnails.push(thumbnail);
   }
   return thumbnails;
 }
 
 /**
- * 全講座のスキルツリーアイコンを列挙する。R2 へ流す `upload-materials.ts` が使う。
+ * 全ステージのスキルツリーアイコンを列挙する。R2 へ流す `upload-materials.ts` が使う。
  *
  * キーは buildContentManifest() が D1 に入れる `stages.icon_path` と同じ計算なので、
  * seed とアップロードが同じコミットから走る限り必ず一致する。
  */
-export function collectCourseIcons(coursesRoot: string = defaultCoursesRoot()): CourseThumbnail[] {
-  const icons: CourseThumbnail[] = [];
-  for (const slug of dirsIn(coursesRoot)) {
-    const courseDir = join(coursesRoot, slug);
-    if (!existsSync(join(courseDir, "modules"))) continue;
-    const icon = resolveIcon(courseDir, slug);
+export function collectStageIcons(stagesRoot: string = defaultStagesRoot()): StageThumbnail[] {
+  const icons: StageThumbnail[] = [];
+  for (const slug of dirsIn(stagesRoot)) {
+    const stageDir = join(stagesRoot, slug);
+    if (!existsSync(join(stageDir, "modules"))) continue;
+    const icon = resolveIcon(stageDir, slug);
     if (icon) icons.push(icon);
   }
   return icons;

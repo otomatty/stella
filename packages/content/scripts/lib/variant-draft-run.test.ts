@@ -16,19 +16,19 @@ import { type DraftModel, type DraftRequest, runDraftGroup } from "./variant-dra
 import { CheckEnvironmentError, scrubbedEnv } from "./task-run-check.js";
 
 const content = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const TASK = "courses/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
+const TASK = "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-/** 見本の講座だけを持つ一時の教材 (コーディング規則はほかの講座を指すので写さない)。 */
+/** 見本のステージだけを持つ一時の教材 (コーディング規則はほかのステージを指すので写さない)。 */
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "stella-variant-draft-test-"));
   roots.push(root);
   for (const name of ["skills.json", "patterns.json", "environments", "sources"])
     cpSync(join(content, name), join(root, name), { recursive: true });
-  cpSync(join(content, "courses/dev-env-basics"), join(root, "courses/dev-env-basics"), {
+  cpSync(join(content, "stages/dev-env-basics"), join(root, "stages/dev-env-basics"), {
     recursive: true,
   });
   return { contentRoot: root, taskDir: join(root, TASK) };
@@ -121,7 +121,7 @@ describe("AI の下書きを検査して書き出す", () => {
       "=== private/solution/index.html ===",
     );
 
-    const variants = buildContentManifest(join(target.contentRoot, "courses")).tasks.filter(
+    const variants = buildContentManifest(join(target.contentRoot, "stages")).tasks.filter(
       (t) => t.variantOf,
     );
     expect(variants.map((v) => [v.definition.id, v.definition.kind])).toEqual([

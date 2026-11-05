@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * 講座サムネイル (courses/<slug>/thumbnail.webp|png|jpg) の検査。
+ * ステージサムネイル (stages/<slug>/thumbnail.webp|png|jpg) の検査。
  *
  *   node scripts/check_thumbnails.mjs
  *
  * サムネイルは LMS の一覧カード (16:9) にそのまま出るため、規格外の画像が main に
  * 入ると R2 へ流れてから気づくことになる。ここで拡張子・寸法・ファイルサイズを見る。
- * 画像を置いていない講座は検査対象外（色のストライプ表示にフォールバックする）。
+ * 画像を置いていないステージは検査対象外（色のストライプ表示にフォールバックする）。
  *
  * 寸法はヘッダだけを読んで判定する（依存を増やさないため）。
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { COURSES_ROOT, CONTENT_ROOT, listCourseSlugs } from "./course-roots.mjs";
+import { STAGES_ROOT, CONTENT_ROOT, listStageSlugs } from "./stage-roots.mjs";
 
 /**
- * course.json の thumbnail 省略時に探すファイル名。
+ * stage.json の thumbnail 省略時に探すファイル名。
  * src/manifest.ts の THUMBNAIL_CANDIDATES と同じ並びに保つこと（片方だけ知っている
  * 拡張子があると、検査は通るのに R2 にも D1 にも載らない画像ができる）。
  */
@@ -77,19 +77,19 @@ function imageSize(buf) {
   return null;
 }
 
-/** course.json の thumbnail 指定があればそれを、無ければ規約のファイル名を探す。 */
-function findThumbnail(courseDir) {
-  const configFile = join(courseDir, "course.json");
+/** stage.json の thumbnail 指定があればそれを、無ければ規約のファイル名を探す。 */
+function findThumbnail(stageDir) {
+  const configFile = join(stageDir, "stage.json");
   let explicit;
   if (existsSync(configFile)) {
     explicit = JSON.parse(readFileSync(configFile, "utf8")).thumbnail?.trim();
   }
   if (explicit) {
-    const file = join(courseDir, explicit);
+    const file = join(stageDir, explicit);
     return { file, explicit };
   }
   for (const name of CANDIDATES) {
-    const file = join(courseDir, name);
+    const file = join(stageDir, name);
     if (existsSync(file)) return { file, explicit: undefined };
   }
   return null;
@@ -97,14 +97,14 @@ function findThumbnail(courseDir) {
 
 const problems = [];
 
-for (const slug of listCourseSlugs()) {
-  const courseDir = join(COURSES_ROOT, slug);
-  const found = findThumbnail(courseDir);
+for (const slug of listStageSlugs()) {
+  const stageDir = join(STAGES_ROOT, slug);
+  const found = findThumbnail(stageDir);
   if (!found) continue;
   const rel = relative(CONTENT_ROOT, found.file);
 
   if (!existsSync(found.file)) {
-    problems.push(`${slug}: course.json の thumbnail が指すファイルがありません — ${rel}`);
+    problems.push(`${slug}: stage.json の thumbnail が指すファイルがありません — ${rel}`);
     continue;
   }
   if (!CANDIDATES.some((c) => found.file.toLowerCase().endsWith(c.slice("thumbnail".length)))) {
@@ -134,7 +134,7 @@ for (const slug of listCourseSlugs()) {
 }
 
 if (problems.length > 0) {
-  console.error(`\n講座サムネイルに ${problems.length} 件の問題があります:\n`);
+  console.error(`\nステージサムネイルに ${problems.length} 件の問題があります:\n`);
   for (const p of problems) console.error(`  - ${p}`);
   console.error("");
   process.exit(1);

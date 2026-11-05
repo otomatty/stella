@@ -1,7 +1,7 @@
 /**
  * 外部リポジトリの名前の台帳 (`packages/content/extra-repositories.json`)。
  *
- * 名前を講座 slug の頭に付け、外部リポジトリどうし、および stella 本体と slug が重ならないようにする。
+ * 名前をステージ slug の頭に付け、外部リポジトリどうし、および stella 本体と slug が重ならないようにする。
  * 非公開リポジトリの所在 (owner/repo) は書かない。stella は公開リポジトリなので。
  */
 
