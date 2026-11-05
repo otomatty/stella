@@ -136,7 +136,6 @@ export const HELP_LOCK_REASONS = [
   "passed",
   "not-offered",
   "stale-version",
-  "withheld",
 ] as const;
 export type HelpLockReason = (typeof HELP_LOCK_REASONS)[number];
 
@@ -145,10 +144,10 @@ export const HELP_LOCK_LABELS: Readonly<Record<HelpLockReason, string>> = {
   "hints-first": "ヒントを最後まで開くと開けます",
   attempts: "決まった回数の挑戦のあとか、合格後に開けます",
   passed: "合格後に開けます",
-  "not-offered": "この種別の課題では表示しません",
+  // 拡張は not-offered の欄を隠す。この文言は API の 403 にだけ出る。
+  "not-offered": "この課題では表示しません",
   // 受講者の手元の版に対応する素材の版が分からない (知らない版・素材の版を記録する前の版)。
   "stale-version": "手元の課題が古い版です。最新を受け取り直すと開けます",
-  withheld: "この課題では解答例と解説を表示しません",
 };
 
 export type HelpAvailability = { open: true } | { open: false; reason: HelpLockReason };
@@ -203,15 +202,20 @@ export function taskHelpAccess(facts: TaskHelpFacts): TaskHelpAccess {
     i + 1 <= opened + 1 ? OPEN : locked("previous-hint"),
   );
   const required = facts.support.attempts ?? SOLUTION_UNLOCK_ATTEMPTS;
-  // 選考の課題など。合格の前も後も解答例と解説は出さず、ヒントの段だけは今までどおり。
+  // 選考の課題など。合格の前も後も解答例と解説は出さない。古い拡張も解答例・解説の欄を
+  // 隠すよう、理由は not-offered にする (確認B と同じ)。ヒントの段だけは今までどおり。
   if (unlock === "never") {
     return {
       phase: facts.passed ? "passed" : "working",
       referencesOnly: facts.passed ? false : !policy.hints,
-      notice: facts.passed ? null : policy.workingNotice,
+      notice: facts.passed
+        ? null
+        : policy.hints
+          ? policy.workingNotice
+          : "取り組み中は、課題文と参照元だけを使います。この課題では、合格の前も後も解答例と解説を表示しません。",
       hints,
-      solution: locked("withheld"),
-      explanation: locked("withheld"),
+      solution: locked("not-offered"),
+      explanation: locked("not-offered"),
       autoOpen: [],
       attempts: null,
     };

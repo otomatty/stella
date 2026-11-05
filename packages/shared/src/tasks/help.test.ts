@@ -141,19 +141,43 @@ describe("taskHelpAccess (07 §8 の表)", () => {
     }
     const support = { hintLevels: 2, solutionUnlock: "never" as const };
     const working = taskHelpAccess(facts({ support }));
-    expect(working.solution).toEqual({ open: false, reason: "withheld" });
-    expect(working.explanation).toEqual({ open: false, reason: "withheld" });
+    expect(working.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(working.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(working.notice).toBeNull();
     expect(working.autoOpen).toEqual([]);
     expect(working.attempts).toBeNull();
     expect(working.hints).toEqual([{ open: true }, { open: false, reason: "previous-hint" }]);
     expect(taskHelpAccess(facts({ support, openedHintLevel: 1 })).hints[1]).toEqual({ open: true });
     const passed = taskHelpAccess(facts({ support, passed: true, openedHintLevel: 2 }));
     expect(passed.phase).toBe("passed");
-    expect(passed.solution).toEqual({ open: false, reason: "withheld" });
-    expect(passed.explanation).toEqual({ open: false, reason: "withheld" });
+    expect(passed.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(passed.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(passed.notice).toBeNull();
     expect(passed.autoOpen).toEqual([]);
     expect(passed.attempts).toBeNull();
     expect(passed.hints).toEqual([{ open: true }, { open: true }]);
+    const neverNotice =
+      "取り組み中は、課題文と参照元だけを使います。この課題では、合格の前も後も解答例と解説を表示しません。";
+    const integrationNever = taskHelpAccess(
+      facts({ kind: "integration", support: { hintLevels: 0, solutionUnlock: "never" } }),
+    );
+    expect(integrationNever.notice).toBe(neverNotice);
+    expect(integrationNever.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(integrationNever.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(
+      taskHelpAccess(
+        facts({
+          kind: "integration",
+          support: { hintLevels: 0, solutionUnlock: "never" },
+          passed: true,
+        }),
+      ).notice,
+    ).toBeNull();
+    expect(
+      taskHelpAccess(
+        facts({ kind: "integration", support: { hintLevels: 0, solutionUnlock: "passed" } }),
+      ).notice,
+    ).toBe(TASK_HELP_POLICIES.integration.workingNotice);
   });
 
   it("素材 1 つの可否を引ける", () => {
