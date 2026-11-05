@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAllowedOrigin } from "../../src/lib/cors.js";
 import { parseD1Config } from "./d1-remote.js";
-import { resolveDeployDatabase, validateDeployUrls, withDeployDatabase } from "./deploy-target.js";
+import {
+  resolveDeployDatabase,
+  validateDeployUrls,
+  validateMaterialsUrl,
+  withDeployDatabase,
+} from "./deploy-target.js";
 
 const TOML = readFileSync(join(import.meta.dirname, "..", "..", "wrangler.toml"), "utf8");
 const ID = "12345678-1234-1234-1234-123456789abc";
@@ -110,6 +115,7 @@ describe("deployment URLs", () => {
   });
   it("accepts the Web origin and a public materials origin", () => {
     expect(() => validateDeployUrls(server, "https://materials.example.com")).not.toThrow();
+    expect(() => validateMaterialsUrl("https://materials.example.com")).not.toThrow();
   });
   it.each([
     undefined,

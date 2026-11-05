@@ -66,6 +66,7 @@ export const SEED_INPUT_PATHS = [
   "packages/shared/src/problems",
   "packages/shared/src/assignment-helpers.ts",
   "packages/shared/src/curriculum/chapters.ts",
+  "packages/shared/src/curriculum/retired-stages.ts",
   "packages/shared/src/lint-presets.ts",
   "packages/shared/src/markdown/os-blocks.ts",
   "packages/shared/src/review/ai-review.ts",

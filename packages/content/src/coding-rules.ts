@@ -19,7 +19,8 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { compareNatural } from "./natural-order.mjs";
 
 export const COMMON_RULE_SCOPE = "common";
@@ -122,6 +123,24 @@ export function parseCodingRules(markdown: string, scope: string, source: string
   return rules;
 }
 
+function defaultContentRoot(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+/** `courses/` 直下のフォルダー。modules の無い準備中の講座も含む。 */
+function courseDirectorySlugs(contentRoot: string): string[] {
+  const coursesRoot = join(contentRoot, "courses");
+  if (!existsSync(coursesRoot)) return [];
+  return readdirSync(coursesRoot)
+    .filter((slug) => lstatSync(join(coursesRoot, slug)).isDirectory())
+    .sort(compareNatural);
+}
+
+/** seed が規則を入れ替える範囲。共通と、この checkout の講座。 */
+export function listCodingRuleScopes(contentRoot = defaultContentRoot()): string[] {
+  return [COMMON_RULE_SCOPE, ...courseDirectorySlugs(contentRoot)];
+}
+
 /**
  * 共通の規則と、講座ごとの追加規則をすべて読む。共通の正本が無ければ共通の規則は 0 件
  * (教材検査の `check-tasks` が正本の有無を別に確かめる)。
@@ -134,18 +153,13 @@ export function readCodingRules(contentRoot: string): CodingRule[] {
       ...parseCodingRules(readFileSync(common, "utf8"), COMMON_RULE_SCOPE, CODING_RULES_FILE),
     );
   const coursesRoot = join(contentRoot, "courses");
-  if (existsSync(coursesRoot))
-    for (const slug of readdirSync(coursesRoot).sort(compareNatural)) {
-      const file = join(coursesRoot, slug, CODING_RULES_FILE);
-      if (!existsSync(file) || !lstatSync(join(coursesRoot, slug)).isDirectory()) continue;
-      rules.push(
-        ...parseCodingRules(
-          readFileSync(file, "utf8"),
-          slug,
-          `courses/${slug}/${CODING_RULES_FILE}`,
-        ),
-      );
-    }
+  for (const slug of courseDirectorySlugs(contentRoot)) {
+    const file = join(coursesRoot, slug, CODING_RULES_FILE);
+    if (!existsSync(file)) continue;
+    rules.push(
+      ...parseCodingRules(readFileSync(file, "utf8"), slug, `courses/${slug}/${CODING_RULES_FILE}`),
+    );
+  }
   const seen = new Set<string>();
   for (const rule of rules) {
     if (seen.has(rule.id)) throw new Error(`コーディング規則の ID が重複しています: ${rule.id}`);

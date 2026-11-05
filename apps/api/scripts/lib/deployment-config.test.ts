@@ -5,6 +5,7 @@ import {
   checkDeploymentConfig,
   deployment,
   parseWrangler,
+  requireContentDeploymentInputs,
   requireDeploymentInputs,
   validateReviewDeployment,
   validateDeploymentConfig,
@@ -118,6 +119,22 @@ env:
       account_id: "account",
     });
     expect(() => parseWrangler('{ "account_id":', "wrangler.jsonc")).toThrow(/invalid/);
+  });
+
+  it("教材だけの事前確認は D1・R2・PDF の塩と教材 URL だけを求める", () => {
+    const env = {
+      CLOUDFLARE_API_TOKEN: "test-token",
+      CLOUDFLARE_ACCOUNT_ID: "test-account",
+      PDF_KEY_SALT: "test-salt",
+      VITE_MATERIALS_BASE_URL: "https://materials.example.test",
+    };
+    expect(() => requireContentDeploymentInputs(env)).not.toThrow();
+    expect(() => requireContentDeploymentInputs({ ...env, PDF_KEY_SALT: " " })).toThrow(
+      /PDF_KEY_SALT/,
+    );
+    expect(() => requireContentDeploymentInputs({ ...env, PDF_KEY_SALT: "" })).toThrow(
+      /^Missing content deployment settings: PDF_KEY_SALT$/,
+    );
   });
 
   it("requires inputs before remote work but allows the optional PDF secret", () => {
