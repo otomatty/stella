@@ -225,7 +225,7 @@ describe("POST /api/stages/:id/start", () => {
     expect(startSelfEnrollment).not.toHaveBeenCalled();
   });
 
-  it("入口を開けた星は前提を終えていなくても始められる", async () => {
+  it("前提を免除した星は前提を終えていなくても始められる", async () => {
     // staff の stage_unlocks は loadUnlockedStageIds が via で絞らずこの集合に載せる。
     vi.mocked(loadSkillMapSource).mockImplementation(async () => ({
       ...pathSource(),

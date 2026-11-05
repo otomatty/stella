@@ -31,6 +31,7 @@ import {
   formatSavedStageGrantsMessage,
   listStageGrants,
   saveStageGrants,
+  stageGrantExemptionChip,
   type StageGrantDraft,
   type StageGrantLearnerRow,
   type StageGrantStageRow,
@@ -133,6 +134,7 @@ export function StageGrantEditor({
     setSaving(true);
     try {
       const profileIds = draft.profileIds;
+      // 前提クリア済みでも、下書きに残っている免除はそのまま送る。
       const unlockedIds = draft.unlockedIds.filter((id) => profileIds.includes(id));
       const saved = await saveStageGrants(stage.id, profileIds, unlockedIds);
       const applied = applySavedStageGrants(
@@ -284,22 +286,28 @@ function GrantBody({
           <span className="text-[12px] text-ink-4">有効な受講者がいません</span>
         ) : null}
       </div>
-      <p className="mb-1 mt-4 text-[12px] text-ink-3">入口を開ける受講者</p>
+      <p className="mb-1 mt-4 text-[12px] text-ink-3">前提を免除する受講者</p>
       <p className="mb-2 text-[12px] text-ink-4">
-        前提のステージを終えていなくても、このステージを始められるようにします（選考の課題など）。割り当てた受講者から選びます。
+        前のステージを終えていなくても、このステージを始められます（選考の課題など）。割り当てた受講者から選びます。
       </p>
       <div className="flex flex-wrap gap-2">
         {assignedLearners.map((learner) => {
-          const label = learnerLabel(learner);
+          const chip = stageGrantExemptionChip(
+            learner,
+            stage.prerequisites_cleared_profile_ids.includes(learner.id),
+          );
           return (
             <Chip
               key={learner.id}
               active={draft.unlockedIds.includes(learner.id)}
-              disabled={saving}
-              ariaLabel={`入口を開ける ${label}`}
-              onClick={() => onToggleUnlock(learner.id)}
+              disabled={saving || !chip.pressable}
+              ariaLabel={chip.ariaLabel}
+              onClick={() => {
+                if (!chip.pressable) return;
+                onToggleUnlock(learner.id);
+              }}
             >
-              {label}
+              {chip.label}
             </Chip>
           );
         })}

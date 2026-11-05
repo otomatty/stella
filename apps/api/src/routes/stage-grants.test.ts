@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { stageUnlocks } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { recordAudit } from "../lib/audit.js";
+import { loadGrantedStages } from "../lib/stage-audience.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 
@@ -65,6 +66,9 @@ const deleteGrants = vi.fn(() => ({ kind: "delete" }));
 const deleted: { table: unknown; where: unknown }[] = [];
 const conflictIgnored: { stageId: string; profileId: string }[] = [];
 const unlockRows: { stageId: string; userId: string; via: string }[] = [];
+const stageCatalog: { id: string; slug: string; prerequisites: string | null }[] = [];
+const enrollmentRows: { userId: string; stageId: string; status: string }[] = [];
+const certificateRows: { userId: string; stageId: string; revoked: boolean }[] = [];
 const unlockInserted: {
   stageId: string;
   userId: string;
@@ -170,6 +174,50 @@ function stageIdsInSketch(sketch: string): Set<string> | null {
   return new Set(ids);
 }
 
+function quotedIds(sketch: string, column: string): Set<string> | null {
+  const equals = new RegExp(String.raw`${column} = ("(?:\\.|[^"\\])*")`).exec(sketch);
+  if (equals?.[1]) {
+    const parsed: unknown = JSON.parse(equals[1]);
+    return typeof parsed === "string" ? new Set([parsed]) : new Set();
+  }
+  const list = new RegExp(String.raw`${column} in \(([^)]*)\)`).exec(sketch);
+  if (!list?.[1]) return null;
+  const ids: string[] = [];
+  for (const match of list[1].matchAll(/"((?:\\.|[^"\\])*)"/g)) {
+    const raw = match[1];
+    if (raw === undefined) continue;
+    const parsed: unknown = JSON.parse(`"${raw}"`);
+    if (typeof parsed === "string") ids.push(parsed);
+  }
+  return new Set(ids);
+}
+
+function readEnrollmentRows(where?: unknown): { userId: string; stageId: string }[] {
+  const sketch = sqlSketch(where);
+  const userIds = quotedIds(sketch, "user_id");
+  const completedOnly = sketch.includes('status = "completed"');
+  return enrollmentRows
+    .filter((row) => {
+      if (userIds && !userIds.has(row.userId)) return false;
+      if (completedOnly && row.status !== "completed") return false;
+      return true;
+    })
+    .map((row) => ({ userId: row.userId, stageId: row.stageId }));
+}
+
+function readCertificateRows(where?: unknown): { userId: string; stageId: string }[] {
+  const sketch = sqlSketch(where);
+  const userIds = quotedIds(sketch, "user_id");
+  const activeOnly = sketch.includes("revoked = false");
+  return certificateRows
+    .filter((row) => {
+      if (userIds && !userIds.has(row.userId)) return false;
+      if (activeOnly && row.revoked) return false;
+      return true;
+    })
+    .map((row) => ({ userId: row.userId, stageId: row.stageId }));
+}
+
 /** GET は via = staff の行だけ、PUT はステージの全行を、ルートが組んだ where に合わせて返す。 */
 function readUnlockRows(where?: unknown): { stageId: string; userId: string; via: string }[] {
   const sketch = sqlSketch(where);
@@ -205,11 +253,33 @@ function selectWhereOnly(resolver: (where?: unknown) => Promise<unknown>) {
   return { from: () => chain };
 }
 
+const DRIZZLE_TABLE_NAME = Symbol.for("drizzle:Name");
+
+function selectedTableName(fields: Record<string, unknown> | undefined): string | null {
+  if (!fields) return null;
+  for (const value of Object.values(fields)) {
+    if (!isRecord(value) || !isRecord(value.table)) continue;
+    const name = (value.table as Record<symbol, unknown>)[DRIZZLE_TABLE_NAME];
+    if (typeof name === "string") return name;
+  }
+  return null;
+}
+
 const mockDb = {
   select: (fields?: Record<string, unknown>) => {
     const keys = Object.keys(fields ?? {});
+    const table = selectedTableName(fields);
     if (keys.includes("id") && keys.includes("audience")) {
       return selectWithLimit(stageLookup);
+    }
+    if (table === "stages") {
+      return selectWhereOnly(async () => stageCatalog.map((row) => ({ ...row })));
+    }
+    if (table === "enrollments") {
+      return selectWhereOnly(async (where) => readEnrollmentRows(where));
+    }
+    if (table === "certificates") {
+      return selectWhereOnly(async (where) => readCertificateRows(where));
     }
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
@@ -262,7 +332,19 @@ describe("GET /api/stage-grants", () => {
     };
     grantSelect.mockResolvedValue([]);
     unlockRows.length = 0;
+    stageCatalog.length = 0;
+    enrollmentRows.length = 0;
+    certificateRows.length = 0;
     unlockSelect.mockClear();
+    vi.mocked(loadGrantedStages).mockReset();
+    vi.mocked(loadGrantedStages).mockImplementation(async () => [
+      {
+        id: "stage-granted-1",
+        slug: "custom-basics",
+        title: "専用補講",
+        category: "基礎",
+      },
+    ]);
     learnerSelect.mockResolvedValue([
       {
         id: "seed-learner",
@@ -315,7 +397,7 @@ describe("GET /api/stage-grants", () => {
     );
   });
 
-  it("staff が開けた入口だけを unlocked_profile_ids に返す", async () => {
+  it("staff が前提を免除した受講者だけを unlocked_profile_ids に返す", async () => {
     unlockRows.push(
       { stageId: "stage-granted-1", userId: "seed-learner", via: "staff" },
       { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
@@ -330,6 +412,104 @@ describe("GET /api/stage-grants", () => {
     );
     const body = await json<{ stages: { unlocked_profile_ids: string[] }[] }>(res);
     expect(body.stages[0]?.unlocked_profile_ids).toEqual(["seed-learner"]);
+  });
+
+  function learner(id: string, name: string) {
+    return {
+      id,
+      display_name: name,
+      email: `${id}@example.com`,
+      role: "student" as const,
+      disabled: false,
+    };
+  }
+
+  it("前提をすべてクリアした受講者だけを prerequisites_cleared_profile_ids に返す", async () => {
+    stageCatalog.push(
+      { id: "stage-pre-a", slug: "pre-a", prerequisites: null },
+      { id: "stage-pre-b", slug: "pre-b", prerequisites: null },
+      { id: "stage-granted-1", slug: "custom-basics", prerequisites: '["pre-a","pre-b"]' },
+    );
+    enrollmentRows.push(
+      { userId: "all-done", stageId: "stage-pre-a", status: "completed" },
+      { userId: "all-done", stageId: "stage-pre-b", status: "completed" },
+      { userId: "partial", stageId: "stage-pre-a", status: "completed" },
+      { userId: "mixed", stageId: "stage-pre-b", status: "completed" },
+      { userId: "active-only", stageId: "stage-pre-a", status: "active" },
+      { userId: "active-only", stageId: "stage-pre-b", status: "active" },
+      { userId: "expired-only", stageId: "stage-pre-a", status: "expired" },
+      { userId: "expired-only", stageId: "stage-pre-b", status: "expired" },
+    );
+    certificateRows.push(
+      { userId: "all-done", stageId: "stage-pre-a", revoked: true },
+      { userId: "cert-only", stageId: "stage-pre-a", revoked: false },
+      { userId: "cert-only", stageId: "stage-pre-b", revoked: false },
+      { userId: "mixed", stageId: "stage-pre-a", revoked: false },
+      { userId: "revoked-only", stageId: "stage-pre-a", revoked: true },
+      { userId: "revoked-only", stageId: "stage-pre-b", revoked: true },
+    );
+    learnerSelect.mockResolvedValue([
+      learner("all-done", "全部"),
+      learner("partial", "一部"),
+      learner("cert-only", "修了証"),
+      learner("mixed", "合わせ"),
+      learner("revoked-only", "取消"),
+      learner("active-only", "進行"),
+      learner("expired-only", "期限"),
+    ]);
+    const res = await request(app, env, "/api/stage-grants", { token: "t" });
+    expect(res.status).toBe(200);
+    const body = await json<{ stages: { prerequisites_cleared_profile_ids: string[] }[] }>(res);
+    expect(new Set(body.stages[0]?.prerequisites_cleared_profile_ids)).toEqual(
+      new Set(["all-done", "cert-only", "mixed"]),
+    );
+    expect(body.stages[0]?.prerequisites_cleared_profile_ids).toHaveLength(3);
+  });
+
+  it("前提の無いステージでは受講者全員を prerequisites_cleared_profile_ids に返す", async () => {
+    vi.mocked(loadGrantedStages).mockResolvedValueOnce([
+      { id: "stage-granted-1", slug: "custom-basics", title: "専用補講", category: "基礎" },
+      { id: "stage-open", slug: "open-basics", title: "前提なし", category: null },
+    ]);
+    stageCatalog.push(
+      { id: "stage-granted-1", slug: "custom-basics", prerequisites: null },
+      { id: "stage-open", slug: "open-basics", prerequisites: "[]" },
+    );
+    learnerSelect.mockResolvedValue([
+      learner("seed-learner", "受講者A"),
+      learner("seed-learner2", "受講者B"),
+    ]);
+    const res = await request(app, env, "/api/stage-grants", { token: "t" });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stages: { prerequisites_cleared_profile_ids: string[] }[];
+    }>(res);
+    expect(body.stages).toHaveLength(2);
+    for (const stage of body.stages) {
+      expect(new Set(stage.prerequisites_cleared_profile_ids)).toEqual(
+        new Set(["seed-learner", "seed-learner2"]),
+      );
+    }
+  });
+
+  it("解けない前提 slug はクリア済みにしない", async () => {
+    stageCatalog.push(
+      { id: "stage-pre-a", slug: "pre-a", prerequisites: null },
+      {
+        id: "stage-granted-1",
+        slug: "custom-basics",
+        prerequisites: '["pre-a","missing-stage"]',
+      },
+    );
+    enrollmentRows.push({
+      userId: "seed-learner",
+      stageId: "stage-pre-a",
+      status: "completed",
+    });
+    const res = await request(app, env, "/api/stage-grants", { token: "t" });
+    expect(res.status).toBe(200);
+    const body = await json<{ stages: { prerequisites_cleared_profile_ids: string[] }[] }>(res);
+    expect(body.stages[0]?.prerequisites_cleared_profile_ids).toEqual([]);
   });
 
   it("student は 403", async () => {
@@ -840,7 +1020,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     );
   });
 
-  it("unlocked_profile_ids を指定すると staff の入口を入れ替え、skill_check は残す", async () => {
+  it("unlocked_profile_ids を指定すると staff の前提の免除を入れ替え、skill_check は残す", async () => {
     unlockRows.push(
       { stageId: "stage-granted-1", userId: "old-staff", via: "staff" },
       { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
@@ -942,13 +1122,13 @@ describe("PUT /api/stage-grants/:stageId", () => {
     });
     expect(res.status).toBe(400);
     expect(await json<{ error: string }>(res)).toEqual({
-      error: "入口を開けられるのは、割り当てる受講者だけです",
+      error: "前提を免除できるのは、割り当てる受講者だけです",
     });
     expect(batchGrants).not.toHaveBeenCalled();
     expect(recordAudit).not.toHaveBeenCalled();
   });
 
-  it("unlocked_profile_ids を省くと、割当から外した人の staff の入口だけを閉じる", async () => {
+  it("unlocked_profile_ids を省くと、割当から外した人の staff の前提の免除だけを外す", async () => {
     grantSelect.mockResolvedValue([{ profileId: "seed-learner" }, { profileId: "leaving" }]);
     unlockRows.push(
       { stageId: "stage-granted-1", userId: "seed-learner", via: "staff" },

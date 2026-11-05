@@ -6,11 +6,13 @@ export interface StageGrantStageRow {
   title: string;
   category: string | null;
   profile_ids: string[];
-  /** 割り当てた受講者のうち、入口を開けた人。古い API が省いたときは空配列。 */
+  /** 割り当てた受講者のうち、前提を免除した人。古い API が省いたときは空配列。 */
   unlocked_profile_ids: string[];
+  /** 応答の受講者のうち、このステージの前提をすべてクリアしている人。古い API が省いたときは空配列。 */
+  prerequisites_cleared_profile_ids: string[];
 }
 
-/** ステージごとの未保存の割当と、入口を開ける受講者。 */
+/** ステージごとの未保存の割当と、前提を免除する受講者。 */
 export interface StageGrantDraft {
   profileIds: string[];
   unlockedIds: string[];
@@ -44,8 +46,12 @@ export interface SavedStageGrants {
 
 export async function listStageGrants(): Promise<StageGrantsPayload> {
   const body = await apiFetch<{
-    stages: (Omit<StageGrantStageRow, "unlocked_profile_ids"> & {
+    stages: (Omit<
+      StageGrantStageRow,
+      "unlocked_profile_ids" | "prerequisites_cleared_profile_ids"
+    > & {
       unlocked_profile_ids?: string[];
+      prerequisites_cleared_profile_ids?: string[];
     })[];
     learners: StageGrantLearnerRow[];
   }>("/api/stage-grants");
@@ -54,6 +60,7 @@ export async function listStageGrants(): Promise<StageGrantsPayload> {
     stages: body.stages.map((stage) => ({
       ...stage,
       unlocked_profile_ids: stage.unlocked_profile_ids ?? [],
+      prerequisites_cleared_profile_ids: stage.prerequisites_cleared_profile_ids ?? [],
     })),
   };
 }
@@ -90,9 +97,9 @@ function unionIds(current: readonly string[], added: readonly string[]): string[
 }
 
 /**
- * 保存したステージの割当と入口を渡した一覧で置き換え、その下書きも保存結果に合わせる。
+ * 保存したステージの割当と前提の免除を渡した一覧で置き換え、その下書きも保存結果に合わせる。
  * 自動で足した祖先には受講者を和集合で足す。
- * 祖先の入口は変えない。祖先の下書きは未保存の編集を残し、足された受講者だけを加える。
+ * 祖先の前提の免除は変えない。祖先の下書きは未保存の編集を残し、足された受講者だけを加える。
  */
 export function applySavedStageGrants(
   stages: readonly StageGrantStageRow[],
@@ -144,6 +151,19 @@ export function applySavedStageGrants(
   }
 
   return { stages: nextStages, drafts: nextDrafts };
+}
+
+/** 前提を免除するチップ。前提クリア済みは押せない。無効な受講者の名前には「（無効）」を付ける。 */
+export function stageGrantExemptionChip(
+  learner: Pick<StageGrantLearnerRow, "display_name" | "selectable">,
+  prerequisitesCleared: boolean,
+): { pressable: boolean; label: string; ariaLabel: string } {
+  const name = learner.selectable ? learner.display_name : `${learner.display_name}（無効）`;
+  if (prerequisitesCleared) {
+    const label = `${name}（前提クリア済み）`;
+    return { pressable: false, label, ariaLabel: label };
+  }
+  return { pressable: true, label: name, ariaLabel: `前提を免除する ${name}` };
 }
 
 /** 保存成功のトースト。祖先に足したときはステージ名を「・」でつなぐ。 */

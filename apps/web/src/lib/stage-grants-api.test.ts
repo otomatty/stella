@@ -5,10 +5,21 @@ vi.mock("./api-client", () => ({
   apiFetch: (...args: unknown[]) => apiFetch(...args),
 }));
 
-const { applySavedStageGrants, formatSavedStageGrantsMessage, listStageGrants, saveStageGrants } =
-  await import("./stage-grants-api");
+const {
+  applySavedStageGrants,
+  formatSavedStageGrantsMessage,
+  listStageGrants,
+  saveStageGrants,
+  stageGrantExemptionChip,
+} = await import("./stage-grants-api");
 
-function stage(id: string, title: string, profileIds: string[], unlockedIds: string[] = []) {
+function stage(
+  id: string,
+  title: string,
+  profileIds: string[],
+  unlockedIds: string[] = [],
+  clearedIds: string[] = [],
+) {
   return {
     id,
     slug: id,
@@ -16,6 +27,7 @@ function stage(id: string, title: string, profileIds: string[], unlockedIds: str
     category: null,
     profile_ids: profileIds,
     unlocked_profile_ids: unlockedIds,
+    prerequisites_cleared_profile_ids: clearedIds,
   };
 }
 
@@ -37,6 +49,17 @@ describe("listStageGrants", () => {
     });
   });
 
+  it("prerequisites_cleared_profile_ids を返す", async () => {
+    apiFetch.mockResolvedValueOnce({
+      stages: [stage("devops", "DevOps", ["a"], [], ["a"])],
+      learners: [],
+    });
+    await expect(listStageGrants()).resolves.toEqual({
+      stages: [stage("devops", "DevOps", ["a"], [], ["a"])],
+      learners: [],
+    });
+  });
+
   it("unlocked_profile_ids が無いステージは空配列にする", async () => {
     apiFetch.mockResolvedValueOnce({
       stages: [
@@ -47,6 +70,60 @@ describe("listStageGrants", () => {
     await expect(listStageGrants()).resolves.toEqual({
       stages: [stage("devops", "DevOps", ["a"])],
       learners: [],
+    });
+  });
+
+  it("prerequisites_cleared_profile_ids が無いステージは空配列にする", async () => {
+    apiFetch.mockResolvedValueOnce({
+      stages: [
+        {
+          id: "devops",
+          slug: "devops",
+          title: "DevOps",
+          category: null,
+          profile_ids: ["a"],
+          unlocked_profile_ids: ["a"],
+        },
+      ],
+      learners: [],
+    });
+    await expect(listStageGrants()).resolves.toEqual({
+      stages: [stage("devops", "DevOps", ["a"], ["a"])],
+      learners: [],
+    });
+  });
+});
+
+describe("stageGrantExemptionChip", () => {
+  const learner = { display_name: "受講者A", selectable: true };
+
+  it("前提をクリア済みの受講者は押せない", () => {
+    expect(stageGrantExemptionChip(learner, true)).toEqual({
+      pressable: false,
+      label: "受講者A（前提クリア済み）",
+      ariaLabel: "受講者A（前提クリア済み）",
+    });
+  });
+
+  it("前提が残っている受講者は免除の操作として押せる", () => {
+    expect(stageGrantExemptionChip(learner, false)).toEqual({
+      pressable: true,
+      label: "受講者A",
+      ariaLabel: "前提を免除する 受講者A",
+    });
+  });
+
+  it("無効な受講者の名前には（無効）を残す", () => {
+    const disabled = { display_name: "元受講者", selectable: false };
+    expect(stageGrantExemptionChip(disabled, true)).toEqual({
+      pressable: false,
+      label: "元受講者（無効）（前提クリア済み）",
+      ariaLabel: "元受講者（無効）（前提クリア済み）",
+    });
+    expect(stageGrantExemptionChip(disabled, false)).toEqual({
+      pressable: true,
+      label: "元受講者（無効）",
+      ariaLabel: "前提を免除する 元受講者（無効）",
     });
   });
 });
@@ -153,7 +230,7 @@ describe("applySavedStageGrants", () => {
     expect(next.drafts).toEqual(drafts);
   });
 
-  it("保存したステージの入口だけを置き換え、祖先の入口は変えない", () => {
+  it("保存したステージの前提の免除だけを置き換え、祖先の前提の免除は変えない", () => {
     const stages = [
       stage("devops", "DevOps", ["a"], ["old"]),
       stage("python", "Python", ["b"], ["b"]),
@@ -182,7 +259,7 @@ describe("applySavedStageGrants", () => {
     expect(drafts.python.unlockedIds).toEqual(["b"]);
   });
 
-  it("応答の入口が送った値より少ないとき、保存したステージの下書きもそれに合わせる", () => {
+  it("応答の前提の免除が送った値より少ないとき、保存したステージの下書きもそれに合わせる", () => {
     const stages = [stage("devops", "DevOps", ["a", "b"], [])];
     const drafts = { devops: draft(["a", "b"], ["a", "b"]) };
     const next = applySavedStageGrants(stages, drafts, "devops", ["a", "b"], ["a"], []);
