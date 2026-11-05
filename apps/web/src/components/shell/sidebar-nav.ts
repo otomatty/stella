@@ -64,6 +64,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "dash", label: "スキルツリー", icon: Compass },
     { id: "lesson", label: "現在のレッスン", icon: Play },
     { id: "cert", label: "修了証", icon: Award },
+    // 本棚は本人だけの棚。staff (講師・管理者) は受講者画面に切り替えて使うので、staff のナビには出さない。
     { id: "library", label: "本棚", icon: Book },
   ],
   instructor: [
@@ -74,7 +75,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "discovery", label: "発見教材", icon: Sparkles },
     { id: "stage-grants", label: "Extra 講座", icon: UserPlus },
     { id: "stages", label: "ステージ", icon: Book },
-    { id: "library", label: "本棚", icon: Book },
   ],
   admin: [
     { id: "dash", label: "KPIダッシュボード", icon: BarChart },
@@ -89,7 +89,6 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "users", label: "ユーザー管理", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
-    // 本棚は本人だけの棚なので、管理者は受講者画面に切り替えて使う (管理画面のナビには出さない)。
   ],
 };
 

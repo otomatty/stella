@@ -68,9 +68,10 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("stage-grants");
   });
 
-  it("本棚は受講者と講師に出し、管理者には出さない (受講者画面に切り替えて使う)", () => {
+  it("本棚は受講者にだけ出す (staff は受講者画面に切り替えて使う)", () => {
     expect(ids("learner")).toContain("library");
-    expect(ids("instructor")).toContain("library");
+    expect(ids("instructor")).not.toContain("library");
+    expect(ids("instructor", "instructor")).not.toContain("library");
     expect(ids("admin", "admin")).not.toContain("library");
     expect(ids("admin", "platform_admin")).not.toContain("library");
     expect(ids("admin")).not.toContain("library");
