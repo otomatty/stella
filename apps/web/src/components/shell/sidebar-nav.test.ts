@@ -68,6 +68,15 @@ describe("navForRole", () => {
     expect(ids("learner")).not.toContain("stage-grants");
   });
 
+  it("本棚は受講者にだけ出す (staff は受講者画面に切り替えて使う)", () => {
+    expect(ids("learner")).toContain("library");
+    expect(ids("instructor")).not.toContain("library");
+    expect(ids("instructor", "instructor")).not.toContain("library");
+    expect(ids("admin", "admin")).not.toContain("library");
+    expect(ids("admin", "platform_admin")).not.toContain("library");
+    expect(ids("admin")).not.toContain("library");
+  });
+
   it("廃止した画面はどのロールにも出さない", () => {
     for (const role of ["learner", "instructor", "admin"] as const) {
       for (const retired of ["records", "interview-prep", "hall-of-fame", "hall-of-fame-admin"]) {
