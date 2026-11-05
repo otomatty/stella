@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { TASK_BUNDLE_LIMITS } from "../../shared/src/tasks/catalog.js";
+import { TASK_KINDS } from "../../shared/src/tasks/manifest.js";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets, pdfFileName, pdfObjectKey, pdfSourceHash } from "./material-pdf.js";
 import { parseTaskDefinition, toRuntimeManifest } from "./task-schema.js";
@@ -203,6 +204,19 @@ describe("format 2 の教材", () => {
     expect(() => as("basic", { hintLevels: 0, solutionUnlock: "later" })).toThrow(
       "support.solutionUnlock",
     );
+  });
+  it("どの種別でも solutionUnlock: never を書ける", () => {
+    const raw = JSON.parse(readFileSync(taskFile, "utf8")) as Record<string, unknown>;
+    const submit = { ...(raw.submit as object), explanation: true, debuggingRecord: true };
+    for (const kind of TASK_KINDS) {
+      const hintLevels = kind === "integration" || kind.startsWith("assessment-") ? 0 : 1;
+      expect(
+        parseTaskDefinition(
+          { ...raw, kind, submit, support: { hintLevels, solutionUnlock: "never" } },
+          {},
+        ).support,
+      ).toEqual({ hintLevels, solutionUnlock: "never" });
+    }
   });
   describe("hints.md の段", () => {
     const hintsFile = (root: string) =>

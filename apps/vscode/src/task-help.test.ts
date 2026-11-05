@@ -216,6 +216,23 @@ describe("buildTaskHelpHtml", () => {
     expect(html).toContain("挑戦 2 / 5 回");
   });
 
+  it("withheld の解答例と解説は、出さない理由を欄に出す", () => {
+    const html = buildTaskHelpHtml({
+      help: help({
+        phase: "passed",
+        status: "passed",
+        solution: { state: "locked", reason: "withheld" },
+        explanation: { state: "locked", reason: "withheld" },
+      }),
+      root: "/work/q01",
+    });
+    expect(html).toContain("<h2>解答例</h2>");
+    expect(html).toContain("<h2>解説</h2>");
+    expect(html).toContain("🔒 この課題では解答例と解説を表示しません");
+    expect(html).not.toContain(">解答例を開く</a>");
+    expect(html).not.toContain(">解説を開く</a>");
+  });
+
   it("取り組み中の確認A・Bはヒントと解答の欄を出さず、案内と参照元だけにする", () => {
     const html = buildTaskHelpHtml({
       help: help({
