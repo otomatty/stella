@@ -287,6 +287,7 @@ packages/content/
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
 | `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
+| `ts-test` | Extra 講座の TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
 | `http-mock` | http-async-basics | 疑似応答と提供API |
 | `react-test` / `storybook` | react-basics, react-ui-basics, ui-integration-basics | Vitest + Testing Library、Storybookの状態見本 |
@@ -338,7 +339,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **拡張のコマンド:** `STELLA: 課題を確認する`、`STELLA: 開発環境を診断する`、`STELLA: 実行ログを表示する`。結果はパネルと`.stella/last-run.json`に残る。
 - **安全面:** Workspace Trustで信頼したフォルダーでだけプロセスを起動する。`stella.serverUrl`・`stella.webUrl`はユーザー設定だけを読む。
 - **確認:** Vitest・ESLint・Prettier・Playwrightの実際の出力で読み取りを確かめた。見本の課題は`apps/vscode/samples/`。
-- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。
+- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。TypeScriptの`ts-test`のテンプレートと見本も足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
   - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。
@@ -750,7 +751,7 @@ SRSは同じ設問を解き直させる。コードでは、同じ実装パタ�
 
 上の表を実装した。判定は`packages/shared/src/tasks/help.ts`の`taskHelpAccess`(種別ごとの方針は`TASK_HELP_POLICIES`)に1つだけ置き、APIと拡張が同じ表を使う。素材を返すかはサーバーが決め、拡張の表示制御だけに頼らない。
 
-- **教材の書き方:** `task.json`の`support.solutionUnlock`は、取り組み中に解答例を開く条件を種別の方針の中から選ぶ。基礎・接続は`after-hints`(ヒントを最後まで開いた次の段)か`passed`。自力・修正は`attempts-or-passed`か`passed`。統合・確認A・Bは`passed`だけで、ヒントは0段。`hints.md`は段ごとに`## ヒント<番号> <題>`の見出しで分け(方針 → 手がかりのコード)、段の数を`support.hintLevels`とそろえる。解答例は`hints.md`に書かず、`private/solution/`が最後の段になる。`content:check`は、種別に合わない条件・段の数の食い違い・見出しの形・非公開の素材の大きさ(D1の1行に収まるか)を落とす。書き方は`packages/content/ADDING_COURSE.md`。
+- **教材の書き方:** `task.json`の`support.solutionUnlock`は、取り組み中に解答例を開く条件を種別の方針の中から選ぶ。基礎・接続は`after-hints`(ヒントを最後まで開いた次の段)か`passed`。自力・修正は`attempts-or-passed`か`passed`。統合・確認A・Bは`passed`だけで、ヒントは0段。どの種別でも`never`を選ぶと、取り組み中も合格後も解答例と解説を出さない(選考の課題など。拡張は解答例・解説の欄を出さない。確認B と同じ見え方。ヒントを出さないなら`hintLevels`を0にする)。`hints.md`は段ごとに`## ヒント<番号> <題>`の見出しで分け(方針 → 手がかりのコード)、段の数を`support.hintLevels`とそろえる。解答例は`hints.md`に書かず、`private/solution/`が最後の段になる。`content:check`は、種別に合わない条件・段の数の食い違い・見出しの形・非公開の素材の大きさ(D1の1行に収まるか)を落とす。書き方は`packages/content/ADDING_COURSE.md`。
 - **一定回数の挑戦:** 回数を決めていなかったので、既定を5回(`SOLUTION_UNLOCK_ATTEMPTS`)にした。つまずきの検知(§6.5.1)の「同じ版で5回続けて失敗」とそろえた。課題ごとに`support.attempts`で変えられる。1回の挑戦は、手元の確認で失敗した1回(`task_local_runs.failed_runs`。環境のエラーと中断は数えない)と、その課題の提出1回(相談を含む。判定の結果は問わない)である。
 - **合格の扱い:** 合格は`task_progress`が`passed`(人)か`ai-passed`(AI)のとき。課題一覧と同じく、版が変わっても合格のまま。確認Aの「判定の確定後」は合格の判定のあととし、再提出・不合格の判定では解答例を開かない(写して出し直せるため)。統合の合格後は表のとおり所見と解答例だけで、解説は出さない。確認Bは合格後も解答例を出さない。
 - **保存先:** seedは今までどおり`private/`と`hints.md`をD1の`task_private`(最新)と`task_private_versions`(素材の版)に入れる。素材は文字のファイルで、1行に収まる大きさに制限したので、R2には置かない。

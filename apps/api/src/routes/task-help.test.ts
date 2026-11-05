@@ -453,6 +453,31 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     });
   });
 
+  it("never は合格後も解答例と解説を返さない", async () => {
+    await setup("basic", { hintLevels: 2, solutionUnlock: "never" });
+    const working = await ok(await help());
+    expect(working.hints[0]).toEqual({ level: 1, state: "available" });
+    expect(working.solution).toEqual({ state: "locked", reason: "not-offered" });
+    await pass();
+    const body = await ok(await help());
+    expect(body).toMatchObject({
+      phase: "passed",
+      solution: { state: "locked", reason: "not-offered" },
+      explanation: { state: "locked", reason: "not-offered" },
+      autoOpen: [],
+      attempts: null,
+    });
+    expect(leaked(body, MARK.solution, MARK.explanation)).toEqual([]);
+    const denied = await open("solution");
+    expect(denied.status).toBe(403);
+    const text = await denied.text();
+    expect(JSON.parse(text)).toEqual({
+      error: "まだ開けません: この課題では表示しません",
+    });
+    expect(leaked(text, MARK.solution, MARK.explanation)).toEqual([]);
+    expect(await opens()).toEqual([]);
+  });
+
   it("統合は取り組み中に参照元だけで、合格後に解答例 (解説は返さない)", async () => {
     await setup("integration", { hintLevels: 0, solutionUnlock: "passed" });
     const working = await ok(await help());

@@ -322,6 +322,96 @@ describe("parseTaskManifest (C# の課題)", () => {
   });
 });
 
+describe("parseTaskManifest (TypeScript の課題)", () => {
+  const typescript = (overrides: Record<string, unknown> = {}) =>
+    base({
+      id: "typescript-basics/u01/t01",
+      title: "合計を求める",
+      runner: "ts-test",
+      submit: { files: ["src/**/*.ts"] },
+      protected: [
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        "eslint.config.js",
+        "vitest.config.js",
+        "tests/**",
+      ],
+      checks: { lint: true },
+      ...overrides,
+    });
+
+  it("ts-test の定義を通す", () => {
+    expect(parseTaskManifest(typescript()).ok).toBe(true);
+  });
+
+  it("checks.lint は true にする", () => {
+    const result = parseTaskManifest(typescript({ checks: { lint: false } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "runner が ts-test の課題では checks.lint を true にしてください (any や @ts-ignore による型の逃げを ESLint で止めるため)",
+    );
+  });
+
+  it("protected に tsconfig.json が要る", () => {
+    const result = parseTaskManifest(
+      typescript({
+        protected: [
+          "package.json",
+          "package-lock.json",
+          "eslint.config.js",
+          "vitest.config.js",
+          "tests/**",
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(
+      "runner が ts-test の課題では protected に tsconfig.json を入れてください",
+    );
+  });
+
+  it("protected に tests/** という文字列が要る", () => {
+    const message =
+      "runner が ts-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)";
+    const result = parseTaskManifest(
+      typescript({
+        protected: [
+          "package.json",
+          "package-lock.json",
+          "tsconfig.json",
+          "eslint.config.js",
+          "vitest.config.js",
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+  });
+
+  it("submit.files は src/ の下のパターンだけ", () => {
+    const message =
+      "runner が ts-test の課題では submit.files を src/ の下のパターンにしてください (tsconfig.json が型を確かめるのは src/ と tests/ のため)";
+    const result = parseTaskManifest(typescript({ submit: { files: ["index.ts"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+  });
+
+  it("submit.files に src/**/*.ts という文字列が要る", () => {
+    const message =
+      "runner が ts-test の課題では submit.files に src/**/*.ts を入れてください (型を確かめる src/ の .ts をすべて提出するため)";
+    const result = parseTaskManifest(typescript({ submit: { files: ["src/greet.ts"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+    expect(parseTaskManifest(typescript({ submit: { files: ["src/**/*.ts"] } })).ok).toBe(true);
+  });
+});
+
 describe("isSafeRelativePattern", () => {
   it("相対の glob を通す", () => {
     for (const pattern of [

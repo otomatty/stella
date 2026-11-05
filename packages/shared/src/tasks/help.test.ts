@@ -133,6 +133,53 @@ describe("taskHelpAccess (07 §8 の表)", () => {
     expect(b.autoOpen).toEqual([]);
   });
 
+  it("never はどの種別でも選べ、取り組み中も合格後も解答例と解説を出さない", () => {
+    for (const kind of TASK_KINDS) {
+      const unlocks = TASK_HELP_POLICIES[kind].solutionUnlocks;
+      expect(unlocks.at(-1)).toBe("never");
+      expect(unlocks[0]).not.toBe("never");
+    }
+    const support = { hintLevels: 2, solutionUnlock: "never" as const };
+    const working = taskHelpAccess(facts({ support }));
+    expect(working.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(working.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(working.notice).toBeNull();
+    expect(working.autoOpen).toEqual([]);
+    expect(working.attempts).toBeNull();
+    expect(working.hints).toEqual([{ open: true }, { open: false, reason: "previous-hint" }]);
+    expect(taskHelpAccess(facts({ support, openedHintLevel: 1 })).hints[1]).toEqual({ open: true });
+    const passed = taskHelpAccess(facts({ support, passed: true, openedHintLevel: 2 }));
+    expect(passed.phase).toBe("passed");
+    expect(passed.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(passed.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(passed.notice).toBeNull();
+    expect(passed.autoOpen).toEqual([]);
+    expect(passed.attempts).toBeNull();
+    expect(passed.hints).toEqual([{ open: true }, { open: true }]);
+    const neverNotice =
+      "取り組み中は、課題文と参照元だけを使います。この課題では、合格の前も後も解答例と解説を表示しません。";
+    const integrationNever = taskHelpAccess(
+      facts({ kind: "integration", support: { hintLevels: 0, solutionUnlock: "never" } }),
+    );
+    expect(integrationNever.notice).toBe(neverNotice);
+    expect(integrationNever.solution).toEqual({ open: false, reason: "not-offered" });
+    expect(integrationNever.explanation).toEqual({ open: false, reason: "not-offered" });
+    expect(
+      taskHelpAccess(
+        facts({
+          kind: "integration",
+          support: { hintLevels: 0, solutionUnlock: "never" },
+          passed: true,
+        }),
+      ).notice,
+    ).toBeNull();
+    expect(
+      taskHelpAccess(
+        facts({ kind: "integration", support: { hintLevels: 0, solutionUnlock: "passed" } }),
+      ).notice,
+    ).toBe(TASK_HELP_POLICIES.integration.workingNotice);
+  });
+
   it("素材 1 つの可否を引ける", () => {
     const access = taskHelpAccess(facts({ openedHintLevel: 1 }));
     expect(helpItemAvailability(access, "hint", 2)).toEqual({ open: true });
@@ -154,6 +201,9 @@ describe("sameHelpPolicy / staleHelpAccess", () => {
     );
     expect(
       sameHelpPolicy(basic, { ...basic, support: { ...basic.support, solutionUnlock: "passed" } }),
+    ).toBe(false);
+    expect(
+      sameHelpPolicy(basic, { ...basic, support: { ...basic.support, solutionUnlock: "never" } }),
     ).toBe(false);
     expect(sameHelpPolicy(basic, { ...basic, kind: "connection" })).toBe(false);
     const independent = {
@@ -276,6 +326,10 @@ describe("supportConfigOf", () => {
     expect(
       supportConfigOf({ support: { hintLevels: 2, solutionUnlock: "after-hints", attempts: 3 } }),
     ).toEqual({ hintLevels: 2, solutionUnlock: "after-hints", attempts: 3 });
+    expect(supportConfigOf({ support: { hintLevels: 1, solutionUnlock: "never" } })).toEqual({
+      hintLevels: 1,
+      solutionUnlock: "never",
+    });
     expect(supportConfigOf({})).toEqual({ hintLevels: 0, solutionUnlock: "passed" });
     expect(supportConfigOf({ support: { hintLevels: -1, solutionUnlock: "now" } })).toEqual({
       hintLevels: 0,

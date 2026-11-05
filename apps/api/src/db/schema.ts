@@ -1096,8 +1096,8 @@ export const stageUnlocks = sqliteTable(
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
-    /** 開いた経路。将来 staff の手動解放 / プレースメントが増えるので残す。 */
-    via: text("via", { enum: ["skill_check"] })
+    /** 開いた経路。腕試しの合格 (skill_check) と、講師・管理者が Extra 講座の画面で開けたもの (staff)。 */
+    via: text("via", { enum: ["skill_check", "staff"] })
       .notNull()
       .default("skill_check"),
     unlockedAt: tsNow("unlocked_at"),

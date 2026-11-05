@@ -1,5 +1,5 @@
 /**
- * 道具の出力 (Vitest・ESLint・Playwright の JSON、.NET の TRX と MSBuild) を、
+ * 道具の出力 (Vitest・ESLint・Playwright の JSON、.NET の TRX と MSBuild、tsc) を、
  * 実行結果の形に読み替える。依存パッケージは足さず、正規表現で読む。
  * 形は各道具の実際の出力から取ったフィクスチャ (`__fixtures__/`) で確かめている。
  */
@@ -444,6 +444,64 @@ export function parseMsbuildDiagnostics(
     seen.add(key);
     findings.push(finding);
   }
+  return findings;
+}
+
+const TSC_DIAGNOSTIC = /^(.+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/;
+const TSC_MESSAGE_MAX = 2000;
+
+/**
+ * tsc (`--pretty false`) の `error TS` 行。warning と、位置の無い設定の誤りは読まない。
+ * 直後の空白で始まる行は、そのエラーの説明として message につなぐ (2000 文字まで)。
+ * パスは MSBuild と同じく、課題フォルダーの中は相対パス、外はファイル名だけにする。
+ */
+export function parseTscDiagnostics(
+  output: string,
+  root: string,
+  platform: NodeJS.Platform,
+): LintFinding[] {
+  const findings: LintFinding[] = [];
+  const seen = new Set<string>();
+  let current: LintFinding | null = null;
+
+  const finish = () => {
+    if (!current) return;
+    const finding: LintFinding = {
+      ...current,
+      message: current.message.slice(0, TSC_MESSAGE_MAX),
+    };
+    current = null;
+    const key = [finding.file, finding.line, finding.column, finding.ruleId, finding.message].join(
+      "\0",
+    );
+    if (seen.has(key)) return;
+    seen.add(key);
+    findings.push(finding);
+  };
+
+  for (const line of output.split(/\r?\n/)) {
+    // 診断の直後に字下げされた説明が続く。位置の行そのものは字下げされない。
+    if (current && /^\s/.test(line)) {
+      const extra = line.trim();
+      if (extra) current.message = `${current.message}\n${extra}`;
+      continue;
+    }
+    const match = TSC_DIAGNOSTIC.exec(line);
+    if (match) {
+      finish();
+      current = {
+        file: msbuildFile(match[1] ?? "", root, platform),
+        line: Number(match[2]),
+        column: Number(match[3]),
+        ruleId: match[4] ?? "",
+        message: (match[5] ?? "").trim(),
+        severity: "error",
+      };
+      continue;
+    }
+    finish();
+  }
+  finish();
   return findings;
 }
 

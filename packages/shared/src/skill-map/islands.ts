@@ -18,6 +18,8 @@
  *
  * 表示条件は島ごとに変えられる。資格・Python・案件は 開発環境とWebの入口、DevOps は
  * Python 入門、という具合に、どこまで進んだ人にその島を見せるかを書く。
+ * `requires` が空の島は条件なしで、割り当てだけで現れる (開発ラボG = 社内の選考の
+ * 事前課題。応募者は dev-env-basics を受けていない)。
  *
  * 表示条件は前提 (`prerequisites`) とは別の軸:
  *   - 前提 = その星を「開ける」条件 (ハードロック。lock_reasons に出る)
@@ -53,6 +55,7 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "DevOps", requires: ["python-basics"] },
   { category: "Salesforce案件", requires: ["dev-env-basics"] },
   { category: "C#", requires: ["dev-env-basics"] },
+  { category: "開発ラボG", requires: [] },
 ];
 
 /** 島になるカテゴリ (レイアウトが本土の扇から外すのに使う)。 */
@@ -67,7 +70,7 @@ export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
  * 載っている島は、申告が下限未満の画面には**存在ごと落とす**。旧 bundle の
  * `SKILL_MAP_ISLAND_CATEGORIES` に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が
  * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`、
- * Python の親は `node-api-basics`、C# の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * Python の親は `node-api-basics`、C# と開発ラボG の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
  * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
  */
 export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
@@ -75,6 +78,7 @@ export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
   Anthropic認定資格: 4,
   Python: 5,
   "C#": 6,
+  開発ラボG: 7,
 };
 
 /**

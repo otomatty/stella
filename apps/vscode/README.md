@@ -86,6 +86,7 @@ Web のボタンは押してから数秒たってもブラウザーから離れ�
 | `static-preview` | HTML の確認（Node.js 不要） |
 | `env-diagnose` | 開発環境の診断 |
 | `node-test` / `dom-test` / `http-mock` / `react-test` / `storybook` / `api-test` / `db` | 依存の準備 → lint・整形（指定時）→ Vitest |
+| `ts-test` | 依存の準備 → lint・整形（指定時）→ 型の確認 (tsc) → Vitest |
 | `e2e` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ Playwright |
 | `next-app` | 依存の準備 → ブラウザの準備 → lint・整形（指定時）→ `next build` → Playwright |
 | `ci-deploy` | 実行の URL と公開先の URL を尋ねて形を確かめる → Git でコミット済みかを確かめ、手元のコミットを控える（テストは受講者の GitHub Actions が動かす。後述） |

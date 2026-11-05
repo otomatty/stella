@@ -17,6 +17,7 @@
 | フォルダー | runner | 直し方 |
 | --- | --- | --- |
 | `node-test/` | `node-test` | `src/greet.js` の戻り値の名前のあとに「さん」を付ける |
+| `ts-test/` | `ts-test` | `src/greet.ts` の引数と戻り値に型を付け、名前のあとに「さん」を付ける |
 | `dom-test/` | `dom-test` | `src/counter.js` で、増やした数を `output.textContent` に表示する (lint も要修正になる) |
 | `http-mock/` | `http-mock` | `src/todos.js` で、`response.ok` が false ならエラーにする (メッセージに状態コードを含める) |
 | `react-test/` | `react-test` | `src/Counter.jsx` のボタンで `setCount(count + 1)` にする |

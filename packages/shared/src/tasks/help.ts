@@ -12,6 +12,8 @@
  * | 統合 | 仕様・状態見本・API 契約へのリンクだけ | レビューの所見と解答例 |
  * | 確認A・B | 公式ドキュメントと文法の参照だけ。ヒントと解答は表示しない | 所見。確認Aの解答例は合格の判定のあと |
  *
+ * どの種別でも `never` を選ぶと、解答例と解説を出さない。
+ *
  * 予備の類題 (`private/variants/`) は親の課題の素材として返さない。類題はそれぞれ自分の課題として
  * seed され、出題した受講者にだけ、その類題の種別の方針でこの表を当てる (#39)。レビューの観点
  * (`private/review.md`) は受講者へは返さない。
@@ -25,8 +27,9 @@ import type { TaskKind } from "./manifest.js";
  * - `after-hints`: ヒントを最後まで開いた次の段で開く (基礎・接続の既定)
  * - `attempts-or-passed`: 決まった回数の挑戦のあとか、合格後 (自力・修正)
  * - `passed`: 合格後だけ
+ * - `never`: 取り組み中も合格後も、解答例と解説を出さない (選考の課題など)
  */
-export const SOLUTION_UNLOCKS = ["after-hints", "attempts-or-passed", "passed"] as const;
+export const SOLUTION_UNLOCKS = ["after-hints", "attempts-or-passed", "passed", "never"] as const;
 export type SolutionUnlock = (typeof SOLUTION_UNLOCKS)[number];
 
 /**
@@ -73,35 +76,35 @@ export interface TaskHelpPolicy {
 export const TASK_HELP_POLICIES: Readonly<Record<TaskKind, TaskHelpPolicy>> = {
   basic: {
     hints: true,
-    solutionUnlocks: ["after-hints", "passed"],
+    solutionUnlocks: ["after-hints", "passed", "never"],
     afterPass: ["solution", "explanation"],
     autoOpenAfterPass: true,
     workingNotice: null,
   },
   connection: {
     hints: true,
-    solutionUnlocks: ["after-hints", "passed"],
+    solutionUnlocks: ["after-hints", "passed", "never"],
     afterPass: ["solution", "explanation"],
     autoOpenAfterPass: true,
     workingNotice: null,
   },
   independent: {
     hints: true,
-    solutionUnlocks: ["attempts-or-passed", "passed"],
+    solutionUnlocks: ["attempts-or-passed", "passed", "never"],
     afterPass: ["solution", "explanation"],
     autoOpenAfterPass: false,
     workingNotice: null,
   },
   debug: {
     hints: true,
-    solutionUnlocks: ["attempts-or-passed", "passed"],
+    solutionUnlocks: ["attempts-or-passed", "passed", "never"],
     afterPass: ["solution", "explanation"],
     autoOpenAfterPass: false,
     workingNotice: null,
   },
   integration: {
     hints: false,
-    solutionUnlocks: ["passed"],
+    solutionUnlocks: ["passed", "never"],
     afterPass: ["solution"],
     autoOpenAfterPass: false,
     workingNotice:
@@ -109,7 +112,7 @@ export const TASK_HELP_POLICIES: Readonly<Record<TaskKind, TaskHelpPolicy>> = {
   },
   "assessment-a": {
     hints: false,
-    solutionUnlocks: ["passed"],
+    solutionUnlocks: ["passed", "never"],
     afterPass: ["solution"],
     autoOpenAfterPass: false,
     workingNotice:
@@ -117,7 +120,7 @@ export const TASK_HELP_POLICIES: Readonly<Record<TaskKind, TaskHelpPolicy>> = {
   },
   "assessment-b": {
     hints: false,
-    solutionUnlocks: ["passed"],
+    solutionUnlocks: ["passed", "never"],
     afterPass: [],
     autoOpenAfterPass: false,
     workingNotice:
@@ -141,7 +144,8 @@ export const HELP_LOCK_LABELS: Readonly<Record<HelpLockReason, string>> = {
   "hints-first": "ヒントを最後まで開くと開けます",
   attempts: "決まった回数の挑戦のあとか、合格後に開けます",
   passed: "合格後に開けます",
-  "not-offered": "この種別の課題では表示しません",
+  // 拡張は not-offered の欄を隠す。この文言は API の 403 にだけ出る。
+  "not-offered": "この課題では表示しません",
   // 受講者の手元の版に対応する素材の版が分からない (知らない版・素材の版を記録する前の版)。
   "stale-version": "手元の課題が古い版です。最新を受け取り直すと開けます",
 };
@@ -198,6 +202,24 @@ export function taskHelpAccess(facts: TaskHelpFacts): TaskHelpAccess {
     i + 1 <= opened + 1 ? OPEN : locked("previous-hint"),
   );
   const required = facts.support.attempts ?? SOLUTION_UNLOCK_ATTEMPTS;
+  // 選考の課題など。合格の前も後も解答例と解説は出さない。古い拡張も解答例・解説の欄を
+  // 隠すよう、理由は not-offered にする (確認B と同じ)。ヒントの段だけは今までどおり。
+  if (unlock === "never") {
+    return {
+      phase: facts.passed ? "passed" : "working",
+      referencesOnly: facts.passed ? false : !policy.hints,
+      notice: facts.passed
+        ? null
+        : policy.hints
+          ? policy.workingNotice
+          : "取り組み中は、課題文と参照元だけを使います。この課題では、合格の前も後も解答例と解説を表示しません。",
+      hints,
+      solution: locked("not-offered"),
+      explanation: locked("not-offered"),
+      autoOpen: [],
+      attempts: null,
+    };
+  }
   if (facts.passed) {
     return {
       phase: "passed",

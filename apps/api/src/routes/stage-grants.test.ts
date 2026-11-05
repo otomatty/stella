@@ -2,11 +2,13 @@
  * 専用ステージ割当 API の route テスト (認可と PUT の基本)。
  */
 
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stageUnlocks } from "../db/schema.js";
 import type { Env } from "../env.js";
-import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { recordAudit } from "../lib/audit.js";
+import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 
 vi.mock("../lib/audit.js", () => ({
@@ -64,17 +66,130 @@ const learnerSelect = vi.fn(async () => [
 ]);
 
 const deleteGrants = vi.fn(() => ({ kind: "delete" }));
+const deleted: { table: unknown; where: unknown }[] = [];
 const conflictIgnored: { stageId: string; profileId: string }[] = [];
-const insertGrant = vi.fn(
-  (row: { tenantId: string; stageId: string; profileId: string; grantedBy: string }) => ({
-    kind: "insert" as const,
-    onConflictDoNothing() {
-      conflictIgnored.push(row);
-      return { kind: "insert" as const };
-    },
-  }),
-);
+const unlockRows: { stageId: string; userId: string; via: string }[] = [];
+const unlockInserted: {
+  tenantId: string;
+  stageId: string;
+  userId: string;
+  via: string;
+  conflictTarget: unknown;
+}[] = [];
+
+type InsertRow = {
+  tenantId: string;
+  stageId: string;
+  profileId?: string;
+  grantedBy?: string;
+  userId?: string;
+  via?: string;
+  unlockedAt?: Date;
+};
+
+const insertGrant = vi.fn((row: InsertRow) => ({
+  kind: "insert" as const,
+  onConflictDoNothing(config?: { target?: unknown }) {
+    if (typeof row.profileId === "string") {
+      conflictIgnored.push({ stageId: row.stageId, profileId: row.profileId });
+    }
+    if (typeof row.userId === "string" && typeof row.via === "string") {
+      unlockInserted.push({
+        tenantId: row.tenantId,
+        stageId: row.stageId,
+        userId: row.userId,
+        via: row.via,
+        conflictTarget: config?.target,
+      });
+    }
+    return { kind: "insert" as const };
+  },
+}));
 const batchGrants = vi.fn(async () => undefined);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** drizzle の where を、列名と束縛値だけの文字列にほどく。モックは SQL を実行しない。 */
+function sqlSketch(node: unknown): string {
+  const parts: string[] = [];
+  const walk = (chunk: unknown): void => {
+    if (Array.isArray(chunk)) {
+      parts.push("(");
+      let first = true;
+      for (const item of chunk) {
+        if (!first) parts.push(", ");
+        first = false;
+        walk(item);
+      }
+      parts.push(")");
+      return;
+    }
+    if (!isRecord(chunk)) return;
+    if (Array.isArray(chunk.queryChunks)) {
+      for (const child of chunk.queryChunks) walk(child);
+      return;
+    }
+    if (Array.isArray(chunk.value) && chunk.value.every((item) => typeof item === "string")) {
+      parts.push(chunk.value.join(""));
+      return;
+    }
+    if (
+      typeof chunk.name === "string" &&
+      typeof chunk.mapToDriverValue === "function" &&
+      "table" in chunk
+    ) {
+      parts.push(chunk.name);
+      return;
+    }
+    if ("value" in chunk && isRecord(chunk.encoder)) {
+      const value = chunk.value;
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean" ||
+        value === null
+      ) {
+        parts.push(JSON.stringify(value));
+      }
+    }
+  };
+  walk(node);
+  return parts.join("");
+}
+
+function stageIdsInSketch(sketch: string): Set<string> | null {
+  const equals = /stage_id = ("(?:\\.|[^"\\])*")/.exec(sketch);
+  if (equals?.[1]) {
+    const parsed: unknown = JSON.parse(equals[1]);
+    return typeof parsed === "string" ? new Set([parsed]) : new Set();
+  }
+  const list = /stage_id in \(([^)]*)\)/.exec(sketch);
+  if (!list?.[1]) return null;
+  const ids: string[] = [];
+  for (const match of list[1].matchAll(/"((?:\\.|[^"\\])*)"/g)) {
+    const raw = match[1];
+    if (raw === undefined) continue;
+    const parsed: unknown = JSON.parse(`"${raw}"`);
+    if (typeof parsed === "string") ids.push(parsed);
+  }
+  return new Set(ids);
+}
+
+/** GET は via = staff の行だけ、PUT は講座の全行を、ルートが組んだ where に合わせて返す。 */
+function readUnlockRows(where?: unknown): { stageId: string; userId: string; via: string }[] {
+  const sketch = sqlSketch(where);
+  const staffOnly = sketch.includes('via = "staff"');
+  const stageIds = stageIdsInSketch(sketch);
+  return unlockRows.filter((row) => {
+    if (staffOnly && row.via !== "staff") return false;
+    if (stageIds && !stageIds.has(row.stageId)) return false;
+    return true;
+  });
+}
+
+const unlockSelect = vi.fn(async (where?: unknown) => readUnlockRows(where));
 
 function selectWithLimit(resolver: () => Promise<unknown>) {
   const run = () => resolver();
@@ -87,11 +202,10 @@ function selectWithLimit(resolver: () => Promise<unknown>) {
   };
 }
 
-function selectWhereOnly(resolver: () => Promise<unknown>) {
-  const run = () => resolver();
+function selectWhereOnly(resolver: (where?: unknown) => Promise<unknown>) {
   return {
     from: () => ({
-      where: () => run(),
+      where: (where?: unknown) => resolver(where),
     }),
   };
 }
@@ -102,6 +216,9 @@ const mockDb = {
     if (keys.includes("id") && keys.includes("audience")) {
       return selectWithLimit(stageLookup);
     }
+    if (keys.includes("userId")) {
+      return selectWhereOnly(unlockSelect);
+    }
     if (keys.includes("profileId")) {
       return selectWhereOnly(grantSelect);
     }
@@ -110,10 +227,24 @@ const mockDb = {
     }
     return selectWhereOnly(profileLookup);
   },
-  delete: () => ({ where: deleteGrants }),
+  delete: (table: unknown) => ({
+    where: (where: unknown) => {
+      deleted.push({ table, where });
+      return deleteGrants();
+    },
+  }),
   insert: () => ({ values: insertGrant }),
   batch: batchGrants,
 };
+
+function columnNames(target: unknown): string[] {
+  if (!Array.isArray(target)) return [];
+  const names: string[] = [];
+  for (const column of target) {
+    if (isRecord(column) && typeof column.name === "string") names.push(column.name);
+  }
+  return names;
+}
 
 vi.mock("../lib/authz.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/authz.js")>();
@@ -136,6 +267,8 @@ describe("GET /api/stage-grants", () => {
       email: null,
     };
     grantSelect.mockResolvedValue([]);
+    unlockRows.length = 0;
+    unlockSelect.mockClear();
     learnerSelect.mockResolvedValue([
       {
         id: "seed-learner",
@@ -188,6 +321,27 @@ describe("GET /api/stage-grants", () => {
     );
   });
 
+  it("staff が開けた入口だけを unlocked_profile_ids に返す", async () => {
+    unlockRows.push(
+      { stageId: "stage-granted-1", userId: "seed-learner", via: "staff" },
+      { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
+      { stageId: "other-stage", userId: "seed-learner", via: "staff" },
+    );
+    const res = await request(app, env, "/api/stage-grants", { token: "t" });
+    expect(res.status).toBe(200);
+    expect(sqlSketch(unlockSelect.mock.calls[0]?.[0])).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.tenantId, "ses"),
+          eq(stageUnlocks.via, "staff"),
+          inArray(stageUnlocks.stageId, ["stage-granted-1"]),
+        ),
+      ),
+    );
+    const body = await json<{ stages: { unlocked_profile_ids: string[] }[] }>(res);
+    expect(body.stages[0]?.unlocked_profile_ids).toEqual(["seed-learner"]);
+  });
+
   it("student は 403", async () => {
     caller = { ...caller, id: "seed-learner", role: "student", name: "受講者" };
     const res = await request(app, env, "/api/stage-grants", { token: "t" });
@@ -214,6 +368,10 @@ describe("PUT /api/stage-grants/:stageId", () => {
     insertGrant.mockClear();
     batchGrants.mockClear();
     conflictIgnored.length = 0;
+    deleted.length = 0;
+    unlockInserted.length = 0;
+    unlockRows.length = 0;
+    unlockSelect.mockClear();
   });
 
   it("granted ステージの割当を 1 トランザクションで置換する", async () => {
@@ -334,6 +492,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(body).toEqual({
       stage_id: "stage-child",
       profile_ids: ["seed-learner"],
+      unlocked_profile_ids: [],
       ancestor_grants: ancestorGrants,
     });
     expect(inserted().map((row) => row.stageId)).toEqual([
@@ -351,6 +510,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
         action: "stage_grants_replace",
         metadata: expect.objectContaining({
           profile_ids: ["seed-learner"],
+          unlocked_profile_ids: [],
           ancestor_grants: ancestorGrants,
         }),
       }),
@@ -372,13 +532,14 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(body).toEqual({
       stage_id: "stage-granted-1",
       profile_ids: ["seed-learner"],
+      unlocked_profile_ids: [],
       ancestor_grants: [],
     });
     expect(recordAudit).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
-        metadata: { profile_ids: ["seed-learner"] },
+        metadata: { profile_ids: ["seed-learner"], unlocked_profile_ids: [] },
       }),
     );
   });
@@ -539,6 +700,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(body).toEqual({
       stage_id: "stage-extra",
       profile_ids: ["seed-learner"],
+      unlocked_profile_ids: [],
       ancestor_grants: ancestorGrants,
     });
     expect(stageLookup).toHaveBeenCalledTimes(4);
@@ -695,8 +857,169 @@ describe("PUT /api/stage-grants/:stageId", () => {
       expect.anything(),
       expect.anything(),
       expect.objectContaining({
-        metadata: { profile_ids: ["seed-learner"] },
+        metadata: { profile_ids: ["seed-learner"], unlocked_profile_ids: [] },
       }),
     );
+  });
+
+  it("unlocked_profile_ids を指定すると staff の入口を入れ替え、skill_check は残す", async () => {
+    unlockRows.push(
+      { stageId: "stage-granted-1", userId: "old-staff", via: "staff" },
+      { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
+    );
+    profileLookup.mockResolvedValue([
+      { id: "seed-learner", role: "student", disabled: false },
+      { id: "skill-learner", role: "student", disabled: false },
+    ]);
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({
+        profile_ids: ["seed-learner", "skill-learner"],
+        unlocked_profile_ids: ["seed-learner", "skill-learner"],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stage_id: string;
+      profile_ids: string[];
+      unlocked_profile_ids: string[];
+      ancestor_grants: { stage_id: string; profile_ids: string[] }[];
+    }>(res);
+    expect(body).toEqual({
+      stage_id: "stage-granted-1",
+      profile_ids: ["seed-learner", "skill-learner"],
+      unlocked_profile_ids: ["seed-learner"],
+      ancestor_grants: [],
+    });
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        action: "stage_grants_replace",
+        metadata: {
+          profile_ids: ["seed-learner", "skill-learner"],
+          unlocked_profile_ids: ["seed-learner"],
+        },
+      }),
+    );
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.tenantId, "ses"),
+          eq(stageUnlocks.via, "staff"),
+          notInArray(stageUnlocks.userId, ["seed-learner", "skill-learner"]),
+        ),
+      ),
+    );
+    expect(unlockInserted).toEqual([
+      {
+        tenantId: "ses",
+        stageId: "stage-granted-1",
+        userId: "seed-learner",
+        via: "staff",
+        conflictTarget: [stageUnlocks.userId, stageUnlocks.stageId],
+      },
+      {
+        tenantId: "ses",
+        stageId: "stage-granted-1",
+        userId: "skill-learner",
+        via: "staff",
+        conflictTarget: [stageUnlocks.userId, stageUnlocks.stageId],
+      },
+    ]);
+    expect(columnNames(unlockInserted[0]?.conflictTarget)).toEqual(["user_id", "stage_id"]);
+  });
+
+  it("選択を変えずに保存すると、指定されていない人の staff の行だけを消す", async () => {
+    unlockRows.push({ stageId: "stage-granted-1", userId: "seed-learner", via: "staff" });
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({
+        profile_ids: ["seed-learner"],
+        unlocked_profile_ids: ["seed-learner"],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.tenantId, "ses"),
+          eq(stageUnlocks.via, "staff"),
+          notInArray(stageUnlocks.userId, ["seed-learner"]),
+        ),
+      ),
+    );
+  });
+
+  it("profile_ids に無い人を unlocked_profile_ids に入れると 400", async () => {
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({
+        profile_ids: ["seed-learner"],
+        unlocked_profile_ids: ["seed-learner", "seed-learner2"],
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(await json<{ error: string }>(res)).toEqual({
+      error: "入口を開けられるのは、割り当てる受講者だけです",
+    });
+    expect(batchGrants).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  it("unlocked_profile_ids を省くと、割当から外した人の staff の入口だけを閉じる", async () => {
+    grantSelect.mockResolvedValue([{ profileId: "seed-learner" }, { profileId: "leaving" }]);
+    unlockRows.push(
+      { stageId: "stage-granted-1", userId: "seed-learner", via: "staff" },
+      { stageId: "stage-granted-1", userId: "leaving", via: "staff" },
+      { stageId: "stage-granted-1", userId: "skill-learner", via: "skill_check" },
+    );
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({ profile_ids: ["seed-learner"] }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stage_id: string;
+      profile_ids: string[];
+      unlocked_profile_ids: string[];
+      ancestor_grants: { stage_id: string; profile_ids: string[] }[];
+    }>(res);
+    expect(body).toEqual({
+      stage_id: "stage-granted-1",
+      profile_ids: ["seed-learner"],
+      unlocked_profile_ids: ["seed-learner"],
+      ancestor_grants: [],
+    });
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        metadata: {
+          profile_ids: ["seed-learner"],
+          unlocked_profile_ids: ["seed-learner"],
+        },
+      }),
+    );
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.tenantId, "ses"),
+          eq(stageUnlocks.via, "staff"),
+          notInArray(stageUnlocks.userId, ["seed-learner"]),
+        ),
+      ),
+    );
+    expect(unlockInserted).toEqual([]);
   });
 });

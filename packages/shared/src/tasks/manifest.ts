@@ -283,6 +283,51 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
     }
   }
 
+  if (raw.runner === "ts-test") {
+    // any や @ts-ignore で型を逃げる書き方は、tsc では止まらない。ESLint で止める。
+    if (!checks.lint) {
+      errors.push(
+        "runner が ts-test の課題では checks.lint を true にしてください (any や @ts-ignore による型の逃げを ESLint で止めるため)",
+      );
+    }
+    for (const file of [
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "eslint.config.js",
+      "vitest.config.js",
+    ]) {
+      if (!protectedPatterns.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`runner が ts-test の課題では protected に ${file} を入れてください`);
+      }
+      if (submitFiles.some((pattern) => picomatch(pattern, { dot: true })(file))) {
+        errors.push(`${file} は配布したファイルなので submit.files に入れられません`);
+      }
+    }
+    // 設定ファイルだけでは tests/ を覆えない。当たり判定ではなく tests/** という文字列を必須にする
+    // (tests/Answers.test.ts だけ、tests/*.ts では配布したテスト全体を照合できない)。
+    if (!protectedPatterns.includes("tests/**")) {
+      errors.push(
+        "runner が ts-test の課題では protected に tests/** を入れてください (配布したテストの改変を提出で照合するため)",
+      );
+    }
+    // tsconfig.json が型を確かめるのは src/ と tests/。受講者のコードは src/ に置く。
+    // 有限個の仮のファイル名では **/answer.ts のように tests/ へ当たるパターンを取りこぼすので、
+    // どのパターンも src/ で始まることを求める (tests/ には当たりえない)。
+    if (submitFiles.some((pattern) => !pattern.startsWith("src/"))) {
+      errors.push(
+        "runner が ts-test の課題では submit.files を src/ の下のパターンにしてください (tsconfig.json が型を確かめるのは src/ と tests/ のため)",
+      );
+    }
+    // src/greet.ts だけだと、分けた src/helper.ts が型の確認に入るのに提出の照合から外れる。
+    // 当たり判定ではなく src/**/*.ts という文字列を必須にする。
+    if (!submitFiles.includes("src/**/*.ts")) {
+      errors.push(
+        "runner が ts-test の課題では submit.files に src/**/*.ts を入れてください (型を確かめる src/ の .ts をすべて提出するため)",
+      );
+    }
+  }
+
   let staticChecks: StaticCheck[] | undefined;
   if (raw.static !== undefined) {
     if (!isObject(raw.static) || !Array.isArray(raw.static.checks)) {

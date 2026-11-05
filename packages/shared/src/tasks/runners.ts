@@ -9,12 +9,14 @@
  * 提出後の AI・人のレビューはコーディング規則などを見る
  * (docs/curriculum/07-stella-adoption-redesign.md §5・§6)。
  * C# の課題は .NET SDK と xUnit で確かめる。
+ * TypeScript の課題は tsc (型の確認) と Vitest で確かめる。
  */
 
 export const RUNNER_IDS = [
   "static-preview",
   "env-diagnose",
   "node-test",
+  "ts-test",
   "dom-test",
   "http-mock",
   "react-test",
@@ -38,6 +40,7 @@ export type RunnerPlanKind =
   | "static"
   | "diagnose"
   | "vitest"
+  | "typescript"
   | "playwright"
   | "next"
   | "ci"
@@ -76,6 +79,13 @@ export const RUNNERS: Readonly<Record<RunnerId, RunnerSpec>> = {
     id: "node-test",
     label: "JavaScript のテスト",
     plan: "vitest",
+    requiresNode: true,
+    runsLocally: true,
+  },
+  "ts-test": {
+    id: "ts-test",
+    label: "TypeScript のテスト",
+    plan: "typescript",
     requiresNode: true,
     runsLocally: true,
   },

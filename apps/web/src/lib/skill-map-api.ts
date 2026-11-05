@@ -184,12 +184,13 @@ export async function startStage(stageId: string): Promise<StartStageResult> {
  * 入口から橋を引いてしまう)。
  * `5` = さらに Python を島として描ける (未知のままだと、本土の親から橋を引いてしまう)。
  * `6` = さらに C# を島として描ける (未知のままだと、開発環境とWebの入口から橋を引いてしまう)。
+ * `7` = さらに開発ラボG を島として描ける (未知のままだと、開発環境とWebの入口から橋を引いてしまう)。
  *
  * **ヘッダではなくクエリ引数**にしてある。独自ヘッダはサーバの CORS 許可リストに
  * 無いとプリフライトで弾かれ、API をロールバックした瞬間に全ての API 呼び出しが
  * 落ちる。クエリ引数なら CORS の対象外で、知らないサーバは黙って無視する。
  */
-const SKILL_MAP_TIERS = "6";
+const SKILL_MAP_TIERS = "7";
 
 export async function getSkillMap(): Promise<SkillMapMine> {
   const { skill_map, cleared_stages } = await apiFetch<{

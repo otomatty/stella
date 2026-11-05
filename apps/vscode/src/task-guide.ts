@@ -168,6 +168,7 @@ function checkStep(input: TaskGuideInput): string {
     static: "HTML の文書の形と、課題文の条件 (見出しなど) を確かめます。",
     diagnose: "Node.js・npm・Git のバージョンを確かめます。",
     vitest: "テストを手元で実行します。",
+    typescript: "型の確認 (tsc) とテストを手元で実行します。",
     playwright: "ブラウザーでの操作テストを手元で実行します。",
     next: "ビルドとブラウザーでの操作テストを手元で実行します。",
     ci: "GitHub Actions の実行の URL と公開先の URL を入力すると、手元のコミットと照らし合わせます。",
