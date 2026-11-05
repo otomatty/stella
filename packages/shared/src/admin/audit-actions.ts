@@ -17,6 +17,7 @@ const LABELS = {
   user_role_change: "ロール変更",
   user_disable: "ユーザー無効化",
   user_enable: "ユーザー復帰",
+  user_delete: "ユーザーの削除",
   // ステージ (CMS #10)
   // 改名前に記録した `course_*` の行は `DEPRECATED_LABELS` 側で拾う
   // (過去ログの書き換えはしない)。
