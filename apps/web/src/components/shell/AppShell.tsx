@@ -102,7 +102,6 @@ const PATH_BY_PAGE: Record<string, string> = {
   // 発見教材は staff 共有ページ (講師も承認する)。 `/admin/*` の下には置かない。
   discovery: "/discovery",
   library: "/library",
-  "stage-grants": "/stage-grants",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
   enrollments: "/admin/enrollments",
@@ -429,8 +428,8 @@ export function AppShell() {
       });
       return;
     }
-    // instructor / admin: ステージ管理画面へ。 admin は該当ステージの編集画面を直接開き、
-    // instructor は一覧内で該当ステージをハイライトする。
+    // instructor / admin: ステージ管理の盤面へ。 admin はそのステージの編集画面を直接開き、
+    // instructor はその星へ寄せる。
     setHighlightStage((prev) => ({
       id: result.stage_id,
       seq: (prev?.seq ?? 0) + 1,
@@ -540,9 +539,13 @@ export function AppShell() {
     }
   }
 
-  // 受講者のホームはスキルツリーの盤面そのものをコンテンツ領域にする (Card も余白も持たない)。
+  // 受講者のホームと、講師・管理者のステージ管理はスキルツリーの盤面そのもの
+  // (Card も余白も持たない)。
   const isFlush =
-    page === "lesson" || page === "review" || (page === "dash" && effectiveRole === "learner");
+    page === "lesson" ||
+    page === "review" ||
+    (page === "dash" && effectiveRole === "learner") ||
+    (page === "stages" && effectiveRole !== "learner");
 
   const shellValue: AppShellValue = {
     role: effectiveRole,

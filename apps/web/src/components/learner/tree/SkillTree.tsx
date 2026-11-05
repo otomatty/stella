@@ -62,7 +62,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -147,6 +147,24 @@ interface SkillTreeProps {
   handleRef?: RefObject<SkillTreeHandle | null>;
   /** 左端から浮いたカード (ホームのガイド) に覆われている幅 (px)。 */
   insetLeft?: number;
+  /**
+   * 星のポップオーバー / ボトムシートの、名前より下の中身。
+   * 名前の見出しは SkillTree が描く (ポップオーバーは名前の行、シートは閉じるボタンと
+   * 同じ行の `DrawerTitle`)。渡すと状態の行は出さず、受講者向けの本文とボタン
+   * (`StarBody` / `StarActions`) の代わりにこれを描く。
+   * `close` で器を閉じる。未指定なら受講者のホームと同じ。
+   */
+  renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
+  /** 星のアイコンの取り方。既定は受講者向けの `getSkillMapIcons`。 */
+  loadIcons?: (signal: AbortSignal) => Promise<Record<string, string>>;
+  /** 星の名前のそばに出す小さな札。読み上げにも足す。null なら出さない。 */
+  starTag?: (node: SkillMapStageNode) => string | null;
+  /**
+   * 解放・登場の演出をするか。既定はする。
+   * 管理画面は false — 全部の星が「新しく登場」にならないようにし、
+   * 受講者の閲覧スナップショットも読まない・書かない。
+   */
+  celebrate?: boolean;
   className?: string;
 }
 
@@ -204,14 +222,17 @@ function routeStyleOf(accent: string | undefined): CSSProperties {
  * 依存は `iconFetchKey` — 見える has_icon の集合か受講者が変わったら取り直す。
  * 空配列だと、腕試しで霧が開けても初回のバッチのままになる。
  */
-function useStageIconUrls(fetchKey: string): Map<string, string> {
+function useStageIconUrls(
+  fetchKey: string,
+  loadIcons: (signal: AbortSignal) => Promise<Record<string, string>>,
+): Map<string, string> {
   const [urls, setUrls] = useState<Map<string, string>>(() => new Map());
   // biome-ignore lint/correctness/useExhaustiveDependencies: fetchKey は再取得トリガー (URL は固定)
   useEffect(() => {
     if (!isApiConfigured()) return;
     const ac = new AbortController();
     let created: string[] = [];
-    void getSkillMapIcons(ac.signal)
+    void loadIcons(ac.signal)
       .then((icons) => {
         if (ac.signal.aborted) return;
         const next = new Map<string, string>();
@@ -235,7 +256,7 @@ function useStageIconUrls(fetchKey: string): Map<string, string> {
       ac.abort();
       for (const url of created) URL.revokeObjectURL(url);
     };
-  }, [fetchKey]);
+  }, [fetchKey, loadIcons]);
   return urls;
 }
 
@@ -304,12 +325,17 @@ export const SkillTree = ({
   spotlight = null,
   handleRef,
   insetLeft = 0,
+  renderDetail,
+  loadIcons = getSkillMapIcons,
+  starTag,
+  celebrate = true,
   className,
 }: SkillTreeProps) => {
   // 座標は星の集合が変わったときだけ計算し直す (ポップオーバーの開閉で組み直さない)。
   const layout = useMemo(() => layoutRadialSkillTree(nodes), [nodes]);
-  const iconUrls = useStageIconUrls(iconFetchKey(currentUserId, nodes));
-  const celebrations = useSkillTreeCelebration(currentUserId, nodes);
+  const iconUrls = useStageIconUrls(iconFetchKey(currentUserId, nodes), loadIcons);
+  // celebrate が false のときは userId を渡さない。フックはスナップショットを触らない。
+  const celebrations = useSkillTreeCelebration(celebrate ? currentUserId : null, nodes);
   const canvasRef = useRef<SkillTreeCanvasHandle | null>(null);
   /** スマホ幅ではポップオーバーではなくボトムシートで詳細を出す。 */
   const isMobile = useIsMobileViewport();
@@ -629,6 +655,7 @@ export const SkillTree = ({
               onQueueStage={onQueueStage}
               onSkillCheck={onSkillCheck}
               onOpenStage={onOpenStage}
+              renderDetail={renderDetail}
             />
           ) : null}
         </>
@@ -782,6 +809,8 @@ export const SkillTree = ({
           onSkillCheck={onSkillCheck}
           onOpenStage={onOpenStage}
           revealDev={revealDev}
+          tag={starTag?.(placed.node) ?? null}
+          renderDetail={renderDetail}
         />
       ))}
 
@@ -897,6 +926,9 @@ interface StarNodeProps {
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
   revealDev: boolean;
+  /** 名前のそばの札。null なら受講者のホームと同じ名前札だけ。 */
+  tag: string | null;
+  renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
 }
 
 const StarNode = ({
@@ -918,6 +950,8 @@ const StarNode = ({
   onSkillCheck,
   onOpenStage,
   revealDev,
+  tag,
+  renderDetail,
 }: StarNodeProps) => {
   const [open, setOpen] = useState(false);
   const node = placed.node;
@@ -956,7 +990,7 @@ const StarNode = ({
   const star = (
     <button
       type="button"
-      aria-label={`${spokenLabel}（${detail.stateText}${highlighted ? "・おすすめ" : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
+      aria-label={`${spokenLabel}（${detail.stateText}${tag ? `・${tag}` : ""}${highlighted ? "・おすすめ" : ""}${celebration === "unlocked" ? "・新しく解放" : celebration === "appeared" ? "・新しく登場" : ""}）`}
       // スマホでは PopoverTrigger を通さないので、開閉の状態は自分で伝える。
       // (sm 以上では Radix が同じ属性を付けるため、こちらからは触らない —
       //  `undefined` でも鍵があると Slot の合成で上書きしてしまう。)
@@ -1033,16 +1067,33 @@ const StarNode = ({
           )}
         </span>
         {showLabel ? (
-          <span
-            className={cn(
-              "pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 w-[4.5rem] -translate-x-1/2 line-clamp-2 text-center text-[8px] leading-tight",
-              isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
-              // 霧の星は名前をぼかして「予告」だけ見せる。開発者モードではぼかさない。
-              detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
-            )}
-          >
-            {detail.label}
-          </span>
+          tag ? (
+            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 flex w-max max-w-[7rem] -translate-x-1/2 flex-col items-center">
+              <span
+                className={cn(
+                  "line-clamp-2 text-center text-[8px] leading-tight",
+                  isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
+                  detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
+                )}
+              >
+                {detail.label}
+              </span>
+              <span className="mt-0.5 rounded-full bg-card/95 px-1 py-px text-[7px] font-semibold leading-none text-ink-2 ring-1 ring-border">
+                {tag}
+              </span>
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "pointer-events-none absolute left-1/2 top-full z-10 mt-0.5 w-[4.5rem] -translate-x-1/2 line-clamp-2 text-center text-[8px] leading-tight",
+                isActive ? "tree-star-label-active font-semibold" : "tree-star-label",
+                // 霧の星は名前をぼかして「予告」だけ見せる。開発者モードではぼかさない。
+                detail.obscured ? "tree-star-label-fog blur-[1.5px] select-none" : "",
+              )}
+            >
+              {detail.label}
+            </span>
+          )
         ) : null}
         {celebration ? (
           <span className="tree-new-badge" aria-hidden="true">
@@ -1072,7 +1123,11 @@ const StarNode = ({
     >
       <PopoverTrigger asChild>{star}</PopoverTrigger>
 
-      <PopoverContent align="center" side="right" className="w-[280px]">
+      <PopoverContent
+        align="center"
+        side="right"
+        className={renderDetail ? "max-h-[min(70vh,32rem)] w-[300px] overflow-y-auto" : "w-[280px]"}
+      >
         <div className="text-[13px] font-semibold leading-snug">
           {detail.obscured ? (
             <>
@@ -1086,25 +1141,31 @@ const StarNode = ({
             detail.label
           )}
         </div>
-        <div className="mt-0.5 text-[11px] text-ink-3">{detail.stateText}</div>
+        {renderDetail ? (
+          <div className="mt-2">{renderDetail(node, () => setOpen(false))}</div>
+        ) : (
+          <>
+            <div className="mt-0.5 text-[11px] text-ink-3">{detail.stateText}</div>
 
-        <StarBody detail={detail} size="sm" className="mt-2" />
+            <StarBody detail={detail} size="sm" className="mt-2" />
 
-        {hasStarActions(detail.actions) ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StarActions
-              detail={detail}
-              stageId={node.id}
-              size="sm"
-              onAct={act}
-              onResumeStage={onResumeStage}
-              onStartStage={onStartStage}
-              onQueueStage={onQueueStage}
-              onSkillCheck={onSkillCheck}
-              onOpenStage={onOpenStage}
-            />
-          </div>
-        ) : null}
+            {hasStarActions(detail.actions) ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <StarActions
+                  detail={detail}
+                  stageId={node.id}
+                  size="sm"
+                  onAct={act}
+                  onResumeStage={onResumeStage}
+                  onStartStage={onStartStage}
+                  onQueueStage={onQueueStage}
+                  onSkillCheck={onSkillCheck}
+                  onOpenStage={onOpenStage}
+                />
+              </div>
+            ) : null}
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -1127,6 +1188,7 @@ interface StarSheetProps {
   onQueueStage: (stageId: string) => void;
   onSkillCheck: (stageId: string) => void;
   onOpenStage: (stageId: string) => void;
+  renderDetail?: (node: SkillMapStageNode, close: () => void) => ReactNode;
 }
 
 /**
@@ -1148,6 +1210,7 @@ const StarSheet = ({
   onQueueStage,
   onSkillCheck,
   onOpenStage,
+  renderDetail,
 }: StarSheetProps) => {
   const lastRef = useRef<RadialNode | null>(null);
   /**
@@ -1224,7 +1287,11 @@ const StarSheet = ({
                 detail.label
               )}
             </DrawerTitle>
-            <DrawerDescription className="mt-0.5">{detail.stateText}</DrawerDescription>
+            {renderDetail ? (
+              <DrawerDescription className="sr-only">ステージの操作</DrawerDescription>
+            ) : (
+              <DrawerDescription className="mt-0.5">{detail.stateText}</DrawerDescription>
+            )}
           </div>
           <DrawerClose asChild>
             <Button variant="ghost" size="icon-sm" aria-label="閉じる">
@@ -1233,24 +1300,30 @@ const StarSheet = ({
           </DrawerClose>
         </DrawerHeader>
 
-        <StarBody detail={detail} size="md" className="overflow-y-auto px-4 py-3" />
+        {renderDetail ? (
+          <div className="overflow-y-auto px-4 pb-4">{renderDetail(node, onClose)}</div>
+        ) : (
+          <>
+            <StarBody detail={detail} size="md" className="overflow-y-auto px-4 py-3" />
 
-        {hasStarActions(detail.actions) ? (
-          // 器の既定は下から積む (`flex-col-reverse`) が、ここは読む順 = 並ぶ順にする。
-          <DrawerFooter className="flex-col">
-            <StarActions
-              detail={detail}
-              stageId={node.id}
-              size="full"
-              onAct={act}
-              onResumeStage={onResumeStage}
-              onStartStage={onStartStage}
-              onQueueStage={onQueueStage}
-              onSkillCheck={handOffToSkillCheck}
-              onOpenStage={onOpenStage}
-            />
-          </DrawerFooter>
-        ) : null}
+            {hasStarActions(detail.actions) ? (
+              // 器の既定は下から積む (`flex-col-reverse`) が、ここは読む順 = 並ぶ順にする。
+              <DrawerFooter className="flex-col">
+                <StarActions
+                  detail={detail}
+                  stageId={node.id}
+                  size="full"
+                  onAct={act}
+                  onResumeStage={onResumeStage}
+                  onStartStage={onStartStage}
+                  onQueueStage={onQueueStage}
+                  onSkillCheck={handOffToSkillCheck}
+                  onOpenStage={onOpenStage}
+                />
+              </DrawerFooter>
+            ) : null}
+          </>
+        )}
       </DrawerContent>
     </Drawer>
   );

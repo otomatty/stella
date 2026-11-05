@@ -1,17 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAppShell } from "@/components/shell/app-shell-context";
-import { RoleGuard } from "@/components/shell/RoleGuard";
-import { StageGrantsPage } from "@/components/instructor/StageGrantsPage";
+/**
+ * 旧 URL 互換 — `/stage-grants` → `/stages`。
+ *
+ * Extra の割当はステージ管理の盤面にまとめた。以前のブックマークを落とさないためだけの
+ * ルート。描画は持たず `beforeLoad` で置き換え遷移する。
+ */
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/stage-grants")({
-  component: StageGrantsRoutePage,
+  beforeLoad: () => {
+    throw redirect({ to: "/stages", search: true, replace: true });
+  },
 });
-
-function StageGrantsRoutePage() {
-  const s = useAppShell();
-  return (
-    <RoleGuard allow={["instructor", "admin"]}>
-      <StageGrantsPage backendEnabled={s.backendEnabled} />
-    </RoleGuard>
-  );
-}
