@@ -1,0 +1,87 @@
+name: prod-tenant-check
+
+# Issue #166 の読み取り確認。マージしない。結果を見たらこのブランチごと消す。
+on:
+  pull_request:
+    paths:
+      - .github/workflows/prod-tenant-check.yml
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  check:
+    name: read production tenant counts
+    runs-on: ubuntu-latest
+    steps:
+      - name: SELECT tenant counts on production D1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          gh api repos/otomatty/stella/issues/166 --jq .body > issue.md
+          python3 << 'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+
+          text = Path("issue.md").read_text()
+          start = text.find("```sql")
+          if start < 0:
+              raise SystemExit("sql fence missing")
+          start = text.find("\n", start) + 1
+          end = text.find("```", start)
+          sql = text[start:end].strip().rstrip(";").strip()
+          if not sql.upper().startswith("SELECT"):
+              raise SystemExit("refusing non-select")
+          head = sql.upper()
+          for word in ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "REPLACE"):
+              if word in head:
+                  raise SystemExit(f"refusing {word}")
+
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+
+          def call(method, url, payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  url,
+                  data=data,
+                  method=method,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Content-Type": "application/json",
+                  },
+              )
+              with urllib.request.urlopen(req) as res:
+                  return json.load(res)
+
+          listed = call(
+              "GET",
+              f"https://api.cloudflare.com/client/v4/accounts/{account}/d1/database?name=stella-db&per_page=100",
+          )
+          matches = [db for db in listed.get("result") or [] if db.get("name") == "stella-db"]
+          if len(matches) != 1 or not matches[0].get("uuid"):
+              raise SystemExit(f"expected one stella-db, found {len(matches)}")
+          db_id = matches[0]["uuid"]
+          queried = call(
+              "POST",
+              f"https://api.cloudflare.com/client/v4/accounts/{account}/d1/database/{db_id}/query",
+              {"sql": sql, "params": []},
+          )
+          if queried.get("success") is not True:
+              errors = [
+                  {"code": err.get("code"), "message": err.get("message")}
+                  for err in queried.get("errors") or []
+              ]
+              print(json.dumps({"ok": False, "errors": errors}))
+              raise SystemExit(1)
+          rows = (queried.get("result") or [{}])[0].get("results") or []
+          if len(rows) != 1:
+              raise SystemExit(f"expected one row, found {len(rows)}")
+          row = rows[0]
+          keys = ("tenants", "rows_not_ses", "rebuild_rows", "estimated_writes")
+          print(json.dumps({key: row[key] for key in keys}, sort_keys=True))
+          PY
