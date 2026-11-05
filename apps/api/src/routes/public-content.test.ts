@@ -137,10 +137,10 @@ describe("GET /api/public/lessons/:id", () => {
     ["知識問題 (印があっても)", "u00-quiz"],
     ["課題文のレッスン (印があっても)", "m0-task"],
     ["本文の無いレッスン", "u00-empty"],
-    ["前提のある講座 (霧・ロックの向こう)", "locked-doc"],
+    ["前提のあるステージ (霧・ロックの向こう)", "locked-doc"],
     ["専用星 (audience: granted)", "granted-doc"],
-    ["下書きの講座", "draft-doc"],
-    ["旧形式の講座", "legacy-doc"],
+    ["下書きのステージ", "draft-doc"],
+    ["旧形式のステージ", "legacy-doc"],
     ["存在しない", "no-such-lesson"],
   ])("%s は 404 で、中身を返さない", async (_label, id) => {
     const res = await get(`/api/public/lessons/${id}`);

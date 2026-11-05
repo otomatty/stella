@@ -20,7 +20,7 @@ export default defineConfig({
       "apps/web/worker/**/*.test.ts",
     ],
     // 受講者に配るテストは課題の道具で動かすもので、 リポジトリのテストではない。
-    // テンプレート・講座の課題・見本の .test.ts を include が拾わないように外す。
+    // テンプレート・ステージの課題・見本の .test.ts を include が拾わないように外す。
     exclude: [
       ...configDefaults.exclude,
       "packages/content/templates/runners/**",

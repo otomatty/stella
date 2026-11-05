@@ -39,7 +39,7 @@ export function staffHomeLabel(role: ProfileRole | undefined): string {
  *
  * staff が受講者シェルへ切り替えた場合も「受講者そのもの」として扱う (認可は
  * profiles.role のまま)。 進捗・提出・修了証は受講者と同じ経路で自分のアカウントに
- * 記録されるので、 受講者画面を確認したい staff は対象講座に受講登録しておく。
+ * 記録されるので、 受講者画面を確認したい staff は対象ステージに受講登録しておく。
  */
 export function resolveUiRole(input: {
   backendEnabled: boolean;
@@ -58,9 +58,9 @@ export function resolveUiRole(input: {
 }
 
 /**
- * 受講者シェルでは、 受講登録済み講座の stage_id だけを検索候補に残す。
- * 検索 API は staff に全講座 (draft 含む) を返すため、 staff が
- * 受講者シェルを開いているときに未受講・下書きの講座が混ざらないようにする。
+ * 受講者シェルでは、 受講登録済みステージの stage_id だけを検索候補に残す。
+ * 検索 API は staff にすべてのステージ (draft 含む) を返すため、 staff が
+ * 受講者シェルを開いているときに未受講・下書きのステージが混ざらないようにする。
  */
 export function filterSearchResultsForLearner(
   results: SearchResult[],

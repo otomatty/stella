@@ -13,7 +13,7 @@
  *   - 管理者のみ。 走査も削除も格納プレフィックス配下に限定する。
  *   - 参照は「配布資料 (lesson_materials.path)」だけでなく
  *     「レッスンの動画 / スライド (lessons.video_path / pdf_path)」「レッスン本文
- *     (lessons.markdown) が埋め込む画像」「講座サムネイル (stages.thumbnail_path)」も数える。
+ *     (lessons.markdown) が埋め込む画像」「ステージサムネイル (stages.thumbnail_path)」も数える。
  *     ここを漏らすと配信中の教材を消してしまう (教材の図解 SVG は本文からしか参照されない)。
  *   - 削除は棚卸しで返ったパスを呼び出し側が明示的に渡した場合のみ。 削除直前に
  *     参照有無を取り直し、 その間に参照が復活したパスはスキップする。
@@ -111,7 +111,7 @@ async function referencedPaths(db: Db): Promise<Set<string>> {
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(or(isNotNull(lessons.videoPath), isNotNull(lessons.pdfPath)));
 
-  // 講座サムネイル (stages.thumbnail_path) とスキルツリーアイコン (stages.icon_path)。
+  // ステージサムネイル (stages.thumbnail_path) とスキルツリーアイコン (stages.icon_path)。
   // キーが内容ハッシュ入りなので、 差し替え前の世代は参照から外れ、 棚卸しに孤児として
   // 出る (掃除して良い)。
   const thumbnailRows = await db

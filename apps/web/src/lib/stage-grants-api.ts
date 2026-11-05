@@ -10,7 +10,7 @@ export interface StageGrantStageRow {
   unlocked_profile_ids: string[];
 }
 
-/** 講座ごとの未保存の割当と、入口を開ける受講者。 */
+/** ステージごとの未保存の割当と、入口を開ける受講者。 */
 export interface StageGrantDraft {
   profileIds: string[];
   unlockedIds: string[];
@@ -29,7 +29,7 @@ export interface StageGrantsPayload {
   learners: StageGrantLearnerRow[];
 }
 
-/** 保存時に自動で足した、祖先の講座への割当。 */
+/** 保存時に自動で足した、祖先のステージへの割当。 */
 export interface StageAncestorGrant {
   stage_id: string;
   profile_ids: string[];
@@ -90,7 +90,7 @@ function unionIds(current: readonly string[], added: readonly string[]): string[
 }
 
 /**
- * 保存した講座の割当と入口を渡した一覧で置き換え、その下書きも保存結果に合わせる。
+ * 保存したステージの割当と入口を渡した一覧で置き換え、その下書きも保存結果に合わせる。
  * 自動で足した祖先には受講者を和集合で足す。
  * 祖先の入口は変えない。祖先の下書きは未保存の編集を残し、足された受講者だけを加える。
  */
@@ -146,7 +146,7 @@ export function applySavedStageGrants(
   return { stages: nextStages, drafts: nextDrafts };
 }
 
-/** 保存成功のトースト。祖先に足したときは講座名を「・」でつなぐ。 */
+/** 保存成功のトースト。祖先に足したときはステージ名を「・」でつなぐ。 */
 export function formatSavedStageGrantsMessage(
   stageTitle: string,
   stages: readonly StageGrantStageRow[],
@@ -162,5 +162,5 @@ export function formatSavedStageGrantsMessage(
   }
   const saved = `「${stageTitle}」の割当を保存しました`;
   if (titles.length === 0) return saved;
-  return `${saved}。前の講座「${titles.join("・")}」にも割り当てました`;
+  return `${saved}。前のステージ「${titles.join("・")}」にも割り当てました`;
 }

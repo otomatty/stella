@@ -90,7 +90,7 @@ function pathSource() {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: slug,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     category: "プログラミング",
     theme: "テーマ",

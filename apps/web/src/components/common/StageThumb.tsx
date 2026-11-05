@@ -37,7 +37,7 @@ export const StageThumb = ({
   className,
 }: StageThumbProps) => {
   // 失敗を boolean で持つと、同じインスタンスが別ステージのパスを受け取ったとき
-  // (ダッシュボードの「受講中の講座」切り替えなど) に新しい画像を二度と試さなくなる。
+  // (ダッシュボードの「受講中のステージ」切り替えなど) に新しい画像を二度と試さなくなる。
   // 落ちたパス自体を覚えて、そのパスのときだけフォールバックする。
   const [failedPath, setFailedPath] = useState<string | null>(null);
   // パスは内容ハッシュ入りなので、差し替えれば URL ごと変わる (キャッシュを跨がない)。

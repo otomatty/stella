@@ -5,8 +5,8 @@
  * 強調 (accent) は、このカードの主ボタンにしか使わない。残りの手順は小さな行で続ける
  * (`LaterSteps`)。
  *
- * 星を勧める手順 (`choose`) も同じで、先頭の 1 講座だけを大きく出す。主ボタンは
- * 「ここから始める」1 つ。ほかの候補はカードの下の「ほかにも始められる講座」に畳み、
+ * 星を勧める手順 (`choose`) も同じで、先頭の 1 ステージだけを大きく出す。主ボタンは
+ * 「ここから始める」1 つ。ほかの候補はカードの下の「ほかにも始められるステージ」に畳み、
  * Basic と Extra に分けて出す (始めるのはツリーの星から)。「ツリーで見る」は後ろの
  * 盤面をその星へ寄せる — ガイドが「何を」、ツリーが「どこか」を受け持つ。
  *
@@ -383,7 +383,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
         {parentCleared ? (
           <p className="mb-1.5 flex items-center gap-1 text-[12px] text-ink-2">
             <Check size={13} className="shrink-0 text-success" />
-            <span className="min-w-0">「{parentCleared.title}」の次の講座です</span>
+            <span className="min-w-0">「{parentCleared.title}」の次のステージです</span>
           </p>
         ) : null}
         <h2 className="text-[17px] font-semibold leading-snug tracking-tight">{title}</h2>
@@ -493,7 +493,7 @@ const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext 
         )}
         <span className="min-w-0 flex-1">
           <span className="block text-[12.5px] font-semibold text-ink-2">
-            ほかにも始められる講座
+            ほかにも始められるステージ
           </span>
           {!open && preview ? (
             <span className="block truncate text-[11px] text-ink-3">{preview}</span>
@@ -507,7 +507,7 @@ const OtherCourses = ({ stageIds, ctx }: { stageIds: string[]; ctx: StepContext 
             <CourseGroup label="Basic" stageIds={basic} ctx={ctx} />
             <CourseGroup
               label="Extra"
-              note="講師・管理者があなたに追加した講座です。"
+              note="講師・管理者があなたに追加したステージです。"
               stageIds={extra}
               ctx={ctx}
             />
@@ -546,7 +546,7 @@ const CourseGroup = ({
   );
 };
 
-/** 候補の 1 行。講座名とコンパスはツリーへ寄るだけで、ここでは始めない。 */
+/** 候補の 1 行。ステージ名とコンパスはツリーへ寄るだけで、ここでは始めない。 */
 const OtherCourseRow = ({ id, ctx }: { id: string; ctx: StepContext }) => {
   const node = ctx.nodeOf(id);
   const title = node?.title ?? "このスキル";

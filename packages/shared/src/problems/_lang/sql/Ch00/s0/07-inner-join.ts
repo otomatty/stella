@@ -1,6 +1,6 @@
 import type { Assignment } from "../../../../../types.js";
 
-/** SQL 入門講座 M4 (JOIN) 用。 ORDER BY は M3 で習得済みの前提。 */
+/** SQL 入門のステージ M4 (JOIN) 用。 ORDER BY は M3 で習得済みの前提。 */
 export const s0SqlCh00InnerJoin: Assignment = {
   id: "S0-Sql-Ch00-07-inner-join",
   stage: "S0",

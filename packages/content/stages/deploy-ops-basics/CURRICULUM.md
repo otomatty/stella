@@ -7,7 +7,7 @@
 
 CIで変更を確かめ、Webアプリを公開して運用できる。
 
-## 前提講座
+## 前提ステージ
 
 `design-quality-basics`
 

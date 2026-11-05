@@ -236,7 +236,7 @@ describe("類題の出題 (#39)", () => {
     const submitted = await post("/api/submissions", { ...fixture.input, support: [] });
     expect(submitted.status).toBe(404);
     expect(await db.select().from(submissions)).toEqual([]);
-    // 講座の課題一覧と、ステージの支援の記録には親の課題だけが並ぶ。
+    // ステージの課題一覧と、ステージの支援の記録には親の課題だけが並ぶ。
     const list = await json<{ tasks: TaskSummary[] }>(await get("/api/tasks/for-stage/stage"));
     expect(list.tasks.map((t) => t.id)).toEqual([PARENT]);
     const support = await json<{ tasks: TaskSupportRecord[] }>(
@@ -266,11 +266,11 @@ describe("類題の出題 (#39)", () => {
     const locked = await post("/api/tasks/help/open", { taskId, item: "solution" });
     expect(locked.status).toBe(403);
     expect(await locked.text()).not.toContain(MARKER);
-    // 同じ講座を受講していても、出題していない受講者には返さない。
+    // 同じステージを受講していても、出題していない受講者には返さない。
     expect((await bundleOf(taskId, "learner2")).status).toBe(404);
     expect((await bundleOf(taskId, "outsider")).status).toBe(404);
     expect(await today("learner2")).toBeNull();
-    // 出題しても講座の課題一覧には混ざらない。
+    // 出題してもステージの課題一覧には混ざらない。
     const list = await json<{ tasks: TaskSummary[] }>(await get("/api/tasks/for-stage/stage"));
     expect(list.tasks.map((t) => t.id)).toEqual([PARENT]);
     // 提出は通常の課題と同じ流れで受け付ける (AI の一次レビューの待ち行列に入る)。
@@ -400,7 +400,7 @@ describe("類題の出題 (#39)", () => {
       db.insert(stages).values({
         id: "stage2",
         slug: "other-course",
-        title: "別の講座",
+        title: "別のステージ",
         format: 2,
         status: "published",
         durationHours: 35,
@@ -411,7 +411,7 @@ describe("類題の出題 (#39)", () => {
     await db.insert(tasks).values({
       id: "other/u/v-elsewhere",
       sectionId: "unit2",
-      title: "別の講座の類題",
+      title: "別のステージの類題",
       kind: "independent",
       pattern: "page",
       skills: { uses: [], assesses: ["html"] },

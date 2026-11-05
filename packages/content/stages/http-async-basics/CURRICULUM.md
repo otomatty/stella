@@ -7,7 +7,7 @@
 
 HTTP通信と非同期処理を、型とエラーを確かめながら実装できる。
 
-## 前提講座
+## 前提ステージ
 
 `javascript-data-basics`・`dom-basics`・`ui-components-basics`
 

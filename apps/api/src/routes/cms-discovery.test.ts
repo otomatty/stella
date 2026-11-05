@@ -148,7 +148,7 @@ beforeEach(() => {
   caller = { ...BASE_CALLER };
   env = {} as Env;
   inserted = null;
-  stageRows = [{ id: "id-b", title: "b の講座", canDo: "b ができる" }];
+  stageRows = [{ id: "id-b", title: "b のステージ", canDo: "b ができる" }];
 
   vi.mocked(listDiscoveryRequests).mockResolvedValue([
     {
@@ -214,7 +214,7 @@ describe("GET /api/cms/discovery", () => {
       requests: { id: string; stage_title: string | null; material_count: number }[];
       materials: { id: string; review_status: string; questions: unknown[] }[];
     };
-    expect(body.requests[0]).toMatchObject({ id: "req-1", stage_title: "b の講座" });
+    expect(body.requests[0]).toMatchObject({ id: "req-1", stage_title: "b のステージ" });
     expect(body.materials[0]?.review_status).toBe("draft");
     // staff には正答つきで返す (レビューの本体)。
     expect(JSON.stringify(body.materials[0]?.questions)).toContain("correct");

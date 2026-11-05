@@ -7,7 +7,7 @@
 
 DOMとイベントを使い、入力に応じて画面を更新できる。
 
-## 前提講座
+## 前提ステージ
 
 `html-css-basics`・`javascript-basics`・`javascript-data-basics`
 

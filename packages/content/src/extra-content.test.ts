@@ -168,7 +168,7 @@ describe("overlayExtraContent", () => {
     expect(() => overlay(contentRoot(), extra)).toThrow(/islands\.ts/);
   });
 
-  it("slug が stella の講座と重なると止まる", () => {
+  it("slug が stella のステージと重なると止まる", () => {
     const content = contentRoot();
     write(content, "stages/csharp-basics/stage.json", '{"title":"既存"}\n');
     expect(() => overlay(content, extraRoot())).toThrow(/重な/);
@@ -322,13 +322,13 @@ describe("assertExtraWorkspace", () => {
 });
 
 describe("checkExtraRepositoryNames", () => {
-  it("stella の講座が登録した名前で始まると止まる", () => {
+  it("stella のステージが登録した名前で始まると止まる", () => {
     const content = contentRoot();
     write(content, "stages/csharp-taken/stage.json", "{}\n");
     expect(() => checkExtraRepositoryNames(content, tempDir())).toThrow(/csharp-taken/);
   });
 
-  it("写しに重ねた講座は外す", () => {
+  it("写しに重ねたステージは外す", () => {
     const content = contentRoot();
     write(content, "stages/csharp-sample/stage.json", "{}\n");
     const repo = tempDir();

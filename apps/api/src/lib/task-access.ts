@@ -52,7 +52,7 @@ export async function isVariantIssuedTo(db: Db, caller: Caller, taskId: string):
  * AI チャット) はすべてここを通す。
  *
  * 類題 (#39) は、出題した受講者にだけ配る。出題 (`variant_reviews`) より前は、課題文・starter・
- * tests・解答例をどの入口からも返さない (課題があるかどうかも返さない)。時間を空けた類題は講座を
+ * tests・解答例をどの入口からも返さない (課題があるかどうかも返さない)。時間を空けた類題はステージを
  * 修了したあとにも出すので、出題した類題は修了後も書き込める (読める受講登録は要る)。
  */
 export async function canAccessTask(

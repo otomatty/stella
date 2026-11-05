@@ -1,6 +1,6 @@
 import type { Assignment } from "../../../../../types.js";
 
-/** SQL 入門講座 M4 (JOIN) 用。 相手のいない行が NULL で残ることを確かめる。 */
+/** SQL 入門のステージ M4 (JOIN) 用。 相手のいない行が NULL で残ることを確かめる。 */
 export const s0SqlCh00LeftJoin: Assignment = {
   id: "S0-Sql-Ch00-08-left-join",
   stage: "S0",

@@ -46,7 +46,7 @@ const compute = (
   });
 
 describe("学習ペース", () => {
-  it("修了した講座に準備中の残りを置き続けない", () => {
+  it("修了したステージに準備中の残りを置き続けない", () => {
     expect(compute([stage([], { minutes: 2100, completed: true })])).toMatchObject({
       totalMinutes: 2100,
       completedMinutes: 2100,
@@ -72,21 +72,24 @@ describe("学習ペース", () => {
     [30, "2027-07-26"],
     [35, "2027-06-14"],
     [40, "2027-05-14"],
-  ] as const)("18講座に分かれていても週%s時間の終了日が1日ずれない", (weeklyHours, finishDate) => {
-    const hours = [35, 70, 105, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 35, 70, 35, 140];
-    const stages = hours.map((hours, i) =>
-      stage([], {
-        id: String(i),
-        slug: String(i),
-        prerequisites: i === 0 ? [] : [String(i - 1)],
-        minutes: hours * 60,
-        units: [],
-      }),
-    );
-    const result = compute(stages, { settings: { weeklyHours, startDate: "2026-10-05" } });
-    expect(result.finishDate).toBe(finishDate);
-    expect(result.targets.at(-1)?.targetDate).toBe(finishDate);
-  });
+  ] as const)(
+    "18ステージに分かれていても週%s時間の終了日が1日ずれない",
+    (weeklyHours, finishDate) => {
+      const hours = [35, 70, 105, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 35, 70, 35, 140];
+      const stages = hours.map((hours, i) =>
+        stage([], {
+          id: String(i),
+          slug: String(i),
+          prerequisites: i === 0 ? [] : [String(i - 1)],
+          minutes: hours * 60,
+          units: [],
+        }),
+      );
+      const result = compute(stages, { settings: { weeklyHours, startDate: "2026-10-05" } });
+      expect(result.finishDate).toBe(finishDate);
+      expect(result.targets.at(-1)?.targetDate).toBe(finishDate);
+    },
+  );
   it("開始前は期日を作らず、未来の開始日はその日を使う", () => {
     expect(compute([stage()], { settings: { weeklyHours: 35, startDate: null } })).toMatchObject({
       finishDate: null,
@@ -197,7 +200,7 @@ describe("学習ペース", () => {
     expect(sunday.thisWeek.reduce((sum, u) => sum + u.minutes, 0)).toBe(60);
     expect(sunday.finishDate).toBe("2026-10-13");
   });
-  describe("講座の残りがBの解禁待ちだけのとき", () => {
+  describe("ステージの残りがBの解禁待ちだけのとき", () => {
     // 週7時間 = 1日60分。親は修了済みで、HTMLとJSのどちらも着手できる。
     const settings = { weeklyHours: 7, startDate: "2026-10-05" };
     const parent = stage([], { id: "parent", completed: true, units: [] });
@@ -227,7 +230,7 @@ describe("学習ペース", () => {
       thisWeek: result.thisWeek.map(({ unitId, minutes }) => ({ unitId, minutes })),
     });
 
-    it("待つ間は前提を満たした兄弟講座を進め、解禁したBを割り込ませる", () => {
+    it("待つ間は前提を満たした兄弟のステージを進め、解禁したBを割り込ませる", () => {
       // HTMLのBは10/12解禁 (420分後)。JSを420分進め、Bの60分のあと残り180分に戻る。
       expect(summary(compute([parent, html(passedA), js([parent.slug])], { settings }))).toEqual({
         targets: [
@@ -256,7 +259,7 @@ describe("学習ペース", () => {
         ],
       });
     });
-    it("Bを待つ講座の子講座は、Bを終えて講座が完了するまで始めない", () => {
+    it("Bを待つステージの子は、Bを終えて親が完了するまで始めない", () => {
       // JSがHTMLの子なら解放はBの後。待つ7日は空き、終了日は兄弟の場合 (10/16) より遅い。
       expect(
         summary(compute([parent, html(passedA), js(["html-css-basics"])], { settings })),

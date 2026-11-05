@@ -7,11 +7,11 @@
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
  * `unlocked_profile_ids` は、割り当てた受講者のうち入口を開ける人 (`stage_unlocks.via = staff`)。
- * 指定すると、その講座の staff の行のうち指定に無い人だけを消し、指定された人を足す
+ * 指定すると、そのステージの staff の行のうち指定に無い人だけを消し、指定された人を足す
  * (残した行の日時はそのまま)。省くと、割当から外した人の入口だけを閉じる。
  * 腕試し (`skill_check`) で開いた行は消さず、上書きもしない。
  * 割り当ても入口も、受講開始は自己開始のまま (`POST /api/stages/:id/start`)。
- * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) の講座にも同じ割当を足す
+ * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) のステージにも同じ割当を足す
  * (外したとき、および既にある割当は触らない)。catalog に着いたらそこから先はたどらない。
  * 自動で足す側の insert だけ、同時保存で祖先が重複しても一意制約で失敗しない。
  */
@@ -78,7 +78,7 @@ function neighborSlugs(row: GrantStageNode): string[] {
 }
 
 /**
- * 線の親と prerequisites をたどり、published な granted の前提講座を集める。
+ * 線の親と prerequisites をたどり、published な granted の前提ステージを集める。
  * catalog に着いたらそこから先はたどらない。起点は含めない。訪問済みで循環と重複を止める。
  */
 async function loadGrantedPrerequisites(db: Db, start: GrantStageNode): Promise<GrantStageNode[]> {
@@ -257,7 +257,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       throw new ApiError("ステージが見つかりません", 404);
     }
     if (stage.audience !== "granted") {
-      throw new ApiError("このステージは Extra 講座 (audience=granted) ではありません", 400);
+      throw new ApiError("このステージは Extra ステージ (audience=granted) ではありません", 400);
     }
 
     const existingGrantIds = new Set<string>();

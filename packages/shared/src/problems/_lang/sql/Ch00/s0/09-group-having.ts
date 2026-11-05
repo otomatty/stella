@@ -1,6 +1,6 @@
 import type { Assignment } from "../../../../../types.js";
 
-/** SQL 入門講座 M5 (集計) 用。 GROUP BY した結果を HAVING で絞る。 */
+/** SQL 入門のステージ M5 (集計) 用。 GROUP BY した結果を HAVING で絞る。 */
 export const s0SqlCh00GroupHaving: Assignment = {
   id: "S0-Sql-Ch00-09-group-having",
   stage: "S0",

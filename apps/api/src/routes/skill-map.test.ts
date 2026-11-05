@@ -125,7 +125,7 @@ function lineSource() {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     theme: "テーマ",
@@ -409,7 +409,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(c?.state).toBe("locked");
     expect(c?.visibility).toBe("full");
     expect(c?.can_do).toBeUndefined();
-    expect(c?.lock_reasons).toEqual(["b の講座"]);
+    expect(c?.lock_reasons).toEqual(["b のステージ"]);
   });
 
   it("手が届く星にだけ到達説明を返す", async () => {
@@ -452,7 +452,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(d?.visibility).toBe("fog");
     expect(d?.theme).toBe("テーマ");
     // 名前は「ぼかしの予告」用に返す。伏せ方 (blur) は画面側の演出。
-    expect(d?.title).toBe("d の講座");
+    expect(d?.title).toBe("d のステージ");
     expect(d?.category).toBe("プログラミング");
     // 線が無いと盤面が深さ = リングを計算できず、先の星が内側に置かれる。
     expect(d?.parent_id).toBe("id-c");
@@ -460,7 +460,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(d?.can_do).toBeUndefined();
     // 解放条件は 1 歩先まで。2 歩先の「何が要るか」は手前の星が既に語っている。
     expect(d?.lock_reasons).toBeUndefined();
-    // アイコンの形は講座の正体を語るので、slug と同じく霧の中に出さない。
+    // アイコンの形はステージの正体を語るので、slug と同じく霧の中に出さない。
     expect(d?.has_icon).toBeUndefined();
     expect(Object.keys(d ?? {})).not.toContain("icon_path");
   });
@@ -597,7 +597,7 @@ describe("GET /api/skill-map/mine", () => {
     const s = (slug: string, prerequisites: string[]) => ({
       id: `id-${slug}`,
       slug,
-      title: `${slug} の講座`,
+      title: `${slug} のステージ`,
       prerequisites,
       category: "基礎",
     });
@@ -746,7 +746,7 @@ describe("GET /api/skill-map/mine", () => {
         {
           id: "id-x",
           slug: "x",
-          title: "x の講座",
+          title: "x のステージ",
           // 線は b の 1 本だけ。c は「線の無い前提」(AND の 2 本目)。
           prerequisites: ["c", "b"],
           parent: "b",
@@ -760,7 +760,7 @@ describe("GET /api/skill-map/mine", () => {
     expect(x?.state).toBe("locked");
     // b (起点) の隣 = 1 歩なので解放条件が出る。線の無い c も名前で残る。
     expect(x?.visibility).toBe("full");
-    expect(x?.lock_reasons).toEqual(["c の講座", "b の講座"]);
+    expect(x?.lock_reasons).toEqual(["c のステージ", "b のステージ"]);
   });
 
   it("飛び級で開いた星は unlocked になり、視界の起点にもなる", async () => {
@@ -881,7 +881,7 @@ function twoComponentSource() {
   const s = (slug: string, prerequisites: string[], theme?: string) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     category: "プログラミング",
@@ -913,8 +913,8 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     expect(stages.get("id-p")?.visibility).toBe("fog");
     const reasons = stages.get("id-x")?.lock_reasons ?? [];
     // 見えている前提 (root1) はタイトルのまま。霧の中の p は伏せる。
-    expect(reasons).toContain("root1 の講座");
-    expect(reasons).not.toContain("p の講座");
+    expect(reasons).toContain("root1 のステージ");
+    expect(reasons).not.toContain("p のステージ");
     // p はテーマも持たないので伏せ字に落ちる。
     expect(reasons).toContain("？？？");
   });
@@ -925,7 +925,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     if (p) Object.assign(p, { theme: "テーマY" });
     vi.mocked(loadSkillMapSource).mockResolvedValue(source);
     const stages = await fetchStages();
-    expect(stages.get("id-x")?.lock_reasons).toEqual(["root1 の講座", "テーマY"]);
+    expect(stages.get("id-x")?.lock_reasons).toEqual(["root1 のステージ", "テーマY"]);
   });
 
   it("霧の星そのものも、テーマが無ければ伏せ字を返す (名無しの星にしない)", async () => {
@@ -933,7 +933,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     const p = stages.get("id-p");
     expect(p?.theme).toBe("？？？");
     // 名前は「ぼかしの予告」として返る (画面側で伏せる)。到達説明は届かないまま。
-    expect(p?.title).toBe("p の講座");
+    expect(p?.title).toBe("p のステージ");
     expect(p?.can_do).toBeUndefined();
   });
 
@@ -942,7 +942,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     source.stages.push({
       id: "id-orphan",
       slug: "orphan",
-      title: "孤児 の講座",
+      title: "孤児 のステージ",
       // root1 を前提に持たせて視界に入れる (孤立させると霧に沈み、解放条件ごと返らない)。
       prerequisites: ["root1", "does-not-exist"],
       canDo: "orphan ができる",
@@ -952,7 +952,7 @@ describe("GET /api/skill-map/mine — 霧の星は解放条件にも名前を出
     vi.mocked(loadSkillMapSource).mockResolvedValue(source);
     const stages = await fetchStages();
     const reasons = stages.get("id-orphan")?.lock_reasons ?? [];
-    expect(reasons).toEqual(["root1 の講座", "非公開の教材"]);
+    expect(reasons).toEqual(["root1 のステージ", "非公開の教材"]);
     expect(reasons.join()).not.toContain("does-not-exist");
   });
 });
@@ -963,9 +963,9 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     const stages = await fetchStages();
     const e = stages.get("id-e");
     expect(e?.visibility).toBe("edge");
-    expect(e?.title).toBe("e の講座");
+    expect(e?.title).toBe("e のステージ");
     expect(e?.slug).toBe("e");
-    expect(e?.lock_reasons).toEqual(["d の講座"]);
+    expect(e?.lock_reasons).toEqual(["d のステージ"]);
     expect(e?.has_icon).toBeUndefined();
   });
 
@@ -975,7 +975,7 @@ describe("GET /api/skill-map/mine — 開発者モード (FAB オン)", () => {
     expect(stages.size).toBe(6);
     const f = stages.get("id-f");
     expect(f?.visibility).toBe("hidden");
-    expect(f?.title).toBe("f の講座");
+    expect(f?.title).toBe("f のステージ");
     expect(f?.parent_id).toBe("id-e");
   });
 
@@ -1140,7 +1140,7 @@ describe("GET /api/skill-map/icons", () => {
   });
 });
 
-// 退役した Git 講座を使う固定入力で、複製の汎用機能を引き続き検証する。
+// 退役した Git のステージを使う固定入力で、複製の汎用機能を引き続き検証する。
 vi.mock("@stella/shared/skill-map/appearances", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@stella/shared/skill-map/appearances")>();
   return {
@@ -1170,7 +1170,7 @@ function staffRow(
   return {
     id: `id-${over.slug}`,
     tenantId: "ses",
-    title: `${over.slug} の講座`,
+    title: `${over.slug} のステージ`,
     category: "フロントエンド",
     prerequisites: null,
     parent: null,

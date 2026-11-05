@@ -927,7 +927,7 @@
   color: rgba(210, 220, 245, 0.72);
 }
 
-/* 講座アイコン (単色シルエット SVG)。img ではなく mask + currentColor で塗る —
+/* ステージアイコン (単色シルエット SVG)。img ではなく mask + currentColor で塗る —
    色は星の状態クラス (.tree-star-*) の color を継承する。外部 SVG をマスクにすると
    輝度マスク扱いになり currentColor→黒で消えることがあるので alpha を明示する。 */
 .tree-star-icon {

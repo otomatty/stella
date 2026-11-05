@@ -139,12 +139,12 @@ export function ReviewMetricsPanel() {
         <>
           <Section
             title="練習の「中」で AI が合格にした提出のうち、人が覆した割合"
-            note={`講座ごと。割合は人が確認した提出に対する覆した提出の割合。${limit(REVIEW_METRIC_ALERTS.practiceMediumOverturned)} を超えたら、その講座の練習も「中」から人に回すことを検討します。`}
+            note={`ステージごと。割合は人が確認した提出に対する覆した提出の割合。${limit(REVIEW_METRIC_ALERTS.practiceMediumOverturned)} を超えたら、そのステージの練習も「中」から人に回すことを検討します。`}
           >
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>講座</TableHead>
+                  <TableHead>ステージ</TableHead>
                   <TableHead>AI 合格 (中)</TableHead>
                   <TableHead>人が確認</TableHead>
                   <TableHead>覆した</TableHead>

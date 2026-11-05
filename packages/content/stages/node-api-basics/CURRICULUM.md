@@ -7,7 +7,7 @@
 
 Node.jsでAPIを実装し、入力と応答をテストできる。
 
-## 前提講座
+## 前提ステージ
 
 `http-async-basics`・`ui-integration-basics`
 

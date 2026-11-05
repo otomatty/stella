@@ -213,7 +213,7 @@ function routeStyleOf(accent: string | undefined): CSSProperties {
 }
 
 /**
- * 講座アイコンを JWT 付きで 1 回取り、mask-image 用の blob URL にする。
+ * ステージアイコンを JWT 付きで 1 回取り、mask-image 用の blob URL にする。
  *
  * 公開 R2 URL を mask に直接渡すと CORS でマスクが透明になり、星の中身が空白になる。
  * 星ごとに取るとマップ評価 (D1) が N 回走るので、ツリー全体で 1 リクエストにする。
@@ -905,7 +905,7 @@ interface StarNodeProps {
   /** 複数の演出を内側から順に灯すための順番。 */
   celebrationIndex: number;
   /**
-   * 講座アイコンの blob URL。無い / 届いていないときは状態グリフ。
+   * ステージアイコンの blob URL。無い / 届いていないときは状態グリフ。
    * ロックと霧は親が渡さない (ロックは南京錠のまま、霧はサーバが has_icon を伏せる)。
    */
   iconUrl: string | null;
@@ -961,7 +961,7 @@ const StarNode = ({
   const locked = node.state === "locked";
   const isCenter = placed.ring === 0;
   const routeStyle = routeStyleOf(routeAccentOf(placed.sector));
-  // 講座アイコン (単色シルエット)。見える星 (解放済み・進行中・クリア) だけ状態グリフを
+  // ステージアイコン (単色シルエット)。見える星 (解放済み・進行中・クリア) だけ状態グリフを
   // 置き換える — ロックは 🔒 のまま (状態が読めなくなる)、霧はサーバが has_icon を
   // 伏せているので親が URL を渡さない。色は mask + currentColor で状態クラスから継承する。
   // 画像が届くまで (届かなければずっと) 状態グリフのまま。

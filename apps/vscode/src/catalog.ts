@@ -77,7 +77,7 @@ export interface CatalogLessonContext {
   sectionTitle: string;
 }
 
-/** 提出に載せる講座名 / セクション名は木構造の親からしか取れないので、 まとめて返す。 */
+/** 提出に載せるステージ名 / セクション名は木構造の親からしか取れないので、 まとめて返す。 */
 export function findCachedLessonContext(
   stageId: string,
   lessonId: string,
@@ -101,9 +101,9 @@ function isCompleted(value: boolean | number): boolean {
 /**
  * 演習に出すステージは受講登録ベース (ロールによらず同じ)。
  *
- * 以前は staff だけ「同テナントの公開講座すべて」を出していたが、 Web の受講者シェルが
+ * 以前は staff だけ「同テナントの公開ステージすべて」を出していたが、 Web の受講者シェルが
  * enrollment ベースに一本化されたため、 拡張側も同じにする。 staff が受講者として演習を
- * 確認したい場合は、 受講者と同様に対象講座へ受講登録しておく。
+ * 確認したい場合は、 受講者と同様に対象ステージへ受講登録しておく。
  */
 function enrolledStageIds(enrollments: EnrollmentRow[]): string[] {
   return enrollments

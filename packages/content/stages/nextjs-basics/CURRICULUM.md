@@ -7,7 +7,7 @@
 
 Next.jsで画面とサーバーを組み合わせ、Webアプリを構成できる。
 
-## 前提講座
+## 前提ステージ
 
 `react-basics`・`react-ui-basics`・`ui-integration-basics`・`node-api-basics`・`sql-basics`・`auth-basics`
 

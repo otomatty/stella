@@ -82,7 +82,7 @@ export interface Stage {
    */
   thumbnailPath?: string;
   /**
-   * スキルツリーの星に出す講座アイコンの R2 パス (`stages.icon_path` 由来)。
+   * スキルツリーの星に出すステージアイコンの R2 パス (`stages.icon_path` 由来)。
    * 正本は `packages/content/stages/<slug>/icon.svg` (単色シルエット)。
    * 未設定なら星は状態グリフ (★/▶/🔒/✨) のまま。
    */

@@ -84,7 +84,7 @@ export function VariantStockPanel() {
           すべて ({rows.length})
         </Chip>
         <span className="text-[12px] text-ink-3 ml-2">
-          類題は教材リポジトリの、親の課題の予備のフォルダーに書きます (書き方は ADDING_COURSE.md
+          類題は教材リポジトリの、親の課題の予備のフォルダーに書きます (書き方は ADDING_STAGE.md
           の「予備の類題」)。足すと、在庫切れで待っている受講者には次に「今日の復習」を開いたときに出ます。
         </span>
       </div>

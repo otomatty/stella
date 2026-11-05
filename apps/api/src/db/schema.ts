@@ -243,7 +243,7 @@ export const stages = sqliteTable(
      */
     thumbnailPath: text("thumbnail_path"),
     /**
-     * スキルツリーの星に出す講座アイコンの R2 キー。教材リポジトリの
+     * スキルツリーの星に出すステージアイコンの R2 キー。教材リポジトリの
      * `stages/<slug>/icon.svg` (単色シルエット) を seed が書き込む。null なら
      * 星は状態グリフ (★/▶/🔒/✨) のまま。
      */
@@ -271,7 +271,7 @@ export const stages = sqliteTable(
     theme: text("theme"),
     /**
      * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (既定)。
-     * `granted` = `stage_grants` がある受講者だけカタログに載る (Git 正本の専用講座)。
+     * `granted` = `stage_grants` がある受講者だけカタログに載る (Git 正本の専用のステージ)。
      */
     audience: text("audience", { enum: ["catalog", "granted"] })
       .notNull()
@@ -388,7 +388,7 @@ export const tasks = sqliteTable(
     /** seed が課題ごとに作る課題文のレッスン (`lessons.id`)。そのレッスンの「VS Code で開く」が課題を配る。 */
     lessonId: text("lesson_id"),
     /**
-     * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39・0057)。類題は講座の
+     * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39・0057)。類題はステージの
      * 課題一覧・学習ペース・修了の判定に出さず (`isNull(tasks.variantOf)` で絞る)、出題した受講者
      * (`variant_reviews`) にだけ配る。親が教材から外れても類題のままにするため外部キーにしない。
      */
@@ -1112,7 +1112,7 @@ export const stageUnlocks = sqliteTable(
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
-    /** 開いた経路。腕試しの合格 (skill_check) と、講師・管理者が Extra 講座の画面で開けたもの (staff)。 */
+    /** 開いた経路。腕試しの合格 (skill_check) と、講師・管理者が ステージ管理の盤面で開けたもの (staff)。 */
     via: text("via", { enum: ["skill_check", "staff"] })
       .notNull()
       .default("skill_check"),
@@ -1902,7 +1902,7 @@ export const aiReviewOverrides = sqliteTable(
 
 /**
  * コメント集 (#34、07 §6.4 の 4)。課題のパターンごとに、よくある違反と定型コメントを持つ。
- * `stage_id` が null なら全講座、`pattern` が null なら講座の全パターンに出す。
+ * `stage_id` が null ならすべてのステージ、`pattern` が null ならステージの全パターンに出す。
  */
 export const reviewCommentTemplates = sqliteTable(
   "review_comment_templates",
@@ -1929,12 +1929,12 @@ export const reviewCommentTemplates = sqliteTable(
   }),
 );
 
-/** コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分)。seed が入れる。 */
+/** コーディング規則の正本 (packages/content/coding-rules.md とステージの追加分)。seed が入れる。 */
 export const codingRules = sqliteTable(
   "coding_rules",
   {
     id: text("id").primaryKey(),
-    /** `common` か講座の slug。 */
+    /** `common` かステージの slug。 */
     scope: text("scope").notNull(),
     position: integer("position").notNull(),
     title: text("title").notNull(),

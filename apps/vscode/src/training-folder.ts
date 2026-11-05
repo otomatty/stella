@@ -1,6 +1,6 @@
 /**
  * 学習フォルダー (06 §3 の `web-training`)。プログラム全体で 1 つにし、課題はその中の
- * `<講座>/<単元>/<課題>/` に置く (07 §4.4)。前の講座で作ったものを後の講座で使い直すため。
+ * `<ステージ>/<単元>/<課題>/` に置く (07 §4.4)。前のステージで作ったものを後のステージで使い直すため。
  *
  * 場所は拡張の globalState に覚える。ワークスペース設定 (`.vscode/settings.json`) には
  * 置かない — 開いたフォルダーの設定一つで課題の書き出し先を変えさせないため
@@ -134,7 +134,7 @@ export async function resolveTrainingRoot(
   const choice = await vscode.window.showQuickPick([create, pick], {
     title: "学習フォルダーを決めてください",
     placeHolder:
-      "すべての講座の課題をこのフォルダーの中に準備します (「STELLA: 学習フォルダーを選ぶ」で変えられます)",
+      "すべてのステージの課題をこのフォルダーの中に準備します (「STELLA: 学習フォルダーを選ぶ」で変えられます)",
     ignoreFocusOut: true,
   });
   if (!choice) return undefined;

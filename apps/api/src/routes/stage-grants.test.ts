@@ -170,7 +170,7 @@ function stageIdsInSketch(sketch: string): Set<string> | null {
   return new Set(ids);
 }
 
-/** GET は via = staff の行だけ、PUT は講座の全行を、ルートが組んだ where に合わせて返す。 */
+/** GET は via = staff の行だけ、PUT はステージの全行を、ルートが組んだ where に合わせて返す。 */
 function readUnlockRows(where?: unknown): { stageId: string; userId: string; via: string }[] {
   const sketch = sqlSketch(where);
   const staffOnly = sketch.includes('via = "staff"');
@@ -623,7 +623,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(ignoredStageIds()).toEqual(["stage-python"]);
   });
 
-  it("線の親が catalog でも prerequisites の granted 講座と、その前提に足す", async () => {
+  it("線の親が catalog でも prerequisites の granted ステージと、その前提に足す", async () => {
     queueStages(
       [
         {
@@ -693,7 +693,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
     expect(ignoredStageIds()).toEqual(["stage-mid", "stage-root"]);
   });
 
-  it("菱形の前提でも同じ granted 講座は一度だけ足す", async () => {
+  it("菱形の前提でも同じ granted ステージは一度だけ足す", async () => {
     queueStages(
       [
         {

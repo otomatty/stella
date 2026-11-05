@@ -1,7 +1,7 @@
 import type { Assignment } from "../../../../../types.js";
 
 /**
- * SQL 入門講座 M2 (WHERE) 用。 ORDER BY は M3 まで未習なので課さず、
+ * SQL 入門のステージ M2 (WHERE) 用。 ORDER BY は M3 まで未習なので課さず、
  * `orderInsensitive` で行の並び順を無視して採点する。
  */
 export const s0SqlCh00WhereOnly: Assignment = {

@@ -67,7 +67,7 @@ tasks/<task>/
 
 | 項目 | 意味 |
 | --- | --- |
-| `id` | `<講座>/<単元>/<課題フォルダー>`。3 つともフォルダー名と一致させる |
+| `id` | `<ステージ>/<単元>/<課題フォルダー>`。3 つともフォルダー名と一致させる |
 | `title` | 課題の題。画面に出る |
 | `kind` | 上の表 |
 | `pattern` | `patterns.json` の id。同じパターンの基礎課題と類題で揃える。類題は親と同じ |
@@ -78,7 +78,7 @@ tasks/<task>/
 | `submit.explanation` | 自力・統合・確認は `true` |
 | `submit.debuggingRecord` | 修正は `true` |
 | `review.rubric` | `{ id, criterion, required }`。`criterion` は当否を決められる文。尺度 (1〜5) や疑問文にしない。必須項目は rubric と rules を合わせて 1 つ以上 |
-| `review.rules` | 任意。`coding-rules.md` と講座の `coding-rules.md` の id。導入より前の課題では必須にできない |
+| `review.rules` | 任意。`coding-rules.md` とステージの `coding-rules.md` の id。導入より前の課題では必須にできない |
 | `review.escalateWhen` | `optional-unmet` か `major-finding`。無ければ空配列 |
 | `support.hintLevels` | `hints.md` の段数と一致。確認と統合は 0 |
 | `support.solutionUnlock` | 種別の表のどれか |
@@ -89,7 +89,7 @@ tasks/<task>/
 | `checks.lint` / `checks.format` | テンプレートの値。C# は両方 `false`。lint をしない課題だけ `false` にする |
 | `static` | `static-preview` だけ。`checks` が 1 つ以上 |
 | `ci.workflow` | `ci-deploy` だけ。`.github/workflows/` の下の yml。`submit.files` か `protected` に当たるパス |
-| `fixedStart.covers` | `fixed-start/` がある課題だけ。同じ講座で、この課題より前の課題 ID |
+| `fixedStart.covers` | `fixed-start/` がある課題だけ。同じステージで、この課題より前の課題 ID |
 
 `schemaVersion` は教材の `task.json` には書きません。読み込みが 1 を足します。
 
@@ -99,7 +99,7 @@ tasks/<task>/
 
 ## フォルダー名
 
-id の各部分は英小文字・数字で始め、続けて英小文字・数字・`.`・`_`・`-` です (`task-schema` が使う形)。講座の課題は英小文字、数字、ハイフンに寄せ、番号は自然順で並ぶようにゼロ埋めします (`q01`、`q02`、`q10`)。
+id の各部分は英小文字・数字で始め、続けて英小文字・数字・`.`・`_`・`-` です (`task-schema` が使う形)。ステージの課題は英小文字、数字、ハイフンに寄せ、番号は自然順で並ぶようにゼロ埋めします (`q01`、`q02`、`q10`)。
 
 種別の頭文字は、03 の記号に合わせると後から追いやすいです。基礎 `q`、接続 `c`、自力 `s`、修正 `r`、統合 `t`、確認 A `a`、確認 B `b`。見本の `q01-first-page` がこの形です。
 

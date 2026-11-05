@@ -27,10 +27,10 @@ export interface SkillMapStageNode {
   category?: string;
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバック。 */
   theme?: string;
-  /** Extra (講師・管理者が割り当てた講座)。Basic の星には付かない。 */
+  /** Extra (講師・管理者が割り当てたステージ)。Basic の星には付かない。 */
   audience?: "granted";
   /**
-   * 講座アイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
+   * ステージアイコンがあるか。霧の外の星にだけ入る (アイコンの形は正体を語るので、
    * サーバが slug と同じ秘匿ルールで伏せる)。実体は
    * `GET /api/skill-map/icons` (JWT)。R2 キーはクライアントに出ない。
    * 画面は blob URL を CSS mask + currentColor で塗る。
@@ -217,7 +217,7 @@ export async function getSkillMap(): Promise<SkillMapMine> {
 }
 
 /**
- * 霧の外の講座アイコン SVG をまとめて取る。呼び出し側が blob URL にして
+ * 霧の外のステージアイコン SVG をまとめて取る。呼び出し側が blob URL にして
  * `URL.revokeObjectURL` する。`mask-image` は Authorization を付けられないので、
  * JWT 付きで取ってから同じオリジンの blob を渡す (公開 R2 URL 直だと CORS で
  * マスクが透明になる)。マップ JSON には埋め込まない (ホームが R2 を踏まないため)。
@@ -237,7 +237,7 @@ export async function getStaffSkillMap(): Promise<{ stages: StaffSkillMapStageNo
   return await apiFetch<{ stages: StaffSkillMapStageNode[] }>("/api/skill-map/staff");
 }
 
-/** ステージ管理の盤面に載る講座アイコン。取り方は `getSkillMapIcons` と同じ。 */
+/** ステージ管理の盤面に載るステージアイコン。取り方は `getSkillMapIcons` と同じ。 */
 export async function getStaffSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
   const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/staff/icons", {
     signal,

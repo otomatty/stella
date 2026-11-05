@@ -43,7 +43,7 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
 
 /**
  * 同じ課題の提出を並べて見る (#34、07 §6.4 の 5)。受講者ごとの最新の提出と、ルーブリックの
- * 項目ごとの「満たさない」の数を出す。共通のつまずきは、講座の受講者全体への補足 (お知らせ) か、
+ * 項目ごとの「満たさない」の数を出す。共通のつまずきは、ステージの受講者全体への補足 (お知らせ) か、
  * つまずき教材 (発見教材) の待ち行列に回す。
  */
 export function TaskBoardPanel({
@@ -85,7 +85,7 @@ export function TaskBoardPanel({
         title: title.trim(),
         body: body.trim(),
       });
-      toast.success("講座の受講者全体に補足を送りました");
+      toast.success("ステージの受講者全体に補足を送りました");
       setBody("");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "補足を送れませんでした");
@@ -214,7 +214,7 @@ export function TaskBoardPanel({
               </CardHeader>
               <div className="px-4 pb-4 text-[12.5px]">
                 <p className="text-ink-3 mb-2">
-                  講座「{board.task.stageTitle}
+                  ステージ「{board.task.stageTitle}
                   」の受講者全員にお知らせとして送ります。特定の受講者の名前や提出には触れないでください。
                 </p>
                 <Input

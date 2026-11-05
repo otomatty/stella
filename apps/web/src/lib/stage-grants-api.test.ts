@@ -37,7 +37,7 @@ describe("listStageGrants", () => {
     });
   });
 
-  it("unlocked_profile_ids が無い講座は空配列にする", async () => {
+  it("unlocked_profile_ids が無いステージは空配列にする", async () => {
     apiFetch.mockResolvedValueOnce({
       stages: [
         { id: "devops", slug: "devops", title: "DevOps", category: null, profile_ids: ["a"] },
@@ -144,7 +144,7 @@ describe("applySavedStageGrants", () => {
     expect(next.drafts.devops).toEqual(draft(["c"]));
   });
 
-  it("祖先が無ければ保存した講座だけが変わる", () => {
+  it("祖先が無ければ保存したステージだけが変わる", () => {
     const stages = [stage("devops", "DevOps", ["a"]), stage("python", "Python", ["b"])];
     const drafts = { devops: draft(["a", "c"]), python: draft(["b", "x"]) };
     const next = applySavedStageGrants(stages, drafts, "devops", ["a", "c"], [], []);
@@ -153,7 +153,7 @@ describe("applySavedStageGrants", () => {
     expect(next.drafts).toEqual(drafts);
   });
 
-  it("保存した講座の入口だけを置き換え、祖先の入口は変えない", () => {
+  it("保存したステージの入口だけを置き換え、祖先の入口は変えない", () => {
     const stages = [
       stage("devops", "DevOps", ["a"], ["old"]),
       stage("python", "Python", ["b"], ["b"]),
@@ -182,7 +182,7 @@ describe("applySavedStageGrants", () => {
     expect(drafts.python.unlockedIds).toEqual(["b"]);
   });
 
-  it("応答の入口が送った値より少ないとき、保存した講座の下書きもそれに合わせる", () => {
+  it("応答の入口が送った値より少ないとき、保存したステージの下書きもそれに合わせる", () => {
     const stages = [stage("devops", "DevOps", ["a", "b"], [])];
     const drafts = { devops: draft(["a", "b"], ["a", "b"]) };
     const next = applySavedStageGrants(stages, drafts, "devops", ["a", "b"], ["a"], []);
@@ -195,13 +195,13 @@ describe("applySavedStageGrants", () => {
 describe("formatSavedStageGrantsMessage", () => {
   const stages = [stage("python", "Python", []), stage("net", "ネットワーク", [])];
 
-  it("祖先が無ければ保存した講座だけを告げる", () => {
+  it("祖先が無ければ保存したステージだけを告げる", () => {
     expect(formatSavedStageGrantsMessage("DevOps", stages, [])).toBe(
       "「DevOps」の割当を保存しました",
     );
   });
 
-  it("祖先の講座名を「・」でつないで添える", () => {
+  it("祖先のステージ名を「・」でつないで添える", () => {
     expect(
       formatSavedStageGrantsMessage("Kubernetes", stages, [
         { stage_id: "net", profile_ids: ["a"] },
@@ -210,7 +210,7 @@ describe("formatSavedStageGrantsMessage", () => {
         { stage_id: "net", profile_ids: [] },
       ]),
     ).toBe(
-      "「Kubernetes」の割当を保存しました。前の講座「ネットワーク・Python」にも割り当てました",
+      "「Kubernetes」の割当を保存しました。前のステージ「ネットワーク・Python」にも割り当てました",
     );
   });
 });

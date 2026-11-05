@@ -190,7 +190,7 @@ export function compareAiPassed(a: AiPassedRow, b: AiPassedRow): number {
 
 /**
  * 目立たせる境目。超えた行を画面で目立たせるだけで、しきい値は自動では変えない。
- * - 練習の「中」で AI が合格にした提出のうち、人が覆した割合 > 1 割 → その講座の練習も中から人に回す
+ * - 練習の「中」で AI が合格にした提出のうち、人が覆した割合 > 1 割 → そのステージの練習も中から人に回す
  * - 人に回した提出のうち、人がそのまま合格にした割合 > 8 割 → 条件が厳しすぎる
  * - 課題ごとの、人に回した割合 > 3 割 → AI より先に課題文とルーブリックを見直す
  */
@@ -209,7 +209,7 @@ export function ratio(hit: number, total: number): number | null {
   return total === 0 ? null : hit / total;
 }
 
-/** 講座ごとの、練習の「中」で AI が合格にした提出と人の確認。 */
+/** ステージごとの、練習の「中」で AI が合格にした提出と人の確認。 */
 export interface PracticeMediumMetric {
   stageId: string;
   stageTitle: string;
@@ -262,9 +262,9 @@ export const MAX_TEMPLATE_BODY = 4000;
 
 export interface ReviewCommentTemplate {
   id: string;
-  /** null = テナントの全講座。 */
+  /** null = テナントのすべてのステージ。 */
   stageId: string | null;
-  /** null = 講座の全パターン。 */
+  /** null = ステージの全パターン。 */
   pattern: string | null;
   ruleId: string | null;
   violation: string;
@@ -273,7 +273,7 @@ export interface ReviewCommentTemplate {
   updatedAt: string;
 }
 
-/** 提出の課題に当てはまる定型コメントか (講座とパターンが合うか、指定が無いか)。 */
+/** 提出の課題に当てはまる定型コメントか (ステージとパターンが合うか、指定が無いか)。 */
 export function templateApplies(
   template: Pick<ReviewCommentTemplate, "stageId" | "pattern">,
   task: { stageId: string | null; pattern: string | null },

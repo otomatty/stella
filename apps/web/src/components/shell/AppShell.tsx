@@ -220,7 +220,7 @@ export function AppShell() {
   // 受講者は「自分に割り当てられたステージ」(enrollment ベース) を見る。 instructor/admin は
   // 公開ステージ一覧を使う (公開ステージを「探す」用途)。
   // staff が受講者シェルを開いている場合も enrollment ベース (= 受講者と同じ経路)。
-  // 受講者画面を確認したい staff は対象講座に自分を受講登録しておく。
+  // 受講者画面を確認したい staff は対象ステージに自分を受講登録しておく。
   const browseStages = useStages(effectiveRole !== "learner");
   const enrolledStages = useEnrolledStages(session?.user.id ?? null, effectiveRole === "learner");
   // DB 由来ステージは progress=0 で届くため、 レッスン進捗ストアから実進捗を導出する。
@@ -234,8 +234,8 @@ export function AppShell() {
   const stageError = effectiveRole === "learner" ? enrolledStages.error : browseStages.error;
   // 自己開始 (Phase 3b) で受講登録が増えたときに、いま見ている側の一覧だけを取り直す。
   const refetchStages = effectiveRole === "learner" ? enrolledStages.refetch : browseStages.refetch;
-  // 検索 API は staff に全講座 (draft 含む) を返すため、 staff が受講者シェルを
-  // 開いているときだけクライアント側で自分の講座に絞る。 受講者は API 側で既に絞られており、
+  // 検索 API は staff にすべてのステージ (draft 含む) を返すため、 staff が受講者シェルを
+  // 開いているときだけクライアント側で自分のステージに絞る。 受講者は API 側で既に絞られており、
   // ここで絞ると enrollment のロード中 / 取得失敗時に検索結果が空になるので触らない。
   const scopeSearchToOwnStages = effectiveRole === "learner" && canSwitchToLearner;
   const pendingReviewCount = usePendingReviewCount();

@@ -293,7 +293,7 @@ export interface VariantStockSummary {
   pattern: string;
   /** そのパターンの練習の課題名 (教材の並び。講師がパターンを見分けるため)。 */
   practiceTitles: string[];
-  /** そのパターンの課題がある講座名。 */
+  /** そのパターンの課題があるステージ名。 */
   stageTitles: string[];
   /** 教材にある有効な類題の数 (補習の小問題・確認用)。 */
   stock: { remedial: number; check: number };

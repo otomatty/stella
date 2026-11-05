@@ -7,7 +7,7 @@
 
 HTMLとJavaScriptで、状態と操作を持つUI部品を作れる。
 
-## 前提講座
+## 前提ステージ
 
 `dom-basics`
 

@@ -141,7 +141,7 @@ function sectionOf(markdown: string, start: string, end?: string): string {
   return markdown.slice(from, to < 0 ? undefined : to).trim();
 }
 
-/** 書き方の決まり (ADDING_COURSE の課題と類題の節・STYLE_GUIDE の文体とコード例)。 */
+/** 書き方の決まり (ADDING_STAGE の課題と類題の節・STYLE_GUIDE の文体とコード例)。 */
 export function draftGuide(contentRoot: string): string {
   const adding = readFileSync(join(contentRoot, "ADDING_STAGE.md"), "utf8");
   const style = readFileSync(join(contentRoot, "STYLE_GUIDE.md"), "utf8");

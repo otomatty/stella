@@ -12,7 +12,7 @@ import {
 } from "@/lib/review-desk-api";
 
 interface CommentTemplatePickerProps {
-  /** 提出の課題の講座とパターン。当てはまる定型コメントだけを出す。 */
+  /** 提出の課題のステージとパターン。当てはまる定型コメントだけを出す。 */
   stageId: string | null | undefined;
   pattern: string | null | undefined;
   /** 選んだ定型コメントを本文に入れる (入れたあと講師が直して送る)。 */
@@ -37,7 +37,7 @@ export function CommentTemplatePicker({
 
   const load = useCallback(async () => {
     try {
-      // サーバーは講座を渡したときだけ絞る。講座の無い提出 (旧形式) は全講座向けだけを出す。
+      // サーバーはステージを渡したときだけ絞る。ステージの無い提出 (旧形式) はすべてのステージ向けだけを出す。
       const task = { stageId: stageId ?? null, pattern: pattern ?? null };
       setTemplates(
         (await fetchTemplates({ stageId, pattern })).filter((t) => templateApplies(t, task)),

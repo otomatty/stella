@@ -110,7 +110,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
         db.insert(submissions).values(
           ["same-time", "checked", "unreviewed", "overturned"].map((id) => ({
             id,
-            stageTitle: "講座",
+            stageTitle: "ステージ",
             assignmentTitle: "課題",
             code: "",
             taskId: "c/u/t",
@@ -187,7 +187,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
         db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "instructor" }),
         db.insert(submissions).values({
           id: "same-time",
-          stageTitle: "講座",
+          stageTitle: "ステージ",
           assignmentTitle: "課題",
           code: "",
           taskId: "c/u/t",

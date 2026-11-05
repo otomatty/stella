@@ -2,9 +2,9 @@
  * スキルツリー (ステージマップ) とスキルプロフィールの読み出し API (Phase 1)。
  *
  *   GET /api/skill-map/mine        … 星の状態・視界・解放条件・次の一歩
- *   GET /api/skill-map/icons       … 霧の外の講座アイコン SVG を 1 応答にまとめる
+ *   GET /api/skill-map/icons       … 霧の外のステージアイコン SVG を 1 応答にまとめる
  *   GET /api/skill-map/staff       … 講師・管理者向け。全ステージを霧なしで 1 つの盤面に
- *   GET /api/skill-map/staff/icons … その盤面に載る講座アイコン
+ *   GET /api/skill-map/staff/icons … その盤面に載るステージアイコン
  *   GET /api/skill-profile/mine    … XP の内訳とレベル、学習ストリークの要約
  *
  * `/mine` と受講者の `/icons` は **呼び出した本人ぶんだけ** を返す。他人の学習状況を
@@ -241,7 +241,7 @@ export interface SkillMapStagePayload {
   /** テーマ名 (カテゴリ相当の粗い括り)。霧の星のラベルのフォールバックでもある。 */
   theme?: string;
   /**
-   * 講座アイコンがあるか。**霧の外でだけ true** — アイコンの形は講座の正体を語るので
+   * ステージアイコンがあるか。**霧の外でだけ true** — アイコンの形はステージの正体を語るので
    * slug と同じ秘匿。実体は `GET /api/skill-map/icons` (JWT 必須) でまとめて取る。
    * R2 キーはクライアントに出さない (公開バケット直リンクを足さないため)。
    */
@@ -285,7 +285,7 @@ export interface SkillMapStagePayload {
    */
   appearance_parent_ids?: Record<string, string>;
   /**
-   * Extra (講師・管理者が割り当てた講座)。Basic (`catalog`) の星には付けない。
+   * Extra (講師・管理者が割り当てたステージ)。Basic (`catalog`) の星には付けない。
    * 名前を出す段 (`full`) と開発者表示にだけ載せる。霧・edge には出さない。
    */
   audience?: "granted";
@@ -556,7 +556,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
 });
 
 /**
- * 講座アイコン SVG。JWT 必須、霧の星は 404。
+ * ステージアイコン SVG。JWT 必須、霧の星は 404。
  *
  * 画面は `mask-image` に載せるので、公開 R2 URL を直接渡すと CORS でマスクが黙って
  * 落ちる。ここを通して blob URL にすると同じオリジンになり、キーもクライアントに出ない。
@@ -598,7 +598,7 @@ skillMapRoute.get("/api/skill-map/stages/:id/icon", async (c) => {
 });
 
 /**
- * 霧の外の講座アイコンを 1 回の評価でまとめて返す。
+ * 霧の外のステージアイコンを 1 回の評価でまとめて返す。
  *
  * 星ごとに `stages/:id/icon` を呼ぶと、マップ読み出し (D1 複数本) が星の数だけ走る。
  * ホームの `/mine` に SVG を埋め込まないのは、マップ JSON を開くたびに R2 を踏まないため。
@@ -758,7 +758,7 @@ skillMapRoute.get("/api/skill-map/staff", async (c) => {
 });
 
 /**
- * ステージ管理の盤面に載る講座アイコン。`/api/skill-map/icons` と同じ形。
+ * ステージ管理の盤面に載るステージアイコン。`/api/skill-map/icons` と同じ形。
  * 盤面に載らないステージ (退役) の SVG は取りに行かない。
  */
 skillMapRoute.get("/api/skill-map/staff/icons", async (c) => {

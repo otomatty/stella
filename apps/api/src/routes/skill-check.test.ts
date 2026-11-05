@@ -139,7 +139,7 @@ function lineSource(unlocked: Set<string>, enrolled: Set<string>) {
   const stage = (slug: string, prerequisites: string[]) => ({
     id: `id-${slug}`,
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     prerequisites,
     canDo: `${slug} ができる`,
     theme: "テーマ",

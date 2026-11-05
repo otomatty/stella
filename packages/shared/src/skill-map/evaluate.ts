@@ -12,7 +12,7 @@
  *
  * **前提が複数あるときは AND** (全部クリアで開く)。例外は見た目の複製
  * (`appearances.ts` の扇ごとの前提) だけで、組どうしは OR (どれか 1 組を満たせば開く)。
- * 通常の講座は AND のまま。
+ * 通常のステージは AND のまま。
  *
  * **状態の優先順位**は cleared > active > unlocked > locked。
  * - `cleared` … クリア済み (修了)
@@ -109,14 +109,14 @@ export interface SkillMapStage {
   /** 霧の中で見せるテーマ名。 */
   theme?: string;
   /**
-   * スキルツリーの星に出す講座アイコンの R2 キー (`stages.icon_path`)。
+   * スキルツリーの星に出すステージアイコンの R2 キー (`stages.icon_path`)。
    * 評価器は使わない素通しの項目 — 秘匿 (霧の星に出さない) は API 層が visibility で決める。
    */
   iconPath?: string;
   category: string;
   /**
    * カタログの出し方。未指定と `catalog` は Basic。`granted` は Extra
-   * (講師・管理者が割り当てた受講者にだけ出る講座)。
+   * (講師・管理者が割り当てた受講者にだけ出るステージ)。
    * 推奨順では Basic を Extra より先にする。
    */
   audience?: "catalog" | "granted";
@@ -288,7 +288,7 @@ function resolveIds(slugs: readonly string[], idBySlug: Map<string, string>): st
 /**
  * ステージグラフを評価して、状態・視界・解放条件・次の一歩を出す。
  *
- * 計算量は O(V + E)。講座数は 2 桁なので素朴な実装で足りる。
+ * 計算量は O(V + E)。ステージ数は 2 桁なので素朴な実装で足りる。
  */
 export function evaluateSkillMap(input: SkillMapInput): SkillMapResult {
   const { stages, clearedStageIds, activeStageId, unlockedStageIds } = input;

@@ -116,11 +116,11 @@ describe("開発者表示を出すか (shouldRevealDevMap)", () => {
 describe("壊れた prerequisites の行き先", () => {
   it("番兵はどのステージにも解決せず、その星は locked のまま残る", () => {
     const stages = [
-      { id: "id-a", slug: "a", title: "a の講座", prerequisites: [], category: "" },
+      { id: "id-a", slug: "a", title: "a のステージ", prerequisites: [], category: "" },
       {
         id: "id-broken",
         slug: "broken",
-        title: "broken の講座",
+        title: "broken のステージ",
         prerequisites: parsePrerequisites("["),
         category: "",
       },
@@ -234,7 +234,7 @@ describe("「進行中」に据えてよい星か (selectableActiveStages)", () 
   const line = ["a", "b", "c", "d"].map((slug, i) => ({
     id: id_(slug),
     slug,
-    title: `${slug} の講座`,
+    title: `${slug} のステージ`,
     category: "基礎",
     prerequisites: i === 0 ? [] : [String(["a", "b", "c", "d"][i - 1])],
   }));
@@ -292,8 +292,8 @@ describe("進捗から「進行中」を導く (pickActiveStageId)", () => {
 
 describe("C# の島", () => {
   it("割り当てが無いと星が残らない", () => {
-    // loadSkillMapSource と同じ順。stella のカタログに C# の講座は無く、
-    // 外部から入る講座は granted なので、割り当てが無い受講者には島ごと出ない。
+    // loadSkillMapSource と同じ順。stella のカタログに C# のステージは無く、
+    // 外部から入るステージは granted なので、割り当てが無い受講者には島ごと出ない。
     const rows = [
       {
         id: "id-dev-env-basics",

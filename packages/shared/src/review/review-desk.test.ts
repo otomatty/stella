@@ -89,7 +89,7 @@ describe("見直しの数字の境目", () => {
 
 describe("定型コメントの当てはめ", () => {
   const task = { stageId: "stage", pattern: "html-page" };
-  it("講座とパターンが合うか、指定が無いものだけを出す", () => {
+  it("ステージとパターンが合うか、指定が無いものだけを出す", () => {
     expect(templateApplies({ stageId: null, pattern: null }, task)).toBe(true);
     expect(templateApplies({ stageId: "stage", pattern: null }, task)).toBe(true);
     expect(templateApplies({ stageId: "stage", pattern: "html-page" }, task)).toBe(true);

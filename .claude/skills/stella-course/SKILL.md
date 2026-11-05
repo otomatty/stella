@@ -1,38 +1,38 @@
 ---
 name: stella-course
-description: "STELLA の講座・課題・知識問題を作るスキル。format 2 の講座を新しく書く、単元や課題を足す・直す、既存の研修教材 (Markdown の問題集、PDF、コード) を STELLA の課題に移す・分割する、課題 (task.json、README、starter、tests、解答例、誤答、ヒント、類題) を足す・直す、C# の課題を作る、特定の受講者向けの Extra 講座を作る、外部の非公開リポジトリで STELLA の教材を書く、といった依頼で使う。本棚に入れる本の zip は stella-book を使う。このスキルは講座と課題の方。"
+description: "STELLA のステージ・課題・知識問題を作るスキル。format 2 のステージを新しく書く、単元や課題を足す・直す、既存の研修教材 (Markdown の問題集、PDF、コード) を STELLA の課題に移す・分割する、課題 (task.json、README、starter、tests、解答例、誤答、ヒント、類題) を足す・直す、C# の課題を作る、特定の受講者向けの Extra ステージを作る、外部の非公開リポジトリで STELLA の教材を書く、といった依頼で使う。本棚に入れる本の zip は stella-book を使う。このスキルはステージと課題の方。"
 ---
 
-# STELLA の講座と課題 (format 2) を作る
+# STELLA のステージと課題 (format 2) を作る
 
-講座、単元、課題、知識問題を作る、直す、既存の研修教材から移すときの手順です。
+ステージ、単元、課題、知識問題を作る、直す、既存の研修教材から移すときの手順です。
 形式の細かい規則は STELLA の文書が正本です。ここに規則の文を写して二重に持たないでください。このスキルは作業の順、判断、どの文書のどこを読むか、よくある誤りを持ちます。
 
-見本の講座は `stages/dev-env-basics/` (format 2) です。課題の定義は `src/task-schema.ts` と `src/task-content.ts`、導入手順は `ADDING_STAGE.md` の「新カリキュラムの format 2」です。
+見本のステージは `stages/dev-env-basics/` (format 2) です。課題の定義は `src/task-schema.ts` と `src/task-content.ts`、導入手順は `ADDING_STAGE.md` の「新カリキュラムの format 2」です。
 
 ## 0. どこで動いているか
 
 最初にどちらのリポジトリかを決め、以降のパスの先頭をそれに合わせます。
 
-- **STELLA 本体**。`packages/content/stages/` がある。文書は `packages/content/...`、講座は `packages/content/stages/<slug>/`、検査は `bun run content:check`。
-- **外部リポジトリ**。`stella-extra.json` がある。STELLA の写しは `.stella/`。文書は `.stella/packages/content/...`、講座はリポジトリ直下の `stages/<slug>/`。写しが無ければ、先に `node scripts/stella.mjs setup`。検査は `node scripts/stella.mjs check`。外部での作業は `references/extra-repo.md`。
+- **STELLA 本体**。`packages/content/stages/` がある。文書は `packages/content/...`、ステージは `packages/content/stages/<slug>/`、検査は `bun run content:check`。
+- **外部リポジトリ**。`stella-extra.json` がある。STELLA の写しは `.stella/`。文書は `.stella/packages/content/...`、ステージはリポジトリ直下の `stages/<slug>/`。写しが無ければ、先に `node scripts/stella.mjs setup`。検査は `node scripts/stella.mjs check`。外部での作業は `references/extra-repo.md`。
 
-以下、本体のパスで書きます。外部では文書の先頭に `.stella/` を付け、講座の置き場所だけ `stages/` に読み替えます。
+以下、本体のパスで書きます。外部では文書の先頭に `.stella/` を付け、ステージの置き場所だけ `stages/` に読み替えます。
 
-Extra 講座 (`audience: granted`。講師が割り当てた受講者にだけ出る) のうち、公開リポジトリに置きたくないものは外部の非公開リポジトリに置きます。公開リポジトリの STELLA 本体には置きません。
+Extra ステージ (`audience: granted`。講師が割り当てた受講者にだけ出る) のうち、公開リポジトリに置きたくないものは外部の非公開リポジトリに置きます。公開リポジトリの STELLA 本体には置きません。
 
 `.stella/` の中は写しです。そこを編集して直したことにしないでください。直すのは外部リポジトリの `stages/` と、足す台帳です。
 
-## 1. 講座の要件を決める
+## 1. ステージの要件を決める
 
 本文の前に `THEME_TO_STAGE.md` で要件を埋めます。到達目標は観測できる動詞で書きます (書ける、直せる、選べる、説明できる)。規模はトピック数で見ます。カリキュラム (takeaway の一覧) が固まる前にスライドを書き始めないでください。
 
 評価は format 2 では課題 (`tasks/`) と知識問題 (`knowledge.md`) です。`THEME_TO_STAGE.md` の「コード演習は javascript / typescript / sql だけ」は、旧形式の QuickJS 演習の話です。format 2 の実行は runner ごとに固定の手順で、テンプレートは `templates/runners/` にあります。
 
-- **Basic**。公開リポジトリのカタログに載る講座。`audience` は書かないか `catalog`。slug、前提、線の親、カテゴリの正本は `docs/curriculum/07-stella-adoption-redesign.md` の §3.1 と §3.4。前提の無い根は `dev-env-basics` だけです。ここへ前提を足さないでください。
-- **Extra**。`stage.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA の講座の slug。外部リポジトリの `name` は `packages/content/extra-repositories.json` に登録した名前で、講座の slug は `<name>-` で始めます。退役した slug は使えません。新しい島が要るときは `references/extra-repo.md`。
+- **Basic**。公開リポジトリのカタログに載るステージ。`audience` は書かないか `catalog`。slug、前提、線の親、カテゴリの正本は `docs/curriculum/07-stella-adoption-redesign.md` の §3.1 と §3.4。前提の無い根は `dev-env-basics` だけです。ここへ前提を足さないでください。
+- **Extra**。`stage.json` の `audience` は `granted`。`category` は `packages/shared/src/skill-map/islands.ts` の島のどれか。`prerequisites` は 1 つ以上、実在する STELLA のステージの slug。外部リポジトリの `name` は `packages/content/extra-repositories.json` に登録した名前で、ステージの slug は `<name>-` で始めます。退役した slug は使えません。新しい島が要るときは `references/extra-repo.md`。
 
-slug、講座名、ファイル名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
+slug、ステージ名、ファイル名に受講者の名前を入れないでください。R2 のキーと D1 に残ります。
 
 ## 2. カリキュラムを先に書く
 
@@ -57,7 +57,7 @@ modules/<unit>/
 ```
 
 - `unit.json` は `plannedHours`、`skills.uses` / `skills.assesses`、`reuses`。スキル ID は `skills.json` に `{ id, title }` で足してから指します。ログインなしで読める単元 (`public: true`) には課題を置けません。
-- `references.json` は参照元の使用箇所です。新形式は初回公開から必須です。台帳の作り方、`unitId` の版、`contentHash` は `SOURCE_GUIDE.md`。課題や本文を足したら、版を上げ、参照元を確かめ直し、`bun run --filter=@stella/content hash:unit -- <講座>/<単元>` の指紋を `contentHash` に書きます。外部では、写しの中の同じコマンドを、そのリポジトリの手順で実行します。資料の `review` と使用箇所の `reviewStatus` は `draft` までです。`approved` は講師が資料と本文の対応を確かめてから付けます。
+- `references.json` は参照元の使用箇所です。新形式は初回公開から必須です。台帳の作り方、`unitId` の版、`contentHash` は `SOURCE_GUIDE.md`。課題や本文を足したら、版を上げ、参照元を確かめ直し、`bun run --filter=@stella/content hash:unit -- <ステージ>/<単元>` の指紋を `contentHash` に書きます。外部では、写しの中の同じコマンドを、そのリポジトリの手順で実行します。資料の `review` と使用箇所の `reviewStatus` は `draft` までです。`approved` は講師が資料と本文の対応を確かめてから付けます。
 - 参照元の ID 自体は `sources/registry.json` (外部では足す分だけをリポジトリの `sources/registry.json` に置く)。技術のトップページだけを根拠にしないでください。
 - 語彙台帳 (`slides.md` の `introduces` / `requires`) は学習順に検査されます。未導入の語が要るなら、語を足すよりトピックの順を直します。
 
@@ -109,7 +109,7 @@ scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題
 ## 7. 受講者に出す
 
 - **Basic**。main への merge で、変わった教材だけが seed されます。
-- **Extra**。外部リポジトリの main への merge で Actions が写しに重ねて seed します。そのあと、講師か管理者が「Extra 講座」画面 (`/stage-grants`) で受講者に割り当てます。割り当てはツリーに出すだけで、受講開始は本人の自己開始です。
+- **Extra**。外部リポジトリの main への merge で Actions が写しに重ねて seed します。そのあと、講師か管理者がステージ管理 (`/stages`) の星の詳細の「受講者を割り当てる」で受講者に割り当てます (`/stage-grants` は `/stages` へ送るだけ)。割り当てはツリーに出すだけで、受講開始は本人の自己開始です。
 
 ## やってはいけないこと
 
@@ -118,8 +118,8 @@ scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題
 - 人に見せたくない内容を、図解、サムネイル、課題文の画像に入れない。
 - `.stella/` の中を編集しない。
 - 検査を通すために tests や protected を弱めない。
-- slug と講座名に個人名を入れない。
-- 既存のスキル `stella-book` と `diagram-design` の手順を、講座の作業で書き換えない。
+- slug とステージ名に個人名を入れない。
+- 既存のスキル `stella-book` と `diagram-design` の手順を、ステージの作業で書き換えない。
 - 参照元 (`sources/registry.json` の `review`・単元の `references.json` の `reviewStatus`) を `approved` にしない。Claude が書くのは `draft` まで。講師が資料と本文の対応を確かめてから承認する (SOURCE_GUIDE.md の 5。AI の調査・照合を講師の承認として記録しない)。検査が承認の無いことで落ちたら、承認を付けずに、講師に確認を頼むと報告する。
 
 ## よくある誤り

@@ -20,7 +20,7 @@ interface SearchPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (result: SearchResult) => void;
-  /** 受講者プレビュー時は公開講座の ID。 null なら API 結果をそのまま出す。 */
+  /** 受講者プレビュー時は公開ステージの ID。 null なら API 結果をそのまま出す。 */
   allowedStageIds?: ReadonlySet<string> | null;
 }
 
