@@ -1,0 +1,23 @@
+{
+  "runner": "ts-test",
+  "environment": "ts-test-01",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

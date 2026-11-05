@@ -15,6 +15,7 @@ export const LOCAL_REPORT_STEP_IDS = [
   "browsers",
   "lint",
   "format",
+  "typecheck",
   "test",
   "build",
   "e2e",

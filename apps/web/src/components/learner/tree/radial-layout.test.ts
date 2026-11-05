@@ -519,6 +519,34 @@ describe("layoutRadialSkillTree", () => {
       expect(layout.islands.map((i) => i.key)).toEqual(["AWS資格"]);
       expect(layout.width).toBeGreaterThan(0);
     });
+
+    it("開発ラボG は本土の扇に混ざらず、親が dev-env-basics でも橋線を引かない", () => {
+      const layout = layoutRadialSkillTree([
+        node({
+          id: "dev-env-basics",
+          title: "開発環境とWebの入口",
+          category: "基礎",
+          state: "cleared",
+        }),
+        node({
+          id: "lab-g",
+          title: "開発ラボG",
+          category: "開発ラボG",
+          parent_id: "dev-env-basics",
+        }),
+      ]);
+      expect(layout.sectors.map((s) => s.key)).not.toContain("開発ラボG");
+      expect(layout.islands.map((i) => i.key)).toEqual(["開発ラボG"]);
+      const lab = layout.nodes.find((n) => n.node.id === "lab-g");
+      const root = layout.nodes.find((n) => n.node.id === "dev-env-basics");
+      if (!lab || !root) throw new Error("星がない");
+      expect(lab.sector).toBe("開発ラボG");
+      const rootD = Math.hypot(root.x - layout.centerX, root.y - layout.centerY);
+      const labD = Math.hypot(lab.x - layout.centerX, lab.y - layout.centerY);
+      expect(labD).toBeGreaterThan(rootD);
+      const pairs = layout.edges.map((e) => `${e.fromId}->${e.toId}`);
+      expect(pairs).not.toContain("dev-env-basics->lab-g");
+    });
   });
 
   describe("appearances (同じステージを複数の扇に置く)", () => {

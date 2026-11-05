@@ -2,16 +2,16 @@
  * `/admin/users` — ユーザー管理 (Issue #22)。
  *
  * バックエンド設定時: `profiles` を実データで一覧し、 招待 (単体 / CSV 一括) /
- * ロール変更 / 無効化を service-role API 経由で行う。
+ * ロール変更 / 無効化 / 受講者の削除を service-role API 経由で行う。
  * バックエンド未設定時 (dev fixtures フロー): デモデータを read-only で表示する。
  *
- * 招待ダイアログ / デモ版 / 共有小物は users-admin/ 配下に分割。
+ * 招待・削除ダイアログ / デモ版 / 共有小物は users-admin/ 配下に分割。
  */
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Upload, Plus, Search, MoreHorizontal, Shield, Lock } from "@/lib/icons";
+import { Upload, Plus, Search, MoreHorizontal, Shield, Lock, Trash } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import { SkeletonRows } from "@/components/ui/skeleton";
@@ -33,6 +33,7 @@ import { setUserRole, setUserDisabled, type AdminProfileRow } from "@/lib/admin-
 
 import { ROLE_LABEL, RoleBadge, toneFromId } from "./users-admin/shared";
 import { InviteDialog } from "./users-admin/InviteDialog";
+import { DeleteUserDialog } from "./users-admin/DeleteUserDialog";
 import { CsvInviteDialog } from "./users-admin/CsvInviteDialog";
 import { UsersAdminDemo } from "./users-admin/UsersAdminDemo";
 
@@ -67,6 +68,14 @@ function UsersAdminLive({
   const [csvOpen, setCsvOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminProfileRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  const visibleProfiles = useMemo(
+    () => profiles.filter((row) => !removedIds.has(row.id)),
+    [profiles, removedIds],
+  );
 
   const counts = useMemo(() => {
     const c: Record<ProfileRole, number> = {
@@ -75,18 +84,18 @@ function UsersAdminLive({
       admin: 0,
       platform_admin: 0,
     };
-    for (const p of profiles) c[p.role]++;
+    for (const p of visibleProfiles) c[p.role]++;
     return c;
-  }, [profiles]);
+  }, [visibleProfiles]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return profiles.filter((p) => {
+    return visibleProfiles.filter((p) => {
       if (roleFilter !== "all" && p.role !== roleFilter) return false;
       if (!q) return true;
       return p.display_name.toLowerCase().includes(q) || (p.email ?? "").toLowerCase().includes(q);
     });
-  }, [profiles, query, roleFilter]);
+  }, [visibleProfiles, query, roleFilter]);
 
   const onChangeRole = async (p: AdminProfileRow, role: AssignableProfileRole) => {
     setMenuId(null);
@@ -115,6 +124,22 @@ function UsersAdminLive({
     } finally {
       setBusyId(null);
     }
+  };
+
+  const askDelete = (profile: AdminProfileRow) => {
+    setMenuId(null);
+    setDeleteTarget(profile);
+    setDeleteOpen(true);
+  };
+
+  const forgetDeletedUser = async (userId: string) => {
+    setRemovedIds((prev) => {
+      if (prev.has(userId)) return prev;
+      const next = new Set(prev);
+      next.add(userId);
+      return next;
+    });
+    await refetch();
   };
 
   return (
@@ -156,7 +181,7 @@ function UsersAdminLive({
           <FilterChip
             active={roleFilter === "all"}
             onClick={() => setRoleFilter("all")}
-            label={`全 ${profiles.length}名`}
+            label={`全 ${visibleProfiles.length}名`}
           />
           <FilterChip
             active={roleFilter === "student"}
@@ -179,7 +204,7 @@ function UsersAdminLive({
 
         {loading && profiles.length === 0 ? (
           <SkeletonRows rows={5} className="p-4" />
-        ) : profiles.length === 0 ? (
+        ) : visibleProfiles.length === 0 ? (
           <div className="py-10 text-center text-sm text-ink-3">
             まだユーザーがいません。 「ユーザーを招待」 から追加してください。
           </div>
@@ -249,6 +274,11 @@ function UsersAdminLive({
                             profile={p}
                             onChangeRole={(role) => void onChangeRole(p, role)}
                             onToggleDisabled={() => void onToggleDisabled(p)}
+                            onDelete={
+                              p.role === "student" && p.id !== currentUserId
+                                ? () => askDelete(p)
+                                : undefined
+                            }
                             onClose={() => setMenuId(null)}
                           />
                         ) : null}
@@ -264,6 +294,12 @@ function UsersAdminLive({
 
       <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onInvited={refetch} />
       <CsvInviteDialog open={csvOpen} onOpenChange={setCsvOpen} onInvited={refetch} />
+      <DeleteUserDialog
+        profile={deleteTarget}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={forgetDeletedUser}
+      />
     </>
   );
 }
@@ -307,11 +343,13 @@ function RowMenu({
   profile,
   onChangeRole,
   onToggleDisabled,
+  onDelete,
   onClose,
 }: {
   profile: AdminProfileRow;
   onChangeRole: (role: AssignableProfileRole) => void;
   onToggleDisabled: () => void;
+  onDelete?: () => void;
   onClose: () => void;
 }) {
   return (
@@ -348,6 +386,16 @@ function RowMenu({
           <Lock size={12} />
           {profile.disabled ? "有効化する" : "無効化する"}
         </button>
+        {onDelete ? (
+          <button
+            type="button"
+            className="w-full text-left px-3 py-1.5 hover:bg-sunken flex items-center gap-1.5 text-destructive"
+            onClick={onDelete}
+          >
+            <Trash size={12} />
+            削除する…
+          </button>
+        ) : null}
       </div>
     </>
   );

@@ -165,6 +165,45 @@ describe("C# の課題の提出", () => {
   });
 });
 
+describe("TypeScript の課題の提出", () => {
+  it("deps・lint・format・typecheck・test が通れば照合に通り、typecheck が無い・失敗だと不足になる", async () => {
+    const { input, bundle } = await submissionFixture({
+      runner: "ts-test",
+      checks: { lint: true, format: true },
+    });
+    input.localResult.steps = [
+      step("deps"),
+      step("lint"),
+      step("format"),
+      step("typecheck"),
+      step("test"),
+      step("files"),
+    ];
+    expect((await verifyTaskSubmission(input, bundle)).check.matched).toBe(true);
+    input.localResult.steps = [
+      step("deps"),
+      step("lint"),
+      step("format"),
+      step("test"),
+      step("files"),
+    ];
+    expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+      "必要な確認の結果が不足しています",
+    );
+    input.localResult.steps = [
+      step("deps"),
+      step("lint"),
+      step("format"),
+      step("typecheck", "failed"),
+      step("test"),
+      step("files"),
+    ];
+    expect((await verifyTaskSubmission(input, bundle)).check.reasons).toContain(
+      "必要な確認の結果が不足しています",
+    );
+  });
+});
+
 describe("CI と公開の課題の提出 (07 §5.5)", () => {
   const claim = {
     runUrl: "https://github.com/yamada/web-deploy/actions/runs/123",

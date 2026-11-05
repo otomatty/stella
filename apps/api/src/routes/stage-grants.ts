@@ -1,21 +1,25 @@
 /**
  * 専用ステージ (`audience = granted`) の受講者割当 API。
  *
- *   GET /api/stage-grants … granted ステージ一覧 + 割当先 + 受講者ピッカー用一覧
- *   PUT /api/stage-grants/:stageId … `{ profile_ids: string[] }` で grant を置換。
- *     応答は `{ stage_id, profile_ids, ancestor_grants }`。ancestor_grants は
+ *   GET /api/stage-grants … granted ステージ一覧 + 割当先 + 入口を開けた受講者 + 受講者ピッカー用一覧
+ *   PUT /api/stage-grants/:stageId … `{ profile_ids, unlocked_profile_ids? }` で grant を置換。
+ *     応答は `{ stage_id, profile_ids, unlocked_profile_ids, ancestor_grants }`。ancestor_grants は
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
- * 割り当てはマップ掲載のみ。 enrollment は `POST /api/stages/:id/start` (自己開始) のまま。
+ * `unlocked_profile_ids` は、割り当てた受講者のうち入口を開ける人 (`stage_unlocks.via = staff`)。
+ * 指定すると、その講座の staff の行のうち指定に無い人だけを消し、指定された人を足す
+ * (残した行の日時はそのまま)。省くと、割当から外した人の入口だけを閉じる。
+ * 腕試し (`skill_check`) で開いた行は消さず、上書きもしない。
+ * 割り当ても入口も、受講開始は自己開始のまま (`POST /api/stages/:id/start`)。
  * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) の講座にも同じ割当を足す
  * (外したとき、および既にある割当は触らない)。catalog に着いたらそこから先はたどらない。
  * 自動で足す側の insert だけ、同時保存で祖先が重複しても一意制約で失敗しない。
  */
 
 import { Hono } from "hono";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 
-import { profiles, stageGrants, stages } from "../db/schema.js";
+import { profiles, stageGrants, stageUnlocks, stages } from "../db/schema.js";
 import { ApiError, errorResponse, getCaller, requireCanManageStageGrants } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { loadGrantedStages, parentSlugFromRow } from "../lib/stage-audience.js";
@@ -46,6 +50,14 @@ function prerequisiteSlugsFromRow(row: { prerequisites: string | null }): string
   } catch {
     return [];
   }
+}
+
+/** trim・空文字除去・重複除去。文字列の配列でなければ 400。 */
+function cleanIdList(value: unknown, label: string): string[] {
+  if (!Array.isArray(value) || !value.every((id) => typeof id === "string")) {
+    throw new ApiError(`${label} は文字列の配列で指定してください`, 400);
+  }
+  return [...new Set(value.map((id) => id.trim()).filter((id) => id !== ""))];
 }
 
 /** 線の親を先に、続けて prerequisites の slug。重複は除く。 */
@@ -125,6 +137,25 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
               ),
             );
 
+    const unlockRows =
+      grantedStages.length === 0
+        ? []
+        : await db
+            .select({
+              stageId: stageUnlocks.stageId,
+              userId: stageUnlocks.userId,
+            })
+            .from(stageUnlocks)
+            .where(
+              and(
+                eq(stageUnlocks.via, "staff"),
+                inArray(
+                  stageUnlocks.stageId,
+                  grantedStages.map((stage) => stage.id),
+                ),
+              ),
+            );
+
     const grantsByStage = new Map<string, string[]>();
     const grantedProfileIds = new Set<string>();
     for (const row of grantRows) {
@@ -132,6 +163,12 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
       list.push(row.profileId);
       grantsByStage.set(row.stageId, list);
       grantedProfileIds.add(row.profileId);
+    }
+    const unlockedByStage = new Map<string, string[]>();
+    for (const row of unlockRows) {
+      const list = unlockedByStage.get(row.stageId) ?? [];
+      list.push(row.userId);
+      unlockedByStage.set(row.stageId, list);
     }
 
     const profileRows = await db
@@ -164,6 +201,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
         title: stage.title,
         category: stage.category,
         profile_ids: grantsByStage.get(stage.id) ?? [],
+        unlocked_profile_ids: unlockedByStage.get(stage.id) ?? [],
       })),
       learners,
     });
@@ -177,7 +215,10 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const { caller, db } = await getCaller(c);
     requireCanManageStageGrants(caller);
     const stageId = c.req.param("stageId");
-    const body = (await c.req.json()) as { profile_ids?: unknown };
+    const body = (await c.req.json()) as {
+      profile_ids?: unknown;
+      unlocked_profile_ids?: unknown;
+    };
 
     if (
       !Array.isArray(body.profile_ids) ||
@@ -188,6 +229,17 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const profileIds = [
       ...new Set(body.profile_ids.map((id) => id.trim()).filter((id) => id !== "")),
     ];
+    // 省いたとき (undefined) は古い画面。空配列は「入口を全員閉じる」で、省略とは別。
+    const requestedUnlocks =
+      body.unlocked_profile_ids === undefined
+        ? undefined
+        : cleanIdList(body.unlocked_profile_ids, "unlocked_profile_ids");
+    if (requestedUnlocks !== undefined) {
+      const assigned = new Set(profileIds);
+      if (requestedUnlocks.some((id) => !assigned.has(id))) {
+        throw new ApiError("入口を開けられるのは、割り当てる受講者だけです", 400);
+      }
+    }
 
     const stageRows = await db
       .select({
@@ -273,7 +325,51 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const ancestorOps = ancestorInserts.map((row) =>
       db.insert(stageGrants).values(valuesFor(row)).onConflictDoNothing(),
     );
-    await db.batch([deleteOp, ...stageInserts, ...ancestorOps]);
+
+    const existingUnlocks = await db
+      .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
+      .from(stageUnlocks)
+      .where(eq(stageUnlocks.stageId, stageId));
+    const assigned = new Set(profileIds);
+    // 一意制約は user × stage。腕試しの行がある人へ staff は入らない (上書きしない)。
+    const blockedByOtherVia = new Set(
+      existingUnlocks.filter((row) => row.via !== "staff").map((row) => row.userId),
+    );
+    const savedUnlocks =
+      requestedUnlocks === undefined
+        ? existingUnlocks
+            .filter((row) => row.via === "staff" && assigned.has(row.userId))
+            .map((row) => row.userId)
+        : requestedUnlocks.filter((id) => !blockedByOtherVia.has(id));
+    // 指定があるときは requestedUnlocks に無い人だけ消す (空なら staff をすべて)。
+    // 省いたとき (古い画面) は、割当 (profileIds) から外した人だけ消す。
+    const retainedStaffIds = requestedUnlocks ?? profileIds;
+    const deleteAllStaff = retainedStaffIds.length === 0;
+    const deleteUnlocks = deleteAllStaff
+      ? db
+          .delete(stageUnlocks)
+          .where(and(eq(stageUnlocks.stageId, stageId), eq(stageUnlocks.via, "staff")))
+      : db
+          .delete(stageUnlocks)
+          .where(
+            and(
+              eq(stageUnlocks.stageId, stageId),
+              eq(stageUnlocks.via, "staff"),
+              notInArray(stageUnlocks.userId, retainedStaffIds),
+            ),
+          );
+    const unlockInserts = (requestedUnlocks ?? []).map((userId) =>
+      db
+        .insert(stageUnlocks)
+        .values({
+          userId,
+          stageId,
+          via: "staff",
+          unlockedAt: new Date(),
+        })
+        .onConflictDoNothing({ target: [stageUnlocks.userId, stageUnlocks.stageId] }),
+    );
+    await db.batch([deleteOp, ...stageInserts, ...ancestorOps, deleteUnlocks, ...unlockInserts]);
 
     const ancestorGrants = new Map<string, string[]>();
     for (const row of ancestorInserts) {
@@ -291,6 +387,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       targetId: stageId,
       metadata: {
         profile_ids: profileIds,
+        unlocked_profile_ids: savedUnlocks,
         ...(ancestorGrantList.length > 0 ? { ancestor_grants: ancestorGrantList } : {}),
       },
       ip: clientIp(c),
@@ -299,6 +396,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     return c.json({
       stage_id: stageId,
       profile_ids: profileIds,
+      unlocked_profile_ids: savedUnlocks,
       ancestor_grants: ancestorGrantList,
     });
   } catch (err) {

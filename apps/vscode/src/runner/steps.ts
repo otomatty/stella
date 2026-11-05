@@ -44,6 +44,7 @@ import {
   parsePlaywrightReport,
   parsePrettierList,
   parseTrxReport,
+  parseTscDiagnostics,
   parseVitestReport,
   redactLocalPaths,
 } from "./parsers.js";
@@ -101,12 +102,16 @@ export const TIMEOUTS = {
   browsers: 10 * 60_000,
   lint: 2 * 60_000,
   format: 60_000,
+  typecheck: 3 * 60_000,
   test: 3 * 60_000,
   build: 5 * 60_000,
   e2e: 5 * 60_000,
   version: 15_000,
   git: 30_000,
 } as const;
+
+/** 型のエラーと C# のコンパイルエラーを結果に残す件数。 */
+const COMPILE_FINDINGS = 50;
 
 const NODE_MISSING =
   "Node.js が見つかりません。教材の手順で Node.js を入れてから、VS Code を再起動してください";
@@ -220,9 +225,11 @@ function isOutcome(value: unknown): value is StepOutcome {
 export function requiredPackages(manifest: TaskManifest): string[] {
   const plan = RUNNERS[manifest.runner].plan;
   const packages: string[] = [];
-  if (plan === "vitest") packages.push("vitest");
+  if (plan === "vitest" || plan === "typescript") packages.push("vitest");
+  if (plan === "typescript") packages.push("typescript");
   if (plan === "playwright" || plan === "next") packages.push("@playwright/test");
   if (plan === "next") packages.push("next");
+  if (plan === "typescript" && manifest.checks.lint) packages.push("typescript-eslint");
   if (manifest.checks.lint) packages.push("eslint");
   if (manifest.checks.format) packages.push("prettier");
   return packages;
@@ -392,6 +399,60 @@ export const formatStep: StepDefinition = {
       };
     }
     return errorOutcome("Prettier を実行できませんでした", out);
+  },
+};
+
+// ---------------------------------------------------------------
+// 型の確認
+// ---------------------------------------------------------------
+
+/**
+ * `tsc --noEmit` の終了コードと出力から手順の結果を決める。
+ * 型のエラーは要修正にし、位置の無い設定の誤りは環境の問題にする。
+ */
+export function tscOutcome(
+  out: ProcessOutcome,
+  root: string,
+  platform: NodeJS.Platform,
+  home: string,
+): StepOutcome {
+  const paths = { root, home, platform };
+  if (out.exitCode === 0) {
+    return redactStepOutcome({ status: "passed", summary: "型の確認が通りました" }, paths);
+  }
+  const diagnostics = parseTscDiagnostics(`${out.stdout}\n${out.stderr}`, root, platform);
+  if (diagnostics.length > 0) {
+    return redactStepOutcome(
+      {
+        status: "failed",
+        summary: `型のエラーが ${diagnostics.length} 件あります。エラーの行を直して保存してください`,
+        lint: diagnostics.slice(0, COMPILE_FINDINGS),
+      },
+      paths,
+    );
+  }
+  return redactStepOutcome(
+    errorOutcome("型の確認を実行できませんでした (tsconfig.json を確認してください)", out),
+    paths,
+  );
+}
+
+export const tscStep: StepDefinition = {
+  id: "typecheck",
+  label: "型の確認 (TypeScript)",
+  async run(ctx) {
+    const bin = await packageBin(ctx, "typescript", "tsc", "TypeScript");
+    if (isOutcome(bin)) return bin;
+    const out = await ctx.exec({
+      file: ctx.node as string,
+      args: [bin.file, "--noEmit", "-p", "tsconfig.json", "--pretty", "false", "--locale", "ja"],
+      cwd: ctx.root,
+      timeoutMs: TIMEOUTS.typecheck,
+    });
+    const stopped = interrupted(out, "型の確認", "error");
+    const paths = localPaths(ctx);
+    if (stopped) return redactStepOutcome(stopped, paths);
+    return tscOutcome(out, ctx.root, ctx.platform, paths.home);
   },
 };
 
@@ -613,7 +674,6 @@ export const diagnoseStep: StepDefinition = {
 const DOTNET_MISSING =
   ".NET SDK が見つかりません。教材の手順で .NET SDK を入れてから、VS Code を再起動してください";
 const TRX_MAX_BYTES = 10 * 1024 * 1024;
-const COMPILE_FINDINGS = 50;
 
 /** 配布した .NET の設定と SDK の版が同じなら、NuGet の準備をやり直さない。 */
 async function dotnetFingerprint(root: string, version: string): Promise<string> {

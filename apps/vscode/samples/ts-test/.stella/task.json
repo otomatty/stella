@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "typescript-practice/samples/ts-test",
+  "title": "あいさつの文を返す関数に型を付けて直す",
+  "kind": "basic",
+  "runner": "ts-test",
+  "submit": {
+    "files": [
+      "src/**/*.ts"
+    ]
+  },
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  },
+  "environment": {
+    "id": "ts-test-01@1",
+    "node": {
+      "min": "22.13.0",
+      "majors": [
+        22,
+        24
+      ]
+    },
+    "npm": {
+      "min": "10.0.0"
+    }
+  }
+}

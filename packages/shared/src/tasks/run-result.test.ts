@@ -49,4 +49,12 @@ describe("RUNNERS", () => {
     const withoutNode = RUNNER_IDS.filter((id) => !RUNNERS[id].requiresNode);
     expect(withoutNode).toEqual(["static-preview", "env-diagnose", "ci-deploy", "dotnet-test"]);
   });
+
+  it("ts-test は TypeScript の手順で、Node.js が要り、手元で実行する", () => {
+    expect(RUNNERS["ts-test"]).toMatchObject({
+      plan: "typescript",
+      requiresNode: true,
+      runsLocally: true,
+    });
+  });
 });

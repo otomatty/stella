@@ -90,6 +90,10 @@ describe("runner ごとの課題テンプレート", () => {
       for (const required of ["package.json", "package-lock.json", "eslint.config.js"]) {
         expect(prot).toContain(required);
       }
+      if (RUNNERS[runner].plan === "typescript") {
+        expect(prot).toContain("tsconfig.json");
+        expect(prot).toContain("vitest.config.js");
+      }
       expect(prot.some((file) => file.startsWith("tests/"))).toBe(true);
       // 提出ファイルと配布ファイルは重ならない。
       const submit = matchPatterns(files, fields.submit.files).files;
@@ -127,12 +131,12 @@ describe("runner ごとの課題テンプレート", () => {
       const files = await templateFiles(runner);
       const plan = RUNNERS[runner].plan;
       const configs =
-        plan === "vitest"
+        plan === "vitest" || plan === "typescript"
           ? files.filter((f) => f === "vitest.config.js" || f === "vite.config.js")
           : files.filter((f) => f === "playwright.config.js");
       expect(configs).toHaveLength(1);
       const config = await readFile(templateFile(runner, configs[0] as string), "utf8");
-      if (plan === "vitest") expect(config).toContain("test:");
+      if (plan === "vitest" || plan === "typescript") expect(config).toContain("test:");
       // 出力形式と出力先は拡張が引数で決める。設定で上書きすると結果を読めなくなる。
       expect(config).not.toMatch(/reporters?\s*:|outputFile|outputDir\s*:/);
     });
@@ -320,7 +324,12 @@ describe("CI と公開のテンプレート (ci-deploy)", () => {
     await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
       recursive: true,
     });
-    const { stdout } = await execFileAsync("node", ["--test", "tests/**/*.test.js"], { cwd: dir });
+    // Node の版で既定の出力が変わる (新しい版はパイプ先でも spec) ので、TAP を明示する。
+    const { stdout } = await execFileAsync(
+      "node",
+      ["--test", "--test-reporter=tap", "tests/**/*.test.js"],
+      { cwd: dir },
+    );
     expect(stdout).toMatch(/# pass 3/);
     expect(stdout).toMatch(/# fail 0/);
   });

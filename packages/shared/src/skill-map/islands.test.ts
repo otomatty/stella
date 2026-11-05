@@ -81,6 +81,16 @@ describe("filterIslandStages", () => {
     }
     expect(SKILL_MAP_ISLAND_CATEGORIES.size).toBe(SKILL_MAP_ISLANDS.length);
   });
+
+  it("開発ラボG は requires が空で、何もクリアしていない受講者にも残る", () => {
+    expect(SKILL_MAP_ISLANDS.find((island) => island.category === "開発ラボG")?.requires).toEqual(
+      [],
+    );
+    const lab = stage("lab-g-prework", "開発ラボG");
+    const aws = stage("aws-clf-c02-basics", "AWS資格");
+    const visible = filterIslandStages([...mainland, lab, aws], new Set());
+    expect(slugsOf(visible)).toEqual(slugsOf([...mainland, lab]));
+  });
 });
 
 describe("dropIslandsUnknownToClient", () => {
@@ -139,5 +149,12 @@ describe("dropIslandsUnknownToClient", () => {
       slugsOf([csharp, py, aws]),
     );
     expect(slugsOf(dropIslandsUnknownToClient([csharp, py, aws], "5"))).toEqual(slugsOf([py, aws]));
+  });
+
+  it("開発ラボG は tiers=7 以上の画面にだけ残す", () => {
+    const lab = stage("lab-g-prework", "開発ラボG");
+    expect(SKILL_MAP_ISLAND_MIN_TIERS["開発ラボG"]).toBe(7);
+    expect(slugsOf(dropIslandsUnknownToClient([lab, aws], "7"))).toEqual(slugsOf([lab, aws]));
+    expect(slugsOf(dropIslandsUnknownToClient([lab, aws], "6"))).toEqual(slugsOf([aws]));
   });
 });

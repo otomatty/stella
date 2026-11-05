@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   // packages/** のテストが apps/web の fixtures を辿ることがある（例:
@@ -18,6 +18,14 @@ export default defineConfig({
       "apps/**/src/**/*.test.ts",
       "apps/**/scripts/**/*.test.ts",
       "apps/web/worker/**/*.test.ts",
+    ],
+    // 受講者に配るテストは課題の道具で動かすもので、 リポジトリのテストではない。
+    // テンプレート・講座の課題・見本の .test.ts を include が拾わないように外す。
+    exclude: [
+      ...configDefaults.exclude,
+      "packages/content/templates/runners/**",
+      "packages/content/courses/**/tasks/**",
+      "apps/vscode/samples/**",
     ],
     environment: "node",
     // 閾値は置かない。 落とすためではなく、 どこが手薄かを見えるようにするため

@@ -18,6 +18,7 @@ import {
   playwrightStep,
   type StepDefinition,
   staticStep,
+  tscStep,
   vitestStep,
 } from "./steps.js";
 
@@ -32,6 +33,8 @@ export function buildPlan(manifest: TaskManifest): StepDefinition[] {
       return [diagnoseStep];
     case "vitest":
       return [depsStep, ...checks, vitestStep];
+    case "typescript":
+      return [depsStep, ...checks, tscStep, vitestStep];
     case "playwright":
       return [depsStep, browsersStep, ...checks, playwrightStep];
     case "next":

@@ -16,6 +16,7 @@ export const SAMPLES_DIR = fileURLToPath(new URL("../../samples/", import.meta.u
 /** テンプレートを用意した runner。static-preview・env-diagnose は Node.js の道具を使わない。 */
 export const TEMPLATE_RUNNERS = [
   "node-test",
+  "ts-test",
   "dom-test",
   "http-mock",
   "react-test",

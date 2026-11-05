@@ -184,7 +184,11 @@ export function parseTaskDefinition(
   const assessment = kind.startsWith("assessment-");
   // 解放の順番は種別ごとに決まっている (07 §8)。教材は種別の方針の中でだけ選べる。
   const policy = TASK_HELP_POLICIES[kind];
-  if (assessment && (support.hintLevels !== 0 || solutionUnlock !== "passed"))
+  // 確認A・Bも `never` を選べる。ヒントなしは変わらない。それ以外は合格後だけ。
+  if (
+    assessment &&
+    (support.hintLevels !== 0 || (solutionUnlock !== "passed" && solutionUnlock !== "never"))
+  )
     throw new Error("確認A・B: ヒントなし、解答は合格後にしてください");
   if (!policy.hints && support.hintLevels !== 0)
     throw new Error("統合: 取り組み中は仕様・参照元だけを使うので、ヒントは 0 段にしてください");
