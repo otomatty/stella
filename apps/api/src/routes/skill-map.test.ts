@@ -81,10 +81,10 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
 const app = new Hono<{ Bindings: Env }>().route("/", skillMapRoute);
 const env = {} as Env;
 
-/** 既定は現行 web の `tiers=5` (幽霊ノード + DevOps・Anthropic認定資格・Python の島)。 */
+/** 既定は現行 web の `tiers=7` (幽霊ノード + DevOps・Anthropic認定資格・Python・開発ラボG の島)。 */
 const get = (path: string, auth = true) =>
   app.request(
-    `${path}${path.includes("?") ? "&" : "?"}tiers=5`,
+    `${path}${path.includes("?") ? "&" : "?"}tiers=7`,
     auth ? { headers: { Authorization: "Bearer test" } } : {},
     env,
   );
