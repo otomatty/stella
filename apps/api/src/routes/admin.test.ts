@@ -424,6 +424,15 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     );
   });
 
+  it("メールアドレスの無い受講者は確認が空でも消せない", async () => {
+    run("UPDATE profiles SET email = NULL WHERE id = ?", LEARNER);
+    await expectRejected(
+      { userId: LEARNER, confirmEmail: "" },
+      400,
+      "メールアドレスの無い受講者は削除できません",
+    );
+  });
+
   it("一覧に出ない auth_users のメールでは消せない", async () => {
     await expectRejected(
       { userId: LEARNER, confirmEmail: "auth-learner@example.com" },

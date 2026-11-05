@@ -400,6 +400,16 @@ describe("parseTaskManifest (TypeScript の課題)", () => {
     if (result.ok) return;
     expect(result.errors).toContain(message);
   });
+
+  it("submit.files に src/**/*.ts という文字列が要る", () => {
+    const message =
+      "runner が ts-test の課題では submit.files に src/**/*.ts を入れてください (型を確かめる src/ の .ts をすべて提出するため)";
+    const result = parseTaskManifest(typescript({ submit: { files: ["src/greet.ts"] } }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors).toContain(message);
+    expect(parseTaskManifest(typescript({ submit: { files: ["src/**/*.ts"] } })).ok).toBe(true);
+  });
 });
 
 describe("isSafeRelativePattern", () => {

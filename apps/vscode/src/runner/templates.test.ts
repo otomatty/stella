@@ -324,7 +324,12 @@ describe("CI と公開のテンプレート (ci-deploy)", () => {
     await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
       recursive: true,
     });
-    const { stdout } = await execFileAsync("node", ["--test", "tests/**/*.test.js"], { cwd: dir });
+    // Node 24 は端末でなくても既定の出力が spec 形式になるので、TAP を指定して版で結果の形を変えない。
+    const { stdout } = await execFileAsync(
+      "node",
+      ["--test", "--test-reporter=tap", "tests/**/*.test.js"],
+      { cwd: dir },
+    );
     expect(stdout).toMatch(/# pass 3/);
     expect(stdout).toMatch(/# fail 0/);
   });

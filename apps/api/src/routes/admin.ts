@@ -55,7 +55,7 @@ import {
 } from "../lib/authz.js";
 import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
-import { clientIp, recordAudit } from "../lib/audit.js";
+import { auditLogInsert, clientIp, recordAudit } from "../lib/audit.js";
 import { resolveInviteAuthUserId } from "../lib/auth-users.js";
 import { insertTestDataForNewUser } from "../lib/test-data.js";
 import type { Env } from "../env.js";
@@ -368,7 +368,12 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
         .limit(1)
     )[0];
     // 一覧 (GET /api/admin/users) が出すのは profiles.email。
-    if (normalizeEmail(body.confirmEmail) !== normalizeEmail(emailRow?.email)) {
+    // 空の確認と NULL・空のメールが両方とも空文字になり、一致してしまうのを止める。
+    const targetEmail = normalizeEmail(emailRow?.email);
+    if (targetEmail === "") {
+      return c.json({ error: "メールアドレスの無い受講者は削除できません" }, 400);
+    }
+    if (normalizeEmail(body.confirmEmail) !== targetEmail) {
       return c.json({ error: "確認のメールアドレスが一致しません" }, 400);
     }
 
@@ -407,14 +412,15 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
         .where(eq(auditLogs.actorId, userId)),
       db.delete(profiles).where(eq(profiles.id, userId)),
       db.delete(authUsers).where(eq(authUsers.id, userId)),
+      // 個人情報を外す UPDATE より後。この行の actor は削除する受講者ではなく管理者。
+      auditLogInsert(db, caller, {
+        action: "user_delete",
+        targetType: "user",
+        targetId: userId,
+        ip: clientIp(c),
+        metadata: deleted,
+      }),
     ]);
-    await recordAudit(db, caller, {
-      action: "user_delete",
-      targetType: "user",
-      targetId: userId,
-      ip: clientIp(c),
-      metadata: deleted,
-    });
     return c.json({ ok: true, deleted });
   } catch (err) {
     return errorResponse(c, err);

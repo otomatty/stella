@@ -90,7 +90,8 @@ function unionIds(current: readonly string[], added: readonly string[]): string[
 }
 
 /**
- * 保存した講座の割当と入口を渡した一覧で置き換え、自動で足した祖先には受講者を和集合で足す。
+ * 保存した講座の割当と入口を渡した一覧で置き換え、その下書きも保存結果に合わせる。
+ * 自動で足した祖先には受講者を和集合で足す。
  * 祖先の入口は変えない。祖先の下書きは未保存の編集を残し、足された受講者だけを加える。
  */
 export function applySavedStageGrants(
@@ -124,7 +125,13 @@ export function applySavedStageGrants(
     return { ...stage, profile_ids: unionIds(stage.profile_ids, added) };
   });
 
-  const nextDrafts: Record<string, StageGrantDraft> = { ...drafts };
+  const nextDrafts: Record<string, StageGrantDraft> = {
+    ...drafts,
+    [savedStageId]: {
+      profileIds: [...savedProfileIds],
+      unlockedIds: [...savedUnlockedIds],
+    },
+  };
   for (const stage of stages) {
     if (stage.id === savedStageId) continue;
     const added = additions.get(stage.id);

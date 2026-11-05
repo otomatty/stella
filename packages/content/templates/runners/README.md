@@ -34,7 +34,7 @@ Node.js の道具を使う課題と、C# の課題 (`task.json` の `runner`) �
 ## 決めごと
 
 - **Node.js は 22.13 以上の 22 系と 24 系だけ。** 環境台帳の `requirements.node` は `{ "min": "22.13.0", "majors": [22, 24] }`。道具の多くが `^22.13.0 || >=24` のように奇数版 (23) を外しているので、`majors` で偶数の版だけを並べる (`maxMajor` だけでは 23 を通してしまう)。この要件で通る版が lockfile の全依存の `engines` を満たすことは `templates.test.ts` が確かめる。
-- **TypeScript は 6.0.3 に固定。** typescript-eslint 8.71 が `typescript <6.1.0` だけを受けるため。`tsconfig.json` は `protected` に入れ、型の確認 (`tsc --noEmit`) は `src/` と `tests/` を見るので `submit.files` は `src/` の下にする。`expectTypeOf` は tsc の手順で確かめる (Vitest の実行では何もしない)。ESLint は `noInlineConfig` で `eslint-disable` を効かなくする。
+- **TypeScript は 6.0.3 に固定。** typescript-eslint 8.71 が `typescript <6.1.0` だけを受けるため。`tsconfig.json` は `protected` に入れ、型の確認 (`tsc --noEmit`) は `src/` と `tests/` を見るので `submit.files` に `src/**/*.ts` を入れる (型を確かめる src/ の .ts をすべて提出する)。`expectTypeOf` は tsc の手順で確かめる (Vitest の実行では何もしない)。ESLint は `noInlineConfig` で `eslint-disable` を効かなくする。
 - **結果の形式はテンプレートで決めない。** 拡張が `--reporter=json` と出力先を引数で渡す。設定に `reporters`・`outputFile` を書くと結果を読めなくなる。
 - **整形の改行は `endOfLine: "auto"`。** Windows で作ったファイル (CRLF) を「整形が必要」と誤って判定しない。`.prettierignore` で `package-lock.json` と `.stella/` を外し、`npm run format` で配布ファイルの内容ハッシュを変えない。
 - **画面を開く道具は npm を通さずに起動する。** Playwright の `webServer` は `node node_modules/<道具>/...` で起動する (Windows でも同じ書き方で動く)。待ち受けは `127.0.0.1` に限り、Windows のファイアウォールの確認を出さない。

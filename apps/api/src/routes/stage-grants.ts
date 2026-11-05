@@ -7,7 +7,8 @@
  *     今回自動で足した祖先の割当 (無ければ空配列。監査ログの ancestor_grants と同じ内容)。
  *
  * `unlocked_profile_ids` は、割り当てた受講者のうち入口を開ける人 (`stage_unlocks.via = staff`)。
- * 指定するとその講座の staff の行を入れ替える。省くと、割当から外した人の入口だけを閉じる。
+ * 指定すると、その講座の staff の行のうち指定に無い人だけを消し、指定された人を足す
+ * (残した行の日時はそのまま)。省くと、割当から外した人の入口だけを閉じる。
  * 腕試し (`skill_check`) で開いた行は消さず、上書きもしない。
  * 割り当ても入口も、受講開始は自己開始のまま (`POST /api/stages/:id/start`)。
  * 新たに割り当てた受講者には、線の親と前提をたどった Extra (granted) の講座にも同じ割当を足す
@@ -354,7 +355,10 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
             .filter((row) => row.via === "staff" && assigned.has(row.userId))
             .map((row) => row.userId)
         : requestedUnlocks.filter((id) => !blockedByOtherVia.has(id));
-    const deleteAllStaff = requestedUnlocks !== undefined || profileIds.length === 0;
+    // 指定があるときは requestedUnlocks に無い人だけ消す (空なら staff をすべて)。
+    // 省いたとき (古い画面) は、割当 (profileIds) から外した人だけ消す。
+    const retainedStaffIds = requestedUnlocks ?? profileIds;
+    const deleteAllStaff = retainedStaffIds.length === 0;
     const deleteUnlocks = deleteAllStaff
       ? db
           .delete(stageUnlocks)
@@ -372,7 +376,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
               eq(stageUnlocks.stageId, stageId),
               eq(stageUnlocks.tenantId, caller.tenantId),
               eq(stageUnlocks.via, "staff"),
-              notInArray(stageUnlocks.userId, profileIds),
+              notInArray(stageUnlocks.userId, retainedStaffIds),
             ),
           );
     const unlockInserts = (requestedUnlocks ?? []).map((userId) =>

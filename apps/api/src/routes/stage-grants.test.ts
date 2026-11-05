@@ -910,6 +910,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
           eq(stageUnlocks.stageId, "stage-granted-1"),
           eq(stageUnlocks.tenantId, "ses"),
           eq(stageUnlocks.via, "staff"),
+          notInArray(stageUnlocks.userId, ["seed-learner", "skill-learner"]),
         ),
       ),
     );
@@ -930,6 +931,30 @@ describe("PUT /api/stage-grants/:stageId", () => {
       },
     ]);
     expect(columnNames(unlockInserted[0]?.conflictTarget)).toEqual(["user_id", "stage_id"]);
+  });
+
+  it("選択を変えずに保存すると、指定されていない人の staff の行だけを消す", async () => {
+    unlockRows.push({ stageId: "stage-granted-1", userId: "seed-learner", via: "staff" });
+    const res = await request(app, env, "/api/stage-grants/stage-granted-1", {
+      token: "t",
+      method: "PUT",
+      body: JSON.stringify({
+        profile_ids: ["seed-learner"],
+        unlocked_profile_ids: ["seed-learner"],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const unlockDelete = deleted.find((op) => op.table === stageUnlocks);
+    expect(sqlSketch(unlockDelete?.where)).toBe(
+      sqlSketch(
+        and(
+          eq(stageUnlocks.stageId, "stage-granted-1"),
+          eq(stageUnlocks.tenantId, "ses"),
+          eq(stageUnlocks.via, "staff"),
+          notInArray(stageUnlocks.userId, ["seed-learner"]),
+        ),
+      ),
+    );
   });
 
   it("profile_ids に無い人を unlocked_profile_ids に入れると 400", async () => {

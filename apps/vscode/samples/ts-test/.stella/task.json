@@ -6,7 +6,7 @@
   "runner": "ts-test",
   "submit": {
     "files": [
-      "src/greet.ts"
+      "src/**/*.ts"
     ]
   },
   "protected": [

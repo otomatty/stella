@@ -319,6 +319,13 @@ export function parseTaskManifest(raw: unknown): ParseTaskManifestResult {
         "runner が ts-test の課題では submit.files を src/ の下のパターンにしてください (tsconfig.json が型を確かめるのは src/ と tests/ のため)",
       );
     }
+    // src/greet.ts だけだと、分けた src/helper.ts が型の確認に入るのに提出の照合から外れる。
+    // 当たり判定ではなく src/**/*.ts という文字列を必須にする。
+    if (!submitFiles.includes("src/**/*.ts")) {
+      errors.push(
+        "runner が ts-test の課題では submit.files に src/**/*.ts を入れてください (型を確かめる src/ の .ts をすべて提出するため)",
+      );
+    }
   }
 
   let staticChecks: StaticCheck[] | undefined;

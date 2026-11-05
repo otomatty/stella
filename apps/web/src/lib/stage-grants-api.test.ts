@@ -181,6 +181,15 @@ describe("applySavedStageGrants", () => {
     expect(stages[1]?.unlocked_profile_ids).toEqual(["b"]);
     expect(drafts.python.unlockedIds).toEqual(["b"]);
   });
+
+  it("応答の入口が送った値より少ないとき、保存した講座の下書きもそれに合わせる", () => {
+    const stages = [stage("devops", "DevOps", ["a", "b"], [])];
+    const drafts = { devops: draft(["a", "b"], ["a", "b"]) };
+    const next = applySavedStageGrants(stages, drafts, "devops", ["a", "b"], ["a"], []);
+    expect(next.stages[0]?.unlocked_profile_ids).toEqual(["a"]);
+    expect(next.drafts.devops).toEqual(draft(["a", "b"], ["a"]));
+    expect(drafts.devops.unlockedIds).toEqual(["a", "b"]);
+  });
 });
 
 describe("formatSavedStageGrantsMessage", () => {

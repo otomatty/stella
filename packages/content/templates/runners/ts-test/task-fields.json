@@ -3,7 +3,7 @@
   "environment": "ts-test-01",
   "submit": {
     "files": [
-      "src/greet.ts"
+      "src/**/*.ts"
     ]
   },
   "protected": [

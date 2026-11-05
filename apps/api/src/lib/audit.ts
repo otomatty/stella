@@ -46,20 +46,25 @@ export function clientIp(c: Context<{ Bindings: Env }>): string | null {
   );
 }
 
+/** 監査ログ 1 件の insert。実行せず、batch に渡せるクエリを返す。 */
+export function auditLogInsert(db: Db, actor: AuditActor, entry: AuditEntry) {
+  return db.insert(auditLogs).values({
+    tenantId: actor.tenantId,
+    actorId: actor.id,
+    actorName: actor.name,
+    actorRole: actor.role,
+    action: entry.action,
+    targetType: entry.targetType,
+    targetId: entry.targetId ?? null,
+    ip: entry.ip ?? null,
+    metadata: entry.metadata ?? {},
+  });
+}
+
 /** 監査ログを 1 件記録する (best-effort)。 */
 export async function recordAudit(db: Db, actor: AuditActor, entry: AuditEntry): Promise<void> {
   try {
-    await db.insert(auditLogs).values({
-      tenantId: actor.tenantId,
-      actorId: actor.id,
-      actorName: actor.name,
-      actorRole: actor.role,
-      action: entry.action,
-      targetType: entry.targetType,
-      targetId: entry.targetId ?? null,
-      ip: entry.ip ?? null,
-      metadata: entry.metadata ?? {},
-    });
+    await auditLogInsert(db, actor, entry);
   } catch (e) {
     console.error("[audit] 監査ログの記録に失敗", entry.action, e);
   }
