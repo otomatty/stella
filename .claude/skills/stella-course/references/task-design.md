@@ -114,6 +114,7 @@ id の各部分は英小文字・数字で始め、続けて英小文字・数�
 | フォルダー | runner | 主な道具 |
 | --- | --- | --- |
 | `node-test/` | `node-test` | Vitest |
+| `ts-test/` | `ts-test` | TypeScript の型の確認 (tsc) + Vitest + typescript-eslint |
 | `dom-test/` | `dom-test` | Vitest + jsdom + Testing Library |
 | `http-mock/` | `http-mock` | Vitest + MSW |
 | `react-test/` | `react-test` | Vitest + React Testing Library |
