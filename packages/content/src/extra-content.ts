@@ -7,6 +7,7 @@
  */
 
 import {
+  constants,
   copyFileSync,
   existsSync,
   lstatSync,
@@ -377,9 +378,10 @@ function copyTree(extraRoot: string, src: string, dest: string): void {
   for (const entry of readdirSync(src, { withFileTypes: true })) {
     const from = join(src, entry.name);
     const to = join(dest, entry.name);
-    if (entry.isSymbolicLink()) throw symlinkError(extraRoot, from);
-    if (entry.isDirectory()) copyTree(extraRoot, from, to);
-    else if (entry.isFile()) copyFileSync(from, to);
+    const stat = lstatSync(from);
+    if (stat.isSymbolicLink()) throw symlinkError(extraRoot, from);
+    if (stat.isDirectory()) copyTree(extraRoot, from, to);
+    else if (stat.isFile()) copyFileSync(from, to, constants.COPYFILE_EXCL);
     else {
       throw new Error(
         `ファイルとフォルダー以外は取り込めません (${displayPath(extraRoot, from)})。`,

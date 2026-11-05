@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -197,9 +205,10 @@ describe("install-skill.mjs", () => {
   });
 
   it("シンボリックリンクがあると写さない", () => {
-    const name = "stella-course-link-probe";
+    const name = `stella-course-link-probe-${process.pid}-${Date.now().toString(36)}`;
     const source = join(repoRoot, ".claude", "skills", name);
     const dest = tempDir();
+    mkdirSync(source);
     mkdirSync(join(source, "nested"), { recursive: true });
     writeFileSync(join(source, "SKILL.md"), "# probe\n");
     writeFileSync(join(source, "nested", "a.txt"), "a\n");
@@ -221,6 +230,43 @@ describe("install-skill.mjs", () => {
       expect(() => readFileSync(join(dest, name, "SOURCE.json"), "utf8")).toThrow();
     } finally {
       rmSync(source, { recursive: true, force: true });
+    }
+  });
+
+  it("行き先のリンクがスキル自身なら消さない", () => {
+    const name = `stella-course-self-dest-${process.pid}-${Date.now().toString(36)}`;
+    const skillsDir = join(repoRoot, ".claude", "skills");
+    const source = join(skillsDir, name);
+    const destParent = tempDir();
+    const link = join(destParent, "skills");
+    mkdirSync(source);
+    try {
+      writeFileSync(join(source, "SKILL.md"), "# probe\n");
+      let linked = true;
+      try {
+        symlinkSync(skillsDir, link, "junction");
+      } catch {
+        linked = false;
+      }
+      expect(linked).toBe(true);
+      const result = run(installSkill, [name, "--dest", link]);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("行き先がスキル自身です");
+      expect(readFileSync(join(source, "SKILL.md"), "utf8")).toBe("# probe\n");
+    } finally {
+      try {
+        unlinkSync(link);
+      } catch {
+        // リンクを作れなかったときは外すものがない
+      }
+      let body: string | undefined;
+      try {
+        body = readFileSync(join(source, "SKILL.md"), "utf8");
+      } catch {
+        body = undefined;
+      }
+      rmSync(source, { recursive: true, force: true });
+      expect(body).toBe("# probe\n");
     }
   });
 });

@@ -132,11 +132,9 @@ env:
     expect(() => requireContentDeploymentInputs({ ...env, PDF_KEY_SALT: " " })).toThrow(
       /PDF_KEY_SALT/,
     );
-    try {
-      requireContentDeploymentInputs({ ...env, PDF_KEY_SALT: "" });
-    } catch (error) {
-      expect(String(error)).not.toContain("test-token");
-    }
+    expect(() => requireContentDeploymentInputs({ ...env, PDF_KEY_SALT: "" })).toThrow(
+      /^Missing content deployment settings: PDF_KEY_SALT$/,
+    );
   });
 
   it("requires inputs before remote work but allows the optional PDF secret", () => {

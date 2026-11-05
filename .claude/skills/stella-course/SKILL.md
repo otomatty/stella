@@ -68,7 +68,8 @@ modules/<unit>/
 runner を選び、テンプレートから始めます。`static-preview` と `env-diagnose` にテンプレートは無いので、見本の課題から写します。それ以外は次です。`$SKILL` はこの SKILL.md があるフォルダーです。
 
 ```bash
-node $SKILL/scripts/scaffold.mjs task \
+SKILL=.claude/skills/stella-course   # ユーザー全体に入れたものなら ~/.claude/skills/stella-course
+node "$SKILL/scripts/scaffold.mjs" task \
   --content packages/content \
   --courses packages/content/courses \
   --course <slug> --unit <単元フォルダー> --task <課題フォルダー> \

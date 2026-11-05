@@ -13,11 +13,12 @@ import {
   lstatSync,
   mkdirSync,
   readdirSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -80,9 +81,16 @@ function installOne(name, destRoot, commit) {
   if (sourceStat.isSymbolicLink()) fail(`シンボリックリンクは写せません: ${source}`);
   if (!sourceStat.isDirectory()) fail(`スキルがありません: ${source}`);
   assertNoSymlink(source);
-  const target = resolve(destRoot, name);
-  const rel = relative(resolve(source), target);
-  if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) {
+  const resolvedSource = realpathSync(source);
+  const target = join(realpathSync(destRoot), name);
+  const fromSource = relative(resolvedSource, target);
+  const fromTarget = relative(target, resolvedSource);
+  if (
+    fromSource === "" ||
+    (!fromSource.startsWith("..") && !isAbsolute(fromSource)) ||
+    fromTarget === "" ||
+    (!fromTarget.startsWith("..") && !isAbsolute(fromTarget))
+  ) {
     fail(`行き先がスキル自身です: ${target}`);
   }
   rmSync(target, { recursive: true, force: true });
