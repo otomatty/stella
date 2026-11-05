@@ -26,6 +26,7 @@ export type RunStepId =
   | "browsers"
   | "lint"
   | "format"
+  | "typecheck"
   | "test"
   | "build"
   | "e2e"

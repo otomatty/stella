@@ -1,0 +1,6 @@
+src/greet.ts(1,23): error TS7006: パラメーター 'name' の型は暗黙的に 'any' になります。
+src/greet.ts(2,9): error TS2322: 型 'string' を型 'number' に割り当てることはできません。
+tests/greet.test.ts(6,48): error TS2344: 型 '[string]' は制約 '{ 0: never; }' を満たしていません。
+  プロパティ '0' の型に互換性がありません。
+    型 'string' を型 'never' に割り当てることはできません。
+tests/greet.test.ts(7,45): error TS2344: 型 'string' は制約 '"Expected: string, Actual: number"' を満たしていません。

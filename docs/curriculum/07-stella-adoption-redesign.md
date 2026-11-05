@@ -287,6 +287,7 @@ packages/content/
 | `static-preview` | dev-env-basics, html-css-basics | HTML・CSSの検査(拡張の中でファイルを読むだけ)。ローカルサーバーと画面幅別のスクリーンショットは入れない(下記) |
 | `env-diagnose` | dev-env-basics | Node・npm・Gitの版を、環境定義と照合する |
 | `node-test` | javascript-basics, javascript-data-basics, node-api-basics | Vitest |
+| `ts-test` | Extra 講座の TypeScript の課題 | TypeScript (tsc) + Vitest |
 | `dom-test` | dom-basics, ui-components-basics | Vitest + jsdom等 + Testing Library |
 | `http-mock` | http-async-basics | 疑似応答と提供API |
 | `react-test` / `storybook` | react-basics, react-ui-basics, ui-integration-basics | Vitest + Testing Library、Storybookの状態見本 |
@@ -338,7 +339,7 @@ runnerごとの課題テンプレート(`package.json`・lockfile・テストと
 - **拡張のコマンド:** `STELLA: 課題を確認する`、`STELLA: 開発環境を診断する`、`STELLA: 実行ログを表示する`。結果はパネルと`.stella/last-run.json`に残る。
 - **安全面:** Workspace Trustで信頼したフォルダーでだけプロセスを起動する。`stella.serverUrl`・`stella.webUrl`はユーザー設定だけを読む。
 - **確認:** Vitest・ESLint・Prettier・Playwrightの実際の出力で読み取りを確かめた。見本の課題は`apps/vscode/samples/`。
-- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。
+- **runnerごとのテンプレート:** `node-test`・`dom-test`・`http-mock`・`react-test`・`storybook`・`api-test`・`db`・`e2e`・`next-app`の9つを`packages/content/templates/runners/`に置いた。それぞれから作った見本(直す前の状態)を`apps/vscode/samples/`に足した。CIと公開の`ci-deploy`のテンプレートと見本も足した(下記)。C#の`dotnet-test`のテンプレートと見本も足した。TypeScriptの`ts-test`のテンプレートと見本も足した。
   - Linuxで、9つの見本を実際の手順(`npm ci`→ESLint・Prettier→Vitest/Playwright/`next build`)で実行し、直す前は要修正、直した後は合格になることを確かめた。日本語と空白を含むフォルダーで実行した。ブラウザーの準備(`playwright install chromium`)の手順だけは、検証した環境でブラウザーをダウンロードしなかったため通していない(入っていたChromiumを使った)。
   - テンプレートと手順の食い違い(道具の有無、固定の版、lockfileが公開レジストリだけを指すこと、他のOS用のネイティブ部品がlockfileにあること、環境の要件で通るNode.jsの版がすべての依存の`engines`を満たすこと)は`templates.test.ts`、見本の定義は`samples.test.ts`が確かめる。
   - `api-test`はHonoにした。`app.request()`でポートを開かずにテストでき、ポートの衝突やWindowsのファイアウォールの確認が起きない。Express版は要るときに足す。

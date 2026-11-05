@@ -62,6 +62,25 @@ describe("手元の確認の要約", () => {
     expect(html).toMatchObject({ outcome: "passed", failedSteps: [], tests: null });
   });
 
+  it("型の確認が失敗した手順を報告に残し、受け付ける", () => {
+    const report = toLocalRunReport(
+      result({
+        steps: [
+          {
+            id: "typecheck",
+            label: "型の確認",
+            status: "failed",
+            durationMs: 1,
+            summary: "型の誤り",
+          },
+        ],
+      }),
+      receipt,
+    );
+    expect(report).toMatchObject({ failedSteps: ["typecheck"] });
+    expect(parseLocalRunReport(report)).toEqual(report);
+  });
+
   it("旧拡張の合格 ({ taskId, contentHash }) を合格として読み、知らない項目は捨てる", () => {
     expect(parseLocalRunReport({ ...receipt, logTail: "code" })).toEqual({
       ...receipt,

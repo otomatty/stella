@@ -282,6 +282,14 @@ function requiredSteps(manifest: TaskBundle["manifest"]): string[] {
   if (plan === "diagnose") return ["diagnose"];
   if (plan === "ci") return ["test"];
   if (plan === "dotnet") return ["deps", "build", "test"];
+  if (plan === "typescript")
+    return [
+      "deps",
+      ...(manifest.checks.lint ? ["lint"] : []),
+      ...(manifest.checks.format ? ["format"] : []),
+      "typecheck",
+      "test",
+    ];
   return [
     "deps",
     ...(manifest.checks.lint ? ["lint"] : []),
