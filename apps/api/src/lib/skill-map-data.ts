@@ -27,6 +27,7 @@ import {
   lessons,
   quizAttempts,
   sections,
+  stageGrants,
   stages,
   studyActivity,
 } from "../db/schema.js";
@@ -263,6 +264,71 @@ export async function loadSkillMapSource(
     unlockedStageIds,
     ...(active.stageId ? { activeStageId: active.stageId, activeStageSource: active.source } : {}),
   };
+}
+
+/**
+ * 講師・管理者のステージ管理盤面が読む行。
+ *
+ * 公開状態 (`draft` / `published` / `archived`) では絞らない。霧・島の表示条件・
+ * Extra の割当でも絞らない — それらは受講者の `/mine` の仕事で、管理画面は
+ * 全部を 1 つの盤面で見る。退役ステージを落とすのはルート側 (`RETIRED_STAGES`)。
+ * ここは D1 の行に、割当件数と受講件数を添えて返す。
+ */
+export interface StaffSkillMapStageRow {
+  id: string;
+  tenantId: string;
+  slug: string;
+  title: string;
+  category: string | null;
+  prerequisites: string | null;
+  parent: string | null;
+  canDo: string | null;
+  theme: string | null;
+  iconPath: string | null;
+  audience: "catalog" | "granted";
+  status: "draft" | "published" | "archived";
+  /** `stage_grants` の件数。catalog でも数えたまま返し、0 にするのはルート。 */
+  grantedCount: number;
+  /** `enrollments` の件数。 */
+  enrolledCount: number;
+}
+
+export async function loadStaffSkillMapRows(db: Db): Promise<StaffSkillMapStageRow[]> {
+  const stageRows = await db
+    .select({
+      id: stages.id,
+      tenantId: stages.tenantId,
+      slug: stages.slug,
+      title: stages.title,
+      category: stages.category,
+      prerequisites: stages.prerequisites,
+      parent: stages.parent,
+      canDo: stages.canDo,
+      theme: stages.theme,
+      iconPath: stages.iconPath,
+      audience: stages.audience,
+      status: stages.status,
+    })
+    .from(stages);
+
+  const grantRows = await db
+    .select({ stageId: stageGrants.stageId, n: count() })
+    .from(stageGrants)
+    .groupBy(stageGrants.stageId);
+
+  const enrollmentRows = await db
+    .select({ stageId: enrollments.stageId, n: count() })
+    .from(enrollments)
+    .groupBy(enrollments.stageId);
+
+  const grants = new Map(grantRows.map((row) => [row.stageId, Number(row.n ?? 0)]));
+  const enrolled = new Map(enrollmentRows.map((row) => [row.stageId, Number(row.n ?? 0)]));
+
+  return stageRows.map((row) => ({
+    ...row,
+    grantedCount: grants.get(row.id) ?? 0,
+    enrolledCount: enrolled.get(row.id) ?? 0,
+  }));
 }
 
 /**

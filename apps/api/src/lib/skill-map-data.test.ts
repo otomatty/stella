@@ -13,6 +13,7 @@ import {
   isDevMode,
   isUsableFocus,
   loadEnrolledStageIds,
+  loadStaffSkillMapRows,
   parsePrerequisites,
   pickActiveStageId,
   selectableActiveStages,
@@ -148,7 +149,7 @@ interface RecordedQuery {
   params: unknown[];
 }
 
-function recordingDb(): { db: Db; last: () => RecordedQuery } {
+function recordingDb(): { db: Db; last: () => RecordedQuery; all: () => RecordedQuery[] } {
   const queries: RecordedQuery[] = [];
   const driver = {
     prepare: (sql: string) => {
@@ -177,6 +178,7 @@ function recordingDb(): { db: Db; last: () => RecordedQuery } {
       if (!q) throw new Error("SQL が 1 つも発行されていません");
       return q;
     },
+    all: () => queries,
   };
 }
 
@@ -186,6 +188,22 @@ const CALLER: Caller = {
   name: "受講者",
   email: null,
 };
+
+describe("loadStaffSkillMapRows", () => {
+  it("status で絞らず、割当件数と受講件数を数える", async () => {
+    const { db, all } = recordingDb();
+    await loadStaffSkillMapRows(db);
+    const queries = all();
+    const stageQuery = queries.find(
+      (query) => query.sql.includes('"stages"') && !query.sql.includes("stage_grants"),
+    );
+    expect(stageQuery).toBeDefined();
+    expect(stageQuery?.sql.toLowerCase()).not.toContain("where");
+    expect(stageQuery?.sql).toContain('"status"');
+    expect(queries.some((query) => query.sql.includes('"stage_grants"'))).toBe(true);
+    expect(queries.some((query) => query.sql.includes('"enrollments"'))).toBe(true);
+  });
+});
 
 describe("受講登録の絞り込み (loadEnrolledStageIds / isEnrolledInStage)", () => {
   it("読める登録 (active / completed) だけを数える — expired は enrolled 扱いにしない", async () => {

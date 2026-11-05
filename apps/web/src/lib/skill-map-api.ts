@@ -59,6 +59,18 @@ export interface SkillMapStageNode {
   appearance_parent_ids?: Record<string, string>;
 }
 
+/**
+ * ステージ管理の盤面の星。受講者の星に、公開状態と件数を足したもの。
+ * `audience` は Extra のときだけ `"granted"` (Basic には付かない)。
+ */
+export interface StaffSkillMapStageNode extends SkillMapStageNode {
+  status: "draft" | "published" | "archived";
+  /** `stage_grants` の件数。Extra 以外は 0。 */
+  granted_count: number;
+  /** `enrollments` の件数。 */
+  enrolled_count: number;
+}
+
 /** 集中ボーナス (表示専用の係数。XP の保存値は動かさない)。 */
 export interface FocusBonusPayload {
   streak_days: number;
@@ -212,6 +224,22 @@ export async function getSkillMap(): Promise<SkillMapMine> {
  */
 export async function getSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
   const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/icons", {
+    signal,
+  });
+  return res.icons;
+}
+
+/**
+ * 講師・管理者向けのスキルツリー。霧も割当も島の表示条件も掛けず、
+ * Basic と Extra を 1 つの盤面で返す。
+ */
+export async function getStaffSkillMap(): Promise<{ stages: StaffSkillMapStageNode[] }> {
+  return await apiFetch<{ stages: StaffSkillMapStageNode[] }>("/api/skill-map/staff");
+}
+
+/** ステージ管理の盤面に載る講座アイコン。取り方は `getSkillMapIcons` と同じ。 */
+export async function getStaffSkillMapIcons(signal?: AbortSignal): Promise<Record<string, string>> {
+  const res = await apiFetch<{ icons: Record<string, string> }>("/api/skill-map/staff/icons", {
     signal,
   });
   return res.icons;
