@@ -76,7 +76,7 @@ node "$SKILL/scripts/scaffold.mjs" task \
   --runner <runner> --kind <kind> --title "<題>"
 ```
 
-外部では `--content .stella/packages/content`、`--courses courses`。
+外部では `--content .stella/packages/content`、`--courses courses`。`SKILL` は、`node scripts/stella.mjs skill` で取り込んだあとなら `.claude/skills/stella-course` のままで動きます。取り込む前なら `SKILL=.stella/.claude/skills/stella-course` にします。
 
 scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題へ写し、`task-fields.json` から `task.json` の下書きを書きます。`pattern`、`skills`、`sources` は、同じ単元の既存の課題があればその値、無ければ台帳の先頭です。課題の内容に合わせて直します。`README.md`、`hints.md`、`private/solution/` (テンプレートの、テストが通る実装)、`private/explanation.md`、`private/review.md`、`private/variants/.gitkeep` も置きます。既存の課題フォルダーがあるときは何も書きません。
 

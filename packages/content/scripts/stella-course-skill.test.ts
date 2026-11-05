@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -23,6 +24,13 @@ function tempDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "stella-course-"));
   temps.push(dir);
   return dir;
+}
+
+function copyInstallScript(dir: string): string {
+  const script = join(dir, "scripts", "install-skill.mjs");
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  cpSync(installSkill, script);
+  return script;
 }
 
 function run(script: string, args: string[]): { status: number; stdout: string; stderr: string } {
@@ -268,5 +276,55 @@ describe("install-skill.mjs", () => {
       rmSync(source, { recursive: true, force: true });
       expect(body).toBe("# probe\n");
     }
+  });
+
+  it("親のリポジトリのコミットを記録しない", () => {
+    const outer = join(tempDir(), "outer");
+    mkdirSync(outer);
+    execFileSync("git", ["init"], { cwd: outer, stdio: "ignore" });
+    execFileSync(
+      "git",
+      [
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "init",
+      ],
+      { cwd: outer, stdio: "ignore" },
+    );
+    const checkout = join(outer, "vendor", "stella");
+    const script = copyInstallScript(checkout);
+    mkdirSync(join(checkout, ".claude", "skills", "probe"), { recursive: true });
+    writeFileSync(join(checkout, ".claude", "skills", "probe", "SKILL.md"), "# probe\n");
+    const dest = tempDir();
+
+    const result = run(script, ["probe", "--dest", dest]);
+    expect(result.status, result.stderr).toBe(0);
+    const source = JSON.parse(readFileSync(join(dest, "probe", "SOURCE.json"), "utf8")) as {
+      repository?: string;
+      commit?: string;
+    };
+    expect(source.repository).toBe("otomatty/stella");
+    expect(source.commit).toBeUndefined();
+  });
+
+  it("`..` で始まる名前のフォルダーも親として見る", () => {
+    const root = tempDir();
+    const checkout = join(root, "stella-course", "..work");
+    const script = copyInstallScript(checkout);
+    const skill = join(checkout, ".claude", "skills", "stella-course", "SKILL.md");
+    mkdirSync(join(checkout, ".claude", "skills", "stella-course"), { recursive: true });
+    writeFileSync(skill, "# probe\n");
+
+    const result = run(script, ["stella-course", "--dest", root]);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("行き先がスキル自身です");
+    expect(readFileSync(skill, "utf8")).toBe("# probe\n");
   });
 });

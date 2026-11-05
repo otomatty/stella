@@ -18,7 +18,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,15 +60,23 @@ function assertNoSymlink(dir) {
 }
 
 function gitCommit() {
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
+  const git = (args) =>
+    execFileSync("git", args, {
       cwd: repoRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
+  try {
+    if (git(["rev-parse", "--show-cdup"]) !== "") return undefined;
+    return git(["rev-parse", "HEAD"]);
   } catch {
     return undefined;
   }
+}
+
+function isSameOrInside(base, path) {
+  const rel = relative(base, path);
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
 
 function installOne(name, destRoot, commit) {
@@ -83,14 +91,7 @@ function installOne(name, destRoot, commit) {
   assertNoSymlink(source);
   const resolvedSource = realpathSync(source);
   const target = join(realpathSync(destRoot), name);
-  const fromSource = relative(resolvedSource, target);
-  const fromTarget = relative(target, resolvedSource);
-  if (
-    fromSource === "" ||
-    (!fromSource.startsWith("..") && !isAbsolute(fromSource)) ||
-    fromTarget === "" ||
-    (!fromTarget.startsWith("..") && !isAbsolute(fromTarget))
-  ) {
+  if (isSameOrInside(resolvedSource, target) || isSameOrInside(target, resolvedSource)) {
     fail(`行き先がスキル自身です: ${target}`);
   }
   rmSync(target, { recursive: true, force: true });

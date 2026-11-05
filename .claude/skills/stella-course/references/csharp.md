@@ -4,7 +4,7 @@
 
 ## テンプレートの形
 
-`templates/runners/dotnet-test/` を scaffold で課題へ写します。受講者のコードは `src/` の下に置きます。`src/` の `.cs` はすべてコンパイルされ、すべて提出されます (`submit.files` は `src/**/*.cs`)。`src/` の外の `.cs` はコンパイルされません。次は配布した設定で、`protected` に入っています。
+`templates/runners/dotnet-test/` を scaffold で課題へ写します。受講者のコードは `src/` の下に置きます。`src/` の `.cs` はすべてコンパイルされ、すべて提出されます (`submit.files` は `src/**/*.cs`)。`src/` と `tests/` の外の `.cs` はコンパイルされません。次は配布した設定で、`protected` に入っています。
 
 | ファイル | 役割 |
 | --- | --- |
