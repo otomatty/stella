@@ -320,7 +320,12 @@ describe("CI と公開のテンプレート (ci-deploy)", () => {
     await cp(path.join(TEMPLATES_DIR, runner, "tests"), path.join(dir, "tests"), {
       recursive: true,
     });
-    const { stdout } = await execFileAsync("node", ["--test", "tests/**/*.test.js"], { cwd: dir });
+    // Node の版で既定の出力が変わる (新しい版はパイプ先でも spec) ので、TAP を明示する。
+    const { stdout } = await execFileAsync(
+      "node",
+      ["--test", "--test-reporter=tap", "tests/**/*.test.js"],
+      { cwd: dir },
+    );
     expect(stdout).toMatch(/# pass 3/);
     expect(stdout).toMatch(/# fail 0/);
   });
