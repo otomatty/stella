@@ -146,6 +146,7 @@ export function shouldRevealDevMap(
  * `tiers=3` は DevOps 島を島として描ける画面 (旧 bundle は本土の扇に混ぜてしまう)。
  * `tiers=4` は Anthropic認定資格の島も島として描ける画面。
  * `tiers=5` は Python の島も島として描ける画面。
+ * `tiers=6` は C# の島も島として描ける画面。
  * `tiers=7` は開発ラボG の島も島として描ける画面。
  */
 export const SKILL_MAP_TIERS_PARAM = "tiers";
@@ -225,7 +226,7 @@ export async function loadSkillMapSource(
   const enrolledStageIds = await loadEnrolledStageIds(db, caller);
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
 
-  // 島 (資格 / Python / DevOps / 案件 / 開発ラボG) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
+  // 島 (資格 / Python / DevOps / 案件 / C# / 開発ラボG) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
   // 組み立て口) で落とすので、スキルマップ・腕試し・開始・発見教材のどの API も
   // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
   // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。

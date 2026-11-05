@@ -287,7 +287,7 @@ cp packages/content/templates/course.json packages/content/courses/<slug>/course
 - `theme` はカテゴリ単位でそろえます（講座ごとに凝った名前を付けない）。まだ見えない範囲では同じテーマのスキルが同じ名前で並ぶのが正です。省略するとまだ見えない範囲では `？？？` と表示されます（名前の無いスキルにはしない）
 - 前提に挙げられた講座は、依存側が公開中のあいだ **非公開にも削除もできません**（CMS が 409 で止めます）。順序を変えるときは依存側の `prerequisites` を先に外します
 - 全部省略できます。省略した講座は「前提なし・到達説明なし・テーマなし・catalog 掲載」として扱われます
-- **`audience: granted`** (Extra) の講座は seed 後も全員のツリーには出ません。Basic = 新18講座、それ以外は Extra (`audience: granted`) です。講師 / 管理者の「Extra 講座」で受講者を選んで初めて、その人のスキルツリーに出ます。granted の親を持ってよいですが、線の親をたどると catalog 講座に着く必要があります。catalog 講座が granted を前提にすることはできません。受講開始は従来どおり自己開始です
+- **`audience: granted`** (Extra) の講座は seed 後も全員のツリーには出ません。Basic = 新18講座、それ以外は Extra (`audience: granted`) です。講師 / 管理者の「Extra 講座」で受講者を選んで初めて、その人のスキルツリーに出ます。granted の親を持ってよいですが、線の親をたどると catalog 講座に着く必要があります。catalog 講座が granted を前提にすることはできません。受講開始は従来どおり自己開始です。Extra 講座を stella の外に置くときは [docs/extra-content.md](../../docs/extra-content.md) を見てください。
 
 ### 3. カリキュラムを書いてから教材を置く
 

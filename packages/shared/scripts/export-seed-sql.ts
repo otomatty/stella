@@ -20,12 +20,13 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-import { buildContentManifest } from "@stella/content";
+import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
+import { RETIRED_STAGES } from "../src/curriculum/retired-stages.js";
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { lessonIdRemapStatements } from "./lesson-id-remap.js";
@@ -266,43 +267,6 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
 function sqlIn(ids: string[]): string {
   return ids.map((id) => `'${id}'`).join(", ");
 }
-
-/** 退役した教材と旧デモ講座。引き継ぐ slug は含めない。
- * 安定 UUID だけを削除し、CMS の別 ID のステージは残す。 */
-const RETIRED_STAGES: ReadonlyArray<{ tenantId: string; slug: string }> = [
-  { tenantId: "ses", slug: "it-basics" },
-  { tenantId: "ses", slug: "modern-css-basics" },
-  { tenantId: "ses", slug: "page-composition-basics" },
-  { tenantId: "ses", slug: "typescript-basics" },
-  { tenantId: "ses", slug: "typescript-node-basics" },
-  { tenantId: "ses", slug: "node-basics" },
-  { tenantId: "ses", slug: "db-design-basics" },
-  { tenantId: "ses", slug: "cli-basics" },
-  { tenantId: "ses", slug: "git-basics" },
-  { tenantId: "ses", slug: "fetch-api-basics" },
-  { tenantId: "ses", slug: "npm-build-basics" },
-  { tenantId: "ses", slug: "web-a11y-basics" },
-  { tenantId: "ses", slug: "frontend-testing-basics" },
-  { tenantId: "ses", slug: "rest-api-basics" },
-  { tenantId: "ses", slug: "web-security-basics" },
-  { tenantId: "ses", slug: "docker-basics" },
-  { tenantId: "ses", slug: "cicd-basics" },
-  { tenantId: "ses", slug: "linux-ops-basics" },
-  { tenantId: "ses", slug: "observability-basics" },
-  // AI駆動開発の島 (2026-10)。Anthropic認定資格の島に置き換え、教材は作り直す。
-  { tenantId: "ses", slug: "ai-fluency-basics" },
-  { tenantId: "ses", slug: "claude-chat-basics" },
-  { tenantId: "ses", slug: "claude-code-basics" },
-  { tenantId: "ses", slug: "claude-code-skills" },
-  { tenantId: "ses", slug: "claude-code-team" },
-  { tenantId: "ses", slug: "claude-cowork-basics" },
-  { tenantId: "ses", slug: "web-fundamentals" },
-  { tenantId: "ses", slug: "ciso-basic" },
-  { tenantId: "ses", slug: "react-intro" },
-  { tenantId: "coach", slug: "safety-1" },
-  { tenantId: "coach", slug: "comm-1" },
-  { tenantId: "coach", slug: "first-aid" },
-];
 
 function emitRetiredStages() {
   for (const { tenantId, slug } of RETIRED_STAGES) {
@@ -733,17 +697,23 @@ for (const [order, task] of content.tasks.entries()) {
   );
 }
 
-// コーディング規則の正本 (packages/content/coding-rules.md と講座の追加分)。AI の一次レビューと
-// 人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す (レビュー結果は内容ハッシュで残る)。
+// コーディング規則の正本 (packages/content/coding-rules.md と講座の courses/<slug>/coding-rules.md)。
+// AI の一次レビューと人のレビューが同じ本文を読む。正本から消えた規則は D1 からも消す
+// (レビュー結果は内容ハッシュで残る)。
+// 消すのはこの checkout の範囲だけ (共通と、packages/content/courses/ にある講座。modules が
+// 無くても含める)。外部リポジトリの講座は、この checkout にフォルダーが無い。範囲を絞らないと、
+// 本体の次の seed が外部の CI で入れた規則を消し、外部の課題のレビューが規則の欠けた素材になる。
 const codingRules = content.codingRules ?? [];
+const codingRuleScopes = listCodingRuleScopes();
 for (const rule of codingRules)
   lines.push(
     `insert into coding_rules (id, scope, position, title, statement, applies_to, introduced_in, exception, content_hash) values (${strLit(rule.id)}, ${strLit(rule.scope)}, ${rule.position}, ${strLit(rule.title)}, ${strLit(rule.statement)}, ${strLit(rule.appliesTo)}, ${strLit(rule.introducedIn)}, ${rule.exception ? strLit(rule.exception) : "null"}, ${strLit(rule.contentHash)}) on conflict (id) ${doUpdate("coding_rules", ["scope", "position", "title", "statement", "applies_to", "introduced_in", "exception", "content_hash"])};`,
   );
+const scopeList = codingRuleScopes.map((scope) => strLit(scope)).join(", ");
 lines.push(
-  codingRules.length
-    ? `delete from coding_rules where id not in (${codingRules.map((r) => strLit(r.id)).join(", ")});`
-    : "delete from coding_rules;",
+  codingRules.length > 0
+    ? `delete from coding_rules where scope in (${scopeList}) and id not in (${codingRules.map((r) => strLit(r.id)).join(", ")});`
+    : `delete from coding_rules where scope in (${scopeList});`,
 );
 
 emitRetiredStages();

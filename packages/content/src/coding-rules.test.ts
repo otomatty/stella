@@ -8,6 +8,7 @@ import {
   type CodingRule,
   parseCodingRules,
   readCodingRules,
+  listCodingRuleScopes,
 } from "./coding-rules.js";
 import { buildContentManifest } from "./manifest.js";
 import { parseTaskDefinition } from "./task-schema.js";
@@ -102,6 +103,16 @@ describe("コーディング規則の正本", () => {
     expect(() => readCodingRules(fixture("", rule("DEV-A-01", "javascript-basics")))).toThrow(
       "その講座",
     );
+  });
+  it("入れ替える範囲は modules の無い講座も含む", () => {
+    const root = fixture("", "");
+    mkdirSync(join(root, "courses/pending-only"));
+    expect(listCodingRuleScopes(root)).toEqual([
+      "common",
+      "dev-env-basics",
+      "javascript-basics",
+      "pending-only",
+    ]);
   });
 });
 

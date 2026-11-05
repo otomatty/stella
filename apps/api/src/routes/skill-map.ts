@@ -290,7 +290,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
     const revealDev = wantsDevReveal(c);
     // 段を増やしたこと / 新しい島を知らない画面には配らない (`SKILL_MAP_TIERS_PARAM`)。
     // 開発者表示は自分の画面でしか使わないので、幽霊ノードは常に素通し。
-    // DevOps / Anthropic認定資格 / Python の島は、旧 layout が本土の扇に混ぜて橋を引くので、
+    // DevOps / Anthropic認定資格 / Python / C# の島は、旧 layout が本土の扇に混ぜて橋を引くので、
     // その島を知らない申告では落とす (FAB オンの古いタブでも同じ — レイアウト側がカテゴリを知らない)。
     const declaredTiers = c.req.query(SKILL_MAP_TIERS_PARAM);
     const ghostStars = revealDev || acceptsGhostStars(declaredTiers);

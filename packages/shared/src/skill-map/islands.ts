@@ -54,6 +54,7 @@ export const SKILL_MAP_ISLANDS: readonly SkillMapIsland[] = [
   { category: "Python", requires: ["dev-env-basics"] },
   { category: "DevOps", requires: ["python-basics"] },
   { category: "Salesforce案件", requires: ["dev-env-basics"] },
+  { category: "C#", requires: ["dev-env-basics"] },
   { category: "開発ラボG", requires: [] },
 ];
 
@@ -69,13 +70,14 @@ export const SKILL_MAP_ISLAND_CATEGORIES: ReadonlySet<string> = new Set(
  * 載っている島は、申告が下限未満の画面には**存在ごと落とす**。旧 bundle の
  * `SKILL_MAP_ISLAND_CATEGORIES` に無いカテゴリは本土の扇に混ざり、親が本土だと橋線が
  * 引かれてしまう (DevOps の親は `python-basics`、Anthropic認定資格の親は `dev-env-basics`、
- * Python の親は `node-api-basics`、開発ラボG の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
+ * Python の親は `node-api-basics`、C# と開発ラボG の親は `dev-env-basics`)。`edge` と同じくクエリ引数 `tiers` で版を申告する
  * (ヘッダにしない — CORS 許可リストに無いと全呼び出しが落ちる)。
  */
 export const SKILL_MAP_ISLAND_MIN_TIERS: Readonly<Record<string, number>> = {
   DevOps: 3,
   Anthropic認定資格: 4,
   Python: 5,
+  "C#": 6,
   開発ラボG: 7,
 };
 

@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/d1";
 
 import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
+import { filterIslandStages } from "@stella/shared/skill-map/islands";
 
 import type { Db } from "../db/client.js";
 import type { Caller } from "./authz.js";
+import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 import { isEnrolledInStage } from "./stage-queue-data.js";
 import {
   INVALID_PREREQUISITE_SENTINEL,
@@ -277,6 +279,40 @@ describe("進捗から「進行中」を導く (pickActiveStageId)", () => {
   it("どれも据えられなければ進行中なし", () => {
     expect(pickActiveStageId(["far"], new Set(), () => false)).toBeUndefined();
     expect(pickActiveStageId([], new Set(), always)).toBeUndefined();
+  });
+});
+
+describe("C# の島", () => {
+  it("割り当てが無いと星が残らない", () => {
+    // loadSkillMapSource と同じ順。stella のカタログに C# の講座は無く、
+    // 外部から入る講座は granted なので、割り当てが無い受講者には島ごと出ない。
+    const rows = [
+      {
+        id: "id-dev-env-basics",
+        slug: "dev-env-basics",
+        audience: "catalog",
+        prerequisites: null,
+        parent: null,
+        category: "基礎",
+      },
+      {
+        id: "id-csharp-basics",
+        slug: "csharp-basics",
+        audience: "granted",
+        prerequisites: JSON.stringify(["dev-env-basics"]),
+        parent: "dev-env-basics",
+        category: "C#",
+      },
+    ];
+    const slugs = (granted: Set<string>) =>
+      dropOrphanGrantedStages(
+        filterIslandStages(filterStagesByAudience(rows, granted), new Set(["id-dev-env-basics"])),
+      ).map((row) => row.slug);
+    expect(slugs(new Set())).toEqual(["dev-env-basics"]);
+    expect(slugs(new Set(["id-csharp-basics"])).sort()).toEqual([
+      "csharp-basics",
+      "dev-env-basics",
+    ]);
   });
 });
 
