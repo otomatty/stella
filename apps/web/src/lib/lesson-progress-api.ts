@@ -4,7 +4,7 @@
  * 旧 BaaS 直アクセス (lesson_progress テーブル + upsert_lesson_progress RPC) を
  * Hono API (`/api/lesson-progress`) 経由に置き換えた。 認可はサーバ側 (アプリ層) で行う:
  *   - 受講者は自分の進捗のみ read/write
- *   - 講師 / 管理者は同テナントを read (`/api/lesson-progress/tenant`)
+ *   - 講師 / 管理者は進捗を read (`/api/lesson-progress/tenant`。URL は開いたままの古いタブ用)
  *
  * `lesson-progress.ts` (フレームワーク非依存の localStorage ストア) から動的 import される。
  * バックエンド未設定時はそもそも呼ばれない。
@@ -62,8 +62,7 @@ export async function fetchProgressForUser(
  * 複数エントリを upsert する (uuid 形式の lesson_id のみ)。
  *
  * サーバ側 upsert が conflict 時に payload の updated_at が既存より新しい場合のみ
- * 更新するため、 端末間 Last-Write-Wins を担保する。 tenant_id はサーバが caller の
- * テナントを使うため送らない。
+ * 更新するため、 端末間 Last-Write-Wins を担保する。
  *
  * **サーバの受付上限 (`MAX_PROGRESS_SYNC_ROWS`) の単位に刻んで送る。** オフラインで
  * 溜めた分が上限を超えると、 1 リクエストにまとめる限り 400 を受けて同じ塊を再送し
@@ -76,7 +75,6 @@ export async function fetchProgressForUser(
  */
 export async function upsertProgressBatch(
   _userId: string,
-  _tenantId: string,
   entries: Array<{ lessonId: string; entry: LessonProgressEntry }>,
 ): Promise<StageClearedNotice[]> {
   const rows = entries
@@ -101,10 +99,10 @@ export async function upsertProgressBatch(
 }
 
 /**
- * 講師 / 管理者向け: 同テナントの進捗行を取得する (可視化のデータ経路)。
+ * 講師 / 管理者向け: 進捗行を取得する (可視化のデータ経路)。
  * 認可はサーバ側で instructor/admin に限定される。
  */
-export async function fetchProgressForTenant(): Promise<
+export async function fetchAllLessonProgress(): Promise<
   Array<{ userId: string; lessonId: string; entry: LessonProgressEntry }>
 > {
   const { rows } = await apiFetch<{ rows: LessonProgressRow[] }>("/api/lesson-progress/tenant");

@@ -24,7 +24,6 @@ function StagesPageBody() {
         // seq を含めることで、 同じステージを選び直したときも再マウントされ
         // StageEditor を閉じた後に開き直せる。
         key={s.highlightStage ? `${s.highlightStage.id}:${s.highlightStage.seq}` : "list"}
-        tenantId={s.tenantId}
         initialStageId={s.highlightStage?.id ?? null}
       />
     );
@@ -33,7 +32,6 @@ function StagesPageBody() {
     return (
       <InstructorGeneric
         page="stages"
-        tenantId={s.tenantId}
         backendEnabled={s.backendEnabled}
         highlightStageId={s.highlightStage?.id ?? null}
         highlightSeq={s.highlightStage?.seq ?? 0}

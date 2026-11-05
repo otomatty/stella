@@ -17,9 +17,8 @@ import { taskFixedStartUses, tasks } from "../db/schema.js";
  * 受講者がこの課題に関わる固定した開始点を受け取った記録: この課題の開始点の受け取りか、
  * 開始点がこの課題の実装を含んでいた (`covered_task_ids` に含む) 後の課題の受け取り。
  */
-export function fixedStartUsesOf(scope: { tenantId: string; userId: string; taskId: string }) {
+export function fixedStartUsesOf(scope: { userId: string; taskId: string }) {
   return and(
-    eq(taskFixedStartUses.tenantId, scope.tenantId),
     eq(taskFixedStartUses.userId, scope.userId),
     or(
       eq(taskFixedStartUses.taskId, scope.taskId),
@@ -30,7 +29,7 @@ export function fixedStartUsesOf(scope: { tenantId: string; userId: string; task
 
 export async function withRecordedFixedStart(
   db: Db,
-  scope: { tenantId: string; userId: string; taskId: string },
+  scope: { userId: string; taskId: string },
   support: SupportEvent[],
   /** 提出の時刻。これより後の受け取りは数えない (受け取る前の提出は変えない)。 */
   submittedAt: Date,

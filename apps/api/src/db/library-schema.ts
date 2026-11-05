@@ -10,17 +10,20 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import type { BookFileKind } from "@stella/shared/library/book-package";
 import type { LibraryBookStatus, LibraryReadingStatus } from "@stella/shared/library/types";
 import { profiles } from "./schema.js";
-// 本棚 (migration 0070)。時刻はミリ秒。テナントを含む複合外部キーでテナントを跨がせない。
+// 本棚 (migration 0070)。時刻はミリ秒。複合外部キーは tenant_id 始まりのまま (列は次の migration で消す)。
 // 正本は drizzle/0070_library_book_packages.sql。ここは型と一覧のための写し。
 
 export const libraryBooks = sqliteTable(
   "library_books",
   {
     id: text("id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     ownerId: text("owner_id").notNull(),
     packageId: text("package_id").notNull(),
     title: text("title").notNull(),
@@ -60,7 +63,9 @@ export const libraryFiles = sqliteTable(
   "library_files",
   {
     id: text("id").primaryKey().notNull(),
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     bookId: text("book_id").notNull(),
     contentKey: text("content_key").notNull(),
     kind: text("kind").$type<BookFileKind>().notNull(),
@@ -86,7 +91,9 @@ export const libraryFiles = sqliteTable(
 export const libraryRevisionFiles = sqliteTable(
   "library_revision_files",
   {
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     bookId: text("book_id").notNull(),
     revision: integer("revision").notNull(),
     path: text("path").notNull(),
@@ -109,7 +116,9 @@ export const libraryRevisionFiles = sqliteTable(
 export const libraryChapters = sqliteTable(
   "library_chapters",
   {
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     bookId: text("book_id").notNull(),
     revision: integer("revision").notNull(),
     chapterId: text("chapter_id").notNull(),
@@ -131,7 +140,9 @@ export const libraryChapters = sqliteTable(
 export const libraryShelfEntries = sqliteTable(
   "library_shelf_entries",
   {
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     profileId: text("profile_id").notNull(),
     bookId: text("book_id").notNull(),
     readingStatus: text("reading_status").$type<LibraryReadingStatus>().notNull().default("unread"),
@@ -160,7 +171,9 @@ export const libraryShelfEntries = sqliteTable(
 export const libraryReaderStates = sqliteTable(
   "library_reader_states",
   {
-    tenantId: text("tenant_id").notNull(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .$defaultFn(() => LEGACY_TENANT_ID),
     profileId: text("profile_id").notNull(),
     bookId: text("book_id").notNull(),
     chapterId: text("chapter_id").notNull(),

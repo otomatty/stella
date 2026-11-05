@@ -18,7 +18,7 @@ vi.mock("../lib/stage-audience.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/stage-audience.js")>();
   return {
     ...actual,
-    loadGrantedStagesForTenant: vi.fn(async () => [
+    loadGrantedStages: vi.fn(async () => [
       {
         id: "stage-granted-1",
         slug: "custom-basics",
@@ -31,22 +31,18 @@ vi.mock("../lib/stage-audience.js", async (importOriginal) => {
 
 let caller: {
   id: string;
-  tenantId: string;
   role: "instructor" | "student" | "admin";
   name: string;
   email: null;
 } = {
   id: "seed-instructor",
-  tenantId: "ses",
   role: "instructor" as const,
   name: "講師",
   email: null,
 };
 
 const stageLookup = vi.fn(
-  async (): Promise<Record<string, unknown>[]> => [
-    { id: "stage-granted-1", audience: "granted", tenantId: "ses" },
-  ],
+  async (): Promise<Record<string, unknown>[]> => [{ id: "stage-granted-1", audience: "granted" }],
 );
 
 const profileLookup = vi.fn(async () => [{ id: "seed-learner", role: "student", disabled: false }]);
@@ -65,15 +61,13 @@ const learnerSelect = vi.fn(async () => [
 
 const deleteGrants = vi.fn(() => ({ kind: "delete" }));
 const conflictIgnored: { stageId: string; profileId: string }[] = [];
-const insertGrant = vi.fn(
-  (row: { tenantId: string; stageId: string; profileId: string; grantedBy: string }) => ({
-    kind: "insert" as const,
-    onConflictDoNothing() {
-      conflictIgnored.push(row);
-      return { kind: "insert" as const };
-    },
-  }),
-);
+const insertGrant = vi.fn((row: { stageId: string; profileId: string; grantedBy: string }) => ({
+  kind: "insert" as const,
+  onConflictDoNothing() {
+    conflictIgnored.push(row);
+    return { kind: "insert" as const };
+  },
+}));
 const batchGrants = vi.fn(async () => undefined);
 
 function selectWithLimit(resolver: () => Promise<unknown>) {
@@ -89,11 +83,13 @@ function selectWithLimit(resolver: () => Promise<unknown>) {
 
 function selectWhereOnly(resolver: () => Promise<unknown>) {
   const run = () => resolver();
-  return {
-    from: () => ({
-      where: () => run(),
-    }),
+  const chain = {
+    where: () => run(),
+    // biome-ignore lint/suspicious/noThenProperty: drizzle のクエリは thenable。where の無い select もある。
+    then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
+      run().then(onFulfilled, onRejected),
   };
+  return { from: () => chain };
 }
 
 const mockDb = {
@@ -130,7 +126,6 @@ describe("GET /api/stage-grants", () => {
   beforeEach(() => {
     caller = {
       id: "seed-instructor",
-      tenantId: "ses",
       role: "instructor",
       name: "講師",
       email: null,
@@ -199,14 +194,11 @@ describe("PUT /api/stage-grants/:stageId", () => {
   beforeEach(() => {
     caller = {
       id: "seed-instructor",
-      tenantId: "ses",
       role: "instructor",
       name: "講師",
       email: null,
     };
-    stageLookup.mockResolvedValue([
-      { id: "stage-granted-1", audience: "granted", tenantId: "ses" },
-    ]);
+    stageLookup.mockResolvedValue([{ id: "stage-granted-1", audience: "granted" }]);
     grantSelect.mockResolvedValue([]);
     profileLookup.mockResolvedValue([{ id: "seed-learner", role: "student", disabled: false }]);
     vi.mocked(recordAudit).mockClear();
@@ -241,9 +233,7 @@ describe("PUT /api/stage-grants/:stageId", () => {
   });
 
   it("catalog ステージへの PUT は 400", async () => {
-    stageLookup.mockImplementation(async () => [
-      { id: "stage-catalog-1", audience: "catalog", tenantId: "ses" },
-    ]);
+    stageLookup.mockImplementation(async () => [{ id: "stage-catalog-1", audience: "catalog" }]);
     const res = await request(app, env, "/api/stage-grants/stage-catalog-1", {
       token: "t",
       method: "PUT",
@@ -272,7 +262,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-child",
           slug: "kubernetes-basics",
           audience: "granted",
-          tenantId: "ses",
           parent: "networking-ops-basics",
           prerequisites: '["networking-ops-basics"]',
         },
@@ -390,7 +379,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-child",
           slug: "fe-kamoku-b",
           audience: "granted",
-          tenantId: "ses",
           parent: null,
           prerequisites: '["fe-kamoku-a"]',
         },
@@ -435,7 +423,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-child",
           slug: "devops-basics",
           audience: "granted",
-          tenantId: "ses",
           parent: "python-basics",
           prerequisites: '["python-basics"]',
         },
@@ -487,7 +474,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-extra",
           slug: "extra-leaf",
           audience: "granted",
-          tenantId: "ses",
           parent: "catalog-root",
           prerequisites: '["catalog-root", "granted-mid"]',
         },
@@ -557,7 +543,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-top",
           slug: "diamond-top",
           audience: "granted",
-          tenantId: "ses",
           parent: "catalog-root",
           prerequisites: '["catalog-root", "diamond-left", "diamond-right"]',
         },
@@ -632,7 +617,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
           id: "stage-child",
           slug: "extra-leaf",
           audience: "granted",
-          tenantId: "ses",
           parent: "granted-parent",
           prerequisites: "not-json",
         },
@@ -674,7 +658,6 @@ describe("PUT /api/stage-grants/:stageId", () => {
         id: "stage-child",
         slug: "kubernetes-basics",
         audience: "granted",
-        tenantId: "ses",
         parent: "networking-ops-basics",
         prerequisites: '["networking-ops-basics"]',
       },

@@ -12,7 +12,6 @@ import {
   Award,
   BarChart,
   Book,
-  Building,
   ClipboardList,
   Compass,
   Code,
@@ -27,7 +26,6 @@ import {
   UserPlus,
 } from "@/lib/icons";
 import type { Role } from "@/data/types";
-import type { ProfileRole } from "@stella/shared/cms/types";
 
 type LucideIcon = ComponentType<LucideProps>;
 
@@ -42,7 +40,6 @@ export type NavId =
   | "students"
   | "users"
   | "enrollments"
-  | "orgs"
   | "report"
   | "audit"
   | "assignments"
@@ -93,13 +90,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
 };
 
-const ORGS_NAV: NavItem = { id: "orgs", label: "組織マスタ", icon: Building };
-
-/** 表示するナビ項目。 組織マスタは platform_admin のみ、 ユーザー管理の直後に挿す。 */
-export function navForRole(role: Role, profileRole?: ProfileRole): NavItem[] {
-  const items = NAV[role];
-  if (role !== "admin" || profileRole !== "platform_admin") return items;
-  const usersIdx = items.findIndex((item) => item.id === "users");
-  const insertAt = usersIdx >= 0 ? usersIdx + 1 : items.length;
-  return [...items.slice(0, insertAt), ORGS_NAV, ...items.slice(insertAt)];
+/** 表示するナビ項目。 */
+export function navForRole(role: Role): NavItem[] {
+  return NAV[role];
 }

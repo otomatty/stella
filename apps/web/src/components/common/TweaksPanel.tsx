@@ -1,14 +1,11 @@
 import { Sliders } from "@/lib/icons";
-import type { Role, Tenant } from "@/data/types";
-import { TENANTS } from "@/demo/fixtures";
+import type { Role } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 interface TweaksPanelProps {
   role: Role;
-  tenant: Tenant;
   showAIBot: boolean;
   onRole: (role: Role) => void;
-  onTenant: (tenant: Tenant) => void;
   onToggleAIBot: () => void;
 }
 
@@ -41,14 +38,7 @@ const Pill = ({
   </button>
 );
 
-export const TweaksPanel = ({
-  role,
-  tenant,
-  showAIBot,
-  onRole,
-  onTenant,
-  onToggleAIBot,
-}: TweaksPanelProps) => (
+export const TweaksPanel = ({ role, showAIBot, onRole, onToggleAIBot }: TweaksPanelProps) => (
   <div className="fixed bottom-5 right-5 w-[280px] bg-card border border-border rounded-lg shadow-lg p-4 z-[100] text-[13px]">
     <h4 className="text-[11px] font-semibold uppercase tracking-wider text-ink-3 mb-3.5 flex items-center gap-1.5">
       <Sliders size={12} />
@@ -64,18 +54,6 @@ export const TweaksPanel = ({
         ))}
       </div>
     </div>
-    {TENANTS.length > 1 ? (
-      <div className="flex items-center gap-2 mb-2.5 text-xs">
-        <span className="flex-1 text-ink-2">テナント</span>
-        <div className="flex gap-1">
-          {TENANTS.map((t) => (
-            <Pill key={t.id} active={tenant.id === t.id} onClick={() => onTenant(t)}>
-              {t.name}
-            </Pill>
-          ))}
-        </div>
-      </div>
-    ) : null}
     <div className="flex items-center gap-2 mb-2.5 text-xs">
       <span className="flex-1 text-ink-2">AI アシスタント</span>
       <div className="flex gap-1">

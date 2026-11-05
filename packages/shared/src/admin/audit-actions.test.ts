@@ -72,6 +72,14 @@ describe("audit-actions", () => {
     }
   });
 
+  it("廃止した組織マスタとテストモードの action は記録できないが、過去ログの絞り込みには残る", () => {
+    for (const action of ["org_create", "org_update", "test_mode_enable", "test_mode_disable"]) {
+      expect(Object.keys(AUDIT_ACTION_LABELS)).not.toContain(action);
+      expect(AUDIT_ACTION_FILTER_LABELS[action]).toBeTruthy();
+      expect(auditActionLabel(action)).toContain("(旧)");
+    }
+  });
+
   it("廃止した殿堂の action は記録できないが、過去ログの絞り込みには残る", () => {
     for (const action of ["hof_nominate", "hof_submit", "hof_publish", "hof_close"]) {
       expect(Object.keys(AUDIT_ACTION_LABELS)).not.toContain(action);

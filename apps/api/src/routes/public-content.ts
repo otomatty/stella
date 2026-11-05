@@ -12,14 +12,13 @@
  * レッスンだけ (印は教材の検査でも縛っているが、ここでも重ねて確かめる):
  *   - 印 (`lessons.public`) のある slides / text のレッスンで、本文がある
  *   - 課題文のレッスン (`tasks.lesson_id`) ではない
- *   - 公開テナント (`PUBLIC_CONTENT_TENANT_ID`) の、公開中 (published)・catalog・前提なしの
- *     format 2 のステージにある (霧やロックの向こうの講座・専用星の本文は返さない)
+ *   - 公開中 (published)・catalog・前提なしの format 2 のステージにある
+ *     (霧やロックの向こうの講座・専用星の本文は返さない)
  * 知識問題・課題・private/・受講者のデータ・ステージの説明や前提は返さない。存在しないものと
  * 条件を満たさないものは同じ 404 にする (印の有無を応答の違いで漏らさない)。
  *
- * テナントは JWT から決まらないので `PUBLIC_CONTENT_TENANT_ID` (wrangler.toml の [vars]) で
- * 決める。リクエストからは選ばせない。未設定なら何も返さない (一覧は空、本文は 404)。
  * Authorization を付けて呼ばれても読まない (ログイン済みでも同じ応答)。
+ * クエリや本文で組織を指定されても、その値は読まない。
  *
  * 匿名で叩けるので、IP 単位のレート制限 (`PUBLIC_CONTENT_RATE_LIMITER`) で負荷を抑える。
  * 応答はキャッシュさせない (`Cache-Control: no-store`)。印を外して seed したら、その時点で
@@ -44,19 +43,14 @@ const PUBLIC_LESSON_TYPES: PublicLessonType[] = ["slides", "text"];
 /** 公開を止めた本文をキャッシュから読ませない (ファイル冒頭)。 */
 const CACHE_CONTROL = "no-store";
 
-function publicTenant(env: Env): string | null {
-  return env.PUBLIC_CONTENT_TENANT_ID?.trim() || null;
-}
-
 /** 公開してよいレッスンの条件 (ファイル冒頭の一覧)。一覧と本文で同じものを使う。 */
-function publicLessonFilter(db: Db, tenantId: string) {
+function publicLessonFilter(db: Db) {
   return and(
     // 部分索引 (lessons_public_idx) を使わせるため、値はバインドせず式に直に書く。
     sql`${lessons.public} = 1`,
     inArray(lessons.type, PUBLIC_LESSON_TYPES),
     ne(lessons.markdown, ""),
     notExists(db.select({ one: sql`1` }).from(tasks).where(eq(tasks.lessonId, lessons.id))),
-    eq(stages.tenantId, tenantId),
     eq(stages.status, "published"),
     eq(stages.audience, "catalog"),
     eq(stages.format, 2),
@@ -68,8 +62,6 @@ publicContentRoute.get("/api/public/units", async (c) => {
   try {
     const limited = await enforcePublicContentRateLimit(c);
     if (limited) return limited;
-    const tenantId = publicTenant(c.env);
-    if (!tenantId) return c.json({ units: [] satisfies PublicUnit[] });
     const db = getDb(c.env);
     const rows = await db
       .select({
@@ -84,7 +76,7 @@ publicContentRoute.get("/api/public/units", async (c) => {
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(publicLessonFilter(db, tenantId))
+      .where(publicLessonFilter(db))
       .orderBy(asc(stages.slug), asc(sections.order), asc(sections.id), asc(lessons.order));
     const units: PublicUnit[] = [];
     for (const row of rows) {
@@ -112,8 +104,7 @@ publicContentRoute.get("/api/public/lessons/:id", async (c) => {
     const limited = await enforcePublicContentRateLimit(c);
     if (limited) return limited;
     const id = c.req.param("id");
-    const tenantId = publicTenant(c.env);
-    if (!tenantId || !id || id.length > 64) throw new ApiError("レッスンが見つかりません", 404);
+    if (!id || id.length > 64) throw new ApiError("レッスンが見つかりません", 404);
     const db = getDb(c.env);
     const rows = await db
       .select({
@@ -130,7 +121,7 @@ publicContentRoute.get("/api/public/lessons/:id", async (c) => {
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(and(eq(lessons.id, id), publicLessonFilter(db, tenantId)))
+      .where(and(eq(lessons.id, id), publicLessonFilter(db)))
       .limit(1);
     const row = rows[0];
     if (!row?.markdown) throw new ApiError("レッスンが見つかりません", 404);

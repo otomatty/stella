@@ -72,7 +72,6 @@ export interface RubricCriterion {
 
 export interface Submission {
   id: string;
-  tenantId: string;
   /** 担当の受講者だけに絞るときに使う (#38)。デモの提出は持たない。 */
   studentId?: string | null;
   studentName: string;

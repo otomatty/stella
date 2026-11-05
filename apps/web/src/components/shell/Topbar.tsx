@@ -9,7 +9,7 @@ import { TOPBAR_SLOT_ID } from "@/components/shell/TopbarSlot";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { NotificationRow } from "@stella/shared/cms/types";
 import type { SearchResult } from "@stella/shared/search/types";
-import type { Stage, Role, Tenant } from "@/data/types";
+import type { Stage, Role } from "@/data/types";
 
 interface TopbarProps {
   actions?: ReactNode;
@@ -20,7 +20,6 @@ interface TopbarProps {
   /** 通知センター用のコンテキスト / データ / ハンドラ。 */
   notify: {
     role: Role;
-    tenantId: Tenant["id"];
     notifications: NotificationRow[];
     unreadCount: number;
     loading: boolean;
@@ -87,7 +86,6 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
       />
       <NotificationCenter
         role={notify.role}
-        tenantId={notify.tenantId}
         notifications={notify.notifications}
         unreadCount={notify.unreadCount}
         loading={notify.loading}

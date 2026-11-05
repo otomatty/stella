@@ -476,7 +476,7 @@ skillMapRoute.get("/api/skill-map/mine", async (c) => {
      * 読むのは見出しだけ (`loadApprovedDiscoverySummaries`)。ホームを開くたびに走る
      * 経路なので、受験でしか要らない設問の JSON 全文をここで運ばない。
      */
-    const approved = await loadApprovedDiscoverySummaries(db, caller.tenantId);
+    const approved = await loadApprovedDiscoverySummaries(db);
     const visible = approved.filter((row) => isDiscoveryVisible(result.states.get(row.stageId)));
     const passedIds = await loadPassedDiscoveryIds(
       db,

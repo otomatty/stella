@@ -39,7 +39,7 @@
  */
 
 import { Hono } from "hono";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import {
   DISCOVERY_QUESTION_COUNT,
@@ -71,7 +71,7 @@ import {
   loadStageQuizQuestionsForCopy,
   updateDiscoveryMaterial,
 } from "../lib/discovery-data.js";
-import type { DiscoveryMaterialRow } from "../lib/discovery-data.js";
+import type { DiscoveryMaterialPatch, DiscoveryMaterialRow } from "../lib/discovery-data.js";
 import { enforceAiRateLimit } from "../lib/rate-limit.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -84,12 +84,12 @@ function requireStaff(role: Parameters<typeof isStaffRole>[0]): void {
 }
 
 /** 画面表示用に、ステージ id → 表示名を引く。 */
-async function stageTitles(db: Db, tenantId: string, ids: string[]): Promise<Map<string, string>> {
+async function stageTitles(db: Db, ids: string[]): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
   const rows = await db
     .select({ id: stages.id, title: stages.title })
     .from(stages)
-    .where(and(eq(stages.tenantId, tenantId), inArray(stages.id, [...new Set(ids)])));
+    .where(inArray(stages.id, [...new Set(ids)]));
   return new Map(rows.map((row) => [row.id, row.title]));
 }
 
@@ -118,9 +118,9 @@ cmsDiscoveryRoute.get("/api/cms/discovery", async (c) => {
     const { caller, db } = await getCaller(c);
     requireStaff(caller.role);
 
-    const requests = await listDiscoveryRequests(db, caller.tenantId);
-    const materials = await listDiscoveryMaterials(db, caller.tenantId);
-    const titles = await stageTitles(db, caller.tenantId, [
+    const requests = await listDiscoveryRequests(db);
+    const materials = await listDiscoveryMaterials(db);
+    const titles = await stageTitles(db, [
       ...requests.map((r) => r.stageId),
       ...materials.map((m) => m.stageId),
     ]);
@@ -178,13 +178,13 @@ cmsDiscoveryRoute.post("/api/cms/discovery/requests/:id/generate", async (c) => 
     const { caller, db } = await getCaller(c);
     requireStaff(caller.role);
 
-    const request = await loadDiscoveryRequest(db, caller.tenantId, c.req.param("id"));
+    const request = await loadDiscoveryRequest(db, c.req.param("id"));
     if (!request) throw new ApiError("対象のつまずきが見つかりません", 404);
 
     const [stage] = await db
       .select({ title: stages.title, canDo: stages.canDo })
       .from(stages)
-      .where(and(eq(stages.id, request.stageId), eq(stages.tenantId, caller.tenantId)))
+      .where(eq(stages.id, request.stageId))
       .limit(1);
     if (!stage) throw new ApiError("対象のステージが見つかりません", 404);
 
@@ -241,7 +241,6 @@ cmsDiscoveryRoute.post("/api/cms/discovery/requests/:id/generate", async (c) => 
     }
 
     const material = await insertDiscoveryMaterial(db, {
-      tenantId: caller.tenantId,
       stageId: request.stageId,
       title: title || `${request.topic} の復習`,
       description:
@@ -286,7 +285,7 @@ cmsDiscoveryRoute.patch("/api/cms/discovery/materials/:id", async (c) => {
     requireStaff(caller.role);
 
     const id = c.req.param("id");
-    const before = await loadDiscoveryMaterial(db, caller.tenantId, id);
+    const before = await loadDiscoveryMaterial(db, id);
     if (!before) throw new ApiError("対象の教材が見つかりません", 404);
 
     type Body = {
@@ -297,7 +296,7 @@ cmsDiscoveryRoute.patch("/api/cms/discovery/materials/:id", async (c) => {
     };
     const body: Body = await c.req.json<Body>().catch(() => ({}) as Body);
 
-    const patch: Parameters<typeof updateDiscoveryMaterial>[3] = {};
+    const patch: DiscoveryMaterialPatch = {};
     // 送られた値が **今の値と違うときだけ** patch に載せる。同じ値の再保存で承認が
     // 外れる (下の「本文を変えたら draft へ」) のは操作として理不尽なので、
     // 「変更したか」は文字列の差で決める。
@@ -376,13 +375,7 @@ cmsDiscoveryRoute.patch("/api/cms/discovery/materials/:id", async (c) => {
 
     // 読んだときの状態を更新条件に入れる。承認の途中で他の staff が中身を差し替えて
     // いたら (= 承認が draft へ落ちていたら) 0 件更新になり、ここで止まる。
-    const after = await updateDiscoveryMaterial(
-      db,
-      caller.tenantId,
-      id,
-      patch,
-      before.reviewStatus,
-    );
+    const after = await updateDiscoveryMaterial(db, id, patch, before.reviewStatus);
     if (!after) {
       throw new ApiError("この教材は他の操作で更新されています。読み直してください", 409);
     }
@@ -425,7 +418,7 @@ cmsDiscoveryRoute.patch("/api/cms/discovery/materials/:id", async (c) => {
       });
     }
 
-    const titles = await stageTitles(db, caller.tenantId, [after.stageId]);
+    const titles = await stageTitles(db, [after.stageId]);
     return c.json({
       material: materialPayload(after, titles.get(after.stageId)),
       /** 本文の編集で承認が外れたか (画面が「再承認が要る」と伝える)。 */

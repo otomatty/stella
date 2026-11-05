@@ -23,7 +23,6 @@ import {
   quizzes,
   sections,
   submissions,
-  tenants,
 } from "../db/schema.js";
 import {
   errorResponse,
@@ -45,13 +44,13 @@ import {
 import { recordStagePathEvents } from "../lib/stage-path-events.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import type { StageCompletion, GradebookEntry } from "@stella/shared/cms/types";
 
 export const certificatesRoute = new Hono<{ Bindings: Env }>();
 
 const CERT_COLS = {
   id: certificates.id,
-  tenant_id: certificates.tenantId,
   user_id: certificates.userId,
   stage_id: certificates.stageId,
   cert_code: certificates.certCode,
@@ -60,13 +59,13 @@ const CERT_COLS = {
   criteria_snapshot: certificates.criteriaSnapshot,
   recipient_name: certificates.recipientName,
   stage_title: certificates.stageTitle,
-  tenant_name: certificates.tenantName,
+  issuer_name: certificates.issuerName,
   revoked: certificates.revoked,
 } as const;
 
 /**
  * (受講者, ステージ) の達成状況を集計する (旧 compute_course_completion)。
- * 認可: 本人 or 同テナント staff。 対象ユーザーが同テナントでなければ null。
+ * 認可: 本人、または staff。対象のユーザーかステージが無ければ null。
  */
 async function computeStageCompletion(
   db: Db,
@@ -76,23 +75,22 @@ async function computeStageCompletion(
 ): Promise<StageCompletion | null> {
   const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
   const stage = stageRows[0];
-  if (!stage || stage.tenantId !== caller.tenantId) return null;
+  if (!stage) return null;
 
   const isStaff = isStaffRole(caller.role);
   if (!(userId === caller.id || isStaff)) return null;
 
   // 受講者はカタログに無い専用星の題名・条件を UUID 直叩きで取れない。
-  // staff の成績台帳 / 発行は従来どおりテナント内の全ステージを見る。
+  // staff の成績台帳 / 発行は全ステージを見る。
   if (!isStaff && !isCatalogAudience(stage.audience)) {
-    const visible = await learnerCanSeeGrantedStage(db, caller.id, caller.tenantId, stageId);
+    const visible = await learnerCanSeeGrantedStage(db, caller.id, stageId);
     if (!visible) return null;
   }
 
-  // 対象ユーザーが同テナントであることを必須化する。
   const target = await db
     .select({ id: profiles.id })
     .from(profiles)
-    .where(and(eq(profiles.id, userId), eq(profiles.tenantId, caller.tenantId)))
+    .where(eq(profiles.id, userId))
     .limit(1);
   if (!target[0]) return null;
 
@@ -400,7 +398,7 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
 
     const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
     const stage = stageRows[0];
-    if (!stage || stage.tenantId !== caller.tenantId) {
+    if (!stage) {
       throw new ApiError("ステージが見つかりません", 404);
     }
 
@@ -416,7 +414,7 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
       })
       .from(enrollments)
       .innerJoin(profiles, eq(profiles.id, enrollments.userId))
-      .where(and(eq(enrollments.stageId, stageId), eq(enrollments.tenantId, caller.tenantId)))
+      .where(eq(enrollments.stageId, stageId))
       .orderBy(profiles.displayName);
 
     // 受講者ごとに computeStageCompletion を呼ぶと N+1 になり Workers の subrequest
@@ -472,20 +470,14 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
 
     const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
     const stage = stageRows[0];
-    if (!stage || stage.tenantId !== caller.tenantId) {
+    if (!stage) {
       throw new ApiError("stage not found", 404);
     }
-    // 対象が同テナントかつ当該ステージに受講登録済みであること。
+    // 対象がそのステージに受講登録済みであること。
     const enr = await db
       .select({ id: enrollments.id })
       .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.userId, userId),
-          eq(enrollments.stageId, stageId),
-          eq(enrollments.tenantId, caller.tenantId),
-        ),
-      )
+      .where(and(eq(enrollments.userId, userId), eq(enrollments.stageId, stageId)))
       .limit(1);
     if (!enr[0]) throw new ApiError("user is not enrolled in this stage", 403);
 
@@ -509,16 +501,10 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
       .where(eq(profiles.id, userId))
       .limit(1);
     if (!recipientRows[0]) throw new ApiError("recipient profile not found", 404);
-    const tenantRows = await db
-      .select({ name: tenants.name })
-      .from(tenants)
-      .where(eq(tenants.id, stage.tenantId))
-      .limit(1);
 
     const inserted = await db
       .insert(certificates)
       .values({
-        tenantId: stage.tenantId,
         userId,
         stageId,
         certCode: genCertCode(),
@@ -526,7 +512,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
         criteriaSnapshot: completion as unknown as Record<string, unknown>,
         recipientName: recipientRows[0].name,
         stageTitle: stage.title,
-        tenantName: tenantRows[0]?.name ?? stage.tenantId,
+        issuerName: DISPLAY_NAME,
       })
       .onConflictDoNothing({ target: [certificates.userId, certificates.stageId] })
       .returning(CERT_COLS);
@@ -554,7 +540,7 @@ certificatesRoute.post("/api/certificates/issue", async (c) => {
 
     // 学習経路の統計 (「星が点いた」)。修了証は 1 人 1 ステージ 1 枚なので、ここを通るのは
     // 新規発行のときだけ (既発行は上で早期 return している)。
-    await recordStagePathEvents(db, stage.tenantId, "cleared", [{ userId, stageId }]);
+    await recordStagePathEvents(db, "cleared", [{ userId, stageId }]);
 
     // 新規発行時のみ記録する (べき等な再取得は操作ではない)。
     await recordAudit(db, caller, {
@@ -584,7 +570,7 @@ function toIssued(row: {
   issued_at: Date;
   recipient_name: string;
   stage_title: string;
-  tenant_name: string;
+  issuer_name: string;
   revoked: boolean;
 }) {
   return {
@@ -595,7 +581,7 @@ function toIssued(row: {
     issued_at: row.issued_at.toISOString(),
     recipient_name: row.recipient_name,
     stage_title: row.stage_title,
-    tenant_name: row.tenant_name,
+    issuer_name: row.issuer_name,
     revoked: row.revoked,
   };
 }
@@ -612,7 +598,7 @@ certificatesRoute.get("/api/certificates/verify/:certCode", async (c) => {
         cert_code: certificates.certCode,
         recipient_name: certificates.recipientName,
         stage_title: certificates.stageTitle,
-        tenant_name: certificates.tenantName,
+        issuer_name: certificates.issuerName,
         issued_at: certificates.issuedAt,
         revoked: certificates.revoked,
       })
@@ -634,7 +620,7 @@ certificatesRoute.get("/api/certificates/verify/:certCode", async (c) => {
         cert_code: cert.cert_code,
         recipient_name: cert.recipient_name,
         stage_title: cert.stage_title,
-        tenant_name: cert.tenant_name,
+        issuer_name: cert.issuer_name,
         issued_at: cert.issued_at.toISOString(),
       },
     });

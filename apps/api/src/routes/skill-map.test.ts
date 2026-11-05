@@ -58,7 +58,6 @@ vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
 
 const CALLER = {
   id: "seed-learner",
-  tenantId: "ses",
   role: "student",
   name: "受講者",
   email: null,

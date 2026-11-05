@@ -22,7 +22,6 @@ export interface UseReportResult {
 }
 
 export function useReport(
-  tenantId: string | null,
   type: ReportType,
   period: ReportPeriod,
   enabled: boolean,
@@ -38,7 +37,7 @@ export function useReport(
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!enabled || !tenantId || isInvalidPeriod({ from, to })) {
+    if (!enabled || isInvalidPeriod({ from, to })) {
       setReport(null);
       setError(null);
       setLoading(false);
@@ -57,7 +56,7 @@ export function useReport(
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [enabled, from, tenantId, to, type]);
+  }, [enabled, from, to, type]);
 
   useEffect(() => {
     void refetch();

@@ -122,27 +122,21 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     } as unknown as Env;
     db = getDb(env);
     await db.batch([
-      db.insert(tenants).values([
-        { id: "ses", name: "テスト" },
-        { id: "other", name: "他社" },
-      ]),
+      db.insert(tenants).values([{ id: "ses", name: "テスト" }]),
       db.insert(profiles).values([
-        { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-        { id: "stranger", tenantId: "ses", displayName: "未受講の受講者", role: "student" },
-        { id: "outsider", tenantId: "other", displayName: "他社の受講者", role: "student" },
+        { id: "learner", displayName: "受講者", role: "student" },
+        { id: "stranger", displayName: "未受講の受講者", role: "student" },
+        { id: "outsider", displayName: "未受講の別の受講者", role: "student" },
       ]),
       db.insert(stages).values({
         id: "stage",
-        tenantId: "ses",
         slug: "dev-env-basics",
         title: "開発環境",
         format: 2,
         status: "published",
       }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "入口" }),
-      db
-        .insert(enrollments)
-        .values({ tenantId: "ses", userId: "learner", stageId: "stage", status: "active" }),
+      db.insert(enrollments).values({ userId: "learner", stageId: "stage", status: "active" }),
     ]);
     token = await signAccessToken("test-secret", "learner", "learner@example.com");
     otherToken = await signAccessToken("test-secret", "outsider", "outsider@example.com");
@@ -239,7 +233,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       await ok(await open("hint", 1));
       expect(await opens()).toMatchObject([
         {
-          tenantId: "ses",
           userId: "learner",
           taskId: fixture.input.taskId,
           item: "hint",
@@ -294,7 +287,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       ]);
       expect(
         await hasRecordedSupport(db, {
-          tenantId: "ses",
           studentId: "learner",
           taskId: fixture.input.taskId,
           submittedAt: row.submittedAt,
@@ -322,7 +314,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       await db.update(taskHelpOpens).set({ openedAt: new Date(row.submittedAt.getTime() + 1000) });
       expect(
         await hasRecordedSupport(db, {
-          tenantId: "ses",
           studentId: "learner",
           taskId: fixture.input.taskId,
           submittedAt: row.submittedAt,
@@ -330,7 +321,7 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       ).toBe(false);
     });
 
-    it("受講していない・他テナントの受講者には 404 で、記録もしない", async () => {
+    it("受講していない受講者には 404 で、記録もしない", async () => {
       for (const as of [otherToken, strangerToken]) {
         expect((await help(as)).status).toBe(404);
         expect((await open("hint", 1, as)).status).toBe(404);
@@ -359,7 +350,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       await db.insert(taskLocalRuns).values({
         userId: "learner",
         taskId: fixture.input.taskId,
-        tenantId: "ses",
         contentHash: fixture.bundle.contentHash,
         failedRuns: 2,
         failureStreak: 2,
@@ -376,20 +366,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       expect(JSON.stringify(opened)).toContain(PRIVATE_FILES["solution/index.html"]);
       // 解説 (別解・選び方の理由) は合格後。自動では開かない。
       expect(opened.explanation).toEqual({ state: "locked", reason: "passed" });
-    });
-
-    it("他テナントの手元の記録は挑戦に数えない", async () => {
-      await db.insert(taskLocalRuns).values({
-        userId: "learner",
-        taskId: fixture.input.taskId,
-        tenantId: "other",
-        contentHash: fixture.bundle.contentHash,
-        failedRuns: 9,
-        lastOutcome: "failed",
-        firstRunAt: new Date(),
-        lastRunAt: new Date(),
-      });
-      expect((await ok(await help())).attempts).toEqual({ count: 0, required: 3 });
     });
 
     it("合格後は自動では開かず、解答例と解説を開ける", async () => {
@@ -593,7 +569,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
         await db.insert(taskLocalRuns).values({
           userId: "learner",
           taskId: fixture.input.taskId,
-          tenantId: "ses",
           contentHash: fixture.bundle.contentHash,
           failedRuns: c.failedRuns,
           lastOutcome: "failed",
@@ -631,7 +606,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
         });
         await db.insert(submissions).values({
           id: "old-version-submission",
-          tenantId: "ses",
           studentId: "learner",
           taskId: fixture.input.taskId,
           taskContentHash: OLD_HASH,
@@ -683,7 +657,6 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
     await setup("basic", { hintLevels: 2, solutionUnlock: "after-hints" });
     const submittedAt = new Date("2026-10-05T00:00:00Z");
     const row = {
-      tenantId: "ses",
       studentId: "learner",
       taskId: fixture.input.taskId,
       stageTitle: "開発環境",

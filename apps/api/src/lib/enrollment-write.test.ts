@@ -22,7 +22,6 @@ vi.mock("./stage-path-events.js", () => ({ recordStagePathEvents: vi.fn(async ()
 
 const caller: Caller = {
   id: "seed-learner",
-  tenantId: "ses",
   role: "student",
   name: "受講者",
   email: null,
@@ -31,7 +30,6 @@ const caller: Caller = {
 /** 偽 db が持つ enrollment 行 (応答形と同じ snake_case)。 */
 interface Row {
   id: string;
-  tenant_id: string;
   user_id: string;
   stage_id: string;
   status: "active" | "completed" | "expired";
@@ -60,7 +58,6 @@ function createDb(initial?: Row, opts: { readsAs?: Row } = {}) {
             if (state.row) return [];
             state.row = {
               id: "enr-1",
-              tenant_id: values.tenantId as string,
               user_id: values.userId as string,
               stage_id: values.stageId as string,
               status: "active",
@@ -105,7 +102,6 @@ function createDb(initial?: Row, opts: { readsAs?: Row } = {}) {
 
 const baseRow = (status: Row["status"], extra: Partial<Row> = {}): Row => ({
   id: "enr-1",
-  tenant_id: "ses",
   user_id: caller.id,
   stage_id: "stage-a",
   status,
@@ -128,7 +124,7 @@ describe("startSelfEnrollment", () => {
     // 自己開始に期限は付かず、必須にもしない。
     expect(state.row?.due_at).toBeNull();
     expect(state.row?.required).toBe(false);
-    expect(recordStagePathEvents).toHaveBeenCalledWith(db, "ses", "started", [
+    expect(recordStagePathEvents).toHaveBeenCalledWith(db, "started", [
       { userId: caller.id, stageId: "stage-a" },
     ]);
   });

@@ -9,6 +9,7 @@
  */
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import {
   BOOK_PACKAGE_LIMITS,
   contentKeyOf,
@@ -146,7 +147,7 @@ async function ownBook(env: Env, caller: Caller, id: string): Promise<BookRow> {
   const row = await env.DB.prepare(
     "SELECT * FROM library_books WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'",
   )
-    .bind(caller.tenantId, id, caller.id)
+    .bind(LEGACY_TENANT_ID, id, caller.id)
     .first<BookRow>();
   requireOwnLibraryBook(caller, row);
   if (!row) throw new ApiError("本が見つかりません", 404);
@@ -158,7 +159,7 @@ async function bookFile(env: Env, caller: Caller, bookId: string, fileId: string
   const file = await env.DB.prepare(
     "SELECT * FROM library_files WHERE tenant_id = ? AND book_id = ? AND id = ?",
   )
-    .bind(caller.tenantId, book.id, fileId)
+    .bind(LEGACY_TENANT_ID, book.id, fileId)
     .first<FileRow>();
   if (!file) throw new ApiError("ファイルが見つかりません", 404);
   return { book, file };
@@ -174,7 +175,7 @@ async function shelfEntry(env: Env, caller: Caller, bookId: string): Promise<Lib
   const row = await env.DB.prepare(
     `${SHELF_SELECT} WHERE s.tenant_id = ? AND s.profile_id = ? AND b.id = ? AND b.owner_id = ? AND b.status <> 'deleting'`,
   )
-    .bind(caller.tenantId, caller.id, bookId, caller.id)
+    .bind(LEGACY_TENANT_ID, caller.id, bookId, caller.id)
     .first<ShelfRow>();
   if (!row) throw new ApiError("本が見つかりません", 404);
   return entryView(row);
@@ -319,7 +320,7 @@ libraryRoute.get("/api/library/mine", async (c) => {
     if (filter === "favorite") conditions.push("s.favorite = 1");
     else if (filter !== "all") conditions.push(`s.reading_status = '${filter}'`);
     const where = conditions.join(" AND ");
-    const args = [caller.tenantId, caller.id, caller.id];
+    const args = [LEGACY_TENANT_ID, caller.id, caller.id];
     const [rows, total] = await Promise.all([
       c.env.DB.prepare(
         `${SHELF_SELECT} WHERE ${where} ORDER BY coalesce(s.last_opened_at, b.created_at) DESC, b.id LIMIT ? OFFSET ?`,
@@ -375,7 +376,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
       .prepare(
         "SELECT * FROM library_books WHERE tenant_id = ? AND owner_id = ? AND package_id = ?",
       )
-      .bind(caller.tenantId, caller.id, manifest.id)
+      .bind(LEGACY_TENANT_ID, caller.id, manifest.id)
       .first<BookRow>();
     if (existing?.status === "deleting")
       throw new ApiError("この本は削除の片付け中です。しばらくしてからもう一度開いてください", 409);
@@ -383,7 +384,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
       .prepare(
         "SELECT coalesce(sum(max(total_bytes, pending_bytes)), 0) AS used FROM library_books WHERE tenant_id = ? AND owner_id = ? AND status <> 'deleting' AND id <> ?",
       )
-      .bind(caller.tenantId, caller.id, existing?.id ?? "")
+      .bind(LEGACY_TENANT_ID, caller.id, existing?.id ?? "")
       .first<{ used: number }>();
     if ((used?.used ?? 0) + totalBytes > BOOK_PACKAGE_LIMITS.maxOwnerBytes)
       throw new ApiError(
@@ -417,7 +418,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
       ? (
           await db
             .prepare("SELECT * FROM library_files WHERE tenant_id = ? AND book_id = ?")
-            .bind(caller.tenantId, bookId)
+            .bind(LEGACY_TENANT_ID, bookId)
             .all<FileRow>()
         ).results
       : [];
@@ -441,7 +442,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
         kind,
         content_type: type,
         size,
-        r2_key: fileR2Key(caller.tenantId, bookId, id),
+        r2_key: fileR2Key(bookId, id),
         status: "pending",
         multipart_upload_id: null,
       };
@@ -482,7 +483,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
         .prepare(
           "UPDATE library_books SET pending_active_at = ?, updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_signature = ?",
         )
-        .bind(now, now, caller.tenantId, bookId, caller.id, signature)
+        .bind(now, now, LEGACY_TENANT_ID, bookId, caller.id, signature)
         .run();
     else {
       const statements: D1PreparedStatement[] = [];
@@ -504,7 +505,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
             )
             .bind(
               bookId,
-              caller.tenantId,
+              LEGACY_TENANT_ID,
               caller.id,
               manifest.id,
               manifest.title,
@@ -528,12 +529,12 @@ libraryRoute.post("/api/library/imports", async (c) => {
               .prepare(
                 "DELETE FROM library_revision_files WHERE tenant_id = ? AND book_id = ? AND revision = ?",
               )
-              .bind(caller.tenantId, bookId, existing.pending_revision),
+              .bind(LEGACY_TENANT_ID, bookId, existing.pending_revision),
             db
               .prepare(
                 "DELETE FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ?",
               )
-              .bind(caller.tenantId, bookId, existing.pending_revision),
+              .bind(LEGACY_TENANT_ID, bookId, existing.pending_revision),
           );
         statements.push(
           db
@@ -542,7 +543,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
                 pending_active_at = ?, pending_bytes = ?, updated_at = ?
               WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'`,
             )
-            .bind(revision, ...pendingColumns, now, caller.tenantId, bookId, caller.id),
+            .bind(revision, ...pendingColumns, now, LEGACY_TENANT_ID, bookId, caller.id),
         );
       }
       statements.push(
@@ -550,7 +551,7 @@ libraryRoute.post("/api/library/imports", async (c) => {
           .prepare(
             "INSERT OR IGNORE INTO library_shelf_entries (tenant_id, profile_id, book_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
           )
-          .bind(caller.tenantId, caller.id, bookId, now, now),
+          .bind(LEGACY_TENANT_ID, caller.id, bookId, now, now),
         // 行が多くても 1 文で済むよう、JSON の配列を 1 つの値として渡す (D1 の 1 文 100 変数の制限)。
         db
           .prepare(
@@ -559,14 +560,14 @@ libraryRoute.post("/api/library/imports", async (c) => {
               json_extract(value, '$.type'), json_extract(value, '$.size'), json_extract(value, '$.r2'), 'pending', ?, ?
             FROM json_each(?)`,
           )
-          .bind(caller.tenantId, bookId, now, now, JSON.stringify(fresh)),
+          .bind(LEGACY_TENANT_ID, bookId, now, now, JSON.stringify(fresh)),
         db
           .prepare(
             `INSERT INTO library_revision_files (tenant_id, book_id, revision, path, file_id)
             SELECT ?, ?, ?, json_extract(value, '$.path'), json_extract(value, '$.fileId') FROM json_each(?)`,
           )
           .bind(
-            caller.tenantId,
+            LEGACY_TENANT_ID,
             bookId,
             revision,
             JSON.stringify(slots.map(({ path, fileId }) => ({ path, fileId }))),
@@ -578,9 +579,9 @@ libraryRoute.post("/api/library/imports", async (c) => {
               json_extract(value, '$.text'), json_extract(value, '$.audio'), json_extract(value, '$.video')
             FROM json_each(?)`,
           )
-          .bind(caller.tenantId, bookId, revision, JSON.stringify(manifest.chapters)),
+          .bind(LEGACY_TENANT_ID, bookId, revision, JSON.stringify(manifest.chapters)),
         // 置き換えた版だけが使っていたファイルを片付ける。
-        ...orphanFileStatements(db, caller.tenantId, bookId, now),
+        ...orphanFileStatements(db, bookId, now),
       );
       await db.batch(statements);
       const saved = await ownBook(c.env, caller, bookId);
@@ -608,7 +609,7 @@ async function touchPendingImport(env: Env, caller: Caller, bookId: string, now:
   await env.DB.prepare(
     "UPDATE library_books SET pending_active_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND pending_revision IS NOT NULL",
   )
-    .bind(now, caller.tenantId, bookId, caller.id)
+    .bind(now, LEGACY_TENANT_ID, bookId, caller.id)
     .run();
 }
 
@@ -618,13 +619,13 @@ async function markUploaded(env: Env, bucket: R2Bucket, caller: Caller, file: Fi
   await env.DB.prepare(
     "UPDATE library_files SET status = 'uploaded', multipart_upload_id = NULL, updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'pending' AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND status <> 'deleting')",
   )
-    .bind(now, caller.tenantId, file.id, caller.tenantId, file.book_id)
+    .bind(now, LEGACY_TENANT_ID, file.id, LEGACY_TENANT_ID, file.book_id)
     .run();
   await touchPendingImport(env, caller, file.book_id, now);
   const after = await env.DB.prepare(
     "SELECT f.status FROM library_files f JOIN library_books b ON b.tenant_id = f.tenant_id AND b.id = f.book_id WHERE f.tenant_id = ? AND f.id = ? AND b.status <> 'deleting'",
   )
-    .bind(caller.tenantId, file.id)
+    .bind(LEGACY_TENANT_ID, file.id)
     .first<{ status: string }>();
   if (after?.status !== "uploaded") {
     await bucket.delete(file.r2_key);
@@ -690,7 +691,7 @@ libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart", async (c
     await c.env.DB.prepare(
       "UPDATE library_files SET multipart_upload_id = ?, updated_at = ? WHERE tenant_id = ? AND id = ? AND status = 'pending'",
     )
-      .bind(upload.uploadId, Date.now(), caller.tenantId, file.id)
+      .bind(upload.uploadId, Date.now(), LEGACY_TENANT_ID, file.id)
       .run();
     await touchPendingImport(c.env, caller, file.book_id, Date.now());
     return c.json({
@@ -764,7 +765,7 @@ libraryRoute.post("/api/library/books/:bookId/files/:fileId/multipart/complete",
       await c.env.DB.prepare(
         "UPDATE library_files SET multipart_upload_id = NULL, updated_at = ? WHERE tenant_id = ? AND id = ?",
       )
-        .bind(Date.now(), caller.tenantId, file.id)
+        .bind(Date.now(), LEGACY_TENANT_ID, file.id)
         .run();
       throw new ApiError("ファイルの大きさが取り込みの時と違います", 400);
     }
@@ -791,7 +792,7 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
         `SELECT count(*) AS count FROM library_files f WHERE f.tenant_id = ? AND f.book_id = ? AND f.status <> 'uploaded'
           AND (f.id = ? OR EXISTS (SELECT 1 FROM library_revision_files rf WHERE rf.tenant_id = f.tenant_id AND rf.book_id = f.book_id AND rf.revision = ? AND rf.file_id = f.id))`,
       )
-      .bind(caller.tenantId, book.id, book.pending_thumb_file_id ?? "", revision)
+      .bind(LEGACY_TENANT_ID, book.id, book.pending_thumb_file_id ?? "", revision)
       .first<{ count: number }>();
     if (missing?.count)
       throw new ApiError(`まだ送っていないファイルが ${missing.count} 個あります`, 409);
@@ -825,7 +826,7 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
           Number(manifest.chapters.some((chapter) => chapter.audio)),
           Number(manifest.chapters.some((chapter) => chapter.video)),
           now,
-          caller.tenantId,
+          LEGACY_TENANT_ID,
           book.id,
           caller.id,
           revision,
@@ -836,11 +837,11 @@ libraryRoute.post("/api/library/books/:bookId/imports/:revision/complete", async
         .prepare(
           `DELETE FROM library_revision_files WHERE ${sameBook} AND revision < ? AND ${switched}`,
         )
-        .bind(caller.tenantId, book.id, revision, caller.tenantId, book.id, revision),
+        .bind(LEGACY_TENANT_ID, book.id, revision, LEGACY_TENANT_ID, book.id, revision),
       db
         .prepare(`DELETE FROM library_chapters WHERE ${sameBook} AND revision < ? AND ${switched}`)
-        .bind(caller.tenantId, book.id, revision, caller.tenantId, book.id, revision),
-      ...orphanFileStatements(db, caller.tenantId, book.id, now),
+        .bind(LEGACY_TENANT_ID, book.id, revision, LEGACY_TENANT_ID, book.id, revision),
+      ...orphanFileStatements(db, book.id, now),
     ]);
     const done = await ownBook(c.env, caller, book.id);
     if (done.current_revision !== revision)
@@ -861,17 +862,10 @@ libraryRoute.delete("/api/library/books/:bookId/imports/:revision", async (c) =>
     const uploads = await c.env.DB.prepare(
       "SELECT r2_key, multipart_upload_id FROM library_files WHERE tenant_id = ? AND book_id = ? AND status = 'pending' AND multipart_upload_id IS NOT NULL",
     )
-      .bind(caller.tenantId, book.id)
+      .bind(LEGACY_TENANT_ID, book.id)
       .all<{ r2_key: string; multipart_upload_id: string }>();
     const results = await c.env.DB.batch(
-      discardPendingStatements(
-        c.env.DB,
-        caller.tenantId,
-        book.id,
-        revision,
-        book.pending_signature,
-        Date.now(),
-      ),
+      discardPendingStatements(c.env.DB, book.id, revision, book.pending_signature, Date.now()),
     );
     // 別のタブが置き換えていて捨てなかったときは、分割送信を止めない (置き換えた取り込みが
     // 同じファイルの行と分割送信を使い続けていることがある)。
@@ -900,7 +894,7 @@ libraryRoute.get("/api/library/books/:bookId", async (c) => {
       LEFT JOIN library_reader_states r ON r.tenant_id = ch.tenant_id AND r.book_id = ch.book_id AND r.chapter_id = ch.chapter_id AND r.profile_id = ?
       WHERE ch.tenant_id = ? AND ch.book_id = ? AND ch.revision = ? ORDER BY ch.position`,
     )
-      .bind(caller.id, caller.tenantId, book.id, book.current_revision)
+      .bind(caller.id, LEGACY_TENANT_ID, book.id, book.current_revision)
       .all<{
         chapter_id: string;
         position: number;
@@ -967,7 +961,7 @@ libraryRoute.get("/api/library/books/:bookId/content/*", async (c) => {
       `SELECT f.* FROM library_revision_files rf JOIN library_files f ON f.tenant_id = rf.tenant_id AND f.id = rf.file_id
       WHERE rf.tenant_id = ? AND rf.book_id = ? AND rf.revision = ? AND rf.path = ? AND f.status = 'uploaded'`,
     )
-      .bind(caller.tenantId, book.id, book.current_revision, path)
+      .bind(LEGACY_TENANT_ID, book.id, book.current_revision, path)
       .first<FileRow>();
     if (!file) throw new ApiError("ファイルが見つかりません", 404);
     return await serveFile(c, bucket, file, "private, no-store");
@@ -986,7 +980,7 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
     const chapter = await c.env.DB.prepare(
       "SELECT 1 AS found FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ? AND chapter_id = ?",
     )
-      .bind(caller.tenantId, book.id, book.current_revision, chapterId)
+      .bind(LEGACY_TENANT_ID, book.id, book.current_revision, chapterId)
       .first<{ found: number }>();
     if (!chapter) throw new ApiError("章が見つかりません", 404);
     const now = Date.now();
@@ -1017,7 +1011,7 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
             updated_at = excluded.updated_at`,
         )
         .bind(
-          caller.tenantId,
+          LEGACY_TENANT_ID,
           caller.id,
           book.id,
           chapterId,
@@ -1041,7 +1035,7 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
           WHERE tenant_id = ? AND profile_id = ? AND book_id = ?`,
         )
         .bind(
-          caller.tenantId,
+          LEGACY_TENANT_ID,
           book.id,
           book.current_revision,
           caller.id,
@@ -1051,7 +1045,7 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
           now,
           input.clientUpdatedAt,
           now,
-          caller.tenantId,
+          LEGACY_TENANT_ID,
           caller.id,
           book.id,
         ),
@@ -1060,7 +1054,7 @@ libraryRoute.put("/api/library/books/:bookId/chapters/:chapterId/state", async (
       .prepare(
         "SELECT audio_sec, video_sec, completed, updated_at FROM library_reader_states WHERE tenant_id = ? AND profile_id = ? AND book_id = ? AND chapter_id = ?",
       )
-      .bind(caller.tenantId, caller.id, book.id, chapterId)
+      .bind(LEGACY_TENANT_ID, caller.id, book.id, chapterId)
       .first<{ audio_sec: number; video_sec: number; completed: number; updated_at: number }>();
     return c.json({
       state: {
@@ -1105,7 +1099,7 @@ libraryRoute.put("/api/library/shelf/:bookId", async (c) => {
         updated_at = excluded.updated_at`,
     )
       .bind(
-        caller.tenantId,
+        LEGACY_TENANT_ID,
         caller.id,
         book.id,
         status,
@@ -1138,13 +1132,13 @@ libraryRoute.delete("/api/library/books/:bookId", async (c) => {
     await c.env.DB.batch([
       c.env.DB.prepare(
         "UPDATE library_books SET status = 'deleting', updated_at = ? WHERE tenant_id = ? AND id = ? AND owner_id = ? AND status <> 'deleting'",
-      ).bind(now, caller.tenantId, book.id, caller.id),
+      ).bind(now, LEGACY_TENANT_ID, book.id, caller.id),
       c.env.DB.prepare(
         "INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) VALUES (?, ?)",
-      ).bind(bookPrefix(caller.tenantId, book.id), now),
+      ).bind(bookPrefix(book.id), now),
       c.env.DB.prepare(
         "DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ?",
-      ).bind(caller.tenantId, book.id),
+      ).bind(LEGACY_TENANT_ID, book.id),
     ]);
     return c.json({ ok: true, status: "deleting" }, 202);
   } catch (error) {

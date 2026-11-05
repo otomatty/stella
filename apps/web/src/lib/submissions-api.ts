@@ -1,7 +1,7 @@
 /**
  * 提出物の API 永続化 (Issue #8 — P3 DB 連携)。
  *
- * RLS: 受講者: insert + mine/本人 select。staff: テナント一覧/更新。
+ * 受講者: insert + mine/本人 select。staff: 一覧/更新。
  */
 
 import { parseGradingSummary } from "@stella/shared/review/grading-summary";
@@ -54,7 +54,6 @@ export type SubmissionPatch = Pick<
 
 interface SubmissionRow {
   id: string;
-  tenant_id: string;
   student_id: string | null;
   lesson_id: string | null;
   assignment_id: string | null;
@@ -114,7 +113,6 @@ function rowToSubmission(row: SubmissionRow): Submission {
   const initials = profile?.initials ?? (name.slice(0, 2).toUpperCase() || "??");
   return {
     id: row.id,
-    tenantId: row.tenant_id,
     studentId: row.student_id,
     studentName: name,
     studentInitials: initials,
@@ -181,17 +179,14 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
   return rowToSubmission(row);
 }
 
-/** staff: テナント内の提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
-export async function fetchSubmissionsForTenant(_tenantId: string): Promise<Submission[]> {
+/** staff: 提出物一覧 (新着順)。 認可はサーバ側 (instructor/admin)。 */
+export async function fetchSubmissions(): Promise<Submission[]> {
   const { rows } = await apiFetch<{ rows: SubmissionRow[] }>("/api/submissions");
   return (rows ?? []).map(rowToSubmission);
 }
 
-/** 受講者: 自分の提出を作成する。 student / tenant はサーバが caller から確定する。 */
-export async function insertSubmission(
-  _tenantId: string,
-  input: InsertSubmissionInput,
-): Promise<Submission> {
+/** 受講者: 自分の提出を作成する。 提出者はサーバが caller から確定する。 */
+export async function insertSubmission(input: InsertSubmissionInput): Promise<Submission> {
   const { row } = await apiFetch<{ row: SubmissionRow }>("/api/submissions", {
     method: "POST",
     body: {

@@ -2,7 +2,7 @@
  * 教材アップロード / レッスン配布資料 API。
  *
  * Cloudflare R2 バインディング (`MATERIALS_BUCKET`) 経由で PUT / GET する。
- * 旧 storage policy (tenant/{tenant_id}/... プレフィクス + staff のみ) をアプリ層で再現する。
+ * 旧 storage policy (格納プレフィックス + staff のみ) をアプリ層で再現する。
  *
  * - POST   /api/materials/upload        … R2 アップロード。 `lessonId` を付けると
  *                                         lesson_materials 行も登録する (Issue #72)。
@@ -26,6 +26,7 @@ import { Hono } from "hono";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 
 import {
   stages,
@@ -77,14 +78,13 @@ function listedMaterials(caller: Caller, includeArchived: string | undefined) {
     : isNull(lessonMaterials.archivedAt);
 }
 
-/** レッスンの所属テナント / ステージ公開状態 / ステージ ID を join で解決する。 */
+/** レッスンのステージ公開状態 / ステージ ID を join で解決する。 */
 async function lessonStageInfo(
   db: Db,
   lessonId: string,
-): Promise<{ tenantId: string; stageStatus: string; stageId: string } | null> {
+): Promise<{ stageStatus: string; stageId: string } | null> {
   const rows = await db
     .select({
-      tenantId: stages.tenantId,
       stageStatus: stages.status,
       stageId: stages.id,
     })
@@ -98,14 +98,14 @@ async function lessonStageInfo(
 
 /**
  * 配布資料の閲覧認可。
- * - staff: 同テナントなら可
+ * - staff: レッスンが存在すれば可
  * - student: published かつ当該ステージに閲覧可能な enrollment
  *   (`active` に加えて `completed`。 修了済みステージも受講者のステージ一覧に並ぶため、
  *    `active` だけにすると一覧に出ているステージの資料が 404 になる)
  */
 async function assertMaterialReadable(db: Db, caller: Caller, lessonId: string): Promise<void> {
   const info = await lessonStageInfo(db, lessonId);
-  if (!info || info.tenantId !== caller.tenantId) {
+  if (!info) {
     throw new ApiError("レッスンが見つかりません", 404);
   }
   if (isStaffRole(caller.role)) return;
@@ -164,20 +164,20 @@ materialsRoute.post("/api/materials/upload", async (c) => {
     if (lessonId) {
       // レッスン配布資料: パスはサーバ側で組み立てる (クライアント指定パスを信用しない)。
       const info = await lessonStageInfo(db, lessonId);
-      if (!info || info.tenantId !== caller.tenantId) {
+      if (!info) {
         throw new ApiError("レッスンが見つかりません", 404);
       }
       const safeName = file.name.replace(/[^\p{L}\p{N}.-]+/gu, "_");
       const uniq = crypto.randomUUID().slice(0, 8);
-      path = `tenant/${caller.tenantId}/lessons/${lessonId}/${uniq}-${safeName}`;
+      path = `tenant/${LEGACY_TENANT_ID}/lessons/${lessonId}/${uniq}-${safeName}`;
     } else {
       path = String(form.get("path") ?? "");
-      // 旧 storage policy 相当: tenant/{caller.tenantId}/... に閉じる。
-      // パストラバーサル ( .. ) やバックスラッシュを拒否し、 他テナント領域への書き込みを防ぐ。
+      // 保存先は格納済みプレフィックス (LEGACY_TENANT_ID) に閉じる。
+      // パストラバーサル ( .. ) やバックスラッシュを拒否する。
       const segments = path.split("/");
       if (
         segments[0] !== "tenant" ||
-        segments[1] !== caller.tenantId ||
+        segments[1] !== LEGACY_TENANT_ID ||
         path.includes("..") ||
         path.includes("\\")
       ) {
@@ -234,12 +234,12 @@ async function assertStageMaterialsReadable(
   stageId: string,
 ): Promise<void> {
   const rows = await db
-    .select({ tenantId: stages.tenantId, status: stages.status })
+    .select({ status: stages.status })
     .from(stages)
     .where(eq(stages.id, stageId))
     .limit(1);
   const stage = rows[0];
-  if (!stage || stage.tenantId !== caller.tenantId) {
+  if (!stage) {
     throw new ApiError("ステージが見つかりません", 404);
   }
   if (isStaffRole(caller.role)) return;
@@ -323,7 +323,7 @@ materialsRoute.get("/api/materials/:id/versions", async (c) => {
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
     const info = await lessonStageInfo(db, material.lessonId);
-    if (!info || info.tenantId !== caller.tenantId) {
+    if (!info) {
       throw new ApiError("資料が見つかりません", 404);
     }
 
@@ -367,7 +367,7 @@ materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) =>
     const material = rows[0];
     if (!material) throw new ApiError("資料が見つかりません", 404);
     const info = await lessonStageInfo(db, material.lessonId);
-    if (!info || info.tenantId !== caller.tenantId) {
+    if (!info) {
       throw new ApiError("資料が見つかりません", 404);
     }
 
@@ -458,8 +458,8 @@ materialsRoute.delete("/api/materials/:id", async (c) => {
     if (!material) throw new ApiError("資料が見つかりません", 404);
 
     const info = await lessonStageInfo(db, material.lessonId);
-    if (!info || info.tenantId !== caller.tenantId) {
-      throw new ApiError("他テナントのリソースは操作できません", 403);
+    if (!info) {
+      throw new ApiError("資料が見つかりません", 404);
     }
 
     // 自動生成資料は削除させない — 教材 (GitHub) が正本で、消しても次の seed が

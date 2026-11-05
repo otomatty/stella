@@ -43,7 +43,6 @@ export async function insertStageQueueEntry(
   await db
     .insert(stageQueue)
     .values({
-      tenantId: caller.tenantId,
       userId: caller.id,
       stageId,
       order,
@@ -91,8 +90,8 @@ export async function setStageQueueOrder(
 /**
  * 「今すぐ中身を開ける」受講登録があるか (キューに積めるのは割り当てられた星だけ)。
  *
- * 絞り込みは `loadEnrolledStageIds` と同じ規約 (`READABLE_ENROLLMENT_STATUSES` +
- * テナント)。`expired` を通すと、期限切れで開けない星が順番待ちに残る。
+ * 絞り込みは `loadEnrolledStageIds` と同じ規約 (`READABLE_ENROLLMENT_STATUSES`)。
+ * `expired` を通すと、期限切れで開けない星が順番待ちに残る。
  */
 export async function isEnrolledInStage(db: Db, caller: Caller, stageId: string): Promise<boolean> {
   const rows = await db
@@ -101,7 +100,6 @@ export async function isEnrolledInStage(db: Db, caller: Caller, stageId: string)
     .where(
       and(
         eq(enrollments.userId, caller.id),
-        eq(enrollments.tenantId, caller.tenantId),
         eq(enrollments.stageId, stageId),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),

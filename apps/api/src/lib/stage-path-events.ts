@@ -29,7 +29,8 @@ export interface StagePathPair {
 }
 
 /**
- * 1 文に載せる行数。1 行 = 5 列 + `id` の既定値で 6 バインド。
+ * 1 文に載せる行数。渡す列は 4 つ (userId, stageId, event, at)。
+ * id と省略した列の既定値もバインドするので 1 行 6。
  *
  * 固定のオーバーヘッドは無い (`do nothing` は値を持たない) ので、上限をそのまま割る。
  */
@@ -42,7 +43,6 @@ const ROWS_PER_INSERT = Math.max(1, Math.floor(D1_MAX_BOUND_PARAMS / 6));
  */
 export async function recordStagePathEvents(
   db: Db,
-  tenantId: string,
   event: StagePathEvent,
   pairs: StagePathPair[],
 ): Promise<void> {
@@ -60,7 +60,6 @@ export async function recordStagePathEvents(
 
     const at = new Date();
     const values = [...unique.values()].map((pair) => ({
-      tenantId,
       userId: pair.userId,
       stageId: pair.stageId,
       event,

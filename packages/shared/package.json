@@ -67,6 +67,7 @@
     "./enrollment/access": "./src/enrollment/access.ts",
     "./enrollment/preset": "./src/enrollment/preset.ts",
     "./brand/display": "./src/brand/display.ts",
+    "./legacy-tenant": "./src/legacy-tenant.ts",
     "./tasks/catalog": "./src/tasks/catalog.ts",
     "./vscode/uris": "./src/vscode/uris.ts",
     "./tasks/submission": "./src/tasks/submission.ts",

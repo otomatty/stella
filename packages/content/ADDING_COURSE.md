@@ -213,7 +213,6 @@ VS Code を入れる前に読む単元 (`dev-env-basics` の U00〜U01) は、`u
 - 置けるのは、前提 (`prerequisites`) が無く、`audience` が `catalog` の講座だけです (いまは `dev-env-basics` だけ)。前提のある講座の本文は、スキルツリーの霧やロックの向こうにあるので公開しません
 - 違反は `bun run content:check` が落とします。`"public"` は `true` / `false` だけを受け付けます
 - 印は seed が D1 `lessons.public` に書き、公開 API (`GET /api/public/units`・`GET /api/public/lessons/:id`) だけが読みます。外せば次の seed で公開が止まります。`unit.json` は単元の内容指紋 (`references.json` の `contentHash`) に含まれないので、印を付け外ししても指紋は変わりません
-- 公開するテナントは API の `PUBLIC_CONTENT_TENANT_ID` (`apps/api/wrangler.toml` の `[vars]`、`ses`) です
 
 ## A. 新しい講座を作る（既定）
 

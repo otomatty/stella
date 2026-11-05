@@ -68,7 +68,7 @@ export function useStageEnrollments(stageId: string | null): UseStageEnrollments
 
 /**
  * 選択中の受講者たちの enrollment。 受講登録画面は受講生を選んでから教材を割り当てるため、
- * 選択が変わるたびにその人数ぶんだけ取り直す (テナント全件は取らない)。
+ * 選択が変わるたびにその人数ぶんだけ取り直す (全件は取らない)。
  */
 export function useUsersEnrollments(userIds: string[]): UseStageEnrollmentsResult {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
@@ -126,7 +126,7 @@ interface UseEnrollmentSummariesResult {
 }
 
 /** 受講者ごとの割当件数サマリ。 受講登録画面の受講者一覧バッジに使う。 */
-export function useEnrollmentSummaries(tenantId: string | null): UseEnrollmentSummariesResult {
+export function useEnrollmentSummaries(enabled = true): UseEnrollmentSummariesResult {
   const [summaries, setSummaries] = useState<Map<string, EnrollmentSummaryRow>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +134,7 @@ export function useEnrollmentSummaries(tenantId: string | null): UseEnrollmentSu
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!tenantId) {
+    if (!enabled) {
       setSummaries(new Map());
       setError(null);
       setLoading(false);
@@ -152,7 +152,7 @@ export function useEnrollmentSummaries(tenantId: string | null): UseEnrollmentSu
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [tenantId]);
+  }, [enabled]);
 
   useEffect(() => {
     void refetch();

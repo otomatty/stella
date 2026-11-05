@@ -14,7 +14,7 @@ type Submission = typeof submissions.$inferSelect;
 export function reviewNotification(
   before: Pick<
     Submission,
-    "id" | "tenantId" | "studentId" | "assignmentTitle" | "stageTitle" | "reviewedAt" | "verdict"
+    "id" | "studentId" | "assignmentTitle" | "stageTitle" | "reviewedAt" | "verdict"
   >,
   verdict: "pass" | "resubmit" | "fail",
 ): typeof notifications.$inferInsert | null {
@@ -23,7 +23,6 @@ export function reviewNotification(
   if (corrected && before.verdict === verdict) return null;
   return {
     userId: before.studentId,
-    tenantId: before.tenantId,
     type: "review_completed",
     title: `${before.assignmentTitle || "課題"} の添削${corrected ? "結果が変更されました" : "が完了しました"}`,
     body:

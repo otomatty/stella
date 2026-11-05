@@ -3,7 +3,7 @@
  *
  * アプリ層認可 (旧 RLS の置き換え):
  *   - 受講者は自分の enrollment のみ read … GET /api/enrollments/mine
- *   - instructor/admin は同テナントを read … 他ルートは requireRole + tenant 突合
+ *   - instructor/admin は read … 他ルートは requireRole
  *
  * ## Phase 3b: 割当は退役した
  *
@@ -89,7 +89,7 @@ enrollmentsRoute.get("/api/enrollments/mine", async (c) => {
 });
 
 /**
- * staff: 受講者ごとの割当件数サマリ (同テナント)。
+ * staff: 受講者ごとの割当件数サマリ。
  *
  * 受講登録画面の受講者一覧はバッジ (割当 n 件 / 期限超過 n 件) しか要らないので、
  * enrollment 行を全部返さず集計だけ返す。 行数は「登録のある受講者数」で頭打ちになる。
@@ -118,7 +118,6 @@ enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
           and ${enrollments.status} <> 'completed' then 1 else 0 end)`,
       })
       .from(enrollments)
-      .where(eq(enrollments.tenantId, caller.tenantId))
       .groupBy(enrollments.userId);
     return c.json({
       rows: rows.map((row) => ({
@@ -133,10 +132,10 @@ enrollmentsRoute.get("/api/enrollments/summary", async (c) => {
 });
 
 /**
- * staff: enrollment 一覧 (常に同テナントに限定)。
+ * staff: enrollment 一覧。
  *
  * `stageId` / `userId` / `userIds` (カンマ区切り, 最大 50) のいずれかが必須。
- * 無条件の全件取得は、 テナントが育つと受講者数 × ステージ数に比例して応答が膨らむため許さない
+ * 無条件の全件取得は、 受講者数 × ステージ数に比例して応答が膨らむため許さない
  * (受講者一覧の件数表示は `/api/enrollments/summary` を使う)。
  */
 enrollmentsRoute.get("/api/enrollments", async (c) => {
@@ -159,7 +158,6 @@ enrollmentsRoute.get("/api/enrollments", async (c) => {
       .from(enrollments)
       .where(
         and(
-          eq(enrollments.tenantId, caller.tenantId),
           ...(stageId ? [eq(enrollments.stageId, stageId)] : []),
           ...(userIds.length > 0 ? [inArray(enrollments.userId, userIds)] : []),
         ),
@@ -188,28 +186,23 @@ enrollmentsRoute.post("/api/enrollments/bulk", (c) =>
 );
 
 /**
- * 対象 enrollment が caller と同テナントであることを保証し、 監査ログ用に
- * 対象の受講者 / ステージを返す。
+ * 対象 enrollment を id で読み、 監査ログ用に対象の受講者 / ステージを返す。
+ * 無ければ 404。
  */
-async function assertSameTenant(
+async function requireEnrollment(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
   id: string,
-  tenantId: string,
 ): Promise<{ userId: string; stageId: string }> {
   const rows = await db
     .select({
-      tenant_id: enrollments.tenantId,
-      user_id: enrollments.userId,
-      stage_id: enrollments.stageId,
+      userId: enrollments.userId,
+      stageId: enrollments.stageId,
     })
     .from(enrollments)
     .where(eq(enrollments.id, id))
     .limit(1);
   if (!rows[0]) throw new ApiError("対象が見つかりません", 404);
-  if (rows[0].tenant_id !== tenantId) {
-    throw new ApiError("他テナントの登録は操作できません", 403);
-  }
-  return { userId: rows[0].user_id, stageId: rows[0].stage_id };
+  return rows[0];
 }
 
 /** staff: 期限 / 必須 / ステータスを更新する。 */
@@ -218,7 +211,7 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    const target = await assertSameTenant(db, id, caller.tenantId);
+    const target = await requireEnrollment(db, id);
     const patch = (await c.req.json()) as {
       due_at?: string | null;
       required?: boolean;
@@ -239,7 +232,7 @@ enrollmentsRoute.patch("/api/enrollments/:id", async (c) => {
     // staff が手で修了にした場合も 「星が点いた」 に含める (修了証の発行を伴わないため、
     // certificates 側の記録では拾えない)。
     if (patch.status === "completed") {
-      await recordStagePathEvents(db, caller.tenantId, "cleared", [
+      await recordStagePathEvents(db, "cleared", [
         { userId: target.userId, stageId: target.stageId },
       ]);
     }
@@ -262,7 +255,7 @@ enrollmentsRoute.delete("/api/enrollments/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
     const id = c.req.param("id");
-    const target = await assertSameTenant(db, id, caller.tenantId);
+    const target = await requireEnrollment(db, id);
     await db.delete(enrollments).where(eq(enrollments.id, id));
     await recordAudit(db, caller, {
       action: "enrollment_delete",

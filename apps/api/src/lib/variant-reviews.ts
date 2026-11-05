@@ -12,7 +12,7 @@
  *   (`reopenVariantStatements`)。受講者がやり直して合格したら、合格の記録と次の出題を付け直す。
  * - 出題した類題は、配布・提出・AI の一次レビュー・ヘルプ・手元の実行記録の既存の流れで使う
  *   (`canAccessTask`)。出題より前は、どの API も類題を返さない。
- * - どの読み書きも受講者のテナントと本人で絞る。
+ * - どの読み書きも受講者本人で絞る。
  */
 
 import { and, asc, eq, exists, inArray, lt, ne, notExists, notInArray } from "drizzle-orm";
@@ -55,7 +55,7 @@ const NEW_PATTERNS_PER_REQUEST = 3;
 const PASSED: readonly string[] = ["passed", "ai-passed"];
 
 type ReviewRow = typeof variantReviews.$inferSelect;
-type Scope = { tenantId: string; userId: string };
+type Scope = { userId: string };
 
 function isUniqueViolation(err: unknown): boolean {
   for (let e: unknown = err; e instanceof Error; e = e.cause)
@@ -63,22 +63,16 @@ function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-/** 受講者本人の出題の記録 1 行 (書き込みもテナントと本人で絞る)。 */
+/** 受講者本人の出題の記録 1 行 (書き込みも本人で絞る)。 */
 function ownRow(scope: Scope, id: string) {
-  return and(
-    eq(variantReviews.tenantId, scope.tenantId),
-    eq(variantReviews.userId, scope.userId),
-    eq(variantReviews.id, id),
-  );
+  return and(eq(variantReviews.userId, scope.userId), eq(variantReviews.id, id));
 }
 
 function rowsOf(db: Db, scope: Scope) {
   return db
     .select()
     .from(variantReviews)
-    .where(
-      and(eq(variantReviews.tenantId, scope.tenantId), eq(variantReviews.userId, scope.userId)),
-    )
+    .where(eq(variantReviews.userId, scope.userId))
     .orderBy(asc(variantReviews.pattern), asc(variantReviews.step));
 }
 
@@ -107,7 +101,6 @@ function readableTasksOf(db: Db, caller: Caller) {
       enrollments,
       and(
         eq(enrollments.stageId, stages.id),
-        eq(enrollments.tenantId, caller.tenantId),
         eq(enrollments.userId, caller.id),
         inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
       ),
@@ -116,14 +109,7 @@ function readableTasksOf(db: Db, caller: Caller) {
       taskProgress,
       and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, caller.id)),
     )
-    .where(
-      and(
-        eq(stages.tenantId, caller.tenantId),
-        eq(stages.status, "published"),
-        eq(stages.format, 2),
-        eq(tasks.active, true),
-      ),
-    );
+    .where(and(eq(stages.status, "published"), eq(stages.format, 2), eq(tasks.active, true)));
 }
 type ReadableTask = Awaited<ReturnType<typeof readableTasksOf>>[number];
 
@@ -141,7 +127,6 @@ async function firstPassAssisted(
 ): Promise<boolean> {
   const [pass] = await db
     .select({
-      tenantId: submissions.tenantId,
       submittedAt: submissions.submittedAt,
       supportLog: submissions.supportLog,
       submissionMode: submissions.submissionMode,
@@ -149,7 +134,6 @@ async function firstPassAssisted(
     .from(submissions)
     .where(
       and(
-        eq(submissions.tenantId, scope.tenantId),
         eq(submissions.studentId, scope.userId),
         eq(submissions.taskId, taskId),
         eq(submissions.verdict, "pass"),
@@ -230,7 +214,6 @@ async function insertSlot(
     .insert(variantReviews)
     .values({
       id,
-      tenantId: scope.tenantId,
       userId: scope.userId,
       pattern,
       step: slot.step,
@@ -258,7 +241,6 @@ async function insertSlot(
             .from(previous)
             .where(
               and(
-                eq(previous.tenantId, scope.tenantId),
                 eq(previous.userId, scope.userId),
                 eq(previous.pattern, pattern),
                 eq(previous.step, after.step),
@@ -472,7 +454,7 @@ export async function loadTodayVariant(
   caller: Caller,
   now = new Date(),
 ): Promise<TodayVariantReview | null> {
-  const scope = { tenantId: caller.tenantId, userId: caller.id };
+  const scope = { userId: caller.id };
   const today = toStudyDate(now);
   let rows = await rowsOf(db, scope);
   if (await syncIssued(db, scope, rows, now)) rows = await rowsOf(db, scope);
@@ -532,16 +514,16 @@ export async function loadTodayVariant(
  */
 export async function reopenVariantStatements(
   db: Db,
-  row: { tenantId: string; studentId: string; taskId: string },
+  row: { studentId: string; taskId: string },
   now: Date,
 ): Promise<BatchItem<"sqlite">[]> {
-  const scope = { tenantId: row.tenantId, userId: row.studentId };
+  const scope = { userId: row.studentId };
   // 読んでから書く形にしない。今日の類題を開いた要求が同時に合格を写す・次の出題を積むので、
   // batch を書く時点の記録に条件で当てる (合格を写すのが先なら戻し、後なら写す側が進捗を見て止まる)。
   const revoked = alias(variantReviews, "revoked");
   const issuedLater = alias(variantReviews, "issued_later");
   const ownOf = (table: typeof variantReviews | typeof revoked | typeof issuedLater) =>
-    and(eq(table.tenantId, scope.tenantId), eq(table.userId, scope.userId));
+    eq(table.userId, scope.userId);
   /** 覆した類題の合格の記録より後の、同じパターンの段か。 */
   const afterRevoked = (table: typeof variantReviews | typeof issuedLater) =>
     exists(
@@ -610,14 +592,13 @@ export async function reopenVariantStatements(
  */
 export async function variantRetentionSkills(
   db: Db,
-  row: { tenantId: string; studentId: string; taskId: string; pattern: string; submittedAt: Date },
+  row: { studentId: string; taskId: string; pattern: string; submittedAt: Date },
 ): Promise<Set<string> | null> {
   const [review] = await db
     .select({ issuedAt: variantReviews.issuedAt })
     .from(variantReviews)
     .where(
       and(
-        eq(variantReviews.tenantId, row.tenantId),
         eq(variantReviews.userId, row.studentId),
         eq(variantReviews.variantTaskId, row.taskId),
         inArray(variantReviews.purpose, [...SPACED_VARIANT_PURPOSES]),
@@ -633,10 +614,8 @@ export async function variantRetentionSkills(
     .innerJoin(tasks, eq(tasks.id, submissions.taskId))
     .where(
       and(
-        eq(skillEvidence.tenantId, row.tenantId),
         eq(skillEvidence.userId, row.studentId),
         eq(skillEvidence.assisted, false),
-        eq(submissions.tenantId, row.tenantId),
         eq(submissions.studentId, row.studentId),
         eq(tasks.pattern, row.pattern),
         ne(submissions.taskId, row.taskId),
@@ -650,13 +629,13 @@ export async function variantRetentionSkills(
 
 /**
  * 講師・管理者向け: パターンごとの類題の在庫と、在庫切れで待っている受講者 (#39)。
- * テナントの講座の課題があるパターンと、在庫切れの出題があるパターンを並べ、待っている
+ * 講座の課題があるパターンと、在庫切れの出題があるパターンを並べ、待っている
  * 受講者のいるパターンを先にする。出題の記録がある受講者ごとに、まだ出していない類題の数も
  * 数え、いちばん少ない人の残りを返す (在庫が近く尽きるかを見るため)。未見の残りは、その受講者に
  * 出せる類題 (受講者が読めるステージのもの) だけで数え、今は出題されない受講者 (そのパターンの
  * 読める練習が無い) は受講者・未見の残り・待っている受講者に数えない。
  */
-export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantStockSummary[]> {
+export async function loadVariantStock(db: Db): Promise<VariantStockSummary[]> {
   const [taskRows, records, readable, waiting] = await Promise.all([
     db
       .select({
@@ -673,9 +652,7 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(eq(stages.tenantId, caller.tenantId), eq(stages.format, 2), eq(tasks.active, true)),
-      )
+      .where(and(eq(stages.format, 2), eq(tasks.active, true)))
       .orderBy(asc(stages.title), asc(sections.order), asc(tasks.order)),
     db
       .select({
@@ -683,17 +660,11 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
         pattern: variantReviews.pattern,
         variantTaskId: variantReviews.variantTaskId,
       })
-      .from(variantReviews)
-      .where(eq(variantReviews.tenantId, caller.tenantId)),
+      .from(variantReviews),
     db
       .select({ userId: enrollments.userId, stageId: enrollments.stageId })
       .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.tenantId, caller.tenantId),
-          inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
-        ),
-      ),
+      .where(inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES])),
     db
       .select({
         userId: variantReviews.userId,
@@ -704,13 +675,7 @@ export async function loadVariantStock(db: Db, caller: Caller): Promise<VariantS
       })
       .from(variantReviews)
       .innerJoin(profiles, eq(profiles.id, variantReviews.userId))
-      .where(
-        and(
-          eq(variantReviews.tenantId, caller.tenantId),
-          eq(profiles.tenantId, caller.tenantId),
-          eq(variantReviews.status, "out-of-stock"),
-        ),
-      )
+      .where(eq(variantReviews.status, "out-of-stock"))
       .orderBy(asc(variantReviews.dueOn)),
   ]);
   const summaries = new Map<string, VariantStockSummary>();

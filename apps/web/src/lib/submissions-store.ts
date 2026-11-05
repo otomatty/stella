@@ -2,17 +2,16 @@
  * 提出物ストア (Issue #8 — 講師添削ワークフロー)。
  *
  * - バックエンド未設定: localStorage + fixtures シード (デモ / Tweaks)
- * - バックエンド設定済み: `submissions` テーブル (RLS)。実データは PATCH await
+ * - バックエンド設定済み: `submissions` テーブル。実データは PATCH await
  */
 
 import type { Submission, ReviewVerdict } from "@stella/shared/review/types";
 import { REVIEW_QUEUE, SUBMITTED_CODE, AI_SUGGESTIONS, RUBRIC } from "@/demo/fixtures";
-import type { Tenant } from "@/data/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { ApiClientError } from "@/lib/api-client";
 import {
   fetchSubmissionById,
-  fetchSubmissionsForTenant,
+  fetchSubmissions,
   insertSubmission,
   patchSubmission,
   type InsertSubmissionInput,
@@ -36,23 +35,31 @@ const STORAGE_KEY = "lms_submissions_v1";
 
 type StoreV1 = {
   version: 1;
-  byTenant: Record<string, Submission[]>;
+  items: Submission[];
+};
+
+/** 以前の保存形。組織ごとに分けていたデモ提出を、読み込み時に 1 つの一覧へ畳む。 */
+type LegacyStore = {
+  version?: number;
+  items?: Submission[];
+  byTenant?: Record<string, Submission[]>;
 };
 
 let localCache: StoreV1 | null = null;
+let localLoaded = false;
 let storeVersion = 0;
 const listeners = new Set<() => void>();
-const listSnapshotCache = new Map<string, { version: number; snapshot: Submission[] }>();
+let listSnapshot: { version: number; snapshot: Submission[] } | null = null;
 
-/** バックエンドモード: テナント別インメモリキャッシュ */
-const remoteByTenant = new Map<string, Submission[]>();
+/** バックエンドモードのインメモリキャッシュ */
+let remoteItems: Submission[] = [];
 type RemoteFetchStatus = "idle" | "loading" | "success" | "error";
-const remoteFetchStatus = new Map<string, RemoteFetchStatus>();
+let remoteStatus: RemoteFetchStatus = "idle";
 const remotePatchGen = new Map<string, number>();
-/** テナントごとの、最後に一覧を読み終えた時刻 (取り直しの間引きに使う、#34)。 */
-const remoteFetchedAt = new Map<string, number>();
-/** 取り直し中のテナント (同じテナントの取り直しを重ねない)。 */
-const remoteRefreshing = new Set<string>();
+/** 最後に一覧を読み終えた時刻 (取り直しの間引きに使う、#34)。 */
+let remoteFetchedAtMs = 0;
+/** 取り直し中 (重ねない)。 */
+let remoteRefreshing = false;
 /** 提出ごとの、講師が手元で最後に書いた時刻と保存中の提出 (取り直しで巻き戻さない)。 */
 const localWriteAt = new Map<string, number>();
 const patchesInFlight = new Set<string>();
@@ -67,38 +74,30 @@ function isRemotePersistence(): boolean {
 
 function emit() {
   storeVersion += 1;
-  listSnapshotCache.clear();
+  listSnapshot = null;
   listeners.forEach((fn) => {
     fn();
   });
 }
 
-function remoteList(tenantId: Tenant["id"]): Submission[] {
-  return remoteByTenant.get(tenantId) ?? [];
-}
-
-function setRemoteList(tenantId: Tenant["id"], list: Submission[]): void {
-  remoteByTenant.set(
-    tenantId,
-    [...list].sort((a, b) => b.submittedAt - a.submittedAt),
-  );
+function setRemoteList(list: Submission[]): void {
+  remoteItems = [...list].sort((a, b) => b.submittedAt - a.submittedAt);
   emit();
 }
 
-function ensureRemoteFetch(tenantId: Tenant["id"]): void {
+function ensureRemoteFetch(): void {
   if (!isRemotePersistence()) return;
-  const status = remoteFetchStatus.get(tenantId) ?? "idle";
-  if (status === "loading" || status === "success") return;
+  if (remoteStatus === "loading" || remoteStatus === "success") return;
 
-  remoteFetchStatus.set(tenantId, "loading");
-  void fetchSubmissionsForTenant(tenantId)
+  remoteStatus = "loading";
+  void fetchSubmissions()
     .then((list) => {
-      remoteFetchStatus.set(tenantId, "success");
-      remoteFetchedAt.set(tenantId, Date.now());
-      setRemoteList(tenantId, list);
+      remoteStatus = "success";
+      remoteFetchedAtMs = Date.now();
+      setRemoteList(list);
     })
     .catch((err) => {
-      remoteFetchStatus.set(tenantId, "error");
+      remoteStatus = "error";
       console.error("[submissions-store] remote fetch failed", err);
     });
 }
@@ -108,28 +107,24 @@ function ensureRemoteFetch(tenantId: Tenant["id"]): void {
  * 初回の読み込み中・取り直し中は重ねず、`force` でなければ直前に読んだばかりのときも取りに
  * 行かない。取り直しの間に講師が保存した・保存中の行は手元の行を残す。
  */
-export async function refreshSubmissions(
-  tenantId: Tenant["id"],
-  options: { force?: boolean } = {},
-): Promise<void> {
+export async function refreshSubmissions(options: { force?: boolean } = {}): Promise<void> {
   if (!isRemotePersistence()) return;
-  if (remoteFetchStatus.get(tenantId) !== "success") {
+  if (remoteStatus !== "success") {
     // 初回がまだなら、初回の読み込みに任せる (失敗していたら読み直す)。
-    if (remoteFetchStatus.get(tenantId) === "error") remoteFetchStatus.set(tenantId, "idle");
-    ensureRemoteFetch(tenantId);
+    if (remoteStatus === "error") remoteStatus = "idle";
+    ensureRemoteFetch();
     return;
   }
-  if (remoteRefreshing.has(tenantId)) return;
-  if (!options.force && isFetchFresh(remoteFetchedAt.get(tenantId), Date.now())) return;
-  remoteRefreshing.add(tenantId);
+  if (remoteRefreshing) return;
+  if (!options.force && isFetchFresh(remoteFetchedAtMs, Date.now())) return;
+  remoteRefreshing = true;
   const startedAt = Date.now();
   try {
-    const list = await fetchSubmissionsForTenant(tenantId);
-    remoteFetchedAt.set(tenantId, Date.now());
+    const list = await fetchSubmissions();
+    remoteFetchedAtMs = Date.now();
     setRemoteList(
-      tenantId,
       mergeFetchedRows(
-        remoteList(tenantId),
+        remoteItems,
         list,
         (id) => patchesInFlight.has(id) || (localWriteAt.get(id) ?? 0) >= startedAt,
       ),
@@ -137,7 +132,7 @@ export async function refreshSubmissions(
   } catch (err) {
     console.error("[submissions-store] remote refresh failed", err);
   } finally {
-    remoteRefreshing.delete(tenantId);
+    remoteRefreshing = false;
   }
 }
 
@@ -174,26 +169,28 @@ function toSubmissionPatch(patch: Partial<Submission>): SubmissionPatch {
   return out;
 }
 
-function loadLocalStore(): StoreV1 {
-  if (localCache) return localCache;
-  if (typeof window === "undefined") {
-    localCache = { version: 1, byTenant: {} };
-    return localCache;
-  }
+/** 保存が無いときは null (まだシードしていない)。空配列は「提出が無い」で、シードし直さない。 */
+function loadLocalStore(): StoreV1 | null {
+  if (localLoaded) return localCache;
+  localLoaded = true;
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as StoreV1;
+      const parsed = JSON.parse(raw) as LegacyStore;
+      if (parsed?.version === 1 && Array.isArray(parsed.items)) {
+        localCache = { version: 1, items: parsed.items };
+        return localCache;
+      }
       if (parsed?.version === 1 && parsed.byTenant) {
-        localCache = parsed;
+        localCache = { version: 1, items: Object.values(parsed.byTenant).flat() };
         return localCache;
       }
     }
   } catch {
     /* ignore */
   }
-  localCache = { version: 1, byTenant: {} };
-  return localCache;
+  return null;
 }
 
 function saveLocalStore(store: StoreV1): boolean {
@@ -206,15 +203,9 @@ function saveLocalStore(store: StoreV1): boolean {
     }
   }
   localCache = store;
+  localLoaded = true;
   emit();
   return true;
-}
-
-function withTenantList(store: StoreV1, tenantId: string, list: Submission[]): StoreV1 {
-  return {
-    ...store,
-    byTenant: { ...store.byTenant, [tenantId]: list },
-  };
 }
 
 function relativeSubmittedAt(ms: number): string {
@@ -227,7 +218,7 @@ function relativeSubmittedAt(ms: number): string {
   return `${days}日前`;
 }
 
-function seedForTenant(tenantId: Tenant["id"]): Submission[] {
+function seedSubmissions(): Submission[] {
   const now = Date.now();
   return REVIEW_QUEUE.map((r, idx) => {
     const hoursAgo = (idx + 1) * 2;
@@ -235,7 +226,6 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
     const isFirst = r.id === "r1";
     return {
       id: r.id,
-      tenantId,
       studentName: r.student,
       studentInitials: r.initials,
       avatarTone: r.c,
@@ -259,41 +249,37 @@ function seedForTenant(tenantId: Tenant["id"]): Submission[] {
   });
 }
 
-function localTenantList(store: StoreV1, tenantId: Tenant["id"]): Submission[] {
-  const list = store.byTenant[tenantId];
-  if (list !== undefined) return list;
-  const seeded = seedForTenant(tenantId);
-  const next = withTenantList(store, tenantId, seeded);
-  if (!saveLocalStore(next)) return seeded;
-  return loadLocalStore().byTenant[tenantId] ?? seeded;
+function localList(): Submission[] {
+  const store = loadLocalStore();
+  if (store) return store.items;
+  const seeded = seedSubmissions();
+  if (!saveLocalStore({ version: 1, items: seeded })) return seeded;
+  return loadLocalStore()?.items ?? seeded;
 }
 
-function snapshotList(tenantId: Tenant["id"], list: Submission[]): Submission[] {
-  const cached = listSnapshotCache.get(tenantId);
-  if (cached && cached.version === storeVersion) {
-    return cached.snapshot;
+function snapshotList(list: Submission[]): Submission[] {
+  if (listSnapshot && listSnapshot.version === storeVersion) {
+    return listSnapshot.snapshot;
   }
   const snapshot = [...list].sort((a, b) => b.submittedAt - a.submittedAt);
-  listSnapshotCache.set(tenantId, { version: storeVersion, snapshot });
+  listSnapshot = { version: storeVersion, snapshot };
   return snapshot;
 }
 
-export function listSubmissions(tenantId: Tenant["id"]): Submission[] {
+export function listSubmissions(): Submission[] {
   if (isRemotePersistence()) {
-    ensureRemoteFetch(tenantId);
-    return snapshotList(tenantId, remoteList(tenantId));
+    ensureRemoteFetch();
+    return snapshotList(remoteItems);
   }
-  const store = loadLocalStore();
-  return snapshotList(tenantId, localTenantList(store, tenantId));
+  return snapshotList(localList());
 }
 
-export function getSubmission(tenantId: Tenant["id"], id: string): Submission | undefined {
+export function getSubmission(id: string): Submission | undefined {
   if (isRemotePersistence()) {
-    ensureRemoteFetch(tenantId);
-    return remoteList(tenantId).find((s) => s.id === id);
+    ensureRemoteFetch();
+    return remoteItems.find((s) => s.id === id);
   }
-  const store = loadLocalStore();
-  return localTenantList(store, tenantId).find((s) => s.id === id);
+  return localList().find((s) => s.id === id);
 }
 
 /**
@@ -306,26 +292,22 @@ function mergeRow(before: Submission | undefined, row: Submission): Submission {
   return { ...before, ...defined } as Submission;
 }
 
-function replaceRemote(tenantId: Tenant["id"], id: string, row: Submission): void {
-  const list = remoteList(tenantId);
-  const idx = list.findIndex((s) => s.id === id);
+function replaceRemote(id: string, row: Submission): void {
+  const idx = remoteItems.findIndex((s) => s.id === id);
   if (idx < 0) return;
   markLocalWrite(id);
-  const next = [...list];
-  next[idx] = mergeRow(list[idx], row);
-  setRemoteList(tenantId, next);
+  const next = [...remoteItems];
+  next[idx] = mergeRow(remoteItems[idx], row);
+  setRemoteList(next);
 }
 
 /** 提出 1 件を取り直してキャッシュに重ねる (事後確認の操作のあとなど)。 */
-export async function refreshSubmission(
-  tenantId: Tenant["id"],
-  id: string,
-): Promise<Submission | undefined> {
-  if (!isRemotePersistence()) return getSubmission(tenantId, id);
+export async function refreshSubmission(id: string): Promise<Submission | undefined> {
+  if (!isRemotePersistence()) return getSubmission(id);
   try {
     const row = await fetchSubmissionById(id);
-    replaceRemote(tenantId, id, row);
-    return remoteList(tenantId).find((s) => s.id === id);
+    replaceRemote(id, row);
+    return remoteItems.find((s) => s.id === id);
   } catch (err) {
     console.error("[submissions-store] refresh failed", err);
     return undefined;
@@ -333,16 +315,15 @@ export async function refreshSubmission(
 }
 
 /** 409 のときは講師のキャッシュを最新化してから知らせる (古いコードを表示し続けない)。 */
-async function refreshAfterConflict(tenantId: Tenant["id"], id: string): Promise<void> {
+async function refreshAfterConflict(id: string): Promise<void> {
   try {
-    replaceRemote(tenantId, id, await fetchSubmissionById(id));
+    replaceRemote(id, await fetchSubmissionById(id));
   } catch (err) {
     console.error("[submissions-store] conflict refresh failed", err);
   }
 }
 
 async function persistRemotePatch(
-  tenantId: Tenant["id"],
   id: string,
   patch: Partial<Submission>,
   rollback: Submission,
@@ -361,21 +342,20 @@ async function persistRemotePatch(
   try {
     const saved = mergeRow(rollback, await patchSubmission(id, apiPatch));
     if (remotePatchGen.get(id) !== nextGen) return saved;
-    const list = remoteList(tenantId);
-    const idx = list.findIndex((s) => s.id === id);
+    const idx = remoteItems.findIndex((s) => s.id === id);
     if (idx >= 0) {
-      const next = [...list];
+      const next = [...remoteItems];
       next[idx] = saved;
-      setRemoteList(tenantId, next);
+      setRemoteList(next);
     }
     return saved;
   } catch (err) {
     if (remotePatchGen.get(id) === nextGen) {
       console.error("[submissions-store] remote patch failed", err);
-      replaceRemote(tenantId, id, rollback);
+      replaceRemote(id, rollback);
     }
     if (err instanceof ApiClientError && err.status === 409) {
-      await refreshAfterConflict(tenantId, id);
+      await refreshAfterConflict(id);
       throw new SubmissionConflictError(err.message);
     }
     return undefined;
@@ -386,50 +366,44 @@ async function persistRemotePatch(
 }
 
 export async function updateSubmission(
-  tenantId: Tenant["id"],
   id: string,
   patch: Partial<Submission>,
   options: { expectUndecided?: boolean } = {},
 ): Promise<Submission | undefined> {
   if (isRemotePersistence()) {
-    const list = remoteList(tenantId);
-    const idx = list.findIndex((s) => s.id === id);
+    const idx = remoteItems.findIndex((s) => s.id === id);
     if (idx < 0) return undefined;
-    const before = list[idx];
+    const before = remoteItems[idx];
     if (!before) return undefined;
     const updated = { ...before, ...patch };
-    const next = list.map((s, i) => (i === idx ? updated : s));
-    setRemoteList(tenantId, next);
-    return persistRemotePatch(tenantId, id, patch, before, options);
+    setRemoteList(remoteItems.map((s, i) => (i === idx ? updated : s)));
+    return persistRemotePatch(id, patch, before, options);
   }
 
-  const store = loadLocalStore();
-  const list = localTenantList(store, tenantId);
+  const list = localList();
   const idx = list.findIndex((s) => s.id === id);
   if (idx < 0) return undefined;
   const updated = { ...list[idx], ...patch };
   const newList = list.map((s, i) => (i === idx ? updated : s));
-  if (!saveLocalStore(withTenantList(store, tenantId, newList))) return undefined;
+  if (!saveLocalStore({ version: 1, items: newList })) return undefined;
   return updated;
 }
 
-export function createSubmission(
-  tenantId: Tenant["id"],
-  input: Omit<
-    Submission,
-    | "id"
-    | "tenantId"
-    | "submittedAt"
-    | "status"
-    | "aiReady"
-    | "aiSuggestions"
-    | "rubric"
-    | "reviewNotes"
-    | "verdict"
-    | "attempt"
-    | "priority"
-  > & { priority?: Submission["priority"]; attempt?: number },
-): Submission | null {
+type NewSubmissionInput = Omit<
+  Submission,
+  | "id"
+  | "submittedAt"
+  | "status"
+  | "aiReady"
+  | "aiSuggestions"
+  | "rubric"
+  | "reviewNotes"
+  | "verdict"
+  | "attempt"
+  | "priority"
+> & { priority?: Submission["priority"]; attempt?: number };
+
+export function createSubmission(input: NewSubmissionInput): Submission | null {
   const base = {
     ...input,
     priority: input.priority ?? "normal",
@@ -444,13 +418,11 @@ export function createSubmission(
     return null;
   }
 
-  const store = loadLocalStore();
-  const list = localTenantList(store, tenantId);
+  const list = localList();
   const id =
     typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `sub-${Date.now()}`;
   const submission: Submission = {
     id,
-    tenantId,
     submittedAt: Date.now(),
     status: "pending",
     aiReady: false,
@@ -460,28 +432,11 @@ export function createSubmission(
     verdict: null,
     ...base,
   };
-  const newList = [submission, ...list];
-  if (!saveLocalStore(withTenantList(store, tenantId, newList))) return null;
+  if (!saveLocalStore({ version: 1, items: [submission, ...list] })) return null;
   return submission;
 }
 
-export async function createSubmissionAsync(
-  tenantId: Tenant["id"],
-  input: Omit<
-    Submission,
-    | "id"
-    | "tenantId"
-    | "submittedAt"
-    | "status"
-    | "aiReady"
-    | "aiSuggestions"
-    | "rubric"
-    | "reviewNotes"
-    | "verdict"
-    | "attempt"
-    | "priority"
-  > & { priority?: Submission["priority"]; attempt?: number },
-): Promise<Submission | null> {
+export async function createSubmissionAsync(input: NewSubmissionInput): Promise<Submission | null> {
   const base = {
     ...input,
     priority: input.priority ?? "normal",
@@ -489,15 +444,15 @@ export async function createSubmissionAsync(
   };
 
   if (!isRemotePersistence()) {
-    return createSubmission(tenantId, input);
+    return createSubmission(input);
   }
 
   try {
-    const created = await insertSubmission(tenantId, toInsertPayload(base));
+    const created = await insertSubmission(toInsertPayload(base));
     markLocalWrite(created.id);
     // 同一課題の未添削がある場合、 サーバは既存行を upsert して返す (Issue #9)。
     // 素直に先頭へ足すと同じ id が 2 つ並ぶので、 id で置き換える。
-    setRemoteList(tenantId, [created, ...remoteList(tenantId).filter((s) => s.id !== created.id)]);
+    setRemoteList([created, ...remoteItems.filter((s) => s.id !== created.id)]);
     return created;
   } catch (err) {
     console.error("[submissions-store] remote insert failed", err);
@@ -510,7 +465,6 @@ export async function createSubmissionAsync(
  * (#34)。別の講師が先に確定していれば `SubmissionConflictError` になる。
  */
 export async function finalizeReview(
-  tenantId: Tenant["id"],
   id: string,
   verdict: ReviewVerdict,
   patch: {
@@ -522,7 +476,6 @@ export async function finalizeReview(
 ): Promise<Submission | undefined> {
   const status = verdict === "pass" ? "passed" : verdict === "fail" ? "failed" : "resubmit";
   return updateSubmission(
-    tenantId,
     id,
     {
       ...patch,
@@ -538,13 +491,12 @@ export function formatSubmittedAt(ms: number): string {
 }
 
 /** 人のレビューを待っている件数 (AI が確認中・置き換えた提出は数えない、#34)。 */
-export function countPending(tenantId: Tenant["id"]): number {
+export function countPending(): number {
   if (isRemotePersistence()) {
-    ensureRemoteFetch(tenantId);
-    return remoteList(tenantId).filter(needsHumanReview).length;
+    ensureRemoteFetch();
+    return remoteItems.filter(needsHumanReview).length;
   }
-  const store = loadLocalStore();
-  return localTenantList(store, tenantId).filter(needsHumanReview).length;
+  return localList().filter(needsHumanReview).length;
 }
 
 export function subscribeSubmissions(listener: () => void): () => void {
@@ -552,6 +504,7 @@ export function subscribeSubmissions(listener: () => void): () => void {
   const onStorage = (e: StorageEvent) => {
     if (e.key === STORAGE_KEY) {
       localCache = null;
+      localLoaded = false;
       emit();
     }
   };

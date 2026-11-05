@@ -70,7 +70,6 @@ async function selectAccessibleCards(
     .where(
       and(
         eq(reviewCards.userId, caller.id),
-        eq(stages.tenantId, caller.tenantId),
         eq(stages.status, "published"),
         or(eq(stages.format, 1), eq(quizzes.source, "knowledge")),
         extra,
@@ -98,7 +97,7 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
       submittedAt: quizAttempts.submittedAt,
     })
     .from(quizAttempts)
-    .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.tenantId, caller.tenantId)))
+    .where(eq(quizAttempts.userId, caller.id))
     .orderBy(asc(quizAttempts.submittedAt));
   if (attempts.length === 0) return;
 
@@ -166,7 +165,7 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
       ];
     });
     if (outcomes.length === 0) continue;
-    await applyOutcomesToCards(db, caller.tenantId, caller.id, outcomes, attempt.submittedAt);
+    await applyOutcomesToCards(db, caller.id, outcomes, attempt.submittedAt);
   }
 }
 
@@ -309,7 +308,6 @@ srsRoute.post("/api/srs/answer", async (c) => {
     const now = new Date();
     const updated = await applyOutcomesToCards(
       db,
-      caller.tenantId,
       caller.id,
       [{ questionId, correct: isCorrect }],
       now,

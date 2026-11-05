@@ -49,7 +49,6 @@ describe("planLessonProgressWrites", () => {
   it("12 行以上でも各 SQL のバインド数が D1 上限以下", () => {
     const batches = planLessonProgressWrites(
       dummyDb(),
-      "ses",
       "seed-learner",
       Array.from({ length: 20 }, (_, i) => row(i, true)),
     );
@@ -64,14 +63,13 @@ describe("planLessonProgressWrites", () => {
   });
 
   it("空配列は SQL を組まず空の batch を返す", () => {
-    expect(planLessonProgressWrites(dummyDb(), "ses", "seed-learner", [])).toEqual([]);
+    expect(planLessonProgressWrites(dummyDb(), "seed-learner", [])).toEqual([]);
   });
 
   it("1 行と 11 行は進捗 upsert が 1 文、12 行で 2 文に分かれる", () => {
     const upsertCount = (n: number) =>
       planLessonProgressWrites(
         dummyDb(),
-        "ses",
         "seed-learner",
         Array.from({ length: n }, (_, i) => row(i, false)),
       ).filter((batch) =>
@@ -83,7 +81,7 @@ describe("planLessonProgressWrites", () => {
   });
 
   it("日別ログの加算文は同じチャンクの進捗 upsert より前", () => {
-    const [batch] = planLessonProgressWrites(dummyDb(), "ses", "seed-learner", [
+    const [batch] = planLessonProgressWrites(dummyDb(), "seed-learner", [
       row(1, true),
       row(2, true),
     ]);
@@ -107,7 +105,6 @@ describe("assertProgressSyncSize", () => {
   it("上限件数の最悪ケースでも D1 の 1 呼び出しクエリ上限を超えない", () => {
     const batches = planLessonProgressWrites(
       dummyDb(),
-      "ses",
       "seed-learner",
       Array.from({ length: MAX_PROGRESS_SYNC_ROWS }, (_, i) => row(i, true)),
     );

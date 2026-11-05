@@ -78,20 +78,16 @@ beforeEach(async () => {
   ).app;
   const definition = JSON.stringify({ skills: { assesses: ["html"] } });
   await db.batch([
-    db.insert(tenants).values([
-      { id: "ses", name: "SES" },
-      { id: "other", name: "Other" },
-    ]),
+    db.insert(tenants).values([{ id: "ses", name: "SES" }]),
     db.insert(profiles).values([
-      { id: "learner", tenantId: "ses", displayName: "受講者", role: "student" },
-      { id: "peer", tenantId: "ses", displayName: "別の受講者", role: "student" },
-      { id: "teacher", tenantId: "ses", displayName: "担当講師", role: "instructor" },
-      { id: "teacher2", tenantId: "ses", displayName: "担当のない講師", role: "instructor" },
-      { id: "outsider", tenantId: "other", displayName: "他テナントの講師", role: "instructor" },
+      { id: "learner", displayName: "受講者", role: "student" },
+      { id: "peer", displayName: "別の受講者", role: "student" },
+      { id: "teacher", displayName: "担当講師", role: "instructor" },
+      { id: "teacher2", displayName: "担当のない講師", role: "instructor" },
     ]),
     db.insert(stages).values([
-      { id: "stage", tenantId: "ses", slug: "dev-env-basics", title: "開発環境", format: 2 },
-      { id: "closed", tenantId: "ses", slug: "html-css-basics", title: "HTML", format: 2 },
+      { id: "stage", slug: "dev-env-basics", title: "開発環境", format: 2 },
+      { id: "closed", slug: "html-css-basics", title: "HTML", format: 2 },
     ]),
     db.insert(sections).values([
       { id: "unit", stageId: "stage", title: "入口" },
@@ -127,7 +123,6 @@ beforeEach(async () => {
     }),
     db.insert(skills).values({ id: "html", title: "HTML" }),
     db.insert(enrollments).values({
-      tenantId: "ses",
       userId: "learner",
       stageId: "stage",
       status: "active",
@@ -135,7 +130,7 @@ beforeEach(async () => {
     }),
     db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" }),
   ]);
-  await db.update(stages).set({ status: "published" }).where(eq(stages.tenantId, "ses"));
+  await db.update(stages).set({ status: "published" });
   streamChat.mockReset();
 });
 afterEach(() => database.sqlite.close());
@@ -249,7 +244,6 @@ async function seedSubmissions() {
   await db.insert(submissions).values([
     {
       id: "legacy-peer",
-      tenantId: "ses",
       studentId: "peer",
       stageTitle: "旧",
       assignmentTitle: "旧課題",
@@ -257,7 +251,6 @@ async function seedSubmissions() {
     },
     {
       id: "legacy-learner",
-      tenantId: "ses",
       studentId: "learner",
       stageTitle: "旧",
       assignmentTitle: "旧課題",
@@ -265,7 +258,6 @@ async function seedSubmissions() {
     },
     {
       id: "task-learner",
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -301,7 +293,6 @@ describe("担当の受講者だけに絞る", () => {
 
   it("講師ダッシュボードは assigned=mine で担当の受講者だけを数え、担当の人数を返す", async () => {
     await db.insert(enrollments).values({
-      tenantId: "ses",
       userId: "peer",
       stageId: "stage",
       status: "active",
@@ -324,7 +315,6 @@ describe("支援の記録 (GET /api/task-support)", () => {
     await db.insert(submissions).values([
       {
         id: "consult",
-        tenantId: "ses",
         studentId: "learner",
         taskId: "practice",
         taskContentHash: HASH,
@@ -342,7 +332,6 @@ describe("支援の記録 (GET /api/task-support)", () => {
       },
       {
         id: "submit",
-        tenantId: "ses",
         studentId: "learner",
         taskId: "practice",
         taskContentHash: HASH,
@@ -364,7 +353,6 @@ describe("支援の記録 (GET /api/task-support)", () => {
       notes: "受講者には見せない講師のメモ",
     });
     await db.insert(taskSupportEvents).values({
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       kind: "ai-chat",
@@ -399,7 +387,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
     expect(records[1]).toMatchObject({ counts: {}, events: [], localRuns: null });
   });
 
-  it("受講者は他人の記録と受講していないステージを見られない。講師は同じテナントの受講者だけ", async () => {
+  it("受講者は他人の記録と受講していないステージを見られない。講師は受講者の記録を読める", async () => {
     await seedSupport();
     expect((await get("/api/task-support?userId=learner", "peer")).status).toBe(403);
     expect((await get("/api/task-support?stageId=closed", "learner")).status).toBe(404);
@@ -408,7 +396,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
     const { tasks: records } = await json<{ tasks: TaskSupportRecord[] }>(teacher);
     // ステージを指定しなければ、記録のある課題だけ。
     expect(records.map((r) => r.taskId)).toEqual(["practice"]);
-    expect((await get("/api/task-support?userId=learner", "outsider")).status).toBe(404);
+    expect((await get("/api/task-support?userId=learner", "teacher2")).status).toBe(200);
   });
 
   it("ステージを省略しても、本人には今読めるステージの課題だけを返す", async () => {
@@ -429,7 +417,7 @@ describe("支援の記録 (GET /api/task-support)", () => {
     expect((await mine()).map((r) => r.taskId)).toEqual(["practice"]);
     await db.update(stages).set({ status: "draft" }).where(eq(stages.id, "stage"));
     expect(await mine()).toEqual([]);
-    // 講師はテナントの範囲で見る。
+    // 講師は受講者の支援記録を見る。
     const teacher = await json<{ tasks: TaskSupportRecord[] }>(
       await get("/api/task-support?userId=learner", "teacher"),
     );
@@ -440,7 +428,6 @@ describe("支援の記録 (GET /api/task-support)", () => {
 describe("支援の記録を習得の水準に反映する", () => {
   const caller = {
     id: "teacher",
-    tenantId: "ses",
     role: "instructor" as const,
     name: "担当講師",
     email: null,
@@ -448,7 +435,6 @@ describe("支援の記録を習得の水準に反映する", () => {
   async function submitAt(id: string, at: Date, mode: "submit" | "consult" = "submit") {
     await db.insert(submissions).values({
       id,
-      tenantId: "ses",
       studentId: "learner",
       taskId: "practice",
       taskContentHash: HASH,
@@ -467,7 +453,6 @@ describe("支援の記録を習得の水準に反映する", () => {
 
   it("提出より前の AI チャットがあれば支援付き。提出の後のチャットは数えない", async () => {
     await db.insert(taskSupportEvents).values({
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       kind: "ai-chat",
@@ -480,7 +465,6 @@ describe("支援の記録を習得の水準に反映する", () => {
     await db.delete(taskSupportEvents);
     await submitAt("after", new Date("2026-10-06T01:00:00Z"));
     await db.insert(taskSupportEvents).values({
-      tenantId: "ses",
       userId: "learner",
       taskId: "practice",
       kind: "ai-chat",
@@ -572,12 +556,11 @@ describe("つまずきの検知 (cron)", () => {
       .where(eq(notifications.type, "learner_stumble"))
       .orderBy(notifications.id);
   const keepActive = (date = "2026-10-13") =>
-    db.insert(studyActivity).values({ tenantId: "ses", userId: "learner", date, watchedSec: 60 });
+    db.insert(studyActivity).values({ userId: "learner", date, watchedSec: 60 });
   async function streak(taskId: string, count: number, startedAt: Date) {
     await db.insert(taskLocalRuns).values({
       userId: "learner",
       taskId,
-      tenantId: "ses",
       contentHash: HASH,
       failedRuns: count,
       failureStreak: count,
@@ -602,7 +585,7 @@ describe("つまずきの検知 (cron)", () => {
     await notifyStumbles(db, now);
     let sent = await stumbles();
     expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ userId: "teacher", tenantId: "ses" });
+    expect(sent[0]).toMatchObject({ userId: "teacher" });
     expect(sent[0]?.payload).toMatchObject({ signal: "local-failures", task_ids: ["practice"] });
     expect((await runRow("practice"))?.streakAlertedAt).toEqual(now);
 
@@ -644,7 +627,6 @@ describe("つまずきの検知 (cron)", () => {
   const bAttempt = (id: string, attempt: number, verdict: "pass" | "resubmit" | "fail") =>
     db.insert(submissions).values({
       id,
-      tenantId: "ses",
       studentId: "learner",
       taskId: "B",
       taskContentHash: HASH,
@@ -722,7 +704,6 @@ describe("つまずきの検知 (cron)", () => {
       const at = opts.at ?? new Date(now.getTime() - (20 - order) * HOUR);
       await db.insert(submissions).values({
         id,
-        tenantId: "ses",
         studentId: "learner",
         taskId: "practice",
         taskContentHash: HASH,
@@ -736,7 +717,6 @@ describe("つまずきの検知 (cron)", () => {
       });
       await db.insert(aiReviews).values({
         submissionId: id,
-        tenantId: "ses",
         taskId: "practice",
         taskContentHash: HASH,
         taskKind: "basic",
@@ -756,7 +736,6 @@ describe("つまずきの検知 (cron)", () => {
       const at = new Date(now.getTime() - (20 - order) * HOUR);
       await db.insert(submissions).values({
         id,
-        tenantId: "ses",
         studentId: "learner",
         taskId: "practice",
         taskContentHash: HASH,
@@ -775,7 +754,6 @@ describe("つまずきの検知 (cron)", () => {
       await db.update(submissions).set({ aiReviewStatus: outcome }).where(eq(submissions.id, id));
       await db.insert(aiReviews).values({
         submissionId: id,
-        tenantId: "ses",
         taskId: "practice",
         taskContentHash: HASH,
         taskKind: "basic",
@@ -803,7 +781,7 @@ describe("つまずきの検知 (cron)", () => {
       await notifyStumbles(db, now);
       let sent = await escalationAlerts();
       expect(sent).toHaveLength(1);
-      expect(sent[0]).toMatchObject({ userId: "teacher", tenantId: "ses" });
+      expect(sent[0]).toMatchObject({ userId: "teacher" });
       expect(sent[0]?.payload).toMatchObject({
         learner_id: "learner",
         submission_ids: [first, "judged-3", third],
@@ -952,10 +930,9 @@ describe("つまずきの検知 (cron)", () => {
       taskId: string,
       level: number,
       at: Date,
-      opts: { afterPass?: boolean; contentHash?: string; tenantId?: string; userId?: string } = {},
+      opts: { afterPass?: boolean; contentHash?: string; userId?: string } = {},
     ) =>
       db.insert(taskHelpOpens).values({
-        tenantId: opts.tenantId ?? "ses",
         userId: opts.userId ?? "learner",
         taskId,
         item: "hint",
@@ -987,7 +964,6 @@ describe("つまずきの検知 (cron)", () => {
       expect(sent).toHaveLength(1);
       expect(sent[0]).toMatchObject({
         userId: "teacher",
-        tenantId: "ses",
         title: "受講者さんがヒントを最後まで開きました",
         payload: { learner_id: "learner", signal: "hints-exhausted", task_ids: ["practice"] },
       });
@@ -1072,27 +1048,20 @@ describe("つまずきの検知 (cron)", () => {
       expect(sent.map((n) => n.payload.task_ids)).toEqual([["practice"], ["second"]]);
     });
 
-    it("担当のない受講者と、別のテナントの記録は知らせない", async () => {
+    it("担当のない受講者には知らせない", async () => {
       for (const level of [1, 2, 3])
         await open("practice", level, minutesAgo(30), { userId: "peer" });
-      for (const level of [1, 2, 3])
-        await open("practice", level, minutesAgo(30), { tenantId: "other" });
       await notifyStumbles(db, now);
       expect(await hintAlerts()).toEqual([]);
     });
   });
 
-  it("担当のない受講者、無効な講師、別テナントの講師には知らせない", async () => {
+  it("担当のない受講者と、無効な講師には知らせない", async () => {
     await keepActive("2026-10-01");
     await db.delete(learnerInstructors);
     await notifyStumbles(db, now);
     expect(await stumbles()).toEqual([]);
 
-    await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "outsider" });
-    await notifyStumbles(db, now);
-    expect(await stumbles()).toEqual([]);
-
-    await db.delete(learnerInstructors);
     await db.insert(learnerInstructors).values({ learnerId: "learner", instructorId: "teacher" });
     await db.update(profiles).set({ disabled: true }).where(eq(profiles.id, "teacher"));
     await notifyStumbles(db, now);

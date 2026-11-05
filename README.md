@@ -155,16 +155,17 @@ CI では出さない。publisher は `saedgewell`（`stella` は Marketplace �
 
 ### 初回ログインとロール昇格
 
-所属は**招待制のみ**。自由オンボーディング（任意テナント選択）は廃止済み。
-未招待のまま Google ログインすると招待必要画面になり、テナントには入れない。
+所属は**招待制のみ**。
+未招待のまま Google ログインすると招待必要画面になり、アプリには入れない。
 
-先に tenant `admin`（管理画面のユーザー招待）か、下記の開発用 SQL で
+先に `admin`（管理画面のユーザー招待）か、下記の開発用 SQL で
 自分の Google メールを `profiles` + `auth_users`（同一 UUID）に登録してからログインする。
+`profiles.tenant_id` は次の migration まで NOT NULL なので、入れる値は `ses`。
 招待メール送信はない。先に未招待ログインしたあとで招待しても、再ログインで紐付く（救済）。
 
 #### 開発ブートストラップ（ローカル D1）
 
-seed の `seed-admin` 等は Google ログイン用ではない。自分の email を seed テナント `ses` へ直接入れる例
+seed の `seed-admin` 等は Google ログイン用ではない。自分の email を直接入れる例
 （`<uuid>` は同じ値を両方に使う。メールは自分のものに置換）:
 
 ```bash
@@ -177,7 +178,7 @@ wrangler d1 execute stella-db --local --command \
   "insert into profiles (id, tenant_id, role, display_name, initials, email, disabled, created_at) values ('<uuid>', 'ses', 'admin', 'You', 'Y', 'you@example.com', 0, unixepoch() * 1000)"
 ```
 
-既に tenant `admin` で入れている場合は、管理画面の招待（単発 / CSV）で同じ email を追加してもよい。
+既に `admin` で入れている場合は、管理画面の招待（単発 / CSV）で同じ email を追加してもよい。
 
 #### ロール昇格（SQL）
 
@@ -186,7 +187,7 @@ Admin / Instructor / プラットフォーム管理を検証するとき（`apps
 ```bash
 cd apps/api
 
-# テナント管理者
+# 管理者
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='admin' where email='you@example.com'"
 
@@ -194,7 +195,7 @@ wrangler d1 execute stella-db --local --command \
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='instructor' where email='you@example.com'"
 
-# プラットフォーム管理者（組織マスタなどテナント横断。招待 UI からは付与不可）
+# プラットフォーム管理者（他の管理者から無効化・降格されない。招待 UI からは付与不可）
 wrangler d1 execute stella-db --local --command \
   "update profiles set role='platform_admin' where email='you@example.com'"
 ```
@@ -217,9 +218,8 @@ JWT の有効期限は **24 時間**。失効後は再ログインが必要（�
 
 ### 認可・所属（#62）手動確認
 
-- [ ] 未招待 Google ログイン → 招待必要画面（任意テナントに入れない）
-- [ ] 招待後ログイン → 正しい tenant/role
-- [ ] tenant admin は組織マスタ不可 / platform_admin は可
+- [ ] 未招待 Google ログイン → 招待必要画面（アプリには入れない）
+- [ ] 招待後ログイン → 正しい role
 - [ ] 未認証で /api/chat・/api/review-draft が 401
 - [ ] student で review-draft が 403
 
@@ -290,7 +290,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 
 - **受講者 (Learner)** — ダッシュボード / ステージ一覧 / レッスン視聴 / Q&A / 修了証
 - **講師 (Instructor)** — ダッシュボード / 添削キュー / AI下書き付き添削エディタ
-- **テナント管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / ステージ管理 / 監査ログ
+- **管理者 (Admin)** — KPIダッシュボード / ユーザー管理 / ステージ管理 / 監査ログ
 
 ### Cloudflare R2 (教材配信・アップロード)
 
@@ -315,10 +315,10 @@ bun run r2:orphans -- --delete  # 一覧に出た孤児を削除
 ```
 
 API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/admin/r2/orphans/cleanup`、
-tenant admin 以上）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
+`admin` / `platform_admin`）の薄いラッパ。1 リクエストの走査件数には上限があり、超える場合は
 `next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
 「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
-走査・削除とも呼び出し元テナントの `tenant/<tenantId>/` 配下に限定し、
+走査・削除とも保存済みの `tenant/ses/` 配下に限定し、
 参照判定には配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
 （`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
 削除は監査ログ（`r2_orphan_cleanup`）に残る。
@@ -341,7 +341,7 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - デモ専用 (`VITE_SERVER_URL` 未設定): `localStorage` キー `lms_lesson_progress`
 - DB 永続化 (D1 設定時): `lesson_progress` テーブル (`/api/lesson-progress` 経由、 ログインが必要)。
   ログイン中はサーバから進捗を取り込み (端末間は updated_at による Last-Write-Wins でマージ)、 以降の更新を自動 upsert します。
-  講師 / 管理者はアプリ層の認可により同テナントの進捗を read できます (可視化 UI は別 Issue)。
+  講師 / 管理者はアプリ層の認可により進捗を read できます (可視化 UI は別 Issue)。
 
 ### 学習アクティビティ (Issue #73)
 
@@ -355,8 +355,6 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 - `GET /api/study-activity/mine?days=14` が欠損日を 0 埋めした系列と連続学習日数を返し、
   受講者ダッシュボードの「週間学習時間」チャートと「連続学習」KPI がこれを描画します。
   受講者は自分のログのみ参照できます。
-- テナントのテストモード中に招待された受講者には、動作確認用の日別ログも投入されます
-  (→ [テストモード](#テストモード-issue-58--76))。
 
 ### 成績台帳と修了証 (Issue #26)
 
@@ -389,34 +387,11 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
   列定義は `@stella/shared/admin/reports` に集約しており、 プレビュー表と CSV は同じ変換を通ります。
 - API: `GET /api/reports/:type?from=&to=&limit=&offset=` (from/to は ISO 日時 または `YYYY-MM-DD` · inclusive。
   日付だけを渡した場合はアプリ基準 TZ の日境界として解釈します)。
-  同テナントの `admin` / `platform_admin` のみ。 母集合は caller のテナントに固定されます。
+  `admin` / `platform_admin` のみ。
 - 件数 (`total`) は各テーブルの `COUNT` で数えるため、 取得上限で明細が欠けることはありません
   (成績は小テストと課題を提出日時で併合するため、 ページ確定に必要な分だけ各表から読みます)。
 - 出力は **CSV のみ** です (Issue #75 の受け入れ基準に合わせたスコープ。 Excel 形式は未対応)。
 - デモ専用 (`VITE_SERVER_URL` 未設定) では実データが無いため、 デモ行は出さず案内のみ表示します。
-
-### テストモード (Issue #58 / #76)
-
-管理画面サイドバーの **設定** で、 テナントごとに **テストモード** を切り替えられます。
-ON の間に招待 (ユーザー登録) されたユーザーには、 直後に動作確認用のテストデータが入り、
-受講者 / 講師 / 管理者の主要画面を空のまま眺めることなく確認できます。
-
-- **受講者を招待したとき**: 公開ステージへの受講登録 (期限 30 日後 / 必須) · 最初のレッスンの完了進捗 ·
-  直近 8 日の日別学習ログ · サンプル提出 3 件 (添削待ち 2 件 + 添削済み 1 件) ·
-  サンプル Q&A 2 スレッド (未返信 1 件 + 講師返信済み 1 件) · 通知 3 件
-  (ようこそ / 添削完了 / Q&A 回答)。
-  提出は課題・演習レッスンに紐付き、 添削待ちの 1 件はあえて AI 下書き未生成にしてあるため、
-  ReviewEditor を開くと `/api/review-draft` の生成経路まで確認できます。
-- **講師 / 管理者を招待したとき**: テナントに添削待ちの提出も未返信 Q&A も無い場合に限り、
-  既存の受講者名義でサンプルを補充します (受講者を先に招待していれば何もしません)。
-  講師 ↔ 受講者の担当割当モデルは無く、 講師画面の母集合はテナント全体です。
-- したがって **受講者と講師を 1 人ずつ招待すれば、 どちらの順でも** 三者の主要画面が埋まります。
-- 投入したデータは通常のレコードなので、 テストモードを OFF にしても消えません。
-  本文には「(テストデータ)」を含め、 通知 / 監査ログの payload には `test_data: true` が入ります。
-- 雛形と投入処理はどちらも `apps/api/src/lib/test-data.ts` にあります。
-  現在の投入経路は招待 (`POST /api/admin/users/invite`) のみです。 セルフサインアップ
-  (Google ログインだけで profile を作る経路) はまだ無いため、 その経路が入る際に
-  `insertTestDataForNewUser()` のフックを足します (Issue #76 の残タスク)。
 
 ### Anthropic (AIチャット用、 任意)
 

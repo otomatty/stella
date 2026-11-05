@@ -1,27 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { navForRole } from "./sidebar-nav";
 
-const ids = (
-  role: Parameters<typeof navForRole>[0],
-  profileRole?: Parameters<typeof navForRole>[1],
-) => navForRole(role, profileRole).map((item) => item.id);
+const ids = (role: Parameters<typeof navForRole>[0]) => navForRole(role).map((item) => item.id);
 
 describe("navForRole", () => {
-  it("組織マスタは platform_admin にだけ、 ユーザー管理の直後に出す", () => {
-    const items = ids("admin", "platform_admin");
-    expect(items).toContain("orgs");
-    expect(items.indexOf("orgs")).toBe(items.indexOf("users") + 1);
-  });
-
-  it("テナント管理者 (admin) には組織マスタを出さない", () => {
-    expect(ids("admin", "admin")).not.toContain("orgs");
-    expect(ids("admin")).not.toContain("orgs");
-  });
-
   it("受講者 / 講師には admin 専用の項目を出さない", () => {
     for (const role of ["learner", "instructor"] as const) {
-      const items = ids(role, "platform_admin");
-      expect(items).not.toContain("orgs");
+      const items = ids(role);
       expect(items).not.toContain("users");
       expect(items).not.toContain("audit");
     }
@@ -49,10 +34,8 @@ describe("navForRole", () => {
   it("レビュー (人に回した提出・AI の合格の確認) は講師と管理者に出す (#34)", () => {
     expect(ids("instructor")).toContain("review-queue");
     // 管理者は発見教材の直後 (課題管理 → 発見教材 の並びは崩さない)。
-    for (const profileRole of ["admin", "platform_admin"] as const) {
-      const admin = ids("admin", profileRole);
-      expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
-    }
+    const admin = ids("admin");
+    expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
     expect(ids("learner")).not.toContain("review-queue");
   });
 
@@ -70,8 +53,14 @@ describe("navForRole", () => {
 
   it("廃止した画面はどのロールにも出さない", () => {
     for (const role of ["learner", "instructor", "admin"] as const) {
-      for (const retired of ["records", "interview-prep", "hall-of-fame", "hall-of-fame-admin"]) {
-        expect(ids(role, "platform_admin") as string[]).not.toContain(retired);
+      for (const retired of [
+        "records",
+        "interview-prep",
+        "hall-of-fame",
+        "hall-of-fame-admin",
+        "orgs",
+      ]) {
+        expect(ids(role) as string[]).not.toContain(retired);
       }
     }
   });

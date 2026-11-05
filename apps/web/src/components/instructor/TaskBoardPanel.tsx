@@ -30,7 +30,6 @@ import { fetchTaskBoard, routeToDiscovery } from "@/lib/review-desk-api";
 import { cn } from "@/lib/utils";
 
 interface TaskBoardPanelProps {
-  tenantId: string;
   taskId: string;
   assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
@@ -48,7 +47,6 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
  * つまずき教材 (発見教材) の待ち行列に回す。
  */
 export function TaskBoardPanel({
-  tenantId,
   taskId,
   assignedOnly,
   onOpen,
@@ -83,7 +81,6 @@ export function TaskBoardPanel({
     setPosting(true);
     try {
       await createAnnouncement({
-        tenantId,
         stageId: board.task.stageId,
         title: title.trim(),
         body: body.trim(),

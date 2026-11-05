@@ -1,8 +1,7 @@
 /**
  * 分析ダッシュボード API (旧 get_tenant_analytics / get_instructor_overview RPC / Issue #28)。
  *
- * 集計はサーバ側で行い、 同テナントの instructor/admin のみ実行できる。 越テナント参照は
- * caller.tenantId を母集合に使うことで構造的に遮断する。 データはテナント単位で件数が
+ * 集計はサーバ側で行い、 instructor/admin のみ実行できる。 データは件数が
  * 限られるため、 取得後に JS で集計する (旧 SQL 集計と等価)。
  */
 
@@ -32,12 +31,11 @@ function round(n: number): number {
   return Math.round(n);
 }
 
-/** 管理者ダッシュボード用のテナント KPI 一式。 */
+/** 管理者ダッシュボード用の KPI 一式。 */
 analyticsRoute.get("/api/analytics/tenant", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     requireRole(caller, "instructor", "admin", "platform_admin");
-    const tenantId = caller.tenantId;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -46,7 +44,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
     const learners = await db
       .select({ id: profiles.id, disabled: profiles.disabled })
       .from(profiles)
-      .where(and(eq(profiles.tenantId, tenantId), eq(profiles.role, "student")));
+      .where(eq(profiles.role, "student"));
     const totalLearners = learners.filter((l) => !l.disabled).length;
 
     // enrollment 一式。
@@ -58,8 +56,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
         status: enrollments.status,
         enrolledAt: enrollments.enrolledAt,
       })
-      .from(enrollments)
-      .where(eq(enrollments.tenantId, tenantId));
+      .from(enrollments);
 
     const activeLearners = new Set(enr.filter((e) => e.status === "active").map((e) => e.userId))
       .size;
@@ -77,15 +74,14 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
     const certs = await db
       .select({ issuedAt: certificates.issuedAt })
       .from(certificates)
-      .where(and(eq(certificates.tenantId, tenantId), eq(certificates.revoked, false)));
+      .where(eq(certificates.revoked, false));
     const certsTotal = certs.length;
     const certsMonth = certs.filter((c) => c.issuedAt >= monthStart).length;
 
     // 平均学習時間 (時間)。
     const progress = await db
       .select({ userId: lessonProgress.userId, watchedSec: lessonProgress.watchedSec })
-      .from(lessonProgress)
-      .where(eq(lessonProgress.tenantId, tenantId));
+      .from(lessonProgress);
     const distinctUsers = new Set(progress.map((p) => p.userId)).size;
     const totalSec = progress.reduce((s, p) => s + (p.watchedSec ?? 0), 0);
     const avgStudyHours =
@@ -102,10 +98,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
     }
 
     // ステージ別の登録者数と完了率。
-    const stageRows = await db
-      .select({ id: stages.id, title: stages.title })
-      .from(stages)
-      .where(eq(stages.tenantId, tenantId));
+    const stageRows = await db.select({ id: stages.id, title: stages.title }).from(stages);
     const completionByStage = stageRows
       .map((co) => {
         const rows = enr.filter((e) => e.stageId === co.id);
@@ -117,7 +110,7 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
       .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
 
     // 小テストのつまずき分析 (正答率の低い順、 最大 8)。
-    const stumbles = await computeStumbles(db, tenantId);
+    const stumbles = await computeStumbles(db);
 
     return c.json({
       analytics: {
@@ -148,13 +141,11 @@ analyticsRoute.get("/api/analytics/tenant", async (c) => {
 /** 設問ごとの正答率を attempt から算出し、 低い順に最大 8 件返す。 */
 async function computeStumbles(
   db: Awaited<ReturnType<typeof getCaller>>["db"],
-  tenantId: string,
 ): Promise<Array<{ question_id: string; prompt: string; n: number; correct_pct: number }>> {
-  // テナントの全 attempt (quizId, answers)。
+  // 全 attempt (quizId, answers)。
   const attempts = await db
     .select({ quizId: quizAttempts.quizId, answers: quizAttempts.answers })
-    .from(quizAttempts)
-    .where(eq(quizAttempts.tenantId, tenantId));
+    .from(quizAttempts);
   if (attempts.length === 0) return [];
 
   const quizIds = [...new Set(attempts.map((a) => a.quizId))];
@@ -215,10 +206,9 @@ async function computeStumbles(
 /**
  * 講師ダッシュボード用の遅延 / 受講者進捗。
  *
- * 母集合は既定でテナント全体の enrollment (= テナント概況)。 `?assigned=mine` で、
+ * 母集合は既定で全体の enrollment。 `?assigned=mine` で、
  * 呼び出した講師が担当する受講者 (`learner_instructors`) だけに絞る (#38)。
  * `assigned_learners` は絞り込みの有無によらず、 呼び出した講師の担当の人数を返す。
- * 越テナント参照は caller.tenantId で構造的に遮断する。
  */
 analyticsRoute.get("/api/analytics/instructor", async (c) => {
   try {
@@ -227,20 +217,13 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
     const assigned = c.req.query("assigned");
     if (assigned !== undefined && assigned !== "mine")
       throw new ApiError("assigned には mine だけを指定できます", 400);
-    const tenantId = caller.tenantId;
     const now = new Date();
 
     const mine = await db
       .select({ id: learnerInstructors.learnerId })
       .from(learnerInstructors)
       .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
-      .where(
-        and(
-          eq(learnerInstructors.instructorId, caller.id),
-          eq(profiles.tenantId, tenantId),
-          eq(profiles.disabled, false),
-        ),
-      );
+      .where(and(eq(learnerInstructors.instructorId, caller.id), eq(profiles.disabled, false)));
     const mineIds = new Set(mine.map((r) => r.id));
 
     const allEnr = (
@@ -252,7 +235,6 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
           dueAt: enrollments.dueAt,
         })
         .from(enrollments)
-        .where(eq(enrollments.tenantId, tenantId))
     ).filter((e) => !assigned || mineIds.has(e.userId));
 
     const overdue = allEnr.filter(
@@ -280,7 +262,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
         ? await db
             .select({ id: stages.id, title: stages.title })
             .from(stages)
-            .where(and(eq(stages.tenantId, tenantId), inArray(stages.id, sampleStageIds)))
+            .where(inArray(stages.id, sampleStageIds))
         : [];
     const stageTitleById = new Map(sampleStages.map((co) => [co.id, co.title]));
 
@@ -308,7 +290,6 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
             .from(lessonProgress)
             .where(
               and(
-                eq(lessonProgress.tenantId, tenantId),
                 inArray(lessonProgress.userId, sampleUserIds),
                 eq(lessonProgress.completed, true),
               ),
@@ -331,7 +312,7 @@ analyticsRoute.get("/api/analytics/instructor", async (c) => {
               initials: profiles.initials,
             })
             .from(profiles)
-            .where(and(eq(profiles.tenantId, tenantId), inArray(profiles.id, sampleUserIds)))
+            .where(inArray(profiles.id, sampleUserIds))
         : [];
     const profileById = new Map(sampleProfiles.map((p) => [p.id, p]));
 

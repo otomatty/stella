@@ -70,14 +70,14 @@ function localD1(sqlite: DatabaseSync): D1Database {
 }
 function seed(sqlite: DatabaseSync) {
   sqlite.exec(`
-    INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('ses', 'SES', 0, 1, 0, 1, 1), ('other', 'Other', 0, 1, 0, 1, 1);
+    INSERT INTO tenants (id, name, active_count, active, test_mode, created_at, updated_at) VALUES ('ses', 'SES', 0, 1, 0, 1, 1);
     INSERT INTO profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) VALUES
       ('learner', 'ses', 'student', '受講者', 0, 'google', 1),
       ('teacher', 'ses', 'instructor', '担当講師', 0, 'google', 1),
       ('unassigned', 'ses', 'instructor', '別の講師', 0, 'google', 1),
       ('admin', 'ses', 'admin', '管理者', 0, 'google', 1),
-      ('outsider', 'other', 'student', '他テナント', 0, 'google', 1),
-      ('foreign-teacher', 'other', 'instructor', '他の講師', 0, 'google', 1);
+      ('outsider', 'ses', 'student', '別の受講者', 0, 'google', 1),
+      ('foreign-teacher', 'ses', 'instructor', 'もう一人の講師', 0, 'google', 1);
     INSERT INTO stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) VALUES
       ('root', 'ses', 'dev-env-basics', '開発環境', 'published', 2, 35, 'catalog', 1, 1);
     INSERT INTO sections (id, stage_id, title, "order", created_at) VALUES ('unit', 'root', '最初のページ', 0, 1);
@@ -94,7 +94,6 @@ let env: Env;
 let app: ReturnType<typeof mountTestApp>["app"];
 const learner = {
   id: "learner",
-  tenantId: "ses",
   role: "student" as const,
   name: "受講者",
   email: null,
@@ -138,14 +137,13 @@ describe("学習ペースのプロフィールと開始日", () => {
           weekly_hours: 30,
           learning_start_date: "2026-10-05",
           role: "admin",
-          tenant_id: "other",
         })
       ).status,
     ).toBe(200);
     expect(
       sqlite
         .prepare(
-          "select weekly_hours, display_name, name_source, role, tenant_id from profiles where id='learner'",
+          "select weekly_hours, display_name, name_source, role from profiles where id='learner'",
         )
         .get(),
     ).toEqual({
@@ -153,7 +151,6 @@ describe("学習ペースのプロフィールと開始日", () => {
       display_name: "受講者",
       name_source: "google",
       role: "student",
-      tenant_id: "ses",
     });
     expect((await write("/api/me", { display_name: "新しい名前" })).status).toBe(200);
     expect(
@@ -238,9 +235,10 @@ describe("担当講師の権限と開始診断", () => {
       ).toBe(400);
     }
   });
-  it("認証が必要で、受講者・担当外の講師・他テナントには公開しない", async () => {
+  it("認証が必要で、受講者と担当外の講師には公開しない", async () => {
     expect((await request(app, env, "/api/learning-pace")).status).toBe(401);
-    expect((await get("/api/learning-pace?userId=outsider", "admin")).status).toBe(404);
+    expect((await get("/api/learning-pace?userId=outsider", "admin")).status).toBe(200);
+    expect((await get("/api/learning-pace?userId=missing", "admin")).status).toBe(404);
     expect((await get("/api/learning-pace?userId=learner", "teacher")).status).toBe(403);
     expect((await get("/api/learning-pace/learners")).status).toBe(403);
     expect(
@@ -254,12 +252,12 @@ describe("担当講師の権限と開始診断", () => {
       ).status,
     ).toBe(403);
   });
-  it("同じテナントの管理者が担当を設定すると、その講師だけ編集できる", async () => {
+  it("管理者が担当を設定すると、その講師だけ編集できる", async () => {
     expect(
       (
         await write(
           "/api/learning-pace/learner/instructor",
-          { instructor_id: "foreign-teacher" },
+          { instructor_id: "nobody" },
           "admin",
           "PUT",
         )
@@ -376,32 +374,40 @@ describe("進捗・確認B・通知", () => {
       // 握り潰す。呼ばれた回数と受講者だけを確かめる。
     });
     try {
-      // a-broken (先に処理される) のテナントは前提が循環した教材で、計画の計算が例外になる。
+      // a-broken は先に処理される。通知の挿入だけが失敗しても、次の受講者へ進む。
       sqlite.exec(`
-        insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) values ('a-broken', 'other', 'student', '計算できない受講者', 0, 'google', 1);
+        insert into profiles (id, tenant_id, role, display_name, disabled, name_source, created_at) values ('a-broken', 'ses', 'student', '計算できない受講者', 0, 'google', 1);
         insert into learner_instructors values ('a-broken', 'foreign-teacher'), ('learner', 'teacher');
         update profiles set learning_start_date='2026-10-05' where id in ('learner', 'a-broken');
         insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, created_at, updated_at) values ('later','ses','html-css-basics','次の講座','published',1,35,'catalog',1,1);
-        insert into stages (id, tenant_id, slug, title, status, format, duration_hours, audience, prerequisites, created_at, updated_at) values
-          ('loop-a','other','dev-env-basics','循環A','published',1,35,'catalog','["html-css-basics"]',1,1),
-          ('loop-b','other','html-css-basics','循環B','published',1,35,'catalog','["dev-env-basics"]',1,1);
       `);
+      const db = getDb(env);
+      const originalInsert = db.insert.bind(db);
+      db.insert = ((table: Parameters<typeof db.insert>[0]) => {
+        const query = originalInsert(table);
+        const values = query.values.bind(query);
+        query.values = ((row: { id?: string }) => {
+          if (row.id?.startsWith("pace:a-broken:")) throw new Error("計画を計算できない");
+          return values(row as never);
+        }) as typeof query.values;
+        return query;
+      }) as typeof db.insert;
       const notified = () =>
         sqlite.prepare("select id, user_id from notifications order by id").all();
-      await notifyPaceDelays(getDb(env), "2026-10-13");
+      await notifyPaceDelays(db, "2026-10-13");
       expect(notified()).toEqual([{ id: "pace:learner:teacher:2026-10-12", user_id: "teacher" }]);
       expect(error).toHaveBeenCalledTimes(1);
       expect(error.mock.calls[0]?.[1]).toEqual({ learnerId: "a-broken" });
-      // 同じ週 (日曜まで) は通知済みの組を飛ばす。計算しないので循環した教材でも例外にならない。
+      // 同じ週 (日曜まで) は通知済みの組を飛ばす。挿入まで進まないので例外にならない。
       sqlite.exec(
-        "insert into notifications (id, user_id, tenant_id, type, created_at) values ('pace:a-broken:foreign-teacher:2026-10-12', 'foreign-teacher', 'other', 'learning_pace_delayed', 1)",
+        "insert into notifications (id, user_id, tenant_id, type, created_at) values ('pace:a-broken:foreign-teacher:2026-10-12', 'foreign-teacher', 'ses', 'learning_pace_delayed', 1)",
       );
       error.mockClear();
-      await notifyPaceDelays(getDb(env), "2026-10-18");
+      await notifyPaceDelays(db, "2026-10-18");
       expect(error).not.toHaveBeenCalled();
       expect(notified()).toHaveLength(2);
       // 翌週は改めて計算する。
-      await notifyPaceDelays(getDb(env), "2026-10-19");
+      await notifyPaceDelays(db, "2026-10-19");
       expect(error).toHaveBeenCalledTimes(1);
       expect(notified()).toEqual([
         { id: "pace:a-broken:foreign-teacher:2026-10-12", user_id: "foreign-teacher" },

@@ -23,7 +23,7 @@ import {
 import { fetchAiPassed } from "@/lib/review-desk-api";
 
 interface AiPassedListProps {
-  /** 絞り込みの選択肢 (講座・課題・受講者) を作るのに使う、テナントの提出。 */
+  /** 絞り込みの選択肢 (講座・課題・受講者) を作るのに使う提出。 */
   submissions: Submission[];
   assignedOnly: boolean;
   onOpen: (submissionId: string) => void;
@@ -51,7 +51,7 @@ export function AiPassedList({ submissions, assignedOnly, onOpen }: AiPassedList
   const [result, setResult] = useState<{ rows: AiPassedRow[]; truncated: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 選択肢は、テナントの新形式の提出から作る (AI の合格が無い講座も選べてよい)。
+  // 選択肢は、新形式の提出から作る (AI の合格が無い講座も選べてよい)。
   const options = useMemo(() => {
     const stages = new Map<string, string>();
     const tasks = new Map<string, { title: string; stageId: string | null }>();

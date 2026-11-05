@@ -9,8 +9,8 @@ import type { Env } from "../env.js";
 export const CHAT_TEST_JWT_SECRET = "chat-ai-gateway-test-secret";
 
 export const CHAT_TEST_PROFILES = {
-  learner: { id: "seed-learner", tenantId: "ses", role: "student" as const },
-  instructor: { id: "seed-instructor", tenantId: "ses", role: "instructor" as const },
+  learner: { id: "seed-learner", role: "student" as const },
+  instructor: { id: "seed-instructor", role: "instructor" as const },
 } as const;
 
 export async function mintChatTestToken(userId: string): Promise<string> {

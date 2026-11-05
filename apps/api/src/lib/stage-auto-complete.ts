@@ -18,6 +18,7 @@ import { taskCompletionCounts } from "./task-completion.js";
 
 import { and, eq, inArray } from "drizzle-orm";
 
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import type { StageClearedNotice, StageCompletion } from "@stella/shared/cms/types";
 
 import type { Db } from "../db/client.js";
@@ -33,7 +34,6 @@ import {
   sections,
   stages,
   submissions,
-  tenants,
 } from "../db/schema.js";
 import type { AuditActor } from "./audit.js";
 import { recordAudit } from "./audit.js";
@@ -118,11 +118,11 @@ export function completionMet(
 }
 
 export interface AutoCompleteInput {
-  /** 監査ログの実行者 (受講者本人、または合格を確定した講師)。テナントもここから取る。 */
+  /** 監査ログの実行者 (受講者本人、または合格を確定した講師)。 */
   actor: AuditActor;
   /** 判定対象の受講者。 */
   userId: string;
-  /** 判定するステージ (重複可・他テナントや未登録は黙って落とす)。 */
+  /** 判定するステージ (重複可・未登録は黙って落とす)。 */
   stageIds: readonly string[];
   ip?: string | null;
 }
@@ -161,13 +161,7 @@ export async function autoCompleteEligibleStages(
     const enrolled = await db
       .select({ stageId: enrollments.stageId })
       .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.userId, userId),
-          eq(enrollments.tenantId, actor.tenantId),
-          eq(enrollments.status, "active"),
-        ),
-      );
+      .where(and(eq(enrollments.userId, userId), eq(enrollments.status, "active")));
     if (enrolled.length === 0) return [];
     return await runAutoComplete(db, {
       actor,
@@ -229,11 +223,7 @@ export async function reclaimAutoCertificatesIfUnmet(
 ): Promise<void> {
   try {
     for (const stageId of new Set(stageIds)) {
-      const stageRows = await db
-        .select()
-        .from(stages)
-        .where(and(eq(stages.id, stageId), eq(stages.tenantId, actor.tenantId)))
-        .limit(1);
+      const stageRows = await db.select().from(stages).where(eq(stages.id, stageId)).limit(1);
       const stage = stageRows[0];
       if (!stage) continue;
 
@@ -246,7 +236,7 @@ export async function reclaimAutoCertificatesIfUnmet(
       // その残余はログに残し、講師が同じ提出の verdict を保存し直せば再実行される。
       const reclaimed = await withResourceLock(
         db,
-        stageClearLockId(actor.tenantId, userId, stageId),
+        stageClearLockId(userId, stageId),
         async () => {
           const certRows = await db
             .select({
@@ -317,7 +307,7 @@ async function runAutoComplete(
   const candidateIds = [...new Set(stageIds)].filter(Boolean);
   if (candidateIds.length === 0) return [];
 
-  // 対象は同テナント・公開済み・自動発行のステージだけ。講師承認ステージは staff の
+  // 対象は公開済み・自動発行のステージだけ。講師承認ステージは staff の
   // 発行 (POST /api/certificates/issue) がクリアのトリガのまま。
   const stageRows = await selectChunked(candidateIds, (slice) =>
     db
@@ -326,7 +316,6 @@ async function runAutoComplete(
       .where(
         and(
           inArray(stages.id, slice),
-          eq(stages.tenantId, actor.tenantId),
           eq(stages.status, "published"),
           eq(stages.autoIssueCertificate, true),
         ),
@@ -344,7 +333,6 @@ async function runAutoComplete(
         .where(
           and(
             eq(enrollments.userId, userId),
-            eq(enrollments.tenantId, actor.tenantId),
             inArray(enrollments.stageId, slice),
             eq(enrollments.status, "active"),
           ),
@@ -388,12 +376,6 @@ async function runAutoComplete(
     .limit(1);
   const recipientName = recipientRows[0]?.name;
   if (!recipientName) return [];
-  const tenantRows = await db
-    .select({ name: tenants.name })
-    .from(tenants)
-    .where(eq(tenants.id, actor.tenantId))
-    .limit(1);
-  const tenantName = tenantRows[0]?.name ?? actor.tenantId;
 
   const cleared: StageClearedNotice[] = [];
   for (const stage of metStages) {
@@ -405,7 +387,7 @@ async function runAutoComplete(
     // 進捗同期の裏で走る処理なので取り合いで本編を遅らせないため。
     const issued = await withResourceLock(
       db,
-      stageClearLockId(actor.tenantId, userId, stage.id),
+      stageClearLockId(userId, stage.id),
       async () => {
         // 受講登録がまだ active かもロックの中で読み直す。外側の絞り込みの後に staff が
         // 登録を期限切れ / 削除にしていると、修了証だけでクリア扱いになる行を作ってしまう。
@@ -416,7 +398,6 @@ async function runAutoComplete(
             and(
               eq(enrollments.userId, userId),
               eq(enrollments.stageId, stage.id),
-              eq(enrollments.tenantId, actor.tenantId),
               eq(enrollments.status, "active"),
             ),
           )
@@ -436,7 +417,6 @@ async function runAutoComplete(
           db
             .insert(certificates)
             .values({
-              tenantId: actor.tenantId,
               userId,
               stageId: stage.id,
               certCode: genCertCode(),
@@ -445,7 +425,7 @@ async function runAutoComplete(
               criteriaSnapshot: toCompletionSnapshot(stage, counts, userId),
               recipientName,
               stageTitle: stage.title,
-              tenantName,
+              issuerName: DISPLAY_NAME,
             })
             .onConflictDoNothing({ target: [certificates.userId, certificates.stageId] })
             .returning({ id: certificates.id, certCode: certificates.certCode }),
@@ -500,7 +480,6 @@ async function runAutoComplete(
     try {
       await db.insert(notifications).values({
         userId,
-        tenantId: actor.tenantId,
         type: "stage_cleared",
         title: `${stage.title} をクリアしました`,
         body: "修了証が発行されました。スキルツリーで次のステージが解放されています。",
@@ -516,7 +495,6 @@ async function runAutoComplete(
   if (cleared.length > 0) {
     await recordStagePathEvents(
       db,
-      actor.tenantId,
       "cleared",
       cleared.map((row) => ({ userId, stageId: row.stage_id })),
     );

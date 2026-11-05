@@ -41,12 +41,6 @@ const LABELS = {
   certificate_issue: "修了証発行",
   // 合格の取り消しで修了条件が崩れたとき、自動発行の修了証を巻き戻した記録 (PR #288)。
   certificate_reclaim: "修了証の自動取り消し",
-  // 組織マスタ (#29)
-  org_create: "組織作成",
-  org_update: "組織更新",
-  // テナント設定 (#76)
-  test_mode_enable: "テストモード有効化",
-  test_mode_disable: "テストモード無効化",
   // ストレージ保守 (#64)
   r2_orphan_cleanup: "教材ストレージの孤児削除",
   // 発見教材 (Phase 4)
@@ -66,7 +60,7 @@ const LABELS = {
  * course → stage のリネーム (Phase 0) 以前に記録された行は action コードが `course_*`
  * のままで、 書き換えはしない。 ラベルだけ残しておかないと監査画面で生の
  * `course_publish` が並ぶ。 Phase 3b で退役した **割当** の action と、 廃止した
- * 面談対策・スキルシート・殿堂の action も同じ扱い。
+ * 面談対策・スキルシート・殿堂・組織マスタ・テストモードの action も同じ扱い。
  * `LABELS` と分けてあるのは、 記録側 (`recordAudit()`) が `AuditAction` で縛られている
  * 以上、 旧 action を再び記録できるようにしないため — 絞り込みの選択肢は
  * `AUDIT_ACTION_FILTER_LABELS` が両方を混ぜて作るので、 定義が 2 か所に割れることもない。
@@ -94,6 +88,11 @@ const DEPRECATED_LABELS: Record<string, string> = {
   hof_submit: "殿堂への掲載申請 (旧)",
   hof_publish: "殿堂の公開 (旧)",
   hof_close: "殿堂の非公開化 (旧)",
+  // 廃止した組織マスタとテストモード。過去の行はラベルのまま読める。
+  org_create: "組織作成 (旧)",
+  org_update: "組織更新 (旧)",
+  test_mode_enable: "テストモード有効化 (旧)",
+  test_mode_disable: "テストモード無効化 (旧)",
 };
 
 /** 記録しうる監査アクション。 記録側・表示側の双方がこの型を共有する。 */

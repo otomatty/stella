@@ -158,8 +158,8 @@ async function syncProfile(db: Db, userId: string): Promise<void> {
 }
 
 /**
- * Audit a successful login (Issue #64). Not before the invitation: without a profile the tenant
- * is unknown, and the person cannot use the app anyway.
+ * Audit a successful login (Issue #64). Not before the invitation: without a profile the person
+ * cannot use the app anyway.
  */
 export async function recordLogin(
   db: Db,
@@ -171,7 +171,6 @@ export async function recordLogin(
     await db
       .select({
         id: profiles.id,
-        tenantId: profiles.tenantId,
         role: profiles.role,
         displayName: profiles.displayName,
       })
@@ -182,7 +181,7 @@ export async function recordLogin(
   if (!profile) return;
   await recordAudit(
     db,
-    { id: profile.id, tenantId: profile.tenantId, role: profile.role, name: profile.displayName },
+    { id: profile.id, role: profile.role, name: profile.displayName },
     { action: "login", targetType: "user", targetId: profile.id, ip, metadata: { provider } },
   );
 }

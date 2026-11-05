@@ -136,7 +136,6 @@ function scheduleFlush(): void {
 
 interface SyncIdentity {
   userId: string;
-  tenantId: string;
 }
 
 /** 直近に同期した user_id を記録し、 共有端末でのアカウント切替を検知する。 */
@@ -265,7 +264,7 @@ async function flushRemote(): Promise<void> {
     .filter((e): e is { lessonId: string; entry: LessonProgressEntry } => Boolean(e.entry));
   try {
     const { upsertProgressBatch } = await import("@/lib/lesson-progress-api");
-    const clearedStages = await upsertProgressBatch(current.userId, current.tenantId, entries);
+    const clearedStages = await upsertProgressBatch(current.userId, entries);
     // 同期でステージの修了条件が揃った (サーバが修了証を自動発行した) 場合は、
     // シェルのクリアダイアログへ流す。identity が切り替わっていたら前ユーザーの分なので出さない。
     if (identity === current) {
@@ -321,7 +320,7 @@ async function hydrateFromRemote(target: SyncIdentity): Promise<void> {
  * - null を渡すと (ログアウト等): 同期を停止する (ローカルキャッシュは保持)
  */
 export function configureRemoteSync(next: SyncIdentity | null): void {
-  if (identity?.userId === next?.userId && identity?.tenantId === next?.tenantId) {
+  if (identity?.userId === next?.userId) {
     return;
   }
   identity = next;

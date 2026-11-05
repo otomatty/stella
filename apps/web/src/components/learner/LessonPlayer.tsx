@@ -51,8 +51,6 @@ import { TaskLessonHandoff } from "./TaskLessonHandoff";
 import { SubmissionHistory } from "./SubmissionHistory";
 import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
 import { QuizPlayer } from "./QuizPlayer";
-import type { Tenant } from "@/data/types";
-
 const SlidesViewer = lazy(() =>
   import("./SlidesViewer").then((m) => ({ default: m.SlidesViewer })),
 );
@@ -60,7 +58,6 @@ const SlidesViewer = lazy(() =>
 interface LessonPlayerProps {
   stage: Stage;
   setPage: (page: string) => void;
-  tenantId: Tenant["id"];
   studentName: string;
   studentInitials: string;
   /**
@@ -89,7 +86,6 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 export const LessonPlayer = ({
   stage,
   setPage,
-  tenantId,
   studentName,
   studentInitials,
   initialLesson = null,
@@ -479,7 +475,6 @@ export const LessonPlayer = ({
                     </>
                   ) : isAssignment && stage.format !== 2 ? (
                     <AssignmentSubmitPanel
-                      tenantId={tenantId}
                       stage={stage}
                       lesson={lessonObj}
                       sectionTitle={activeSection?.title}

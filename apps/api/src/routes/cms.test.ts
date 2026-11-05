@@ -25,7 +25,6 @@ const tableName = (table: object): string => (table as Record<symbol, string>)[D
 
 interface StageRowFixture {
   id: string;
-  tenantId: string;
   slug: string;
   title: string;
   status: "draft" | "published" | "archived";
@@ -33,7 +32,6 @@ interface StageRowFixture {
 }
 
 const stageFixture = (over: Partial<StageRowFixture> & { id: string }): StageRowFixture => ({
-  tenantId: "ses",
   slug: over.id,
   title: `${over.id} の講座`,
   status: "published",
@@ -54,18 +52,15 @@ const state = {
 
 function resolveSelect(table: string, shape: Record<string, unknown> | undefined, limit?: number) {
   const keys = shape ? Object.keys(shape) : [];
-  const mine = state.stages.filter((s) => s.tenantId === "ses");
   if (table === "stages") {
     // publishedDependents: 公開ステージを前提の判定用に全件引く。
-    if (keys.includes("prerequisites")) return mine.filter((s) => s.status === "published");
-    // 1 件取得 (詳細 / stageAuditInfo / stageTenant)。
+    if (keys.includes("prerequisites")) return state.stages.filter((s) => s.status === "published");
+    // 1 件取得 (詳細 / 存在確認 / 監査用の現在値)。
     if (limit === 1) {
-      const row = mine.find((s) => s.id === state.requestedStageId);
-      if (!row) return [];
-      return [{ ...row, tenant: row.tenantId, t: row.tenantId }];
+      const row = state.stages.find((s) => s.id === state.requestedStageId);
+      return row ? [row] : [];
     }
-    // 一覧。
-    return mine;
+    return state.stages;
   }
   if (table === "enrollments") {
     return state.enrollments.has(`${state.callerId}:${state.requestedStageId}`)
@@ -119,7 +114,6 @@ vi.mock("../lib/authz.js", async (importOriginal) => {
       return {
         caller: {
           id: state.callerId,
-          tenantId: "ses",
           role: state.callerRole,
           name: "テスト",
           email: null,

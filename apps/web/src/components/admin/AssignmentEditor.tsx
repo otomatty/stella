@@ -50,7 +50,6 @@ import { StaticAnalysisForm } from "./assignment-editor/StaticAnalysisForm";
 import { PreviewPanel } from "./assignment-editor/PreviewPanel";
 
 interface Props {
-  tenantId: string;
   /** null = 新規作成 */
   assignmentId: string | null;
   onClose: () => void;
@@ -64,7 +63,7 @@ const EXTRA_FILE_NAME: Partial<Record<Language, string>> = {
   "fe-pseudo": "extra.fe",
 };
 
-export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: Props) {
+export function AssignmentEditor({ assignmentId, onClose, onSaved }: Props) {
   const [draft, setDraft] = useState<Draft>(newDraft);
   const [loading, setLoading] = useState(assignmentId !== null);
   const [saving, setSaving] = useState(false);
@@ -241,7 +240,6 @@ export function AssignmentEditor({ tenantId, assignmentId, onClose, onSaved }: P
 
       await upsertAssignment({
         id: draft.id,
-        tenant_id: tenantId,
         stage: draft.stage,
         chapter_id: draft.chapterId,
         title: draft.title,

@@ -27,7 +27,6 @@ import { recordStagePathEvents } from "./stage-path-events.js";
 /** enrollment 行の応答形 (route の一覧・単体で共通)。 */
 export const ENROLLMENT_SELECT = {
   id: enrollments.id,
-  tenant_id: enrollments.tenantId,
   user_id: enrollments.userId,
   stage_id: enrollments.stageId,
   assigned_by: enrollments.assignedBy,
@@ -45,21 +44,13 @@ export const ENROLLMENT_SELECT = {
 /**
  * 受講者 × ステージの登録を 1 件読む (自己開始が既存行を返すために使う)。
  *
- * `(user_id, stage_id)` はグローバルに一意だが、テナントでも絞る。呼び出し元が渡すのは
- * 常に caller のテナントで、万一 (移行ミス等で) 他テナントの行が同じ組で存在しても、
- * それを自分の登録として返さないため。
+ * `(user_id, stage_id)` で一意。
  */
-async function loadEnrollment(db: Db, tenantId: string, userId: string, stageId: string) {
+async function loadEnrollment(db: Db, userId: string, stageId: string) {
   const rows = await db
     .select(ENROLLMENT_SELECT)
     .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.tenantId, tenantId),
-        eq(enrollments.userId, userId),
-        eq(enrollments.stageId, stageId),
-      ),
-    )
+    .where(and(eq(enrollments.userId, userId), eq(enrollments.stageId, stageId)))
     .limit(1);
   return rows[0];
 }
@@ -104,7 +95,6 @@ export async function startSelfEnrollment(
   const inserted = await db
     .insert(enrollments)
     .values({
-      tenantId: caller.tenantId,
       userId: caller.id,
       stageId,
       // 自己開始は「自分が自分に割り当てた」と記録する (列の値域は profile id)。
@@ -118,12 +108,12 @@ export async function startSelfEnrollment(
   const created = inserted[0];
   if (created) {
     // 学習経路の統計。既に started があれば足さない (一意索引で冪等)。
-    await recordStagePathEvents(db, caller.tenantId, "started", [{ userId: caller.id, stageId }]);
+    await recordStagePathEvents(db, "started", [{ userId: caller.id, stageId }]);
     return { row: created, created: true, reactivated: false };
   }
 
   // 既存行があって insert が弾かれた場合。読み直して状態を見る。
-  const existing = await loadEnrollment(db, caller.tenantId, caller.id, stageId);
+  const existing = await loadEnrollment(db, caller.id, stageId);
   if (existing?.status !== "expired") {
     return { row: existing, created: false, reactivated: false };
   }
@@ -139,7 +129,7 @@ export async function startSelfEnrollment(
   return row
     ? { row, created: false, reactivated: true }
     : {
-        row: await loadEnrollment(db, caller.tenantId, caller.id, stageId),
+        row: await loadEnrollment(db, caller.id, stageId),
         created: false,
         reactivated: false,
       };

@@ -182,7 +182,6 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
     await db
       .insert(taskFixedStartUses)
       .values({
-        tenantId: caller.tenantId,
         userId: caller.id,
         taskId: row.id,
         contentHash: row.contentHash,
@@ -288,7 +287,7 @@ const handleLocalRun =
         throw new ApiError("task not found", 404);
       if (row.contentHash !== body.contentHash)
         throw new ApiError("教材が更新されています。課題を開き直してください", 409);
-      const runs = localRunUpsert(db, { userId: caller.id, tenantId: caller.tenantId }, row, body);
+      const runs = localRunUpsert(db, { userId: caller.id }, row, body);
       if (body.outcome !== "passed") {
         await runs;
         return c.json({ ok: true });

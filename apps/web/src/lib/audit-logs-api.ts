@@ -1,14 +1,13 @@
 /**
  * 監査ログのデータアクセス層 (Issue #27 — Neon / Hono API)。
  *
- * 読み取り専用。 認可はサーバ側で「同テナントの instructor/admin のみ」。 記録は管理 API 側。
+ * 読み取り専用。 認可はサーバ側で instructor/admin のみ。 記録は管理 API 側。
  */
 
 import { apiFetch } from "./api-client";
 
 export interface AuditLogRow {
   id: string;
-  tenant_id: string;
   actor_id: string | null;
   actor_name: string;
   actor_role: string | null;
@@ -21,7 +20,6 @@ export interface AuditLogRow {
 }
 
 export interface ListAuditLogsOpts {
-  tenantId: string;
   /** 開始日時 (ISO, inclusive)。 未指定なら下限なし。 */
   from?: string | null;
   /** 終了日時 (ISO, inclusive)。 未指定なら上限なし。 */
@@ -40,14 +38,9 @@ export const DEFAULT_LIST_LIMIT = 500;
 /** CSV 全件取得時の 1 ページあたり件数。 */
 const EXPORT_PAGE_SIZE = 1000;
 
-/** tenant / 期間 / 実行者 / 操作種別の絞り込みをクエリ文字列に組み立てる。 */
-function buildQuery(
-  opts: Omit<ListAuditLogsOpts, "tenantId">,
-  limit: number,
-  offset: number,
-): string {
+/** 期間 / 実行者 / 操作種別の絞り込みをクエリ文字列に組み立てる。 */
+function buildQuery(opts: ListAuditLogsOpts, limit: number, offset: number): string {
   const p = new URLSearchParams();
-  // tenant はサーバが caller から決めるため送らない。
   if (opts.from) p.set("from", opts.from);
   if (opts.to) p.set("to", opts.to);
   if (opts.actorId) p.set("actorId", opts.actorId);

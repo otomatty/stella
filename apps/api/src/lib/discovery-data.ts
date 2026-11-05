@@ -4,7 +4,7 @@
  * 3 つのテーブル (`discovery_requests` / `discovery_materials` / `discovery_attempts`)
  * への出入りをここに集める。**秘匿の判定 (誰に見せてよいか) はここには置かない** —
  * 源流ステージの状態で決まるので、評価器を持つルート側 (`routes/discovery.ts` /
- * `routes/skill-map.ts`) が最後に絞る。ここは「テナントで絞って読む」までを担う。
+ * `routes/skill-map.ts`) が最後に絞る。ここは行の読み書きまでを担う。
  */
 
 import { and, asc, count, countDistinct, desc, eq, inArray, sql } from "drizzle-orm";
@@ -32,7 +32,6 @@ import {
   quizQuestions,
   quizzes,
   sections,
-  stages,
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
 
@@ -68,20 +67,19 @@ export interface DiscoveryMaterialRow {
 /**
  * つまずきを 1 行記録する (**既にあれば何もしない**)。
  *
- * 同じ文脈で何人が何度つまずいても行は増えない — 一意索引 (tenant × stage × topic)
- * に `do nothing` で当てる。講師の待ち行列が同じ話題で埋まるのを防ぐのが目的で、
+ * 同じ文脈で何人が何度つまずいても行は増えない — 一意索引に `do nothing` で当てる。
+ * 講師の待ち行列が同じ話題で埋まるのを防ぐのが目的で、
  * 「何人つまずいたか」は数えない (数えるなら誰かを記録することになる)。
  */
 export async function upsertDiscoveryRequest(
   db: Db,
-  input: { tenantId: string; stageId: string; topic: string; origin: DiscoveryRequestOrigin },
+  input: { stageId: string; topic: string; origin: DiscoveryRequestOrigin },
 ): Promise<void> {
   const topic = input.topic.trim().slice(0, TOPIC_MAX_LENGTH);
   if (!topic) return;
   await db
     .insert(discoveryRequests)
     .values({
-      tenantId: input.tenantId,
       stageId: input.stageId,
       topic,
       origin: input.origin,
@@ -95,22 +93,18 @@ export async function upsertDiscoveryRequest(
 /**
  * レッスン id からステージ id とレッスン名を引く (つまずきの記録に使う)。
  *
- * **テナントで必ず絞る。** レッスン id は受講者の送るボディから来うるので、絞らないと
- * 他テナントの id を送るだけで「そのテナントのステージに紐づく行」を自分のテナントへ
- * 作れてしまう (`discovery_requests.stage_id` は stages への外部キー = 他テナントの
- * ステージ id が自テナントの行に入る)。
+ * レッスン id は受講者の送るボディから来うる。無い id は null を返し、呼び出し側は
+ * リクエストを作らない。
  */
 export async function resolveLessonStage(
   db: Db,
-  tenantId: string,
   lessonId: string,
 ): Promise<{ stageId: string; lessonTitle: string } | null> {
   const [row] = await db
     .select({ stageId: sections.stageId, lessonTitle: lessons.title })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(stages, eq(stages.id, sections.stageId))
-    .where(and(eq(lessons.id, lessonId), eq(stages.tenantId, tenantId)))
+    .where(eq(lessons.id, lessonId))
     .limit(1);
   return row ? { stageId: row.stageId, lessonTitle: row.lessonTitle } : null;
 }
@@ -119,18 +113,14 @@ export async function resolveLessonStage(
  * 課題 id から **正本の** 課題名を引く (つまずきの記録に使う)。
  *
  * 提出行の `assignment_title` は受講者 (VS Code 拡張) が送った文字列がそのまま入って
- * いるので、つまずきの短文には使わない。同じテナントの `assignments` に無い id なら
- * `null` を返し、呼び出し側がレッスン名で組み立てる。
+ * いるので、つまずきの短文には使わない。`assignments` に無い id なら `null` を返し、
+ * 呼び出し側がレッスン名で組み立てる。
  */
-export async function resolveAssignmentTitle(
-  db: Db,
-  tenantId: string,
-  assignmentId: string,
-): Promise<string | null> {
+export async function resolveAssignmentTitle(db: Db, assignmentId: string): Promise<string | null> {
   const [row] = await db
     .select({ title: assignments.title })
     .from(assignments)
-    .where(and(eq(assignments.id, assignmentId), eq(assignments.tenantId, tenantId)))
+    .where(eq(assignments.id, assignmentId))
     .limit(1);
   return row?.title ?? null;
 }
@@ -155,10 +145,7 @@ export async function countFailedQuizAttempts(
 }
 
 /** 一覧 (講師のレビュー画面) 用のリクエスト。新しい順。 */
-export async function listDiscoveryRequests(
-  db: Db,
-  tenantId: string,
-): Promise<DiscoveryRequestRow[]> {
+export async function listDiscoveryRequests(db: Db): Promise<DiscoveryRequestRow[]> {
   const rows = await db
     .select({
       id: discoveryRequests.id,
@@ -168,7 +155,6 @@ export async function listDiscoveryRequests(
       createdAt: discoveryRequests.createdAt,
     })
     .from(discoveryRequests)
-    .where(eq(discoveryRequests.tenantId, tenantId))
     .orderBy(desc(discoveryRequests.createdAt));
 
   // 「もう教材を作ったか」は **別クエリで数えて JS で合わせる**。相関サブクエリを
@@ -178,7 +164,6 @@ export async function listDiscoveryRequests(
   const counts = await db
     .select({ requestId: discoveryMaterials.requestId, n: count() })
     .from(discoveryMaterials)
-    .where(eq(discoveryMaterials.tenantId, tenantId))
     .groupBy(discoveryMaterials.requestId);
   const countByRequest = new Map(counts.map((row) => [row.requestId, Number(row.n)]));
 
@@ -205,14 +190,10 @@ function toMaterialRow(row: typeof discoveryMaterials.$inferSelect): DiscoveryMa
 }
 
 /** 一覧 (講師のレビュー画面) 用の教材。新しい順。 */
-export async function listDiscoveryMaterials(
-  db: Db,
-  tenantId: string,
-): Promise<DiscoveryMaterialRow[]> {
+export async function listDiscoveryMaterials(db: Db): Promise<DiscoveryMaterialRow[]> {
   const rows = await db
     .select()
     .from(discoveryMaterials)
-    .where(eq(discoveryMaterials.tenantId, tenantId))
     .orderBy(desc(discoveryMaterials.createdAt));
   return rows.map(toMaterialRow);
 }
@@ -227,7 +208,7 @@ export interface DiscoverySummaryRow {
 }
 
 /**
- * 承認済み教材の **見出しだけ** (テナントぶん)。
+ * 承認済み教材の **見出しだけ**。
  *
  * ホームを開くたびに走るので、設問の JSON 全文は読まない — 一覧に要るのは題名と
  * 説明と問題数だけで、設問そのものは受験 (`GET /api/discovery/:id`) でだけ要る。
@@ -237,10 +218,7 @@ export interface DiscoverySummaryRow {
  * **公開の可否はここでは決めない** — 呼び出し側が源流ステージの状態で絞る。
  * ここで `approved` に絞るのは、下書きが応答へ漏れる経路をそもそも作らないため。
  */
-export async function loadApprovedDiscoverySummaries(
-  db: Db,
-  tenantId: string,
-): Promise<DiscoverySummaryRow[]> {
+export async function loadApprovedDiscoverySummaries(db: Db): Promise<DiscoverySummaryRow[]> {
   const rows = await db
     .select({
       id: discoveryMaterials.id,
@@ -251,33 +229,26 @@ export async function loadApprovedDiscoverySummaries(
       questionCount: sql<number>`coalesce(json_array_length(${discoveryMaterials.questions}), 0)`,
     })
     .from(discoveryMaterials)
-    .where(
-      and(
-        eq(discoveryMaterials.tenantId, tenantId),
-        eq(discoveryMaterials.reviewStatus, "approved"),
-      ),
-    )
+    .where(eq(discoveryMaterials.reviewStatus, "approved"))
     .orderBy(asc(discoveryMaterials.createdAt));
   return rows.map((row) => ({ ...row, questionCount: Number(row.questionCount ?? 0) }));
 }
 
-/** 1 件読む (他テナントのものは返さない)。 */
+/** 1 件読む。無ければ null。 */
 export async function loadDiscoveryMaterial(
   db: Db,
-  tenantId: string,
   id: string,
 ): Promise<DiscoveryMaterialRow | null> {
   const [row] = await db
     .select()
     .from(discoveryMaterials)
-    .where(and(eq(discoveryMaterials.id, id), eq(discoveryMaterials.tenantId, tenantId)))
+    .where(eq(discoveryMaterials.id, id))
     .limit(1);
   return row ? toMaterialRow(row) : null;
 }
 
 export async function loadDiscoveryRequest(
   db: Db,
-  tenantId: string,
   id: string,
 ): Promise<{ id: string; stageId: string; topic: string; origin: DiscoveryRequestOrigin } | null> {
   const [row] = await db
@@ -288,13 +259,12 @@ export async function loadDiscoveryRequest(
       origin: discoveryRequests.origin,
     })
     .from(discoveryRequests)
-    .where(and(eq(discoveryRequests.id, id), eq(discoveryRequests.tenantId, tenantId)))
+    .where(eq(discoveryRequests.id, id))
     .limit(1);
   return row ?? null;
 }
 
 export interface NewDiscoveryMaterial {
-  tenantId: string;
   stageId: string;
   title: string;
   description: string;
@@ -311,7 +281,6 @@ export async function insertDiscoveryMaterial(
   const [row] = await db
     .insert(discoveryMaterials)
     .values({
-      tenantId: input.tenantId,
       stageId: input.stageId,
       title: input.title,
       description: input.description,
@@ -347,24 +316,14 @@ export interface DiscoveryMaterialPatch {
  */
 export async function updateDiscoveryMaterial(
   db: Db,
-  tenantId: string,
   id: string,
   patch: DiscoveryMaterialPatch,
   expectedReviewStatus?: DiscoveryReviewStatus,
 ): Promise<DiscoveryMaterialRow | null> {
-  const [row] = await db
-    .update(discoveryMaterials)
-    .set(patch)
-    .where(
-      and(
-        eq(discoveryMaterials.id, id),
-        eq(discoveryMaterials.tenantId, tenantId),
-        ...(expectedReviewStatus
-          ? [eq(discoveryMaterials.reviewStatus, expectedReviewStatus)]
-          : []),
-      ),
-    )
-    .returning();
+  const match = expectedReviewStatus
+    ? and(eq(discoveryMaterials.id, id), eq(discoveryMaterials.reviewStatus, expectedReviewStatus))
+    : eq(discoveryMaterials.id, id);
+  const [row] = await db.update(discoveryMaterials).set(patch).where(match).returning();
   return row ? toMaterialRow(row) : null;
 }
 
@@ -461,7 +420,6 @@ export async function insertDiscoveryAttempt(
   record: DiscoveryAttemptRecord,
 ): Promise<void> {
   await db.insert(discoveryAttempts).values({
-    tenantId: caller.tenantId,
     userId: caller.id,
     materialId: record.materialId,
     score: record.score,

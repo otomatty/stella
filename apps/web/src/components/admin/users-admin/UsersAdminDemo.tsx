@@ -38,7 +38,7 @@ export function UsersAdminDemo() {
     <>
       <PageHeader
         title="ユーザー管理"
-        sub="テナント内の全ユーザーを管理 · CSV一括招待 / ロール割当"
+        sub="ユーザーを管理 · CSV一括招待 / ロール割当"
         actions={
           <>
             <Button disabled>

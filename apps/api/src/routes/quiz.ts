@@ -29,6 +29,7 @@ import type { Caller } from "../lib/authz.js";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import type { LearnerQuizHistory, QuizAnswer } from "@stella/shared/cms/types";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { clientIp } from "../lib/audit.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { noteQuizStumble } from "../lib/discovery-stumble.js";
@@ -38,7 +39,7 @@ import { applyOutcomesToCards } from "../lib/srs-cards.js";
 export const quizRoute = new Hono<{ Bindings: Env }>();
 
 /**
- * lesson が caller の同テナントで、かつアクセス可かを判定する。
+ * lesson がアクセス可かを判定する。
  * ロールによらず published かつ当該ステージに active enrollment があること。
  * 可なら属するステージ id を返す (合格時の自動修了判定に使う)。不可なら null。
  */
@@ -50,7 +51,6 @@ async function authorizedStageForLesson(
   const rows = await db
     .select({
       status: stages.status,
-      tenantId: stages.tenantId,
       stageId: stages.id,
     })
     .from(lessons)
@@ -60,7 +60,6 @@ async function authorizedStageForLesson(
     .limit(1);
   const row = rows[0];
   if (!row) return null;
-  if (row.tenantId !== caller.tenantId) return null;
   if (row.status !== "published") return null;
 
   const enrolled = await db
@@ -244,7 +243,7 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
     // 合格済みの再受験は上限に関係なく許す (成績は下がらない)。
     const inserted = await db.run(
       sql`insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, answers, submitted_at)
-          select ${crypto.randomUUID()}, ${caller.tenantId}, ${quizId}, ${caller.id}, ${score}, ${max}, ${passed ? 1 : 0}, ${JSON.stringify(answers)}, ${Date.now()}
+          select ${crypto.randomUUID()}, ${LEGACY_TENANT_ID}, ${quizId}, ${caller.id}, ${score}, ${max}, ${passed ? 1 : 0}, ${JSON.stringify(answers)}, ${Date.now()}
           where ${quiz.maxAttempts} is null
              or (select count(*) from quiz_attempts where quiz_id = ${quizId} and user_id = ${caller.id}) < ${quiz.maxAttempts}
              or exists (select 1 from quiz_attempts where quiz_id = ${quizId} and user_id = ${caller.id} and passed = 1)`,
@@ -260,7 +259,6 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
     try {
       await applyOutcomesToCards(
         db,
-        caller.tenantId,
         caller.id,
         results.map((r) => ({ questionId: r.question_id, correct: r.correct })),
         new Date(),
@@ -277,7 +275,6 @@ quizRoute.post("/api/quiz/:quizId/attempt", async (c) => {
     if (!passed) {
       try {
         await noteQuizStumble(db, {
-          tenantId: caller.tenantId,
           userId: caller.id,
           quizId,
           lessonId: quiz.lessonId,

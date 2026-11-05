@@ -33,11 +33,10 @@ import { ROLE_LABEL } from "./shared";
 interface InviteDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  tenantName: string;
   onInvited: () => Promise<void> | void;
 }
 
-export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: InviteDialogProps) {
+export function InviteDialog({ open, onOpenChange, onInvited }: InviteDialogProps) {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<AssignableProfileRole>("student");
@@ -95,7 +94,7 @@ export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: Invi
             ユーザーを招待
           </DialogTitle>
           <DialogDescription>
-            {tenantName} に招待メールを送ります。 受諾後、 指定したロールでログインできます。
+            このメールアドレスで Google ログインすると、指定したロールで入れます。
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4 px-6 py-2">
@@ -139,7 +138,7 @@ export function InviteDialog({ open, onOpenChange, tenantName, onInvited }: Invi
               キャンセル
             </Button>
             <Button type="submit" variant="accent" disabled={submitting}>
-              {submitting ? "送信中…" : "招待を送る"}
+              {submitting ? "送信中…" : "招待する"}
             </Button>
           </DialogFooter>
         </form>

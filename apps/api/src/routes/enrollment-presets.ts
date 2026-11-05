@@ -32,7 +32,6 @@ export const enrollmentPresetsRoute = new Hono<{ Bindings: Env }>();
 
 const PRESET_SELECT = {
   id: enrollmentPresets.id,
-  tenant_id: enrollmentPresets.tenantId,
   name: enrollmentPresets.name,
   description: enrollmentPresets.description,
   archived: enrollmentPresets.archived,
@@ -60,8 +59,8 @@ function requirePresetUser(caller: Caller): void {
   requireRole(caller, "instructor", "admin", "platform_admin");
 }
 
-/** 対象プリセットが caller と同テナントであることを保証して返す。 */
-async function loadPreset(db: Db, id: string, tenantId: string) {
+/** 対象プリセットを id で読む。無ければ 404。 */
+async function loadPreset(db: Db, id: string) {
   const rows = await db
     .select(PRESET_SELECT)
     .from(enrollmentPresets)
@@ -69,31 +68,24 @@ async function loadPreset(db: Db, id: string, tenantId: string) {
     .limit(1);
   const preset = rows[0];
   if (!preset) throw new ApiError("プリセットが見つかりません", 404);
-  if (preset.tenant_id !== tenantId) {
-    throw new ApiError("他テナントのプリセットは操作できません", 403);
-  }
   return preset;
 }
 
 /**
- * プリセット項目のステージが同テナントに実在するか確かめ、 未公開のものを拾う。
+ * プリセット項目のステージが実在するか確かめ、 未公開のものを拾う。
  *
  * 未公開 (draft / archived) でも保存 / 適用は止めない。 教材を作りながらプリセットを
  * 組む運用があるため。 ただし受講者には見えないので、 呼び出し側へ警告として返す。
  */
-async function checkPresetStages(
-  db: Db,
-  tenantId: string,
-  stageIds: string[],
-): Promise<{ unpublished: string[] }> {
+async function checkPresetStages(db: Db, stageIds: string[]): Promise<{ unpublished: string[] }> {
   if (stageIds.length === 0) return { unpublished: [] };
   const rows = await db
     .select({ id: stages.id, status: stages.status })
     .from(stages)
-    .where(and(eq(stages.tenantId, tenantId), inArray(stages.id, stageIds)));
+    .where(inArray(stages.id, stageIds));
   const found = new Map(rows.map((row) => [row.id, row.status]));
   if (stageIds.some((id) => !found.has(id))) {
-    throw new ApiError("同じテナントに存在しない教材が含まれています", 403);
+    throw new ApiError("教材が見つかりません", 404);
   }
   return { unpublished: stageIds.filter((id) => found.get(id) !== "published") };
 }
@@ -135,9 +127,9 @@ function itemInserts(db: Db, presetId: string, items: PresetItemInput[]) {
 // ---------------------------------------------------------------
 
 /**
- * staff: 同テナントのプリセット一覧 (項目込み)。
+ * staff: プリセット一覧 (項目込み)。
  *
- * 件数はテナントあたり数十を想定しているので、 プリセットと項目を 2 クエリで取って
+ * 件数は数十を想定しているので、 プリセットと項目を 2 クエリで取って
  * メモリ上で組み立てる (N+1 を避ける)。 退役済みは既定で返さない。
  */
 enrollmentPresetsRoute.get("/api/enrollment-presets", async (c) => {
@@ -149,14 +141,7 @@ enrollmentPresetsRoute.get("/api/enrollment-presets", async (c) => {
     const presetRows = await db
       .select(PRESET_SELECT)
       .from(enrollmentPresets)
-      .where(
-        includeArchived
-          ? eq(enrollmentPresets.tenantId, caller.tenantId)
-          : and(
-              eq(enrollmentPresets.tenantId, caller.tenantId),
-              eq(enrollmentPresets.archived, false),
-            ),
-      )
+      .where(includeArchived ? undefined : eq(enrollmentPresets.archived, false))
       .orderBy(asc(enrollmentPresets.name));
 
     if (presetRows.length === 0) return c.json({ rows: [] });
@@ -168,14 +153,7 @@ enrollmentPresetsRoute.get("/api/enrollment-presets", async (c) => {
       .select(ITEM_SELECT)
       .from(enrollmentPresetItems)
       .innerJoin(enrollmentPresets, eq(enrollmentPresetItems.presetId, enrollmentPresets.id))
-      .where(
-        includeArchived
-          ? eq(enrollmentPresets.tenantId, caller.tenantId)
-          : and(
-              eq(enrollmentPresets.tenantId, caller.tenantId),
-              eq(enrollmentPresets.archived, false),
-            ),
-      )
+      .where(includeArchived ? undefined : eq(enrollmentPresets.archived, false))
       .orderBy(asc(enrollmentPresetItems.order));
 
     const byPreset = new Map<string, typeof itemRows>();
@@ -208,21 +186,14 @@ enrollmentPresetsRoute.post("/api/enrollment-presets", async (c) => {
 
     const { unpublished } = await checkPresetStages(
       db,
-      caller.tenantId,
       items.map((i) => i.stage_id),
     );
 
-    // 名前はテナント内で一意 (退役していないものに限る)。 重複は入力の問題なので 409 で返す。
+    // 名前は一意 (退役していないものに限る)。 重複は入力の問題なので 409 で返す。
     const sameName = await db
       .select({ id: enrollmentPresets.id })
       .from(enrollmentPresets)
-      .where(
-        and(
-          eq(enrollmentPresets.tenantId, caller.tenantId),
-          eq(enrollmentPresets.name, name),
-          eq(enrollmentPresets.archived, false),
-        ),
-      )
+      .where(and(eq(enrollmentPresets.name, name), eq(enrollmentPresets.archived, false)))
       .limit(1);
     if (sameName[0]) {
       throw new ApiError("同じ名前のプリセットが既にあります", 409);
@@ -236,7 +207,6 @@ enrollmentPresetsRoute.post("/api/enrollment-presets", async (c) => {
       await db.batch([
         db.insert(enrollmentPresets).values({
           id: presetId,
-          tenantId: caller.tenantId,
           name,
           description,
           createdBy: caller.id,
@@ -283,7 +253,7 @@ enrollmentPresetsRoute.patch("/api/enrollment-presets/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requirePresetEditor(caller);
     const id = c.req.param("id");
-    await loadPreset(db, id, caller.tenantId);
+    await loadPreset(db, id);
 
     const validated = validatePresetInput(await c.req.json().catch(() => null));
     if (!validated.ok) throw new ApiError(validated.message, 400);
@@ -291,7 +261,6 @@ enrollmentPresetsRoute.patch("/api/enrollment-presets/:id", async (c) => {
 
     const { unpublished } = await checkPresetStages(
       db,
-      caller.tenantId,
       items.map((i) => i.stage_id),
     );
 
@@ -302,7 +271,6 @@ enrollmentPresetsRoute.patch("/api/enrollment-presets/:id", async (c) => {
       .from(enrollmentPresets)
       .where(
         and(
-          eq(enrollmentPresets.tenantId, caller.tenantId),
           eq(enrollmentPresets.name, name),
           // 一意制約は退役していないものに限るので、 ここでも退役済みは無視する
           // (消した名前を再利用できる)。
@@ -367,7 +335,7 @@ enrollmentPresetsRoute.delete("/api/enrollment-presets/:id", async (c) => {
     const { caller, db } = await getCaller(c);
     requirePresetEditor(caller);
     const id = c.req.param("id");
-    const preset = await loadPreset(db, id, caller.tenantId);
+    const preset = await loadPreset(db, id);
 
     await db.update(enrollmentPresets).set({ archived: true }).where(eq(enrollmentPresets.id, id));
 

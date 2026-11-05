@@ -14,9 +14,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { StageThumb } from "@/components/common/StageThumb";
-import type { AvatarTone, Tenant } from "@/data/types";
+import type { AvatarTone } from "@/data/types";
 import type { InstructorStudentProgress } from "@stella/shared/cms/types";
-import { useStagesForTenant } from "@/data/stages-source";
+import { useStages } from "@/data/stages-source";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,6 @@ function severityOf(s: InstructorStudentProgress): {
 
 interface Props {
   page: string;
-  tenantId: Tenant["id"];
   backendEnabled: boolean;
   /** 検索から指定されたステージ。 一覧内で強調表示してスクロールする (Issue #77)。 */
   highlightStageId?: string | null;
@@ -59,7 +58,6 @@ interface Props {
 
 export const InstructorGeneric = ({
   page,
-  tenantId,
   backendEnabled,
   highlightStageId = null,
   highlightSeq = 0,
@@ -67,7 +65,6 @@ export const InstructorGeneric = ({
   if (page === "stages") {
     return (
       <InstructorStagesPage
-        tenantId={tenantId}
         backendEnabled={backendEnabled}
         highlightStageId={highlightStageId}
         highlightSeq={highlightSeq}
@@ -75,7 +72,7 @@ export const InstructorGeneric = ({
     );
   }
   if (page === "students") {
-    return <InstructorStudentsPage tenantId={tenantId} backendEnabled={backendEnabled} />;
+    return <InstructorStudentsPage backendEnabled={backendEnabled} />;
   }
 
   return (
@@ -86,14 +83,8 @@ export const InstructorGeneric = ({
   );
 };
 
-function InstructorStudentsPage({
-  tenantId,
-  backendEnabled,
-}: {
-  tenantId: Tenant["id"];
-  backendEnabled: boolean;
-}) {
-  const { overview, loading, error } = useInstructorOverview(tenantId, backendEnabled);
+function InstructorStudentsPage({ backendEnabled }: { backendEnabled: boolean }) {
+  const { overview, loading, error } = useInstructorOverview(backendEnabled);
 
   return (
     <>
@@ -131,17 +122,15 @@ function InstructorStudentsPage({
 }
 
 function InstructorStagesPage({
-  tenantId,
   backendEnabled,
   highlightStageId,
   highlightSeq,
 }: {
-  tenantId: Tenant["id"];
   backendEnabled: boolean;
   highlightStageId: string | null;
   highlightSeq: number;
 }) {
-  const { stages, loading, error } = useStagesForTenant(tenantId, true);
+  const { stages, loading, error } = useStages(true);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   // 検索から来たステージを可視領域に入れる。 同じステージを選び直した場合も

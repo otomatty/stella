@@ -25,16 +25,10 @@ import { inviteUsers } from "@/lib/admin-users-api";
 interface CsvInviteDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  tenantName: string;
   onInvited: () => Promise<void> | void;
 }
 
-export function CsvInviteDialog({
-  open,
-  onOpenChange,
-  tenantName,
-  onInvited,
-}: CsvInviteDialogProps) {
+export function CsvInviteDialog({ open, onOpenChange, onInvited }: CsvInviteDialogProps) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -89,8 +83,8 @@ export function CsvInviteDialog({
             CSV一括招待
           </DialogTitle>
           <DialogDescription>
-            {tenantName} へ一括招待します。 形式: <code>email, 表示名, ロール</code> (1 行 1 名 /
-            ヘッダ行は自動スキップ)。 ロールは 受講者 / 講師 / 管理者。
+            形式: <code>email, 表示名, ロール</code> (1 行 1 名 / ヘッダ行は自動スキップ)。 ロールは
+            受講者 / 講師 / 管理者。
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-6 py-2">

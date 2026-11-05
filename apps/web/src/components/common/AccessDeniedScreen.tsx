@@ -44,7 +44,7 @@ export const AccessDeniedScreen = ({ allow }: { allow: Role[] }) => {
           {allow.length ? `${formatRoles(allow)}向けのページです` : "アクセスが制限されています"}
           {shell ? `（現在のロール: ${ROLE_LABELS[shell.role]}）` : ""}。
           <br />
-          権限が必要な場合はテナント管理者にお問い合わせください。
+          権限が必要な場合は管理者にお問い合わせください。
         </>
       }
       actions={

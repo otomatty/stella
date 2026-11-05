@@ -213,28 +213,11 @@ describe("Better Auth (本番の経路)", () => {
 });
 
 describe("接続コードの守り", () => {
-  it("無効化した利用者と停止中の組織には、接続コードを交換させない", async () => {
+  it("無効化した利用者には、接続コードを交換させない", async () => {
     const { issueCode, exchange } = setup();
     const disabledCode = await issueCode();
     db.sqlite.exec("UPDATE profiles SET disabled = 1 WHERE id = 'learner'");
     expect((await exchange(disabledCode)).status).toBe(401);
-
-    db.sqlite.exec("UPDATE profiles SET disabled = 0 WHERE id = 'learner'");
-    const suspendedCode = await issueCode();
-    db.sqlite.exec("UPDATE tenants SET active = 0 WHERE id = 'ses'");
-    expect((await exchange(suspendedCode)).status).toBe(401);
-    // 停止中は API 自体も使えない (コードの発行も止まる)。
-    const { app } = mountTestApp({ DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env, authRoute);
-    const issued = await request(
-      app,
-      { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env,
-      "/api/auth/vscode-link",
-      {
-        method: "POST",
-        token: await signAccessToken(SECRET, "learner", "learner@example.test"),
-      },
-    );
-    expect(issued.status).toBe(403);
   });
 });
 

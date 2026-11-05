@@ -4,21 +4,22 @@
  *   GET  /api/me  … caller のプロフィールを返す (未招待は invite_required)
  *   POST /api/me  … 表示名・週の時間・開始日・教材の OS の自己更新 / 未招待は invite_required
  *
- * role / tenant / email は招待とログイン (JWT) が真実なので、
- * 本人からは変更させない (別テナントのメールを名乗るなりすましを防ぐ)。
+ * role / email は招待とログイン (JWT) が真実なので、本人からは変更させない。
  *
  * getCaller は「プロフィール必須」だが、 ここは JWT 検証のみで profile 有無を判定するため
  * verifyToken (JWT 検証のみ) を直接使う。
  */
 
-import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { parseOsPreference } from "@stella/shared/markdown/os-blocks";
 import { parsePaceSettings } from "@stella/shared/study/pace";
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 
 import { getDb } from "../db/client.js";
-import { profiles, tenants } from "../db/schema.js";
-import { ApiError, assertTenantActive, errorResponse, verifyToken } from "../lib/authz.js";
+import { profiles } from "../db/schema.js";
+import { ApiError, errorResponse, verifyToken } from "../lib/authz.js";
 import type { Env } from "../env.js";
 import { paceProfileUpdate } from "../lib/learning-pace.js";
 
@@ -46,37 +47,25 @@ meRoute.get("/api/me", async (c) => {
   try {
     const payload = await verifyToken(c);
     const db = getDb(c.env);
-    // テナント表示名は seed カタログではなく DB を真実とするため、 profile と一緒に返す。
     const rows = await db
-      .select({
-        ...PROFILE_COLS,
-        tenant_name: tenants.name,
-        tenant_subtitle: tenants.subtitle,
-        tenant_icon: tenants.icon,
-        tenant_active: tenants.active,
-      })
+      .select(PROFILE_COLS)
       .from(profiles)
-      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, payload.sub as string))
       .limit(1);
-    const row = rows[0];
-    if (!row) {
+    const profile = rows[0];
+    if (!profile) {
       throw new ApiError("invite_required", 403);
     }
-    if (row.disabled) throw new ApiError("このアカウントは無効化されています", 403);
-    assertTenantActive(row.tenant_active);
-    const { tenant_name, tenant_subtitle, tenant_icon, tenant_active: _active, ...profile } = row;
+    if (profile.disabled) throw new ApiError("このアカウントは無効化されています", 403);
     return c.json({
       profile,
-      tenant:
-        tenant_name != null
-          ? {
-              id: profile.tenant_id,
-              name: tenant_name,
-              subtitle: tenant_subtitle,
-              icon: tenant_icon,
-            }
-          : null,
+      // 開いたままの古いタブ用。DB の列を消す次の PR で消す
+      tenant: {
+        id: LEGACY_TENANT_ID,
+        name: DISPLAY_NAME,
+        subtitle: null,
+        icon: null,
+      },
     });
   } catch (err) {
     return errorResponse(c, err);
@@ -119,16 +108,14 @@ meRoute.post("/api/me", async (c) => {
     if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
 
     const existing = await db
-      .select({ id: profiles.id, disabled: profiles.disabled, tenantActive: tenants.active })
+      .select({ id: profiles.id, disabled: profiles.disabled })
       .from(profiles)
-      .leftJoin(tenants, eq(profiles.tenantId, tenants.id))
       .where(eq(profiles.id, userId))
       .limit(1);
     if (!existing[0]) {
       throw new ApiError("invite_required", 403);
     }
     if (existing[0].disabled) throw new ApiError("このアカウントは無効化されています", 403);
-    assertTenantActive(existing[0].tenantActive);
 
     // 本人が設定した名前は Google ログインで上書きしない (auth.ts の syncGoogleDisplayName)。
     await db.update(profiles).set(update).where(eq(profiles.id, userId));

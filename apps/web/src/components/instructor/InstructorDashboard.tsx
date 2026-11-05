@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardActions } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import type { AvatarTone, Tenant } from "@/data/types";
+import type { AvatarTone } from "@/data/types";
 import type { InstructorStudentProgress } from "@stella/shared/cms/types";
 import { useRefreshSubmissionsOnOpen, useSubmissions } from "@/hooks/useSubmissions";
 import { useInstructorOverview } from "@/hooks/useAnalytics";
@@ -29,7 +29,6 @@ import { hasAiDraft } from "@/lib/ai-draft";
 import { needsHumanReview } from "@/lib/review-queue";
 
 interface InstructorDashboardProps {
-  tenantId: Tenant["id"];
   setPage: (p: string) => void;
   onOpenReview: (submissionId: string) => void;
   backendEnabled: boolean;
@@ -55,14 +54,13 @@ function severityOf(s: InstructorStudentProgress): {
 }
 
 export const InstructorDashboard = ({
-  tenantId,
   setPage,
   onOpenReview,
   backendEnabled,
   currentUserId = null,
 }: InstructorDashboardProps) => {
-  const { submissions } = useSubmissions(tenantId);
-  useRefreshSubmissionsOnOpen(tenantId, backendEnabled);
+  const { submissions } = useSubmissions();
+  useRefreshSubmissionsOnOpen(backendEnabled);
   const scope = useAssignedScope(currentUserId, backendEnabled);
   // 人のレビューを待つ提出だけを数える (AI が確認中・置き換えた提出は除く。キューと同じ数え方)。
   const pending = submissions.filter(
@@ -74,11 +72,7 @@ export const InstructorDashboard = ({
   const aiReadyCount = pending.filter(hasAiDraft).length;
 
   // 担当の取得が済んでから引く (全員 → 担当の順に 2 度引かない)。
-  const { overview } = useInstructorOverview(
-    tenantId,
-    backendEnabled && scope.ready,
-    scope.assignedOnly,
-  );
+  const { overview } = useInstructorOverview(backendEnabled && scope.ready, scope.assignedOnly);
 
   // デモ専用のみデモ定数。backendEnabled 時は overview null → KPI 0 / 空リスト。
   const overdueLearners = overview ? overview.overdue_learners : backendEnabled ? 0 : 4;

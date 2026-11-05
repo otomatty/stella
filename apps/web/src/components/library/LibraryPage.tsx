@@ -33,7 +33,7 @@ function message(error: unknown): string {
 }
 
 export function LibraryPage() {
-  const { currentUserId, tenantId, backendEnabled } = useAppShell();
+  const { currentUserId, backendEnabled } = useAppShell();
   if (!backendEnabled || !isApiConfigured())
     return (
       <StatusScreen
@@ -44,7 +44,7 @@ export function LibraryPage() {
       />
     );
   if (!currentUserId) return null;
-  return <Shelf key={`${tenantId}:${currentUserId}`} />;
+  return <Shelf key={currentUserId} />;
 }
 
 /** 幅を測って、棚 1 段に並べる冊数を決める。 */

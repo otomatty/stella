@@ -9,13 +9,7 @@ import {
   sections,
   stages,
 } from "../db/schema.js";
-import {
-  ApiError,
-  errorResponse,
-  getCaller,
-  requireRole,
-  requireTenantAdmin,
-} from "../lib/authz.js";
+import { ApiError, errorResponse, getCaller, requireRole, requireAdmin } from "../lib/authz.js";
 import {
   loadLearningPace,
   paceProfileUpdate,
@@ -55,7 +49,6 @@ learningPaceRoute.get("/api/learning-pace/learners", async (c) => {
       .leftJoin(learnerInstructors, eq(learnerInstructors.learnerId, profiles.id))
       .where(
         and(
-          eq(profiles.tenantId, caller.tenantId),
           eq(profiles.role, "student"),
           eq(profiles.disabled, false),
           ...(isAdmin ? [] : [eq(learnerInstructors.instructorId, caller.id)]),
@@ -65,13 +58,7 @@ learningPaceRoute.get("/api/learning-pace/learners", async (c) => {
       ? await db
           .select({ id: profiles.id, name: profiles.displayName })
           .from(profiles)
-          .where(
-            and(
-              eq(profiles.tenantId, caller.tenantId),
-              eq(profiles.role, "instructor"),
-              eq(profiles.disabled, false),
-            ),
-          )
+          .where(and(eq(profiles.role, "instructor"), eq(profiles.disabled, false)))
       : [];
     return c.json({ learners, instructors });
   } catch (err) {
@@ -94,10 +81,7 @@ learningPaceRoute.patch("/api/learning-pace/:userId", async (c) => {
       throw new ApiError(err instanceof Error ? err.message : "学習設定が不正です", 400);
     }
     if (!Object.keys(update).length) throw new ApiError("更新する設定を入力してください", 400);
-    await db
-      .update(profiles)
-      .set(update)
-      .where(and(eq(profiles.id, userId), eq(profiles.tenantId, caller.tenantId)));
+    await db.update(profiles).set(update).where(eq(profiles.id, userId));
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
@@ -107,7 +91,7 @@ learningPaceRoute.patch("/api/learning-pace/:userId", async (c) => {
 learningPaceRoute.put("/api/learning-pace/:userId/instructor", async (c) => {
   try {
     const { db, caller } = await getCaller(c);
-    requireTenantAdmin(caller);
+    requireAdmin(caller);
     const userId = c.req.param("userId");
     await requirePaceLearner(db, caller, userId);
     const body = (await c.req.json().catch(() => null)) as { instructor_id?: unknown } | null;
@@ -124,7 +108,6 @@ learningPaceRoute.put("/api/learning-pace/:userId/instructor", async (c) => {
         .where(
           and(
             eq(profiles.id, body.instructor_id),
-            eq(profiles.tenantId, caller.tenantId),
             eq(profiles.role, "instructor"),
             eq(profiles.disabled, false),
           ),
@@ -158,7 +141,6 @@ learningPaceRoute.get("/api/learning-pace/:userId/diagnostics", async (c) => {
       .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
         and(
-          eq(stages.tenantId, caller.tenantId),
           eq(stages.status, "published"),
           eq(stages.format, 2),
           eq(tasks.active, true),
@@ -203,7 +185,6 @@ learningPaceRoute.put("/api/learning-pace/:userId/diagnostics", async (c) => {
       .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
         and(
-          eq(stages.tenantId, caller.tenantId),
           eq(stages.status, "published"),
           eq(stages.format, 2),
           eq(tasks.active, true),

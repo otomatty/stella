@@ -31,12 +31,10 @@ beforeEach(async () => {
     { id: "ses", name: "SES" },
     { id: "other", name: "Other" },
   ]);
-  await db
-    .insert(profiles)
-    .values({ id: "learner", tenantId: "ses", role: "student", displayName: "受講者" });
+  await db.insert(profiles).values({ id: "learner", role: "student", displayName: "受講者" });
   await db.insert(stages).values([
-    { id: "enrolled", tenantId: "ses", slug: "enrolled", title: "受講中" },
-    { id: "closed", tenantId: "ses", slug: "closed", title: "未受講" },
+    { id: "enrolled", slug: "enrolled", title: "受講中" },
+    { id: "closed", slug: "closed", title: "未受講" },
   ]);
 });
 afterEach(() => database.sqlite.close());
@@ -49,23 +47,20 @@ describe("お知らせの履歴", () => {
     await db.insert(announcements).values([
       {
         id: "general",
-        tenantId: "ses",
         title: "入会前の連絡",
         publishedAt: new Date("2026-01-01T00:00:00Z"),
       },
       {
         id: "stage",
-        tenantId: "ses",
         stageId: "enrolled",
         title: "受講開始前の連絡",
         publishedAt: new Date("2026-01-02T00:00:00Z"),
       },
-      { id: "hidden", tenantId: "ses", stageId: "closed", title: "未受講" },
-      { id: "other", tenantId: "other", title: "別のテナント" },
+      { id: "hidden", stageId: "closed", title: "未受講" },
     ]);
     await db
       .insert(enrollments)
-      .values({ tenantId: "ses", userId: "learner", stageId: "enrolled", status: "active" });
+      .values({ userId: "learner", stageId: "enrolled", status: "active" });
     expect(await json(await get("/api/notifications"))).toEqual({ rows: [] });
     const result = await get("/api/announcements");
     expect(result.status).toBe(200);
@@ -75,11 +70,10 @@ describe("お知らせの履歴", () => {
   });
 
   it("添削通知が30件あっても、過去のお知らせを一覧で読める", async () => {
-    await db.insert(announcements).values({ id: "old", tenantId: "ses", title: "以前の連絡" });
+    await db.insert(announcements).values({ id: "old", title: "以前の連絡" });
     for (let i = 0; i < 30; i++) {
       await db.insert(notifications).values({
         userId: "learner",
-        tenantId: "ses",
         type: "review_completed",
         title: `添削 ${i}`,
       });
@@ -94,7 +88,6 @@ describe("お知らせの履歴", () => {
     for (let i = 0; i < 45; i++) {
       await db.insert(announcements).values({
         id: `notice-${String(i).padStart(2, "0")}`,
-        tenantId: "ses",
         title: `連絡 ${i}`,
         publishedAt: new Date("2026-01-01T00:00:00Z"),
       });

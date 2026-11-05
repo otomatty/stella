@@ -54,10 +54,6 @@ const ACTION_VARIANT: Partial<Record<AuditAction, ActionVariant>> = {
   enrollment_update: "default",
   enrollment_delete: "danger",
   certificate_issue: "accent",
-  org_create: "info",
-  org_update: "warning",
-  test_mode_enable: "warning",
-  test_mode_disable: "default",
   r2_orphan_cleanup: "danger",
 };
 
@@ -94,24 +90,23 @@ function dateInputToIso(value: string, endOfDay: boolean): string | null {
 }
 
 interface Props {
-  tenantId: string;
   backendEnabled: boolean;
 }
 
-export function AdminAuditPage({ tenantId, backendEnabled }: Props) {
+export function AdminAuditPage({ backendEnabled }: Props) {
   if (!backendEnabled) {
     return <AuditDemo />;
   }
-  return <AuditLive tenantId={tenantId} />;
+  return <AuditLive />;
 }
 
-function AuditLive({ tenantId }: { tenantId: string }) {
+function AuditLive() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [actorId, setActorId] = useState("");
   const [action, setAction] = useState("");
 
-  const { profiles } = useProfiles(tenantId);
+  const { profiles } = useProfiles();
 
   const filters: AuditFilters = useMemo(
     () => ({
@@ -123,7 +118,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
     [fromDate, toDate, actorId, action],
   );
 
-  const { logs, loading, error, refetch } = useAuditLogs(tenantId, filters);
+  const { logs, loading, error, refetch } = useAuditLogs(filters);
   const [exporting, setExporting] = useState(false);
 
   // 表示上限に達している = 古い証跡が表示から漏れている可能性がある。
@@ -146,7 +141,7 @@ function AuditLive({ tenantId }: { tenantId: string }) {
     setExporting(true);
     try {
       // 表示上限に縛られず、 絞り込み条件に一致する全件をエクスポートする。
-      const all = await listAllAuditLogs({ tenantId, ...filters });
+      const all = await listAllAuditLogs(filters);
       const headers = [
         "日時",
         "実行者",

@@ -4,13 +4,14 @@
  * 認可 (旧 RLS):
  *   - 受講者は自分の提出のみ insert (student_id = caller)。
  *   - 受講者は mine / 本人の :id を select 可。
- *   - 講師 / 管理者は同テナントの提出を一覧 / 更新。
+ *   - 講師 / 管理者は提出を一覧 / 更新。
  * 添削確定 (reviewed_at が初めて設定) で受講者へ review_completed 通知を生成する。
  *
  * 返却形は旧 PostgREST 埋め込み (`profiles!student_id(...)`) に合わせ、
  * `profiles: { display_name, initials }` をネストしてフロントのマッパーを無変更に保つ。
  */
 
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import type { RouteReason } from "@stella/shared/review/ai-review";
 import { nextSubmissionAttempt } from "@stella/shared/review/escalation";
 import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/grading-summary";
@@ -106,7 +107,6 @@ function toSummaryRow(
   const decided = s.verdict !== null;
   return {
     id: s.id,
-    tenant_id: s.tenantId,
     student_id: s.studentId,
     lesson_id: s.lessonId,
     assignment_id: s.assignmentId,
@@ -238,9 +238,9 @@ const latestAi = alias(aiReviews, "latest_ai");
 const isLatestAi = sql`${latestAi.id} = (select r.id from ai_reviews r where r.submission_id = "submissions"."id" order by r.created_at desc limit 1)`;
 
 /**
- * staff: テナント内の提出物一覧 (新着順)。
+ * staff: 提出物一覧 (新着順)。
  * `?assigned=mine` で、呼び出した講師が担当する受講者の提出 (新形式・旧形式とも) だけに絞る (#38)。
- * 省略時はこれまでどおりテナント全体。キューを理由で分け、待ち時間・担当者で並べるための列
+ * 省略時は全体。キューを理由で分け、待ち時間・担当者で並べるための列
  * (人に回した理由・確信度・判定案・担当講師) も返す (#34)。
  */
 submissionsRoute.get("/api/submissions", async (c) => {
@@ -271,18 +271,15 @@ submissionsRoute.get("/api/submissions", async (c) => {
       .leftJoin(tasks, eq(tasks.id, submissions.taskId))
       .leftJoin(sections, eq(sections.id, tasks.sectionId))
       .where(
-        and(
-          eq(submissions.tenantId, caller.tenantId),
-          assigned
-            ? inArray(
-                submissions.studentId,
-                db
-                  .select({ id: learnerInstructors.learnerId })
-                  .from(learnerInstructors)
-                  .where(eq(learnerInstructors.instructorId, caller.id)),
-              )
-            : undefined,
-        ),
+        assigned
+          ? inArray(
+              submissions.studentId,
+              db
+                .select({ id: learnerInstructors.learnerId })
+                .from(learnerInstructors)
+                .where(eq(learnerInstructors.instructorId, caller.id)),
+            )
+          : undefined,
       )
       .orderBy(desc(submissions.submittedAt));
 
@@ -317,20 +314,13 @@ submissionsRoute.get("/api/submissions", async (c) => {
 /** 同一課題の直近提出を 1 件引く (新しい行の attempt を決めるため)。 */
 async function latestForAssignment(
   db: Db,
-  tenantId: string,
   studentId: string,
   assignmentId: string,
 ): Promise<{ attempt: number } | null> {
   const rows = await db
     .select({ attempt: submissions.attempt })
     .from(submissions)
-    .where(
-      and(
-        eq(submissions.tenantId, tenantId),
-        eq(submissions.studentId, studentId),
-        eq(submissions.assignmentId, assignmentId),
-      ),
-    )
+    .where(and(eq(submissions.studentId, studentId), eq(submissions.assignmentId, assignmentId)))
     .orderBy(desc(submissions.submittedAt))
     .limit(1);
   return rows[0] ?? null;
@@ -351,7 +341,6 @@ interface SubmissionInput {
 /** 同一課題の未添削提出のうち最新の 1 件の id。 */
 async function pendingIdForAssignment(
   db: Db,
-  tenantId: string,
   studentId: string,
   assignmentId: string,
 ): Promise<string | undefined> {
@@ -360,7 +349,6 @@ async function pendingIdForAssignment(
     .from(submissions)
     .where(
       and(
-        eq(submissions.tenantId, tenantId),
         eq(submissions.studentId, studentId),
         eq(submissions.assignmentId, assignmentId),
         eq(submissions.status, "pending"),
@@ -381,12 +369,11 @@ async function pendingIdForAssignment(
  */
 async function overwritePending(
   db: Db,
-  tenantId: string,
   studentId: string,
   assignmentId: string,
   input: SubmissionInput,
 ): Promise<SubmissionSelect | undefined> {
-  const id = await pendingIdForAssignment(db, tenantId, studentId, assignmentId);
+  const id = await pendingIdForAssignment(db, studentId, assignmentId);
   if (!id) return undefined;
   const updated = await db
     .update(submissions)
@@ -425,19 +412,18 @@ async function overwritePending(
 async function insertUnlessPending(
   db: Db,
   id: string,
-  tenantId: string,
   studentId: string,
   input: SubmissionInput,
   attempt: number,
 ): Promise<void> {
   const summary = input.gradingSummary ? JSON.stringify(input.gradingSummary) : null;
-  const values = sql`${id}, ${tenantId}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
+  const values = sql`${id}, ${LEGACY_TENANT_ID}, ${studentId}, ${input.lessonId}, ${input.assignmentId},
       ${input.stageTitle}, ${input.sectionTitle}, ${input.assignmentTitle}, ${input.code},
       'pending', ${input.priority}, ${attempt}, ${summary}, ${input.explanation}, ${Date.now()}`;
   const guard = input.assignmentId
     ? sql`WHERE NOT EXISTS (
         SELECT 1 FROM submissions
-        WHERE tenant_id = ${tenantId} AND student_id = ${studentId}
+        WHERE student_id = ${studentId}
           AND assignment_id = ${input.assignmentId} AND status = 'pending'
       )`
     : sql``;
@@ -544,26 +530,19 @@ submissionsRoute.post("/api/submissions", async (c) => {
     // 「未添削を上書き」か「新規作成」のどちらかに必ず収束する。
     for (let round = 0; round < MAX_SUBMISSION_ROUNDS; round++) {
       if (input.assignmentId) {
-        const overwritten = await overwritePending(
-          db,
-          caller.tenantId,
-          caller.id,
-          input.assignmentId,
-          input,
-        );
+        const overwritten = await overwritePending(db, caller.id, input.assignmentId, input);
         if (overwritten) {
           return c.json({ row: toRow(overwritten, profile) });
         }
       }
 
       const previous = input.assignmentId
-        ? await latestForAssignment(db, caller.tenantId, caller.id, input.assignmentId)
+        ? await latestForAssignment(db, caller.id, input.assignmentId)
         : null;
       const id = crypto.randomUUID();
       await insertUnlessPending(
         db,
         id,
-        caller.tenantId,
         caller.id,
         input,
         nextSubmissionAttempt(previous, body.attempt),
@@ -587,7 +566,7 @@ submissionsRoute.get("/api/submissions/mine", async (c) => {
     const rows = await db
       .select(summaryColumns)
       .from(submissions)
-      .where(and(eq(submissions.tenantId, caller.tenantId), eq(submissions.studentId, caller.id)))
+      .where(eq(submissions.studentId, caller.id))
       .orderBy(desc(submissions.submittedAt));
 
     const profile = await profileFor(db, caller.id);
@@ -607,9 +586,6 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
     const rows = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
     const row = rows[0];
     if (!row) throw new ApiError("対象の提出が見つかりません", 404);
-    if (row.tenantId !== caller.tenantId) {
-      throw new ApiError("他テナントの提出は操作できません", 403);
-    }
     const isStaff = isStaffRole(caller.role);
     const isOwner = row.studentId === caller.id;
     if (!isStaff && !isOwner) {
@@ -675,9 +651,6 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
     const current = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1);
     const before = current[0];
     if (!before) throw new ApiError("対象の提出が見つかりません", 404);
-    if (before.tenantId !== caller.tenantId) {
-      throw new ApiError("他テナントの提出は操作できません", 403);
-    }
 
     const patch = (await c.req.json()) as {
       /**
@@ -858,7 +831,6 @@ submissionsRoute.patch("/api/submissions/:id", async (c) => {
         // そのもので、 講師の待ち行列と生成プロンプトに混ぜてはいけない。 id だけ渡し、
         // 正本 (`assignments.title`) はサーバが引き直す。
         await noteSubmissionStumble(db, {
-          tenantId: after.tenantId,
           lessonId: after.lessonId,
           assignmentId: after.assignmentId,
         });

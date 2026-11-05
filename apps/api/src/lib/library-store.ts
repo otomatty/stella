@@ -1,3 +1,5 @@
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
+
 /**
  * 本棚の D1 操作のうち、ルートと cron の両方が使うもの。
  *
@@ -6,13 +8,13 @@
  * (送信中のオブジェクトを消さないよう、cron は積んでから少し待つ)。
  */
 
-/** 本 1 冊ぶんの R2 の接頭辞。利用者の入力からは作らない (テナント ID と本の ID だけ)。 */
-export function bookPrefix(tenantId: string, bookId: string): string {
-  return `library/${tenantId}/${bookId}/`;
+/** 本 1 冊ぶんの R2 の接頭辞。利用者の入力からは作らない。接頭辞は保存済みの `library/ses/` と本の ID。 */
+export function bookPrefix(bookId: string): string {
+  return `library/${LEGACY_TENANT_ID}/${bookId}/`;
 }
 
-export function fileR2Key(tenantId: string, bookId: string, fileId: string): string {
-  return `${bookPrefix(tenantId, bookId)}files/${fileId}`;
+export function fileR2Key(bookId: string, fileId: string): string {
+  return `${bookPrefix(bookId)}files/${fileId}`;
 }
 
 const SEGMENT = "[^/]+";
@@ -24,9 +26,9 @@ const FILE_KEY = new RegExp(
 /** cron が消してよい形か: 本 1 冊 `library/<t>/<b>/` かファイル 1 つ `library/<t>/<b>/files/<uuid>`。 */
 export function parsePurgePrefix(
   prefix: string,
-): { kind: "book"; tenantId: string; bookId: string } | { kind: "file" } | null {
+): { kind: "book"; bookId: string } | { kind: "file" } | null {
   const book = BOOK_PREFIX.exec(prefix);
-  if (book?.[1] && book[2]) return { kind: "book", tenantId: book[1], bookId: book[2] };
+  if (book?.[1] && book[2]) return { kind: "book", bookId: book[2] };
   if (FILE_KEY.test(prefix)) return { kind: "file" };
   return null;
 }
@@ -39,7 +41,6 @@ const ORPHAN = `f.tenant_id = ? AND f.book_id = ?
 /** 孤児のファイルを R2 の削除待ちに積み、行を消す (2 文。batch の最後に置く)。 */
 export function orphanFileStatements(
   db: D1Database,
-  tenantId: string,
   bookId: string,
   now: number,
 ): D1PreparedStatement[] {
@@ -48,8 +49,8 @@ export function orphanFileStatements(
       .prepare(
         `INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) SELECT f.r2_key, ? FROM library_files f WHERE ${ORPHAN}`,
       )
-      .bind(now, tenantId, bookId),
-    db.prepare(`DELETE FROM library_files AS f WHERE ${ORPHAN}`).bind(tenantId, bookId),
+      .bind(now, LEGACY_TENANT_ID, bookId),
+    db.prepare(`DELETE FROM library_files AS f WHERE ${ORPHAN}`).bind(LEGACY_TENANT_ID, bookId),
   ];
 }
 
@@ -71,7 +72,6 @@ export function discardedPending(results: D1Result[]): boolean {
  */
 export function discardPendingStatements(
   db: D1Database,
-  tenantId: string,
   bookId: string,
   expectRevision: number,
   expectSignature: string | null,
@@ -90,10 +90,10 @@ export function discardPendingStatements(
         `DELETE FROM library_revision_files WHERE tenant_id = ? AND book_id = ? AND revision = ? AND ${still}`,
       )
       .bind(
-        tenantId,
+        LEGACY_TENANT_ID,
         bookId,
         expectRevision,
-        tenantId,
+        LEGACY_TENANT_ID,
         bookId,
         expectRevision,
         expectSignature,
@@ -104,10 +104,10 @@ export function discardPendingStatements(
         `DELETE FROM library_chapters WHERE tenant_id = ? AND book_id = ? AND revision = ? AND ${still}`,
       )
       .bind(
-        tenantId,
+        LEGACY_TENANT_ID,
         bookId,
         expectRevision,
-        tenantId,
+        LEGACY_TENANT_ID,
         bookId,
         expectRevision,
         expectSignature,
@@ -119,9 +119,9 @@ export function discardPendingStatements(
         `INSERT OR IGNORE INTO library_r2_purges (prefix, created_at) SELECT ?, ? FROM library_books WHERE tenant_id = ? AND id = ? AND ${match} AND current_revision = 0`,
       )
       .bind(
-        bookPrefix(tenantId, bookId),
+        bookPrefix(bookId),
         now,
-        tenantId,
+        LEGACY_TENANT_ID,
         bookId,
         expectRevision,
         expectSignature,
@@ -131,7 +131,15 @@ export function discardPendingStatements(
       .prepare(
         `DELETE FROM library_shelf_entries WHERE tenant_id = ? AND book_id = ? AND EXISTS (SELECT 1 FROM library_books WHERE tenant_id = ? AND id = ? AND ${match} AND current_revision = 0)`,
       )
-      .bind(tenantId, bookId, tenantId, bookId, expectRevision, expectSignature, inactiveBefore),
+      .bind(
+        LEGACY_TENANT_ID,
+        bookId,
+        LEGACY_TENANT_ID,
+        bookId,
+        expectRevision,
+        expectSignature,
+        inactiveBefore,
+      ),
     db
       .prepare(
         `UPDATE library_books SET
@@ -140,7 +148,7 @@ export function discardPendingStatements(
           pending_thumb_file_id = NULL, pending_active_at = NULL, pending_bytes = 0, updated_at = ?
         WHERE tenant_id = ? AND id = ? AND ${match} RETURNING id`,
       )
-      .bind(now, tenantId, bookId, expectRevision, expectSignature, inactiveBefore),
-    ...orphanFileStatements(db, tenantId, bookId, now),
+      .bind(now, LEGACY_TENANT_ID, bookId, expectRevision, expectSignature, inactiveBefore),
+    ...orphanFileStatements(db, bookId, now),
   ];
 }

@@ -1,3 +1,5 @@
+import { DISPLAY_NAME } from "@stella/shared/brand/display";
+import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { meRoute } from "./me.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
@@ -24,7 +26,7 @@ afterEach(() => db.sqlite.close());
 
 const token = () => signAccessToken(SECRET, "learner", "learner@example.test");
 const get = async () =>
-  json<{ profile: Record<string, unknown> }>(
+  json<{ profile: Record<string, unknown>; tenant: Record<string, unknown> }>(
     await request(app, env, "/api/me", { token: await token() }),
   );
 const write = async (body: unknown) =>
@@ -80,14 +82,17 @@ describe("教材の OS 設定 (os_preference)", () => {
   });
 });
 
-describe("停止中の組織", () => {
-  it("有効な JWT でもプロフィールを返さない", async () => {
-    db.sqlite.exec("UPDATE tenants SET active = 0 WHERE id = 'ses'");
-    const res = await request(app, env, "/api/me", { token: await token() });
-    expect(res.status).toBe(403);
-    expect(await res.text()).not.toContain("受講者");
-    expect((await write({ display_name: "書き換え" })).status).toBe(403);
-    db.sqlite.exec("UPDATE tenants SET active = 1 WHERE id = 'ses'");
-    expect((await get()).profile.display_name).toBe("受講者");
+describe("GET /api/me の古いタブ向け", () => {
+  it("古いタブ向けのプロフィール項目と固定の組織情報を返し、組織の停止では拒まない", async () => {
+    db.sqlite.exec("UPDATE tenants SET active = 0, name = 'SES' WHERE id = 'ses'");
+    const body = await get();
+    expect(body.profile.tenant_id).toBe("ses");
+    expect(body.tenant).toEqual({
+      id: LEGACY_TENANT_ID,
+      name: DISPLAY_NAME,
+      subtitle: null,
+      icon: null,
+    });
+    expect((await write({ display_name: "書き換え" })).status).toBe(200);
   });
 });

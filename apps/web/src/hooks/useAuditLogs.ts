@@ -20,7 +20,8 @@ interface UseAuditLogsResult {
   refetch: () => Promise<void>;
 }
 
-export function useAuditLogs(tenantId: string | null, filters: AuditFilters): UseAuditLogsResult {
+/** `enabled` が false のあいだは取らない (ログイン前・権限の無い画面)。 */
+export function useAuditLogs(filters: AuditFilters, enabled = true): UseAuditLogsResult {
   const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export function useAuditLogs(tenantId: string | null, filters: AuditFilters): Us
 
   const refetch = useCallback(async () => {
     const reqId = ++requestIdRef.current;
-    if (!tenantId) {
+    if (!enabled) {
       setLogs([]);
       setError(null);
       setLoading(false);
@@ -39,7 +40,7 @@ export function useAuditLogs(tenantId: string | null, filters: AuditFilters): Us
     setLoading(true);
     setError(null);
     try {
-      const rows = await listAuditLogs({ tenantId, from, to, actorId, action });
+      const rows = await listAuditLogs({ from, to, actorId, action });
       if (reqId !== requestIdRef.current) return;
       setLogs(rows);
     } catch (err) {
@@ -48,7 +49,7 @@ export function useAuditLogs(tenantId: string | null, filters: AuditFilters): Us
     } finally {
       if (reqId === requestIdRef.current) setLoading(false);
     }
-  }, [tenantId, from, to, actorId, action]);
+  }, [enabled, from, to, actorId, action]);
 
   useEffect(() => {
     void refetch();

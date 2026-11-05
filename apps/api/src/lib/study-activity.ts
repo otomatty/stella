@@ -35,12 +35,7 @@ import { lessonProgress, studyActivity } from "../db/schema.js";
  * `setWhere` で更新を見送り、 既存行が無ければ 0 埋めの行が 1 件できる。 0 の日は系列でも
  * ストリークでも「学習なし」として扱うので表示への影響はない。
  */
-export function buildStudyActivityIncrement(
-  db: Db,
-  tenantId: string,
-  userId: string,
-  row: NormalizedProgressRow,
-) {
+export function buildStudyActivityIncrement(db: Db, userId: string, row: NormalizedProgressRow) {
   // 更新前の lesson_progress を参照するスカラサブクエリ群。
   const match = sql`${lessonProgress.userId} = ${userId} and ${lessonProgress.lessonId} = ${row.lessonId}`;
   const prevWatched = sql`coalesce((select ${lessonProgress.watchedSec} from ${lessonProgress} where ${match}), 0)`;
@@ -54,7 +49,6 @@ export function buildStudyActivityIncrement(
   return db
     .insert(studyActivity)
     .values({
-      tenantId,
       userId,
       date: row.activityDate,
       watchedSec: sql`case when ${applies} then max(0, ${watched} - ${prevWatched}) else 0 end`,

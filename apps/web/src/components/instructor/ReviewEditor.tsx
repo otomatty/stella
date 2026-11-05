@@ -47,7 +47,6 @@ import {
   refreshSubmission,
 } from "@/lib/submissions-store";
 import { isAiPassed } from "@/lib/review-queue";
-import type { Tenant } from "@/data/types";
 import { fetchSubmissionById } from "@/lib/submissions-api";
 import type { Submission } from "@stella/shared/review/types";
 import { cn } from "@/lib/utils";
@@ -83,13 +82,12 @@ const severityDot: Record<ReviewSuggestion["severity"], string> = {
 };
 
 interface ReviewEditorProps {
-  tenantId: Tenant["id"];
   submissionId: string | null;
   setPage: (page: string) => void;
 }
 
-export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorProps) => {
-  const submission = useSubmission(tenantId, submissionId);
+export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
+  const submission = useSubmission(submissionId);
   const [loadedDetail, setLoadedDetail] = useState<Submission | undefined>();
   // 別の提出に切り替えた直後は、前の提出の詳細 (ファイル) を出さない。
   const taskDetail = loadedDetail?.id === submission?.id ? loadedDetail : undefined;
@@ -120,10 +118,10 @@ export const ReviewEditor = ({ tenantId, submissionId, setPage }: ReviewEditorPr
   }, [submission?.id, submission?.taskId, detailVersion]);
   const reloadAfterCheck = useCallback(async () => {
     if (!submission) return;
-    await refreshSubmission(tenantId, submission.id);
+    await refreshSubmission(submission.id);
     setDetailVersion((v) => v + 1);
-  }, [submission, tenantId]);
-  const { update, finalize } = useSubmissions(tenantId);
+  }, [submission]);
+  const { update, finalize } = useSubmissions();
 
   const [tab, setTab] = useState("ai");
   const [suggestions, setSuggestions] = useState<ReviewSuggestion[]>([]);

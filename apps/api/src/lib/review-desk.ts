@@ -7,8 +7,8 @@
  * - 同じ課題の提出を並べて見るための集計と、共通のつまずきの発見教材への回送。
  * - コメント集 (パターンごとのよくある違反と定型コメント)。
  *
- * すべてのクエリを呼び出した staff のテナントで絞る。担当の絞り込み (`assigned`) は #38 と同じく
- * 表示の絞り込みで、権限ではない (担当のいない受講者の提出を取り残さない)。
+ * 担当の絞り込み (`assigned`) は #38 と同じく表示の絞り込みで、権限ではない
+ * (担当のいない受講者の提出を取り残さない)。ロールの確認はルート側。
  */
 
 import {
@@ -70,7 +70,7 @@ const reviewer = alias(profiles, "reviewer");
 /**
  * 機械の照合が一致したか (`machine_check.matched`)。記録の JSON が壊れていれば NULL にする。
  * `json_extract` は不正な JSON で文ごとエラーにするので、壊れた提出が 1 件あるだけで
- * テナントの一覧・並べ見・数字がすべて 500 になってしまう (AI の想定外の失敗が上限まで続いた
+ * 一覧・並べ見・数字がすべて 500 になってしまう (AI の想定外の失敗が上限まで続いた
  * 壊れた行も、人のキューに入る)。CASE は条件を満たした枝だけを評価する。
  */
 export const machineMatchedColumn = sql<
@@ -93,8 +93,8 @@ function assignedTo(caller: Caller) {
   );
 }
 
-/** 課題の講座 (ステージ)。テナントで絞って引く。 */
-async function taskStage(db: Db, tenantId: string, taskId: string) {
+/** 課題の講座 (ステージ)。無い id は null。 */
+async function taskStage(db: Db, taskId: string) {
   const [task] = await db
     .select({
       id: tasks.id,
@@ -109,7 +109,7 @@ async function taskStage(db: Db, tenantId: string, taskId: string) {
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
     .innerJoin(stages, eq(stages.id, sections.stageId))
-    .where(and(eq(tasks.id, taskId), eq(stages.tenantId, tenantId)))
+    .where(eq(tasks.id, taskId))
     .limit(1);
   return task ?? null;
 }
@@ -196,15 +196,13 @@ export async function checkAiPassedSubmission(
 ): Promise<SubmissionCheckRecord[]> {
   const [initial] = await db
     .select({
-      tenantId: submissions.tenantId,
       studentId: submissions.studentId,
       taskId: submissions.taskId,
     })
     .from(submissions)
     .where(eq(submissions.id, submissionId))
     .limit(1);
-  if (!initial || initial.tenantId !== caller.tenantId)
-    throw new ApiError("対象の提出が見つかりません", 404);
+  if (!initial) throw new ApiError("対象の提出が見つかりません", 404);
   if (!initial.taskId || !initial.studentId)
     throw new ApiError("AI が合格にした課題の提出だけを確認できます", 400);
   const comment = input.comment.trim();
@@ -220,7 +218,7 @@ export async function checkAiPassedSubmission(
     await reviewTaskSubmission(db, caller, submissionId, "resubmit", comment, "human", {
       requireAiPass: true,
     });
-    const task = await taskStage(db, caller.tenantId, initial.taskId);
+    const task = await taskStage(db, initial.taskId);
     if (task)
       await reclaimAutoCertificatesIfUnmet(db, {
         actor: caller,
@@ -234,7 +232,7 @@ export async function checkAiPassedSubmission(
   const { studentId, taskId } = initial;
   const locked = await withResourceLock(
     db,
-    taskSubmissionLockId(caller.tenantId, studentId, taskId),
+    taskSubmissionLockId(studentId, taskId),
     async () => {
       const [row] = await db
         .select({
@@ -264,7 +262,6 @@ export async function checkAiPassedSubmission(
       const checkId = crypto.randomUUID();
       const insertCheck = db.insert(submissionChecks).values({
         id: checkId,
-        tenantId: caller.tenantId,
         submissionId,
         aiReviewId: review?.id ?? null,
         reviewerId: caller.id,
@@ -277,7 +274,6 @@ export async function checkAiPassedSubmission(
           insertCheck,
           db.insert(notifications).values({
             userId: studentId,
-            tenantId: caller.tenantId,
             type: "review_comment",
             title: `${row.assignmentTitle || "課題"} に講師がコメントしました`,
             body: comment.slice(0, 500),
@@ -361,8 +357,6 @@ export async function listAiPassed(
   filters: AiPassedFilters,
 ): Promise<{ rows: AiPassedRow[]; truncated: boolean }> {
   const conditions: (SQL | undefined)[] = [
-    eq(submissions.tenantId, caller.tenantId),
-    eq(stages.tenantId, caller.tenantId),
     eq(submissions.aiReviewStatus, "confirmed"),
     filters.stageId ? eq(stages.id, filters.stageId) : undefined,
     filters.taskId ? eq(submissions.taskId, filters.taskId) : undefined,
@@ -507,7 +501,6 @@ export function submittedRouteReasons(input: {
 /** staff: しきい値の月次見直しに使う数字。直近 `days` 日の提出・判定を数える。 */
 export async function reviewMetrics(
   db: Db,
-  tenantId: string,
   days: number,
   now = Date.now(),
 ): Promise<ReviewMetrics> {
@@ -528,8 +521,6 @@ export async function reviewMetrics(
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(
       and(
-        eq(aiReviews.tenantId, tenantId),
-        eq(stages.tenantId, tenantId),
         eq(aiReviews.outcome, "confirmed"),
         eq(aiReviews.disposition, "applied"),
         eq(aiReviews.confidence, "medium"),
@@ -567,7 +558,6 @@ export async function reviewMetrics(
     .from(submissions)
     .where(
       and(
-        eq(submissions.tenantId, tenantId),
         eq(submissions.aiReviewStatus, "escalated"),
         eq(submissions.reviewSource, "human"),
         gte(submissions.reviewedAt, since),
@@ -634,8 +624,6 @@ export async function reviewMetrics(
     .innerJoin(stages, eq(stages.id, sections.stageId))
     .where(
       and(
-        eq(submissions.tenantId, tenantId),
-        eq(stages.tenantId, tenantId),
         inArray(submissions.aiReviewStatus, ["confirmed", "escalated"]),
         gte(submissions.submittedAt, since),
       ),
@@ -724,7 +712,7 @@ export async function taskBoard(
   taskId: string,
   assignedOnly: boolean,
 ): Promise<TaskBoard> {
-  const task = await taskStage(db, caller.tenantId, taskId);
+  const task = await taskStage(db, taskId);
   if (!task) throw new ApiError("課題が見つかりません", 404);
   const items = await rubricItemsOf(db, task.definition);
   const rows = await db
@@ -754,9 +742,8 @@ export async function taskBoard(
     )
     .where(
       and(
-        eq(submissions.tenantId, caller.tenantId),
         eq(submissions.taskId, taskId),
-        sql`${submissions.attempt} = (select max(m.attempt) from submissions m where m.tenant_id = "submissions"."tenant_id" and m.student_id = "submissions"."student_id" and m.task_id = "submissions"."task_id")`,
+        sql`${submissions.attempt} = (select max(m.attempt) from submissions m where m.student_id = "submissions"."student_id" and m.task_id = "submissions"."task_id")`,
         assignedOnly ? assignedTo(caller) : undefined,
       ),
     )
@@ -825,11 +812,10 @@ export async function taskBoard(
  */
 export async function routeTaskToDiscovery(
   db: Db,
-  caller: Caller,
   taskId: string,
   rubricId: string | null,
 ): Promise<{ topic: string; stageId: string }> {
-  const task = await taskStage(db, caller.tenantId, taskId);
+  const task = await taskStage(db, taskId);
   if (!task) throw new ApiError("課題が見つかりません", 404);
   let topic = `課題「${task.title}」`;
   if (rubricId) {
@@ -838,7 +824,6 @@ export async function routeTaskToDiscovery(
     topic = `${topic}: ${item.criterion}`;
   }
   await upsertDiscoveryRequest(db, {
-    tenantId: caller.tenantId,
     stageId: task.stageId,
     topic,
     origin: "review_common",
@@ -880,31 +865,30 @@ const templateColumns = {
  */
 export async function listTemplates(
   db: Db,
-  caller: Caller,
   scope: { stageId?: string; pattern?: string },
 ): Promise<ReviewCommentTemplate[]> {
-  const rows = await db
+  const scoped = and(
+    scope.stageId
+      ? or(
+          isNull(reviewCommentTemplates.stageId),
+          eq(reviewCommentTemplates.stageId, scope.stageId),
+        )
+      : undefined,
+    scope.pattern
+      ? or(
+          isNull(reviewCommentTemplates.pattern),
+          eq(reviewCommentTemplates.pattern, scope.pattern),
+        )
+      : undefined,
+  );
+  const query = db
     .select(templateColumns)
     .from(reviewCommentTemplates)
-    .leftJoin(reviewer, eq(reviewer.id, reviewCommentTemplates.createdBy))
-    .where(
-      and(
-        eq(reviewCommentTemplates.tenantId, caller.tenantId),
-        scope.stageId
-          ? or(
-              isNull(reviewCommentTemplates.stageId),
-              eq(reviewCommentTemplates.stageId, scope.stageId),
-            )
-          : undefined,
-        scope.pattern
-          ? or(
-              isNull(reviewCommentTemplates.pattern),
-              eq(reviewCommentTemplates.pattern, scope.pattern),
-            )
-          : undefined,
-      ),
-    )
-    .orderBy(reviewCommentTemplates.pattern, reviewCommentTemplates.violation);
+    .leftJoin(reviewer, eq(reviewer.id, reviewCommentTemplates.createdBy));
+  const rows = await (scoped ? query.where(scoped) : query).orderBy(
+    reviewCommentTemplates.pattern,
+    reviewCommentTemplates.violation,
+  );
   return rows.map(toTemplate);
 }
 
@@ -949,37 +933,34 @@ export function parseTemplateInput(raw: unknown, partial: boolean): TemplateInpu
   };
 }
 
-/** 講座がこのテナントのものか (他テナントの講座に定型コメントを付けさせない)。 */
-async function assertStage(db: Db, tenantId: string, stageId: string | null | undefined) {
+/** 講座があるか。無い講座に定型コメントを付けさせない。 */
+async function assertStage(db: Db, stageId: string | null | undefined) {
   if (!stageId) return;
   const [stage] = await db
     .select({ id: stages.id })
     .from(stages)
-    .where(and(eq(stages.id, stageId), eq(stages.tenantId, tenantId)))
+    .where(eq(stages.id, stageId))
     .limit(1);
   if (!stage) throw new ApiError("講座が見つかりません", 400);
 }
 
-async function templateById(db: Db, caller: Caller, id: string) {
+async function templateById(db: Db, id: string) {
   const [row] = await db
     .select(templateColumns)
     .from(reviewCommentTemplates)
     .leftJoin(reviewer, eq(reviewer.id, reviewCommentTemplates.createdBy))
-    .where(
-      and(eq(reviewCommentTemplates.id, id), eq(reviewCommentTemplates.tenantId, caller.tenantId)),
-    )
+    .where(eq(reviewCommentTemplates.id, id))
     .limit(1);
   if (!row) throw new ApiError("定型コメントが見つかりません", 404);
   return toTemplate(row);
 }
 
 export async function createTemplate(db: Db, caller: Caller, input: TemplateInput) {
-  await assertStage(db, caller.tenantId, input.stageId);
+  await assertStage(db, input.stageId);
   const id = crypto.randomUUID();
   const now = new Date();
   await db.insert(reviewCommentTemplates).values({
     id,
-    tenantId: caller.tenantId,
     stageId: input.stageId ?? null,
     pattern: input.pattern ?? null,
     ruleId: input.ruleId ?? null,
@@ -989,30 +970,21 @@ export async function createTemplate(db: Db, caller: Caller, input: TemplateInpu
     createdAt: now,
     updatedAt: now,
   });
-  return templateById(db, caller, id);
+  return templateById(db, id);
 }
 
-export async function updateTemplate(db: Db, caller: Caller, id: string, input: TemplateInput) {
-  await templateById(db, caller, id);
-  await assertStage(db, caller.tenantId, input.stageId);
+export async function updateTemplate(db: Db, id: string, input: TemplateInput) {
+  await templateById(db, id);
+  await assertStage(db, input.stageId);
   if (Object.keys(input).length > 0)
     await db
       .update(reviewCommentTemplates)
       .set({ ...input, updatedAt: new Date() })
-      .where(
-        and(
-          eq(reviewCommentTemplates.id, id),
-          eq(reviewCommentTemplates.tenantId, caller.tenantId),
-        ),
-      );
-  return templateById(db, caller, id);
+      .where(eq(reviewCommentTemplates.id, id));
+  return templateById(db, id);
 }
 
-export async function deleteTemplate(db: Db, caller: Caller, id: string) {
-  await templateById(db, caller, id);
-  await db
-    .delete(reviewCommentTemplates)
-    .where(
-      and(eq(reviewCommentTemplates.id, id), eq(reviewCommentTemplates.tenantId, caller.tenantId)),
-    );
+export async function deleteTemplate(db: Db, id: string) {
+  await templateById(db, id);
+  await db.delete(reviewCommentTemplates).where(eq(reviewCommentTemplates.id, id));
 }

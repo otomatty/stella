@@ -48,10 +48,8 @@ import {
   mentorMemos,
   notifications,
   profiles,
-  sections,
   skillEvidence,
   skills,
-  stages,
   studyActivity,
   submissionReviews,
   submissions,
@@ -101,64 +99,44 @@ export const MEMO_BACKFILL_WEEKS = 4;
 
 /**
  * 前の週のメモを積む。cron が週をまたいで止まっていたときのために、直近
- * `MEMO_BACKFILL_WEEKS` 週のうちまだ無い週も積む。ただしさかのぼるのは、そのテナントで最初に
- * メモを作った週 (機能を入れた週) より後の週だけ。メモが 1 枚も無いテナント (初めてのデプロイ) は
+ * `MEMO_BACKFILL_WEEKS` 週のうちまだ無い週も積む。ただしさかのぼるのは、表の中で最初に
+ * メモを作った週 (機能を入れた週) より後の週だけ。メモが 1 枚も無いとき (初めてのデプロイ) は
  * 前の週だけにして、過去の週をまとめて作らない。
  */
 export async function enqueueWeeklyMemos(db: Db, now = new Date()): Promise<number> {
   const latest = memoWeekOf(toStudyDate(now));
-  // 索引 (tenant_id, week_start) で引く。今回の cron で積む前の値を使う。
-  const firstWeeks = new Map(
-    (
-      await db
-        .select({
-          tenantId: mentorMemos.tenantId,
-          week: sql<string>`min(${mentorMemos.weekStart})`,
-        })
-        .from(mentorMemos)
-        .groupBy(mentorMemos.tenantId)
-    ).map((r) => [r.tenantId, r.week]),
-  );
+  // 表全体でいちばん古いメモの週を 1 件読む。今回の cron で積む前の値を使う。
+  const [earliest] = await db
+    .select({ week: sql<string | null>`min(${mentorMemos.weekStart})` })
+    .from(mentorMemos);
+  const firstWeek = earliest?.week ?? null;
   let total = 0;
   for (let i = 0; i < MEMO_BACKFILL_WEEKS; i++) {
     const weekStart = addStudyDays(latest, -7 * i);
-    const eligible =
-      i === 0
-        ? null
-        : new Set(
-            [...firstWeeks].flatMap(([tenantId, first]) => (first < weekStart ? [tenantId] : [])),
-          );
-    // 古い週ほど条件を満たすテナントは減るので、無くなったらそこで止める。
-    if (eligible && eligible.size === 0) break;
-    total += await enqueueWeek(db, weekStart, eligible, now);
+    // メモが無いときは最新の週だけ。古い週は、最初のメモの週より後だけ積む。
+    if (i > 0 && !(firstWeek !== null && firstWeek < weekStart)) break;
+    total += await enqueueWeek(db, weekStart, now);
   }
   return total;
 }
 
 /**
- * 担当のいる受講者ごとに、1 つの週のメモを積む。担当は同じテナントの有効な講師だけ。
+ * 担当のいる受講者ごとに、1 つの週のメモを積む。担当は有効な講師だけ。
  * その週の終わりまでに受講を始めていた受講者だけを積む (受講中の登録か、その週以降に修了した登録がある)。
- * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。`tenants` を渡すと、
- * そのテナントの受講者だけを積む (null はすべて)。
+ * 既に積んだ受講者は先に除くので、15分ごとに同じ書き込みを繰り返さない。
  */
-async function enqueueWeek(
-  db: Db,
-  weekStart: string,
-  tenants: ReadonlySet<string> | null,
-  now: Date,
-): Promise<number> {
+async function enqueueWeek(db: Db, weekStart: string, now: Date): Promise<number> {
   const weekBegin = new Date(studyDateStartMs(weekStart));
   const weekEnd = new Date(studyDateStartMs(addStudyDays(weekStart, 7)));
   const instructor = alias(profiles, "instructor");
   const learners = await db
-    .select({ id: profiles.id, tenantId: profiles.tenantId })
+    .select({ id: profiles.id })
     .from(learnerInstructors)
     .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
     .innerJoin(
       instructor,
       and(
         eq(instructor.id, learnerInstructors.instructorId),
-        eq(instructor.tenantId, profiles.tenantId),
         eq(instructor.role, "instructor"),
         eq(instructor.disabled, false),
       ),
@@ -181,7 +159,6 @@ async function enqueueWeek(
             .where(
               and(
                 eq(enrollments.userId, profiles.id),
-                eq(enrollments.tenantId, profiles.tenantId),
                 lt(enrollments.enrolledAt, weekEnd),
                 // 週の途中で修了した受講者も、その週の材料があるので積む (修了すると active でなくなる)。
                 // 修了の時刻が無い登録 (登録の編集で状態だけ変えたもの) は、その週に学習の記録か
@@ -201,7 +178,6 @@ async function enqueueWeek(
                           .where(
                             and(
                               eq(studyActivity.userId, profiles.id),
-                              eq(studyActivity.tenantId, profiles.tenantId),
                               gte(studyActivity.date, weekStart),
                               lte(studyActivity.date, addStudyDays(weekStart, 6)),
                             ),
@@ -214,7 +190,6 @@ async function enqueueWeek(
                           .where(
                             and(
                               eq(submissions.studentId, profiles.id),
-                              eq(submissions.tenantId, profiles.tenantId),
                               gte(submissions.submittedAt, weekBegin),
                               lt(submissions.submittedAt, weekEnd),
                             ),
@@ -229,11 +204,9 @@ async function enqueueWeek(
       ),
     )
     .orderBy(asc(profiles.id));
-  const targets = tenants ? learners.filter((l) => tenants.has(l.tenantId)) : learners;
-  if (targets.length === 0) return 0;
-  const values = targets.map((l) => ({
+  if (learners.length === 0) return 0;
+  const values = learners.map((l) => ({
     id: crypto.randomUUID(),
-    tenantId: l.tenantId,
     learnerId: l.id,
     weekStart,
     // 週の終わりから猶予を置いて書く (さかのぼって積んだ古い週は、すぐに書く)。
@@ -255,7 +228,6 @@ async function enqueueWeek(
 
 interface LeasedMemo {
   id: string;
-  tenantId: string;
   learnerId: string;
   weekStart: string;
   attempts: number;
@@ -289,7 +261,6 @@ export async function leaseMentorMemo(
     .where(and(sql`${mentorMemos.id} = (${next})`, available))
     .returning({
       id: mentorMemos.id,
-      tenantId: mentorMemos.tenantId,
       learnerId: mentorMemos.learnerId,
       weekStart: mentorMemos.weekStart,
       attempts: mentorMemos.attempts,
@@ -303,7 +274,7 @@ const SERVER_SUPPORT_KINDS: readonly string[] = RECORDED_SUPPORT_KINDS;
 const DECLARED_SUPPORT_KINDS: readonly string[] = SUPPORT_KINDS;
 
 /**
- * 1 人・1 週間の材料を集める。どの読み出しも受講者とテナントで絞る。
+ * 1 人・1 週間の材料を集める。どの読み出しも受講者と期間で絞る。
  * 学習ペースは生成した日のもの (`loadLearningPace` は過去の時点を再現しない)。
  */
 export async function collectMemoMaterial(
@@ -312,7 +283,6 @@ export async function collectMemoMaterial(
   weekStart: string,
   now = new Date(),
 ): Promise<MentorMemoMaterial> {
-  const tenant = learner.tenantId;
   const weekEnd = addStudyDays(weekStart, 6);
   const from = new Date(studyDateStartMs(weekStart));
   const to = new Date(studyDateStartMs(addStudyDays(weekStart, 7)));
@@ -343,7 +313,6 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(studyActivity.userId, learner.id),
-          eq(studyActivity.tenantId, tenant),
           gte(studyActivity.date, weekStart),
           lte(studyActivity.date, weekEnd),
         ),
@@ -358,24 +327,14 @@ export async function collectMemoMaterial(
         supportLog: submissions.supportLog,
       })
       .from(submissions)
-      .where(
-        and(
-          eq(submissions.tenantId, tenant),
-          eq(submissions.studentId, learner.id),
-          gte(submissions.submittedAt, from),
-        ),
-      ),
-    // 課題の表はテナントを持たないので、単元 → ステージで絞る。
+      .where(and(eq(submissions.studentId, learner.id), gte(submissions.submittedAt, from))),
     db
       .select({ title: tasks.title, kind: tasks.kind })
       .from(taskProgress)
       .innerJoin(tasks, eq(tasks.id, taskProgress.taskId))
-      .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
         and(
           eq(taskProgress.userId, learner.id),
-          eq(stages.tenantId, tenant),
           gte(taskProgress.passedAt, from),
           lt(taskProgress.passedAt, to),
         ),
@@ -390,13 +349,7 @@ export async function collectMemoMaterial(
       })
       .from(skillEvidence)
       .innerJoin(skills, eq(skills.id, skillEvidence.skillId))
-      .where(
-        and(
-          eq(skillEvidence.userId, learner.id),
-          eq(skillEvidence.tenantId, tenant),
-          lt(skillEvidence.createdAt, to),
-        ),
-      ),
+      .where(and(eq(skillEvidence.userId, learner.id), lt(skillEvidence.createdAt, to))),
     // つまずきの通知 ID は作る側と同じ接頭辞 (`stumbleIdPrefix`) で始まるので、主キーの範囲で引く。
     db
       .select({
@@ -407,7 +360,6 @@ export async function collectMemoMaterial(
       .where(
         and(
           or(...STUMBLE_SIGNALS.map((signal) => stumbleIdRange(signal, learner.id))),
-          eq(notifications.tenantId, tenant),
           eq(notifications.type, "learner_stumble"),
           sql`json_extract(${notifications.payload}, '$.learner_id') = ${learner.id}`,
           gte(notifications.createdAt, from),
@@ -419,11 +371,7 @@ export async function collectMemoMaterial(
       .from(taskLocalRuns)
       .innerJoin(tasks, eq(tasks.id, taskLocalRuns.taskId))
       .where(
-        and(
-          eq(taskLocalRuns.userId, learner.id),
-          eq(taskLocalRuns.tenantId, tenant),
-          gte(taskLocalRuns.failureStreak, STREAK_MIN),
-        ),
+        and(eq(taskLocalRuns.userId, learner.id), gte(taskLocalRuns.failureStreak, STREAK_MIN)),
       )
       .orderBy(desc(taskLocalRuns.failureStreak))
       .limit(5),
@@ -433,7 +381,6 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(taskSupportEvents.userId, learner.id),
-          eq(taskSupportEvents.tenantId, tenant),
           gte(taskSupportEvents.createdAt, from),
           lt(taskSupportEvents.createdAt, to),
         ),
@@ -446,7 +393,6 @@ export async function collectMemoMaterial(
       .where(
         and(
           eq(taskFixedStartUses.userId, learner.id),
-          eq(taskFixedStartUses.tenantId, tenant),
           gte(taskFixedStartUses.usedAt, from),
           lt(taskFixedStartUses.usedAt, to),
         ),
@@ -461,13 +407,7 @@ export async function collectMemoMaterial(
         openedAt: taskHelpOpens.openedAt,
       })
       .from(taskHelpOpens)
-      .where(
-        and(
-          eq(taskHelpOpens.userId, learner.id),
-          eq(taskHelpOpens.tenantId, tenant),
-          lt(taskHelpOpens.openedAt, to),
-        ),
-      )
+      .where(and(eq(taskHelpOpens.userId, learner.id), lt(taskHelpOpens.openedAt, to)))
       .orderBy(asc(taskHelpOpens.openedAt)),
     // その週に提出へ当てた AI の結果 (受講者に見せたかどうかによらず、講師向けの集計に使う)。
     db
@@ -481,7 +421,6 @@ export async function collectMemoMaterial(
       .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
       .where(
         and(
-          eq(submissions.tenantId, tenant),
           eq(submissions.studentId, learner.id),
           eq(aiReviews.disposition, "applied"),
           gte(aiReviews.appliedAt, from),
@@ -494,7 +433,6 @@ export async function collectMemoMaterial(
       .innerJoin(submissions, eq(submissions.id, submissionReviews.submissionId))
       .where(
         and(
-          eq(submissions.tenantId, tenant),
           eq(submissions.studentId, learner.id),
           eq(submissionReviews.source, "human"),
           gte(submissionReviews.createdAt, from),
@@ -794,14 +732,13 @@ export async function processLeasedMemo(
   const [learner] = await db
     .select({
       id: profiles.id,
-      tenantId: profiles.tenantId,
       role: profiles.role,
       name: profiles.displayName,
       email: profiles.email,
       disabled: profiles.disabled,
     })
     .from(profiles)
-    .where(and(eq(profiles.id, memo.learnerId), eq(profiles.tenantId, memo.tenantId)))
+    .where(eq(profiles.id, memo.learnerId))
     .limit(1);
   // 積んだあとに無効になった受講者のメモは書かない (読む人もいない)。
   if (!learner || learner.disabled) {

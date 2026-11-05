@@ -23,7 +23,6 @@ import { SectionList } from "./SectionList";
 
 interface Props {
   stageId: string;
-  tenantId: string;
   onBack: () => void;
   /** AdminStagesPage に stage の status / title 変更を伝える (一覧の再取得用)。 */
   onMetadataChanged: () => Promise<void> | void;
@@ -36,7 +35,7 @@ const COLORS: { value: StageColor; label: string }[] = [
   { value: "slate", label: "Slate" },
 ];
 
-export function StageEditor({ stageId, tenantId, onBack, onMetadataChanged }: Props) {
+export function StageEditor({ stageId, onBack, onMetadataChanged }: Props) {
   const { data, loading, error, refetch } = useCmsStage(stageId);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,7 +55,6 @@ export function StageEditor({ stageId, tenantId, onBack, onMetadataChanged }: Pr
     try {
       await upsertStage({
         id: data.stage.id,
-        tenant_id: tenantId,
         slug: cleanSlug,
         title: form.title,
         category: form.category || null,
@@ -261,7 +259,7 @@ export function StageEditor({ stageId, tenantId, onBack, onMetadataChanged }: Pr
 
       <section className="bg-card border border-border rounded-md p-5">
         <h3 className="text-sm font-semibold mb-3">セクション / レッスン</h3>
-        <SectionList stage={data} tenantId={tenantId} onChange={refetch} />
+        <SectionList stage={data} onChange={refetch} />
       </section>
     </div>
   );

@@ -48,7 +48,7 @@ const DETAIL_MAX = 200;
  */
 export function localRunUpsert(
   db: Db,
-  owner: { userId: string; tenantId: string },
+  owner: { userId: string },
   task: { id: string; contentHash: string },
   report: Pick<LocalRunReport, "outcome" | "failedSteps" | "tests">,
   now = new Date(),
@@ -70,7 +70,6 @@ export function localRunUpsert(
     .values({
       userId: owner.userId,
       taskId: task.id,
-      tenantId: owner.tenantId,
       contentHash: task.contentHash,
       passedRuns: report.outcome === "passed" ? 1 : 0,
       failedRuns: failed ? 1 : 0,
@@ -107,14 +106,13 @@ export function localRunUpsert(
 /**
  * サーバーが見た支援を 1 件残す。種類は `RECORDED_SUPPORT_KINDS` に限る。
  *
- * ここでは種類しか確かめない。呼び出し側は、課題が有効で、そのテナントの受講者が
+ * ここでは種類しか確かめない。呼び出し側は、課題が有効で、受講者が
  * 読める課題であること (`canAccessTasks`) を先に確かめ、ID はサーバーで引き直した値を渡す。
- * 受講者が送った課題 ID をそのまま渡すと、他人・他テナントの課題の水準を「支援付き」にできてしまう。
+ * 受講者が送った課題 ID をそのまま渡すと、他人の課題の水準を「支援付き」にできてしまう。
  */
 export async function recordSupportEvent(
   db: Db,
   event: {
-    tenantId: string;
     userId: string;
     taskId: string;
     kind: RecordedSupportKind;
@@ -124,7 +122,6 @@ export async function recordSupportEvent(
   if (!(RECORDED_SUPPORT_KINDS as readonly string[]).includes(event.kind))
     throw new Error(`unknown support kind: ${event.kind}`);
   await db.insert(taskSupportEvents).values({
-    tenantId: event.tenantId,
     userId: event.userId,
     taskId: event.taskId,
     kind: event.kind,
@@ -143,14 +140,13 @@ export async function recordSupportEvent(
  */
 export async function hasRecordedSupport(
   db: Db,
-  row: { tenantId: string; studentId: string; taskId: string; submittedAt: Date },
+  row: { studentId: string; taskId: string; submittedAt: Date },
 ): Promise<boolean> {
   const [recorded] = await db
     .select({ one: sql`1` })
     .from(taskSupportEvents)
     .where(
       and(
-        eq(taskSupportEvents.tenantId, row.tenantId),
         eq(taskSupportEvents.userId, row.studentId),
         eq(taskSupportEvents.taskId, row.taskId),
         lte(taskSupportEvents.createdAt, row.submittedAt),
@@ -163,7 +159,7 @@ export async function hasRecordedSupport(
     .from(taskFixedStartUses)
     .where(
       and(
-        fixedStartUsesOf({ tenantId: row.tenantId, userId: row.studentId, taskId: row.taskId }),
+        fixedStartUsesOf({ userId: row.studentId, taskId: row.taskId }),
         lte(taskFixedStartUses.usedAt, row.submittedAt),
       ),
     )
@@ -174,7 +170,7 @@ export async function hasRecordedSupport(
     .from(taskHelpOpens)
     .where(
       and(
-        helpOpensOf({ tenantId: row.tenantId, userId: row.studentId, taskId: row.taskId }),
+        helpOpensOf({ userId: row.studentId, taskId: row.taskId }),
         lte(taskHelpOpens.openedAt, row.submittedAt),
       ),
     )
@@ -185,7 +181,6 @@ export async function hasRecordedSupport(
     .from(submissions)
     .where(
       and(
-        eq(submissions.tenantId, row.tenantId),
         eq(submissions.studentId, row.studentId),
         eq(submissions.taskId, row.taskId),
         eq(submissions.submissionMode, "consult"),
@@ -204,7 +199,6 @@ export async function hasRecordedSupport(
 export async function isAssistedSubmission(
   db: Db,
   row: {
-    tenantId: string;
     studentId: string;
     taskId: string;
     submittedAt: Date;
@@ -226,17 +220,16 @@ const VERDICT_LABELS = { pass: "合格", resubmit: "再提出", fail: "不合格
  * 受講者 1 人の課題ごとの支援の記録。`stageId` を渡すとそのステージの有効な課題をすべて返し、
  * 省略すると記録のある課題だけを返す。認可は呼び出し側で済ませる。
  *
- * どの読み出しも課題 → 単元 → ステージで同じテナントに絞る (課題表はテナントを持たない)。
+ * どの読み出しも課題 → 単元 → ステージをたどり、ステージの名前を一緒に返す。
  * `readableOnly` を付けると、受講者が今読めるステージ (`canAccessTasks` と同じ条件: 公開中の
  * format 2 で、受講中か修了) の課題だけにする。受講者本人に返すときに使い、受講をやめた・
  * 非公開になったステージの課題名を出さない。
  */
 export async function loadTaskSupport(
   db: Db,
-  scope: { tenantId: string; userId: string; stageId?: string; readableOnly?: boolean },
+  scope: { userId: string; stageId?: string; readableOnly?: boolean },
 ): Promise<TaskSupportRecord[]> {
   const where = and(
-    eq(stages.tenantId, scope.tenantId),
     scope.stageId ? eq(sections.stageId, scope.stageId) : undefined,
     scope.readableOnly
       ? and(
@@ -249,7 +242,6 @@ export async function loadTaskSupport(
               .where(
                 and(
                   eq(enrollments.stageId, stages.id),
-                  eq(enrollments.tenantId, scope.tenantId),
                   eq(enrollments.userId, scope.userId),
                   inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
                 ),
@@ -288,13 +280,7 @@ export async function loadTaskSupport(
       .innerJoin(tasks, eq(tasks.id, submissions.taskId))
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(
-          where,
-          eq(submissions.tenantId, scope.tenantId),
-          eq(submissions.studentId, scope.userId),
-        ),
-      ),
+      .where(and(where, eq(submissions.studentId, scope.userId))),
     db
       .select({ ...meta, verdict: submissionReviews.verdict, at: submissionReviews.createdAt })
       .from(submissionReviews)
@@ -303,12 +289,7 @@ export async function loadTaskSupport(
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
-        and(
-          where,
-          eq(submissionReviews.source, "human"),
-          eq(submissions.tenantId, scope.tenantId),
-          eq(submissions.studentId, scope.userId),
-        ),
+        and(where, eq(submissionReviews.source, "human"), eq(submissions.studentId, scope.userId)),
       ),
     db
       .select({
@@ -322,26 +303,14 @@ export async function loadTaskSupport(
       .innerJoin(tasks, eq(tasks.id, taskSupportEvents.taskId))
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(
-          where,
-          eq(taskSupportEvents.tenantId, scope.tenantId),
-          eq(taskSupportEvents.userId, scope.userId),
-        ),
-      ),
+      .where(and(where, eq(taskSupportEvents.userId, scope.userId))),
     db
       .select({ ...meta, run: taskLocalRuns })
       .from(taskLocalRuns)
       .innerJoin(tasks, eq(tasks.id, taskLocalRuns.taskId))
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(
-          where,
-          eq(taskLocalRuns.tenantId, scope.tenantId),
-          eq(taskLocalRuns.userId, scope.userId),
-        ),
-      ),
+      .where(and(where, eq(taskLocalRuns.userId, scope.userId))),
     db
       .select({
         ...meta,
@@ -355,12 +324,7 @@ export async function loadTaskSupport(
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
       .where(
-        and(
-          where,
-          eq(skillEvidence.tenantId, scope.tenantId),
-          eq(skillEvidence.userId, scope.userId),
-          eq(submissions.studentId, scope.userId),
-        ),
+        and(where, eq(skillEvidence.userId, scope.userId), eq(submissions.studentId, scope.userId)),
       )
       .orderBy(desc(submissions.submittedAt)),
     db
@@ -375,13 +339,7 @@ export async function loadTaskSupport(
       .innerJoin(tasks, eq(tasks.id, taskHelpOpens.taskId))
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
       .innerJoin(stages, eq(stages.id, sections.stageId))
-      .where(
-        and(
-          where,
-          eq(taskHelpOpens.tenantId, scope.tenantId),
-          eq(taskHelpOpens.userId, scope.userId),
-        ),
-      ),
+      .where(and(where, eq(taskHelpOpens.userId, scope.userId))),
   ]);
 
   type Meta = { [K in keyof typeof meta]: (typeof stageTasks)[number][K] };

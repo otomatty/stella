@@ -1,5 +1,5 @@
 /**
- * `/admin/assignments` — テナント所属の課題一覧 + 編集起動。
+ * `/admin/assignments` — 課題一覧 + 編集起動。
  */
 
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
@@ -26,11 +26,7 @@ const AssignmentEditor = lazy(() =>
   import("./AssignmentEditor").then((m) => ({ default: m.AssignmentEditor })),
 );
 
-interface Props {
-  tenantId: string;
-}
-
-export function AdminAssignmentsPage({ tenantId }: Props) {
+export function AdminAssignmentsPage() {
   const [rows, setRows] = useState<AssignmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,14 +36,14 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const data = await listAssignments(tenantId);
+      const data = await listAssignments();
       setRows(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "unknown");
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, []);
 
   useEffect(() => {
     void refetch();
@@ -149,7 +145,6 @@ export function AdminAssignmentsPage({ tenantId }: Props) {
           }
         >
           <AssignmentEditor
-            tenantId={tenantId}
             assignmentId={editingId === "__new__" ? null : editingId}
             onClose={() => setEditingId(null)}
             onSaved={async () => {

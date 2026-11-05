@@ -95,33 +95,30 @@ export const HINTS_EXHAUSTED_WINDOW_MS = 3 * 86_400_000;
 interface Pair {
   learnerId: string;
   learnerName: string;
-  tenantId: string;
   instructorId: string;
   /** 最後に学習した日 (日本時間の YYYY-MM-DD)。記録がなければ空文字。 */
   lastActive: string;
   active: number;
 }
 
-/** 担当のある受講者と、最後に学習した日。担当は同じテナントの有効な講師だけ。 */
+/** 担当のある受講者と、最後に学習した日。担当は有効な講師だけ。 */
 async function assignedPairs(db: Db): Promise<Pair[]> {
   const instructor = alias(profiles, "instructor");
   const learner = learnerInstructors.learnerId;
-  const tenant = profiles.tenantId;
   return db
     .select({
       learnerId: profiles.id,
       learnerName: profiles.displayName,
-      tenantId: profiles.tenantId,
       instructorId: instructor.id,
       // 視聴・完了・手元の確認・提出・復習・受講開始のどれもない日を、学習の記録がない日とする。
       lastActive: sql<string>`max(
         coalesce((select max(date) from study_activity where user_id = ${learner} and (watched_sec > 0 or completed_lessons > 0)), ''),
         coalesce((select date(max(last_run_at) / 1000, 'unixepoch', '+9 hours') from task_local_runs where user_id = ${learner}), ''),
-        coalesce((select date(max(submitted_at) / 1000, 'unixepoch', '+9 hours') from submissions where tenant_id = ${tenant} and student_id = ${learner}), ''),
+        coalesce((select date(max(submitted_at) / 1000, 'unixepoch', '+9 hours') from submissions where student_id = ${learner}), ''),
         coalesce((select date(max(answered_at) / 1000, 'unixepoch', '+9 hours') from review_logs where user_id = ${learner}), ''),
-        coalesce((select date(max(enrolled_at) / 1000, 'unixepoch', '+9 hours') from enrollments where user_id = ${learner} and tenant_id = ${tenant}), '')
+        coalesce((select date(max(enrolled_at) / 1000, 'unixepoch', '+9 hours') from enrollments where user_id = ${learner}), '')
       )`,
-      active: sql<number>`exists (select 1 from enrollments where user_id = ${learner} and tenant_id = ${tenant} and status = 'active')`,
+      active: sql<number>`exists (select 1 from enrollments where user_id = ${learner} and status = 'active')`,
     })
     .from(learnerInstructors)
     .innerJoin(profiles, eq(profiles.id, learnerInstructors.learnerId))
@@ -129,7 +126,6 @@ async function assignedPairs(db: Db): Promise<Pair[]> {
       instructor,
       and(
         eq(instructor.id, learnerInstructors.instructorId),
-        eq(instructor.tenantId, profiles.tenantId),
         eq(instructor.role, "instructor"),
         eq(instructor.disabled, false),
       ),
@@ -203,7 +199,6 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
   const rows = await db
     .select({
       learnerId: taskLocalRuns.userId,
-      tenantId: taskLocalRuns.tenantId,
       taskId: taskLocalRuns.taskId,
       title: tasks.title,
       streak: taskLocalRuns.failureStreak,
@@ -222,7 +217,7 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
   const byLearner = new Map<string, { pair: Pair; rows: typeof rows }>();
   for (const row of rows) {
     const pair = pairs.get(row.learnerId);
-    if (!pair || pair.tenantId !== row.tenantId) continue;
+    if (!pair) continue;
     const entry = byLearner.get(row.learnerId) ?? { pair, rows: [] };
     entry.rows.push(row);
     byLearner.set(row.learnerId, entry);
@@ -241,7 +236,6 @@ async function notifyLocalFailures(db: Db, pairs: Map<string, Pair>, now: Date, 
       const inserted = await insertOnce(db, {
         id,
         userId: pair.instructorId,
-        tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんが同じ課題でつまずいています`,
         body: `「${first.title}」で手元の確認が${first.streak}回続けて失敗しています${rest > 0 ? `(ほか${rest}件の課題でも続いています)` : ""}。声を掛けるか、講師への相談を勧めてください。`,
@@ -299,7 +293,6 @@ async function notifyIdle(db: Db, pairs: Pair[], today: string) {
       await insertOnce(db, {
         id,
         userId: pair.instructorId,
-        tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんの学習が止まっています`,
         body: `最後の学習の記録は${pair.lastActive}で、平日${IDLE_WEEKDAYS}日以上記録がありません。声を掛けるか、ペースを相談してください。`,
@@ -321,7 +314,6 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
     .select({
       id: submissions.id,
       learnerId: submissions.studentId,
-      tenantId: submissions.tenantId,
       taskId: submissions.taskId,
       title: tasks.title,
       verdict: submissions.verdict,
@@ -342,7 +334,6 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
             .from(later)
             .where(
               and(
-                eq(later.tenantId, submissions.tenantId),
                 eq(later.studentId, submissions.studentId),
                 eq(later.taskId, submissions.taskId),
                 eq(later.verdict, "pass"),
@@ -354,9 +345,7 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
     );
   const candidates = rows.flatMap((row) => {
     const pair = row.learnerId ? pairs.get(row.learnerId) : undefined;
-    return pair && pair.tenantId === row.tenantId
-      ? [{ row, pair, id: stumbleId("assessment-b", pair, row.id) }]
-      : [];
+    return pair ? [{ row, pair, id: stumbleId("assessment-b", pair, row.id) }] : [];
   });
   const sent = await sentIds(
     db,
@@ -368,7 +357,6 @@ async function notifyAssessmentB(db: Db, pairs: Map<string, Pair>, now: Date) {
       await insertOnce(db, {
         id,
         userId: pair.instructorId,
-        tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんが確認Bで${row.verdict === "fail" ? "不合格" : "再提出"}になりました`,
         body: `「${row.title}」の定着を確認できませんでした。補習の小問題と、翌日以降の未見の問題で確かめてください。`,
@@ -412,7 +400,7 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
   );
   // 直近に人に回した受講者だけを見る (15分ごとに全員の履歴を読まない)。
   const recent = await db
-    .selectDistinct({ learnerId: submissions.studentId, tenantId: submissions.tenantId })
+    .selectDistinct({ learnerId: submissions.studentId })
     .from(aiReviews)
     .innerJoin(submissions, eq(submissions.id, aiReviews.submissionId))
     .where(
@@ -424,7 +412,7 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
     );
   const learners = recent.flatMap((r) => {
     const pair = r.learnerId ? pairs.get(r.learnerId) : undefined;
-    return pair && pair.tenantId === r.tenantId ? [pair] : [];
+    return pair ? [pair] : [];
   });
   const candidates: {
     pair: Pair;
@@ -438,17 +426,8 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       submittedAt: Date;
     }[];
   }[] = [];
-  // テナントごとに、受講者を 50 人ずつ引く (テナントでも絞り、ほかのテナントの提出を読まない)。
-  const byTenant = new Map<string, Pair[]>();
-  for (const pair of learners) {
-    const list = byTenant.get(pair.tenantId) ?? [];
-    list.push(pair);
-    byTenant.set(pair.tenantId, list);
-  }
-  const parts = [...byTenant].flatMap(([tenantId, list]) =>
-    chunk(list, 50).map((part) => ({ tenantId, part })),
-  );
-  for (const { tenantId, part } of parts) {
+  // 受講者を 50 人ずつ引く。
+  for (const part of chunk(learners, 50)) {
     const rows = await db
       .select({
         learnerId: submissions.studentId,
@@ -465,7 +444,6 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       .where(
         and(
           applied,
-          eq(submissions.tenantId, tenantId),
           inArray(
             submissions.studentId,
             part.map((p) => p.learnerId),
@@ -488,7 +466,6 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
             and(
               applied,
               eq(aiReviews.outcome, "confirmed"),
-              eq(submissions.tenantId, tenantId),
               inArray(
                 submissions.studentId,
                 part.map((p) => p.learnerId),
@@ -516,7 +493,6 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
           .from(submissions)
           .where(
             and(
-              eq(submissions.tenantId, tenantId),
               inArray(
                 submissions.studentId,
                 part.map((p) => p.learnerId),
@@ -592,7 +568,6 @@ async function notifyReviewEscalations(db: Db, pairs: Map<string, Pair>, now: Da
       await insertOnce(db, {
         id,
         userId: pair.instructorId,
-        tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんの提出が続けて講師の確認に回っています`,
         body: `直近の提出${streak.length}件 (最新は「${latest.title}」) が、AIの一次レビューで続けて講師の確認に回りました。理由: ${reasons.join("、")}。課題文やコーディング規則のどこで迷っているかを聞いてください。`,
@@ -658,7 +633,6 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
   // 直近に合格前のヒントを開いた受講者・課題 (開いた時刻の索引で引き、表を全部読まない)。
   const recent = db
     .selectDistinct({
-      tenantId: taskHelpOpens.tenantId,
       userId: taskHelpOpens.userId,
       taskId: taskHelpOpens.taskId,
     })
@@ -675,7 +649,6 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
   // その受講者・課題の合格前のヒントを、期間の前の分も段ごとに引く (最後の段に届いた時刻を決めるため)。
   const rows = await db
     .select({
-      tenantId: recent.tenantId,
       learnerId: recent.userId,
       taskId: recent.taskId,
       level: opens.level,
@@ -688,7 +661,6 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
     .innerJoin(
       opens,
       and(
-        eq(opens.tenantId, recent.tenantId),
         eq(opens.userId, recent.userId),
         eq(opens.taskId, recent.taskId),
         eq(opens.item, "hint"),
@@ -711,13 +683,13 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
           ),
       ),
     )
-    .groupBy(recent.tenantId, recent.userId, recent.taskId, opens.level);
+    .groupBy(recent.userId, recent.taskId, opens.level);
 
-  // 受講者・課題ごとに段をまとめる。担当のある受講者の、同じテナントの記録だけ。
+  // 受講者・課題ごとに段をまとめる。担当のある受講者の記録だけ。
   const byTask = new Map<string, { pair: Pair; rows: typeof rows }>();
   for (const row of rows) {
     const pair = pairs.get(row.learnerId);
-    if (!pair || pair.tenantId !== row.tenantId) continue;
+    if (!pair) continue;
     const key = `${row.learnerId}\n${row.taskId}`;
     const entry = byTask.get(key) ?? { pair, rows: [] };
     entry.rows.push(row);
@@ -794,7 +766,6 @@ async function notifyHintsExhausted(db: Db, pairs: Map<string, Pair>, now: Date,
       await insertOnce(db, {
         id,
         userId: pair.instructorId,
-        tenantId: pair.tenantId,
         type: "learner_stumble",
         title: `${pair.learnerName}さんがヒントを最後まで開きました`,
         body: `「${first.title}」で、合格前にヒントを最後の段 (${first.levels}段目) まで開きました${rest > 0 ? `(ほか${rest}件の課題でも最後まで開いています)` : ""}。${first.solutionNext ? "次は解答例を開ける段です。" : ""}ヒントを使うのは悪いことではありませんが、行き詰まっているかもしれません。責めずに、どこで迷っているかを聞くか、講師への相談を勧めてください。`,

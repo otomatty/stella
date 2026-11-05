@@ -3,7 +3,7 @@
  *
  * 旧トリガー / RLS のアプリ層での再現:
  *   - お知らせ作成: author を caller から確定し、 対象受講者へ通知を fan-out する
- *     (stage 指定 → 受講登録者、 未指定 → テナント全 student、 発信者自身は除外)。
+ *     (stage 指定 → 受講登録者、 未指定 → 全 student、 発信者自身は除外)。
  *   - お知らせ read: stage 全体は全員、 stage 指定は staff か当該ステージ受講者のみ。
  *   - 通知は本人のみ read / 既読化。 生成はサーバ内ロジックからのみ (捏造防止)。
  */
@@ -28,7 +28,6 @@ export const notificationsRoute = new Hono<{ Bindings: Env }>();
 
 const A_COLS = {
   id: announcements.id,
-  tenant_id: announcements.tenantId,
   stage_id: announcements.stageId,
   author_id: announcements.authorId,
   author_name: announcements.authorName,
@@ -41,7 +40,6 @@ const A_COLS = {
 const N_COLS = {
   id: notifications.id,
   user_id: notifications.userId,
-  tenant_id: notifications.tenantId,
   type: notifications.type,
   title: notifications.title,
   body: notifications.body,
@@ -71,11 +69,10 @@ notificationsRoute.get("/api/announcements", async (c) => {
     }
     const isStaff = isStaffRole(caller.role);
 
-    const conds = [eq(announcements.tenantId, caller.tenantId)];
-    if (stageId) conds.push(eq(announcements.stageId, stageId));
+    const conds = [stageId ? eq(announcements.stageId, stageId) : undefined];
 
     if (!isStaff) {
-      // 受講者: テナント全体 (stage_id null) か、 登録済みステージのお知らせのみ。
+      // 受講者: 全体 (stage_id null) か、 登録済みステージのお知らせのみ。
       const ids = await enrolledStageIds(db, caller.id);
       const visible = ids.length
         ? or(isNull(announcements.stageId), inArray(announcements.stageId, ids))
@@ -114,7 +111,6 @@ notificationsRoute.post("/api/announcements", async (c) => {
     const inserted = await db
       .insert(announcements)
       .values({
-        tenantId: caller.tenantId,
         stageId: body.stageId ?? null,
         authorId: caller.id,
         authorName: caller.name,
@@ -141,7 +137,7 @@ async function fanoutAnnouncement(
   body: string,
 ): Promise<void> {
   // 対象 student を解決する。
-  const baseConds = [eq(profiles.tenantId, caller.tenantId), eq(profiles.role, "student")];
+  const baseConds = [eq(profiles.role, "student")];
   let targetIds: string[];
   if (stageId) {
     const rows = await db
@@ -163,7 +159,6 @@ async function fanoutAnnouncement(
   await db.insert(notifications).values(
     recipients.map((userId) => ({
       userId,
-      tenantId: caller.tenantId,
       type: "announcement" as const,
       title,
       body,
@@ -179,10 +174,7 @@ notificationsRoute.get("/api/notifications", async (c) => {
     const unreadOnly = c.req.query("unreadOnly") === "true";
     const limit = Math.min(Number(c.req.query("limit")) || 30, 200);
 
-    const conds = [
-      eq(notifications.userId, caller.id),
-      eq(notifications.tenantId, caller.tenantId),
-    ];
+    const conds = [eq(notifications.userId, caller.id)];
     if (unreadOnly) conds.push(eq(notifications.read, false));
 
     const rows = await db
@@ -205,13 +197,7 @@ notificationsRoute.patch("/api/notifications/:id/read", async (c) => {
     const updated = await db
       .update(notifications)
       .set({ read: true })
-      .where(
-        and(
-          eq(notifications.id, id),
-          eq(notifications.userId, caller.id),
-          eq(notifications.tenantId, caller.tenantId),
-        ),
-      )
+      .where(and(eq(notifications.id, id), eq(notifications.userId, caller.id)))
       .returning({ id: notifications.id });
     if (!updated[0]) {
       throw new ApiError("対象の通知が見つからないか、 更新権限がありません", 404);
@@ -222,20 +208,14 @@ notificationsRoute.patch("/api/notifications/:id/read", async (c) => {
   }
 });
 
-/** 自分宛の未読通知をすべて既読にする (当該テナント内)。 */
+/** 自分宛の未読通知をすべて既読にする。 */
 notificationsRoute.post("/api/notifications/read-all", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
     await db
       .update(notifications)
       .set({ read: true })
-      .where(
-        and(
-          eq(notifications.userId, caller.id),
-          eq(notifications.tenantId, caller.tenantId),
-          eq(notifications.read, false),
-        ),
-      );
+      .where(and(eq(notifications.userId, caller.id), eq(notifications.read, false)));
     return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);

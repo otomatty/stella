@@ -11,7 +11,6 @@ import {
 
 function submission(over: Partial<Submission> & { id: string }): Submission {
   return {
-    tenantId: "ses",
     studentName: "受講者",
     studentInitials: "受",
     avatarTone: "c1",

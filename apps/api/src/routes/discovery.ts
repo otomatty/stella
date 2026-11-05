@@ -72,8 +72,8 @@ async function resolveMaterial(
 ): Promise<DiscoveryMaterialRow> {
   // ロールのゲートも 1 か所に寄せる。顔ぶれは腕試しと同じ (受講者 + 管理者)。
   requireCanTakeSkillCheck(caller);
-  const material = await loadDiscoveryMaterial(db, caller.tenantId, id);
-  // 存在しない / 他テナント / 未承認 を **同じ 400** に丸める。
+  const material = await loadDiscoveryMaterial(db, id);
+  // 存在しない / 未承認 を **同じ 400** に丸める。
   if (material?.reviewStatus !== "approved") {
     throw new ApiError(UNSELECTABLE_STAGE_MESSAGE, 400);
   }

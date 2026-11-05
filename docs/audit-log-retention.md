@@ -10,7 +10,7 @@
 | action | 記録経路 | 対象 (target) | metadata |
 |--------|----------|----------------|----------|
 | `login` | `GET /api/auth/google/callback` | `user/<userId>` | `provider` |
-| `user_invite` | `POST /api/admin/users/invite` | `user/<userId>` | `email`, `role`, `test_data` |
+| `user_invite` | `POST /api/admin/users/invite` | `user/<userId>` | `email`, `role` |
 | `user_role_change` | `POST /api/admin/users/role` | `user/<userId>` | `new_role` |
 | `user_disable` / `user_enable` | `POST /api/admin/users/disable` | `user/<userId>` | `disabled` |
 | `course_publish` / `course_unpublish` / `course_status_change` | `PATCH /api/cms/courses/:id/status` | `course/<courseId>` | `title`, `slug`, `from`, `to` |
@@ -19,8 +19,6 @@
 | `enrollment_update` | `PATCH /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id`, `patch` |
 | `enrollment_delete` | `DELETE /api/enrollments/:id` | `enrollment/<id>` | `user_id`, `stage_id` |
 | `certificate_issue` | `POST /api/certificates/issue` | `certificate/<id>` | `cert_code`, `course_id`, `user_id`, `self_issued` |
-| `org_create` / `org_update` | `POST /api/admin/orgs/upsert` | `org/<orgId>` | `name`, `active` |
-| `test_mode_enable` / `test_mode_disable` | `POST /api/admin/settings` | `tenant/<tenantId>` | `test_mode` |
 | `r2_orphan_cleanup` | `POST /api/admin/r2/orphans/cleanup` | `storage` | `prefix`, `deleted`, `skipped` |
 | `discovery_generate` | `POST /api/cms/discovery/requests/:id/generate` | `discovery_material/<id>` | `request_id`, `stage_id`, `generator`, `question_count` |
 | `discovery_material_edit` | `PATCH /api/cms/discovery/materials/:id` | `discovery_material/<id>` | `stage_id`, `fields`, `question_count`, `approval_revoked` |
@@ -41,6 +39,9 @@
   `enrollment_bulk_delete` / `enrollment_preset_apply`) は **記録側の型から外した** ので
   もう新規に記録されない。 過去ログは残るため、 ラベルは `DEPRECATED_LABELS` に移して
   監査画面の絞り込みからは 「(旧)」 付きで引ける。
+- 廃止した組織マスタ (`org_create` / `org_update`) とテストモード
+  (`test_mode_enable` / `test_mode_disable`) も記録側の型から外してある。
+  過去の行は `DEPRECATED_LABELS` のラベルのまま読める。
 - `certificate_issue` は新規発行時のみ記録する (既発行のべき等な再取得は操作ではない)。
   受講者本人の自己発行もあるため `self_issued` で区別する。
 - 発見教材 (Phase 4) は **生成・編集・レビューを別の action で残す**。 「AI が書いたものを
@@ -49,8 +50,8 @@
   設問) を変えるとサーバが承認を外して `draft` に落とすため、 その場合は
   `discovery_material_edit` (`approval_revoked: true`) と `discovery_review`
   (`to: draft`, `reason: content_edited`) の 2 行が並ぶ。
-- 招待前 (プロフィール未作成) の Google ログインは記録しない。 所属テナントが未確定で
-  `tenant_id` を決められず、 そもそもアプリへ入れないため。
+- 招待前 (プロフィール未作成) の Google ログインは記録しない。 プロフィールが無いので
+  アプリへ入れないため。
 
 > **best-effort である**: `recordAudit()` の失敗は `console.error` に留め、 主操作は成功させる。
 > 主操作と監査記録の原子性 (片方だけ成功する状態の解消) は #39 で扱う別課題。
@@ -59,8 +60,8 @@
 ## append-only (改ざん防止)
 
 - クライアントから `audit_logs` を直接書き換える経路はない。 読み取りは
-  `GET /api/audit-logs` のみ（`instructor` / `admin` + 同テナント）。
-- INSERT はサーバ側 `recordAudit()` のみ。 actor・tenant はリクエスト本文ではなく
+  `GET /api/audit-logs` のみ（`instructor` / `admin` / `platform_admin`）。
+- INSERT はサーバ側 `recordAudit()` のみ。 actor はリクエスト本文ではなく
   `getCaller()` が解決した値を使うため、 一般ユーザーが自分の証跡を消す・捏造することはできない。
 - 物理 DELETE 用の公開 API は用意しない。 世代削除は運用ジョブ（下記）からのみ行う。
 

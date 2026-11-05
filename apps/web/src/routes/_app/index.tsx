@@ -21,7 +21,6 @@ function DashboardPage() {
   if (s.role === "instructor") {
     return (
       <InstructorDashboard
-        tenantId={s.tenantId}
         setPage={s.setPage}
         onOpenReview={s.onOpenReview}
         backendEnabled={s.backendEnabled}
@@ -30,7 +29,7 @@ function DashboardPage() {
     );
   }
   if (s.role === "admin") {
-    return <AdminDashboard tenantId={s.tenantId} backendEnabled={s.backendEnabled} />;
+    return <AdminDashboard backendEnabled={s.backendEnabled} />;
   }
   // 受講者のホームはスキルツリー + 「次にやること」(ステージ一覧と旧スキルツリー画面を集約)。
   return (

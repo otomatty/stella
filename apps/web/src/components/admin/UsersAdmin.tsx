@@ -1,7 +1,7 @@
 /**
  * `/admin/users` — ユーザー管理 (Issue #22)。
  *
- * バックエンド設定時: 同テナントの `profiles` を実データで一覧し、 招待 (単体 / CSV 一括) /
+ * バックエンド設定時: `profiles` を実データで一覧し、 招待 (単体 / CSV 一括) /
  * ロール変更 / 無効化を service-role API 経由で行う。
  * バックエンド未設定時 (dev fixtures フロー): デモデータを read-only で表示する。
  *
@@ -37,31 +37,16 @@ import { CsvInviteDialog } from "./users-admin/CsvInviteDialog";
 import { UsersAdminDemo } from "./users-admin/UsersAdminDemo";
 
 interface Props {
-  tenantId: string;
-  tenantName: string;
   currentUserId: string | null;
   currentUserRole: ProfileRole | null;
   backendEnabled: boolean;
 }
 
-export function UsersAdmin({
-  tenantId,
-  tenantName,
-  currentUserId,
-  currentUserRole,
-  backendEnabled,
-}: Props) {
+export function UsersAdmin({ currentUserId, currentUserRole, backendEnabled }: Props) {
   if (!backendEnabled) {
     return <UsersAdminDemo />;
   }
-  return (
-    <UsersAdminLive
-      tenantId={tenantId}
-      tenantName={tenantName}
-      currentUserId={currentUserId}
-      currentUserRole={currentUserRole}
-    />
-  );
+  return <UsersAdminLive currentUserId={currentUserId} currentUserRole={currentUserRole} />;
 }
 
 // ---------------------------------------------------------------
@@ -69,17 +54,13 @@ export function UsersAdmin({
 // ---------------------------------------------------------------
 
 function UsersAdminLive({
-  tenantId,
-  tenantName,
   currentUserId,
   currentUserRole,
 }: {
-  tenantId: string;
-  tenantName: string;
   currentUserId: string | null;
   currentUserRole: ProfileRole | null;
 }) {
-  const { profiles, loading, error, refetch } = useProfiles(tenantId);
+  const { profiles, loading, error, refetch } = useProfiles();
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<ProfileRole | "all">("all");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -140,7 +121,7 @@ function UsersAdminLive({
     <>
       <PageHeader
         title="ユーザー管理"
-        sub={`${tenantName} のユーザーを管理 · CSV一括招待 / ロール割当`}
+        sub="ユーザーを管理 · CSV一括招待 / ロール割当"
         actions={
           <>
             <Button onClick={() => setCsvOpen(true)}>
@@ -281,18 +262,8 @@ function UsersAdminLive({
         )}
       </Card>
 
-      <InviteDialog
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
-        tenantName={tenantName}
-        onInvited={refetch}
-      />
-      <CsvInviteDialog
-        open={csvOpen}
-        onOpenChange={setCsvOpen}
-        tenantName={tenantName}
-        onInvited={refetch}
-      />
+      <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onInvited={refetch} />
+      <CsvInviteDialog open={csvOpen} onOpenChange={setCsvOpen} onInvited={refetch} />
     </>
   );
 }

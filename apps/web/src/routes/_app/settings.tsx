@@ -12,7 +12,6 @@ function Settings() {
     <SettingsPage
       role={s.role}
       profile={s.profile}
-      tenantName={s.tenantName}
       backendEnabled={s.backendEnabled}
       onProfileUpdated={s.onProfileUpdated}
     />
